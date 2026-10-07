@@ -15,7 +15,7 @@ Umdrehung.
 
 ## Den Bildschirm einrichten
 
-![Der Rotor und wohin die Masse kommt](img/balance.png)
+![Der Rotor und wohin die Masse kommt](img/de/balance.png)
 
 Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
 gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
@@ -24,11 +24,11 @@ drei“).
 Bei einem Impeller wird die Korrektur als Winkel auf der Nabe angegeben, weil
 eine Blattspitze im Kanal nicht erreichbar ist:
 
-![Ein fünfblättriger Impeller](img/balance-edf.png)
+![Ein fünfblättriger Impeller](img/de/balance-edf.png)
 
 ## Sensorplatzierung am Prüfstand
 
-![Wohin die Sensoren am Prüfstand kommen](img/balance-rig.png)
+![Wohin die Sensoren am Prüfstand kommen](img/de/balance-rig.png)
 
 - Die Indexmarke gehört auf die Motorglocke, nicht auf einen Spinner. Die
   Glocke dreht mit der Welle, ist starr, ist bei jedem Propeller vorhanden und
@@ -42,7 +42,7 @@ eine Blattspitze im Kanal nicht erreichbar ist:
 
 ## Sensorplatzierung am fertigen Modell
 
-![Wohin die Sensoren am Modell kommen](img/balance-aircraft.png)
+![Wohin die Sensoren am Modell kommen](img/de/balance-aircraft.png)
 
 - Der Beschleunigungssensor gehört flach auf den Motorspant, nicht auf die
   Motorhaube. Die Haube ist eine Verkleidung, oft gummigelagert, und bewegt

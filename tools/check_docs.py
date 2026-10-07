@@ -149,10 +149,12 @@ def check_links(problems: list[str]) -> None:
             elif resolved.suffix.lower() == ".png":
                 referenced.add(resolved)
 
-    for image in sorted(IMG.glob("*.png")):
+    # docs/img/de holds the same screens in German, for the German pages.
+    for image in sorted(IMG.rglob("*.png")):
         if image.resolve() not in referenced:
             problems.append(
-                f"docs/img/{image.name} is committed but no page shows it")
+                f"docs/img/{image.relative_to(IMG)} is committed but no page "
+                "shows it")
 
 
 def check_translations(problems: list[str]) -> None:
@@ -386,14 +388,15 @@ def check_compile_table(problems: list[str]) -> None:
 
 
 def check_screenshot_count(problems: list[str]) -> None:
-    """STATUS.md's count of committed screenshots is the number in docs/img."""
+    """STATUS.md's count of committed screenshots is the number in docs/img,
+    the German ones in docs/img/de included."""
     text = read(REPO / "STATUS.md")
     m = re.search(r"(\w+) committed screenshots", text)
     if not m:
         problems.append("STATUS.md: no '<N> committed screenshots' sentence")
         return
     said = as_number(m.group(1))
-    real = len(list(IMG.glob("*.png")))
+    real = len(list(IMG.rglob("*.png")))
     if said != real:
         problems.append(f"STATUS.md: says {m.group(1)} committed screenshots; "
                         f"docs/img holds {real}")

@@ -51,6 +51,7 @@ TRACKED = [
     "shared/ui/ui_hero.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
+    "shared/ui/ui_text.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",

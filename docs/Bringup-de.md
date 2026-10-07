@@ -102,14 +102,14 @@ unsichtbar: ein Bus, der keine Frames trägt, sieht genauso aus wie ein
 Koprozessor, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,
 der einfach keine Zahlen zeigt.
 
-![Frames kommen verändert an](img/busfault.png)
+![Frames kommen verändert an](img/de/busfault.png)
 
 Das Urteil ist die Überschrift, die Liste darunter ist das, was zu prüfen ist,
 in der Reihenfolge, die am wenigsten kostet, und die rechte Spalte ist das,
 was beide Enden gezählt haben. `returned` ist grün, sobald überhaupt etwas
 zurückkam; `BUS OFF` heißt, dass dieses Panel aufgehört hat zu senden.
 
-![Es kam nichts zurück](img/busfault-silent.png)
+![Es kam nichts zurück](img/de/busfault-silent.png)
 
 Verlassen wird der Bildschirm mit einem zwei Sekunden langen Halten der Taste
 am unteren Rand — dieselbe Geste und dieselbe Überblendung wie bei ARM. Ein

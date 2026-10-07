@@ -39,7 +39,7 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 ## Marken im Menü
 
-![Das Funktionsmenü](img/overview.png)
+![Das Funktionsmenü](img/de/overview.png)
 
 | Marke | Bedeutung |
 | --- | --- |
@@ -55,11 +55,11 @@ meldet: Das Panel rechnet dann sein eigenes Modell eines Netzteils.
 
 Das Menü im hellen Theme:
 
-![Das Menü im hellen Theme](img/overview-light.png)
+![Das Menü im hellen Theme](img/de/overview-light.png)
 
 ## Splash
 
-![Der Splash](img/splash.png)
+![Der Splash](img/de/splash.png)
 
 Jedes Subsystem meldet beim Hochfahren sein Ergebnis: Platine, Display,
 Touch, SD-Karte, Einstellungen, Link, Koprozessor. Die Zeile der Platine
@@ -74,7 +74,7 @@ Prüfstand schaltet nicht scharf. Wenn alle Schritte geantwortet haben,
 
 ## Motor & ESC
 
-![Motor und ESC](img/motor.png)
+![Motor und ESC](img/de/motor.png)
 
 Zwei Spalten. Der Plot und das Gas nehmen die linke, die vier Anzeigen und
 die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
@@ -82,7 +82,7 @@ und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren.
 ### Der Plot zeigt einen Lauf
 
-![Motor und ESC, Telemetrie angehalten](img/motor-held.png)
+![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
 
 Die Kurve ist die Aufzeichnung eines Laufs. Sie läuft nur, solange der
 Prüfstand scharf ist: das Scharfschalten löscht sie, das Entschärfen hält sie
@@ -183,7 +183,7 @@ Wert.
 
 ## Servo
 
-![Servo](img/servo.png)
+![Servo](img/de/servo.png)
 
 An beliebiger Stelle auf dem Bogen ziehen, um eine Stellung zu befehlen. Der
 kräftige Arm ist die gemessene Stellung, der blasse Arm die befohlene. Der
@@ -247,7 +247,7 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   schon über 6,0 V liegt, ändert sich ohne sie. Eine auf SUPPLY eingestellte
   Spannung öffnet sie nicht.
 
-  ![Die HV-Warnung](img/servo-hv.png)
+  ![Die HV-Warnung](img/de/servo-hv.png)
 
 - OUTPUT ON ist ein Halten über zwei Sekunden, OUTPUT OFF ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
@@ -320,14 +320,14 @@ kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
-![Ein Lauf](img/servo-run.png)
+![Ein Lauf](img/de/servo-run.png)
 
 Das Ergebnis bleibt bis CLOSE auf der linken Karte: PASS, FAIL oder ABORTED
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
 Dateien, die die Karte angenommen hat: `BENCHnnn.CSV`, und `+ .TXT`, sobald
 die Karte den Bericht vollständig angenommen hat.
 
-![Ein Ergebnis](img/servo-result.png)
+![Ein Ergebnis](img/de/servo-result.png)
 
 ### Einstellungen
 
@@ -336,7 +336,7 @@ der linken Karte. ARM, CENTRE, RELEASE und STOP bleiben, wo sie sind, und
 funktionieren. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
-![Die Einstellungen des Servos](img/servo-settings.png)
+![Die Einstellungen des Servos](img/de/servo-settings.png)
 
 | Seite | Einstellung | Wirkung |
 | --- | --- | --- |
@@ -389,7 +389,7 @@ rechten Karte rot, und jeder Neustart geht auf STANDARD PWM mit 50 Hz zurück:
 ein nach einem Neustart angestecktes Servo bekommt nie eine Rate, die für ein
 anderes gedacht war.
 
-![Die Warnung](img/servo-warning.png)
+![Die Warnung](img/de/servo-warning.png)
 
 **Die Frame Rate erreicht die Pins** über die SERVO-Page des Koprozessors
 (Protokoll 4.1). Sie gilt für jeden PWM-Ausgang, dessen erster Kanal die Rolle
@@ -423,9 +423,9 @@ Die OUTPUT-Einstellungen und HV SERVO gelten für die Sitzung; die übrigen
 Einstellungen unter TEST, LIMITS und DUT liegen im NVS (Non-Volatile Storage)
 und werden wie bei SUPPLY geschrieben.
 
-![Die Einstellungen des automatischen Tests](img/servo-test.png)
-![Die Grenzen](img/servo-limits.png)
-![Der Name](img/servo-name.png)
+![Die Einstellungen des automatischen Tests](img/de/servo-test.png)
+![Die Grenzen](img/de/servo-limits.png)
+![Der Name](img/de/servo-name.png)
 
 Aktuelle Einschränkungen:
 
@@ -440,7 +440,7 @@ Aktuelle Einschränkungen:
 
 ## Netzteil
 
-![Netzteil](img/supply.png)
+![Netzteil](img/de/supply.png)
 
 Stellt ein programmierbares Netzteil ein, schaltet es und zeichnet es auf: den
 PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
@@ -490,7 +490,7 @@ Titelzeile und den aktuellen Wert blass, bis eine Ziffer getippt ist. OK
 Wert außerhalb wird abgelehnt, und der Bereich wechselt in die Warnfarbe. OK
 ohne Eingabe und CANCEL lassen den Sollwert, wie er war.
 
-![Die Tastatur](img/supply-keypad.png)
+![Die Tastatur](img/de/supply-keypad.png)
 
 **Eine Änderung an einem eingeschalteten Ausgang fragt zuerst.** Solange der
 Ausgang an ist, öffnet ein neuer Sollwert vom Schieber oder seinen
@@ -501,7 +501,7 @@ Netzteil den alten Sollwert. Bei ausgeschaltetem Ausgang wird nichts gefragt.
 SETTINGS schaltet die Frage für den Schieber und für die Tastatur getrennt
 ab.
 
-![Die Frage](img/supply-confirm.png)
+![Die Frage](img/de/supply-confirm.png)
 
 **OUTPUT ON ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
 wie ARM. OUTPUT OFF ist ein Tippen. STOP schaltet den Ausgang auf jedem
@@ -549,7 +549,7 @@ Trips eingeschlossen. Die unterste Zeile sagt SAVED, SAVE WAITING, NOT SAVED
 Änderung in SETUP, die ohne SAVE verlassen wurde und die nichts schreibt, bis
 SAVE dort oder eine Änderung hier danach fragt.
 
-![Die Einstellungen des Netzteils](img/supply-settings.png)
+![Die Einstellungen des Netzteils](img/de/supply-settings.png)
 
 | Einstellung | Bereich | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
@@ -629,7 +629,7 @@ AUTO wie bei einer festen Rate.
 
 ## Analyser
 
-![Analyser](img/analyser.png)
+![Analyser](img/de/analyser.png)
 
 Sechzehn Kanäle, jeder mit 1,5 s Verlauf und einem Balken für den aktuellen
 Wert. CH17 und CH18 sind die beiden Digitalkanäle. Ein Glitch ist eine Spitze
@@ -639,7 +639,7 @@ Moment.
 Der Zustandsblock zeigt einen von SILENT, FAILSAFE, FRAME LOST und LIVE, mit
 einer Zeile Erklärung:
 
-![Ein Empfänger im Failsafe](img/analyser-failsafe.png)
+![Ein Empfänger im Failsafe](img/de/analyser-failsafe.png)
 
 Im FAILSAFE sendet der Empfänger wohlgeformte Werte, die er selbst erzeugt;
 jede Spur wird rot gezeichnet. FAILSAFE als Stopp behandeln, nicht als
@@ -653,12 +653,12 @@ Klasse, listet ESC-Profile statt Protokollen und programmiert einen ESC über
 sein Gasknüppel-Menü; sie hat eine eigene Seite,
 [Stick-Programmierung](StickProgramming-de.md).
 
-![Geräteklasse](img/programmer.png)
+![Geräteklasse](img/de/programmer.png)
 
 Jede Protokollzeile nennt ihren Transport. Eine automatische Erkennung gibt
 es nicht:
 
-![Die Protokolle einer Klasse](img/programmer-protocols.png)
+![Die Protokolle einer Klasse](img/de/programmer-protocols.png)
 
 BLHeli_32 steht nicht in der ESC-Liste. Der Prüfstand erkennt diese ESCs,
 steuert sie an und sendet die DShot Special Commands, kann ihre Parameter aber
@@ -666,23 +666,23 @@ nicht lesen: [BLHeli_32-Parameter](BLHeli32-de.md).
 
 Bevor ein Gerät geantwortet hat, ist nichts editierbar:
 
-![Nichts hat geantwortet](img/programmer-idle.png)
+![Nichts hat geantwortet](img/de/programmer-idle.png)
 
 Nachdem ein Gerät geantwortet hat, erscheinen die Parameter in Gruppen, mit
 der Hilfe zur ausgewählten Zeile unter der Liste:
 
-![Verbunden](img/programmer-params.png)
+![Verbunden](img/de/programmer-params.png)
 
 Jede Firmware zeigt ihre Einstellungen in ihren eigenen Einheiten. BLHeli_S
 zeigt das Timing als benannte Stufen, die anderen in Grad Vorzündung:
 
-![Grad statt benannter Stufen](img/programmer-am32.png)
+![Grad statt benannter Stufen](img/de/programmer-am32.png)
 
 Ein geänderter Wert wird erst geschrieben, wenn WRITE gedrückt wird.
 Vorgemerkte Änderungen tragen eine Markierung und eine eigene Farbe, und der
 WRITE-Knopf zeigt, wie viele vorgemerkt sind:
 
-![Zwei vorgemerkte Änderungen](img/programmer-dirty.png)
+![Zwei vorgemerkte Änderungen](img/de/programmer-dirty.png)
 
 Stepper halten an den Enden einer Liste an; sie springen nicht auf die andere
 Seite.
@@ -695,39 +695,39 @@ das Home-Tag im Band verlässt den Bildschirm.
 Die Liste enthält jedes ESC-Profil, die ausführbaren zuerst; eine Zeile, die
 nicht laufen kann, nennt den Grund:
 
-![Die Profile](img/programmer-stick.png)
+![Die Profile](img/de/programmer-stick.png)
 
 Die Punkte eines Profils stehen anfangs auf KEEP. Die Stepper wählen einen
 Wert; RUN zählt die gewählten Werte:
 
-![Zwei Werte gewählt](img/programmer-stick-items.png)
+![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
 RUN öffnet eine Warnung über den ganzen Bildschirm. Der Lauf beginnt, wenn
 HOLD TO RUN 2 s gehalten ist:
 
-![Die Warnung](img/programmer-stick-warning.png)
+![Die Warnung](img/de/programmer-stick-warning.png)
 
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe und die letzte Gruppe. ABORT, STOP und das Verlassen des Bildschirms
 beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
 entschärft:
 
-![Ein Lauf](img/programmer-stick-run.png)
+![Ein Lauf](img/de/programmer-stick-run.png)
 
 Das Ergebnis bleibt bis OK:
 
-![Fertig](img/programmer-stick-done.png)
+![Fertig](img/de/programmer-stick-done.png)
 
-![Gestoppt](img/programmer-stick-aborted.png)
+![Gestoppt](img/de/programmer-stick-aborted.png)
 
 TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
 davon ist gemessen:
 
-![Timing](img/programmer-stick-timing.png)
+![Timing](img/de/programmer-stick-timing.png)
 
 ## Akku
 
-![Zellenabweichung](img/battery.png)
+![Zellenabweichung](img/de/battery.png)
 
 Die Zellen werden als Abweichung vom Mittelwert des Packs gezeichnet. Das
 Urteil folgt der Spreizung, dem größten Abstand zwischen zwei beliebigen
@@ -738,13 +738,13 @@ Unter Last messen. In Ruhe liest sich eine schwache Zelle wie die anderen.
 
 ## Logs
 
-![Der Dateibrowser](img/logs.png)
+![Der Dateibrowser](img/de/logs.png)
 
 Karte durchsehen, Datei öffnen, prüfen, was der Import erkannt hat, dann
 plotten:
 
-![Die Importansicht](img/logs-import.png)
-![Der Plot](img/logs-plot.png)
+![Die Importansicht](img/de/logs-import.png)
+![Der Plot](img/de/logs-plot.png)
 
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
@@ -780,7 +780,7 @@ Lauf, der sich nicht öffnen ließ, und zählt sonst von dort weiter. Eine
 gelöschte Nummer wird nur wieder vergeben, wenn sie bei diesem Lesen über allen
 verbliebenen Läufen lag.
 
-![Die DELETE-Rückfrage](img/logs-delete.png)
+![Die DELETE-Rückfrage](img/de/logs-delete.png)
 
 Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
 je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet die
@@ -817,11 +817,15 @@ Liste und läse sich wie ein fertiger.
 
 ## Setup
 
-![Setup](img/setup.png)
+![Setup](img/de/setup.png)
 
 Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Themes:
 
-![Setup im hellen Theme](img/setup-light.png)
+![Setup im hellen Theme](img/de/setup-light.png)
+
+Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
+zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
+bleibt und warum: [Sprache der Oberfläche](Language-de.md).
 
 ### Werte behalten
 
@@ -836,7 +840,7 @@ Zuständen:
 | `WHEN IDLE` | Das Schreiben ist angefordert und wartet auf einen Moment dafür. |
 | `NOT SAVED` | Der Store hat das Schreiben abgelehnt. Was auf das Medium gelangt ist, geht aus dem Bildschirm nicht hervor: Eine Ablehnung bei einem Key lässt die davor geschriebenen Keys committed, der nächste Boot kann also eine Mischung aus neuen und alten Werten laden. Ein Druck versucht es erneut. |
 
-![Ein geänderter Wert, SAVE angeboten](img/setup-dirty.png)
+![Ein geänderter Wert, SAVE angeboten](img/de/setup-dirty.png)
 
 Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
 eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
@@ -867,7 +871,7 @@ Start aus, 1200 ms lang innerhalb des Splash. Ein anderes Urteil als „alle
 Probes kamen unversehrt zurück" bringt diesen Bildschirm auf das Panel statt
 des Menüs.
 
-![Frames kommen verändert an](img/busfault.png)
+![Frames kommen verändert an](img/de/busfault.png)
 
 Es gibt ihn, weil der Fehler von jedem anderen Bildschirm aus unsichtbar ist:
 ein Bus, der keine Frames trägt, sieht genauso aus wie ein Koprozessor, der
@@ -876,7 +880,7 @@ Zahlen zeigt. Das Urteil ist die Überschrift, die Liste ist das, was der
 Reihe nach zu prüfen ist, und die rechte Spalte ist das, was beide Enden
 gezählt haben.
 
-![Es kam nichts zurück](img/busfault-silent.png)
+![Es kam nichts zurück](img/de/busfault-silent.png)
 
 Verlassen kostet zwei Sekunden Halten — die ARM-Geste und dieselbe
 Überblendung. Das Quittieren repariert nichts: der Prüfstand läuft in
@@ -890,7 +894,7 @@ Derselbe Bildschirm trägt die andere Hälfte: ein Link, der stand und seit 4 s
 weg ist. Die Überschrift ist das, was der CAN-Controller dieses Panels gerade
 tut — der Draht hat eben noch Frames getragen.
 
-![Das Panel ist vom Bus](img/busfault-lost.png)
+![Das Panel ist vom Bus](img/de/busfault-lost.png)
 
 | Überschrift | Bedeutung |
 | --- | --- |
@@ -937,7 +941,7 @@ bedeutet.
 Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Die Protokolle, die an die
 Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt.
 
-![Outputs](img/outputs.png)
+![Outputs](img/de/outputs.png)
 
 Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
 protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
@@ -989,12 +993,12 @@ TAKES 8 PINS`. Eine komplett graue Platine ohne Begründung daneben liest sich
 wie ein Defekt, und PPM färbt die ganze Platine grau, sobald irgendetwas
 anderes gebunden ist.
 
-![PPM bei schon gebundenen Servo-Pins](img/outputs-full.png)
+![PPM bei schon gebundenen Servo-Pins](img/de/outputs-full.png)
 
 Das Protokoll ist eine Liste und kein Stepper: es gibt acht davon, und sich
 an sieben vorbeizuschieben, um das achte zu erreichen, ist keine Auswahl.
 
-![Die Protokollliste](img/outputs-protocol.png)
+![Die Protokollliste](img/de/outputs-protocol.png)
 
 Reservierte Pins werden gezeigt und lassen sich nicht anhaken. GP3 trägt die
 Safety-Heartbeat-Leitung und GP8 bis GP12 den CAN-Controller (Controller Area
@@ -1026,7 +1030,7 @@ Vier Servokabel und ein ESC, mit DShot600 als bearbeitetem Protokoll. GP5 ist
 angehakt; GP0, GP1, GP2 und GP4 sagen SERVO PWM und lassen sich hier nicht
 anhaken; GP3 und GP8 bis GP12 sind rot, weil der Koprozessor sie reserviert:
 
-![Outputs mit Pins, die ein anderes Protokoll hält](img/outputs-held.png)
+![Outputs mit Pins, die ein anderes Protokoll hält](img/de/outputs-held.png)
 
 Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
@@ -1038,7 +1042,7 @@ Hinter der Taste PICK A PIN auf dem Setup-Bildschirm, und dieselbe Bindung,
 die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
 gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 
-![Der Pin-Picker](img/picker.png)
+![Der Pin-Picker](img/de/picker.png)
 
 Die Tasten sind nicht die Pads. In jeder Größe, die auf ein 480-Pixel-Panel
 passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
@@ -1068,7 +1072,7 @@ Das Foto ist wieder davon getrennt. Mit einem ist die Platine auf dem
 Bildschirm die Platine in deinen Händen; ohne eines werden Umriss und jedes
 Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
 
-![Der Picker ohne Foto](img/picker-drawn.png)
+![Der Picker ohne Foto](img/de/picker-drawn.png)
 
 Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
 behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -27,7 +28,10 @@
 static const char k_chars[UI_TEXTKEY_CHARS + 1] =
     "1234567890" "QWERTYUIOP" "ASDFGHJKL-" "ZXCVBNM_.";
 
-static const char *const k_bottom[] = { "SPACE", "CLR", "CANCEL", "OK" };
+/* SPACE and CANCEL are translated; CLR and OK are legends. */
+static const ui_text_id_t k_bottom_tx[] = { TX_SPACE, TX_COUNT, TX_CANCEL,
+                                            TX_COUNT };
+static const char *const k_bottom[] = { NULL, "CLR", NULL, "OK" };
 /* How many columns each bottom key spans. */
 static const int k_bottom_span[] = { 4, 2, 2, 2 };
 
@@ -83,7 +87,8 @@ const char *ui_textkey_label(int key)
         one[1] = '\0';
         return one;
     }
-    return k_bottom[key - UI_TEXTKEY_CHARS];
+    const int b = key - UI_TEXTKEY_CHARS;
+    return (k_bottom[b] != NULL) ? k_bottom[b] : ui_tr(k_bottom_tx[b]);
 }
 
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
@@ -224,9 +229,12 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
                              (int16_t)(a.w - 2 * TK_PAD), 18 };
     gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_LEFT);
-    char room[32];
-    snprintf(room, sizeof(room), k->refused ? "a name is needed"
-                                            : "%d of %d", k->len, k->max_len);
+    char room[40];
+    if (k->refused) {
+        snprintf(room, sizeof(room), "%s", TR(TEXTKEY_NEEDED));
+    } else {
+        snprintf(room, sizeof(room), TR(TEXTKEY_COUNT), k->len, k->max_len);
+    }
     gfx_text_in(c, hdr, room, &gfx_font_8x16,
                 k->refused ? ui_theme_color(UI_C_WARN)
                            : ui_theme_color(UI_C_TEXT_DIM),

@@ -759,6 +759,10 @@ Settings are behind the SETUP tile, in both themes:
 
 ![Setup in the light theme](img/setup-light.png)
 
+APPLICATION's Language switches the whole interface between English and
+German on the next frame, with no restart. What follows it, what stays
+English and why: [Interface language](Language.md).
+
 ### Keeping the values
 
 A changed value takes effect at once and is not written to flash until SAVE is

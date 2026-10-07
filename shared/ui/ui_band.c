@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -37,7 +38,8 @@ gfx_rect_t ui_band_stop_rect(void)
 static int chip(gfx_canvas_t *c, int right, const char *label,
                 gfx_color_t dot, gfx_color_t fill)
 {
-    const int w = 14 + (int)strlen(label) * 8 + 14 + (dot ? 14 : 0);
+    const int w = 14 + gfx_text_width(&gfx_font_8x16, label, 1) + 14
+                  + (dot ? 14 : 0);
     const gfx_rect_t r = { (int16_t)(right - w), 10,
                            (int16_t)w, (int16_t)(UI_BAND_H - 20) };
     ui_pill(c, r, label, dot, fill);
@@ -76,13 +78,13 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
 
     /* ARMED is a filled badge rather than a coloured dot, so the armed state
      * is readable by shape at arm's length, not by colour alone. */
-    right = chip(c, right, st->armed ? "ARMED" : "SAFE", 0,
+    right = chip(c, right, st->armed ? "ARMED" : TR(BAND_SAFE), 0,
                  st->armed ? ui_theme_color(UI_C_DANGER)
                            : ui_theme_color(UI_C_PANEL_SUNK));
 
     if (st->faults != 0) {
-        char fault[16];
-        snprintf(fault, sizeof(fault), "FAULT %02X", (unsigned)st->faults);
+        char fault[24];
+        snprintf(fault, sizeof(fault), TR(BAND_FAULT), (unsigned)st->faults);
         right = chip(c, right, fault, 0, ui_theme_color(UI_C_WARN));
     }
 
@@ -90,7 +92,7 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         right = chip(c, right, st->mode, 0, ui_theme_color(UI_C_PANEL_SUNK));
     }
 
-    (void)chip(c, right, st->link_up ? "LINK" : "NO LINK",
+    (void)chip(c, right, st->link_up ? "LINK" : TR(BAND_NO_LINK),
                st->link_up ? ui_theme_color(UI_C_OK)
                            : ui_theme_color(UI_C_DANGER),
                ui_theme_color(UI_C_PANEL_SUNK));

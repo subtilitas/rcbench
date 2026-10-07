@@ -69,8 +69,35 @@ history is in git.
   `scheme.store`, the move that stores a selection; the generator and the
   card reader take the same rules. The nine YGE profiles carry
   `scheme.listen` and the eight YGE mode setups `scheme.store`.
+- **A German interface.** SETUP, APPLICATION, Language switches every
+  screen between English and German on the next frame, with no restart.
+  Labels, setting names and help, alerts, warnings, refusal notes and the
+  servo test's TXT report are translated; ARM, DISARM, STOP, SWEEP, HOLD,
+  the screen titles, protocol and mode names, units and the field's own
+  terms stay English, as does the servo test's CSV. The strings are IDs in
+  `shared/ui/include/ui_text.def` with English as the fallback, and German
+  is `shared/ui/ui_text_de.c`. Text is UTF-8: `gfx` decodes it, one cell a
+  code point, and the two text fonts carry Ä Ö Ü ß ä ö ü, 102 glyphs each.
+  `tools/render_ui.py` renders every screenshot in German into
+  `docs/img/de/` as well, the German wiki pages show those, and
+  `render_ui.py --fit`, run in CI, fails on a German string that is cut,
+  runs past its field or overlaps another. `test_text` holds every format to
+  its English's conversions and every string no screenshot shows to its
+  field. The how and the glossary are on the new Language page.
 
 ### Changed
+
+- **Alerts hold 127 bytes.** The alert band took 47 bytes of an alert and
+  cut the rest, so `coprocessor has no SUPPLY page -- PD mini not driven`
+  lost its last five characters; `UI_ALERT_MAX` is 128 and the control
+  task's copy is the same size.
+- **Four bus-fault headings fit the screen.** "this panel is
+  rejoining the bus", "this panel's controller has stopped", "probes cross,
+  and not all of them" and "probes go missing without a bus error" ran under
+  the measured numbers in the heading face; the screen now heads them "this
+  panel is rejoining", "the controller has stopped", "not every probe
+  crosses" and "probes lost, no bus error". The console keeps the longer
+  words.
 
 - **The Silver Series profile is not a counted menu.**
   `greatplanes-electrifly-silver-series` is `scheme.type` `other`: its stick

@@ -13,6 +13,27 @@
 #define GFX_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define GFX_MAX(a, b) ((a) > (b) ? (a) : (b))
 
+/*
+ * The fit check's hooks (gfx.h), compiled in only with GFX_TEXT_TRACE.  A
+ * shape is reported once, as the caller drew it: the spans a rounded
+ * rectangle or a glyph is filled with are held back.
+ */
+#ifdef GFX_TEXT_TRACE
+static int s_trace_hold;
+#define TRACE_BOX(c, x, y, w, h)                                            \
+    do {                                                                    \
+        if (s_trace_hold == 0) {                                            \
+            gfx_trace_box((c), (x), (y), (w), (h));                         \
+        }                                                                   \
+    } while (0)
+#define TRACE_HOLD()    (++s_trace_hold)
+#define TRACE_RELEASE() (--s_trace_hold)
+#else
+#define TRACE_BOX(c, x, y, w, h) ((void)0)
+#define TRACE_HOLD()    ((void)0)
+#define TRACE_RELEASE() ((void)0)
+#endif
+
 /* The framebuffer is in PSRAM (pseudo-static random-access memory) behind a
  * write-back, write-allocate cache with 64-byte lines, so every byte written
  * costs two bytes on the bus: the line is fetched before it is overwritten,
@@ -181,6 +202,7 @@ void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t colo
     if (!canvas_ok(c)) {
         return;
     }
+    TRACE_BOX(c, x, y, w, h);
     gfx_rect_t r;
     if (!gfx_rect_intersect(gfx_rect_make(x, y, w, h), c->clip, &r)) {
         return;
@@ -438,9 +460,12 @@ void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
     if (w <= 0 || h <= 0) {
         return;
     }
+    TRACE_BOX(c, x, y, w, h);
+    TRACE_HOLD();
     r = clamp_radius(w, h, r);
     if (r == 0) {
         gfx_fill_rect(c, x, y, w, h, color);
+        TRACE_RELEASE();
         return;
     }
 
@@ -469,6 +494,7 @@ void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
         }
         ++px;
     }
+    TRACE_RELEASE();
 }
 
 void gfx_draw_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
@@ -537,6 +563,8 @@ void gfx_fill_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
     if (w <= 0 || h <= 0) {
         return;
     }
+    TRACE_BOX(c, x, y, w, h);
+    TRACE_HOLD();
     tl = clamp_cut(w, h, tl);
     tr = clamp_cut(w, h, tr);
     br = clamp_cut(w, h, br);
@@ -558,6 +586,7 @@ void gfx_fill_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
             gfx_hline(c, x + left, y + row, span, color);
         }
     }
+    TRACE_RELEASE();
 }
 
 void gfx_fill_chamfer_rect(gfx_canvas_t *c, int x, int y, int w, int h,
@@ -617,6 +646,7 @@ void gfx_blit(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
     if (!canvas_ok(c) || !src || w <= 0 || h <= 0) {
         return;
     }
+    TRACE_BOX(c, x, y, w, h);
     if (src_stride <= 0) {
         src_stride = w;
     }
@@ -678,16 +708,105 @@ void gfx_blit_1bpp(gfx_canvas_t *c, int x, int y, const uint8_t *bits,
 
 /* -------------------------------------------------------------------- text */
 
-static const uint8_t *glyph_rows(const gfx_font_t *font, unsigned char ch)
+uint32_t gfx_utf8_next(const char **s)
 {
-    if (ch < font->first || ch > font->last) {
-        ch = '?';
-        if (ch < font->first || ch > font->last) {
+    const unsigned char *p = (const unsigned char *)*s;
+    const unsigned c0 = p[0];
+    if (c0 == 0u) {
+        return 0u;
+    }
+    if (c0 < 0x80u) {
+        *s += 1;
+        return c0;
+    }
+    /* The sequence length from the lead byte.  A continuation byte, or a
+     * lead byte UTF-8 does not use, is one malformed cell. */
+    unsigned len;
+    uint32_t cp;
+    if ((c0 & 0xE0u) == 0xC0u && c0 >= 0xC2u) {
+        len = 2u;
+        cp = c0 & 0x1Fu;
+    } else if ((c0 & 0xF0u) == 0xE0u) {
+        len = 3u;
+        cp = c0 & 0x0Fu;
+    } else if ((c0 & 0xF8u) == 0xF0u && c0 <= 0xF4u) {
+        len = 4u;
+        cp = c0 & 0x07u;
+    } else {
+        *s += 1;
+        return '?';
+    }
+    for (unsigned i = 1u; i < len; ++i) {
+        /* The terminator is not a continuation byte, so a sequence cut short
+         * stops here rather than reading past the end. */
+        if ((p[i] & 0xC0u) != 0x80u) {
+            *s += 1;
+            return '?';
+        }
+        cp = (cp << 6) | (p[i] & 0x3Fu);
+    }
+    /* An overlong three- or four-byte form, or a surrogate, is malformed. */
+    if ((len == 3u && cp < 0x800u) || (len == 4u && cp < 0x10000u)
+        || (cp >= 0xD800u && cp <= 0xDFFFu)) {
+        *s += 1;
+        return '?';
+    }
+    *s += len;
+    return cp;
+}
+
+int gfx_text_cells(const char *s)
+{
+    if (s == NULL) {
+        return 0;
+    }
+    int n = 0;
+    while (gfx_utf8_next(&s) != 0u) {
+        ++n;
+    }
+    return n;
+}
+
+size_t gfx_text_prefix(const char *s, int cells)
+{
+    if (s == NULL) {
+        return 0u;
+    }
+    const char *p = s;
+    for (int i = 0; i < cells; ++i) {
+        if (gfx_utf8_next(&p) == 0u) {
+            break;
+        }
+    }
+    return (size_t)(p - s);
+}
+
+/* The glyph index of code point @p cp, or -1 when the font has none.  The
+ * extra list is a handful long, so a scan costs less than a table would. */
+static int glyph_index(const gfx_font_t *font, uint32_t cp)
+{
+    if (cp >= font->first && cp <= font->last) {
+        return (int)(cp - font->first);
+    }
+    for (unsigned i = 0u; i < font->extra_count; ++i) {
+        if (font->extra[i] == cp) {
+            return (int)((unsigned)(font->last - font->first) + 1u + i);
+        }
+    }
+    return -1;
+}
+
+static const uint8_t *glyph_rows(const gfx_font_t *font, uint32_t cp)
+{
+    int idx = glyph_index(font, cp);
+    if (idx < 0) {
+        idx = glyph_index(font, '?');
+        if (idx < 0) {
             return NULL;
         }
     }
     size_t stride = font->bytes_per_row ? font->bytes_per_row : 1u;
-    return font->glyphs + (size_t)(ch - font->first) * font->height * stride;
+    return font->glyphs + (size_t)idx * font->height * stride;
 }
 
 /*
@@ -724,23 +843,14 @@ int gfx_text_width(const gfx_font_t *font, const char *s, int scale)
     if (scale < 1) {
         scale = 1;
     }
-    int n = 0;
-    for (const char *p = s; *p; ++p) {
-        ++n;
-    }
-    return n * font->width * scale;
+    return gfx_text_cells(s) * font->width * scale;
 }
 
-int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
-             gfx_color_t fg, int scale)
+/* One glyph by code point; gfx_char() and gfx_text() both come here. */
+static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
+                      const gfx_font_t *font, gfx_color_t fg, int scale)
 {
-    if (!font) {
-        return 0;
-    }
-    if (scale < 1) {
-        scale = 1;
-    }
-    const uint8_t *rows = glyph_rows(font, (unsigned char)ch);
+    const uint8_t *rows = glyph_rows(font, cp);
     if (!rows) {
         /* '?' is the documented fallback, but the numeric face does not
          * contain one -- and a glyph that silently renders as whitespace makes
@@ -799,6 +909,34 @@ int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
     return font->width * scale;
 }
 
+int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
+             gfx_color_t fg, int scale)
+{
+    if (!font) {
+        return 0;
+    }
+    if (scale < 1) {
+        scale = 1;
+    }
+    /* A byte at 0x80 or above is half of a character, never one. */
+    const unsigned char b = (unsigned char)ch;
+    return draw_glyph(c, x, y, (b < 0x80u) ? b : (uint32_t)'?', font, fg,
+                      scale);
+}
+
+/* The string, decoded; the public calls below trace it first. */
+static int text_run(gfx_canvas_t *c, int x, int y, const char *s,
+                    const gfx_font_t *font, gfx_color_t fg, int scale)
+{
+    int advance = 0;
+    TRACE_HOLD();
+    for (uint32_t cp = gfx_utf8_next(&s); cp != 0u; cp = gfx_utf8_next(&s)) {
+        advance += draw_glyph(c, x + advance, y, cp, font, fg, scale);
+    }
+    TRACE_RELEASE();
+    return advance;
+}
+
 int gfx_text(gfx_canvas_t *c, int x, int y, const char *s,
              const gfx_font_t *font, gfx_color_t fg, int scale)
 {
@@ -808,11 +946,11 @@ int gfx_text(gfx_canvas_t *c, int x, int y, const char *s,
     if (scale < 1) {
         scale = 1;
     }
-    int advance = 0;
-    for (const char *p = s; *p; ++p) {
-        advance += gfx_char(c, x + advance, y, *p, font, fg, scale);
-    }
-    return advance;
+#ifdef GFX_TEXT_TRACE
+    gfx_trace_text(c, x, y, gfx_text_width(font, s, scale),
+                   gfx_text_height(font, scale), s, NULL);
+#endif
+    return text_run(c, x, y, s, font, fg, scale);
 }
 
 int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
@@ -852,9 +990,12 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
     }
     int y = box.y + (box.h - th) / 2;
 
+#ifdef GFX_TEXT_TRACE
+    gfx_trace_text(c, x, y, tw, th, s, &box);
+#endif
     gfx_rect_t saved = c->clip;
     if (gfx_clip_intersect(c, box)) {
-        gfx_text(c, x, y, s, font, fg, scale);
+        text_run(c, x, y, s, font, fg, scale);
     }
     c->clip = saved;
 }
@@ -1085,7 +1226,15 @@ static int rotated_stencil(gfx_canvas_t *c, int cx, int cy, const char *s,
         scale = 1;
     }
 
-    const int len = (int)strlen(s);
+    /* Decoded once into cells, so a glyph is found by its column.  The mark
+     * is one short word; a longer string is cut at the buffer. */
+    uint32_t cps[32];
+    int len = 0;
+    for (uint32_t cp = gfx_utf8_next(&s);
+         cp != 0u && len < (int)(sizeof(cps) / sizeof(cps[0]));
+         cp = gfx_utf8_next(&s)) {
+        cps[len++] = cp;
+    }
     if (len <= 0) {
         return 0;
     }
@@ -1130,15 +1279,15 @@ static int rotated_stencil(gfx_canvas_t *c, int cx, int cy, const char *s,
             }
 
             const int idx = tx / (font->width * scale);
-            const unsigned char ch = (unsigned char)s[idx];
-            if (ch < font->first || ch > font->last) {
+            const int gi = glyph_index(font, cps[idx]);
+            if (gi < 0) {
                 continue;
             }
             const int col = (tx % (font->width * scale)) / scale;
             const int row = ty / scale;
 
             const uint8_t *glyph = font->glyphs
-                + (size_t)(ch - font->first) * font->height * font->bytes_per_row;
+                + (size_t)gi * font->height * font->bytes_per_row;
             /* Thresholded, not blended: this draws an idempotent stencil,
              * and a soft edge would put half-covered pixels into it that a
              * second pass would darken again. */

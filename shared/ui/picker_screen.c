@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -453,7 +454,7 @@ static void draw_mine(gfx_canvas_t *c, const int8_t *chan)
         ++shown;
     }
     if (shown == 0) {
-        gfx_text(c, tx, ty, "NONE YET", UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, tx, ty, TR(PK_NONE_YET), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     }
 }
 
@@ -466,11 +467,12 @@ static void draw_theirs(gfx_canvas_t *c, const int8_t *chan)
     const int tx = SCREEN_W - 132;
     int ty = 8;
 
-    gfx_text(c, tx, ty, "IN USE", UI_FONT_HEAD, GFX_RGB(150, 154, 162), 1);
+    gfx_text(c, tx, ty, TR(PK_IN_USE), UI_FONT_HEAD, GFX_RGB(150, 154, 162),
+             1);
     ty += 30;
     gfx_fill_rect(c, tx, ty, SCREEN_W - tx - 6, 2, UI_EDGE_HI);
     ty += 8;
-    gfx_text(c, tx, ty, "BY OTHERS", UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+    gfx_text(c, tx, ty, TR(PK_BY_OTHERS), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     ty += 22;
 
     /* In the order their first pin falls, so the channels count down the
@@ -498,7 +500,7 @@ static void draw_theirs(gfx_canvas_t *c, const int8_t *chan)
         }
     }
     if (shown == 0) {
-        gfx_text(c, tx, ty, "NONE", UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, tx, ty, TR(PK_NONE), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     }
 }
 
@@ -586,11 +588,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const int px = (SCREEN_W - pw) / 2, py = (SCREEN_H - ph) / 2;
         gfx_fill_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_PANEL);
         gfx_draw_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_EDGE);
-        static const char *const lines[] = {
-            "NO PICTURE OF THIS BOARD",
-            "IT DOES NOT SAY WHERE ITS PADS ARE,",
-            "SO DRAWING ONE WOULD BE GUESSWORK.",
-            "ITS PINS ARE ON THE OUTPUTS SCREEN.",
+        const char *const lines[] = {
+            TR(PK_NO_ART_1), TR(PK_NO_ART_2), TR(PK_NO_ART_3),
+            TR(PK_NO_ART_4),
         };
         int ty = py + 26;
         for (unsigned i = 0; i < sizeof(lines) / sizeof(lines[0]); ++i) {

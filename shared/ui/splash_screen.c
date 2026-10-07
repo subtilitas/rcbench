@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -17,13 +18,14 @@
  * seven lines.  A tap skips it; a failed step stays reported on screen. */
 #define HOLD_S 1.6f
 
-static const char *const k_labels[SPLASH_STEP_COUNT] = {
-    "BOARD", "DISPLAY", "TOUCH", "STORAGE", "SETTINGS", "LINK", "COPROCESSOR",
+static const ui_text_id_t k_labels[SPLASH_STEP_COUNT] = {
+    TX_SPLASH_BOARD, TX_SPLASH_DISPLAY, TX_SPLASH_TOUCH, TX_SPLASH_STORAGE,
+    TX_SPLASH_SETTINGS, TX_SPLASH_LINK, TX_SPLASH_IOMCU,
 };
 
 static struct {
     splash_result_t result[SPLASH_STEP_COUNT];
-    char            detail[SPLASH_STEP_COUNT][24];
+    char            detail[SPLASH_STEP_COUNT][32];
     float           held_s;
     bool            skipped;
     unsigned        drawn_mask;   /**< per framebuffer, bit per buffer      */
@@ -113,11 +115,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_clear(c, ui_theme_color(UI_C_BG));
         ui_wordmark(c, "rcbench", ui_theme_color(UI_C_ACCENT));
         gfx_text_in(c, (gfx_rect_t){ 0, 108, W, 24 },
-                    "motor, ESC and servo test bench", &gfx_font_8x16,
+                    TR(SPLASH_TAGLINE), &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
         /* The one credit line, at the bottom of the splash only. */
         gfx_text_in(c, (gfx_rect_t){ 0, H - 34, W, 20 },
-                    "built with Claude Code", &gfx_font_8x16,
+                    TR(SPLASH_CREDIT), &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_CENTER);
         s.drawn_mask |= bit;
     }
@@ -126,7 +128,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const int y = LIST_Y + i * ROW_H;
         gfx_fill_rect(c, LIST_X, y, 400, ROW_H - 4,
                       ui_theme_color(UI_C_BG));
-        gfx_text(c, LIST_X, y + 6, k_labels[i], &gfx_font_8x16,
+        gfx_text(c, LIST_X, y + 6, ui_tr(k_labels[i]), &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text(c, LIST_X + 120, y + 6, mark_of(s.result[i]),
                  &gfx_font_8x16, colour_of(s.result[i]), 1);

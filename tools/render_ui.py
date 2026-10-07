@@ -8,7 +8,15 @@ the fonts and the layout code the panel runs.  The output is what the display
 shows.
 
     python3 tools/render_ui.py                   # every screen into docs/img/
-    python3 tools/render_ui.py overview -o /tmp/overview.png
+    python3 tools/render_ui.py overview -o /tmp/overview.png --lang en
+    python3 tools/render_ui.py --check           # the committed images match
+    python3 tools/render_ui.py --fit             # every German string fits
+
+Every screen is rendered in English into docs/img/ and in German into
+docs/img/de/.  --fit builds the renderer with GFX_TEXT_TRACE, draws every
+view in both languages and fails when a German string is wider than its box,
+is cut at the edge of the area it is drawn in, runs past the shape it is
+printed on, or overlaps another string.
 """
 
 from __future__ import annotations
@@ -39,6 +47,8 @@ SOURCES = [
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
+    "shared/ui/ui_text.c",
+    "shared/ui/ui_text_de.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
@@ -169,9 +179,11 @@ INCLUDES = [
 ]
 
 
-def build(tmp: pathlib.Path) -> pathlib.Path:
-    exe = tmp / "render_screen"
+def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
+    exe = tmp / ("render_trace" if trace else "render_screen")
     cmd = ["cc", "-O2", "-g", "-Wall", "-Wextra", "-o", str(exe)]
+    if trace:
+        cmd += ["-DGFX_TEXT_TRACE"]
     cmd += [str(REPO / s) for s in SOURCES]
     for inc in INCLUDES:
         cmd += ["-I", str(REPO / inc)]
@@ -180,15 +192,176 @@ def build(tmp: pathlib.Path) -> pathlib.Path:
     return exe
 
 
-def render_one(exe, tmp, name, screen, theme):
-    ppm = tmp / f"{name}.ppm"
+def render_one(exe, tmp, name, screen, theme, lang="en", trace=None):
+    ppm = tmp / f"{name}-{lang}.ppm"
     # The view name as well as the screen: three log goldens are all the
     # same screen in different states, and the renderer needs to know
     # which state to drive it into.
-    subprocess.run([str(exe), str(ppm), screen, theme, name],
-                   check=True)
+    cmd = [str(exe), str(ppm), screen, theme, name, lang]
+    if trace is not None:
+        cmd.append(str(trace))
+    subprocess.run(cmd, check=True)
     from PIL import Image
     return Image.open(ppm).convert("RGB")
+
+
+# ------------------------------------------------------------- the fit check
+
+# A string's cell box carries a little empty space above and below the ink,
+# so two lines that touch are not counted as overlapping until they share
+# more than this many rows.
+SLACK_Y = 2
+
+# A filled shape smaller than this on either side is a mark or a rule, not
+# something a label sits inside.
+MIN_SHAPE = 8
+
+
+class Rect:
+    def __init__(self, x, y, w, h):
+        self.x, self.y, self.w, self.h = x, y, w, h
+
+    @property
+    def r(self):
+        return self.x + self.w
+
+    @property
+    def b(self):
+        return self.y + self.h
+
+    def inter(self, o):
+        x0, y0 = max(self.x, o.x), max(self.y, o.y)
+        x1, y1 = min(self.r, o.r), min(self.b, o.b)
+        if x1 <= x0 or y1 <= y0:
+            return None
+        return Rect(x0, y0, x1 - x0, y1 - y0)
+
+    def covers(self, o):
+        return (self.x <= o.x and self.y <= o.y and self.r >= o.r
+                and self.b >= o.b)
+
+    def holds(self, px, py):
+        return self.x <= px < self.r and self.y <= py < self.b
+
+
+def read_trace(path: pathlib.Path):
+    """The traced frame: its strings and shapes in drawing order, and the
+    table IDs looked up while the view was set up and drawn."""
+    items, used = [], set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("U "):
+            used.add(line[2:].strip())
+        elif line == "F":
+            items = []
+        elif line.startswith("B "):
+            v = [int(t) for t in line.split()[1:9]]
+            items.append(("B", Rect(*v[0:4]), Rect(*v[4:8])))
+        elif line.startswith("T "):
+            parts = line.split(" ", 13)
+            v = [int(t) for t in parts[1:13]]
+            box = Rect(*v[8:12]) if v[10] >= 0 else None
+            items.append(("T", Rect(*v[0:4]), Rect(*v[4:8]), box,
+                          parts[13]))
+    return items, used
+
+
+def fit_problems(items):
+    """What overflows, as (string, problem) pairs.  Width only: a language
+    changes how long a string is, not how tall."""
+    problems = []
+    drawn = []          # (index, visible rect, string)
+    for i, it in enumerate(items):
+        if it[0] != "T":
+            continue
+        _, t, clip, box, s = it
+        if t.y + t.h <= clip.y or t.y >= clip.b:
+            continue    # wholly above or below its clip: not drawn at all
+        if box is not None and t.w > box.w:
+            problems.append((s, "is %d px wide in a %d px box"
+                             % (t.w, box.w)))
+        elif t.x < clip.x or t.r > clip.r:
+            problems.append((s, "is cut at the edge of its area "
+                             "(%d to %d, area %d to %d)"
+                             % (t.x, t.r, clip.x, clip.r)))
+        # The shape it is printed on: the last one drawn under its start.
+        px, py = t.x + min(4, max(t.w // 2, 0)), t.y + t.h // 2
+        for j in range(i - 1, -1, -1):
+            b = items[j]
+            if (b[0] == "B" and b[1].w >= MIN_SHAPE and b[1].h >= MIN_SHAPE
+                    and b[1].holds(px, py)):
+                if t.r > b[1].r and b[1].r <= clip.r:
+                    problems.append((s, "runs %d px past the shape it sits "
+                                     "on" % (t.r - b[1].r)))
+                break
+        vis = t.inter(clip)
+        if vis is None:
+            continue
+        core = Rect(vis.x, vis.y + SLACK_Y, vis.w, max(vis.h - 2 * SLACK_Y, 0))
+        for k, other, os_ in drawn:
+            hit = core.inter(other)
+            if hit is None:
+                continue
+            # Painted over between the two is not drawn under the second.
+            hidden = any(items[j][0] == "B" and items[j][1].covers(hit)
+                         for j in range(k + 1, i))
+            if not hidden:
+                problems.append((s, "overlaps %r" % os_))
+        drawn.append((i, Rect(vis.x, vis.y + SLACK_Y, vis.w,
+                              max(vis.h - 2 * SLACK_Y, 0)), s))
+    return problems
+
+
+def fit(views, langs) -> int:
+    """Render every view in every language with the trace on and report
+    every string that overflows.  A German overflow fails; English is the
+    layout the screens were drawn for, and its findings are listed so they
+    are seen.  A table string with no declared width has to be drawn by
+    some view, or nothing measures it."""
+    failed = False
+    with tempfile.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        exe = build(tmp, trace=True)
+        ids = {}
+        out = subprocess.run([str(exe), "--ids"], check=True,
+                             capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            _, name, cells = line.split()
+            ids[name] = int(cells)
+        seen = {lang: set() for lang in langs}
+        # English first: a finding English shares word for word is the
+        # layout's, not the translation's -- a number from the data, say --
+        # and is listed with English's rather than failing German.
+        english = {}
+        for lang in sorted(langs, key=lambda x: x != "en"):
+            for name in views:
+                filename, screen, theme = SCREENS[name]
+                trace = tmp / f"{name}-{lang}.trace"
+                render_one(exe, tmp, name, screen, theme, lang, trace)
+                items, used = read_trace(trace)
+                seen[lang] |= used
+                for s, why in fit_problems(items):
+                    if lang == "en":
+                        english.setdefault(name, set()).add((s, why))
+                    shared = (s, why) in english.get(name, set())
+                    tag = "note" if lang == "en" or shared else "FAIL"
+                    print(f"{tag} {lang} {name}: {s!r} {why}")
+                    failed = failed or tag == "FAIL"
+        for lang in langs:
+            if lang == "en":
+                continue
+            unmeasured = sorted(n for n, c in ids.items()
+                                if c == 0 and n not in seen[lang])
+            for n in unmeasured:
+                print(f"FAIL {lang}: {n} has no declared width and no view "
+                      "draws it")
+                failed = True
+    if not failed:
+        print("every string fits")
+    return 1 if failed else 0
+
+
+# The languages a golden is committed in, and where each set lives.
+LANGS = {"en": ".", "de": "de"}
 
 
 def main() -> int:
@@ -199,8 +372,14 @@ def main() -> int:
                     help="write a single screen here instead of docs/img/")
     ap.add_argument("--dir", type=pathlib.Path,
                     default=REPO / "docs" / "img")
+    ap.add_argument("--lang", choices=sorted(LANGS) + ["all"], default="all",
+                    help="the language to render (default: every one; "
+                         "German goes to docs/img/de/)")
     ap.add_argument("--check", action="store_true",
                     help="fail if any render differs from the committed image")
+    ap.add_argument("--fit", action="store_true",
+                    help="fail if a translated string overflows where it is "
+                         "drawn")
     args = ap.parse_args()
 
     if not shutil.which("cc"):
@@ -211,8 +390,12 @@ def main() -> int:
         if name not in SCREENS:
             sys.exit(f"unknown screen {name!r}; expected one of "
                      f"{', '.join(SCREENS)}")
-    if args.output and len(wanted) != 1:
-        sys.exit("--output takes exactly one screen")
+    langs = list(LANGS) if args.lang == "all" else [args.lang]
+    if args.output and (len(wanted) != 1 or len(langs) != 1):
+        sys.exit("--output takes exactly one screen and one --lang")
+
+    if args.fit:
+        return fit(wanted, langs)
 
     try:
         from PIL import Image  # noqa: F401
@@ -224,42 +407,45 @@ def main() -> int:
         tmp = pathlib.Path(td)
         exe = build(tmp)
 
-        for name in wanted:
-            filename, screen, theme = SCREENS[name]
+        for lang in langs:
+            for name in wanted:
+                filename, screen, theme = SCREENS[name]
 
-            out = args.output or (args.dir / filename)
-            rendered = render_one(exe, tmp, name, screen, theme)
+                out = args.output or (args.dir / LANGS[lang] / filename)
+                rendered = render_one(exe, tmp, name, screen, theme, lang)
+                shown = f"{LANGS[lang]}/{out.name}".lstrip("./")
 
-            if args.check:
-                # The unit tests cover what a screen decides; the golden image
-                # covers what it looks like.  Compare pixels rather than
-                # encoded bytes: PNG encoders differ between versions.
-                if not out.exists():
-                    print(f"{out} does not exist; run tools/render_ui.py",
-                          file=sys.stderr)
-                    failed = True
-                    continue
-                committed = Image.open(out).convert("RGB")
-                if committed.size != rendered.size:
-                    print(f"{out} is {committed.size}, "
-                      f"render is {rendered.size}",
-                          file=sys.stderr)
-                    failed = True
-                    continue
-                a = committed.tobytes()
-                b = rendered.tobytes()
-                if a != b:
-                    diff = sum(1 for i in range(0, len(a), 3)
-                               if a[i:i + 3] != b[i:i + 3])
-                    print(f"{out.name} is out of date: {diff:,} pixels differ",
-                          file=sys.stderr)
-                    failed = True
+                if args.check:
+                    # The unit tests cover what a screen decides; the golden
+                    # image covers what it looks like.  Compare pixels rather
+                    # than encoded bytes: PNG encoders differ between
+                    # versions.
+                    if not out.exists():
+                        print(f"{out} does not exist; run tools/render_ui.py",
+                              file=sys.stderr)
+                        failed = True
+                        continue
+                    committed = Image.open(out).convert("RGB")
+                    if committed.size != rendered.size:
+                        print(f"{out} is {committed.size}, "
+                              f"render is {rendered.size}",
+                              file=sys.stderr)
+                        failed = True
+                        continue
+                    a = committed.tobytes()
+                    b = rendered.tobytes()
+                    if a != b:
+                        diff = sum(1 for i in range(0, len(a), 3)
+                                   if a[i:i + 3] != b[i:i + 3])
+                        print(f"{shown} is out of date: {diff:,} pixels "
+                              "differ", file=sys.stderr)
+                        failed = True
+                    else:
+                        print(f"{shown} matches")
                 else:
-                    print(f"{out.name} matches")
-            else:
-                out.parent.mkdir(parents=True, exist_ok=True)
-                rendered.save(out)
-                print(f"wrote {out}")
+                    out.parent.mkdir(parents=True, exist_ok=True)
+                    rendered.save(out)
+                    print(f"wrote {out}")
 
     if failed:
         print("\nRun tools/render_ui.py and review the new images.",

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -105,12 +106,12 @@ bool busfault_screen_take_ack(void)
 static const char *bus_text(busfault_bus_t b)
 {
     switch (b) {
-    case BUSFAULT_BUS_OFF:        return "this panel is off the bus";
-    case BUSFAULT_BUS_RECOVERING: return "this panel is rejoining the bus";
-    case BUSFAULT_BUS_STOPPED:    return "this panel's controller has stopped";
-    case BUSFAULT_BUS_RUNNING:    return "the link stopped answering";
+    case BUSFAULT_BUS_OFF:        return TR(BF_BUS_OFF_TEXT);
+    case BUSFAULT_BUS_RECOVERING: return TR(BF_BUS_REJOIN_TEXT);
+    case BUSFAULT_BUS_STOPPED:    return TR(BF_BUS_STOPPED_TEXT);
+    case BUSFAULT_BUS_RUNNING:    return TR(BF_BUS_RUNNING_TEXT);
     case BUSFAULT_BUS_UNKNOWN:
-    default:                      return "the controller cannot be read";
+    default:                      return TR(BF_BUS_UNKNOWN_TEXT);
     }
 }
 
@@ -119,29 +120,24 @@ static const char *bus_text(busfault_bus_t b)
 static const char *bus_word(busfault_bus_t b)
 {
     switch (b) {
-    case BUSFAULT_BUS_OFF:        return "BUS OFF";
-    case BUSFAULT_BUS_RECOVERING: return "rejoining";
-    case BUSFAULT_BUS_STOPPED:    return "stopped";
-    case BUSFAULT_BUS_RUNNING:    return "running";
+    case BUSFAULT_BUS_OFF:        return "BUS OFF";   /* the CAN state's name */
+    case BUSFAULT_BUS_RECOVERING: return TR(BF_BUS_REJOIN_WORD);
+    case BUSFAULT_BUS_STOPPED:    return TR(BF_BUS_STOPPED_WORD);
+    case BUSFAULT_BUS_RUNNING:    return TR(BF_BUS_RUNNING_WORD);
     case BUSFAULT_BUS_UNKNOWN:
-    default:                      return "not running";
+    default:                      return TR(BF_BUS_UNKNOWN_WORD);
     }
 }
 
 static const char *bus_meaning(busfault_bus_t b)
 {
     switch (b) {
-    case BUSFAULT_BUS_OFF:
-        return "Too many frames went unacknowledged. It stopped transmitting.";
-    case BUSFAULT_BUS_RECOVERING:
-        return "It is counting the quiet time a rejoin needs. Give it 3 s.";
-    case BUSFAULT_BUS_STOPPED:
-        return "It is idle and was not restarted. That is a fault in here.";
-    case BUSFAULT_BUS_RUNNING:
-        return "The controller is on the bus and nothing answers its frames.";
+    case BUSFAULT_BUS_OFF:        return TR(BF_BUS_OFF_MEANS);
+    case BUSFAULT_BUS_RECOVERING: return TR(BF_BUS_REJOIN_MEANS);
+    case BUSFAULT_BUS_STOPPED:    return TR(BF_BUS_STOPPED_MEANS);
+    case BUSFAULT_BUS_RUNNING:    return TR(BF_BUS_RUNNING_MEANS);
     case BUSFAULT_BUS_UNKNOWN:
-    default:
-        return "The driver is not running, so nothing can be sent at all.";
+    default:                      return TR(BF_BUS_UNKNOWN_MEANS);
     }
 }
 
@@ -150,21 +146,21 @@ static int bus_checks(busfault_bus_t b, const char *out[LIST_MAX])
     switch (b) {
     case BUSFAULT_BUS_OFF:
     case BUSFAULT_BUS_RECOVERING:
-        out[0] = "The panel is asking for the bus back, once a second.";
-        out[1] = "If this clears on its own, nothing here is broken.";
-        out[2] = "If it stays, photograph this screen and report it.";
+        out[0] = TR(BF_REJOIN_1);
+        out[1] = TR(BF_REJOIN_2);
+        out[2] = TR(BF_REJOIN_3);
         return 3;
     case BUSFAULT_BUS_RUNNING:
-        out[0] = "Is the coprocessor still powered? Its own LED.";
-        out[1] = "A connector only nearly seated behaves exactly like this.";
-        out[2] = "Photograph this screen if both look right.";
+        out[0] = TR(BF_RUNNING_1);
+        out[1] = TR(BF_RUNNING_2);
+        out[2] = TR(BF_RUNNING_3);
         return 3;
     case BUSFAULT_BUS_STOPPED:
     case BUSFAULT_BUS_UNKNOWN:
     default:
-        out[0] = "Nothing on the bench causes this. It is a fault in the";
-        out[1] = "  panel's own firmware.";
-        out[2] = "Photograph this screen and report it.";
+        out[0] = TR(BF_STOPPED_1);
+        out[1] = TR(BF_STOPPED_2);
+        out[2] = TR(BF_STOPPED_3);
         return 3;
     }
 }
@@ -172,16 +168,11 @@ static int bus_checks(busfault_bus_t b, const char *out[LIST_MAX])
 static const char *meaning_of(can_selftest_verdict_t v)
 {
     switch (v) {
-    case CAN_SELFTEST_SILENT:
-        return "Nothing answered on the bus. The two boards are not talking.";
-    case CAN_SELFTEST_CORRUPT:
-        return "Frames cross and arrive changed. The wire or the bit timing.";
-    case CAN_SELFTEST_LOSSY:
-        return "Frames cross, some are lost, and the bus reported errors.";
-    case CAN_SELFTEST_DROPPED:
-        return "Frames arrived intact and were dropped unread. Not the wire.";
-    default:
-        return "";
+    case CAN_SELFTEST_SILENT:  return TR(BF_SILENT_MEANS);
+    case CAN_SELFTEST_CORRUPT: return TR(BF_CORRUPT_MEANS);
+    case CAN_SELFTEST_LOSSY:   return TR(BF_LOSSY_MEANS);
+    case CAN_SELFTEST_DROPPED: return TR(BF_DROPPED_MEANS);
+    default:                   return "";
     }
 }
 
@@ -198,31 +189,44 @@ static int checks_for(can_selftest_verdict_t v, const char *out[LIST_MAX])
 {
     switch (v) {
     case CAN_SELFTEST_SILENT:
-        out[0] = "Is the coprocessor powered? Its own LED, not the panel's.";
-        out[1] = "CANH to CANH and CANL to CANL, not crossed.";
-        out[2] = "Both boards flashed from the same release.";
-        out[3] = "Terminators: about 60 ohms across CANH and CANL,";
-        out[4] = "  measured with the bench switched off.";
+        out[0] = TR(BF_SILENT_1);
+        out[1] = TR(BF_SILENT_2);
+        out[2] = TR(BF_SILENT_3);
+        out[3] = TR(BF_SILENT_4);
+        out[4] = TR(BF_SILENT_5);
         return 5;
     case CAN_SELFTEST_CORRUPT:
-        out[0] = "Terminators: about 60 ohms across CANH and CANL with the";
-        out[1] = "  bench off. 120 ohms means one of the two is missing.";
-        out[2] = "Keep the branch to each board under 30 cm.";
-        out[3] = "CANH and CANL twisted together, away from motor leads.";
+        out[0] = TR(BF_CORRUPT_1);
+        out[1] = TR(BF_CORRUPT_2);
+        out[2] = TR(BF_CORRUPT_3);
+        out[3] = TR(BF_TWISTED);
         return 4;
     case CAN_SELFTEST_LOSSY:
-        out[0] = "Terminators: about 60 ohms across CANH and CANL, bench off.";
-        out[1] = "Total bus under 5 m, and each branch under 30 cm.";
-        out[2] = "CANH and CANL twisted together, away from motor leads.";
-        out[3] = "A connector that is only nearly seated behaves like this.";
+        out[0] = TR(BF_LOSSY_1);
+        out[1] = TR(BF_LOSSY_2);
+        out[2] = TR(BF_TWISTED);
+        out[3] = TR(BF_LOSSY_4);
         return 4;
     case CAN_SELFTEST_DROPPED:
-        out[0] = "The wiring is not the fault: the frames arrived intact.";
-        out[1] = "Something stopped reading them in time. Please report this";
-        out[2] = "  with the numbers on the right.";
+        out[0] = TR(BF_DROPPED_1);
+        out[1] = TR(BF_DROPPED_2);
+        out[2] = TR(BF_DROPPED_3);
         return 3;
     default:
         return 0;
+    }
+}
+
+const char *busfault_verdict_text(can_selftest_verdict_t v)
+{
+    switch (v) {
+    case CAN_SELFTEST_OK:      return TR(CAN_OK);
+    case CAN_SELFTEST_SILENT:  return TR(CAN_SILENT);
+    case CAN_SELFTEST_CORRUPT: return TR(CAN_CORRUPT);
+    case CAN_SELFTEST_LOSSY:   return TR(CAN_LOSSY);
+    case CAN_SELFTEST_DROPPED: return TR(CAN_DROPPED);
+    case CAN_SELFTEST_RUNNING:
+    default:                   return TR(CAN_RUNNING);
     }
 }
 
@@ -321,17 +325,17 @@ static void draw_link_numbers(gfx_canvas_t *c)
     int y = VERDICT_Y;
     char line[48];
 
-    gfx_text(c, NUM_X, y, "THIS PANEL", UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += 24;
 
-    snprintf(line, sizeof(line), "down      %lu s", (unsigned long)s.r.down_s);
+    snprintf(line, sizeof(line), TR(BF_DOWN), (unsigned long)s.r.down_s);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
     y += 20;
-    snprintf(line, sizeof(line), "requests  %lu", (unsigned long)s.r.polls);
+    snprintf(line, sizeof(line), TR(BF_REQUESTS), (unsigned long)s.r.polls);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += 20;
-    snprintf(line, sizeof(line), "no answer %lu",
+    snprintf(line, sizeof(line), TR(BF_NO_ANSWER),
              (unsigned long)s.r.timeouts);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.timeouts > 0 ? ui_theme_color(UI_C_WARN)
@@ -355,7 +359,7 @@ static void draw_link_numbers(gfx_canvas_t *c)
              (unsigned long)s.r.bus_errors);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += 20;
-    snprintf(line, sizeof(line), "rejoins %lu",
+    snprintf(line, sizeof(line), TR(BF_REJOINS),
              (unsigned long)s.r.recoveries);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.recoveries > 0 ? ui_theme_color(UI_C_WARN)
@@ -365,31 +369,31 @@ static void draw_link_numbers(gfx_canvas_t *c)
 static void draw_numbers(gfx_canvas_t *c)
 {
     int y = VERDICT_Y;
-    gfx_text(c, NUM_X, y, "MEASURED", UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_MEASURED), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += 24;
 
     char line[48];
-    snprintf(line, sizeof(line), "sent      %lu", (unsigned long)s.r.sent);
+    snprintf(line, sizeof(line), TR(BF_SENT), (unsigned long)s.r.sent);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += 20;
-    snprintf(line, sizeof(line), "returned  %lu", (unsigned long)s.r.echoed);
+    snprintf(line, sizeof(line), TR(BF_RETURNED), (unsigned long)s.r.echoed);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.echoed > 0 ? ui_theme_color(UI_C_OK)
                             : ui_theme_color(UI_C_DANGER), 1);
     y += 20;
-    snprintf(line, sizeof(line), "altered   %lu", (unsigned long)s.r.corrupt);
+    snprintf(line, sizeof(line), TR(BF_ALTERED), (unsigned long)s.r.corrupt);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.corrupt > 0 ? ui_theme_color(UI_C_DANGER)
                              : ui_theme_color(UI_C_TEXT), 1);
     y += 20;
-    snprintf(line, sizeof(line), "lost      %lu", (unsigned long)s.r.lost);
+    snprintf(line, sizeof(line), TR(BF_LOST), (unsigned long)s.r.lost);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.lost > 0 ? ui_theme_color(UI_C_WARN)
                           : ui_theme_color(UI_C_TEXT), 1);
     y += 30;
 
-    gfx_text(c, NUM_X, y, "THIS PANEL", UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += 22;
     snprintf(line, sizeof(line), "tx err %lu  rx err %lu",
@@ -405,7 +409,7 @@ static void draw_numbers(gfx_canvas_t *c)
     }
     y += 30;
 
-    gfx_text(c, NUM_X, y, "COPROCESSOR", UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_COPROCESSOR), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += 22;
     if (!s.r.have_remote) {
@@ -414,11 +418,11 @@ static void draw_numbers(gfx_canvas_t *c)
          * already the whole of what SILENT says, and repeating it in red
          * would read as a second fault.
          */
-        gfx_text(c, NUM_X, y, "did not answer", UI_FONT_LABEL,
+        gfx_text(c, NUM_X, y, TR(BF_NO_REPLY), UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         return;
     }
-    gfx_text(c, NUM_X, y, s.r.remote_up ? "CAN up" : "CAN DOWN",
+    gfx_text(c, NUM_X, y, s.r.remote_up ? TR(BF_CAN_UP) : TR(BF_CAN_DOWN),
              UI_FONT_LABEL,
              s.r.remote_up ? ui_theme_color(UI_C_OK)
                            : ui_theme_color(UI_C_DANGER), 1);
@@ -431,7 +435,7 @@ static void draw_numbers(gfx_canvas_t *c)
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += 20;
     if (s.r.remote_overflows > 0u) {
-        snprintf(line, sizeof(line), "dropped %u", s.r.remote_overflows);
+        snprintf(line, sizeof(line), TR(BF_DROPPED), s.r.remote_overflows);
         gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
     }
@@ -455,14 +459,14 @@ static void render(gfx_canvas_t *c, int buffer_index)
         /* The verdict is the heading of the page, not a caption: it is what
          * the operator repeats when they ask somebody about it. */
         gfx_text(c, COL_X, VERDICT_Y,
-                 lost ? bus_text(s.r.bus) : can_selftest_text(s.r.verdict),
+                 lost ? bus_text(s.r.bus) : busfault_verdict_text(s.r.verdict),
                  UI_FONT_HEAD, ui_theme_color(UI_C_TEXT), 1);
         gfx_text(c, COL_X, MEANING_Y,
                  lost ? bus_meaning(s.r.bus) : meaning_of(s.r.verdict),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
 
         gfx_text(c, COL_X, HEAD_Y,
-                 lost ? "WHAT THIS MEANS" : "CHECK, IN THIS ORDER",
+                 lost ? TR(BF_HEAD_MEANS) : TR(BF_HEAD_CHECK),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         const char *checks[LIST_MAX] = { 0 };
@@ -487,14 +491,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * dismissal: the bench is still on a bus that does not work.
          */
         gfx_text(c, COL_X, NOTE_Y,
-                 "Acknowledging leaves the bench in simulation. It will show",
+                 TR(BF_NOTE_1),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text(c, COL_X, NOTE_Y + 20,
-                 "numbers, and nothing will drive an output.",
+                 TR(BF_NOTE_2),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text(c, COL_X, NOTE_Y + 44,
-                 lost ? "The same numbers are written to RCBENCH.LOG on the card."
-                      : "The test runs again at every start-up.",
+                 lost ? TR(BF_NOTE_LOST) : TR(BF_NOTE_TEST),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         ui_rule(c, COL_X, ACK_Y - 20, ACK_W, ui_theme_color(UI_C_EDGE));
@@ -512,7 +515,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * would be a step in the fade.
      */
     ui_button(c, gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H),
-              s.fired ? "ACKNOWLEDGED" : "HOLD 2 s TO ACKNOWLEDGE",
+              s.fired ? TR(BF_ACKNOWLEDGED) : TR(BF_HOLD),
               ack_fill(), false, true);
     flash_advance();
 }

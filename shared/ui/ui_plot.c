@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -370,7 +371,8 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     /* NOW while the trace advances, END where a held one stopped.  Nothing at
      * all on a plot with no samples: there is no edge to name. */
-    const char *right = p->running ? "NOW" : (p->filled > 0 ? "END" : NULL);
+    const char *right = p->running ? TR(PLOT_NOW)
+                                   : (p->filled > 0 ? TR(PLOT_END) : NULL);
     if (right != NULL) {
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 60),
                                      (int16_t)(r.y + r.h - 19), 56, 16 },

@@ -11,6 +11,7 @@
 
 #include "link_pages.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -270,11 +271,11 @@ static void event(const touch_event_t *evt)
 static const char *result_text(void)
 {
     switch (s.result) {
-    case OUTPUTS_OK:      return "WRITTEN";
-    case OUTPUTS_NO_LINK: return "NO LINK";
-    case OUTPUTS_REFUSED: return "REFUSED";
+    case OUTPUTS_OK:      return TR(OUT_WRITTEN);
+    case OUTPUTS_NO_LINK: return TR(OUT_NO_LINK);
+    case OUTPUTS_REFUSED: return TR(OUT_REFUSED);
     case OUTPUTS_IDLE:
-    default:              return "NOT WRITTEN";
+    default:              return TR(OUT_NOT_WRITTEN);
     }
 }
 
@@ -301,7 +302,8 @@ static void draw_left(gfx_canvas_t *c)
 {
     const outbind_proto_t *p = chosen_proto();
 
-    gfx_text(c, COL_X, COL_Y, "PROTOCOL", UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+    gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), UI_FONT_LABEL, UI_TEXT_FAINT,
+             1);
 
     gfx_rect_t r = dd_rect();
     const bool down = (s.hit_kind == HIT_DD);
@@ -318,15 +320,15 @@ static void draw_left(gfx_canvas_t *c)
                       UI_TEXT_DIM);
     }
 
-    char buf[40];
+    char buf[64];
     const uint8_t n = outbind_chosen(&s.bind);
     const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
                                                       : (uint8_t)OUT_MAX_SLOTS;
-    snprintf(buf, sizeof(buf), "%u OF %u PINS", (unsigned)n, (unsigned)cap);
+    snprintf(buf, sizeof(buf), TR(OUT_PINS_OF), (unsigned)n, (unsigned)cap);
     gfx_text(c, COL_X, DD_Y + DD_H + 16, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
     if (p->channels > 1u) {
-        snprintf(buf, sizeof(buf), "%u CHANNELS ON ONE PIN",
+        snprintf(buf, sizeof(buf), TR(OUT_CHANNELS_ON_PIN),
                  (unsigned)p->channels);
         gfx_text(c, COL_X, DD_Y + DD_H + 38, buf, UI_FONT_LABEL,
                  UI_TEXT_FAINT, 1);
@@ -350,18 +352,20 @@ static void draw_left(gfx_canvas_t *c)
         const uint8_t used_sl = outbind_chosen_total(&s.bind);
         const char *why = NULL;
         if (n >= cap) {
-            snprintf(buf, sizeof(buf), "%s TAKES %u PIN%s", p->name,
-                     (unsigned)cap, cap == 1u ? "" : "S");
+            snprintf(buf, sizeof(buf),
+                     (cap == 1u) ? TR(OUT_TAKES_PIN) : TR(OUT_TAKES_PINS),
+                     p->name, (unsigned)cap);
             why = buf;
         } else if (used_sl >= (uint8_t)LINK_OUT_SLOTS) {
-            snprintf(buf, sizeof(buf), "ALL %u SLOTS IN USE",
+            snprintf(buf, sizeof(buf), TR(OUT_ALL_SLOTS),
                      (unsigned)LINK_OUT_SLOTS);
             why = buf;
         } else if ((unsigned)used_ch + p->channels
                    > (unsigned)LINK_OUT_CHANNELS) {
-            snprintf(buf, sizeof(buf), "NEEDS %u CHANNEL%s, %u FREE",
+            snprintf(buf, sizeof(buf),
+                     (p->channels == 1u) ? TR(OUT_NEEDS_CHANNEL)
+                                         : TR(OUT_NEEDS_CHANNELS),
                      (unsigned)p->channels,
-                     p->channels == 1u ? "" : "S",
                      (unsigned)(LINK_OUT_CHANNELS - used_ch));
             why = buf;
         }
@@ -371,7 +375,7 @@ static void draw_left(gfx_canvas_t *c)
         }
     }
 
-    gfx_text(c, COL_X, SCREEN_H - 92, "LAST WRITE", UI_FONT_LABEL,
+    gfx_text(c, COL_X, SCREEN_H - 92, TR(OUT_LAST_WRITE), UI_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     gfx_text(c, COL_X, SCREEN_H - 70, result_text(), UI_FONT_HEAD,
              result_color(), 1);

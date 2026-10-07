@@ -15,7 +15,8 @@ extern "C" {
 #endif
 
 /**
- * Push the display-related settings into the theme and repaint.
+ * Push the display-related settings -- language, theme, brightness and
+ * contrast -- into the interface and repaint every screen.
  * Call at startup, and whenever an application setting changes.
  */
 void settings_apply_ui(void);

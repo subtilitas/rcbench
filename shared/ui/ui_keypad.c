@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -24,10 +25,12 @@
 #define KP_COLS    4
 #define KP_ROWS    4
 
+/* DEL and CLR are the keys' legends in every language; CANCEL is
+ * translated, so it is looked up where it is drawn. */
 static const char *const k_labels[UI_KEY_COUNT] = {
     "7", "8", "9", "DEL",
     "4", "5", "6", "CLR",
-    "1", "2", "3", "CANCEL",
+    "1", "2", "3", NULL,
     "0", ".", "OK",
 };
 
@@ -238,8 +241,8 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
                              (int16_t)(a.w - 2 * KP_PAD), 18 };
     gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_LEFT);
-    char range[40];
-    snprintf(range, sizeof(range), "%.*f to %.*f %s", k->decimals,
+    char range[48];
+    snprintf(range, sizeof(range), TR(KEYPAD_RANGE), k->decimals,
              (double)k->min, k->decimals, (double)k->max, k->unit);
     gfx_text_in(c, hdr, range, &gfx_font_8x16,
                 k->refused ? ui_theme_color(UI_C_WARN)
@@ -270,7 +273,8 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
         const gfx_color_t fill = (key == UI_KEY_OK)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
-        ui_button(c, ui_keypad_key_rect(k, (ui_key_t)key), k_labels[key],
+        ui_button(c, ui_keypad_key_rect(k, (ui_key_t)key),
+                  (key == UI_KEY_CANCEL) ? TR(CANCEL) : k_labels[key],
                   fill, k->pressed == key, true);
     }
 }

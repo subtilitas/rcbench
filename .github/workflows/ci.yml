@@ -180,6 +180,11 @@ jobs:
       - name: The committed screenshots match the current render
         run: python3 tools/render_ui.py --check
 
+      # A German string longer than its field is cut or runs into its
+      # neighbour; this draws every view in both languages and measures.
+      - name: Every German string fits where it is drawn
+        run: python3 tools/render_ui.py --fit
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:

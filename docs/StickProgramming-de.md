@@ -37,7 +37,7 @@ Was sie nicht weiß:
 
 PROGRAMMER, dann ESC STICK:
 
-![Geräteklasse](img/programmer.png)
+![Geräteklasse](img/de/programmer.png)
 
 Die Liste enthält jedes Profil, die ausführbaren zuerst. Ein Profil, das der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
@@ -46,7 +46,7 @@ Reihenfolge und Anzahl folgen VOLTAGE und der Grenze, wenn sie sich
 ändern. Ein
 Profil von der SD-Karte trägt CARD.
 
-![Die Profile](img/programmer-stick.png)
+![Die Profile](img/de/programmer-stick.png)
 
 Die Seite eines Profils listet seine Menüpunkte. Jeder steht anfangs auf
 KEEP und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
@@ -61,7 +61,7 @@ Werte des gewählten Punkts und den Standardwert. RUN erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
 neben RUN, warum.
 
-![Zwei Werte gewählt](img/programmer-stick-items.png)
+![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
 RUN öffnet eine Warnung über den ganzen Bildschirm. HOLD TO RUN startet den
 Lauf nach 2 s Halten, wie ARM. Ein Finger, der den Knopf verlässt, ein
@@ -71,28 +71,28 @@ Bildschirm mit den Befehlen des nächsten Frames; ein STOP oder ein
 verlorenes Touch-Ereignis davor nimmt es zurück und beendet den Lauf, damit
 es keinen Stopp aufheben kann, der danach kam.
 
-![Die Warnung](img/programmer-stick-warning.png)
+![Die Warnung](img/de/programmer-stick-warning.png)
 
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
 neben seinem Grundwert. ABORT beendet den Lauf, ebenso STOP im Band und das
 Verlassen des Bildschirms. BACK und TIMING sind nicht verfügbar.
 
-![Ein Lauf zählt Punktgruppen](img/programmer-stick-run.png)
+![Ein Lauf zählt Punktgruppen](img/de/programmer-stick-run.png)
 
 Das Ergebnis bleibt bis OK: welche Auswahlen getroffen wurden, und bei einem
 abgebrochenen Lauf der Grund. Bei mehr als fünf Änderungen zählt die letzte
 Zeile den Rest.
 
-![Fertig](img/programmer-stick-done.png)
+![Fertig](img/de/programmer-stick-done.png)
 
-![Gestoppt](img/programmer-stick-aborted.png)
+![Gestoppt](img/de/programmer-stick-aborted.png)
 
 TIMING öffnet die Einstellungen unten. CLOSE fordert das Speichern an;
 gespeichert wird, während der Prüfstand entschärft und der Ausgang des
 Netzteils aus ist.
 
-![Die Zeiteinstellungen](img/programmer-stick-timing.png)
+![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
 
 ## Was ein Lauf tut
 

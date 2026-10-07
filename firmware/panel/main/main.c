@@ -158,6 +158,7 @@ static uint16_t pct_to_span(float pct)
 #include "touch.h"
 #include "touch_map.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 
 static const char *TAG = "rcbench";
@@ -344,7 +345,7 @@ static void beat(bool alive)
 #define TOUCH_Q_LEN       32
 #define CMD_Q_LEN         16
 #define SAMPLE_Q_LEN      8
-#define ALERT_MAX         64
+#define ALERT_MAX         UI_ALERT_MAX
 
 /*
  * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
@@ -939,7 +940,7 @@ static void drv_lost(uint32_t n)
     }
     s_stop_press = false;
     arming_stop(&s_arm);
-    control_alert("touch lost while STOP was held -- stopped");
+    control_alert(TR(ALERT_TOUCH_LOST_STOP));
 }
 
 static void control_pump(void)
@@ -1050,7 +1051,7 @@ static void control_pump(void)
         && arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
                           atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
         arming_stop(&s_arm);
-        control_alert("touch lost while arming -- stopped");
+        control_alert(TR(ALERT_TOUCH_LOST_ARMING));
     }
     /*
      * touch_age_ms() is the time since the controller last answered a poll,
@@ -1581,7 +1582,7 @@ static bool bring_up(void)
     if (display_init(&dcfg) == ESP_OK) {
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_OK, "800x480 39Hz");
     } else {
-        splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_FAIL, "no panel");
+        splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_FAIL, TR(SPLASH_NO_PANEL));
         return false;   /* nothing can be reported after this */
     }
     pump();
@@ -1592,7 +1593,7 @@ static bool bring_up(void)
     } else {
         /* A bench with no touch has no STOP button, so this is fatal rather
          * than degraded -- but it is reported first. */
-        splash_screen_set(SPLASH_STEP_TOUCH, SPLASH_FAIL, "no answer");
+        splash_screen_set(SPLASH_STEP_TOUCH, SPLASH_FAIL, TR(SPLASH_NO_ANSWER));
         s_touch_ok = false;
         ok = false;
     }
@@ -1608,15 +1609,18 @@ static bool bring_up(void)
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();
+    /* The component's "no card" in the language showing; its other words
+     * are ESP-IDF's error names, which stay as they are. */
     splash_screen_set(SPLASH_STEP_STORAGE,
                       storage_mounted() ? SPLASH_OK : SPLASH_WARN,
-                      storage_status());
+                      (strcmp(storage_status(), "no card") == 0)
+                          ? TR(SPLASH_NO_CARD) : storage_status());
     pump();
 
     /* Loaded above, before the panel started scanning. */
     splash_screen_set(SPLASH_STEP_SETTINGS,
                       store != NULL ? SPLASH_OK : SPLASH_WARN,
-                      store != NULL ? "NVS" : "NVS unavailable");
+                      store != NULL ? "NVS" : TR(SPLASH_NVS_MISSING));
     pump();
 
     /*
@@ -1628,7 +1632,7 @@ static bool bring_up(void)
     const bool link_open = (can_twai_start(PANEL_CAN_BITRATE) == ESP_OK);
     splash_screen_set(SPLASH_STEP_LINK,
                       link_open ? SPLASH_OK : SPLASH_WARN,
-                      link_open ? "CAN 1 Mbit/s" : "not opened");
+                      link_open ? "CAN 1 Mbit/s" : TR(SPLASH_NOT_OPENED));
     /*
      * After the bus is up, so the echo test measures the bus rather than
      * reporting "nothing came back" regardless of the hardware, and before
@@ -1645,7 +1649,8 @@ static bool bring_up(void)
         splash_screen_set(SPLASH_STEP_LINK,
                           s_bus_ok ? SPLASH_OK : SPLASH_FAIL,
                           s_bus_ok ? "CAN 1 Mbit/s"
-                                   : can_selftest_text(s_busfault.verdict));
+                                   : busfault_verdict_text(
+                                         s_busfault.verdict));
         if (!s_bus_ok) {
             busfault_screen_set(&s_busfault);
         }
@@ -1709,16 +1714,16 @@ static bool bring_up(void)
              * that is rejected are different faults, and the poller counts
              * which happened.
              */
-            const char *why = "no answer";
+            const char *why = TR(SPLASH_NO_ANSWER);
             if (s_host.nacks > 0) {
-                why = "refused";
+                why = TR(SPLASH_REFUSED);
             } else if (s_host.mismatches > 0) {
-                why = "wrong reply";
+                why = TR(SPLASH_WRONG_REPLY);
             }
             splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, why);
         }
     } else {
-        splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, "no link");
+        splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, TR(SPLASH_NO_LINK));
     }
     pump();
 
@@ -2000,7 +2005,7 @@ static void log_open(uint32_t run)
      */
     if (!storage_mounted()) {
         ESP_LOGW(TAG, "no card mounted; this run is not recorded");
-        control_alert("no card -- this run is not recorded");
+        control_alert(TR(ALERT_NO_CARD_RUN));
         return;
     }
     /*
@@ -2030,7 +2035,7 @@ static void log_open(uint32_t run)
          * itself out of sight.
          */
         ESP_LOGW(TAG, "the card would not list; this run is not recorded");
-        control_alert("card unreadable -- run not recorded");
+        control_alert(TR(ALERT_CARD_UNREADABLE));
         return;
     }
     /*
@@ -2084,7 +2089,7 @@ static void log_open(uint32_t run)
          */
         s_log_numbered = false;
         ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
-        control_alert("card full or unwritable -- run not recorded");
+        control_alert(TR(ALERT_CARD_FULL));
         return;
     }
     const log_sink_t sink = { .write = file_write, .flush = file_flush,
@@ -2106,7 +2111,7 @@ static void log_close(void)
          * is the difference between an experiment and half of one, and the
          * operator at the bench has no console.  Dropped rows are the control
          * task's to report; see log_follow_runs(). */
-        control_alert("the card stopped taking rows -- the log is short");
+        control_alert(TR(ALERT_CARD_ROWS_SHORT));
     }
     /*
      * The close is the last commit and the largest one: FATFS writes the
@@ -2121,8 +2126,7 @@ static void log_close(void)
         ESP_LOGW(TAG, "the log did not close: %u rows are not in it",
                  uncommitted);
         if (!failed) {
-            control_alert("the card failed on the last write -- the log is "
-                          "short");
+            control_alert(TR(ALERT_CARD_LAST_WRITE));
         }
     } else if (!failed) {
         ESP_LOGI(TAG, "%u rows written", (unsigned)s_log.rows);
@@ -2235,7 +2239,7 @@ static void test_open(void)
         }
     }
     if (s_test_fp == NULL) {
-        control_alert("no card or card full -- servo test not recorded");
+        control_alert(TR(ALERT_CARD_SERVO));
     }
     atomic_store(&s_test_file, s_test_num);
     atomic_fetch_add(&s_test_opens_done, 1u);
@@ -2254,7 +2258,7 @@ static void test_write(const test_line_t *l)
         atomic_store(&s_test_report,
                      s_test_num > 0 && s_test_txt && !s_test_txt_bad);
         if (s_test_num > 0 && s_test_failed) {
-            control_alert("the card failed -- the servo test files are short");
+            control_alert(TR(ALERT_CARD_SERVO_SHORT));
         }
         s_test_num = -1;
         return;
@@ -2374,8 +2378,7 @@ static void log_task(void *arg)
         }
 
         if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
-            control_alert("the card stopped taking rows -- run not "
-                          "recorded past here");
+            control_alert(TR(ALERT_CARD_ROWS_PAST));
         }
 
         /*
@@ -2889,7 +2892,7 @@ static bool poles_service(void)
     memset(&pr, 0, sizeof(pr));
     if (!control_write_poles(&pr)) {
         if (pr.op == LINK_OP_NACK) {
-            control_alert("coprocessor refused the pole count");
+            control_alert(TR(ALERT_POLES));
             return false;
         }
         atomic_store(&s_poles_owed, true);
@@ -2948,7 +2951,7 @@ static void endpoints_service(bool far_disarmed)
     const bool held = s_endpoints_hold;
     s_endpoints_hold = false;
     if (ccr.op == LINK_OP_NACK) {
-        control_alert("coprocessor would not report its pulse range");
+        control_alert(TR(ALERT_PULSE_RANGE_UNKNOWN));
         return;
     }
     uint16_t cfg[LINK_CC_COUNT];
@@ -2957,7 +2960,7 @@ static void endpoints_service(bool far_disarmed)
         /* Idle pulse and Full pulse overlap in their ranges (800 to 1600 and
          * 1400 to 2400 us), so the pair can be inverted while it is being
          * edited.  Said, and the far end keeps the last pair it took. */
-        control_alert("idle pulse must be below full pulse -- not sent");
+        control_alert(TR(ALERT_PULSE_ORDER));
         return;
     }
     if (memcmp(cfg, ccr.regs, sizeof(cfg)) == 0) {
@@ -2971,7 +2974,7 @@ static void endpoints_service(bool far_disarmed)
         return;
     }
     if (reply.op != LINK_OP_ACK) {
-        control_alert("coprocessor refused the pulse range");
+        control_alert(TR(ALERT_PULSE_REFUSED));
     }
 }
 
@@ -3398,7 +3401,7 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
         if (s_supply_auto) {
             supply_link_reset(&s_supply_link);
         } else {
-            control_alert("coprocessor too old to reset the PD mini");
+            control_alert(TR(ALERT_PDMINI_OLD));
         }
     }
     if (c->off) {
@@ -3464,13 +3467,13 @@ static void supply_real_follow(void)
         }
         if (rewired && real && s_supply_on) {
             supply_switch(false);
-            control_alert("PD mini wiring changed in SETUP -- output off");
+            control_alert(TR(ALERT_PDMINI_WIRING));
         }
         return;
     }
     if (s_supply_on) {
         supply_switch(false);
-        control_alert("supply changed in SETUP -- output off");
+        control_alert(TR(ALERT_SUPPLY_CHANGED));
     }
     s_supply_is_real = real;
     atomic_store(&s_supply_vin_mv, 0u);   /* another module, perhaps */
@@ -3532,7 +3535,7 @@ static void supply_step(float step_s)
      */
     if (!s_supply.online && s_supply_on) {
         supply_switch(false);
-        control_alert("supply not answering -- output off");
+        control_alert(TR(ALERT_SUPPLY_SILENT));
     }
     if (s_supply.output) {
         if (s_supply_fresh) {
@@ -3562,8 +3565,8 @@ static void supply_step(float step_s)
             ((trip == SUPPLY_TRIP_CURRENT) ? lim.trip_i : lim.trip_v)
             * 1000.0f);
         char line[ALERT_MAX];
-        snprintf(line, sizeof(line), "supply tripped over %u.%02u %s -- "
-                 "output off", milli / 1000u, (milli % 1000u) / 10u,
+        snprintf(line, sizeof(line), TR(ALERT_SUPPLY_TRIP),
+                 milli / 1000u, (milli % 1000u) / 10u,
                  (trip == SUPPLY_TRIP_CURRENT) ? "A" : "V");
         control_alert(line);
     }
@@ -3661,7 +3664,7 @@ static void arm_watch_service(bool link_up)
          * arm the watch undid is a stop to the supply wherever it is found
          * (control_pump() finds it by arming_stop()). */
         supply_switch(false);
-        control_alert("touch lost while arming -- arm again");
+        control_alert(TR(ALERT_TOUCH_ARM_AGAIN));
     }
 }
 
@@ -3769,7 +3772,7 @@ static void service_arming(bool link_up)
         throttle_to_zero();
         servo_let_go();
         if (was_touch_dead) {
-            control_alert("touch stopped answering -- disarmed");
+            control_alert(TR(ALERT_TOUCH_STOPPED));
         }
         if (link_up) {
             link_msg_t ack = { 0 };
@@ -3815,13 +3818,13 @@ static void service_arming(bool link_up)
              * What the far end must not do meanwhile is arm; see poll_bench().
              */
             arming_refused(&s_arm);
-            control_alert("servo output not released -- arm again");
+            control_alert(TR(ALERT_SERVO_NOT_RELEASED));
         } else if (link_up && !servo_rate_settled()) {
             /* The far end may hold a rate faster than the surfaces' servos
              * take, and nothing here knows otherwise; refused like an
              * unpaid release, and asked again on the next attempt. */
             arming_refused(&s_arm);
-            control_alert("servo frame rate not known -- arm again");
+            control_alert(TR(ALERT_SERVO_RATE));
         } else if (link_up) {
             /*
              * Two exchanges: CLEAR on its own, then the frame that arms.
@@ -3841,7 +3844,7 @@ static void service_arming(bool link_up)
              */
             if (!control_clear_failsafe(&ack)) {
                 arming_refused(&s_arm);
-                control_alert("coprocessor refused to arm");
+                control_alert(TR(ALERT_ARM_REFUSED));
                 break;
             }
             if (arming_stopped(&s_arm) || atomic_load(&s_disarm_request)) {
@@ -3850,7 +3853,7 @@ static void service_arming(bool link_up)
                 arming_refused(&s_arm);
             } else if (!control_arm(&ack)) {
                 arming_refused(&s_arm);
-                control_alert("coprocessor refused to arm");
+                control_alert(TR(ALERT_ARM_REFUSED));
             } else {
                 outputs_arm(&s_out, true, now_ms());
                 arm_applied();
@@ -4873,9 +4876,9 @@ static void log_follow_runs(void)
          * operator would otherwise look for a CSV that is not there.
          */
         if (s_log_run_lost > 0u && s_log_run_sent == 0u) {
-            control_alert("the card did not keep up -- run not recorded");
+            control_alert(TR(ALERT_CARD_SLOW));
         } else if (s_log_run_lost > 0u) {
-            control_alert("the card fell behind -- the log has gaps");
+            control_alert(TR(ALERT_CARD_GAPS));
         }
     }
     s_log_kind = wanted;
@@ -4914,7 +4917,7 @@ static void supply_watch_service(void)
     if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
                        atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
         supply_switch(false);
-        control_alert("touch lost while switching on -- output off");
+        control_alert(TR(ALERT_TOUCH_SWITCH_ON));
     }
 }
 
@@ -4981,19 +4984,19 @@ static void supply_link_alerts(void)
                | SUPPLY_LINK_EV_TRIPPED)) != 0u) {
         supply_switch(false);
         control_alert(((ev & SUPPLY_LINK_EV_TRIPPED) != 0u)
-                          ? "PD mini switched its output off -- output off"
+                          ? TR(ALERT_PDMINI_OFF)
                       : ((ev & SUPPLY_LINK_EV_ON_LOST) != 0u)
-                          ? "supply switched off at the coprocessor"
-                          : "supply refused ON -- output off");
+                          ? TR(ALERT_SUPPLY_OFF_REMOTE)
+                          : TR(ALERT_SUPPLY_REFUSED_ON));
     }
     if ((ev & SUPPLY_LINK_EV_WIRING_REFUSED) != 0u) {
-        control_alert("PD mini pins refused -- see SETUP INTERFACES");
+        control_alert(TR(ALERT_PDMINI_PINS));
     }
     if ((ev & SUPPLY_LINK_EV_STUCK) != 0u) {
-        control_alert("PD mini output would not switch");
+        control_alert(TR(ALERT_PDMINI_SWITCH));
     }
     if ((ev & SUPPLY_LINK_EV_SET_STUCK) != 0u) {
-        control_alert("PD mini set points would not take");
+        control_alert(TR(ALERT_PDMINI_SET));
     }
     /* A rate AUTO found is not a fault: it is in the SUPPLY screen's
      * header, not in the alert band, which stays until another alert
@@ -5146,7 +5149,7 @@ static bool poll_bench(bench_state_t *bench)
             throttle_to_zero();
             servo_let_go();
             arming_stop_from_far_end(&s_arm);
-            control_alert("coprocessor disarmed -- arm again");
+            control_alert(TR(ALERT_COPRO_DISARMED));
         }
     }
     return answered;
@@ -5199,7 +5202,7 @@ static bool probe_identity(link_msg_t *reply)
             ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
                      (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
                      (unsigned)LINK_PROTOCOL_MAJOR);
-            control_alert("protocol mismatch -- will not arm");
+            control_alert(TR(ALERT_MISMATCH));
             s_mismatch_told = true;
         }
         answered = false;
@@ -5395,7 +5398,7 @@ static void link_came_up(const link_msg_t *reply)
     s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
     if (!s_supply_page && pdmini_wiring().en) {
-        control_alert("coprocessor has no SUPPLY page -- PD mini not driven");
+        control_alert(TR(ALERT_NO_SUPPLY_PAGE));
     }
 
     /*
@@ -6158,7 +6161,7 @@ void app_main(void)
     /* Held for the touch alone: bring_up() fails for other reasons too,
      * a protocol mismatch among them, which has its own passing alert. */
     if (!s_touch_ok) {
-        ui_router_hold_alert("touch did not answer -- the bench will not arm");
+        ui_router_hold_alert(TR(ALERT_TOUCH_NO_ANSWER));
     }
 
     /*

@@ -16,6 +16,8 @@ set(SRCS
     ui_keypad.c
     ui_textkey.c
     ui_router.c
+    ui_text.c
+    ui_text_de.c
     splash_screen.c
     overview_screen.c
     stub_screen.c
@@ -40,5 +42,5 @@ if(ESP_PLATFORM)
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc)
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo)
 endif()

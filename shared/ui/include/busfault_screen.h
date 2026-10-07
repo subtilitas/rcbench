@@ -111,6 +111,12 @@ bool busfault_screen_take_ack(void);
 
 void busfault_screen_invalidate(void);
 
+/**
+ * The self-test's verdict as the screen heads it, in the language showing.
+ * can_selftest_text() is the console's English.
+ */
+const char *busfault_verdict_text(can_selftest_verdict_t v);
+
 const ui_screen_t *busfault_screen(void);
 
 #ifdef __cplusplus

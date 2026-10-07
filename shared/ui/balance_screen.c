@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "ui_tabs.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -45,7 +46,8 @@
 #define SPIN_X   406
 #define BLADE_L  92
 
-static const char *const k_tabs[] = { "BALANCE", "TEST RIG", "AIRCRAFT" };
+static const ui_text_id_t k_tabs[] = { TX_BAL_TAB_BALANCE, TX_BAL_TAB_RIG,
+                                       TX_BAL_TAB_AIRCRAFT };
 
 /*
  * The rotor, drawn face on.
@@ -84,7 +86,7 @@ static void reset(void)
     s.drawn[1] = UINT32_MAX;
     s.blades = 2;
     s.rotor  = ROTOR_PROP;
-    ui_tabs_init(&s.tabs, k_tabs, BALANCE_PANE_COUNT,
+    ui_tabs_init_text(&s.tabs, k_tabs, BALANCE_PANE_COUNT,
                  (gfx_rect_t){ PAD + 3, TAB_Y, 390, TAB_H });
 
     const int x = RCARD_X + 14;
@@ -147,7 +149,7 @@ static void event(const touch_event_t *evt)
 static void callout(gfx_canvas_t *c, int px, int py, int lx, int ly,
                     const char *text, gfx_color_t ink)
 {
-    const int w = (int)strlen(text) * 8;
+    const int w = gfx_text_width(UI_FONT_LABEL, text, 1);
     /* The leader meets the label at whichever end is nearer the part. */
     const int join_x = (px > lx + w) ? lx + w + 4 : lx - 4;
     gfx_capsule_aa(c, px, py, join_x, ly + 8, 2, ink);
@@ -247,11 +249,11 @@ static void draw_rig(gfx_canvas_t *c)
         gfx_fill_circle_aa(c, mark_x, 292 - i * 10, 2, warn);
     }
 
-    callout(c, MOTOR_X - 25, ARM_Y - 12, 24, 62, "ACCELEROMETER", ink);
+    callout(c, MOTOR_X - 25, ARM_Y - 12, 24, 62, TR(BAL_ACCELEROMETER), ink);
     /* Both labels go left, under the arm, which is the one large piece of
      * empty card that no leader has to cross anything to reach. */
-    callout(c, mark_x, SHAFT_Y + 36, 196, 282, "ONE MARK", warn);
-    callout(c, mark_x, 308, 196, 332, "OPTICAL", warn);
+    callout(c, mark_x, SHAFT_Y + 36, 196, 282, TR(BAL_ONE_MARK), warn);
+    callout(c, mark_x, 308, 196, 332, TR(BAL_OPTICAL), warn);
 }
 
 /*
@@ -363,12 +365,12 @@ static void draw_aircraft(gfx_canvas_t *c)
     gfx_capsule_aa(c, 60, axis + 16, 52, ground, 3, warn);
     gfx_capsule_aa(c, 42, ground - 4, 62, ground - 4, 6, warn);
 
-    callout(c, ax, axis - 34, 24, 62, "ACCELEROMETER", ink);
-    callout(c, fw, axis + 18, 132, 288, "FIREWALL", ink);
+    callout(c, ax, axis - 34, 24, 62, TR(BAL_ACCELEROMETER), ink);
+    callout(c, fw, axis + 18, 132, 288, TR(BAL_FIREWALL), ink);
     /* Down and left: between the bell and the disc there is no gap for a
      * leader to climb through. */
-    callout(c, mark_x, axis + 30, 236, 344, "ONE MARK", warn);
-    callout(c, 52, ground - 12, 96, 344, "TIED DOWN", warn);
+    callout(c, mark_x, axis + 30, 236, 344, TR(BAL_ONE_MARK), warn);
+    callout(c, 52, ground - 12, 96, 344, TR(BAL_TIED_DOWN), warn);
 }
 
 /* A point on the disc, measured from the index mark and drawn with zero at
@@ -454,51 +456,26 @@ static void draw_measure(gfx_canvas_t *c)
 }
 
 /* The placement rules, numbered. */
-typedef struct { const char *head; const char *line1; const char *line2; }
-    rule_t;
+typedef struct { ui_text_id_t head, line1, line2; } rule_t;
 
 static const rule_t k_rig_rules[] = {
-    { "ACROSS THE SHAFT",
-      "An unbalanced disc pulls",
-      "sideways, not along it." },
-    { "AS CLOSE AS IT GOES",
-      "Every joint before the sensor",
-      "is a spring you did not pick." },
-    { "BOLTED, NOT TAPED",
-      "Foam eats the frequencies",
-      "you came to measure." },
-    { "ONE MARK A TURN",
-      "On the motor bell. A blade",
-      "gives one pulse per blade." },
-    { "A PEN, NOT TAPE",
-      "Anything stuck on is mass",
-      "you would then measure." },
-    { "OUT OF THE WASH",
-      "A lead that flaps is a",
-      "second accelerometer." },
+    { TX_BAL_RIG_1, TX_BAL_RIG_1A, TX_BAL_RIG_1B },
+    { TX_BAL_RIG_2, TX_BAL_RIG_2A, TX_BAL_RIG_2B },
+    { TX_BAL_RIG_3, TX_BAL_RIG_3A, TX_BAL_RIG_3B },
+    { TX_BAL_RIG_4, TX_BAL_RIG_4A, TX_BAL_RIG_4B },
+    { TX_BAL_RIG_5, TX_BAL_RIG_5A, TX_BAL_RIG_5B },
+    { TX_BAL_RIG_6, TX_BAL_RIG_6A, TX_BAL_RIG_6B },
 };
 #define RIG_RULES ((int)(sizeof(k_rig_rules) / sizeof(k_rig_rules[0])))
 
 #define AIR_RULES 6
 static const rule_t k_air_rules[] = {
-    { "THE FIREWALL, NOT THE COWL",
-      "A cowl is a fairing. It moves",
-      "relative to everything." },
-    { "FLAT IS FINE",
-      "Mount it flat and use an axis",
-      "in the firewall's plane." },
-    { "NEAR THE BOLTS",
-      "Same rule as a rig: joints",
-      "between it and the bearing." },
-    { "STILL THE BELL",
-      "A spinner comes off, and goes",
-      "back on at a new angle." },
-    { "TIE THE TAIL DOWN",
-      "An aircraft free to rock is",
-      "a spring you did not want." },
-    { "LEAD OUT OF THE WASH",
-      "And secured. A flapping lead",
-      "is a second accelerometer." },
+    { TX_BAL_AIR_1, TX_BAL_AIR_1A, TX_BAL_AIR_1B },
+    { TX_BAL_AIR_2, TX_BAL_AIR_2A, TX_BAL_AIR_2B },
+    { TX_BAL_AIR_3, TX_BAL_AIR_3A, TX_BAL_AIR_3B },
+    { TX_BAL_AIR_4, TX_BAL_AIR_4A, TX_BAL_AIR_4B },
+    { TX_BAL_AIR_5, TX_BAL_AIR_5A, TX_BAL_AIR_5B },
+    { TX_BAL_AIR_6, TX_BAL_AIR_6A, TX_BAL_AIR_6B },
 };
 
 /* Which blades the correction falls between, which is the whole reason the
@@ -529,7 +506,7 @@ static void draw_readings(gfx_canvas_t *c)
     }
 
     char buf[32];
-    gfx_text(c, x, BODY_Y + 102, "BLADES", UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 102, TR(BAL_BLADES), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     snprintf(buf, sizeof(buf), "%d", s.blades & 0xFF);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 60), (int16_t)(BODY_Y + 102),
@@ -553,20 +530,20 @@ static void draw_readings(gfx_canvas_t *c)
     if (s.rotor == ROTOR_EDF) {
         /* A blade tip inside a duct is not reachable, so the answer is an
          * angle on the hub rather than a blade to tape. */
-        snprintf(v_where, sizeof(v_where), "hub, %d deg",
+        snprintf(v_where, sizeof(v_where), TR(BAL_HUB),
                  (int)ang & 0x1FF);
     } else {
             /* Bounded so the compiler can see it: both are 1..6, but the
          * format is not told so, and the render tool inlines this far
          * enough to notice. */
-        snprintf(v_where, sizeof(v_where), "between %d and %d",
+        snprintf(v_where, sizeof(v_where), TR(BAL_BETWEEN),
                  lo & 0xFF, hi & 0xFF);
     }
     const struct { const char *k; const char *v; } rows[] = {
-        { "VIBRATION", v_amp },
-        { "ANGLE",     v_ang },
-        { "ADD",       v_mass },
-        { "WHERE",     v_where },
+        { TR(BAL_VIBRATION), v_amp },
+        { TR(BAL_ANGLE),     v_ang },
+        { TR(BAL_ADD),       v_mass },
+        { TR(BAL_WHERE),     v_where },
     };
     for (int i = 0; i < 4; ++i) {
         const int y = BODY_Y + 158 + i * 30;
@@ -581,18 +558,18 @@ static void draw_readings(gfx_canvas_t *c)
     }
 
     gfx_hline(c, x, BODY_Y + 288, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, BODY_Y + 300, "Four runs: baseline, then one", UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 300, TR(BAL_NOTE_1), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BODY_Y + 318, "trial mass at 0, 120 and 240.", UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 318, TR(BAL_NOTE_2), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BODY_Y + 342, "An index pulse halves that.", UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 342, TR(BAL_NOTE_3), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
 static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
 {
     const int x = RCARD_X + 14;
-    gfx_text(c, x, BODY_Y + 12, "GETTING IT WRONG", UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 12, TR(BAL_WRONG), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
 
     for (int i = 0; i < count; ++i) {
@@ -606,11 +583,11 @@ static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
         gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)(y + 1), 20, 16 },
                     n, UI_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1,
                     GFX_ALIGN_CENTER);
-        gfx_text(c, x + 28, y, rules[i].head, UI_FONT_LABEL,
+        gfx_text(c, x + 28, y, ui_tr(rules[i].head), UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, x + 28, y + 20, rules[i].line1, UI_FONT_LABEL,
+        gfx_text(c, x + 28, y + 20, ui_tr(rules[i].line1), UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text(c, x + 28, y + 36, rules[i].line2, UI_FONT_LABEL,
+        gfx_text(c, x + 28, y + 36, ui_tr(rules[i].line2), UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
 }
