@@ -2144,6 +2144,112 @@ TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
     CHECK_STR_EQ(why, "rest move, no entry time");
 }
 
+/* A button to hold while the supply comes on: the step at an unpowered
+ * ESC. */
+static const esc_manual_t k_hold_button[] = {
+    { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u },
+};
+
+/* A run started with the module's output still on: nothing is powered or
+ * asked of a person until the supply reads off; a module that stays on
+ * ends the run with SUPPLY STAYS ON, the step never shown. */
+TEST_CASE(a_run_started_with_the_output_on_asks_nothing)
+{
+    rig_hand("kontronik-jazz", k_hold_button, 1);
+    r.supply_on = true;                 /* live before the run */
+    r.supply_stuck = true;
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    bool asked = false, powered = false;
+    for (int i = 0; i < 10000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        asked = asked || esc_stick_hand(&r.e) != NULL;
+        powered = powered || esc_stick_out(&r.e)->supply_on;
+    }
+    CHECK(!asked);
+    CHECK(!powered);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    CHECK(esc_stick_reason_is_fault(r.e.reason));
+    ended_safe();
+
+    /* The same module going off 600 ms into the run: the step is asked
+     * only once it has read off for ESC_STICK_OFF_SETTLE_MS. */
+    rig_hand("kontronik-jazz", k_hold_button, 1);
+    r.supply_on = true;
+    r.off_at = r.now;
+    r.off_lag_ms = 600u;
+    CHECK(start(c, 1));
+    uint32_t off_at = 0u;
+    for (int i = 0; i < 10000 && esc_stick_running(&r.e)
+                    && esc_stick_hand(&r.e) == NULL; ++i) {
+        tick();
+        if (!r.supply_on && off_at == 0u) {
+            off_at = r.now;
+        }
+    }
+    CHECK(esc_stick_hand(&r.e) != NULL);
+    CHECK(off_at != 0u);
+    CHECK(r.now - off_at >= ESC_STICK_OFF_SETTLE_MS);
+    CHECK(!r.supply_on);
+}
+
+/* While a step at an unpowered ESC is asked, a reading that shows the
+ * output on, or the current up, ends the run at once; readings that stop
+ * end it too. */
+TEST_CASE(a_supply_that_comes_on_during_the_step_ends_the_run)
+{
+    esc_stick_change_t c[1] = { change(1, 3) };
+    for (int k = 0; k < 3; ++k) {
+        rig_hand("kontronik-jazz", k_hold_button, 1);
+        CHECK(start(c, 1));
+        run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+        CHECK_EQ(r.e.phase, ESC_STICK_HAND_OFF);
+        CHECK(esc_stick_hand(&r.e) != NULL);
+        if (k == 0) {
+            r.supply_on = true;         /* the module, by itself */
+            r.supply_stuck = true;
+        } else if (k == 1) {
+            r.extra_ma = 200;           /* current through the ESC */
+        } else {
+            r.readings_stop = true;
+        }
+        const uint32_t at = r.now;
+        run_for(5000u);
+        if (k < 2) {
+            CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+            CHECK(r.e.phase_ms - at <= r.read_iv + 2u);   /* the next one */
+        } else {
+            CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+        }
+        CHECK(esc_stick_hand(&r.e) == NULL);
+        ended_safe();
+    }
+
+    /* Before a later power-up: a module on again after the run saw it off
+     * ends the run before the jumper is asked for. */
+    static const esc_manual_t fit[] = {
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
+    };
+    rig_hand("sunrise-pro", fit, 1);
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e)
+                    && !r.e.cycle_moved; ++i) {
+        tick();
+    }
+    CHECK(r.e.cycle_moved);
+    r.supply_on = true;
+    r.supply_stuck = true;
+    bool asked = false;
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        asked = asked || esc_stick_hand(&r.e) != NULL;
+    }
+    CHECK(!asked);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+}
+
 int main(void)
 {
     RUN(beeps_make_a_group_that_silence_ends);
@@ -2205,6 +2311,8 @@ int main(void)
     RUN(a_value_waits_its_own_entry_time);
     RUN(an_entry_time_that_cannot_work_is_refused);
     RUN(shared_entry_times_compare_what_the_run_waits);
+    RUN(a_run_started_with_the_output_on_asks_nothing);
+    RUN(a_supply_that_comes_on_during_the_step_ends_the_run);
     RUN(a_value_makes_its_moves_after_the_selection);
     RUN(a_car_mode_selects_at_full_and_stores_at_the_brake);
     return test_summary("esc_stick");

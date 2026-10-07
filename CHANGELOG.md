@@ -90,6 +90,16 @@ sweep starts over from the curve's beginning, and the alert band says so.
   lines of `after_programming` steps; more are now counted there, the steps
   open by themselves over the result when the run ends, and MANUAL
   INTERVENTION REQUIRED in the result's header opens them again.
+- **No step at an ESC that may be powered.** A run started with the
+  output still live, or a module that came on by itself, could ask the
+  operator to fit a jumper or hold a button at a powered ESC. RUN is now
+  refused while the supply reads live; the warning shows its before-power
+  steps and counts HOLD TO RUN only while the supply reads off; the run
+  asks the supply off at its start and asks for no step at an unpowered
+  ESC, and powers nothing, until it reads off (else SUPPLY STAYS ON); a
+  reading with the output on or the current up during such a step ends the
+  run at once, and readings that stop end it with NO READINGS. The result
+  says not to touch the ESC while the supply does not read off.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

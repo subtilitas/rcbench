@@ -249,7 +249,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 1978 | 1863 | 94.2% |
+| `shared/ui/programmer_screen.c` | 2032 | 1917 | 94.3% |
 | `shared/ui/log_viewer_screen.c` | 796 | 724 | 91.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 304 | 295 | 97.0% |
@@ -274,7 +274,7 @@ chrome-cached screen to 2,000.
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 852 | 803 | 94.2% |
 | `shared/esc/esc_registry.c` | 126 | 124 | 98.4% |
-| `shared/esc/esc_stick.c` | 892 | 860 | 96.4% |
+| `shared/esc/esc_stick.c` | 910 | 877 | 96.4% |
 | `shared/esc/esc_sim.c` | 362 | 337 | 93.1% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |

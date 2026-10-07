@@ -491,6 +491,24 @@ static void stick_type(const char *text)
     }
 }
 
+/* The supply reading off for 300 ms, as the warning needs before it asks
+ * for a step at the ESC. */
+static void stick_supply_off(void)
+{
+    for (uint32_t t = 0; t <= 300u; t += 100u) {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.samples = (uint16_t)(t / 100u + 1u);
+        st.taken_ms = t;
+        st.mode = SUPPLY_MODE_OFF;
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        programmer_screen_supply(&st);
+    }
+    programmer_screen_bench(300u, false, 0u, 0u, false);
+    ui_router_tick(0.02f);
+}
+
 /* The ESC STICK list's row @p at, paged to first: the rows of
  * programmer_screen.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
  * v at 723 and 761 on the crumb row. */
@@ -813,6 +831,7 @@ int main(int argc, char **argv)
             const bool prompt = strcmp(view, "programmer-stick-hand-prompt")
                                 == 0;
             if (prompt || strcmp(view, "programmer-stick-hand-warning") == 0) {
+                stick_supply_off();             /* the jumper on, unpowered */
                 tap(698, UI_BAND_H + 407);      /* RUN: the warning */
             }
             if (prompt) {

@@ -37,7 +37,9 @@ What it does not know:
    the MOTOR screen does.
 4. Connect the ESC's power leads to the supply output.
 5. Switch the supply's output off. A run that finds it on or on its way is
-   refused.
+   refused, and so is one whose supply reads live: its own state on, or
+   more than 20 mA (`ESC_STICK_OFF_MA`) through the output, in its newest
+   reading. The line beside RUN says to switch it off first.
 
 ## On the screen
 
@@ -233,7 +235,15 @@ them.
 ![Its manual steps](img/programmer-stick-hand-info.png)
 
 The warning before a run lists the steps due before the power-up, and says
-when the run will stop for more.
+when the run will stop for more. It lists them, and HOLD TO RUN counts, only
+while the supply reads off: a reading no older than 1000 ms
+(`ESC_STICK_STALE_MS`) in which the supply itself reports its output off
+with the current at or under 20 mA for 200 ms. Until then it says to switch
+the supply off, and a hold under way ends when the supply stops reading
+off. The run then asks the supply off itself and powers nothing, and asks
+for no step at an unpowered ESC, until its own readings say the same; the
+result and the steps after a run say not to touch the ESC while the supply
+does not read off.
 
 ![The warning with a step before power-up](img/programmer-stick-hand-warning.png)
 
@@ -345,8 +355,8 @@ A change of either light repaints both screen buffers.
 | Phase | Throttle | Supply | Ends |
 | --- | --- | --- | --- |
 | ARMING | MIN | off | when the bench reports armed; after 3000 ms: NOT ARMED |
-| SIGNAL | the power-up position | off | after 1000 ms, so the ESC sees the signal when it starts |
-| MANUAL STEP | entry position | off | before a power-up with a step due: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED |
+| SIGNAL | the power-up position | off | after 1000 ms, so the ESC sees the signal when it starts, and once the supply reads off in readings taken since the run asked it off: its own state off, the current at or under 20 mA for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
+| MANUAL STEP | entry position | off, read off | before a power-up with a step due, asked only once the supply reads off: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED; a reading with the output on or the current up: SUPPLY STAYS ON at once; no reading for 1000 ms: NO READINGS |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
 | ENTRY | entry position | on | ENTRY after power-on: the value's `entry_hold_ms`, else the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
 | MANUAL STEP, POWERED | the power-up position | on | after ENTRY with a `before_menu` step due that is not the menu's own start: DONE, then the next step or the menu; no DONE in 60 s: NOT CONFIRMED. The last step is asked from ITEMS or VALUES, already counting |
@@ -517,7 +527,7 @@ A profile corrected on the SD card is listed with its correction.
 | READ RATE | 3 late readings in a row | lit |
 | NOT ARMED | not armed within 3000 ms | lit |
 | NO POWER | the output not reported on within 3000 ms | lit |
-| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off | lit |
+| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off -- at the start, before a power-up or at the end -- or a reading with the output on or the current up while a step at an unpowered ESC is asked | lit |
 | TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet armed | lit |
 | NO BEEPS | no beep for SILENCE | lit |
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |

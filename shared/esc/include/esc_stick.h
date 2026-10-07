@@ -462,7 +462,11 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  *     step, and from the second power-up on each before_power step too --
  *     the first power-up's are on the warning a run starts from.  The
  *     supply is off and the stick at the entry position; DONE switches the
- *     supply on.
+ *     supply on.  Such a step is asked only once the supply itself reads
+ *     off (ESC_STICK_OFF_MA for ESC_STICK_OFF_SETTLE_MS, in readings taken
+ *     since the run asked it off); a reading with the output on or the
+ *     current up while it is asked ends the run with SUPPLY STAYS ON, and
+ *     readings that stop end it with NO READINGS.
  *   - once the entry has had its time: each before_menu step, with the
  *     ESC powered and the stick at the power-up position (MIN, or MID
  *     where the value names it).  One marked starts_menu is the action

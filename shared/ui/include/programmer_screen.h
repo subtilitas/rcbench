@@ -92,6 +92,12 @@ const char *programmer_screen_step_text(const esc_manual_t *m);
  *  tests. */
 const char *programmer_screen_stick_hand_why(void);
 
+/** Whether the supply reads off now, by the rule a run holds it to: its
+ *  own state off, the current at or under ESC_STICK_OFF_MA for
+ *  ESC_STICK_OFF_SETTLE_MS, in a reading no older than ESC_STICK_STALE_MS.
+ *  For tests. */
+bool programmer_screen_stick_supply_reads_off(void);
+
 /** Whether the manual steps' pop-up is open; for tests. */
 bool programmer_screen_stick_hand_shown(void);
 

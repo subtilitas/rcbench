@@ -410,6 +410,12 @@ typedef struct {
     int                  hand_model;    /* the model it was opened for, or
                                            -1: the family's lowest      */
     bool                 was_running;   /* the run, as the last tick saw */
+
+    /* The supply as its newest reading had it, run or no run: whether its
+     * output is live, and since when it has read off. */
+    bool                 sup_have, sup_live, sup_off_known, sup_gate;
+    bool                 sup_off_drawn; /* what a result last showed     */
+    uint32_t             sup_at, sup_off_since;
     uint8_t              hand_seen[SP_MAX / 8];
 
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
@@ -1513,7 +1519,8 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                  imax / 1000u, imax % 1000u / 10u);
         return false;
     }
-    if (supply_screen_output_live()) {
+    /* Asked on, or read live: the output on, or current through it. */
+    if (supply_screen_output_live() || st->sup_live) {
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_OUTPUT_LIVE));
         return false;
     }
@@ -1523,6 +1530,35 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
         return false;
     }
     return true;
+}
+
+/*
+ * Whether the supply reads off now: a reading no older than
+ * ESC_STICK_STALE_MS in which the supply itself reports its output off
+ * with the current at or under ESC_STICK_OFF_MA, and has for
+ * ESC_STICK_OFF_SETTLE_MS -- the rule a run holds the supply to.  The
+ * warning shows a step at an unpowered ESC only then.
+ */
+static bool sp_supply_reads_off(void)
+{
+    const stick_t *t = &s.st;
+    if (!t->sup_have || !t->sup_off_known || supply_screen_output_live()) {
+        return false;
+    }
+    const int32_t age = (int32_t)(t->now_ms - t->sup_at);
+    const uint32_t held = t->sup_at - t->sup_off_since;
+    return age <= (int32_t)ESC_STICK_STALE_MS
+           && held >= ESC_STICK_OFF_SETTLE_MS;
+}
+
+/* Whether the warning asks a step at an unpowered ESC of the operator and
+ * may not, as the supply does not read off. */
+static bool sp_warn_gated(void)
+{
+    const stick_t *t = &s.st;
+    return t->p != NULL
+           && esc_profile_manual_count(t->p, ESC_MANUAL_BEFORE_POWER) > 0u
+           && !sp_supply_reads_off();
 }
 
 static bool sp_can_run(void)
@@ -1586,7 +1622,7 @@ static void sp_start(void)
     size_t n;
     esc_stick_timing_t tm;
     uint32_t mv, ma;
-    if (!sp_plan(ch, &n, &tm, &mv, &ma)) {
+    if (!sp_plan(ch, &n, &tm, &mv, &ma) || sp_warn_gated()) {
         return;     /* the note says why */
     }
     const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
@@ -1601,7 +1637,9 @@ static void sp_start(void)
     esc_stick_light_reset(&t->light, &t->run);
     t->green = false;
     t->sent_arm = false;
-    t->sent_supply = false;
+    /* Sent as on, so the run's off goes out: the supply is asked off at
+     * the start, whatever it was left as. */
+    t->sent_supply = true;
     t->sent_pct = ESC_STICK_PCT_MIN;
     t->sig = 0u;
     /* The set points before anything else, so an ON never meets old ones. */
@@ -1650,6 +1688,26 @@ static void sp_tick(float dt_s)
         && sp_list_key() != t->built_key) {
         sp_build_list(true);
         ++s.rev;
+    }
+    if (t->shown && t->p != NULL && t->p->manual_count > 0u) {
+        const bool off = sp_supply_reads_off();
+        if (off != t->sup_off_drawn) {
+            t->sup_off_drawn = off;
+            ++s.rev;
+        }
+    }
+    if (t->warn) {
+        /* The steps at an unpowered ESC show, and HOLD TO RUN counts, only
+         * while the supply reads off; a hold under way ends when it stops
+         * reading so. */
+        const bool gated = sp_warn_gated();
+        if (gated != t->sup_gate) {
+            t->sup_gate = gated;
+            ++s.rev;
+        }
+        if (gated) {
+            sp_end_hold();
+        }
     }
     if (t->warn && t->warn_down) {
         ++s.rev;            /* the hold's fill */
@@ -1879,7 +1937,7 @@ static bool sp_down(const touch_event_t *evt)
 
     /* The warning covers the screen, BACK included. */
     if (t->warn) {
-        if (gfx_rect_contains(t->hold_btn, px, py)) {
+        if (gfx_rect_contains(t->hold_btn, px, py) && !sp_warn_gated()) {
             t->warn_down = true;
             t->warn_id = evt->point.id;
             ui_hold_begin(&t->hold);
@@ -2841,6 +2899,14 @@ static void sp_draw_result(gfx_canvas_t *c)
     int y = y0 + 6 * pitch;
     int room = 2;
     int need = 0;
+    if (p->manual_count > 0u && !sp_supply_reads_off()) {
+        /* An abort asks the supply off; until it reads off, no hand at the
+         * ESC for anything that follows. */
+        sp_text(c, PAD + 12, y, TR(SP_HAND_OVER_LIVE), 93,
+                ui_theme_color(UI_C_DANGER));
+        y += pitch;
+        room--;
+    }
     char what[ESC_MANUAL_MAX][256];
     unsigned after = 0u;
     for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
@@ -2852,7 +2918,7 @@ static void sp_draw_result(gfx_canvas_t *c)
             ++after;
         }
     }
-    if (need > room) {
+    if (need > room && room > 0) {
         char line2[128];
         snprintf(line2, sizeof(line2), TR(SP_HAND_AFTER_N), after);
         sp_text(c, PAD + 12, y, line2, 93, ui_theme_color(UI_C_WARN));
@@ -3180,6 +3246,13 @@ static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
     const unsigned later =
         esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
         + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU);
+    if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
+        && sp_warn_gated()) {
+        /* No hand at the ESC until the supply reads off. */
+        (void)sp_wrap(c, a.x + 20, y, 22, TR(SP_WARN_HAND_WAIT), 92, 2,
+                      ui_theme_color(UI_C_DANGER));
+        return;
+    }
     if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u) {
         const int keep = (later > 0u) ? 22 : 0;    /* room for that line */
         gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND), UI_FONT_LABEL,
@@ -3254,7 +3327,7 @@ static void sp_draw_warning(gfx_canvas_t *c)
     ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
                            t->hold.held_s),
-              t->warn_down, true);
+              t->warn_down, !sp_warn_gated());
     ui_button(c, t->cancel_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
               false, true);
 }
@@ -3288,7 +3361,9 @@ static void sp_draw_hand(gfx_canvas_t *c)
     }
     char why[48];
     const char *no = sp_model_why(p, t->hand_model, why, sizeof(why));
-    if (t->shown && t->p == p) {
+    if (t->shown && t->p == p && !sp_supply_reads_off()) {
+        snprintf(line, sizeof(line), "%s", TR(SP_HAND_OVER_LIVE));
+    } else if (t->shown && t->p == p) {
         snprintf(line, sizeof(line), "%s", TR(SP_HAND_OVER));
     } else if (no == NULL) {
         snprintf(line, sizeof(line), "%s", TR(SP_HAND_ASKS));
@@ -3297,7 +3372,9 @@ static void sp_draw_hand(gfx_canvas_t *c)
     }
     sp_wrap(c, a.x + 20, t->cancel_btn.y + 8, 20, line,
             (t->cancel_btn.x - a.x - 36) / 8, 2,
-            ui_theme_color(UI_C_TEXT_DIM));
+            (t->shown && t->p == p && !sp_supply_reads_off())
+                ? ui_theme_color(UI_C_DANGER)
+                : ui_theme_color(UI_C_TEXT_DIM));
     ui_button(c, t->cancel_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
               true);
 }
@@ -3405,7 +3482,26 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
 void programmer_screen_supply(const supply_state_t *st)
 {
     stick_t *t = &s.st;
-    if (st == NULL || !esc_stick_running(&t->run)) {
+    if (st == NULL) {
+        return;
+    }
+    /* Every reading, run or no run: whether the supply is live, and since
+     * when it has read off -- its own state, the current at or under
+     * ESC_STICK_OFF_MA. */
+    const bool reads_off = st->online && !st->output
+                           && st->mode == SUPPLY_MODE_OFF
+                           && (st->ok & SUPPLY_OK_CURRENT) != 0u
+                           && lroundf(st->i * 1000.0f) <= ESC_STICK_OFF_MA;
+    t->sup_have = true;
+    t->sup_at = st->taken_ms;
+    t->sup_live = !reads_off && st->online;
+    if (!reads_off) {
+        t->sup_off_known = false;
+    } else if (!t->sup_off_known) {
+        t->sup_off_known = true;
+        t->sup_off_since = st->taken_ms;
+    }
+    if (!esc_stick_running(&t->run)) {
         return;
     }
     const esc_stick_sample_t x = {
@@ -3488,6 +3584,11 @@ const char *programmer_screen_stick_maker_at(int i)
     const stick_t *t = &s.st;
     return (t->level == 0 && i >= 0 && i < t->count) ? t->makers[i].name
                                                      : NULL;
+}
+
+bool programmer_screen_stick_supply_reads_off(void)
+{
+    return sp_supply_reads_off();
 }
 
 const char *programmer_screen_stick_hand_why(void)

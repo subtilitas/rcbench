@@ -450,6 +450,24 @@ static void open_profile(const char *id)
     open_model(id, NULL);
 }
 
+/* The supply reading off for 300 ms: its own state off, the current at
+ * 0, as the warning needs before it asks for a step at the ESC. */
+static void supply_reads_off(void)
+{
+    for (uint32_t t = 0; t <= 300u; t += 100u) {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.samples = (uint16_t)(t / 100u + 1u);
+        st.taken_ms = t;
+        st.mode = SUPPLY_MODE_OFF;
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        programmer_screen_supply(&st);
+    }
+    programmer_screen_bench(300u, false, 0u, 0u, false);
+    scr->tick(0.02f);
+}
+
 /* The stick class, then hobbywing-flyfun-8item. */
 static void descend_to_hobbywing(void)
 {
@@ -1667,6 +1685,7 @@ TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
     for (int i = 0; i < 3; ++i) {
         tap(STEP_UP_X, STEP_CY(0));          /* KEEP, 1, 2, 3 */
     }
+    supply_reads_off();                      /* the jumper on */
     tap(WRITE_X, BTN_CY);
     draws();                                 /* the warning, with its step */
     hold_for(2.25f);
@@ -1757,6 +1776,7 @@ TEST_CASE(abort_on_the_prompt_ends_the_run)
     for (int i = 0; i < 3; ++i) {
         tap(STEP_UP_X, STEP_CY(0));
     }
+    supply_reads_off();                      /* the jumper on */
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
     static rig_t r;
@@ -2055,6 +2075,7 @@ TEST_CASE(the_model_tapped_is_the_one_judged)
     CHECK(programmer_screen_stick_hand_why() == NULL);
     tap(CANCEL_X, HOLD_Y);
     tap(STEP_UP_X, STEP_CY(0));              /* mode 1 */
+    supply_reads_off();                      /* the jumper on */
     tap(WRITE_X, BTN_CY);
     draws();                                 /* the warning */
     hold_for(2.25f);
@@ -2139,6 +2160,131 @@ TEST_CASE(every_step_after_programming_is_shown)
     CHECK(!programmer_screen_stick_hand_shown());
 }
 
+/* A supply that reads live -- its output on, its own state on, or current
+ * through it -- refuses RUN, manual steps or not; the warning asks a step
+ * at an unpowered ESC, and HOLD TO RUN counts, only while it reads off. */
+TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
+{
+    static const struct { bool output; supply_mode_t mode; float i; } k[] = {
+        { true,  SUPPLY_MODE_CV,  0.0f },    /* on, as asked          */
+        { false, SUPPLY_MODE_CV,  0.0f },    /* off asked, module on  */
+        { false, SUPPLY_MODE_OFF, 0.05f },   /* 50 mA through it      */
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh();
+        descend_to_hobbywing();
+        pick_cutoff();
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.samples = 1u;
+        st.output = k[i].output;
+        st.mode = k[i].mode;
+        st.i = k[i].i;
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        programmer_screen_supply(&st);
+        scr->tick(0.02f);
+        tap(WRITE_X, BTN_CY);                /* RUN: refused */
+        hold_for(2.25f);
+        CHECK_EQ(programmer_screen_stick_runs(), 0u);
+        draws();                             /* the note says why */
+    }
+
+    /* kontronik-jazz: the jumper is fitted on the warning.  No reading yet:
+     * the step is not shown and the hold does nothing. */
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(0));
+    tap(WRITE_X, BTN_CY);
+    draws();                                 /* waiting for the supply */
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    /* Reading off: the step shows and the hold runs it. */
+    supply_reads_off();
+    draws();
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    scr->leave();
+
+    /* Off, then live again during the hold: the hold ends, no run. */
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(0));
+    supply_reads_off();
+    tap(WRITE_X, BTN_CY);
+    press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y);
+    scr->tick(0.5f);
+    supply_state_t on;
+    memset(&on, 0, sizeof(on));
+    on.samples = 9u;
+    on.taken_ms = 350u;
+    on.mode = SUPPLY_MODE_CV;
+    on.online = true;
+    on.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    programmer_screen_supply(&on);
+    for (int i = 0; i < 10; ++i) {
+        scr->tick(0.25f);
+    }
+    press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+
+    /* A run that ends with the supply still on: the result and the steps
+     * after it say not to touch the ESC. */
+    fresh();
+    esc_profiles_clear_overrides();
+    static const esc_manual_t after[] = {
+        { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the jumper.", 0u, NULL,
+          false },
+    };
+    esc_profile_t card = *esc_profiles_find("sunrise-pro");
+    card.id = "card-live";
+    card.automatable = ESC_AUTO_ASSISTED;
+    card.automatable_note = "A step after programming.";
+    card.manual = after;
+    card.manual_count = 1;
+    CHECK(esc_profiles_override(&card, NULL));
+    open_profile("card-live");
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(1));
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    for (int i = 0; i < 20000; ++i) {
+        rig_step(&r);
+    }
+    r.off_lag = 100000u;                     /* the module stays on */
+    tap(WRITE_X, BTN_CY);                    /* ABORT */
+    for (int i = 0; i < 1000; ++i) {
+        rig_step(&r);
+    }
+    CHECK(!esc_stick_running(programmer_screen_stick()));
+    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(!programmer_screen_stick_supply_reads_off());
+    draws();
+    r.off_lag = 0u;                          /* off now */
+    for (int i = 0; i < 1000; ++i) {
+        rig_step(&r);
+    }
+    CHECK(programmer_screen_stick_supply_reads_off());
+    draws();
+    esc_profiles_clear_overrides();
+
+    /* A reading too old to say the supply is off now. */
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(0));
+    supply_reads_off();
+    programmer_screen_bench(300u + ESC_STICK_STALE_MS + 1u, false, 0u, 0u,
+                            false);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -2187,5 +2333,6 @@ int main(void)
     RUN(a_card_profile_joins_its_maker);
     RUN(the_model_tapped_is_the_one_judged);
     RUN(every_step_after_programming_is_shown);
+    RUN(no_step_at_the_esc_while_the_supply_reads_live);
     return test_summary("programmer");
 }

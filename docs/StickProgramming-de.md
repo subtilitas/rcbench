@@ -39,7 +39,10 @@ Was sie nicht weiß:
    Throttle gebundenen Kanal, wie der Bildschirm MOTOR.
 4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
 5. Den Ausgang des Netzteils ausschalten. Ein Lauf, der ihn an oder auf dem
-   Weg findet, wird abgelehnt.
+   Weg findet, wird abgelehnt, ebenso einer, dessen Netzteil spannungsführend
+   meldet: sein eigener Zustand an, oder mehr als 20 mA (`ESC_STICK_OFF_MA`)
+   durch den Ausgang, im neuesten Messwert. Die Zeile neben START sagt, es
+   zuerst auszuschalten.
 
 ## Auf dem Bildschirm
 
@@ -257,7 +260,16 @@ sie.
 ![Seine Handgriffe](img/de/programmer-stick-hand-info.png)
 
 Die Warnung vor einem Lauf nennt die Schritte vor dem Einschalten und sagt,
-wann der Lauf für weitere anhält.
+wann der Lauf für weitere anhält. Sie nennt sie, und HALTEN ZUM STARTEN
+zählt, nur solange das Netzteil aus meldet: ein Messwert, nicht älter als
+1000 ms (`ESC_STICK_STALE_MS`), in dem das Netzteil selbst seinen Ausgang
+aus meldet, mit dem Strom 200 ms lang bei höchstens 20 mA. Bis dahin sagt
+sie, das Netzteil auszuschalten, und ein laufendes Halten endet, sobald das
+Netzteil nicht mehr aus meldet. Der Lauf fordert dann selbst das
+Ausschalten an, schaltet nichts ein und fragt nach keinem Schritt an einem
+stromlosen ESC, bis seine eigenen Messwerte dasselbe sagen; das Ergebnis
+und die Schritte nach einem Lauf sagen, den ESC nicht zu berühren, solange
+das Netzteil nicht aus meldet.
 
 ![Die Warnung mit einem Schritt vor dem Einschalten](img/de/programmer-stick-hand-warning.png)
 
@@ -380,8 +392,8 @@ gezeichnet.
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
 | ARMING | MIN | aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
-| SIGNAL | Einschaltstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
-| HANDGRIFF | Einstiegsstellung | aus | vor einem Einschalten mit fälligem Schritt: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
+| SIGNAL | Einschaltstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht, und sobald das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet: sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
+| HANDGRIFF | Einstiegsstellung | aus, gemeldet aus | vor einem Einschalten mit fälligem Schritt, erst gefragt, wenn das Netzteil aus meldet: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT; ein Messwert mit Ausgang an oder Strom oben: sofort NETZTEIL BLEIBT EIN; 1000 ms kein Messwert: KEINE MESSWERTE |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
 | EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
 | HANDGRIFF, VERSORGT | Einschaltstellung | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
@@ -569,7 +581,7 @@ Liste.
 | MESSRATE | 3 späte Messwerte hintereinander | an |
 | NICHT ARMED | nicht scharf innerhalb von 3000 ms | an |
 | AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet | an |
-| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten | an |
+| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten -- beim Start, vor einem Einschalten oder am Ende --, oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
 | TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war | an |
 | KEINE PIEPTÖNE | STILLE lang kein Piepton | an |
 | STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
