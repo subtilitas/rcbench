@@ -263,21 +263,31 @@ jobs:
           # target before the checked copy replaces it (--clobber).  The
           # download runs before the create, while the latest is still the
           # previous release.  Two cases are not errors: no release yet, and
-          # a latest release without the guide.  Anything else -- the API
-          # failing, a listed guide that does not download -- fails the
-          # release, since publishing without the guide breaks those links.
+          # a latest release without either guide.  Anything else -- the API
+          # failing, one guide of the two, a listed guide that does not
+          # download -- fails the release, since publishing without both
+          # breaks those links.
           assets=(dist/*.zip dist/SHA256SUMS)
           mkdir -p guide
           if names=$(gh release view --repo "$REPO" --json assets \
                        -q '.assets[].name' 2>guide.err); then
-            if printf '%s\n' "$names" | grep -q '^rcbench-build-guide-.*\.pdf$'; then
-              gh release download --repo "$REPO" \
-                --pattern 'rcbench-build-guide-*.pdf' --dir guide
-              for f in guide/*.pdf; do
-                assets+=("$f")
+            have=0
+            for lang in en de; do
+              if printf '%s\n' "$names" | grep -qx "rcbench-build-guide-$lang.pdf"; then
+                have=$((have + 1))
+              fi
+            done
+            if [ "$have" = 2 ]; then
+              for lang in en de; do
+                gh release download --repo "$REPO" \
+                  --pattern "rcbench-build-guide-$lang.pdf" --dir guide
+                assets+=("guide/rcbench-build-guide-$lang.pdf")
               done
-            else
+            elif [ "$have" = 0 ]; then
               echo "no build guide on the latest release"
+            else
+              echo "::error::the latest release carries one build guide of two"
+              exit 1
             fi
           elif grep -q 'release not found' guide.err; then
             echo "no release yet, so no build guide to carry over"
