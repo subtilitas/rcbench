@@ -121,7 +121,10 @@
         },
         {
           "number": 2,
-          "name": "Glider: EMK brake and undervoltage cutoff on, optional separate motor-off position"
+          "name": "Glider: EMK brake and undervoltage cutoff on, optional separate motor-off position",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 3,
@@ -154,6 +157,6 @@
   "notes": [
     "Kontronik_Pix1000_3000.pdf and Kontronik_Pix4000.pdf print the same technical data and procedures; the PIX 4000 manual adds ProgCARD notes.",
     "Modes 7 and 9 do not change other stored settings; the PIX manuals do not state a prerequisite for them.",
-    "Mode 2 asks for a move to the brake position after full throttle, then an optional motor-off position (Kontronik_Pix1000_3000.pdf p.5 DE, p.11 EN); stick programming makes neither move."
+    "Mode 2 moves the stick to the brake position (back) after the full-throttle selection, and the ESC answers with a descending tone sequence (Kontronik_Pix1000_3000.pdf p.5 steps 9-10 DE, p.11 EN): after_select min. The optional separate motor-off position (steps 11-12) is not made. The manual gives no time for the move; stick programming makes it STORE after the selection."
   ]
 }

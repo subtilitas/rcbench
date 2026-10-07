@@ -319,6 +319,12 @@ static const char *entry_refused(const esc_profile_t *p,
     if (shared && wait != esc_stick_change_entry_ms(p, &ch[0], t)) {
         return "changes need different entry times";
     }
+    /* After the value move a two-stage menu goes back to its items, and
+     * which change comes last is the ESC's order: no moves after it. */
+    if (p->value_select_throttle != ESC_THR_NONE
+        && p->items[ch[i].item].values[ch[i].value].after_count > 0u) {
+        return "moves after the value, two stages";
+    }
     if (wait <= ESC_STICK_SETTLE_MS) {
         return "ENTRY above 500 ms";
     }
@@ -1035,6 +1041,32 @@ bool esc_stick_confirm(esc_stick_t *e)
     return true;
 }
 
+/*
+ * The moves after a selection, in order: the profile's store move, then
+ * the moves the stored value asks for (after_select), each made once STORE
+ * has passed since the one before -- the time the ESC takes to answer.  A
+ * one-stage run stores one value a power-up, the active change's.
+ */
+esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k)
+{
+    if (e == NULL || e->p == NULL) {
+        return ESC_THR_NONE;
+    }
+    if (e->p->store_throttle != ESC_THR_NONE) {
+        if (k == 0u) {
+            return e->p->store_throttle;
+        }
+        --k;
+    }
+    if (e->kind != ESC_STICK_KIND_ONE_STAGE || e->active >= e->n) {
+        return ESC_THR_NONE;
+    }
+    const esc_stick_change_t *c = &e->ch[e->active];
+    const esc_value_t *v = &e->p->items[c->item].values[c->value];
+    return (k < v->after_count && k < ESC_AFTER_MAX) ? v->after[k]
+                                                      : ESC_THR_NONE;
+}
+
 static uint8_t wanted_value(const esc_stick_t *e)
 {
     const esc_stick_change_t *c = &e->ch[e->active];
@@ -1045,7 +1077,7 @@ static void selected(esc_stick_t *e)
 {
     e->done[e->active] = true;
     if (all_done(e) || e->p->one_change_per_entry) {
-        e->store_moved = false;
+        e->store_step = 0u;
         enter(e, ESC_STICK_STORE);
         return;
     }
@@ -1365,11 +1397,12 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         if (in_phase < e->t.store_ms) {
             break;
         }
-        if (e->p->store_throttle != ESC_THR_NONE && !e->store_moved) {
-            /* The ESC has answered the selection: the move that stores
-             * it, held as long again. */
-            e->store_moved = true;
-            e->out.throttle_pct = esc_stick_pct(e->p->store_throttle);
+        if (esc_stick_store_move(e, e->store_step) != ESC_THR_NONE) {
+            /* The ESC has answered the selection, or the move before: the
+             * next move, held as long again. */
+            e->out.throttle_pct =
+                esc_stick_pct(esc_stick_store_move(e, e->store_step));
+            e->store_step++;
             enter(e, ESC_STICK_STORE);
             break;
         }

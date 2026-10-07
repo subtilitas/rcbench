@@ -131,7 +131,10 @@
         {
           "number": 6,
           "name": "Car: proportional brake",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -160,6 +163,7 @@
   "notes": [
     "INDEX.csv summarises the entry with a jumper; the manual describes a button. The summary is wrong for this file.",
     "Mode 8 does not exist: the manual prints 'Modus 8 - nicht vorhanden'.",
-    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Smile.pdf p.9 DE, p.22 EN): entry_throttle mid."
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Smile.pdf p.9 DE, p.22 EN): entry_throttle mid.",
+    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_Smile.pdf p.9 DE, p.22 EN): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

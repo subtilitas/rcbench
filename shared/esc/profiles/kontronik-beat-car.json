@@ -97,27 +97,42 @@
         {
           "number": 2,
           "name": "Car mode, slowest start-up",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 3,
           "name": "Car mode",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 4,
           "name": "Car mode",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 5,
           "name": "Car mode",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 6,
           "name": "Car mode, fastest start-up",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -126,7 +141,10 @@
         {
           "number": 8,
           "name": "Forward / reverse, combinable with modes 2 to 6",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         }
       ],
       "applies_to": null,
@@ -144,6 +162,7 @@
   ],
   "notes": [
     "The addendum replaces the BEAT mode meanings for modes 2 to 6; use this profile instead of kontronik-beat for the CAR version.",
-    "Modes 2 to 6 are programmed like BEAT mode 6, with the stick at motor-off in the middle (Kontronik_Beat_70_CAR.pdf p.1; Kontronik_Beat.pdf p.15). Mode 8 is 'like mode 7' on the CAR sheet and starts in the middle in the BEAT manual (p.17); it is marked mid as well. Modes 1 and 7 start with the stick back."
+    "Modes 2 to 6 are programmed like BEAT mode 6, with the stick at motor-off in the middle (Kontronik_Beat_70_CAR.pdf p.1; Kontronik_Beat.pdf p.15). Mode 8 is 'like mode 7' on the CAR sheet and starts in the middle in the BEAT manual (p.17); it is marked mid as well. Modes 1 and 7 start with the stick back.",
+    "Modes 2 to 6, programmed like BEAT mode 6, and mode 8 move the stick back after the full-throttle selection (Kontronik_Beat.pdf p.15, p.17): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

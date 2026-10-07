@@ -161,7 +161,10 @@
         {
           "number": 6,
           "name": "Car: proportional brake",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -186,6 +189,7 @@
   ],
   "notes": [
     "The 3SL manual lists modes 1 to 7; the BEAT successor adds mode 8.",
-    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_3SL.pdf p.16 DE, p.6 EN). It carries entry_throttle mid, so stick programming does not store it from the brake position."
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_3SL.pdf p.16 DE, p.6 EN). It carries entry_throttle mid, so stick programming does not store it from the brake position.",
+    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_3SL.pdf p.16 DE, p.6 EN): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

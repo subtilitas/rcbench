@@ -118,7 +118,10 @@
         {
           "number": 3,
           "name": "Forward / reverse operation",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 4,
@@ -144,6 +147,7 @@
   "notes": [
     "INDEX.csv summarises these as throttle only; the procedure text includes a button press (step 5), so the entry needs a person.",
     "Kontronik_Kontrol-X_Kolibri-X.pdf gives the KOLIBRI-X example as 90 LV = 90 A on the German side and 60 LV = 60 A on the English side.",
-    "Mode 3 (forward and reverse) puts full reverse at the back (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.12), so its motor-off start is taken as the middle: entry_throttle mid. The manual does not say 'middle'. Modes 1, 2 and 4 say 'motor off' only and are taken as the back."
+    "Mode 3 (forward and reverse) puts full reverse at the back (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.12), so its motor-off start is taken as the middle: entry_throttle mid. The manual does not say 'middle'. Modes 1, 2 and 4 say 'motor off' only and are taken as the back.",
+    "Mode 3 moves the stick to full reverse (back) after full forward (Kontronik_Kontrol-X_Kolibri-X.pdf p.4 DE, p.12 EN): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

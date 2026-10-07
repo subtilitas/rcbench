@@ -890,6 +890,35 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
          * other than the entry's: absent or null, the entry's. */
         int64_t hold = 0;
         (void)get_num(d, ti, "entry_hold_ms", w, 0, 600000, true, &hold);
+        /* The moves after the select move: absent or null, none; else 1 to
+         * ESC_AFTER_MAX of min, mid, max. */
+        esc_throttle_t after[ESC_AFTER_MAX] = { ESC_THR_MIN };
+        uint32_t after_n = 0u;
+        const int64_t av = member(d, ti, "after_select");
+        if (av >= 0 && d->t[av].type != T_NULL) {
+            after_n = (d->t[av].type == T_ARR) ? d->t[av].size : 0u;
+            if (after_n == 0u || after_n > ESC_AFTER_MAX) {
+                FAIL(d, "%s.after_select: not 1-%u moves", w,
+                     (unsigned)ESC_AFTER_MAX);
+                return;
+            }
+            uint32_t mi = (uint32_t)av + 1u;
+            for (uint32_t k = 0; k < after_n; ++k, mi = d->t[mi].next) {
+                int x = -1;
+                for (int m = 0; d->t[mi].type == T_STR
+                                && m < COUNT(k_throttle) - 1; ++m) {
+                    if (text_is(d->s, &d->t[mi], k_throttle[m])) {
+                        x = m;
+                    }
+                }
+                if (x < 0) {
+                    FAIL(d, "%s.after_select[%u]: not a known value", w,
+                         (unsigned)k);
+                    return;
+                }
+                after[k] = (esc_throttle_t)x;
+            }
+        }
         if (v != NULL && !d->failed) {
             const uint8_t bit = (uint8_t)(1u << ((uint8_t)num & 7u));
             if ((seen[(uint8_t)num >> 3] & bit) != 0u) {
@@ -898,7 +927,9 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
             }
             seen[(uint8_t)num >> 3] |= bit;
             v[j] = (esc_value_t){ name, (uint8_t)num, dflt, et,
-                                  (uint32_t)hold };
+                                  (uint32_t)hold, (uint8_t)after_n,
+                                  { after[0], after[1], after[2],
+                                    after[3] } };
         }
     }
     if (defaults > 1u) {

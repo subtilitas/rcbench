@@ -288,7 +288,7 @@ A change of either light repaints both screen buffers.
 | MANUAL STEP, POWERED | entry position, MIN | on | after ENTRY with a `before_menu` step due: DONE, then the menu; no DONE in 60 s: NOT CONFIRMED |
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
-| STORING | the value move, then the store move | on | after STORE, and after STORE again where the profile has a store move |
+| STORING | the value move, then the store move, then the value's own moves (`after_select`) | on | after STORE, and after STORE again for each move: the profile's store move, then each of the value's |
 | POWER CYCLE | where it stored, then entry position | off | the supply reports the output off and the current down for 200 ms, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; not off within 3000 ms: SUPPLY STAYS ON |
 | POWER OFF | where it stored | off | the supply reports the output off and the current down for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
 | DONE | MIN | off | disarmed |
@@ -565,9 +565,12 @@ engine's stores no value other than the one asked for.
   group: PIX modes 7, 9 and 1 (it lists 1, 2, 3, 7, 9), Smile modes 9 and
   1, SUN PLUS modes 9 and 1. The run ends with TIMEOUT. Whether these ESCs
   sound the counts they do not use is not stated.
-- `kontronik-pix` mode 2 asks for a move to the brake position after the
-  selection; the run makes none. Whether the ESC stores the mode without it
-  is not known.
+- A value's moves after its selection (`after_select`: PIX mode 2, the
+  Kontronik car modes, KONTROL-X mode 3) are each made STORE after the one
+  before. The manuals time them by the ESC's answering tones, which the run
+  does not decode; STORE (2000 ms by default) stands in for them, not
+  measured. The optional separate motor-off position of the glider modes is
+  not made.
 - A switch on the ESC in the power-up sequence -- SeaKing V3 with a switch,
   Trackstar 60A V2, the BEC switch of the Hacker X and Master series, the
   Jeti Spin's receiver switch -- is left on and the supply stands in for it.

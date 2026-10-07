@@ -161,7 +161,10 @@
         {
           "number": 6,
           "name": "Car: proportional brake",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         }
       ],
       "applies_to": null,
@@ -181,6 +184,7 @@
   ],
   "notes": [
     "The BEC type for StarBEC 40-6-12 is not stated; the bec field there reflects no manual statement.",
-    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Star-Line.pdf p.6): entry_throttle mid."
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Star-Line.pdf p.6): entry_throttle mid.",
+    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_Star-Line.pdf p.6): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

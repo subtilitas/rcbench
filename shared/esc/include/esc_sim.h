@@ -8,8 +8,9 @@
  * entry_throttle), enters the menu; the groups loop, a move to the select
  * position after a group selects it, and in a two-stage menu a move to the
  * value_select position after a value group stores the value.  Where the
- * profile names a store move, the selection waits for it and is lost if
- * the power goes first.  An item keyed exit leaves the menu when it is
+ * profile names a store move, or the value moves after its selection
+ * (after_select), the selection waits for each in order and is lost if the
+ * power goes first.  An item keyed exit leaves the menu when it is
  * selected, and one keyed reset clears what was stored.  A value stored
  * from a power-up at another position than its own is counted as
  * misplaced: the ESC would teach that position.  What it stores is
@@ -93,6 +94,7 @@ typedef struct {
     uint8_t              item;         /* VALUES: the item selected     */
     uint8_t              pend_item;    /* PENDING: what the move stores */
     uint8_t              pend_value;
+    uint8_t              pend_step;    /* PENDING: the store moves made */
     uint32_t             resets;       /* reset items taken             */
     uint32_t             menu_groups;
     bool                 dropped;      /* this beep draws nothing       */

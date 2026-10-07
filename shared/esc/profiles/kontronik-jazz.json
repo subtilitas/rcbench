@@ -168,7 +168,10 @@
         {
           "number": 6,
           "name": "Car, one direction, proportional brake",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -177,7 +180,10 @@
         {
           "number": 8,
           "name": "Car, forward and reverse",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 9,
@@ -206,6 +212,7 @@
     "Kontronik_MiniJazz.pdf follows the JAZZ procedure and mode list; its type table lists 15 LV and 20 LV only.",
     "INDEX.csv names 'Jazz 40-6-18'; the manual uses 'JAZZ 40 LV'.",
     "MINIJAZZ is entered with a button ('Taster drücken', Kontronik_MiniJazz.pdf p.6 DE; 'Push Taster' p.15 EN), not a jumper; the manual's 'Jumper' is a glossary entry only.",
-    "Modes 6 and 8 start at 'Motor-Aus-Stellung' with a separate maximum-brake step after it (Kontronik_Jazz.pdf p.6, p.16), so the motor-off position is not at the back and is taken as the middle. They carry entry_throttle mid; the manual does not say 'middle'."
+    "Modes 6 and 8 start at 'Motor-Aus-Stellung' with a separate maximum-brake step after it (Kontronik_Jazz.pdf p.6, p.16), so the motor-off position is not at the back and is taken as the middle. They carry entry_throttle mid; the manual does not say 'middle'.",
+    "Modes 6 and 8 move the stick to maximum brake (back) after the full-throttle selection (Kontronik_Jazz.pdf p.6, p.16): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

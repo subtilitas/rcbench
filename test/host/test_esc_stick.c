@@ -1760,6 +1760,104 @@ TEST_CASE(an_entry_time_that_cannot_work_is_refused)
     CHECK_STR_EQ(why, "ENTRY above 500 ms");
 }
 
+/* PIX mode 2: full throttle selects, then the stick goes to the brake
+ * and the ESC answers before the mode is stored.  The simulated ESC keeps
+ * nothing without that move, so a run that skipped it would fail here. */
+TEST_CASE(a_value_makes_its_moves_after_the_selection)
+{
+    rig("kontronik-pix");
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_until_phase(ESC_STICK_STORE, 240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_STORE);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK_EQ(esc_stick_store_move(&r.e, 0u), ESC_THR_MIN);
+    CHECK_EQ(esc_stick_store_move(&r.e, 1u), ESC_THR_NONE);
+    CHECK_EQ(r.sim.stores, 0u);                /* selected, not stored */
+    run_for(r.t.store_ms + 5u);
+    CHECK_EQ(r.e.store_step, 1u);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    CHECK(esc_stick_out(&r.e)->supply_on);    /* the ESC answers first */
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+    CHECK_EQ(r.sim.stores, 1u);
+
+    /* A mode with no move after it powers off from full throttle. */
+    rig("kontronik-pix");
+    c[0] = change(1, 3);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_until_phase(ESC_STICK_STORE, 240000u);
+    CHECK_EQ(esc_stick_store_move(&r.e, 0u), ESC_THR_NONE);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_stick_store_move(NULL, 0u), ESC_THR_NONE);
+
+    /* The same run with the move left out of the engine's profile: the ESC
+     * still waits for it, and nothing is stored. */
+    rig("kontronik-pix");
+    static esc_profile_t bare;
+    static esc_item_t bare_item;
+    static esc_value_t bare_values[5];
+    bare = *r.p;
+    bare_item = r.p->items[0];
+    memcpy(bare_values, r.p->items[0].values, sizeof(bare_values));
+    bare_values[1].after_count = 0u;
+    bare_item.values = bare_values;
+    bare.items = &bare_item;
+    r.p = &bare;
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.sim.stores, 0u);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 0);
+}
+
+/* A car mode from the middle: power-up at MID, full throttle selects, the
+ * brake stores. */
+TEST_CASE(a_car_mode_selects_at_full_and_stores_at_the_brake)
+{
+    rig("kontronik-jazz");
+    esc_stick_change_t c[1] = { change(1, 6) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(r.on_pct[0] == ESC_STICK_PCT_MID);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 6);
+    CHECK_EQ(r.sim.misplaced, 0u);
+    /* Two stages: no moves after a value. */
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[1];
+    static esc_value_t two_values[2];
+    two = *r.p;
+    two_items[0] = r.p->items[0];
+    memcpy(two_values, r.p->items[0].values, sizeof(two_values));
+    two_values[1].after_count = 1u;
+    two_values[1].after[0] = ESC_THR_MID;
+    two_items[0].values = two_values;
+    two.items = two_items;
+    two.item_count = 1;
+    const char *why = NULL;
+    esc_stick_change_t d[1] = { { 0u, 1u } };
+    CHECK(!esc_stick_check(&two, d, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "moves after the value, two stages");
+}
+
 /* sunrise-pro with value 5 of item 2 programmed from the middle. */
 static esc_profile_t g_mid;
 static esc_item_t    g_mid_items[2];
@@ -1935,5 +2033,7 @@ int main(void)
     RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(a_value_waits_its_own_entry_time);
     RUN(an_entry_time_that_cannot_work_is_refused);
+    RUN(a_value_makes_its_moves_after_the_selection);
+    RUN(a_car_mode_selects_at_full_and_stores_at_the_brake);
     return test_summary("esc_stick");
 }

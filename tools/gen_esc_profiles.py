@@ -50,6 +50,7 @@ MANUAL = {"before_power": "ESC_MANUAL_BEFORE_POWER",
           "during_menu": "ESC_MANUAL_DURING_MENU",
           "after_programming": "ESC_MANUAL_AFTER_PROGRAMMING"}
 MANUAL_MAX = 4          # steps in one profile: ESC_MANUAL_MAX
+AFTER_MAX = 4           # moves after a value's selection: ESC_AFTER_MAX
 ACTION_MAX = 120        # bytes of one step's text: ESC_MANUAL_ACTION_MAX
 
 
@@ -152,6 +153,21 @@ def no_nul(v: object, where: str) -> None:
     elif isinstance(v, list):
         for i, x in enumerate(v):
             no_nul(x, f"{where}[{i}]")
+
+
+def after_select(v: dict, w: str) -> list[str]:
+    """The moves a value asks for after its select move: absent or null,
+    none; else 1 to AFTER_MAX of min, mid, max."""
+    a = v.get("after_select")
+    if a is None:
+        return []
+    want(isinstance(a, list) and 0 < len(a) <= AFTER_MAX,
+         f"{w}.after_select", f"not 1-{AFTER_MAX} moves")
+    moves = {k: x for k, x in THROTTLE.items() if k != "none"}
+    for i, m in enumerate(a):
+        want(isinstance(m, str) and m in moves, f"{w}.after_select[{i}]",
+             f"not one of {', '.join(moves)}")
+    return [moves[m] for m in a]
 
 
 def check_manual(d: dict, w: str, auto: str) -> list[dict]:
@@ -345,7 +361,8 @@ def check(path: pathlib.Path) -> dict:
                         "d": "true" if dflt else "false", "et": et,
                         # Power-on to the menu for this value, where the
                         # manual gives one other than the entry's.
-                        "eh": num(v, "entry_hold_ms", vw, 600000) or 0})
+                        "eh": num(v, "entry_hold_ms", vw, 600000) or 0,
+                        "after": after_select(v, vw)})
         want(defaults <= 1, f"{iw}.values", "more than one default")
         p["items"].append({"name": text(it, "name", iw), "key": key,
                            "n": number, "values": out, "applies": applies,
@@ -398,7 +415,9 @@ def emit(profiles: list[dict]) -> str:
             o.append(f"static const esc_value_t {n}_v{k}[] = {{\n")
             for v in it["values"]:
                 o.append(f"    {{ {c_str(v['name'])}, {v['n']}u, "
-                         f"{v['d']}, {v['et']}, {v['eh']}u }},\n")
+                         f"{v['d']}, {v['et']}, {v['eh']}u, "
+                         f"{len(v['after'])}u, "
+                         f"{{ {', '.join(v['after']) or '0'} }} }},\n")
             o.append("};\n")
             if it["applies"]:
                 o.append(f"static const char *const {n}_a{k}[] = {{\n")
@@ -521,6 +540,15 @@ def self_test() -> list[str]:
         "value hold -1": at(val, '"entry_hold_ms": -1, ' + val),
         "value hold 2.5": at(val, '"entry_hold_ms": 2.5, ' + val),
         "value hold a string": at(val, '"entry_hold_ms": "5000", ' + val),
+        "after a string": at(val, '"after_select": "min", ' + val),
+        "after empty": at(val, '"after_select": [], ' + val),
+        "after 5 moves": at(val, '"after_select": ["min", "max", "min", '
+                            '"max", "min"], ' + val),
+        "after none": at(val, '"after_select": ["none"], ' + val),
+        "after MIN": at(val, '"after_select": ["MIN"], ' + val),
+        "after null inside": at(val, '"after_select": [null], ' + val),
+        "after an object": at(val, '"after_select": [{"throttle": "min"}], '
+                              + val),
         "manual on a full profile": man(f"[{jumper}]", "full"),
         "manual on a profile nobody runs": man(f"[{jumper}]", "none"),
         "manual empty": man("[]"),
@@ -568,6 +596,10 @@ def self_test() -> list[str]:
         "value entry mid": at(val, '"entry_throttle": "mid", ' + val),
         "value hold null": at(val, '"entry_hold_ms": null, ' + val),
         "value hold 600000": at(val, '"entry_hold_ms": 600000, ' + val),
+        "after null": at(val, '"after_select": null, ' + val),
+        "after min": at(val, '"after_select": ["min"], ' + val),
+        "after 4 moves": at(val, '"after_select": ["min", "mid", "max", '
+                            '"m\\u0069n"], ' + val),
         "manual null": at(auto, auto + ' "manual": null,'),
         "manual two steps": man(f"[{jumper}, {pull}]"),
         "manual four steps of one kind": man("[" + ", ".join([pull] * 4)

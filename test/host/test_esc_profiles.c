@@ -148,6 +148,11 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
                      y->values[k].entry_throttle);
             CHECK_EQ(x->values[k].entry_hold_ms,
                      y->values[k].entry_hold_ms);
+            CHECK_EQ(x->values[k].after_count, y->values[k].after_count);
+            for (unsigned m = 0; m < x->values[k].after_count
+                                 && m < ESC_AFTER_MAX; ++m) {
+                CHECK_EQ(x->values[k].after[m], y->values[k].after[m]);
+            }
         }
     }
     CHECK_EQ(a->manual_count, b->manual_count);
@@ -297,6 +302,73 @@ TEST_CASE(a_value_reads_its_own_entry_time)
             if (ok) {
                 CHECK_EQ(p.items[0].values[1].entry_hold_ms, k[i].ms);
                 CHECK_EQ(p.items[0].values[0].entry_hold_ms, 0u);
+            }
+        } else {
+            CHECK(!ok);
+            if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+                T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i,
+                       err, k[i].err);
+            }
+        }
+        free(block);
+        free(j);
+    }
+}
+
+/* The moves a value asks for after its selection, read in order; the
+ * generator's self-test holds it to the same spellings. */
+TEST_CASE(a_value_reads_its_moves_after_the_selection)
+{
+    static const char from[] = "{\"number\": 2, \"name\": \"on\"}";
+    static const char pre[] = "{\"number\": 2, \"name\": \"on\", "
+                              "\"after_select\": ";
+    static const struct {
+        const char *moves, *err;
+        uint8_t n;
+        esc_throttle_t first, last;
+    } k[] = {
+        { "[\"min\"]", NULL, 1u, ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"min\", \"mid\", \"max\", \"m\\u0069n\"]", NULL, 4u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"max\", \"mid\"]", NULL, 2u, ESC_THR_MAX, ESC_THR_MID },
+        { "null", NULL, 0u, ESC_THR_MIN, ESC_THR_MIN },
+        { "\"min\"", "items[0].values[1].after_select: not 1-4", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[]", "items[0].values[1].after_select: not 1-4", 0u, ESC_THR_MIN,
+          ESC_THR_MIN },
+        { "[\"min\", \"max\", \"min\", \"max\", \"min\"]",
+          "items[0].values[1].after_select: not 1-4", 0u, ESC_THR_MIN,
+          ESC_THR_MIN },
+        { "[\"none\"]", "items[0].values[1].after_select[0]: not a known",
+          0u, ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"min\", \"MIN\"]",
+          "items[0].values[1].after_select[1]: not a known", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[null]", "items[0].values[1].after_select[0]: not a known", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[{\"throttle\": \"min\"}]",
+          "items[0].values[1].after_select[0]: not a known", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char to[160];
+        (void)snprintf(to, sizeof(to), "%s%s}", pre, k[i].moves);
+        char *j = subst(from, to);
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96] = "";
+        const bool ok = esc_profile_parse(j, strlen(j), &p, &block, err,
+                                          sizeof(err));
+        if (k[i].err == NULL) {
+            CHECK(ok);
+            if (ok) {
+                const esc_value_t *v = &p.items[0].values[1];
+                CHECK_EQ(v->after_count, k[i].n);
+                if (k[i].n > 0u) {
+                    CHECK_EQ(v->after[0], k[i].first);
+                    CHECK_EQ(v->after[k[i].n - 1u], k[i].last);
+                }
+                CHECK_EQ(p.items[0].values[0].after_count, 0u);
             }
         } else {
             CHECK(!ok);
@@ -1188,6 +1260,7 @@ int main(void)
     RUN(a_profile_reads_its_manual_steps);
     RUN(a_value_reads_the_stick_position_it_is_set_from);
     RUN(a_value_reads_its_own_entry_time);
+    RUN(a_value_reads_its_moves_after_the_selection);
     RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);

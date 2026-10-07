@@ -209,7 +209,10 @@
         {
           "number": 6,
           "name": "Car 1: one direction, proportional brake",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -218,7 +221,10 @@
         {
           "number": 8,
           "name": "Car 2: forward and reverse",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         }
       ],
       "applies_to": null,
@@ -240,6 +246,7 @@
   "notes": [
     "The Beat manual lists FAI models (FAI 7/10, FAI 24, FAI 27) with this procedure; their addendum Kontronik_Beat_FAI.pdf replaces the menu, see kontronik-beat-fai.",
     "The ESC may only be fed from NiCd or NiMH packs per the manual's safety text.",
-    "Modes 6 and 8 are programmed with the stick at motor-off in the middle (Kontronik_Beat.pdf p.15, p.17 DE; p.37, p.39 EN). They carry entry_throttle mid, so stick programming does not store them from the brake position."
+    "Modes 6 and 8 are programmed with the stick at motor-off in the middle (Kontronik_Beat.pdf p.15, p.17 DE; p.37, p.39 EN). They carry entry_throttle mid, so stick programming does not store them from the brake position.",
+    "Mode 6 moves the stick to the brake position and mode 8 to full reverse, both back, after the full-throttle selection (Kontronik_Beat.pdf p.15, p.17 DE; p.37, p.39 EN): after_select min, made STORE after the selection; the manual gives no time."
   ]
 }

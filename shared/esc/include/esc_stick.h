@@ -371,7 +371,9 @@ typedef struct {
     uint32_t             off_seq;       /**< the reading count then      */
     uint32_t             off_since_ms;  /**< reported off from here      */
     bool                 off_since_known;
-    bool                 store_moved;   /**< the store move is made      */
+    uint8_t              store_step;    /**< moves made after the
+                                             selection (esc_stick_store_
+                                             move())                      */
     bool                 cycle_moved;   /**< the stick is at the entry   */
     bool                 armed_seen;
 
@@ -488,6 +490,15 @@ uint32_t esc_stick_hand_left_ms(const esc_stick_t *e);
  * or the step was asked less than ESC_STICK_HAND_MIN_MS ago.
  */
 bool esc_stick_confirm(esc_stick_t *e);
+
+/**
+ * The @p k-th move after a selection, from 0, or ESC_THR_NONE past the
+ * last: the profile's store move, then the moves the stored value asks for
+ * (esc_value_t's after: Kontronik's car modes go to the brake after full
+ * throttle).  The run makes each STORE after the one before, then switches
+ * the supply off.
+ */
+esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k);
 
 /** How many selections have been made. */
 unsigned esc_stick_done_count(const esc_stick_t *e);

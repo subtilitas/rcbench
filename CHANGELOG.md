@@ -59,6 +59,11 @@ sweep starts over from the curve's beginning, and the alert band says so.
   Kontronik SUN PLUS modes 4 to 6 wait 5 s, the others 2 s, and the button
   is asked for at that time. The entry also lasts at least the longest
   `at_power_up` hold.
+- **Moves after a selection.** `values[].after_select` lists the stick
+  moves a value asks for after its select move: PIX mode 2 and the
+  Kontronik car modes go to the brake after full throttle. A run makes each
+  STORE after the one before, then switches the supply off; the simulated
+  ESC stores nothing without them. A two-stage profile takes none.
 
 ### Changed
 

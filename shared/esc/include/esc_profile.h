@@ -95,6 +95,9 @@ typedef struct {
     uint16_t    current_a;      /**< continuous; 0: not known               */
 } esc_model_t;
 
+/** The most stick moves a value asks for after its selection. */
+#define ESC_AFTER_MAX 4u
+
 typedef struct {
     const char *name;
     uint8_t     number;         /**< as the ESC sounds it                   */
@@ -105,6 +108,11 @@ typedef struct {
     /** Power-on to the menu when this value is programmed, where the
      *  manual gives one other than the entry's; 0: the entry's. */
     uint32_t       entry_hold_ms;
+    /** The moves this value asks for after its select move, in order, each
+     *  once the ESC has answered the one before (Kontronik's car modes: to
+     *  the brake after full throttle); 0 entries: none. */
+    uint8_t        after_count;
+    esc_throttle_t after[ESC_AFTER_MAX];
 } esc_value_t;
 
 typedef struct {

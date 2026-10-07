@@ -340,12 +340,40 @@ static bool in_window(const esc_sim_t *s, uint32_t now, uint32_t profile_ms)
     return (uint32_t)(now - s->ended_ms) <= w;
 }
 
+/* The moves that store @p value of @p item once it is selected: the
+ * profile's store move, then the value's own after_select.  How many. */
+static unsigned store_moves(const esc_profile_t *p, uint8_t item,
+                            uint8_t value, esc_throttle_t *out)
+{
+    unsigned n = 0u;
+    if (p->store_throttle != ESC_THR_NONE) {
+        out[n++] = p->store_throttle;
+    }
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (p->items[i].number != item) {
+            continue;
+        }
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            const esc_value_t *v = &p->items[i].values[k];
+            for (unsigned m = 0; v->number == value && m < v->after_count
+                                 && m < ESC_AFTER_MAX; ++m) {
+                out[n++] = v->after[m];
+            }
+        }
+    }
+    return n;
+}
+
 static void store(esc_sim_t *s, uint32_t now, uint8_t item, uint8_t value)
 {
-    if (s->p->store_throttle != ESC_THR_NONE && s->mode != ESC_SIM_PENDING) {
-        /* Answered, and stored only by the move that follows. */
+    esc_throttle_t moves[ESC_AFTER_MAX + 1u];
+    if (s->mode != ESC_SIM_PENDING
+        && store_moves(s->p, item, value, moves) > 0u) {
+        /* Answered, and stored only by the moves that follow, in order;
+         * the power going first loses it. */
         s->pend_item = item;
         s->pend_value = value;
+        s->pend_step = 0u;
         s->ended = 0u;
         s->mode = ESC_SIM_PENDING;
         start_group(s, now, 2u, false, false);
@@ -388,11 +416,19 @@ static void moved(esc_sim_t *s, uint32_t now)
             s->seg_end = now + s->c.pause_ms;
         }
         return;
-    case ESC_SIM_PENDING:
-        if (s->pos == p->store_throttle) {
-            store(s, now, s->pend_item, s->pend_value);
+    case ESC_SIM_PENDING: {
+        esc_throttle_t moves[ESC_AFTER_MAX + 1u];
+        const unsigned n = store_moves(p, s->pend_item, s->pend_value, moves);
+        if (s->pend_step < n && s->pos == moves[s->pend_step]) {
+            s->pend_step++;
+            if (s->pend_step == n) {
+                store(s, now, s->pend_item, s->pend_value);
+            } else {
+                start_group(s, now, 2u, false, false);  /* answered */
+            }
         }
         return;
+    }
     case ESC_SIM_ITEMS:
         if (s->pos == p->select_throttle
             && in_window(s, now, p->select_within_ms)) {

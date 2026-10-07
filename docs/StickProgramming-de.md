@@ -315,7 +315,7 @@ gezeichnet.
 | HANDGRIFF, VERSORGT | Einstiegsstellung, MIN | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`: ERLEDIGT, dann das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
-| SPEICHERN | die Wertbewegung, dann die Speicherbewegung | an | nach SPEICHERN, und nach SPEICHERN noch einmal, wo das Profil eine Speicherbewegung hat |
+| SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
 | AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN |
 | AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
 | FERTIG | MIN | aus | entschärft |
@@ -618,9 +618,12 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Liste ist 1, 2, 3, 7, 9), Smile-Modi 9 und 1, SUN-PLUS-Modi 9 und 1. Der
   Lauf endet mit ZEITLIMIT. Ob diese ESCs die nicht genutzten Zahlen
   ausgeben, steht nicht fest.
-- `kontronik-pix` Modus 2 verlangt nach der Auswahl eine Bewegung in die
-  Bremsstellung; der Lauf macht keine. Ob der ESC den Modus ohne sie
-  speichert, ist nicht bekannt.
+- Die Bewegungen eines Werts nach seiner Auswahl (`after_select`: PIX
+  Modus 2, die Kontronik-Car-Modi, KONTROL-X Modus 3) folgen jeweils
+  SPEICHERN nach der vorigen. Die Handbücher takten sie mit den
+  Antworttönen des ESC, die der Lauf nicht dekodiert; SPEICHERN (vorgegeben
+  2000 ms) steht für sie, nicht gemessen. Die wahlfreie eigene
+  Motor-Aus-Stellung der Segelflugmodi wird nicht angefahren.
 - Ein Schalter am ESC in der Einschaltfolge -- SeaKing V3 mit Schalter,
   Trackstar 60A V2, der BEC-Schalter der Hacker-X- und Master-Reihe, der
   Empfängerschalter des Jeti Spin -- bleibt eingeschaltet, und das Netzteil
