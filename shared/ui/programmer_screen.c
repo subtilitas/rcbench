@@ -86,6 +86,16 @@
 
 #define MAX_PARAMS 10
 
+/*
+ * Each page's drawer is its own function, so the main task's stack holds
+ * the buffers of the page on screen and no other.  render() runs on the
+ * panel's main task, which tools/stack_check.py holds to its stack.  GCC
+ * inlines a static function called once, and inlined, every page's buffers
+ * share render()'s frame: 1760 bytes at -O2.  Kept apart, render()'s frame
+ * is 32 bytes and the largest page's 464.
+ */
+#define DRAWER __attribute__((noinline))
+
 /* ------------------------------------------------------------- the model */
 
 typedef enum {
@@ -765,7 +775,7 @@ static void draw_crumb(gfx_canvas_t *c, const char *trail)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-static void draw_classes(gfx_canvas_t *c)
+static DRAWER void draw_classes(gfx_canvas_t *c)
 {
     gfx_text(c, PAD + 12, 24, TR(PG_WHAT), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
@@ -798,7 +808,7 @@ static void draw_classes(gfx_canvas_t *c)
     }
 }
 
-static void draw_protocol_list(gfx_canvas_t *c)
+static DRAWER void draw_protocol_list(gfx_canvas_t *c)
 {
     draw_crumb(c, k_classes[s.klass].name);
     for (int i = 0; i < PROTO_COUNT; ++i) {
@@ -820,7 +830,7 @@ static void draw_protocol_list(gfx_canvas_t *c)
     }
 }
 
-static void draw_device(gfx_canvas_t *c)
+static DRAWER void draw_device(gfx_canvas_t *c)
 {
     const int x = PAD + 12;
     const gfx_color_t tone = s.connected ? ui_theme_color(UI_C_OK)
@@ -876,7 +886,7 @@ static void widget_number(gfx_canvas_t *c, int y, const param_def_t *d,
     }
 }
 
-static void draw_params(gfx_canvas_t *c)
+static DRAWER void draw_params(gfx_canvas_t *c)
 {
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(PG_PARAMETERS), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
@@ -1000,11 +1010,27 @@ static void sp_cut(char *buf, size_t n, int max_chars)
  * A text cut to @p max_chars, with ".." in place of what did not fit: the
  * profiles' names are the manuals' and run long.
  */
+/*
+ * @p src into @p dst, as much as fits with its terminator.  The copy every
+ * row and line makes, without snprintf(): whatever the format, a call to
+ * snprintf() reaches newlib's float conversion, and the panel's call graph
+ * puts 1952 bytes of stack below it (tools/stack_check.py -v).
+ */
+static void sp_copy(char *dst, size_t n, const char *src)
+{
+    size_t i = 0;
+    while (src != NULL && i + 1u < n && src[i] != '\0') {
+        dst[i] = src[i];
+        ++i;
+    }
+    dst[i] = '\0';
+}
+
 static void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
                     int max_chars, gfx_color_t ink)
 {
     char buf[192];
-    snprintf(buf, sizeof(buf), "%s", (text != NULL) ? text : "");
+    sp_copy(buf, sizeof(buf), text);
     sp_cut(buf, sizeof(buf), max_chars);
     gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
 }
@@ -1047,7 +1073,7 @@ static int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
         if (lines == max_lines) {
             /* The last line takes the rest, cut with ".." if it is more
              * than fits. */
-            snprintf(buf, sizeof(buf), "%s", at);
+            sp_copy(buf, sizeof(buf), at);
             sp_cut(buf, sizeof(buf), cells);
             at += strlen(at);
         } else {
@@ -1514,18 +1540,33 @@ static void sp_pick_profile(const esc_profile_t *p)
 /*
  * The items the page offers, as indices into the profile's, in its order:
  * those on the model picked (esc_item_applies()); with no model, those on
- * every model.  Returns how many.
+ * every model.  sp_items() counts them; sp_item_at() is the profile's index
+ * of the @p at-th, or -1.  Walked each time rather than kept in a list,
+ * which would put 256 bytes on the stack of every caller, the page's drawer
+ * among them.
  */
-static int sp_items(uint8_t *idx)
+static int sp_items(void)
 {
     const stick_t *t = &s.st;
     int n = 0;
     for (unsigned i = 0; t->p != NULL && i < t->p->item_count; ++i) {
         if (esc_item_applies(t->p, i, t->model)) {
-            idx[n++] = (uint8_t)i;
+            ++n;
         }
     }
     return n;
+}
+
+static int sp_item_at(int at)
+{
+    const stick_t *t = &s.st;
+    int n = 0;
+    for (unsigned i = 0; t->p != NULL && i < t->p->item_count; ++i) {
+        if (esc_item_applies(t->p, i, t->model) && n++ == at) {
+            return (int)i;
+        }
+    }
+    return -1;
 }
 
 /* The picked item kept among those shown: the first shown otherwise. */
@@ -1536,8 +1577,8 @@ static void sp_pick_shown(void)
         || esc_item_applies(t->p, (unsigned)t->picked, t->model)) {
         return;
     }
-    uint8_t idx[256];
-    t->picked = (sp_items(idx) > 0) ? idx[0] : 0;
+    const int first = sp_item_at(0);
+    t->picked = (first >= 0) ? first : 0;
 }
 
 /* The picks as changes, in item order; how many were picked in all. */
@@ -2369,8 +2410,7 @@ static bool sp_down(const touch_event_t *evt)
         ++s.rev;
         return true;
     }
-    uint8_t shown[256];
-    const int items = sp_items(shown);
+    const int items = sp_items();
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
     if (gfx_rect_contains(s.page_up, px, py) && t->iscroll > 0) {
         --t->iscroll;
@@ -2384,10 +2424,10 @@ static bool sp_down(const touch_event_t *evt)
     }
     for (int i = 0; i < sp_rows_shown(items, t->iscroll); ++i) {
         const int at = t->iscroll + i;
-        if (at < 0 || at >= items) {
+        const int idx = sp_item_at(at);
+        if (idx < 0) {
             break;
         }
-        const int idx = shown[at];
         const int by = gfx_rect_contains(s.down[i], px, py)  ? -1
                      : gfx_rect_contains(s.up[i], px, py)    ?  1 : 0;
         if (by != 0 && esc_stick_not_offered(&t->p->items[idx]) == NULL) {
@@ -2412,7 +2452,7 @@ static bool sp_down(const touch_event_t *evt)
 
 /* The search field: what is searched for, or SEARCH; X clears it while
  * the keyboard is closed. */
-static void sp_draw_find(gfx_canvas_t *c)
+static DRAWER void sp_draw_find(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const gfx_rect_t b = t->find_box;
@@ -2488,8 +2528,9 @@ static void sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs)
 /* A maker's row: its name, the MANUAL tag where a model it lists has
  * manual steps, and its models: those that run of all, or while a search
  * is typed those found of all and those of them that run. */
-static void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r, const sp_maker_t *m,
-                          bool dock, bool searching)
+static DRAWER void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r,
+                                 const sp_maker_t *m, bool dock,
+                                 bool searching)
 {
     const bool runs = m->runs > 0u;
     ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
@@ -2530,8 +2571,8 @@ static void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r, const sp_maker_t *m,
 
 /* A model's row: its name, current and voltage, its family, the MANUAL
  * tag, and what its family's profile is or why it does not run. */
-static void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row,
-                          bool dock)
+static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
+                                 const sp_row_t *row, bool dock)
 {
     const esc_profile_t *p = esc_profiles_at(row->prof);
     const esc_model_t *m = &p->models[row->model];
@@ -2607,7 +2648,7 @@ static void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row,
  * keyboard at the left; the line that no profile is verified while the
  * keyboard is closed.
  */
-static void sp_draw_list(gfx_canvas_t *c)
+static DRAWER void sp_draw_list(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const bool dock = t->tk.open;
@@ -2901,7 +2942,7 @@ static uint32_t sp_hold_ms(const esc_profile_t *p)
     return hold;
 }
 
-static void sp_draw_progress(gfx_canvas_t *c)
+static DRAWER void sp_draw_progress(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_stick_t *e = &t->run;
@@ -3099,7 +3140,7 @@ static void sp_result_more(const esc_stick_t *e, unsigned shown, char *buf,
     }
 }
 
-static void sp_draw_result(gfx_canvas_t *c)
+static DRAWER void sp_draw_result(gfx_canvas_t *c)
 {
     const esc_stick_t *e = &s.st.run;
     const bool done = e->phase == ESC_STICK_DONE;
@@ -3157,29 +3198,39 @@ static void sp_draw_result(gfx_canvas_t *c)
         y += pitch;
         room--;
     }
-    char what[ESC_MANUAL_MAX][256];
+    /* The steps after programming: counted first, then drawn, each put
+     * into the one buffer as it is needed. */
+    char what[256];
     unsigned after = 0u;
     for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
         const esc_manual_t *m = &p->manual[i];
         if (m->when == ESC_MANUAL_AFTER_PROGRAMMING && after < ESC_MANUAL_MAX) {
-            snprintf(what[after], sizeof(what[after]), "%s: %s",
-                     sp_when_text(m), sp_action(m));
-            need += sp_wrap_lines(what[after], 93, 2);
+            snprintf(what, sizeof(what), "%s: %s", sp_when_text(m),
+                     sp_action(m));
+            need += sp_wrap_lines(what, 93, 2);
             ++after;
         }
     }
     if (need > room && room > 0) {
-        char line2[128];
-        snprintf(line2, sizeof(line2), TR(SP_HAND_AFTER_N), after);
-        sp_text(c, PAD + 12, y, line2, 93, ui_theme_color(UI_C_WARN));
+        snprintf(line, sizeof(line), TR(SP_HAND_AFTER_N), after);
+        sp_text(c, PAD + 12, y, line, 93, ui_theme_color(UI_C_WARN));
         y += pitch;
         room--;
     } else {
-        for (unsigned i = 0; i < after; ++i) {
-            const int n = sp_wrap(c, PAD + 12, y, pitch, what[i], 93, 2,
+        unsigned drawn = 0u;
+        for (unsigned i = 0; p->manual != NULL && i < p->manual_count
+                             && drawn < after; ++i) {
+            const esc_manual_t *m = &p->manual[i];
+            if (m->when != ESC_MANUAL_AFTER_PROGRAMMING) {
+                continue;
+            }
+            snprintf(what, sizeof(what), "%s: %s", sp_when_text(m),
+                     sp_action(m));
+            const int n = sp_wrap(c, PAD + 12, y, pitch, what, 93, 2,
                                   ui_theme_color(UI_C_WARN));
             y += n * pitch;
             room -= n;
+            ++drawn;
         }
     }
     if (!done && room > 0
@@ -3226,7 +3277,7 @@ static void sp_setting_text(setting_id_t id, char *out, size_t n)
     snprintf(out, n, "%s %s", v, settings_def(id)->unit);
 }
 
-static void sp_draw_timing(gfx_canvas_t *c)
+static DRAWER void sp_draw_timing(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD),
@@ -3275,12 +3326,11 @@ static void sp_draw_timing(gfx_canvas_t *c)
               false, true);
 }
 
-static void sp_draw_items(gfx_canvas_t *c)
+static DRAWER void sp_draw_items(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
-    uint8_t shown[256];
-    const int items = sp_items(shown);
+    const int items = sp_items();
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_CHANGE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     if (p->manual_count > 0u) {
@@ -3301,10 +3351,10 @@ static void sp_draw_items(gfx_canvas_t *c)
 
     for (int i = 0; i < sp_rows_shown(items, t->iscroll); ++i) {
         const int at = t->iscroll + i;
-        if (at < 0 || at >= items) {
+        const int idx = sp_item_at(at);
+        if (idx < 0) {
             break;
         }
-        const int idx = shown[at];
         const esc_item_t *it = &p->items[idx];
         const int pick = t->pick[idx];
         const int y = ROW_Y0 + i * ROW_H;
@@ -3431,7 +3481,8 @@ static uint32_t sp_entry_shown(void)
     return esc_stick_change_entry_ms(t->p, (n > 0u) ? &ch[0] : NULL, &tm);
 }
 
-static void sp_draw_device(gfx_canvas_t *c)
+/* The profile page's crumb: BACK and the profile's name. */
+static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
@@ -3447,10 +3498,15 @@ static void sp_draw_device(gfx_canvas_t *c)
               !esc_stick_running(&t->run));
     sp_text(c, s.back.x + s.back.w + 16, CRUMB_Y + 8, line, 72,
             ui_theme_color(UI_C_TEXT_DIM));
-    if (t->timing) {
-        sp_draw_timing(c);
-        return;
-    }
+}
+
+/* The profile page's two cards, and in the upper one how the profile's
+ * menu works and the supply and entry time a run uses. */
+static DRAWER void sp_draw_card(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const esc_profile_t *p = t->p;
+    char line[128];
     ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD), DEV_H },
             ui_theme_color(UI_C_PANEL));
     ui_card(c, (gfx_rect_t){ PAD, PARM_Y, (int16_t)(W - 2 * PAD), PARM_H },
@@ -3485,7 +3541,19 @@ static void sp_draw_device(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     ui_button(c, s.connect_btn, "TIMING", ui_theme_color(UI_C_PANEL_HI),
               false, !esc_stick_running(&t->run) && !t->shown);
+}
 
+/* The profile page.  Its parts are drawn one after another, so none of
+ * their buffers is on the stack below the stage drawn last. */
+static void sp_draw_device(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    sp_draw_crumb(c);
+    if (t->timing) {
+        sp_draw_timing(c);
+        return;
+    }
+    sp_draw_card(c);
     if (esc_stick_running(&t->run)) {
         sp_draw_progress(c);
     } else if (t->shown) {
@@ -3525,8 +3593,9 @@ static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
  * hold that starts the run is the operator's word that they are done.
  * Then, where the run asks for more on its way, a line that it will.
  */
-static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
-                                 gfx_rect_t a, int y)
+static DRAWER void sp_draw_warning_hand(gfx_canvas_t *c,
+                                        const esc_profile_t *p,
+                                        gfx_rect_t a, int y)
 {
     const int last = s.st.hold_btn.y - 20;     /* the last line's top */
     const unsigned later = sp_later_steps(p);
@@ -3565,7 +3634,7 @@ static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
     }
 }
 
-static void sp_draw_warning(gfx_canvas_t *c)
+static DRAWER void sp_draw_warning(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const gfx_color_t red = ui_theme_color(UI_C_DANGER);
@@ -3629,7 +3698,7 @@ static void sp_draw_warning(gfx_canvas_t *c)
  * by the first opening of the profile, or by a tap on a row the bench does
  * not run.
  */
-static void sp_draw_hand(gfx_canvas_t *c)
+static DRAWER void sp_draw_hand(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->hand_p;
@@ -3689,7 +3758,7 @@ static const char *sp_left_text(const esc_stick_t *e)
                                   : TR(SP_PROMPT_LEFT_CUT);
 }
 
-static void sp_draw_prompt(gfx_canvas_t *c)
+static DRAWER void sp_draw_prompt(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_stick_t *e = &t->run;
@@ -3900,9 +3969,7 @@ const char *programmer_screen_stick_row_why(int i)
 
 int programmer_screen_stick_item_at(int i)
 {
-    uint8_t shown[256];
-    const int n = sp_items(shown);
-    return (i >= 0 && i < n) ? shown[i] : -1;
+    return sp_item_at(i);
 }
 
 const char *programmer_screen_stick_row_warn(int i)
@@ -3990,6 +4057,19 @@ void programmer_screen_stick_lights(bool *red, bool *green)
     }
 }
 
+/* A protocol's page: the crumb and the two cards. */
+static DRAWER void draw_page(gfx_canvas_t *c)
+{
+    char trail[64];
+    snprintf(trail, sizeof(trail), "%s  >  %s",
+             k_classes[s.klass].name, proto()->name);
+    draw_crumb(c, trail);
+    ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD), DEV_H },
+            ui_theme_color(UI_C_PANEL));
+    ui_card(c, (gfx_rect_t){ PAD, PARM_Y, (int16_t)(W - 2 * PAD), PARM_H },
+            ui_theme_color(UI_C_PANEL));
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -4017,15 +4097,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         draw_protocol_list(c);
         return;
     }
-
-    char trail[64];
-    snprintf(trail, sizeof(trail), "%s  >  %s",
-             k_classes[s.klass].name, proto()->name);
-    draw_crumb(c, trail);
-    ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD), DEV_H },
-            ui_theme_color(UI_C_PANEL));
-    ui_card(c, (gfx_rect_t){ PAD, PARM_Y, (int16_t)(W - 2 * PAD), PARM_H },
-            ui_theme_color(UI_C_PANEL));
+    draw_page(c);
     draw_device(c);
     draw_params(c);
 }

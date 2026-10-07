@@ -61,6 +61,7 @@ python3 tools/check_sanitizers.py     # sanitizers reach shared/
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/render_ui.py --fit      # every German string fits where it is drawn
 python3 tools/research/session.py check  # the research scripts against their plan
+python3 tools/stack_check.py firmware/panel/build  # after a panel build: task stacks
 
 cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
@@ -80,6 +81,8 @@ A change fails if:
   committing them;
 - drawing code exceeds its cache-line ceiling
   ([Performance](docs/Performance.md));
+- a panel task's deepest call chain exceeds its stack less 1024 bytes
+  ([Performance](docs/Performance.md#stacks));
 - a source file has no SPDX (Software Package Data Exchange) line, a wiki page
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`

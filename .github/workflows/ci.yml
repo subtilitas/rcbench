@@ -279,6 +279,14 @@ jobs:
           ls -l firmware/panel/build/*.bin firmware/panel/build/bootloader/bootloader.bin
           sha256sum firmware/panel/build/*.bin
 
+      # Every task's deepest call chain, read out of the ELF, against its
+      # stack less a 1024-byte margin.  The UI runs on the main task, and a
+      # chain past its end restarts the panel.  Needs only Python: the tool
+      # decodes the instructions itself.  On both matrix entries, because
+      # each ESP-IDF release brings its own toolchain and its own frames.
+      - name: Every task's stack holds its deepest call chain
+        run: python3 tools/stack_check.py firmware/panel/build
+
       - uses: actions/upload-artifact@v7
         with:
           name: panel-${{ matrix.idf }}
