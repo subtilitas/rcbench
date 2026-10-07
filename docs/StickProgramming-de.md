@@ -279,6 +279,15 @@ das Netzteil nicht aus meldet.
 
 ![Die Warnung mit einem Schritt vor dem Einschalten](img/de/programmer-stick-hand-warning.png)
 
+Schritte, die nicht alle ganz auf die Warnung passen -- jeder auf zwei
+Zeilen umbrochen, über HALTEN ZUM STARTEN --, erscheinen nicht
+abgeschnitten: die Warnung zählt sie und bietet ALLE HANDGRIFFE neben
+HALTEN ZUM STARTEN an. HALTEN ZUM STARTEN zählt erst, wenn ALLE HANDGRIFFE
+über dieser Warnung geöffnet und mit OK geschlossen wurde; das Halten
+bestätigt so jeden Schritt, und eine neue Warnung fragt wieder danach.
+
+![Vier Schritte vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen (ein Beispielprofil)](img/de/programmer-stick-hand-steps.png)
+
 Ein Schritt, nach dem der Lauf fragt, deckt die Seite ab: der Schritt, wo
 Netzteil und Knüppel stehen und wie lange der Lauf wartet. ERLEDIGT geht
 weiter; es ist die ersten 1000 ms dunkel (`ESC_STICK_HAND_MIN_MS`), damit
@@ -341,7 +350,7 @@ stattdessen, wie viele es sind. Endet ein Lauf eines Profils mit solchen
 Schritten, öffnen sich seine Schritte von selbst über dem Ergebnis, alle,
 und MANUELLER EINGRIFF NÖTIG im Kopf des Ergebnisses öffnet sie wieder.
 
-![Vier Schritte nach dem Programmieren, über dem Ergebnis](img/de/programmer-stick-hand-after.png)
+![Vier Handgriffe nach dem Programmieren, über dem Ergebnis (ein Beispielprofil)](img/de/programmer-stick-hand-after.png)
 
 Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
 oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf

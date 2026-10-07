@@ -411,6 +411,7 @@ typedef struct {
     int                  hand_model;    /* the model it was opened for, or
                                            -1: the family's lowest      */
     bool                 was_running;   /* the run, as the last tick saw */
+    bool                 warn_read;     /* ALL STEPS read over the warning */
 
     /* The supply as its newest reading had it, run or no run: whether its
      * output is live, and since when it has read off. */
@@ -420,7 +421,7 @@ typedef struct {
     uint8_t              hand_seen[SP_MAX / 8];
 
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
-    gfx_rect_t hold_btn, cancel_btn, hand_btn;
+    gfx_rect_t hold_btn, cancel_btn, hand_btn, steps_btn;
 } stick_t;
 
 /* --------------------------------------------------------------- the state */
@@ -540,6 +541,9 @@ static void reset(void)
                                     260, 56 };
     s.st.cancel_btn = (gfx_rect_t){ (int16_t)(W - PAD - 20 - 180),
                                     (int16_t)(H - PAD - 76), 180, 56 };
+    /* Between HOLD TO RUN and CANCEL, on the warning. */
+    s.st.steps_btn  = (gfx_rect_t){ PAD + 20 + 260 + 24,
+                                    (int16_t)(H - PAD - 76), 266, 56 };
     /* In the item list's header, between CHANGE and the count. */
     s.st.hand_btn   = (gfx_rect_t){ PAD + 108, (int16_t)(PARM_Y + 4), 300,
                                     24 };
@@ -1480,6 +1484,7 @@ static void sp_supply(uint32_t *mv, uint32_t *ma)
  * the operator's to change.
  */
 static bool sp_supply_reads_off(void);
+static bool sp_warn_steps_fit(const esc_profile_t *p);
 
 static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                     esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma)
@@ -1571,6 +1576,46 @@ static bool sp_warn_gated(void)
            && !sp_supply_reads_off();
 }
 
+/*
+ * Whether the warning shows every before-power step whole: under its
+ * lines (sp_draw_warning(): five, the profile, the supply and the
+ * unverified line from PAD + 68 at 22 px, then the steps' label), each
+ * step wrapped to two lines, and room kept for the line about later steps,
+ * above HOLD TO RUN.
+ */
+static bool sp_warn_steps_fit(const esc_profile_t *p)
+{
+    if (p == NULL || esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER)
+                         == 0u) {
+        return true;
+    }
+    const int last = s.st.hold_btn.y - 20;
+    const unsigned later = esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
+                           + esc_profile_manual_count(p,
+                                                      ESC_MANUAL_BEFORE_MENU);
+    const int keep = (later > 0u) ? 22 : 0;
+    int y = PAD + 68 + 5 * 22 + 66 + 22;
+    for (unsigned i = 0; i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        if (m->when == ESC_MANUAL_BEFORE_POWER) {
+            const int need = sp_wrap_lines(sp_action(m), 90, 2);
+            if (y + (need - 1) * 22 > last - keep) {
+                return false;
+            }
+            y += 22 * need;
+        }
+    }
+    return true;
+}
+
+/* Whether HOLD TO RUN may not count: the supply does not read off, or the
+ * before-power steps do not fit and ALL STEPS has not been read. */
+static bool sp_hold_blocked(void)
+{
+    const stick_t *t = &s.st;
+    return sp_warn_gated() || (!sp_warn_steps_fit(t->p) && !t->warn_read);
+}
+
 static bool sp_can_run(void)
 {
     esc_stick_change_t ch[ESC_STICK_MAX_CHANGES];
@@ -1632,7 +1677,7 @@ static void sp_start(void)
     size_t n;
     esc_stick_timing_t tm;
     uint32_t mv, ma;
-    if (!sp_plan(ch, &n, &tm, &mv, &ma) || sp_warn_gated()) {
+    if (!sp_plan(ch, &n, &tm, &mv, &ma) || sp_hold_blocked()) {
         return;     /* the note says why */
     }
     const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
@@ -1710,7 +1755,7 @@ static void sp_tick(float dt_s)
         /* The steps at an unpowered ESC show, and HOLD TO RUN counts, only
          * while the supply reads off; a hold under way ends when it stops
          * reading so. */
-        const bool gated = sp_warn_gated();
+        const bool gated = sp_hold_blocked();
         if (gated != t->sup_gate) {
             t->sup_gate = gated;
             ++s.rev;
@@ -1940,6 +1985,8 @@ static bool sp_down(const touch_event_t *evt)
     if (t->hand_open) {
         if (gfx_rect_contains(t->cancel_btn, px, py)) {
             t->hand_open = false;
+            /* Read over the warning: the hold may count. */
+            t->warn_read = t->warn_read || t->warn;
             ++s.rev;
         }
         return true;
@@ -1947,7 +1994,15 @@ static bool sp_down(const touch_event_t *evt)
 
     /* The warning covers the screen, BACK included. */
     if (t->warn) {
-        if (gfx_rect_contains(t->hold_btn, px, py) && !sp_warn_gated()) {
+        if (!sp_warn_steps_fit(t->p) && gfx_rect_contains(t->steps_btn, px, py)) {
+            t->hand_open = true;            /* ALL STEPS, over the warning */
+            t->hand_p = t->p;
+            t->hand_model = t->model;
+            sp_end_hold();
+            ++s.rev;
+            return true;
+        }
+        if (gfx_rect_contains(t->hold_btn, px, py) && !sp_hold_blocked()) {
             t->warn_down = true;
             t->warn_id = evt->point.id;
             ui_hold_begin(&t->hold);
@@ -2157,6 +2212,7 @@ static bool sp_down(const touch_event_t *evt)
     if (gfx_rect_contains(s.write_btn, px, py)) {
         if (sp_can_run()) {
             t->warn = true;                 /* RUN asks first */
+            t->warn_read = false;
             t->warn_down = false;
             ui_hold_reset(&t->hold);
         }
@@ -3283,23 +3339,25 @@ static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
         return;
     }
     if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u) {
-        const int keep = (later > 0u) ? 22 : 0;    /* room for that line */
         gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND), UI_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
         y += 22;
-        for (unsigned i = 0; i < p->manual_count; ++i) {
-            const esc_manual_t *m = &p->manual[i];
-            if (m->when != ESC_MANUAL_BEFORE_POWER) {
-                continue;
+        if (!sp_warn_steps_fit(p)) {
+            /* Not every step fits: none is shown cut, and ALL STEPS shows
+             * them, as HOLD TO RUN needs. */
+            char line[128];
+            snprintf(line, sizeof(line), TR(SP_WARN_HAND_READ),
+                     esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER));
+            sp_text(c, a.x + 44, y, line, 90, ui_theme_color(UI_C_TEXT));
+            y += 22;
+        } else {
+            for (unsigned i = 0; i < p->manual_count; ++i) {
+                const esc_manual_t *m = &p->manual[i];
+                if (m->when == ESC_MANUAL_BEFORE_POWER) {
+                    y += 22 * sp_wrap(c, a.x + 44, y, 22, sp_action(m), 90,
+                                      2, ui_theme_color(UI_C_TEXT));
+                }
             }
-            const int need = sp_wrap_lines(sp_action(m), 90, 2);
-            if (y + (need - 1) * 22 > last - keep) {
-                sp_text(c, a.x + 20, y, TR(SP_WARN_HAND_MORE), 92,
-                        ui_theme_color(UI_C_WARN));
-                return;
-            }
-            y += 22 * sp_wrap(c, a.x + 44, y, 22, sp_action(m), 90, 2,
-                              ui_theme_color(UI_C_TEXT));
         }
     }
     if (later > 0u && y <= last) {
@@ -3356,7 +3414,12 @@ static void sp_draw_warning(gfx_canvas_t *c)
     ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
                            t->hold.held_s),
-              t->warn_down, !sp_warn_gated());
+              t->warn_down, !sp_hold_blocked());
+    if (!sp_warn_steps_fit(t->p)) {
+        ui_button(c, t->steps_btn, TR(SP_STEPS_BTN),
+                  t->warn_read ? ui_theme_color(UI_C_PANEL_HI) : red, false,
+                  true);
+    }
     ui_button(c, t->cancel_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
               false, true);
 }

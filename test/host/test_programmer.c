@@ -2121,6 +2121,90 @@ TEST_CASE(the_page_shows_the_entry_the_run_waits)
     draws();
 }
 
+/* ALL STEPS, between HOLD TO RUN and CANCEL on the warning. */
+#define STEPS_X 437
+
+/* Four long steps before the power-up do not fit the warning: it shows
+ * none cut, HOLD TO RUN does not count until ALL STEPS has been opened and
+ * closed over it, and then it does.  The steps are read again for the next
+ * warning. */
+TEST_CASE(the_hold_needs_every_pre_power_step_read)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_POWER,
+          "Fit the programming jumper on the two gold contacts beside the "
+          "motor leads, with the receiver lead plugged in first.", 0u,
+          NULL, false },
+        { ESC_MANUAL_BEFORE_POWER,
+          "Set the transmitter's throttle trim to its middle and its "
+          "throttle curve to linear before the ESC is powered at all.", 0u,
+          NULL, false },
+        { ESC_MANUAL_BEFORE_POWER,
+          "Connect the motor and fix it to the bench so that it cannot "
+          "turn its leads off the contacts if it starts by itself.", 0u,
+          NULL, false },
+        { ESC_MANUAL_BEFORE_POWER,
+          "Take any propeller or pinion off the motor shaft and keep "
+          "hands and tools clear of the motor for the whole run.", 0u,
+          NULL, false },
+    };
+    fresh();
+    esc_profiles_clear_overrides();
+    esc_profile_t card = *esc_profiles_find("sunrise-pro");
+    card.id = "card-steps";
+    card.automatable = ESC_AUTO_ASSISTED;
+    card.automatable_note = "Steps before power.";
+    card.manual = k;
+    card.manual_count = 4;
+    CHECK(esc_profiles_override(&card, NULL));
+    open_profile("card-steps");
+    tap(CANCEL_X, HOLD_Y);                   /* the first opening */
+    tap(STEP_UP_X, STEP_CY(1));
+    tap(WRITE_X, BTN_CY);                    /* the warning */
+    draws();
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);      /* not yet */
+    tap(STEPS_X, HOLD_Y);                    /* ALL STEPS */
+    CHECK(programmer_screen_stick_hand_shown());
+    draws();
+    hold_for(2.25f);                         /* under the pop-up: nothing */
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    tap(CANCEL_X, HOLD_Y);                   /* OK: back to the warning */
+    CHECK(!programmer_screen_stick_hand_shown());
+    draws();
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    scr->leave();
+
+    /* A new warning asks for them again. */
+    fresh();
+    open_profile("card-steps");
+    tap(CANCEL_X, HOLD_Y);                   /* the first opening */
+    tap(STEP_UP_X, STEP_CY(1));
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    tap(CANCEL_X, HOLD_Y);                   /* CANCEL the warning */
+    tap(WRITE_X, BTN_CY);
+    tap(STEPS_X, HOLD_Y);
+    tap(CANCEL_X, HOLD_Y);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    scr->leave();
+    esc_profiles_clear_overrides();
+
+    /* kontronik-jazz's one short step fits: no ALL STEPS needed. */
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(0));
+    tap(WRITE_X, BTN_CY);
+    tap(STEPS_X, HOLD_Y);                    /* nothing there */
+    CHECK(!programmer_screen_stick_hand_shown());
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+}
+
 /* A family whose models need different voltages, with the SUPPLY cap
  * between them: 3SL's 6-cell models (7.2 V) run, its 14-cell ones
  * (16.8 V) do not.  The row, the pop-up, the page and RUN agree for the
@@ -2435,6 +2519,7 @@ int main(void)
     RUN(a_card_profile_joins_its_maker);
     RUN(the_model_tapped_is_the_one_judged);
     RUN(the_page_shows_the_entry_the_run_waits);
+    RUN(the_hold_needs_every_pre_power_step_read);
     RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);

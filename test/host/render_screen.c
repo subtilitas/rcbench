@@ -744,10 +744,63 @@ int main(int argc, char **argv)
         programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
         stick_supply_off();                     /* a panel's readings, off */
-        if (strcmp(view, "programmer-stick-hand-after") == 0) {
+        if (strcmp(view, "programmer-stick-hand-steps") == 0) {
             /*
-             * A card profile with four long steps after programming, run to
-             * its end: the steps open by themselves over the result.
+             * An example card profile, maker "Example", with four long steps
+             * before the power-up: the warning shows none cut and asks for
+             * ALL STEPS before HOLD TO RUN counts.
+             */
+            static const esc_manual_t k_before[] = {
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Fit the programming jumper on the two gold contacts "
+                  "beside the motor leads, with the receiver lead plugged "
+                  "in first.", 0u,
+                  "Den Programmier-Jumper auf die beiden Goldkontakte neben "
+                  "den Motorkabeln stecken, das Empfängerkabel zuerst.",
+                  false },
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Set the transmitter's throttle trim to its middle and its "
+                  "throttle curve to linear before the ESC is powered.", 0u,
+                  "Die Throttle-Trimmung des Senders auf Mitte und die "
+                  "Gaskurve linear stellen, bevor der ESC Strom bekommt.",
+                  false },
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Connect the motor and fix it to the bench so that it "
+                  "cannot turn its leads off the contacts by itself.", 0u,
+                  "Den Motor anschließen und am Prüfstand befestigen, damit "
+                  "er seine Kabel nicht selbst von den Kontakten dreht.",
+                  false },
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Take any propeller or pinion off the motor shaft and keep "
+                  "hands and tools clear of the motor for the run.", 0u,
+                  "Propeller oder Ritzel von der Motorwelle nehmen und Hände "
+                  "und Werkzeug während des Laufs vom Motor fernhalten.",
+                  false },
+            };
+            static esc_profile_t ex;
+            ex = *esc_profiles_find("sunrise-pro");
+            ex.id = "example-steps";
+            ex.brand = "Example";
+            ex.family = "Example ESC, not a real product";
+            ex.automatable = ESC_AUTO_ASSISTED;
+            ex.automatable_note = "An example.";
+            ex.manual = k_before;
+            ex.manual_count = 4;
+            esc_profiles_clear_overrides();
+            (void)esc_profiles_override(&ex, NULL);
+            programmer_invalidate();
+            tap(66, UI_BAND_H + 27);            /* BACK, and the tile again: */
+            tap(660, UI_BAND_H + 180);          /* the list with the card */
+            stick_open("Example", "example-steps");
+            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
+            stick_supply_off();
+            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+        } else if (strcmp(view, "programmer-stick-hand-after") == 0) {
+            /*
+             * An example card profile, maker "Example", with four long steps
+             * after programming, run to its end: the steps open by
+             * themselves over the result.
              */
             static const esc_manual_t k_after[] = {
                 { ESC_MANUAL_AFTER_PROGRAMMING,
@@ -780,7 +833,9 @@ int main(int argc, char **argv)
             };
             static esc_profile_t card;
             card = *esc_profiles_find("sunrise-pro");
-            card.id = "card-after";
+            card.id = "example-after";
+            card.brand = "Example";
+            card.family = "Example ESC, not a real product";
             card.automatable = ESC_AUTO_ASSISTED;
             card.automatable_note = "Steps after programming.";
             card.manual = k_after;
@@ -788,7 +843,9 @@ int main(int argc, char **argv)
             esc_profiles_clear_overrides();
             (void)esc_profiles_override(&card, NULL);
             programmer_invalidate();
-            stick_open("Sunrise", "card-after");
+            tap(66, UI_BAND_H + 27);            /* BACK, and the tile again: */
+            tap(660, UI_BAND_H + 180);          /* the list with the card */
+            stick_open("Example", "example-after");
             tap(684, UI_BAND_H + 378);          /* OK: the first opening */
             tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
             tap(698, UI_BAND_H + 407);          /* RUN: the warning */

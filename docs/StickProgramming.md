@@ -253,6 +253,14 @@ does not read off.
 
 ![The warning with a step before power-up](img/programmer-stick-hand-warning.png)
 
+Steps that do not all fit the warning whole -- each wrapped to two lines,
+above HOLD TO RUN -- are not shown cut: the warning counts them and offers
+ALL STEPS beside HOLD TO RUN. HOLD TO RUN counts only once ALL STEPS has
+been opened over this warning and closed with OK, so the hold attests to
+every step; a new warning asks for them again.
+
+![Four steps before power-up, read under ALL STEPS (an example profile)](img/programmer-stick-hand-steps.png)
+
 A step asked during the run covers the page: the step, where the supply
 and the stick are, and how long the run waits. DONE goes on; it is dark for
 the first 1000 ms (`ESC_STICK_HAND_MIN_MS`), so one tap meant for the step
@@ -310,7 +318,7 @@ instead. When a run of a profile with such steps ends, its steps open by
 themselves over the result, every one of them, and MANUAL INTERVENTION
 REQUIRED in the result's header opens them again.
 
-![Four steps after programming, over the result](img/programmer-stick-hand-after.png)
+![Four steps after programming, over the result (an example profile)](img/programmer-stick-hand-after.png)
 
 After an aborted run of a profile with a step before or at the power-up,
 the result says to check the ESC: a jumper fitted for the run may still be in place.
