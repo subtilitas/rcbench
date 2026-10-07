@@ -114,7 +114,8 @@ is taken in a gap ahead of the save that needs it.
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
-| ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. [Reference](docs/EscProfiles.md) |
+| ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
+| Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 14 of the 72 profiles (13 two-stage, 1 one-stage; the list opens 13, one needing 22.8 V) from a warning held for 2 s, arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
 | Servo programmer | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
 
@@ -153,6 +154,7 @@ rcbench/
     ppm/                  frame layout
     openyge/              OpenYGE framing, status and parameter cache
     esc/                  ESC programming profiles · JSON reader · registry
+                          · stick programmer · simulated ESC
 
   firmware/panel/         ESP-IDF
     main/                 main.c · selftest.c
@@ -194,7 +196,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 56 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 57 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_servo`,
@@ -206,13 +208,13 @@ The host suite is 56 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_supply_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_logview` and `test_logwriter`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
 this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 47 committed screenshots to the current
+below. `render_ui.py --check` holds 54 committed screenshots to the current
 render; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
@@ -243,7 +245,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/analyser_screen.c` | 223 | 220 | 98.7% |
 | `shared/ui/balance_screen.c` | 307 | 307 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 316 | 299 | 94.6% |
+| `shared/ui/programmer_screen.c` | 1229 | 1138 | 92.6% |
 | `shared/ui/log_viewer_screen.c` | 771 | 713 | 92.5% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 298 | 289 | 97.0% |
@@ -266,8 +268,10 @@ chrome-cached screen to 2,000.
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
-| `shared/esc/esc_json.c` | 725 | 673 | 92.8% |
+| `shared/esc/esc_json.c` | 741 | 689 | 93.0% |
 | `shared/esc/esc_registry.c` | 71 | 70 | 98.6% |
+| `shared/esc/esc_stick.c` | 638 | 607 | 95.1% |
+| `shared/esc/esc_sim.c` | 306 | 283 | 92.5% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
 | `shared/dshot/dshot_frame.c` | 23 | 23 | 100.0% |
@@ -299,7 +303,7 @@ chrome-cached screen to 2,000.
 | `shared/bench/pdmini.c` | 513 | 504 | 98.2% |
 | `shared/bench/supply_link.c` | 222 | 212 | 95.5% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **16404** | **15855** | **96.7%** |
+| **total** | **18277** | **17600** | **96.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -331,6 +335,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The heartbeat has no hardware backstop | the wire from J8's GPIO6 to the coprocessor's GP3 is fitted on the bring-up bench, and arming succeeds there: a motor and a servo have each been run from the panel. What is not fitted is the retriggerable monostable the wire is supposed to pass through, so firmware at both ends is the only thing gating the outputs. The wire covers a panel that stops beating while the coprocessor is healthy: the monitor sees no edge for HEARTBEAT_MAX_GAP_MS (150 ms) and the loop disarms. Uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs. That is what the monostable does, retriggered by the panel's edges and needing no firmware. A healthy panel beside a misbehaving coprocessor is covered by neither, and by no hardware in this design | the monostable specified in [Safety](docs/Safety.md), on a board. `testbench/WIRING.md` carries the specification and deliberately no part numbers |
 | The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
+| Stick programming has met no ESC | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
 | Interface language | about 430 user-visible strings are literals in ten screens, 168 of them the programmer's parameter names and help | an X-macro string table with one ID per string, a table per language, and a fallback to English; deferred until the screens stop changing |
 
 ## Constraints

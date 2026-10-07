@@ -71,6 +71,13 @@ SOURCES = [
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
+    # The ESC profiles and the stick programmer the PROGRAMMER screen's
+    # ESC STICK class lists and runs.
+    "shared/esc/esc_profiles_gen.c",
+    "shared/esc/esc_json.c",
+    "shared/esc/esc_registry.c",
+    "shared/esc/esc_stick.c",
+    "shared/esc/esc_sim.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
@@ -102,6 +109,7 @@ INCLUDES = [
     "shared/logfile/include",
     "shared/settings/include",
     "shared/servo/include",
+    "shared/esc/include",
     "shared/sbus/include",
 ]
 

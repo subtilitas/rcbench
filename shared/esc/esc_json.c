@@ -1032,6 +1032,32 @@ static void decode(dec_t *d, esc_profile_t *p)
     x = get_enum(d, (uint32_t)sk, "throttle", "scheme.skip", k_throttle,
                  COUNT(k_throttle));
     p->skip_throttle = (esc_throttle_t)(x < 0 ? 0 : x);
+    /* Where the stick rests while the menu sounds: absent or null, where
+     * the entry left it.  "none" is no resting place, so it is refused. */
+    const int64_t li = member(d, si, "listen");
+    p->listen_throttle = ESC_THR_NONE;
+    if (li >= 0 && d->t[li].type != T_NULL) {
+        if (d->t[li].type != T_OBJ) {
+            FAIL(d, "scheme.listen: not an object");
+            return;
+        }
+        x = get_enum(d, (uint32_t)li, "throttle", "scheme.listen",
+                     k_throttle, COUNT(k_throttle) - 1);
+        p->listen_throttle = (esc_throttle_t)(x < 0 ? 0 : x);
+    }
+    /* The move that stores a selection once the ESC has answered it:
+     * absent or null, the selection stores.  "none" is refused here too. */
+    const int64_t so = member(d, si, "store");
+    p->store_throttle = ESC_THR_NONE;
+    if (so >= 0 && d->t[so].type != T_NULL) {
+        if (d->t[so].type != T_OBJ) {
+            FAIL(d, "scheme.store: not an object");
+            return;
+        }
+        x = get_enum(d, (uint32_t)so, "throttle", "scheme.store",
+                     k_throttle, COUNT(k_throttle) - 1);
+        p->store_throttle = (esc_throttle_t)(x < 0 ? 0 : x);
+    }
     /* Only a two-stage menu has one: absent or null, the select move
      * stores the value too. */
     const int64_t vs = member(d, si, "value_select");

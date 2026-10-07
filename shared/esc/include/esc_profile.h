@@ -135,6 +135,12 @@ typedef struct {
     esc_throttle_t     value_select_throttle;
     uint32_t           value_select_within_ms; /**< 0: not known         */
     esc_throttle_t     skip_throttle;
+    /** Where the stick rests while the menu sounds; ESC_THR_NONE where the
+     *  entry left it. */
+    esc_throttle_t     listen_throttle;
+    /** The move that stores a selection once the ESC has answered it;
+     *  ESC_THR_NONE where the selection itself stores. */
+    esc_throttle_t     store_throttle;
     uint8_t            long_equals_short;  /**< 0 unless short_long      */
     uint32_t           beep_ms;            /**< 0: not known             */
     uint32_t           gap_ms;             /**< 0: not known             */

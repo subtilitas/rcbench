@@ -1,0 +1,1123 @@
+/*
+ * Stick programming against the simulated ESC (electronic speed
+ * controller): the beep detector on its own, then whole runs through a
+ * modelled bench -- an arm that follows the ARM the engine asks for, a
+ * supply that switches when asked and is read at a chosen rate, and the
+ * simulation drawing the current.
+ *
+ * The cases that matter most are the ones where a count could go wrong: a
+ * beep that never shows in the current must not become a selection of the
+ * number below it, and a menu that does not match the profile must time
+ * out rather than select something.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "greatest.h"
+
+#include "esc_profile.h"
+#include "esc_sim.h"
+#include "esc_stick.h"
+
+/* ------------------------------------------------------------ the rig */
+
+typedef struct {
+    esc_stick_t        e;
+    esc_sim_t          sim;
+    esc_stick_timing_t t;
+    const esc_profile_t *p;
+
+    uint32_t now;
+    bool     armed;
+    bool     arm_refused;     /* the bench never arms                 */
+    uint32_t stops;
+    bool     link;
+    bool     supply_on;
+    bool     supply_dead;     /* the output never comes on            */
+    bool     supply_stuck;    /* the output never goes off            */
+    bool     online;
+
+    uint32_t read_iv;         /* a reading every this many ms         */
+    uint32_t jitter;          /* plus up to this much                 */
+    uint32_t next_read;
+    uint32_t seq;
+    uint32_t lcg;
+    bool     readings_stop;
+    int32_t  extra_ma;        /* added to every reading               */
+    uint32_t late_once_at;    /* one reading this late, at this time  */
+    uint32_t late_once_by;
+    uint32_t skew_ms;         /* readings stamped this far ahead      */
+    uint32_t skip;            /* readings the supply took unseen      */
+} rig_t;
+
+static rig_t r;
+
+static int item_index(const esc_profile_t *p, uint8_t number)
+{
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (p->items[i].number == number) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+static int value_index(const esc_profile_t *p, uint8_t item, uint8_t number)
+{
+    const int i = item_index(p, item);
+    if (i < 0) {
+        return -1;
+    }
+    for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+        if (p->items[i].values[k].number == number) {
+            return (int)k;
+        }
+    }
+    return -1;
+}
+
+/* A change by the numbers the ESC sounds. */
+static esc_stick_change_t change(uint8_t item, uint8_t value)
+{
+    const int i = item_index(r.p, item);
+    const int v = value_index(r.p, item, value);
+    esc_stick_change_t c = { (uint8_t)((i < 0) ? 255 : i),
+                             (uint8_t)((v < 0) ? 255 : v) };
+    return c;
+}
+
+static void rig(const char *id)
+{
+    memset(&r, 0, sizeof(r));
+    r.p = esc_profiles_find(id);
+    esc_stick_timing_defaults(&r.t);
+    if (r.p != NULL && r.p->entry_hold_ms != 0u) {
+        r.t.entry_ms = r.p->entry_hold_ms;
+    }
+    esc_sim_cfg_t c;
+    esc_sim_defaults(&c);
+    esc_sim_init(&r.sim, r.p, &c);
+    r.now = 1000u;
+    r.link = true;
+    r.online = true;
+    r.read_iv = 50u;
+    r.lcg = 7u;
+}
+
+static esc_stick_bench_t bench(void)
+{
+    esc_stick_bench_t b = { r.now, r.armed, r.stops, r.link };
+    return b;
+}
+
+static bool start(const esc_stick_change_t *ch, size_t n)
+{
+    const esc_stick_bench_t b = bench();
+    const char *why = NULL;
+    const bool ok = esc_stick_start(&r.e, r.p, ch, n, &r.t, 7600u, 1000u,
+                                    &b, &why);
+    r.next_read = r.now;
+    return ok;
+}
+
+/* One millisecond of bench. */
+static void tick(void)
+{
+    const esc_stick_out_t *o = esc_stick_out(&r.e);
+    if (!r.arm_refused) {
+        r.armed = o->arm;
+    }
+    r.supply_on = (o->supply_on || (r.supply_stuck && r.supply_on))
+                  && !r.supply_dead;
+    const float pct = r.armed ? o->throttle_pct : -1.0f;
+    const int32_t ma = esc_sim_step(&r.sim, r.now, r.supply_on, pct);
+    if (!r.readings_stop && (int32_t)(r.now - r.next_read) >= 0) {
+        r.seq += 1u + r.skip;
+        esc_stick_sample_t s = {
+            .seq = r.seq, .at_ms = r.now + r.skew_ms,
+            .ma = r.supply_on ? ma + r.extra_ma : 0,
+            .current_ok = true, .output = r.supply_on, .online = r.online,
+        };
+        esc_stick_sample(&r.e, &s);
+        r.lcg = r.lcg * 1103515245u + 12345u;
+        const uint32_t j = (r.jitter > 0u) ? (r.lcg >> 8) % (r.jitter + 1u)
+                                           : 0u;
+        r.next_read = r.now + r.read_iv + j;
+        if (r.late_once_at != 0u && r.now >= r.late_once_at) {
+            r.next_read += r.late_once_by;
+            r.late_once_at = 0u;
+        }
+    }
+    const esc_stick_bench_t b = bench();
+    esc_stick_step(&r.e, &b);
+    r.now++;
+}
+
+/* Until the run ends or @p ms pass. */
+static void run_for(uint32_t ms)
+{
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e); ++i) {
+        tick();
+    }
+}
+
+static void run_until_phase(esc_stick_phase_t ph, uint32_t ms)
+{
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e)
+                         && r.e.phase != ph; ++i) {
+        tick();
+    }
+}
+
+/* The run ended where everything is safe: throttle at rest, supply off,
+ * the arm let go. */
+static void ended_safe(void)
+{
+    const esc_stick_out_t *o = esc_stick_out(&r.e);
+    CHECK(!esc_stick_running(&r.e));
+    CHECK(!o->arm);
+    CHECK(!o->supply_on);
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MIN);
+}
+
+/* ------------------------------------------------------- the detector */
+
+static esc_det_t det;
+
+/* The time the last det_fresh() left the detector at. */
+static uint32_t g_at;
+
+static void det_fresh(uint8_t les)
+{
+    esc_stick_timing_t t;
+    esc_stick_timing_defaults(&t);
+    esc_det_init(&det, &t, les);
+    /* The floor at 150 mA, then counting, after the quiet that has to come
+     * first. */
+    (void)esc_det_reading(&det, 0u, 150, false);
+    esc_det_count(&det);
+    g_at = 0u;
+    for (int i = 0; i < 15; ++i) {
+        g_at += 50u;
+        (void)esc_det_reading(&det, g_at, 150, false);
+    }
+}
+
+/* Readings every @p iv ms from @p *at: @p n of them at @p ma. */
+static esc_det_event_t feed(uint32_t *at, uint32_t iv, int n, int32_t ma)
+{
+    esc_det_event_t last = ESC_DET_NONE;
+    for (int i = 0; i < n; ++i) {
+        *at += iv;
+        const esc_det_event_t ev = esc_det_reading(&det, *at, ma, false);
+        if (ev != ESC_DET_NONE) {
+            last = ev;
+        }
+    }
+    return last;
+}
+
+TEST_CASE(beeps_make_a_group_that_silence_ends)
+{
+    det_fresh(0u);
+    uint32_t at = g_at;
+    for (int b = 0; b < 3; ++b) {
+        (void)feed(&at, 50u, 5, 750);      /* 250 ms beep */
+        CHECK_EQ(feed(&at, 50u, 1, 150), ESC_DET_PULSE);
+        (void)feed(&at, 50u, 4, 150);      /* the rest of a 250 ms gap */
+    }
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK_EQ(det.count, 3);
+    CHECK(det.valid);
+}
+
+TEST_CASE(long_beeps_count_by_the_profiles_measure)
+{
+    det_fresh(5u);
+    uint32_t at = g_at;
+    (void)feed(&at, 50u, 16, 750);         /* 800 ms: long */
+    (void)feed(&at, 50u, 5, 150);
+    (void)feed(&at, 50u, 5, 750);          /* short */
+    (void)feed(&at, 50u, 5, 150);
+    (void)feed(&at, 50u, 5, 750);          /* short */
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK_EQ(det.count, 7);
+    CHECK(det.valid);
+}
+
+/* A long beep in a menu that sounds none, or after a short one, is not the
+ * menu speaking. */
+TEST_CASE(a_long_beep_where_none_belongs_spoils_the_group)
+{
+    det_fresh(0u);
+    uint32_t at = g_at;
+    (void)feed(&at, 50u, 16, 750);
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK(!det.valid);
+
+    det_fresh(5u);
+    at = g_at;
+    (void)feed(&at, 50u, 5, 750);
+    (void)feed(&at, 50u, 5, 150);
+    (void)feed(&at, 50u, 16, 750);
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK(!det.valid);
+}
+
+TEST_CASE(pulses_and_gaps_outside_their_lengths_spoil_the_group)
+{
+    /* One reading of a pulse where a beep must hold four. */
+    det_fresh(0u);
+    uint32_t at = g_at;
+    (void)feed(&at, 50u, 2, 150);
+    (void)feed(&at, 50u, 1, 750);
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK(!det.valid);
+
+    /* Longer than any beep. */
+    det_fresh(5u);
+    at = g_at;
+    (void)feed(&at, 50u, 40, 750);
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK(!det.valid);
+
+    /* A gap of one reading between two beeps. */
+    det_fresh(0u);
+    at = g_at;
+    (void)feed(&at, 50u, 5, 750);
+    (void)feed(&at, 50u, 1, 150);
+    (void)feed(&at, 50u, 5, 750);
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK(!det.valid);
+}
+
+/* Between the two thresholds the state holds: no chatter on a reading that
+ * sits near the edge. */
+TEST_CASE(hysteresis_holds_a_beep_through_a_dip)
+{
+    det_fresh(0u);
+    uint32_t at = g_at;
+    (void)feed(&at, 50u, 2, 750);
+    /* 150 + 100 - 40 = 210 is the release: 230 is still a beep. */
+    CHECK_EQ(feed(&at, 50u, 1, 230), ESC_DET_NONE);
+    (void)feed(&at, 50u, 2, 750);
+    CHECK_EQ(feed(&at, 50u, 1, 150), ESC_DET_PULSE);
+    CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
+    CHECK_EQ(det.count, 1);
+    CHECK(det.valid);
+}
+
+TEST_CASE(a_current_that_stays_high_is_reported_once)
+{
+    det_fresh(0u);
+    uint32_t at = g_at;
+    int stuck = 0;
+    for (int i = 0; i < 200; ++i) {
+        at += 50u;
+        if (esc_det_reading(&det, at, 900, false) == ESC_DET_STUCK) {
+            ++stuck;
+        }
+    }
+    CHECK_EQ(stuck, 1);
+}
+
+/* The floor while the ESC starts is the lowest current seen, so a tone in
+ * the entry does not lift it. */
+TEST_CASE(the_floor_is_the_lowest_current_before_counting)
+{
+    esc_stick_timing_t t;
+    esc_stick_timing_defaults(&t);
+    esc_det_init(&det, &t, 0u);
+    (void)esc_det_reading(&det, 0u, 700, false);
+    (void)esc_det_reading(&det, 50u, 160, false);
+    (void)esc_det_reading(&det, 100u, 900, false);
+    CHECK_EQ(esc_det_floor_ma(&det), 160);
+    CHECK(esc_det_reading(&det, 150u, 900, false) == ESC_DET_NONE);
+    CHECK(!det.group_open);
+}
+
+/* ------------------------------------------------------ what can run */
+
+TEST_CASE(the_profiles_the_engine_runs_are_the_counted_menus)
+{
+    unsigned two = 0, one = 0;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        const char *why = NULL;
+        switch (esc_stick_kind(p, &why)) {
+        case ESC_STICK_KIND_TWO_STAGE: ++two; break;
+        case ESC_STICK_KIND_ONE_STAGE: ++one; break;
+        default:
+            if (why == NULL || why[0] == '\0') {
+                T_FAIL("%s refused without a reason", p->id);
+            }
+            break;
+        }
+    }
+    /* docs/StickProgramming.md gives these counts. */
+    CHECK_EQ(two, 13);
+    CHECK_EQ(one, 1);
+
+    const char *why = NULL;
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("castle-phoenix-edge"), &why),
+             ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "yes/no menu");
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("kontronik-jive"), &why),
+             ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "needs a person at the ESC");
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("robbe-roxxy-bl-smart-control"),
+                            &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "item and value, one move");
+    CHECK_EQ(esc_stick_kind(NULL, &why), ESC_STICK_KIND_NONE);
+    /* The YGE menus rest at minimum after a maximum entry whose length no
+     * manual gives: the move is not guessed. */
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("yge-mode-setup-5"), &why),
+             ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    CHECK_EQ(esc_stick_listen(esc_profiles_find("yge-mode-setup-5")),
+             ESC_THR_MIN);
+    /* The Silver Series toggles its brake; it sounds no menu of values. */
+    CHECK_EQ(esc_stick_kind(
+                 esc_profiles_find("greatplanes-electrifly-silver-series"),
+                 &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "menu of its own kind");
+    CHECK_EQ(esc_stick_listen(esc_profiles_find("hobbywing-flyfun-8item")),
+             ESC_THR_MAX);
+}
+
+TEST_CASE(a_run_that_cannot_work_is_refused_before_it_starts)
+{
+    rig("hobbywing-flyfun-8item");
+    const char *why = NULL;
+    esc_stick_change_t c[2] = { change(1, 2), change(1, 1) };
+    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "one change per item");
+    CHECK(!esc_stick_check(r.p, c, 0, &r.t, &why));
+    CHECK(!esc_stick_check(r.p, NULL, 1, &r.t, &why));
+    CHECK(!esc_stick_check(r.p, c, 1, NULL, &why));
+    esc_stick_change_t bad = { 200u, 0u };
+    CHECK(!esc_stick_check(r.p, &bad, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "no such item");
+    bad.item = 0u;
+    bad.value = 200u;
+    CHECK(!esc_stick_check(r.p, &bad, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "no such value");
+    esc_stick_change_t many[ESC_STICK_MAX_CHANGES + 1u];
+    memset(many, 0, sizeof(many));
+    CHECK(!esc_stick_check(r.p, many, ESC_STICK_MAX_CHANGES + 1u, &r.t,
+                           &why));
+
+    /* Every timing rule, one at a time. */
+    static const struct { size_t off; uint32_t v; const char *why; } k[] = {
+        { offsetof(esc_stick_timing_t, beep_min_ms), 0u,
+          "BEEP MIN and GAP MIN above 0" },
+        { offsetof(esc_stick_timing_t, long_ms), 200u, "LONG above BEEP MIN" },
+        { offsetof(esc_stick_timing_t, long_max_ms), 500u,
+          "LONG MAX above LONG" },
+        { offsetof(esc_stick_timing_t, group_gap_ms), 200u,
+          "GROUP GAP above GAP MIN" },
+        { offsetof(esc_stick_timing_t, hysteresis_ma), 100u,
+          "THRESHOLD above HYSTERESIS" },
+        { offsetof(esc_stick_timing_t, entry_ms), 500u,
+          "ENTRY above 500 ms" },
+        /* The item has to be moved on within 3000 ms of its tone. */
+        { offsetof(esc_stick_timing_t, group_gap_ms), 2800u,
+          "GROUP GAP misses the select window" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        esc_stick_timing_t t = r.t;
+        memcpy((char *)&t + k[i].off, &k[i].v, sizeof(uint32_t));
+        if (esc_stick_check(r.p, c, 1, &t, &why)) {
+            T_FAIL("timing case %u accepted", (unsigned)i);
+        } else {
+            CHECK_STR_EQ(why, k[i].why);
+        }
+    }
+    CHECK(esc_stick_check(r.p, c, 1, &r.t, &why));
+
+    /* A value numbered 0 is never sounded. */
+    rig("eflite-pro-sbec-7menu");
+    CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_NONE);
+
+    /* And a refused start leaves the run idle. */
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t dup[2] = { change(1, 2), change(1, 1) };
+    CHECK(!start(dup, 2));
+    CHECK(!esc_stick_running(&r.e));
+}
+
+TEST_CASE(the_voltage_is_the_lowest_cell_count_the_family_states)
+{
+    CHECK_EQ(esc_stick_profile_mv(esc_profiles_find("hobbywing-flyfun-8item")),
+             7600u);
+    CHECK_EQ(esc_stick_profile_mv(NULL), 0u);
+    esc_model_t m[2] = { { "a", 0, 0, false, 0, 0 }, { "b", 6, 6, true, 0, 0 } };
+    esc_profile_t p;
+    memset(&p, 0, sizeof(p));
+    p.models = m;
+    p.model_count = 1u;
+    CHECK_EQ(esc_stick_profile_mv(&p), 0u);
+    p.model_count = 2u;
+    CHECK_EQ(esc_stick_profile_mv(&p), 7200u);   /* six NiMH cells */
+}
+
+/* ------------------------------------------------------- whole runs */
+
+TEST_CASE(a_two_stage_short_long_menu_stores_what_was_asked)
+{
+    rig("hobbywing-flyfun-8item");
+    /* Item 5 sounds as one long beep; item 2 as two short ones. */
+    esc_stick_change_t c[2] = { change(5, 2), change(2, 2) };
+    CHECK(start(c, 2));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_stick_done_count(&r.e), 2u);
+    CHECK_EQ(esc_sim_stored(&r.sim, 5), 2);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 2);
+    CHECK_EQ(r.sim.stores, 2u);
+    CHECK_EQ(r.e.entries, 1);
+    ended_safe();
+}
+
+/* Readings at the PD mini's 100 ms with jitter up to the 200 ms the default
+ * timing allows. */
+TEST_CASE(a_slow_jittery_supply_still_counts_right)
+{
+    rig("dualsky-xcontroller");
+    r.read_iv = 100u;
+    r.jitter = 90u;
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
+    CHECK_EQ(r.sim.stores, 1u);
+}
+
+TEST_CASE(noise_inside_the_hysteresis_does_not_count)
+{
+    rig("hobbywing-flyfun-8item");
+    r.sim.c.noise_ma = 30u;
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
+    CHECK_EQ(r.sim.stores, 1u);
+}
+
+TEST_CASE(a_one_stage_menu_of_repeated_groups_stores_its_value)
+{
+    rig("sunrise-pro");
+    esc_stick_change_t c[1] = { change(2, 5) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 5);
+    CHECK_EQ(r.sim.stores, 1u);
+}
+
+/* One change per power-up: the run switches the supply off and enters
+ * again for the next. */
+TEST_CASE(one_change_per_entry_cycles_the_power)
+{
+    rig("sunrise-pro");
+    esc_stick_change_t c[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(c, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_CYCLE);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_out(&r.e)->arm);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.e.entries, 2);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 4);
+}
+
+/* yge-hv with an entry time, as a card profile would give it once one is
+ * measured. */
+static esc_profile_t g_yge;
+
+static void rig_yge(uint32_t hold_ms)
+{
+    rig("yge-hv");
+    g_yge = *r.p;
+    g_yge.entry_hold_ms = hold_ms;
+    r.p = &g_yge;
+    r.t.entry_ms = hold_ms;
+    esc_sim_cfg_t c;
+    esc_sim_defaults(&c);
+    esc_sim_init(&r.sim, r.p, &c);
+}
+
+/* YGE with a known entry: power up at maximum, the stick rests at minimum
+ * while the modes sound, maximum selects, and the move back to minimum
+ * stores -- before the supply goes off. */
+TEST_CASE(the_stick_rests_and_stores_where_the_profile_says)
+{
+    rig_yge(6000u);
+    CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_ONE_STAGE);
+    esc_stick_change_t c[1] = { change(1, 4) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_VALUES, 60000u);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    run_until_phase(ESC_STICK_STORE, 240000u);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK_EQ(r.sim.stores, 0u);               /* selected, not yet stored */
+    run_until_phase(ESC_STICK_OFF, 60000u);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 4);
+    run_for(60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+
+    /* Without the store move the simulated ESC keeps nothing: what the
+     * profile says is what it needs. */
+    rig_yge(6000u);
+    g_yge.store_throttle = ESC_THR_NONE;
+    esc_sim_init(&r.sim, r.p, NULL);
+    g_yge.store_throttle = ESC_THR_MIN;
+    CHECK(start(c, 1));
+    r.e.p = r.p;
+    run_for(240000u);
+    CHECK_EQ(r.sim.stores, 1u);
+}
+
+/* A run that ends as planned switches the supply off with the stick where
+ * it stored, and moves it only once the output reads off. */
+TEST_CASE(the_supply_goes_off_before_the_stick_moves)
+{
+    rig("sunrise-pro");
+    esc_stick_change_t c[1] = { change(2, 5) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_OFF, 240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_OFF);
+    const esc_stick_out_t *o = esc_stick_out(&r.e);
+    CHECK(!o->supply_on);
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MIN);   /* sunrise selects at MIN */
+    CHECK(o->arm);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+
+    /* Two-stage, selecting at MAX: MAX holds until the output is off. */
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t h[1] = { change(3, 2) };
+    CHECK(start(h, 1));
+    run_until_phase(ESC_STICK_OFF, 240000u);
+    CHECK(o == esc_stick_out(&r.e));
+    o = esc_stick_out(&r.e);
+    CHECK(!o->supply_on);
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MAX);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MIN);
+
+    /* A supply that does not go off ends the run: at the end, and between
+     * two changes. */
+    rig("hobbywing-flyfun-8item");
+    CHECK(start(h, 1));
+    run_until_phase(ESC_STICK_OFF, 240000u);
+    r.supply_stuck = true;
+    run_for(10000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    ended_safe();
+
+    rig("sunrise-pro");
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    r.supply_stuck = true;
+    run_for(10000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    CHECK_EQ(r.e.entries, 1);
+    ended_safe();
+}
+
+/* Reset and exit are actions: the ESC acts on the select move and sounds
+ * no values, so they are not offered as changes. */
+TEST_CASE(reset_and_exit_are_not_changes)
+{
+    rig("hobbywing-flyfun-8item");
+    const char *why = NULL;
+    esc_stick_change_t c[2] = { change(3, 2), change(7, 1) };
+    CHECK(esc_stick_is_action(&r.p->items[6]));
+    CHECK(esc_stick_is_action(&r.p->items[7]));
+    CHECK(!esc_stick_is_action(&r.p->items[0]));
+    CHECK(!esc_stick_is_action(NULL));
+    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "reset and exit are actions, not settings");
+    c[1] = change(8, 1);
+    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
+}
+
+/* The simulated ESC follows the data for actions: exit leaves the menu,
+ * reset clears what was stored. */
+TEST_CASE(the_simulation_acts_on_reset_and_exit)
+{
+    const esc_profile_t *p = esc_profiles_find("hobbywing-flyfun-8item");
+    for (int k = 0; k < 2; ++k) {
+        esc_sim_t s;
+        esc_sim_init(&s, p, NULL);
+        s.stored[3] = 2u;
+        const uint8_t want = (k == 0) ? 7u : 8u;   /* reset, exit */
+        float pct = 100.0f;
+        bool moved = false;
+        for (uint32_t t = 0; t < 120000u; t += 5u) {
+            (void)esc_sim_step(&s, t, true, pct);
+            if (!moved && s.mode == ESC_SIM_ITEMS && s.ended == want
+                && s.seg == 3u /* the pause after it */) {
+                pct = 0.0f;
+                moved = true;
+            }
+        }
+        CHECK(moved);
+        if (k == 0) {
+            CHECK_EQ(s.resets, 1u);
+            CHECK_EQ(esc_sim_stored(&s, 3), 0);
+            CHECK_EQ(s.mode, ESC_SIM_ITEMS);
+        } else {
+            CHECK_EQ(s.mode, ESC_SIM_IDLE);
+            CHECK_EQ(esc_sim_stored(&s, 3), 2);
+        }
+    }
+}
+
+/* The reviewers' traces: listening that began in the middle of a group, a
+ * beep then lost, and in a menu that repeats its groups a lost beep that
+ * makes a "2" read as one more "1".  Each stored the wrong value. */
+TEST_CASE(a_partial_first_group_and_a_lost_beep_store_nothing_wrong)
+{
+    static const struct {
+        const char *id;
+        uint8_t item, value;
+        int32_t drop;
+        uint32_t entry;     /* the engine's ENTRY, ms */
+    } k[] = {
+        { "dualsky-xcontroller", 2, 1, 2, 9000u },
+        { "sunrise-pro", 1, 1, 5, 10500u },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig(k[i].id);
+        r.sim.c.drop_group = k[i].drop;
+        r.t.entry_ms = k[i].entry;
+        esc_stick_change_t c[1] = { change(k[i].item, k[i].value) };
+        CHECK(start(c, 1));
+        run_for(400000u);
+        const uint8_t got = esc_sim_stored(&r.sim, k[i].item);
+        if (r.sim.stores > 0u && got != k[i].value) {
+            T_FAIL("%s stored item %u = %u, wanted %u", k[i].id,
+                   (unsigned)k[i].item, (unsigned)got, (unsigned)k[i].value);
+        }
+        CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    }
+}
+
+/*
+ * A sweep of the ESC's entry against the engine's, with one beep lost in
+ * each of the first groups in turn: no run stores a value other than the
+ * one asked for.  Before the order rule asked for three groups in a row
+ * and a quiet line first, 68 of a wider sweep did.
+ */
+TEST_CASE(a_sweep_of_lost_beeps_and_entry_times_stores_nothing_wrong)
+{
+    static const struct { const char *id; uint8_t item, value; } k[] = {
+        { "dualsky-xcontroller", 3, 1 },
+        { "sunrise-pro", 1, 1 },
+        { "sunrise-pro", 2, 5 },
+        { "ztw-gecko", 2, 1 },
+    };
+    unsigned runs = 0, wrong = 0, done = 0;
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        for (int32_t drop = -1; drop < 10; ++drop) {
+            for (int32_t dl = -2000; dl <= 2000; dl += 1000) {
+                rig(k[i].id);
+                const int32_t ent = (int32_t)((r.p->entry_hold_ms != 0u)
+                                                  ? r.p->entry_hold_ms
+                                                  : 5000u) + dl;
+                if (ent < 600) {
+                    continue;
+                }
+                r.sim.c.drop_group = drop;
+                r.sim.c.entry_ms = (uint32_t)ent;
+                esc_stick_change_t c[1] = { change(k[i].item, k[i].value) };
+                if (!start(c, 1)) {
+                    continue;
+                }
+                run_for(400000u);
+                ++runs;
+                done += (r.e.phase == ESC_STICK_DONE) ? 1u : 0u;
+                const uint8_t got = esc_sim_stored(&r.sim, k[i].item);
+                if (r.sim.stores > 0u && got != k[i].value) {
+                    ++wrong;
+                    T_FAIL("%s drop %d entry %d stored %u, wanted %u",
+                           k[i].id, (int)drop, (int)ent, (unsigned)got,
+                           (unsigned)k[i].value);
+                }
+            }
+        }
+    }
+    CHECK_EQ(wrong, 0u);
+    CHECK(runs > 150u);
+    /* And losing a beep costs a loop, not the run. */
+    if (done * 10u < runs * 9u) {
+        T_FAIL("%u of %u runs done", done, runs);
+    }
+}
+
+/* A link that came up after the start and went is lost as well. */
+TEST_CASE(a_link_that_comes_up_and_goes_is_lost)
+{
+    rig("hobbywing-flyfun-8item");
+    r.link = false;
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ENTRY, 10000u);
+    r.link = true;
+    run_for(100u);
+    CHECK(esc_stick_running(&r.e));
+    r.link = false;
+    run_for(100u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_LINK);
+    ended_safe();
+}
+
+TEST_CASE(a_two_stage_menu_whose_groups_repeat_stores_its_value)
+{
+    rig("ztw-gecko");
+    esc_stick_change_t c[1] = { change(2, 3) };
+    CHECK(start(c, 1));
+    run_for(400000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 3);
+    CHECK_EQ(r.sim.stores, 1u);
+}
+
+/*
+ * The case the sequence check exists for.  DualSky's brake has values 1 and
+ * 2.  Item 1 is selected on the ninth group (the first heard is never acted
+ * on, so it is the loop's second pass); the value loop then sounds 1, 2, 1,
+ * 2 ... and group 10 -- a "2" -- loses its last beep, so it reads as "1".
+ * Acted on, it would store 2.  The check passes it, and the next loop
+ * stores 1.
+ */
+TEST_CASE(a_missed_beep_does_not_select_the_number_below)
+{
+    rig("dualsky-xcontroller");
+    r.sim.c.drop_group = 10;
+    esc_stick_change_t c[1] = { change(1, 1) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 1);
+    CHECK_EQ(r.sim.stores, 1u);
+}
+
+/* An ESC whose menu is one item longer than the profile's: item 1 follows
+ * item 9, which the profile does not have, so it is never trusted and the
+ * run times out having selected nothing. */
+TEST_CASE(a_menu_that_does_not_match_the_profile_times_out)
+{
+    rig("dualsky-xcontroller");
+    r.sim.c.extra = 1u;
+    r.t.timeout_ms = 40000u;
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ABORTED);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_TIMEOUT);
+    CHECK_EQ(r.sim.stores, 0u);
+    ended_safe();
+}
+
+TEST_CASE(an_esc_that_never_beeps_ends_the_run)
+{
+    rig("hobbywing-flyfun-8item");
+    r.sim.c.mute = true;
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_NO_BEEPS);
+    ended_safe();
+}
+
+TEST_CASE(abort_stop_and_disarm_end_the_run_safe)
+{
+    static const esc_stick_reason_t want[] = {
+        ESC_STICK_R_USER, ESC_STICK_R_STOP, ESC_STICK_R_DISARMED,
+        ESC_STICK_R_LINK, ESC_STICK_R_SUPPLY_OFF, ESC_STICK_R_SUPPLY_LOST,
+        ESC_STICK_R_STALE, ESC_STICK_R_LEFT,
+    };
+    for (size_t k = 0; k < sizeof(want) / sizeof(want[0]); ++k) {
+        rig("hobbywing-flyfun-8item");
+        esc_stick_change_t c[1] = { change(3, 2) };
+        CHECK(start(c, 1));
+        run_until_phase(ESC_STICK_ITEMS, 60000u);
+        CHECK_EQ(r.e.phase, ESC_STICK_ITEMS);
+        CHECK(esc_stick_out(&r.e)->supply_on);
+        switch (want[k]) {
+        case ESC_STICK_R_USER:  esc_stick_abort(&r.e, ESC_STICK_R_USER); break;
+        case ESC_STICK_R_LEFT:  esc_stick_abort(&r.e, ESC_STICK_R_LEFT); break;
+        case ESC_STICK_R_STOP:  r.stops++;                               break;
+        case ESC_STICK_R_DISARMED: r.arm_refused = true; r.armed = false; break;
+        case ESC_STICK_R_LINK:  r.link = false;                          break;
+        case ESC_STICK_R_SUPPLY_OFF: r.supply_dead = true;               break;
+        case ESC_STICK_R_SUPPLY_LOST: r.online = false;                  break;
+        case ESC_STICK_R_STALE: r.readings_stop = true;                  break;
+        default: break;
+        }
+        run_for(5000u);
+        if (r.e.reason != want[k]) {
+            T_FAIL("case %u ended %s", (unsigned)k,
+                   esc_stick_reason_text(r.e.reason));
+        }
+        ended_safe();
+        CHECK_STR_EQ(esc_stick_phase_text(r.e.phase), "ABORTED");
+        /* And a second abort changes nothing about how it ended. */
+        esc_stick_abort(&r.e, ESC_STICK_R_USER);
+        CHECK_EQ(r.e.reason, want[k]);
+    }
+}
+
+/* Without a coprocessor the bench is modelled, and the run is allowed;
+ * only a link that was there and went is a reason to stop. */
+TEST_CASE(a_link_that_was_never_up_is_not_lost)
+{
+    rig("hobbywing-flyfun-8item");
+    r.link = false;
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+}
+
+TEST_CASE(readings_too_far_apart_end_the_run)
+{
+    rig("hobbywing-flyfun-8item");
+    r.read_iv = 300u;
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_for(60000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_RATE);
+    CHECK_EQ(r.sim.stores, 0u);
+    ended_safe();
+}
+
+/* One reading late spoils the group it falls in, and only that: the next
+ * loop is used. */
+TEST_CASE(one_late_reading_passes_a_group_and_the_run_goes_on)
+{
+    rig("hobbywing-flyfun-8item");
+    r.late_once_at = 1000u + 1000u + 7000u + 9000u;
+    r.late_once_by = 400u;
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
+}
+
+/* A reading count that steps by more than one is a reading missed: once
+ * spoils a group, every time ends the run.  And a count that stops is
+ * readings that stop, however often the page is read. */
+TEST_CASE(readings_the_panel_never_saw_are_late)
+{
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.skip = 1u;
+    run_for(1000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_RATE);
+    ended_safe();
+
+    rig("hobbywing-flyfun-8item");
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.skip = 1u;
+    const uint32_t before = r.seq;
+    while (r.seq == before && esc_stick_running(&r.e)) {
+        tick();
+    }
+    r.skip = 0u;
+    run_for(400000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
+
+    /* The count stops: samples go on, the same reading in each. */
+    rig("hobbywing-flyfun-8item");
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    const uint32_t frozen = r.seq;
+    const uint32_t taken = r.now;
+    for (int i = 0; i < 2000 && esc_stick_running(&r.e); ++i) {
+        esc_stick_sample_t x = { .seq = frozen, .at_ms = taken, .ma = 150,
+                                 .current_ok = true, .output = true,
+                                 .online = true };
+        esc_stick_sample(&r.e, &x);
+        const esc_stick_bench_t b = bench();
+        esc_stick_step(&r.e, &b);
+        r.now++;
+    }
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+}
+
+/* A reading stamped a little after the step's own time is not old. */
+TEST_CASE(a_reading_ahead_of_the_step_is_not_stale)
+{
+    rig("hobbywing-flyfun-8item");
+    r.skew_ms = 30u;
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+}
+
+TEST_CASE(a_bench_that_will_not_arm_or_power_ends_the_run)
+{
+    rig("hobbywing-flyfun-8item");
+    r.arm_refused = true;
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_for(10000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_NOT_ARMED);
+    ended_safe();
+
+    rig("hobbywing-flyfun-8item");
+    r.supply_dead = true;
+    CHECK(start(c, 1));
+    run_for(10000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_NO_POWER);
+    ended_safe();
+}
+
+TEST_CASE(a_current_that_stays_high_ends_the_run)
+{
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.extra_ma = 2000;
+    run_for(20000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_HIGH);
+    ended_safe();
+}
+
+/* The run's order: arm first with the throttle at rest and the supply off,
+ * then the entry position, and only then power. */
+TEST_CASE(the_signal_is_in_place_before_the_power)
+{
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    const esc_stick_out_t *o = esc_stick_out(&r.e);
+    CHECK_EQ(r.e.phase, ESC_STICK_ARMING);
+    CHECK(o->arm && !o->supply_on && o->throttle_pct == ESC_STICK_PCT_MIN);
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_SIGNAL);
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MAX && !o->supply_on);
+    run_until_phase(ESC_STICK_POWER, 5000u);
+    CHECK(o->supply_on);
+    CHECK_EQ(o->supply_mv, 7600u);
+    CHECK_EQ(o->supply_ma, 1000u);
+    CHECK_EQ(esc_stick_beeps(&r.e), 0u);
+    CHECK(esc_stick_beeps(NULL) == 0u);
+    CHECK(esc_stick_out(NULL) == NULL);
+    /* A sample or a step with nothing to act on does nothing. */
+    esc_stick_sample(&r.e, NULL);
+    esc_stick_step(&r.e, NULL);
+    esc_stick_t idle;
+    memset(&idle, 0, sizeof(idle));
+    esc_stick_step(&idle, NULL);
+    CHECK_EQ(idle.phase, ESC_STICK_IDLE);
+}
+
+/* Every reason and phase has words for the screen. */
+TEST_CASE(every_reason_and_phase_has_its_words)
+{
+    for (int i = ESC_STICK_R_STOP; i <= ESC_STICK_R_LEFT; ++i) {
+        const char *t = esc_stick_reason_text((esc_stick_reason_t)i);
+        if (t == NULL || t[0] == '\0' || strcmp(t, "?") == 0) {
+            T_FAIL("reason %d has no words", i);
+        }
+    }
+    for (int i = ESC_STICK_IDLE; i <= ESC_STICK_ABORTED; ++i) {
+        const char *t = esc_stick_phase_text((esc_stick_phase_t)i);
+        if (t == NULL || t[0] == '\0' || strcmp(t, "?") == 0) {
+            T_FAIL("phase %d has no words", i);
+        }
+    }
+    CHECK_STR_EQ(esc_stick_reason_text(ESC_STICK_R_NONE), "");
+    CHECK_EQ(esc_stick_read_max_ms(NULL), 0u);
+    esc_stick_timing_defaults(NULL);
+}
+
+/* The simulation on its own: the stick away from the entry position at
+ * power-on, or moved off it during the entry, gives no menu. */
+TEST_CASE(the_simulation_enters_only_from_the_entry_position)
+{
+    const esc_profile_t *p = esc_profiles_find("hobbywing-flyfun-8item");
+    esc_sim_t s;
+    esc_sim_init(&s, p, NULL);
+    int beeps = 0;
+    for (uint32_t t = 0; t < 20000u; t += 5u) {
+        if (esc_sim_step(&s, t, true, 0.0f) > 300) {
+            ++beeps;
+        }
+    }
+    CHECK_EQ(beeps, 0);
+    CHECK_EQ(s.mode, ESC_SIM_IDLE);
+
+    esc_sim_init(&s, p, NULL);
+    (void)esc_sim_step(&s, 0u, true, 100.0f);
+    (void)esc_sim_step(&s, 100u, true, 0.0f);
+    CHECK_EQ(s.mode, ESC_SIM_IDLE);
+    (void)esc_sim_step(&s, 200u, false, 0.0f);
+    CHECK_EQ(s.mode, ESC_SIM_OFF);
+    CHECK_EQ(esc_sim_step(NULL, 0u, true, 0.0f), 0);
+    CHECK_EQ(esc_sim_stored(NULL, 1), 0);
+}
+
+int main(void)
+{
+    RUN(beeps_make_a_group_that_silence_ends);
+    RUN(long_beeps_count_by_the_profiles_measure);
+    RUN(a_long_beep_where_none_belongs_spoils_the_group);
+    RUN(pulses_and_gaps_outside_their_lengths_spoil_the_group);
+    RUN(hysteresis_holds_a_beep_through_a_dip);
+    RUN(a_current_that_stays_high_is_reported_once);
+    RUN(the_floor_is_the_lowest_current_before_counting);
+    RUN(the_profiles_the_engine_runs_are_the_counted_menus);
+    RUN(a_run_that_cannot_work_is_refused_before_it_starts);
+    RUN(the_voltage_is_the_lowest_cell_count_the_family_states);
+    RUN(a_two_stage_short_long_menu_stores_what_was_asked);
+    RUN(a_slow_jittery_supply_still_counts_right);
+    RUN(noise_inside_the_hysteresis_does_not_count);
+    RUN(a_one_stage_menu_of_repeated_groups_stores_its_value);
+    RUN(one_change_per_entry_cycles_the_power);
+    RUN(the_stick_rests_and_stores_where_the_profile_says);
+    RUN(the_supply_goes_off_before_the_stick_moves);
+    RUN(reset_and_exit_are_not_changes);
+    RUN(the_simulation_acts_on_reset_and_exit);
+    RUN(a_partial_first_group_and_a_lost_beep_store_nothing_wrong);
+    RUN(a_sweep_of_lost_beeps_and_entry_times_stores_nothing_wrong);
+    RUN(a_link_that_comes_up_and_goes_is_lost);
+    RUN(a_two_stage_menu_whose_groups_repeat_stores_its_value);
+    RUN(a_missed_beep_does_not_select_the_number_below);
+    RUN(a_menu_that_does_not_match_the_profile_times_out);
+    RUN(an_esc_that_never_beeps_ends_the_run);
+    RUN(abort_stop_and_disarm_end_the_run_safe);
+    RUN(a_link_that_was_never_up_is_not_lost);
+    RUN(readings_too_far_apart_end_the_run);
+    RUN(one_late_reading_passes_a_group_and_the_run_goes_on);
+    RUN(readings_the_panel_never_saw_are_late);
+    RUN(a_reading_ahead_of_the_step_is_not_stale);
+    RUN(a_bench_that_will_not_arm_or_power_ends_the_run);
+    RUN(a_current_that_stays_high_ends_the_run);
+    RUN(the_signal_is_in_place_before_the_power);
+    RUN(every_reason_and_phase_has_its_words);
+    RUN(the_simulation_enters_only_from_the_entry_position);
+    return test_summary("esc_stick");
+}

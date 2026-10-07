@@ -89,6 +89,19 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
+- Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy scharf, nachdem
+  seine Warnung (MOTOR REMOVED, LOAD FITTED?) 2 s gehalten ist. Danach setzt
+  er das Gas auf die Einstiegsstellung des Profils, bevor er das Netzteil
+  einschaltet; bei den meisten ESCs ist das Vollgas: so wird ihr Menü
+  betreten, und deshalb verlangt die Warnung, dass der Motor ab ist. Das ARM
+  des Haltens wartet einen Frame im Bildschirm; ein STOP oder ein verlorenes
+  Touch-Ereignis in diesem Frame nimmt es zurück und beendet den Lauf, damit
+  es den Stopp nicht aufheben kann. STOP, ein Entschärfen, ein verlorener
+  Link, ABORT und das Verlassen des Bildschirms beenden den Lauf mit dem Gas
+  auf Minimum, dem Netzteil aus und dem Prüfstand entschärft, in einem
+  Schritt. Ein Lauf, der wie geplant endet, schaltet zuerst das Netzteil aus
+  und bewegt den Knüppel, wenn der Ausgang aus meldet.
+  [Stick-Programmierung](StickProgramming-de.md).
 - Einem Halten werden höchstens 250 ms pro Frame gutgeschrieben, es erstreckt
   sich also über mindestens acht Frames mit stehendem Druck. Die Dauer eines
   Frames wird an seinem Anfang gemessen und an seinem Ende angewendet; ohne

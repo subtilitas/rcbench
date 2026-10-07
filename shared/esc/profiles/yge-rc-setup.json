@@ -378,6 +378,10 @@
       "throttle": "none",
       "description": "No skip. Leaving the throttle at minimum passes every item or value; the menu then restarts."
     },
+    "listen": {
+      "throttle": "min",
+      "description": "After the entry tones the stick goes to minimum, and the ESC sounds the menu while it rests there (entry steps)."
+    },
     "confirm_signal": "One tone after each selection (item or value), per the manual's acknowledgement symbol; the manual draws one note per acknowledgement",
     "exit": "After a value is stored, throttle back to minimum arms the ESC when the arming signal sounds. Power can also be removed and re-applied to change a further item.",
     "changes_per_entry": "one",

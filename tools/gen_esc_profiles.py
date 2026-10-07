@@ -75,7 +75,10 @@ def num(d: dict, key: str, where: str, hi: int, null_ok: bool = True,
 
 def pick(d: dict, key: str, where: str, table: dict) -> str:
     v = d.get(key)
-    want(v in table, f"{where}.{key}", f"not one of {', '.join(table)}")
+    # A string first: a list or an object is not hashable, and the card
+    # reader refuses it as it refuses any other unknown value.
+    want(isinstance(v, str) and v in table, f"{where}.{key}",
+         f"not one of {', '.join(table)}")
     return table[v]
 
 
@@ -182,6 +185,16 @@ def check(path: pathlib.Path) -> dict:
     vsel = s.get("value_select")
     want(vsel is None or isinstance(vsel, dict), f"{w}.scheme.value_select",
          "not an object")
+    # Where the stick rests while the menu sounds: absent or null, where the
+    # entry left it.
+    lis = s.get("listen")
+    want(lis is None or isinstance(lis, dict), f"{w}.scheme.listen",
+         "not an object")
+    # The move that stores a selection once the ESC has answered it: absent
+    # or null, the selection stores.
+    sto = s.get("store")
+    want(sto is None or isinstance(sto, dict), f"{w}.scheme.store",
+         "not an object")
     steps = e.get("steps")
     want(isinstance(steps, list) and 0 < len(steps) <= 255
          and all(isinstance(x, str) and x for x in steps),
@@ -213,6 +226,12 @@ def check(path: pathlib.Path) -> dict:
         "vsel_ms": 0 if vsel is None else
         num(vsel, "within_ms", f"{w}.scheme.value_select", 60000) or 0,
         "skip_thr": pick(skip, "throttle", f"{w}.scheme.skip", THROTTLE),
+        "listen_thr": "ESC_THR_NONE" if lis is None else
+        pick(lis, "throttle", f"{w}.scheme.listen",
+             {k: v for k, v in THROTTLE.items() if k != "none"}),
+        "store_thr": "ESC_THR_NONE" if sto is None else
+        pick(sto, "throttle", f"{w}.scheme.store",
+             {k: v for k, v in THROTTLE.items() if k != "none"}),
         "les": les or 0,
         "beep": num(a, "beep_ms", f"{w}.scheme.announce", 60000) or 0,
         "gap": num(a, "gap_ms", f"{w}.scheme.announce", 60000) or 0,
@@ -359,7 +378,8 @@ def emit(profiles: list[dict]) -> str:
             f"      {c_str(p['note'])},\n"
             f"      {p['entry_thr']}, {p['entry_after']}, {p['hold']}u,\n"
             f"      {p['select_thr']}, {p['select_ms']}u,"
-            f" {p['vsel_thr']}, {p['vsel_ms']}u, {p['skip_thr']},\n"
+            f" {p['vsel_thr']}, {p['vsel_ms']}u, {p['skip_thr']},"
+            f" {p['listen_thr']}, {p['store_thr']},\n"
             f"      {p['les']}u, {p['beep']}u, {p['gap']}u, {p['ggap']}u,"
             f" {p['repeat']}, {p['one']}, {p['verified']},\n"
             f"      {len(p['steps'])}u, {n}_steps,"
@@ -411,6 +431,24 @@ def self_test() -> list[str]:
                                                   1),
         "value_select a string": at(sel, '"value_select": "max", ' + sel),
         "within_ms 60001": at('"within_ms": null', '"within_ms": 60001'),
+        "listen a string": at(sel, '"listen": "min", ' + sel),
+        "listen none": at(sel, '"listen": {"throttle": "none"}, ' + sel),
+        "listen no throttle": at(sel, '"listen": {}, ' + sel),
+        "listen throttle null": at(sel, '"listen": {"throttle": null}, '
+                                   + sel),
+        "listen throttle a list": at(sel, '"listen": {"throttle": []}, '
+                                     + sel),
+        "listen throttle an object": at(sel, '"listen": {"throttle": {}}, '
+                                        + sel),
+        "listen throttle 0": at(sel, '"listen": {"throttle": 0}, ' + sel),
+        "listen throttle MIN": at(sel, '"listen": {"throttle": "MIN"}, '
+                                  + sel),
+        "listen throttle twice": at(sel, '"listen": {"throttle": "min", '
+                                    '"throttle": "max"}, ' + sel),
+        "store a string": at(sel, '"store": "min", ' + sel),
+        "store none": at(sel, '"store": {"throttle": "none"}, ' + sel),
+        "store throttle a list": at(sel, '"store": {"throttle": []}, '
+                                    + sel),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -423,6 +461,14 @@ def self_test() -> list[str]:
         # skips any length of number it does not read.
         "4301 digits": at(head, head + ' "n": ' + "1" * 4301 + ","),
         "value_select null": at(sel, '"value_select": null, ' + sel),
+        "listen null": at(sel, '"listen": null, ' + sel),
+        "listen min": at(sel, '"listen": {"throttle": "min"}, ' + sel),
+        "listen escaped min": at(sel, '"listen": {"throttle": "m\\u0069n"}, '
+                                 + sel),
+        "listen with more": at(sel, '"listen": {"throttle": "mid", '
+                               '"x": [1, 2]}, ' + sel),
+        "store null": at(sel, '"store": null, ' + sel),
+        "store min": at(sel, '"store": {"throttle": "min"}, ' + sel),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:

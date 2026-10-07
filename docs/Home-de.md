@@ -22,6 +22,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | Die Bildschirme bedienen | [Bildschirme](Screens-de.md) |
 | Einen Propeller oder Impeller auswuchten | [Auswuchten](Balance-de.md) |
 | Die eingebaute Endlage eines Servos messen oder zwei Servos abgleichen | [Servoverfahren](Servo-de.md) |
+| Einen ESC über sein Gasknüppel-Menü programmieren | [Stick-Programmierung](StickProgramming-de.md) |
 | Einen Empfänger anschließen und seine Ausgabe prüfen | [Empfängerbusse](Receivers-de.md) |
 | Stoppmechanismen und die externe Schaltung, die sie brauchen | [Sicherheit](Safety-de.md) |
 | BLHeli_32-ESCs: was unterstützt wird und was nicht | [BLHeli_32-Parameter](BLHeli32-de.md) |

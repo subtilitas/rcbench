@@ -54,6 +54,13 @@ SOURCES = [
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
+    # The ESC profiles and the stick programmer the PROGRAMMER screen's
+    # ESC STICK class lists and runs.
+    "shared/esc/esc_profiles_gen.c",
+    "shared/esc/esc_json.c",
+    "shared/esc/esc_registry.c",
+    "shared/esc/esc_stick.c",
+    "shared/esc/esc_sim.c",
     # Generated artwork: pure data, so the screenshot is the real photograph.
     "firmware/iomcu/src/art_rp2350_can.c",
     "shared/ui/log_viewer_screen.c",
@@ -107,6 +114,19 @@ SCREENS = {
     "programmer-params": ("programmer-params.png", "programmer", "dark"),
     "programmer-dirty": ("programmer-dirty.png", "programmer", "dark"),
     "programmer-am32": ("programmer-am32.png", "programmer", "dark"),
+    "programmer-stick": ("programmer-stick.png", "programmer", "dark"),
+    "programmer-stick-items": ("programmer-stick-items.png", "programmer",
+                               "dark"),
+    "programmer-stick-timing": ("programmer-stick-timing.png", "programmer",
+                                "dark"),
+    "programmer-stick-warning": ("programmer-stick-warning.png",
+                                 "programmer", "dark"),
+    "programmer-stick-run": ("programmer-stick-run.png", "programmer",
+                             "dark"),
+    "programmer-stick-done": ("programmer-stick-done.png", "programmer",
+                              "dark"),
+    "programmer-stick-aborted": ("programmer-stick-aborted.png",
+                                 "programmer", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
@@ -144,6 +164,7 @@ INCLUDES = [
     "shared/logfile/include",
     "shared/settings/include",
     "shared/servo/include",
+    "shared/esc/include",
     "shared/sbus/include",
 ]
 

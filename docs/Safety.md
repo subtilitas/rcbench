@@ -80,6 +80,17 @@ unpowered or unplugged panel reads as a line that is not edging.
 - STOP latches. The bench stays disarmed until it is armed again.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
+- A stick run on PROGRAMMER arms through the same policy, after its warning
+  (MOTOR REMOVED, LOAD FITTED?) is held for 2 s. It then sets the throttle to
+  the profile's entry position before it switches the supply on, which for
+  most ESCs is full throttle: that is how their menu is entered, and why the
+  warning asks for the motor to be off. The hold's ARM waits one frame in
+  the screen; a STOP or a lost touch event in that frame takes it back and
+  ends the run, so it cannot clear the stop. STOP, a disarm, a lost link,
+  ABORT and leaving the screen end the run with the throttle at minimum, the
+  supply off and the bench disarmed, in one step. A run that ends as planned
+  switches the supply off first and moves the stick once the output reads
+  off. [Stick programming](StickProgramming.md).
 - A hold is credited at most 250 ms per frame, so it spans at least eight
   frames with the press standing. A frame's duration is measured at its top
   and applied at its end, and without the cap one late frame credits a hold

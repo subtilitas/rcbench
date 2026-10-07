@@ -28,13 +28,14 @@ typedef enum {
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
+    SET_CAT_STICK,       /**< stick programming: supply and timing    */
     SET_CAT_COUNT
 } setting_cat_t;
 
 /**
- * The categories SETUP lists.  SET_CAT_SUPPLY and SET_CAT_SERVO are edited
- * on their own screens' SETTINGS overlays, beside what they set, and SETUP
- * has no room for a fourth category button.
+ * The categories SETUP lists.  SET_CAT_SUPPLY, SET_CAT_SERVO and
+ * SET_CAT_STICK are edited on their own screens, beside what they set, and
+ * SETUP has no room for a fourth category button.
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_SUPPLY
 
@@ -104,6 +105,21 @@ typedef enum {
     SET_SERVO_TRAVEL_MAX_MS,
     SET_SERVO_STALL_A,
     SET_SERVO_REPORT,
+    /* --- stick programming ---------------------------------------------- */
+    SET_STICK_V,
+    SET_STICK_I,
+    SET_STICK_BEEP_MIN,
+    SET_STICK_GAP_MIN,
+    SET_STICK_LONG,
+    SET_STICK_LONG_MAX,
+    SET_STICK_GROUP_GAP,
+    SET_STICK_ENTRY,
+    SET_STICK_STORE,
+    SET_STICK_OFF,
+    SET_STICK_SILENCE,
+    SET_STICK_TIMEOUT,
+    SET_STICK_THRESHOLD,
+    SET_STICK_HYST,
 
     SETTING_COUNT
 } setting_id_t;
