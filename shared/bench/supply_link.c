@@ -36,6 +36,7 @@ void supply_link_lost(supply_link_t *s)
         return;
     }
     s->wired     = false;
+    s->wire_wait = false;
     s->refused   = false;
     s->commanded = false;
     s->pending   = SUPPLY_LINK_W_NONE;
@@ -126,6 +127,11 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
      * refusal is taken as the pins' and not written again.
      */
     const supply_wiring_t w = as_written(&s->want);
+    if (s->wire_wait && same_wiring(&s->page, &w)) {
+        /* Written and acknowledged; a read says whether the page holds
+         * it, or waits on the module for it.  Nothing goes before. */
+        return SUPPLY_LINK_W_NONE;
+    }
     if (!s->refused && (!s->wired || !same_wiring(&s->page, &w))) {
         const bool page_off = s->commanded && !s->page_on && s->read_any
                               && s->regs[LINK_SP_OUTPUT] == 0u
@@ -205,7 +211,10 @@ void supply_link_written(supply_link_t *s, int result)
         break;
     case SUPPLY_LINK_W_WIRING:
         if (result == SUPPLY_LINK_ACK) {
-            s->wired = true;
+            /* The page's once a read shows it holding it: a 4.5
+             * coprocessor may hold it back for a read of the module. */
+            s->wired     = false;
+            s->wire_wait = true;
             s->page.en   = s->out[LINK_SP_ENABLE] != 0u;
             s->page.tx   = (int8_t)s->out[LINK_SP_TX_PIN];
             s->page.rx   = (int8_t)s->out[LINK_SP_RX_PIN];
@@ -279,6 +288,23 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     s->read_any = true;
     s->read_ms  = now_ms;
 
+    const uint16_t f = regs[LINK_SP_FLAGS];
+    if (s->wire_wait && (f & LINK_SP_WIRE_WAIT) == 0u) {
+        /* The wiring written: held, refused on a read of the module that
+         * did not show it off, or neither -- a coprocessor that restarted
+         * since -- and owed again. */
+        const bool held = regs[LINK_SP_ENABLE] == (s->page.en ? 1u : 0u)
+                          && regs[LINK_SP_TX_PIN] == (uint16_t)s->page.tx
+                          && regs[LINK_SP_RX_PIN] == (uint16_t)s->page.rx
+                          && regs[LINK_SP_BAUD] == s->page.baud;
+        s->wire_wait = false;
+        if (held) {
+            s->wired = true;
+        } else if ((f & LINK_SP_WIRE_REFUSED) != 0u) {
+            s->refused = true;
+            s->events |= SUPPLY_LINK_EV_WIRING_LIVE;
+        }
+    }
     /* The page holding other than was written: owed again. */
     if (s->wired
         && (regs[LINK_SP_ENABLE] != (s->page.en ? 1u : 0u)
@@ -303,7 +329,6 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
         s->page_ma = 0xFFFFu;
     }
 
-    const uint16_t f = regs[LINK_SP_FLAGS];
     if ((f & LINK_SP_STUCK) != 0u && (was & LINK_SP_STUCK) == 0u) {
         s->events |= SUPPLY_LINK_EV_STUCK;
     }
@@ -322,6 +347,14 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
          * comes back only with a new one. */
         s->on = false;
         s->events |= SUPPLY_LINK_EV_TRIPPED;
+    }
+    if ((f & LINK_SP_SAGGED) != 0u && (was & LINK_SP_SAGGED) == 0u) {
+        /* The coprocessor switched it off for a sagging input: the same,
+         * with the input and set point it was read with. */
+        s->on = false;
+        s->events |= SUPPLY_LINK_EV_SAGGED;
+        s->sag_vin_mv = regs[LINK_SP_VIN_MV];
+        s->sag_set_mv = regs[LINK_SP_SET_MV_RB];
     }
 }
 
@@ -357,12 +390,35 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     st->taken_ms = s->sample_ms;
 }
 
-uint8_t supply_link_events(supply_link_t *s)
+uint16_t supply_link_events(supply_link_t *s)
 {
     if (s == NULL) {
         return 0u;
     }
-    const uint8_t e = s->events;
+    const uint16_t e = s->events;
     s->events = 0u;
     return e;
+}
+
+void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
+                     uint16_t *set_mv)
+{
+    if (s == NULL || vin_mv == NULL || set_mv == NULL) {
+        return;
+    }
+    *vin_mv = s->sag_vin_mv;
+    *set_mv = s->sag_set_mv;
+}
+
+bool supply_link_wiring_moved(supply_link_follow_t *f, unsigned edits,
+                              unsigned word)
+{
+    if (f == NULL) {
+        return false;
+    }
+    const bool moved = !f->seen || edits != f->edits || word != f->word;
+    f->seen  = true;
+    f->edits = edits;
+    f->word  = word;
+    return moved;
 }

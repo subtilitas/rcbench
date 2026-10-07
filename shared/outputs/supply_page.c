@@ -72,9 +72,34 @@ static bool pin_free(const supply_page_t *p, const outputs_t *o, uint16_t pin)
     return true;
 }
 
-uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
+/* FLAGS bits 8 and 9, kept whether or not a driver runs. */
+static uint16_t wire_flags(const supply_page_t *p)
+{
+    uint16_t f = 0u;
+    if (p->wire != (uint8_t)SUPPLY_WIRE_IDLE) {
+        f |= LINK_SP_WIRE_WAIT;
+    }
+    if (p->wire_refused) {
+        f |= LINK_SP_WIRE_REFUSED;
+    }
+    return f;
+}
+
+/* Bits 8 and 9 onto the page as they change, not at the next step: a read
+ * between the two must not show a refusal already cleared, or no wait. */
+static void wire_publish(supply_page_t *p)
+{
+    p->regs[LINK_SP_FLAGS] = (uint16_t)((p->regs[LINK_SP_FLAGS]
+                                         & ~(LINK_SP_WIRE_WAIT
+                                             | LINK_SP_WIRE_REFUSED))
+                                        | wire_flags(p));
+}
+
+/* A write, judged whole; @p checked for the wiring a state read cleared,
+ * which does not wait again. */
+static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o,
-                          bool beat_alive)
+                          bool beat_alive, bool checked)
 {
     if (p == NULL || in == NULL || o == NULL) {
         return LINK_NACK_BAD_RANGE;
@@ -117,6 +142,10 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
                         || (p->regs[LINK_SP_FLAGS] & LINK_SP_LIVE) != 0u)) {
             return LINK_NACK_BAD_VALUE;
         }
+        /* Taken with a change that waits for its read, in the same frame. */
+        if (changed && p->answered && !checked && command) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if (next[LINK_SP_ENABLE] > 1u
             || next[LINK_SP_BAUD] > SUPPLY_BAUD_AUTO) {
             return LINK_NACK_BAD_VALUE;
@@ -145,6 +174,10 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
             if (next[LINK_SP_ENABLE] == 0u) {
                 return LINK_NACK_BAD_VALUE;
             }
+            /* Not onto a module whose wiring is about to change. */
+            if (p->wire != (uint8_t)SUPPLY_WIRE_IDLE) {
+                return LINK_NACK_BAD_VALUE;
+            }
             /* No supply comes on that a dead panel could not switch off. */
             if (!beat_alive) {
                 return LINK_NACK_NOT_ARMED;
@@ -164,6 +197,29 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
             next[LINK_SP_SET_MA] = (uint16_t)PDMINI_I_MIN_MA;
         }
     }
+    if (wiring) {
+        bool changed = false;
+        for (unsigned r = LINK_SP_ENABLE; r <= LINK_SP_BAUD; ++r) {
+            changed = changed || next[r] != p->regs[r];
+        }
+        p->wire_refused = false;
+        if (changed && p->answered && !checked) {
+            /*
+             * A module has answered on these pins, and it can switch itself
+             * on -- its button, its AUTO OUT -- between two state reads.
+             * The change waits for one sent after it; the page holds the
+             * wiring in force until then.
+             */
+            memcpy(p->wire_next, &next[LINK_SP_ENABLE], sizeof(p->wire_next));
+            p->wire     = (uint8_t)SUPPLY_WIRE_WAIT;
+            p->wire_ask = true;
+            wire_publish(p);
+            return 0u;
+        }
+        /* The wiring in force written, or this change taken: none waits. */
+        p->wire     = (uint8_t)SUPPLY_WIRE_IDLE;
+        p->wire_ask = false;
+    }
     if (wiring && memcmp(&next[LINK_SP_ENABLE], &p->regs[LINK_SP_ENABLE],
                          4u * sizeof(uint16_t)) != 0) {
         /* New wiring: a new driver, and AUTO looks again from 19200. */
@@ -172,10 +228,99 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
         next[LINK_SP_BAUD_FOUND] = SUPPLY_BAUD_AUTO;
     }
     memcpy(p->regs, next, sizeof(next));
+    if (wiring) {
+        wire_publish(p);
+    }
     if (sets) {
         p->commanded = true;
     }
     return 0u;
+}
+
+uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
+                          const uint16_t *in, const outputs_t *o,
+                          bool beat_alive)
+{
+    return page_write(p, off, n, in, o, beat_alive, false);
+}
+
+void supply_page_follow(supply_page_t *p, const pdmini_t *drv)
+{
+    if (p == NULL) {
+        return;
+    }
+    p->answered = drv != NULL && drv->answered;
+    if (drv != NULL && pdmini_may_be_on(drv)) {
+        p->regs[LINK_SP_FLAGS] |= LINK_SP_LIVE;
+    } else {
+        p->regs[LINK_SP_FLAGS] &= (uint16_t)~LINK_SP_LIVE;
+    }
+}
+
+bool supply_page_wire_ready(const supply_page_t *p, uint16_t *regs)
+{
+    if (p == NULL || regs == NULL || p->wire != (uint8_t)SUPPLY_WIRE_READY) {
+        return false;
+    }
+    memcpy(regs, p->wire_next, sizeof(p->wire_next));
+    return true;
+}
+
+void supply_page_wire_refuse(supply_page_t *p)
+{
+    if (p != NULL) {
+        p->wire         = (uint8_t)SUPPLY_WIRE_IDLE;
+        p->wire_ask     = false;
+        p->wire_refused = true;
+        wire_publish(p);
+    }
+}
+
+uint8_t supply_page_wire_write(supply_page_t *p, const outputs_t *o)
+{
+    uint16_t w[4];
+    if (!supply_page_wire_ready(p, w)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* No heartbeat needed: a wiring write carries no ON. */
+    const uint8_t nack = page_write(p, (uint8_t)LINK_SP_ENABLE, 4u, w, o,
+                                    false, true);
+    if (nack != 0u) {
+        supply_page_wire_refuse(p);
+    }
+    return nack;
+}
+
+/* The wiring change waiting, followed: its read asked of @p drv, and its
+ * answer taken. */
+static void wire_step(supply_page_t *p, pdmini_t *drv)
+{
+    if (p->wire != (uint8_t)SUPPLY_WIRE_WAIT) {
+        return;
+    }
+    if (drv == NULL) {
+        /* No driver: nothing attached to the module to switch it off, as
+         * for a change no module has answered. */
+        p->wire = (uint8_t)SUPPLY_WIRE_READY;
+        return;
+    }
+    /* Asked once per change -- and again of a driver started afresh since,
+     * which has forgotten it. */
+    if (p->wire_ask || pdmini_checked(drv) == PDMINI_CHECK_NONE) {
+        p->wire_ask = false;
+        pdmini_check_off(drv);
+        return;
+    }
+    switch (pdmini_checked(drv)) {
+    case PDMINI_CHECK_OFF:
+        p->wire = (uint8_t)SUPPLY_WIRE_READY;
+        break;
+    case PDMINI_CHECK_NOT_OFF:
+        supply_page_wire_refuse(p);
+        break;
+    default:
+        break;                      /* not yet read */
+    }
 }
 
 uint8_t supply_page_rate(supply_page_t *p, const pdmini_t *drv)
@@ -246,8 +391,10 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     if (!beat_alive) {
         p->regs[LINK_SP_OUTPUT] = 0u;
     }
+    p->answered = drv != NULL && drv->answered;
+    wire_step(p, drv);
     if (drv == NULL || !supply_page_enabled(p)) {
-        p->regs[LINK_SP_FLAGS] = 0u;
+        p->regs[LINK_SP_FLAGS] = wire_flags(p);
         return;
     }
     if (p->reset_owed) {
@@ -270,6 +417,8 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     if (st->set_stuck) { flags |= LINK_SP_SET_STUCK; }
     if (pdmini_may_be_on(drv)) { flags |= LINK_SP_LIVE; }
     if (st->tripped) { flags |= LINK_SP_TRIPPED; }
+    if (st->sagged)  { flags |= LINK_SP_SAGGED; }
+    flags |= wire_flags(p);
     flags |= (uint16_t)((st->mode & 3u) << 2);
     p->regs[LINK_SP_FLAGS]     = flags;
     p->regs[LINK_SP_V_MV]      = st->v_mv;

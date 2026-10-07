@@ -2333,6 +2333,43 @@ TEST_CASE(stop_lets_go_of_an_apply_press)
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
 }
 
+/* STOP and a whole APPLY tap in one frame: the stop is seen first, as the
+ * render loop does, while the supply has not yet reported the output off.
+ * The tap applies nothing, and the question has gone by the frame's tick. */
+TEST_CASE(stop_and_an_apply_tap_in_one_frame_apply_nothing)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5.5");
+    servo_screen_cancel_arm();
+    supply_screen_cancel_on();
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+    scr->tick(0.025f);
+    tap(WARN_APPLY_X, WARN_Y);                  /* nothing there now */
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+}
+
+/* A question asked after a stop, on an output still on, is not the one the
+ * stop ended: APPLY applies it. */
+TEST_CASE(a_question_asked_after_a_stop_stands)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    servo_screen_cancel_arm();
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5.5");
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
+}
+
 /* The output reported off and on again between two frames: the question
  * was about the run that ended, and APPLY gives the new run nothing. */
 TEST_CASE(a_question_does_not_outlive_its_run)
@@ -3380,6 +3417,8 @@ int main(void)
     RUN(the_set_lines_gestures_draw_and_end_as_they_should);
     RUN(stop_ends_the_warning_holds);
     RUN(stop_lets_go_of_an_apply_press);
+    RUN(stop_and_an_apply_tap_in_one_frame_apply_nothing);
+    RUN(a_question_asked_after_a_stop_stands);
     RUN(a_question_does_not_outlive_its_run);
     RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
     RUN(a_run_through_the_screen_ends_and_restores_the_set_points);

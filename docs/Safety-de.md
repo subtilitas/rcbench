@@ -86,6 +86,21 @@ Panel als Leitung ohne Flanken gelesen wird.
 
 - STOP rastet ein. Der Prüfstand bleibt entschärft, bis er erneut scharf
   geschaltet wird.
+- STOP schließt die Rückfrage AUSGANG IST EIN auf SUPPLY und SERVO. Jeder
+  Bildschirm zählt die Stopps, die ihm gemeldet werden, und eine Rückfrage
+  gilt nur unter dem Zählerstand, mit dem sie gestellt wurde. Ein ÜBERNEHMEN
+  im selben Frame wie STOP ändert also keinen Sollwert, auch wenn das
+  Netzteil den Ausgang erst eine Messung später als aus meldet.
+- Die Verdrahtung des PD mini (SETUP ANSCHLÜSSE) ändert sich, sobald das
+  Modul einmal geantwortet hat, nur auf eine nach der Änderung gesendete
+  Zustandslesung, die den Ausgang aus zeigt. Ein Modul, das sich in den
+  500 ms zwischen zwei Lesungen selbst eingeschaltet hat, behält seine Pins
+  und damit seinen Weg zum OFF; der Koprozessor schaltet es ab.
+- Einen eingeschalteten Ausgang des PD mini, dessen Eingang bei 2 Lesungen
+  hintereinander unter dem Sollwert plus 0,5 V liegt, schaltet der
+  Koprozessor ab und meldet es dem Panel danach. Eine vorsichtige Regel,
+  ohne Messung gewählt: sie kann einen Lauf abbrechen, der durchgehalten
+  hätte.
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.

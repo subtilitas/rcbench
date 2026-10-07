@@ -235,7 +235,9 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 - Ist der Ausgang an, wartet ein getippter Sollwert auf die Rückfrage von
   SUPPLY, AUSGANG IST EIN, mit ÜBERNEHMEN und ABBRECHEN, außer SUPPLYs OPTIONEN, RÜCKFRAGE
   IM BETRIEB, TASTENFELD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
-  der Ausgang ausgeht.
+  der Ausgang ausgeht oder STOP gedrückt wird. Ein ÜBERNEHMEN im selben Frame
+  wie STOP übernimmt nichts, auch wenn das Netzteil den Ausgang erst eine
+  Messung später als aus meldet.
 - Eine Spannung, die von 6,0 V oder darunter auf mehr als 6,0 V erhöht wird,
   öffnet die Warnung NUR HV-SERVOS: Standardservos sind für 4,8 bis 6,0 V
   ausgelegt, darüber arbeitet nur ein als HV (high voltage) spezifiziertes
@@ -498,7 +500,8 @@ Schrittknöpfen oder von der Tastatur eine Frage, die die Änderung nennt.
 ÜBERNEHMEN gibt sie dem Netzteil; ABBRECHEN verwirft sie, und der Schieber geht
 zurück. Ein Ziehen fragt einmal, beim Loslassen, und bis dahin hält das
 Netzteil den alten Sollwert. Bei ausgeschaltetem Ausgang wird nichts gefragt.
-OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
+STOP schließt die Frage unbeantwortet: ein ÜBERNEHMEN im selben Frame (etwa
+50 ms) wie STOP übernimmt nichts. OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
 ab.
 
 ![Die Frage](img/de/supply-confirm.png)
@@ -529,6 +532,19 @@ wieder eingeschaltet. Das Band sagt außerdem, wenn die Pins abgewiesen werden,
 wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
 werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
 des PD mini schalten den Ausgang ab.
+
+**Ein einbrechender Eingang schaltet den PD mini ab.** Solange der Ausgang an
+ist, liest der Koprozessor den Eingang des Moduls alle 500 ms. Liegt der
+Eingang bei 2 Lesungen hintereinander unter dem Sollwert plus 0,5 V, schaltet
+er den Ausgang sofort ab, und das Band nennt Eingang und Sollwert, zum
+Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0,5 V -- Ausgang aus`.
+Der Ausgang bleibt aus bis zu einem neuen Halten. Eine einzelne niedrige
+Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
+setzt sie zurück. Solange der Ausgang an ist, wird sein Sollwert einem
+fallenden Eingang nicht nachgeführt. Die Regel ist ohne Messung am Prüfstand
+gewählt: ob ein eingeschaltetes Modul bei einbrechendem Eingang in ERR geht,
+ist nicht gemessen, also kann die Regel einen Lauf abbrechen, der
+durchgehalten hätte.
 
 AUSGANG EIN und AUS, SPITZEN ZURÜCKSETZEN und die Messwerte bleiben unter der Tastatur,
 der Frage und OPTIONEN bedienbar. Ein Finger zur Zeit: solange einer ein
@@ -620,7 +636,16 @@ Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
 Baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
 Koprozessors: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
 Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
-oder der andere Pin ist. PD mini Baud ist die eigene UART-Baudrate-
+oder der andere Pin ist. Hat das Modul einmal geantwortet, wartet eine
+Änderung auf eine danach gesendete Zustandslesung des Moduls, höchstens etwa
+1,2 s, und wird nur übernommen, wenn diese den Ausgang aus zeigt: das Modul
+kann sich zwischen zwei der 500-ms-Lesungen selbst einschalten, über seinen
+Knopf oder seine Einstellung AUTO OUT, und neue Pins ließen ihm keinen Weg
+zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
+Änderung abgewiesen, und das Band sagt
+`Verdrahtung des PD mini abgelehnt -- sein Ausgang kann an sein`. Eine
+abgewiesene Änderung wird erst wieder geschrieben, wenn sich die Verdrahtung
+in SETUP ändert. PD mini Baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
 oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den Koprozessor sie
 finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von

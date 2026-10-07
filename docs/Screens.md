@@ -217,7 +217,8 @@ the change on both.
 - While the output is on, a typed set point waits for SUPPLY's question,
   OUTPUT IS ON, with APPLY and CANCEL, unless SUPPLY's SETTINGS, CONFIRM
   WHILE ON, KEYPAD is off. The question goes, unanswered, when the output
-  goes off.
+  goes off or on STOP. An APPLY tapped in the same frame as STOP applies
+  nothing, though the supply reports the output off a sample later.
 - A voltage raised from 6.0 V or below to above it opens the warning HV
   SERVOS ONLY: standard servos are rated for 4.8 to 6.0 V, and above that
   only a servo specified as HV (high voltage) is within its rating; a
@@ -463,7 +464,8 @@ point from the slider or its step buttons, or from the keypad, opens a
 question that names the change. APPLY gives it to the supply; CANCEL drops it
 and the slider goes back. A drag asks once, on the release, and the supply
 holds the old set point until then. With the output off nothing is asked.
-SETTINGS switches the question off for the slider and for the keypad
+STOP closes the question unanswered: an APPLY tapped in the same frame
+(about 50 ms) as STOP applies nothing. SETTINGS switches the question off for the slider and for the keypad
 separately.
 
 ![The question](img/supply-confirm.png)
@@ -491,6 +493,17 @@ overcurrent protection or its button. The band also says when the pins are
 refused, when the output would not switch, and when the set points would not
 take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
+
+**A sagging input switches the PD mini off.** While the output is on, the
+coprocessor reads the module's input every 500 ms. When the input reads
+under the set point plus 0.5 V on 2 input reads in a row, it switches the
+output off at once, and the band names the input and the set point, for
+example `PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. The
+output stays off until a new hold. One low reading switches nothing, and a
+read that fails neither counts nor clears. While the output is on, its set
+point is not lowered to follow a falling input. The rule is chosen without
+a bench measurement: whether a live module goes to ERR when its input sags
+is not measured, so the rule may cut a run that would have survived.
 
 OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
 the question and SETTINGS. One finger at a time: while one holds a control, a
@@ -572,7 +585,14 @@ is powered.
 The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are coprocessor GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
-reserved, bound to an output or the other pin. PD mini baud is the module's
+reserved, bound to an output or the other pin. Once the module has
+answered, a change waits for a state read of the module sent after it, at
+most about 1.2 s, and is taken only if that read shows the output off: the
+module can switch itself on between two of the 500 ms reads, by its button
+or its AUTO OUT setting, and new pins would leave it no OFF path. A read
+that shows the output on, or fails, refuses the change, and the band says
+`PD mini wiring refused -- its output may be on`. A refused change is not
+written again until the wiring changes in SETUP. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
 coprocessor find it: it tries each of the 7 rates, one a second. The

@@ -78,6 +78,18 @@ unpowered or unplugged panel reads as a line that is not edging.
 ## Deliberate behaviours
 
 - STOP latches. The bench stays disarmed until it is armed again.
+- STOP closes the OUTPUT IS ON question on SUPPLY and SERVO. Each screen
+  counts the stops it is told of, and a question stands only under the count
+  it was asked with, so an APPLY tapped in the same frame as STOP changes no
+  set point, though the supply reports its output off a sample later.
+- The PD mini's wiring (SETUP INTERFACES) changes, once the module has
+  answered, only on a state read sent after the change that shows the output
+  off. A module that switched itself on in the 500 ms between two reads keeps
+  its pins and so its OFF path; the coprocessor switches it off.
+- A live PD mini output whose input reads under the set point plus 0.5 V on
+  2 input reads in a row is switched off by the coprocessor, which tells the
+  panel afterwards. A conservative rule chosen without a measurement: it may
+  cut a run that would have survived.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
 - A stick run on PROGRAMMER arms through the same policy, after its warning

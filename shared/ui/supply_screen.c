@@ -181,6 +181,10 @@ static struct {
     bool            on_asked;
     bool            confirm_open;
     uint32_t        off_count;      /* reported ON-to-OFF edges */
+    /* Stops seen (supply_screen_cancel_on()), and the count the question
+     * was asked under: see confirm_stands(). */
+    uint32_t        stops;
+    uint32_t        confirm_stops;
     /* Whether OUTPUT's press began on a live output: an OFF tap rather
      * than an ON hold, whatever the output does before it lifts. */
     bool            press_on;
@@ -604,7 +608,8 @@ static void propose(int from)
         s.pend_i = i;
         ui_slider_set(&s.v_slider, s.cv);
         ui_slider_set(&s.i_slider, s.ci);
-        s.confirm_open = true;
+        s.confirm_open  = true;
+        s.confirm_stops = s.stops;
         ++s.set_rev;
         ++s.ov_rev;
         supply_invalidate();
@@ -613,6 +618,18 @@ static void propose(int from)
     s.cv = v;
     s.ci = i;
     ++s.set_rev;
+}
+
+/*
+ * Whether the question about a live output still stands: the output on or
+ * an ON on its way, and no stop since it was asked.  A stop switches the
+ * output off, but the supply reports that a sample later; an APPLY drained
+ * in the frame of the stop finds the output still on and is refused by the
+ * count.
+ */
+static bool confirm_stands(void)
+{
+    return (s.on || s.on_asked) && s.stops == s.confirm_stops;
 }
 
 /* The question answered: APPLY gives the supply the change, CANCEL drops it. */
@@ -681,6 +698,8 @@ void supply_screen_set_on_coming(bool coming)
 void supply_screen_cancel_on(void)
 {
     bool changed = false;
+    /* Counted: the question about a live output does not outlive it. */
+    ++s.stops;
     /* A stop drops an ON wherever it is, so none is waiting any more. */
     s.on_asked = false;
     if (s.pending.on) {
@@ -992,9 +1011,10 @@ static void released(int was, int row, int x, int y)
         break;
     case P_APPLY:
         /* Only while the question still stands: a release drained in the
-         * frame that dropped the ON it was about must not apply it. */
+         * frame that dropped the ON it was about, or of a stop, must not
+         * apply it. */
         if (gfx_rect_contains(s.apply_btn, x, y) && s.confirm_open
-            && (s.on || s.on_asked)) {
+            && confirm_stands()) {
             confirm_close(true);
         }
         break;
@@ -1108,8 +1128,9 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     /* A question about a live output goes once there is none: off, and no
-     * ON on its way -- a STOP or a lost touch can drop one that was. */
-    if (s.confirm_open && !s.on && !s.on_asked) {
+     * ON on its way -- a STOP or a lost touch can drop one that was -- or
+     * once a stop has come since it was asked. */
+    if (s.confirm_open && !confirm_stands()) {
         s.confirm_open = false;
         if (s.pressed == P_APPLY || s.pressed == P_DISCARD) {
             let_go();                   /* its buttons have gone with it */

@@ -1,5 +1,5 @@
 /*
- * The panel's half of the SUPPLY link page (0x2A, protocol 4.3): what is
+ * The panel's half of the SUPPLY link page (0x2A, protocol 4.3 to 4.5): what is
  * written to it, in what order, and what a read of it means for the supply
  * the screen shows.
  *
@@ -13,11 +13,17 @@
  *      as the page refuses it otherwise;
  *   3. the command: ON and the set points in one frame.
  *
- * A refused wiring is not written again until the settings change.  A read
- * that shows the page holding other than what was written -- a coprocessor
- * that restarted between two polls, or one that switched the output off
- * when the heartbeat stopped -- makes everything owed again, and an ON the
- * page no longer holds is lost.
+ * A refused wiring is not written again until the settings change.  A
+ * wiring acknowledged is taken as the page's only once a read shows the
+ * page holding it: a 4.5 coprocessor holds a change while a module has
+ * answered until a state read of it shows the output off (FLAGS bit 8),
+ * and refuses it when that read shows it on or fails (bit 9), which is
+ * taken as a refusal and said as one (SUPPLY_LINK_EV_WIRING_LIVE).
+ * Nothing else is written while it waits.  A read that shows the page
+ * holding other than what was written -- a coprocessor that restarted
+ * between two polls, or one that switched the output off when the
+ * heartbeat stopped -- makes everything owed again, and an ON the page no
+ * longer holds is lost.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.
@@ -71,6 +77,9 @@ enum {
     SUPPLY_LINK_EV_SET_STUCK      = 0x10,  /**< set points would not take */
     SUPPLY_LINK_EV_TRIPPED        = 0x20,  /**< the module switched it off */
     SUPPLY_LINK_EV_BAUD_FOUND     = 0x40,  /**< AUTO found the module's rate */
+    SUPPLY_LINK_EV_SAGGED         = 0x80,  /**< switched off: input sagged */
+    SUPPLY_LINK_EV_WIRING_LIVE    = 0x100, /**< wiring refused: output may
+                                                be on (4.5)               */
 };
 
 typedef enum {
@@ -90,6 +99,7 @@ typedef struct {
     /* What the page holds, as written and acknowledged since the last
      * time it was known. */
     bool     wired;          /* page.wiring holds `want` as it was then */
+    bool     wire_wait;      /* page.wiring acknowledged, not yet read held */
     supply_wiring_t page;
     bool     refused;        /* `want` was refused; not written again   */
     bool     commanded;      /* the page holds page_on, page_mv, page_ma */
@@ -113,8 +123,11 @@ typedef struct {
     uint16_t samples_seen;
     uint32_t sample_ms;
 
-    uint8_t  events;
+    uint16_t events;
     uint8_t  found;          /* the rate AUTO last reported, 7 none    */
+    /* The input and the set point, in mV, on the read that first showed
+     * the output switched off for a sagging input (FLAGS bit 10). */
+    uint16_t sag_vin_mv, sag_set_mv;
     bool     reset_owed;     /* a module restart asked, not yet written */
 } supply_link_t;
 
@@ -172,7 +185,29 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
                        supply_state_t *st);
 
 /** The events since the last call, SUPPLY_LINK_EV_*, and cleared. */
-uint8_t supply_link_events(supply_link_t *s);
+uint16_t supply_link_events(supply_link_t *s);
+
+/** The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read
+ *  with: the page's VIN_MV and SET_MV_RB on the read that first showed
+ *  FLAGS bit 10.  An input reading taken between the coprocessor's cut and
+ *  that read replaces the one that cut; not seen on the bench. */
+void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
+                     uint16_t *set_mv);
+
+/**
+ * Where the PD mini's wiring stood when last followed: the edit count and
+ * the wiring word the settings publish.  supply_link_wiring_moved() says
+ * whether either has moved since, and takes the new ones.  The count is
+ * read before the word: an edit that has counted and not yet stored its
+ * word, or one undone, is a move too.
+ */
+typedef struct {
+    bool     seen;
+    unsigned edits, word;
+} supply_link_follow_t;
+
+bool supply_link_wiring_moved(supply_link_follow_t *f, unsigned edits,
+                              unsigned word);
 
 #ifdef __cplusplus
 }

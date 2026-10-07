@@ -333,12 +333,15 @@ static struct {
         int       purpose;   /**< ASK_SET, ASK_ON or ASK_TEST          */
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
+        uint32_t  stops;     /**< the screen's stop count at asking     */
         float     v, i;
         ui_hold_t hold;
         bool      down;
         uint32_t  rev;
     } ask;
     uint32_t drawn_ask[2];
+    /* Stops seen (servo_screen_cancel_arm()), for the question above. */
+    uint32_t stops;
 
     /* The overlay and what it opens. */
     bool         ov_open;
@@ -957,6 +960,9 @@ void servo_screen_cancel_arm(void)
      * forwarded a frame later and clear the latch the stop had just set.
      */
     bool changed = false;
+    /* Counted: a question about the live output stands only while this
+     * count is the one it was asked under (ask_stands()). */
+    ++s.stops;
     s.arm_in_flight = false;   /* the stop ends the arm on its way too */
     /* A run ends, and START TEST's hold with it. */
     test_end_now(SERVO_TEST_AB_STOP);
@@ -1445,6 +1451,7 @@ static void set_point_typed(int target, float typed)
         s.ask.purpose   = ASK_SET;
         s.ask.target    = target;
         s.ask.off_count = supply_screen_off_count();
+        s.ask.stops     = s.stops;
         s.ask.v      = v;
         s.ask.i      = i;
         s.ask.down = false;
@@ -1745,6 +1752,7 @@ static void ask_hv_test(void)
     s.ask.purpose   = ASK_TEST;
     s.ask.target    = KT_NONE;
     s.ask.off_count = supply_screen_off_count();
+    s.ask.stops     = s.stops;
     s.ask.v         = test_top_v();
     s.ask.i         = supply_screen_set_i();
     s.ask.down      = false;
@@ -1816,6 +1824,7 @@ static void ask_hv_on(void)
     s.ask.purpose   = ASK_ON;
     s.ask.target    = KT_NONE;
     s.ask.off_count = supply_screen_off_count();
+    s.ask.stops     = s.stops;
     s.ask.v         = supply_screen_set_v();
     s.ask.i         = supply_screen_set_i();
     s.ask.down      = false;
@@ -1824,12 +1833,16 @@ static void ask_hv_on(void)
 }
 
 /* Whether the question about a live output still stands: the output on
- * or coming, and not gone off since it was asked -- an OFF and a new ON
- * between two frames start a run the question was not about. */
+ * or coming, not gone off since it was asked -- an OFF and a new ON
+ * between two frames start a run the question was not about -- and no
+ * stop since.  A stop switches the output off, but the supply reports
+ * that a sample later; an APPLY drained in the frame of the stop finds
+ * the output still live and is refused by the count. */
 static bool ask_stands(void)
 {
     return supply_screen_output_live()
-           && supply_screen_off_count() == s.ask.off_count;
+           && supply_screen_off_count() == s.ask.off_count
+           && s.stops == s.ask.stops;
 }
 
 /* The question answered with APPLY, or the HV warning's hold completed. */

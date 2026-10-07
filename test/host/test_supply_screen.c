@@ -1366,6 +1366,38 @@ TEST_CASE(stop_lets_go_of_supplys_apply)
     CHECK_EQ(supply_screen_set_v(), was);
 }
 
+/* STOP and a whole APPLY tap in one frame on SUPPLY: the stop is seen
+ * first, while the output still reports on.  The tap applies nothing, and
+ * the question has gone by the frame's tick. */
+TEST_CASE(stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply)
+{
+    fresh();
+    supply_screen_set_output(true);
+    const float was = supply_screen_set_v();
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    supply_screen_cancel_on();
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_set_v(), was);
+    tick_for(1);
+    tap(APPLY_X, ASK_Y);                        /* nothing there now */
+    CHECK_EQ(supply_screen_set_v(), was);
+}
+
+/* A question asked after a stop, the output still on, stands. */
+TEST_CASE(a_question_asked_after_a_stop_stands_on_supply)
+{
+    fresh();
+    supply_screen_set_output(true);
+    supply_screen_cancel_on();
+    tick_for(1);
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    tap(APPLY_X, ASK_Y);
+    CHECK_EQ(supply_screen_set_v(), 7.0f);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1418,6 +1450,8 @@ int main(void)
     RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
     RUN(a_dropped_question_lets_go_of_its_apply);
     RUN(stop_lets_go_of_supplys_apply);
+    RUN(stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply);
+    RUN(a_question_asked_after_a_stop_stands_on_supply);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

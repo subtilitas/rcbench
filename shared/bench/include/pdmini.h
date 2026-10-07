@@ -31,6 +31,22 @@
  * Three state reads in a row that fail take the module for gone, however
  * the other readings are answered: its output state is what matters.
  *
+ * A live output whose input reads under its set point and
+ * PDMINI_HEADROOM_MV on PDMINI_SAG_READS input reads in a row is switched
+ * off and held off (st.sagged) until an OFF is asked: a buck fed less than
+ * it is set to put out may show ERR and need a power cycle.  A rule chosen
+ * without a bench measurement -- whether a live module goes to ERR on a
+ * sagging input is not measured -- so it may cut a run that would have
+ * survived.  An input read that fails neither counts nor clears the run of
+ * low readings.  While the output is on, the set point is not lowered to
+ * follow a falling input; the rule switches it off instead.
+ *
+ * A state read can be asked for (pdmini_check_off()): one sent after the
+ * asking, whose answer says whether the output is off now.  The SUPPLY
+ * page takes a wiring change from a module that has answered only on such
+ * a read: the module can switch itself on between two of the 500 ms
+ * reads.
+ *
  * A module that stops answering while its output is on may still be
  * listening: while an OFF is asked for, it is sent blind straight after
  * each WHO_AM_I that is answered by not one byte, once a second, until a state read
@@ -136,6 +152,10 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         vendor's client has it from firmware
                                         v1.0.2.0 on                        */
 #define PDMINI_INPUT_RETRY_MS 5000u /**< and asked again this often after */
+#define PDMINI_SAG_READS      2u   /**< input reads in a row under a live
+                                        output's set point and
+                                        PDMINI_HEADROOM_MV that switch it
+                                        off; chosen, not measured        */
 
 /** CRC8, polynomial 0x31, initial 0xFF, over @p n bytes. */
 uint8_t pdmini_crc8(const uint8_t *p, size_t n);
@@ -170,6 +190,8 @@ typedef struct {
     bool     stuck;       /**< the output would not reach what was asked */
     bool     set_stuck;   /**< the set points would not take             */
     bool     tripped;     /**< the module switched it off; held off      */
+    bool     sagged;      /**< switched off here: the input sagged under
+                               the set point and the headroom; held off */
     uint32_t samples;     /**< readings of the output taken              */
     uint32_t errors;      /**< transactions that failed                  */
 } pdmini_status_t;
@@ -216,6 +238,9 @@ typedef struct {
     bool     input_seen;     /* and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
+    uint8_t  sag_reads;      /* input reads in a row under a live output's
+                                set point and the headroom              */
+    uint8_t  check;          /* pdmini_check_t, PDMINI_CHECK_SENT between */
 
     /* The transaction under way. */
     enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;
@@ -233,11 +258,31 @@ typedef struct {
 
 void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
 
+/** What a state read asked for with pdmini_check_off() has shown. */
+typedef enum {
+    PDMINI_CHECK_NONE = 0,  /**< none asked                               */
+    PDMINI_CHECK_ASKED,     /**< asked, no state read sent since          */
+    PDMINI_CHECK_SENT,      /**< a state read sent since, not yet answered */
+    PDMINI_CHECK_OFF,       /**< it showed the output off, and nothing
+                                 that may be on (pdmini_may_be_on())      */
+    PDMINI_CHECK_NOT_OFF,   /**< it showed the output on, or something
+                                 that may be on, or it failed, or the
+                                 module was not identified to be read      */
+} pdmini_check_t;
+
+/** A state read sent from now on, ahead of the other readings: the
+ *  answer is in pdmini_checked().  It waits for the transaction under way
+ *  and for an OFF owed, so at most about two transactions, 1210 ms. */
+void pdmini_check_off(pdmini_t *d);
+
+pdmini_check_t pdmini_checked(const pdmini_t *d);
+
 /** What the output is to be.  Set points are clamped to the module's range;
  *  switching off is the first thing done whatever else is waiting.  An
  *  output switched off because its set points would not take stays off,
  *  whatever is asked, until an OFF is asked -- and so does one the module
- *  switched off by itself while ON was asked (st.tripped). */
+ *  switched off by itself while ON was asked (st.tripped), and one switched
+ *  off for a sagging input (st.sagged). */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
 /** Attached to a module whose state is not known -- wiring restored after
