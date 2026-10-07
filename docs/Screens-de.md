@@ -273,17 +273,36 @@ Servo machen darf: von WEG und vom näheren von PULS MIN und MAX, damit die
 Kurve kein Ende erreicht, das sie nicht erreichen darf. TEMPO auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
 Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
-gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
-Kurve dort an, wo der Ausgang gerade steht -- TEMPO kann ihn hinter der Kurve
-zurücklassen --, und hält ihn dort. Das Halten übernimmt der Koprozessor,
-weil nur er genau weiß, wo das ist; ohne Rückmeldung ist das im Panel
-gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
-Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
-500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
-die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
-Skala, ZENTRIEREN, FREIGEBEN, ein Disarm und das Verlassen der Seite beenden sie
-ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
-geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
+gestartet hat.
+
+**PAUSE hält sie an.** Während ein Sweep läuft, heißt der Knopf PAUSE, in der
+Akzentfarbe. Ein Tippen hält die Kurve dort an, wo der Ausgang gerade steht
+-- TEMPO kann ihn hinter der Kurve zurücklassen --, und hält ihn dort; der
+Knopf heißt weiter PAUSE, gefüllt in der Warnfarbe. Das Halten übernimmt der
+Koprozessor (das HOLD des Links, SWEEP-Register 4), weil nur er genau weiß,
+wo das ist; ohne Rückmeldung ist das im Panel gezeichnete Horn eine Schätzung
+davon. Das Panel wiederholt das Halten alle 100 ms (`SERVO_HOLD_MS`), daher
+überdauert eine Pause die 500-ms-Regel des Koprozessors. Eine Pause wartet
+nicht hinter Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein
+zweites Tippen auf PAUSE setzt den Sweep am Anfang der Kurve fort -- in der
+Mitte bei Sinus und Dreieck, am ersten Ende beim Rechteck --, und der
+Ausgang fährt von der Stelle der Pause dorthin, mit der Rate von TEMPO, bei
+100 % sofort. Der Koprozessor behält über ein Halten keine Phase, daher kann
+das Fortsetzen die Kurve nicht dort weiterführen, wo sie angehalten wurde.
+
+![Ein angehaltener Sweep](img/de/servo-paused.png)
+
+Ein Halten, das der Link 500 ms nicht wiederholt hat, hat das andere Ende
+losgelassen; das Panel gibt die Surfaces dann zur Mitte frei, und das Horn
+geht dorthin. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
+Disarm und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
+angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
+geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine
+Pause; das Servo wird dann als Position am Winkel der Pause gehalten. Ein
+geändertes TEMPO lässt die Pause stehen; das Fortsetzen läuft mit dem neuen
+TEMPO. Verlorene Touch-Ereignisse halten einen laufenden Sweep an wie PAUSE.
+Eine geänderte Einstellung startet einen laufenden Sweep mit der neuen Kurve
+neu; ein geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.

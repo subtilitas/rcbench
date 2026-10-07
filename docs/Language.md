@@ -56,8 +56,9 @@ the same in every language. A translated ARM would not match the word in the
 manual beside the bench.
 
 - The safety and drive controls: ARM, DISARM, ARMED, DISARMED, STOP, SWEEP,
-  HOLD, TRIM, REVERSE. CENTRE stays English as a pulse name (PULS CENTRE);
-  the SERVO button that moves the servo there reads ZENTRIEREN.
+  PAUSE, TRIM, REVERSE. CENTRE stays English as a pulse name (PULS CENTRE);
+  the SERVO button that moves the servo there reads ZENTRIEREN. HOLD stays
+  English as the servo test's phase name.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
   CAN BUS FAULT, LINK LOST. A note that names a screen names it by its

@@ -373,9 +373,10 @@ static void servo_run_view(bool to_the_end)
  * the left end of its track, 12 %: the curve asks for 1257 units a second
  * at the centre and SPEED allows 240, so SPEED's row says it limits the
  * sweep.  Geometry from servo_screen.c, offset by the band: the SPEED
- * track's left end and SWEEP.
+ * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8 s in and
+ * the frames after it show the paused button.
  */
-static void servo_sweep_view(void)
+static void servo_sweep_view(bool pause)
 {
     ui_router_goto(SCREEN_SERVO);
     servo_screen_set_armed(true);
@@ -387,7 +388,10 @@ static void servo_sweep_view(void)
     servo_screen_clock(now);
     tap(521, UI_BAND_H + 307);                      /* SPEED 12 % */
     tap(651, UI_BAND_H + 366);                      /* SWEEP */
-    for (int i = 0; i < 40; ++i) {
+    for (int i = 0; i < 40 + (pause ? 20 : 0); ++i) {
+        if (pause && i == 40) {
+            tap(651, UI_BAND_H + 366);              /* PAUSE */
+        }
         now += 20u;
         servo_screen_clock(now);
         servo_cmd_t sc;
@@ -1035,8 +1039,9 @@ int main(int argc, char **argv)
                 const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
                 tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
             }
-        } else if (strcmp(view, "servo-sweep") == 0) {
-            servo_sweep_view();
+        } else if (strcmp(view, "servo-sweep") == 0
+                   || strcmp(view, "servo-paused") == 0) {
+            servo_sweep_view(strcmp(view, "servo-paused") == 0);
         } else if (strcmp(view, "servo") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);
@@ -1067,7 +1072,8 @@ int main(int argc, char **argv)
                     && strcmp(view, "motor-held") != 0)
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
-                   || strcmp(view, "servo-sweep") == 0;
+                   || strcmp(view, "servo-sweep") == 0
+                   || strcmp(view, "servo-paused") == 0;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

@@ -361,6 +361,12 @@ Die Zeile vergleicht die Kurve nur mit TEMPO. Ein Servo, das langsamer ist
 als beide, begrenzt den Sweep ebenfalls; nichts auf dem Prüfstand misst das
 Ruderhorn, daher wird das nicht angezeigt.
 
+PAUSE, der Sweep-Knopf während ein Sweep läuft, hält den Ausgang dort, wo
+er gerade steht, und der Knopf füllt sich in der Warnfarbe. Ein zweites
+Tippen setzt den Sweep am Anfang der Kurve fort: der Koprozessor behält über
+das Halten keine Phase. Ein angehaltener Sweep ist der Moment, TEMPO zu
+erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
+
 ## Voraussetzungen
 
 Die Strommessung an den Servoausgängen: ein Sensor je Ausgang für die

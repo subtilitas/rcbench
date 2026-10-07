@@ -19,6 +19,14 @@ history is in git.
 
 ### Changed
 
+- **SERVO's sweep button pauses and resumes.** While a sweep runs it reads
+  PAUSE (in English and German) where it read HOLD. A tap holds the output
+  where it has got to, as HOLD did, and the button stays PAUSE, filled in
+  the warning colour instead of the accent. A second tap resumes the sweep
+  from the curve's beginning; the coprocessor keeps no phase across the
+  hold. A changed SPEED keeps the pause, and the resume runs at it. CENTRE,
+  RELEASE, a finger on the dial, STOP, a disarm, leaving the screen and a
+  hold unrepeated for 500 ms end a pause, and the button reads SWEEP.
 - **SERVO's CENTRE button reads ZENTRIEREN in German.** CENTRE stays
   English as a pulse name (PULS CENTRE).
 - **The status band's mode reads BENCH or SIM.** It read LINK with the link

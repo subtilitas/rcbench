@@ -389,6 +389,12 @@ The line compares the curve with SPEED only. A servo slower than both limits
 the sweep as well; nothing on the bench measures the horn, so that is not
 shown.
 
+PAUSE, the sweep button while a sweep runs, holds the output where it has
+got to, and the button fills in the warning colour. A second tap resumes
+the sweep from the curve's beginning: the coprocessor keeps no phase across
+the hold. A paused sweep is the moment to raise SPEED: the pause stays, and
+the resume runs at the new rate.
+
 ## Prerequisites
 
 Current sensing on the servo outputs: one sensor per output for the limit

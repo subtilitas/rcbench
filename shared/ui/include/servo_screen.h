@@ -150,6 +150,10 @@ void servo_screen_set_sweep(bool able);
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 
+/** Whether a sweep is paused: PAUSE tapped, the hold in force, nothing
+ *  else commanded since.  For tests. */
+bool servo_screen_paused(void);
+
 /** The panel let go of what the screen was holding -- a HOLD the far end
  *  had already ended -- and released the surfaces to their centre. */
 void servo_screen_released(void);

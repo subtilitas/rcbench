@@ -383,6 +383,7 @@ static struct {
      * clock, to draw the horn by. */
     bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
     bool        sweeping;
+    bool        paused;          /* a sweep held by PAUSE: HOLD posted   */
     bool        sweep_ended;     /* the next command ends it             */
     sweep_t     sw;
     uint32_t    clock_ms;
@@ -643,6 +644,12 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
      * has to follow the command rather than the screen being open. */
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
                  || kind == SERVO_CMD_SWEEP || kind == SERVO_CMD_HOLD);
+    /* Paused while the hold is the command in force: anything sent after it
+     * replaces it at the far end, and the button goes with it. */
+    if (s.paused != (kind == SERVO_CMD_HOLD)) {
+        s.paused = (kind == SERVO_CMD_HOLD);
+        ++s.ctrl_rev;
+    }
     const bool sw = kind == SERVO_CMD_SWEEP;
     s.pending.ends_sweep     = s.sweep_ended && !sw;
     if (!sw) {
@@ -703,6 +710,8 @@ static float sweep_deg(uint16_t cmd)
     return us_to_deg((uint16_t)(us + 0.5f));
 }
 
+/* The sweep ended, running or paused.  A pause is ended by the command
+ * that follows; the button reads SWEEP from now. */
 static void stop_sweep(void)
 {
     if (s.sweeping) {
@@ -710,13 +719,19 @@ static void stop_sweep(void)
         s.sweep_ended = true;
         ++s.ctrl_rev;
     }
+    if (s.paused) {
+        s.paused = false;
+        ++s.ctrl_rev;
+    }
 }
 
 /*
- * HOLD: the sweep stops and every surface stays where its output had got
- * to.  The coprocessor holds it there, because only it knows where that is:
- * SPEED can leave the output well behind the curve, and without feedback the
- * horn drawn here is an estimate.  The drawing stops where it was.
+ * PAUSE: the sweep stops and every surface stays where its output had got
+ * to, by the link's HOLD.  The coprocessor holds it there, because only it
+ * knows where that is: SPEED can leave the output well behind the curve, and
+ * without feedback the horn drawn here is an estimate.  The drawing stops
+ * where it was.  A second tap starts the curve again from its beginning:
+ * the coprocessor keeps no phase across a hold.
  */
 static void hold_sweep(void)
 {
@@ -768,11 +783,14 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
+bool servo_screen_paused(void) { return s.paused; }
+
 void servo_screen_released(void)
 {
     /* Nothing held any more, and the horn goes to the centre the surfaces
-     * were released to. */
+     * were released to.  A pause is over with the hold. */
     s.driving       = false;
+    s.paused        = false;
     s.commanded_deg = 0.0f;
     ++s.ctrl_rev;
 }
@@ -826,7 +844,7 @@ void servo_screen_set_sweep(bool able)
         return;
     }
     s.sweep_able = able;
-    if (!able && s.sweeping) {
+    if (!able && (s.sweeping || s.paused)) {
         /* The panel would go on repeating a sweep the coprocessor no longer
          * takes: what it holds is ended, and the surfaces rest. */
         stop_sweep();
@@ -2503,6 +2521,8 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
             test_end_now(SERVO_TEST_AB_OPERATOR);
+            /* PAUSE pauses a running sweep; a tap on a paused one, or on
+             * SWEEP, starts the curve. */
             if (s.sweeping) {
                 hold_sweep();
             } else {
@@ -2601,8 +2621,11 @@ static void event(const touch_event_t *evt)
     if (ui_slider_event(&s.speed, evt)) {
         s.speed_pct = (int)(s.speed.value + 0.5f);
         /* The rate is part of the command, so a held output takes the new
-         * one rather than waiting for the next drag. */
-        reissue();
+         * one rather than waiting for the next drag.  Not a paused sweep:
+         * the hold moves nothing, and the resume carries the new rate. */
+        if (!s.paused) {
+            reissue();
+        }
         ++s.ctrl_rev;
     }
 }
@@ -3128,10 +3151,15 @@ static void draw_right(gfx_canvas_t *c, bool power)
 
     ui_button(c, s.centre_btn, TR(SV_CENTRE_BTN), ui_theme_color(UI_C_ACCENT),
               false, true);
-    ui_button(c, s.sweep_btn, s.sweeping ? "HOLD" : "SWEEP",
-              s.sweeping ? ui_theme_color(UI_C_ACCENT)
-                         : ui_theme_color(UI_C_PANEL_HI),
-              false, s.sweeping || (s.armed && s.sweep_able));
+    /* PAUSE while a sweep runs, in the accent; PAUSE still while it is
+     * paused, filled in the warning colour, so the two read apart by fill
+     * as well as by the motion. */
+    const gfx_color_t sweep_fill = s.sweeping ? ui_theme_color(UI_C_ACCENT)
+                                   : s.paused ? ui_theme_color(UI_C_WARN)
+                                              : ui_theme_color(UI_C_PANEL_HI);
+    ui_button(c, s.sweep_btn,
+              (s.sweeping || s.paused) ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
+              false, s.sweeping || s.paused || (s.armed && s.sweep_able));
     ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
               false, true);
     draw_arm(c);
@@ -3822,7 +3850,7 @@ static void tick(float dt_s)
      * In the units the far end slews in -- its command across the range a
      * command carries -- and at its rate, SPEED_FULL_SPAN_S at 100%.  An
      * angle a second would not be: with CENTRE off the middle a degree is a
-     * different share of the command on either side, and HOLD, which keeps
+     * different share of the command on either side, and PAUSE, which keeps
      * the servo where the horn is drawn, would keep it somewhere else.
      */
     const float step = (float)SPEED_FULL_SPAN_S * (float)s.speed_pct / 100.0f
@@ -3996,6 +4024,7 @@ static void leave(void)
     s.out_down = false;
     ++s.sup_rev;
     s.sweeping = false;
+    s.paused   = false;
     s.ov_open = false;
     s.kp_alone = false;
     close_panels();
@@ -4029,9 +4058,9 @@ static void cancel(void)
         s.pending.kind  = SERVO_CMD_NONE;
         s.arm_in_flight = false;
     }
-    /* And a sweep: the event that went missing may be the HOLD that was to
-     * stop it, and the panel would go on repeating it.  Held where the
-     * output has got to, as HOLD holds it. */
+    /* And a sweep: the event that went missing may be the PAUSE that was to
+     * stop it, and the panel would go on repeating it.  Paused where the
+     * output has got to, as PAUSE pauses it. */
     if (s.sweeping) {
         hold_sweep();
     }

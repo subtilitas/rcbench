@@ -249,17 +249,32 @@ end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
 of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
 neither end it may not. SPEED on the right card limits it as it limits a
 drag, and trim is not applied. The horn follows the same curve, computed on
-the panel and timed from when the coprocessor started its own. While it runs
-the button reads HOLD, and a tap stops the sweep where the output has got to
--- which SPEED can leave behind the curve -- and holds it there. The
-coprocessor does the holding, because only it knows exactly where that is;
-without feedback the horn drawn on the panel is an estimate of it. A HOLD
-does not wait behind sweep writes already on the wire. A HOLD the link left
-unrepeated for 500 ms has been let go at the far end, so the panel releases
-the surfaces to their centre and the horn goes there. A finger on the dial,
-CENTRE, RELEASE,
-a disarm and leaving the screen stop it too, and touch events going missing
-stop it as HOLD would. A changed setting starts it over
+the panel and timed from when the coprocessor started its own.
+
+**PAUSE pauses it.** While a sweep runs the button reads PAUSE in the accent
+colour. A tap stops the sweep where the output has got to -- which SPEED can
+leave behind the curve -- and holds it there; the button still reads PAUSE,
+filled in the warning colour. The coprocessor does the holding (the link's
+HOLD, SWEEP register 4), because only it knows exactly where that is;
+without feedback the horn drawn on the panel is an estimate of it. The panel
+repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
+coprocessor's 500 ms rule. A pause does not wait behind sweep writes already
+on the wire. A second tap on PAUSE resumes the sweep from the curve's
+beginning -- the centre for a sine or a triangle, the first end for a
+square -- and the output slews there from where it was paused, at SPEED's
+rate, at once at 100 %. The coprocessor keeps no phase across a hold, so a
+resume cannot continue the curve where it paused.
+
+![A paused sweep](img/servo-paused.png)
+
+A hold the link left unrepeated for 500 ms has been let go at the far end,
+so the panel releases the surfaces to their centre and the horn goes there.
+A finger on the dial, CENTRE, RELEASE, STOP, a disarm and leaving the screen
+end a sweep, running or paused, and the button reads SWEEP again. A changed
+type, frame rate, pulse, trim, travel or reverse ends a pause too, and the
+servo is held at the paused angle as a position. A changed SPEED keeps the
+pause; the resume runs at the new SPEED. Touch events going missing pause a
+running sweep as PAUSE would. A changed setting starts a running sweep over
 with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
