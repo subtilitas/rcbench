@@ -149,3 +149,87 @@ bool esc_profile_file_is(const char *file_name, const char *id)
     }
     return true;
 }
+
+/* ------------------------------------------------------------- search */
+
+static unsigned char fold(unsigned char c)
+{
+    return (c >= 'A' && c <= 'Z') ? (unsigned char)(c - 'A' + 'a') : c;
+}
+
+/*
+ * Byte @p i of @p a, a space and @p b read as one text of @p n bytes; @p b
+ * NULL is @p a alone.  No copy is made, since a card profile's strings have
+ * no length limit short of the file's.
+ */
+static unsigned char joined_at(const char *a, size_t na, const char *b,
+                               size_t i)
+{
+    if (i < na) {
+        return (unsigned char)a[i];
+    }
+    return (i == na) ? (unsigned char)' ' : (unsigned char)b[i - na - 1u];
+}
+
+/*
+ * The wildcard match, with a "*" implied at either end.  On a mismatch the
+ * last "*" takes one byte more and the rest of the pattern is tried again
+ * from there: at most text times pattern comparisons, no recursion.  A
+ * multi-byte character cannot match from its middle, because a UTF-8 lead
+ * byte never equals a continuation byte.
+ */
+static bool match_joined(const char *a, const char *b, const char *pattern)
+{
+    const size_t na = strlen(a);
+    const size_t n = (b != NULL) ? na + 1u + strlen(b) : na;
+    const char *p = (pattern != NULL) ? pattern : "";
+    const char *star_p = p;     /* the pattern after the last "*"       */
+    size_t star_t = 0u;         /* where the text after it was tried    */
+    size_t t = 0u;
+    for (;;) {
+        if (*p == '*') {
+            while (*p == '*') {
+                ++p;
+            }
+            star_p = p;
+            star_t = t;
+            continue;
+        }
+        if (*p == '\0') {
+            return true;        /* the "*" implied at the end */
+        }
+        if (t < n && fold(joined_at(a, na, b, t)) == fold((unsigned char)*p)) {
+            ++t;
+            ++p;
+            continue;
+        }
+        if (star_t >= n) {
+            return false;
+        }
+        t = ++star_t;
+        p = star_p;
+    }
+}
+
+bool esc_text_matches(const char *text, const char *pattern)
+{
+    return match_joined((text != NULL) ? text : "", NULL, pattern);
+}
+
+bool esc_profile_matches(const esc_profile_t *p, const char *pattern)
+{
+    if (p == NULL) {
+        return false;
+    }
+    const char *brand = (p->brand != NULL) ? p->brand : "";
+    if (match_joined(brand, (p->family != NULL) ? p->family : "", pattern)) {
+        return true;
+    }
+    for (uint16_t i = 0; p->models != NULL && i < p->model_count; ++i) {
+        if (p->models[i].name != NULL
+            && match_joined(brand, p->models[i].name, pattern)) {
+            return true;
+        }
+    }
+    return false;
+}

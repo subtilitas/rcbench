@@ -215,6 +215,26 @@ const esc_profile_t *esc_profiles_find(const char *id);
 /** Whether the profile at @p p came from the card. */
 bool esc_profiles_is_override(const esc_profile_t *p);
 
+/* ------------------------------------------------------------- search */
+
+/**
+ * Whether @p pattern is found in @p text.  Letters A to Z match without
+ * regard to case; every other byte matches itself, so "Ü" does not match
+ * "ü".  "*" stands for any run of characters, none included, and the
+ * pattern is found anywhere in the text: "sky*v2" is in "Skywalker V2".
+ * An empty pattern, or one of "*" only, is found in every text.  A NULL
+ * pattern counts as empty and a NULL text as "".
+ */
+bool esc_text_matches(const char *text, const char *pattern);
+
+/**
+ * Whether @p pattern (as esc_text_matches()) is found in the profile's
+ * manufacturer and name read as one text, "brand family", or in its
+ * manufacturer and one of its models' names, "brand model": a family such
+ * as "JAZZ / MINIJAZZ" names its sizes only in its models ("JAZZ 55 LV").
+ */
+bool esc_profile_matches(const esc_profile_t *p, const char *pattern);
+
 #ifdef __cplusplus
 }
 #endif

@@ -20,6 +20,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 
 #define W 800
@@ -635,6 +636,10 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
         const esc_stick_t *run = programmer_screen_stick();
         CHECK_EQ(run->phase, ESC_STICK_ABORTED);
         CHECK_EQ(run->reason, want);
+        /* An end the operator chose lights no red. */
+        bool red = true, green = true;
+        programmer_screen_stick_lights(&red, &green);
+        CHECK(!red && !green);
         CHECK(!r.armed);
         CHECK(!r.on);
         CHECK_EQ(r.sim.stores, 0u);
@@ -864,11 +869,20 @@ TEST_CASE(every_end_draws_its_reason)
                    esc_stick_reason_text(run->reason));
         }
         CHECK(!r.on);
+        /* Every one of these is an end nobody chose: red, until OK. */
+        bool red = false, green = true;
+        programmer_screen_stick_lights(&red, &green);
+        CHECK(red && !green);
+        scr->tick(0.25f);
+        programmer_screen_stick_lights(&red, NULL);
+        CHECK(red);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 0);
         CHECK(lit() > 20000);
         /* BACK from the result goes to the list. */
         tap(BACK_X, BACK_Y);
+        programmer_screen_stick_lights(&red, NULL);
+        CHECK(!red);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 1);
         CHECK(lit() > 20000);
@@ -1126,6 +1140,218 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     CHECK(lit() > 20000);
 }
 
+/* ------------------------------------------------------------ the search */
+
+/* Mirrored from programmer_screen.c: the field, its X, and the keyboard
+ * docked right of SP_DOCK_X below the crumb row. */
+#define FIND_X     260
+#define FIND_CLR_X 370
+#define FIND_Y     27
+static const gfx_rect_t k_dock = { 352, 50, 442, 376 };
+
+/* One key of the docked search keyboard; "\n" is OK, "~" CANCEL, "<" DEL,
+ * "#" CLR. */
+static void find_key(char ch)
+{
+    static const char keys[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM*.";
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open_search(&k, k_dock, "", "", 16);
+    const char *at = strchr(keys, ch);
+    const int key = (ch == '\n') ? UI_TK_OK
+                  : (ch == '~')  ? UI_TK_CANCEL
+                  : (ch == '<')  ? UI_TK_DEL
+                  : (ch == '#')  ? UI_TK_CLR
+                  : (ch == ' ')  ? UI_TK_SPACE
+                                 : (int)(at - keys);
+    const gfx_rect_t r = ui_textkey_key_rect(&k, key);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+static void find_type(const char *s)
+{
+    for (; *s != '\0'; ++s) {
+        find_key(*s);
+    }
+}
+
+static int listed(void)
+{
+    return programmer_screen_stick_listed(NULL);
+}
+
+/* Every key filters the list at once, and the list stays in view. */
+TEST_CASE(the_search_filters_the_list_with_every_key)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    CHECK_EQ(listed(), (int)esc_profiles_count());
+    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    tap(LIST_DN_X, LIST_CY);                 /* a page down first */
+    int top = 0;
+    (void)programmer_screen_stick_listed(&top);
+    CHECK_EQ(top, 9);
+
+    tap(FIND_X, FIND_Y);
+    CHECK(programmer_screen_stick_typing());
+    find_key('S');
+    CHECK_STR_EQ(programmer_screen_stick_search(), "S");
+    (void)programmer_screen_stick_listed(&top);
+    CHECK_EQ(top, 0);                        /* back to the top */
+    const int after_s = listed();
+    CHECK(after_s > 3 && after_s < (int)esc_profiles_count());
+    find_type("KY*V2");
+    CHECK_STR_EQ(programmer_screen_stick_search(), "SKY*V2");
+    CHECK_EQ(listed(), 3);
+    find_key('<');                           /* DEL: "SKY*V" */
+    CHECK(listed() >= 3);
+    find_key('2');
+    CHECK_EQ(listed(), 3);
+    /* Drawn with the keyboard over the right of the list. */
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+
+    /* A row tapped while typing opens its profile; the search stays. */
+    tap(100, SP_ROW_CY(0));
+    CHECK(!programmer_screen_stick_typing());
+    const esc_profile_t *p = programmer_screen_stick_page();
+    CHECK(p != NULL);
+    CHECK(esc_profile_matches(p, "SKY*V2"));
+    tap(BACK_X, BACK_Y);
+    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK_STR_EQ(programmer_screen_stick_search(), "SKY*V2");
+    CHECK_EQ(listed(), 3);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 1);
+    CHECK(lit() > 20000);
+
+    /* X clears it. */
+    tap(FIND_CLR_X, FIND_Y);
+    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK_EQ(listed(), (int)esc_profiles_count());
+    CHECK(!programmer_screen_stick_typing());
+}
+
+/* OK keeps what was typed, CANCEL goes back to what the keyboard opened
+ * on, and an empty entry is no search. */
+TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    tap(FIND_X, FIND_Y);
+    find_type("FLYFUN\n");
+    CHECK(!programmer_screen_stick_typing());
+    CHECK_STR_EQ(programmer_screen_stick_search(), "FLYFUN");
+    CHECK_EQ(listed(), 3);
+
+    tap(FIND_X, FIND_Y);
+    find_type("#ZZZ");
+    CHECK_EQ(listed(), 0);                   /* nothing found */
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+    find_key('~');                           /* CANCEL */
+    CHECK(!programmer_screen_stick_typing());
+    CHECK_STR_EQ(programmer_screen_stick_search(), "FLYFUN");
+    CHECK_EQ(listed(), 3);
+
+    tap(FIND_X, FIND_Y);
+    find_type("#\n");                        /* CLR, OK: empty */
+    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK_EQ(listed(), (int)esc_profiles_count());
+
+    /* The search holds its most, sixteen. */
+    tap(FIND_X, FIND_Y);
+    find_type("ABCDEFGHIJKLMNOPQRS");
+    CHECK_EQ((int)strlen(programmer_screen_stick_search()), 16);
+    /* BACK and leaving the screen close the keyboard, the search kept. */
+    tap(BACK_X, BACK_Y);
+    CHECK(!programmer_screen_stick_typing());
+    tap(TILE_CX(2), TILE_CY);
+    CHECK_EQ((int)strlen(programmer_screen_stick_search()), 16);
+    tap(FIND_X, FIND_Y);
+    CHECK(programmer_screen_stick_typing());
+    scr->leave();
+    CHECK(!programmer_screen_stick_typing());
+    CHECK_EQ(listed(), 0);
+}
+
+/* A press on a key the touch stream lost the release of types nothing. */
+TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    tap(FIND_X, FIND_Y);
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open_search(&k, k_dock, "", "", 16);
+    const gfx_rect_t r = ui_textkey_key_rect(&k, 10);    /* Q */
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 3, .x = (int16_t)(r.x + 4),
+                                   .y = (int16_t)(r.y + 4),
+                                   .strength = 40 } };
+    scr->event(&e);
+    scr->cancel();
+    e.type = TOUCH_EVENT_UP;
+    scr->event(&e);
+    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK(programmer_screen_stick_typing());
+    /* A key slid off is no key either. */
+    e.type = TOUCH_EVENT_DOWN;
+    scr->event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    e.point.x = 10;
+    scr->event(&e);
+    e.type = TOUCH_EVENT_UP;
+    scr->event(&e);
+    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+}
+
+/* ------------------------------------------------------- the stack light */
+
+/* Green lights with the detector's beeps during a run, both ways. */
+TEST_CASE(the_green_light_follows_the_beeps)
+{
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    unsigned on = 0u, off = 0u, rises = 0u;
+    bool was = false, red = true;
+    for (int i = 0; i < 240000 && esc_stick_running(programmer_screen_stick());
+         ++i) {
+        rig_step(&r);
+        bool g = false;
+        programmer_screen_stick_lights(&red, &g);
+        CHECK(!red);
+        if (programmer_screen_stick()->det.high) {
+            CHECK(g);                        /* never dark in a beep */
+        }
+        on += g ? 1u : 0u;
+        off += g ? 0u : 1u;
+        rises += (g && !was) ? 1u : 0u;
+        was = g;
+        if ((i & 4095) == 0) {
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, i & 1);
+        }
+    }
+    rig_run(&r, 10u);
+    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK(on > 1000u && off > 1000u);
+    CHECK(rises > 5u);
+    bool g = true;
+    programmer_screen_stick_lights(&red, &g);
+    CHECK(!red && !g);                       /* DONE: both dark */
+}
+
 /* Past five changes the result says how many more there were. */
 TEST_CASE(a_result_of_many_changes_counts_the_rest)
 {
@@ -1178,5 +1404,9 @@ int main(void)
     RUN(the_list_follows_voltage_and_the_cap);
     RUN(a_profile_over_the_supply_cap_is_refused_in_the_list);
     RUN(a_result_of_many_changes_counts_the_rest);
+    RUN(the_search_filters_the_list_with_every_key);
+    RUN(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it);
+    RUN(a_lost_touch_drops_a_search_key_under_way);
+    RUN(the_green_light_follows_the_beeps);
     return test_summary("programmer");
 }

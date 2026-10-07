@@ -1157,6 +1157,110 @@ TEST_CASE(every_reason_and_phase_has_its_words)
     esc_stick_timing_defaults(NULL);
 }
 
+/* The red light's table: every reason decided, the operator's ends and DONE
+ * dark, everything not as expected lit. */
+TEST_CASE(the_red_light_is_for_ends_nobody_chose)
+{
+    static const struct {
+        esc_stick_reason_t r;
+        bool               fault;
+    } k[] = {
+        { ESC_STICK_R_NONE,        false },
+        { ESC_STICK_R_STOP,        false },
+        { ESC_STICK_R_USER,        false },
+        { ESC_STICK_R_LEFT,        false },
+        { ESC_STICK_R_DISARMED,    true },
+        { ESC_STICK_R_LINK,        true },
+        { ESC_STICK_R_SUPPLY_OFF,  true },
+        { ESC_STICK_R_SUPPLY_LOST, true },
+        { ESC_STICK_R_STALE,       true },
+        { ESC_STICK_R_RATE,        true },
+        { ESC_STICK_R_NOT_ARMED,   true },
+        { ESC_STICK_R_NO_POWER,    true },
+        { ESC_STICK_R_SUPPLY_ON,   true },
+        { ESC_STICK_R_NO_BEEPS,    true },
+        { ESC_STICK_R_HIGH,        true },
+        { ESC_STICK_R_TIMEOUT,     true },
+        { ESC_STICK_R_TOUCH,       true },
+    };
+    /* The table covers the list. */
+    CHECK_EQ(sizeof(k) / sizeof(k[0]), (size_t)ESC_STICK_R_LEFT + 1u);
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        if (esc_stick_reason_is_fault(k[i].r) != k[i].fault) {
+            T_FAIL("%s is decided wrong", esc_stick_reason_text(k[i].r));
+        }
+    }
+}
+
+/* Every rise of the detector is counted as a pulse, on every power-up. */
+TEST_CASE(the_run_counts_every_pulse_the_detector_begins)
+{
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    uint32_t rises = 0u;
+    bool was = false;
+    for (uint32_t i = 0; i < 240000u && esc_stick_running(&r.e); ++i) {
+        tick();
+        if (r.e.det.high && !was) {
+            ++rises;
+        }
+        was = r.e.det.high;
+        if (r.e.pulses != rises && r.e.pulses != rises + 1u) {
+            T_FAIL("%u pulses counted for %u rises seen", r.e.pulses, rises);
+        }
+    }
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(r.e.pulses > 10u);
+    CHECK(r.e.pulses >= rises);
+}
+
+/* Green follows the detector, and a pulse shorter than a look still shows
+ * for ESC_STICK_BEEP_LIGHT_MS. */
+TEST_CASE(the_green_light_shows_every_pulse_for_its_minimum)
+{
+    static esc_stick_t e;
+    esc_stick_light_t l;
+    memset(&e, 0, sizeof(e));
+    esc_stick_light_reset(&l, &e);
+    CHECK(!esc_stick_light_green(&l, &e, 0u));          /* idle: dark */
+    e.phase = ESC_STICK_ITEMS;
+    CHECK(!esc_stick_light_green(&l, &e, 10u));
+    /* A pulse under way: on for as long as it lasts. */
+    e.det.high = true;
+    e.pulses = 1u;
+    CHECK(esc_stick_light_green(&l, &e, 20u));
+    CHECK(esc_stick_light_green(&l, &e, 1000u));
+    e.det.high = false;
+    CHECK(!esc_stick_light_green(&l, &e, 1001u));
+    /* A pulse that began and ended between two looks: on from the look
+     * that sees it, for the minimum, then off. */
+    e.pulses = 2u;
+    CHECK(esc_stick_light_green(&l, &e, 2000u));
+    CHECK(esc_stick_light_green(&l, &e,
+                                2000u + ESC_STICK_BEEP_LIGHT_MS - 1u));
+    CHECK(!esc_stick_light_green(&l, &e, 2000u + ESC_STICK_BEEP_LIGHT_MS));
+    /* A pulse still high past the minimum stays on. */
+    e.pulses = 3u;
+    e.det.high = true;
+    CHECK(esc_stick_light_green(&l, &e, 3000u));
+    CHECK(esc_stick_light_green(&l, &e, 3500u));
+    /* The run over: dark, and what it counted does not light the next. */
+    e.phase = ESC_STICK_ABORTED;
+    CHECK(!esc_stick_light_green(&l, &e, 3501u));
+    e.phase = ESC_STICK_ITEMS;
+    e.det.high = false;
+    CHECK(!esc_stick_light_green(&l, &e, 3502u));
+    /* A look stamped before the pulse's own look counts as no time. */
+    e.pulses = 4u;
+    CHECK(esc_stick_light_green(&l, &e, 5000u));
+    CHECK(esc_stick_light_green(&l, &e, 4990u));
+    esc_stick_light_reset(NULL, &e);
+    CHECK(!esc_stick_light_green(NULL, &e, 0u));
+    esc_stick_light_reset(&l, NULL);
+    CHECK_EQ(l.pulses, 0u);
+}
+
 /* The simulation on its own: the stick away from the entry position at
  * power-on, or moved off it during the entry, gives no menu. */
 TEST_CASE(the_simulation_enters_only_from_the_entry_position)
@@ -1223,6 +1327,9 @@ int main(void)
     RUN(a_current_that_stays_high_ends_the_run);
     RUN(the_signal_is_in_place_before_the_power);
     RUN(every_reason_and_phase_has_its_words);
+    RUN(the_red_light_is_for_ends_nobody_chose);
+    RUN(the_run_counts_every_pulse_the_detector_begins);
+    RUN(the_green_light_shows_every_pulse_for_its_minimum);
     RUN(the_simulation_enters_only_from_the_entry_position);
     return test_summary("esc_stick");
 }

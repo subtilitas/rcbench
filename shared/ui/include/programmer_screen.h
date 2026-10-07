@@ -59,6 +59,21 @@ uint32_t programmer_screen_stick_runs(void);
 /** The stick run, under way or ended, for tests. */
 const esc_stick_t *programmer_screen_stick(void);
 
+/** The ESC STICK search as typed, "" for none, and whether its keyboard
+ *  is open; for tests. */
+const char *programmer_screen_stick_search(void);
+bool programmer_screen_stick_typing(void);
+
+/** How many profiles the list holds under the search, and the index in it
+ *  of the top row shown; for tests. */
+int programmer_screen_stick_listed(int *top);
+
+/** The profile whose page is open, or NULL on the list; for tests. */
+const esc_profile_t *programmer_screen_stick_page(void);
+
+/** What the stack light shows; for tests. */
+void programmer_screen_stick_lights(bool *red, bool *green);
+
 /**
  * A refusal of the stick engine (esc_stick_kind(), esc_stick_check(),
  * esc_stick_start()) in the language showing, found by its English; one the

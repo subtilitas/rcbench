@@ -697,28 +697,47 @@ nicht laufen kann, nennt den Grund:
 
 ![Die Profile](img/de/programmer-stick.png)
 
+SUCHE filtert die Liste. Ihre Tastatur dockt rechts an, die Zeilen werden
+daneben schmaler, und jede Taste filtert sofort. Ein Profil wird gefunden,
+wenn der Text in Hersteller und Name steht, als ein Text gelesen, oder in
+Hersteller und einem Modellnamen. Groß- und Kleinschreibung spielen keine
+Rolle, und `*` steht für eine beliebige Folge von Zeichen:
+
+![Eine Suche wird getippt](img/de/programmer-stick-find.png)
+
+OK behält die Suche, X leert sie:
+
+![Eine Suche angewendet](img/de/programmer-stick-found.png)
+
 Die Punkte eines Profils stehen anfangs auf BEHALTEN. Die Stepper wählen einen
 Wert; START zählt die gewählten Werte:
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
-START öffnet eine Warnung über den ganzen Bildschirm. Der Lauf beginnt, wenn
-HALTEN ZUM STARTEN 2 s gehalten ist:
+START öffnet eine Warnung über den ganzen Bildschirm, KEIN PROPELLER, MOTOR
+GESICHERT?: ein Motor am ESC muss fest montiert sein und darf keinen
+Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
+beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
 
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms
 beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
-entschärft:
+entschärft. Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt
+ist, mindestens 150 ms:
 
 ![Ein Lauf](img/de/programmer-stick-run.png)
 
-Das Ergebnis bleibt bis OK:
+Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
+etwas nicht wie erwartet war, und bleibt aus bei FERTIG, STOP, ABBRECHEN und
+dem Verlassen des Bildschirms ([die Liste](StickProgramming-de.md#wie-ein-lauf-endet)):
 
 ![Fertig](img/de/programmer-stick-done.png)
 
 ![Gestoppt](img/de/programmer-stick-aborted.png)
+
+![Vom Netzteil beendet](img/de/programmer-stick-failed.png)
 
 TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
 davon ist gemessen:

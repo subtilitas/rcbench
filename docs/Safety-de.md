@@ -90,10 +90,13 @@ Panel als Leitung ohne Flanken gelesen wird.
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
 - Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy scharf, nachdem
-  seine Warnung (MOTOR ABGEKLEMMT, LAST ANGESCHLOSSEN?) 2 s gehalten ist. Danach setzt
-  er das Gas auf die Einstiegsstellung des Profils, bevor er das Netzteil
-  einschaltet; bei den meisten ESCs ist das Vollgas: so wird ihr Menü
-  betreten, und deshalb verlangt die Warnung, dass der Motor ab ist. Das ARM
+  seine Warnung (KEIN PROPELLER, MOTOR GESICHERT?) 2 s gehalten ist. Danach
+  setzt er das Gas auf die Einstiegsstellung des Profils, bevor er das
+  Netzteil einschaltet; bei den meisten ESCs ist das der Knüppel auf MAX: so
+  wird ihr Menü betreten. Der ESC gibt dann sein Programmiermenü aus und
+  treibt nicht, aber in seltenen Fällen kann ein Motor anlaufen und drehen;
+  deshalb verlangt die Warnung einen Lastwiderstand anstelle des Motors oder
+  einen fest montierten Motor ohne Propeller. Das ARM
   des Haltens wartet einen Frame im Bildschirm; ein STOP oder ein verlorenes
   Touch-Ereignis in diesem Frame nimmt es zurück und beendet den Lauf, damit
   es den Stopp nicht aufheben kann. STOP, ein Entschärfen, ein verlorener

@@ -44,7 +44,7 @@ history is in git.
 
 - **Stick programming.** PROGRAMMER has a third class, ESC STICK, that
   programs an ESC through its throttle-stick menu: pick a profile and the
-  values to change, hold the red warning MOTOR REMOVED, LOAD FITTED? for
+  values to change, hold the red warning NO PROPELLER, MOTOR SECURED? for
   2 s, and the bench arms, holds the throttle at the entry position, switches
   the supply on and counts the menu's beeps in the supply current, moving
   the throttle on the group that names the wanted item or value. 14 of the
@@ -64,6 +64,27 @@ history is in git.
   With the PD mini off, the panel's modelled supply draws a simulated ESC's
   current. Never run against an ESC.
   [Stick programming](docs/StickProgramming.md).
+- **The stick warning asks for no propeller.** The ESC enters its
+  programming menu during a run and does not drive, but in rare cases a
+  motor may start and run. The warning says so: a connected motor must be
+  mounted solid and carry no propeller, and a resistor load in place of the
+  motor works as well. The beeps are counted from the current either way.
+- **Search in the ESC STICK list.** A SEARCH field filters the profiles as
+  each key is typed, on the text keyboard docked to the right of the list.
+  A profile is found when the text appears in its maker and name read as
+  one text, or in its maker and a model name; case does not matter, and `*`
+  stands for any run of characters (`kontr*jazz*55` finds the Kontronik
+  Jazz by its model JAZZ 55 LV). The header counts what was found, OK keeps
+  the search, CANCEL restores it and X clears it. The text keyboard has a
+  search mode in which its `_` key types `*` and OK takes an empty text;
+  the SERVO name keyboard is unchanged. The matcher is
+  `esc_profile_matches()`, host-tested.
+- **A stack light on the stick run.** A red-over-green signal tower beside
+  the beep count. Green is on while the beep detector holds a pulse, at
+  least 150 ms (`ESC_STICK_BEEP_LIGHT_MS`) so a beep shorter than a frame
+  shows. Red is lit on a result that ended because something was not as
+  expected (every end except DONE, STOP, ABORT and leaving the screen,
+  decided in `esc_stick_reason_is_fault()`), until OK.
 - **Where the stick rests, and the move that stores.** An ESC profile may
   name `scheme.listen`, the stick position while the menu sounds, and
   `scheme.store`, the move that stores a selection; the generator and the

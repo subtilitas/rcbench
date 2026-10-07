@@ -644,27 +644,45 @@ cannot run names the reason:
 
 ![The profiles](img/programmer-stick.png)
 
+SEARCH filters the list. Its keyboard docks on the right, the rows narrow
+beside it, and every key filters at once. A profile is found when the text
+appears in its maker and name read as one text, or in its maker and a model
+name. Case does not matter, and `*` stands for any run of characters:
+
+![Typing a search](img/programmer-stick-find.png)
+
+OK keeps the search, X clears it:
+
+![A search applied](img/programmer-stick-found.png)
+
 A profile's items start at KEEP. The steppers pick a value; RUN counts the
 values picked:
 
 ![Two values picked](img/programmer-stick-items.png)
 
-RUN opens a warning over the whole screen. The run starts after HOLD TO RUN
-is held for 2 s:
+RUN opens a warning over the whole screen, NO PROPELLER, MOTOR SECURED?: a
+motor on the ESC must be mounted solid and carry no propeller, or a
+resistor load takes its place. The run starts after HOLD TO RUN is held
+for 2 s:
 
 ![The warning](img/programmer-stick-warning.png)
 
 While it runs, the page shows the phase, the beeps of the group under way
 and the last group. ABORT, STOP and leaving the screen end it with the
-throttle at MIN, the supply off and the bench disarmed:
+throttle at MIN, the supply off and the bench disarmed. The stack light's
+green is on while a beep is detected, for at least 150 ms:
 
 ![A run](img/programmer-stick-run.png)
 
-The result stays until OK:
+The result stays until OK. Its red light is on when the run ended because
+something was not as expected, and dark on DONE, STOP, ABORT and leaving
+the screen ([the list](StickProgramming.md#how-a-run-ends)):
 
 ![Done](img/programmer-stick-done.png)
 
 ![Stopped](img/programmer-stick-aborted.png)
+
+![Ended by the supply](img/programmer-stick-failed.png)
 
 TIMING holds the beep timings and the supply settings. None of them is
 measured:
