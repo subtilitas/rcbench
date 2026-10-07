@@ -318,7 +318,14 @@ seinen Jumper oder Taster wartet, außer HELI JIVE und JIVE Pro, 10 s nach
 dem Einschalten, und keiner von beiden läuft.
 
 Das Ergebnis eines Laufs nennt die Schritte `after_programming` des
-Profils. Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
+Profils in zwei Zeilen unter den Änderungen; brauchen sie mehr, sagt es
+stattdessen, wie viele es sind. Endet ein Lauf eines Profils mit solchen
+Schritten, öffnen sich seine Schritte von selbst über dem Ergebnis, alle,
+und MANUELLER EINGRIFF NÖTIG im Kopf des Ergebnisses öffnet sie wieder.
+
+![Vier Schritte nach dem Programmieren, über dem Ergebnis](img/de/programmer-stick-hand-after.png)
+
+Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
 oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf
 gesteckter Jumper kann noch stecken.
 

@@ -409,6 +409,7 @@ typedef struct {
     const esc_profile_t *hand_p;
     int                  hand_model;    /* the model it was opened for, or
                                            -1: the family's lowest      */
+    bool                 was_running;   /* the run, as the last tick saw */
     uint8_t              hand_seen[SP_MAX / 8];
 
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
@@ -1656,7 +1657,18 @@ static void sp_tick(float dt_s)
             sp_start();
         }
     }
-    if (esc_stick_running(&t->run)) {
+    const bool running = esc_stick_running(&t->run);
+    if (t->was_running && !running && t->shown && t->run.p != NULL
+        && esc_profile_manual_count(t->run.p,
+                                    ESC_MANUAL_AFTER_PROGRAMMING) > 0u) {
+        /* The run is over: what is to be done now, every step of it. */
+        t->hand_open = true;
+        t->hand_p = t->run.p;
+        t->hand_model = t->model;
+        ++s.rev;
+    }
+    t->was_running = running;
+    if (running) {
         const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
                                       t->link_up, t->pressed };
         esc_stick_step(&t->run, &b);
@@ -1994,6 +2006,13 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
     if (t->shown) {
+        if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
+            t->hand_open = true;            /* every step, after included */
+            t->hand_p = t->p;
+            t->hand_model = t->model;
+            ++s.rev;
+            return true;
+        }
         const bool back = gfx_rect_contains(s.back, px, py);
         if (back || gfx_rect_contains(s.write_btn, px, py)) {
             t->shown = false;               /* OK: back to the menu */
@@ -2811,21 +2830,41 @@ static void sp_draw_result(gfx_canvas_t *c)
     }
     /* Below the changes, two lines: what the profile has a person do once
      * the run is over, and after an abort that what was fitted before
-     * the power-up may still be there. */
+     * the power-up may still be there.  Steps that need more than the two
+     * lines are counted there instead, and MANUAL INTERVENTION REQUIRED
+     * above -- open by itself when the run ended -- lists every one. */
     const esc_profile_t *p = e->p;
+    if (p->manual_count > 0u) {
+        ui_button(c, s.st.hand_btn, TR(SP_HAND_BTN),
+                  ui_theme_color(UI_C_DANGER), false, true);
+    }
     int y = y0 + 6 * pitch;
     int room = 2;
+    int need = 0;
+    char what[ESC_MANUAL_MAX][256];
+    unsigned after = 0u;
     for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
         const esc_manual_t *m = &p->manual[i];
-        if (m->when != ESC_MANUAL_AFTER_PROGRAMMING || room <= 0) {
-            continue;
+        if (m->when == ESC_MANUAL_AFTER_PROGRAMMING && after < ESC_MANUAL_MAX) {
+            snprintf(what[after], sizeof(what[after]), "%s: %s",
+                     sp_when_text(m), sp_action(m));
+            need += sp_wrap_lines(what[after], 93, 2);
+            ++after;
         }
-        char what[256];
-        snprintf(what, sizeof(what), "%s: %s", sp_when_text(m), sp_action(m));
-        const int n = sp_wrap(c, PAD + 12, y, pitch, what, 93, room,
-                              ui_theme_color(UI_C_WARN));
-        y += n * pitch;
-        room -= n;
+    }
+    if (need > room) {
+        char line2[128];
+        snprintf(line2, sizeof(line2), TR(SP_HAND_AFTER_N), after);
+        sp_text(c, PAD + 12, y, line2, 93, ui_theme_color(UI_C_WARN));
+        y += pitch;
+        room--;
+    } else {
+        for (unsigned i = 0; i < after; ++i) {
+            const int n = sp_wrap(c, PAD + 12, y, pitch, what[i], 93, 2,
+                                  ui_theme_color(UI_C_WARN));
+            y += n * pitch;
+            room -= n;
+        }
     }
     if (!done && room > 0
         && (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
@@ -3249,7 +3288,9 @@ static void sp_draw_hand(gfx_canvas_t *c)
     }
     char why[48];
     const char *no = sp_model_why(p, t->hand_model, why, sizeof(why));
-    if (no == NULL) {
+    if (t->shown && t->p == p) {
+        snprintf(line, sizeof(line), "%s", TR(SP_HAND_OVER));
+    } else if (no == NULL) {
         snprintf(line, sizeof(line), "%s", TR(SP_HAND_ASKS));
     } else {
         snprintf(line, sizeof(line), TR(SP_HAND_NOT_RUN), no);

@@ -86,6 +86,10 @@ sweep starts over from the curve's beginning, and the alert band says so.
   prompt only for that step, and every other waits for DONE. One a profile,
   only on before_menu, none after it, in the generator and the card reader
   alike. 16 Kontronik profiles mark their pull or press.
+- **Every step after programming shows.** The result showed at most two
+  lines of `after_programming` steps; more are now counted there, the steps
+  open by themselves over the result when the run ends, and MANUAL
+  INTERVENTION REQUIRED in the result's header opens them again.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

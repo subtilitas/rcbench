@@ -2063,6 +2063,82 @@ TEST_CASE(the_model_tapped_is_the_one_judged)
     scr->leave();
 }
 
+/* A card profile with four long steps after programming: they cannot fit
+ * the result's two lines, which count them; the steps open by themselves
+ * when the run ends, list every one, and reopen from MANUAL INTERVENTION
+ * REQUIRED on the result. */
+TEST_CASE(every_step_after_programming_is_shown)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AFTER_PROGRAMMING,
+          "Remove the programming jumper from the two gold contacts before "
+          "the model is flown, or the ESC enters its menu again.", 0u,
+          NULL, false },
+        { ESC_MANUAL_AFTER_PROGRAMMING,
+          "Refit the heat shrink over the programming contacts and the "
+          "button so that no conductive dirt reaches them in use.", 0u,
+          NULL, false },
+        { ESC_MANUAL_AFTER_PROGRAMMING,
+          "Disconnect the bench supply, then reconnect the flight battery "
+          "and check the stored mode on the ESC's start-up tones.", 0u,
+          NULL, false },
+        { ESC_MANUAL_AFTER_PROGRAMMING,
+          "Run the motor without a propeller at low throttle once and check "
+          "the direction and the brake before the first flight.", 0u,
+          NULL, false },
+    };
+    for (size_t i = 0; i < 4; ++i) {
+        CHECK(strlen(k[i].action) > 100u
+              && strlen(k[i].action) <= ESC_MANUAL_ACTION_MAX);
+    }
+    fresh();
+    esc_profiles_clear_overrides();
+    esc_profile_t card = *esc_profiles_find("sunrise-pro");
+    card.id = "card-after";
+    card.automatable = ESC_AUTO_ASSISTED;
+    card.automatable_note = "Steps after programming.";
+    card.manual = k;
+    card.manual_count = 4;
+    CHECK(esc_profiles_override(&card, NULL));
+    open_profile("card-after");
+    const esc_profile_t *p = programmer_screen_stick_page();
+    CHECK(p != NULL && strcmp(p->id, "card-after") == 0);
+    CHECK(programmer_screen_stick_hand_shown());   /* the first opening */
+    draws();
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(1));              /* timing: automatic */
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    static rig_t r;
+    rig_start(&r);
+    rig_run(&r, 300000u);
+    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    /* Ended: every step after programming shows by itself. */
+    CHECK(programmer_screen_stick_hand_shown());
+    draws();
+    tap(CANCEL_X, HOLD_Y);                   /* OK: the result */
+    CHECK(!programmer_screen_stick_hand_shown());
+    draws();                                 /* the count, and the button */
+    tap(HAND_X, HAND_Y);
+    CHECK(programmer_screen_stick_hand_shown());
+    tap(CANCEL_X, HOLD_Y);
+    tap(WRITE_X, BTN_CY);                    /* OK on the result */
+    CHECK(!programmer_screen_stick_hand_shown());
+    esc_profiles_clear_overrides();
+
+    /* A profile without such steps: no pop-up when the run ends. */
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    rig_start(&r);
+    rig_run(&r, 300000u);
+    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK(!programmer_screen_stick_hand_shown());
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -2110,5 +2186,6 @@ int main(void)
     RUN(the_search_finds_on_both_levels_and_back_keeps_it);
     RUN(a_card_profile_joins_its_maker);
     RUN(the_model_tapped_is_the_one_judged);
+    RUN(every_step_after_programming_is_shown);
     return test_summary("programmer");
 }

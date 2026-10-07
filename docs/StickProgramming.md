@@ -288,9 +288,16 @@ the operator's time to reach the ESC, not the ESC's: no manual in the set
 states how long an ESC waits for its jumper or button except the HELI JIVE
 and JIVE Pro, 10 s after power-up, and neither runs.
 
-The result of a run lists the profile's `after_programming` steps. After an
-aborted run of a profile with a step before or at the power-up, it says to check
-the ESC: a jumper fitted for the run may still be in place.
+The result of a run lists the profile's `after_programming` steps in two
+lines under the changes; steps that need more say how many there are
+instead. When a run of a profile with such steps ends, its steps open by
+themselves over the result, every one of them, and MANUAL INTERVENTION
+REQUIRED in the result's header opens them again.
+
+![Four steps after programming, over the result](img/programmer-stick-hand-after.png)
+
+After an aborted run of a profile with a step before or at the power-up,
+the result says to check the ESC: a jumper fitted for the run may still be in place.
 
 24 profiles have manual steps: the 22 Kontronik families, `turnigy-aquastar`
 and `greatplanes-electrifly-c-series`. 10 run:

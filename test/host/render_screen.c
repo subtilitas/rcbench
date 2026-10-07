@@ -725,7 +725,75 @@ int main(int argc, char **argv)
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
-        if (strcmp(view, "programmer-stick-hand-list") == 0) {
+        if (strcmp(view, "programmer-stick-hand-after") == 0) {
+            /*
+             * A card profile with four long steps after programming, run to
+             * its end: the steps open by themselves over the result.
+             */
+            static const esc_manual_t k_after[] = {
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Remove the programming jumper from the two gold contacts "
+                  "before the model is flown, or the ESC enters its menu "
+                  "again.", 0u,
+                  "Den Programmier-Jumper vor dem Flug von den beiden "
+                  "Goldkontakten abziehen, sonst geht der ESC wieder ins "
+                  "Menü.", false },
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Refit the heat shrink over the programming contacts and "
+                  "the button so that no conductive dirt reaches them in "
+                  "use.", 0u,
+                  "Den Schrumpfschlauch wieder über Kontakte und Taster "
+                  "ziehen, damit im Betrieb kein leitender Schmutz hinkommt.",
+                  false },
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Disconnect the bench supply, then reconnect the flight "
+                  "battery and check the stored mode on the start-up "
+                  "tones.", 0u,
+                  "Netzteil abziehen, dann den Flugakku anstecken und den "
+                  "gespeicherten Modus an den Starttönen prüfen.", false },
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Run the motor without a propeller at low throttle once "
+                  "and check the direction and the brake before the first "
+                  "flight.", 0u,
+                  "Den Motor einmal ohne Propeller mit wenig Gas laufen "
+                  "lassen und vor dem Erstflug Drehrichtung und Bremse "
+                  "prüfen.", false },
+            };
+            static esc_profile_t card;
+            card = *esc_profiles_find("sunrise-pro");
+            card.id = "card-after";
+            card.automatable = ESC_AUTO_ASSISTED;
+            card.automatable_note = "Steps after programming.";
+            card.manual = k_after;
+            card.manual_count = 4;
+            esc_profiles_clear_overrides();
+            (void)esc_profiles_override(&card, NULL);
+            programmer_invalidate();
+            stick_open("Sunrise", "card-after");
+            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
+            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                .point = { .id = 2, .x = 156,
+                                           .y = UI_BAND_H + 378,
+                                           .strength = 40 } };
+            ui_router_event(&e);
+            for (int i = 0; i < 9; ++i) {
+                ui_router_tick(0.25f);
+            }
+            e.type = TOUCH_EVENT_UP;
+            ui_router_event(&e);
+            static stick_rig_t arig;
+            memset(&arig, 0, sizeof(arig));
+            esc_sim_init(&arig.sim, programmer_screen_stick()->p, NULL);
+            const esc_stick_t *run = programmer_screen_stick();
+            for (int ms = 0; ms < 400000 && esc_stick_running(run); ++ms) {
+                stick_step(&arig);
+            }
+            for (int i = 0; i < 10; ++i) {
+                stick_step(&arig);
+            }
+        } else if (strcmp(view, "programmer-stick-hand-list") == 0) {
             /* Kontronik's models, those with manual steps tagged. */
             stick_open("Kontronik", NULL);
         } else if (strncmp(view, "programmer-stick-hand", 21) == 0) {
