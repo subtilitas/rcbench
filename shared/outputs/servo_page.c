@@ -55,6 +55,19 @@ static void freeze_surfaces(outputs_t *o)
 }
 
 /*
+ * Whether the sweep is running as of @p now_ms.  The coprocessor serves a
+ * pass's writes before its servo_page_step(), so a write can arrive after
+ * the sweep went unwritten for OUT_DEFAULT_TIMEOUT_MS and before the pass
+ * that stops it.  Judged here as that pass judges it, the sweep has
+ * stopped: a hold keeps no phase of it, and a repeat does not carry it on.
+ */
+static bool sweep_live(const servo_page_t *p, uint32_t now_ms)
+{
+    return p->sweep.running
+           && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS;
+}
+
+/*
  * Whether a RESUME can carry on the sweep held now: a phase kept by a hold
  * still in force -- repeated within the time a channel command is trusted,
  * which servo_page_step() may not have judged yet -- and a page that still
@@ -145,7 +158,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         }
     }
 
-    const bool was_running = p->sweep.running;
+    const bool was_running = sweep_live(p, now_ms);
     const sweep_cfg_t was  = p->sweep.cfg;
     memcpy(p->regs, next, sizeof(next));
     if (resume) {
@@ -170,7 +183,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
          * keeps none.
          */
         if (!p->holding) {
-            if (p->sweep.running) {
+            if (sweep_live(p, now_ms)) {
                 sweep_pause(&p->sweep, now_ms);
             } else {
                 sweep_stop(&p->sweep);

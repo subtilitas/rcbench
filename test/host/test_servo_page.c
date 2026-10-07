@@ -462,6 +462,39 @@ TEST_CASE(resume_is_refused_with_no_sweep_held)
 }
 
 /*
+ * The coprocessor serves a pass's writes before its step.  A sweep left
+ * unwritten for longer than OUT_DEFAULT_TIMEOUT_MS has stopped even when
+ * the pass that stops it has not run yet: a HOLD then keeps no phase, and a
+ * repeat of the same curve starts it over rather than carrying it on --
+ * the same as when the step comes first.
+ */
+TEST_CASE(a_write_after_the_timeout_and_before_the_step_finds_it_stopped)
+{
+    const uint32_t late = T0 + OUT_DEFAULT_TIMEOUT_MS + 1u;
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 100u));
+    CHECK_EQ(say(LINK_SV_HOLD, late), 0u);        /* before late's step */
+    (void)servo_page_step(&pg, &o, late);
+    CHECK_EQ(say(LINK_SV_RESUME, late + 10u), LINK_NACK_BAD_VALUE);
+
+    /* At the limit itself the sweep still runs, and the hold keeps it. */
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 100u));
+    CHECK_EQ(say(LINK_SV_HOLD, late - 1u), 0u);
+    CHECK_EQ(say(LINK_SV_RESUME, late + 10u), 0u);
+
+    /* A repeat after the timeout starts the curve from the centre. */
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 100u));
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, late), 0u);
+    CHECK(servo_page_step(&pg, &o, late));
+    CHECK_EQ(o.channel[0].command, 500u);
+}
+
+/*
  * The host's choice: RESUME for a resume of a hold in force on 4.6; the
  * curve over, and saying so, on an older coprocessor or after a refusal;
  * the curve as usual for anything else, a resumed sweep's repeats included.
@@ -514,6 +547,7 @@ int main(void)
     RUN(resume_keeps_the_movements_reached);
     RUN(resume_slews_from_where_the_surfaces_were_held);
     RUN(resume_is_refused_with_no_sweep_held);
+    RUN(a_write_after_the_timeout_and_before_the_step_finds_it_stopped);
     RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
     return test_summary("servo_page");
