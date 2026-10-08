@@ -571,6 +571,7 @@ TEST_CASE(the_sense_pages_are_served_and_refuse_whole)
                              .channels = 1, .pin = 4, .rate_hz = 50 };
     CHECK(outputs_configure(&s_out, 0, &pwm));
     CHECK(outputs_set_role(&s_out, 0, OUT_ROLE_SURFACE));
+    sense_page_bound(&s_sense, 0x01u);       /* the silicon bound it */
     const uint16_t cap[4] = { LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u };
     CHECK(write_page(LINK_PAGE_SERVO_SENSE, LINK_SS_CAP_ARM, 4, cap, &r));
     CHECK_EQ(r.op, LINK_OP_NACK);

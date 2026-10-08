@@ -76,8 +76,9 @@
  * CH1 samples are stamped when CH1's read is done.  A one-sample excursion
  * starts a move only when a quarter of it passes the threshold.  A clipped
  * CH1 sample is at or past the full scale less a step: 1.6376 A on the
- * 0.1 Ω shunt.  The INA3221 leaving online ends a capture as lost.  The
- * capture states take link_cap_state_t's numbers.
+ * 0.1 Ω shunt.  The INA3221 leaving online ends a capture as lost, and so
+ * does an armed capture given no edge within SENSE_CAP_EDGE_WAIT_MS of the
+ * arm.  The capture states take link_cap_state_t's numbers.
  *
  * The level before the command.  A capture armed with rise_ua
  * SENSE_CAP_RISE_AUTO takes it from CH1 itself: the mean of the CH1
@@ -126,6 +127,11 @@ extern "C" {
 #define SENSE_CAP_LAG_MS      5u
 /** The capture's time unit: 0.1 ms. */
 #define SENSE_CAP_T_PER_MS   10u
+/** An armed capture given no edge in this long ends lost: nothing renders
+ *  the frame it waits for.  The panel writes the command straight after
+ *  the arm, and a frame at the slowest PWM rate, 40 Hz, is 25 ms; the
+ *  bound is the move's own window. */
+#define SENSE_CAP_EDGE_WAIT_MS SERVO_MOVE_TIMEOUT_MS
 /** sense_cap_arm_t.rise_ua: the level before the command taken from CH1's
  *  SENSE_WINDOW_MS before the edge. */
 #define SENSE_CAP_RISE_AUTO  INT32_MIN
@@ -236,6 +242,7 @@ typedef struct {
     uint16_t seq;         /**< captures ended, modulo 65536               */
     sense_cap_arm_t arm;
     uint32_t edge_t;      /**< the edge, 0.1 ms                           */
+    uint32_t arm_t;       /**< the arm, 0.1 ms                            */
     bool     rise_owed;   /**< the level before the command is CH1's,
                                taken at the first sample past the edge    */
     /* The last SENSE_CAP_FILTER_N CH1 samples while armed. */

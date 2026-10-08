@@ -39,10 +39,14 @@ history is in git.
   windows and the move capture. BENCH carries the INA228's voltage,
   current, power, peaks, charge and energy at the existing scales, with
   bits 5 and 6; a run that starts with the INA228 answering keeps it as
-  the source to its end. Capability bits 3 and 4 follow the parts. A
-  capture's edge is the start of the PWM frame that first carries the new
-  pulse, stamped from the slice's counter to 1 µs, and its level before the
-  command is CH1's mean over the 50 ms before the edge. Nothing trips: a
+  the source to its end. Capability bits 3 and 4 say what the SENSE set-up
+  enables and change only when a SENSE write is taken; whether a part
+  answers is SENSE FLAGS and BENCH bit 5. A capture's edge is the start of
+  the PWM frame that first carries the new pulse, stamped from the slice's
+  counter to 1 µs, and its level before the command is CH1's mean over the
+  50 ms before the edge. A capture is refused on a PWM slot the silicon did
+  not bind, and one given no edge within 3000 ms of its arm ends lost. An
+  OUTPUTS write on a pin the sensor bus has not yet let go of is refused. Nothing trips: a
   part that stops answering is reported in FLAGS and the bench stays
   armed. The flash store's erases and programs run through
   `flash_safe_execute()`, which parks core 1 in RAM. A boot whose core 1
@@ -55,7 +59,7 @@ history is in git.
   parts at the page's defaults while no set-up is stored, and while a part
   is enabled the console prints the sensors' state every 3 s; the bench
   session is in [First run](docs/FirstRun.md) §8. The coprocessor image
-  grows by 19,452 bytes, to 320,280.
+  grows by 19,988 bytes, to 320,816.
 - **Output store record version 5.** The record keeps the sensor set-up
   beside the bindings and the supply's wiring. Version 3 and 4 records
   still load, with the parts they lack off.

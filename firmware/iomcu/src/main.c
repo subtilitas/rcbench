@@ -80,11 +80,10 @@ static bool          s_supply_attach;
  * gives it its orders and publishes what it hands back.
  */
 static sense_page_t  s_sense;
-/* Core 1's last snapshot, and the pins it said it still holds: a bus moved
- * or closed keeps its old pins from the outputs until core 1 has let them
- * go, about 1 ms. */
+/* Core 1's last snapshot.  The pins it said it still holds are the page's
+ * (sense_page_held()): a bus moved or closed keeps its old pins from the
+ * outputs until core 1 has let them go, about 1 ms. */
 static sense_snap_t  s_sense_snap;
-static uint64_t      s_sense_held;
 /* Moves on each edge of the bank into driving: core 1 starts the run's
  * peaks and the INA228's totals on it. */
 static uint16_t      s_run_gen;
@@ -246,6 +245,15 @@ static void hw_apply(void)
     uint16_t rate[OUT_MAX_SLOTS];
     outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
     outputs_hw_apply(&s_outputs, rate);
+    /* And the SERVO_SENSE page told which slots render frames, so a
+     * capture never arms on one the silicon left unbound. */
+    uint8_t bound = 0u;
+    for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
+        if (outputs_hw_bound(i)) {
+            bound |= (uint8_t)(1u << i);
+        }
+    }
+    sense_page_bound(&s_sense, bound);
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -299,8 +307,7 @@ static void reserve_held(void)
 {
     outputs_reserve_pins(&s_outputs, s_base_reserved
                                      | supply_page_pins(&s_supply)
-                                     | sense_page_pins(&s_sense)
-                                     | s_sense_held);
+                                     | sense_page_held(&s_sense));
 }
 
 /* ------------------------------------------------------------- core 1 */
@@ -335,11 +342,24 @@ static void sense_sync(void)
     if (!sense_core1_snapshot(&s_sense_snap)) {
         return;
     }
-    if (s_sense_snap.held != s_sense_held) {
-        s_sense_held = s_sense_snap.held;
+    const uint64_t was = s_sense.held;
+    sense_page_publish(&s_sense, &s_sense_snap, s_run_gen);
+    if (s_sense.held != was) {
         reserve_held();
     }
-    sense_page_publish(&s_sense, &s_sense_snap, s_run_gen);
+}
+
+/*
+ * The identity page's capability word: what the output drivers make true,
+ * and the current monitors the SENSE set-up enables (sense_page_caps()).
+ * Fitted as configured, not online now: a panel reads identity at link-up
+ * and after it writes SENSE, so the word moves only with a SENSE write
+ * taken.  Whether a part answers is SENSE FLAGS and BENCH bit 5.
+ */
+static void capabilities_update(void)
+{
+    s_state.identity[LINK_ID_CAPABILITIES] =
+        (uint16_t)(IOMCU_CAPABILITIES | sense_page_caps(&s_sense));
 }
 
 /* Whether the page holds a capture that has not finished. */
@@ -526,6 +546,7 @@ static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
     if (memcmp(was, s_sense.sense, sizeof(was)) != 0) {
         reserve_held();
         save_outputs(&s_state);
+        capabilities_update();
         sense_order();
     }
     return 0u;
@@ -606,7 +627,8 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     if (supply_page_slots_check(&s_supply, next) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
-    /* Nor on one the sensor bus holds, for the same reason. */
+    /* Nor on one the sensor bus holds, for the same reason: its set-up's
+     * pins, and the ones core 1 has not let go of yet. */
     if (sense_page_slots_check(&s_sense, next) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
@@ -1233,8 +1255,6 @@ static void sample(void)
     sense_sync();
     sense_page_bench(&s_sense, &s_sense_snap, s_run_gen, driving, &s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
-    s_state.identity[LINK_ID_CAPABILITIES] =
-        (uint16_t)(IOMCU_CAPABILITIES | sense_page_caps(&s_sense));
 
     s_state.status[LINK_ST_STATE] =
         (s_dev.failsafe || !s_beat.alive)
@@ -1331,10 +1351,9 @@ int main(void)
      *
      * These say the coprocessor can, not that anything is connected.  An ESC
      * that does not answer is an ESC that does not answer, and the BENCH
-     * page's valid bits are where that shows.  The current monitors are
-     * the exception, because whether they are fitted is only known by
-     * asking them: pack sense while the INA228 answers, servo sense while
-     * the INA3221 does, updated with the 50 Hz sample.
+     * page's valid bits are where that shows.  The current monitors add
+     * pack sense and servo sense for the parts the SENSE set-up enables,
+     * set once the set-up is restored below (capabilities_update()).
      */
     s_state.identity[LINK_ID_CAPABILITIES] = IOMCU_CAPABILITIES;
 
@@ -1446,6 +1465,7 @@ int main(void)
         reserve_held();
     }
 #endif
+    capabilities_update();
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -1495,7 +1515,9 @@ int main(void)
          * STATUS page says so in LINK_FAULT_STORE_OFF, which the panel's
          * band shows as a fault; the console repeats it every 3 s.
          */
-        if (!sense_core1_start(&first)) {
+        if (sense_core1_start(&first)) {
+            out_store_core1_parkable();   /* windows park core 1 from now */
+        } else {
             out_store_off();
         }
     }

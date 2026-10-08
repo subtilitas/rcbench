@@ -360,6 +360,39 @@ TEST_CASE(an_arm_with_nothing_to_read_ends_lost)
     CHECK_EQ(snap.cap_seq, 3u);
 }
 
+/* A set-up after a refused arm: idle, not the old LOST, whether the bus
+ * then closes, fails to open or opens. */
+TEST_CASE(a_new_set_up_ends_a_lost_arm)
+{
+    for (unsigned how = 0; how < 3u; ++how) {
+        rig();
+        i3221->present = false;
+        steps(5u);
+        cmd.cap_gen = 1u;
+        cmd.cap_on = true;
+        step();
+        CHECK_EQ(snap.cap_state, SENSE_CAP_LOST);
+        CHECK_EQ(snap.cap_seq, 1u);
+        /* The page clears CAP_ARM with the new set-up. */
+        cmd.cfg_gen = 2u;
+        cmd.cap_on = false;
+        if (how == 0u) {
+            cmd.parts.ina228_en = false;     /* the bus closes */
+            cmd.parts.ina3221_en = false;
+        } else if (how == 1u) {
+            g_open_ok = false;               /* the bus does not open */
+        }
+        step();
+        CHECK_EQ(snap.open, how == 2u);
+        CHECK_EQ(snap.cfg_gen, 2u);
+        CHECK_EQ(snap.cap_gen, 1u);
+        CHECK_EQ(snap.cap_state, SENSE_CAP_IDLE);
+        CHECK_EQ(snap.cap_seq, 1u);
+        step();
+        CHECK_EQ(snap.cap_state, SENSE_CAP_IDLE);
+    }
+}
+
 /* ------------------------------------------------------------- the scan */
 
 /* A part missing: scanned again every SENSE_RETRY_MS, and what answers
@@ -530,6 +563,7 @@ int main(void)
     RUN(a_new_run_restarts_the_peaks_and_the_totals);
     RUN(a_capture_is_armed_given_its_edge_once_and_reported);
     RUN(an_arm_with_nothing_to_read_ends_lost);
+    RUN(a_new_set_up_ends_a_lost_arm);
     RUN(a_missing_part_is_scanned_for_again);
     RUN(a_scan_cut_short_keeps_what_it_found);
     RUN(a_line_held_under_the_scan_starts_the_recovery);

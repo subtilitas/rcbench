@@ -45,6 +45,7 @@ static void fresh(void)
     CHECK(outputs_configure(&o, 0, &pwm));
     CHECK(outputs_set_role(&o, 0, OUT_ROLE_SURFACE));
     sense_page_init(&pg);
+    sense_page_bound(&pg, 0x01u);            /* the silicon bound slot 0 */
 }
 
 static uint8_t bus(uint16_t en, uint16_t sda, uint16_t scl, uint16_t khz,
@@ -398,6 +399,40 @@ TEST_CASE(no_slot_binds_a_pin_the_bus_holds)
     CHECK_EQ(sense_page_slots_check(&pg, NULL), LINK_NACK_BAD_VALUE);
 }
 
+/* The bus moved from GP16/GP17 to GP20/GP21: until core 1 says it has let
+ * the old pins go, a slot on one of them is refused, as one on a pin the
+ * SUPPLY page holds is -- not taken and left unbound.  The held pins come
+ * with a snapshot of the old set-up as well. */
+TEST_CASE(no_slot_binds_a_pin_core_1_still_holds)
+{
+    fresh();
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
+    sense_snap_t s;
+    memset(&s, 0, sizeof(s));
+    s.cfg_gen = pg.cfg_gen;
+    s.open = true;
+    s.held = BIT(16) | BIT(17);
+    sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(bus(1u, 20u, 21u, 400u, 0u), 0u);
+    CHECK_EQ(sense_page_pins(&pg), BIT(20) | BIT(21));
+    CHECK_EQ(sense_page_held(&pg), BIT(16) | BIT(17) | BIT(20) | BIT(21));
+    uint16_t slots[LINK_OS_COUNT];
+    memset(slots, 0, sizeof(slots));
+    slots[LINK_OS_DRIVER] = LINK_DRIVER_PWM;
+    slots[LINK_OS_PIN]    = 16u;
+    CHECK_EQ(sense_page_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    /* Core 1 still on the old set-up, still holding: refused. */
+    sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(sense_page_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    /* Core 1 on the new set-up, the old pins let go: taken. */
+    s.cfg_gen = pg.cfg_gen;
+    s.held = BIT(20) | BIT(21);
+    sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(sense_page_slots_check(&pg, slots), 0u);
+    CHECK_EQ(sense_page_held(&pg), BIT(20) | BIT(21));
+    CHECK_EQ(sense_page_held(NULL), 0u);
+}
+
 /* An INA3221 reading CH1 and CH3, and a bank armed. */
 static void ready_to_capture(void)
 {
@@ -487,6 +522,29 @@ TEST_CASE(a_capture_is_refused_what_it_cannot_time)
     outputs_arm(&o, true, 0u);
     CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u),
              LINK_NACK_BAD_VALUE);
+}
+
+/* A PWM slot the bank holds and the silicon did not bind -- its compare
+ * register taken by another pin -- renders no frame: no capture arms on
+ * it.  A page told nothing counts no slot bound. */
+TEST_CASE(a_capture_is_refused_on_a_slot_the_silicon_did_not_bind)
+{
+    ready_to_capture();
+    sense_page_bound(&pg, 0x02u);            /* slot 1 bound, slot 0 not */
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
+    sense_page_bound(&pg, 0x01u);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+
+    sense_page_init(&pg);                    /* told nothing yet */
+    outputs_arm(&o, false, 0u);
+    CHECK_EQ(i3221(0x40u, 1000u, 1u, 0u), 0u);
+    CHECK_EQ(bus(2u, 16u, 17u, 400u, 0u), 0u);
+    outputs_arm(&o, true, 0u);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u),
+             LINK_NACK_BAD_VALUE);
+    sense_page_bound(NULL, 0x01u);           /* nothing, no crash */
 }
 
 TEST_CASE(a_disarm_is_never_refused_and_stores_nothing_beside_it)
@@ -876,7 +934,8 @@ TEST_CASE(a_new_set_up_forgets_what_the_old_one_read)
     CHECK_EQ(reg(LINK_SN_ESC_VOLTAGE_CV), 1600u);
     CHECK_EQ(reg(LINK_SN_ESC_FLAGS),
              (uint16_t)(LINK_SN_ESC_VOLTAGE_OK | LINK_SN_ESC_CURRENT_OK));
-    CHECK_EQ(sense_page_caps(&pg), 0u);
+    /* The capability is the set-up's, which still enables the INA3221. */
+    CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
 
     /* The old set-up's snapshot changes nothing; the new one's fills. */
     sense_page_publish(&pg, &s, 3u);
@@ -1017,17 +1076,26 @@ TEST_CASE(bench_carries_the_ina228_while_it_answers)
     sense_page_bench(&pg, &s, 3u, false, NULL);
 }
 
-TEST_CASE(the_capabilities_follow_the_parts)
+/* The capability bits are the set-up's, not the parts' state: a part that
+ * answers or stops answering moves none; an enable written moves them. */
+TEST_CASE(the_capabilities_follow_the_set_up)
 {
-    ready_to_capture();
+    fresh();
     CHECK_EQ(sense_page_caps(&pg), 0u);
+    CHECK_EQ(bus(2u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
     sense_snap_t s = snapshot();
-    sense_page_publish(&pg, &s, 3u);
-    CHECK_EQ(sense_page_caps(&pg),
-             (uint16_t)(LINK_CAP_PACK_SENSE | LINK_CAP_SERVO_SENSE));
-    s.i228 = SENSE_PART_ABSENT;
+    s.i3221 = SENSE_PART_ABSENT;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
+    s.i3221 = SENSE_PART_ONLINE;                /* and the INA228 online */
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
+    CHECK_EQ(bus(3u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(sense_page_caps(&pg),
+             (uint16_t)(LINK_CAP_PACK_SENSE | LINK_CAP_SERVO_SENSE));
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_PACK_SENSE);
     CHECK_EQ(sense_page_caps(NULL), 0u);
 }
 
@@ -1044,8 +1112,10 @@ int main(void)
     RUN(a_refused_write_stores_none_of_its_registers);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(no_slot_binds_a_pin_the_bus_holds);
+    RUN(no_slot_binds_a_pin_core_1_still_holds);
     RUN(a_capture_arms_whole_on_an_armed_bank);
     RUN(a_capture_is_refused_what_it_cannot_time);
+    RUN(a_capture_is_refused_on_a_slot_the_silicon_did_not_bind);
     RUN(a_disarm_is_never_refused_and_stores_nothing_beside_it);
     RUN(a_bank_that_stops_driving_ends_an_unfinished_capture);
     RUN(the_channel_flags_and_the_arm_word_pack_as_documented);
@@ -1056,6 +1126,6 @@ int main(void)
     RUN(a_new_set_up_forgets_what_the_old_one_read);
     RUN(the_escs_own_telemetry_goes_to_its_registers);
     RUN(bench_carries_the_ina228_while_it_answers);
-    RUN(the_capabilities_follow_the_parts);
+    RUN(the_capabilities_follow_the_set_up);
     return test_summary("sense_page");
 }

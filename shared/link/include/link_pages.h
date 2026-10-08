@@ -445,7 +445,7 @@ typedef enum {
  *     over CAP_SAMPLES samples.  A capture ends arrived, at a stop, late
  *     (movement and no arrival within 3000 ms plus the meter's lag),
  *     unseen (no movement in that time) or lost (the INA3221 stopped
- *     answering).
+ *     answering, or no PWM edge came within 3000 ms of the arm).
  *
  *     Not kept: a coprocessor restart reads 0 throughout. */
 enum {
@@ -505,7 +505,8 @@ typedef enum {
                                  plus the meter's lag                      */
     LINK_CAP_UNSEEN    = 7, /**< no movement within 3000 ms plus the
                                  meter's lag: neither timed nor late       */
-    LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering            */
+    LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering, or no PWM
+                                 edge came within 3000 ms of the arm       */
 } link_cap_state_t;
 
 #define LINK_OS_RANGE_OF(first, count) \

@@ -127,9 +127,22 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
  */
 #define OUT_STORE_GAP_WAIT_MS  1000u
 
+/*
+ * Where core 1 stands decides how a window opens.  Until either call below,
+ * core 1 is taken as not launched: a window is interrupts off and the
+ * operation run directly, which is what the boot's reclaims use.  The
+ * caller makes one of the two calls straight after launching core 1, with
+ * no store call in between.
+ */
+
+/** Core 1 registered for the flash lock-out: every window from now on
+ *  through flash_safe_execute(), which parks it in RAM. */
+void out_store_core1_parkable(void);
+
 /**
- * Switch the store's writing off for this boot: core 1 did not register
- * for the flash lock-out, and flash_safe_execute() would then refuse, or in
+ * Switch the store's writing off for this boot: core 1 was launched and
+ * did not register for the flash lock-out.  A direct window would fault
+ * core 1 executing from flash, and flash_safe_execute() would refuse, or in
  * a build with PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core.
  * Afterwards no erase or program runs and flash_safe_execute() is never
  * called: out_store_save() takes nothing, so nothing waits for a save that

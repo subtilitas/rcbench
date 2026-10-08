@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "hardware/flash.h"
+#include "hardware/sync.h"
 #include "pico/flash.h"
 #include "pico/stdlib.h"
 
@@ -233,9 +234,9 @@ static void survey(out_store_rec_t *recs)
 }
 
 /*
- * One erase or one program, as flash_safe_execute() runs it: interrupts off
- * on this core, and core 1 parked in RAM by the multicore lock-out, for the
- * whole operation.  The flash cannot be read while it is being written, and
+ * One erase or one program: interrupts off on this core, and core 1 either
+ * not launched yet or parked in RAM by the multicore lock-out
+ * (flash_window()), for the whole operation.  The flash cannot be read while it is being written, and
  * both cores execute from it.  That is also why none of this runs while the
  * bank is driving -- the caller's loop takes nothing off the CAN controller
  * and steps no output for the length of the window, so a disarm or a
@@ -271,19 +272,46 @@ static void flash_op_run(void *arg)
 static bool     s_refused;
 static uint32_t s_refused_ms;
 
-/* No window may open this boot: core 1 is not a lock-out victim
- * (out_store_off()).  Checked in front of every flash_safe_execute(). */
-static bool     s_off;
+/*
+ * How a window opens, by where core 1 stands (out_store.h):
+ *
+ *   ALONE     core 1 has not been launched.  Interrupts off on this core
+ *             and the operation run directly: nothing else executes from
+ *             flash.  flash_safe_execute() is not used here, because
+ *             whether it lets this through depends on a pico-sdk option.
+ *             In 2.3.0, multicore_lockout_ready() answers true for a
+ *             core 1 that never ran only while
+ *             PICO_MULTICORE_LOCKOUT_BEFORE_CORE1_STARTED is set
+ *             (multicore.c:374-381; it defaults to 1).  Without it,
+ *             default_enter_safe_zone_timeout_ms() reaches the
+ *             assert(false) at flash.c:189-190 under
+ *             PICO_FLASH_ASSERT_ON_UNSAFE, or refuses the window.
+ *   PARKABLE  core 1 registered for the lock-out (out_store_core1_parkable()):
+ *             every window through flash_safe_execute(), which parks it.
+ *   OFF       core 1 was launched and did not register (out_store_off()):
+ *             no window opens at all, since the direct path would fault a
+ *             core 1 executing from flash and flash_safe_execute() would
+ *             take that same assert, or refuse.
+ */
+typedef enum { STORE_ALONE = 0, STORE_PARKABLE, STORE_OFF } store_mode_t;
+static store_mode_t s_mode = STORE_ALONE;
+
+void out_store_core1_parkable(void)
+{
+    if (s_mode == STORE_ALONE) {
+        s_mode = STORE_PARKABLE;
+    }
+}
 
 void out_store_off(void)
 {
-    s_off     = true;
+    s_mode    = STORE_OFF;
     s_pending = false;
 }
 
 bool out_store_is_off(void)
 {
-    return s_off;
+    return s_mode == STORE_OFF;
 }
 
 static uint32_t clock_ms(void)
@@ -308,15 +336,24 @@ static bool refusing(void)
 static bool flash_window(flash_op_t *op)
 {
     op->done = false;
-    if (s_off) {
-        return false;             /* the gate: never into the lock-out */
+    switch (s_mode) {
+    case STORE_ALONE: {
+        const uint32_t irq = save_and_disable_interrupts();
+        flash_op_run(op);
+        restore_interrupts(irq);
+        return op->done;
     }
-    (void)flash_safe_execute(flash_op_run, op, OUT_STORE_LOCKOUT_MS);
-    if (!op->done) {
-        s_refused    = true;
-        s_refused_ms = clock_ms();
+    case STORE_PARKABLE:
+        (void)flash_safe_execute(flash_op_run, op, OUT_STORE_LOCKOUT_MS);
+        if (!op->done) {
+            s_refused    = true;
+            s_refused_ms = clock_ms();
+        }
+        return op->done;
+    case STORE_OFF:
+    default:
+        return false;             /* the gate: no window, no lock-out */
     }
-    return op->done;
 }
 
 static bool erase_sector(uint8_t sector, uint32_t *window_us)
@@ -370,7 +407,7 @@ bool out_store_load(out_store_t *out)
 
 void out_store_save(const out_store_t *cfg, uint32_t now_ms)
 {
-    if (cfg == NULL || s_off) {
+    if (cfg == NULL || s_mode == STORE_OFF) {
         return;                   /* off: the set-up lives in RAM only */
     }
     /* A record written to say what is already saved is a slot spent on
@@ -396,7 +433,7 @@ uint8_t out_store_last_record(void) { return s_last_record; }
 out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
                                 uint32_t now_ms)
 {
-    if (s_off || !s_pending || driving || refusing()) {
+    if (s_mode == STORE_OFF || !s_pending || driving || refusing()) {
         return OUT_STORE_IDLE;
     }
     /*
@@ -463,7 +500,7 @@ bool out_store_reclaim(bool driving, uint32_t quiet_ms)
 {
     /* A pending save comes first: it takes the erase it needs itself, and
      * two erases of the same sector would be one wasted cycle. */
-    if (s_off || driving || s_pending || !s_reclaim_wanted
+    if (s_mode == STORE_OFF || driving || s_pending || !s_reclaim_wanted
         || quiet_ms < OUT_STORE_QUIET_MS || refusing()) {
         return false;
     }

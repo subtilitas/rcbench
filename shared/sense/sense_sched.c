@@ -150,6 +150,7 @@ bool sense_sched_cap_arm(sense_sched_t *s, const sense_cap_arm_t *levels)
     memset(&s->cap, 0, sizeof(s->cap));
     s->cap.seq   = seq;
     s->cap.arm   = *levels;
+    s->cap.arm_t = (uint32_t)(s->io.now_us(s->io.ctx) / 100u);
     s->cap.state = SENSE_CAP_ARMED;
     return true;
 }
@@ -290,6 +291,13 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
         }
     }
     if (c->state == SENSE_CAP_ARMED) {
+        /* No edge in all this time: nothing renders the frame it waits
+         * for, and it is not left armed for ever. */
+        if ((int32_t)(at_t - c->arm_t)
+            >= (int32_t)(SENSE_CAP_EDGE_WAIT_MS * SENSE_CAP_T_PER_MS)) {
+            cap_end(c, SENSE_CAP_LOST);
+            return;
+        }
         if (v != NULL) {
             c->pre[c->pre_head].a    = a;
             c->pre[c->pre_head].clip = (int8_t)clip;

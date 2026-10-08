@@ -21,7 +21,8 @@
  *
  * Generations.  cfg_gen moves with every change of the set-up, cap_gen
  * with every arm, every disarm and every capture a stopped bank ends.  A
- * snapshot taken under an earlier set-up publishes nothing; one taken
+ * snapshot taken under an earlier set-up publishes nothing but the pins
+ * core 1 still holds (sense_page_held()); one taken
  * under an earlier capture order leaves the capture's registers as the
  * page set them, so CAP_STATE never steps back from armed to the last
  * capture's result.
@@ -72,6 +73,10 @@ typedef struct {
     uint16_t cap_gen;   /**< moves with each arm and each end of a
                              capture's order                             */
     bool     sensed;    /**< BENCH carries the INA228's numbers          */
+    uint8_t  bound;     /**< bit n: output slot n is bound to silicon
+                             (sense_page_bound()); 0 until told           */
+    uint64_t held;      /**< the pins core 1 still holds, as of its last
+                             snapshot, whatever set-up it was under      */
 } sense_page_t;
 
 void sense_page_init(sense_page_t *p);
@@ -126,12 +131,18 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
  * Refused: off the page (BAD_RANGE); a read-only register (READ_ONLY);
  * not the whole frame, CAP_ARM with bits it does not have, an INA3221
  * channel that is not 1 (LINK_SS_CAP_CH) or not read, an output channel
- * that is not a surface on a PWM slot, a level past 32767 mA, a movement or band of 0 or
+ * that is not a surface on a PWM slot bound to silicon
+ * (sense_page_bound()), a level past 32767 mA, a movement or band of 0 or
  * past 32767 mA (BAD_VALUE); an arm while @p o is not driving (NOT_ARMED).
  * An arm restarts the capture: CAP_STATE armed, the results 0.
  */
 uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o);
+
+/** Which output slots the silicon bound (bit n slot n): a capture arms
+ *  only on a PWM slot that renders frames.  The coprocessor says so after
+ *  every change of the bindings; until it does, no slot counts as bound. */
+void sense_page_bound(sense_page_t *p, uint8_t slots);
 
 void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
@@ -191,8 +202,14 @@ void sense_page_esc(sense_page_t *p, bool v_ok, float volts, bool i_ok,
 void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
                       uint16_t run_gen, bool driving, bench_state_t *b);
 
-/** The capability bits the parts make true: LINK_CAP_PACK_SENSE while the
- *  INA228 is online, LINK_CAP_SERVO_SENSE while the INA3221 is. */
+/**
+ * The capability bits the set-up makes true: LINK_CAP_PACK_SENSE while
+ * the INA228 is enabled, LINK_CAP_SERVO_SENSE while the INA3221 is --
+ * fitted as configured, not online now.  They change only with a SENSE
+ * write taken, because a panel reads the identity page at link-up and
+ * again after it writes SENSE, not on every poll; whether a part answers
+ * is FLAGS' and BENCH bit 5's, which it polls.
+ */
 uint16_t sense_page_caps(const sense_page_t *p);
 
 /** Whether either part is enabled, and so the bus runs. */
@@ -203,12 +220,19 @@ uint8_t  sense_page_sda(const sense_page_t *p);
 uint8_t  sense_page_scl(const sense_page_t *p);
 uint32_t sense_page_hz(const sense_page_t *p);
 
-/** The pins it holds, as a reservation mask; 0 while neither part is
- *  enabled. */
+/** The pins the set-up holds, as a reservation mask; 0 while neither part
+ *  is enabled. */
 uint64_t sense_page_pins(const sense_page_t *p);
 
+/** Those and the pins core 1 has not let go of yet (sense_page_t.held): a
+ *  bus moved or closed keeps its old pins for about 1 ms.  What no output
+ *  may have. */
+uint64_t sense_page_held(const sense_page_t *p);
+
 /** LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
- *  registers) that binds a slot to a pin the bus holds; 0 otherwise. */
+ *  registers) that binds a slot to a pin sense_page_held() names, the
+ *  refusal the SUPPLY page gives for its own; 0 otherwise.  Taken instead,
+ *  such a slot would be left unbound with nothing on the wire to say so. */
 uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots);
 
 #ifdef __cplusplus

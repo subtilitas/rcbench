@@ -37,6 +37,14 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
     v->cfg_gen  = cmd->cfg_gen;
     v->present  = 0u;
     v->scan_due = false;
+    /* Whatever happens to the bus, the set-up ends the capture and the run
+     * before it: the ones in force are taken as they stand and act from
+     * their next move, and a refused arm's LOST does not outlive the
+     * set-up the page has just cleared to idle. */
+    v->run_gen    = cmd->run_gen;
+    v->cap_gen    = cmd->cap_gen;
+    v->edge_given = true;
+    v->refused    = false;
     if (!any_part(&cmd->parts)
         || !v->io.open(v->io.sched.ctx, cmd->sda, cmd->scl)) {
         return;
@@ -46,12 +54,6 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
     v->scl  = cmd->scl;
     sense_sched_init(&v->sched, &v->io.sched, &cmd->parts);
     v->scan_due = true;
-    /* A fresh schedule holds no run and no capture: the ones in force are
-     * taken as they stand, and act from their next move. */
-    v->run_gen    = cmd->run_gen;
-    v->cap_gen    = cmd->cap_gen;
-    v->edge_given = true;
-    v->refused    = false;
 }
 
 static void capture(sense_svc_t *v, const sense_cmd_t *cmd)

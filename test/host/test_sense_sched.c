@@ -1011,6 +1011,30 @@ TEST_CASE(a_capture_with_no_ch1_level_before_the_edge_is_lost)
     CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
 }
 
+/* Armed and never given its edge -- nothing rendered the frame -- the
+ * capture ends lost at SENSE_CAP_EDGE_WAIT_MS, not armed for ever; an
+ * edge in time keeps it. */
+TEST_CASE(a_capture_with_no_edge_ends_lost)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.12;
+    tick();
+    /* Armed at the next tick's time: that tick is 0 ms after the arm, so
+     * the last one still armed is 2999 ms after it. */
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+    ticks(SENSE_CAP_EDGE_WAIT_MS);
+    CHECK_EQ(s.cap.state, SENSE_CAP_ARMED);
+    tick();
+    CHECK_EQ(s.cap.state, SENSE_CAP_LOST);
+    CHECK_EQ(s.cap.seq, 1u);
+
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+    ticks(SENSE_CAP_EDGE_WAIT_MS - 10u);
+    sense_sched_cap_edge(&s, g_us);
+    ticks(20u);
+    CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
+}
+
 /* The capture's states are SERVO_SENSE's CAP_STATE values. */
 TEST_CASE(the_capture_states_are_the_links)
 {
@@ -1051,6 +1075,7 @@ int main(void)
     RUN(a_capture_takes_the_level_before_the_command_from_ch1);
     RUN(the_level_before_the_command_is_the_50_ms_before_the_edge);
     RUN(a_capture_with_no_ch1_level_before_the_edge_is_lost);
+    RUN(a_capture_with_no_edge_ends_lost);
     RUN(the_capture_states_are_the_links);
     return test_summary("sense_sched");
 }

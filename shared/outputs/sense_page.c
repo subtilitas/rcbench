@@ -95,6 +95,11 @@ uint64_t sense_page_pins(const sense_page_t *p)
            | ((uint64_t)1u << p->sense[LINK_SN_SCL_PIN]);
 }
 
+uint64_t sense_page_held(const sense_page_t *p)
+{
+    return (p != NULL) ? (sense_page_pins(p) | p->held) : 0u;
+}
+
 /* Whether @p pin may carry the bus: in the bank, not another page's, not
  * reserved unless it is one this page already holds, and no output's. */
 static bool pin_free(const sense_page_t *p, const outputs_t *o,
@@ -244,18 +249,29 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
 
 /* Whether output channel @p ch is a surface a PWM slot renders: the one
  * kind of output whose pulse edge a capture can be timed from. */
-static bool pwm_surface(const outputs_t *o, uint8_t ch)
+static bool pwm_surface(const sense_page_t *p, const outputs_t *o, uint8_t ch)
 {
     if (o->channel[ch].role != OUT_ROLE_SURFACE) {
         return false;
     }
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        /* A slot the bank holds and the silicon could not bind -- a
+         * compare register another pin has, GP0 beside GP16 -- renders no
+         * frame to time from. */
         if (o->slot[i].driver == OUT_DRIVER_PWM
-            && o->slot[i].first_channel == ch) {
+            && o->slot[i].first_channel == ch
+            && (p->bound & (1u << i)) != 0u) {
             return true;
         }
     }
     return false;
+}
+
+void sense_page_bound(sense_page_t *p, uint8_t slots)
+{
+    if (p != NULL) {
+        p->bound = slots;
+    }
 }
 
 /* A capture's frame, CAP_ARM to CAP_BAND_MA, judged as an arm. */
@@ -278,7 +294,7 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
     const uint16_t *c = p->sense;
     if ((c[LINK_SN_ENABLE] & LINK_SN_EN_I3221) == 0u
         || (c[LINK_SN_I3221_CHANNELS] & (1u << (ch - 1u))) == 0u
-        || !pwm_surface(o, LINK_SS_ARM_OUT(arm))) {
+        || !pwm_surface(p, o, LINK_SS_ARM_OUT(arm))) {
         return LINK_NACK_BAD_VALUE;
     }
     if (!outputs_driving(o)) {
@@ -365,7 +381,7 @@ uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots)
     if (slots == NULL) {
         return LINK_NACK_BAD_VALUE;
     }
-    const uint64_t held = sense_page_pins(p);
+    const uint64_t held = sense_page_held(p);
     for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u && r[LINK_OS_PIN] <= OUT_MAX_PIN
@@ -563,7 +579,13 @@ static void publish_capture(uint16_t *r, const sense_snap_t *s)
 void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
                         uint16_t run_gen)
 {
-    if (p == NULL || s == NULL || s->cfg_gen != p->cfg_gen) {
+    if (p == NULL || s == NULL) {
+        return;
+    }
+    /* The pins first and whatever set-up the snapshot was taken under:
+     * one from before a change is exactly when old pins are still held. */
+    p->held = s->held;
+    if (s->cfg_gen != p->cfg_gen) {
         return;
     }
     publish_sense(p->sense, s, run_gen);
@@ -655,12 +677,12 @@ uint16_t sense_page_caps(const sense_page_t *p)
     if (p == NULL) {
         return 0u;
     }
-    const uint16_t f = p->sense[LINK_SN_FLAGS];
+    const uint16_t en = p->sense[LINK_SN_ENABLE];
     uint16_t caps = 0u;
-    if ((f & LINK_SN_I228_ONLINE) != 0u) {
+    if ((en & LINK_SN_EN_I228) != 0u) {
         caps |= (uint16_t)LINK_CAP_PACK_SENSE;
     }
-    if ((f & LINK_SN_I3221_ONLINE) != 0u) {
+    if ((en & LINK_SN_EN_I3221) != 0u) {
         caps |= (uint16_t)LINK_CAP_SERVO_SENSE;
     }
     return caps;
