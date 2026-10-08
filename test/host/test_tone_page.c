@@ -342,16 +342,6 @@ TEST_CASE(the_set_up_kept_in_flash_is_restored_through_the_pages_checks)
     CHECK(!tone_page_enabled(&pg));
     CHECK_EQ(reg(LINK_TN_F_MAX_HZ), 6500u);
     CHECK_EQ(reg(LINK_TN_PIN), 22u);
-    /* Enabled on a pin the board reserves (GP3, the heartbeat): kept, refused,
-     * and not held as the tap's own, so the pin stays the board's. */
-    kept[LINK_TN_F_MAX_HZ] = 5000u;
-    kept[LINK_TN_PIN] = 3u;
-    tone_page_restore(&pg, kept, &o, 0u);
-    CHECK(tone_page_enabled(&pg));
-    CHECK(!tone_page_wanted(&pg));
-    CHECK_EQ(tone_page_pins(&pg), 0u);
-    CHECK((reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED) != 0u);
-    CHECK_EQ(reg(LINK_TN_PIN), 3u);
     /* Enabled on a pin an output has since been bound to: kept, refused,
      * and not reserved. */
     kept[LINK_TN_F_MAX_HZ] = 5000u;

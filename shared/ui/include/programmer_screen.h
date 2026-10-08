@@ -53,7 +53,7 @@ void programmer_screen_supply(const supply_state_t *st);
  * The phase tap as the control task last read it (tone_link_readout()),
  * every frame.  While the tap is enabled on SETUP a stick run's page
  * shows it: its state, the last window's pitch, the last beeps, and the
- * counts of beeps lost, lows ignored and beeps not read.  Read only: the
+ * counts of beeps lost and beeps not read.  Read only: the
  * run still counts its beeps from the supply current.
  */
 void programmer_screen_tone(const tone_readout_t *r);

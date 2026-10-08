@@ -2997,7 +2997,6 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
     const int bare = tone_drawn(&r, &t, buf++ & 1);
     t.win_freq_dhz = 15234u;
     t.lost = 12u;
-    t.glitches = 345u;
     t.missed = 6u;
     t.n = TONE_LINK_SHOWN;
     for (unsigned i = 0u; i < TONE_LINK_SHOWN; ++i) {

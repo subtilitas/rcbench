@@ -349,13 +349,15 @@ static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
                 t->synced     = false;
                 t->ring_empty = true;
                 t->sel_ok     = false;
+                /* The flags start again with the capture; a sticky flag
+                 * already told stays told while the capture goes on. */
+                t->was_flags  = 0u;
             }
         } else {
             memcpy(&t->held[FRAME1_AT], t->out,
                    FRAME1_CFG * sizeof(uint16_t));
             t->refused0 = false;
         }
-        t->was_flags = 0u;
         return;
     }
     if (w == TONE_LINK_OP_FRAME0) {

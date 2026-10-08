@@ -928,8 +928,7 @@ ist, mindestens 150 ms:
 Solange der Phasenabgriff unter SETUP eingeschaltet ist, ergänzt die Seite des
 Laufs unter der Stromzeile eine reine Anzeige: den Zustand des Abgriffs, die
 Tonhöhe seines letzten 8-ms-Fensters, die Zähler der Pieptöne, die der
-Koprozessor verlor, der Tiefs, die er als kürzer als 500 ns ignorierte, und
-der Pieptöne, die das Panel nicht gelesen hat, und die letzten vier Pieptöne
+Koprozessor verlor, und der Pieptöne, die das Panel nicht gelesen hat, und die letzten vier Pieptöne
 mit Nummer, Länge in ms und mittlerer Tonhöhe in Hz. Der Lauf zählt seine
 Pieptöne weiter aus dem Netzteilstrom.
 

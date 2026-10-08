@@ -1919,7 +1919,7 @@ static uint32_t sp_signature(void)
         e->hand_menu ? 1u : 0u,
         /* The phase tap's readout, which a run's page shows beside it. */
         (uint32_t)s.tone.state, s.tone.overrun ? 1u : 0u,
-        s.tone.win_freq_dhz, s.tone.lost, s.tone.glitches, s.tone.missed,
+        s.tone.win_freq_dhz, s.tone.lost, s.tone.missed,
         s.tone.n, (s.tone.n > 0u) ? s.tone.beeps[0].seq : 0u,
     };
     uint32_t h = 2166136261u;
@@ -3003,8 +3003,7 @@ static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
     }
     char line[128];
     snprintf(line, sizeof(line), TR(SP_TONE_HEAD), sp_tone_state(r),
-             pitch_txt, (unsigned)r->lost, (unsigned)r->glitches,
-             (unsigned)r->missed);
+             pitch_txt, (unsigned)r->lost, (unsigned)r->missed);
     gfx_text(c, PAD + 12, y, line, UI_FONT_LABEL,
              fault ? ui_theme_color(UI_C_WARN) : dim, 1);
     const int x0 = PAD + 12 + (gfx_text_cells(TR(SP_TONE_BEEPS)) + 2) * 8;

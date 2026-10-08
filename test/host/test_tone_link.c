@@ -114,6 +114,7 @@ static int fake_write(uint8_t off, uint8_t n, const uint16_t *regs)
             || next[LINK_TN_PIN] != fk.cfg[LINK_TN_PIN]
             || (fk.flags & LINK_TN_PIN_REFUSED) != 0u)) {
         memset(fk.ring, 0, sizeof(fk.ring));
+        fk.flags &= (uint16_t)~LINK_TN_OVERRUN;
         ++fk.captures;
     }
     memcpy(fk.cfg, next, sizeof(next));
@@ -1146,6 +1147,35 @@ TEST_CASE(a_pin_not_free_and_an_overrun_are_said_on_their_edges)
     CHECK_EQ(tone_link_event(&tl, now + 300000u), TONE_LINK_EV_OVERRUN);
 }
 
+TEST_CASE(an_overrun_said_once_is_not_said_again_by_an_edit_of_the_range)
+{
+    fresh(8u);
+    tap_on();
+    fk.flags = LINK_TN_RUNNING | LINK_TN_OVERRUN;
+    polls(3);
+    CHECK_EQ(tone_link_event(&tl, now + 100000u), TONE_LINK_EV_OVERRUN);
+
+    /* The range moves: the capture goes on and the flag stays set. */
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.f_min_hz = 600u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.captures, 1u);
+    CHECK(fk.flags & LINK_TN_OVERRUN);
+    CHECK_EQ(tone_link_event(&tl, now + 200000u), 0u);
+
+    /* Another pin starts the capture again; a new overrun is news. */
+    w.pin = (uint16_t)(LINK_TN_DEFAULT_PIN + 1u);
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.captures, 2u);
+    CHECK_EQ(tone_link_event(&tl, now + 300000u), 0u);
+    fk.flags |= LINK_TN_OVERRUN;
+    polls(3);
+    CHECK_EQ(tone_link_event(&tl, now + 400000u), TONE_LINK_EV_OVERRUN);
+}
+
 TEST_CASE(events_are_handed_out_one_at_a_time_and_can_be_put_back)
 {
     fresh(8u);
@@ -1278,6 +1308,7 @@ int main(void)
     RUN(a_status_that_stops_coming_is_no_longer_running);
     RUN(a_pin_not_free_and_an_overrun_are_said_on_their_edges);
     RUN(events_are_handed_out_one_at_a_time_and_can_be_put_back);
+    RUN(an_overrun_said_once_is_not_said_again_by_an_edit_of_the_range);
     RUN(a_new_link_forgets_what_the_last_one_said);
     RUN(the_history_stays_across_a_lost_link);
     RUN(null_arguments_are_taken);

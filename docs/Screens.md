@@ -853,8 +853,8 @@ green is on while a beep is detected, for at least 150 ms:
 
 While the phase tap is enabled on SETUP the run's page adds a read-only
 readout under the current line: the tap's state, the pitch of its last 8 ms
-window, the counts of beeps the coprocessor lost, lows it ignored as
-shorter than 500 ns and beeps the panel did not read, and the last four
+window, the counts of beeps the coprocessor lost and beeps the panel did not
+read, and the last four
 beeps with their number, length in ms and mean pitch in Hz. The run still
 counts its beeps from the supply current.
 

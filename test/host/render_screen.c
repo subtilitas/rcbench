@@ -492,7 +492,6 @@ static void stick_step(stick_rig_t *r)
         t.win_freq_dhz = 15234u;
         t.win_periods = 12u;
         t.lost = 0u;
-        t.glitches = 3u;
         t.n = TONE_LINK_SHOWN;
         for (unsigned i = 0u; i < TONE_LINK_SHOWN; ++i) {
             t.beeps[i].seq = (uint16_t)(41u - i);

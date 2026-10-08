@@ -561,9 +561,7 @@ typedef enum {
  *     at one.
  *     LOST counts beeps dropped, modulo 65536: the detector's queue full,
  *     or the hand-over between the cores full.  GLITCHES counts lows the
- *     detector ignored as shorter than 500 ns, modulo 65536.  The
- *     capture's 8 us hold-off removes every low shorter than 8 us before
- *     the detector sees it, so the register reads 0 on the tap.
+ *     detector ignored as shorter than 500 ns, modulo 65536.
  *
  *     The capture starts when the tap is enabled or its pin changes, and
  *     then empties the ring; the numbers go on.  Registers 0 to 6 are kept
