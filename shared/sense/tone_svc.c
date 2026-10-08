@@ -130,11 +130,13 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
         report(s, st);
         return 0u;
     }
-    if (fifo_overrun) {
-        /* The state machine dropped a word: the edges have a hole.  The
-         * beep under way ends before the pass's words go in, so none
-         * completes across it. */
-        tone_flush(&s->det);
+    /* A dropped word leaves the FIFO's older words in the ring beside the
+     * newer ones that follow the hole, so every word taken in this pass is
+     * suspect, not only the ones after the gap.  They are read to move the
+     * reader on and fed to nobody; the beep under way ends and the next
+     * rise starts a new run. */
+    bool discard = fifo_overrun;
+    if (discard) {
         s->overrun = true;
     }
     if (ring != NULL) {
@@ -149,12 +151,17 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
                 s->overrun = true;
             }
             if (n != 0u) {
-                tone_feed(&s->det, buf, n);
+                if (!discard) {
+                    tone_feed(&s->det, buf, n);
+                }
                 if (buf[n - 1u].t > s->hold.out_t) {
                     s->hold.out_t = buf[n - 1u].t;
                 }
             }
         } while (n == TONE_SVC_BATCH);
+    }
+    if (discard) {
+        tone_flush(&s->det);
     }
     const uint64_t margin = tone_svc_ticks(TONE_SVC_MARGIN_US);
     tone_advance(&s->det,

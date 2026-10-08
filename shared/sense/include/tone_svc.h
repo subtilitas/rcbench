@@ -111,8 +111,10 @@ uint64_t tone_svc_ticks(uint64_t us);
  * One pass.  @p ring is the capture ring (TONE_RING_WORDS words), @p wr the
  * slot the DMA writes next, @p now the present in ticks since the capture
  * started, @p fifo_overrun true when the state machine dropped a word
- * (its FIFO was full).  The beeps finished go to @p rec, at most
- * TONE_SVC_BEEPS; the count is returned.  @p st is always written.
+ * (its FIFO was full): the words read in that pass are discarded, the beep
+ * under way ends and the status shows the overrun.  The beeps finished go
+ * to @p rec, at most TONE_SVC_BEEPS; the count is returned.  @p st is
+ * always written.
  */
 size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
                      const uint32_t *ring, uint32_t wr, uint64_t now,

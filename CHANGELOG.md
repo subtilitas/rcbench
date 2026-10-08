@@ -24,7 +24,7 @@ history is in git.
   whether a pitch change bounds it, read by number through EVT_SEL without
   consuming one. The set-up, registers 0 to 6, is kept in the coprocessor's
   flash (store record version 6; records of version 3 to 5 still read), and
-  the tap starts at boot. The read at 20 Hz is registers 8 to 23, one request
+  the tap starts at boot, and a saved enabled pin the board reserves starts refused (PIN_REFUSED), the set-up kept. GLITCHES (register 23) counts lows under 500 ns, which the capture's 8 µs hold-off removes first, so it reads 0 on the tap. The read at 20 Hz is registers 8 to 23, one request
   and four data frames, about 1.7 % of the bus. No capability bit. A 4.7
   coprocessor answers the page with BAD_PAGE; a 4.7 panel never writes it.
 - **The coprocessor captures the phase tap's edges.** A PIO state machine
@@ -38,8 +38,9 @@ history is in git.
   (`shared/sense/edge_ring.c`, `tone_svc.c`), extending the 31-bit count to 64
   bits against the microsecond timer, counting a lap of the ring, also one
   before the first read (the ring is cleared at the start), or a FIFO
-  overflow as an overrun that ends the beep under way, before the pass's
-  words go in. Core 0 waits up to 5 ms for core 1 to finish its pass before
+  overflow as an overrun that ends the beep under way; the words read in the
+  pass that sees the overflow are discarded, since they hold edges from both
+  sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before
   it stops or moves the capture. The pin is an input
   with its pull-down on while the tap is disabled. The host suite assembles
   the PIO program from its source, runs it in a cycle-counting model and

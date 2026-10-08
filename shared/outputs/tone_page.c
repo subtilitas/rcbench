@@ -198,11 +198,14 @@ void tone_page_restore(tone_page_t *p, const uint16_t *cfg,
     if (!values_ok(p, next)) {
         tone_page_defaults(next);
     }
+    /* The saved pin is judged before it is installed: once the set-up is in
+     * the page, the page owns the pin and the reservations are not asked. */
+    const bool refused = (next[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u
+                         && !pin_free(p, o, next[LINK_TN_PIN], taken);
     memcpy(p->cfg, next, sizeof(p->cfg));
     ++p->gen;
     forget_status(p);
-    p->refused = tone_page_enabled(p)
-                 && !pin_free(p, o, p->cfg[LINK_TN_PIN], taken);
+    p->refused = refused;
 }
 
 void tone_page_revert(tone_page_t *p, const uint16_t *cfg, bool refused)
