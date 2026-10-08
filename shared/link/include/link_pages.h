@@ -46,6 +46,7 @@ typedef enum {
     LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART; wiring kept */
     LINK_PAGE_SENSE     = 0x2B, /**< the current monitors' bus; set-up kept */
     LINK_PAGE_SERVO_SENSE = 0x2C, /**< the servo rail's channels, a move timed */
+    LINK_PAGE_TONE      = 0x2D, /**< ESC tones from one motor phase; set-up kept */
 } link_page_id_t;
 
 /*
@@ -58,11 +59,12 @@ typedef enum {
  * Only the major has to agree for the link to come up and the bench to arm.
  * The panel reads the minor at link-up and sends nothing to a page the
  * coprocessor's minor does not have: SUPPLY from 4.3, SENSE and
- * SERVO_SENSE from 4.7.  A coprocessor never asks the panel's minor; a
+ * SERVO_SENSE from 4.7, TONE from 4.8.  A coprocessor never asks the
+ * panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 7u
+#define LINK_PROTOCOL_MINOR 8u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -508,6 +510,138 @@ typedef enum {
     LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering, or no PWM
                                  edge came within 3000 ms of the arm       */
 } link_cap_state_t;
+
+/* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
+ *     controller), heard on one motor phase.  One GPIO reads the phase
+ *     through a series resistor and a zener clamp; a PIO (programmable
+ *     input/output) state machine stamps its edges at 26.7 ns, and
+ *     shared/sense/tone.c turns them into beeps and their pitch.
+ *
+ *     ENABLE to F_MAX_HZ are one frame and SPLIT_PCT to register 7 the
+ *     next.  ENABLE bit 0 runs the tap.  PIN is the GPIO.  F_MIN_HZ and
+ *     F_MAX_HZ bound the tones heard: 50 to 2000 Hz, and F_MIN_HZ + 1 to
+ *     6900 Hz (EVT_FREQ_DHZ holds 0.1 Hz in 16 bits, to 6553.5 Hz).
+ *     SPLIT_PCT is how far a pitch moves, in percent, to start a new beep
+ *     without a silence: 0 splits on silence only, 50 at most.  GAP_MS is
+ *     the silence that ends a beep, 1 to 100 ms and at least the period of
+ *     F_MIN_HZ.  MIN_PERIODS is how many tone periods make a beep, 1 to
+ *     64.  Register 7 reads 0 and takes only 0.
+ *
+ *     Refused with BAD_VALUE: a value out of its range, a combination the
+ *     detector refuses (tone_init()), and, while the tap is enabled, a pin
+ *     past the bank, reserved, bound to an output, held by the SENSE or
+ *     SUPPLY page, or an ADC (analog to digital converter) pin: GP26 to
+ *     GP29 on the RP2350A and GP40 to GP47 on the RP2354B, rated IOVDD +
+ *     0.5 V and not fault tolerant.  The pin is no output's while the tap
+ *     is enabled, and an OUTPUTS write that binds it is refused, as are a
+ *     SENSE or SUPPLY write that takes it.  A change is taken armed or
+ *     not: the tap is an input and drives nothing.
+ *
+ *     FLAGS onwards are read only: FLAGS (link_tone_flag_t); WINDOW, the
+ *     detector's 8 ms windows counted modulo 65536; WIN_FREQ_DHZ, the last
+ *     window's tone in 0.1 Hz, 0 with no tone; WIN_PERIODS, the periods in
+ *     it.
+ *
+ *     The coprocessor keeps the last LINK_TN_RING beeps and numbers them
+ *     from 1 to 65535, then from 1 again.  BEEP_HEAD is the newest number,
+ *     0 before the first beep.  EVT_SEL names the beep that EVT_SEQ to
+ *     EVT_FLAGS show.  It is the one writable register after register 7,
+ *     it is not kept, and a read does not consume a beep, so a reply lost
+ *     on the link loses nothing.  EVT_SEQ equals EVT_SEL while that beep is
+ *     in the ring; when it has left the ring, or has not happened yet,
+ *     EVT_SEQ and registers 15 to 21 read 0.  EVT_START_MS is the beep's
+ *     first rise in ms since ENABLE was written 1, 32 bit, low register
+ *     first (49.7 days); EVT_LEN_DMS its length to its last edge in 0.1 ms,
+ *     to 6553.5 ms; EVT_FREQ_DHZ its mean pitch in 0.1 Hz; EVT_BURSTS its
+ *     bursts, to 65535; EVT_CARRIER_HHZ the carrier it was chopped at in
+ *     100 Hz steps, 0 unchopped.  EVT_FLAGS bit 0: the beep began at a
+ *     pitch change with no silence before it; bit 1: it ended at one.
+ *     LOST counts beeps dropped, modulo 65536: the detector's queue full,
+ *     or the hand-over between the cores full.  GLITCHES counts lows the
+ *     detector ignored as shorter than 500 ns, modulo 65536.
+ *
+ *     Registers 0 to 6 are kept in the coprocessor's flash beside the
+ *     SENSE set-up, and the tap starts at boot.  Nothing else is kept.
+ *
+ *     While the tap is disabled the pin is an input with its pull-down on,
+ *     so a wire connected to nothing reads low.  The panel's read at
+ *     20 Hz is registers 8 to 23: a request and 4 data frames. */
+enum {
+    LINK_TN_ENABLE       = 0,
+    LINK_TN_PIN          = 1,
+    LINK_TN_F_MIN_HZ     = 2,
+    LINK_TN_F_MAX_HZ     = 3,
+    LINK_TN_SPLIT_PCT    = 4,
+    LINK_TN_GAP_MS       = 5,
+    LINK_TN_MIN_PERIODS  = 6,
+    LINK_TN_RESERVED_7   = 7,   /**< reads 0; written 0                  */
+    LINK_TN_FLAGS        = 8,   /**< read only from here                 */
+    LINK_TN_WINDOW       = 9,
+    LINK_TN_WIN_FREQ_DHZ = 10,
+    LINK_TN_WIN_PERIODS  = 11,
+    LINK_TN_BEEP_HEAD    = 12,
+    LINK_TN_EVT_SEL      = 13,  /**< writable, not kept                  */
+    LINK_TN_EVT_SEQ      = 14,
+    LINK_TN_EVT_START_LO = 15,  /**< ms since ENABLE, uint32_t, low first*/
+    LINK_TN_EVT_START_HI = 16,
+    LINK_TN_EVT_LEN_DMS  = 17,  /**< 0.1 ms                              */
+    LINK_TN_EVT_FREQ_DHZ = 18,  /**< 0.1 Hz                              */
+    LINK_TN_EVT_BURSTS   = 19,
+    LINK_TN_EVT_CARRIER_HHZ = 20, /**< 100 Hz steps; 0 unchopped         */
+    LINK_TN_EVT_FLAGS    = 21,
+    LINK_TN_LOST         = 22,
+    LINK_TN_GLITCHES     = 23,
+    LINK_TN_COUNT        = 24,
+};
+/** The set-up, ENABLE to register 6: what a write may change, and what
+ *  flash keeps. */
+#define LINK_TN_CONFIG_COUNT 7u
+
+/* ENABLE's bit. */
+#define LINK_TN_EN_TAP   0x01u
+
+/* The ranges a write is held to. */
+#define LINK_TN_F_MIN_LO       50u
+#define LINK_TN_F_MIN_HI     2000u
+#define LINK_TN_F_MAX_HI     6900u
+#define LINK_TN_SPLIT_MAX      50u
+#define LINK_TN_GAP_MS_MIN      1u
+#define LINK_TN_GAP_MS_MAX    100u
+#define LINK_TN_PERIODS_MIN     1u
+#define LINK_TN_PERIODS_MAX    64u
+/** Beeps the coprocessor keeps. */
+#define LINK_TN_RING           64u
+
+/** The set-up before anything is written: the tap off, on GP22 (pad 29);
+ *  400 to 6500 Hz, 8 % split, 3 ms gap, 3 periods a beep. */
+#define LINK_TN_DEFAULT_PIN        22u
+#define LINK_TN_DEFAULT_F_MIN     400u
+#define LINK_TN_DEFAULT_F_MAX    6500u
+#define LINK_TN_DEFAULT_SPLIT       8u
+#define LINK_TN_DEFAULT_GAP_MS      3u
+#define LINK_TN_DEFAULT_PERIODS     3u
+
+/** What the coprocessor says about the tap. */
+typedef enum {
+    /** The PIO state machine and its DMA ring run on the pin. */
+    LINK_TN_RUNNING     = 1u << 0,
+    /** The tap is enabled and does not run: the pin is not free (a kept
+     *  set-up met a binding or a reservation at boot) or no PIO state
+     *  machine could take it. */
+    LINK_TN_PIN_REFUSED = 1u << 1,
+    /** The capture ring or the state machine's FIFO was overrun since
+     *  ENABLE was written 1; the beep under way was cut at its last edge.
+     *  Cleared when ENABLE is written 0. */
+    LINK_TN_OVERRUN     = 1u << 2,
+    /** A run of bursts is under way. */
+    LINK_TN_BEEP        = 1u << 3,
+    /** The last window held a tone. */
+    LINK_TN_TONE        = 1u << 4,
+} link_tone_flag_t;
+
+/** EVT_FLAGS' bits, tone_beep_flag_t's. */
+#define LINK_TN_EVT_AFTER_CHANGE  0x01u
+#define LINK_TN_EVT_BEFORE_CHANGE 0x02u
 
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))

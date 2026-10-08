@@ -434,7 +434,7 @@ TEST_CASE(the_version_string_says_what_the_numbers_say)
 TEST_CASE(the_sense_pages_extend_the_map_without_moving_it)
 {
     CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 7u);
+    CHECK(LINK_PROTOCOL_MINOR >= 7u);
     CHECK_EQ(LINK_PAGE_BENCH, 0x20);
     CHECK_EQ(LINK_PAGE_SERVO, 0x29);
     CHECK_EQ(LINK_PAGE_SUPPLY, 0x2A);
@@ -453,6 +453,30 @@ TEST_CASE(the_sense_pages_extend_the_map_without_moving_it)
     CHECK_EQ(LINK_SN_FLAGS, (int)LINK_SN_CONFIG_COUNT);
     CHECK_EQ(LINK_SS_CAP_STATE - LINK_SS_CAP_ARM, (int)LINK_SS_CAP_FRAME);
     CHECK_EQ(LINK_SS_CAP_FRAME, 4u);
+}
+
+/*
+ * Protocol 4.8 adds the TONE page and moves nothing.  The set-up is two
+ * frames of four, the read-only block starts on a frame, and the page fits.
+ */
+TEST_CASE(the_tone_page_extends_the_map_without_moving_it)
+{
+    CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 8u);
+    CHECK_EQ(LINK_PAGE_SERVO_SENSE, 0x2C);
+    CHECK_EQ(LINK_PAGE_TONE, 0x2D);
+    CHECK(LINK_TN_COUNT <= LINK_MAX_REGS);
+    CHECK_EQ(LINK_TN_COUNT, 24);
+    CHECK_EQ(LINK_TN_ENABLE, 0);
+    CHECK_EQ(LINK_TN_SPLIT_PCT, 4);
+    CHECK_EQ(LINK_TN_RESERVED_7, 7);
+    CHECK_EQ(LINK_TN_CONFIG_COUNT, 7u);
+    CHECK_EQ(LINK_TN_FLAGS, 8);
+    CHECK_EQ(LINK_TN_EVT_SEL, 13);
+    CHECK_EQ(LINK_TN_EVT_START_HI - LINK_TN_EVT_START_LO, 1);
+    /* The 20 Hz read is registers 8 to 23: four frames of four. */
+    CHECK_EQ(LINK_TN_COUNT - LINK_TN_FLAGS, 16);
+    CHECK_EQ(LINK_TN_RING, 64u);
 }
 
 /* Two flags join BENCH at the bits that were free, and none of the old
@@ -514,6 +538,7 @@ static const link_page_t k_pages_47[] = {
 static void fresh_47(void)
 {
     fresh();
+    g.identity[LINK_ID_PROTOCOL_MINOR] = 7u;   /* the pages below are 4.7's */
     outputs_init(&s_out, 0u);
     sense_page_init(&s_sense);
     link_dev_init(&dev, k_pages_47, 4, &g, 0);
@@ -667,6 +692,7 @@ int main(void)
     RUN(every_request_is_answered);
     RUN(the_version_string_says_what_the_numbers_say);
     RUN(the_sense_pages_extend_the_map_without_moving_it);
+    RUN(the_tone_page_extends_the_map_without_moving_it);
     RUN(the_bench_flags_add_bits_5_and_6_and_move_none);
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
