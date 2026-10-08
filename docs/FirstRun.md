@@ -270,9 +270,11 @@ ships with, two
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
-**Build the bring-up image.** The panel cannot write the SENSE page yet.
-This build enables both parts at the page's defaults while no set-up is
-stored in flash; it saves nothing:
+**Set it up on the panel.** SETUP → INTERFACES: `INA228` and `INA3221` ON.
+The other sensor settings default to the modules above as shipped: INA228
+at 0x45 with 200 µΩ, INA3221 at 0x40 with 0.1 Ω, SDA on GP16 and SCL on
+GP17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
+parts at the page's defaults while no set-up is stored in flash:
 
 ```bash
 cmake -S firmware/iomcu -B firmware/iomcu/build-sense -DIOMCU_SENSE_BRINGUP=ON

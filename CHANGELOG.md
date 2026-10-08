@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+## 0.14.0 - 2026-10-08
+
+Both boards must be updated together: the link protocol is 4.7, and a 0.13
+board does not link with a 0.14 one. The coprocessor reads an INA228 in the
+ESC's power path and an INA3221 on the servo rail over I2C at 400 kHz, and
+the panel sets them up under SETUP → INTERFACES and shows them on MOTOR &
+ESC, in alerts and in the run log. The servo test no longer fails small
+servos it cannot measure, the coprocessor refuses the module's own pins,
+and the log viewer zooms and pans with two fingers. None of the sensor work
+has run on hardware.
+
 ### Added
 
 - **Zoom in the log viewer's plot.** Two fingers spread to zoom in, pinch to
