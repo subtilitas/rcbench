@@ -28,16 +28,20 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz)
     c->window_min_periods = 2u;
 }
 
-/* Ticks in @p us, rounded down. */
-static uint64_t us_ticks(uint32_t tick_hz, uint32_t us)
-{
-    return (uint64_t)tick_hz * us / 1000000u;
-}
-
 /* @p a / @p b rounded up. */
 static uint64_t div_up(uint64_t a, uint64_t b)
 {
     return (a + b - 1u) / b;
+}
+
+/* A duration of @p ns as ticks of @p tick_hz, rounded up: the one rule
+ * for every time setting (window, glitch, hold-off, gap), so a low or a
+ * silence counts as that long only once it has lasted that long.  A
+ * setting derived from another, as start_low from the hold-off, is
+ * derived from the rounded ticks, never rounded again. */
+static uint64_t ns_ticks(uint32_t tick_hz, uint64_t ns)
+{
+    return div_up((uint64_t)tick_hz * ns, 1000000000u);
 }
 
 bool tone_init(tone_t *d, const tone_cfg_t *c)
@@ -59,19 +63,18 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
         return false;
     }
     d->c         = *c;
-    d->win_ticks = us_ticks(c->tick_hz, c->window_us);
+    d->win_ticks = ns_ticks(c->tick_hz, (uint64_t)c->window_us * 1000u);
     /* Each bound in whole ticks, rounded so that a period exactly at it,
      * which the tick clock sees as the tick below or the tick above, is
      * inside: the shortest tone period down, the longest up, the carrier's
-     * up.  The glitch and the gap round up: a low or a silence counts as
-     * that long only once it has lasted that long. */
+     * up.  Durations by ns_ticks(); start_low is twice the hold-off as
+     * the capture's tone_holdoff_init() rounds it. */
     d->per_min   = c->tick_hz / c->f_max_hz;
     d->per_max   = div_up(c->tick_hz, c->f_min_hz);
     d->car_max   = div_up(c->tick_hz, c->carrier_min_hz);
-    d->glitch    = div_up((uint64_t)c->tick_hz * c->glitch_ns, 1000000000u);
-    d->gap       = div_up((uint64_t)c->tick_hz * c->gap_us, 1000000u);
-    d->start_low = div_up(2u * (uint64_t)c->tick_hz * c->hold_ns,
-                          1000000000u);
+    d->glitch    = ns_ticks(c->tick_hz, c->glitch_ns);
+    d->gap       = ns_ticks(c->tick_hz, (uint64_t)c->gap_us * 1000u);
+    d->start_low = 2u * ns_ticks(c->tick_hz, c->hold_ns);
     /*
      * The shortest time between two burst starts that makes a period the
      * detector counts: at least half per_min, the shortest period in
@@ -602,7 +605,7 @@ void tone_holdoff_init(tone_holdoff_t *h, uint32_t tick_hz, uint32_t hold_ns)
         return;
     }
     memset(h, 0, sizeof *h);
-    h->hold = div_up((uint64_t)tick_hz * hold_ns, 1000000000u);
+    h->hold = ns_ticks(tick_hz, hold_ns);
 }
 
 size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,

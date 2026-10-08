@@ -76,8 +76,10 @@
  * - Rounding.  The period of f_max_hz rounds down, the periods of f_min_hz
  *   and carrier_min_hz round up, so a period exactly at a bound, which the
  *   tick clock sees as the tick below or the tick above, is inside it.
- *   glitch_ns and gap_us round up: a low or a silence counts once it has
- *   lasted that long.
+ *   Every time setting -- window_us, glitch_ns, hold_ns, gap_us --
+ *   rounds up to whole ticks by one rule, and start_low is twice the
+ *   hold-off so rounded, the hold-off the capture applies: a low or a
+ *   silence counts once it has lasted that long.
  *
  * What the edges cannot tell:
  *
