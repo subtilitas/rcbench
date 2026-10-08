@@ -137,7 +137,7 @@ TEST_CASE(the_ina228_set_up_is_taken_when_the_driver_calibrates_it)
         50u, 81u, 82u, 100u, 200u, 250u, 1000u, 16384u, 16385u, 20000u,
     };
     static const uint16_t da[] = {
-        10u, 20u, 21u, 100u, 2048u, 2049u, 5000u, 6000u, 6553u,
+        10u, 20u, 21u, 100u, 2048u, 2049u, 2500u, 3000u,
     };
     unsigned taken = 0u;
     unsigned refused = 0u;
@@ -169,13 +169,11 @@ TEST_CASE(the_ina228_set_up_is_taken_when_the_driver_calibrates_it)
     /* 163.84 mV exactly is inside; a step past it is not. */
     CHECK_EQ(i228(0x45u, 16384u, 100u, 0u), 0u);
     CHECK_EQ(i228(0x45u, 16385u, 100u, 0u), LINK_NACK_BAD_VALUE);
-    /* Under 81.92 uOhm ADCRANGE 0 would read past 2000 A: only a maximum
-     * that fits ADCRANGE 1 is taken.  At 50 uOhm that is up to 819.2 A,
-     * past the page's 655.3 A, so the floor always works. */
-    CHECK_EQ(i228(0x45u, 50u, 6553u, 0u), 0u);
-    CHECK_EQ(i228(0x45u, 81u, 5000u, 0u), 0u);           /* 40.5 mV: 1 */
-    CHECK_EQ(i228(0x45u, 81u, 6000u, 0u), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(i228(0x45u, 82u, 6000u, 0u), 0u);           /* 1998 A: 0 */
+    /* The page's 300 A on its smallest shunts stays inside ADCRANGE 1:
+     * 24.3 mV across 81 uOhm, so the 2000 A refusal of ADCRANGE 0 below
+     * 81.92 uOhm is never reached from the page. */
+    CHECK_EQ(i228(0x45u, 50u, 3000u, 0u), 0u);
+    CHECK_EQ(i228(0x45u, 81u, 3000u, 0u), 0u);
 }
 
 /* DAOKAI's R100: 163.8 mV across 0.1 Ohm is 1.638 A, and the 5 mOhm floor
@@ -249,12 +247,12 @@ TEST_CASE(every_value_is_held_to_its_range)
     CHECK_EQ(i228(0x45u, 49u, 2048u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(i228(0x45u, 20001u, 10u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(i228(0x45u, 200u, 9u, 0u), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(i228(0x45u, 200u, 6554u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(i228(0x45u, 200u, 3001u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(i228(0x45u, 200u, 2048u, 1u), LINK_NACK_BAD_VALUE);
     /* In range one by one, and no setting reads that current. */
-    CHECK_EQ(i228(0x45u, 20000u, 6553u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(i228(0x45u, 20000u, 3000u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(i228(0x40u, 50u, 10u, 0u), 0u);
-    CHECK_EQ(i228(0x4Fu, 250u, 6553u, 0u), 0u);
+    CHECK_EQ(i228(0x4Fu, 250u, 3000u, 0u), 0u);
     CHECK_EQ(i228(0x44u, 20000u, 81u, 0u), 0u);
     CHECK_EQ(i228(0x44u, 20000u, 82u, 0u), LINK_NACK_BAD_VALUE);
 

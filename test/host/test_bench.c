@@ -452,6 +452,291 @@ TEST_CASE(a_stalled_loop_counts_at_most_one_step)
     bench_totals_reset(NULL);
 }
 
+/*
+ * The INA228 counts while BENCH says its totals are the run's: its charge
+ * and energy are the count and nothing the panel saw is added.  When the
+ * bit goes the count carries on from the part's last total, and never goes
+ * back.
+ */
+TEST_CASE(the_ina228_counts_while_its_totals_are_the_runs)
+{
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const uint16_t sensed = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                       | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    /* The run's first sample can be the last run's page: its totals are
+     * not taken, and the panel counts that sample itself. */
+    bench_state_t b = measured(16.0f, 36.0f, sensed);
+    b.charge_mah = 900.0f;
+    b.energy_wh  = 14.0f;
+    bench_totals_count(&t, &b, 0.05f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, 0.5f, 0.001f);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 1.0f, 0.001f);
+
+    b = measured(16.0f, 36.0f, sensed);
+    b.charge_mah = 120.0f;
+    b.energy_wh  = 1.9f;
+    bench_totals_count(&t, &b, 1.0f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, 120.0f, 0.001f);
+    CHECK_NEAR(b.energy_wh, 1.9f, 0.001f);
+    CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+
+    /* Not while disarmed: the totals stand where the run left them. */
+    b = measured(16.0f, 36.0f, sensed);
+    b.charge_mah = 130.0f;
+    bench_totals_count(&t, &b, 1.0f, false);
+    CHECK_NEAR(t.mah, 120.0f, 0.001f);
+
+    /* The part stopped answering: BENCH's fields empty, the bit gone, and
+     * the count goes on from 120 mAh with nothing to add. */
+    b = measured(0.0f, 0.0f, LINK_BN_SENSED);
+    bench_totals_count(&t, &b, 1.0f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, 120.0f, 0.001f);
+    CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+}
+
+/*
+ * The coprocessor's edge into driving: the last run's totals leave the
+ * BENCH page at once, so a poll before its next 50 Hz sample reads no
+ * totals rather than the last run's marked as this one's.  The live
+ * readings, the peaks and every other flag stay.
+ */
+TEST_CASE(a_run_start_takes_the_last_runs_totals_off_the_page)
+{
+    bench_state_t b = measured(24.0f, 40.0f,
+                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                               | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    b.charge_mah  = 1840.0f;
+    b.energy_wh   = 44.7f;
+    b.voltage_min = 21.5f;
+    b.current_max = 96.0f;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&b, regs);
+    uint16_t before[LINK_BN_COUNT];
+    memcpy(before, regs, sizeof(before));
+
+    bench_state_run_starts(&b, regs);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 0u);
+    CHECK_EQ(regs[LINK_BN_ENERGY_DWH], 0u);
+    CHECK_EQ(regs[LINK_BN_FLAGS] & LINK_BN_TOTALS_OK, 0u);
+    CHECK_EQ(regs[LINK_BN_FLAGS],
+             before[LINK_BN_FLAGS] & (uint16_t)~LINK_BN_TOTALS_OK);
+    for (unsigned i = 0u; i < LINK_BN_COUNT; ++i) {
+        if (i != LINK_BN_CHARGE_MAH && i != LINK_BN_ENERGY_DWH
+            && i != LINK_BN_FLAGS) {
+            CHECK_EQ(regs[i], before[i]);
+        }
+    }
+    CHECK_EQ(b.charge_mah, 0.0f);
+    CHECK_EQ(b.energy_wh, 0.0f);
+    CHECK_EQ(b.flags & LINK_BN_TOTALS_OK, 0u);
+    CHECK_NEAR(b.voltage, 24.0f, 0.001f);
+
+    /* A panel reading the page now counts its own, from 0. */
+    bench_state_t panel;
+    memset(&panel, 0, sizeof(panel));
+    bench_state_from_regs(&panel, regs, 0u, LINK_BN_COUNT);
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;      /* past the panel's own guard */
+    bench_totals_count(&t, &panel, 0.05f, true);
+    CHECK(t.mah < 1.0f);
+
+    bench_state_run_starts(NULL, regs);
+    bench_state_run_starts(&b, NULL);
+}
+
+TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
+{
+    const uint16_t sensed = (uint16_t)(LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    bench_state_t b = measured(0.0f, 0.0f, sensed);
+    b.charge_mah = 123.0f;          /* BENCH's 1 mAh and 0.1 Wh steps */
+    b.energy_wh  = 2.9f;
+    bench_state_fine_totals(&b, 12274, 287u);
+    CHECK_NEAR(b.charge_mah, 122.74f, 0.001f);
+    CHECK_NEAR(b.energy_wh, 2.87f, 0.001f);
+
+    /* A read from another moment -- before the arm, after a stall --
+     * disagrees by more than a step and is not taken. */
+    b.charge_mah = 123.0f;
+    b.energy_wh  = 2.9f;
+    bench_state_fine_totals(&b, 51200, 1904u);
+    CHECK_EQ(b.charge_mah, 123.0f);
+    CHECK_NEAR(b.energy_wh, 2.9f, 0.001f);
+
+    /* A run that gave back more than it took: BENCH holds 0, SENSE the
+     * signed total. */
+    b.charge_mah = 0.0f;
+    bench_state_fine_totals(&b, -350, 0u);
+    CHECK_NEAR(b.charge_mah, -3.5f, 0.001f);
+
+    /* Without TOTALS_OK nothing changes. */
+    b = measured(0.0f, 0.0f, LINK_BN_SENSED);
+    b.charge_mah = 7.0f;
+    bench_state_fine_totals(&b, 700, 0u);
+    CHECK_EQ(b.charge_mah, 7.0f);
+    bench_state_fine_totals(NULL, 0, 0u);
+}
+
+/*
+ * A run past BENCH's 65535 mAh or 6553.5 Wh, or below 0 mAh: the
+ * registers read their bound, SENSE's 32-bit totals go on, and the count
+ * goes on with them -- through a poll with no SENSE read too, which offers
+ * only the bound.
+ */
+TEST_CASE(the_totals_go_on_past_benchs_bounds)
+{
+    const uint16_t sensed = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                       | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    bench_state_t src = measured(48.0f, 200.0f, sensed);
+    src.charge_mah = 70000.0f;
+    src.energy_wh  = 7000.0f;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&src, regs);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 65535u);
+    CHECK_EQ(regs[LINK_BN_ENERGY_DWH], 65535u);
+
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;
+
+    /* SENSE read in the poll: its figures, above the ceiling. */
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    CHECK_NEAR(b.charge_mah, BENCH_CHARGE_MAH_MAX, 0.001f);
+    CHECK_NEAR(b.energy_wh, BENCH_ENERGY_WH_MAX, 0.001f);
+    bench_state_fine_totals(&b, 7000000, 700000u);
+    CHECK_NEAR(b.charge_mah, 70000.0f, 0.01f);
+    CHECK_NEAR(b.energy_wh, 7000.0f, 0.001f);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70000.0f, 0.01f);
+    CHECK_NEAR(t.wh, 7000.0f, 0.001f);
+
+    /* No SENSE read in this poll: BENCH's ceiling does not pull the count
+     * back. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70000.0f, 0.01f);
+    CHECK_NEAR(t.wh, 7000.0f, 0.001f);
+
+    /* The next read goes on from there. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, 7001000, 700100u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70010.0f, 0.01f);
+    CHECK_NEAR(t.wh, 7001.0f, 0.001f);
+    /* Down as well, while above it: a finer figure is a reading. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, 7000500, 700200u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70005.0f, 0.01f);
+
+    /* At the ceiling, a finer figure below it is another moment's and is
+     * not taken. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, 6000000, 600000u);
+    CHECK_NEAR(b.charge_mah, BENCH_CHARGE_MAH_MAX, 0.001f);
+    CHECK_NEAR(b.energy_wh, BENCH_ENERGY_WH_MAX, 0.001f);
+
+    /*
+     * And the floor: a run that gave back more than it took.  BENCH holds
+     * no negative charge and reads 0; SENSE's signed total goes on below
+     * it, and a poll with no SENSE read does not lift the count back to 0.
+     * Energy accumulates unsigned power and has no floor to pass.
+     */
+    src = measured(16.0f, 0.0f, sensed);
+    src.charge_mah = -35.0f;
+    src.energy_wh  = 0.4f;
+    bench_state_to_regs(&src, regs);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 0u);
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;
+
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, -3500, 40u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, -35.0f, 0.001f);
+    CHECK_NEAR(t.wh, 0.4f, 0.001f);
+
+    /* No SENSE read: BENCH's 0 is the floor, not the total. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_totals_count(&t, &b, 0.05f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, -35.0f, 0.001f);
+    CHECK_NEAR(b.energy_wh, 0.4f, 0.001f);
+
+    /* The next read goes on from there, up or down. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, -3610, 41u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, -36.1f, 0.001f);
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, -1000, 42u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, -10.0f, 0.001f);
+
+    /* A count that is not below the floor follows BENCH as before. */
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_EQ(t.mah, 0.0f);
+}
+
+TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
+{
+    float v = 0.0f;
+    float a = 0.0f;
+    /* No INA228: BENCH's numbers are the ESC's. */
+    bench_state_t b = measured(24.0f, 30.0f,
+                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    CHECK(bench_state_esc_voltage(&b, &v));
+    CHECK(bench_state_esc_current(&b, &a));
+    CHECK_NEAR(v, 24.0f, 0.001f);
+    CHECK_NEAR(a, 30.0f, 0.001f);
+    CHECK(!bench_state_ina_voltage(&b, &v));
+    CHECK(!bench_state_ina_current(&b, &a));
+
+    /* The INA228 as the source: BENCH's are its own, SENSE's the ESC's. */
+    b.flags |= (uint16_t)LINK_BN_SENSED;
+    bench_state_set_esc(&b, true, 24.4f, false, 99.0f, true);
+    CHECK(b.clipped);
+    CHECK(bench_state_esc_voltage(&b, &v));
+    CHECK_NEAR(v, 24.4f, 0.001f);
+    CHECK(!bench_state_esc_current(&b, &a));
+    CHECK(bench_state_ina_voltage(&b, &v));
+    CHECK(bench_state_ina_current(&b, &a));
+    CHECK_NEAR(v, 24.0f, 0.001f);
+    CHECK_NEAR(a, 30.0f, 0.001f);
+    CHECK_EQ(b.esc_current, 0.0f);
+
+    /* The panel's model, with the link down mid-run, is no ESC: its
+     * current stays BENCH's and is not the ESC's. */
+    b = measured(24.0f, 30.0f, LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                   | LINK_BN_SIMULATED);
+    CHECK(!bench_state_esc_voltage(&b, &v));
+    CHECK(!bench_state_esc_current(&b, &a));
+    telemetry_sim_t sim;
+    telemetry_sim_init(&sim, NULL);
+    bench_state_t m;
+    memset(&m, 0, sizeof(m));
+    telemetry_sim_step(&sim, 40.0f, 0.05f, &m);
+    CHECK((m.flags & LINK_BN_CURRENT_OK) != 0u);
+    CHECK(!bench_state_esc_current(&m, &a));
+
+    /* An INA228 field nothing answered for is not one. */
+    b.flags = (uint16_t)LINK_BN_SENSED;
+    CHECK(!bench_state_ina_voltage(&b, &v));
+    CHECK(!bench_state_esc_voltage(NULL, &v));
+    CHECK(!bench_state_esc_current(&b, NULL));
+    bench_state_set_esc(NULL, false, 0.0f, false, 0.0f, false);
+}
+
 int main(void)
 {
     RUN(every_field_survives_the_round_trip);
@@ -472,5 +757,10 @@ int main(void)
     RUN(one_count_runs_through_a_change_of_source);
     RUN(the_totals_outlast_the_run_and_reset_at_the_next);
     RUN(a_stalled_loop_counts_at_most_one_step);
+    RUN(the_ina228_counts_while_its_totals_are_the_runs);
+    RUN(a_run_start_takes_the_last_runs_totals_off_the_page);
+    RUN(the_finer_totals_replace_benchs_where_they_agree);
+    RUN(the_totals_go_on_past_benchs_bounds);
+    RUN(the_escs_figures_come_from_whichever_page_carries_them);
     return test_summary("bench");
 }

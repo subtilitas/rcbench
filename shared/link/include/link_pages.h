@@ -290,8 +290,8 @@ enum {
  *
  *     I228_ADDR to register 7 are the INA228, one frame: its address, 0x40
  *     to 0x4F; its shunt in micro-ohms, 50 to 20000; the current its range
- *     is set for, in 0.1 A, 1.0 to 655.3 A, which is as far as BENCH's
- *     current register reaches.  That current chooses ADCRANGE only: 1
+ *     is set for, in 0.1 A, 1.0 to 300.0 A, the bench's design maximum.
+ *     That current chooses ADCRANGE only: 1
  *     while the shunt's voltage at it is at most 40.96 mV, 0 up to
  *     163.84 mV, and past that the write is refused.  CURRENT_LSB is the
  *     shunt ADC's step divided by the shunt at that range, so CURRENT and
@@ -375,7 +375,7 @@ enum {
 #define LINK_SN_I228_UOHM_MIN      50u
 #define LINK_SN_I228_UOHM_MAX   20000u
 #define LINK_SN_I228_DA_MIN        10u
-#define LINK_SN_I228_DA_MAX      6553u
+#define LINK_SN_I228_DA_MAX      3000u
 #define LINK_SN_I3221_ADDR_MIN   0x40u
 #define LINK_SN_I3221_ADDR_MAX   0x43u
 #define LINK_SN_I3221_DMOHM_MIN    50u

@@ -13,6 +13,7 @@ set(SRCS
     supply.c
     pdmini.c
     supply_link.c
+    sense_link.c
 )
 
 if(ESP_PLATFORM)

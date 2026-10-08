@@ -15,7 +15,9 @@ warning too, so a new lookup that bypasses the tables cannot slip past.
     tools/check_formats.py
 
 Not covered: firmware/panel/main/main.c, which needs ESP-IDF to compile.
-Its translated formats are ALERT_SUPPLY_TRIP and ALERT_PDMINI_SAG.
+Its translated formats are ALERT_SUPPLY_TRIP, ALERT_PDMINI_SAG,
+ALERT_SENSE_SAME_ADDR, ALERT_SENSE_PINS, ALERT_SENSE_SILENT,
+ALERT_SENSE_SILENT_FOUND, ALERT_SENSE_WRONG and ALERT_SENSE_I3221_CLIPPED.
 """
 
 from __future__ import annotations

@@ -17,7 +17,11 @@
  */
 static const char *const k_header =
     "time (s);voltage (V);current (A);power (W);rpm (rpm);"
-    "esc (C);motor (C);charge (mAh);energy (Wh)\n";
+    "esc (C);motor (C);charge (mAh);energy (Wh);"
+    "ina voltage (V);ina current (A);esc current (A);window;"
+    "ch1 current (A);ch1 max (A);ch1 voltage (V);"
+    "ch2 current (A);ch2 max (A);ch2 voltage (V);"
+    "ch3 current (A);ch3 max (A);ch3 voltage (V)\n";
 
 /* A supply run's file: what was asked beside what was delivered, and which
  * of the two the supply was holding. */
@@ -250,13 +254,16 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY },
     };
 
-    char line[160];
-    int n = fmt(line, sizeof(line), t_s, 3);
+    /* In the writer, not on the stack: 22 cells, every one checked
+     * against the end. */
+    char *line = w->line;
+    const size_t cap = sizeof(w->line);
+    int n = fmt(line, cap, t_s, 3);
     if (n <= 0) {
         return false;   /* a row with no time is not a row */
     }
     for (size_t i = 0; i < sizeof(k_cols) / sizeof(k_cols[0]); ++i) {
-        if ((size_t)n + 2u >= sizeof(line)) {
+        if ((size_t)n + 2u >= cap) {
             w->failed = true;
             return false;
         }
@@ -271,9 +278,39 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         }
         float v;
         memcpy(&v, (const char *)b + k_cols[i].offset, sizeof(v));
-        n += fmt(line + n, sizeof(line) - (size_t)n, v, k_cols[i].decimals);
+        n += fmt(line + n, cap - (size_t)n, v, k_cols[i].decimals);
     }
-    if ((size_t)n + 2u >= sizeof(line)) {
+    /*
+     * Where the voltage and current came from, beside them: the INA228's
+     * own, empty while it is not BENCH's source, and the ESC's own current
+     * whichever page carried it, so a run with both says what the ESC
+     * claimed against what was measured.
+     */
+    float ina_v = 0.0f;
+    float ina_i = 0.0f;
+    float esc_i = 0.0f;
+    const bool have_v   = bench_state_ina_voltage(b, &ina_v);
+    const bool have_i   = bench_state_ina_current(b, &ina_i);
+    const bool have_esc = bench_state_esc_current(b, &esc_i);
+    bool fits = cell(line, cap, &n, have_v, ina_v, 2)
+                && cell(line, cap, &n, have_i, ina_i, 2)
+                && cell(line, cap, &n, have_esc, esc_i, 2);
+    /*
+     * The INA3221's window, on the row that first carries it and on no
+     * other: its number, then per channel the mean and highest current and
+     * the lowest bus voltage, empty for a channel the window has no
+     * readings of.  A row with no new window has these cells empty.
+     */
+    const bool win = b->servo_new;
+    fits = fits && cell(line, cap, &n, win, (float)b->servo_window, 0);
+    for (unsigned c = 0u; c < 3u; ++c) {
+        const bool ch = win && (b->servo_ok & (1u << c)) != 0u;
+        fits = fits
+               && cell(line, cap, &n, ch, (float)b->servo_mean_ma[c] / 1000.0f, 3)
+               && cell(line, cap, &n, ch, (float)b->servo_max_ma[c] / 1000.0f, 3)
+               && cell(line, cap, &n, ch, (float)b->servo_min_mv[c] / 1000.0f, 3);
+    }
+    if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;
     }

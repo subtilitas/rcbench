@@ -4,6 +4,7 @@
 
 #include "bench_state.h"
 
+#include <math.h>
 #include <string.h>
 
 /* The scales of the BENCH page registers, matching link_pages.h.  A scale
@@ -91,6 +92,20 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs)
     regs[LINK_BN_FLAGS]       = b->flags;
 }
 
+void bench_state_run_starts(bench_state_t *b, uint16_t *regs)
+{
+    if (b != NULL) {
+        b->charge_mah = 0.0f;
+        b->energy_wh  = 0.0f;
+        b->flags &= (uint16_t)~LINK_BN_TOTALS_OK;
+    }
+    if (regs != NULL) {
+        regs[LINK_BN_CHARGE_MAH] = 0u;
+        regs[LINK_BN_ENERGY_DWH] = 0u;
+        regs[LINK_BN_FLAGS] &= (uint16_t)~LINK_BN_TOTALS_OK;
+    }
+}
+
 void bench_state_reset_peaks(bench_state_t *b)
 {
     if (b == NULL) {
@@ -113,6 +128,7 @@ void bench_totals_reset(bench_totals_t *t)
         t->mah     = 0.0f;
         t->wh      = 0.0f;
         t->counted = 0u;
+        t->run_s   = 0.0f;
     }
 }
 
@@ -127,6 +143,31 @@ void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
         dt = 0.0f;              /* negative, zero or NaN counts nothing */
     } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
         dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    const bool settled = t->run_s >= BENCH_TOTALS_SETTLE_S;
+    t->run_s += dt;
+    if ((b->flags & (uint16_t)LINK_BN_TOTALS_OK) != 0u && settled) {
+        /* The INA228 counts, at every conversion: its totals are the run's,
+         * and a reading the panel saw adds nothing to them.  Not in the
+         * run's first samples, which can be the last run's page.  A
+         * register at either end of its range is a bound, not the total:
+         * a count already past it from a finer read stands -- above the
+         * ceiling, and for charge below the floor of 0, where a run that
+         * gave back more than it took reads 0 on BENCH.  Only the bound
+         * itself, as BENCH decodes it: a finer figure beyond it is a
+         * reading and is taken, up or down.  Energy has no floor to pass:
+         * the INA228 accumulates unsigned power. */
+        const bool past_ceiling = b->charge_mah == BENCH_CHARGE_MAH_MAX
+                                  && t->mah > b->charge_mah;
+        const bool past_floor = b->charge_mah == 0.0f && t->mah < 0.0f;
+        if (!past_ceiling && !past_floor) {
+            t->mah = b->charge_mah;
+        }
+        if (!(b->energy_wh == BENCH_ENERGY_WH_MAX && t->wh > b->energy_wh)) {
+            t->wh = b->energy_wh;
+        }
+        t->counted |= (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+        return;
     }
     const uint16_t both = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
     if ((b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
@@ -147,6 +188,110 @@ void bench_totals_show(const bench_totals_t *t, bench_state_t *b)
     b->charge_mah = t->mah;
     b->energy_wh  = t->wh;
     b->counted    = t->counted;
+}
+
+void bench_state_set_esc(bench_state_t *b, bool v_ok, float volts,
+                         bool i_ok, float amps, bool clipped)
+{
+    if (b == NULL) {
+        return;
+    }
+    b->esc_voltage = v_ok ? volts : 0.0f;
+    b->esc_current = i_ok ? amps : 0.0f;
+    b->esc_ok = (uint8_t)((v_ok ? LINK_SN_ESC_VOLTAGE_OK : 0u)
+                          | (i_ok ? LINK_SN_ESC_CURRENT_OK : 0u));
+    b->clipped = clipped;
+}
+
+static bool sensed(const bench_state_t *b)
+{
+    return (b->flags & (uint16_t)LINK_BN_SENSED) != 0u;
+}
+
+/* One of the ESC's figures: from SENSE while the INA228 is the source,
+ * from BENCH's own register and flag otherwise. */
+static bool esc_figure(const bench_state_t *b, uint8_t esc_bit, float esc,
+                       uint16_t bench_bit, float bench, float *out)
+{
+    if (b == NULL || out == NULL) {
+        return false;
+    }
+    if (sensed(b)) {
+        if ((b->esc_ok & esc_bit) == 0u) {
+            return false;
+        }
+        *out = esc;
+        return true;
+    }
+    /* The panel's model is no ESC: its numbers are the bench's when the
+     * link is down, and nothing reported them. */
+    if ((b->flags & bench_bit) == 0u
+        || (b->flags & (uint16_t)LINK_BN_SIMULATED) != 0u) {
+        return false;
+    }
+    *out = bench;
+    return true;
+}
+
+bool bench_state_esc_voltage(const bench_state_t *b, float *out)
+{
+    return b != NULL
+           && esc_figure(b, LINK_SN_ESC_VOLTAGE_OK, b->esc_voltage,
+                         LINK_BN_VOLTAGE_OK, b->voltage, out);
+}
+
+bool bench_state_esc_current(const bench_state_t *b, float *out)
+{
+    return b != NULL
+           && esc_figure(b, LINK_SN_ESC_CURRENT_OK, b->esc_current,
+                         LINK_BN_CURRENT_OK, b->current, out);
+}
+
+static bool ina_figure(const bench_state_t *b, uint16_t bit, float v,
+                       float *out)
+{
+    if (b == NULL || out == NULL || !sensed(b) || (b->flags & bit) == 0u) {
+        return false;
+    }
+    *out = v;
+    return true;
+}
+
+bool bench_state_ina_voltage(const bench_state_t *b, float *out)
+{
+    return b != NULL && ina_figure(b, LINK_BN_VOLTAGE_OK, b->voltage, out);
+}
+
+bool bench_state_ina_current(const bench_state_t *b, float *out)
+{
+    return b != NULL && ina_figure(b, LINK_BN_CURRENT_OK, b->current, out);
+}
+
+void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
+                             uint32_t energy_cwh)
+{
+    if (b == NULL || (b->flags & (uint16_t)LINK_BN_TOTALS_OK) == 0u) {
+        return;
+    }
+    const float mah = (float)charge_cmah / 100.0f;
+    const float wh  = (float)energy_cwh / 100.0f;
+    /* BENCH holds no negative charge: a run that gave back more than it
+     * took reads 0 there, and the finer figure is the only one. */
+    const float coarse_mah = b->charge_mah;
+    if (fabsf(mah - coarse_mah) <= BENCH_FINE_MAH_TOL
+        || (coarse_mah == 0.0f && mah < 0.0f)
+        || (coarse_mah >= BENCH_CHARGE_MAH_MAX
+            && mah >= BENCH_CHARGE_MAH_MAX - BENCH_FINE_MAH_TOL)) {
+        b->charge_mah = mah;
+    }
+    /* Nor more than 65535 mAh or 6553.5 Wh: past that BENCH reads its
+     * ceiling, and a finer figure at or above it is the only one. */
+    const float coarse_wh = b->energy_wh;
+    if (fabsf(wh - coarse_wh) <= BENCH_FINE_WH_TOL
+        || (coarse_wh >= BENCH_ENERGY_WH_MAX
+            && wh >= BENCH_ENERGY_WH_MAX - BENCH_FINE_WH_TOL)) {
+        b->energy_wh = wh;
+    }
 }
 
 void bench_state_track_peaks(bench_state_t *b)

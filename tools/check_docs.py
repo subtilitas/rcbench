@@ -255,13 +255,21 @@ OPTION_SOURCES = (
 )
 
 
+# Option arrays that are a range of numbers offered one by one, not choices
+# with names: the current monitors' I2C addresses, 0x40 to 0x4F and 0x40 to
+# 0x43.  Prose names an address it means, and that is not an enumeration of
+# the menu.
+NOT_MENUS = {"settings.c:k_ina228_addr", "settings.c:k_ina3221_addr"}
+
+
 def option_lists() -> dict[str, list[str]]:
     lists: dict[str, list[str]] = {}
     for source in OPTION_SOURCES:
         for name, body in OPTIONS_RE.findall(read(source)):
             members = re.findall(r'"([^"]+)"', body)
-            if len(members) > 1:
-                lists[f"{source.name}:{name}"] = members
+            key = f"{source.name}:{name}"
+            if len(members) > 1 and key not in NOT_MENUS:
+                lists[key] = members
     return lists
 
 

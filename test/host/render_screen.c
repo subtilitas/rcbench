@@ -117,11 +117,17 @@ void ui_text_trace(ui_text_id_t id)
 
 /* The language the shot is in, as the panel would load it from NVS. */
 static int s_lang;
+/* Both current monitors enabled, as a bench with them fitted keeps it. */
+static bool s_monitors_on;
 
 static bool lang_load(float *values, int count)
 {
     if ((int)SET_LANGUAGE < count) {
         values[SET_LANGUAGE] = (float)s_lang;
+    }
+    if (s_monitors_on && (int)SET_INA3221_EN < count) {
+        values[SET_INA228_EN]  = 1.0f;
+        values[SET_INA3221_EN] = 1.0f;
     }
     return true;
 }
@@ -269,6 +275,26 @@ static void tap(int x, int y)
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = (int16_t)x,
                                    .y = (int16_t)y, .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+/* A finger drawn from @p y0 to @p y1 at @p x, in steps a controller would
+ * report. */
+static void drag(int x, int y0, int y1)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y0, .strength = 40 } };
+    ui_router_event(&e);
+    const int step = (y1 > y0) ? 8 : -8;
+    e.type = TOUCH_EVENT_MOVE;
+    for (int y = y0 + step; (step > 0) ? (y < y1) : (y > y1); y += step) {
+        e.point.y = (int16_t)y;
+        ui_router_event(&e);
+    }
+    e.point.y = (int16_t)y1;
     ui_router_event(&e);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
@@ -626,6 +652,8 @@ int main(int argc, char **argv)
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
     s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
                                                        : UI_LANG_EN;
+    s_monitors_on = strcmp(view, "setup-interfaces") == 0
+                    || strcmp(view, "setup-sensors") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     settings_set_store(&k_lang_store);
@@ -673,6 +701,16 @@ int main(int argc, char **argv)
             else if (t < 30.0f)          { th = 30.0f; }
             else                         { th = 64.0f; }
             telemetry_sim_step(&sim, th, 0.05f, &bench);
+            if (strcmp(view, "motor-table") == 0) {
+                /* A coprocessor reading an INA228: BENCH's numbers are the
+                 * INA228's, and the ESC's own telemetry reads 0.18 V and
+                 * 12 % of the current high beside them. */
+                bench.flags = (uint16_t)((bench.flags
+                                          & (uint16_t)~LINK_BN_SIMULATED)
+                                         | LINK_BN_SENSED);
+                bench_state_set_esc(&bench, true, bench.voltage + 0.18f,
+                                    true, bench.current * 1.12f, false);
+            }
             bench_totals_count(&totals, &bench, 0.05f, true);
             bench_totals_show(&totals, &bench);
             motor_screen_push(&bench);
@@ -1369,7 +1407,8 @@ int main(int argc, char **argv)
     }
 
     ui_bench_status_t st = k_status;
-    st.simulated = sim || (id == SCREEN_MOTOR);
+    st.simulated = sim || (id == SCREEN_MOTOR
+                           && strcmp(view, "motor-table") != 0);
     /* Modelled numbers are the panel's own, which it runs only while no
      * coprocessor answers: the band says NO LINK and SIM, as on the bench. */
     st.link_up   = !st.simulated;
@@ -1382,6 +1421,23 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-paused") == 0;
     ui_router_set_status(&st);
     ui_router_goto(id);
+
+    if (strcmp(view, "motor-table") == 0) {
+        tap(6 + 93, UI_BAND_H + 11);                    /* TABLE */
+    }
+    /*
+     * SETUP's INTERFACES, the current monitors' rows at the top, and the
+     * same list drawn on by four rows to the INA3221's and the bus's pins.
+     */
+    if (strcmp(view, "setup-interfaces") == 0
+        || strcmp(view, "setup-sensors") == 0) {
+        tap(120, UI_BAND_H + 16 + 2 * 72 + 32);        /* INTERFACES */
+        if (strcmp(view, "setup-sensors") == 0) {
+            /* Four rows of 58 px, and the 8 px the finger travels before
+             * the screen takes it for a scroll. */
+            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
+        }
+    }
 
     if (id == SCREEN_LOGS) {
         /* Driven by taps, so the shots are of reachable states.  Taps are
