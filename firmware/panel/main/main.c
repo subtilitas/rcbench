@@ -1643,16 +1643,18 @@ static bool bring_up(void)
      * the coprocessor the same way an edit made later is. */
     settings_set_observer(settings_changed);
     settings_init();
-    /* And once unconditionally: settings_init() fires the observer only for
-     * a value that differs from the schema default, and a bench left at the
-     * default still has to tell the far end what it is.  The pulse
-     * endpoints the same way: the far end keeps CHAN_CFG in flash, so a
-     * range written by another panel, or before a reset to defaults, would
-     * otherwise stay on the motor channels.  Nothing is written when the
-     * page already agrees. */
+    /* And once unconditionally, whatever settings_init() told the observer:
+     * a bench left at the defaults still has to tell the far end what it
+     * is, and each snapshot the control task reads starts zeroed.  The
+     * pulse endpoints the same way: the far end keeps CHAN_CFG in flash, so
+     * a range written by another panel, or before a reset to defaults,
+     * would otherwise stay on the motor channels.  The current monitors'
+     * set-up too: a zeroed one is no set-up at all.  Nothing is written
+     * when the page already agrees. */
     publish_poles();
     publish_endpoints();
     publish_pdmini();
+    publish_sense();
     settings_apply_ui();
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();

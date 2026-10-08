@@ -77,10 +77,29 @@ void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms)
     }
 }
 
+/* Whether @p w is a set-up SETUP can name: every value inside the page's
+ * own range.  A zeroed one -- a snapshot nobody has published into -- is
+ * not, and is no reason to write anything. */
+static bool setup_valid(const sense_setup_t *w)
+{
+    return w->sda >= -1 && w->scl >= -1
+           && w->i228_addr >= LINK_SN_I228_ADDR_MIN
+           && w->i228_addr <= LINK_SN_I228_ADDR_MAX
+           && w->i228_uohm >= LINK_SN_I228_UOHM_MIN
+           && w->i228_uohm <= LINK_SN_I228_UOHM_MAX
+           && w->i228_max_da >= LINK_SN_I228_DA_MIN
+           && w->i228_max_da <= LINK_SN_I228_DA_MAX
+           && w->i3221_addr >= LINK_SN_I3221_ADDR_MIN
+           && w->i3221_addr <= LINK_SN_I3221_ADDR_MAX
+           && w->i3221_dmohm >= LINK_SN_I3221_DMOHM_MIN
+           && w->i3221_dmohm <= LINK_SN_I3221_DMOHM_MAX
+           && w->i3221_ch != 0u && w->i3221_ch <= LINK_SN_I3221_CH_ALL;
+}
+
 void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                      uint32_t now_ms)
 {
-    if (s == NULL || w == NULL) {
+    if (s == NULL || w == NULL || !setup_valid(w)) {
         return;
     }
     uint16_t next[LINK_SN_CONFIG_COUNT];
@@ -286,6 +305,17 @@ static void new_setup(sense_link_t *s, uint32_t now_ms)
 {
     s->setup_ms = now_ms;
     forget_reads(s);
+    /* An event a read raised and the band has not shown yet is about the
+     * set-up that was: shown now, it would name this one's address, ID or
+     * shunt.  What describes the set-up asked -- unset pins, one address,
+     * a refusal -- and the store stand. */
+    s->events &= (uint16_t)~(SENSE_LINK_EV_I228_SILENT
+                             | SENSE_LINK_EV_I3221_SILENT
+                             | SENSE_LINK_EV_I228_WRONG
+                             | SENSE_LINK_EV_I3221_WRONG
+                             | SENSE_LINK_EV_STUCK
+                             | SENSE_LINK_EV_I228_CLIPPED
+                             | SENSE_LINK_EV_I3221_CLIPPED);
 }
 
 static void written(sense_link_t *s, sense_link_op_kind_t w, int result,

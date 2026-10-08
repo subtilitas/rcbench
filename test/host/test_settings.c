@@ -423,6 +423,38 @@ TEST_CASE(store_round_trips_and_coerces_stale_values)
     settings_set_store(NULL);
 }
 
+/*
+ * A load tells the observer every setting, its defaults included: the
+ * panel's copies for the control task -- the current monitors' set-up
+ * among them -- are filled from that sweep, and a value left at its
+ * default is a value the far end still has to be told.
+ */
+static int s_seen_ids[SETTING_COUNT];
+
+static void every_id_observer(setting_id_t id)
+{
+    if (id >= 0 && id < SETTING_COUNT) {
+        ++s_seen_ids[id];
+    }
+}
+
+TEST_CASE(a_load_tells_the_observer_every_setting_at_its_default)
+{
+    memset(s_seen_ids, 0, sizeof(s_seen_ids));
+    settings_set_store(NULL);
+    settings_set_observer(every_id_observer);
+    settings_init();
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        if (s_seen_ids[i] < 1) {
+            T_FAIL("%s not told at the load", settings_def((setting_id_t)i)->key);
+        }
+    }
+    CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
+    CHECK_EQ(settings_get_int(SET_SENSE_SCL), 17);
+    CHECK_EQ(settings_get_int(SET_INA228_ADDR), 5);   /* 0x45 */
+    settings_set_observer(NULL);
+}
+
 TEST_CASE(observer_fires_only_on_real_changes)
 {
     fresh_model();
@@ -1231,6 +1263,7 @@ int main(void)
     RUN(categories_partition_every_setting);
     RUN(value_text_renders_every_type);
     RUN(store_round_trips_and_coerces_stale_values);
+    RUN(a_load_tells_the_observer_every_setting_at_its_default);
     RUN(observer_fires_only_on_real_changes);
     RUN(a_pole_count_edit_reaches_the_observer);
     RUN(startup_delivers_the_stored_pole_count);

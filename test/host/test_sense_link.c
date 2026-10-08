@@ -202,6 +202,48 @@ TEST_CASE(the_page_is_read_first_and_only_what_differs_is_written)
     CHECK(sense_link_settled(&sl));
 }
 
+/*
+ * A set-up nobody published into -- every field 0 -- is no set-up: the
+ * panel reads the page and writes nothing, rather than GP0 for both pins
+ * and a shunt of 0.  A real one after it is written as usual.
+ */
+TEST_CASE(a_zeroed_setup_writes_nothing)
+{
+    outputs_init(&o, 0u);
+    sense_page_init(&pg);
+    sense_link_init(&sl);
+    now = 10000u;
+    minor = 7u;
+    writes = reads = to_sense = idents = 0u;
+    idle = true;
+    sense_setup_t zero;
+    memset(&zero, 0, sizeof(zero));
+    sense_link_want(&sl, &zero, now);
+    sense_link_came_up(&sl, minor, now);
+    polls(40);
+    CHECK_EQ(writes, 0u);
+    CHECK_EQ(reads, 1u);              /* the page, read once */
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], SENSE_DEFAULT_SDA);
+
+    /* Out of range one field at a time is ignored the same way. */
+    sense_setup_t w = setup_default();
+    w.i228_uohm = 20001u;
+    want(&w);
+    w = setup_default();
+    w.i3221_ch = 0u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(writes, 0u);
+
+    w = setup_default();
+    w.i228 = true;
+    want(&w);
+    polls(12);
+    CHECK_EQ(writes, 1u);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
+}
+
 TEST_CASE(enabling_a_part_writes_the_bus_frame_and_reads_identity)
 {
     fresh(7u);
@@ -626,6 +668,25 @@ TEST_CASE(simultaneous_events_are_handed_out_one_at_a_time)
              SENSE_LINK_EV_I3221_SILENT);
     CHECK_EQ(sense_link_event(&sl, now + 3u * SENSE_LINK_EVENT_GAP_MS), 0u);
 
+    /*
+     * One waiting when a new set-up is taken: it was about the old one's
+     * address, and shown now it would name the new one.  It goes; a
+     * refusal of what is asked now stays.
+     */
+    polls(5);
+    CHECK_EQ(sl.events, 0u);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE);
+    polls(2);
+    far_flags(LINK_SN_BUS_OPEN);
+    polls(1);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I228_SILENT);
+    sl.events |= SENSE_LINK_EV_I3221_REFUSED;
+    w.i228_addr = 0x44u;
+    want(&w);
+    polls(12);
+    CHECK_EQ(pg.sense[LINK_SN_I228_ADDR], 0x44u);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I3221_REFUSED);
+
     /* The most pressing first, whatever order they were raised in. */
     sl.events = (uint16_t)(SENSE_LINK_EV_STORE_OFF | SENSE_LINK_EV_STUCK
                            | SENSE_LINK_EV_NO_PAGE);
@@ -715,6 +776,7 @@ int main(void)
     RUN(nothing_is_sent_to_a_4_6_coprocessor);
     RUN(a_coprocessor_that_refuses_the_page_is_left_alone);
     RUN(the_page_is_read_first_and_only_what_differs_is_written);
+    RUN(a_zeroed_setup_writes_nothing);
     RUN(enabling_a_part_writes_the_bus_frame_and_reads_identity);
     RUN(a_part_frame_goes_with_both_parts_off);
     RUN(two_parts_swap_addresses_without_meeting);

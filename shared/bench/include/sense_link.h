@@ -226,7 +226,9 @@ void sense_link_lost(sense_link_t *s);
 void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms);
 
 /** The set-up SETUP names now.  A part enabled while a coprocessor without
- *  the page answers raises SENSE_LINK_EV_NO_PAGE. */
+ *  the page answers raises SENSE_LINK_EV_NO_PAGE.  A set-up with a value
+ *  outside the page's range -- a zeroed snapshot -- is ignored: nothing is
+ *  asked, and nothing is written for it. */
 void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                      uint32_t now_ms);
 
