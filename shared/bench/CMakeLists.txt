@@ -14,6 +14,7 @@ set(SRCS
     pdmini.c
     supply_link.c
     sense_link.c
+    tone_link.c
 )
 
 if(ESP_PLATFORM)

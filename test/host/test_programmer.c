@@ -2921,6 +2921,104 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
 }
 
+/* The frame drawn with the tap off, to count what the readout adds. */
+static gfx_color_t *tone_base;
+
+/* Pixels of the run page's rows below its current line, left of the stack
+ * light -- where the phase tap's readout is drawn -- that differ from the
+ * frame drawn with the tap off. */
+static int tone_rows_lit(void)
+{
+    int n = 0;
+    for (int y = 284; y < 352; ++y) {
+        for (int x = 0; x < 700; ++x) {
+            n += (fb[y * W + x] != tone_base[y * W + x]) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/* The tap's readout fed to the screen and one frame drawn after it. */
+static int tone_drawn(rig_t *r, const tone_readout_t *t, int buf)
+{
+    programmer_screen_tone(t);
+    rig_run(r, 2u);                 /* a tick: the page repaints on a change */
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, buf);
+    if (tone_base == NULL) {
+        tone_base = malloc((size_t)W * H * sizeof(gfx_color_t));
+        memcpy(tone_base, fb, (size_t)W * H * sizeof(gfx_color_t));
+    }
+    return tone_rows_lit();
+}
+
+/* A run's page shows the phase tap while the tap is enabled on SETUP, in
+ * each state it can be in, and nothing in its place while it is not. */
+TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
+{
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    for (int i = 0; i < 300000
+         && programmer_screen_stick()->phase != ESC_STICK_ITEMS; ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_ITEMS);
+
+    tone_readout_t t;
+    memset(&t, 0, sizeof(t));
+    int buf = 0;
+    const int off = tone_drawn(&r, &t, buf++ & 1);
+    CHECK_EQ(off, 0);
+
+    /* Every state with no beep yet draws its head and "none yet". */
+    static const tone_state_t k_states[] = {
+        TONE_STATE_NO_PAGE, TONE_STATE_WAITING, TONE_STATE_RUNNING,
+        TONE_STATE_REFUSED, TONE_STATE_STOPPED,
+    };
+    int last = 0;
+    for (size_t i = 0; i < sizeof(k_states) / sizeof(k_states[0]); ++i) {
+        t.state = k_states[i];
+        last = tone_drawn(&r, &t, buf++ & 1);
+        CHECK(last > off + 200);
+    }
+    /* Running with the capture overrun says so. */
+    t.state = TONE_STATE_RUNNING;
+    t.overrun = true;
+    CHECK(tone_drawn(&r, &t, buf++ & 1) > off + 200);
+    t.overrun = false;
+
+    /* The window's pitch, the counts and four beeps add to it, and a new
+     * reading repaints. */
+    const int bare = tone_drawn(&r, &t, buf++ & 1);
+    t.win_freq_dhz = 15234u;
+    t.lost = 12u;
+    t.glitches = 345u;
+    t.missed = 6u;
+    t.n = TONE_LINK_SHOWN;
+    for (unsigned i = 0u; i < TONE_LINK_SHOWN; ++i) {
+        t.beeps[i].seq = (uint16_t)(65535u - i);
+        t.beeps[i].len_dms = 6553u;
+        t.beeps[i].freq_dhz = 6553u;
+    }
+    CHECK(tone_drawn(&r, &t, buf++ & 1) > bare);
+
+    /* A null readout changes nothing. */
+    programmer_screen_tone(NULL);
+    CHECK(tone_drawn(&r, &t, buf++ & 1) > bare);
+
+    /* Off again: nothing in its place. */
+    memset(&t, 0, sizeof(t));
+    CHECK_EQ(tone_drawn(&r, &t, buf++ & 1), 0);
+    rig_run(&r, 300000u);
+    free(tone_base);
+    tone_base = NULL;
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -2977,5 +3075,6 @@ int main(void)
     RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);
+    RUN(the_run_page_shows_the_phase_tap_while_it_is_enabled);
     return test_summary("programmer");
 }

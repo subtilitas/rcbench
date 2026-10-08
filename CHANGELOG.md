@@ -42,6 +42,26 @@ history is in git.
   after the one before on every path, a low of 1200 cycles always kept and one
   of 1196 never. The firmware build holds pioasm's words to the same list.
   Not run on hardware. Core 1's stack is 4 kB.
+- **The panel sets up and reads the phase tap (TONE page, protocol 4.8).**
+  SETUP INTERFACES gains seven rows after the bus's pins: Phase tap (ON or
+  OFF, default OFF), Tap pin (0 to 47, default 22), Tap lowest tone (50 to
+  2000 Hz, default 400), Tap highest tone (100 to 6900 Hz, default 6500),
+  Tap pitch split (0 to 50 %, default 8), Tap gap (1 to 100 ms, default 3)
+  and Tap min periods (1 to 64, default 3), with German labels. The panel
+  writes them to the TONE page (0x2D) in two frames, 500 ms after the last
+  edit and only what differs from what the page holds, the frame that leaves
+  the page a valid set-up first. While the page holds the tap on it reads
+  registers 8 to 23 every 50 ms and takes the coprocessor's last 64 beeps one
+  by one by number, from 1 to 65535 and round to 1; a lost reply loses no
+  beep, and beeps the ring moved past are counted as missed. A coprocessor
+  older than 4.8 is sent nothing, and with the tap enabled the band says
+  "coprocessor has no tone page". The band also says a refused set-up, a pin
+  the coprocessor does not hold free, and a capture overrun, each once.
+  The ESC STICK run's page shows the tap read only under the current line:
+  its state, the last window's pitch, the beeps lost, the lows ignored and
+  the beeps not read, and the last four beeps with number, length in ms and
+  pitch in Hz. The run still counts its beeps from the supply current. Needs
+  the coprocessor's TONE page; not run against hardware.
 - **Zoom in the log viewer's plot.** Two fingers spread to zoom in, pinch to
   zoom out and move together to pan; the view stays where they leave it, from
   8 samples to the whole run. A bar under the plot shows which part of the run
