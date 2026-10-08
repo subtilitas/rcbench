@@ -143,6 +143,35 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_SENSE_SCL] = {
         "sns_scl", "Sensor SCL", "The GPIO after SDA; -1 until wired", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
+    /*
+     * The phase tap, written to the coprocessor's TONE page (protocol
+     * 4.8): one GPIO that reads an ESC's beeps off one motor phase.  The
+     * ranges and defaults are the page's (LINK_TN_*): the pin GP22 (pad 29),
+     * tones from 400 to 6500 Hz, a new beep when the pitch moves 8 %, a
+     * silence of 3 ms ending a beep, 3 tone periods making one.  The tap is
+     * off until it is enabled here and the pin is wired.
+     */
+    [SET_TONE_EN] = {
+        "tone_en", "Phase tap", "ESC beeps heard on one motor phase", "",
+        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_TONE_PIN] = {
+        "tone_pin", "Tap pin", "Coprocessor GPIO; GP22 is pad 29", "GPIO",
+        SET_CAT_IFACE, SET_TYPE_INT, 0, 47, 1, 22, NULL, 0 },
+    [SET_TONE_F_MIN] = {
+        "tone_fmin", "Tap lowest tone", "Lower tones are not beeps", "Hz",
+        SET_CAT_IFACE, SET_TYPE_INT, 50, 2000, 10, 400, NULL, 0 },
+    [SET_TONE_F_MAX] = {
+        "tone_fmax", "Tap highest tone", "Above the lowest tone; to 6900 Hz", "Hz",
+        SET_CAT_IFACE, SET_TYPE_INT, 100, 6900, 50, 6500, NULL, 0 },
+    [SET_TONE_SPLIT] = {
+        "tone_split", "Tap pitch split", "Pitch step that splits a beep; 0 off", "%",
+        SET_CAT_IFACE, SET_TYPE_INT, 0, 50, 1, 8, NULL, 0 },
+    [SET_TONE_GAP] = {
+        "tone_gap", "Tap gap", "Silence that ends a beep", "ms",
+        SET_CAT_IFACE, SET_TYPE_INT, 1, 100, 1, 3, NULL, 0 },
+    [SET_TONE_PERIODS] = {
+        "tone_periods", "Tap min periods", "Tone periods that make a beep", "",
+        SET_CAT_IFACE, SET_TYPE_INT, 1, 64, 1, 3, NULL, 0 },
     [SET_VIBE_EN] = {
         "vibe_en", "Vibration", "Accelerometer for the balancing mode", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },

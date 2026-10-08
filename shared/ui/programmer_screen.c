@@ -460,6 +460,9 @@ static struct {
 
     stick_t  st;
 
+    /* The phase tap, as the control task last read it. */
+    tone_readout_t tone;
+
     uint32_t rev;
     uint32_t drawn[2];
     unsigned drawn_mask;
@@ -1914,6 +1917,10 @@ static uint32_t sp_signature(void)
         esc_stick_hand_ready(e) ? 1u : 0u,
         (esc_stick_hand_left_ms(e) + 999u) / 1000u, e->hand,
         e->hand_menu ? 1u : 0u,
+        /* The phase tap's readout, which a run's page shows beside it. */
+        (uint32_t)s.tone.state, s.tone.overrun ? 1u : 0u,
+        s.tone.win_freq_dhz, s.tone.lost, s.tone.glitches, s.tone.missed,
+        s.tone.n, (s.tone.n > 0u) ? s.tone.beeps[0].seq : 0u,
     };
     uint32_t h = 2166136261u;
     for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
@@ -2942,6 +2949,79 @@ static uint32_t sp_hold_ms(const esc_profile_t *p)
     return hold;
 }
 
+/* The phase tap's state as its readout is worded. */
+static const char *sp_tone_state(const tone_readout_t *r)
+{
+    switch (r->state) {
+    case TONE_STATE_NO_PAGE:
+        return TR(SP_TONE_NO_PAGE);
+    case TONE_STATE_WAITING:
+        return TR(SP_TONE_WAITING);
+    case TONE_STATE_RUNNING:
+        return r->overrun ? TR(SP_TONE_OVERRUN) : TR(SP_TONE_RUNNING);
+    case TONE_STATE_REFUSED:
+        return TR(SP_TONE_REFUSED);
+    case TONE_STATE_STOPPED:
+    default:
+        return TR(SP_TONE_STOPPED);
+    }
+}
+
+/* One beep of the readout: its number, length in ms and pitch in Hz, to
+ * the tenth, as the page reports them. */
+static void sp_tone_beep(const tone_beep_t *b, char *buf, size_t n)
+{
+    snprintf(buf, n, TR(SP_TONE_BEEP), (unsigned)b->seq,
+             (unsigned)(b->len_dms / 10u), (unsigned)(b->len_dms % 10u),
+             (unsigned)(b->freq_dhz / 10u), (unsigned)(b->freq_dhz % 10u));
+}
+
+/* The beeps' two columns and the cells each takes. */
+#define SP_TONE_COL_CELLS 30
+
+/*
+ * The phase tap, read only, on the run's page while the tap is enabled
+ * on SETUP: a head line, then the last four beeps two to a line.
+ */
+static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
+{
+    const tone_readout_t *r = &s.tone;
+    if (r->state == TONE_STATE_OFF) {
+        return;
+    }
+    const gfx_color_t dim = ui_theme_color(UI_C_TEXT_DIM);
+    const bool fault = r->state == TONE_STATE_NO_PAGE
+                       || r->state == TONE_STATE_REFUSED
+                       || r->state == TONE_STATE_STOPPED || r->overrun;
+    char pitch_txt[16];
+    if (r->win_freq_dhz == 0u) {
+        snprintf(pitch_txt, sizeof(pitch_txt), "--");
+    } else {
+        snprintf(pitch_txt, sizeof(pitch_txt), "%u.%u Hz",
+                 (unsigned)(r->win_freq_dhz / 10u),
+                 (unsigned)(r->win_freq_dhz % 10u));
+    }
+    char line[128];
+    snprintf(line, sizeof(line), TR(SP_TONE_HEAD), sp_tone_state(r),
+             pitch_txt, (unsigned)r->lost, (unsigned)r->glitches,
+             (unsigned)r->missed);
+    gfx_text(c, PAD + 12, y, line, UI_FONT_LABEL,
+             fault ? ui_theme_color(UI_C_WARN) : dim, 1);
+    const int x0 = PAD + 12 + (gfx_text_cells(TR(SP_TONE_BEEPS)) + 2) * 8;
+    gfx_text(c, PAD + 12, y + pitch, TR(SP_TONE_BEEPS), UI_FONT_LABEL, dim,
+             1);
+    if (r->n == 0u) {
+        gfx_text(c, x0, y + pitch, TR(SP_TONE_NONE), UI_FONT_LABEL, dim, 1);
+        return;
+    }
+    for (unsigned i = 0u; i < r->n && i < TONE_LINK_SHOWN; ++i) {
+        sp_tone_beep(&r->beeps[i], line, sizeof(line));
+        gfx_text(c, x0 + (int)(i % 2u) * SP_TONE_COL_CELLS * 8,
+                 y + pitch + (int)(i / 2u) * pitch, line, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT), 1);
+    }
+}
+
 static DRAWER void sp_draw_progress(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -3094,6 +3174,7 @@ static DRAWER void sp_draw_progress(gfx_canvas_t *c)
     snprintf(line, sizeof(line), TR(SP_CURRENT), (int)e->ma,
              (int)esc_det_floor_ma(&e->det), (unsigned)e->iv_ms);
     gfx_text(c, PAD + 12, y0 + 4 * pitch, line, UI_FONT_LABEL, dim, 1);
+    sp_draw_tone(c, y0 + 5 * pitch, pitch);
     /* After the lines, so a line that reached under it would show as
      * painted over in the fit check. */
     sp_draw_tower(c, false, t->green);
@@ -3857,6 +3938,13 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
     t->stops = stops;
     t->pressed = pressed;
     t->link_up = link_up;
+}
+
+void programmer_screen_tone(const tone_readout_t *r)
+{
+    if (r != NULL) {
+        s.tone = *r;
+    }
 }
 
 void programmer_screen_supply(const supply_state_t *st)

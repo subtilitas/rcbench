@@ -851,6 +851,24 @@ green is on while a beep is detected, for at least 150 ms:
 
 ![A run](img/programmer-stick-run.png)
 
+While the phase tap is enabled on SETUP the run's page adds a read-only
+readout under the current line: the tap's state, the pitch of its last 8 ms
+window, the counts of beeps the coprocessor lost, lows it ignored as
+shorter than 500 ns and beeps the panel did not read, and the last four
+beeps with their number, length in ms and mean pitch in Hz. The run still
+counts its beeps from the supply current.
+
+![A run with the phase tap running](img/programmer-stick-tone.png)
+
+| State | Meaning |
+| --- | --- |
+| `RUNNING` | the capture runs |
+| `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
+| `WAITING` | no link, or the TONE page has not answered in the last 500 ms |
+| `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
+| `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere |
+| `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
+
 The result stays until OK. Its red light is on when the run ended because
 something was not as expected, a stop the bench raised itself included,
 and dark on DONE, a STOP pressed, ABORT and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):
@@ -1037,6 +1055,57 @@ board holds one, are offered again every 5 s without another alert, so
 freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not disarm the bench: nothing trips on the
 monitors' readings.
+
+### INTERFACES: the phase tap
+
+![INTERFACES, the phase tap](img/setup-tap.png)
+
+The phase tap hears an ESC's beeps on one motor phase. One coprocessor
+GPIO reads the phase through a series resistor and a zener clamp; the
+coprocessor times the pin's edges and reports each beep's length and pitch.
+The wiring is not in the build guide. The tap is an input: it drives
+nothing, and the coprocessor takes a change armed or not. Its rows follow
+the bus's pins:
+
+| Setting | Range | Default | |
+| --- | --- | --- | --- |
+| Phase tap | ON, OFF | OFF | the capture runs on the coprocessor |
+| Tap pin | 0 to 47 | 22 | coprocessor GPIO; GP22 is pad 29. Refused: an ADC (analog-to-digital converter) pin, GP26 to GP29 on the RP2350A and GP40 to GP47 on the RP2354B; a pin bound to an output; a pin the SENSE or SUPPLY page holds |
+| Tap lowest tone | 50 to 2000 Hz, 10 Hz steps | 400 | a tone below it is not a beep |
+| Tap highest tone | 100 to 6900 Hz, 50 Hz steps | 6500 | above the lowest tone |
+| Tap pitch split | 0 to 50 %, 1 % steps | 8 | a pitch change this large starts a new beep with no silence between; 0 splits on silence only |
+| Tap gap | 1 to 100 ms | 3 | the silence that ends a beep; at least one period of the lowest tone, so 20 ms at 50 Hz |
+| Tap min periods | 1 to 64 | 3 | the tone periods that make a beep |
+
+The panel writes the set-up to the coprocessor's TONE page (protocol 4.8)
+500 ms after the last edit, and only what differs from what the page holds:
+the coprocessor keeps each change in flash. It reads the page at every
+link-up first. The set-up goes in two frames, the pin and the tone range,
+then the split, the gap and the periods. When both change, the one that
+leaves the page a valid set-up goes first: a lower tone with a gap shorter
+than its period is refused, so the gap is written before the tone goes down
+and after it goes up. A coprocessor older than 4.8 is sent nothing.
+
+While the page holds the tap on, the panel reads its 16 read-only registers
+every 50 ms: the flags, the last 8 ms window's pitch, the number of the
+newest beep and the counts of beeps lost and lows ignored. It takes the
+beeps one by one by number. The coprocessor keeps the last 64 beeps,
+numbered 1 to 65535 and then 1 again, and a read does not remove one, so a
+reply lost on the link loses no beep. A beep that left the ring before it
+was read, or that the ring moved past while the panel was more than 64
+behind, is counted as missed. The last 8 beeps are kept for the screen; the
+run page of ESC STICK shows 4 of them ([Programmer](#programmer)).
+
+The band says what the tap reports, each once and one at a time, as for the
+current monitors:
+
+| Message | When |
+| --- | --- |
+| `coprocessor has no tone page -- phase tap not read` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
+| `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` | the coprocessor refused the first frame: the pin is not allowed or the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period). Offered again every 5 s without another message, so freeing the pin lets the tap start |
+| `phase tap split, gap or periods refused -- see SETUP INTERFACES` | the coprocessor refused the second frame; not written again until a value changes |
+| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused: a set-up it kept in flash met a binding at its boot |
+| `phase tap capture overrun -- beeps cut` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 ### Keeping the values
 

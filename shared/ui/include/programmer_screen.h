@@ -18,6 +18,7 @@
 #include "esc_stick.h"
 #include "motor_screen.h"
 #include "supply.h"
+#include "tone_link.h"
 #include "ui_screen.h"
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -47,6 +48,15 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
 
 /** One supply sample, every one, in the order they were taken. */
 void programmer_screen_supply(const supply_state_t *st);
+
+/**
+ * The phase tap as the control task last read it (tone_link_readout()),
+ * every frame.  While the tap is enabled on SETUP a stick run's page
+ * shows it: its state, the last window's pitch, the last beeps, and the
+ * counts of beeps lost, lows ignored and beeps not read.  Read only: the
+ * run still counts its beeps from the supply current.
+ */
+void programmer_screen_tone(const tone_readout_t *r);
 
 /** A command a stick run asks for, oldest first; true when there was one. */
 bool programmer_screen_poll_cmd(motor_cmd_t *out);

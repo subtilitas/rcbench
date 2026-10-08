@@ -140,6 +140,10 @@ SCREENS = {
                                  "programmer", "dark"),
     "programmer-stick-run": ("programmer-stick-run.png", "programmer",
                              "dark"),
+    # The run's page with the phase tap enabled and running, its readout
+    # under the current line.
+    "programmer-stick-tone": ("programmer-stick-tone.png", "programmer",
+                              "dark"),
     "programmer-stick-done": ("programmer-stick-done.png", "programmer",
                               "dark"),
     "programmer-stick-aborted": ("programmer-stick-aborted.png",
@@ -177,6 +181,8 @@ SCREENS = {
     # and drawn on to the INA3221's rows and the bus's pins.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
+    # The same list past them, to the phase tap's rows, the tap enabled.
+    "setup-tap": ("setup-tap.png", "setup", "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "outputs-held": ("outputs-held.png", "outputs", "dark"),
