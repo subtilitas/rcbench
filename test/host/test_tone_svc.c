@@ -271,6 +271,34 @@ TEST_CASE(a_dropped_word_with_new_words_in_the_ring_splits_the_beep)
     }
 }
 
+TEST_CASE(a_batch_with_a_hole_is_discarded_whole_and_the_next_beep_is_clean)
+{
+    fresh();
+    const uint64_t t0 = TICK / 100u;
+    const uint64_t period = TICK / 2000u;
+    /* One 20-burst beep; the state machine dropped a word in the middle,
+     * and the pass that sees it reads the words before and after the hole
+     * together.  Nothing of the batch may make a beep. */
+    const uint64_t end = beep(t0, 20u, 2000u, period / 5u, 0u);
+    capture(end + 100u);
+    tone_rec_t r[TONE_SVC_BEEPS];
+    size_t n = tone_svc_step(&svc, &cmd, ring, wr % TONE_RING_WORDS,
+                             end + 100u, true, r, &st);
+    CHECK_EQ(n, 0u);
+    CHECK(st.overrun);
+    CHECK(!st.beep);
+    run_passes(end + 200u, end + 10u * TICK / 1000u);
+    CHECK_EQ(nrec, 0u);
+    /* The reader moved on: a clean beep after it is read whole. */
+    const uint64_t t1 = end + 20u * TICK / 1000u;
+    const uint64_t end2 = beep(t1, 20u, 2000u, period / 5u, 0u);
+    run_passes(end + 10u * TICK / 1000u + TICK / 1000u,
+               end2 + 10u * TICK / 1000u);
+    CHECK_EQ(nrec, 1u);
+    CHECK_EQ(recs[0].bursts, 20u);
+    CHECK(st.overrun);                /* sticky for the capture */
+}
+
 TEST_CASE(a_stopped_order_runs_nothing_and_reports_not_running)
 {
     fresh();
@@ -418,6 +446,7 @@ int main(void)
     RUN(a_lap_of_the_ring_cuts_the_beep_and_shows_in_the_status);
     RUN(a_dropped_word_ends_the_beep_under_way);
     RUN(a_dropped_word_with_new_words_in_the_ring_splits_the_beep);
+    RUN(a_batch_with_a_hole_is_discarded_whole_and_the_next_beep_is_clean);
     RUN(a_stopped_order_runs_nothing_and_reports_not_running);
     RUN(a_new_set_up_restarts_the_detector_and_keeps_the_ring_reader);
     RUN(a_new_capture_starts_the_ring_reader_again);
