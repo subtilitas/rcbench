@@ -905,6 +905,17 @@ so every file on the card is dated 1980-01-01. A run outranks a file the bench
 did not write, so a card holding 48 or more runs lists no other file. Delete
 old runs to get one back.
 
+RESCAN, and every read of the card, selects the newest run and scrolls it
+into view, so OPEN opens the run just recorded. A card with no numbered run
+selects nothing.
+
+In the plot, two fingers zoom: spreading them zooms in, pinching zooms out,
+and moving both together pans. The view stays where the fingers leave it, and
+a bar under the plot shows which part of the run is on screen. The narrowest
+view is 8 samples, the widest the whole run. One finger and the `<` and `>`
+buttons move the cursor as before; stepping the cursor past the edge of a
+zoomed view carries the view with it. BACK returns to the import view.
+
 DELETE removes the selected file from the card. It asks first: a second panel
 names the file and its size, and only its own DELETE, pressed and released on
 that button, removes the file. CANCEL, or leaving the screen, closes the

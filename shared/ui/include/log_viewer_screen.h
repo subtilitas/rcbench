@@ -92,8 +92,23 @@ const log_analysis_t *log_viewer_analysis(void);
 const log_data_t *log_viewer_data(void);
 
 /**
+ * The samples the plot shows: the first in @p first and how many in
+ * @p count.  The whole file until two fingers zoom in; both 0 with nothing
+ * plotted.
+ */
+void log_viewer_window(int *first, int *count);
+
+/** The colour series @p k is drawn in. */
+gfx_color_t log_viewer_series_color(int k);
+
+/** The sample the cursor is on, or -1 with nothing plotted. */
+int log_viewer_cursor(void);
+
+/**
  * Re-read the directory, e.g. after a card was inserted.  Closes an open
  * DELETE question: the name it asked about may be on another card now.
+ * Selects the newest numbered run, so the run just recorded is the one
+ * OPEN opens.
  */
 void log_viewer_refresh(void);
 

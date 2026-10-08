@@ -424,7 +424,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_NOTHING_LOADED]     = "NICHTS GELADEN",
     [TX_LOG_PICK_FIRST]         = "Zuerst eine Datei wählen.",
     [TX_LOG_SUMMARY]            = "%s   %d ZEILEN   %.2f s   %.0f Hz",
-    [TX_LOG_FIELDS]             = "FELDER",
     [TX_LOG_AT_TIME]            = "t = %.3f s   Messpunkt %d/%d",
     [TX_LOG_AT_ROW]             = "Zeile %d von %d   (keine Zeitspalte)",
     [TX_LOG_UNREADABLE_CELLS]   = "%d ZELLEN UNLESBAR",

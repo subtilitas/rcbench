@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- **Zoom in the log viewer's plot.** Two fingers spread to zoom in, pinch to
+  zoom out and move together to pan; the view stays where they leave it, from
+  8 samples to the whole run. A bar under the plot shows which part of the run
+  is on screen. The cursor and the `<` and `>` buttons work as before, and a
+  cursor stepped past the edge carries the view with it. The plot's left
+  button reads BACK (ZURÜCK) instead of FIELDS (FELDER), which is what it
+  does. RESCAN (NEU LESEN), and every read of the card, selects the newest
+  run, so OPEN opens the run just recorded. Requested by a beta tester.
 - **SENSE and SERVO_SENSE link pages (protocol 4.7).** SENSE (0x2B) sets
   up an I2C (Inter-Integrated Circuit) bus on two coprocessor pins for a TI
   INA228 in the ESC's power path and a TI INA3221 on the servo rail:
@@ -91,6 +99,11 @@ history is in git.
 
 ### Fixed
 
+- **The log viewer's traces are unbroken on long runs.** A run longer than
+  the plot's 752 columns drew each column from its own samples only, so a
+  steep stretch, such as rpm on a ramp, came apart into dashes. Every
+  column now reaches its neighbour. The stretch before a column's first
+  number draws nothing instead of a line along the bottom of the scale.
 - A reading at or past a move's window no longer counts as its arrival.
   The window is 3000 ms plus the meter's lag: 3300 ms on the PD mini, and
   3005 ms for the coprocessor's capture on INA3221 CH1. The servo test

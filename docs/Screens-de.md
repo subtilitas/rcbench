@@ -984,6 +984,19 @@ Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
 nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
 andere Datei mehr. Alte Läufe löschen, um eine zurückzuholen.
 
+NEU LESEN, und jedes Lesen der Karte, wählt den neuesten Lauf aus und rollt
+ihn ins Bild, sodass ÖFFNEN den gerade aufgezeichneten Lauf öffnet. Eine Karte
+ohne nummerierten Lauf wählt nichts aus.
+
+In der Grafik zoomen zwei Finger: Auseinanderziehen vergrößert,
+Zusammenziehen verkleinert, beide zusammen bewegt verschiebt den Ausschnitt.
+Der Ausschnitt bleibt, wo die Finger ihn lassen, und ein Balken unter der
+Grafik zeigt, welcher Teil des Laufs zu sehen ist. Der engste Ausschnitt sind
+8 Messpunkte, der weiteste der ganze Lauf. Ein Finger und die Knöpfe `<` und
+`>` bewegen den Cursor wie bisher; läuft der Cursor über den Rand eines
+vergrößerten Ausschnitts, wandert der Ausschnitt mit. ZURÜCK führt zur
+Importansicht.
+
 LÖSCHEN löscht die ausgewählte Datei von der Karte. Vorher kommt eine Rückfrage:
 ein zweites Feld nennt die Datei und ihre Größe, und erst dessen eigenes
 LÖSCHEN, auf dem Knopf gedrückt und losgelassen, löscht sie. ABBRECHEN oder das
