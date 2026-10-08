@@ -45,8 +45,8 @@ void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us);
 
 /** Core 0: wait until core 1 has finished a pass under the latest order.
  *  Bounded by TONE_CORE1_WAIT_US; returns at once when core 1 has not
- *  run a pass yet (at boot) and, after the bound, when it does not answer
- *  (parked for a flash write). */
+ *  taken an order yet (at boot: the first it takes is the latest), and,
+ *  after the bound, when it does not answer (parked for a flash write). */
 void tone_core1_quiesce(void);
 
 /** The longest core 0 waits in tone_core1_quiesce(), 5 ms: core 1's tick

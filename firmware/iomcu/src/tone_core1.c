@@ -29,7 +29,7 @@ static volatile uint32_t s_status_seq;
 static volatile uint32_t s_ack_seq;        /* core 1: the order its last
                                               pass ran under, set when the
                                               pass is over                 */
-static volatile bool     s_live;           /* core 1 has run a pass        */
+static volatile bool     s_live;           /* core 1 has taken an order    */
 
 static q_entry_t        s_q[TONE_Q_LEN];
 static volatile uint32_t s_q_head;         /* core 1 advances              */
@@ -75,12 +75,19 @@ void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us)
 
 void tone_core1_quiesce(void)
 {
-    if (!s_started || !s_live) {
+    if (!s_started) {
         return;
     }
+    /* Core 1 marks itself live under the lock as it takes an order, so a
+     * core 1 not live here has taken none: the first it takes is the
+     * stopped one already posted, and no pass touches the capture. */
     const uint32_t irq = spin_lock_blocking(s_lock);
     const uint32_t seq = s_order_seq;
+    const bool live = s_live;
     spin_unlock(s_lock, irq);
+    if (!live) {
+        return;
+    }
     const uint64_t until = time_us_64() + TONE_CORE1_WAIT_US;
     while ((int32_t)(s_ack_seq - seq) < 0 && time_us_64() < until) {
         tight_loop_contents();
@@ -144,6 +151,7 @@ void tone_core1_step(void)
     memcpy(&s_cmd, &s_order, sizeof(s_cmd));
     s_cmd_t0_us = s_order_t0_us;
     s_cmd_seq = s_order_seq;
+    s_live = true;
     spin_unlock(s_lock, irq);
 
     pass();
@@ -151,7 +159,6 @@ void tone_core1_step(void)
      * ran: core 0 may tear it down once it sees this. */
     __dmb();
     s_ack_seq = s_cmd_seq;
-    s_live = true;
 }
 
 void tone_core1_sync(tone_page_t *page)
