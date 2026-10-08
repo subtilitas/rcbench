@@ -4,7 +4,7 @@
  * A phase is modelled as the intervals it is driven, at the supply voltage
  * or, floating against a resistor star, at half of it.  The front end is
  * modelled as it is wired: a series resistor into the pin's capacitance
- * and a zener's, a 3.3 V clamp, and a Schmitt input that goes high at
+ * and a zener's, a 3.0 V clamp, and a Schmitt input that goes high at
  * 2.0 V and low at 0.8 V, the datasheet's VIH minimum and VIL maximum.
  * Edges come out at the 26.7 ns tick of a PIO (programmable input/output)
  * counter at 150 MHz, 4 cycles a count.
@@ -20,9 +20,9 @@
  * 8 to 48 kHz carriers through it; the fitted front end, 4.7 kOhm into a
  * zener of about 65 pF (0.31 us), at 8.4 V and 20 V, every carrier at 10,
  * 50 and 90 % duty, with the hold-off and without it, driven and floating
- * at half the supply; a floating 2S phase of 3.0 V, whose shortest
- * 144 kHz pulses come and go, pinned as a limit; and the same resistor
- * into a 450 pF zener (2.1 us).
+ * at half the supply, and at clamps of 2.6 V and 3.4 V; a floating 2S
+ * phase of 3.0 V, whose shortest 144 kHz pulses come and go, pinned as a
+ * limit; and the same resistor into a 450 pF zener (2.1 us).
  *
  * Accuracy held here, with up to 1 us of jitter on every edge:
  *   carrier locked to the tone, or none, or 144 kHz through the 8 us
@@ -158,7 +158,7 @@ typedef struct {
     double tau_s;        /* series resistor x (pin + zener capacitance)  */
 } front_t;
 
-#define VZ   3.3
+#define VZ   3.0                        /* the UDZV3.0B's clamp */
 #define VT_H 2.0
 #define VT_L 0.8
 
@@ -177,6 +177,9 @@ static void edge_add(edges_t *s, double t, bool level)
     s->e[s->n].level = level;
     s->n++;
 }
+
+/* The zener's clamp, V: VZ unless a case models another part. */
+static double vz_clamp = VZ;
 
 /* The pin's edges for the phase @p d through @p f. */
 static void front_run(const drive_t *d, const front_t *f, edges_t *out)
@@ -203,8 +206,8 @@ static void front_run(const drive_t *d, const front_t *f, edges_t *out)
             }
         }
         v = f->v - (f->v - v) * exp(-(b - a) / f->tau_s);
-        if (v > VZ) {
-            v = VZ;
+        if (v > vz_clamp) {
+            v = vz_clamp;
         }
         /* Discharging towards 0 V through the resistor. */
         if (high) {
@@ -223,7 +226,7 @@ static void front_run(const drive_t *d, const front_t *f, edges_t *out)
 #define TAU_22K  (22e3 * 50e-12)    /* 1.1 us  */
 #define TAU_TYP  (33e3 * 50e-12)    /* 1.65 us */
 #define TAU_SLOW (33e3 * 300e-12)   /* 9.9 us  */
-/* The fitted front end: 4.7 kOhm into a UDZV3.3B, about 65 pF at 0 V. */
+/* The fitted front end: 4.7 kOhm into a UDZV3.0B, about 65 pF at 0 V. */
 #define TAU_4K7  (4.7e3 * 65e-12)   /* 0.31 us */
 /* The same resistor into a BZX84-class zener of about 450 pF. */
 #define TAU_4K7_SLOW (4.7e3 * 450e-12) /* 2.1 us */
@@ -1678,12 +1681,15 @@ TEST_CASE(a_144_khz_carrier_without_the_hold_off_is_read_at_every_edge)
      * detector reads the carrier and the tone, at 288,000 edges a second
      * inside a burst.  The carrier is the shortest rise interval, so
      * 0.2 us of jitter on each edge reads it up to 0.4 us short: 6 % high.
-     * At 30 % duty a node of 3.3 us takes 4.7 us to fall from the clamp,
-     * against a 4.9 us low, and loses some lows and not others; the
-     * bursts still group.  At 50 % duty one of 6.6 us at 25.2 V loses
-     * every low: one pulse a burst.  The tone is read as accurately as
-     * an unchopped one in all three. */
-    static const double tau[] = { TAU_22K, 3.3e-6, 6.6e-6 };
+     * At 30 % duty a node of 3.7 us takes 4.89 us to fall from the 3.0 V
+     * clamp to 0.8 V, against a 4.86 us low, and under 0.2 us of jitter
+     * loses some lows and not others; the bursts still group.  The node
+     * is chosen for that: its fall must sit at the low's length, and
+     * 3.3 us, which fell in 4.7 us from a 3.3 V clamp, falls in 4.36 us
+     * from 3.0 V and passes every low.  At 50 % duty one of 6.6 us at
+     * 25.2 V loses every low: one pulse a burst.  The tone is read as
+     * accurately as an unchopped one in all three. */
+    static const double tau[] = { TAU_22K, 3.7e-6, 6.6e-6 };
     static const double volts[] = { 12.0, 12.0, 25.2 };
     static const double duty[] = { 0.5, 0.3, 0.5 };
     rng_seed(5u);
@@ -1842,7 +1848,7 @@ static const double node_volts[] = { 8.4, 20.0 };
 TEST_CASE(a_4k7_node_reads_every_carrier_through_the_hold_off)
 {
     /* 4.7 kOhm into about 65 pF: the node rises to 2.0 V in 0.08 us at
-     * 8.4 V and falls from the clamp to 0.8 V in 0.43 us, so it passes
+     * 8.4 V and falls from the clamp to 0.8 V in 0.40 us, so it passes
      * every pulse and every low of 8 to 144 kHz at 10 to 90 % duty, the
      * 0.69 us of 144 kHz included.  Through the hold-off, as the capture
      * runs by default, every case holds the bounds of its class. */
@@ -1899,6 +1905,28 @@ TEST_CASE(a_floating_phase_at_2s_and_20_v_reads_every_carrier)
         hold_ns = 0u;
         CHECK(node_sweep(&f, skip_144k_90) > 200u);
     }
+}
+
+TEST_CASE(the_4k7_node_reads_every_carrier_over_the_clamp_s_spread)
+{
+    /* The UDZV3.0B clamps at about 2.5 V at 1 mA (graph) and at 3.01 to
+     * 3.22 V at 5 mA; a cheap 3.0 V part anywhere from about 2.6 to
+     * 3.4 V.  A lower clamp falls to 0.8 V sooner, a higher one later:
+     * 1.18 tau from 2.6 V, 1.45 tau from 3.4 V.  Through the hold-off,
+     * driven at 8.4 V and 20 V, every case holds the bounds of its
+     * class at both ends. */
+    static const double clamp[] = { 2.6, 3.4 };
+    hold_ns = 8000u;
+    rng_seed(29u);
+    for (size_t k = 0; k < 2u; ++k) {
+        vz_clamp = clamp[k];
+        for (size_t n = 0; n < 2u; ++n) {
+            const front_t f = { node_volts[n], TAU_4K7 };
+            CHECK(node_sweep(&f, NULL) > 200u);
+        }
+    }
+    vz_clamp = VZ;
+    hold_ns = 0u;
 }
 
 /* One 100 ms beep of @p hz, 144 kHz at 10 %, locked, through @p f and the
@@ -2173,6 +2201,7 @@ int main(void)
     RUN(a_4k7_node_reads_every_carrier_through_the_hold_off);
     RUN(a_4k7_node_reads_every_carrier_without_the_hold_off);
     RUN(a_floating_phase_at_2s_and_20_v_reads_every_carrier);
+    RUN(the_4k7_node_reads_every_carrier_over_the_clamp_s_spread);
     RUN(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent);
     RUN(a_slow_450_pf_zener_still_reads_the_tone_through_the_hold_off);
     RUN(an_edge_earlier_than_the_last_time_is_ignored);
