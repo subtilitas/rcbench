@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "log_name.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -77,6 +78,13 @@
 #define PV_BAND   10
 #define PV_DIV_X  6
 #define PV_DIV_Y  4
+/* The bar under the plot that shows where a zoomed view sits. */
+#define PV_POS_Y  (PV_Y + PV_H + 2)
+#define PV_POS_H  4
+/* The narrowest window two fingers can zoom to, in samples. */
+#define PV_MIN_WIN 8
+/* A pixel column with no number in it: drawn as nothing. */
+#define PV_EMPTY   (-1)
 
 #define CHIP_Y    26
 #define CHIP_H    36
@@ -132,6 +140,25 @@ static struct {
     bool have_data;
     int cursor;
 
+    /*
+     * The samples the plot shows: [win0, win0 + win_n).  The whole file
+     * until two fingers zoom in, and it stays where they leave it.
+     */
+    int win0;
+    int win_n;
+
+    /*
+     * Two fingers on the plot: spreading or pinching zooms, moving both
+     * together pans.  The sample under the fingers' midpoint at the start
+     * stays under the midpoint as they move.
+     */
+    bool pinch;
+    uint8_t pinch_id[2];
+    int16_t pinch_x[2];
+    float pinch_d0;      /* distance at the start, px          */
+    float pinch_s0;      /* sample under the start midpoint    */
+    float pinch_n0;      /* window width at the start, samples */
+
     /* press tracking, shared by the list views */
     bool pressing;
     int press_row;
@@ -139,6 +166,8 @@ static struct {
     int press_scroll0;
     bool dragged;
     int press_btn;
+    uint8_t press_id;    /* the finger that holds the plot cursor */
+    int16_t press_x;
 
     bool valid[MAX_FBS];
 } s;
@@ -169,6 +198,30 @@ const log_analysis_t *log_viewer_analysis(void)
 const log_data_t *log_viewer_data(void)
 {
     return s.have_data ? &s.data : NULL;
+}
+
+void log_viewer_window(int *first, int *count)
+{
+    const bool on = s.have_data && s.data.count > 0;
+    if (first != NULL) {
+        *first = on ? s.win0 : 0;
+    }
+    if (count != NULL) {
+        *count = on ? s.win_n : 0;
+    }
+}
+
+gfx_color_t log_viewer_series_color(int k)
+{
+    if (k < 0 || k >= LOG_MAX_SERIES) {
+        return 0;
+    }
+    return ui_theme_color(k_series_color[k]);
+}
+
+int log_viewer_cursor(void)
+{
+    return s.have_data ? s.cursor : -1;
 }
 
 void log_viewer_invalidate(void)
@@ -214,6 +267,24 @@ void log_viewer_refresh(void)
             s.n_card = n;
             s.n_files = (n < LOG_VIEWER_MAX_FILES) ? n : LOG_VIEWER_MAX_FILES;
             s.listed = 1;
+            /*
+             * The run just recorded is the one an operator re-reads the card
+             * for, so the list opens on it: the highest run number, scrolled
+             * into view.  A card with no numbered run keeps no selection.
+             */
+            int best = -1;
+            for (int i = 0; i < s.n_files; ++i) {
+                if (!s.files[i].is_dir &&
+                    log_run_number(s.files[i].name) >= 0 &&
+                    (best < 0 || log_name_rank(s.files[i].name,
+                                               s.files[best].name) < 0)) {
+                    best = i;
+                }
+            }
+            s.sel = best;
+            if (best >= BR_ROWS) {
+                s.scroll = best - BR_ROWS + 1;
+            }
         }
     }
     log_viewer_invalidate();
@@ -226,6 +297,9 @@ static void drop_data(void)
         s.have_data = false;
     }
     s.cursor = -1;
+    s.win0 = 0;
+    s.win_n = 0;
+    s.pinch = false;
 }
 
 /* ------------------------------------------------------------- loading --- */
@@ -371,7 +445,12 @@ static void compute_spans(void)
     if (!s.have_data || s.data.count <= 0) {
         return;
     }
-    int count = s.data.count;
+    if (s.win_n <= 0 || s.win0 < 0 || s.win0 + s.win_n > s.data.count) {
+        s.win0 = 0;
+        s.win_n = s.data.count;
+    }
+    const int base = s.win0;
+    const int count = s.win_n;
 
     for (int k = 0; k < s.data.n_fields; ++k) {
         float lo = s.data.field[k].min;
@@ -406,7 +485,7 @@ static void compute_spans(void)
         s_hi[k] = hi;
         float span = hi - lo;
 
-        const float *v = s.data.value[k];
+        const float *v = s.data.value[k] + base;
         for (int x = 0; x < PV_W; ++x) {
             int i0 = (int)(((long)x * count) / PV_W);
             int i1 = (int)(((long)(x + 1) * count) / PV_W);
@@ -440,8 +519,15 @@ static void compute_spans(void)
                 }
             }
             if (!any) {
-                vmin = lo;
-                vmax = lo;
+                /*
+                 * No number in this column.  The loader holds the previous
+                 * value across an empty cell, so this is only the stretch
+                 * before a column's first number: drawn as nothing rather
+                 * than as a line along the bottom of the scale.
+                 */
+                s_span[k][x][0] = PV_EMPTY;
+                s_span[k][x][1] = PV_EMPTY;
+                continue;
             }
 
             int y_hi = PV_Y + PV_H - 1 -
@@ -464,15 +550,17 @@ static void compute_spans(void)
             s_span[k][x][1] = (int16_t)y_lo;
         }
 
-        /* Fewer samples than pixels: join neighbouring columns so the trace is
-         * a line rather than a dotted row of one-pixel marks. */
-        if (count < PV_W) {
-            for (int x = 1; x < PV_W; ++x) {
-                if (s_span[k][x][0] > s_span[k][x - 1][1]) {
-                    s_span[k][x][0] = (int16_t)(s_span[k][x - 1][1]);
-                } else if (s_span[k][x][1] < s_span[k][x - 1][0]) {
-                    s_span[k][x][1] = (int16_t)(s_span[k][x - 1][0]);
-                }
+        /* Join neighbouring columns so the trace is a line rather than a
+         * dotted row of marks: each column reaches the one before it.  An
+         * empty column joins nothing, so a gap stays a gap. */
+        for (int x = 1; x < PV_W; ++x) {
+            if (s_span[k][x][0] == PV_EMPTY || s_span[k][x - 1][0] == PV_EMPTY) {
+                continue;
+            }
+            if (s_span[k][x][0] > s_span[k][x - 1][1]) {
+                s_span[k][x][0] = (int16_t)(s_span[k][x - 1][1]);
+            } else if (s_span[k][x][1] < s_span[k][x - 1][0]) {
+                s_span[k][x][1] = (int16_t)(s_span[k][x - 1][0]);
             }
         }
     }
@@ -502,6 +590,9 @@ static void load_data(void)
 
     s.have_data = true;
     s.cursor = s.data.count - 1;
+    s.win0 = 0;
+    s.win_n = s.data.count;
+    s.pinch = false;
     s.message[0] = '\0';
     compute_spans();
     s.view = VIEW_PLOT;
@@ -897,7 +988,7 @@ static void draw_trace_band(gfx_canvas_t *band, int k, int band_y0, int rows)
     for (int x = 0; x < PV_W; ++x) {
         int y0 = s_span[k][x][0];
         int y1 = s_span[k][x][1];
-        if (y1 < band_y0 || y0 >= band_y0 + rows) {
+        if (y0 == PV_EMPTY || y1 < band_y0 || y0 >= band_y0 + rows) {
             continue;
         }
         int a = (y0 < band_y0) ? band_y0 : y0;
@@ -908,10 +999,12 @@ static void draw_trace_band(gfx_canvas_t *band, int k, int band_y0, int rows)
 
 static int cursor_x(void)
 {
-    if (!s.have_data || s.data.count <= 1 || s.cursor < 0) {
+    if (!s.have_data || s.win_n <= 1 || s.cursor < s.win0 ||
+        s.cursor >= s.win0 + s.win_n) {
         return -1;
     }
-    return PV_X + (int)(((long)s.cursor * (PV_W - 1)) / (s.data.count - 1));
+    return PV_X + (int)(((long)(s.cursor - s.win0) * (PV_W - 1)) /
+                        (s.win_n - 1));
 }
 
 static void render_plot(gfx_canvas_t *c)
@@ -981,14 +1074,31 @@ static void render_plot(gfx_canvas_t *c)
         gfx_vline(c, cx, PV_Y, PV_H, UI_TEXT_DIM);
         for (int k = 0; k < s.data.n_fields; ++k) {
             int x = cx - PV_X;
+            if (s_span[k][x][0] == PV_EMPTY) {
+                continue;
+            }
             int y = (s_span[k][x][0] + s_span[k][x][1]) / 2;
             gfx_fill_circle(c, cx, y, 3, ui_theme_color(k_series_color[k]));
         }
     }
 
     /* --- time axis ------------------------------------------------------ */
+    /* --- position of a zoomed view ------------------------------------ */
+    if (s.win_n > 0 && s.win_n < s.data.count) {
+        gfx_fill_rect(c, PV_X, PV_POS_Y, PV_W, PV_POS_H, UI_PANEL_SUNK);
+        int bx = PV_X + (int)(((long)s.win0 * PV_W) / s.data.count);
+        int bw = (int)(((long)s.win_n * PV_W) / s.data.count);
+        if (bw < 6) {
+            bw = 6;
+        }
+        if (bx + bw > PV_X + PV_W) {
+            bx = PV_X + PV_W - bw;
+        }
+        gfx_fill_rect(c, bx, PV_POS_Y, bw, PV_POS_H, UI_ACCENT);
+    }
+
     for (int i = 0; i <= PV_DIV_X; ++i) {
-        int idx = (s.data.count - 1) * i / PV_DIV_X;
+        int idx = s.win0 + (s.win_n - 1) * i / PV_DIV_X;
         char t[16];
         ui_fmt(t, sizeof(t), s.data.time[idx], 2);
         int x = PV_X + (PV_W - 1) * i / PV_DIV_X;
@@ -1005,7 +1115,7 @@ static void render_plot(gfx_canvas_t *c)
     }
 
     /* --- footer --------------------------------------------------------- */
-    ui_button(c, gfx_rect_make(16, FOOT_Y, 170, FOOT_H), TR(LOG_FIELDS),
+    ui_button(c, gfx_rect_make(16, FOOT_Y, 170, FOOT_H), TR(LOG_BACK),
               UI_PANEL_HI,
               s.press_btn == 0, true);
     ui_button(c, gfx_rect_make(196, FOOT_Y, 80, FOOT_H), "<", UI_PANEL_HI,
@@ -1314,7 +1424,82 @@ static void set_cursor_from_x(int x)
     if (rel > PV_W - 1) {
         rel = PV_W - 1;
     }
-    s.cursor = (int)(((long)rel * (s.data.count - 1)) / (PV_W - 1));
+    s.cursor = s.win0 + (int)(((long)rel * (s.win_n - 1)) / (PV_W - 1));
+}
+
+/* Keep the cursor's sample on screen after an arrow press. */
+static void follow_cursor(void)
+{
+    if (s.cursor < s.win0) {
+        s.win0 = s.cursor;
+        compute_spans();
+    } else if (s.cursor >= s.win0 + s.win_n) {
+        s.win0 = s.cursor - s.win_n + 1;
+        compute_spans();
+    }
+}
+
+static float pinch_dist(void)
+{
+    float d = (float)(s.pinch_x[1] - s.pinch_x[0]);
+    return d < 0.0f ? -d : d;
+}
+
+static float pinch_mid(void)
+{
+    return 0.5f * (float)(s.pinch_x[0] + s.pinch_x[1]);
+}
+
+/* A second finger lands on the plot: the gesture starts from here. */
+static void pinch_start(uint8_t id0, int16_t x0, uint8_t id1, int16_t x1)
+{
+    s.pinch = true;
+    s.pinch_id[0] = id0;
+    s.pinch_id[1] = id1;
+    s.pinch_x[0] = x0;
+    s.pinch_x[1] = x1;
+    s.pinch_d0 = pinch_dist();
+    if (s.pinch_d0 < 20.0f) {
+        s.pinch_d0 = 20.0f;
+    }
+    s.pinch_n0 = (float)s.win_n;
+    s.pinch_s0 = (float)s.win0 +
+                 (pinch_mid() - (float)PV_X) * s.pinch_n0 / (float)PV_W;
+}
+
+/* Both fingers' positions changed: set the window from them. */
+static void pinch_apply(void)
+{
+    const int count = s.data.count;
+    float d = pinch_dist();
+    if (d < 20.0f) {
+        d = 20.0f;
+    }
+    float n = s.pinch_n0 * s.pinch_d0 / d;
+    const float min_n = (float)((count < PV_MIN_WIN) ? count : PV_MIN_WIN);
+    if (n < min_n) {
+        n = min_n;
+    }
+    if (n > (float)count) {
+        n = (float)count;
+    }
+    float w0 = s.pinch_s0 - (pinch_mid() - (float)PV_X) * n / (float)PV_W;
+    if (w0 < 0.0f) {
+        w0 = 0.0f;
+    }
+    if (w0 + n > (float)count) {
+        w0 = (float)count - n;
+    }
+    const int nw = (int)(n + 0.5f);
+    int nw0 = (int)(w0 + 0.5f);
+    if (nw0 + nw > count) {
+        nw0 = count - nw;
+    }
+    if (nw != s.win_n || nw0 != s.win0) {
+        s.win_n = nw;
+        s.win0 = nw0;
+        compute_spans();
+    }
 }
 
 static void plot_event(const touch_event_t *e)
@@ -1325,31 +1510,69 @@ static void plot_event(const touch_event_t *e)
         gfx_rect_make(284, FOOT_Y, 80, FOOT_H),
     };
 
+    /* Two fingers on the plot own it until one lifts; a third is ignored. */
+    if (s.pinch) {
+        int f = (e->point.id == s.pinch_id[0]) ? 0
+              : (e->point.id == s.pinch_id[1]) ? 1 : -1;
+        if (f < 0) {
+            return;
+        }
+        if (e->type == TOUCH_EVENT_MOVE) {
+            s.pinch_x[f] = e->point.x;
+            pinch_apply();
+            log_viewer_invalidate();
+        } else if (e->type == TOUCH_EVENT_UP) {
+            /* The view stays where the fingers left it. */
+            s.pinch = false;
+            s.pressing = false;
+            log_viewer_invalidate();
+        }
+        return;
+    }
+
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
+        if (s.pressing && e->point.id != s.press_id && s.have_data &&
+            s.data.count > 1 &&
+            gfx_rect_contains(PV_PANEL, e->point.x, e->point.y)) {
+            pinch_start(s.press_id, s.press_x, e->point.id, e->point.x);
+            log_viewer_invalidate();
+            break;
+        }
+        if (s.pressing || s.press_btn >= 0) {
+            break;   /* a second finger elsewhere presses nothing */
+        }
         s.press_btn = hit_button(btns, 3, e->point.x, e->point.y);
         if (s.press_btn < 0 && gfx_rect_contains(PV_PANEL, e->point.x, e->point.y)) {
             s.pressing = true;
+            s.press_id = e->point.id;
+            s.press_x = e->point.x;
             set_cursor_from_x(e->point.x);
         }
         log_viewer_invalidate();
         break;
 
     case TOUCH_EVENT_MOVE:
-        if (s.pressing) {
+        if (s.pressing && e->point.id == s.press_id) {
+            s.press_x = e->point.x;
             set_cursor_from_x(e->point.x);
             log_viewer_invalidate();
         }
         break;
 
     case TOUCH_EVENT_UP:
+        if (s.pressing && e->point.id != s.press_id) {
+            break;
+        }
         if (s.press_btn == 0) {
             s.view = VIEW_IMPORT;
         } else if (s.press_btn == 1 && s.cursor > 0) {
             s.cursor--;
+            follow_cursor();
         } else if (s.press_btn == 2 && s.have_data &&
                    s.cursor < s.data.count - 1) {
             s.cursor++;
+            follow_cursor();
         }
         s.pressing = false;
         s.press_btn = -1;
@@ -1428,6 +1651,7 @@ static void cancel(void)
     s.press_row = -1;
     s.dragged   = false;
     s.q_down    = false;
+    s.pinch     = false;
     log_viewer_invalidate();
 }
 

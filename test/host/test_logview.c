@@ -56,6 +56,10 @@ static const char k_ragged[] = "t,a,b\n0,1,2\n1,2\n2,3,4\n";
 static const char k_plain[] =
     "left,right\n5,1.0\n3,2.0\n9,n/a\n4,4.0\n8,5.0\n7,6.0\n";
 
+/* 400 rows of a ramp, written by long_file() before a zoom case opens it. */
+static char g_long[16384];
+
+
 static const struct {
     const char *name;
     const char *text;
@@ -69,6 +73,7 @@ static const struct {
     { "GONE.CSV", NULL },
     /* Appended, not inserted: the cases above address the card by index. */
     { "RAGGED.CSV", k_ragged },
+    { "LONG.CSV", g_long },
 };
 
 static bool g_no_card;
@@ -121,6 +126,10 @@ static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
     for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]) && n < max_entries;
          ++i) {
         if (g_removed[i]) {
+            continue;
+        }
+        /* LONG.CSV is on the card only for the zoom cases that write it. */
+        if (k_card[i].text == g_long && g_long[0] == '\0') {
             continue;
         }
         snprintf(out[n].name, sizeof(out[n].name), "%s", k_card[i].name);
@@ -212,6 +221,7 @@ static void reset_screen(void)
 static void fresh(void)
 {
     g_dir_index = -1;
+    g_long[0] = '\0';
     if (s_fb == NULL) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
     }
@@ -262,6 +272,16 @@ static void draw(void)
 #define OPEN_X      709
 #define DELETE_X    551
 #define RESCAN_X    91
+/* The plot view: a point inside the plot, and the > button's centre. */
+#define PV_TAP_X    400
+#define NEXT_X      324
+#define FOOT_PLOT_CY (390 + 21)
+/* The plot area: left edge, width in columns, the row a constant trace runs
+ * along (the middle grid line) and the bottom row. */
+#define PV_X0       24
+#define PV_COLS     752
+#define PV_TOP_Y    76
+#define PV_BOTTOM_Y (76 + 275)
 /* The DELETE question's two buttons. */
 #define DQ_CY       282
 #define DQ_CANCEL_X 264
@@ -1482,6 +1502,233 @@ TEST_CASE(the_question_leaves_no_stale_pixels)
     }
 }
 
+
+/* ------------------------------------------------------------ zoom ------ */
+
+#define LONG_ROWS 400
+
+/* Write LONG.CSV and open it in the plot: the first three fixture files are
+ * taken off the card so it is the sixth row and needs no scrolling. */
+static void long_file(void)
+{
+    fresh();
+    size_t at = (size_t)snprintf(g_long, sizeof(g_long), "t,v\n");
+    for (int i = 0; i < LONG_ROWS; ++i) {
+        at += (size_t)snprintf(g_long + at, sizeof(g_long) - at, "%d,%d\n",
+                               i, i % 50);
+    }
+    g_removed[0] = g_removed[1] = g_removed[2] = true;
+    log_viewer_refresh();
+    open_file(5);
+    tap(PLOT_X, IM_BTN_CY);
+    draw();
+}
+
+/* Two fingers down on the plot at x0 and x1, both moved to y0 = 200. */
+static void two_down(int x0, int x1)
+{
+    send_id(TOUCH_EVENT_DOWN, 1, x0, 200);
+    send_id(TOUCH_EVENT_DOWN, 2, x1, 200);
+}
+
+static void two_move(int x0, int x1)
+{
+    send_id(TOUCH_EVENT_MOVE, 1, x0, 200);
+    send_id(TOUCH_EVENT_MOVE, 2, x1, 200);
+}
+
+static void two_up(int x0, int x1)
+{
+    send_id(TOUCH_EVENT_UP, 2, x1, 200);
+    send_id(TOUCH_EVENT_UP, 1, x0, 200);
+}
+
+TEST_CASE(re_reading_the_card_selects_the_newest_run)
+{
+    fresh();
+    g_card_runs = 30;          /* more than seven rows: the newest scrolls in */
+    log_viewer_refresh();
+    tap(OPEN_X, FOOT_CY);
+    draw();
+    char want[LOG_VIEWER_NAME_MAX];
+    log_run_name(want, sizeof(want), 30);
+    CHECK_STR_EQ(log_viewer_open_name(), want);
+
+    /* A card with no numbered run selects nothing: OPEN opens nothing. */
+    fresh();
+    log_viewer_refresh();
+    tap(OPEN_X, FOOT_CY);
+    CHECK_STR_EQ(log_viewer_open_name(), "");
+}
+
+TEST_CASE(two_fingers_spread_zoom_in_and_the_view_stays)
+{
+    long_file();
+    const log_data_t *d = log_viewer_data();
+    if (d == NULL) {
+        T_FAIL("no data");
+        return;
+    }
+    CHECK_EQ(d->count, LONG_ROWS);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    CHECK_EQ(first, 0);
+    CHECK_EQ(count, LONG_ROWS);
+
+    /* Spread from 100 px apart to 400 px apart around x = 400: a quarter
+     * of the samples, centred where the fingers were. */
+    two_down(350, 450);
+    two_move(200, 600);
+    two_up(200, 600);
+    draw();
+    log_viewer_window(&first, &count);
+    CHECK_EQ(count, LONG_ROWS / 4);
+    CHECK(first > 100 && first < 200);
+
+    /* The view stays after the fingers lift, and the position bar shows. */
+    int first2 = -1, count2 = -1;
+    log_viewer_window(&first2, &count2);
+    CHECK_EQ(first2, first);
+    CHECK_EQ(count2, count);
+}
+
+TEST_CASE(two_fingers_moved_together_pan_and_pinching_zooms_out)
+{
+    long_file();
+    two_down(350, 450);
+    two_move(200, 600);
+    two_up(200, 600);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    const int zoomed_first = first;
+
+    /* Both fingers 200 px to the right, same distance: the trace follows
+     * them, so earlier samples come into view. */
+    two_down(300, 500);
+    two_move(500, 700);
+    two_up(500, 700);
+    log_viewer_window(&first, &count);
+    CHECK_EQ(count, LONG_ROWS / 4);
+    CHECK(first < zoomed_first);
+
+    /* Pinching far in returns the whole file, and never more. */
+    two_down(100, 700);
+    two_move(390, 410);
+    two_up(390, 410);
+    log_viewer_window(&first, &count);
+    CHECK_EQ(first, 0);
+    CHECK_EQ(count, LONG_ROWS);
+    draw();
+}
+
+TEST_CASE(the_arrows_still_pick_values_and_carry_the_view)
+{
+    long_file();
+    two_down(350, 450);
+    two_move(200, 600);
+    two_up(200, 600);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+
+    /* A tap on the plot puts the cursor inside the zoomed view. */
+    tap(PV_TAP_X, 200);
+    const int c0 = log_viewer_cursor();
+    CHECK(c0 >= first && c0 < first + count);
+
+    /* Pressing > past the right edge moves the view along with the cursor. */
+    for (int i = 0; i < count; ++i) {
+        tap(NEXT_X, FOOT_PLOT_CY);
+    }
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    const int c1 = log_viewer_cursor();
+    CHECK_EQ(n2, count);
+    CHECK(f2 > first);
+    CHECK(c1 >= f2 && c1 < f2 + n2);
+    draw();
+}
+
+TEST_CASE(a_third_finger_and_a_cancel_leave_the_view_alone)
+{
+    long_file();
+    two_down(350, 450);
+    send_id(TOUCH_EVENT_DOWN, 3, 600, 200);   /* ignored */
+    send_id(TOUCH_EVENT_MOVE, 3, 700, 200);
+    two_move(200, 600);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    CHECK_EQ(count, LONG_ROWS / 4);
+    screen()->cancel();
+    /* After the cancel one finger moves the cursor, not the view. */
+    send_id(TOUCH_EVENT_MOVE, 1, 600, 200);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    CHECK_EQ(f2, first);
+    CHECK_EQ(n2, count);
+}
+
+
+TEST_CASE(a_steep_trace_longer_than_the_plot_is_one_line)
+{
+    /*
+     * 1200 rows, more than the plot's 752 columns, of a steep sawtooth, with
+     * the first 60 cells empty.  Each column's span has to reach its
+     * neighbour's: drawn as min..max of its own samples alone, a steep
+     * stretch came apart into dashes.  The empty start draws nothing, not a
+     * line along the bottom.
+     */
+    fresh();
+    size_t at = (size_t)snprintf(g_long, sizeof(g_long), "t,v\n");
+    for (int i = 0; i < 1200; ++i) {
+        char v[8] = "";
+        if (i >= 60) {
+            snprintf(v, sizeof(v), "%d", (i * 37) % 1000);
+        }
+        at += (size_t)snprintf(g_long + at, sizeof(g_long) - at, "%d,%s\n",
+                               i, v);
+    }
+    g_removed[0] = g_removed[1] = g_removed[2] = true;
+    log_viewer_refresh();
+    open_file(5);
+    tap(PLOT_X, IM_BTN_CY);
+    /* Park the cursor at the start so its marker is not in the way. */
+    tap(PV_X0, 200);
+    draw();
+
+
+    int top_prev = -1, bot_prev = -1, breaks = 0, cols = 0;
+    const gfx_color_t col = log_viewer_series_color(0);
+    for (int x = PV_X0 + 60; x < PV_X0 + PV_COLS - 4; ++x) {
+        int top = -1, bot = -1;
+        for (int yy = PV_TOP_Y; yy <= PV_BOTTOM_Y; ++yy) {
+            if (gfx_pixel_get(&s_c, x, yy) == col) {
+                if (top < 0) {
+                    top = yy;
+                }
+                bot = yy;
+            }
+        }
+        if (top < 0) {
+            ++breaks;            /* a column with no trace at all */
+        } else if (top_prev >= 0 &&
+                   (top > bot_prev + 1 || bot < top_prev - 1)) {
+            ++breaks;            /* does not reach its neighbour */
+        }
+        top_prev = top;
+        bot_prev = bot;
+        ++cols;
+    }
+    CHECK(cols > 600);
+    CHECK_EQ(breaks, 0);
+
+    /* The empty start: nothing along the bottom of the plot there. */
+    int bottom = 0;
+    for (int x = PV_X0 + 2; x < PV_X0 + 30; ++x) {
+        bottom += (gfx_pixel_get(&s_c, x, PV_BOTTOM_Y) == col);
+    }
+    CHECK_EQ(bottom, 0);
+}
+
 int main(void)
 {
     RUN(every_view_draws_something);
@@ -1520,6 +1767,12 @@ int main(void)
     RUN(only_the_finger_that_pressed_delete_can_release_it);
     RUN(a_touch_loss_drops_the_press_on_delete);
     RUN(delete_needs_a_selected_file);
+    RUN(re_reading_the_card_selects_the_newest_run);
+    RUN(two_fingers_spread_zoom_in_and_the_view_stays);
+    RUN(two_fingers_moved_together_pan_and_pinching_zooms_out);
+    RUN(the_arrows_still_pick_values_and_carry_the_view);
+    RUN(a_third_finger_and_a_cancel_leave_the_view_alone);
+    RUN(a_steep_trace_longer_than_the_plot_is_one_line);
     RUN(without_remove_there_is_no_delete);
     RUN(deleting_the_open_file_drops_what_was_read_from_it);
     RUN(deleting_another_file_keeps_the_open_one);
