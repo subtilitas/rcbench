@@ -76,8 +76,19 @@
  * CH1 samples are stamped when CH1's read is done.  A one-sample excursion
  * starts a move only when a quarter of it passes the threshold.  A clipped
  * CH1 sample is at or past the full scale less a step: 1.6376 A on the
- * 0.1 Ω shunt.  The INA3221 leaving online ends a capture as lost.  The
- * capture states take link_cap_state_t's numbers.
+ * 0.1 Ω shunt.  The INA3221 leaving online ends a capture as lost, and so
+ * does an armed capture given no edge within SENSE_CAP_EDGE_WAIT_MS of the
+ * arm.  The capture states take link_cap_state_t's numbers.
+ *
+ * The level before the command.  A capture armed with rise_ua
+ * SENSE_CAP_RISE_AUTO takes it from CH1 itself: the mean of the CH1
+ * samples stamped in the SENSE_WINDOW_MS before the edge, a clipped one
+ * counted at the end of the range as the filter takes it.  The schedule
+ * keeps the last SENSE_WINDOW_MS CH1 samples for it, whether a capture is
+ * armed or not.  The level is taken when the first CH1 sample at or past
+ * the edge arrives, so an edge that lies ahead counts the samples taken
+ * up to it.  A capture with no CH1 sample in those 50 ms ends as lost:
+ * the INA3221 did not answer.
  *
  * Not known: the INA3221's noise at 140 µs conversions, and so whether 4
  * samples of filter and 10 of settling suit it; the controller's time
@@ -116,6 +127,16 @@ extern "C" {
 #define SENSE_CAP_LAG_MS      5u
 /** The capture's time unit: 0.1 ms. */
 #define SENSE_CAP_T_PER_MS   10u
+/** An armed capture given no edge in this long ends lost: nothing renders
+ *  the frame it waits for.  The panel writes the command straight after
+ *  the arm, and a frame at the slowest PWM rate, 40 Hz, is 25 ms; the
+ *  bound is the move's own window. */
+#define SENSE_CAP_EDGE_WAIT_MS SERVO_MOVE_TIMEOUT_MS
+/** sense_cap_arm_t.rise_ua: the level before the command taken from CH1's
+ *  SENSE_WINDOW_MS before the edge. */
+#define SENSE_CAP_RISE_AUTO  INT32_MIN
+/** CH1 samples kept for that level: one window at 1 kHz. */
+#define SENSE_CH1_HISTORY    SENSE_WINDOW_MS
 
 /** Where a window's readings come from. */
 typedef enum {
@@ -197,7 +218,8 @@ typedef enum {
 
 /** A capture's levels, µA. */
 typedef struct {
-    int32_t rise_ua;      /**< the level before the command               */
+    int32_t rise_ua;      /**< the level before the command, or
+                               SENSE_CAP_RISE_AUTO                        */
     int32_t hold_ua;      /**< the destination's holding level            */
     int32_t move_ua;      /**< the threshold                              */
     int32_t band_ua;      /**< the arrival band                           */
@@ -209,11 +231,20 @@ typedef struct {
     int8_t clip;          /**< servo_move_clip_t                          */
 } sense_cap_pre_t;
 
+/** A CH1 sample kept for the level before a command. */
+typedef struct {
+    uint32_t t;           /**< when it was read, 0.1 ms                   */
+    int32_t  ua;          /**< its value; a clip at the end of the range  */
+} sense_ch1_t;
+
 typedef struct {
     sense_cap_state_t state;
     uint16_t seq;         /**< captures ended, modulo 65536               */
     sense_cap_arm_t arm;
     uint32_t edge_t;      /**< the edge, 0.1 ms                           */
+    uint32_t arm_t;       /**< the arm, 0.1 ms                            */
+    bool     rise_owed;   /**< the level before the command is CH1's,
+                               taken at the first sample past the edge    */
     /* The last SENSE_CAP_FILTER_N CH1 samples while armed. */
     sense_cap_pre_t pre[SENSE_CAP_FILTER_N];
     uint8_t  pre_n, pre_head;
@@ -255,6 +286,9 @@ typedef struct {
     uint16_t flags;          /**< INA3221 Mask/Enable as last read        */
     sense_run_t run;
     sense_cap_t cap;
+    /* The last SENSE_CH1_HISTORY CH1 samples, oldest overwritten. */
+    sense_ch1_t ch1[SENSE_CH1_HISTORY];
+    uint8_t  ch1_n, ch1_head;
 } sense_sched_t;
 
 /** A schedule over @p io for the parts @p cfg enables.  A part whose
@@ -278,7 +312,8 @@ void sense_sched_arm(sense_sched_t *s);
 bool sense_sched_window(const sense_sched_t *s, sense_src_t src,
                         sense_window_t *out);
 
-/** Arm a capture on CH1 with @p levels.  Refused, and nothing changed,
+/** Arm a capture on CH1 with @p levels; rise_ua SENSE_CAP_RISE_AUTO takes
+ *  the level before the command from CH1.  Refused, and nothing changed,
  *  while the INA3221 is not online or CH1 is not enabled. */
 bool sense_sched_cap_arm(sense_sched_t *s, const sense_cap_arm_t *levels);
 

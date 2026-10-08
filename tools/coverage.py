@@ -129,6 +129,7 @@ TRACKED = [
     "shared/sense/ina228.c",
     "shared/sense/ina3221.c",
     "shared/sense/sense_sched.c",
+    "shared/sense/sense_svc.c",
     "shared/sense/tone.c",
 ]
 

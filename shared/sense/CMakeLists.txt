@@ -3,13 +3,15 @@
 # servo rail.  Register codecs, drivers and the sampling schedule in pure C,
 # talking through a read and a write callback, so the host suite runs them
 # against a fake that answers as each part does.  The schedule's move
-# capture judges moves by servo_move's rules.  Both images compile them,
+# capture judges moves by servo_move's rules.  sense_svc.c is what the
+# coprocessor's core 1 runs each 1 ms tick: the schedule driven by core 0's
+# orders, and a snapshot of what it read.  Both images compile them,
 # through shared/outputs, whose SENSE page validates an INA228 set-up with
-# ina228_calibrate(); nothing else of them is called yet.
+# ina228_calibrate() and publishes the snapshot; the coprocessor runs them.
 #
 # The tone detector, tone.c, turns the edges of one ESC motor phase into
-# beeps and their pitch.  Nothing calls it yet either.
-set(SRCS sense_bus.c ina228.c ina3221.c sense_sched.c tone.c)
+# beeps and their pitch.  Nothing calls it yet.
+set(SRCS sense_bus.c ina228.c ina3221.c sense_sched.c sense_svc.c tone.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)

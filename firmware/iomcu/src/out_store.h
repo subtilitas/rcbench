@@ -127,11 +127,59 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
  */
 #define OUT_STORE_GAP_WAIT_MS  1000u
 
+/*
+ * Where core 1 stands decides how a window opens.  Until either call below,
+ * core 1 is taken as not launched: a window is interrupts off and the
+ * operation run directly, which is what the boot's reclaims use.  The
+ * caller makes one of the two calls straight after launching core 1, with
+ * no store call in between.
+ */
+
+/** Core 1 registered for the flash lock-out: every window from now on
+ *  through flash_safe_execute(), which parks it in RAM. */
+void out_store_core1_parkable(void);
+
+/**
+ * Switch the store's writing off for this boot: core 1 was launched and
+ * did not register for the flash lock-out.  A direct window would fault
+ * core 1 executing from flash, and flash_safe_execute() would refuse, or in
+ * a build with PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core.
+ * Afterwards no erase or program runs and flash_safe_execute() is never
+ * called: out_store_save() takes nothing, so nothing waits for a save that
+ * cannot come, out_store_tick() is idle and out_store_reclaim() false.
+ * What was loaded stays readable.  Nothing switches it on again.
+ */
+void out_store_off(void);
+
+/** Whether out_store_off() has been called. */
+bool out_store_is_off(void);
+
+/**
+ * How long a window waits for core 1 to stop, and to start again after.
+ *
+ * Every erase and program runs through flash_safe_execute(): interrupts
+ * off on this core, and core 1 -- the sensor bus -- parked in RAM by the
+ * multicore lock-out, because a core executing from flash while it is
+ * written faults.  Core 1 answers the lock-out between two I2C
+ * transactions, each held to 1 ms (sense_i2c.h), so it stops within about
+ * 1.2 ms; 10 ms is that with room.  The wait for it is spent before the
+ * window opens and is not counted in it.
+ */
+#define OUT_STORE_LOCKOUT_MS  10u
+
+/** After a window core 1 did not stop for, how long before the next is
+ *  tried. */
+#define OUT_STORE_REFUSED_WAIT_MS  1000u
+
 /** What a pass of out_store_tick() did. */
 typedef enum {
     OUT_STORE_IDLE = 0,   /**< nothing to do, or not yet the moment for it */
     OUT_STORE_ERASED,     /**< a sector was erased; the record follows */
-    OUT_STORE_WROTE       /**< the record is in flash */
+    OUT_STORE_WROTE,      /**< the record is in flash */
+    /** Core 1 did not stop within OUT_STORE_LOCKOUT_MS: nothing was
+     *  written, the save stays asked for, and no window is tried for
+     *  OUT_STORE_REFUSED_WAIT_MS. */
+    OUT_STORE_REFUSED
 } out_store_step_t;
 
 /**
@@ -151,6 +199,8 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
  * The window is the same length wherever it is taken; the point is that the
  * caller picks the moment, and that the save which later finds the sector
  * ready costs a page program alone.  Returns true on the pass that erased.
+ *
+ * A window core 1 did not stop for erases nothing and returns false.
  *
  * One call erases at most one sector, and the call after it looks again.
  * Nothing to do is the ordinary answer: one save in sixteen leaves a sector

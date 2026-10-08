@@ -100,6 +100,14 @@ sense_err_t sense_bus_read(sense_bus_t *b, uint8_t addr, uint8_t reg,
 sense_err_t sense_bus_write16(sense_bus_t *b, uint8_t addr, uint8_t reg,
                               uint16_t value);
 
+/** A transaction made on the wire without this module -- an address scan
+ *  -- and what it came to, for the stuck decision: a held line or a
+ *  timeout counts as one of this module's would, and marks the bus stuck
+ *  by the same rule.  An OK or a NACK shows the lines working and ends a
+ *  run of timeouts; a NACK is a missing address and is not counted as an
+ *  error.  Any other code reached nothing and changes nothing. */
+void sense_bus_note(sense_bus_t *b, sense_err_t e);
+
 /** Whether a recovery is to be run now: the bus is stuck, and none has run
  *  since, or the last ran SENSE_RECOVER_MS or more ago without a
  *  transaction proving the bus free. */

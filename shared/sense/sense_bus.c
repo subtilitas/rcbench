@@ -71,6 +71,23 @@ sense_err_t sense_bus_write16(sense_bus_t *b, uint8_t addr, uint8_t reg,
     return settle(b, b->io.write(b->io.ctx, addr, reg, buf, sizeof buf));
 }
 
+void sense_bus_note(sense_bus_t *b, sense_err_t e)
+{
+    switch (e) {
+    case SENSE_OK:
+    case SENSE_NACK:
+        /* The address went out and the lines came back: the bus works. */
+        (void)settle(b, SENSE_OK);
+        break;
+    case SENSE_TIMEOUT:
+    case SENSE_BUS_LOW:
+        (void)settle(b, e);
+        break;
+    default:
+        break;                    /* nothing reached the wire */
+    }
+}
+
 bool sense_bus_recovery_due(const sense_bus_t *b, uint32_t now_ms)
 {
     if (!b->stuck) {

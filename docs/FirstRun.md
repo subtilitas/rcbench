@@ -256,7 +256,153 @@ builds. Record real values for each:
 
 ---
 
-## 8. When something goes wrong
+## 8. Current monitors (INA228, INA3221)
+
+The coprocessor's core 1 reads an INA228 in the ESC's power path and an
+INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400 kHz,
+every 1 ms. This has not run on hardware. Every step below says what good
+looks like; anything else is a finding to write down.
+
+**Have to hand:** the MATEK I2C-INA-BM (INA228, 200 µΩ) and the DAOKAI
+INA3221 (0.1 Ω per channel, 1.638 A full scale), each at the address it
+ships with, two
+2.2 kΩ resistors, a multimeter, a scope or logic analyser with I2C decode,
+a servo, and the ESC and motor or a resistive load on a current-limited
+supply.
+
+**Build the bring-up image.** The panel cannot write the SENSE page yet.
+This build enables both parts at the page's defaults while no set-up is
+stored in flash; it saves nothing:
+
+```bash
+cmake -S firmware/iomcu -B firmware/iomcu/build-sense -DIOMCU_SENSE_BRINGUP=ON
+cmake --build firmware/iomcu/build-sense
+```
+
+**Wire it** (all coprocessor pads on the RP2350-CAN module):
+
+| Wire | From | To |
+|---|---|---|
+| SDA | GP16 (pad 21) | INA3221 SDA, MATEK SDA |
+| SCL | GP17 (pad 22) | INA3221 SCL, MATEK SCL |
+| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |
+| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |
+| MATEK power | VBUS (pad 40, 5 V from USB), GND | MATEK 5V, G |
+
+The firmware switches the pads' own pull-ups and pull-downs off on both
+pins: the bus runs on the modules' pull-ups and the two 2.2 kΩ. **Before
+connecting the coprocessor**, power the modules and measure SDA and SCL to
+GND: both must read 3.3 V or less. The MATEK's pull-up rail is not known.
+
+**The console.** Every 3 s, while a part is enabled, the coprocessor prints
+two lines:
+
+```
+rcbench-iomcu: sense flags 0x0133 present 0x0021 ids 0x2281 0x3220 errors 0 | bench 1680 cV 1200 cA 33 mAh 6 dWh flags 0x63 | temp 254 dC
+rcbench-iomcu: sense window 4711 CH1 120 mA 6000 mV ch_flags 0x01 | capture state 0 seq 0 move 0 arrive 0
+```
+
+`flags` is the SENSE page's FLAGS: 0x0001 INA228 online, 0x0002 its
+identity read was an INA228's, 0x0004 something else answers at its
+address, 0x0008 a current clipped, 0x0010, 0x0020 and 0x0040 the same for
+the INA3221, 0x0100 the bus is open, 0x0200 the bus is stuck. `present`
+has bit n for address 0x40 + n. `bench` is the BENCH page: 10 mV and
+10 mA steps, charge in mAh, energy in 0.1 Wh, and its flags (0x01
+voltage, 0x02 current, 0x20 the INA228's, 0x40 the INA228's totals).
+
+### 8.1 The parts answer
+
+Power everything, nothing armed.
+
+**Good:** `flags 0x0133`, `present 0x0021`, `ids 0x228x 0x3220`, `errors`
+not rising between two lines.
+
+**Write down:** the two IDs as printed. An INA238 on the MATEK answers
+0x238x and is refused (flag 0x0004). A DAOKAI unit that answers 0x1408
+(one buyer's reading) is refused the same way (0x0040).
+
+### 8.2 The bus on a scope
+
+Probe SDA and SCL at the coprocessor.
+
+**Good:** SCL at 400 kHz (2.5 µs a clock); rise time, 30 % to 70 %, at most
+300 ns; a read of the INA3221's register 0x01 every 1.0 ms; the INA228's
+registers 0x07 and 0x05 in turn, one each 1.0 ms; no NACK in the decode.
+
+**Write down:** the rise time, the clock, the time from one transaction's
+STOP to the next START (the controller's own time, not measured), and the
+period of the CH1 read.
+
+### 8.3 Readings against a meter
+
+Run a steady current through the MATEK's shunt and measure it and the
+pack voltage with the meter. Then a servo, or a resistor drawing under
+1.6 A, on INA3221 CH1, with the meter in series.
+
+**Good:** `bench` voltage and current, and `CH1` mA and mV (CH1's voltage
+is at the load side of the shunt), agree with the meter within the meter's
+accuracy and the shunt's tolerance, which is not known for either module.
+`temp` near room temperature, in 0.1 °C. `ch_flags 0x01`; 0x10 appears
+when CH1 passes 1.638 A, and CH1's current is then a bound, not a value.
+
+**Write down:** each pair of numbers, the meter's and the console's.
+
+### 8.4 A run: peaks and totals
+
+Arm on MOTOR & ESC and hold a steady current for 60 s, then disarm.
+
+**Good:** `bench flags` reads 0x63 (with 0x04 and 0x08 too when a
+bidirectional ESC answers). `mAh` counts current × time: 2.00 A for 60 s
+is 33 mAh. A new arm starts charge and energy from 0.
+The MOTOR & ESC screen shows the INA228's voltage and current.
+
+**Write down:** current, time and the charge reached, and the peaks the
+panel shows against the scope or meter.
+
+### 8.5 A lead pulled mid-run
+
+Armed, pull the MATEK's SDA for about 5 s, then plug it back.
+
+**Good:** within about 6 ms `flags` loses 0x0001 and keeps 0x0002; `bench
+flags` reads 0x20: the INA228 is still the source, its fields empty, not
+the ESC's numbers; `errors` rises; the bench stays armed. About 1 s after
+the lead is back, 0x0001 returns, and 0x40 stays clear until the next arm.
+Disarmed with the lead out, `bench` carries the ESC's telemetry again.
+
+### 8.6 A stuck bus
+
+Hold SDA to GND with a wire for 2 s, then let go. The lines are open drain:
+the pin is never driven high, so the short is safe.
+
+**Good:** `flags` gains 0x0200 while it is held; on SCL the scope shows 9
+clocks and a STOP every 100 ms; after release, 0x0200 clears and both
+parts are online within about 1 s.
+
+**Write down:** the clock rate of the 9 clocks (meant to be 100 kHz), and
+how long the parts took to come back.
+
+### 8.7 A save while reading
+
+Disarmed, with both parts reading, tick a pin on the OUTPUTS screen: the
+binding is saved.
+
+**Good:** the console prints `outputs saved, record n, program window N
+us` and no `window refused`; `errors` does not rise; `window` goes on
+counting; the heartbeat does not drop.
+
+**Write down:** the program window, and the erase window when one is
+printed: core 1 is parked in RAM for each.
+
+### 8.8 Not reachable yet
+
+The move capture on SERVO_SENSE -- the PWM frame stamped to 1 µs and the
+travel times -- is armed by the panel's servo test, which does not use it
+yet. A travel time against a scope on the PWM pin and on the shunt waits
+for that.
+
+---
+
+## 9. When something goes wrong
 
 | Symptom | Look here first |
 |---|---|
@@ -269,6 +415,9 @@ builds. Record real values for each:
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
 | Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is armed |
 | Pulses stop altogether | Not the timeout. Something released the pin, disarmed, or stopped the bench |
+| `sense flags` without 0x0100, a part enabled | The I2C block did not open on those pins. They must be one block's SDA and SCL: SDA's GPIO number mod 4 is 0 or 2, SCL the next |
+| `sense flags` 0x0200 that stays | SDA or SCL held low: an unpowered module clamping the bus, a missing pull-up, or a short |
+| `sense present 0x0000` with the bus open | Nothing answers: pull-ups missing, modules unpowered, or SDA and SCL swapped |
 
 **If the bench misbehaves in a way that points at the panel**, the three
 newest and least proven things are all mine and all only compiler-checked:
@@ -286,7 +435,7 @@ first row after it.
 
 ---
 
-## 9. What to write down
+## 10. What to write down
 
 For each step: what was measured, against what it was expected to be, and
 what the scope showed. `STATUS.md` carries an "Open items" table — the rows

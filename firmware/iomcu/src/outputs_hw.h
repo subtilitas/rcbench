@@ -46,6 +46,20 @@ void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz);
  */
 void outputs_hw_service(const outputs_t *o);
 
+/**
+ * Watch output channel @p ch for a move capture's edge; a negative @p ch
+ * stops watching.  The first later pass that renders a pulse other than
+ * the one before it on @p ch's PWM slot writes it stamped
+ * (out_pwm_write_stamped()) and ends the watch: the start of the frame
+ * that first carries the new pulse, on time_us_64().  A pulse of 0, the
+ * bank stopping, is not an edge.  A slot that is not PWM never stamps.
+ */
+void outputs_hw_watch(int ch);
+
+/** The edge stamped since the last call, once: true with its time in
+ *  @p us. */
+bool outputs_hw_edge(uint64_t *us);
+
 /** Whether slot @p slot is configured and bound to real silicon. */
 bool outputs_hw_bound(uint8_t slot);
 

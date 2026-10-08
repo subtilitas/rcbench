@@ -391,8 +391,9 @@ typedef enum {
     /** Something answers at its address with another identity, and is not
      *  used. */
     LINK_SN_I228_ID_WRONG  = 1u << 2,
-    /** Its last current read the top of its range: BENCH's current and
-     *  power are then lower bounds, not values. */
+    /** A current read at the end of its range, in the last 50 ms window
+     *  or since the run's arm: BENCH's current and power, or their peaks,
+     *  are then bounds, not values. */
     LINK_SN_I228_CLIPPED   = 1u << 3,
     LINK_SN_I3221_ONLINE   = 1u << 4,
     LINK_SN_I3221_ID_OK    = 1u << 5,
@@ -444,7 +445,7 @@ typedef enum {
  *     over CAP_SAMPLES samples.  A capture ends arrived, at a stop, late
  *     (movement and no arrival within 3000 ms plus the meter's lag),
  *     unseen (no movement in that time) or lost (the INA3221 stopped
- *     answering).
+ *     answering, or no PWM edge came within 3000 ms of the arm).
  *
  *     Not kept: a coprocessor restart reads 0 throughout. */
 enum {
@@ -504,7 +505,8 @@ typedef enum {
                                  plus the meter's lag                      */
     LINK_CAP_UNSEEN    = 7, /**< no movement within 3000 ms plus the
                                  meter's lag: neither timed nor late       */
-    LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering            */
+    LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering, or no PWM
+                                 edge came within 3000 ms of the arm       */
 } link_cap_state_t;
 
 #define LINK_OS_RANGE_OF(first, count) \
@@ -589,6 +591,14 @@ typedef enum {
     LINK_FAULT_STALL         = 1u << 3,
     LINK_FAULT_HEARTBEAT     = 1u << 4, /**< the safety line stopped edging */
     LINK_FAULT_VERSION       = 1u << 5, /**< the two ends disagree          */
+    /**
+     * The coprocessor's flash store is off for this boot (protocol 4.7):
+     * its second core did not register for the flash lock-out, so no
+     * erase or program may run.  Set-ups written over the link are taken
+     * and run from RAM, and are gone at the next restart.  Set while it
+     * lasts, which is until a restart.
+     */
+    LINK_FAULT_STORE_OFF     = 1u << 6,
 } link_fault_t;
 
 typedef enum {

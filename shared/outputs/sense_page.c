@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "ina228.h"
+#include "ina3221.h"
 #include "link_msg.h"
 
 /* The INA3221's shunt full scale, 163.8 mV, in uV: 4095 steps of 40 uV. */
@@ -94,6 +95,11 @@ uint64_t sense_page_pins(const sense_page_t *p)
            | ((uint64_t)1u << p->sense[LINK_SN_SCL_PIN]);
 }
 
+uint64_t sense_page_held(const sense_page_t *p)
+{
+    return (p != NULL) ? (sense_page_pins(p) | p->held) : 0u;
+}
+
 /* Whether @p pin may carry the bus: in the bank, not another page's, not
  * reserved unless it is one this page already holds, and no output's. */
 static bool pin_free(const sense_page_t *p, const outputs_t *o,
@@ -154,6 +160,30 @@ static bool values_ok(const uint16_t *c)
     return true;
 }
 
+/*
+ * A new set-up: everything read under the old one is gone -- FLAGS,
+ * PRESENT, the IDs, ERRORS, the readings, the windows and a finished
+ * capture's result -- so no read shows a part online, or a value scaled by
+ * the old shunt, before core 1 has read under the new one.  The ESC's own
+ * telemetry (registers 23 to 25) is not the bus's and stays.  CAP_SEQ
+ * counts on across set-ups.  A capture under way cannot meet this: a
+ * set-up is refused while the bank drives, and a stopped bank ends it.
+ */
+static void forget_readings(sense_page_t *p)
+{
+    memset(&p->sense[LINK_SN_FLAGS], 0,
+           (size_t)(LINK_SN_ESC_VOLTAGE_CV - LINK_SN_FLAGS) * sizeof(uint16_t));
+    memset(&p->servo[LINK_SS_CH_MEAN_MA], 0,
+           (size_t)(LINK_SS_CH_FLAGS + 1) * sizeof(uint16_t));
+    p->servo[LINK_SS_CAP_ARM]      = 0u;
+    p->servo[LINK_SS_CAP_STATE]    = (uint16_t)LINK_CAP_IDLE;
+    p->servo[LINK_SS_CAP_MOVE_T]   = 0u;
+    p->servo[LINK_SS_CAP_ARRIVE_T] = 0u;
+    p->servo[LINK_SS_CAP_PEAK_MA]  = 0u;
+    p->servo[LINK_SS_CAP_MEAN_MA]  = 0u;
+    p->servo[LINK_SS_CAP_SAMPLES]  = 0u;
+}
+
 uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, const outputs_t *o,
                          uint64_t taken)
@@ -200,6 +230,8 @@ uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(p->sense, next, sizeof(next));
+    ++p->cfg_gen;
+    forget_readings(p);
     return 0u;
 }
 
@@ -217,18 +249,29 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
 
 /* Whether output channel @p ch is a surface a PWM slot renders: the one
  * kind of output whose pulse edge a capture can be timed from. */
-static bool pwm_surface(const outputs_t *o, uint8_t ch)
+static bool pwm_surface(const sense_page_t *p, const outputs_t *o, uint8_t ch)
 {
     if (o->channel[ch].role != OUT_ROLE_SURFACE) {
         return false;
     }
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        /* A slot the bank holds and the silicon could not bind -- a
+         * compare register another pin has, GP0 beside GP16 -- renders no
+         * frame to time from. */
         if (o->slot[i].driver == OUT_DRIVER_PWM
-            && o->slot[i].first_channel == ch) {
+            && o->slot[i].first_channel == ch
+            && (p->bound & (1u << i)) != 0u) {
             return true;
         }
     }
     return false;
+}
+
+void sense_page_bound(sense_page_t *p, uint8_t slots)
+{
+    if (p != NULL) {
+        p->bound = slots;
+    }
 }
 
 /* A capture's frame, CAP_ARM to CAP_BAND_MA, judged as an arm. */
@@ -251,7 +294,7 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
     const uint16_t *c = p->sense;
     if ((c[LINK_SN_ENABLE] & LINK_SN_EN_I3221) == 0u
         || (c[LINK_SN_I3221_CHANNELS] & (1u << (ch - 1u))) == 0u
-        || !pwm_surface(o, LINK_SS_ARM_OUT(arm))) {
+        || !pwm_surface(p, o, LINK_SS_ARM_OUT(arm))) {
         return LINK_NACK_BAD_VALUE;
     }
     if (!outputs_driving(o)) {
@@ -281,6 +324,7 @@ uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
     if (off == (uint8_t)LINK_SS_CAP_ARM && in[0] == 0u) {
         p->servo[LINK_SS_CAP_ARM] = 0u;
         p->servo[LINK_SS_CAP_STATE] = (uint16_t)LINK_CAP_IDLE;
+        ++p->cap_gen;
         return 0u;
     }
     /* Anything else is an arm, and an arm is its whole frame. */
@@ -300,6 +344,7 @@ uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
     p->servo[LINK_SS_CAP_MEAN_MA]  = 0u;
     p->servo[LINK_SS_CAP_SAMPLES]  = 0u;
     p->servo[LINK_SS_CH_FLAGS] &= (uint16_t)~LINK_SS_CAP_CLIPPED;
+    ++p->cap_gen;
     return 0u;
 }
 
@@ -315,17 +360,20 @@ void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
     }
 }
 
-void sense_page_step(sense_page_t *p, bool driving)
+bool sense_page_step(sense_page_t *p, bool driving)
 {
     if (p == NULL || driving) {
-        return;
+        return false;
     }
     const uint16_t st = p->servo[LINK_SS_CAP_STATE];
     if (st == (uint16_t)LINK_CAP_ARMED || st == (uint16_t)LINK_CAP_WAIT_MOVE
         || st == (uint16_t)LINK_CAP_MOVING) {
         p->servo[LINK_SS_CAP_ARM]   = 0u;
         p->servo[LINK_SS_CAP_STATE] = (uint16_t)LINK_CAP_IDLE;
+        ++p->cap_gen;
+        return true;
     }
+    return false;
 }
 
 uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots)
@@ -333,7 +381,7 @@ uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots)
     if (slots == NULL) {
         return LINK_NACK_BAD_VALUE;
     }
-    const uint64_t held = sense_page_pins(p);
+    const uint64_t held = sense_page_held(p);
     for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u && r[LINK_OS_PIN] <= OUT_MAX_PIN
@@ -342,4 +390,300 @@ uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots)
         }
     }
     return 0u;
+}
+
+/* ------------------------------------------------- core 1's order and view */
+
+void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
+{
+    if (p == NULL || cmd == NULL) {
+        return;
+    }
+    const uint16_t *c  = p->sense;
+    const uint16_t  en = c[LINK_SN_ENABLE];
+    cmd->cfg_gen = p->cfg_gen;
+    cmd->sda     = (uint8_t)c[LINK_SN_SDA_PIN];
+    cmd->scl     = (uint8_t)c[LINK_SN_SCL_PIN];
+    memset(&cmd->parts, 0, sizeof(cmd->parts));
+    cmd->parts.ina228_en          = (en & LINK_SN_EN_I228) != 0u;
+    cmd->parts.ina228_addr        = (uint8_t)c[LINK_SN_I228_ADDR];
+    cmd->parts.ina228_shunt_uohm  = c[LINK_SN_I228_SHUNT_UOHM];
+    cmd->parts.ina228_max_ma      = (uint32_t)c[LINK_SN_I228_MAX_DA] * 100u;
+    cmd->parts.ina3221_en         = (en & LINK_SN_EN_I3221) != 0u;
+    cmd->parts.ina3221_addr       = (uint8_t)c[LINK_SN_I3221_ADDR];
+    cmd->parts.ina3221_shunt_uohm =
+        (uint32_t)c[LINK_SN_I3221_SHUNT_DMOHM] * 100u;
+    cmd->parts.ina3221_channels   = (uint8_t)c[LINK_SN_I3221_CHANNELS];
+    const uint16_t *v = p->servo;
+    cmd->cap_gen      = p->cap_gen;
+    cmd->cap_on       = (v[LINK_SS_CAP_ARM] & LINK_SS_ARM) != 0u;
+    cmd->cap.rise_ua  = SENSE_CAP_RISE_AUTO;
+    cmd->cap.hold_ua  = (int32_t)v[LINK_SS_CAP_HOLD_MA] * 1000;
+    cmd->cap.move_ua  = (int32_t)v[LINK_SS_CAP_MOVE_MA] * 1000;
+    cmd->cap.band_ua  = (int32_t)v[LINK_SS_CAP_BAND_MA] * 1000;
+}
+
+/* @p a / @p d to the nearest, halves away from zero; @p d positive. */
+static int64_t div_round(int64_t a, int64_t d)
+{
+    return (a >= 0) ? (a + d / 2) / d : -((-a + d / 2) / d);
+}
+
+/* A signed register: two's complement, held to -32767 .. 32767. */
+static uint16_t reg_i16(int64_t v)
+{
+    if (v > 32767) {
+        v = 32767;
+    } else if (v < -32767) {
+        v = -32767;
+    }
+    return (uint16_t)(int16_t)v;
+}
+
+/* An unsigned register, held to 0 .. 65535. */
+static uint16_t reg_u16(int64_t v)
+{
+    if (v < 0) {
+        return 0u;
+    }
+    return (v > 65535) ? 65535u : (uint16_t)v;
+}
+
+/* A 32-bit value into two registers, low half first. */
+static void reg_32(uint16_t *r, uint32_t v)
+{
+    r[0] = (uint16_t)(v & 0xFFFFu);
+    r[1] = (uint16_t)(v >> 16);
+}
+
+static bool clipped(const sense_window_t *w)
+{
+    return w->clip_hi || w->clip_lo;
+}
+
+static uint16_t part_flags(sense_state_t st, bool id_ok, uint16_t online,
+                           uint16_t good, uint16_t wrong)
+{
+    uint16_t f = 0u;
+    if (st == SENSE_PART_ONLINE) {
+        f |= online;
+    }
+    if (id_ok) {
+        f |= good;
+    }
+    if (st == SENSE_PART_WRONG_ID) {
+        f |= wrong;
+    }
+    return f;
+}
+
+static uint16_t sense_flags(const sense_snap_t *s)
+{
+    uint16_t f = 0u;
+    if (s->open) {
+        f |= (uint16_t)LINK_SN_BUS_OPEN;
+    }
+    if (s->stuck) {
+        f |= (uint16_t)LINK_SN_BUS_STUCK;
+    }
+    f |= part_flags(s->i228, ina228_identity_ok(s->i228_maker, s->i228_device),
+                    LINK_SN_I228_ONLINE, LINK_SN_I228_ID_OK,
+                    LINK_SN_I228_ID_WRONG);
+    f |= part_flags(s->i3221, ina3221_identity_ok(s->i3221_maker, s->i3221_die),
+                    LINK_SN_I3221_ONLINE, LINK_SN_I3221_ID_OK,
+                    LINK_SN_I3221_ID_WRONG);
+    if ((s->have_win && clipped(&s->win[SENSE_SRC_INA228]))
+        || s->run.i_clipped) {
+        f |= (uint16_t)LINK_SN_I228_CLIPPED;
+    }
+    return f;
+}
+
+/* Whether the snapshot's charge and energy are run @p run_gen's. */
+static bool totals_ok(const sense_snap_t *s, uint16_t run_gen)
+{
+    return s->run_gen == run_gen && s->run.totals_ok
+           && s->i228 == SENSE_PART_ONLINE;
+}
+
+static void publish_sense(uint16_t *r, const sense_snap_t *s,
+                          uint16_t run_gen)
+{
+    r[LINK_SN_FLAGS]    = sense_flags(s);
+    r[LINK_SN_PRESENT]  = s->present;
+    r[LINK_SN_I228_ID]  = s->i228_device;
+    r[LINK_SN_I3221_ID] = s->i3221_die;
+    r[LINK_SN_ERRORS]   = s->errors;
+    r[LINK_SN_I228_TEMP_DC] =
+        s->have_temp ? reg_i16(div_round(s->temp_mdegc, 100)) : 0u;
+    r[LINK_SN_I228_DIAG] = s->have_diag ? s->diag : 0u;
+    uint32_t charge = 0u;
+    uint32_t energy = 0u;
+    if (totals_ok(s, run_gen)) {
+        /* 0.01 mAh is 36 mC, and 0.01 Wh is 36 J. */
+        int64_t c = div_round(s->run.charge_uc, 36000);
+        if (c > INT32_MAX) {
+            c = INT32_MAX;
+        } else if (c < -INT32_MAX) {
+            c = -INT32_MAX;
+        }
+        charge = (uint32_t)(int32_t)c;
+        const uint64_t e = (s->run.energy_mj + 18000u) / 36000u;
+        energy = (e > UINT32_MAX) ? UINT32_MAX : (uint32_t)e;
+    }
+    reg_32(&r[LINK_SN_I228_CHARGE_LO], charge);
+    reg_32(&r[LINK_SN_I228_ENERGY_LO], energy);
+}
+
+static void publish_channels(uint16_t *r, const sense_snap_t *s)
+{
+    uint16_t flags = (uint16_t)(r[LINK_SS_CH_FLAGS] & LINK_SS_CAP_CLIPPED);
+    for (unsigned ch = 1u; ch <= LINK_SS_CHANNELS; ++ch) {
+        uint16_t *c = &r[(size_t)(ch - 1u) * LINK_SS_CH_STRIDE];
+        sense_window_t w;
+        memset(&w, 0, sizeof(w));
+        if (s->have_win) {
+            w = s->win[SENSE_SRC_CH1 + ch - 1u];
+        }
+        c[LINK_SS_CH_MEAN_MA] = reg_i16(div_round(w.i_mean_ua, 1000));
+        c[LINK_SS_CH_MAX_MA]  = reg_i16(div_round(w.i_max_ua, 1000));
+        c[LINK_SS_CH_MEAN_MV] = reg_u16(div_round(w.v_mean_uv, 1000));
+        c[LINK_SS_CH_MIN_MV]  = reg_u16(div_round(w.v_min_uv, 1000));
+        if (w.n_i > 0u || w.n_v > 0u) {
+            flags |= LINK_SS_CH_VALID(ch);
+        }
+        if (clipped(&w)) {
+            flags |= LINK_SS_CH_CLIPPED(ch);
+        }
+    }
+    r[LINK_SS_WINDOW]   = s->have_win ? s->win[SENSE_SRC_CH1].number : 0u;
+    r[LINK_SS_CH_FLAGS] = flags;
+}
+
+static void publish_capture(uint16_t *r, const sense_snap_t *s)
+{
+    r[LINK_SS_CAP_STATE]    = (uint16_t)s->cap_state;
+    r[LINK_SS_CAP_SEQ]      = s->cap_seq;
+    r[LINK_SS_CAP_MOVE_T]   = reg_u16(s->cap_move_t);
+    r[LINK_SS_CAP_ARRIVE_T] = reg_u16(s->cap_arrive_t);
+    r[LINK_SS_CAP_PEAK_MA]  = reg_i16(div_round(s->cap_peak_ua, 1000));
+    r[LINK_SS_CAP_MEAN_MA]  = reg_i16(div_round(s->cap_mean_ua, 1000));
+    r[LINK_SS_CAP_SAMPLES]  = reg_u16(s->cap_samples);
+    if (s->cap_clipped) {
+        r[LINK_SS_CH_FLAGS] |= LINK_SS_CAP_CLIPPED;
+    } else {
+        r[LINK_SS_CH_FLAGS] &= (uint16_t)~LINK_SS_CAP_CLIPPED;
+    }
+}
+
+void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
+                        uint16_t run_gen)
+{
+    if (p == NULL || s == NULL) {
+        return;
+    }
+    /* The pins first and whatever set-up the snapshot was taken under:
+     * one from before a change is exactly when old pins are still held. */
+    p->held = s->held;
+    if (s->cfg_gen != p->cfg_gen) {
+        return;
+    }
+    publish_sense(p->sense, s, run_gen);
+    publish_channels(p->servo, s);
+    if (s->cap_gen == p->cap_gen) {
+        publish_capture(p->servo, s);
+    }
+}
+
+/* Volts or amps in hundredths, rounded and held to a register. */
+static uint16_t hundredths(float x)
+{
+    const float h = x * 100.0f + 0.5f;
+    if (!(h > 0.0f)) {
+        return 0u;                      /* negative, zero or NaN */
+    }
+    return (h >= 65535.0f) ? 65535u : (uint16_t)h;
+}
+
+void sense_page_esc(sense_page_t *p, bool v_ok, float volts, bool i_ok,
+                    float amps)
+{
+    if (p == NULL) {
+        return;
+    }
+    uint16_t *r = p->sense;
+    r[LINK_SN_ESC_VOLTAGE_CV] = v_ok ? hundredths(volts) : 0u;
+    r[LINK_SN_ESC_CURRENT_CA] = i_ok ? hundredths(amps) : 0u;
+    r[LINK_SN_ESC_FLAGS] = (uint16_t)((v_ok ? LINK_SN_ESC_VOLTAGE_OK : 0u)
+                                      | (i_ok ? LINK_SN_ESC_CURRENT_OK : 0u));
+}
+
+void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
+                      uint16_t run_gen, bool driving, bench_state_t *b)
+{
+    if (p == NULL || s == NULL || b == NULL) {
+        return;
+    }
+    const bool fresh   = s->cfg_gen == p->cfg_gen;
+    const bool enabled = (p->sense[LINK_SN_ENABLE] & LINK_SN_EN_I228) != 0u;
+    const bool online  = enabled && fresh && s->i228 == SENSE_PART_ONLINE;
+    /* The source holds to the end of a run it was online in. */
+    p->sensed = enabled && (online || (p->sensed && driving));
+    if (!p->sensed) {
+        return;
+    }
+    const uint16_t ok = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                   | LINK_BN_TOTALS_OK);
+    b->flags   = (uint16_t)((b->flags & (uint16_t)~ok) | LINK_BN_SENSED);
+    b->voltage = 0.0f;
+    b->current = 0.0f;
+    b->power   = 0.0f;
+    const sense_window_t *w = &s->win[SENSE_SRC_INA228];
+    if (online && s->have_win) {
+        if (w->n_v > 0u) {
+            b->voltage = (float)w->v_mean_uv * 1e-6f;
+            b->flags  |= (uint16_t)LINK_BN_VOLTAGE_OK;
+        }
+        if (w->n_i > 0u) {
+            b->current = (float)w->i_mean_ua * 1e-6f;
+            b->flags  |= (uint16_t)LINK_BN_CURRENT_OK;
+        }
+        if (w->n_v > 0u && w->n_i > 0u) {
+            b->power = b->voltage * b->current;
+        }
+    }
+    /* The peaks of the run in force, from the 500 Hz samples, kept when
+     * the part drops out within it. */
+    const sense_run_t *r = &s->run;
+    const bool run = fresh && s->run_gen == run_gen;
+    b->voltage_min = (run && r->have_v) ? (float)r->v_min_uv * 1e-6f
+                                        : b->voltage;
+    b->current_max = (run && r->have_i) ? (float)r->i_max_ua * 1e-6f
+                                        : b->current;
+    b->power_max   = (run && r->have_p) ? (float)r->p_max_uw * 1e-6f
+                                        : b->power;
+    b->charge_mah = 0.0f;
+    b->energy_wh  = 0.0f;
+    if (fresh && totals_ok(s, run_gen)) {
+        /* 1 mAh is 3.6 C; 1 Wh is 3600 J. */
+        b->charge_mah = (float)r->charge_uc / 3.6e6f;
+        b->energy_wh  = (float)r->energy_mj / 3.6e6f;
+        b->flags     |= (uint16_t)LINK_BN_TOTALS_OK;
+    }
+}
+
+uint16_t sense_page_caps(const sense_page_t *p)
+{
+    if (p == NULL) {
+        return 0u;
+    }
+    const uint16_t en = p->sense[LINK_SN_ENABLE];
+    uint16_t caps = 0u;
+    if ((en & LINK_SN_EN_I228) != 0u) {
+        caps |= (uint16_t)LINK_CAP_PACK_SENSE;
+    }
+    if ((en & LINK_SN_EN_I3221) != 0u) {
+        caps |= (uint16_t)LINK_CAP_SERVO_SENSE;
+    }
+    return caps;
 }

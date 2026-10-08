@@ -571,6 +571,7 @@ TEST_CASE(the_sense_pages_are_served_and_refuse_whole)
                              .channels = 1, .pin = 4, .rate_hz = 50 };
     CHECK(outputs_configure(&s_out, 0, &pwm));
     CHECK(outputs_set_role(&s_out, 0, OUT_ROLE_SURFACE));
+    sense_page_bound(&s_sense, 0x01u);       /* the silicon bound it */
     const uint16_t cap[4] = { LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u };
     CHECK(write_page(LINK_PAGE_SERVO_SENSE, LINK_SS_CAP_ARM, 4, cap, &r));
     CHECK_EQ(r.op, LINK_OP_NACK);
@@ -632,6 +633,20 @@ TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
     CHECK_EQ(g.control[LINK_CT_ARM], 1u);
 }
 
+/* The fault bits are one bit each; 4.7's store-off bit is bit 6 and moves
+ * none of the others. */
+TEST_CASE(the_fault_bits_are_one_bit_each)
+{
+    static const uint16_t bits[] = {
+        LINK_FAULT_LINK_SILENT, LINK_FAULT_OVERCURRENT, LINK_FAULT_OVERTEMP,
+        LINK_FAULT_STALL, LINK_FAULT_HEARTBEAT, LINK_FAULT_VERSION,
+        LINK_FAULT_STORE_OFF,
+    };
+    for (unsigned i = 0; i < sizeof(bits) / sizeof(bits[0]); ++i) {
+        CHECK_EQ(bits[i], (uint16_t)(1u << i));
+    }
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -656,5 +671,6 @@ int main(void)
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
     RUN(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor);
+    RUN(the_fault_bits_are_one_bit_each);
     return test_summary("link_pages");
 }

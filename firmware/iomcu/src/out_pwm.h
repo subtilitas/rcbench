@@ -50,4 +50,29 @@ void out_pwm_release(uint8_t pin);
  */
 void out_pwm_write(uint8_t pin, uint16_t pulse_us);
 
+/** How long the stamped write may wait for the counter to leave the end
+ *  of its frame, us.  Two counts at most when the slice runs. */
+#define OUT_PWM_STAMP_WAIT_US 5u
+
+/**
+ * out_pwm_write(), and the time the first frame carrying @p pulse_us
+ * starts, on the 64-bit microsecond timer (time_us_64()), into
+ * @p frame_us.
+ *
+ * The compare register is double-buffered: a level written during a frame
+ * takes effect at the wrap that ends it, and the pin rises at counter 0.
+ * The counter is read and the level written with interrupts off, never in
+ * the frame's last 2 counts -- a write there could meet the wrap that
+ * latches it, and the frame it lands in would be unknown -- so the write
+ * lands in the frame the counter was read in, and that frame ends
+ * (wrap - counter + 1) counts later.  One count is 1 us, from clk_sys
+ * divided to 1 MHz; the timer ticks at 1 MHz from the same crystal.  The
+ * stamp is good to the 1 us of each, within +-1 us.
+ *
+ * False, with the level written and nothing stamped, for a pin not bound
+ * or a slice whose counter does not leave the frame's end within
+ * OUT_PWM_STAMP_WAIT_US: one that is not counting.
+ */
+bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us);
+
 #endif /* RCBENCH_OUT_PWM_H */
