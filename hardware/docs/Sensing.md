@@ -115,7 +115,7 @@ P5's budget in T5, as its critic upheld it
 
 Each item is reported to the owner, with its evidence; a part an item needs comes from a follow-up of its research category, or from round 2 for a passive, a connector, or the protection on the signal, sensor, balance-lead, link and heartbeat connectors ([Research](Research.md#scope)).
 
-- R11, optical index: not known; no part qualifies. No optical reflective sensor searched meets the delay-variation budget of V225, at most 1.244 µs at 1,092 Hz (65,535 rpm): VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000 and TCRT5000L state response times of 10 to 70 µs (`hardware/research/round1/FU-C2/002-P2-R11.json`). The magnetic pickup and the phase-wire clip of the same category are selected.
+- R11, optical index: not known; no part qualifies. No optical reflective sensor searched meets the delay-variation budget of V225, at most 1.244 µs at 1,092 Hz (65,535 rpm): VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000 and TCRT5000L state response times of 10 to 70 µs (`hardware/research/round1/FU-C2/002-P2-R11.json`). The magnetic pickup of the same category is selected. The phase-wire clip's TLV3201AIDBVR holds for a ground-referenced front end only; that front end is open again (Phase-wire clip front end in [hardware STATUS](../STATUS.md#open)).
 
 The other conflicts and gaps up to T5 are on [Control](Control.md#not-known)
 and [Supply](Supply.md#not-known).
