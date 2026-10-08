@@ -34,6 +34,7 @@ static void forget_reads(sense_link_t *s)
 {
     s->have_status  = false;
     s->have_servo   = false;
+    s->window_taken = false;
     s->asked_status = false;
     s->asked_servo  = false;
     s->was_flags    = 0u;
@@ -51,6 +52,7 @@ void sense_link_lost(sense_link_t *s)
     s->page          = false;
     s->known         = false;
     s->refused_bus   = false;
+    s->bus_told      = false;
     s->refused_i228  = false;
     s->refused_i3221 = false;
     s->caps_owed     = false;
@@ -168,6 +170,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     memcpy(s->want, next, sizeof(next));
     /* A new set-up is a new question: what was refused is asked again. */
     s->refused_bus   = false;
+    s->bus_told      = false;
     s->refused_i228  = false;
     s->refused_i3221 = false;
     s->events |= local;
@@ -266,6 +269,10 @@ bool sense_link_next(sense_link_t *s, uint32_t now_ms, bool idle,
         s->pending = op->kind;
         return true;
     }
+    if (s->refused_bus && s->bus_retry
+        && (uint32_t)(now_ms - s->bus_refused_ms) >= SENSE_LINK_BUS_RETRY_MS) {
+        s->refused_bus = false;
+    }
     if (s->want_set) {
         uint16_t regs[FRAME_N];
         const sense_link_op_kind_t w = write_owed(s, regs);
@@ -361,12 +368,23 @@ static void written(sense_link_t *s, sense_link_op_kind_t w, int result,
         s->refused_i228  = true;
         s->refused_i3221 = true;
         s->refused_bus   = true;
+        s->bus_retry     = false;
         s->events |= SENSE_LINK_EV_BUS_REFUSED;
         break;
     case SENSE_LINK_OP_BUS:
     default:
         s->refused_bus = true;
-        s->events |= SENSE_LINK_EV_BUS_REFUSED;
+        if (!s->bus_told) {
+            s->events |= SENSE_LINK_EV_BUS_REFUSED;
+            s->bus_told = true;
+        }
+        /* One I2C block's pair refused is pins something else holds -- an
+         * output, the SUPPLY page, the board -- and that can let go: the
+         * frame is offered again, quietly, every SENSE_LINK_BUS_RETRY_MS.
+         * Any other pair is refused for itself, until the next edit. */
+        s->bus_retry = (s->out[1] % 2u) == 0u
+                       && s->out[2] == (uint16_t)(s->out[1] + 1u);
+        s->bus_refused_ms = now_ms;
         break;
     }
 }
@@ -625,6 +643,36 @@ bool sense_link_take_caps(sense_link_t *s, uint16_t *caps)
     }
     *caps = s->caps;
     s->caps_new = false;
+    return true;
+}
+
+bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
+{
+    if (s == NULL || b == NULL || !s->have_servo) {
+        return false;
+    }
+    const uint16_t flags = s->servo[LINK_SS_CH_FLAGS];
+    uint8_t ok = 0u;
+    for (unsigned ch = 1u; ch <= LINK_SS_CHANNELS; ++ch) {
+        if ((flags & LINK_SS_CH_VALID(ch)) != 0u) {
+            ok |= (uint8_t)(1u << (ch - 1u));
+        }
+    }
+    const uint16_t window = s->servo[LINK_SS_WINDOW];
+    if (ok == 0u || (s->window_taken && window == s->window_last)) {
+        return false;
+    }
+    s->window_taken = true;
+    s->window_last  = window;
+    b->servo_new    = true;
+    b->servo_window = window;
+    b->servo_ok     = ok;
+    for (size_t i = 0u; i < LINK_SS_CHANNELS; ++i) {
+        const uint16_t *c = &s->servo[i * (size_t)LINK_SS_CH_STRIDE];
+        b->servo_mean_ma[i] = (int16_t)c[LINK_SS_CH_MEAN_MA];
+        b->servo_max_ma[i]  = (int16_t)c[LINK_SS_CH_MAX_MA];
+        b->servo_min_mv[i]  = c[LINK_SS_CH_MIN_MV];
+    }
     return true;
 }
 

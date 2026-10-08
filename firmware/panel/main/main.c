@@ -5643,6 +5643,8 @@ static void sense_link_service(bool idle, bench_state_t *bench)
         (void)sense_link_esc(&s_sense_link, now_ms(), &v_ok, &volts, &i_ok,
                              &amps);
     }
+    /* Each new INA3221 window, once, for the run's log. */
+    (void)sense_link_take_window(&s_sense_link, bench);
     bench_state_set_esc(bench, v_ok, volts, i_ok, amps,
                         sensed && (sense_link_flags(&s_sense_link)
                                    & LINK_SN_I228_CLIPPED) != 0u);
@@ -6152,6 +6154,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
              * link comes back, and the ESC's figures go with the readings. */
             sense_link_lost(&s_sense_link);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
+            bench->servo_new = false;
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -6259,6 +6262,8 @@ static void advance_model_and_log(bool link_up, float emitted,
         log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = s_log_t };
         row.u.bench = *bench;
         log_post(&row);
+        /* The INA3221's window is in that row and in no later one. */
+        bench->servo_new = false;
     }
 }
 

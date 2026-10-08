@@ -269,13 +269,13 @@ TEST_CASE(enabling_a_part_writes_the_bus_frame_and_reads_identity)
     polls(20);
     CHECK_EQ(reads - before, 20u);
 
-    /* The INA3221 adds SERVO_SENSE, one poll in four. */
+    /* The INA3221 adds SERVO_SENSE, every poll as well. */
     w.i3221 = true;
     want(&w);
     polls(12);
     const unsigned at = reads;
     polls(40);
-    CHECK_EQ(reads - at, 40u + 10u);
+    CHECK_EQ(reads - at, 40u + 40u);
     CHECK_EQ(pg.sense[LINK_SN_ENABLE],
              (uint16_t)(LINK_SN_EN_I228 | LINK_SN_EN_I3221));
     CHECK(sense_link_take_caps(&sl, &caps));
@@ -372,9 +372,9 @@ TEST_CASE(a_refused_frame_is_not_written_again_and_its_part_stays_off)
     sense_setup_t w = setup_default();
     w.i228 = true;
     w.i3221 = true;
-    /* 20000 uOhm at 655.3 A is 13 V across the shunt: no range reads it. */
+    /* 20000 uOhm at 300 A is 6 V across the shunt: no range reads it. */
     w.i228_uohm = 20000u;
-    w.i228_max_da = 6553u;
+    w.i228_max_da = 3000u;
     want(&w);
     polls(14);
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_I228_REFUSED);
@@ -495,7 +495,7 @@ TEST_CASE(a_waiting_refusal_goes_with_the_value_it_refused)
     sense_setup_t w = setup_default();
     w.i228 = true;
     w.i228_uohm = 20000u;
-    w.i228_max_da = 6553u;
+    w.i228_max_da = 3000u;
     want(&w);
     polls(14);
     CHECK_EQ(sl.events, SENSE_LINK_EV_I228_REFUSED);
@@ -916,6 +916,92 @@ TEST_CASE(an_event_that_never_reached_the_band_goes_back)
     sense_link_event_back(NULL, SENSE_LINK_EV_STUCK);
 }
 
+/*
+ * SERVO_SENSE every poll: four 50 ms windows in a row each give one row
+ * for the log, keyed by the window number, and a window read twice gives
+ * none.  A clip in one window, gone in the next, is still said.
+ */
+TEST_CASE(every_window_reaches_the_log_once)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i3221 = true;
+    want(&w);
+    polls(14);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I3221_ONLINE);
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    unsigned rows = 0u;
+    for (uint16_t win = 100u; win < 104u; ++win) {
+        pg.servo[LINK_SS_WINDOW]   = win;
+        pg.servo[LINK_SS_CH_FLAGS] = LINK_SS_CH_VALID(1);
+        pg.servo[LINK_SS_CH_MEAN_MA] = (uint16_t)(400u + win);
+        pg.servo[LINK_SS_CH_MAX_MA]  = 900u;
+        pg.servo[LINK_SS_CH_MIN_MV]  = 5900u;
+        poll_once();
+        if (sense_link_take_window(&sl, &b)) {
+            ++rows;
+            CHECK(b.servo_new);
+            CHECK_EQ(b.servo_window, win);
+            CHECK_EQ(b.servo_ok, 0x01u);
+            CHECK_EQ(b.servo_mean_ma[0], 400 + win);
+            CHECK_EQ(b.servo_max_ma[0], 900);
+            CHECK_EQ(b.servo_min_mv[0], 5900u);
+            b.servo_new = false;
+        }
+        /* The same window again: no second row. */
+        CHECK(!sense_link_take_window(&sl, &b));
+        poll_once();
+        CHECK(!sense_link_take_window(&sl, &b));
+    }
+    CHECK_EQ(rows, 4u);
+
+    /* One window clipped, the next not: seen and said. */
+    pg.servo[LINK_SS_WINDOW]   = 104u;
+    pg.servo[LINK_SS_CH_FLAGS] = (uint16_t)(LINK_SS_CH_VALID(1)
+                                            | LINK_SS_CH_CLIPPED(1));
+    poll_once();
+    pg.servo[LINK_SS_WINDOW]   = 105u;
+    pg.servo[LINK_SS_CH_FLAGS] = LINK_SS_CH_VALID(1);
+    poll_once();
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I3221_CLIPPED);
+
+    /* A window with no readings is no row. */
+    pg.servo[LINK_SS_WINDOW]   = 106u;
+    pg.servo[LINK_SS_CH_FLAGS] = 0u;
+    poll_once();
+    CHECK(!sense_link_take_window(&sl, &b));
+    CHECK(!sense_link_take_window(NULL, &b));
+}
+
+/*
+ * Pins an output holds: the bus frame is refused and said once, and
+ * offered again every SENSE_LINK_BUS_RETRY_MS, so freeing the pin on
+ * OUTPUTS lets it through without an edit.
+ */
+TEST_CASE(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free)
+{
+    fresh(7u);
+    o.slot[0].driver = OUT_DRIVER_PWM;
+    o.slot[0].pin    = 16u;
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_BUS_REFUSED);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], 0u);
+    const unsigned before = writes;
+    polls((int)(SENSE_LINK_BUS_RETRY_MS / 50u) + 2);
+    CHECK_EQ(writes, before + 1u);             /* tried again, once */
+    CHECK_EQ(sense_link_events(&sl), 0u);      /* and not said again */
+
+    o.slot[0].driver = OUT_DRIVER_NONE;
+    polls((int)(SENSE_LINK_BUS_RETRY_MS / 50u) + 2);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
+    CHECK(sense_link_settled(&sl));
+    CHECK_EQ(sense_link_events(&sl), 0u);
+}
+
 TEST_CASE(the_store_off_is_said_once_per_link)
 {
     fresh(7u);
@@ -1005,6 +1091,8 @@ int main(void)
     RUN(channels_that_clip_together_are_each_said);
     RUN(a_waiting_event_says_what_its_read_saw);
     RUN(an_event_that_never_reached_the_band_goes_back);
+    RUN(every_window_reaches_the_log_once);
+    RUN(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);
     return test_summary("sense_link");

@@ -206,7 +206,7 @@ back.
 A run's CSV file has one row every 50 ms:
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
 ```
 
 `voltage`, `current` and `power` are what the screen shows. `ina voltage` and
@@ -214,8 +214,13 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 `esc current` is the ESC's own telemetry current, from the SENSE page while
 the INA228 is the source and from the BENCH page otherwise, and empty when
 the ESC reports none or the panel models the bench. A quantity nothing
-measured is an empty cell. The log viewer groups the last three under
-INA228 and ESC.
+measured is an empty cell. `window` and the nine channel columns are the
+INA3221's 50 ms window -- per channel the mean and highest current and the
+lowest bus voltage -- on the first row after the panel read it and on no
+other, so each window is in the file once, under its number; a channel the
+window has no readings of is empty. The log viewer groups `ina voltage`,
+`ina current` and `esc current` under INA228 and ESC, and the window's
+columns under INA3221.
 
 ## Servo
 
@@ -966,7 +971,7 @@ INA3221 on the servo rail. Their rows are at the top of INTERFACES:
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 655.3 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else |
+| INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300 A is the bench's design maximum; the coprocessor refuses more. Its refusal of a range past 2000 A full scale stays, and 300 A on the smallest shunt, 50 µΩ, does not reach it |
 | INA3221 | ON, OFF | OFF | the servo rail's three channels |
 | INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module as shipped |
 | INA3221 shunt | 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | one a channel; the DAOKAI's R100 reads to 1.64 A |
@@ -996,7 +1001,7 @@ mark.
 
 While a monitor is enabled, the panel reads SENSE's 14 read-only registers
 every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
-200 ms. The band says what they show, each once and one at a time: the most
+50 ms, each 50 ms window once. The band says what they show, each once and one at a time: the most
 pressing first, and the next no sooner than 5 s later, so two at once are
 both said. In order:
 
@@ -1015,7 +1020,10 @@ both said. In order:
 | `INA3221 CH1 clipped at 1.64 A -- current is a bound` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
 | `coprocessor store off -- set-ups last until it restarts` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
 
-A refused set-up is not written again until it changes on SETUP. A monitor
+A refused set-up is not written again until it changes on SETUP. Pins that
+are one I2C block's pair, refused because an output, the PD mini or the
+board holds one, are offered again every 5 s without another alert, so
+freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not disarm the bench: nothing trips on the
 monitors' readings.
 

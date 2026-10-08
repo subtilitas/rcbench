@@ -72,6 +72,21 @@ typedef struct {
      *  window or since the arm (SENSE FLAGS bit 3): current and power, or
      *  their peaks, are bounds and not values. */
     bool     clipped;
+
+    /*
+     * One 50 ms window of the INA3221's channels, from SERVO_SENSE, for
+     * the log: servo_new while it has not been written to a row, so each
+     * window reaches the log once, keyed by its number.  Per channel the
+     * mean and highest current in mA, signed, and the lowest bus voltage
+     * in mV, as the page carries them; bit n-1 of servo_ok says CHn's
+     * window holds readings.  Not on the BENCH page.
+     */
+    bool     servo_new;
+    uint8_t  servo_ok;
+    uint16_t servo_window;
+    int16_t  servo_mean_ma[3];
+    int16_t  servo_max_ma[3];
+    uint16_t servo_min_mv[3];
 } bench_state_t;
 
 /** True when the numbers are modelled rather than measured. */

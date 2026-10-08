@@ -103,7 +103,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * The current monitors, on the coprocessor's I2C (Inter-Integrated
      * Circuit) bus and written to its SENSE page by the panel (protocol
      * 4.7).  The ranges are the page's: an INA228 shunt of 50 to 20000 uOhm
-     * and a range of 1.0 to 655.3 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
+     * and a range of 1.0 to 300.0 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
      * The defaults are the modules the bench is built with: the MATEK
      * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8 A, and the
      * DAOKAI INA3221 at 0x40 on its 0.1 Ohm shunts (1.638 A full scale),
@@ -123,7 +123,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         SET_CAT_IFACE, SET_TYPE_INT, 50, 20000, 1, 200, NULL, 0 },
     [SET_INA228_MAX_A] = {
         "ina228_max_a", "INA228 max current", "Highest current expected; sets range", "A",
-        SET_CAT_IFACE, SET_TYPE_FLOAT, 1.0f, 655.3f, 0.1f, 204.8f, NULL, 0 },
+        SET_CAT_IFACE, SET_TYPE_FLOAT, 1.0f, 300.0f, 0.1f, 204.8f, NULL, 0 },
     [SET_INA3221_EN] = {
         "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },

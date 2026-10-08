@@ -12,7 +12,7 @@ history is in git.
   up an I2C (Inter-Integrated Circuit) bus on two coprocessor pins for a TI
   INA228 in the ESC's power path and a TI INA3221 on the servo rail:
   enable, SDA, SCL and the clock, 400 kHz only; the INA228's address,
-  shunt (50 to 20000 µΩ) and range (1.0 to 655.3 A); the INA3221's address, shunt (5 mΩ
+  shunt (50 to 20000 µΩ) and range (1.0 to 300.0 A, the bench's design maximum); the INA3221's address, shunt (5 mΩ
   to 1 Ω, default 0.1 Ω for 1.638 A full scale) and channels. The INA228's
   shunt and range are held to the driver's `ina228_calibrate()`: SHUNT_CAL
   4096, ADCRANGE from the range, refused past 163.84 mV or 2000 A full
@@ -68,7 +68,7 @@ history is in git.
 - **The panel sets up and reads the current monitors.** Not run on
   hardware. SETUP INTERFACES gains INA228 address (0x40 to 0x4F, default
   0x45), INA228 shunt (50 to 20000 µΩ, default 200), INA228 max current
-  (1.0 to 655.3 A, default 204.8), INA3221, INA3221 address (0x40 to
+  (1.0 to 300.0 A, default 204.8), INA3221, INA3221 address (0x40 to
   0x43, default 0x40), INA3221 shunt (5.0 to 1000.0 mΩ, default 100.0),
   INA3221 channels (CH1 or CH1+2+3) and Sensor SDA and SCL (default GP16
   and GP17). INA228 shunt in 0.1 mΩ and I2C speed are gone: the first
@@ -78,13 +78,15 @@ history is in git.
   last edit while the bank is disarmed, only where it differs, and reads
   the identity page again once a write is taken; a coprocessor older than
   4.7 is sent nothing. It reads SENSE every 50 ms while a part is enabled
-  and SERVO_SENSE every 200 ms while the INA3221 is. The band says, once
+  and SERVO_SENSE every 50 ms window while the INA3221 is. The band says, once
   each, a set-up refused or not sent, a part not answering, another
   identity at a part's address, a stuck bus, a clipped reading and STATUS
   fault bit 6. MOTOR & ESC's TABLE pane shows the ESC's own voltage and
   current beside the INA228's, with the difference; the totals are the
   INA228's while BENCH bit 6 is set; a run's CSV file gains
-  `ina voltage (V)`, `ina current (A)` and `esc current (A)`, and the log
+  `ina voltage (V)`, `ina current (A)` and `esc current (A)`, and each
+  INA3221 window once: `window` and per channel the mean and highest current
+  and the lowest bus voltage; the log
   viewer groups them under INA228 and ESC.
 
 ### Fixed

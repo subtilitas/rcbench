@@ -125,7 +125,7 @@ TEST_CASE(a_written_run_reads_back)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 12);
+    CHECK_EQ(an.n_columns, 22);
     CHECK_EQ(an.row_count, 120);
     /* Detected, not assumed: the file never says which convention it uses. */
     CHECK_EQ(an.delimiter, ';');
@@ -190,7 +190,7 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
     CHECK(p != NULL);
     ++p;
 
-    char got[160];
+    char got[200];
     snprintf(got, sizeof(got), "%s", p);
     char *nl = strchr(got, '\n');
     if (nl != NULL) { *nl = '\0'; }
@@ -199,7 +199,7 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
      * temperature has no sensor; and with no current there is no charge or
      * energy to count.  Six empty cells, and the ones that did answer carry
      * numbers. */
-    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;;;;");
+    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;;;;;;;;;;;;;;");
 }
 
 TEST_CASE(charge_and_energy_are_written_only_when_counted)
@@ -220,11 +220,11 @@ TEST_CASE(charge_and_energy_are_written_only_when_counted)
     const char *p = strchr(g_mem.buf, '\n');
     CHECK(p != NULL);
     ++p;
-    char got[160];
+    char got[200];
     snprintf(got, sizeof(got), "%s", p);
     char *nl = strchr(got, '\n');
     if (nl != NULL) { *nl = '\0'; }
-    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;;;;10.00");
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;;;;10.00;;;;;;;;;;");
 }
 
 TEST_CASE(the_values_survive_the_round_trip)
@@ -326,10 +326,10 @@ TEST_CASE(the_sources_survive_the_round_trip)
     CHECK(log_writer_row(&w, 1.05f, &b));
 
     CHECK(strstr(g_mem.buf, ";ina voltage (V);ina current (A);"
-                            "esc current (A)\n") != NULL);
+                            "esc current (A);window;") != NULL);
     static const char k_rows[] =
-        "1.000;24.31;31.20;758;;;;;;24.31;31.20;36.75\n"
-        "1.050;24.10;40.05;0;;;;;;;;40.05\n";
+        "1.000;24.31;31.20;758;;;;;;24.31;31.20;36.75;;;;;;;;;;\n"
+        "1.050;24.10;40.05;0;;;;;;;;40.05;;;;;;;;;;\n";
     const char *row = strchr(g_mem.buf, '\n') + 1;
     CHECK_STR_EQ(row, k_rows);
 
@@ -340,7 +340,7 @@ TEST_CASE(the_sources_survive_the_round_trip)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 12);
+    CHECK_EQ(an.n_columns, 22);
     CHECK_EQ(an.ragged_rows, 0);
 
     log_source_t src2;
@@ -363,6 +363,60 @@ TEST_CASE(the_sources_survive_the_round_trip)
     CHECK_NEAR(data.value[1][0], 31.20f, 0.005f);
     CHECK_NEAR(data.value[2][0], 36.75f, 0.005f);
     CHECK_NEAR(data.value[2][1], 40.05f, 0.005f);
+    log_data_free(&data);
+}
+
+/*
+ * The INA3221's window goes into the row that first carries it, by its
+ * number, and into no other; a channel the window has no readings of is
+ * empty.  The columns read back by name, unit and value.
+ */
+TEST_CASE(each_window_goes_into_one_row)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.servo_new    = true;
+    b.servo_window = 812u;
+    b.servo_ok     = 0x01u;                /* CH1 only */
+    b.servo_mean_ma[0] = 412;
+    b.servo_max_ma[0]  = 1638;
+    b.servo_min_mv[0]  = 5874u;
+    CHECK(log_writer_row(&w, 1.0f, &b));
+    b.servo_new = false;                   /* the panel, once it is posted */
+    CHECK(log_writer_row(&w, 1.05f, &b));
+
+    CHECK(strstr(g_mem.buf, ";window;ch1 current (A);ch1 max (A);"
+                            "ch1 voltage (V);ch2 current (A)") != NULL);
+    static const char k_rows[] =
+        "1.000;;;;;;;;;;;;812;0.412;1.638;5.874;;;;;;\n"
+        "1.050;;;;;;;;;;;;;;;;;;;;;\n";
+    const char *row = strchr(g_mem.buf, '\n') + 1;
+    CHECK_STR_EQ(row, k_rows);
+
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.n_columns, 22);
+    CHECK_EQ(an.ragged_rows, 0);
+    log_source_t src2;
+    log_mem_ctx_t ctx2;
+    log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
+    int cols[3] = { 13, 14, 15 };
+    log_data_t data;
+    CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
+    CHECK_STR_EQ(data.field[0].name, "ch1 current");
+    CHECK_STR_EQ(data.field[0].unit, "A");
+    CHECK_STR_EQ(data.field[0].group, "INA3221");
+    CHECK_STR_EQ(data.field[2].name, "ch1 voltage");
+    CHECK_NEAR(data.value[0][0], 0.412f, 0.0005f);
+    CHECK_NEAR(data.value[1][0], 1.638f, 0.0005f);
+    CHECK_NEAR(data.value[2][0], 5.874f, 0.0005f);
     log_data_free(&data);
 }
 
@@ -644,6 +698,7 @@ int main(void)
     RUN(charge_and_energy_are_written_only_when_counted);
     RUN(the_values_survive_the_round_trip);
     RUN(the_sources_survive_the_round_trip);
+    RUN(each_window_goes_into_one_row);
     RUN(a_non_finite_reading_is_written_as_an_absent_cell);
     RUN(the_header_is_written_once_and_without_being_asked);
     RUN(a_failing_sink_latches_and_stops);

@@ -221,7 +221,7 @@ zurück.
 Die CSV-Datei eines Laufs hat alle 50 ms eine Zeile:
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
 ```
 
 `voltage`, `current` und `power` sind, was der Bildschirm zeigt.
@@ -230,7 +230,13 @@ nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,
 von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
 BENCH-Page, und leer, wenn der ESC keinen meldet oder das Panel den
 Prüfstand simuliert. Eine Größe, die nichts gemessen hat, ist eine leere
-Zelle. Der Log-Viewer gruppiert die letzten drei unter INA228 und ESC.
+Zelle. `window` und die neun Kanalspalten sind das 50-ms-Fenster des
+INA3221 -- je Kanal der mittlere und der höchste Strom und die niedrigste
+Busspannung -- in der ersten Zeile, nachdem das Panel es gelesen hat, und in
+keiner anderen, sodass jedes Fenster einmal in der Datei steht, unter seiner
+Nummer; ein Kanal ohne Messwerte im Fenster ist leer. Der Log-Viewer
+gruppiert `ina voltage`, `ina current` und `esc current` unter INA228 und
+ESC und die Spalten des Fensters unter INA3221.
 
 ## Servo
 
@@ -1051,7 +1057,7 @@ ANSCHLÜSSE:
 | INA228 | EIN, AUS | AUS | der Monitor im Strompfad des ESC |
 | INA228 Adresse | 0x40 bis 0x4F | 0x45 | der MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41 |
 | INA228 Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
-| INA228 Höchststrom | 1,0 bis 655,3 A, Schritte von 0,1 A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts |
+| INA228 Höchststrom | 1,0 bis 300,0 A, Schritte von 0,1 A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300 A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der Koprozessor ab. Seine Ablehnung eines Bereichs über 2000 A Vollausschlag bleibt, und 300 A am kleinsten Shunt, 50 µΩ, erreichen sie nicht |
 | INA3221 | EIN, AUS | AUS | die drei Kanäle der Servoschiene |
 | INA3221 Adresse | 0x40 bis 0x43 | 0x40 | das DAOKAI-Modul ab Werk |
 | INA3221 Shunt | 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | einer je Kanal; der R100 des DAOKAI misst bis 1,64 A |
@@ -1083,7 +1089,8 @@ und mit eingeschaltetem INA228 verliert die Kachel MOTOR & ESC ihre Marke
 
 Solange ein Monitor eingeschaltet ist, liest das Panel die 14
 Nur-Lese-Register der SENSE-Page alle 50 ms; solange der INA3221
-eingeschaltet ist, die Kanalfenster der SERVO_SENSE-Page alle 200 ms. Das
+eingeschaltet ist, die Kanalfenster der SERVO_SENSE-Page alle 50 ms, jedes 50-ms-Fenster
+einmal. Das
 Band sagt, was sie zeigen, jedes einmal und eines nach dem anderen: das
 Dringendste zuerst und das nächste frühestens 5 s später, sodass zwei
 gleichzeitige beide gesagt werden. In dieser Reihenfolge:
@@ -1104,7 +1111,10 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `Speicher des Koprozessors aus -- Einstellungen gelten bis zum Neustart` | STATUS-Fehlerbit 6: der Koprozessor speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
 
 Eine abgelehnte Einstellung wird erst wieder geschrieben, wenn sie sich unter
-SETUP ändert. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
+SETUP ändert. Pins, die das Paar eines I2C-Blocks sind und abgelehnt wurden,
+weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
+5 s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
+NETZTEIL freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
 nicht unscharf: auf den Messwerten der Monitore löst nichts aus.
 
 ### Werte behalten

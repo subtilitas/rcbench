@@ -36,6 +36,9 @@ typedef struct {
     void *ctx;
 } log_sink_t;
 
+/** The longest bench row, terminator included. */
+#define LOG_WRITER_LINE_MAX 256
+
 typedef struct {
     log_sink_t sink;
     uint32_t   rows;
@@ -44,6 +47,9 @@ typedef struct {
     float      committed_s;  /**< t_s of the row the last commit ended at */
     bool       header_done;
     bool       failed;     /**< a write failed; the file is not trustworthy */
+    /** A bench row as it is built: 22 cells, here rather than on the
+     *  stack of the task that writes the card. */
+    char       line[LOG_WRITER_LINE_MAX];
 } log_writer_t;
 
 /*

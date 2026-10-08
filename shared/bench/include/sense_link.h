@@ -25,7 +25,9 @@
  * refuses any change while it drives -- and only once the set-up has rested
  * SENSE_LINK_SETTLE_MS since its last edit, because the coprocessor keeps
  * each change in flash.  A frame the page refuses is not written again
- * until the set-up changes.  Two set-ups are not written at all, and said
+ * until the set-up changes -- except a bus frame whose SDA and SCL are one
+ * I2C block's pair, refused for pins something else holds, which is
+ * offered again every SENSE_LINK_BUS_RETRY_MS and said once.  Two set-ups are not written at all, and said
  * once per edit: a part enabled with SDA or SCL unset, and both parts
  * enabled on one address; neither part is enabled on the page then.
  *
@@ -51,6 +53,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "bench_state.h"
 #include "link_pages.h"
 
 #ifdef __cplusplus
@@ -76,14 +79,20 @@ extern "C" {
  *  count back to BENCH's 1 mAh and 0.1 Wh rounding for a sample. */
 #define SENSE_LINK_TOTALS_MS 100u
 
-/** SERVO_SENSE's windows and channel flags, read this often while the
- *  INA3221 is enabled: one 50 ms window in four. */
-#define SENSE_LINK_SERVO_MS 200u
+/** SERVO_SENSE's windows and channel flags are due this long after the
+ *  last read while the INA3221 is enabled: under the 50 ms poll, so every
+ *  poll reads them and every 50 ms window is seen -- its mean the filter,
+ *  its highest current and lowest voltage the spikes. */
+#define SENSE_LINK_SERVO_MS 40u
 
 /** A part enabled and not online this long after its set-up was taken, or
  *  first read, is said not to answer: the coprocessor scans the bus again
  *  every 1000 ms while a part is missing. */
 #define SENSE_LINK_GRACE_MS 2500u
+
+/** A bus frame refused on pins something else holds is offered again
+ *  this often: freeing the pin on OUTPUTS or SUPPLY lets it through. */
+#define SENSE_LINK_BUS_RETRY_MS 5000u
 
 /** A SENSE read older than this gives no ESC figures. */
 #define SENSE_LINK_STALE_MS 500u
@@ -183,6 +192,9 @@ typedef struct {
     uint16_t held[LINK_SN_CONFIG_COUNT];
     uint32_t setup_ms;        /**< when the set-up in force was taken  */
     bool     refused_bus, refused_i228, refused_i3221;
+    bool     bus_told;        /**< the bus refusal said for this edit  */
+    bool     bus_retry;       /**< the refused pair may be let go of    */
+    uint32_t bus_refused_ms;
     bool     caps_owed;       /**< a write taken; identity not re-read */
 
     /* The exchange in flight. */
@@ -197,6 +209,8 @@ typedef struct {
     uint16_t servo[SENSE_LINK_SERVO_COUNT];
     uint32_t status_ms;
     uint32_t status_reads;    /**< SENSE reads answered, since init    */
+    bool     window_taken;    /**< a window has gone to the log        */
+    uint16_t window_last;     /**< the number of the last one          */
     bool     caps_new;
     uint16_t caps;
 
@@ -291,6 +305,14 @@ bool sense_link_take_caps(sense_link_t *s, uint16_t *caps);
 
 /** FLAGS as last read, 0 before any read. */
 uint16_t sense_link_flags(const sense_link_t *s);
+
+/**
+ * The INA3221's last window into @p b for the log, once per window: true
+ * and servo_new set when the last SERVO_SENSE read holds a window with
+ * readings whose number has not been taken before; false otherwise, @p b
+ * untouched.
+ */
+bool sense_link_take_window(sense_link_t *s, bench_state_t *b);
 
 /** SENSE reads answered since init: a caller that compares two counts can
  *  tell a read made in between. */
