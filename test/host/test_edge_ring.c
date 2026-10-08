@@ -35,6 +35,13 @@ static void put(uint32_t slot, uint64_t tick, bool level)
     ring[slot % SIZE] = edge_word(count_at(tick), level);
 }
 
+/* A capture's start: the ring cleared, the reader at slot 0. */
+static void fresh(void)
+{
+    memset(ring, 0, sizeof(ring));
+    edge_ring_init(&r);
+}
+
 TEST_CASE(a_word_carries_a_31_bit_count_and_a_level)
 {
     const uint32_t w = edge_word(0x12345678u, true);
@@ -84,7 +91,7 @@ TEST_CASE(a_tick_before_the_start_does_not_exist)
 
 TEST_CASE(a_ring_read_returns_the_words_written_since_the_last_read)
 {
-    edge_ring_init(&r);
+    fresh();
     bool lap = true;
     CHECK_EQ(edge_ring_take(&r, ring, SIZE, 0u, 0u, out, 8u, &lap), 0);
     CHECK(!lap);
@@ -110,7 +117,7 @@ TEST_CASE(a_ring_read_returns_the_words_written_since_the_last_read)
 
 TEST_CASE(a_read_follows_the_ring_across_its_end_and_in_batches)
 {
-    edge_ring_init(&r);
+    fresh();
     bool lap = false;
     uint64_t t = 100;
     uint32_t wr = 0;
@@ -135,7 +142,7 @@ TEST_CASE(a_read_follows_the_ring_across_its_end_and_in_batches)
 
 TEST_CASE(a_lap_of_the_dma_shows_in_the_slot_of_the_last_word_taken)
 {
-    edge_ring_init(&r);
+    fresh();
     bool lap = false;
     uint64_t t = 0;
     uint32_t wr = 0;
@@ -162,7 +169,7 @@ TEST_CASE(a_lap_of_the_dma_shows_in_the_slot_of_the_last_word_taken)
 
 TEST_CASE(a_whole_ring_written_between_reads_is_a_lap_too)
 {
-    edge_ring_init(&r);
+    fresh();
     bool lap = false;
     uint64_t t = 0;
     uint32_t wr = 0;
@@ -178,9 +185,35 @@ TEST_CASE(a_whole_ring_written_between_reads_is_a_lap_too)
     CHECK(lap);
 }
 
+TEST_CASE(a_lap_before_the_first_read_is_an_overrun)
+{
+    fresh();
+    bool lap = false;
+    uint64_t t = 0;
+    /* The DMA writes SIZE + 5 words before the first read. */
+    for (unsigned i = 0; i < SIZE + 5u; ++i) {
+        put(i, t += 10u, (i & 1u) == 0u);
+    }
+    CHECK_EQ(edge_ring_take(&r, ring, SIZE, 5u, t, out, 32u, &lap), 0);
+    CHECK(lap);
+    CHECK_EQ(r.overruns, 1u);
+    /* The reader is after the newest word: the next word comes alone. */
+    put(5, t += 10u, true);
+    CHECK_EQ(edge_ring_take(&r, ring, SIZE, 6u, t, out, 32u, &lap), 1);
+    CHECK(!lap);
+    /* Just short of a lap, the ring is read whole and no lap shows. */
+    fresh();
+    for (unsigned i = 0; i < SIZE - 1u; ++i) {
+        put(i, t += 10u, (i & 1u) == 0u);
+    }
+    CHECK_EQ(edge_ring_take(&r, ring, SIZE, SIZE - 1u, t, out, 32u, &lap),
+             (int)SIZE - 1);
+    CHECK(!lap);
+}
+
 TEST_CASE(a_ring_that_holds_no_words_yet_is_not_a_lap)
 {
-    edge_ring_init(&r);
+    fresh();
     bool lap = true;
     memset(ring, 0, sizeof(ring));
     CHECK_EQ(edge_ring_take(&r, ring, SIZE, 0u, 0u, out, 8u, &lap), 0);
@@ -192,7 +225,7 @@ TEST_CASE(a_ring_that_holds_no_words_yet_is_not_a_lap)
 TEST_CASE(a_bad_argument_reads_nothing)
 {
     bool lap = true;
-    edge_ring_init(&r);
+    fresh();
     edge_ring_init(NULL);
     CHECK_EQ(edge_ring_take(NULL, ring, SIZE, 1u, 0u, out, 8u, &lap), 0);
     CHECK(!lap);
@@ -214,6 +247,7 @@ int main(void)
     RUN(a_read_follows_the_ring_across_its_end_and_in_batches);
     RUN(a_lap_of_the_dma_shows_in_the_slot_of_the_last_word_taken);
     RUN(a_whole_ring_written_between_reads_is_a_lap_too);
+    RUN(a_lap_before_the_first_read_is_an_overrun);
     RUN(a_ring_that_holds_no_words_yet_is_not_a_lap);
     RUN(a_bad_argument_reads_nothing);
     return test_summary("edge_ring");

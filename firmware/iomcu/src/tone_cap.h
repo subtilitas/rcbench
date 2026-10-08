@@ -6,7 +6,7 @@
  *
  * Core 0 starts and stops it, from the TONE page's set-up.  Core 1 reads
  * the ring and the channel's write position (tone_core1.c), and the state
- * machine's overflow flag.  Nothing here drives the pin: it is an input
+ * machine's overflow flag.  The ring is cleared when the capture starts.  Nothing here drives the pin: it is an input
  * for the PIO, and an input with its pull-down on while the tap is off.
  *
  * Pull-down.  The pin's pull-down is on while the tap is disabled, so a
@@ -36,8 +36,15 @@
  */
 bool tone_cap_start(uint8_t pin);
 
+/** Mark the capture not running, so core 1 reads nothing from it from its
+ *  next pass on; the state machine and the channel stay.  The first step
+ *  of taking the capture down: tell core 1, wait for it
+ *  (tone_core1_quiesce()), then tone_cap_stop(). */
+void tone_cap_pause(void);
+
 /** Stop the capture and give back what it claimed; the pin is left an
- *  input with its pull-down on.  Safe when it is not running. */
+ *  input with its pull-down on.  Safe when it is not running.  Core 1 is
+ *  not reading the ring or the channel at that moment (tone_cap_pause()). */
 void tone_cap_stop(void);
 
 bool tone_cap_running(void);

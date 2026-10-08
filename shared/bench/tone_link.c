@@ -81,6 +81,7 @@ void tone_link_lost(tone_link_t *t)
     t->asked_status = false;
     t->was_flags   = 0u;
     t->synced      = false;
+    t->ring_empty  = false;
     t->sel_ok      = false;
     /* What the coprocessor that went said, and not yet shown, is about a
      * page nobody reads now. */
@@ -178,10 +179,33 @@ static bool frame1_differs(const tone_link_t *t)
                   FRAME1_CFG * sizeof(uint16_t)) != 0;
 }
 
-/* The write owed now, or NONE, with its registers in @p regs. */
-static tone_link_op_kind_t write_owed(const tone_link_t *t, uint16_t *regs)
+/* Whether the first frame is owed again for a pin something else holds: the
+ * page's FLAGS say the saved tap met a busy pin at boot, the page holds
+ * what is asked, and TONE_LINK_RETRY_MS have passed since the last try. */
+static bool pin_retry_due(const tone_link_t *t, uint32_t now_ms)
 {
-    const bool f0 = !t->refused0 && frame0_differs(t);
+    return t->have_status && !t->refused0
+           && t->want[LINK_TN_ENABLE] != 0u
+           && (t->held[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u
+           && (t->status[ST(LINK_TN_FLAGS)] & LINK_TN_PIN_REFUSED) != 0u
+           && (uint32_t)(now_ms - t->retry_ms) >= TONE_LINK_RETRY_MS;
+}
+
+/* The write owed now, or NONE, with its registers in @p regs.  @p retry
+ * counts a first frame owed again for a busy pin. */
+static tone_link_op_kind_t write_owed(const tone_link_t *t, uint16_t *regs,
+                                      bool retry)
+{
+    /* Switching the tap off writes the first frame with the values the page
+     * holds, so a set-up the page would refuse cannot keep it running; the
+     * range follows in a frame of its own. */
+    if (!t->refused0 && t->want[LINK_TN_ENABLE] == 0u
+        && (t->held[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u) {
+        memcpy(regs, &t->held[FRAME0_AT], FRAME_N * sizeof(uint16_t));
+        regs[LINK_TN_ENABLE - FRAME0_AT] = 0u;
+        return TONE_LINK_OP_FRAME0;
+    }
+    const bool f0 = !t->refused0 && (frame0_differs(t) || retry);
     const bool f1 = !t->refused1 && frame1_differs(t);
     bool first0 = f0;
     if (f0 && f1) {
@@ -249,8 +273,14 @@ bool tone_link_next(tone_link_t *t, uint32_t now_ms, tone_link_op_t *op)
     if (t->want_set
         && (uint32_t)(now_ms - t->want_ms) >= TONE_LINK_SETTLE_MS) {
         uint16_t regs[FRAME_N];
-        const tone_link_op_kind_t w = write_owed(t, regs);
+        const bool retry = pin_retry_due(t, now_ms);
+        const tone_link_op_kind_t w = write_owed(t, regs, retry);
         if (w != TONE_LINK_OP_NONE) {
+            if (retry && w == TONE_LINK_OP_FRAME0) {
+                /* Offered again quietly: the operator was told. */
+                t->retry_ms = now_ms;
+                t->told |= 1u;
+            }
             op->kind  = w;
             op->write = true;
             op->page  = (uint8_t)LINK_PAGE_TONE;
@@ -299,12 +329,27 @@ static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
 {
     if (result == TONE_LINK_ACK) {
         if (w == TONE_LINK_OP_FRAME0) {
+            /* The page starts the capture again, with its ring empty, when
+             * the tap is enabled, moved to another pin or tried again for
+             * a pin that was busy.  A change of the range only restarts
+             * the detector: the ring and the numbering stay. */
+            const bool capture =
+                t->out[LINK_TN_ENABLE - FRAME0_AT] != t->held[LINK_TN_ENABLE]
+                || t->out[LINK_TN_PIN - FRAME0_AT] != t->held[LINK_TN_PIN]
+                || (t->have_status
+                    && (t->status[ST(LINK_TN_FLAGS)] & LINK_TN_PIN_REFUSED)
+                           != 0u);
             memcpy(&t->held[FRAME0_AT], t->out, FRAME_N * sizeof(uint16_t));
             /* The range moved: a gap refused against the old one is asked
-             * again, and the beeps are numbered from the new run. */
+             * again. */
             t->refused1 = false;
-            t->synced   = false;
-            t->sel_ok   = false;
+            if (capture) {
+                /* The numbering goes on from the beep before the ring
+                 * emptied: the next status places the panel at its head. */
+                t->synced     = false;
+                t->ring_empty = true;
+                t->sel_ok     = false;
+            }
         } else {
             memcpy(&t->held[FRAME1_AT], t->out,
                    FRAME1_CFG * sizeof(uint16_t));
@@ -337,6 +382,7 @@ static void judge_status(tone_link_t *t)
     const uint16_t was = t->was_flags;
     if ((f & LINK_TN_PIN_REFUSED) != 0u && (was & LINK_TN_PIN_REFUSED) == 0u) {
         t->events |= TONE_LINK_EV_PIN_BUSY;
+        t->retry_ms = t->status_ms;
     }
     if ((f & LINK_TN_OVERRUN) != 0u && (was & LINK_TN_OVERRUN) == 0u) {
         t->events |= TONE_LINK_EV_OVERRUN;
@@ -352,6 +398,15 @@ static void follow_head(tone_link_t *t)
         /* No beep yet, or the numbering restarted: the next is 1. */
         t->last = 0u;
         t->synced = true;
+        t->ring_empty = false;
+        return;
+    }
+    if (!t->synced && t->ring_empty) {
+        /* The capture began again with its ring empty and the numbering
+         * going on: every beep the ring holds from here is a new one. */
+        t->last = head;
+        t->synced = true;
+        t->ring_empty = false;
         return;
     }
     if (!t->synced) {
@@ -493,7 +548,7 @@ bool tone_link_settled(const tone_link_t *t)
         return true;
     }
     uint16_t regs[FRAME_N];
-    return t->known && write_owed(t, regs) == TONE_LINK_OP_NONE;
+    return t->known && write_owed(t, regs, false) == TONE_LINK_OP_NONE;
 }
 
 unsigned tone_link_beeps(const tone_link_t *t, tone_beep_t *out, unsigned max)
@@ -531,7 +586,11 @@ uint16_t tone_link_flags(const tone_link_t *t)
 static tone_state_t state_of(const tone_link_t *t, bool fresh)
 {
     if (!t->want_set || t->want[LINK_TN_ENABLE] == 0u) {
-        return TONE_STATE_OFF;
+        /* Off is asked and the page does not hold it yet: not off. */
+        return (t->want_set && t->up && t->page && t->known
+                && (t->held[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u)
+                   ? TONE_STATE_WAITING
+                   : TONE_STATE_OFF;
     }
     if (!t->up) {
         return TONE_STATE_WAITING;

@@ -41,7 +41,7 @@ uint64_t edge_tick(uint32_t count, uint64_t est)
 void edge_ring_init(edge_ring_t *r)
 {
     if (r != NULL) {
-        memset(r, 0, sizeof(*r));
+        memset(r, 0, sizeof(*r));   /* last = 0: the word of an empty slot */
     }
 }
 
@@ -60,8 +60,9 @@ size_t edge_ring_take(edge_ring_t *r, const uint32_t *ring, uint32_t size,
     wr &= mask;
     r->rd &= mask;
     /* The slot of the last word taken holds another word: the DMA has
-     * written the whole ring since. */
-    if (r->have_last && ring[(r->rd - 1u) & mask] != r->last) {
+     * written the whole ring since.  Before the first word is taken that
+     * slot is the ring's last one, and the word is the 0 of an empty ring. */
+    if (ring[(r->rd - 1u) & mask] != r->last) {
         ++r->overruns;
         r->rd = wr;
         r->last = ring[(wr - 1u) & mask];
@@ -77,7 +78,6 @@ size_t edge_ring_take(edge_ring_t *r, const uint32_t *ring, uint32_t size,
         out[n].level = edge_word_level(w);
         ++n;
         r->last = w;
-        r->have_last = true;
         r->rd = (r->rd + 1u) & mask;
     }
     return n;

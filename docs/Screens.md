@@ -864,7 +864,7 @@ counts its beeps from the supply current.
 | --- | --- |
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
-| `WAITING` | no link, or the TONE page has not answered in the last 500 ms |
+| `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or the tap was switched off and the page still holds it on |
 | `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
 | `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
@@ -1084,7 +1084,17 @@ link-up first. The set-up goes in two frames, the pin and the tone range,
 then the split, the gap and the periods. When both change, the one that
 leaves the page a valid set-up goes first: a lower tone with a gap shorter
 than its period is refused, so the gap is written before the tone goes down
-and after it goes up. A coprocessor older than 4.8 is sent nothing.
+and after it goes up. Switching the tap off writes the first frame with
+the values the page holds and the tap disabled, whatever range is asked, so
+a range the page would refuse cannot keep the tap running; the range
+follows in a frame of its own. Until the page holds the tap off the screen
+shows `WAITING`, not off. A set-up kept in flash that met a busy pin at the
+coprocessor's boot is written again every 5 s, without another message,
+while the page reports the pin refused. A change of ENABLE or of the pin
+empties the coprocessor's ring and the panel takes its place at the newest
+beep number, so none is read twice and none counted as missed; a change
+of the range or of the other values leaves the ring and the numbering
+alone. A coprocessor older than 4.8 is sent nothing.
 
 While the page holds the tap on, the panel reads its 16 read-only registers
 every 50 ms: the flags, the last 8 ms window's pitch, the number of the
@@ -1104,7 +1114,7 @@ current monitors:
 | `coprocessor has no tone page -- phase tap not read` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
 | `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` | the coprocessor refused the first frame: the pin is not allowed or the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period). Offered again every 5 s without another message, so freeing the pin lets the tap start |
 | `phase tap split, gap or periods refused -- see SETUP INTERFACES` | the coprocessor refused the second frame; not written again until a value changes |
-| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused: a set-up it kept in flash met a binding at its boot |
+| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused: a set-up it kept in flash met a binding at its boot. The first frame is offered again every 5 s without another message, so freeing the pin lets the tap start |
 | `phase tap capture overrun -- beeps cut` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 ### Keeping the values

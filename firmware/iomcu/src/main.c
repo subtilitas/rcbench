@@ -619,13 +619,17 @@ static void tone_order(void)
  * page's pin if the tap is enabled and not refused, else the pin left an
  * input with its pull-down on.  False when the tap is enabled and the
  * wiring could not take its pin (no PIO state machine, no DMA channel).
- * Core 1 is told first that nothing runs, and again once the capture does,
- * so it never reads a ring that is being started over.
+ * Core 1 is told first that nothing runs and given up to
+ * TONE_CORE1_WAIT_US to finish the pass it is in, then the capture is torn
+ * down, and core 1 is told again once the capture runs: it never reads a
+ * ring that is being started over.
  */
 static bool tone_rewire(void)
 {
-    tone_cap_stop();
+    tone_cap_pause();
     tone_order();
+    tone_core1_quiesce();
+    tone_cap_stop();
     reserve_held();
     if (!tone_page_wanted(&s_tone)) {
         if (tone_page_pin_free(&s_tone, &s_outputs, tone_taken())) {

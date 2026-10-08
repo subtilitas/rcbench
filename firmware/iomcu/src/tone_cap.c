@@ -6,6 +6,8 @@
 
 #include "tone_cap.h"
 
+#include <string.h>
+
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "hardware/gpio.h"
@@ -75,7 +77,10 @@ bool tone_cap_start(uint8_t pin)
     pio->fdebug = 1u << (PIO_FDEBUG_RXSTALL_LSB + sm);
 
     /* The words into the ring, endlessly, the write address wrapping on
-     * it.  Started before the state machine so the first word has a place. */
+     * it.  Started before the state machine so the first word has a place.
+     * The ring is cleared first: a word in its last slot before the reader
+     * has taken one shows a lap (edge_ring.h). */
+    memset(s_ring, 0, sizeof(s_ring));
     dma_channel_config c = dma_channel_get_default_config((uint)dma);
     channel_config_set_transfer_data_size(&c, DMA_SIZE_32);
     channel_config_set_read_increment(&c, false);
@@ -92,6 +97,11 @@ bool tone_cap_start(uint8_t pin)
     s_start_us = (t0 + t1) / 2u;
     s_running = true;
     return true;
+}
+
+void tone_cap_pause(void)
+{
+    s_running = false;
 }
 
 void tone_cap_stop(void)

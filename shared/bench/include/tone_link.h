@@ -24,6 +24,18 @@
  *      holds, which is offered again every TONE_LINK_RETRY_MS and said
  *      once.
  *
+ * Switching the tap off writes the first frame with the values the page
+ * holds and ENABLE clear, whatever range is asked; the range follows in a
+ * frame of its own.  The readout is not OFF while the page holds ENABLE.
+ * A saved tap the page refused for a busy pin at boot is offered again
+ * every TONE_LINK_RETRY_MS while FLAGS says so, and not said again.
+ *
+ * A write that enables the tap, or moves it to another pin, starts the
+ * capture again with the ring empty and the numbering going on: the panel
+ * takes its place at BEEP_HEAD at the next status.  A change of the range
+ * or of the other values leaves the ring, the numbering and the panel's
+ * place.
+ *
  * The tap is an input and drives nothing, so a write does not wait for an
  * idle bank.  It waits TONE_LINK_SETTLE_MS since the set-up's last edit,
  * because the coprocessor keeps each change in flash.
@@ -190,6 +202,7 @@ typedef struct {
     bool     refused0, refused1;
     uint8_t  told;            /**< bit 0, 1: a frame's refusal said for this edit */
     uint32_t refused0_ms;
+    uint32_t retry_ms;        /**< the first frame last offered for a busy pin */
 
     /* The exchange in flight. */
     tone_link_op_kind_t pending;
@@ -205,6 +218,7 @@ typedef struct {
 
     /* The beeps. */
     bool     synced;          /**< last is meaningful                  */
+    bool     ring_empty;      /**< the capture began again: last = head */
     uint16_t last;            /**< the number of the last beep taken, 0 none */
     uint32_t missed;
     bool     sel_ok;          /**< EVT_SEL holds sel_num on the page   */

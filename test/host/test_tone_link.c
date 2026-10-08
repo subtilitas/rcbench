@@ -39,6 +39,7 @@ typedef struct {
     fake_beep_t ring[LINK_TN_RING];
     int      bad_pin;           /**< a pin an enabled tap is refused on */
     unsigned frames_taken;      /**< writes of regs 0 to 7 that landed   */
+    unsigned captures;          /**< times the capture began again       */
     uint16_t order[8];          /**< the first register of each         */
 } fake_t;
 
@@ -105,13 +106,24 @@ static int fake_write(uint8_t off, uint8_t n, const uint16_t *regs)
     if (!fake_valid(next)) {
         return LINK_NACK_BAD_VALUE;
     }
+    /* The capture starts again, its ring empty and the numbering going on,
+     * when the tap is enabled, moved to another pin or tried again for a
+     * busy pin; a change of the range only restarts the detector. */
+    if (next[LINK_TN_ENABLE] != 0u
+        && (fk.cfg[LINK_TN_ENABLE] == 0u
+            || next[LINK_TN_PIN] != fk.cfg[LINK_TN_PIN]
+            || (fk.flags & LINK_TN_PIN_REFUSED) != 0u)) {
+        memset(fk.ring, 0, sizeof(fk.ring));
+        ++fk.captures;
+    }
     memcpy(fk.cfg, next, sizeof(next));
     if (fk.frames_taken < sizeof(fk.order) / sizeof(fk.order[0])) {
         fk.order[fk.frames_taken] = off;
     }
     ++fk.frames_taken;
     fk.flags = (fk.cfg[LINK_TN_ENABLE] != 0u)
-                   ? (uint16_t)(fk.flags | LINK_TN_RUNNING)
+                   ? (uint16_t)((fk.flags | LINK_TN_RUNNING)
+                                & ~LINK_TN_PIN_REFUSED)
                    : 0u;
     return TONE_LINK_ACK;
 }
@@ -168,9 +180,12 @@ static void fake_beeps(unsigned n)
     }
 }
 
-/* The ring as it is when the newest beep is number @p n. */
+/* The ring as it is when the newest beep is number @p n, on a page whose
+ * tap already runs. */
 static void fake_head(uint16_t n)
 {
+    fk.cfg[LINK_TN_ENABLE] = LINK_TN_EN_TAP;
+    fk.flags = LINK_TN_RUNNING;
     fk.head = (uint16_t)(n - 1u);
     fake_beeps(1);
 }
@@ -469,6 +484,35 @@ TEST_CASE(disabling_the_tap_writes_it_and_stops_the_reads)
     CHECK_EQ(r.state, TONE_STATE_OFF);
 }
 
+TEST_CASE(switching_the_tap_off_goes_through_whatever_range_is_asked)
+{
+    fresh(8u);
+    tap_on();
+    /* A range the page refuses for the gap: 50 Hz needs 20 ms. */
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.f_min_hz = 50u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], LINK_TN_EN_TAP);
+    CHECK_EQ(fk.cfg[LINK_TN_F_MIN_HZ], LINK_TN_DEFAULT_F_MIN);
+    /* Off, with the same range: the page is told off with what it holds. */
+    w.enable = false;
+    want(&w);
+    tone_readout_t r;
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);      /* the page still runs */
+    polls(14);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 0u);
+    CHECK_EQ(fk.cfg[LINK_TN_F_MIN_HZ], LINK_TN_DEFAULT_F_MIN);
+    CHECK_EQ(fk.flags & LINK_TN_RUNNING, 0u);
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_OFF);
+    const unsigned before = reads;
+    polls(20);
+    CHECK_EQ(reads, before);
+}
+
 TEST_CASE(frames_go_in_the_order_that_leaves_a_valid_set_up)
 {
     /* 400 Hz and 3 ms to 50 Hz and 20 ms: the range alone would leave 50 Hz
@@ -571,6 +615,45 @@ TEST_CASE(a_pin_held_by_something_else_goes_through_once_it_is_free)
     CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
 }
 
+TEST_CASE(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free)
+{
+    fresh(8u);
+    /* The page holds the tap enabled from flash and met a busy pin. */
+    fk.bad_pin = LINK_TN_DEFAULT_PIN;
+    fk.cfg[LINK_TN_ENABLE] = LINK_TN_EN_TAP;
+    fk.flags = LINK_TN_PIN_REFUSED;
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(20);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_BUSY);
+    CHECK_EQ(writes, 0u);
+
+    /* Every 5 s the first frame is offered again, and not said again. */
+    polls(120);
+    CHECK_EQ(writes, 1u);
+    polls(120);
+    CHECK_EQ(writes, 2u);
+    CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
+    tone_readout_t r;
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_REFUSED);
+
+    /* The pin is freed: the next offer lands and the capture runs. */
+    fk.bad_pin = -1;
+    polls(120);
+    CHECK_EQ(writes, 3u);
+    CHECK_EQ(fk.captures, 1u);
+    CHECK_EQ(fk.flags & LINK_TN_PIN_REFUSED, 0u);
+    polls(4);
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
+    /* No more offers once it runs. */
+    polls(240);
+    CHECK_EQ(writes, 3u);
+}
+
 TEST_CASE(an_unanswered_write_is_written_again)
 {
     for (int landed = 0; landed < 2; ++landed) {
@@ -654,7 +737,7 @@ TEST_CASE(beeps_are_read_one_by_one_by_number)
     CHECK_EQ(tone_link_read_count(&tl), 3u);
 }
 
-TEST_CASE(a_tap_that_starts_with_beeps_in_the_ring_reads_the_newest)
+TEST_CASE(a_tap_that_is_running_at_link_up_reads_the_newest)
 {
     fresh(8u);
     fake_head(20);
@@ -866,6 +949,66 @@ TEST_CASE(a_restart_the_panel_never_saw_is_not_a_miss)
     CHECK_EQ(tone_link_beeps(&tl, b, 1), 1u);
     check_beep(&b[0], 5u);
     CHECK_EQ(tone_link_read_count(&tl), 5u);
+}
+
+TEST_CASE(a_change_of_the_range_neither_repeats_nor_skips_a_beep)
+{
+    fresh(8u);
+    tap_on();
+    fake_beeps(3);
+    polls(6);
+    CHECK_EQ(tone_link_read_count(&tl), 3u);
+    /* The range moves: the detector restarts, the ring and the numbering
+     * stay. */
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.f_min_hz = 600u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.cfg[LINK_TN_F_MIN_HZ], 600u);
+    CHECK_EQ(fk.captures, 1u);
+    CHECK_EQ(tone_link_read_count(&tl), 3u);
+    fake_beeps(2);
+    polls(6);
+    CHECK_EQ(tone_link_read_count(&tl), 5u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
+}
+
+TEST_CASE(a_capture_that_begins_again_empty_is_neither_a_miss_nor_a_repeat)
+{
+    fresh(8u);
+    tap_on();
+    fake_beeps(5);
+    polls(8);
+    CHECK_EQ(tone_link_read_count(&tl), 5u);
+    /* Off and on: the ring empties, the numbering goes on from 5. */
+    tone_setup_t w = setup_default();
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 0u);
+    w.enable = true;
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.captures, 2u);
+    CHECK_EQ(tone_link_read_count(&tl), 5u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
+    fake_beeps(2);
+    polls(8);
+    CHECK_EQ(tone_link_read_count(&tl), 7u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
+    tone_beep_t b[1];
+    CHECK_EQ(tone_link_beeps(&tl, b, 1), 1u);
+    check_beep(&b[0], 7u);
+
+    /* A move to another pin empties it too. */
+    w.pin = 18u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.captures, 3u);
+    fake_beeps(1);
+    polls(8);
+    CHECK_EQ(tone_link_read_count(&tl), 8u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
 }
 
 TEST_CASE(the_history_keeps_the_newest_eight)
@@ -1108,14 +1251,16 @@ int main(void)
     RUN(enabling_the_tap_writes_the_first_frame_and_polls_the_status);
     RUN(a_held_button_writes_the_set_up_once);
     RUN(disabling_the_tap_writes_it_and_stops_the_reads);
+    RUN(switching_the_tap_off_goes_through_whatever_range_is_asked);
     RUN(frames_go_in_the_order_that_leaves_a_valid_set_up);
     RUN(a_refused_frame_is_said_once_and_not_written_again);
     RUN(a_refused_second_frame_is_its_own_event);
     RUN(a_pin_held_by_something_else_goes_through_once_it_is_free);
+    RUN(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free);
     RUN(an_unanswered_write_is_written_again);
     RUN(a_lost_link_reads_the_page_again);
     RUN(beeps_are_read_one_by_one_by_number);
-    RUN(a_tap_that_starts_with_beeps_in_the_ring_reads_the_newest);
+    RUN(a_tap_that_is_running_at_link_up_reads_the_newest);
     RUN(the_numbering_runs_across_the_wrap_and_skips_zero);
     RUN(a_beep_number_65535_is_taken_like_any_other);
     RUN(a_lost_reply_loses_no_beep);
@@ -1125,6 +1270,8 @@ int main(void)
     RUN(every_beep_is_read_or_counted_whatever_the_pace);
     RUN(a_restarted_numbering_is_not_a_miss);
     RUN(a_restart_the_panel_never_saw_is_not_a_miss);
+    RUN(a_change_of_the_range_neither_repeats_nor_skips_a_beep);
+    RUN(a_capture_that_begins_again_empty_is_neither_a_miss_nor_a_repeat);
     RUN(the_history_keeps_the_newest_eight);
     RUN(a_beep_costs_a_select_and_a_read);
     RUN(the_readout_follows_the_flags);

@@ -34,8 +34,11 @@ history is in git.
   endlessly into a ring of 4096 words (16 kB, 42.7 ms at 96,000 edges/s), and
   core 1 reads it on its 1 ms tick and feeds the detector
   (`shared/sense/edge_ring.c`, `tone_svc.c`), extending the 31-bit count to 64
-  bits against the microsecond timer, counting a lap of the ring or a FIFO
-  overflow as an overrun that ends the beep under way. The pin is an input
+  bits against the microsecond timer, counting a lap of the ring, also one
+  before the first read (the ring is cleared at the start), or a FIFO
+  overflow as an overrun that ends the beep under way, before the pass's
+  words go in. Core 0 waits up to 5 ms for core 1 to finish its pass before
+  it stops or moves the capture. The pin is an input
   with its pull-down on while the tap is disabled. The host suite assembles
   the PIO program from its source, runs it in a cycle-counting model and
   holds it to `tone_holdoff_edge()`: every decrement of the counter 4 cycles
@@ -55,8 +58,13 @@ history is in git.
   by one by number, from 1 to 65535 and round to 1; a lost reply loses no
   beep, and beeps the ring moved past are counted as missed. A coprocessor
   older than 4.8 is sent nothing, and with the tap enabled the band says
-  "coprocessor has no tone page". The band also says a refused set-up, a pin
-  the coprocessor does not hold free, and a capture overrun, each once.
+  "coprocessor has no tone page". Switching the tap off writes the first
+  frame with the values the page holds, so a refused range cannot keep it
+  on; a saved tap refused at boot for a busy pin is written again every
+  5 s; a change of ENABLE or of the pin places the panel at the newest beep
+  number, a change of the range leaves its place. The band also says a
+  refused set-up, a pin the coprocessor does not hold free, and a capture
+  overrun, each once.
   The ESC STICK run's page shows the tap read only under the current line:
   its state, the last window's pitch, the beeps lost, the lows ignored and
   the beeps not read, and the last four beeps with number, length in ms and

@@ -130,6 +130,13 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
         report(s, st);
         return 0u;
     }
+    if (fifo_overrun) {
+        /* The state machine dropped a word: the edges have a hole.  The
+         * beep under way ends before the pass's words go in, so none
+         * completes across it. */
+        tone_flush(&s->det);
+        s->overrun = true;
+    }
     if (ring != NULL) {
         tone_edge_t *buf = s->batch;
         size_t n;
@@ -148,11 +155,6 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
                 }
             }
         } while (n == TONE_SVC_BATCH);
-    }
-    if (fifo_overrun) {
-        /* The state machine dropped a word: the edges have a hole. */
-        tone_flush(&s->det);
-        s->overrun = true;
     }
     const uint64_t margin = tone_svc_ticks(TONE_SVC_MARGIN_US);
     tone_advance(&s->det,

@@ -19,11 +19,14 @@
  *
  * The ring.  The DMA channel writes the words into a ring of a power of two
  * in size, endlessly; the caller reads the channel's write position as a
- * word index.  edge_ring_take() takes the words written since the last
- * call.  An overrun, the DMA having lapped the reader, shows as the slot of
- * the last word taken holding another word: counts do not repeat within
- * 57.3 s, so a lap always shows.  The reader then discards what is in the
- * ring and starts again after the newest word.
+ * word index.  The capture clears the ring before it starts.
+ * edge_ring_take() takes the words written since the last call.  An
+ * overrun, the DMA having lapped the reader, shows as the slot of the last
+ * word taken holding another word: counts do not repeat within 57.3 s, so
+ * a lap always shows.  Before the first word is taken that slot is the
+ * ring's last one and the word expected is 0, the cleared state; a real
+ * word of 0, a fall at tick 0, cannot occur.  The reader then discards
+ * what is in the ring and starts again after the newest word.
  *
  * Pure C, no SDK (software development kit).  Host-tested in
  * test_edge_ring.
@@ -62,11 +65,12 @@ uint64_t edge_tick(uint32_t count, uint64_t est);
 typedef struct {
     uint32_t rd;         /**< the next slot to read                       */
     uint32_t last;       /**< the word taken last, in slot rd - 1         */
-    bool     have_last;  /**< a word has been taken since the start       */
     uint32_t overruns;   /**< laps seen                                   */
 } edge_ring_t;
 
-/** Start reading a ring from slot 0, as after the DMA channel restarts. */
+/** Start reading a ring from slot 0, as after the DMA channel restarts.
+ *  The ring holds only zero words at that moment, so a lap before the
+ *  first read shows as a word in its last slot. */
 void edge_ring_init(edge_ring_t *r);
 
 /**

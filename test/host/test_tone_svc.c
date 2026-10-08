@@ -243,6 +243,34 @@ TEST_CASE(a_dropped_word_ends_the_beep_under_way)
     CHECK(st.overrun);
 }
 
+TEST_CASE(a_dropped_word_with_new_words_in_the_ring_splits_the_beep)
+{
+    fresh();
+    const uint64_t t0 = TICK / 100u;
+    const uint64_t period = TICK / 2000u;
+    const uint64_t end = beep(t0, 20u, 2000u, period / 5u, 0u);
+    /* The pass sees 10 bursts, then the state machine drops a word and
+     * the other 10 bursts are in the ring when the next pass runs. */
+    run_passes(0, t0 + 10u * period);
+    CHECK(st.beep);
+    CHECK_EQ(nrec, 0u);
+    capture(end + 100u);
+    tone_rec_t r[TONE_SVC_BEEPS];
+    size_t n = tone_svc_step(&svc, &cmd, ring, wr % TONE_RING_WORDS,
+                             end + 100u, true, r, &st);
+    for (size_t i = 0; i < n; ++i) {
+        recs[nrec++] = r[i];
+    }
+    CHECK(st.overrun);
+    run_passes(end + 200u, end + 10u * TICK / 1000u);
+    /* The first ten bursts are one beep; none spans the hole. */
+    CHECK(nrec >= 1u);
+    CHECK(recs[0].bursts < 20u);
+    for (size_t i = 0; i < nrec; ++i) {
+        CHECK(recs[i].bursts < 20u);
+    }
+}
+
 TEST_CASE(a_stopped_order_runs_nothing_and_reports_not_running)
 {
     fresh();
@@ -389,6 +417,7 @@ int main(void)
     RUN(a_144_khz_carrier_reaches_the_detector_as_one_pulse_a_burst);
     RUN(a_lap_of_the_ring_cuts_the_beep_and_shows_in_the_status);
     RUN(a_dropped_word_ends_the_beep_under_way);
+    RUN(a_dropped_word_with_new_words_in_the_ring_splits_the_beep);
     RUN(a_stopped_order_runs_nothing_and_reports_not_running);
     RUN(a_new_set_up_restarts_the_detector_and_keeps_the_ring_reader);
     RUN(a_new_capture_starts_the_ring_reader_again);

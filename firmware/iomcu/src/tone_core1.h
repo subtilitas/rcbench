@@ -16,6 +16,12 @@
  * generations it was made under, so the page drops a beep from an earlier
  * one.
  *
+ * Tearing the capture down.  Core 1 reads the ring and the DMA channel's
+ * write address in its pass.  After core 0 posts an order with run clear,
+ * tone_core1_quiesce() waits until core 1 has finished a pass under it, so
+ * no pass that saw the capture running is still reading when core 0
+ * aborts the channel, releases the state machine or clears the ring.
+ *
  * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_TONE_CORE1_H
@@ -36,6 +42,17 @@ void tone_core1_init(void);
 /** A new order for core 1, taken at its next tick.  @p t0_us is the
  *  microsecond timer when the capture's counter began. */
 void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us);
+
+/** Core 0: wait until core 1 has finished a pass under the latest order.
+ *  Bounded by TONE_CORE1_WAIT_US; returns at once when core 1 has not
+ *  run a pass yet (at boot) and, after the bound, when it does not answer
+ *  (parked for a flash write). */
+void tone_core1_quiesce(void);
+
+/** The longest core 0 waits in tone_core1_quiesce(), 5 ms: core 1's tick
+ *  is 1 ms and the sensor pass before the tone pass takes up to 1.1 ms; the
+ *  tone pass is not measured. */
+#define TONE_CORE1_WAIT_US 5000u
 
 /** Core 1's pass, once a tick. */
 void tone_core1_step(void);
