@@ -19,8 +19,10 @@
  * hold-off, an eGaN ESC's 144 kHz carrier with it and without it, and the
  * 8 to 48 kHz carriers through it; the fitted front end, 4.7 kOhm into a
  * zener of about 65 pF (0.31 us), at 8.4 V and 20 V, every carrier at 10,
- * 50 and 90 % duty, with the hold-off and without it; and the same
- * resistor into a 450 pF zener (2.1 us).
+ * 50 and 90 % duty, with the hold-off and without it, driven and floating
+ * at half the supply; a floating 2S phase of 3.0 V, whose shortest
+ * 144 kHz pulses come and go, pinned as a limit; and the same resistor
+ * into a 450 pF zener (2.1 us).
  *
  * Accuracy held here, with up to 1 us of jitter on every edge:
  *   carrier locked to the tone, or none, or 144 kHz through the 8 us
@@ -1877,6 +1879,119 @@ TEST_CASE(a_4k7_node_reads_every_carrier_without_the_hold_off)
     }
 }
 
+/* A floating phase at half the supply: 2S nominal and full, and the
+ * bench's highest supply. */
+static const double float_volts[] = { 3.7, 4.2, 10.0 };
+
+TEST_CASE(a_floating_phase_at_2s_and_20_v_reads_every_carrier)
+{
+    /* The tapped phase floating against the resistor star carries the
+     * bursts at half the supply.  At 3.7 V a 144 kHz pulse at 10 %,
+     * 0.29 us at its shortest under 0.2 us of jitter on each edge, still
+     * lifts the node to 2.0 V.  The model leaves out the zener's knee,
+     * which lowers a floating node on the bench. */
+    rng_seed(23u);
+    for (size_t n = 0; n < sizeof float_volts / sizeof float_volts[0];
+         ++n) {
+        const front_t f = { float_volts[n], TAU_4K7 };
+        hold_ns = 8000u;
+        CHECK(node_sweep(&f, NULL) > 200u);
+        hold_ns = 0u;
+        CHECK(node_sweep(&f, skip_144k_90) > 200u);
+    }
+}
+
+/* One 100 ms beep of @p hz, 144 kHz at 10 %, locked, through @p f and the
+ * hold-off in hold_ns, played from seed @p seed. */
+static void float_beep(double hz, const front_t *f, double jit,
+                       uint32_t seed)
+{
+    drive_t d = { 0 };
+    edges_t e = { 0 };
+    rng_seed(seed);
+    const tone_spec_t sp = { hz, 0.5, 144000.0, 0.1, false, jit };
+    beep_add(&d, &sp, 0.010, 0.100);
+    front_run(&d, f, &e);
+    if (hold_ns != 0u) {
+        edges_t h = { 0 };
+        holdoff_apply(&e, &h, hold_ns);
+        edges_free(&e);
+        e = h;
+    }
+    tone_cfg_t c;
+    tone_cfg_defaults(&c, TICK_HZ);
+    c.hold_ns = hold_ns;
+    start(&c);
+    play(&e, 0.130);
+    drive_free(&d);
+    edges_free(&e);
+}
+
+/* The extreme window frequencies inside the beep, as fractions of @p hz. */
+static void window_span(double hz, double *lo, double *hi)
+{
+    for (size_t i = 0; i < n_wins; ++i) {
+        const double a = (double)wins[i].index * 8e-3;
+        if (!wins[i].present || a < 0.0105 || a + 8e-3 > 0.1095) {
+            continue;
+        }
+        const double r = (double)wins[i].freq_hz / hz;
+        *lo = r < *lo ? r : *lo;
+        *hi = r > *hi ? r : *hi;
+    }
+}
+
+TEST_CASE(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent)
+{
+    /* A current limitation, pinned.  A floating phase of 3.0 V (2S at
+     * 6.0 V) charges the 0.31 us node to 2.0 V in 0.34 us, so a 0.69 us
+     * pulse of 144 kHz at 10 %, shortened to as little as 0.29 us by
+     * 0.2 us of jitter on each edge, is seen at some periods and not at
+     * others.  That holds below about 3.2 V, 2.0 V / (1 - exp(-0.29 us /
+     * 0.31 us)).  The front end then drops pulses inside a burst. */
+    const front_t f = { 3.0, TAU_4K7 };
+    /* Without the hold-off a 500 Hz beep splits into several and its
+     * windows read up to about 3 times the tone. */
+    hold_ns = 0u;
+    for (uint32_t s = 1u; s <= 10u; ++s) {
+        float_beep(500.0, &f, 0.2e-6, s);
+        double lo = 1e9;
+        double hi = 0.0;
+        window_span(500.0, &lo, &hi);
+        CHECK(n_beeps >= 2u);
+        CHECK(hi > 1.5);
+    }
+    /* With the hold-off a 5 kHz beep stays one beep, its frequency within
+     * the bound, but loses bursts, and windows read up to about 28 %
+     * low. */
+    hold_ns = 8000u;
+    unsigned bursts = 0;
+    double lo = 1e9;
+    double hi = 0.0;
+    for (uint32_t s = 1u; s <= 10u; ++s) {
+        float_beep(5000.0, &f, 0.2e-6, s);
+        CHECK_EQ(n_beeps, 1);
+        if (n_beeps == 1u) {
+            CHECK(beeps[0].bursts <= 500u);
+            CHECK(rel_err(beeps[0].freq_hz, 5000.0) < LOCKED_BEEP);
+            bursts += beeps[0].bursts;
+        }
+        window_span(5000.0, &lo, &hi);
+    }
+    CHECK(bursts < 10u * 500u);
+    CHECK(lo < 0.9);
+    /* Without jitter every pulse is 0.69 us and is seen: the same drive
+     * reads as the bounds require, with the hold-off and without it. */
+    static const double hz[] = { 500.0, 5000.0 };
+    for (size_t i = 0; i < 2u; ++i) {
+        const tone_spec_t sp = { hz[i], 0.5, 144000.0, 0.1, false, 0.0 };
+        hold_ns = 8000u;
+        one_beep(&sp, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+        hold_ns = 0u;
+        one_beep(&sp, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+    }
+}
+
 /* Where the 2.1 us node fails, left out of the sanity case below:
  *   at 8.4 V, 144 kHz at 10 %: a 0.69 us pulse lifts the node to 2.3 V,
  *     and one shortened by jitter stays under 2.0 V, so pulses come and
@@ -2057,6 +2172,8 @@ int main(void)
     RUN(carriers_of_8_to_48_khz_read_the_same_through_the_hold_off);
     RUN(a_4k7_node_reads_every_carrier_through_the_hold_off);
     RUN(a_4k7_node_reads_every_carrier_without_the_hold_off);
+    RUN(a_floating_phase_at_2s_and_20_v_reads_every_carrier);
+    RUN(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent);
     RUN(a_slow_450_pf_zener_still_reads_the_tone_through_the_hold_off);
     RUN(an_edge_earlier_than_the_last_time_is_ignored);
     RUN(a_full_queue_counts_the_beeps_it_loses);
