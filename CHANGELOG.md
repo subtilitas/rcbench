@@ -8,8 +8,10 @@ history is in git.
 
 ## 0.14.0 - 2026-10-08
 
-Both boards must be updated together: the link protocol is 4.7, and a 0.13
-board does not link with a 0.14 one. The coprocessor reads an INA228 in the
+The link protocol is 4.7. A 0.13 board still links and arms with a 0.14
+one, since only the protocol's major number has to match; the current
+monitors need both boards at 0.14, because the panel reads them only from a
+4.7 coprocessor. The coprocessor reads an INA228 in the
 ESC's power path and an INA3221 on the servo rail over I2C at 400 kHz, and
 the panel sets them up under SETUP → INTERFACES and shows them on MOTOR &
 ESC, in alerts and in the run log. The servo test no longer fails small
