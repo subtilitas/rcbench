@@ -643,6 +643,65 @@ TEST_CASE(reset_peaks_posts_its_own_command)
 }
 
 /*
+ * A source that stops answering mid-run empties the live readings and
+ * keeps the run's peaks it measured: the peaks stay drawn.  They go with
+ * the next arm and with RESET PEAKS, until a valid reading comes again.
+ */
+TEST_CASE(a_peak_outlasts_the_reading_that_went)
+{
+    fresh();
+    motor_screen_set_armed(true);
+    for (int i = 0; i < 4; ++i) {
+        CHECK(!motor_screen_peak_shown(i));
+    }
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.valid = true;
+    b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                         | LINK_BN_SENSED);
+    b.voltage = 24.0f;
+    b.current = 30.0f;
+    b.power = 720.0f;
+    b.voltage_min = 23.1f;
+    b.current_max = 41.0f;
+    b.power_max = 960.0f;
+    motor_screen_push(&b);
+    CHECK(motor_screen_peak_shown(0));
+    CHECK(motor_screen_peak_shown(1));
+    CHECK(motor_screen_peak_shown(2));
+    CHECK(!motor_screen_peak_shown(3));      /* no rpm answered */
+
+    /* The INA228 stops answering: the live flags go, the peaks stay. */
+    b.flags = (uint16_t)LINK_BN_SENSED;
+    b.voltage = 0.0f;
+    b.current = 0.0f;
+    b.power = 0.0f;
+    motor_screen_push(&b);
+    CHECK(motor_screen_peak_shown(0));
+    CHECK(motor_screen_peak_shown(1));
+    CHECK(motor_screen_peak_shown(2));
+    scr->render(&cv, 0);                       /* the PLOT pane */
+    tap(6 + 93, 2 + 9);                        /* TABLE */
+    scr->render(&cv, 1);
+
+    tap(RESET_X, RESET_Y);
+    CHECK(!motor_screen_peak_shown(1));
+    motor_screen_push(&b);
+    CHECK(!motor_screen_peak_shown(1));
+    b.flags |= (uint16_t)LINK_BN_CURRENT_OK;
+    motor_screen_push(&b);
+    CHECK(motor_screen_peak_shown(1));
+
+    /* A new run starts without them. */
+    motor_screen_set_armed(false);
+    CHECK(motor_screen_peak_shown(1));         /* the last run's, held */
+    motor_screen_set_armed(true);
+    CHECK(!motor_screen_peak_shown(1));
+    CHECK(!motor_screen_peak_shown(-1));
+    CHECK(!motor_screen_peak_shown(4));
+}
+
+/*
  * Leaving disarms.  Navigating away from an armed bench must not leave a
  * propeller spinning behind a screen that does not show it, and the command
  * carries the disarm rather than the application inferring it from the
@@ -1140,6 +1199,7 @@ int main(void)
     RUN(the_rated_kv_prefers_the_esc_over_the_entered_value);
     RUN(the_throttle_track_moves_by_how_far_it_is_dragged);
     RUN(reset_peaks_posts_its_own_command);
+    RUN(a_peak_outlasts_the_reading_that_went);
     RUN(leaving_the_screen_disarms);
     RUN(the_tabs_switch_panes_and_both_render);
     RUN(each_framebuffer_is_updated_independently);

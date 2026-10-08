@@ -189,7 +189,8 @@ current from the SENSE page, and `diff` is the ESC's figure less the
 INA228's. An ESC that reports a current it does not measure shows a
 difference the size of the reading. An INA228 that stops answering during a
 run leaves voltage, current and power empty to the end of that run; they do
-not fall back to the ESC's figures. Without the INA228, the channels are the
+not fall back to the ESC's figures. The peaks it measured in that run stay
+shown, here and on the rail. Without the INA228, the channels are the
 ESC's telemetry and `ESC SAYS` is not shown.
 
 The mAh and Wh under ARM are the INA228's own while BENCH flag bit 6 is

@@ -140,6 +140,21 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     if (s->up && !s->page && grew) {
         local |= SENSE_LINK_EV_NO_PAGE;
     }
+    /*
+     * What was said about the request this one replaces and not yet shown
+     * no longer describes anything asked: unset pins, one address and the
+     * refusals go, and come back only if they still hold.  A missing page
+     * waiting stays while a part is still enabled.
+     */
+    uint16_t stale = (uint16_t)(SENSE_LINK_EV_PINS_UNSET
+                                | SENSE_LINK_EV_SAME_ADDR
+                                | SENSE_LINK_EV_BUS_REFUSED
+                                | SENSE_LINK_EV_I228_REFUSED
+                                | SENSE_LINK_EV_I3221_REFUSED);
+    if (!w->i228 && !w->i3221) {
+        stale |= (uint16_t)SENSE_LINK_EV_NO_PAGE;
+    }
+    s->events &= (uint16_t)~stale;
     /* The first set-up is the one the panel starts with, not an edit: it
      * is due at once. */
     s->want_ms = s->want_set ? now_ms

@@ -203,8 +203,9 @@ und `Abw.` ist der Wert des ESC minus den des INA228. Ein ESC, der einen
 Strom meldet, den er nicht misst, zeigt eine Abweichung so groß wie der
 Messwert. Hört der INA228 während eines Laufs auf zu antworten, bleiben
 Spannung, Strom und Leistung bis zum Ende dieses Laufs leer; sie fallen
-nicht auf die Werte des ESC zurück. Ohne INA228 sind die Kanäle die
-Telemetrie des ESC, und `ESC MELDET` wird nicht gezeigt.
+nicht auf die Werte des ESC zurück. Die Spitzen, die er in diesem Lauf
+gemessen hat, bleiben sichtbar, hier und in der Leiste. Ohne INA228 sind die
+Kanäle die Telemetrie des ESC, und `ESC MELDET` wird nicht gezeigt.
 
 Die mAh und Wh unter ARM sind die eigenen des INA228, solange BENCH-Flag
 Bit 6 gesetzt ist: seine Ladung und Energie seit dem Scharfschalten, im

@@ -116,6 +116,13 @@ static const ui_plot_series_t k_series[S_COUNT] = {
     { "RPM",  "RPM", 0, 0, 1000.0f, 0 },
 };
 
+/* Power has no flag of its own: it is voltage times current, and it is worth
+ * no more than the weaker of the two. */
+static const uint16_t k_ok[S_COUNT] = {
+    LINK_BN_VOLTAGE_OK, LINK_BN_CURRENT_OK,
+    LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK, LINK_BN_RPM_OK,
+};
+
 /* Voltage's interesting extreme is the minimum -- what the pack does under
  * load is how far down it goes -- and every other channel's is the maximum. */
 static const ui_text_id_t k_extreme[S_COUNT] = { TX_HERO_MIN, TX_HERO_PEAK,
@@ -169,6 +176,11 @@ static struct {
     uint32_t      arm_rev;
     uint32_t      drawn_arm[2];
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
+    /* Whether each channel's peak is a measurement: a valid live reading
+     * has arrived since the run started.  Kept apart from the live flags,
+     * which a source that stops answering mid-run clears while the run's
+     * peaks it measured stand. */
+    bool          pk_ok[S_COUNT];
     ui_hold_t     arm;           /**< the ARM gesture: ui_widgets owns it  */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
@@ -292,6 +304,11 @@ void motor_screen_push(const bench_state_t *b)
         return;
     }
     s.bench = *b;
+    for (int i = 0; i < S_COUNT; ++i) {
+        if (b->valid && (b->flags & k_ok[i]) == k_ok[i]) {
+            s.pk_ok[i] = true;
+        }
+    }
     const float v[S_COUNT] = { b->voltage, b->current, b->power, b->rpm };
     ui_plot_push(&s.plot, v);
     ui_plot_update_scales(&s.plot, PLOT_W);
@@ -309,6 +326,11 @@ motor_plot_state_t motor_screen_plot_state(void)
 }
 
 int motor_screen_plot_samples(void) { return s.plot.filled; }
+
+bool motor_screen_peak_shown(int channel)
+{
+    return channel >= 0 && channel < S_COUNT && s.pk_ok[channel];
+}
 
 void motor_screen_cancel_arm(void)
 {
@@ -347,8 +369,9 @@ void motor_screen_set_armed(bool armed)
         if (armed) {
             /* A run's trace is that run's.  Cleared at the arm rather than
              * at the disarm, so the last run stays readable until the next
-             * one starts. */
+             * one starts.  Its peaks start again too. */
             ui_plot_clear(&s.plot);
+            memset(s.pk_ok, 0, sizeof(s.pk_ok));
         }
         ui_plot_set_running(&s.plot, armed);
     }
@@ -493,6 +516,9 @@ static void event(const touch_event_t *evt)
         }
         if (was == 2 && gfx_rect_contains(s.reset_rect, x, y)) {
             post(MOTOR_CMD_RESET_PEAKS, 0.0f);
+            /* The peaks start again from the live reading: a measurement
+             * only once one is. */
+            memset(s.pk_ok, 0, sizeof(s.pk_ok));
         }
     }
 }
@@ -681,13 +707,6 @@ static void draw_derived(gfx_canvas_t *c)
                 ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
 }
 
-/* Power has no flag of its own: it is voltage times current, and it is worth
- * no more than the weaker of the two. */
-static const uint16_t k_ok[S_COUNT] = {
-    LINK_BN_VOLTAGE_OK, LINK_BN_CURRENT_OK,
-    LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK, LINK_BN_RPM_OK,
-};
-
 /* The table's rows, 30 px apart from under its heading rule. */
 #define TABLE_ROW_Y(i) (LEG_Y + 34 + (i) * 30)
 /* The ESC's own figures under the four channels, two rows 26 px apart. */
@@ -777,7 +796,8 @@ static void draw_table(gfx_canvas_t *c)
                         && (s.bench.flags & k_ok[i]) == k_ok[i];
         char v[24], p[24];
         ui_fmt(v, sizeof(v), ok ? now[i] : NAN, k_series[i].decimals);
-        ui_fmt(p, sizeof(p), ok ? pk[i] : NAN, k_series[i].decimals);
+        ui_fmt(p, sizeof(p), s.pk_ok[i] ? pk[i] : NAN,
+               k_series[i].decimals);
         gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
                  s.plot.series[i].color, 1);
         gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
@@ -858,7 +878,8 @@ static void draw_heroes(gfx_canvas_t *c)
                                     ui_tr(k_extreme[i]) };
         const bool ok = s.bench.valid
                         && (s.bench.flags & k_ok[i]) == k_ok[i];
-        draw_rail_card(c, r, &def, ok ? now[i] : NAN, ok ? pk[i] : NAN);
+        draw_rail_card(c, r, &def, ok ? now[i] : NAN,
+                       s.pk_ok[i] ? pk[i] : NAN);
     }
 }
 

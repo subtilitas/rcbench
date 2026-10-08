@@ -65,6 +65,15 @@ motor_plot_state_t motor_screen_plot_state(void);
  *  than that, so a longer run is drawn truncated to its newest columns. */
 int motor_screen_plot_samples(void);
 
+/**
+ * Whether channel @p channel's peak is drawn as a value -- 0 voltage, 1
+ * current, 2 power, 3 rpm: a valid reading of it has arrived since the run
+ * started or the peaks were reset.  It stays drawn when the live reading
+ * goes empty, as when a source stops answering mid-run and the run's peaks
+ * it measured stand.
+ */
+bool motor_screen_peak_shown(int channel);
+
 /** Abandon a hold that is under way, because the bench has been stopped.
  *  A stop on a bench that was not armed changes nothing about whether it is
  *  armed, and the gesture must end all the same. */

@@ -455,6 +455,71 @@ TEST_CASE(unset_pins_and_one_address_are_not_written_enabled)
     CHECK_EQ(sense_link_events(&sl), 0u);
     want(&w);
     CHECK_EQ(sense_link_events(&sl), 0u);
+
+    /*
+     * An edit that puts it right before the band has shown it: the
+     * waiting alert goes, and only what still holds of the new request is
+     * said.
+     */
+    w.i228_addr = 0x40u;
+    w.i3221_addr = 0x41u;
+    want(&w);
+    w.i3221_addr = 0x40u;
+    want(&w);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_SAME_ADDR);
+    w.i3221_addr = 0x41u;
+    want(&w);
+    CHECK_EQ(sl.events, 0u);
+    /* Unset pins, then set, the same way. */
+    w.scl = -1;
+    want(&w);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_PINS_UNSET);
+    w.scl = 17;
+    want(&w);
+    CHECK_EQ(sl.events, 0u);
+    /* And one the edit does not cure stays, said again. */
+    w.scl = -1;
+    want(&w);
+    w.i228_uohm = 210u;
+    want(&w);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_PINS_UNSET);
+}
+
+/*
+ * A refusal waiting when the refused value is corrected: the corrected
+ * frame goes through, and the refusal is not said after it.
+ */
+TEST_CASE(a_waiting_refusal_goes_with_the_value_it_refused)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i228_uohm = 20000u;
+    w.i228_max_da = 6553u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I228_REFUSED);
+    w.i228_max_da = 80u;
+    want(&w);
+    CHECK_EQ(sl.events, 0u);
+    polls(14);
+    CHECK_EQ(sl.events, 0u);
+    CHECK_EQ(pg.sense[LINK_SN_I228_SHUNT_UOHM], 20000u);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
+
+    /* A missing page waiting stays while a part is enabled, and goes when
+     * none is. */
+    fresh(6u);
+    w = setup_default();
+    w.i228 = true;
+    want(&w);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_NO_PAGE);
+    w.i228_uohm = 250u;
+    want(&w);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_NO_PAGE);
+    w.i228 = false;
+    want(&w);
+    CHECK_EQ(sl.events, 0u);
 }
 
 TEST_CASE(writes_wait_for_an_idle_bank)
@@ -680,9 +745,10 @@ TEST_CASE(simultaneous_events_are_handed_out_one_at_a_time)
     far_flags(LINK_SN_BUS_OPEN);
     polls(1);
     CHECK_EQ(sl.events, SENSE_LINK_EV_I228_SILENT);
-    sl.events |= SENSE_LINK_EV_I3221_REFUSED;
     w.i228_addr = 0x44u;
     want(&w);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I228_SILENT);
+    sl.events |= SENSE_LINK_EV_I3221_REFUSED;   /* of the request now */
     polls(12);
     CHECK_EQ(pg.sense[LINK_SN_I228_ADDR], 0x44u);
     CHECK_EQ(sl.events, SENSE_LINK_EV_I3221_REFUSED);
@@ -783,6 +849,7 @@ int main(void)
     RUN(a_refused_frame_is_not_written_again_and_its_part_stays_off);
     RUN(pins_the_page_refuses_are_said_and_leave_the_parts_off);
     RUN(unset_pins_and_one_address_are_not_written_enabled);
+    RUN(a_waiting_refusal_goes_with_the_value_it_refused);
     RUN(writes_wait_for_an_idle_bank);
     RUN(an_unanswered_write_is_written_again);
     RUN(a_lost_link_reads_the_page_again);
