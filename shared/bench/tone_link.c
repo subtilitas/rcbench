@@ -413,14 +413,11 @@ static void follow_head(tone_link_t *t)
          * ring holds is a new one.  The panel asks the ring's span back
          * from the head; those not in it were before the restart and are
          * not counted as missed. */
-        const unsigned at = pos_of(head);
-        if (at < LINK_TN_RING) {
-            t->last  = 0u;
-            t->quiet = (uint8_t)at;
-        } else {
-            t->last  = num_of(at - LINK_TN_RING);
-            t->quiet = (uint8_t)LINK_TN_RING;
-        }
+        /* The span crosses the wrap from 65535 to 1 like any other: a
+         * number below the ring's size says nothing about how many beeps
+         * came since the restart. */
+        t->last  = num_of((pos_of(head) + CYCLE - LINK_TN_RING) % CYCLE);
+        t->quiet = (uint8_t)LINK_TN_RING;
         t->synced = true;
         t->ring_empty = false;
         return;

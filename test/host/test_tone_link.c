@@ -1063,12 +1063,44 @@ TEST_CASE(a_panel_that_never_read_the_tap_reads_every_beep_after_its_start)
     }
     CHECK_EQ(fk.captures, 1u);
     fake_beeps(3);
-    polls(10);
+    /* The ring's span back from the head: 64 numbers, two exchanges
+     * each, 8 a poll. */
+    polls(20);
     CHECK_EQ(tone_link_read_count(&tl), 3u);
     CHECK_EQ(tone_link_missed(&tl), 0u);
     tone_beep_t b[1];
     CHECK_EQ(tone_link_beeps(&tl, b, 1), 1u);
     check_beep(&b[0], 33u);
+}
+
+TEST_CASE(a_panel_that_never_read_the_tap_reads_across_the_wrap)
+{
+    fresh(8u);
+    /* The page's numbering stands at 65534 with the tap off; after the
+     * start come 65535 and 1. */
+    fk.head = 65534u;
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    now += TONE_LINK_SETTLE_MS;
+    tone_link_op_t op;
+    uint16_t regs[LINK_MAX_REGS];
+    for (int k = 0; k < 4; ++k) {
+        CHECK(tone_link_next(&tl, now, &op));
+        const int r = far_exchange(&op, regs);
+        tone_link_done(&tl, r, op.write ? NULL : regs, now);
+        if (op.write) {
+            break;
+        }
+    }
+    fake_beeps(2);
+    polls(30);
+    CHECK_EQ(tone_link_read_count(&tl), 2u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
+    tone_beep_t b[2];
+    CHECK_EQ(tone_link_beeps(&tl, b, 2), 2u);
+    check_beep(&b[0], 1u);
+    check_beep(&b[1], 65535u);
 }
 
 TEST_CASE(the_history_keeps_the_newest_eight)
@@ -1363,6 +1395,7 @@ int main(void)
     RUN(a_capture_that_begins_again_empty_is_neither_a_miss_nor_a_repeat);
     RUN(beeps_after_a_restart_are_read_before_and_after_the_next_status);
     RUN(a_panel_that_never_read_the_tap_reads_every_beep_after_its_start);
+    RUN(a_panel_that_never_read_the_tap_reads_across_the_wrap);
     RUN(the_history_keeps_the_newest_eight);
     RUN(a_beep_costs_a_select_and_a_read);
     RUN(the_readout_follows_the_flags);
