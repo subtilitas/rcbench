@@ -81,6 +81,7 @@ static bool restart(tone_svc_t *s, const tone_cmd_t *cmd)
         /* The counter and the ring begin again. */
         edge_ring_init(&s->ring);
         s->overrun = false;
+        s->discard = 0u;
     }
     s->active = true;
     return true;
@@ -131,13 +132,18 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
         return 0u;
     }
     /* A dropped word leaves the FIFO's older words in the ring beside the
-     * newer ones that follow the hole, so every word taken in this pass is
-     * suspect, not only the ones after the gap.  They are read to move the
-     * reader on and fed to nobody; the beep under way ends and the next
-     * rise starts a new run. */
-    bool discard = fifo_overrun;
-    if (discard) {
+     * newer ones that follow the hole, and the DMA may move some of them
+     * only after this pass's boundary, so the words of this pass and of
+     * the next are suspect, not only the ones after the gap.  They are read
+     * to move the reader on and fed to nobody; the beep under way ends and
+     * the first rise after them starts a new run. */
+    if (fifo_overrun) {
         s->overrun = true;
+        s->discard = 2u;
+    }
+    const bool discard = s->discard != 0u;
+    if (discard) {
+        --s->discard;
     }
     if (ring != NULL) {
         tone_edge_t *buf = s->batch;

@@ -299,6 +299,35 @@ TEST_CASE(a_batch_with_a_hole_is_discarded_whole_and_the_next_beep_is_clean)
     CHECK(st.overrun);                /* sticky for the capture */
 }
 
+TEST_CASE(the_pass_after_a_hole_is_discarded_too)
+{
+    fresh();
+    const uint64_t t0 = TICK / 100u;
+    const uint64_t period = TICK / 2000u;
+    /* The pass that sees the dropped word holds the first half of a beep;
+     * the FIFO's older words and the ones after the hole reach the ring
+     * only for the next pass.  Neither half may make a beep. */
+    const uint64_t mid = beep(t0, 10u, 2000u, period / 5u, 0u);
+    capture(mid + 10u);
+    tone_rec_t r[TONE_SVC_BEEPS];
+    size_t n = tone_svc_step(&svc, &cmd, ring, wr % TONE_RING_WORDS,
+                             mid + 10u, true, r, &st);
+    CHECK_EQ(n, 0u);
+    const uint64_t end = beep(mid + period - period / 5u, 10u, 2000u,
+                              period / 5u, 0u);
+    pass(end + 100u);
+    run_passes(end + 200u, end + 10u * TICK / 1000u);
+    CHECK_EQ(nrec, 0u);
+    CHECK(st.overrun);
+    /* The pass after that is fed: a clean beep is read whole. */
+    const uint64_t t1 = end + 20u * TICK / 1000u;
+    const uint64_t end2 = beep(t1, 20u, 2000u, period / 5u, 0u);
+    run_passes(end + 10u * TICK / 1000u + TICK / 1000u,
+               end2 + 10u * TICK / 1000u);
+    CHECK_EQ(nrec, 1u);
+    CHECK_EQ(recs[0].bursts, 20u);
+}
+
 TEST_CASE(a_stopped_order_runs_nothing_and_reports_not_running)
 {
     fresh();
@@ -447,6 +476,7 @@ int main(void)
     RUN(a_dropped_word_ends_the_beep_under_way);
     RUN(a_dropped_word_with_new_words_in_the_ring_splits_the_beep);
     RUN(a_batch_with_a_hole_is_discarded_whole_and_the_next_beep_is_clean);
+    RUN(the_pass_after_a_hole_is_discarded_too);
     RUN(a_stopped_order_runs_nothing_and_reports_not_running);
     RUN(a_new_set_up_restarts_the_detector_and_keeps_the_ring_reader);
     RUN(a_new_capture_starts_the_ring_reader_again);

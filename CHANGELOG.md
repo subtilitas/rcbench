@@ -42,8 +42,8 @@ history is in git.
   bits against the microsecond timer, counting a lap of the ring, also one
   before the first read (the ring is cleared at the start), or a FIFO
   overflow as an overrun that ends the beep under way; the words read in the
-  pass that sees the overflow are discarded, since they hold edges from both
-  sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before
+  pass that sees the overflow and in the next are discarded, since they hold
+  edges from both sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before
   it stops or moves the capture. The pin is an input
   with its pull-down on while the tap is disabled. The host suite assembles
   the PIO program from its source, runs it in a cycle-counting model and

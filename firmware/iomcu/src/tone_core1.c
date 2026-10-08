@@ -117,8 +117,11 @@ static void pass(void)
     if (s_cmd.run) {
         const uint64_t t = time_us_64();
         now = tone_svc_ticks(t > s_cmd_t0_us ? t - s_cmd_t0_us : 0u);
-        wr = tone_cap_wr();
+        /* The flag before the write pointer: every word the DMA moves after
+         * this boundary was pushed after the flag was cleared, or sat in
+         * the FIFO then and is discarded with the next pass. */
         stalled = tone_cap_stalled();
+        wr = tone_cap_wr();
     }
     const size_t n = tone_svc_step(&s_svc, &s_cmd,
                                    s_cmd.run ? tone_cap_ring() : NULL, wr, now,

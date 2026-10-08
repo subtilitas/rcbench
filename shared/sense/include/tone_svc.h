@@ -97,6 +97,9 @@ typedef struct {
     uint16_t       gen, cap_gen;
     bool           active;
     bool           overrun;
+    /** Passes still to discard after a FIFO overflow: the one that sees it
+     *  and the next. */
+    uint8_t        discard;
     /** One pass's words as edges.  Here, not on the stack: core 1's stack
      *  is small. */
     tone_edge_t    batch[TONE_SVC_BATCH];
@@ -111,8 +114,12 @@ uint64_t tone_svc_ticks(uint64_t us);
  * One pass.  @p ring is the capture ring (TONE_RING_WORDS words), @p wr the
  * slot the DMA writes next, @p now the present in ticks since the capture
  * started, @p fifo_overrun true when the state machine dropped a word
- * (its FIFO was full): the words read in that pass are discarded, the beep
- * under way ends and the status shows the overrun.  The beeps finished go
+ * (its FIFO was full): the words read in that pass and in the next are
+ * discarded, the beep under way ends and the status shows the overrun.
+ * The caller reads the flag before @p wr, so the next pass's boundary
+ * lies after the flag was cleared; words the FIFO still held at the drop
+ * reach the ring before that boundary unless the DMA stalls for a whole
+ * pass, 1 ms, and a stall that long overflows the FIFO again.  The beeps finished go
  * to @p rec, at most TONE_SVC_BEEPS; the count is returned.  @p st is
  * always written.
  */
