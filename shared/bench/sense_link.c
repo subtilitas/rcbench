@@ -60,6 +60,7 @@ void sense_link_lost(sense_link_t *s)
      * page nobody reads now; what the settings say stands. */
     s->events &= (uint16_t)(SENSE_LINK_EV_PINS_UNSET
                             | SENSE_LINK_EV_SAME_ADDR);
+    s->clip_pending = 0u;
     forget_reads(s);
 }
 
@@ -331,6 +332,7 @@ static void new_setup(sense_link_t *s, uint32_t now_ms)
                              | SENSE_LINK_EV_STUCK
                              | SENSE_LINK_EV_I228_CLIPPED
                              | SENSE_LINK_EV_I3221_CLIPPED);
+    s->clip_pending = 0u;
 }
 
 static void written(sense_link_t *s, sense_link_op_kind_t w, int result,
@@ -396,11 +398,18 @@ static void judge_status(sense_link_t *s, uint32_t now_ms)
         if ((f & k_online[p]) != 0u) {
             s->silent_told[p] = false;
             s->online_seen[p] = true;
+            /* Answering as itself now: a "not answering" or "another
+             * identity" still waiting for the band is over. */
+            s->events &= (uint16_t)~(k_silent[p] | k_wrong_ev[p]);
             continue;
         }
         if ((f & k_wrong[p]) != 0u) {
             if ((was & k_wrong[p]) == 0u) {
                 s->events |= k_wrong_ev[p];
+                /* The ID it gave, as the band will say it: a later read
+                 * may show another. */
+                s->ev_id[p] = s->status[(p == 0u) ? ST(LINK_SN_I228_ID)
+                                                  : ST(LINK_SN_I3221_ID)];
             }
             continue;
         }
@@ -408,6 +417,8 @@ static void judge_status(sense_link_t *s, uint32_t now_ms)
             s->events |= k_silent[p];
             s->silent_told[p] = true;
             s->online_seen[p] = false;
+            /* And what answered elsewhere, by this read's scan. */
+            s->ev_found[p] = sense_link_found(s, (sense_link_part_t)p);
         }
     }
     if ((f & LINK_SN_BUS_STUCK) != 0u && (was & LINK_SN_BUS_STUCK) == 0u) {
@@ -433,11 +444,13 @@ static void judge_servo(sense_link_t *s)
         }
     }
     const uint16_t fresh = (uint16_t)(clipped & (uint16_t)~s->was_clipped);
-    for (unsigned ch = 1u; ch <= LINK_SS_CHANNELS; ++ch) {
+    /* Every channel newly clipped waits its own turn on the band: CH2 and
+     * CH3 move together in a synchronised pair. */
+    for (unsigned ch = LINK_SS_CHANNELS; ch >= 1u; --ch) {
         if ((fresh & LINK_SS_CH_CLIPPED(ch)) != 0u) {
-            s->clipped_ch = (uint8_t)ch;
+            s->clip_pending |= (uint8_t)(1u << (ch - 1u));
+            s->clipped_ch = (uint8_t)ch;   /* the lowest, for events() */
             s->events |= SENSE_LINK_EV_I3221_CLIPPED;
-            break;
         }
     }
     s->was_clipped = clipped;
@@ -523,6 +536,7 @@ uint16_t sense_link_events(sense_link_t *s)
     }
     const uint16_t e = s->events;
     s->events = 0u;
+    s->clip_pending = 0u;
     return e;
 }
 
@@ -545,12 +559,29 @@ uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms)
         return 0u;
     }
     for (size_t i = 0u; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
-        if ((s->events & k_order[i]) != 0u) {
-            s->events &= (uint16_t)~k_order[i];
-            s->event_given = true;
-            s->event_ms    = now_ms;
+        if ((s->events & k_order[i]) == 0u) {
+            continue;
+        }
+        s->event_given = true;
+        s->event_ms    = now_ms;
+        if (k_order[i] == SENSE_LINK_EV_I3221_CLIPPED) {
+            /* One channel a turn, the lowest; the event stands while
+             * another waits. */
+            for (unsigned ch = 1u; ch <= LINK_SS_CHANNELS; ++ch) {
+                const uint8_t bit = (uint8_t)(1u << (ch - 1u));
+                if ((s->clip_pending & bit) != 0u) {
+                    s->clip_pending &= (uint8_t)~bit;
+                    s->clipped_ch = (uint8_t)ch;
+                    break;
+                }
+            }
+            if (s->clip_pending == 0u) {
+                s->events &= (uint16_t)~k_order[i];
+            }
             return k_order[i];
         }
+        s->events &= (uint16_t)~k_order[i];
+        return k_order[i];
     }
     s->events = 0u;                 /* no bit this build knows */
     return 0u;
@@ -666,6 +697,16 @@ uint8_t sense_link_found(const sense_link_t *s, sense_link_part_t part)
         return (uint8_t)a;
     }
     return 0u;
+}
+
+uint16_t sense_link_event_id(const sense_link_t *s, sense_link_part_t part)
+{
+    return (s != NULL && (unsigned)part < 2u) ? s->ev_id[part] : 0u;
+}
+
+uint8_t sense_link_event_found(const sense_link_t *s, sense_link_part_t part)
+{
+    return (s != NULL && (unsigned)part < 2u) ? s->ev_found[part] : 0u;
 }
 
 uint8_t sense_link_clipped_channel(const sense_link_t *s)

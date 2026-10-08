@@ -228,9 +228,9 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 `ina voltage` und `ina current` sind die des INA228 und leer, solange er
 nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,
 von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
-BENCH-Page, und leer, wenn der ESC keinen meldet. Eine Größe, die nichts
-gemessen hat, ist eine leere Zelle. Der Log-Viewer gruppiert die letzten drei
-unter INA228 und ESC.
+BENCH-Page, und leer, wenn der ESC keinen meldet oder das Panel den
+Prüfstand simuliert. Eine Größe, die nichts gemessen hat, ist eine leere
+Zelle. Der Log-Viewer gruppiert die letzten drei unter INA228 und ESC.
 
 ## Servo
 

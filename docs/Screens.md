@@ -213,8 +213,9 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 `ina current` are the INA228's and are empty while it is not the source;
 `esc current` is the ESC's own telemetry current, from the SENSE page while
 the INA228 is the source and from the BENCH page otherwise, and empty when
-the ESC reports none. A quantity nothing measured is an empty cell. The log
-viewer groups the last three under INA228 and ESC.
+the ESC reports none or the panel models the bench. A quantity nothing
+measured is an empty cell. The log viewer groups the last three under
+INA228 and ESC.
 
 ## Servo
 

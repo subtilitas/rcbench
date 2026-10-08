@@ -772,6 +772,95 @@ TEST_CASE(simultaneous_events_are_handed_out_one_at_a_time)
     CHECK_EQ(sense_link_event(NULL, t), 0u);
 }
 
+/*
+ * Two channels that clip in one window -- a synchronised pair -- are each
+ * said, one turn of the band each, CH2 then CH3.
+ */
+TEST_CASE(channels_that_clip_together_are_each_said)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i3221 = true;
+    w.i3221_ch = 0x07u;
+    want(&w);
+    polls(14);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I3221_ONLINE);
+    pg.servo[LINK_SS_CH_FLAGS] = (uint16_t)(LINK_SS_CH_CLIPPED(2)
+                                            | LINK_SS_CH_CLIPPED(3));
+    polls(4);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I3221_CLIPPED);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_I3221_CLIPPED);
+    CHECK_EQ(sense_link_clipped_channel(&sl), 2u);
+    CHECK_EQ(sense_link_event(&sl, now + 50u), 0u);
+    polls(4);                               /* still clipped: no new edge */
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_I3221_CLIPPED);
+    CHECK_EQ(sense_link_clipped_channel(&sl), 3u);
+    CHECK_EQ(sl.events, 0u);
+    CHECK_EQ(sense_link_event(&sl, now + 3u * SENSE_LINK_EVENT_GAP_MS), 0u);
+
+    /* A new set-up drops the ones still waiting. */
+    pg.servo[LINK_SS_CH_FLAGS] = 0u;
+    polls(4);
+    pg.servo[LINK_SS_CH_FLAGS] = (uint16_t)(LINK_SS_CH_CLIPPED(1)
+                                            | LINK_SS_CH_CLIPPED(2));
+    polls(4);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I3221_CLIPPED);
+    w.i3221_dmohm = 500u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sl.clip_pending, 0u);
+    CHECK_EQ(sl.events & SENSE_LINK_EV_I3221_CLIPPED, 0u);
+}
+
+/*
+ * What an event says is what the read that raised it saw.  A wrong
+ * identity keeps the ID it was raised with, a part not answering the
+ * address the scan found then; and a part that answers as itself before
+ * the band shows either drops it.
+ */
+TEST_CASE(a_waiting_event_says_what_its_read_saw)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    want(&w);
+    polls(14);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE | LINK_SN_I3221_ID_WRONG);
+    pg.sense[LINK_SN_I3221_ID] = 0x1408u;
+    polls(1);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I3221_WRONG);
+    /* Another read shows another ID; the event says the first. */
+    pg.sense[LINK_SN_I3221_ID] = 0x0000u;
+    polls(2);
+    CHECK_EQ(sense_link_event_id(&sl, SENSE_LINK_INA3221), 0x1408u);
+    CHECK_EQ(sense_link_id(&sl, SENSE_LINK_INA3221), 0x0000u);
+
+    /* The right part answers before the band shows it: the event goes. */
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE | LINK_SN_I3221_ONLINE);
+    polls(1);
+    CHECK_EQ(sl.events, 0u);
+
+    /* Not answering, with 0x44 answering in that read's scan. */
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I3221_ONLINE);
+    pg.sense[LINK_SN_PRESENT] = (uint16_t)((1u << 0) | (1u << 4));
+    polls(1);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I228_SILENT);
+    CHECK_EQ(sense_link_event_found(&sl, SENSE_LINK_INA228), 0x44u);
+    /* The scan moves on; the event keeps what it found. */
+    pg.sense[LINK_SN_PRESENT] = (uint16_t)((1u << 0) | (1u << 7));
+    polls(2);
+    CHECK_EQ(sense_link_found(&sl, SENSE_LINK_INA228), 0x47u);
+    CHECK_EQ(sense_link_event_found(&sl, SENSE_LINK_INA228), 0x44u);
+    /* And it answers again before it is shown: dropped. */
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE | LINK_SN_I3221_ONLINE);
+    polls(1);
+    CHECK_EQ(sl.events, 0u);
+    CHECK_EQ(sense_link_event_id(NULL, SENSE_LINK_INA228), 0u);
+    CHECK_EQ(sense_link_event_found(NULL, SENSE_LINK_INA228), 0u);
+}
+
 TEST_CASE(the_store_off_is_said_once_per_link)
 {
     fresh(7u);
@@ -858,6 +947,8 @@ int main(void)
     RUN(a_stuck_bus_and_clipped_readings_are_said_on_their_edges);
     RUN(a_clip_on_a_channel_not_read_is_not_said);
     RUN(simultaneous_events_are_handed_out_one_at_a_time);
+    RUN(channels_that_clip_together_are_each_said);
+    RUN(a_waiting_event_says_what_its_read_saw);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);
     return test_summary("sense_link");

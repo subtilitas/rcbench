@@ -207,6 +207,10 @@ typedef struct {
     bool     online_seen[2];
     uint16_t was_faults;
     uint8_t  clipped_ch;
+    uint8_t  clip_pending;    /**< INA3221 channels clipped, not yet
+                                   handed out: bit n-1 for CHn          */
+    uint16_t ev_id[2];        /**< the ID a WRONG event was raised with */
+    uint8_t  ev_found[2];     /**< the address a SILENT event found     */
     uint16_t events;
     bool     event_given;     /**< an event has been handed out        */
     uint32_t event_ms;        /**< when                                */
@@ -310,8 +314,21 @@ uint16_t sense_link_id(const sense_link_t *s, sense_link_part_t part);
  */
 uint8_t sense_link_found(const sense_link_t *s, sense_link_part_t part);
 
-/** The INA3221 channel SENSE_LINK_EV_I3221_CLIPPED named, 1 to 3. */
+/**
+ * The INA3221 channel SENSE_LINK_EV_I3221_CLIPPED names, 1 to 3: the one
+ * sense_link_event() last handed out.  Channels that clip together are
+ * handed out one each, the event standing until the last.
+ */
 uint8_t sense_link_clipped_channel(const sense_link_t *s);
+
+/**
+ * What an event was raised with, kept for when the band shows it: the ID
+ * @p part gave for SENSE_LINK_EV_*_WRONG, and the address the scan found
+ * for SENSE_LINK_EV_*_SILENT (0 none).  A later read can show another; a
+ * part that answers as itself before the band shows either drops it.
+ */
+uint16_t sense_link_event_id(const sense_link_t *s, sense_link_part_t part);
+uint8_t  sense_link_event_found(const sense_link_t *s, sense_link_part_t part);
 
 /** The INA3221's shunt on the page, 0.1 mOhm. */
 uint16_t sense_link_i3221_dmohm(const sense_link_t *s);

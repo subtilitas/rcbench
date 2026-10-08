@@ -715,6 +715,20 @@ TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
     CHECK_NEAR(a, 30.0f, 0.001f);
     CHECK_EQ(b.esc_current, 0.0f);
 
+    /* The panel's model, with the link down mid-run, is no ESC: its
+     * current stays BENCH's and is not the ESC's. */
+    b = measured(24.0f, 30.0f, LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                   | LINK_BN_SIMULATED);
+    CHECK(!bench_state_esc_voltage(&b, &v));
+    CHECK(!bench_state_esc_current(&b, &a));
+    telemetry_sim_t sim;
+    telemetry_sim_init(&sim, NULL);
+    bench_state_t m;
+    memset(&m, 0, sizeof(m));
+    telemetry_sim_step(&sim, 40.0f, 0.05f, &m);
+    CHECK((m.flags & LINK_BN_CURRENT_OK) != 0u);
+    CHECK(!bench_state_esc_current(&m, &a));
+
     /* An INA228 field nothing answered for is not one. */
     b.flags = (uint16_t)LINK_BN_SENSED;
     CHECK(!bench_state_ina_voltage(&b, &v));

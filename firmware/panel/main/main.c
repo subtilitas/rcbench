@@ -5492,7 +5492,7 @@ static void sense_link_alerts(void)
         if ((ev & k_silent[p]) != 0u) {
             /* With what did answer, where something did: a solder bridge
              * set otherwise, as often as not. */
-            const unsigned found = sense_link_found(&s_sense_link, part);
+            const unsigned found = sense_link_event_found(&s_sense_link, part);
             if (found != 0u) {
                 snprintf(line, sizeof(line), TR(ALERT_SENSE_SILENT_FOUND),
                          k_sense_part[p], addr, found);
@@ -5504,7 +5504,7 @@ static void sense_link_alerts(void)
         }
         if ((ev & k_wrong[p]) != 0u) {
             snprintf(line, sizeof(line), TR(ALERT_SENSE_WRONG), addr,
-                     (unsigned)sense_link_id(&s_sense_link, part),
+                     (unsigned)sense_link_event_id(&s_sense_link, part),
                      k_sense_part[p]);
             control_alert(line);
         }

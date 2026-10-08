@@ -223,7 +223,10 @@ static bool esc_figure(const bench_state_t *b, uint8_t esc_bit, float esc,
         *out = esc;
         return true;
     }
-    if ((b->flags & bench_bit) == 0u) {
+    /* The panel's model is no ESC: its numbers are the bench's when the
+     * link is down, and nothing reported them. */
+    if ((b->flags & bench_bit) == 0u
+        || (b->flags & (uint16_t)LINK_BN_SIMULATED) != 0u) {
         return false;
     }
     *out = bench;

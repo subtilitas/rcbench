@@ -117,7 +117,8 @@ void bench_state_set_esc(bench_state_t *b, bool v_ok, float volts,
 /**
  * The ESC's own voltage and current, whichever page carries them: the
  * SENSE page's while the INA228 is BENCH's source, BENCH's own otherwise.
- * False, and @p out untouched, when the ESC reported none.
+ * False, and @p out untouched, when the ESC reported none -- and for
+ * modelled numbers (LINK_BN_SIMULATED), which no ESC reported.
  */
 bool bench_state_esc_voltage(const bench_state_t *b, float *out);
 bool bench_state_esc_current(const bench_state_t *b, float *out);
