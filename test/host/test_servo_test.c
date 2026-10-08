@@ -1702,6 +1702,84 @@ TEST_CASE(a_standard_servo_on_the_pd_mini_passes)
     CHECK_EQ(servo_test_verdict(&g_rp), SERVO_TEST_FAIL);
 }
 
+/* ---------------------------------------------------- the move's deadline */
+
+static servo_test_t g_dl;
+static uint16_t     g_dl_samples;
+
+/* A reading of @p i amps at @p t, at a 5.00 V set point, then a pass. */
+static void dl_feed(uint32_t t, float i)
+{
+    servo_test_reading_t r;
+    memset(&r, 0, sizeof(r));
+    r.v = 5.0f;
+    r.i = i;
+    r.set_v = 5.0f;
+    r.set_i = 2.0f;
+    r.mode = 1u;
+    r.output = true;
+    r.online = true;
+    r.ok = true;
+    r.samples = ++g_dl_samples;
+    r.taken_ms = t;
+    servo_test_reading(&g_dl, &r, 0u);
+    const servo_test_in_t in = { true, 20.0f };
+    servo_test_do_t d;
+    servo_test_step(&g_dl, t, &in, &d);
+}
+
+/* The brown-out's first move, centre to the high end, on the PD mini's
+ * meter: 0.12 A at rest, 0.9 A moving every 100 ms, and the reading back
+ * at 0.12 A @p back_ms after the command. */
+static void dl_run(uint32_t back_ms)
+{
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 0u;
+    c.brownout = true;
+    c.settle_ms = 100u;
+    servo_test_meter_pdmini(&c.meter);
+    servo_test_reading_t last;
+    memset(&last, 0, sizeof(last));
+    last.online = true;
+    last.output = true;
+    servo_test_init(&g_dl);
+    g_dl_samples = 0u;
+    CHECK_EQ(servo_test_start(&g_dl, &c, 1000u, &last, 3.0f, 20.0f),
+             SERVO_TEST_START_OK);
+    uint32_t t = 1000u;
+    while (g_dl.phase != SERVO_TEST_PH_MOVE && t < 10000u) {
+        t += 100u;
+        dl_feed(t, 0.12f);
+    }
+    CHECK_EQ(g_dl.phase, SERVO_TEST_PH_MOVE);
+    const uint32_t cmd = g_dl.cmd_ms;
+    for (t = cmd + 100u; t < cmd + back_ms; t += 100u) {
+        dl_feed(t, 0.9f);
+    }
+    dl_feed(cmd + back_ms, 0.12f);
+}
+
+/* The window is 3000 ms and the PD mini's 300 ms lag: a reading back at
+ * the level 1 ms before 3300 ms is the arrival, one at 3300 ms is not --
+ * the move is late. */
+TEST_CASE(a_reading_at_the_deadline_is_late)
+{
+    CHECK_EQ(servo_test_travel_window_ms(&g_dl), 3000u);
+    dl_run(3299u);
+    CHECK_EQ(g_dl.steps[0].moves, 1u);
+    CHECK_EQ(g_dl.steps[0].travels, 1u);
+    CHECK_EQ(g_dl.steps[0].travel_max_ms, 3299u);
+    CHECK_EQ(g_dl.steps[0].timeouts, 0u);
+    CHECK_EQ(servo_test_travel_window_ms(&g_dl), 3300u);
+
+    dl_run(3300u);
+    CHECK_EQ(g_dl.steps[0].moves, 1u);
+    CHECK_EQ(g_dl.steps[0].travels, 0u);
+    CHECK_EQ(g_dl.steps[0].timeouts, 1u);
+    CHECK_EQ(g_dl.phase, SERVO_TEST_PH_HOLD);
+}
+
 int main(void)
 {
     RUN(a_run_measures_each_step_and_passes);
@@ -1733,6 +1811,7 @@ int main(void)
     RUN(a_micro_servo_on_the_pd_mini_is_seen_moving);
     RUN(a_servo_moving_under_the_threshold_is_not_failed);
     RUN(a_standard_servo_on_the_pd_mini_passes);
+    RUN(a_reading_at_the_deadline_is_late);
     free(g.csv_text);
     return test_summary("servo_test");
 }

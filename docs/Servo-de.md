@@ -170,7 +170,8 @@ oder für TESTZEIT, wie LÄNGE NACH sagt, höchstens 1000 je Stufe.
   wird addiert, statt die letzten 300 ms des Fensters unbeurteilt zu
   lassen: ein Servo, das bei 2900 ms ankommt, zeigt das bei etwa 3200 ms
   und wird gemessen, und eine Bewegung, die nie ankommt, ist trotzdem
-  verspätet, 300 ms später.
+  verspätet, 300 ms später. Ein Messwert am Ende des Fensters oder danach,
+  3300 ms am PD mini, ist nie eine Ankunft: die Bewegung ist verspätet.
 - **Unerkannt:** eine gezählte Bewegung ohne Messwert jenseits der Schwelle
   binnen des Fensters. Der Strom unterscheidet sie nicht von einem stillstehenden
   Servo: sie wird weder gemessen noch als verspätet gezählt, und der Bericht
