@@ -33,8 +33,8 @@ static sense_svc_t  s_svc;
 static sense_cmd_t  s_cmd;
 static sense_snap_t s_snap;
 
-/* Core 1's stack: the default 2 kB is the sensor bus's; the tone service
- * runs on it too. */
+/* Core 1's stack, 4 kB: the default 2 kB was the sensor bus's, and the tone
+ * service runs on it too. */
 static uint32_t s_stack[1024];
 
 /* --- core 0's own ------------------------------------------------------- */

@@ -8,6 +8,40 @@ history is in git.
 
 ### Added
 
+- **TONE link page and the phase tap's capture (protocol 4.8).** TONE
+  (0x2D) sets up and reads the tap that hears an ESC's beeps on one motor
+  phase through a series resistor and a zener clamp: enable, the GPIO
+  (default 22, pad 29), the lowest and highest tone (50 to 2000 Hz and up to
+  6900 Hz), the pitch change that splits a beep (0 to 50 %), the silence that
+  ends one (1 to 100 ms, at least the lowest tone's period) and the periods
+  that make one (1 to 64). The GPIO is refused past the bank, on a reserved
+  pin, on an output's, SENSE's or SUPPLY's, and on an ADC pin (GP26 to GP29,
+  GP40 to GP47) while the tap is enabled, and an OUTPUTS write on it is
+  refused. The page holds the last 64 beeps: start in ms since the capture,
+  length in 0.1 ms, pitch in 0.1 Hz, bursts, carrier in 100 Hz steps and
+  whether a pitch change bounds it, read by number through EVT_SEL without
+  consuming one. The set-up, registers 0 to 6, is kept in the coprocessor's
+  flash (store record version 6; records of version 3 to 5 still read), and
+  the tap starts at boot. The read at 20 Hz is registers 8 to 23, one request
+  and four data frames, about 1.7 % of the bus. No capability bit. A 4.7
+  coprocessor answers the page with BAD_PAGE; a 4.7 panel never writes it.
+- **The coprocessor captures the phase tap's edges.** A PIO state machine
+  (`firmware/iomcu/src/tone_cap.pio`, 22 instructions) counts a 31-bit
+  down counter every 4 clocks (26.7 ns at 150 MHz) and pushes a word for each
+  edge: the counter and the level. A fall is pushed only after the line has
+  stayed low for the hold-off, 8 µs (300 counts), and carries the time it
+  fell; a low that ends sooner is never pushed. A DMA channel writes the words
+  endlessly into a ring of 4096 words (16 kB, 42.7 ms at 96,000 edges/s), and
+  core 1 reads it on its 1 ms tick and feeds the detector
+  (`shared/sense/edge_ring.c`, `tone_svc.c`), extending the 31-bit count to 64
+  bits against the microsecond timer, counting a lap of the ring or a FIFO
+  overflow as an overrun that ends the beep under way. The pin is an input
+  with its pull-down on while the tap is disabled. The host suite assembles
+  the PIO program from its source, runs it in a cycle-counting model and
+  holds it to `tone_holdoff_edge()`: every decrement of the counter 4 cycles
+  after the one before on every path, a low of 1200 cycles always kept and one
+  of 1196 never. The firmware build holds pioasm's words to the same list.
+  Not run on hardware. Core 1's stack is 4 kB.
 - **Zoom in the log viewer's plot.** Two fingers spread to zoom in, pinch to
   zoom out and move together to pan; the view stays where they leave it, from
   8 samples to the whole run. A bar under the plot shows which part of the run

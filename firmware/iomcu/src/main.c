@@ -1560,20 +1560,17 @@ int main(void)
      * the slots and the supply, so a pin either already holds is refused and
      * the page starts with both parts off.  The bank is not armed yet, so
      * nothing refuses it for that.
+     *
+     * And the phase tap's, last, the same way: a pin an output, the supply
+     * or the sensor bus holds is refused, the tap does not run, and FLAGS
+     * says so.  Its capture starts after their PIO programs, so it takes
+     * what state machine they leave.
      */
     if (have_saved) {
         (void)sense_page_write(&s_sense, LINK_SN_ENABLE,
                                (uint8_t)LINK_SN_CONFIG_COUNT, saved.sense,
                                &s_outputs, supply_page_pins(&s_supply));
         reserve_held();
-    }
-    /*
-     * The phase tap, last: through the page's own checks, so a pin an
-     * output, the supply or the sensor bus holds is refused and the tap
-     * does not run, FLAGS saying so; and after their PIO programs, so it
-     * takes what state machine they leave.
-     */
-    if (have_saved) {
         tone_page_restore(&s_tone, saved.tone, &s_outputs, tone_taken());
     }
     if (!tone_rewire()) {

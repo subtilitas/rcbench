@@ -550,18 +550,23 @@ typedef enum {
  *     on the link loses nothing.  EVT_SEQ equals EVT_SEL while that beep is
  *     in the ring; when it has left the ring, or has not happened yet,
  *     EVT_SEQ and registers 15 to 21 read 0.  EVT_START_MS is the beep's
- *     first rise in ms since ENABLE was written 1, 32 bit, low register
- *     first (49.7 days); EVT_LEN_DMS its length to its last edge in 0.1 ms,
- *     to 6553.5 ms; EVT_FREQ_DHZ its mean pitch in 0.1 Hz; EVT_BURSTS its
- *     bursts, to 65535; EVT_CARRIER_HHZ the carrier it was chopped at in
- *     100 Hz steps, 0 unchopped.  EVT_FLAGS bit 0: the beep began at a
- *     pitch change with no silence before it; bit 1: it ended at one.
+ *     first rise in ms since the capture started (ENABLE written 1, or PIN
+ *     changed while enabled), 32 bit, low register first (49.7 days);
+ *     EVT_LEN_DMS its length to its last edge in 0.1 ms, to 6553.5 ms;
+ *     EVT_FREQ_DHZ its mean pitch in 0.1 Hz; EVT_BURSTS its bursts, to
+ *     65535; EVT_CARRIER_HHZ the carrier it was chopped at in 100 Hz
+ *     steps, 0 unchopped.  A length, pitch, burst count or carrier past its
+ *     register reads as the largest it holds.  EVT_FLAGS bit 0: the beep
+ *     began at a pitch change with no silence before it; bit 1: it ended
+ *     at one.
  *     LOST counts beeps dropped, modulo 65536: the detector's queue full,
  *     or the hand-over between the cores full.  GLITCHES counts lows the
  *     detector ignored as shorter than 500 ns, modulo 65536.
  *
- *     Registers 0 to 6 are kept in the coprocessor's flash beside the
- *     SENSE set-up, and the tap starts at boot.  Nothing else is kept.
+ *     The capture starts when the tap is enabled or its pin changes, and
+ *     then empties the ring; the numbers go on.  Registers 0 to 6 are kept
+ *     in the coprocessor's flash beside the SENSE set-up, and the tap starts
+ *     at boot.  Nothing else is kept.
  *
  *     While the tap is disabled the pin is an input with its pull-down on,
  *     so a wire connected to nothing reads low.  The panel's read at
@@ -629,9 +634,9 @@ typedef enum {
      *  set-up met a binding or a reservation at boot) or no PIO state
      *  machine could take it. */
     LINK_TN_PIN_REFUSED = 1u << 1,
-    /** The capture ring or the state machine's FIFO was overrun since
-     *  ENABLE was written 1; the beep under way was cut at its last edge.
-     *  Cleared when ENABLE is written 0. */
+    /** The capture ring or the state machine's FIFO was overrun since the
+     *  capture started; the beep under way was cut at its last edge.
+     *  Cleared when the capture starts again. */
     LINK_TN_OVERRUN     = 1u << 2,
     /** A run of bursts is under way. */
     LINK_TN_BEEP        = 1u << 3,

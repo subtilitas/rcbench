@@ -274,21 +274,22 @@ void tone_page_publish(tone_page_t *p, const tone_status_t *st,
         return;
     }
     p->running = st->running;
-    p->overrun = st->running && st->overrun;
-    p->beep = st->running && st->beep;
-    p->tone = st->running && st->tone;
-    p->window = st->running ? st->window : 0u;
-    p->win_freq_dhz = st->running ? st->win_freq_dhz : 0u;
-    p->win_periods = st->running ? st->win_periods : 0u;
-    if (st->running) {
-        p->lost += st->lost - p->seen_lost;
-        p->glitches += st->glitches - p->seen_glitches;
-        p->seen_lost = st->lost;
-        p->seen_glitches = st->glitches;
+    if (!st->running) {
+        p->overrun = p->beep = p->tone = false;
+        p->window = p->win_freq_dhz = p->win_periods = 0u;
+        return;
     }
-    if (st->running) {
-        tone_page_beeps(p, st->gen, st->cap_gen, rec, n);
-    }
+    p->overrun = st->overrun;
+    p->beep = st->beep;
+    p->tone = st->tone;
+    p->window = st->window;
+    p->win_freq_dhz = st->win_freq_dhz;
+    p->win_periods = st->win_periods;
+    p->lost += st->lost - p->seen_lost;
+    p->glitches += st->glitches - p->seen_glitches;
+    p->seen_lost = st->lost;
+    p->seen_glitches = st->glitches;
+    tone_page_beeps(p, st->gen, st->cap_gen, rec, n);
 }
 
 void tone_page_beeps(tone_page_t *p, uint16_t gen, uint16_t cap_gen,
