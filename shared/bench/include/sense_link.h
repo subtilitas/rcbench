@@ -272,6 +272,15 @@ uint16_t sense_link_events(sense_link_t *s);
  */
 uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms);
 
+/**
+ * Put back an event sense_link_event() handed out that never reached the
+ * band -- another alert replaced it first -- with what it was raised
+ * with, so it is handed out again after the gap.  A clipped event takes
+ * its channel back.  An event about a coprocessor is not put back once the
+ * link has gone.
+ */
+void sense_link_event_back(sense_link_t *s, uint16_t ev);
+
 /** Whether nothing is owed: the page holds the set-up asked, less the
  *  frames it refused. */
 bool sense_link_settled(const sense_link_t *s);

@@ -861,6 +861,61 @@ TEST_CASE(a_waiting_event_says_what_its_read_saw)
     CHECK_EQ(sense_link_event_found(NULL, SENSE_LINK_INA228), 0u);
 }
 
+/*
+ * An event handed out and replaced on the alert slot before a frame took
+ * it -- a NACKed control write's alert in the same pass -- goes back, with
+ * what it was raised with, and is handed out again after the gap.  Its
+ * read will not raise it again on its own.
+ */
+TEST_CASE(an_event_that_never_reached_the_band_goes_back)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i3221_ch = 0x07u;
+    want(&w);
+    polls(14);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I3221_ONLINE);
+    pg.sense[LINK_SN_PRESENT] = (uint16_t)((1u << 0) | (1u << 4));
+    polls((int)(SENSE_LINK_GRACE_MS / 50u) + 2);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_I228_SILENT);
+    uint16_t ev = sense_link_event(&sl, now);
+    CHECK_EQ(ev, SENSE_LINK_EV_I228_SILENT);
+    polls(20);
+    CHECK_EQ(sl.events, 0u);                  /* told: not raised again */
+    sense_link_event_back(&sl, ev);
+    CHECK_EQ(sense_link_event(&sl, now), 0u); /* the gap still runs */
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_I228_SILENT);
+    CHECK_EQ(sense_link_event_found(&sl, SENSE_LINK_INA228), 0x44u);
+
+    /* A clipped channel goes back ahead of the one still waiting. */
+    pg.servo[LINK_SS_CH_FLAGS] = (uint16_t)(LINK_SS_CH_CLIPPED(2)
+                                            | LINK_SS_CH_CLIPPED(3));
+    polls(4);
+    uint32_t t = now + 2u * SENSE_LINK_EVENT_GAP_MS;
+    ev = sense_link_event(&sl, t);
+    CHECK_EQ(ev, SENSE_LINK_EV_I3221_CLIPPED);
+    CHECK_EQ(sense_link_clipped_channel(&sl), 2u);
+    sense_link_event_back(&sl, ev);
+    t += SENSE_LINK_EVENT_GAP_MS;
+    CHECK_EQ(sense_link_event(&sl, t), SENSE_LINK_EV_I3221_CLIPPED);
+    CHECK_EQ(sense_link_clipped_channel(&sl), 2u);
+    t += SENSE_LINK_EVENT_GAP_MS;
+    CHECK_EQ(sense_link_event(&sl, t), SENSE_LINK_EV_I3221_CLIPPED);
+    CHECK_EQ(sense_link_clipped_channel(&sl), 3u);
+    CHECK_EQ(sl.events, 0u);
+
+    /* Once the link has gone, only what the settings say goes back. */
+    sense_link_lost(&sl);
+    sense_link_event_back(&sl, SENSE_LINK_EV_I228_SILENT);
+    CHECK_EQ(sl.events, 0u);
+    sense_link_event_back(&sl, SENSE_LINK_EV_PINS_UNSET);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_PINS_UNSET);
+    sense_link_event_back(NULL, SENSE_LINK_EV_STUCK);
+}
+
 TEST_CASE(the_store_off_is_said_once_per_link)
 {
     fresh(7u);
@@ -949,6 +1004,7 @@ int main(void)
     RUN(simultaneous_events_are_handed_out_one_at_a_time);
     RUN(channels_that_clip_together_are_each_said);
     RUN(a_waiting_event_says_what_its_read_saw);
+    RUN(an_event_that_never_reached_the_band_goes_back);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);
     return test_summary("sense_link");

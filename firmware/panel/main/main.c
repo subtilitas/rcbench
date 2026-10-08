@@ -512,17 +512,40 @@ static struct {
     uint32_t      run_seconds;
     char          alert[ALERT_MAX];
     bool          alert_pending;
+    /* Every alert posted is numbered, and the render side records the
+     * number of the one it took: an alert posted and replaced before a
+     * frame took it was never shown.  See sense_link_alerts(). */
+    uint32_t      alert_gen;
+    uint32_t      alert_taken;
 } s_snap;
 
 static void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
 static void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
 
-/* Called from the control task, which must not touch the router. */
-static void control_alert(const char *text)
+/* Called from the control task, which must not touch the router.  The
+ * slot holds one alert; a later one replaces it.  Returns its number. */
+static uint32_t control_alert_numbered(const char *text)
 {
     snap_lock();
     snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
     s_snap.alert_pending = true;
+    const uint32_t gen = ++s_snap.alert_gen;
+    snap_unlock();
+    return gen;
+}
+
+/* The same, for the callers that do not follow it.  Inlined where it is
+ * called, as the compiler chose before the numbering: a frame of its own
+ * puts 32 bytes on the control task's deepest chain (drv_lost() through
+ * control_pump()) and moves stack_check's walk onto a deeper path through
+ * ESP-IDF's logging. */
+__attribute__((always_inline)) static inline void
+control_alert(const char *text)
+{
+    snap_lock();
+    snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
+    s_snap.alert_pending = true;
+    ++s_snap.alert_gen;
     snap_unlock();
 }
 
@@ -5451,22 +5474,52 @@ static void supply_link_service(void)
 /* The part names as the alerts print them. */
 static const char *const k_sense_part[2] = { "INA228", "INA3221" };
 
+/* The sensor alert posted and not yet seen taken: its number in the alert
+ * slot (0 none) and its event.  Control task only. */
+static uint32_t s_sense_alert_gen;
+static uint16_t s_sense_alert_ev;
+
 /*
  * What the SENSE and SERVO_SENSE pages said that the operator is told.
  * The band shows one line and the snapshot holds one pending alert, so
  * this takes one event at a time, the most pressing first, and the next no
  * sooner than SENSE_LINK_EVENT_GAP_MS later (sense_link_event()): two parts
  * that both stop answering are both said, one after the other.
+ *
+ * An event is taken only into a free slot, and followed until a frame has
+ * taken it.  Any other alert replaces it -- a NACKed control write's
+ * "coprocessor disarmed" in the same pass, say -- and one replaced before
+ * a frame took it goes back to the queue (sense_link_event_back()): its
+ * read will not raise it again.
  */
 static void sense_link_alerts(void)
 {
+    snap_lock();
+    const bool     slot_free = !s_snap.alert_pending;
+    const uint32_t posted    = s_snap.alert_gen;
+    const uint32_t taken     = s_snap.alert_taken;
+    snap_unlock();
+    if (s_sense_alert_gen != 0u) {
+        if ((int32_t)(taken - s_sense_alert_gen) >= 0) {
+            s_sense_alert_gen = 0u;                  /* shown */
+        } else if (posted != s_sense_alert_gen) {
+            sense_link_event_back(&s_sense_link, s_sense_alert_ev);
+            s_sense_alert_gen = 0u;                  /* replaced unseen */
+        } else {
+            return;                                  /* not taken yet */
+        }
+    }
+    if (!slot_free) {
+        return;
+    }
     const uint16_t ev = sense_link_event(&s_sense_link, now_ms());
     if (ev == 0u) {
         return;
     }
+    s_sense_alert_ev = ev;
     char line[ALERT_MAX];
     if ((ev & SENSE_LINK_EV_STORE_OFF) != 0u) {
-        control_alert(TR(ALERT_STORE_OFF));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_STORE_OFF));
     }
     if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
         /* The full scale in hundredths of an ampere, rounded: 1638 mA on
@@ -5477,10 +5530,10 @@ static void sense_link_alerts(void)
         snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED),
                  (unsigned)sense_link_clipped_channel(&s_sense_link),
                  (unsigned)(ca / 100u), (unsigned)(ca % 100u));
-        control_alert(line);
+        s_sense_alert_gen = control_alert_numbered(line);
     }
     if ((ev & SENSE_LINK_EV_I228_CLIPPED) != 0u) {
-        control_alert(TR(ALERT_SENSE_I228_CLIPPED));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_CLIPPED));
     }
     static const uint16_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
                                           SENSE_LINK_EV_I3221_SILENT };
@@ -5500,39 +5553,39 @@ static void sense_link_alerts(void)
                 snprintf(line, sizeof(line), TR(ALERT_SENSE_SILENT),
                          k_sense_part[p], addr);
             }
-            control_alert(line);
+            s_sense_alert_gen = control_alert_numbered(line);
         }
         if ((ev & k_wrong[p]) != 0u) {
             snprintf(line, sizeof(line), TR(ALERT_SENSE_WRONG), addr,
                      (unsigned)sense_link_event_id(&s_sense_link, part),
                      k_sense_part[p]);
-            control_alert(line);
+            s_sense_alert_gen = control_alert_numbered(line);
         }
     }
     if ((ev & SENSE_LINK_EV_STUCK) != 0u) {
-        control_alert(TR(ALERT_SENSE_STUCK));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_STUCK));
     }
     if ((ev & SENSE_LINK_EV_I3221_REFUSED) != 0u) {
-        control_alert(TR(ALERT_SENSE_I3221_SETUP));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I3221_SETUP));
     }
     if ((ev & SENSE_LINK_EV_I228_REFUSED) != 0u) {
-        control_alert(TR(ALERT_SENSE_I228_SETUP));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_SETUP));
     }
     if ((ev & SENSE_LINK_EV_BUS_REFUSED) != 0u) {
         snprintf(line, sizeof(line), TR(ALERT_SENSE_PINS),
                  sense_link_sda(&s_sense_link), sense_link_scl(&s_sense_link));
-        control_alert(line);
+        s_sense_alert_gen = control_alert_numbered(line);
     }
     if ((ev & SENSE_LINK_EV_SAME_ADDR) != 0u) {
         snprintf(line, sizeof(line), TR(ALERT_SENSE_SAME_ADDR),
                  (unsigned)s_sense_link.want[LINK_SN_I228_ADDR]);
-        control_alert(line);
+        s_sense_alert_gen = control_alert_numbered(line);
     }
     if ((ev & SENSE_LINK_EV_PINS_UNSET) != 0u) {
-        control_alert(TR(ALERT_SENSE_PINS_UNSET));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_PINS_UNSET));
     }
     if ((ev & SENSE_LINK_EV_NO_PAGE) != 0u) {
-        control_alert(TR(ALERT_NO_SENSE_PAGE));
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_NO_SENSE_PAGE));
     }
 }
 
@@ -7043,6 +7096,7 @@ void app_main(void)
         if (have_alert) {
             snprintf(alert, sizeof(alert), "%s", s_snap.alert);
             s_snap.alert_pending = false;
+            s_snap.alert_taken   = s_snap.alert_gen;
         }
         snap_unlock();
 

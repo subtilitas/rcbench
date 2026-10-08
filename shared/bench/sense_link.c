@@ -587,6 +587,25 @@ uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms)
     return 0u;
 }
 
+void sense_link_event_back(sense_link_t *s, uint16_t ev)
+{
+    if (s == NULL || ev == 0u) {
+        return;
+    }
+    /* What the settings say holds whatever answers; the rest is about the
+     * coprocessor that answers now, and a link gone since took it. */
+    const uint16_t settings = (uint16_t)(SENSE_LINK_EV_PINS_UNSET
+                                         | SENSE_LINK_EV_SAME_ADDR);
+    if (!s->up && (ev & (uint16_t)~settings) != 0u) {
+        return;
+    }
+    if (ev == SENSE_LINK_EV_I3221_CLIPPED && s->clipped_ch >= 1u
+        && s->clipped_ch <= LINK_SS_CHANNELS) {
+        s->clip_pending |= (uint8_t)(1u << (s->clipped_ch - 1u));
+    }
+    s->events |= ev;
+}
+
 bool sense_link_settled(const sense_link_t *s)
 {
     if (s == NULL) {
