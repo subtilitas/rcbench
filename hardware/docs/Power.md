@@ -48,7 +48,8 @@ the other 8 PWM ports, and the 4 multiprotocol ports (owner, 2026-09-30).
 At 4 a board the 12 held cover 3 boards. Each rail runs to 6.35 A, and the
 DC (direct current) input is 12 to 20 V to stay inside the 22 V input rating
 ([where things stand](../STATUS.md#decided)).
-The TPS55288 and TPS55289 below are the alternatives, not used.
+The TPS55288, the TPS55289 and the MP4246 below are the alternatives, not
+used.
 
 Each servo rail has two output settings: up to 5.5 V for LV (low-voltage)
 servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Each
@@ -67,16 +68,18 @@ limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
 runs hot (owner, 2026-09-30). The continuous current at 6.0 V in and 50 °C
 is not known; a follow-up of R6 finds it.
 
-Three parts of the same TI (Texas Instruments) family:
+Three parts of the same TI (Texas Instruments) family, and the MP4246 of
+MPS (Monolithic Power Systems), added by the owner (2026-10-08). The MP4246
+stock was read on 2026-10-08, the others on 2026-09-01:
 
-| | TPS55288 | TPS55289 | TPS55285 |
-| --- | --- | --- | --- |
-| V_in | 2.7–36 V | 3.0–30 V | 2.4–22 V |
-| V_out over I²C | 0.8–22 V, 20 mV step | 0.8–22 V, 10 mV step | 0.8–15 V, 10 mV step |
-| Current limit | external shunt, 0–63.5 mV in 0.5 mV steps | external shunt, same | internal sense, fixed 6.35 A |
-| Rating | 16 A inductor limit, 100 W from 12 V | 8 A | 8 A, four 15 mΩ FETs (field-effect transistors) |
-| JLCPCB | C2864583 · 5854 · $1.79 | C5942077 · 2218 · $5.20 | C52160906 · 2984 · $2.11 |
-| Digi-Key | 5808 · $4.28 | 0, 3000 due 2026-11-02 | 2349 · $2.76 |
+| | TPS55288 | TPS55289 | TPS55285 | MP4246 |
+| --- | --- | --- | --- | --- |
+| V_in | 2.7–36 V | 3.0–30 V | 2.4–22 V | 4–22 V, 36 V transient, 40 V absolute maximum |
+| V_out over I²C | 0.8–22 V, 20 mV step | 0.8–22 V, 10 mV step | 0.8–15 V, 10 mV step | 1–21.47 V, 10 mV step |
+| Current limit | external shunt, 0–63.5 mV in 0.5 mV steps | external shunt, same | internal sense, fixed 6.35 A | external shunt of 5 or 10 mΩ, 0.5–6.35 A in 50 mA steps at 5 mΩ |
+| Rating | 16 A inductor limit, 100 W from 12 V | 8 A | 8 A, four 15 mΩ FETs (field-effect transistors) | 6 A "at certain input supply ranges", four FETs of 6 to 14 mΩ |
+| JLCPCB | C2864583 · 5854 · $1.79 | C5942077 · 2218 · $5.20 | C52160906 · 2984 · $2.11 | C46881996 · 5 · $3.63 |
+| Digi-Key | 5808 · $4.28 | 0, 3000 due 2026-11-02 | 2349 · $2.76 | 244 · $3.58 (cut tape), lead time 40 weeks |
 
 All three datasheets state "programmable output current limit up to 6.35 A". On
 the '288 and the '289 the register sets a sense voltage, 0 to 63.5 mV in 0.5 mV
@@ -94,8 +97,42 @@ resistor at the ILIM pin and goes to 16 A.
 On the '285 the sense is internal, so 6.35 A is a hard ceiling. It delivers 8 A
 but cannot be set to allow 8 A; the rail's 6.35 A follows from it.
 
+### MP4246
+
+Figures from the MP4246 datasheet, Rev. 1.0 of 2024-07-16, read from the
+copy LCSC hosts; the MPS site was not reachable, so a later revision is
+not ruled out. Against the servo rails and the adjustable supply:
+
+- **Output floor.** V_out starts at 1 V, above the 0.8 V the brownout test
+  needs. The datasheet gives the ceiling as 22 V on its cover and as
+  21.47 V at the VOUT_COMMAND register; either covers the adjustable
+  supply's 15 V.
+- **Current limit.** A constant-current limit across an external 5 mΩ or
+  10 mΩ shunt, 0.5 to 6.35 A in 50 mA steps at 5 mΩ, default 5.4 A. The
+  threshold is ±5 % at the 3.6 A setting and ±15 % at the 1 A setting.
+  After a blank time of 320 µs to 80 ms the limit holds the output current;
+  with the output 40 % low and under 2.97 V it enters hiccup, 570 ms off.
+  Separate cycle-by-cycle switch limits run from 9 to 22.4 A peak.
+- **Rating.** "Up to 6 A of output current at certain input supply ranges";
+  the datasheet does not name the ranges and gives no derating curve. Its
+  efficiency curves stop at 5 A and have no 8.4 V output: about 97 % at
+  12 V in, 9 V out and 5 A (graph).
+- **Read-back.** None over I²C: no output voltage or current register and
+  no ADC (analogue-to-digital converter). An IMON pin gives an analogue
+  248 mV/A at 5 mΩ, ±5 % at 3 A. STATUS_WORD flags output overvoltage,
+  overcurrent, input overvoltage, temperature and power good.
+- **Input.** Input overvoltage trips at 24 V (23 to 25 V), above the 20 V
+  DC input; a 2S pack at 6.0 to 8.4 V is inside 4 to 22 V.
+- **I²C.** Four addresses, 07h, 27h, 47h and 67h, set by a divider on ADDR,
+  which also sets whether the output starts on.
+- **Package.** QFN-19, 4 × 5 mm; junction −40 to 125 °C; thermal shutdown
+  at 165 °C.
+
+Digi-Key lists the MP4246 as Active (2026-10-08). The stock row above is
+under the 4 a board, 12 for 3 boards, that the TPS55285 covers.
+
 Rejected: MP4245 (36 V, 6 A peak, I²C) is marked Not For New Designs at
-Digi-Key. MP8859 stops at 3 A.
+Digi-Key; the MP4246 above is its sibling with a 22 V input and no ADC. MP8859 stops at 3 A.
 
 ### Input rail
 
