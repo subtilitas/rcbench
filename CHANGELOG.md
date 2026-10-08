@@ -61,7 +61,7 @@ history is in git.
   parts at the page's defaults while no set-up is stored, and while a part
   is enabled the console prints the sensors' state every 3 s; the bench
   session is in [First run](docs/FirstRun.md) §8. The coprocessor image
-  grows by 20,588 bytes, to 321,416.
+  grows by 20,612 bytes, to 321,440.
 - **Output store record version 5.** The record keeps the sensor set-up
   beside the bindings and the supply's wiring. Version 3 and 4 records
   still load, with the parts they lack off.

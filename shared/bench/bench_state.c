@@ -150,12 +150,20 @@ void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
         /* The INA228 counts, at every conversion: its totals are the run's,
          * and a reading the panel saw adds nothing to them.  Not in the
          * run's first samples, which can be the last run's page.  A
-         * register at its ceiling is a bound, not the total: a count
-         * already past it from a finer read stands. */
-        if (!(b->charge_mah >= BENCH_CHARGE_MAH_MAX && t->mah > b->charge_mah)) {
+         * register at either end of its range is a bound, not the total:
+         * a count already past it from a finer read stands -- above the
+         * ceiling, and for charge below the floor of 0, where a run that
+         * gave back more than it took reads 0 on BENCH.  Only the bound
+         * itself, as BENCH decodes it: a finer figure beyond it is a
+         * reading and is taken, up or down.  Energy has no floor to pass:
+         * the INA228 accumulates unsigned power. */
+        const bool past_ceiling = b->charge_mah == BENCH_CHARGE_MAH_MAX
+                                  && t->mah > b->charge_mah;
+        const bool past_floor = b->charge_mah == 0.0f && t->mah < 0.0f;
+        if (!past_ceiling && !past_floor) {
             t->mah = b->charge_mah;
         }
-        if (!(b->energy_wh >= BENCH_ENERGY_WH_MAX && t->wh > b->energy_wh)) {
+        if (!(b->energy_wh == BENCH_ENERGY_WH_MAX && t->wh > b->energy_wh)) {
             t->wh = b->energy_wh;
         }
         t->counted |= (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);

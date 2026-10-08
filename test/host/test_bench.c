@@ -583,11 +583,12 @@ TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
 }
 
 /*
- * A run past BENCH's 65535 mAh or 6553.5 Wh: the registers read their
- * ceiling, SENSE's 32-bit totals go on, and the count goes on with them --
- * through a poll with no SENSE read too, which offers only the ceiling.
+ * A run past BENCH's 65535 mAh or 6553.5 Wh, or below 0 mAh: the
+ * registers read their bound, SENSE's 32-bit totals go on, and the count
+ * goes on with them -- through a poll with no SENSE read too, which offers
+ * only the bound.
  */
-TEST_CASE(the_totals_go_on_past_benchs_ceiling)
+TEST_CASE(the_totals_go_on_past_benchs_bounds)
 {
     const uint16_t sensed = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
                                        | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
@@ -629,6 +630,11 @@ TEST_CASE(the_totals_go_on_past_benchs_ceiling)
     bench_totals_count(&t, &b, 0.05f, true);
     CHECK_NEAR(t.mah, 70010.0f, 0.01f);
     CHECK_NEAR(t.wh, 7001.0f, 0.001f);
+    /* Down as well, while above it: a finer figure is a reading. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, 7000500, 700200u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70005.0f, 0.01f);
 
     /* At the ceiling, a finer figure below it is another moment's and is
      * not taken. */
@@ -636,6 +642,50 @@ TEST_CASE(the_totals_go_on_past_benchs_ceiling)
     bench_state_fine_totals(&b, 6000000, 600000u);
     CHECK_NEAR(b.charge_mah, BENCH_CHARGE_MAH_MAX, 0.001f);
     CHECK_NEAR(b.energy_wh, BENCH_ENERGY_WH_MAX, 0.001f);
+
+    /*
+     * And the floor: a run that gave back more than it took.  BENCH holds
+     * no negative charge and reads 0; SENSE's signed total goes on below
+     * it, and a poll with no SENSE read does not lift the count back to 0.
+     * Energy accumulates unsigned power and has no floor to pass.
+     */
+    src = measured(16.0f, 0.0f, sensed);
+    src.charge_mah = -35.0f;
+    src.energy_wh  = 0.4f;
+    bench_state_to_regs(&src, regs);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 0u);
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;
+
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, -3500, 40u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, -35.0f, 0.001f);
+    CHECK_NEAR(t.wh, 0.4f, 0.001f);
+
+    /* No SENSE read: BENCH's 0 is the floor, not the total. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_totals_count(&t, &b, 0.05f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, -35.0f, 0.001f);
+    CHECK_NEAR(b.energy_wh, 0.4f, 0.001f);
+
+    /* The next read goes on from there, up or down. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, -3610, 41u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, -36.1f, 0.001f);
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, -1000, 42u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, -10.0f, 0.001f);
+
+    /* A count that is not below the floor follows BENCH as before. */
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_EQ(t.mah, 0.0f);
 }
 
 TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
@@ -696,7 +746,7 @@ int main(void)
     RUN(the_ina228_counts_while_its_totals_are_the_runs);
     RUN(a_run_start_takes_the_last_runs_totals_off_the_page);
     RUN(the_finer_totals_replace_benchs_where_they_agree);
-    RUN(the_totals_go_on_past_benchs_ceiling);
+    RUN(the_totals_go_on_past_benchs_bounds);
     RUN(the_escs_figures_come_from_whichever_page_carries_them);
     return test_summary("bench");
 }
