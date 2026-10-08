@@ -34,6 +34,12 @@ history is in git.
 
 ### Fixed
 
+- A reading at or past a move's window no longer counts as its arrival.
+  The window is 3000 ms plus the meter's lag: 3300 ms on the PD mini, and
+  3005 ms for the coprocessor's capture on INA3221 CH1. The servo test
+  took a reading that came in after the window ended, but before the next
+  pass, as the arrival and timed the move at 3300 ms or more. Such a move
+  is now late.
 - The coprocessor refuses GP23, GP24, GP25 and GP29 for an output slot and for
   the PD mini's pins. The RP2350-CAN module uses them (GP23 is the MODE pin of
   its power converter, GP24 senses VBUS, GP25 drives LED1, GP29 senses VSYS)

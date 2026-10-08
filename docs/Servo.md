@@ -156,7 +156,8 @@ end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
   arrival about 300 ms after it happens. The lag is added rather than the
   window's last 300 ms left unjudged: a servo arriving at 2900 ms shows it
   at about 3200 ms and is timed, and a move that never arrives is still
-  late, 300 ms later.
+  late, 300 ms later. A reading at or past the window's end, 3300 ms on
+  the PD mini, is never an arrival: the move is late.
 - **Unseen:** a counted move with no reading past the threshold within
   the window. The current cannot tell it from a servo standing still: it is
   neither timed nor late, and the report counts it in the `Unseen` column.

@@ -188,6 +188,25 @@ TEST_CASE(the_window_ends_a_move_late_or_unseen)
     CHECK_EQ(m.end_t - m.cfg.cmd_t, 3100u);
 }
 
+/* A sample at the window's end is not judged: the move is over there,
+ * late with movement and unseen without, whatever the sample says. */
+TEST_CASE(a_sample_at_the_window_end_is_never_the_arrival)
+{
+    servo_move_t m;
+    pd_move(&m, 0.10f, 0.10f, 0.020f);
+    const float up[] = { 0.40f };
+    CHECK_EQ(feed(&m, 1100u, up, 1u), SERVO_MOVE_MOVING);
+    CHECK_EQ(servo_move_sample(&m, 1000u + 3300u, 0.10f, SERVO_MOVE_CLIP_NONE),
+             SERVO_MOVE_LATE);
+    CHECK_EQ(m.end_t, 4300u);
+    CHECK(!servo_move_arrived(&m));
+
+    pd_move(&m, 0.10f, 0.10f, 0.020f);
+    CHECK_EQ(servo_move_sample(&m, 1000u + 3301u, 0.90f, SERVO_MOVE_CLIP_NONE),
+             SERVO_MOVE_UNSEEN);
+    CHECK(!servo_move_moved(&m));
+}
+
 /* The coprocessor stamps the edge ahead of the time it is told: a clock
  * before the command decides nothing. */
 TEST_CASE(a_clock_before_the_command_decides_nothing)
@@ -469,6 +488,7 @@ int main(void)
     RUN(the_peak_of_samples_below_zero_is_the_highest_of_them);
     RUN(leaving_an_end_pushed_on_is_movement_downwards);
     RUN(the_window_ends_a_move_late_or_unseen);
+    RUN(a_sample_at_the_window_end_is_never_the_arrival);
     RUN(a_clock_before_the_command_decides_nothing);
     RUN(the_configuration_is_held_to_its_range);
     RUN(a_run_wider_than_the_band_starts_again);
