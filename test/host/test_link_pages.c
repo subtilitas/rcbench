@@ -21,6 +21,7 @@
 #include "outputs_pages.h"
 #include "rcbench_version.h"
 #include "sense_page.h"
+#include "tone_page.h"
 
 /* A stand-in for the coprocessor's own state. */
 typedef struct {
@@ -658,6 +659,124 @@ TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
     CHECK_EQ(g.control[LINK_CT_ARM], 1u);
 }
 
+/* The coprocessor's TONE handler is the page's rules and nothing more. */
+static tone_page_t s_tone;
+
+static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    tone_page_read(&s_tone, off, n, out);
+}
+
+static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    (void)ctx;
+    return tone_page_write(&s_tone, off, n, in, &s_out, 0u);
+}
+
+static const link_page_t k_pages_48[] = {
+    { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
+    { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
+    { LINK_PAGE_SENSE,    LINK_SN_COUNT, sense_read,    sense_write },
+    { LINK_PAGE_TONE,     LINK_TN_COUNT, tone_read,     tone_write },
+};
+
+static void fresh_48(void)
+{
+    fresh();
+    outputs_init(&s_out, 0u);
+    sense_page_init(&s_sense);
+    tone_page_init(&s_tone);
+    link_dev_init(&dev, k_pages_48, 4, &g, 0);
+}
+
+TEST_CASE(the_tone_page_is_served_in_frames_and_refuses_whole)
+{
+    fresh_48();
+    link_msg_t r;
+    /* The 20 Hz read: registers 8 to 23, 16 of them, four frames. */
+    CHECK(ask_read(LINK_PAGE_TONE, LINK_TN_FLAGS,
+                   LINK_TN_COUNT - LINK_TN_FLAGS, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+    CHECK_EQ(r.count, LINK_TN_COUNT - LINK_TN_FLAGS);
+    CHECK(ask_read(LINK_PAGE_TONE, 0, LINK_TN_COUNT, &r));
+    CHECK_EQ(r.regs[LINK_TN_PIN], 22u);
+    CHECK_EQ(r.regs[LINK_TN_F_MAX_HZ], 6500u);
+
+    /* The set-up in its two frames. */
+    const uint16_t a[4] = { LINK_TN_EN_TAP, 22u, 500u, 5000u };
+    const uint16_t b[4] = { 10u, 5u, 4u, 0u };
+    CHECK(write_page(LINK_PAGE_TONE, LINK_TN_ENABLE, 4, a, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK(write_page(LINK_PAGE_TONE, LINK_TN_SPLIT_PCT, 4, b, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(s_tone.cfg[LINK_TN_F_MIN_HZ], 500u);
+    CHECK_EQ(s_tone.cfg[LINK_TN_MIN_PERIODS], 4u);
+
+    /* A value out of range is refused with its reason and stores nothing. */
+    const uint16_t bad[4] = { LINK_TN_EN_TAP, 22u, 500u, 7000u };
+    CHECK(write_page(LINK_PAGE_TONE, LINK_TN_ENABLE, 4, bad, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(s_tone.cfg[LINK_TN_F_MAX_HZ], 5000u);
+
+    /* Read only registers; EVT_SEL alone is writable. */
+    const uint16_t one = 1u;
+    CHECK(write_page(LINK_PAGE_TONE, LINK_TN_FLAGS, 1, &one, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_READ_ONLY);
+    CHECK(write_page(LINK_PAGE_TONE, LINK_TN_EVT_SEL, 1, &one, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(s_tone.evt_sel, 1u);
+
+    /* The SENSE page's pins are not the tap's. */
+    const uint16_t sn[4] = { LINK_SN_EN_I228, 16u, 17u, 400u };
+    CHECK(write_page(LINK_PAGE_SENSE, LINK_SN_ENABLE, 4, sn, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+}
+
+/*
+ * A 4.8 panel and a 4.7 coprocessor.  The coprocessor has no TONE page and
+ * answers BAD_PAGE, which is why the panel sends nothing there below
+ * minor 8.
+ */
+TEST_CASE(a_4_7_coprocessor_has_no_tone_page_and_says_so)
+{
+    fresh_47();
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_TONE, 0, 1, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+    const uint16_t a[4] = { 1u, 22u, 400u, 6500u };
+    CHECK(write_page(LINK_PAGE_TONE, 0, 4, a, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+    /* The 4.7 pages are where they were. */
+    CHECK(ask_read(LINK_PAGE_SENSE, 0, 1, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+}
+
+/*
+ * A 4.7 panel and a 4.8 coprocessor.  The panel never reads or writes
+ * TONE; the identity and CONTROL answer as before, the bench arms, and a
+ * tap kept in the coprocessor's flash is still there for a 4.8 panel.
+ */
+TEST_CASE(a_4_7_panel_links_and_arms_on_a_4_8_coprocessor)
+{
+    fresh_48();
+    s_tone.cfg[LINK_TN_ENABLE] = LINK_TN_EN_TAP;
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_IDENTITY, 0, LINK_ID_COUNT, &r));
+    CHECK_EQ(r.regs[LINK_ID_PROTOCOL_MAJOR], 4u);
+    CHECK_EQ(r.regs[LINK_ID_PROTOCOL_MINOR], 8u);
+    const uint16_t frame[LINK_CT_ARM_FRAME] = { 1, 2500, 14 };
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, frame, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], 1u);
+    CHECK(tone_page_enabled(&s_tone));
+}
+
 /* The fault bits are one bit each; 4.7's store-off bit is bit 6 and moves
  * none of the others. */
 TEST_CASE(the_fault_bits_are_one_bit_each)
@@ -697,6 +816,9 @@ int main(void)
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
     RUN(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor);
+    RUN(the_tone_page_is_served_in_frames_and_refuses_whole);
+    RUN(a_4_7_coprocessor_has_no_tone_page_and_says_so);
+    RUN(a_4_7_panel_links_and_arms_on_a_4_8_coprocessor);
     RUN(the_fault_bits_are_one_bit_each);
     return test_summary("link_pages");
 }

@@ -120,6 +120,7 @@ TRACKED = [
     "shared/outputs/out_store_map.c",
     "shared/outputs/out_store_rec.c",
     "shared/outputs/sense_page.c",
+    "shared/outputs/tone_page.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
     "shared/bench/pdmini.c",
@@ -132,6 +133,8 @@ TRACKED = [
     "shared/sense/sense_sched.c",
     "shared/sense/sense_svc.c",
     "shared/sense/tone.c",
+    "shared/sense/edge_ring.c",
+    "shared/sense/tone_svc.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.

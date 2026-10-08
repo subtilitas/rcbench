@@ -14,6 +14,7 @@
 #include "pico/stdlib.h"
 
 #include "sense_i2c.h"
+#include "tone_core1.h"
 
 /* --- shared between the cores, under s_lock --------------------------- */
 
@@ -31,6 +32,10 @@ static volatile uint32_t s_shared_seq;
 static sense_svc_t  s_svc;
 static sense_cmd_t  s_cmd;
 static sense_snap_t s_snap;
+
+/* Core 1's stack: the default 2 kB is the sensor bus's; the tone service
+ * runs on it too. */
+static uint32_t s_stack[1024];
 
 /* --- core 0's own ------------------------------------------------------- */
 
@@ -101,6 +106,9 @@ static void core1_main(void)
         spin_unlock(s_lock, irq);
 
         sense_svc_step(&s_svc, &s_cmd, &s_snap);
+        /* The phase tap's pass: the words the PIO left in its ring since
+         * the last tick.  Nothing when no tap runs. */
+        tone_core1_step();
 
         irq = spin_lock_blocking(s_lock);
         memcpy(&s_shared, &s_snap, sizeof(s_shared));
@@ -113,7 +121,7 @@ bool sense_core1_start(const sense_cmd_t *first)
 {
     s_lock = spin_lock_instance((uint)spin_lock_claim_unused(true));
     s_order = *first;
-    multicore_launch_core1(core1_main);
+    multicore_launch_core1_with_stack(core1_main, s_stack, sizeof(s_stack));
     const uint64_t until = time_us_64() + SENSE_CORE1_START_MS * 1000u;
     while (!multicore_lockout_victim_is_initialized(1u)) {
         if (time_us_64() >= until) {

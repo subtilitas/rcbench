@@ -43,6 +43,9 @@
 #include "sense_page.h"
 #include "servo_page.h"
 #include "supply_page.h"
+#include "tone_cap.h"
+#include "tone_core1.h"
+#include "tone_page.h"
 #include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -80,6 +83,12 @@ static bool          s_supply_attach;
  * gives it its orders and publishes what it hands back.
  */
 static sense_page_t  s_sense;
+/*
+ * The TONE page: the phase tap's set-up, kept, and the beeps core 1 hears
+ * on it.  Core 0 owns the PIO state machine and the DMA ring
+ * (tone_cap.c); core 1 reads the ring and detects (tone_core1.c).
+ */
+static tone_page_t   s_tone;
 /* Core 1's last snapshot.  The pins it said it still holds are the page's
  * (sense_page_held()): a bus moved or closed keeps its old pins from the
  * outputs until core 1 has let them go, about 1 ms. */
@@ -201,12 +210,15 @@ static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static void save_outputs(const iomcu_state_t *s)
 {
     out_store_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
     /* And the supply's wiring, so a restart can still switch a module off. */
     memcpy(cfg.supply, &s_supply.regs[LINK_SP_ENABLE], sizeof(cfg.supply));
     /* And the sensor bus's set-up, so its pins stay held across one. */
     memcpy(cfg.sense, &s_sense.sense[LINK_SN_ENABLE], sizeof(cfg.sense));
+    /* And the phase tap's. */
+    memcpy(cfg.tone, s_tone.cfg, sizeof(cfg.tone));
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -299,15 +311,16 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 }
 
 /*
- * What no output may have: the board's own pins, and the ones the supply
- * and the sensor bus hold now -- the page's, and the ones core 1 has not
- * let go of yet.
+ * What no output may have: the board's own pins, and the ones the supply,
+ * the sensor bus and the phase tap hold now -- the pages', and the ones
+ * core 1 has not let go of yet.
  */
 static void reserve_held(void)
 {
     outputs_reserve_pins(&s_outputs, s_base_reserved
                                      | supply_page_pins(&s_supply)
-                                     | sense_page_held(&s_sense));
+                                     | sense_page_held(&s_sense)
+                                     | tone_page_pins(&s_tone));
 }
 
 /* ------------------------------------------------------------- core 1 */
@@ -539,7 +552,8 @@ static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
     uint16_t was[LINK_SN_CONFIG_COUNT];
     memcpy(was, s_sense.sense, sizeof(was));
     const uint8_t nack = sense_page_write(&s_sense, off, n, in, &s_outputs,
-                                          supply_page_pins(&s_supply));
+                                          supply_page_pins(&s_supply)
+                                          | tone_page_pins(&s_tone));
     if (nack != 0u) {
         return nack;
     }
@@ -580,6 +594,103 @@ static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
                                                  : -1);
     s_edge_set = false;
     sense_order();
+    return 0u;
+}
+
+/* ------------------------------------------------------------ the phase tap */
+
+/* The pins the tap may not take: the supply's, and the sensor bus's with the
+ * ones core 1 has not let go of yet. */
+static uint64_t tone_taken(void)
+{
+    return supply_page_pins(&s_supply) | sense_page_held(&s_sense);
+}
+
+/* Core 1's order from the page, running when the capture does. */
+static void tone_order(void)
+{
+    tone_cmd_t cmd;
+    tone_page_cmd(&s_tone, tone_cap_running(), &cmd);
+    tone_core1_order(&cmd, tone_cap_start_us());
+}
+
+/*
+ * The capture made to agree with the page: stopped, then started on the
+ * page's pin if the tap is enabled and not refused, else the pin left an
+ * input with its pull-down on.  False when the tap is enabled and the
+ * wiring could not take its pin (no PIO state machine, no DMA channel).
+ * Core 1 is told first that nothing runs, and again once the capture does,
+ * so it never reads a ring that is being started over.
+ */
+static bool tone_rewire(void)
+{
+    tone_cap_stop();
+    tone_order();
+    reserve_held();
+    if (!tone_page_wanted(&s_tone)) {
+        if (tone_page_pin_free(&s_tone, &s_outputs, tone_taken())) {
+            tone_cap_rest(tone_page_pin(&s_tone));
+        }
+        return true;
+    }
+    if (!tone_cap_start(tone_page_pin(&s_tone))) {
+        return false;
+    }
+    tone_page_capture(&s_tone);
+    tone_order();
+    return true;
+}
+
+static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    tone_core1_sync(&s_tone);
+    tone_page_read(&s_tone, off, n, out);
+}
+
+/*
+ * The tap's set-up: judged by the page against the bank and the other
+ * pages' pins, then the capture started or moved, the pin reserved, the
+ * set-up saved and core 1 told.  A change of ENABLE or of the pin, and a
+ * write that tries a refused tap again, rewire the capture; the wiring
+ * failing there puts the old set-up back and refuses the write.  A change
+ * of a range only reaches core 1.  Taken
+ * armed or not: the tap is an input.
+ */
+static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    (void)ctx;
+    /* The pins core 1 still holds, as of its last tick. */
+    sense_sync();
+    tone_core1_sync(&s_tone);
+    uint16_t was[LINK_TN_CONFIG_COUNT];
+    memcpy(was, s_tone.cfg, sizeof(was));
+    const bool was_refused = s_tone.refused;
+    const uint16_t gen = s_tone.gen;
+    const uint8_t nack = tone_page_write(&s_tone, off, n, in, &s_outputs,
+                                         tone_taken());
+    if (nack != 0u || s_tone.gen == gen) {
+        return nack;
+    }
+    const bool rewire = was_refused
+                        || s_tone.cfg[LINK_TN_ENABLE] != was[LINK_TN_ENABLE]
+                        || s_tone.cfg[LINK_TN_PIN] != was[LINK_TN_PIN];
+    if (rewire && !tone_rewire()) {
+        /* No state machine or channel for that pin: the set-up as it was,
+         * and the capture as it was. */
+        tone_page_revert(&s_tone, was, was_refused);
+        if (!tone_rewire()) {
+            tone_page_refuse(&s_tone);
+            reserve_held();
+        }
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (!rewire) {
+        reserve_held();
+        tone_order();
+    }
+    save_outputs(&s_state);
     return 0u;
 }
 
@@ -630,6 +741,10 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     /* Nor on one the sensor bus holds, for the same reason: its set-up's
      * pins, and the ones core 1 has not let go of yet. */
     if (sense_page_slots_check(&s_sense, next) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* Nor on the phase tap's pin while the tap runs. */
+    if (tone_page_slots_check(&s_tone, next) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     /* Nor a slot bound beside a surface at another rate. */
@@ -891,6 +1006,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE,     LINK_SN_COUNT,  sense_read,     sense_write },
     { LINK_PAGE_SERVO_SENSE, LINK_SS_COUNT, servo_sense_read,
       servo_sense_write },
+    { LINK_PAGE_TONE,      LINK_TN_COUNT,  tone_read,      tone_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1405,6 +1521,8 @@ int main(void)
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
     sense_page_init(&s_sense);
+    tone_page_init(&s_tone);
+    tone_core1_init();
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
@@ -1447,6 +1565,19 @@ int main(void)
         (void)sense_page_write(&s_sense, LINK_SN_ENABLE,
                                (uint8_t)LINK_SN_CONFIG_COUNT, saved.sense,
                                &s_outputs, supply_page_pins(&s_supply));
+        reserve_held();
+    }
+    /*
+     * The phase tap, last: through the page's own checks, so a pin an
+     * output, the supply or the sensor bus holds is refused and the tap
+     * does not run, FLAGS saying so; and after their PIO programs, so it
+     * takes what state machine they leave.
+     */
+    if (have_saved) {
+        tone_page_restore(&s_tone, saved.tone, &s_outputs, tone_taken());
+    }
+    if (!tone_rewire()) {
+        tone_page_refuse(&s_tone);
         reserve_held();
     }
 #if IOMCU_SENSE_BRINGUP
@@ -1546,6 +1677,8 @@ int main(void)
          * than a frame takes to arrive, and the failsafe has to fire on time
          * whether or not anything is arriving. */
         can_service(now);
+        /* Core 1's beeps and status into the TONE page. */
+        tone_core1_sync(&s_tone);
 
         /*
          * Two independent watchdogs, and both before the bank is armed.  The

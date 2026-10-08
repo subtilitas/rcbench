@@ -57,9 +57,9 @@ _Static_assert(STORE_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
 
 #define STORE_MAGIC    0x7263626FuL    /* "rcbo" */
-/* Written at OUT_STORE_VERSION; versions 3 and 4 are still read, so the
- * output bindings and the supply's wiring an earlier build saved survive
- * the update (out_store_rec.h). */
+/* Written at OUT_STORE_VERSION; versions 3 to 5 are still read, so the
+ * output bindings, the supply's wiring and the sensor bus's set-up an
+ * earlier build saved survive the update (out_store_rec.h). */
 #define STORE_VERSION  OUT_STORE_VERSION
 
 /*
