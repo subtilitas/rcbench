@@ -34,14 +34,28 @@ static uint64_t div_up(uint64_t a, uint64_t b)
     return (a + b - 1u) / b;
 }
 
-/* A duration of @p ns as ticks of @p tick_hz, rounded up: the one rule
- * for every time setting (window, glitch, hold-off, gap), so a low or a
- * silence counts as that long only once it has lasted that long.  A
- * setting derived from another, as start_low from the hold-off, is
- * derived from the rounded ticks, never rounded again. */
+/* The one rule for every time setting (window, glitch, hold-off, gap):
+ * a low or a silence counts as that long only once it has lasted that
+ * long.  A setting derived from another, as start_low from the hold-off,
+ * is derived from the rounded ticks, never rounded again.
+ *
+ * tick_hz * ns / 1e9 without forming tick_hz * ns: with ns = a * 1e9 + b
+ * and tick_hz = q * 1e9 + r, the product over 1e9 is tick_hz * a + q * b
+ * + r * b / 1e9, and r * b is under 1e18.  Exact, rounded up, for every
+ * result that fits 64 bits. */
+uint64_t tone_ns_ticks(uint64_t tick_hz, uint64_t ns)
+{
+    const uint64_t g = 1000000000u;
+    const uint64_t a = ns / g;
+    const uint64_t b = ns % g;
+    const uint64_t q = tick_hz / g;
+    const uint64_t r = tick_hz % g;
+    return tick_hz * a + q * b + div_up(r * b, g);
+}
+
 static uint64_t ns_ticks(uint32_t tick_hz, uint64_t ns)
 {
-    return div_up((uint64_t)tick_hz * ns, 1000000000u);
+    return tone_ns_ticks(tick_hz, ns);
 }
 
 bool tone_init(tone_t *d, const tone_cfg_t *c)
@@ -53,10 +67,10 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
     if (c->f_min_hz < 50u || c->f_min_hz >= c->f_max_hz
         || c->carrier_min_hz <= c->f_max_hz
         || c->f_max_hz > c->tick_hz || c->carrier_min_hz > c->tick_hz
-        || c->glitch_ns == 0u || c->glitch_ns > 10000u
-        || c->hold_ns > 100000u
+        || c->glitch_ns == 0u || c->glitch_ns > TONE_GLITCH_NS_MAX
+        || c->hold_ns > TONE_HOLD_NS_MAX || c->gap_us > TONE_GAP_US_MAX
         || (uint64_t)c->tick_hz * c->glitch_ns < 1000000000u
-        || c->window_us < 1000u || c->window_us > 100000u
+        || c->window_us < 1000u || c->window_us > TONE_WINDOW_US_MAX
         || (uint64_t)c->gap_us * c->f_min_hz < 1000000u
         || c->min_periods == 0u || c->window_min_periods == 0u
         || c->split_pct > 100u) {

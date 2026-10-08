@@ -127,6 +127,13 @@ extern "C" {
 /** Beeps held until the caller takes them. */
 #define TONE_BEEP_QUEUE 16u
 
+/* The longest each time setting may be; tone_init() refuses more.  At
+ * these, every setting is under 2^32 ticks at any 32-bit tick_hz. */
+#define TONE_WINDOW_US_MAX 100000u   /**< 100 ms                          */
+#define TONE_GAP_US_MAX    1000000u  /**< 1 s                             */
+#define TONE_GLITCH_NS_MAX 10000u    /**< 10 us                           */
+#define TONE_HOLD_NS_MAX   100000u   /**< 100 us                          */
+
 typedef struct {
     uint32_t tick_hz;        /**< the edge stamps' clock                  */
     uint32_t window_us;      /**< a window's length, 1000 to 100000 us    */
@@ -137,11 +144,13 @@ typedef struct {
     uint32_t carrier_min_hz;
     /** A low shorter than this, ns, is no low; 1 to 10000. */
     uint32_t glitch_ns;
-    /** The capture's hold-off (tone_holdoff_t), ns, 0 to 100000; 0 none.
+    /** The capture's hold-off (tone_holdoff_t), ns, 0 to
+     *  TONE_HOLD_NS_MAX; 0 none.
      *  A rise starts a burst only after a low of at least twice it. */
     uint32_t hold_ns;
-    /** No edge for this long ends a beep, us; at least the period of
-     *  f_min_hz, so a tone's own off time never does. */
+    /** No edge for this long ends a beep, us, at most TONE_GAP_US_MAX;
+     *  at least the period of f_min_hz, so a tone's own off time never
+     *  does. */
     uint32_t gap_us;
     /** TONE_BLOCK periods this far from the beep's mean, in percent, start
      *  a new beep; 0 splits only on silence; at most 100. */
@@ -256,11 +265,12 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
 /** Start from nothing.  False, leaving @p d unusable, when @p c contradicts
  *  itself or names a range the tick clock cannot resolve: f_min_hz >=
  *  f_max_hz, carrier_min_hz <= f_max_hz, f_max_hz or carrier_min_hz above
- *  tick_hz (a period under one tick), hold_ns above 100000, glitch_ns
- *  outside 1 to 10000 or under one tick, gap_us under the period of
- *  f_min_hz, a window outside 1000 to 100000 us, f_min_hz under 50 Hz, a
- *  minimum of 0, split_pct above 100.  Also refused, as settings under which no signal makes a
- *  tone, in whole ticks: the period of f_min_hz, or the gap, at most the
+ *  tick_hz (a period under one tick), hold_ns above TONE_HOLD_NS_MAX,
+ *  glitch_ns outside 1 to TONE_GLITCH_NS_MAX or under one tick, gap_us
+ *  under the period of f_min_hz or above TONE_GAP_US_MAX, a window
+ *  outside 1000 us to TONE_WINDOW_US_MAX, f_min_hz under 50 Hz, a minimum
+ *  of 0, split_pct above 100.  Also refused, as settings under which no
+ *  signal makes a tone, in whole ticks: the period of f_min_hz, or the gap, at most the
  *  glitch or at most twice the hold-off (no low could part two bursts
  *  without being a glitch, being too short to start one, or ending the
  *  run); the period of f_max_hz rounded down at most the period of
@@ -293,6 +303,11 @@ bool tone_next_beep(tone_t *d, tone_beep_t *b);
 bool tone_busy(const tone_t *d);
 
 const tone_stats_t *tone_stats(const tone_t *d);
+
+/** @p ns as ticks of a @p tick_hz clock, rounded up: the conversion of
+ *  every time setting.  Exact for every result that fits 64 bits; no
+ *  intermediate product overflows. */
+uint64_t tone_ns_ticks(uint64_t tick_hz, uint64_t ns);
 
 /** @p ticks of the detector's clock in microseconds, rounded down. */
 uint64_t tone_ticks_us(const tone_t *d, uint64_t ticks);

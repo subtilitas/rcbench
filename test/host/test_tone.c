@@ -444,9 +444,9 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     REFUSED(f_min_hz, 6500u);
     REFUSED(carrier_min_hz, 6500u);
     REFUSED(glitch_ns, 0u);
-    REFUSED(glitch_ns, 10001u);
+    REFUSED(glitch_ns, TONE_GLITCH_NS_MAX + 1u);
     REFUSED(window_us, 999u);
-    REFUSED(window_us, 100001u);
+    REFUSED(window_us, TONE_WINDOW_US_MAX + 1u);
     REFUSED(gap_us, 2499u);
     REFUSED(min_periods, 0u);
     REFUSED(window_min_periods, 0u);
@@ -456,7 +456,8 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     c.f_max_hz = TICK_HZ + 1u;
     c.carrier_min_hz = TICK_HZ + 2u;
     CHECK(!tone_init(&det, &c));
-    REFUSED(hold_ns, 100001u);
+    REFUSED(hold_ns, TONE_HOLD_NS_MAX + 1u);
+    REFUSED(gap_us, TONE_GAP_US_MAX + 1u);
 #undef REFUSED
     CHECK(!tone_init(NULL, &c));
     CHECK(!tone_init(&det, NULL));
@@ -511,6 +512,55 @@ static void cfg_1mhz(tone_cfg_t *c)
     c->glitch_ns = 1000u;
     c->hold_ns = 0u;
     c->gap_us = 100u;
+}
+
+TEST_CASE(every_time_setting_is_taken_at_its_bound_and_refused_past_it)
+{
+    tone_cfg_t c;
+#define AT_BOUND(field, max)                                                  \
+    do {                                                                      \
+        tone_cfg_defaults(&c, TICK_HZ);                                       \
+        c.field = (max);                                                      \
+        if (!tone_init(&det, &c)) {                                           \
+            T_FAIL("%s = %u refused", #field, (unsigned)(max));               \
+        }                                                                     \
+        c.field = (max) + 1u;                                                 \
+        if (tone_init(&det, &c)) {                                            \
+            T_FAIL("%s = %u taken", #field, (unsigned)(max) + 1u);            \
+        }                                                                     \
+    } while (0)
+    AT_BOUND(window_us, TONE_WINDOW_US_MAX);
+    AT_BOUND(gap_us, TONE_GAP_US_MAX);
+    AT_BOUND(glitch_ns, TONE_GLITCH_NS_MAX);
+    AT_BOUND(hold_ns, TONE_HOLD_NS_MAX);
+#undef AT_BOUND
+    /* A 1 GHz clock and a gap of 2^32 - 1 us, 71.6 min: refused, where
+     * the product of the two in 64 bits wrapped to 15.3 s.  1 s: taken,
+     * 10^9 ticks. */
+    tone_cfg_defaults(&c, 1000000000u);
+    c.gap_us = UINT32_MAX;
+    CHECK(!tone_init(&det, &c));
+    c.gap_us = TONE_GAP_US_MAX;
+    CHECK(tone_init(&det, &c));
+    CHECK(det.gap == 1000000000ull);
+}
+
+TEST_CASE(the_tick_conversion_is_exact_without_overflow)
+{
+    CHECK_EQ(tone_ns_ticks(1000000u, 0u), 0);
+    CHECK_EQ(tone_ns_ticks(1000000u, 1500u), 2);
+    CHECK_EQ(tone_ns_ticks(TICK_HZ, 3000000u), 112500);
+    CHECK_EQ(tone_ns_ticks(TICK_HZ, 400u), 15);
+    CHECK_EQ(tone_ns_ticks(TICK_HZ, 401u), 16);
+    /* 2^32 - 1 us at 1 GHz: 71.6 min, 4294967295000 ticks, where
+     * 1e9 * 4294967295000 overflows 64 bits. */
+    CHECK(tone_ns_ticks(1000000000u, 4294967295000ull) == 4294967295000ull);
+    /* (2^32 - 1)^2 * 1000 / 1e9, rounded up. */
+    CHECK(tone_ns_ticks(UINT32_MAX, 4294967295000ull)
+          == 18446744065120ull);
+    /* A 64-bit clock: one nanosecond, and one second. */
+    CHECK(tone_ns_ticks(UINT64_MAX, 1u) == 18446744074ull);
+    CHECK(tone_ns_ticks(UINT64_MAX, 1000000000u) == UINT64_MAX);
 }
 
 TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
@@ -1804,6 +1854,8 @@ int main(void)
 {
     RUN(the_defaults_are_a_configuration_init_takes);
     RUN(a_configuration_that_contradicts_itself_is_refused);
+    RUN(every_time_setting_is_taken_at_its_bound_and_refused_past_it);
+    RUN(the_tick_conversion_is_exact_without_overflow);
     RUN(settings_under_which_no_signal_makes_a_tone_are_refused);
     RUN(a_square_tone_reads_its_frequency_from_500_hz_to_6_khz);
     RUN(a_chopped_tone_reads_the_tone_and_the_carrier);
