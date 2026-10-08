@@ -452,6 +452,120 @@ TEST_CASE(a_stalled_loop_counts_at_most_one_step)
     bench_totals_reset(NULL);
 }
 
+/*
+ * The INA228 counts while BENCH says its totals are the run's: its charge
+ * and energy are the count and nothing the panel saw is added.  When the
+ * bit goes the count carries on from the part's last total, and never goes
+ * back.
+ */
+TEST_CASE(the_ina228_counts_while_its_totals_are_the_runs)
+{
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const uint16_t sensed = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                       | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    /* The run's first sample can be the last run's page: its totals are
+     * not taken, and the panel counts that sample itself. */
+    bench_state_t b = measured(16.0f, 36.0f, sensed);
+    b.charge_mah = 900.0f;
+    b.energy_wh  = 14.0f;
+    bench_totals_count(&t, &b, 0.05f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, 0.5f, 0.001f);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 1.0f, 0.001f);
+
+    b = measured(16.0f, 36.0f, sensed);
+    b.charge_mah = 120.0f;
+    b.energy_wh  = 1.9f;
+    bench_totals_count(&t, &b, 1.0f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, 120.0f, 0.001f);
+    CHECK_NEAR(b.energy_wh, 1.9f, 0.001f);
+    CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+
+    /* Not while disarmed: the totals stand where the run left them. */
+    b = measured(16.0f, 36.0f, sensed);
+    b.charge_mah = 130.0f;
+    bench_totals_count(&t, &b, 1.0f, false);
+    CHECK_NEAR(t.mah, 120.0f, 0.001f);
+
+    /* The part stopped answering: BENCH's fields empty, the bit gone, and
+     * the count goes on from 120 mAh with nothing to add. */
+    b = measured(0.0f, 0.0f, LINK_BN_SENSED);
+    bench_totals_count(&t, &b, 1.0f, true);
+    bench_totals_show(&t, &b);
+    CHECK_NEAR(b.charge_mah, 120.0f, 0.001f);
+    CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+}
+
+TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
+{
+    const uint16_t sensed = (uint16_t)(LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    bench_state_t b = measured(0.0f, 0.0f, sensed);
+    b.charge_mah = 123.0f;          /* BENCH's 1 mAh and 0.1 Wh steps */
+    b.energy_wh  = 2.9f;
+    bench_state_fine_totals(&b, 12274, 287u);
+    CHECK_NEAR(b.charge_mah, 122.74f, 0.001f);
+    CHECK_NEAR(b.energy_wh, 2.87f, 0.001f);
+
+    /* A read from another moment -- before the arm, after a stall --
+     * disagrees by more than a step and is not taken. */
+    b.charge_mah = 123.0f;
+    b.energy_wh  = 2.9f;
+    bench_state_fine_totals(&b, 51200, 1904u);
+    CHECK_EQ(b.charge_mah, 123.0f);
+    CHECK_NEAR(b.energy_wh, 2.9f, 0.001f);
+
+    /* A run that gave back more than it took: BENCH holds 0, SENSE the
+     * signed total. */
+    b.charge_mah = 0.0f;
+    bench_state_fine_totals(&b, -350, 0u);
+    CHECK_NEAR(b.charge_mah, -3.5f, 0.001f);
+
+    /* Without TOTALS_OK nothing changes. */
+    b = measured(0.0f, 0.0f, LINK_BN_SENSED);
+    b.charge_mah = 7.0f;
+    bench_state_fine_totals(&b, 700, 0u);
+    CHECK_EQ(b.charge_mah, 7.0f);
+    bench_state_fine_totals(NULL, 0, 0u);
+}
+
+TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
+{
+    float v = 0.0f;
+    float a = 0.0f;
+    /* No INA228: BENCH's numbers are the ESC's. */
+    bench_state_t b = measured(24.0f, 30.0f,
+                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    CHECK(bench_state_esc_voltage(&b, &v));
+    CHECK(bench_state_esc_current(&b, &a));
+    CHECK_NEAR(v, 24.0f, 0.001f);
+    CHECK_NEAR(a, 30.0f, 0.001f);
+    CHECK(!bench_state_ina_voltage(&b, &v));
+    CHECK(!bench_state_ina_current(&b, &a));
+
+    /* The INA228 as the source: BENCH's are its own, SENSE's the ESC's. */
+    b.flags |= (uint16_t)LINK_BN_SENSED;
+    bench_state_set_esc(&b, true, 24.4f, false, 99.0f, true);
+    CHECK(b.clipped);
+    CHECK(bench_state_esc_voltage(&b, &v));
+    CHECK_NEAR(v, 24.4f, 0.001f);
+    CHECK(!bench_state_esc_current(&b, &a));
+    CHECK(bench_state_ina_voltage(&b, &v));
+    CHECK(bench_state_ina_current(&b, &a));
+    CHECK_NEAR(v, 24.0f, 0.001f);
+    CHECK_NEAR(a, 30.0f, 0.001f);
+    CHECK_EQ(b.esc_current, 0.0f);
+
+    /* An INA228 field nothing answered for is not one. */
+    b.flags = (uint16_t)LINK_BN_SENSED;
+    CHECK(!bench_state_ina_voltage(&b, &v));
+    CHECK(!bench_state_esc_voltage(NULL, &v));
+    CHECK(!bench_state_esc_current(&b, NULL));
+    bench_state_set_esc(NULL, false, 0.0f, false, 0.0f, false);
+}
+
 int main(void)
 {
     RUN(every_field_survives_the_round_trip);
@@ -472,5 +586,8 @@ int main(void)
     RUN(one_count_runs_through_a_change_of_source);
     RUN(the_totals_outlast_the_run_and_reset_at_the_next);
     RUN(a_stalled_loop_counts_at_most_one_step);
+    RUN(the_ina228_counts_while_its_totals_are_the_runs);
+    RUN(the_finer_totals_replace_benchs_where_they_agree);
+    RUN(the_escs_figures_come_from_whichever_page_carries_them);
     return test_summary("bench");
 }

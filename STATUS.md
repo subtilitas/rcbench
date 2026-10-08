@@ -112,7 +112,7 @@ is taken in a gap ahead of the save that needs it.
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers, at every edit, and in the frame that arms, so a run starts on the count that was sent or does not start; with none sent the coprocessor reports no speed rather than one derived from a guess |
 | Outputs screen | built and tested on the host: a protocol list and a pin grid behind the Setup screen's OUTPUTS key, writing `CHAN_CFG` and `OUTPUTS` on every change and reading the binding back from the coprocessor. Reserved pins are shown and refused. Run on hardware: the bindings behind the servo and motor runs were made here, and the nine saves that produced `FAULT 01` were an operator ticking pins on it |
 | Output binding in the coprocessor's flash | built, not run on hardware: the last two sectors of the first 4 MB as 32 record slots, restored at boot, saved once the bank is idle and the bus quiet. A save is one page program; a sector erase falls to one per sixteen saves and is taken ahead of the save that needs it, or at boot. The placement rules are host-tested in `test_outstore`; `firmware/iomcu/src/out_store.c` and `firmware/iomcu/src/main.c` compile and have not run on a board. What has run on hardware is the single-sector store this one replaces: eight of its saves printed an erase-and-program window of 19,174 to 19,186 us. Every erase and program runs through `flash_safe_execute()`, which parks core 1 in RAM for the window; a window core 1 does not stop for within 10 ms writes nothing, prints `window refused` and is tried again 1000 ms on. A boot whose core 1 does not register for the lock-out within 100 ms switches the store off: no window opens and `flash_safe_execute()` is not called, set-ups run from RAM until a restart, STATUS fault bit 6 is set and the console says so every 3 s. The offset is deliberately the 4 MB module's rather than the 16 MB board file's. The record is version 5: the bindings, the supply's wiring and the current monitors' set-up. Version 3 and 4 records load, with what they lack off; that decode is `shared/outputs/out_store_rec.c`, host-tested in `test_outstore`. A record of any other version reads as unwritten, so the first boot on such a store starts from the defaults -- no driver and no pin in any slot -- and the binding is gone until an operator sets it again on the OUTPUTS screen |
-| Current monitors (INA228, INA3221) | drivers built and host-tested against a modelled bus in `test_ina228` and `test_ina3221` (`shared/sense/`). Link pages built and host-tested in `test_sense_page`: SENSE and SERVO_SENSE (protocol 4.7), the bus's pins, clock, addresses, shunts and channels validated (the INA228's shunt and maximum by the driver's `ina228_calibrate()`), kept in the coprocessor's flash, and the pins held from the outputs. The sampling schedule (`shared/sense/sense_sched.c`) built and host-tested in `test_sense_sched` against the modelled bus: per 1 ms tick on a 400 kHz bus INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or 1000 Hz while a pair runs, the INA228's current and voltage at 500 Hz each and the rest at 50 Hz; 50 ms windows with a clipped reading kept out of them; the run's INA228 peaks and its ENERGY and CHARGE cleared at the arm, no longer the run's after one failed INA228 read; a move capture on CH1, in 1 ms steps, timed from a PWM edge the caller gives, judged by the servo test's own rules (`shared/servo/servo_move.c`, `test_servo_move`) with a 4-sample filter, the level before the command the mean of CH1 over the 50 ms before the edge. The coprocessor reads both parts on core 1 (`firmware/iomcu/src/sense_core1.c`, `sense_i2c.c`): a 1 ms tick, the I2C block at 400 kHz on the SENSE page's pins with the pads' pulls off, a 1 ms limit on each transaction, a bus clear of 9 clocks and a STOP when the bus sticks, and an address scan for PRESENT, repeated every 1 s while a part is missing. Core 1's step is `shared/sense/sense_svc.c`, host-tested in `test_sense_svc`. Core 0 hands it orders and takes back a snapshot, each a copy under one spin lock; it publishes the snapshot into SENSE and SERVO_SENSE, fills BENCH from the INA228 at the existing scales with bits 5 and 6, and stamps the capture's edge from the PWM slice's counter, good to 1 µs. The flash store's windows run through `flash_safe_execute()`, which parks core 1. None of this has run on hardware: both images compile, and [First run](docs/FirstRun.md) §8 lists what a bench session measures. The panel has no setting or screen for the parts and writes neither page |
+| Current monitors (INA228, INA3221) | drivers built and host-tested against a modelled bus in `test_ina228` and `test_ina3221` (`shared/sense/`). Link pages built and host-tested in `test_sense_page`: SENSE and SERVO_SENSE (protocol 4.7), the bus's pins, clock, addresses, shunts and channels validated (the INA228's shunt and maximum by the driver's `ina228_calibrate()`), kept in the coprocessor's flash, and the pins held from the outputs. The sampling schedule (`shared/sense/sense_sched.c`) built and host-tested in `test_sense_sched` against the modelled bus: per 1 ms tick on a 400 kHz bus INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or 1000 Hz while a pair runs, the INA228's current and voltage at 500 Hz each and the rest at 50 Hz; 50 ms windows with a clipped reading kept out of them; the run's INA228 peaks and its ENERGY and CHARGE cleared at the arm, no longer the run's after one failed INA228 read; a move capture on CH1, in 1 ms steps, timed from a PWM edge the caller gives, judged by the servo test's own rules (`shared/servo/servo_move.c`, `test_servo_move`) with a 4-sample filter, the level before the command the mean of CH1 over the 50 ms before the edge. The coprocessor reads both parts on core 1 (`firmware/iomcu/src/sense_core1.c`, `sense_i2c.c`): a 1 ms tick, the I2C block at 400 kHz on the SENSE page's pins with the pads' pulls off, a 1 ms limit on each transaction, a bus clear of 9 clocks and a STOP when the bus sticks, and an address scan for PRESENT, repeated every 1 s while a part is missing. Core 1's step is `shared/sense/sense_svc.c`, host-tested in `test_sense_svc`. Core 0 hands it orders and takes back a snapshot, each a copy under one spin lock; it publishes the snapshot into SENSE and SERVO_SENSE, fills BENCH from the INA228 at the existing scales with bits 5 and 6, and stamps the capture's edge from the PWM slice's counter, good to 1 µs. The flash store's windows run through `flash_safe_execute()`, which parks core 1. None of this has run on hardware: both images compile, and [First run](docs/FirstRun.md) §8 lists what a bench session measures. The panel sets both parts up from SETUP INTERFACES (`shared/bench/sense_link.c`, host-tested in `test_sense_link` against the coprocessor's page code and against a 4.6 coprocessor, which it sends nothing): SENSE read at every link-up, a set-up written 500 ms after its last edit while the bank is disarmed and only where it differs, both parts off on the page while a part's own frame changes with both enabled, a refused frame not written again until the next edit, and the identity page read again after a write is taken. It reads SENSE every 50 ms while a part is enabled and SERVO_SENSE every 200 ms while the INA3221 is, and says on the band, once each, a part not answering 2.5 s after its set-up was taken, another identity at its address, a stuck bus, a clipped reading and STATUS fault bit 6. MOTOR & ESC's TABLE pane shows the ESC's own telemetry beside the INA228's readings with the difference, the totals are the INA228's while BENCH bit 6 is set, and a run's CSV file carries `ina voltage`, `ina current` and `esc current`. The panel arms no capture; the servo test does not use the INA3221 yet |
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
@@ -204,7 +204,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 65 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 66 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_servo`,
@@ -214,7 +214,7 @@ The host suite is 65 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_touch_loss`, `test_servo_limit`,
-`test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
+`test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_sense_sched`, `test_sense_svc`, `test_tone`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
@@ -222,8 +222,8 @@ this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 136 committed screenshots to the current
-render, 68 in English and the same 68 in German, and `render_ui.py --fit`
+below. `render_ui.py --check` holds 142 committed screenshots to the current
+render, 71 in English and the same 71 in German, and `render_ui.py --fit`
 fails on a German string that overflows where it is drawn; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
@@ -236,7 +236,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/gfx/gfx_seg.c` | 96 | 91 | 94.8% |
 | `shared/touch/touch_map.c` | 100 | 100 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 200 | 192 | 96.0% |
+| `shared/ui/ui_widgets.c` | 200 | 194 | 97.0% |
 | `shared/ui/ui_icons.c` | 122 | 122 | 100.0% |
 | `shared/ui/ui_band.c` | 37 | 35 | 94.6% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
@@ -249,7 +249,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 85 | 81 | 95.3% |
 | `shared/ui/stub_screen.c` | 52 | 14 | 26.9% |
-| `shared/ui/motor_screen.c` | 449 | 439 | 97.8% |
+| `shared/ui/motor_screen.c` | 488 | 445 | 91.2% |
 | `shared/ui/supply_screen.c` | 972 | 960 | 98.8% |
 | `shared/ui/ui_keypad.c` | 163 | 161 | 98.8% |
 | `shared/ui/ui_textkey.c` | 170 | 169 | 99.4% |
@@ -260,7 +260,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/ui/programmer_screen.c` | 2244 | 2113 | 94.2% |
 | `shared/ui/log_viewer_screen.c` | 796 | 724 | 91.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
-| `shared/ui/settings_screen.c` | 304 | 295 | 97.0% |
+| `shared/ui/settings_screen.c` | 304 | 297 | 97.7% |
 | `shared/ui/outputs_screen.c` | 239 | 237 | 99.2% |
 | `shared/ui/picker_screen.c` | 321 | 315 | 98.1% |
 | `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
@@ -303,7 +303,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/link/link_control.c` | 23 | 23 | 100.0% |
 | `shared/artwork/art_store.c` | 104 | 96 | 92.3% |
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
-| `shared/bench/bench_state.c` | 103 | 99 | 96.1% |
+| `shared/bench/bench_state.c` | 158 | 154 | 97.5% |
 | `shared/outputs/outputs.c` | 192 | 184 | 95.8% |
 | `shared/outputs/outputs_pages.c` | 190 | 179 | 94.2% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
@@ -317,14 +317,15 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
 | `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
 | `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
-| `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
+| `shared/bench/sense_link.c` | 386 | 361 | 93.5% |
+| `shared/bench/log_writer.c` | 136 | 124 | 91.2% |
 | `shared/sense/sense_bus.c` | 119 | 119 | 100.0% |
 | `shared/sense/ina228.c` | 188 | 188 | 100.0% |
 | `shared/sense/ina3221.c` | 115 | 115 | 100.0% |
 | `shared/sense/sense_sched.c` | 333 | 333 | 100.0% |
 | `shared/sense/sense_svc.c` | 146 | 146 | 100.0% |
 | `shared/sense/tone.c` | 372 | 372 | 100.0% |
-| **total** | **22802** | **22049** | **96.7%** |
+| **total** | **23292** | **22485** | **96.5%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -358,7 +359,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming has met no ESC | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 68 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
+| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 71 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
 
 ## Constraints
 

@@ -57,6 +57,21 @@ typedef struct {
      * reading after it, and report a collapsed pack for the whole run.
      */
     bool     sag_seeded;
+
+    /*
+     * The ESC's own telemetry while the INA228 is BENCH's source
+     * (LINK_BN_SENSED), from the SENSE page: voltage and current, each
+     * valid with its bit in esc_ok (LINK_SN_ESC_VOLTAGE_OK,
+     * LINK_SN_ESC_CURRENT_OK).  Not on the BENCH page; without SENSED the
+     * BENCH numbers are the ESC's and these are not used.
+     */
+    float    esc_voltage;   /**< V */
+    float    esc_current;   /**< A */
+    uint8_t  esc_ok;
+    /** The INA228 read its current at the end of its range in the last
+     *  window or since the arm (SENSE FLAGS bit 3): current and power, or
+     *  their peaks, are bounds and not values. */
+    bool     clipped;
 } bench_state_t;
 
 /** True when the numbers are modelled rather than measured. */
@@ -81,6 +96,43 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
 /** Clear the peaks without disturbing the live readings. */
 void bench_state_reset_peaks(bench_state_t *b);
 
+/**
+ * The ESC's own figures while the INA228 is the source: from the SENSE
+ * page's ESC registers, @p v_ok and @p i_ok their valid bits, and whether
+ * the INA228 reads clipped.  All clear while it is not the source.
+ */
+void bench_state_set_esc(bench_state_t *b, bool v_ok, float volts,
+                         bool i_ok, float amps, bool clipped);
+
+/**
+ * The ESC's own voltage and current, whichever page carries them: the
+ * SENSE page's while the INA228 is BENCH's source, BENCH's own otherwise.
+ * False, and @p out untouched, when the ESC reported none.
+ */
+bool bench_state_esc_voltage(const bench_state_t *b, float *out);
+bool bench_state_esc_current(const bench_state_t *b, float *out);
+
+/** The INA228's own voltage and current: BENCH's while it is the source.
+ *  False otherwise. */
+bool bench_state_ina_voltage(const bench_state_t *b, float *out);
+bool bench_state_ina_current(const bench_state_t *b, float *out);
+
+/** How far the SENSE page's totals may lie from BENCH's and be the same
+ *  count: half a register step of rounding, and what a few milliseconds
+ *  between the two reads adds at full current. */
+#define BENCH_FINE_MAH_TOL 2.0f
+#define BENCH_FINE_WH_TOL  0.2f
+
+/**
+ * With LINK_BN_TOTALS_OK, the INA228's totals in the SENSE page's finer
+ * steps -- @p charge_cmah in 0.01 mAh, @p energy_cwh in 0.01 Wh, read in
+ * the same poll -- over BENCH's 1 mAh and 0.1 Wh, each where it agrees
+ * with BENCH's within the tolerance above.  Nothing changes without
+ * TOTALS_OK.
+ */
+void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
+                             uint32_t energy_cwh);
+
 /** bench_state_t.counted: the run's charge has counted a measured current. */
 #define BENCH_COUNTED_CHARGE 0x01u
 /** bench_state_t.counted: the run's energy has counted voltage and current. */
@@ -97,8 +149,14 @@ void bench_state_reset_peaks(bench_state_t *b);
  * extended DShot telemetry -- and the panel's model while it is down.  The
  * count does not change hands when the source does, so a run's totals never
  * go back within one log, and they outlast the run until the next arm
- * whatever happens to the link meanwhile.  The BENCH page's charge and energy
- * registers are not used: no coprocessor fills them yet.
+ * whatever happens to the link meanwhile.
+ *
+ * While BENCH carries LINK_BN_TOTALS_OK, the INA228 counts: its charge and
+ * energy since the run's arm, accumulated in the part at every conversion,
+ * become the count, and the panel adds nothing of its own.  When the bit
+ * goes -- the part stopped answering -- the count goes on from the last
+ * total the part gave, from the readings shown, so it neither restarts nor
+ * goes back.
  *
  * The totals are only as good as the current.  An ESC that reports a
  * current without measuring one -- no current sensor, an input left
@@ -108,7 +166,17 @@ typedef struct {
     float   mah;
     float   wh;
     uint8_t counted;   /**< BENCH_COUNTED_* */
+    float   run_s;     /**< driving time counted since the reset */
 } bench_totals_t;
+
+/**
+ * How long into a run the INA228's totals are not taken, in seconds.  The
+ * coprocessor builds the BENCH page from its 50 Hz sample, so for up to
+ * 20 ms after the arm BENCH can still carry the last run's totals with
+ * LINK_BN_TOTALS_OK; the panel counts on its own until five such samples
+ * have passed.
+ */
+#define BENCH_TOTALS_SETTLE_S 0.1f
 
 /** A run begins: nothing counted. */
 void bench_totals_reset(bench_totals_t *t);
@@ -118,7 +186,9 @@ void bench_totals_reset(bench_totals_t *t);
  * mark measured: charge from a current, energy from a power with both
  * halves.  @p dt_s is the time since the last call, clamped to
  * 0 .. BENCH_TOTALS_MAX_STEP_S, so a loop that stalled counts at most one
- * second of its last reading.
+ * second of its last reading.  With LINK_BN_TOTALS_OK in @p b's flags and
+ * BENCH_TOTALS_SETTLE_S of the run counted, the count is @p b's own charge
+ * and energy instead, both counted.
  */
 void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
                         float dt_s, bool driving);

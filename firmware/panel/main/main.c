@@ -62,6 +62,8 @@
 #include "servo_page.h"
 #include "servo_screen.h"
 #include "pdmini.h"
+#include "sense_link.h"
+#include "sense_page.h"
 #include "supply_link.h"
 #include "supply_page.h"
 #include "supply_screen.h"
@@ -176,8 +178,11 @@ static const char *TAG = "rcbench";
 /* Used during bring-up as well as in the loop, so file scope. */
 static link_host_t    s_host;
 /* A link_cap_t bitmap from the coprocessor's identity page.  Zero until
- * something answers, which is also what it stays if nothing is fitted. */
-static uint16_t       s_capabilities;
+ * something answers, which is also what it stays if nothing is fitted.
+ * Read at bring-up, at every link-up edge and after a SENSE write is taken
+ * (bits 3 and 4 follow the SENSE set-up), by the control task; the render
+ * loop reads it for the menu marks, so it is atomic. */
+static atomic_uint    s_capabilities;
 /* LINK_ST_FAULTS from the coprocessor's last status poll, shown in the band. */
 static uint16_t       s_dev_faults;
 static link_bringup_t s_bring;
@@ -853,6 +858,49 @@ static supply_wiring_t pdmini_wiring(void)
     return wiring_of(atomic_load(&s_pdmini_wiring));
 }
 
+/*
+ * The current monitors' set-up, as SETUP INTERFACES left it, for the
+ * control task's SENSE writes (sense_link.h).
+ *
+ * Ten values do not fit an atomic word, so the copy is taken under a
+ * spinlock both ways: the control task never pairs one edit's shunt with
+ * another's address.  Written by the settings observer on app_main, read
+ * once a poll by the control task.
+ */
+static portMUX_TYPE  s_sense_mux = portMUX_INITIALIZER_UNLOCKED;
+static sense_setup_t s_sense_want;
+
+static void publish_sense(void)
+{
+    const int ch = settings_get_int(SET_INA3221_CH);
+    const sense_setup_t w = {
+        .i228  = settings_get_bool(SET_INA228_EN),
+        .i3221 = settings_get_bool(SET_INA3221_EN),
+        .sda   = (int8_t)settings_get_int(SET_SENSE_SDA),
+        .scl   = (int8_t)settings_get_int(SET_SENSE_SCL),
+        /* The address options run up from 0x40 in steps of one. */
+        .i228_addr   = (uint8_t)(LINK_SN_I228_ADDR_MIN
+                                 + (unsigned)settings_get_int(SET_INA228_ADDR)),
+        .i228_uohm   = (uint16_t)settings_get_int(SET_INA228_UOHM),
+        .i228_max_da = (uint16_t)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f),
+        .i3221_addr  = (uint8_t)(LINK_SN_I3221_ADDR_MIN
+                                 + (unsigned)settings_get_int(SET_INA3221_ADDR)),
+        .i3221_dmohm = (uint16_t)lrintf(settings_get(SET_INA3221_MOHM) * 10.0f),
+        .i3221_ch    = (uint8_t)((ch != 0) ? LINK_SN_I3221_CH_ALL : 0x01u),
+    };
+    taskENTER_CRITICAL(&s_sense_mux);
+    s_sense_want = w;
+    taskEXIT_CRITICAL(&s_sense_mux);
+}
+
+static sense_setup_t sense_wanted(void)
+{
+    taskENTER_CRITICAL(&s_sense_mux);
+    const sense_setup_t w = s_sense_want;
+    taskEXIT_CRITICAL(&s_sense_mux);
+    return w;
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_MOTOR_POLES) {
@@ -862,6 +910,18 @@ static void settings_changed(setting_id_t id)
     } else if (id == SET_PDMINI_EN || id == SET_PDMINI_TX
                || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD) {
         publish_pdmini();
+    } else {
+        switch (id) {
+        case SET_INA228_EN:  case SET_INA228_ADDR:  case SET_INA228_UOHM:
+        case SET_INA228_MAX_A:
+        case SET_INA3221_EN: case SET_INA3221_ADDR: case SET_INA3221_MOHM:
+        case SET_INA3221_CH:
+        case SET_SENSE_SDA:  case SET_SENSE_SCL:
+            publish_sense();
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -1709,7 +1769,8 @@ static bool bring_up(void)
              * at a later poll: a menu that greys itself only after a poll
              * shows a state in which the bench claims more than it has.
              */
-            s_capabilities        = reply.regs[LINK_ID_CAPABILITIES];
+            atomic_store(&s_capabilities,
+                         (unsigned)reply.regs[LINK_ID_CAPABILITIES]);
             /*
              * Which board answered.  Everything the outputs screen offers is
              * that board's, and a board this build does not know offers
@@ -2533,6 +2594,17 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
     return exchange(host, &req, reply);
 }
 
+/* A window of a page from @p offset; the reply's registers start there. */
+static bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
+                      uint8_t count, link_msg_t *reply)
+{
+    link_msg_t req;
+    if (!link_host_read(host, page, offset, count, now_ms(), &req)) {
+        return false;
+    }
+    return exchange(host, &req, reply);
+}
+
 static bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
                        uint8_t count, const uint16_t *regs, link_msg_t *reply)
 {
@@ -3219,6 +3291,9 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
  */
 static supply_sim_t   s_supply_sim;
 static supply_link_t  s_supply_link;
+/* The current monitors' pages, SENSE and SERVO_SENSE (4.7); see
+ * sense_link_service().  Control task only. */
+static sense_link_t   s_sense_link;
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
@@ -3629,6 +3704,7 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
     supply_link_init(&s_supply_link);
+    sense_link_init(&s_sense_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
     s_pump_live = true;
@@ -5370,6 +5446,162 @@ static void supply_link_service(void)
     supply_link_alerts();
 }
 
+/* The part names as the alerts print them. */
+static const char *const k_sense_part[2] = { "INA228", "INA3221" };
+
+/*
+ * What the SENSE and SERVO_SENSE pages said that the operator is told.
+ * Several can come in one pass and the band shows the last, so the least
+ * pressing go first: a store that keeps nothing, a clipped reading, a part
+ * that does not answer or is another part, a stuck bus, then a set-up the
+ * page refused or that was not sent, and a coprocessor with no page.
+ */
+static void sense_link_alerts(void)
+{
+    const uint16_t ev = sense_link_events(&s_sense_link);
+    if (ev == 0u) {
+        return;
+    }
+    char line[ALERT_MAX];
+    if ((ev & SENSE_LINK_EV_STORE_OFF) != 0u) {
+        control_alert(TR(ALERT_STORE_OFF));
+    }
+    if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
+        /* The full scale in hundredths of an ampere, rounded: 1638 mA on
+         * the DAOKAI's 0.1 Ohm reads 1.64 A. */
+        const uint32_t ca = (sense_i3221_full_scale_ma(
+                                 sense_link_i3221_dmohm(&s_sense_link))
+                             + 5u) / 10u;
+        snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED),
+                 (unsigned)sense_link_clipped_channel(&s_sense_link),
+                 (unsigned)(ca / 100u), (unsigned)(ca % 100u));
+        control_alert(line);
+    }
+    if ((ev & SENSE_LINK_EV_I228_CLIPPED) != 0u) {
+        control_alert(TR(ALERT_SENSE_I228_CLIPPED));
+    }
+    static const uint16_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
+                                          SENSE_LINK_EV_I3221_SILENT };
+    static const uint16_t k_wrong[2]  = { SENSE_LINK_EV_I228_WRONG,
+                                          SENSE_LINK_EV_I3221_WRONG };
+    for (unsigned p = 0u; p < 2u; ++p) {
+        const sense_link_part_t part = (sense_link_part_t)p;
+        const unsigned addr = sense_link_addr(&s_sense_link, part);
+        if ((ev & k_silent[p]) != 0u) {
+            /* With what did answer, where something did: a solder bridge
+             * set otherwise, as often as not. */
+            const unsigned found = sense_link_found(&s_sense_link, part);
+            if (found != 0u) {
+                snprintf(line, sizeof(line), TR(ALERT_SENSE_SILENT_FOUND),
+                         k_sense_part[p], addr, found);
+            } else {
+                snprintf(line, sizeof(line), TR(ALERT_SENSE_SILENT),
+                         k_sense_part[p], addr);
+            }
+            control_alert(line);
+        }
+        if ((ev & k_wrong[p]) != 0u) {
+            snprintf(line, sizeof(line), TR(ALERT_SENSE_WRONG), addr,
+                     (unsigned)sense_link_id(&s_sense_link, part),
+                     k_sense_part[p]);
+            control_alert(line);
+        }
+    }
+    if ((ev & SENSE_LINK_EV_STUCK) != 0u) {
+        control_alert(TR(ALERT_SENSE_STUCK));
+    }
+    if ((ev & SENSE_LINK_EV_I3221_REFUSED) != 0u) {
+        control_alert(TR(ALERT_SENSE_I3221_SETUP));
+    }
+    if ((ev & SENSE_LINK_EV_I228_REFUSED) != 0u) {
+        control_alert(TR(ALERT_SENSE_I228_SETUP));
+    }
+    if ((ev & SENSE_LINK_EV_BUS_REFUSED) != 0u) {
+        snprintf(line, sizeof(line), TR(ALERT_SENSE_PINS),
+                 sense_link_sda(&s_sense_link), sense_link_scl(&s_sense_link));
+        control_alert(line);
+    }
+    if ((ev & SENSE_LINK_EV_SAME_ADDR) != 0u) {
+        snprintf(line, sizeof(line), TR(ALERT_SENSE_SAME_ADDR),
+                 (unsigned)s_sense_link.want[LINK_SN_I228_ADDR]);
+        control_alert(line);
+    }
+    if ((ev & SENSE_LINK_EV_PINS_UNSET) != 0u) {
+        control_alert(TR(ALERT_SENSE_PINS_UNSET));
+    }
+    if ((ev & SENSE_LINK_EV_NO_PAGE) != 0u) {
+        control_alert(TR(ALERT_NO_SENSE_PAGE));
+    }
+}
+
+/*
+ * The current monitors' pages: the set-up SETUP names written when it
+ * differs from what SENSE holds, the identity read again after a write is
+ * taken, and SENSE's and SERVO_SENSE's readings read at their rates
+ * (sense_link.h).  From poll_bench(), after the control write, so @p idle
+ * -- the bank disarmed here and ARM written 0 there -- is this pass's.  A
+ * coprocessor older than 4.7 is sent nothing.
+ *
+ * With the INA228 as BENCH's source, @p bench gets the ESC's own figures
+ * from the last SENSE read, the INA228's clipped flag, and its totals in
+ * SENSE's finer steps while that read is younger than two polls.
+ */
+static void sense_link_service(bool idle, bench_state_t *bench)
+{
+    const sense_setup_t w = sense_wanted();
+    sense_link_want(&s_sense_link, &w, now_ms());
+    for (int k = 0; k < 6; ++k) {
+        sense_link_op_t op;
+        if (!sense_link_next(&s_sense_link, now_ms(), idle, &op)) {
+            break;
+        }
+        link_msg_t reply = { 0 };
+        const bool answered =
+            op.write ? write_regs(&s_host, op.page, op.off, op.n, op.regs,
+                                  &reply)
+                     : read_regs(&s_host, op.page, op.off, op.n, &reply);
+        int result = SENSE_LINK_NO_ANSWER;
+        if (answered) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : SENSE_LINK_ACK;
+        }
+        sense_link_done(&s_sense_link, result,
+                        (answered && reply.op == LINK_OP_DATA) ? reply.regs
+                                                               : NULL,
+                        now_ms());
+        if (result == SENSE_LINK_NO_ANSWER) {
+            break;
+        }
+    }
+    uint16_t caps = 0u;
+    if (sense_link_take_caps(&s_sense_link, &caps)) {
+        atomic_store(&s_capabilities, (unsigned)caps);
+    }
+    sense_link_alerts();
+
+    const bool sensed = (bench->flags & (uint16_t)LINK_BN_SENSED) != 0u;
+    bool v_ok = false;
+    bool i_ok = false;
+    float volts = 0.0f;
+    float amps = 0.0f;
+    if (sensed) {
+        (void)sense_link_esc(&s_sense_link, now_ms(), &v_ok, &volts, &i_ok,
+                             &amps);
+    }
+    bench_state_set_esc(bench, v_ok, volts, i_ok, amps,
+                        sensed && (sense_link_flags(&s_sense_link)
+                                   & LINK_SN_I228_CLIPPED) != 0u);
+    /* The totals from the last SENSE read while it is younger than two
+     * polls: one read that went unanswered keeps the finer figure rather
+     * than stepping back to BENCH's rounding for a sample. */
+    int32_t charge = 0;
+    uint32_t energy = 0u;
+    if (sensed
+        && sense_link_totals(&s_sense_link, now_ms(), &charge, &energy)) {
+        bench_state_fine_totals(bench, charge, energy);
+    }
+}
+
 /*
  * The bench page, and the control page in the same pass.
  *
@@ -5428,6 +5660,11 @@ static bool poll_bench(bench_state_t *bench)
                           && (!outputs_armed(&s_out) || s_endpoints_hold));
         /* And the supply's page, a write only when one is owed. */
         supply_link_service();
+        /* And the current monitors': a set-up only with ARM written 0 and
+         * acknowledged and the bank disarmed here, as the page refuses one
+         * while the bank drives. */
+        sense_link_service(written && !armed && !outputs_armed(&s_out),
+                           bench);
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A
@@ -5702,6 +5939,22 @@ static void link_came_up(const link_msg_t *reply)
     }
 
     /*
+     * And the current monitors' pages (4.7): what SENSE holds is read
+     * before anything is written, and a coprocessor older than that is sent
+     * nothing.  Its capability bits are this identity page's: bits 3 and 4
+     * follow a SENSE set-up kept in its flash, whoever wrote it.
+     */
+    atomic_store(&s_capabilities,
+                 (unsigned)reply->regs[LINK_ID_CAPABILITIES]);
+    {
+        const sense_setup_t w = sense_wanted();
+        sense_link_want(&s_sense_link, &w, now_ms());
+    }
+    sense_link_came_up(&s_sense_link, reply->regs[LINK_ID_PROTOCOL_MINOR],
+                       now_ms());
+    sense_link_alerts();
+
+    /*
      * A board this build ships no catalogue for describes its own pins, so a
      * coprocessor newer than this panel is usable rather than blank.
      *
@@ -5775,6 +6028,10 @@ static void read_status_counters(void)
         /* Two of link_bringup's diagnoses are gated on this; it was lost in
          * the move and left every one of them dead. */
         s_bring.have_status    = true;
+        /* The band shows the bitmap as a code; a store that keeps nothing
+         * this boot is said in words, once per link-up. */
+        sense_link_faults(&s_sense_link, s_dev_faults);
+        sense_link_alerts();
     }
 }
 
@@ -5836,6 +6093,10 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             supply_link_lost(&s_supply_link);
             atomic_store(&s_supply_vin_mv, 0u);
             atomic_store(&s_supply_baud, 0u);
+            /* And the monitors' pages: nothing on them is known until the
+             * link comes back, and the ESC's figures go with the readings. */
+            sense_link_lost(&s_sense_link);
+            bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -6798,7 +7059,7 @@ void app_main(void)
             .run_seconds = run_seconds,
             .mode        = ui_band_mode(link_up),
             .simulated   = bench_state_simulated(&bench),
-            .capabilities = s_capabilities,
+            .capabilities = (uint16_t)atomic_load(&s_capabilities),
             .link_errors = link_errors,
             .mcu_temp_c  = mcu_temp_c,
         };

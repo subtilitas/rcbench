@@ -125,7 +125,7 @@ TEST_CASE(a_written_run_reads_back)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 9);
+    CHECK_EQ(an.n_columns, 12);
     CHECK_EQ(an.row_count, 120);
     /* Detected, not assumed: the file never says which convention it uses. */
     CHECK_EQ(an.delimiter, ';');
@@ -185,7 +185,7 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
     CHECK(log_writer_row(&w, 1.0f, &b));
 
     /* The row after the header: time;voltage;current;power;rpm;esc;motor;
-     * charge;energy */
+     * charge;energy;ina voltage;ina current;esc current */
     const char *p = strchr(g_mem.buf, '\n');
     CHECK(p != NULL);
     ++p;
@@ -199,7 +199,7 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
      * temperature has no sensor; and with no current there is no charge or
      * energy to count.  Six empty cells, and the ones that did answer carry
      * numbers. */
-    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;");
+    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;;;;");
 }
 
 TEST_CASE(charge_and_energy_are_written_only_when_counted)
@@ -224,7 +224,7 @@ TEST_CASE(charge_and_energy_are_written_only_when_counted)
     snprintf(got, sizeof(got), "%s", p);
     char *nl = strchr(got, '\n');
     if (nl != NULL) { *nl = '\0'; }
-    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;");
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;;;;10.00");
 }
 
 TEST_CASE(the_values_survive_the_round_trip)
@@ -295,6 +295,74 @@ TEST_CASE(the_values_survive_the_round_trip)
     /* And the units came off the header, not out of thin air. */
     CHECK_STR_EQ(data.field[0].unit, "V");
     CHECK_STR_EQ(data.field[3].unit, "rpm");
+    log_data_free(&data);
+}
+
+/*
+ * The source beside the reading.  With the INA228 as BENCH's source the
+ * voltage and current are its own and the ESC's current is the SENSE
+ * page's; without it the INA228's columns are empty and the ESC's current
+ * is BENCH's.  The three columns come back by name, unit and value, and the
+ * log viewer's map puts them with the INA228 and the ESC.
+ */
+TEST_CASE(the_sources_survive_the_round_trip)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                         | LINK_BN_SENSED);
+    b.voltage = 24.31f;
+    b.current = 31.20f;
+    b.power = 758.0f;
+    bench_state_set_esc(&b, true, 24.50f, true, 36.75f, false);
+    CHECK(log_writer_row(&w, 1.0f, &b));
+    /* The ESC's current only: the INA228 is not fitted. */
+    memset(&b, 0, sizeof(b));
+    b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    b.voltage = 24.10f;
+    b.current = 40.05f;
+    CHECK(log_writer_row(&w, 1.05f, &b));
+
+    CHECK(strstr(g_mem.buf, ";ina voltage (V);ina current (A);"
+                            "esc current (A)\n") != NULL);
+    static const char k_rows[] =
+        "1.000;24.31;31.20;758;;;;;;24.31;31.20;36.75\n"
+        "1.050;24.10;40.05;0;;;;;;;;40.05\n";
+    const char *row = strchr(g_mem.buf, '\n') + 1;
+    CHECK_STR_EQ(row, k_rows);
+
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.n_columns, 12);
+    CHECK_EQ(an.ragged_rows, 0);
+
+    log_source_t src2;
+    log_mem_ctx_t ctx2;
+    log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
+    int cols[3] = { 9, 10, 11 };
+    log_data_t data;
+    CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
+    CHECK_EQ(data.count, 2);
+    CHECK_STR_EQ(data.field[0].name, "ina voltage");
+    CHECK_STR_EQ(data.field[0].unit, "V");
+    CHECK_STR_EQ(data.field[0].group, "INA228");
+    CHECK_STR_EQ(data.field[1].name, "ina current");
+    CHECK_STR_EQ(data.field[1].unit, "A");
+    CHECK_STR_EQ(data.field[1].group, "INA228");
+    CHECK_STR_EQ(data.field[2].name, "esc current");
+    CHECK_STR_EQ(data.field[2].unit, "A");
+    CHECK_STR_EQ(data.field[2].group, "ESC");
+    CHECK_NEAR(data.value[0][0], 24.31f, 0.005f);
+    CHECK_NEAR(data.value[1][0], 31.20f, 0.005f);
+    CHECK_NEAR(data.value[2][0], 36.75f, 0.005f);
+    CHECK_NEAR(data.value[2][1], 40.05f, 0.005f);
     log_data_free(&data);
 }
 
@@ -575,6 +643,7 @@ int main(void)
     RUN(a_column_nothing_measured_is_empty_rather_than_zero);
     RUN(charge_and_energy_are_written_only_when_counted);
     RUN(the_values_survive_the_round_trip);
+    RUN(the_sources_survive_the_round_trip);
     RUN(a_non_finite_reading_is_written_as_an_absent_cell);
     RUN(the_header_is_written_once_and_without_being_asked);
     RUN(a_failing_sink_latches_and_stops);

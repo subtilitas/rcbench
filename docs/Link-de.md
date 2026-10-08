@@ -111,7 +111,11 @@ Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der
 Pegel vor dem Befehl der Mittelwert von CH1 über die 50 ms vor der Flanke;
 eine Messung, die scharfgeschaltet wird, während der INA3221 CH1 nicht
 liest, endet sofort als verloren und zählt in CAP_SEQ. Nichts davon ist auf Hardware
-gelaufen. Das Panel dieses Builds schreibt keine der beiden Pages.
+gelaufen. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
+bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
+Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
+liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
+SERVO_SENSE schreibt es keine Messung.
 
 ### Identifier
 
@@ -208,8 +212,9 @@ Bit 5 Spannung, Strom und Leistung sind die des INA228 und nicht die
 Telemetrie des ESC (seit 4.7), Bit 6 Ladung und Energie sind die Zähler des
 INA228, beim Schärfen dieses Laufs gelöscht, und das Bauteil hat
 durchgehend geantwortet (seit 4.7), Bit 7 simuliert. Ohne Bit 6 zählt ein
-Panel Ladung und Energie selbst aus dem Strom; das Panel dieses Builds tut
-das immer. Die beiden Temperaturen haben getrennte Bits, weil sie aus
+Panel Ladung und Energie selbst aus dem Strom; mit Bit 6 zeigt das Panel
+dieses Builds die des INA228, in den Schritten von 0,01 mAh und 0,01 Wh der
+SENSE-Page aus einem Lesen jünger als 100 ms, ab 100 ms nach Laufbeginn. Die beiden Temperaturen haben getrennte Bits, weil sie aus
 verschiedenen Quellen kommen und eine davon meist gar nicht kommt: ein ESC
 meldet seine eigene Temperatur über die erweiterte DShot-Telemetrie und weiß
 nichts über den Motor, den er treibt. Bis Protokoll 3.0 galt Bit 3 für beide —
@@ -282,10 +287,12 @@ fest.
 ### Budget
 
 Ein Poll der Bench-Page ist ein Anfrage-Frame und vier Daten-Frames (13
-Register). Bei 20 Hz sind das 1,55 % des Busses. Ein Lesen der Register 12
-bis 25 von SENSE und aller 25 Register von SERVO_SENSE sind zwei
-Anfrage-Frames und elf Daten-Frames, etwa das 2,5-Fache der Bits eines Polls
-der Bench-Page: bei 20 Hz etwa 3,9 % des Busses. Die Nutzlast von Classic CAN
+Register). Bei 20 Hz sind das 1,55 % des Busses. Solange ein Strommonitor
+eingeschaltet ist, liest das Panel die Register 12 bis 25 von SENSE (14
+Register, ein Anfrage-Frame und vier Daten-Frames) mit 20 Hz, etwa 1,6 %, und
+solange der INA3221 eingeschaltet ist, die Register 0 bis 13 von SERVO_SENSE
+mit 5 Hz, etwa 0,4 %: zusammen etwa 2,0 %. Jedes Lesen ist ein Austausch
+mehr im 50-ms-Poll. Die Nutzlast von Classic CAN
 bei 1 Mbit/s mit 29-Bit-Identifiern und vollem Bit Stuffing liegt im
 ungünstigsten Fall bei etwa 52 kB/s; der erwartete Verkehr liegt bei 12 bis
 30 kB/s.

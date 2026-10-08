@@ -248,8 +248,10 @@ TEST_CASE(a_missing_entry_shows_the_english)
     /* No German options for the INA228's addresses: the English ones. */
     settings_init();
     char buf[24];
-    CHECK_STR_EQ(ui_setting_value(SET_INA228_ADDR, buf, sizeof(buf)), "0x40");
-    CHECK_STR_EQ(ui_setting_option(SET_INA228_ADDR, 9), "?");
+    CHECK_STR_EQ(ui_setting_value(SET_INA228_ADDR, buf, sizeof(buf)), "0x45");
+    CHECK_STR_EQ(ui_setting_option(SET_INA228_ADDR, 15), "0x4F");
+    CHECK_STR_EQ(ui_setting_option(SET_INA228_ADDR, 16), "?");
+    CHECK_STR_EQ(ui_setting_value(SET_INA3221_CH, buf, sizeof(buf)), "CH1");
     CHECK_STR_EQ(ui_setting_option(SET_THEME, 1), "HELL");
     CHECK_STR_EQ(ui_setting_value(SET_THEME, buf, sizeof(buf)), "DUNKEL");
     CHECK_STR_EQ(ui_setting_value(SET_BACKLIGHT, buf, sizeof(buf)), "EIN");

@@ -26,7 +26,7 @@ history is in git.
   panel, which ends arrived, at a stop, late, unseen or lost.
   BENCH gains bit 5 (the INA228's voltage, current and power) and bit 6
   (the INA228's charge and energy totals). The coprocessor serves both
-  pages and holds the pins; the panel writes neither page. A 4.6 peer
+  pages and holds the pins. A 4.6 peer
   still links and arms.
 - **The coprocessor reads the INA228 and the INA3221.** It has not run on
   hardware: both images compile, and the host suite runs core 1's step
@@ -59,10 +59,31 @@ history is in git.
   parts at the page's defaults while no set-up is stored, and while a part
   is enabled the console prints the sensors' state every 3 s; the bench
   session is in [First run](docs/FirstRun.md) §8. The coprocessor image
-  grows by 19,988 bytes, to 320,816.
+  grows by 20,396 bytes, to 321,224.
 - **Output store record version 5.** The record keeps the sensor set-up
   beside the bindings and the supply's wiring. Version 3 and 4 records
   still load, with the parts they lack off.
+- **The panel sets up and reads the current monitors.** Not run on
+  hardware. SETUP INTERFACES gains INA228 address (0x40 to 0x4F, default
+  0x45), INA228 shunt (50 to 20000 µΩ, default 200), INA228 max current
+  (1.0 to 655.3 A, default 204.8), INA3221, INA3221 address (0x40 to
+  0x43, default 0x40), INA3221 shunt (5.0 to 1000.0 mΩ, default 100.0),
+  INA3221 channels (CH1 or CH1+2+3) and Sensor SDA and SCL (default GP16
+  and GP17). INA228 shunt in 0.1 mΩ and I2C speed are gone: the first
+  could not hold 250 µΩ, and the coprocessor takes 400 kHz only. The INA228
+  address has a new key, so an address chosen before reads 0x45 again. The
+  panel reads SENSE at every link-up, writes the set-up 500 ms after its
+  last edit while the bank is disarmed, only where it differs, and reads
+  the identity page again once a write is taken; a coprocessor older than
+  4.7 is sent nothing. It reads SENSE every 50 ms while a part is enabled
+  and SERVO_SENSE every 200 ms while the INA3221 is. The band says, once
+  each, a set-up refused or not sent, a part not answering, another
+  identity at a part's address, a stuck bus, a clipped reading and STATUS
+  fault bit 6. MOTOR & ESC's TABLE pane shows the ESC's own voltage and
+  current beside the INA228's, with the difference; the totals are the
+  INA228's while BENCH bit 6 is set; a run's CSV file gains
+  `ina voltage (V)`, `ina current (A)` and `esc current (A)`, and the log
+  viewer groups them under INA228 and ESC.
 
 ### Fixed
 

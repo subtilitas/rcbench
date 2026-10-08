@@ -26,7 +26,16 @@
 static const char *const k_theme[]     = { "DARK", "LIGHT" };
 static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
 static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
-static const char *const k_ina_addr[]  = { "0x40", "0x41", "0x44", "0x45" };
+/* The INA228's address, 0x40 + the option: A0 and A1 each to GND, VS, SDA
+ * or SCL give sixteen.  The INA3221's, from its A0 pin: four. */
+static const char *const k_ina228_addr[] = {
+    "0x40", "0x41", "0x42", "0x43", "0x44", "0x45", "0x46", "0x47",
+    "0x48", "0x49", "0x4A", "0x4B", "0x4C", "0x4D", "0x4E", "0x4F",
+};
+static const char *const k_ina3221_addr[] = { "0x40", "0x41", "0x42", "0x43" };
+/* Which INA3221 channels are read: CH1 alone, the servo test's, or all
+ * three, CH2 and CH3 a synchronised pair's. */
+static const char *const k_ina3221_ch[] = { "CH1", "CH1+2+3" };
 static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
@@ -90,15 +99,50 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "dim_after", "Dim after", "0 keeps the screen at full brightness", "min",
         SET_CAT_APP, SET_TYPE_INT, 0, 60, 5, 0, NULL, 0 },
 
+    /*
+     * The current monitors, on the coprocessor's I2C (Inter-Integrated
+     * Circuit) bus and written to its SENSE page by the panel (protocol
+     * 4.7).  The ranges are the page's: an INA228 shunt of 50 to 20000 uOhm
+     * and a range of 1.0 to 655.3 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
+     * The defaults are the modules the bench is built with: the MATEK
+     * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8 A, and the
+     * DAOKAI INA3221 at 0x40 on its 0.1 Ohm shunts (1.638 A full scale),
+     * reading CH1, on GP16 and GP17.  The bus clock is not a setting: the
+     * page takes 400 kHz and nothing else.  The address keys are new ones:
+     * the INA228's old key held an index into four addresses, which read
+     * as one of sixteen would name another address.
+     */
     [SET_INA228_EN] = {
-        "ina228_en", "INA228", "I2C current and voltage monitor", "",
+        "ina228_en", "INA228", "I2C current monitor in the ESC path", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_INA228_ADDR] = {
-        "ina228_addr", "INA228 address", "Set by its A0 and A1 pins", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina_addr) },
-    [SET_INA228_SHUNT] = {
-        "ina228_shunt", "Shunt", "Resistance the INA228 measures across", "mOhm",
-        SET_CAT_IFACE, SET_TYPE_FLOAT, 0.1f, 20, 0.1f, 0.5f, NULL, 0 },
+        "ina228_adr", "INA228 address", "A0/A1 pins; MATEK as shipped: 0x45", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(k_ina228_addr) },
+    [SET_INA228_UOHM] = {
+        "ina228_uohm", "INA228 shunt", "The shunt the INA228 measures across", "uOhm",
+        SET_CAT_IFACE, SET_TYPE_INT, 50, 20000, 1, 200, NULL, 0 },
+    [SET_INA228_MAX_A] = {
+        "ina228_max_a", "INA228 max current", "Highest current expected; sets range", "A",
+        SET_CAT_IFACE, SET_TYPE_FLOAT, 1.0f, 655.3f, 0.1f, 204.8f, NULL, 0 },
+    [SET_INA3221_EN] = {
+        "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
+        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_INA3221_ADDR] = {
+        "ina3221_adr", "INA3221 address", "Set by its A0 pin; DAOKAI: 0x40", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_addr) },
+    [SET_INA3221_MOHM] = {
+        "ina3221_mohm", "INA3221 shunt", "Per channel; 100 reads to 1.64 A", "mOhm",
+        SET_CAT_IFACE, SET_TYPE_FLOAT, 5.0f, 1000.0f, 0.1f, 100.0f, NULL, 0 },
+    [SET_INA3221_CH] = {
+        "ina3221_ch", "INA3221 channels", "CH1 the servo test, CH2+3 a pair", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_ch) },
+    /* The bus's pins: coprocessor GPIO, one I2C block's SDA and SCL. */
+    [SET_SENSE_SDA] = {
+        "sns_sda", "Sensor SDA", "Coprocessor GPIO; mod 4 is 0 or 2", "GPIO",
+        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },
+    [SET_SENSE_SCL] = {
+        "sns_scl", "Sensor SCL", "The GPIO after SDA; -1 until wired", "GPIO",
+        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
     [SET_VIBE_EN] = {
         "vibe_en", "Vibration", "Accelerometer for the balancing mode", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
@@ -108,9 +152,6 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_OPTICAL_PIN] = {
         "optical_pin", "Tacho pin", "-1 until one is wired", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 48, 1, -1, NULL, 0 },
-    [SET_I2C_KHZ] = {
-        "i2c_khz", "I2C speed", "Shared with the touch controller", "kHz",
-        SET_CAT_IFACE, SET_TYPE_INT, 100, 400, 100, 400, NULL, 0 },
     /*
      * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3 V.
      * Coprocessor GPIO, written to its SUPPLY page by the panel; the pins

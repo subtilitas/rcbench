@@ -17,7 +17,8 @@
  */
 static const char *const k_header =
     "time (s);voltage (V);current (A);power (W);rpm (rpm);"
-    "esc (C);motor (C);charge (mAh);energy (Wh)\n";
+    "esc (C);motor (C);charge (mAh);energy (Wh);"
+    "ina voltage (V);ina current (A);esc current (A)\n";
 
 /* A supply run's file: what was asked beside what was delivered, and which
  * of the two the supply was holding. */
@@ -250,6 +251,8 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY },
     };
 
+    /* Twelve cells of at most eight characters each, about 100, with every
+     * one checked against the end. */
     char line[160];
     int n = fmt(line, sizeof(line), t_s, 3);
     if (n <= 0) {
@@ -273,7 +276,23 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         memcpy(&v, (const char *)b + k_cols[i].offset, sizeof(v));
         n += fmt(line + n, sizeof(line) - (size_t)n, v, k_cols[i].decimals);
     }
-    if ((size_t)n + 2u >= sizeof(line)) {
+    /*
+     * Where the voltage and current came from, beside them: the INA228's
+     * own, empty while it is not BENCH's source, and the ESC's own current
+     * whichever page carried it, so a run with both says what the ESC
+     * claimed against what was measured.
+     */
+    float ina_v = 0.0f;
+    float ina_i = 0.0f;
+    float esc_i = 0.0f;
+    const bool have_v   = bench_state_ina_voltage(b, &ina_v);
+    const bool have_i   = bench_state_ina_current(b, &ina_i);
+    const bool have_esc = bench_state_esc_current(b, &esc_i);
+    const size_t cap = sizeof(line);
+    if (!cell(line, cap, &n, have_v, ina_v, 2)
+        || !cell(line, cap, &n, have_i, ina_i, 2)
+        || !cell(line, cap, &n, have_esc, esc_i, 2)
+        || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;
     }

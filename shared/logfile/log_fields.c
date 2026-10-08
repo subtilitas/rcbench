@@ -63,6 +63,11 @@ static const rule_t k_rules[] = {
     { M_ANY_OF, "flightModeFlags|stateFlags|failsafePhase|"
                 "rxSignalReceived|rxFlightChannelsValid", "Flags", "" },
     { M_PREFIX, "GPS_",           "GPS",   ""      },
+    /* The bench's own log names its source beside the voltage and current
+     * it shows: the INA228's two, and the ESC's own current. */
+    { M_EXACT,  "ina voltage",    "INA228", "V"    },
+    { M_EXACT,  "ina current",    "INA228", "A"    },
+    { M_EXACT,  "esc current",    "ESC",   "A"     },
 };
 
 static bool starts_with(const char *s, const char *prefix, bool fold)

@@ -183,6 +183,54 @@ seine eigenen Sensoren, sobald ein Messfrontend bestückt ist. Eine Größe, die
 nichts misst, wird als leeres Feld gezeichnet und nicht als modellierter
 Wert.
 
+### TABELLE, und was der ESC meldet
+
+![Die TABELLE-Seite mit einem INA228 als Quelle](img/de/motor-table.png)
+
+TABELLE listet die vier Kanäle, jeden mit seinem Extremwert. Ein Kanal, für
+den nichts geantwortet hat, liest `--`.
+
+Ist der INA228 unter SETUP, ANSCHLÜSSE eingeschaltet und antwortet er
+(BENCH-Flag Bit 5), sind Spannung, Strom und Leistung die des INA228: die
+Mittelwerte des letzten 50-ms-Fensters des Koprozessors, gelesen mit 20 Hz,
+mit den Spitzen des Laufs aus seinen 500-Hz-Abtastungen. Die Kopfzeile nennt
+die Quelle, `INA228`, und fügt `ÜBERSTEUERT` an, solange ein Strom im letzten
+Fenster oder seit dem Scharfschalten das Ende des Messbereichs des Bauteils
+erreicht hat: Strom und Leistung, oder ihre Spitzen, sind dann Grenzen und
+keine Werte. Unter den Kanälen listet `ESC MELDET` die eigene
+Telemetriespannung und den eigenen Telemetriestrom des ESC von der SENSE-Page,
+und `Abw.` ist der Wert des ESC minus den des INA228. Ein ESC, der einen
+Strom meldet, den er nicht misst, zeigt eine Abweichung so groß wie der
+Messwert. Hört der INA228 während eines Laufs auf zu antworten, bleiben
+Spannung, Strom und Leistung bis zum Ende dieses Laufs leer; sie fallen
+nicht auf die Werte des ESC zurück. Ohne INA228 sind die Kanäle die
+Telemetrie des ESC, und `ESC MELDET` wird nicht gezeigt.
+
+Die mAh und Wh unter ARM sind die eigenen des INA228, solange BENCH-Flag
+Bit 6 gesetzt ist: seine Ladung und Energie seit dem Scharfschalten, im
+Bauteil bei jeder Wandlung aufsummiert und in Schritten von 0,01 mAh und
+0,01 Wh gelesen. In den ersten 100 ms eines Laufs zählt das Panel sie
+selbst: der Koprozessor baut die Bench-Page aus seiner 50-Hz-Abtastung, bis
+zu 20 ms nach dem Scharfschalten kann sie also noch die Summen des letzten
+Laufs tragen. Ohne Bit 6 zählt das Panel beide aus dem gezeigten Strom
+und der gezeigten Leistung. Hört der INA228 mitten im Lauf auf zu antworten,
+zählt das Panel von seiner letzten Summe weiter, und die Summe geht nicht
+zurück.
+
+Die CSV-Datei eines Laufs hat alle 50 ms eine Zeile:
+
+```
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A)
+```
+
+`voltage`, `current` und `power` sind, was der Bildschirm zeigt.
+`ina voltage` und `ina current` sind die des INA228 und leer, solange er
+nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,
+von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
+BENCH-Page, und leer, wenn der ESC keinen meldet. Eine Größe, die nichts
+gemessen hat, ist eine leere Zelle. Der Log-Viewer gruppiert die letzten drei
+unter INA228 und ESC.
+
 ## Servo
 
 ![Servo](img/de/servo.png)
@@ -987,6 +1035,74 @@ Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Designs:
 Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
 bleibt und warum: [Sprache der Oberfläche](Language-de.md).
+
+### ANSCHLÜSSE: die Strommonitore
+
+![ANSCHLÜSSE, die Strommonitore](img/de/setup-interfaces.png)
+
+Der Koprozessor liest zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit)
+an einem Bus auf zwei seiner Pins: einen TI INA228 im Strompfad des ESC und
+einen TI INA3221 an der Servoschiene. Ihre Zeilen stehen oben unter
+ANSCHLÜSSE:
+
+| Einstellung | Bereich | Standard | |
+| --- | --- | --- | --- |
+| INA228 | EIN, AUS | AUS | der Monitor im Strompfad des ESC |
+| INA228 Adresse | 0x40 bis 0x4F | 0x45 | der MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41 |
+| INA228 Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
+| INA228 Höchststrom | 1,0 bis 655,3 A, Schritte von 0,1 A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts |
+| INA3221 | EIN, AUS | AUS | die drei Kanäle der Servoschiene |
+| INA3221 Adresse | 0x40 bis 0x43 | 0x40 | das DAOKAI-Modul ab Werk |
+| INA3221 Shunt | 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | einer je Kanal; der R100 des DAOKAI misst bis 1,64 A |
+| INA3221 Kanäle | CH1, CH1+2+3 | CH1 | CH1 ist der des Servotests, CH2 und CH3 die eines synchronisierten Paars |
+| Sensor-SDA | −1, 0 bis 47 | 16 | GPIO des Koprozessors (GPIO: General-Purpose Input/Output); −1, bis er verdrahtet ist |
+| Sensor-SCL | −1, 0 bis 47 | 17 | der GPIO nach SDA |
+
+![ANSCHLÜSSE, der INA3221 und die Pins des Busses](img/de/setup-sensors.png)
+
+SDA und SCL sind das Paar eines I2C-Blocks: die GPIO-Nummer von SDA ist
+modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Der Bus läuft mit
+400 kHz, und das ist keine Einstellung: der Koprozessor nimmt keinen anderen
+Takt. Ein Messwert am oberen Ende des Bereichs des INA3221, 163,8 mV über dem
+Shunt, wird als übersteuert gezeigt und nie als Wert.
+
+Das Panel schreibt die Einstellung 500 ms nach der letzten Änderung auf die
+SENSE-Page des Koprozessors (Protokoll 4.7), nur bei unscharfem Prüfstand,
+und nur, was von dem abweicht, was die Page hält: der Koprozessor lehnt eine
+Änderung ab, solange er Ausgänge treibt, und legt jede Änderung im Flash ab.
+Bei jedem Link-Aufbau liest es die Page zuerst, eine Einstellung, die der
+Koprozessor schon hält, wird also nicht noch einmal geschrieben. Ändern sich
+die eigenen Werte eines Monitors, während beide eingeschaltet sind, werden
+zuerst beide auf der Page ausgeschaltet und danach wieder ein, sodass kein
+Schritt dazwischen die zwei Bauteile auf eine Adresse legt. Einem Koprozessor älter als 4.7 wird nichts
+gesendet. Nachdem ein Schreiben angenommen ist, liest das Panel die Identität
+des Koprozessors erneut: die Capability-Bits 3 und 4 folgen der Einstellung,
+und mit eingeschaltetem INA228 verliert die Kachel MOTOR & ESC ihre Marke
+`SIMULIERT`.
+
+Solange ein Monitor eingeschaltet ist, liest das Panel die 14
+Nur-Lese-Register der SENSE-Page alle 50 ms; solange der INA3221
+eingeschaltet ist, die Kanalfenster der SERVO_SENSE-Page alle 200 ms. Das
+Band sagt, was sie zeigen, jedes einmal:
+
+| Meldung | Wann |
+| --- | --- |
+| `Koprozessor ohne SENSE-Page -- Strommonitore nicht gelesen` | ein Monitor ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
+| `Sensor-SDA oder -SCL nicht gesetzt -- siehe SETUP ANSCHLÜSSE` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `INA228 und INA3221 beide auf 0x40 -- siehe SETUP ANSCHLÜSSE` | beide auf einer Adresse eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `Sensor-Pins GP5/GP6 abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor hat die Pins abgelehnt: kein Paar eines I2C-Blocks, reserviert, an einen Ausgang gebunden oder vom PD mini belegt; beide Monitore bleiben aus |
+| `INA228 Shunt oder Höchststrom abgelehnt -- siehe SETUP ANSCHLÜSSE` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
+| `INA3221-Einstellung abgelehnt -- siehe SETUP ANSCHLÜSSE` | der INA3221 bleibt aus |
+| `INA228 antwortet nicht auf 0x45` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `-- 0x44 antwortet` wird angefügt, wenn der Adress-Scan des Koprozessors dort etwas gefunden hat, wo das Bauteil sein könnte |
+| `0x40 antwortet mit 1408h, kein INA3221 -- nicht benutzt` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
+| `Sensorbus hängt: SDA auf low -- wird freigetaktet` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
+| `INA228-Strom am Ende des Messbereichs -- Strom ist eine Grenze` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Scharfschalten das Ende seines Bereichs gelesen |
+| `INA3221 CH1 übersteuert bei 1.64 A -- Strom ist eine Grenze` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
+| `Speicher des Koprozessors aus -- Einstellungen gelten bis zum Neustart` | STATUS-Fehlerbit 6: der Koprozessor speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
+
+Eine abgelehnte Einstellung wird erst wieder geschrieben, wenn sie sich unter
+SETUP ändert. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
+nicht unscharf: auf den Messwerten der Monitore löst nichts aus.
 
 ### Werte behalten
 

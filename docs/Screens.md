@@ -171,6 +171,50 @@ from bidirectional DShot today, and its own sensors when a measurement front
 end is fitted. A quantity nothing measures is drawn as an empty field rather
 than as a modelled number.
 
+### TABLE, and what the ESC says
+
+![The TABLE pane with an INA228 as the source](img/motor-table.png)
+
+TABLE lists the four channels, each with its extreme. A channel nothing
+answered for reads `--`.
+
+With the INA228 enabled on SETUP under INTERFACES and answering (BENCH flag
+bit 5), voltage, current and power are the INA228's: the means of the
+coprocessor's last 50 ms window, read at 20 Hz, with the run's peaks from its
+500 Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
+while a current read the end of the part's range in the last window or since
+the arm: current and power, or their peaks, are then bounds and not values.
+Under the channels, `ESC SAYS` lists the ESC's own telemetry voltage and
+current from the SENSE page, and `diff` is the ESC's figure less the
+INA228's. An ESC that reports a current it does not measure shows a
+difference the size of the reading. An INA228 that stops answering during a
+run leaves voltage, current and power empty to the end of that run; they do
+not fall back to the ESC's figures. Without the INA228, the channels are the
+ESC's telemetry and `ESC SAYS` is not shown.
+
+The mAh and Wh under ARM are the INA228's own while BENCH flag bit 6 is
+set: its charge and energy since the arm, accumulated in the part at every
+conversion and read in 0.01 mAh and 0.01 Wh steps. The first 100 ms of a
+run the panel counts them itself: the coprocessor builds the bench page from
+its 50 Hz sample, so for up to 20 ms after the arm the page can still carry
+the last run's totals. Without bit 6 the panel counts both from the current
+and power shown. When the INA228 stops
+answering mid-run, the count carries on from its last total and does not go
+back.
+
+A run's CSV file has one row every 50 ms:
+
+```
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A)
+```
+
+`voltage`, `current` and `power` are what the screen shows. `ina voltage` and
+`ina current` are the INA228's and are empty while it is not the source;
+`esc current` is the ESC's own telemetry current, from the SENSE page while
+the INA228 is the source and from the BENCH page otherwise, and empty when
+the ESC reports none. A quantity nothing measured is an empty cell. The log
+viewer groups the last three under INA228 and ESC.
+
 ## Servo
 
 ![Servo](img/servo.png)
@@ -906,6 +950,70 @@ Settings are behind the SETUP tile, in both themes:
 APPLICATION's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md).
+
+### INTERFACES: the current monitors
+
+![INTERFACES, the current monitors](img/setup-interfaces.png)
+
+The coprocessor reads two I2C (Inter-Integrated Circuit) current monitors on
+one bus on two of its pins: a TI INA228 in the ESC's power path and a TI
+INA3221 on the servo rail. Their rows are at the top of INTERFACES:
+
+| Setting | Range | Default | |
+| --- | --- | --- | --- |
+| INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
+| INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
+| INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
+| INA228 max current | 1.0 to 655.3 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else |
+| INA3221 | ON, OFF | OFF | the servo rail's three channels |
+| INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module as shipped |
+| INA3221 shunt | 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | one a channel; the DAOKAI's R100 reads to 1.64 A |
+| INA3221 channels | CH1, CH1+2+3 | CH1 | CH1 is the servo test's; CH2 and CH3 a synchronised pair's |
+| Sensor SDA | −1, 0 to 47 | 16 | coprocessor GPIO (general-purpose input/output); −1 until wired |
+| Sensor SCL | −1, 0 to 47 | 17 | the GPIO after SDA |
+
+![INTERFACES, the INA3221 and the bus's pins](img/setup-sensors.png)
+
+SDA and SCL are one I2C block's pair: SDA's GPIO number mod 4 is 0 or 2, and
+SCL is the GPIO after it. The bus runs at 400 kHz, which is not a setting:
+the coprocessor takes no other clock. A reading at the top of the INA3221's
+range, 163.8 mV across the shunt, is shown as clipped and never as a value.
+
+The panel writes the set-up to the coprocessor's SENSE page (protocol 4.7)
+500 ms after the last edit, only while the bench is disarmed, and only what
+differs from what the page holds: the coprocessor refuses a change while it
+drives, and keeps each change in flash. It reads the page at every link-up
+first, so a set-up the coprocessor already keeps is not written again. When
+a monitor's own values change while both are enabled, both are switched off
+on the page first and on again after, so no step on the way puts the two
+parts on one address. A
+coprocessor older than 4.7 is sent nothing. After a write is taken the panel
+reads the coprocessor's identity again: capability bits 3 and 4 follow the
+set-up, and with the INA228 enabled the MOTOR & ESC tile loses its MODELLED
+mark.
+
+While a monitor is enabled, the panel reads SENSE's 14 read-only registers
+every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
+200 ms. The band says what they show, each once:
+
+| Message | When |
+| --- | --- |
+| `coprocessor has no SENSE page -- current monitors not read` | a monitor is enabled and the coprocessor speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
+| `sensor SDA or SCL not set -- see SETUP INTERFACES` | a monitor is enabled with a pin at −1; neither is enabled on the page |
+| `INA228 and INA3221 both at 0x40 -- see SETUP INTERFACES` | both enabled on one address; neither is enabled on the page |
+| `sensor pins GP5/GP6 refused -- see SETUP INTERFACES` | the coprocessor refused the pins: not one I2C block's pair, reserved, bound to an output or held by the PD mini; both monitors stay off |
+| `INA228 shunt or max current refused -- see SETUP INTERFACES` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
+| `INA3221 set-up refused -- see SETUP INTERFACES` | the INA3221 stays off |
+| `INA228 not answering at 0x45` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `-- 0x44 answers` is added when the coprocessor's address scan found something where the part could be |
+| `0x40 answers 1408h, not an INA3221 -- not used` | something answers at the part's address with another identity |
+| `sensor bus stuck: SDA held low -- clocking it free` | the coprocessor found SDA held low and clocks it free |
+| `INA228 current at the end of its range -- current is a bound` | the INA228 read the end of its range in the last 50 ms window or since the arm |
+| `INA3221 CH1 clipped at 1.64 A -- current is a bound` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
+| `coprocessor store off -- set-ups last until it restarts` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
+
+A refused set-up is not written again until it changes on SETUP. A monitor
+that stops answering does not disarm the bench: nothing trips on the
+monitors' readings.
 
 ### Keeping the values
 

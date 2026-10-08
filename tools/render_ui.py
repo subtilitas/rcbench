@@ -109,6 +109,9 @@ SCREENS = {
     "overview-light": ("overview-light.png", "overview", "light"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
+    # The TABLE pane with an INA228 as BENCH's source, the ESC's own
+    # telemetry beside it.
+    "motor-table": ("motor-table.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
     "servo-settings": ("servo-settings.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
@@ -170,6 +173,10 @@ SCREENS = {
     "logs-delete":("logs-delete.png","logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
+    # INTERFACES with both current monitors enabled, at the top of the list
+    # and drawn on to the INA3221's rows and the bus's pins.
+    "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
+    "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "outputs-held": ("outputs-held.png", "outputs", "dark"),

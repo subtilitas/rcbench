@@ -102,7 +102,11 @@ run's end: if it stops answering, those fields go empty rather than back to
 the ESC's telemetry. A capture's level before the command is CH1's mean
 over the 50 ms before the edge; an arm while the INA3221 is not reading CH1
 ends at once as lost and counts in CAP_SEQ. None of this has run on
-hardware. This build's panel writes neither page.
+hardware. This build's panel reads SENSE's registers 0 to 11 at every
+link-up, writes the set-up from SETUP INTERFACES one frame at a time where it
+differs (`shared/bench/sense_link.c`, `test_sense_link`), and reads the
+identity page again after a write is taken. It writes no capture to
+SERVO_SENSE.
 
 ### Identifier
 
@@ -193,7 +197,8 @@ voltage, current and power are the INA228's and not the ESC's telemetry
 (since 4.7), bit 6 charge and energy are the INA228's accumulators, cleared
 at this run's arm, with the part answering throughout (since 4.7), bit 7
 simulated. Without bit 6 a panel counts charge and energy itself from the
-current; this build's panel always does. The two temperatures carry
+current; with it, this build's panel shows the INA228's, in SENSE's 0.01 mAh
+and 0.01 Wh steps from a SENSE read younger than 100 ms, from 100 ms into the run. The two temperatures carry
 separate bits because they come from
 different places and one of them usually does not come at all: an ESC reports
 its own temperature over extended DShot telemetry and knows nothing about the
@@ -257,10 +262,11 @@ timing is chosen to match. `test_can_timing` pins both.
 ### Budget
 
 A bench-page poll is one request frame and four data frames (13 registers). At
-20 Hz that is 1.55% of the bus. A read of SENSE's registers 12 to 25 and of
-all 25 SERVO_SENSE registers is two request frames and eleven data frames,
-about 2.5 times the bits of a bench-page poll: about 3.9% of the bus at
-20 Hz. Worst-case classic CAN payload at 1 Mbit/s with
+20 Hz that is 1.55% of the bus. While a current monitor is enabled, the panel
+reads SENSE's registers 12 to 25 (14 registers, one request and four data
+frames) at 20 Hz, about 1.6%, and while the INA3221 is, SERVO_SENSE's
+registers 0 to 13 at 5 Hz, about 0.4%: about 2.0% together. Each read is one
+more exchange in the 50 ms poll. Worst-case classic CAN payload at 1 Mbit/s with
 29-bit identifiers and full bit stuffing is about 52 kB/s; the expected traffic
 is 12 to 30 kB/s.
 
