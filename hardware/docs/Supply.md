@@ -67,7 +67,7 @@ selection, so those functions add no part.
 
 | Function | Rank 1 | Alternatives |
 | --- | --- | --- |
-| Servo supply | TPS55285VALR, the held fixed input, refuted on its ambient range; no part selected | none |
+| Servo supply | TPS55285VALR, the held fixed input, refuted on its ambient range; no part selected | MP4246GVE-0000 (owner, 2026-10-08): output from 1 V, not 0.8 V; no I²C read-back; see [Power](Power.md#mp4246); not verified |
 | Servo supply inductor | no part in selection.json; FU-B3's verifiers confirm SRP1265A-4R7M | ETQP5M4R7YFC, ASPIAIG-Q1010-4R7M-T; not verified |
 | Port supply switch | TPS259474LRPWR | TPS259470LRPWR, TPS259470ARPWR; not verified |
 | I/O expander | MCP23017T-E/SS | TCA6416APWR, TCA6424ARGJR; not verified |
