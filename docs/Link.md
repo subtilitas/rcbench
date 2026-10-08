@@ -250,9 +250,11 @@ every count the setting allows is inside the range the page takes.
 
 The coprocessor refuses a pin it must not drive -- the safety line, the CAN
 controller's pins, GP23, GP24, GP25 and GP29 (used by the module, not brought
-out) and any number above GP29 -- on the OUTPUTS and SUPPLY pages alike, and a
-slot it refuses is left unbound while the page still reads back what was asked
-for. [DShot and the output drivers](DShot.md) has the rest.
+out) and any number above GP29 -- on the OUTPUTS and SUPPLY pages alike. An
+OUTPUTS write with a slot the silicon cannot bind -- such a pin, or a PIO state
+machine, instruction memory or DMA channel that the phase tap or the supply's
+UART holds -- is refused with BAD_VALUE, the slots in force stay, and nothing
+is saved. [DShot and the output drivers](DShot.md) has the rest.
 
 CHAN_CFG and OUTPUTS entries are written whole, four registers at a time. A
 channel's pulse range defaults to 1000..2000 µs; endpoints outside 400..2500 µs

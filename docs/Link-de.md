@@ -271,8 +271,10 @@ den die Page annimmt.
 Der Coprozessor verweigert einen Pin, den er nicht treiben darf — die
 Safety-Leitung, die Pins des CAN-Controllers, GP23, GP24, GP25 und GP29 (vom
 Modul belegt, nicht herausgeführt) und jede Nummer über GP29 — auf der
-OUTPUTS- und der SUPPLY-Page gleichermaßen. Ein verweigerter Slot bleibt ungebunden, während die Page
-weiterhin zurückliest, was gefordert wurde. [DShot und die
+OUTPUTS- und der SUPPLY-Page gleichermaßen. Ein OUTPUTS-Write mit einem Slot, den die Hardware nicht
+binden kann — ein solcher Pin, oder eine PIO-Zustandsmaschine, Instruktionsspeicher oder ein
+DMA-Kanal, den der Phase-Tap oder die UART der Versorgung belegt —, wird mit BAD_VALUE verweigert;
+die geltenden Slots bleiben, und nichts wird gespeichert. [DShot und die
 Output-Treiber](DShot-de.md) hat den Rest.
 
 Einträge in CHAN_CFG und OUTPUTS werden ganz geschrieben, vier Register auf

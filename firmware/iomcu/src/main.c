@@ -248,6 +248,18 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
+/* The slots the silicon has bound, one bit each. */
+static uint8_t bound_slots(void)
+{
+    uint8_t bound = 0u;
+    for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
+        if (outputs_hw_bound(i)) {
+            bound |= (uint8_t)(1u << i);
+        }
+    }
+    return bound;
+}
+
 /*
  * The silicon made to agree with the bank, every slot at the rate it runs
  * at: its own, or the SERVO page's for a PWM surface.
@@ -259,13 +271,7 @@ static void hw_apply(void)
     outputs_hw_apply(&s_outputs, rate);
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
-    uint8_t bound = 0u;
-    for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
-        if (outputs_hw_bound(i)) {
-            bound |= (uint8_t)(1u << i);
-        }
-    }
-    sense_page_bound(&s_sense, bound);
+    sense_page_bound(&s_sense, bound_slots());
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -758,26 +764,30 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     }
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
+    const uint8_t bound_before = bound_slots();
     memcpy(s->slots, next, sizeof(next));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
     hw_apply();
     /*
-     * With the supply's UART holding two PIO state machines, a slot the
-     * bank took that the silicon could not bind is refused rather than kept
-     * unbound: a restart binds the outputs first, and the supply would be
-     * the one left out.
+     * A slot the bank took that the silicon could not bind is refused
+     * rather than kept unbound, whatever holds what it needs: a PIO state
+     * machine, instruction memory or DMA channel of the phase tap or the
+     * supply's UART, a PWM slice, a pin.  The slots this write changed and
+     * the ones it unbound are judged; one an earlier write or a restart left
+     * unbound does not refuse a write that did not touch it.  A restart
+     * binds the outputs first, so a binding kept here that the silicon
+     * refused would take the resource from the tap or the supply there.
+     * outputs_bind_check() in shared/ decides; this is the glue.
      */
-    bool refused = false;
+    uint8_t watch = (uint8_t)(outputs_slots_changed(prev, next)
+                              | bound_before);
     if (s_pd_open) {
-        for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
-            if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
-                && !outputs_hw_bound(i)) {
-                refused = true;
-            }
-        }
-    } else if (s_supply_attach) {
+        watch = 0xFFu;   /* the UART holds two state machines: every slot */
+    }
+    bool refused = outputs_bind_check(&s_outputs, watch, bound_slots()) != 0u;
+    if (!refused && !s_pd_open && s_supply_attach) {
         /* The supply's UART waits for its save: the slots must leave it a
          * PIO block, tried now, or the attach would fail unseen. */
         refused = !pd_uart_open(supply_page_tx(&s_supply),
@@ -1568,7 +1578,12 @@ int main(void)
      * And the phase tap's, last, the same way: a pin an output, the supply
      * or the sensor bus holds is refused, the tap does not run, and FLAGS
      * says so.  Its capture starts after their PIO programs, so it takes
-     * what state machine they leave.
+     * what state machine they leave: when the outputs and an enabled tap
+     * need more than the silicon has, the outputs bind and the tap is the
+     * one left out, with the TONE page's flag bit 1 (LINK_TN_PIN_REFUSED)
+     * set until a write tries it again.  An OUTPUTS write at run time
+     * cannot reach that state with the tap running: it is refused, so the
+     * order here and the one at run time agree.
      */
     if (have_saved) {
         (void)sense_page_write(&s_sense, LINK_SN_ENABLE,

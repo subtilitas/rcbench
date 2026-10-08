@@ -16,8 +16,10 @@ history is in git.
   ends one (1 to 100 ms, at least the lowest tone's period) and the periods
   that make one (1 to 64). The GPIO is refused past the bank, on a reserved
   pin, on an output's, SENSE's or SUPPLY's, and on an ADC pin (GP26 to GP29,
-  GP40 to GP47) while the tap is enabled, and an OUTPUTS write on it is
-  refused. The page holds the last 64 beeps: start in ms since the capture,
+  GP40 to GP47) while the tap is enabled, and an OUTPUTS write on it, or one
+  whose slot the silicon cannot bind beside the running tap (no PIO state
+  machine, instruction memory or DMA channel left), is refused with
+  BAD_VALUE, keeps the slots in force and saves nothing. The page holds the last 64 beeps: start in ms since the capture,
   length in 0.1 ms, pitch in 0.1 Hz, bursts, carrier in 100 Hz steps and
   whether a pitch change bounds it, read by number through EVT_SEL without
   consuming one. The set-up, registers 0 to 6, is kept in the coprocessor's
