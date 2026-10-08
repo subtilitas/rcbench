@@ -56,6 +56,10 @@ void sense_link_lost(sense_link_t *s)
     s->caps_owed     = false;
     s->pending       = SENSE_LINK_OP_NONE;
     s->was_faults    = 0u;
+    /* What the coprocessor that went said, and not yet shown, is about a
+     * page nobody reads now; what the settings say stands. */
+    s->events &= (uint16_t)(SENSE_LINK_EV_PINS_UNSET
+                            | SENSE_LINK_EV_SAME_ADDR);
     forget_reads(s);
 }
 
@@ -475,6 +479,36 @@ uint16_t sense_link_events(sense_link_t *s)
     const uint16_t e = s->events;
     s->events = 0u;
     return e;
+}
+
+uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms)
+{
+    /* Most pressing first: what stops the monitors being read at all, then
+     * what makes a reading absent or wrong, then what makes it a bound. */
+    static const uint16_t k_order[] = {
+        SENSE_LINK_EV_NO_PAGE,      SENSE_LINK_EV_PINS_UNSET,
+        SENSE_LINK_EV_SAME_ADDR,    SENSE_LINK_EV_BUS_REFUSED,
+        SENSE_LINK_EV_I228_REFUSED, SENSE_LINK_EV_I3221_REFUSED,
+        SENSE_LINK_EV_STUCK,        SENSE_LINK_EV_I228_SILENT,
+        SENSE_LINK_EV_I3221_SILENT, SENSE_LINK_EV_I228_WRONG,
+        SENSE_LINK_EV_I3221_WRONG,  SENSE_LINK_EV_I228_CLIPPED,
+        SENSE_LINK_EV_I3221_CLIPPED, SENSE_LINK_EV_STORE_OFF,
+    };
+    if (s == NULL || s->events == 0u
+        || (s->event_given
+            && (uint32_t)(now_ms - s->event_ms) < SENSE_LINK_EVENT_GAP_MS)) {
+        return 0u;
+    }
+    for (size_t i = 0u; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
+        if ((s->events & k_order[i]) != 0u) {
+            s->events &= (uint16_t)~k_order[i];
+            s->event_given = true;
+            s->event_ms    = now_ms;
+            return k_order[i];
+        }
+    }
+    s->events = 0u;                 /* no bit this build knows */
+    return 0u;
 }
 
 bool sense_link_settled(const sense_link_t *s)

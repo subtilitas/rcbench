@@ -1083,7 +1083,9 @@ und mit eingeschaltetem INA228 verliert die Kachel MOTOR & ESC ihre Marke
 Solange ein Monitor eingeschaltet ist, liest das Panel die 14
 Nur-Lese-Register der SENSE-Page alle 50 ms; solange der INA3221
 eingeschaltet ist, die Kanalfenster der SERVO_SENSE-Page alle 200 ms. Das
-Band sagt, was sie zeigen, jedes einmal:
+Band sagt, was sie zeigen, jedes einmal und eines nach dem anderen: das
+Dringendste zuerst und das nächste frühestens 5 s später, sodass zwei
+gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 
 | Meldung | Wann |
 | --- | --- |
@@ -1093,9 +1095,9 @@ Band sagt, was sie zeigen, jedes einmal:
 | `Sensor-Pins GP5/GP6 abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor hat die Pins abgelehnt: kein Paar eines I2C-Blocks, reserviert, an einen Ausgang gebunden oder vom PD mini belegt; beide Monitore bleiben aus |
 | `INA228 Shunt oder Höchststrom abgelehnt -- siehe SETUP ANSCHLÜSSE` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
 | `INA3221-Einstellung abgelehnt -- siehe SETUP ANSCHLÜSSE` | der INA3221 bleibt aus |
+| `Sensorbus hängt: SDA auf low -- wird freigetaktet` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
 | `INA228 antwortet nicht auf 0x45` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `-- 0x44 antwortet` wird angefügt, wenn der Adress-Scan des Koprozessors dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 antwortet mit 1408h, kein INA3221 -- nicht benutzt` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
-| `Sensorbus hängt: SDA auf low -- wird freigetaktet` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
 | `INA228-Strom am Ende des Messbereichs -- Strom ist eine Grenze` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Scharfschalten das Ende seines Bereichs gelesen |
 | `INA3221 CH1 übersteuert bei 1.64 A -- Strom ist eine Grenze` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
 | `Speicher des Koprozessors aus -- Einstellungen gelten bis zum Neustart` | STATUS-Fehlerbit 6: der Koprozessor speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |

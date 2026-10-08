@@ -133,11 +133,18 @@ bool bench_state_ina_current(const bench_state_t *b, float *out);
 #define BENCH_FINE_MAH_TOL 2.0f
 #define BENCH_FINE_WH_TOL  0.2f
 
+/** The most BENCH's charge (1 mAh) and energy (0.1 Wh) registers carry: a
+ *  run past them reads the ceiling there, and only SENSE's 32-bit totals
+ *  go on. */
+#define BENCH_CHARGE_MAH_MAX 65535.0f
+#define BENCH_ENERGY_WH_MAX   6553.5f
+
 /**
  * With LINK_BN_TOTALS_OK, the INA228's totals in the SENSE page's finer
  * steps -- @p charge_cmah in 0.01 mAh, @p energy_cwh in 0.01 Wh, read in
  * the same poll -- over BENCH's 1 mAh and 0.1 Wh, each where it agrees
- * with BENCH's within the tolerance above.  Nothing changes without
+ * with BENCH's within the tolerance above, or where BENCH reads its
+ * ceiling and the finer figure is at or above it.  Nothing changes without
  * TOTALS_OK.
  */
 void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,

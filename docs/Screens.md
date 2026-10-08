@@ -994,7 +994,9 @@ mark.
 
 While a monitor is enabled, the panel reads SENSE's 14 read-only registers
 every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
-200 ms. The band says what they show, each once:
+200 ms. The band says what they show, each once and one at a time: the most
+pressing first, and the next no sooner than 5 s later, so two at once are
+both said. In order:
 
 | Message | When |
 | --- | --- |
@@ -1004,9 +1006,9 @@ every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
 | `sensor pins GP5/GP6 refused -- see SETUP INTERFACES` | the coprocessor refused the pins: not one I2C block's pair, reserved, bound to an output or held by the PD mini; both monitors stay off |
 | `INA228 shunt or max current refused -- see SETUP INTERFACES` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
 | `INA3221 set-up refused -- see SETUP INTERFACES` | the INA3221 stays off |
+| `sensor bus stuck: SDA held low -- clocking it free` | the coprocessor found SDA held low and clocks it free |
 | `INA228 not answering at 0x45` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `-- 0x44 answers` is added when the coprocessor's address scan found something where the part could be |
 | `0x40 answers 1408h, not an INA3221 -- not used` | something answers at the part's address with another identity |
-| `sensor bus stuck: SDA held low -- clocking it free` | the coprocessor found SDA held low and clocks it free |
 | `INA228 current at the end of its range -- current is a bound` | the INA228 read the end of its range in the last 50 ms window or since the arm |
 | `INA3221 CH1 clipped at 1.64 A -- current is a bound` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
 | `coprocessor store off -- set-ups last until it restarts` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |

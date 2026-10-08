@@ -208,6 +208,8 @@ typedef struct {
     uint16_t was_faults;
     uint8_t  clipped_ch;
     uint16_t events;
+    bool     event_given;     /**< an event has been handed out        */
+    uint32_t event_ms;        /**< when                                */
 } sense_link_t;
 
 void sense_link_init(sense_link_t *s);
@@ -249,6 +251,20 @@ void sense_link_faults(sense_link_t *s, uint16_t faults);
 
 /** The events since the last call, SENSE_LINK_EV_*, and cleared. */
 uint16_t sense_link_events(sense_link_t *s);
+
+/** How long an event handed out by sense_link_event() has the alert band
+ *  before the next one is handed out. */
+#define SENSE_LINK_EVENT_GAP_MS 5000u
+
+/**
+ * One event for the alert band, which shows one line and replaces it with
+ * the next: the most pressing waiting -- no page, a set-up not sent or
+ * refused, a stuck bus, a part not answering, another identity, a clipped
+ * reading, the store off -- cleared, and the rest kept.  0 while none waits
+ * or while the last one handed out is younger than SENSE_LINK_EVENT_GAP_MS
+ * at @p now_ms.
+ */
+uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms);
 
 /** Whether nothing is owed: the page holds the set-up asked, less the
  *  frames it refused. */

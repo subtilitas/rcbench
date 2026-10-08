@@ -582,6 +582,62 @@ TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
     bench_state_fine_totals(NULL, 0, 0u);
 }
 
+/*
+ * A run past BENCH's 65535 mAh or 6553.5 Wh: the registers read their
+ * ceiling, SENSE's 32-bit totals go on, and the count goes on with them --
+ * through a poll with no SENSE read too, which offers only the ceiling.
+ */
+TEST_CASE(the_totals_go_on_past_benchs_ceiling)
+{
+    const uint16_t sensed = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                       | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    bench_state_t src = measured(48.0f, 200.0f, sensed);
+    src.charge_mah = 70000.0f;
+    src.energy_wh  = 7000.0f;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&src, regs);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 65535u);
+    CHECK_EQ(regs[LINK_BN_ENERGY_DWH], 65535u);
+
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;
+
+    /* SENSE read in the poll: its figures, above the ceiling. */
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    CHECK_NEAR(b.charge_mah, BENCH_CHARGE_MAH_MAX, 0.001f);
+    CHECK_NEAR(b.energy_wh, BENCH_ENERGY_WH_MAX, 0.001f);
+    bench_state_fine_totals(&b, 7000000, 700000u);
+    CHECK_NEAR(b.charge_mah, 70000.0f, 0.01f);
+    CHECK_NEAR(b.energy_wh, 7000.0f, 0.001f);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70000.0f, 0.01f);
+    CHECK_NEAR(t.wh, 7000.0f, 0.001f);
+
+    /* No SENSE read in this poll: BENCH's ceiling does not pull the count
+     * back. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70000.0f, 0.01f);
+    CHECK_NEAR(t.wh, 7000.0f, 0.001f);
+
+    /* The next read goes on from there. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, 7001000, 700100u);
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_NEAR(t.mah, 70010.0f, 0.01f);
+    CHECK_NEAR(t.wh, 7001.0f, 0.001f);
+
+    /* At the ceiling, a finer figure below it is another moment's and is
+     * not taken. */
+    bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
+    bench_state_fine_totals(&b, 6000000, 600000u);
+    CHECK_NEAR(b.charge_mah, BENCH_CHARGE_MAH_MAX, 0.001f);
+    CHECK_NEAR(b.energy_wh, BENCH_ENERGY_WH_MAX, 0.001f);
+}
+
 TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
 {
     float v = 0.0f;
@@ -640,6 +696,7 @@ int main(void)
     RUN(the_ina228_counts_while_its_totals_are_the_runs);
     RUN(a_run_start_takes_the_last_runs_totals_off_the_page);
     RUN(the_finer_totals_replace_benchs_where_they_agree);
+    RUN(the_totals_go_on_past_benchs_ceiling);
     RUN(the_escs_figures_come_from_whichever_page_carries_them);
     return test_summary("bench");
 }

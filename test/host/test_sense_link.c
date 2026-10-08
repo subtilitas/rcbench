@@ -601,6 +601,50 @@ TEST_CASE(a_clip_on_a_channel_not_read_is_not_said)
     CHECK_EQ(sense_link_clipped_channel(&sl), 1u);
 }
 
+/*
+ * The band holds one line.  Two parts that stop answering in one read are
+ * both said: one event at a time, the next once the first has had the band
+ * for SENSE_LINK_EVENT_GAP_MS, and none lost on the way.
+ */
+TEST_CASE(simultaneous_events_are_handed_out_one_at_a_time)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    want(&w);
+    polls(12);
+    far_flags(LINK_SN_BUS_OPEN);
+    polls((int)(SENSE_LINK_GRACE_MS / 50u) + 2);
+    /* Both raised by the same read, neither taken yet. */
+    CHECK_EQ(sl.events, (uint16_t)(SENSE_LINK_EV_I228_SILENT
+                                   | SENSE_LINK_EV_I3221_SILENT));
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_I228_SILENT);
+    CHECK_EQ(sense_link_event(&sl, now + 50u), 0u);
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS - 1u), 0u);
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_I3221_SILENT);
+    CHECK_EQ(sense_link_event(&sl, now + 3u * SENSE_LINK_EVENT_GAP_MS), 0u);
+
+    /* The most pressing first, whatever order they were raised in. */
+    sl.events = (uint16_t)(SENSE_LINK_EV_STORE_OFF | SENSE_LINK_EV_STUCK
+                           | SENSE_LINK_EV_NO_PAGE);
+    const uint32_t t = now + 10u * SENSE_LINK_EVENT_GAP_MS;
+    CHECK_EQ(sense_link_event(&sl, t), SENSE_LINK_EV_NO_PAGE);
+    CHECK_EQ(sense_link_event(&sl, t + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_STUCK);
+    CHECK_EQ(sense_link_event(&sl, t + 2u * SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_STORE_OFF);
+
+    /* A lost link drops what its coprocessor said and keeps what the
+     * settings say. */
+    sl.events = (uint16_t)(SENSE_LINK_EV_I228_SILENT
+                           | SENSE_LINK_EV_PINS_UNSET);
+    sense_link_lost(&sl);
+    CHECK_EQ(sl.events, SENSE_LINK_EV_PINS_UNSET);
+    CHECK_EQ(sense_link_event(NULL, t), 0u);
+}
+
 TEST_CASE(the_store_off_is_said_once_per_link)
 {
     fresh(7u);
@@ -684,6 +728,7 @@ int main(void)
     RUN(another_identity_is_said_once_with_what_it_read);
     RUN(a_stuck_bus_and_clipped_readings_are_said_on_their_edges);
     RUN(a_clip_on_a_channel_not_read_is_not_said);
+    RUN(simultaneous_events_are_handed_out_one_at_a_time);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);
     return test_summary("sense_link");

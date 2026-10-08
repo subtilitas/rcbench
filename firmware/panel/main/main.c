@@ -5451,14 +5451,14 @@ static const char *const k_sense_part[2] = { "INA228", "INA3221" };
 
 /*
  * What the SENSE and SERVO_SENSE pages said that the operator is told.
- * Several can come in one pass and the band shows the last, so the least
- * pressing go first: a store that keeps nothing, a clipped reading, a part
- * that does not answer or is another part, a stuck bus, then a set-up the
- * page refused or that was not sent, and a coprocessor with no page.
+ * The band shows one line and the snapshot holds one pending alert, so
+ * this takes one event at a time, the most pressing first, and the next no
+ * sooner than SENSE_LINK_EVENT_GAP_MS later (sense_link_event()): two parts
+ * that both stop answering are both said, one after the other.
  */
 static void sense_link_alerts(void)
 {
-    const uint16_t ev = sense_link_events(&s_sense_link);
+    const uint16_t ev = sense_link_event(&s_sense_link, now_ms());
     if (ev == 0u) {
         return;
     }

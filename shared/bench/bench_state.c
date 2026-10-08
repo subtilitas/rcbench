@@ -149,9 +149,15 @@ void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
     if ((b->flags & (uint16_t)LINK_BN_TOTALS_OK) != 0u && settled) {
         /* The INA228 counts, at every conversion: its totals are the run's,
          * and a reading the panel saw adds nothing to them.  Not in the
-         * run's first samples, which can be the last run's page. */
-        t->mah = b->charge_mah;
-        t->wh  = b->energy_wh;
+         * run's first samples, which can be the last run's page.  A
+         * register at its ceiling is a bound, not the total: a count
+         * already past it from a finer read stands. */
+        if (!(b->charge_mah >= BENCH_CHARGE_MAH_MAX && t->mah > b->charge_mah)) {
+            t->mah = b->charge_mah;
+        }
+        if (!(b->energy_wh >= BENCH_ENERGY_WH_MAX && t->wh > b->energy_wh)) {
+            t->wh = b->energy_wh;
+        }
         t->counted |= (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
         return;
     }
@@ -262,10 +268,17 @@ void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
      * took reads 0 there, and the finer figure is the only one. */
     const float coarse_mah = b->charge_mah;
     if (fabsf(mah - coarse_mah) <= BENCH_FINE_MAH_TOL
-        || (coarse_mah == 0.0f && mah < 0.0f)) {
+        || (coarse_mah == 0.0f && mah < 0.0f)
+        || (coarse_mah >= BENCH_CHARGE_MAH_MAX
+            && mah >= BENCH_CHARGE_MAH_MAX - BENCH_FINE_MAH_TOL)) {
         b->charge_mah = mah;
     }
-    if (fabsf(wh - b->energy_wh) <= BENCH_FINE_WH_TOL) {
+    /* Nor more than 65535 mAh or 6553.5 Wh: past that BENCH reads its
+     * ceiling, and a finer figure at or above it is the only one. */
+    const float coarse_wh = b->energy_wh;
+    if (fabsf(wh - coarse_wh) <= BENCH_FINE_WH_TOL
+        || (coarse_wh >= BENCH_ENERGY_WH_MAX
+            && wh >= BENCH_ENERGY_WH_MAX - BENCH_FINE_WH_TOL)) {
         b->energy_wh = wh;
     }
 }
