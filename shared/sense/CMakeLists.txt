@@ -6,7 +6,10 @@
 # capture judges moves by servo_move's rules.  Both images compile them,
 # through shared/outputs, whose SENSE page validates an INA228 set-up with
 # ina228_calibrate(); nothing else of them is called yet.
-set(SRCS sense_bus.c ina228.c ina3221.c sense_sched.c)
+#
+# The tone detector, tone.c, turns the edges of one ESC motor phase into
+# beeps and their pitch.  Nothing calls it yet either.
+set(SRCS sense_bus.c ina228.c ina3221.c sense_sched.c tone.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)
