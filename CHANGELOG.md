@@ -43,8 +43,10 @@ history is in git.
   before the first read (the ring is cleared at the start), or a FIFO
   overflow as an overrun that ends the beep under way; the words read in the
   pass that sees the overflow and in the next are discarded, since they hold
-  edges from both sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before
-  it stops or moves the capture. The pin is an input
+  edges from both sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before it stops or
+  moves the capture; a pass still running then refuses the change and
+  leaves the capture as it was. A core 1 that does not start leaves a
+  saved tap refused, its capture let go. The pin is an input
   with its pull-down on while the tap is disabled. The host suite assembles
   the PIO program from its source, runs it in a cycle-counting model and
   holds it to `tone_holdoff_edge()`: every decrement of the counter 4 cycles

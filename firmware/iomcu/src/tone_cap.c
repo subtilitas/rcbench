@@ -99,9 +99,16 @@ bool tone_cap_start(uint8_t pin)
     return true;
 }
 
-void tone_cap_pause(void)
+bool tone_cap_pause(void)
 {
+    const bool was = s_running;
     s_running = false;
+    return was;
+}
+
+void tone_cap_resume(void)
+{
+    s_running = true;
 }
 
 void tone_cap_stop(void)

@@ -73,10 +73,10 @@ void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us)
     spin_unlock(s_lock, irq);
 }
 
-void tone_core1_quiesce(void)
+bool tone_core1_quiesce(void)
 {
     if (!s_started) {
-        return;
+        return true;
     }
     /* Core 1 marks itself live under the lock as it takes an order, so a
      * core 1 not live here has taken none: the first it takes is the
@@ -86,12 +86,16 @@ void tone_core1_quiesce(void)
     const bool live = s_live;
     spin_unlock(s_lock, irq);
     if (!live) {
-        return;
+        return true;
     }
     const uint64_t until = time_us_64() + TONE_CORE1_WAIT_US;
-    while ((int32_t)(s_ack_seq - seq) < 0 && time_us_64() < until) {
+    while ((int32_t)(s_ack_seq - seq) < 0) {
+        if (time_us_64() >= until) {
+            return false;
+        }
         tight_loop_contents();
     }
+    return true;
 }
 
 static void push(const tone_rec_t *r, uint16_t gen, uint16_t cap_gen)

@@ -262,16 +262,22 @@ static uint8_t bound_slots(void)
 
 /*
  * The silicon made to agree with the bank, every slot at the rate it runs
- * at: its own, or the SERVO page's for a PWM surface.
+ * at: its own, or the SERVO page's for a PWM surface.  Only the slots in
+ * @p may_bind are bound; hw_apply() binds every one.
  */
-static void hw_apply(void)
+static void hw_apply_only(uint8_t may_bind)
 {
     uint16_t rate[OUT_MAX_SLOTS];
     outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
-    outputs_hw_apply(&s_outputs, rate);
+    outputs_hw_apply_only(&s_outputs, rate, may_bind);
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
     sense_page_bound(&s_sense, bound_slots());
+}
+
+static void hw_apply(void)
+{
+    hw_apply_only(0xFFu);
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -630,11 +636,22 @@ static void tone_order(void)
  * down, and core 1 is told again once the capture runs: it never reads a
  * ring that is being started over.
  */
+static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
+
 static bool tone_rewire(void)
 {
-    tone_cap_pause();
+    s_tone_busy = false;
+    const bool was_running = tone_cap_pause();
     tone_order();
-    tone_core1_quiesce();
+    if (!tone_core1_quiesce() && was_running) {
+        /* Core 1 did not finish its pass in time and may still read the
+         * capture: nothing is taken down, the capture runs on as it was,
+         * and the caller puts the set-up back. */
+        tone_cap_resume();
+        tone_order();
+        s_tone_busy = true;
+        return false;
+    }
     tone_cap_stop();
     reserve_held();
     if (!tone_page_wanted(&s_tone)) {
@@ -698,6 +715,14 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
         if (wired) {
             pd_uart_close();
         }
+    }
+    if (!wired && s_tone_busy) {
+        /* Core 1 still in a pass: the capture was not touched and runs as
+         * the set-up it had, which the page shows again. */
+        tone_page_revert(&s_tone, was, was_refused);
+        reserve_held();
+        tone_order();
+        return LINK_NACK_BAD_VALUE;
     }
     if (!wired) {
         /* No state machine or channel for that pin, or none left for a
@@ -810,9 +835,12 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
         pd_uart_close();
     }
     if (refused) {
+        /* The bank as it was, and the silicon bound exactly as before: a
+         * slot unbound then, retried by the trial, may not keep what a
+         * slot bound then needs back. */
         memcpy(s->slots, prev, sizeof(prev));
         outputs_slots_apply(&s_outputs, s->slots);
-        hw_apply();
+        hw_apply_only(bound_before);
         return LINK_NACK_BAD_VALUE;
     }
     save_outputs(s);
@@ -1680,6 +1708,13 @@ int main(void)
             out_store_core1_parkable();   /* windows park core 1 from now */
         } else {
             out_store_off();
+            /* No core 1 known to run, so nothing reads the tap: its capture
+             * is let go and the page says refused (FLAGS PIN_REFUSED). */
+            if (tone_page_wanted(&s_tone)) {
+                tone_page_refuse(&s_tone);
+                (void)tone_rewire();
+                reserve_held();
+            }
         }
     }
 

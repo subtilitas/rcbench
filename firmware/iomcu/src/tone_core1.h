@@ -45,9 +45,11 @@ void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us);
 
 /** Core 0: wait until core 1 has finished a pass under the latest order.
  *  Bounded by TONE_CORE1_WAIT_US; returns at once when core 1 has not
- *  taken an order yet (at boot: the first it takes is the latest), and,
- *  after the bound, when it does not answer (parked for a flash write). */
-void tone_core1_quiesce(void);
+ *  taken an order yet (at boot: the first it takes is the latest).  False
+ *  when the bound passed without the acknowledgement: core 1 may still be
+ *  in a pass that reads the capture (a long pass, or parked for a flash
+ *  write), and nothing may be taken down. */
+bool tone_core1_quiesce(void);
 
 /** The longest core 0 waits in tone_core1_quiesce(), 5 ms: core 1's tick
  *  is 1 ms and the sensor pass before the tone pass takes up to 1.1 ms; the
