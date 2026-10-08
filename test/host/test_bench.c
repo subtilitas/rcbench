@@ -499,6 +499,57 @@ TEST_CASE(the_ina228_counts_while_its_totals_are_the_runs)
     CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
 }
 
+/*
+ * The coprocessor's edge into driving: the last run's totals leave the
+ * BENCH page at once, so a poll before its next 50 Hz sample reads no
+ * totals rather than the last run's marked as this one's.  The live
+ * readings, the peaks and every other flag stay.
+ */
+TEST_CASE(a_run_start_takes_the_last_runs_totals_off_the_page)
+{
+    bench_state_t b = measured(24.0f, 40.0f,
+                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                               | LINK_BN_SENSED | LINK_BN_TOTALS_OK);
+    b.charge_mah  = 1840.0f;
+    b.energy_wh   = 44.7f;
+    b.voltage_min = 21.5f;
+    b.current_max = 96.0f;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&b, regs);
+    uint16_t before[LINK_BN_COUNT];
+    memcpy(before, regs, sizeof(before));
+
+    bench_state_run_starts(&b, regs);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 0u);
+    CHECK_EQ(regs[LINK_BN_ENERGY_DWH], 0u);
+    CHECK_EQ(regs[LINK_BN_FLAGS] & LINK_BN_TOTALS_OK, 0u);
+    CHECK_EQ(regs[LINK_BN_FLAGS],
+             before[LINK_BN_FLAGS] & (uint16_t)~LINK_BN_TOTALS_OK);
+    for (unsigned i = 0u; i < LINK_BN_COUNT; ++i) {
+        if (i != LINK_BN_CHARGE_MAH && i != LINK_BN_ENERGY_DWH
+            && i != LINK_BN_FLAGS) {
+            CHECK_EQ(regs[i], before[i]);
+        }
+    }
+    CHECK_EQ(b.charge_mah, 0.0f);
+    CHECK_EQ(b.energy_wh, 0.0f);
+    CHECK_EQ(b.flags & LINK_BN_TOTALS_OK, 0u);
+    CHECK_NEAR(b.voltage, 24.0f, 0.001f);
+
+    /* A panel reading the page now counts its own, from 0. */
+    bench_state_t panel;
+    memset(&panel, 0, sizeof(panel));
+    bench_state_from_regs(&panel, regs, 0u, LINK_BN_COUNT);
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    t.run_s = BENCH_TOTALS_SETTLE_S;      /* past the panel's own guard */
+    bench_totals_count(&t, &panel, 0.05f, true);
+    CHECK(t.mah < 1.0f);
+
+    bench_state_run_starts(NULL, regs);
+    bench_state_run_starts(&b, NULL);
+}
+
 TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
 {
     const uint16_t sensed = (uint16_t)(LINK_BN_SENSED | LINK_BN_TOTALS_OK);
@@ -587,6 +638,7 @@ int main(void)
     RUN(the_totals_outlast_the_run_and_reset_at_the_next);
     RUN(a_stalled_loop_counts_at_most_one_step);
     RUN(the_ina228_counts_while_its_totals_are_the_runs);
+    RUN(a_run_start_takes_the_last_runs_totals_off_the_page);
     RUN(the_finer_totals_replace_benchs_where_they_agree);
     RUN(the_escs_figures_come_from_whichever_page_carries_them);
     return test_summary("bench");

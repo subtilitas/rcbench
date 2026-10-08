@@ -1590,6 +1590,10 @@ int main(void)
         if (driving_now && !s_pass_driving) {
             ++s_run_gen;
             sense_order();
+            /* And the last run's totals off the BENCH page now, not at the
+             * next 50 Hz sample: a panel polling in between would take
+             * them, marked TOTALS_OK, as this run's. */
+            bench_state_run_starts(&s_bench, s_state.bench);
         }
         s_pass_driving = driving_now;
         /* The sweep's command for this pass, before the step slews to it. */

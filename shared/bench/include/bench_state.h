@@ -93,6 +93,16 @@ void bench_state_from_regs(bench_state_t *b, const uint16_t *regs,
 /** Encode into a BENCH page, for the coprocessor and for round-trip tests. */
 void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
 
+/**
+ * A run starts: the totals of the last one go, in @p b and in the BENCH
+ * page @p regs built from it -- charge and energy 0 and LINK_BN_TOTALS_OK
+ * clear -- and every other register stays.  For the coprocessor, on the
+ * edge into driving: it rebuilds the page at its 50 Hz sample, and until
+ * the next one a panel reading the page would see the last run's totals
+ * marked as this run's.  Either pointer may be NULL.
+ */
+void bench_state_run_starts(bench_state_t *b, uint16_t *regs);
+
 /** Clear the peaks without disturbing the live readings. */
 void bench_state_reset_peaks(bench_state_t *b);
 
@@ -170,11 +180,11 @@ typedef struct {
 } bench_totals_t;
 
 /**
- * How long into a run the INA228's totals are not taken, in seconds.  The
- * coprocessor builds the BENCH page from its 50 Hz sample, so for up to
- * 20 ms after the arm BENCH can still carry the last run's totals with
- * LINK_BN_TOTALS_OK; the panel counts on its own until five such samples
- * have passed.
+ * How long into a run the INA228's totals are not taken, in seconds.  A
+ * coprocessor builds the BENCH page from its 50 Hz sample, so one that does
+ * not clear the page on the arm (bench_state_run_starts()) can carry the
+ * last run's totals with LINK_BN_TOTALS_OK for up to 20 ms after it; the
+ * panel counts on its own until five such samples have passed.
  */
 #define BENCH_TOTALS_SETTLE_S 0.1f
 

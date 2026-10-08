@@ -104,7 +104,10 @@ lesen 0, bis Core 1 unter der geltenden Konfiguration gelesen hat, etwa 1 ms
 nach einer Änderung. Solange der INA228 antwortet, trägt BENCH seine
 Spannung und seinen Strom (die Mittelwerte des letzten 50-ms-Fensters), ihr
 Produkt als Leistung, die Spitzen des Laufs aus seinen 500-Hz-Messungen
-sowie seine Ladung und Energie, mit Bits 5 und 6. Ein Lauf, der mit
+sowie seine Ladung und Energie, mit Bits 5 und 6. An der Flanke zum Treiben
+löscht er Bit 6 und die Register für Ladung und Energie im selben Durchlauf
+und nicht erst bei seiner nächsten 50-Hz-Abtastung, sodass kein Lesen nach
+dem Scharfschalten die Summen des letzten Laufs trägt. Ein Lauf, der mit
 antwortendem INA228 beginnt, behält ihn bis zu seinem Ende als Quelle von
 BENCH: hört er auf zu antworten, bleiben diese Felder leer, statt zur
 Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der

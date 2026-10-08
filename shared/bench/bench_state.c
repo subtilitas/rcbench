@@ -92,6 +92,20 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs)
     regs[LINK_BN_FLAGS]       = b->flags;
 }
 
+void bench_state_run_starts(bench_state_t *b, uint16_t *regs)
+{
+    if (b != NULL) {
+        b->charge_mah = 0.0f;
+        b->energy_wh  = 0.0f;
+        b->flags &= (uint16_t)~LINK_BN_TOTALS_OK;
+    }
+    if (regs != NULL) {
+        regs[LINK_BN_CHARGE_MAH] = 0u;
+        regs[LINK_BN_ENERGY_DWH] = 0u;
+        regs[LINK_BN_FLAGS] &= (uint16_t)~LINK_BN_TOTALS_OK;
+    }
+}
+
 void bench_state_reset_peaks(bench_state_t *b)
 {
     if (b == NULL) {

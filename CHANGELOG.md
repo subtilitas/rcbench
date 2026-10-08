@@ -39,7 +39,9 @@ history is in git.
   windows and the move capture. BENCH carries the INA228's voltage,
   current, power, peaks, charge and energy at the existing scales, with
   bits 5 and 6; a run that starts with the INA228 answering keeps it as
-  the source to its end. Capability bits 3 and 4 say what the SENSE set-up
+  the source to its end. The edge into driving clears bit 6 and the charge
+  and energy registers in that pass, so no read after an arm carries the
+  last run's totals. Capability bits 3 and 4 say what the SENSE set-up
   enables and change only when a SENSE write is taken; whether a part
   answers is SENSE FLAGS and BENCH bit 5. A capture's edge is the start of
   the PWM frame that first carries the new pulse, stamped from the slice's
@@ -59,7 +61,7 @@ history is in git.
   parts at the page's defaults while no set-up is stored, and while a part
   is enabled the console prints the sensors' state every 3 s; the bench
   session is in [First run](docs/FirstRun.md) §8. The coprocessor image
-  grows by 20,396 bytes, to 321,224.
+  grows by 20,444 bytes, to 321,272.
 - **Output store record version 5.** The record keeps the sensor set-up
   beside the bindings and the supply's wiring. Version 3 and 4 records
   still load, with the parts they lack off.

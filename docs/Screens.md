@@ -194,10 +194,10 @@ ESC's telemetry and `ESC SAYS` is not shown.
 
 The mAh and Wh under ARM are the INA228's own while BENCH flag bit 6 is
 set: its charge and energy since the arm, accumulated in the part at every
-conversion and read in 0.01 mAh and 0.01 Wh steps. The first 100 ms of a
-run the panel counts them itself: the coprocessor builds the bench page from
-its 50 Hz sample, so for up to 20 ms after the arm the page can still carry
-the last run's totals. Without bit 6 the panel counts both from the current
+conversion and read in 0.01 mAh and 0.01 Wh steps. The coprocessor takes
+the last run's totals and bit 6 off the bench page on the arm, and the panel
+counts the first 100 ms of a run itself as well, so a page built before the
+arm cannot carry the last run's totals into this one. Without bit 6 the panel counts both from the current
 and power shown. When the INA228 stops
 answering mid-run, the count carries on from its last total and does not go
 back.

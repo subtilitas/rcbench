@@ -209,10 +209,10 @@ Telemetrie des ESC, und `ESC MELDET` wird nicht gezeigt.
 Die mAh und Wh unter ARM sind die eigenen des INA228, solange BENCH-Flag
 Bit 6 gesetzt ist: seine Ladung und Energie seit dem Scharfschalten, im
 Bauteil bei jeder Wandlung aufsummiert und in Schritten von 0,01 mAh und
-0,01 Wh gelesen. In den ersten 100 ms eines Laufs zählt das Panel sie
-selbst: der Koprozessor baut die Bench-Page aus seiner 50-Hz-Abtastung, bis
-zu 20 ms nach dem Scharfschalten kann sie also noch die Summen des letzten
-Laufs tragen. Ohne Bit 6 zählt das Panel beide aus dem gezeigten Strom
+0,01 Wh gelesen. Der Koprozessor nimmt die Summen des letzten Laufs und
+Bit 6 beim Scharfschalten von der Bench-Page, und das Panel zählt die ersten
+100 ms eines Laufs zusätzlich selbst, sodass eine vor dem Scharfschalten
+gebaute Page die Summen des letzten Laufs nicht in diesen trägt. Ohne Bit 6 zählt das Panel beide aus dem gezeigten Strom
 und der gezeigten Leistung. Hört der INA228 mitten im Lauf auf zu antworten,
 zählt das Panel von seiner letzten Summe weiter, und die Summe geht nicht
 zurück.

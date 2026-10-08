@@ -96,7 +96,10 @@ holds its pins. Its core 1 reads the enabled parts on a 1 ms tick, and core
 0 until core 1 has read under the set-up in force, about 1 ms after a
 change. With the INA228 answering, BENCH carries its voltage and current
 (the last 50 ms window's means), their product as power, the run's peaks
-from its 500 Hz samples, and its charge and energy, with bits 5 and 6. A
+from its 500 Hz samples, and its charge and energy, with bits 5 and 6. On
+the edge into driving it clears bit 6 and the charge and energy registers in
+the same pass, rather than at its next 50 Hz sample, so no read after the
+arm carries the last run's totals. A
 run that starts with the INA228 answering keeps it as BENCH's source to the
 run's end: if it stops answering, those fields go empty rather than back to
 the ESC's telemetry. A capture's level before the command is CH1's mean
