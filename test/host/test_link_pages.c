@@ -632,6 +632,20 @@ TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
     CHECK_EQ(g.control[LINK_CT_ARM], 1u);
 }
 
+/* The fault bits are one bit each; 4.7's store-off bit is bit 6 and moves
+ * none of the others. */
+TEST_CASE(the_fault_bits_are_one_bit_each)
+{
+    static const uint16_t bits[] = {
+        LINK_FAULT_LINK_SILENT, LINK_FAULT_OVERCURRENT, LINK_FAULT_OVERTEMP,
+        LINK_FAULT_STALL, LINK_FAULT_HEARTBEAT, LINK_FAULT_VERSION,
+        LINK_FAULT_STORE_OFF,
+    };
+    for (unsigned i = 0; i < sizeof(bits) / sizeof(bits[0]); ++i) {
+        CHECK_EQ(bits[i], (uint16_t)(1u << i));
+    }
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -656,5 +670,6 @@ int main(void)
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
     RUN(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor);
+    RUN(the_fault_bits_are_one_bit_each);
     return test_summary("link_pages");
 }

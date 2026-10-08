@@ -45,12 +45,17 @@ history is in git.
   command is CH1's mean over the 50 ms before the edge. Nothing trips: a
   part that stops answering is reported in FLAGS and the bench stays
   armed. The flash store's erases and programs run through
-  `flash_safe_execute()`, which parks core 1 in RAM. `cmake
+  `flash_safe_execute()`, which parks core 1 in RAM. A boot whose core 1
+  does not register for that lock-out switches the store off: nothing is
+  saved, set-ups run from RAM, and STATUS fault bit 6 (new) is set. A new
+  SENSE set-up clears every register read under the old one. A held line
+  or timeouts during the address scan mark the bus stuck and start its
+  recovery. `cmake
   -DIOMCU_SENSE_BRINGUP=ON` builds a coprocessor image that enables both
   parts at the page's defaults while no set-up is stored, and while a part
   is enabled the console prints the sensors' state every 3 s; the bench
   session is in [First run](docs/FirstRun.md) §8. The coprocessor image
-  grows by 19,156 bytes, to 319,984.
+  grows by 19,452 bytes, to 320,280.
 - **Output store record version 5.** The record keeps the sensor set-up
   beside the bindings and the supply's wiring. Version 3 and 4 records
   still load, with the parts they lack off.

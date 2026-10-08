@@ -155,6 +155,30 @@ static bool values_ok(const uint16_t *c)
     return true;
 }
 
+/*
+ * A new set-up: everything read under the old one is gone -- FLAGS,
+ * PRESENT, the IDs, ERRORS, the readings, the windows and a finished
+ * capture's result -- so no read shows a part online, or a value scaled by
+ * the old shunt, before core 1 has read under the new one.  The ESC's own
+ * telemetry (registers 23 to 25) is not the bus's and stays.  CAP_SEQ
+ * counts on across set-ups.  A capture under way cannot meet this: a
+ * set-up is refused while the bank drives, and a stopped bank ends it.
+ */
+static void forget_readings(sense_page_t *p)
+{
+    memset(&p->sense[LINK_SN_FLAGS], 0,
+           (size_t)(LINK_SN_ESC_VOLTAGE_CV - LINK_SN_FLAGS) * sizeof(uint16_t));
+    memset(&p->servo[LINK_SS_CH_MEAN_MA], 0,
+           (size_t)(LINK_SS_CH_FLAGS + 1) * sizeof(uint16_t));
+    p->servo[LINK_SS_CAP_ARM]      = 0u;
+    p->servo[LINK_SS_CAP_STATE]    = (uint16_t)LINK_CAP_IDLE;
+    p->servo[LINK_SS_CAP_MOVE_T]   = 0u;
+    p->servo[LINK_SS_CAP_ARRIVE_T] = 0u;
+    p->servo[LINK_SS_CAP_PEAK_MA]  = 0u;
+    p->servo[LINK_SS_CAP_MEAN_MA]  = 0u;
+    p->servo[LINK_SS_CAP_SAMPLES]  = 0u;
+}
+
 uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, const outputs_t *o,
                          uint64_t taken)
@@ -202,6 +226,7 @@ uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
     }
     memcpy(p->sense, next, sizeof(next));
     ++p->cfg_gen;
+    forget_readings(p);
     return 0u;
 }
 

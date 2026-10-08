@@ -105,6 +105,12 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
  * supply_page_pins().  The bank's reservation covers them on the
  * coprocessor as well; they are named here so the page refuses them by
  * itself.
+ *
+ * A set-up taken clears every register core 1 fills -- FLAGS, PRESENT,
+ * the IDs, ERRORS, the readings, the SERVO_SENSE windows and a finished
+ * capture's result, CAP_ARM with it -- so nothing read under the old
+ * set-up shows until core 1 has read under the new one.  The ESC's
+ * telemetry and CAP_SEQ stay.
  */
 uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, const outputs_t *o,

@@ -40,6 +40,8 @@ static bool     g_open_ok;
 static unsigned g_opens, g_closes, g_asks, g_recoveries;
 static uint8_t  g_sda, g_scl;
 static unsigned g_ask_fail_at;  /* the nth ask since the reset fails, 0 none */
+static bool     g_ask_hold;     /* every ask fails: SDA held under the scan */
+static sense_err_t g_ask_fail_with;
 static uint32_t g_asked;        /* bit n: 0x40 + n was asked */
 
 static uint64_t now_us(void *ctx)
@@ -74,8 +76,8 @@ static sense_err_t ask(void *ctx, uint8_t addr)
     fake_bus_t *b = (fake_bus_t *)ctx;
     ++g_asks;
     g_asked |= 1u << (addr - 0x40u);
-    if (g_ask_fail_at != 0u && g_asks == g_ask_fail_at) {
-        return SENSE_BUS_LOW;
+    if (g_ask_hold || (g_ask_fail_at != 0u && g_asks == g_ask_fail_at)) {
+        return g_ask_fail_with;
     }
     return (fake_find(b, addr) != NULL) ? SENSE_OK : SENSE_NACK;
 }
@@ -85,6 +87,8 @@ static void counts_zero(void)
     g_opens = g_closes = g_asks = g_recoveries = 0u;
     g_asked = 0u;
     g_ask_fail_at = 0u;
+    g_ask_hold = false;
+    g_ask_fail_with = SENSE_BUS_LOW;
 }
 
 /* Both parts and one other device on the bus; the service closed; an
@@ -413,6 +417,93 @@ TEST_CASE(a_scan_cut_short_keeps_what_it_found)
     CHECK_EQ(snap.present, BIT(I3221_ADDR) | BIT(0x41u) | BIT(OTHER_ADDR));
 }
 
+/* Both parts offline, so the scan is the only traffic; SDA held under it:
+ * the scan's first answer marks the bus stuck and ends it, the error
+ * counts, the recovery runs at the next tick and every SENSE_RECOVER_MS
+ * after, and the scan waits for the bus. */
+TEST_CASE(a_line_held_under_the_scan_starts_the_recovery)
+{
+    rig();
+    i228->present = false;
+    i3221->present = false;
+    step();
+    CHECK(snap.i228 != SENSE_PART_ONLINE);
+    CHECK(snap.i3221 != SENSE_PART_ONLINE);
+    CHECK(!snap.stuck);
+    const uint16_t errors = snap.errors;     /* the two probes' NACKs */
+    counts_zero();
+    g_ask_hold = true;
+    steps(SENSE_RETRY_MS - 1u);              /* up to the next scan */
+    CHECK_EQ(g_asks, 0u);
+    step();                                  /* the scan */
+    CHECK_EQ(g_asks, 1u);
+    CHECK(snap.stuck);
+    /* The two probes due at the same tick NACK, then the held line. */
+    CHECK_EQ(snap.errors, (uint16_t)(errors + 3u));
+    CHECK_EQ(g_recoveries, 0u);
+    step();
+    CHECK_EQ(g_recoveries, 1u);              /* within 1 ms */
+    steps(SENSE_RECOVER_MS);
+    CHECK_EQ(g_recoveries, 2u);
+    CHECK_EQ(g_asks, 1u);                    /* no scan on a stuck bus */
+    CHECK(snap.stuck);
+}
+
+/* Timeouts under the scan: one alone is not stuck and the scan goes on,
+ * the address keeping its last answer; SENSE_STUCK_TIMEOUTS in a row are,
+ * and end it. */
+TEST_CASE(timeouts_under_the_scan_count_towards_stuck)
+{
+    rig();
+    i228->present = false;
+    step();
+    CHECK_EQ(snap.present, BIT(I3221_ADDR) | BIT(OTHER_ADDR));
+    counts_zero();
+    g_ask_fail_with = SENSE_TIMEOUT;
+    g_ask_fail_at = 8u;                      /* 0x48 times out, once */
+    steps(SENSE_RETRY_MS);
+    CHECK_EQ(g_asks, 15u);
+    CHECK(!snap.stuck);
+    CHECK_EQ(snap.present, BIT(I3221_ADDR) | BIT(OTHER_ADDR));
+
+    counts_zero();
+    g_ask_fail_with = SENSE_TIMEOUT;
+    g_ask_hold = true;
+    steps(SENSE_RETRY_MS);
+    CHECK_EQ(g_asks, SENSE_STUCK_TIMEOUTS);
+    CHECK(snap.stuck);
+    step();
+    CHECK_EQ(g_recoveries, 1u);
+}
+
+/* What sense_bus makes of an answer from outside its drivers. */
+TEST_CASE(the_bus_notes_an_outside_answer)
+{
+    sense_bus_t b;
+    fake_bus_t f;
+    fake_bus_init(&f, &b);
+    sense_bus_note(&b, SENSE_NACK);
+    CHECK_EQ(b.errors, 0u);
+    CHECK(!b.stuck);
+    sense_bus_note(&b, SENSE_TIMEOUT);
+    CHECK_EQ(b.errors, 1u);
+    CHECK(!b.stuck);
+    sense_bus_note(&b, SENSE_NACK);          /* ends the run */
+    sense_bus_note(&b, SENSE_TIMEOUT);
+    CHECK(!b.stuck);
+    sense_bus_note(&b, SENSE_TIMEOUT);
+    CHECK(b.stuck);
+    sense_bus_note(&b, SENSE_OK);            /* lines back */
+    CHECK(!b.stuck);
+    sense_bus_note(&b, SENSE_BUS_LOW);
+    CHECK(b.stuck);
+    CHECK_EQ(b.errors, 4u);
+    sense_bus_note(&b, SENSE_OFFLINE);       /* reached nothing */
+    sense_bus_note(&b, SENSE_STUCK);
+    CHECK_EQ(b.errors, 4u);
+    CHECK(b.stuck);
+}
+
 /* ------------------------------------------------------------- snapshot */
 
 /* Before a first order: nothing open, every field 0. */
@@ -441,6 +532,9 @@ int main(void)
     RUN(an_arm_with_nothing_to_read_ends_lost);
     RUN(a_missing_part_is_scanned_for_again);
     RUN(a_scan_cut_short_keeps_what_it_found);
+    RUN(a_line_held_under_the_scan_starts_the_recovery);
+    RUN(timeouts_under_the_scan_count_towards_stuck);
+    RUN(the_bus_notes_an_outside_answer);
     RUN(a_service_starts_closed);
     return test_summary("sense_svc");
 }

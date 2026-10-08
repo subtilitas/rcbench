@@ -109,7 +109,7 @@ static uint16_t online_mask(const sense_sched_t *s)
 
 static void scan(sense_svc_t *v, uint64_t now)
 {
-    const sense_sched_t *s = &v->sched;
+    sense_sched_t *s = &v->sched;
     if (!v->scan_due && !(part_missing(s) && (int64_t)(now - v->scan_at_us) >= 0)) {
         return;
     }
@@ -119,27 +119,28 @@ static void scan(sense_svc_t *v, uint64_t now)
     v->scan_due   = false;
     v->scan_at_us = now + (uint64_t)SENSE_RETRY_MS * 1000u;
     const uint16_t online = online_mask(s);
-    uint16_t found = online;
-    for (unsigned k = 0; k < SENSE_SCAN_COUNT; ++k) {
+    uint16_t found    = 0u;
+    uint16_t answered = 0u;      /* asked and answered, yes or no */
+    for (unsigned k = 0; k < SENSE_SCAN_COUNT && !s->bus.stuck; ++k) {
         const uint16_t bit = (uint16_t)(1u << k);
         if ((online & bit) != 0u) {
             continue;
         }
         const sense_err_t e = v->io.ask(v->io.sched.ctx,
                                         (uint8_t)(SENSE_SCAN_FIRST + k));
-        if (e == SENSE_OK) {
-            found |= bit;
-        } else if (e != SENSE_NACK) {
-            /* The bus failed under the scan: what it found so far stands,
-             * and what it did not reach keeps its last answer. */
-            const uint16_t reached = (uint16_t)(bit - 1u);
-            v->present = (uint16_t)((found & reached)
-                                    | (v->present & (uint16_t)~reached)
-                                    | online);
-            return;
+        /* The bus hears of every answer: a held line or timeouts make it
+         * stuck, and its recovery is due at the next tick. */
+        sense_bus_note(&s->bus, e);
+        if (e == SENSE_OK || e == SENSE_NACK) {
+            answered |= bit;
+            if (e == SENSE_OK) {
+                found |= bit;
+            }
         }
     }
-    v->present = found;
+    /* An address without an answer keeps its last one. */
+    v->present = (uint16_t)((found & answered)
+                            | (v->present & (uint16_t)~answered) | online);
 }
 
 /* The capture's fields: the schedule's, or lost for an arm refused. */

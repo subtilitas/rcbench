@@ -836,6 +836,56 @@ TEST_CASE(the_flags_and_the_ranges_follow_the_snapshot)
     CHECK_EQ(reg(LINK_SN_PRESENT), 0u);
 }
 
+/* A new set-up forgets what the old one read: until a snapshot of the new
+ * set-up arrives, no part reads online and no value of the old shunt or
+ * address shows.  The ESC's telemetry and the capture count stay; a write
+ * of the set-up in force, or a refused one, clears nothing. */
+TEST_CASE(a_new_set_up_forgets_what_the_old_one_read)
+{
+    ready_to_capture();
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    sense_snap_t s = snapshot();
+    s.cap_clipped = true;
+    sense_page_publish(&pg, &s, 3u);
+    sense_page_esc(&pg, true, 16.0f, true, 70.0f);
+    CHECK(reg(LINK_SN_FLAGS) != 0u);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARRIVED);
+    outputs_arm(&o, false, 0u);
+    (void)sense_page_step(&pg, false);           /* finished: kept */
+
+    /* The set-up in force again, and a refused one: nothing cleared. */
+    CHECK_EQ(i3221(0x40u, 1000u, 5u, 0u), 0u);
+    CHECK_EQ(i3221(0x44u, 1000u, 5u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SN_ERRORS), 12u);
+    CHECK_EQ(sreg(LINK_SS_CH_MEAN_MA), 120u);
+
+    /* Another shunt: everything core 1 fills reads 0. */
+    CHECK_EQ(i3221(0x40u, 500u, 5u, 0u), 0u);
+    for (unsigned r = LINK_SN_FLAGS; r < LINK_SN_ESC_VOLTAGE_CV; ++r) {
+        CHECK_EQ(reg(r), 0u);
+    }
+    for (unsigned r = 0; r <= LINK_SS_CH_FLAGS; ++r) {
+        CHECK_EQ(sreg(r), 0u);
+    }
+    CHECK_EQ(sreg(LINK_SS_CAP_ARM), 0u);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
+    for (unsigned r = LINK_SS_CAP_MOVE_T; r < LINK_SS_COUNT; ++r) {
+        CHECK_EQ(sreg(r), 0u);
+    }
+    CHECK_EQ(sreg(LINK_SS_CAP_SEQ), 4u);
+    CHECK_EQ(reg(LINK_SN_ESC_VOLTAGE_CV), 1600u);
+    CHECK_EQ(reg(LINK_SN_ESC_FLAGS),
+             (uint16_t)(LINK_SN_ESC_VOLTAGE_OK | LINK_SN_ESC_CURRENT_OK));
+    CHECK_EQ(sense_page_caps(&pg), 0u);
+
+    /* The old set-up's snapshot changes nothing; the new one's fills. */
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_FLAGS), 0u);
+    s.cfg_gen = pg.cfg_gen;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK(reg(LINK_SN_FLAGS) != 0u);
+}
+
 TEST_CASE(the_escs_own_telemetry_goes_to_its_registers)
 {
     fresh();
@@ -1003,6 +1053,7 @@ int main(void)
     RUN(the_order_carries_the_page);
     RUN(a_snapshot_fills_the_read_only_registers);
     RUN(the_flags_and_the_ranges_follow_the_snapshot);
+    RUN(a_new_set_up_forgets_what_the_old_one_read);
     RUN(the_escs_own_telemetry_goes_to_its_registers);
     RUN(bench_carries_the_ina228_while_it_answers);
     RUN(the_capabilities_follow_the_parts);

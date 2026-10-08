@@ -19,7 +19,8 @@
  * The flash store's windows stop core 1: out_store.c runs its erases and
  * programs through flash_safe_execute(), and core 1 registers as the
  * lock-out victim before its first tick.  sense_core1_start() returns once
- * it has, so no save can find it unregistered.
+ * it has, so no save can find it unregistered; if it never does, the
+ * caller switches the store off (out_store_off()) and no window opens.
  *
  * Time: both cores read the same 64-bit microsecond timer (time_us_64()),
  * which is the clock sense_sched stamps its samples with and the clock
@@ -45,9 +46,9 @@
 
 /**
  * Launch core 1 with @p first as its first order.  Returns whether core 1
- * registered for the flash lock-out within SENSE_CORE1_START_MS; when it
- * did not, flash_safe_execute() refuses every window and the store's
- * saves wait.
+ * registered for the flash lock-out within SENSE_CORE1_START_MS.  False
+ * means no flash window may open this boot: flash_safe_execute() would
+ * refuse it, or assert where asserts are on.
  */
 bool sense_core1_start(const sense_cmd_t *first);
 

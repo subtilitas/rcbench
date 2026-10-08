@@ -128,6 +128,20 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
 #define OUT_STORE_GAP_WAIT_MS  1000u
 
 /**
+ * Switch the store's writing off for this boot: core 1 did not register
+ * for the flash lock-out, and flash_safe_execute() would then refuse, or in
+ * a build with PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core.
+ * Afterwards no erase or program runs and flash_safe_execute() is never
+ * called: out_store_save() takes nothing, so nothing waits for a save that
+ * cannot come, out_store_tick() is idle and out_store_reclaim() false.
+ * What was loaded stays readable.  Nothing switches it on again.
+ */
+void out_store_off(void);
+
+/** Whether out_store_off() has been called. */
+bool out_store_is_off(void);
+
+/**
  * How long a window waits for core 1 to stop, and to start again after.
  *
  * Every erase and program runs through flash_safe_execute(): interrupts

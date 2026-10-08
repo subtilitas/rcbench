@@ -29,8 +29,12 @@
  *   Scan     at the first tick of an open bus, then every SENSE_RETRY_MS
  *            while an enabled part is not online: every address from 0x40
  *            to 0x4F that no online part holds is asked for one byte.  Not
- *            on a stuck bus and not while a capture is under way; a fault
- *            other than a NACK ends the scan, and the answers so far stand.
+ *            on a stuck bus and not while a capture is under way.  Each
+ *            answer goes to sense_bus (sense_bus_note()): a held line, or
+ *            SENSE_STUCK_TIMEOUTS timeouts in a row, mark the bus stuck and
+ *            end the scan, and the recovery is due at the next tick, parts
+ *            online or not; a NACK is an empty address and no error.  An
+ *            address that gave no answer keeps its last one.
  *            An online part's address counts as answering without being
  *            asked: a read at it would clear the flags its last register
  *            pointer holds.  16 addresses at 400 kHz are about 0.8 ms of

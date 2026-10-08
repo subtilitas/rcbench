@@ -271,6 +271,21 @@ static void flash_op_run(void *arg)
 static bool     s_refused;
 static uint32_t s_refused_ms;
 
+/* No window may open this boot: core 1 is not a lock-out victim
+ * (out_store_off()).  Checked in front of every flash_safe_execute(). */
+static bool     s_off;
+
+void out_store_off(void)
+{
+    s_off     = true;
+    s_pending = false;
+}
+
+bool out_store_is_off(void)
+{
+    return s_off;
+}
+
 static uint32_t clock_ms(void)
 {
     return (uint32_t)to_ms_since_boot(get_absolute_time());
@@ -293,6 +308,9 @@ static bool refusing(void)
 static bool flash_window(flash_op_t *op)
 {
     op->done = false;
+    if (s_off) {
+        return false;             /* the gate: never into the lock-out */
+    }
     (void)flash_safe_execute(flash_op_run, op, OUT_STORE_LOCKOUT_MS);
     if (!op->done) {
         s_refused    = true;
@@ -352,8 +370,8 @@ bool out_store_load(out_store_t *out)
 
 void out_store_save(const out_store_t *cfg, uint32_t now_ms)
 {
-    if (cfg == NULL) {
-        return;
+    if (cfg == NULL || s_off) {
+        return;                   /* off: the set-up lives in RAM only */
     }
     /* A record written to say what is already saved is a slot spent on
      * nothing, and the store is written every time an operator ticks a
@@ -378,7 +396,7 @@ uint8_t out_store_last_record(void) { return s_last_record; }
 out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
                                 uint32_t now_ms)
 {
-    if (!s_pending || driving || refusing()) {
+    if (s_off || !s_pending || driving || refusing()) {
         return OUT_STORE_IDLE;
     }
     /*
@@ -445,7 +463,7 @@ bool out_store_reclaim(bool driving, uint32_t quiet_ms)
 {
     /* A pending save comes first: it takes the erase it needs itself, and
      * two erases of the same sector would be one wasted cycle. */
-    if (driving || s_pending || !s_reclaim_wanted
+    if (s_off || driving || s_pending || !s_reclaim_wanted
         || quiet_ms < OUT_STORE_QUIET_MS || refusing()) {
         return false;
     }

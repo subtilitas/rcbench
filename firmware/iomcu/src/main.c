@@ -1061,6 +1061,11 @@ static void can_report(uint32_t now)
     }
     last = now;
 
+    if (out_store_is_off()) {
+        printf("rcbench-iomcu: flash store OFF -- core 1 did not register "
+               "for the flash lock-out; set-ups run from RAM and are lost at "
+               "restart\n");
+    }
     if (!s_can_up) {
         printf("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
                "wiring on GP9-12?\n");
@@ -1243,6 +1248,9 @@ static void sample(void)
     }
     if (!s_beat.alive) {
         faults |= (uint16_t)LINK_FAULT_HEARTBEAT;
+    }
+    if (out_store_is_off()) {
+        faults |= (uint16_t)LINK_FAULT_STORE_OFF;
     }
     s_state.status[LINK_ST_FAULTS] = faults;
 
@@ -1478,9 +1486,17 @@ int main(void)
     {
         sense_cmd_t first;
         sense_build(&first);
+        /*
+         * A core 1 that did not register for the lock-out cannot be parked
+         * for a flash window: flash_safe_execute() would refuse every one,
+         * or assert in a build with asserts on, and an erase run anyway
+         * would fault core 1 executing from flash.  The store is switched
+         * off for this boot instead -- set-ups run from RAM -- and the
+         * STATUS page says so in LINK_FAULT_STORE_OFF, which the panel's
+         * band shows as a fault; the console repeats it every 3 s.
+         */
         if (!sense_core1_start(&first)) {
-            printf("rcbench-iomcu: core 1 did not register for the flash "
-                   "lock-out; the store will not save\n");
+            out_store_off();
         }
     }
 

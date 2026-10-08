@@ -590,6 +590,14 @@ typedef enum {
     LINK_FAULT_STALL         = 1u << 3,
     LINK_FAULT_HEARTBEAT     = 1u << 4, /**< the safety line stopped edging */
     LINK_FAULT_VERSION       = 1u << 5, /**< the two ends disagree          */
+    /**
+     * The coprocessor's flash store is off for this boot (protocol 4.7):
+     * its second core did not register for the flash lock-out, so no
+     * erase or program may run.  Set-ups written over the link are taken
+     * and run from RAM, and are gone at the next restart.  Set while it
+     * lasts, which is until a restart.
+     */
+    LINK_FAULT_STORE_OFF     = 1u << 6,
 } link_fault_t;
 
 typedef enum {
