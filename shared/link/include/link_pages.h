@@ -391,8 +391,9 @@ typedef enum {
     /** Something answers at its address with another identity, and is not
      *  used. */
     LINK_SN_I228_ID_WRONG  = 1u << 2,
-    /** Its last current read the top of its range: BENCH's current and
-     *  power are then lower bounds, not values. */
+    /** A current read at the end of its range, in the last 50 ms window
+     *  or since the run's arm: BENCH's current and power, or their peaks,
+     *  are then bounds, not values. */
     LINK_SN_I228_CLIPPED   = 1u << 3,
     LINK_SN_I3221_ONLINE   = 1u << 4,
     LINK_SN_I3221_ID_OK    = 1u << 5,

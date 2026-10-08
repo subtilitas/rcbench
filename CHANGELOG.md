@@ -26,8 +26,31 @@ history is in git.
   panel, which ends arrived, at a stop, late, unseen or lost.
   BENCH gains bit 5 (the INA228's voltage, current and power) and bit 6
   (the INA228's charge and energy totals). The coprocessor serves both
-  pages and holds the pins; it reads neither part yet, and the panel
-  writes neither page. A 4.6 peer still links and arms.
+  pages and holds the pins; the panel writes neither page. A 4.6 peer
+  still links and arms.
+- **The coprocessor reads the INA228 and the INA3221.** It has not run on
+  hardware: both images compile, and the host suite runs core 1's step
+  (`shared/sense/sense_svc.c`) and the pages against modelled parts. Core 1
+  runs the sensor bus and nothing else, on a 1 ms tick: the I2C block at
+  400 kHz on the SENSE page's pins with the pads' pulls off, 1 ms at most
+  per transaction, a bus clear of 9 clocks and a STOP when SDA or SCL
+  sticks, and an address scan for PRESENT, repeated every 1 s while a part
+  is missing. Core 0 publishes FLAGS, the IDs, the readings, the 50 ms
+  windows and the move capture. BENCH carries the INA228's voltage,
+  current, power, peaks, charge and energy at the existing scales, with
+  bits 5 and 6; a run that starts with the INA228 answering keeps it as
+  the source to its end. Capability bits 3 and 4 follow the parts. A
+  capture's edge is the start of the PWM frame that first carries the new
+  pulse, stamped from the slice's counter to 1 µs, and its level before the
+  command is CH1's mean over the 50 ms before the edge. Nothing trips: a
+  part that stops answering is reported in FLAGS and the bench stays
+  armed. The flash store's erases and programs run through
+  `flash_safe_execute()`, which parks core 1 in RAM. `cmake
+  -DIOMCU_SENSE_BRINGUP=ON` builds a coprocessor image that enables both
+  parts at the page's defaults while no set-up is stored, and while a part
+  is enabled the console prints the sensors' state every 3 s; the bench
+  session is in [First run](docs/FirstRun.md) §8. The coprocessor image
+  grows by 19,156 bytes, to 319,984.
 - **Output store record version 5.** The record keeps the sensor set-up
   beside the bindings and the supply's wiring. Version 3 and 4 records
   still load, with the parts they lack off.

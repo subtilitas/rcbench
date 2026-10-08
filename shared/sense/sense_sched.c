@@ -172,10 +172,13 @@ void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us)
         return;
     }
     c->edge_t = (uint32_t)(edge_us / 100u);
+    /* CH1's level is taken at the first sample past the edge; until then
+     * the move judges nothing that reads it (servo_move_sample()). */
+    c->rise_owed = (c->arm.rise_ua == SENSE_CAP_RISE_AUTO);
     const servo_move_cfg_t mc = {
         .cmd_t    = c->edge_t,
         .window_t = servo_move_window_ms(SENSE_CAP_LAG_MS) * SENSE_CAP_T_PER_MS,
-        .rise_a   = ua_to_a(c->arm.rise_ua),
+        .rise_a   = c->rise_owed ? 0.0f : ua_to_a(c->arm.rise_ua),
         .ref_a    = ua_to_a(c->arm.hold_ua),
         .move_a   = ua_to_a(c->arm.move_ua),
         .band_a   = ua_to_a(c->arm.band_ua),
@@ -216,6 +219,55 @@ static void cap_end(sense_cap_t *c, sense_cap_state_t state)
     c->clipped  = m->clipped;
 }
 
+/* A clipped CH1 sample at the end of the range it is at or past, as the
+ * capture's filter takes it; a sample with a value as it is. */
+static int32_t ch1_ua(const sense_sched_t *s, const sense_value_t *v)
+{
+    if (v->clip == SENSE_CLIP_HIGH) {
+        return s->ch_clip_ua;
+    }
+    if (v->clip == SENSE_CLIP_LOW) {
+        return -s->ch_clip_ua;
+    }
+    return v->value;
+}
+
+/* A CH1 sample into the history the level before a command is taken
+ * from. */
+static void ch1_keep(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
+{
+    s->ch1[s->ch1_head].t  = at_t;
+    s->ch1[s->ch1_head].ua = ch1_ua(s, v);
+    s->ch1_head = (uint8_t)((s->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    if (s->ch1_n < SENSE_CH1_HISTORY) {
+        ++s->ch1_n;
+    }
+}
+
+/* The level before the command: the mean of the CH1 samples stamped in
+ * the SENSE_WINDOW_MS before the edge.  False with none. */
+static bool take_rise(sense_sched_t *s)
+{
+    sense_cap_t *c = &s->cap;
+    const uint32_t span = SENSE_WINDOW_MS * SENSE_CAP_T_PER_MS;
+    int64_t sum = 0;
+    uint32_t n = 0u;
+    for (unsigned k = 0; k < s->ch1_n; ++k) {
+        const uint32_t before = c->edge_t - s->ch1[k].t;
+        if ((int32_t)before > 0 && before <= span) {
+            sum += s->ch1[k].ua;
+            ++n;
+        }
+    }
+    if (n == 0u) {
+        return false;
+    }
+    c->arm.rise_ua    = (int32_t)(sum / (int64_t)n);
+    c->mv.cfg.rise_a  = ua_to_a(c->arm.rise_ua);
+    c->rise_owed      = false;
+    return true;
+}
+
 /* A CH1 sample, or none, and the clock: both at @p at_t. */
 static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
 {
@@ -230,13 +282,11 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
     servo_move_clip_t clip = SERVO_MOVE_CLIP_NONE;
     float a = 0.0f;
     if (v != NULL) {
-        a = ua_to_a(v->value);
+        a = ua_to_a(ch1_ua(s, v));
         if (v->clip == SENSE_CLIP_HIGH) {
             clip = SERVO_MOVE_CLIP_HIGH;
-            a    = ua_to_a(s->ch_clip_ua);
         } else if (v->clip == SENSE_CLIP_LOW) {
             clip = SERVO_MOVE_CLIP_LOW;
-            a    = -ua_to_a(s->ch_clip_ua);
         }
     }
     if (c->state == SENSE_CAP_ARMED) {
@@ -248,6 +298,14 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
                 ++c->pre_n;
             }
         }
+        return;
+    }
+    /* The first sample at or past the edge is the first that can be
+     * judged against the level before the command, so the level is taken
+     * now, from the samples before the edge. */
+    if (c->rise_owed && v != NULL && (int32_t)(at_t - c->edge_t) >= 0
+        && !take_rise(s)) {
+        cap_end(c, SENSE_CAP_LOST);
         return;
     }
     /* A sample at or past the deadline is the move late or unseen, never
@@ -483,6 +541,12 @@ void sense_sched_tick(sense_sched_t *s)
     if ((tick & 1u) == 0u) {
         read_rotation(s);
     }
-    /* The capture on CH1's own time, whatever came after it. */
-    cap_step(s, have_ch1 ? &ch1 : NULL, (uint32_t)(ch1_us / 100u));
+    /* The capture on CH1's own time, whatever came after it; then the
+     * sample into the history, so the level before a command is taken
+     * from samples before it. */
+    const uint32_t ch1_t = (uint32_t)(ch1_us / 100u);
+    cap_step(s, have_ch1 ? &ch1 : NULL, ch1_t);
+    if (have_ch1) {
+        ch1_keep(s, &ch1, ch1_t);
+    }
 }

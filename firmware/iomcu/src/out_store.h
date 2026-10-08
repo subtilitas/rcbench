@@ -127,11 +127,32 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
  */
 #define OUT_STORE_GAP_WAIT_MS  1000u
 
+/**
+ * How long a window waits for core 1 to stop, and to start again after.
+ *
+ * Every erase and program runs through flash_safe_execute(): interrupts
+ * off on this core, and core 1 -- the sensor bus -- parked in RAM by the
+ * multicore lock-out, because a core executing from flash while it is
+ * written faults.  Core 1 answers the lock-out between two I2C
+ * transactions, each held to 1 ms (sense_i2c.h), so it stops within about
+ * 1.2 ms; 10 ms is that with room.  The wait for it is spent before the
+ * window opens and is not counted in it.
+ */
+#define OUT_STORE_LOCKOUT_MS  10u
+
+/** After a window core 1 did not stop for, how long before the next is
+ *  tried. */
+#define OUT_STORE_REFUSED_WAIT_MS  1000u
+
 /** What a pass of out_store_tick() did. */
 typedef enum {
     OUT_STORE_IDLE = 0,   /**< nothing to do, or not yet the moment for it */
     OUT_STORE_ERASED,     /**< a sector was erased; the record follows */
-    OUT_STORE_WROTE       /**< the record is in flash */
+    OUT_STORE_WROTE,      /**< the record is in flash */
+    /** Core 1 did not stop within OUT_STORE_LOCKOUT_MS: nothing was
+     *  written, the save stays asked for, and no window is tried for
+     *  OUT_STORE_REFUSED_WAIT_MS. */
+    OUT_STORE_REFUSED
 } out_store_step_t;
 
 /**
@@ -151,6 +172,8 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
  * The window is the same length wherever it is taken; the point is that the
  * caller picks the moment, and that the save which later finds the sector
  * ready costs a page program alone.  Returns true on the pass that erased.
+ *
+ * A window core 1 did not stop for erases nothing and returns false.
  *
  * One call erases at most one sector, and the call after it looks again.
  * Nothing to do is the ordinary answer: one save in sixteen leaves a sector

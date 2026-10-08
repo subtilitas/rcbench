@@ -14,7 +14,8 @@
  * stuck bus recovered; the move capture on CH1 against the servo model,
  * arrived, settled, late, unseen, clipped and lost, its filter seeded with
  * the samples taken while armed, and across the 0.1 ms
- * count's wrap; its states the link's.
+ * count's wrap; the level before the command taken from CH1's 50 ms
+ * before the edge, and a capture with none lost; its states the link's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -923,6 +924,93 @@ TEST_CASE(a_one_sample_transient_at_the_edge_starts_no_move)
     CHECK_EQ(s.cap.state, SENSE_CAP_MOVING);
 }
 
+/* ------------------------------------- the level before the command */
+
+static const sense_cap_arm_t k_auto = { SENSE_CAP_RISE_AUTO, 120000, 30000,
+                                        50000 };
+
+/* Armed with the level left to CH1: it is the 0.12 A the servo held
+ * before the edge, and the move is timed as with the level given. */
+TEST_CASE(a_capture_takes_the_level_before_the_command_from_ch1)
+{
+    servo_rig(0.95f);
+    servo_ticks(100u);
+    CHECK(sense_sched_cap_arm(&s, &k_auto));
+    servo_ticks(5u);
+    const uint64_t edge = g_us + 500u;
+    sense_sched_cap_edge(&s, edge);
+    CHECK(s.cap.rise_owed);
+    servo_tick();                            /* before the edge */
+    CHECK(s.cap.rise_owed);
+    g_cmd = 1900u;
+    servo_tick();                            /* the first past it */
+    CHECK(!s.cap.rise_owed);
+    /* The model holds at about 0.12 A; the INA3221 reads it in 0.4 mA
+     * steps. */
+    CHECK_NEAR((double)s.cap.arm.rise_ua, 120000.0, 1200.0);
+    CHECK_NEAR((double)s.cap.mv.cfg.rise_a, s.cap.arm.rise_ua * 1e-6, 1e-6);
+    for (unsigned k = 0; k < 1000u && !servo_move_over(&s.cap.mv); ++k) {
+        servo_tick();
+    }
+    CHECK_EQ(s.cap.state, SENSE_CAP_ARRIVED);
+    CHECK(s.cap.move_t <= 30u);
+    CHECK(s.cap.arrive_t >= 6670u);
+    CHECK(s.cap.arrive_t <= 6670u + 40u);
+}
+
+/* The level is the 50 ms before the edge: older samples are not in it,
+ * samples taken between the call and an edge that lies ahead are, and a
+ * clipped sample counts at the end of the range. */
+TEST_CASE(the_level_before_the_command_is_the_50_ms_before_the_edge)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(100u);
+    i3221->amps[0] = 0.2;
+    ticks(40u);
+    CHECK(sense_sched_cap_arm(&s, &k_auto));
+    const uint64_t edge = g_us + 10000u;     /* 10 ms ahead */
+    sense_sched_cap_edge(&s, edge);
+    i3221->amps[0] = 0.3;
+    ticks(10u);                              /* up to the edge */
+    CHECK(s.cap.rise_owed);
+    tick();                                  /* at the edge */
+    CHECK(!s.cap.rise_owed);
+    /* 40 samples at 0.2 A and 10 at 0.3 A. */
+    CHECK_EQ(s.cap.arm.rise_ua, 220000);
+
+    rig(1u, true);
+    i3221->amps[0] = 2.0;                    /* past 1.638 A: clipped */
+    ticks(60u);
+    CHECK(sense_sched_cap_arm(&s, &k_auto));
+    sense_sched_cap_edge(&s, g_us);
+    tick();
+    CHECK_EQ(s.cap.arm.rise_ua, s.ch_clip_ua);
+    CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
+}
+
+/* No CH1 sample in the 50 ms before the edge: the capture ends lost, at
+ * the first sample past it.  A level given at the arm needs none. */
+TEST_CASE(a_capture_with_no_ch1_level_before_the_edge_is_lost)
+{
+    rig(1u, true);
+    tick();                                  /* probe, the first sample */
+    CHECK(sense_sched_cap_arm(&s, &k_auto));
+    sense_sched_cap_edge(&s, g_us - 2000u);  /* before every sample */
+    CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
+    tick();
+    CHECK_EQ(s.cap.state, SENSE_CAP_LOST);
+    CHECK_EQ(s.cap.seq, 1u);
+
+    rig(1u, true);
+    i3221->amps[0] = 0.12;                   /* k_levels' level */
+    tick();
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+    sense_sched_cap_edge(&s, g_us - 2000u);
+    tick();
+    CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
+}
+
 /* The capture's states are SERVO_SENSE's CAP_STATE values. */
 TEST_CASE(the_capture_states_are_the_links)
 {
@@ -960,6 +1048,9 @@ int main(void)
     RUN(an_arrival_at_the_deadline_is_late);
     RUN(slow_reads_after_ch1_do_not_move_the_capture);
     RUN(a_one_sample_transient_at_the_edge_starts_no_move);
+    RUN(a_capture_takes_the_level_before_the_command_from_ch1);
+    RUN(the_level_before_the_command_is_the_50_ms_before_the_edge);
+    RUN(a_capture_with_no_ch1_level_before_the_edge_is_lost);
     RUN(the_capture_states_are_the_links);
     return test_summary("sense_sched");
 }

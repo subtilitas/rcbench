@@ -38,10 +38,20 @@ typedef struct {
      * a model of AM32's command handling.  Bidirectional slots only.
      */
     dshot_edt_t edt;
+    /* PWM only: the pulse rendered on the last pass, for the capture's
+     * edge (outputs_hw_watch()). */
+    bool     pwm_have;
+    uint16_t pwm_last;
 } slot_state_t;
 
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
+
+/* The capture's edge: the output channel watched, -1 for none, and the
+ * frame stamped for it, until taken. */
+static int      s_watch_ch = -1;
+static bool     s_edge_ready;
+static uint64_t s_edge_us;
 
 /* The millisecond clock the telemetry ages and the ask schedule run on. */
 static uint32_t now_ms(void)
@@ -185,6 +195,10 @@ void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
         if (moved[i] && s_state[i].bound) {
             unbind(&s_shadow[i]);
             s_state[i].bound = false;
+        }
+        if (moved[i]) {
+            /* A slot bound afresh has rendered nothing to change from. */
+            s_state[i].pwm_have = false;
         }
     }
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
@@ -365,6 +379,45 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     out_dshot_send(s->pin, value, false);
 }
 
+void outputs_hw_watch(int ch)
+{
+    s_watch_ch   = ch;
+    s_edge_ready = false;
+}
+
+bool outputs_hw_edge(uint64_t *us)
+{
+    if (!s_edge_ready) {
+        return false;
+    }
+    s_edge_ready = false;
+    *us = s_edge_us;
+    return true;
+}
+
+/*
+ * A PWM slot's pulse for this pass.  On the watched channel, the first
+ * pulse other than the last one rendered -- a changed command, not a
+ * disarm -- is written stamped: the start of the frame that first carries
+ * it is the capture's edge.  Once: the watch ends with it, stamped or not.
+ */
+static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
+{
+    const bool changed = st->pwm_have && pulse != st->pwm_last;
+    if (changed && pulse != 0u && s_watch_ch == (int)s->first_channel) {
+        uint64_t at = 0u;
+        if (out_pwm_write_stamped(s->pin, pulse, &at)) {
+            s_edge_us    = at;
+            s_edge_ready = true;
+        }
+        s_watch_ch = -1;
+    } else {
+        out_pwm_write(s->pin, pulse);
+    }
+    st->pwm_last = pulse;
+    st->pwm_have = true;
+}
+
 void outputs_hw_service(const outputs_t *o)
 {
     if (o == NULL) {
@@ -391,8 +444,8 @@ void outputs_hw_service(const outputs_t *o)
         const out_slot_t *s = &s_shadow[i];
         switch (s->driver) {
         case OUT_DRIVER_PWM:
-            out_pwm_write(s->pin,
-                          drive ? outputs_pulse_us(o, s->first_channel) : 0u);
+            service_pwm(&s_state[i], s,
+                        drive ? outputs_pulse_us(o, s->first_channel) : 0u);
             break;
         case OUT_DRIVER_PPM:
             service_ppm(o, s, drive);

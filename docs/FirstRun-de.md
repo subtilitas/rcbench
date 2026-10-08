@@ -272,7 +272,160 @@ Code baut. Für jede einen echten Wert aufschreiben:
 
 ---
 
-## 8. Wenn etwas schiefgeht
+## 8. Strommonitore (INA228, INA3221)
+
+Core 1 des Koprozessors liest einen INA228 im Leistungspfad des ESC und
+einen INA3221 an der Servoversorgung über I2C (Inter-Integrated Circuit) mit
+400 kHz, jede 1 ms. Das ist nicht auf Hardware gelaufen. Jeder Schritt unten
+sagt, wie gut aussieht; alles andere ist ein Befund zum Aufschreiben.
+
+**Bereitlegen:** das MATEK I2C-INA-BM (INA228, 200 µΩ) und das DAOKAI
+INA3221 (0,1 Ω je Kanal, 1,638 A Vollausschlag), jedes auf der Adresse, mit
+der es geliefert wird, zwei
+Widerstände 2,2 kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
+I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
+einem Netzteil mit Strombegrenzung.
+
+**Das Bring-up-Image bauen.** Das Panel kann die SENSE-Page noch nicht
+schreiben. Dieser Build gibt beide Bauteile mit den Vorgaben der Page frei,
+solange im Flash keine Konfiguration liegt; er speichert nichts:
+
+```bash
+cmake -S firmware/iomcu -B firmware/iomcu/build-sense -DIOMCU_SENSE_BRINGUP=ON
+cmake --build firmware/iomcu/build-sense
+```
+
+**Verdrahten** (alles Pads des Koprozessors auf dem Modul RP2350-CAN):
+
+| Draht | Von | Nach |
+|---|---|---|
+| SDA | GP16 (Pad 21) | INA3221 SDA, MATEK SDA |
+| SCL | GP17 (Pad 22) | INA3221 SCL, MATEK SCL |
+| Pull-ups | 2,2 kΩ von SDA und von SCL | 3V3 (Pad 36) |
+| Versorgung INA3221 | 3V3 (Pad 36), GND | INA3221 VS, GND |
+| Versorgung MATEK | VBUS (Pad 40, 5 V vom USB), GND | MATEK 5V, G |
+
+Die Firmware schaltet die eigenen Pull-ups und Pull-downs der Pads an beiden
+Pins ab: der Bus läuft auf den Pull-ups der Module und den beiden 2,2 kΩ.
+**Bevor der Koprozessor angeschlossen wird**, die Module versorgen und SDA
+und SCL gegen GND messen: beide dürfen höchstens 3,3 V zeigen. Auf welche
+Spannung das MATEK hochzieht, ist nicht bekannt.
+
+**Die Konsole.** Alle 3 s, solange ein Bauteil freigegeben ist, druckt der
+Koprozessor zwei Zeilen:
+
+```
+rcbench-iomcu: sense flags 0x0133 present 0x0021 ids 0x2281 0x3220 errors 0 | bench 1680 cV 1200 cA 33 mAh 6 dWh flags 0x63 | temp 254 dC
+rcbench-iomcu: sense window 4711 CH1 120 mA 6000 mV ch_flags 0x01 | capture state 0 seq 0 move 0 arrive 0
+```
+
+`flags` sind die FLAGS der SENSE-Page: 0x0001 INA228 online, 0x0002 seine
+Identitätslesung war die eines INA228, 0x0004 an seiner Adresse antwortet
+etwas anderes, 0x0008 ein Strom lag am Bereichsende, 0x0010, 0x0020 und
+0x0040 dasselbe für den INA3221, 0x0100 der Bus ist offen, 0x0200 der Bus
+hängt. `present` hat Bit n für Adresse 0x40 + n. `bench` ist die
+BENCH-Page: Schritte von 10 mV und 10 mA, Ladung in mAh, Energie in 0,1 Wh,
+und ihre Flags (0x01 Spannung, 0x02 Strom, 0x20 die des INA228, 0x40 die
+Zähler des INA228).
+
+### 8.1 Die Bauteile antworten
+
+Alles versorgen, nichts scharf.
+
+**Gut:** `flags 0x0133`, `present 0x0021`, `ids 0x228x 0x3220`, `errors`
+steigt zwischen zwei Zeilen nicht.
+
+**Aufschreiben:** die beiden IDs wie gedruckt. Ein INA238 auf dem MATEK
+antwortet 0x238x und wird abgewiesen (Flag 0x0004). Ein DAOKAI-Exemplar, das
+0x1408 antwortet (die Lesung eines Käufers), wird ebenso abgewiesen (0x0040).
+
+### 8.2 Der Bus am Oszilloskop
+
+SDA und SCL am Koprozessor abgreifen.
+
+**Gut:** SCL mit 400 kHz (2,5 µs je Takt); Anstiegszeit, 30 % bis 70 %,
+höchstens 300 ns; eine Lesung von Register 0x01 des INA3221 alle 1,0 ms;
+die Register 0x07 und 0x05 des INA228 abwechselnd, eines je 1,0 ms; kein
+NACK in der Dekodierung.
+
+**Aufschreiben:** die Anstiegszeit, den Takt, die Zeit vom STOP einer
+Transaktion zum START der nächsten (die eigene Zeit des Controllers, nicht
+gemessen), und die Periode der CH1-Lesung.
+
+### 8.3 Messwerte gegen ein Messgerät
+
+Einen gleichmäßigen Strom durch den Shunt des MATEK schicken und ihn und die
+Akkuspannung mit dem Multimeter messen. Dann ein Servo, oder einen
+Widerstand unter 1,6 A, an INA3221 CH1, das Multimeter in Reihe.
+
+**Gut:** Spannung und Strom in `bench` und mA und mV von `CH1` (die Spannung
+von CH1 liegt auf der Lastseite des Shunts) stimmen mit dem Multimeter
+überein, innerhalb seiner Genauigkeit und der Toleranz des Shunts, die für
+keines der beiden Module bekannt ist. `temp` nahe Raumtemperatur, in
+0,1 °C. `ch_flags 0x01`; 0x10 kommt hinzu, wenn CH1 über 1,638 A geht, und
+der Strom von CH1 ist dann eine Grenze, kein Wert.
+
+**Aufschreiben:** jedes Zahlenpaar, das des Multimeters und das der Konsole.
+
+### 8.4 Ein Lauf: Spitzen und Zähler
+
+Auf MOTOR & ESC scharf schalten, 60 s einen gleichmäßigen Strom halten, dann
+unscharf schalten.
+
+**Gut:** `bench flags` liest 0x63 (dazu 0x04 und 0x08, wenn ein
+bidirektionaler ESC antwortet). `mAh` zählt Strom × Zeit: 2,00 A über 60 s
+sind 33 mAh. Ein neues Scharfschalten beginnt Ladung und Energie bei 0. Der
+Bildschirm MOTOR & ESC zeigt Spannung und Strom des INA228.
+
+**Aufschreiben:** Strom, Zeit und erreichte Ladung, und die Spitzen, die das
+Panel zeigt, gegen Oszilloskop oder Multimeter.
+
+### 8.5 Eine Leitung im Lauf gezogen
+
+Scharf, SDA am MATEK für etwa 5 s abziehen, dann wieder stecken.
+
+**Gut:** innerhalb von etwa 6 ms verliert `flags` 0x0001 und behält 0x0002;
+`bench flags` liest 0x20: der INA228 bleibt die Quelle, seine Felder leer,
+nicht die Werte des ESC; `errors` steigt; der Prüfstand bleibt scharf. Etwa
+1 s nachdem die Leitung wieder steckt, kommt 0x0001 zurück, und 0x40 bleibt
+bis zum nächsten Scharfschalten gelöscht. Unscharf und mit gezogener
+Leitung trägt `bench` wieder die Telemetrie des ESC.
+
+### 8.6 Ein hängender Bus
+
+SDA für 2 s mit einem Draht auf GND halten, dann loslassen. Die Leitungen
+sind Open Drain: der Pin wird nie high getrieben, der Kurzschluss ist
+ungefährlich.
+
+**Gut:** `flags` bekommt 0x0200, solange gehalten wird; auf SCL zeigt das
+Oszilloskop alle 100 ms 9 Takte und ein STOP; nach dem Loslassen geht
+0x0200 weg, und beide Bauteile sind innerhalb von etwa 1 s online.
+
+**Aufschreiben:** die Taktrate der 9 Takte (gedacht sind 100 kHz), und wie
+lange die Bauteile zum Zurückkommen brauchten.
+
+### 8.7 Speichern während des Lesens
+
+Unscharf, beide Bauteile lesen, auf dem Bildschirm OUTPUTS einen Pin
+ankreuzen: die Belegung wird gespeichert.
+
+**Gut:** die Konsole druckt `outputs saved, record n, program window N us`
+und kein `window refused`; `errors` steigt nicht; `window` zählt weiter;
+der Heartbeat fällt nicht aus.
+
+**Aufschreiben:** das Programmierfenster, und das Löschfenster, wenn eines
+gedruckt wird: Core 1 wird für jedes im RAM geparkt.
+
+### 8.8 Noch nicht erreichbar
+
+Die Messung der Bewegung auf SERVO_SENSE -- der PWM-Frame auf 1 µs
+gestempelt und die Stellzeiten -- schaltet der Servotest des Panels scharf,
+der sie noch nicht nutzt. Eine Stellzeit gegen ein Oszilloskop am PWM-Pin
+und am Shunt wartet darauf.
+
+---
+
+## 9. Wenn etwas schiefgeht
 
 | Symptom | Zuerst hier nachsehen |
 |---|---|
@@ -285,6 +438,9 @@ Code baut. Für jede einen echten Wert aufschreiben:
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
 | Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand scharf ist |
 | Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, unscharf geschaltet oder den Prüfstand gestoppt |
+| `sense flags` ohne 0x0100, ein Bauteil freigegeben | Der I2C-Block hat auf diesen Pins nicht geöffnet. Sie müssen SDA und SCL eines Blocks sein: die GPIO-Nummer von SDA mod 4 ist 0 oder 2, SCL die nächste |
+| `sense flags` 0x0200, das bleibt | SDA oder SCL low gehalten: ein unversorgtes Modul klemmt den Bus, ein Pull-up fehlt, oder ein Kurzschluss |
+| `sense present 0x0000` bei offenem Bus | Nichts antwortet: Pull-ups fehlen, Module unversorgt, oder SDA und SCL vertauscht |
 
 **Verhält sich der Prüfstand so, dass es aufs Panel zeigt**, sind die drei
 neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
@@ -300,7 +456,7 @@ Schacht wirkungslos und tut nichts, bevor der Prüfstand scharf ist.
 
 ---
 
-## 9. Was aufzuschreiben ist
+## 10. Was aufzuschreiben ist
 
 Für jeden Schritt: was gemessen wurde, wogegen es erwartet wurde und was das
 Oszilloskop zeigte. `STATUS.md` trägt eine Tabelle „Open items“ — die Zeilen

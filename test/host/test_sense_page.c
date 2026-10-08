@@ -10,6 +10,11 @@
  * two addresses; a refused write storing nothing; the pins reserved while
  * held; and a capture armed only whole, on an armed bank, on CH1 while the
  * INA3221 reads it and for a surface on a PWM slot, and ended by a disarm.
+ * Core 1's side: the generations; the order built from the page; a
+ * snapshot published into both pages, rounded and held to the registers,
+ * and only under the set-up and the capture order in force; the ESC's own
+ * telemetry; BENCH from the INA228 at its existing scales while it is the
+ * source, and to the end of a run it was online in; the capability bits.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -547,6 +552,435 @@ TEST_CASE(the_channel_flags_and_the_arm_word_pack_as_documented)
     CHECK_EQ(LINK_SS_CH_STRIDE * LINK_SS_CHANNELS, (unsigned)LINK_SS_WINDOW);
 }
 
+/* ------------------------------------------- core 1's order and its view */
+
+/* cfg_gen moves with a change of the set-up and nothing else; cap_gen
+ * with an arm, a disarm and a capture a stopped bank ends. */
+TEST_CASE(the_generations_move_with_what_they_cover)
+{
+    fresh();
+    const uint16_t c0 = pg.cfg_gen;
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(pg.cfg_gen, (uint16_t)(c0 + 1u));
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);          /* in force */
+    CHECK_EQ(pg.cfg_gen, (uint16_t)(c0 + 1u));
+    CHECK_EQ(bus(1u, 17u, 18u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(pg.cfg_gen, (uint16_t)(c0 + 1u));
+
+    ready_to_capture();
+    const uint16_t g0 = pg.cap_gen;
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK_EQ(pg.cap_gen, (uint16_t)(g0 + 1u));
+    CHECK_EQ(arm(LINK_SS_ARM_OF(2u, 0u), 900u, 100u, 50u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(pg.cap_gen, (uint16_t)(g0 + 1u));
+    CHECK(!sense_page_step(&pg, true));
+    CHECK(sense_page_step(&pg, false));                 /* ends it */
+    CHECK_EQ(pg.cap_gen, (uint16_t)(g0 + 2u));
+    CHECK(!sense_page_step(&pg, false));                /* once */
+    CHECK_EQ(pg.cap_gen, (uint16_t)(g0 + 2u));
+    const uint16_t off = 0u;
+    CHECK_EQ(sense_servo_write(&pg, LINK_SS_CAP_ARM, 1u, &off, &o), 0u);
+    CHECK_EQ(pg.cap_gen, (uint16_t)(g0 + 3u));
+}
+
+/* The order core 1 runs is the page in its own units. */
+TEST_CASE(the_order_carries_the_page)
+{
+    ready_to_capture();
+    outputs_arm(&o, false, 0u);
+    CHECK_EQ(i228(0x44u, 250u, 1500u, 0u), 0u);
+    CHECK_EQ(bus(3u, 16u, 17u, 400u, 0u), 0u);
+    outputs_arm(&o, true, 0u);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    sense_cmd_t c;
+    memset(&c, 0xA5, sizeof(c));
+    c.run_gen  = 7u;
+    c.edge_set = true;
+    c.edge_us  = 1234u;
+    sense_page_cmd(&pg, &c);
+    CHECK_EQ(c.cfg_gen, pg.cfg_gen);
+    CHECK_EQ(c.sda, 16u);
+    CHECK_EQ(c.scl, 17u);
+    CHECK(c.parts.ina228_en);
+    CHECK_EQ(c.parts.ina228_addr, 0x44u);
+    CHECK_EQ(c.parts.ina228_shunt_uohm, 250u);
+    CHECK_EQ(c.parts.ina228_max_ma, 150000u);
+    CHECK(c.parts.ina3221_en);
+    CHECK_EQ(c.parts.ina3221_addr, 0x40u);
+    CHECK_EQ(c.parts.ina3221_shunt_uohm, 100000u);
+    CHECK_EQ(c.parts.ina3221_channels, 5u);
+    CHECK_EQ(c.cap_gen, pg.cap_gen);
+    CHECK(c.cap_on);
+    CHECK_EQ(c.cap.rise_ua, SENSE_CAP_RISE_AUTO);
+    CHECK_EQ(c.cap.hold_ua, 900000);
+    CHECK_EQ(c.cap.move_ua, 100000);
+    CHECK_EQ(c.cap.band_ua, 50000);
+    /* The caller's fields are left alone. */
+    CHECK_EQ(c.run_gen, 7u);
+    CHECK(c.edge_set);
+    CHECK_EQ(c.edge_us, 1234u);
+
+    const uint16_t off = 0u;
+    CHECK_EQ(sense_servo_write(&pg, LINK_SS_CAP_ARM, 1u, &off, &o), 0u);
+    sense_page_cmd(&pg, &c);
+    CHECK(!c.cap_on);
+    CHECK_EQ(c.cap_gen, pg.cap_gen);
+
+    sense_page_cmd(NULL, &c);                /* nothing, no crash */
+    sense_page_cmd(&pg, NULL);
+}
+
+/* A snapshot of both parts online, under the page's set-up and capture
+ * order. */
+static sense_snap_t snapshot(void)
+{
+    sense_snap_t s;
+    memset(&s, 0, sizeof(s));
+    s.cfg_gen = pg.cfg_gen;
+    s.cap_gen = pg.cap_gen;
+    s.run_gen = 3u;
+    s.open = true;
+    s.held = BIT(16) | BIT(17);
+    s.present = 0x0021u;
+    s.i228 = SENSE_PART_ONLINE;
+    s.i3221 = SENSE_PART_ONLINE;
+    s.i228_maker = 0x5449u;
+    s.i228_device = 0x2281u;
+    s.i3221_maker = 0x5449u;
+    s.i3221_die = 0x3220u;
+    s.errors = 12u;
+    s.have_temp = true;
+    s.temp_mdegc = 25450;
+    s.have_diag = true;
+    s.diag = 0x0001u;
+    s.have_win = true;
+    s.win[SENSE_SRC_CH1] = (sense_window_t){ .number = 77u, .n_i = 50u,
+        .n_v = 3u, .i_mean_ua = 120499, .i_min_ua = 100000,
+        .i_max_ua = 950500, .v_mean_uv = 5999500, .v_min_uv = 5800000 };
+    s.win[SENSE_SRC_CH2] = (sense_window_t){ .number = 77u, .n_i = 2u,
+        .clip_hi = true, .i_mean_ua = -1500, .i_max_ua = -1499 };
+    s.win[SENSE_SRC_CH3] = (sense_window_t){ .number = 77u };
+    s.win[SENSE_SRC_INA228] = (sense_window_t){ .number = 77u, .n_i = 25u,
+        .n_v = 25u, .i_mean_ua = 12000000, .v_mean_uv = 16800000 };
+    s.run.have_v = true;
+    s.run.v_min_uv = 16000000;
+    s.run.have_i = true;
+    s.run.i_max_ua = 30000000;
+    s.run.have_p = true;
+    s.run.p_max_uw = 480000000;
+    s.run.totals_ok = true;
+    s.run.charge_uc = 3600000;              /* 1 mAh */
+    s.run.energy_mj = 36000;                /* 0.01 Wh */
+    s.cap_state = SENSE_CAP_ARRIVED;
+    s.cap_seq = 4u;
+    s.cap_move_t = 25u;
+    s.cap_arrive_t = 6700u;
+    s.cap_peak_ua = 951499;
+    s.cap_mean_ua = -2500;
+    s.cap_samples = 670u;
+    return s;
+}
+
+TEST_CASE(a_snapshot_fills_the_read_only_registers)
+{
+    ready_to_capture();
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    sense_snap_t s = snapshot();
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_FLAGS),
+             (uint16_t)(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE
+                        | LINK_SN_I228_ID_OK | LINK_SN_I3221_ONLINE
+                        | LINK_SN_I3221_ID_OK));
+    CHECK_EQ(reg(LINK_SN_PRESENT), 0x0021u);
+    CHECK_EQ(reg(LINK_SN_I228_ID), 0x2281u);
+    CHECK_EQ(reg(LINK_SN_I3221_ID), 0x3220u);
+    CHECK_EQ(reg(LINK_SN_ERRORS), 12u);
+    CHECK_EQ(reg(LINK_SN_I228_TEMP_DC), 255u);          /* 25.45 C */
+    CHECK_EQ(reg(LINK_SN_I228_DIAG), 0x0001u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 100u);        /* 1.00 mAh */
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_HI), 0u);
+    CHECK_EQ(reg(LINK_SN_I228_ENERGY_LO), 1u);          /* 0.01 Wh */
+    CHECK_EQ(reg(LINK_SN_I228_ENERGY_HI), 0u);
+    /* The windows, rounded to mA and mV. */
+    CHECK_EQ(sreg(LINK_SS_CH_MEAN_MA), 120u);
+    CHECK_EQ(sreg(LINK_SS_CH_MAX_MA), 951u);
+    CHECK_EQ(sreg(LINK_SS_CH_MEAN_MV), 6000u);
+    CHECK_EQ(sreg(LINK_SS_CH_MIN_MV), 5800u);
+    CHECK_EQ((int16_t)sreg(LINK_SS_CH_STRIDE + LINK_SS_CH_MEAN_MA), -2);
+    CHECK_EQ((int16_t)sreg(LINK_SS_CH_STRIDE + LINK_SS_CH_MAX_MA), -1);
+    CHECK_EQ(sreg(LINK_SS_WINDOW), 77u);
+    CHECK_EQ(sreg(LINK_SS_CH_FLAGS),
+             (uint16_t)(LINK_SS_CH_VALID(1u) | LINK_SS_CH_VALID(2u)
+                        | LINK_SS_CH_CLIPPED(2u)));
+    /* The capture, of the order in force. */
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARRIVED);
+    CHECK_EQ(sreg(LINK_SS_CAP_SEQ), 4u);
+    CHECK_EQ(sreg(LINK_SS_CAP_MOVE_T), 25u);
+    CHECK_EQ(sreg(LINK_SS_CAP_ARRIVE_T), 6700u);
+    CHECK_EQ(sreg(LINK_SS_CAP_PEAK_MA), 951u);
+    CHECK_EQ((int16_t)sreg(LINK_SS_CAP_MEAN_MA), -3);
+    CHECK_EQ(sreg(LINK_SS_CAP_SAMPLES), 670u);
+    s.cap_clipped = true;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK((sreg(LINK_SS_CH_FLAGS) & LINK_SS_CAP_CLIPPED) != 0u);
+
+    /* An earlier capture order: the capture's registers as the page set
+     * them, the channels still published, the clip bit kept. */
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+    s.cap_clipped = false;
+    s.win[SENSE_SRC_CH1].number = 78u;
+    s.win[SENSE_SRC_CH2].clip_hi = false;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+    CHECK_EQ(sreg(LINK_SS_CAP_SAMPLES), 0u);
+    CHECK_EQ(sreg(LINK_SS_WINDOW), 78u);
+    CHECK_EQ(sreg(LINK_SS_CH_FLAGS),
+             (uint16_t)(LINK_SS_CH_VALID(1u) | LINK_SS_CH_VALID(2u)));
+
+    /* Another run, or the totals not the run's: no charge, no energy. */
+    s = snapshot();
+    sense_page_publish(&pg, &s, 4u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 0u);
+    CHECK_EQ(reg(LINK_SN_I228_ENERGY_LO), 0u);
+    s.run.charge_uc = -3600000;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ((int16_t)reg(LINK_SN_I228_CHARGE_LO), -100);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_HI), 0xFFFFu);
+    s.run.totals_ok = false;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 0u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_HI), 0u);
+
+    /* An earlier set-up publishes nothing. */
+    s = snapshot();
+    s.cfg_gen = (uint16_t)(pg.cfg_gen - 1u);
+    s.errors = 99u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_ERRORS), 12u);
+    sense_page_publish(NULL, &s, 3u);
+    sense_page_publish(&pg, NULL, 3u);
+}
+
+/* FLAGS from each part's state, the bus and the clips; values held to
+ * their registers. */
+TEST_CASE(the_flags_and_the_ranges_follow_the_snapshot)
+{
+    ready_to_capture();
+    sense_snap_t s = snapshot();
+    s.stuck = true;
+    s.i228 = SENSE_PART_OFFLINE;           /* stopped answering */
+    s.i3221 = SENSE_PART_WRONG_ID;
+    s.i3221_maker = 0x1408u;
+    s.i3221_die = 0u;
+    s.have_temp = false;
+    s.have_diag = false;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_FLAGS),
+             (uint16_t)(LINK_SN_BUS_OPEN | LINK_SN_BUS_STUCK
+                        | LINK_SN_I228_ID_OK | LINK_SN_I3221_ID_WRONG));
+    CHECK_EQ(reg(LINK_SN_I228_TEMP_DC), 0u);
+    CHECK_EQ(reg(LINK_SN_I228_DIAG), 0u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 0u);          /* not online */
+
+    s = snapshot();
+    s.win[SENSE_SRC_INA228].clip_lo = true;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK((reg(LINK_SN_FLAGS) & LINK_SN_I228_CLIPPED) != 0u);
+    s = snapshot();
+    s.run.i_clipped = true;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK((reg(LINK_SN_FLAGS) & LINK_SN_I228_CLIPPED) != 0u);
+
+    /* Held to the registers. */
+    s = snapshot();
+    s.temp_mdegc = -40050;
+    s.win[SENSE_SRC_CH1].i_mean_ua = 40000000;
+    s.win[SENSE_SRC_CH1].i_max_ua = -40000000;
+    s.win[SENSE_SRC_CH1].v_mean_uv = 70000000;
+    s.win[SENSE_SRC_CH1].v_min_uv = -8000;
+    s.cap_move_t = 70000u;
+    s.cap_samples = 70000u;
+    s.run.charge_uc = INT64_MAX / 2;
+    s.run.energy_mj = UINT64_MAX / 2;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ((int16_t)reg(LINK_SN_I228_TEMP_DC), -401);
+    CHECK_EQ(sreg(LINK_SS_CH_MEAN_MA), 32767u);
+    CHECK_EQ((int16_t)sreg(LINK_SS_CH_MAX_MA), -32767);
+    CHECK_EQ(sreg(LINK_SS_CH_MEAN_MV), 65535u);
+    CHECK_EQ(sreg(LINK_SS_CH_MIN_MV), 0u);
+    CHECK_EQ(sreg(LINK_SS_CAP_MOVE_T), 65535u);
+    CHECK_EQ(sreg(LINK_SS_CAP_SAMPLES), 65535u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_HI), 0x7FFFu);
+    CHECK_EQ(reg(LINK_SN_I228_ENERGY_HI), 0xFFFFu);
+    s.run.charge_uc = -(INT64_MAX / 2);
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_HI), 0x8000u);
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 0x0001u);
+
+    /* No window yet: the channels read 0 and are not valid. */
+    s = snapshot();
+    s.have_win = false;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(sreg(LINK_SS_CH_MEAN_MA), 0u);
+    CHECK_EQ(sreg(LINK_SS_WINDOW), 0u);
+    CHECK_EQ(sreg(LINK_SS_CH_FLAGS) & 0x7Fu, 0u);
+
+    /* The bus closed: every flag clear. */
+    memset(&s, 0, sizeof(s));
+    s.cfg_gen = pg.cfg_gen;
+    s.cap_gen = pg.cap_gen;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_FLAGS), 0u);
+    CHECK_EQ(reg(LINK_SN_PRESENT), 0u);
+}
+
+TEST_CASE(the_escs_own_telemetry_goes_to_its_registers)
+{
+    fresh();
+    sense_page_esc(&pg, true, 16.84f, true, 12.346f);
+    CHECK_EQ(reg(LINK_SN_ESC_VOLTAGE_CV), 1684u);
+    CHECK_EQ(reg(LINK_SN_ESC_CURRENT_CA), 1235u);
+    CHECK_EQ(reg(LINK_SN_ESC_FLAGS),
+             (uint16_t)(LINK_SN_ESC_VOLTAGE_OK | LINK_SN_ESC_CURRENT_OK));
+    sense_page_esc(&pg, true, 900.0f, false, 12.0f);
+    CHECK_EQ(reg(LINK_SN_ESC_VOLTAGE_CV), 65535u);
+    CHECK_EQ(reg(LINK_SN_ESC_CURRENT_CA), 0u);
+    CHECK_EQ(reg(LINK_SN_ESC_FLAGS), (uint16_t)LINK_SN_ESC_VOLTAGE_OK);
+    sense_page_esc(&pg, true, -1.0f, true, 0.0f);
+    CHECK_EQ(reg(LINK_SN_ESC_VOLTAGE_CV), 0u);
+    sense_page_esc(NULL, true, 1.0f, true, 1.0f);
+}
+
+/* A bench_state the ESC's telemetry filled. */
+static bench_state_t esc_bench(void)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.voltage = 16.0f;
+    b.current = 70.0f;
+    b.power = 1120.0f;
+    b.voltage_min = 15.0f;
+    b.current_max = 72.0f;
+    b.power_max = 1200.0f;
+    b.rpm = 9000.0f;
+    b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                         | LINK_BN_RPM_OK);
+    return b;
+}
+
+TEST_CASE(bench_carries_the_ina228_while_it_answers)
+{
+    fresh();
+    CHECK_EQ(i228(0x45u, 200u, 2048u, 0u), 0u);
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
+    sense_snap_t s = snapshot();
+    bench_state_t b = esc_bench();
+    sense_page_bench(&pg, &s, 3u, false, &b);
+    CHECK(pg.sensed);
+    CHECK_EQ(b.flags, (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                 | LINK_BN_RPM_OK | LINK_BN_SENSED
+                                 | LINK_BN_TOTALS_OK));
+    CHECK_NEAR(b.voltage, 16.8, 1e-4);
+    CHECK_NEAR(b.current, 12.0, 1e-4);
+    CHECK_NEAR(b.power, 201.6, 1e-2);
+    CHECK_NEAR(b.voltage_min, 16.0, 1e-4);
+    CHECK_NEAR(b.current_max, 30.0, 1e-4);
+    CHECK_NEAR(b.power_max, 480.0, 1e-3);
+    CHECK_NEAR(b.charge_mah, 1.0, 1e-5);
+    CHECK_NEAR(b.energy_wh, 0.01, 1e-6);
+    CHECK_NEAR(b.rpm, 9000.0, 1e-3);                     /* the ESC's */
+
+    /* Through the BENCH page's own encoding: the existing scales. */
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&b, regs);
+    CHECK_EQ(regs[LINK_BN_VOLTAGE_CV], 1680u);
+    CHECK_EQ(regs[LINK_BN_CURRENT_CA], 1200u);
+    CHECK_EQ(regs[LINK_BN_POWER_W], 202u);
+    CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 1u);
+    CHECK_EQ(regs[LINK_BN_VOLT_MIN_CV], 1600u);
+    CHECK_EQ(regs[LINK_BN_CURR_MAX_CA], 3000u);
+    CHECK_EQ(regs[LINK_BN_POWER_MAX_W], 480u);
+
+    /* Core 1 has not started this run yet: the peaks are the live
+     * readings, and there are no totals. */
+    b = esc_bench();
+    sense_page_bench(&pg, &s, 4u, true, &b);
+    CHECK_NEAR(b.voltage_min, 16.8, 1e-4);
+    CHECK_NEAR(b.current_max, 12.0, 1e-4);
+    CHECK_NEAR(b.power_max, 201.6, 1e-2);
+    CHECK((b.flags & LINK_BN_TOTALS_OK) == 0u);
+    CHECK_NEAR(b.charge_mah, 0.0, 1e-9);
+
+    /* A window with no voltage: no voltage, no power. */
+    s.win[SENSE_SRC_INA228].n_v = 0u;
+    b = esc_bench();
+    sense_page_bench(&pg, &s, 3u, true, &b);
+    CHECK_EQ(b.flags & (LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK),
+             (uint16_t)LINK_BN_CURRENT_OK);
+    CHECK_NEAR(b.power, 0.0, 1e-9);
+
+    /* The part drops out in the run: the fields go empty, the run's peaks
+     * stay, and the ESC does not take over. */
+    s = snapshot();
+    s.i228 = SENSE_PART_OFFLINE;
+    s.run.totals_ok = false;
+    b = esc_bench();
+    sense_page_bench(&pg, &s, 3u, true, &b);
+    CHECK(pg.sensed);
+    CHECK_EQ(b.flags, (uint16_t)(LINK_BN_RPM_OK | LINK_BN_SENSED));
+    CHECK_NEAR(b.voltage, 0.0, 1e-9);
+    CHECK_NEAR(b.current, 0.0, 1e-9);
+    CHECK_NEAR(b.current_max, 30.0, 1e-4);
+    /* The run over, still gone: the ESC's numbers are BENCH's again. */
+    b = esc_bench();
+    sense_page_bench(&pg, &s, 3u, false, &b);
+    CHECK(!pg.sensed);
+    CHECK_NEAR(b.current, 70.0, 1e-4);
+    CHECK_EQ(b.flags, (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                                 | LINK_BN_RPM_OK));
+    /* Gone before a run starts: never the source in it. */
+    sense_page_bench(&pg, &s, 3u, true, &b);
+    CHECK(!pg.sensed);
+
+    /* Online again, then the INA228 switched off: not the source. */
+    s = snapshot();
+    sense_page_bench(&pg, &s, 3u, false, &b);
+    CHECK(pg.sensed);
+    CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), 0u);
+    s.cfg_gen = pg.cfg_gen;
+    b = esc_bench();
+    sense_page_bench(&pg, &s, 3u, true, &b);
+    CHECK(!pg.sensed);
+    CHECK_NEAR(b.voltage, 16.0, 1e-4);
+
+    /* A snapshot of an earlier set-up is not an INA228 online. */
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
+    s = snapshot();
+    s.cfg_gen = (uint16_t)(pg.cfg_gen - 1u);
+    b = esc_bench();
+    sense_page_bench(&pg, &s, 3u, false, &b);
+    CHECK(!pg.sensed);
+    sense_page_bench(NULL, &s, 3u, false, &b);
+    sense_page_bench(&pg, NULL, 3u, false, &b);
+    sense_page_bench(&pg, &s, 3u, false, NULL);
+}
+
+TEST_CASE(the_capabilities_follow_the_parts)
+{
+    ready_to_capture();
+    CHECK_EQ(sense_page_caps(&pg), 0u);
+    sense_snap_t s = snapshot();
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(sense_page_caps(&pg),
+             (uint16_t)(LINK_CAP_PACK_SENSE | LINK_CAP_SERVO_SENSE));
+    s.i228 = SENSE_PART_ABSENT;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
+    CHECK_EQ(sense_page_caps(NULL), 0u);
+}
+
 int main(void)
 {
     RUN(a_page_starts_with_both_parts_off_at_the_modules_defaults);
@@ -565,5 +999,12 @@ int main(void)
     RUN(a_disarm_is_never_refused_and_stores_nothing_beside_it);
     RUN(a_bank_that_stops_driving_ends_an_unfinished_capture);
     RUN(the_channel_flags_and_the_arm_word_pack_as_documented);
+    RUN(the_generations_move_with_what_they_cover);
+    RUN(the_order_carries_the_page);
+    RUN(a_snapshot_fills_the_read_only_registers);
+    RUN(the_flags_and_the_ranges_follow_the_snapshot);
+    RUN(the_escs_own_telemetry_goes_to_its_registers);
+    RUN(bench_carries_the_ina228_while_it_answers);
+    RUN(the_capabilities_follow_the_parts);
     return test_summary("sense_page");
 }

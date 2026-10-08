@@ -9,6 +9,8 @@
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
+#include "hardware/sync.h"
+#include "hardware/timer.h"
 
 #include "out_pwm_map.h"
 #include "outputs.h"
@@ -195,4 +197,35 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us)
      * At 560 Hz the wrap is 1784 us.
      */
     pwm_set_gpio_level(pin, (pulse_us > b->wrap) ? b->wrap : pulse_us);
+}
+
+/* Counts at the end of a frame in which a write may meet the wrap. */
+#define STAMP_GUARD 2u
+
+bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us)
+{
+    const binding_t *b = find(pin);
+    if (b == NULL) {
+        return false;
+    }
+    const uint16_t level = (pulse_us > b->wrap) ? b->wrap : pulse_us;
+    const uint slice = pwm_gpio_to_slice_num(pin);
+    /* Off for the read, the wait and the write: nothing may come between
+     * the counter as read and the level as written.  At most
+     * OUT_PWM_STAMP_WAIT_US. */
+    const uint32_t irq = save_and_disable_interrupts();
+    const uint64_t limit = time_us_64() + OUT_PWM_STAMP_WAIT_US;
+    uint64_t t = time_us_64();
+    uint16_t c = pwm_get_counter(slice);
+    while ((uint32_t)c + STAMP_GUARD > b->wrap && t < limit) {
+        t = time_us_64();
+        c = pwm_get_counter(slice);
+    }
+    const bool stamped = (uint32_t)c + STAMP_GUARD <= b->wrap;
+    pwm_set_gpio_level(pin, level);
+    restore_interrupts(irq);
+    if (stamped) {
+        *frame_us = t + (uint64_t)(b->wrap - c) + 1u;
+    }
+    return stamped;
 }

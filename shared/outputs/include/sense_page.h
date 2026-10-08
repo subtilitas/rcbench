@@ -11,9 +11,20 @@
  * only on an armed bank, on INA3221 CH1 while the INA3221 reads it, and
  * for an output channel that is a surface on a PWM slot.
  *
- * Host-tested.  The page holds the contract and the checks; reading the
- * parts and filling the read-only registers is the coprocessor's, and
- * until it does they read 0, FLAGS included: no bus open.
+ * Host-tested.  The page holds the contract and the checks.  Reading the
+ * parts is core 1's (sense_svc.h); the page turns core 0's view of the
+ * page into the order core 1 runs (sense_page_cmd()), and what core 1
+ * read into the read-only registers (sense_page_publish()) and into the
+ * BENCH page's numbers (sense_page_bench()).  Until a snapshot of the
+ * set-up in force arrives the read-only registers read 0, FLAGS included:
+ * no bus open.
+ *
+ * Generations.  cfg_gen moves with every change of the set-up, cap_gen
+ * with every arm, every disarm and every capture a stopped bank ends.  A
+ * snapshot taken under an earlier set-up publishes nothing; one taken
+ * under an earlier capture order leaves the capture's registers as the
+ * page set them, so CAP_STATE never steps back from armed to the last
+ * capture's result.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,8 +34,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "bench_state.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "sense_svc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +68,10 @@ extern "C" {
 typedef struct {
     uint16_t sense[LINK_SN_COUNT];   /**< the SENSE page          */
     uint16_t servo[LINK_SS_COUNT];   /**< the SERVO_SENSE page    */
+    uint16_t cfg_gen;   /**< moves with each change of the set-up        */
+    uint16_t cap_gen;   /**< moves with each arm and each end of a
+                             capture's order                             */
+    bool     sensed;    /**< BENCH carries the INA228's numbers          */
 } sense_page_t;
 
 void sense_page_init(sense_page_t *p);
@@ -115,10 +132,62 @@ void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
 
 /**
  * One pass: a bank that is not @p driving ends a capture that has not
- * finished -- CAP_ARM 0, CAP_STATE idle.  A finished capture keeps its
- * result until the next arm.
+ * finished -- CAP_ARM 0, CAP_STATE idle -- and returns true.  A finished
+ * capture keeps its result until the next arm.
  */
-void sense_page_step(sense_page_t *p, bool driving);
+bool sense_page_step(sense_page_t *p, bool driving);
+
+/**
+ * The order for core 1 from the page: the set-up and its generation, and
+ * the capture's.  The INA228's maximum in mA, the INA3221's shunt in µΩ;
+ * a capture's level before the command left to CH1
+ * (SENSE_CAP_RISE_AUTO).  run_gen, edge_set and edge_us are the caller's,
+ * and left as they are.
+ */
+void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd);
+
+/**
+ * What core 1 read into the read-only registers of both pages, when @p s
+ * was taken under the set-up in force.  SENSE: FLAGS, PRESENT, the IDs,
+ * ERRORS, the die temperature, DIAG_ALRT, and the charge and energy while
+ * they are the totals of run @p run_gen (sense_run_t.totals_ok), 0
+ * otherwise.  SERVO_SENSE: each channel's last window and its flags, the
+ * window number, and the capture when @p s was taken under the capture
+ * order in force.  Values are rounded to their register's step and held
+ * to its range.
+ *
+ * FLAGS bit 3 (LINK_SN_I228_CLIPPED) is set when the INA228's last window
+ * held a clipped current, or the run's peaks lack one.
+ */
+void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
+                        uint16_t run_gen);
+
+/** The ESC's own telemetry voltage and current, each with its valid bit,
+ *  into SENSE registers 23 to 25. */
+void sense_page_esc(sense_page_t *p, bool v_ok, float volts, bool i_ok,
+                    float amps);
+
+/**
+ * The BENCH page's numbers from the INA228, over what the ESC's telemetry
+ * put in @p b, once the peaks of @p b are tracked.
+ *
+ * The INA228 is BENCH's source (LINK_BN_SENSED) while it is enabled and
+ * online, and stays it to the end of a run it was online in: a part that
+ * drops out while @p driving leaves voltage, current and power empty, not
+ * the ESC's.  Voltage and current are the last 50 ms window's means, each
+ * valid with a sample in it; power is their product, valid with both.
+ * The peaks are run @p run_gen's, from the 500 Hz samples, and until
+ * core 1 has started that run, the live readings.  Charge and energy are
+ * the part's ENERGY and CHARGE, with LINK_BN_TOTALS_OK, while they are the
+ * run's totals; otherwise 0 and the bit clear.  Nothing changes while the
+ * INA228 is not BENCH's source.
+ */
+void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
+                      uint16_t run_gen, bool driving, bench_state_t *b);
+
+/** The capability bits the parts make true: LINK_CAP_PACK_SENSE while the
+ *  INA228 is online, LINK_CAP_SERVO_SENSE while the INA3221 is. */
+uint16_t sense_page_caps(const sense_page_t *p);
 
 /** Whether either part is enabled, and so the bus runs. */
 bool sense_page_enabled(const sense_page_t *p);

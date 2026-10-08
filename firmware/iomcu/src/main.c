@@ -4,9 +4,11 @@
  * Answers polls and never transmits unsolicited: every transmission here
  * follows a decoded request.
  *
- * The measurement front end and the power path are not written.  This file
- * holds the wire, the failsafe and the output bank; the output protocols are
- * in out_pwm.c, out_ppm.c and out_dshot.c behind outputs_hw.c.
+ * The power path is not written.  This file runs on core 0 and holds the
+ * wire, the failsafe and the output bank; the output protocols are in
+ * out_pwm.c, out_ppm.c and out_dshot.c behind outputs_hw.c.  Core 1 reads
+ * the current monitors on their I2C bus (sense_core1.c) and nothing else;
+ * this file gives it its orders and publishes what it reads.
  *
  * Nothing here models a reading.  A number this end publishes came off a
  * wire or a sensor, and a quantity nothing measures is left at zero with its
@@ -37,6 +39,7 @@
 #include "outputs_pages.h"
 #include "pd_uart.h"
 #include "pdmini.h"
+#include "sense_core1.h"
 #include "sense_page.h"
 #include "servo_page.h"
 #include "supply_page.h"
@@ -55,6 +58,10 @@ typedef struct {
 } iomcu_state_t;
 
 static iomcu_state_t s_state;
+
+/* What the output drivers make true, whatever is connected; see main(). */
+#define IOMCU_CAPABILITIES \
+    ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM))
 /* The SERVO page: the surfaces' frame rate and their sweep.  Not kept. */
 static servo_page_t s_servo;
 /* The SUPPLY page and the PD mini it drives on a PIO UART.  Not kept. */
@@ -69,10 +76,24 @@ static bool          s_supply_unsaved;
 static bool          s_supply_attach;
 /*
  * The SENSE and SERVO_SENSE pages: the current monitors' set-up, kept, and
- * the pins it holds.  No part is read yet: FLAGS reads no bus open, and
- * every reading 0.
+ * the pins it holds.  Core 1 reads the parts (sense_core1.h); this core
+ * gives it its orders and publishes what it hands back.
  */
 static sense_page_t  s_sense;
+/* Core 1's last snapshot, and the pins it said it still holds: a bus moved
+ * or closed keeps its old pins from the outputs until core 1 has let them
+ * go, about 1 ms. */
+static sense_snap_t  s_sense_snap;
+static uint64_t      s_sense_held;
+/* Moves on each edge of the bank into driving: core 1 starts the run's
+ * peaks and the INA228's totals on it. */
+static uint16_t      s_run_gen;
+static bool          s_pass_driving;
+/* The capture's PWM edge, stamped by outputs_hw for capture order
+ * s_edge_gen. */
+static bool          s_edge_set;
+static uint16_t      s_edge_gen;
+static uint64_t      s_edge_us;
 /* What the board and this file hold, before the supply and the sensor bus
  * take their pins. */
 static uint64_t      s_base_reserved;
@@ -271,13 +292,62 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 
 /*
  * What no output may have: the board's own pins, and the ones the supply
- * and the sensor bus hold now.
+ * and the sensor bus hold now -- the page's, and the ones core 1 has not
+ * let go of yet.
  */
 static void reserve_held(void)
 {
     outputs_reserve_pins(&s_outputs, s_base_reserved
                                      | supply_page_pins(&s_supply)
-                                     | sense_page_pins(&s_sense));
+                                     | sense_page_pins(&s_sense)
+                                     | s_sense_held);
+}
+
+/* ------------------------------------------------------------- core 1 */
+
+/* Core 1's order, from the page as it stands, the run and the edge. */
+static void sense_build(sense_cmd_t *cmd)
+{
+    memset(cmd, 0, sizeof(*cmd));
+    sense_page_cmd(&s_sense, cmd);
+    cmd->run_gen  = s_run_gen;
+    cmd->edge_set = s_edge_set && s_edge_gen == s_sense.cap_gen;
+    cmd->edge_us  = s_edge_us;
+}
+
+/* Sent whenever something in it changes; core 1 takes it at its next
+ * tick.  A copy under a lock, about a microsecond. */
+static void sense_order(void)
+{
+    sense_cmd_t cmd;
+    sense_build(&cmd);
+    sense_core1_order(&cmd);
+}
+
+/*
+ * Core 1's newest snapshot into the pages, when there is one.  Called
+ * where its contents are needed -- a read of either page, the 50 Hz
+ * sample, a capture ending -- rather than every pass, so a pass with
+ * nothing to publish costs one load.
+ */
+static void sense_sync(void)
+{
+    if (!sense_core1_snapshot(&s_sense_snap)) {
+        return;
+    }
+    if (s_sense_snap.held != s_sense_held) {
+        s_sense_held = s_sense_snap.held;
+        reserve_held();
+    }
+    sense_page_publish(&s_sense, &s_sense_snap, s_run_gen);
+}
+
+/* Whether the page holds a capture that has not finished. */
+static bool sense_capture_open(void)
+{
+    const uint16_t st = s_sense.servo[LINK_SS_CAP_STATE];
+    return st == (uint16_t)LINK_CAP_ARMED || st == (uint16_t)LINK_CAP_WAIT_MOVE
+           || st == (uint16_t)LINK_CAP_MOVING;
 }
 
 /*
@@ -422,25 +492,30 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
                             const uint16_t *in)
 {
     (void)ctx;
+    /* Judged against the pins core 1 still holds, as of its last tick. */
+    sense_sync();
     return supply_take(off, n, in, false);
 }
 
 static void sense_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
+    sense_sync();
     sense_page_read(&s_sense, off, n, out);
 }
 
 /*
  * The sensor bus's set-up: judged by the page against the bank and the
- * supply's pins, then its pins reserved and the set-up saved.  Refused
- * while armed, so a save it asks for is taken at the next disarm like
- * any other.
+ * supply's pins, then its pins reserved, the set-up saved and core 1 told.
+ * Refused while armed, so a save it asks for is taken at the next disarm
+ * like any other.
  */
 static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
     (void)ctx;
+    /* The pins core 1 still holds, as of its last tick. */
+    sense_sync();
     uint16_t was[LINK_SN_CONFIG_COUNT];
     memcpy(was, s_sense.sense, sizeof(was));
     const uint8_t nack = sense_page_write(&s_sense, off, n, in, &s_outputs,
@@ -451,6 +526,7 @@ static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
     if (memcmp(was, s_sense.sense, sizeof(was)) != 0) {
         reserve_held();
         save_outputs(&s_state);
+        sense_order();
     }
     return 0u;
 }
@@ -459,14 +535,31 @@ static void servo_sense_read(void *ctx, uint8_t off, uint8_t n,
                              uint16_t *out)
 {
     (void)ctx;
+    sense_sync();
     sense_servo_read(&s_sense, off, n, out);
 }
 
+/*
+ * A capture armed or disarmed.  An arm watches its output channel for the
+ * edge: the first pass that renders a changed pulse there stamps the frame
+ * that carries it (outputs_hw_watch()).  Either way core 1 is told, and an
+ * edge stamped for an earlier capture no longer counts.
+ */
 static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
                                  const uint16_t *in)
 {
     (void)ctx;
-    return sense_servo_write(&s_sense, off, n, in, &s_outputs);
+    const uint16_t gen = s_sense.cap_gen;
+    const uint8_t nack = sense_servo_write(&s_sense, off, n, in, &s_outputs);
+    if (nack != 0u || s_sense.cap_gen == gen) {
+        return nack;
+    }
+    const uint16_t arm = s_sense.servo[LINK_SS_CAP_ARM];
+    outputs_hw_watch(((arm & LINK_SS_ARM) != 0u) ? (int)LINK_SS_ARM_OUT(arm)
+                                                 : -1);
+    s_edge_set = false;
+    sense_order();
+    return 0u;
 }
 
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -499,6 +592,9 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
+    /* The reservation as of core 1's last tick: a bus that moved gives its
+     * old pins back once core 1 has let them go. */
+    sense_sync();
     uint16_t next[LINK_OS_COUNT];
     memcpy(next, s->slots, sizeof(next));
     const uint8_t nack = outputs_slots_write(next, off, n, in);
@@ -923,6 +1019,36 @@ static void can_service(uint32_t now)
 }
 
 /*
+ * The current monitors as the pages show them, with can_report() every 3 s,
+ * while either part is enabled: what a bench session reads before the
+ * panel has a screen for them.  The registers as published, in their own
+ * units: FLAGS, PRESENT and the IDs in hex, BENCH's 10 mV and 10 mA, CH1's
+ * mA and mV, times in 0.1 ms.
+ */
+static void sense_report(void)
+{
+    if (!sense_page_enabled(&s_sense)) {
+        return;
+    }
+    sense_sync();
+    const uint16_t *n = s_sense.sense;
+    const uint16_t *v = s_sense.servo;
+    const uint16_t *b = s_state.bench;
+    printf("rcbench-iomcu: sense flags 0x%04X present 0x%04X ids 0x%04X "
+           "0x%04X errors %u | bench %u cV %u cA %u mAh %u dWh flags 0x%02X "
+           "| temp %d dC\n",
+           n[LINK_SN_FLAGS], n[LINK_SN_PRESENT], n[LINK_SN_I228_ID],
+           n[LINK_SN_I3221_ID], n[LINK_SN_ERRORS], b[LINK_BN_VOLTAGE_CV],
+           b[LINK_BN_CURRENT_CA], b[LINK_BN_CHARGE_MAH], b[LINK_BN_ENERGY_DWH],
+           b[LINK_BN_FLAGS], (int)(int16_t)n[LINK_SN_I228_TEMP_DC]);
+    printf("rcbench-iomcu: sense window %u CH1 %d mA %u mV ch_flags 0x%02X | "
+           "capture state %u seq %u move %u arrive %u\n",
+           v[LINK_SS_WINDOW], (int)(int16_t)v[LINK_SS_CH_MEAN_MA],
+           v[LINK_SS_CH_MEAN_MV], v[LINK_SS_CH_FLAGS], v[LINK_SS_CAP_STATE],
+           v[LINK_SS_CAP_SEQ], v[LINK_SS_CAP_MOVE_T], v[LINK_SS_CAP_ARRIVE_T]);
+}
+
+/*
  * Repeated every 3 s rather than printed at boot alone.  USB (Universal
  * Serial Bus) CDC (communications device class) does not exist until a host
  * enumerates it, so anything printed before the terminal opens is lost.
@@ -938,6 +1064,7 @@ static void can_report(uint32_t now)
     if (!s_can_up) {
         printf("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
                "wiring on GP9-12?\n");
+        sense_report();
         return;
     }
     uint8_t tec = 0, rec = 0, eflg = 0;
@@ -966,6 +1093,7 @@ static void can_report(uint32_t now)
                "frames arrived with nowhere to put them; not a bus fault\n",
                (unsigned long)s_can_overflows);
     }
+    sense_report();
 }
 
 /* ---------------------------------------------------------------- the loop */
@@ -973,10 +1101,13 @@ static void can_report(uint32_t now)
 /*
  * The numbers, and only the ones something measured.
  *
- * There is no measurement front end, so voltage, current and temperature are
- * zero with their valid bits clear and the panel draws those fields empty.
- * The one quantity that has a source is speed, from a bidirectional DShot
- * ESC (electronic speed controller) answering on its own signal line.
+ * Speed, and the ESC's own voltage, current and temperature, come from a
+ * bidirectional DShot ESC (electronic speed controller) answering on its
+ * own signal line.  Voltage, current, power, their peaks, charge and energy
+ * come from the INA228 instead while it is enabled and answering
+ * (LINK_BN_SENSED, sense_page_bench()), and the ESC's two then stay on the
+ * SENSE page.  A quantity nothing measured is zero with its valid bit
+ * clear, and the panel draws that field empty.
  *
  * LINK_BN_SIMULATED is never set here.  A coprocessor that is answering is
  * reporting what it can see; the panel models only when nothing answers at
@@ -1071,6 +1202,13 @@ static void sample(void)
         && (s_bench.flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
         s_bench.power = s_bench.voltage * s_bench.current;
     }
+    /* The ESC's own voltage and current go to SENSE as well, where they
+     * stay while BENCH carries the INA228's. */
+    sense_page_esc(&s_sense,
+                   (s_bench.flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u,
+                   s_bench.voltage,
+                   (s_bench.flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u,
+                   s_bench.current);
 
     /* On the edge into driving, so a run's peaks are that run's.  The reset
      * takes the current reading rather than zero, which is what stops a sag
@@ -1084,7 +1222,14 @@ static void sample(void)
     /* Peaks only from readings that arrived, and a sag floor seeded by the
      * first voltage of the run rather than by the reset that opened it. */
     bench_state_track_peaks(&s_bench);
+    /* Then the INA228's numbers over the ESC's, while it is the source:
+     * the 50 ms window's voltage and current, the run's peaks from its
+     * 500 Hz samples, and its charge and energy (sense_page_bench()). */
+    sense_sync();
+    sense_page_bench(&s_sense, &s_sense_snap, s_run_gen, driving, &s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
+    s_state.identity[LINK_ID_CAPABILITIES] =
+        (uint16_t)(IOMCU_CAPABILITIES | sense_page_caps(&s_sense));
 
     s_state.status[LINK_ST_STATE] =
         (s_dev.failsafe || !s_beat.alive)
@@ -1178,11 +1323,12 @@ int main(void)
      *
      * These say the coprocessor can, not that anything is connected.  An ESC
      * that does not answer is an ESC that does not answer, and the BENCH
-     * page's valid bits are where that shows.
+     * page's valid bits are where that shows.  The current monitors are
+     * the exception, because whether they are fitted is only known by
+     * asking them: pack sense while the INA228 answers, servo sense while
+     * the INA3221 does, updated with the 50 Hz sample.
      */
-    s_state.identity[LINK_ID_CAPABILITIES] =
-        (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
-                   | LINK_CAP_ESC_TELEM);
+    s_state.identity[LINK_ID_CAPABILITIES] = IOMCU_CAPABILITIES;
 
     /* A range before anybody sets one, so the clamp is meaningful from the
      * first frame rather than from the first configuration. */
@@ -1276,6 +1422,22 @@ int main(void)
                                &s_outputs, supply_page_pins(&s_supply));
         reserve_held();
     }
+#if IOMCU_SENSE_BRINGUP
+    /*
+     * A bring-up build (cmake -DIOMCU_SENSE_BRINGUP=ON): with no part
+     * enabled in flash, both are enabled at the page's defaults -- GP16 and
+     * GP17, the INA228 at 0x45 on 200 uOhm, the INA3221 at 0x40 reading
+     * CH1 -- for this boot, through the page's own checks, and not saved.
+     * It is how a bench reads the parts before the panel can write the
+     * SENSE page.
+     */
+    if (!sense_page_enabled(&s_sense)) {
+        const uint16_t en = (uint16_t)(LINK_SN_EN_I228 | LINK_SN_EN_I3221);
+        (void)sense_page_write(&s_sense, LINK_SN_ENABLE, 1u, &en, &s_outputs,
+                               supply_page_pins(&s_supply));
+        reserve_held();
+    }
+#endif
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -1304,6 +1466,22 @@ int main(void)
         printf("rcbench-iomcu: output store sector reclaimed at boot, "
                "window %lu us\n",
                (unsigned long)out_store_last_erase_us());
+    }
+
+    /*
+     * Core 1 and the sensor bus, after the boot's flash windows -- core 1
+     * is not running for them, so they need no lock-out -- and with the
+     * set-up restored above as its first order.  It opens the bus within
+     * its first tick.  The pins are already held from the outputs by the
+     * page.
+     */
+    {
+        sense_cmd_t first;
+        sense_build(&first);
+        if (!sense_core1_start(&first)) {
+            printf("rcbench-iomcu: core 1 did not register for the flash "
+                   "lock-out; the store will not save\n");
+        }
     }
 
     can_start();
@@ -1368,10 +1546,26 @@ int main(void)
                     s_state.control[LINK_CT_ARM] != 0
                         && !s_dev.failsafe && s_beat.alive,
                     now);
+        /* The edge into driving starts a run on core 1: its peaks and the
+         * INA228's totals.  One compare a pass, an order on the edge. */
+        const bool driving_now = outputs_driving(&s_outputs);
+        if (driving_now && !s_pass_driving) {
+            ++s_run_gen;
+            sense_order();
+        }
+        s_pass_driving = driving_now;
         /* The sweep's command for this pass, before the step slews to it. */
         (void)servo_page_step(&s_servo, &s_outputs, now);
-        /* A capture ends with the run it was timing. */
-        sense_page_step(&s_sense, outputs_driving(&s_outputs));
+        /* A capture ends with the run it was timing; one core 1 has
+         * finished meanwhile keeps its result, so the page takes core 1's
+         * view first. */
+        if (!driving_now && sense_capture_open()) {
+            sense_sync();
+        }
+        if (sense_page_step(&s_sense, driving_now)) {
+            outputs_hw_watch(-1);
+            sense_order();
+        }
         /* The supply: its bytes in, a step of its driver, and the output off
          * whenever the panel's heartbeat is not there to switch it off. */
         /* The page first, so a heartbeat lost this pass reaches the driver
@@ -1404,6 +1598,15 @@ int main(void)
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */
         outputs_hw_service(&s_outputs);
+        /* The capture's edge, when this pass rendered it: to core 1, for
+         * the capture order in force. */
+        uint64_t edge_us;
+        if (outputs_hw_edge(&edge_us)) {
+            s_edge_us  = edge_us;
+            s_edge_gen = s_sense.cap_gen;
+            s_edge_set = true;
+            sense_order();
+        }
 
         /* 50 Hz, which is faster than the panel polls, so a poll always finds
          * a fresh sample rather than the one it was already shown. */
@@ -1472,6 +1675,12 @@ int main(void)
             printf("rcbench-iomcu: output store sector erased, "
                    "window %lu us\n",
                    (unsigned long)out_store_last_erase_us());
+            break;
+        case OUT_STORE_REFUSED:
+            printf("rcbench-iomcu: output store window refused, core 1 did "
+                   "not stop within %u ms; tried again in %u ms\n",
+                   (unsigned)OUT_STORE_LOCKOUT_MS,
+                   (unsigned)OUT_STORE_REFUSED_WAIT_MS);
             break;
         case OUT_STORE_IDLE:
         default:
