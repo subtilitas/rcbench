@@ -67,8 +67,11 @@ history is in git.
   "coprocessor has no tone page". Switching the tap off writes the first
   frame with the values the page holds, so a refused range cannot keep it
   on; a saved tap refused at boot for a busy pin is written again every
-  5 s; a change of ENABLE or of the pin places the panel at the newest beep
-  number, a change of the range leaves its place. The band also says a
+  5 s; across a change of ENABLE, of the pin or of the range the panel keeps
+  its place in the numbering, so every beep after the change is read and one
+  it had not read before counts as missed. While the supply's wiring waits
+  for flash, the coprocessor refuses a tap start that would take the PIO
+  room the supply attaches into. The band also says a
   refused set-up, a pin the coprocessor does not hold free, and a capture
   overrun, each once: an overrun stays said while the capture goes on, so an
   edit of the range does not say it again, and a restarted capture says a

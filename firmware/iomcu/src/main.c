@@ -686,9 +686,23 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
     const bool rewire = was_refused
                         || s_tone.cfg[LINK_TN_ENABLE] != was[LINK_TN_ENABLE]
                         || s_tone.cfg[LINK_TN_PIN] != was[LINK_TN_PIN];
-    if (rewire && !tone_rewire()) {
-        /* No state machine or channel for that pin: the set-up as it was,
-         * and the capture as it was. */
+    bool wired = !rewire || tone_rewire();
+    if (wired && rewire && s_supply_attach && !s_pd_open
+        && supply_page_enabled(&s_supply)) {
+        /* The supply's wiring waits for flash with its UART closed, and
+         * attaches once saved: the capture may not take the PIO room that
+         * attach needs.  Tried, and let go again. */
+        wired = pd_uart_open(supply_page_tx(&s_supply),
+                             supply_page_rx(&s_supply),
+                             supply_page_uart_baud(&s_supply));
+        if (wired) {
+            pd_uart_close();
+        }
+    }
+    if (!wired) {
+        /* No state machine or channel for that pin, or none left for a
+         * supply waiting to attach: the set-up as it was, and the capture
+         * as it was. */
         tone_page_revert(&s_tone, was, was_refused);
         if (!tone_rewire()) {
             tone_page_refuse(&s_tone);

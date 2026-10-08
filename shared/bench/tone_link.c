@@ -82,6 +82,7 @@ void tone_link_lost(tone_link_t *t)
     t->was_flags   = 0u;
     t->synced      = false;
     t->ring_empty  = false;
+    t->quiet       = 0u;
     t->sel_ok      = false;
     /* What the coprocessor that went said, and not yet shown, is about a
      * page nobody reads now. */
@@ -345,9 +346,12 @@ static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
             t->refused1 = false;
             if (capture) {
                 /* The numbering goes on from the beep before the ring
-                 * emptied: the next status places the panel at its head. */
-                t->synced     = false;
-                t->ring_empty = true;
+                 * emptied.  A panel that knows its place keeps it: beeps
+                 * it had not read are gone and count as missed, and every
+                 * beep after the restart is read, also one that came
+                 * before the next status.  One that does not know its
+                 * place finds it at the next status. */
+                t->ring_empty = !t->synced;
                 t->sel_ok     = false;
                 /* The flags start again with the capture; a sticky flag
                  * already told stays told while the capture goes on. */
@@ -405,8 +409,18 @@ static void follow_head(tone_link_t *t)
     }
     if (!t->synced && t->ring_empty) {
         /* The capture began again with its ring empty and the numbering
-         * going on: every beep the ring holds from here is a new one. */
-        t->last = head;
+         * going on, and the panel had no place before it: every beep the
+         * ring holds is a new one.  The panel asks the ring's span back
+         * from the head; those not in it were before the restart and are
+         * not counted as missed. */
+        const unsigned at = pos_of(head);
+        if (at < LINK_TN_RING) {
+            t->last  = 0u;
+            t->quiet = (uint8_t)at;
+        } else {
+            t->last  = num_of(at - LINK_TN_RING);
+            t->quiet = (uint8_t)LINK_TN_RING;
+        }
         t->synced = true;
         t->ring_empty = false;
         return;
@@ -434,9 +448,16 @@ static void take_beep(tone_link_t *t, const uint16_t *r)
 {
     const uint16_t sel = t->sel_num;
     t->last = sel;
+    const bool quiet = t->quiet != 0u;
+    if (quiet) {
+        --t->quiet;
+    }
     if (r[0] != sel) {
-        /* Not in the ring: it left before the panel asked. */
-        ++t->missed;
+        /* Not in the ring: it left before the panel asked, or, while
+         * quiet, it came before the capture began again. */
+        if (!quiet) {
+            ++t->missed;
+        }
         return;
     }
     tone_beep_t *b = &t->hist[t->hist_at];

@@ -218,7 +218,8 @@ typedef struct {
 
     /* The beeps. */
     bool     synced;          /**< last is meaningful                  */
-    bool     ring_empty;      /**< the capture began again: last = head */
+    bool     ring_empty;      /**< the capture began again, place unknown */
+    uint8_t  quiet;           /**< beeps still to ask that may predate it */
     uint16_t last;            /**< the number of the last beep taken, 0 none */
     uint32_t missed;
     bool     sel_ok;          /**< EVT_SEL holds sel_num on the page   */

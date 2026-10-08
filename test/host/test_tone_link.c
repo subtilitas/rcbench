@@ -1012,6 +1012,65 @@ TEST_CASE(a_capture_that_begins_again_empty_is_neither_a_miss_nor_a_repeat)
     CHECK_EQ(tone_link_missed(&tl), 0u);
 }
 
+TEST_CASE(beeps_after_a_restart_are_read_before_and_after_the_next_status)
+{
+    fresh(8u);
+    tap_on();
+    fake_beeps(5);
+    polls(8);
+    CHECK_EQ(tone_link_read_count(&tl), 5u);
+    tone_setup_t w = setup_default();
+    want(&w);
+    polls(14);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 0u);
+    /* On again; two beeps come between the write and the first status,
+     * whose reply is lost. */
+    w.enable = true;
+    want(&w);
+    now += TONE_LINK_SETTLE_MS;
+    tone_link_op_t op;
+    uint16_t regs[LINK_MAX_REGS];
+    CHECK(tone_link_next(&tl, now, &op));
+    CHECK(op.write && op.off == LINK_TN_ENABLE);
+    tone_link_done(&tl, far_exchange(&op, regs), NULL, now);
+    CHECK_EQ(fk.captures, 2u);
+    fake_beeps(2);
+    lose_next = true;
+    polls(10);
+    CHECK_EQ(tone_link_read_count(&tl), 7u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
+}
+
+TEST_CASE(a_panel_that_never_read_the_tap_reads_every_beep_after_its_start)
+{
+    fresh(8u);
+    /* The page counted 30 beeps in an earlier run and holds the tap off;
+     * the panel has read nothing from it. */
+    fk.head = 30u;
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    now += TONE_LINK_SETTLE_MS;
+    tone_link_op_t op;
+    uint16_t regs[LINK_MAX_REGS];
+    for (int k = 0; k < 4; ++k) {
+        CHECK(tone_link_next(&tl, now, &op));
+        const int r = far_exchange(&op, regs);
+        tone_link_done(&tl, r, op.write ? NULL : regs, now);
+        if (op.write) {
+            break;
+        }
+    }
+    CHECK_EQ(fk.captures, 1u);
+    fake_beeps(3);
+    polls(10);
+    CHECK_EQ(tone_link_read_count(&tl), 3u);
+    CHECK_EQ(tone_link_missed(&tl), 0u);
+    tone_beep_t b[1];
+    CHECK_EQ(tone_link_beeps(&tl, b, 1), 1u);
+    check_beep(&b[0], 33u);
+}
+
 TEST_CASE(the_history_keeps_the_newest_eight)
 {
     fresh(8u);
@@ -1302,6 +1361,8 @@ int main(void)
     RUN(a_restart_the_panel_never_saw_is_not_a_miss);
     RUN(a_change_of_the_range_neither_repeats_nor_skips_a_beep);
     RUN(a_capture_that_begins_again_empty_is_neither_a_miss_nor_a_repeat);
+    RUN(beeps_after_a_restart_are_read_before_and_after_the_next_status);
+    RUN(a_panel_that_never_read_the_tap_reads_every_beep_after_its_start);
     RUN(the_history_keeps_the_newest_eight);
     RUN(a_beep_costs_a_select_and_a_read);
     RUN(the_readout_follows_the_flags);
