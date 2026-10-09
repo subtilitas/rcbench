@@ -237,6 +237,14 @@ void tone_page_capture(tone_page_t *p)
     }
 }
 
+void tone_page_recapture(tone_page_t *p)
+{
+    if (p != NULL) {
+        ++p->cap_gen;
+        forget_status(p);
+    }
+}
+
 uint8_t tone_page_slots_check(const tone_page_t *p, const uint16_t *slots)
 {
     if (slots == NULL) {

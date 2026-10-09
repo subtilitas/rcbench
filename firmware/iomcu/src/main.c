@@ -638,7 +638,7 @@ static void tone_order(void)
  */
 static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
 
-static bool tone_rewire(void)
+static bool tone_rewire_as(bool keep_ring)
 {
     s_tone_busy = false;
     const bool was_running = tone_cap_pause();
@@ -663,9 +663,18 @@ static bool tone_rewire(void)
     if (!tone_cap_start(tone_page_pin(&s_tone))) {
         return false;
     }
-    tone_page_capture(&s_tone);
+    if (keep_ring) {
+        tone_page_recapture(&s_tone);
+    } else {
+        tone_page_capture(&s_tone);
+    }
     tone_order();
     return true;
+}
+
+static bool tone_rewire(void)
+{
+    return tone_rewire_as(false);
 }
 
 static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -729,7 +738,9 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
          * supply waiting to attach: the set-up as it was, and the capture
          * as it was. */
         tone_page_revert(&s_tone, was, was_refused);
-        if (!tone_rewire()) {
+        /* The panel was refused and keeps its place: the beeps in the
+         * ring stay readable across the restart of the old capture. */
+        if (!tone_rewire_as(true)) {
             tone_page_refuse(&s_tone);
             reserve_held();
         }

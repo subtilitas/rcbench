@@ -530,6 +530,22 @@ TEST_CASE(a_new_capture_empties_the_ring_and_the_numbers_go_on)
     tone_page_capture(NULL);
 }
 
+TEST_CASE(a_capture_restarted_after_a_refusal_keeps_the_ring)
+{
+    fresh();
+    give(5u);
+    tone_page_recapture(&pg);
+    CHECK_EQ(reg(LINK_TN_BEEP_HEAD), 5u);
+    uint16_t sel = 3u;
+    tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u);
+    CHECK_EQ(reg(LINK_TN_EVT_SEQ), 3u);
+    give(1u);
+    sel = 6u;
+    tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u);
+    CHECK_EQ(reg(LINK_TN_EVT_SEQ), 6u);
+    tone_page_recapture(NULL);
+}
+
 TEST_CASE(a_status_is_taken_only_under_the_set_up_and_capture_in_force)
 {
     fresh();
@@ -677,6 +693,7 @@ int main(void)
     RUN(a_beep_that_has_left_the_ring_or_not_come_reads_as_none);
     RUN(beep_numbers_run_to_65535_and_go_round_without_a_zero);
     RUN(a_new_capture_empties_the_ring_and_the_numbers_go_on);
+    RUN(a_capture_restarted_after_a_refusal_keeps_the_ring);
     RUN(a_status_is_taken_only_under_the_set_up_and_capture_in_force);
     RUN(beeps_handed_over_alone_are_taken_under_the_generations_in_force);
     RUN(the_counters_wrap_at_65536_and_beeps_lost_between_the_cores_count);

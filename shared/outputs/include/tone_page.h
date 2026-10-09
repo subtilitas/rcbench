@@ -105,6 +105,12 @@ void tone_page_refuse(tone_page_t *p);
  *  empties and the order carries a new capture generation. */
 void tone_page_capture(tone_page_t *p);
 
+/** The capture starts again with the ring kept: a refused write that put
+ *  the old set-up back.  The order carries a new capture generation; the
+ *  beeps already in the ring stay readable, because the panel was told
+ *  nothing restarted. */
+void tone_page_recapture(tone_page_t *p);
+
 bool    tone_page_enabled(const tone_page_t *p);   /**< ENABLE bit 0      */
 uint8_t tone_page_pin(const tone_page_t *p);
 
