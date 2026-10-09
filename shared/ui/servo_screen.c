@@ -3191,6 +3191,13 @@ static void ov_rest(const touch_event_t *evt)
         return;
     }
     ov_let_go();
+    /* A release the finger did not make activates nothing, except the tap
+     * that stops a run. */
+    if (!touch_event_is_tap_up(evt)
+        && !(was == OP_TEST_START && servo_test_running(&s.test))) {
+        ++s.ctrl_rev;
+        return;
+    }
     switch (was) {
     case OP_CLOSE:
         if (gfx_rect_contains(close_rect(), x, y)) {

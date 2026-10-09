@@ -11,7 +11,8 @@
  *
  * Coordinates are the panel's.  The events go to ui_router_event(), or to
  * one screen's event() with the band's height removed (feed_to_screen()),
- * which is what the router hands a screen.
+ * which is what the router hands a screen, or as they are to a function
+ * (feed_to_handler()), for a widget on its own.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,8 +35,10 @@ static touch_tracker_t    feed_trk;
 static touch_point_t      feed_cur[TOUCH_MAX_POINTS];
 static int                feed_ncur;
 static const ui_screen_t *feed_scr;        /* NULL: the router            */
+static void             (*feed_fn)(const touch_event_t *);
 static int                feed_lose;       /* events still to be lost     */
 static int                feed_downs, feed_moves, feed_ups;
+static float              feed_tick_s;     /* frame time a report; 0: none */
 
 /* A fresh controller with nothing on the glass, feeding the router. */
 static inline void feed_reset(void)
@@ -43,13 +46,27 @@ static inline void feed_reset(void)
     touch_tracker_reset(&feed_trk);
     feed_ncur = 0;
     feed_scr  = NULL;
+    feed_fn   = NULL;
     feed_lose = 0;
     feed_downs = feed_moves = feed_ups = 0;
+    feed_tick_s = 0.0f;
 }
+
+/* Every report is followed by one ui_router_tick() of @p dt_s, as a frame
+ * follows the events it drained: a hold or a repeat runs while a finger
+ * travels.  0 leaves the frame timer to the test. */
+static inline void feed_tick_per_report(float dt_s) { feed_tick_s = dt_s; }
 
 /* Hand the events to @p scr itself, in its own coordinates, and not to the
  * router: a screen's own rules, with no router in front of them. */
 static inline void feed_to_screen(const ui_screen_t *scr) { feed_scr = scr; }
+
+/* Hand the events to @p fn as the tracker emits them, coordinates
+ * untouched: a widget, with no screen around it. */
+static inline void feed_to_handler(void (*fn)(const touch_event_t *))
+{
+    feed_fn = fn;
+}
 
 /* The next @p n events the tracker emits reach nobody, as when the panel's
  * queue is full.  The tracker has emitted them all the same. */
@@ -69,13 +86,18 @@ static inline void feed_report(void)
             --feed_lose;
             continue;
         }
-        if (feed_scr == NULL) {
+        if (feed_fn != NULL) {
+            feed_fn(&ev[i]);
+        } else if (feed_scr == NULL) {
             ui_router_event(&ev[i]);
         } else if (feed_scr->event != NULL) {
             touch_event_t local = ev[i];
             local.point.y = (int16_t)(local.point.y - UI_BAND_H);
             feed_scr->event(&local);
         }
+    }
+    if (feed_tick_s > 0.0f) {
+        ui_router_tick(feed_tick_s);
     }
 }
 

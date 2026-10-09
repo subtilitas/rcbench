@@ -67,7 +67,20 @@
 #define SAVE_H   36
 #define MAX_ROWS 32
 
-/* Held +/- repeats: a 0 to 30,000 mAh range is 300 taps otherwise. */
+/*
+ * A "-" or "+" key is a tap: the press arms it and the release steps it
+ * once.  The release counts when the same contact makes it inside the key,
+ * no further than DRAG_SLOP from the press in x and in y, with no scroll
+ * and no repeat in between.  The list scrolls by a drag that starts
+ * anywhere on it, the keys included, so a key that stepped on the press
+ * would step under every scroll that starts on one.
+ *
+ * A key held repeats: a 0 to 30,000 mAh range is 300 taps otherwise.  The
+ * first step comes REPEAT_DELAY_S after the press, then REPEAT_SLOW_HZ, and
+ * REPEAT_FAST_HZ once the key is held REPEAT_FAST_S longer.  The time runs
+ * only while the contact stays on the key within the slop; the release of
+ * a key that has repeated adds no step.
+ */
 #define REPEAT_DELAY_S 0.45f
 #define REPEAT_SLOW_HZ 8.0f
 #define REPEAT_FAST_S  1.8f
@@ -83,6 +96,11 @@ static struct {
     setting_cat_t cat;
     int      scroll;
     int      scroll_max;
+
+    /* One contact holds the screen from its DOWN to its UP; any other
+     * presses nothing and ends nothing. */
+    bool     have_press;
+    uint8_t  press_id;
 
     int      hit_kind;
     int      hit_index;      /* category index, or row index */
@@ -212,6 +230,21 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < row_count()) ? idx : -1;
 }
 
+/*
+ * Whether (x, y) is on the "-" or the "+" key of row @p index: the key's
+ * column over the row's own height.  The gap between two rows belongs to
+ * neither key, so the keys of a column are apart and a press in a gap
+ * scrolls and steps nothing.
+ */
+static bool on_key(int kind, int index, int x, int y)
+{
+    const int kx = (kind == HIT_MINUS) ? MINUS_X : PLUS_X;
+    if (x < kx || x >= kx + BTN_W || row_at(x, y) != index) {
+        return false;
+    }
+    return gfx_rect_contains(row_rect(index), x, y);
+}
+
 static setting_id_t row_setting(int index)
 {
     setting_id_t ids[MAX_ROWS];
@@ -244,6 +277,7 @@ static void reset(void)
 
 static void enter(void)
 {
+    s.have_press = false;
     s.hit_kind = HIT_NONE;
     s.dragging = false;
     s.repeating = false;
@@ -283,10 +317,11 @@ static void tick(float dt_s)
     }
     float hz = (s.held_for > REPEAT_DELAY_S + REPEAT_FAST_S) ? REPEAT_FAST_HZ
                                                              : REPEAT_SLOW_HZ;
-    /* Fire on each crossing of the repeat period, so the rate is honest even
-     * if a frame runs long. */
-    int fired_before = (int)((before - REPEAT_DELAY_S) * hz);
-    int fired_now = (int)((s.held_for - REPEAT_DELAY_S) * hz);
+    /* One step as the delay ends, then one on each crossing of the repeat
+     * period, so the rate is honest even if a frame runs long. */
+    int fired_before = (before < REPEAT_DELAY_S)
+                           ? 0 : 1 + (int)((before - REPEAT_DELAY_S) * hz);
+    int fired_now = 1 + (int)((s.held_for - REPEAT_DELAY_S) * hz);
     for (int i = fired_before; i < fired_now; ++i) {
         step_row(s.hit_index, (s.hit_kind == HIT_PLUS) ? 1 : -1);
         s.repeating = true;
@@ -298,8 +333,20 @@ static void event(const touch_event_t *evt)
     int x = evt->point.x;
     int y = evt->point.y;
 
+    if (evt->type == TOUCH_EVENT_DOWN) {
+        /* A DOWN with the id of the press held says that contact has gone
+         * and its release with it: the press is this one's. */
+        if (s.have_press && evt->point.id != s.press_id) {
+            return;
+        }
+    } else if (!s.have_press || evt->point.id != s.press_id) {
+        return;
+    }
+
     switch (evt->type) {
     case TOUCH_EVENT_DOWN: {
+        s.have_press = true;
+        s.press_id = evt->point.id;
         s.press_x = x;
         s.press_y = y;
         s.last_y = y;
@@ -343,22 +390,19 @@ static void event(const touch_event_t *evt)
 
         int row = row_at(x, y);
         if (row >= 0) {
-            gfx_rect_t r = row_rect(row);
-            if (x >= MINUS_X && x < MINUS_X + BTN_W) {
-                s.hit_kind = HIT_MINUS;
-                s.hit_index = row;
-                step_row(row, -1);
-                return;
-            }
-            if (x >= PLUS_X && x < PLUS_X + BTN_W) {
-                s.hit_kind = HIT_PLUS;
-                s.hit_index = row;
-                step_row(row, 1);
-                return;
-            }
-            (void)r;
-            s.hit_kind = HIT_LIST;
+            /* A key is armed here and steps nothing: its release steps
+             * it, or the repeat while it is held.  A DOWN the tracker made
+             * for a jump arms none: a flick up the list arrives as one, and
+             * its lift on a key in the next report would be a tap. */
+            const bool jump = (evt->flags & TOUCH_FLAG_JUMP) != 0u;
             s.hit_index = row;
+            s.hit_kind = jump                          ? HIT_LIST
+                         : on_key(HIT_MINUS, row, x, y) ? HIT_MINUS
+                         : on_key(HIT_PLUS, row, x, y)  ? HIT_PLUS
+                                                        : HIT_LIST;
+            if (s.hit_kind != HIT_LIST) {
+                settings_screen_invalidate();   /* the key draws pressed */
+            }
             return;
         }
         s.hit_kind = HIT_NONE;
@@ -379,6 +423,18 @@ static void event(const touch_event_t *evt)
             /* Turned into a scroll: give up the button. */
             s.dragging = true;
             s.hit_kind = HIT_LIST;
+            settings_screen_invalidate();
+        }
+        int side = x - s.press_x;
+        if (side < 0) { side = -side; }
+        if ((s.hit_kind == HIT_MINUS || s.hit_kind == HIT_PLUS)
+            && (side > DRAG_SLOP
+                || !on_key(s.hit_kind, s.hit_index, x, y))) {
+            /* Off the key sideways, or out of it within the slop: the
+             * press on the key ends, and the repeat with it.  The contact
+             * can still scroll. */
+            s.hit_kind = HIT_LIST;
+            settings_screen_invalidate();
         }
         if (s.dragging) {
             s.scroll -= dy;
@@ -392,13 +448,32 @@ static void event(const touch_event_t *evt)
         int kind = s.hit_kind;
         int index = s.hit_index;
         bool dragged = s.dragging;
+        bool repeated = s.repeating;
+        s.have_press = false;
         s.hit_kind = HIT_NONE;
         s.dragging = false;
         s.held_for = 0.0f;
         s.repeating = false;
         settings_screen_invalidate();
 
-        if (dragged) {
+        /* A contact that scrolled activates nothing, and neither does a
+         * release the finger did not make: it ends the press. */
+        if (dragged || !touch_event_is_tap_up(evt)) {
+            break;
+        }
+        if (kind == HIT_MINUS || kind == HIT_PLUS) {
+            /* One step for a tap.  A key that has repeated has stepped on
+             * the timer and its release adds none.  A MOVE has given the
+             * key up past the slop or outside it; the release is asked
+             * again because it can be the first event to carry the
+             * point. */
+            int dx = x - s.press_x, dy = y - s.press_y;
+            if (dx < 0) { dx = -dx; }
+            if (dy < 0) { dy = -dy; }
+            if (!repeated && dx <= DRAG_SLOP && dy <= DRAG_SLOP
+                && on_key(kind, index, x, y)) {
+                step_row(index, (kind == HIT_PLUS) ? 1 : -1);
+            }
             break;
         }
         if (kind == HIT_CAT && gfx_rect_contains(cat_rect(index), x, y)) {
@@ -618,6 +693,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static void cancel(void)
 {
+    s.have_press = false;
     s.hit_kind  = HIT_NONE;
     s.hit_index = -1;
     s.dragging  = false;
@@ -640,4 +716,12 @@ static const ui_screen_t s_screen = {
 const ui_screen_t *settings_screen(void)
 {
     return &s_screen;
+}
+
+int settings_screen_scroll(int *max)
+{
+    if (max != NULL) {
+        *max = s.scroll_max;
+    }
+    return s.scroll;
 }

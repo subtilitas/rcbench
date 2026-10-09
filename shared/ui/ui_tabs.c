@@ -84,8 +84,10 @@ bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt)
         && evt->type == TOUCH_EVENT_UP) {
         const int i = t->pressed;
         t->pressed = -1;
-        /* A press that slid off its tab is not a tap on that tab. */
-        if (gfx_rect_contains(t->rect[i], evt->point.x, evt->point.y)
+        /* A press that slid off its tab is not a tap on that tab, and
+         * neither is a release the finger did not make. */
+        if (touch_event_is_tap_up(evt)
+            && gfx_rect_contains(t->rect[i], evt->point.x, evt->point.y)
             && t->selected != i) {
             t->selected = i;
             return true;

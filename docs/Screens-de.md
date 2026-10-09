@@ -32,10 +32,19 @@ Band sind die oberen 48 px des Panels.
   hatte. Ein Drag auf einem Schieberegler oder auf dem SERVO-Zifferblatt endet
   mit dem Wert von dieser Stelle, und der Weg auf dem Band wird nicht
   dazugerechnet. Ein Halten auf ARM oder OUTPUT ON ist abgebrochen. Eine
-  Schaltfläche wirkt wie bei einem Finger, der an dieser Stelle abhebt: Eine,
-  die der Finger schon verlassen hatte, fordert nichts an. Die Berührung wird
-  nicht wieder aufgenommen, wenn der Finger zurück auf den Bildschirm kommt;
-  abheben und neu drücken.
+  Schaltfläche, eine Taste, eine Kachel, ein Tab oder eine Listenzeile unter
+  dieser Stelle ist nicht gedrückt: Das Release stammt vom Panel und nicht
+  vom Finger. Drei Bedienelemente nehmen es an, weil sie etwas anhalten:
+  DISARM, AUSGANG AUS und START TEST, solange ein Servotest läuft. Die
+  Berührung wird nicht wieder aufgenommen, wenn der Finger zurück auf den
+  Bildschirm kommt; abheben und neu drücken.
+- Ein Kontakt, der mehr als 120 px (x- und y-Abstand addiert) von der Stelle
+  des vorigen Reports entfernt liegt, gilt als dort abgehoben und hier neu
+  aufgesetzt. Der Touch-Controller wird alle 10 ms gelesen; sein
+  Report-Intervall am Panel ist nicht gemessen. Auch dieses Abheben drückt
+  nichts, mit denselben drei Ausnahmen und STOP. Das neue Aufsetzen ist ein
+  Druck wie jeder andere, außer auf einer Taste der SETUP-Liste: Dort scrollt
+  es und stellt nichts.
 - STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt.
   Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts.
 - Ein zweiter Finger auf STOP, auf dem Home-Tag oder auf dem Alert-Band wird
@@ -980,6 +989,20 @@ SCHREIBEN-Knopf zeigt, wie viele vorgemerkt sind:
 Stepper halten an den Enden einer Liste an; sie springen nicht auf die andere
 Seite.
 
+Jedes Bedienelement auf PROGRAMMER nimmt ein Tippen. Es wirkt, wenn der
+Finger innerhalb des Elements abhebt, das er gedrückt hat, in x und in y
+höchstens 8 px vom Aufsetzpunkt entfernt. Ein Finger, der auf einem Element
+aufsetzt und weiterwandert, drückt nichts, ebenso einer, der ein Element
+überquert. Ein Finger zur Zeit drückt ein Element. Drei Bedienelemente wirken
+schon beim Aufsetzen:
+
+- HALTEN ZUM STARTEN: Das Halten über 2 s beginnt mit dem Aufsetzen.
+- ABBRECHEN eines Stick-Laufs, auf der Seite des Laufs und in der Abfrage
+  eines manuellen Schritts. Es hält einen Motor an, wartet deshalb nicht auf
+  das Abheben und reagiert auch auf einen zweiten Finger.
+- Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
+  folgen.
+
 Eine Ebene zurück trennt die Verbindung. Zurück geht eine Ebene auf einmal;
 das Home-Tag im Band verlässt den Bildschirm.
 
@@ -1158,6 +1181,13 @@ Ausschnitt, der den ganzen Lauf zeigt, wird nicht verschoben: ein Finger
 bewegt den Cursor. Ein zweiter Finger auf der Grafik beginnt wie bisher das
 Zoomen.
 
+Eine Schaltfläche oder eine Zeile auf LOGS nimmt ein Tippen. Sie wirkt, wenn
+der Finger, der sie gedrückt hat, innerhalb von ihr abhebt und in x und in y
+nie mehr als 8 px vom Aufsetzpunkt entfernt war. Ein senkrechter Drag von
+mehr als 8 px auf der Dateiliste oder der Spaltenliste scrollt sie und wählt
+nichts aus. In diesen beiden Ansichten drückt ein Finger zur Zeit; ein
+zweiter Finger bewirkt nichts.
+
 LÖSCHEN löscht die ausgewählte Datei von der Karte. Vorher kommt eine Rückfrage:
 ein zweites Feld nennt die Datei und ihre Größe, und erst dessen eigenes
 LÖSCHEN, auf dem Knopf gedrückt und losgelassen, löscht sie. ABBRECHEN oder das
@@ -1219,6 +1249,41 @@ bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
 Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht bei der
 Logansicht beschrieben.
+
+### Tasten und Liste
+
+Die Tasten `-` und `+` einer Zeile (`<` und `>` bei einem Schalter oder einer
+Auswahl) ändern ihren Wert um einen Schritt. Ein geänderter Wert gilt sofort;
+SPEICHERN entscheidet, ob er einen Neustart übersteht
+([Werte behalten](#werte-behalten)).
+
+- **Tippen.** Eine Taste stellt einmal, wenn der Finger abhebt. Das Abheben
+  zählt, wenn es der Finger ist, der die Taste gedrückt hat, wenn er
+  innerhalb der Taste liegt und in x und in y höchstens 8 px vom Aufsetzpunkt
+  entfernt ist. Die Taste wird ab dem Aufsetzen gedrückt gezeichnet.
+- **Halten.** Eine gehaltene Taste stellt zum ersten Mal 0,45 s nach dem
+  Aufsetzen, dann 8-mal pro Sekunde und ab 2,25 s nach dem Aufsetzen 30-mal
+  pro Sekunde. Nach 1,00 s hat sie 5-mal gestellt, nach 3,00 s 38-mal. Das
+  Abheben nach einem Halten stellt nicht mehr. Das Halten endet, wenn der
+  Finger mehr als 8 px vom Aufsetzpunkt entfernt oder außerhalb der Taste
+  ist.
+- **Scrollen.** Ein senkrechter Drag von mehr als 8 px, der irgendwo auf der
+  Liste beginnt, scrollt sie, die Tastenspalten eingeschlossen. Ein Scrollen
+  ändert keinen Wert. Der Balken am rechten Rand der Liste zeigt die Position
+  und nimmt keine Berührung an.
+- Eine Taste ist ihre Spalte, 44 px breit, über die 54 px ihrer Zeile. Die
+  4 px zwischen zwei Zeilen gehören zu keiner Taste.
+- Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
+  Finger auf diesem Bildschirm nichts.
+
+Zwei Grenzen:
+
+- Ein Finger, der 0,45 s oder länger auf einer Taste ruht und dann scrollt,
+  hat die Taste gestellt: Das ist ein Halten.
+- Ein Kontakt, den der Touch-Controller in einem Report auslässt, kommt als
+  Abheben und neues Aufsetzen an. Liegt das neue Aufsetzen auf einer Taste
+  und hebt dort ab, ohne sich zu bewegen, ist es ein Tippen. Wie oft der
+  GT911 einen bewegten Kontakt in einem Report auslässt, ist nicht gemessen.
 
 ### ANWENDUNG: der Drehknopf
 

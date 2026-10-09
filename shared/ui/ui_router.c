@@ -282,8 +282,9 @@ static int owned_find(uint8_t id)
  * its MOVE and its UP reach no screen.
  *
  * A contact the screen owns that reaches the band is released at the edge.
- * The screen is handed an UP at the last point it was handed, and the
- * contact is the router's from then on.  The release is not the contact's
+ * The screen is handed an UP at the last point it was handed, flagged
+ * TOUCH_FLAG_NO_TAP: it ends the press or the drag and activates nothing.
+ * The contact is the router's from then on.  The release is not the contact's
  * real UP with its y moved into the body: a slider applies the horizontal
  * distance on its release and would step by the travel made on the band.
  * A screen that never saw the gesture end keeps its drag latched to a track
@@ -323,7 +324,10 @@ void ui_router_event(const touch_event_t *evt)
                      * that drives the heartbeat drains it, so a stop also
                      * stops the line. */
                     s.stop_latched = true;
-                } else if (!s.on_stop && in_home) {
+                } else if (!s.on_stop && in_home
+                           && touch_event_is_tap_up(evt)) {
+                    /* STOP above takes any release over it; the home tag
+                     * takes one the finger made. */
                     ui_router_goto(SCREEN_OVERVIEW);
                 }
             }
@@ -343,6 +347,7 @@ void ui_router_event(const touch_event_t *evt)
             if (s.alert_press && id == s.alert_id) {
                 s.alert_press = false;
                 if (s.has_alert && in_alert(evt)
+                    && touch_event_is_tap_up(evt)
                     && s.alert_gen == s.alert_press_gen) {
                     clear_alert();
                 }
@@ -369,6 +374,7 @@ void ui_router_event(const touch_event_t *evt)
             return;
         }
         local.type    = TOUCH_EVENT_UP;
+        local.flags   = TOUCH_FLAG_NO_TAP;
         local.point.x = s.owned[slot].x;
         local.point.y = s.owned[slot].y;
         s.owned[slot].live = false;

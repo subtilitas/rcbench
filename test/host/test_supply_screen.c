@@ -1506,6 +1506,55 @@ TEST_CASE(a_second_contact_does_not_end_a_press_that_is_held)
     CHECK(supply_screen_set_v() > before);
 }
 
+/*
+ * A contact the tracker ends for a jump: its release is on the control it
+ * pressed and the finger did not make it.  RESET PEAKS, the SETTINGS button
+ * and a settings row are not pressed.  OUTPUT OFF is: switching off takes
+ * a release however it came about.
+ */
+TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
+{
+    fed();
+    supply_cmd_t c;
+    finger(FEED_LONE, RESET_X, P(RESET_Y));
+    finger(FEED_LONE, OFF_X, P(OFF_Y));
+    CHECK_EQ(feed_ups, 1);                    /* the tracker's release */
+    lift(FEED_LONE);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    feed_tap(FEED_LONE, RESET_X, P(RESET_Y));
+    CHECK(supply_screen_poll_cmd(&c) && c.reset);
+
+    /* SETTINGS: not opened, so the plot's tab row still answers. */
+    finger(FEED_LONE, SETB_X, P(SETB_Y));
+    finger(FEED_LONE, OFF_X, P(OFF_Y));
+    lift(FEED_LONE);
+    feed_tap(FEED_LONE, RESET_X, P(RESET_Y));
+    CHECK(supply_screen_poll_cmd(&c) && c.reset);
+
+    /* A switch among the settings: not flipped by the tracker's release.
+     * The contact is not lifted where it is next reported. */
+    feed_tap(FEED_LONE, SETB_X, P(SETB_Y));
+    const bool was = settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE);
+    finger(FEED_LONE, ROW_R_X, P(CONF_SL_Y));
+    finger(FEED_LONE, ROW_R_X, P(CONF_SL_Y) - 200);
+    CHECK_EQ(feed_ups, 8);                    /* the last, the tracker's */
+    CHECK_EQ(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE), was);
+    scr->cancel();
+    feed_reset();
+    feed_to_screen(scr);
+    feed_tap(FEED_LONE, ROW_R_X, P(CONF_SL_Y));
+    CHECK_EQ(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE), !was);
+    settings_cancel_save();
+
+    /* OUTPUT OFF. */
+    fed();
+    supply_screen_set_output(true);
+    finger(FEED_LONE, OUT_X, P(OUT_Y));
+    finger(FEED_LONE, OFF_X, P(OFF_Y));
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
+    lift(FEED_LONE);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1564,6 +1613,7 @@ int main(void)
     RUN(a_lost_release_on_output_off_is_sent_at_the_next_press);
     RUN(an_on_posted_by_a_hold_that_lost_its_release_is_dropped);
     RUN(a_second_contact_does_not_end_a_press_that_is_held);
+    RUN(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

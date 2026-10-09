@@ -129,6 +129,7 @@ int touch_tracker_update(touch_tracker_t *t,
             if (n < max_out) {
                 out[n].type = TOUCH_EVENT_UP;
                 out[n].point = t->prev[i];
+                out[n].flags = 0u;
             }
             ++n;
         }
@@ -142,6 +143,7 @@ int touch_tracker_update(touch_tracker_t *t,
             continue;
         }
         const touch_point_t *old = find_by_id(t->prev, t->prev_count, cur[i].id);
+        bool jumped = false;
         if (old != NULL) {
             int dx = cur[i].x - old->x;
             int dy = cur[i].y - old->y;
@@ -149,25 +151,31 @@ int touch_tracker_update(touch_tracker_t *t,
             if (dy < 0) { dy = -dy; }
             if (dx + dy > TOUCH_JUMP_PX) {
                 /* Too far for one finger in one frame: report the release the
-                 * consumer is waiting for, then the new press. */
+                 * consumer is waiting for, then the new press.  Where the
+                 * finger lifted is not known, so the release ends the press
+                 * and activates nothing. */
                 if (n < max_out) {
                     out[n].type = TOUCH_EVENT_UP;
                     out[n].point = *old;
+                    out[n].flags = TOUCH_FLAG_NO_TAP;
                 }
                 ++n;
                 old = NULL;
+                jumped = true;
             }
         }
         if (!old) {
             if (n < max_out) {
                 out[n].type = TOUCH_EVENT_DOWN;
                 out[n].point = cur[i];
+                out[n].flags = jumped ? TOUCH_FLAG_JUMP : 0u;
             }
             ++n;
         } else if (old->x != cur[i].x || old->y != cur[i].y) {
             if (n < max_out) {
                 out[n].type = TOUCH_EVENT_MOVE;
                 out[n].point = cur[i];
+                out[n].flags = 0u;
             }
             ++n;
         }

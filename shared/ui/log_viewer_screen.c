@@ -184,6 +184,14 @@ static struct {
     uint8_t press_id;    /* the finger that holds the plot cursor */
     int16_t press_x;
 
+    /* The contact that holds a press on a button or a row, where it came
+     * down, and whether it has been further than the slop from there: its
+     * release is asked whether it is a tap (tap_on()). */
+    bool tap_have;
+    bool tap_moved;
+    uint8_t tap_id;
+    int16_t tap_x0, tap_y0;
+
     bool valid[MAX_FBS];
 } s;
 
@@ -1170,6 +1178,62 @@ static int hit_button(const gfx_rect_t *rects, int n, int x, int y)
     return -1;
 }
 
+/* A press that moves further than this, in x or in y, is not a tap; on a
+ * list, vertical travel past it is a scroll. */
+#define DRAG_SLOP 8
+
+/*
+ * A button or a row is a tap: the press arms it and the release activates
+ * it.  One contact holds the press from its DOWN to its UP; another
+ * presses nothing and ends nothing.
+ */
+static bool tap_begin(const touch_event_t *e)
+{
+    /* Another contact's DOWN is refused.  A DOWN with the id of the press
+     * held says that contact has gone and its release with it, and is
+     * taken. */
+    if (s.tap_have && e->point.id != s.tap_id) {
+        return false;
+    }
+    s.tap_have = true;
+    s.tap_moved = false;
+    s.tap_id = e->point.id;
+    s.tap_x0 = e->point.x;
+    s.tap_y0 = e->point.y;
+    return true;
+}
+
+static bool tap_mine(const touch_event_t *e)
+{
+    return s.tap_have && e->point.id == s.tap_id;
+}
+
+/* Whether @p e is further than the slop from the press, in x or in y. */
+static bool tap_far(const touch_event_t *e)
+{
+    int dx = e->point.x - s.tap_x0, dy = e->point.y - s.tap_y0;
+    if (dx < 0) { dx = -dx; }
+    if (dy < 0) { dy = -dy; }
+    return dx > DRAG_SLOP || dy > DRAG_SLOP;
+}
+
+/*
+ * Whether the release @p e is a tap on @p r: inside it, the contact never
+ * further than the slop from its press, and the release made by the finger,
+ * not for it (TOUCH_FLAG_NO_TAP).
+ */
+static bool tap_on(const touch_event_t *e, gfx_rect_t r)
+{
+    return touch_event_is_tap_up(e) && !s.tap_moved && !tap_far(e)
+           && gfx_rect_contains(r, e->point.x, e->point.y);
+}
+
+/* Row @p r of the rows showing in a list: under its 30 px heading. */
+static gfx_rect_t list_row_rect(gfx_rect_t list, int row_h, int r)
+{
+    return gfx_rect_make(list.x, list.y + 30 + r * row_h, list.w, row_h);
+}
+
 static void clamp_scroll(int *scroll, int total, int visible)
 {
     int max = total - visible;
@@ -1183,8 +1247,6 @@ static void clamp_scroll(int *scroll, int total, int visible)
         *scroll = 0;
     }
 }
-
-#define DRAG_SLOP 8
 
 static void ask_delete(void)
 {
@@ -1239,6 +1301,8 @@ static void question_event(const touch_event_t *e)
             if (s.press_btn >= 0) {
                 s.q_down = true;
                 s.q_id = e->point.id;
+                s.tap_have = false;
+                (void)tap_begin(e);
             }
             log_viewer_invalidate();
         }
@@ -1252,13 +1316,13 @@ static void question_event(const touch_event_t *e)
             break;
         }
         /*
-         * Pressed and released on the same button by the same contact,
-         * unlike the other footers here: a finger that slides off DELETE has
-         * changed its mind, and this is the one control on the screen that
-         * cannot be taken back.
+         * Pressed and released on the same button by the same contact, as
+         * a tap: a finger that slides off DELETE has changed its mind, and
+         * this is the one control on the screen that cannot be taken back.
          */
         s.q_down = false;
-        if (hit_button(btns, 2, e->point.x, e->point.y) == s.press_btn) {
+        s.tap_have = false;
+        if (s.press_btn >= 0 && tap_on(e, btns[s.press_btn])) {
             if (s.press_btn == 0) {
                 s.doomed[0] = '\0';
             } else if (s.press_btn == 1) {
@@ -1282,9 +1346,13 @@ static void browse_event(const touch_event_t *e)
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
+        if (!tap_begin(e)) {
+            break;
+        }
         s.press_btn = hit_button(btns, 3, e->point.x, e->point.y);
         s.press_row = -1;
         s.dragged = false;
+        s.pressing = false;
         if (s.press_btn < 0 && gfx_rect_contains(BR_LIST, e->point.x, e->point.y)) {
             s.pressing = true;
             s.press_y0 = e->point.y;
@@ -1299,7 +1367,7 @@ static void browse_event(const touch_event_t *e)
         break;
 
     case TOUCH_EVENT_MOVE:
-        if (s.pressing) {
+        if (s.pressing && tap_mine(e)) {
             int dy = e->point.y - s.press_y0;
             if (dy > DRAG_SLOP || dy < -DRAG_SLOP) {
                 s.dragged = true;
@@ -1310,25 +1378,36 @@ static void browse_event(const touch_event_t *e)
         }
         break;
 
-    case TOUCH_EVENT_UP:
-        if (s.press_btn == 0) {
+    case TOUCH_EVENT_UP: {
+        if (!tap_mine(e)) {
+            break;
+        }
+        s.tap_have = false;
+        const int btn = s.press_btn;
+        const bool row = s.pressing && !s.dragged && s.press_row >= 0
+                         && s.press_row < s.n_files
+                         && tap_on(e, list_row_rect(BR_LIST, BR_ROW_H,
+                                                    s.press_row - s.scroll));
+        s.pressing = false;
+        s.press_btn = -1;
+        /* A press that slid off its button is not a tap on it. */
+        const bool on = btn >= 0 && tap_on(e, btns[btn]);
+        if (on && btn == 0) {
             log_viewer_refresh();
-        } else if (s.press_btn == 1) {
+        } else if (on && btn == 1) {
             open_selected();
-        } else if (s.press_btn == 2) {
+        } else if (on) {
             ask_delete();
-        } else if (s.pressing && !s.dragged && s.press_row >= 0 &&
-                   s.press_row < s.n_files) {
+        } else if (btn < 0 && row) {
             if (s.sel == s.press_row) {
                 open_selected(); /* second tap opens */
             } else {
                 s.sel = s.press_row;
             }
         }
-        s.pressing = false;
-        s.press_btn = -1;
         log_viewer_invalidate();
         break;
+    }
     }
 }
 
@@ -1363,9 +1442,13 @@ static void import_event(const touch_event_t *e)
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
+        if (!tap_begin(e)) {
+            break;
+        }
         s.press_btn = hit_button(btns, 4, e->point.x, e->point.y);
         s.press_row = -1;
         s.dragged = false;
+        s.pressing = false;
         if (s.press_btn < 0 && s.have_analysis &&
             gfx_rect_contains(IM_RIGHT, e->point.x, e->point.y)) {
             s.pressing = true;
@@ -1381,7 +1464,7 @@ static void import_event(const touch_event_t *e)
         break;
 
     case TOUCH_EVENT_MOVE:
-        if (s.pressing) {
+        if (s.pressing && tap_mine(e)) {
             int dy = e->point.y - s.press_y0;
             if (dy > DRAG_SLOP || dy < -DRAG_SLOP) {
                 s.dragged = true;
@@ -1392,8 +1475,22 @@ static void import_event(const touch_event_t *e)
         }
         break;
 
-    case TOUCH_EVENT_UP:
-        switch (s.press_btn) {
+    case TOUCH_EVENT_UP: {
+        if (!tap_mine(e)) {
+            break;
+        }
+        s.tap_have = false;
+        /* A press that slid off its button or its row is not a tap on it:
+         * it ends here and nothing acts. */
+        int btn = s.press_btn;
+        if (btn >= 0 && !tap_on(e, btns[btn])) {
+            btn = 4;
+        }
+        const bool row = s.pressing && !s.dragged && s.press_row >= 0
+                         && tap_on(e, list_row_rect(IM_RIGHT, IM_ROW_H,
+                                                    s.press_row
+                                                        - s.col_scroll));
+        switch (btn) {
         case 0:
             /* AUTO, then each candidate in turn. */
             s.delim_index++;
@@ -1416,8 +1513,10 @@ static void import_event(const touch_event_t *e)
                 load_data();
             }
             break;
+        case 4:
+            break;
         default:
-            if (s.pressing && !s.dragged && s.press_row >= 0) {
+            if (row) {
                 toggle_column(s.press_row);
             }
             break;
@@ -1426,6 +1525,7 @@ static void import_event(const touch_event_t *e)
         s.press_btn = -1;
         log_viewer_invalidate();
         break;
+    }
     }
 }
 
@@ -1587,6 +1687,10 @@ static void plot_event(const touch_event_t *e)
             break;   /* a second finger elsewhere presses nothing */
         }
         s.press_btn = hit_button(btns, 3, e->point.x, e->point.y);
+        if (s.press_btn >= 0) {
+            s.tap_have = false;
+            (void)tap_begin(e);
+        }
         if (s.press_btn < 0 && gfx_rect_contains(PV_PANEL, e->point.x, e->point.y)) {
             s.pressing = true;
             s.press_id = e->point.id;
@@ -1625,24 +1729,32 @@ static void plot_event(const touch_event_t *e)
         }
         break;
 
-    case TOUCH_EVENT_UP:
+    case TOUCH_EVENT_UP: {
         if (s.pressing && e->point.id != s.press_id) {
             break;
         }
-        if (s.press_btn == 0) {
+        if (s.press_btn >= 0 && !tap_mine(e)) {
+            break;   /* another finger's release ends no press */
+        }
+        /* A press that slid off its button is not a tap on it. */
+        const int btn = (s.press_btn >= 0 && tap_on(e, btns[s.press_btn]))
+                            ? s.press_btn : -1;
+        if (btn == 0) {
             s.view = VIEW_IMPORT;
-        } else if (s.press_btn == 1 && s.cursor > 0) {
+        } else if (btn == 1 && s.cursor > 0) {
             s.cursor--;
             follow_cursor();
-        } else if (s.press_btn == 2 && s.have_data &&
+        } else if (btn == 2 && s.have_data &&
                    s.cursor < s.data.count - 1) {
             s.cursor++;
             follow_cursor();
         }
+        s.tap_have = false;
         s.pressing = false;
         s.press_btn = -1;
         log_viewer_invalidate();
         break;
+    }
     }
 }
 
@@ -1683,6 +1795,11 @@ static void event(const touch_event_t *e)
     if (e == NULL) {
         return;
     }
+    /* A press that goes further than the slop is no tap, wherever it is
+     * when it lifts. */
+    if (e->type == TOUCH_EVENT_MOVE && tap_mine(e) && tap_far(e)) {
+        s.tap_moved = true;
+    }
     switch (s.view) {
     case VIEW_IMPORT:
         import_event(e);
@@ -1715,6 +1832,7 @@ static void cancel(void)
     s.press_btn = -1;
     s.press_row = -1;
     s.dragged   = false;
+    s.tap_have  = false;
     s.q_down    = false;
     s.pinch     = false;
     s.panning   = false;
@@ -1739,6 +1857,11 @@ static void enter(void)
     /* A question left open by leaving the screen is not asked again on the
      * way back in: the operator has moved on from it. */
     s.doomed[0] = '\0';
+    /* A press held when the screen was left has no release coming. */
+    s.tap_have  = false;
+    s.pressing  = false;
+    s.press_btn = -1;
+    s.q_down    = false;
     if (s.listed == 0) {
         log_viewer_refresh();
     }

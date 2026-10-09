@@ -283,6 +283,61 @@ TEST_CASE(a_duplicate_track_id_in_one_frame_is_counted_once)
     CHECK_EQ(ev[0].type, TOUCH_EVENT_UP);
 }
 
+/* What the tracker makes for a jump is marked as made: the UP ends the
+ * contact and is no release by the finger, the DOWN starts one that may be
+ * a finger in flight.  Every other event carries no flag, the UP of a
+ * contact missing from a report included. */
+TEST_CASE(the_tracker_flags_the_up_and_the_down_it_makes_for_a_jump)
+{
+    touch_tracker_t t;
+    touch_tracker_reset(&t);
+    touch_event_t ev[8];
+    memset(ev, 0xff, sizeof(ev));
+
+    touch_point_t a = { .id = 1, .x = 100, .y = 100 };
+    CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_DOWN);
+    CHECK_EQ(ev[0].flags, 0);
+
+    /* 120 px is one drag. */
+    a.x = 160;
+    a.y = 160;
+    CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_MOVE);
+    CHECK_EQ(ev[0].flags, 0);
+
+    /* 121 px is a release where it was and a press where it is. */
+    a.x = 281;
+    CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 2);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_UP);
+    CHECK_EQ(ev[0].point.x, 160);
+    CHECK_EQ(ev[0].flags, TOUCH_FLAG_NO_TAP);
+    CHECK(!touch_event_is_tap_up(&ev[0]));
+    CHECK_EQ(ev[1].type, TOUCH_EVENT_DOWN);
+    CHECK_EQ(ev[1].point.x, 281);
+    CHECK_EQ(ev[1].flags, TOUCH_FLAG_JUMP);
+
+    /* The contact goes on as any other, and its own lift is a lift. */
+    a.x = 282;
+    memset(ev, 0xff, sizeof(ev));
+    CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_MOVE);
+    CHECK_EQ(ev[0].flags, 0);
+    memset(ev, 0xff, sizeof(ev));
+    CHECK_EQ(touch_tracker_update(&t, NULL, 0, ev, 8), 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_UP);
+    CHECK_EQ(ev[0].flags, 0);
+    CHECK(touch_event_is_tap_up(&ev[0]));
+
+    /* Back in the next report, with the same id: a DOWN like any first. */
+    memset(ev, 0xff, sizeof(ev));
+    a.x = 700;
+    CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_DOWN);
+    CHECK_EQ(ev[0].flags, 0);
+    CHECK(!touch_event_is_tap_up(&ev[0]));
+}
+
 int main(void)
 {
     RUN(identity_mapping);
@@ -297,5 +352,6 @@ int main(void)
     RUN(tracker_clamps_and_survives_small_buffers);
     RUN(a_contact_that_teleports_is_a_release_and_a_new_press);
     RUN(a_duplicate_track_id_in_one_frame_is_counted_once);
+    RUN(the_tracker_flags_the_up_and_the_down_it_makes_for_a_jump);
     return test_summary("touch_map");
 }
