@@ -59,6 +59,7 @@
 #include "link_port.h"
 #include "log_name.h"
 #include "log_select.h"
+#include "log_cadence.h"
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_page.h"
@@ -2009,8 +2010,15 @@ static atomic_uint s_log_run_now;
  * So the count is reported where it is kept, at the run's end.  The logger
  * reports what the logger knows: rows written, and a write that failed.
  */
-static uint32_t    s_log_run_lost;
-static uint32_t    s_log_run_sent;
+static log_cadence_t s_log_cad;
+
+/* The model's gate is the sample rate's period, and its longest step the
+ * totals' longest. */
+_Static_assert((uint32_t)(1000.0f / PANEL_SAMPLE_HZ) == LOG_CADENCE_MODEL_MS,
+               "the model's period is 1/PANEL_SAMPLE_HZ");
+_Static_assert((uint32_t)(BENCH_TOTALS_MAX_STEP_S * 1000.0f)
+               == LOG_CADENCE_MODEL_MAX_MS,
+               "the model's longest step is the totals' longest");
 
 /* The control task's own: the run it numbers rows with, and which kind of
  * run it has seen start.  The counter never takes the value 0, because 0 is
@@ -2100,7 +2108,8 @@ static bool log_number_free(int number, char *path, size_t n)
 static log_writer_t s_log;
 static uint32_t     s_log_last_row_ms;
 
-/* The control task's: the timestamp the next row carries. */
+/* The control task's: the timestamp a supply run's next row carries.  A
+ * bench run's is s_log_cad's. */
 static float        s_log_t;
 
 static int file_write(void *ctx, const void *data, size_t len)
@@ -2574,8 +2583,8 @@ static void log_task(void *arg)
  * A full queue is the card falling behind the run.  The row is dropped and
  * counted rather than waited for: waiting here would put the card's latency
  * back on the safety line by a longer road.  The newest row is the one
- * dropped, so what the file holds is the run up to the stall, and its time
- * column shows the gap.
+ * dropped, so what the file holds is the run up to the stall.  A bench run's
+ * time column is the wall time since the arm and shows the gap.
  */
 static void log_post(log_row_t *row)
 {
@@ -2583,11 +2592,7 @@ static void log_post(log_row_t *row)
         return;
     }
     row->run = s_log_run_ctr;
-    if (xQueueSend(s_log_q, row, 0) == pdTRUE) {
-        ++s_log_run_sent;
-    } else {
-        ++s_log_run_lost;
-    }
+    log_cadence_posted(&s_log_cad, xQueueSend(s_log_q, row, 0) == pdTRUE);
 }
 
 /* ---------------------------------------------------- asking the far end */
@@ -5563,9 +5568,10 @@ static void log_follow_runs(void)
          * left over from the run before produces, and it is the case where an
          * operator would otherwise look for a CSV that is not there.
          */
-        if (s_log_run_lost > 0u && s_log_run_sent == 0u) {
+        if (log_cadence_lost(&s_log_cad) > 0u
+            && log_cadence_sent(&s_log_cad) == 0u) {
             control_alert(TR(ALERT_CARD_SLOW));
-        } else if (s_log_run_lost > 0u) {
+        } else if (log_cadence_lost(&s_log_cad) > 0u) {
             control_alert(TR(ALERT_CARD_GAPS));
         }
     }
@@ -5582,8 +5588,7 @@ static void log_follow_runs(void)
      * level goes up so the logger cannot see a run half started.  Zero means
      * no run, so the count skips it on the one wrap in 2^32 runs. */
     s_log_t = 0.0f;
-    s_log_run_lost = 0u;
-    s_log_run_sent = 0u;
+    log_cadence_run_start(&s_log_cad, now_ms());
     if (++s_log_run_ctr == 0u) {
         s_log_run_ctr = 1u;
     }
@@ -6748,44 +6753,33 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
 }
 
 /*
- * The model and the log advance on their own 50 ms cadence, not on the poll
- * gate's.  The gate runs at 1 Hz while the link is down, which would step the
- * model once per 1000 ms of wall clock instead of twenty times -- the plot's
- * axis and every CSV timestamp twenty times slow.
+ * The model's step, the run's totals and the bench log's row, each decided
+ * for this pass.
+ *
+ * The model runs on its own 50 ms gate, not on the poll's.  The poll's runs
+ * at 1 Hz while the link is down, which would step the model once per
+ * 1000 ms of wall clock instead of twenty times -- the plot's axis twenty
+ * times slow.  Its step is the time that passed, capped at a second like
+ * the totals: a probe for the coprocessor's identity can hold this loop for
+ * its whole 1000 ms timeout.
+ *
+ * The log has no gate: a pass that brought a sample writes one row, stamped
+ * with the wall time since the arm; see log_cadence.h.
  */
 static void advance_model_and_log(bool link_up, float emitted,
                                   telemetry_sim_t *sim, bench_state_t *bench,
-                                  uint32_t *last_sample, bool *new_sample)
+                                  bool *new_sample)
 {
-    bool due = false;
-    /*
-     * The step is the time that passed, not the 50 ms this cadence aims at.
-     * While the link is down a probe for the coprocessor's identity can hold
-     * this loop for its whole 1000 ms timeout, and a fixed step would run
-     * the model, the plot's run and the log's clock twenty times slow for as
-     * long as the outage lasts.  Capped at a second, like the totals.
-     */
     float step_s = 0.0f;
-    const uint32_t since = (uint32_t)(now_ms() - *last_sample);
-    if (since >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
-        *last_sample = now_ms();
-        due = true;
-        step_s = (float)since / 1000.0f;
-        if (step_s > BENCH_TOTALS_MAX_STEP_S) {
-            step_s = BENCH_TOTALS_MAX_STEP_S;
-        }
-        if (!link_up) {
-            telemetry_sim_step(sim, emitted, step_s, bench);
-            *new_sample = true;
-        }
+    if (log_cadence_model_due(&s_log_cad, now_ms(), link_up, &step_s)) {
+        telemetry_sim_step(sim, emitted, step_s, bench);
+        *new_sample = true;
     }
     /*
      * The run's totals, from the sample either source just wrote, over the
      * time since the last one -- measured, not the 50 ms the model's cadence
-     * aims at: a link probe can hold this loop for a second.  Outside that
-     * cadence's gate, because a coprocessor sample arrives on the poll's
-     * clock, not on this one, and one that landed between two of its ticks
-     * would otherwise go uncounted.
+     * aims at: a link probe can hold this loop for a second, and a
+     * coprocessor sample arrives on the poll's clock.
      */
     if (*new_sample) {
         const uint32_t t = now_ms();
@@ -6802,9 +6796,10 @@ static void advance_model_and_log(bool link_up, float emitted,
      */
     bench_totals_show(&s_totals, bench);
     /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
-    if (due && *new_sample && s_log_kind == LOG_RUN_BENCH) {
-        s_log_t += step_s;
-        log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = s_log_t };
+    float t_s = 0.0f;
+    if (log_cadence_row(&s_log_cad, now_ms(), *new_sample,
+                        s_log_kind == LOG_RUN_BENCH, &t_s)) {
+        log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = t_s };
         row.u.bench = *bench;
         log_post(&row);
         /* The INA3221's window is in that row and in no later one. */
@@ -6861,6 +6856,8 @@ static void control_task(void *arg)
 
     telemetry_sim_t sim;
     bench_state_t   bench;
+    /* Before anything that can start a run: a run's start sets its clock. */
+    log_cadence_init(&s_log_cad, now_ms());
     control_setup(&sim, &bench);
 
     uint32_t last_poll     = 0;
@@ -6868,8 +6865,6 @@ static void control_task(void *arg)
     uint32_t last_report   = 0;
     uint32_t last_temp     = 0;
     bool     link_up       = false;
-
-    uint32_t last_sample = now_ms();
 
     for (;;) {
         control_pump();
@@ -6920,8 +6915,7 @@ static void control_task(void *arg)
         bool new_sample = poll_far_end(&link_up, &bench, &last_poll,
                                        &last_status);
 
-        advance_model_and_log(link_up, emitted, &sim, &bench, &last_sample,
-                              &new_sample);
+        advance_model_and_log(link_up, emitted, &sim, &bench, &new_sample);
 
         if ((uint32_t)(now_ms() - last_temp) >= 1000u) {
             last_temp = now_ms();

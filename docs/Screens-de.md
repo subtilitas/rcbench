@@ -251,7 +251,32 @@ und der gezeigten Leistung. Hört der INA228 mitten im Lauf auf zu antworten,
 zählt das Panel von seiner letzten Summe weiter, und die Summe geht nicht
 zurück.
 
-Die CSV-Datei eines Laufs hat alle 50 ms eine Zeile:
+Die CSV-Datei eines Laufs hat für jeden Messwert, den das Panel nimmt, eine
+Zeile, und ohne Messwert keine:
+
+- Bei stehendem Link ist ein Messwert ein beantwortetes Lesen der
+  BENCH-Page. Das Panel fragt alle 50 ms ab, dazu kommen der 5-ms-Durchlauf
+  seiner Control-Task, der das Gate prüft, und die Exchanges des Durchlaufs:
+  im Mittel 52,9 ms auf einem Prüfstand, etwa 19 Zeilen je Sekunde. Andere
+  Prüfstände sind nicht gemessen.
+- Ohne Link ist ein Messwert ein Schritt des Modells, alle 50 ms.
+- Sonst hält nichts eine Zeile zurück. Eine Zeile, die die Queue zur Karte
+  nicht aufnimmt, wird verworfen und gezählt, und das Band meldet es am Ende
+  des Laufs (siehe [Logs](#logs)).
+
+`time` ist die Uhrzeit seit dem ARM in Sekunden, auf 1 ms geschrieben, und
+kein Zeilenzähler: Die erste Zeile steht nicht bei 0, und eine Strecke ohne
+Messwerte oder mit verworfenen Zeilen ist ein Sprung in `time` von ihrer
+Länge. Der Wert löst in den ersten 4,5 h eines Laufs auf 1 ms auf, bis 9,1 h
+auf 2 ms.
+
+Eine Datei von Firmware 0.15.0 oder älter weicht in zwei Punkten ab. Nach
+einem Servobefehl fehlen Zeilen über Strecken von bis zu 30 s, und
+`time` läuft nur mit einer geschriebenen Zeile weiter, endet also vor der
+Länge des Laufs und zeigt keine Lücke. In einer solchen Datei geben die
+`window`-Nummern im Abstand von 50 ms den Abstand der Zeilen an, solange der
+INA3221 eingeschaltet ist.
+
 
 ```
 time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
@@ -1069,6 +1094,15 @@ Grafik zeigt, welcher Teil des Laufs zu sehen ist. Der engste Ausschnitt sind
 `>` bewegen den Cursor wie bisher; läuft der Cursor über den Rand eines
 vergrößerten Ausschnitts, wandert der Ausschnitt mit. ZURÜCK führt zur
 Importansicht.
+
+Der Plot setzt die Zeilen gleichmäßig nach Zeilennummer. Die Beschriftung
+darunter und die Anzeige des Cursors sind die Zeitspalte der Datei, gezählt
+ab ihrer ersten Zeile, und die Dauer in der Kopfzeile ist die Zeit der
+letzten Zeile abzüglich der der ersten. Eine Lücke in den Zeilen ist ein
+Sprung in diesen Zeiten, keine breitere Strecke im Plot. Beim Lauf eines
+armierten Prüfstands ist die Zeit die Uhrzeit seit dem ARM, die Dauer also
+die des Laufs; bei einer Datei von Firmware 0.15.0 oder älter ist sie kürzer
+als der Lauf (siehe Motor & ESC, die CSV-Datei).
 
 SETUP → ANWENDUNG → Ein Finger schiebt, standardmäßig aus, lässt einen
 einzelnen Finger den vergrößerten Ausschnitt verschieben. Ist die Einstellung

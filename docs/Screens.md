@@ -231,7 +231,28 @@ and power shown. When the INA228 stops
 answering mid-run, the count carries on from its last total and does not go
 back.
 
-A run's CSV file has one row every 50 ms:
+A run's CSV file has one row for every sample the panel takes, and no row
+without one:
+
+- With the link up a sample is one answered read of the BENCH page. The
+  panel polls every 50 ms plus the 5 ms pass of its control task that looks
+  at the gate and the pass's own exchanges: 52.9 ms on average on one bench,
+  about 19 rows per second. Other benches are not measured.
+- With the link down a sample is one step of the model, every 50 ms.
+- Nothing else gates a row. A row the card's queue cannot take is dropped
+  and counted, and the band says so at the run's end (see [Logs](#logs)).
+
+`time` is the wall time since the arm in seconds, written to 1 ms, and is
+not a row count: the first row is not at 0, and a stretch without samples or
+with dropped rows is a step in `time` of that length. The value keeps 1 ms
+of resolution for the first 4.5 h of a run and 2 ms up to 9.1 h.
+
+A file written by firmware 0.15.0 or older differs in two ways. Rows are
+missing in stretches of up to 30 s after a servo command, and
+`time` advances only with a written row, so it ends short of the run's
+length and shows no gap. In such a file the `window` numbers, 50 ms apart,
+give the spacing of the rows while the INA3221 is enabled.
+
 
 ```
 time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
@@ -980,6 +1001,14 @@ a bar under the plot shows which part of the run is on screen. The narrowest
 view is 8 samples, the widest the whole run. One finger and the `<` and `>`
 buttons move the cursor as before; stepping the cursor past the edge of a
 zoomed view carries the view with it. BACK returns to the import view.
+
+The plot places the rows evenly by row number. The labels under it and the
+cursor's read-out are the file's time column, counted from the file's first
+row, and the header's duration is the last row's time less the first's. A
+gap in the rows is a jump in those times, not a wider stretch of plot. For
+an armed bench's run the time is wall time, so the duration is the run's;
+for a file written by firmware 0.15.0 or older it is shorter than the run
+(see Motor & ESC, the CSV file).
 
 SETUP → APPLICATION → One finger pans, off by default, lets a single finger
 pan a zoomed view. While it is on and the view is zoomed in, a finger that

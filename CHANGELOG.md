@@ -6,6 +6,28 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **An armed bench's log has a row for every sample, and its time column is
+  wall time.** The panel wrote a row only in a pass of its control task in
+  which the 50 ms poll gate and a second, independent 50 ms gate were both
+  open. A command's write ahead of the poll shifted the 5 ms passes against
+  the two gates, and no row was written until they lined up again. Two runs
+  on hardware with firmware 0.14.0 showed it: 2508 of 3817 INA3221 windows
+  (65.7 %) not logged in a run of 190.8 s, with gaps of up to 605 windows
+  (30.25 s), and 1712 of 2986 (57.3 %) in a run of 149.3 s; 28 of 28 and 20
+  of 21 gaps began within 0.15 s of a servo command. The time column grew
+  only with a written row and ended at 69.0 s for the 190.8 s run. Every
+  armed run's log was thinned this way, a motor run's included. A row is
+  written for every sample the poll takes, and `time` is the wall time since
+  the arm, across the tick's wrap at 2^32 ms; a stretch without samples and
+  rows dropped by a full queue show as a step in it. Charge and energy were
+  integrated on the sample's own interval and are unchanged. A supply run's
+  log and a servo test's CSV have one gate each and are unchanged. The rule
+  is `shared/bench/log_cadence.c`, tested on the host against a model of the
+  pass grid; it has not run on hardware. Single windows are still skipped
+  where the poll (52.9 ms measured) is longer than the 50 ms window.
+
 ## 0.15.0 - 2026-10-09
 
 The link protocol is 4.10. A 0.14 board still links and arms with a 0.15
