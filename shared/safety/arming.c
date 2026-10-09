@@ -229,12 +229,13 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
     }
 
     if (a->arming && reached(now_ms, a->settle_until_ms)) {
-        if (a->stopped || arming_touch_dead(a, now_ms)) {
+        const bool fit = !a->stopped && !arming_touch_dead(a, now_ms);
+        if (!fit || a->line_wait_ms == 0u || a->line_trusted) {
             a->arming = false;
-        } else if (a->line_wait_ms == 0u || a->line_trusted) {
-            a->arming = false;
-            a->armed  = true;
-            act = ARMING_ACT_ARM;
+            if (fit) {
+                a->armed = true;
+                act = ARMING_ACT_ARM;
+            }
         } else if (reached(now_ms, a->settle_until_ms + a->line_wait_ms)) {
             /* The far end has not come to trust the line.  Given up before
              * CLEAR is written, so its latch stays set. */
