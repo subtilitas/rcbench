@@ -19,6 +19,24 @@ recovering does not clear a stop.
 
 ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
+A touch belongs to what it came down on until it lifts. The band is the top
+48 px of the panel.
+
+- A touch that comes down on the band stays the band's. Sliding it down into
+  the screen moves nothing there, and lifting it there presses nothing.
+- A touch that comes down on the screen and slides up into the band is
+  released at the last point it had on the screen. A drag on a slider or on
+  the SERVO dial ends with the value it had at that point, and the distance
+  travelled on the band is not added. A hold on ARM or OUTPUT ON is abandoned.
+  A button acts as for a finger lifted at that point: one the finger had
+  left asks for nothing. The touch is not picked up again when the finger
+  comes back down onto the screen; lift and press again.
+- STOP and the home tag answer to a press that lands on them. A finger that
+  slides onto STOP from the screen stops nothing.
+- A second finger on STOP, on the home tag or on the alert band is answered
+  while the first finger drags. After the home tag, the finger still on the
+  glass moves nothing on the overview.
+
 ## The alert band
 
 A fault the screen itself does not show appears in a red band, 34 px high,
@@ -116,6 +134,13 @@ The throttle moves by how far a finger travels, not to where it lands. A press
 on the track commands nothing, so a touch at the far end asks for nothing; a
 drag across the whole track asks for the whole span, and the pin follows it
 unramped. `-1` and `+1` at the ends of the track step one percentage point.
+
+Arming returns the throttle to 0 %. The slider can be moved on a disarmed
+bench and commands nothing there; when the ARM hold completes, and again when
+the bench reports armed, the slider, the readout and the `-1` and `+1` steps
+are at 0.0 %, so the first `+1` after an arm asks for 1.0 %. A finger on the
+track when the bench arms or disarms moves nothing until it lifts and presses
+again.
 
 ARM is a hold. The fill fades from green to the danger red across two
 seconds, and the bench arms when the fade completes; letting go before then
@@ -236,6 +261,10 @@ the button, is what returns the surfaces to centre -- and even that leaves the
 pins bound and driving, at the middle of their travel. A disarm, or leaving
 the screen, which disarms, is what stops the edges. With the rotary knob on,
 turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)).
+
+One finger drags the dial. A press by a second finger anywhere on the screen
+ends the drag, as it ends a drag on SPEED: the horn stays where it was
+commanded, and the dial follows again after a new press on it.
 
 The screen drives the channels the binding marks as surfaces, not a fixed pin
 and not a fixed protocol. PPM's eight channels are surfaces too, so a bound

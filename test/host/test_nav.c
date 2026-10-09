@@ -5,17 +5,27 @@
  * and no screen may draw over it.  The second is enforced by handing screens a
  * sub-canvas, and this file checks the enforcement.
  *
+ * And who owns a contact: one owner from its DOWN to its UP, the screen or
+ * the router.  Those cases feed frames of contacts through the tracker
+ * (touch_feed.h), as the panel does.
+ *
  * SPDX-License-Identifier: MIT
  */
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
+#include "touch_feed.h"
 
 #include "gfx.h"
+#include "motor_screen.h"
 #include "overview_screen.h"
+#include "servo_screen.h"
+#include "settings.h"
 #include "splash_screen.h"
 #include "stub_screen.h"
+#include "supply_screen.h"
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -1119,6 +1129,880 @@ TEST_CASE(cancelling_gestures_lets_go_of_the_band)
     CHECK(!ui_router_take_stop());
 }
 
+/* ------------------------------------------------ one owner per contact */
+
+/*
+ * Geometry in panel coordinates, mirrored from the screens (their own
+ * suites carry the screen-local values).
+ * MOTOR & ESC: the throttle track x 72..485, y 384..423; + at x 492..547.
+ * SERVO: the shaft; SPEED's track x 514..781, y 344..365.
+ * SUPPLY: both tracks x 72..485; OUTPUT ON / OFF on the right rail.
+ */
+#define M_TRACK_Y  (336 + UI_BAND_H + 20)
+#define M_PX_PCT   (100.0f / 413.0f)     /* throttle per px of travel */
+#define SV_SHAFT_X 300
+#define SV_SHAFT_Y (UI_BAND_H + (H - UI_BAND_H) / 2)
+#define SV_SPEED_Y (UI_BAND_H + 306)
+#define SU_TRACK_X 72
+#define SU_V_Y     (335 + UI_BAND_H)
+#define SU_I_Y     (397 + UI_BAND_H)
+#define SU_OUT_X   676
+#define SU_OUT_Y   (318 + UI_BAND_H)
+/* On the band, 3 px under STOP (y 6..41) and 4 px above the body. */
+#define UNDER_STOP_X 720
+#define UNDER_STOP_Y 44
+
+static bool motor_posted(motor_cmd_t *c)
+{
+    motor_cmd_t got = { .kind = MOTOR_CMD_NONE };
+    const bool any = motor_screen_poll_cmd(&got);
+    if (c != NULL) {
+        *c = got;
+    }
+    return any;
+}
+
+static void drain_motor(void)
+{
+    while (motor_posted(NULL)) { }
+}
+
+static servo_cmd_t servo_took(void)
+{
+    servo_cmd_t c = { .kind = SERVO_CMD_NONE };
+    servo_screen_take(&c);
+    return c;
+}
+
+static void drain_servo(void)
+{
+    while (servo_took().kind != SERVO_CMD_NONE) { }
+}
+
+static void drain_supply(void)
+{
+    supply_cmd_t c;
+    while (supply_screen_poll_cmd(&c)) { }
+}
+
+/* A bench screen on top, nothing on the glass, nothing waiting. */
+static void on_screen(ui_screen_id_t id)
+{
+    settings_set_store(NULL);
+    settings_init();
+    fresh();
+    to_overview();
+    ui_router_goto(id);
+    if (id == SCREEN_SUPPLY) {
+        supply_screen_settings_loaded();
+    }
+    drain_motor();
+    drain_servo();
+    drain_supply();
+    feed_reset();
+}
+
+/* Whether the knob moves the throttle: it does not while a finger owns the
+ * slider.  The turn is taken back. */
+static bool knob_moves_the_throttle(void)
+{
+    motor_screen_knob_frame();
+    motor_screen_knob(0.05f);
+    const bool posted = motor_posted(NULL);
+    if (posted) {
+        motor_screen_knob_frame();
+        motor_screen_knob(-0.05f);
+        (void)motor_posted(NULL);
+    }
+    return posted;
+}
+
+static void dial_at(float deg, int r, int *x, int *y)
+{
+    const float k = 3.14159265358979f / 180.0f;
+    *x = SV_SHAFT_X + (int)((float)r * cosf(deg * k) + 0.5f);
+    *y = SV_SHAFT_Y - (int)((float)r * sinf(deg * k) + 0.5f);
+}
+
+/* A point on the band, clear of STOP and of the home tag. */
+static void check_plain_band(int x, int y)
+{
+    CHECK(y < UI_BAND_H);
+    CHECK(!gfx_rect_contains(ui_band_stop_rect(), x, y));
+    CHECK(!gfx_rect_contains(
+              ui_home_tag_rect(ui_router_title(ui_router_current())), x, y));
+}
+
+/*
+ * Armed.  A finger drags the throttle track 60 px, slides up the glass at
+ * 8 px per report and leaves it on the band.  The next lone finger aims at
+ * STOP, lands in the 6 px of band under the button and rolls 5 px down into
+ * the body.  The first drag ended at the edge of the band, so the second
+ * contact has nothing to continue, and it came down on the band, so the
+ * screen sees none of it.
+ */
+TEST_CASE(a_throttle_drag_that_leaves_by_the_band_ends_at_the_edge)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+
+    finger(FEED_LONE, 300, M_TRACK_Y);
+    glide(FEED_LONE, 360, M_TRACK_Y, 8);
+    const float dragged = motor_screen_throttle();
+    CHECK_NEAR(dragged, 60.0f * M_PX_PCT, 0.01f);
+    glide(FEED_LONE, 360, 30, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(feed_ups, 1);
+    CHECK_NEAR(motor_screen_throttle(), dragged, 0.01f);
+    drain_motor();
+    /* The drag is over, so the knob has the throttle again. */
+    CHECK(knob_moves_the_throttle());
+    CHECK_NEAR(motor_screen_throttle(), dragged, 0.01f);
+
+    check_plain_band(UNDER_STOP_X, UNDER_STOP_Y);
+    finger(FEED_LONE, UNDER_STOP_X, UNDER_STOP_Y);
+    glide(FEED_LONE, UNDER_STOP_X, UI_BAND_H + 1, 3);
+    motor_cmd_t c;
+    const bool posted = motor_posted(&c);
+    lift(FEED_LONE);
+    CHECK(!posted);
+    CHECK(!motor_posted(NULL));
+    CHECK_NEAR(motor_screen_throttle(), dragged, 0.01f);
+    CHECK(!ui_router_take_stop());
+}
+
+/*
+ * The release the screen is handed is at the last point it saw, not where
+ * the finger lifts: the slider applies the horizontal distance on a
+ * release, and the travel made on the band is not the screen's.  The edge
+ * is y = 48: the last row of the band is 47.  A contact released there is
+ * not handed back when it returns to the body.
+ */
+TEST_CASE(the_release_at_the_edge_adds_no_travel_made_on_the_band)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+
+    finger(FEED_LONE, 300, M_TRACK_Y);
+    glide(FEED_LONE, 360, M_TRACK_Y, 8);
+    glide(FEED_LONE, 360, UI_BAND_H + 4, 8);
+    const uint32_t d0 = ui_router_dispatched();
+
+    /* One step short of the band: still the screen's, and the 4 px to the
+     * right count. */
+    glide(FEED_LONE, 364, UI_BAND_H, 4);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+    const float at_edge = motor_screen_throttle();
+    CHECK_NEAR(at_edge, 64.0f * M_PX_PCT, 0.01f);
+    drain_motor();
+
+    /* The first row of the band, 2 px further right: one event to the
+     * screen, the release, and the 2 px do not count. */
+    glide(FEED_LONE, 366, UI_BAND_H - 1, 2);
+    CHECK_EQ(ui_router_dispatched(), d0 + 2u);
+    CHECK_NEAR(motor_screen_throttle(), at_edge, 0.001f);
+    CHECK(knob_moves_the_throttle());
+
+    /* Along the band, back down onto the track, along the track, and up. */
+    glide(FEED_LONE, 600, 20, 8);
+    glide(FEED_LONE, 600, M_TRACK_Y, 8);
+    glide(FEED_LONE, 700, M_TRACK_Y, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_dispatched(), d0 + 2u);
+    CHECK_NEAR(motor_screen_throttle(), at_edge, 0.001f);
+    CHECK(!motor_posted(NULL));
+}
+
+/*
+ * A contact that came down on the band is the router's until it lifts: its
+ * moves into the body and its release there reach no screen.  The row
+ * below the band is the screen's.
+ */
+TEST_CASE(a_contact_that_came_down_on_the_band_reaches_no_screen)
+{
+    static const ui_screen_id_t ids[] = {
+        SCREEN_OVERVIEW, SCREEN_MOTOR, SCREEN_SERVO, SCREEN_SUPPLY,
+        SCREEN_SETUP, SCREEN_LOGS, SCREEN_PROGRAMMER,
+    };
+    for (size_t i = 0; i < sizeof(ids) / sizeof(ids[0]); ++i) {
+        on_screen(ids[i]);
+        const uint32_t d0 = ui_router_dispatched();
+        const uint32_t n0 = ui_router_navigations();
+        check_plain_band(560, UI_BAND_H - 1);
+        finger(FEED_LONE, 560, UI_BAND_H - 1);
+        glide(FEED_LONE, 560, 300, 8);
+        glide(FEED_LONE, 300, M_TRACK_Y, 8);
+        glide(FEED_LONE, 400, M_TRACK_Y, 8);
+        lift(FEED_LONE);
+        if (ui_router_dispatched() != d0) {
+            T_FAIL("screen %d was handed %u event(s) of a contact from the "
+                   "band", (int)ids[i],
+                   (unsigned)(ui_router_dispatched() - d0));
+        }
+        CHECK_EQ(ui_router_navigations(), n0);
+        CHECK(!ui_router_take_stop());
+    }
+
+    /* One row lower the same contact is the screen's: its DOWN, each MOVE
+     * and its UP. */
+    on_screen(SCREEN_MOTOR);
+    const uint32_t d0 = ui_router_dispatched();
+    finger(FEED_LONE, 560, UI_BAND_H);
+    glide(FEED_LONE, 560, UI_BAND_H + 16, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_dispatched(), d0 + 4u);
+}
+
+/* The splash carries no band, so its top 48 px are the screen's. */
+TEST_CASE(a_screen_without_a_band_owns_its_top_rows)
+{
+    fresh();
+    feed_reset();
+    CHECK_EQ(ui_router_current(), SCREEN_SPLASH);
+    const uint32_t d0 = ui_router_dispatched();
+    finger(FEED_LONE, 400, 10);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+    glide(FEED_LONE, 400, 100, 8);
+    glide(FEED_LONE, 400, 4, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(feed_downs + feed_moves + feed_ups,
+             (int)(ui_router_dispatched() - d0));
+}
+
+/* A drag, a way of leaving the body, a second contact: what the throttle
+ * moved by in the second. */
+static float after_a_drag_then(uint8_t id2, int x0, int y0, int x1, int y1,
+                               int step1)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+    finger(FEED_LONE, 300, M_TRACK_Y);
+    glide(FEED_LONE, 360, M_TRACK_Y, 8);
+    glide(FEED_LONE, 360, 30, step1);
+    lift(FEED_LONE);
+    const float before = motor_screen_throttle();
+    finger(id2, x0, y0);
+    glide(id2, x1, y1, 8);
+    lift(id2);
+    return motor_screen_throttle() - before;
+}
+
+/*
+ * Every way the second contact can arrive, and the first drag at three
+ * speeds.  At 130 px per report the tracker splits each step into an UP and
+ * a DOWN (TOUCH_JUMP_PX is 120), so the screen has its release from the
+ * tracker; at 100 px per report it has it from the router.
+ */
+TEST_CASE(no_later_contact_continues_a_drag_that_left_by_the_band)
+{
+    CHECK_NEAR(after_a_drag_then(1, 560, 30, 560, 80, 8), 0.0f, 0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 560, 30, 560, 80, 8), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 560, 60, 560, 110, 8), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 560, 30, 600, 30, 8), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 720, 24, 720, 80, 8), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 560, 30, 560, 80, 130), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 560, 30, 560, 80, 100), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 560, 30, 560, 80, 120), 0.0f,
+               0.001f);
+    CHECK_NEAR(after_a_drag_then(FEED_LONE, 360, 30, 360, 80, 8), 0.0f,
+               0.001f);
+}
+
+/*
+ * STOP answers a second finger while the first drags, and the drag goes on:
+ * the stop is the application's to act on, and the bench's disarm is what
+ * ends the run.
+ */
+TEST_CASE(stop_answers_a_second_finger_during_a_drag)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+    const gfx_rect_t stop = ui_band_stop_rect();
+    const int sx = stop.x + stop.w / 2, sy = stop.y + stop.h / 2;
+
+    finger(0, 300, M_TRACK_Y);
+    glide(0, 340, M_TRACK_Y, 8);
+    finger(1, sx, sy);
+    CHECK(!ui_router_take_stop());      /* on the release, not the press */
+    lift(1);
+    CHECK(ui_router_take_stop());
+    CHECK(!ui_router_take_stop());
+
+    glide(0, 380, M_TRACK_Y, 8);
+    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    lift(0);
+    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+}
+
+/*
+ * STOP and the home tag answer to a press on them.  A contact that began on
+ * the body and slides onto either presses nothing, and one that began on
+ * STOP and slides into the body moves nothing there.
+ */
+TEST_CASE(sliding_onto_stop_or_home_presses_neither)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+    const gfx_rect_t stop = ui_band_stop_rect();
+    const int sx = stop.x + stop.w / 2, sy = stop.y + stop.h / 2;
+    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
+    const int hx = home.x + home.w / 2, hy = home.y + home.h / 2;
+
+    /* From the track up onto STOP, and lifted there. */
+    finger(FEED_LONE, 300, M_TRACK_Y);
+    glide(FEED_LONE, 340, M_TRACK_Y, 8);
+    const float dragged = motor_screen_throttle();
+    glide(FEED_LONE, sx, sy, 8);
+    CHECK(gfx_rect_contains(stop, sx, sy));
+    lift(FEED_LONE);
+    CHECK(!ui_router_take_stop());
+    drain_motor();
+
+    /* From the plot up onto the home tag, and lifted there. */
+    finger(FEED_LONE, hx, 200);
+    glide(FEED_LONE, hx, hy, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+
+    /* From STOP down onto the track and along it. */
+    const float before = motor_screen_throttle();
+    const uint32_t d0 = ui_router_dispatched();
+    finger(FEED_LONE, sx, sy);
+    glide(FEED_LONE, 300, M_TRACK_Y, 8);
+    glide(FEED_LONE, 400, M_TRACK_Y, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_dispatched(), d0);
+    CHECK(!ui_router_take_stop());      /* it lifted off the button */
+    CHECK_NEAR(motor_screen_throttle(), before, 0.001f);
+    CHECK(!motor_posted(NULL));
+    CHECK(before > dragged - 30.0f);    /* and the first drag ended sanely */
+
+    /* STOP itself still answers the next press. */
+    feed_tap(FEED_LONE, sx, sy);
+    CHECK(ui_router_take_stop());
+}
+
+/*
+ * The home tag answers a second finger during a drag.  The contact that was
+ * dragging belonged to the screen that was left; on the screen now on top
+ * it is nobody's, so its moves and its release reach no screen.
+ */
+TEST_CASE(home_under_a_drag_leaves_the_dragging_contact_to_no_screen)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
+
+    finger(0, 300, M_TRACK_Y);
+    glide(0, 340, M_TRACK_Y, 8);
+    feed_tap(1, home.x + home.w / 2, home.y + home.h / 2);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    const uint32_t d0 = ui_router_dispatched();
+    const uint32_t n0 = ui_router_navigations();
+    glide(0, 200, 200, 8);              /* across the tiles */
+    lift(0);
+    CHECK_EQ(ui_router_dispatched(), d0);
+    CHECK_EQ(ui_router_navigations(), n0);
+
+    /* The next press is an ordinary one. */
+    finger(0, 200, 200);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+    lift(0);
+}
+
+/* The alert strip answers a second finger during a drag, and the drag goes
+ * on.  A press on the strip that wanders to the band and lifts there clears
+ * nothing and leaves the strip answering the next tap. */
+TEST_CASE(the_alert_strip_answers_a_second_finger_during_a_drag)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+    ui_router_set_alert("touch controller stopped answering");
+
+    finger(0, 300, M_TRACK_Y);
+    glide(0, 340, M_TRACK_Y, 8);
+    const uint32_t d0 = ui_router_dispatched();
+    feed_tap(1, 600, H - 10);
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_dispatched(), d0);
+    glide(0, 380, M_TRACK_Y, 8);
+    lift(0);
+    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+
+    ui_router_set_alert("again");
+    const uint32_t d1 = ui_router_dispatched();
+    finger(FEED_LONE, 600, H - 10);
+    glide(FEED_LONE, 600, 20, 100);
+    lift(FEED_LONE);
+    CHECK(ui_router_alert() != NULL);
+    CHECK_EQ(ui_router_dispatched(), d1);
+    feed_tap(FEED_LONE, 600, H - 10);
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_dispatched(), d1);
+}
+
+/*
+ * A touch loss drops what the screen owned.  A finger still on the glass
+ * is nobody's from then on: the event that went missing may have been its
+ * release and a new press.
+ */
+TEST_CASE(a_touch_loss_leaves_the_contacts_on_the_glass_to_no_screen)
+{
+    on_screen(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    drain_motor();
+    finger(FEED_LONE, 300, M_TRACK_Y);
+    glide(FEED_LONE, 340, M_TRACK_Y, 8);
+    const float dragged = motor_screen_throttle();
+
+    ui_router_cancel_gestures();
+    drain_motor();
+    const uint32_t d0 = ui_router_dispatched();
+    glide(FEED_LONE, 420, M_TRACK_Y, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_dispatched(), d0);
+    CHECK_NEAR(motor_screen_throttle(), dragged, 0.001f);
+    CHECK(!motor_posted(NULL));
+
+    /* Down again, it is the screen's, and moves by its own travel. */
+    finger(FEED_LONE, 200, M_TRACK_Y);
+    glide(FEED_LONE, 240, M_TRACK_Y, 8);
+    lift(FEED_LONE);
+    CHECK_NEAR(motor_screen_throttle(), dragged + 40.0f * M_PX_PCT, 0.01f);
+}
+
+/*
+ * A release that reaches nobody without the loss being told -- the panel
+ * tells every one, so this is the router's own guard -- does not leave the
+ * screen's table holding the contact: the id's next DOWN is a new contact.
+ * Six rounds, one more than the table has room for.
+ */
+TEST_CASE(a_down_replaces_what_its_id_owned_before)
+{
+    on_screen(SCREEN_MOTOR);
+    for (int round = 0; round < TOUCH_MAX_POINTS + 1; ++round) {
+        const uint32_t d0 = ui_router_dispatched();
+        finger(FEED_LONE, 300, 200);
+        CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+        feed_lose_next(1);
+        lift(FEED_LONE);
+        CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+    }
+}
+
+/*
+ * The table has room for the five contacts the controller reports.  A
+ * sixth cannot come out of the tracker, so these events are written by
+ * hand: a contact the router cannot follow to its release is handed to no
+ * screen, and the five it does follow are not disturbed.
+ */
+TEST_CASE(a_contact_beyond_the_table_reaches_no_screen)
+{
+    on_screen(SCREEN_MOTOR);
+    const uint32_t d0 = ui_router_dispatched();
+    for (int i = 0; i < TOUCH_MAX_POINTS; ++i) {
+        touch(100 + 40 * i, 200, TOUCH_EVENT_DOWN, (uint8_t)(10 + i));
+    }
+    CHECK_EQ(ui_router_dispatched(), d0 + (uint32_t)TOUCH_MAX_POINTS);
+    touch(400, 200, TOUCH_EVENT_DOWN, 99);
+    touch(404, 200, TOUCH_EVENT_MOVE, 99);
+    touch(404, 200, TOUCH_EVENT_UP, 99);
+    CHECK_EQ(ui_router_dispatched(), d0 + (uint32_t)TOUCH_MAX_POINTS);
+
+    touch(100, 200, TOUCH_EVENT_UP, 10);
+    CHECK_EQ(ui_router_dispatched(), d0 + (uint32_t)TOUCH_MAX_POINTS + 1u);
+    touch(400, 200, TOUCH_EVENT_DOWN, 99);
+    touch(400, 200, TOUCH_EVENT_UP, 99);
+    CHECK_EQ(ui_router_dispatched(), d0 + (uint32_t)TOUCH_MAX_POINTS + 3u);
+}
+
+/* What ends a throttle drag while the finger stays on the track. */
+typedef enum { END_STOP, END_DISARM, END_ARM, END_HOME, END_LOSS } ender_t;
+
+/*
+ * A drag on the throttle track, then one of the things that end a run or a
+ * gesture, in the order the panel's frame does them.  From there the finger
+ * still on the track moves nothing, a later contact with its id moves
+ * nothing on its way from the band into the body, the knob has the throttle
+ * again, and a fresh drag moves it by its own travel.
+ */
+static void a_throttle_drag_then(ender_t e)
+{
+    on_screen(SCREEN_MOTOR);
+    if (e != END_ARM) {
+        motor_screen_set_armed(true);
+    }
+    drain_motor();
+    const gfx_rect_t stop = ui_band_stop_rect();
+    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
+
+    finger(0, 300, M_TRACK_Y);
+    glide(0, 340, M_TRACK_Y, 8);
+    const float dragged = motor_screen_throttle();
+    CHECK_NEAR(dragged, 40.0f * M_PX_PCT, 0.01f);
+    float want = dragged;
+
+    switch (e) {
+    case END_STOP:
+        feed_tap(1, stop.x + stop.w / 2, stop.y + stop.h / 2);
+        CHECK(ui_router_take_stop());
+        motor_screen_cancel_arm();
+        /* fall through: the bench disarms on a stop */
+    case END_DISARM:
+        motor_screen_set_throttle(0.0f);
+        drain_motor();
+        motor_screen_set_armed(false);
+        want = 0.0f;
+        break;
+    case END_ARM:
+        motor_screen_set_armed(true);
+        want = 0.0f;
+        break;
+    case END_HOME:
+        feed_tap(1, home.x + home.w / 2, home.y + home.h / 2);
+        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+        ui_router_goto(SCREEN_MOTOR);
+        break;
+    case END_LOSS:
+        motor_screen_knob_cancel();
+        ui_router_cancel_gestures();
+        break;
+    }
+    drain_motor();
+    CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
+
+    glide(0, 420, M_TRACK_Y, 8);
+    CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
+    lift(0);
+    CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
+
+    finger(0, 560, UNDER_STOP_Y);
+    glide(0, 560, UI_BAND_H + 1, 3);
+    glide(0, 640, UI_BAND_H + 1, 8);
+    lift(0);
+    CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
+    CHECK(!motor_posted(NULL));
+
+    CHECK(knob_moves_the_throttle());
+
+    finger(0, 200, M_TRACK_Y);
+    glide(0, 240, M_TRACK_Y, 8);
+    lift(0);
+    CHECK_NEAR(motor_screen_throttle(), want + 40.0f * M_PX_PCT, 0.01f);
+}
+
+TEST_CASE(a_stop_ends_a_throttle_drag)      { a_throttle_drag_then(END_STOP); }
+TEST_CASE(a_disarm_ends_a_throttle_drag)    { a_throttle_drag_then(END_DISARM); }
+TEST_CASE(an_arm_ends_a_throttle_drag)      { a_throttle_drag_then(END_ARM); }
+TEST_CASE(leaving_ends_a_throttle_drag)     { a_throttle_drag_then(END_HOME); }
+TEST_CASE(a_touch_loss_ends_a_throttle_drag) { a_throttle_drag_then(END_LOSS); }
+
+/*
+ * SERVO.  A dial drag slides up the glass and leaves it on the band.  The
+ * knob has the horn again, and the next lone finger, which presses the body
+ * beside the dial and slides onto it, commands nothing: it did not press
+ * the dial.
+ */
+TEST_CASE(a_dial_drag_that_leaves_by_the_band_ends_at_the_edge)
+{
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+
+    int x, y;
+    dial_at(80.0f, 110, &x, &y);
+    finger(FEED_LONE, x, y);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
+    glide(FEED_LONE, x, 30, 8);
+    lift(FEED_LONE);
+    const uint16_t held = servo_screen_commanded();
+    drain_servo();
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    const servo_cmd_t k = servo_took();
+    CHECK_EQ(k.kind, SERVO_CMD_POSITION);
+    CHECK(k.value_us != held);
+    const uint16_t turned = servo_screen_commanded();
+
+    /* 190 px right of the shaft: outside the arc, which ends at 174 px. */
+    finger(FEED_LONE, SV_SHAFT_X + 190, SV_SHAFT_Y);
+    const servo_cmd_t d = servo_took();
+    glide(FEED_LONE, SV_SHAFT_X + 150, SV_SHAFT_Y, 8);
+    const servo_cmd_t c = servo_took();
+    lift(FEED_LONE);
+    CHECK_EQ(d.kind, SERVO_CMD_NONE);
+    CHECK_EQ(c.kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), turned);
+}
+
+/* The same press and slide with no drag before it, for comparison. */
+TEST_CASE(a_slide_onto_the_dial_commands_nothing)
+{
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+    finger(FEED_LONE, SV_SHAFT_X + 190, SV_SHAFT_Y);
+    glide(FEED_LONE, SV_SHAFT_X + 150, SV_SHAFT_Y, 8);
+    const servo_cmd_t c = servo_took();
+    lift(FEED_LONE);
+    CHECK_EQ(c.kind, SERVO_CMD_NONE);
+}
+
+/*
+ * SPEED is part of the command, so on a held output a change of it says the
+ * position again at the new rate.  A drag on it that leaves by the band
+ * ends at the edge: a contact from the band into the body changes no rate.
+ */
+TEST_CASE(a_speed_drag_that_leaves_by_the_band_ends_at_the_edge)
+{
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    feed_tap(FEED_LONE, x, y);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
+
+    finger(FEED_LONE, 560, SV_SPEED_Y);
+    glide(FEED_LONE, 620, SV_SPEED_Y, 8);
+    const servo_cmd_t set = servo_took();
+    CHECK_EQ(set.kind, SERVO_CMD_POSITION);
+    glide(FEED_LONE, 620, 30, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
+
+    check_plain_band(700, UNDER_STOP_Y);
+    finger(FEED_LONE, 700, UNDER_STOP_Y);
+    glide(FEED_LONE, 700, UI_BAND_H + 1, 3);
+    glide(FEED_LONE, 760, UI_BAND_H + 1, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
+
+    /* The rate is the one the drag set: a tap on the dial carries it. */
+    feed_tap(FEED_LONE, x, y);
+    const servo_cmd_t after = servo_took();
+    CHECK_EQ(after.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(after.slew_per_s, set.slew_per_s);
+}
+
+/* ARM by touch: the button's place is found by holding each candidate. */
+static bool servo_arm_by_touch(uint8_t id)
+{
+    for (int yy = UI_BAND_H + 392; yy < UI_BAND_H + 418; yy += 8) {
+        finger(id, 650, yy);
+        for (int i = 0; i < 50; ++i) {
+            ui_router_tick(0.05f);
+        }
+        const servo_cmd_t c = servo_took();
+        lift(id);
+        if (c.kind == SERVO_CMD_ARM) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * Finger 0 on the dial, finger 1 taps the home tag, finger 0 lifts on the
+ * overview.  SERVO again, armed by a hold on ARM with a lone finger, every
+ * event of which reaches the screen; then a press beside the dial slides
+ * onto it.  The drag ended when the screen was left.
+ */
+TEST_CASE(home_under_a_dial_drag_ends_the_drag)
+{
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    finger(0, x, y);
+    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_SERVO));
+    feed_tap(1, home.x + 10, home.y + 10);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    lift(0);
+    drain_servo();
+    servo_screen_set_armed(false);
+
+    ui_router_goto(SCREEN_SERVO);
+    drain_servo();
+    CHECK(servo_arm_by_touch(FEED_LONE));
+    servo_screen_set_armed(true);
+    drain_servo();
+
+    /* The knob has the horn. */
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
+
+    finger(FEED_LONE, SV_SHAFT_X + 190, SV_SHAFT_Y);
+    glide(FEED_LONE, SV_SHAFT_X + 150, SV_SHAFT_Y, 8);
+    const servo_cmd_t c = servo_took();
+    lift(FEED_LONE);
+    CHECK_EQ(c.kind, SERVO_CMD_NONE);
+}
+
+/* A touch loss under a dial drag: the finger still on the dial commands
+ * nothing more, and the knob has the horn. */
+TEST_CASE(a_touch_loss_ends_a_dial_drag)
+{
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+    int x, y, x2, y2;
+    dial_at(40.0f, 110, &x, &y);
+    dial_at(70.0f, 110, &x2, &y2);
+    finger(FEED_LONE, x, y);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
+
+    servo_screen_knob_cancel();
+    ui_router_cancel_gestures();
+    drain_servo();
+    const uint16_t held = servo_screen_commanded();
+    glide(FEED_LONE, x2, y2, 8);
+    lift(FEED_LONE);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
+}
+
+/*
+ * SUPPLY, output off.  The voltage track is dragged, the finger slides up
+ * and leaves on the band.  The next lone finger holds OUTPUT ON without
+ * moving: the hold switches on, at the set point the drag left.
+ */
+TEST_CASE(a_set_point_drag_that_leaves_by_the_band_ends_at_the_edge)
+{
+    static const int rows[] = { SU_V_Y, SU_I_Y };
+    for (int r = 0; r < 2; ++r) {
+        on_screen(SCREEN_SUPPLY);
+        finger(FEED_LONE, SU_TRACK_X + 60, rows[r]);
+        glide(FEED_LONE, SU_TRACK_X + 80, rows[r], 8);
+        const float set_v = supply_screen_set_v();
+        const float set_i = supply_screen_set_i();
+        glide(FEED_LONE, SU_TRACK_X + 80, 30, 8);
+        lift(FEED_LONE);
+        CHECK_NEAR(supply_screen_set_v(), set_v, 0.001f);
+        CHECK_NEAR(supply_screen_set_i(), set_i, 0.001f);
+
+        finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+        for (int i = 0; i < 50; ++i) {
+            ui_router_tick(0.05f);
+        }
+        supply_cmd_t c1 = { 0 };
+        const bool p1 = supply_screen_poll_cmd(&c1);
+        lift(FEED_LONE);
+        CHECK(p1 && c1.on);
+        CHECK_NEAR(supply_screen_set_v(), set_v, 0.001f);
+        CHECK_NEAR(supply_screen_set_i(), set_i, 0.001f);
+    }
+}
+
+/* Output on: the same drag, and the next tap is OUTPUT OFF.  The first tap
+ * switches off. */
+TEST_CASE(output_off_answers_the_first_tap_after_a_drag_left_by_the_band)
+{
+    on_screen(SCREEN_SUPPLY);
+    supply_screen_set_output(true);
+    const float set = supply_screen_set_v();
+
+    finger(FEED_LONE, SU_TRACK_X + 60, SU_V_Y);
+    glide(FEED_LONE, SU_TRACK_X + 80, SU_V_Y, 8);
+    glide(FEED_LONE, SU_TRACK_X + 80, 30, 8);
+    lift(FEED_LONE);
+
+    feed_tap(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    supply_cmd_t c1 = { 0 };
+    const bool p1 = supply_screen_poll_cmd(&c1);
+    CHECK(p1 && c1.off);
+    CHECK_NEAR(supply_screen_set_v(), set, 0.001f);
+}
+
+/* A press on OUTPUT OFF that slides up and leaves by the band is a press
+ * that left its button: no OFF, and the next tap switches off. */
+TEST_CASE(an_output_off_press_that_leaves_by_the_band_asks_for_nothing)
+{
+    on_screen(SCREEN_SUPPLY);
+    supply_screen_set_output(true);
+
+    finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    glide(FEED_LONE, SU_OUT_X, 30, 8);
+    lift(FEED_LONE);
+    CHECK(!supply_screen_poll_cmd(NULL));
+
+    feed_tap(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    supply_cmd_t c1 = { 0 };
+    const bool p1 = supply_screen_poll_cmd(&c1);
+    CHECK(p1 && c1.off);
+}
+
+/* An OUTPUT ON hold that slides up to the band is abandoned where it left
+ * the button, and switches nothing on, however long the finger stays. */
+TEST_CASE(an_output_on_hold_that_leaves_by_the_band_switches_nothing_on)
+{
+    on_screen(SCREEN_SUPPLY);
+    finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    glide(FEED_LONE, SU_OUT_X, 30, 8);
+    for (int i = 0; i < 80; ++i) {
+        ui_router_tick(0.05f);
+    }
+    CHECK(!supply_screen_poll_cmd(NULL));
+    lift(FEED_LONE);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/* A second finger on the home tag or a touch loss under a set-point drag:
+ * the finger still on the track changes nothing more. */
+TEST_CASE(leaving_or_a_touch_loss_ends_a_set_point_drag)
+{
+    for (int how = 0; how < 2; ++how) {
+        on_screen(SCREEN_SUPPLY);
+        finger(0, SU_TRACK_X + 60, SU_V_Y);
+        glide(0, SU_TRACK_X + 80, SU_V_Y, 8);
+        if (how == 0) {
+            const gfx_rect_t home =
+                ui_home_tag_rect(ui_router_title(SCREEN_SUPPLY));
+            feed_tap(1, home.x + 10, home.y + 10);
+            CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+            ui_router_goto(SCREEN_SUPPLY);
+        } else {
+            ui_router_cancel_gestures();
+        }
+        const float set = supply_screen_set_v();
+        glide(0, SU_TRACK_X + 200, SU_V_Y, 8);
+        lift(0);
+        CHECK_NEAR(supply_screen_set_v(), set, 0.001f);
+
+        /* And the screen answers the next press. */
+        finger(0, SU_OUT_X, SU_OUT_Y);
+        for (int i = 0; i < 50; ++i) {
+            ui_router_tick(0.05f);
+        }
+        supply_cmd_t c1 = { 0 };
+        const bool p1 = supply_screen_poll_cmd(&c1);
+        lift(0);
+        CHECK(p1 && c1.on);
+    }
+}
+
 int main(void)
 {
     RUN(the_navigation_count_sees_away_and_back);
@@ -1161,5 +2045,32 @@ int main(void)
     RUN(cancelling_gestures_lets_go_of_the_band);
     RUN(a_cancelled_tile_press_navigates_nowhere);
     RUN(a_cancel_reaches_a_screen_left_during_the_frame);
+    RUN(a_throttle_drag_that_leaves_by_the_band_ends_at_the_edge);
+    RUN(the_release_at_the_edge_adds_no_travel_made_on_the_band);
+    RUN(a_contact_that_came_down_on_the_band_reaches_no_screen);
+    RUN(a_screen_without_a_band_owns_its_top_rows);
+    RUN(no_later_contact_continues_a_drag_that_left_by_the_band);
+    RUN(stop_answers_a_second_finger_during_a_drag);
+    RUN(sliding_onto_stop_or_home_presses_neither);
+    RUN(home_under_a_drag_leaves_the_dragging_contact_to_no_screen);
+    RUN(the_alert_strip_answers_a_second_finger_during_a_drag);
+    RUN(a_touch_loss_leaves_the_contacts_on_the_glass_to_no_screen);
+    RUN(a_down_replaces_what_its_id_owned_before);
+    RUN(a_contact_beyond_the_table_reaches_no_screen);
+    RUN(a_stop_ends_a_throttle_drag);
+    RUN(a_disarm_ends_a_throttle_drag);
+    RUN(an_arm_ends_a_throttle_drag);
+    RUN(leaving_ends_a_throttle_drag);
+    RUN(a_touch_loss_ends_a_throttle_drag);
+    RUN(a_dial_drag_that_leaves_by_the_band_ends_at_the_edge);
+    RUN(a_slide_onto_the_dial_commands_nothing);
+    RUN(a_speed_drag_that_leaves_by_the_band_ends_at_the_edge);
+    RUN(home_under_a_dial_drag_ends_the_drag);
+    RUN(a_touch_loss_ends_a_dial_drag);
+    RUN(a_set_point_drag_that_leaves_by_the_band_ends_at_the_edge);
+    RUN(output_off_answers_the_first_tap_after_a_drag_left_by_the_band);
+    RUN(an_output_off_press_that_leaves_by_the_band_asks_for_nothing);
+    RUN(an_output_on_hold_that_leaves_by_the_band_switches_nothing_on);
+    RUN(leaving_or_a_touch_loss_ends_a_set_point_drag);
     return test_summary("nav");
 }

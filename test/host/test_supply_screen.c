@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "touch_feed.h"
 
 #include "settings.h"
 #include "supply.h"
@@ -1398,6 +1399,85 @@ TEST_CASE(a_question_asked_after_a_stop_stands_on_supply)
     CHECK_EQ(supply_screen_set_v(), 7.0f);
 }
 
+/* ------------------------------------------- a press that lost its release */
+
+/*
+ * The cases below feed the screen frames of contacts through the tracker
+ * (touch_feed.h), with no router in front of it.  The feed works in panel
+ * coordinates and removes the band's height, as the router does.
+ */
+#define P(y) ((y) + UI_BAND_H)
+
+static void fed(void)
+{
+    fresh();
+    feed_reset();
+    feed_to_screen(scr);
+}
+
+/*
+ * One contact holds the screen, and a contact that has gone cannot.  A drag
+ * on the voltage track loses its release, with no loss told.  The next
+ * press carries the same track id: it says the first contact is over, so
+ * the screen takes it.  A hold on OUTPUT ON switches on at the set point the
+ * supply has, and the lift moves no set point.
+ */
+TEST_CASE(a_press_that_lost_its_release_gives_way_to_the_next_press)
+{
+    fed();
+    finger(FEED_LONE, TRACK_X + 60, P(V_ROW_Y));
+    glide(FEED_LONE, TRACK_X + 80, P(V_ROW_Y), 8);
+    const float set = supply_screen_set_v();
+    feed_lose_next(1);
+    lift(FEED_LONE);
+    drain();
+
+    finger(FEED_LONE, OUT_X, P(OUT_Y));
+    tick_for(HOLD_TICKS);
+    supply_cmd_t c = { 0 };
+    const bool posted = supply_screen_poll_cmd(&c);
+    lift(FEED_LONE);
+    CHECK(posted && c.on);
+    CHECK_NEAR(supply_screen_set_v(), set, 0.001f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/* On a live output the press that went missing was a tap on OUTPUT OFF: an
+ * OFF the operator made, sent when the next press shows it is over. */
+TEST_CASE(a_lost_release_on_output_off_is_sent_at_the_next_press)
+{
+    fed();
+    supply_screen_set_output(true);
+    drain();
+    finger(FEED_LONE, OUT_X, P(OUT_Y));
+    feed_lose_next(1);
+    lift(FEED_LONE);
+    CHECK(!supply_screen_poll_cmd(NULL));
+
+    finger(FEED_LONE, OFF_X, P(OFF_Y));
+    supply_cmd_t c = { 0 };
+    const bool posted = supply_screen_poll_cmd(&c);
+    lift(FEED_LONE);
+    CHECK(posted && c.off);
+}
+
+/* A second finger, with a track id of its own, still cannot take the screen
+ * from a press that is being held. */
+TEST_CASE(a_second_contact_does_not_end_a_press_that_is_held)
+{
+    fed();
+    finger(0, TRACK_X + 60, P(V_ROW_Y));
+    glide(0, TRACK_X + 80, P(V_ROW_Y), 8);
+    finger(1, OUT_X, P(OUT_Y));
+    tick_for(HOLD_TICKS);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    lift(1);
+    const float before = supply_screen_set_v();
+    glide(0, TRACK_X + 120, P(V_ROW_Y), 8);
+    lift(0);
+    CHECK(supply_screen_set_v() > before);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1452,6 +1532,9 @@ int main(void)
     RUN(stop_lets_go_of_supplys_apply);
     RUN(stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply);
     RUN(a_question_asked_after_a_stop_stands_on_supply);
+    RUN(a_press_that_lost_its_release_gives_way_to_the_next_press);
+    RUN(a_lost_release_on_output_off_is_sent_at_the_next_press);
+    RUN(a_second_contact_does_not_end_a_press_that_is_held);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

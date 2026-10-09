@@ -72,6 +72,43 @@ as before.
 
 None of the encoder work has run on hardware.
 
+### Changed
+
+- **Arming returns the MOTOR & ESC throttle to 0 %.** The slider, the readout
+  and the `-1` and `+1` steps are at 0.0 % when the ARM hold completes and
+  when the bench reports armed, whatever was set on the disarmed bench: a
+  slider at 60.5 % before the arm posts 1.0 % on the first `+1`, where it
+  posted 61.5 %. A throttle command waiting at the arm is dropped, and a drag
+  under way ends at an arm and at a disarm.
+- **One finger drags the SERVO dial.** A press by a second finger anywhere on
+  the screen ends a drag on the dial, as it ends a drag on a slider.
+
+### Fixed
+
+- **A touch has one owner from its press to its release.** The router hands
+  a screen a move or a release only for a contact whose press it handed that
+  screen. A contact that slides from the screen into the status band (the top
+  48 px) is released for the screen at its last point on the screen; one that
+  comes down on the band reaches no screen, and neither does one that was
+  down when the screen changed or touch events were lost. A drag that ended
+  on the band stayed latched to its track id: on an armed MOTOR & ESC a later
+  touch that landed in the 6 px of band under STOP and crossed into the
+  screen moved the throttle by its own distance from the first drag's origin
+  (14.5 % to 100.0 % in the host test); on SUPPLY the next hold on OUTPUT ON
+  switched nothing on and its lift moved the voltage set point from 6.72 V to
+  the 21.00 V cap. The same latch held SERVO's dial and SPEED. Assumes the
+  GT911 gives a lone finger the same track id on successive touches; not
+  measured on a panel.
+- **The SERVO dial's drag ends with every press and when the screen is
+  left.** A home tap by a second finger during a drag left the dial latched;
+  back on SERVO a contact that pressed beside the dial and slid onto it
+  commanded a position.
+- **SUPPLY drops a held press when a press with the same track id arrives.**
+- **A knob command withdrawn after a stop or a disarm leaves SERVO holding
+  nothing.** The withdrawal restored the screen's record of a held output on
+  a disarmed bench, and the next change of SPEED posted the position again.
+  The coprocessor holds a disarmed bank at rest, so no pin moved.
+
 ## 0.14.0 - 2026-10-09
 
 The link protocol is 4.8. A 0.13 board still links and arms with a 0.14

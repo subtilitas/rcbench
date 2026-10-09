@@ -365,6 +365,27 @@ void motor_screen_cancel_arm(void)
     }
 }
 
+/*
+ * An arm starts from nothing: the slider, the readout and the step buttons,
+ * which all read the slider's value, are at 0 %, whatever was set on the
+ * disarmed bench.  A throttle waiting to be collected was set before the arm
+ * and goes with it, and so does what the knob would put back.  A drag under
+ * way is released, so a finger resting on the track commands nothing until
+ * it presses again: ui_slider_set() re-anchors a drag on the new value and
+ * keeps its origin, and the next move would add the whole travel since the
+ * press to 0 %.
+ */
+static void throttle_from_zero(void)
+{
+    ui_slider_release(&s.slider);
+    ui_slider_set(&s.slider, 0.0f);
+    if (s.pending.kind == MOTOR_CMD_THROTTLE) {
+        s.pending.kind = MOTOR_CMD_NONE;
+    }
+    s.knob_pending = false;
+    ++s.thr_rev;
+}
+
 void motor_screen_set_armed(bool armed)
 {
     /*
@@ -382,6 +403,15 @@ void motor_screen_set_armed(bool armed)
              * one starts.  Its peaks start again too. */
             ui_plot_clear(&s.plot);
             memset(s.pk_ok, 0, sizeof(s.pk_ok));
+            /* The edge and not the level: the application reports the armed
+             * bench on every frame, and the throttle set since the arm
+             * stays. */
+            throttle_from_zero();
+        } else {
+            /* The application returns the value to zero on this edge; the
+             * drag ends with the run, for the reason throttle_from_zero()
+             * gives. */
+            ui_slider_release(&s.slider);
         }
         ui_plot_set_running(&s.plot, armed);
     }
@@ -597,6 +627,11 @@ static void tick(float dt_s)
     if (s.pressed == 1 && !s.armed) {
         ++s.arm_rev;
         if (ui_hold_tick(&s.arm, dt_s)) {
+            /* From the ask, not only from the bench's answer: the bench
+             * arms between two frames, and a step button pressed in a frame
+             * that still reads it as disarmed posts from this value onto a
+             * bench that is armed by the time the command lands. */
+            throttle_from_zero();
             post(MOTOR_CMD_ARM, 0.0f);
         }
     }

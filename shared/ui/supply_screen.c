@@ -1028,6 +1028,34 @@ static void released(int was, int row, int x, int y)
     }
 }
 
+/*
+ * The press this screen holds ends without its release.  Every gesture is
+ * dropped, which asks for nothing, except a tap on OUTPUT OFF: switching off
+ * is a press, so a release that never came is an OFF the operator made, and
+ * it is sent.  A key held on the keypad is let go of; what was typed stays.
+ */
+static void drop_press(void)
+{
+    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
+        post_off();
+    }
+    ui_slider_release(&s.v_slider);
+    ui_slider_release(&s.i_slider);
+    /* A drag whose release went missing changes nothing: the slider goes
+     * back to the set point the supply has. */
+    if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER) {
+        ui_slider_set(&s.v_slider, s.cv);
+        ui_slider_set(&s.i_slider, s.ci);
+        ++s.set_rev;
+    }
+    ui_hold_reset(&s.hold);
+    ui_tabs_cancel(&s.tabs);
+    ui_keypad_cancel_press(&s.kp);
+    let_go();
+    ++s.ctrl_rev;
+    ++s.out_rev;
+}
+
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -1041,6 +1069,13 @@ static void event(const touch_event_t *evt)
      * lose its release.
      */
     if (evt->type == TOUCH_EVENT_DOWN) {
+        /* A contact comes down once between two releases, so a DOWN with
+         * the id of the press held says that contact has gone and its
+         * release with it.  Kept, the press would refuse every later touch
+         * and take this contact's release for its own. */
+        if (s.have_press && evt->point.id == s.press_id) {
+            drop_press();
+        }
         if (!s.have_press) {
             down(evt);
         }
@@ -1748,34 +1783,16 @@ static void leave(void)
 }
 
 /*
- * Touch events were lost.  Every gesture is dropped, which asks for nothing,
- * except a tap on OUTPUT OFF: switching off is a press, so a release lost is
- * an OFF the operator made, and it is sent.  An ON this screen has posted and
- * the application has not collected is dropped.  A key held on the keypad is
- * let go of; what was typed stays.
+ * Touch events were lost.  The press is dropped as drop_press() drops it:
+ * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent.
+ * An ON this screen has posted and the application has not collected is
+ * dropped.
  */
 static void cancel(void)
 {
-    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
-        post_off();
-    }
+    drop_press();
     s.pending.on = false;
     s.on_asked   = false;
-    ui_slider_release(&s.v_slider);
-    ui_slider_release(&s.i_slider);
-    /* A drag whose release went missing changes nothing: the slider goes
-     * back to the set point the supply has. */
-    if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER) {
-        ui_slider_set(&s.v_slider, s.cv);
-        ui_slider_set(&s.i_slider, s.ci);
-        ++s.set_rev;
-    }
-    ui_hold_reset(&s.hold);
-    ui_tabs_cancel(&s.tabs);
-    ui_keypad_cancel_press(&s.kp);
-    let_go();
-    ++s.ctrl_rev;
-    ++s.out_rev;
 }
 
 static const ui_screen_t k_screen = {

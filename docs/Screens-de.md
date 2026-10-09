@@ -21,6 +21,27 @@ einen Stopp nicht auf.
 
 ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
+Eine Berührung gehört dem, worauf sie aufgesetzt hat, bis sie abhebt. Das
+Band sind die oberen 48 px des Panels.
+
+- Eine Berührung, die auf dem Band aufsetzt, bleibt beim Band. Rutscht sie
+  nach unten in den Bildschirm, bewegt sie dort nichts, und hebt sie dort ab,
+  drückt sie nichts.
+- Eine Berührung, die auf dem Bildschirm aufsetzt und nach oben ins Band
+  rutscht, wird an der letzten Stelle losgelassen, die sie auf dem Bildschirm
+  hatte. Ein Drag auf einem Schieberegler oder auf dem SERVO-Zifferblatt endet
+  mit dem Wert von dieser Stelle, und der Weg auf dem Band wird nicht
+  dazugerechnet. Ein Halten auf ARM oder OUTPUT ON ist abgebrochen. Eine
+  Schaltfläche wirkt wie bei einem Finger, der an dieser Stelle abhebt: Eine,
+  die der Finger schon verlassen hatte, fordert nichts an. Die Berührung wird
+  nicht wieder aufgenommen, wenn der Finger zurück auf den Bildschirm kommt;
+  abheben und neu drücken.
+- STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt.
+  Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts.
+- Ein zweiter Finger auf STOP, auf dem Home-Tag oder auf dem Alert-Band wird
+  bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
+  noch auf dem Glas liegt, auf der Übersicht nichts.
+
 ## Das Alert-Band
 
 Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
@@ -123,6 +144,14 @@ Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
 Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
 fordert den ganzen Weg an, und der Pin folgt ihm ohne Rampe. `-1` und `+1` an
 den Enden des Tracks schalten um einen Prozentpunkt.
+
+Das Scharfschalten setzt das Gas auf 0 %. Auf einem entschärften Prüfstand
+lässt sich der Schieberegler bewegen und kommandiert dort nichts; wenn das
+Halten auf ARM durchgelaufen ist, und noch einmal, wenn der Prüfstand scharf
+meldet, stehen Schieberegler, Anzeige und die Schritte `-1` und `+1` auf
+0,0 %, das erste `+1` nach dem Scharfschalten fordert also 1,0 % an. Ein
+Finger, der beim Scharfschalten oder Entschärfen auf dem Track liegt, bewegt
+nichts, bis er abhebt und neu drückt.
 
 ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
@@ -255,6 +284,11 @@ ihres Wegs. Beendet werden die Flanken durch ein Entschärfen oder durch das
 Verlassen des Bildschirms, was entschärft. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
 ([der Knopf](#anwendung-der-drehknopf)).
+
+Ein Finger zieht das Zifferblatt. Ein Druck eines zweiten Fingers irgendwo
+auf dem Bildschirm beendet den Drag, wie er einen Drag auf SPEED beendet: Das
+Horn bleibt, wo es befohlen wurde, und das Zifferblatt folgt wieder nach
+einem neuen Druck darauf.
 
 Der Bildschirm treibt die Kanäle, die die Bindung als Ruderflächen markiert,
 und weder einen festen Pin noch ein festes Protokoll. Die acht Kanäle von PPM

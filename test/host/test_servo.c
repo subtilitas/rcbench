@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "touch_feed.h"
 
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -5377,6 +5378,214 @@ TEST_CASE(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_column
     CHECK(strstr(b.report, "ENCODER") == NULL);
 }
 
+/* ------------------------------------------- a drag that lost its release */
+
+/*
+ * The cases below feed the screen frames of contacts through the tracker
+ * (touch_feed.h), with no router in front of it: what the screen does by
+ * itself about a drag whose release it never sees.  The feed works in panel
+ * coordinates and removes the band's height, as the router does.
+ */
+#define P(y) ((y) + UI_BAND_H)
+/* Beside the dial, 190 px right of the shaft: the arc ends at 174 px. */
+#define BESIDE_X (SHAFT_X + 190)
+#define ONTO_X   (SHAFT_X + 150)
+
+static void fed_armed(void)
+{
+    fresh();
+    feed_reset();
+    feed_to_screen(scr);
+    servo_screen_set_armed(true);
+    while (last_cmd().kind != SERVO_CMD_NONE) { }
+}
+
+/* Whether a contact that presses beside the dial and slides onto it
+ * commands a position.  With no drag latched it does not. */
+static bool a_slide_onto_the_dial_commands(void)
+{
+    finger(FEED_LONE, BESIDE_X, P(SHAFT_Y));
+    const servo_cmd_t d = last_cmd();
+    glide(FEED_LONE, ONTO_X, P(SHAFT_Y), 8);
+    const servo_cmd_t c = last_cmd();
+    lift(FEED_LONE);
+    return d.kind != SERVO_CMD_NONE || c.kind != SERVO_CMD_NONE;
+}
+
+static bool the_knob_moves_the_horn(void)
+{
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    return last_cmd().kind == SERVO_CMD_POSITION;
+}
+
+/*
+ * The screen is left under a finger on the dial: a second finger on the
+ * home tag, which the band handles without asking this screen.  The
+ * release goes to the screen then on top.  Back on SERVO and armed, the
+ * knob has the horn and a contact with the same id commands nothing by
+ * sliding onto the dial.
+ */
+TEST_CASE(leaving_under_a_dial_drag_ends_the_drag)
+{
+    fed_armed();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    finger(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    scr->leave();
+    feed_lose_next(1);                  /* the release is another screen's */
+    lift(FEED_LONE);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
+    servo_screen_set_armed(false);
+    servo_screen_set_armed(true);
+    while (last_cmd().kind != SERVO_CMD_NONE) { }
+
+    CHECK(the_knob_moves_the_horn());
+    CHECK(!a_slide_onto_the_dial_commands());
+}
+
+/*
+ * A release that never arrives, and no loss told.  The next press ends the
+ * drag wherever it lands, so the contact that made it commands nothing by
+ * sliding onto the dial, and the knob has the horn after it.
+ */
+TEST_CASE(a_press_ends_a_dial_drag_that_lost_its_release)
+{
+    fed_armed();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    finger(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    feed_lose_next(1);
+    lift(FEED_LONE);
+    const uint16_t held = servo_screen_commanded();
+
+    CHECK(!a_slide_onto_the_dial_commands());
+    CHECK_EQ(servo_screen_commanded(), held);
+    CHECK(the_knob_moves_the_horn());
+}
+
+/*
+ * Any press, a second finger's included, as on the sliders: the finger on
+ * the dial commands nothing more until it presses again.
+ */
+TEST_CASE(a_second_press_ends_a_dial_drag)
+{
+    fed_armed();
+    int x, y, x2, y2;
+    dial_at(40.0f, 110, &x, &y);
+    dial_at(60.0f, 110, &x2, &y2);
+    finger(0, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    const uint16_t held = servo_screen_commanded();
+
+    finger(1, BESIDE_X, P(SHAFT_Y));
+    glide(0, x2, P(y2), 8);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+    lift(1);
+    lift(0);
+
+    /* Pressed again, the dial has the horn. */
+    finger(0, x2, P(y2));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    CHECK(servo_screen_commanded() != held);
+    lift(0);
+}
+
+/*
+ * SPEED's drag loses its release, and the next press is on the dial, which
+ * takes the press before the slider is asked.  The rate stays the one the
+ * drag set through that gesture and the one after it.
+ */
+TEST_CASE(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release)
+{
+    fed_armed();
+    int x, y, x2, y2;
+    dial_at(40.0f, 110, &x, &y);
+    dial_at(60.0f, 110, &x2, &y2);
+    feed_tap(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    finger(FEED_LONE, 560, P(306));
+    glide(FEED_LONE, 620, P(306), 8);
+    const servo_cmd_t set = last_cmd();
+    CHECK_EQ(set.kind, SERVO_CMD_POSITION);
+    feed_lose_next(1);
+    lift(FEED_LONE);
+
+    finger(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
+    glide(FEED_LONE, x2, P(y2), 8);
+    CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
+    lift(FEED_LONE);
+
+    finger(FEED_LONE, BESIDE_X, P(SHAFT_Y));
+    glide(FEED_LONE, BESIDE_X + 60, P(SHAFT_Y), 8);
+    lift(FEED_LONE);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    feed_tap(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
+}
+
+/*
+ * The knob's command is withdrawn after a stop and a disarm, in the panel's
+ * order: the knob turned at the end of one frame; the next frame takes the
+ * stop and the disarm and then finds touch events lost.  The withdrawal
+ * restores no drive on a disarmed bench, so a change of SPEED says no
+ * position.
+ */
+TEST_CASE(a_withdrawal_on_a_disarmed_bench_restores_no_drive)
+{
+    fed_armed();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    feed_tap(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+
+    servo_screen_knob_frame();
+    servo_screen_cancel_arm();
+    servo_screen_set_armed(false);
+    servo_screen_knob_cancel();
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    finger(FEED_LONE, 560, P(306));
+    glide(FEED_LONE, 620, P(306), 8);
+    lift(FEED_LONE);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/* On an armed bench the withdrawal restores the drive the knob found, so a
+ * change of SPEED says the held position again. */
+TEST_CASE(a_withdrawal_on_an_armed_bench_restores_the_drive)
+{
+    fed_armed();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    feed_tap(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    const uint16_t held = servo_screen_commanded();
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    servo_screen_knob_cancel();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+
+    finger(FEED_LONE, 560, P(306));
+    glide(FEED_LONE, 620, P(306), 8);
+    lift(FEED_LONE);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(c.value_us, held);
+}
+
 int main(void)
 {
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
@@ -5544,5 +5753,11 @@ int main(void)
     RUN(the_result_names_the_report_only_when_it_was_written);
     RUN(a_refusal_goes_with_the_edit_that_answers_it);
     RUN(a_hold_on_supplys_output_on_holds_the_restore_back);
+    RUN(leaving_under_a_dial_drag_ends_the_drag);
+    RUN(a_press_ends_a_dial_drag_that_lost_its_release);
+    RUN(a_second_press_ends_a_dial_drag);
+    RUN(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release);
+    RUN(a_withdrawal_on_a_disarmed_bench_restores_no_drive);
+    RUN(a_withdrawal_on_an_armed_bench_restores_the_drive);
     return test_summary("servo");
 }
