@@ -561,7 +561,8 @@ OUTPUT page says what became of it:
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
 back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
-written while the reset to each slot's own rate goes unanswered, and the bench
+written while the reset to each slot's own rate goes unanswered (OUTPUTS says
+`NO LINK`) or is refused (`REFUSED`), and the bench
 does not arm, from any screen, while the rate the surfaces run at is not
 known: the arm is refused with `servo frame rate not known -- arm again`, and
 an arm made while the link was down reaches the coprocessor only once the
@@ -1415,22 +1416,48 @@ The pad number under each pin is the one printed on the board, so an operator
 counting pads and an operator reading GPIO (general-purpose input/output)
 numbers arrive at the same pin.
 
-Changing anything writes the pages at once. There is no APPLY key: a screen
-holding a choice that has not been sent is a screen that disagrees with the
-bench, with nothing to say which of the two is driving. What became of the
-write is under the protocol — WRITTEN, NO LINK, or REFUSED.
+Ticking or unticking a pin writes the binding at once. There is no APPLY key:
+a screen holding a choice that has not been sent is a screen that disagrees
+with the bench, with nothing to say which of the two is driving. The panel
+then reads both pages back and shows what the coprocessor holds. What became
+of the write is under the protocol, as LAST WRITE:
 
-Switching protocol says which set is being edited. Nothing is dropped: the
-pins ticked for the protocol being left stay bound, and the pins of the one
-arrived at come back as they were. A selector that retargeted the current pins
-would make binding a second protocol mean unbinding the first.
+| LAST WRITE | Meaning |
+| --- | --- |
+| `NOT WRITTEN` | nothing has been written since the panel started, or a write was not sent because the binding on the screen was not one a read confirmed |
+| `WRITTEN` | the coprocessor acknowledged every exchange of the write |
+| `NO LINK` | an exchange of the write got no answer within 1000 ms, or the link was down |
+| `REFUSED` | the coprocessor answered and refused: a pin it cannot bind, a change while the bench is armed, or a frame rate it could not put back |
+
+To a coprocessor speaking protocol 4.10 the binding is written whole: the
+two pages are prepared beside the ones in force and taken together by one
+commit ([Link](Link.md#a-binding-taken-whole)). `NO LINK` and `REFUSED` then
+leave the binding in force exactly as it was, except when the one
+acknowledgement of the commit is lost: the binding is then in force, the
+screen says `NO LINK`, and the read at the next link-up shows it. An older
+coprocessor takes the pages one entry at a time, and a write that stops part
+way leaves the entries before it in force.
+
+Picking a protocol in the list writes nothing. It says which set of pins the
+screen shows as ticked and which set the next tick joins. Nothing is dropped:
+the pins ticked for the protocol being left stay bound, and the pins of the
+one arrived at come back as they were. A selector that retargeted the current
+pins would make binding a second protocol mean unbinding the first. On entry
+the list shows the lowest-numbered protocol that holds a pin, in the list's
+order, or OFF when no pin is bound. A protocol picked without ticking a pin
+stays selected across read-backs and across leaving the screen, and is the
+one a tap on PICK A PIN joins.
+
+`DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
+
+![The longest protocol name in the list](img/outputs-bidir.png)
 
 A pin another protocol holds is drawn greyed, with that protocol's name under
 it where a free pin shows its pad number. That is a choice, undone by going to
 that protocol and unticking it there — unlike a reserved pin, which is drawn
 red and struck through because it is the wiring rather than a choice.
 
-Four servo leads and an ESC, with DShot600 the protocol being edited. GP5 is
+Four servo leads and an ESC, with DSHOT300 the protocol being edited. GP5 is
 ticked; GP0, GP1, GP2 and GP4 say SERVO PWM and cannot be ticked here; GP3 and
 GP8 to GP12 are red because the coprocessor reserves them:
 
@@ -1439,6 +1466,63 @@ GP8 to GP12 are red because the coprocessor reserves them:
 So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
+
+### OFF
+
+OFF is the first entry of the list and binds nothing: it takes 0 pins, and
+the count under it reads `0 OF 0 PINS`. With OFF picked, every bound pin
+shows the name of the protocol that holds it, so the whole binding is on one
+screen. No pin can be ticked or unticked: a tap on a pin does nothing, and
+the line under the list says `OFF SHOWS ALL, EDITS NOTHING`. Picking OFF
+writes nothing and unbinds nothing.
+
+OFF stays picked across read-backs, repaints and a link that goes down and
+comes back, until another entry is picked or the screen is left. The next
+entry opens on the lowest-numbered protocol that holds a pin.
+
+GP0 bound as DSHOT600 BIDIR, GP1 as MOTOR PWM, GP2 and GP13 as SERVO PWM,
+with OFF picked:
+
+![OFF shows the protocol of every bound pin](img/outputs-off.png)
+
+With SERVO PWM picked on the same bench, GP2 and GP13 are ticked and show
+`PAD 4` and `PAD 17`: a pin ticked in the selected protocol shows its pad
+number, because the protocol is the one named in the list.
+
+### A binding that is not confirmed
+
+The screen edits a binding only after reading it. A read gives one of four
+results:
+
+| Read | The screen |
+| --- | --- |
+| both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
+| a page did not read: no answer within 1000 ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `BINDING NOT READ - NO EDITS` |
+| both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `PAGES HOLD NO VALID BINDING` and the key `HOLD: UNBIND ALL PINS` |
+| the coprocessor is a board this build has no pin map for | shows no pins |
+
+In the second and third state a tap on a pin does nothing here and on PICK
+A PIN, and no write is sent. A tick made just before the read failed is
+taken back: the pins shown are the ones last read, not the ones last
+tapped. The list still opens, and a pick still changes which protocol's pins
+show their pad. The panel reads again at every link-up and every 500 ms while
+the link is up and the binding is not confirmed; the first read that gives a
+binding ends the state.
+
+![The last binding read, after a read that failed](img/outputs-unread.png)
+
+Pages no binding describes do not become readable by reading them again.
+`HOLD: UNBIND ALL PINS`, held for 2 s, writes a binding with no pin; the
+read-back then shows nothing bound and edits are taken again. It is the one
+write the screen sends in this state. A finger that leaves the key, a lift
+before 2 s, and leaving the screen abandon the hold.
+
+![Pages no binding describes](img/outputs-odd.png)
+
+A coprocessor older than 4.10 can be left in this state by a write that
+lost a frame part way. A coprocessor speaking 4.10 written by this panel is
+not; it shows this state only for pages another host or an older panel left
+in its flash.
 
 ### Pick a pin
 
@@ -1461,6 +1545,13 @@ because a button under a pin that cannot be chosen says it could be.
 Down the left are this protocol's pins in channel order; down the right are
 the pins other protocols hold, named. The two together read as one run of
 channels, because that is what the OUTPUTS page carries.
+
+The protocol is the one selected on the Outputs screen; this screen has no
+control for it. A tap on a button writes the binding through the same
+sequence as a tick on the Outputs screen, with the same results. While the
+binding is not confirmed — a read failed, or the pages describe no binding —
+every button is drawn grey, `NOT READ` stands under the protocol's name on
+the left, and a tap changes nothing and writes nothing.
 
 Where the pads are comes from the board, not from the panel: the [shape
 page](Link.md#page-map) carries the outline, the pitch and the corner pad 1
@@ -1544,9 +1635,10 @@ either direction. The record being written is therefore rejected rather than
 probably rejected, the record before it is still the newest good one, and the
 sector being erased is never the one holding the record still wanted.
 
-A page the screen cannot describe — two protocols at once, a rate no entry
-offers, a pin that is not on the header — reads back as nothing configured
-rather than as a selection that disagrees with the page it came from.
+Pages the screen cannot describe — one pin in two slots, a rate no entry
+offers, a pin that is not on the header — are shown as such and not as
+nothing configured: see [A binding that is not
+confirmed](#a-binding-that-is-not-confirmed).
 
 ## Balancing
 

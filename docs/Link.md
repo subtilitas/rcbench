@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.9. The
+coprocessor transmits only in answer to a request. Protocol version 4.10. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -87,7 +87,8 @@ Only the major is compared. The link comes up and the bench arms whatever
 the two minors are. The panel reads the coprocessor's minor at link-up and
 uses nothing that minor does not have: SERVO's frame rate from 4.1, its
 sweep from 4.2, SUPPLY from 4.3, the sweep's RESUME from 4.6, SENSE and
-SERVO_SENSE from 4.7, TONE from 4.8, SENSE's output encoder from 4.9. The
+SERVO_SENSE from 4.7, TONE from 4.8, SENSE's output encoder from 4.9, BIND_CFG,
+BIND_OUT and BIND from 4.10. The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -220,6 +221,96 @@ Not run on hardware: the AS5600 on the bus beside the INA parts, its address,
 the pull-ups, the schedule's time on the bus, the sample interval, and the
 12-count tolerance against a real servo's noise.
 
+### A binding taken whole
+
+BIND_CFG (0x2E), BIND_OUT (0x2F) and BIND (0x30) are new in 4.10, and 4.10
+moves nothing else. A binding is two pages of 32 registers, CHAN_CFG and
+OUTPUTS, 16 frames. A write to either page is in force frame by frame, so a
+sequence that stops part way leaves the first entries of one binding and the
+rest of another. The three pages make the change one step:
+
+| Page | Registers | Rules |
+| --- | --- | --- |
+| BIND_CFG | 32, as CHAN_CFG | a CHAN_CFG page that is not in force. A frame is checked by CHAN_CFG's value rules (role 0 or 1, endpoints 400 to 2500 µs) and refused with BAD_VALUE, storing nothing, on a breach. No output changes |
+| BIND_OUT | 32, as OUTPUTS | an OUTPUTS page that is not in force. A frame is checked by OUTPUTS' value rules (a driver 0 to 4, a pin number up to 63) and refused with BAD_VALUE on a breach. No output changes |
+| BIND | 1: `COMMIT` | a write carries the CRC (cyclic redundancy check) of the 64 prepared registers. Reads the CRC of what is prepared |
+
+The CRC is CRC-16/CCITT-FALSE: polynomial 0x1021, seed 0xFFFF, no
+reflection, no final XOR, over the 32 BIND_CFG registers and then the 32
+BIND_OUT registers, each as its low byte and then its high byte, 128 bytes.
+
+A write of `COMMIT`:
+
+1. is refused with BAD_VALUE when its value is not the CRC of what the
+   coprocessor holds prepared. Nothing changes. A frame that did not arrive,
+   or a coprocessor that restarted since the pages were prepared, ends here;
+2. judges the prepared CHAN_CFG page by every rule of a CHAN_CFG write and
+   puts it in force, or refuses with BAD_VALUE and changes nothing;
+3. judges the prepared OUTPUTS page by every rule of an OUTPUTS write —
+   armed, the supply's, the sensor bus's and the phase tap's pins, the SERVO
+   rate, what the silicon binds — and puts it in force, or refuses with
+   BAD_VALUE and puts the CHAN_CFG page of before the commit back;
+4. is acknowledged, and the binding is saved once.
+
+So the pages in force are both the old binding or both the new one after
+every way the sequence can end. A commit whose acknowledgement is lost has
+been taken: the host reads the pages to learn it.
+
+What is prepared starts as the pages in force at boot. It is not kept in
+flash and not cleared by link silence; the CRC is what ties a commit to the
+frames one host sent. CHAN_CFG and OUTPUTS stay writable one entry a frame,
+in force as each is acknowledged: the SERVO screen writes a channel's range
+that way, and the panel the throttle's endpoints.
+
+| Panel | Coprocessor | A binding edited on OUTPUTS or PICK A PIN |
+| --- | --- | --- |
+| 4.10 | 4.10 | prepared and committed: SERVO `FRAME_HZ` = 0, 8 frames to BIND_CFG, 8 to BIND_OUT, `COMMIT`, then OUTPUTS and CHAN_CFG read back. 20 exchanges |
+| 4.10 | 4.9 or older | the panel reads the minor at link-up and sends nothing to the three pages. SERVO `FRAME_HZ` = 0 (4.1 and later), 8 frames to CHAN_CFG, 8 to OUTPUTS, each its own acknowledged exchange and in force as acknowledged, then both pages read back. 19 exchanges. A frame lost part way leaves the entries before it in force; the panel then shows the pages as they read and writes nothing over them but a binding with no pin |
+| 4.9 or older | 4.10 | the panel never writes the three pages. It writes CHAN_CFG and OUTPUTS as 8 frames back to back in one exchange each, as between two older builds |
+| another host | 4.10 | a `COMMIT` that does not name the CRC of the prepared pages is refused with BAD_VALUE; BIND_CFG and BIND_OUT are refused frame by frame as above |
+
+Every write this panel sends that is wider than one frame goes out one frame
+of up to 4 registers per exchange, each acknowledged before the next is sent
+(`link_write_acked()` in `shared/link/link_port.c`). The XL2515 holds 2
+received frames and the coprocessor reads it from its main loop; with one
+request frame on its way at a time, a pass that is late delays a frame and
+does not lose one to a full buffer. The same write as 8 frames back to back
+loses 6 of them to one 20 ms pass (`test_bind_link`). A reply still arrives
+as back-to-back frames: the panel's TWAI driver queues 16.
+
+The cost of one edit, and what it is held against:
+
+| | 0.14.0 | This build, 4.10 coprocessor |
+| --- | ---: | ---: |
+| Exchanges | 5 | 20 |
+| Request frames | 19 | 20 |
+| Reply frames | 33 | 34 |
+| Request frames on the bus at once, at most | 8 | 1 |
+| CHAN_CFG and OUTPUTS applied to the outputs | 16 times, once a frame | once each, at the commit |
+| Save requests to the flash store | 16 | 1 |
+
+54 frames at about 130 µs are 7 ms of bus time in both. An exchange adds the
+coprocessor's loop pass and the panel task's wake: [Bringing up the
+link](Bringup.md) prints 334 to 1400 µs for the round trip of one, which
+puts the 20 between 7 and 28 ms; the sequence itself is not timed on
+hardware. The panel's control task runs every 5 ms and sends the sequence
+from one pass, so that pass is 2 to 6 periods long; the safety loop — the
+heartbeat's 20 ms edges, STOP — runs inside it at least every 5 ms. The
+50 ms poll with its ARM and THROTTLE write is late by the same time; an edit
+is refused while the bench is armed, so no armed bench waits on it. The
+coprocessor's 200 ms silence limit counts from the last request it heard,
+and every exchange of the sequence is one: the sequence cannot starve it
+however long it takes as a whole, and a single frame the coprocessor does
+not take for 200 ms latches `FAULT 01` as any request does. A frame that is
+lost on the wire ends the sequence after the 1000 ms of its own exchange,
+with the link taken down and the binding in force unchanged.
+
+`shared/outputs/out_stage.c` is the coprocessor's half and
+`shared/outputs/bind_link.c` the panel's, under `test_bind_link`: the
+sequence through a model of the 2-frame buffer with a 20 ms deaf window
+opened at every 125 µs, a frame lost at each of the 18 positions, the
+timeouts across the 2^32 ms wrap. Not run on hardware.
+
 ### Identifier
 
 A 29-bit extended identifier carries the whole address, so a read is a frame
@@ -285,6 +376,9 @@ Clearing a latched failsafe is such a side effect.
 | 0x2B | SENSE | read, write | two I2C (Inter-Integrated Circuit) current monitors on one bus on two of the coprocessor's pins, a TI INA228 in the ESC's power path and a TI INA3221 on the servo rail (since 4.7). Registers 0 to 3, one frame: enable (bit 0 INA228, bit 1 INA3221, bit 2 the AS5600 output encoder since 4.9), the SDA GPIO, the SCL GPIO, and the clock, 400 kHz and no other value: at 100 kHz one read takes 480 to 750 µs and the coprocessor's 1 ms schedule does not fit. The schedule reads INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or at 1000 Hz for a synchronised pair, the INA228's current and voltage at 500 Hz each, and everything else at 50 Hz. Both modules carry pull-ups on SDA and SCL, and they add in parallel: the DAOKAI INA3221 has 10 kΩ to its VS (3.3 V); the MATEK INA228's pull-up value and rail are unknown. The combined value must stay above about 1 kΩ: an I2C output sinks 3 mA at 0.4 V, and (3.3 V − 0.4 V) / 3 mA is 967 Ω. Below 10 kΩ it shortens the rise time: the 300 ns rise limit at 400 kHz allows 35 pF of bus with 10 kΩ alone, and more with less. SDA's GPIO number mod 4 is 0 or 2 and SCL is the GPIO after it, one I2C block's pair (GP16 and GP17 by default). Registers 4 to 7, one frame: the INA228's address, 0x40 to 0x4F (default 0x45, the MATEK I2C-INA-BM's as shipped; its solder bridges give 0x44 or 0x41); its shunt in µΩ, 50 to 20000 (default 200); the current its range is set for in 0.1 A, 10 to 3000 (1.0 to 300.0 A, the bench's design maximum; default 2048). The maximum chooses ADCRANGE only: 1 while the shunt's voltage at it is at most 40.96 mV, 0 up to 163.84 mV, and above that the write is refused. CURRENT_LSB is the shunt ADC's step divided by the shunt (78.125 nV or 312.5 nV over R), so CURRENT and the shunt voltage clip together, and SHUNT_CAL is 4096 at either range. A shunt whose full scale at the chosen range passes 2000 A is refused as well, so below 81.92 µΩ only ADCRANGE 1 is taken; the rule is the driver's, `ina228_calibrate()`; register 7 reserved. Registers 8 to 11, one frame: the INA3221's address, 0x40 to 0x43 (default 0x40); its shunt in 0.1 mΩ, 50 to 10000 (5 mΩ to 1 Ω, default 1000, the 0.1 Ω that reads to 1.638 A); the channels read, bits 0..2 for CH1 to CH3, at least one while enabled (default CH1); register 11 reserved. The reserved registers read 0 and take only 0. Refused with BAD_VALUE: a value out of range, SDA and SCL not one block's pair, a pin that is reserved, bound to an output or held by SUPPLY, both parts on one address while both are enabled, and any change while the bank is armed; a write of the set-up in force is taken. The pins are no output's while any part is enabled, and an OUTPUTS write binding one is refused. Registers 12 to 25, read only: flags (bit 0 INA228 online, bit 1 its last identity read was an INA228's, bit 2 something else answers at its address, bit 3 a current read at the end of its range in the last 50 ms window or since the run's arm, so BENCH's current and power, or their peaks, are bounds and not values; bits 4 to 6 the same three for the INA3221; bit 8 the bus is open on its pins, bit 9 SDA is held low and being clocked free), the addresses that answered the last scan (bit n for 0x40 + n), the INA228's DEVICE_ID and the INA3221's die ID as read, transactions failed modulo 65536, the INA228's die temperature in 0.1 °C (signed) and DIAG_ALRT, its charge in 0.01 mAh (signed, 32 bit, registers 19 and 20, low first) and energy in 0.01 Wh (32 bit, registers 21 and 22, low first) since the run's arm, the ESC's own telemetry voltage (10 mV) and current (10 mA), and their valid bits (bit 0 voltage, bit 1 current). Registers 26 to 31, read only, since 4.9: the output encoder's flags, RAW ANGLE, MAGNITUDE, sample count and still time in ms, and a reserved register (see below). Registers 0 to 11 are kept in the coprocessor's flash |
 | 0x2C | SERVO_SENSE | read, write | the INA3221's channels and a move timed on the coprocessor's clock (since 4.7). Registers 0 to 11, read only, four a channel from CH1: mean current (mA, signed), highest current (mA, signed), mean bus voltage (mV) and lowest bus voltage (mV) over the last 50 ms window, the voltage at the load side of the shunt. Register 12, read only: the window number modulo 65536; a read does not end a window. Register 13, read only: bits 0..2 a channel's window holds readings, bits 4..6 one of them read the top of the range (163.8 mV across the shunt), which makes that channel's mean and highest current lower bounds, bit 7 the same of the capture. Registers 14 to 17, one frame: a capture -- bit 7 set, the INA3221 channel in bits 0..1, CH1 only (2 and 3 are refused; the field stays for a channel read fast enough later), and the output channel (0 to 7) in bits 8..10 whose next changed command starts the timing; the holding level the move ends at, 0 to 32767 mA; the movement threshold and the arrival band, each 1 to 32767 mA. An arm is the whole frame and restarts a capture already running. 0 in register 14 disarms and is never refused; written at the head of the frame, the other three are not stored. Refused with BAD_VALUE: any other write that is not the whole frame, other bits set in register 14, a value out of range, a channel other than CH1 or one SENSE does not read, and an output channel that is not a surface on a PWM slot the coprocessor has bound (a pin whose compare register another pin holds is not); with NOT_ARMED on a disarmed bank. A bank that stops driving ends a capture that has not finished. Registers 18 to 24, read only: the state (0 idle, 1 armed, 2 waiting for movement, 3 moving, 4 arrived, 5 settled on an end stop, 6 late: movement and no arrival within 3000 ms plus the meter's lag, 7 unseen: no movement in that time, 8 lost: the INA3221 stopped answering, or no PWM edge came within 3000 ms of the arm), captures finished modulo 65536, the time from the PWM frame carrying the new pulse to movement and to arrival in 0.1 ms, resolved to CH1's 1 ms sample interval, the highest and mean filtered current of the move (mA, signed), and the samples in it. Nothing is kept: a coprocessor restart reads 0 throughout |
 | 0x2D | TONE | read, write | the beeps of an ESC heard on one motor phase, through a series resistor and a zener clamp on one coprocessor GPIO, stamped by a PIO state machine at 26.7 ns (since 4.8). Registers 0 to 3, one frame: enable (bit 0), the GPIO (default 22, pad 29), the lowest tone heard in Hz (50 to 2000, default 400) and the highest (above the lowest, to 6900, default 6500). Registers 4 to 7, one frame: the pitch change in percent that starts a new beep without a silence (0 splits on silence only, 50 at most, default 8), the silence that ends a beep in ms (1 to 100 and at least the period of the lowest tone, default 3), the tone periods that make a beep (1 to 64, default 3), and register 7 reserved. The reserved register reads 0 and takes only 0. Refused with BAD_VALUE: a value out of range, a combination the detector refuses (a silence shorter than the lowest tone's period), and, while the tap is enabled, a GPIO past the bank (63), reserved, bound to an output, held by SENSE or SUPPLY, or an ADC (analog-to-digital converter) pin: GP26 to GP29 of the RP2350A and GP40 to GP47 of the RP2354B, which are not fault tolerant. The GPIO is no output's while the tap is enabled, and an OUTPUTS, SENSE or SUPPLY write that takes it is refused. A change is taken armed or not: the tap is an input and drives nothing. Registers 8 to 12, read only: flags (bit 0 the capture runs, bit 1 the tap is enabled and its pin could not be taken, bit 2 the capture ring or the state machine's FIFO overran since the capture started, bit 3 a run of bursts is under way, bit 4 the last window held a tone), the window number modulo 65536 (windows of 8 ms), the last window's tone in 0.1 Hz (0 for none) and the tone periods in it, and the number of the newest beep. The coprocessor keeps the last 64 beeps and numbers them 1 to 65535, then from 1 again; the newest number is 0 before the first beep. Register 13, EVT_SEL, is the one writable register after register 7 and is not kept: the number of the beep that registers 14 to 21 show. A read consumes no beep, so a reply lost on the link loses nothing. Registers 14 to 21, read only: EVT_SEL again while that beep is among the 64, else 0 with registers 15 to 21 reading 0; the beep's first rise in ms since the capture started (32 bit, registers 15 and 16, low first); its length to its last edge in 0.1 ms; its mean pitch in 0.1 Hz; its bursts; the carrier it was chopped at in 100 Hz steps (0 unchopped); flags (bit 0 it began at a pitch change with no silence before it, bit 1 it ended at one). Registers 22 and 23, read only: beeps lost, and lows shorter than 500 ns that the detector ignored, each modulo 65536. The capture's 8 µs hold-off removes every low shorter than 8 µs before the detector sees it, so register 23 reads 0 on the tap. The capture starts when the tap is enabled or its pin changes, and then empties the 64. Registers 0 to 6 are kept in the coprocessor's flash and the tap starts at boot. While the tap is disabled the pin is an input with its pull-down on (32 to 86 kΩ), and it stays on while the tap runs |
+| 0x2E | BIND_CFG | read, write | a CHAN_CFG page prepared and not in force (since 4.10): the registers and the value rules of CHAN_CFG. [A binding taken whole](#a-binding-taken-whole) has the three pages |
+| 0x2F | BIND_OUT | read, write | an OUTPUTS page prepared and not in force (since 4.10): the registers and the value rules of OUTPUTS |
+| 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared |
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch, bit 6
@@ -358,8 +452,8 @@ write of the page in force binds nothing anew. The rule is
 `outputs_chan_cfg_armed_check()` and `outputs_slots_armed_check()`, under
 `test_link_pages`.
 
-The arm latch and the armed refusal change no register and no frame, so the
-protocol version stays 4.9. What a peer built before them sees:
+The arm latch and the armed refusal change no register and no frame, so they
+carry no protocol version of their own. What a peer built without them sees:
 
 | Panel | Coprocessor | Behaviour |
 | --- | --- | --- |
@@ -425,4 +519,6 @@ solver is pinned to hand-checked examples; `test_link_loopback` runs the host
 poller against the device dispatcher over a bus that drops, delays and reorders
 frames: split replies arriving in reverse, refused writes, lost pieces leaving
 a request unanswered rather than half-answered, and the device watchdog firing
-on a quiet bus.
+on a quiet bus. `test_bind_link` runs a binding's write and read sequences
+against the coprocessor's page rules over a bus with the XL2515's 2-frame
+buffer: see [A binding taken whole](#a-binding-taken-whole).

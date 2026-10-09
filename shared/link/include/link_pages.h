@@ -47,6 +47,9 @@ typedef enum {
     LINK_PAGE_SENSE     = 0x2B, /**< the current monitors' bus; set-up kept */
     LINK_PAGE_SERVO_SENSE = 0x2C, /**< the servo rail's channels, a move timed */
     LINK_PAGE_TONE      = 0x2D, /**< ESC tones from one motor phase; set-up kept */
+    LINK_PAGE_BIND_CFG  = 0x2E, /**< a CHAN_CFG page prepared, not in force  */
+    LINK_PAGE_BIND_OUT  = 0x2F, /**< an OUTPUTS page prepared, not in force  */
+    LINK_PAGE_BIND      = 0x30, /**< takes the two prepared pages as one     */
 } link_page_id_t;
 
 /*
@@ -60,12 +63,16 @@ typedef enum {
  * The panel reads the minor at link-up and sends nothing to a page the
  * coprocessor's minor does not have: SUPPLY from 4.3, SENSE and
  * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
- * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9.  A
+ * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
+ * BIND_CFG, BIND_OUT and BIND from 4.10.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 9u
+#define LINK_PROTOCOL_MINOR 10u
+
+/** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
+#define LINK_MINOR_BIND 10u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -731,6 +738,34 @@ typedef enum {
      */
     LINK_DRIVER_DSHOT_BIDIR = 4,
 } link_out_driver_t;
+
+/* -------------------------------------------------------------------- bind */
+
+/*
+ * A binding taken whole (protocol 4.10).
+ *
+ * A binding is two pages of 32 registers, 16 frames, and a write to CHAN_CFG
+ * or OUTPUTS is in force frame by frame: a sequence that stops part way
+ * leaves the first frames of one binding and the rest of another.  BIND_CFG
+ * and BIND_OUT hold a CHAN_CFG and an OUTPUTS page that are not in force.
+ * They take the registers and the windows of the pages they prepare, check
+ * each frame by those pages' value rules, and change no output.
+ *
+ * BIND has one register.  A write of LINK_BD_COMMIT carries the CRC (cyclic
+ * redundancy check, out_stage_crc()) of the 64 prepared registers.  The
+ * coprocessor compares it with the CRC of what it holds prepared and refuses
+ * a difference with BAD_VALUE; on a match it judges the two pages by every
+ * rule a CHAN_CFG and an OUTPUTS write is judged by, CHAN_CFG first, and
+ * puts both in force or neither.  The register reads the CRC of what is
+ * prepared.
+ *
+ * What is prepared starts as the pages in force at boot and is not kept in
+ * flash.  CHAN_CFG and OUTPUTS stay writable, one entry a frame.
+ */
+enum {
+    LINK_BD_COMMIT = 0, /**< write: the prepared pages' CRC; read: the same */
+    LINK_BD_COUNT  = 1,
+};
 
 /* ---------------------------------------------------------------- identity */
 enum {

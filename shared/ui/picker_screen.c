@@ -45,6 +45,8 @@ static struct {
     uint16_t          art_w, art_h;
 
     int      hit;            /**< catalogue index under the finger, or -1  */
+    /* The binding shown is not one a read confirmed: no button acts. */
+    bool     unread;
     bool     chrome_valid[MAX_FBS];
 } s;
 
@@ -80,6 +82,24 @@ void picker_screen_set_binding(const outbind_t *b)
         touched();
     }
 }
+
+void picker_screen_follow(uint8_t proto, bool editable)
+{
+    const bool unread = !editable;
+    if (proto < OUTBIND_PROTOS && proto != s.bind.proto) {
+        outbind_set_proto(&s.bind, proto);
+        touched();
+    }
+    if (unread != s.unread) {
+        s.unread = unread;
+        /* A press begun while the binding could be edited does not act on
+         * its release. */
+        s.hit = -1;
+        touched();
+    }
+}
+
+bool picker_screen_editable(void) { return !s.unread; }
 
 void picker_screen_set_apply(picker_apply_fn fn) { s.apply = fn; }
 
@@ -385,7 +405,8 @@ static void draw_pads_and_buttons(gfx_canvas_t *c, const int8_t *chan)
         const bool on    = (held != 0u && held == proto);
         /* A soldered board's pins are nobody's to press, so they are drawn
          * the way a pin another protocol holds is: shown, and not offered. */
-        const bool other = (held != 0u && held != proto) || locked;
+        const bool other = (held != 0u && held != proto) || locked
+                           || s.unread;
 
         if (pins[i].reserved) {
             cross(c, px, py, UI_DANGER);
@@ -441,6 +462,11 @@ static void draw_mine(gfx_canvas_t *c, const int8_t *chan)
     gfx_text(c, tx, ty, outbind_protos()[proto].name, UI_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     ty += 22;
+    if (s.unread) {
+        /* Why no button acts: the binding drawn is the last one read. */
+        gfx_text(c, tx, ty, TR(PK_NOT_READ), UI_FONT_LABEL, UI_WARN, 1);
+        ty += 22;
+    }
 
     int shown = 0;
     for (uint8_t i = 0; i < n && ty < SCREEN_H - 24; ++i) {
@@ -524,7 +550,7 @@ static void event(const touch_event_t *evt)
         return;
     }
     if (evt->type == TOUCH_EVENT_DOWN) {
-        s.hit = cell_at(evt->point.x, evt->point.y);
+        s.hit = s.unread ? -1 : cell_at(evt->point.x, evt->point.y);
         if (s.hit >= 0) { touched(); }
         return;
     }
@@ -539,6 +565,9 @@ static void event(const touch_event_t *evt)
     touched();
     if (cell_at(evt->point.x, evt->point.y) != was) {
         return;              /* the finger left the button it pressed */
+    }
+    if (s.unread) {
+        return;              /* the binding shown is not confirmed */
     }
     if (outbind_toggle(&s.bind, (uint8_t)was) && s.apply != NULL) {
         s.apply(&s.bind);

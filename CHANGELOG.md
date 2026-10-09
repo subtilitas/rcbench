@@ -18,7 +18,7 @@ history is in git.
   request that ends unanswered while the link is up takes the link down on
   the control task's next pass, whichever service sent it, and the panel
   sends nothing more until then; armed or arming, the stop is latched as the
-  request ends. No register or frame changes; the protocol stays 4.9.
+  request ends. This changes no register and no frame.
 - **The first arm after a STOP is taken on the first hold.** After its 100 ms
   settle the panel reads the STATUS fault register once a pass until the
   coprocessor reports the heartbeat trusted, for at most 200 ms more, and
@@ -32,6 +32,46 @@ history is in git.
 The decisions are `shared/safety/safety_gate.c` and
 `shared/safety/arming.c`, host-tested in `test_safety_gate` and
 `test_arming`. Not run on hardware.
+
+- **A failed write on OUTPUTS no longer loses the binding.** Known issue in
+  0.14.0: with a current sensor enabled under SETUP, INTERFACES, a tap on
+  OUTPUTS or PICK A PIN can end with `NO LINK` and `FAULT 01` and leave the
+  stored binding empty or mixed. Workaround on 0.14.0: switch the sensor off
+  under SETUP, INTERFACES, edit the binding, wait 3 s, restart both boards,
+  switch the sensor on again. Why a frame is lost only with a sensor
+  enabled is not known. What changes:
+  - A binding is written one frame per exchange, each acknowledged before
+    the next is sent, in place of 8 frames back to back into the
+    coprocessor's 2 receive buffers. Every write wider than one frame goes
+    out this way.
+  - Protocol 4.10 adds the pages BIND_CFG (0x2E), BIND_OUT (0x2F) and BIND
+    (0x30). The panel prepares both output pages on a 4.10 coprocessor and
+    one commit, carrying their CRC-16, puts both in force or neither. A
+    frame lost anywhere in the sequence leaves the binding in force and the
+    binding in flash as they were. A coprocessor older than 4.10 is written
+    entry by entry and can still be left with a mixed page by a lost frame.
+  - A binding that did not read is shown as not read, and one whose pages
+    describe no binding as that, with the last binding read kept on the
+    screen, dimmed. Neither is treated as nothing bound: no tap on OUTPUTS
+    or PICK A PIN writes until a read succeeds. For pages that describe no
+    binding, `HOLD: UNBIND ALL PINS`, held 2 s, writes a binding with no
+    pin.
+  - A write refused because the SERVO frame rate could not be put back says
+    `REFUSED`, not `NO LINK`.
+- **Picking a protocol on OUTPUTS writes nothing.** A pick changes which
+  protocol's pins the screen shows as ticked and which the next tick joins.
+  Only ticking or unticking a pin writes.
+- **OFF stays picked.** With OFF picked every bound pin shows its protocol's
+  name, and no pin can be ticked; the screen says `OFF SHOWS ALL, EDITS
+  NOTHING`. OFF is kept until another entry is picked or the screen is left.
+  From 0.8.1 to 0.14.0 the list went back to a protocol after one write.
+- **`DSHOT300 BIDIR` and `DSHOT600 BIDIR` fit the protocol list and a pin's
+  cell.** The list is 266 px wide for the 224 px of the name; a cell prints
+  the protocol under the pin's box and name, 112 px in 121.
+
+The sequences are `shared/link/link_port.c`, `shared/outputs/bind_link.c`
+and `shared/outputs/out_stage.c`, host-tested in `test_bind_link` against a
+model of the 2-frame receive buffer. Not run on hardware.
 
 The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
 (Ein Finger schiebt), off by default. While it is on and the view is zoomed

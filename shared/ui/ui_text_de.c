@@ -165,6 +165,11 @@ static const char *const k_text[TX_COUNT] = {
     [TX_OUT_REFUSED]            = "ABGELEHNT",
     [TX_OUT_NOT_WRITTEN]        = "NICHT GESCHR.",
     [TX_OUT_NO_LINK]            = "KEIN LINK",
+    [TX_OUT_OFF_VIEW]           = "OFF ZEIGT ALLES, ÄNDERT NICHTS",
+    [TX_OUT_NOT_READ]           = "BINDUNG NICHT GELESEN - GESPERRT",
+    [TX_OUT_NOT_MAPPED]         = "PAGES OHNE GÜLTIGE BINDUNG",
+    [TX_OUT_HOLD_UNBIND]        = "HALTEN: ALLE PINS LÖSEN",
+    [TX_PK_NOT_READ]            = "NICHT GELESEN",
 
     /* ------------------------------------------------------ pin picker */
     [TX_PK_NONE_YET]            = "NOCH KEINE",

@@ -52,9 +52,11 @@
 #include "art_fetch.h"
 #include "art_store.h"
 #include "heartbeat.h"
+#include "bind_link.h"
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
+#include "link_port.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "log_writer.h"
@@ -209,6 +211,7 @@ static void supply_pump(void);
 /* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
  * for one straight afterwards. */
 static void read_outputs_binding(void);
+static void post_no_reading(void);
 static bool disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
@@ -439,8 +442,16 @@ static atomic_int s_outputs_result;
  * configuration and pushed it would be applying it to whatever is on the
  * bench now.  The coprocessor keeps it in its own flash, and this asks.
  */
-static outbind_t s_outputs_read;
-static bool      s_outputs_read_fresh;    /* both under s_snap_lock */
+static bind_reading_t s_outputs_read;
+static bool           s_outputs_read_fresh;    /* both under s_snap_lock */
+/*
+ * The state of the last reading, for the control task alone: a binding a
+ * screen queued is written only over pages that were read
+ * (bind_link_may_write()).  BIND_READ_NONE until the first read.
+ */
+static bind_read_t    s_bind_read = BIND_READ_NONE;
+/* The coprocessor serves BIND_CFG, BIND_OUT and BIND (protocol 4.10). */
+static uint16_t       s_far_minor;
 
 /* The coprocessor's board identity, from the identity page at bring-up. */
 static uint16_t  s_board;
@@ -2716,14 +2727,54 @@ static bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
     return exchange(host, &req, reply);
 }
 
+/* exchange() and the clock, as shared/link asks for them. */
+static bool port_exchange(void *ctx, link_host_t *host, const link_msg_t *req,
+                          link_msg_t *reply)
+{
+    (void)ctx;
+    return exchange(host, req, reply);
+}
+
+static uint32_t port_now(void *ctx)
+{
+    (void)ctx;
+    return now_ms();
+}
+
+static const link_port_t k_port = { port_exchange, port_now, NULL };
+
+/*
+ * The same for a binding, whose 17 exchanges run back to back.  An exchange
+ * answered inside its first 5 ms receive window returns without a pump, so
+ * the safety loop runs here between two of them once 5 ms have passed: the
+ * heartbeat keeps its 20 ms edges and STOP is read inside a frame of the
+ * press for as long as the sequence takes.
+ */
+static bool bind_port_exchange(void *ctx, link_host_t *host,
+                               const link_msg_t *req, link_msg_t *reply)
+{
+    static uint32_t pumped_ms;
+    (void)ctx;
+    const bool ok = exchange(host, req, reply);
+    if (s_pump_live && (uint32_t)(now_ms() - pumped_ms) >= 5u) {
+        pumped_ms = now_ms();
+        control_pump();
+    }
+    return ok;
+}
+
+static const link_port_t k_bind_port = { bind_port_exchange, port_now, NULL };
+
+/*
+ * A write of any width goes out one frame per exchange, each acknowledged
+ * before the next is sent (link_write_acked()): the far end's controller
+ * buffers 2 frames and is polled, so frames sent back to back can find it
+ * full.  A write of up to 4 registers is one exchange.
+ */
 static bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
                        uint8_t count, const uint16_t *regs, link_msg_t *reply)
 {
-    link_msg_t req;
-    if (!link_host_write(host, page, offset, count, regs, now_ms(), &req)) {
-        return false;
-    }
-    return exchange(host, &req, reply);
+    return link_write_acked(host, &k_port, page, offset, count, regs, reply);
 }
 
 static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
@@ -4230,40 +4281,42 @@ static void service_arming(bool link_up)
  * The outputs screen's choice, onto the coprocessor's two output pages.
  *
  * Leaves what became of it in s_outputs_result, which app_main hands to the
- * screen; screen state is app_main's alone.
+ * screen; screen state is app_main's alone.  True when a page may have been
+ * written: the rate reset that leads the sequence landed, or there is none.
  */
-static void write_output_binding(const outbind_t *bind)
+static void servo_rate_reset_note(bool page, bool landed);
+
+static bool write_output_binding(const outbind_t *bind)
 {
-    /*
-     * CHAN_CFG first.  It says what a channel is; OUTPUTS says what renders
-     * it.  A slot that starts rendering a channel whose role has not arrived
-     * would drive it to the wrong rest for as long as the second write takes.
-     */
     uint16_t cfg[LINK_CC_COUNT];
     uint16_t slots[LINK_OS_COUNT];
     outbind_to_chan_cfg(bind, cfg, endpoints_min(), endpoints_max());
     (void)outbind_to_slots(bind, slots);
 
     /*
+     * The sequence is bind_link_write()'s: prepared and committed whole on a
+     * coprocessor speaking 4.10, page by page on an older one.
+     *
      * A write that got no answer and one that was refused are different things
      * to be told.  REFUSED sends the operator back to the pins they chose; NO
      * LINK sends them to the cable.  Collapsing the two would send them to the
      * wrong one every time the link dropped mid-write.
      */
-    link_msg_t reply;
     outputs_result_t res = OUTPUTS_OK;
-    if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg,
-                    &reply)) {
-        res = OUTPUTS_NO_LINK;
-    } else if (reply.op != LINK_OP_ACK) {
-        res = OUTPUTS_REFUSED;
-    } else if (!write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT, slots,
-                           &reply)) {
-        res = OUTPUTS_NO_LINK;
-    } else if (reply.op != LINK_OP_ACK) {
-        res = OUTPUTS_REFUSED;
+    bind_rate_t rate = BIND_RATE_NOT_SENT;
+    switch (bind_link_write(&s_host, &k_bind_port, s_far_minor, cfg, slots,
+                            &rate)) {
+    case BIND_WRITTEN: res = OUTPUTS_OK;      break;
+    case BIND_REFUSED: res = OUTPUTS_REFUSED; break;
+    case BIND_NO_LINK:
+    default:           res = OUTPUTS_NO_LINK; break;
     }
+    /* The sequence put each slot back at its own rate first, or found that
+     * it could not: the rate this end holds the far end to follows it. */
+    servo_rate_reset_note(rate != BIND_RATE_NOT_SENT,
+                          rate == BIND_RATE_LANDED);
     atomic_store(&s_outputs_result, (int)res);
+    return rate == BIND_RATE_NOT_SENT || rate == BIND_RATE_LANDED;
 }
 
 /*
@@ -5021,13 +5074,26 @@ static bool write_servo_and_rate(const servo_cmd_t sv)
  * quiet, can leave the far end holding a heli rate the screen no longer
  * shows.  True when it landed, or there is no page to reset; otherwise the
  * rate in force is not known.
+ *
+ * servo_rate_reset_note() is what a reset leaves behind at this end, for the
+ * reset a binding's own sequence sends (bind_link_write()) as well.
  */
-static bool servo_rate_reset(void)
+static void servo_rate_reset_note(bool page, bool landed)
 {
     s_servo_hz_refused = 0u;
-    if (!s_servo_rate_page) {
+    if (!page) {
         s_servo_hz_sent = 0u;
         servo_rate_show(SERVO_RATE_UNSUPPORTED, 0u);
+        return;
+    }
+    s_servo_hz_sent = landed ? 0u : (uint16_t)SERVO_HZ_UNKNOWN;
+    servo_rate_show(SERVO_RATE_UNSENT, 0u);
+}
+
+static bool servo_rate_reset(void)
+{
+    if (!s_servo_rate_page) {
+        servo_rate_reset_note(false, true);
         return true;
     }
     const uint16_t own = 0u;
@@ -5035,8 +5101,7 @@ static bool servo_rate_reset(void)
     const bool landed = write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_FRAME_HZ,
                                    1u, &own, &reply)
                         && reply.op == LINK_OP_ACK;
-    s_servo_hz_sent = landed ? 0u : (uint16_t)SERVO_HZ_UNKNOWN;
-    servo_rate_show(SERVO_RATE_UNSENT, 0u);
+    servo_rate_reset_note(true, landed);
     return landed;
 }
 
@@ -5396,16 +5461,33 @@ static void drain_commands(bool link_up, bench_state_t *bench)
         if (pc.kind == PANEL_CMD_OUTPUTS) {
             if (!link_up) {
                 atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
+                post_no_reading();
                 continue;
             }
-            /* Not over a rate the binding was never checked against: the
-             * far end may still hold one, and the operator is told nothing
-             * was written. */
-            if (!servo_rate_reset()) {
-                atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
+            /*
+             * Only over pages that were read.  A binding queued before a
+             * read failed, or built on a screen that showed nothing, would
+             * replace whatever the far end holds; the screens refuse the
+             * tap themselves once they are told, and this is the same rule
+             * for a command already on its way (bind_link_may_write()).
+             * Nothing is sent.  LAST WRITE goes from WRITTEN to NOT WRITTEN;
+             * a NO LINK or REFUSED that explains the state stays.
+             */
+            if (!bind_link_may_write(s_bind_read, s_board, &pc.bind)) {
+                int was = (int)OUTPUTS_OK;
+                (void)atomic_compare_exchange_strong(&s_outputs_result, &was,
+                                                     (int)OUTPUTS_IDLE);
                 continue;
             }
-            write_output_binding(&pc.bind);
+            /* The sequence leads with the SERVO rate reset and writes
+             * nothing over a rate that did not go back: a refusal is told
+             * as REFUSED, no answer as NO LINK. */
+            if (!write_output_binding(&pc.bind)) {
+                /* No page was written.  The screens still show the tap, so
+                 * the far end is asked what it holds. */
+                read_outputs_binding();
+                continue;
+            }
             /*
              * What the horn may drive has changed, and what this end sent is
              * not the answer: a write whose acknowledgement was lost was
@@ -6251,26 +6333,42 @@ static void learn_board_pins(void)
     }
 }
 
+/* A reading, into the snapshot the outputs and picker screens take. */
+static void post_reading(const bind_reading_t *r)
+{
+    s_bind_read = r->state;
+    if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
+        s_outputs_read = *r;
+        s_outputs_read_fresh = true;
+        xSemaphoreGive(s_snap_lock);
+    }
+}
+
+/*
+ * No reading is to be had: the link is down.  The screens keep the last
+ * binding read, marked, and take no edit until one is read again.
+ */
+static void post_no_reading(void)
+{
+    static bind_reading_t r;     /* 140 bytes kept off the task's stack */
+    (void)bind_link_classify(&r, s_board, NULL, NULL);
+    post_reading(&r);
+}
+
 /*
  * What the coprocessor's outputs already are, into the snapshot the outputs
  * and picker screens read.
+ *
+ * bind_link_read() reads both pages and tells four results apart: a binding
+ * (one with nothing bound included), pages that did not read, pages no
+ * binding describes, and a board this build has no pin map for.  Only the
+ * first is a binding to edit; the screens are told which of the others it
+ * is.
  */
 static void read_outputs_binding(void)
 {
-    link_msg_t orr, ccr;
-    outbind_t got;
-    /*
-     * Both pages, because the slots page alone cannot say whether a 50 Hz
-     * pulse slot is a servo or a motor.  The roles on CHAN_CFG say which,
-     * and reading the binding back without them rests an ESC at half
-     * throttle.  A CHAN_CFG that will not read leaves the roles unknown
-     * rather than guessed, and the binding is then not shown at all.
-     */
-    if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT, &orr)
-        && orr.op != LINK_OP_NACK
-        && poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)
-        && ccr.op != LINK_OP_NACK
-        && outbind_from_slots(&got, s_board, orr.regs, ccr.regs)) {
+    static bind_reading_t r;     /* control task only */
+    if (bind_link_read(&s_host, &k_port, s_board, &r) == BIND_READ_OK) {
         /*
          * Which channels the horn may drive, from the pages themselves rather
          * than from the binding they were read into.  A binding names one
@@ -6282,46 +6380,36 @@ static void read_outputs_binding(void)
          * Held unlocked because the control task is the only one that touches
          * it, and it is the only task that writes the wire.
          */
-        s_servo_channels = outputs_role_channels(orr.regs, ccr.regs,
+        s_servo_channels = outputs_role_channels(r.slots, r.cfg,
                                                  OUT_ROLE_SURFACE);
         s_servo_known    = true;
         atomic_store(&s_servo_surfaces, s_servo_channels != 0u);
-        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
-            s_outputs_read = got;
-            s_outputs_read_fresh = true;
-            xSemaphoreGive(s_snap_lock);
-        }
-    } else {
-        /*
-         * Two different failures land here and they are not the same to
-         * somebody reading the log.  A board with no pin map in this build can
-         * offer nothing at all; a known board whose page would not read still
-         * offers its pins, with nothing selected.
-         */
-        outbind_t none;
-        outbind_init(&none);
-        outbind_set_board(&none, s_board);
-        /*
-         * A binding that would not read is unknown, not empty.  The horn
-         * drives nothing either way, but the release stays owed: the far end
-         * may still be rendering surfaces from before this panel started, and
-         * nothing here can name them to settle them.
-         */
-        s_servo_channels = 0u;
-        s_servo_known    = false;
-        atomic_store(&s_servo_surfaces, false);
-        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
-            s_outputs_read = none;
-            s_outputs_read_fresh = true;
-            xSemaphoreGive(s_snap_lock);
-        }
-        if (outbind_board(s_board) == NULL) {
-            ESP_LOGW(TAG, "hardware %u has no pin map in this build; the "
-                          "screen will offer no pins", (unsigned)s_board);
-        } else {
-            ESP_LOGW(TAG, "could not read the outputs page; the screen will "
-                          "show nothing configured");
-        }
+        post_reading(&r);
+        return;
+    }
+    /*
+     * A binding that would not read is unknown, not empty.  The horn
+     * drives nothing either way, but the release stays owed: the far end
+     * may still be rendering surfaces from before this panel started, and
+     * nothing here can name them to settle them.
+     */
+    s_servo_channels = 0u;
+    s_servo_known    = false;
+    atomic_store(&s_servo_surfaces, false);
+    post_reading(&r);
+    switch (r.state) {
+    case BIND_READ_NO_BOARD:
+        ESP_LOGW(TAG, "hardware %u has no pin map in this build; the "
+                      "screen will offer no pins", (unsigned)s_board);
+        break;
+    case BIND_READ_ODD:
+        ESP_LOGW(TAG, "the output pages describe no binding this build can "
+                      "show; the screen takes no edit but UNBIND ALL PINS");
+        break;
+    default:
+        ESP_LOGW(TAG, "could not read the outputs page; the screen keeps the "
+                      "last binding read and takes no edit");
+        break;
     }
 }
 
@@ -6362,7 +6450,11 @@ static void link_came_up(const link_msg_t *reply)
      * plugged in since would meet it on the next arm.  The screen sends its
      * rate again with its next position.
      */
-    s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 1u;
+    s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR]
+                        >= LINK_MINOR_SERVO_RATE;
+    /* A binding is prepared and committed whole from 4.10
+     * (bind_link_write()), and written page by page before it. */
+    s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
     (void)servo_rate_reset();
     s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
     /* 4.6 carries a held sweep on from its phase (LINK_SV_RESUME). */
@@ -6604,6 +6696,9 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             tone_link_lost(&s_tone_link);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;
+            /* And the binding: what the screens show is the last one read,
+             * and they take no edit until the link-up read. */
+            post_no_reading();
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -7564,7 +7659,7 @@ void app_main(void)
         /* The flag is read inside the lock that guards the value it refers
          * to.  Testing it outside would let this task cache it and miss a
          * binding the control task had just read off the wire. */
-        outbind_t got;
+        static bind_reading_t got;      /* app_main only */
         bool have = false;
         if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
             have = s_outputs_read_fresh;
@@ -7587,9 +7682,14 @@ void app_main(void)
              * would leave it on OFF and unable to add a pin, however the
              * outputs screen had reconciled it.
              */
-            outputs_screen_set_binding(&got);
+            outputs_screen_set_reading(&got);
             picker_screen_set_binding(outputs_screen_binding());
         }
+        /* A pick on the outputs screen writes nothing and so reads nothing
+         * back: the picker follows the selection, and whether the binding
+         * is one a read confirmed, every frame. */
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 

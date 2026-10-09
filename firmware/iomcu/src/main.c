@@ -32,6 +32,7 @@
 #include "dshot.h"
 #include "out_bind.h"
 #include "rcbench_version.h"
+#include "out_stage.h"
 #include "out_store.h"
 #include "outputs.h"
 #include "outputs_hw.h"
@@ -313,16 +314,15 @@ static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
-static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
-                              const uint16_t *in)
+/*
+ * A whole CHAN_CFG page, judged and put in force: 0, or the reason with the
+ * page in force unchanged.  A CHAN_CFG write is the page with one window
+ * replaced; a BIND commit is the page prepared (out_stage_commit()), which
+ * saves once for both pages and passes @p save false.
+ */
+static uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
+                             bool save)
 {
-    iomcu_state_t *s = (iomcu_state_t *)ctx;
-    uint16_t next[LINK_CC_COUNT];
-    memcpy(next, s->chan_cfg, sizeof(next));
-    const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
-    if (nack != 0u) {
-        return nack;
-    }
     /* Not a role, nor anything of a throttle channel, while the bench is
      * armed or has been asked to arm in this pass: the bank takes the ARM
      * register only after the link is served. */
@@ -337,13 +337,28 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
                                     servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
-    memcpy(s->chan_cfg, next, sizeof(next));
+    memcpy(s->chan_cfg, next, sizeof(s->chan_cfg));
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
     hw_apply();
-    save_outputs(s);
+    if (save) {
+        save_outputs(s);
+    }
     return 0u;
+}
+
+static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
+    uint16_t next[LINK_CC_COUNT];
+    memcpy(next, s->chan_cfg, sizeof(next));
+    const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
+    if (nack != 0u) {
+        return nack;
+    }
+    return chan_cfg_take(s, next, true);
 }
 
 static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -829,19 +844,17 @@ static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
-static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
-                           const uint16_t *in)
+/*
+ * A whole OUTPUTS page, judged and put in force: 0, or the reason with the
+ * page, the bank and the silicon as they were.  The page with one window
+ * replaced for an OUTPUTS write, the page prepared for a BIND commit, as
+ * chan_cfg_take().
+ */
+static uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
 {
-    iomcu_state_t *s = (iomcu_state_t *)ctx;
     /* The reservation as of core 1's last tick: a bus that moved gives its
      * old pins back once core 1 has let them go. */
     sense_sync();
-    uint16_t next[LINK_OS_COUNT];
-    memcpy(next, s->slots, sizeof(next));
-    const uint8_t nack = outputs_slots_write(next, off, n, in);
-    if (nack != 0u) {
-        return nack;
-    }
     /* No slot changes under an armed bank, and the binding in force,
      * written again, is taken without binding anything anew. */
     if (bank_armed(s)) {
@@ -869,7 +882,7 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
     const uint8_t bound_before = bound_slots();
-    memcpy(s->slots, next, sizeof(next));
+    memcpy(s->slots, next, sizeof(s->slots));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
@@ -908,8 +921,111 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
         hw_apply_only(bound_before);
         return LINK_NACK_BAD_VALUE;
     }
-    save_outputs(s);
+    if (save) {
+        save_outputs(s);
+    }
     return 0u;
+}
+
+static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
+    uint16_t next[LINK_OS_COUNT];
+    memcpy(next, s->slots, sizeof(next));
+    const uint8_t nack = outputs_slots_write(next, off, n, in);
+    if (nack != 0u) {
+        return nack;
+    }
+    return slots_take(s, next, true);
+}
+
+/* ---------------------------------------------------------------- BIND */
+
+/*
+ * A binding prepared and taken whole (protocol 4.10): BIND_CFG and BIND_OUT
+ * hold a CHAN_CFG and an OUTPUTS page that are not in force, and a write of
+ * BIND's COMMIT that names their CRC (cyclic redundancy check) puts both in
+ * force or neither.  shared/outputs/out_stage.c decides; this is the glue
+ * to the two pages' own rules above.  Not kept in flash: it starts as the
+ * pages in force at boot.
+ */
+static out_stage_t s_stage;
+/* The slots the silicon had bound when a commit began, put back with the
+ * CHAN_CFG page when the commit's OUTPUTS page is refused. */
+static uint8_t s_stage_bound;
+
+static void bind_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    out_stage_cfg_read(&s_stage, off, n, out);
+}
+
+static uint8_t bind_cfg_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    (void)ctx;
+    return out_stage_cfg_write(&s_stage, off, n, in);
+}
+
+static void bind_out_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    out_stage_slots_read(&s_stage, off, n, out);
+}
+
+static uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    (void)ctx;
+    return out_stage_slots_write(&s_stage, off, n, in);
+}
+
+static uint8_t stage_take_cfg(void *ctx, const uint16_t *next)
+{
+    s_stage_bound = bound_slots();
+    return chan_cfg_take((iomcu_state_t *)ctx, next, false);
+}
+
+static uint8_t stage_take_slots(void *ctx, const uint16_t *next)
+{
+    return slots_take((iomcu_state_t *)ctx, next, false);
+}
+
+static void stage_put_cfg(void *ctx, const uint16_t *prev)
+{
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
+    memcpy(s->chan_cfg, prev, sizeof(s->chan_cfg));
+    outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
+    hw_apply_only(s_stage_bound);
+}
+
+static void stage_keep(void *ctx)
+{
+    save_outputs((const iomcu_state_t *)ctx);
+}
+
+static const out_stage_ops_t k_stage_ops = {
+    stage_take_cfg, stage_take_slots, stage_put_cfg, stage_keep,
+};
+
+static void bind_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = ((uint8_t)(off + i) == (uint8_t)LINK_BD_COMMIT)
+                     ? out_stage_held_crc(&s_stage) : 0u;
+    }
+}
+
+static uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
+    if (off != (uint8_t)LINK_BD_COMMIT || n != 1u) {
+        return LINK_NACK_BAD_RANGE;
+    }
+    return out_stage_commit(&s_stage, in[0], s->chan_cfg, &k_stage_ops, s);
 }
 
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
@@ -1116,6 +1232,9 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SERVO_SENSE, LINK_SS_COUNT, servo_sense_read,
       servo_sense_write },
     { LINK_PAGE_TONE,      LINK_TN_COUNT,  tone_read,      tone_write },
+    { LINK_PAGE_BIND_CFG,  LINK_CC_COUNT,  bind_cfg_read,  bind_cfg_write },
+    { LINK_PAGE_BIND_OUT,  LINK_OS_COUNT,  bind_out_read,  bind_out_write },
+    { LINK_PAGE_BIND,      LINK_BD_COUNT,  bind_read,      bind_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1622,6 +1741,9 @@ int main(void)
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
+    /* What BIND_CFG and BIND_OUT hold prepared starts as the pages in
+     * force. */
+    out_stage_init(&s_stage, s_state.chan_cfg, s_state.slots);
     /*
      * The page takes its values from the bank, not the other way round.
      * Nobody has commanded anything yet, and the defaults above filled the
