@@ -2353,7 +2353,11 @@ static void test_apply(const servo_test_do_t *d)
         supply_screen_ask_on();
     }
     if (d->command) {
-        s.commanded_deg = us_to_deg(d->cmd_us);
+        /* Under a disarm waiting to be taken the step is dropped (post()),
+         * and the value stays with it. */
+        if (value_live()) {
+            s.commanded_deg = us_to_deg(d->cmd_us);
+        }
         post(SERVO_CMD_POSITION, d->cmd_us);
         /* A step: the servo's own travel is what is timed, not SPEED's. */
         s.pending.slew_per_s = 0u;
@@ -2366,7 +2370,7 @@ static void test_apply(const servo_test_do_t *d)
         post(SERVO_CMD_RELEASE, 0);
         /* The horn is drawn released only where the pin follows: a run a
          * disarm ended leaves the value where the run last drove it. */
-        if (s.armed) {
+        if (value_live()) {
             s.commanded_deg = 0.0f;
         }
         ++s.ctrl_rev;

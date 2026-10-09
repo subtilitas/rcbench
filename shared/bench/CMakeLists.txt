@@ -10,6 +10,7 @@ set(SRCS
     bench_state.c
     telemetry_sim.c
     log_writer.c
+    log_cadence.c
     supply.c
     pdmini.c
     supply_link.c

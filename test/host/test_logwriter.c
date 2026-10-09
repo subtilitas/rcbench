@@ -12,6 +12,7 @@
 
 #include "greatest.h"
 
+#include "log_cadence.h"
 #include "log_csv.h"
 #include "log_numbers.h"
 #include "log_writer.h"
@@ -628,6 +629,64 @@ TEST_CASE(a_slow_run_is_committed_on_the_clock_rather_than_on_the_count)
     CHECK_EQ((int)log_writer_pending(&w), 0);
 }
 
+/*
+ * A bench run's rows carry the wall time since the arm (log_cadence.h): the
+ * first row is not at 0, the rows come 52 to 53 ms apart, and a stretch
+ * without samples is a step.  The reader counts time from the first row, so
+ * the duration is the last row's time less the first's, the gap is found at
+ * its length, and the rate is the rows' own.  The tick wraps inside the run.
+ */
+TEST_CASE(a_run_stamped_with_wall_time_reads_back_with_its_gap)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags   = LINK_BN_VOLTAGE_OK;
+    b.voltage = 12.0f;
+
+    uint32_t now = 0xFFFFF000u;                 /* 4.096 s ahead of the wrap */
+    log_cadence_t c;
+    log_cadence_init(&c, now);
+    float t = 0.0f;
+    for (int i = 0; i < 300; ++i) {
+        now += (i % 10 == 9) ? 52u : 53u;       /* 52.9 ms on average */
+        if (i == 150) {
+            now += 30000u;                      /* 30 s with no sample */
+        }
+        CHECK(log_cadence_row(&c, now, true, true, &t));
+        CHECK(log_writer_row(&w, t, &b));
+    }
+    CHECK_NEAR(t, 300.0 * 0.0529 + 30.0, 1e-3);
+
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.time_index, 0);
+    CHECK_STR_EQ(an.time_unit, "s");
+
+    log_source_t src2;
+    log_mem_ctx_t ctx2;
+    log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
+    int cols[1] = { 1 };
+    log_data_t data;
+    CHECK_EQ(log_csv_build(&src2, &an, cols, 1, &data), LOG_OK);
+    CHECK_EQ(data.count, 300);
+    CHECK_STR_EQ(data.time_name, "time");       /* kept: it never runs back */
+    CHECK_NEAR(data.time[0], 0.0, 1e-6);
+    CHECK_NEAR(data.time[149], 149.0 * 0.0529, 2e-3);
+    CHECK_NEAR(data.time[150], 150.0 * 0.0529 + 30.0, 2e-3);
+    /* 299 intervals of 52.9 ms and the 30 s. */
+    CHECK_NEAR(data.duration_s, 299.0 * 0.0529 + 30.0, 2e-3);
+    CHECK_NEAR(data.max_gap_s, 30.053, 2e-3);
+    CHECK_NEAR(data.rate_hz, 1.0 / 0.053, 0.05);
+    log_data_free(&data);
+}
+
 /* A run that has gone quiet is committed by hand, and an empty one is not: a
  * commit with nothing pending is a card transaction that buys nothing. */
 TEST_CASE(a_commit_by_hand_keeps_the_tail_and_an_empty_one_costs_nothing)
@@ -708,6 +767,7 @@ int main(void)
     RUN(no_more_than_one_interval_of_a_run_is_ever_uncommitted);
     RUN(what_a_power_cut_leaves_is_a_short_run_and_not_an_empty_file);
     RUN(a_slow_run_is_committed_on_the_clock_rather_than_on_the_count);
+    RUN(a_run_stamped_with_wall_time_reads_back_with_its_gap);
     RUN(a_commit_by_hand_keeps_the_tail_and_an_empty_one_costs_nothing);
     RUN(a_commit_the_sink_refuses_latches_the_writer);
     RUN(a_sink_that_needs_no_commit_still_writes_the_whole_run);

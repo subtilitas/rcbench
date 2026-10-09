@@ -98,7 +98,7 @@ is taken in a gap ahead of the save that needs it.
 | Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`, confirmed on hardware: a save writes and the next boot reports what it loaded |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
-| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads; an automatic servo test's CSV and report go beside it under the next run number. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
+| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads. An armed bench's log has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the arm; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid, and not run on hardware. An automatic servo test's CSV and report go beside it under the next run number. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
@@ -213,7 +213,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 76 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 77 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_servo`, `test_servo_arm`,
@@ -225,7 +225,7 @@ The host suite is 76 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview` and `test_logwriter`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter` and `test_log_cadence`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router or one screen frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -265,7 +265,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/ui/supply_screen.c` | 977 | 965 | 98.8% |
 | `shared/ui/ui_keypad.c` | 163 | 161 | 98.8% |
 | `shared/ui/ui_textkey.c` | 170 | 169 | 99.4% |
-| `shared/ui/servo_screen.c` | 2631 | 2578 | 98.0% |
+| `shared/ui/servo_screen.c` | 2690 | 2634 | 97.9% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
@@ -338,6 +338,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/bench/tone_link.c` | 382 | 377 | 98.7% |
 | `shared/bench/knob.c` | 37 | 37 | 100.0% |
 | `shared/bench/log_writer.c` | 145 | 133 | 91.7% |
+| `shared/bench/log_cadence.c` | 38 | 38 | 100.0% |
 | `shared/sense/sense_bus.c` | 127 | 126 | 99.2% |
 | `shared/sense/ina228.c` | 188 | 188 | 100.0% |
 | `shared/sense/ina3221.c` | 115 | 115 | 100.0% |
@@ -347,7 +348,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/sense/tone.c` | 372 | 372 | 100.0% |
 | `shared/sense/edge_ring.c` | 43 | 43 | 100.0% |
 | `shared/sense/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **25634** | **24842** | **96.9%** |
+| **total** | **25731** | **24936** | **96.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

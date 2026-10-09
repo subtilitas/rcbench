@@ -105,7 +105,8 @@ bool log_writer_header(log_writer_t *w);
  *
  * So a caller that watches only the latch has to check the return as well if
  * it can pass either of those.  The panel cannot: its row carries a struct by
- * value and a time that only ever increases by 1/PANEL_SAMPLE_HZ.
+ * value and a finite time: a supply run's sum of steps, or a bench run's
+ * wall time since the arm (log_cadence.h).
  */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
 
