@@ -147,7 +147,10 @@ void tone_page_publish(tone_page_t *p, const tone_status_t *st,
 
 /**
  * @p n beeps finished by core 1 under set-up @p gen and capture @p cap_gen,
- * into the ring; dropped when either is not the one in force.
+ * into the ring; dropped when the capture is not the one in force.  A beep
+ * finished under an earlier set-up of the same capture is taken: a change
+ * of the range keeps the ring and the numbering, and a beep the detector
+ * finished before it took the change is a beep that happened.
  */
 void tone_page_beeps(tone_page_t *p, uint16_t gen, uint16_t cap_gen,
                      const tone_rec_t *rec, size_t n);

@@ -310,7 +310,8 @@ void tone_page_publish(tone_page_t *p, const tone_status_t *st,
 void tone_page_beeps(tone_page_t *p, uint16_t gen, uint16_t cap_gen,
                      const tone_rec_t *rec, size_t n)
 {
-    if (p == NULL || rec == NULL || gen != p->gen || cap_gen != p->cap_gen) {
+    (void)gen;
+    if (p == NULL || rec == NULL || cap_gen != p->cap_gen) {
         return;
     }
     for (size_t i = 0; i < n; ++i) {

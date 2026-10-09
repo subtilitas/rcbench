@@ -646,17 +646,20 @@ TEST_CASE(a_status_is_taken_only_under_the_set_up_and_capture_in_force)
     tone_page_publish(&pg, NULL, &r, 1u);
 }
 
-TEST_CASE(beeps_handed_over_alone_are_taken_under_the_generations_in_force)
+TEST_CASE(beeps_handed_over_alone_are_taken_under_the_capture_in_force)
 {
     fresh();
     const tone_rec_t r = rec(7u, 4000u);
     tone_page_beeps(&pg, pg.gen, pg.cap_gen, &r, 1u);
     CHECK_EQ(reg(LINK_TN_BEEP_HEAD), 1u);
-    tone_page_beeps(&pg, (uint16_t)(pg.gen + 1u), pg.cap_gen, &r, 1u);
+    /* Finished under the set-up before a change of the range: taken. */
+    tone_page_beeps(&pg, (uint16_t)(pg.gen - 1u), pg.cap_gen, &r, 1u);
+    CHECK_EQ(reg(LINK_TN_BEEP_HEAD), 2u);
+    /* From another capture: dropped. */
     tone_page_beeps(&pg, pg.gen, (uint16_t)(pg.cap_gen + 1u), &r, 1u);
     tone_page_beeps(NULL, pg.gen, pg.cap_gen, &r, 1u);
     tone_page_beeps(&pg, pg.gen, pg.cap_gen, NULL, 1u);
-    CHECK_EQ(reg(LINK_TN_BEEP_HEAD), 1u);
+    CHECK_EQ(reg(LINK_TN_BEEP_HEAD), 2u);
 }
 
 TEST_CASE(the_counters_wrap_at_65536_and_beeps_lost_between_the_cores_count)
@@ -732,7 +735,7 @@ int main(void)
     RUN(a_refused_restart_keeps_the_time_base_and_says_the_cut);
     RUN(the_beep_index_does_not_wrap_at_32_bits);
     RUN(a_status_is_taken_only_under_the_set_up_and_capture_in_force);
-    RUN(beeps_handed_over_alone_are_taken_under_the_generations_in_force);
+    RUN(beeps_handed_over_alone_are_taken_under_the_capture_in_force);
     RUN(the_counters_wrap_at_65536_and_beeps_lost_between_the_cores_count);
     RUN(the_order_for_core_1_carries_the_page);
     return test_summary("tone_page");
