@@ -271,7 +271,9 @@ its neutral), in degrees from -180 to just under 180. The sensor counts up in
 the direction its DIR pin is strapped for; the test assumes the angle rises
 with the pulse width, so a DIR strap that runs the other way shows as an
 angle error of twice the travel. Commanded angles are the screen's: -90
-degrees at PULSE MIN, +90 at PULSE MAX, with REVERSE and TRIM applied. A
+degrees at PULSE MIN, +90 at PULSE MAX, with REVERSE and TRIM applied. With
+REVERSE on, the measured angle is negated the same way, on the screen, in the
+report and in the CSV, so a horn at the commanded end shows no error. A
 servo that turns less than 90 degrees over that span shows the difference as
 angle error.
 

@@ -464,6 +464,21 @@ TEST_CASE(pins_the_page_refuses_are_said_and_leave_the_parts_off)
     CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
 }
 
+TEST_CASE(one_address_for_both_monitors_keeps_the_encoder_enabled)
+{
+    fresh(9u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i228_addr = 0x40u;
+    w.i3221_addr = 0x40u;
+    w.as5600 = true;
+    want(&w);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_SAME_ADDR);
+    polls(14);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], (uint16_t)LINK_SN_EN_AS5600);
+}
+
 TEST_CASE(unset_pins_and_one_address_are_not_written_enabled)
 {
     fresh(7u);
@@ -1285,6 +1300,24 @@ TEST_CASE(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right)
     CHECK_EQ(sense_link_enc_magnet(NULL), 0u);
 }
 
+TEST_CASE(a_magnet_is_judged_only_from_a_read_angle)
+{
+    enc_wanted(9u);
+    /* Online with no angle read yet: the status bits are still zero, and
+     * zero is not "no magnet". */
+    far_enc(LINK_SN_ENC_ONLINE, 0u, 0u, 0u);
+    polls(6);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* The angle read with the magnet detected: nothing to say. */
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* The angle read with the magnet not detected: said. */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+}
+
 TEST_CASE(a_magnet_event_waiting_survives_a_current_monitor_answering)
 {
     /* The magnet event is bit 16.  A read that finds a current monitor
@@ -1365,6 +1398,7 @@ int main(void)
     RUN(the_link_going_down_takes_the_angle_with_it);
     RUN(an_encoder_that_does_not_answer_is_said_once);
     RUN(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right);
+    RUN(a_magnet_is_judged_only_from_a_read_angle);
     RUN(a_magnet_event_waiting_survives_a_current_monitor_answering);
 RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
     RUN(encoder_events_come_after_the_current_monitors);
@@ -1377,6 +1411,7 @@ RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
     RUN(two_parts_swap_addresses_without_meeting);
     RUN(a_refused_frame_is_not_written_again_and_its_part_stays_off);
     RUN(pins_the_page_refuses_are_said_and_leave_the_parts_off);
+    RUN(one_address_for_both_monitors_keeps_the_encoder_enabled);
     RUN(unset_pins_and_one_address_are_not_written_enabled);
     RUN(a_waiting_refusal_goes_with_the_value_it_refused);
     RUN(writes_wait_for_an_idle_bank);

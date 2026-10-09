@@ -296,7 +296,9 @@ Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
 nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
 die andere Richtung zeigt sich also als Winkelfehler vom Doppelten des Wegs.
 Die befohlenen Winkel sind die der Seite: -90 Grad bei PULS MIN, +90 bei
-PULS MAX, mit REVERSE und TRIM. Ein Servo, das über diese Spanne weniger als
+PULS MAX, mit REVERSE und TRIM. Bei REVERSE an wird der gemessene Winkel
+genauso negiert, auf der Seite, im Bericht und in der CSV; ein Horn am
+befohlenen Ende zeigt dann keinen Fehler. Ein Servo, das über diese Spanne weniger als
 90 Grad dreht, zeigt den Unterschied als Winkelfehler.
 
 Für jede Bewegung, vom Befehl bis zum nächsten Befehl (Konstanten in

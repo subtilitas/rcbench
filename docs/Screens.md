@@ -1096,7 +1096,7 @@ once and one at a time like the monitors':
 | --- | --- |
 | `coprocessor older than 4.9 -- AS5600 not read` | the encoder is enabled and the coprocessor speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
 | `AS5600 not answering at 0x36` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives |
-| `AS5600 sees no magnet -- check the magnet on the horn shaft` | it answers and STATUS MD (magnet detected) is clear |
+| `AS5600 sees no magnet -- check the magnet on the horn shaft` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear |
 | `AS5600 magnet too weak -- move it closer` | STATUS ML is set |
 | `AS5600 magnet too strong -- move it away` | STATUS MH is set |
 

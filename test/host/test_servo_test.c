@@ -1883,6 +1883,32 @@ TEST_CASE(an_angle_is_counted_from_the_centre_round_the_circle)
     CHECK_EQ(SERVO_TEST_ENC_TOL_COUNTS, 12u);
 }
 
+TEST_CASE(a_reversed_profile_reads_the_encoder_in_the_commanded_direction)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    /* REVERSE on: the commanded angles are flipped, and the measured
+     * angle follows, so a horn at the right end shows no error. */
+    c.reverse = true;
+    c.enc_cmd_deg[0] =  400.0f * ENC_DEG_PER_US;
+    c.enc_cmd_deg[1] = -400.0f * ENC_DEG_PER_US;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->enc_travels, 3u);
+    CHECK(s->enc_end[0].n + s->enc_end[1].n == 3u);
+    if (s->enc_end[0].n > 0u) {
+        CHECK_NEAR(s->enc_end[0].sum / (float)s->enc_end[0].n, 36.0f, 0.5f);
+    }
+    if (s->enc_end[1].n > 0u) {
+        CHECK_NEAR(s->enc_end[1].sum / (float)s->enc_end[1].n, -36.0f, 0.5f);
+    }
+    float deg = 0.0f;
+    CHECK(servo_test_enc_at(&g.t, g.now, &deg));
+    CHECK(fabsf(deg) <= 36.5f);
+    CHECK(strstr(g.report, "Commanded: +36.0 deg at the low end, -36.0 deg at the high end.") != NULL);
+}
+
 TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
 {
     servo_test_cfg_t c;
@@ -2227,6 +2253,7 @@ TEST_CASE(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged)
 int main(void)
 {
     RUN(an_angle_is_counted_from_the_centre_round_the_circle);
+    RUN(a_reversed_profile_reads_the_encoder_in_the_commanded_direction);
     RUN(a_run_with_the_encoder_reports_the_angle_beside_the_current);
     RUN(without_the_encoder_the_run_and_its_files_are_as_before);
     RUN(a_servo_that_turns_less_than_commanded_shows_the_error);

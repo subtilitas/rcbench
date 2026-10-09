@@ -127,7 +127,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                    == (LINK_SN_EN_I228 | LINK_SN_EN_I3221)
                && w->i228_addr == w->i3221_addr) {
         local = SENSE_LINK_EV_SAME_ADDR;
-        en = 0u;
+        en = (uint16_t)(en & ~(LINK_SN_EN_I228 | LINK_SN_EN_I3221));
     }
     next[LINK_SN_ENABLE]  = en;
     next[LINK_SN_SDA_PIN] = (w->sda < 0) ? 0u : (uint16_t)w->sda;
@@ -237,7 +237,9 @@ static sense_link_op_kind_t write_owed(const sense_link_t *s,
         if (s->refused_bus) {
             return SENSE_LINK_OP_NONE;
         }
-        regs[0] = 0u;
+        /* Both monitors off; the encoder shares the bus pins, not their
+         * addresses, and stays as it is. */
+        regs[0] = (uint16_t)(s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600);
         regs[1] = s->held[LINK_SN_SDA_PIN];
         regs[2] = s->held[LINK_SN_SCL_PIN];
         regs[3] = (uint16_t)LINK_SN_KHZ_BUS;
@@ -459,6 +461,11 @@ static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
     s->enc_silent_told = false;
     s->enc_online_seen = true;
     s->events &= ~(uint32_t)SENSE_LINK_EV_ENC_SILENT;
+    if ((f & LINK_SN_ENC_VALID) == 0u) {
+        /* Online but no register set read yet: the magnet bits are not
+         * yet a reading, and a zero is not "no magnet". */
+        return;
+    }
     const uint16_t bits = (uint16_t)(f & (LINK_SN_ENC_MD | LINK_SN_ENC_ML
                                           | LINK_SN_ENC_MH));
     const bool fine = (bits & LINK_SN_ENC_MD) != 0u

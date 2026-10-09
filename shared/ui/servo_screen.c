@@ -1661,11 +1661,13 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     }
 }
 
-/* The encoder's angle from its centre, degrees. */
+/* The encoder's angle from its centre, degrees, in the direction of the
+ * commanded angle: negated with REVERSE on, as us_to_deg() is. */
 static float enc_deg_now(void)
 {
-    return servo_test_enc_deg(s.enc_raw,
-                              (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    const float d = servo_test_enc_deg(
+        s.enc_raw, (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    return s.reverse ? -d : d;
 }
 
 /* Whether the encoder's last reading is on show and may be used: one the

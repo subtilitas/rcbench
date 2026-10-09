@@ -21,6 +21,14 @@ static float mean_of(const servo_test_mean_t *m)
     return (m->n > 0u) ? m->sum / (float)m->n : 0.0f;
 }
 
+/* The angle in the commanded direction: with REVERSE on, the horn turns
+ * the other way for the same command, and the angle is negated. */
+static float enc_dir_deg(const servo_test_t *t, uint16_t raw)
+{
+    const float d = servo_test_enc_deg(raw, t->cfg.enc_centre);
+    return t->cfg.reverse ? -d : d;
+}
+
 float servo_test_enc_deg(uint16_t raw, uint16_t centre)
 {
     int d = (int)((unsigned)(raw - centre) & 4095u);
@@ -683,7 +691,7 @@ bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg)
     if (!found || best > SERVO_TEST_ENC_STALE_MS) {
         return false;
     }
-    *deg = servo_test_enc_deg(raw, t->cfg.enc_centre);
+    *deg = enc_dir_deg(t, raw);
     return true;
 }
 
@@ -704,7 +712,7 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
     if (t->enc_hist_n < SERVO_TEST_ENC_HIST) {
         ++t->enc_hist_n;
     }
-    const float deg = servo_test_enc_deg(e->raw, t->cfg.enc_centre);
+    const float deg = enc_dir_deg(t, e->raw);
     if (!servo_test_running(t) || !t->cfg.enc_on) {
         return;
     }

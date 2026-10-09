@@ -1193,7 +1193,7 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 | --- | --- |
 | `Koprozessor älter als 4.9 -- AS5600 nicht gelesen` | der Encoder ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
 | `AS5600 antwortet nicht an 0x36` | eingeschaltet, und 2,5 s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt |
-| `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen` | er antwortet, und STATUS MD (Magnet erkannt) ist nicht gesetzt |
+| `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt |
 | `AS5600: Magnet zu schwach -- näher heranbringen` | STATUS ML ist gesetzt |
 | `AS5600: Magnet zu stark -- weiter weg` | STATUS MH ist gesetzt |
 
