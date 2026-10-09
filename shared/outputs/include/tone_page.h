@@ -54,8 +54,11 @@ typedef struct {
     uint32_t   seen_lost, seen_glitches;   /**< the status's own, last    */
     /* The beeps of this capture. */
     tone_rec_t ring[LINK_TN_RING];
-    uint32_t   n;          /**< beeps taken since boot                    */
-    uint32_t   first;      /**< the first still valid, as a count         */
+    uint64_t   n;          /**< beeps taken since boot; 64 bit: no wrap   */
+    uint64_t   first;      /**< the first still valid, as a count         */
+    uint32_t   ms_shift;   /**< added to each start: a restart that kept
+                                the ring keeps the time base too          */
+    bool       broke;      /**< such a restart cut this capture: OVERRUN  */
     tone_t     scratch;    /**< tone_init()'s verdict on a set-up         */
 } tone_page_t;
 
@@ -108,8 +111,11 @@ void tone_page_capture(tone_page_t *p);
 /** The capture starts again with the ring kept: a refused write that put
  *  the old set-up back.  The order carries a new capture generation; the
  *  beeps already in the ring stay readable, because the panel was told
- *  nothing restarted. */
-void tone_page_recapture(tone_page_t *p);
+ *  nothing restarted.  @p shift_ms, the time from the old capture's start
+ *  to the new one's, is added to every later beep's start, so EVT_START_MS
+ *  keeps its origin.  A beep under way was cut: FLAGS shows OVERRUN until
+ *  the next capture. */
+void tone_page_recapture(tone_page_t *p, uint32_t shift_ms);
 
 bool    tone_page_enabled(const tone_page_t *p);   /**< ENABLE bit 0      */
 uint8_t tone_page_pin(const tone_page_t *p);

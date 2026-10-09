@@ -1103,6 +1103,25 @@ TEST_CASE(a_panel_that_never_read_the_tap_reads_across_the_wrap)
     check_beep(&b[1], 65535u);
 }
 
+TEST_CASE(a_waiting_pin_busy_word_goes_with_its_pin)
+{
+    fresh(8u);
+    tap_on();
+    /* The band is busy; the page says the pin is not free. */
+    fk.flags |= LINK_TN_PIN_REFUSED;
+    polls(2);
+    /* Another pin before the word is shown: it would name pin 18. */
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.pin = 18u;
+    want(&w);
+    uint16_t ev;
+    while ((ev = tone_link_event(&tl, now + 60000u)) != 0u) {
+        CHECK((ev & TONE_LINK_EV_PIN_BUSY) == 0u);
+        now += TONE_LINK_EVENT_GAP_MS;
+    }
+}
+
 TEST_CASE(the_history_keeps_the_newest_eight)
 {
     fresh(8u);
@@ -1396,6 +1415,7 @@ int main(void)
     RUN(beeps_after_a_restart_are_read_before_and_after_the_next_status);
     RUN(a_panel_that_never_read_the_tap_reads_every_beep_after_its_start);
     RUN(a_panel_that_never_read_the_tap_reads_across_the_wrap);
+    RUN(a_waiting_pin_busy_word_goes_with_its_pin);
     RUN(the_history_keeps_the_newest_eight);
     RUN(a_beep_costs_a_select_and_a_read);
     RUN(the_readout_follows_the_flags);

@@ -233,14 +233,18 @@ void tone_page_capture(tone_page_t *p)
     if (p != NULL) {
         ++p->cap_gen;
         p->first = p->n + 1u;
+        p->ms_shift = 0u;
+        p->broke = false;
         forget_status(p);
     }
 }
 
-void tone_page_recapture(tone_page_t *p)
+void tone_page_recapture(tone_page_t *p, uint32_t shift_ms)
 {
     if (p != NULL) {
         ++p->cap_gen;
+        p->ms_shift += shift_ms;
+        p->broke = true;
         forget_status(p);
     }
 }
@@ -310,7 +314,9 @@ void tone_page_beeps(tone_page_t *p, uint16_t gen, uint16_t cap_gen,
         return;
     }
     for (size_t i = 0; i < n; ++i) {
-        p->ring[p->n % LINK_TN_RING] = rec[i];
+        tone_rec_t *r = &p->ring[p->n % LINK_TN_RING];
+        *r = rec[i];
+        r->start_ms += p->ms_shift;
         ++p->n;
     }
 }
@@ -323,7 +329,7 @@ void tone_page_dropped(tone_page_t *p, uint32_t n)
 }
 
 /* Beep index @p i (a count from 1) as the number the wire carries. */
-static uint16_t seq_of(uint32_t i)
+static uint16_t seq_of(uint64_t i)
 {
     return i == 0u ? 0u : (uint16_t)((i - 1u) % SEQ_PERIOD + 1u);
 }
@@ -334,8 +340,8 @@ static const tone_rec_t *find(const tone_page_t *p, uint16_t sel)
     if (sel == 0u) {
         return NULL;
     }
-    for (uint32_t k = 0; k < LINK_TN_RING && k < p->n; ++k) {
-        const uint32_t i = p->n - k;
+    for (uint64_t k = 0; k < LINK_TN_RING && k < p->n; ++k) {
+        const uint64_t i = p->n - k;
         if (i < p->first) {
             break;
         }
@@ -359,7 +365,7 @@ void tone_page_read(const tone_page_t *p, uint8_t off, uint8_t n,
     uint16_t f = 0u;
     if (p->running)       { f |= LINK_TN_RUNNING; }
     if (p->refused)       { f |= LINK_TN_PIN_REFUSED; }
-    if (p->overrun)       { f |= LINK_TN_OVERRUN; }
+    if (p->overrun || p->broke) { f |= LINK_TN_OVERRUN; }
     if (p->beep)          { f |= LINK_TN_BEEP; }
     if (p->tone)          { f |= LINK_TN_TONE; }
     r[LINK_TN_FLAGS]        = f;

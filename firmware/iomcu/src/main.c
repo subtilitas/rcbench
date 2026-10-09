@@ -637,10 +637,14 @@ static void tone_order(void)
  * ring that is being started over.
  */
 static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
+static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
 
 static bool tone_rewire_as(bool keep_ring)
 {
     s_tone_busy = false;
+    if (!keep_ring) {
+        s_tone_was_us = tone_cap_start_us();
+    }
     const bool was_running = tone_cap_pause();
     tone_order();
     if (!tone_core1_quiesce() && was_running) {
@@ -664,7 +668,9 @@ static bool tone_rewire_as(bool keep_ring)
         return false;
     }
     if (keep_ring) {
-        tone_page_recapture(&s_tone);
+        tone_page_recapture(&s_tone,
+                            (uint32_t)((tone_cap_start_us() - s_tone_was_us)
+                                       / 1000u));
     } else {
         tone_page_capture(&s_tone);
     }

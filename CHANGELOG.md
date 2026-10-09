@@ -45,7 +45,9 @@ history is in git.
   pass that sees the overflow and in the next are discarded, since they hold
   edges from both sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before it stops or
   moves the capture; a pass still running then refuses the change and
-  leaves the capture as it was. A core 1 that does not start leaves a
+  leaves the capture as it was. A refused change that has to restart the old
+  capture keeps the ring and the time base of EVT_START_MS and shows
+  OVERRUN, since a beep under way was cut. A core 1 that does not start leaves a
   saved tap refused, its capture let go. The pin is an input
   with its pull-down on while the tap is disabled. The host suite assembles
   the PIO program from its source, runs it in a cycle-counting model and

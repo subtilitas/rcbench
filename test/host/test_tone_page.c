@@ -93,7 +93,8 @@ static void give(unsigned n)
     while (n != 0u) {
         const unsigned k = n < 8u ? n : 8u;
         for (unsigned i = 0; i < k; ++i) {
-            r[i] = rec((pg.n + i + 1u) * 10u, (uint16_t)(1000u + pg.n + i));
+            r[i] = rec((uint32_t)((pg.n + i + 1u) * 10u),
+                       (uint16_t)(1000u + pg.n + i));
         }
         tone_page_publish(&pg, &st, r, k);
         n -= k;
@@ -534,7 +535,7 @@ TEST_CASE(a_capture_restarted_after_a_refusal_keeps_the_ring)
 {
     fresh();
     give(5u);
-    tone_page_recapture(&pg);
+    tone_page_recapture(&pg, 0u);
     CHECK_EQ(reg(LINK_TN_BEEP_HEAD), 5u);
     uint16_t sel = 3u;
     tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u);
@@ -543,7 +544,41 @@ TEST_CASE(a_capture_restarted_after_a_refusal_keeps_the_ring)
     sel = 6u;
     tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u);
     CHECK_EQ(reg(LINK_TN_EVT_SEQ), 6u);
-    tone_page_recapture(NULL);
+    tone_page_recapture(NULL, 0u);
+}
+
+TEST_CASE(a_refused_restart_keeps_the_time_base_and_says_the_cut)
+{
+    fresh();
+    give(2u);
+    CHECK_EQ(reg(LINK_TN_FLAGS) & LINK_TN_OVERRUN, 0u);
+    tone_page_recapture(&pg, 1000u);
+    CHECK(reg(LINK_TN_FLAGS) & LINK_TN_OVERRUN);
+    tone_rec_t r = rec(30u, 1234u);
+    tone_status_t st = status(pg.gen, pg.cap_gen);
+    tone_page_publish(&pg, &st, &r, 1u);
+    uint16_t sel = 3u;
+    tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u);
+    CHECK_EQ(reg(LINK_TN_EVT_SEQ), 3u);
+    CHECK_EQ(reg(LINK_TN_EVT_START_LO), 1030u);
+    /* A real restart starts both again. */
+    tone_page_capture(&pg);
+    CHECK_EQ(reg(LINK_TN_FLAGS) & LINK_TN_OVERRUN, 0u);
+    CHECK_EQ(pg.ms_shift, 0u);
+}
+
+TEST_CASE(the_beep_index_does_not_wrap_at_32_bits)
+{
+    fresh();
+    /* Four billion beeps in, after a restart. */
+    pg.n = 0xFFFFFFFEull;
+    pg.first = pg.n + 1u;
+    give(4u);
+    const uint16_t head = reg(LINK_TN_BEEP_HEAD);
+    CHECK(head != 0u);
+    uint16_t sel = head;
+    tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u);
+    CHECK_EQ(reg(LINK_TN_EVT_SEQ), head);
 }
 
 TEST_CASE(a_status_is_taken_only_under_the_set_up_and_capture_in_force)
@@ -694,6 +729,8 @@ int main(void)
     RUN(beep_numbers_run_to_65535_and_go_round_without_a_zero);
     RUN(a_new_capture_empties_the_ring_and_the_numbers_go_on);
     RUN(a_capture_restarted_after_a_refusal_keeps_the_ring);
+    RUN(a_refused_restart_keeps_the_time_base_and_says_the_cut);
+    RUN(the_beep_index_does_not_wrap_at_32_bits);
     RUN(a_status_is_taken_only_under_the_set_up_and_capture_in_force);
     RUN(beeps_handed_over_alone_are_taken_under_the_generations_in_force);
     RUN(the_counters_wrap_at_65536_and_beeps_lost_between_the_cores_count);

@@ -147,6 +147,11 @@ void tone_link_want(tone_link_t *t, const tone_setup_t *w, uint32_t now_ms)
     if (!w->enable) {
         stale |= (uint16_t)TONE_LINK_EV_NO_PAGE;
     }
+    /* A pin said to be busy is about that pin: off, or another one, and
+     * the word waiting to be shown would name a pin nobody asked for. */
+    if (!w->enable || !t->want_set || t->want[LINK_TN_PIN] != w->pin) {
+        stale |= (uint16_t)TONE_LINK_EV_PIN_BUSY;
+    }
     t->events &= (uint16_t)~stale;
     /* The first set-up is the one the panel starts with, not an edit: it
      * is due at once. */
