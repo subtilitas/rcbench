@@ -346,6 +346,10 @@ static struct {
     /* The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;
+    /* A DISARM has been posted and the bench has not reported itself
+     * disarmed since: taken or not, the bench is on its way down.  Cleared
+     * by the bench's report. */
+    bool       disarm_asked;
     ui_hold_t  arm;
     bool       arm_down;   /**< a press is on the ARM button          */
     int        arm_id;     /**< which contact it is                   */
@@ -747,12 +751,14 @@ static float rest_deg(void)
 /*
  * Whether an input may change the commanded value: only while the servo
  * follows it.  Not on a disarmed bench, whose pins carry no pulse, and not
- * under a disarm waiting to be taken, which every position is dropped
- * behind (post()).
+ * from a DISARM being posted until the bench reports itself disarmed:
+ * waiting to be taken, every position is dropped behind it (post()), and
+ * once taken the bench reads armed here for the frames its answer takes.
  */
 static bool value_live(void)
 {
-    return s.armed && s.pending.kind != SERVO_CMD_DISARM;
+    return s.armed && !s.disarm_asked
+           && s.pending.kind != SERVO_CMD_DISARM;
 }
 
 static void post(servo_cmd_kind_t kind, uint16_t us);
@@ -762,13 +768,14 @@ static void post(servo_cmd_kind_t kind, uint16_t us);
  * so the value shown is that rest, as at an arm: a drag under way ends, the
  * value follows the rest through a change of profile (at_rest), and the
  * next input starts from it.  The horn is drawn towards it at SPEED.  On a
- * disarmed bench, and behind an arm or a disarm waiting to be taken, which
- * the release does not replace (post()), the value stays.
+ * disarmed bench, behind an arm or a disarm waiting to be taken, which the
+ * release does not replace (post()), and after a disarm the bench has not
+ * answered yet, the value stays.
  */
 static void release(void)
 {
     post(SERVO_CMD_RELEASE, 0);
-    if (s.armed && s.pending.kind == SERVO_CMD_RELEASE) {
+    if (value_live() && s.pending.kind == SERVO_CMD_RELEASE) {
         s.dragging      = false;
         s.commanded_deg = rest_deg();
         s.at_rest       = true;
@@ -883,6 +890,7 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
         s.arm_in_flight   = true;
     } else if (kind == SERVO_CMD_DISARM) {
         s.arm_in_flight = false;
+        s.disarm_asked  = true;
     }
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
@@ -1050,13 +1058,13 @@ static void record_start(void)
 
 /*
  * Start the sweep, or carry on with a changed one from its beginning, as the
- * coprocessor does.  Only on an armed bench and a coprocessor that sweeps:
- * the far end refuses one otherwise.  Drawn once the start is acknowledged
- * (servo_screen_sweep_started()).
+ * coprocessor does.  Only while the value is live (value_live()) and on a
+ * coprocessor that sweeps: the far end refuses one otherwise.  Drawn once
+ * the start is acknowledged (servo_screen_sweep_started()).
  */
 static void start_sweep(void)
 {
-    if (!s.armed || !s.sweep_able || !s.surfaces || !s.link_up) {
+    if (!value_live() || !s.sweep_able || !s.surfaces || !s.link_up) {
         return;
     }
     const sweep_cfg_t cfg = sweep_cfg_now();
@@ -1125,7 +1133,7 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 static void resume_sweep(void)
 {
     const sweep_cfg_t now = sweep_cfg_now();
-    if (!s.armed || !s.sweep_able || !same_sweep(&now, &s.sw.cfg)
+    if (!value_live() || !s.sweep_able || !same_sweep(&now, &s.sw.cfg)
         || !sweep_resume(&s.sw, s.clock_ms)) {
         start_sweep();
         return;
@@ -1584,6 +1592,9 @@ void servo_screen_set_armed(bool armed)
 {
     const bool arm_edge = armed && !s.bench_armed;
     s.bench_armed = armed;
+    if (!armed) {
+        s.disarm_asked = false;     /* answered */
+    }
     if (arm_edge) {
         /*
          * The bench armed: the pins drive every surface at its rest, the

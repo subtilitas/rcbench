@@ -351,8 +351,11 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   `ZUERST ARM`. Eine Drehung des Drehknopfs in dieser Zeit wird nicht
   aufgehoben. Nicht scharf reicht vom DISARM, bis der Prüfstand scharf
   meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
-  ARM und der Antwort des Prüfstands; ein DISARM, das der Bildschirm gepostet
-  und die Anwendung noch nicht abgeholt hat, lehnt sie ebenfalls ab. Ein
+  ARM und der Antwort des Prüfstands. Von einem DISARM an, das ein Bildschirm
+  anfordert, bis der Prüfstand entschärft meldet, werden die Bedienelemente
+  ebenfalls abgelehnt, solange das DISARM auf das Abholen wartet und danach.
+  Auf SERVO wird ein FREIGEBEN in dieser Zeit gesendet und bewegt keinen
+  Wert. Ein
   laufender Drag endet bei einem ARM, einem DISARM und einem STOP, und ein
   Finger, der auf dem Bedienelement liegt, bewegt nichts, bis er abhebt und
   neu drückt. Ein Wert, den der Bildschirm

@@ -270,6 +270,47 @@ TEST_CASE(nothing_moves_the_throttle_under_a_disarm_not_yet_taken)
     CHECK_EQ(motor_screen_throttle(), 0.0f);
 }
 
+/*
+ * A DISARM taken and not yet answered: the bench still reads armed here for
+ * the frames its answer takes, and every control stays refused through
+ * them.  Reporting the bench armed again in that time changes nothing; its
+ * report of the disarm returns the throttle to 0 %, and the arm after it
+ * takes input again.
+ */
+TEST_CASE(nothing_moves_the_throttle_between_a_disarm_and_its_answer)
+{
+    for (int by_leaving = 0; by_leaving < 2; ++by_leaving) {
+        fresh();
+        CHECK(arm());
+        drag(28, 100);
+        const float driven = took().value;
+        CHECK_NEAR(driven, 100.0f * PX_PCT, 0.01f);
+        if (by_leaving) {
+            ui_router_goto(SCREEN_OVERVIEW);
+            CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+            ui_router_goto(SCREEN_MOTOR);
+        } else {
+            feed_tap(FEED_LONE, ARM_X, ARM_Y);
+            CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+        }
+        for (int frame = 0; frame < 5; ++frame) {
+            motor_screen_set_armed(true);       /* not yet answered */
+            drag(28, 200);
+            feed_tap(FEED_LONE, UP_X, TRACK_Y);
+            feed_tap(FEED_LONE, DOWN_X, TRACK_Y);
+            knob(0.2f);
+            CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+            CHECK_EQ(motor_screen_throttle(), driven);
+        }
+        motor_screen_set_armed(false);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK(every_control_is_refused());
+        CHECK(arm());
+        feed_tap(FEED_LONE, UP_X, TRACK_Y);
+        CHECK_NEAR(took().value, 1.0f, 0.001f);
+    }
+}
+
 /* A drag under way when a second finger taps DISARM ends there: its moves
  * behind the disarm change nothing. */
 TEST_CASE(a_drag_ends_where_the_disarm_is_asked)
@@ -695,6 +736,7 @@ int main(void)
     RUN(no_throttle_control_moves_the_value_after_a_disarm);
     RUN(no_throttle_control_moves_the_value_before_the_bench_answers);
     RUN(nothing_moves_the_throttle_under_a_disarm_not_yet_taken);
+    RUN(nothing_moves_the_throttle_between_a_disarm_and_its_answer);
     RUN(a_drag_ends_where_the_disarm_is_asked);
     RUN(a_press_on_the_disarmed_track_is_no_drag_after_the_arm);
     RUN(the_first_input_after_an_arm_starts_from_zero);

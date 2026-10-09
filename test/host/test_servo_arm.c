@@ -336,6 +336,43 @@ TEST_CASE(nothing_moves_the_value_under_a_disarm_not_yet_taken)
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
+/*
+ * A DISARM taken and not yet answered: the bench still reads armed here for
+ * the frames its answer takes.  Every position stays refused through them,
+ * and RELEASE is sent and moves no value.  The bench's report of the disarm
+ * leaves the value last driven, and the arm after it takes input again.
+ */
+TEST_CASE(nothing_moves_the_value_between_a_disarm_and_its_answer)
+{
+    fresh();
+    CHECK(arm());
+    drag(10.0f, 40.0f);
+    const uint16_t driven = took().value_us;
+    CHECK(driven > 1700);
+    frames(40);
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    for (int frame = 0; frame < 5; ++frame) {
+        servo_screen_set_armed(true);           /* not yet answered */
+        drag(-60.0f, -30.0f);
+        knob(0.2f);
+        feed_tap(FEED_LONE, CENTRE_X, BTN_Y);
+        feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_NONE);
+        CHECK_EQ(servo_screen_commanded(), driven);
+        feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+        CHECK_EQ(servo_screen_commanded(), driven);
+    }
+    servo_screen_set_armed(false);
+    CHECK_EQ(servo_screen_commanded(), driven);
+    CHECK(every_input_is_refused());
+    CHECK(arm());
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    knob(0.01f);
+    CHECK_EQ(took().value_us, 1510);
+}
+
 /* ---------------------------------------------------------- the arm edge */
 
 /* STANDARD PWM: the arm sets the value to the rest the outputs layer
@@ -964,6 +1001,7 @@ int main(void)
     RUN(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm);
     RUN(a_drag_does_not_cross_a_disarm_and_the_next_arm);
     RUN(nothing_moves_the_value_under_a_disarm_not_yet_taken);
+    RUN(nothing_moves_the_value_between_a_disarm_and_its_answer);
     RUN(an_arm_sets_the_value_to_the_channels_rest);
     RUN(an_arm_on_a_narrow_servo_sets_the_value_to_760_us);
     RUN(an_arm_sets_the_rest_and_not_the_trimmed_centre);

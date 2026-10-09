@@ -3043,6 +3043,7 @@ TEST_CASE(leaving_forgets_the_sweep_model)
     servo_screen_sweep_started(old_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
     CHECK_EQ(servo_screen_drawn(), at);
 
+    servo_screen_set_armed(false);             /* the disarm, answered */
     servo_screen_set_armed(true);
     sweep_go();
     frames(0.25f);

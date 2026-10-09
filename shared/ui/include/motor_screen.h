@@ -54,8 +54,8 @@ void motor_screen_push(const bench_state_t *b);
  * The throttle follows the bench.  While it is not armed no control
  * changes the value: the slider, its -1 and +1 buttons and
  * motor_screen_knob() post nothing and move nothing, from the first frame
- * to the bench's answer to an ARM, and behind a MOTOR_CMD_DISARM waiting to
- * be polled.  The change to disarmed returns the slider to 0 %, drops a
+ * to the bench's answer to an ARM, and from a MOTOR_CMD_DISARM being posted
+ * until this is called with false, polled or not.  The change to disarmed returns the slider to 0 %, drops a
  * throttle command waiting to be polled and ends a drag under way.
  *
  * The hold that posts MOTOR_CMD_ARM does the same.  The change to armed

@@ -181,6 +181,9 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * button, the release a run's end posts, and the one a change of profile
  * posts on a resting bench.  On a disarmed bench RELEASE is posted and the
  * value stays.
+ *
+ * From a SERVO_CMD_DISARM being posted until this is called with false,
+ * taken or not, the bench counts as disarmed for all of the above.
  */
 void servo_screen_set_armed(bool armed);
 

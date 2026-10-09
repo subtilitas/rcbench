@@ -305,8 +305,10 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   readout stay, the control is drawn dimmed and the screen reads
   `ARM FIRST`. A turn of the rotary knob made then is not kept. Not armed
   runs from the disarm until the bench reports armed, so it covers the time
-  between a completed ARM hold and the bench's answer; a disarm the screen
-  has posted and the application has not collected refuses them too. A drag
+  between a completed ARM hold and the bench's answer. From a DISARM a
+  screen asks for until the bench reports disarmed the controls are refused
+  too, while the DISARM waits to be collected and after it. On SERVO a
+  RELEASE in that time is sent and moves no value. A drag
   under way ends at an arm, a disarm and a stop, and a finger resting on the
   control moves nothing until it lifts and presses again. A value the screen
   has posted and the application has not collected at a disarm or a stop is

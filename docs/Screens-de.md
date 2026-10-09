@@ -160,9 +160,9 @@ Bedienelement tut:
 Nicht scharf zeigt die Zeile unter dem Track `ZUERST ARM`. Der Prüfstand ist
 vom Entschärfen an nicht scharf, bis er scharf meldet: Auch ein
 Bedienelement, das nach dem durchgelaufenen Halten auf ARM und vor dieser
-Meldung berührt wird, wird abgelehnt. Hinter einem DISARM, das der
-Bildschirm gepostet und das Panel noch nicht gesendet hat, werden die
-Bedienelemente ebenfalls abgelehnt.
+Meldung berührt wird, wird abgelehnt. Von einem DISARM an, das der
+Bildschirm anfordert, durch den Tap oder durch das Verlassen, bis der
+Prüfstand entschärft meldet, werden die Bedienelemente ebenfalls abgelehnt.
 
 Ein Entschärfen setzt das Gas auf 0 %, gleich wie es geschieht: der Tap auf
 DISARM, STOP, eine verlorene Verbindung, ein Touch-Controller, der nicht
@@ -382,7 +382,9 @@ Unscharf wird das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST
 ARM`. Horn und PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
 Neustart PULS CENTRE. Eine unscharf geänderte Pulsbreiten-Einstellung ändert
 die Mikrosekunden, die PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
-ihn nicht.
+ihn nicht. Von einem DISARM an, das der Bildschirm anfordert, durch den Tap
+oder durch das Verlassen, bis der Prüfstand unscharf meldet, gilt die Spalte
+Unscharf ebenfalls.
 
 Wird der Prüfstand scharf, wird der befohlene Wert zur Ruhelage, die die Pins
 treiben: die Mitte zwischen den Endpunkten des Kanals, 1500 us bei STANDARD

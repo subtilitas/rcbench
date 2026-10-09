@@ -161,6 +161,10 @@ static struct {
      * and the bench has not answered: the slider's value is from after the
      * ask.  Cleared by the bench's answer, a stop, a touch loss and leave(). */
     bool          arm_asked;
+    /* A DISARM has been posted and the bench has not reported itself
+     * disarmed since: collected or not, the bench is on its way down, and
+     * the throttle is not live.  Cleared by the bench's report. */
+    bool          disarm_asked;
     unsigned      drawn_mask;
     /* The arm state of the bench itself, which is what bounds a run.  Kept
      * apart from `armed`: that one also carries a disarm this screen has
@@ -283,12 +287,15 @@ static void reset(void)
 /*
  * Whether a control may change the throttle: only while the ESC follows it.
  * Not on a disarmed bench, which the slider, its step buttons and the knob
- * would otherwise load with a value for the next arm, and not under a disarm
- * waiting to be taken, which every throttle is dropped behind (post()).
+ * would otherwise load with a value for the next arm, and not from a DISARM
+ * being posted until the bench reports itself disarmed: waiting to be
+ * taken, every throttle is dropped behind it (post()), and once taken the
+ * bench reads armed here for the frames its answer takes.
  */
 static bool value_live(void)
 {
-    return s.armed && s.pending.kind != MOTOR_CMD_DISARM;
+    return s.armed && !s.disarm_asked
+           && s.pending.kind != MOTOR_CMD_DISARM;
 }
 
 /* End a drag on the track.  The finger owned the slider in this frame, so
@@ -316,6 +323,7 @@ static void post(motor_cmd_kind_t kind, float value)
     s.knob_pending = false;
     if (kind == MOTOR_CMD_DISARM) {
         end_drag();
+        s.disarm_asked = true;
     }
     if (s.pending.kind == MOTOR_CMD_DISARM && kind != MOTOR_CMD_DISARM) {
         return;
@@ -425,6 +433,9 @@ void motor_screen_set_armed(bool armed)
      * catches up.  Hanging the clear on `s.armed` would erase the run at the
      * moment of asking to end it.
      */
+    if (!armed) {
+        s.disarm_asked = false;     /* answered */
+    }
     if (s.bench_armed != armed) {
         s.bench_armed = armed;
         if (armed) {

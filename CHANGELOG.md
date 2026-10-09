@@ -14,7 +14,9 @@ history is in git.
   at 0.0 %. They are drawn dimmed and the line under the track reads
   `ARM FIRST`. Not armed runs from the disarm until the bench reports armed,
   so a control touched between a completed ARM hold and the bench's answer
-  is refused too. The screen returns the throttle to 0 % at every disarm
+  is refused too, and so is one touched from a DISARM the screen asks for
+  until the bench reports disarmed; SERVO's position controls follow the
+  same rule. The screen returns the throttle to 0 % at every disarm
   itself and drops a throttle posted and not yet sent. A knob turn made
   while not armed is not kept. Host suite only; not run on hardware.
 - **RELEASE on SERVO sets the value shown to the rest.** On an armed bench
