@@ -2582,6 +2582,15 @@ static void log_post(log_row_t *row)
 /* ---------------------------------------------------- asking the far end */
 
 /*
+ * Exchanges that ended with no answer: a frame that did not reach the wire,
+ * or a request that waited out LINK_HOST_TIMEOUT_MS (1000 ms).  A refusal is
+ * an answer and is not counted.  Control task only.  An arm compares it
+ * across its own exchanges to tell a far end that refused from a link that
+ * went quiet; see arm_write_failed().
+ */
+static uint32_t s_unanswered;
+
+/*
  * Put a built request on the wire and wait for its answer.  Blocking, and
  * short: the link is host-polled, so there is never a second request in
  * flight, and a transaction is well under one panel frame.
@@ -2598,6 +2607,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
     const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
     if (n == 0) {
         link_host_abandon(host);
+        ++s_unanswered;
         return false;
     }
     const uint32_t sent_us = (uint32_t)esp_timer_get_time();
@@ -2606,6 +2616,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
             /* Nothing reached the wire, so there is nothing to wait for.
              * Leaving it outstanding would refuse every later request. */
             link_host_abandon(host);
+            ++s_unanswered;
             return false;
         }
     }
@@ -2655,6 +2666,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
          */
         (void)link_host_tick(host, now_ms());
         if (!link_host_pending(host)) {
+            ++s_unanswered;
             return false;
         }
     }
@@ -3181,6 +3193,28 @@ static void far_end_stop_here(void)
     throttle_to_zero();
     servo_let_go();
     control_alert(TR(ALERT_COPRO_DISARMED));
+}
+
+/*
+ * An arm that did not go through: a release or a rate the far end did not
+ * take, a CLEAR or an arming frame that did not come back acknowledged.
+ *
+ * @p quiet_before is s_unanswered as the arm began.  Unchanged, every
+ * exchange of the arm was answered and the far end refused: the panel stays
+ * disarmed and says @p alert.  Changed, one of them waited out its timeout
+ * or never reached the wire: the link went quiet under this arm, and the
+ * far end may have taken a frame and lost only the acknowledgement.  That
+ * is a stop, heartbeat withheld, as poll_far_end() makes one on its own
+ * edge -- by the time the poll finds the link down there is no arm left for
+ * it to stop.  arming_write_failed() is the decision.
+ */
+static void arm_write_failed(uint32_t quiet_before, const char *alert)
+{
+    if (arming_write_failed(&s_arm, s_unanswered == quiet_before)) {
+        far_end_stop_here();
+    } else {
+        control_alert(alert);
+    }
 }
 
 static bool control_clear_failsafe(link_msg_t *reply)
@@ -4022,6 +4056,7 @@ static void service_arming(bool link_up)
         break;
     case ARMING_ACT_ARM: {
         link_msg_t ack = { 0 };
+        const uint32_t quiet = s_unanswered;
         /*
          * An arm starts from nothing, and this is where that is made true
          * rather than hoped for.  ARM and THROTTLE travel in one
@@ -4059,14 +4094,12 @@ static void service_arming(bool link_up)
              * What the far end must not do meanwhile is arm; see
              * poll_far_end().
              */
-            arming_refused(&s_arm);
-            control_alert(TR(ALERT_SERVO_NOT_RELEASED));
+            arm_write_failed(quiet, TR(ALERT_SERVO_NOT_RELEASED));
         } else if (link_up && !servo_rate_settled()) {
             /* The far end may hold a rate faster than the surfaces' servos
              * take, and nothing here knows otherwise; refused like an
              * unpaid release, and asked again on the next attempt. */
-            arming_refused(&s_arm);
-            control_alert(TR(ALERT_SERVO_RATE));
+            arm_write_failed(quiet, TR(ALERT_SERVO_RATE));
         } else if (link_up) {
             /*
              * Two exchanges: CLEAR on its own, then the frame that arms.
@@ -4085,17 +4118,17 @@ static void service_arming(bool link_up)
              * count that was sent or does not start; control_arm() says why.
              */
             if (!control_clear_failsafe(&ack)) {
-                arming_refused(&s_arm);
-                control_alert(TR(ALERT_ARM_REFUSED));
+                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
                 break;
             }
             if (arming_stopped(&s_arm) || atomic_load(&s_disarm_request)) {
                 /* Stopped or disarmed while the clear was in flight.  No
                  * alert: the operator asked for this and knows. */
                 arming_refused(&s_arm);
-            } else if (!control_arm(&ack)) {
-                arming_refused(&s_arm);
-                control_alert(TR(ALERT_ARM_REFUSED));
+                break;
+            }
+            if (!control_arm(&ack)) {
+                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
             } else {
                 outputs_arm(&s_out, true, now_ms());
                 arm_applied();

@@ -139,6 +139,19 @@ void arming_stop_from_far_end(arming_t *a)
     }
 }
 
+bool arming_write_failed(arming_t *a, bool answered)
+{
+    if (a == NULL) {
+        return false;
+    }
+    if (answered) {
+        arming_refused(a);
+        return false;
+    }
+    arming_stop_from_far_end(a);
+    return true;
+}
+
 bool arming_link_lost(arming_t *a, bool bank_armed)
 {
     if (a == NULL || !(bank_armed || a->armed || a->arming)) {

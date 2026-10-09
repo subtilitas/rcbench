@@ -154,11 +154,14 @@ einmal je Durchlauf das Fault-Register von STATUS, bis das Heartbeat-Bit
 gelöscht ist, und schreibt erst dann CLEAR und den Frame, der schärft. Ist
 das Bit 300 ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
 das Schärfen mit `Koprozessor lehnte ARM ab` auf und schreibt nichts, der
-Latch des Koprozessors bleibt also gesetzt. Ein Lesen von STATUS, auf das
-niemand antwortet, hat den Timeout von 1000 ms abgewartet: das ist der Link,
-der unter einem wartenden Schärfen ausfällt, und am Panel rastet ein Stopp
-ein wie oben. Ohne angeschlossenen Koprozessor schärft das Panel seine eigene
-Bank nach den 100 ms.
+Latch des Koprozessors bleibt also gesetzt. Ein Austausch des Schärfens, auf
+den niemand antwortet -- das Lesen von STATUS, das Freigeben des Servos,
+CLEAR oder der Frame, der schärft --, hat den Timeout von 1000 ms abgewartet
+oder die Leitung nicht erreicht: das ist der Link, der unter einem Schärfen
+ausfällt, und am Panel rastet ein Stopp ein wie oben. Eine Ablehnung ist
+eine Antwort und lässt das Panel entschärft und ohne Stopp. Ohne
+angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
+100 ms.
 
 ## Verhaltensweisen, die Absicht sind
 

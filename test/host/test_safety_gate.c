@@ -320,6 +320,7 @@ static uint32_t w_glitch_at;      /* 0: none.  The line reads inverted for
                                      this one millisecond                  */
 typedef enum { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX } wire_t;
 static wire_t   w_wire;
+static uint32_t w_unanswered;     /* exchanges that ended with no answer   */
 
 /* A panel or a coprocessor without this change's rules, to show what each
  * end holds on its own. */
@@ -454,7 +455,7 @@ static uint16_t        p_throttle;
 static bool            p_link_up, p_endpoints_hold;
 static uint32_t        p_last_poll, p_stops_served;
 static unsigned        p_far_end_stops, p_arm_refused, p_arm_acked,
-                       p_arm_gave_up, p_clear_sent;
+                       p_arm_gave_up, p_clear_sent, p_arm_unanswered;
 static uint32_t        p_extra_at, p_extra_ms;    /* one long pass, pumping */
 static uint32_t        p_pass_work_ms;            /* work in every pass     */
 static uint32_t        p_touch_out_at, p_touch_out_ms;
@@ -524,10 +525,12 @@ static bool xchg(uint8_t op, uint8_t page, uint8_t off, uint8_t n,
     }
     if (!d_up) {
         if (w_wire == WIRE_BUS_OFF) {
+            ++w_unanswered;
             return false;
         }
         if (w_wire == WIRE_LOST) {
             wait_pumping(LINK_HOST_TIMEOUT_MS);
+            ++w_unanswered;
             return false;
         }
         for (uint32_t i = 1; i <= LINK_HOST_TIMEOUT_MS && !d_up; ++i) {
@@ -536,11 +539,16 @@ static bool xchg(uint8_t op, uint8_t page, uint8_t off, uint8_t n,
                 p_pump();
             }
             if (i == LINK_HOST_TIMEOUT_MS) {
+                ++w_unanswered;
                 return false;
             }
         }
     }
-    return step_ms(&req, reply);
+    if (!step_ms(&req, reply)) {
+        ++w_unanswered;         /* it went down under this very frame */
+        return false;
+    }
+    return true;
 }
 
 static bool p_control_write(bool armed, link_msg_t *ack)
@@ -575,6 +583,17 @@ static bool p_line_trusted(bool *answered)
            && safety_gate_line_trusted(st.regs[0]);
 }
 
+/* arm_write_failed(): refused, or the link quiet under the arm. */
+static void p_arm_write_failed(uint32_t quiet_before)
+{
+    if (arming_write_failed(&p_arm, w_unanswered == quiet_before)) {
+        ++p_arm_unanswered;
+        p_stop_here();
+    } else {
+        ++p_arm_refused;
+    }
+}
+
 /* service_arming() */
 static void p_service_arming(void)
 {
@@ -603,6 +622,7 @@ static void p_service_arming(void)
         break;
     case ARMING_ACT_ARM: {
         link_msg_t ack;
+        const uint32_t quiet = w_unanswered;
         p_throttle = 0;
         if (!p_link_up) {
             outputs_arm(&p_out, true, T);   /* the simulator */
@@ -613,16 +633,14 @@ static void p_service_arming(void)
         if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, &magic,
                    &ack)
               && ack.op == LINK_OP_ACK)) {
-            arming_refused(&p_arm);
-            ++p_arm_refused;
+            p_arm_write_failed(quiet);
             break;
         }
         const uint16_t regs[3] = { 1u, p_throttle, 0u };
         if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_ARM, 3, regs,
                    &ack)
               && ack.op == LINK_OP_ACK)) {
-            arming_refused(&p_arm);
-            ++p_arm_refused;
+            p_arm_write_failed(quiet);
         } else {
             outputs_arm(&p_out, true, T);
             ++p_arm_acked;
@@ -751,6 +769,7 @@ static void world_init(uint32_t t0)
     p_last_poll = t0;
     p_stops_served = 0;
     p_far_end_stops = p_arm_refused = p_arm_acked = p_arm_gave_up = 0;
+    p_arm_unanswered = 0;
     p_clear_sent = 0;
     p_extra_at = p_extra_ms = 0;
     p_touch_out_at = p_touch_out_ms = 0;
@@ -1084,12 +1103,15 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
 {
     /* STOP at 3 s, the hold completes at 6 s, and the coprocessor goes down
      * for 3 s somewhere between 100 ms before the hold and the end of the
-     * wait.  The question about the line gets no answer for 1000 ms, past
-     * the bound: that is a link lost, not an arm given up. */
+     * wait: every 5 ms, and every millisecond from 6090 to 6150 ms, where
+     * the question about the line, the CLEAR and the frame that arms are
+     * on the wire.  An exchange nobody answers has waited 1000 ms, past
+     * the bound: that is a link lost, not an arm given up or refused. */
     static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
     for (unsigned w = 0; w < 3u; ++w) {
-        unsigned gave_up = 0, not_stopped = 0, armed = 0;
-        for (uint32_t at = 5900u; at <= 6300u; at += 5u) {
+        unsigned gave_up = 0, not_stopped = 0, armed = 0, unanswered = 0;
+        for (uint32_t at = 5900u; at <= 6300u;
+             at += (at >= 6090u && at < 6150u) ? 1u : 5u) {
             armed_at_70(0, wires[w]);
             op_at(2, 3000, OP_STOP, 0);
             op_at(3, 6000, OP_ARM, 0);
@@ -1099,12 +1121,12 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
             run_until(at + 2500u);
             gave_up += p_arm_gave_up;
             /*
-             * Three ends, by which pass found the link gone.  The poll,
+             * Two ends, by which pass found the link gone.  The poll,
              * before the hold completed: the panel arms its own bank with
-             * no link, the simulated bench.  The question about the line,
-             * or the poll after the arm was taken: a stop, the heartbeat
-             * withheld.  The arm's own CLEAR or frame: refused, nothing
-             * armed.
+             * no link, the simulated bench.  Anything later -- the question
+             * about the line, the CLEAR, the frame that arms, the poll
+             * after the arm was taken: a stop, the heartbeat withheld.
+             * The coprocessor refuses nothing here, so no arm ends refused.
              */
             const bool idle = !outputs_armed(&p_out) && !p_arm.arming
                               && !p_arm.armed;
@@ -1112,8 +1134,8 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
                              && p_clear_sent == 1u;
             const bool stopped = idle && arming_stopped(&p_arm)
                                  && !arming_heartbeat(&p_arm, T);
-            const bool refused = idle && p_arm_refused != 0u;
-            not_stopped += !(sim || stopped || refused);
+            not_stopped += !(sim || stopped) || p_arm_refused != 0u;
+            unanswered += p_arm_unanswered;
             /* And when the coprocessor is back, neither end is armed. */
             const unsigned edges = d_arm_edges;
             run_until(at + 9000u);
@@ -1124,6 +1146,8 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
             T_FAIL("wire %u: given up %u, not stopped %u, armed after the "
                    "return %u", w, gave_up, not_stopped, armed);
         }
+        /* The sweep did put the reset under the CLEAR or the arming frame. */
+        CHECK(unanswered >= 1u);
     }
 }
 

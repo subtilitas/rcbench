@@ -766,6 +766,43 @@ TEST_CASE(a_far_end_that_appears_stops_a_bank_armed_without_one)
     CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS), ARMING_ACT_ARM);
 }
 
+TEST_CASE(a_write_nobody_answers_is_a_stop_and_a_refusal_is_not)
+{
+    /* The far end answered and refused: disarmed, the latch clear, the
+     * line running, so the operator can ask again. */
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    CHECK(a.armed);
+    uint32_t stops = arming_stop_count(&a);
+    CHECK(!arming_write_failed(&a, true));
+    CHECK(!a.armed);
+    CHECK(!a.arming);
+    CHECK(!a.stopped);
+    CHECK(arming_heartbeat(&a, t));
+    CHECK_EQ(arming_stop_count(&a), stops);
+
+    /* Nobody answered: a stop of the bench's own, the line withheld, and
+     * no disarm left for the policy to hand back. */
+    arming_init(&a, 0, SETTLE_MS);
+    t = arm_by(100);
+    stops = arming_stop_count(&a);
+    const uint32_t pressed = arming_pressed_count(&a);
+    CHECK(arming_write_failed(&a, false));
+    CHECK(!a.armed);
+    CHECK(!a.arming);
+    CHECK(a.stopped);
+    CHECK(!arming_heartbeat(&a, t));
+    CHECK_EQ(arming_stop_count(&a), stops + 1);
+    CHECK_EQ(arming_pressed_count(&a), pressed);
+    CHECK_EQ(arming_step(&a, t), ARMING_ACT_NONE);
+    /* The link found down afterwards adds no second stop. */
+    CHECK(!arming_link_lost(&a, false));
+    CHECK_EQ(arming_stop_count(&a), stops + 1);
+
+    CHECK(!arming_write_failed(NULL, false));
+    CHECK(!arming_write_failed(NULL, true));
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -796,5 +833,6 @@ int main(void)
     RUN(a_link_lost_while_disarmed_changes_nothing);
     RUN(the_bank_alone_being_armed_is_enough_for_a_link_stop);
     RUN(a_far_end_that_appears_stops_a_bank_armed_without_one);
+    RUN(a_write_nobody_answers_is_a_stop_and_a_refusal_is_not);
     return test_summary("arming");
 }

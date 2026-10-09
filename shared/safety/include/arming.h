@@ -189,6 +189,20 @@ void arming_request_disarm(arming_t *a);
  */
 void arming_refused(arming_t *a);
 
+/**
+ * The CLEAR or the frame that arms did not come back acknowledged.
+ *
+ * @p answered: the far end answered and refused, which is arming_refused().
+ * Not answered, the exchange has waited out its timeout and the link has
+ * gone quiet under an arm: a stop, as arming_link_lost() makes one.  The far
+ * end may have taken the frame and lost only the acknowledgement, so it may
+ * be armed; the stop withholds the heartbeat from it.
+ *
+ * Returns true when it stopped, with arming_link_lost()'s duty for the
+ * caller.
+ */
+bool arming_write_failed(arming_t *a, bool answered);
+
 /** The coprocessor disarmed us: a NACK on a control write, or a failsafe. */
 void arming_stop_from_far_end(arming_t *a);
 
