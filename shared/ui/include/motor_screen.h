@@ -51,11 +51,12 @@ void motor_screen_push(const bench_state_t *b);
  * disarm that has been asked for and not yet answered must not erase the run
  * it is ending.
  *
- * The change to armed returns the throttle slider to 0 %, drops a throttle
- * command waiting to be polled and ends a drag under way; the hold that
- * posts MOTOR_CMD_ARM does the same when it posts.  The change to disarmed
- * ends a drag under way and leaves the value to the caller.  Reporting the
- * same state again changes nothing.
+ * The hold that posts MOTOR_CMD_ARM returns the throttle slider to 0 %,
+ * drops a throttle command waiting to be polled and ends a drag under way.
+ * The change to armed does the same for an arm that hold did not ask for;
+ * after the hold's ask it leaves the slider, whose value is from after the
+ * ask, as it is.  The change to disarmed ends a drag under way and leaves
+ * the value to the caller.  Reporting the same state again changes nothing.
  */
 void motor_screen_set_armed(bool armed);
 

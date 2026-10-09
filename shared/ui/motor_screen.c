@@ -157,6 +157,10 @@ static struct {
     float         knob_prev;
     /* A finger owned the slider at some point since knob_frame(). */
     bool          knob_finger;
+    /* The ARM hold has asked for an arm, which returned the slider to zero,
+     * and the bench has not answered: the slider's value is from after the
+     * ask.  Cleared by the bench's answer, a stop, a touch loss and leave(). */
+    bool          arm_asked;
     unsigned      drawn_mask;
     /* The arm state of the bench itself, which is what bounds a run.  Kept
      * apart from `armed`: that one also carries a disarm this screen has
@@ -347,6 +351,7 @@ void motor_screen_cancel_arm(void)
     /* A stop latched; see the servo screen's own for why the command is
      * dealt with first and on its own account. */
     bool changed = false;
+    s.arm_asked = false;        /* the stop drops the arm that was asked for */
     if (s.pending.kind == MOTOR_CMD_ARM) {
         s.pending.kind = MOTOR_CMD_NONE;
         changed = true;
@@ -365,16 +370,6 @@ void motor_screen_cancel_arm(void)
     }
 }
 
-/*
- * An arm starts from nothing: the slider, the readout and the step buttons,
- * which all read the slider's value, are at 0 %, whatever was set on the
- * disarmed bench.  A throttle waiting to be collected was set before the arm
- * and goes with it, and so does what the knob would put back.  A drag under
- * way is released, so a finger resting on the track commands nothing until
- * it presses again: ui_slider_set() re-anchors a drag on the new value and
- * keeps its origin, and the next move would add the whole travel since the
- * press to 0 %.
- */
 /* End a drag on the track.  The finger owned the slider in this frame, so
  * the knob stays out of the frame. */
 static void end_drag(void)
@@ -385,6 +380,16 @@ static void end_drag(void)
     ui_slider_release(&s.slider);
 }
 
+/*
+ * An arm starts from nothing: the slider, the readout and the step buttons,
+ * which all read the slider's value, are at 0 %, whatever was set on the
+ * disarmed bench.  A throttle waiting to be collected was set before the arm
+ * and goes with it, and so does what the knob would put back.  A drag under
+ * way is released, so a finger resting on the track commands nothing until
+ * it presses again: ui_slider_set() re-anchors a drag on the new value and
+ * keeps its origin, and the next move would add the whole travel since the
+ * press to 0 %.
+ */
 static void throttle_from_zero(void)
 {
     end_drag();
@@ -413,11 +418,23 @@ void motor_screen_set_armed(bool armed)
              * one starts.  Its peaks start again too. */
             ui_plot_clear(&s.plot);
             memset(s.pk_ok, 0, sizeof(s.pk_ok));
-            /* The edge and not the level: the application reports the armed
+            /*
+             * The edge and not the level: the application reports the armed
              * bench on every frame, and the throttle set since the arm
-             * stays. */
-            throttle_from_zero();
+             * stays.
+             *
+             * And only for an arm this screen's hold did not ask for, such
+             * as a stick run's.  The hold returned the slider to zero when
+             * it asked, and a throttle set after that follows the arm in
+             * the command queue: it is what the armed bench is given, so
+             * the slider keeps it.
+             */
+            if (!s.arm_asked) {
+                throttle_from_zero();
+            }
+            s.arm_asked = false;
         } else {
+            s.arm_asked = false;
             /* The application returns the value to zero on this edge; the
              * drag ends with the run, for the reason throttle_from_zero()
              * gives. */
@@ -643,6 +660,7 @@ static void tick(float dt_s)
              * bench that is armed by the time the command lands. */
             throttle_from_zero();
             post(MOTOR_CMD_ARM, 0.0f);
+            s.arm_asked = true;
         }
     }
     if (s.arm.flash_left > 0) {
@@ -1242,6 +1260,7 @@ static void leave(void)
     ui_slider_release(&s.slider);
     post(MOTOR_CMD_DISARM, 0.0f);
     s.armed = false;
+    s.arm_asked = false;
     /* Neither animation should still be running when the screen comes back. */
     ui_hold_reset(&s.arm);
     /*
@@ -1291,6 +1310,9 @@ static void cancel(void)
     if (s.pending.kind == MOTOR_CMD_ARM) {
         s.pending.kind = MOTOR_CMD_NONE;
     }
+    /* Collected or not, the arm asked for is dropped across a loss, so an
+     * arm that comes later is not this hold's. */
+    s.arm_asked = false;
     ui_slider_release(&s.slider);
     ui_hold_reset(&s.arm);
     /* And the tab row: a press it kept would take a later contact's release

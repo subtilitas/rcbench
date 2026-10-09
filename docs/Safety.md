@@ -207,11 +207,14 @@ unpowered or unplugged panel reads as a line that is not edging.
 - A disarm returns the throttle to zero, so an arm starts from nothing rather
   than from where the last run left it. The MOTOR & ESC slider moves on a
   disarmed bench and commands nothing there, so an arm returns it to zero as
-  well: when the ARM hold asks for the arm, and again when the bench reports
-  armed. The readout and the `-1` and `+1` steps read the slider, so the
-  first step after an arm asks for 1.0 %. A throttle the screen has posted
-  and the application has not collected is dropped at that edge, and a drag
-  under way ends at an arm and at a disarm.
+  well, when the ARM hold asks for the arm. The readout and the `-1` and `+1`
+  steps read the slider, so the first step after the ask posts 1.0 %. A
+  throttle the screen has posted and the application has not collected is
+  dropped at the ask, and a drag under way ends there and at a disarm. A
+  throttle set after the ask follows the arm in the command queue and is
+  what the armed bench is given, so the slider keeps it when the bench
+  reports armed. A bench that arms without this hold, as for a stick run on
+  PROGRAMMER, returns the slider to zero when it reports armed.
 - Leaving a bench screen disarms.
 - The rotary knob (an AS5600 angle sensor; SETUP, APPLICATION, Rotary knob,
   OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by

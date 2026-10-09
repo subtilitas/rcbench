@@ -1461,6 +1461,34 @@ TEST_CASE(a_lost_release_on_output_off_is_sent_at_the_next_press)
     CHECK(posted && c.off);
 }
 
+/*
+ * A hold on OUTPUT ON loses its release and completes on its timer with
+ * nothing on the glass.  The ON it posted is still waiting when the next
+ * press shows the contact had gone, and it is dropped with the press.
+ */
+TEST_CASE(an_on_posted_by_a_hold_that_lost_its_release_is_dropped)
+{
+    fed();
+    finger(FEED_LONE, OUT_X, P(OUT_Y));
+    tick_for(HOLD_TICKS / 2);
+    feed_lose_next(1);
+    lift(FEED_LONE);
+    tick_for(HOLD_TICKS);
+
+    finger(FEED_LONE, OFF_X, P(OFF_Y));
+    CHECK(!supply_screen_poll_cmd(NULL));
+    lift(FEED_LONE);
+    tick_for(HOLD_TICKS);
+    CHECK(!supply_screen_poll_cmd(NULL));
+
+    /* A hold that is held switches on. */
+    finger(FEED_LONE, OUT_X, P(OUT_Y));
+    tick_for(HOLD_TICKS);
+    supply_cmd_t c = { 0 };
+    CHECK(supply_screen_poll_cmd(&c) && c.on);
+    lift(FEED_LONE);
+}
+
 /* A second finger, with a track id of its own, still cannot take the screen
  * from a press that is being held. */
 TEST_CASE(a_second_contact_does_not_end_a_press_that_is_held)
@@ -1534,6 +1562,7 @@ int main(void)
     RUN(a_question_asked_after_a_stop_stands_on_supply);
     RUN(a_press_that_lost_its_release_gives_way_to_the_next_press);
     RUN(a_lost_release_on_output_off_is_sent_at_the_next_press);
+    RUN(an_on_posted_by_a_hold_that_lost_its_release_is_dropped);
     RUN(a_second_contact_does_not_end_a_press_that_is_held);
     free(fb);
     free(fb2);

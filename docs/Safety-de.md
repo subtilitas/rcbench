@@ -242,13 +242,17 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Ein Entschärfen setzt das Gas auf null, damit ein Scharfschalten bei null
   beginnt und nicht dort, wo der letzte Lauf aufgehört hat. Der Schieberegler
   von MOTOR & ESC lässt sich auf einem entschärften Prüfstand bewegen und
-  kommandiert dort nichts, also setzt auch das Scharfschalten ihn auf null:
-  wenn das Halten auf ARM das Scharfschalten anfordert, und noch einmal, wenn
-  der Prüfstand scharf meldet. Die Anzeige und die Schritte `-1` und `+1`
-  lesen den Schieberegler, der erste Schritt nach dem Scharfschalten fordert
-  also 1,0 % an. Ein Gas, das die Seite gepostet und die Anwendung noch nicht
-  abgeholt hat, wird an dieser Flanke verworfen, und ein laufender Drag endet
-  beim Scharfschalten und beim Entschärfen.
+  kommandiert dort nichts, also setzt auch das Scharfschalten ihn auf null,
+  wenn das Halten auf ARM das Scharfschalten anfordert. Die Anzeige und die
+  Schritte `-1` und `+1` lesen den Schieberegler, der erste Schritt nach der
+  Anforderung postet also 1,0 %. Ein Gas, das die Seite gepostet und die
+  Anwendung noch nicht abgeholt hat, wird bei der Anforderung verworfen, und
+  ein laufender Drag endet dort und beim Entschärfen. Ein Gas, das nach der
+  Anforderung gestellt wird, folgt dem Scharfschalten in der Kommando-Queue
+  und ist das, was der scharfe Prüfstand bekommt; der Schieberegler behält es
+  also, wenn der Prüfstand scharf meldet. Ein Prüfstand, der ohne dieses
+  Halten scharf wird, wie bei einem Knüppel-Lauf auf PROGRAMMER, setzt den
+  Schieberegler auf null, wenn er scharf meldet.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um

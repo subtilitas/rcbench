@@ -1500,6 +1500,94 @@ TEST_CASE(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero)
     CHECK_NEAR(c.value, 1.0f, 0.001f);
 }
 
+/*
+ * A throttle set after the hold has asked follows the arm in the command
+ * queue, so it is what the armed bench is given.  The bench's answer leaves
+ * it on the slider: collected already, or still waiting.
+ */
+TEST_CASE(a_throttle_set_after_the_ask_stays_when_the_bench_answers)
+{
+    for (int collected = 0; collected < 2; ++collected) {
+        dragged_disarmed(250);
+        finger(FEED_LONE, ARM_X, P(ARM_Y));
+        tick_for(HOLD_TICKS);
+        lift(FEED_LONE);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        const float set = motor_screen_throttle();
+        CHECK_NEAR(set, 100.0f * 100.0f / 413.0f, 0.01f);
+        if (collected) {
+            CHECK_EQ(last_cmd().kind, MOTOR_CMD_THROTTLE);
+        }
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), set);
+        const motor_cmd_t c = last_cmd();
+        if (collected) {
+            CHECK_EQ(c.kind, MOTOR_CMD_NONE);
+        } else {
+            CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+            CHECK_EQ(c.value, set);
+        }
+    }
+}
+
+/*
+ * An arm that was asked for and dropped -- by a stop, a touch loss or
+ * leaving the screen -- is not the arm that comes later: that one returns
+ * the slider to zero like any arm this screen's hold did not ask for.
+ */
+TEST_CASE(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero)
+{
+    for (int how = 0; how < 3; ++how) {
+        dragged_disarmed(250);
+        finger(FEED_LONE, ARM_X, P(ARM_Y));
+        tick_for(HOLD_TICKS);
+        lift(FEED_LONE);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+        switch (how) {
+        case 0:  motor_screen_cancel_arm(); break;
+        case 1:  scr->cancel(); break;
+        default: scr->leave(); break;
+        }
+        (void)last_cmd();
+
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        (void)last_cmd();
+        CHECK(motor_screen_throttle() > 20.0f);
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+    }
+}
+
+/* One run after another from the hold: the second ask starts from zero
+ * too, whatever the first run and the disarmed bench left. */
+TEST_CASE(every_ask_returns_the_throttle_to_zero)
+{
+    fed();
+    for (int run = 0; run < 2; ++run) {
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        CHECK(motor_screen_throttle() > 48.0f);
+        finger(FEED_LONE, ARM_X, P(ARM_Y));
+        tick_for(HOLD_TICKS);
+        lift(FEED_LONE);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        motor_screen_set_throttle(0.0f);
+        motor_screen_set_armed(false);
+        (void)last_cmd();
+    }
+}
+
 /* A hold abandoned before it asks leaves the slider as it was. */
 TEST_CASE(a_hold_that_does_not_arm_leaves_the_throttle_alone)
 {
@@ -1716,6 +1804,9 @@ int main(void)
     RUN(arming_returns_every_throttle_to_zero);
     RUN(the_readout_after_an_arm_is_that_of_an_untouched_screen);
     RUN(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero);
+    RUN(a_throttle_set_after_the_ask_stays_when_the_bench_answers);
+    RUN(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero);
+    RUN(every_ask_returns_the_throttle_to_zero);
     RUN(a_hold_that_does_not_arm_leaves_the_throttle_alone);
     RUN(a_throttle_waiting_at_the_arm_is_dropped);
     RUN(a_knob_command_waiting_at_the_arm_is_not_put_back);

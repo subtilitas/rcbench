@@ -1620,6 +1620,9 @@ void servo_screen_cancel_arm(void)
         s.driving = false;
         ++s.ctrl_rev;
     }
+    /* Nor is what the knob found before the stop: a withdrawal after it
+     * puts back no drive, while the screen still reads the bench as armed. */
+    s.knob_had_driving = false;
     stop_sweep();
 }
 

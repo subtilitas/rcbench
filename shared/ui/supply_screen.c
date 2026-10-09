@@ -1032,13 +1032,18 @@ static void released(int was, int row, int x, int y)
  * The press this screen holds ends without its release.  Every gesture is
  * dropped, which asks for nothing, except a tap on OUTPUT OFF: switching off
  * is a press, so a release that never came is an OFF the operator made, and
- * it is sent.  A key held on the keypad is let go of; what was typed stays.
+ * it is sent.  An ON this screen has posted and the application has not
+ * collected is dropped: the hold that posted it may have completed on a
+ * contact that had gone.  A key held on the keypad is let go of; what was
+ * typed stays.
  */
 static void drop_press(void)
 {
     if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
+    s.pending.on = false;
+    s.on_asked   = false;
     ui_slider_release(&s.v_slider);
     ui_slider_release(&s.i_slider);
     /* A drag whose release went missing changes nothing: the slider goes
@@ -1784,15 +1789,12 @@ static void leave(void)
 
 /*
  * Touch events were lost.  The press is dropped as drop_press() drops it:
- * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent.
- * An ON this screen has posted and the application has not collected is
- * dropped.
+ * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent,
+ * and an ON not yet collected is dropped.
  */
 static void cancel(void)
 {
     drop_press();
-    s.pending.on = false;
-    s.on_asked   = false;
 }
 
 static const ui_screen_t k_screen = {

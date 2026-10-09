@@ -147,11 +147,14 @@ den Enden des Tracks schalten um einen Prozentpunkt.
 
 Das Scharfschalten setzt das Gas auf 0 %. Auf einem entschärften Prüfstand
 lässt sich der Schieberegler bewegen und kommandiert dort nichts; wenn das
-Halten auf ARM durchgelaufen ist, und noch einmal, wenn der Prüfstand scharf
-meldet, stehen Schieberegler, Anzeige und die Schritte `-1` und `+1` auf
-0,0 %, das erste `+1` nach dem Scharfschalten fordert also 1,0 % an. Ein
-Finger, der beim Scharfschalten oder Entschärfen auf dem Track liegt, bewegt
-nichts, bis er abhebt und neu drückt.
+Halten auf ARM durchgelaufen ist, stehen Schieberegler, Anzeige und die
+Schritte `-1` und `+1` auf 0,0 %, das erste `+1` danach fordert also 1,0 %
+an. Ein Gas, das nach dem durchgelaufenen Halten gestellt wird, bekommt der
+scharfe Prüfstand. Ein Prüfstand, der ohne dieses Halten scharf wird, durch
+einen Knüppel-Lauf auf PROGRAMMER, setzt den Schieberegler auf 0 %, wenn er
+scharf meldet. Ein Finger, der auf dem Track liegt, wenn das Halten
+durchläuft oder der Prüfstand entschärft, bewegt nichts, bis er abhebt und
+neu drückt.
 
 ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende

@@ -136,11 +136,13 @@ drag across the whole track asks for the whole span, and the pin follows it
 unramped. `-1` and `+1` at the ends of the track step one percentage point.
 
 Arming returns the throttle to 0 %. The slider can be moved on a disarmed
-bench and commands nothing there; when the ARM hold completes, and again when
-the bench reports armed, the slider, the readout and the `-1` and `+1` steps
-are at 0.0 %, so the first `+1` after an arm asks for 1.0 %. A finger on the
-track when the bench arms or disarms moves nothing until it lifts and presses
-again.
+bench and commands nothing there; when the ARM hold completes, the slider,
+the readout and the `-1` and `+1` steps are at 0.0 %, so the first `+1` after
+it asks for 1.0 %. A throttle set after the hold completes is what the armed
+bench is given. A bench armed without this hold, by a stick run on
+PROGRAMMER, returns the slider to 0 % when it reports armed. A finger on the
+track when the hold completes or when the bench disarms moves nothing until
+it lifts and presses again.
 
 ARM is a hold. The fill fades from green to the danger red across two
 seconds, and the bench arms when the fade completes; letting go before then

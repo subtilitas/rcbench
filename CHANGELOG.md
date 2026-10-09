@@ -75,11 +75,13 @@ None of the encoder work has run on hardware.
 ### Changed
 
 - **Arming returns the MOTOR & ESC throttle to 0 %.** The slider, the readout
-  and the `-1` and `+1` steps are at 0.0 % when the ARM hold completes and
-  when the bench reports armed, whatever was set on the disarmed bench: a
-  slider at 60.5 % before the arm posts 1.0 % on the first `+1`, where it
-  posted 61.5 %. A throttle command waiting at the arm is dropped, and a drag
-  under way ends at an arm and at a disarm.
+  and the `-1` and `+1` steps are at 0.0 % when the ARM hold completes,
+  whatever was set on the disarmed bench: a slider at 60.5 % before the arm
+  posts 1.0 % on the first `+1`, where it posted 61.5 %. A throttle command
+  waiting at that moment is dropped, and a drag under way ends there and at a
+  disarm. A throttle set after the hold completes is kept. A bench armed
+  without the hold (a stick run on PROGRAMMER) returns the slider to 0 % when
+  it reports armed.
 - **One finger drags the SERVO dial.** A press by a second finger anywhere on
   the screen ends a drag on the dial, as it ends a drag on a slider.
 

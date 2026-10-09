@@ -5616,6 +5616,34 @@ TEST_CASE(a_withdrawal_on_a_disarmed_bench_restores_no_drive)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
+/*
+ * The stop is seen a frame before the bench reports disarmed.  The
+ * withdrawal in that frame finds the screen still reading the bench as
+ * armed, and restores no drive all the same: the stop held nothing.
+ */
+TEST_CASE(a_withdrawal_after_a_stop_restores_no_drive_before_the_disarm)
+{
+    fed_armed();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    feed_tap(FEED_LONE, x, P(y));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+
+    servo_screen_knob_frame();
+    servo_screen_cancel_arm();          /* and no disarm reported yet */
+    servo_screen_knob_cancel();
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    finger(FEED_LONE, 560, P(306));
+    glide(FEED_LONE, 620, P(306), 8);
+    lift(FEED_LONE);
+    CHECK(last_cmd().kind != SERVO_CMD_POSITION);
+}
+
 /* On an armed bench the withdrawal restores the drive the knob found, so a
  * change of SPEED says the held position again. */
 TEST_CASE(a_withdrawal_on_an_armed_bench_restores_the_drive)
@@ -5815,6 +5843,7 @@ int main(void)
     RUN(a_withdrawal_after_an_arm_restores_no_drive_from_before_it);
     RUN(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release);
     RUN(a_withdrawal_on_a_disarmed_bench_restores_no_drive);
+    RUN(a_withdrawal_after_a_stop_restores_no_drive_before_the_disarm);
     RUN(a_withdrawal_on_an_armed_bench_restores_the_drive);
     return test_summary("servo");
 }
