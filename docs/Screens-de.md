@@ -283,6 +283,12 @@ nicht dafür gebaut ist -- und das Netzteil, das das Servo versorgt: Spannung,
 Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
 vom Netzteil stehen dort `--`.
 
+GEMESSEN ist der Winkel des Horns ab dem Mittenwert, solange AS5600 in SETUP,
+ANSCHLÜSSE eingeschaltet ist und der Sensor antwortet: `+38.0 deg`, Zehntelgrad,
+20-mal in der Sekunde gelesen. Antwortet der Sensor nicht, steht dort `---`,
+und bei ausgeschaltetem AS5600 der Winkel der Rückmeldung. Die befohlene Stellung
+daneben ist die Pulsbreite in Mikrosekunden.
+
 **Das Netzteil wird auch hier eingestellt und geschaltet.** Die Zeile SOLL
 unter dem Plot trägt die beiden Sollwerte von SUPPLY, Spannung und
 Strombegrenzung, und seinen Ausgangsschalter. Es sind die von SUPPLY, keine
@@ -503,6 +509,10 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | GRENZEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
 | PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
+| PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
+| PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+
+![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
 | Typ | Mitte | Weg | Bildwiederholraten |
 | --- | --- | --- | --- |
@@ -1161,6 +1171,36 @@ weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
 5 s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
 NETZTEIL freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
 nicht unscharf: auf den Messwerten der Monitore löst nichts aus.
+
+### ANSCHLÜSSE: der Ausgangsencoder
+
+Ein magnetischer Winkelsensor AS5600 von ams OSRAM auf der Ausgangswelle des
+Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
+(Protokoll 4.9):
+
+| Einstellung | Bereich | Standard | |
+| --- | --- | --- | --- |
+| AS5600 | EIN, AUS | AUS | der Ausgangsencoder; er nimmt SDA und SCL des Sensorbusses oben, beide Pins müssen gesetzt sein |
+| AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. ENC-MITTE auf der Seite SERVO setzt ihn aus dem aktuellen Wert |
+
+Das Panel schreibt das Freigabe-Bit mit dem Rest des Bus-Frames, 500 ms nach
+der letzten Änderung und nur bei unscharfem Prüfstand, an einen Koprozessor,
+der Protokoll 4.9 nennt; einem älteren wird nichts gesendet. Solange der Encoder
+freigegeben ist, liest es die Register 12 bis 31 von SENSE alle 40 ms. Das Band
+sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
+
+| Meldung | Wann |
+| --- | --- |
+| `Koprozessor älter als 4.9 -- AS5600 nicht gelesen` | der Encoder ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
+| `AS5600 antwortet nicht an 0x36` | eingeschaltet, und 2,5 s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt |
+| `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen` | er antwortet, und STATUS MD (Magnet erkannt) ist nicht gesetzt |
+| `AS5600: Magnet zu schwach -- näher heranbringen` | STATUS ML ist gesetzt |
+| `AS5600: Magnet zu stark -- weiter weg` | STATUS MH ist gesetzt |
+
+Eine Magnetmeldung wird einmal gesagt, bis das Feld wieder stimmt. Der DIR-Pin
+des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
+nimmt an, dass er mit der Pulsbreite des Servos steigt. Nicht auf Hardware
+gelaufen.
 
 ### ANSCHLÜSSE: der Phasenabgriff
 

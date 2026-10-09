@@ -59,12 +59,13 @@ typedef enum {
  * Only the major has to agree for the link to come up and the bench to arm.
  * The panel reads the minor at link-up and sends nothing to a page the
  * coprocessor's minor does not have: SUPPLY from 4.3, SENSE and
- * SERVO_SENSE from 4.7, TONE from 4.8.  A coprocessor never asks the
- * panel's minor; a
+ * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
+ * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9.  A
+ * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 8u
+#define LINK_PROTOCOL_MINOR 9u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -284,7 +285,7 @@ enum {
  *     rail.
  *
  *     ENABLE to KHZ are the bus, one frame: ENABLE bit 0 the INA228, bit 1
- *     the INA3221; the GPIO for SDA and the one for SCL; the clock, 400 kHz
+ *     the INA3221, bit 2 the AS5600 output encoder (protocol 4.9); the GPIO for SDA and the one for SCL; the clock, 400 kHz
  *     and nothing else (LINK_SN_KHZ_BUS): the schedule's 1 ms tick does not
  *     fit a slower bus.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
  *     1 I2C0 SCL, 2 I2C1 SDA, 3 I2C1 SCL -- so SDA is a GPIO whose number
@@ -330,6 +331,30 @@ enum {
  *     current (10 mA), ESC_FLAGS bit 0 and bit 1 saying each is valid --
  *     here because BENCH carries the INA228's while it answers.
  *
+ *     The output encoder (protocol 4.9) is an ams OSRAM AS5600 magnetic
+ *     angle sensor on the same bus, at its fixed address 0x36, on the horn
+ *     shaft of the servo under test.  ENABLE bit 2 turns it on and has no
+ *     parameter of its own: the bus pins are the INA parts', and the angle
+ *     comes back as the 12-bit count, 0 to 4095 for one turn (0.0879 degrees
+ *     a count), with no centre applied -- the panel keeps that.  The
+ *     coprocessor reads it at 500 Hz.  A bit 2 written to a 4.8 or older
+ *     coprocessor is not sent: the panel gates it on minor >= 9.
+ *
+ *     AS5600_FLAGS (link_sense_enc_flag_t) say whether it answers and what
+ *     its magnet is doing.  AS5600_ANGLE is RAW ANGLE as last read, 0 until
+ *     the first read of a set-up.  AS5600_MAGNITUDE is the part's CORDIC
+ *     (coordinate rotation digital computer) magnitude, read at 20 Hz, 0
+ *     until read; it is a measure of the field.  AS5600_SAMPLES counts the
+ *     angle reads, modulo 65536: two reads of the page with the same count
+ *     are one sample.  AS5600_STILL_MS is how long the angle has stayed
+ *     within 12 counts (1.05 degrees) of an anchor -- the angle at the last
+ *     time it left that band -- in milliseconds, saturating at 65535, 0 with
+ *     no sample.  A move that ends at time t_end, read at time t_read, shows
+ *     STILL_MS = t_read - t_end to within the 2 ms sample interval, so the
+ *     panel times the end of a move to the coprocessor's resolution
+ *     whatever its own polling interval.  Register 31 is reserved: it reads
+ *     0.
+ *
  *     ENABLE to register 11 are kept in the coprocessor's flash beside the
  *     bindings and the supply's wiring, and the bus is opened at boot. */
 enum {
@@ -359,8 +384,16 @@ enum {
     LINK_SN_ESC_VOLTAGE_CV  = 23,  /**< 10 mV steps                         */
     LINK_SN_ESC_CURRENT_CA  = 24,  /**< 10 mA steps                         */
     LINK_SN_ESC_FLAGS       = 25,
-    LINK_SN_COUNT           = 26,
+    LINK_SN_AS5600_FLAGS    = 26,  /**< protocol 4.9, from here             */
+    LINK_SN_AS5600_ANGLE    = 27,  /**< RAW ANGLE, 0 to 4095                */
+    LINK_SN_AS5600_MAGNITUDE = 28, /**< 12 bits; 0 until read               */
+    LINK_SN_AS5600_SAMPLES  = 29,  /**< angle reads, modulo 65536           */
+    LINK_SN_AS5600_STILL_MS = 30,  /**< within 12 counts of its anchor, ms  */
+    LINK_SN_RESERVED_31     = 31,  /**< reads 0                             */
+    LINK_SN_COUNT           = 32,
 };
+/** The registers a 4.8 coprocessor's page has. */
+#define LINK_SN_COUNT_V48 26u
 /** The set-up, ENABLE to register 11: what a write may change, and what
  *  flash keeps. */
 #define LINK_SN_CONFIG_COUNT 12u
@@ -368,6 +401,9 @@ enum {
 /* ENABLE's bits. */
 #define LINK_SN_EN_I228   0x01u
 #define LINK_SN_EN_I3221  0x02u
+#define LINK_SN_EN_AS5600 0x04u     /**< protocol 4.9 */
+/** Every bit ENABLE takes. */
+#define LINK_SN_EN_ALL    (LINK_SN_EN_I228 | LINK_SN_EN_I3221 | LINK_SN_EN_AS5600)
 
 /* The ranges a write is held to. */
 /** The bus clock, the one KHZ takes: 400 kHz, the parts' fast mode. */
@@ -403,6 +439,22 @@ typedef enum {
     LINK_SN_BUS_OPEN       = 1u << 8, /**< the I2C block runs on its pins   */
     LINK_SN_BUS_STUCK      = 1u << 9, /**< SDA held low, being clocked free */
 } link_sense_flag_t;
+
+/** AS5600_FLAGS' bits (protocol 4.9). */
+typedef enum {
+    /** Answering at 0x36 with a STATUS only an AS5600 gives. */
+    LINK_SN_ENC_ONLINE = 1u << 0,
+    /** STATUS MD: a magnet is detected. */
+    LINK_SN_ENC_MD     = 1u << 1,
+    /** STATUS ML: the field is too weak. */
+    LINK_SN_ENC_ML     = 1u << 2,
+    /** STATUS MH: the field is too strong. */
+    LINK_SN_ENC_MH     = 1u << 3,
+    /** Something answers at 0x36 with a STATUS no AS5600 gives; not used. */
+    LINK_SN_ENC_WRONG  = 1u << 4,
+    /** AS5600_ANGLE holds a reading of this set-up. */
+    LINK_SN_ENC_VALID  = 1u << 5,
+} link_sense_enc_flag_t;
 
 /* ESC_FLAGS' bits. */
 #define LINK_SN_ESC_VOLTAGE_OK 0x01u

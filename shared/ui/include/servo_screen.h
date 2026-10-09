@@ -109,6 +109,14 @@ const ui_screen_t *servo_screen(void);
 /** Take the pending command, if any.  Cleared by reading. */
 bool servo_screen_take(servo_cmd_t *out);
 
+/**
+ * A reading of the output encoder (an AS5600 on the horn shaft), each one
+ * once, in the order they arrive.  With AS5600 on in SETUP the MEASURED row
+ * shows its angle from the centre count, and a run reads it for the angle
+ * results in its CSV and report.  A reading that is not valid shows "---".
+ */
+void servo_screen_encoder(const servo_test_enc_t *e);
+
 /** What the output is actually doing, from the bench or from the model. */
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 

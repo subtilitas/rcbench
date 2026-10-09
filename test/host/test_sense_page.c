@@ -22,6 +22,7 @@
 
 #include "greatest.h"
 
+#include "as5600.h"
 #include "ina228.h"
 
 #include "link_msg.h"
@@ -235,7 +236,7 @@ TEST_CASE(the_bus_is_refused_on_pins_something_else_holds)
 TEST_CASE(every_value_is_held_to_its_range)
 {
     fresh();
-    CHECK_EQ(bus(4u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(8u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
     /* 400 kHz and no other clock: the 1 ms schedule needs it. */
     CHECK_EQ(bus(0u, 16u, 17u, 100u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(bus(0u, 16u, 17u, 200u, 0u), LINK_NACK_BAD_VALUE);
@@ -1097,8 +1098,161 @@ TEST_CASE(the_capabilities_follow_the_set_up)
     CHECK_EQ(sense_page_caps(NULL), 0u);
 }
 
+/* ---------------------------------------------------- the output encoder */
+
+TEST_CASE(the_encoder_is_bit_2_of_the_bus_frame)
+{
+    fresh();
+    CHECK_EQ(LINK_SN_EN_AS5600, 4u);
+    CHECK_EQ(bus(4u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(reg(LINK_SN_ENABLE), 4u);
+    CHECK(sense_page_enabled(&pg));
+    /* The bus pins are reserved for it as for any part. */
+    CHECK_EQ(sense_page_pins(&pg), BIT(16) | BIT(17));
+    sense_cmd_t c;
+    memset(&c, 0, sizeof(c));
+    sense_page_cmd(&pg, &c);
+    CHECK(c.parts.as5600_en);
+    CHECK(!c.parts.ina228_en && !c.parts.ina3221_en);
+    CHECK_EQ(c.sda, 16u);
+    CHECK_EQ(c.scl, 17u);
+    /* With the INA3221, and with both parts. */
+    CHECK_EQ(bus(6u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(bus(7u, 16u, 17u, 400u, 0u), 0u);
+    sense_page_cmd(&pg, &c);
+    CHECK(c.parts.as5600_en && c.parts.ina228_en && c.parts.ina3221_en);
+    /* Off again: the pins are let go. */
+    CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(sense_page_pins(&pg), 0u);
+    sense_page_cmd(&pg, &c);
+    CHECK(!c.parts.as5600_en);
+    /* Bit 3 is not a part. */
+    CHECK_EQ(bus(8u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(12u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+}
+
+TEST_CASE(the_encoder_takes_the_same_pin_rules_as_the_parts)
+{
+    fresh();
+    CHECK_EQ(bus(4u, 17u, 18u, 400u, 0u), LINK_NACK_BAD_VALUE);   /* not a pair */
+    CHECK_EQ(bus(4u, 3u, 4u, 400u, 0u), LINK_NACK_BAD_VALUE);     /* an output */
+    CHECK_EQ(bus(4u, 16u, 17u, 400u, BIT(16)), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(4u, 16u, 17u, 100u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(4u, 16u, 17u, 400u, 0u), 0u);
+    /* Not mid-run. */
+    outputs_arm(&o, true, 0u);
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(5u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    outputs_arm(&o, false, 0u);
+    CHECK_EQ(bus(5u, 16u, 17u, 400u, 0u), 0u);
+}
+
+TEST_CASE(the_encoders_registers_are_26_to_31_and_read_only)
+{
+    CHECK_EQ(LINK_SN_ESC_FLAGS, 25);
+    CHECK_EQ(LINK_SN_AS5600_FLAGS, 26);
+    CHECK_EQ(LINK_SN_AS5600_ANGLE, 27);
+    CHECK_EQ(LINK_SN_AS5600_MAGNITUDE, 28);
+    CHECK_EQ(LINK_SN_AS5600_SAMPLES, 29);
+    CHECK_EQ(LINK_SN_AS5600_STILL_MS, 30);
+    CHECK_EQ(LINK_SN_RESERVED_31, 31);
+    CHECK_EQ(LINK_SN_COUNT, 32);
+    CHECK_EQ(LINK_SN_COUNT_V48, 26u);
+    CHECK(LINK_SN_COUNT <= LINK_MAX_REGS);
+    fresh();
+    const uint16_t v[2] = { 1u, 2u };
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_AS5600_FLAGS, 1u, v, &o, 0u),
+             LINK_NACK_READ_ONLY);
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_RESERVED_31, 1u, v, &o, 0u),
+             LINK_NACK_READ_ONLY);
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_COUNT, 1u, v, &o, 0u),
+             LINK_NACK_BAD_RANGE);
+}
+
+TEST_CASE(a_snapshot_fills_the_encoders_registers)
+{
+    fresh();
+    CHECK_EQ(bus(4u, 16u, 17u, 400u, 0u), 0u);
+    sense_snap_t s = snapshot();
+    s.enc = SENSE_PART_ONLINE;
+    s.enc_have_angle = true;
+    s.enc_status = AS5600_STATUS_MD | AS5600_STATUS_MH;
+    s.enc_raw = 2345u;
+    s.enc_samples = 65530u;
+    s.enc_still_ms = 321u;
+    s.enc_have_mag = true;
+    s.enc_magnitude = 1777u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_AS5600_FLAGS),
+             (uint16_t)(LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD | LINK_SN_ENC_MH
+                        | LINK_SN_ENC_VALID));
+    CHECK_EQ(reg(LINK_SN_AS5600_ANGLE), 2345u);
+    CHECK_EQ(reg(LINK_SN_AS5600_MAGNITUDE), 1777u);
+    CHECK_EQ(reg(LINK_SN_AS5600_SAMPLES), 65530u);
+    CHECK_EQ(reg(LINK_SN_AS5600_STILL_MS), 321u);
+    CHECK_EQ(reg(LINK_SN_RESERVED_31), 0u);
+
+    /* The weak field and the missing magnet. */
+    s.enc_status = AS5600_STATUS_ML;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_AS5600_FLAGS),
+             (uint16_t)(LINK_SN_ENC_ONLINE | LINK_SN_ENC_ML
+                        | LINK_SN_ENC_VALID));
+
+    /* Gone offline: the last angle stays, ONLINE and the magnet bits go. */
+    s.enc = SENSE_PART_OFFLINE;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_AS5600_FLAGS), (uint16_t)LINK_SN_ENC_VALID);
+    CHECK_EQ(reg(LINK_SN_AS5600_ANGLE), 2345u);
+
+    /* Something else at 0x36. */
+    s.enc = SENSE_PART_WRONG_ID;
+    s.enc_have_angle = false;
+    s.enc_still_ms = 99u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_AS5600_FLAGS), (uint16_t)LINK_SN_ENC_WRONG);
+    CHECK_EQ(reg(LINK_SN_AS5600_ANGLE), 0u);
+    CHECK_EQ(reg(LINK_SN_AS5600_STILL_MS), 0u);
+
+    /* Not read yet: a magnitude of 0, not stale. */
+    s.enc = SENSE_PART_ONLINE;
+    s.enc_have_mag = false;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_AS5600_MAGNITUDE), 0u);
+}
+
+TEST_CASE(a_new_set_up_clears_the_encoders_registers)
+{
+    fresh();
+    CHECK_EQ(bus(4u, 16u, 17u, 400u, 0u), 0u);
+    sense_snap_t s = snapshot();
+    s.enc = SENSE_PART_ONLINE;
+    s.enc_have_angle = true;
+    s.enc_raw = 100u;
+    s.enc_samples = 9u;
+    s.enc_have_mag = true;
+    s.enc_magnitude = 50u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK(reg(LINK_SN_AS5600_FLAGS) != 0u);
+    /* A snapshot of the earlier set-up fills nothing under the new one. */
+    CHECK_EQ(bus(5u, 16u, 17u, 400u, 0u), 0u);
+    for (unsigned r = LINK_SN_AS5600_FLAGS; r < LINK_SN_COUNT; ++r) {
+        CHECK_EQ(reg(r), 0u);
+    }
+    sense_page_publish(&pg, &s, 3u);
+    for (unsigned r = LINK_SN_AS5600_FLAGS; r < LINK_SN_COUNT; ++r) {
+        CHECK_EQ(reg(r), 0u);
+    }
+}
+
 int main(void)
 {
+    RUN(the_encoder_is_bit_2_of_the_bus_frame);
+    RUN(the_encoder_takes_the_same_pin_rules_as_the_parts);
+    RUN(the_encoders_registers_are_26_to_31_and_read_only);
+    RUN(a_snapshot_fills_the_encoders_registers);
+    RUN(a_new_set_up_clears_the_encoders_registers);
     RUN(a_page_starts_with_both_parts_off_at_the_modules_defaults);
     RUN(the_ina228_set_up_is_taken_when_the_driver_calibrates_it);
     RUN(the_ina3221_full_scale_follows_from_its_shunt);

@@ -41,6 +41,10 @@ static void forget_reads(sense_link_t *s)
     s->was_clipped  = 0u;
     s->silent_told[0] = s->silent_told[1] = false;
     s->online_seen[0] = s->online_seen[1] = false;
+    s->enc_silent_told = false;
+    s->enc_online_seen = false;
+    s->enc_magnet_told = false;
+    s->enc_magnet      = 0u;
 }
 
 void sense_link_lost(sense_link_t *s)
@@ -50,6 +54,7 @@ void sense_link_lost(sense_link_t *s)
     }
     s->up            = false;
     s->page          = false;
+    s->enc_page      = false;
     s->known         = false;
     s->refused_bus   = false;
     s->bus_told      = false;
@@ -60,7 +65,7 @@ void sense_link_lost(sense_link_t *s)
     s->was_faults    = 0u;
     /* What the coprocessor that went said, and not yet shown, is about a
      * page nobody reads now; what the settings say stands. */
-    s->events &= (uint16_t)(SENSE_LINK_EV_PINS_UNSET
+    s->events &= (uint32_t)(SENSE_LINK_EV_PINS_UNSET
                             | SENSE_LINK_EV_SAME_ADDR);
     s->clip_pending = 0u;
     forget_reads(s);
@@ -74,9 +79,13 @@ void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms)
     sense_link_lost(s);
     s->up   = true;
     s->page = minor >= SENSE_LINK_MINOR;
+    s->enc_page = minor >= SENSE_LINK_ENC_MINOR;
     s->setup_ms = now_ms;
     if (!s->page && (s->want_i228 || s->want_i3221)) {
         s->events |= SENSE_LINK_EV_NO_PAGE;
+    }
+    if (!s->enc_page && s->want_enc) {
+        s->events |= SENSE_LINK_EV_ENC_OLD;
     }
 }
 
@@ -108,12 +117,15 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     uint16_t next[LINK_SN_CONFIG_COUNT];
     memset(next, 0, sizeof(next));
     uint16_t en = (uint16_t)((w->i228 ? LINK_SN_EN_I228 : 0u)
-                             | (w->i3221 ? LINK_SN_EN_I3221 : 0u));
-    uint16_t local = 0u;
+                             | (w->i3221 ? LINK_SN_EN_I3221 : 0u)
+                             | (w->as5600 ? LINK_SN_EN_AS5600 : 0u));
+    uint32_t local = 0u;
     if (en != 0u && (w->sda < 0 || w->scl < 0)) {
         local = SENSE_LINK_EV_PINS_UNSET;
         en = 0u;
-    } else if (w->i228 && w->i3221 && w->i228_addr == w->i3221_addr) {
+    } else if ((en & (LINK_SN_EN_I228 | LINK_SN_EN_I3221))
+                   == (LINK_SN_EN_I228 | LINK_SN_EN_I3221)
+               && w->i228_addr == w->i3221_addr) {
         local = SENSE_LINK_EV_SAME_ADDR;
         en = 0u;
     }
@@ -132,6 +144,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                        || memcmp(next, s->want, sizeof(next)) != 0
                        || s->want_i228 != w->i228
                        || s->want_i3221 != w->i3221
+                       || s->want_enc != w->as5600
                        || s->want_sda != w->sda || s->want_scl != w->scl;
     if (!moved) {
         return;
@@ -143,21 +156,28 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     if (s->up && !s->page && grew) {
         local |= SENSE_LINK_EV_NO_PAGE;
     }
+    if (s->up && !s->enc_page && w->as5600 && !s->want_enc) {
+        local |= SENSE_LINK_EV_ENC_OLD;
+    }
     /*
      * What was said about the request this one replaces and not yet shown
      * no longer describes anything asked: unset pins, one address and the
      * refusals go, and come back only if they still hold.  A missing page
      * waiting stays while a part is still enabled.
      */
-    uint16_t stale = (uint16_t)(SENSE_LINK_EV_PINS_UNSET
+    uint32_t stale = (uint32_t)(SENSE_LINK_EV_PINS_UNSET
                                 | SENSE_LINK_EV_SAME_ADDR
                                 | SENSE_LINK_EV_BUS_REFUSED
                                 | SENSE_LINK_EV_I228_REFUSED
                                 | SENSE_LINK_EV_I3221_REFUSED);
     if (!w->i228 && !w->i3221) {
-        stale |= (uint16_t)SENSE_LINK_EV_NO_PAGE;
+        stale |= (uint32_t)SENSE_LINK_EV_NO_PAGE;
     }
-    s->events &= (uint16_t)~stale;
+    if (!w->as5600) {
+        stale |= (uint32_t)(SENSE_LINK_EV_ENC_OLD | SENSE_LINK_EV_ENC_SILENT
+                            | SENSE_LINK_EV_ENC_MAGNET);
+    }
+    s->events &= ~stale;
     /* The first set-up is the one the panel starts with, not an edit: it
      * is due at once. */
     s->want_ms = s->want_set ? now_ms
@@ -165,6 +185,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     s->want_set   = true;
     s->want_i228  = w->i228;
     s->want_i3221 = w->i3221;
+    s->want_enc   = w->as5600;
     s->want_sda   = w->sda;
     s->want_scl   = w->scl;
     memcpy(s->want, next, sizeof(next));
@@ -177,10 +198,14 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
 }
 
 /* The bus frame as it is to be written: the pins asked and the parts
- * whose own frames the page has not refused. */
+ * whose own frames the page has not refused.  The encoder's bit goes only
+ * to a coprocessor that has it. */
 static void bus_frame(const sense_link_t *s, uint16_t *out)
 {
     uint16_t en = s->want[LINK_SN_ENABLE];
+    if (!s->enc_page) {
+        en &= (uint16_t)~LINK_SN_EN_AS5600;
+    }
     if (s->refused_i228) {
         en &= (uint16_t)~LINK_SN_EN_I228;
     }
@@ -208,7 +233,7 @@ static sense_link_op_kind_t write_owed(const sense_link_t *s,
     /* The page holds two parts to two addresses only while both are
      * enabled, so that is when a part's frame goes with both off. */
     const uint16_t both = (uint16_t)(LINK_SN_EN_I228 | LINK_SN_EN_I3221);
-    if ((i228 || i3221) && s->held[LINK_SN_ENABLE] == both) {
+    if ((i228 || i3221) && (s->held[LINK_SN_ENABLE] & both) == both) {
         if (s->refused_bus) {
             return SENSE_LINK_OP_NONE;
         }
@@ -250,6 +275,15 @@ static bool due(bool asked, uint32_t asked_ms, uint32_t now_ms,
                 uint32_t every)
 {
     return !asked || (uint32_t)(now_ms - asked_ms) >= every;
+}
+
+/* The registers a SENSE status read takes: to the encoder's last when the
+ * page has it enabled, else to ESC_FLAGS. */
+static unsigned status_count(const sense_link_t *s)
+{
+    return ((s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u)
+               ? SENSE_LINK_STATUS_COUNT
+               : SENSE_LINK_STATUS_COUNT_V48;
 }
 
 bool sense_link_next(sense_link_t *s, uint32_t now_ms, bool idle,
@@ -303,7 +337,7 @@ bool sense_link_next(sense_link_t *s, uint32_t now_ms, bool idle,
         && due(s->asked_status, s->status_asked_ms, now_ms,
                SENSE_LINK_READ_MS)) {
         read_op(op, SENSE_LINK_OP_STATUS, (uint8_t)LINK_PAGE_SENSE,
-                (uint8_t)LINK_SN_FLAGS, (uint8_t)SENSE_LINK_STATUS_COUNT);
+                (uint8_t)LINK_SN_FLAGS, (uint8_t)status_count(s));
         s->pending = op->kind;
         s->asked_status = true;
         s->status_asked_ms = now_ms;
@@ -332,13 +366,15 @@ static void new_setup(sense_link_t *s, uint32_t now_ms)
      * set-up that was: shown now, it would name this one's address, ID or
      * shunt.  What describes the set-up asked -- unset pins, one address,
      * a refusal -- and the store stand. */
-    s->events &= (uint16_t)~(SENSE_LINK_EV_I228_SILENT
+    s->events &= ~(uint32_t)(SENSE_LINK_EV_I228_SILENT
                              | SENSE_LINK_EV_I3221_SILENT
                              | SENSE_LINK_EV_I228_WRONG
                              | SENSE_LINK_EV_I3221_WRONG
                              | SENSE_LINK_EV_STUCK
                              | SENSE_LINK_EV_I228_CLIPPED
-                             | SENSE_LINK_EV_I3221_CLIPPED);
+                             | SENSE_LINK_EV_I3221_CLIPPED
+                             | SENSE_LINK_EV_ENC_SILENT
+                             | SENSE_LINK_EV_ENC_MAGNET);
     s->clip_pending = 0u;
 }
 
@@ -399,6 +435,47 @@ static const uint16_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
 static const uint16_t k_wrong_ev[2] = { SENSE_LINK_EV_I228_WRONG,
                                         SENSE_LINK_EV_I3221_WRONG };
 
+/* The encoder's part of a SENSE read: not answering, once until it does,
+ * and a magnet that is missing, weak or strong, once until it is right. */
+static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
+{
+    (void)now_ms;
+    if ((s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) == 0u) {
+        s->enc_silent_told = false;
+        s->enc_online_seen = false;
+        s->enc_magnet_told = false;
+        return;
+    }
+    const uint16_t f = s->status[ST(LINK_SN_AS5600_FLAGS)];
+    if ((f & LINK_SN_ENC_ONLINE) == 0u) {
+        s->enc_magnet_told = false;
+        if (!s->enc_silent_told && (s->enc_online_seen || waited)) {
+            s->events |= SENSE_LINK_EV_ENC_SILENT;
+            s->enc_silent_told = true;
+            s->enc_online_seen = false;
+        }
+        return;
+    }
+    s->enc_silent_told = false;
+    s->enc_online_seen = true;
+    s->events &= ~(uint32_t)SENSE_LINK_EV_ENC_SILENT;
+    const uint16_t bits = (uint16_t)(f & (LINK_SN_ENC_MD | LINK_SN_ENC_ML
+                                          | LINK_SN_ENC_MH));
+    const bool fine = (bits & LINK_SN_ENC_MD) != 0u
+                      && (bits & (LINK_SN_ENC_ML | LINK_SN_ENC_MH)) == 0u;
+    if (fine) {
+        s->enc_magnet_told = false;
+        s->events &= ~(uint32_t)SENSE_LINK_EV_ENC_MAGNET;
+        s->enc_magnet = bits;
+        return;
+    }
+    s->enc_magnet = bits;
+    if (!s->enc_magnet_told) {
+        s->events |= SENSE_LINK_EV_ENC_MAGNET;
+        s->enc_magnet_told = true;
+    }
+}
+
 /* What a SENSE read says that the operator is told. */
 static void judge_status(sense_link_t *s, uint32_t now_ms)
 {
@@ -447,6 +524,7 @@ static void judge_status(sense_link_t *s, uint32_t now_ms)
         s->events |= SENSE_LINK_EV_I228_CLIPPED;
     }
     s->was_flags = f;
+    judge_enc(s, now_ms, waited);
 }
 
 /* What a SERVO_SENSE read says: a channel read newly clipped, of the
@@ -519,7 +597,8 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
         new_setup(s, now_ms);
         break;
     case SENSE_LINK_OP_STATUS:
-        memcpy(s->status, regs, sizeof(s->status));
+        memset(s->status, 0, sizeof(s->status));
+        memcpy(s->status, regs, status_count(s) * sizeof(uint16_t));
         s->have_status = true;
         s->status_ms   = now_ms;
         ++s->status_reads;
@@ -547,22 +626,22 @@ void sense_link_faults(sense_link_t *s, uint16_t faults)
     s->was_faults = faults;
 }
 
-uint16_t sense_link_events(sense_link_t *s)
+uint32_t sense_link_events(sense_link_t *s)
 {
     if (s == NULL) {
         return 0u;
     }
-    const uint16_t e = s->events;
+    const uint32_t e = s->events;
     s->events = 0u;
     s->clip_pending = 0u;
     return e;
 }
 
-uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms)
+uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms)
 {
     /* Most pressing first: what stops the monitors being read at all, then
      * what makes a reading absent or wrong, then what makes it a bound. */
-    static const uint16_t k_order[] = {
+    static const uint32_t k_order[] = {
         SENSE_LINK_EV_NO_PAGE,      SENSE_LINK_EV_PINS_UNSET,
         SENSE_LINK_EV_SAME_ADDR,    SENSE_LINK_EV_BUS_REFUSED,
         SENSE_LINK_EV_I228_REFUSED, SENSE_LINK_EV_I3221_REFUSED,
@@ -570,6 +649,8 @@ uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms)
         SENSE_LINK_EV_I3221_SILENT, SENSE_LINK_EV_I228_WRONG,
         SENSE_LINK_EV_I3221_WRONG,  SENSE_LINK_EV_I228_CLIPPED,
         SENSE_LINK_EV_I3221_CLIPPED, SENSE_LINK_EV_STORE_OFF,
+        SENSE_LINK_EV_ENC_OLD,      SENSE_LINK_EV_ENC_SILENT,
+        SENSE_LINK_EV_ENC_MAGNET,
     };
     if (s == NULL || s->events == 0u
         || (s->event_given
@@ -594,27 +675,27 @@ uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms)
                 }
             }
             if (s->clip_pending == 0u) {
-                s->events &= (uint16_t)~k_order[i];
+                s->events &= ~k_order[i];
             }
             return k_order[i];
         }
-        s->events &= (uint16_t)~k_order[i];
+        s->events &= ~k_order[i];
         return k_order[i];
     }
     s->events = 0u;                 /* no bit this build knows */
     return 0u;
 }
 
-void sense_link_event_back(sense_link_t *s, uint16_t ev)
+void sense_link_event_back(sense_link_t *s, uint32_t ev)
 {
     if (s == NULL || ev == 0u) {
         return;
     }
     /* What the settings say holds whatever answers; the rest is about the
      * coprocessor that answers now, and a link gone since took it. */
-    const uint16_t settings = (uint16_t)(SENSE_LINK_EV_PINS_UNSET
+    const uint32_t settings = (uint32_t)(SENSE_LINK_EV_PINS_UNSET
                                          | SENSE_LINK_EV_SAME_ADDR);
-    if (!s->up && (ev & (uint16_t)~settings) != 0u) {
+    if (!s->up && (ev & ~settings) != 0u) {
         return;
     }
     if (ev == SENSE_LINK_EV_I3221_CLIPPED && s->clipped_ch >= 1u
@@ -723,6 +804,38 @@ bool sense_link_totals(const sense_link_t *s, uint32_t now_ms,
     *energy_cwh  = (uint32_t)s->status[ST(LINK_SN_I228_ENERGY_LO)]
                    | ((uint32_t)s->status[ST(LINK_SN_I228_ENERGY_HI)] << 16);
     return true;
+}
+
+bool sense_link_enc_on(const sense_link_t *s)
+{
+    return s != NULL && s->known
+           && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u;
+}
+
+bool sense_link_enc(const sense_link_t *s, uint32_t now_ms,
+                    sense_link_enc_t *out)
+{
+    if (out == NULL || !sense_link_enc_on(s) || !s->have_status
+        || (uint32_t)(now_ms - s->status_ms) >= SENSE_LINK_STALE_MS) {
+        return false;
+    }
+    const uint16_t f = s->status[ST(LINK_SN_AS5600_FLAGS)];
+    if ((f & LINK_SN_ENC_ONLINE) == 0u || (f & LINK_SN_ENC_VALID) == 0u) {
+        return false;
+    }
+    out->raw      = s->status[ST(LINK_SN_AS5600_ANGLE)];
+    out->samples  = s->status[ST(LINK_SN_AS5600_SAMPLES)];
+    out->still_ms = s->status[ST(LINK_SN_AS5600_STILL_MS)];
+    out->taken_ms = s->status_ms;
+    out->magnet   = (f & LINK_SN_ENC_MD) != 0u;
+    out->weak     = (f & LINK_SN_ENC_ML) != 0u;
+    out->strong   = (f & LINK_SN_ENC_MH) != 0u;
+    return true;
+}
+
+uint16_t sense_link_enc_magnet(const sense_link_t *s)
+{
+    return (s != NULL) ? s->enc_magnet : 0u;
 }
 
 uint8_t sense_link_addr(const sense_link_t *s, sense_link_part_t part)

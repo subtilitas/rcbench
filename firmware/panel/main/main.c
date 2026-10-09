@@ -494,6 +494,8 @@ static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 /* The supply's samples, one entry each, for the same reason. */
 static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
+/* The output encoder's readings (servo_test_enc_t), each once. */
+static QueueHandle_t     s_enc_q;     /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
 
 /* What the screen reads.  Written by the control task, copied by app_main. */
@@ -903,6 +905,7 @@ static void publish_sense(void)
     const sense_setup_t w = {
         .i228  = settings_get_bool(SET_INA228_EN),
         .i3221 = settings_get_bool(SET_INA3221_EN),
+        .as5600 = settings_get_bool(SET_ENC_EN),
         .sda   = (int8_t)settings_get_int(SET_SENSE_SDA),
         .scl   = (int8_t)settings_get_int(SET_SENSE_SCL),
         /* The address options run up from 0x40 in steps of one. */
@@ -978,6 +981,7 @@ static void settings_changed(setting_id_t id)
         case SET_INA3221_EN: case SET_INA3221_ADDR: case SET_INA3221_MOHM:
         case SET_INA3221_CH:
         case SET_SENSE_SDA:  case SET_SENSE_SCL:
+        case SET_ENC_EN:
             publish_sense();
             break;
         case SET_TONE_EN:    case SET_TONE_PIN:   case SET_TONE_F_MIN:
@@ -5525,7 +5529,7 @@ static const char *const k_sense_part[2] = { "INA228", "INA3221" };
 /* The sensor alert posted and not yet seen taken: its number in the alert
  * slot (0 none) and its event.  Control task only. */
 static uint32_t s_sense_alert_gen;
-static uint16_t s_sense_alert_ev;
+static uint32_t s_sense_alert_ev;
 
 /*
  * What the SENSE and SERVO_SENSE pages said that the operator is told.
@@ -5560,7 +5564,7 @@ static void sense_link_alerts(void)
     if (!slot_free) {
         return;
     }
-    const uint16_t ev = sense_link_event(&s_sense_link, now_ms());
+    const uint32_t ev = sense_link_event(&s_sense_link, now_ms());
     if (ev == 0u) {
         return;
     }
@@ -5635,6 +5639,64 @@ static void sense_link_alerts(void)
     if ((ev & SENSE_LINK_EV_NO_PAGE) != 0u) {
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_NO_SENSE_PAGE));
     }
+    if ((ev & SENSE_LINK_EV_ENC_OLD) != 0u) {
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_ENC_OLD));
+    }
+    if ((ev & SENSE_LINK_EV_ENC_SILENT) != 0u) {
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_ENC_SILENT));
+    }
+    if ((ev & SENSE_LINK_EV_ENC_MAGNET) != 0u) {
+        /* The most pressing of what the last read said: no magnet, then
+         * too weak, then too strong. */
+        const uint16_t m = sense_link_enc_magnet(&s_sense_link);
+        s_sense_alert_gen = control_alert_numbered(
+            ((m & LINK_SN_ENC_MD) == 0u) ? TR(ALERT_ENC_NO_MAGNET)
+            : ((m & LINK_SN_ENC_ML) != 0u) ? TR(ALERT_ENC_WEAK)
+                                           : TR(ALERT_ENC_STRONG));
+    }
+}
+
+/*
+ * The output encoder's readings to the SERVO screen: one per SENSE read
+ * that moved the sample count, so a run sees each angle once, and one
+ * "none" when the angle stops being readable.  Control task only.
+ */
+static void enc_queue(void)
+{
+    static bool     given;
+    static bool     was_valid;
+    static uint16_t last_samples;
+    static uint32_t last_taken;
+    sense_link_enc_t e;
+    servo_test_enc_t q;
+    memset(&q, 0, sizeof(q));
+    if (sense_link_enc(&s_sense_link, now_ms(), &e)) {
+        /* The same read is not sent twice: the page is read every 40 ms
+         * and the count moves 20 times in that. */
+        if (given && was_valid && e.taken_ms == last_taken
+            && e.samples == last_samples) {
+            return;
+        }
+        q.valid    = true;
+        q.raw      = e.raw;
+        q.still_ms = e.still_ms;
+        q.taken_ms = e.taken_ms;
+        given        = true;
+        was_valid    = true;
+        last_taken   = e.taken_ms;
+        last_samples = e.samples;
+    } else {
+        if (given && !was_valid) {
+            return;
+        }
+        given     = true;
+        was_valid = false;
+    }
+    if (xQueueSend(s_enc_q, &q, 0) != pdTRUE) {
+        servo_test_enc_t stale;
+        (void)xQueueReceive(s_enc_q, &stale, 0);
+        (void)xQueueSend(s_enc_q, &q, 0);
+    }
 }
 
 /*
@@ -5681,6 +5743,7 @@ static void sense_link_service(bool idle, bench_state_t *bench)
         atomic_store(&s_capabilities, (unsigned)caps);
     }
     sense_link_alerts();
+    enc_queue();
 
     const bool sensed = (bench->flags & (uint16_t)LINK_BN_SENSED) != 0u;
     bool v_ok = false;
@@ -6921,6 +6984,7 @@ void app_main(void)
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_state_t));
+    s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
@@ -6930,6 +6994,7 @@ void app_main(void)
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
+                     && s_enc_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
                      && s_note_q != NULL && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
@@ -7152,6 +7217,10 @@ void app_main(void)
         }
         supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
                                            : 0u);
+        servo_test_enc_t enc;
+        while (xQueueReceive(s_enc_q, &enc, 0) == pdTRUE) {
+            servo_screen_encoder(&enc);
+        }
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
             supply_screen_set_output(sup.output);

@@ -96,8 +96,9 @@ genügt.
 Was ein Servo in Ruhe, in Bewegung und beim Halten eines Endes zieht und wie
 lange es von Ende zu Ende braucht, bei den Versorgungsspannungen, für die es
 ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
-(Brown-out). Nichts am Prüfstand misst das Horn, also wird jedes Ergebnis am
-Strom des Netzteils abgelesen, das das Servo versorgt: am PD mini (WeAct PD
+(Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
+(siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
+abgelesen, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert.
@@ -278,6 +279,67 @@ Stromsensor setzt seine eigenen Werte und lässt STELLZEIT prüfen. Ein Lauf
 am Netzteilmodell des Panels nennt keine eigene Verzögerung und prüft
 STELLZEIT wie der PD mini: gar nicht.
 
+### Der Ausgangsencoder
+
+Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
+SETUP, ANSCHLÜSSE unter AS5600 eingestellt (Standard AUS) und vom Koprozessor
+gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
+Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
+und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
+Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
+Bauteil.
+
+Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
+oder ENC-MITTE auf der Seite PRÜFLING, die den aktuellen Zählerstand nimmt,
+wenn das Servo in Neutral steht), in Grad von -180 bis knapp unter 180. Der
+Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
+nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
+die andere Richtung zeigt sich also als Winkelfehler vom Doppelten des Wegs.
+Die befohlenen Winkel sind die der Seite: -90 Grad bei PULS MIN, +90 bei
+PULS MAX, mit REVERSE und TRIM. Ein Servo, das über diese Spanne weniger als
+90 Grad dreht, zeigt den Unterschied als Winkelfehler.
+
+Für jede Bewegung, vom Befehl bis zum nächsten Befehl (Konstanten in
+`servo_test.h`):
+
+| Begriff | Regel |
+| --- | --- |
+| bewegt | der Winkel verlässt `SERVO_TEST_ENC_MOVED_DEG`, 2,0 Grad, um den Winkel vor dem Befehl; dieser Messwert muss jünger sein als `SERVO_TEST_ENC_STALE_MS`, 500 ms, sonst wird die Bewegung nicht beurteilt |
+| beruhigt | nach der Bewegung ein Messwert, dessen Ruhezeit mindestens `SERVO_TEST_ENC_HOLD_MS`, 100 ms, beträgt und deren Ruhe nach dem Befehl begann. Der Winkel ist dann so lange innerhalb von `SERVO_TEST_ENC_TOL_COUNTS`, 12 Schritten oder 1,05 Grad, eines Ankers geblieben |
+| Stellzeit (Winkel) | der Beginn dieser Ruhe minus der Befehl: der Moment, in dem der Winkel in die Toleranz um seinen Endwert kam |
+| Endwinkel | der Winkel beim letzten Messwert vor dem nächsten Befehl, bei einer beruhigten Bewegung |
+| Winkelfehler | der mittlere Endwinkel an einem Ende minus der befohlene Winkel dieses Endes |
+| unbewegt | der Winkel verließ die 2,0 Grad nie |
+| spät | er bewegte sich und war vor dem nächsten Befehl keine 100 ms ruhig |
+
+Die Toleranz ist `SENSE_ENC_STILL_TOL` des Koprozessors; `test_as5600` hält
+beide gleich. Die Ruhezeit führt der Koprozessor in seinem 2-ms-Messintervall,
+die Stellzeit hängt also nicht davon ab, wie oft das Panel die Page liest (alle
+40 ms). Sie beginnt beim Befehl, wie der Test ihn ausgibt, und enthält den
+Weg des Befehls zum Pin: die Render-Schleife, den Control Task, den Link und
+den nächsten PWM-Frame, bis zu einem Poll-Intervall und einem Frame, nicht
+gemessen. Sie endet, wenn der Winkel innerhalb von 1,05 Grad seines Endwerts
+ist, und das ist früher als die letzte Bewegung des Arms um die Zeit, die das
+dauert: bei einem Servo mit 0,09 Grad je Mikrosekunde und 1,2 µs je
+Millisekunde etwa 10 ms. Berichtet werden nur gezählte Bewegungen; die
+Bewegungen, die das Horn zuerst an jedes Ende stellen, nicht.
+
+Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe -- den
+mittleren Endwinkel und seinen Fehler an jedem Ende, die mittlere und die
+längste Stellzeit, die gezählten, unbewegten und späten Bewegungen -- und die
+befohlenen Winkel mit den Regeln oben. Die Tabelle des Stroms und seine Spalte
+`Stell.` bleiben, die beiden Zeiten stehen also nebeneinander: am PD mini ist
+die aus dem Strom eine Obergrenze und hinkt dem Horn um etwa 0,3 s nach, die aus dem Winkel
+nicht. Die CSV bekommt zwei Spalten, `angle (deg)` in jeder Zeile, deren
+Winkelmesswert jünger als 500 ms ist, und `travel angle (ms)` in der Zeile nach
+einer beruhigten Bewegung. Der Bericht vermerkt, dass das Totband nicht
+gemessen wird: es braucht Schritte, die kleiner sind als die Bewegungen von
+Ende zu Ende, und der Test macht keine. Die Zeile GEMESSEN der Seite SERVO
+zeigt den aktuellen Winkel, solange AS5600 an ist.
+
+Nicht auf Hardware gelaufen: der Sensor am Bus, die Toleranz und die 100 ms
+Haltezeit gegen das Zittern eines echten Servos, und die Montage.
+
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
@@ -374,6 +436,8 @@ Prüfstands:
 | `power (W)` | W | Spannung mal Strom |
 | `mode` | | `CV`, `CC` oder `OFF` |
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
+| `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte; leer ohne einen Messwert, der jünger als 500 ms ist |
+| `travel angle (ms)` | ms | nur mit AS5600 an: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
 deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in

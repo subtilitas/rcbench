@@ -180,7 +180,7 @@ static const ui_text_id_t k_pages[PG_COUNT] = {
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV };
+       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE };
 
 typedef struct {
     uint8_t      page;
@@ -225,6 +225,8 @@ static const ov_row_t k_rows[] = {
 
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
+    { PG_DUT, R_SETTING, SET_ENC_EN,       TX_SV_ROW_ENC,  0, 2, false },
+    { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 3, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -298,6 +300,10 @@ static struct {
     float    measured_deg;
     float    current_a;
     bool     have_feedback;
+    /* The output encoder's last reading (servo_screen_encoder()). */
+    bool     enc_valid;
+    uint16_t enc_raw;
+    int      shown_q_enc;  /**< the angle as drawn, in tenths             */
 
     bool     dragging;
     int      drag_id;
@@ -1655,6 +1661,36 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     }
 }
 
+/* The encoder's angle from its centre, degrees. */
+static float enc_deg_now(void)
+{
+    return servo_test_enc_deg(s.enc_raw,
+                              (uint16_t)settings_get_int(SET_ENC_CENTRE));
+}
+
+static bool enc_shown(void)
+{
+    return s.enc_valid && settings_get_bool(SET_ENC_EN);
+}
+
+void servo_screen_encoder(const servo_test_enc_t *e)
+{
+    if (e == NULL) {
+        return;
+    }
+    s.enc_valid = e->valid;
+    if (e->valid) {
+        s.enc_raw = e->raw;
+    }
+    servo_test_encoder(&s.test, e);
+    /* Redrawn only when the digits change: tenths of a degree. */
+    const int q = e->valid ? (int)lroundf(enc_deg_now() * 10.0f) : 0x7FFF;
+    if (q != s.shown_q_enc) {
+        s.shown_q_enc = q;
+        ++s.ctrl_rev;
+    }
+}
+
 static servo_test_reading_t test_reading_of(const supply_state_t *st)
 {
     servo_test_reading_t r;
@@ -2146,6 +2182,10 @@ static void test_cfg(servo_test_cfg_t *c)
     c->travel_deg = (uint8_t)s.travel_deg;
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
     c->model      = supply_screen_model();
+    c->enc_on     = settings_get_bool(SET_ENC_EN);
+    c->enc_centre = (uint16_t)settings_get_int(SET_ENC_CENTRE);
+    c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
+    c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
     /* The current is the PD mini's, whose travel times are an upper bound.
      * The model stands in for it: no lag of its own, and its travel times
      * held to what a run on the PD mini can check. */
@@ -2642,6 +2682,13 @@ static void edit_row(int i)
     case R_HV:
         /* For a run started after it; one under way keeps its steps. */
         s.test_hv = !s.test_hv;
+        break;
+    case R_ENC_CENTRE:
+        /* The servo is at its neutral: the live count is the centre. */
+        if (enc_shown()) {
+            settings_set(SET_ENC_CENTRE, (float)s.enc_raw);
+            settings_request_save();
+        }
         break;
     case R_TEXT:
         ui_textkey_open(&s.tk, overlay_area(), TR(SV_DUT_TITLE),
@@ -3759,13 +3806,21 @@ static void draw_right(gfx_canvas_t *c, bool power)
     char buf[24];
     snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
     row(c, 44, TR(SV_COMMANDED), buf);
-    if (s.have_feedback) {
+    /* The horn's angle from the encoder where one reads, else from the
+     * feedback. */
+    if (enc_shown()) {
+        snprintf(buf, sizeof(buf), "%+.1f deg", (double)enc_deg_now());
+        row(c, 68, TR(SV_MEASURED), buf);
+    } else if (s.have_feedback) {
         snprintf(buf, sizeof(buf), "%+.1f deg", (double)s.measured_deg);
         row(c, 68, TR(SV_MEASURED), buf);
+    } else {
+        row(c, 68, TR(SV_MEASURED), "---");
+    }
+    if (s.have_feedback) {
         snprintf(buf, sizeof(buf), "%.2f A", (double)s.current_a);
         row(c, 92, TR(SV_CURRENT), buf);
     } else {
-        row(c, 68, TR(SV_MEASURED), "---");
         row(c, 92, TR(SV_CURRENT), "---");
     }
 
@@ -3844,6 +3899,9 @@ static void draw_save_line(gfx_canvas_t *c)
 /* A test setting that the length rule leaves unused is drawn faint. */
 static bool row_unused(const ov_row_t *r)
 {
+    if (r->kind == R_ENC_CENTRE) {
+        return !settings_get_bool(SET_ENC_EN);
+    }
     if (r->kind != R_SETTING) {
         return false;
     }
@@ -3868,6 +3926,9 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
     case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
+    case R_ENC_CENTRE:
+        snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));
+        return;
     default:
         break;
     }
@@ -4069,9 +4130,9 @@ static void draw_page(gfx_canvas_t *c)
         draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
     } else {
         const char *const lines[] = {
-            TR(SV_DUT_NOTE),
+            TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_1), TR(SV_ENC_NOTE_2),
         };
-        draw_note(c, nx, OV_ROW0 + 2 * OV_PITCH + 6, lines, 1);
+        draw_note(c, nx, OV_ROW0 + 4 * OV_PITCH + 6, lines, 3);
     }
     draw_save_line(c);
 }

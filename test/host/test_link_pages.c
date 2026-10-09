@@ -463,7 +463,7 @@ TEST_CASE(the_sense_pages_extend_the_map_without_moving_it)
 TEST_CASE(the_tone_page_extends_the_map_without_moving_it)
 {
     CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 8u);
+    CHECK(LINK_PROTOCOL_MINOR >= 8u);
     CHECK_EQ(LINK_PAGE_SERVO_SENSE, 0x2C);
     CHECK_EQ(LINK_PAGE_TONE, 0x2D);
     CHECK(LINK_TN_COUNT <= LINK_MAX_REGS);
@@ -478,6 +478,31 @@ TEST_CASE(the_tone_page_extends_the_map_without_moving_it)
     /* The 20 Hz read is registers 8 to 23: four frames of four. */
     CHECK_EQ(LINK_TN_COUNT - LINK_TN_FLAGS, 16);
     CHECK_EQ(LINK_TN_RING, 64u);
+}
+
+/*
+ * Protocol 4.9 adds the output encoder to SENSE and moves nothing: the
+ * set-up frames are where they were, ENABLE gains bit 2, and the registers
+ * after ESC_FLAGS are new.  The 4.8 page's 26 registers read the same.
+ */
+TEST_CASE(the_encoder_extends_the_sense_page_without_moving_it)
+{
+    CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 9u);
+    CHECK_EQ(LINK_SN_ENABLE, 0);
+    CHECK_EQ(LINK_SN_I228_ADDR, 4);
+    CHECK_EQ(LINK_SN_I3221_ADDR, 8);
+    CHECK_EQ(LINK_SN_CONFIG_COUNT, 12u);
+    CHECK_EQ(LINK_SN_FLAGS, 12);
+    CHECK_EQ(LINK_SN_ESC_VOLTAGE_CV, 23);
+    CHECK_EQ(LINK_SN_ESC_FLAGS, 25);
+    CHECK_EQ(LINK_SN_COUNT_V48, (unsigned)LINK_SN_ESC_FLAGS + 1u);
+    CHECK_EQ(LINK_SN_AS5600_FLAGS, (int)LINK_SN_COUNT_V48);
+    CHECK_EQ(LINK_SN_COUNT, LINK_MAX_REGS);
+    CHECK_EQ(LINK_SN_EN_I228, 1u);
+    CHECK_EQ(LINK_SN_EN_I3221, 2u);
+    CHECK_EQ(LINK_SN_EN_AS5600, 4u);
+    CHECK_EQ(LINK_SN_EN_ALL, 7u);
 }
 
 /* Two flags join BENCH at the bits that were free, and none of the old
@@ -769,7 +794,7 @@ TEST_CASE(a_4_7_panel_links_and_arms_on_a_4_8_coprocessor)
     link_msg_t r;
     CHECK(ask_read(LINK_PAGE_IDENTITY, 0, LINK_ID_COUNT, &r));
     CHECK_EQ(r.regs[LINK_ID_PROTOCOL_MAJOR], 4u);
-    CHECK_EQ(r.regs[LINK_ID_PROTOCOL_MINOR], 8u);
+    CHECK(r.regs[LINK_ID_PROTOCOL_MINOR] >= 8u);
     const uint16_t frame[LINK_CT_ARM_FRAME] = { 1, 2500, 14 };
     CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, frame, &r));
     CHECK_EQ(r.op, LINK_OP_ACK);
@@ -812,6 +837,7 @@ int main(void)
     RUN(the_version_string_says_what_the_numbers_say);
     RUN(the_sense_pages_extend_the_map_without_moving_it);
     RUN(the_tone_page_extends_the_map_without_moving_it);
+    RUN(the_encoder_extends_the_sense_page_without_moving_it);
     RUN(the_bench_flags_add_bits_5_and_6_and_move_none);
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);

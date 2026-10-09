@@ -51,6 +51,33 @@
  * from the level before its command; the walk stops there, or at the
  * floor, which is the last step when it lies off the step's grid.
  *
+ * The output encoder.  With an AS5600 on the horn shaft (cfg.enc_on) the run
+ * also reads the angle, from servo_test_encoder(), and reports it beside the
+ * current's figures; the current's rules above are unchanged and the angle
+ * decides nothing: not the verdict, not a limit.  For each move, from its
+ * command to the next:
+ *
+ *   moved    the angle leaves SERVO_TEST_ENC_MOVED_DEG of the angle read
+ *            before the command, when that reading is younger than
+ *            SERVO_TEST_ENC_STALE_MS;
+ *   settled  after it has moved, a reading whose STILL_MS is at least
+ *            SERVO_TEST_ENC_HOLD_MS and whose still time began after the
+ *            command: the angle has stayed within SERVO_TEST_ENC_TOL_COUNTS
+ *            counts (1.05 degrees) of an anchor for that long.  The travel
+ *            time is the start of that stillness minus the command, which
+ *            the coprocessor's 2 ms sample interval resolves whatever the
+ *            polling interval.  It includes the command's way from the
+ *            panel to the pin, up to one poll interval and one PWM frame,
+ *            not measured;
+ *   end angle the last reading of a settled move, from the centre count
+ *            (cfg.enc_centre); the angle error is that minus the commanded
+ *            angle of the end (cfg.enc_cmd_deg).
+ *
+ * A move that never left the tolerance is unmoved; one that moved and was
+ * not still for SERVO_TEST_ENC_HOLD_MS before the next command is late.
+ * Only counted moves are reported.  A deadband cannot be derived from
+ * moves that go end to end, and is reported as not measured.
+ *
  * What reads the current is described to the run (servo_test_meter_t), so
  * a meter whose readings lag and repeat, as the PD mini's do, gives travel
  * times that are an upper bound: TRAVEL TIME is reported against them and
@@ -134,6 +161,20 @@ extern "C" {
 /** The most moves a step makes, LENGTH BY TIME included. */
 #define SERVO_TEST_MOVES_MAX         1000u
 
+/* The output encoder's constants.  The tolerance is the coprocessor's
+ * SENSE_ENC_STILL_TOL, test_servo_test holds the two equal. */
+#define SERVO_TEST_ENC_TOL_COUNTS    12u
+/** The same in degrees: 12 counts of 360 / 4096. */
+#define SERVO_TEST_ENC_TOL_DEG       1.0547f
+/** The angle is still when its STILL_MS reaches this. */
+#define SERVO_TEST_ENC_HOLD_MS       100u
+/** A move has moved when the angle is further than this from where it
+ *  started. */
+#define SERVO_TEST_ENC_MOVED_DEG     2.0f
+/** The angle read before a command is the move's start while younger than
+ *  this. */
+#define SERVO_TEST_ENC_STALE_MS      500u
+
 /* ------------------------------------------------------- what it reads */
 
 /** One reading of the supply, as SUPPLY has it (supply_state_t). */
@@ -149,6 +190,19 @@ typedef struct {
     uint16_t samples;       /**< readings the supply took, mod 65536    */
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
 } servo_test_reading_t;
+
+/** One reading of the output encoder, as the SENSE page has it. */
+typedef struct {
+    bool     valid;         /**< the part answers and has an angle      */
+    uint16_t raw;           /**< RAW ANGLE, 0 to 4095                   */
+    uint16_t still_ms;      /**< the angle within the tolerance for this
+                                 long at the reading                    */
+    uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
+} servo_test_enc_t;
+
+/** @p raw from @p centre on the circle, degrees, -180 to just under 180:
+ *  360 / 4096 a count. */
+float servo_test_enc_deg(uint16_t raw, uint16_t centre);
 
 /** What the run wants done, from servo_test_step(). */
 typedef struct {
@@ -211,6 +265,13 @@ typedef struct {
     float    stall_a;
 
     bool     report;        /**< a TXT report beside the CSV            */
+
+    /* The output encoder: off leaves the run, the CSV and the report as
+     * they are without one. */
+    bool     enc_on;
+    uint16_t enc_centre;    /**< the count at the servo's neutral       */
+    float    enc_cmd_deg[2];/**< the commanded angle of the low and the
+                                 high end, the screen's degrees          */
 
     /* For the report only: the settings in force. */
     char     dut[24];
@@ -318,6 +379,14 @@ typedef struct {
     uint16_t timeouts;      /**< counted moves with movement that did not
                                  arrive: late                            */
     bool     moved;         /**< movement seen in any move              */
+
+    /* The angle, with the encoder on. */
+    uint16_t enc_moves;     /**< counted moves with a start angle        */
+    uint16_t enc_travels;   /**< ... that settled                        */
+    uint16_t enc_unmoved;   /**< ... whose angle never moved             */
+    uint16_t enc_late;      /**< ... that moved and did not settle       */
+    uint32_t enc_travel_sum_ms, enc_travel_max_ms;
+    servo_test_mean_t enc_end[2];   /**< settled end angles, degrees    */
 } servo_test_step_t;
 
 #define SERVO_TEST_STEP_SLOTS (SERVO_TEST_STEPS_MAX + SERVO_TEST_BROWNOUT_MAX)
@@ -368,6 +437,21 @@ typedef struct {
     uint8_t  placed;        /**< uncounted moves to the ends, this step   */
     uint32_t travel_now_ms; /**< the arrival to log, 0 for none          */
 
+    /* The encoder. */
+    bool     enc_have;      /**< enc_deg is a reading                    */
+    float    enc_deg;
+    uint32_t enc_ms;        /**< when it was taken                       */
+    uint32_t enc_reads;     /**< readings that reached the run           */
+    bool     enc_open;      /**< a move is being judged                  */
+    bool     enc_counted;
+    bool     enc_ok;        /**< it has a start angle                    */
+    uint8_t  enc_end;
+    uint32_t enc_cmd_ms;
+    float    enc_start_deg, enc_last_deg;
+    bool     enc_moved, enc_settled;
+    uint32_t enc_travel_ms;
+    uint32_t enc_travel_now_ms;     /**< the settle to log, 0 for none   */
+
     /* The readings. */
     bool     have_reading;
     uint16_t samples;
@@ -414,6 +498,14 @@ servo_test_start_t servo_test_start(servo_test_t *t,
  *  is checked for the supply's state and measures nothing. */
 void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
                         uint16_t position_us);
+
+/**
+ * A reading of the output encoder, each one once.  Judged against the move
+ * under way; kept as the angle the CSV and the SERVO screen show.  A reading
+ * that is not valid ends the angle's validity.  Nothing is judged without
+ * cfg.enc_on.
+ */
+void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e);
 
 /** One pass at @p now_ms: the timers, and what the run wants done since the
  *  last pass into @p out. */
@@ -588,6 +680,19 @@ typedef enum {
     SERVO_STR_R_UNM_POSITION,
     SERVO_STR_R_UNM_PEAKS,
     SERVO_STR_R_UNM_PATH,
+    /* The output encoder's. */
+    SERVO_STR_R_ENC_DEVICE,
+    SERVO_STR_R_ENC_HEAD,
+    SERVO_STR_R_ENC_COLUMNS,
+    SERVO_STR_R_ENC_CMD,
+    SERVO_STR_R_ENC_END,
+    SERVO_STR_R_ENC_SETTLED,
+    SERVO_STR_R_ENC_TRAVEL,
+    SERVO_STR_R_ENC_UNMOVED,
+    SERVO_STR_R_ENC_LATE,
+    SERVO_STR_R_ENC_DEADBAND,
+    SERVO_STR_R_ENC_NONE,
+    SERVO_STR_R_UNM_POSITION_ENC,
     SERVO_STR_COUNT
 } servo_str_t;
 
@@ -612,6 +717,8 @@ const char *servo_test_start_name(servo_test_start_t why);
 
 /** The CSV's header row. */
 const char *servo_test_csv_header(void);
+/** And with the encoder's two columns, angle_deg and travel_angle_ms. */
+const char *servo_test_csv_header_enc(void);
 
 /** Line @p idx of the report into @p buf, in the language of
  *  @p t->cfg.text; false past the last. */

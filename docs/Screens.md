@@ -262,6 +262,12 @@ not made for them -- and the supply that feeds the servo: its voltage, current
 and power, read and plotted over the last 13 s. Without a supply sample the
 readings are `--`.
 
+MEASURED is the horn's angle from the centre count while AS5600 is on in
+SETUP, INTERFACES and the sensor answers: `+38.0 deg`, tenths of a degree,
+read 20 times a second. It is `---` while the sensor does not answer, and the
+feedback's angle where AS5600 is off. The commanded position beside it is the
+pulse width in microseconds.
+
 **The supply is set and switched here too.** The SET line under the plot
 holds SUPPLY's two set points, the voltage and the current limit, and its
 output switch. They are SUPPLY's, not a copy: a change on either screen is
@@ -464,6 +470,10 @@ name opens a keyboard.
 | LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
 | DUT | NAME | the device under test, up to 23 characters, for the report |
 | DUT | REPORT | a text report beside each test's log |
+| DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
+| DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+
+![The DUT page with the output encoder on](img/servo-encoder.png)
 
 | Type | Centre | Travel | Frame rates |
 | --- | --- | --- | --- |
@@ -1065,6 +1075,34 @@ board holds one, are offered again every 5 s without another alert, so
 freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not disarm the bench: nothing trips on the
 monitors' readings.
+
+### INTERFACES: the output encoder
+
+An ams OSRAM AS5600 magnetic angle sensor on the servo's output shaft, on the
+sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
+
+| Setting | Range | Default | |
+| --- | --- | --- | --- |
+| AS5600 | ON, OFF | OFF | the output encoder; it takes the sensor bus's SDA and SCL above, and needs both pins set |
+| AS5600 centre | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTRE sets it from the live reading |
+
+The panel writes the enable bit with the rest of the bus frame, 500 ms after
+the last edit and only while the bench is disarmed, to a coprocessor that
+names protocol 4.9; an older one is sent nothing. While the encoder is
+enabled it reads SENSE's registers 12 to 31 every 40 ms. The band says, each
+once and one at a time like the monitors':
+
+| Message | When |
+| --- | --- |
+| `coprocessor older than 4.9 -- AS5600 not read` | the encoder is enabled and the coprocessor speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
+| `AS5600 not answering at 0x36` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives |
+| `AS5600 sees no magnet -- check the magnet on the horn shaft` | it answers and STATUS MD (magnet detected) is clear |
+| `AS5600 magnet too weak -- move it closer` | STATUS ML is set |
+| `AS5600 magnet too strong -- move it away` | STATUS MH is set |
+
+A magnet message is said once until the field reads right again. The sensor's
+DIR pin sets the direction its count rises in; the panel takes the count to
+rise with the servo's pulse width. Not run on hardware.
 
 ### INTERFACES: the phase tap
 

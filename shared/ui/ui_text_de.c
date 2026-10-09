@@ -769,6 +769,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_ROW_TRAVEL_TIME]     = "STELLZEIT",
     [TX_SV_ROW_NAME]            = "NAME",
     [TX_SV_ROW_REPORT]          = "BERICHT",
+    [TX_SV_ROW_ENC]             = "AS5600",
+    [TX_SV_ROW_ENC_CENTRE]      = "ENC-MITTE",
     [TX_SV_SERVO_TYPE]          = "SERVOTYP",
     [TX_SV_CUSTOM]              = "EIGENE",
     [TX_SV_DUT_TITLE]           = "PRÜFLING",
@@ -815,6 +817,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_LIMITS_3]            = "nicht geprüft.  Über BLOCKIERT AB gilt das",
     [TX_SV_LIMITS_4]            = "Servo als blockiert.",
     [TX_SV_DUT_NOTE]            = "Der Name steht über jedem Testbericht.",
+    [TX_SV_ENC_NOTE_1]          = "AS5600: Winkelsensor an der Hornwelle.",
+    [TX_SV_ENC_NOTE_2]          = "ENC-MITTE tippen, wenn der Servo in Neutral steht.",
     [TX_SV_HOLD_TO_APPLY]       = "HALTEN ZUM ÜBERNEHMEN",
     [TX_SV_DESTROY]             = "KANN DAS SERVO ZERSTÖREN",
     [TX_SV_DESTROY_WHAT]        = "%s bei %u Hz, %u-%u us",
@@ -889,6 +893,11 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_SENSE_STUCK]      = "Sensorbus hängt: SDA auf low -- wird freigetaktet",
     [TX_ALERT_SENSE_I228_CLIPPED] = "INA228-Strom am Ende des Messbereichs -- Strom ist eine Grenze",
     [TX_ALERT_SENSE_I3221_CLIPPED] = "INA3221 CH%u übersteuert bei %u.%02u A -- Strom ist eine Grenze",
+    [TX_ALERT_ENC_OLD]          = "Koprozessor älter als 4.9 -- AS5600 nicht gelesen",
+    [TX_ALERT_ENC_SILENT]       = "AS5600 antwortet nicht an 0x36",
+    [TX_ALERT_ENC_NO_MAGNET]    = "AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen",
+    [TX_ALERT_ENC_WEAK]         = "AS5600: Magnet zu schwach -- näher heranbringen",
+    [TX_ALERT_ENC_STRONG]       = "AS5600: Magnet zu stark -- weiter weg",
     [TX_ALERT_STORE_OFF]        = "Speicher des Koprozessors aus -- Einstellungen gelten bis zum Neustart",
     [TX_ALERT_NO_TONE_PAGE]     = "Koprozessor ohne TONE-Page -- Phasenabgriff nicht gelesen",
     [TX_ALERT_TONE_PIN]         = "Phasenabgriff an GP%u, %u bis %u Hz abgelehnt -- siehe SETUP ANSCHLÜSSE",
@@ -941,6 +950,8 @@ static const char *const k_label[SETTING_COUNT] = {
     [SET_INA3221_CH]          = "INA3221 Kanäle",
     [SET_SENSE_SDA]           = "Sensor-SDA",
     [SET_SENSE_SCL]           = "Sensor-SCL",
+    [SET_ENC_EN]              = "AS5600",
+    [SET_ENC_CENTRE]          = "AS5600-Mitte",
     [SET_TONE_EN]             = "Phasenabgriff",
     [SET_TONE_PIN]            = "Abgriff-Pin",
     [SET_TONE_F_MIN]          = "Tiefster Ton",
@@ -1025,6 +1036,8 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_INA3221_CH]          = "CH1 der Servotest, CH2+3 ein Paar",
     [SET_SENSE_SDA]           = "Koprozessor-GPIO; mod 4 ist 0 oder 2",
     [SET_SENSE_SCL]           = "Der GPIO nach SDA; -1: offen",
+    [SET_ENC_EN]              = "Winkelsensor an der Servowelle",
+    [SET_ENC_CENTRE]          = "Zähler in Neutral; 4096 je Umdr.",
     [SET_TONE_EN]             = "Pieptöne des ESC an einer Motorphase",
     [SET_TONE_PIN]            = "Koprozessor-GPIO; GP22 ist Pad 29",
     [SET_TONE_F_MIN]          = "Tiefere Töne sind kein Piepton",
@@ -1273,6 +1286,33 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "Messung.",
     [SERVO_STR_R_UNM_PATH]       = "Der Weg des Befehls vom Panel zum Pin, "
                                    "in jeder Stellzeit enthalten.",
+    [SERVO_STR_R_ENC_DEVICE]     = "Encoder:         AS5600 an der Hornwelle, "
+                                   "Mittenwert %u, %lu Winkelmesswerte",
+    [SERVO_STR_R_ENC_HEAD]       = "ENCODER (Winkel in Grad ab dem "
+                                   "Mittenwert, Zeiten in ms)",
+    /* Over the columns of the encoder lines: 0, 7, 16, 25, 34, 43, 50, 58,
+     * 64 and 72, as the English. */
+    [SERVO_STR_R_ENC_COLUMNS]    = "Soll V  Ende u   Abw. u   Ende o   Abw. o   "
+                                   "Stell. Längste Anz.  Unbew. Spät",
+    [SERVO_STR_R_ENC_CMD]        = "Befohlen: %+.1f deg am unteren Ende, %+.1f "
+                                   "deg am oberen.",
+    [SERVO_STR_R_ENC_END]        = "Ende: der beruhigte Winkel. Abw.: Ende "
+                                   "minus befohlen.",
+    [SERVO_STR_R_ENC_SETTLED]    = "Beruhigt: der Winkel blieb %.2f deg "
+                                   "innerhalb, %u ms lang.",
+    [SERVO_STR_R_ENC_TRAVEL]     = "Stell.: vom Befehl bis zum Beginn dieser "
+                                   "Ruhe, mit dem Weg des Befehls vom Panel "
+                                   "zum Pin.",
+    [SERVO_STR_R_ENC_UNMOVED]    = "Unbew.: der Winkel verließ %.1f deg um "
+                                   "den Start nicht.",
+    [SERVO_STR_R_ENC_LATE]       = "Spät: der Winkel bewegte sich und war vor "
+                                   "dem nächsten Befehl keine %u ms ruhig.",
+    [SERVO_STR_R_ENC_DEADBAND]   = "Totband: nicht gemessen; die Bewegungen "
+                                   "gehen von Ende zu Ende.",
+    [SERVO_STR_R_ENC_NONE]       = "Kein Winkelmesswert erreichte den Lauf.",
+    [SERVO_STR_R_UNM_POSITION_ENC] = "Position: der AS5600 misst das "
+                                     "Ruderhorn; die Stellzeit aus dem Strom "
+                                     "steht neben der aus dem Winkel.",
 };
 
 const ui_language_t ui_lang_de = {

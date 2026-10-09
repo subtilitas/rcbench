@@ -11,6 +11,11 @@
  * a reading past the end of a range stays at the end code, and RSTACC
  * reads back as written.
  *
+ * An AS5600 (ams DS000365) answers at 0x36: STATUS at 0x0B, RAW ANGLE at
+ * 0x0C and ANGLE at 0x0E, AGC at 0x1A and MAGNITUDE at 0x1B, with the
+ * register pointer incrementing over a read.  A test sets status, raw,
+ * agc and magnitude.
+ *
  * Faults a test can give it: a part that is not there (NACK), the next n
  * transactions or the nth since the start failing with a chosen code, the lines held low, a part
  * that acknowledges writes and keeps none, and other identities.
@@ -22,11 +27,12 @@
 #include <math.h>
 #include <string.h>
 
+#include "as5600.h"
 #include "ina228.h"
 #include "ina3221.h"
 #include "sense_bus.h"
 
-typedef enum { FAKE_INA228, FAKE_INA3221 } fake_kind_t;
+typedef enum { FAKE_INA228, FAKE_INA3221, FAKE_AS5600 } fake_kind_t;
 
 typedef struct {
     fake_kind_t kind;
@@ -41,6 +47,10 @@ typedef struct {
     double      degc;
     uint64_t    energy;          /* ENERGY and CHARGE, raw 40-bit codes    */
     uint64_t    charge;
+    uint8_t     status;          /* AS5600 STATUS                          */
+    uint16_t    raw;             /* AS5600 RAW ANGLE and ANGLE, 12 bits    */
+    uint8_t     agc;
+    uint16_t    magnitude;
     unsigned    reads[256];
     unsigned    writes[256];
 } fake_part_t;
@@ -83,7 +93,9 @@ static fake_part_t *fake_add(fake_bus_t *b, fake_kind_t kind, uint8_t addr,
     p->present   = true;
     p->shunt_ohm = shunt_ohm;
     p->maker     = 0x5449u;
-    if (kind == FAKE_INA228) {
+    if (kind == FAKE_AS5600) {
+        p->status = AS5600_STATUS_MD;
+    } else if (kind == FAKE_INA228) {
         p->device = 0x2281u;
         fake_reset228(p);
     } else {
@@ -260,6 +272,27 @@ static sense_err_t fake_fault(fake_bus_t *b)
     return SENSE_OK;
 }
 
+/* The AS5600's registers as bytes, a read running on from @p reg. */
+static bool fake_read5600(const fake_part_t *p, uint8_t reg, uint8_t *buf,
+                          size_t n)
+{
+    uint8_t m[0x20];
+    memset(m, 0, sizeof m);
+    m[AS5600_REG_STATUS]        = p->status;
+    m[AS5600_REG_RAW_ANGLE]     = (uint8_t)(p->raw >> 8);
+    m[AS5600_REG_RAW_ANGLE + 1] = (uint8_t)p->raw;
+    m[AS5600_REG_ANGLE]         = (uint8_t)(p->raw >> 8);
+    m[AS5600_REG_ANGLE + 1]     = (uint8_t)p->raw;
+    m[AS5600_REG_AGC]           = p->agc;
+    m[AS5600_REG_MAGNITUDE]     = (uint8_t)(p->magnitude >> 8);
+    m[AS5600_REG_MAGNITUDE + 1] = (uint8_t)p->magnitude;
+    if ((size_t)reg + n > sizeof m) {
+        return false;
+    }
+    memcpy(buf, &m[reg], n);
+    return true;
+}
+
 static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
                              uint8_t *buf, size_t n)
 {
@@ -273,6 +306,12 @@ static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
         return SENSE_NACK;
     }
     ++p->reads[reg];
+    if (p->kind == FAKE_AS5600) {
+        if (!fake_read5600(p, reg, buf, n)) {
+            ++b->bad_width;
+        }
+        return SENSE_OK;
+    }
     const size_t want = (p->kind == FAKE_INA228) ? fake_width228(reg) : 2u;
     if (n != want) {
         ++b->bad_width;

@@ -88,8 +88,8 @@ symmetric about centre. One current sensor across the pair is sufficient.
 What a servo draws at rest, moving and holding an end, and how long it takes
 from end to end, at the supply voltages it is rated for; and the voltage
 below which it no longer moves (brown-out). Nothing on the bench measures the
-horn, so every result is read from the current of the supply that feeds the
-servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
+horn unless the output encoder is on (see below), so every result is read from
+the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated.
 
@@ -256,6 +256,65 @@ current sensor sets its own and has TRAVEL TIME checked. A run on the
 panel's model states no lag of its own and checks TRAVEL TIME as the PD mini
 would: not at all.
 
+### The output encoder
+
+An AS5600 magnetic angle sensor on the servo's output shaft, set up under
+SETUP, INTERFACES, AS5600 (default OFF) and read by the coprocessor
+([Link](Link.md), SENSE registers 26 to 31), adds the horn's angle to a run.
+The current's results are unchanged and the angle decides nothing: it is not
+part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
+its report are as without the part.
+
+The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
+or ENC CENTRE on the DUT page, which takes the live count with the servo at
+its neutral), in degrees from -180 to just under 180. The sensor counts up in
+the direction its DIR pin is strapped for; the test assumes the angle rises
+with the pulse width, so a DIR strap that runs the other way shows as an
+angle error of twice the travel. Commanded angles are the screen's: -90
+degrees at PULSE MIN, +90 at PULSE MAX, with REVERSE and TRIM applied. A
+servo that turns less than 90 degrees over that span shows the difference as
+angle error.
+
+For each move, from its command to the next command (constants in
+`servo_test.h`):
+
+| Term | Rule |
+| --- | --- |
+| moved | the angle leaves `SERVO_TEST_ENC_MOVED_DEG`, 2.0 degrees, of the angle read before the command; that reading must be younger than `SERVO_TEST_ENC_STALE_MS`, 500 ms, or the move is not judged |
+| settled | after it has moved, a reading whose still time is at least `SERVO_TEST_ENC_HOLD_MS`, 100 ms, and whose stillness began after the command. The angle has then stayed within `SERVO_TEST_ENC_TOL_COUNTS`, 12 counts or 1.05 degrees, of an anchor for that long |
+| travel time (angle) | the start of that stillness minus the command: the moment the angle came within the tolerance of its final value |
+| end angle | the angle at the last reading before the next command, for a settled move |
+| angle error | the mean end angle at an end minus that end's commanded angle |
+| unmoved | the angle never left the 2.0 degrees |
+| late | it moved and was not still for 100 ms before the next command |
+
+The tolerance is the coprocessor's `SENSE_ENC_STILL_TOL`; `test_as5600` holds
+the two equal. The still time is kept on the coprocessor at its 2 ms sample
+interval, so the travel time does not depend on how often the panel reads the
+page (every 40 ms). It starts at the command as the test issues it and so
+includes the command's way to the pin: the render loop, the control task,
+the link and the next PWM frame, up to one poll interval and one frame, not
+measured. It ends when the angle comes within 1.05 degrees of its final
+value, which is earlier than the arm's last movement by the time that takes:
+on a 0.09 degrees a microsecond servo at 1.2 us a millisecond, about 10 ms.
+Only counted moves are reported. The moves that place the horn at each end
+first are not.
+
+The report adds a header line (`Encoder:`), a table per step -- the mean end
+angle and its error at each end, the mean and longest travel time, the moves
+counted, unmoved and late -- and the commanded angles with the rules above.
+The current's table and its `Travel` column stay, so the two times sit side
+by side: on the PD mini the current's is an upper bound that lags the horn by
+about 0.3 s, and the angle's is not. The CSV gains two columns, `angle (deg)`
+on every row whose angle reading is younger than 500 ms, and `travel angle
+(ms)` on the row after a move settled. The report notes that the deadband is
+not measured: it needs steps smaller than the end-to-end moves the test
+makes, and the test makes none. The SERVO screen's MEASURED row shows the
+live angle while AS5600 is on.
+
+Not run on hardware: the sensor on the bus, the tolerance and the 100 ms
+hold against a real servo's jitter, and the mounting.
+
 ### What ends a run
 
 Every ending switches the output off, releases the servo to its centre, and
@@ -348,6 +407,8 @@ writes:
 | `power (W)` | W | voltage times current |
 | `mode` | | `CV`, `CC` or `OFF` |
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
+| `angle (deg)` | deg | with AS5600 on only: the horn's angle from the centre count; empty without a reading younger than 500 ms |
+| `travel angle (ms)` | ms | with AS5600 on only: on the row after a move settled, its travel time from the angle |
 
 The report from the host suite's replay of an MG90S micro servo's run on
 the bench with the PD mini (`test/host/fixtures/servo-mg90s.csv`), with

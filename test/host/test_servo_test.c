@@ -7,6 +7,15 @@
  * go and a report that says ABORTED and why; the caps it never exceeds; the
  * outbox; and the CSV read back by the log viewer's parser.
  *
+ * The output encoder: angles from the centre count across the wrap; a run
+ * with it reporting each step's end angles, their error against the
+ * commanded angle and a travel time from the start of the angle's
+ * stillness, beside the current's; the same run without it unchanged, its
+ * CSV header and report included; a servo that turns less than commanded
+ * showing the error; one that never moves counted unmoved; an encoder that
+ * gives nothing said so; a stillness that began before the command not
+ * taken for its end.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
@@ -52,6 +61,18 @@ typedef struct {
     float    set_v_max;      /* the highest voltage ever asked */
     bool     released;
     bool     off_asked;
+    /* The output encoder: the horn's angle at enc_deg_per_us from 1500 us,
+     * read from a count with its centre at ENC_CENTRE_COUNT, every
+     * enc_every ms, with the coprocessor's still time (a 12-count anchor)
+     * kept at the frame rate. */
+    bool     enc_model_on;
+    float    enc_deg_per_us;
+    uint32_t enc_every, enc_next;
+    bool     enc_valid;
+    bool     enc_anchored;
+    uint16_t enc_anchor;
+    uint32_t enc_anchor_ms;
+    unsigned enc_sent;
     /* What came out of the outbox. */
     unsigned opens, csv, txt, ends;
     char    *csv_text;
@@ -61,6 +82,9 @@ typedef struct {
 } rig_t;
 
 static rig_t g;
+
+#define ENC_CENTRE_COUNT 3000u
+#define ENC_DEG_PER_US   0.09f      /* 90 degrees across 1000 us */
 
 static void cfg_defaults(servo_test_cfg_t *c)
 {
@@ -194,6 +218,34 @@ static servo_test_reading_t reading(float amps)
     return r;
 }
 
+/* The horn's count now, and the still time as the coprocessor keeps it. */
+static void enc_model(void)
+{
+    const float deg = (g.servo.position_us - 1500.0f) * g.enc_deg_per_us;
+    const int counts = (int)lroundf(deg * 4096.0f / 360.0f);
+    const uint16_t raw = (uint16_t)((counts + (int)ENC_CENTRE_COUNT) & 4095);
+    int d = (int)raw - (int)g.enc_anchor;
+    d = ((d + 2048) & 4095) - 2048;
+    if (d < 0) {
+        d = -d;
+    }
+    if (!g.enc_anchored || d > (int)SERVO_TEST_ENC_TOL_COUNTS) {
+        g.enc_anchor    = raw;
+        g.enc_anchor_ms = g.now;
+        g.enc_anchored  = true;
+    }
+    if (g.enc_valid && (int32_t)(g.now - g.enc_next) >= 0) {
+        g.enc_next += g.enc_every;
+        servo_test_enc_t e;
+        e.valid    = true;
+        e.raw      = raw;
+        e.still_ms = (uint16_t)(g.now - g.enc_anchor_ms);
+        e.taken_ms = g.now;
+        servo_test_encoder(&g.t, &e);
+        ++g.enc_sent;
+    }
+}
+
 static void frame(void)
 {
     g.now += FRAME_MS;
@@ -202,6 +254,9 @@ static void frame(void)
     /* A servo without enough voltage stays where it is. */
     const uint16_t cmd = moves ? g.cmd_us : (uint16_t)(g.servo.position_us + 0.5f);
     const float amps = out ? servo_sim_step(&g.servo, cmd, g.now) : 0.0f;
+    if (g.enc_model_on) {
+        enc_model();
+    }
     if (g.readings && (int32_t)(g.now - g.next_read) >= 0) {
         g.next_read += g.read_every_ms;
         const servo_test_reading_t r = reading(amps);
@@ -1780,8 +1835,299 @@ TEST_CASE(a_reading_at_the_deadline_is_late)
     CHECK_EQ(g_dl.phase, SERVO_TEST_PH_HOLD);
 }
 
+/* ---------------------------------------------------- the output encoder */
+
+/* A rig whose horn is read by an encoder turning @p gain degrees a us. */
+static void enc_rig(float gain, servo_test_cfg_t *c)
+{
+    rig_fresh();
+    cfg_defaults(c);
+    c->step_count = 1u;
+    c->moves = 3u;
+    c->enc_on = true;
+    c->enc_centre = ENC_CENTRE_COUNT;
+    c->enc_cmd_deg[0] = -400.0f * ENC_DEG_PER_US;
+    c->enc_cmd_deg[1] =  400.0f * ENC_DEG_PER_US;
+    g.enc_model_on = true;
+    g.enc_valid = true;
+    g.enc_every = 40u;
+    g.enc_deg_per_us = gain;
+}
+
+TEST_CASE(an_angle_is_counted_from_the_centre_round_the_circle)
+{
+    CHECK_NEAR(servo_test_enc_deg(3000u, 3000u), 0.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_deg(4096u - 1u, 0u), -0.0879f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_deg(10u, 4090u), 16.0f * 360.0f / 4096.0f, 0.001f);
+    CHECK_NEAR(servo_test_enc_deg(4090u, 10u), -16.0f * 360.0f / 4096.0f, 0.001f);
+    CHECK_NEAR(servo_test_enc_deg(1024u, 0u), 90.0f, 0.001f);
+    CHECK_NEAR(servo_test_enc_deg(3072u, 0u), -90.0f, 0.001f);
+    CHECK_NEAR(servo_test_enc_deg(2048u, 0u), -180.0f, 0.001f);
+    /* The tolerance in degrees is 12 counts. */
+    CHECK_NEAR(SERVO_TEST_ENC_TOL_DEG, 12.0f * 360.0f / 4096.0f, 0.001f);
+    CHECK_EQ(SERVO_TEST_ENC_TOL_COUNTS, 12u);
+}
+
+TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
+    const servo_test_step_t *s = &g.t.steps[0];
+    /* The current's figures are as without the encoder. */
+    CHECK_EQ(s->moves, 3u);
+    CHECK_EQ(s->travels, 3u);
+    CHECK(s->travel_max_ms >= TRAVEL_MS);
+    /* And the angle's: each counted move seen, settled, none unmoved. */
+    CHECK_EQ(s->enc_moves, 3u);
+    CHECK_EQ(s->enc_travels, 3u);
+    CHECK_EQ(s->enc_unmoved, 0u);
+    CHECK_EQ(s->enc_late, 0u);
+    CHECK(s->enc_end[0].n + s->enc_end[1].n == 3u);
+    const float lo = s->enc_end[0].n ? s->enc_end[0].sum / (float)s->enc_end[0].n
+                                      : -36.0f;
+    const float hi = s->enc_end[1].n ? s->enc_end[1].sum / (float)s->enc_end[1].n
+                                      : 36.0f;
+    CHECK_NEAR(lo, -36.0f, 0.5f);
+    CHECK_NEAR(hi, 36.0f, 0.5f);
+    /* The settle begins as the horn comes within the tolerance of its
+     * end: up to the tolerance's worth of travel before the whole move,
+     * within a frame and a reading of it. */
+    const float tol_ms = SERVO_TEST_ENC_TOL_DEG / ENC_DEG_PER_US / 1.2f;
+    CHECK((float)s->enc_travel_max_ms >= (float)TRAVEL_MS - tol_ms - 2.0f * FRAME_MS);
+    CHECK(s->enc_travel_max_ms <= TRAVEL_MS + 100u);
+    CHECK(s->enc_travel_sum_ms / s->enc_travels <= s->enc_travel_max_ms);
+    CHECK(g.t.enc_reads > 100u);
+
+    /* The report: the encoder's header line, its table and its notes. */
+    CHECK(strstr(g.report, "Encoder:        AS5600 on the horn shaft, centre count 3000,") != NULL);
+    CHECK(strstr(g.report, "ENCODER (angles in degrees from the centre count, times in ms)") != NULL);
+    CHECK(strstr(g.report, "Set V  End lo   Err lo   End hi   Err hi   Travel Longest Moves Unmoved Late") != NULL);
+    CHECK(strstr(g.report, "Commanded: -36.0 deg at the low end, +36.0 deg at the high end.") != NULL);
+    CHECK(strstr(g.report, "Settled: the angle has stayed within 1.05 deg for 100 ms.") != NULL);
+    CHECK(strstr(g.report, "Deadband: not measured; the moves go end to end.") != NULL);
+    CHECK(strstr(g.report, "Position: the AS5600 measures the horn;") != NULL);
+    CHECK(strstr(g.report, "Position: nothing measures the horn") == NULL);
+    /* Side by side: the current's table is there too. */
+    CHECK(strstr(g.report, "RESULTS PER STEP (currents in A, times in ms)") != NULL);
+
+    /* The CSV has two more columns, and the settle on the row after it. */
+    CHECK(strncmp(g.csv_text, servo_test_csv_header_enc(),
+                  strlen(servo_test_csv_header_enc())) == 0);
+    CHECK(strstr(servo_test_csv_header_enc(), ";travel (ms);angle (deg);travel angle (ms)") != NULL);
+    unsigned rows = 0u, with_angle = 0u, with_settle = 0u;
+    for (const char *p = strchr(g.csv_text, '\n'); p != NULL && *p != '\0';) {
+        const char *e = strchr(p + 1, '\n');
+        if (e == NULL) {
+            break;
+        }
+        unsigned fields = 1u;
+        for (const char *q = p + 1; q < e; ++q) {
+            fields += (*q == ';') ? 1u : 0u;
+        }
+        CHECK_EQ(fields, 15u);
+        ++rows;
+        const char *last = e;
+        while (last > p + 1 && last[-1] != ';') {
+            --last;
+        }
+        const char *prev = last - 1;
+        while (prev > p + 1 && prev[-1] != ';') {
+            --prev;
+        }
+        with_settle += (last < e) ? 1u : 0u;
+        with_angle += (prev < last - 1) ? 1u : 0u;
+        p = e;
+    }
+    CHECK(rows > 40u);
+    CHECK(with_angle > rows / 2u);
+    /* One settle for each of the 3 counted moves and the 2 that place the
+     * horn first. */
+    CHECK_EQ(with_settle, 5u);
+}
+
+TEST_CASE(without_the_encoder_the_run_and_its_files_are_as_before)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    c.enc_on = false;               /* readings arrive, the run ignores them */
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK(g.enc_sent > 100u);
+    CHECK_EQ(g.t.enc_reads, 0u);
+    CHECK_EQ(g.t.steps[0].enc_moves, 0u);
+    CHECK(strncmp(g.csv_text, servo_test_csv_header(),
+                  strlen(servo_test_csv_header())) == 0);
+    CHECK(strstr(g.csv_text, "angle") == NULL);
+    CHECK(strstr(g.report, "ENCODER") == NULL);
+    CHECK(strstr(g.report, "Encoder:") == NULL);
+    CHECK(strstr(g.report, "Deadband") == NULL);
+    CHECK(strstr(g.report, "Position: nothing measures the horn") != NULL);
+    for (const char *p = strchr(g.csv_text, '\n'); p != NULL && *p != '\0';) {
+        const char *e = strchr(p + 1, '\n');
+        if (e == NULL) {
+            break;
+        }
+        unsigned fields = 1u;
+        for (const char *q = p + 1; q < e; ++q) {
+            fields += (*q == ';') ? 1u : 0u;
+        }
+        CHECK_EQ(fields, 13u);
+        p = e;
+    }
+}
+
+/* A horn that turns 0.07 degrees a us where 0.09 is commanded: 28 degrees
+ * at the ends, not 36. */
+TEST_CASE(a_servo_that_turns_less_than_commanded_shows_the_error)
+{
+    servo_test_cfg_t c;
+    enc_rig(0.07f, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->enc_travels, 3u);
+    CHECK(s->enc_end[0].n + s->enc_end[1].n == 3u);
+    if (s->enc_end[0].n > 0u) {
+        CHECK_NEAR(s->enc_end[0].sum / (float)s->enc_end[0].n, -28.0f, 0.5f);
+    }
+    if (s->enc_end[1].n > 0u) {
+        CHECK_NEAR(s->enc_end[1].sum / (float)s->enc_end[1].n, 28.0f, 0.5f);
+    }
+    /* Err is End less commanded: +8.00 at the low end, -8.00 at the high. */
+    CHECK(strstr(g.report, "-28.0") != NULL);
+    CHECK(strstr(g.report, "+28.0") != NULL);
+    CHECK(strstr(g.report, "+7.9") != NULL);
+    CHECK(strstr(g.report, "-7.9") != NULL);
+}
+
+TEST_CASE(a_servo_that_does_not_move_is_counted_unmoved_by_the_angle)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    g.brownout_v = 30.0f;           /* never enough voltage to move */
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->moves, 3u);
+    CHECK_EQ(s->enc_moves, 3u);
+    CHECK_EQ(s->enc_unmoved, 3u);
+    CHECK_EQ(s->enc_travels, 0u);
+    CHECK_EQ(s->enc_late, 0u);
+    CHECK(strstr(g.report, "Unmoved: the angle did not leave 2.0 deg of its start.") != NULL);
+}
+
+TEST_CASE(an_encoder_that_gives_nothing_is_said_so)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    g.enc_valid = false;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK_EQ(g.t.enc_reads, 0u);
+    CHECK_EQ(g.t.steps[0].enc_moves, 0u);
+    CHECK(strstr(g.report, "No angle reading reached the run.") != NULL);
+    /* The current's result stands. */
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
+    CHECK(strstr(g.csv_text, ";CV;") != NULL);
+}
+
+TEST_CASE(an_invalid_reading_ends_the_angle_until_the_next)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_ms(1000u);
+    CHECK(g.t.enc_have);
+    servo_test_enc_t none = { false, 0u, 0u, g.now };
+    servo_test_encoder(&g.t, &none);
+    CHECK(!g.t.enc_have);
+    servo_test_encoder(&g.t, NULL);
+    servo_test_encoder(NULL, &none);
+    run_ms(100u);
+    CHECK(g.t.enc_have);            /* the model's next reading */
+}
+
+/* Stillness that began before the command is the servo at rest, not the
+ * move's end: a horn that starts late shows no settle until it has moved
+ * and stopped again. */
+TEST_CASE(a_stillness_from_before_the_command_is_not_the_end_of_the_move)
+{
+    servo_test_cfg_t c;
+    memset(&c, 0, sizeof(c));
+    c.enc_on = true;
+    c.enc_centre = 0u;
+    servo_test_t t;
+    servo_test_init(&t);
+    t.cfg = c;
+    t.state = SERVO_TEST_RUNNING;
+    t.step_count = 1u;
+    t.enc_open = true;
+    t.enc_counted = true;
+    t.enc_ok = true;
+    t.enc_end = 1u;
+    t.enc_cmd_ms = 10000u;
+    t.enc_start_deg = 0.0f;
+    /* Moved 5 degrees, still for 200 ms, the stillness older than the
+     * command: not settled. */
+    servo_test_enc_t e = { true, (uint16_t)(5.0f * 4096.0f / 360.0f), 200u, 10100u };
+    servo_test_encoder(&t, &e);
+    CHECK(t.enc_moved);
+    CHECK(!t.enc_settled);
+    /* Still for 100 ms from 10050: after the command, settled at 50 ms. */
+    e.taken_ms = 10150u;
+    e.still_ms = 100u;
+    servo_test_encoder(&t, &e);
+    CHECK(t.enc_settled);
+    CHECK_EQ(t.enc_travel_ms, 50u);
+    CHECK_EQ(t.enc_travel_now_ms, 50u);
+    /* Settled once: a later reading does not move it. */
+    e.taken_ms = 10300u;
+    e.still_ms = 250u;
+    servo_test_encoder(&t, &e);
+    CHECK_EQ(t.enc_travel_ms, 50u);
+    /* Less than SERVO_TEST_ENC_HOLD_MS still is not settled. */
+    servo_test_t u = t;
+    u.enc_settled = false;
+    e.taken_ms = 10400u;
+    e.still_ms = SERVO_TEST_ENC_HOLD_MS - 1u;
+    servo_test_encoder(&u, &e);
+    CHECK(!u.enc_settled);
+    /* A reading from before the command is not the move. */
+    servo_test_t w = t;
+    w.enc_settled = false;
+    w.enc_moved = false;
+    e.taken_ms = 9000u;
+    e.still_ms = 500u;
+    servo_test_encoder(&w, &e);
+    CHECK(!w.enc_moved);
+}
+
+TEST_CASE(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    g.enc_every = 2000u;            /* a reading every 2 s: too old to start from */
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->moves, 3u);
+    CHECK(s->enc_moves < 3u);
+}
+
 int main(void)
 {
+    RUN(an_angle_is_counted_from_the_centre_round_the_circle);
+    RUN(a_run_with_the_encoder_reports_the_angle_beside_the_current);
+    RUN(without_the_encoder_the_run_and_its_files_are_as_before);
+    RUN(a_servo_that_turns_less_than_commanded_shows_the_error);
+    RUN(a_servo_that_does_not_move_is_counted_unmoved_by_the_angle);
+    RUN(an_encoder_that_gives_nothing_is_said_so);
+    RUN(an_invalid_reading_ends_the_angle_until_the_next);
+    RUN(a_stillness_from_before_the_command_is_not_the_end_of_the_move);
+    RUN(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged);
     RUN(a_run_measures_each_step_and_passes);
     RUN(the_travel_time_is_late_by_at_most_a_reading);
     RUN(length_by_time_moves_for_the_test_time);

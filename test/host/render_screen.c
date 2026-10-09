@@ -122,6 +122,8 @@ static bool s_monitors_on;
 /* The phase tap enabled, and the readout a run's page shows beside it. */
 static bool s_tap_on;
 static bool s_tone_fed;
+/* The output encoder enabled, its centre at count 3000. */
+static bool s_enc_on;
 
 static bool lang_load(float *values, int count)
 {
@@ -130,6 +132,10 @@ static bool lang_load(float *values, int count)
     }
     if (s_tap_on && (int)SET_TONE_EN < count) {
         values[SET_TONE_EN] = 1.0f;
+    }
+    if (s_enc_on && (int)SET_ENC_CENTRE < count) {
+        values[SET_ENC_EN]     = 1.0f;
+        values[SET_ENC_CENTRE] = 3000.0f;
     }
     if (s_monitors_on && (int)SET_INA3221_EN < count) {
         values[SET_INA228_EN]  = 1.0f;
@@ -680,6 +686,7 @@ int main(int argc, char **argv)
     s_monitors_on = strcmp(view, "setup-interfaces") == 0
                     || strcmp(view, "setup-sensors") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
+    s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_tone_fed = strcmp(view, "programmer-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
@@ -1391,6 +1398,13 @@ int main(int argc, char **argv)
         }
         /* A coprocessor that took the screen's 50 Hz. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+        /* The output encoder on, its centre at count 3000 and the horn
+         * read at the commanded 38 degrees: 38 * 4096 / 360 = 432
+         * counts on. */
+        if (strcmp(view, "servo-encoder") == 0) {
+            const servo_test_enc_t e = { true, 3432u, 0u, 1000u };
+            servo_screen_encoder(&e);
+        }
         /*
          * The overlay, opened the way a finger opens it.  Geometry from
          * servo_screen.c, offset by the band: SETTINGS at the top of the
@@ -1426,6 +1440,8 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo-warning") == 0) {
             tap(100, UI_BAND_H + 71);
             tap(130, UI_BAND_H + 212);
+        } else if (strcmp(view, "servo-encoder") == 0) {
+            tap(296, UI_BAND_H + 27);                 /* DUT */
         } else if (strcmp(view, "servo-name") == 0) {
             tap(296, UI_BAND_H + 27);
             tap(100, UI_BAND_H + 71);

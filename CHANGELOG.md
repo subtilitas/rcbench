@@ -12,6 +12,38 @@ in, a finger that moves more than 10 px pans the view; a shorter touch still
 selects a value. With it off, one finger moves the cursor and two fingers pan,
 as before.
 
+### Added
+
+- **Output encoder on the SENSE page (protocol 4.9).** An ams OSRAM AS5600
+  magnetic angle sensor on a servo's output shaft, at 0x36 on the sensor bus
+  beside the INA parts. SENSE's ENABLE takes bit 2 for it, and registers 26
+  to 31 carry its flags (answering, magnet detected, too weak, too strong,
+  another STATUS, angle valid), RAW ANGLE (0 to 4095, 0.0879 degrees a
+  count), MAGNITUDE, an angle sample count and the time the angle has stayed
+  within 12 counts (1.05 degrees) of an anchor, in ms. The coprocessor reads
+  STATUS and RAW ANGLE at 500 Hz on the 1 ms schedule's ticks without a
+  rotation item, and AGC with MAGNITUDE at 20 Hz; the still time is kept at
+  the 2 ms sample interval, so the panel times the end of a move whatever its
+  polling interval. The panel writes bit 2 and reads registers 26 to 31 only
+  from a coprocessor that names 4.9 and says
+  `coprocessor older than 4.9 -- AS5600 not read` for an older one; it says
+  `AS5600 not answering at 0x36` and the three magnet messages once each.
+  The driver is `shared/sense/as5600.c`.
+- **AS5600 in SETUP, INTERFACES, and on SERVO.** An AS5600 row (OFF at the
+  start) and AS5600 centre, the sensor's count at the servo's neutral. The
+  SERVO screen's MEASURED row shows the angle from the centre, and ENC CENTRE
+  on the DUT page takes the live count as the centre.
+- **Angle results in the automatic servo test.** With AS5600 on, each step
+  reports the end angles, the angle error against the commanded angle and a
+  travel time measured from the angle: the command to the start of 100 ms
+  within 1.05 degrees (`SERVO_TEST_ENC_TOL_COUNTS`, `SERVO_TEST_ENC_HOLD_MS`),
+  beside the supply current's, which is unchanged. The CSV gains `angle (deg)`
+  and `travel angle (ms)` columns and the report an ENCODER section; the
+  deadband is reported as not measured, since the moves go end to end. With
+  AS5600 off, the CSV and the report are as before.
+
+None of the encoder work has run on hardware.
+
 ## 0.14.0 - 2026-10-09
 
 The link protocol is 4.8. A 0.13 board still links and arms with a 0.14

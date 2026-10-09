@@ -90,6 +90,25 @@
  * up to it.  A capture with no CH1 sample in those 50 ms ends as lost:
  * the INA3221 did not answer.
  *
+ * The output encoder.  An AS5600 on the same bus (as5600.h), when enabled,
+ * is read on the ticks that read no rotation item -- every second tick,
+ * 500 Hz: STATUS and RAW ANGLE in one 3-byte read, 0.19 ms of bus time,
+ * and every SENSE_ENC_MAG_EVERY-th slot AGC and MAGNITUDE instead (20 Hz).
+ * An odd tick then is CH1, the INA228's slot and the encoder: under the
+ * 690 µs of an even tick.  The angle is kept as the 12-bit count; the
+ * schedule judges nothing from it but how long it has held still.
+ *
+ * Still time.  The angle holds an anchor, the count and the time of the
+ * last sample that lay more than SENSE_ENC_STILL_TOL counts from the
+ * previous anchor on the circle; that sample is the new anchor.
+ * sense_sched_enc_still_ms() is the time since the anchor, saturating at
+ * 65535 ms: how long the output has stayed within SENSE_ENC_STILL_TOL
+ * counts of where it is.  A move that settles gives the time its last
+ * anchor was set -- the moment the angle came within the tolerance of its
+ * final value -- as now minus the still time, to the sample interval of
+ * 2 ms.  The first sample after a set-up, and the first after the part
+ * has been offline, set the anchor.
+ *
  * Not known: the INA3221's noise at 140 µs conversions, and so whether 4
  * samples of filter and 10 of settling suit it; the controller's time
  * between transactions.
@@ -102,6 +121,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "as5600.h"
 #include "ina228.h"
 #include "ina3221.h"
 #include "sense_bus.h"
@@ -119,6 +139,10 @@ extern "C" {
  *  far above the band arrives 3 ms late.  Chosen, not measured: the noise
  *  is not known. */
 #define SENSE_CAP_FILTER_N    4u
+/** The encoder's tolerance for holding still: 12 counts, 1.05 degrees. */
+#define SENSE_ENC_STILL_TOL  12u
+/** One slot in this many reads AGC and MAGNITUDE and not the angle. */
+#define SENSE_ENC_MAG_EVERY  25u
 /** Samples in a row at an end held harder than the servo moves: 10 ms. */
 #define SENSE_CAP_SETTLE_N   10u
 /** The capture's lag, added to the window: the filter's 3 ms, up to 1 ms
@@ -166,6 +190,7 @@ typedef struct {
     uint8_t  ina3221_addr;
     uint32_t ina3221_shunt_uohm;
     uint8_t  ina3221_channels;     /**< bit 0 CH1 to bit 2 CH3           */
+    bool     as5600_en;            /**< the output encoder, at 0x36      */
 } sense_sched_cfg_t;
 
 /** One complete window of one source. */
@@ -260,6 +285,22 @@ typedef struct {
     servo_move_t mv;
 } sense_cap_t;
 
+/** The output encoder as last read. */
+typedef struct {
+    as5600_t dev;
+    bool     have_angle;   /**< raw holds a reading of this set-up          */
+    uint8_t  status;       /**< STATUS as last read                         */
+    uint16_t raw;          /**< RAW ANGLE, 0 to 4095                        */
+    uint16_t samples;      /**< angle reads taken, modulo 65536             */
+    bool     have_mag;
+    uint8_t  agc;
+    uint16_t magnitude;
+    uint32_t slots;        /**< encoder slots taken                         */
+    uint16_t anchor;       /**< the count the still time is held to         */
+    uint64_t anchor_ms;    /**< when it was set                             */
+    bool     anchored;     /**< an anchor is set                            */
+} sense_enc_t;
+
 typedef struct {
     sense_sched_io_t    io;
     sense_sched_cfg_t   cfg;
@@ -286,6 +327,7 @@ typedef struct {
     uint16_t flags;          /**< INA3221 Mask/Enable as last read        */
     sense_run_t run;
     sense_cap_t cap;
+    sense_enc_t enc;
     /* The last SENSE_CH1_HISTORY CH1 samples, oldest overwritten. */
     sense_ch1_t ch1[SENSE_CH1_HISTORY];
     uint8_t  ch1_n, ch1_head;
@@ -324,6 +366,10 @@ void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us);
 
 /** Stop a capture; its count stays. */
 void sense_sched_cap_disarm(sense_sched_t *s);
+
+/** How long the encoder's angle has stayed within SENSE_ENC_STILL_TOL
+ *  counts of its anchor, ms, saturating at 65535; 0 with no anchor. */
+uint16_t sense_sched_enc_still_ms(const sense_sched_t *s);
 
 #ifdef __cplusplus
 }
