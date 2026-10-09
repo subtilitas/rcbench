@@ -679,6 +679,92 @@ TEST_CASE(a_sweep_not_yet_sent_is_dropped_by_a_stop)
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
+/* Every command taken over @p n frames, as a bit per kind. */
+static unsigned kinds_over(int n)
+{
+    unsigned seen = 0u;
+    for (int i = 0; i < n; ++i) {
+        ui_router_tick(0.026f);
+        for (servo_cmd_t c = took(); c.kind != SERVO_CMD_NONE; c = took()) {
+            seen |= 1u << (unsigned)c.kind;
+        }
+    }
+    return seen;
+}
+
+#define DRIVES ((1u << SERVO_CMD_POSITION) | (1u << SERVO_CMD_CENTRE) \
+                | (1u << SERVO_CMD_SWEEP) | (1u << SERVO_CMD_HOLD))
+
+/*
+ * DISARM tapped while a sweep runs, or while one is paused: the sweep ends
+ * at the tap, not at the bench's answer.  Until that answer no frame, no
+ * tap on the sweep button, no change of SPEED and no trim posts anything
+ * that drives, and the value stays where the tap found it.
+ */
+TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
+{
+    for (int paused = 0; paused < 2; ++paused) {
+        fresh();
+        CHECK(arm());
+        CHECK_EQ(start_sweep(), SERVO_CMD_SWEEP);
+        frames(12);
+        uint16_t pause_seq = 0u;
+        if (paused) {
+            feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
+            const servo_cmd_t hold = took();
+            CHECK_EQ(hold.kind, SERVO_CMD_HOLD);
+            pause_seq = hold.pause_seq;
+            CHECK(servo_screen_paused());
+        }
+        feed_tap(FEED_LONE, ARM_X, ARM_Y);
+        CHECK(!servo_screen_sweeping());
+        CHECK(!servo_screen_paused());
+        CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+        const uint16_t left = servo_screen_commanded();
+
+        unsigned seen = kinds_over(40);
+        servo_screen_set_armed(true);           /* not yet answered */
+        feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
+        seen |= kinds_over(4);
+        feed_tap(FEED_LONE, 521, SPEED_Y);
+        seen |= kinds_over(4);
+        open_settings();
+        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
+        close_settings();
+        seen |= kinds_over(4);
+        /* The panel letting go of the pause it held: no value moves. */
+        servo_screen_released(pause_seq);
+        seen |= kinds_over(40);
+        CHECK_EQ(seen & DRIVES, 0u);
+        CHECK(!servo_screen_sweeping());
+        CHECK_EQ(servo_screen_commanded(), left + 5);   /* the trim's 5 us */
+
+        servo_screen_set_armed(false);
+        CHECK_EQ(kinds_over(4) & DRIVES, 0u);
+        CHECK(arm());
+        CHECK_EQ(servo_screen_commanded(), 1500);
+    }
+}
+
+/* A position held when DISARM is tapped is not said again by a change of
+ * SPEED or trim before the bench answers. */
+TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
+{
+    fresh();
+    CHECK(arm());
+    drag(10.0f, 40.0f);
+    drain();
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    feed_tap(FEED_LONE, 521, SPEED_Y);
+    unsigned seen = kinds_over(4);
+    open_settings();
+    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
+    close_settings();
+    seen |= kinds_over(4);
+    CHECK_EQ(seen & DRIVES, 0u);
+}
+
 /* ---------------------------------------------------------- the picture */
 
 static gfx_color_t px(int x, int y) { return fb[(size_t)y * W + x]; }
@@ -721,6 +807,37 @@ TEST_CASE(centre_and_the_horn_are_dimmed_while_disarmed)
     CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
+}
+
+/* From the DISARM tap to the bench's answer the position controls are
+ * refused, and drawn so, before the DISARM is taken and after. */
+TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
+{
+    fresh();
+    CHECK(arm());
+    frames(2 * UI_HOLD_FLASH_FRAMES);
+    const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);          /* DISARM, not yet taken */
+    for (int taken = 0; taken < 2; ++taken) {
+        if (taken) {
+            CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+            servo_screen_set_armed(true);       /* not yet answered */
+        }
+        ui_router_tick(0.026f);
+        ui_router_render(&cv, 0);
+        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+        CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
+        CHECK(arm_first_px() > 0);
+        picture(fb);
+        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+        CHECK(arm_first_px() > 0);
+    }
+    servo_screen_set_armed(false);
+    CHECK(arm());
+    frames(2 * UI_HOLD_FLASH_FRAMES);
+    picture(fb);
+    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
+    CHECK_EQ(arm_first_px(), 0);
 }
 
 /* A bench disarmed while ARM's flash runs shows ARM in its own green, not
@@ -1014,7 +1131,10 @@ int main(void)
     RUN(a_sweep_ended_by_a_disarm_leaves_nothing_to_send);
     RUN(a_pause_not_yet_sent_is_dropped_by_a_disarm);
     RUN(a_sweep_not_yet_sent_is_dropped_by_a_stop);
+    RUN(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap);
+    RUN(a_held_position_is_not_said_again_after_a_disarm_tap);
     RUN(centre_and_the_horn_are_dimmed_while_disarmed);
+    RUN(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer);
     RUN(a_disarm_during_the_arm_flash_leaves_the_button_green);
     RUN(release_speed_and_the_settings_work_while_disarmed);
     RUN(release_on_an_armed_bench_sets_the_value_to_the_rest);

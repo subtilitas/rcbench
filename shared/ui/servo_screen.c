@@ -38,6 +38,7 @@
 #include "ui_textkey.h"
 #include "ui_text.h"
 #include "ui_theme.h"
+#include "ui_value_gate.h"
 #include "ui_widgets.h"
 
 #define W 800
@@ -338,18 +339,15 @@ static struct {
      * scope.  The gesture is ui_widgets' -- the same two seconds and the same
      * fade as the other screen's, because it is the same control.
      */
-    bool       armed;
-    /* The bench as it last reported itself.  Apart from `armed`, which
-     * leave() clears for a disarm this screen has only asked for: the edge
-     * the commanded value follows is the bench's. */
-    bool       bench_armed;
+    /* Whether the commanded value follows its controls (ui_value_gate.h):
+     * the bench's report, an ARM posted whose arm has not landed yet --
+     * collected by the panel, which arms only once the release it owes has
+     * been written -- and a DISARM or STOP not yet answered.  gate.armed is
+     * what the ARM button reads. */
+    ui_value_gate_t gate;
     /* The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;
-    /* A DISARM has been posted and the bench has not reported itself
-     * disarmed since: taken or not, the bench is on its way down.  Cleared
-     * by the bench's report. */
-    bool       disarm_asked;
     ui_hold_t  arm;
     bool       arm_down;   /**< a press is on the ARM button          */
     int        arm_id;     /**< which contact it is                   */
@@ -543,9 +541,6 @@ static struct {
      * travel -- and how many there had been when ARM was asked for. */
     uint32_t profile_rev;
     uint32_t arm_profile_rev;
-    /* An ARM posted whose arm has not landed yet: collected by the panel,
-     * which arms only once the release it owes has been written. */
-    bool     arm_in_flight;
 
     /*
      * The automatic test: the run, START TEST's hold, HV SERVO, and what the
@@ -749,16 +744,15 @@ static float rest_deg(void)
 }
 
 /*
- * Whether an input may change the commanded value: only while the servo
- * follows it.  Not on a disarmed bench, whose pins carry no pulse, and not
- * from a DISARM being posted until the bench reports itself disarmed:
- * waiting to be taken, every position is dropped behind it (post()), and
- * once taken the bench reads armed here for the frames its answer takes.
+ * Whether the commanded value follows its controls: only in UI_VALUE_LIVE.
+ * The one question every input, the drawing, a run and a late callback ask:
+ * not on a disarmed bench, whose pins carry no pulse, not while an ARM is
+ * on its way, and not from a DISARM or a STOP until the bench reports
+ * itself disarmed.
  */
 static bool value_live(void)
 {
-    return s.armed && !s.disarm_asked
-           && s.pending.kind != SERVO_CMD_DISARM;
+    return ui_value_live(&s.gate);
 }
 
 static void post(servo_cmd_kind_t kind, uint16_t us);
@@ -767,10 +761,9 @@ static void post(servo_cmd_kind_t kind, uint16_t us);
  * RELEASE posted.  On an armed bench the pins go to every surface's rest,
  * so the value shown is that rest, as at an arm: a drag under way ends, the
  * value follows the rest through a change of profile (at_rest), and the
- * next input starts from it.  The horn is drawn towards it at SPEED.  On a
- * disarmed bench, behind an arm or a disarm waiting to be taken, which the
- * release does not replace (post()), and after a disarm the bench has not
- * answered yet, the value stays.
+ * next input starts from it.  The horn is drawn towards it at SPEED.  While
+ * the value is not live, and behind an arm or a disarm waiting to be taken,
+ * which the release does not replace (post()), the value stays.
  */
 static void release(void)
 {
@@ -887,10 +880,9 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     }
     if (kind == SERVO_CMD_ARM) {
         s.arm_profile_rev = s.profile_rev;
-        s.arm_in_flight   = true;
+        ui_value_ask_arm(&s.gate);
     } else if (kind == SERVO_CMD_DISARM) {
-        s.arm_in_flight = false;
-        s.disarm_asked  = true;
+        ui_value_drop_arm(&s.gate);
     }
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
@@ -1244,7 +1236,8 @@ void servo_screen_released(uint16_t pause_seq)
     s.driving       = false;
     s.paused        = false;
     s.dr.on      = false;
-    if (s.armed) {
+    /* Where the pins follow; behind a disarm the value last driven stays. */
+    if (value_live()) {
         s.commanded_deg = rest_deg();
         s.at_rest       = true;
     }
@@ -1487,6 +1480,7 @@ void servo_screen_set_sweep(bool able)
  * servo whose maximum is 860 while the screen shows the new range.
  */
 static void test_end_now(servo_test_abort_t why);
+static void ask_disarm(void);
 
 static void reissue(void)
 {
@@ -1533,7 +1527,7 @@ static void reissue(void)
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
-    } else if (s.armed || s.arm_in_flight) {
+    } else if (s.gate.armed || s.gate.arm_asked) {
         /*
          * Resting on an armed bench: the rest restated under the profile now
          * in force, its range and its frame rate, which the panel orders so
@@ -1588,14 +1582,31 @@ static void drop_motion(void)
     s.toggle_live = false;
 }
 
-void servo_screen_set_armed(bool armed)
+/*
+ * What an edge of the value's state does, in one place.
+ *
+ * Into LIVE: the value is the rest.
+ *
+ * Out of LIVE, to LEAVING or to OFF: everything that drives the servo by
+ * itself ends -- a run, ended as @p why, a sweep, a pause, a drag, and a
+ * held position, which a change of SPEED or of the profile would otherwise
+ * say again -- and a motion command not yet taken is not sent.  The value
+ * shown stays where it was last driven: the release a run ends with moves
+ * none, because the value is no longer live (release()).
+ */
+static void value_edge(ui_value_edge_t edge, servo_test_abort_t why)
 {
-    const bool arm_edge = armed && !s.bench_armed;
-    s.bench_armed = armed;
-    if (!armed) {
-        s.disarm_asked = false;     /* answered */
+    if (edge == UI_VALUE_EDGE_LEFT) {
+        test_end_now(why);
+        drop_motion();
+        stop_sweep();
+        s.dragging         = false;
+        s.driving          = false;
+        s.knob_had_driving = false;
+        s.at_rest          = false;
+        ++s.ctrl_rev;
     }
-    if (arm_edge) {
+    if (edge == UI_VALUE_EDGE_LIVE) {
         /*
          * The bench armed: the pins drive every surface at its rest, the
          * release the arm pays having put them there, whatever this screen
@@ -1615,11 +1626,15 @@ void servo_screen_set_armed(bool armed)
         }
         ++s.ctrl_rev;
     }
-    if (s.armed == armed) {
+}
+
+void servo_screen_set_armed(bool armed)
+{
+    const bool was = s.gate.armed;
+    value_edge(ui_value_report(&s.gate, armed), SERVO_TEST_AB_DISARMED);
+    if (was == armed) {
         return;
     }
-    s.armed = armed;
-    s.arm_in_flight = false;
     /* A finger on the dial does not carry its drag across the edge: after
      * an arm the first input is a new press, and a disarmed dial takes
      * none. */
@@ -1688,16 +1703,13 @@ void servo_screen_cancel_arm(void)
     /* Counted: a question about the live output stands only while this
      * count is the one it was asked under (ask_stands()). */
     ++s.stops;
-    s.arm_in_flight = false;   /* the stop ends the arm on its way too */
-    /* A run ends, and START TEST's hold with it.  The stop disarms, so the
+    /* The stop ends the arm on its way too, and an armed bench is on its
+     * way down from here.  A run ends, and START TEST's hold with it; the
      * value shown stays where the run last drove the servo, as after any
-     * disarm, rather than at the centre a run's end on an armed bench
-     * releases to. */
-    const float driven = s.commanded_deg;
-    const bool  rested = s.at_rest;
+     * disarm, rather than at the rest a run's end on a live bench releases
+     * to. */
+    value_edge(ui_value_ask_leave(&s.gate), SERVO_TEST_AB_STOP);
     test_end_now(SERVO_TEST_AB_STOP);
-    s.commanded_deg = driven;
-    s.at_rest       = rested;
     if (s.test_down || s.test_hold.held_s > 0.0f) {
         ui_hold_reset(&s.test_hold);
         s.test_down = false;
@@ -2471,17 +2483,28 @@ static void test_end_now(servo_test_abort_t why)
         return;
     }
     servo_test_abort(&s.test, why, test_now());
-    const servo_test_in_t in = { s.armed, supply_screen_caps().v_max };
+    const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
     test_apply(&d);
     test_ended();
 }
 
+/*
+ * DISARM asked of an armed bench: the value leaves LIVE here and not at the
+ * bench's answer (value_edge()).  The release a run ends with is replaced
+ * by the disarm, which lets go of the output.
+ */
+static void ask_disarm(void)
+{
+    value_edge(ui_value_ask_leave(&s.gate), SERVO_TEST_AB_DISARMED);
+    post(SERVO_CMD_DISARM, 0);
+}
+
 /* Why a START cannot run now, before any hold: SERVO_STR_*, or 0. */
 static int test_blocked(void)
 {
-    if (!s.armed) {
+    if (!value_live()) {
         return SERVO_STR_START_NOT_ARMED;
     }
     if (!servo_test_drained(&s.test)) {
@@ -2969,8 +2992,8 @@ static void keypad_done(ui_keypad_result_t r, float v)
             break;
         case KT_TRAVEL:
             s.travel_deg = (float)lroundf(v);
-            /* Disarmed, the value shown stays what was last driven. */
-            if (s.armed) {
+            /* Not live, the value shown stays what was last driven. */
+            if (value_live()) {
                 s.commanded_deg = clamp_travel(s.commanded_deg);
             }
             reissue();
@@ -3354,7 +3377,7 @@ static void knob_withdraw(void)
     /* Held as before the knob only on an armed bench: a stop or a disarm
      * since the knob's post holds nothing, and a screen that read itself as
      * driving would say the position again on the next change of SPEED. */
-    s.driving       = s.knob_had_driving && s.armed;
+    s.driving       = s.knob_had_driving && value_live();
     ++s.ctrl_rev;
     if (s.knob_had_cmd) {
         s.pending.value_us = deg_to_us(s.commanded_deg);
@@ -3576,7 +3599,7 @@ static void event_body(const touch_event_t *evt)
             /* A finger that leaves ARM abandons the hold -- see
              * ui_hold_leave().  While the bench is armed the same press is a
              * disarm, whose release is checked against the rectangle. */
-            if (!s.armed && !gfx_rect_contains(s.arm_btn, px, py)
+            if (!s.gate.armed && !gfx_rect_contains(s.arm_btn, px, py)
                 && ui_hold_leave(&s.arm)) {
                 s.arm_down = false;
                 ++s.arm_rev;
@@ -3591,8 +3614,8 @@ static void event_body(const touch_event_t *evt)
              * Disarming is a press; arming is a hold that has already sent
              * its command by the time the finger lifts.
              */
-            if (s.armed && !fired && gfx_rect_contains(s.arm_btn, px, py)) {
-                post(SERVO_CMD_DISARM, 0);
+            if (s.gate.armed && !fired && gfx_rect_contains(s.arm_btn, px, py)) {
+                ask_disarm();
             }
             return;
         }
@@ -3918,7 +3941,7 @@ static void draw_left(gfx_canvas_t *c)
     /* Dimmed while the bench is disarmed, as a button that takes no press
      * is: the dial takes none either. */
     draw_horn(c, s.shown_deg,
-              s.armed ? ui_theme_color(UI_C_ACCENT)
+              value_live() ? ui_theme_color(UI_C_ACCENT)
                       : gfx_lerp(ui_theme_color(UI_C_PANEL),
                                  ui_theme_color(UI_C_ACCENT), 120));
 
@@ -3933,7 +3956,7 @@ static void draw_left(gfx_canvas_t *c)
     gfx_text(c, PAD + 52 + dw, H - 70, "DEG",
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     /* Why the dial takes no press, in the words START TEST's line uses. */
-    if (!s.armed) {
+    if (!value_live()) {
         gfx_text(c, PAD + 46, H - 36,
                  ui_servo_str(SERVO_STR_START_NOT_ARMED), UI_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
@@ -3966,12 +3989,12 @@ static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
  */
 static gfx_color_t arm_fill(void)
 {
-    gfx_color_t fill = s.armed ? ui_theme_color(UI_C_DANGER)
+    gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
                                : ui_theme_color(UI_C_OK);
     if (s.arm.flash_left > 0) {
         return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
     }
-    if (!s.armed && s.arm.held_s > 0.0f) {
+    if (!s.gate.armed && s.arm.held_s > 0.0f) {
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
     }
     return fill;
@@ -3979,7 +4002,7 @@ static gfx_color_t arm_fill(void)
 
 static void draw_arm(gfx_canvas_t *c)
 {
-    ui_button(c, s.arm_btn, s.armed ? "DISARM" : "ARM", arm_fill(),
+    ui_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
               s.arm_down, true);
 }
 
@@ -4167,7 +4190,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
      * is disarmed. */
     ui_button(c, s.centre_btn, TR(SV_CENTRE_BTN), ui_theme_color(UI_C_ACCENT),
-              false, s.armed);
+              false, value_live());
     /* PAUSE while a sweep runs, in the accent; PAUSED (PAUSIERT) while it
      * is paused, filled in the warning colour, so the two read apart by
      * fill as well as by the word. */
@@ -4177,7 +4200,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     ui_button(c, s.sweep_btn,
               s.paused ? TR(SV_PAUSED) : s.sweeping ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
               false, s.sweeping || s.paused
-                     || (s.armed && s.sweep_able && s.surfaces
+                     || (value_live() && s.sweep_able && s.surfaces
                          && s.link_up));
     ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
               false, true);
@@ -4677,7 +4700,7 @@ static uint32_t test_signature(void)
  */
 static void test_tick(void)
 {
-    const servo_test_in_t in = { s.armed, supply_screen_caps().v_max };
+    const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
     test_apply(&d);
@@ -4766,7 +4789,7 @@ static void tick_body(float dt_s)
         }
         ++s.ctrl_rev;
     }
-    if (s.arm_down && !s.armed) {
+    if (s.arm_down && !s.gate.armed) {
         ++s.arm_rev;
         if (ui_hold_tick(&s.arm, dt_s)) {
             post(SERVO_CMD_ARM, 0);
@@ -5070,13 +5093,14 @@ static void leave(void)
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */
-    const float driven = s.commanded_deg;
+    value_edge(ui_value_ask_leave(&s.gate), SERVO_TEST_AB_LEFT);
     test_end_now(SERVO_TEST_AB_LEFT);
-    s.commanded_deg = driven;   /* disarmed: the value last driven stays */
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
     post(SERVO_CMD_DISARM, 0);
-    s.armed = false;
+    /* The button reads ARM when the screen comes back; a DISARM asked of an
+     * armed bench stands until the bench answers it. */
+    (void)ui_value_hide(&s.gate);
     s.at_rest = false;
     ui_hold_reset(&s.arm);
     s.arm_down = false;
@@ -5118,15 +5142,15 @@ static void cancel(void)
      * went missing is a DISARM the operator made and the bench never saw.
      * Arming has already sent its command by the time the finger lifts, so
      * cancelling one part way asks for nothing, which is correct. */
-    if (s.armed && s.arm_down && !s.arm.fired) {
-        post(SERVO_CMD_DISARM, 0);
+    if (s.gate.armed && s.arm_down && !s.arm.fired) {
+        ask_disarm();
     }
     /* And an arm posted but not yet collected: a command is forwarded on the
      * frame after the one that posted it, and the frame that observes a loss
      * cancels before that forwarding.  A disarm is kept. */
     if (s.pending.kind == SERVO_CMD_ARM) {
         s.pending.kind  = SERVO_CMD_NONE;
-        s.arm_in_flight = false;
+        ui_value_drop_arm(&s.gate);
     }
     /* And a sweep: the event that went missing may be the PAUSE that was to
      * stop it, and the panel would go on repeating it.  Paused where the

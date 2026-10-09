@@ -384,7 +384,8 @@ Neustart PULS CENTRE. Eine unscharf geänderte Pulsbreiten-Einstellung ändert
 die Mikrosekunden, die PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
 ihn nicht. Von einem DISARM an, das der Bildschirm anfordert, durch den Tap
 oder durch das Verlassen, bis der Prüfstand unscharf meldet, gilt die Spalte
-Unscharf ebenfalls.
+Unscharf ebenfalls, und ein Sweep, eine Pause und ein Lauf des automatischen
+Tests enden beim Tap.
 
 Wird der Prüfstand scharf, wird der befohlene Wert zur Ruhelage, die die Pins
 treiben: die Mitte zwischen den Endpunkten des Kanals, 1500 us bei STANDARD

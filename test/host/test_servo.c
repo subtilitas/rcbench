@@ -4587,6 +4587,150 @@ static void a_run_ends_disarmed(int way)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
+/*
+ * DISARM tapped during a run: the run ends at the tap, marked as a disarm
+ * ends it, and until the bench answers -- it reads armed here meanwhile --
+ * no step of the run is posted, START TEST is refused, and the value shown
+ * stays where the run last drove the servo.
+ */
+TEST_CASE(a_disarm_tap_ends_a_run_at_the_tap)
+{
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 2000 && b.cmd == 1500u; ++i) {
+        bench_frames(20u);
+    }
+    CHECK(b.cmd != 1500u);
+    const uint16_t driven = servo_screen_commanded();
+
+    tap(ARM_X + 40, ARM_Y + 16);
+    CHECK(!servo_screen_testing());
+    CHECK_EQ(servo_screen_commanded(), driven);
+    int positions = 0, disarms = 0;
+    for (int i = 0; i < 100; ++i) {
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        servo_screen_set_armed(true);           /* not yet answered */
+        scr->tick(0.02f);
+        servo_screen_service();
+        servo_cmd_t c;
+        while (servo_screen_take(&c)) {
+            if (c.kind == SERVO_CMD_DISARM) {
+                ++disarms;
+            } else if (c.kind != SERVO_CMD_RELEASE) {
+                ++positions;
+            }
+        }
+    }
+    CHECK_EQ(disarms, 1);
+    CHECK_EQ(positions, 0);
+    CHECK_EQ(servo_screen_commanded(), driven);
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());
+    close_settings();
+    bench_drain();
+    CHECK(strstr(b.report, "ABORTED") != NULL);
+
+    servo_screen_set_armed(false);
+    CHECK_EQ(servo_screen_commanded(), driven);
+    servo_screen_set_armed(true);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+}
+
+/*
+ * The run's row of the value-state table (test_value_state.c).
+ *
+ * A run starts only in LIVE: START TEST's hold starts nothing on a bench
+ * that is OFF, ARMING, or LEAVING by a DISARM waiting, a DISARM taken or a
+ * STOP.  A run under way ends on every edge out of LIVE -- the DISARM tap,
+ * a STOP, the bench's report, leaving -- at the edge and not at the bench's
+ * answer: no step is posted after it, the release it ends with moves no
+ * value, and the value shown stays where the run last drove the servo
+ * until the next arm sets the rest.
+ */
+TEST_CASE(a_run_follows_the_value_state_at_every_edge)
+{
+    for (int st = 0; st < 5; ++st) {
+        bench_fresh();
+        short_runs();
+        switch (st) {
+        case 0:                                  /* OFF */
+            servo_screen_set_armed(false);
+            break;
+        case 1:                                  /* ARMING */
+            servo_screen_set_armed(false);
+            arm_press();
+            held(2.3f);
+            arm_release();
+            CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+            break;
+        case 2:                                  /* LEAVING: DISARM waiting */
+            tap(ARM_X + 40, ARM_Y + 16);
+            break;
+        case 3:                                  /* LEAVING: DISARM taken */
+            tap(ARM_X + 40, ARM_Y + 16);
+            CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
+            servo_screen_set_armed(true);
+            break;
+        default:                                 /* LEAVING: a STOP */
+            servo_screen_cancel_arm();
+            servo_screen_set_armed(true);
+            break;
+        }
+        hold_start(2.3f);
+        CHECK(!servo_screen_testing());
+        close_settings();
+    }
+
+    for (int edge = 0; edge < 4; ++edge) {
+        bench_fresh();
+        short_runs();
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        for (int i = 0; i < 2000 && b.cmd == 1500u; ++i) {
+            bench_frames(20u);
+        }
+        CHECK(b.cmd != 1500u);
+        const uint16_t driven = servo_screen_commanded();
+        switch (edge) {
+        case 0:  tap(ARM_X + 40, ARM_Y + 16); break;
+        case 1:  servo_screen_cancel_arm(); break;
+        case 2:  servo_screen_set_armed(false); break;
+        default: scr->leave(); break;
+        }
+        CHECK(!servo_screen_testing());
+        CHECK_EQ(servo_screen_commanded(), driven);
+        int drives = 0;
+        for (int i = 0; i < 100; ++i) {
+            b.now += 20u;
+            servo_screen_clock(b.now);
+            if (edge != 2) {
+                servo_screen_set_armed(true);   /* not yet answered */
+            }
+            scr->tick(0.02f);
+            servo_screen_service();
+            servo_cmd_t c;
+            while (servo_screen_take(&c)) {
+                if (c.kind != SERVO_CMD_DISARM
+                    && c.kind != SERVO_CMD_RELEASE) {
+                    ++drives;
+                }
+            }
+        }
+        CHECK_EQ(drives, 0);
+        CHECK_EQ(servo_screen_commanded(), driven);
+        hold_start(2.3f);
+        CHECK(!servo_screen_testing());
+        close_settings();
+        servo_screen_set_armed(false);
+        CHECK_EQ(servo_screen_commanded(), driven);
+        servo_screen_set_armed(true);
+        CHECK_EQ(servo_screen_commanded(), 1500);
+    }
+}
+
 TEST_CASE(a_run_ended_by_a_disarm_leaves_no_position_to_send)
 {
     for (int way = 0; way < 3; ++way) {
@@ -4745,6 +4889,8 @@ TEST_CASE(a_refused_start_says_why)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     servo_screen_cancel_arm();
+    servo_screen_set_armed(false);      /* the stop's disarm, and a new arm */
+    servo_screen_set_armed(true);
     scr->tick(0.02f);
     hold_start(2.3f);
     CHECK(!servo_screen_testing());
@@ -5957,6 +6103,8 @@ int main(void)
     RUN(a_run_through_the_screen_ends_and_restores_the_set_points);
     RUN(a_run_above_6_v_starts_through_the_hv_hold);
     RUN(every_way_out_of_a_run_switches_off_and_lets_go);
+    RUN(a_disarm_tap_ends_a_run_at_the_tap);
+    RUN(a_run_follows_the_value_state_at_every_edge);
     RUN(a_run_ended_by_a_disarm_leaves_no_position_to_send);
     RUN(a_run_that_ends_on_an_armed_bench_leaves_the_value_at_the_rest);
     RUN(the_runs_faces_draw_as_a_full_redraw_would);

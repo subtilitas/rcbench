@@ -641,6 +641,48 @@ TEST_CASE(the_throttle_is_dimmed_and_says_arm_first_while_disarmed)
     CHECK_EQ(hint_px(), 0);
 }
 
+/* From the DISARM tap to the bench's answer the controls are refused, and
+ * drawn so: dimmed, with ARM FIRST under the track, before the DISARM is
+ * taken and after, in a buffer repainted by its revision counters and in a
+ * full redraw. */
+TEST_CASE(the_throttle_is_dimmed_from_the_disarm_tap_to_its_answer)
+{
+    fresh();
+    CHECK(arm());
+    settle();
+    picture(fb);
+    const gfx_color_t sunk = ui_theme_color(UI_C_PANEL_SUNK);
+    CHECK_EQ(px(DOWN_X - 16, TRACK_Y - 12), sunk);
+    CHECK_EQ(arm_first_px(), 0);
+
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);          /* DISARM, not yet taken */
+    for (int taken = 0; taken < 2; ++taken) {
+        if (taken) {
+            CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+            motor_screen_set_armed(true);       /* not yet answered */
+        }
+        ui_router_tick(0.026f);
+        ui_router_render(&cv, 0);
+        CHECK(px(DOWN_X - 16, TRACK_Y - 12) != sunk);
+        CHECK(px(UP_X - 16, TRACK_Y - 12) != sunk);
+        CHECK(px(TRACK_X + 10, TRACK_Y - 15) != ui_theme_color(UI_C_TEXT));
+        CHECK(arm_first_px() > 0);
+        CHECK_EQ(hint_px(), 0);
+        memcpy(fb_was, fb, (size_t)W * H * sizeof(gfx_color_t));
+        CHECK(picture_unchanged());
+    }
+    motor_screen_set_armed(false);
+    settle();
+    picture(fb);
+    CHECK(arm_first_px() > 0);
+    CHECK(arm());
+    settle();
+    picture(fb);
+    CHECK_EQ(px(DOWN_X - 16, TRACK_Y - 12), sunk);
+    CHECK_EQ(arm_first_px(), 0);
+    CHECK(hint_px() > 0);
+}
+
 /* The change shows without a full redraw: both buffers, repainted only by
  * their revision counters, match a full redraw after the arm and after the
  * disarm. */
@@ -747,6 +789,7 @@ int main(void)
     RUN(disarm_stop_link_loss_and_leaving_each_end_at_zero);
     RUN(a_drag_does_not_cross_leaving_the_screen);
     RUN(the_throttle_is_dimmed_and_says_arm_first_while_disarmed);
+    RUN(the_throttle_is_dimmed_from_the_disarm_tap_to_its_answer);
     RUN(the_dimming_follows_the_arm_in_both_buffers);
     RUN(a_disarm_during_the_arm_flash_leaves_the_button_green);
     RUN(arm_reset_peaks_and_the_tabs_work_while_disarmed);

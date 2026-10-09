@@ -307,8 +307,10 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   runs from the disarm until the bench reports armed, so it covers the time
   between a completed ARM hold and the bench's answer. From a DISARM a
   screen asks for until the bench reports disarmed the controls are refused
-  too, while the DISARM waits to be collected and after it. On SERVO a
-  RELEASE in that time is sent and moves no value. A drag
+  too and drawn dimmed, while the DISARM waits to be collected and after
+  it. On SERVO a sweep, a pause and a run of the automatic test end where
+  the DISARM is asked, and a RELEASE in that time is sent and moves no
+  value. A drag
   under way ends at an arm, a disarm and a stop, and a finger resting on the
   control moves nothing until it lifts and presses again. A value the screen
   has posted and the application has not collected at a disarm or a stop is

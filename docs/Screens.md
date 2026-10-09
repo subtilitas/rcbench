@@ -348,7 +348,8 @@ horn and COMMANDED show the position last driven; after a restart, PULSE
 CENTRE. A pulse-width setting changed while disarmed changes the
 microseconds COMMANDED shows for that angle, and TRAVEL does not clamp it.
 From a DISARM the screen asks for, by the tap or by leaving, until the bench
-reports disarmed, the Disarmed column holds as well.
+reports disarmed, the Disarmed column holds as well, and a sweep, a pause
+and a run of the automatic test end at the tap.
 
 When the bench arms, the commanded value becomes the rest the pins drive:
 the midpoint of the channel's endpoints, 1500 us for STANDARD PWM and 760 us
