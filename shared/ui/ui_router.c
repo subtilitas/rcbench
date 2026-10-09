@@ -34,6 +34,7 @@
 static struct {
     ui_screen_id_t    current;
     uint32_t          nav_count;      /**< navigations since init           */
+    uint32_t          dispatched;     /**< events handed to a screen        */
     ui_bench_status_t status;
     char              alert[UI_ALERT_MAX];
     bool              has_alert;
@@ -62,6 +63,19 @@ static struct {
     bool    band_press;
     uint8_t band_id;
     bool    on_stop;      /**< the press started on STOP rather than home   */
+
+    /*
+     * The contacts the screen on top owns: each one whose DOWN it was
+     * handed, with the last point it was handed, in panel coordinates.  A
+     * screen is handed a MOVE or an UP only for a contact in this table, so
+     * a contact has one owner from its DOWN to its UP.  Every other contact
+     * is the router's and reaches no screen.
+     */
+    struct {
+        bool    live;
+        uint8_t id;
+        int16_t x, y;
+    } owned[TOUCH_MAX_POINTS];
 } s;
 
 static const ui_screen_t *screen_for(ui_screen_id_t id)
@@ -123,15 +137,18 @@ void ui_router_goto(ui_screen_id_t id)
     if (now != NULL && now->enter != NULL) {
         now->enter();
     }
-    /* A press that began on the old screen must not land on the new one. */
+    /* A press that began on the old screen must not land on the new one:
+     * the contacts it owned are nobody's until they lift. */
     s.band_press = false;
     s.alert_press = false;
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
+    memset(s.owned, 0, sizeof(s.owned));
     ui_router_invalidate();
 }
 
 ui_screen_id_t ui_router_current(void) { return s.current; }
 uint32_t ui_router_navigations(void) { return s.nav_count; }
+uint32_t ui_router_dispatched(void) { return s.dispatched; }
 
 void ui_router_invalidate(void)
 {
@@ -244,14 +261,46 @@ static bool has_home(ui_screen_id_t id)
            && id != SCREEN_BUSFAULT;
 }
 
+/* The slot of contact @p id in the screen's table, or -1 when the screen
+ * does not own it. */
+static int owned_find(uint8_t id)
+{
+    for (int i = 0; i < TOUCH_MAX_POINTS; ++i) {
+        if (s.owned[i].live && s.owned[i].id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/*
+ * One owner per contact, from its DOWN to its UP.
+ *
+ * The screen owns a contact whose DOWN it was handed, and is handed nothing
+ * of any other.  A contact that came down on the band, on the alert strip,
+ * on another screen or before a touch loss is the router's wherever it goes:
+ * its MOVE and its UP reach no screen.
+ *
+ * A contact the screen owns that reaches the band is released at the edge.
+ * The screen is handed an UP at the last point it was handed, and the
+ * contact is the router's from then on.  The release is not the contact's
+ * real UP with its y moved into the body: a slider applies the horizontal
+ * distance on its release and would step by the travel made on the band.
+ * A screen that never saw the gesture end keeps its drag latched to a track
+ * id the controller reuses, and takes a later contact's travel for its own.
+ *
+ * STOP and the home tag answer to a DOWN on them and to nothing else, so a
+ * contact that slides onto STOP from the body presses nothing.
+ */
 void ui_router_event(const touch_event_t *evt)
 {
     if (evt == NULL) {
         return;
     }
-    const ui_screen_t *scr = screen_for(s.current);
+    const uint8_t id   = evt->point.id;
+    const bool    band = has_band(s.current);
 
-    if (has_band(s.current)) {
+    if (band) {
         const gfx_rect_t stop = ui_band_stop_rect();
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(s.current));
         const bool in_stop = gfx_rect_contains(stop, evt->point.x,
@@ -280,16 +329,12 @@ void ui_router_event(const touch_event_t *evt)
             }
             return;
         }
-        if (evt->point.y < UI_BAND_H) {
-            /* Any other event on the band is consumed here, so no screen
-             * receives an event with a negative y. */
-            return;
-        }
     }
 
-    const uint8_t id  = evt->point.id;
     const uint8_t bit = (uint8_t)(1u << (id & 7u));
     if ((s.alert_ids[id >> 3] & bit) != 0u) {
+        /* Asked before the band takes anything: a contact that came down on
+         * the alert strip and lifts on the band ends its press here too. */
         if (evt->type == TOUCH_EVENT_UP) {
             s.alert_ids[id >> 3] &= (uint8_t)~bit;
             /* Only the first contact's lift, and only on the alert that
@@ -305,24 +350,67 @@ void ui_router_event(const touch_event_t *evt)
         }
         return;
     }
-    if (evt->type == TOUCH_EVENT_DOWN && s.has_alert && has_band(s.current)
-        && in_alert(evt)) {
-        s.alert_ids[id >> 3] |= bit;
-        if (!s.alert_press) {
-            s.alert_press     = true;
-            s.alert_id        = id;
-            s.alert_press_gen = s.alert_gen;
-        }
-        return;   /* the band covers the screen here, so the screen gets none */
+
+    int slot = owned_find(id);
+    if (evt->type == TOUCH_EVENT_DOWN && slot >= 0) {
+        /* A DOWN is a new contact: the one this id named before is over. */
+        s.owned[slot].live = false;
+        slot = -1;
     }
 
+    /* What the screen is handed: the event, or the release made for it. */
+    touch_event_t local = *evt;
+
+    if (band && evt->point.y < UI_BAND_H) {
+        /* The band is the router's, so no screen receives an event with a
+         * negative y.  A contact the screen owns ends where the screen last
+         * saw it, and is not handed back when it returns to the body. */
+        if (slot < 0) {
+            return;
+        }
+        local.type    = TOUCH_EVENT_UP;
+        local.point.x = s.owned[slot].x;
+        local.point.y = s.owned[slot].y;
+        s.owned[slot].live = false;
+    } else if (evt->type == TOUCH_EVENT_DOWN) {
+        if (s.has_alert && band && in_alert(evt)) {
+            s.alert_ids[id >> 3] |= bit;
+            if (!s.alert_press) {
+                s.alert_press     = true;
+                s.alert_id        = id;
+                s.alert_press_gen = s.alert_gen;
+            }
+            return;   /* the band covers the screen here, so the screen gets none */
+        }
+        slot = 0;
+        while (slot < TOUCH_MAX_POINTS && s.owned[slot].live) {
+            ++slot;
+        }
+        if (slot == TOUCH_MAX_POINTS) {
+            /* More contacts than the controller reports.  One the router
+             * cannot follow to its release is handed to no screen. */
+            return;
+        }
+        s.owned[slot].live = true;
+        s.owned[slot].id   = id;
+    } else if (slot < 0) {
+        return;   /* the screen on top never saw this contact come down */
+    }
+    if (local.type == TOUCH_EVENT_UP) {
+        s.owned[slot].live = false;
+    } else {
+        s.owned[slot].x = evt->point.x;
+        s.owned[slot].y = evt->point.y;
+    }
+
+    const ui_screen_t *scr = screen_for(s.current);
     if (scr != NULL && scr->event != NULL) {
         /* Screens work in their own coordinates; the band's height is
          * removed here. */
-        touch_event_t local = *evt;
-        if (has_band(s.current)) {
+        if (band) {
             local.point.y = (int16_t)(local.point.y - UI_BAND_H);
         }
+        ++s.dispatched;
         scr->event(&local);
     }
 }
@@ -334,8 +422,12 @@ void ui_router_cancel_gestures(void)
      * not the screen's, and a band press left latched owns its track id.
      * The GT911 reuses ids, so a later contact that began on the screen
      * would be taken for this one's release and act on where it lifts.
+     * The contacts the screen owned go the same way: their releases may
+     * never come, so what is still on the glass is nobody's until it lifts
+     * and comes down again.
      */
     s.band_press = false;
+    memset(s.owned, 0, sizeof(s.owned));
 
     /*
      * Every screen, not the one on top.  The loss is observed after the

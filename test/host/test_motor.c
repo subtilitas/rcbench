@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "touch_feed.h"
 
 #include "motor_screen.h"
 #include "settings.h"
@@ -1376,6 +1377,375 @@ TEST_CASE(a_cancel_keeps_a_disarm_already_posted)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
 }
 
+/* ------------------------------------------------- the throttle at an arm */
+
+/*
+ * The cases below feed the screen frames of contacts through the tracker
+ * (touch_feed.h).  The feed works in panel coordinates and removes the
+ * band's height, as the router does.
+ */
+#define P(y) ((y) + UI_BAND_H)
+
+static void fed(void)
+{
+    fresh();
+    feed_reset();
+    feed_to_screen(scr);
+}
+
+/* The slider dragged to @p px of travel on a disarmed bench, finger up. */
+static void dragged_disarmed(int px)
+{
+    fed();
+    finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+    glide(FEED_LONE, TRACK_X + 28 + px, P(TRACK_Y), 8);
+    lift(FEED_LONE);
+    (void)last_cmd();
+}
+
+/*
+ * An arm starts from nothing.  The slider dragged to 60.5 % on a disarmed
+ * bench is at 0 % once the bench is armed, and the step buttons, which move
+ * the slider's value by one point, start from there: + posts 1.0 %, not
+ * 61.5 %.
+ */
+TEST_CASE(arming_returns_the_throttle_to_zero)
+{
+    dragged_disarmed(250);
+    CHECK_NEAR(motor_screen_throttle(), 250.0f * 100.0f / 413.0f, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 60.5f, 0.05f);
+
+    motor_screen_set_armed(true);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    feed_tap(FEED_LONE, UP_X, P(TRACK_Y));
+    motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 1.0f, 0.001f);
+    feed_tap(FEED_LONE, DOWN_X, P(TRACK_Y));
+    c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 0.0f, 0.001f);
+    feed_tap(FEED_LONE, DOWN_X, P(TRACK_Y));
+    CHECK_EQ(motor_screen_throttle(), 0.0f);    /* and no lower */
+
+    /* The knob goes on from zero as well. */
+    (void)last_cmd();
+    motor_screen_knob_frame();
+    motor_screen_knob(0.1f);
+    CHECK_NEAR(last_cmd().value, 10.0f, 0.01f);
+}
+
+/* At the limits of the slider and one step inside each: every value a
+ * disarmed bench can show arms to 0 %. */
+TEST_CASE(arming_returns_every_throttle_to_zero)
+{
+    static const float from[] = { 0.0f, 1.0f, 60.5f, 99.0f, 100.0f };
+    for (size_t i = 0; i < sizeof(from) / sizeof(from[0]); ++i) {
+        fed();
+        motor_screen_set_throttle(from[i]);
+        CHECK_EQ(motor_screen_throttle(), from[i]);
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+    }
+}
+
+/*
+ * The readout is the slider's value, so it reads 0.0 after the arm.  Held to
+ * the picture of a screen that was never touched before its arm: the whole
+ * frame is the same.
+ */
+TEST_CASE(the_readout_after_an_arm_is_that_of_an_untouched_screen)
+{
+    static gfx_color_t *untouched;
+    if (untouched == NULL) {
+        untouched = calloc((size_t)W * H, sizeof(gfx_color_t));
+    }
+    fed();
+    motor_screen_set_armed(true);
+    scr->render(&cv, 0);
+    memcpy(untouched, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    dragged_disarmed(250);
+    scr->render(&cv, 0);                /* 60.5 on the glass */
+    CHECK(memcmp(untouched, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    motor_screen_set_armed(true);
+    scr->render(&cv, 0);
+    CHECK(memcmp(untouched, fb, (size_t)W * H * sizeof(gfx_color_t)) == 0);
+}
+
+/*
+ * From the ask, not only from the bench's answer.  The bench arms between
+ * two frames, so a frame can still read it as disarmed when a command it
+ * posts lands on an armed bench: the hold that asks for the arm returns the
+ * slider to zero itself.
+ */
+TEST_CASE(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero)
+{
+    dragged_disarmed(250);
+    finger(FEED_LONE, ARM_X, P(ARM_Y));
+    tick_for(HOLD_TICKS - 10);
+    CHECK_NEAR(motor_screen_throttle(), 60.5f, 0.05f);   /* not yet asked */
+    tick_for(10);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    lift(FEED_LONE);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+
+    /* A second finger on + in a frame that still reads the bench as
+     * disarmed posts one point, from zero. */
+    feed_tap(FEED_LONE, UP_X, P(TRACK_Y));
+    const motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 1.0f, 0.001f);
+}
+
+/*
+ * A throttle set after the hold has asked follows the arm in the command
+ * queue, so it is what the armed bench is given.  The bench's answer leaves
+ * it on the slider: collected already, or still waiting.
+ */
+TEST_CASE(a_throttle_set_after_the_ask_stays_when_the_bench_answers)
+{
+    for (int collected = 0; collected < 2; ++collected) {
+        dragged_disarmed(250);
+        finger(FEED_LONE, ARM_X, P(ARM_Y));
+        tick_for(HOLD_TICKS);
+        lift(FEED_LONE);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        const float set = motor_screen_throttle();
+        CHECK_NEAR(set, 100.0f * 100.0f / 413.0f, 0.01f);
+        if (collected) {
+            CHECK_EQ(last_cmd().kind, MOTOR_CMD_THROTTLE);
+        }
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), set);
+        const motor_cmd_t c = last_cmd();
+        if (collected) {
+            CHECK_EQ(c.kind, MOTOR_CMD_NONE);
+        } else {
+            CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+            CHECK_EQ(c.value, set);
+        }
+    }
+}
+
+/*
+ * An arm that was asked for and dropped -- by a stop, a touch loss or
+ * leaving the screen -- is not the arm that comes later: that one returns
+ * the slider to zero like any arm this screen's hold did not ask for.
+ */
+TEST_CASE(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero)
+{
+    for (int how = 0; how < 3; ++how) {
+        dragged_disarmed(250);
+        finger(FEED_LONE, ARM_X, P(ARM_Y));
+        tick_for(HOLD_TICKS);
+        lift(FEED_LONE);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+        switch (how) {
+        case 0:  motor_screen_cancel_arm(); break;
+        case 1:  scr->cancel(); break;
+        default: scr->leave(); break;
+        }
+        (void)last_cmd();
+
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        (void)last_cmd();
+        CHECK(motor_screen_throttle() > 20.0f);
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+    }
+}
+
+/* One run after another from the hold: the second ask starts from zero
+ * too, whatever the first run and the disarmed bench left. */
+TEST_CASE(every_ask_returns_the_throttle_to_zero)
+{
+    fed();
+    for (int run = 0; run < 2; ++run) {
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        CHECK(motor_screen_throttle() > 48.0f);
+        finger(FEED_LONE, ARM_X, P(ARM_Y));
+        tick_for(HOLD_TICKS);
+        lift(FEED_LONE);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        motor_screen_set_throttle(0.0f);
+        motor_screen_set_armed(false);
+        (void)last_cmd();
+    }
+}
+
+/* A hold abandoned before it asks leaves the slider as it was. */
+TEST_CASE(a_hold_that_does_not_arm_leaves_the_throttle_alone)
+{
+    dragged_disarmed(250);
+    const float before = motor_screen_throttle();
+    finger(FEED_LONE, ARM_X, P(ARM_Y));
+    tick_for(HOLD_TICKS / 2);
+    lift(FEED_LONE);
+    tick_for(HOLD_TICKS);
+    CHECK_EQ(motor_screen_throttle(), before);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/* A throttle posted on the disarmed bench and not yet collected was set
+ * before the arm, and goes with it. */
+TEST_CASE(a_throttle_waiting_at_the_arm_is_dropped)
+{
+    fed();
+    finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+    glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+    lift(FEED_LONE);
+    motor_screen_set_armed(true);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+}
+
+/* And a knob command waiting at the arm: withdrawing it afterwards puts no
+ * disarmed value back. */
+TEST_CASE(a_knob_command_waiting_at_the_arm_is_not_put_back)
+{
+    dragged_disarmed(100);
+    const float before = motor_screen_throttle();
+    motor_screen_knob_frame();
+    motor_screen_knob(0.2f);
+    CHECK_NEAR(motor_screen_throttle(), before + 20.0f, 0.01f);
+    motor_screen_set_armed(true);
+    motor_screen_knob_cancel();
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/*
+ * The application reports the armed bench on every frame.  Only the edge
+ * returns the slider to zero: a throttle set on the armed bench stays, and
+ * so does a drag under way.
+ */
+TEST_CASE(an_armed_report_repeated_keeps_the_throttle)
+{
+    fed();
+    motor_screen_set_armed(true);
+    finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+    glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+    for (int i = 0; i < 3; ++i) {
+        motor_screen_set_armed(true);
+    }
+    CHECK_NEAR(motor_screen_throttle(), 100.0f * 100.0f / 413.0f, 0.01f);
+    glide(FEED_LONE, TRACK_X + 168, P(TRACK_Y), 8);
+    motor_screen_set_armed(true);
+    lift(FEED_LONE);
+    CHECK_NEAR(motor_screen_throttle(), 140.0f * 100.0f / 413.0f, 0.01f);
+    CHECK_NEAR(last_cmd().value, 140.0f * 100.0f / 413.0f, 0.01f);
+}
+
+/*
+ * A finger on the track as the bench arms: a second finger held ARM.  The
+ * drag ends at the arm.  Left latched, it would keep its origin, and the
+ * next move would add the whole travel since the press to 0 %.
+ */
+TEST_CASE(a_drag_under_way_ends_at_the_arm)
+{
+    fed();
+    finger(0, TRACK_X + 28, P(TRACK_Y));
+    glide(0, TRACK_X + 228, P(TRACK_Y), 8);
+    CHECK(motor_screen_throttle() > 48.0f);
+    (void)last_cmd();
+
+    motor_screen_set_armed(true);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    glide(0, TRACK_X + 236, P(TRACK_Y), 8);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    lift(0);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* Pressed again, the track moves the throttle by the finger's travel. */
+    finger(0, TRACK_X + 236, P(TRACK_Y));
+    glide(0, TRACK_X + 276, P(TRACK_Y), 8);
+    lift(0);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * 100.0f / 413.0f, 0.01f);
+}
+
+/*
+ * The finger whose drag the arm ended owned the slider in that frame: a
+ * knob turn applied at the end of the frame moves nothing.  The next frame
+ * is the knob's.
+ */
+TEST_CASE(the_knob_stays_out_of_the_frame_an_arm_ended_a_drag_in)
+{
+    fed();
+    finger(0, TRACK_X + 28, P(TRACK_Y));        /* frame N */
+    glide(0, TRACK_X + 228, P(TRACK_Y), 8);
+    (void)last_cmd();
+
+    motor_screen_knob_frame();                  /* frame N+1 */
+    motor_screen_set_armed(true);
+    motor_screen_knob(0.1f);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    motor_screen_knob_frame();                  /* frame N+2 */
+    motor_screen_knob(0.1f);
+    CHECK_NEAR(last_cmd().value, 10.0f, 0.01f);
+    lift(0);
+}
+
+/* And at the disarm, where the application returns the value to zero. */
+TEST_CASE(a_drag_under_way_ends_at_the_disarm)
+{
+    fed();
+    motor_screen_set_armed(true);
+    finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+    glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
+    CHECK(motor_screen_throttle() > 48.0f);
+
+    motor_screen_set_throttle(0.0f);    /* the panel's disarm edge */
+    (void)last_cmd();
+    motor_screen_set_armed(false);
+    glide(FEED_LONE, TRACK_X + 236, P(TRACK_Y), 8);
+    lift(FEED_LONE);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/* Run after run: each arm starts from zero, whatever the bench showed
+ * between them. */
+TEST_CASE(every_arm_starts_from_zero)
+{
+    fed();
+    for (int run = 0; run < 3; ++run) {
+        motor_screen_set_armed(true);
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        CHECK(motor_screen_throttle() > 20.0f);
+        motor_screen_set_throttle(0.0f);
+        (void)last_cmd();
+        motor_screen_set_armed(false);
+        /* Set again on the disarmed bench. */
+        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+        glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
+        lift(FEED_LONE);
+        CHECK(motor_screen_throttle() > 48.0f);
+        (void)last_cmd();
+    }
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -1430,5 +1800,20 @@ int main(void)
     RUN(a_cancelled_arm_asks_for_nothing);
     RUN(a_cancel_drops_an_arm_the_hold_already_posted);
     RUN(a_cancel_keeps_a_disarm_already_posted);
+    RUN(arming_returns_the_throttle_to_zero);
+    RUN(arming_returns_every_throttle_to_zero);
+    RUN(the_readout_after_an_arm_is_that_of_an_untouched_screen);
+    RUN(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero);
+    RUN(a_throttle_set_after_the_ask_stays_when_the_bench_answers);
+    RUN(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero);
+    RUN(every_ask_returns_the_throttle_to_zero);
+    RUN(a_hold_that_does_not_arm_leaves_the_throttle_alone);
+    RUN(a_throttle_waiting_at_the_arm_is_dropped);
+    RUN(a_knob_command_waiting_at_the_arm_is_not_put_back);
+    RUN(an_armed_report_repeated_keeps_the_throttle);
+    RUN(a_drag_under_way_ends_at_the_arm);
+    RUN(the_knob_stays_out_of_the_frame_an_arm_ended_a_drag_in);
+    RUN(a_drag_under_way_ends_at_the_disarm);
+    RUN(every_arm_starts_from_zero);
     return test_summary("motor");
 }

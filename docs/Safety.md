@@ -218,6 +218,29 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   contact that began elsewhere is taken for the missing release. The DELETE
   question stays open through a cancel and takes the next fresh press. HOME
   and STOP are the router's own gesture and it cancels those itself.
+- A contact has one owner from its press to its release, and the router
+  decides it. A screen is handed a move or a release only for a contact whose
+  press it was handed. A contact that comes down on the status band (the top
+  48 px) or on the alert band is the router's until it lifts, wherever it
+  travels. A contact that was down when the screen changed or when touch
+  events were lost is nobody's until it lifts and comes down again. A contact
+  the screen owns that reaches the status band is released for the screen at
+  the last point the screen was handed, and is the router's from there: a
+  slider's or the dial's drag ends with the value from that point, a hold is
+  abandoned, and the distance travelled on the band is not applied. Without
+  that release the drag stays latched to its track id, and a later contact
+  with the same id that crosses from the band into the body moves the value
+  by its own distance from the first drag's origin. STOP and the home tag
+  answer to a press that lands on them: a contact that slides onto STOP from
+  the body presses nothing. The table holds 5 contacts, the number the GT911
+  reports; a sixth is handed to no screen.
+- The screens do not rely on the router for it. Every press ends a drag on a
+  slider or on the SERVO dial that is still latched, wherever the press
+  lands, and leaving SERVO ends a dial drag. SUPPLY holds one press at a
+  time; a press with the track id of the one it holds says that contact has
+  gone, and the held press is dropped as a touch loss drops it. Not measured
+  on a panel: whether the GT911 gives a lone finger the same track id on
+  successive touches.
 - A touch stream that breaks while STOP is held stops the bench. The control
   task owns that press independently of the screens, and the release that
   would have stopped the bench may be the event that went missing -- or it may
@@ -256,7 +279,16 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   command nothing dangerous, such as the servo screen's sweep speed, keep
   tap-to-set.
 - A disarm returns the throttle to zero, so an arm starts from nothing rather
-  than from where the last run left it.
+  than from where the last run left it. The MOTOR & ESC slider moves on a
+  disarmed bench and commands nothing there, so an arm returns it to zero as
+  well, when the ARM hold asks for the arm. The readout and the `-1` and `+1`
+  steps read the slider, so the first step after the ask posts 1.0 %. A
+  throttle the screen has posted and the application has not collected is
+  dropped at the ask, and a drag under way ends there and at a disarm. A
+  throttle set after the ask follows the arm in the command queue and is
+  what the armed bench is given, so the slider keeps it when the bench
+  reports armed. A bench that arms without this hold, as for a stick run on
+  PROGRAMMER, returns the slider to zero when it reports armed.
 - Leaving a bench screen disarms.
 - The rotary knob (an AS5600 angle sensor; SETUP, APPLICATION, Rotary knob,
   OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by
