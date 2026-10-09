@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "log_name.h"
+#include "settings.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -83,6 +84,9 @@
 #define PV_POS_H  4
 /* The narrowest window two fingers can zoom to, in samples. */
 #define PV_MIN_WIN 8
+/* With SET_PLOT_PAN on, a finger that moves further than this many pixels
+ * from where it touched down pans the zoomed view instead of selecting. */
+#define PV_PAN_SLOP 10
 /* A pixel column with no number in it: drawn as nothing. */
 #define PV_EMPTY   (-1)
 
@@ -158,6 +162,17 @@ static struct {
     float pinch_d0;      /* distance at the start, px          */
     float pinch_s0;      /* sample under the start midpoint    */
     float pinch_n0;      /* window width at the start, samples */
+
+    /*
+     * One finger panning a zoomed view (SET_PLOT_PAN).  Until the finger has
+     * moved PV_PAN_SLOP px it is a tap: the cursor follows it.  Past that it
+     * pans, the cursor goes back to where it was before the touch, and the
+     * sample under the finger stays under it.
+     */
+    bool panning;
+    int16_t pan_x0;      /* finger x where the pan began       */
+    int pan_win0;        /* window start where the pan began   */
+    int pan_cursor0;     /* cursor before the touch            */
 
     /* press tracking, shared by the list views */
     bool pressing;
@@ -300,6 +315,7 @@ static void drop_data(void)
     s.win0 = 0;
     s.win_n = 0;
     s.pinch = false;
+    s.panning = false;
 }
 
 /* ------------------------------------------------------------- loading --- */
@@ -593,6 +609,7 @@ static void load_data(void)
     s.win0 = 0;
     s.win_n = s.data.count;
     s.pinch = false;
+    s.panning = false;
     s.message[0] = '\0';
     compute_spans();
     s.view = VIEW_PLOT;
@@ -1454,6 +1471,7 @@ static float pinch_mid(void)
 static void pinch_start(uint8_t id0, int16_t x0, uint8_t id1, int16_t x1)
 {
     s.pinch = true;
+    s.panning = false;
     s.pinch_id[0] = id0;
     s.pinch_id[1] = id1;
     s.pinch_x[0] = x0;
@@ -1497,6 +1515,32 @@ static void pinch_apply(void)
     }
     if (nw != s.win_n || nw0 != s.win0) {
         s.win_n = nw;
+        s.win0 = nw0;
+        compute_spans();
+    }
+}
+
+/* A drag pans only a view that is zoomed in, and only when the setting asks. */
+static bool pan_enabled(void)
+{
+    return settings_get_bool(SET_PLOT_PAN) && s.have_data &&
+           s.win_n < s.data.count;
+}
+
+/* The finger is at @p x: keep the sample that was under it where it began. */
+static void pan_apply(int x)
+{
+    const int max0 = s.data.count - s.win_n;
+    float w0 = (float)s.pan_win0 +
+               (float)(s.pan_x0 - x) * (float)s.win_n / (float)PV_W;
+    if (w0 < 0.0f) {
+        w0 = 0.0f;
+    }
+    if (w0 > (float)max0) {
+        w0 = (float)max0;
+    }
+    const int nw0 = (int)(w0 + 0.5f);
+    if (nw0 != s.win0) {
         s.win0 = nw0;
         compute_spans();
     }
@@ -1547,6 +1591,9 @@ static void plot_event(const touch_event_t *e)
             s.pressing = true;
             s.press_id = e->point.id;
             s.press_x = e->point.x;
+            s.panning = false;
+            s.pan_x0 = e->point.x;
+            s.pan_cursor0 = s.cursor;
             set_cursor_from_x(e->point.x);
         }
         log_viewer_invalidate();
@@ -1555,7 +1602,21 @@ static void plot_event(const touch_event_t *e)
     case TOUCH_EVENT_MOVE:
         if (s.pressing && e->point.id == s.press_id) {
             s.press_x = e->point.x;
-            set_cursor_from_x(e->point.x);
+            if (!s.panning && pan_enabled()) {
+                /* Judge the drag from where the finger touched down. */
+                if (e->point.x - s.pan_x0 > PV_PAN_SLOP ||
+                    s.pan_x0 - e->point.x > PV_PAN_SLOP) {
+                    s.panning = true;
+                    s.cursor = s.pan_cursor0;
+                    s.pan_x0 = e->point.x;
+                    s.pan_win0 = s.win0;
+                }
+            }
+            if (s.panning) {
+                pan_apply(e->point.x);
+            } else {
+                set_cursor_from_x(e->point.x);
+            }
             log_viewer_invalidate();
         }
         break;
@@ -1652,6 +1713,7 @@ static void cancel(void)
     s.dragged   = false;
     s.q_down    = false;
     s.pinch     = false;
+    s.panning   = false;
     log_viewer_invalidate();
 }
 
