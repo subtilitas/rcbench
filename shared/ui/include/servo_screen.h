@@ -182,8 +182,11 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * posts on a resting bench.  On a disarmed bench RELEASE is posted and the
  * value stays.
  *
- * From a SERVO_CMD_DISARM being posted until this is called with false,
- * taken or not, the bench counts as disarmed for all of the above.
+ * The state is ui_value_gate.h's.  From a SERVO_CMD_DISARM being posted,
+ * taken or not, or servo_screen_cancel_arm() on an armed bench, until this
+ * is called with false, the value is not live: the inputs are refused as
+ * on a disarmed bench, and a sweep, a pause, a held position and a run of
+ * the automatic test end where it was asked.
  */
 void servo_screen_set_armed(bool armed);
 

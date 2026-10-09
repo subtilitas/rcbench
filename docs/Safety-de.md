@@ -369,10 +369,12 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   aufgehoben. Nicht scharf reicht vom DISARM, bis der Prüfstand scharf
   meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
   ARM und der Antwort des Prüfstands. Von einem DISARM an, das ein Bildschirm
-  anfordert, bis der Prüfstand entschärft meldet, werden die Bedienelemente
+  anfordert, oder einem STOP auf einem scharfen Prüfstand, bis der Prüfstand
+  entschärft meldet, werden die Bedienelemente
   ebenfalls abgelehnt und gedimmt gezeichnet, solange das DISARM auf das
-  Abholen wartet und danach. Auf SERVO enden ein Sweep, eine Pause und ein
-  Lauf des automatischen Tests dort, wo das DISARM angefordert wird, und ein
+  Abholen wartet und danach. Auf SERVO enden ein Sweep, eine Pause, eine
+  gehaltene Stellung und ein Lauf des automatischen Tests dort, wo das DISARM
+  oder das STOP angefordert wird, und ein
   FREIGEBEN in dieser Zeit wird gesendet und bewegt keinen Wert. Ein
   laufender Drag endet bei einem ARM, einem DISARM und einem STOP, und ein
   Finger, der auf dem Bedienelement liegt, bewegt nichts, bis er abhebt und

@@ -1500,6 +1500,16 @@ static void reissue(void)
         s.arm_profile_rev    = s.profile_rev;
         return;
     }
+    if (!value_live()) {
+        /* Nothing that drives is said again while the value is not live.
+         * An arm on its way is answered with the rest, as below, and so is
+         * a bench on its way down. */
+        if (s.gate.armed || s.gate.arm_asked) {
+            release();
+            s.arm_profile_rev = s.profile_rev;
+        }
+        return;
+    }
     if (s.sweeping) {
         /*
          * Said again under the profile now in force -- its range and its
@@ -2396,12 +2406,10 @@ static void test_apply(const servo_test_do_t *d)
     if (d->on) {
         supply_screen_ask_on();
     }
-    if (d->command) {
-        /* Under a disarm waiting to be taken the step is dropped (post()),
-         * and the value stays with it. */
-        if (value_live()) {
-            s.commanded_deg = us_to_deg(d->cmd_us);
-        }
+    /* A step is a position like any other: only while the value is live.
+     * The run itself ends on the edge out of it (value_edge()). */
+    if (d->command && value_live()) {
+        s.commanded_deg = us_to_deg(d->cmd_us);
         post(SERVO_CMD_POSITION, d->cmd_us);
         /* A step: the servo's own travel is what is timed, not SPEED's. */
         s.pending.slew_per_s = 0u;

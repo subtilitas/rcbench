@@ -157,8 +157,8 @@ The throttle changes only on an armed bench. What each control does:
 Not armed, the line under the track reads `ARM FIRST`. The bench is not armed
 from the disarm until it reports armed: a control touched after the ARM hold
 completes and before that report is refused as well. From a DISARM the
-screen asks for, by the tap or by leaving, until the bench reports disarmed,
-the controls are refused too.
+screen asks for, by the tap or by leaving, or a STOP on an armed bench,
+until the bench reports disarmed, the controls are refused too.
 
 A disarm returns the throttle to 0 %, however it happens: the DISARM tap,
 STOP, a lost link, a touch controller that stops answering, or leaving the
@@ -355,9 +355,10 @@ Disarmed, the horn is drawn dimmed and the left card reads `ARM FIRST`. The
 horn and COMMANDED show the position last driven; after a restart, PULSE
 CENTRE. A pulse-width setting changed while disarmed changes the
 microseconds COMMANDED shows for that angle, and TRAVEL does not clamp it.
-From a DISARM the screen asks for, by the tap or by leaving, until the bench
-reports disarmed, the Disarmed column holds as well, and a sweep, a pause
-and a run of the automatic test end at the tap.
+From a DISARM the screen asks for, by the tap or by leaving, or a STOP on an
+armed bench, until the bench reports disarmed, the Disarmed column holds as
+well, and a sweep, a pause, a held position and a run of the automatic test
+end where it is asked.
 
 When the bench arms, the commanded value becomes the rest the pins drive:
 the midpoint of the channel's endpoints, 1500 us for STANDARD PWM and 760 us

@@ -320,10 +320,11 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   `ARM FIRST`. A turn of the rotary knob made then is not kept. Not armed
   runs from the disarm until the bench reports armed, so it covers the time
   between a completed ARM hold and the bench's answer. From a DISARM a
-  screen asks for until the bench reports disarmed the controls are refused
+  screen asks for, or a STOP on an armed bench, until the bench reports
+  disarmed the controls are refused
   too and drawn dimmed, while the DISARM waits to be collected and after
-  it. On SERVO a sweep, a pause and a run of the automatic test end where
-  the DISARM is asked, and a RELEASE in that time is sent and moves no
+  it. On SERVO a sweep, a pause, a held position and a run of the automatic
+  test end where the DISARM or the STOP is asked, and a RELEASE in that time is sent and moves no
   value. A drag
   under way ends at an arm, a disarm and a stop, and a finger resting on the
   control moves nothing until it lifts and presses again. A value the screen
