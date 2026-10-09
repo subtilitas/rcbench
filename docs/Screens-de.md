@@ -145,16 +145,36 @@ Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
 fordert den ganzen Weg an, und der Pin folgt ihm ohne Rampe. `-1` und `+1` an
 den Enden des Tracks schalten um einen Prozentpunkt.
 
-Das Scharfschalten setzt das Gas auf 0 %. Auf einem entschärften Prüfstand
-lässt sich der Schieberegler bewegen und kommandiert dort nichts; wenn das
-Halten auf ARM durchgelaufen ist, stehen Schieberegler, Anzeige und die
-Schritte `-1` und `+1` auf 0,0 %, das erste `+1` danach fordert also 1,0 %
-an. Ein Gas, das nach dem durchgelaufenen Halten gestellt wird, bekommt der
-scharfe Prüfstand. Ein Prüfstand, der ohne dieses Halten scharf wird, durch
-einen Knüppel-Lauf auf PROGRAMMER, setzt den Schieberegler auf 0 %, wenn er
-scharf meldet. Ein Finger, der auf dem Track liegt, wenn das Halten
-durchläuft oder der Prüfstand entschärft, bewegt nichts, bis er abhebt und
-neu drückt.
+Das Gas ändert sich nur auf einem scharfen Prüfstand. Was jedes
+Bedienelement tut:
+
+| Bedienelement | Nicht scharf | Scharf |
+| --- | --- | --- |
+| Der Track | abgelehnt: kein Kommando, Schieberegler und Anzeige bleiben; gedimmt gezeichnet | bewegt das Gas um den Weg des Fingers |
+| `-1`, `+1` | abgelehnt; gedimmt gezeichnet | schalten um einen Prozentpunkt |
+| Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
+| ARM | schaltet nach seinem Halten von 2 s scharf | entschärft bei einem Tap |
+| SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
+| GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
+
+Nicht scharf zeigt die Zeile unter dem Track `ZUERST ARM`. Der Prüfstand ist
+vom Entschärfen an nicht scharf, bis er scharf meldet: Auch ein
+Bedienelement, das nach dem durchgelaufenen Halten auf ARM und vor dieser
+Meldung berührt wird, wird abgelehnt. Hinter einem DISARM, das der
+Bildschirm gepostet und das Panel noch nicht gesendet hat, werden die
+Bedienelemente ebenfalls abgelehnt.
+
+Ein Entschärfen setzt das Gas auf 0 %, gleich wie es geschieht: der Tap auf
+DISARM, STOP, eine verlorene Verbindung, ein Touch-Controller, der nicht
+mehr antwortet, oder das Verlassen des Bildschirms. Schieberegler, Anzeige
+und die Schritte `-1` und `+1` bleiben dann bis zum nächsten Scharfschalten
+auf 0,0 %; das erste `+1` nach einem Scharfschalten fordert also 1,0 % an,
+und die erste Knopfdrehung von 1 % fordert 1,0 % an. Auch ein Prüfstand, der
+ohne das Halten auf ARM scharf wird, durch einen Knüppel-Lauf auf
+PROGRAMMER, beginnt bei 0 %. Ein Gas, das der Bildschirm gepostet und das
+Panel noch nicht gesendet hat, wenn der Prüfstand entschärft, wird nicht
+gesendet. Ein Finger, der auf dem Track liegt, wenn der Prüfstand scharf
+wird oder entschärft, bewegt nichts, bis er abhebt und neu drückt.
 
 ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
@@ -352,7 +372,7 @@ Was jedes Bedienelement auf einem unscharfen Prüfstand tut:
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Horn vom befohlenen Wert aus |
 | ZENTRIEREN | abgelehnt; gedimmt gezeichnet | befiehlt PULS CENTRE plus TRIM |
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
-| FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert bleibt |
+| FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
 | OPTIONEN: TYP, FRAME RATE, PULS MIN, CENTRE und MAX, TRIM, WEG, REVERSE | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
@@ -380,10 +400,18 @@ gesendet hat, wenn der Prüfstand unscharf wird oder stoppt, wird nicht
 gesendet, und eine Knopfdrehung in diesem Zustand wird zurückgenommen: Der
 Wert kehrt auf den vor der Drehung zurück.
 
-Nach FREIGEBEN auf einem scharfen Prüfstand stehen die Pins auf der Mitte,
-und Horn und PULSBREITE behalten die letzte Stellung. Ein Druck auf das
-Zifferblatt steuert das Servo wieder an; eine Knopfdrehung steuert es vom
-gezeigten Wert aus an, nicht von der Mitte.
+Für FREIGEBEN auf einem scharfen Prüfstand gilt die Regel des ARM erneut.
+Die Pins gehen in die Ruhelage, und der befohlene Wert wird zu dieser
+Ruhelage: 1500 us bei STANDARD PWM, 760 us bei NARROW 760, ohne TRIM. Das
+Horn wird mit TEMPO dorthin laufend gezeichnet. Ein laufender Drag endet.
+Ein Druck auf das Zifferblatt steuert das Servo wieder an, und die erste
+Knopfdrehung zählt von der Ruhelage: 1 % Knopfdrehung bei STANDARD PWM
+fordert 1510 us an. Dasselbe gilt für die Freigabe, mit der ein Lauf des
+automatischen Tests endet, und für die, die ein geänderter Typ oder eine
+geänderte Pulsbreite auf einem ruhenden Prüfstand sendet. Auf jeden Frame
+wartet ein Kommando: Von einer Stellung und einem FREIGEBEN im selben Frame
+wird das spätere gesendet, und der gezeigte Wert ist dessen Wert. Eine
+Knopfdrehung in einem Frame, in dem FREIGEBEN wartet, wird verworfen.
 
 Die rechte Karte zeigt, was befohlen und gemessen ist, Typ und Bildwiederholrate,
 die gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
@@ -1268,8 +1296,10 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   wird nicht aufgehoben. Das ARM setzt das Horn auf die Ruhelage, und die
   nächste Drehung zählt von dort. Eine gepostete und noch nicht gesendete
   Drehung wird zurückgenommen, wenn der Prüfstand unscharf wird oder stoppt.
-  Auf MOTOR & ESC bewegt der Knopf den Schieberegler auf einem unscharfen
-  Prüfstand, und das ARM setzt ihn auf 0 %.
+  Auch auf MOTOR & ESC bewegt eine Drehung auf einem nicht scharfen
+  Prüfstand nichts und wird nicht aufgehoben; das Entschärfen setzt den
+  Schieberegler auf 0 %, und die nächste Drehung nach einem ARM zählt von
+  dort.
 - Bekannte Einschränkung: Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G des Boards an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse 0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht lesen. `Drehknopf` ist standardmäßig aus.
 
 ### ANSCHLÜSSE: die Strommonitore

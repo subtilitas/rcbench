@@ -135,14 +135,31 @@ on the track commands nothing, so a touch at the far end asks for nothing; a
 drag across the whole track asks for the whole span, and the pin follows it
 unramped. `-1` and `+1` at the ends of the track step one percentage point.
 
-Arming returns the throttle to 0 %. The slider can be moved on a disarmed
-bench and commands nothing there; when the ARM hold completes, the slider,
-the readout and the `-1` and `+1` steps are at 0.0 %, so the first `+1` after
-it asks for 1.0 %. A throttle set after the hold completes is what the armed
-bench is given. A bench armed without this hold, by a stick run on
-PROGRAMMER, returns the slider to 0 % when it reports armed. A finger on the
-track when the hold completes or when the bench disarms moves nothing until
-it lifts and presses again.
+The throttle changes only on an armed bench. What each control does:
+
+| Control | Not armed | Armed |
+| --- | --- | --- |
+| The track | refused: no command, the slider and the readout stay; drawn dimmed | moves the throttle by the finger's travel |
+| `-1`, `+1` | refused; drawn dimmed | step one percentage point |
+| Rotary knob | refused; the turn is not kept | moves the throttle from its value |
+| ARM | arms after its 2 s hold | disarms on a tap |
+| RESET PEAKS | resets the peaks | resets the peaks |
+| PLOT, TABLE | switch the pane | switch the pane |
+
+Not armed, the line under the track reads `ARM FIRST`. The bench is not armed
+from the disarm until it reports armed: a control touched after the ARM hold
+completes and before that report is refused as well. Behind a DISARM the
+screen has posted and the panel has not sent, the controls are refused too.
+
+A disarm returns the throttle to 0 %, however it happens: the DISARM tap,
+STOP, a lost link, a touch controller that stops answering, or leaving the
+screen. The slider, the readout and the `-1` and `+1` steps then stay at
+0.0 % until the next arm, so the first `+1` after an arm asks for 1.0 % and
+the first 1 % turn of the knob asks for 1.0 %. A bench armed without the ARM
+hold, by a stick run on PROGRAMMER, starts from 0 % as well. A throttle the
+screen has posted and the panel has not sent when the bench disarms is not
+sent. A finger on the track when the bench arms or disarms moves nothing
+until it lifts and presses again.
 
 ARM is a hold. The fill fades from green to the danger red across two
 seconds, and the bench arms when the fade completes; letting go before then
@@ -319,7 +336,7 @@ What each control does on a disarmed bench:
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
 | CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
-| RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown stays |
+| RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
 | SETTINGS: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
@@ -344,9 +361,16 @@ has posted and the panel has not sent when the bench disarms or stops is not
 sent, and a knob turn in that state is withdrawn: the value returns to the
 one before the turn.
 
-After RELEASE on an armed bench the pins are at the centre and the horn and
-COMMANDED keep the last position. A press on the dial drives the servo
-again; a knob turn drives it from the value shown, not from the centre.
+RELEASE on an armed bench is the arm's rule again. The pins go to the rest,
+and the commanded value becomes that rest: 1500 us for STANDARD PWM, 760 us
+for NARROW 760, without TRIM. The horn is drawn moving there at SPEED. A
+drag under way ends. A press on the dial drives the servo again, and the
+first knob turn counts from the rest: a 1 % turn on STANDARD PWM asks for
+1510 us. The same holds for the release a run of the automatic test ends
+with, and for the one a changed type or pulse width sends on a resting
+bench. One command waits for each frame: of a position and a RELEASE made in
+the same frame the later is sent, and the value shown is that one's. A knob
+turn in a frame in which RELEASE waits is dropped.
 
 The right card shows what is commanded and measured, the type and frame rate
 in force -- in the danger colour while they are ones that can destroy a servo
@@ -1155,8 +1179,9 @@ across a third of its travel from -travel to +travel.
 - On SERVO a turn on a disarmed bench moves nothing and is not kept. The arm
   sets the horn to the rest, and the next turn counts from there. A turn
   posted and not yet sent when the bench disarms or stops is withdrawn. On
-  MOTOR & ESC the knob moves the slider on a disarmed bench, and the arm
-  returns it to 0 %.
+  MOTOR & ESC a turn on a bench that is not armed moves nothing and is not
+  kept either; the disarm returns the slider to 0 %, and the next turn after
+  an arm counts from there.
 - Known limitation: On the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus. The Rotary knob setting is OFF by default.
 
 ### INTERFACES: the current monitors

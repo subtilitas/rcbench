@@ -343,42 +343,52 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   abgeschlossen ist, ist ein Sprung von 0 auf 100 % am Pin. Slider, die
   nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit des
   Servobildschirms, behalten Tap-to-set.
-- Ein Entschärfen setzt das Gas auf null, damit ein Scharfschalten bei null
-  beginnt und nicht dort, wo der letzte Lauf aufgehört hat. Der Schieberegler
-  von MOTOR & ESC lässt sich auf einem entschärften Prüfstand bewegen und
-  kommandiert dort nichts, also setzt auch das Scharfschalten ihn auf null,
-  wenn das Halten auf ARM das Scharfschalten anfordert. Die Anzeige und die
-  Schritte `-1` und `+1` lesen den Schieberegler, der erste Schritt nach der
-  Anforderung postet also 1,0 %. Ein Gas, das die Seite gepostet und die
-  Anwendung noch nicht abgeholt hat, wird bei der Anforderung verworfen, und
-  ein laufender Drag endet dort und beim Entschärfen. Ein Gas, das nach der
-  Anforderung gestellt wird, folgt dem Scharfschalten in der Kommando-Queue
-  und ist das, was der scharfe Prüfstand bekommt; der Schieberegler behält es
-  also, wenn der Prüfstand scharf meldet. Ein Prüfstand, der ohne dieses
-  Halten scharf wird, wie bei einem Knüppel-Lauf auf PROGRAMMER, setzt den
-  Schieberegler auf null, wenn er scharf meldet.
-- Die befohlene Stellung des SERVO-Bildschirms ändert sich nur auf einem
-  scharfen Prüfstand. Unscharf werden das Zifferblatt, der Drehknopf,
-  ZENTRIEREN und SWEEP abgelehnt: Nichts wird gepostet, und das Horn und die
-  gezeigte Pulsbreite bleiben auf der zuletzt gefahrenen Stellung. Bei einem
-  ARM wird der Wert zur Ruhelage der Ruderfläche, die die Pins treiben,
-  sobald das ARM seine Freigabe bezahlt hat: die Mitte zwischen den
-  Endpunkten des Kanals, 1500 us über 1000 bis 2000 us und 760 us über 660
-  bis 860 us. Die erste Eingabe nach einem ARM beginnt dort. Ein laufender
-  Drag endet bei einem ARM, einem DISARM und einem STOP. Eine Stellung, ein
-  Sweep oder ein Hold, die der Bildschirm gepostet und die Anwendung bei
-  einem DISARM oder STOP noch nicht abgeholt hat, wird verworfen. FREIGEBEN
-  auf einem scharfen Prüfstand zentriert die Pins und lässt den gezeigten
-  Wert stehen; eine Knopfdrehung danach zählt vom gezeigten Wert.
+- Ein Ausgangswert ändert sich nur auf einem scharfen Prüfstand, auf
+  MOTOR & ESC wie auf SERVO. Solange der Prüfstand nicht scharf ist, ändert
+  kein Bedienelement der beiden Bildschirme den Wert, den es kommandiert:
+  Nichts wird gepostet, der Wert und seine Anzeige bleiben, das
+  Bedienelement wird gedimmt gezeichnet, und der Bildschirm zeigt
+  `ZUERST ARM`. Eine Drehung des Drehknopfs in dieser Zeit wird nicht
+  aufgehoben. Nicht scharf reicht vom DISARM, bis der Prüfstand scharf
+  meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
+  ARM und der Antwort des Prüfstands; ein DISARM, das der Bildschirm gepostet
+  und die Anwendung noch nicht abgeholt hat, lehnt sie ebenfalls ab. Ein
+  laufender Drag endet bei einem ARM, einem DISARM und einem STOP, und ein
+  Finger, der auf dem Bedienelement liegt, bewegt nichts, bis er abhebt und
+  neu drückt. Ein Wert, den der Bildschirm
+  gepostet und die Anwendung bei einem DISARM oder STOP noch nicht abgeholt
+  hat, wird verworfen.
+- Jedes ARM beginnt bei der Ruhelage des Kanals, nicht dort, wo der letzte
+  Lauf das Bedienelement gelassen hat.
+  - MOTOR & ESC: Der Gas-Schieberegler, seine Schritte `-1` und `+1` und der
+    Drehknopf sind die Bedienelemente. Ein DISARM setzt das Gas auf 0 %, und
+    es bleibt dort bis zum nächsten ARM; der erste Schritt nach einem ARM
+    postet also 1,0 %. Das Halten auf ARM setzt den Schieberegler auf 0 %,
+    wenn es anfordert, und ebenso der Wechsel auf scharf bei einem ARM, das
+    dieses Halten nicht angefordert hat, wie bei einem Knüppel-Lauf auf
+    PROGRAMMER.
+  - SERVO: Das Zifferblatt, der Drehknopf, ZENTRIEREN und SWEEP sind die
+    Bedienelemente. Unscharf bleiben das Horn und die gezeigte Pulsbreite
+    auf der zuletzt gefahrenen Stellung. Bei einem ARM wird der Wert zur
+    Ruhelage der Ruderfläche, die die Pins treiben, sobald das ARM seine
+    Freigabe bezahlt hat: die Mitte zwischen den Endpunkten des Kanals,
+    1500 us über 1000 bis 2000 us und 760 us über 660 bis 860 us. Die erste
+    Eingabe nach einem ARM beginnt dort.
+- FREIGEBEN auf SERVO ist keine Stellung und wird auf einem unscharfen
+  Prüfstand angenommen, wo es keinen Wert bewegt. Auf einem scharfen
+  Prüfstand stellt es die Pins in die Ruhelage, und der gezeigte Wert wird
+  zu dieser Ruhelage, wie bei einem ARM: Ein laufender Drag endet, und die
+  erste Eingabe danach beginnt bei der Ruhelage. Die Freigabe, mit der ein
+  Lauf des automatischen Tests endet, tut dasselbe.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
-  Regeln. Er schärft nie: Das einzige Schärfen ist der ARM-Hold. Ein
-  Entschärfen setzt das Gas auf null, der Knopf bewegt von dort aus weiter,
-  und das Verlassen des Bildschirms entschärft. Auf SERVO bewegt eine
-  Drehung auf einem unscharfen Prüfstand nichts und wird nicht aufgehoben,
-  und der Knopf bewegt von der Ruhelage aus weiter, die das ARM setzt. Die
+  Regeln. Er schärft nie: Das einzige Schärfen ist der ARM-Hold. Auf beiden
+  Bildschirmen bewegt eine Drehung auf einem nicht scharfen Prüfstand nichts
+  und wird nicht aufgehoben; nach einem ARM bewegt der Knopf auf MOTOR & ESC
+  von 0 % aus weiter und auf SERVO von der Ruhelage aus. Das Verlassen des
+  Bildschirms entschärft. Die
   erste Messung nach dem
   Einschalten, eine Messung, die der Sensor markiert (kein Magnet, zu
   schwach, zu stark, Magnitude 0), eine Messung, die nicht eintrifft, und ein

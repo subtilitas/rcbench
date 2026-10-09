@@ -40,6 +40,14 @@ static void fresh(void)
     while (motor_screen_poll_cmd(&junk)) { }
 }
 
+/* The same on a bench that reports itself armed: the throttle's controls
+ * move it only there. */
+static void fresh_armed(void)
+{
+    fresh();
+    motor_screen_set_armed(true);
+}
+
 /* Screen coordinates: the router strips the band before the screen sees an
  * event, so these are already screen-local. */
 static void ev(int x, int y, touch_event_type_t t, uint8_t id)
@@ -448,7 +456,7 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
  */
 TEST_CASE(the_nudges_step_the_throttle_by_one_point)
 {
-    fresh();
+    fresh_armed();
     motor_screen_set_throttle(50.0f);
     (void)last_cmd();
 
@@ -614,7 +622,7 @@ TEST_CASE(the_rated_kv_prefers_the_esc_over_the_entered_value)
  */
 TEST_CASE(the_throttle_track_moves_by_how_far_it_is_dragged)
 {
-    fresh();
+    fresh_armed();
 
     /* A press commands nothing, wherever on the track it lands. */
     ev(TRACK_X + TRACK_W - 4, TRACK_Y, TOUCH_EVENT_DOWN, 1);
@@ -643,7 +651,7 @@ TEST_CASE(the_throttle_track_moves_by_how_far_it_is_dragged)
  */
 TEST_CASE(the_knob_moves_the_throttle_by_how_far_it_turned)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob(0.25f);
     CHECK_NEAR(motor_screen_throttle(), 25.0f, 0.01f);
     motor_cmd_t c = last_cmd();
@@ -664,7 +672,7 @@ TEST_CASE(the_knob_moves_the_throttle_by_how_far_it_turned)
 
 TEST_CASE(the_knob_stops_at_the_ends_of_the_throttle)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob(5.0f);
     CHECK_NEAR(motor_screen_throttle(), 100.0f, 0.01f);
     CHECK_NEAR(last_cmd().value, 100.0f, 0.01f);
@@ -684,9 +692,17 @@ TEST_CASE(a_knob_that_does_not_turn_commands_nothing)
     CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.0f);
 }
 
+/* On a disarmed bench the knob posts nothing at all, an arm least of all,
+ * and on an armed one nothing but throttles. */
 TEST_CASE(the_knob_never_arms)
 {
     fresh();
+    for (int i = 0; i < 40; ++i) {
+        motor_screen_knob(0.05f);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    }
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    motor_screen_set_armed(true);
     for (int i = 0; i < 40; ++i) {
         motor_screen_knob(0.05f);
         const motor_cmd_t c = last_cmd();
@@ -697,7 +713,7 @@ TEST_CASE(the_knob_never_arms)
 
 TEST_CASE(a_finger_on_the_throttle_track_owns_it_against_the_knob)
 {
-    fresh();
+    fresh_armed();
     ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
     motor_screen_knob(0.5f);
     CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
@@ -713,7 +729,7 @@ TEST_CASE(a_finger_on_the_throttle_track_owns_it_against_the_knob)
  * the finger is still down when it is applied. */
 TEST_CASE(a_finger_that_lifted_in_the_frame_still_owned_the_slider)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob_frame();
     ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
     ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
@@ -741,7 +757,7 @@ TEST_CASE(a_finger_that_lifted_in_the_frame_still_owned_the_slider)
 /* A touch elsewhere in the frame does not own the slider. */
 TEST_CASE(a_touch_off_the_slider_leaves_it_to_the_knob)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob_frame();
     ev(5, 5, TOUCH_EVENT_DOWN, 1);
     ev(5, 5, TOUCH_EVENT_UP, 1);
@@ -754,7 +770,7 @@ TEST_CASE(a_touch_off_the_slider_leaves_it_to_the_knob)
  * nothing; a throttle pending before the knob moved it stays pending. */
 TEST_CASE(a_withdrawn_knob_command_restores_the_throttle)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob(0.25f);
     motor_screen_knob(0.25f);
     motor_screen_knob_cancel();
@@ -771,7 +787,7 @@ TEST_CASE(a_withdrawn_knob_command_restores_the_throttle)
 
 TEST_CASE(a_withdrawn_knob_command_leaves_a_throttle_from_a_touch)
 {
-    fresh();
+    fresh_armed();
     ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
     ev(TRACK_X + 10 + TRACK_W / 4, TRACK_Y, TOUCH_EVENT_MOVE, 1);
     ev(TRACK_X + 10 + TRACK_W / 4, TRACK_Y, TOUCH_EVENT_UP, 1);
@@ -788,7 +804,7 @@ TEST_CASE(a_withdrawn_knob_command_leaves_a_throttle_from_a_touch)
 
 TEST_CASE(a_withdrawal_does_not_touch_a_command_posted_after_the_knob)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob(0.25f);
     scr->leave();                       /* posts the DISARM over it */
     motor_screen_knob_cancel();
@@ -797,7 +813,7 @@ TEST_CASE(a_withdrawal_does_not_touch_a_command_posted_after_the_knob)
 
 TEST_CASE(a_posted_disarm_is_not_overwritten_by_the_knob)
 {
-    fresh();
+    fresh_armed();
     scr->leave();                       /* posts the DISARM */
     motor_screen_knob(0.3f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
@@ -812,13 +828,16 @@ TEST_CASE(a_completed_arm_is_not_overwritten_by_the_knob)
     motor_screen_knob(0.3f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
     CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    /* Nor is the delta kept for the armed bench: the next turn is its own. */
+    motor_screen_set_armed(true);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
     motor_screen_knob(0.3f);
     CHECK_NEAR(motor_screen_throttle(), 30.0f, 0.01f);
 }
 
 TEST_CASE(a_pending_peak_reset_is_not_overwritten_by_the_knob)
 {
-    fresh();
+    fresh_armed();
     tap(RESET_X, RESET_Y);
     motor_screen_knob(0.3f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_RESET_PEAKS);
@@ -828,10 +847,15 @@ TEST_CASE(a_pending_peak_reset_is_not_overwritten_by_the_knob)
 /* A disarm returns the throttle to zero, and the knob goes on from there. */
 TEST_CASE(the_knob_goes_on_from_zero_after_a_disarm)
 {
-    fresh();
+    fresh_armed();
     motor_screen_knob(0.6f);
-    motor_screen_set_throttle(0.0f);    /* what the application does on a disarm */
     (void)last_cmd();
+    motor_screen_set_armed(false);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    motor_screen_knob(0.1f);            /* refused: not armed */
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    motor_screen_set_armed(true);
     motor_screen_knob(0.1f);
     CHECK_NEAR(motor_screen_throttle(), 10.0f, 0.01f);
 }
@@ -1393,26 +1417,26 @@ static void fed(void)
     feed_to_screen(scr);
 }
 
-/* The slider dragged to @p px of travel on a disarmed bench, finger up. */
-static void dragged_disarmed(int px)
+/*
+ * 60.5 % on the slider of a disarmed bench.  No control puts a value there
+ * (test_motor_arm.c); the application's hook does, and the cases below hold
+ * the arm edge to what it does with one.
+ */
+static void set_disarmed(void)
 {
     fed();
-    finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
-    glide(FEED_LONE, TRACK_X + 28 + px, P(TRACK_Y), 8);
-    lift(FEED_LONE);
+    motor_screen_set_throttle(60.5f);
     (void)last_cmd();
 }
 
 /*
- * An arm starts from nothing.  The slider dragged to 60.5 % on a disarmed
- * bench is at 0 % once the bench is armed, and the step buttons, which move
- * the slider's value by one point, start from there: + posts 1.0 %, not
- * 61.5 %.
+ * An arm starts from nothing.  A slider at 60.5 % on a disarmed bench is at
+ * 0 % once the bench is armed, and the step buttons, which move the
+ * slider's value by one point, start from there: + posts 1.0 %, not 61.5 %.
  */
 TEST_CASE(arming_returns_the_throttle_to_zero)
 {
-    dragged_disarmed(250);
-    CHECK_NEAR(motor_screen_throttle(), 250.0f * 100.0f / 413.0f, 0.01f);
+    set_disarmed();
     CHECK_NEAR(motor_screen_throttle(), 60.5f, 0.05f);
 
     motor_screen_set_armed(true);
@@ -1467,7 +1491,7 @@ TEST_CASE(the_readout_after_an_arm_is_that_of_an_untouched_screen)
     scr->render(&cv, 0);
     memcpy(untouched, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    dragged_disarmed(250);
+    set_disarmed();
     scr->render(&cv, 0);                /* 60.5 on the glass */
     CHECK(memcmp(untouched, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
     motor_screen_set_armed(true);
@@ -1476,14 +1500,13 @@ TEST_CASE(the_readout_after_an_arm_is_that_of_an_untouched_screen)
 }
 
 /*
- * From the ask, not only from the bench's answer.  The bench arms between
- * two frames, so a frame can still read it as disarmed when a command it
- * posts lands on an armed bench: the hold that asks for the arm returns the
- * slider to zero itself.
+ * From the ask, not only from the bench's answer: the hold that asks for
+ * the arm returns the slider to zero itself.  Until the bench answers it is
+ * not armed, and + in a frame that still reads it as disarmed is refused.
  */
 TEST_CASE(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero)
 {
-    dragged_disarmed(250);
+    set_disarmed();
     finger(FEED_LONE, ARM_X, P(ARM_Y));
     tick_for(HOLD_TICKS - 10);
     CHECK_NEAR(motor_screen_throttle(), 60.5f, 0.05f);   /* not yet asked */
@@ -1492,47 +1515,35 @@ TEST_CASE(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero)
     lift(FEED_LONE);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 
-    /* A second finger on + in a frame that still reads the bench as
-     * disarmed posts one point, from zero. */
     feed_tap(FEED_LONE, UP_X, P(TRACK_Y));
-    const motor_cmd_t c = last_cmd();
-    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
-    CHECK_NEAR(c.value, 1.0f, 0.001f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
 }
 
 /*
- * A throttle set after the hold has asked follows the arm in the command
- * queue, so it is what the armed bench is given.  The bench's answer leaves
- * it on the slider: collected already, or still waiting.
+ * A throttle the application sets after the hold has asked is from after
+ * the ask, and the bench's answer leaves it on the slider.  A drag in that
+ * time is refused like any other on a bench not yet armed.
  */
 TEST_CASE(a_throttle_set_after_the_ask_stays_when_the_bench_answers)
 {
-    for (int collected = 0; collected < 2; ++collected) {
-        dragged_disarmed(250);
-        finger(FEED_LONE, ARM_X, P(ARM_Y));
-        tick_for(HOLD_TICKS);
-        lift(FEED_LONE);
-        CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+    set_disarmed();
+    finger(FEED_LONE, ARM_X, P(ARM_Y));
+    tick_for(HOLD_TICKS);
+    lift(FEED_LONE);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
 
-        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
-        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
-        lift(FEED_LONE);
-        const float set = motor_screen_throttle();
-        CHECK_NEAR(set, 100.0f * 100.0f / 413.0f, 0.01f);
-        if (collected) {
-            CHECK_EQ(last_cmd().kind, MOTOR_CMD_THROTTLE);
-        }
-        motor_screen_set_armed(true);
-        CHECK_EQ(motor_screen_throttle(), set);
-        const motor_cmd_t c = last_cmd();
-        if (collected) {
-            CHECK_EQ(c.kind, MOTOR_CMD_NONE);
-        } else {
-            CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
-            CHECK_EQ(c.value, set);
-        }
-    }
+    finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
+    glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
+    lift(FEED_LONE);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    motor_screen_set_throttle(24.0f);
+    motor_screen_set_armed(true);
+    CHECK_EQ(motor_screen_throttle(), 24.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
 /*
@@ -1543,7 +1554,7 @@ TEST_CASE(a_throttle_set_after_the_ask_stays_when_the_bench_answers)
 TEST_CASE(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero)
 {
     for (int how = 0; how < 3; ++how) {
-        dragged_disarmed(250);
+        set_disarmed();
         finger(FEED_LONE, ARM_X, P(ARM_Y));
         tick_for(HOLD_TICKS);
         lift(FEED_LONE);
@@ -1555,11 +1566,7 @@ TEST_CASE(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero)
         }
         (void)last_cmd();
 
-        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
-        glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
-        lift(FEED_LONE);
-        (void)last_cmd();
-        CHECK(motor_screen_throttle() > 20.0f);
+        motor_screen_set_throttle(24.0f);
         motor_screen_set_armed(true);
         CHECK_EQ(motor_screen_throttle(), 0.0f);
     }
@@ -1571,10 +1578,7 @@ TEST_CASE(every_ask_returns_the_throttle_to_zero)
 {
     fed();
     for (int run = 0; run < 2; ++run) {
-        finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
-        glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
-        lift(FEED_LONE);
-        CHECK(motor_screen_throttle() > 48.0f);
+        motor_screen_set_throttle(48.5f);
         finger(FEED_LONE, ARM_X, P(ARM_Y));
         tick_for(HOLD_TICKS);
         lift(FEED_LONE);
@@ -1591,7 +1595,7 @@ TEST_CASE(every_ask_returns_the_throttle_to_zero)
 /* A hold abandoned before it asks leaves the slider as it was. */
 TEST_CASE(a_hold_that_does_not_arm_leaves_the_throttle_alone)
 {
-    dragged_disarmed(250);
+    set_disarmed();
     const float before = motor_screen_throttle();
     finger(FEED_LONE, ARM_X, P(ARM_Y));
     tick_for(HOLD_TICKS / 2);
@@ -1601,28 +1605,37 @@ TEST_CASE(a_hold_that_does_not_arm_leaves_the_throttle_alone)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
-/* A throttle posted on the disarmed bench and not yet collected was set
- * before the arm, and goes with it. */
-TEST_CASE(a_throttle_waiting_at_the_arm_is_dropped)
+/* A throttle posted on the armed bench and not yet collected as it disarms
+ * is not sent to the disarmed bench, and the slider is at zero. */
+TEST_CASE(a_throttle_waiting_at_the_disarm_is_dropped)
 {
     fed();
+    motor_screen_set_armed(true);
     finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
     glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
     lift(FEED_LONE);
-    motor_screen_set_armed(true);
+    CHECK(motor_screen_throttle() > 20.0f);
+    motor_screen_set_armed(false);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     CHECK_EQ(motor_screen_throttle(), 0.0f);
 }
 
-/* And a knob command waiting at the arm: withdrawing it afterwards puts no
- * disarmed value back. */
-TEST_CASE(a_knob_command_waiting_at_the_arm_is_not_put_back)
+/* And a knob command waiting at the disarm: withdrawing it afterwards puts
+ * no armed value back, on the disarmed bench or at the next arm. */
+TEST_CASE(a_knob_command_waiting_at_the_disarm_is_not_put_back)
 {
-    dragged_disarmed(100);
-    const float before = motor_screen_throttle();
+    fed();
+    motor_screen_set_armed(true);
     motor_screen_knob_frame();
     motor_screen_knob(0.2f);
-    CHECK_NEAR(motor_screen_throttle(), before + 20.0f, 0.01f);
+    (void)last_cmd();
+    motor_screen_knob_frame();
+    motor_screen_knob(0.2f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f, 0.01f);
+    motor_screen_set_armed(false);
+    motor_screen_knob_cancel();
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     motor_screen_set_armed(true);
     motor_screen_knob_cancel();
     CHECK_EQ(motor_screen_throttle(), 0.0f);
@@ -1653,16 +1666,17 @@ TEST_CASE(an_armed_report_repeated_keeps_the_throttle)
 
 /*
  * A finger on the track as the bench arms: a second finger held ARM.  The
- * drag ends at the arm.  Left latched, it would keep its origin, and the
- * next move would add the whole travel since the press to 0 %.
+ * press was on a disarmed bench and took no drag, so its travel before and
+ * after the arm moves nothing.  Pressed again, the track moves the throttle
+ * by that press's travel.
  */
-TEST_CASE(a_drag_under_way_ends_at_the_arm)
+TEST_CASE(a_press_on_the_disarmed_track_is_no_drag_after_the_arm)
 {
     fed();
     finger(0, TRACK_X + 28, P(TRACK_Y));
     glide(0, TRACK_X + 228, P(TRACK_Y), 8);
-    CHECK(motor_screen_throttle() > 48.0f);
-    (void)last_cmd();
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     motor_screen_set_armed(true);
     CHECK_EQ(motor_screen_throttle(), 0.0f);
@@ -1673,35 +1687,10 @@ TEST_CASE(a_drag_under_way_ends_at_the_arm)
     CHECK_EQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
-    /* Pressed again, the track moves the throttle by the finger's travel. */
     finger(0, TRACK_X + 236, P(TRACK_Y));
     glide(0, TRACK_X + 276, P(TRACK_Y), 8);
     lift(0);
     CHECK_NEAR(motor_screen_throttle(), 40.0f * 100.0f / 413.0f, 0.01f);
-}
-
-/*
- * The finger whose drag the arm ended owned the slider in that frame: a
- * knob turn applied at the end of the frame moves nothing.  The next frame
- * is the knob's.
- */
-TEST_CASE(the_knob_stays_out_of_the_frame_an_arm_ended_a_drag_in)
-{
-    fed();
-    finger(0, TRACK_X + 28, P(TRACK_Y));        /* frame N */
-    glide(0, TRACK_X + 228, P(TRACK_Y), 8);
-    (void)last_cmd();
-
-    motor_screen_knob_frame();                  /* frame N+1 */
-    motor_screen_set_armed(true);
-    motor_screen_knob(0.1f);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
-    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
-
-    motor_screen_knob_frame();                  /* frame N+2 */
-    motor_screen_knob(0.1f);
-    CHECK_NEAR(last_cmd().value, 10.0f, 0.01f);
-    lift(0);
 }
 
 /* And at the disarm, where the application returns the value to zero. */
@@ -1722,8 +1711,8 @@ TEST_CASE(a_drag_under_way_ends_at_the_disarm)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
-/* Run after run: each arm starts from zero, whatever the bench showed
- * between them. */
+/* Run after run: each arm starts from zero, and the disarmed bench between
+ * them takes no value from the track. */
 TEST_CASE(every_arm_starts_from_zero)
 {
     fed();
@@ -1737,12 +1726,12 @@ TEST_CASE(every_arm_starts_from_zero)
         motor_screen_set_throttle(0.0f);
         (void)last_cmd();
         motor_screen_set_armed(false);
-        /* Set again on the disarmed bench. */
+        /* Dragged again on the disarmed bench: refused. */
         finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
         glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
         lift(FEED_LONE);
-        CHECK(motor_screen_throttle() > 48.0f);
-        (void)last_cmd();
+        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     }
 }
 
@@ -1808,11 +1797,10 @@ int main(void)
     RUN(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero);
     RUN(every_ask_returns_the_throttle_to_zero);
     RUN(a_hold_that_does_not_arm_leaves_the_throttle_alone);
-    RUN(a_throttle_waiting_at_the_arm_is_dropped);
-    RUN(a_knob_command_waiting_at_the_arm_is_not_put_back);
+    RUN(a_throttle_waiting_at_the_disarm_is_dropped);
+    RUN(a_knob_command_waiting_at_the_disarm_is_not_put_back);
     RUN(an_armed_report_repeated_keeps_the_throttle);
-    RUN(a_drag_under_way_ends_at_the_arm);
-    RUN(the_knob_stays_out_of_the_frame_an_arm_ended_a_drag_in);
+    RUN(a_press_on_the_disarmed_track_is_no_drag_after_the_arm);
     RUN(a_drag_under_way_ends_at_the_disarm);
     RUN(every_arm_starts_from_zero);
     return test_summary("motor");

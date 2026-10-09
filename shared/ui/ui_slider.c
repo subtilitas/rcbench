@@ -249,6 +249,14 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     gfx_hline(c, s->track.x + rad, s->track.y + 1, s->track.w - 2 * rad,
               gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK, 70));
 
+    /* Dimmed: the fill and the thumb towards the trough they sit in. */
+    const gfx_color_t sunk  = ui_theme_color(UI_C_PANEL_SUNK);
+    const gfx_color_t fillc = s->dim ? gfx_lerp(sunk, s->color, 120)
+                                     : s->color;
+    const gfx_color_t thumb = s->dim
+                              ? gfx_lerp(sunk, ui_theme_color(UI_C_TEXT), 90)
+                              : ui_theme_color(UI_C_TEXT);
+
     int filled = (int)(frac * (float)s->track.w + 0.5f);
     /* A rounded fill narrower than its own height has no straight section
      * and draws as a lens, so the fill is at least one diameter wide. */
@@ -257,9 +265,9 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     }
     if (filled > 0) {
         gfx_fill_round_rect(c, s->track.x, s->track.y, filled, s->track.h,
-                            rad, s->color);
+                            rad, fillc);
         gfx_hline(c, s->track.x + rad, s->track.y + 1, filled - 2 * rad,
-                  gfx_lerp(s->color, GFX_WHITE, 70));
+                  gfx_lerp(fillc, GFX_WHITE, 70));
     }
 
     /* Scale divisions, cut 5 px into both edges rather than ruled across the
@@ -270,7 +278,7 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
         /* A tick darkens over the fill and lightens over the trough, so
          * every tick is visible at every setting. */
         const gfx_color_t tc = (tx < s->track.x + filled)
-            ? gfx_lerp(s->color, GFX_BLACK, 105)
+            ? gfx_lerp(fillc, GFX_BLACK, 105)
             : gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK),
                        ui_theme_color(UI_C_TEXT), 105);
         gfx_vline(c, tx, s->track.y + 3, 5, tc);
@@ -305,16 +313,13 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     gfx_fill_round_rect(c, tx, ty + SLIDER_SHADOW_DROP, tw, th, 6,
                         gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK,
                                  120));
-    gfx_fill_round_rect(c, tx, ty, tw, th, 6, ui_theme_color(UI_C_TEXT));
-    gfx_draw_round_rect(c, tx, ty, tw, th, 6,
-                        gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_BLACK, 80));
-    gfx_hline(c, tx + 6, ty + 1, tw - 12,
-              gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_WHITE, 120));
+    gfx_fill_round_rect(c, tx, ty, tw, th, 6, thumb);
+    gfx_draw_round_rect(c, tx, ty, tw, th, 6, gfx_lerp(thumb, GFX_BLACK, 80));
+    gfx_hline(c, tx + 6, ty + 1, tw - 12, gfx_lerp(thumb, GFX_WHITE, 120));
 
     /* Two grip lines, so the thumb reads as a control rather than as a
      * marker. */
-    const gfx_color_t grip = gfx_lerp(ui_theme_color(UI_C_TEXT),
-                                      GFX_BLACK, 95);
+    const gfx_color_t grip = gfx_lerp(thumb, GFX_BLACK, 95);
     const int gy = ty + th / 2 - 6;
     gfx_vline(c, hx - 4, gy, 13, grip);
     gfx_vline(c, hx + 4, gy, 13, grip);

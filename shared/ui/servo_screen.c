@@ -755,6 +755,27 @@ static bool value_live(void)
     return s.armed && s.pending.kind != SERVO_CMD_DISARM;
 }
 
+static void post(servo_cmd_kind_t kind, uint16_t us);
+
+/*
+ * RELEASE posted.  On an armed bench the pins go to every surface's rest,
+ * so the value shown is that rest, as at an arm: a drag under way ends, the
+ * value follows the rest through a change of profile (at_rest), and the
+ * next input starts from it.  The horn is drawn towards it at SPEED.  On a
+ * disarmed bench, and behind an arm or a disarm waiting to be taken, which
+ * the release does not replace (post()), the value stays.
+ */
+static void release(void)
+{
+    post(SERVO_CMD_RELEASE, 0);
+    if (s.armed && s.pending.kind == SERVO_CMD_RELEASE) {
+        s.dragging      = false;
+        s.commanded_deg = rest_deg();
+        s.at_rest       = true;
+    }
+    ++s.ctrl_rev;
+}
+
 /* The fastest frame rate the profile in force allows with these pulses:
  * the pause rule, under the profile's own ceiling. */
 static uint16_t max_rate_for(int t, uint16_t max_us)
@@ -1215,7 +1236,10 @@ void servo_screen_released(uint16_t pause_seq)
     s.driving       = false;
     s.paused        = false;
     s.dr.on      = false;
-    s.commanded_deg = 0.0f;
+    if (s.armed) {
+        s.commanded_deg = rest_deg();
+        s.at_rest       = true;
+    }
     ++s.ctrl_rev;
 }
 
@@ -1439,7 +1463,7 @@ void servo_screen_set_sweep(bool able)
         /* The panel would go on repeating a sweep the coprocessor no longer
          * takes: what it holds is ended, and the surfaces rest. */
         stop_sweep();
-        post(SERVO_CMD_RELEASE, 0);
+        release();
     }
     stop_sweep();
     ++s.ctrl_rev;
@@ -1515,13 +1539,8 @@ static void reissue(void)
          * written, so a release that reaches it before the arm lands is the
          * profile the pins arm under.
          */
-        post(SERVO_CMD_RELEASE, 0);
+        release();
         s.arm_profile_rev = s.profile_rev;
-    }
-    /* At rest since the arm: the value is the rest of the profile now in
-     * force, which is where the release above puts the pin. */
-    if (s.armed && s.at_rest) {
-        s.commanded_deg = rest_deg();
     }
 }
 
@@ -1664,8 +1683,10 @@ void servo_screen_cancel_arm(void)
      * disarm, rather than at the centre a run's end on an armed bench
      * releases to. */
     const float driven = s.commanded_deg;
+    const bool  rested = s.at_rest;
     test_end_now(SERVO_TEST_AB_STOP);
     s.commanded_deg = driven;
+    s.at_rest       = rested;
     if (s.test_down || s.test_hold.held_s > 0.0f) {
         ui_hold_reset(&s.test_hold);
         s.test_down = false;
@@ -2367,13 +2388,9 @@ static void test_apply(const servo_test_do_t *d)
         supply_screen_ask_off();
     }
     if (d->release) {
-        post(SERVO_CMD_RELEASE, 0);
-        /* The horn is drawn released only where the pin follows: a run a
-         * disarm ended leaves the value where the run last drove it. */
-        if (value_live()) {
-            s.commanded_deg = 0.0f;
-        }
-        ++s.ctrl_rev;
+        /* The value goes to the rest only where the pin follows: a run a
+         * disarm ended leaves it where the run last drove it. */
+        release();
     }
 }
 
@@ -3498,8 +3515,7 @@ static void event_body(const touch_event_t *evt)
         } else if (gfx_rect_contains(s.release_btn, px, py)) {
             test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
-            post(SERVO_CMD_RELEASE, 0);
-            ++s.ctrl_rev;
+            release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
             if (s.arm_down) {
                 /* The gesture belongs to the contact that began it.  A second

@@ -175,6 +175,12 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * shown is the one last driven.  At a disarm a drag ends, and a position, a
  * sweep or a hold still waiting to be taken is not sent; the knob's is
  * withdrawn with the value it replaced.
+ *
+ * RELEASE on an armed bench is the arm's rule again: the value becomes the
+ * rest, a drag ends, and the next input starts from there -- for the
+ * button, the release a run's end posts, and the one a change of profile
+ * posts on a resting bench.  On a disarmed bench RELEASE is posted and the
+ * value stays.
  */
 void servo_screen_set_armed(bool armed);
 

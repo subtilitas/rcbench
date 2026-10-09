@@ -281,17 +281,42 @@ static void reset(void)
 }
 
 /*
+ * Whether a control may change the throttle: only while the ESC follows it.
+ * Not on a disarmed bench, which the slider, its step buttons and the knob
+ * would otherwise load with a value for the next arm, and not under a disarm
+ * waiting to be taken, which every throttle is dropped behind (post()).
+ */
+static bool value_live(void)
+{
+    return s.armed && s.pending.kind != MOTOR_CMD_DISARM;
+}
+
+/* End a drag on the track.  The finger owned the slider in this frame, so
+ * the knob stays out of the frame. */
+static void end_drag(void)
+{
+    if (s.slider.dragging) {
+        s.knob_finger = true;
+    }
+    ui_slider_release(&s.slider);
+}
+
+/*
  * One slot, coalescing.  The pending command is overwritten rather than
  * queued: the application drains it every frame, and the latest throttle
  * position is the one that matters.
  *
  * Exception: a pending DISARM survives everything.  Two taps inside one
  * drain must not let an ARM land on top of a DISARM and re-arm a bench that
- * was stopped a moment before.
+ * was stopped a moment before.  A drag on the track ends where the disarm
+ * is posted: the value is not live behind it.
  */
 static void post(motor_cmd_kind_t kind, float value)
 {
     s.knob_pending = false;
+    if (kind == MOTOR_CMD_DISARM) {
+        end_drag();
+    }
     if (s.pending.kind == MOTOR_CMD_DISARM && kind != MOTOR_CMD_DISARM) {
         return;
     }
@@ -370,25 +395,15 @@ void motor_screen_cancel_arm(void)
     }
 }
 
-/* End a drag on the track.  The finger owned the slider in this frame, so
- * the knob stays out of the frame. */
-static void end_drag(void)
-{
-    if (s.slider.dragging) {
-        s.knob_finger = true;
-    }
-    ui_slider_release(&s.slider);
-}
-
 /*
- * An arm starts from nothing: the slider, the readout and the step buttons,
- * which all read the slider's value, are at 0 %, whatever was set on the
- * disarmed bench.  A throttle waiting to be collected was set before the arm
- * and goes with it, and so does what the knob would put back.  A drag under
- * way is released, so a finger resting on the track commands nothing until
- * it presses again: ui_slider_set() re-anchors a drag on the new value and
- * keeps its origin, and the next move would add the whole travel since the
- * press to 0 %.
+ * An arm starts from nothing and a disarm ends at nothing: the slider, the
+ * readout and the step buttons, which all read the slider's value, are at
+ * 0 %.  A throttle waiting to be collected was set on the other side of the
+ * edge and goes with it, and so does what the knob would put back.  A drag
+ * under way is released, so a finger resting on the track commands nothing
+ * until it presses again: ui_slider_set() re-anchors a drag on the new value
+ * and keeps its origin, and the next move would add the whole travel since
+ * the press to 0 %.
  */
 static void throttle_from_zero(void)
 {
@@ -435,10 +450,10 @@ void motor_screen_set_armed(bool armed)
             s.arm_asked = false;
         } else {
             s.arm_asked = false;
-            /* The application returns the value to zero on this edge; the
-             * drag ends with the run, for the reason throttle_from_zero()
-             * gives. */
-            end_drag();
+            /* The value shown on a disarmed bench is 0 %, and no control
+             * moves it from there (value_live()).  A throttle not yet
+             * collected is not sent to the disarmed bench. */
+            throttle_from_zero();
         }
         ui_plot_set_running(&s.plot, armed);
     }
@@ -518,6 +533,11 @@ void motor_screen_knob(float span_fraction)
             && s.pending.kind != MOTOR_CMD_THROTTLE)) {
         return;
     }
+    /* A turn while the value is not live moves nothing and is not kept: the
+     * next turn after an arm starts from 0 %. */
+    if (!value_live()) {
+        return;
+    }
     const float before = s.slider.value;
     const bool  was_knob = s.knob_pending;
     const bool  had_cmd  = s.pending.kind == MOTOR_CMD_THROTTLE;
@@ -550,14 +570,22 @@ static void event(const touch_event_t *evt)
          * what was drawn there is void -- not merely the chrome's. */
         motor_invalidate();
     }
-    const bool was_dragging = s.slider.dragging;
-    const bool slider_moved = ui_slider_event(&s.slider, evt);
-    if (was_dragging || s.slider.dragging) {
-        s.knob_finger = true;
-    }
-    if (slider_moved) {
-        post(MOTOR_CMD_THROTTLE, s.slider.value);
-        ++s.thr_rev;
+    /* Refused while the value is not live: the track takes no press, so a
+     * bench armed under a finger resting on it moves nothing until the next
+     * press, and a drag under way ends. */
+    const bool live = value_live();
+    if (!live) {
+        end_drag();
+    } else {
+        const bool was_dragging = s.slider.dragging;
+        const bool slider_moved = ui_slider_event(&s.slider, evt);
+        if (was_dragging || s.slider.dragging) {
+            s.knob_finger = true;
+        }
+        if (slider_moved) {
+            post(MOTOR_CMD_THROTTLE, s.slider.value);
+            ++s.thr_rev;
+        }
     }
 
     const int x = evt->point.x, y = evt->point.y;
@@ -566,6 +594,11 @@ static void event(const touch_event_t *evt)
          * is a fine adjustment and it should feel immediate. */
         if (gfx_rect_contains(s.down_rect, x, y)
             || gfx_rect_contains(s.up_rect, x, y)) {
+            /* A throttle like any other, and refused like one: nothing
+             * is pressed, moved or posted. */
+            if (!live) {
+                return;
+            }
             const bool up = gfx_rect_contains(s.up_rect, x, y);
             motor_screen_set_throttle(s.slider.value + (up ? 1.0f : -1.0f));
             post(MOTOR_CMD_THROTTLE, s.slider.value);
@@ -1223,11 +1256,14 @@ static void render(gfx_canvas_t *c, int buffer_index)
     gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
 
+    /* Dimmed while the bench is disarmed, as a button that takes no press
+     * is: the track and its step buttons take none. */
     ui_button(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 3, true);
+              s.pressed == 3, s.armed);
+    s.slider.dim = !s.armed;
     ui_slider_render(&s.slider, c);
     ui_button(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 4, true);
+              s.pressed == 4, s.armed);
 
     if (!ctrl_moved && !arm_moved) {
         return;
@@ -1238,9 +1274,16 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (!ctrl_moved) {
         return;
     }
-    gfx_text(c, LEFT_X + INNER, HINT_Y,
-             TR(MO_HINT),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    /* How the throttle is moved; disarmed, why it is not, in the words
+     * SERVO's dial uses. */
+    if (s.armed) {
+        gfx_text(c, LEFT_X + INNER, HINT_Y, TR(MO_HINT), &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_FAINT), 1);
+    } else {
+        gfx_text(c, LEFT_X + INNER, HINT_Y,
+                 ui_servo_str(SERVO_STR_START_NOT_ARMED), &gfx_font_8x16,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
     draw_totals(c);
     ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
               ui_theme_color(UI_C_PANEL_SUNK),

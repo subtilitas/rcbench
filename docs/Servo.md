@@ -120,7 +120,9 @@ trim not applied. With the defaults (RANGE 80 %, TRAVEL +/-90 deg, PULSE MIN
 only.
 
 A run that completes also switches the output off and releases the servo to
-its centre. A step's first two moves, centre to the low end and on to the
+its centre. On the bench it leaves armed, the commanded value shown is then
+the rest, as after RELEASE: 1500 us for STANDARD PWM whatever the trim, and
+the next drag or knob turn starts from it. A step's first two moves, centre to the low end and on to the
 high end, are not counted: they measure each end's holding level. The counted moves then go
 end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
 1000 a step.
@@ -374,7 +376,9 @@ unless the ending was a disarm, STOP or leaving the screen, which disarm.
 A step the run has posted and the panel has not sent when the bench disarms
 or stops is not sent. After a run ended by a disarm, STOP or leaving the
 screen, the horn and COMMANDED stay at the position the run last drove;
-after an ending that leaves the bench armed they show the centre.
+after an ending that leaves the bench armed they show the rest the release
+puts the pins at, 1500 us for STANDARD PWM whatever the trim, and the next
+drag or knob turn starts from it.
 Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
 reading taken after that in which the supply itself reports the output off, no ON is on its way and

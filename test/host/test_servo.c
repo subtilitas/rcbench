@@ -4593,6 +4593,74 @@ TEST_CASE(a_run_ended_by_a_disarm_leaves_no_position_to_send)
     }
 }
 
+/*
+ * A run that ends on an armed bench releases the servo, and the value shown
+ * is the rest the pins go to: 1500 us for STANDARD PWM whatever the trim,
+ * 760 us for NARROW 760.  Ended by its last step, or by STOP TEST on the
+ * left card while it is driven off the centre.
+ */
+static void a_run_ends_armed(int profile, bool by_operator)
+{
+    bench_fresh();
+    short_runs();
+    uint16_t rest = 1500u;
+    if (profile == 1) {
+        choose_type(1);                 /* NARROW 760 */
+        b.sv.cfg.stop_lo_us = 660u;
+        b.sv.cfg.stop_hi_us = 860u;
+        b.sv.position_us = 760.0f;
+        b.cmd = 760u;
+        rest  = 760u;
+    } else if (profile == 2) {
+        open_settings();
+        for (int i = 0; i < 4; ++i) {
+            tap(TRIM_UP_X, ROW_Y(3));   /* +20 us */
+        }
+        close_settings();
+    }
+    (void)last_cmd();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    if (by_operator) {
+        const uint16_t first = (uint16_t)(rest + ((profile == 2) ? 20u : 0u));
+        b.cmd = first;
+        for (int i = 0; i < 2000 && b.cmd == first; ++i) {
+            bench_frames(20u);
+        }
+        CHECK(b.cmd != first);
+        CHECK_EQ(servo_screen_commanded(), b.cmd);
+        tap(BOXBTN_X, BOXBTN_Y);        /* STOP TEST */
+        CHECK(!servo_screen_testing());
+        CHECK_EQ(servo_screen_commanded(), rest);
+        CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+    } else {
+        for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
+            bench_frames(500u);
+        }
+        CHECK(!servo_screen_testing());
+        CHECK(b.released);
+        CHECK_EQ(servo_screen_commanded(), rest);
+    }
+    bench_frames(200u);
+    CHECK_EQ(servo_screen_commanded(), rest);
+    CHECK_EQ(servo_screen_drawn(), rest);
+    /* The first 1 % of the knob goes on from the rest. */
+    servo_screen_knob_frame();
+    servo_screen_knob(0.01f);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(c.value_us, (profile == 1) ? 762u : 1510u);
+}
+
+TEST_CASE(a_run_that_ends_on_an_armed_bench_leaves_the_value_at_the_rest)
+{
+    for (int profile = 0; profile < 3; ++profile) {
+        a_run_ends_armed(profile, true);
+    }
+    a_run_ends_armed(0, false);
+    a_run_ends_armed(2, false);
+}
+
 /* START TEST's hold repaints only its button, a finger that leaves it or a
  * STOP mid-hold starts nothing, and a run's faces draw as a full redraw
  * would. */
@@ -5889,6 +5957,7 @@ int main(void)
     RUN(a_run_above_6_v_starts_through_the_hv_hold);
     RUN(every_way_out_of_a_run_switches_off_and_lets_go);
     RUN(a_run_ended_by_a_disarm_leaves_no_position_to_send);
+    RUN(a_run_that_ends_on_an_armed_bench_leaves_the_value_at_the_rest);
     RUN(the_runs_faces_draw_as_a_full_redraw_would);
     RUN(a_refused_start_says_why);
     RUN(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v);
