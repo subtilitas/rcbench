@@ -324,6 +324,34 @@ void sense_link_event_back(sense_link_t *s, uint32_t ev);
  *  frames it refused. */
 bool sense_link_settled(const sense_link_t *s);
 
+/** The rows of SETUP INTERFACES, for sense_link_unheld(). */
+enum {
+    SENSE_LINK_ROW_I228        = 0x0001,  /**< INA228 on or off         */
+    SENSE_LINK_ROW_I3221       = 0x0002,  /**< INA3221 on or off        */
+    SENSE_LINK_ROW_ENC         = 0x0004,  /**< AS5600 on or off         */
+    SENSE_LINK_ROW_PINS        = 0x0008,  /**< Sensor SDA and SCL       */
+    SENSE_LINK_ROW_I228_ADDR   = 0x0010,
+    SENSE_LINK_ROW_I228_SHUNT  = 0x0020,
+    SENSE_LINK_ROW_I228_MAX    = 0x0040,
+    SENSE_LINK_ROW_I3221_ADDR  = 0x0080,
+    SENSE_LINK_ROW_I3221_SHUNT = 0x0100,
+    SENSE_LINK_ROW_I3221_CH    = 0x0200,
+};
+
+/**
+ * The rows whose value as asked is not the one the page holds,
+ * SENSE_LINK_ROW_*: a set-up not written yet -- it rests
+ * SENSE_LINK_SETTLE_MS and waits for an idle bank -- one the page
+ * refused, and a part that is on in the settings and off on the page
+ * because its frame was refused, its pins are unset, both monitors share
+ * an address or the coprocessor is older than the part.  The comparison
+ * is want against held, the two this module writes from.  0 while no
+ * coprocessor answers and before the page has been read: nothing is
+ * known to compare with.  A coprocessor without the page holds no part,
+ * and the parts that are on are named.
+ */
+uint16_t sense_link_unheld(const sense_link_t *s);
+
 /** The capability bits an identity read since the last call brought, into
  *  @p caps; false if none did. */
 bool sense_link_take_caps(sense_link_t *s, uint16_t *caps);

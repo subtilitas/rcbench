@@ -96,7 +96,9 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
  * A SENSE write, validated whole before any of it is stored.  Refused: off
  * the page (BAD_RANGE); a read-only register (READ_ONLY); a value out of
  * its range, a reserved register written other than 0, SDA and SCL not
- * one I2C block's pair while a part is enabled, a pin past the bank,
+ * one I2C block's pair (link_sn_pins_pair()) whatever is enabled -- but
+ * for nothing enabled with SDA or SCL 0, a panel's pins that are not set
+ * -- and while a part is enabled a pin past the bank,
  * reserved, bound to an output or in @p taken, the two parts on one
  * address while both are enabled, the INA3221 enabled with no channel, an
  * INA228 shunt and maximum ina228_calibrate() refuses (past 163.84 mV

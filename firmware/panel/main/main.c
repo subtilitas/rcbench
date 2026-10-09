@@ -5992,6 +5992,12 @@ static void enc_queue(void)
  * from the last SENSE read, the INA228's clipped flag, and its totals in
  * SENSE's finer steps while that read is younger than two polls.
  */
+/* The INTERFACES rows the coprocessor does not hold, for SETUP's marks:
+ * sense_link_unheld() and tone_link_unheld() as of the last poll, and 0
+ * with the link down.  Control task writes, app_main reads. */
+static atomic_uint s_sense_unheld;
+static atomic_uint s_tone_unheld;
+
 static void sense_link_service(bool idle, bench_state_t *bench)
 {
     const sense_setup_t w = sense_wanted();
@@ -6025,6 +6031,8 @@ static void sense_link_service(bool idle, bench_state_t *bench)
     }
     sense_link_alerts();
     atomic_store(&s_enc_held, sense_link_enc_on(&s_sense_link));
+    atomic_store(&s_sense_unheld,
+                 (unsigned)sense_link_unheld(&s_sense_link));
     enc_queue();
 
     const bool sensed = (bench->flags & (uint16_t)LINK_BN_SENSED) != 0u;
@@ -6141,6 +6149,7 @@ static void tone_link_service(void)
         }
     }
     tone_link_alerts();
+    atomic_store(&s_tone_unheld, (unsigned)tone_link_unheld(&s_tone_link));
 }
 
 /*
@@ -6697,6 +6706,8 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
              * link comes back, and the ESC's figures go with the readings. */
             sense_link_lost(&s_sense_link);
             tone_link_lost(&s_tone_link);
+            atomic_store(&s_sense_unheld, 0u);
+            atomic_store(&s_tone_unheld, 0u);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;
             /* And the binding: what the screens show is the last one read,
@@ -7546,6 +7557,9 @@ void app_main(void)
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
+            settings_screen_set_unheld(
+                (uint16_t)atomic_load(&s_sense_unheld),
+                (uint8_t)atomic_load(&s_tone_unheld));
             if (atomic_exchange(&s_sweep_refused, false)) {
                 servo_screen_sweep_refused();
             }

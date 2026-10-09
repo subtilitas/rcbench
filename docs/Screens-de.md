@@ -1353,16 +1353,33 @@ ANSCHLÜSSE:
 | INA228 Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
 | INA228 Höchststrom | 1,0 bis 300,0 A, Schritte von 0,1 A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300 A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der Koprozessor ab. Seine Ablehnung eines Bereichs über 2000 A Vollausschlag bleibt, und 300 A am kleinsten Shunt, 50 µΩ, erreichen sie nicht |
 | INA3221 | EIN, AUS | AUS | die drei Kanäle der Servoschiene |
-| INA3221 Adresse | 0x40 bis 0x43 | 0x40 | das DAOKAI-Modul ab Werk |
+| INA3221 Adresse | 0x40 bis 0x43 | 0x40 | das DAOKAI-Modul mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
 | INA3221 Shunt | 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | einer je Kanal; der R100 des DAOKAI misst bis 1,64 A |
 | INA3221 Kanäle | CH1, CH1+2+3 | CH1 | CH1 ist der des Servotests, CH2 und CH3 die eines synchronisierten Paars |
-| Sensor-SDA | −1, 0 bis 47 | 16 | GPIO des Koprozessors (GPIO: General-Purpose Input/Output); −1, bis er verdrahtet ist |
-| Sensor-SCL | −1, 0 bis 47 | 17 | der GPIO nach SDA |
+| Sensor-SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | GPIO des Koprozessors (GPIO: General-Purpose Input/Output). `-` und `+` gehen von einem dieser Werte zum nächsten und halten bei −1 und bei 26. −1: die Pins sind nicht gesetzt, und auf der Page ist kein Bauteil eingeschaltet |
+| Sensor-SCL | SDA + 1 oder −1 | 17 | der GPIO nach Sensor-SDA, und −1 mit ihm. Die Zeile zeigt den Wert und hat keine Tasten |
 
 ![ANSCHLÜSSE, der INA3221 und die Pins des Busses](img/de/setup-sensors.png)
 
 SDA und SCL sind das Paar eines I2C-Blocks: die GPIO-Nummer von SDA ist
-modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Der Bus läuft mit
+modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Sensor-SDA nimmt nur
+die Pins eines solchen Paars, die das RP2350-CAN herausführt und nicht
+reserviert: GP2 fehlt, weil GP3 der Heartbeat ist, GP8 bis GP12 gehören dem
+CAN-Controller, und GP22, GP24 und GP28 fehlen, weil das Modul GP23, GP25 und
+GP29 nicht herausführt. Die Regel ist die, nach der die SENSE-Page des
+Koprozessors ein Schreiben beurteilt (`link_sn_pins_pair()`,
+`settings_sense_sda_valid()`). Ein Pin, den ein Ausgang, der PD mini oder der
+Phasenabgriff hält, wird trotzdem angeboten, und der Koprozessor lehnt ihn
+ab. Mit Sensor-SDA auf −1 schreibt das Panel ENABLE 0, SDA 0 und SCL 0 auf
+die Page.
+
+Gespeicherte Einstellungen: der Schlüssel `sns_scl` wird nicht gelesen.
+Sensor-SCL wird aus dem gespeicherten Sensor-SDA abgeleitet, und der
+Schlüssel wird mit dem abgeleiteten Wert gespeichert. Ein gespeichertes
+Sensor-SDA außerhalb der Werte oben lädt als 16, ohne Alert und ohne die
+Einstellungen als geändert zu markieren.
+
+Der Bus läuft mit
 400 kHz, und das ist keine Einstellung: der Koprozessor nimmt keinen anderen
 Takt. Ein Messwert am oberen Ende des Bereichs des INA3221, 163,8 mV über dem
 Shunt, wird als übersteuert gezeigt und nie als Wert.
@@ -1394,7 +1411,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `Koprozessor ohne SENSE-Page -- Strommonitore nicht gelesen` | ein Monitor ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
 | `Sensor-SDA oder -SCL nicht gesetzt -- siehe SETUP ANSCHLÜSSE` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
 | `INA228 und INA3221 beide auf 0x40 -- siehe SETUP ANSCHLÜSSE` | beide auf einer Adresse eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `Sensor-Pins GP5/GP6 abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor hat die Pins abgelehnt: kein Paar eines I2C-Blocks, reserviert, an einen Ausgang gebunden oder vom PD mini belegt; beide Monitore bleiben aus |
+| `Sensor-Pins GP16/GP17 abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30 s lang gezeigt oder bis zum Antippen, einmal je Änderung |
 | `INA228 Shunt oder Höchststrom abgelehnt -- siehe SETUP ANSCHLÜSSE` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
 | `INA3221-Einstellung abgelehnt -- siehe SETUP ANSCHLÜSSE` | der INA3221 bleibt aus |
 | `Sensorbus hängt: SDA auf low -- wird freigetaktet` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
@@ -1410,6 +1427,33 @@ weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
 5 s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
 NETZTEIL freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
 nicht unscharf: auf den Messwerten der Monitore löst nichts aus.
+
+#### Eine Zeile, die der Koprozessor nicht hält
+
+![ANSCHLÜSSE, Pins, die der Koprozessor nicht übernommen hat](img/de/setup-unheld.png)
+
+Eine Zeile, deren Wert nicht der ist, den die Page des Koprozessors hält,
+ist markiert: ihr Rand und ihr Wert sind in der Warnfarbe gezeichnet, und
+ihre Hilfezeile lautet `Vom Koprozessor nicht übernommen`. Das Panel
+vergleicht die Einstellung, die es verlangt, mit der, die die Page zuletzt
+bestätigt oder zurückgelesen hat (`sense_link_unheld()`,
+`tone_link_unheld()`). Die Marke gilt für die Zeilen der Strommonitore, für
+Sensor-SDA und Sensor-SCL (eine Marke, die Pins sind ein Frame), für AS5600
+und für die Zeilen des Phasenabgriffs in zwei Gruppen: Phasenabgriff,
+Abgriff-Pin und die zwei Töne, sowie Tonsprung, Abgriff-Pause und Min.
+Perioden.
+
+| Die Marke steht | Bis |
+| --- | --- |
+| ab einer Änderung | das Schreiben bestätigt ist: 500 ms nach der letzten Änderung, und bei den Strommonitoren erst bei unscharfem Prüfstand |
+| auf einem Wert, den der Koprozessor abgelehnt hat | der Wert auf einen geändert ist, den er annimmt; bei anderswo belegten Pins, bis der Versuch alle 5 s angenommen wird |
+| auf INA228, INA3221 oder AS5600 auf EIN, während die Page das Bauteil aus hat | die Ursache weg ist: ein abgelehnter Frame, Sensor-SDA auf −1, beide Monitore auf einer Adresse, ein Koprozessor älter als das Bauteil |
+| nach einem Neustart des Koprozessors oder einem Link-Aufbau auf dem, was seine Page anders liest | das Panel es geschrieben hat |
+
+Keine Zeile ist markiert, solange kein Koprozessor antwortet oder die Page
+nach einem Link-Aufbau noch nicht gelesen ist: es gibt nichts zum
+Vergleichen. AS5600-Mitte gehört dem Panel und wird nie markiert. Der Alert
+auf dem Band ist davon getrennt und bleibt wie oben beschrieben.
 
 ### ANSCHLÜSSE: der Ausgangsencoder
 

@@ -184,6 +184,9 @@ SCREENS = {
     # and drawn on to the INA3221's rows and the bus's pins.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
+    # The same rows with the pins the coprocessor has not taken: the mark on
+    # Sensor SDA and Sensor SCL, and on the INA3221 that is off for them.
+    "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # The same list past them, to the phase tap's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),

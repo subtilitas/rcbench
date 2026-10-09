@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "link_pages.h"
+#include "out_bind.h"
+
 static const char *const k_theme[]     = { "DARK", "LIGHT" };
 static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
 static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
@@ -115,8 +118,8 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * and a range of 1.0 to 300.0 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
      * The defaults are the modules the bench is built with: the MATEK
      * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8 A, and the
-     * DAOKAI INA3221 at 0x40 on its 0.1 Ohm shunts (1.638 A full scale),
-     * reading CH1, on GP16 and GP17.  The bus clock is not a setting: the
+     * DAOKAI INA3221 at 0x40, its A0 bridge closed to GND, on its 0.1 Ohm
+     * shunts (1.638 A full scale), reading CH1, on GP16 and GP17.  The bus clock is not a setting: the
      * page takes 400 kHz and nothing else.  The address keys are new ones:
      * the INA228's old key held an index into four addresses, which read
      * as one of sixteen would name another address.
@@ -137,7 +140,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_INA3221_ADDR] = {
-        "ina3221_adr", "INA3221 address", "Set by its A0 pin; DAOKAI: 0x40", "",
+        "ina3221_adr", "INA3221 address", "DAOKAI: bridge A0 to GND for 0x40", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_addr) },
     [SET_INA3221_MOHM] = {
         "ina3221_mohm", "INA3221 shunt", "Per channel; 100 reads to 1.64 A", "mOhm",
@@ -145,12 +148,19 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_INA3221_CH] = {
         "ina3221_ch", "INA3221 channels", "CH1 the servo test, CH2+3 a pair", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_ch) },
-    /* The bus's pins: coprocessor GPIO, one I2C block's SDA and SCL. */
+    /*
+     * The bus's pins: coprocessor GPIO, one I2C block's SDA and SCL.
+     * Sensor SDA takes the values settings_sense_sda_valid() does and no
+     * other: -1, the pins not set, and the SDA pins the coprocessor's page
+     * can take.  Sensor SCL is derived: the GPIO after SDA, and -1 with
+     * it.  Its key is kept and saved with the value derived, so a panel
+     * build that reads both keys reads a pair.
+     */
     [SET_SENSE_SDA] = {
-        "sns_sda", "Sensor SDA", "Coprocessor GPIO; mod 4 is 0 or 2", "GPIO",
+        "sns_sda", "Sensor SDA", "Coprocessor GPIO; -1: no sensor bus", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },
     [SET_SENSE_SCL] = {
-        "sns_scl", "Sensor SCL", "The GPIO after SDA; -1 until wired", "GPIO",
+        "sns_scl", "Sensor SCL", "Follows Sensor SDA: the GPIO after", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
     /*
      * The output encoder (protocol 4.9): an AS5600 magnetic angle sensor on
@@ -415,6 +425,11 @@ const setting_def_t *settings_def(setting_id_t id)
     return &k_defs[id];
 }
 
+bool settings_derived(setting_id_t id)
+{
+    return id == SET_SENSE_SCL;
+}
+
 const char *settings_category_name(setting_cat_t cat)
 {
     return (cat >= 0 && cat < SET_CAT_COUNT) ? k_cat_names[cat] : "";
@@ -431,8 +446,31 @@ static float snap_to_step(const setting_def_t *d, float v)
     return d->min + roundf((v - d->min) / d->step) * d->step;
 }
 
+bool settings_sense_sda_valid(int gpio)
+{
+    if (gpio == -1) {
+        return true;
+    }
+    if (gpio < 0 || gpio >= (int)OUT_MAX_PIN) {
+        return false;
+    }
+    const unsigned sda = (unsigned)gpio;
+    const uint64_t pair = ((uint64_t)1u << sda)
+                          | ((uint64_t)1u << (sda + 1u));
+    return link_sn_pins_pair(sda, sda + 1u)
+           && (outbind_reserved_mask(OUTBIND_BOARD_PICO_HEADER) & pair) == 0u;
+}
+
 static float coerce(const setting_def_t *d, float v)
 {
+    if (d == &k_defs[SET_SENSE_SDA]) {
+        /* A stored pin the bus cannot have is a stale word, as an enum
+         * out of its range is: the default, not the nearest pin. */
+        const long pin = lrintf(v);
+        return (pin >= (long)d->min && pin <= (long)d->max
+                && settings_sense_sda_valid((int)pin))
+                   ? (float)pin : d->def;
+    }
     switch (d->type) {
     case SET_TYPE_BOOL:
         return (v != 0.0f) ? 1.0f : 0.0f;
@@ -451,6 +489,17 @@ static float coerce(const setting_def_t *d, float v)
     default:
         return clampf(snap_to_step(d, v), d->min, d->max);
     }
+}
+
+/* Sensor SCL from Sensor SDA: the GPIO after it, and -1 with it.  True
+ * when that moved it. */
+static bool derive(void)
+{
+    const float sda = s.values[SET_SENSE_SDA];
+    const float scl = (sda < 0.0f) ? -1.0f : sda + 1.0f;
+    const bool moved = s.values[SET_SENSE_SCL] != scl;
+    s.values[SET_SENSE_SCL] = scl;
+    return moved;
 }
 
 /*
@@ -528,6 +577,9 @@ void settings_init(void)
             for (int i = 0; i < SETTING_COUNT; ++i) {
                 s.values[i] = coerce(&k_defs[i], s.values[i]);
             }
+            /* A stored Sensor SCL is not read: whatever the medium held
+             * for it, it is the pin after the SDA loaded. */
+            (void)derive();
         }
     }
     if (s.store && s.store->load_text) {
@@ -566,7 +618,7 @@ bool settings_get_bool(setting_id_t id)
 void settings_set(setting_id_t id, float value)
 {
     const setting_def_t *d = settings_def(id);
-    if (!d) {
+    if (!d || settings_derived(id)) {
         return;
     }
     float v = coerce(d, value);
@@ -575,15 +627,19 @@ void settings_set(setting_id_t id, float value)
     }
     s.values[id] = v;
     mark_dirty();
+    const bool scl = (id == SET_SENSE_SDA) && derive();
     if (s.observer) {
         s.observer(id);
+        if (scl) {
+            s.observer(SET_SENSE_SCL);
+        }
     }
 }
 
 void settings_adjust(setting_id_t id, int steps)
 {
     const setting_def_t *d = settings_def(id);
-    if (!d || steps == 0) {
+    if (!d || steps == 0 || settings_derived(id)) {
         return;
     }
     if (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) {
@@ -593,6 +649,25 @@ void settings_adjust(setting_id_t id, int steps)
         int cur = (int)lrintf(s.values[id]);
         int next = ((cur + steps) % n + n) % n;
         settings_set(id, (float)next);
+        return;
+    }
+    if (id == SET_SENSE_SDA) {
+        /* From one pin the bus can have to the next, and no further than
+         * the first and the last. */
+        int pin = (int)lrintf(s.values[id]);
+        const int dir = (steps > 0) ? 1 : -1;
+        for (int left = (steps > 0) ? steps : -steps; left > 0; --left) {
+            int next = pin + dir;
+            while (next >= (int)d->min && next <= (int)d->max
+                   && !settings_sense_sda_valid(next)) {
+                next += dir;
+            }
+            if (next < (int)d->min || next > (int)d->max) {
+                break;
+            }
+            pin = next;
+        }
+        settings_set(id, (float)pin);
         return;
     }
     float step = (d->step > 0.0f) ? d->step : 1.0f;

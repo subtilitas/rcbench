@@ -281,6 +281,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_WHEN_IDLE]          = "BEI STILLSTAND",
     [TX_SET_NOT_SAVED]          = "NICHT GESPEICHERT",
     [TX_SET_SAVE]               = "SPEICHERN",
+    [TX_SET_UNHELD]             = "Vom Koprozessor nicht übernommen",
 
     /* -------------------------------------------- plots and hero cards */
     [TX_PLOT_NOW]               = "JETZT",
@@ -1040,11 +1041,11 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_INA228_UOHM]         = "Shunt, über dem der INA228 misst",
     [SET_INA228_MAX_A]        = "Höchststrom; wählt den Messbereich",
     [SET_INA3221_EN]          = "Dreikanal-Monitor der Servoschiene",
-    [SET_INA3221_ADDR]        = "Über Pin A0 gesetzt; DAOKAI: 0x40",
+    [SET_INA3221_ADDR]        = "DAOKAI: 0x40 mit A0-Brücke nach GND",
     [SET_INA3221_MOHM]        = "Je Kanal; 100 misst bis 1.64 A",
     [SET_INA3221_CH]          = "CH1 der Servotest, CH2+3 ein Paar",
-    [SET_SENSE_SDA]           = "Koprozessor-GPIO; mod 4 ist 0 oder 2",
-    [SET_SENSE_SCL]           = "Der GPIO nach SDA; -1: offen",
+    [SET_SENSE_SDA]           = "Koprozessor-GPIO; -1: kein Sensorbus",
+    [SET_SENSE_SCL]           = "Folgt Sensor-SDA: der GPIO danach",
     [SET_ENC_EN]              = "Winkelsensor an der Servowelle",
     [SET_ENC_CENTRE]          = "Zähler in Neutral; 4096 je Umdr.",
     [SET_TONE_EN]             = "Pieptöne des ESC an einer Motorphase",

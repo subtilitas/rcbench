@@ -13,7 +13,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "sense_link.h"
 #include "settings.h"
+#include "tone_link.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -126,6 +128,14 @@ static struct {
     bool     drawn_failed;
 } s;
 
+/*
+ * The rows the coprocessor does not hold, as the control task last said.
+ * Outside s: what the coprocessor holds does not change when the screen
+ * is reset.
+ */
+static uint16_t s_sense_unheld;
+static uint8_t  s_tone_unheld;
+
 void settings_screen_invalidate(void)
 {
     memset(s.chrome_valid, 0, sizeof(s.chrome_valid));
@@ -140,6 +150,44 @@ void settings_apply_ui(void)
     ui_theme_set_brightness(settings_get_int(SET_BRIGHTNESS));
     ui_theme_set_contrast(settings_get_int(SET_CONTRAST));
     ui_router_invalidate();
+}
+
+void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows)
+{
+    if (sense_rows != s_sense_unheld || tone_rows != s_tone_unheld) {
+        s_sense_unheld = sense_rows;
+        s_tone_unheld  = tone_rows;
+        settings_screen_invalidate();
+    }
+}
+
+bool settings_screen_unheld(setting_id_t id)
+{
+    uint16_t sense = 0u;
+    uint8_t  tone  = 0u;
+    switch (id) {
+    case SET_INA228_EN:    sense = SENSE_LINK_ROW_I228;        break;
+    case SET_INA228_ADDR:  sense = SENSE_LINK_ROW_I228_ADDR;   break;
+    case SET_INA228_UOHM:  sense = SENSE_LINK_ROW_I228_SHUNT;  break;
+    case SET_INA228_MAX_A: sense = SENSE_LINK_ROW_I228_MAX;    break;
+    case SET_INA3221_EN:   sense = SENSE_LINK_ROW_I3221;       break;
+    case SET_INA3221_ADDR: sense = SENSE_LINK_ROW_I3221_ADDR;  break;
+    case SET_INA3221_MOHM: sense = SENSE_LINK_ROW_I3221_SHUNT; break;
+    case SET_INA3221_CH:   sense = SENSE_LINK_ROW_I3221_CH;    break;
+    case SET_SENSE_SDA:
+    case SET_SENSE_SCL:    sense = SENSE_LINK_ROW_PINS;        break;
+    case SET_ENC_EN:       sense = SENSE_LINK_ROW_ENC;         break;
+    case SET_TONE_EN:
+    case SET_TONE_PIN:
+    case SET_TONE_F_MIN:
+    case SET_TONE_F_MAX:   tone = TONE_LINK_ROWS_TAP;          break;
+    case SET_TONE_SPLIT:
+    case SET_TONE_GAP:
+    case SET_TONE_PERIODS: tone = TONE_LINK_ROWS_BEEP;         break;
+    default:
+        break;
+    }
+    return (s_sense_unheld & sense) != 0u || (s_tone_unheld & tone) != 0u;
 }
 
 /* ---------------------------------------------------------------- geometry */
@@ -230,6 +278,13 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < row_count()) ? idx : -1;
 }
 
+static setting_id_t row_setting(int index)
+{
+    setting_id_t ids[MAX_ROWS];
+    int n = settings_in_category(s.cat, ids, MAX_ROWS);
+    return (index >= 0 && index < n) ? ids[index] : (setting_id_t)0;
+}
+
 /*
  * Whether (x, y) is on the "-" or the "+" key of row @p index: the key's
  * column over the row's own height.  The gap between two rows belongs to
@@ -242,14 +297,12 @@ static bool on_key(int kind, int index, int x, int y)
     if (x < kx || x >= kx + BTN_W || row_at(x, y) != index) {
         return false;
     }
+    /* A row whose value follows another setting has no keys: a press
+     * there is a press on the list. */
+    if (settings_derived(row_setting(index))) {
+        return false;
+    }
     return gfx_rect_contains(row_rect(index), x, y);
-}
-
-static setting_id_t row_setting(int index)
-{
-    setting_id_t ids[MAX_ROWS];
-    int n = settings_in_category(s.cat, ids, MAX_ROWS);
-    return (index >= 0 && index < n) ? ids[index] : (setting_id_t)0;
 }
 
 /* ------------------------------------------------------------------- input */
@@ -595,8 +648,13 @@ static void draw_row(gfx_canvas_t *c, int index)
         return;
     }
 
+    /* A value the coprocessor does not hold: the row's edge, its value
+     * and one line in place of its help, in the colour of a write that
+     * waits. */
+    const bool unheld = settings_screen_unheld(id);
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_PANEL);
-    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_EDGE);
+    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
+                             unheld ? UI_WARN : UI_EDGE);
 
     /* Label and help are clipped short of the keys rather than allowed to
      * run under them. */
@@ -604,9 +662,10 @@ static void draw_row(gfx_canvas_t *c, int index)
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
     gfx_text(c, r.x + 16, r.y + 3, ui_setting_label(id), UI_FONT_HEAD,
              UI_TEXT, 1);
-    const char *help = ui_setting_help(id);
+    const char *help = unheld ? TR(SET_UNHELD) : ui_setting_help(id);
     if (help[0] != '\0') {
-        gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL,
+                 unheld ? UI_WARN : UI_TEXT_FAINT, 1);
     }
     c->clip = saved;
 
@@ -631,8 +690,11 @@ static void draw_row(gfx_canvas_t *c, int index)
         vw = gfx_text_width(vf, buf, 1);
     }
     int vy = r.y + (ROW_H - gfx_text_height(vf, 1)) / 2;
-    gfx_text(c, ux - vw, vy, buf, vf, UI_ACCENT, 1);
+    gfx_text(c, ux - vw, vy, buf, vf, unheld ? UI_WARN : UI_ACCENT, 1);
 
+    if (settings_derived(id)) {
+        return;                 /* shown, not set here: no keys */
+    }
     bool minus_down = (s.hit_kind == HIT_MINUS && s.hit_index == index);
     bool plus_down  = (s.hit_kind == HIT_PLUS  && s.hit_index == index);
     int by = r.y + (ROW_H - BTN_H) / 2;

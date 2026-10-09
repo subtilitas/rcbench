@@ -25,7 +25,9 @@
 
 #include "log_viewer_screen.h"
 #include "busfault_screen.h"
+#include "sense_link.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "balance_screen.h"
 #include "battery_screen.h"
 #include "analyser_screen.h"
@@ -697,7 +699,8 @@ int main(int argc, char **argv)
     s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
                                                        : UI_LANG_EN;
     s_monitors_on = strcmp(view, "setup-interfaces") == 0
-                    || strcmp(view, "setup-sensors") == 0;
+                    || strcmp(view, "setup-sensors") == 0
+                    || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_tone_fed = strcmp(view, "programmer-stick-tone") == 0;
@@ -1541,9 +1544,17 @@ int main(int argc, char **argv)
      */
     if (strcmp(view, "setup-interfaces") == 0
         || strcmp(view, "setup-sensors") == 0
+        || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0) {
         tap(120, UI_BAND_H + 16 + 2 * 72 + 32);        /* INTERFACES */
-        if (strcmp(view, "setup-sensors") == 0) {
+        if (strcmp(view, "setup-unheld") == 0) {
+            /* The pins refused: their two rows, and the INA3221 the page
+             * leaves off for them. */
+            settings_screen_set_unheld(
+                SENSE_LINK_ROW_PINS | SENSE_LINK_ROW_I3221, 0u);
+        }
+        if (strcmp(view, "setup-sensors") == 0
+            || strcmp(view, "setup-unheld") == 0) {
             /* Four rows of 58 px, and the 8 px the finger travels before
              * the screen takes it for a scroll. */
             drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));

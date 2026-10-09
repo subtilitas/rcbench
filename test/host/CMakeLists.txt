@@ -107,6 +107,11 @@ foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini
     set_tests_properties(${suite} PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()
+# The pins the coprocessor reserves at boot, from its own header, so
+# test_settings holds Sensor SDA's values to the page as the firmware
+# starts it.
+target_include_directories(test_settings PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/include")
 # Bench recordings the servo test replays, by an absolute path, so
 # test_servo_test reads them from whatever directory it is started in.
 target_compile_definitions(test_servo_test PRIVATE

@@ -571,6 +571,60 @@ TEST_CASE(a_refused_frame_is_said_once_and_not_written_again)
     CHECK_EQ(fk.cfg[LINK_TN_F_MIN_HZ], 600u);
 }
 
+/* The frames the page does not hold, for SETUP's marks: from the edit to
+ * the acknowledgement, for as long as a frame is refused, and none while
+ * nothing answers. */
+TEST_CASE(a_frame_is_unheld_until_the_page_takes_it)
+{
+    fresh(8u);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);        /* not read yet */
+    polls(2);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    tone_setup_t w = setup_default();
+    w.pin = 20u;
+    want(&w);
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_TAP);
+    polls(9);
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_TAP);   /* resting */
+    polls(3);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    w.gap_ms = 5u;
+    want(&w);
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_BEEP);
+    polls(12);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+
+    /* A pin the page refuses: unheld across the retries, a lost link and
+     * the link back, until another pin is asked. */
+    fk.bad_pin = 21;
+    w.enable = true;
+    w.pin = 21u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_TAP);
+    polls((int)(2u * TONE_LINK_RETRY_MS / 50u));
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_TAP);
+    tone_link_lost(&tl);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    tone_link_came_up(&tl, minor, now);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    polls(14);
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_TAP);
+    w.pin = 22u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 1u);
+
+    /* A coprocessor without the page holds no tap. */
+    fresh(7u);
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    want(&w);
+    polls(4);
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_TAP);
+    CHECK_EQ(tone_link_unheld(NULL), 0u);
+}
+
 TEST_CASE(a_refused_second_frame_is_its_own_event)
 {
     fresh(8u);
@@ -1394,6 +1448,7 @@ int main(void)
     RUN(switching_the_tap_off_goes_through_whatever_range_is_asked);
     RUN(frames_go_in_the_order_that_leaves_a_valid_set_up);
     RUN(a_refused_frame_is_said_once_and_not_written_again);
+    RUN(a_frame_is_unheld_until_the_page_takes_it);
     RUN(a_refused_second_frame_is_its_own_event);
     RUN(a_pin_held_by_something_else_goes_through_once_it_is_free);
     RUN(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free);

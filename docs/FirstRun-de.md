@@ -279,15 +279,17 @@ einen INA3221 an der Servoversorgung über I2C (Inter-Integrated Circuit) mit
 400 kHz, jede 1 ms. Das ist nicht auf Hardware gelaufen. Jeder Schritt unten
 sagt, wie gut aussieht; alles andere ist ein Befund zum Aufschreiben.
 
-**Bereitlegen:** das MATEK I2C-INA-BM (INA228, 200 µΩ) und das DAOKAI
-INA3221 (0,1 Ω je Kanal, 1,638 A Vollausschlag), jedes auf der Adresse, mit
-der es geliefert wird, zwei
+**Bereitlegen:** das MATEK I2C-INA-BM (INA228, 200 µΩ) auf der Adresse, mit
+der es geliefert wird, das DAOKAI INA3221 (0,1 Ω je Kanal, 1,638 A
+Vollausschlag) mit geschlossener A0-Lötbrücke nach GND für 0x40 (ab Werk
+sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und
+0x41), zwei
 Widerstände 2,2 kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
 **Am Panel einrichten.** SETUP → ANSCHLÜSSE: `INA228` und `INA3221` auf ON.
-Die übrigen Sensoreinstellungen passen ab Werk zu den Modulen oben: INA228
+Die übrigen Sensoreinstellungen passen in der Vorgabe zu den Modulen oben: INA228
 auf 0x45 mit 200 µΩ, INA3221 auf 0x40 mit 0,1 Ω, SDA an GP16 und SCL an
 GP17. Ohne Panel gibt die Build-Option `IOMCU_SENSE_BRINGUP=ON` beide
 Bauteile mit den Vorgaben der Page frei, solange im Flash keine

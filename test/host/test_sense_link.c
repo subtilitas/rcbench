@@ -1028,6 +1028,205 @@ TEST_CASE(every_window_reaches_the_log_once)
  * offered again every SENSE_LINK_BUS_RETRY_MS, so freeing the pin on
  * OUTPUTS lets it through without an edit.
  */
+/* ------------------------------------------------- what the page holds */
+
+#define ROWS_ALL 0x03FFu
+
+/* An edit is not on the page until its frame is written and taken: it
+ * rests SENSE_LINK_SETTLE_MS first. */
+TEST_CASE(a_row_is_unheld_from_its_edit_to_the_acknowledgement)
+{
+    fresh(9u);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);       /* the page not read yet */
+    polls(2);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);       /* read: it holds it all */
+
+    static const struct { unsigned field; uint16_t row; } k[] = {
+        { 0u, SENSE_LINK_ROW_I228 },       { 1u, SENSE_LINK_ROW_I3221 },
+        { 2u, SENSE_LINK_ROW_ENC },        { 3u, SENSE_LINK_ROW_PINS },
+        { 4u, SENSE_LINK_ROW_I228_ADDR },  { 5u, SENSE_LINK_ROW_I228_SHUNT },
+        { 6u, SENSE_LINK_ROW_I228_MAX },   { 7u, SENSE_LINK_ROW_I3221_ADDR },
+        { 8u, SENSE_LINK_ROW_I3221_SHUNT }, { 9u, SENSE_LINK_ROW_I3221_CH },
+    };
+    uint16_t seen = 0u;
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh(9u);
+        polls(2);
+        sense_setup_t w = setup_default();
+        switch (k[i].field) {
+        case 0u: w.i228 = true;         break;
+        case 1u: w.i3221 = true;        break;
+        case 2u: w.as5600 = true;       break;
+        case 3u: w.sda = 18; w.scl = 19; break;
+        case 4u: w.i228_addr = 0x44u;   break;
+        case 5u: w.i228_uohm = 199u;    break;
+        case 6u: w.i228_max_da = 2000u; break;
+        case 7u: w.i3221_addr = 0x41u;  break;
+        case 8u: w.i3221_dmohm = 999u;  break;
+        default: w.i3221_ch = 0x07u;    break;
+        }
+        want(&w);
+        CHECK_EQ(sense_link_unheld(&sl), k[i].row);
+        /* Still resting 450 ms later, and written by 550 ms. */
+        polls(9);
+        CHECK_EQ(sense_link_unheld(&sl), k[i].row);
+        polls(2);
+        CHECK_EQ(sense_link_unheld(&sl), 0u);
+        CHECK(sense_link_settled(&sl));
+        seen |= k[i].row;
+    }
+    CHECK_EQ(seen, ROWS_ALL);
+    CHECK_EQ(sense_link_unheld(NULL), 0u);
+}
+
+/* A write waits for an idle bank, and the row with it. */
+TEST_CASE(a_row_stays_unheld_while_the_bank_drives)
+{
+    fresh(7u);
+    polls(2);
+    idle = false;
+    sense_setup_t w = setup_default();
+    w.i3221_dmohm = 999u;
+    want(&w);
+    polls(60);
+    CHECK_EQ(sense_link_unheld(&sl), SENSE_LINK_ROW_I3221_SHUNT);
+    idle = true;
+    polls(2);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+}
+
+/*
+ * Pins the page refuses stay unheld, with the part that is off for them,
+ * for as long as they are asked: across the retries, a link that goes and
+ * comes back and a coprocessor that starts again.  No coprocessor
+ * answering, nothing is known and nothing is marked.
+ */
+TEST_CASE(refused_pins_stay_unheld_across_a_lost_link_and_a_restart)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i3221 = true;
+    w.sda = 2;            /* GP3 is reserved */
+    w.scl = 3;
+    want(&w);
+    const uint16_t refused = SENSE_LINK_ROW_PINS | SENSE_LINK_ROW_I3221;
+    polls(14);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_BUS_REFUSED);
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+    polls((int)(2u * SENSE_LINK_BUS_RETRY_MS / 50u));
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+
+    sense_link_lost(&sl);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    polls(20);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    sense_link_came_up(&sl, minor, now);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);       /* not read yet */
+    polls(1);
+    CHECK_EQ(sense_link_unheld(&sl), refused);  /* read, written, refused */
+    polls(20);
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+
+    /* The coprocessor starts again at its defaults. */
+    sense_page_init(&pg);
+    sense_link_lost(&sl);
+    sense_link_came_up(&sl, minor, now);
+    polls(20);
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+
+    /* Pins it takes: both rows are held. */
+    w.sda = 18;
+    w.scl = 19;
+    want(&w);
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 18u);
+
+    /* A restart that loses that: unheld from the read to the write. */
+    sense_page_init(&pg);
+    sense_link_lost(&sl);
+    sense_link_came_up(&sl, minor, now);
+    sense_link_op_t op;
+    CHECK(sense_link_next(&sl, now, true, &op));
+    CHECK_EQ(op.kind, SENSE_LINK_OP_READ_SETUP);
+    uint16_t regs[LINK_MAX_REGS];
+    CHECK_EQ(far_exchange(&op, regs), SENSE_LINK_ACK);
+    sense_link_done(&sl, SENSE_LINK_ACK, regs, now);
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+    polls(4);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I3221);
+}
+
+/* A part's frame the page refuses: its values, and the part left off. */
+TEST_CASE(a_refused_part_frame_leaves_its_rows_and_its_switch_unheld)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i228_uohm = 20000u;
+    w.i228_max_da = 3000u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl),
+             SENSE_LINK_ROW_I228 | SENSE_LINK_ROW_I228_SHUNT
+                 | SENSE_LINK_ROW_I228_MAX);
+    w.i228_max_da = 80u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+}
+
+/* A part that is on in the settings and that the page cannot have on. */
+TEST_CASE(a_part_the_page_cannot_enable_is_unheld)
+{
+    /* One address for both monitors: neither is enabled. */
+    fresh(9u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i228_addr = 0x40u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl),
+             SENSE_LINK_ROW_I228 | SENSE_LINK_ROW_I3221);
+
+    /* The pins not set: the part is off, and the pins are written. */
+    fresh(9u);
+    w = setup_default();
+    w.i3221 = true;
+    w.sda = -1;
+    w.scl = -1;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl), SENSE_LINK_ROW_I3221);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 0u);
+    CHECK_EQ(pg.sense[LINK_SN_SCL_PIN], 0u);
+    w.i3221 = false;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+
+    /* A 4.8 coprocessor has no encoder; a 4.6 one no page. */
+    fresh(8u);
+    w = setup_default();
+    w.as5600 = true;
+    w.i228 = true;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl), SENSE_LINK_ROW_ENC);
+    fresh(6u);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    w.i3221_dmohm = 999u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl),
+             SENSE_LINK_ROW_I228 | SENSE_LINK_ROW_ENC);
+    CHECK_EQ(to_sense, 0u);
+}
+
 TEST_CASE(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free)
 {
     fresh(7u);
@@ -1519,6 +1718,11 @@ RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
     RUN(a_waiting_event_says_what_its_read_saw);
     RUN(an_event_that_never_reached_the_band_goes_back);
     RUN(every_window_reaches_the_log_once);
+    RUN(a_row_is_unheld_from_its_edit_to_the_acknowledgement);
+    RUN(a_row_stays_unheld_while_the_bank_drives);
+    RUN(refused_pins_stay_unheld_across_a_lost_link_and_a_restart);
+    RUN(a_refused_part_frame_leaves_its_rows_and_its_switch_unheld);
+    RUN(a_part_the_page_cannot_enable_is_unheld);
     RUN(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);

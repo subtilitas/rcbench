@@ -285,6 +285,23 @@ void tone_link_event_back(tone_link_t *t, uint16_t ev);
  *  frames it refused. */
 bool tone_link_settled(const tone_link_t *t);
 
+/** The rows of SETUP INTERFACES, for tone_link_unheld(): the first frame's
+ *  -- Phase tap, Tap pin and the two tones -- and the second's -- pitch
+ *  split, gap and periods. */
+enum {
+    TONE_LINK_ROWS_TAP  = 0x01,
+    TONE_LINK_ROWS_BEEP = 0x02,
+};
+
+/**
+ * The frames whose values as asked are not the ones the page holds,
+ * TONE_LINK_ROWS_*: not written yet, or refused.  The comparison is want
+ * against held, the two this module writes from.  0 while no coprocessor
+ * answers and before the page has been read.  A coprocessor without the
+ * page holds no tap, and a tap that is on is named.
+ */
+uint8_t tone_link_unheld(const tone_link_t *t);
+
 /** The beeps the panel has read, newest first, at most @p max; how many. */
 unsigned tone_link_beeps(const tone_link_t *t, tone_beep_t *out,
                          unsigned max);

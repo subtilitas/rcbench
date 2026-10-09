@@ -206,6 +206,105 @@ TEST_CASE(the_bus_is_refused_on_pins_that_are_not_one_blocks_pair)
     CHECK_EQ(sense_page_hz(&pg), 400000u);
 }
 
+/*
+ * A pair the bus can never open is refused when it is written, part
+ * enabled or not, and the page keeps the pins it had: with no part enabled
+ * the page took GP15/GP17 and refused the part enabled afterwards.
+ */
+TEST_CASE(a_pair_that_is_no_blocks_is_refused_with_nothing_enabled)
+{
+    fresh();
+    CHECK_EQ(bus(0u, 15u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(0u, 15u, 16u, 400u, 0u), LINK_NACK_BAD_VALUE); /* SDA odd */
+    CHECK_EQ(bus(0u, 16u, 18u, 400u, 0u), LINK_NACK_BAD_VALUE); /* not +1 */
+    CHECK_EQ(bus(0u, 17u, 16u, 400u, 0u), LINK_NACK_BAD_VALUE); /* swapped */
+    CHECK_EQ(bus(0u, 16u, 16u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(0u, 1u, 2u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SN_SDA_PIN), 16u);
+    CHECK_EQ(reg(LINK_SN_SCL_PIN), 17u);
+    /* One register of the pair alone is judged with the one the page has. */
+    const uint16_t sda = 15u;
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_SDA_PIN, 1u, &sda, &o, 0u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SN_SDA_PIN), 16u);
+    /* A pair is taken with nothing enabled wherever it is: who holds the
+     * pins is judged when a part is enabled. */
+    CHECK_EQ(bus(0u, 2u, 3u, 400u, 0u), 0u);        /* GP3 is reserved */
+    CHECK_EQ(bus(1u, 2u, 3u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(0u, 4u, 5u, 400u, 0u), 0u);        /* GP4 is an output */
+    CHECK_EQ(bus(0u, 18u, 19u, 400u, 0u), 0u);
+    CHECK_EQ(bus(2u, 18u, 19u, 400u, 0u), 0u);
+}
+
+/*
+ * Pins that are not set: a panel writes 0 for a pin at -1, with nothing
+ * enabled.  Those frames are taken, as they were, so a panel that unsets
+ * a pin switches the parts off and lets go of the pins.
+ */
+TEST_CASE(pins_written_as_not_set_are_taken_with_nothing_enabled)
+{
+    fresh();
+    CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(sense_page_pins(&pg), BIT(16) | BIT(17));
+    CHECK_EQ(bus(0u, 0u, 17u, 400u, 0u), 0u);       /* SDA -1 */
+    CHECK_EQ(sense_page_pins(&pg), 0u);
+    CHECK_EQ(bus(0u, 16u, 0u, 400u, 0u), 0u);       /* SCL -1 */
+    CHECK_EQ(bus(0u, 0u, 0u, 400u, 0u), 0u);        /* both */
+    CHECK_EQ(reg(LINK_SN_SDA_PIN), 0u);
+    CHECK_EQ(reg(LINK_SN_SCL_PIN), 0u);
+    /* A part's frame goes through under them. */
+    CHECK_EQ(i3221(0x41u, 500u, 0x01u, 0u), 0u);
+    /* And they enable nothing. */
+    CHECK_EQ(bus(1u, 0u, 0u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(1u, 0u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(1u, 16u, 0u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), 0u);
+    CHECK_EQ(bus(1u, 0u, 1u, 400u, 0u), 0u);        /* GP0/GP1 is a pair */
+}
+
+/*
+ * A set-up kept in flash goes through the page's write at boot, twelve
+ * registers at once.  One with a pair no block has is refused whole and
+ * the page starts at its defaults; the panel writes what differs at
+ * link-up.
+ */
+TEST_CASE(a_saved_set_up_with_no_blocks_pair_leaves_the_defaults)
+{
+    fresh();
+    uint16_t saved[LINK_SN_CONFIG_COUNT];
+    sense_page_defaults(saved);
+    saved[LINK_SN_SDA_PIN] = 15u;
+    saved[LINK_SN_I3221_SHUNT_DMOHM] = 999u;
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_ENABLE,
+                              (uint8_t)LINK_SN_CONFIG_COUNT, saved, &o, 0u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SN_SDA_PIN), 16u);
+    CHECK_EQ(reg(LINK_SN_I3221_SHUNT_DMOHM), SENSE_DEFAULT_I3221_DMOHM);
+    saved[LINK_SN_SDA_PIN] = 16u;
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_ENABLE,
+                              (uint8_t)LINK_SN_CONFIG_COUNT, saved, &o, 0u),
+             0u);
+    CHECK_EQ(reg(LINK_SN_I3221_SHUNT_DMOHM), 999u);
+}
+
+/* The rule itself, at its edges. */
+TEST_CASE(one_blocks_pair_is_an_even_sda_and_the_gpio_after_it)
+{
+    for (unsigned sda = 0u; sda < 64u; ++sda) {
+        for (unsigned scl = 0u; scl < 64u; ++scl) {
+            const bool pair = (sda % 4u == 0u || sda % 4u == 2u)
+                              && scl == sda + 1u;
+            if (link_sn_pins_pair(sda, scl) != pair) {
+                T_FAIL("GP%u/GP%u", sda, scl);
+            }
+        }
+    }
+    CHECK(link_sn_pins_pair(0u, 1u));
+    CHECK(!link_sn_pins_pair(1u, 2u));
+    CHECK(!link_sn_pins_pair(0u, 0u));
+    CHECK(!link_sn_pins_pair(65535u, 0u));      /* no wrap to GP0 */
+}
+
 TEST_CASE(the_bus_is_refused_on_pins_something_else_holds)
 {
     fresh();
@@ -1257,6 +1356,10 @@ int main(void)
     RUN(the_ina228_set_up_is_taken_when_the_driver_calibrates_it);
     RUN(the_ina3221_full_scale_follows_from_its_shunt);
     RUN(the_bus_is_refused_on_pins_that_are_not_one_blocks_pair);
+    RUN(a_pair_that_is_no_blocks_is_refused_with_nothing_enabled);
+    RUN(pins_written_as_not_set_are_taken_with_nothing_enabled);
+    RUN(a_saved_set_up_with_no_blocks_pair_leaves_the_defaults);
+    RUN(one_blocks_pair_is_an_even_sda_and_the_gpio_after_it);
     RUN(the_bus_is_refused_on_pins_something_else_holds);
     RUN(every_value_is_held_to_its_range);
     RUN(two_parts_enabled_answer_at_two_addresses);

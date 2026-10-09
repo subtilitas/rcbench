@@ -263,15 +263,16 @@ INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400 kHz,
 every 1 ms. This has not run on hardware. Every step below says what good
 looks like; anything else is a finding to write down.
 
-**Have to hand:** the MATEK I2C-INA-BM (INA228, 200 µΩ) and the DAOKAI
-INA3221 (0.1 Ω per channel, 1.638 A full scale), each at the address it
-ships with, two
+**Have to hand:** the MATEK I2C-INA-BM (INA228, 200 µΩ) at the address it
+ships with, the DAOKAI INA3221 (0.1 Ω per channel, 1.638 A full scale) with
+its A0 solder bridge closed to GND for 0x40 (as shipped all four A0 bridges
+are open and the address floats between 0x40 and 0x41), two
 2.2 kΩ resistors, a multimeter, a scope or logic analyser with I2C decode,
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
 **Set it up on the panel.** SETUP → INTERFACES: `INA228` and `INA3221` ON.
-The other sensor settings default to the modules above as shipped: INA228
+The other sensor settings default to the modules above: INA228
 at 0x45 with 200 µΩ, INA3221 at 0x40 with 0.1 Ω, SDA on GP16 and SCL on
 GP17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
 parts at the page's defaults while no set-up is stored in flash:
