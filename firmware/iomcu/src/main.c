@@ -27,7 +27,6 @@
 #include "bench_state.h"
 #include "can_selftest.h"
 #include "heartbeat.h"
-#include "link_control.h"
 #include "link_dev.h"
 #include "link_pages.h"
 #include "dshot.h"
@@ -39,6 +38,7 @@
 #include "outputs_pages.h"
 #include "pd_uart.h"
 #include "pdmini.h"
+#include "safety_gate.h"
 #include "sense_core1.h"
 #include "sense_page.h"
 #include "servo_page.h"
@@ -166,9 +166,28 @@ static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+/*
+ * STATUS's state and fault registers.  The state and the link and heartbeat
+ * bits are the gate's (safety_gate_status()); the arm latch is on neither.
+ */
+static void status_gate(iomcu_state_t *s)
+{
+    uint16_t faults = 0;
+    safety_gate_status(&s_beat, &s_dev, s->control,
+                       &s->status[LINK_ST_STATE], &faults);
+    if (out_store_is_off()) {
+        faults |= (uint16_t)LINK_FAULT_STORE_OFF;
+    }
+    s->status[LINK_ST_FAULTS] = faults;
+}
+
 static void status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
+    /* As of the last pass rather than the last 50 Hz sample: the panel
+     * writes an arm once the heartbeat bit reads clear, and a bit up to
+     * 20 ms old would hold that arm back a poll. */
+    status_gate(s);
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->status[off + i];
     }
@@ -280,6 +299,12 @@ static void hw_apply(void)
     hw_apply_only(0xFFu);
 }
 
+/* Armed, or asked to arm by a frame served earlier in this pass. */
+static bool bank_armed(const iomcu_state_t *s)
+{
+    return outputs_driving(&s_outputs) || s->control[LINK_CT_ARM] != 0u;
+}
+
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
@@ -297,6 +322,13 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
     const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
     if (nack != 0u) {
         return nack;
+    }
+    /* Not a role, nor anything of a throttle channel, while the bench is
+     * armed or has been asked to arm in this pass: the bank takes the ARM
+     * register only after the link is served. */
+    if (outputs_chan_cfg_armed_check(s->chan_cfg, next, bank_armed(s))
+        != 0u) {
+        return LINK_NACK_BAD_VALUE;
     }
     /* Not a role change that would split a PWM slice under the SERVO
      * page's rate: refused whole, rather than taken with an output left
@@ -480,7 +512,7 @@ static uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
     const uint8_t nack =
         checked ? supply_page_wire_write(&s_supply, &s_outputs)
                 : supply_page_write(&s_supply, off, n, in, &s_outputs,
-                                    s_beat.alive && !s_dev.failsafe);
+                                    safety_gate_supply_ok(&s_beat, &s_dev));
     if (nack != 0u) {
         return nack;
     }
@@ -810,6 +842,11 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     if (nack != 0u) {
         return nack;
     }
+    /* No slot changes under an armed bank, and the binding in force,
+     * written again, is taken without binding anything anew. */
+    if (bank_armed(s)) {
+        return outputs_slots_armed_check(s->slots, next, true);
+    }
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
      * and a restart would drive it on the module's pin. */
     if (supply_page_slots_check(&s_supply, next) != 0u) {
@@ -880,29 +917,17 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     /*
-     * The page's rules are link_control_write()'s, host-tested: every
+     * The page's rules are link_control_write()'s and whether the bench may
+     * arm is safety_gate_control_write()'s, both host-tested: every
      * register of the frame is validated before any is stored, so a refused
-     * write leaves the page as it was and lifts no latched failsafe.  What
-     * is decided here is whether the bench may arm -- the coprocessor's
-     * call, not the panel's -- and what a clear does.
+     * write leaves the page as it was and lifts no latch, and a CLEAR
+     * releases the failsafe and the arm latch.  The decision is the
+     * coprocessor's, not the panel's.
      */
-    bool cleared = false;
-    const uint8_t nack = link_control_write(s->control, off, n, in,
-                                            !s_dev.failsafe && s_beat.alive,
-                                            &cleared);
+    const uint8_t nack = safety_gate_control_write(s->control, off, n, in,
+                                                   &s_beat, &s_dev);
     if (nack != 0u) {
         return nack;
-    }
-    if (cleared) {
-        /*
-         * The clock of this pass, as recorded by the dispatcher, not a
-         * fresh read.  A fresh read is later than the `now` that
-         * link_dev_tick() receives a few lines further on, and the
-         * wrap-safe comparison there reads a timestamp in the future as
-         * 4,294,967,295 ms of silence, which re-arms the failsafe
-         * immediately.
-         */
-        link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
     }
     /*
      * The throttle rides the control page rather than the CHANNELS page, so
@@ -1103,14 +1128,15 @@ static const link_page_t k_pages[] = {
  * software involved.  It cannot tell a heartbeat from noise: a ringing line,
  * a short to a clock or a floating input next to a switching supply all
  * retrigger it.  heartbeat_mon_t knows the expected period and rejects what
- * cannot be a 39 Hz render loop.
+ * cannot be the panel's 5 ms control task edging every 20 ms.
  *
- * The pin is sampled in the main loop rather than by an interrupt.  The loop
- * has no blocking call and turns over far faster than HEARTBEAT_MIN_GAP_MS
- * (4 ms), so a sample cannot miss an edge the monitor would accept; the
- * slowest thing in the loop is a printf every 3 s.  An ISR (interrupt
- * service routine) would notice edges faster than the floor, which the
- * monitor rejects anyway.
+ * The pin is sampled in the main loop rather than by an interrupt.  A pass
+ * that turns over faster than HEARTBEAT_MIN_GAP_MS (4 ms) cannot miss an
+ * edge the monitor would accept.  The pass time is not measured: a printf
+ * every 3 s goes to USB (Universal Serial Bus) stdio, and the supply's
+ * UART send blocks while its PIO FIFO is full.  An ISR (interrupt service
+ * routine) would notice edges faster than the floor, which the monitor
+ * rejects anyway.
  */
 static bool s_beat_level;
 
@@ -1125,15 +1151,16 @@ static void heartbeat_init(void)
     s_beat_level = gpio_get(IOMCU_HEARTBEAT_PIN);
 }
 
-/** Sample the line; returns whether it may currently be believed. */
-static bool heartbeat_poll(uint32_t now)
+/** Sample the line; returns whether its level changed since the last
+ *  sample.  safety_gate_step() hands the edge to the monitor. */
+static bool heartbeat_edge(void)
 {
     const bool level = gpio_get(IOMCU_HEARTBEAT_PIN);
-    if (level != s_beat_level) {
-        s_beat_level = level;
-        heartbeat_mon_edge(&s_beat, now);
+    if (level == s_beat_level) {
+        return false;
     }
-    return heartbeat_mon_alive(&s_beat, now);
+    s_beat_level = level;
+    return true;
 }
 
 /* ------------------------------------------------------------ the CAN bus */
@@ -1456,23 +1483,7 @@ static void sample(void)
     sense_page_bench(&s_sense, &s_sense_snap, s_run_gen, driving, &s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
 
-    s_state.status[LINK_ST_STATE] =
-        (s_dev.failsafe || !s_beat.alive)
-            ? (uint16_t)LINK_STATE_FAILSAFE
-            : (s_state.control[LINK_CT_ARM] != 0
-                   ? (uint16_t)LINK_STATE_ARMED
-                   : (uint16_t)LINK_STATE_IDLE);
-    uint16_t faults = 0;
-    if (s_dev.failsafe) {
-        faults |= (uint16_t)LINK_FAULT_LINK_SILENT;
-    }
-    if (!s_beat.alive) {
-        faults |= (uint16_t)LINK_FAULT_HEARTBEAT;
-    }
-    if (out_store_is_off()) {
-        faults |= (uint16_t)LINK_FAULT_STORE_OFF;
-    }
-    s_state.status[LINK_ST_FAULTS] = faults;
+    status_gate(&s_state);
 
     const uint32_t up = (uint32_t)to_ms_since_boot(get_absolute_time());
     s_state.status[LINK_ST_UPTIME_MS_LO] = (uint16_t)(up & 0xFFFFu);
@@ -1568,9 +1579,10 @@ int main(void)
      * Then what was saved, over the defaults.  This configures the outputs;
      * it does not drive them.  Every driver is gated by outputs_driving(),
      * which is the bank's armed flag, and this end sets that flag only while
-     * the ARM register is set, the link is out of failsafe and the heartbeat
-     * is trusted, so a restored binding claims its pins and holds them at
-     * idle until somebody arms.  The channels are not restored: a command is
+     * the ARM register is set, the link is out of failsafe, the heartbeat is
+     * trusted and the arm latch is clear.  The latch is set from start-up
+     * until a CLEAR arrives, so a restored binding claims its pins and
+     * holds them at idle until somebody arms.  The channels are not restored: a command is
      * not a configuration, and a bench that came back holding the last
      * throttle it was given is exactly what must not happen.
      */
@@ -1790,12 +1802,14 @@ int main(void)
          *
          * After can_service() above, so a frame that arrived this pass has
          * already cleared the silence before it is judged.
+         *
+         * safety_gate_step() is the decision, host-tested: either edge
+         * sets the arm latch, and only a CLEAR releases it.
          */
-        const bool was_beating = s_beat.alive;
-        if (!heartbeat_poll(now) && was_beating) {
-            outputs_off();   /* fires on the edge only */
-        }
-        if (link_dev_tick(&s_dev, now)) {
+        const safety_gate_t gate =
+            safety_gate_step(&s_beat, heartbeat_edge(), &s_dev,
+                             s_state.control, now);
+        if (gate.off) {
             outputs_off();   /* fires on the edge only */
         }
 
@@ -1807,10 +1821,7 @@ int main(void)
          * not refreshed here for the same reason: a channel is alive because
          * the host wrote it.
          */
-        outputs_arm(&s_outputs,
-                    s_state.control[LINK_CT_ARM] != 0
-                        && !s_dev.failsafe && s_beat.alive,
-                    now);
+        outputs_arm(&s_outputs, gate.arm, now);
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -1839,7 +1850,7 @@ int main(void)
          * whenever the panel's heartbeat is not there to switch it off. */
         /* The page first, so a heartbeat lost this pass reaches the driver
          * as an OFF before it steps and can send an ON already queued. */
-        supply_page_step(&s_supply, s_beat.alive && !s_dev.failsafe,
+        supply_page_step(&s_supply, safety_gate_supply_ok(&s_beat, &s_dev),
                          s_pd_open ? &s_pd : NULL);
         /* A wiring change whose state read has just shown the module off:
          * taken now, before the driver's next transaction, so the module

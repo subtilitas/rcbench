@@ -36,6 +36,21 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
     d->page_count      = page_count;
     d->ctx             = ctx;
     d->last_request_ms = now_ms;
+    /* A start is not a silence, so `failsafe` stays clear; the latch is what
+     * keeps an ARM written by a host that never saw the start from arming. */
+    d->arm_latched     = true;
+}
+
+void link_dev_latch_arm(link_dev_t *d)
+{
+    if (d != NULL) {
+        d->arm_latched = true;
+    }
+}
+
+bool link_dev_arm_latched(const link_dev_t *d)
+{
+    return d == NULL || d->arm_latched;
 }
 
 void link_dev_clear_failsafe(link_dev_t *d, uint32_t now_ms)
@@ -44,6 +59,7 @@ void link_dev_clear_failsafe(link_dev_t *d, uint32_t now_ms)
         return;
     }
     d->failsafe        = false;
+    d->arm_latched     = false;
     d->silent          = false;
     d->last_request_ms = now_ms;
 }
@@ -143,7 +159,8 @@ bool link_dev_tick(link_dev_t *d, uint32_t now_ms)
     if (!elapsed(now_ms, d->last_request_ms, LINK_DEV_SILENCE_MS)) {
         return false;
     }
-    d->silent   = true;
-    d->failsafe = true;
+    d->silent      = true;
+    d->failsafe    = true;
+    d->arm_latched = true;
     return true;   /* the edge, once, not every tick after it */
 }

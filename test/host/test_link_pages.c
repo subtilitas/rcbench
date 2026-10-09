@@ -816,6 +816,100 @@ TEST_CASE(the_fault_bits_are_one_bit_each)
     }
 }
 
+/*
+ * CHAN_CFG and OUTPUTS under an armed bank.  Disarmed, both take anything
+ * the page's own rules take.  Armed, a slot does not change, a role does
+ * not change and a throttle channel's slew and endpoints do not change; a
+ * surface's slew and endpoints do, because the SERVO screen states them
+ * with every position.  The reason is the SENSE page's for the same rule.
+ */
+TEST_CASE(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more)
+{
+    uint16_t regs[LINK_CC_COUNT];
+    uint16_t next[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(regs);
+    regs[LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;      /* channel 0: a motor */
+    regs[LINK_CC_MIN_US] = 1000u;
+    regs[LINK_CC_MAX_US] = 2000u;
+
+    /* The page in force, written again. */
+    memcpy(next, regs, sizeof(next));
+    CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true), 0u);
+
+    /* The throttle's endpoints, one microsecond either way. */
+    for (int d = -1; d <= 1; d += 2) {
+        memcpy(next, regs, sizeof(next));
+        next[LINK_CC_MIN_US] = (uint16_t)(1000 + d);
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, false), 0u);
+        memcpy(next, regs, sizeof(next));
+        next[LINK_CC_MAX_US] = (uint16_t)(2000 + d);
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, false), 0u);
+    }
+    /* Its slew. */
+    memcpy(next, regs, sizeof(next));
+    next[LINK_CC_SLEW] = 1u;
+    CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true),
+             LINK_NACK_BAD_VALUE);
+
+    /* A role, either way, on any channel. */
+    memcpy(next, regs, sizeof(next));
+    next[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
+    CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true),
+             LINK_NACK_BAD_VALUE);
+    for (unsigned c = 1; c < LINK_OUT_CHANNELS; ++c) {
+        memcpy(next, regs, sizeof(next));
+        next[c * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, false), 0u);
+    }
+
+    /* A surface's slew and endpoints: taken armed, on every surface. */
+    for (unsigned c = 1; c < LINK_OUT_CHANNELS; ++c) {
+        memcpy(next, regs, sizeof(next));
+        next[c * LINK_CC_STRIDE + LINK_CC_SLEW]   = 600u;
+        next[c * LINK_CC_STRIDE + LINK_CC_MIN_US] = 660u;
+        next[c * LINK_CC_STRIDE + LINK_CC_MAX_US] = 860u;
+        CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true), 0u);
+    }
+    /* But not in one write with a throttle's. */
+    next[LINK_CC_MAX_US] = 1900u;
+    CHECK_EQ(outputs_chan_cfg_armed_check(regs, next, true),
+             LINK_NACK_BAD_VALUE);
+
+    CHECK_EQ(outputs_chan_cfg_armed_check(NULL, next, true), 0u);
+    CHECK_EQ(outputs_chan_cfg_armed_check(regs, NULL, true), 0u);
+}
+
+TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
+{
+    uint16_t regs[LINK_OS_COUNT];
+    uint16_t next[LINK_OS_COUNT];
+    outputs_slots_defaults(regs);
+    regs[LINK_OS_DRIVER]  = (uint16_t)LINK_DRIVER_PWM;
+    regs[LINK_OS_PIN]     = 0u;
+    regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    regs[LINK_OS_RATE_HZ] = 50u;
+
+    memcpy(next, regs, sizeof(next));
+    CHECK_EQ(outputs_slots_armed_check(regs, next, true), 0u);
+
+    /* Every register of every slot, changed alone. */
+    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+        memcpy(next, regs, sizeof(next));
+        next[i] = (uint16_t)(next[i] + 1u);
+        CHECK_EQ(outputs_slots_armed_check(regs, next, true),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(outputs_slots_armed_check(regs, next, false), 0u);
+    }
+    CHECK_EQ(outputs_slots_armed_check(NULL, next, true), 0u);
+    CHECK_EQ(outputs_slots_armed_check(regs, NULL, true), 0u);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -846,5 +940,7 @@ int main(void)
     RUN(a_4_7_coprocessor_has_no_tone_page_and_says_so);
     RUN(a_4_7_panel_links_and_arms_on_a_4_8_coprocessor);
     RUN(the_fault_bits_are_one_bit_each);
+    RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
+    RUN(outputs_under_an_armed_bank_takes_no_change);
     return test_summary("link_pages");
 }

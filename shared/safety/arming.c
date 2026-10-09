@@ -16,6 +16,32 @@ void arming_init(arming_t *a, uint32_t now_ms, uint32_t settle_ms)
     a->last_touch_ms = now_ms;
 }
 
+void arming_set_line_wait(arming_t *a, uint32_t wait_ms)
+{
+    if (a != NULL) {
+        a->line_wait_ms = wait_ms;
+    }
+}
+
+/* Wrap-safe: true from the millisecond `deadline` on, for half the range. */
+static bool reached(uint32_t now_ms, uint32_t deadline_ms)
+{
+    return (int32_t)(deadline_ms - now_ms) <= 0;
+}
+
+bool arming_line_wanted(const arming_t *a, uint32_t now_ms)
+{
+    return a != NULL && a->arming && a->line_wait_ms != 0u
+           && !a->line_trusted && reached(now_ms, a->settle_until_ms);
+}
+
+void arming_line_report(arming_t *a, bool trusted)
+{
+    if (a != NULL && a->arming) {
+        a->line_trusted = trusted;
+    }
+}
+
 void arming_touch_seen(arming_t *a, uint32_t now_ms)
 {
     if (a != NULL) {
@@ -81,6 +107,9 @@ void arming_request_arm(arming_t *a, uint32_t now_ms)
     a->stopped         = false;
     a->arming          = true;
     a->settle_until_ms = now_ms + a->settle_ms;
+    /* The far end's word is asked for afresh: one given for an earlier arm
+     * says nothing about a line that has been withheld since. */
+    a->line_trusted    = false;
 }
 
 void arming_request_disarm(arming_t *a)
@@ -108,6 +137,24 @@ void arming_stop_from_far_end(arming_t *a)
         a->arming  = false;
         a->armed   = false;
     }
+}
+
+bool arming_link_lost(arming_t *a, bool bank_armed)
+{
+    if (a == NULL || !(bank_armed || a->armed || a->arming)) {
+        return false;
+    }
+    arming_stop_from_far_end(a);
+    return true;
+}
+
+bool arming_link_found(arming_t *a, bool bank_armed)
+{
+    if (a == NULL || !(bank_armed || a->armed)) {
+        return false;
+    }
+    arming_stop_from_far_end(a);
+    return true;
 }
 
 void arming_touch_poll(arming_t *a, uint32_t now_ms)
@@ -181,11 +228,18 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
         act = ARMING_ACT_DISARM;
     }
 
-    if (a->arming && (int32_t)(a->settle_until_ms - now_ms) <= 0) {
-        a->arming = false;
-        if (!a->stopped && !arming_touch_dead(a, now_ms)) {
-            a->armed = true;
+    if (a->arming && reached(now_ms, a->settle_until_ms)) {
+        if (a->stopped || arming_touch_dead(a, now_ms)) {
+            a->arming = false;
+        } else if (a->line_wait_ms == 0u || a->line_trusted) {
+            a->arming = false;
+            a->armed  = true;
             act = ARMING_ACT_ARM;
+        } else if (reached(now_ms, a->settle_until_ms + a->line_wait_ms)) {
+            /* The far end has not come to trust the line.  Given up before
+             * CLEAR is written, so its latch stays set. */
+            a->arming = false;
+            act = ARMING_ACT_GIVE_UP;
         }
     }
 

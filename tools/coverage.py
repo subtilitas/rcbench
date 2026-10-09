@@ -78,6 +78,7 @@ TRACKED = [
     "shared/logfile/log_name.c",
     "shared/safety/heartbeat.c",
     "shared/safety/arming.c",
+    "shared/safety/safety_gate.c",
     "shared/safety/touch_loss.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",

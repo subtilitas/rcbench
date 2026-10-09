@@ -14,6 +14,16 @@
  *     therefore clears the latch FIRST and waits for the line to settle
  *     before the write, or the two conditions deadlock each other.
  *   - A stop during that wait wins.  The arm is abandoned, not queued.
+ *   - With a far end to ask, the wait ends when the far end reports the
+ *     line trusted and not when a fixed time is up: the monitor needs five
+ *     edges, the fifth is 100 to 125 ms after the latch clears at a 5 ms
+ *     pass, and later on a slower one.  The wait is bounded; an arm the far
+ *     end never trusts is given up before CLEAR is written.
+ *   - A link that goes quiet while the bench is armed, or while an arm is
+ *     waiting, is a stop.  The far end may have restarted, and an ARM
+ *     written again when it answers would arm it with no hand on the panel.
+ *     A bank armed with no link is stopped when a far end appears, for the
+ *     same reason.
  *   - Touch that has stopped answering disarms and refuses to arm: the panel
  *     is the only place a STOP button exists.
  *   - The run clock times a run, not the panel.
@@ -36,11 +46,26 @@ extern "C" {
  */
 #define ARMING_TOUCH_DEAD_MS 500u
 
+/**
+ * How long past the settle the panel waits for the far end to report the
+ * line trusted before it gives the arm up: 200 ms, 300 ms from the hold
+ * with the 100 ms settle.
+ *
+ * The monitor needs five edges.  An edge is emitted on the first pass at or
+ * after HEARTBEAT_PERIOD_MS (20 ms) from the last, so five take 100 ms at a
+ * 5 ms pass, 135 ms at 9 ms and 300 ms at a pass of 30 ms, six times the
+ * control task's period.
+ */
+#define ARMING_LINE_WAIT_MS 200u
+
 /** What the caller must put on the link, if anything, after a step. */
 typedef enum {
     ARMING_ACT_NONE = 0,
     ARMING_ACT_DISARM,   /**< write ARM = 0                          */
     ARMING_ACT_ARM,      /**< write CLEAR, then ARM = 1              */
+    /** The far end did not come to trust the line within the bound: the arm
+     *  is given up, nothing is written, the operator is told. */
+    ARMING_ACT_GIVE_UP,
 } arming_action_t;
 
 typedef struct {
@@ -77,6 +102,13 @@ typedef struct {
     bool     arming;          /**< an arm is waiting for the line         */
     uint32_t settle_ms;       /**< how long the line is given             */
     uint32_t settle_until_ms;
+    /**
+     * How long past the settle an arm waits for the far end to report the
+     * line trusted; 0 when there is no far end to ask and the settle alone
+     * decides.  See arming_set_line_wait().
+     */
+    uint32_t line_wait_ms;
+    bool     line_trusted;    /**< reported for the arm that is waiting   */
     uint32_t last_touch_ms;
     uint32_t run_start_ms;    /**< 0 when not in a run                    */
     uint32_t run_seconds;     /**< held after the run ends                */
@@ -87,6 +119,27 @@ typedef struct {
  * before an arm is written: HEARTBEAT_GOOD_RUN intervals, plus one.
  */
 void arming_init(arming_t *a, uint32_t now_ms, uint32_t settle_ms);
+
+/**
+ * Make an arm wait for the far end's word on the line, for at most
+ * @p wait_ms past the settle.  0 turns the wait off.
+ *
+ * After the settle arming_line_wanted() is true on every pass until
+ * arming_line_report() has said the line is trusted; arming_step() then
+ * returns ARMING_ACT_ARM in that pass, or ARMING_ACT_GIVE_UP once the bound
+ * has passed.
+ */
+void arming_set_line_wait(arming_t *a, uint32_t wait_ms);
+
+/** Whether the caller is to ask the far end about the line in this pass. */
+bool arming_line_wanted(const arming_t *a, uint32_t now_ms);
+
+/**
+ * What the far end said: @p trusted when its monitor believes the line.  A
+ * question nobody answered is reported as false.  With no far end the
+ * caller reports true.  Ignored unless an arm is waiting.
+ */
+void arming_line_report(arming_t *a, bool trusted);
 
 /** The touch controller answered. */
 void arming_touch_seen(arming_t *a, uint32_t now_ms);
@@ -138,6 +191,28 @@ void arming_refused(arming_t *a);
 
 /** The coprocessor disarmed us: a NACK on a control write, or a failsafe. */
 void arming_stop_from_far_end(arming_t *a);
+
+/**
+ * The far end stopped answering.  @p bank_armed is whether this end's bank
+ * is armed.  An armed bench and an arm that is waiting are stopped as
+ * arming_stop_from_far_end() stops them; a disarmed bench is left as it is.
+ *
+ * Returns true when it stopped: the caller then disarms its bank and zeroes
+ * the command, because the policy's own disarm is gated on `armed`, which
+ * the stop has already cleared.
+ */
+bool arming_link_lost(arming_t *a, bool bank_armed);
+
+/**
+ * A far end started answering.  A bank armed with no link -- the
+ * simulator's -- is stopped the same way: the far end was never asked to
+ * arm, and the ARM written at every poll would ask it now.  An arm still
+ * waiting is left to complete: it writes CLEAR and the frame that arms, as
+ * an arm made with the link up does.
+ *
+ * Returns true when it stopped, with the same duty for the caller.
+ */
+bool arming_link_found(arming_t *a, bool bank_armed);
 
 /** Advance, and say what the link owes the coprocessor. */
 arming_action_t arming_step(arming_t *a, uint32_t now_ms);

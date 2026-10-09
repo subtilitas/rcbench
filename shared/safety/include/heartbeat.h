@@ -65,6 +65,19 @@
  */
 #define HEARTBEAT_GOOD_RUN    4u
 
+/**
+ * The least time the panel gives a line that was already running before it
+ * writes an arm: HEARTBEAT_GOOD_RUN intervals, plus one, 100 ms.
+ *
+ * It is not enough for a line that was withheld.  The generator's first
+ * edge is one period after it resumes and the monitor rejects the interval
+ * that edge closes, so the fifth edge is what makes the line trusted:
+ * 100 to 125 ms after the resume at a 5 ms pass, later on a slower one.
+ * arming_set_line_wait() covers the rest by asking the far end.
+ */
+#define HEARTBEAT_SETTLE_MS \
+    (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
+
 /* ------------------------------------------------------- the panel's end */
 
 typedef struct {

@@ -16,9 +16,10 @@ und welche Verhaltensweisen Absicht sind.
 Ein gedrücktes STOP stoppt den Heartbeat, entschärft das eigene
 Ausgangsmodell des Panels und schreibt ARM = 0 auf die Control-Page. Bei
 stehendem Link schreibt das Panel ARM und THROTTLE mit jedem Poll alle 50 ms;
-ein bewusstes Schärfen schreibt zuerst CLEAR (0x5AFE) allein, dann ARM,
-THROTTLE und MOTOR_POLES in einem Frame, und ein NACK des Koprozessors auf
-eines von beiden lässt das Panel entschärft.
+ein bewusstes Schärfen wartet, bis der Koprozessor meldet, dass er dem
+Heartbeat vertraut, schreibt dann CLEAR (0x5AFE) allein, dann ARM, THROTTLE
+und MOTOR_POLES in einem Frame, und ein NACK (negative Quittung) des
+Koprozessors auf eines von beiden lässt das Panel entschärft.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
@@ -73,14 +74,88 @@ Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
 wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist
 weg. Der Koprozessor verweigert das Schärfen, solange der Leitung nicht
-vertraut wird, und entschärft seine Ausgänge, sobald sie ausbleibt.
+vertraut wird, und entschärft seine Ausgänge und setzt seinen Arm-Latch,
+sobald sie ausbleibt.
 
-Der Heartbeat wird in der Schleife erzeugt, die den Touch liest und STOP
-besitzt, nicht von einem Timer oder einer Peripherie und nicht in der
-Schleife, die zeichnet: ein Panel, das nicht mehr zeichnet, lässt sich noch
-stoppen, eines ohne Touch nicht. Der Eingang des
+Der Heartbeat wird vom Control-Task erzeugt, der STOP besitzt und alle 5 ms
+auf Kern 1 läuft, dem Kern, der nicht zeichnet. Er kommt nicht von einem
+Timer oder einer Peripherie und nicht aus der Schleife, die zeichnet: ein
+Panel, das nicht mehr zeichnet, lässt sich noch stoppen. Den Touch-Controller
+liest eine eigene Task, Priorität 5 auf Kern 0, dem Kern, der zeichnet. Der
+Control-Task nimmt deren Ereignisse aus einer Queue und beurteilt den
+Controller nach der Zeit seit dessen letzter Antwort: 500 ms ohne Antwort
+entschärfen den Prüfstand und stoppen den Heartbeat. Der Eingang des
 Koprozessors hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
 Panel als Leitung ohne Flanken gelesen wird.
+
+## Arm-Latch
+
+Der Koprozessor hält einen Arm-Latch. Solange er gesetzt ist, wird ein
+Schreiben von ARM mit NOT_ARMED abgewiesen, und die Bank bleibt entschärft,
+was immer im Register ARM steht.
+
+| Setzt den Latch | Bedingung |
+| --- | --- |
+| Ein Start des Koprozessors | Einschalten, ein Reset, der RUN-Pin, ein Neuflashen |
+| Stille auf dem Link | 200 ms ohne Anfrage, zusammen mit dem Link-Failsafe |
+| Dem Heartbeat wird nicht mehr vertraut | ein Abstand unter 4 ms oder über 150 ms, oder 150 ms ohne Flanke |
+| Ein abgewiesenes ARM | ein ARM, das mit NOT_ARMED beantwortet wurde; ein CLEAR mit anschließend abgewiesenem ARM lässt den Latch also gesetzt |
+
+Eines löscht ihn: das Schreiben von 0x5AFE in CLEAR auf der Control-Page.
+Das Panel schreibt CLEAR an einer Stelle, beim Schärfen, das eine Person
+durch 2 s Halten von ARM vollendet. Das ARM = 1, das das Panel bei jedem
+Poll alle 50 ms einer scharfen Bank schreibt, trägt kein CLEAR und bringt
+einen Koprozessor mit gesetztem Latch daher nie zurück.
+
+Der Latch ist vom Link-Failsafe getrennt. Das ON der Versorgung und die
+STATUS-Page lesen das Failsafe und den Heartbeat und nicht den Latch: nach
+einem Start meldet STATUS Idle ohne Fault-Bit, und ein ON der Versorgung wird
+vor dem ersten Schärfen angenommen. Der Latch steht nicht auf STATUS. Ein
+Koprozessor mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
+Panel als `Koprozessor DISARMED -- erneut ARM` meldet.
+
+Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
+Koprozessor nicht mehr, während der Prüfstand scharf ist oder ein Schärfen
+auf die Leitung wartet, rastet am Panel bei diesem Poll ein Stopp ein: die
+eigene Bank wird entschärft, das Gas geht auf null, eine gehaltene
+Servo-Position wird losgelassen, und der Heartbeat stoppt. Eine ausbleibende
+Antwort wird nach dem Timeout von 1000 ms bemerkt, oder sofort, wenn der
+CAN-Controller (Controller Area Network) des Panels bus-off ist. Eine Bank,
+die ohne angeschlossenen Koprozessor scharf ist, der simulierte Prüfstand,
+wird auf dieselbe Weise bei dem Poll gestoppt, bei dem ein Koprozessor zum
+ersten Mal antwortet, bevor ein ARM an ihn geschrieben wird.
+
+### Neustart des Koprozessors während eines Laufs
+
+Der Koprozessor stellt seine Ausgangsbindung aus dem Flash wieder her und
+startet mit gesetztem Latch und ohne Kommando. Die Bank des Panels ist noch
+bis zu 1000 ms scharf. Zwei Fälle:
+
+- Das Panel bemerkt den Ausfall. Bei ihm rastet ein Stopp ein, und es
+  schreibt von da an ARM = 0.
+- Das Panel bemerkt ihn nicht, weil die Anfrage wiederholt wurde, bis der neu
+  gestartete Koprozessor antwortete. Sein nächstes Schreiben von ARM = 1 wird
+  mit NOT_ARMED abgewiesen, und bei dieser Antwort rastet am Panel ein Stopp
+  ein.
+
+In beiden bleiben die Ausgänge aus, bis eine Person ARM hält. Auf dem Host
+getestet in `test_safety_gate` für Ausfälle von 5, 30, 50, 60, 300, 1000 und
+5000 ms bei je 55 Reset-Phasen und drei Modellen der Leitung; nicht auf
+Hardware gelaufen. Wie lange der Koprozessor vom Reset bis zu seinem ersten
+beantworteten Frame braucht, ist nicht gemessen.
+
+### Das erste Schärfen nach einem Stopp
+
+Der Heartbeat wird zurückgehalten, solange ein Stopp eingerastet ist. Ein
+Schärfen löst den Stopp am Panel, der Heartbeat läuft wieder, und der Monitor
+des Koprozessors braucht fünf Flanken, bevor er der Leitung vertraut: 100 bis
+125 ms bei den 5 ms des Control-Tasks. Das Panel wartet 100 ms, liest dann
+einmal je Durchlauf das Fault-Register von STATUS, bis das Heartbeat-Bit
+gelöscht ist, und schreibt erst dann CLEAR und den Frame, der schärft. Ist
+das Bit 300 ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
+das Schärfen mit `Koprozessor lehnte ARM ab` auf und schreibt nichts, der
+Latch des Koprozessors bleibt also gesetzt. Ohne angeschlossenen Koprozessor
+schärft das Panel seine eigene Bank nach den 100 ms.
 
 ## Verhaltensweisen, die Absicht sind
 
@@ -239,9 +314,11 @@ Panel als Leitung ohne Flanken gelesen wird.
   vollendetes Schärfen, ein Entschärfen, ein Freigeben und ein Zurücksetzen
   der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
-  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout; ein Sensor, der den
-  gemeinsamen I2C-Bus festhält, verzögert das Lesen des Touch also um höchstens
-  5 ms gegenüber den 150 ms, auf die der Heartbeat überwacht wird. Angenommen
+  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede der drei
+  Transaktionen eines Polls; ein Sensor, der den gemeinsamen I2C-Bus
+  festhält, verzögert das Lesen des Touch also um höchstens 15 ms je Poll.
+  Das Lesen des Touch liegt nicht auf dem Weg des Heartbeats: die
+  Control-Task erzeugt den Heartbeat und benutzt den I2C-Bus nicht. Angenommen
   wird, dass der Sensor ohne Kollision unter 0x36 antwortet: 0x36 liegt
   außerhalb der Kommandoadressen des CH422G in dessen Datenblatt, Waveshares
   Wiki reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware
@@ -251,7 +328,17 @@ Panel als Leitung ohne Flanken gelesen wird.
   STOP-Knopf.
 - Nach einem Link-Failsafe schaltet der Koprozessor nicht wieder scharf, wenn
   Verkehr zurückkehrt. Das Failsafe wird durch das Schreiben eines definierten
-  Werts (0x5AFE) auf die Control-Page verlassen.
+  Werts (0x5AFE) auf die Control-Page verlassen. Dasselbe gilt nach einem
+  Start des Koprozessors und nach einem Heartbeat, dem nicht mehr vertraut
+  wurde: siehe [Arm-Latch](#arm-latch).
+- Ein Link, der bei scharfem Prüfstand ausfällt, ist am Panel ein Stopp. Er
+  rastet ein wie STOP und wird vom nächsten Schärfen gelöst.
+- Solange der Prüfstand scharf ist, weist der Koprozessor mit BAD_VALUE ein
+  Schreiben auf OUTPUTS ab, das einen Slot ändert, und ein Schreiben auf
+  CHAN_CFG, das die Rolle eines Kanals oder irgendetwas an einem
+  Throttle-Kanal ändert. Slew und Pulsbereich einer Surface werden scharf
+  angenommen: der SERVO-Bildschirm schreibt sie mit jeder Position. Das Panel
+  schreibt eine Bindung und den Pulsbereich des Throttle nur entschärft.
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
   Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
 - Ein scharfer Prüfstand treibt jeden gebundenen Pin, ob ihn etwas

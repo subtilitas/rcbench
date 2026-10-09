@@ -91,6 +91,39 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
     return 0u;
 }
 
+uint8_t outputs_chan_cfg_armed_check(const uint16_t *regs,
+                                     const uint16_t *next, bool armed)
+{
+    if (!armed || regs == NULL || next == NULL) {
+        return 0u;
+    }
+    for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+        const uint16_t *was = &regs[(size_t)c * LINK_CC_STRIDE];
+        const uint16_t *now = &next[(size_t)c * LINK_CC_STRIDE];
+        if (was[LINK_CC_ROLE] != now[LINK_CC_ROLE]) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        if (was[LINK_CC_ROLE] != LINK_CC_ROLE_THROTTLE) {
+            continue;
+        }
+        for (unsigned f = 0; f < LINK_CC_STRIDE; ++f) {
+            if (was[f] != now[f]) {
+                return LINK_NACK_BAD_VALUE;
+            }
+        }
+    }
+    return 0u;
+}
+
+uint8_t outputs_slots_armed_check(const uint16_t *regs, const uint16_t *next,
+                                  bool armed)
+{
+    if (!armed || regs == NULL || next == NULL) {
+        return 0u;
+    }
+    return outputs_slots_changed(regs, next) != 0u ? LINK_NACK_BAD_VALUE : 0u;
+}
+
 bool outputs_chan_cfg_set_throttle_range(uint16_t *regs, uint16_t min_us,
                                          uint16_t max_us)
 {

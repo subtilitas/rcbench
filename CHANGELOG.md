@@ -6,6 +6,30 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **A restarted coprocessor is not armed again.** The coprocessor starts with
+  an arm latch set and sets it on 200 ms of link silence, on a distrusted
+  heartbeat and when it refuses an ARM; only CLEAR releases it, and the
+  panel writes CLEAR only for an arm an operator held. The supply's ON and
+  the STATUS page do not read the latch. The panel latches a stop, disarms
+  its bank and zeroes the throttle when the link goes quiet while armed, and
+  when a coprocessor starts answering under a bank armed without one. No
+  register or frame changes; the protocol stays 4.9.
+- **The first arm after a STOP is taken on the first hold.** After its 100 ms
+  settle the panel reads the STATUS fault register once a pass until the
+  coprocessor reports the heartbeat trusted, for at most 200 ms more, and
+  writes CLEAR only then. An arm the coprocessor never trusts is given up
+  with nothing written.
+- **CHAN_CFG and OUTPUTS while armed.** The coprocessor refuses with
+  BAD_VALUE an OUTPUTS write that changes a slot and a CHAN_CFG write that
+  changes a role or anything of a throttle channel. A surface's slew and
+  pulse range are taken armed, as the SERVO screen writes them.
+
+The decisions are `shared/safety/safety_gate.c` and
+`shared/safety/arming.c`, host-tested in `test_safety_gate` and
+`test_arming`. Not run on hardware.
+
 The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
 (Ein Finger schiebt), off by default. While it is on and the view is zoomed
 in, a finger that moves more than 10 px pans the view; a shorter touch still

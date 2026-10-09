@@ -64,9 +64,25 @@ typedef struct {
     bool     heard;
     bool     silent;      /**< nothing has arrived for LINK_DEV_SILENCE_MS  */
     bool     failsafe;    /**< latched: only an explicit clear leaves it    */
+    /**
+     * The arm latch: while set, a write of ARM is refused.
+     *
+     * Set by link_dev_init(), on the silence edge and by
+     * link_dev_latch_arm(); cleared by link_dev_clear_failsafe() and by
+     * nothing else.  It is not `failsafe`: that flag says the link went
+     * silent, gates the supply and is reported on STATUS, and a coprocessor
+     * that has just started has had no silence.  What a start and a silence
+     * share is that the ARM register the host goes on writing is older than
+     * the event, so neither may arm on it.
+     */
+    bool     arm_latched;
     uint32_t requests;
 } link_dev_t;
 
+/**
+ * Start with no request heard, out of failsafe and with the arm latch set:
+ * the first ARM after a start needs a CLEAR ahead of it.
+ */
 void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
                    void *ctx, uint32_t now_ms);
 
@@ -86,15 +102,26 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
 /**
  * Advance the silence watchdog.  Returns true on the edge where failsafe
  * fires, so the caller can drop the outputs once rather than every tick.
+ * The edge sets the arm latch too.
  */
 bool link_dev_tick(link_dev_t *d, uint32_t now_ms);
 
 /**
- * Leave failsafe.  Not exposed as "the link came back": recovery of the wire
- * is not consent to spin a propeller, so the host asks for this by writing
- * LINK_CLEAR_MAGIC to the control page.
+ * Leave failsafe and release the arm latch.  Not exposed as "the link came
+ * back": recovery of the wire is not consent to spin a propeller, so the
+ * host asks for this by writing LINK_CLEAR_MAGIC to the control page.
  */
 void link_dev_clear_failsafe(link_dev_t *d, uint32_t now_ms);
+
+/**
+ * Set the arm latch: a cause other than link silence took the outputs down,
+ * and the ARM the host goes on writing does not bring them back.  Leaves
+ * `failsafe` as it is.
+ */
+void link_dev_latch_arm(link_dev_t *d);
+
+/** Whether a write of ARM is refused until the host writes CLEAR. */
+bool link_dev_arm_latched(const link_dev_t *d);
 
 #ifdef __cplusplus
 }

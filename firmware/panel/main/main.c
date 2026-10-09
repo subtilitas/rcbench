@@ -73,6 +73,7 @@
 #include "picker_screen.h"
 #include "programmer_screen.h"
 #include "rcbench_version.h"
+#include "safety_gate.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -3142,6 +3143,42 @@ static void endpoints_service(bool far_disarmed)
     }
 }
 
+/*
+ * Whether the far end trusts the heartbeat, asked of its STATUS page.
+ *
+ * An arm waits for this before CLEAR is written.  The heartbeat is withheld
+ * while a stop is latched, and after it resumes the far end's monitor needs
+ * five edges, 100 to 125 ms at a 5 ms pass and longer on a slower one: a
+ * fixed wait is right for one pass period and refused at the next.  One
+ * register, one frame each way.  No answer is not trusted.
+ */
+static bool far_line_trusted(void)
+{
+    link_msg_t st = { 0 };
+    return read_regs(&s_host, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1u, &st)
+           && st.op == LINK_OP_DATA
+           && safety_gate_line_trusted(st.regs[0]);
+}
+
+/*
+ * A stop the policy has just latched for the far end -- a refused ARM, a
+ * link that went quiet, a far end that appeared under an armed bank -- as
+ * it is finished at this end.
+ *
+ * The command goes to zero here rather than through the policy:
+ * arming_stop_from_far_end() clears a->armed itself, and arming_step()'s
+ * disarm is gated on a->armed, so ARMING_ACT_DISARM cannot follow and the
+ * throttle would keep its last value, to be written again with the next
+ * ARM = 1.
+ */
+static void far_end_stop_here(void)
+{
+    outputs_arm(&s_out, false, now_ms());
+    throttle_to_zero();
+    servo_let_go();
+    control_alert(TR(ALERT_COPRO_DISARMED));
+}
+
 static bool control_clear_failsafe(link_msg_t *reply)
 {
     const uint16_t magic = LINK_CLEAR_MAGIC;
@@ -3776,8 +3813,10 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
     publish_throttle_ramp();
     (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
-    arming_init(&s_arm, now_ms(),
-                HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
+    arming_init(&s_arm, now_ms(), HEARTBEAT_SETTLE_MS);
+    /* And past the settle an arm waits for the far end's own word on the
+     * line; see far_line_trusted(). */
+    arming_set_line_wait(&s_arm, ARMING_LINE_WAIT_MS);
     /* The supply starts switched off, its readings those of an off output. */
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
@@ -3942,6 +3981,16 @@ static void service_arming(bool link_up)
      * policy's, not this loop's: a latched stop, dead touch, or an arm that
      * finished settling.
      */
+    /*
+     * An arm past its settle asks the far end whether it trusts the line,
+     * once a pass until it does; with no far end there is nobody to ask and
+     * the settle alone decides.  The exchange pumps, so a STOP can land in
+     * it: the policy then holds no arm and drops the answer.
+     */
+    if (arming_line_wanted(&s_arm, now_ms())) {
+        arming_line_report(&s_arm, !link_up || far_line_trusted());
+    }
+
     const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
     switch (arming_step(&s_arm, now_ms())) {
     case ARMING_ACT_DISARM:
@@ -3992,7 +4041,8 @@ static void service_arming(bool link_up)
              * by anybody and nothing at the far end is being armed either, so
              * refusing would leave the panel unable to arm its own bank --
              * the simulator included -- until a coprocessor answered again.
-             * What the far end must not do meanwhile is arm; see poll_bench().
+             * What the far end must not do meanwhile is arm; see
+             * poll_far_end().
              */
             arming_refused(&s_arm);
             control_alert(TR(ALERT_SERVO_NOT_RELEASED));
@@ -4041,6 +4091,11 @@ static void service_arming(bool link_up)
         }
         break;
     }
+    case ARMING_ACT_GIVE_UP:
+        /* The far end did not come to trust the line inside the bound.
+         * Nothing was written, CLEAR included, so its arm latch stands. */
+        control_alert(TR(ALERT_ARM_REFUSED));
+        break;
     default:
         break;
     }
@@ -5904,10 +5959,11 @@ static bool poll_bench(bench_state_t *bench)
         (void)poles_service();
         /*
          * Not while a surface at the far end is still holding a position and
-         * owed a release.  A bank armed with no link -- the simulator, or a
-         * cable pulled -- reaches this the moment one answers, and the far end
-         * would render that old command before the centre arrived.
-         * servo_service() pays the debt every pass, so this holds for one.
+         * owed a release: the far end would render that old command before
+         * the centre arrived.  servo_service() pays the debt every pass, so
+         * this holds for one.  A bank armed with no link does not reach
+         * this: poll_far_end() stops it on the edge where one answers, as
+         * it stops an armed bench on the edge where the link goes.
          * Nor while the rate the surfaces run at is not known: the far end
          * may hold a heli rate from before a panel restart, and
          * servo_service() settles that every pass too.  And not after a
@@ -5945,20 +6001,12 @@ static bool poll_bench(bench_state_t *bench)
         tone_link_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
-             * The coprocessor is in failsafe or has lost the heartbeat.  A
-             * stop latches at this end too.
-             *
-             * The command goes to zero here rather than through the policy:
-             * arming_stop_from_far_end() clears a->armed itself, and
-             * arming_step()'s disarm is gated on a->armed, so
-             * ARMING_ACT_DISARM cannot follow and the throttle would keep
-             * its last value.
+             * The coprocessor is in failsafe, has lost the heartbeat or
+             * holds its arm latch -- it started again, or the line was
+             * distrusted for a moment.  A stop latches at this end too.
              */
-            outputs_arm(&s_out, false, now_ms());
-            throttle_to_zero();
-            servo_let_go();
             arming_stop_from_far_end(&s_arm);
-            control_alert(TR(ALERT_COPRO_DISARMED));
+            far_end_stop_here();
         }
     }
     return answered;
@@ -6346,6 +6394,15 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             ESP_LOGI(TAG, "coprocessor %s",
                      answered ? "answered" : "went quiet");
             if (answered) {
+                /*
+                 * A bank armed with no link -- the simulator's -- is
+                 * stopped before anything is written: the far end was
+                 * never asked to arm, and the ARM this bank writes at
+                 * every poll would ask it now, at this end's throttle.
+                 */
+                if (arming_link_found(&s_arm, outputs_armed(&s_out))) {
+                    far_end_stop_here();
+                }
                 link_came_up(&reply);
             }
         }
@@ -6367,6 +6424,17 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /*
+             * An armed bench stops with the link, and so does an arm still
+             * waiting for the line.  The far end has failed safe on its own
+             * 200 ms of silence, or it has started again; either way the
+             * bank and the command kept here would be written to it as
+             * ARM = 1 at the first poll it answers, with nobody having
+             * asked.  The stop also withholds the heartbeat.
+             */
+            if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+                far_end_stop_here();
+            }
             /* A sweep or a hold ends with the link, here as on the screen
              * and at the far end: kept, it would be said again when the
              * link comes back and start motion nobody asked for. */

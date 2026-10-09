@@ -31,6 +31,12 @@ escalates after 1 s without an answer. The failsafe latches. Traffic returning
 stops the silence counter but does not lift the failsafe; leaving it takes a
 write of 0x5AFE to the CLEAR register of the control page.
 
+The coprocessor also holds an arm latch, set at every start, on the edge
+into link silence, when the heartbeat stops being trusted and by an ARM it
+refuses. While it is set a write of ARM is refused with NOT_ARMED. The same
+CLEAR releases it. It is not the failsafe: STATUS does not report it, and the
+supply's ON does not read it. [Safety](Safety.md#arm-latch) has the rules.
+
 ### Bus off
 
 A CAN transmitter that gets no acknowledgement retransmits on its own and adds
@@ -341,7 +347,25 @@ channel's pulse range defaults to 1000..2000 µs; endpoints outside 400..2500 µ
 are refused with BAD_VALUE. A command outside its range is clamped. Two slots
 on one pin, or two slots rendering the same channel, are refused. Arming is
 decided by the coprocessor: a write of ARM is refused with NOT_ARMED while the
-link is in failsafe or the heartbeat is not trusted.
+link is in failsafe, the heartbeat is not trusted or the arm latch is set.
+
+While the bench is armed -- the bank drives, or the ARM register is set -- an
+OUTPUTS write that changes any register is refused with BAD_VALUE, and so is
+a CHAN_CFG write that changes a channel's role or the role, slew or
+endpoints of a channel whose role is throttle. A surface's slew and endpoints
+are taken armed, and so is a write of the page in force; an armed OUTPUTS
+write of the page in force binds nothing anew. The rule is
+`outputs_chan_cfg_armed_check()` and `outputs_slots_armed_check()`, under
+`test_link_pages`.
+
+The arm latch and the armed refusal change no register and no frame, so the
+protocol version stays 4.9. What a peer built before them sees:
+
+| Panel | Coprocessor | Behaviour |
+| --- | --- | --- |
+| older | this build | the link comes up and the bench arms: that panel writes CLEAR ahead of every arm. Its first arm after a STOP can be refused once with NOT_ARMED, because it waits a fixed 100 ms; the refusal leaves the latch set and the second hold arms. An ARM = 1 it writes after a coprocessor restart is refused, and it latches a stop |
+| this build | older | the link comes up and the bench arms. The panel stops on the link-down edge, so a restart it notices arms nothing. A restart it does not notice -- the request retransmitted until the coprocessor answers again -- is armed again by the next poll, as between two older builds. A heartbeat distrusted for under one poll interval does not latch there |
+| another host | this build | an ARM with no CLEAR since the coprocessor started is refused with NOT_ARMED; a CHAN_CFG or OUTPUTS write as above is refused with BAD_VALUE while ARM is set |
 
 An arm from the panel is two transactions. CLEAR travels first and alone: the
 coprocessor checks ARM against its failsafe before it applies a CLEAR from the
@@ -352,7 +376,14 @@ panel sent or does not start it. Every 50 ms poll after that writes ARM and
 THROTTLE; a pole count edited during a run goes on a write of its own at the
 next poll. The rules of the page -- the throttle range, the pole count, the
 CLEAR magic, ARM refused in failsafe, and a refusal storing nothing -- are
-`shared/link/link_control.c`, under `test_link_pages`.
+`shared/link/link_control.c`, under `test_link_pages`. Whether the bench may
+arm, and what sets and clears the latch, is `shared/safety/safety_gate.c`,
+under `test_safety_gate`.
+
+Before CLEAR the panel waits for the coprocessor to trust the heartbeat: 100 ms
+after the hold completes it reads STATUS register 1 once per 5 ms pass until
+bit 4 reads clear, for at most 200 ms more. The coprocessor fills STATUS
+registers 0 and 1 at the read.
 
 ### Bit timing
 

@@ -40,7 +40,10 @@ not draw. The task runs every 5 ms; the line edges every 20 ms
 outputs are to be gated by a retriggerable monostable with a window of about
 150 ms, and the line is checked in firmware (4 to 150 ms between edges, four
 good intervals before it is trusted). The coprocessor fails safe after 200 ms
-of link silence; the panel escalates after 1 s. [Reference](docs/Safety.md).
+of link silence; the panel escalates after 1 s. The coprocessor starts with an
+arm latch set, sets it again on link silence and on a distrusted heartbeat,
+and releases it only on a CLEAR; the panel latches a stop when the link goes
+quiet under an armed bench. [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
@@ -78,7 +81,8 @@ and the panel is not the board the wires are in. The coprocessor keeps the
 panel stores none of it and reads the page back when the link comes up.
 Restoring configures the outputs and does not drive them -- every driver is
 gated on the bank being armed, which the coprocessor grants only while the ARM
-register is set, the link is out of failsafe and the heartbeat is trusted --
+register is set, the link is out of failsafe, the heartbeat is trusted and the
+arm latch a start sets has been released by a CLEAR --
 and channel commands are not restored, so a bench never comes back holding the
 throttle it was last given.
 The save waits for the bank to stop driving and then for a gap in the
@@ -106,7 +110,7 @@ is taken in a gap ahead of the save that needs it.
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built; run on hardware at 1 Mbit/s with zero errors at either end |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. It publishes what the ESC reports over extended DShot telemetry -- speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors; not run on hardware). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
+| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. The decision to arm is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone; not run on hardware. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while armed. It publishes what the ESC reports over extended DShot telemetry -- speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors; not run on hardware). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. PWM has swung a servo and plain DShot has run a motor from the panel on the bring-up bench, with no instrument on either pin. PPM has driven nothing. Bidirectional DShot600 has answered from one AM32 2.21 ESC on a tester's bench: speed, and extended-telemetry voltage, current and ESC temperature (#172). [Reference](docs/DShot.md) |
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers, at every edit, and in the frame that arms, so a run starts on the count that was sent or does not start; with none sent the coprocessor reports no speed rather than one derived from a guess |
@@ -153,6 +157,7 @@ rcbench/
     outputs/              channels · driver table · arming, slew and staleness
                           · where a saved binding goes in flash
     safety/               heartbeat generator and monitor · arming policy
+                          · the coprocessor's arm gate
     servo/                limit and synchronisation searches · servo model
                           · move rules
     can/                  bit timing · MCP2515 registers · echo self-test
@@ -208,7 +213,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 73 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 74 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_servo`,
@@ -217,7 +222,7 @@ The host suite is 73 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_touch_loss`, `test_servo_limit`,
+`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_logview` and `test_logwriter`. The harness is
@@ -274,7 +279,8 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 62 | 62 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
-| `shared/safety/arming.c` | 97 | 91 | 93.8% |
+| `shared/safety/arming.c` | 126 | 119 | 94.4% |
+| `shared/safety/safety_gate.c` | 52 | 52 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
@@ -301,7 +307,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/link/link_bringup.c` | 61 | 61 | 100.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
-| `shared/link/link_dev.c` | 77 | 74 | 96.1% |
+| `shared/link/link_dev.c` | 86 | 83 | 96.5% |
 | `shared/link/link_host.c` | 136 | 132 | 97.1% |
 | `shared/link/link_artxfer.c` | 61 | 60 | 98.4% |
 | `shared/link/link_control.c` | 23 | 23 | 100.0% |
@@ -309,7 +315,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 179 | 175 | 97.8% |
 | `shared/outputs/outputs.c` | 192 | 184 | 95.8% |
-| `shared/outputs/outputs_pages.c` | 207 | 196 | 94.7% |
+| `shared/outputs/outputs_pages.c` | 225 | 214 | 95.1% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
 | `shared/outputs/servo_page.c` | 183 | 181 | 98.9% |
@@ -335,7 +341,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/sense/tone.c` | 372 | 372 | 100.0% |
 | `shared/sense/edge_ring.c` | 43 | 43 | 100.0% |
 | `shared/sense/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **25110** | **24318** | **96.8%** |
+| **total** | **25218** | **24425** | **96.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -344,7 +350,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 
 | Item | State | Needs |
 | --- | --- | --- |
-| The control page under measurement | the NVS round trip has run, and the control page has since carried an accepted ARM: with the heartbeat wire fitted, a servo has been swung and a motor run from the panel. What that does not cover is the paths a session has to provoke rather than pass through -- the failsafe clear, a STOP mid-throttle, the link unplugged while armed, and an arm refused for each of its three reasons | a session with both boards that provokes them one at a time, and writes down what the band said |
+| The control page under measurement | the NVS round trip has run, and the control page has since carried an accepted ARM: with the heartbeat wire fitted, a servo has been swung and a motor run from the panel. What that does not cover is the paths a session has to provoke rather than pass through -- the failsafe clear, a STOP mid-throttle, the link unplugged while armed, a coprocessor reset while armed, a panel armed with the coprocessor unpowered and then powered, the first arm after a STOP, and an arm refused for each of its four reasons (link failsafe, heartbeat not trusted, arm latch set, the line not trusted within 300 ms). The arm latch and the panel's stop on a lost link are host-tested in `test_safety_gate` and have not run on a board | a session with both boards that provokes them one at a time, and writes down what the band said. For the reset: a motor channel on GP0, a scope on GP0 and GP3, armed at 70 %, the RUN pin held low for 100 ms; pulses must not return on GP0 until ARM is held again |
 | Output drivers on hardware | a servo has been swung and a motor run from the panel on the bring-up bench, so a pin drives; what nothing has seen is any timing on an instrument. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC other than the one AM32 2.21 ESC on a tester's bench (#172) answers | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
 | The flash save costs CAN frames | measured on the bring-up module: eight erase-and-program windows printed 19,174 to 19,186 us, and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at 1 Mbit/s is about 130 us and the controller holds two, so 19 ms is about 150 frame times, or seventy times over the 260 us the two buffers hold, with nobody emptying them; the bus reports no error, because the frames arrived and nobody collected them. A lost request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's 200 ms failsafe, so one lost frame is enough for `FAULT 01`. What the store does about it is above, and none of that has run on a board; what it does not do is get under the 260 us the two buffers hold. The 19 ms is an erase and a page program inside one window, which is what the store this replaces printed: neither half of it is measured on its own. The program is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to two orders of magnitude below 19 ms on serial NOR flash, or roughly 200 to 2,000 us against a 260 us budget | a board: the page program and erase windows from the console lines, the overrun count across sixteen saves, the heartbeat after a window, and a power cut mid-save |
 | The capability word is read once, at boot | `s_capabilities` is taken from the identity page during bring-up and never again, so a coprocessor that arrives after boot, or is swapped for one with different parts fitted, leaves the menu marked from the wrong word. The board identity beside it comes from the identity page that opens each link, so it follows a swap; this word does not, because it is written at boot and read by the render task, and moving the write into the control task adds a cross-task race | the same snapshot treatment the bench numbers already get |
@@ -367,7 +373,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |
 | No ESC reports its kV | the ESC screen shows the rated kV, what the motor turns per volt, and the ratio of the two as EFF, an estimate documented as such in [Screens](docs/Screens.md). The rated value is read from the connected ESC when it reports one and from `SET_MOTOR_KV` when it does not; nothing calls `motor_screen_set_esc_kv()` yet, so it is whatever the operator entered, and zero draws the field empty | an ESC parameter set on the link. The OpenYGE cache is built and unconnected; BLHeli_32's parameters are not published |
 | The heartbeat has no hardware backstop | the wire from J8's GPIO6 to the coprocessor's GP3 is fitted on the bring-up bench, and arming succeeds there: a motor and a servo have each been run from the panel. What is not fitted is the retriggerable monostable the wire is supposed to pass through, so firmware at both ends is the only thing gating the outputs. The wire covers a panel that stops beating while the coprocessor is healthy: the monitor sees no edge for HEARTBEAT_MAX_GAP_MS (150 ms) and the loop disarms. Uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs. That is what the monostable does, retriggered by the panel's edges and needing no firmware. A healthy panel beside a misbehaving coprocessor is covered by neither, and by no hardware in this design | the monostable specified in [Safety](docs/Safety.md), on a board. `testbench/WIRING.md` carries the specification and deliberately no part numbers |
-| The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
+| The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming has met no ESC | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
 | The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 74 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
@@ -400,7 +406,11 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
   each line's tail wrapped one line down.
 - The link is CAN only. There is no RS485 transceiver, direction circuit or
   turnaround in the design.
-- Every stop latches; nothing re-arms on its own.
+- Every stop latches; nothing re-arms on its own. On the coprocessor a start,
+  200 ms of link silence, a distrusted heartbeat and a refused ARM set an arm
+  latch that only a CLEAR releases. On the panel a STOP, a refused ARM, 500 ms
+  without touch and a link lost while armed latch a stop that only an arm
+  clears.
 
 ## Not planned
 
