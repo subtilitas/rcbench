@@ -58,6 +58,10 @@ typedef struct {
      */
     bool    tap_to_set;
 
+    /* Drawn dimmed, as a button that takes no press is.  The drawing only:
+     * the owner decides which events the slider is given. */
+    bool    dim;
+
     bool    dragging;
     uint8_t drag_id;
     int16_t drag_x;       /**< where the finger went down                 */

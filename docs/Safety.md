@@ -313,36 +313,50 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   completed inside a 50 ms poll is a 0 to 100 % step at the pin. Sliders that
   command nothing dangerous, such as the servo screen's sweep speed, keep
   tap-to-set.
-- A disarm returns the throttle to zero, so an arm starts from nothing rather
-  than from where the last run left it. The MOTOR & ESC slider moves on a
-  disarmed bench and commands nothing there, so an arm returns it to zero as
-  well, when the ARM hold asks for the arm. The readout and the `-1` and `+1`
-  steps read the slider, so the first step after the ask posts 1.0 %. A
-  throttle the screen has posted and the application has not collected is
-  dropped at the ask, and a drag under way ends there and at a disarm. A
-  throttle set after the ask follows the arm in the command queue and is
-  what the armed bench is given, so the slider keeps it when the bench
-  reports armed. A bench that arms without this hold, as for a stick run on
-  PROGRAMMER, returns the slider to zero when it reports armed.
-- The SERVO screen's commanded position changes only on an armed bench.
-  Disarmed, the dial, the rotary knob, CENTRE and SWEEP are refused: nothing
-  is posted, and the horn and the pulse width shown stay at the position
-  last driven. At an arm the value becomes the surface's rest, which the
-  pins drive once the arm has paid its release: the midpoint of the
-  channel's endpoints, 1500 us across 1000 to 2000 us and 760 us across 660
-  to 860 us. The first input after an arm starts from there. A drag under
-  way ends at an arm, a disarm and a stop. A position, a sweep or a hold the
-  screen has posted and the application has not collected at a disarm or a
-  stop is dropped. RELEASE on an armed bench centres the pins and leaves the
-  value shown; a knob turn after it counts from the value shown.
+- An output value changes only on an armed bench, on MOTOR & ESC and on
+  SERVO alike. While the bench is not armed, no control on either screen
+  changes the value it commands: nothing is posted, the value and its
+  readout stay, the control is drawn dimmed and the screen reads
+  `ARM FIRST`. A turn of the rotary knob made then is not kept. Not armed
+  runs from the disarm until the bench reports armed, so it covers the time
+  between a completed ARM hold and the bench's answer. From a DISARM a
+  screen asks for, or a STOP on an armed bench, until the bench reports
+  disarmed the controls are refused
+  too and drawn dimmed, while the DISARM waits to be collected and after
+  it. On SERVO a sweep, a pause, a held position and a run of the automatic
+  test end where the DISARM or the STOP is asked, and a RELEASE in that time is sent and moves no
+  value. A drag
+  under way ends at an arm, a disarm and a stop, and a finger resting on the
+  control moves nothing until it lifts and presses again. A value the screen
+  has posted and the application has not collected at a disarm or a stop is
+  dropped.
+- Every arm starts from the channel's rest, not from where the last run left
+  the control.
+  - MOTOR & ESC: the throttle slider, its `-1` and `+1` steps and the knob
+    are the controls. A disarm returns the throttle to 0 %, and it stays
+    there until the next arm, so the first step after an arm posts 1.0 %.
+    The ARM hold returns the slider to 0 % when it asks, and so does the
+    change to armed for an arm the hold did not ask for, as for a stick run
+    on PROGRAMMER.
+  - SERVO: the dial, the knob, CENTRE and SWEEP are the controls. Disarmed,
+    the horn and the pulse width shown stay at the position last driven. At
+    an arm the value becomes the surface's rest, which the pins drive once
+    the arm has paid its release: the midpoint of the channel's endpoints,
+    1500 us across 1000 to 2000 us and 760 us across 660 to 860 us. The
+    first input after an arm starts from there.
+- RELEASE on SERVO is not a position and is taken on a disarmed bench, where
+  it moves no value. On an armed bench it puts the pins at the rest and the
+  value shown becomes that rest, as at an arm: a drag under way ends, and
+  the first input after it starts from the rest. The release that ends a run
+  of the automatic test does the same.
 - Leaving a bench screen disarms.
 - The rotary knob (an AS5600 angle sensor; SETUP, APPLICATION, Rotary knob,
   OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by
   how far it turns, as the slider does, and the same rules hold. It never
-  arms: the only arm is the ARM hold. A disarm returns the throttle to zero
-  and the knob goes on from there, and leaving the screen disarms. On SERVO
-  a turn on a disarmed bench moves nothing and is not kept, and the knob
-  goes on from the rest the arm sets. The first
+  arms: the only arm is the ARM hold. On both screens a turn on a bench that
+  is not armed moves nothing and is not kept; after an arm the knob goes on
+  from 0 % on MOTOR & ESC and from the rest on SERVO. Leaving the screen
+  disarms. The first
   reading after power-up, a reading the sensor flags (no magnet, too weak,
   too strong, magnitude 0), a reading that does not arrive, and a step over
   90 deg between two readings each set the reference again and move nothing,
