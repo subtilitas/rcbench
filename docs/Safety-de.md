@@ -385,11 +385,11 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   Transaktionen eines Polls; ein Sensor, der den gemeinsamen I2C-Bus
   festhält, verzögert das Lesen des Touch also um höchstens 15 ms je Poll.
   Das Lesen des Touch liegt nicht auf dem Weg des Heartbeats: die
-  Control-Task erzeugt den Heartbeat und benutzt den I2C-Bus nicht. Angenommen
-  wird, dass der Sensor ohne Kollision unter 0x36 antwortet: 0x36 liegt
-  außerhalb der Kommandoadressen des CH422G in dessen Datenblatt, Waveshares
-  Wiki reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware
-  geprüft.
+  Control-Task erzeugt den Heartbeat und benutzt den I2C-Bus nicht. Auf dem Waveshare
+  ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G an den
+  I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse
+  0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht
+  lesen.
 - Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
   und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.

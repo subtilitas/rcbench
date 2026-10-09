@@ -333,9 +333,9 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   with a 5 ms bus timeout on each of the three transactions of a poll, so a
   sensor that holds the shared I2C bus delays the touch read by at most 15 ms
   per poll. The touch read is not on the heartbeat's path: the control task
-  generates the heartbeat and does not use the I2C bus. The sensor is assumed to answer at 0x36 without a clash: 0x36 is
-  outside the CH422G's command addresses in its datasheet, Waveshare's wiki
-  reserves 0x30 to 0x3F on this bus, and this is not checked on hardware.
+  generates the heartbeat and does not use the I2C bus. On the Waveshare ESP32-S3 Touch LCD 7 the CH422G I/O expander
+  answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the
+  AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus.
 - If the touch controller stops answering for 500 ms, the bench disarms and
   refuses to arm. The panel is the only place a STOP button exists.
 - After a link failsafe the coprocessor does not re-arm when traffic returns.

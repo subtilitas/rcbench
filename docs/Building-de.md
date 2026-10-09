@@ -110,10 +110,9 @@ prüfen.
 Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip. Der
 AS5600 meldet ein zu schwaches oder zu starkes Feld im STATUS-Register, und
 das Panel behandelt beides als keine Antwort. Der Sensor liest unter 0x36, was
-fest ist. Diese Adresse wird als frei angenommen: Sie liegt außerhalb der
-Kommandoadressen des CH422G in dessen Datenblatt, Waveshares Wiki
-reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware
-geprüft. Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet
+fest ist. Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der
+I/O-Expander CH422G an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F,
+darunter 0x36; ein AS5600 lässt sich an diesem Bus daher nicht lesen. Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet
 wird. [Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er
 tut.
 

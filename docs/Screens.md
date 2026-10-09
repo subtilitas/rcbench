@@ -1085,7 +1085,7 @@ across a third of its travel from -travel to +travel.
   command waits for the frame (an arm that has just completed, a disarm, a
   peak reset, a release), the knob's motion in that frame is dropped, not
   held.
-- The sensor is assumed to answer at 0x36 without a clash: 0x36 is outside the CH422G's command addresses in its datasheet, Waveshare's wiki reserves 0x30 to 0x3F on this bus, and this is not checked on hardware.
+- Known limitation: On the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus. The Rotary knob setting is OFF by default.
 
 ### INTERFACES: the current monitors
 
