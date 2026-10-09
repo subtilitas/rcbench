@@ -14,7 +14,12 @@
  * CSV header and report included; a servo that turns less than commanded
  * showing the error; one that never moves counted unmoved; an encoder that
  * gives nothing said so; a stillness that began before the command not
- * taken for its end.
+ * taken for its end; movement, end angles and their error taken on the
+ * circle, with a horn at rest across the half turn from the centre, end
+ * angles either side of it, and ends more than 180 degrees apart or from
+ * the centre; a reading without a magnet counted and reported as the
+ * reason for missing angles, and readings with a weak or strong field
+ * used and counted.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -69,6 +74,14 @@ typedef struct {
     float    enc_deg_per_us;
     uint32_t enc_every, enc_next;
     bool     enc_valid;
+    int      enc_flutter;    /* counts, + and - on alternate readings */
+    int      enc_by_move;    /* counts, + and - on alternate pairs of
+                                commands: the same end reads either side
+                                of its place from one move to the next */
+    bool     enc_weak;       /* every reading says the field is too weak */
+    unsigned cmds;           /* commands taken */
+    uint16_t enc_raw;        /* the count last read */
+    uint16_t enc_at_cmd[16]; /* ... as each command found it */
     uint32_t row_lag_ms;     /* the supply's rows are stamped this much older */
     bool     check_rows;     /* keep_csv() checks where a settle was logged */
     unsigned settle_rows;
@@ -238,7 +251,10 @@ static void enc_model(void)
 {
     const float deg = (g.servo.position_us - 1500.0f) * g.enc_deg_per_us;
     const int counts = (int)lroundf(deg * 4096.0f / 360.0f);
-    const uint16_t raw = (uint16_t)((counts + (int)ENC_CENTRE_COUNT) & 4095);
+    const int flutter = (g.enc_sent & 1u) ? g.enc_flutter : -g.enc_flutter;
+    const int by_move = ((g.cmds >> 1) & 1u) ? g.enc_by_move : -g.enc_by_move;
+    const uint16_t raw = (uint16_t)((counts + (int)ENC_CENTRE_COUNT + flutter
+                                     + by_move) & 4095);
     int d = (int)raw - (int)g.enc_anchor;
     d = ((d + 2048) & 4095) - 2048;
     if (d < 0) {
@@ -256,6 +272,8 @@ static void enc_model(void)
         e.raw      = raw;
         e.still_ms = (uint16_t)(g.now - g.enc_anchor_ms);
         e.taken_ms = g.now;
+        e.weak     = g.enc_weak;
+        g.enc_raw  = raw;
         servo_test_encoder(&g.t, &e);
         ++g.enc_sent;
     }
@@ -299,6 +317,8 @@ static void frame(void)
     if (d.command) {
         CHECK(d.cmd_us >= LO_US && d.cmd_us <= HI_US);
         g.cmd_us = d.cmd_us;
+        g.enc_at_cmd[g.cmds % 16u] = g.enc_raw;
+        ++g.cmds;
     }
     if (d.release) {
         g.released = true;
@@ -1896,12 +1916,13 @@ TEST_CASE(a_reversed_profile_reads_the_encoder_in_the_commanded_direction)
     run_out(120000u);
     const servo_test_step_t *s = &g.t.steps[0];
     CHECK_EQ(s->enc_travels, 3u);
-    CHECK(s->enc_end[0].n + s->enc_end[1].n == 3u);
-    if (s->enc_end[0].n > 0u) {
-        CHECK_NEAR(s->enc_end[0].sum / (float)s->enc_end[0].n, 36.0f, 0.5f);
+    CHECK(s->enc_end_off[0].n + s->enc_end_off[1].n == 3u);
+    float end = 0.0f;
+    if (servo_test_enc_end(&g.t, s, 0u, &end, NULL)) {
+        CHECK_NEAR(end, 36.0f, 0.5f);
     }
-    if (s->enc_end[1].n > 0u) {
-        CHECK_NEAR(s->enc_end[1].sum / (float)s->enc_end[1].n, -36.0f, 0.5f);
+    if (servo_test_enc_end(&g.t, s, 1u, &end, NULL)) {
+        CHECK_NEAR(end, -36.0f, 0.5f);
     }
     float deg = 0.0f;
     CHECK(servo_test_enc_at(&g.t, g.now, &deg));
@@ -1926,11 +1947,10 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
     CHECK_EQ(s->enc_travels, 3u);
     CHECK_EQ(s->enc_unmoved, 0u);
     CHECK_EQ(s->enc_late, 0u);
-    CHECK(s->enc_end[0].n + s->enc_end[1].n == 3u);
-    const float lo = s->enc_end[0].n ? s->enc_end[0].sum / (float)s->enc_end[0].n
-                                      : -36.0f;
-    const float hi = s->enc_end[1].n ? s->enc_end[1].sum / (float)s->enc_end[1].n
-                                      : 36.0f;
+    CHECK(s->enc_end_off[0].n + s->enc_end_off[1].n == 3u);
+    float lo = -36.0f, hi = 36.0f;
+    (void)servo_test_enc_end(&g.t, s, 0u, &lo, NULL);
+    (void)servo_test_enc_end(&g.t, s, 1u, &hi, NULL);
     CHECK_NEAR(lo, -36.0f, 0.5f);
     CHECK_NEAR(hi, 36.0f, 0.5f);
     /* The settle begins as the horn comes within the tolerance of its
@@ -2030,12 +2050,13 @@ TEST_CASE(a_servo_that_turns_less_than_commanded_shows_the_error)
     run_out(120000u);
     const servo_test_step_t *s = &g.t.steps[0];
     CHECK_EQ(s->enc_travels, 3u);
-    CHECK(s->enc_end[0].n + s->enc_end[1].n == 3u);
-    if (s->enc_end[0].n > 0u) {
-        CHECK_NEAR(s->enc_end[0].sum / (float)s->enc_end[0].n, -28.0f, 0.5f);
+    CHECK(s->enc_end_off[0].n + s->enc_end_off[1].n == 3u);
+    float end = 0.0f;
+    if (servo_test_enc_end(&g.t, s, 0u, &end, NULL)) {
+        CHECK_NEAR(end, -28.0f, 0.5f);
     }
-    if (s->enc_end[1].n > 0u) {
-        CHECK_NEAR(s->enc_end[1].sum / (float)s->enc_end[1].n, 28.0f, 0.5f);
+    if (servo_test_enc_end(&g.t, s, 1u, &end, NULL)) {
+        CHECK_NEAR(end, 28.0f, 0.5f);
     }
     /* Err is End less commanded: +8.00 at the low end, -8.00 at the high. */
     CHECK(strstr(g.report, "-28.0") != NULL);
@@ -2070,6 +2091,8 @@ TEST_CASE(an_encoder_that_gives_nothing_is_said_so)
     CHECK_EQ(g.t.enc_reads, 0u);
     CHECK_EQ(g.t.steps[0].enc_moves, 0u);
     CHECK(strstr(g.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(g.report, "No magnet:") == NULL);  /* nobody said so */
+    CHECK(strstr(g.report, "Field:") == NULL);
     /* The current's result stands. */
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
     CHECK(strstr(g.csv_text, ";CV;") != NULL);
@@ -2316,7 +2339,7 @@ TEST_CASE(a_stillness_from_before_the_command_is_not_the_end_of_the_move)
     t.enc_ok = true;
     t.enc_end = 1u;
     t.enc_cmd_ms = 10000u;
-    t.enc_start_deg = 0.0f;
+    t.enc_start_raw = 0u;
     /* Moved 5 degrees, still for 200 ms, the stillness older than the
      * command: not settled. */
     servo_test_enc_t e = { true, (uint16_t)(5.0f * 4096.0f / 360.0f), 200u, 10100u, false };
@@ -2364,6 +2387,244 @@ TEST_CASE(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged)
     CHECK(s->enc_moves < 3u);
 }
 
+/* ------------------------------------------------ the angle on the circle */
+
+/* The first step's row of the report's ENCODER table: the end angles and
+ * their errors.  False when the row is missing or has a "--" in it. */
+static bool enc_row(float *lo, float *elo, float *hi, float *ehi)
+{
+    const char *p = strstr(g.report, "Set V  End lo");
+    if (p == NULL || (p = strchr(p, '\n')) == NULL) {
+        return false;
+    }
+    float v = 0.0f;
+    return sscanf(p + 1, "%f %f %f %f %f", &v, lo, elo, hi, ehi) == 5;
+}
+
+/* A horn that holds still with the centre a half turn away: its count
+ * flutters by 2, 2047 and 2049 from the centre, +179.9 and -179.9 degrees.
+ * That is 0.18 degrees of movement, not 359.8: every move is unmoved. */
+TEST_CASE(two_counts_across_the_half_turn_are_not_a_move)
+{
+    servo_test_cfg_t c;
+    enc_rig(0.0f, &c);
+    c.enc_centre = (uint16_t)(ENC_CENTRE_COUNT - 2048u);
+    g.enc_flutter = 1;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    /* The rig did read either side of the half turn. */
+    CHECK_NEAR(servo_test_enc_deg(ENC_CENTRE_COUNT - 1u, c.enc_centre),
+               179.91f, 0.01f);
+    CHECK_NEAR(servo_test_enc_deg(ENC_CENTRE_COUNT + 1u, c.enc_centre),
+               -179.91f, 0.01f);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->enc_moves, 3u);
+    CHECK_EQ(s->enc_unmoved, 3u);
+    CHECK_EQ(s->enc_late, 0u);
+    CHECK_EQ(s->enc_travels, 0u);
+}
+
+/* The high end lies a half turn from the centre and settles 2 counts short
+ * of it after one move and 2 counts past it after the next: +179.8 and
+ * -179.8 degrees.  Their mean is the half turn, not 0, and against a
+ * commanded 180 degrees the error is about 0, not 180. */
+TEST_CASE(end_angles_either_side_of_the_half_turn_average_on_the_circle)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    c.moves = 4u;
+    const uint16_t hi_count = (uint16_t)(ENC_CENTRE_COUNT + 410u);  /* +36 deg */
+    c.enc_centre = (uint16_t)(hi_count - 2048u);
+    c.enc_cmd_deg[0] = 108.0f;
+    c.enc_cmd_deg[1] = 180.0f;
+    g.enc_by_move = 2;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->enc_travels, 4u);
+    /* The rig did leave the high end on both sides of the half turn. */
+    bool below = false, above = false;
+    for (unsigned k = 0u; k < 16u && k < g.cmds; ++k) {
+        const float d = servo_test_enc_deg(g.enc_at_cmd[k], c.enc_centre);
+        below = below || (d > 179.0f);
+        above = above || (d < -179.0f);
+    }
+    CHECK(below && above);
+    float lo = 0.0f, elo = 0.0f, hi = 0.0f, ehi = 0.0f;
+    CHECK(enc_row(&lo, &elo, &hi, &ehi));
+    CHECK(fabsf(hi) > 179.5f);
+    CHECK(fabsf(ehi) < 0.5f);
+    CHECK_NEAR(lo, 108.0f, 0.5f);
+    CHECK(fabsf(elo) < 0.5f);
+}
+
+/* A servo that turns 200 degrees between its ends.  With the centre in the
+ * middle each end is within 180 degrees of it and reads as it is, -100 and
+ * +100.  With the centre at the low end the high end is 200 degrees from
+ * it and reads 360 less, -160; the error against a commanded 200 is still
+ * about 0, taken on the circle. */
+TEST_CASE(ends_more_than_180_degrees_apart_are_reported_within_one_turn)
+{
+    servo_test_cfg_t c;
+    enc_rig(0.25f, &c);
+    c.moves = 4u;
+    c.enc_cmd_deg[0] = -100.0f;
+    c.enc_cmd_deg[1] =  100.0f;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->enc_moves, 4u);
+    CHECK_EQ(s->enc_travels, 4u);
+    CHECK_EQ(s->enc_unmoved, 0u);
+    float lo = 0.0f, elo = 0.0f, hi = 0.0f, ehi = 0.0f;
+    CHECK(enc_row(&lo, &elo, &hi, &ehi));
+    CHECK_NEAR(lo, -100.0f, 0.5f);
+    CHECK_NEAR(hi, 100.0f, 0.5f);
+    CHECK(fabsf(elo) < 0.5f && fabsf(ehi) < 0.5f);
+
+    enc_rig(0.25f, &c);
+    c.moves = 4u;
+    /* 100 degrees are 1138 counts: the centre at the low end. */
+    c.enc_centre = (uint16_t)(ENC_CENTRE_COUNT - 1138u);
+    c.enc_cmd_deg[0] = 0.0f;
+    c.enc_cmd_deg[1] = 200.0f;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    s = &g.t.steps[0];
+    CHECK_EQ(s->enc_travels, 4u);
+    CHECK_EQ(s->enc_unmoved, 0u);
+    CHECK(enc_row(&lo, &elo, &hi, &ehi));
+    CHECK_NEAR(lo, 0.0f, 0.5f);
+    CHECK_NEAR(hi, -160.0f, 0.5f);
+    CHECK(fabsf(elo) < 0.5f && fabsf(ehi) < 0.5f);
+    CHECK(strstr(g.report, "End: the settled angle, -180 to +180 deg from the "
+                           "centre count. Err: End minus commanded, the "
+                           "shortest way round.") != NULL);
+}
+
+TEST_CASE(a_steps_end_angle_is_a_mean_taken_from_its_first)
+{
+    CHECK_NEAR(servo_test_enc_wrap(0.0f), 0.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(179.9f), 179.9f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(180.0f), -180.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(-180.0f), -180.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(190.0f), -170.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(-190.0f), 170.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(-360.0f), 0.0f, 0.0001f);
+    CHECK_NEAR(servo_test_enc_wrap(540.0f), -180.0f, 0.0001f);
+
+    servo_test_t t;
+    servo_test_init(&t);
+    t.cfg.enc_centre = 0u;
+    t.cfg.enc_cmd_deg[0] = -170.0f;
+    t.cfg.enc_cmd_deg[1] = 170.0f;
+    servo_test_step_t s;
+    memset(&s, 0, sizeof(s));
+    float deg = 1.0f, err = 1.0f;
+    CHECK(!servo_test_enc_end(&t, &s, 1u, &deg, &err));    /* none settled */
+    CHECK_NEAR(deg, 1.0f, 0.0001f);
+    /* The first at 2040 counts (+179.30 degrees), three offsets from it:
+     * 0, +16 and +8 counts, the mean 8 counts on: 2048, the half turn. */
+    s.enc_end_ref[1] = 2040u;
+    s.enc_end_off[1].n = 3u;
+    s.enc_end_off[1].sum = 24.0f * 360.0f / 4096.0f;
+    CHECK(servo_test_enc_end(&t, &s, 1u, &deg, &err));
+    CHECK_NEAR(deg, -180.0f, 0.001f);
+    CHECK_NEAR(err, 10.0f, 0.001f);        /* 180 less 170, not -350 */
+    CHECK(servo_test_enc_end(&t, &s, 1u, NULL, NULL));
+    /* REVERSE on negates the angle; the half turn stays -180. */
+    t.cfg.reverse = true;
+    s.enc_end_off[1].sum = 0.0f;
+    CHECK(servo_test_enc_end(&t, &s, 1u, &deg, &err));
+    CHECK_NEAR(deg, -179.30f, 0.01f);
+    CHECK_NEAR(err, 10.70f, 0.01f);        /* -179.30 less 170, wrapped */
+    CHECK(!servo_test_enc_end(&t, &s, 0u, &deg, &err));
+    CHECK(!servo_test_enc_end(&t, &s, 2u, &deg, &err));
+    CHECK(!servo_test_enc_end(NULL, &s, 1u, &deg, &err));
+    CHECK(!servo_test_enc_end(&t, NULL, 1u, &deg, &err));
+}
+
+/* ------------------------------------------------------------ the magnet */
+
+/* The sensor answers and sees no magnet: the reading is not valid and says
+ * why.  The angle ends as with any invalid reading -- the open move is not
+ * counted -- and the report gives the reason. */
+TEST_CASE(a_reading_without_a_magnet_is_no_angle_and_the_report_says_why)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    CHECK(run_to_counted_move_start());
+    servo_test_enc_t none = { 0 };
+    none.no_magnet = true;
+    none.raw       = 1234u;             /* whatever the part read */
+    none.taken_ms  = g.now;
+    servo_test_encoder(&g.t, &none);
+    float deg = 0.0f;
+    CHECK(!servo_test_enc_at(&g.t, g.now, &deg));
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(g.t.enc_no_magnet, 1u);
+    CHECK_EQ(s->moves, 3u);
+    CHECK_EQ(s->enc_moves, 2u);
+    CHECK_EQ(s->enc_travels, 2u);
+    CHECK(strstr(g.report, "No magnet: the AS5600 reported none 1 time(s). "
+                           "No angle is logged then, and an unsettled move "
+                           "is not counted.") != NULL);
+    CHECK(strstr(g.report, "No angle reading reached the run.") == NULL);
+    CHECK(strstr(g.report, "Field:") == NULL);
+
+    /* No magnet for the whole run: no reading reached it, and why. */
+    enc_rig(ENC_DEG_PER_US, &c);
+    g.enc_valid = false;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    none.taken_ms = g.now;
+    servo_test_encoder(&g.t, &none);
+    run_out(120000u);
+    CHECK_EQ(g.t.enc_reads, 0u);
+    CHECK_EQ(g.t.steps[0].enc_moves, 0u);
+    CHECK(strstr(g.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(g.report, "No magnet: the AS5600 reported none 1 time(s).")
+          != NULL);
+    /* Outside a run nothing is counted. */
+    servo_test_t idle;
+    servo_test_init(&idle);
+    servo_test_encoder(&idle, &none);
+    CHECK_EQ(idle.enc_no_magnet, 0u);
+}
+
+/* The field too weak with the magnet detected: the angles are positions,
+ * the run uses them as any other, and the report says how many there
+ * were. */
+TEST_CASE(readings_with_a_weak_field_are_used_and_counted)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    g.enc_weak = true;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->enc_moves, 3u);
+    CHECK_EQ(s->enc_travels, 3u);
+    CHECK(g.t.enc_reads > 100u);
+    CHECK_EQ(g.t.enc_weak, g.t.enc_reads);
+    CHECK_EQ(g.t.enc_strong, 0u);
+    char want[96];
+    snprintf(want, sizeof(want), "Field: %lu reading(s) with the magnet too "
+             "weak, 0 too strong. The angle is used;",
+             (unsigned long)g.t.enc_reads);
+    CHECK(strstr(g.report, want) != NULL);
+    CHECK(strstr(g.report, "No magnet:") == NULL);
+    /* Too strong is counted beside it. */
+    servo_test_enc_t e = { 0 };
+    e.valid = true;
+    e.strong = true;
+    g.t.state = SERVO_TEST_RUNNING;
+    servo_test_encoder(&g.t, &e);
+    CHECK_EQ(g.t.enc_strong, 1u);
+}
+
+
 int main(void)
 {
     RUN(an_angle_is_counted_from_the_centre_round_the_circle);
@@ -2382,6 +2643,12 @@ int main(void)
     RUN(rows_older_than_the_encoders_readings_still_get_their_angle);
     RUN(a_reading_after_lost_ones_leaves_the_open_move_unmeasured);
     RUN(a_stillness_from_before_the_command_is_not_the_end_of_the_move);
+    RUN(two_counts_across_the_half_turn_are_not_a_move);
+    RUN(end_angles_either_side_of_the_half_turn_average_on_the_circle);
+    RUN(ends_more_than_180_degrees_apart_are_reported_within_one_turn);
+    RUN(a_steps_end_angle_is_a_mean_taken_from_its_first);
+    RUN(a_reading_without_a_magnet_is_no_angle_and_the_report_says_why);
+    RUN(readings_with_a_weak_field_are_used_and_counted);
     RUN(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged);
     RUN(a_run_measures_each_step_and_passes);
     RUN(the_travel_time_is_late_by_at_most_a_reading);

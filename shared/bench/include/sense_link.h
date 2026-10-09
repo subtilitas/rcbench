@@ -168,7 +168,10 @@ enum {
      *  answers there that is not an AS5600. */
     SENSE_LINK_EV_ENC_SILENT    = 0x8000,
     /** The encoder answers and its magnet is missing, too weak or too
-     *  strong; see sense_link_enc_magnet(). */
+     *  strong; see sense_link_enc_magnet().  Said once until the field
+     *  reads right, and again when a magnet that was weak or strong goes
+     *  missing or a missing one comes back weak or strong: the first takes
+     *  the angle away and the second gives it back. */
     SENSE_LINK_EV_ENC_MAGNET    = 0x10000,
 };
 
@@ -354,24 +357,31 @@ bool sense_link_esc(const sense_link_t *s, uint32_t now_ms, bool *v_ok,
 bool sense_link_totals(const sense_link_t *s, uint32_t now_ms,
                        int32_t *charge_cmah, uint32_t *energy_cwh);
 
-/** The output encoder as last read. */
+/** The output encoder's angle as last read. */
 typedef struct {
     uint16_t raw;         /**< RAW ANGLE, 0 to 4095                       */
     uint16_t samples;     /**< angle reads, modulo 65536                  */
     uint16_t still_ms;    /**< held within the tolerance, ms, at the read */
     uint32_t taken_ms;    /**< when the panel had the read                */
-    bool     magnet;      /**< STATUS MD                                  */
-    bool     weak, strong;/**< STATUS ML, MH                              */
+    bool     weak, strong;/**< STATUS ML, MH: a position, its noise not
+                               specified (as5600.h)                       */
 } sense_link_enc_t;
 
 /**
- * The encoder's last reading into @p out: true when the page enables it,
- * the last SENSE read is younger than SENSE_LINK_STALE_MS at @p now_ms, the
- * part was online in it and the angle holds a reading of this set-up.
- * False, @p out untouched, otherwise.
+ * The encoder's last angle into @p out: true when the page enables it, the
+ * last SENSE read is younger than SENSE_LINK_STALE_MS at @p now_ms, the
+ * part was online in it, the angle holds a reading of this set-up and that
+ * reading's STATUS has MD set: a magnet is detected, and RAW ANGLE is a
+ * position.  False, @p out untouched, otherwise.  This is the one place an
+ * angle leaves the link, so no caller has an angle read without a magnet.
  */
 bool sense_link_enc(const sense_link_t *s, uint32_t now_ms,
                     sense_link_enc_t *out);
+
+/** Whether sense_link_enc() gives no angle at @p now_ms because the part
+ *  answers and sees no magnet: every condition of sense_link_enc() but MD
+ *  holds. */
+bool sense_link_enc_no_magnet(const sense_link_t *s, uint32_t now_ms);
 
 /** The magnet bits SENSE_LINK_EV_ENC_MAGNET was raised with:
  *  LINK_SN_ENC_MD, _ML and _MH, as read. */

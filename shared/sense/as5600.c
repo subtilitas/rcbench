@@ -11,9 +11,10 @@ uint16_t as5600_u12(const uint8_t *b)
     return (uint16_t)(sense_be16(b) & 0x0FFFu);
 }
 
-bool as5600_status_valid(uint8_t status)
+bool as5600_status_possible(uint8_t status)
 {
-    return (status & (uint8_t)~AS5600_STATUS_MASK) == 0u;
+    const uint8_t both = (uint8_t)(AS5600_STATUS_ML | AS5600_STATUS_MH);
+    return (status & both) != both;
 }
 
 bool as5600_md(uint8_t status)
@@ -62,8 +63,8 @@ static sense_state_t probe(as5600_t *d)
         return SENSE_PART_ABSENT;
     }
     d->part.id_device = b[0];
-    return as5600_status_valid(b[0]) ? SENSE_PART_ONLINE
-                                     : SENSE_PART_WRONG_ID;
+    return as5600_status_possible(b[0]) ? SENSE_PART_ONLINE
+                                        : SENSE_PART_WRONG_ID;
 }
 
 bool as5600_step(as5600_t *d, uint32_t now_ms)

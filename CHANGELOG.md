@@ -33,7 +33,7 @@ as before.
   magnetic angle sensor on a servo's output shaft, at 0x36 on the sensor bus
   beside the INA parts. SENSE's ENABLE takes bit 2 for it, and registers 26
   to 31 carry its flags (answering, magnet detected, too weak, too strong,
-  another STATUS, angle valid), RAW ANGLE (0 to 4095, 0.0879 degrees a
+  an impossible STATUS, angle valid), RAW ANGLE (0 to 4095, 0.0879 degrees a
   count), MAGNITUDE, an angle sample count and the time the angle has stayed
   within 12 counts (1.05 degrees) of an anchor, in ms. The coprocessor reads
   STATUS and RAW ANGLE at 500 Hz on the 1 ms schedule's ticks without a
@@ -44,7 +44,13 @@ as before.
   from a coprocessor that names 4.9 and says
   `coprocessor older than 4.9 -- AS5600 not read` for an older one; it says
   `AS5600 not answering at 0x36` and the three magnet messages once each.
-  The driver is `shared/sense/as5600.c`.
+  An angle read with STATUS MD clear (no magnet, field below 8 mT) is not a
+  position: the coprocessor holds no still time for it and the panel hands it
+  to no consumer, so MEASURED shows `---`, ENC CENTRE stores nothing and a
+  run judges no angle. With ML or MH set beside MD the angle is used and the
+  condition is reported. STATUS bits 7, 6, 2, 1 and 0 are blank in the
+  datasheet and are masked off; the probe takes any answer at 0x36 as the
+  part except ML and MH both set. The driver is `shared/sense/as5600.c`.
 - **AS5600 in SETUP, INTERFACES, and on SERVO.** An AS5600 row (OFF at the
   start) and AS5600 centre, the sensor's count at the servo's neutral. The
   SERVO screen's MEASURED row shows the angle from the centre, and ENC CENTRE
@@ -57,7 +63,12 @@ as before.
   and `travel angle (ms)` columns, each row taking the newest angle taken at
   or before it, and the report an ENCODER section; the
   deadband is reported as not measured, since the moves go end to end. With
-  AS5600 off, the CSV and the report are as before.
+  AS5600 off, the CSV and the report are as before. Angles are compared and
+  averaged on the circle: movement the shortest way round, end angles as
+  offsets from the step's first, the error wrapped to -180 to +180 degrees.
+  An end more than 180 degrees from the centre count is reported 360 degrees
+  off; turns are not counted. The report says how often the sensor reported
+  no magnet and how many readings had the field too weak or too strong.
 
 None of the encoder work has run on hardware.
 

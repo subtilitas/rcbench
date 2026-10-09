@@ -5231,6 +5231,13 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 
+    /* A sensor that answers and sees no magnet has no live count. */
+    const servo_test_enc_t dark = { .valid = false, .raw = 777u,
+                                    .taken_ms = 5020u, .no_magnet = true };
+    servo_screen_encoder(&dark);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
+
     /* A reading that has gone sets nothing; with the encoder off in SETUP
      * the row is faint and sets nothing either. */
     const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false };
@@ -5295,6 +5302,46 @@ TEST_CASE(a_run_with_the_encoder_on_writes_the_angle_columns)
     CHECK(b.ends >= 1u);
 }
 
+/* "No magnet" reaches the screen once, when it begins.  A run started
+ * after that is told the state it starts in, and its report gives the
+ * reason for its missing angles. */
+TEST_CASE(a_run_started_without_a_magnet_says_so_in_its_report)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_screen_set_enc_held(true);
+    const servo_test_enc_t dark = { .valid = false, .no_magnet = true };
+    servo_screen_encoder(&dark);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    CHECK(strstr(b.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(b.report, "No magnet: the AS5600 reported none 1 time(s).")
+          != NULL);
+
+    /* A sensor that stopped answering before the run is not "no magnet". */
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    servo_screen_set_enc_held(true);
+    servo_screen_encoder(&dark);
+    const servo_test_enc_t gone = { .valid = false };
+    servo_screen_encoder(&gone);
+    hold_start(2.3f);
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    bench_frames(1000u);
+    CHECK(strstr(b.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(b.report, "No magnet:") == NULL);
+}
+
 TEST_CASE(a_run_with_the_encoder_off_writes_the_old_columns)
 {
     bench_fresh();
@@ -5338,6 +5385,7 @@ int main(void)
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);
+    RUN(a_run_started_without_a_magnet_says_so_in_its_report);
     RUN(a_run_with_the_encoder_off_writes_the_old_columns);
     RUN(a_touch_on_the_dial_points_the_horn_there);
     RUN(a_drag_keeps_commanding);

@@ -144,7 +144,9 @@ bool servo_screen_take(servo_cmd_t *out);
  * A reading of the output encoder (an AS5600 on the horn shaft), each one
  * once, in the order they arrive.  With AS5600 on in SETUP the MEASURED row
  * shows its angle from the centre count, and a run reads it for the angle
- * results in its CSV and report.  A reading that is not valid shows "---".
+ * results in its CSV and report.  A reading that is not valid -- the sensor
+ * not answering, or answering and detecting no magnet -- shows "---", and
+ * ENC CENTRE takes nothing from it.
  */
 void servo_screen_encoder(const servo_test_enc_t *e);
 

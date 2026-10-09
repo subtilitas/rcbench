@@ -280,16 +280,35 @@ report and in the CSV, so a horn at the commanded end shows no error. A
 servo that turns less than 90 degrees over that span shows the difference as
 angle error.
 
+The count wraps from 4095 to 0, so every angle is a position on one turn and
+no two are subtracted or averaged as plain numbers. A move's distance from
+its start is taken the shortest way round, 0 to 180 degrees: 2 counts either
+side of the half turn from the centre are 0.18 degrees apart, not 359.8. A
+step's end angles at one end are averaged as offsets from the first of them
+and the mean is put back on the circle, so ends read at +179.9 and -179.9
+degrees average to 180 (shown as -180.00), not 0. The angle error is wrapped
+to -180 to +180 degrees as well.
+
+One turn is all the sensor tells apart, which limits what is reported for a
+servo that travels more than 180 degrees:
+
+| Case | Reported |
+| --- | --- |
+| the ends more than 180 degrees apart, each within 180 degrees of the centre (-100 and +100) | both end angles and both errors as they are; the two ends are never subtracted from each other |
+| an end more than 180 degrees from the centre (+200) | the end angle 360 degrees off (-160); the angle error is right while the commanded angle names the same position (+200), since it is wrapped |
+| a move that ends within 2.0 degrees of a whole turn from its start | unmoved |
+| the direction of a move, and the turns of a winch servo | not judged, not counted |
+
 For each move, from its command to the next command (constants in
 `servo_test.h`):
 
 | Term | Rule |
 | --- | --- |
-| moved | the angle leaves `SERVO_TEST_ENC_MOVED_DEG`, 2.0 degrees, of the angle read before the command; that reading must be younger than `SERVO_TEST_ENC_STALE_MS`, 500 ms, or the move is not judged |
+| moved | the angle leaves `SERVO_TEST_ENC_MOVED_DEG`, 2.0 degrees, of the angle read before the command, the shortest way round; that reading must be younger than `SERVO_TEST_ENC_STALE_MS`, 500 ms, or the move is not judged |
 | settled | after it has moved, a reading whose still time is at least `SERVO_TEST_ENC_HOLD_MS`, 100 ms, and whose stillness began after the command. The angle has then stayed within `SERVO_TEST_ENC_TOL_COUNTS`, 12 counts or 1.05 degrees, of an anchor for that long |
 | travel time (angle) | the start of that stillness minus the command: the moment the angle came within the tolerance of its final value |
 | end angle | the angle at the last reading before the next command, for a settled move |
-| angle error | the mean end angle at an end minus that end's commanded angle |
+| angle error | the mean end angle at an end, taken on the circle from the step's first end angle there, minus that end's commanded angle, wrapped to -180 to +180 degrees |
 | unmoved | the angle never left the 2.0 degrees |
 | late | it moved and was not still for 100 ms before the next command |
 
@@ -314,6 +333,19 @@ settled: its window was cut short, and the current's results do not count
 such a move either. A move that had settled before the gap or the abort
 keeps its result.
 
+The angle is a reading only while the sensor detects its magnet (STATUS MD,
+[Link](Link.md)). While it reports none, its count is not a position: the
+panel hands it to nothing, the reading reaches the run marked invalid with
+the reason, the CSV's angle column is empty, and an open move that had not
+settled is left out as above. The report then has the line `No magnet: the
+AS5600 reported none N time(s). ...`, N being the times the sensor went from
+any other state to "no magnet" during the run, a run started in that state
+included. A magnet reported too weak or too strong (ML, MH) with MD set
+leaves the angle in use: the datasheet states no effect on the angle and
+specifies its noise for 30 to 90 mT only. The report counts those readings:
+`Field: N reading(s) with the magnet too weak, M too strong. ...`. Neither
+line is written when its counts are 0.
+
 The report adds a header line (`Encoder:`), a table per step -- the mean end
 angle and its error at each end, the mean and longest travel time, the moves
 counted, unmoved and late -- and the commanded angles with the rules above.
@@ -329,7 +361,7 @@ not measured: it needs steps smaller than the end-to-end moves the test
 makes, and the test makes none. The SERVO screen's MEASURED row shows the
 live angle while AS5600 is on. A link that goes down clears the reading: the
 row shows dashes and ENC CENTRE sets nothing until a reading arrives with the
-link back.
+link back. The same holds while the sensor reports no magnet.
 
 Not run on hardware: the sensor on the bus, the tolerance and the 100 ms
 hold against a real servo's jitter, and the mounting.

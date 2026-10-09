@@ -186,8 +186,9 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "Travel Longest Moves Unmoved Late",
     [SERVO_STR_R_ENC_CMD]        = "Commanded: %+.1f deg at the low end, %+.1f "
                                    "deg at the high end.",
-    [SERVO_STR_R_ENC_END]        = "End: the settled angle. Err: End minus "
-                                   "commanded.",
+    [SERVO_STR_R_ENC_END]        = "End: the settled angle, -180 to +180 deg "
+                                   "from the centre count. Err: End minus "
+                                   "commanded, the shortest way round.",
     [SERVO_STR_R_ENC_SETTLED]    = "Settled: the angle has stayed within %.2f "
                                    "deg for %u ms.",
     [SERVO_STR_R_ENC_TRAVEL]     = "Travel: the command to the start of that "
@@ -200,6 +201,12 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_ENC_DEADBAND]   = "Deadband: not measured; the moves go end "
                                    "to end.",
     [SERVO_STR_R_ENC_NONE]       = "No angle reading reached the run.",
+    [SERVO_STR_R_ENC_NO_MAGNET]  = "No magnet: the AS5600 reported none %lu "
+                                   "time(s). No angle is logged then, and an "
+                                   "unsettled move is not counted.",
+    [SERVO_STR_R_ENC_FIELD]      = "Field: %lu reading(s) with the magnet too "
+                                   "weak, %lu too strong. The angle is used; "
+                                   "its noise is not specified then.",
     [SERVO_STR_R_UNM_POSITION_ENC] = "Position: the AS5600 measures the horn; "
                                      "the current's travel time is reported "
                                      "beside the angle's.",
@@ -670,23 +677,19 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-/* A mean angle, signed, or "--" for none. */
-static void deg_mean(char *b, size_t n, const servo_test_mean_t *m)
+/* A step's mean end angle at @p end and its error against the commanded
+ * one, both on the circle (servo_test_enc_end()), signed, or "--" for
+ * none. */
+static void deg_end(const servo_test_t *t, const servo_test_step_t *s,
+                    unsigned end, char *b, char *eb, size_t n)
 {
-    if (m->n > 0u) {
-        snprintf(b, n, "%+.2f", (double)(m->sum / (float)m->n));
+    float deg = 0.0f, err = 0.0f;
+    if (servo_test_enc_end(t, s, end, &deg, &err)) {
+        snprintf(b, n, "%+.2f", (double)deg);
+        snprintf(eb, n, "%+.2f", (double)err);
     } else {
         snprintf(b, n, "--");
-    }
-}
-
-/* The mean end angle less the commanded one, or "--". */
-static void deg_err(char *b, size_t n, const servo_test_mean_t *m, float cmd)
-{
-    if (m->n > 0u) {
-        snprintf(b, n, "%+.2f", (double)(m->sum / (float)m->n - cmd));
-    } else {
-        snprintf(b, n, "--");
+        snprintf(eb, n, "--");
     }
 }
 
@@ -725,10 +728,8 @@ static bool encoder_lines(const servo_test_t *t, cursor_t *c)
             return true;
         }
         char lo[16], elo[16], hi[16], ehi[16], mean_ms[12], max_ms[12];
-        deg_mean(lo, sizeof(lo), &s->enc_end[0]);
-        deg_err(elo, sizeof(elo), &s->enc_end[0], g->enc_cmd_deg[0]);
-        deg_mean(hi, sizeof(hi), &s->enc_end[1]);
-        deg_err(ehi, sizeof(ehi), &s->enc_end[1], g->enc_cmd_deg[1]);
+        deg_end(t, s, 0u, lo, elo, sizeof(lo));
+        deg_end(t, s, 1u, hi, ehi, sizeof(hi));
         if (s->enc_travels > 0u) {
             snprintf(mean_ms, sizeof(mean_ms), "%lu",
                      (unsigned long)(s->enc_travel_sum_ms / s->enc_travels));
@@ -750,6 +751,15 @@ static bool encoder_lines(const servo_test_t *t, cursor_t *c)
     }
     if (t->enc_reads == 0u && here(c)) {
         snprintf(b, n, "%s", S(R_ENC_NONE));
+        return true;
+    }
+    if (t->enc_no_magnet > 0u && here(c)) {
+        snprintf(b, n, S(R_ENC_NO_MAGNET), (unsigned long)t->enc_no_magnet);
+        return true;
+    }
+    if ((t->enc_weak > 0u || t->enc_strong > 0u) && here(c)) {
+        snprintf(b, n, S(R_ENC_FIELD), (unsigned long)t->enc_weak,
+                 (unsigned long)t->enc_strong);
         return true;
     }
     if (here(c)) {

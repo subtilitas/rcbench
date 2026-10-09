@@ -5663,12 +5663,15 @@ static void sense_link_alerts(void)
 /*
  * The output encoder's readings to the SERVO screen: one per SENSE read
  * that moved the sample count, so a run sees each angle once, and one
- * "none" when the angle stops being readable.  Control task only.
+ * "none" when the angle stops being readable, and another when its reason
+ * changes between "no magnet" and any other.  sense_link_enc() hands out
+ * an angle only while the sensor detects its magnet.  Control task only.
  */
 static void enc_queue(void)
 {
     static bool     given;
     static bool     was_valid;
+    static bool     was_no_magnet;
     static uint16_t last_samples;
     static uint32_t last_taken;
     sense_link_enc_t e;
@@ -5685,16 +5688,20 @@ static void enc_queue(void)
         q.raw      = e.raw;
         q.still_ms = e.still_ms;
         q.taken_ms = e.taken_ms;
+        q.weak     = e.weak;
+        q.strong   = e.strong;
         given        = true;
         was_valid    = true;
         last_taken   = e.taken_ms;
         last_samples = e.samples;
     } else {
-        if (given && !was_valid) {
+        q.no_magnet = sense_link_enc_no_magnet(&s_sense_link, now_ms());
+        if (given && !was_valid && q.no_magnet == was_no_magnet) {
             return;
         }
-        given     = true;
-        was_valid = false;
+        given         = true;
+        was_valid     = false;
+        was_no_magnet = q.no_magnet;
     }
     if (xQueueSend(s_enc_q, &q, 0) != pdTRUE) {
         /* The screen has not drained 8 readings (320 ms): what is queued

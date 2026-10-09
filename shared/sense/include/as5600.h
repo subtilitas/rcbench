@@ -11,7 +11,8 @@
  * Registers used:
  *
  *   0x0B STATUS     bit 5 MD (magnet detected), bit 4 ML (magnet too weak),
- *                   bit 3 MH (magnet too strong); bits 7, 6, 2, 1 and 0 read 0
+ *                   bit 3 MH (magnet too strong); bits 7, 6, 2, 1 and 0 are
+ *                   blank in the register map and are masked off
  *   0x0C RAW ANGLE  bits 11-0 in 0x0C bits 3-0 and 0x0D: the angle before
  *                   the zero position, the maximum angle and the filters
  *   0x0E ANGLE      the same 12 bits after them; equal to RAW ANGLE while
@@ -52,8 +53,30 @@
  * transactions, which is not measured.  as5600_read_angle() is 217.5 us,
  * as5600_read_magnitude() 217.5 us.
  *
- * Identity.  The part has no identity register.  A probe reads STATUS; a STATUS with a reserved bit set is not an AS5600's and the
- * part is not used (SENSE_PART_WRONG_ID).  An AS5600L answers at 0x40 by
+ * The magnet bits.  The datasheet's STATUS table (Figure 23) gives the
+ * state when each bit is high: MD (0x0B bit 5) "Magnet was detected", ML
+ * (bit 4) "AGC maximum gain overflow, magnet too weak", MH (bit 3) "AGC
+ * minimum gain overflow, magnet too strong".  Under "Magnet Detection" it
+ * says: "the AS5600 indicates the absence of the magnet. If the measured
+ * magnet field strength goes below the minimum specified level (Bz_ERROR),
+ * the output is driven low, without regard to which output mode has been
+ * selected (analog or PWM) and the MD bit in the STATUS register is 0."
+ * Bz_ERROR is 8 mT at most.  So with MD clear RAW ANGLE is not a position
+ * and is not used as one (as5600_md()).  For ML and MH the datasheet states
+ * no effect on the angle or the output: the gain control has reached the
+ * end of its range, and the noise figures (0.015 and 0.043 degrees RMS)
+ * are specified for a field of 30 to 90 mT only.  An angle read with MD
+ * set and ML or MH set is used, and its noise is not specified.
+ *
+ * Identity.  The part has no identity register, and the five blank STATUS
+ * bits are no identity: the register map's note says "Blank fields may
+ * contain factory settings", so what they read is not guaranteed.  A probe
+ * reads STATUS and takes any answer as the part, with one exception: ML and
+ * MH both set say the gain is at its maximum and its minimum at once, which
+ * no AS5600 reports and a device answering 0xFF does
+ * (as5600_status_possible()); that answer is not used
+ * (SENSE_PART_WRONG_ID).  The datasheet does not state the exception; it
+ * follows from the two bits' meanings.  An AS5600L answers at 0x40 by
  * default and is not addressed here.
  *
  * Pure C, no SDK (software development kit): host-tested in test_as5600.
@@ -82,7 +105,7 @@ extern "C" {
 #define AS5600_STATUS_MH     0x08u
 #define AS5600_STATUS_ML     0x10u
 #define AS5600_STATUS_MD     0x20u
-/** The bits STATUS defines; any other set is not an AS5600. */
+/** The bits STATUS defines; the other five are not read. */
 #define AS5600_STATUS_MASK   (AS5600_STATUS_MH | AS5600_STATUS_ML | AS5600_STATUS_MD)
 
 /** Counts in one turn: 12 bits. */
@@ -94,10 +117,11 @@ extern "C" {
  *  MAGNITUDE.  0 to 4095. */
 uint16_t as5600_u12(const uint8_t *b);
 
-/** Whether @p status has only the bits the datasheet defines. */
-bool as5600_status_valid(uint8_t status);
+/** Whether @p status is one an AS5600 can give: not ML and MH together.
+ *  Bits 7, 6, 2, 1 and 0 are not looked at. */
+bool as5600_status_possible(uint8_t status);
 
-/** The magnet bits of @p status. */
+/** The magnet bits of @p status.  RAW ANGLE is a position only with MD. */
 bool as5600_md(uint8_t status);
 bool as5600_ml(uint8_t status);
 bool as5600_mh(uint8_t status);

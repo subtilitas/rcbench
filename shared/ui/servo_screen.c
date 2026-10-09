@@ -302,6 +302,7 @@ static struct {
     bool     have_feedback;
     /* The output encoder's last reading (servo_screen_encoder()). */
     bool     enc_valid;
+    bool     enc_no_magnet; /**< not valid: the sensor sees no magnet     */
     uint16_t enc_raw;
     int      shown_q_enc;  /**< the angle as drawn, in tenths             */
 
@@ -1702,11 +1703,12 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     }
     /* A reading that was queued before the link went down is not the
      * angle now. */
-    const servo_test_enc_t none = { false, 0u, 0u, 0u, false };
+    const servo_test_enc_t none = { .valid = false };
     if (!s.link_up) {
         e = &none;
     }
-    s.enc_valid = e->valid;
+    s.enc_valid     = e->valid;
+    s.enc_no_magnet = !e->valid && e->no_magnet;
     if (e->valid) {
         s.enc_raw = e->raw;
     }
@@ -2395,6 +2397,12 @@ static void test_begin(void)
         ++s.ctrl_rev;
         return;
     }
+    /* "No magnet" arrives once, when it begins: a run that starts in it is
+     * told so, and its report gives the reason for its missing angles. */
+    if (s.enc_no_magnet) {
+        const servo_test_enc_t none = { .valid = false, .no_magnet = true };
+        servo_test_encoder(&s.test, &none);
+    }
     stop_sweep();
     s.test_v0      = v0;
     s.test_i0      = i0;
@@ -2463,8 +2471,9 @@ void servo_screen_set_link(bool up)
         test_end_now(SERVO_TEST_AB_LINK);
         /* The encoder's last angle is not the horn's now: the dashes, and
          * no ENC CENTRE from it, until a reading arrives with the link. */
-        const servo_test_enc_t none = { false, 0u, 0u, 0u, false };
-        s.enc_valid = false;
+        const servo_test_enc_t none = { .valid = false };
+        s.enc_valid     = false;
+        s.enc_no_magnet = false;
         servo_test_encoder(&s.test, &none);
         if (s.shown_q_enc != 0x7FFF) {
             s.shown_q_enc = 0x7FFF;

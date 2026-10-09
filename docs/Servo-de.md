@@ -304,16 +304,36 @@ genauso negiert, auf der Seite, im Bericht und in der CSV; ein Horn am
 befohlenen Ende zeigt dann keinen Fehler. Ein Servo, das über diese Spanne weniger als
 90 Grad dreht, zeigt den Unterschied als Winkelfehler.
 
+Der Zählerstand springt von 4095 auf 0, jeder Winkel ist also eine Position
+auf einer Umdrehung, und keine zwei werden als bloße Zahlen subtrahiert oder
+gemittelt. Der Abstand einer Bewegung von ihrem Start wird auf dem kürzeren
+Weg genommen, 0 bis 180 Grad: 2 Schritte beiderseits der halben Umdrehung von
+der Mitte liegen 0,18 Grad auseinander, nicht 359,8. Die Endwinkel einer Stufe
+an einem Ende werden als Abstände vom ersten von ihnen gemittelt, und der
+Mittelwert wird auf den Kreis zurückgelegt; Enden bei +179,9 und -179,9 Grad
+ergeben also 180 (angezeigt als -180.00), nicht 0. Auch der Winkelfehler wird
+auf -180 bis +180 Grad gefaltet.
+
+Der Sensor unterscheidet nur eine Umdrehung, und das begrenzt, was für ein
+Servo berichtet wird, das mehr als 180 Grad dreht:
+
+| Fall | Berichtet |
+| --- | --- |
+| die Enden mehr als 180 Grad auseinander, jedes innerhalb von 180 Grad um die Mitte (-100 und +100) | beide Endwinkel und beide Fehler, wie sie sind; die beiden Enden werden nie voneinander subtrahiert |
+| ein Ende mehr als 180 Grad von der Mitte (+200) | der Endwinkel um 360 Grad versetzt (-160); der Winkelfehler stimmt, solange der befohlene Winkel dieselbe Position nennt (+200), weil er gefaltet wird |
+| eine Bewegung, die innerhalb von 2,0 Grad um eine ganze Umdrehung von ihrem Start endet | unbewegt |
+| die Richtung einer Bewegung und die Umdrehungen eines Windenservos | nicht beurteilt, nicht gezählt |
+
 Für jede Bewegung, vom Befehl bis zum nächsten Befehl (Konstanten in
 `servo_test.h`):
 
 | Begriff | Regel |
 | --- | --- |
-| bewegt | der Winkel verlässt `SERVO_TEST_ENC_MOVED_DEG`, 2,0 Grad, um den Winkel vor dem Befehl; dieser Messwert muss jünger sein als `SERVO_TEST_ENC_STALE_MS`, 500 ms, sonst wird die Bewegung nicht beurteilt |
+| bewegt | der Winkel verlässt `SERVO_TEST_ENC_MOVED_DEG`, 2,0 Grad, um den Winkel vor dem Befehl, auf dem kürzeren Weg; dieser Messwert muss jünger sein als `SERVO_TEST_ENC_STALE_MS`, 500 ms, sonst wird die Bewegung nicht beurteilt |
 | beruhigt | nach der Bewegung ein Messwert, dessen Ruhezeit mindestens `SERVO_TEST_ENC_HOLD_MS`, 100 ms, beträgt und deren Ruhe nach dem Befehl begann. Der Winkel ist dann so lange innerhalb von `SERVO_TEST_ENC_TOL_COUNTS`, 12 Schritten oder 1,05 Grad, eines Ankers geblieben |
 | Stellzeit (Winkel) | der Beginn dieser Ruhe minus der Befehl: der Moment, in dem der Winkel in die Toleranz um seinen Endwert kam |
 | Endwinkel | der Winkel beim letzten Messwert vor dem nächsten Befehl, bei einer beruhigten Bewegung |
-| Winkelfehler | der mittlere Endwinkel an einem Ende minus der befohlene Winkel dieses Endes |
+| Winkelfehler | der mittlere Endwinkel an einem Ende, auf dem Kreis ab dem ersten Endwinkel der Stufe dort gemittelt, minus der befohlene Winkel dieses Endes, auf -180 bis +180 Grad gefaltet |
 | unbewegt | der Winkel verließ die 2,0 Grad nie |
 | spät | er bewegte sich und war vor dem nächsten Befehl keine 100 ms ruhig |
 
@@ -339,6 +359,20 @@ bevor sie sich beruhigt hat: ihr Fenster wurde abgeschnitten, und die
 Ergebnisse aus dem Strom zählen so eine Bewegung auch nicht. Eine Bewegung,
 die sich vor der Lücke oder dem Abbruch beruhigt hatte, behält ihr Ergebnis.
 
+Der Winkel ist nur ein Messwert, solange der Sensor seinen Magneten erkennt
+(STATUS MD, [Link](Link-de.md)). Meldet er keinen, ist sein Zählerstand keine
+Position: das Panel gibt ihn an nichts weiter, der Messwert erreicht den Lauf
+als ungültig mit dem Grund, die Winkelspalte der CSV bleibt leer, und eine
+offene, noch nicht beruhigte Bewegung fällt wie oben heraus. Der Bericht hat
+dann die Zeile `Kein Magnet: AS5600 meldete N-mal keinen. ...`; N zählt, wie
+oft der Sensor im Lauf aus einem anderen Zustand zu "kein Magnet" wechselte,
+ein in diesem Zustand gestarteter Lauf eingeschlossen. Ein als zu schwach oder
+zu stark gemeldeter Magnet (ML, MH) bei gesetztem MD lässt den Winkel in
+Gebrauch: das Datenblatt nennt keine Wirkung auf den Winkel und spezifiziert
+sein Rauschen nur für 30 bis 90 mT. Der Bericht zählt diese Messwerte: `Feld:
+N Messwert(e) mit zu schwachem Magneten, M mit zu starkem. ...`. Keine der
+beiden Zeilen steht im Bericht, wenn ihre Zahlen 0 sind.
+
 Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe -- den
 mittleren Endwinkel und seinen Fehler an jedem Ende, die mittlere und die
 längste Stellzeit, die gezählten, unbewegten und späten Bewegungen -- und die
@@ -356,7 +390,8 @@ gemessen wird: es braucht Schritte, die kleiner sind als die Bewegungen von
 Ende zu Ende, und der Test macht keine. Die Zeile GEMESSEN der Seite SERVO
 zeigt den aktuellen Winkel, solange AS5600 an ist. Fällt der Link aus, wird
 der Messwert gelöscht: die Zeile zeigt Striche, und ENC-MITTE setzt nichts,
-bis mit dem Link wieder ein Messwert eintrifft.
+bis mit dem Link wieder ein Messwert eintrifft. Dasselbe gilt, solange der
+Sensor keinen Magneten meldet.
 
 Nicht auf Hardware gelaufen: der Sensor am Bus, die Toleranz und die 100 ms
 Haltezeit gegen das Zittern eines echten Servos, und die Montage.

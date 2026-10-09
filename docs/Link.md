@@ -165,11 +165,11 @@ to the bus time of a second: 44.0 % in all, 66.8 % with the pair.
 
 | Register | Name | Reads |
 | ---: | --- | --- |
-| 26 | `AS5600_FLAGS` | bit 0 answering at 0x36 with a STATUS only an AS5600 gives; bit 1 STATUS MD (magnet detected); bit 2 ML (field too weak); bit 3 MH (field too strong); bit 4 something answers at 0x36 with another STATUS and is not used; bit 5 the angle holds a reading of this set-up. Bits 1 to 3 read 0 while bit 0 does |
+| 26 | `AS5600_FLAGS` | bit 0 answering at 0x36 with a STATUS an AS5600 can give; bit 1 STATUS MD (magnet detected); bit 2 ML (field too weak); bit 3 MH (field too strong); bit 4 something answers at 0x36 with ML and MH both set, which no AS5600 gives, and is not used; bit 5 the angle and bits 1 to 3 hold a reading of this set-up. Bits 1 to 3 read 0 while bit 0 does. `AS5600_ANGLE` is a position only while bits 0, 1 and 5 are all set |
 | 27 | `AS5600_ANGLE` | RAW ANGLE, 0 to 4095 for one turn (360 / 4096 = 0.0879 degrees a count), as last read and with no centre applied; 0 until read |
 | 28 | `AS5600_MAGNITUDE` | the CORDIC (coordinate rotation digital computer) magnitude, 12 bits, read at 20 Hz; 0 until read |
 | 29 | `AS5600_SAMPLES` | angle reads, modulo 65536: two reads of the page with the same count are one sample |
-| 30 | `AS5600_STILL_MS` | how long the angle has stayed within 12 counts (1.05 degrees) of an anchor, in ms, saturating at 65535; 0 without a sample |
+| 30 | `AS5600_STILL_MS` | how long the angle has stayed within 12 counts (1.05 degrees) of an anchor, in ms, saturating at 65535; 0 without a sample and while MD is clear |
 | 31 | reserved | 0 |
 
 The anchor is the angle at the last sample that lay more than 12 counts from
@@ -179,7 +179,30 @@ t_read - t_end to within the 2 ms sample interval, so the panel times the end
 of a move to the coprocessor's resolution whatever its own polling interval.
 The panel's own error is the time between the coprocessor's reading and the
 reply reaching the panel: not measured. The part going offline, or a new
-set-up, clears the anchor and registers 26 to 31. STATUS and RAW ANGLE are one
+set-up, clears the anchor and registers 26 to 31.
+
+The magnet bits are STATUS (0x0B) bit 5 MD, bit 4 ML and bit 3 MH. The
+datasheet (ams AS5600 DS000365 v1-06) says of MD clear: "If the measured
+magnet field strength goes below the minimum specified level (Bz_ERROR), the
+output is driven low [...] and the MD bit in the STATUS register is 0", with
+Bz_ERROR at 8 mT. The count is then no position: a sample with MD clear
+clears the anchor, `AS5600_STILL_MS` reads 0, and the panel hands the angle
+to nothing -- not the SERVO screen, not ENC CENTRE, not a run. ML and MH are
+"AGC maximum gain overflow, magnet too weak" and "AGC minimum gain overflow,
+magnet too strong"; the datasheet states no effect on the angle and
+specifies its noise only for 30 to 90 mT. With MD set the count is used
+whatever ML and MH say, and the panel reports them. A slot that reads
+MAGNITUDE reads no STATUS and goes by the one read 2 ms before.
+
+STATUS bits 7, 6, 2, 1 and 0 are blank in the datasheet's register map,
+whose note says "Blank fields may contain factory settings". They are masked
+off and decide nothing. The part has no identity register: the probe takes
+whatever answers at 0x36 as the AS5600, except a STATUS with ML and MH both
+set -- the gain at both ends of its range, which a device answering 0xFF
+shows and an AS5600 does not. That exception follows from the two bits'
+meanings; the datasheet does not state it.
+
+STATUS and RAW ANGLE are one
 sample for the failure count: a RAW ANGLE read that fails counts as a failure
 even when the STATUS read before it answered, so 3 samples in a row whose RAW
 ANGLE read fails take the part offline (3 failed transactions in a row, as for

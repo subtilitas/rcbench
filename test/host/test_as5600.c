@@ -6,7 +6,9 @@
  *
  * Under test: the 12-bit registers and the STATUS bits; angle differences on
  * the circle across the 4095 to 0 wrap; hundredths of a degree; a probe that
- * finds the part, finds nothing, or finds a STATUS no AS5600 gives; each
+ * finds the part, finds nothing, or finds a STATUS no AS5600 gives (ML and
+ * MH together), and takes the part whatever its five blank STATUS bits
+ * read; each
  * register read in a transaction of its own (STATUS 1 byte, RAW ANGLE 2,
  * AGC 1, MAGNITUDE 2), never across the increment-suppressing registers;
  * the part offline after three failed reads and back after a probe a second
@@ -15,7 +17,7 @@
  * time the header states and without moving the rate of any other read;
  * the angle sampled every 2 ms through the field slots; the still time: counting up inside the 12-count tolerance, restarting
  * at a sample outside it, across the wrap, on a ramp, cleared by an offline
- * part; the service opening the bus for the encoder alone and handing the
+ * part and by a sample without a magnet; the service opening the bus for the encoder alone and handing the
  * readings over.
  *
  * SPDX-License-Identifier: MIT
@@ -54,15 +56,24 @@ TEST_CASE(a_register_pair_holds_twelve_bits)
     CHECK_EQ(as5600_u12(z), 0u);
 }
 
-TEST_CASE(status_carries_the_magnet_bits_and_nothing_else)
+TEST_CASE(status_is_read_by_its_three_magnet_bits)
 {
-    CHECK(as5600_status_valid(0x00u));
-    CHECK(as5600_status_valid(AS5600_STATUS_MD));
-    CHECK(as5600_status_valid(AS5600_STATUS_MD | AS5600_STATUS_ML
-                              | AS5600_STATUS_MH));
-    CHECK(!as5600_status_valid(0x01u));
-    CHECK(!as5600_status_valid(0x40u));
-    CHECK(!as5600_status_valid(0xFFu));
+    CHECK(as5600_status_possible(0x00u));
+    CHECK(as5600_status_possible(AS5600_STATUS_MD));
+    CHECK(as5600_status_possible(AS5600_STATUS_MD | AS5600_STATUS_ML));
+    CHECK(as5600_status_possible(AS5600_STATUS_MD | AS5600_STATUS_MH));
+    /* The five blank bits are not looked at. */
+    CHECK(as5600_status_possible(0x01u));
+    CHECK(as5600_status_possible(0x40u));
+    CHECK(as5600_status_possible(0xC7u | AS5600_STATUS_MD));
+    CHECK(as5600_md(0xC7u | AS5600_STATUS_MD));
+    CHECK(!as5600_ml(0xC7u) && !as5600_mh(0xC7u) && !as5600_md(0xC7u));
+    /* The gain at both ends of its range at once is no AS5600's. */
+    CHECK(!as5600_status_possible(AS5600_STATUS_ML | AS5600_STATUS_MH));
+    CHECK(!as5600_status_possible(AS5600_STATUS_MD | AS5600_STATUS_ML
+                                  | AS5600_STATUS_MH));
+    CHECK(!as5600_status_possible(0xFFu));
+    CHECK_EQ(AS5600_STATUS_MASK, 0x38u);
     CHECK_EQ(AS5600_STATUS_MH, 0x08u);          /* bit 3 */
     CHECK_EQ(AS5600_STATUS_ML, 0x10u);          /* bit 4 */
     CHECK_EQ(AS5600_STATUS_MD, 0x20u);          /* bit 5 */
@@ -128,13 +139,31 @@ TEST_CASE(a_missing_part_is_absent_and_probed_again_a_second_later)
 TEST_CASE(a_status_no_as5600_gives_is_not_used)
 {
     fresh();
-    enc->status = 0xC1u;                           /* reserved bits set */
+    enc->status = 0xFFu;                           /* ML and MH together */
     CHECK(!as5600_step(&d, 0));
     CHECK_EQ(as5600_state(&d), SENSE_PART_WRONG_ID);
-    CHECK_EQ(d.part.id_device, 0xC1u);
+    CHECK_EQ(d.part.id_device, 0xFFu);
     uint8_t st = 0;
     uint16_t raw = 0;
     CHECK_EQ(as5600_read_angle(&d, &st, &raw), SENSE_OFFLINE);
+}
+
+/* The datasheet's register map leaves STATUS bits 7, 6, 2, 1 and 0 blank
+ * and says blank fields may contain factory settings: a part that reads
+ * them set is an AS5600, and is used. */
+TEST_CASE(blank_status_bits_do_not_make_the_part_another)
+{
+    fresh();
+    enc->status = (uint8_t)(0xC7u | AS5600_STATUS_MD);
+    enc->raw = 2222u;
+    CHECK(as5600_step(&d, 0));
+    CHECK_EQ(as5600_state(&d), SENSE_PART_ONLINE);
+    CHECK_EQ(d.part.id_device, 0xE7u);             /* kept as read */
+    uint8_t st = 0;
+    uint16_t raw = 0;
+    CHECK_EQ(as5600_read_angle(&d, &st, &raw), SENSE_OK);
+    CHECK_EQ(raw, 2222u);
+    CHECK(as5600_md(st) && !as5600_ml(st) && !as5600_mh(st));
 }
 
 TEST_CASE(status_and_raw_angle_are_two_reads)
@@ -488,6 +517,29 @@ TEST_CASE(a_part_gone_offline_has_no_still_time_and_returns_afresh)
     CHECK(h < 20u);                                /* counted from the return */
 }
 
+/* STATUS MD clear: the part sees no magnet and its count is not a position.
+ * Nothing holds still then, however steady the count; the still time starts
+ * afresh at the first sample with the magnet back, a weak one included. */
+TEST_CASE(a_sample_without_a_magnet_holds_nothing_still)
+{
+    rig(false);
+    enc->raw = 1000u;
+    ticks(300u);
+    CHECK(sense_sched_enc_still_ms(&s) >= 290u);
+    const uint16_t samples = s.enc.samples;
+    enc->status = 0x00u;
+    ticks(60u);
+    CHECK_EQ(sense_sched_enc_still_ms(&s), 0u);
+    CHECK(!s.enc.anchored);
+    CHECK(s.enc.have_angle);                       /* read, and no position */
+    CHECK(!as5600_md(s.enc.status));
+    CHECK((uint16_t)(s.enc.samples - samples) >= 29u);
+    enc->status = (uint8_t)(AS5600_STATUS_MD | AS5600_STATUS_ML);
+    ticks(100u);
+    const unsigned h = sense_sched_enc_still_ms(&s);
+    CHECK(h >= 90u && h <= 100u);                  /* from the magnet's return */
+}
+
 /* STATUS answers and RAW ANGLE does not, slot after slot: the reads are one
  * sample, so the failures run on and the part goes offline after
  * SENSE_FAILS of them. */
@@ -684,12 +736,13 @@ TEST_CASE(a_new_set_up_forgets_the_old_readings)
 int main(void)
 {
     RUN(a_register_pair_holds_twelve_bits);
-    RUN(status_carries_the_magnet_bits_and_nothing_else);
+    RUN(status_is_read_by_its_three_magnet_bits);
     RUN(differences_are_taken_on_the_circle);
     RUN(counts_are_hundredths_of_a_degree);
     RUN(a_probe_finds_the_part_and_reads_nothing_more);
     RUN(a_missing_part_is_absent_and_probed_again_a_second_later);
     RUN(a_status_no_as5600_gives_is_not_used);
+    RUN(blank_status_bits_do_not_make_the_part_another);
     RUN(status_and_raw_angle_are_two_reads);
     RUN(agc_and_magnitude_are_two_reads);
     RUN(a_read_across_the_special_registers_is_a_fault_of_the_model);
@@ -704,6 +757,7 @@ int main(void)
     RUN(the_tolerance_is_taken_across_the_wrap);
     RUN(a_ramp_keeps_restarting_it_and_a_stop_lets_it_count);
     RUN(a_part_gone_offline_has_no_still_time_and_returns_afresh);
+    RUN(a_sample_without_a_magnet_holds_nothing_still);
     RUN(a_status_that_answers_does_not_hide_failing_angle_reads);
     RUN(an_angle_from_before_an_outage_is_not_valid_when_the_part_returns);
     RUN(the_still_time_saturates_at_65535);

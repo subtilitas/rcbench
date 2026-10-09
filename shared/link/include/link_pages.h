@@ -342,14 +342,18 @@ enum {
  *
  *     AS5600_FLAGS (link_sense_enc_flag_t) say whether it answers and what
  *     its magnet is doing.  AS5600_ANGLE is RAW ANGLE as last read, 0 until
- *     the first read of a set-up.  AS5600_MAGNITUDE is the part's CORDIC
+ *     the first read of a set-up.  It is a position only while ENC_ONLINE,
+ *     ENC_VALID and ENC_MD are all set: with MD clear the part sees no
+ *     magnet and the count means nothing.  With ML or MH set beside MD the
+ *     count is a position whose noise the datasheet does not specify.  AS5600_MAGNITUDE is the part's CORDIC
  *     (coordinate rotation digital computer) magnitude, read at 20 Hz, 0
  *     until read; it is a measure of the field.  AS5600_SAMPLES counts the
  *     angle reads, modulo 65536: two reads of the page with the same count
  *     are one sample.  AS5600_STILL_MS is how long the angle has stayed
  *     within 12 counts (1.05 degrees) of an anchor -- the angle at the last
  *     time it left that band -- in milliseconds, saturating at 65535, 0 with
- *     no sample.  A move that ends at time t_end, read at time t_read, shows
+ *     no sample and 0 while MD is clear: without a magnet the count is not
+ *     a position, and the anchor starts afresh when MD returns.  A move that ends at time t_end, read at time t_read, shows
  *     STILL_MS = t_read - t_end to within the 2 ms sample interval, so the
  *     panel times the end of a move to the coprocessor's resolution
  *     whatever its own polling interval.  Register 31 is reserved: it reads
@@ -442,17 +446,19 @@ typedef enum {
 
 /** AS5600_FLAGS' bits (protocol 4.9). */
 typedef enum {
-    /** Answering at 0x36 with a STATUS only an AS5600 gives. */
+    /** Answering at 0x36 with a STATUS an AS5600 can give. */
     LINK_SN_ENC_ONLINE = 1u << 0,
-    /** STATUS MD: a magnet is detected. */
+    /** STATUS MD: a magnet is detected.  Clear, AS5600_ANGLE is no
+     *  position. */
     LINK_SN_ENC_MD     = 1u << 1,
     /** STATUS ML: the field is too weak. */
     LINK_SN_ENC_ML     = 1u << 2,
     /** STATUS MH: the field is too strong. */
     LINK_SN_ENC_MH     = 1u << 3,
-    /** Something answers at 0x36 with a STATUS no AS5600 gives; not used. */
+    /** Something answers at 0x36 with a STATUS no AS5600 gives, ML and MH
+     *  both set; not used. */
     LINK_SN_ENC_WRONG  = 1u << 4,
-    /** AS5600_ANGLE holds a reading of this set-up. */
+    /** AS5600_ANGLE and bits 1 to 3 hold a reading of this set-up. */
     LINK_SN_ENC_VALID  = 1u << 5,
 } link_sense_enc_flag_t;
 

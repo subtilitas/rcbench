@@ -287,9 +287,13 @@ Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
 vom Netzteil stehen dort `--`.
 
 GEMESSEN ist der Winkel des Horns ab dem Mittenwert, solange AS5600 in SETUP,
-ANSCHLÜSSE eingeschaltet ist und der Sensor antwortet: `+38.0 deg`, Zehntelgrad,
-20-mal in der Sekunde gelesen. Antwortet der Sensor nicht, steht dort `---`,
-und bei ausgeschaltetem AS5600 der Winkel der Rückmeldung. Die befohlene Stellung
+ANSCHLÜSSE eingeschaltet ist, der Sensor antwortet und seinen Magneten
+erkennt: `+38.0 deg`, Zehntelgrad, -180.0 bis +179.9, 20-mal in der Sekunde
+gelesen. Antwortet der Sensor nicht oder meldet er keinen Magneten (STATUS MD
+nicht gesetzt), steht dort `---`: sein Zählerstand ist dann kein Winkel. Ein
+als zu schwach oder zu stark gemeldeter Magnet lässt den Winkel stehen; das
+Alert-Band sagt, welches von beiden. Bei ausgeschaltetem AS5600 zeigt die Zeile
+den Winkel der Rückmeldung. Die befohlene Stellung
 daneben ist die Pulsbreite in Mikrosekunden.
 
 **Das Netzteil wird auch hier eingestellt und geschaltet.** Die Zeile SOLL
@@ -513,7 +517,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
-| PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft); die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+| PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
@@ -1241,12 +1245,15 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 | Meldung | Wann |
 | --- | --- |
 | `Koprozessor älter als 4.9 -- AS5600 nicht gelesen` | der Encoder ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
-| `AS5600 antwortet nicht an 0x36` | eingeschaltet, und 2,5 s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt |
-| `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt |
-| `AS5600: Magnet zu schwach -- näher heranbringen` | STATUS ML ist gesetzt |
-| `AS5600: Magnet zu stark -- weiter weg` | STATUS MH ist gesetzt |
+| `AS5600 antwortet nicht an 0x36` | eingeschaltet, und 2,5 s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
+| `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt. Der Zählerstand ist kein Winkel: GEMESSEN zeigt `---`, ENC-MITTE setzt nichts, und ein Lauf protokolliert und beurteilt keinen Winkel |
+| `AS5600: Magnet zu schwach -- näher heranbringen` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
+| `AS5600: Magnet zu stark -- weiter weg` | STATUS MD und MH sind gesetzt. Der Winkel wird verwendet, wie bei ML |
 
-Eine Magnetmeldung wird einmal gesagt, bis das Feld wieder stimmt. Der DIR-Pin
+Eine Magnetmeldung wird einmal gesagt, bis das Feld wieder stimmt, und noch
+einmal, wenn ein als schwach oder stark gelesener Magnet verschwindet oder ein
+fehlender schwach oder stark zurückkommt: mit dem ersten hört der Winkel auf,
+mit dem zweiten kommt er wieder. Der DIR-Pin
 des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
 nimmt an, dass er mit der Pulsbreite des Servos steigt. Nicht auf Hardware
 gelaufen.

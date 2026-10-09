@@ -59,7 +59,8 @@
  *
  *   moved    the angle leaves SERVO_TEST_ENC_MOVED_DEG of the angle read
  *            before the command, when that reading is younger than
- *            SERVO_TEST_ENC_STALE_MS;
+ *            SERVO_TEST_ENC_STALE_MS.  The distance is taken on the
+ *            circle, the shortest way round, 0 to 180 degrees;
  *   settled  after it has moved, a reading whose STILL_MS is at least
  *            SERVO_TEST_ENC_HOLD_MS and whose still time began after the
  *            command: the angle has stayed within SERVO_TEST_ENC_TOL_COUNTS
@@ -72,6 +73,37 @@
  *   end angle the last reading of a settled move, from the centre count
  *            (cfg.enc_centre); the angle error is that minus the commanded
  *            angle of the end (cfg.enc_cmd_deg).
+ *
+ * The circle.  The sensor's count wraps from 4095 to 0 and every angle is a
+ * position on one turn, so no two angles are subtracted or averaged as
+ * plain numbers.  An angle is the count less the centre count taken the
+ * shortest way, -180 to just under +180 degrees.  A step's end angles at
+ * one end are averaged as offsets from the first of them, each offset the
+ * shortest way, and the mean is put back on the circle
+ * (servo_test_enc_end()); the angle error is wrapped to the same range.
+ * Two readings 2 counts apart either side of the half turn from the centre
+ * are 0.18 degrees apart, and ends read at +179.9 and -179.9 degrees
+ * average to 180, shown as -180.0.
+ *
+ * More than 180 degrees.  One turn is all the sensor tells apart.  A servo
+ * whose ends lie more than 180 degrees apart is reported correctly while
+ * each end lies within 180 degrees of the centre: the two ends are never
+ * subtracted from each other.  An end further than 180 degrees from the
+ * centre is reported 360 degrees off (+200 as -160); its angle error is
+ * still right while the commanded angle names the same position, since the
+ * error is wrapped.  A move is "moved" by the shortest way between its
+ * start and the reading, so a move that ends within
+ * SERVO_TEST_ENC_MOVED_DEG of a whole turn from its start reads unmoved,
+ * and the direction of a move is not judged.  Turns are not counted: a
+ * winch servo's travel of several turns is not measured.
+ *
+ * The magnet.  A reading is an angle only while the sensor detects its
+ * magnet (STATUS MD, as5600.h); the link hands out no other
+ * (sense_link_enc()).  A reading without one arrives as not valid with
+ * no_magnet set: it ends the angle's validity as any invalid reading does
+ * -- no angle in the CSV, a move that had not settled not counted -- and
+ * the report says how often it happened.  A reading with the field too weak
+ * or too strong (ML, MH) is an angle and is used; the report counts them.
  *
  * A move that never left the tolerance is unmoved; one that moved and was
  * not still for SERVO_TEST_ENC_HOLD_MS before the next command is late.
@@ -204,7 +236,8 @@ typedef struct {
 
 /** One reading of the output encoder, as the SENSE page has it. */
 typedef struct {
-    bool     valid;         /**< the part answers and has an angle      */
+    bool     valid;         /**< the part answers, detects its magnet and
+                                 has an angle                           */
     uint16_t raw;           /**< RAW ANGLE, 0 to 4095                   */
     uint16_t still_ms;      /**< the angle within the tolerance for this
                                  long at the reading                    */
@@ -212,11 +245,20 @@ typedef struct {
     bool     gap;           /**< readings before this one were lost: the
                                  angle between is not known, as after a
                                  reading that is not valid             */
+    bool     no_magnet;     /**< not valid because the part answers and
+                                 detects no magnet (STATUS MD clear)   */
+    bool     weak, strong;  /**< valid, with the field too weak (ML) or
+                                 too strong (MH): the angle's noise is
+                                 not specified                          */
 } servo_test_enc_t;
 
 /** @p raw from @p centre on the circle, degrees, -180 to just under 180:
- *  360 / 4096 a count. */
+ *  360 / 4096 a count.  The difference of any two counts the shortest way
+ *  round. */
 float servo_test_enc_deg(uint16_t raw, uint16_t centre);
+
+/** @p deg on the circle: -180 to just under 180. */
+float servo_test_enc_wrap(float deg);
 
 /** What the run wants done, from servo_test_step(). */
 typedef struct {
@@ -400,7 +442,11 @@ typedef struct {
     uint16_t enc_unmoved;   /**< ... whose angle never moved             */
     uint16_t enc_late;      /**< ... that moved and did not settle       */
     uint32_t enc_travel_sum_ms, enc_travel_max_ms;
-    servo_test_mean_t enc_end[2];   /**< settled end angles, degrees    */
+    /* The settled end angles at the low and the high end: the count of
+     * the first, and every one's offset from it in degrees, the shortest
+     * way round.  servo_test_enc_end() gives the mean. */
+    uint16_t enc_end_ref[2];
+    servo_test_mean_t enc_end_off[2];
 } servo_test_step_t;
 
 #define SERVO_TEST_STEP_SLOTS (SERVO_TEST_STEPS_MAX + SERVO_TEST_BROWNOUT_MAX)
@@ -458,12 +504,16 @@ typedef struct {
     servo_test_enc_sample_t enc_hist[SERVO_TEST_ENC_HIST];
     uint8_t  enc_hist_n, enc_hist_next;
     uint32_t enc_reads;     /**< readings that reached the run           */
+    uint32_t enc_no_magnet; /**< times the part reported no magnet       */
+    uint32_t enc_weak;      /**< readings with the field too weak        */
+    uint32_t enc_strong;    /**< ... and too strong                      */
     bool     enc_open;      /**< a move is being judged                  */
     bool     enc_counted;
     bool     enc_ok;        /**< it has a start angle                    */
     uint8_t  enc_end;
     uint32_t enc_cmd_ms;
-    float    enc_start_deg, enc_last_deg;
+    uint16_t enc_start_raw; /**< the count read before the command       */
+    uint16_t enc_last_raw;  /**< the last since                          */
     bool     enc_moved, enc_settled;
     uint32_t enc_travel_ms;
     uint32_t enc_travel_now_ms;     /**< the settle to log, 0 for none   */
@@ -529,6 +579,18 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e);
  *  taken later than the row does not count), when it is no older than
  *  SERVO_TEST_ENC_STALE_MS.  False when there is none. */
 bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg);
+
+/**
+ * The mean settled end angle of step @p s at @p end (0 low, 1 high) into
+ * @p deg, degrees from cfg.enc_centre in the commanded direction, -180 to
+ * just under 180, and its error against cfg.enc_cmd_deg[end] into @p err,
+ * the same range; either may be NULL.  The mean is taken on the circle,
+ * from the first end angle of the step.  False when no move settled there.
+ * End angles of one end that lie 180 degrees or more apart have no mean
+ * that says anything.
+ */
+bool servo_test_enc_end(const servo_test_t *t, const servo_test_step_t *s,
+                        unsigned end, float *deg, float *err);
 
 /** One pass at @p now_ms: the timers, and what the run wants done since the
  *  last pass into @p out. */
@@ -715,6 +777,8 @@ typedef enum {
     SERVO_STR_R_ENC_LATE,
     SERVO_STR_R_ENC_DEADBAND,
     SERVO_STR_R_ENC_NONE,
+    SERVO_STR_R_ENC_NO_MAGNET,
+    SERVO_STR_R_ENC_FIELD,
     SERVO_STR_R_UNM_POSITION_ENC,
     SERVO_STR_COUNT
 } servo_str_t;

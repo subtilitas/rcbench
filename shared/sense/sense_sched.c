@@ -539,7 +539,13 @@ static void read_enc(sense_sched_t *s)
     e->raw        = raw;
     e->have_angle = true;
     ++e->samples;
-    enc_anchor(e, raw, at_ms);
+    if (as5600_md(status)) {
+        enc_anchor(e, raw, at_ms);
+    } else {
+        /* No magnet: RAW ANGLE is not a position (as5600.h), and nothing
+         * holds still.  The next sample with MD set starts afresh. */
+        e->anchored = false;
+    }
     if (field) {
         uint8_t agc = 0u;
         uint16_t mag = 0u;

@@ -1300,8 +1300,9 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "Stell. Längste Anz.  Unbew. Spät",
     [SERVO_STR_R_ENC_CMD]        = "Befohlen: %+.1f deg am unteren Ende, %+.1f "
                                    "deg am oberen.",
-    [SERVO_STR_R_ENC_END]        = "Ende: der beruhigte Winkel. Abw.: Ende "
-                                   "minus befohlen.",
+    [SERVO_STR_R_ENC_END]        = "Ende: der beruhigte Winkel, -180 bis +180 "
+                                   "deg ab dem Mittenwert. Abw.: Ende minus "
+                                   "befohlen, auf dem kürzeren Weg.",
     [SERVO_STR_R_ENC_SETTLED]    = "Beruhigt: der Winkel blieb %.2f deg "
                                    "innerhalb, %u ms lang.",
     [SERVO_STR_R_ENC_TRAVEL]     = "Stell.: vom Befehl bis zum Beginn dieser "
@@ -1314,6 +1315,12 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_ENC_DEADBAND]   = "Totband: nicht gemessen; die Bewegungen "
                                    "gehen von Ende zu Ende.",
     [SERVO_STR_R_ENC_NONE]       = "Kein Winkelmesswert erreichte den Lauf.",
+    [SERVO_STR_R_ENC_NO_MAGNET]  = "Kein Magnet: AS5600 meldete %lu-mal "
+                                   "keinen. Dann kein Winkel im Protokoll, "
+                                   "unberuhigte Bewegung nicht gezählt.",
+    [SERVO_STR_R_ENC_FIELD]      = "Feld: %lu Messwert(e) mit zu schwachem "
+                                   "Magneten, %lu mit zu starkem. Winkel "
+                                   "verwendet, Rauschen nicht spezifiziert.",
     [SERVO_STR_R_UNM_POSITION_ENC] = "Position: der AS5600 misst das "
                                      "Ruderhorn; die Stellzeit aus dem Strom "
                                      "steht neben der aus dem Winkel.",

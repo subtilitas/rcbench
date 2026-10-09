@@ -476,8 +476,12 @@ static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
         s->enc_magnet = bits;
         return;
     }
+    /* Said once, and again when MD changes under it: a weak magnet that
+     * goes missing takes the angle away, and one that comes back weak
+     * gives it back. */
+    const bool md_moved = ((bits ^ s->enc_magnet) & LINK_SN_ENC_MD) != 0u;
     s->enc_magnet = bits;
-    if (!s->enc_magnet_told) {
+    if (!s->enc_magnet_told || md_moved) {
         s->events |= SENSE_LINK_EV_ENC_MAGNET;
         s->enc_magnet_told = true;
     }
@@ -819,10 +823,12 @@ bool sense_link_enc_on(const sense_link_t *s)
            && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u;
 }
 
-bool sense_link_enc(const sense_link_t *s, uint32_t now_ms,
-                    sense_link_enc_t *out)
+/* Whether the last SENSE read is fresh at @p now_ms and holds a reading
+ * of the encoder's registers from a part that answers; its flags into
+ * @p flags. */
+static bool enc_read(const sense_link_t *s, uint32_t now_ms, uint16_t *flags)
 {
-    if (out == NULL || !sense_link_enc_on(s) || !s->have_status
+    if (!sense_link_enc_on(s) || !s->have_status
         || (uint32_t)(now_ms - s->status_ms) >= SENSE_LINK_STALE_MS) {
         return false;
     }
@@ -830,14 +836,33 @@ bool sense_link_enc(const sense_link_t *s, uint32_t now_ms,
     if ((f & LINK_SN_ENC_ONLINE) == 0u || (f & LINK_SN_ENC_VALID) == 0u) {
         return false;
     }
+    *flags = f;
+    return true;
+}
+
+bool sense_link_enc(const sense_link_t *s, uint32_t now_ms,
+                    sense_link_enc_t *out)
+{
+    uint16_t f = 0u;
+    /* STATUS MD clear: no magnet, and RAW ANGLE is not a position
+     * (as5600.h).  ML and MH leave it one. */
+    if (out == NULL || !enc_read(s, now_ms, &f)
+        || (f & LINK_SN_ENC_MD) == 0u) {
+        return false;
+    }
     out->raw      = s->status[ST(LINK_SN_AS5600_ANGLE)];
     out->samples  = s->status[ST(LINK_SN_AS5600_SAMPLES)];
     out->still_ms = s->status[ST(LINK_SN_AS5600_STILL_MS)];
     out->taken_ms = s->status_ms;
-    out->magnet   = (f & LINK_SN_ENC_MD) != 0u;
     out->weak     = (f & LINK_SN_ENC_ML) != 0u;
     out->strong   = (f & LINK_SN_ENC_MH) != 0u;
     return true;
+}
+
+bool sense_link_enc_no_magnet(const sense_link_t *s, uint32_t now_ms)
+{
+    uint16_t f = 0u;
+    return enc_read(s, now_ms, &f) && (f & LINK_SN_ENC_MD) == 0u;
 }
 
 uint16_t sense_link_enc_magnet(const sense_link_t *s)

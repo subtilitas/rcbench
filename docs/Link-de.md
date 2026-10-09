@@ -177,11 +177,11 @@ gerader Takt bleibt unter 690 µs. Der Encoder fügt der Buszeit einer Sekunde
 
 | Register | Name | Liest |
 | ---: | --- | --- |
-| 26 | `AS5600_FLAGS` | Bit 0 antwortet an 0x36 mit einem STATUS, den nur ein AS5600 gibt; Bit 1 STATUS MD (Magnet erkannt); Bit 2 ML (Feld zu schwach); Bit 3 MH (Feld zu stark); Bit 4 an 0x36 antwortet etwas mit einem anderen STATUS und wird nicht benutzt; Bit 5 der Winkel enthält einen Messwert dieser Konfiguration. Bits 1 bis 3 lesen 0, solange Bit 0 es tut |
+| 26 | `AS5600_FLAGS` | Bit 0 antwortet an 0x36 mit einem STATUS, den ein AS5600 geben kann; Bit 1 STATUS MD (Magnet erkannt); Bit 2 ML (Feld zu schwach); Bit 3 MH (Feld zu stark); Bit 4 an 0x36 antwortet etwas mit ML und MH zugleich, was kein AS5600 gibt, und wird nicht benutzt; Bit 5 der Winkel und die Bits 1 bis 3 enthalten einen Messwert dieser Konfiguration. Bits 1 bis 3 lesen 0, solange Bit 0 es tut. `AS5600_ANGLE` ist nur eine Position, solange die Bits 0, 1 und 5 alle gesetzt sind |
 | 27 | `AS5600_ANGLE` | RAW ANGLE, 0 bis 4095 für eine Umdrehung (360 / 4096 = 0,0879 Grad je Schritt), zuletzt gelesen und ohne Mitte; 0 bis zum ersten Lesen |
 | 28 | `AS5600_MAGNITUDE` | die CORDIC-Magnitude (CORDIC: Coordinate Rotation Digital Computer), 12 Bit, mit 20 Hz gelesen; 0 bis zum ersten Lesen |
 | 29 | `AS5600_SAMPLES` | Winkellesungen modulo 65536: zwei Lesungen der Page mit demselben Zählerstand sind eine Messung |
-| 30 | `AS5600_STILL_MS` | wie lange der Winkel innerhalb von 12 Schritten (1,05 Grad) eines Ankers geblieben ist, in ms, bei 65535 gesättigt; 0 ohne Messung |
+| 30 | `AS5600_STILL_MS` | wie lange der Winkel innerhalb von 12 Schritten (1,05 Grad) eines Ankers geblieben ist, in ms, bei 65535 gesättigt; 0 ohne Messung und solange MD nicht gesetzt ist |
 | 31 | reserviert | 0 |
 
 Der Anker ist der Winkel der letzten Messung, die mehr als 12 Schritte vom
@@ -192,7 +192,33 @@ Panel misst das Ende einer Bewegung also in der Auflösung des Koprozessors,
 gleich wie oft es selbst abfragt. Der eigene Fehler des Panels ist die Zeit
 zwischen dem Lesen im Koprozessor und dem Eintreffen der Antwort im Panel:
 nicht gemessen. Fällt das Bauteil aus oder gilt eine neue Konfiguration, werden
-der Anker und die Register 26 bis 31 gelöscht. STATUS und RAW ANGLE sind für
+der Anker und die Register 26 bis 31 gelöscht.
+
+Die Magnetbits sind STATUS (0x0B) Bit 5 MD, Bit 4 ML und Bit 3 MH. Das
+Datenblatt (ams AS5600 DS000365 v1-06) sagt zu nicht gesetztem MD: "If the
+measured magnet field strength goes below the minimum specified level
+(Bz_ERROR), the output is driven low [...] and the MD bit in the STATUS
+register is 0", mit Bz_ERROR bei 8 mT. Der Zählerstand ist dann keine
+Position: eine Messung ohne MD löscht den Anker, `AS5600_STILL_MS` liest 0,
+und das Panel gibt den Winkel an nichts weiter -- nicht an die Seite SERVO,
+nicht an ENC-MITTE, nicht an einen Lauf. ML und MH sind "AGC maximum gain
+overflow, magnet too weak" und "AGC minimum gain overflow, magnet too
+strong"; das Datenblatt nennt keine Wirkung auf den Winkel und spezifiziert
+sein Rauschen nur für 30 bis 90 mT. Mit gesetztem MD wird der Zählerstand
+verwendet, was auch immer ML und MH sagen, und das Panel meldet sie. Ein
+Slot, der MAGNITUDE liest, liest kein STATUS und richtet sich nach dem 2 ms
+davor gelesenen.
+
+Die STATUS-Bits 7, 6, 2, 1 und 0 sind in der Registerübersicht des
+Datenblatts leer, und deren Anmerkung sagt: "Blank fields may contain
+factory settings". Sie werden ausmaskiert und entscheiden nichts. Das
+Bauteil hat kein Identitätsregister: der Probe nimmt, was an 0x36 antwortet,
+als AS5600, außer bei einem STATUS mit ML und MH zugleich -- die Verstärkung
+an beiden Enden ihres Bereichs, was ein Gerät zeigt, das 0xFF antwortet, und
+ein AS5600 nicht. Diese Ausnahme folgt aus der Bedeutung der beiden Bits; das
+Datenblatt nennt sie nicht.
+
+STATUS und RAW ANGLE sind für
 die Fehlerzählung eine Messung: ein fehlschlagendes Lesen von RAW ANGLE zählt
 als Fehler, auch wenn das STATUS-Lesen davor geantwortet hat; 3 Messungen in
 Folge mit fehlschlagendem RAW-ANGLE-Lesen nehmen das Bauteil offline (3

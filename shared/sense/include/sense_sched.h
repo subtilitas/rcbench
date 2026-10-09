@@ -112,7 +112,11 @@
  * anchor was set -- the moment the angle came within the tolerance of its
  * final value -- as now minus the still time, to the sample interval of
  * 2 ms.  The first sample after a set-up, and the first after the part
- * has been offline, set the anchor.
+ * has been offline, set the anchor.  A sample whose STATUS has MD clear (no
+ * magnet, as5600.h) is no position: it clears the anchor, the still time
+ * reads 0, and the first sample with MD set is the new anchor.  A field
+ * slot reads no STATUS and goes by the last one read, in the slot 2 ms
+ * before.
  *
  * Not known: the INA3221's noise at 140 µs conversions, and so whether 4
  * samples of filter and 10 of settling suit it; the controller's time

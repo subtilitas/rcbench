@@ -1202,7 +1202,7 @@ TEST_CASE(the_encoders_angle_is_handed_over_while_the_read_is_fresh)
     CHECK_EQ(e.raw, 2345u);
     CHECK_EQ(e.samples, 10u);
     CHECK_EQ(e.still_ms, 120u);
-    CHECK(e.magnet && !e.weak && !e.strong);
+    CHECK(!e.weak && !e.strong);
     CHECK_EQ(e.taken_ms, now - 50u);
     /* A read older than SENSE_LINK_STALE_MS gives nothing. */
     CHECK(!sense_link_enc(&sl, e.taken_ms + SENSE_LINK_STALE_MS, &e));
@@ -1298,6 +1298,96 @@ TEST_CASE(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right)
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
     CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MH);
     CHECK_EQ(sense_link_enc_magnet(NULL), 0u);
+}
+
+/* STATUS MD clear: the part answers and sees no magnet.  Its count is not
+ * a position and is not handed out, whatever else the read says.  ML and MH
+ * beside MD leave it a position, handed out and marked. */
+TEST_CASE(an_angle_read_without_a_magnet_is_not_handed_out)
+{
+    enc_wanted(9u);
+    sense_link_enc_t e, before;
+    memset(&e, 0x5A, sizeof(e));
+    memcpy(&before, &e, sizeof(e));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 1234u, 7u, 300u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    CHECK_EQ(memcmp(&e, &before, sizeof(e)), 0);    /* untouched */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID | LINK_SN_ENC_ML,
+            1234u, 8u, 300u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID | LINK_SN_ENC_MH,
+            1234u, 9u, 300u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    /* The magnet back, too weak: a position again. */
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 1240u, 10u, 0u);
+    polls(1);
+    CHECK(sense_link_enc(&sl, now, &e));
+    CHECK_EQ(e.raw, 1240u);
+    CHECK(e.weak && !e.strong);
+}
+
+TEST_CASE(no_magnet_is_the_reason_only_while_the_part_says_so)
+{
+    enc_wanted(9u);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));     /* no read yet */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 1u, 1u);
+    polls(1);
+    CHECK(sense_link_enc_no_magnet(&sl, now));
+    /* A read too old says nothing about the magnet now. */
+    CHECK(!sense_link_enc_no_magnet(&sl, now + SENSE_LINK_STALE_MS));
+    /* A magnet, weak or not: an angle, so no reason for none. */
+    far_enc(ENC_OK, 5u, 2u, 1u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 5u, 3u, 1u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    /* A part that does not answer, and one with no STATUS read yet, have
+     * no magnet bits to go by. */
+    far_enc(LINK_SN_ENC_VALID, 5u, 3u, 1u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    far_enc(LINK_SN_ENC_ONLINE, 0u, 0u, 0u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 4u, 1u);
+    polls(1);
+    CHECK(sense_link_enc_no_magnet(&sl, now));
+    sense_link_lost(&sl);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    CHECK(!sense_link_enc_no_magnet(NULL, now));
+}
+
+/* "Too weak" was said and the angle went on; the magnet then goes missing
+ * and the angle stops.  That is said, and so is its return. */
+TEST_CASE(a_weak_magnet_that_goes_missing_is_said_again)
+{
+    enc_wanted(9u);
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID | LINK_SN_ENC_ML,
+            5u, 3u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK_EQ(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MD, 0u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);           /* once */
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 5u, 4u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MD);
+    /* Weak to strong with the magnet detected throughout: the angle is
+     * there before and after, and nothing more is said. */
+    far_enc(ENC_OK | LINK_SN_ENC_MH, 5u, 5u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
 }
 
 TEST_CASE(a_magnet_is_judged_only_from_a_read_angle)
@@ -1398,6 +1488,9 @@ int main(void)
     RUN(the_link_going_down_takes_the_angle_with_it);
     RUN(an_encoder_that_does_not_answer_is_said_once);
     RUN(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right);
+    RUN(an_angle_read_without_a_magnet_is_not_handed_out);
+    RUN(no_magnet_is_the_reason_only_while_the_part_says_so);
+    RUN(a_weak_magnet_that_goes_missing_is_said_again);
     RUN(a_magnet_is_judged_only_from_a_read_angle);
     RUN(a_magnet_event_waiting_survives_a_current_monitor_answering);
 RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);

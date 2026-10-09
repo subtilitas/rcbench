@@ -38,6 +38,41 @@ float servo_test_enc_deg(uint16_t raw, uint16_t centre)
     return (float)d * (360.0f / 4096.0f);
 }
 
+float servo_test_enc_wrap(float deg)
+{
+    float d = fmodf(deg, 360.0f);
+    if (d >= 180.0f) {
+        d -= 360.0f;
+    } else if (d < -180.0f) {
+        d += 360.0f;
+    }
+    return d;
+}
+
+bool servo_test_enc_end(const servo_test_t *t, const servo_test_step_t *s,
+                        unsigned end, float *deg, float *err)
+{
+    if (t == NULL || s == NULL || end > 1u || s->enc_end_off[end].n == 0u) {
+        return false;
+    }
+    /* The first end angle from the centre, and the mean of the offsets
+     * from it; negated with REVERSE on as enc_dir_deg() does, and wrapped
+     * after it, since -180 negated is 180. */
+    float d = servo_test_enc_deg(s->enc_end_ref[end], t->cfg.enc_centre)
+              + mean_of(&s->enc_end_off[end]);
+    if (t->cfg.reverse) {
+        d = -d;
+    }
+    d = servo_test_enc_wrap(d);
+    if (deg != NULL) {
+        *deg = d;
+    }
+    if (err != NULL) {
+        *err = servo_test_enc_wrap(d - t->cfg.enc_cmd_deg[end]);
+    }
+    return true;
+}
+
 void servo_test_meter_pdmini(servo_test_meter_t *m)
 {
     if (m == NULL) {
@@ -164,6 +199,31 @@ static servo_test_step_t *cur(servo_test_t *t)
     return &t->steps[t->step];
 }
 
+/* The count at @p at_ms, by servo_test_enc_at()'s rule. */
+static bool enc_raw_at(const servo_test_t *t, uint32_t at_ms, uint16_t *out)
+{
+    bool     found = false;
+    uint32_t best  = 0u;                 /* the age of the best so far */
+    uint16_t raw   = 0u;
+    for (unsigned k = 0u; k < t->enc_hist_n; ++k) {
+        const servo_test_enc_sample_t *h = &t->enc_hist[k];
+        if ((int32_t)(at_ms - h->ms) < 0) {
+            continue;                    /* taken after the row */
+        }
+        const uint32_t age = at_ms - h->ms;
+        if (!found || age < best) {
+            found = true;
+            best  = age;
+            raw   = h->raw;
+        }
+    }
+    if (!found || best > SERVO_TEST_ENC_STALE_MS) {
+        return false;
+    }
+    *out = raw;
+    return true;
+}
+
 /* The move the encoder was judging is over: counted into its step. */
 static void enc_close(servo_test_t *t)
 {
@@ -186,7 +246,14 @@ static void enc_close(servo_test_t *t)
         if (t->enc_travel_ms > s->enc_travel_max_ms) {
             s->enc_travel_max_ms = t->enc_travel_ms;
         }
-        mean_add(&s->enc_end[t->enc_end], t->enc_last_deg);
+        /* On the circle: the offset from the step's first end angle at
+         * this end, the shortest way round. */
+        const uint8_t k = t->enc_end;
+        if (s->enc_end_off[k].n == 0u) {
+            s->enc_end_ref[k] = t->enc_last_raw;
+        }
+        mean_add(&s->enc_end_off[k],
+                 servo_test_enc_deg(t->enc_last_raw, s->enc_end_ref[k]));
     }
 }
 
@@ -202,10 +269,10 @@ static void enc_open(servo_test_t *t, uint8_t end, bool counted,
     t->enc_counted    = counted;
     t->enc_end        = end;
     t->enc_cmd_ms     = now_ms;
-    float start = 0.0f;
-    t->enc_ok         = servo_test_enc_at(t, now_ms, &start);
-    t->enc_start_deg  = start;
-    t->enc_last_deg   = start;
+    uint16_t start = 0u;
+    t->enc_ok         = enc_raw_at(t, now_ms, &start);
+    t->enc_start_raw  = start;
+    t->enc_last_raw   = start;
     t->enc_moved      = false;
     t->enc_settled    = false;
     t->enc_travel_ms  = 0u;
@@ -678,22 +745,8 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
 
 bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg)
 {
-    bool     found = false;
-    uint32_t best  = 0u;                 /* the age of the best so far */
-    uint16_t raw   = 0u;
-    for (unsigned k = 0u; k < t->enc_hist_n; ++k) {
-        const servo_test_enc_sample_t *h = &t->enc_hist[k];
-        if ((int32_t)(at_ms - h->ms) < 0) {
-            continue;                    /* taken after the row */
-        }
-        const uint32_t age = at_ms - h->ms;
-        if (!found || age < best) {
-            found = true;
-            best  = age;
-            raw   = h->raw;
-        }
-    }
-    if (!found || best > SERVO_TEST_ENC_STALE_MS) {
+    uint16_t raw = 0u;
+    if (!enc_raw_at(t, at_ms, &raw)) {
         return false;
     }
     *deg = enc_dir_deg(t, raw);
@@ -716,6 +769,9 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
             t->enc_ok = false;
         }
         if (!e->valid) {
+            if (e->no_magnet && servo_test_running(t) && t->cfg.enc_on) {
+                ++t->enc_no_magnet;
+            }
             return;
         }
     }
@@ -725,19 +781,27 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
     if (t->enc_hist_n < SERVO_TEST_ENC_HIST) {
         ++t->enc_hist_n;
     }
-    const float deg = enc_dir_deg(t, e->raw);
     if (!servo_test_running(t) || !t->cfg.enc_on) {
         return;
     }
     ++t->enc_reads;
+    if (e->weak) {
+        ++t->enc_weak;
+    }
+    if (e->strong) {
+        ++t->enc_strong;
+    }
     /* A reading taken before the command is not the move. */
     if (!t->enc_open || !t->enc_ok
         || (int32_t)(e->taken_ms - t->enc_cmd_ms) < 0) {
         return;
     }
-    t->enc_last_deg = deg;
+    t->enc_last_raw = e->raw;
+    /* How far from the start, on the circle: 2 counts across the half
+     * turn from the centre are 0.18 degrees, not 359.8. */
     if (!t->enc_moved
-        && fabsf(deg - t->enc_start_deg) > SERVO_TEST_ENC_MOVED_DEG) {
+        && fabsf(servo_test_enc_deg(e->raw, t->enc_start_raw))
+               > SERVO_TEST_ENC_MOVED_DEG) {
         t->enc_moved = true;
     }
     if (t->enc_moved && !t->enc_settled

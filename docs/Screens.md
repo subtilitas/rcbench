@@ -265,9 +265,12 @@ and power, read and plotted over the last 13 s. Without a supply sample the
 readings are `--`.
 
 MEASURED is the horn's angle from the centre count while AS5600 is on in
-SETUP, INTERFACES and the sensor answers: `+38.0 deg`, tenths of a degree,
-read 20 times a second. It is `---` while the sensor does not answer, and the
-feedback's angle where AS5600 is off. The commanded position beside it is the
+SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0 deg`,
+tenths of a degree, -180.0 to +179.9, read 20 times a second. It is `---`
+while the sensor does not answer and while it reports no magnet (STATUS MD
+clear): its count is no angle then. A magnet reported too weak or too strong
+leaves the angle on show; the band says which. Where AS5600 is off the row
+shows the feedback's angle. The commanded position beside it is the
 pulse width in microseconds.
 
 **The supply is set and switched here too.** The SET line under the plot
@@ -473,7 +476,7 @@ name opens a keyboard.
 | DUT | NAME | the device under test, up to 23 characters, for the report |
 | DUT | REPORT | a text report beside each test's log |
 | DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
-| DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives); the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+| DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
@@ -1140,12 +1143,15 @@ once and one at a time like the monitors':
 | Message | When |
 | --- | --- |
 | `coprocessor older than 4.9 -- AS5600 not read` | the encoder is enabled and the coprocessor speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
-| `AS5600 not answering at 0x36` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives |
-| `AS5600 sees no magnet -- check the magnet on the horn shaft` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear |
-| `AS5600 magnet too weak -- move it closer` | STATUS ML is set |
-| `AS5600 magnet too strong -- move it away` | STATUS MH is set |
+| `AS5600 not answering at 0x36` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
+| `AS5600 sees no magnet -- check the magnet on the horn shaft` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
+| `AS5600 magnet too weak -- move it closer` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
+| `AS5600 magnet too strong -- move it away` | STATUS MD and MH are set. The angle is used, as with ML |
 
-A magnet message is said once until the field reads right again. The sensor's
+A magnet message is said once until the field reads right again, and again
+when a magnet that read weak or strong goes missing or a missing one comes
+back weak or strong: the angle stops with the first and returns with the
+second. The sensor's
 DIR pin sets the direction its count rises in; the panel takes the count to
 rise with the servo's pulse width. Not run on hardware.
 
