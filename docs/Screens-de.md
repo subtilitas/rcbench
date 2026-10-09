@@ -925,6 +925,24 @@ ist, mindestens 150 ms:
 
 ![Ein Lauf](img/de/programmer-stick-run.png)
 
+Solange der Phasenabgriff unter SETUP eingeschaltet ist, ergänzt die Seite des
+Laufs unter der Stromzeile eine reine Anzeige: den Zustand des Abgriffs, die
+Tonhöhe seines letzten 8-ms-Fensters, die Zähler der Pieptöne, die der
+Koprozessor verlor, und der Pieptöne, die das Panel nicht gelesen hat, und die letzten vier Pieptöne
+mit Nummer, Länge in ms und mittlerer Tonhöhe in Hz. Der Lauf zählt seine
+Pieptöne weiter aus dem Netzteilstrom.
+
+![Ein Lauf mit laufendem Phasenabgriff](img/de/programmer-stick-tone.png)
+
+| Zustand | Bedeutung |
+| --- | --- |
+| `LÄUFT` | die Aufnahme läuft |
+| `ÜBERLAUF` | sie läuft, und der Aufnahmering oder die FIFO ist seit dem Einschalten des Abgriffs übergelaufen |
+| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet |
+| `KEINE TONE-PAGE` | der Koprozessor spricht ein Protokoll älter als 4.8 |
+| `PIN BELEGT` | der Koprozessor hält den Abgriff aus: sein Pin ist anderweitig gebunden |
+| `LÄUFT NICHT` | eingeschaltet, und die Page hält den Abgriff aus oder lässt ihn nicht laufen: die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
+
 Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
 etwas nicht wie erwartet war, ein Stopp des Prüfstands selbst eingeschlossen,
 und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN und
@@ -1129,6 +1147,61 @@ weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
 5 s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
 NETZTEIL freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
 nicht unscharf: auf den Messwerten der Monitore löst nichts aus.
+
+### ANSCHLÜSSE: der Phasenabgriff
+
+![ANSCHLÜSSE, der Phasenabgriff](img/de/setup-tap.png)
+
+Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO
+des Koprozessors liest die Phase über einen Vorwiderstand und eine
+Zener-Klemme; der Koprozessor misst die Zeiten der Flanken am Pin und meldet
+Länge und Tonhöhe jedes Pieptons. Die Verdrahtung steht nicht im Bauhandbuch.
+Der Abgriff ist ein Eingang: er treibt nichts, und der Koprozessor nimmt eine
+Änderung bei scharfem wie bei unscharfem Prüfstand an. Seine Zeilen folgen den
+Pins des Busses:
+
+| Einstellung | Bereich | Standard | |
+| --- | --- | --- | --- |
+| Phasenabgriff | EIN, AUS | AUS | die Aufnahme läuft auf dem Koprozessor |
+| Abgriff-Pin | 0 bis 47 | 22 | GPIO des Koprozessors; GP22 ist Pad 29. Abgelehnt: ein ADC-Pin (ADC: Analog-Digital-Wandler), GP26 bis GP29 am RP2350A und GP40 bis GP47 am RP2354B; ein Pin, der an einen Ausgang gebunden ist; ein Pin, den die SENSE- oder SUPPLY-Page hält |
+| Tiefster Ton | 50 bis 2000 Hz, Schritte von 10 Hz | 400 | ein tieferer Ton ist kein Piepton |
+| Höchster Ton | 100 bis 6900 Hz, Schritte von 50 Hz | 6500 | über dem tiefsten Ton |
+| Tonsprung | 0 bis 50 %, Schritte von 1 % | 8 | ein Tonhöhensprung dieser Größe beginnt einen neuen Piepton ohne Stille dazwischen; 0 trennt nur an Stille |
+| Abgriff-Pause | 1 bis 100 ms | 3 | die Stille, die einen Piepton beendet; mindestens eine Periode des tiefsten Tons, bei 50 Hz also 20 ms |
+| Min. Perioden | 1 bis 64 | 3 | die Tonperioden, die einen Piepton ergeben |
+
+Das Panel schreibt die Einstellung 500 ms nach der letzten Änderung auf die
+TONE-Page des Koprozessors (Protokoll 4.8), und nur, was von dem abweicht,
+was die Page hält: der Koprozessor legt jede Änderung im Flash ab. Bei jedem
+Link-Aufbau liest es die Page zuerst. Die Einstellung geht in zwei Frames,
+der Pin und der Tonbereich, dann der Sprung, die Pause und die Perioden.
+Ändern sich beide, geht der zuerst, der der Page eine gültige Einstellung
+lässt: ein tieferer Ton mit einer Pause kürzer als seine Periode wird
+abgelehnt, die Pause wird also geschrieben, bevor der Ton sinkt, und nachdem
+er steigt. Einem Koprozessor älter als 4.8 wird nichts gesendet.
+
+Solange die Page den Abgriff eingeschaltet hält, liest das Panel ihre 16
+Leseregister alle 50 ms: die Flags, die Tonhöhe des letzten 8-ms-Fensters,
+die Nummer des neuesten Pieptons und die Zähler der verlorenen Pieptöne und
+der ignorierten Tiefs. Die Pieptöne holt es einzeln nach Nummer. Der
+Koprozessor hält die letzten 64 Pieptöne, nummeriert von 1 bis 65535 und
+dann wieder ab 1, und ein Lesen entfernt keinen, eine auf dem Link verlorene
+Antwort kostet also keinen Piepton. Ein Piepton, der den Ring verlassen hat,
+bevor er gelesen wurde, oder an dem der Ring vorbeizog, während das Panel
+mehr als 64 zurücklag, wird als verpasst gezählt. Die letzten 8 Pieptöne
+hält das Panel für den Bildschirm; die Laufseite von ESC STICK zeigt 4
+davon ([Programmierer](#programmierer)).
+
+Das Band sagt, was der Abgriff meldet, je einmal und eins nach dem anderen,
+wie bei den Strommonitoren:
+
+| Meldung | Wann |
+| --- | --- |
+| `Koprozessor ohne TONE-Page -- Phasenabgriff nicht gelesen` | der Abgriff ist eingeschaltet und der Koprozessor spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
+| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt oder der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons). Alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet |
+| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
+| `Phasenabgriff: Pin GP22 nicht frei -- Abgriff läuft nicht` | der Koprozessor meldet den Pin als abgelehnt: eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung |
+| `Phasenabgriff: Aufnahme übergelaufen -- Pieptöne abgeschnitten` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des Koprozessors ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 ### Werte behalten
 

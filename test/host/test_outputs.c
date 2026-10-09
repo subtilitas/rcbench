@@ -1348,6 +1348,50 @@ TEST_CASE(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused)
     CHECK_EQ(outputs_slots_rate_check(&o, NULL, 560u), LINK_NACK_BAD_VALUE);
 }
 
+/*
+ * The silicon's verdict on an OUTPUTS write: a slot the write changed, or
+ * one it unbound, that the bank holds with a driver and the silicon did not
+ * bind refuses the write; a slot left unbound before it does not.
+ */
+TEST_CASE(an_outputs_write_the_silicon_did_not_bind_is_refused)
+{
+    fresh_pages();
+    for (unsigned sl = 0; sl < 3u; ++sl) {
+        uint16_t *r = &slots[sl * LINK_OS_STRIDE];
+        r[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+        r[LINK_OS_PIN]     = (uint16_t)(sl * 4u);
+        r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(sl, 1);
+        r[LINK_OS_RATE_HZ] = 50u;
+    }
+    outputs_slots_apply(&o, slots);
+    uint16_t next[LINK_OS_COUNT];
+    memcpy(next, slots, sizeof(next));
+
+    CHECK_EQ(outputs_slots_changed(slots, next), 0u);
+    next[1 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 55u;
+    next[2 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 60u;
+    CHECK_EQ(outputs_slots_changed(slots, next), 0x06u);
+    CHECK_EQ(outputs_slots_changed(NULL, next), 0xFFu);
+
+    /* Slots 0 and 1 were bound; slot 2 was left unbound before. */
+    const uint8_t before = 0x03u;
+    outputs_slots_apply(&o, next);
+    uint8_t watch = (uint8_t)(outputs_slots_changed(slots, next) | before);
+    CHECK_EQ(outputs_bind_check(&o, watch, 0x07u), 0u);
+    /* The changed slot 1 not bound: refused. */
+    CHECK_EQ(outputs_bind_check(&o, watch, 0x05u), LINK_NACK_BAD_VALUE);
+    /* An unchanged slot 0 that was bound and no longer is: refused. */
+    CHECK_EQ(outputs_bind_check(&o, watch, 0x06u), LINK_NACK_BAD_VALUE);
+    /* The changed slot 2 not bound: refused, it was changed. */
+    CHECK_EQ(outputs_bind_check(&o, watch, 0x03u), LINK_NACK_BAD_VALUE);
+    /* A slot nobody touched, unbound before and after: not judged. */
+    watch = 0x03u;
+    CHECK_EQ(outputs_bind_check(&o, watch, 0x03u), 0u);
+    /* A slot without a driver needs no binding. */
+    CHECK_EQ(outputs_bind_check(&o, 0xFFu, 0x07u), 0u);
+    CHECK_EQ(outputs_bind_check(NULL, 0xFFu, 0xFFu), LINK_NACK_BAD_VALUE);
+}
+
 TEST_CASE(a_pin_past_the_bank_reaches_no_slice)
 {
     CHECK_EQ(out_pwm_slice_of((uint8_t)OUT_PWM_GPIOS), OUT_PWM_NONE);
@@ -1415,6 +1459,7 @@ int main(void)
     RUN(two_header_pins_sixteen_apart_are_one_compare_register);
     RUN(the_only_pins_sharing_a_compare_register_are_the_folded_pairs);
     RUN(a_pin_past_the_bank_reaches_no_slice);
+    RUN(an_outputs_write_the_silicon_did_not_bind_is_refused);
     RUN(the_servo_rate_reaches_pwm_surfaces_and_nothing_else);
     RUN(a_servo_rate_outside_the_pwm_range_is_refused);
     RUN(a_servo_rate_that_would_split_a_slice_is_refused);

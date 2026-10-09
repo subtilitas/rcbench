@@ -37,6 +37,15 @@ void outputs_hw_init(void);
  */
 void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz);
 
+/*
+ * As outputs_hw_apply(), with only the slots in @p may_bind bound; a slot
+ * outside it is released and left unbound.  A refused OUTPUTS write puts
+ * back exactly the set that was bound before it, so a slot unbound then
+ * cannot take the resource a slot bound then needs.
+ */
+void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
+                           uint8_t may_bind);
+
 /**
  * Render the bank onto the pins.  Call every pass.
  *

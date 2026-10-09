@@ -119,11 +119,17 @@ void ui_text_trace(ui_text_id_t id)
 static int s_lang;
 /* Both current monitors enabled, as a bench with them fitted keeps it. */
 static bool s_monitors_on;
+/* The phase tap enabled, and the readout a run's page shows beside it. */
+static bool s_tap_on;
+static bool s_tone_fed;
 
 static bool lang_load(float *values, int count)
 {
     if ((int)SET_LANGUAGE < count) {
         values[SET_LANGUAGE] = (float)s_lang;
+    }
+    if (s_tap_on && (int)SET_TONE_EN < count) {
+        values[SET_TONE_EN] = 1.0f;
     }
     if (s_monitors_on && (int)SET_INA3221_EN < count) {
         values[SET_INA228_EN]  = 1.0f;
@@ -476,6 +482,25 @@ static void stick_step(stick_rig_t *r)
         supply_screen_set_on_coming(false);
     }
     programmer_screen_bench(r->now, r->armed, r->stops, r->pressed, false);
+    if (s_tone_fed) {
+        /* The tap running on a phase that sounds 1523.4 Hz, and the last
+         * four beeps it reported. */
+        tone_readout_t t;
+        memset(&t, 0, sizeof(t));
+        t.state = TONE_STATE_RUNNING;
+        t.tone = true;
+        t.win_freq_dhz = 15234u;
+        t.win_periods = 12u;
+        t.lost = 0u;
+        t.n = TONE_LINK_SHOWN;
+        for (unsigned i = 0u; i < TONE_LINK_SHOWN; ++i) {
+            t.beeps[i].seq = (uint16_t)(41u - i);
+            t.beeps[i].len_dms = (uint16_t)(2003u - 11u * i);
+            t.beeps[i].freq_dhz = (uint16_t)(15234u - 7u * i);
+            t.beeps[i].bursts = 1u;
+        }
+        programmer_screen_tone(&t);
+    }
     const int32_t ma = esc_sim_step(&r->sim, r->now, r->on,
                                     r->armed ? r->pct : -1.0f);
     if (r->now >= r->next) {
@@ -654,6 +679,8 @@ int main(int argc, char **argv)
                                                        : UI_LANG_EN;
     s_monitors_on = strcmp(view, "setup-interfaces") == 0
                     || strcmp(view, "setup-sensors") == 0;
+    s_tap_on = strcmp(view, "setup-tap") == 0;
+    s_tone_fed = strcmp(view, "programmer-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     settings_set_store(&k_lang_store);
@@ -1033,6 +1060,7 @@ int main(int argc, char **argv)
                 }
             }
             const bool runs = strcmp(view, "programmer-stick-run") == 0
+                || strcmp(view, "programmer-stick-tone") == 0
                 || strcmp(view, "programmer-stick-done") == 0
                 || strcmp(view, "programmer-stick-aborted") == 0
                 || strcmp(view, "programmer-stick-failed") == 0;
@@ -1059,7 +1087,8 @@ int main(int argc, char **argv)
                      ++ms) {
                     stick_step(&rig);
                     /* Inside a beep, so the green light is on. */
-                    if (strcmp(view, "programmer-stick-run") == 0
+                    if ((strcmp(view, "programmer-stick-run") == 0
+                         || strcmp(view, "programmer-stick-tone") == 0)
                         && run->phase == ESC_STICK_ITEMS && run->groups >= 4u
                         && esc_stick_beeps(run) >= 2u && run->det.high) {
                         break;
@@ -1430,11 +1459,18 @@ int main(int argc, char **argv)
      * same list drawn on by four rows to the INA3221's and the bus's pins.
      */
     if (strcmp(view, "setup-interfaces") == 0
-        || strcmp(view, "setup-sensors") == 0) {
+        || strcmp(view, "setup-sensors") == 0
+        || strcmp(view, "setup-tap") == 0) {
         tap(120, UI_BAND_H + 16 + 2 * 72 + 32);        /* INTERFACES */
         if (strcmp(view, "setup-sensors") == 0) {
             /* Four rows of 58 px, and the 8 px the finger travels before
              * the screen takes it for a scroll. */
+            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
+        } else if (strcmp(view, "setup-tap") == 0) {
+            /* Past the ten rows of the current monitors and their bus:
+             * two drags, as one longer than the list is high leaves the
+             * screen. */
+            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (6 * 58 + 8));
             drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
         }
     }

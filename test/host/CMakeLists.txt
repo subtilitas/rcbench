@@ -95,7 +95,7 @@ set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming touch_loss servo_limit servo_sync servo_sweep servo_move servo_test servo_page supply_page sense_page supply_link sense_link openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 sense_sched sense_svc tone)
+foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming touch_loss servo_limit servo_sync servo_sweep servo_move servo_test servo_page supply_page sense_page supply_link sense_link openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 sense_sched sense_svc tone edge_ring tone_svc tone_page tone_pio tone_link)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -115,3 +115,8 @@ target_compile_definitions(test_servo_test PRIVATE
 # them from whatever directory it is started in.
 target_compile_definitions(test_esc_profiles PRIVATE
     "PROFILE_DIR=\"${SHARED}/esc/profiles\"")
+# The phase tap's PIO program, assembled from its source by the test and
+# held to the words pioasm gives (the firmware build checks the same file).
+target_compile_definitions(test_tone_pio PRIVATE
+    "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/tone_cap.pio\""
+    "TONE_CAP_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/tone_cap_words.txt\"")

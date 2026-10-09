@@ -209,6 +209,15 @@ count is described [below](#the-stack-light).
 
 ![A run counting item groups, a beep under way](img/programmer-stick-run.png)
 
+With the phase tap enabled on SETUP under INTERFACES the page adds a
+read-only readout of the tap under the current line: its state, the pitch of
+its last 8 ms window, the counts of beeps lost and beeps not read, and the
+last four beeps with their number, length in ms and pitch in Hz ([the tap's rows and states](Screens.md#interfaces-the-phase-tap)). The
+run counts its beeps from the supply current as before; it does not use the
+tap's beeps.
+
+![A run with the phase tap running](img/programmer-stick-tone.png)
+
 The result stays until OK: which selections were made, and for an aborted
 run the reason. Past five changes the last line counts the rest.
 

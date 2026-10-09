@@ -233,6 +233,16 @@ beschrieben.
 
 ![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/programmer-stick-run.png)
 
+Ist der Phasenabgriff unter SETUP bei ANSCHLÜSSE eingeschaltet, ergänzt die
+Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
+die Tonhöhe seines letzten 8-ms-Fensters, die Zähler der verlorenen
+Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz
+([die Zeilen und Zustände des Abgriffs](Screens-de.md#anschlüsse-der-phasenabgriff)).
+Der Lauf zählt seine Pieptöne wie bisher aus dem Netzteilstrom; die Pieptöne
+des Abgriffs benutzt er nicht.
+
+![Ein Lauf mit laufendem Phasenabgriff](img/de/programmer-stick-tone.png)
+
 Das Ergebnis bleibt bis OK: welche Auswahlen getroffen wurden, und bei einem
 abgebrochenen Lauf der Grund. Bei mehr als fünf Änderungen zählt die letzte
 Zeile den Rest.

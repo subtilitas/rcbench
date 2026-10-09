@@ -8,6 +8,83 @@ history is in git.
 
 ### Added
 
+- **TONE link page and the phase tap's capture (protocol 4.8).** TONE
+  (0x2D) sets up and reads the tap that hears an ESC's beeps on one motor
+  phase through a series resistor and a zener clamp: enable, the GPIO
+  (default 22, pad 29), the lowest and highest tone (50 to 2000 Hz and up to
+  6900 Hz), the pitch change that splits a beep (0 to 50 %), the silence that
+  ends one (1 to 100 ms, at least the lowest tone's period) and the periods
+  that make one (1 to 64). The GPIO is refused past the bank, on a reserved
+  pin, on an output's, SENSE's or SUPPLY's, and on an ADC pin (GP26 to GP29,
+  GP40 to GP47) while the tap is enabled, and an OUTPUTS write on it, or one
+  whose slot the silicon cannot bind beside the running tap (no PIO state
+  machine, instruction memory or DMA channel left), is refused with
+  BAD_VALUE, keeps the slots in force and saves nothing. The page holds the last 64 beeps: start in ms since the capture,
+  length in 0.1 ms, pitch in 0.1 Hz, bursts, carrier in 100 Hz steps and
+  whether a pitch change bounds it, read by number through EVT_SEL without
+  consuming one. The set-up, registers 0 to 6, is kept in the coprocessor's
+  flash (store record version 6; records of version 3 to 5 still read), and
+  the tap starts at boot, and a saved enabled pin the board reserves starts
+  refused (PIN_REFUSED), the set-up kept. GLITCHES (register 23) counts lows
+  under 500 ns, which the capture's 8 µs hold-off removes first, so it reads
+  0 on the tap. The read at 20 Hz is registers 8 to 23, one request
+  and four data frames, about 1.7 % of the bus. No capability bit. A 4.7
+  coprocessor answers the page with BAD_PAGE; a 4.7 panel never writes it.
+- **The coprocessor captures the phase tap's edges.** A PIO state machine
+  (`firmware/iomcu/src/tone_cap.pio`, 22 instructions) counts a 31-bit
+  down counter every 4 clocks (26.7 ns at 150 MHz) and pushes a word for each
+  edge: the counter and the level. A fall is pushed only after the line has
+  stayed low for the hold-off, 8 µs (300 counts), and carries the time it
+  fell; a low that ends sooner is never pushed. A DMA channel writes the words
+  endlessly into a ring of 4096 words (16 kB, 42.7 ms at 96,000 edges/s), and
+  core 1 reads it on its 1 ms tick and feeds the detector
+  (`shared/sense/edge_ring.c`, `tone_svc.c`), extending the 31-bit count to 64
+  bits against the microsecond timer, counting a lap of the ring, also one
+  before the first read (the ring is cleared at the start), or a FIFO
+  overflow as an overrun that ends the beep under way; the words read in the
+  pass that sees the overflow and in the next are discarded, since they hold
+  edges from both sides of the dropped word. Core 0 waits up to 5 ms for core 1 to finish its pass before it stops or
+  moves the capture; a pass still running then refuses the change and
+  leaves the capture as it was. A refused change that has to restart the old
+  capture keeps the ring and the time base of EVT_START_MS and shows
+  OVERRUN, since a beep under way was cut. A core 1 that does not start leaves a
+  saved tap refused, its capture let go. The pin is an input
+  with its pull-down on while the tap is disabled. The host suite assembles
+  the PIO program from its source, runs it in a cycle-counting model and
+  holds it to `tone_holdoff_edge()`: every decrement of the counter 4 cycles
+  after the one before on every path, a low of 1200 cycles always kept and one
+  of 1196 never. The firmware build holds pioasm's words to the same list.
+  Not run on hardware. Core 1's stack is 4 kB.
+- **The panel sets up and reads the phase tap (TONE page, protocol 4.8).**
+  SETUP INTERFACES gains seven rows after the bus's pins: Phase tap (ON or
+  OFF, default OFF), Tap pin (0 to 47, default 22), Tap lowest tone (50 to
+  2000 Hz, default 400), Tap highest tone (100 to 6900 Hz, default 6500),
+  Tap pitch split (0 to 50 %, default 8), Tap gap (1 to 100 ms, default 3)
+  and Tap min periods (1 to 64, default 3), with German labels. The panel
+  writes them to the TONE page (0x2D) in two frames, 500 ms after the last
+  edit and only what differs from what the page holds, the frame that leaves
+  the page a valid set-up first. While the page holds the tap on it reads
+  registers 8 to 23 every 50 ms and takes the coprocessor's last 64 beeps one
+  by one by number, from 1 to 65535 and round to 1; a lost reply loses no
+  beep, and beeps the ring moved past are counted as missed. A coprocessor
+  older than 4.8 is sent nothing, and with the tap enabled the band says
+  "coprocessor has no tone page". Switching the tap off writes the first
+  frame with the values the page holds, so a refused range cannot keep it
+  on; a saved tap refused at boot for a busy pin is written again every
+  5 s; across a change of ENABLE, of the pin or of the range the panel keeps
+  its place in the numbering, so every beep after the change is read and one
+  it had not read before counts as missed. While the supply's wiring waits
+  for flash, the coprocessor refuses a tap start that would take the PIO
+  room the supply attaches into. The band also says a
+  refused set-up, a pin the coprocessor does not hold free, and a capture
+  overrun, each once: an overrun stays said while the capture goes on, so an
+  edit of the range does not say it again, and a restarted capture says a
+  new one.
+  The ESC STICK run's page shows the tap read only under the current line:
+  its state, the last window's pitch, the beeps lost and the beeps not read,
+  and the last four beeps with number, length in ms and
+  pitch in Hz. The run still counts its beeps from the supply current. Needs
+  the coprocessor's TONE page; not run against hardware.
 - **Zoom in the log viewer's plot.** Two fingers spread to zoom in, pinch to
   zoom out and move together to pan; the view stays where they leave it, from
   8 samples to the whole run. A bar under the plot shows which part of the run

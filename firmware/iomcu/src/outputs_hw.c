@@ -164,6 +164,12 @@ static bool bind(const out_slot_t *s)
 
 void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
 {
+    outputs_hw_apply_only(o, rate_hz, 0xFFu);
+}
+
+void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
+                           uint8_t may_bind)
+{
     if (o == NULL || rate_hz == NULL) {
         return;
     }
@@ -182,7 +188,8 @@ void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
      */
     bool moved[OUT_MAX_SLOTS];
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        moved[i] = !(same(&s_shadow[i], &want[i]) && s_state[i].bound);
+        moved[i] = !(same(&s_shadow[i], &want[i]) && s_state[i].bound)
+                   || (may_bind & (1u << i)) == 0u;
         if (moved[i]) {
             /* Whatever this slot's ESC said belongs to a binding that is
              * going away, and so does whether that ESC was ever asked for
@@ -206,7 +213,8 @@ void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
             continue;
         }
         s_shadow[i] = want[i];
-        if (s_shadow[i].driver == OUT_DRIVER_NONE) {
+        if (s_shadow[i].driver == OUT_DRIVER_NONE
+            || (may_bind & (1u << i)) == 0u) {
             continue;
         }
         /*
