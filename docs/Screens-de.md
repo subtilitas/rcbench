@@ -1121,12 +1121,16 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   starkem Magneten oder mit Magnitude 0 gilt als keine Antwort. Ein Sprung von
   mehr als 90 deg zwischen zwei Messungen gilt als Störung und wird verworfen.
 - Ein Finger auf dem Gas-Track oder dem SERVO-Zifferblatt besitzt den Wert,
-  solange er aufliegt. Auf SERVO nimmt der Knopf das Horn nicht aus einem
+  solange er aufliegt, und für den ganzen Frame, in dem er das Bedienelement
+  berührt hat, auch wenn er in diesem Frame abhebt. Auf SERVO nimmt der Knopf das Horn nicht aus einem
   laufenden oder pausierten Sweep, einem Testlauf oder dem offenen
   Einstellungsfeld.
 - Ein Frame, der Touch-Ereignisse verloren hat, verwirft die Bewegung des
-  Knopfs zusammen mit den Gesten, ebenso ein Frame, in dem der Bildschirm
-  gewechselt hat.
+  Knopfs zusammen mit den Gesten, ebenso ein Frame, in dem der Router
+  überhaupt navigiert hat, auch weg vom Bildschirm und zurück. Das Kommando
+  des Knopfs geht mit dem nächsten Frame hinaus; findet dieser Frame zuerst
+  verlorene Touch-Ereignisse, wird das Kommando zurückgenommen, und der
+  Regler kehrt auf seinen Wert vor dem Knopf zurück.
 - Der Knopf ersetzt nur ein Gas oder eine Horn-Position. Wartet ein anderes
   Kommando auf den Frame (ein eben vollendetes Schärfen, ein Entschärfen, ein
   Zurücksetzen der Spitzen, ein Freigeben), wird die Bewegung des Knopfs in

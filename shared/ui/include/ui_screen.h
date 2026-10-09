@@ -79,6 +79,14 @@ void ui_router_init(void);
 void ui_router_goto(ui_screen_id_t id);
 
 ui_screen_id_t ui_router_current(void);
+
+/**
+ * Count of navigations since ui_router_init(): every switch to a different
+ * screen adds one.  Two reads that differ tell that the router moved between
+ * them, including away and back to the same screen, which comparing
+ * ui_router_current() cannot.
+ */
+uint32_t ui_router_navigations(void);
 const char *ui_router_title(ui_screen_id_t id);
 
 void ui_router_tick(float dt_s);

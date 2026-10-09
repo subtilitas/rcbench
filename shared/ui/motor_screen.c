@@ -149,6 +149,14 @@ static struct {
     bench_state_t bench;
     bool          armed;
     motor_cmd_t   pending;
+    /* The knob's throttle command waiting in `pending`, and what to put back
+     * if it is withdrawn: the slider's value before the knob moved it, and
+     * whether a throttle was pending before it. */
+    bool          knob_pending;
+    bool          knob_had_cmd;
+    float         knob_prev;
+    /* A finger owned the slider at some point since knob_frame(). */
+    bool          knob_finger;
     unsigned      drawn_mask;
     /* The arm state of the bench itself, which is what bounds a run.  Kept
      * apart from `armed`: that one also carries a disarm this screen has
@@ -279,6 +287,7 @@ static void reset(void)
  */
 static void post(motor_cmd_kind_t kind, float value)
 {
+    s.knob_pending = false;
     if (s.pending.kind == MOTOR_CMD_DISARM && kind != MOTOR_CMD_DISARM) {
         return;
     }
@@ -295,6 +304,7 @@ bool motor_screen_poll_cmd(motor_cmd_t *out)
         *out = s.pending;
     }
     s.pending.kind = MOTOR_CMD_NONE;
+    s.knob_pending = false;
     return true;
 }
 
@@ -418,6 +428,26 @@ void motor_screen_set_throttle(float pct)
     ++s.thr_rev;
 }
 
+void motor_screen_knob_frame(void)
+{
+    s.knob_finger = false;
+}
+
+void motor_screen_knob_cancel(void)
+{
+    if (!s.knob_pending) {
+        return;
+    }
+    s.knob_pending = false;
+    ui_slider_set(&s.slider, s.knob_prev);
+    ++s.thr_rev;
+    if (s.knob_had_cmd) {
+        s.pending.value = s.knob_prev;
+    } else {
+        s.pending.kind = MOTOR_CMD_NONE;
+    }
+}
+
 void motor_screen_knob(float span_fraction)
 {
     /*
@@ -426,16 +456,23 @@ void motor_screen_knob(float span_fraction)
      * that completed in this frame's tick, a disarm, a peak reset -- is not
      * the knob's to overwrite, and its delta is dropped, not held for later.
      */
-    if (span_fraction == 0.0f || s.slider.dragging
+    if (span_fraction == 0.0f || s.slider.dragging || s.knob_finger
         || (s.pending.kind != MOTOR_CMD_NONE
             && s.pending.kind != MOTOR_CMD_THROTTLE)) {
         return;
     }
     const float before = s.slider.value;
+    const bool  was_knob = s.knob_pending;
+    const bool  had_cmd  = s.pending.kind == MOTOR_CMD_THROTTLE;
     motor_screen_set_throttle(before
                               + span_fraction * (s.slider.max - s.slider.min));
     if (s.slider.value != before) {
         post(MOTOR_CMD_THROTTLE, s.slider.value);
+        if (!was_knob) {
+            s.knob_prev    = before;
+            s.knob_had_cmd = had_cmd;
+        }
+        s.knob_pending = true;
     }
 }
 
@@ -456,7 +493,12 @@ static void event(const touch_event_t *evt)
          * what was drawn there is void -- not merely the chrome's. */
         motor_invalidate();
     }
-    if (ui_slider_event(&s.slider, evt)) {
+    const bool was_dragging = s.slider.dragging;
+    const bool slider_moved = ui_slider_event(&s.slider, evt);
+    if (was_dragging || s.slider.dragging) {
+        s.knob_finger = true;
+    }
+    if (slider_moved) {
         post(MOTOR_CMD_THROTTLE, s.slider.value);
         ++s.thr_rev;
     }

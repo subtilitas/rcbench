@@ -5,6 +5,7 @@
 #include "knob_task.h"
 
 #include <stdatomic.h>
+#include <stddef.h>
 
 #include "board.h"
 #include "esp_log.h"
@@ -17,14 +18,28 @@ static const char *TAG = "knob";
 /*
  * Short, because the bus is shared with the touch controller the control
  * task reads every 5 ms: a sensor that holds the bus costs that task at most
- * this long, far under the 150 ms the safety line is watched against.  One
- * burst of 18 bytes at 400 kHz is about 0.5 ms.
+ * this long per transaction, far under the 150 ms the safety line is watched
+ * against.  The three transactions of one poll take about 0.3 ms at 400 kHz.
  */
 #define KNOB_I2C_TIMEOUT_MS 5
 
 static atomic_bool s_on;
 static atomic_int  s_steps;
 static i2c_master_dev_handle_t s_dev;
+
+/*
+ * One register per transaction.  From the ams AS5600 datasheet, "Automatic
+ * Increment of the Address Pointer for ANGLE, RAW ANGLE and MAGNITUDE
+ * Registers": "These are special registers which suppress the automatic
+ * increment of the address pointer on reads".  A read that starts at STATUS
+ * therefore does not walk on to RAW ANGLE and MAGNITUDE; each is addressed
+ * by its own write of the register address, and read from its high byte.
+ */
+static bool knob_read(uint8_t reg, uint8_t *buf, size_t len)
+{
+    return i2c_master_transmit_receive(s_dev, &reg, 1, buf, len,
+                                       KNOB_I2C_TIMEOUT_MS) == ESP_OK;
+}
 
 static void knob_task(void *arg)
 {
@@ -40,13 +55,14 @@ static void knob_task(void *arg)
             period_ms = KNOB_POLL_IDLE_MS;
             continue;
         }
-        const uint8_t reg = KNOB_REG_STATUS;
-        uint8_t regs[KNOB_BURST_LEN];
-        const bool read_ok =
-            i2c_master_transmit_receive(s_dev, &reg, 1, regs, sizeof regs,
-                                        KNOB_I2C_TIMEOUT_MS) == ESP_OK;
+        uint8_t status = 0;
+        uint8_t raw[KNOB_WORD_LEN];
+        uint8_t mag[KNOB_WORD_LEN];
+        const bool read_ok = knob_read(KNOB_REG_STATUS, &status, KNOB_STATUS_LEN)
+                          && knob_read(KNOB_REG_RAW_ANGLE, raw, KNOB_WORD_LEN)
+                          && knob_read(KNOB_REG_MAGNITUDE, mag, KNOB_WORD_LEN);
         knob_reading_t r = { 0 };
-        const bool usable = read_ok && knob_decode(regs, &r);
+        const bool usable = read_ok && knob_decode(status, raw, mag, &r);
         const int d = knob_feed(&k, usable, r.raw);
         if (d != 0) {
             atomic_fetch_add(&s_steps, d);

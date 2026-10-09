@@ -12,19 +12,25 @@
 #include "knob.h"
 #include "settings.h"
 
-#define OFF(reg) ((reg) - KNOB_REG_STATUS)
+/* The three reads of one poll, each as the sensor returns it. */
+typedef struct {
+    uint8_t status;
+    uint8_t raw[KNOB_WORD_LEN];
+    uint8_t mag[KNOB_WORD_LEN];
+} reads_t;
 
-/* The 18 bytes of a burst from STATUS: status, raw angle, angle (unused),
- * and magnitude. */
-static void burst(uint8_t out[KNOB_BURST_LEN], uint8_t status, uint16_t raw,
-                  uint16_t magnitude)
+static void reads(reads_t *o, uint8_t status, uint16_t raw, uint16_t magnitude)
 {
-    memset(out, 0, KNOB_BURST_LEN);
-    out[0] = status;
-    out[OFF(KNOB_REG_RAW_ANGLE)]     = (uint8_t)(raw >> 8);
-    out[OFF(KNOB_REG_RAW_ANGLE) + 1] = (uint8_t)raw;
-    out[OFF(KNOB_REG_MAGNITUDE)]     = (uint8_t)(magnitude >> 8);
-    out[OFF(KNOB_REG_MAGNITUDE) + 1] = (uint8_t)magnitude;
+    o->status = status;
+    o->raw[0] = (uint8_t)(raw >> 8);
+    o->raw[1] = (uint8_t)raw;
+    o->mag[0] = (uint8_t)(magnitude >> 8);
+    o->mag[1] = (uint8_t)magnitude;
+}
+
+static bool decode(const reads_t *o, knob_reading_t *r)
+{
+    return knob_decode(o->status, o->raw, o->mag, r);
 }
 
 TEST_CASE(the_register_offsets_are_the_datasheets)
@@ -33,58 +39,58 @@ TEST_CASE(the_register_offsets_are_the_datasheets)
     CHECK_EQ(KNOB_REG_STATUS, 0x0B);
     CHECK_EQ(KNOB_REG_RAW_ANGLE, 0x0C);
     CHECK_EQ(KNOB_REG_MAGNITUDE, 0x1B);
-    /* 0x0B..0x1C inclusive. */
-    CHECK_EQ(KNOB_BURST_LEN, 0x1C - 0x0B + 1);
+    CHECK_EQ(KNOB_STATUS_LEN, 1);
+    CHECK_EQ(KNOB_WORD_LEN, 2);
 }
 
 TEST_CASE(decode_reads_the_twelve_bit_fields_and_the_flags)
 {
-    uint8_t b[KNOB_BURST_LEN];
+    reads_t b;
     knob_reading_t r;
-    burst(b, KNOB_STATUS_MD, 0x0ABC, 0x0123);
-    CHECK(knob_decode(b, &r));
+    reads(&b, KNOB_STATUS_MD, 0x0ABC, 0x0123);
+    CHECK(decode(&b, &r));
     CHECK(r.magnet && !r.too_weak && !r.too_strong);
     CHECK_EQ(r.raw, 0x0ABC);
     CHECK_EQ(r.magnitude, 0x0123);
 
     /* The top four bits of each high byte are not part of the value. */
-    b[OFF(KNOB_REG_RAW_ANGLE)]  |= 0xF0u;
-    b[OFF(KNOB_REG_MAGNITUDE)]  |= 0xF0u;
-    CHECK(knob_decode(b, &r));
+    b.raw[0] |= 0xF0u;
+    b.mag[0] |= 0xF0u;
+    CHECK(decode(&b, &r));
     CHECK_EQ(r.raw, 0x0ABC);
     CHECK_EQ(r.magnitude, 0x0123);
 
-    burst(b, KNOB_STATUS_MD, 4095, 4095);
-    CHECK(knob_decode(b, &r));
+    reads(&b, KNOB_STATUS_MD, 4095, 4095);
+    CHECK(decode(&b, &r));
     CHECK_EQ(r.raw, 4095);
     CHECK_EQ(r.magnitude, 4095);
 }
 
 TEST_CASE(a_reading_is_unusable_unless_the_magnet_is_right)
 {
-    uint8_t b[KNOB_BURST_LEN];
+    reads_t b;
     knob_reading_t r;
 
-    burst(b, 0, 100, 800);                       /* no magnet          */
-    CHECK(!knob_decode(b, &r));
+    reads(&b, 0, 100, 800);                       /* no magnet          */
+    CHECK(!decode(&b, &r));
     CHECK(!r.magnet);
 
-    burst(b, KNOB_STATUS_MD | KNOB_STATUS_ML, 100, 800);   /* too weak   */
-    CHECK(!knob_decode(b, &r));
+    reads(&b, KNOB_STATUS_MD | KNOB_STATUS_ML, 100, 800);   /* too weak   */
+    CHECK(!decode(&b, &r));
     CHECK(r.too_weak);
 
-    burst(b, KNOB_STATUS_MD | KNOB_STATUS_MH, 100, 800);   /* too strong */
-    CHECK(!knob_decode(b, &r));
+    reads(&b, KNOB_STATUS_MD | KNOB_STATUS_MH, 100, 800);   /* too strong */
+    CHECK(!decode(&b, &r));
     CHECK(r.too_strong);
 
-    burst(b, KNOB_STATUS_MD, 100, 0);            /* nothing measured    */
-    CHECK(!knob_decode(b, &r));
+    reads(&b, KNOB_STATUS_MD, 100, 0);            /* nothing measured    */
+    CHECK(!decode(&b, &r));
 
     /* Bits outside MD, ML and MH are not read as flags. */
-    burst(b, 0xC7, 100, 800);
-    CHECK(!knob_decode(b, &r));
-    burst(b, (uint8_t)(0xC7 | KNOB_STATUS_MD), 100, 800);
-    CHECK(knob_decode(b, &r));
+    reads(&b, 0xC7, 100, 800);
+    CHECK(!decode(&b, &r));
+    reads(&b, (uint8_t)(0xC7 | KNOB_STATUS_MD), 100, 800);
+    CHECK(decode(&b, &r));
 }
 
 TEST_CASE(the_first_reading_sets_a_reference_and_moves_nothing)

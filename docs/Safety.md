@@ -194,9 +194,12 @@ unpowered or unplugged panel reads as a line that is not edging.
   90 deg between two readings each set the reference again and move nothing,
   so a knob that stops answering stops contributing and no last value is held
   as a command. A finger on the track or dial owns the value against the
-  knob, and on SERVO a sweep, a test run and the settings panel own the horn.
-  A frame that lost touch events, or in which the screen changed, drops the
-  knob's motion. The knob never replaces a command other than a throttle or
+  knob for the whole frame in which it touched the control, and on SERVO a
+  sweep, a test run and the settings panel own the horn. A frame that lost
+  touch events, or in which the router navigated at all, drops the knob's
+  motion. The knob's command goes out with the next frame; if that frame
+  finds lost touch events first, the command is withdrawn and the value
+  returns to what it was before the knob. The knob never replaces a command other than a throttle or
   a horn position that is waiting for the frame: a completed arm, a disarm, a
   release and a peak reset stay, and its motion is dropped. The knob is read by
   a task of its own on the core the renderer uses, never by the control task,

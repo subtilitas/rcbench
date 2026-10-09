@@ -118,6 +118,21 @@ const ui_screen_t *servo_screen(void);
  */
 void servo_screen_knob(float span_fraction);
 
+/**
+ * Start of a frame, before its touch events: forget that a finger owned the
+ * dial.  The knob moves nothing in a frame in which a finger owned the dial
+ * at any point, including a press and release inside it.
+ */
+void servo_screen_knob_frame(void);
+
+/**
+ * Withdraw the knob's position command if it is still waiting to be taken:
+ * the commanded angle returns to its value from before the knob, and a
+ * position that was pending before the knob moved it is pending again with
+ * that angle.  A command posted since, or already taken, is left alone.
+ */
+void servo_screen_knob_cancel(void);
+
 /** Take the pending command, if any.  Cleared by reading. */
 bool servo_screen_take(servo_cmd_t *out);
 

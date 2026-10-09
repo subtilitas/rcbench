@@ -227,10 +227,14 @@ Panel als Leitung ohne Flanken gelesen wird.
   Sprung über 90 deg zwischen zwei Messungen setzen jeweils die Referenz neu
   und bewegen nichts; ein Knopf, der nicht mehr antwortet, trägt also nichts
   mehr bei, und kein letzter Wert bleibt als Kommando stehen. Ein Finger auf
-  Track oder Zifferblatt besitzt den Wert gegenüber dem Knopf, und auf SERVO
-  besitzen ein Sweep, ein Testlauf und das Einstellungsfeld das Horn. Ein
-  Frame, der Touch-Ereignisse verloren hat, oder in dem der Bildschirm
-  gewechselt hat, verwirft die Bewegung des Knopfs. Der Knopf ersetzt nie ein
+  Track oder Zifferblatt besitzt den Wert gegenüber dem Knopf für den ganzen
+  Frame, in dem er das Bedienelement berührt hat, und auf SERVO besitzen ein
+  Sweep, ein Testlauf und das Einstellungsfeld das Horn. Ein Frame, der
+  Touch-Ereignisse verloren hat, oder in dem der Router überhaupt navigiert
+  hat, verwirft die Bewegung des Knopfs. Das Kommando des Knopfs geht mit dem
+  nächsten Frame hinaus; findet dieser Frame zuerst verlorene
+  Touch-Ereignisse, wird das Kommando zurückgenommen, und der Wert kehrt auf
+  den Stand vor dem Knopf zurück. Der Knopf ersetzt nie ein
   anderes wartendes Kommando als ein Gas oder eine Horn-Position: Ein
   vollendetes Schärfen, ein Entschärfen, ein Freigeben und ein Zurücksetzen
   der Spitzen bleiben stehen, und seine Bewegung wird verworfen.

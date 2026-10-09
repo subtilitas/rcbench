@@ -1028,10 +1028,14 @@ across a third of its travel from -travel to +travel.
   magnitude of 0 counts as no answer. A step of more than 90 deg between two
   readings counts as a glitch and is dropped.
 - A finger on the throttle track or on the SERVO dial owns the value while it
-  is down. On SERVO the knob does not take the horn from a running or paused
+  is down, and for the whole frame in which it touched the control, also when
+  it lifts in that frame. On SERVO the knob does not take the horn from a running or paused
   sweep, a test run, or the open settings panel.
 - A frame that lost touch events drops the knob's motion with its gestures,
-  and so does a frame in which the screen changed.
+  and so does a frame in which the router navigated at all, also away from
+  the screen and back to it. The knob's command goes out with the next frame;
+  if that frame finds lost touch events first, the command is withdrawn and
+  the slider returns to its value from before the knob.
 - The knob replaces only a throttle or a horn position. While another
   command waits for the frame (an arm that has just completed, a disarm, a
   peak reset, a release), the knob's motion in that frame is dropped, not

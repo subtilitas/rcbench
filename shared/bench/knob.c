@@ -6,17 +6,15 @@
 
 #include <stddef.h>
 
-bool knob_decode(const uint8_t regs[KNOB_BURST_LEN], knob_reading_t *out)
+bool knob_decode(uint8_t status, const uint8_t raw[KNOB_WORD_LEN],
+                 const uint8_t magnitude[KNOB_WORD_LEN], knob_reading_t *out)
 {
-    const uint8_t status = regs[0];
     knob_reading_t r;
     r.magnet     = (status & KNOB_STATUS_MD) != 0u;
     r.too_weak   = (status & KNOB_STATUS_ML) != 0u;
     r.too_strong = (status & KNOB_STATUS_MH) != 0u;
-    r.raw = (uint16_t)((((unsigned)regs[KNOB_REG_RAW_ANGLE - KNOB_REG_STATUS] & 0x0Fu) << 8)
-                       | regs[KNOB_REG_RAW_ANGLE - KNOB_REG_STATUS + 1]);
-    r.magnitude = (uint16_t)((((unsigned)regs[KNOB_REG_MAGNITUDE - KNOB_REG_STATUS] & 0x0Fu) << 8)
-                             | regs[KNOB_REG_MAGNITUDE - KNOB_REG_STATUS + 1]);
+    r.raw = (uint16_t)((((unsigned)raw[0] & 0x0Fu) << 8) | raw[1]);
+    r.magnitude = (uint16_t)((((unsigned)magnitude[0] & 0x0Fu) << 8) | magnitude[1]);
     if (out != NULL) {
         *out = r;
     }

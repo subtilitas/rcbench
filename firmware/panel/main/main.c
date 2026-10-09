@@ -6711,19 +6711,24 @@ static void test_lines_service(void)
  * on MOTOR & ESC, the horn on SERVO.
  *
  * The motion is taken at the start of the frame together with the screen it
- * was turned on, and applied at the end, after the last touch drain and the
- * tick.  A motion turned on another screen, with the setting off, in a frame
- * whose route changed (a tap on a menu item navigates inside the drain), or
- * in a frame that lost touch events is dropped and not applied later.  The
- * knob's command is posted after the frame's flush and goes with the next
- * one, so a touch loss found by the second drain is seen before it is
- * posted.  The knob moves a value by how far it turned; it arms nothing, and
- * a disarm, a stop or leaving the screen act exactly as they do for the touch
- * slider.
+ * was turned on and the router's navigation count, and applied at the end,
+ * after the last touch drain and the tick.  A motion turned on another
+ * screen, with the setting off, in a frame in which the router navigated at
+ * all (a tap on a menu item navigates inside the drain, and a tap away and a
+ * tap back lands on the same screen), in a frame that lost touch events, or
+ * in a frame in which a finger owned the slider or the dial is dropped and
+ * not applied later.  The knob's command is posted after the frame's flush
+ * and goes with the next one.  If the next frame's first drain finds a touch
+ * loss, the command is withdrawn before the loss flushes the screens
+ * (knob_withdraw()), so a frame that lost touch never moves the output from
+ * the knob.  The knob moves a value by how far it turned; it arms nothing,
+ * and a disarm, a stop or leaving the screen act exactly as they do for the
+ * touch slider.
  */
 typedef struct {
-    int           steps;
+    int            steps;
     ui_screen_id_t route;
+    uint32_t       navigations;
 } knob_turn_t;
 
 static knob_turn_t knob_take(void)
@@ -6731,12 +6736,24 @@ static knob_turn_t knob_take(void)
     const bool on = settings_get_bool(SET_KNOB_EN);
     knob_task_set_enabled(on);
     const int steps = knob_task_take();
-    return (knob_turn_t){ .steps = on ? steps : 0, .route = ui_router_current() };
+    motor_screen_knob_frame();
+    servo_screen_knob_frame();
+    return (knob_turn_t){ .steps = on ? steps : 0,
+                          .route = ui_router_current(),
+                          .navigations = ui_router_navigations() };
+}
+
+static void knob_withdraw(void)
+{
+    motor_screen_knob_cancel();
+    servo_screen_knob_cancel();
 }
 
 static void knob_apply(const knob_turn_t *turn, bool frame_lost)
 {
-    if (turn->steps == 0 || frame_lost || ui_router_current() != turn->route) {
+    if (turn->steps == 0 || frame_lost
+        || ui_router_navigations() != turn->navigations
+        || ui_router_current() != turn->route) {
         return;
     }
     const float span =
@@ -6826,6 +6843,9 @@ static void flush_screen_commands(uint32_t stops_now)
  */
 static void touch_stream_broke(uint32_t stops_now)
 {
+    /* A throttle or position the knob posted last frame and the flush below
+     * would send is not sent: this frame lost touch. */
+    knob_withdraw();
     ui_router_cancel_gestures();
     atomic_fetch_add(&s_loss_gen, 1u);
     if (ui_router_take_stop()) {

@@ -98,6 +98,22 @@ void motor_screen_set_throttle(float pct);
  */
 void motor_screen_knob(float span_fraction);
 
+/**
+ * Start of a frame, before its touch events: forget that a finger owned the
+ * slider.  The knob moves nothing in a frame in which a finger owned the
+ * slider at any point, including a press and release inside it, because the
+ * touch has already set the value the knob would move.
+ */
+void motor_screen_knob_frame(void);
+
+/**
+ * Withdraw the knob's throttle command if it is still waiting to be taken:
+ * the slider returns to its value from before the knob, and a throttle that
+ * was pending before the knob moved it is pending again with that value.  A
+ * command posted by a touch since, or already taken, is left alone.
+ */
+void motor_screen_knob_cancel(void);
+
 /** True when a command was waiting; clears it. */
 bool motor_screen_poll_cmd(motor_cmd_t *out);
 

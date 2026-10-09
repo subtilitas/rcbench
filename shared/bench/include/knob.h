@@ -37,8 +37,14 @@ extern "C" {
 /** MAGNITUDE: 12 bits over 0x1B (high, bits 3..0) and 0x1C (low). */
 #define KNOB_REG_MAGNITUDE   0x1B
 
-/** One read of 0x0B..0x1C, auto-incrementing: all three registers at once. */
-#define KNOB_BURST_LEN       18
+/**
+ * Each register is its own transaction: the address byte, then 1 byte
+ * (STATUS) or 2 bytes, high then low (RAW ANGLE, MAGNITUDE).  RAW ANGLE and
+ * MAGNITUDE are special registers that suppress the address pointer's
+ * automatic increment, so one read from 0x0B does not reach them.
+ */
+#define KNOB_STATUS_LEN      1
+#define KNOB_WORD_LEN        2
 
 #define KNOB_STATUS_MH       0x08u
 #define KNOB_STATUS_ML       0x10u
@@ -73,13 +79,16 @@ typedef struct {
 } knob_reading_t;
 
 /**
- * Decode the KNOB_BURST_LEN bytes read from KNOB_REG_STATUS.
+ * Decode the three reads: the STATUS byte, the KNOB_WORD_LEN bytes of
+ * RAW ANGLE read from KNOB_REG_RAW_ANGLE and the KNOB_WORD_LEN bytes of
+ * MAGNITUDE read from KNOB_REG_MAGNITUDE, each high byte first.
  *
  * Returns whether the reading can move a slider: the magnet is detected,
  * neither too weak nor too strong, and the magnitude is not zero.  @p out is
  * filled either way.
  */
-bool knob_decode(const uint8_t regs[KNOB_BURST_LEN], knob_reading_t *out);
+bool knob_decode(uint8_t status, const uint8_t raw[KNOB_WORD_LEN],
+                 const uint8_t magnitude[KNOB_WORD_LEN], knob_reading_t *out);
 
 typedef struct {
     bool     have_ref;

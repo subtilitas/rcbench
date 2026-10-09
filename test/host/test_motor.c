@@ -702,8 +702,96 @@ TEST_CASE(a_finger_on_the_throttle_track_owns_it_against_the_knob)
     CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
+    motor_screen_knob_frame();          /* the next frame */
     motor_screen_knob(0.5f);
     CHECK_NEAR(motor_screen_throttle(), 50.0f, 0.01f);
+}
+
+/* A finger that went down and came up inside the frame owned the slider in
+ * it: the delta the knob collected in that frame is dropped, whether or not
+ * the finger is still down when it is applied. */
+TEST_CASE(a_finger_that_lifted_in_the_frame_still_owned_the_slider)
+{
+    fresh();
+    motor_screen_knob_frame();
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
+    (void)last_cmd();
+    const float held = motor_screen_throttle();
+    motor_screen_knob(0.5f);
+    CHECK_NEAR(motor_screen_throttle(), held, 0.01f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* A drag that began in an earlier frame and ends in this one. */
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    motor_screen_knob_frame();
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
+    (void)last_cmd();
+    const float held2 = motor_screen_throttle();
+    motor_screen_knob(0.5f);
+    CHECK_NEAR(motor_screen_throttle(), held2, 0.01f);
+
+    /* The next frame is free again. */
+    motor_screen_knob_frame();
+    motor_screen_knob(0.1f);
+    CHECK_NEAR(motor_screen_throttle(), held2 + 10.0f, 0.01f);
+}
+
+/* A touch elsewhere in the frame does not own the slider. */
+TEST_CASE(a_touch_off_the_slider_leaves_it_to_the_knob)
+{
+    fresh();
+    motor_screen_knob_frame();
+    ev(5, 5, TOUCH_EVENT_DOWN, 1);
+    ev(5, 5, TOUCH_EVENT_UP, 1);
+    (void)last_cmd();
+    motor_screen_knob(0.1f);
+    CHECK_NEAR(motor_screen_throttle(), 10.0f, 0.01f);
+}
+
+/* Withdrawing the knob's waiting command puts the slider back and sends
+ * nothing; a throttle pending before the knob moved it stays pending. */
+TEST_CASE(a_withdrawn_knob_command_restores_the_throttle)
+{
+    fresh();
+    motor_screen_knob(0.25f);
+    motor_screen_knob(0.25f);
+    motor_screen_knob_cancel();
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* Nothing waiting: nothing changes. */
+    motor_screen_knob(0.25f);
+    (void)last_cmd();                   /* taken */
+    motor_screen_knob_cancel();
+    CHECK_NEAR(motor_screen_throttle(), 25.0f, 0.01f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+TEST_CASE(a_withdrawn_knob_command_leaves_a_throttle_from_a_touch)
+{
+    fresh();
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 10 + TRACK_W / 4, TRACK_Y, TOUCH_EVENT_MOVE, 1);
+    ev(TRACK_X + 10 + TRACK_W / 4, TRACK_Y, TOUCH_EVENT_UP, 1);
+    const float touched = motor_screen_throttle();
+    CHECK(touched > 20.0f);
+    motor_screen_knob_frame();
+    motor_screen_knob(0.1f);
+    motor_screen_knob_cancel();
+    CHECK_NEAR(motor_screen_throttle(), touched, 0.01f);
+    const motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, touched, 0.01f);
+}
+
+TEST_CASE(a_withdrawal_does_not_touch_a_command_posted_after_the_knob)
+{
+    fresh();
+    motor_screen_knob(0.25f);
+    scr->leave();                       /* posts the DISARM over it */
+    motor_screen_knob_cancel();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
 }
 
 TEST_CASE(a_posted_disarm_is_not_overwritten_by_the_knob)
@@ -1315,6 +1403,11 @@ int main(void)
     RUN(a_knob_that_does_not_turn_commands_nothing);
     RUN(the_knob_never_arms);
     RUN(a_finger_on_the_throttle_track_owns_it_against_the_knob);
+    RUN(a_finger_that_lifted_in_the_frame_still_owned_the_slider);
+    RUN(a_touch_off_the_slider_leaves_it_to_the_knob);
+    RUN(a_withdrawn_knob_command_restores_the_throttle);
+    RUN(a_withdrawn_knob_command_leaves_a_throttle_from_a_touch);
+    RUN(a_withdrawal_does_not_touch_a_command_posted_after_the_knob);
     RUN(a_posted_disarm_is_not_overwritten_by_the_knob);
     RUN(a_completed_arm_is_not_overwritten_by_the_knob);
     RUN(a_pending_peak_reset_is_not_overwritten_by_the_knob);
