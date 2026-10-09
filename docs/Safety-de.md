@@ -120,9 +120,12 @@ auf die Leitung wartet, rastet am Panel bei diesem Poll ein Stopp ein: die
 eigene Bank wird entschärft, das Gas geht auf null, eine gehaltene
 Servo-Position wird losgelassen, und der Heartbeat stoppt. Eine ausbleibende
 Antwort wird nach dem Timeout von 1000 ms bemerkt, oder sofort, wenn der
-CAN-Controller (Controller Area Network) des Panels bus-off ist. Beide
-Austausche eines Polls zählen: das Lesen der Bench-Page und das Schreiben
-von ARM und THROTTLE, das darauf folgt. Eine Bank,
+CAN-Controller (Controller Area Network) des Panels bus-off ist. Jeder
+Austausch zählt, nicht nur das Lesen der Bench-Page im Poll: das Schreiben
+von ARM und THROTTLE, das darauf folgt, ein Page-Dienst, ein Servo-Refresh,
+das Lesen von STATUS. Solange der Prüfstand scharf ist oder ein Schärfen
+wartet, gilt der Link, wenn einer ohne Antwort endet, beim nächsten
+Durchlauf des Control-Tasks als ausgefallen. Eine Bank,
 die ohne angeschlossenen Koprozessor scharf ist, der simulierte Prüfstand,
 wird auf dieselbe Weise bei dem Poll gestoppt, bei dem ein Koprozessor zum
 ersten Mal antwortet, bevor ein ARM an ihn geschrieben wird.

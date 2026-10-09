@@ -716,6 +716,18 @@ TEST_CASE(a_link_lost_while_disarmed_changes_nothing)
 {
     arming_init(&a, 0, SETTLE_MS);
     arming_touch_seen(&a, 0);
+    /* The link is needed by an armed bank, an armed policy and a waiting
+     * arm, and by nothing else. */
+    CHECK(!arming_link_needed(&a, false));
+    CHECK(arming_link_needed(&a, true));
+    CHECK(!arming_link_needed(NULL, true));
+    arming_request_arm(&a, 0);
+    CHECK(arming_link_needed(&a, false));
+    (void)arming_step(&a, SETTLE_MS);
+    CHECK(a.armed);
+    CHECK(arming_link_needed(&a, false));
+    arming_request_disarm(&a);
+    CHECK(!arming_link_needed(&a, false));
     CHECK(!arming_link_lost(&a, false));
     CHECK(!a.stopped);
     CHECK_EQ(arming_stop_count(&a), 0);

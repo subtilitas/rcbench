@@ -321,10 +321,15 @@ static uint32_t w_glitch_at;      /* 0: none.  The line reads inverted for
 typedef enum { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX } wire_t;
 static wire_t   w_wire;
 static uint32_t w_unanswered;     /* exchanges that ended with no answer   */
+static void     w_quiet(void);    /* counts one, and times the first       */
 
 /* A panel or a coprocessor without this change's rules, to show what each
  * end holds on its own. */
 static bool w_panel_ignores_link_edges;
+/* The panel has pages to service: three reads after each poll's write and
+ * a status read after each poll.  Off, a poll is its read and its write,
+ * which is what the firmware sends with nothing owed. */
+static bool w_services;
 static bool w_dev_starts_unlatched;
 
 /* -- coprocessor */
@@ -454,15 +459,30 @@ static outputs_t       p_out;
 static uint16_t        p_throttle;
 static bool            p_link_up, p_endpoints_hold;
 static uint32_t        p_last_poll, p_stops_served;
+static uint32_t        p_quiet_polled;   /* w_unanswered as of the last poll */
 static unsigned        p_far_end_stops, p_arm_refused, p_arm_acked,
                        p_arm_gave_up, p_clear_sent, p_arm_unanswered;
 /* Which exchange of an arm went unanswered: the servo release, CLEAR, the
  * frame that arms. */
 static unsigned        p_quiet_release, p_quiet_clear, p_quiet_frame;
-/* When a poll's write of ARM and THROTTLE first went unanswered, and when
- * the panel first finished a far-end stop. */
-static uint32_t        p_write_quiet_at, p_stop_at;
-static bool            p_write_quiet, p_stop_seen;
+/* When a poll's write of ARM and THROTTLE first went unanswered, when any
+ * exchange first did with the link up and the bank armed, and when the
+ * panel first finished a far-end stop. */
+static uint32_t        p_write_quiet_at, p_stop_at, p_any_quiet_at;
+static bool            p_write_quiet, p_stop_seen, p_any_quiet;
+/* Which exchange that first one was: 1 the poll's read, 2 its write, 3 the
+ * page services after the write, 4 the status read after the poll. */
+static int             p_poll_stage, p_any_quiet_stage;
+
+static void w_quiet(void)
+{
+    ++w_unanswered;
+    if (p_link_up && outputs_armed(&p_out) && !p_any_quiet) {
+        p_any_quiet = true;
+        p_any_quiet_at = T;
+        p_any_quiet_stage = p_poll_stage;
+    }
+}
 static uint32_t        p_extra_at, p_extra_ms;    /* one long pass, pumping */
 static uint32_t        p_pass_work_ms;            /* work in every pass     */
 static uint32_t        p_touch_out_at, p_touch_out_ms;
@@ -532,12 +552,12 @@ static bool xchg(uint8_t op, uint8_t page, uint8_t off, uint8_t n,
     }
     if (!d_up) {
         if (w_wire == WIRE_BUS_OFF) {
-            ++w_unanswered;
+            w_quiet();
             return false;
         }
         if (w_wire == WIRE_LOST) {
             wait_pumping(LINK_HOST_TIMEOUT_MS);
-            ++w_unanswered;
+            w_quiet();
             return false;
         }
         for (uint32_t i = 1; i <= LINK_HOST_TIMEOUT_MS && !d_up; ++i) {
@@ -546,13 +566,13 @@ static bool xchg(uint8_t op, uint8_t page, uint8_t off, uint8_t n,
                 p_pump();
             }
             if (i == LINK_HOST_TIMEOUT_MS) {
-                ++w_unanswered;
+                w_quiet();
                 return false;
             }
         }
     }
     if (!step_ms(&req, reply)) {
-        ++w_unanswered;         /* it went down under this very frame */
+        w_quiet();              /* it went down under this very frame */
         return false;
     }
     return true;
@@ -679,17 +699,27 @@ static void p_service_arming(void)
 /* poll_far_end() with poll_bench() */
 static void p_poll_far_end(void)
 {
-    if ((uint32_t)(T - p_last_poll) < (p_link_up ? 50u : 1000u)) {
+    /* An exchange nobody answered since the last poll is the link gone,
+     * whoever sent it; no poll is spent on finding that out again. */
+    const bool quiet = p_link_up && w_unanswered != p_quiet_polled
+                       && arming_link_needed(&p_arm, outputs_armed(&p_out));
+    if (!quiet
+        && (uint32_t)(T - p_last_poll) < (p_link_up ? 50u : 1000u)) {
         return;
     }
     p_last_poll = T;
     link_msg_t r;
     bool answered;
-    if (p_link_up) {
+    const uint32_t before = w_unanswered;
+    if (quiet) {
+        answered = false;
+    } else if (p_link_up) {
+        p_poll_stage = 1;
         answered = xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, LINK_CT_COUNT,
                         NULL, &r);
         if (answered) {
             p_pump();
+            p_poll_stage = 2;
             const bool armed = outputs_armed(&p_out) && !p_endpoints_hold
                                && !arming_stopped(&p_arm);
             link_msg_t ack;
@@ -712,7 +742,20 @@ static void p_poll_far_end(void)
                 arming_stop_from_far_end(&p_arm);
                 p_stop_here();
             }
+            if (answered && w_services) {
+                /* supply_link_service(), sense_link_service() and
+                 * tone_link_service(): a read each. */
+                p_poll_stage = 3;
+                for (int i = 0; i < 3 && w_unanswered == before; ++i) {
+                    link_msg_t sv;
+                    (void)xchg(LINK_OP_READ, LINK_PAGE_STATUS, 0, 1, NULL,
+                               &sv);
+                }
+            }
         }
+        p_poll_stage = 0;
+        /* poll_bench(): any exchange of the poll unanswered fails it. */
+        answered = answered && w_unanswered == before;
     } else {
         answered = xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, LINK_CT_COUNT,
                         NULL, &r);
@@ -729,11 +772,20 @@ static void p_poll_far_end(void)
             p_endpoints_hold = true;
         }
     }
+    p_quiet_polled = w_unanswered;
     if (!answered && p_link_up && !w_panel_ignores_link_edges
         && arming_link_lost(&p_arm, outputs_armed(&p_out))) {
         p_stop_here();
     }
     p_link_up = answered;
+    if (p_link_up && w_services) {
+        /* read_status_counters(), after the poll and outside it. */
+        link_msg_t st;
+        p_poll_stage = 4;
+        (void)xchg(LINK_OP_READ, LINK_PAGE_STATUS, 0, LINK_ST_COUNT, NULL,
+                   &st);
+        p_poll_stage = 0;
+    }
 }
 
 /* The operator. */
@@ -795,11 +847,14 @@ static void world_init(uint32_t t0)
     p_link_up = false;
     p_endpoints_hold = false;
     p_last_poll = t0;
+    w_unanswered = 0;
+    p_quiet_polled = 0;
     p_stops_served = 0;
     p_far_end_stops = p_arm_refused = p_arm_acked = p_arm_gave_up = 0;
     p_arm_unanswered = 0;
     p_quiet_release = p_quiet_clear = p_quiet_frame = 0;
-    p_write_quiet = p_stop_seen = false;
+    p_write_quiet = p_stop_seen = p_any_quiet = false;
+    p_poll_stage = p_any_quiet_stage = 0;
     p_clear_sent = 0;
     p_extra_at = p_extra_ms = 0;
     p_touch_out_at = p_touch_out_ms = 0;
@@ -1284,6 +1339,46 @@ TEST_CASE(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll)
     }
 }
 
+TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
+{
+    /* Armed at 70 %; the coprocessor goes down at each millisecond of two
+     * poll periods.  Whichever exchange is the first to end unanswered --
+     * the poll's read, its write, a page service after the write, the
+     * status read after the poll -- the stop is latched within two passes
+     * of that exchange ending, not at the next poll's timeout. */
+    static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
+    w_services = true;
+    for (unsigned w = 0; w < 3u; ++w) {
+        unsigned late = 0, armed = 0, missed = 0;
+        unsigned stage[5] = { 0, 0, 0, 0, 0 };
+        for (uint32_t ph = 0; ph < 110u; ++ph) {
+            armed_at_70(0, wires[w]);
+            e_reset_at = 3000u + ph;
+            e_boot_at = e_reset_at + 3000u;
+            e_reset_on = e_boot_on = true;
+            run_until(3000u + ph + 2500u);
+            missed += !p_any_quiet;
+            ++stage[p_any_quiet_stage];
+            late += !(p_stop_seen
+                      && (uint32_t)(p_stop_at - p_any_quiet_at) <= 12u
+                      && arming_stopped(&p_arm) && !outputs_armed(&p_out)
+                      && p_throttle == 0u && !arming_heartbeat(&p_arm, T));
+            run_until(3000u + ph + 9000u);
+            armed += d_arm_edges != 1u || outputs_driving(&d_bank)
+                     || outputs_armed(&p_out);
+        }
+        CHECK_EQ(missed, 0);
+        CHECK_EQ(late, 0);
+        CHECK_EQ(armed, 0);
+        /* Each of the four was the first in some phase. */
+        CHECK(stage[1] >= 1u);
+        CHECK(stage[2] >= 1u);
+        CHECK(stage[3] >= 1u);
+        CHECK(stage[4] >= 1u);
+    }
+    w_services = false;
+}
+
 int main(void)
 {
     RUN(a_start_is_latched_and_reports_no_fault);
@@ -1305,5 +1400,6 @@ int main(void)
     RUN(an_arm_the_far_end_never_trusts_is_given_up_latched);
     RUN(a_touch_outage_disarms_and_the_next_arm_is_taken);
     RUN(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll);
+    RUN(any_exchange_nobody_answers_stops_an_armed_panel_at_once);
     return test_summary("safety_gate");
 }

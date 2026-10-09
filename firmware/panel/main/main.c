@@ -2589,6 +2589,8 @@ static void log_post(log_row_t *row)
  * went quiet; see arm_write_failed().
  */
 static uint32_t s_unanswered;
+/* s_unanswered as poll_far_end() last left it; see there. */
+static uint32_t s_unanswered_polled;
 
 /*
  * Put a built request on the wire and wait for its answer.  Blocking, and
@@ -3852,6 +3854,8 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     publish_throttle_ramp();
     (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
     arming_init(&s_arm, now_ms(), HEARTBEAT_SETTLE_MS);
+    /* What bring-up left unanswered is not this loop's to act on. */
+    s_unanswered_polled = s_unanswered;
     /* And past the settle an arm waits for the far end's own word on the
      * line; see far_line_trusted(). */
     arming_set_line_wait(&s_arm, ARMING_LINE_WAIT_MS);
@@ -5992,6 +5996,7 @@ static void tone_link_service(void)
  */
 static bool poll_bench(bench_state_t *bench)
 {
+    const uint32_t quiet = s_unanswered;
     const bool answered = read_bench(&s_host, bench);
     if (answered) {
         link_msg_t ack = { 0 };
@@ -6008,6 +6013,17 @@ static bool poll_bench(bench_state_t *bench)
          * per edit.
          */
         (void)poles_service();
+        if (s_unanswered != quiet) {
+            /*
+             * Nobody answered, so the poll has failed, whatever its read
+             * brought back, and it ends here: every further exchange would
+             * wait out LINK_HOST_TIMEOUT_MS (1000 ms) of its own with the
+             * bank armed and the heartbeat running.  poll_far_end() takes
+             * the link as down on this pass and stops an armed bench.  The
+             * same after each exchange below.
+             */
+            return false;
+        }
         /*
          * Not while a surface at the far end is still holding a position and
          * owed a release: the far end would render that old command before
@@ -6032,16 +6048,9 @@ static bool poll_bench(bench_state_t *bench)
                            && !arming_stopped(&s_arm)
                            && !atomic_load(&s_disarm_request);
         const bool written = control_write(armed, &ack);
-        if (!written && ack.op != LINK_OP_NACK) {
-            /*
-             * Nobody answered the write this poll exists for, so the poll
-             * has failed, whatever its read brought back.  poll_far_end()
-             * takes the link as down on this pass and stops an armed bench;
-             * waiting for the next poll's read to fail would leave the bank
-             * armed and the heartbeat running for another
-             * LINK_HOST_TIMEOUT_MS (1000 ms).  A refusal is an answer and
-             * is handled below.
-             */
+        if (s_unanswered != quiet) {
+            /* The write this poll exists for.  A refusal is an answer and
+             * is handled below. */
             return false;
         }
         /*
@@ -6053,15 +6062,27 @@ static bool poll_bench(bench_state_t *bench)
          */
         endpoints_service(written && !armed
                           && (!outputs_armed(&s_out) || s_endpoints_hold));
+        if (s_unanswered != quiet) {
+            return false;
+        }
         /* And the supply's page, a write only when one is owed. */
         supply_link_service();
+        if (s_unanswered != quiet) {
+            return false;
+        }
         /* And the current monitors': a set-up only with ARM written 0 and
          * acknowledged and the bank disarmed here, as the page refuses one
          * while the bank drives. */
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
+        if (s_unanswered != quiet) {
+            return false;
+        }
         /* And the phase tap's: an input, taken armed or not. */
         tone_link_service();
+        if (s_unanswered != quiet) {
+            return false;
+        }
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe, has lost the heartbeat or
@@ -6444,15 +6465,33 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
                          uint32_t *last_poll, uint32_t *last_status)
 {
     bool new_sample = false;
-    if ((uint32_t)(now_ms() - *last_poll) >= (*link_up ? 50u : 1000u)) {
+    /*
+     * An exchange nobody answered since the last poll -- a servo refresh, a
+     * command's write, the status read, a slice of the photograph -- is the
+     * link gone, whoever sent it.  While the bench is armed or an arm is
+     * waiting it is taken as this poll's answer on the pass that follows
+     * it, ahead of the 50 ms gate and without a read that would wait
+     * another LINK_HOST_TIMEOUT_MS (1000 ms) to learn the same: the edge
+     * below stops the bench.  Disarmed, the next poll's own read decides,
+     * as it does for every exchange outside a poll.
+     */
+    const bool quiet = *link_up && s_unanswered != s_unanswered_polled
+                       && arming_link_needed(&s_arm, outputs_armed(&s_out));
+    if (quiet
+        || (uint32_t)(now_ms() - *last_poll) >= (*link_up ? 50u : 1000u)) {
         *last_poll = now_ms();
         link_msg_t reply;
         bool answered;
-        if (*link_up) {
+        if (quiet) {
+            answered = false;
+        } else if (*link_up) {
             answered = poll_bench(bench);
         } else {
             answered = probe_identity(&reply);
         }
+        /* What the poll itself left unanswered is in its answer; what
+         * follows it in this pass and the next is the next poll's. */
+        s_unanswered_polled = s_unanswered;
         if (answered != *link_up) {
             ESP_LOGI(TAG, "coprocessor %s",
                      answered ? "answered" : "went quiet");

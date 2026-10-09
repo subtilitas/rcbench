@@ -220,6 +220,14 @@ bool arming_write_failed(arming_t *a, bool answered);
 void arming_stop_from_far_end(arming_t *a);
 
 /**
+ * Whether a link going quiet now would be a stop: this end's bank is armed
+ * (@p bank_armed), the policy is armed, or an arm is waiting.  What
+ * arming_link_lost() acts on; a caller asks it to decide whether an
+ * unanswered exchange is worth taking the link down for at once.
+ */
+bool arming_link_needed(const arming_t *a, bool bank_armed);
+
+/**
  * The far end stopped answering.  @p bank_armed is whether this end's bank
  * is armed.  An armed bench and an arm that is waiting are stopped as
  * arming_stop_from_far_end() stops them; a disarmed bench is left as it is.
