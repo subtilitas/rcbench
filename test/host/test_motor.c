@@ -635,6 +635,96 @@ TEST_CASE(the_throttle_track_moves_by_how_far_it_is_dragged)
     ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
     CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
 }
+/*
+ * The rotary knob moves the throttle by how far it turns, with the rules
+ * the touch slider has: it never arms, it stops at the ends, and it does
+ * not fight a finger.
+ */
+TEST_CASE(the_knob_moves_the_throttle_by_how_far_it_turned)
+{
+    fresh();
+    motor_screen_knob(0.25f);
+    CHECK_NEAR(motor_screen_throttle(), 25.0f, 0.01f);
+    motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 25.0f, 0.01f);
+
+    motor_screen_knob(0.25f);
+    CHECK_NEAR(motor_screen_throttle(), 50.0f, 0.01f);
+    motor_screen_knob(-0.1f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f, 0.01f);
+    c = last_cmd();
+    CHECK_NEAR(c.value, 40.0f, 0.01f);
+
+    /* A step finer than a percentage point still counts. */
+    motor_screen_knob(0.001f);
+    CHECK_NEAR(motor_screen_throttle(), 40.1f, 0.01f);
+}
+
+TEST_CASE(the_knob_stops_at_the_ends_of_the_throttle)
+{
+    fresh();
+    motor_screen_knob(5.0f);
+    CHECK_NEAR(motor_screen_throttle(), 100.0f, 0.01f);
+    CHECK_NEAR(last_cmd().value, 100.0f, 0.01f);
+    motor_screen_knob(-5.0f);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    CHECK_NEAR(last_cmd().value, 0.0f, 0.01f);
+    /* Already at the end: nothing to say. */
+    motor_screen_knob(-0.2f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+TEST_CASE(a_knob_that_does_not_turn_commands_nothing)
+{
+    fresh();
+    motor_screen_knob(0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.0f);
+}
+
+TEST_CASE(the_knob_never_arms)
+{
+    fresh();
+    for (int i = 0; i < 40; ++i) {
+        motor_screen_knob(0.05f);
+        const motor_cmd_t c = last_cmd();
+        CHECK(c.kind == MOTOR_CMD_THROTTLE || c.kind == MOTOR_CMD_NONE);
+    }
+    CHECK(motor_screen_throttle() > 99.0f);
+}
+
+TEST_CASE(a_finger_on_the_throttle_track_owns_it_against_the_knob)
+{
+    fresh();
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    motor_screen_knob(0.5f);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
+    motor_screen_knob(0.5f);
+    CHECK_NEAR(motor_screen_throttle(), 50.0f, 0.01f);
+}
+
+TEST_CASE(a_posted_disarm_is_not_overwritten_by_the_knob)
+{
+    fresh();
+    scr->leave();                       /* posts the DISARM */
+    motor_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+}
+
+/* A disarm returns the throttle to zero, and the knob goes on from there. */
+TEST_CASE(the_knob_goes_on_from_zero_after_a_disarm)
+{
+    fresh();
+    motor_screen_knob(0.6f);
+    motor_screen_set_throttle(0.0f);    /* what the application does on a disarm */
+    (void)last_cmd();
+    motor_screen_knob(0.1f);
+    CHECK_NEAR(motor_screen_throttle(), 10.0f, 0.01f);
+}
+
 TEST_CASE(reset_peaks_posts_its_own_command)
 {
     fresh();
@@ -1198,6 +1288,13 @@ int main(void)
     RUN(the_nudges_step_the_throttle_by_one_point);
     RUN(the_rated_kv_prefers_the_esc_over_the_entered_value);
     RUN(the_throttle_track_moves_by_how_far_it_is_dragged);
+    RUN(the_knob_moves_the_throttle_by_how_far_it_turned);
+    RUN(the_knob_stops_at_the_ends_of_the_throttle);
+    RUN(a_knob_that_does_not_turn_commands_nothing);
+    RUN(the_knob_never_arms);
+    RUN(a_finger_on_the_throttle_track_owns_it_against_the_knob);
+    RUN(a_posted_disarm_is_not_overwritten_by_the_knob);
+    RUN(the_knob_goes_on_from_zero_after_a_disarm);
     RUN(reset_peaks_posts_its_own_command);
     RUN(a_peak_outlasts_the_reading_that_went);
     RUN(leaving_the_screen_disarms);

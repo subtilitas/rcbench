@@ -1425,6 +1425,84 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
     free(early);
 }
 
+/* ------------------------------------------------------------------- knob */
+
+/* The rotary knob moves the horn by a fraction of its travel, relative to
+ * where it is, and leaves the horn to a finger, a sweep and the settings. */
+TEST_CASE(the_knob_moves_the_horn_by_how_far_it_turned)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    const servo_cmd_t a = last_cmd();
+    CHECK_EQ(a.kind, SERVO_CMD_POSITION);
+    CHECK(a.value_us > 1500);
+    const int first = (int)a.value_us - 1500;
+
+    servo_screen_knob(0.25f);
+    const servo_cmd_t b = last_cmd();
+    CHECK(abs(((int)b.value_us - 1500) - 2 * first) <= 2);
+
+    servo_screen_knob(-0.5f);
+    const servo_cmd_t c = last_cmd();
+    CHECK(abs((int)c.value_us - 1500) <= 2);
+    CHECK_EQ(servo_screen_commanded(), c.value_us);
+}
+
+TEST_CASE(the_knob_stops_at_the_servos_travel)
+{
+    fresh();
+    servo_screen_knob(9.0f);
+    const servo_cmd_t hi = last_cmd();
+    servo_screen_knob(0.1f);
+    CHECK_EQ(servo_screen_commanded(), hi.value_us);
+    servo_screen_knob(-9.0f);
+    const servo_cmd_t lo = last_cmd();
+    CHECK(lo.value_us < 1500 && hi.value_us > 1500);
+    CHECK(abs((int)(hi.value_us - 1500) - (int)(1500 - lo.value_us)) <= 2);
+}
+
+TEST_CASE(the_knob_never_arms_the_servo_bench)
+{
+    fresh();
+    for (int i = 0; i < 30; ++i) {
+        servo_screen_knob(0.07f);
+        const servo_cmd_t c = last_cmd();
+        CHECK(c.kind == SERVO_CMD_POSITION || c.kind == SERVO_CMD_NONE);
+    }
+}
+
+TEST_CASE(a_knob_that_does_not_turn_commands_nothing_on_the_servo)
+{
+    fresh();
+    servo_screen_knob(0.0f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(a_finger_on_the_dial_owns_the_horn_against_the_knob)
+{
+    fresh();
+    int x, y;
+    dial_at(0.0f, ARC_R - 30, &x, &y);
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    (void)last_cmd();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+TEST_CASE(the_knob_leaves_the_horn_to_the_settings_panel)
+{
+    fresh();
+    open_settings();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    close_settings();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
 /* ------------------------------------------------------------------ sweep */
 
 #define SWEEP_X (ARM_X + ARM_W / 2)
@@ -1518,6 +1596,23 @@ TEST_CASE(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
     const uint16_t held_at = servo_screen_commanded();
     CHECK(held_at > 1880u && held_at <= 1900u);
+}
+
+/* A sweep, running or paused, owns the horn: the knob does not take it. */
+TEST_CASE(the_knob_does_not_take_the_horn_from_a_sweep)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK(servo_screen_sweeping());
+
+    (void)pause_go();
+    CHECK(servo_screen_paused());
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
 /* A finger on the dial, CENTRE, RELEASE, a disarm and leaving each end the
@@ -4981,6 +5076,13 @@ int main(void)
     RUN(the_set_points_go_back_whichever_screen_is_up);
     RUN(the_set_points_wait_for_a_sample_after_the_off);
     RUN(start_test_starts_a_second_run);
+    RUN(the_knob_moves_the_horn_by_how_far_it_turned);
+    RUN(the_knob_stops_at_the_servos_travel);
+    RUN(the_knob_never_arms_the_servo_bench);
+    RUN(a_knob_that_does_not_turn_commands_nothing_on_the_servo);
+    RUN(a_finger_on_the_dial_owns_the_horn_against_the_knob);
+    RUN(the_knob_leaves_the_horn_to_the_settings_panel);
+    RUN(the_knob_does_not_take_the_horn_from_a_sweep);
     RUN(the_start_line_follows_the_report_being_taken);
     RUN(arm_first_goes_once_the_bench_is_armed);
     RUN(a_run_outside_the_caps_is_refused_before_the_warning);

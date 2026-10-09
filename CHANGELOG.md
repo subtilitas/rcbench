@@ -6,6 +6,20 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **A rotary knob on the panel.** An AS5600 magnetic angle sensor on the
+  panel's I2C terminal (GPIO8 and GPIO9, 0x36) turns the throttle on MOTOR &
+  ESC and the horn on SERVO by how far it turns, with the touch slider's
+  rules: relative, never arming, back to zero on a disarm, dropped on a frame
+  that lost touch events, and a sensor that stops answering adds nothing.
+  SETUP, APPLICATION has Rotary knob (OFF by default) and Knob scale (90 to
+  720 deg of knob per full slider span, 270 by default). A task of its own
+  reads 18 bytes from STATUS every 10 ms with a 5 ms bus timeout.
+  `shared/bench/knob.c` decodes RAW ANGLE, STATUS and MAGNITUDE and maps
+  steps across the 4095 to 0 wrap. Not run on hardware; 0x36 is assumed free
+  next to the CH422G.
+
 ## 0.14.0 - 2026-10-09
 
 The link protocol is 4.8. A 0.13 board still links and arms with a 0.14

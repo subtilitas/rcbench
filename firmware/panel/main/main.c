@@ -76,6 +76,8 @@
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
+#include "knob.h"
+#include "knob_task.h"
 #include "log_viewer_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
@@ -6705,6 +6707,30 @@ static void test_lines_service(void)
 }
 
 /*
+ * The rotary knob turns the slider of the bench screen on top: the throttle
+ * on MOTOR & ESC, the horn on SERVO.  The motion is taken every frame so
+ * that what is turned on another screen, with the setting off, or in a frame
+ * that lost touch events is dropped and not applied later.  The knob moves
+ * a value by how far it turned; it arms nothing, and a disarm, a stop or
+ * leaving the screen act exactly as they do for the touch slider.
+ */
+static void knob_service(bool frame_lost)
+{
+    const bool on = settings_get_bool(SET_KNOB_EN);
+    knob_task_set_enabled(on);
+    const int steps = knob_task_take();
+    if (!on || steps == 0 || frame_lost) {
+        return;
+    }
+    const float span = knob_span_fraction(steps, settings_get_int(SET_KNOB_SCALE));
+    switch (ui_router_current()) {
+    case SCREEN_MOTOR: motor_screen_knob(span); break;
+    case SCREEN_SERVO: servo_screen_knob(span); break;
+    default: break;
+    }
+}
+
+/*
  * Stamped with what this loop knows of the touch stream as it queues the
  * command: the gestures it has dropped (s_loss_gen, which only this loop
  * writes) and the number of the last event it took.  The control task
@@ -6960,6 +6986,8 @@ void app_main(void)
                                             NULL, 3, NULL, 1) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
+    knob_task_start();
+
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
@@ -7172,6 +7200,8 @@ void app_main(void)
         if (drain_touch(stops_now)) {
             frame_lost = true;
         }
+
+        knob_service(frame_lost);
 
         /* What the screens decided, back to the control task. */
         /*

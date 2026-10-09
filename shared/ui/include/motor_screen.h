@@ -87,6 +87,15 @@ void motor_screen_set_esc_kv(int kv);
 float motor_screen_throttle(void);
 void motor_screen_set_throttle(float pct);
 
+/**
+ * Move the throttle by @p span_fraction of the slider's span, from the
+ * rotary knob (knob.h).  Relative: the value changes by how far the knob
+ * turned.  Nothing happens for a zero fraction or while a finger is
+ * dragging the slider.  It posts the same throttle command a touch does and
+ * never arms.
+ */
+void motor_screen_knob(float span_fraction);
+
 /** True when a command was waiting; clears it. */
 bool motor_screen_poll_cmd(motor_cmd_t *out);
 

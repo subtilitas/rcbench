@@ -184,6 +184,24 @@ unpowered or unplugged panel reads as a line that is not edging.
 - A disarm returns the throttle to zero, so an arm starts from nothing rather
   than from where the last run left it.
 - Leaving a bench screen disarms.
+- The rotary knob (an AS5600 angle sensor; SETUP, APPLICATION, Rotary knob,
+  OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by
+  how far it turns, as the slider does, and the same rules hold. It never
+  arms: the only arm is the ARM hold. A disarm returns the throttle to zero
+  and the knob goes on from there, and leaving the screen disarms. The first
+  reading after power-up, a reading the sensor flags (no magnet, too weak,
+  too strong, magnitude 0), a reading that does not arrive, and a step over
+  90 deg between two readings each set the reference again and move nothing,
+  so a knob that stops answering stops contributing and no last value is held
+  as a command. A finger on the track or dial owns the value against the
+  knob, and on SERVO a sweep, a test run and the settings panel own the horn.
+  A frame that lost touch events drops the knob's motion. The knob is read by
+  a task of its own on the core the renderer uses, never by the control task,
+  with a 5 ms bus timeout, so a sensor that holds the shared I2C bus delays
+  the touch read by at most 5 ms against the 150 ms the heartbeat is watched
+  for. The sensor is assumed to answer at 0x36 without a clash: 0x36 is
+  outside the CH422G's command addresses in its datasheet, Waveshare's wiki
+  reserves 0x30 to 0x3F on this bus, and this is not checked on hardware.
 - If the touch controller stops answering for 500 ms, the bench disarms and
   refuses to arm. The panel is the only place a STOP button exists.
 - After a link failsafe the coprocessor does not re-arm when traffic returns.

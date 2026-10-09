@@ -418,6 +418,19 @@ void motor_screen_set_throttle(float pct)
     ++s.thr_rev;
 }
 
+void motor_screen_knob(float span_fraction)
+{
+    if (span_fraction == 0.0f || s.slider.dragging) {
+        return;
+    }
+    const float before = s.slider.value;
+    motor_screen_set_throttle(before
+                              + span_fraction * (s.slider.max - s.slider.min));
+    if (s.slider.value != before) {
+        post(MOTOR_CMD_THROTTLE, s.slider.value);
+    }
+}
+
 /* ------------------------------------------------------------------ events */
 
 static void event(const touch_event_t *evt)
