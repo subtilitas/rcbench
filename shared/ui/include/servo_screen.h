@@ -132,8 +132,9 @@ void servo_screen_knob_frame(void);
  * Withdraw the knob's position command if it is still waiting to be taken:
  * the commanded angle returns to its value from before the knob, and a
  * position that was pending before the knob moved it is pending again with
- * that angle, and the output is held or idle as it was before the knob.  A
- * command posted since, or already taken, is left alone.
+ * that angle, and the output is held or idle as it was before the knob.  On
+ * a bench that is disarmed by then the output is idle whatever the knob
+ * found.  A command posted since, or already taken, is left alone.
  */
 void servo_screen_knob_cancel(void);
 

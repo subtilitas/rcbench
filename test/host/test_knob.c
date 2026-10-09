@@ -1,16 +1,24 @@
 /*
  * The rotary knob: the AS5600 register decode, the relative-motion mapping
  * across the 4095 to 0 wrap, and the rules that stop a knob that is gone or
- * confused from moving anything.
+ * confused from moving anything.  And one rule of the knob's command on the
+ * SERVO screen, through the router, with touch fed as the panel produces it
+ * (touch_feed.h).
  *
  * SPDX-License-Identifier: MIT
  */
+#include <math.h>
 #include <string.h>
 
 #include "greatest.h"
+#include "touch_feed.h"
 
 #include "knob.h"
+#include "servo_screen.h"
 #include "settings.h"
+#include "splash_screen.h"
+#include "ui_screen.h"
+#include "ui_theme.h"
 
 /* The three reads of one poll, each as the sensor returns it. */
 typedef struct {
@@ -217,6 +225,75 @@ TEST_CASE(the_settings_agree_with_the_constants)
     CHECK(!settings_get_bool(SET_KNOB_EN));
 }
 
+static servo_cmd_t servo_took(void)
+{
+    servo_cmd_t c = { .kind = SERVO_CMD_NONE };
+    servo_screen_take(&c);
+    return c;
+}
+
+/*
+ * The panel's order.  Frame N: a tap on the dial is held, and the knob's
+ * turn is applied at the end of the frame.  Frame N+1: the knob's frame
+ * starts, a stop ends the arm, the bench reports disarmed, and then the
+ * first drain finds touch events lost: the knob's command is withdrawn and
+ * every gesture is cancelled.
+ *
+ * The withdrawal puts back what the knob found, and the knob found a held
+ * output.  The bench is disarmed by then and holds nothing, so a drag on
+ * SPEED says no position: on the disarmed bench, and after the next arm.
+ */
+TEST_CASE(a_knob_command_withdrawn_after_a_stop_leaves_nothing_held)
+{
+    ui_theme_set(UI_THEME_DARK);
+    settings_set_store(NULL);
+    settings_init();
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
+    }
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_SERVO);
+    feed_reset();
+    servo_screen_set_armed(true);
+    while (servo_took().kind != SERVO_CMD_NONE) { }
+
+    /* The dial at 40 deg, 110 px from the shaft at (300, 264). */
+    const float k = 3.14159265358979f / 180.0f;
+    const int x = 300 + (int)(110.0f * cosf(40.0f * k) + 0.5f);
+    const int y = UI_BAND_H + 216 - (int)(110.0f * sinf(40.0f * k) + 0.5f);
+    feed_tap(FEED_LONE, x, y);
+    CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
+    const uint16_t held = servo_screen_commanded();
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);                     /* end of frame N */
+    CHECK(servo_screen_commanded() != held);
+
+    servo_screen_knob_frame();                   /* frame N+1 */
+    servo_screen_cancel_arm();
+    servo_screen_set_armed(false);
+    servo_screen_knob_cancel();
+    ui_router_cancel_gestures();
+    CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+
+    /* SPEED: track x 514..781, panel y 344..365. */
+    finger(FEED_LONE, 560, UI_BAND_H + 306);
+    glide(FEED_LONE, 620, UI_BAND_H + 306, 8);
+    lift(FEED_LONE);
+    const servo_cmd_t c = servo_took();
+    CHECK_EQ(c.kind, SERVO_CMD_NONE);
+
+    servo_screen_set_armed(true);                /* the next arm */
+    while (servo_took().kind != SERVO_CMD_NONE) { }
+    finger(FEED_LONE, 560, UI_BAND_H + 306);
+    glide(FEED_LONE, 660, UI_BAND_H + 306, 8);
+    lift(FEED_LONE);
+    CHECK(servo_took().kind != SERVO_CMD_POSITION);
+}
+
 int main(void)
 {
     RUN(the_register_offsets_are_the_datasheets);
@@ -230,5 +307,6 @@ int main(void)
     RUN(a_span_fraction_is_degrees_over_the_scale);
     RUN(the_scale_is_clamped_to_the_settings_range);
     RUN(the_settings_agree_with_the_constants);
+    RUN(a_knob_command_withdrawn_after_a_stop_leaves_nothing_held);
     return test_summary("knob");
 }

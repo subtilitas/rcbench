@@ -87,15 +87,39 @@ ui_screen_id_t ui_router_current(void);
  * ui_router_current() cannot.
  */
 uint32_t ui_router_navigations(void);
+
+/**
+ * Count of touch events handed to a screen's event() since ui_router_init(),
+ * a release the router makes up for a contact that left the body included.
+ * An event the router keeps -- the band's, the alert strip's, one of a
+ * contact no screen owns -- does not count.
+ */
+uint32_t ui_router_dispatched(void);
 const char *ui_router_title(ui_screen_id_t id);
 
 void ui_router_tick(float dt_s);
+
+/**
+ * One touch event, in panel coordinates, in the order the tracker emits
+ * them.
+ *
+ * A contact has one owner from its DOWN to its UP.  The screen on top owns a
+ * contact whose DOWN it was handed, and is handed a MOVE or an UP of no
+ * other: a contact that came down on the band or on the alert strip, or
+ * that was down when the screen changed or gestures were cancelled, reaches
+ * no screen.  A contact the screen owns that reaches the band (y below
+ * UI_BAND_H) is released for the screen with an UP at the last point the
+ * screen was handed, and is the router's from then on.  STOP and the home
+ * tag answer to a DOWN on them only.
+ */
 void ui_router_event(const touch_event_t *evt);
 
 /**
- * Tell the screen on top that touch events were lost, so a gesture that
+ * Tell every screen that touch events were lost, so a gesture that
  * completes on a timer cannot finish on a contact that is no longer there.
  * Called once per frame in which the panel could not deliver every event.
+ * The contacts on the glass are no screen's until they lift and come down
+ * again.
  */
 void ui_router_cancel_gestures(void);
 void ui_router_render(gfx_canvas_t *c, int buffer_index);

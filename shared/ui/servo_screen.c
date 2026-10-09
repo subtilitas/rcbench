@@ -1511,6 +1511,9 @@ void servo_screen_set_armed(bool armed)
      * now armed.
      */
     s.driving = false;
+    /* Nor is what the knob found before the edge: a withdrawal after it
+     * puts back no drive from the other side. */
+    s.knob_had_driving = false;
     stop_sweep();
     if (armed) {
         ui_hold_reached(&s.arm);
@@ -1617,6 +1620,9 @@ void servo_screen_cancel_arm(void)
         s.driving = false;
         ++s.ctrl_rev;
     }
+    /* Nor is what the knob found before the stop: a withdrawal after it
+     * puts back no drive, while the screen still reads the bench as armed. */
+    s.knob_had_driving = false;
     stop_sweep();
 }
 
@@ -3201,7 +3207,10 @@ void servo_screen_knob_cancel(void)
         return;     /* something else was posted over it since */
     }
     s.commanded_deg = s.knob_prev_deg;
-    s.driving       = s.knob_had_driving;
+    /* Held as before the knob only on an armed bench: a stop or a disarm
+     * since the knob's post holds nothing, and a screen that read itself as
+     * driving would say the position again on the next change of SPEED. */
+    s.driving       = s.knob_had_driving && s.armed;
     ++s.ctrl_rev;
     if (s.knob_had_cmd) {
         s.pending.value_us = deg_to_us(s.commanded_deg);
@@ -3258,6 +3267,19 @@ static void event_body(const touch_event_t *evt)
     }
 
     if (evt->type == TOUCH_EVENT_DOWN) {
+        /*
+         * Any press ends a drag on the dial or on SPEED that is still
+         * latched, wherever the press lands; ui_slider_event() gives the
+         * reason.  A release can go missing, and a later contact reusing
+         * the track id would command a position, or a rate, with no press
+         * on the control.  A finger that was on the dial still owned it in
+         * this frame, so the knob stays out of the frame.
+         */
+        if (s.dragging) {
+            s.knob_finger = true;
+        }
+        s.dragging = false;
+        ui_slider_release(&s.speed);
         if (s.ov_open && gfx_rect_contains(overlay_area(), px, py)) {
             /* One press at a time in the overlay. */
             if (!s.ov_have) {
@@ -4865,9 +4887,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static void leave(void)
 {
-    /* No release arrives for a finger on the speed slider as the screen
-     * changes, and a latched drag outlives the gesture. */
+    /* No release arrives for a finger on the speed slider or on the dial as
+     * the screen changes, and a latched drag outlives the gesture. */
     ui_slider_release(&s.speed);
+    s.dragging = false;
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */

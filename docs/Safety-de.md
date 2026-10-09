@@ -167,6 +167,32 @@ Panel als Leitung ohne Flanken gelesen wird.
   das fehlende Release gehalten. Die LÖSCHEN-Rückfrage bleibt bei einem Abbruch
   offen und nimmt den nächsten frischen Druck an. HOME und STOP sind die eigene
   Geste des Routers, und er bricht sie selbst ab.
+- Ein Kontakt hat vom Druck bis zum Release einen Besitzer, und der Router
+  entscheidet ihn. Eine Seite bekommt ein Move oder ein Release nur für einen
+  Kontakt, dessen Druck sie bekommen hat. Ein Kontakt, der auf dem Statusband
+  (den oberen 48 px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
+  er abhebt, wohin er auch wandert. Ein Kontakt, der beim Bildschirmwechsel
+  oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis
+  er abhebt und neu aufsetzt. Ein Kontakt der Seite, der das Statusband
+  erreicht, wird für die Seite an der letzten Stelle losgelassen, die sie
+  bekommen hat, und gehört von da an dem Router: Ein Drag auf einem
+  Schieberegler oder dem Zifferblatt endet mit dem Wert von dieser Stelle,
+  ein Halten ist abgebrochen, und der Weg auf dem Band wird nicht angewendet.
+  Ohne dieses Release bleibt der Drag an seiner Track-ID hängen, und ein
+  späterer Kontakt mit derselben ID, der vom Band in den Bildschirm wandert,
+  bewegt den Wert um seinen eigenen Weg vom Ursprung des ersten Drags aus.
+  STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt:
+  Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Die
+  Tabelle fasst 5 Kontakte, so viele meldet der GT911; ein sechster erreicht
+  keine Seite.
+- Die Seiten verlassen sich dafür nicht auf den Router. Jeder Druck beendet
+  einen Drag auf einem Schieberegler oder dem SERVO-Zifferblatt, der noch
+  hängt, wo auch immer der Druck landet, und das Verlassen von SERVO beendet
+  einen Drag auf dem Zifferblatt. SUPPLY hält einen Druck zur Zeit; ein Druck
+  mit der Track-ID des gehaltenen sagt, dass dieser Kontakt weg ist, und der
+  gehaltene Druck wird verworfen, wie ein Touch-Verlust ihn verwirft. Nicht
+  am Panel gemessen: ob der GT911 einem einzelnen Finger bei
+  aufeinanderfolgenden Berührungen dieselbe Track-ID gibt.
 - Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
   Control-Task besitzt diesen Druck unabhängig von den Seiten, und das
   Release, das den Prüfstand gestoppt hätte, kann genau das verlorene Event
@@ -214,7 +240,19 @@ Panel als Leitung ohne Flanken gelesen wird.
   nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit des
   Servobildschirms, behalten Tap-to-set.
 - Ein Entschärfen setzt das Gas auf null, damit ein Scharfschalten bei null
-  beginnt und nicht dort, wo der letzte Lauf aufgehört hat.
+  beginnt und nicht dort, wo der letzte Lauf aufgehört hat. Der Schieberegler
+  von MOTOR & ESC lässt sich auf einem entschärften Prüfstand bewegen und
+  kommandiert dort nichts, also setzt auch das Scharfschalten ihn auf null,
+  wenn das Halten auf ARM das Scharfschalten anfordert. Die Anzeige und die
+  Schritte `-1` und `+1` lesen den Schieberegler, der erste Schritt nach der
+  Anforderung postet also 1,0 %. Ein Gas, das die Seite gepostet und die
+  Anwendung noch nicht abgeholt hat, wird bei der Anforderung verworfen, und
+  ein laufender Drag endet dort und beim Entschärfen. Ein Gas, das nach der
+  Anforderung gestellt wird, folgt dem Scharfschalten in der Kommando-Queue
+  und ist das, was der scharfe Prüfstand bekommt; der Schieberegler behält es
+  also, wenn der Prüfstand scharf meldet. Ein Prüfstand, der ohne dieses
+  Halten scharf wird, wie bei einem Knüppel-Lauf auf PROGRAMMER, setzt den
+  Schieberegler auf null, wenn er scharf meldet.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
