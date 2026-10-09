@@ -1018,6 +1018,17 @@ Grafik zeigt, welcher Teil des Laufs zu sehen ist. Der engste Ausschnitt sind
 vergrößerten Ausschnitts, wandert der Ausschnitt mit. ZURÜCK führt zur
 Importansicht.
 
+SETUP → ANWENDUNG → Ein Finger schiebt, standardmäßig aus, lässt einen
+einzelnen Finger den vergrößerten Ausschnitt verschieben. Ist die Einstellung
+an und der Ausschnitt vergrößert, zieht ein Finger, der sich mehr als 10 px
+von der Stelle entfernt, an der er aufgesetzt wurde, den Ausschnitt zur Seite,
+und der Messpunkt unter dem Finger bleibt unter ihm. Eine Berührung, die
+innerhalb von 10 px bleibt, wählt einen Wert wie bei ausgeschalteter
+Einstellung, und nach dem Verschieben bleibt der Cursor, wo er war. Ein
+Ausschnitt, der den ganzen Lauf zeigt, wird nicht verschoben: ein Finger
+bewegt den Cursor. Ein zweiter Finger auf der Grafik beginnt wie bisher das
+Zoomen.
+
 LÖSCHEN löscht die ausgewählte Datei von der Karte. Vorher kommt eine Rückfrage:
 ein zweites Feld nennt die Datei und ihre Größe, und erst dessen eigenes
 LÖSCHEN, auf dem Knopf gedrückt und losgelassen, löscht sie. ABBRECHEN oder das
@@ -1075,7 +1086,10 @@ Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Designs:
 
 Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
-bleibt und warum: [Sprache der Oberfläche](Language-de.md).
+bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
+schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
+Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht bei der
+Logansicht beschrieben.
 
 ### ANWENDUNG: der Drehknopf
 

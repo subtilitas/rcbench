@@ -6,6 +6,11 @@ history is in git.
 
 ## Unreleased
 
+The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
+(Ein Finger schiebt), off by default. While it is on and the view is zoomed
+in, a finger that moves more than 10 px pans the view; a shorter touch still
+selects a value. With it off, one finger moves the cursor and two fingers pan,
+as before.
 ### Added
 
 - **A rotary knob on the panel.** An AS5600 magnetic angle sensor on the

@@ -24,7 +24,7 @@ extern "C" {
 
 typedef enum {
     SET_CAT_ESC = 0,     /**< pack, motor, telemetry, throttle output */
-    SET_CAT_APP,         /**< theme, brightness, language, units      */
+    SET_CAT_APP,         /**< theme, brightness, language, units, plot  */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
@@ -64,6 +64,7 @@ typedef enum {
     SET_LANGUAGE,
     SET_UNITS,
     SET_DIM_AFTER,
+    SET_PLOT_PAN,
     SET_KNOB_EN,
     SET_KNOB_SCALE,
     /* --- interfaces ---------------------------------------------------- */

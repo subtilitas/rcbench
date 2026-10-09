@@ -936,6 +936,14 @@ view is 8 samples, the widest the whole run. One finger and the `<` and `>`
 buttons move the cursor as before; stepping the cursor past the edge of a
 zoomed view carries the view with it. BACK returns to the import view.
 
+SETUP → APPLICATION → One finger pans, off by default, lets a single finger
+pan a zoomed view. While it is on and the view is zoomed in, a finger that
+moves more than 10 px from where it touched down drags the view sideways, and
+the sample under the finger stays under it. A touch that stays within 10 px
+selects a value as with the setting off, and a pan leaves the cursor where it
+was. A view that shows the whole run is not panned: one finger moves the
+cursor. A second finger on the plot starts a zoom, as before.
+
 DELETE removes the selected file from the card. It asks first: a second panel
 names the file and its size, and only its own DELETE, pressed and released on
 that button, removes the file. CANCEL, or leaving the screen, closes the
@@ -987,7 +995,9 @@ Settings are behind the SETUP tile, in both themes:
 
 APPLICATION's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
-English and why: [Interface language](Language.md).
+English and why: [Interface language](Language.md). One finger pans, in the
+same category, sets whether one finger pans the zoomed log plot; it is off by
+default and is described under the log viewer.
 
 ### APPLICATION: the rotary knob
 
