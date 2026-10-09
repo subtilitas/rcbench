@@ -1577,8 +1577,35 @@ TEST_CASE(the_knob_leaves_the_horn_to_the_settings_panel)
     servo_screen_knob(0.4f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
     close_settings();
+    servo_screen_knob_frame();
     servo_screen_knob(0.4f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+/* The settings open and closed again inside the frame still own it. */
+TEST_CASE(a_turn_in_a_frame_where_the_settings_were_open_is_dropped)
+{
+    fresh();
+    servo_screen_knob_frame();
+    open_settings();
+    close_settings();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    servo_screen_knob_frame();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+/* A withdrawn first command leaves the servo idle: a later change of SPEED
+ * restates nothing. */
+TEST_CASE(a_withdrawn_knob_command_leaves_the_servo_idle)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    servo_screen_knob_cancel();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    tap(SPEED_X_HALF, SPEED_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
 /* The knob posts only over a position or into an empty slot: a release or a
@@ -1715,6 +1742,23 @@ TEST_CASE(the_knob_does_not_take_the_horn_from_a_sweep)
     CHECK(servo_screen_paused());
     servo_screen_knob(0.3f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/* A sweep that ended before the turn is applied still owned the frame. */
+TEST_CASE(a_turn_in_a_frame_where_a_sweep_ran_is_dropped)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    servo_screen_knob_frame();          /* the frame starts mid-sweep */
+    servo_screen_set_sweep(false);      /* ends it, with a RELEASE */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    servo_screen_knob_frame();
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 }
 
 /* A finger on the dial, CENTRE, RELEASE, a disarm and leaving each end the
@@ -5185,6 +5229,9 @@ int main(void)
     RUN(a_finger_on_the_dial_owns_the_horn_against_the_knob);
     RUN(a_finger_that_lifted_in_the_frame_still_owned_the_dial);
     RUN(a_withdrawn_knob_command_restores_the_horn);
+    RUN(a_withdrawn_knob_command_leaves_the_servo_idle);
+    RUN(a_turn_in_a_frame_where_the_settings_were_open_is_dropped);
+    RUN(a_turn_in_a_frame_where_a_sweep_ran_is_dropped);
     RUN(a_withdrawn_knob_command_leaves_a_position_from_a_touch);
     RUN(a_withdrawal_does_not_touch_a_command_posted_after_the_knob);
     RUN(the_knob_leaves_the_horn_to_the_settings_panel);
