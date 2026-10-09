@@ -1159,7 +1159,11 @@ static void event(const touch_event_t *evt)
             const int was = s.pressed;
             const int row = s.press_row;
             let_go();
-            released(was, row, x, y);
+            /* A release the finger did not make ends the press and
+             * activates nothing. */
+            if (touch_event_is_tap_up(evt)) {
+                released(was, row, x, y);
+            }
         }
         return;
     }

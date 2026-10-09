@@ -389,6 +389,7 @@ typedef struct {
     uint32_t    runs;
     uint32_t    sig;        /* what the progress showed last */
     uint32_t    built_key;  /* sp_list_key() when the list was built */
+    uint32_t    builds;     /* how often the list has been built */
 
     /* The bench, as the application last said. */
     uint32_t now_ms, stops, pressed;
@@ -459,6 +460,22 @@ static struct {
     gfx_rect_t row[ROWS_MAX], down[ROWS_MAX], up[ROWS_MAX];
 
     stick_t  st;
+
+    /*
+     * The press that may become a tap: the contact, where it came down,
+     * the control under it, and what the screen showed then.  pass says
+     * which of the two walks over the controls is running (hit()).
+     */
+    struct {
+        bool       live;
+        uint8_t    id;
+        int16_t    x, y;
+        gfx_rect_t rect;
+        uint32_t   showing;
+    } tap;
+    int        pass;
+    bool       found;
+    gfx_rect_t found_rect;
 
     /* The phase tap, as the control task last read it. */
     tone_readout_t tone;
@@ -637,19 +654,144 @@ static void sp_render(gfx_canvas_t *c);
 static void sp_find_event(const touch_event_t *evt);
 static void sp_find_close(void);
 
+/*
+ * A control on this screen is a tap: its press arms it and its release
+ * activates it.  The release counts when the same contact makes it inside
+ * the control, no further than TAP_SLOP from the press in x and in y, with
+ * the screen still showing what it showed at the press, and is not an UP
+ * made for the finger (TOUCH_FLAG_NO_TAP).  A finger that crosses a control
+ * presses nothing.
+ *
+ * The controls are found by one walk, press_at(), run twice.  On the DOWN
+ * it runs as PASS_PRESS: hit() notes the first control under the point and
+ * answers false, so nothing acts.  On a release that counts it runs again
+ * as PASS_TAP at the point of the press: hit() answers true and the control
+ * acts, or does not where it has nothing to do, as a page key at the end of
+ * its list.
+ *
+ * Three controls act on the press and are asked with hit_down(): HOLD TO
+ * RUN, whose hold is the gesture; ABORT of a run, on the run's page and on
+ * a manual step, which stops a motor and does so at once; and the search's
+ * keyboard, whose keys follow their own press and release.
+ */
+#define TAP_SLOP 8
+enum { PASS_PRESS = 0, PASS_TAP };
+
+static bool hit(gfx_rect_t r, int px, int py)
+{
+    if (!gfx_rect_contains(r, px, py)) {
+        return false;
+    }
+    if (s.pass == PASS_TAP) {
+        return true;
+    }
+    if (!s.found) {
+        s.found = true;
+        s.found_rect = r;
+    }
+    return false;
+}
+
+static bool hit_down(gfx_rect_t r, int px, int py)
+{
+    return s.pass == PASS_PRESS && !s.found && gfx_rect_contains(r, px, py);
+}
+
+/* What decides which control lies under a point.  A press and its release
+ * with a different answer are not a tap: the control has changed under the
+ * finger. */
+static uint32_t showing(void)
+{
+    const stick_t *t = &s.st;
+    const uint32_t parts[] = {
+        (uint32_t)s.stage, (uint32_t)s.klass, (uint32_t)s.proto,
+        s.connected ? 1u : 0u, (uint32_t)s.scroll,
+        (uint32_t)t->level, (uint32_t)t->scroll, (uint32_t)t->count,
+        (uint32_t)t->iscroll, (uint32_t)t->tscroll,
+        t->warn ? 1u : 0u, t->hand_open ? 1u : 0u, t->shown ? 1u : 0u,
+        t->timing ? 1u : 0u, t->tk.open ? 1u : 0u, t->builds,
+        esc_stick_running(&t->run) ? 1u : 0u,
+        (esc_stick_hand(&t->run) != NULL) ? 1u : 0u,
+    };
+    uint32_t h = 2166136261u;
+    for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
+        h = (h ^ parts[i]) * 16777619u;
+    }
+    return h;
+}
+
+static void press_at(const touch_event_t *evt);
+
+/* The rest of the press that may become a tap: its moves and its release. */
+static void tap_follow(const touch_event_t *evt)
+{
+    if (!s.tap.live || evt->point.id != s.tap.id) {
+        return;
+    }
+    int dx = evt->point.x - s.tap.x, dy = evt->point.y - s.tap.y;
+    if (dx < 0) { dx = -dx; }
+    if (dy < 0) { dy = -dy; }
+    const bool on = dx <= TAP_SLOP && dy <= TAP_SLOP
+                    && gfx_rect_contains(s.tap.rect, evt->point.x,
+                                         evt->point.y);
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        if (!on) {
+            s.tap.live = false;     /* moved off: the press ends */
+        }
+        return;
+    }
+    s.tap.live = false;
+    if (!on || !touch_event_is_tap_up(evt) || showing() != s.tap.showing) {
+        return;
+    }
+    touch_event_t press = *evt;
+    press.type    = TOUCH_EVENT_DOWN;
+    press.point.x = s.tap.x;
+    press.point.y = s.tap.y;
+    s.pass = PASS_TAP;
+    press_at(&press);
+    s.pass = PASS_PRESS;
+}
+
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
         return;
     }
     if (evt->type != TOUCH_EVENT_DOWN) {
-        /* Only the search's keys and the warning's hold follow a finger. */
+        /* The search's keys, the warning's hold and a press that may
+         * become a tap follow a finger. */
         if (s.st.tk.open) {
             sp_find_event(evt);
         }
         sp_track(evt);
+        tap_follow(evt);
         return;
     }
+    /* A DOWN with the id of the press held says that contact has gone and
+     * its release with it. */
+    if (s.tap.live && evt->point.id == s.tap.id) {
+        s.tap.live = false;
+    }
+    s.pass  = PASS_PRESS;
+    s.found = false;
+    press_at(evt);
+    /* One press at a time: a second contact arms nothing.  The controls
+     * that act on the press have acted above, whichever contact it is. */
+    if (s.found && !s.tap.live) {
+        s.tap.live    = true;
+        s.tap.id      = evt->point.id;
+        s.tap.x       = evt->point.x;
+        s.tap.y       = evt->point.y;
+        s.tap.rect    = s.found_rect;
+        s.tap.showing = showing();
+    }
+}
+
+/* The controls under the point of @p evt, in the order they cover each
+ * other; see hit(). */
+static void press_at(const touch_event_t *evt)
+{
     const int px = evt->point.x, py = evt->point.y;
 
     if (s.klass == CLASS_STICK && s.stage != STAGE_CLASS
@@ -658,7 +800,7 @@ static void event(const touch_event_t *evt)
     }
 
     /* Back climbs one level; the band's home tag leaves the screen. */
-    if (s.stage != STAGE_CLASS && gfx_rect_contains(s.back, px, py)) {
+    if (s.stage != STAGE_CLASS && hit(s.back, px, py)) {
         s.stage = (s.stage == STAGE_DEVICE) ? STAGE_PROTOCOL : STAGE_CLASS;
         if (s.stage == STAGE_PROTOCOL) {
             s.connected = false;
@@ -669,7 +811,7 @@ static void event(const touch_event_t *evt)
 
     if (s.stage == STAGE_CLASS) {
         for (int i = 0; i < CLASS_COUNT; ++i) {
-            if (gfx_rect_contains(s.tile[i], px, py)) {
+            if (hit(s.tile[i], px, py)) {
                 s.klass = i;
                 s.stage = STAGE_PROTOCOL;
                 if (i == CLASS_STICK) {
@@ -685,7 +827,7 @@ static void event(const touch_event_t *evt)
     if (s.stage == STAGE_PROTOCOL) {
         for (int i = 0; i < PROTO_COUNT; ++i) {
             if (k_protos[i].klass == s.klass
-                && gfx_rect_contains(proto_row(i), px, py)) {
+                && hit(proto_row(i), px, py)) {
                 s.proto = i;
                 s.connected = false;
                 adopt_device();
@@ -697,7 +839,7 @@ static void event(const touch_event_t *evt)
         return;
     }
 
-    if (gfx_rect_contains(s.connect_btn, px, py)) {
+    if (hit(s.connect_btn, px, py)) {
         s.connected = !s.connected;
         if (s.connected) {
             adopt_device();
@@ -710,7 +852,7 @@ static void event(const touch_event_t *evt)
     }
 
     /* READ takes what the device says and discards staged edits. */
-    if (gfx_rect_contains(s.read_btn, px, py)) {
+    if (hit(s.read_btn, px, py)) {
         for (int i = 0; i < proto()->count; ++i) {
             s.value[i] = s.device[i];
         }
@@ -718,7 +860,7 @@ static void event(const touch_event_t *evt)
         return;
     }
     /* And writing makes the device agree with the screen. */
-    if (gfx_rect_contains(s.write_btn, px, py)) {
+    if (hit(s.write_btn, px, py)) {
         for (int i = 0; i < proto()->count; ++i) {
             s.device[i] = s.value[i];
         }
@@ -728,19 +870,19 @@ static void event(const touch_event_t *evt)
 
     const int max_scroll = (proto()->count > ROWS_MAX)
                                ? proto()->count - ROWS_MAX : 0;
-    if (gfx_rect_contains(s.page_up, px, py)) {
+    if (hit(s.page_up, px, py)) {
         if (s.scroll > 0) { --s.scroll; ++s.rev; }
         return;
     }
-    if (gfx_rect_contains(s.page_dn, px, py)) {
+    if (hit(s.page_dn, px, py)) {
         if (s.scroll < max_scroll) { ++s.scroll; ++s.rev; }
         return;
     }
     for (int i = 0; i < rows_shown(); ++i) {
-        if (gfx_rect_contains(s.down[i], px, py)) { step(i, -1); return; }
-        if (gfx_rect_contains(s.up[i],   px, py)) { step(i, +1); return; }
+        if (hit(s.down[i], px, py)) { step(i, -1); return; }
+        if (hit(s.up[i],   px, py)) { step(i, +1); return; }
         /* Touching the name asks what it does. */
-        if (gfx_rect_contains(s.row[i], px, py)) {
+        if (hit(s.row[i], px, py)) {
             s.picked = s.scroll + i;
             ++s.rev;
             return;
@@ -1483,6 +1625,7 @@ static void sp_build_models(stick_t *t)
 static void sp_build_list(bool keep_scroll)
 {
     stick_t *t = &s.st;
+    ++t->builds;            /* the rows under a finger may be others */
     const int scroll = keep_scroll ? t->scroll : 0;
     t->built_key = sp_list_key();
     if (t->level == 1) {
@@ -1495,6 +1638,7 @@ static void sp_build_list(bool keep_scroll)
 
 static void sp_enter(void)
 {
+    s.tap.live = false;
     if (s.klass == CLASS_STICK && s.stage != STAGE_CLASS) {
         sp_build_list(true);
         ++s.rev;
@@ -2010,6 +2154,7 @@ static void sp_tick(float dt_s)
 static void sp_leave(void)
 {
     stick_t *t = &s.st;
+    s.tap.live = false;
     if (esc_stick_running(&t->run)) {
         esc_stick_abort(&t->run, ESC_STICK_R_LEFT);
         sp_follow();
@@ -2073,6 +2218,8 @@ static void sp_end_run(esc_stick_reason_t why)
  */
 static void sp_cancel(void)
 {
+    /* A press that may become a tap has no release to wait for. */
+    s.tap.live = false;
     sp_end_hold();
     stick_t *t = &s.st;
     if (t->tk.open && t->tk.pressed >= 0) {
@@ -2180,7 +2327,7 @@ static bool sp_down(const touch_event_t *evt)
 
     /* The manual steps' pop-up covers the screen; OK closes it. */
     if (t->hand_open) {
-        if (gfx_rect_contains(t->cancel_btn, px, py)) {
+        if (hit(t->cancel_btn, px, py)) {
             t->hand_open = false;
             /* Read over the warning: the hold may count. */
             t->warn_read = t->warn_read || t->warn;
@@ -2191,7 +2338,7 @@ static bool sp_down(const touch_event_t *evt)
 
     /* The warning covers the screen, BACK included. */
     if (t->warn) {
-        if (!sp_warn_steps_fit(t->p) && gfx_rect_contains(t->steps_btn, px, py)) {
+        if (!sp_warn_steps_fit(t->p) && hit(t->steps_btn, px, py)) {
             t->hand_open = true;            /* ALL STEPS, over the warning */
             t->hand_p = t->p;
             t->hand_model = t->model;
@@ -2199,12 +2346,12 @@ static bool sp_down(const touch_event_t *evt)
             ++s.rev;
             return true;
         }
-        if (gfx_rect_contains(t->hold_btn, px, py) && !sp_hold_blocked()) {
+        if (!sp_hold_blocked() && hit_down(t->hold_btn, px, py)) {
             t->warn_down = true;
             t->warn_id = evt->point.id;
             ui_hold_begin(&t->hold);
             ++s.rev;
-        } else if (gfx_rect_contains(t->cancel_btn, px, py)) {
+        } else if (hit(t->cancel_btn, px, py)) {
             t->warn = false;
             sp_end_hold();
             ++s.rev;
@@ -2213,11 +2360,11 @@ static bool sp_down(const touch_event_t *evt)
     }
 
     if (s.stage == STAGE_PROTOCOL) {
-        if (t->tk.open && gfx_rect_contains(t->tk.area, px, py)) {
+        if (t->tk.open && hit_down(t->tk.area, px, py)) {
             sp_find_event(evt);
             return true;
         }
-        if (gfx_rect_contains(s.back, px, py)) {
+        if (hit(s.back, px, py)) {
             /* BACK climbs a level: a maker's models to the makers, with
              * the makers' scroll and the search kept; the makers to the
              * classes. */
@@ -2233,13 +2380,13 @@ static bool sp_down(const touch_event_t *evt)
             return true;
         }
         if (!t->tk.open && t->find[0] != '\0'
-            && gfx_rect_contains(t->find_clr, px, py)) {
+            && hit(t->find_clr, px, py)) {
             t->find[0] = '\0';                  /* X: the whole list */
             sp_build_list(false);
             ++s.rev;
             return true;
         }
-        if (!t->tk.open && gfx_rect_contains(t->find_box, px, py)) {
+        if (!t->tk.open && hit(t->find_box, px, py)) {
             memcpy(t->find_was, t->find, sizeof(t->find_was));
             ui_textkey_open_search(&t->tk, sp_dock(), TR(SP_FIND_TITLE),
                                    t->find, SP_FIND_MAX);
@@ -2247,19 +2394,19 @@ static bool sp_down(const touch_event_t *evt)
             ++s.rev;
             return true;
         }
-        if (gfx_rect_contains(t->list_up, px, py) && t->scroll > 0) {
+        if (hit(t->list_up, px, py) && t->scroll > 0) {
             t->scroll = (t->scroll > SP_ROWS) ? t->scroll - SP_ROWS : 0;
             ++s.rev;
             return true;
         }
-        if (gfx_rect_contains(t->list_dn, px, py)
+        if (hit(t->list_dn, px, py)
             && t->scroll + SP_ROWS < t->count) {
             t->scroll += SP_ROWS;
             ++s.rev;
             return true;
         }
         for (int i = 0; i < SP_ROWS && t->scroll + i < t->count; ++i) {
-            if (!gfx_rect_contains(sp_row(i), px, py)) {
+            if (!hit(sp_row(i), px, py)) {
                 continue;
             }
             const int at = t->scroll + i;
@@ -2305,21 +2452,22 @@ static bool sp_down(const touch_event_t *evt)
     }
 
     /* The device page.  A run under way takes ABORT and nothing else; STOP
-     * is in the band, and leaving the screen aborts. */
+     * is in the band, and leaving the screen aborts.  ABORT acts on the
+     * press: it stops a motor. */
     if (esc_stick_running(&t->run)) {
         /* A manual step asked covers the page: DONE or ABORT.  DONE is
          * acted on in the next tick, after the bench has been judged. */
         if (esc_stick_hand(&t->run) != NULL) {
-            if (gfx_rect_contains(t->hold_btn, px, py)) {
+            if (hit(t->hold_btn, px, py)) {
                 if (esc_stick_confirm(&t->run)) {
                     ++s.rev;
                 }
-            } else if (gfx_rect_contains(t->cancel_btn, px, py)) {
+            } else if (hit_down(t->cancel_btn, px, py)) {
                 sp_end_run(ESC_STICK_R_USER);
             }
             return true;
         }
-        if (gfx_rect_contains(s.write_btn, px, py)) {
+        if (hit_down(s.write_btn, px, py)) {
             esc_stick_abort(&t->run, ESC_STICK_R_USER);
             sp_follow();
             ++s.rev;
@@ -2327,15 +2475,15 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
     if (t->shown) {
-        if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
+        if (t->p->manual_count > 0u && hit(t->hand_btn, px, py)) {
             t->hand_open = true;            /* every step, after included */
             t->hand_p = t->p;
             t->hand_model = t->model;
             ++s.rev;
             return true;
         }
-        const bool back = gfx_rect_contains(s.back, px, py);
-        if (back || gfx_rect_contains(s.write_btn, px, py)) {
+        const bool back = hit(s.back, px, py);
+        if (back || hit(s.write_btn, px, py)) {
             t->shown = false;               /* OK: back to the menu */
             if (back) {
                 s.stage = STAGE_PROTOCOL;
@@ -2346,8 +2494,8 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
     if (t->timing) {
-        if (gfx_rect_contains(s.back, px, py)
-            || gfx_rect_contains(s.write_btn, px, py)) {
+        if (hit(s.back, px, py)
+            || hit(s.write_btn, px, py)) {
             t->timing = false;              /* CLOSE */
             if (settings_dirty()) {
                 settings_request_save();
@@ -2355,30 +2503,30 @@ static bool sp_down(const touch_event_t *evt)
             ++s.rev;
             return true;
         }
-        if (gfx_rect_contains(s.read_btn, px, py)) {
+        if (hit(s.read_btn, px, py)) {
             settings_reset(SET_CAT_STICK);  /* DEFAULTS */
             ++s.rev;
             return true;
         }
         const int max_scroll = SP_SETTINGS - ROWS_MAX;
-        if (gfx_rect_contains(s.page_up, px, py) && t->tscroll > 0) {
+        if (hit(s.page_up, px, py) && t->tscroll > 0) {
             --t->tscroll;
             ++s.rev;
             return true;
         }
-        if (gfx_rect_contains(s.page_dn, px, py) && t->tscroll < max_scroll) {
+        if (hit(s.page_dn, px, py) && t->tscroll < max_scroll) {
             ++t->tscroll;
             ++s.rev;
             return true;
         }
         for (int i = 0; i < sp_rows_shown(SP_SETTINGS, t->tscroll); ++i) {
             const int idx = t->tscroll + i;
-            const int by = gfx_rect_contains(s.down[i], px, py)  ? -1
-                         : gfx_rect_contains(s.up[i], px, py)    ?  1 : 0;
+            const int by = hit(s.down[i], px, py)  ? -1
+                         : hit(s.up[i], px, py)    ?  1 : 0;
             if (by != 0) {
                 settings_adjust(k_sp_settings[idx], by);
             }
-            if (by != 0 || gfx_rect_contains(s.row[i], px, py)) {
+            if (by != 0 || hit(s.row[i], px, py)) {
                 t->tpicked = idx;
                 ++s.rev;
                 return true;
@@ -2387,27 +2535,27 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
 
-    if (gfx_rect_contains(s.back, px, py)) {
+    if (hit(s.back, px, py)) {
         s.stage = STAGE_PROTOCOL;
         sp_build_list(true);
         ++s.rev;
         return true;
     }
-    if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
+    if (t->p->manual_count > 0u && hit(t->hand_btn, px, py)) {
         t->hand_open = true;                /* MANUAL INTERVENTION REQUIRED */
         t->hand_p = t->p;
         t->hand_model = t->model;
         ++s.rev;
         return true;
     }
-    if (gfx_rect_contains(s.connect_btn, px, py)) {
+    if (hit(s.connect_btn, px, py)) {
         t->timing = true;                   /* TIMING */
         t->tscroll = 0;
         t->tpicked = 0;
         ++s.rev;
         return true;
     }
-    if (gfx_rect_contains(s.write_btn, px, py)) {
+    if (hit(s.write_btn, px, py)) {
         if (sp_can_run()) {
             t->warn = true;                 /* RUN asks first */
             t->warn_read = false;
@@ -2419,12 +2567,12 @@ static bool sp_down(const touch_event_t *evt)
     }
     const int items = sp_items();
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
-    if (gfx_rect_contains(s.page_up, px, py) && t->iscroll > 0) {
+    if (hit(s.page_up, px, py) && t->iscroll > 0) {
         --t->iscroll;
         ++s.rev;
         return true;
     }
-    if (gfx_rect_contains(s.page_dn, px, py) && t->iscroll < max_scroll) {
+    if (hit(s.page_dn, px, py) && t->iscroll < max_scroll) {
         ++t->iscroll;
         ++s.rev;
         return true;
@@ -2435,8 +2583,8 @@ static bool sp_down(const touch_event_t *evt)
         if (idx < 0) {
             break;
         }
-        const int by = gfx_rect_contains(s.down[i], px, py)  ? -1
-                     : gfx_rect_contains(s.up[i], px, py)    ?  1 : 0;
+        const int by = hit(s.down[i], px, py)  ? -1
+                     : hit(s.up[i], px, py)    ?  1 : 0;
         if (by != 0 && esc_stick_not_offered(&t->p->items[idx]) == NULL) {
             /* KEEP, then each value in the profile's order; clamped, not
              * wrapped, as every stepper here is.  Reset and exit are
@@ -2446,7 +2594,7 @@ static bool sp_down(const touch_event_t *evt)
             v = (v < -1) ? -1 : (v > hi) ? hi : v;
             t->pick[idx] = v;
         }
-        if (by != 0 || gfx_rect_contains(s.row[i], px, py)) {
+        if (by != 0 || hit(s.row[i], px, py)) {
             t->picked = idx;
             ++s.rev;
             return true;

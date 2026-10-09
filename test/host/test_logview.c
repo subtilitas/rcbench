@@ -19,6 +19,7 @@
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "ui_theme.h"
+#include "touch_feed.h"
 
 #define W 800
 #define H 480
@@ -101,10 +102,12 @@ static bool g_removed[16];
 static int g_remove_calls;
 static char g_removed_name[LOG_VIEWER_NAME_MAX];
 static bool g_remove_refuses;
+static int g_list_calls;        /* how often the card was listed */
 
 static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
 {
     (void)ctx;
+    ++g_list_calls;
     if (g_no_card) {
         return -1;
     }
@@ -1901,6 +1904,218 @@ TEST_CASE(a_steep_trace_longer_than_the_plot_is_one_line)
     CHECK_EQ(bottom, 0);
 }
 
+/* ------------------------------------------------- taps, tracker-fed */
+
+/*
+ * The cases below put finger frames through the tracker (touch_feed.h) and
+ * hand its events to the screen.  A button or a row is a tap: pressed and
+ * released in place it acts, and a finger that leaves it, crosses it or
+ * travels past 8 px does nothing.
+ */
+#define TAP_ID 3
+
+static void f_at(int x, int y)    { finger(TAP_ID, x, y + UI_BAND_H); }
+static void f_to(int x, int y, int step)
+{
+    glide(TAP_ID, x, y + UI_BAND_H, step);
+}
+static void f_lift(void)          { lift(TAP_ID); }
+
+/* Everything the screen shows and what it has asked of the card, as one
+ * number. */
+static uint32_t look(void)
+{
+    uint32_t h = 2166136261u;
+    log_viewer_invalidate();
+    memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    screen()->render(&s_c, 0);
+    for (int i = 0; i < W * H; ++i) {
+        h = (h ^ (uint32_t)s_fb[i]) * 16777619u;
+    }
+    const uint32_t more[] = {
+        (uint32_t)log_viewer_view(), (uint32_t)g_remove_calls,
+        (uint32_t)g_list_calls, (uint32_t)log_viewer_cursor(),
+    };
+    for (size_t i = 0; i < sizeof(more) / sizeof(more[0]); ++i) {
+        h = (h ^ more[i]) * 16777619u;
+    }
+    return h;
+}
+
+static void at_list(void)     { fresh(); tap(400, BR_ROW_Y(1)); }
+static void at_import(void)   { fresh(); open_file(0); }
+static void at_plot(void)
+{
+    fresh();
+    open_file(0);
+    tap(PLOT_X, IM_BTN_CY);
+    tap(PV_TAP_X, 200);
+}
+static void at_question(void) { fresh(); ask_to_delete(0); }
+
+typedef struct {
+    const char *name;
+    void (*page)(void);
+    int x, y;
+} control_t;
+
+static const control_t k_controls[] = {
+    { "RESCAN",          at_list,     RESCAN_X, FOOT_CY },
+    { "OPEN",            at_list,     OPEN_X, FOOT_CY },
+    { "DELETE",          at_list,     DELETE_X, FOOT_CY },
+    { "file row",        at_list,     400, BR_ROW_Y(3) },
+    { "separator",       at_import,   SEP_X, IM_BTN_CY },
+    { "number format",   at_import,   NUM_X, IM_BTN_CY },
+    { "BACK",            at_import,   BACK_X, IM_BTN_CY },
+    { "PLOT",            at_import,   PLOT_X, IM_BTN_CY },
+    { "column row",      at_import,   560, IM_ROW_Y(2) },
+    { "FIELDS",          at_plot,     100, FOOT_PLOT_CY },
+    { "previous sample", at_plot,     236, FOOT_PLOT_CY },
+    { "next sample",     at_plot,     NEXT_X, FOOT_PLOT_CY },
+    { "question CANCEL", at_question, DQ_CANCEL_X, DQ_CY },
+    { "question DELETE", at_question, DQ_DELETE_X, DQ_CY },
+};
+#define CONTROLS ((int)(sizeof(k_controls) / sizeof(k_controls[0])))
+
+/* The defect: the footers acted on the release wherever the finger was, so
+ * a press on DELETE that slid away still asked the question. */
+TEST_CASE(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less)
+{
+    for (int i = 0; i < CONTROLS; ++i) {
+        const control_t *c = &k_controls[i];
+        c->page();
+        feed_reset();
+        feed_to_screen(screen());
+        const uint32_t was = look();
+        int moved = 0;
+
+        /* Pressed, carried away down the glass or across it, and lifted. */
+        f_at(c->x, c->y);
+        f_to(c->x, c->y + 60, 9);
+        f_lift();
+        moved += (look() != was) ? 1 : 0;
+        f_at(c->x, c->y);
+        f_to(c->x - 110, c->y, 9);
+        f_lift();
+        moved += (look() != was) ? 2 : 0;
+        /* A swipe across it from 110 px to its left. */
+        f_at(c->x - 110, c->y);
+        f_to(c->x + 110, c->y, 9);
+        f_lift();
+        moved += (look() != was) ? 4 : 0;
+        /* Pressed, carried 60 px away and back onto it. */
+        f_at(c->x, c->y);
+        f_to(c->x + 60, c->y, 9);
+        f_to(c->x, c->y, 9);
+        f_lift();
+        moved += (look() != was) ? 8 : 0;
+        /* 9 px from the press, in one report and px by px. */
+        f_at(c->x, c->y);
+        f_to(c->x + 9, c->y, 9);
+        f_lift();
+        f_at(c->x, c->y);
+        f_to(c->x - 9, c->y, 1);
+        f_lift();
+        moved += (look() != was) ? 16 : 0;
+        /* The contact next reported 300 px away: the tracker's release. */
+        f_at(c->x, c->y);
+        f_at((c->x < 400) ? c->x + 300 : c->x - 300, 20);
+        f_lift();
+        moved += (look() != was) ? 32 : 0;
+        if (moved != 0) {
+            T_FAIL("%s acted without a tap (%d)", c->name, moved);
+        }
+
+        /* A tap acts; so does one that moves 8 px, or wobbles. */
+        for (int k = 0; k < 3; ++k) {
+            c->page();
+            feed_reset();
+            feed_to_screen(screen());
+            const uint32_t before = look();
+            f_at(c->x, c->y);
+            if (k == 1) {
+                f_to(c->x - 8, c->y, 8);
+            } else if (k == 2) {
+                f_to(c->x + 2, c->y - 3, 1);
+                f_to(c->x, c->y, 1);
+            }
+            f_lift();
+            if (look() == before) {
+                T_FAIL("%s did not act on a tap (%d)", c->name, k);
+            }
+        }
+    }
+}
+
+/* One contact holds a press on the list views; a second one presses
+ * nothing and ends nothing. */
+TEST_CASE(a_second_finger_presses_nothing_on_the_list_views)
+{
+    at_list();
+    feed_reset();
+    feed_to_screen(screen());
+    /* The first rests on a row; the second taps OPEN and DELETE. */
+    finger(1, 400, BR_ROW_Y(3) + UI_BAND_H);
+    finger(2, OPEN_X, FOOT_CY + UI_BAND_H);
+    lift(2);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    finger(2, DELETE_X, FOOT_CY + UI_BAND_H);
+    lift(2);
+    lift(1);                                  /* selects its row: README */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    feed_tap(2, DELETE_X, FOOT_CY + UI_BAND_H);
+    feed_tap(2, DQ_DELETE_X, DQ_CY + UI_BAND_H);
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "MIXED.CSV");
+
+    /* The first holds OPEN; the second's release ends nothing. */
+    at_list();
+    feed_reset();
+    feed_to_screen(screen());
+    finger(1, OPEN_X, FOOT_CY + UI_BAND_H);
+    finger(2, 400, 200 + UI_BAND_H);
+    lift(2);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    lift(1);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+
+    /* On the import view the same. */
+    finger(1, 560, IM_ROW_Y(2) + UI_BAND_H);
+    finger(2, BACK_X, IM_BTN_CY + UI_BAND_H);
+    lift(2);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    lift(1);
+    feed_tap(2, BACK_X, IM_BTN_CY + UI_BAND_H);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+
+    /* On the plot, a finger on a footer button keeps its press while
+     * another comes and goes. */
+    at_plot();
+    feed_reset();
+    feed_to_screen(screen());
+    const int c0 = log_viewer_cursor();
+    finger(1, NEXT_X, FOOT_PLOT_CY + UI_BAND_H);
+    finger(2, 100, FOOT_PLOT_CY + UI_BAND_H);
+    lift(2);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
+    CHECK_EQ(log_viewer_cursor(), c0);
+    lift(1);
+    CHECK_EQ(log_viewer_cursor(), c0 + 1);
+}
+
+/* A press held when the screen is left has no release coming; it holds
+ * nothing when the screen is entered again. */
+TEST_CASE(a_press_left_behind_holds_nothing_on_the_way_back_in)
+{
+    at_list();
+    feed_reset();
+    feed_to_screen(screen());
+    finger(1, OPEN_X, FOOT_CY + UI_BAND_H);
+    screen()->enter();
+    feed_tap(2, OPEN_X, FOOT_CY + UI_BAND_H);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+}
+
 int main(void)
 {
     RUN(every_view_draws_something);
@@ -1957,5 +2172,8 @@ int main(void)
     RUN(a_refused_delete_keeps_the_file_listed);
     RUN(a_rescan_or_leaving_the_screen_closes_the_question);
     RUN(the_question_leaves_no_stale_pixels);
+    RUN(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less);
+    RUN(a_second_finger_presses_nothing_on_the_list_views);
+    RUN(a_press_left_behind_holds_nothing_on_the_way_back_in);
     return test_summary("logview");
 }

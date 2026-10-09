@@ -76,7 +76,7 @@ static void event(const touch_event_t *evt)
 {
     /* A tap skips the hold, not the report: if a step failed it has already
      * been drawn, and the operator chose to move on. */
-    if (evt != NULL && evt->type == TOUCH_EVENT_UP && all_answered()) {
+    if (evt != NULL && touch_event_is_tap_up(evt) && all_answered()) {
         s.skipped = true;
     }
 }

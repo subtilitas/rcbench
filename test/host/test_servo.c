@@ -4413,6 +4413,27 @@ TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
     CHECK(fb[6 * W + 6] != ui_theme_color(UI_C_ACCENT));
 }
 
+/* START TEST reads STOP while a run is under way, and a release ends the
+ * run however it came about: here the tracker's, for a contact that
+ * jumps. */
+TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
+{
+    bench_fresh();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    CHECK(servo_screen_testing());
+    feed_reset();
+    feed_to_screen(scr);
+    finger(FEED_LONE, START_X, START_Y + UI_BAND_H);
+    CHECK(servo_screen_testing());
+    finger(FEED_LONE, START_X, START_Y + UI_BAND_H - 200);
+    CHECK_EQ(feed_ups, 1);
+    CHECK(!servo_screen_testing());
+    lift(FEED_LONE);
+}
+
 /* A run through the screen: it passes, its files are handed over and
  * ended, the output goes off and the set points come back to what they
  * were. */
@@ -6100,6 +6121,7 @@ int main(void)
     RUN(a_question_asked_after_a_stop_stands);
     RUN(a_question_does_not_outlive_its_run);
     RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
+    RUN(a_run_stops_on_a_release_the_tracker_makes_for_a_jump);
     RUN(a_run_through_the_screen_ends_and_restores_the_set_points);
     RUN(a_run_above_6_v_starts_through_the_hv_hold);
     RUN(every_way_out_of_a_run_switches_off_and_lets_go);

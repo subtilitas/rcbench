@@ -16,6 +16,7 @@
 #include "ui_tabs.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "touch_feed.h"
 
 #define W 800
 #define H 480
@@ -811,6 +812,65 @@ TEST_CASE(tabs_select_and_a_slip_does_not)
 }
 
 /*
+ * A contact the tracker ends for a jump: the release is where the contact
+ * was, on the tab or the preset it pressed, and the finger did not make it.
+ * Nothing is chosen.  The press the tracker starts where the contact is next
+ * reported is a press like any other.
+ */
+static ui_tabs_t s_jump_tabs;
+static bool      s_jump_changed;
+
+static void to_jump_tabs(const touch_event_t *e)
+{
+    s_jump_changed = ui_tabs_event(&s_jump_tabs, e) || s_jump_changed;
+}
+
+static void to_slider(const touch_event_t *e)
+{
+    s_jump_changed = ui_slider_event(&sl, e) || s_jump_changed;
+}
+
+TEST_CASE(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset)
+{
+    static const char *const labels[] = { "PLOT", "TABLE", "RAW" };
+    ui_tabs_init(&s_jump_tabs, labels, 3, (gfx_rect_t){ 10, 10, 400, 30 });
+    const gfx_rect_t t1 = s_jump_tabs.rect[1], t2 = s_jump_tabs.rect[2];
+    feed_reset();
+    feed_to_handler(to_jump_tabs);
+    s_jump_changed = false;
+    finger(FEED_LONE, t1.x + 5, 20);
+    finger(FEED_LONE, 700, 400);              /* 121 px or more away */
+    CHECK_EQ(s_jump_tabs.selected, 0);
+    CHECK_EQ(s_jump_tabs.pressed, -1);
+    lift(FEED_LONE);
+    CHECK_EQ(s_jump_tabs.selected, 0);
+    CHECK(!s_jump_changed);
+    /* Onto another tab in one report, and lifted there: that tab. */
+    finger(FEED_LONE, 700, 400);
+    finger(FEED_LONE, t2.x + 5, 20);
+    lift(FEED_LONE);
+    CHECK_EQ(s_jump_tabs.selected, 2);
+    /* And a tap is a tap. */
+    feed_tap(FEED_LONE, t1.x + 5, 20);
+    CHECK_EQ(s_jump_tabs.selected, 1);
+
+    fresh_slider();
+    ui_slider_set(&sl, 10.0f);
+    const gfx_rect_t fifty = sl.presets[2];
+    feed_reset();
+    feed_to_handler(to_slider);
+    s_jump_changed = false;
+    finger(FEED_LONE, fifty.x + fifty.w / 2, fifty.y + fifty.h / 2);
+    finger(FEED_LONE, fifty.x + fifty.w / 2,
+           fifty.y + fifty.h / 2 + 200);
+    lift(FEED_LONE);
+    CHECK_EQ(sl.value, 10.0f);
+    CHECK(!s_jump_changed);
+    feed_tap(FEED_LONE, fifty.x + fifty.w / 2, fifty.y + fifty.h / 2);
+    CHECK_EQ(sl.value, 50.0f);
+}
+
+/*
  * Every drawing primitive the benches are assembled from, rendered once into a
  * canvas that is bigger than the boxes they are given.
  *
@@ -1059,5 +1119,6 @@ int main(void)
     RUN(one_late_frame_cannot_complete_a_hold);
     RUN(a_state_that_goes_away_under_a_press_ends_the_gesture);
     RUN(the_hold_refuses_a_null_rather_than_following_it);
+    RUN(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset);
     return test_summary("widgets");
 }

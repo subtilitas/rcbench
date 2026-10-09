@@ -236,8 +236,10 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
     const int key = k->pressed;
     k->pressed = -1;
     ++k->revision;
-    /* A press that slid off its key is not a press on it. */
-    if (!gfx_rect_contains(ui_textkey_key_rect(k, key), x, y)) {
+    /* A press that slid off its key is not a press on it, and neither is
+     * a release the finger did not make. */
+    if (!touch_event_is_tap_up(evt)
+        || !gfx_rect_contains(ui_textkey_key_rect(k, key), x, y)) {
         return UI_TEXTKEY_NONE;
     }
     return press(k, key, out, n);

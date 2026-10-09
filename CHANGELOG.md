@@ -42,6 +42,43 @@ history is in git.
 
 ### Fixed
 
+- **Scrolling the SETUP list changes no value.** A `-` or `+` key stepped
+  its setting when the finger came down, and the list scrolls by a drag that
+  starts anywhere on it, the key columns included (`-` at x 556 to 599, `+`
+  at x 726 to 769, the whole height of the list). A scroll swipe that
+  started on a key column had stepped the setting under the finger before
+  it scrolled: INTERFACES scrolled twice from its bottom row showed INA3221
+  shunt 99.9 mOhm and Sensor SDA 15, one step under their defaults, and a
+  stepped value is in force at once. A key is a tap: it steps once when the
+  finger that pressed it lifts inside it, no more than 8 px from the press
+  in x and in y. A key held steps for the first time 0.45 s after the press
+  and then as before (8 a second, 30 a second from 2.25 s; 5 steps after
+  1.00 s, 38 after 3.00 s); the lift after a hold adds none. Sideways travel
+  of more than 8 px gives the key up. A second finger does nothing on SETUP
+  while one presses or scrolls. A key is its column over its own row; the
+  4 px between two rows step nothing. Host suite only; not run on hardware.
+- **PROGRAMMER's controls take a tap.** Every control acted when the finger
+  came down, DEFAULTS of the stick timing and its step keys included, so a
+  finger that came down on one and travelled on had pressed it. A control
+  acts when the finger lifts inside it, no more than 8 px from the press.
+  ABORT of a stick run still acts on the press, HOLD TO RUN keeps its 2 s
+  hold and the search keyboard its keys.
+- **A LOGS button acts where it was pressed.** RESCAN, OPEN, DELETE, the
+  import view's buttons and the plot's footer acted on the lift wherever the
+  finger was: a press on DELETE that slid away still asked the delete
+  question. A button or a row acts when the finger that pressed it lifts
+  inside it, having moved no more than 8 px. A second finger on the file
+  list or the import view does nothing.
+- **A release the panel makes presses nothing.** A touch carried from the
+  screen into the status band is released for the screen at its last point
+  there, and a contact that is more than 120 px from its previous report is
+  released where it was. Both could land on the control that was pressed
+  and activate it: a tile or a tab carried into the band, a keypad key under
+  a contact that jumped. Such a release ends the press or the drag and
+  activates no tile, tab, key, button or row, on every screen. STOP, DISARM,
+  OUTPUT OFF and START TEST while a servo test runs take it as before. The
+  press that follows a jump is a press, except on a key of the SETUP list,
+  where it scrolls and steps nothing.
 - **An armed bench's log has a row for every sample, and its time column is
   wall time.** The panel wrote a row only in a pass of its control task in
   which the 50 ms poll gate and a second, independent 50 ms gate were both

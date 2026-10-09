@@ -192,8 +192,10 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
         && evt->type == TOUCH_EVENT_UP) {
         const int i = s->pressed_preset;
         s->pressed_preset = -1;
-        /* A press that slid off its preset is not a tap on that preset. */
-        if (gfx_rect_contains(s->presets[i], x, y)) {
+        /* A press that slid off its preset is not a tap on that preset,
+         * and neither is a release the finger did not make. */
+        if (touch_event_is_tap_up(evt)
+            && gfx_rect_contains(s->presets[i], x, y)) {
             const float was = s->value;
             s->value = clampf(s->preset_value[i], s->min, s->max);
             return s->value != was;

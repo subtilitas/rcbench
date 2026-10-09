@@ -19,6 +19,7 @@
 #include "outputs_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
+#include "touch_feed.h"
 
 /* Geometry the screen draws to; a test that hard-codes it is a test that
  * notices when the layout moves under the hit testing. */
@@ -296,6 +297,45 @@ TEST_CASE(a_release_away_from_the_press_does_nothing)
     release_at(x + 400, y);          /* finger slid off the cell */
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
     CHECK_EQ(s_applied, was);
+}
+
+/* A contact the tracker ends for a jump: its release is on the control it
+ * pressed and the finger did not make it.  No pin is ticked, no protocol
+ * picked and the list is not opened. */
+TEST_CASE(a_release_the_tracker_makes_for_a_jump_picks_nothing)
+{
+    fresh();
+    choose_named("SERVO PWM");
+    const int was = s_applied;
+    int x, y;
+    cell_centre(0, &x, &y);
+    feed_reset();
+    feed_to_screen(scr());
+    /* Off every control: the left column's foot. */
+    const int off_x = COL_X + 100, off_y = 400 + UI_BAND_H;
+
+    finger(FEED_LONE, x, y + UI_BAND_H);
+    finger(FEED_LONE, off_x, off_y);
+    CHECK_EQ(feed_ups, 1);                    /* the tracker's release */
+    lift(FEED_LONE);
+    CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
+    CHECK_EQ(s_applied, was);
+
+    /* The protocol field: not opened, so a pin cell is still a pin cell. */
+    finger(FEED_LONE, DD_X + DD_W / 2, DD_Y + DD_H / 2 + UI_BAND_H);
+    finger(FEED_LONE, off_x, off_y);
+    lift(FEED_LONE);
+    feed_tap(FEED_LONE, x, y + UI_BAND_H);
+    CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
+    CHECK_EQ(s_applied, was + 1);
+
+    /* A row of the open list: not picked. */
+    feed_tap(FEED_LONE, DD_X + DD_W / 2, DD_Y + DD_H / 2 + UI_BAND_H);
+    finger(FEED_LONE, DD_X + 40,
+           DD_Y + 4 + POP_ROW / 2 + UI_BAND_H);         /* row 0: off */
+    finger(FEED_LONE, DD_X + 40 + 300, DD_Y + 4 + POP_ROW / 2 + UI_BAND_H);
+    lift(FEED_LONE);
+    CHECK_EQ(outputs_screen_binding()->proto, proto_row("SERVO PWM"));
 }
 
 /* ---------------------------------------------------------------- the pins */
@@ -1057,5 +1097,6 @@ int main(void)
     RUN(a_protocol_index_from_outside_cannot_run_off_the_table);
     RUN(null_events_are_refused_rather_than_dereferenced);
     RUN(a_cancelled_press_applies_nothing);
+    RUN(a_release_the_tracker_makes_for_a_jump_picks_nothing);
     return test_summary("outputs_screen");
 }

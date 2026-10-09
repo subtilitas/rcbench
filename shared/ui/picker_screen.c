@@ -566,6 +566,9 @@ static void event(const touch_event_t *evt)
     if (cell_at(evt->point.x, evt->point.y) != was) {
         return;              /* the finger left the button it pressed */
     }
+    if (!touch_event_is_tap_up(evt)) {
+        return;              /* a release the finger did not make */
+    }
     if (s.unread) {
         return;              /* the binding shown is not confirmed */
     }

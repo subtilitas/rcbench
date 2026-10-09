@@ -285,10 +285,27 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   Ohne dieses Release bleibt der Drag an seiner Track-ID hängen, und ein
   späterer Kontakt mit derselben ID, der vom Band in den Bildschirm wandert,
   bewegt den Wert um seinen eigenen Weg vom Ursprung des ersten Drags aus.
+  Das Release trägt eine Marke (`TOUCH_FLAG_NO_TAP`), ebenso das Release, das
+  der Tracker für einen Kontakt erzeugt, der mehr als 120 px von der Stelle
+  des vorigen Reports entfernt liegt. Ein markiertes Release beendet einen
+  Druck oder einen Drag und löst kein Bedienelement aus: Der Finger hat dort
+  nicht abgehoben. Vier Bedienelemente nehmen es trotzdem an, weil sie etwas
+  anhalten: STOP, DISARM auf MOTOR & ESC und auf SERVO, AUSGANG AUS und
+  START TEST, solange ein Servotest läuft.
   STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt:
   Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Die
   Tabelle fasst 5 Kontakte, so viele meldet der GT911; ein sechster erreicht
   keine Seite.
+- Ein Bedienelement, das eine Einstellung ändert, wirkt auf ein Tippen und
+  nicht auf das Aufsetzen. Auf SETUP stellt eine Taste `-` oder `+`, wenn der
+  Finger, der sie gedrückt hat, innerhalb von ihr abhebt, in x und in y
+  höchstens 8 px vom Aufsetzpunkt entfernt; die Liste scrollt von überall,
+  die Tasten eingeschlossen, und ein Scrollen ändert keinen Wert. Eine
+  gehaltene Taste stellt ab 0,45 s nach dem Aufsetzen. Die Bedienelemente auf
+  PROGRAMMER folgen derselben Regel, VORGABEN und die Tasten des Stick-Timings
+  eingeschlossen. ABBRECHEN eines Stick-Laufs wirkt beim Aufsetzen, ebenso
+  jedes Anhalten auf den Prüfstandsbildschirmen: Anhalten wartet nie auf ein
+  Abheben, das ausbleiben kann.
 - Die Seiten verlassen sich dafür nicht auf den Router. Jeder Druck beendet
   einen Drag auf einem Schieberegler oder dem SERVO-Zifferblatt, der noch
   hängt, wo auch immer der Druck landet, und das Verlassen von SERVO beendet

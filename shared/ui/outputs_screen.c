@@ -392,16 +392,22 @@ static void event(const touch_event_t *evt)
     const int kind = s.hit_kind, index = s.hit_index;
     s.hit_kind = HIT_NONE;
 
-    if (kind == HIT_DD && inside(dd_rect(), x, y)) {
+    /* A release the finger did not make ends the press and picks
+     * nothing. */
+    const bool tap = touch_event_is_tap_up(evt);
+
+    if (tap && kind == HIT_DD && inside(dd_rect(), x, y)) {
         s.open = true; touched();
-    } else if (kind == HIT_POP && inside(pop_row_rect(index), x, y)) {
+    } else if (tap && kind == HIT_POP
+               && inside(pop_row_rect(index), x, y)) {
         /* A pick says which set is shown and which the next tick joins.  It
          * changes no page, so nothing is written. */
         s.open = false;
         outbind_set_proto(&s.bind, (uint8_t)index);
         s.off_picked = (index == 0);
         touched();
-    } else if (kind == HIT_CELL && inside(cell_rect(index), x, y)) {
+    } else if (tap && kind == HIT_CELL
+               && inside(cell_rect(index), x, y)) {
         /* A refused tick is not silent: the cell flashes nothing, but the
          * count under the protocol does not move and the reason is printed
          * in the cell or under the protocol. */

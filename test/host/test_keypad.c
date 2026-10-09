@@ -12,6 +12,7 @@
 #include "ui_keypad.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
+#include "touch_feed.h"
 
 #define W 800
 #define H 480
@@ -383,6 +384,54 @@ TEST_CASE(a_keyboard_key_acts_on_its_own_release_only)
     CHECK_EQ(ui_textkey_event(&tk, &e, out, sizeof(out)), UI_TEXTKEY_NONE);
 }
 
+/* A contact the tracker ends for a jump types nothing: its release is on
+ * the key it pressed and the finger did not make it.  The press the tracker
+ * starts where the contact is next reported types its key on its lift. */
+static void to_keypad(const touch_event_t *e)
+{
+    (void)ui_keypad_event(&kp, e, NULL);
+}
+
+static void to_keyboard(const touch_event_t *e)
+{
+    static char out[32];
+    (void)ui_textkey_event(&tk, e, out, sizeof(out));
+}
+
+TEST_CASE(a_release_the_tracker_makes_for_a_jump_types_nothing)
+{
+    open_v();
+    const gfx_rect_t r7 = ui_keypad_key_rect(&kp, UI_KEY_7);
+    const gfx_rect_t r3 = ui_keypad_key_rect(&kp, UI_KEY_3);
+    CHECK(r3.y - r7.y > TOUCH_JUMP_PX || r3.x - r7.x > TOUCH_JUMP_PX
+          || (r3.y - r7.y) + (r3.x - r7.x) > TOUCH_JUMP_PX);
+    feed_reset();
+    feed_to_handler(to_keypad);
+    finger(FEED_LONE, r7.x + 5, r7.y + 5);
+    finger(FEED_LONE, r3.x + 5, r3.y + 5);    /* the id, reused elsewhere */
+    CHECK_EQ(kp.len, 0);
+    lift(FEED_LONE);
+    CHECK_STR_EQ(kp.entry, "3");
+    feed_tap(FEED_LONE, r7.x + 5, r7.y + 5);
+    CHECK_STR_EQ(kp.entry, "37");
+    ui_keypad_close(&kp);
+
+    ui_textkey_open(&tk, k_area, "NAME", "", 23);
+    const gfx_rect_t q = ui_textkey_key_rect(&tk, tk_key('Q'));
+    const gfx_rect_t m = ui_textkey_key_rect(&tk, tk_key('M'));
+    CHECK((m.x - q.x) + (m.y - q.y) > TOUCH_JUMP_PX);
+    feed_reset();
+    feed_to_handler(to_keyboard);
+    finger(FEED_LONE, q.x + 5, q.y + 5);
+    finger(FEED_LONE, m.x + 5, m.y + 5);
+    CHECK_EQ(tk.len, 0);
+    lift(FEED_LONE);
+    CHECK_STR_EQ(tk.text, "M");
+    feed_tap(FEED_LONE, q.x + 5, q.y + 5);
+    CHECK_STR_EQ(tk.text, "MQ");
+    ui_textkey_close(&tk);
+}
+
 TEST_CASE(the_keyboard_draws_inside_its_area_and_only_while_open)
 {
     gfx_color_t *fb = calloc((size_t)W * H, sizeof(gfx_color_t));
@@ -430,6 +479,7 @@ int main(void)
     RUN(the_keyboard_refuses_an_empty_name_and_keeps_its_length);
     RUN(a_search_keyboard_types_a_star_and_takes_an_empty_text);
     RUN(a_keyboard_key_acts_on_its_own_release_only);
+    RUN(a_release_the_tracker_makes_for_a_jump_types_nothing);
     RUN(the_keyboard_draws_inside_its_area_and_only_while_open);
     return test_summary("keypad");
 }
