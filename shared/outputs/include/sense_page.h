@@ -1,13 +1,14 @@
 /*
  * The SENSE and SERVO_SENSE link pages at the coprocessor: the I2C bus of
- * the two current monitors, its set-up and what they last read, and the
- * servo rail's channels with a move capture.  The registers are in
+ * the two current monitors and the output encoder, its set-up and what
+ * they last read, and the servo rail's channels with a move capture.  The
+ * registers are in
  * link_pages.h (LINK_SN_*, LINK_SS_*).
  *
  * The set-up is refused while the bank is armed, on pins that are not one
  * I2C block's SDA and SCL, and on pins the board, an output or the SUPPLY
  * page already holds; the pins it takes are reserved from the outputs for
- * as long as either part is enabled (sense_page_pins()).  A capture arms
+ * as long as any part is enabled (sense_page_pins()).  A capture arms
  * only on an armed bank, on INA3221 CH1 while the INA3221 reads it, and
  * for an output channel that is a surface on a PWM slot.
  *

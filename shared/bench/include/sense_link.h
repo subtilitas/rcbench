@@ -3,10 +3,13 @@
  * protocol 4.7: what is written to SENSE, in what order, what is read from
  * both pages and how often, and what a read means for the operator.
  *
- * The coprocessor reads the two current monitors; the panel sets them up
- * from SETUP INTERFACES and reads what they measured.  A coprocessor whose
- * protocol minor is below SENSE_LINK_MINOR has neither page, and nothing is
- * sent to it: not a write and not a read.
+ * The coprocessor reads the two current monitors and the output encoder (an
+ * AS5600 angle sensor); the panel sets them up from SETUP INTERFACES and
+ * reads what they measured.  A coprocessor whose protocol minor is below
+ * SENSE_LINK_MINOR has neither page, and nothing is sent to it: not a write
+ * and not a read.  One below SENSE_LINK_ENC_MINOR has no encoder: ENABLE
+ * bit 2 is not written, SENSE 26 to 31 are not read, and an encoder enabled
+ * on SETUP raises SENSE_LINK_EV_ENC_OLD.
  *
  * The set-up is three frames of four registers: the bus (ENABLE to KHZ),
  * the INA228 (4 to 7) and the INA3221 (8 to 11).  The page judges every
@@ -35,8 +38,8 @@
  * bits 3 and 4 say what the SENSE set-up enables, and change only with a
  * SENSE write.
  *
- * While the page enables a part, SENSE 12 to 25 are read every
- * SENSE_LINK_READ_MS and, while it enables the INA3221, SERVO_SENSE 0 to 13
+ * While the page enables a part, SENSE 12 to 25 -- to 31 with the encoder
+ * -- are read every SENSE_LINK_READ_MS and, while it enables the INA3221, SERVO_SENSE 0 to 13
  * every SENSE_LINK_SERVO_MS.  From those reads come the events the caller
  * tells the operator about, each once: a part enabled and not answering, a
  * part that answers with another identity, the bus stuck, and a reading
@@ -62,6 +65,8 @@ extern "C" {
 
 /** The protocol minor that has SENSE and SERVO_SENSE. */
 #define SENSE_LINK_MINOR 7u
+/** The protocol minor that has SENSE's output encoder. */
+#define SENSE_LINK_ENC_MINOR 9u
 
 /** How long a set-up rests after its last edit before it is written: a held
  *  + or - on SETUP steps a value about 30 times a second, and each write is
@@ -97,8 +102,11 @@ extern "C" {
 /** A SENSE read older than this gives no ESC figures. */
 #define SENSE_LINK_STALE_MS 500u
 
-/** The registers read from SENSE: FLAGS to ESC_FLAGS. */
+/** The registers read from SENSE: FLAGS to the last, AS5600_STILL_MS's
+ *  neighbour; and without the encoder FLAGS to ESC_FLAGS. */
 #define SENSE_LINK_STATUS_COUNT ((unsigned)LINK_SN_COUNT - (unsigned)LINK_SN_FLAGS)
+#define SENSE_LINK_STATUS_COUNT_V48 \
+    ((unsigned)LINK_SN_COUNT_V48 - (unsigned)LINK_SN_FLAGS)
 /** And from SERVO_SENSE: the three channels' windows, WINDOW and CH_FLAGS. */
 #define SENSE_LINK_SERVO_COUNT ((unsigned)LINK_SS_CH_FLAGS + 1u)
 
@@ -115,6 +123,7 @@ typedef enum {
 /** The set-up as SETUP INTERFACES has it. */
 typedef struct {
     bool     i228, i3221;     /**< enabled                              */
+    bool     as5600;          /**< the output encoder, enabled          */
     int8_t   sda, scl;        /**< coprocessor GPIO; -1 not set         */
     uint8_t  i228_addr;       /**< 0x40 to 0x4F                         */
     uint16_t i228_uohm;       /**< shunt, uOhm                          */
@@ -153,6 +162,17 @@ enum {
     SENSE_LINK_EV_I3221_CLIPPED = 0x1000,
     /** STATUS fault bit 6: the coprocessor saves nothing this boot. */
     SENSE_LINK_EV_STORE_OFF     = 0x2000,
+    /** The encoder is enabled and the coprocessor is older than 4.9. */
+    SENSE_LINK_EV_ENC_OLD       = 0x4000,
+    /** The encoder is enabled and does not answer at 0x36, or something
+     *  answers there that is not an AS5600. */
+    SENSE_LINK_EV_ENC_SILENT    = 0x8000,
+    /** The encoder answers and its magnet is missing, too weak or too
+     *  strong; see sense_link_enc_magnet().  Said once until the field
+     *  reads right, and again when a magnet that was weak or strong goes
+     *  missing or a missing one comes back weak or strong: the first takes
+     *  the angle away and the second gives it back. */
+    SENSE_LINK_EV_ENC_MAGNET    = 0x10000,
 };
 
 /** The exchange sense_link_next() asks for. */
@@ -164,7 +184,7 @@ typedef enum {
     SENSE_LINK_OP_I3221,        /**< SENSE 8 to 11                       */
     SENSE_LINK_OP_BUS,          /**< SENSE 0 to 3                        */
     SENSE_LINK_OP_IDENTITY,     /**< IDENTITY, for the capability bits   */
-    SENSE_LINK_OP_STATUS,       /**< SENSE 12 to 25                      */
+    SENSE_LINK_OP_STATUS,       /**< SENSE 12 to 25, or to 31            */
     SENSE_LINK_OP_SERVO,        /**< SERVO_SENSE 0 to 13                 */
 } sense_link_op_kind_t;
 
@@ -179,10 +199,12 @@ typedef struct {
 typedef struct {
     bool     up;              /**< a coprocessor answers               */
     bool     page;            /**< the coprocessor has SENSE (4.7)     */
+    bool     enc_page;        /**< and the encoder (4.9)               */
 
     /* What is asked, as the page is to hold it. */
     bool     want_set;
     bool     want_i228, want_i3221;   /**< enabled on SETUP, as asked */
+    bool     want_enc;                /**< the encoder, likewise       */
     int8_t   want_sda, want_scl;      /**< as asked, -1 unset         */
     uint16_t want[LINK_SN_CONFIG_COUNT];
     uint32_t want_ms;         /**< when it last changed                */
@@ -219,13 +241,16 @@ typedef struct {
     uint16_t was_clipped;     /**< CH_FLAGS' clipped bits, likewise    */
     bool     silent_told[2];
     bool     online_seen[2];
+    bool     enc_silent_told, enc_online_seen;
+    bool     enc_magnet_told;       /**< the magnet event is said          */
+    uint16_t enc_magnet;            /**< the magnet bits of the last read   */
     uint16_t was_faults;
     uint8_t  clipped_ch;
     uint8_t  clip_pending;    /**< INA3221 channels clipped, not yet
                                    handed out: bit n-1 for CHn          */
     uint16_t ev_id[2];        /**< the ID a WRONG event was raised with */
     uint8_t  ev_found[2];     /**< the address a SILENT event found     */
-    uint16_t events;
+    uint32_t events;
     bool     event_given;     /**< an event has been handed out        */
     uint32_t event_ms;        /**< when                                */
 } sense_link_t;
@@ -270,7 +295,7 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
 void sense_link_faults(sense_link_t *s, uint16_t faults);
 
 /** The events since the last call, SENSE_LINK_EV_*, and cleared. */
-uint16_t sense_link_events(sense_link_t *s);
+uint32_t sense_link_events(sense_link_t *s);
 
 /** How long an event handed out by sense_link_event() has the alert band
  *  before the next one is handed out. */
@@ -284,7 +309,7 @@ uint16_t sense_link_events(sense_link_t *s);
  * or while the last one handed out is younger than SENSE_LINK_EVENT_GAP_MS
  * at @p now_ms.
  */
-uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms);
+uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
 
 /**
  * Put back an event sense_link_event() handed out that never reached the
@@ -293,7 +318,7 @@ uint16_t sense_link_event(sense_link_t *s, uint32_t now_ms);
  * its channel back.  An event about a coprocessor is not put back once the
  * link has gone.
  */
-void sense_link_event_back(sense_link_t *s, uint16_t ev);
+void sense_link_event_back(sense_link_t *s, uint32_t ev);
 
 /** Whether nothing is owed: the page holds the set-up asked, less the
  *  frames it refused. */
@@ -331,6 +356,39 @@ bool sense_link_esc(const sense_link_t *s, uint32_t now_ms, bool *v_ok,
  *  read older than SENSE_LINK_TOTALS_MS at @p now_ms. */
 bool sense_link_totals(const sense_link_t *s, uint32_t now_ms,
                        int32_t *charge_cmah, uint32_t *energy_cwh);
+
+/** The output encoder's angle as last read. */
+typedef struct {
+    uint16_t raw;         /**< RAW ANGLE, 0 to 4095                       */
+    uint16_t samples;     /**< angle reads, modulo 65536                  */
+    uint16_t still_ms;    /**< held within the tolerance, ms, at the read */
+    uint32_t taken_ms;    /**< when the panel had the read                */
+    bool     weak, strong;/**< STATUS ML, MH: a position, its noise not
+                               specified (as5600.h)                       */
+} sense_link_enc_t;
+
+/**
+ * The encoder's last angle into @p out: true when the page enables it, the
+ * last SENSE read is younger than SENSE_LINK_STALE_MS at @p now_ms, the
+ * part was online in it, the angle holds a reading of this set-up and that
+ * reading's STATUS has MD set: a magnet is detected, and RAW ANGLE is a
+ * position.  False, @p out untouched, otherwise.  This is the one place an
+ * angle leaves the link, so no caller has an angle read without a magnet.
+ */
+bool sense_link_enc(const sense_link_t *s, uint32_t now_ms,
+                    sense_link_enc_t *out);
+
+/** Whether sense_link_enc() gives no angle at @p now_ms because the part
+ *  answers and sees no magnet: every condition of sense_link_enc() but MD
+ *  holds. */
+bool sense_link_enc_no_magnet(const sense_link_t *s, uint32_t now_ms);
+
+/** The magnet bits SENSE_LINK_EV_ENC_MAGNET was raised with:
+ *  LINK_SN_ENC_MD, _ML and _MH, as read. */
+uint16_t sense_link_enc_magnet(const sense_link_t *s);
+
+/** Whether the encoder is set up on the page: enabled there, and read. */
+bool sense_link_enc_on(const sense_link_t *s);
 
 /** The address @p part is set up at on the page, 0 while not known. */
 uint8_t sense_link_addr(const sense_link_t *s, sense_link_part_t part);

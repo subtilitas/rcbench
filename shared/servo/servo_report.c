@@ -176,6 +176,40 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "supply reports one value a reading.",
     [SERVO_STR_R_UNM_PATH]       = "The command's way from the panel to the "
                                    "pin, inside every travel time.",
+
+    /* The output encoder. */
+    [SERVO_STR_R_ENC_DEVICE]     = "Encoder:        AS5600 on the horn shaft, "
+                                   "centre count %u, %lu angle readings",
+    [SERVO_STR_R_ENC_HEAD]       = "ENCODER (angles in degrees from the centre "
+                                   "count, times in ms)",
+    [SERVO_STR_R_ENC_COLUMNS]    = "Set V  End lo   Err lo   End hi   Err hi   "
+                                   "Travel Longest Moves Unmoved Late",
+    [SERVO_STR_R_ENC_CMD]        = "Commanded: %+.1f deg at the low end, %+.1f "
+                                   "deg at the high end.",
+    [SERVO_STR_R_ENC_END]        = "End: the settled angle, -180 to +180 deg "
+                                   "from the centre count. Err: End minus "
+                                   "commanded, the shortest way round.",
+    [SERVO_STR_R_ENC_SETTLED]    = "Settled: the angle has stayed within %.2f "
+                                   "deg for %u ms.",
+    [SERVO_STR_R_ENC_TRAVEL]     = "Travel: the command to the start of that "
+                                   "stillness, with the command's way from "
+                                   "the panel to the pin.",
+    [SERVO_STR_R_ENC_UNMOVED]    = "Unmoved: the angle did not leave %.1f deg "
+                                   "of its start.",
+    [SERVO_STR_R_ENC_LATE]       = "Late: the angle moved and was not still "
+                                   "for %u ms before the next command.",
+    [SERVO_STR_R_ENC_DEADBAND]   = "Deadband: not measured; the moves go end "
+                                   "to end.",
+    [SERVO_STR_R_ENC_NONE]       = "No angle reading reached the run.",
+    [SERVO_STR_R_ENC_NO_MAGNET]  = "No magnet: the AS5600 reported none %lu "
+                                   "time(s). No angle is logged then, and an "
+                                   "unsettled move is not counted.",
+    [SERVO_STR_R_ENC_FIELD]      = "Field: %lu reading(s) with the magnet too "
+                                   "weak, %lu too strong. The angle is used; "
+                                   "its noise is not specified then.",
+    [SERVO_STR_R_UNM_POSITION_ENC] = "Position: the AS5600 measures the horn; "
+                                     "the current's travel time is reported "
+                                     "beside the angle's.",
 };
 
 const char *servo_str_in(const char *const *table, servo_str_t id)
@@ -252,6 +286,13 @@ const char *servo_test_csv_header(void)
 {
     return "time (s);test;step;phase;command (us);position (us);set (V);"
            "voltage (V);limit (A);current (A);power (W);mode;travel (ms)";
+}
+
+const char *servo_test_csv_header_enc(void)
+{
+    return "time (s);test;step;phase;command (us);position (us);set (V);"
+           "voltage (V);limit (A);current (A);power (W);mode;travel (ms);"
+           "angle (deg);travel angle (ms)";
 }
 
 /* ------------------------------------------------------------- the report */
@@ -383,6 +424,11 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, S(R_SUPPLY), g->model ? S(R_SUPPLY_MODEL)
                                     : (g->meter.name[0] != '\0')
                                           ? g->meter.name : "--");
+        return true;
+    }
+    if (g->enc_on && here(c)) {
+        snprintf(b, n, S(R_ENC_DEVICE), (unsigned)g->enc_centre,
+                 (unsigned long)t->enc_reads);
         return true;
     }
     float per_s = 0.0f, module_s = 0.0f;
@@ -631,6 +677,124 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
+/* A step's mean end angle at @p end and its error against the commanded
+ * one, both on the circle (servo_test_enc_end()), signed, or "--" for
+ * none. */
+static void deg_end(const servo_test_t *t, const servo_test_step_t *s,
+                    unsigned end, char *b, char *eb, size_t n)
+{
+    float deg = 0.0f, err = 0.0f;
+    if (servo_test_enc_end(t, s, end, &deg, &err)) {
+        snprintf(b, n, "%+.2f", (double)deg);
+        snprintf(eb, n, "%+.2f", (double)err);
+    } else {
+        snprintf(b, n, "--");
+        snprintf(eb, n, "--");
+    }
+}
+
+static bool encoder_lines(const servo_test_t *t, cursor_t *c)
+{
+    const servo_test_cfg_t *g = &t->cfg;
+    if (!g->enc_on) {
+        return false;
+    }
+    char *b = c->buf;
+    const size_t n = c->n;
+    if (here(c)) {
+        b[0] = '\0';
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_ENC_HEAD));
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_ENC_COLUMNS));
+        return true;
+    }
+    bool any = false;
+    for (unsigned k = 0; k < t->step_count; ++k) {
+        const servo_test_step_t *s = &t->steps[k];
+        if (s->brownout) {
+            continue;
+        }
+        any = true;
+        if (!here(c)) {
+            continue;
+        }
+        if (!s->begun) {
+            snprintf(b, n, S(R_STEP_NOT_RUN), (double)s->set_v);
+            return true;
+        }
+        char lo[16], elo[16], hi[16], ehi[16], mean_ms[12], max_ms[12];
+        deg_end(t, s, 0u, lo, elo, sizeof(lo));
+        deg_end(t, s, 1u, hi, ehi, sizeof(hi));
+        if (s->enc_travels > 0u) {
+            snprintf(mean_ms, sizeof(mean_ms), "%lu",
+                     (unsigned long)(s->enc_travel_sum_ms / s->enc_travels));
+            snprintf(max_ms, sizeof(max_ms), "%lu",
+                     (unsigned long)s->enc_travel_max_ms);
+        } else {
+            snprintf(mean_ms, sizeof(mean_ms), "--");
+            snprintf(max_ms, sizeof(max_ms), "--");
+        }
+        snprintf(b, n, "%5.2f  %-7s  %-7s  %-7s  %-7s  %-6s %-7s %5u %7u %4u",
+                 (double)s->set_v, lo, elo, hi, ehi, mean_ms, max_ms,
+                 (unsigned)s->enc_moves, (unsigned)s->enc_unmoved,
+                 (unsigned)s->enc_late);
+        return true;
+    }
+    if (!any && here(c)) {
+        snprintf(b, n, "%s", S(R_NO_STEP));
+        return true;
+    }
+    if (t->enc_reads == 0u && here(c)) {
+        snprintf(b, n, "%s", S(R_ENC_NONE));
+        return true;
+    }
+    if (t->enc_no_magnet > 0u && here(c)) {
+        snprintf(b, n, S(R_ENC_NO_MAGNET), (unsigned long)t->enc_no_magnet);
+        return true;
+    }
+    if ((t->enc_weak > 0u || t->enc_strong > 0u) && here(c)) {
+        snprintf(b, n, S(R_ENC_FIELD), (unsigned long)t->enc_weak,
+                 (unsigned long)t->enc_strong);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, S(R_ENC_CMD), (double)g->enc_cmd_deg[0],
+                 (double)g->enc_cmd_deg[1]);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_ENC_END));
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, S(R_ENC_SETTLED), (double)SERVO_TEST_ENC_TOL_DEG,
+                 (unsigned)SERVO_TEST_ENC_HOLD_MS);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_ENC_TRAVEL));
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, S(R_ENC_UNMOVED), (double)SERVO_TEST_ENC_MOVED_DEG);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, S(R_ENC_LATE), (unsigned)SERVO_TEST_ENC_HOLD_MS);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_ENC_DEADBAND));
+        return true;
+    }
+    return false;
+}
+
 static bool brownout_lines(const servo_test_t *t, cursor_t *c)
 {
     char *b = c->buf;
@@ -771,12 +935,13 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-static bool unmeasured_lines(cursor_t *c)
+static bool unmeasured_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_str_t k_lines[] = {
         SERVO_STR_COUNT,            /* the blank line before the heading */
         SERVO_STR_R_UNM_HEAD,
-        SERVO_STR_R_UNM_POSITION,
+        t->cfg.enc_on ? SERVO_STR_R_UNM_POSITION_ENC
+                      : SERVO_STR_R_UNM_POSITION,
         SERVO_STR_R_UNM_PEAKS,
         SERVO_STR_R_UNM_PATH,
     };
@@ -797,6 +962,6 @@ bool servo_report_line(const servo_test_t *t, unsigned idx, char *buf,
     }
     cursor_t c = { idx, 0u, buf, n, t->cfg.text };
     return header_lines(t, &c) || settings_lines(t, &c) || step_lines(t, &c)
-           || brownout_lines(t, &c) || limit_lines(t, &c)
-           || unmeasured_lines(&c);
+           || encoder_lines(t, &c) || brownout_lines(t, &c)
+           || limit_lines(t, &c) || unmeasured_lines(t, &c);
 }

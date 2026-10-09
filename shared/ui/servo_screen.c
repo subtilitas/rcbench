@@ -180,7 +180,7 @@ static const ui_text_id_t k_pages[PG_COUNT] = {
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV };
+       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE };
 
 typedef struct {
     uint8_t      page;
@@ -225,6 +225,8 @@ static const ov_row_t k_rows[] = {
 
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
+    { PG_DUT, R_SETTING, SET_ENC_EN,       TX_SV_ROW_ENC,  0, 2, false },
+    { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 3, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -298,6 +300,11 @@ static struct {
     float    measured_deg;
     float    current_a;
     bool     have_feedback;
+    /* The output encoder's last reading (servo_screen_encoder()). */
+    bool     enc_valid;
+    bool     enc_no_magnet; /**< not valid: the sensor sees no magnet     */
+    uint16_t enc_raw;
+    int      shown_q_enc;  /**< the angle as drawn, in tenths             */
 
     bool     dragging;
     int      drag_id;
@@ -543,6 +550,8 @@ static struct {
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
     bool      have_now;
     bool      link_up;
+    bool      enc_held;      /**< the coprocessor holds the encoder on,
+                                  servo_screen_set_enc_held()           */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */
@@ -1670,6 +1679,48 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     }
 }
 
+/* The encoder's angle from its centre, degrees, in the direction of the
+ * commanded angle: negated with REVERSE on, as us_to_deg() is. */
+static float enc_deg_now(void)
+{
+    const float d = servo_test_enc_deg(
+        s.enc_raw, (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    return s.reverse ? -d : d;
+}
+
+/* Whether the encoder's last reading is on show and may be used: one the
+ * link carried, with the encoder on in SETUP.  A link that goes down takes
+ * the reading with it (servo_screen_set_link()). */
+static bool enc_shown(void)
+{
+    return s.enc_valid && s.link_up && settings_get_bool(SET_ENC_EN);
+}
+
+void servo_screen_encoder(const servo_test_enc_t *e)
+{
+    if (e == NULL) {
+        return;
+    }
+    /* A reading that was queued before the link went down is not the
+     * angle now. */
+    const servo_test_enc_t none = { .valid = false };
+    if (!s.link_up) {
+        e = &none;
+    }
+    s.enc_valid     = e->valid;
+    s.enc_no_magnet = !e->valid && e->no_magnet;
+    if (e->valid) {
+        s.enc_raw = e->raw;
+    }
+    servo_test_encoder(&s.test, e);
+    /* Redrawn only when the digits change: tenths of a degree. */
+    const int q = e->valid ? (int)lroundf(enc_deg_now() * 10.0f) : 0x7FFF;
+    if (q != s.shown_q_enc) {
+        s.shown_q_enc = q;
+        ++s.ctrl_rev;
+    }
+}
+
 static servo_test_reading_t test_reading_of(const supply_state_t *st)
 {
     servo_test_reading_t r;
@@ -2161,6 +2212,12 @@ static void test_cfg(servo_test_cfg_t *c)
     c->travel_deg = (uint8_t)s.travel_deg;
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
     c->model      = supply_screen_model();
+    /* Only an encoder the coprocessor holds on reads angles: a set-up it
+     * has not taken -- written only while disarmed -- gives a run none. */
+    c->enc_on     = settings_get_bool(SET_ENC_EN) && s.enc_held;
+    c->enc_centre = (uint16_t)settings_get_int(SET_ENC_CENTRE);
+    c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
+    c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
     /* The current is the PD mini's, whose travel times are an upper bound.
      * The model stands in for it: no lag of its own, and its travel times
      * held to what a run on the PD mini can check. */
@@ -2340,6 +2397,12 @@ static void test_begin(void)
         ++s.ctrl_rev;
         return;
     }
+    /* "No magnet" arrives once, when it begins: a run that starts in it is
+     * told so, and its report gives the reason for its missing angles. */
+    if (s.enc_no_magnet) {
+        const servo_test_enc_t none = { .valid = false, .no_magnet = true };
+        servo_test_encoder(&s.test, &none);
+    }
     stop_sweep();
     s.test_v0      = v0;
     s.test_i0      = i0;
@@ -2406,6 +2469,16 @@ void servo_screen_set_link(bool up)
 {
     if (s.link_up && !up) {
         test_end_now(SERVO_TEST_AB_LINK);
+        /* The encoder's last angle is not the horn's now: the dashes, and
+         * no ENC CENTRE from it, until a reading arrives with the link. */
+        const servo_test_enc_t none = { .valid = false };
+        s.enc_valid     = false;
+        s.enc_no_magnet = false;
+        servo_test_encoder(&s.test, &none);
+        if (s.shown_q_enc != 0x7FFF) {
+            s.shown_q_enc = 0x7FFF;
+            ++s.ctrl_rev;
+        }
         /*
          * A sweep or a pause: the far end stops a sweep and lets a hold go
          * 500 ms after the last write it heard, and the surfaces rest.  The
@@ -2434,6 +2507,11 @@ void servo_screen_set_link(bool up)
         }
     }
     s.link_up = up;
+}
+
+void servo_screen_set_enc_held(bool held)
+{
+    s.enc_held = held;
 }
 
 void servo_screen_set_surfaces(bool any)
@@ -2657,6 +2735,13 @@ static void edit_row(int i)
     case R_HV:
         /* For a run started after it; one under way keeps its steps. */
         s.test_hv = !s.test_hv;
+        break;
+    case R_ENC_CENTRE:
+        /* The servo is at its neutral: the live count is the centre. */
+        if (enc_shown()) {
+            settings_set(SET_ENC_CENTRE, (float)s.enc_raw);
+            settings_request_save();
+        }
         break;
     case R_TEXT:
         ui_textkey_open(&s.tk, overlay_area(), TR(SV_DUT_TITLE),
@@ -3843,13 +3928,22 @@ static void draw_right(gfx_canvas_t *c, bool power)
     char buf[24];
     snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
     row(c, 44, TR(SV_COMMANDED), buf);
-    if (s.have_feedback) {
+    /* The horn's angle from the encoder where one reads.  With the encoder
+     * off in SETUP, from the feedback; with it on and not reading, the
+     * dashes: the pulse position is not the horn's angle then. */
+    if (enc_shown()) {
+        snprintf(buf, sizeof(buf), "%+.1f deg", (double)enc_deg_now());
+        row(c, 68, TR(SV_MEASURED), buf);
+    } else if (s.have_feedback && !settings_get_bool(SET_ENC_EN)) {
         snprintf(buf, sizeof(buf), "%+.1f deg", (double)s.measured_deg);
         row(c, 68, TR(SV_MEASURED), buf);
+    } else {
+        row(c, 68, TR(SV_MEASURED), "---");
+    }
+    if (s.have_feedback) {
         snprintf(buf, sizeof(buf), "%.2f A", (double)s.current_a);
         row(c, 92, TR(SV_CURRENT), buf);
     } else {
-        row(c, 68, TR(SV_MEASURED), "---");
         row(c, 92, TR(SV_CURRENT), "---");
     }
 
@@ -3928,6 +4022,9 @@ static void draw_save_line(gfx_canvas_t *c)
 /* A test setting that the length rule leaves unused is drawn faint. */
 static bool row_unused(const ov_row_t *r)
 {
+    if (r->kind == R_ENC_CENTRE) {
+        return !settings_get_bool(SET_ENC_EN);
+    }
     if (r->kind != R_SETTING) {
         return false;
     }
@@ -3952,6 +4049,9 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
     case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
+    case R_ENC_CENTRE:
+        snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));
+        return;
     default:
         break;
     }
@@ -4153,9 +4253,9 @@ static void draw_page(gfx_canvas_t *c)
         draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
     } else {
         const char *const lines[] = {
-            TR(SV_DUT_NOTE),
+            TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_1), TR(SV_ENC_NOTE_2),
         };
-        draw_note(c, nx, OV_ROW0 + 2 * OV_PITCH + 6, lines, 1);
+        draw_note(c, nx, OV_ROW0 + 4 * OV_PITCH + 6, lines, 3);
     }
     draw_save_line(c);
 }

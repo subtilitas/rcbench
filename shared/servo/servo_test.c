@@ -21,6 +21,58 @@ static float mean_of(const servo_test_mean_t *m)
     return (m->n > 0u) ? m->sum / (float)m->n : 0.0f;
 }
 
+/* The angle in the commanded direction: with REVERSE on, the horn turns
+ * the other way for the same command, and the angle is negated. */
+static float enc_dir_deg(const servo_test_t *t, uint16_t raw)
+{
+    const float d = servo_test_enc_deg(raw, t->cfg.enc_centre);
+    return t->cfg.reverse ? -d : d;
+}
+
+float servo_test_enc_deg(uint16_t raw, uint16_t centre)
+{
+    int d = (int)((unsigned)(raw - centre) & 4095u);
+    if (d >= 2048) {
+        d -= 4096;
+    }
+    return (float)d * (360.0f / 4096.0f);
+}
+
+float servo_test_enc_wrap(float deg)
+{
+    float d = fmodf(deg, 360.0f);
+    if (d >= 180.0f) {
+        d -= 360.0f;
+    } else if (d < -180.0f) {
+        d += 360.0f;
+    }
+    return d;
+}
+
+bool servo_test_enc_end(const servo_test_t *t, const servo_test_step_t *s,
+                        unsigned end, float *deg, float *err)
+{
+    if (t == NULL || s == NULL || end > 1u || s->enc_end_off[end].n == 0u) {
+        return false;
+    }
+    /* The first end angle from the centre, and the mean of the offsets
+     * from it; negated with REVERSE on as enc_dir_deg() does, and wrapped
+     * after it, since -180 negated is 180. */
+    float d = servo_test_enc_deg(s->enc_end_ref[end], t->cfg.enc_centre)
+              + mean_of(&s->enc_end_off[end]);
+    if (t->cfg.reverse) {
+        d = -d;
+    }
+    d = servo_test_enc_wrap(d);
+    if (deg != NULL) {
+        *deg = d;
+    }
+    if (err != NULL) {
+        *err = servo_test_enc_wrap(d - t->cfg.enc_cmd_deg[end]);
+    }
+    return true;
+}
+
 void servo_test_meter_pdmini(servo_test_meter_t *m)
 {
     if (m == NULL) {
@@ -147,9 +199,94 @@ static servo_test_step_t *cur(servo_test_t *t)
     return &t->steps[t->step];
 }
 
+/* The count at @p at_ms, by servo_test_enc_at()'s rule. */
+static bool enc_raw_at(const servo_test_t *t, uint32_t at_ms, uint16_t *out)
+{
+    bool     found = false;
+    uint32_t best  = 0u;                 /* the age of the best so far */
+    uint16_t raw   = 0u;
+    for (unsigned k = 0u; k < t->enc_hist_n; ++k) {
+        const servo_test_enc_sample_t *h = &t->enc_hist[k];
+        if ((int32_t)(at_ms - h->ms) < 0) {
+            continue;                    /* taken after the row */
+        }
+        const uint32_t age = at_ms - h->ms;
+        if (!found || age < best) {
+            found = true;
+            best  = age;
+            raw   = h->raw;
+        }
+    }
+    if (!found || best > SERVO_TEST_ENC_STALE_MS) {
+        return false;
+    }
+    *out = raw;
+    return true;
+}
+
+/* The move the encoder was judging is over: counted into its step. */
+static void enc_close(servo_test_t *t)
+{
+    if (!t->enc_open) {
+        return;
+    }
+    t->enc_open = false;
+    if (!t->enc_counted || !t->enc_ok || t->step_count == 0u) {
+        return;
+    }
+    servo_test_step_t *s = cur(t);
+    ++s->enc_moves;
+    if (!t->enc_moved) {
+        ++s->enc_unmoved;
+    } else if (!t->enc_settled) {
+        ++s->enc_late;
+    } else {
+        s->enc_travel_sum_ms += t->enc_travel_ms;
+        ++s->enc_travels;
+        if (t->enc_travel_ms > s->enc_travel_max_ms) {
+            s->enc_travel_max_ms = t->enc_travel_ms;
+        }
+        /* On the circle: the offset from the step's first end angle at
+         * this end, the shortest way round. */
+        const uint8_t k = t->enc_end;
+        if (s->enc_end_off[k].n == 0u) {
+            s->enc_end_ref[k] = t->enc_last_raw;
+        }
+        mean_add(&s->enc_end_off[k],
+                 servo_test_enc_deg(t->enc_last_raw, s->enc_end_ref[k]));
+    }
+}
+
+/* A move to @p end is commanded at @p now_ms: the encoder judges it from
+ * the angle read before. */
+static void enc_open(servo_test_t *t, uint8_t end, bool counted,
+                     uint32_t now_ms)
+{
+    if (!t->cfg.enc_on) {
+        return;
+    }
+    t->enc_open       = true;
+    t->enc_counted    = counted;
+    t->enc_end        = end;
+    t->enc_cmd_ms     = now_ms;
+    uint16_t start = 0u;
+    t->enc_ok         = enc_raw_at(t, now_ms, &start);
+    t->enc_start_raw  = start;
+    t->enc_last_raw   = start;
+    t->enc_moved      = false;
+    t->enc_settled    = false;
+    t->enc_travel_ms  = 0u;
+}
+
 /* The run ends: the output off and the servo let go, whatever ended it. */
 static void finish(servo_test_t *t, servo_test_abort_t why, uint32_t now_ms)
 {
+    if (why != SERVO_TEST_AB_NONE && !t->enc_settled) {
+        /* An aborted run cut the move's window short: not counted, as
+         * the current-based results do not count it. */
+        t->enc_open = false;
+    }
+    enc_close(t);
     t->state  = SERVO_TEST_DONE;
     t->why    = why;
     t->end_ms = now_ms;
@@ -183,6 +320,7 @@ static void command(servo_test_t *t, uint16_t us, uint32_t now_ms)
  * and on the first step the output on. */
 static void begin_step(servo_test_t *t, uint8_t idx, uint32_t now_ms)
 {
+    enc_close(t);
     t->step = idx;
     servo_test_step_t *s = cur(t);
     if (s->set_v > t->v_max + 0.001f) {
@@ -219,6 +357,7 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
     if (t->phase == SERVO_TEST_PH_HOLD && t->hold_known[from]) {
         start = t->hold_ref[from];
     }
+    enc_close(t);
     t->end     = end;
     t->counted = counted;
     /* The supply's readings one by one: the settled rule over two in a
@@ -235,6 +374,7 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
     };
     servo_move_begin(&t->move, &mc);
     command(t, end ? t->cfg.end_hi_us : t->cfg.end_lo_us, now_ms);
+    enc_open(t, end, counted, now_ms);
     t->phase = SERVO_TEST_PH_MOVE;
 }
 
@@ -424,7 +564,8 @@ servo_test_start_t servo_test_start(servo_test_t *t,
     t->step_count = cfg->step_count;
 
     put_line(t, SERVO_TEST_OUT_OPEN, "");
-    put_line(t, SERVO_TEST_OUT_CSV, servo_test_csv_header());
+    put_line(t, SERVO_TEST_OUT_CSV, cfg->enc_on ? servo_test_csv_header_enc()
+                                                : servo_test_csv_header());
     t->rows = 0u;           /* the header is not a reading */
 
     if (cfg->step_count > 0u) {
@@ -464,6 +605,26 @@ static void log_row(servo_test_t *t, const servo_test_reading_t *r,
              (unsigned)t->cmd_us, pos, (double)s->set_v, (double)r->v,
              (double)t->cfg.i_limit, (double)r->i, (double)(r->v * r->i),
              (r->mode < 3u) ? k_mode[r->mode] : "", travel);
+    if (t->cfg.enc_on) {
+        /* The angle, while it is a reading younger than the start angle may
+         * be, and the settle once, on the row after it was found. */
+        const size_t used = strlen(line);
+        char angle[12] = "";
+        float deg = 0.0f;
+        if (servo_test_enc_at(t, r->taken_ms, &deg)) {
+            snprintf(angle, sizeof(angle), "%.2f", (double)deg);
+        }
+        char settle[12] = "";
+        /* On the first row taken at or after the reading that found it:
+         * a row older than that reading waits for the next. */
+        if (t->enc_travel_now_ms != 0u
+            && (int32_t)(r->taken_ms - t->enc_travel_at_ms) >= 0) {
+            snprintf(settle, sizeof(settle), "%lu",
+                     (unsigned long)t->enc_travel_now_ms);
+            t->enc_travel_now_ms = 0u;
+        }
+        snprintf(line + used, sizeof(line) - used, ";%s;%s", angle, settle);
+    }
     put_line(t, SERVO_TEST_OUT_CSV, line);
 }
 
@@ -580,6 +741,82 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
 
     measure(t, r);
     log_row(t, r, position_us);
+}
+
+bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg)
+{
+    uint16_t raw = 0u;
+    if (!enc_raw_at(t, at_ms, &raw)) {
+        return false;
+    }
+    *deg = enc_dir_deg(t, raw);
+    return true;
+}
+
+void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
+{
+    if (t == NULL || e == NULL) {
+        return;
+    }
+    if (!e->valid || e->gap) {
+        /* The angle is not known across a gap: nor is the move open over
+         * it, unless it had settled before.  A reading that follows lost
+         * ones ends the validity as one that is not valid does, and is
+         * kept after it. */
+        t->enc_hist_n    = 0u;
+        t->enc_hist_next = 0u;
+        if (t->enc_open && !t->enc_settled) {
+            t->enc_ok = false;
+        }
+        if (!e->valid) {
+            if (e->no_magnet && servo_test_running(t) && t->cfg.enc_on) {
+                ++t->enc_no_magnet;
+            }
+            return;
+        }
+    }
+    t->enc_hist[t->enc_hist_next].ms  = e->taken_ms;
+    t->enc_hist[t->enc_hist_next].raw = e->raw;
+    t->enc_hist_next = (uint8_t)((t->enc_hist_next + 1u) % SERVO_TEST_ENC_HIST);
+    if (t->enc_hist_n < SERVO_TEST_ENC_HIST) {
+        ++t->enc_hist_n;
+    }
+    if (!servo_test_running(t) || !t->cfg.enc_on) {
+        return;
+    }
+    ++t->enc_reads;
+    if (e->weak) {
+        ++t->enc_weak;
+    }
+    if (e->strong) {
+        ++t->enc_strong;
+    }
+    /* A reading taken before the command is not the move. */
+    if (!t->enc_open || !t->enc_ok
+        || (int32_t)(e->taken_ms - t->enc_cmd_ms) < 0) {
+        return;
+    }
+    t->enc_last_raw = e->raw;
+    /* How far from the start, on the circle: 2 counts across the half
+     * turn from the centre are 0.18 degrees, not 359.8. */
+    if (!t->enc_moved
+        && fabsf(servo_test_enc_deg(e->raw, t->enc_start_raw))
+               > SERVO_TEST_ENC_MOVED_DEG) {
+        t->enc_moved = true;
+    }
+    if (t->enc_moved && !t->enc_settled
+        && e->still_ms >= SERVO_TEST_ENC_HOLD_MS) {
+        /* When the stillness began, on the panel's clock; it must have
+         * begun after the command, or it is the stillness before it. */
+        const int32_t began =
+            (int32_t)(e->taken_ms - e->still_ms - t->enc_cmd_ms);
+        if (began >= 0) {
+            t->enc_settled   = true;
+            t->enc_travel_ms = (uint32_t)began;
+            t->enc_travel_now_ms = (began > 0) ? (uint32_t)began : 1u;
+            t->enc_travel_at_ms  = e->taken_ms;
+        }
+    }
 }
 
 void servo_test_step(servo_test_t *t, uint32_t now_ms,

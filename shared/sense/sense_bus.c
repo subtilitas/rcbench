@@ -172,6 +172,19 @@ sense_err_t sense_part_write16(sense_part_t *p, uint8_t reg, uint16_t value)
     return count(p, sense_bus_write16(p->bus, p->addr, reg, value));
 }
 
+void sense_part_sample_failed(sense_part_t *p, uint8_t before)
+{
+    if (p->state != SENSE_PART_ONLINE) {
+        return;
+    }
+    p->fails = (uint8_t)(before + 1u);
+    if (p->fails >= SENSE_FAILS) {
+        p->state    = SENSE_PART_OFFLINE;
+        p->fails    = 0u;
+        p->probe_at = p->now + SENSE_RETRY_MS;
+    }
+}
+
 /* ------------------------------------------------------------- codec */
 
 uint16_t sense_be16(const uint8_t *b)

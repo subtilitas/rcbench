@@ -4169,6 +4169,14 @@ static struct {
     unsigned opens, csv, txt, ends;
     char     report[4096];
     size_t   report_len;
+    char     csv_head[256];     /* the CSV's first line */
+    /* The output encoder: the horn at 0.09 degrees a us from 1500, counted
+     * from 3000, read every 40 ms with a 12-count still time. */
+    bool     enc;
+    uint32_t enc_next;
+    bool     enc_anchored;
+    uint16_t enc_anchor;
+    uint32_t enc_anchor_ms;
 } b;
 
 static void bench_fresh(void)
@@ -4210,6 +4218,9 @@ static void bench_drain(void)
         if (o == SERVO_TEST_OUT_OPEN) {
             ++b.opens;
         } else if (o == SERVO_TEST_OUT_CSV) {
+            if (b.csv == 0u) {
+                snprintf(b.csv_head, sizeof(b.csv_head), "%s", text);
+            }
             ++b.csv;
         } else if (o == SERVO_TEST_OUT_TXT) {
             ++b.txt;
@@ -4272,6 +4283,24 @@ static void bench_frames(uint32_t ms)
             st.samples  = ++b.samples;
             st.taken_ms = b.now;
             servo_screen_supply(&st);
+        }
+        if (b.enc) {
+            const int counts = (int)lroundf(
+                (b.sv.position_us - 1500.0f) * 0.09f * 4096.0f / 360.0f);
+            const uint16_t raw = (uint16_t)((counts + 3000) & 4095);
+            int d = ((int)raw - (int)b.enc_anchor + 2048) & 4095;
+            d -= 2048;
+            if (!b.enc_anchored || d > 12 || d < -12) {
+                b.enc_anchor = raw;
+                b.enc_anchor_ms = b.now;
+                b.enc_anchored = true;
+            }
+            if ((int32_t)(b.now - b.enc_next) >= 0) {
+                b.enc_next += 40u;
+                const servo_test_enc_t e = { true, raw,
+                    (uint16_t)(b.now - b.enc_anchor_ms), b.now, false };
+                servo_screen_encoder(&e);
+            }
         }
         /* After the OFF was taken and the samples, as the panel runs it. */
         servo_screen_service();
@@ -5085,8 +5114,279 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
     CHECK_EQ(on_v, 0.0f);
 }
 
+/* ------------------------------------------------- the output encoder */
+
+/* The DUT page's rows: AS5600 on row 2 and ENC CENTRE on row 3 of the left
+ * column. */
+TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
+{
+    fresh();
+    scr->render(&cv, 0);
+    gfx_color_t *none = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(none, fb, (size_t)W * H * sizeof(gfx_color_t));
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false };
+
+    /* AS5600 off in SETUP: the reading is ignored. */
+    CHECK(!settings_get_bool(SET_ENC_EN));
+    servo_screen_encoder(&e);
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* On: the MEASURED row shows the angle from the centre count. */
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_invalidate();
+    servo_screen_encoder(&e);
+    scr->render(&cv, 0);
+    CHECK(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    gfx_color_t *shown = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(shown, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    /* Another count, another angle; the same count, the same picture. */
+    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u, false };
+    servo_screen_encoder(&e2);
+    scr->render(&cv, 0);
+    CHECK(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    servo_screen_encoder(&e);
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* A reading that is not valid is the dashes again. */
+    const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false };
+    servo_screen_encoder(&gone);
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    servo_screen_encoder(NULL);
+    free(none);
+    free(shown);
+}
+
+/* The MEASURED row of the right card, copied out of the frame. */
+static void measured_row(gfx_color_t *out)
+{
+    for (int y = 0; y < 20; ++y) {
+        memcpy(out + y * 292, fb + (size_t)(64 + y) * W + 502,
+               292 * sizeof(gfx_color_t));
+    }
+}
+
+/* With the encoder on in SETUP and no valid reading, the MEASURED row shows
+ * the dashes, not the angle of the pulse position. */
+TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback)
+{
+    fresh();
+    gfx_color_t *a = malloc(20 * 292 * sizeof(gfx_color_t));
+    gfx_color_t *b = malloc(20 * 292 * sizeof(gfx_color_t));
+
+    /* Encoder off: the feedback's angle is on show and follows it. */
+    servo_screen_feedback(1700u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(a);
+    servo_screen_feedback(1300u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(b);
+    CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+
+    /* Encoder on, no reading: dashes, whatever the feedback says. */
+    settings_set(SET_ENC_EN, 1.0f);
+    servo_invalidate();
+    servo_screen_feedback(1700u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(a);
+    servo_screen_feedback(1300u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(b);
+    CHECK_EQ(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)), 0);
+
+    /* A reading puts the encoder's angle there. */
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false };
+    servo_screen_encoder(&e);
+    scr->render(&cv, 0);
+    measured_row(b);
+    CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+    free(a);
+    free(b);
+}
+
+TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
+{
+    fresh();
+    open_settings();
+    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 */
+    CHECK(settings_get_bool(SET_ENC_EN));
+    tap(ROW_L_X, ROW_Y(2));
+    CHECK(!settings_get_bool(SET_ENC_EN));
+    tap(ROW_L_X, ROW_Y(2));
+    CHECK(settings_get_bool(SET_ENC_EN));
+
+    /* No reading yet: the tap sets nothing. */
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
+    tap(ROW_L_X, ROW_Y(3));                    /* ENC CENTRE */
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
+
+    /* A live count is the centre. */
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false };
+    servo_screen_encoder(&e);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
+
+    /* A sensor that answers and sees no magnet has no live count. */
+    const servo_test_enc_t dark = { .valid = false, .raw = 777u,
+                                    .taken_ms = 5020u, .no_magnet = true };
+    servo_screen_encoder(&dark);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
+
+    /* A reading that has gone sets nothing; with the encoder off in SETUP
+     * the row is faint and sets nothing either. */
+    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false };
+    servo_screen_encoder(&e2);
+    settings_set(SET_ENC_EN, 0.0f);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
+}
+
+TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
+{
+    fresh();
+    open_settings();
+    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 on */
+    CHECK(settings_get_bool(SET_ENC_EN));
+    settings_set(SET_ENC_CENTRE, 1000.0f);
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false };
+    servo_screen_encoder(&e);
+
+    /* The link drops: ENC CENTRE takes nothing from the last count. */
+    servo_screen_set_link(false);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
+
+    /* A reading queued before the drop and drained after it is not used
+     * either. */
+    servo_screen_encoder(&e);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
+
+    /* The link back and no reading yet: still nothing; a reading that
+     * arrives with the link is the live count. */
+    servo_screen_set_link(true);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
+    const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false };
+    servo_screen_encoder(&f);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);
+}
+
+TEST_CASE(a_run_with_the_encoder_on_writes_the_angle_columns)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_screen_set_enc_held(true);
+    b.enc = true;
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    CHECK(strstr(b.csv_head, ";travel (ms);angle (deg);travel angle (ms)") != NULL);
+    CHECK(strstr(b.report, "ENCODER (angles in degrees from the centre count") != NULL);
+    CHECK(strstr(b.report, "centre count 3000,") != NULL);
+    CHECK(strstr(b.report, "Commanded: ") != NULL);
+    CHECK(b.ends >= 1u);
+}
+
+/* "No magnet" reaches the screen once, when it begins.  A run started
+ * after that is told the state it starts in, and its report gives the
+ * reason for its missing angles. */
+TEST_CASE(a_run_started_without_a_magnet_says_so_in_its_report)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_screen_set_enc_held(true);
+    const servo_test_enc_t dark = { .valid = false, .no_magnet = true };
+    servo_screen_encoder(&dark);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    CHECK(strstr(b.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(b.report, "No magnet: the AS5600 reported none 1 time(s).")
+          != NULL);
+
+    /* A sensor that stopped answering before the run is not "no magnet". */
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    servo_screen_set_enc_held(true);
+    servo_screen_encoder(&dark);
+    const servo_test_enc_t gone = { .valid = false };
+    servo_screen_encoder(&gone);
+    hold_start(2.3f);
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    bench_frames(1000u);
+    CHECK(strstr(b.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(b.report, "No magnet:") == NULL);
+}
+
+TEST_CASE(a_run_with_the_encoder_off_writes_the_old_columns)
+{
+    bench_fresh();
+    short_runs();
+    b.enc = true;                               /* readings, AS5600 off */
+    hold_start(2.3f);
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    bench_frames(1000u);
+    CHECK(strstr(b.csv_head, "angle") == NULL);
+    CHECK(strstr(b.report, "ENCODER") == NULL);
+}
+
+/* The SENSE set-up is written only while the bank is disarmed: an AS5600
+ * switched on while armed is not in the coprocessor, and a run started then
+ * has no angles to log. */
+TEST_CASE(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_screen_set_enc_held(false);
+    b.enc = true;
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    bench_frames(1000u);
+    CHECK(strstr(b.csv_head, "angle") == NULL);
+    CHECK(strstr(b.report, "ENCODER") == NULL);
+}
+
 int main(void)
 {
+    RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
+    RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
+    RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
+    RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
+    RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
+    RUN(a_run_with_the_encoder_on_writes_the_angle_columns);
+    RUN(a_run_started_without_a_magnet_says_so_in_its_report);
+    RUN(a_run_with_the_encoder_off_writes_the_old_columns);
     RUN(a_touch_on_the_dial_points_the_horn_there);
     RUN(a_drag_keeps_commanding);
     RUN(the_case_is_not_the_dial);

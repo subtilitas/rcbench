@@ -96,8 +96,9 @@ genügt.
 Was ein Servo in Ruhe, in Bewegung und beim Halten eines Endes zieht und wie
 lange es von Ende zu Ende braucht, bei den Versorgungsspannungen, für die es
 ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
-(Brown-out). Nichts am Prüfstand misst das Horn, also wird jedes Ergebnis am
-Strom des Netzteils abgelesen, das das Servo versorgt: am PD mini (WeAct PD
+(Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
+(siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
+abgelesen, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert.
@@ -278,6 +279,123 @@ Stromsensor setzt seine eigenen Werte und lässt STELLZEIT prüfen. Ein Lauf
 am Netzteilmodell des Panels nennt keine eigene Verzögerung und prüft
 STELLZEIT wie der PD mini: gar nicht.
 
+### Der Ausgangsencoder
+
+Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
+SETUP, ANSCHLÜSSE unter AS5600 eingestellt (Standard AUS) und vom Koprozessor
+gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
+Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
+und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
+Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
+Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei entschärfter
+Bank. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
+eingeschaltet hält: wird AS5600 bei scharfer Bank eingeschaltet, hat der Lauf
+keine Winkelspalten, bis das Setup in entschärftem Zustand übernommen ist.
+
+Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
+oder ENC-MITTE auf der Seite PRÜFLING, die den aktuellen Zählerstand nimmt,
+wenn das Servo in Neutral steht), in Grad von -180 bis knapp unter 180. Der
+Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
+nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
+die andere Richtung zeigt sich also als Winkelfehler vom Doppelten des Wegs.
+Die befohlenen Winkel sind die der Seite: -90 Grad bei PULS MIN, +90 bei
+PULS MAX, mit REVERSE und TRIM. Bei REVERSE an wird der gemessene Winkel
+genauso negiert, auf der Seite, im Bericht und in der CSV; ein Horn am
+befohlenen Ende zeigt dann keinen Fehler. Ein Servo, das über diese Spanne weniger als
+90 Grad dreht, zeigt den Unterschied als Winkelfehler.
+
+Der Zählerstand springt von 4095 auf 0, jeder Winkel ist also eine Position
+auf einer Umdrehung, und keine zwei werden als bloße Zahlen subtrahiert oder
+gemittelt. Der Abstand einer Bewegung von ihrem Start wird auf dem kürzeren
+Weg genommen, 0 bis 180 Grad: 2 Schritte beiderseits der halben Umdrehung von
+der Mitte liegen 0,18 Grad auseinander, nicht 359,8. Die Endwinkel einer Stufe
+an einem Ende werden als Abstände vom ersten von ihnen gemittelt, und der
+Mittelwert wird auf den Kreis zurückgelegt; Enden bei +179,9 und -179,9 Grad
+ergeben also 180 (angezeigt als -180.00), nicht 0. Auch der Winkelfehler wird
+auf -180 bis +180 Grad gefaltet.
+
+Der Sensor unterscheidet nur eine Umdrehung, und das begrenzt, was für ein
+Servo berichtet wird, das mehr als 180 Grad dreht:
+
+| Fall | Berichtet |
+| --- | --- |
+| die Enden mehr als 180 Grad auseinander, jedes innerhalb von 180 Grad um die Mitte (-100 und +100) | beide Endwinkel und beide Fehler, wie sie sind; die beiden Enden werden nie voneinander subtrahiert |
+| ein Ende mehr als 180 Grad von der Mitte (+200) | der Endwinkel um 360 Grad versetzt (-160); der Winkelfehler stimmt, solange der befohlene Winkel dieselbe Position nennt (+200), weil er gefaltet wird |
+| eine Bewegung, die innerhalb von 2,0 Grad um eine ganze Umdrehung von ihrem Start endet | unbewegt |
+| die Richtung einer Bewegung und die Umdrehungen eines Windenservos | nicht beurteilt, nicht gezählt |
+
+Für jede Bewegung, vom Befehl bis zum nächsten Befehl (Konstanten in
+`servo_test.h`):
+
+| Begriff | Regel |
+| --- | --- |
+| bewegt | der Winkel verlässt `SERVO_TEST_ENC_MOVED_DEG`, 2,0 Grad, um den Winkel vor dem Befehl, auf dem kürzeren Weg; dieser Messwert muss jünger sein als `SERVO_TEST_ENC_STALE_MS`, 500 ms, sonst wird die Bewegung nicht beurteilt |
+| beruhigt | nach der Bewegung ein Messwert, dessen Ruhezeit mindestens `SERVO_TEST_ENC_HOLD_MS`, 100 ms, beträgt und deren Ruhe nach dem Befehl begann. Der Winkel ist dann so lange innerhalb von `SERVO_TEST_ENC_TOL_COUNTS`, 12 Schritten oder 1,05 Grad, eines Ankers geblieben |
+| Stellzeit (Winkel) | der Beginn dieser Ruhe minus der Befehl: der Moment, in dem der Winkel in die Toleranz um seinen Endwert kam |
+| Endwinkel | der Winkel beim letzten Messwert vor dem nächsten Befehl, bei einer beruhigten Bewegung |
+| Winkelfehler | der mittlere Endwinkel an einem Ende, auf dem Kreis ab dem ersten Endwinkel der Stufe dort gemittelt, minus der befohlene Winkel dieses Endes, auf -180 bis +180 Grad gefaltet |
+| unbewegt | der Winkel verließ die 2,0 Grad nie |
+| spät | er bewegte sich und war vor dem nächsten Befehl keine 100 ms ruhig |
+
+Die Toleranz ist `SENSE_ENC_STILL_TOL` des Koprozessors; `test_as5600` hält
+beide gleich. Die Ruhezeit führt der Koprozessor in seinem 2-ms-Messintervall,
+die Stellzeit hängt also nicht davon ab, wie oft das Panel die Page liest (alle
+40 ms). Sie beginnt beim Befehl, wie der Test ihn ausgibt, und enthält den
+Weg des Befehls zum Pin: die Render-Schleife, den Control Task, den Link und
+den nächsten PWM-Frame, bis zu einem Poll-Intervall und einem Frame, nicht
+gemessen. Sie endet, wenn der Winkel innerhalb von 1,05 Grad seines Endwerts
+ist, und das ist früher als die letzte Bewegung des Arms um die Zeit, die das
+dauert: bei einem Servo mit 0,09 Grad je Mikrosekunde und 1,2 µs je
+Millisekunde etwa 10 ms. Berichtet werden nur gezählte Bewegungen; die
+Bewegungen, die das Horn zuerst an jedes Ende stellen, nicht. Eine Bewegung
+fällt aus den Zählungen des Winkels heraus, weder unbewegt noch spät, wenn der
+Winkel eine Lücke hat, während sie offen ist, und sie sich noch nicht beruhigt
+hatte (ein als ungültig markierter Messwert oder einer, der auf Messwerte
+folgt, die nach einem Stillstand der Anzeige von 320 ms oder mehr auf dem Weg
+zum Bildschirm verloren gingen, löscht den Winkelverlauf), wenn
+sie keinen Startwinkel hat und wenn der Lauf aus einem anderen Grund als dem
+Abschluss endet (STOP, Disarm, Linkverlust, Versorgungsfehler, Blockade),
+bevor sie sich beruhigt hat: ihr Fenster wurde abgeschnitten, und die
+Ergebnisse aus dem Strom zählen so eine Bewegung auch nicht. Eine Bewegung,
+die sich vor der Lücke oder dem Abbruch beruhigt hatte, behält ihr Ergebnis.
+
+Der Winkel ist nur ein Messwert, solange der Sensor seinen Magneten erkennt
+(STATUS MD, [Link](Link-de.md)). Meldet er keinen, ist sein Zählerstand keine
+Position: das Panel gibt ihn an nichts weiter, der Messwert erreicht den Lauf
+als ungültig mit dem Grund, die Winkelspalte der CSV bleibt leer, und eine
+offene, noch nicht beruhigte Bewegung fällt wie oben heraus. Der Bericht hat
+dann die Zeile `Kein Magnet: AS5600 meldete N-mal keinen. ...`; N zählt, wie
+oft der Sensor im Lauf aus einem anderen Zustand zu "kein Magnet" wechselte,
+ein in diesem Zustand gestarteter Lauf eingeschlossen. Ein als zu schwach oder
+zu stark gemeldeter Magnet (ML, MH) bei gesetztem MD lässt den Winkel in
+Gebrauch: das Datenblatt nennt keine Wirkung auf den Winkel und spezifiziert
+sein Rauschen nur für 30 bis 90 mT. Der Bericht zählt diese Messwerte: `Feld:
+N Messwert(e) mit zu schwachem Magneten, M mit zu starkem. ...`. Keine der
+beiden Zeilen steht im Bericht, wenn ihre Zahlen 0 sind.
+
+Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe -- den
+mittleren Endwinkel und seinen Fehler an jedem Ende, die mittlere und die
+längste Stellzeit, die gezählten, unbewegten und späten Bewegungen -- und die
+befohlenen Winkel mit den Regeln oben. Die Tabelle des Stroms und seine Spalte
+`Stell.` bleiben, die beiden Zeiten stehen also nebeneinander: am PD mini ist
+die aus dem Strom eine Obergrenze und hinkt dem Horn um etwa 0,3 s nach, die aus dem Winkel
+nicht. Die CSV bekommt zwei Spalten, `angle (deg)` in jeder Zeile, deren
+Winkelmesswert jünger als 500 ms ist, und `travel angle (ms)` in der ersten
+Zeile, die zur Zeit des Messwerts, der die Beruhigung fand, oder danach
+genommen wurde. Jede Zeile nimmt den neuesten Winkelmesswert, der zur Zeit der
+Zeile oder davor genommen wurde, aus den letzten 16 Messwerten (etwa 640 ms);
+die Reihenfolge, in der das Panel Messwerte und Zeilen abarbeitet, schiebt
+also keinen Winkel in die falsche Zeile. Der Bericht vermerkt, dass das Totband nicht
+gemessen wird: es braucht Schritte, die kleiner sind als die Bewegungen von
+Ende zu Ende, und der Test macht keine. Die Zeile GEMESSEN der Seite SERVO
+zeigt den aktuellen Winkel, solange AS5600 an ist. Fällt der Link aus, wird
+der Messwert gelöscht: die Zeile zeigt Striche, und ENC-MITTE setzt nichts,
+bis mit dem Link wieder ein Messwert eintrifft. Dasselbe gilt, solange der
+Sensor keinen Magneten meldet.
+
+Nicht auf Hardware gelaufen: der Sensor am Bus, die Toleranz und die 100 ms
+Haltezeit gegen das Zittern eines echten Servos, und die Montage.
+
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
@@ -374,6 +492,8 @@ Prüfstands:
 | `power (W)` | W | Spannung mal Strom |
 | `mode` | | `CV`, `CC` oder `OFF` |
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
+| `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte, aus dem neuesten Messwert, der zur Zeit der Zeile oder davor genommen wurde; leer, wenn dieser älter als 500 ms ist oder fehlt |
+| `travel angle (ms)` | ms | nur mit AS5600 an: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
 deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in

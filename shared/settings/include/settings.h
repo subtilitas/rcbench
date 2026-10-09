@@ -78,6 +78,8 @@ typedef enum {
     SET_INA3221_CH,
     SET_SENSE_SDA,
     SET_SENSE_SCL,
+    SET_ENC_EN,
+    SET_ENC_CENTRE,
     SET_TONE_EN,
     SET_TONE_PIN,
     SET_TONE_F_MIN,

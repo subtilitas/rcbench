@@ -94,6 +94,9 @@ void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
                                     cfg->ina228_shunt_uohm,
                                     cfg->ina228_max_ma, INA228_ADC_BENCH);
     }
+    if (cfg->as5600_en) {
+        as5600_init(&s->enc.dev, &s->bus);
+    }
     if (cfg->ina3221_en) {
         s->i3221_setup = ina3221_init(
             &s->i3221, &s->bus, cfg->ina3221_addr, cfg->ina3221_shunt_uohm,
@@ -473,6 +476,88 @@ static void read_rotation(sense_sched_t *s)
     }
 }
 
+/* ------------------------------------------------------------ encoder */
+
+uint16_t sense_sched_enc_still_ms(const sense_sched_t *s)
+{
+    if (!s->enc.anchored) {
+        return 0u;
+    }
+    const uint64_t now_ms = s->io.now_us(s->io.ctx) / 1000u;
+    const uint64_t d = now_ms - s->enc.anchor_ms;
+    return (d > 65535u) ? 65535u : (uint16_t)d;
+}
+
+/* An angle sample at @p at_ms: the anchor moves when the angle has left
+ * its tolerance. */
+static void enc_anchor(sense_enc_t *e, uint16_t raw, uint64_t at_ms)
+{
+    int d = as5600_delta(raw, e->anchor);
+    if (d < 0) {
+        d = -d;
+    }
+    if (!e->anchored || d > (int)SENSE_ENC_STILL_TOL) {
+        e->anchor    = raw;
+        e->anchor_ms = at_ms;
+        e->anchored  = true;
+    }
+}
+
+/* The encoder's slot: STATUS and RAW ANGLE, and every SENSE_ENC_MAG_EVERY-th
+ * time the field's AGC and MAGNITUDE as well, in place of STATUS.  The angle
+ * is read in every slot, 500 Hz.  Each register is a transaction of its own
+ * (as5600.h). */
+static void read_enc(sense_sched_t *s)
+{
+    sense_enc_t *e = &s->enc;
+    if (as5600_state(&e->dev) != SENSE_PART_ONLINE) {
+        /* Offline: the next reading starts the still time afresh, and the
+         * angle of before the outage is not shown as a reading again. */
+        e->anchored   = false;
+        e->have_angle = false;
+        return;
+    }
+    const uint32_t slot = e->slots++;
+    const bool field = (slot % SENSE_ENC_MAG_EVERY) == SENSE_ENC_MAG_EVERY - 1u;
+    uint8_t status = e->status;
+    uint16_t raw = 0u;
+    /* STATUS and RAW ANGLE are one sample: a STATUS that answers does not
+     * clear the failures of the RAW ANGLE reads before it. */
+    const uint8_t fails = e->dev.part.fails;
+    if (!field && as5600_read_status(&e->dev, &status) != SENSE_OK) {
+        return;
+    }
+    if (as5600_read_raw(&e->dev, &raw) != SENSE_OK) {
+        sense_part_sample_failed(&e->dev.part, fails);
+        if (as5600_state(&e->dev) != SENSE_PART_ONLINE) {
+            e->have_angle = false;
+        }
+        return;
+    }
+    const uint64_t at_ms = stamp(s) / 1000u;
+    e->status     = status;
+    e->raw        = raw;
+    e->have_angle = true;
+    ++e->samples;
+    if (as5600_md(status)) {
+        enc_anchor(e, raw, at_ms);
+    } else {
+        /* No magnet: RAW ANGLE is not a position (as5600.h), and nothing
+         * holds still.  The next sample with MD set starts afresh. */
+        e->anchored = false;
+    }
+    if (field) {
+        uint8_t agc = 0u;
+        uint16_t mag = 0u;
+        if (as5600_read_agc(&e->dev, &agc) == SENSE_OK
+            && as5600_read_mag(&e->dev, &mag) == SENSE_OK) {
+            e->agc       = agc;
+            e->magnitude = mag;
+            e->have_mag  = true;
+        }
+    }
+}
+
 /* The windows: the one being filled closes when the clock passes its
  * end, and the next one starts empty.  In 64 bits, so the numbering runs
  * on past the 32-bit millisecond count's wrap at 49.7 days. */
@@ -530,6 +615,9 @@ void sense_sched_tick(sense_sched_t *s)
     }
     (void)ina3221_step(&s->i3221, now_ms32);
     (void)ina228_step(&s->i228, now_ms32);
+    if (s->cfg.as5600_en) {
+        (void)as5600_step(&s->enc.dev, now_ms32);
+    }
     totals(s);
 
     /* CH1, the pair, the INA228, and every second tick the rotation.  Each
@@ -548,6 +636,8 @@ void sense_sched_tick(sense_sched_t *s)
     read_i228(s, tick);
     if ((tick & 1u) == 0u) {
         read_rotation(s);
+    } else if (s->cfg.as5600_en) {
+        read_enc(s);
     }
     /* The capture on CH1's own time, whatever came after it; then the
      * sample into the history, so the level before a command is taken

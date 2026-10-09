@@ -15,6 +15,13 @@
  * the wrong identity, a stuck bus, a clipped reading, the store off --
  * each once.
  *
+ * The output encoder (protocol 4.9): ENABLE bit 2 and SENSE 26 to 31 sent
+ * only to a coprocessor that names 4.9, the operator told once when one
+ * older is asked for it, the status read taken to 31 only while the page
+ * enables it, its angle handed over while the read is fresh and the part
+ * answers, and its two events -- not answering, a magnet missing, weak or
+ * strong -- each once.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include <string.h>
@@ -34,6 +41,7 @@ static uint32_t     now;
 static uint16_t     minor;   /* the coprocessor's protocol minor */
 static unsigned     writes, reads, to_sense, idents;
 static bool         idle;
+static unsigned     last_status_n;    /* the registers of the last status read */
 
 /* The setup SETUP starts with: both parts off, the page's own defaults. */
 static sense_setup_t setup_default(void)
@@ -80,6 +88,9 @@ static int far_exchange(const sense_link_op_t *op, uint16_t *regs)
         return (nack == 0u) ? SENSE_LINK_ACK : (int)nack;
     }
     ++reads;
+    if (op->kind == SENSE_LINK_OP_STATUS) {
+        last_status_n = op->n;
+    }
     memset(regs, 0, LINK_MAX_REGS * sizeof(uint16_t));
     if (op->page == LINK_PAGE_IDENTITY) {
         ++idents;
@@ -125,6 +136,29 @@ static void want(const sense_setup_t *w)
 static void far_flags(uint16_t f)
 {
     pg.sense[LINK_SN_FLAGS] = f;
+}
+
+/* The encoder as core 1 would leave it: its flags and what goes with them. */
+static void far_enc(uint16_t flags, uint16_t raw, uint16_t samples,
+                    uint16_t still)
+{
+    pg.sense[LINK_SN_AS5600_FLAGS]    = flags;
+    pg.sense[LINK_SN_AS5600_ANGLE]    = raw;
+    pg.sense[LINK_SN_AS5600_SAMPLES]  = samples;
+    pg.sense[LINK_SN_AS5600_STILL_MS] = still;
+}
+
+#define ENC_OK (LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD | LINK_SN_ENC_VALID)
+
+/* The encoder asked for on a coprocessor of minor @p m, the set-up
+ * written. */
+static void enc_wanted(uint16_t m)
+{
+    fresh(m);
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    want(&w);
+    polls(20);
 }
 
 /* ---------------------------------------------------------- the version */
@@ -428,6 +462,21 @@ TEST_CASE(pins_the_page_refuses_are_said_and_leave_the_parts_off)
     polls(14);
     CHECK_EQ(sense_link_events(&sl), 0u);
     CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
+}
+
+TEST_CASE(one_address_for_both_monitors_keeps_the_encoder_enabled)
+{
+    fresh(9u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i228_addr = 0x40u;
+    w.i3221_addr = 0x40u;
+    w.as5600 = true;
+    want(&w);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_SAME_ADDR);
+    polls(14);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], (uint16_t)LINK_SN_EN_AS5600);
 }
 
 TEST_CASE(unset_pins_and_one_address_are_not_written_enabled)
@@ -1067,8 +1116,385 @@ TEST_CASE(the_esc_figures_and_the_totals_come_from_the_last_read)
     CHECK(!v_ok);
 }
 
+/* ---------------------------------------------------- the output encoder */
+
+TEST_CASE(the_encoder_is_enabled_only_on_a_4_9_coprocessor)
+{
+    CHECK_EQ(SENSE_LINK_ENC_MINOR, 9u);
+    /* 4.8: the operator is told once, the bit is not sent, the status read
+     * stops at ESC_FLAGS. */
+    fresh(8u);
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    want(&w);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_OLD);
+    polls(20);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], 0u);
+    CHECK(!sense_link_enc_on(&sl));
+    sense_link_came_up(&sl, 8u, now);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_OLD);
+    polls(20);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    CHECK(sense_link_settled(&sl));
+
+    /* With the INA228 beside it: the part is enabled, the encoder is not. */
+    w.i228 = true;
+    want(&w);
+    polls(20);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], (uint16_t)LINK_SN_EN_I228);
+    CHECK_EQ(last_status_n, SENSE_LINK_STATUS_COUNT_V48);
+    CHECK_EQ(SENSE_LINK_STATUS_COUNT_V48, 14u);
+
+    /* 4.6: nothing is sent, and the encoder is the reason it says. */
+    fresh(6u);
+    w = setup_default();
+    w.as5600 = true;
+    want(&w);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_OLD);
+    polls(40);
+    CHECK_EQ(to_sense, 0u);
+
+    /* 4.9: the bit goes, and the status read takes the encoder's six. */
+    enc_wanted(9u);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], (uint16_t)LINK_SN_EN_AS5600);
+    CHECK(sense_link_enc_on(&sl));
+    CHECK_EQ(last_status_n, SENSE_LINK_STATUS_COUNT);
+    CHECK_EQ(SENSE_LINK_STATUS_COUNT, 20u);
+    CHECK(sense_link_settled(&sl));
+}
+
+TEST_CASE(the_encoder_and_the_parts_enable_in_any_order)
+{
+    enc_wanted(9u);
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    w.i228 = true;
+    w.i3221 = true;
+    want(&w);
+    polls(40);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], 7u);
+    /* A part's frame changes with all three on: the page takes it, and the
+     * encoder is back on afterwards. */
+    w.i228_uohm = 250u;
+    want(&w);
+    polls(40);
+    CHECK_EQ(pg.sense[LINK_SN_I228_SHUNT_UOHM], 250u);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], 7u);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Off again. */
+    w.as5600 = false;
+    want(&w);
+    polls(20);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], 3u);
+    CHECK_EQ(last_status_n, SENSE_LINK_STATUS_COUNT_V48);
+}
+
+TEST_CASE(the_encoders_angle_is_handed_over_while_the_read_is_fresh)
+{
+    enc_wanted(9u);
+    sense_link_enc_t e;
+    /* Before any read. */
+    CHECK(!sense_link_enc(&sl, now, &e));
+    far_enc(ENC_OK, 2345u, 10u, 120u);
+    polls(1);
+    CHECK(sense_link_enc(&sl, now, &e));
+    CHECK_EQ(e.raw, 2345u);
+    CHECK_EQ(e.samples, 10u);
+    CHECK_EQ(e.still_ms, 120u);
+    CHECK(!e.weak && !e.strong);
+    CHECK_EQ(e.taken_ms, now - 50u);
+    /* A read older than SENSE_LINK_STALE_MS gives nothing. */
+    CHECK(!sense_link_enc(&sl, e.taken_ms + SENSE_LINK_STALE_MS, &e));
+    /* The next read updates it. */
+    far_enc(ENC_OK | LINK_SN_ENC_MH, 100u, 30u, 0u);
+    polls(1);
+    CHECK(sense_link_enc(&sl, now, &e));
+    CHECK_EQ(e.raw, 100u);
+    CHECK(e.strong);
+    /* A part that stopped answering, or an angle never read: none. */
+    far_enc(LINK_SN_ENC_VALID, 100u, 30u, 0u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD, 0u, 0u, 0u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    CHECK(!sense_link_enc(&sl, now, NULL));
+    CHECK(!sense_link_enc(NULL, now, &e));
+    /* Read every 40 ms: two polls of 50 ms never go by unread. */
+    far_enc(ENC_OK, 7u, 1u, 1u);
+    uint32_t last = 0u;
+    for (int k = 0; k < 10; ++k) {
+        polls(1);
+        CHECK(sense_link_enc(&sl, now, &e));
+        CHECK(e.taken_ms != last);
+        last = e.taken_ms;
+    }
+}
+
+TEST_CASE(the_link_going_down_takes_the_angle_with_it)
+{
+    enc_wanted(9u);
+    far_enc(ENC_OK, 1u, 1u, 1u);
+    polls(1);
+    sense_link_enc_t e;
+    CHECK(sense_link_enc(&sl, now, &e));
+    sense_link_lost(&sl);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    CHECK(!sense_link_enc_on(&sl));
+}
+
+TEST_CASE(an_encoder_that_does_not_answer_is_said_once)
+{
+    enc_wanted(9u);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Never online: said after the grace, once. */
+    far_enc(0u, 0u, 0u, 0u);
+    polls((int)(SENSE_LINK_GRACE_MS / 50u) + 2);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_SILENT);
+    polls(40);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Answering: nothing to say; stopping again is said again. */
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(2);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    far_enc(LINK_SN_ENC_VALID, 5u, 1u, 1u);
+    polls(2);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_SILENT);
+    polls(10);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Something else at 0x36 is no answer. */
+    far_enc(LINK_SN_ENC_WRONG, 0u, 0u, 0u);
+    polls(10);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+}
+
+TEST_CASE(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right)
+{
+    enc_wanted(9u);
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Too weak. */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD | LINK_SN_ENC_ML
+            | LINK_SN_ENC_VALID, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_ML);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Right again, then not detected: said again. */
+    far_enc(ENC_OK, 5u, 3u, 1u);
+    polls(4);
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 4u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK_EQ(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MD, 0u);
+    /* Too strong. */
+    far_enc(ENC_OK, 5u, 5u, 1u);
+    polls(4);
+    far_enc(ENC_OK | LINK_SN_ENC_MH, 5u, 6u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MH);
+    CHECK_EQ(sense_link_enc_magnet(NULL), 0u);
+}
+
+/* STATUS MD clear: the part answers and sees no magnet.  Its count is not
+ * a position and is not handed out, whatever else the read says.  ML and MH
+ * beside MD leave it a position, handed out and marked. */
+TEST_CASE(an_angle_read_without_a_magnet_is_not_handed_out)
+{
+    enc_wanted(9u);
+    sense_link_enc_t e, before;
+    memset(&e, 0x5A, sizeof(e));
+    memcpy(&before, &e, sizeof(e));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 1234u, 7u, 300u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    CHECK_EQ(memcmp(&e, &before, sizeof(e)), 0);    /* untouched */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID | LINK_SN_ENC_ML,
+            1234u, 8u, 300u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID | LINK_SN_ENC_MH,
+            1234u, 9u, 300u);
+    polls(1);
+    CHECK(!sense_link_enc(&sl, now, &e));
+    /* The magnet back, too weak: a position again. */
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 1240u, 10u, 0u);
+    polls(1);
+    CHECK(sense_link_enc(&sl, now, &e));
+    CHECK_EQ(e.raw, 1240u);
+    CHECK(e.weak && !e.strong);
+}
+
+TEST_CASE(no_magnet_is_the_reason_only_while_the_part_says_so)
+{
+    enc_wanted(9u);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));     /* no read yet */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 1u, 1u);
+    polls(1);
+    CHECK(sense_link_enc_no_magnet(&sl, now));
+    /* A read too old says nothing about the magnet now. */
+    CHECK(!sense_link_enc_no_magnet(&sl, now + SENSE_LINK_STALE_MS));
+    /* A magnet, weak or not: an angle, so no reason for none. */
+    far_enc(ENC_OK, 5u, 2u, 1u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 5u, 3u, 1u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    /* A part that does not answer, and one with no STATUS read yet, have
+     * no magnet bits to go by. */
+    far_enc(LINK_SN_ENC_VALID, 5u, 3u, 1u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    far_enc(LINK_SN_ENC_ONLINE, 0u, 0u, 0u);
+    polls(1);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 4u, 1u);
+    polls(1);
+    CHECK(sense_link_enc_no_magnet(&sl, now));
+    sense_link_lost(&sl);
+    CHECK(!sense_link_enc_no_magnet(&sl, now));
+    CHECK(!sense_link_enc_no_magnet(NULL, now));
+}
+
+/* "Too weak" was said and the angle went on; the magnet then goes missing
+ * and the angle stops.  That is said, and so is its return. */
+TEST_CASE(a_weak_magnet_that_goes_missing_is_said_again)
+{
+    enc_wanted(9u);
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID | LINK_SN_ENC_ML,
+            5u, 3u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK_EQ(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MD, 0u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);           /* once */
+    far_enc(ENC_OK | LINK_SN_ENC_ML, 5u, 4u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MD);
+    /* Weak to strong with the magnet detected throughout: the angle is
+     * there before and after, and nothing more is said. */
+    far_enc(ENC_OK | LINK_SN_ENC_MH, 5u, 5u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+}
+
+TEST_CASE(a_magnet_is_judged_only_from_a_read_angle)
+{
+    enc_wanted(9u);
+    /* Online with no angle read yet: the status bits are still zero, and
+     * zero is not "no magnet". */
+    far_enc(LINK_SN_ENC_ONLINE, 0u, 0u, 0u);
+    polls(6);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* The angle read with the magnet detected: nothing to say. */
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* The angle read with the magnet not detected: said. */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+}
+
+TEST_CASE(a_magnet_event_waiting_survives_a_current_monitor_answering)
+{
+    /* The magnet event is bit 16.  A read that finds a current monitor
+     * answering clears that monitor's "not answering" and "another
+     * identity" events with a mask of the event word's full width; a mask
+     * of 16 bits would clear the magnet event with them. */
+    fresh(9u);
+    sense_setup_t w = setup_default();
+    w.i228  = true;
+    w.as5600 = true;
+    want(&w);
+    polls(20);
+    far_flags(LINK_SN_I228_ONLINE);
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* A weak magnet, while the caller's alert slot is busy: the event
+     * waits. */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD | LINK_SN_ENC_ML
+            | LINK_SN_ENC_VALID, 5u, 2u, 1u);
+    polls(4);
+    /* More status reads with the monitor answering. */
+    polls(10);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK_EQ(sense_link_event(&sl, now + 10000u), 0u);
+
+    /* The same, with another event handed out first: the magnet event is
+     * held back by the gap and comes with the next call after it. */
+    far_enc(ENC_OK, 5u, 3u, 1u);
+    polls(4);
+    far_flags(LINK_SN_I228_ONLINE | LINK_SN_BUS_STUCK);
+    polls(2);
+    const uint32_t t0 = now + 20000u;
+    CHECK_EQ(sense_link_event(&sl, t0), SENSE_LINK_EV_STUCK);
+    far_flags(LINK_SN_I228_ONLINE);
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 4u, 1u);
+    polls(1);
+    CHECK_EQ(sense_link_event(&sl, t0 + 100u), 0u);   /* inside the gap */
+    polls(3);
+    CHECK_EQ(sense_link_event(&sl, t0 + 10000u), SENSE_LINK_EV_ENC_MAGNET);
+}
+
+TEST_CASE(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off)
+{
+    enc_wanted(9u);
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 1u, 1u);
+    polls(4);
+    sense_setup_t w = setup_default();
+    w.as5600 = false;
+    want(&w);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+}
+
+TEST_CASE(encoder_events_come_after_the_current_monitors)
+{
+    enc_wanted(9u);
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    w.i228 = true;
+    want(&w);
+    polls(20);
+    far_enc(LINK_SN_ENC_VALID, 5u, 1u, 1u);
+    far_flags(LINK_SN_I228_ID_WRONG);
+    pg.sense[LINK_SN_I228_ID] = 0x1234u;
+    polls(2);
+    /* The monitor's identity first, the encoder's silence after. */
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_I228_WRONG);
+    polls((int)(SENSE_LINK_GRACE_MS / 50u) + 2);
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_ENC_SILENT);
+}
+
 int main(void)
 {
+    RUN(the_encoder_is_enabled_only_on_a_4_9_coprocessor);
+    RUN(the_encoder_and_the_parts_enable_in_any_order);
+    RUN(the_encoders_angle_is_handed_over_while_the_read_is_fresh);
+    RUN(the_link_going_down_takes_the_angle_with_it);
+    RUN(an_encoder_that_does_not_answer_is_said_once);
+    RUN(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right);
+    RUN(an_angle_read_without_a_magnet_is_not_handed_out);
+    RUN(no_magnet_is_the_reason_only_while_the_part_says_so);
+    RUN(a_weak_magnet_that_goes_missing_is_said_again);
+    RUN(a_magnet_is_judged_only_from_a_read_angle);
+    RUN(a_magnet_event_waiting_survives_a_current_monitor_answering);
+RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
+    RUN(encoder_events_come_after_the_current_monitors);
     RUN(nothing_is_sent_to_a_4_6_coprocessor);
     RUN(a_coprocessor_that_refuses_the_page_is_left_alone);
     RUN(the_page_is_read_first_and_only_what_differs_is_written);
@@ -1078,6 +1504,7 @@ int main(void)
     RUN(two_parts_swap_addresses_without_meeting);
     RUN(a_refused_frame_is_not_written_again_and_its_part_stays_off);
     RUN(pins_the_page_refuses_are_said_and_leave_the_parts_off);
+    RUN(one_address_for_both_monitors_keeps_the_encoder_enabled);
     RUN(unset_pins_and_one_address_are_not_written_enabled);
     RUN(a_waiting_refusal_goes_with_the_value_it_refused);
     RUN(writes_wait_for_an_idle_bank);

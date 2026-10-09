@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "as5600.h"
 #include "ina228.h"
 #include "ina3221.h"
 #include "link_msg.h"
@@ -67,8 +68,7 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm)
 bool sense_page_enabled(const sense_page_t *p)
 {
     return p != NULL
-           && (p->sense[LINK_SN_ENABLE]
-               & (LINK_SN_EN_I228 | LINK_SN_EN_I3221)) != 0u;
+           && (p->sense[LINK_SN_ENABLE] & LINK_SN_EN_ALL) != 0u;
 }
 
 uint8_t sense_page_sda(const sense_page_t *p)
@@ -135,7 +135,7 @@ static bool one_block(uint16_t sda, uint16_t scl)
  * one a later enable can take without another write. */
 static bool values_ok(const uint16_t *c)
 {
-    if (c[LINK_SN_ENABLE] > (LINK_SN_EN_I228 | LINK_SN_EN_I3221)
+    if (c[LINK_SN_ENABLE] > LINK_SN_EN_ALL
         || c[LINK_SN_KHZ] != LINK_SN_KHZ_BUS
         || c[LINK_SN_RESERVED_7] != 0u || c[LINK_SN_RESERVED_11] != 0u) {
         return false;
@@ -165,7 +165,8 @@ static bool values_ok(const uint16_t *c)
  * PRESENT, the IDs, ERRORS, the readings, the windows and a finished
  * capture's result -- so no read shows a part online, or a value scaled by
  * the old shunt, before core 1 has read under the new one.  The ESC's own
- * telemetry (registers 23 to 25) is not the bus's and stays.  CAP_SEQ
+ * telemetry (registers 23 to 25) is not the bus's and stays; the output
+ * encoder's (26 to 31) goes with the rest.  CAP_SEQ
  * counts on across set-ups.  A capture under way cannot meet this: a
  * set-up is refused while the bank drives, and a stopped bank ends it.
  */
@@ -173,6 +174,8 @@ static void forget_readings(sense_page_t *p)
 {
     memset(&p->sense[LINK_SN_FLAGS], 0,
            (size_t)(LINK_SN_ESC_VOLTAGE_CV - LINK_SN_FLAGS) * sizeof(uint16_t));
+    memset(&p->sense[LINK_SN_AS5600_FLAGS], 0,
+           (size_t)(LINK_SN_COUNT - LINK_SN_AS5600_FLAGS) * sizeof(uint16_t));
     memset(&p->servo[LINK_SS_CH_MEAN_MA], 0,
            (size_t)(LINK_SS_CH_FLAGS + 1) * sizeof(uint16_t));
     p->servo[LINK_SS_CAP_ARM]      = 0u;
@@ -414,6 +417,7 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
     cmd->parts.ina3221_shunt_uohm =
         (uint32_t)c[LINK_SN_I3221_SHUNT_DMOHM] * 100u;
     cmd->parts.ina3221_channels   = (uint8_t)c[LINK_SN_I3221_CHANNELS];
+    cmd->parts.as5600_en          = (en & LINK_SN_EN_AS5600) != 0u;
     const uint16_t *v = p->servo;
     cmd->cap_gen      = p->cap_gen;
     cmd->cap_on       = (v[LINK_SS_CAP_ARM] & LINK_SS_ARM) != 0u;
@@ -576,6 +580,39 @@ static void publish_capture(uint16_t *r, const sense_snap_t *s)
     }
 }
 
+/* The output encoder's registers 26 to 31.  The angle and its figures are
+ * the snapshot's only for a part that is online or was: a part gone
+ * offline keeps its last reading and loses ONLINE, and the still time
+ * goes on counting from it. */
+static void publish_enc(uint16_t *r, const sense_snap_t *s)
+{
+    uint16_t f = 0u;
+    if (s->enc == SENSE_PART_ONLINE) {
+        f |= LINK_SN_ENC_ONLINE;
+        if (as5600_md(s->enc_status)) {
+            f |= LINK_SN_ENC_MD;
+        }
+        if (as5600_ml(s->enc_status)) {
+            f |= LINK_SN_ENC_ML;
+        }
+        if (as5600_mh(s->enc_status)) {
+            f |= LINK_SN_ENC_MH;
+        }
+    }
+    if (s->enc == SENSE_PART_WRONG_ID) {
+        f |= LINK_SN_ENC_WRONG;
+    }
+    if (s->enc_have_angle) {
+        f |= LINK_SN_ENC_VALID;
+    }
+    r[LINK_SN_AS5600_FLAGS]     = f;
+    r[LINK_SN_AS5600_ANGLE]     = s->enc_have_angle ? s->enc_raw : 0u;
+    r[LINK_SN_AS5600_MAGNITUDE] = s->enc_have_mag ? s->enc_magnitude : 0u;
+    r[LINK_SN_AS5600_SAMPLES]   = s->enc_samples;
+    r[LINK_SN_AS5600_STILL_MS]  = s->enc_have_angle ? s->enc_still_ms : 0u;
+    r[LINK_SN_RESERVED_31]      = 0u;
+}
+
 void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
                         uint16_t run_gen)
 {
@@ -589,6 +626,7 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
         return;
     }
     publish_sense(p->sense, s, run_gen);
+    publish_enc(p->sense, s);
     publish_channels(p->servo, s);
     if (s->cap_gen == p->cap_gen) {
         publish_capture(p->servo, s);

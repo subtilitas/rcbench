@@ -118,6 +118,9 @@ SCREENS = {
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
+    # The DUT page with the output encoder on, and its angle in the
+    # MEASURED row.
+    "servo-encoder":  ("servo-encoder.png",  "servo", "dark"),
     "servo-hv":       ("servo-hv.png",       "servo", "dark"),
     "servo-run":      ("servo-run.png",      "servo", "dark"),
     "servo-result":   ("servo-result.png",   "servo", "dark"),

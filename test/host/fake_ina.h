@@ -11,6 +11,14 @@
  * a reading past the end of a range stays at the end code, and RSTACC
  * reads back as written.
  *
+ * An AS5600 (ams DS000365) answers at 0x36: STATUS at 0x0B, RAW ANGLE at
+ * 0x0C and ANGLE at 0x0E, AGC at 0x1A and MAGNITUDE at 0x1B.  A read is
+ * one register: STATUS and AGC 1 byte, RAW ANGLE, ANGLE and MAGNITUDE 2
+ * bytes, since a read that runs on into a register that suppresses the
+ * address increment is not relied on; any other width or register counts
+ * in bad_width.  A test sets status, raw, agc and magnitude.  Each part
+ * counts the clocks its reads take: 9 * (3 + bytes) + 3.
+ *
  * Faults a test can give it: a part that is not there (NACK), the next n
  * transactions or the nth since the start failing with a chosen code, the lines held low, a part
  * that acknowledges writes and keeps none, and other identities.
@@ -22,11 +30,12 @@
 #include <math.h>
 #include <string.h>
 
+#include "as5600.h"
 #include "ina228.h"
 #include "ina3221.h"
 #include "sense_bus.h"
 
-typedef enum { FAKE_INA228, FAKE_INA3221 } fake_kind_t;
+typedef enum { FAKE_INA228, FAKE_INA3221, FAKE_AS5600 } fake_kind_t;
 
 typedef struct {
     fake_kind_t kind;
@@ -41,8 +50,13 @@ typedef struct {
     double      degc;
     uint64_t    energy;          /* ENERGY and CHARGE, raw 40-bit codes    */
     uint64_t    charge;
+    uint8_t     status;          /* AS5600 STATUS                          */
+    uint16_t    raw;             /* AS5600 RAW ANGLE and ANGLE, 12 bits    */
+    uint8_t     agc;
+    uint16_t    magnitude;
     unsigned    reads[256];
     unsigned    writes[256];
+    uint64_t    clocks;          /* of the reads: 9 * (3 + n) + 3 each     */
 } fake_part_t;
 
 typedef struct {
@@ -83,7 +97,9 @@ static fake_part_t *fake_add(fake_bus_t *b, fake_kind_t kind, uint8_t addr,
     p->present   = true;
     p->shunt_ohm = shunt_ohm;
     p->maker     = 0x5449u;
-    if (kind == FAKE_INA228) {
+    if (kind == FAKE_AS5600) {
+        p->status = AS5600_STATUS_MD;
+    } else if (kind == FAKE_INA228) {
         p->device = 0x2281u;
         fake_reset228(p);
     } else {
@@ -260,6 +276,32 @@ static sense_err_t fake_fault(fake_bus_t *b)
     return SENSE_OK;
 }
 
+/* The AS5600's registers as bytes: one register a read. */
+static bool fake_read5600(const fake_part_t *p, uint8_t reg, uint8_t *buf,
+                          size_t n)
+{
+    uint16_t v;
+    size_t   want;
+    switch (reg) {
+    case AS5600_REG_STATUS:    v = p->status;    want = 1u; break;
+    case AS5600_REG_AGC:       v = p->agc;       want = 1u; break;
+    case AS5600_REG_RAW_ANGLE:
+    case AS5600_REG_ANGLE:     v = p->raw;       want = 2u; break;
+    case AS5600_REG_MAGNITUDE: v = p->magnitude; want = 2u; break;
+    default:                   return false;
+    }
+    if (n != want) {
+        return false;
+    }
+    if (n == 1u) {
+        buf[0] = (uint8_t)v;
+    } else {
+        buf[0] = (uint8_t)(v >> 8);
+        buf[1] = (uint8_t)v;
+    }
+    return true;
+}
+
 static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
                              uint8_t *buf, size_t n)
 {
@@ -273,6 +315,13 @@ static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
         return SENSE_NACK;
     }
     ++p->reads[reg];
+    p->clocks += 9u * (3u + (unsigned)n) + 3u;
+    if (p->kind == FAKE_AS5600) {
+        if (!fake_read5600(p, reg, buf, n)) {
+            ++b->bad_width;
+        }
+        return SENSE_OK;
+    }
     const size_t want = (p->kind == FAKE_INA228) ? fake_width228(reg) : 2u;
     if (n != want) {
         ++b->bad_width;

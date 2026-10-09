@@ -26,9 +26,9 @@
  *
  * Every tick reads CH1, the pair when on and one INA228 register, and
  * every second tick one item of the 50 Hz rotation: at most 690 µs of bus
- * time a tick.  Bus time over a second, arithmetic only: 32.9 %, 55.7 %
- * with the pair.  Not counted: the controller's own time between
- * transactions, not measured.  The bus runs at 400 kHz only: at 100 kHz a
+ * time a tick without the encoder.  Bus time over a second, arithmetic
+ * only: 32.9 %, 55.7 % with the pair.  Not counted: the controller's own
+ * time between transactions, not measured.  The bus runs at 400 kHz only: at 100 kHz a
  * read takes 480 to 750 µs, and the tick does not fit.  A probe is 10
  * transactions on the INA228, 1.1 ms, and 4 on the INA3221: the ticks it
  * covers run late.
@@ -90,6 +90,34 @@
  * up to it.  A capture with no CH1 sample in those 50 ms ends as lost:
  * the INA3221 did not answer.
  *
+ * The output encoder.  An AS5600 on the same bus (as5600.h), when enabled,
+ * is read on the ticks that read no rotation item -- every second tick,
+ * 500 Hz: STATUS (1 byte) and RAW ANGLE (2 bytes), two transactions, 217.5
+ * µs of bus time.  Every SENSE_ENC_MAG_EVERY-th slot (20 Hz) reads RAW ANGLE,
+ * AGC (1 byte) and MAGNITUDE (2 bytes) instead, 337.5 µs: the angle is read
+ * in every slot, STATUS in 24 of 25.  A transaction of N bytes is 9 * (3 + N)
+ * + 3 clocks, 2.5 µs each at 400 kHz.  An odd tick is CH1, the pair when on,
+ * the INA228's slot and the encoder: 480 µs, 600 µs in a field slot, and
+ * with the pair 720 µs, 840 µs in a field slot; an even tick stays under
+ * 690 µs.  With the encoder the bus time over a second is 44.0 %, 66.8 %
+ * with the pair.  The angle is kept as the 12-bit count; the schedule
+ * judges nothing from it but how long it has held still.
+ *
+ * Still time.  The angle holds an anchor, the count and the time of the
+ * last sample that lay more than SENSE_ENC_STILL_TOL counts from the
+ * previous anchor on the circle; that sample is the new anchor.
+ * sense_sched_enc_still_ms() is the time since the anchor, saturating at
+ * 65535 ms: how long the output has stayed within SENSE_ENC_STILL_TOL
+ * counts of where it is.  A move that settles gives the time its last
+ * anchor was set -- the moment the angle came within the tolerance of its
+ * final value -- as now minus the still time, to the sample interval of
+ * 2 ms.  The first sample after a set-up, and the first after the part
+ * has been offline, set the anchor.  A sample whose STATUS has MD clear (no
+ * magnet, as5600.h) is no position: it clears the anchor, the still time
+ * reads 0, and the first sample with MD set is the new anchor.  A field
+ * slot reads no STATUS and goes by the last one read, in the slot 2 ms
+ * before.
+ *
  * Not known: the INA3221's noise at 140 µs conversions, and so whether 4
  * samples of filter and 10 of settling suit it; the controller's time
  * between transactions.
@@ -102,6 +130,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "as5600.h"
 #include "ina228.h"
 #include "ina3221.h"
 #include "sense_bus.h"
@@ -119,6 +148,10 @@ extern "C" {
  *  far above the band arrives 3 ms late.  Chosen, not measured: the noise
  *  is not known. */
 #define SENSE_CAP_FILTER_N    4u
+/** The encoder's tolerance for holding still: 12 counts, 1.05 degrees. */
+#define SENSE_ENC_STILL_TOL  12u
+/** One slot in this many reads AGC and MAGNITUDE besides the angle. */
+#define SENSE_ENC_MAG_EVERY  25u
 /** Samples in a row at an end held harder than the servo moves: 10 ms. */
 #define SENSE_CAP_SETTLE_N   10u
 /** The capture's lag, added to the window: the filter's 3 ms, up to 1 ms
@@ -166,6 +199,7 @@ typedef struct {
     uint8_t  ina3221_addr;
     uint32_t ina3221_shunt_uohm;
     uint8_t  ina3221_channels;     /**< bit 0 CH1 to bit 2 CH3           */
+    bool     as5600_en;            /**< the output encoder, at 0x36      */
 } sense_sched_cfg_t;
 
 /** One complete window of one source. */
@@ -260,6 +294,22 @@ typedef struct {
     servo_move_t mv;
 } sense_cap_t;
 
+/** The output encoder as last read. */
+typedef struct {
+    as5600_t dev;
+    bool     have_angle;   /**< raw holds a reading of this set-up          */
+    uint8_t  status;       /**< STATUS as last read                         */
+    uint16_t raw;          /**< RAW ANGLE, 0 to 4095                        */
+    uint16_t samples;      /**< angle reads taken, modulo 65536             */
+    bool     have_mag;
+    uint8_t  agc;
+    uint16_t magnitude;
+    uint32_t slots;        /**< encoder slots taken                         */
+    uint16_t anchor;       /**< the count the still time is held to         */
+    uint64_t anchor_ms;    /**< when it was set                             */
+    bool     anchored;     /**< an anchor is set                            */
+} sense_enc_t;
+
 typedef struct {
     sense_sched_io_t    io;
     sense_sched_cfg_t   cfg;
@@ -286,6 +336,7 @@ typedef struct {
     uint16_t flags;          /**< INA3221 Mask/Enable as last read        */
     sense_run_t run;
     sense_cap_t cap;
+    sense_enc_t enc;
     /* The last SENSE_CH1_HISTORY CH1 samples, oldest overwritten. */
     sense_ch1_t ch1[SENSE_CH1_HISTORY];
     uint8_t  ch1_n, ch1_head;
@@ -324,6 +375,10 @@ void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us);
 
 /** Stop a capture; its count stays. */
 void sense_sched_cap_disarm(sense_sched_t *s);
+
+/** How long the encoder's angle has stayed within SENSE_ENC_STILL_TOL
+ *  counts of its anchor, ms, saturating at 65535; 0 with no anchor. */
+uint16_t sense_sched_enc_still_ms(const sense_sched_t *s);
 
 #ifdef __cplusplus
 }

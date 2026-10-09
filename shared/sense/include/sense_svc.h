@@ -39,6 +39,11 @@
  *            asked: a read at it would clear the flags its last register
  *            pointer holds.  16 addresses at 400 kHz are about 0.8 ms of
  *            bus time, in the tick they run in.
+ *   Encoder  with the AS5600 enabled, the bus is opened and the schedule
+ *            reads the part at 0x36 on the ticks that read no rotation item
+ *            (sense_sched.h).  The scan does not look for it: its address
+ *            is fixed and outside 0x40 to 0x4F, and it counts for nothing in
+ *            "a part is missing".
  *   Snapshot every field from the schedule, with the generations the
  *            step has taken, so core 0 can tell a reading of the set-up,
  *            run and capture in force from one that came before them.
@@ -103,6 +108,17 @@ typedef struct {
     int32_t  cap_peak_ua, cap_mean_ua;
     uint32_t cap_samples;
     bool     cap_clipped;
+    /* The output encoder (AS5600). */
+    sense_state_t enc;
+    bool     enc_have_angle;     /**< enc_raw is a reading of this set-up  */
+    uint8_t  enc_status;         /**< STATUS as last read                  */
+    uint8_t  enc_id;             /**< STATUS at the probe                  */
+    uint16_t enc_raw;            /**< RAW ANGLE, 0 to 4095                 */
+    uint16_t enc_samples;        /**< angle reads taken, modulo 65536      */
+    uint16_t enc_still_ms;       /**< held within the tolerance, ms        */
+    bool     enc_have_mag;
+    uint8_t  enc_agc;
+    uint16_t enc_magnitude;
 } sense_snap_t;
 
 /** The wire, the clock, the recovery and the pins. */

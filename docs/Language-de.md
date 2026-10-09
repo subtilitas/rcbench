@@ -195,7 +195,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 73 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 74 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein deutscher Text
 
 - breiter ist als die Box, die `gfx_text_in()` bekam,

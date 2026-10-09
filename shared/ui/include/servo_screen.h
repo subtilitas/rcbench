@@ -140,6 +140,16 @@ void servo_screen_knob_cancel(void);
 /** Take the pending command, if any.  Cleared by reading. */
 bool servo_screen_take(servo_cmd_t *out);
 
+/**
+ * A reading of the output encoder (an AS5600 on the horn shaft), each one
+ * once, in the order they arrive.  With AS5600 on in SETUP the MEASURED row
+ * shows its angle from the centre count, and a run reads it for the angle
+ * results in its CSV and report.  A reading that is not valid -- the sensor
+ * not answering, or answering and detecting no magnet -- shows "---", and
+ * ENC CENTRE takes nothing from it.
+ */
+void servo_screen_encoder(const servo_test_enc_t *e);
+
 /** What the output is actually doing, from the bench or from the model. */
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 
@@ -200,6 +210,12 @@ void servo_screen_set_sweep(bool able);
 /** Whether a surface is bound, as the panel last read the binding: SWEEP
  *  is offered only then, since a sweep of nothing never starts. */
 void servo_screen_set_surfaces(bool any);
+
+/** Whether the coprocessor holds the output encoder enabled, as SENSE's
+ *  ENABLE register was last read or written.  The SENSE set-up is written
+ *  only while the bank is disarmed: a run started with the AS5600 setting on
+ *  and this false has no angles, and takes no angle columns. */
+void servo_screen_set_enc_held(bool held);
 
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */

@@ -21,7 +21,7 @@ static uint64_t now_us(const sense_svc_t *v)
 
 static bool any_part(const sense_sched_cfg_t *c)
 {
-    return c->ina228_en || c->ina3221_en;
+    return c->ina228_en || c->ina3221_en || c->as5600_en;
 }
 
 /* The set-up: the bus closed, and opened again with a fresh schedule on
@@ -196,6 +196,18 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
     out->have_win    = s->have_last;
     memcpy(out->win, s->last, sizeof(out->win));
     out->run         = s->run;
+    out->enc         = as5600_state(&s->enc.dev);
+    if (s->cfg.as5600_en) {
+        out->enc_have_angle = s->enc.have_angle;
+        out->enc_status     = s->enc.status;
+        out->enc_id         = (uint8_t)s->enc.dev.part.id_device;
+        out->enc_raw        = s->enc.raw;
+        out->enc_samples    = s->enc.samples;
+        out->enc_still_ms   = sense_sched_enc_still_ms(s);
+        out->enc_have_mag   = s->enc.have_mag;
+        out->enc_agc        = s->enc.agc;
+        out->enc_magnitude  = s->enc.magnitude;
+    }
 }
 
 void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out)

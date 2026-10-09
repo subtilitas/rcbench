@@ -153,6 +153,19 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "sns_scl", "Sensor SCL", "The GPIO after SDA; -1 until wired", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
     /*
+     * The output encoder (protocol 4.9): an AS5600 magnetic angle sensor on
+     * the horn shaft of the servo under test, at 0x36 on the sensor bus
+     * above.  AS5600 centre is the sensor's 12-bit count with the servo at
+     * its neutral; angles are shown and reported from it.  The SERVO
+     * screen's ENC CENTRE row sets it from the live reading.
+     */
+    [SET_ENC_EN] = {
+        "enc_en", "AS5600", "Angle sensor on the servo shaft", "",
+        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_ENC_CENTRE] = {
+        "enc_centre", "AS5600 centre", "Count at neutral; 4096 a turn", "",
+        SET_CAT_IFACE, SET_TYPE_INT, 0, 4095, 1, 0, NULL, 0 },
+    /*
      * The phase tap, written to the coprocessor's TONE page (protocol
      * 4.8): one GPIO that reads an ESC's beeps off one motor phase.  The
      * ranges and defaults are the page's (LINK_TN_*): the pin GP22 (pad 29),
