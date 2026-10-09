@@ -309,6 +309,20 @@ static struct {
     int      drawn_pulse[2];
 
     servo_cmd_t pending;
+    /* The knob's position command waiting in `pending`: valid while
+     * post_count is still knob_post, with what to put back if it is
+     * withdrawn -- the commanded angle before the knob, and whether a
+     * position was pending before it. */
+    bool     knob_live;
+    bool     knob_had_cmd;
+    bool     knob_had_driving;
+    uint32_t knob_post;
+    float    knob_prev_deg;
+    /* A finger owned the dial at some point since knob_frame(). */
+    bool     knob_finger;
+    /* The settings, a sweep or a test owned the horn at some point since
+     * knob_frame(), even if it let go again before the turn is applied. */
+    bool     knob_owned;
 
     /*
      * Arming, which this screen needs as much as MOTOR & ESC does: until the
@@ -1604,6 +1618,7 @@ bool servo_screen_take(servo_cmd_t *out)
     }
     *out = s.pending;
     s.pending.kind = SERVO_CMD_NONE;
+    s.knob_live = false;
     return true;
 }
 
@@ -3076,7 +3091,74 @@ static bool on_the_dial(int px, int py, float *deg)
     return true;
 }
 
-static void event(const touch_event_t *evt)
+/* Latches that something other than the knob holds the horn. */
+static void knob_note_owner(void)
+{
+    if (s.ov_open || servo_test_running(&s.test) || s.sweeping || s.paused) {
+        s.knob_owned = true;
+    }
+}
+
+void servo_screen_knob_frame(void)
+{
+    s.knob_finger = false;
+    s.knob_owned  = false;
+    knob_note_owner();
+}
+
+void servo_screen_knob_cancel(void)
+{
+    if (!s.knob_live) {
+        return;
+    }
+    s.knob_live = false;
+    if (s.post_count != s.knob_post || s.pending.kind != SERVO_CMD_POSITION) {
+        return;     /* something else was posted over it since */
+    }
+    s.commanded_deg = s.knob_prev_deg;
+    s.driving       = s.knob_had_driving;
+    ++s.ctrl_rev;
+    if (s.knob_had_cmd) {
+        s.pending.value_us = deg_to_us(s.commanded_deg);
+    } else {
+        s.pending.kind = SERVO_CMD_NONE;
+    }
+}
+
+void servo_screen_knob(float span_fraction)
+{
+    knob_note_owner();
+    if (span_fraction == 0.0f || s.dragging || s.knob_finger
+        || s.knob_owned) {
+        return;
+    }
+    /*
+     * Posts only into an empty slot or over a position, which it may replace
+     * as a drag does.  A release, an arm, a disarm, a hold or a sweep waiting
+     * to be taken is not the knob's to overwrite; its delta is dropped.
+     */
+    if (s.pending.kind != SERVO_CMD_NONE
+        && s.pending.kind != SERVO_CMD_POSITION) {
+        return;
+    }
+    const float before = s.commanded_deg;
+    const bool  was_knob = s.knob_live && s.post_count == s.knob_post;
+    const bool  had_cmd  = s.pending.kind == SERVO_CMD_POSITION;
+    const bool  was_driving = s.driving;
+    const uint32_t posts = s.post_count;
+    command(before + span_fraction * 2.0f * s.travel_deg);
+    if (s.post_count != posts) {
+        if (!was_knob) {
+            s.knob_prev_deg = before;
+            s.knob_had_cmd  = had_cmd;
+            s.knob_had_driving = was_driving;
+        }
+        s.knob_live = true;
+        s.knob_post = s.post_count;
+    }
+}
+
+static void event_body(const touch_event_t *evt)
 {
     if (evt == NULL) {
         return;
@@ -3156,6 +3238,7 @@ static void event(const touch_event_t *evt)
             test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.dragging = true;
+            s.knob_finger = true;
             s.drag_id  = evt->point.id;
             command(deg);
             return;
@@ -3246,6 +3329,7 @@ static void event(const touch_event_t *evt)
     }
 
     if (s.dragging && evt->point.id == s.drag_id) {
+        s.knob_finger = true;
         if (evt->type == TOUCH_EVENT_MOVE) {
             float deg;
             if (on_the_dial(px, py, &deg)) {
@@ -4331,7 +4415,7 @@ static void remember_shown(void)
     }
 }
 
-static void tick(float dt_s)
+static void tick_body(float dt_s)
 {
     /* The screen's own clock, for the sweep it draws. */
     if (dt_s > 0.0f) {
@@ -4787,6 +4871,20 @@ static void cancel(void)
     s.ov_pressed = OP_NONE;
     ++s.arm_rev;
     ++s.ctrl_rev;
+}
+
+/* The owners the knob yields to can end inside a frame: each tick and each
+ * event latches them, so a turn applied after the frame sees them. */
+static void tick(float dt_s)
+{
+    tick_body(dt_s);
+    knob_note_owner();
+}
+
+static void event(const touch_event_t *evt)
+{
+    event_body(evt);
+    knob_note_owner();
 }
 
 static const ui_screen_t k_screen = {

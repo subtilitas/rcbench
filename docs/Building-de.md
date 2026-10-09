@@ -20,7 +20,7 @@ rcbench/
     settings/             typisiertes Schema und Werte
     logfile/              Zahlen- und CSV-Parsing
     link/                 Page-Protokoll · CAN-Framing · Watchdogs · Diagnose
-    bench/                bench_state · Telemetriesimulator · Log-Writer
+    bench/                bench_state · Telemetriesimulator · Log-Writer · Drehknopf-Decoder
     outputs/              Kanäle · Treibertabelle · Arming, Slew und Staleness
     safety/               Heartbeat-Generator (Panel) und -Monitor (Koprozessor)
     servo/                Endlagen- und Abgleichsuche · Servomodell
@@ -87,6 +87,35 @@ ESP-IDF liest `sdkconfig.defaults` nur, wenn es `sdkconfig` erzeugt. Ein Baum,
 der schon einmal gebaut wurde, hat bereits `firmware/panel/sdkconfig`, und
 diese Datei gewinnt: nach einer Änderung der Defaults löschen, sonst wirkt die
 Änderung nicht auf das Image.
+
+## Verdrahtung des Drehknopfs
+
+Der Drehknopf ist ein magnetischer Winkelsensor AS5600 am I2C-Anschluss
+(I2C: Inter-Integrated Circuit) des Panels, der 4-poligen PH2.0-Buchse des
+Waveshare ESP32-S3-Touch-LCD-7. Der Anschluss ist GPIO8 (SDA) und GPIO9 (SCL),
+der Bus von Touch-Controller und CH422G-Expander, über den Pegelumsetzer der
+Platine. Pinbelegung aus dem Text des Platinenschaltplans, nicht gemessen:
+1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Vor dem Anschließen mit einem Multimeter
+prüfen.
+
+| AS5600-Pin | Anschluss an |
+| --- | --- |
+| VDD3V3 und VDD5V | 3,3 V von I2C_VCC, beide Pins verbunden, was die 3,3-V-Versorgung des Datenblatts ist. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3; ein Breakout mit eigenem Regler nimmt seinen Versorgungspin von I2C_VCC mit 3,3 V |
+| GND | GND |
+| SDA, SCL | SDA, SCL |
+| DIR | GND oder VCC, nie offen. GND: Der Winkel steigt, wenn der Magnet von der Chipoberseite gesehen im Uhrzeigersinn dreht (Datenblatt; hier nicht geprüft). VCC kehrt es um |
+| PGO | GND |
+| OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
+
+Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip. Der
+AS5600 meldet ein zu schwaches oder zu starkes Feld im STATUS-Register, und
+das Panel behandelt beides als keine Antwort. Der Sensor liest unter 0x36, was
+fest ist. Diese Adresse wird als frei angenommen: Sie liegt außerhalb der
+Kommandoadressen des CH422G in dessen Datenblatt, Waveshares Wiki
+reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware
+geprüft. Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet
+wird. [Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er
+tut.
 
 ## Befehle
 

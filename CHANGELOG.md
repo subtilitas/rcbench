@@ -11,6 +11,21 @@ The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
 in, a finger that moves more than 10 px pans the view; a shorter touch still
 selects a value. With it off, one finger moves the cursor and two fingers pan,
 as before.
+### Added
+
+- **A rotary knob on the panel.** An AS5600 magnetic angle sensor on the
+  panel's I2C terminal (GPIO8 and GPIO9, 0x36) turns the throttle on MOTOR &
+  ESC and the horn on SERVO by how far it turns, with the touch slider's
+  rules: relative, never arming, back to zero on a disarm, dropped on a frame
+  that lost touch events or changed screen, never replacing a waiting arm,
+  disarm, release or peak reset, and a sensor that stops answering adds nothing.
+  SETUP, APPLICATION has Rotary knob (OFF by default) and Knob scale (90 to
+  720 deg of knob per full slider span, 270 by default). A task of its own
+  reads STATUS, RAW ANGLE and MAGNITUDE as three transactions every 10 ms,
+  each with a 5 ms bus timeout.
+  `shared/bench/knob.c` decodes RAW ANGLE, STATUS and MAGNITUDE and maps
+  steps across the 4095 to 0 wrap. Not run on hardware; 0x36 is assumed free
+  next to the CH422G.
 
 ## 0.14.0 - 2026-10-09
 

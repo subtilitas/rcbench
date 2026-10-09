@@ -101,6 +101,12 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_PLOT_PAN] = {
         "plot_pan1", "One finger pans", "Zoomed log plot: a drag moves the view", "",
         SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_KNOB_EN] = {
+        "knob_en", "Rotary knob", "AS5600 turns the active slider", "",
+        SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_KNOB_SCALE] = {
+        "knob_scale", "Knob scale", "Degrees of knob per full slider span", "deg",
+        SET_CAT_APP, SET_TYPE_INT, 90, 720, 10, 270, NULL, 0 },
 
     /*
      * The current monitors, on the coprocessor's I2C (Inter-Integrated

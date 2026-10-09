@@ -127,6 +127,7 @@ TRACKED = [
     "shared/bench/supply_link.c",
     "shared/bench/sense_link.c",
     "shared/bench/tone_link.c",
+    "shared/bench/knob.c",
     "shared/bench/log_writer.c",
     "shared/sense/sense_bus.c",
     "shared/sense/ina228.c",

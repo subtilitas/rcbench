@@ -21,7 +21,7 @@ rcbench/
     logfile/              number and CSV parsing
     link/                 page protocol · CAN framing · watchdogs · diagnosis
     artwork/              the panel's cache of board photographs
-    bench/                bench_state · telemetry simulator · log writer
+    bench/                bench_state · telemetry simulator · log writer · rotary knob decode
     outputs/              channels · driver table · arming, slew and staleness
     safety/               heartbeat generator (panel) and monitor (coprocessor)
     servo/                limit and synchronisation searches · servo model
@@ -87,6 +87,34 @@ ESP-IDF reads `sdkconfig.defaults` only when it generates `sdkconfig`. A tree
 that has been built before already has `firmware/panel/sdkconfig`, and that
 file wins: delete it after changing the defaults, or the change has no effect
 on the image.
+
+## Rotary knob wiring
+
+The rotary knob is an AS5600 magnetic angle sensor on the panel's I2C
+(Inter-Integrated Circuit) terminal, the 4-pin PH2.0 connector on the
+Waveshare ESP32-S3-Touch-LCD-7. The terminal is GPIO8 (SDA) and GPIO9 (SCL),
+the bus the touch controller and the CH422G expander use, through the
+board's level translator. Pin order from the board schematic's text, not
+measured: 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Check it with a meter before
+connecting.
+
+| AS5600 pin | Connect to |
+| --- | --- |
+| VDD3V3 and VDD5V | 3.3 V from I2C_VCC, both pins tied together, which is the datasheet's 3.3 V supply. The board's solder jumper feeds I2C_VCC from 3V3 as shipped; a breakout with its own regulator takes its supply pin from I2C_VCC at 3.3 V |
+| GND | GND |
+| SDA, SCL | SDA, SCL |
+| DIR | GND or VCC, never open. GND: the angle rises when the magnet turns clockwise seen from the chip's top (datasheet; not checked here). VCC reverses it |
+| PGO | GND |
+| OUT | not connected; the panel reads the angle over I2C |
+
+The magnet is a diametrically magnetised disc centred over the chip. The
+AS5600 reports a field too weak or too strong in its STATUS register, and the
+panel treats either as no answer. The sensor reads at 0x36, which is fixed.
+That address is assumed free: it is outside the CH422G's command addresses in
+its datasheet, Waveshare's wiki reserves 0x30 to 0x3F on this bus, and it is
+not checked on hardware. The knob is off until SETUP, APPLICATION, Rotary
+knob is switched on. [Screens](Screens.md#application-the-rotary-knob)
+describes what it does.
 
 ## Commands
 

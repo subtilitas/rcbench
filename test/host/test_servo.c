@@ -1425,6 +1425,213 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
     free(early);
 }
 
+/* ------------------------------------------------------------------- knob */
+
+/* The rotary knob moves the horn by a fraction of its travel, relative to
+ * where it is, and leaves the horn to a finger, a sweep and the settings. */
+TEST_CASE(the_knob_moves_the_horn_by_how_far_it_turned)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    const servo_cmd_t a = last_cmd();
+    CHECK_EQ(a.kind, SERVO_CMD_POSITION);
+    CHECK(a.value_us > 1500);
+    const int first = (int)a.value_us - 1500;
+
+    servo_screen_knob(0.25f);
+    const servo_cmd_t b = last_cmd();
+    CHECK(abs(((int)b.value_us - 1500) - 2 * first) <= 2);
+
+    servo_screen_knob(-0.5f);
+    const servo_cmd_t c = last_cmd();
+    CHECK(abs((int)c.value_us - 1500) <= 2);
+    CHECK_EQ(servo_screen_commanded(), c.value_us);
+}
+
+TEST_CASE(the_knob_stops_at_the_servos_travel)
+{
+    fresh();
+    servo_screen_knob(9.0f);
+    const servo_cmd_t hi = last_cmd();
+    servo_screen_knob(0.1f);
+    CHECK_EQ(servo_screen_commanded(), hi.value_us);
+    servo_screen_knob(-9.0f);
+    const servo_cmd_t lo = last_cmd();
+    CHECK(lo.value_us < 1500 && hi.value_us > 1500);
+    CHECK(abs((int)(hi.value_us - 1500) - (int)(1500 - lo.value_us)) <= 2);
+}
+
+TEST_CASE(the_knob_never_arms_the_servo_bench)
+{
+    fresh();
+    for (int i = 0; i < 30; ++i) {
+        servo_screen_knob(0.07f);
+        const servo_cmd_t c = last_cmd();
+        CHECK(c.kind == SERVO_CMD_POSITION || c.kind == SERVO_CMD_NONE);
+    }
+}
+
+TEST_CASE(a_knob_that_does_not_turn_commands_nothing_on_the_servo)
+{
+    fresh();
+    servo_screen_knob(0.0f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(a_finger_on_the_dial_owns_the_horn_against_the_knob)
+{
+    fresh();
+    int x, y;
+    dial_at(0.0f, ARC_R - 30, &x, &y);
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    (void)last_cmd();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    servo_screen_knob_frame();          /* the next frame */
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+/* A finger that went down and came up inside the frame owned the dial in it:
+ * the delta collected in that frame is dropped although dragging is clear
+ * again when it is applied. */
+TEST_CASE(a_finger_that_lifted_in_the_frame_still_owned_the_dial)
+{
+    fresh();
+    int x, y;
+    dial_at(0.0f, ARC_R - 30, &x, &y);
+    servo_screen_knob_frame();
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    (void)last_cmd();
+    const uint16_t held = servo_screen_commanded();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(servo_screen_commanded(), held);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* A drag begun in an earlier frame and ended in this one. */
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    servo_screen_knob_frame();
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    (void)last_cmd();
+    const uint16_t held2 = servo_screen_commanded();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(servo_screen_commanded(), held2);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+/* Withdrawing the knob's waiting command puts the horn back and sends
+ * nothing; a position pending before the knob moved it stays pending. */
+TEST_CASE(a_withdrawn_knob_command_restores_the_horn)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    servo_screen_knob(0.25f);
+    servo_screen_knob_cancel();
+    CHECK(abs((int)servo_screen_commanded() - 1500) <= 2);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    servo_screen_knob(0.25f);
+    const servo_cmd_t taken = last_cmd();          /* taken */
+    servo_screen_knob_cancel();
+    CHECK_EQ(servo_screen_commanded(), taken.value_us);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(a_withdrawn_knob_command_leaves_a_position_from_a_touch)
+{
+    fresh();
+    int x, y;
+    dial_at(20.0f, ARC_R - 30, &x, &y);
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    const uint16_t touched = servo_screen_commanded();
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    CHECK(servo_screen_commanded() != touched);
+    servo_screen_knob_cancel();
+    CHECK_EQ(servo_screen_commanded(), touched);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(c.value_us, touched);
+}
+
+TEST_CASE(a_withdrawal_does_not_touch_a_command_posted_after_the_knob)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    tap(716, 350 + 16);                 /* RELEASE, over the position */
+    servo_screen_knob_cancel();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+}
+
+TEST_CASE(the_knob_leaves_the_horn_to_the_settings_panel)
+{
+    fresh();
+    open_settings();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    close_settings();
+    servo_screen_knob_frame();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+/* The settings open and closed again inside the frame still own it. */
+TEST_CASE(a_turn_in_a_frame_where_the_settings_were_open_is_dropped)
+{
+    fresh();
+    servo_screen_knob_frame();
+    open_settings();
+    close_settings();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    servo_screen_knob_frame();
+    servo_screen_knob(0.4f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+}
+
+/* A withdrawn first command leaves the servo idle: a later change of SPEED
+ * restates nothing. */
+TEST_CASE(a_withdrawn_knob_command_leaves_the_servo_idle)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    servo_screen_knob_cancel();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    tap(SPEED_X_HALF, SPEED_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/* The knob posts only over a position or into an empty slot: a release or a
+ * completed arm waiting to be taken stays, and the delta is dropped. */
+TEST_CASE(a_pending_release_is_not_overwritten_by_the_knob)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    (void)last_cmd();
+    tap(716, 350 + 16);                 /* RELEASE */
+    const uint16_t before = servo_screen_commanded();
+    servo_screen_knob(0.25f);
+    CHECK_EQ(servo_screen_commanded(), before);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+}
+
+TEST_CASE(a_completed_arm_is_not_overwritten_by_the_servo_knob)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    servo_screen_knob(0.25f);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+}
+
 /* ------------------------------------------------------------------ sweep */
 
 #define SWEEP_X (ARM_X + ARM_W / 2)
@@ -1518,6 +1725,40 @@ TEST_CASE(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
     const uint16_t held_at = servo_screen_commanded();
     CHECK(held_at > 1880u && held_at <= 1900u);
+}
+
+/* A sweep, running or paused, owns the horn: the knob does not take it. */
+TEST_CASE(the_knob_does_not_take_the_horn_from_a_sweep)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK(servo_screen_sweeping());
+
+    (void)pause_go();
+    CHECK(servo_screen_paused());
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/* A sweep that ended before the turn is applied still owned the frame. */
+TEST_CASE(a_turn_in_a_frame_where_a_sweep_ran_is_dropped)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    servo_screen_knob_frame();          /* the frame starts mid-sweep */
+    servo_screen_set_sweep(false);      /* ends it, with a RELEASE */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    servo_screen_knob_frame();
+    servo_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 }
 
 /* A finger on the dial, CENTRE, RELEASE, a disarm and leaving each end the
@@ -4981,6 +5222,22 @@ int main(void)
     RUN(the_set_points_go_back_whichever_screen_is_up);
     RUN(the_set_points_wait_for_a_sample_after_the_off);
     RUN(start_test_starts_a_second_run);
+    RUN(the_knob_moves_the_horn_by_how_far_it_turned);
+    RUN(the_knob_stops_at_the_servos_travel);
+    RUN(the_knob_never_arms_the_servo_bench);
+    RUN(a_knob_that_does_not_turn_commands_nothing_on_the_servo);
+    RUN(a_finger_on_the_dial_owns_the_horn_against_the_knob);
+    RUN(a_finger_that_lifted_in_the_frame_still_owned_the_dial);
+    RUN(a_withdrawn_knob_command_restores_the_horn);
+    RUN(a_withdrawn_knob_command_leaves_the_servo_idle);
+    RUN(a_turn_in_a_frame_where_the_settings_were_open_is_dropped);
+    RUN(a_turn_in_a_frame_where_a_sweep_ran_is_dropped);
+    RUN(a_withdrawn_knob_command_leaves_a_position_from_a_touch);
+    RUN(a_withdrawal_does_not_touch_a_command_posted_after_the_knob);
+    RUN(the_knob_leaves_the_horn_to_the_settings_panel);
+    RUN(a_pending_release_is_not_overwritten_by_the_knob);
+    RUN(a_completed_arm_is_not_overwritten_by_the_servo_knob);
+    RUN(the_knob_does_not_take_the_horn_from_a_sweep);
     RUN(the_start_line_follows_the_report_being_taken);
     RUN(arm_first_goes_once_the_bench_is_armed);
     RUN(a_run_outside_the_caps_is_refused_before_the_warning);
