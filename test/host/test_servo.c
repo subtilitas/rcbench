@@ -4298,7 +4298,7 @@ static void bench_frames(uint32_t ms)
             if ((int32_t)(b.now - b.enc_next) >= 0) {
                 b.enc_next += 40u;
                 const servo_test_enc_t e = { true, raw,
-                    (uint16_t)(b.now - b.enc_anchor_ms), b.now };
+                    (uint16_t)(b.now - b.enc_anchor_ms), b.now, false };
                 servo_screen_encoder(&e);
             }
         }
@@ -5124,7 +5124,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     scr->render(&cv, 0);
     gfx_color_t *none = malloc((size_t)W * H * sizeof(gfx_color_t));
     memcpy(none, fb, (size_t)W * H * sizeof(gfx_color_t));
-    const servo_test_enc_t e = { true, 3100u, 0u, 1000u };
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false };
 
     /* AS5600 off in SETUP: the reading is ignored. */
     CHECK(!settings_get_bool(SET_ENC_EN));
@@ -5143,7 +5143,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     memcpy(shown, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     /* Another count, another angle; the same count, the same picture. */
-    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u };
+    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u, false };
     servo_screen_encoder(&e2);
     scr->render(&cv, 0);
     CHECK(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
@@ -5152,7 +5152,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     CHECK_EQ(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
     /* A reading that is not valid is the dashes again. */
-    const servo_test_enc_t gone = { false, 0u, 0u, 1040u };
+    const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false };
     servo_screen_encoder(&gone);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
@@ -5179,14 +5179,14 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
 
     /* A live count is the centre. */
-    const servo_test_enc_t e = { true, 2871u, 0u, 5000u };
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false };
     servo_screen_encoder(&e);
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 
     /* A reading that has gone sets nothing; with the encoder off in SETUP
      * the row is faint and sets nothing either. */
-    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u };
+    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false };
     servo_screen_encoder(&e2);
     settings_set(SET_ENC_EN, 0.0f);
     tap(ROW_L_X, ROW_Y(3));
@@ -5201,7 +5201,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     tap(ROW_L_X, ROW_Y(2));                    /* AS5600 on */
     CHECK(settings_get_bool(SET_ENC_EN));
     settings_set(SET_ENC_CENTRE, 1000.0f);
-    const servo_test_enc_t e = { true, 2871u, 0u, 5000u };
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false };
     servo_screen_encoder(&e);
 
     /* The link drops: ENC CENTRE takes nothing from the last count. */
@@ -5220,7 +5220,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     servo_screen_set_link(true);
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
-    const servo_test_enc_t f = { true, 1500u, 0u, 6000u };
+    const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false };
     servo_screen_encoder(&f);
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);
@@ -5232,6 +5232,7 @@ TEST_CASE(a_run_with_the_encoder_on_writes_the_angle_columns)
     short_runs();
     settings_set(SET_ENC_EN, 1.0f);
     settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_screen_set_enc_held(true);
     b.enc = true;
     hold_start(2.3f);
     CHECK(servo_screen_testing());
@@ -5261,8 +5262,30 @@ TEST_CASE(a_run_with_the_encoder_off_writes_the_old_columns)
     CHECK(strstr(b.report, "ENCODER") == NULL);
 }
 
+/* The SENSE set-up is written only while the bank is disarmed: an AS5600
+ * switched on while armed is not in the coprocessor, and a run started then
+ * has no angles to log. */
+TEST_CASE(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 3000.0f);
+    servo_screen_set_enc_held(false);
+    b.enc = true;
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    bench_frames(1000u);
+    CHECK(strstr(b.csv_head, "angle") == NULL);
+    CHECK(strstr(b.report, "ENCODER") == NULL);
+}
+
 int main(void)
 {
+    RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);

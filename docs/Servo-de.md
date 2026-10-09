@@ -287,7 +287,10 @@ gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
 Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
-Bauteil.
+Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei entschärfter
+Bank. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
+eingeschaltet hält: wird AS5600 bei scharfer Bank eingeschaltet, hat der Lauf
+keine Winkelspalten, bis das Setup in entschärftem Zustand übernommen ist.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
 oder ENC-MITTE auf der Seite PRÜFLING, die den aktuellen Zählerstand nimmt,
@@ -327,7 +330,9 @@ Millisekunde etwa 10 ms. Berichtet werden nur gezählte Bewegungen; die
 Bewegungen, die das Horn zuerst an jedes Ende stellen, nicht. Eine Bewegung
 fällt aus den Zählungen des Winkels heraus, weder unbewegt noch spät, wenn der
 Winkel eine Lücke hat, während sie offen ist, und sie sich noch nicht beruhigt
-hatte (ein als ungültig markierter Messwert löscht den Winkelverlauf), wenn
+hatte (ein als ungültig markierter Messwert oder einer, der auf Messwerte
+folgt, die nach einem Stillstand der Anzeige von 320 ms oder mehr auf dem Weg
+zum Bildschirm verloren gingen, löscht den Winkelverlauf), wenn
 sie keinen Startwinkel hat und wenn der Lauf aus einem anderen Grund als dem
 Abschluss endet (STOP, Disarm, Linkverlust, Versorgungsfehler, Blockade),
 bevor sie sich beruhigt hat: ihr Fenster wurde abgeschnitten, und die

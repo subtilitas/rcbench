@@ -549,6 +549,8 @@ static struct {
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
     bool      have_now;
     bool      link_up;
+    bool      enc_held;      /**< the coprocessor holds the encoder on,
+                                  servo_screen_set_enc_held()           */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */
@@ -1700,7 +1702,7 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     }
     /* A reading that was queued before the link went down is not the
      * angle now. */
-    const servo_test_enc_t none = { false, 0u, 0u, 0u };
+    const servo_test_enc_t none = { false, 0u, 0u, 0u, false };
     if (!s.link_up) {
         e = &none;
     }
@@ -2208,7 +2210,9 @@ static void test_cfg(servo_test_cfg_t *c)
     c->travel_deg = (uint8_t)s.travel_deg;
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
     c->model      = supply_screen_model();
-    c->enc_on     = settings_get_bool(SET_ENC_EN);
+    /* Only an encoder the coprocessor holds on reads angles: a set-up it
+     * has not taken -- written only while disarmed -- gives a run none. */
+    c->enc_on     = settings_get_bool(SET_ENC_EN) && s.enc_held;
     c->enc_centre = (uint16_t)settings_get_int(SET_ENC_CENTRE);
     c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
     c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
@@ -2459,7 +2463,7 @@ void servo_screen_set_link(bool up)
         test_end_now(SERVO_TEST_AB_LINK);
         /* The encoder's last angle is not the horn's now: the dashes, and
          * no ENC CENTRE from it, until a reading arrives with the link. */
-        const servo_test_enc_t none = { false, 0u, 0u, 0u };
+        const servo_test_enc_t none = { false, 0u, 0u, 0u, false };
         s.enc_valid = false;
         servo_test_encoder(&s.test, &none);
         if (s.shown_q_enc != 0x7FFF) {
@@ -2494,6 +2498,11 @@ void servo_screen_set_link(bool up)
         }
     }
     s.link_up = up;
+}
+
+void servo_screen_set_enc_held(bool held)
+{
+    s.enc_held = held;
 }
 
 void servo_screen_set_surfaces(bool any)

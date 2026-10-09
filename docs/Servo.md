@@ -263,7 +263,10 @@ SETUP, INTERFACES, AS5600 (default OFF) and read by the coprocessor
 ([Link](Link.md), SENSE registers 26 to 31), adds the horn's angle to a run.
 The current's results are unchanged and the angle decides nothing: it is not
 part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
-its report are as without the part.
+its report are as without the part. The coprocessor takes the SENSE set-up
+only while the bank is disarmed. A run uses the angle only when the
+coprocessor holds AS5600 on: AS5600 switched on while armed gives a run
+without angle columns until the set-up has been taken in a disarmed state.
 
 The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
 or ENC CENTRE on the DUT page, which takes the live count with the servo at
@@ -302,7 +305,9 @@ on a 0.09 degrees a microsecond servo at 1.2 us a millisecond, about 10 ms.
 Only counted moves are reported. The moves that place the horn at each end
 first are not. A move is left out of the angle's counts, neither unmoved nor
 late, when the angle has a gap while the move is open and the move has not
-settled (a reading marked invalid, which drops the angle history), when the
+settled (a reading marked invalid, or one that follows readings lost on the
+way to the screen after a stall of 320 ms or more, either of which drops the
+angle history), when the
 move has no start angle, and when the run ends for any reason other than
 completion (STOP, disarm, link loss, supply fault, stall) before the move
 settled: its window was cut short, and the current's results do not count

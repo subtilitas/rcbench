@@ -1402,7 +1402,7 @@ int main(int argc, char **argv)
          * read at the commanded 38 degrees: 38 * 4096 / 360 = 432
          * counts on. */
         if (strcmp(view, "servo-encoder") == 0) {
-            const servo_test_enc_t e = { true, 3432u, 0u, 1000u };
+            const servo_test_enc_t e = { true, 3432u, 0u, 1000u, false };
             servo_screen_encoder(&e);
         }
         /*

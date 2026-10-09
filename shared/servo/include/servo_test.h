@@ -209,6 +209,9 @@ typedef struct {
     uint16_t still_ms;      /**< the angle within the tolerance for this
                                  long at the reading                    */
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
+    bool     gap;           /**< readings before this one were lost: the
+                                 angle between is not known, as after a
+                                 reading that is not valid             */
 } servo_test_enc_t;
 
 /** @p raw from @p centre on the circle, degrees, -180 to just under 180:
@@ -516,8 +519,8 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
 /**
  * A reading of the output encoder, each one once.  Judged against the move
  * under way; kept as the angle the CSV and the SERVO screen show.  A reading
- * that is not valid ends the angle's validity.  Nothing is judged without
- * cfg.enc_on.
+ * that is not valid, or that carries gap, ends the angle's validity before
+ * it.  Nothing is judged without cfg.enc_on.
  */
 void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e);
 

@@ -209,6 +209,12 @@ void servo_screen_set_sweep(bool able);
  *  is offered only then, since a sweep of nothing never starts. */
 void servo_screen_set_surfaces(bool any);
 
+/** Whether the coprocessor holds the output encoder enabled, as SENSE's
+ *  ENABLE register was last read or written.  The SENSE set-up is written
+ *  only while the bank is disarmed: a run started with the AS5600 setting on
+ *  and this false has no angles, and takes no angle columns. */
+void servo_screen_set_enc_held(bool held);
+
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */
 void servo_screen_sweep_refused(void);

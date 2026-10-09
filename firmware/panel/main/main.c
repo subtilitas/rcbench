@@ -4101,6 +4101,8 @@ static void write_output_binding(const outbind_t *bind)
 static uint8_t s_servo_channels;
 /* For the screen's SWEEP: a binding read, with a surface in it. */
 static atomic_bool s_servo_surfaces;
+/* For the screen's runs: the SENSE page holds the encoder enabled. */
+static atomic_bool s_enc_held;
 /* A sweep command with no surface to sweep: the screen stops waiting. */
 static atomic_bool s_sweep_refused;
 /* The pause the panel last let go of: commands asked during it and queued
@@ -5695,8 +5697,13 @@ static void enc_queue(void)
         was_valid = false;
     }
     if (xQueueSend(s_enc_q, &q, 0) != pdTRUE) {
+        /* The screen has not drained 8 readings (320 ms): what is queued
+         * may hold the only "none" marker, and dropping one entry would
+         * keep the readings after it.  All of it goes, and the reading
+         * that follows says readings were lost. */
         servo_test_enc_t stale;
-        (void)xQueueReceive(s_enc_q, &stale, 0);
+        while (xQueueReceive(s_enc_q, &stale, 0) == pdTRUE) { }
+        q.gap = true;
         (void)xQueueSend(s_enc_q, &q, 0);
     }
 }
@@ -5745,6 +5752,7 @@ static void sense_link_service(bool idle, bench_state_t *bench)
         atomic_store(&s_capabilities, (unsigned)caps);
     }
     sense_link_alerts();
+    atomic_store(&s_enc_held, sense_link_enc_on(&s_sense_link));
     enc_queue();
 
     const bool sensed = (bench->flags & (uint16_t)LINK_BN_SENSED) != 0u;
@@ -7221,6 +7229,7 @@ void app_main(void)
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
+            servo_screen_set_enc_held(atomic_load(&s_enc_held));
             if (atomic_exchange(&s_sweep_refused, false)) {
                 servo_screen_sweep_refused();
             }

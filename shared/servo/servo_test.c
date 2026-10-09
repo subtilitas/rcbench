@@ -705,15 +705,19 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
     if (t == NULL || e == NULL) {
         return;
     }
-    if (!e->valid) {
+    if (!e->valid || e->gap) {
         /* The angle is not known across a gap: nor is the move open over
-         * it, unless it had settled before. */
+         * it, unless it had settled before.  A reading that follows lost
+         * ones ends the validity as one that is not valid does, and is
+         * kept after it. */
         t->enc_hist_n    = 0u;
         t->enc_hist_next = 0u;
         if (t->enc_open && !t->enc_settled) {
             t->enc_ok = false;
         }
-        return;
+        if (!e->valid) {
+            return;
+        }
     }
     t->enc_hist[t->enc_hist_next].ms  = e->taken_ms;
     t->enc_hist[t->enc_hist_next].raw = e->raw;
