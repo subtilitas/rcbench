@@ -153,6 +153,24 @@ void arming_stop_from_far_end(arming_t *a)
     }
 }
 
+bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared)
+{
+    if (a == NULL || !a->armed) {
+        return false;
+    }
+    if (!a->handshake_bounded || !past(now_ms, a->handshake_until_ms)) {
+        return true;
+    }
+    if (cleared) {
+        /* The far end's latch is released and nothing on the wire sets it
+         * again: the line is withheld, and its monitor does. */
+        arming_stop_from_far_end(a);
+    } else {
+        arming_refused(a);
+    }
+    return false;
+}
+
 bool arming_write_failed(arming_t *a, bool answered)
 {
     if (a == NULL) {
@@ -291,6 +309,10 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
             if (fit) {
                 a->armed = true;
                 act = ARMING_ACT_ARM;
+                /* The same deadline goes with the arm into its handshake,
+                 * unless nobody was asked. */
+                a->handshake_until_ms = bound;
+                a->handshake_bounded  = a->line_wait_ms != 0u && !nobody;
             }
         } else if (reached(now_ms, bound)) {
             /* The far end has not come to trust the line in time.  Given up

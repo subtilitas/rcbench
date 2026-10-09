@@ -1138,6 +1138,162 @@ TEST_CASE(an_unanswered_exchange_is_judged_alike_whatever_it_carried)
              ARMING_QUIET_NOTHING);
 }
 
+/* ------------------------------------------- the deadline in the handshake */
+
+/* An arm handed out at @p at for a hold at @p t0, the far end asked. */
+static void handed_out(uint32_t t0, uint32_t at)
+{
+    init_asking(t0 - 10u);
+    arming_touch_seen(&a, t0);
+    arming_request_arm(&a, t0);
+    arming_touch_seen(&a, at);
+    arming_line_report(&a, true);
+    (void)arming_step(&a, at);
+}
+
+TEST_CASE(the_arms_deadline_holds_through_the_handshake)
+{
+    const uint32_t bases[2] = { 1000u, 0xFFFFFFFFu - 249u };  /* and the wrap */
+    for (unsigned b = 0; b < 2u; ++b) {
+        const uint32_t t0 = bases[b];
+        const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+
+        /* The first point is arming_step() itself: handed out at the
+         * deadline and one before it, given up one past it. */
+        handed_out(t0, dl - 1u);
+        CHECK(a.armed);
+        handed_out(t0, dl);
+        CHECK(a.armed);
+        handed_out(t0, dl + 1u);
+        CHECK(!a.armed);
+
+        /* Before CLEAR. */
+        for (int d = -1; d <= 1; ++d) {
+            handed_out(t0, t0 + SETTLE_MS);
+            const uint32_t stops = arming_stop_count(&a);
+            const bool open = arming_handshake_open(&a, dl + (uint32_t)d,
+                                                    false);
+            if (d <= 0) {
+                CHECK(open);
+                CHECK(a.armed);
+            } else {
+                /* Given up as a refusal is: nothing written, no stop, the
+                 * line running, the operator can ask again. */
+                CHECK(!open);
+                CHECK(!a.armed);
+                CHECK(!a.arming);
+                CHECK(!a.stopped);
+                CHECK(arming_heartbeat(&a, dl + 1u));
+                CHECK_EQ(arming_stop_count(&a), stops);
+                CHECK_EQ(arming_step(&a, dl + 2u), ARMING_ACT_NONE);
+            }
+        }
+
+        /* Before the frame that arms, the CLEAR acknowledged. */
+        for (int d = -1; d <= 1; ++d) {
+            handed_out(t0, t0 + SETTLE_MS);
+            CHECK(arming_handshake_open(&a, t0 + SETTLE_MS + 1u, false));
+            const uint32_t stops = arming_stop_count(&a);
+            const uint32_t pressed = arming_pressed_count(&a);
+            const bool open = arming_handshake_open(&a, dl + (uint32_t)d,
+                                                    true);
+            if (d <= 0) {
+                CHECK(open);
+                CHECK(a.armed);
+                CHECK(!a.stopped);
+            } else {
+                /* Given up as a stop: the line is withheld so the far end,
+                 * whose latch the CLEAR released, sets it again. */
+                CHECK(!open);
+                CHECK(!a.armed);
+                CHECK(a.stopped);
+                CHECK(!arming_heartbeat(&a, dl + 1u));
+                CHECK_EQ(arming_stop_count(&a), stops + 1);
+                CHECK_EQ(arming_pressed_count(&a), pressed);
+                CHECK_EQ(arming_step(&a, dl + 2u), ARMING_ACT_NONE);
+                /* And the next hold clears it. */
+                arming_touch_seen(&a, dl + 2000u);
+                arming_request_arm(&a, dl + 2000u);
+                CHECK(!a.stopped);
+                CHECK(a.arming);
+            }
+        }
+
+        /* 700 ms past, an exchange that all but timed out, at both. */
+        handed_out(t0, t0 + SETTLE_MS);
+        CHECK(!arming_handshake_open(&a, dl + 700u, false));
+        CHECK(!a.stopped);
+        handed_out(t0, t0 + SETTLE_MS);
+        CHECK(!arming_handshake_open(&a, dl + 700u, true));
+        CHECK(a.stopped);
+    }
+}
+
+TEST_CASE(the_handshake_ends_with_whatever_ends_an_arm)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+
+    /* STOP between two of its exchanges: the latch, as before; the caller
+     * asks arming_stopped() and writes no frame. */
+    handed_out(t0, at);
+    CHECK(arming_handshake_open(&a, at + 1u, false));
+    arming_stop_pressed(&a);
+    CHECK(arming_stopped(&a));
+    CHECK_EQ(arming_step(&a, at + 5u), ARMING_ACT_DISARM);
+    CHECK(!arming_handshake_open(&a, at + 6u, true));      /* no arm in hand */
+    CHECK_EQ(arming_stop_count(&a), 1);                    /* and no second */
+
+    /* A disarm. */
+    handed_out(t0, at);
+    arming_request_disarm(&a);
+    CHECK(!arming_handshake_open(&a, at + 1u, false));
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    /* The link going quiet under one of its exchanges. */
+    handed_out(t0, at);
+    CHECK_EQ(arming_exchange_unanswered(&a, true, false), ARMING_QUIET_STOP);
+    CHECK(!arming_handshake_open(&a, at + 1u, true));
+    CHECK_EQ(arming_stop_count(&a), 1);
+
+    /* A refusal. */
+    handed_out(t0, at);
+    arming_refused(&a);
+    CHECK(!arming_handshake_open(&a, at + 1u, true));
+    CHECK(!a.stopped);
+
+    /* An arm that asked no far end has no deadline: with no line wait, and
+     * with no far end in the pass. */
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, t0);
+    (void)arm_by(t0);
+    CHECK(a.armed);
+    CHECK(arming_handshake_open(&a, dl + 5000u, false));
+    CHECK(arming_handshake_open(&a, dl + 5000u, true));
+    init_asking(t0 - 10u);
+    arming_touch_seen(&a, t0);
+    arming_request_arm(&a, t0);
+    arming_touch_seen(&a, dl + 800u);
+    arming_line_nobody(&a);
+    CHECK_EQ(arming_step(&a, dl + 800u), ARMING_ACT_ARM);
+    CHECK(arming_handshake_open(&a, dl + 5000u, true));
+    CHECK(a.armed);
+
+    /* A deadline is not carried from one arm to the next. */
+    handed_out(t0, at);
+    arming_request_disarm(&a);
+    arming_set_line_wait(&a, 0u);
+    arming_touch_seen(&a, dl + 3000u);
+    arming_request_arm(&a, dl + 3000u);
+    arming_touch_seen(&a, dl + 3000u + SETTLE_MS);
+    CHECK_EQ(arming_step(&a, dl + 3000u + SETTLE_MS), ARMING_ACT_ARM);
+    CHECK(arming_handshake_open(&a, dl + 9000u, true));
+
+    CHECK(!arming_handshake_open(NULL, 0, false));
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -1172,5 +1328,7 @@ int main(void)
     RUN(a_trusted_report_past_the_bound_arms_nothing);
     RUN(with_no_far_end_in_the_pass_the_settle_alone_decides);
     RUN(an_unanswered_exchange_is_judged_alike_whatever_it_carried);
+    RUN(the_arms_deadline_holds_through_the_handshake);
+    RUN(the_handshake_ends_with_whatever_ends_an_arm);
     return test_summary("arming");
 }

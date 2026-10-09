@@ -162,7 +162,22 @@ gelöscht ist, und schreibt erst dann CLEAR und den Frame, der schärft. Ist
 das Bit 300 ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
 das Schärfen mit `Koprozessor lehnte ARM ab` auf und schreibt nichts, der
 Latch des Koprozessors bleibt also gesetzt. Eine Antwort, die später als
-diese 300 ms zurückkommt, wird nicht verwendet, was immer sie sagt. Ein Austausch des Schärfens, auf
+diese 300 ms zurückkommt, wird nicht verwendet, was immer sie sagt.
+
+Dieselben 300 ms gelten durch die Schreibvorgänge, die folgen. Das Panel
+fragt die Frist vor dem CLEAR und vor dem Frame, der schärft, erneut ab,
+weil das Freigeben des Servos davor und das CLEAR selbst spät beantwortet
+werden können. Ist die Frist vor dem CLEAR abgelaufen, wird das Schärfen wie
+oben aufgegeben, und nichts wird geschrieben. Ist sie nach einem quittierten
+CLEAR abgelaufen, wird kein Frame geschrieben, und am Panel rastet ein Stopp
+ein: das CLEAR hat den Latch des Koprozessors gelöst, und kein Register
+setzt ihn wieder, also hält der Stopp den Heartbeat zurück, und der
+Koprozessor setzt seinen Latch, sobald er der Leitung nicht mehr vertraut,
+innerhalb von 150 ms. Die Grenze der Frist ist der Frame, der schärft,
+selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
+bis zum Timeout von 1000 ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
+Koprozessor hat die Bank dann scharf geschaltet, in Ruhe: Gas 0, Surfaces
+zentriert. Das Panel macht das nicht rückgängig. Ein Austausch des Schärfens, auf
 den niemand antwortet -- das Lesen von STATUS, das Freigeben des Servos,
 CLEAR oder der Frame, der schärft --, hat den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schärfen

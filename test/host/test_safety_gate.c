@@ -473,6 +473,22 @@ static unsigned        p_quiet_release, p_quiet_clear, p_quiet_frame;
 static uint32_t        p_write_quiet_at, p_stop_at, p_any_quiet_at;
 static bool            p_write_quiet, p_stop_seen, p_any_quiet;
 static uint32_t        p_servo_next;     /* the 100 ms servo refresh */
+/* How late each exchange of the arm's handshake is answered, once: 1 the
+ * servo release, 2 CLEAR, 3 the frame that arms.  The request reaches the
+ * coprocessor on time; its answer is what takes long. */
+static uint32_t        w_slow_ms[4];
+static unsigned        p_arm_expired;    /* arms given up at the deadline */
+
+static void wait_pumping(uint32_t ms);
+
+static void p_slow(int stage_now)
+{
+    if (w_slow_ms[stage_now] != 0u) {
+        const uint32_t ms = w_slow_ms[stage_now];
+        w_slow_ms[stage_now] = 0;
+        wait_pumping(ms);
+    }
+}
 /* Which exchange that first one was: 1 the poll's read, 2 its write, 3 the
  * page services after the write, 4 the status read after the poll, 5 the
  * servo refresh ahead of the next poll. */
@@ -695,6 +711,11 @@ static void p_service_arming(void)
             p_arm_write_failed(quiet);
             break;
         }
+        p_slow(1);
+        if (!arming_handshake_open(&p_arm, T, false)) {
+            ++p_arm_expired;
+            break;
+        }
         const uint16_t magic = LINK_CLEAR_MAGIC;
         ++p_clear_sent;
         if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, &magic,
@@ -704,6 +725,11 @@ static void p_service_arming(void)
             p_arm_write_failed(quiet);
             break;
         }
+        p_slow(2);
+        if (!arming_handshake_open(&p_arm, T, true)) {
+            ++p_arm_expired;
+            break;
+        }
         const uint16_t regs[3] = { 1u, p_throttle, 0u };
         if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_ARM, 3, regs,
                    &ack)
@@ -711,6 +737,7 @@ static void p_service_arming(void)
             p_quiet_frame += w_unanswered != quiet;
             p_arm_write_failed(quiet);
         } else {
+            p_slow(3);
             outputs_arm(&p_out, true, T);
             ++p_arm_acked;
         }
@@ -882,6 +909,8 @@ static void world_init(uint32_t t0)
     p_write_quiet = p_stop_seen = p_any_quiet = false;
     p_poll_stage = p_any_quiet_stage = 0;
     p_servo_next = t0;
+    memset(w_slow_ms, 0, sizeof(w_slow_ms));
+    p_arm_expired = 0;
     p_clear_sent = 0;
     p_extra_at = p_extra_ms = 0;
     p_touch_out_at = p_touch_out_ms = 0;
@@ -1417,6 +1446,95 @@ TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
     w_services = false;
 }
 
+/* STOP at 3 s, the hold completes at 6 s, and the answers to the servo
+ * release, the CLEAR and the frame that arms come that many ms late. */
+static void slow_handshake(uint32_t release_ms, uint32_t clear_ms,
+                           uint32_t frame_ms)
+{
+    armed_at_70(0, WIRE_LOST);
+    op_at(2, 3000, OP_STOP, 0);
+    op_at(3, 6000, OP_ARM, 0);
+    run_until(5990);
+    w_slow_ms[1] = release_ms;
+    w_slow_ms[2] = clear_ms;
+    w_slow_ms[3] = frame_ms;
+}
+
+TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
+{
+    /* Answered 20 ms late: inside the deadline, and the arm is taken. */
+    for (int st = 1; st <= 3; ++st) {
+        slow_handshake(st == 1 ? 20u : 0u, st == 2 ? 20u : 0u,
+                       st == 3 ? 20u : 0u);
+        run_until(7000);
+        CHECK_EQ(p_arm_expired, 0);
+        CHECK_EQ(p_arm_acked, 2);
+        CHECK(outputs_driving(&d_bank));
+    }
+
+    /* The servo release answered 250 ms late: past the deadline before
+     * CLEAR.  No CLEAR, no frame; the coprocessor's latch was never
+     * released; the panel is disarmed with no stop, and the next hold
+     * arms. */
+    slow_handshake(250u, 0u, 0u);
+    op_at(4, 9000, OP_ARM, 0);
+    run_until(8000);
+    CHECK_EQ(p_arm_expired, 1);
+    CHECK_EQ(p_clear_sent, 1);
+    CHECK_EQ(d_arm_edges, 1);
+    CHECK(link_dev_arm_latched(&d_dev));
+    CHECK(!outputs_armed(&p_out));
+    CHECK(!p_arm.armed);
+    CHECK(!arming_stopped(&p_arm));
+    CHECK_EQ(p_arm_refused, 0);
+    run_until(10000);
+    CHECK_EQ(d_arm_edges, 2);
+    CHECK(outputs_driving(&d_bank));
+
+    /* The release answered 100 ms late and the CLEAR 150 ms: past the
+     * deadline before the frame, with the coprocessor's link watchdog not
+     * yet at its 200 ms.  No frame is written.  The CLEAR released the coprocessor's latch; the
+     * panel's stop withholds the heartbeat and the coprocessor sets it
+     * again within HEARTBEAT_MAX_GAP_MS of the last edge. */
+    slow_handshake(100u, 150u, 0u);
+    op_at(4, 9000, OP_ARM, 0);
+    const unsigned frames = d_arm_frames;
+    while (p_arm_expired == 0u && (int32_t)(T - (T0 + 8000u)) < 0) {
+        run_until((T - T0) + 1u);
+    }
+    CHECK_EQ(p_arm_expired, 1);
+    CHECK_EQ(p_clear_sent, 2);
+    CHECK_EQ(d_arm_frames, frames);
+    CHECK(!link_dev_arm_latched(&d_dev));        /* released by the CLEAR */
+    CHECK(arming_stopped(&p_arm));
+    CHECK(!arming_heartbeat(&p_arm, T));
+    CHECK(!outputs_armed(&p_out));
+    const uint32_t gave_up = T;
+    while (!link_dev_arm_latched(&d_dev)
+           && (uint32_t)(T - gave_up) < 1000u) {
+        run_until((T - T0) + 1u);
+    }
+    CHECK(link_dev_arm_latched(&d_dev));
+    CHECK((uint32_t)(T - gave_up) <= HEARTBEAT_MAX_GAP_MS + 10u);
+    CHECK_EQ(d_arm_edges, 1);
+    CHECK(!outputs_driving(&d_bank));
+    run_until(10000);
+    CHECK_EQ(d_arm_edges, 2);                    /* the next hold */
+    CHECK(outputs_driving(&d_bank));
+
+    /* The release answered 100 ms late and the frame that arms 150 ms:
+     * written inside the deadline, acknowledged past it.  The bound does
+     * not reach that: the coprocessor has taken the frame and the bench is
+     * armed, at rest. */
+    slow_handshake(100u, 0u, 150u);
+    run_until(7000);
+    CHECK_EQ(p_arm_expired, 0);
+    CHECK_EQ(p_arm_acked, 2);
+    CHECK(outputs_driving(&d_bank));
+    CHECK_EQ(outputs_actual(&d_bank, 0), 0);
+    CHECK_EQ(p_throttle, 0);
+}
+
 int main(void)
 {
     RUN(a_start_is_latched_and_reports_no_fault);
@@ -1439,5 +1557,6 @@ int main(void)
     RUN(a_touch_outage_disarms_and_the_next_arm_is_taken);
     RUN(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll);
     RUN(any_exchange_nobody_answers_stops_an_armed_panel_at_once);
+    RUN(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched);
     return test_summary("safety_gate");
 }

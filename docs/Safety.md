@@ -149,7 +149,21 @@ until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that arms. If the bit has not cleared 300 ms after the hold completed, the
 panel gives the arm up with `coprocessor refused to arm` and writes nothing,
 so the coprocessor's latch stays set. An answer that comes back later than
-those 300 ms is not used, whatever it says. An exchange of the arm that nobody
+those 300 ms is not used, whatever it says.
+
+The same 300 ms hold through the writes that follow. The panel asks the
+deadline again before CLEAR and before the frame that arms, because the
+servo release ahead of them and the CLEAR itself can be answered late. Past
+the deadline before CLEAR, the arm is given up as above with nothing
+written. Past it after an acknowledged CLEAR, no frame is written and the
+panel latches a stop: the CLEAR released the coprocessor's latch and no
+register sets it again, so the stop withholds the heartbeat and the
+coprocessor sets its latch when it stops trusting the line, within 150 ms.
+The limit of the bound is the frame that arms itself. It is written at or
+before the deadline, and its acknowledgement can arrive up to the 1000 ms
+exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the coprocessor has then
+armed the bank, at rest: throttle 0, surfaces centred. The panel does not
+undo it. An exchange of the arm that nobody
 answers -- the STATUS read, the servo release, CLEAR or the frame that arms
 -- has waited the 1000 ms exchange timeout or did not reach the wire: that is
 the link going quiet under an arm, and the panel latches a stop as above. A

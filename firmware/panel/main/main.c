@@ -4175,6 +4175,21 @@ static void service_arming(bool link_up)
              * THROTTLE and the pole count together, so the run starts on the
              * count that was sent or does not start; control_arm() says why.
              */
+            /*
+             * And the arm's deadline, the one its wait for the line ended
+             * at, is asked again before each of the two writes: the
+             * exchanges above and the CLEAR are answered in about a
+             * millisecond and can be answered up to LINK_HOST_TIMEOUT_MS
+             * (1000 ms) late.  Past it the arm is given up and nothing
+             * further is written (arming_handshake_open()): before CLEAR
+             * as a refusal, after it as a stop, whose withheld heartbeat
+             * sets the far end's latch again.  The frame that arms is the
+             * limit: acknowledged late, it has armed the far end, at rest.
+             */
+            if (!arming_handshake_open(&s_arm, now_ms(), false)) {
+                control_alert(TR(ALERT_ARM_REFUSED));
+                break;
+            }
             if (!control_clear_failsafe(&ack)) {
                 arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
                 break;
@@ -4183,6 +4198,10 @@ static void service_arming(bool link_up)
                 /* Stopped or disarmed while the clear was in flight.  No
                  * alert: the operator asked for this and knows. */
                 arming_refused(&s_arm);
+                break;
+            }
+            if (!arming_handshake_open(&s_arm, now_ms(), true)) {
+                control_alert(TR(ALERT_ARM_REFUSED));
                 break;
             }
             if (!control_arm(&ack)) {

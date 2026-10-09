@@ -127,6 +127,14 @@ typedef struct {
     bool     line_trusted;    /**< reported for the arm that is waiting   */
     bool     line_nobody;     /**< no far end in this pass; see
                                    arming_line_nobody()                   */
+    /**
+     * The deadline of the arm arming_step() last handed out, kept for the
+     * handshake that writes it: settle plus line wait, the instant the wait
+     * for the line ends at.  `handshake_bounded` is false for an arm that
+     * asked no far end.  See arming_handshake_open().
+     */
+    uint32_t handshake_until_ms;
+    bool     handshake_bounded;
     uint32_t last_touch_ms;
     uint32_t run_start_ms;    /**< 0 when not in a run                    */
     uint32_t run_seconds;     /**< held after the run ends                */
@@ -217,6 +225,32 @@ void arming_request_disarm(arming_t *a);
  * ask again.
  */
 void arming_refused(arming_t *a);
+
+/**
+ * Whether the arm arming_step() handed out may still write its next frame,
+ * asked before CLEAR (@p cleared false) and before the frame that arms
+ * (@p cleared true, the CLEAR acknowledged).
+ *
+ * The arm's deadline is the one the wait for the line ends at, settle plus
+ * line wait from the hold.  The exchanges of the handshake are answered in
+ * about a millisecond each and can be answered up to the exchange timeout
+ * late; the deadline is what keeps a slow one from arming the bench that
+ * much after the hold.  True up to and at the deadline.  Past it the arm is
+ * given up and false is returned; the caller writes nothing further and
+ * tells the operator, who holds ARM again:
+ *
+ *   - before CLEAR, as arming_refused() gives one up.  Nothing was written
+ *     and the far end's latch stands;
+ *   - after CLEAR, as a stop from the far end.  The CLEAR released the far
+ *     end's latch and no frame can set it again, so the stop withholds the
+ *     heartbeat, and the far end sets its latch when it stops trusting the
+ *     line, within HEARTBEAT_MAX_GAP_MS (150 ms).
+ *
+ * Also false, with nothing changed, when no arm is in hand.  Always true
+ * for an arm that asked no far end.  What it cannot bound is the frame that
+ * arms itself: one acknowledged late has armed the far end, at rest.
+ */
+bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared);
 
 /**
  * The CLEAR or the frame that arms did not come back acknowledged.
