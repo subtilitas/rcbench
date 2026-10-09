@@ -2741,29 +2741,27 @@ static uint32_t port_now(void *ctx)
     return now_ms();
 }
 
-static const link_port_t k_port = { port_exchange, port_now, NULL };
-
 /*
- * The same for a binding, whose 17 exchanges run back to back.  An exchange
- * answered inside its first 5 ms receive window returns without a pump, so
- * the safety loop runs here between two of them once 5 ms have passed: the
- * heartbeat keeps its 20 ms edges and STOP is read inside a frame of the
- * press for as long as the sequence takes.
+ * Between two frames of a write wider than one.  A page is 8 exchanges back
+ * to back and a binding 17, and an exchange answered inside its first 5 ms
+ * receive window returns without a pump.  The safety loop runs here once
+ * 5 ms have passed since it last did: the heartbeat keeps its 20 ms edges
+ * and STOP is read inside a frame of the press for as long as the write
+ * takes.  A write of one frame never comes here.
  */
-static bool bind_port_exchange(void *ctx, link_host_t *host,
-                               const link_msg_t *req, link_msg_t *reply)
+static void port_between(void *ctx)
 {
     static uint32_t pumped_ms;
     (void)ctx;
-    const bool ok = exchange(host, req, reply);
     if (s_pump_live && (uint32_t)(now_ms() - pumped_ms) >= 5u) {
         pumped_ms = now_ms();
         control_pump();
     }
-    return ok;
 }
 
-static const link_port_t k_bind_port = { bind_port_exchange, port_now, NULL };
+static const link_port_t k_port = {
+    port_exchange, port_now, NULL, port_between,
+};
 
 /*
  * A write of any width goes out one frame per exchange, each acknowledged
@@ -4304,7 +4302,7 @@ static bool write_output_binding(const outbind_t *bind)
      */
     outputs_result_t res = OUTPUTS_OK;
     bind_rate_t rate = BIND_RATE_NOT_SENT;
-    switch (bind_link_write(&s_host, &k_bind_port, s_far_minor, cfg, slots,
+    switch (bind_link_write(&s_host, &k_port, s_far_minor, cfg, slots,
                             &rate)) {
     case BIND_WRITTEN: res = OUTPUTS_OK;      break;
     case BIND_REFUSED: res = OUTPUTS_REFUSED; break;

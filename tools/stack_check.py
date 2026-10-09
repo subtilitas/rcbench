@@ -116,8 +116,8 @@ SCREEN_CALLS = {
 # is followed by name.  A function listed here that makes no indirect call,
 # or a callback that is not one function in the ELF, fails the check.
 PORT_CALLS = {
-    "link_write_acked": ("port_exchange", "bind_port_exchange", "port_now"),
-    "link_read_window": ("port_exchange", "bind_port_exchange", "port_now"),
+    "link_write_acked": ("port_exchange", "port_now", "port_between"),
+    "link_read_window": ("port_exchange", "port_now"),
 }
 
 

@@ -296,7 +296,9 @@ link](Bringup.md) prints 334 to 1400 µs for the round trip of one, which
 puts the 20 between 7 and 28 ms; the sequence itself is not timed on
 hardware. The panel's control task runs every 5 ms and sends the sequence
 from one pass, so that pass is 2 to 6 periods long; the safety loop — the
-heartbeat's 20 ms edges, STOP — runs inside it at least every 5 ms. The
+heartbeat's 20 ms edges, STOP — runs inside it, between two frames of a
+page once 5 ms have passed since it last ran, and in every 5 ms an answer is
+waited for. The
 50 ms poll with its ARM and THROTTLE write is late by the same time; an edit
 is refused while the bench is armed, so no armed bench waits on it. The
 coprocessor's 200 ms silence limit counts from the last request it heard,

@@ -244,6 +244,7 @@ static struct {
 
     unsigned exchanges, request_frames, reply_frames;
     unsigned most_in_flight;    /* request frames of one exchange          */
+    unsigned betweens;          /* calls between two frames of one write   */
 
     bool     answered;
     link_msg_t reply;
@@ -374,7 +375,15 @@ static uint32_t port_now(void *ctx)
     return now_ms();
 }
 
-static const link_port_t k_port = { port_exchange, port_now, NULL };
+static void port_between(void *ctx)
+{
+    (void)ctx;
+    ++bus.betweens;
+}
+
+static const link_port_t k_port = {
+    port_exchange, port_now, NULL, port_between,
+};
 
 /* ------------------------------------------------------------- bindings */
 
@@ -552,6 +561,71 @@ TEST_CASE(a_refused_frame_ends_the_write_and_names_itself)
     CHECK(!host.pending);
 }
 
+/*
+ * The caller's other work runs between two frames of one write: the panel
+ * runs its safety loop there, so a page of 8 exchanges answered at once
+ * does not keep STOP and the heartbeat waiting for all 8.  Once after every
+ * acknowledged frame that has a successor, and never for a write of one
+ * frame, which is every write the arming path sends.
+ */
+TEST_CASE(the_port_is_called_between_the_frames_of_a_wide_write)
+{
+    fresh(10u);
+    link_msg_t reply;
+    CHECK(link_write_acked(&host, &k_port, LINK_PAGE_BIND_OUT, 0u,
+                           LINK_OS_COUNT, s_new.slots, &reply));
+    CHECK_EQ(bus.exchanges, 8u);
+    CHECK_EQ(bus.betweens, 7u);
+
+    /* One frame: 1, 3 and 4 registers. */
+    static const uint8_t k_one[] = { 1u, 3u, 4u };
+    for (unsigned i = 0; i < 3u; ++i) {
+        fresh(10u);
+        CHECK(link_write_acked(&host, &k_port, LINK_PAGE_BIND_OUT, 0u,
+                               k_one[i], s_new.slots, &reply));
+        CHECK_EQ(bus.exchanges, 1u);
+        CHECK_EQ(bus.betweens, 0u);
+    }
+    /* 5 registers are two frames: once. */
+    fresh(10u);
+    CHECK(link_write_acked(&host, &k_port, LINK_PAGE_BIND_OUT, 0u, 5u,
+                           s_new.slots, &reply));
+    CHECK_EQ(bus.exchanges, 2u);
+    CHECK_EQ(bus.betweens, 1u);
+
+    /* A refusal at the third frame: after the first two, not after it. */
+    fresh(10u);
+    uint16_t regs[LINK_OS_COUNT];
+    memcpy(regs, s_new.slots, sizeof(regs));
+    regs[2u * LINK_OS_STRIDE + LINK_OS_DRIVER] = 99u;
+    CHECK(link_write_acked(&host, &k_port, LINK_PAGE_BIND_OUT, 0u,
+                           LINK_OS_COUNT, regs, &reply));
+    CHECK_EQ(reply.op, LINK_OP_NACK);
+    CHECK_EQ(bus.betweens, 2u);
+
+    /* A frame nobody answers: none after it. */
+    fresh(10u);
+    bus.drop_request = 1;
+    CHECK(!link_write_acked(&host, &k_port, LINK_PAGE_BIND_OUT, 0u,
+                            LINK_OS_COUNT, s_new.slots, &reply));
+    CHECK_EQ(bus.betweens, 1u);
+
+    /* A binding: 7 in each of the two pages, none for the rate reset and
+     * the commit, which are one frame each. */
+    fresh(10u);
+    CHECK_EQ(write_new(10u), BIND_WRITTEN);
+    CHECK_EQ(bus.exchanges, 18u);
+    CHECK_EQ(bus.betweens, 14u);
+
+    /* A port with nothing to run between frames writes the same. */
+    fresh(10u);
+    const link_port_t plain = { port_exchange, port_now, NULL, NULL };
+    CHECK(link_write_acked(&host, &plain, LINK_PAGE_BIND_OUT, 0u,
+                           LINK_OS_COUNT, s_new.slots, &reply));
+    CHECK_EQ(reply.op, LINK_OP_ACK);
+    CHECK_EQ(bus.betweens, 0u);
+}
+
 TEST_CASE(a_write_that_cannot_be_built_sends_nothing)
 {
     fresh(10u);
@@ -570,7 +644,7 @@ TEST_CASE(a_write_that_cannot_be_built_sends_nothing)
                             s_new.slots, &reply));
     CHECK(!link_write_acked(&host, &k_port, LINK_PAGE_BIND_OUT, 0u, 4u,
                             s_new.slots, NULL));
-    const link_port_t no_clock = { port_exchange, NULL, NULL };
+    const link_port_t no_clock = { port_exchange, NULL, NULL, NULL };
     CHECK(!link_write_acked(&host, &no_clock, LINK_PAGE_BIND_OUT, 0u, 4u,
                             s_new.slots, &reply));
     CHECK(!link_read_window(&host, &no_clock, LINK_PAGE_OUTPUTS, 0u, 4u,
@@ -1918,6 +1992,7 @@ int main(void)
     RUN(a_wide_write_goes_out_one_frame_per_exchange);
     RUN(a_window_that_is_not_whole_frames_is_split_at_four);
     RUN(a_refused_frame_ends_the_write_and_names_itself);
+    RUN(the_port_is_called_between_the_frames_of_a_wide_write);
     RUN(a_write_that_cannot_be_built_sends_nothing);
     RUN(frames_sent_back_to_back_are_lost_to_a_deaf_window);
     RUN(a_binding_is_written_in_eighteen_exchanges_and_read_in_two);

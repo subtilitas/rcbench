@@ -321,7 +321,9 @@ Austauschs 334 bis 1400 µs aus, das legt die 20 zwischen 7 und 28 ms; die
 Folge selbst ist auf Hardware nicht gemessen. Die Control-Task des Panels
 läuft alle 5 ms und sendet die Folge aus einem Durchlauf, dieser Durchlauf
 dauert also 2 bis 6 Perioden; die Sicherheitsschleife — die 20-ms-Flanken des
-Heartbeats, STOP — läuft darin mindestens alle 5 ms. Der 50-ms-Poll mit
+Heartbeats, STOP — läuft darin, zwischen zwei Frames einer Page, sobald 5 ms
+seit ihrem letzten Lauf vergangen sind, und in allen 5 ms, die auf eine
+Antwort gewartet wird. Der 50-ms-Poll mit
 seinem Schreiben von ARM und THROTTLE verspätet sich um dieselbe Zeit; eine
 Änderung wird bei scharfem Prüfstand abgelehnt, kein scharfer Prüfstand
 wartet also darauf. Die 200-ms-Stillegrenze des Koprozessors zählt ab der

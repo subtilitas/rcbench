@@ -40,12 +40,20 @@ extern "C" {
  * included, or false when it ended unanswered.  It leaves no request
  * outstanding on @p h either way.  `now_ms` is the millisecond clock the
  * requests are stamped with.
+ *
+ * `between`, when not NULL, is called after each acknowledged frame of a
+ * write that has another frame to send.  A write of 32 registers is 8
+ * exchanges back to back, and an exchange answered at once returns without
+ * the caller's other work having run: the panel runs its safety loop here.
+ * It is not called for a write of one frame, after the last frame, or after
+ * a refusal.
  */
 typedef struct {
     bool     (*exchange)(void *ctx, link_host_t *h, const link_msg_t *req,
                          link_msg_t *reply);
     uint32_t (*now_ms)(void *ctx);
     void      *ctx;
+    void     (*between)(void *ctx);
 } link_port_t;
 
 /**

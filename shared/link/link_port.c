@@ -56,6 +56,9 @@ bool link_write_acked(link_host_t *h, const link_port_t *port, uint8_t page,
         /* An acknowledgement carries what the far end stored. */
         memcpy(&whole.regs[at], part.regs, (size_t)n * sizeof(part.regs[0]));
         at = (uint8_t)(at + n);
+        if (at < count && port->between != NULL) {
+            port->between(port->ctx);
+        }
     }
     *reply = whole;
     return true;
