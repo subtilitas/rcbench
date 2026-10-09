@@ -51,6 +51,8 @@ typedef struct {
     bool     armed;
     bool     refuse_rate;               /* SERVO's FRAME_HZ is refused  */
     bool     refuse_slots;              /* the silicon binds no page    */
+    uint64_t resync;                    /* reserved pins, as the OUTPUTS
+                                         * page's take finds them       */
     unsigned takes;                     /* pages put in force           */
 
     /* The store: what is in force, 400 ms after its last change. */
@@ -121,6 +123,11 @@ static uint8_t take_cfg(void *ctx, const uint16_t *next)
 static uint8_t take_slots(void *ctx, const uint16_t *next)
 {
     far_t *f = (far_t *)ctx;
+    /* The firmware brings the pins the sensor bus holds up to date first
+     * (sense_sync()), whatever becomes of the page. */
+    if (f->resync != 0u) {
+        outputs_reserve_pins(&s_bank, f->resync);
+    }
     if (f->armed) {
         return outputs_slots_armed_check(f->slots, next, true);
     }
@@ -1091,6 +1098,22 @@ TEST_CASE(a_refused_commit_leaves_each_channels_command_as_it_was)
     CHECK_EQ(outputs_command(&s_bank, 2u), 700u);
     CHECK_EQ(s_bank.channel[1].role, OUT_ROLE_THROTTLE);
     CHECK(memcmp(&before, &s_bank, sizeof(before)) == 0);
+
+    /*
+     * Only the channels are put back.  The pins reserved, brought up to
+     * date while the OUTPUTS page was judged, stay as that left them: a pin
+     * the sensor bus gave back is not reserved again by the refusal.
+     */
+    outputs_reserve_pins(&s_bank, (uint64_t)0x30000u);    /* GP16, GP17 */
+    far.resync = (uint64_t)0x8u;                          /* GP3 alone  */
+    CHECK_EQ(write_new(10u), BIND_REFUSED);
+    CHECK(s_bank.reserved == (uint64_t)0x8u);
+    CHECK(outputs_pin_available(&s_bank, 16u));
+    CHECK_EQ(outputs_command(&s_bank, 1u), 250u);
+    CHECK_EQ(s_bank.channel[1].role, OUT_ROLE_THROTTLE);
+    CHECK(memcmp(before.channel, s_bank.channel, sizeof(before.channel))
+          == 0);
+    far.resync = 0u;
 
     /* A commit that is taken does move the role, and rests the channel. */
     far.refuse_slots = false;

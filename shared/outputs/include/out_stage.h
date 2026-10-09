@@ -74,8 +74,10 @@ uint16_t out_stage_held_crc(const out_stage_t *st);
  * changes a role moves that channel's command and output to the new role's
  * rest (outputs_set_role()), so taking the old page again would leave the
  * old role at its rest and not at the command it held.  The commit keeps a
- * copy of the bank from before take_cfg and puts the whole of it back
- * ahead of put_cfg when the OUTPUTS page is refused.
+ * copy of the bank's channels from before take_cfg and puts them back ahead
+ * of put_cfg when the OUTPUTS page is refused.  Nothing else of the bank is
+ * put back: take_slots leaves the slots as they were when it refuses, and
+ * the pins reserved may have been brought up to date inside it.
  */
 typedef struct {
     uint8_t (*take_cfg)(void *ctx, const uint16_t *next);

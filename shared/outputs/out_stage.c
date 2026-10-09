@@ -100,9 +100,8 @@ uint16_t out_stage_held_crc(const out_stage_t *st)
     return (st != NULL) ? out_stage_crc(st->cfg, st->slots) : 0u;
 }
 
-/* The bank from before a commit.  Static rather than on the stack, which on
- * the coprocessor is the link loop's. */
-static outputs_t s_held;
+/* The bank's channels from before a commit. */
+static out_channel_t s_held[OUT_MAX_CHANNELS];
 
 uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
                          const uint16_t *cfg_in_force,
@@ -124,7 +123,7 @@ uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
     uint16_t prev[LINK_CC_COUNT];
     memcpy(prev, cfg_in_force, sizeof(prev));
     if (ops->bank != NULL) {
-        s_held = *ops->bank;
+        memcpy(s_held, ops->bank->channel, sizeof(s_held));
     }
 
     /* CHAN_CFG first: it says what a channel is, and a slot that starts
@@ -135,11 +134,16 @@ uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
     }
     nack = ops->take_slots(ctx, st->slots);
     if (nack != 0u) {
-        /* The bank whole, not the old page applied again: a role taken and
-         * given back would rest the channel instead of returning it to the
-         * command it held. */
+        /*
+         * The channels as they were, not the old page applied again: a role
+         * taken and given back would rest the channel instead of returning
+         * it to the command it held.  Only the channels: they are all that
+         * take_cfg changes, a refused take_slots leaves the slots as they
+         * were, and the rest of the bank -- the pins reserved, which
+         * take_slots may have brought up to date -- stays as it is now.
+         */
         if (ops->bank != NULL) {
-            *ops->bank = s_held;
+            memcpy(ops->bank->channel, s_held, sizeof(s_held));
         }
         ops->put_cfg(ctx, prev);
         return nack;

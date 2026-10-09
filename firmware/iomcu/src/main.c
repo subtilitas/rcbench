@@ -994,8 +994,8 @@ static uint8_t stage_take_slots(void *ctx, const uint16_t *next)
 
 static void stage_put_cfg(void *ctx, const uint16_t *prev)
 {
-    /* The commit has put the bank back whole, each channel's command with
-     * its role; the page and the silicon follow it here. */
+    /* The commit has put the bank's channels back, each command with its
+     * role; the page and the silicon follow it here. */
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     memcpy(s->chan_cfg, prev, sizeof(s->chan_cfg));
     hw_apply_only(s_stage_bound);
