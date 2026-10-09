@@ -26,9 +26,9 @@
  *
  * Every tick reads CH1, the pair when on and one INA228 register, and
  * every second tick one item of the 50 Hz rotation: at most 690 µs of bus
- * time a tick.  Bus time over a second, arithmetic only: 32.9 %, 55.7 %
- * with the pair.  Not counted: the controller's own time between
- * transactions, not measured.  The bus runs at 400 kHz only: at 100 kHz a
+ * time a tick without the encoder.  Bus time over a second, arithmetic
+ * only: 32.9 %, 55.7 % with the pair.  Not counted: the controller's own
+ * time between transactions, not measured.  The bus runs at 400 kHz only: at 100 kHz a
  * read takes 480 to 750 µs, and the tick does not fit.  A probe is 10
  * transactions on the INA228, 1.1 ms, and 4 on the INA3221: the ticks it
  * covers run late.
@@ -92,11 +92,16 @@
  *
  * The output encoder.  An AS5600 on the same bus (as5600.h), when enabled,
  * is read on the ticks that read no rotation item -- every second tick,
- * 500 Hz: STATUS and RAW ANGLE in one 3-byte read, 0.19 ms of bus time,
- * and every SENSE_ENC_MAG_EVERY-th slot AGC and MAGNITUDE instead (20 Hz).
- * An odd tick then is CH1, the INA228's slot and the encoder: under the
- * 690 µs of an even tick.  The angle is kept as the 12-bit count; the
- * schedule judges nothing from it but how long it has held still.
+ * 500 Hz: STATUS (1 byte) and RAW ANGLE (2 bytes), two transactions, 217.5
+ * µs of bus time.  Every SENSE_ENC_MAG_EVERY-th slot (20 Hz) reads RAW ANGLE,
+ * AGC (1 byte) and MAGNITUDE (2 bytes) instead, 337.5 µs: the angle is read
+ * in every slot, STATUS in 24 of 25.  A transaction of N bytes is 9 * (3 + N)
+ * + 3 clocks, 2.5 µs each at 400 kHz.  An odd tick is CH1, the pair when on,
+ * the INA228's slot and the encoder: 480 µs, 600 µs in a field slot, and
+ * with the pair 720 µs, 840 µs in a field slot; an even tick stays under
+ * 690 µs.  With the encoder the bus time over a second is 44.0 %, 66.8 %
+ * with the pair.  The angle is kept as the 12-bit count; the schedule
+ * judges nothing from it but how long it has held still.
  *
  * Still time.  The angle holds an anchor, the count and the time of the
  * last sample that lay more than SENSE_ENC_STILL_TOL counts from the
@@ -141,7 +146,7 @@ extern "C" {
 #define SENSE_CAP_FILTER_N    4u
 /** The encoder's tolerance for holding still: 12 counts, 1.05 degrees. */
 #define SENSE_ENC_STILL_TOL  12u
-/** One slot in this many reads AGC and MAGNITUDE and not the angle. */
+/** One slot in this many reads AGC and MAGNITUDE besides the angle. */
 #define SENSE_ENC_MAG_EVERY  25u
 /** Samples in a row at an end held harder than the servo moves: 10 ms. */
 #define SENSE_CAP_SETTLE_N   10u

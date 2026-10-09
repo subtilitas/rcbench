@@ -158,13 +158,22 @@ bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
 Der Encoder ist ein AS5600 von ams OSRAM auf der Ausgangswelle des Servos, an
 seiner festen Adresse 0x36 auf dem Bus, den SENSE schon betreibt, standardmäßig
 GP16 und GP17. Er hat auf der Page keinen Parameter außer dem Freigabe-Bit:
-Pins und die 400 kHz sind die des Busses. Der Koprozessor liest STATUS und
-RAW ANGLE in einem 3-Byte-Lesen in jedem zweiten 1-ms-Takt, 500 Hz, in den
-Takten ohne Rotationseintrag, und AGC und MAGNITUDE in einem 3-Byte-Lesen in
-einem von 25 dieser Plätze, das sind 480 Winkel- und 20 Magnitudenlesungen
-je Sekunde. Winkellesen und die übrigen Lesungen des Ablaufs treffen im
-ungünstigsten Fall nie im selben Takt zusammen: ein ungerader Takt ist CH1, der
-Platz des INA228 und der Encoder, unter den 690 µs eines geraden Takts.
+Pins und die 400 kHz sind die des Busses. Jedes Register wird in einer
+eigenen Transaktion gelesen, da RAW ANGLE und MAGNITUDE Register sind, die das
+Bauteil besonders behandelt: der Adresszeiger läuft nicht über sie hinaus,
+und ein Lesen, das von STATUS oder AGC her durch das Weiterzählen dort
+ankommt, wird nicht vorausgesetzt. Der Koprozessor liest STATUS (1 Byte) und
+RAW ANGLE (2 Byte) in jedem zweiten 1-ms-Takt, 500 Hz, in den Takten ohne
+Rotationseintrag: 217,5 µs Buszeit bei 400 kHz. In einem von 25 dieser Plätze
+liest er stattdessen RAW ANGLE, AGC (1 Byte) und MAGNITUDE (2 Byte):
+337,5 µs. Das sind 500 Winkellesungen je Sekunde im Abstand von 2 ms, 480
+STATUS-Lesungen und 20 Lesungen von AGC und MAGNITUDE. Eine Transaktion von N
+Byte dauert 9 × (3 + N) + 3 Takte; die Zeit des Controllers zwischen den
+Transaktionen ist nicht gezählt und nicht gemessen. Ein ungerader Takt ist
+CH1, das Paar, wenn es läuft, der Platz des INA228 und der Encoder: 480 µs,
+600 µs in einem Platz mit MAGNITUDE, mit dem Paar 720 µs und 840 µs. Ein
+gerader Takt bleibt unter 690 µs. Der Encoder fügt der Buszeit einer Sekunde
+11,1 % hinzu: 44,0 % insgesamt, 66,8 % mit dem Paar.
 
 | Register | Name | Liest |
 | ---: | --- | --- |

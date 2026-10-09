@@ -4952,6 +4952,39 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 }
 
+TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
+{
+    fresh();
+    open_settings();
+    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 on */
+    CHECK(settings_get_bool(SET_ENC_EN));
+    settings_set(SET_ENC_CENTRE, 1000.0f);
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u };
+    servo_screen_encoder(&e);
+
+    /* The link drops: ENC CENTRE takes nothing from the last count. */
+    servo_screen_set_link(false);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
+
+    /* A reading queued before the drop and drained after it is not used
+     * either. */
+    servo_screen_encoder(&e);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
+
+    /* The link back and no reading yet: still nothing; a reading that
+     * arrives with the link is the live count. */
+    servo_screen_set_link(true);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
+    const servo_test_enc_t f = { true, 1500u, 0u, 6000u };
+    servo_screen_encoder(&f);
+    tap(ROW_L_X, ROW_Y(3));
+    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);
+}
+
 TEST_CASE(a_run_with_the_encoder_on_writes_the_angle_columns)
 {
     bench_fresh();
@@ -4991,6 +5024,7 @@ int main(void)
 {
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
+    RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);
     RUN(a_run_with_the_encoder_off_writes_the_old_columns);
     RUN(a_touch_on_the_dial_points_the_horn_there);

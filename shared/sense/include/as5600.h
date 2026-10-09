@@ -26,13 +26,33 @@
  * differences between two angles are taken on the circle
  * (as5600_delta()).
  *
- * Reads.  STATUS and RAW ANGLE are contiguous: as5600_read_angle() gets both
- * in one 3-byte read, 0.19 ms of bus time at 400 kHz without the
- * controller's own time between transactions, which is not measured.
- * as5600_read_magnitude() reads AGC and MAGNITUDE in one 3-byte read.
+ * Reads.  Each register is read in a transaction of its own: the register
+ * address, a repeated START, then the register's bytes.  The datasheet
+ * (ams AS5600 DS000365, I2C section, "Automatic Increment of the Address
+ * Pointer for ANGLE, RAW ANGLE and MAGNITUDE Registers") says: "These are
+ * special registers which suppress the automatic increment of the address
+ * pointer on reads, so a re-read of these registers requires no I2C write
+ * command to reload the address pointer. This special treatment of the
+ * pointer is effective only if the address pointer is set to the high byte
+ * of the register."  Elsewhere it says the pointer "is incremented after
+ * each byte is transferred, except for certain read transactions to special
+ * registers".  A read that runs from STATUS (0x0B) into RAW ANGLE, or from
+ * AGC (0x1A) into MAGNITUDE, arrives at a special register by the
+ * increment, and the code does not rely on what the part does then:
  *
- * Identity.  The part has no identity register.  A probe reads STATUS and
- * RAW ANGLE; a STATUS with a reserved bit set is not an AS5600's and the
+ *   STATUS     0x0B  1 byte
+ *   RAW ANGLE  0x0C  2 bytes, high byte first
+ *   AGC        0x1A  1 byte
+ *   MAGNITUDE  0x1B  2 bytes, high byte first
+ *
+ * Bus time at 400 kHz, 9 clocks a byte, the address byte written, the
+ * register byte and the address byte read, and 3 clocks for START,
+ * repeated START and STOP: 39 clocks (97.5 us) for a 1-byte read, 48 clocks
+ * (120 us) for a 2-byte read, without the controller's own time between
+ * transactions, which is not measured.  as5600_read_angle() is 217.5 us,
+ * as5600_read_magnitude() 217.5 us.
+ *
+ * Identity.  The part has no identity register.  A probe reads STATUS; a STATUS with a reserved bit set is not an AS5600's and the
  * part is not used (SENSE_PART_WRONG_ID).  An AS5600L answers at 0x40 by
  * default and is not addressed here.
  *
@@ -106,11 +126,24 @@ bool as5600_step(as5600_t *d, uint32_t now_ms);
 
 sense_state_t as5600_state(const as5600_t *d);
 
-/** STATUS and RAW ANGLE in one read.  On anything but SENSE_OK both are
- *  left as they were. */
+/** STATUS: 1 byte from 0x0B.  On anything but SENSE_OK @p status is left as
+ *  it was. */
+sense_err_t as5600_read_status(as5600_t *d, uint8_t *status);
+
+/** RAW ANGLE: 2 bytes from 0x0C, 0 to 4095; the same rule. */
+sense_err_t as5600_read_raw(as5600_t *d, uint16_t *raw);
+
+/** AGC: 1 byte from 0x1A; the same rule. */
+sense_err_t as5600_read_agc(as5600_t *d, uint8_t *agc);
+
+/** MAGNITUDE: 2 bytes from 0x1B, 0 to 4095; the same rule. */
+sense_err_t as5600_read_mag(as5600_t *d, uint16_t *magnitude);
+
+/** STATUS, then RAW ANGLE: two transactions.  On anything but SENSE_OK both
+ *  are left as they were. */
 sense_err_t as5600_read_angle(as5600_t *d, uint8_t *status, uint16_t *raw);
 
-/** AGC and MAGNITUDE in one read; the same rule. */
+/** AGC, then MAGNITUDE: two transactions; the same rule. */
 sense_err_t as5600_read_magnitude(as5600_t *d, uint8_t *agc,
                                   uint16_t *magnitude);
 

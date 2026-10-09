@@ -22,8 +22,9 @@ as before.
   count), MAGNITUDE, an angle sample count and the time the angle has stayed
   within 12 counts (1.05 degrees) of an anchor, in ms. The coprocessor reads
   STATUS and RAW ANGLE at 500 Hz on the 1 ms schedule's ticks without a
-  rotation item, and AGC with MAGNITUDE at 20 Hz; the still time is kept at
-  the 2 ms sample interval, so the panel times the end of a move whatever its
+  rotation item, each register in a transaction of its own; one slot in 25
+  reads RAW ANGLE, AGC and MAGNITUDE instead of STATUS, so the angle is
+  sampled every 2 ms. The still time is kept at the 2 ms sample interval, so the panel times the end of a move whatever its
   polling interval. The panel writes bit 2 and reads registers 26 to 31 only
   from a coprocessor that names 4.9 and says
   `coprocessor older than 4.9 -- AS5600 not read` for an older one; it says
@@ -38,7 +39,8 @@ as before.
   travel time measured from the angle: the command to the start of 100 ms
   within 1.05 degrees (`SERVO_TEST_ENC_TOL_COUNTS`, `SERVO_TEST_ENC_HOLD_MS`),
   beside the supply current's, which is unchanged. The CSV gains `angle (deg)`
-  and `travel angle (ms)` columns and the report an ENCODER section; the
+  and `travel angle (ms)` columns, each row taking the newest angle taken at
+  or before it, and the report an ENCODER section; the
   deadband is reported as not measured, since the moves go end to end. With
   AS5600 off, the CSV and the report are as before.
 

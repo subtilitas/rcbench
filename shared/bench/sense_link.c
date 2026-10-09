@@ -430,9 +430,9 @@ static const uint16_t k_online[2] = { LINK_SN_I228_ONLINE,
 static const uint16_t k_wrong[2]  = { LINK_SN_I228_ID_WRONG,
                                       LINK_SN_I3221_ID_WRONG };
 static const uint16_t k_en[2]     = { LINK_SN_EN_I228, LINK_SN_EN_I3221 };
-static const uint16_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
+static const uint32_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
                                       SENSE_LINK_EV_I3221_SILENT };
-static const uint16_t k_wrong_ev[2] = { SENSE_LINK_EV_I228_WRONG,
+static const uint32_t k_wrong_ev[2] = { SENSE_LINK_EV_I228_WRONG,
                                         SENSE_LINK_EV_I3221_WRONG };
 
 /* The encoder's part of a SENSE read: not answering, once until it does,
@@ -495,7 +495,7 @@ static void judge_status(sense_link_t *s, uint32_t now_ms)
             s->online_seen[p] = true;
             /* Answering as itself now: a "not answering" or "another
              * identity" still waiting for the band is over. */
-            s->events &= (uint16_t)~(k_silent[p] | k_wrong_ev[p]);
+            s->events &= ~(uint32_t)(k_silent[p] | k_wrong_ev[p]);
             continue;
         }
         if ((f & k_wrong[p]) != 0u) {

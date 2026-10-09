@@ -5587,9 +5587,9 @@ static void sense_link_alerts(void)
     if ((ev & SENSE_LINK_EV_I228_CLIPPED) != 0u) {
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_CLIPPED));
     }
-    static const uint16_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
+    static const uint32_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
                                           SENSE_LINK_EV_I3221_SILENT };
-    static const uint16_t k_wrong[2]  = { SENSE_LINK_EV_I228_WRONG,
+    static const uint32_t k_wrong[2]  = { SENSE_LINK_EV_I228_WRONG,
                                           SENSE_LINK_EV_I3221_WRONG };
     for (unsigned p = 0u; p < 2u; ++p) {
         const sense_link_part_t part = (sense_link_part_t)p;

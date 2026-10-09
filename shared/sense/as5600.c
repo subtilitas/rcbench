@@ -56,7 +56,7 @@ void as5600_init(as5600_t *d, sense_bus_t *bus)
 
 static sense_state_t probe(as5600_t *d)
 {
-    uint8_t b[3];
+    uint8_t b[1];
     if (sense_bus_read(d->part.bus, d->part.addr, AS5600_REG_STATUS, b,
                        sizeof b) != SENSE_OK) {
         return SENSE_PART_ABSENT;
@@ -79,14 +79,61 @@ sense_state_t as5600_state(const as5600_t *d)
     return d->part.state;
 }
 
-sense_err_t as5600_read_angle(as5600_t *d, uint8_t *status, uint16_t *raw)
+sense_err_t as5600_read_status(as5600_t *d, uint8_t *status)
 {
-    uint8_t b[3];
+    uint8_t b[1];
     const sense_err_t e = sense_part_read(&d->part, AS5600_REG_STATUS, b,
                                           sizeof b);
     if (e == SENSE_OK) {
         *status = b[0];
-        *raw    = as5600_u12(&b[1]);
+    }
+    return e;
+}
+
+sense_err_t as5600_read_raw(as5600_t *d, uint16_t *raw)
+{
+    uint8_t b[2];
+    const sense_err_t e = sense_part_read(&d->part, AS5600_REG_RAW_ANGLE, b,
+                                          sizeof b);
+    if (e == SENSE_OK) {
+        *raw = as5600_u12(b);
+    }
+    return e;
+}
+
+sense_err_t as5600_read_agc(as5600_t *d, uint8_t *agc)
+{
+    uint8_t b[1];
+    const sense_err_t e = sense_part_read(&d->part, AS5600_REG_AGC, b,
+                                          sizeof b);
+    if (e == SENSE_OK) {
+        *agc = b[0];
+    }
+    return e;
+}
+
+sense_err_t as5600_read_mag(as5600_t *d, uint16_t *magnitude)
+{
+    uint8_t b[2];
+    const sense_err_t e = sense_part_read(&d->part, AS5600_REG_MAGNITUDE, b,
+                                          sizeof b);
+    if (e == SENSE_OK) {
+        *magnitude = as5600_u12(b);
+    }
+    return e;
+}
+
+sense_err_t as5600_read_angle(as5600_t *d, uint8_t *status, uint16_t *raw)
+{
+    uint8_t st = 0u;
+    uint16_t r = 0u;
+    sense_err_t e = as5600_read_status(d, &st);
+    if (e == SENSE_OK) {
+        e = as5600_read_raw(d, &r);
+    }
+    if (e == SENSE_OK) {
+        *status = st;
+        *raw    = r;
     }
     return e;
 }
@@ -94,12 +141,15 @@ sense_err_t as5600_read_angle(as5600_t *d, uint8_t *status, uint16_t *raw)
 sense_err_t as5600_read_magnitude(as5600_t *d, uint8_t *agc,
                                   uint16_t *magnitude)
 {
-    uint8_t b[3];
-    const sense_err_t e = sense_part_read(&d->part, AS5600_REG_AGC, b,
-                                          sizeof b);
+    uint8_t a = 0u;
+    uint16_t m = 0u;
+    sense_err_t e = as5600_read_agc(d, &a);
     if (e == SENSE_OK) {
-        *agc       = b[0];
-        *magnitude = as5600_u12(&b[1]);
+        e = as5600_read_mag(d, &m);
+    }
+    if (e == SENSE_OK) {
+        *agc       = a;
+        *magnitude = m;
     }
     return e;
 }

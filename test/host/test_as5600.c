@@ -6,12 +6,14 @@
  *
  * Under test: the 12-bit registers and the STATUS bits; angle differences on
  * the circle across the 4095 to 0 wrap; hundredths of a degree; a probe that
- * finds the part, finds nothing, or finds a STATUS no AS5600 gives; one
- * 3-byte read for STATUS with RAW ANGLE and one for AGC with MAGNITUDE; the
- * part offline after three failed reads and back after a probe a second
- * later; the schedule reading the angle 480 times and the magnitude 20
- * times in 1000 ms, on the odd ticks, without moving the rate of any other
- * read; the still time: counting up inside the 12-count tolerance, restarting
+ * finds the part, finds nothing, or finds a STATUS no AS5600 gives; each
+ * register read in a transaction of its own (STATUS 1 byte, RAW ANGLE 2,
+ * AGC 1, MAGNITUDE 2), never across the increment-suppressing registers;
+ * the part offline after three failed reads and back after a probe a second
+ * later; the schedule reading the angle 500 times, STATUS 480 times and
+ * AGC with MAGNITUDE 20 times in 1000 ms, on the odd ticks, with the bus
+ * time the header states and without moving the rate of any other read;
+ * the angle sampled every 2 ms through the field slots; the still time: counting up inside the 12-count tolerance, restarting
  * at a sample outside it, across the wrap, on a ramp, cleared by an offline
  * part; the service opening the bus for the encoder alone and handing the
  * readings over.
@@ -102,7 +104,8 @@ TEST_CASE(a_probe_finds_the_part_and_reads_nothing_more)
     CHECK(as5600_step(&d, 0));
     CHECK_EQ(as5600_state(&d), SENSE_PART_ONLINE);
     CHECK_EQ(d.part.addr, AS5600_ADDR);
-    CHECK_EQ(enc->reads[AS5600_REG_STATUS], 1u);   /* one 3-byte read */
+    CHECK_EQ(enc->reads[AS5600_REG_STATUS], 1u);   /* STATUS, 1 byte */
+    CHECK_EQ(enc->reads[AS5600_REG_RAW_ANGLE], 0u);
     CHECK_EQ(fb.transactions, 1u);
     CHECK_EQ(fb.bad_width, 0u);
     CHECK(as5600_step(&d, 1));                     /* not probed again */
@@ -134,7 +137,7 @@ TEST_CASE(a_status_no_as5600_gives_is_not_used)
     CHECK_EQ(as5600_read_angle(&d, &st, &raw), SENSE_OFFLINE);
 }
 
-TEST_CASE(status_and_raw_angle_come_in_one_read)
+TEST_CASE(status_and_raw_angle_are_two_reads)
 {
     fresh();
     enc->status = AS5600_STATUS_MD | AS5600_STATUS_MH;
@@ -146,11 +149,21 @@ TEST_CASE(status_and_raw_angle_come_in_one_read)
     CHECK_EQ(as5600_read_angle(&d, &st, &raw), SENSE_OK);
     CHECK_EQ(st, AS5600_STATUS_MD | AS5600_STATUS_MH);
     CHECK_EQ(raw, 0x0ABCu);
-    CHECK_EQ(fb.transactions, before + 1u);
+    CHECK_EQ(fb.transactions, before + 2u);
+    CHECK_EQ(enc->reads[AS5600_REG_STATUS], 2u);     /* probe and this */
+    CHECK_EQ(enc->reads[AS5600_REG_RAW_ANGLE], 1u);
+    CHECK_EQ(fb.bad_width, 0u);
+    /* The single reads. */
+    enc->raw = 0x0F01u;
+    CHECK_EQ(as5600_read_raw(&d, &raw), SENSE_OK);
+    CHECK_EQ(raw, 0x0F01u);
+    enc->status = AS5600_STATUS_ML;
+    CHECK_EQ(as5600_read_status(&d, &st), SENSE_OK);
+    CHECK_EQ(st, AS5600_STATUS_ML);
     CHECK_EQ(fb.bad_width, 0u);
 }
 
-TEST_CASE(agc_and_magnitude_come_in_one_read)
+TEST_CASE(agc_and_magnitude_are_two_reads)
 {
     fresh();
     enc->agc = 128u;
@@ -162,8 +175,34 @@ TEST_CASE(agc_and_magnitude_come_in_one_read)
     CHECK_EQ(as5600_read_magnitude(&d, &agc, &mag), SENSE_OK);
     CHECK_EQ(agc, 128u);
     CHECK_EQ(mag, 0x0345u);
-    CHECK_EQ(fb.transactions, before + 1u);
+    CHECK_EQ(fb.transactions, before + 2u);
     CHECK_EQ(enc->reads[AS5600_REG_AGC], 1u);
+    CHECK_EQ(enc->reads[AS5600_REG_MAGNITUDE], 1u);
+    CHECK_EQ(fb.bad_width, 0u);
+    enc->magnitude = 0x0FFFu;
+    CHECK_EQ(as5600_read_mag(&d, &mag), SENSE_OK);
+    CHECK_EQ(mag, 0x0FFFu);
+    enc->agc = 7u;
+    CHECK_EQ(as5600_read_agc(&d, &agc), SENSE_OK);
+    CHECK_EQ(agc, 7u);
+    CHECK_EQ(fb.bad_width, 0u);
+}
+
+TEST_CASE(a_read_across_the_special_registers_is_a_fault_of_the_model)
+{
+    /* The modelled part takes one register a read: STATUS on to RAW ANGLE
+     * in one read, and AGC on to MAGNITUDE, are counted as bad. */
+    fresh();
+    uint8_t b[3];
+    CHECK_EQ(sense_bus_read(&bus, AS5600_ADDR, AS5600_REG_STATUS, b, 3u),
+             SENSE_OK);
+    CHECK_EQ(fb.bad_width, 1u);
+    CHECK_EQ(sense_bus_read(&bus, AS5600_ADDR, AS5600_REG_AGC, b, 3u),
+             SENSE_OK);
+    CHECK_EQ(fb.bad_width, 2u);
+    CHECK_EQ(sense_bus_read(&bus, AS5600_ADDR, AS5600_REG_RAW_ANGLE, b, 2u),
+             SENSE_OK);
+    CHECK_EQ(fb.bad_width, 2u);
 }
 
 TEST_CASE(a_failed_read_leaves_the_values_and_three_take_it_offline)
@@ -240,27 +279,90 @@ static void ticks(unsigned n)
     }
 }
 
-TEST_CASE(the_angle_is_read_480_times_and_the_magnitude_20_in_a_second)
+TEST_CASE(the_angle_is_read_500_times_and_the_field_20_in_a_second)
 {
     rig(false);
     tick();                                        /* the probe */
     CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_ONLINE);
     memset(enc->reads, 0, sizeof(enc->reads));
+    enc->clocks = 0u;
     enc->raw = 2000u;
     enc->status = AS5600_STATUS_MD;
     enc->magnitude = 1500u;
     enc->agc = 100u;
     const uint16_t before = s.enc.samples;
     ticks(1000u);
+    CHECK_EQ(enc->reads[AS5600_REG_RAW_ANGLE], 500u);
+    CHECK_EQ((uint16_t)(s.enc.samples - before), 500u);
     CHECK_EQ(enc->reads[AS5600_REG_STATUS], 480u);
     CHECK_EQ(enc->reads[AS5600_REG_AGC], 20u);
-    CHECK_EQ((uint16_t)(s.enc.samples - before), 480u);
+    CHECK_EQ(enc->reads[AS5600_REG_MAGNITUDE], 20u);
     CHECK_EQ(fb.bad_width, 0u);
     CHECK(s.enc.have_angle && s.enc.have_mag);
     CHECK_EQ(s.enc.raw, 2000u);
     CHECK_EQ(s.enc.status, AS5600_STATUS_MD);
     CHECK_EQ(s.enc.magnitude, 1500u);
     CHECK_EQ(s.enc.agc, 100u);
+    /* Bus time: 480 slots of STATUS (39 clocks) and RAW ANGLE (48), 20 of
+     * RAW ANGLE, AGC (39) and MAGNITUDE (48): 44460 clocks of 2.5 us,
+     * 111.15 ms of the second, 11.1 %. */
+    CHECK_EQ(enc->clocks, 480u * (39u + 48u) + 20u * (48u + 39u + 48u));
+    CHECK_EQ(enc->clocks, 44460u);
+}
+
+TEST_CASE(the_angle_is_sampled_every_2_ms_through_the_field_slots)
+{
+    rig(false);
+    tick();
+    /* 100 slots, four field slots among them: the sample count advances
+     * once in every second tick, never skipping one. */
+    uint16_t last = s.enc.samples;
+    unsigned since = 0u;
+    for (unsigned k = 0; k < 200u; ++k) {
+        tick();
+        ++since;
+        if (s.enc.samples != last) {
+            CHECK_EQ((uint16_t)(s.enc.samples - last), 1u);
+            if (k > 4u) {
+                CHECK_EQ(since, 2u);
+            }
+            since = 0u;
+            last  = s.enc.samples;
+        }
+        CHECK(since <= 2u);
+    }
+    /* A field slot still stamps its sample: the still time keeps counting
+     * across it. */
+    enc->raw = 900u;
+    ticks(400u);
+    CHECK(sense_sched_enc_still_ms(&s) >= 395u);
+}
+
+TEST_CASE(the_encoders_slot_is_217_or_337_us_of_a_tick)
+{
+    /* CH1 alone beside the encoder: CH1 is one 2-byte read (48 clocks), so
+     * a tick's reads are 48 clocks on an even tick, and on an odd tick
+     * 48 plus the encoder's 87 (STATUS, RAW ANGLE) or 135 (RAW ANGLE, AGC,
+     * MAGNITUDE).  The header adds the INA228's slot and the pair to that:
+     * 840 us at most. */
+    rig(true);
+    tick();
+    unsigned worst = 0u, field = 0u, plain = 0u;
+    for (unsigned k = 0; k < 400u; ++k) {
+        const uint64_t c0 = i3221->clocks, e0 = enc->clocks;
+        tick();
+        const unsigned enc_clk = (unsigned)(enc->clocks - e0);
+        const unsigned all     = (unsigned)(i3221->clocks - c0) + enc_clk;
+        if (all > worst) {
+            worst = all;
+        }
+        field += (enc_clk == 135u);
+        plain += (enc_clk == 87u);
+        CHECK(enc_clk == 0u || enc_clk == 87u || enc_clk == 135u);
+    }
+    CHECK_EQ(plain + field, 200u);
+    CHECK_EQ(field, 8u);
+    CHECK(worst <= 48u + 135u);                    /* 457.5 us */
 }
 
 TEST_CASE(the_encoder_moves_no_other_reads_rate)
@@ -274,7 +376,7 @@ TEST_CASE(the_encoder_moves_no_other_reads_rate)
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
     CHECK_EQ(i3221->reads[INA3221_BUS1], 50u);
     CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 50u);
-    CHECK_EQ(enc->reads[AS5600_REG_STATUS] + enc->reads[AS5600_REG_AGC], 500u);
+    CHECK_EQ(enc->reads[AS5600_REG_RAW_ANGLE], 500u);
 }
 
 TEST_CASE(a_part_not_enabled_is_never_addressed)
@@ -521,10 +623,13 @@ int main(void)
     RUN(a_probe_finds_the_part_and_reads_nothing_more);
     RUN(a_missing_part_is_absent_and_probed_again_a_second_later);
     RUN(a_status_no_as5600_gives_is_not_used);
-    RUN(status_and_raw_angle_come_in_one_read);
-    RUN(agc_and_magnitude_come_in_one_read);
+    RUN(status_and_raw_angle_are_two_reads);
+    RUN(agc_and_magnitude_are_two_reads);
+    RUN(a_read_across_the_special_registers_is_a_fault_of_the_model);
     RUN(a_failed_read_leaves_the_values_and_three_take_it_offline);
-    RUN(the_angle_is_read_480_times_and_the_magnitude_20_in_a_second);
+    RUN(the_angle_is_read_500_times_and_the_field_20_in_a_second);
+    RUN(the_angle_is_sampled_every_2_ms_through_the_field_slots);
+    RUN(the_encoders_slot_is_217_or_337_us_of_a_tick);
     RUN(the_encoder_moves_no_other_reads_rate);
     RUN(a_part_not_enabled_is_never_addressed);
     RUN(the_still_time_counts_up_inside_the_tolerance);

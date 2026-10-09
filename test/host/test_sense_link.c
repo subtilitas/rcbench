@@ -1285,6 +1285,48 @@ TEST_CASE(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right)
     CHECK_EQ(sense_link_enc_magnet(NULL), 0u);
 }
 
+TEST_CASE(a_magnet_event_waiting_survives_a_current_monitor_answering)
+{
+    /* The magnet event is bit 16.  A read that finds a current monitor
+     * answering clears that monitor's "not answering" and "another
+     * identity" events with a mask of the event word's full width; a mask
+     * of 16 bits would clear the magnet event with them. */
+    fresh(9u);
+    sense_setup_t w = setup_default();
+    w.i228  = true;
+    w.as5600 = true;
+    want(&w);
+    polls(20);
+    far_flags(LINK_SN_I228_ONLINE);
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* A weak magnet, while the caller's alert slot is busy: the event
+     * waits. */
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD | LINK_SN_ENC_ML
+            | LINK_SN_ENC_VALID, 5u, 2u, 1u);
+    polls(4);
+    /* More status reads with the monitor answering. */
+    polls(10);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK_EQ(sense_link_event(&sl, now + 10000u), 0u);
+
+    /* The same, with another event handed out first: the magnet event is
+     * held back by the gap and comes with the next call after it. */
+    far_enc(ENC_OK, 5u, 3u, 1u);
+    polls(4);
+    far_flags(LINK_SN_I228_ONLINE | LINK_SN_BUS_STUCK);
+    polls(2);
+    const uint32_t t0 = now + 20000u;
+    CHECK_EQ(sense_link_event(&sl, t0), SENSE_LINK_EV_STUCK);
+    far_flags(LINK_SN_I228_ONLINE);
+    far_enc(LINK_SN_ENC_ONLINE | LINK_SN_ENC_VALID, 5u, 4u, 1u);
+    polls(1);
+    CHECK_EQ(sense_link_event(&sl, t0 + 100u), 0u);   /* inside the gap */
+    polls(3);
+    CHECK_EQ(sense_link_event(&sl, t0 + 10000u), SENSE_LINK_EV_ENC_MAGNET);
+}
+
 TEST_CASE(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off)
 {
     enc_wanted(9u);
@@ -1323,7 +1365,8 @@ int main(void)
     RUN(the_link_going_down_takes_the_angle_with_it);
     RUN(an_encoder_that_does_not_answer_is_said_once);
     RUN(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right);
-    RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
+    RUN(a_magnet_event_waiting_survives_a_current_monitor_answering);
+RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
     RUN(encoder_events_come_after_the_current_monitors);
     RUN(nothing_is_sent_to_a_4_6_coprocessor);
     RUN(a_coprocessor_that_refuses_the_page_is_left_alone);

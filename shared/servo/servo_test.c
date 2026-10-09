@@ -194,10 +194,10 @@ static void enc_open(servo_test_t *t, uint8_t end, bool counted,
     t->enc_counted    = counted;
     t->enc_end        = end;
     t->enc_cmd_ms     = now_ms;
-    t->enc_ok         = t->enc_have
-                        && (now_ms - t->enc_ms) <= SERVO_TEST_ENC_STALE_MS;
-    t->enc_start_deg  = t->enc_deg;
-    t->enc_last_deg   = t->enc_deg;
+    float start = 0.0f;
+    t->enc_ok         = servo_test_enc_at(t, now_ms, &start);
+    t->enc_start_deg  = start;
+    t->enc_last_deg   = start;
     t->enc_moved      = false;
     t->enc_settled    = false;
     t->enc_travel_ms  = 0u;
@@ -530,11 +530,15 @@ static void log_row(servo_test_t *t, const servo_test_reading_t *r,
          * be, and the settle once, on the row after it was found. */
         const size_t used = strlen(line);
         char angle[12] = "";
-        if (t->enc_have && (r->taken_ms - t->enc_ms) <= SERVO_TEST_ENC_STALE_MS) {
-            snprintf(angle, sizeof(angle), "%.2f", (double)t->enc_deg);
+        float deg = 0.0f;
+        if (servo_test_enc_at(t, r->taken_ms, &deg)) {
+            snprintf(angle, sizeof(angle), "%.2f", (double)deg);
         }
         char settle[12] = "";
-        if (t->enc_travel_now_ms != 0u) {
+        /* On the first row taken at or after the reading that found it:
+         * a row older than that reading waits for the next. */
+        if (t->enc_travel_now_ms != 0u
+            && (int32_t)(r->taken_ms - t->enc_travel_at_ms) >= 0) {
             snprintf(settle, sizeof(settle), "%lu",
                      (unsigned long)t->enc_travel_now_ms);
             t->enc_travel_now_ms = 0u;
@@ -659,18 +663,48 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
     log_row(t, r, position_us);
 }
 
+bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg)
+{
+    bool     found = false;
+    uint32_t best  = 0u;                 /* the age of the best so far */
+    uint16_t raw   = 0u;
+    for (unsigned k = 0u; k < t->enc_hist_n; ++k) {
+        const servo_test_enc_sample_t *h = &t->enc_hist[k];
+        if ((int32_t)(at_ms - h->ms) < 0) {
+            continue;                    /* taken after the row */
+        }
+        const uint32_t age = at_ms - h->ms;
+        if (!found || age < best) {
+            found = true;
+            best  = age;
+            raw   = h->raw;
+        }
+    }
+    if (!found || best > SERVO_TEST_ENC_STALE_MS) {
+        return false;
+    }
+    *deg = servo_test_enc_deg(raw, t->cfg.enc_centre);
+    return true;
+}
+
 void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
 {
     if (t == NULL || e == NULL) {
         return;
     }
     if (!e->valid) {
-        t->enc_have = false;
+        /* The angle is not known across a gap. */
+        t->enc_hist_n    = 0u;
+        t->enc_hist_next = 0u;
         return;
     }
-    t->enc_deg  = servo_test_enc_deg(e->raw, t->cfg.enc_centre);
-    t->enc_ms   = e->taken_ms;
-    t->enc_have = true;
+    t->enc_hist[t->enc_hist_next].ms  = e->taken_ms;
+    t->enc_hist[t->enc_hist_next].raw = e->raw;
+    t->enc_hist_next = (uint8_t)((t->enc_hist_next + 1u) % SERVO_TEST_ENC_HIST);
+    if (t->enc_hist_n < SERVO_TEST_ENC_HIST) {
+        ++t->enc_hist_n;
+    }
+    const float deg = servo_test_enc_deg(e->raw, t->cfg.enc_centre);
     if (!servo_test_running(t) || !t->cfg.enc_on) {
         return;
     }
@@ -680,9 +714,9 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
         || (int32_t)(e->taken_ms - t->enc_cmd_ms) < 0) {
         return;
     }
-    t->enc_last_deg = t->enc_deg;
+    t->enc_last_deg = deg;
     if (!t->enc_moved
-        && fabsf(t->enc_deg - t->enc_start_deg) > SERVO_TEST_ENC_MOVED_DEG) {
+        && fabsf(deg - t->enc_start_deg) > SERVO_TEST_ENC_MOVED_DEG) {
         t->enc_moved = true;
     }
     if (t->enc_moved && !t->enc_settled
@@ -695,6 +729,7 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
             t->enc_settled   = true;
             t->enc_travel_ms = (uint32_t)began;
             t->enc_travel_now_ms = (began > 0) ? (uint32_t)began : 1u;
+            t->enc_travel_at_ms  = e->taken_ms;
         }
     }
 }

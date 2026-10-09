@@ -331,11 +331,17 @@ befohlenen Winkel mit den Regeln oben. Die Tabelle des Stroms und seine Spalte
 `Stell.` bleiben, die beiden Zeiten stehen also nebeneinander: am PD mini ist
 die aus dem Strom eine Obergrenze und hinkt dem Horn um etwa 0,3 s nach, die aus dem Winkel
 nicht. Die CSV bekommt zwei Spalten, `angle (deg)` in jeder Zeile, deren
-Winkelmesswert jünger als 500 ms ist, und `travel angle (ms)` in der Zeile nach
-einer beruhigten Bewegung. Der Bericht vermerkt, dass das Totband nicht
+Winkelmesswert jünger als 500 ms ist, und `travel angle (ms)` in der ersten
+Zeile, die zur Zeit des Messwerts, der die Beruhigung fand, oder danach
+genommen wurde. Jede Zeile nimmt den neuesten Winkelmesswert, der zur Zeit der
+Zeile oder davor genommen wurde, aus den letzten 16 Messwerten (etwa 640 ms);
+die Reihenfolge, in der das Panel Messwerte und Zeilen abarbeitet, schiebt
+also keinen Winkel in die falsche Zeile. Der Bericht vermerkt, dass das Totband nicht
 gemessen wird: es braucht Schritte, die kleiner sind als die Bewegungen von
 Ende zu Ende, und der Test macht keine. Die Zeile GEMESSEN der Seite SERVO
-zeigt den aktuellen Winkel, solange AS5600 an ist.
+zeigt den aktuellen Winkel, solange AS5600 an ist. Fällt der Link aus, wird
+der Messwert gelöscht: die Zeile zeigt Striche, und ENC-MITTE setzt nichts,
+bis mit dem Link wieder ein Messwert eintrifft.
 
 Nicht auf Hardware gelaufen: der Sensor am Bus, die Toleranz und die 100 ms
 Haltezeit gegen das Zittern eines echten Servos, und die Montage.
@@ -436,7 +442,7 @@ Prüfstands:
 | `power (W)` | W | Spannung mal Strom |
 | `mode` | | `CV`, `CC` oder `OFF` |
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
-| `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte; leer ohne einen Messwert, der jünger als 500 ms ist |
+| `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte, aus dem neuesten Messwert, der zur Zeit der Zeile oder davor genommen wurde; leer, wenn dieser älter als 500 ms ist oder fehlt |
 | `travel angle (ms)` | ms | nur mit AS5600 an: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine

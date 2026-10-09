@@ -191,6 +191,17 @@ typedef struct {
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
 } servo_test_reading_t;
 
+/** Readings of the encoder kept for matching with the supply's rows.  The
+ *  panel has one about every 40 ms, so 16 span 640 ms: more than
+ *  SERVO_TEST_ENC_STALE_MS. */
+#define SERVO_TEST_ENC_HIST          16u
+
+/** A kept reading. */
+typedef struct {
+    uint32_t ms;            /**< when the panel had it                   */
+    uint16_t raw;           /**< RAW ANGLE, 0 to 4095                    */
+} servo_test_enc_sample_t;
+
 /** One reading of the output encoder, as the SENSE page has it. */
 typedef struct {
     bool     valid;         /**< the part answers and has an angle      */
@@ -438,9 +449,11 @@ typedef struct {
     uint32_t travel_now_ms; /**< the arrival to log, 0 for none          */
 
     /* The encoder. */
-    bool     enc_have;      /**< enc_deg is a reading                    */
-    float    enc_deg;
-    uint32_t enc_ms;        /**< when it was taken                       */
+    /* The last SERVO_TEST_ENC_HIST readings, oldest overwritten, each with
+     * the time it was taken: a log row takes the newest not later than
+     * itself (servo_test_enc_at()). */
+    servo_test_enc_sample_t enc_hist[SERVO_TEST_ENC_HIST];
+    uint8_t  enc_hist_n, enc_hist_next;
     uint32_t enc_reads;     /**< readings that reached the run           */
     bool     enc_open;      /**< a move is being judged                  */
     bool     enc_counted;
@@ -451,6 +464,7 @@ typedef struct {
     bool     enc_moved, enc_settled;
     uint32_t enc_travel_ms;
     uint32_t enc_travel_now_ms;     /**< the settle to log, 0 for none   */
+    uint32_t enc_travel_at_ms;      /**< the reading that found it       */
 
     /* The readings. */
     bool     have_reading;
@@ -506,6 +520,12 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
  * cfg.enc_on.
  */
 void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e);
+
+/** The angle at @p at_ms, degrees from cfg.enc_centre: the newest kept
+ *  reading taken at or before @p at_ms (a signed difference, so a reading
+ *  taken later than the row does not count), when it is no older than
+ *  SERVO_TEST_ENC_STALE_MS.  False when there is none. */
+bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg);
 
 /** One pass at @p now_ms: the timers, and what the run wants done since the
  *  last pass into @p out. */

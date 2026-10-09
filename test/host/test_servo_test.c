@@ -69,6 +69,9 @@ typedef struct {
     float    enc_deg_per_us;
     uint32_t enc_every, enc_next;
     bool     enc_valid;
+    uint32_t row_lag_ms;     /* the supply's rows are stamped this much older */
+    bool     check_rows;     /* keep_csv() checks where a settle was logged */
+    unsigned settle_rows;
     bool     enc_anchored;
     uint16_t enc_anchor;
     uint32_t enc_anchor_ms;
@@ -145,6 +148,18 @@ static void rig_fresh(void)
 
 static void keep_csv(const char *line)
 {
+    if (g.check_rows && line[0] >= '0' && line[0] <= '9') {
+        /* A row with a settle on it was taken at or after the reading that
+         * found the settle (the row's time is from the run's start). */
+        const char *last = strrchr(line, ';');
+        if (last != NULL && last[1] != '\0') {
+            unsigned long sec = 0u, ms = 0u;
+            CHECK_EQ(sscanf(line, "%lu.%lu", &sec, &ms), 2);
+            const uint32_t at = g.t.start_ms + (uint32_t)(sec * 1000u + ms);
+            CHECK((int32_t)(at - g.t.enc_travel_at_ms) >= 0);
+            ++g.settle_rows;
+        }
+    }
     const size_t n = strlen(line);
     if (g.csv_len + n + 2u > g.csv_cap) {
         g.csv_cap = (g.csv_cap + n + 2u) * 2u;
@@ -208,13 +223,13 @@ static servo_test_reading_t reading(float amps)
          * the current as they were, the stamp of when they came. */
         r.i = g.frozen_a;
         r.samples = g.samples;
-        r.taken_ms = g.now;
+        r.taken_ms = g.now - g.row_lag_ms;
         return r;
     }
     g.samples = (uint16_t)(g.samples + (g.sample_step ? g.sample_step : 1u));
     g.frozen_a = r.i;
     r.samples = g.samples;
-    r.taken_ms = g.now;
+    r.taken_ms = g.now - g.row_lag_ms;
     return r;
 }
 
@@ -2040,14 +2055,106 @@ TEST_CASE(an_invalid_reading_ends_the_angle_until_the_next)
     enc_rig(ENC_DEG_PER_US, &c);
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_ms(1000u);
-    CHECK(g.t.enc_have);
+    float deg = 0.0f;
+    CHECK(servo_test_enc_at(&g.t, g.now, &deg));
     servo_test_enc_t none = { false, 0u, 0u, g.now };
     servo_test_encoder(&g.t, &none);
-    CHECK(!g.t.enc_have);
+    CHECK(!servo_test_enc_at(&g.t, g.now, &deg));
     servo_test_encoder(&g.t, NULL);
     servo_test_encoder(NULL, &none);
     run_ms(100u);
-    CHECK(g.t.enc_have);            /* the model's next reading */
+    CHECK(servo_test_enc_at(&g.t, g.now, &deg));    /* the model's next reading */
+}
+
+/* The panel drains the encoder's readings before the supply's, so a row can
+ * be older than the newest reading.  The row takes the newest reading not
+ * later than itself. */
+TEST_CASE(a_row_takes_the_newest_angle_not_later_than_itself)
+{
+    servo_test_t t;
+    servo_test_init(&t);
+    t.cfg.enc_centre = 0u;
+    float deg = 0.0f;
+    CHECK(!servo_test_enc_at(&t, 1000u, &deg));            /* none yet */
+    for (unsigned k = 0; k < 5u; ++k) {                    /* 1000 ... 1160 */
+        const servo_test_enc_t e = { true, (uint16_t)(100u * (k + 1u)), 0u,
+                                     1000u + 40u * k };
+        servo_test_encoder(&t, &e);
+    }
+    /* A row at 1100: the reading of 1080, not the newer ones. */
+    CHECK(servo_test_enc_at(&t, 1100u, &deg));
+    CHECK_NEAR(deg, servo_test_enc_deg(300u, 0u), 0.0001f);
+    /* At a reading's own time: that reading. */
+    CHECK(servo_test_enc_at(&t, 1120u, &deg));
+    CHECK_NEAR(deg, servo_test_enc_deg(400u, 0u), 0.0001f);
+    /* Before the oldest: none, and not the newest by an unsigned wrap. */
+    CHECK(!servo_test_enc_at(&t, 999u, &deg));
+    CHECK(!servo_test_enc_at(&t, 0u, &deg));
+    /* Older than SERVO_TEST_ENC_STALE_MS to the newest not later: none. */
+    CHECK(servo_test_enc_at(&t, 1160u + SERVO_TEST_ENC_STALE_MS, &deg));
+    CHECK(!servo_test_enc_at(&t, 1160u + SERVO_TEST_ENC_STALE_MS + 1u, &deg));
+    /* The centre is the one in force when the row is matched. */
+    t.cfg.enc_centre = 500u;
+    CHECK(servo_test_enc_at(&t, 1160u, &deg));
+    CHECK_NEAR(deg, servo_test_enc_deg(500u, 500u), 0.0001f);
+    /* The ring keeps the last SERVO_TEST_ENC_HIST readings. */
+    for (unsigned k = 0; k < 40u; ++k) {
+        const servo_test_enc_t e = { true, (uint16_t)(2000u + k), 0u,
+                                     2000u + 40u * k };
+        servo_test_encoder(&t, &e);
+    }
+    CHECK_EQ(t.enc_hist_n, SERVO_TEST_ENC_HIST);
+    CHECK(servo_test_enc_at(&t, 2000u + 40u * 39u + 10u, &deg));
+    CHECK_NEAR(deg, servo_test_enc_deg(2039u, 500u), 0.0001f);
+    /* The oldest one kept is 15 readings back; one older is gone. */
+    CHECK(servo_test_enc_at(&t, 2000u + 40u * 24u, &deg));
+    CHECK_NEAR(deg, servo_test_enc_deg(2024u, 500u), 0.0001f);
+    CHECK(!servo_test_enc_at(&t, 2000u + 40u * 24u - 1u, &deg)
+          || fabsf(deg - servo_test_enc_deg(2024u, 500u)) > 0.0001f);
+    /* Across the 32-bit wrap of the clock. */
+    servo_test_init(&t);
+    const servo_test_enc_t w = { true, 700u, 0u, 0xFFFFFFF0u };
+    servo_test_encoder(&t, &w);
+    CHECK(servo_test_enc_at(&t, 20u, &deg));               /* 36 ms later */
+    CHECK_NEAR(deg, servo_test_enc_deg(700u, 0u), 0.0001f);
+    CHECK(!servo_test_enc_at(&t, 0xFFFFFFE0u, &deg));      /* before it */
+}
+
+TEST_CASE(rows_older_than_the_encoders_readings_still_get_their_angle)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    c.moves = 1u;
+    g.enc_every = 20u;
+    g.row_lag_ms = 30u;             /* every row older than the reading before it */
+    g.check_rows = true;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    unsigned rows = 0u, with_angle = 0u;
+    for (const char *p = strchr(g.csv_text, '\n'); p != NULL && *p != '\0';) {
+        const char *e = strchr(p + 1, '\n');
+        if (e == NULL) {
+            break;
+        }
+        const char *last = e;
+        while (last > p + 1 && last[-1] != ';') {
+            --last;
+        }
+        const char *prev = last - 1;
+        while (prev > p + 1 && prev[-1] != ';') {
+            --prev;
+        }
+        ++rows;
+        with_angle += (prev < last - 1) ? 1u : 0u;
+        p = e;
+    }
+    CHECK(rows > 40u);
+    /* Rows have an angle from the first reading on; the few before it do
+     * not. */
+    CHECK(with_angle + 8u >= rows);
+    /* The settles are logged, each once, none on a row older than the
+     * reading that found it. */
+    CHECK_EQ(g.settle_rows, 3u);
 }
 
 /* Stillness that began before the command is the servo at rest, not the
@@ -2126,6 +2233,8 @@ int main(void)
     RUN(a_servo_that_does_not_move_is_counted_unmoved_by_the_angle);
     RUN(an_encoder_that_gives_nothing_is_said_so);
     RUN(an_invalid_reading_ends_the_angle_until_the_next);
+    RUN(a_row_takes_the_newest_angle_not_later_than_itself);
+    RUN(rows_older_than_the_encoders_readings_still_get_their_angle);
     RUN(a_stillness_from_before_the_command_is_not_the_end_of_the_move);
     RUN(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged);
     RUN(a_run_measures_each_step_and_passes);

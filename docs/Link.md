@@ -148,12 +148,20 @@ reserved.
 The encoder is an ams OSRAM AS5600 on the servo's output shaft, at its fixed
 address 0x36 on the bus SENSE already runs, GP16 and GP17 by default. It has
 no parameter on the page beyond the enable bit: the pins and the 400 kHz are
-the bus's. The coprocessor reads STATUS and RAW ANGLE in one 3-byte read on
-every second 1 ms tick, 500 Hz, on the ticks that read no rotation item, and
-AGC and MAGNITUDE in one 3-byte read once in 25 of those slots, so 480 angle
-reads and 20 magnitude reads a second. The angle read and the other reads of
-the schedule never share a tick's worst case: an odd tick is CH1, the
-INA228's slot and the encoder, under the 690 µs of an even tick.
+the bus's. Each register is read in a transaction of its own, since RAW ANGLE
+and MAGNITUDE are registers the part treats specially: the address pointer
+does not step on past them, and a read that arrives at one by the increment
+from STATUS or AGC is not relied on. The coprocessor reads STATUS (1 byte)
+and RAW ANGLE (2 bytes) on every second 1 ms tick, 500 Hz, on the ticks that
+read no rotation item: 217.5 µs of bus time at 400 kHz. Once in 25 of those
+slots it reads RAW ANGLE, AGC (1 byte) and MAGNITUDE (2 bytes) instead:
+337.5 µs. That is 500 angle reads a second at a 2 ms interval, 480 STATUS
+reads and 20 AGC and MAGNITUDE reads. A transaction of N bytes is 9 × (3 + N)
++ 3 clocks; the controller's own time between transactions is not counted
+and not measured. An odd tick is CH1, the pair when on, the INA228's slot
+and the encoder: 480 µs, 600 µs in a slot with MAGNITUDE, and with the pair
+720 µs and 840 µs. An even tick stays under 690 µs. The encoder adds 11.1 %
+to the bus time of a second: 44.0 % in all, 66.8 % with the pair.
 
 | Register | Name | Reads |
 | ---: | --- | --- |

@@ -12,9 +12,12 @@
  * reads back as written.
  *
  * An AS5600 (ams DS000365) answers at 0x36: STATUS at 0x0B, RAW ANGLE at
- * 0x0C and ANGLE at 0x0E, AGC at 0x1A and MAGNITUDE at 0x1B, with the
- * register pointer incrementing over a read.  A test sets status, raw,
- * agc and magnitude.
+ * 0x0C and ANGLE at 0x0E, AGC at 0x1A and MAGNITUDE at 0x1B.  A read is
+ * one register: STATUS and AGC 1 byte, RAW ANGLE, ANGLE and MAGNITUDE 2
+ * bytes, since a read that runs on into a register that suppresses the
+ * address increment is not relied on; any other width or register counts
+ * in bad_width.  A test sets status, raw, agc and magnitude.  Each part
+ * counts the clocks its reads take: 9 * (3 + bytes) + 3.
  *
  * Faults a test can give it: a part that is not there (NACK), the next n
  * transactions or the nth since the start failing with a chosen code, the lines held low, a part
@@ -53,6 +56,7 @@ typedef struct {
     uint16_t    magnitude;
     unsigned    reads[256];
     unsigned    writes[256];
+    uint64_t    clocks;          /* of the reads: 9 * (3 + n) + 3 each     */
 } fake_part_t;
 
 typedef struct {
@@ -272,24 +276,29 @@ static sense_err_t fake_fault(fake_bus_t *b)
     return SENSE_OK;
 }
 
-/* The AS5600's registers as bytes, a read running on from @p reg. */
+/* The AS5600's registers as bytes: one register a read. */
 static bool fake_read5600(const fake_part_t *p, uint8_t reg, uint8_t *buf,
                           size_t n)
 {
-    uint8_t m[0x20];
-    memset(m, 0, sizeof m);
-    m[AS5600_REG_STATUS]        = p->status;
-    m[AS5600_REG_RAW_ANGLE]     = (uint8_t)(p->raw >> 8);
-    m[AS5600_REG_RAW_ANGLE + 1] = (uint8_t)p->raw;
-    m[AS5600_REG_ANGLE]         = (uint8_t)(p->raw >> 8);
-    m[AS5600_REG_ANGLE + 1]     = (uint8_t)p->raw;
-    m[AS5600_REG_AGC]           = p->agc;
-    m[AS5600_REG_MAGNITUDE]     = (uint8_t)(p->magnitude >> 8);
-    m[AS5600_REG_MAGNITUDE + 1] = (uint8_t)p->magnitude;
-    if ((size_t)reg + n > sizeof m) {
+    uint16_t v;
+    size_t   want;
+    switch (reg) {
+    case AS5600_REG_STATUS:    v = p->status;    want = 1u; break;
+    case AS5600_REG_AGC:       v = p->agc;       want = 1u; break;
+    case AS5600_REG_RAW_ANGLE:
+    case AS5600_REG_ANGLE:     v = p->raw;       want = 2u; break;
+    case AS5600_REG_MAGNITUDE: v = p->magnitude; want = 2u; break;
+    default:                   return false;
+    }
+    if (n != want) {
         return false;
     }
-    memcpy(buf, &m[reg], n);
+    if (n == 1u) {
+        buf[0] = (uint8_t)v;
+    } else {
+        buf[0] = (uint8_t)(v >> 8);
+        buf[1] = (uint8_t)v;
+    }
     return true;
 }
 
@@ -306,6 +315,7 @@ static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
         return SENSE_NACK;
     }
     ++p->reads[reg];
+    p->clocks += 9u * (3u + (unsigned)n) + 3u;
     if (p->kind == FAKE_AS5600) {
         if (!fake_read5600(p, reg, buf, n)) {
             ++b->bad_width;

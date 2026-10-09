@@ -503,8 +503,10 @@ static void enc_anchor(sense_enc_t *e, uint16_t raw, uint64_t at_ms)
     }
 }
 
-/* The encoder's slot: the angle, or every SENSE_ENC_MAG_EVERY-th time the
- * field's AGC and MAGNITUDE. */
+/* The encoder's slot: STATUS and RAW ANGLE, and every SENSE_ENC_MAG_EVERY-th
+ * time the field's AGC and MAGNITUDE as well, in place of STATUS.  The angle
+ * is read in every slot, 500 Hz.  Each register is a transaction of its own
+ * (as5600.h). */
 static void read_enc(sense_sched_t *s)
 {
     sense_enc_t *e = &s->enc;
@@ -514,19 +516,13 @@ static void read_enc(sense_sched_t *s)
         return;
     }
     const uint32_t slot = e->slots++;
-    if ((slot % SENSE_ENC_MAG_EVERY) == SENSE_ENC_MAG_EVERY - 1u) {
-        uint8_t agc = 0u;
-        uint16_t mag = 0u;
-        if (as5600_read_magnitude(&e->dev, &agc, &mag) == SENSE_OK) {
-            e->agc       = agc;
-            e->magnitude = mag;
-            e->have_mag  = true;
-        }
+    const bool field = (slot % SENSE_ENC_MAG_EVERY) == SENSE_ENC_MAG_EVERY - 1u;
+    uint8_t status = e->status;
+    uint16_t raw = 0u;
+    if (!field && as5600_read_status(&e->dev, &status) != SENSE_OK) {
         return;
     }
-    uint8_t status = 0u;
-    uint16_t raw = 0u;
-    if (as5600_read_angle(&e->dev, &status, &raw) != SENSE_OK) {
+    if (as5600_read_raw(&e->dev, &raw) != SENSE_OK) {
         return;
     }
     const uint64_t at_ms = stamp(s) / 1000u;
@@ -535,6 +531,16 @@ static void read_enc(sense_sched_t *s)
     e->have_angle = true;
     ++e->samples;
     enc_anchor(e, raw, at_ms);
+    if (field) {
+        uint8_t agc = 0u;
+        uint16_t mag = 0u;
+        if (as5600_read_agc(&e->dev, &agc) == SENSE_OK
+            && as5600_read_mag(&e->dev, &mag) == SENSE_OK) {
+            e->agc       = agc;
+            e->magnitude = mag;
+            e->have_mag  = true;
+        }
+    }
 }
 
 /* The windows: the one being filled closes when the clock passes its

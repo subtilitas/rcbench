@@ -1668,15 +1668,24 @@ static float enc_deg_now(void)
                               (uint16_t)settings_get_int(SET_ENC_CENTRE));
 }
 
+/* Whether the encoder's last reading is on show and may be used: one the
+ * link carried, with the encoder on in SETUP.  A link that goes down takes
+ * the reading with it (servo_screen_set_link()). */
 static bool enc_shown(void)
 {
-    return s.enc_valid && settings_get_bool(SET_ENC_EN);
+    return s.enc_valid && s.link_up && settings_get_bool(SET_ENC_EN);
 }
 
 void servo_screen_encoder(const servo_test_enc_t *e)
 {
     if (e == NULL) {
         return;
+    }
+    /* A reading that was queued before the link went down is not the
+     * angle now. */
+    const servo_test_enc_t none = { false, 0u, 0u, 0u };
+    if (!s.link_up) {
+        e = &none;
     }
     s.enc_valid = e->valid;
     if (e->valid) {
@@ -2431,6 +2440,15 @@ void servo_screen_set_link(bool up)
 {
     if (s.link_up && !up) {
         test_end_now(SERVO_TEST_AB_LINK);
+        /* The encoder's last angle is not the horn's now: the dashes, and
+         * no ENC CENTRE from it, until a reading arrives with the link. */
+        const servo_test_enc_t none = { false, 0u, 0u, 0u };
+        s.enc_valid = false;
+        servo_test_encoder(&s.test, &none);
+        if (s.shown_q_enc != 0x7FFF) {
+            s.shown_q_enc = 0x7FFF;
+            ++s.ctrl_rev;
+        }
         /*
          * A sweep or a pause: the far end stops a sweep and lets a hold go
          * 500 ms after the last write it heard, and the surfaces rest.  The

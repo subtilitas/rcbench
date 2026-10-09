@@ -471,7 +471,7 @@ name opens a keyboard.
 | DUT | NAME | the device under test, up to 23 characters, for the report |
 | DUT | REPORT | a text report beside each test's log |
 | DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
-| DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+| DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives); the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 

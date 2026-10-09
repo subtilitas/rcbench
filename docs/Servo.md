@@ -307,10 +307,15 @@ The current's table and its `Travel` column stay, so the two times sit side
 by side: on the PD mini the current's is an upper bound that lags the horn by
 about 0.3 s, and the angle's is not. The CSV gains two columns, `angle (deg)`
 on every row whose angle reading is younger than 500 ms, and `travel angle
-(ms)` on the row after a move settled. The report notes that the deadband is
+(ms)` on the first row taken at or after the reading that found the settle.
+Each row takes the newest angle reading taken at or before the row, from the
+last 16 readings (about 640 ms), so the order in which the panel handles
+readings and rows does not move an angle onto the wrong row. The report notes that the deadband is
 not measured: it needs steps smaller than the end-to-end moves the test
 makes, and the test makes none. The SERVO screen's MEASURED row shows the
-live angle while AS5600 is on.
+live angle while AS5600 is on. A link that goes down clears the reading: the
+row shows dashes and ENC CENTRE sets nothing until a reading arrives with the
+link back.
 
 Not run on hardware: the sensor on the bus, the tolerance and the 100 ms
 hold against a real servo's jitter, and the mounting.
@@ -407,7 +412,7 @@ writes:
 | `power (W)` | W | voltage times current |
 | `mode` | | `CV`, `CC` or `OFF` |
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
-| `angle (deg)` | deg | with AS5600 on only: the horn's angle from the centre count; empty without a reading younger than 500 ms |
+| `angle (deg)` | deg | with AS5600 on only: the horn's angle from the centre count, from the newest reading taken at or before the row; empty when that reading is older than 500 ms or there is none |
 | `travel angle (ms)` | ms | with AS5600 on only: on the row after a move settled, its travel time from the angle |
 
 The report from the host suite's replay of an MG90S micro servo's run on
