@@ -322,6 +322,7 @@ typedef enum { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX } wire_t;
 static wire_t   w_wire;
 static uint32_t w_unanswered;     /* exchanges that ended with no answer   */
 static void     w_quiet(void);    /* counts one, and times the first       */
+static void     p_stop_here(void);
 
 /* A panel or a coprocessor without this change's rules, to show what each
  * end holds on its own. */
@@ -470,8 +471,10 @@ static unsigned        p_quiet_release, p_quiet_clear, p_quiet_frame;
  * panel first finished a far-end stop. */
 static uint32_t        p_write_quiet_at, p_stop_at, p_any_quiet_at;
 static bool            p_write_quiet, p_stop_seen, p_any_quiet;
+static uint32_t        p_servo_next;     /* the 100 ms servo refresh */
 /* Which exchange that first one was: 1 the poll's read, 2 its write, 3 the
- * page services after the write, 4 the status read after the poll. */
+ * page services after the write, 4 the status read after the poll, 5 the
+ * servo refresh ahead of the next poll. */
 static int             p_poll_stage, p_any_quiet_stage;
 
 static void w_quiet(void)
@@ -481,6 +484,13 @@ static void w_quiet(void)
         p_any_quiet = true;
         p_any_quiet_at = T;
         p_any_quiet_stage = p_poll_stage;
+    }
+    /* exchange_unanswered(): the stop, where the exchange ended.  Not
+     * with the link down: the probe of a bench armed without a coprocessor
+     * goes unanswered every second. */
+    if (p_link_up && !w_panel_ignores_link_edges
+        && arming_link_lost(&p_arm, outputs_armed(&p_out))) {
+        p_stop_here();
     }
 }
 static uint32_t        p_extra_at, p_extra_ms;    /* one long pass, pumping */
@@ -617,11 +627,16 @@ static bool p_line_trusted(bool *answered)
 /* arm_write_failed(): refused, or the link quiet under the arm. */
 static void p_arm_write_failed(uint32_t quiet_before)
 {
-    if (arming_write_failed(&p_arm, w_unanswered == quiet_before)) {
-        ++p_arm_unanswered;
-        p_stop_here();
-    } else {
+    if (w_unanswered == quiet_before) {
+        (void)arming_write_failed(&p_arm, true);
         ++p_arm_refused;
+        return;
+    }
+    /* The exchange that went unanswered has stopped the bench where it
+     * ended; what is left is the arm the policy handed out. */
+    ++p_arm_unanswered;
+    if (arming_link_lost(&p_arm, outputs_armed(&p_out))) {
+        p_stop_here();
     }
 }
 
@@ -855,6 +870,7 @@ static void world_init(uint32_t t0)
     p_quiet_release = p_quiet_clear = p_quiet_frame = 0;
     p_write_quiet = p_stop_seen = p_any_quiet = false;
     p_poll_stage = p_any_quiet_stage = 0;
+    p_servo_next = t0;
     p_clear_sent = 0;
     p_extra_at = p_extra_ms = 0;
     p_touch_out_at = p_touch_out_ms = 0;
@@ -873,6 +889,15 @@ static void run_until(uint32_t end)
             const uint32_t ms = p_extra_ms;
             p_extra_ms = 0;
             wait_pumping(ms);
+        }
+        if (w_services && p_link_up && (int32_t)(T - p_servo_next) >= 0) {
+            /* servo_service(): a held position, written again every
+             * 100 ms, ahead of the poll. */
+            link_msg_t sv;
+            p_servo_next = T + 100u;
+            p_poll_stage = 5;
+            (void)xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, 1, NULL, &sv);
+            p_poll_stage = 0;
         }
         p_poll_far_end();
         sleep_ms(5u + p_pass_work_ms);
@@ -1344,13 +1369,14 @@ TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
     /* Armed at 70 %; the coprocessor goes down at each millisecond of two
      * poll periods.  Whichever exchange is the first to end unanswered --
      * the poll's read, its write, a page service after the write, the
-     * status read after the poll -- the stop is latched within two passes
-     * of that exchange ending, not at the next poll's timeout. */
+     * status read after the poll, the servo refresh ahead of the next --
+     * the stop is latched as that exchange ends: not a pass later, behind
+     * whatever else the pass sends, and not at the next poll's timeout. */
     static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
     w_services = true;
     for (unsigned w = 0; w < 3u; ++w) {
         unsigned late = 0, armed = 0, missed = 0;
-        unsigned stage[5] = { 0, 0, 0, 0, 0 };
+        unsigned stage[6] = { 0, 0, 0, 0, 0, 0 };
         for (uint32_t ph = 0; ph < 110u; ++ph) {
             armed_at_70(0, wires[w]);
             e_reset_at = 3000u + ph;
@@ -1360,7 +1386,7 @@ TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
             missed += !p_any_quiet;
             ++stage[p_any_quiet_stage];
             late += !(p_stop_seen
-                      && (uint32_t)(p_stop_at - p_any_quiet_at) <= 12u
+                      && p_stop_at == p_any_quiet_at
                       && arming_stopped(&p_arm) && !outputs_armed(&p_out)
                       && p_throttle == 0u && !arming_heartbeat(&p_arm, T));
             run_until(3000u + ph + 9000u);
@@ -1375,6 +1401,7 @@ TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
         CHECK(stage[2] >= 1u);
         CHECK(stage[3] >= 1u);
         CHECK(stage[4] >= 1u);
+        CHECK(stage[5] >= 1u);
     }
     w_services = false;
 }

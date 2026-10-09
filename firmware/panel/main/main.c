@@ -2589,6 +2589,10 @@ static void log_post(log_row_t *row)
  * went quiet; see arm_write_failed().
  */
 static uint32_t s_unanswered;
+static void exchange_unanswered(void);
+/* The control loop's link_up, as poll_far_end() last left it; false until
+ * the first identity probe is answered. */
+static bool s_link_is_up;
 /* s_unanswered as poll_far_end() last left it; see there. */
 static uint32_t s_unanswered_polled;
 
@@ -2609,7 +2613,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
     const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
     if (n == 0) {
         link_host_abandon(host);
-        ++s_unanswered;
+        exchange_unanswered();
         return false;
     }
     const uint32_t sent_us = (uint32_t)esp_timer_get_time();
@@ -2618,7 +2622,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
             /* Nothing reached the wire, so there is nothing to wait for.
              * Leaving it outstanding would refuse every later request. */
             link_host_abandon(host);
-            ++s_unanswered;
+            exchange_unanswered();
             return false;
         }
     }
@@ -2668,7 +2672,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
          */
         (void)link_host_tick(host, now_ms());
         if (!link_host_pending(host)) {
-            ++s_unanswered;
+            exchange_unanswered();
             return false;
         }
     }
@@ -3206,16 +3210,38 @@ static void far_end_stop_here(void)
  * disarmed and says @p alert.  Changed, one of them waited out its timeout
  * or never reached the wire: the link went quiet under this arm, and the
  * far end may have taken a frame and lost only the acknowledgement.  That
- * is a stop, heartbeat withheld, as poll_far_end() makes one on its own
- * edge -- by the time the poll finds the link down there is no arm left for
- * it to stop.  arming_write_failed() is the decision.
+ * is a stop, heartbeat withheld, and exchange_unanswered() has already made
+ * it where the exchange ended; what is left here is the arm the policy
+ * handed out with ARMING_ACT_ARM, which arming_link_lost() takes back
+ * without counting a second stop.  A refusal is arming_refused().
  */
 static void arm_write_failed(uint32_t quiet_before, const char *alert)
 {
-    if (arming_write_failed(&s_arm, s_unanswered == quiet_before)) {
-        far_end_stop_here();
-    } else {
+    if (s_unanswered == quiet_before) {
+        (void)arming_write_failed(&s_arm, true);
         control_alert(alert);
+    } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+        far_end_stop_here();
+    }
+}
+
+/*
+ * An exchange ended with no answer.  Counted, and an armed bench or a
+ * waiting arm is stopped here, where it ended, whichever service sent it:
+ * the pass it belongs to may send more, each waiting out its own
+ * LINK_HOST_TIMEOUT_MS (1000 ms), before poll_far_end() takes the link
+ * down, and the bank and the heartbeat do not wait for that.  Only memory
+ * is touched; nothing here sends.
+ *
+ * Only while the link is up.  With it down the identity probe goes
+ * unanswered once a second, and a bank armed with no coprocessor -- the
+ * simulated bench -- runs on through that.
+ */
+static void exchange_unanswered(void)
+{
+    ++s_unanswered;
+    if (s_link_is_up && arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+        far_end_stop_here();
     }
 }
 
@@ -6570,6 +6596,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
          */
         new_sample = *link_up && answered;
         *link_up = answered;
+        s_link_is_up = answered;
 
         /*
          * The status page is read a tenth as often as the bench page: a status
