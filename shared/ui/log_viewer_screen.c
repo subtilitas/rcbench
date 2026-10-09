@@ -1606,9 +1606,13 @@ static void plot_event(const touch_event_t *e)
                 /* Judge the drag from where the finger touched down. */
                 if (e->point.x - s.pan_x0 > PV_PAN_SLOP ||
                     s.pan_x0 - e->point.x > PV_PAN_SLOP) {
+                    /* Anchored where the finger crossed the threshold, so
+                     * the movement past it pans, also in one event. */
                     s.panning = true;
                     s.cursor = s.pan_cursor0;
-                    s.pan_x0 = e->point.x;
+                    s.pan_x0 = (int16_t)((e->point.x > s.pan_x0)
+                                             ? s.pan_x0 + PV_PAN_SLOP
+                                             : s.pan_x0 - PV_PAN_SLOP);
                     s.pan_win0 = s.win0;
                 }
             }

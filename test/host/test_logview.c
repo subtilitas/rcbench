@@ -1682,6 +1682,9 @@ static int zoom_in_with_cursor(void)
 }
 
 /* One finger from x0 to x1 in steps of 25 px, then up. */
+/* The plot's width in pixels, as log_viewer_screen.c draws it. */
+#define PV_W_TEST 752
+
 static void drag(int x0, int x1)
 {
     send(TOUCH_EVENT_DOWN, x0, 200);
@@ -1716,13 +1719,14 @@ TEST_CASE(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on)
     log_viewer_window(&first, &count);
     settings_set(SET_PLOT_PAN, 1.0f);
 
-    /* A drag of 100 px left, less the pixels spent on the threshold, moves
-     * the view right by about an eighth of the window; the cursor stays. */
+    /* A drag of 100 px left, less the 10 px threshold, moves the view
+     * right by 90 px worth of samples; the cursor stays. */
     drag(600, 500);
     int f2 = -1, n2 = -1;
     log_viewer_window(&f2, &n2);
     CHECK_EQ(n2, count);
-    CHECK(f2 >= first + 10 && f2 <= first + 14);
+    const int want = first + (90 * count + PV_W_TEST / 2) / PV_W_TEST;
+    CHECK(f2 >= want - 1 && f2 <= want + 1);
     CHECK_EQ(log_viewer_cursor(), c0);
     draw();
 
@@ -1746,6 +1750,23 @@ TEST_CASE(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on)
     CHECK_EQ(f3 + n3, LONG_ROWS);
     CHECK_EQ(n3, count);
     draw();
+}
+
+TEST_CASE(one_move_past_the_threshold_pans_by_what_lies_past_it)
+{
+    zoom_in_with_cursor();
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    settings_set(SET_PLOT_PAN, 1.0f);
+    /* Down, one move of 60 px, up: 50 px of pan. */
+    send(TOUCH_EVENT_DOWN, 600, 200);
+    send(TOUCH_EVENT_MOVE, 540, 200);
+    send(TOUCH_EVENT_UP, 540, 200);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    const int want = first + (50 * count + PV_W_TEST / 2) / PV_W_TEST;
+    CHECK(f2 >= want - 1 && f2 <= want + 1);
+    CHECK(f2 > first);
 }
 
 TEST_CASE(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on)
@@ -1926,6 +1947,7 @@ int main(void)
     RUN(one_finger_drag_moves_the_cursor_while_the_setting_is_off);
     RUN(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on);
     RUN(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on);
+    RUN(one_move_past_the_threshold_pans_by_what_lies_past_it);
     RUN(a_view_that_shows_the_whole_file_is_not_panned_by_one_finger);
     RUN(a_second_finger_after_a_pan_zooms_and_a_cancel_ends_the_pan);
     RUN(a_steep_trace_longer_than_the_plot_is_one_line);
