@@ -179,7 +179,11 @@ t_read - t_end to within the 2 ms sample interval, so the panel times the end
 of a move to the coprocessor's resolution whatever its own polling interval.
 The panel's own error is the time between the coprocessor's reading and the
 reply reaching the panel: not measured. The part going offline, or a new
-set-up, clears the anchor and registers 26 to 31. The panel reads registers 12
+set-up, clears the anchor and registers 26 to 31. STATUS and RAW ANGLE are one
+sample for the failure count: a RAW ANGLE read that fails counts as a failure
+even when the STATUS read before it answered, so 3 samples in a row whose RAW
+ANGLE read fails take the part offline (3 failed transactions in a row, as for
+the INA parts). The panel reads registers 12
 to 31 every 40 ms while the encoder is enabled on the page. Registers 26 to 31
 are read only; a write is refused with READ_ONLY.
 

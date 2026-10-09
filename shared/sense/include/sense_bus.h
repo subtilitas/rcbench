@@ -159,6 +159,12 @@ sense_err_t sense_part_read(sense_part_t *p, uint8_t reg,
                             uint8_t *buf, size_t n);
 sense_err_t sense_part_write16(sense_part_t *p, uint8_t reg, uint16_t value);
 
+/** After a sample of two reads whose second failed: the failure run is
+ *  @p before plus one, as if the first read had not reset it.  @p before
+ *  is the part's fails count taken ahead of the sample.  A part that the
+ *  failed read took offline is left as it is. */
+void sense_part_sample_failed(sense_part_t *p, uint8_t before);
+
 /* ------------------------------------------------------------- codec */
 
 /** Big-endian register contents, most significant byte first. */

@@ -214,6 +214,11 @@ static void enc_open(servo_test_t *t, uint8_t end, bool counted,
 /* The run ends: the output off and the servo let go, whatever ended it. */
 static void finish(servo_test_t *t, servo_test_abort_t why, uint32_t now_ms)
 {
+    if (why != SERVO_TEST_AB_NONE && !t->enc_settled) {
+        /* An aborted run cut the move's window short: not counted, as
+         * the current-based results do not count it. */
+        t->enc_open = false;
+    }
     enc_close(t);
     t->state  = SERVO_TEST_DONE;
     t->why    = why;
@@ -701,9 +706,13 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
         return;
     }
     if (!e->valid) {
-        /* The angle is not known across a gap. */
+        /* The angle is not known across a gap: nor is the move open over
+         * it, unless it had settled before. */
         t->enc_hist_n    = 0u;
         t->enc_hist_next = 0u;
+        if (t->enc_open && !t->enc_settled) {
+            t->enc_ok = false;
+        }
         return;
     }
     t->enc_hist[t->enc_hist_next].ms  = e->taken_ms;

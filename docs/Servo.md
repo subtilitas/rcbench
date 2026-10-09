@@ -300,7 +300,14 @@ measured. It ends when the angle comes within 1.05 degrees of its final
 value, which is earlier than the arm's last movement by the time that takes:
 on a 0.09 degrees a microsecond servo at 1.2 us a millisecond, about 10 ms.
 Only counted moves are reported. The moves that place the horn at each end
-first are not.
+first are not. A move is left out of the angle's counts, neither unmoved nor
+late, when the angle has a gap while the move is open and the move has not
+settled (a reading marked invalid, which drops the angle history), when the
+move has no start angle, and when the run ends for any reason other than
+completion (STOP, disarm, link loss, supply fault, stall) before the move
+settled: its window was cut short, and the current's results do not count
+such a move either. A move that had settled before the gap or the abort
+keeps its result.
 
 The report adds a header line (`Encoder:`), a table per step -- the mean end
 angle and its error at each end, the mean and longest travel time, the moves

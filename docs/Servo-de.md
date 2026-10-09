@@ -324,7 +324,15 @@ gemessen. Sie endet, wenn der Winkel innerhalb von 1,05 Grad seines Endwerts
 ist, und das ist früher als die letzte Bewegung des Arms um die Zeit, die das
 dauert: bei einem Servo mit 0,09 Grad je Mikrosekunde und 1,2 µs je
 Millisekunde etwa 10 ms. Berichtet werden nur gezählte Bewegungen; die
-Bewegungen, die das Horn zuerst an jedes Ende stellen, nicht.
+Bewegungen, die das Horn zuerst an jedes Ende stellen, nicht. Eine Bewegung
+fällt aus den Zählungen des Winkels heraus, weder unbewegt noch spät, wenn der
+Winkel eine Lücke hat, während sie offen ist, und sie sich noch nicht beruhigt
+hatte (ein als ungültig markierter Messwert löscht den Winkelverlauf), wenn
+sie keinen Startwinkel hat und wenn der Lauf aus einem anderen Grund als dem
+Abschluss endet (STOP, Disarm, Linkverlust, Versorgungsfehler, Blockade),
+bevor sie sich beruhigt hat: ihr Fenster wurde abgeschnitten, und die
+Ergebnisse aus dem Strom zählen so eine Bewegung auch nicht. Eine Bewegung,
+die sich vor der Lücke oder dem Abbruch beruhigt hatte, behält ihr Ergebnis.
 
 Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe -- den
 mittleren Endwinkel und seinen Fehler an jedem Ende, die mittlere und die

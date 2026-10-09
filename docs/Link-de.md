@@ -192,7 +192,11 @@ Panel misst das Ende einer Bewegung also in der Auflösung des Koprozessors,
 gleich wie oft es selbst abfragt. Der eigene Fehler des Panels ist die Zeit
 zwischen dem Lesen im Koprozessor und dem Eintreffen der Antwort im Panel:
 nicht gemessen. Fällt das Bauteil aus oder gilt eine neue Konfiguration, werden
-der Anker und die Register 26 bis 31 gelöscht. Das Panel liest die Register 12
+der Anker und die Register 26 bis 31 gelöscht. STATUS und RAW ANGLE sind für
+die Fehlerzählung eine Messung: ein fehlschlagendes Lesen von RAW ANGLE zählt
+als Fehler, auch wenn das STATUS-Lesen davor geantwortet hat; 3 Messungen in
+Folge mit fehlschlagendem RAW-ANGLE-Lesen nehmen das Bauteil offline (3
+fehlgeschlagene Transaktionen in Folge, wie bei den INA-Bauteilen). Das Panel liest die Register 12
 bis 31 alle 40 ms, solange der Encoder auf der Page freigegeben ist. Die
 Register 26 bis 31 sind nur lesbar; ein Schreiben wird mit READ_ONLY abgewiesen.
 

@@ -519,10 +519,14 @@ static void read_enc(sense_sched_t *s)
     const bool field = (slot % SENSE_ENC_MAG_EVERY) == SENSE_ENC_MAG_EVERY - 1u;
     uint8_t status = e->status;
     uint16_t raw = 0u;
+    /* STATUS and RAW ANGLE are one sample: a STATUS that answers does not
+     * clear the failures of the RAW ANGLE reads before it. */
+    const uint8_t fails = e->dev.part.fails;
     if (!field && as5600_read_status(&e->dev, &status) != SENSE_OK) {
         return;
     }
     if (as5600_read_raw(&e->dev, &raw) != SENSE_OK) {
+        sense_part_sample_failed(&e->dev.part, fails);
         return;
     }
     const uint64_t at_ms = stamp(s) / 1000u;

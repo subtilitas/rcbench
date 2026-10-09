@@ -2092,6 +2092,97 @@ TEST_CASE(an_invalid_reading_ends_the_angle_until_the_next)
     CHECK(servo_test_enc_at(&g.t, g.now, &deg));    /* the model's next reading */
 }
 
+/* Runs until a counted move has begun with a start angle and has not moved
+ * yet; false when none does within 60 s. */
+static bool run_to_counted_move_start(void)
+{
+    for (uint32_t k = 0; k < 60000u; k += FRAME_MS) {
+        frame();
+        if (g.t.enc_open && g.t.enc_counted && g.t.enc_ok
+            && !g.t.enc_moved && g.t.phase == SERVO_TEST_PH_MOVE) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* A gap in the angle after a move's valid start leaves the move unmeasured:
+ * not moved, not late, not counted, however the angle goes on afterwards. */
+TEST_CASE(a_gap_in_the_angle_leaves_the_open_move_unmeasured)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    CHECK(run_to_counted_move_start());
+    const servo_test_enc_t none = { false, 0u, 0u, g.now };
+    servo_test_encoder(&g.t, &none);
+    run_out(120000u);
+    const servo_test_step_t *s = &g.t.steps[0];
+    CHECK_EQ(s->moves, 3u);
+    CHECK_EQ(s->enc_moves, 2u);
+    CHECK_EQ(s->enc_travels, 2u);
+    CHECK_EQ(s->enc_unmoved, 0u);
+    CHECK_EQ(s->enc_late, 0u);
+}
+
+/* A move that had settled before the gap keeps its result. */
+TEST_CASE(a_gap_after_the_move_settled_keeps_its_result)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    CHECK(run_to_counted_move_start());
+    for (uint32_t k = 0; k < 10000u && !g.t.enc_settled; k += FRAME_MS) {
+        frame();
+    }
+    CHECK(g.t.enc_settled);
+    const servo_test_enc_t none = { false, 0u, 0u, g.now };
+    servo_test_encoder(&g.t, &none);
+    run_out(120000u);
+    CHECK_EQ(g.t.steps[0].enc_moves, 3u);
+    CHECK_EQ(g.t.steps[0].enc_travels, 3u);
+}
+
+/* An abort cuts the open move's window short: it is not counted unmoved or
+ * late, as the current-based results do not count it either. */
+TEST_CASE(an_abort_does_not_count_the_move_it_cut_short)
+{
+    static const servo_test_abort_t why[] = {
+        SERVO_TEST_AB_STOP, SERVO_TEST_AB_DISARMED, SERVO_TEST_AB_LINK,
+        SERVO_TEST_AB_SUPPLY_LOST,
+    };
+    for (unsigned k = 0; k < sizeof why / sizeof why[0]; ++k) {
+        servo_test_cfg_t c;
+        enc_rig(ENC_DEG_PER_US, &c);
+        CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+        CHECK(run_to_counted_move_start());
+        const uint16_t before = g.t.steps[0].enc_moves;
+        servo_test_abort(&g.t, why[k], g.now);
+        CHECK(!servo_test_running(&g.t));
+        CHECK_EQ(g.t.steps[0].enc_moves, before);
+        CHECK_EQ(g.t.steps[0].enc_unmoved, 0u);
+        CHECK_EQ(g.t.steps[0].enc_late, 0u);
+    }
+}
+
+/* A move whose angle had settled is a finished measurement: an abort in its
+ * hold still counts it. */
+TEST_CASE(an_abort_after_the_angle_settled_counts_the_move)
+{
+    servo_test_cfg_t c;
+    enc_rig(ENC_DEG_PER_US, &c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    CHECK(run_to_counted_move_start());
+    for (uint32_t k = 0; k < 10000u && !g.t.enc_settled; k += FRAME_MS) {
+        frame();
+    }
+    CHECK(g.t.enc_settled);
+    const uint16_t before = g.t.steps[0].enc_moves;
+    servo_test_abort(&g.t, SERVO_TEST_AB_STOP, g.now);
+    CHECK_EQ(g.t.steps[0].enc_moves, before + 1u);
+    CHECK_EQ(g.t.steps[0].enc_travels, 1u);
+}
+
 /* The panel drains the encoder's readings before the supply's, so a row can
  * be older than the newest reading.  The row takes the newest reading not
  * later than itself. */
@@ -2260,6 +2351,10 @@ int main(void)
     RUN(a_servo_that_does_not_move_is_counted_unmoved_by_the_angle);
     RUN(an_encoder_that_gives_nothing_is_said_so);
     RUN(an_invalid_reading_ends_the_angle_until_the_next);
+    RUN(a_gap_in_the_angle_leaves_the_open_move_unmeasured);
+    RUN(a_gap_after_the_move_settled_keeps_its_result);
+    RUN(an_abort_does_not_count_the_move_it_cut_short);
+    RUN(an_abort_after_the_angle_settled_counts_the_move);
     RUN(a_row_takes_the_newest_angle_not_later_than_itself);
     RUN(rows_older_than_the_encoders_readings_still_get_their_angle);
     RUN(a_stillness_from_before_the_command_is_not_the_end_of_the_move);

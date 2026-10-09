@@ -488,6 +488,33 @@ TEST_CASE(a_part_gone_offline_has_no_still_time_and_returns_afresh)
     CHECK(h < 20u);                                /* counted from the return */
 }
 
+/* STATUS answers and RAW ANGLE does not, slot after slot: the reads are one
+ * sample, so the failures run on and the part goes offline after
+ * SENSE_FAILS of them. */
+TEST_CASE(a_status_that_answers_does_not_hide_failing_angle_reads)
+{
+    rig(false);
+    tick();                                        /* the probe */
+    ticks(20u);
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_ONLINE);
+    CHECK(s.enc.have_angle);
+    const uint16_t samples = s.enc.samples;
+    const uint32_t slots = s.enc.slots;
+    fb.fail_with = SENSE_NACK;
+    unsigned guard = 0u;
+    while (as5600_state(&s.enc.dev) == SENSE_PART_ONLINE && guard++ < 40u) {
+        /* The second transaction of the slot is RAW ANGLE (STATUS first);
+         * in a field slot RAW ANGLE comes first. */
+        const bool field = (s.enc.slots % SENSE_ENC_MAG_EVERY)
+                           == SENSE_ENC_MAG_EVERY - 1u;
+        fb.fail_at = fb.transactions + (field ? 1u : 2u);
+        tick();
+    }
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_OFFLINE);
+    CHECK_EQ((uint32_t)(s.enc.slots - slots), (uint32_t)SENSE_FAILS);
+    CHECK_EQ(s.enc.samples, samples);              /* no angle was taken */
+}
+
 TEST_CASE(the_still_time_saturates_at_65535)
 {
     rig(false);
@@ -637,6 +664,7 @@ int main(void)
     RUN(the_tolerance_is_taken_across_the_wrap);
     RUN(a_ramp_keeps_restarting_it_and_a_stop_lets_it_count);
     RUN(a_part_gone_offline_has_no_still_time_and_returns_afresh);
+    RUN(a_status_that_answers_does_not_hide_failing_angle_reads);
     RUN(the_still_time_saturates_at_65535);
     RUN(the_encoder_alone_opens_the_bus_and_reaches_the_snapshot);
     RUN(a_set_up_without_the_encoder_leaves_its_snapshot_empty);
