@@ -142,8 +142,10 @@ The panel waits 100 ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that arms. If the bit has not cleared 300 ms after the hold completed, the
 panel gives the arm up with `coprocessor refused to arm` and writes nothing,
-so the coprocessor's latch stays set. With no coprocessor connected the panel
-arms its own bank after the 100 ms.
+so the coprocessor's latch stays set. A STATUS read that nobody answers has
+waited the 1000 ms exchange timeout: that is the link going quiet under a
+waiting arm, and the panel latches a stop as above. With no coprocessor
+connected the panel arms its own bank after the 100 ms.
 
 ## Deliberate behaviours
 

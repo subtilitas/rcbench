@@ -566,11 +566,13 @@ static void p_stop_here(void)
 }
 
 /* far_line_trusted() */
-static bool p_line_trusted(void)
+static bool p_line_trusted(bool *answered)
 {
     link_msg_t st;
-    return xchg(LINK_OP_READ, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1, NULL, &st)
-           && st.op == LINK_OP_DATA && safety_gate_line_trusted(st.regs[0]);
+    *answered = xchg(LINK_OP_READ, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1, NULL,
+                     &st);
+    return *answered && st.op == LINK_OP_DATA
+           && safety_gate_line_trusted(st.regs[0]);
 }
 
 /* service_arming() */
@@ -582,7 +584,13 @@ static void p_service_arming(void)
         p_throttle = 0;
     }
     if (arming_line_wanted(&p_arm, T)) {
-        arming_line_report(&p_arm, !p_link_up || p_line_trusted());
+        bool answered = true;
+        const bool trusted = !p_link_up || p_line_trusted(&answered);
+        if (answered) {
+            arming_line_report(&p_arm, trusted);
+        } else if (arming_link_lost(&p_arm, outputs_armed(&p_out))) {
+            p_stop_here();
+        }
     }
     switch (arming_step(&p_arm, T)) {
     case ARMING_ACT_DISARM:
@@ -1072,6 +1080,53 @@ TEST_CASE(the_first_arm_after_a_stop_is_taken)
     p_pass_work_ms = 0;
 }
 
+TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
+{
+    /* STOP at 3 s, the hold completes at 6 s, and the coprocessor goes down
+     * for 3 s somewhere between 100 ms before the hold and the end of the
+     * wait.  The question about the line gets no answer for 1000 ms, past
+     * the bound: that is a link lost, not an arm given up. */
+    static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
+    for (unsigned w = 0; w < 3u; ++w) {
+        unsigned gave_up = 0, not_stopped = 0, armed = 0;
+        for (uint32_t at = 5900u; at <= 6300u; at += 5u) {
+            armed_at_70(0, wires[w]);
+            op_at(2, 3000, OP_STOP, 0);
+            op_at(3, 6000, OP_ARM, 0);
+            e_reset_at = at;
+            e_boot_at = at + 3000u;
+            e_reset_on = e_boot_on = true;
+            run_until(at + 2500u);
+            gave_up += p_arm_gave_up;
+            /*
+             * Three ends, by which pass found the link gone.  The poll,
+             * before the hold completed: the panel arms its own bank with
+             * no link, the simulated bench.  The question about the line,
+             * or the poll after the arm was taken: a stop, the heartbeat
+             * withheld.  The arm's own CLEAR or frame: refused, nothing
+             * armed.
+             */
+            const bool idle = !outputs_armed(&p_out) && !p_arm.arming
+                              && !p_arm.armed;
+            const bool sim = outputs_armed(&p_out) && !p_link_up
+                             && p_clear_sent == 1u;
+            const bool stopped = idle && arming_stopped(&p_arm)
+                                 && !arming_heartbeat(&p_arm, T);
+            const bool refused = idle && p_arm_refused != 0u;
+            not_stopped += !(sim || stopped || refused);
+            /* And when the coprocessor is back, neither end is armed. */
+            const unsigned edges = d_arm_edges;
+            run_until(at + 9000u);
+            armed += d_arm_edges != edges || outputs_driving(&d_bank)
+                     || outputs_armed(&p_out);
+        }
+        if (gave_up != 0u || not_stopped != 0u || armed != 0u) {
+            T_FAIL("wire %u: given up %u, not stopped %u, armed after the "
+                   "return %u", w, gave_up, not_stopped, armed);
+        }
+    }
+}
+
 TEST_CASE(an_arm_the_far_end_never_trusts_is_given_up_latched)
 {
     /* The line is cut at the coprocessor: it reads low whatever the panel
@@ -1151,6 +1206,7 @@ int main(void)
     RUN(a_pulled_cable_stops_the_panel_and_arms_nothing_on_return);
     RUN(a_heartbeat_glitch_stays_disarmed_until_clear);
     RUN(the_first_arm_after_a_stop_is_taken);
+    RUN(a_link_that_goes_while_an_arm_waits_is_a_stop);
     RUN(an_arm_the_far_end_never_trusts_is_given_up_latched);
     RUN(a_touch_outage_disarms_and_the_next_arm_is_taken);
     return test_summary("safety_gate");

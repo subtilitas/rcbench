@@ -3150,13 +3150,17 @@ static void endpoints_service(bool far_disarmed)
  * while a stop is latched, and after it resumes the far end's monitor needs
  * five edges, 100 to 125 ms at a 5 ms pass and longer on a slower one: a
  * fixed wait is right for one pass period and refused at the next.  One
- * register, one frame each way.  No answer is not trusted.
+ * register, one frame each way.
+ *
+ * @p answered is false when nobody answered.  That exchange has then waited
+ * LINK_HOST_TIMEOUT_MS (1000 ms), past the arm's whole bound, and it is the
+ * link that is gone and not the line that is distrusted.
  */
-static bool far_line_trusted(void)
+static bool far_line_trusted(bool *answered)
 {
     link_msg_t st = { 0 };
-    return read_regs(&s_host, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1u, &st)
-           && st.op == LINK_OP_DATA
+    *answered = read_regs(&s_host, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1u, &st);
+    return *answered && st.op == LINK_OP_DATA
            && safety_gate_line_trusted(st.regs[0]);
 }
 
@@ -3986,9 +3990,20 @@ static void service_arming(bool link_up)
      * once a pass until it does; with no far end there is nobody to ask and
      * the settle alone decides.  The exchange pumps, so a STOP can land in
      * it: the policy then holds no arm and drops the answer.
+     *
+     * A question nobody answers is the link going quiet under a waiting
+     * arm, and is stopped here as poll_far_end() stops it on its own edge:
+     * left to the policy it would run past the bound and be given up, and
+     * the poll would then find no arm to stop.
      */
     if (arming_line_wanted(&s_arm, now_ms())) {
-        arming_line_report(&s_arm, !link_up || far_line_trusted());
+        bool answered = true;
+        const bool trusted = !link_up || far_line_trusted(&answered);
+        if (answered) {
+            arming_line_report(&s_arm, trusted);
+        } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+            far_end_stop_here();
+        }
     }
 
     const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
