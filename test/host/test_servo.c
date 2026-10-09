@@ -5496,6 +5496,61 @@ TEST_CASE(a_second_press_ends_a_dial_drag)
 }
 
 /*
+ * The second press ends the drag, and the finger that was dragging still
+ * owned the dial in that frame: a knob turn applied at the end of the frame
+ * moves nothing.  The next frame is the knob's.
+ */
+TEST_CASE(the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in)
+{
+    fed_armed();
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    finger(0, x, P(y));                 /* frame N */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    const uint16_t held = servo_screen_commanded();
+
+    servo_screen_knob_frame();          /* frame N+1 */
+    finger(1, BESIDE_X, P(SHAFT_Y));
+    servo_screen_knob(0.1f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+
+    servo_screen_knob_frame();          /* frame N+2 */
+    servo_screen_knob(0.1f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    lift(1);
+    lift(0);
+}
+
+/*
+ * The knob's command waits while the bench arms.  The arm holds nothing,
+ * and a withdrawal after it restores no drive from before it: a change of
+ * SPEED on the armed bench says no position set on the disarmed one.
+ */
+TEST_CASE(a_withdrawal_after_an_arm_restores_no_drive_from_before_it)
+{
+    fresh();
+    feed_reset();
+    feed_to_screen(scr);
+    int x, y;
+    dial_at(40.0f, 110, &x, &y);
+    feed_tap(FEED_LONE, x, P(y));       /* disarmed: the horn's picture */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    servo_screen_knob_frame();
+    servo_screen_knob(0.1f);
+    servo_screen_set_armed(true);
+    servo_screen_knob_cancel();
+    scr->cancel();
+    while (last_cmd().kind != SERVO_CMD_NONE) { }
+
+    finger(FEED_LONE, 560, P(306));
+    glide(FEED_LONE, 620, P(306), 8);
+    lift(FEED_LONE);
+    CHECK(last_cmd().kind != SERVO_CMD_POSITION);
+}
+
+/*
  * SPEED's drag loses its release, and the next press is on the dial, which
  * takes the press before the slider is asked.  The rate stays the one the
  * drag set through that gesture and the one after it.
@@ -5756,6 +5811,8 @@ int main(void)
     RUN(leaving_under_a_dial_drag_ends_the_drag);
     RUN(a_press_ends_a_dial_drag_that_lost_its_release);
     RUN(a_second_press_ends_a_dial_drag);
+    RUN(the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in);
+    RUN(a_withdrawal_after_an_arm_restores_no_drive_from_before_it);
     RUN(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release);
     RUN(a_withdrawal_on_a_disarmed_bench_restores_no_drive);
     RUN(a_withdrawal_on_an_armed_bench_restores_the_drive);

@@ -1511,6 +1511,9 @@ void servo_screen_set_armed(bool armed)
      * now armed.
      */
     s.driving = false;
+    /* Nor is what the knob found before the edge: a withdrawal after it
+     * puts back no drive from the other side. */
+    s.knob_had_driving = false;
     stop_sweep();
     if (armed) {
         ui_hold_reached(&s.arm);
@@ -3266,8 +3269,12 @@ static void event_body(const touch_event_t *evt)
          * latched, wherever the press lands; ui_slider_event() gives the
          * reason.  A release can go missing, and a later contact reusing
          * the track id would command a position, or a rate, with no press
-         * on the control.
+         * on the control.  A finger that was on the dial still owned it in
+         * this frame, so the knob stays out of the frame.
          */
+        if (s.dragging) {
+            s.knob_finger = true;
+        }
         s.dragging = false;
         ui_slider_release(&s.speed);
         if (s.ov_open && gfx_rect_contains(overlay_area(), px, py)) {

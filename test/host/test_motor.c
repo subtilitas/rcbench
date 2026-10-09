@@ -1592,6 +1592,30 @@ TEST_CASE(a_drag_under_way_ends_at_the_arm)
     CHECK_NEAR(motor_screen_throttle(), 40.0f * 100.0f / 413.0f, 0.01f);
 }
 
+/*
+ * The finger whose drag the arm ended owned the slider in that frame: a
+ * knob turn applied at the end of the frame moves nothing.  The next frame
+ * is the knob's.
+ */
+TEST_CASE(the_knob_stays_out_of_the_frame_an_arm_ended_a_drag_in)
+{
+    fed();
+    finger(0, TRACK_X + 28, P(TRACK_Y));        /* frame N */
+    glide(0, TRACK_X + 228, P(TRACK_Y), 8);
+    (void)last_cmd();
+
+    motor_screen_knob_frame();                  /* frame N+1 */
+    motor_screen_set_armed(true);
+    motor_screen_knob(0.1f);
+    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    motor_screen_knob_frame();                  /* frame N+2 */
+    motor_screen_knob(0.1f);
+    CHECK_NEAR(last_cmd().value, 10.0f, 0.01f);
+    lift(0);
+}
+
 /* And at the disarm, where the application returns the value to zero. */
 TEST_CASE(a_drag_under_way_ends_at_the_disarm)
 {
@@ -1697,6 +1721,7 @@ int main(void)
     RUN(a_knob_command_waiting_at_the_arm_is_not_put_back);
     RUN(an_armed_report_repeated_keeps_the_throttle);
     RUN(a_drag_under_way_ends_at_the_arm);
+    RUN(the_knob_stays_out_of_the_frame_an_arm_ended_a_drag_in);
     RUN(a_drag_under_way_ends_at_the_disarm);
     RUN(every_arm_starts_from_zero);
     return test_summary("motor");

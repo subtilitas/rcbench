@@ -375,9 +375,19 @@ void motor_screen_cancel_arm(void)
  * keeps its origin, and the next move would add the whole travel since the
  * press to 0 %.
  */
+/* End a drag on the track.  The finger owned the slider in this frame, so
+ * the knob stays out of the frame. */
+static void end_drag(void)
+{
+    if (s.slider.dragging) {
+        s.knob_finger = true;
+    }
+    ui_slider_release(&s.slider);
+}
+
 static void throttle_from_zero(void)
 {
-    ui_slider_release(&s.slider);
+    end_drag();
     ui_slider_set(&s.slider, 0.0f);
     if (s.pending.kind == MOTOR_CMD_THROTTLE) {
         s.pending.kind = MOTOR_CMD_NONE;
@@ -411,7 +421,7 @@ void motor_screen_set_armed(bool armed)
             /* The application returns the value to zero on this edge; the
              * drag ends with the run, for the reason throttle_from_zero()
              * gives. */
-            ui_slider_release(&s.slider);
+            end_drag();
         }
         ui_plot_set_running(&s.plot, armed);
     }
