@@ -1030,7 +1030,12 @@ across a third of its travel from -travel to +travel.
 - A finger on the throttle track or on the SERVO dial owns the value while it
   is down. On SERVO the knob does not take the horn from a running or paused
   sweep, a test run, or the open settings panel.
-- A frame that lost touch events drops the knob's motion with its gestures.
+- A frame that lost touch events drops the knob's motion with its gestures,
+  and so does a frame in which the screen changed.
+- The knob replaces only a throttle or a horn position. While another
+  command waits for the frame (an arm that has just completed, a disarm, a
+  peak reset, a release), the knob's motion in that frame is dropped, not
+  held.
 - The sensor is assumed to answer at 0x36 without a clash: 0x36 is outside the CH422G's command addresses in its datasheet, Waveshare's wiki reserves 0x30 to 0x3F on this bus, and this is not checked on hardware.
 
 ### INTERFACES: the current monitors

@@ -92,7 +92,9 @@ void motor_screen_set_throttle(float pct);
  * rotary knob (knob.h).  Relative: the value changes by how far the knob
  * turned.  Nothing happens for a zero fraction or while a finger is
  * dragging the slider.  It posts the same throttle command a touch does and
- * never arms.
+ * never arms.  It posts only into an empty slot or over a throttle: any other
+ * pending command (an arm, a disarm, a peak reset) stays and the knob's
+ * motion is dropped.
  */
 void motor_screen_knob(float span_fraction);
 

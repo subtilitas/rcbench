@@ -24,41 +24,26 @@ static const char *TAG = "knob";
 
 static atomic_bool s_on;
 static atomic_int  s_steps;
+static i2c_master_dev_handle_t s_dev;
 
 static void knob_task(void *arg)
 {
     (void)arg;
     knob_t k;
     knob_reset(&k);
-    i2c_master_dev_handle_t dev = NULL;
     uint32_t period_ms = KNOB_POLL_IDLE_MS;
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(period_ms));
         if (!atomic_load(&s_on)) {
             knob_reset(&k);
-            if (dev != NULL) {
-                i2c_master_bus_rm_device(dev);
-                dev = NULL;
-            }
             period_ms = KNOB_POLL_IDLE_MS;
             continue;
-        }
-        if (dev == NULL) {
-            const i2c_device_config_t cfg = {
-                .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-                .device_address = KNOB_I2C_ADDR,
-                .scl_speed_hz = BOARD_I2C_FREQ_HZ,
-            };
-            if (i2c_master_bus_add_device(board_i2c_bus(), &cfg, &dev) != ESP_OK) {
-                dev = NULL;
-                continue;
-            }
         }
         const uint8_t reg = KNOB_REG_STATUS;
         uint8_t regs[KNOB_BURST_LEN];
         const bool read_ok =
-            i2c_master_transmit_receive(dev, &reg, 1, regs, sizeof regs,
+            i2c_master_transmit_receive(s_dev, &reg, 1, regs, sizeof regs,
                                         KNOB_I2C_TIMEOUT_MS) == ESP_OK;
         knob_reading_t r = { 0 };
         const bool usable = read_ok && knob_decode(regs, &r);
@@ -66,12 +51,37 @@ static void knob_task(void *arg)
         if (d != 0) {
             atomic_fetch_add(&s_steps, d);
         }
-        period_ms = read_ok ? KNOB_POLL_MS : KNOB_POLL_IDLE_MS;
+        /* A sensor that answers with a flagged reading is as good as absent:
+         * both back off to the idle period. */
+        period_ms = usable ? KNOB_POLL_MS : KNOB_POLL_IDLE_MS;
+    }
+}
+
+void knob_task_attach(void)
+{
+    /*
+     * The bus driver's add and remove calls are not thread-safe against a
+     * transaction on the same bus, and the control task reads the touch
+     * controller on it every 5 ms.  The handle is allocated once, before that
+     * task exists, and stays registered; the setting only gates the polling.
+     * Registering sends nothing to 0x36.
+     */
+    const i2c_device_config_t cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = KNOB_I2C_ADDR,
+        .scl_speed_hz = BOARD_I2C_FREQ_HZ,
+    };
+    if (i2c_master_bus_add_device(board_i2c_bus(), &cfg, &s_dev) != ESP_OK) {
+        s_dev = NULL;
+        ESP_LOGE(TAG, "sensor not registered on the bus");
     }
 }
 
 void knob_task_start(void)
 {
+    if (s_dev == NULL) {
+        return;     /* nothing to poll; the knob stays inert */
+    }
     /*
      * Core 0 beside the renderer, below it in nothing it needs: 10 ms polls
      * of 0.5 ms each.  Priority 2, under the card task's 3, and not on

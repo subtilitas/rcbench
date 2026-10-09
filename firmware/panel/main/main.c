@@ -6708,22 +6708,40 @@ static void test_lines_service(void)
 
 /*
  * The rotary knob turns the slider of the bench screen on top: the throttle
- * on MOTOR & ESC, the horn on SERVO.  The motion is taken every frame so
- * that what is turned on another screen, with the setting off, or in a frame
- * that lost touch events is dropped and not applied later.  The knob moves
- * a value by how far it turned; it arms nothing, and a disarm, a stop or
- * leaving the screen act exactly as they do for the touch slider.
+ * on MOTOR & ESC, the horn on SERVO.
+ *
+ * The motion is taken at the start of the frame together with the screen it
+ * was turned on, and applied at the end, after the last touch drain and the
+ * tick.  A motion turned on another screen, with the setting off, in a frame
+ * whose route changed (a tap on a menu item navigates inside the drain), or
+ * in a frame that lost touch events is dropped and not applied later.  The
+ * knob's command is posted after the frame's flush and goes with the next
+ * one, so a touch loss found by the second drain is seen before it is
+ * posted.  The knob moves a value by how far it turned; it arms nothing, and
+ * a disarm, a stop or leaving the screen act exactly as they do for the touch
+ * slider.
  */
-static void knob_service(bool frame_lost)
+typedef struct {
+    int           steps;
+    ui_screen_id_t route;
+} knob_turn_t;
+
+static knob_turn_t knob_take(void)
 {
     const bool on = settings_get_bool(SET_KNOB_EN);
     knob_task_set_enabled(on);
     const int steps = knob_task_take();
-    if (!on || steps == 0 || frame_lost) {
+    return (knob_turn_t){ .steps = on ? steps : 0, .route = ui_router_current() };
+}
+
+static void knob_apply(const knob_turn_t *turn, bool frame_lost)
+{
+    if (turn->steps == 0 || frame_lost || ui_router_current() != turn->route) {
         return;
     }
-    const float span = knob_span_fraction(steps, settings_get_int(SET_KNOB_SCALE));
-    switch (ui_router_current()) {
+    const float span =
+        knob_span_fraction(turn->steps, settings_get_int(SET_KNOB_SCALE));
+    switch (turn->route) {
     case SCREEN_MOTOR: motor_screen_knob(span); break;
     case SCREEN_SERVO: servo_screen_knob(span); break;
     default: break;
@@ -6969,6 +6987,9 @@ void app_main(void)
         ui_router_hold_alert(TR(ALERT_TOUCH_NO_ANSWER));
     }
 
+    /* The knob's sensor joins the bus before the control task starts using it. */
+    knob_task_attach();
+
     /*
      * On the core the renderer does not use, and above it in priority: the
      * bench's timing must not depend on how long a frame takes.
@@ -7030,6 +7051,7 @@ void app_main(void)
          * acknowledged only by a frame that did not.  See the end of the
          * frame. */
         bool frame_lost = false;
+        const knob_turn_t knob_turn = knob_take();
 
         /*
          * A stop ends any hold under way and drops an arm it has already
@@ -7200,8 +7222,6 @@ void app_main(void)
         if (drain_touch(stops_now)) {
             frame_lost = true;
         }
-
-        knob_service(frame_lost);
 
         /* What the screens decided, back to the control task. */
         /*
@@ -7385,6 +7405,7 @@ void app_main(void)
             frame_lost = true;
         }
         ui_router_tick(dt_s);
+        knob_apply(&knob_turn, frame_lost);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

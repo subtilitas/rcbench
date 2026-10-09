@@ -420,7 +420,15 @@ void motor_screen_set_throttle(float pct)
 
 void motor_screen_knob(float span_fraction)
 {
-    if (span_fraction == 0.0f || s.slider.dragging) {
+    /*
+     * The knob posts only when the slot is empty or holds a throttle, which
+     * it may replace as the slider does.  Any other pending command -- an arm
+     * that completed in this frame's tick, a disarm, a peak reset -- is not
+     * the knob's to overwrite, and its delta is dropped, not held for later.
+     */
+    if (span_fraction == 0.0f || s.slider.dragging
+        || (s.pending.kind != MOTOR_CMD_NONE
+            && s.pending.kind != MOTOR_CMD_THROTTLE)) {
         return;
     }
     const float before = s.slider.value;

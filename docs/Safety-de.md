@@ -229,7 +229,11 @@ Panel als Leitung ohne Flanken gelesen wird.
   mehr bei, und kein letzter Wert bleibt als Kommando stehen. Ein Finger auf
   Track oder Zifferblatt besitzt den Wert gegenüber dem Knopf, und auf SERVO
   besitzen ein Sweep, ein Testlauf und das Einstellungsfeld das Horn. Ein
-  Frame, der Touch-Ereignisse verloren hat, verwirft die Bewegung des Knopfs.
+  Frame, der Touch-Ereignisse verloren hat, oder in dem der Bildschirm
+  gewechselt hat, verwirft die Bewegung des Knopfs. Der Knopf ersetzt nie ein
+  anderes wartendes Kommando als ein Gas oder eine Horn-Position: Ein
+  vollendetes Schärfen, ein Entschärfen, ein Freigeben und ein Zurücksetzen
+  der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
   benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout; ein Sensor, der den
   gemeinsamen I2C-Bus festhält, verzögert das Lesen des Touch also um höchstens

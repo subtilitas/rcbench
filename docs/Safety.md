@@ -195,7 +195,10 @@ unpowered or unplugged panel reads as a line that is not edging.
   so a knob that stops answering stops contributing and no last value is held
   as a command. A finger on the track or dial owns the value against the
   knob, and on SERVO a sweep, a test run and the settings panel own the horn.
-  A frame that lost touch events drops the knob's motion. The knob is read by
+  A frame that lost touch events, or in which the screen changed, drops the
+  knob's motion. The knob never replaces a command other than a throttle or
+  a horn position that is waiting for the frame: a completed arm, a disarm, a
+  release and a peak reset stay, and its motion is dropped. The knob is read by
   a task of its own on the core the renderer uses, never by the control task,
   with a 5 ms bus timeout, so a sensor that holds the shared I2C bus delays
   the touch read by at most 5 ms against the 150 ms the heartbeat is watched

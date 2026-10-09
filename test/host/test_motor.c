@@ -714,6 +714,28 @@ TEST_CASE(a_posted_disarm_is_not_overwritten_by_the_knob)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
 }
 
+/* An arm that completed in the frame's tick waits for the application's next
+ * flush; a knob delta in between drops and leaves the arm in the slot. */
+TEST_CASE(a_completed_arm_is_not_overwritten_by_the_knob)
+{
+    fresh();
+    hold_arm();
+    motor_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    motor_screen_knob(0.3f);
+    CHECK_NEAR(motor_screen_throttle(), 30.0f, 0.01f);
+}
+
+TEST_CASE(a_pending_peak_reset_is_not_overwritten_by_the_knob)
+{
+    fresh();
+    tap(RESET_X, RESET_Y);
+    motor_screen_knob(0.3f);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_RESET_PEAKS);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+}
+
 /* A disarm returns the throttle to zero, and the knob goes on from there. */
 TEST_CASE(the_knob_goes_on_from_zero_after_a_disarm)
 {
@@ -1294,6 +1316,8 @@ int main(void)
     RUN(the_knob_never_arms);
     RUN(a_finger_on_the_throttle_track_owns_it_against_the_knob);
     RUN(a_posted_disarm_is_not_overwritten_by_the_knob);
+    RUN(a_completed_arm_is_not_overwritten_by_the_knob);
+    RUN(a_pending_peak_reset_is_not_overwritten_by_the_knob);
     RUN(the_knob_goes_on_from_zero_after_a_disarm);
     RUN(reset_peaks_posts_its_own_command);
     RUN(a_peak_outlasts_the_reading_that_went);

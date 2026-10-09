@@ -112,7 +112,9 @@ const ui_screen_t *servo_screen(void);
  * happens for a zero fraction, while a finger is on the dial, while the
  * settings panel is open, or while a sweep (running or paused) or a test run owns the horn: the
  * knob does not take the horn from them as a finger does.  It posts the
- * position command a touch does and never arms.
+ * position command a touch does and never arms.  It posts only into an empty
+ * slot or over a position: any other pending command (a release, an arm, a
+ * disarm) stays and the knob's motion is dropped.
  */
 void servo_screen_knob(float span_fraction);
 

@@ -1125,7 +1125,12 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   laufenden oder pausierten Sweep, einem Testlauf oder dem offenen
   Einstellungsfeld.
 - Ein Frame, der Touch-Ereignisse verloren hat, verwirft die Bewegung des
-  Knopfs zusammen mit den Gesten.
+  Knopfs zusammen mit den Gesten, ebenso ein Frame, in dem der Bildschirm
+  gewechselt hat.
+- Der Knopf ersetzt nur ein Gas oder eine Horn-Position. Wartet ein anderes
+  Kommando auf den Frame (ein eben vollendetes Schärfen, ein Entschärfen, ein
+  Zurücksetzen der Spitzen, ein Freigeben), wird die Bewegung des Knopfs in
+  diesem Frame verworfen, nicht aufgehoben.
 - Angenommen wird, dass der Sensor ohne Kollision unter 0x36 antwortet: 0x36 liegt außerhalb der Kommandoadressen des CH422G in dessen Datenblatt, Waveshares Wiki reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware geprüft.
 
 ### ANSCHLÜSSE: die Strommonitore

@@ -3082,6 +3082,15 @@ void servo_screen_knob(float span_fraction)
         || servo_test_running(&s.test) || s.sweeping || s.paused) {
         return;
     }
+    /*
+     * Posts only into an empty slot or over a position, which it may replace
+     * as a drag does.  A release, an arm, a disarm, a hold or a sweep waiting
+     * to be taken is not the knob's to overwrite; its delta is dropped.
+     */
+    if (s.pending.kind != SERVO_CMD_NONE
+        && s.pending.kind != SERVO_CMD_POSITION) {
+        return;
+    }
     const float before = s.commanded_deg;
     command(before + span_fraction * 2.0f * s.travel_deg);
 }

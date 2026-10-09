@@ -1503,6 +1503,30 @@ TEST_CASE(the_knob_leaves_the_horn_to_the_settings_panel)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 }
 
+/* The knob posts only over a position or into an empty slot: a release or a
+ * completed arm waiting to be taken stays, and the delta is dropped. */
+TEST_CASE(a_pending_release_is_not_overwritten_by_the_knob)
+{
+    fresh();
+    servo_screen_knob(0.25f);
+    (void)last_cmd();
+    tap(716, 350 + 16);                 /* RELEASE */
+    const uint16_t before = servo_screen_commanded();
+    servo_screen_knob(0.25f);
+    CHECK_EQ(servo_screen_commanded(), before);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+}
+
+TEST_CASE(a_completed_arm_is_not_overwritten_by_the_servo_knob)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    servo_screen_knob(0.25f);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+}
+
 /* ------------------------------------------------------------------ sweep */
 
 #define SWEEP_X (ARM_X + ARM_W / 2)
@@ -5082,6 +5106,8 @@ int main(void)
     RUN(a_knob_that_does_not_turn_commands_nothing_on_the_servo);
     RUN(a_finger_on_the_dial_owns_the_horn_against_the_knob);
     RUN(the_knob_leaves_the_horn_to_the_settings_panel);
+    RUN(a_pending_release_is_not_overwritten_by_the_knob);
+    RUN(a_completed_arm_is_not_overwritten_by_the_servo_knob);
     RUN(the_knob_does_not_take_the_horn_from_a_sweep);
     RUN(the_start_line_follows_the_report_being_taken);
     RUN(arm_first_goes_once_the_bench_is_armed);
