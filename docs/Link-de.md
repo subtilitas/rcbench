@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.9. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.10. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -95,7 +95,8 @@ Verglichen wird nur die Major. Der Link kommt hoch und der Prüfstand wird
 scharf, gleich welche Minor die beiden haben. Das Panel liest die Minor des
 Koprozessors beim Link-up und nutzt nichts, was diese Minor nicht hat: die
 Frame Rate von SERVO ab 4.1, seinen Sweep ab 4.2, SUPPLY ab 4.3, RESUME des
-Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder von SENSE ab 4.9. Der Koprozessor liest
+Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder von SENSE ab 4.9,
+BIND_CFG, BIND_OUT und BIND ab 4.10. Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
 
@@ -238,6 +239,107 @@ Nicht auf Hardware gelaufen: der AS5600 am Bus neben den INA-Bauteilen, seine
 Adresse, die Pull-ups, die Zeit des Ablaufs auf dem Bus, das Messintervall und
 die Toleranz von 12 Schritten gegen das Rauschen eines echten Servos.
 
+### Eine Bindung als Ganzes
+
+BIND_CFG (0x2E), BIND_OUT (0x2F) und BIND (0x30) sind neu in 4.10, und 4.10
+verschiebt sonst nichts. Eine Bindung sind zwei Pages mit 32 Registern,
+CHAN_CFG und OUTPUTS, 16 Frames. Ein Schreiben auf eine der beiden gilt Frame
+für Frame, eine Folge, die mittendrin endet, lässt also die ersten Einträge
+der einen Bindung und den Rest einer anderen stehen. Die drei Pages machen aus
+der Änderung einen Schritt:
+
+| Page | Register | Regeln |
+| --- | --- | --- |
+| BIND_CFG | 32, wie CHAN_CFG | eine CHAN_CFG-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von CHAN_CFG geprüft (Rolle 0 oder 1, Endpunkte 400 bis 2500 µs) und bei einem Verstoß mit BAD_VALUE abgelehnt, ohne etwas zu speichern. Kein Ausgang ändert sich |
+| BIND_OUT | 32, wie OUTPUTS | eine OUTPUTS-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von OUTPUTS geprüft (ein Treiber 0 bis 4, eine Pin-Nummer bis 63) und bei einem Verstoß mit BAD_VALUE abgelehnt. Kein Ausgang ändert sich |
+| BIND | 1: `COMMIT` | ein Schreiben trägt die CRC (Cyclic Redundancy Check) der 64 vorbereiteten Register. Liest die CRC dessen, was vorbereitet ist |
+
+Die CRC ist CRC-16/CCITT-FALSE: Polynom 0x1021, Startwert 0xFFFF, keine
+Spiegelung, kein abschließendes XOR, über die 32 Register von BIND_CFG und
+dann die 32 von BIND_OUT, jedes als Low-Byte und dann High-Byte, 128 Bytes.
+
+Ein Schreiben von `COMMIT`:
+
+1. wird mit BAD_VALUE abgelehnt, wenn sein Wert nicht die CRC dessen ist, was
+   der Koprozessor vorbereitet hält. Nichts ändert sich. Ein Frame, der nicht
+   ankam, oder ein Koprozessor, der seit dem Vorbereiten neu gestartet ist,
+   endet hier;
+2. beurteilt die vorbereitete CHAN_CFG-Page nach jeder Regel eines
+   CHAN_CFG-Schreibens und setzt sie in Kraft, oder lehnt mit BAD_VALUE ab
+   und ändert nichts;
+3. beurteilt die vorbereitete OUTPUTS-Page nach jeder Regel eines
+   OUTPUTS-Schreibens — scharf, die Pins des Netzteils, des Sensorbusses und
+   des Phasenabgriffs, die SERVO-Rate, was das Silizium bindet — und setzt
+   sie in Kraft, oder lehnt mit BAD_VALUE ab und setzt die CHAN_CFG-Page von
+   vor dem Commit zurück, und mit ihr Rolle, Kommando und Ausgang jedes
+   Kanals, wie sie waren;
+4. wird bestätigt, und die Bindung wird einmal gespeichert.
+
+Die geltenden Pages sind also nach jedem Ende der Folge beide die alte
+Bindung oder beide die neue. Ein Commit, dessen Bestätigung verloren geht,
+wurde übernommen: der Host liest die Pages, um es zu erfahren.
+
+Was vorbereitet ist, beginnt als die beim Start geltenden Pages. Es wird
+nicht im Flash gehalten und von Link-Stille nicht gelöscht; die CRC bindet
+einen Commit an die Frames, die ein Host gesendet hat. CHAN_CFG und OUTPUTS
+bleiben Eintrag für Eintrag beschreibbar und gelten mit jeder Bestätigung:
+so schreibt der SERVO-Bildschirm den Bereich eines Kanals und das Panel die
+Endpunkte des Throttle.
+
+| Panel | Koprozessor | Eine auf OUTPUTS oder PICK A PIN geänderte Bindung |
+| --- | --- | --- |
+| 4.10 | 4.10 | vorbereitet und übernommen: SERVO `FRAME_HZ` = 0, 8 Frames an BIND_CFG, 8 an BIND_OUT, `COMMIT`, dann OUTPUTS und CHAN_CFG zurückgelesen. 20 Austausche |
+| 4.10 | 4.9 oder älter | das Panel liest die Minor beim Link-up und sendet nichts an die drei Pages. SERVO `FRAME_HZ` = 0 (ab 4.1), 8 Frames an CHAN_CFG, 8 an OUTPUTS, jeder ein eigener bestätigter Austausch und mit der Bestätigung in Kraft, dann beide Pages zurückgelesen. 19 Austausche. Ein mittendrin verlorener Frame lässt die Einträge davor in Kraft; das Panel zeigt die Pages dann, wie sie sich lesen, und schreibt nichts darüber außer einer Bindung ohne Pin |
+| 4.9 oder älter | 4.10 | das Panel schreibt die drei Pages nie. Es schreibt CHAN_CFG und OUTPUTS als 8 Frames direkt hintereinander in je einem Austausch, wie zwischen zwei älteren Builds |
+| ein anderer Host | 4.10 | ein `COMMIT`, der nicht die CRC der vorbereiteten Pages nennt, wird mit BAD_VALUE abgelehnt; BIND_CFG und BIND_OUT werden Frame für Frame abgelehnt wie oben |
+
+Jedes Schreiben dieses Panels, das breiter als ein Frame ist, geht mit einem
+Frame von bis zu 4 Registern je Austausch hinaus, jeder bestätigt, bevor der
+nächste gesendet wird (`link_write_acked()` in `shared/link/link_port.c`). Der
+XL2515 hält 2 empfangene Frames, und der Koprozessor liest ihn aus seiner
+Hauptschleife; mit einem Anfrage-Frame gleichzeitig unterwegs verzögert ein
+verspäteter Durchlauf einen Frame und verliert keinen an einen vollen Puffer.
+Dasselbe Schreiben als 8 Frames direkt hintereinander verliert 6 davon an
+einen Durchlauf von 20 ms (`test_bind_link`). Eine Antwort kommt weiterhin
+als Frames direkt hintereinander: der TWAI-Treiber des Panels puffert 16.
+
+Die Kosten einer Änderung, und woran sie gemessen werden:
+
+| | 0.14.0 | Dieser Build, Koprozessor mit 4.10 |
+| --- | ---: | ---: |
+| Austausche | 5 | 20 |
+| Anfrage-Frames | 19 | 20 |
+| Antwort-Frames | 33 | 34 |
+| Anfrage-Frames gleichzeitig auf dem Bus, höchstens | 8 | 1 |
+| CHAN_CFG und OUTPUTS auf die Ausgänge angewendet | 16-mal, einmal je Frame | je einmal, beim Commit |
+| Speicheranforderungen an den Flash-Speicher | 16 | 1 |
+
+54 Frames zu etwa 130 µs sind in beiden 7 ms Buszeit. Ein Austausch fügt den
+Schleifendurchlauf des Koprozessors und das Aufwachen der Panel-Task hinzu:
+[Den Link in Betrieb nehmen](Bringup-de.md) gibt für die Laufzeit eines
+Austauschs 334 bis 1400 µs aus, das legt die 20 zwischen 7 und 28 ms; die
+Folge selbst ist auf Hardware nicht gemessen. Die Control-Task des Panels
+läuft alle 5 ms und sendet die Folge aus einem Durchlauf, dieser Durchlauf
+dauert also 2 bis 6 Perioden; die Sicherheitsschleife — die 20-ms-Flanken des
+Heartbeats, STOP — läuft darin, zwischen zwei Frames einer Page, sobald 5 ms
+seit ihrem letzten Lauf vergangen sind, und in allen 5 ms, die auf eine
+Antwort gewartet wird. Der 50-ms-Poll mit
+seinem Schreiben von ARM und THROTTLE verspätet sich um dieselbe Zeit; eine
+Änderung wird bei scharfem Prüfstand abgelehnt, kein scharfer Prüfstand
+wartet also darauf. Die 200-ms-Stillegrenze des Koprozessors zählt ab der
+letzten Anfrage, die er gehört hat, und jeder Austausch der Folge ist eine:
+die Folge kann sie nicht aushungern, wie lange sie insgesamt auch dauert,
+und ein einzelner Frame, den der Koprozessor 200 ms lang nicht annimmt, setzt
+`FEHLER 01` wie jede Anfrage. Ein Frame, der auf der Leitung verloren geht,
+beendet die Folge nach den 1000 ms seines eigenen Austauschs, der Link wird
+abgebaut, und die geltende Bindung bleibt unverändert.
+
+`shared/outputs/out_stage.c` ist die Hälfte des Koprozessors und
+`shared/outputs/bind_link.c` die des Panels, unter `test_bind_link`: die
+Folge durch ein Modell des 2-Frame-Puffers mit einem tauben Fenster von
+20 ms, geöffnet alle 125 µs, ein verlorener Frame an jeder der 18 Stellen,
+die Timeouts über den Überlauf bei 2^32 ms. Nicht auf Hardware gelaufen.
+
 ### Identifier
 
 Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
@@ -305,6 +407,9 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x2B | SENSE | lesen, schreiben | zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem Bus auf zwei Pins des Koprozessors, ein TI INA228 im Leistungspfad des ESC und ein TI INA3221 an der Servoversorgung (seit 4.7). Register 0 bis 3, ein Frame: Freigabe (Bit 0 INA228, Bit 1 INA3221, Bit 2 der Ausgangsencoder AS5600 seit 4.9), der SDA-GPIO, der SCL-GPIO und der Takt, 400 kHz und kein anderer Wert: bei 100 kHz dauert ein Lesezugriff 480 bis 750 µs, und der 1-ms-Zeitplan des Koprozessors passt nicht. Der Zeitplan liest INA3221 CH1 mit 1000 Hz, CH2 und CH3 mit 50 Hz oder für ein synchronisiertes Paar mit 1000 Hz, Strom und Spannung des INA228 mit je 500 Hz und alles andere mit 50 Hz. Beide Module tragen Pull-ups an SDA und SCL, und die liegen parallel: der DAOKAI-INA3221 hat 10 kΩ nach VS (3,3 V); Wert und Schiene der Pull-ups des MATEK-INA228 sind unbekannt. Der Gesamtwert muss über etwa 1 kΩ bleiben: ein I2C-Ausgang zieht 3 mA bei 0,4 V, und (3,3 V − 0,4 V) / 3 mA sind 967 Ω. Unter 10 kΩ verkürzt er die Anstiegszeit: die Grenze von 300 ns bei 400 kHz erlaubt mit 10 kΩ allein 35 pF Buskapazität, mit weniger mehr. Die GPIO-Nummer von SDA ist modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach, das Paar eines I2C-Blocks (standardmäßig GP16 und GP17). Register 4 bis 7, ein Frame: die Adresse des INA228, 0x40 bis 0x4F (Standard 0x45, die des MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41); sein Shunt in µΩ, 50 bis 20000 (Standard 200); der Strom, auf den sein Bereich eingestellt ist, in 0,1 A, 10 bis 3000 (1,0 bis 300,0 A, das Auslegungsmaximum des Prüfstands; Standard 2048). Das Maximum wählt nur ADCRANGE: 1, solange die Shuntspannung dabei höchstens 40,96 mV beträgt, 0 bis 163,84 mV, und darüber wird das Schreiben abgewiesen. CURRENT_LSB ist der Schritt des Shunt-ADC geteilt durch den Shunt (78,125 nV oder 312,5 nV durch R), damit begrenzen CURRENT und die Shuntspannung gemeinsam, und SHUNT_CAL ist in beiden Bereichen 4096. Ein Shunt, dessen Vollausschlag im gewählten Bereich 2000 A übersteigt, wird ebenfalls abgewiesen; unter 81,92 µΩ gilt also nur ADCRANGE 1. Die Regel ist die des Treibers, `ina228_calibrate()`; Register 7 reserviert. Register 8 bis 11, ein Frame: die Adresse des INA3221, 0x40 bis 0x43 (Standard 0x40); sein Shunt in 0,1 mΩ, 50 bis 10000 (5 mΩ bis 1 Ω, Standard 1000, die 0,1 Ω, die bis 1,638 A messen); die gelesenen Kanäle, Bits 0..2 für CH1 bis CH3, mindestens einer, solange er freigegeben ist (Standard CH1); Register 11 reserviert. Die reservierten Register lesen 0 und nehmen nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, SDA und SCL nicht das Paar eines Blocks, ein Pin, der reserviert, an einen Ausgang gebunden oder von SUPPLY gehalten ist, beide Bauteile auf einer Adresse, solange beide freigegeben sind, und jede Änderung bei scharfem Prüfstand; ein Schreiben der geltenden Konfiguration wird angenommen. Die Pins gehören keinem Ausgang, solange eines der Bauteile freigegeben ist, und ein Schreiben auf OUTPUTS, das einen davon bindet, wird abgewiesen. Register 12 bis 25, nur lesen: Flags (Bit 0 INA228 online, Bit 1 seine letzte Identitätslesung war die eines INA228, Bit 2 an seiner Adresse antwortet etwas anderes, Bit 3 ein Strom lag im letzten 50-ms-Fenster oder seit dem Schärfen des Laufs am Ende seines Bereichs, Strom und Leistung in BENCH oder ihre Spitzen sind dann Grenzen und keine Werte; Bits 4 bis 6 dieselben drei für den INA3221; Bit 8 der Bus ist auf seinen Pins offen, Bit 9 SDA wird low gehalten und wird freigetaktet), die Adressen, die beim letzten Scan geantwortet haben (Bit n für 0x40 + n), DEVICE_ID des INA228 und Die-ID des INA3221 wie gelesen, fehlgeschlagene Transaktionen modulo 65536, die Chiptemperatur des INA228 in 0,1 °C (vorzeichenbehaftet) und DIAG_ALRT, seine Ladung in 0,01 mAh (vorzeichenbehaftet, 32 Bit, Register 19 und 20, niederwertiges zuerst) und Energie in 0,01 Wh (32 Bit, Register 21 und 22, niederwertiges zuerst) seit dem Schärfen des Laufs, die Telemetriespannung (10 mV) und der Telemetriestrom (10 mA) des ESC selbst und ihre Gültigkeitsbits (Bit 0 Spannung, Bit 1 Strom). Register 26 bis 31, nur lesen, seit 4.9: Flags, RAW ANGLE, MAGNITUDE, Zähler und Ruhezeit in ms des Ausgangsencoders und ein reserviertes Register (siehe unten). Register 0 bis 11 werden im Flash des Koprozessors gehalten |
 | 0x2C | SERVO_SENSE | lesen, schreiben | die Kanäle des INA3221 und eine Bewegung, gemessen auf dem Takt des Koprozessors (seit 4.7). Register 0 bis 11, nur lesen, vier je Kanal ab CH1: mittlerer Strom (mA, vorzeichenbehaftet), höchster Strom (mA, vorzeichenbehaftet), mittlere Busspannung (mV) und niedrigste Busspannung (mV) über das letzte 50-ms-Fenster, die Spannung auf der Lastseite des Shunts. Register 12, nur lesen: die Fensternummer modulo 65536; ein Lesen beendet kein Fenster. Register 13, nur lesen: Bits 0..2 das Fenster eines Kanals enthält Messungen, Bits 4..6 eine davon lag am Ende des Bereichs (163,8 mV über dem Shunt), womit mittlerer und höchster Strom dieses Kanals Untergrenzen sind, Bit 7 dasselbe für die Messung der Bewegung. Register 14 bis 17, ein Frame: eine Messung -- Bit 7 gesetzt, der INA3221-Kanal in Bits 0..1, nur CH1 (2 und 3 werden abgewiesen; das Feld bleibt für einen Kanal, der später schnell genug gelesen wird), und in Bits 8..10 der Ausgangskanal (0 bis 7), dessen nächstes geändertes Kommando die Zeitmessung startet; der Haltestrom, bei dem die Bewegung endet, 0 bis 32767 mA; die Schwelle für Bewegung und das Band für Ankunft, je 1 bis 32767 mA. Ein Scharfschalten ist der ganze Frame und startet eine laufende Messung neu. 0 in Register 14 entschärft und wird nie abgewiesen; am Anfang des Frames geschrieben, werden die anderen drei nicht gespeichert. Mit BAD_VALUE abgewiesen: jedes andere Schreiben, das nicht der ganze Frame ist, andere Bits in Register 14, ein Wert außerhalb seines Bereichs, ein anderer Kanal als CH1 oder einer, den SENSE nicht liest, und ein Ausgangskanal, der keine Surface an einem PWM-Slot ist, den der Koprozessor gebunden hat (ein Pin, dessen Compare-Register ein anderer Pin hält, ist es nicht); mit NOT_ARMED bei entschärftem Prüfstand. Ein Prüfstand, der aufhört zu treiben, beendet eine nicht fertige Messung. Register 18 bis 24, nur lesen: der Zustand (0 idle, 1 scharf, 2 wartet auf Bewegung, 3 bewegt sich, 4 angekommen, 5 an einem Endanschlag eingeschwungen, 6 zu spät: Bewegung und keine Ankunft innerhalb von 3000 ms plus der Verzögerung des Strommessers, 7 unerkannt: keine Bewegung in dieser Zeit, 8 verloren: der INA3221 antwortet nicht mehr, oder binnen 3000 ms nach dem Scharfschalten kam keine PWM-Flanke), fertige Messungen modulo 65536, die Zeit vom PWM-Frame mit dem neuen Puls bis zur Bewegung und bis zur Ankunft in 0,1 ms, aufgelöst auf das Abtastintervall von CH1, 1 ms, höchster und mittlerer gefilterter Strom der Bewegung (mA, vorzeichenbehaftet) und die Zahl der Messungen darin. Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
 | 0x2D | TONE | lesen, schreiben | die Beeps eines ESC, gehört an einer Motorphase über einen Vorwiderstand und eine Z-Dioden-Klemme an einem GPIO des Koprozessors, gestempelt von einer PIO-State-Machine mit 26,7 ns (seit 4.8). Register 0 bis 3, ein Frame: Freigabe (Bit 0), der GPIO (Standard 22, Pad 29), der tiefste gehörte Ton in Hz (50 bis 2000, Standard 400) und der höchste (über dem tiefsten, bis 6900, Standard 6500). Register 4 bis 7, ein Frame: die Tonhöhenänderung in Prozent, die ohne Stille einen neuen Beep beginnt (0 trennt nur an Stille, höchstens 50, Standard 8), die Stille, die einen Beep beendet, in ms (1 bis 100 und mindestens die Periode des tiefsten Tons, Standard 3), die Tonperioden, die einen Beep ausmachen (1 bis 64, Standard 3), und Register 7 reserviert. Das reservierte Register liest 0 und nimmt nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, eine Kombination, die der Detektor ablehnt (eine Stille, die kürzer ist als die Periode des tiefsten Tons), und, solange der Tap freigegeben ist, ein GPIO hinter der Bank (63), reserviert, an einen Ausgang gebunden, von SENSE oder SUPPLY gehalten oder ein ADC-Pin (ADC: Analog-Digital-Wandler): GP26 bis GP29 des RP2350A und GP40 bis GP47 des RP2354B, die nicht fehlertolerant sind. Der GPIO gehört keinem Ausgang, solange der Tap freigegeben ist, und ein Schreiben auf OUTPUTS, SENSE oder SUPPLY, das ihn nimmt, wird abgewiesen. Eine Änderung wird bei scharfem wie bei unscharfem Prüfstand angenommen: der Tap ist ein Eingang und treibt nichts. Register 8 bis 12, nur lesen: Flags (Bit 0 die Erfassung läuft, Bit 1 der Tap ist freigegeben und sein Pin konnte nicht genommen werden, Bit 2 der Erfassungsring oder die FIFO der State Machine ist seit Beginn der Erfassung übergelaufen, Bit 3 eine Folge von Bursts läuft, Bit 4 das letzte Fenster enthielt einen Ton), die Fensternummer modulo 65536 (Fenster zu 8 ms), der Ton des letzten Fensters in 0,1 Hz (0 für keinen) und die Tonperioden darin, und die Nummer des neuesten Beeps. Der Koprozessor hält die letzten 64 Beeps und nummeriert sie von 1 bis 65535, dann wieder ab 1; die neueste Nummer ist vor dem ersten Beep 0. Register 13, EVT_SEL, ist das einzige beschreibbare Register nach Register 7 und wird nicht gespeichert: die Nummer des Beeps, den die Register 14 bis 21 zeigen. Ein Lesen verbraucht keinen Beep, eine auf dem Link verlorene Antwort verliert also nichts. Register 14 bis 21, nur lesen: noch einmal EVT_SEL, solange dieser Beep unter den 64 ist, sonst 0, wobei Register 15 bis 21 0 lesen; der erste Anstieg des Beeps in ms seit Beginn der Erfassung (32 Bit, Register 15 und 16, niederwertiges zuerst); seine Länge bis zur letzten Flanke in 0,1 ms; seine mittlere Tonhöhe in 0,1 Hz; seine Bursts; der Träger, mit dem er zerhackt war, in 100-Hz-Schritten (0 nicht zerhackt); Flags (Bit 0 er begann bei einer Tonhöhenänderung ohne Stille davor, Bit 1 er endete bei einer). Register 22 und 23, nur lesen: verlorene Beeps und Lows unter 500 ns, die der Detektor ignoriert hat, je modulo 65536. Der 8-µs-Hold-off der Erfassung entfernt jedes Low unter 8 µs, bevor der Detektor es sieht; Register 23 liest deshalb am Tap 0. Die Erfassung beginnt, wenn der Tap freigegeben wird oder sein Pin wechselt, und leert dann die 64. Register 0 bis 6 werden im Flash des Koprozessors gehalten, und der Tap startet beim Booten. Solange der Tap gesperrt ist, ist der Pin ein Eingang mit eingeschaltetem Pull-down (32 bis 86 kΩ), und der bleibt an, solange der Tap läuft |
+| 0x2E | BIND_CFG | lesen, schreiben | eine vorbereitete CHAN_CFG-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von CHAN_CFG. [Eine Bindung als Ganzes](#eine-bindung-als-ganzes) beschreibt die drei Pages |
+| 0x2F | BIND_OUT | lesen, schreiben | eine vorbereitete OUTPUTS-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von OUTPUTS |
+| 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,
@@ -391,8 +496,8 @@ geltenden OUTPUTS-Page bindet nichts neu. Die Regel steht in
 `test_link_pages`.
 
 Der Arm-Latch und die Ablehnung im scharfen Zustand ändern kein Register und
-keinen Frame, die Protokollversion bleibt also 4.9. Was eine Gegenstelle
-sieht, die vor ihnen gebaut wurde:
+keinen Frame und tragen deshalb keine eigene Protokollversion. Was eine
+Gegenstelle sieht, die ohne sie gebaut wurde:
 
 | Panel | Koprozessor | Verhalten |
 | --- | --- | --- |
@@ -463,4 +568,7 @@ Device-Dispatcher laufen, über einen Bus, der Frames verwirft, verzögert und
 umsortiert: geteilte Antworten in umgekehrter Reihenfolge, abgewiesene
 Schreibzugriffe, verlorene Teilstücke, die eine Anfrage unbeantwortet lassen
 statt halb beantwortet, und der Watchdog des Geräts, der auf einem stillen
-Bus feuert.
+Bus feuert. `test_bind_link` lässt die Schreib- und Lesefolge einer Bindung
+gegen die Page-Regeln des Koprozessors laufen, über einen Bus mit dem
+2-Frame-Puffer des XL2515: siehe [Eine Bindung als
+Ganzes](#eine-bindung-als-ganzes).

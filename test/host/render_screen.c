@@ -612,6 +612,19 @@ static void stick_open(const char *name, const char *id)
     }
 }
 
+/* A protocol by its name, so a view cannot come to select the entry beside
+ * the one its comment names when the list changes. */
+static uint8_t proto_named(const char *name)
+{
+    for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
+        if (strcmp(outbind_protos()[i].name, name) == 0) {
+            return i;
+        }
+    }
+    fprintf(stderr, "render_screen: no protocol %s\n", name);
+    exit(2);
+}
+
 static ui_screen_id_t id_of(const char *name)
 {
     static const struct { const char *name; ui_screen_id_t id; } k[] = {
@@ -1298,25 +1311,45 @@ int main(int argc, char **argv)
     if (id == SCREEN_OUTPUTS) {
         /* Four servo leads on the first four free pins: the state an
          * operator reaches in four taps, and the one worth a picture. */
+        const uint16_t brd = OUTBIND_BOARD_PICO_HEADER;
+        const bool three = strcmp(view, "outputs-bidir") == 0
+                           || strcmp(view, "outputs-off") == 0
+                           || strcmp(view, "outputs-unread") == 0
+                           || strcmp(view, "outputs-odd") == 0;
         outbind_t b;
         outbind_init(&b);
-        outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
-        outbind_set_proto(&b, 1u);                 /* SERVO PWM */
-        static const uint8_t gp[4] = { 0, 1, 2, 4 };
-        for (unsigned i = 0; i < 4u; ++i) {
-            (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gp[i]));
+        outbind_set_board(&b, brd);
+        if (three) {
+            /*
+             * Three protocols on one bench: an ESC on GP0 with telemetry,
+             * a second on GP1 by pulse, servos on GP2 and GP13.  The
+             * longest protocol name is in the list for outputs-bidir and
+             * under a pin for the others.
+             */
+            outbind_set_proto(&b, proto_named("SERVO PWM"));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 2));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 13));
+            outbind_set_proto(&b, proto_named("MOTOR PWM"));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 1));
+            outbind_set_proto(&b, proto_named("DSHOT600 BIDIR"));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 0));
+        } else {
+            outbind_set_proto(&b, proto_named("SERVO PWM"));
+            static const uint8_t gp[4] = { 0, 1, 2, 4 };
+            for (unsigned i = 0; i < 4u; ++i) {
+                (void)outbind_toggle(&b, outbind_index_of(brd, gp[i]));
+            }
         }
         if (strcmp(view, "outputs-held") == 0) {
             /*
-             * An ESC beside the servos.  Under DShot the four servo pins are
-             * drawn greyed with SERVO PWM under them, which is the state the
-             * grid exists to make readable: those pins are taken, by a
+             * An ESC beside the servos.  Under DSHOT300 the four servo pins
+             * are drawn greyed with SERVO PWM under them, which is the state
+             * the grid exists to make readable: those pins are taken, by a
              * choice, and giving them back is done from the protocol that
              * holds them.
              */
-            outbind_set_proto(&b, 4u);             /* DSHOT600 */
-            (void)outbind_toggle(&b,
-                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 5));
+            outbind_set_proto(&b, proto_named("DSHOT300"));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 5));
         }
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
@@ -1327,15 +1360,40 @@ int main(int argc, char **argv)
              * a line saying why. An operator met this state and could not
              * tell it from a fault.
              */
-            outbind_set_proto(&b, 2u);             /* PPM */
+            outbind_set_proto(&b, proto_named("PPM"));
             outputs_screen_set_binding(&b);
         }
-        if (strcmp(view, "outputs-protocol") == 0) {
+        if (strcmp(view, "outputs-protocol") == 0
+            || strcmp(view, "outputs-off") == 0) {
             /* Tap the dropdown open. */
             touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 } };
             touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 } };
             ui_router_event(&d);
             ui_router_event(&u);
+        }
+        if (strcmp(view, "outputs-off") == 0) {
+            /* And OFF picked in it, the first row: every bound pin says
+             * which protocol holds it. */
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 } };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 } };
+            ui_router_event(&d);
+            ui_router_event(&u);
+        }
+        if (strcmp(view, "outputs-unread") == 0
+            || strcmp(view, "outputs-odd") == 0) {
+            /*
+             * The last binding read, after a read that failed
+             * (outputs-unread) or that gave pages no binding describes
+             * (outputs-odd): dimmed, with the reason, and for the second
+             * the key that unbinds every pin.
+             */
+            static bind_reading_t r;
+            outbind_init(&r.bind);
+            outbind_set_board(&r.bind, brd);
+            r.state = (strcmp(view, "outputs-odd") == 0) ? BIND_READ_ODD
+                                                         : BIND_READ_NONE;
+            outputs_screen_set_reading(&r);
+            outputs_screen_set_result(OUTPUTS_NO_LINK);
         }
     }
 

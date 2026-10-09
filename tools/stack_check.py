@@ -110,6 +110,16 @@ SCREEN_CALLS = {
     "ui_router_render": ("render",),
 }
 
+# The link_port_t callbacks shared/link calls: the functions the panel puts
+# in its two ports.  A request to the coprocessor waits in exchange(), which
+# runs the safety loop, so this is the control task's deepest chain and it
+# is followed by name.  A function listed here that makes no indirect call,
+# or a callback that is not one function in the ELF, fails the check.
+PORT_CALLS = {
+    "link_write_acked": ("port_exchange", "port_now", "port_between"),
+    "link_read_window": ("port_exchange", "port_now"),
+}
+
 
 def die(msg: str) -> None:
     sys.exit(f"stack_check: {msg}")
@@ -614,6 +624,26 @@ def main() -> int:
             continue
         for slot in slots:
             f.calls |= tables.get(slot, set())
+        f.callx = 0
+
+    for caller, callbacks in PORT_CALLS.items():
+        addrs = by_name.get(caller, [])
+        if len(addrs) != 1:
+            fails.append(f"PORT_CALLS: {caller} is {len(addrs)} functions "
+                         f"in the ELF, not 1")
+            continue
+        f = funcs[addrs[0]]
+        if f.callx == 0:
+            fails.append(f"PORT_CALLS: {caller} makes no indirect call; "
+                         f"the table no longer matches shared/link")
+            continue
+        for cb in callbacks:
+            targets = by_name.get(cb, [])
+            if len(targets) != 1:
+                fails.append(f"PORT_CALLS: callback {cb} is {len(targets)} "
+                             f"functions in the ELF, not 1")
+                continue
+            f.calls.add(targets[0])
         f.callx = 0
 
     for f in funcs.values():

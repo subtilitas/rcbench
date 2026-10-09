@@ -51,6 +51,21 @@ const outbind_t *picker_screen_binding(void);
 /** Set the choice: this screen and the outputs screen are two views of one. */
 void picker_screen_set_binding(const outbind_t *b);
 
+/**
+ * Follow the outputs screen: the protocol selected there is the group a tap
+ * here joins, and a binding that is not confirmed there
+ * (outputs_screen_editable() false) is not edited here either.  Called
+ * every frame; it repaints only on a change.
+ *
+ * While @p editable is false every button is drawn as not offered, NOT READ
+ * stands under the protocol's name, and a tap changes nothing and calls
+ * nothing.
+ */
+void picker_screen_follow(uint8_t proto, bool editable);
+
+/** Whether a tap on a button can change the binding. */
+bool picker_screen_editable(void);
+
 /** Called after any change the operator makes, as on the outputs screen. */
 typedef void (*picker_apply_fn)(const outbind_t *b);
 void picker_screen_set_apply(picker_apply_fn fn);

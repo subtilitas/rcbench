@@ -613,7 +613,8 @@ Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
 jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; die Seite sendet
 ihre Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
-Rate jedes Slots unbeantwortet bleibt, und der Prüfstand wird von keiner
+Rate jedes Slots unbeantwortet bleibt (OUTPUTS meldet `KEIN LINK`) oder
+abgelehnt wird (`ABGELEHNT`), und der Prüfstand wird von keiner
 Seite aus scharf, solange die Rate der Surfaces nicht bekannt ist: Der Arm
 wird mit `Frame Rate des Servos unbekannt -- erneut ARM` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
@@ -1533,15 +1534,44 @@ Die Pad-Nummer unter jedem Pin ist die auf der Platine aufgedruckte, damit wer
 Pads zählt und wer GPIO-Nummern (General-Purpose Input/Output) liest beim
 gleichen Pin ankommen.
 
-Jede Änderung schreibt die Pages sofort. Es gibt keine ÜBERNEHMEN-Taste: ein
-Bildschirm mit einer nicht gesendeten Auswahl ist ein Bildschirm, der dem
-Prüfstand widerspricht, und nichts sagt, welcher von beiden treibt. Was aus dem
-Schreiben wurde, steht unter dem Protokoll — GESCHRIEBEN, KEIN LINK oder ABGELEHNT.
+Einen Pin anzuhaken oder den Haken zu entfernen schreibt die Bindung sofort.
+Es gibt keine ÜBERNEHMEN-Taste: ein Bildschirm mit einer nicht gesendeten
+Auswahl ist ein Bildschirm, der dem Prüfstand widerspricht, und nichts sagt,
+welcher von beiden treibt. Danach liest das Panel beide Pages zurück und
+zeigt, was der Koprozessor hält. Was aus dem Schreiben wurde, steht unter dem
+Protokoll als LETZTER SCHREIBVORGANG:
 
-Ein Protokollwechsel sagt, welcher Satz gerade bearbeitet wird. Nichts wird
-verworfen: die Pins des verlassenen Protokolls bleiben gebunden, und die Pins
-des erreichten kommen zurück, wie sie waren. Ein Selektor, der die aktuellen
-Pins umlenkte, hieße, dass ein zweites Protokoll zu binden das erste löst.
+| LETZTER SCHREIBVORGANG | Bedeutung |
+| --- | --- |
+| `NICHT GESCHR.` | seit dem Start des Panels wurde nichts geschrieben, oder ein Schreibvorgang wurde nicht gesendet, weil die Bindung auf dem Bildschirm nicht durch ein Lesen bestätigt war |
+| `GESCHRIEBEN` | der Koprozessor hat jeden Austausch des Schreibvorgangs bestätigt |
+| `KEIN LINK` | ein Austausch des Schreibvorgangs blieb 1000 ms ohne Antwort, oder der Link war unten |
+| `ABGELEHNT` | der Koprozessor hat geantwortet und abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei scharfem Prüfstand oder eine Frame Rate, die er nicht zurücksetzen konnte |
+
+An einen Koprozessor mit Protokoll 4.10 wird die Bindung als Ganzes
+geschrieben: die beiden Pages werden neben den geltenden vorbereitet und von
+einem Commit gemeinsam übernommen
+([Link](Link-de.md#eine-bindung-als-ganzes)). `KEIN LINK` und `ABGELEHNT`
+lassen die geltende Bindung dann genau, wie sie war, außer wenn allein die
+Bestätigung des Commits verloren geht: dann gilt die Bindung, der Bildschirm
+meldet `KEIN LINK`, und das Lesen beim nächsten Link-Aufbau zeigt sie. Ein
+älterer Koprozessor übernimmt die Pages Eintrag für Eintrag, und ein
+Schreibvorgang, der mittendrin endet, lässt die Einträge davor in Kraft.
+
+Ein Protokoll in der Liste zu wählen schreibt nichts. Es sagt, welchen
+Pin-Satz der Bildschirm als angehakt zeigt und welchem Satz der nächste Haken
+zufällt. Nichts wird verworfen: die Pins des verlassenen Protokolls bleiben
+gebunden, und die Pins des erreichten kommen zurück, wie sie waren. Ein
+Selektor, der die aktuellen Pins umlenkte, hieße, dass ein zweites Protokoll
+zu binden das erste löst. Beim Betreten zeigt die Liste das Protokoll mit der
+niedrigsten Nummer in der Reihenfolge der Liste, das einen Pin hält, oder OFF,
+wenn kein Pin gebunden ist. Ein Protokoll, das gewählt wurde, ohne einen Pin
+anzuhaken, bleibt über das Zurücklesen und über das Verlassen des Bildschirms
+gewählt, und ihm fällt ein Tippen auf PICK A PIN zu.
+
+`DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
+
+![Der längste Protokollname in der Liste](img/de/outputs-bidir.png)
 
 Ein Pin, den ein anderes Protokoll hält, wird grau gezeichnet, mit dem Namen
 dieses Protokolls darunter, wo ein freier Pin seine Pad-Nummer zeigt. Das ist
@@ -1549,7 +1579,7 @@ eine Auswahl, rückgängig gemacht bei diesem Protokoll — anders als ein
 reservierter Pin, der rot und durchgestrichen ist, weil er die Verkabelung ist
 und keine Auswahl.
 
-Vier Servokabel und ein ESC, mit DShot600 als bearbeitetem Protokoll. GP5 ist
+Vier Servokabel und ein ESC, mit DSHOT300 als bearbeitetem Protokoll. GP5 ist
 angehakt; GP0, GP1, GP2 und GP4 sagen SERVO PWM und lassen sich hier nicht
 anhaken; GP3 und GP8 bis GP12 sind rot, weil der Koprozessor sie reserviert:
 
@@ -1558,6 +1588,67 @@ anhaken; GP3 und GP8 bis GP12 sind rot, weil der Koprozessor sie reserviert:
 Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
+
+### OFF
+
+OFF ist der erste Eintrag der Liste und bindet nichts: er nimmt 0 Pins, und
+die Zählung darunter lautet `0 VON 0 PINS`. Mit OFF gewählt zeigt jeder
+gebundene Pin den Namen des Protokolls, das ihn hält, die ganze Bindung steht
+also auf einem Bildschirm. Kein Pin lässt sich anhaken oder lösen: ein Tippen
+auf einen Pin bewirkt nichts, und die Zeile unter der Liste sagt `OFF ZEIGT
+ALLES, ÄNDERT NICHTS`. OFF zu wählen schreibt nichts und löst nichts.
+
+OFF bleibt gewählt über das Zurücklesen, über Neuzeichnen und über einen
+Link, der abreißt und wiederkommt, bis ein anderer Eintrag gewählt oder der
+Bildschirm verlassen wird. Das nächste Betreten öffnet auf dem Protokoll mit
+der niedrigsten Nummer, das einen Pin hält.
+
+GP0 als DSHOT600 BIDIR gebunden, GP1 als MOTOR PWM, GP2 und GP13 als SERVO
+PWM, mit OFF gewählt:
+
+![OFF zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
+
+Mit SERVO PWM gewählt sind auf demselben Prüfstand GP2 und GP13 angehakt und
+zeigen `PAD 4` und `PAD 17`: ein im gewählten Protokoll angehakter Pin zeigt
+seine Pad-Nummer, denn das Protokoll ist das in der Liste genannte.
+
+### Eine Bindung, die nicht bestätigt ist
+
+Der Bildschirm bearbeitet eine Bindung erst, nachdem er sie gelesen hat. Ein
+Lesen hat eines von vier Ergebnissen:
+
+| Gelesen | Der Bildschirm |
+| --- | --- |
+| beide Pages gelesen, und sie beschreiben eine Bindung, auch eine ohne gebundenen Pin | zeigt sie und nimmt Änderungen an |
+| eine Page wurde nicht gelesen: keine Antwort in 1000 ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, abgedunkelt, mit `BINDUNG NICHT GELESEN - GESPERRT` |
+| beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `PAGES OHNE GÜLTIGE BINDUNG` und der Taste `HALTEN: ALLE PINS LÖSEN` |
+| der Koprozessor ist eine Platine, für die dieser Build keine Pin-Tabelle hat | zeigt keine Pins |
+
+Im zweiten und dritten Zustand bewirkt ein Tippen auf einen Pin hier und auf
+PICK A PIN nichts, und es wird nichts geschrieben. Ein Haken, der kurz vor dem
+fehlgeschlagenen Lesen gesetzt wurde, wird zurückgenommen: gezeigt werden die
+zuletzt gelesenen Pins, nicht die zuletzt angetippten. Die Liste öffnet sich
+weiterhin, und eine Wahl ändert weiterhin, welches Protokolls Pins ihre
+Pad-Nummer zeigen. Das Panel liest bei jedem Link-Aufbau erneut und alle
+500 ms, solange der Link oben und die Bindung nicht bestätigt ist; das erste
+Lesen, das eine Bindung ergibt, beendet den Zustand.
+
+![Die zuletzt gelesene Bindung nach einem fehlgeschlagenen Lesen](img/de/outputs-unread.png)
+
+Pages, die keine Bindung beschreibt, werden durch erneutes Lesen nicht
+lesbar. `HALTEN: ALLE PINS LÖSEN`, 2 s gehalten, schreibt eine Bindung ohne
+Pin; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
+angenommen. Es ist der einzige Schreibvorgang, den der Bildschirm in diesem
+Zustand sendet. Ein Finger, der die Taste verlässt, ein Abheben vor 2 s und
+das Verlassen des Bildschirms brechen das Halten ab.
+
+![Pages, die keine Bindung beschreibt](img/de/outputs-odd.png)
+
+Ein Koprozessor älter als 4.10 kann durch einen Schreibvorgang, der
+mittendrin einen Frame verlor, in diesem Zustand bleiben. Ein Koprozessor mit
+4.10, den dieses Panel beschreibt, nicht; er zeigt diesen Zustand nur für
+Pages, die ein anderer Host oder ein älteres Panel in seinem Flash
+hinterlassen hat.
 
 ### Pin auswählen
 
@@ -1582,6 +1673,14 @@ gewählt werden kann, sagt, er ließe sich wählen.
 Links stehen die Pins dieses Protokolls in Kanalreihenfolge, rechts die Pins,
 die andere Protokolle halten, mit Namen. Beide zusammen lesen sich als ein
 Lauf von Kanälen, denn das ist, was die OUTPUTS-Page trägt.
+
+Das Protokoll ist das auf dem Outputs-Bildschirm gewählte; dieser Bildschirm
+hat kein Bedienelement dafür. Ein Tippen auf eine Taste schreibt die Bindung
+über dieselbe Folge wie ein Haken auf dem Outputs-Bildschirm, mit denselben
+Ergebnissen. Solange die Bindung nicht bestätigt ist — ein Lesen schlug fehl,
+oder die Pages beschreiben keine Bindung — ist jede Taste grau gezeichnet,
+links steht `NICHT GELESEN` unter dem Namen des Protokolls, und ein Tippen
+ändert nichts und schreibt nichts.
 
 Wo die Pads liegen, kommt von der Platine und nicht vom Panel: die
 [Shape-Page](Link-de.md#page-map) trägt den Umriss, das Raster und die Ecke,
@@ -1669,10 +1768,11 @@ Der gerade geschriebene Record fällt durch seine Prüfsumme, der Record davor
 ist weiterhin der neueste gültige, und der gelöschte Sektor ist nie der, in
 dem der noch gebrauchte Record liegt.
 
-Eine Page, die der Bildschirm nicht beschreiben kann — zwei Protokolle
-gleichzeitig, eine Rate, die kein Eintrag anbietet, ein Pin, der nicht auf dem
-Header liegt — liest sich als "nichts konfiguriert" zurück, statt als eine
-Auswahl, die der Page widerspricht, aus der sie stammt.
+Pages, die der Bildschirm nicht beschreiben kann — ein Pin in zwei Slots,
+eine Rate, die kein Eintrag anbietet, ein Pin, der nicht auf dem Header liegt
+— werden als solche gezeigt und nicht als „nichts konfiguriert“: siehe [Eine
+Bindung, die nicht bestätigt
+ist](#eine-bindung-die-nicht-bestätigt-ist).
 
 ## Auswuchten
 

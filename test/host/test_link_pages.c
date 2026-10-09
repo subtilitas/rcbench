@@ -488,7 +488,7 @@ TEST_CASE(the_tone_page_extends_the_map_without_moving_it)
 TEST_CASE(the_encoder_extends_the_sense_page_without_moving_it)
 {
     CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 9u);
+    CHECK(LINK_PROTOCOL_MINOR >= 9u);
     CHECK_EQ(LINK_SN_ENABLE, 0);
     CHECK_EQ(LINK_SN_I228_ADDR, 4);
     CHECK_EQ(LINK_SN_I3221_ADDR, 8);

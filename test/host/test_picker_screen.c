@@ -521,8 +521,54 @@ TEST_CASE(the_picker_follows_the_protocol_chosen_on_the_outputs_screen)
     CHECK(outbind_can_add(&b, idx(4u)));
 }
 
+/*
+ * A binding the outputs screen holds unconfirmed -- a read failed, or the
+ * pages describe no binding -- is not edited here either: every button is
+ * drawn as not offered, NOT READ stands in the left column, and a tap
+ * changes nothing and calls nothing.  The press that was down when the
+ * state changed does not act on its release.
+ */
+TEST_CASE(an_unconfirmed_binding_takes_no_tap)
+{
+    fresh();
+    render();
+    int bx, by;
+    if (!button_point(4u, &bx, &by)) { T_FAIL("GP4 has no button"); }
+    CHECK_EQ(s_applied, 1);
+    CHECK(picker_screen_editable());
+    const outbind_t before = *picker_screen_binding();
+
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 } };
+    scr()->event(&d);
+    picker_screen_follow(1u, false);
+    scr()->event(&u);
+    CHECK(!picker_screen_editable());
+    CHECK_EQ(s_applied, 1);
+
+    render();                                   /* NOT READ, buttons grey */
+    scr()->event(&d);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 1);
+    CHECK(memcmp(&before, picker_screen_binding(), sizeof(before)) == 0);
+
+    /* Told the same again: nothing to repaint, nothing changes. */
+    picker_screen_follow(1u, false);
+    scr()->event(&d);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 1);
+
+    /* Confirmed again: the same tap acts. */
+    picker_screen_follow(1u, true);
+    render();
+    scr()->event(&d);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 2);
+}
+
 int main(void)
 {
+    RUN(an_unconfirmed_binding_takes_no_tap);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);

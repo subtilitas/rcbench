@@ -3,7 +3,8 @@
 # Pure logic with no pin, so it is host-tested before anything toggles.
 
 set(SRCS outputs.c outputs_pages.c out_bind.c out_pwm_map.c out_store_map.c
-         out_store_rec.c servo_page.c supply_page.c sense_page.c tone_page.c)
+         out_store_rec.c servo_page.c supply_page.c sense_page.c tone_page.c
+         out_stage.c bind_link.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link servo bench sense)

@@ -190,6 +190,15 @@ SCREENS = {
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "outputs-held": ("outputs-held.png", "outputs", "dark"),
     "outputs-full": ("outputs-full.png", "outputs", "dark"),
+    # The longest protocol name, DSHOT600 BIDIR, in the closed list.
+    "outputs-bidir": ("outputs-bidir.png", "outputs", "dark"),
+    # OFF picked: every bound pin names its protocol, the longest among them.
+    "outputs-off": ("outputs-off.png", "outputs", "dark"),
+    # The binding last read, after a read that failed.
+    "outputs-unread": ("outputs-unread.png", "outputs", "dark"),
+    # The same after a read of pages no binding describes, with the key
+    # that unbinds every pin.
+    "outputs-odd": ("outputs-odd.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
