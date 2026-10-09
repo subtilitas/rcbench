@@ -460,7 +460,8 @@ static outputs_t       p_out;
 static uint16_t        p_throttle;
 static bool            p_link_up, p_endpoints_hold;
 static uint32_t        p_last_poll, p_stops_served;
-static uint32_t        p_quiet_polled;   /* w_unanswered as of the last poll */
+static bool            p_link_is_up;     /* s_link_is_up */
+static bool            p_link_quiet;     /* s_link_quiet */
 static unsigned        p_far_end_stops, p_arm_refused, p_arm_acked,
                        p_arm_gave_up, p_clear_sent, p_arm_unanswered;
 /* Which exchange of an arm went unanswered: the servo release, CLEAR, the
@@ -485,12 +486,21 @@ static void w_quiet(void)
         p_any_quiet_at = T;
         p_any_quiet_stage = p_poll_stage;
     }
-    /* exchange_unanswered(): the stop, where the exchange ended.  Not
-     * with the link down: the probe of a bench armed without a coprocessor
-     * goes unanswered every second. */
-    if (p_link_up && !w_panel_ignores_link_edges
-        && arming_link_lost(&p_arm, outputs_armed(&p_out))) {
+    /* exchange_unanswered() */
+    if (w_panel_ignores_link_edges) {
+        return;
+    }
+    switch (arming_exchange_unanswered(&p_arm, p_link_is_up,
+                                       outputs_armed(&p_out))) {
+    case ARMING_QUIET_STOP:
         p_stop_here();
+        p_link_quiet = true;
+        break;
+    case ARMING_QUIET_LINK_DOWN:
+        p_link_quiet = true;
+        break;
+    default:
+        break;
     }
 }
 static uint32_t        p_extra_at, p_extra_ms;    /* one long pass, pumping */
@@ -560,6 +570,9 @@ static bool xchg(uint8_t op, uint8_t page, uint8_t off, uint8_t n,
     for (uint8_t i = 0; regs != NULL && i < n; ++i) {
         req.regs[i] = regs[i];
     }
+    if (p_link_quiet) {
+        return false;           /* exchange(): nothing is sent */
+    }
     if (!d_up) {
         if (w_wire == WIRE_BUS_OFF) {
             w_quiet();
@@ -627,7 +640,7 @@ static bool p_line_trusted(bool *answered)
 /* arm_write_failed(): refused, or the link quiet under the arm. */
 static void p_arm_write_failed(uint32_t quiet_before)
 {
-    if (w_unanswered == quiet_before) {
+    if (w_unanswered == quiet_before && !p_link_quiet) {
         (void)arming_write_failed(&p_arm, true);
         ++p_arm_refused;
         return;
@@ -714,20 +727,16 @@ static void p_service_arming(void)
 /* poll_far_end() with poll_bench() */
 static void p_poll_far_end(void)
 {
-    /* An exchange nobody answered since the last poll is the link gone,
-     * whoever sent it; no poll is spent on finding that out again. */
-    const bool quiet = p_link_up && w_unanswered != p_quiet_polled
-                       && arming_link_needed(&p_arm, outputs_armed(&p_out));
-    if (!quiet
+    /* The link is taken down on p_link_quiet and on nothing else. */
+    if (!p_link_quiet
         && (uint32_t)(T - p_last_poll) < (p_link_up ? 50u : 1000u)) {
         return;
     }
     p_last_poll = T;
     link_msg_t r;
-    bool answered;
-    const uint32_t before = w_unanswered;
-    if (quiet) {
-        answered = false;
+    bool answered = false;
+    if (p_link_quiet) {
+        /* nothing is asked */
     } else if (p_link_up) {
         p_poll_stage = 1;
         answered = xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, LINK_CT_COUNT,
@@ -739,14 +748,11 @@ static void p_poll_far_end(void)
                                && !arming_stopped(&p_arm);
             link_msg_t ack;
             const bool written = p_control_write(armed, &ack);
-            if (!written && ack.op != LINK_OP_NACK) {
-                if (!p_write_quiet) {
-                    p_write_quiet = true;
-                    p_write_quiet_at = T;
-                }
-                answered = false;       /* the poll has failed */
+            if (!written && ack.op != LINK_OP_NACK && !p_write_quiet) {
+                p_write_quiet = true;
+                p_write_quiet_at = T;
             }
-            if (answered && p_endpoints_hold && written && !armed) {
+            if (p_endpoints_hold && written && !armed) {
                 link_msg_t cc;
                 if (xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, LINK_CT_COUNT,
                          NULL, &cc)) {
@@ -757,11 +763,11 @@ static void p_poll_far_end(void)
                 arming_stop_from_far_end(&p_arm);
                 p_stop_here();
             }
-            if (answered && w_services) {
+            if (w_services) {
                 /* supply_link_service(), sense_link_service() and
                  * tone_link_service(): a read each. */
                 p_poll_stage = 3;
-                for (int i = 0; i < 3 && w_unanswered == before; ++i) {
+                for (int i = 0; i < 3; ++i) {
                     link_msg_t sv;
                     (void)xchg(LINK_OP_READ, LINK_PAGE_STATUS, 0, 1, NULL,
                                &sv);
@@ -769,12 +775,11 @@ static void p_poll_far_end(void)
             }
         }
         p_poll_stage = 0;
-        /* poll_bench(): any exchange of the poll unanswered fails it. */
-        answered = answered && w_unanswered == before;
     } else {
         answered = xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, LINK_CT_COUNT,
                         NULL, &r);
         if (answered) {
+            p_link_is_up = true;    /* link_came_up()'s exchanges included */
             if (!w_panel_ignores_link_edges
                 && arming_link_found(&p_arm, outputs_armed(&p_out))) {
                 p_stop_here();
@@ -787,7 +792,13 @@ static void p_poll_far_end(void)
             p_endpoints_hold = true;
         }
     }
-    p_quiet_polled = w_unanswered;
+    if (p_link_quiet) {
+        answered = false;
+        p_link_quiet = false;
+    }
+    if (!answered) {
+        p_link_is_up = false;
+    }
     if (!answered && p_link_up && !w_panel_ignores_link_edges
         && arming_link_lost(&p_arm, outputs_armed(&p_out))) {
         p_stop_here();
@@ -863,7 +874,7 @@ static void world_init(uint32_t t0)
     p_endpoints_hold = false;
     p_last_poll = t0;
     w_unanswered = 0;
-    p_quiet_polled = 0;
+    p_link_is_up = p_link_quiet = false;
     p_stops_served = 0;
     p_far_end_stops = p_arm_refused = p_arm_acked = p_arm_gave_up = 0;
     p_arm_unanswered = 0;

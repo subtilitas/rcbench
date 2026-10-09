@@ -58,6 +58,22 @@ extern "C" {
  */
 #define ARMING_LINE_WAIT_MS 200u
 
+/**
+ * What an exchange with the far end that ended unanswered means; see
+ * arming_exchange_unanswered().
+ */
+typedef enum {
+    /** The link was already down: a probe nobody answered.  Nothing. */
+    ARMING_QUIET_NOTHING = 0,
+    /** The link is gone.  The caller sends nothing more on it and takes it
+     *  down at its next poll. */
+    ARMING_QUIET_LINK_DOWN,
+    /** The link is gone under an armed bench or a waiting arm: a stop is
+     *  latched as well, and the caller disarms its bank and zeroes the
+     *  command now. */
+    ARMING_QUIET_STOP,
+} arming_quiet_t;
+
 /** What the caller must put on the link, if anything, after a step. */
 typedef enum {
     ARMING_ACT_NONE = 0,
@@ -218,6 +234,26 @@ bool arming_write_failed(arming_t *a, bool answered);
 
 /** The coprocessor disarmed us: a NACK on a control write, or a failsafe. */
 void arming_stop_from_far_end(arming_t *a);
+
+/**
+ * An exchange with the far end ended with no answer: it waited out its
+ * timeout, or its frame did not reach the wire.  A refusal is an answer and
+ * is not reported here.
+ *
+ * The one decision for every exchange, whatever it carried and wherever in
+ * a pass it was sent.  @p link_up is whether the caller held the link as up
+ * when it sent it; @p bank_armed whether its bank is armed.
+ *
+ *     link down                      ARMING_QUIET_NOTHING
+ *     link up, disarmed              ARMING_QUIET_LINK_DOWN
+ *     link up, armed or arming       ARMING_QUIET_STOP, the stop latched as
+ *                                    arming_link_lost() latches it
+ *
+ * With the link down the exchange was a probe, and a bank armed with no far
+ * end -- the simulated bench -- runs on through probes nobody answers.
+ */
+arming_quiet_t arming_exchange_unanswered(arming_t *a, bool link_up,
+                                          bool bank_armed);
 
 /**
  * Whether a link going quiet now would be a stop: this end's bank is armed

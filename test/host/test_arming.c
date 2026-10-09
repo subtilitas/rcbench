@@ -932,6 +932,212 @@ TEST_CASE(with_no_far_end_in_the_pass_the_settle_alone_decides)
     arming_line_nobody(NULL);
 }
 
+/* ------------------------------- an exchange that ends with no answer */
+
+/*
+ * Every kind of request the panel sends.  The decision does not look at
+ * the kind, and this table is what holds it to that: a kind added to the
+ * firmware is added here, and it is judged like the rest because there is
+ * one judge.
+ */
+enum {
+    Q_BENCH_READ, Q_CONTROL_WRITE, Q_STATUS_READ, Q_SENSE, Q_SERVO_SENSE,
+    Q_SERVO_RELEASE, Q_SERVO_RATE, Q_CLEAR, Q_ARM_FRAME, Q_SUPPLY, Q_TONE,
+    Q_KINDS
+};
+static const char *const q_name[Q_KINDS] = {
+    "BENCH read", "control write", "STATUS read", "SENSE", "SERVO_SENSE",
+    "servo release", "servo rate", "CLEAR", "arming frame", "supply", "tone",
+};
+enum { Q_ARMED, Q_ARMING, Q_DISARMED, Q_LINK_DOWN, Q_STATES };
+static const char *const q_state_name[Q_STATES] = {
+    "armed", "arming", "disarmed", "link down",
+};
+
+/* The panel's exchange() as a model: one way in for every request, one way
+ * out for a missing answer. */
+static bool     q_link_is_up, q_link_quiet, q_bank;
+static uint16_t q_throttle;
+static unsigned q_on_wire;       /* requests that reached the wire */
+static unsigned q_stops_here;    /* stops made where an exchange ended */
+static int      q_dead;          /* the kind nobody answers, or -1 */
+
+static bool q_exchange(int kind)
+{
+    if (q_link_quiet) {
+        return false;            /* not sent */
+    }
+    ++q_on_wire;
+    if (kind != q_dead) {
+        return true;
+    }
+    switch (arming_exchange_unanswered(&a, q_link_is_up, q_bank)) {
+    case ARMING_QUIET_STOP:
+        q_bank = false;
+        q_throttle = 0;
+        ++q_stops_here;
+        q_link_quiet = true;
+        break;
+    case ARMING_QUIET_LINK_DOWN:
+        q_link_quiet = true;
+        break;
+    case ARMING_QUIET_NOTHING:
+    default:
+        break;
+    }
+    return false;
+}
+
+/* The poll's decision: the latch, and nothing else. */
+static void q_poll_decides(void)
+{
+    if (q_link_quiet) {
+        q_link_quiet = false;
+        q_link_is_up = false;
+    }
+}
+
+TEST_CASE(an_unanswered_exchange_is_judged_alike_whatever_it_carried)
+{
+    for (int kind = 0; kind < Q_KINDS; ++kind) {
+        for (int state = 0; state < Q_STATES; ++state) {
+            for (int pos = 0; pos < 3; ++pos) {
+                /* A pass of three requests with this one first, in the
+                 * middle or last; the other two are the next two kinds. */
+                int pass[3];
+                for (int i = 0, other = kind; i < 3; ++i) {
+                    if (i == pos) {
+                        pass[i] = kind;
+                    } else {
+                        other = (other + 1) % Q_KINDS;
+                        pass[i] = other;
+                    }
+                }
+
+                uint32_t t = 1000;
+                arming_init(&a, 0, SETTLE_MS);
+                arming_touch_seen(&a, t);
+                q_link_is_up = state != Q_LINK_DOWN;
+                q_link_quiet = false;
+                q_bank = false;
+                q_throttle = 0;
+                if (state == Q_ARMED || state == Q_LINK_DOWN) {
+                    t = arm_by(t);              /* no far end was asked */
+                    if (state == Q_ARMED) {
+                        arming_touch_seen(&a, t);
+                    }
+                    q_bank = a.armed;
+                    q_throttle = 7000;
+                } else if (state == Q_ARMING) {
+                    arming_set_line_wait(&a, WAIT_MS);
+                    arming_request_arm(&a, t);
+                }
+                CHECK(state != Q_ARMED || (a.armed && q_bank));
+                CHECK(state != Q_ARMING || a.arming);
+                const uint32_t stops = arming_stop_count(&a);
+                const uint32_t pressed = arming_pressed_count(&a);
+                q_on_wire = 0;
+                q_stops_here = 0;
+                q_dead = kind;
+
+                bool got[3];
+                for (int i = 0; i < 3; ++i) {
+                    got[i] = q_exchange(pass[i]);
+                }
+                const bool quiet_after_pass = q_link_quiet;
+                q_poll_decides();
+
+                bool ok = !got[pos];
+                switch (state) {
+                case Q_ARMED:
+                case Q_ARMING:
+                    /* Stopped where the exchange ended, once, as the
+                     * bench's own stop; nothing sent after it; the link
+                     * down at the poll; and no arm left to complete. */
+                    ok = ok && q_stops_here == 1u && a.stopped && !a.armed
+                         && !a.arming && !q_bank && q_throttle == 0u
+                         && !arming_heartbeat(&a, t)
+                         && arming_stop_count(&a) == stops + 1u
+                         && arming_pressed_count(&a) == pressed
+                         && q_on_wire == (unsigned)pos + 1u
+                         && quiet_after_pass && !q_link_is_up;
+                    arming_touch_seen(&a, t + SETTLE_MS + WAIT_MS);
+                    arming_line_report(&a, true);
+                    ok = ok && arming_step(&a, t + SETTLE_MS + WAIT_MS)
+                                   == ARMING_ACT_NONE
+                         && !a.armed;
+                    break;
+                case Q_DISARMED:
+                    /* No stop to make: the link down, and nothing sent
+                     * after it. */
+                    ok = ok && q_stops_here == 0u && !a.stopped
+                         && arming_heartbeat(&a, t)
+                         && arming_stop_count(&a) == stops
+                         && q_on_wire == (unsigned)pos + 1u
+                         && quiet_after_pass && !q_link_is_up;
+                    break;
+                case Q_LINK_DOWN:
+                default:
+                    /* A probe: the bank armed with no far end runs on,
+                     * and the pass sends the rest. */
+                    ok = ok && q_stops_here == 0u && !a.stopped && a.armed
+                         && q_bank && q_throttle == 7000u
+                         && arming_heartbeat(&a, t)
+                         && arming_stop_count(&a) == stops
+                         && q_on_wire == 3u && !quiet_after_pass
+                         && !q_link_is_up;
+                    for (int i = 0; i < 3; ++i) {
+                        ok = ok && (i == pos || got[i]);
+                    }
+                    break;
+                }
+                if (!ok) {
+                    T_FAIL("%s unanswered, %s, place %d of the pass",
+                           q_name[kind], q_state_name[state], pos + 1);
+                }
+            }
+        }
+    }
+
+    /* A pass in which every request is answered touches nothing. */
+    arming_init(&a, 0, SETTLE_MS);
+    (void)arm_by(100);
+    q_link_is_up = true;
+    q_link_quiet = false;
+    q_bank = true;
+    q_dead = -1;
+    q_on_wire = 0;
+    for (int kind = 0; kind < Q_KINDS; ++kind) {
+        CHECK(q_exchange(kind));
+    }
+    q_poll_decides();
+    CHECK_EQ(q_on_wire, Q_KINDS);
+    CHECK(q_link_is_up);
+    CHECK(a.armed);
+    CHECK(!a.stopped);
+
+    /* And the three answers on their own. */
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    CHECK_EQ(arming_exchange_unanswered(&a, false, true),
+             ARMING_QUIET_NOTHING);
+    CHECK_EQ(arming_exchange_unanswered(&a, false, false),
+             ARMING_QUIET_NOTHING);
+    CHECK_EQ(arming_exchange_unanswered(&a, true, false),
+             ARMING_QUIET_LINK_DOWN);
+    CHECK_EQ(arming_stop_count(&a), 0);
+    CHECK_EQ(arming_exchange_unanswered(&a, true, true), ARMING_QUIET_STOP);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    /* A second one in the same outage stops nothing twice. */
+    CHECK_EQ(arming_exchange_unanswered(&a, true, false),
+             ARMING_QUIET_LINK_DOWN);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    CHECK_EQ(arming_exchange_unanswered(NULL, true, true),
+             ARMING_QUIET_LINK_DOWN);
+    CHECK_EQ(arming_exchange_unanswered(NULL, false, true),
+             ARMING_QUIET_NOTHING);
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -965,5 +1171,6 @@ int main(void)
     RUN(a_write_nobody_answers_is_a_stop_and_a_refusal_is_not);
     RUN(a_trusted_report_past_the_bound_arms_nothing);
     RUN(with_no_far_end_in_the_pass_the_settle_alone_decides);
+    RUN(an_unanswered_exchange_is_judged_alike_whatever_it_carried);
     return test_summary("arming");
 }

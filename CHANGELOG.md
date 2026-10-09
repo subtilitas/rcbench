@@ -14,8 +14,11 @@ history is in git.
   panel writes CLEAR only for an arm an operator held. The supply's ON and
   the STATUS page do not read the latch. The panel latches a stop, disarms
   its bank and zeroes the throttle when the link goes quiet while armed, and
-  when a coprocessor starts answering under a bank armed without one. No
-  register or frame changes; the protocol stays 4.9.
+  when a coprocessor starts answering under a bank armed without one. Any
+  request that ends unanswered while the link is up takes the link down on
+  the control task's next pass, whichever service sent it, and the panel
+  sends nothing more until then; armed or arming, the stop is latched as the
+  request ends. No register or frame changes; the protocol stays 4.9.
 - **The first arm after a STOP is taken on the first hold.** After its 100 ms
   settle the panel reads the STATUS fault register once a pass until the
   coprocessor reports the heartbeat trusted, for at most 200 ms more, and

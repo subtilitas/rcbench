@@ -114,9 +114,10 @@ missing answer is noticed after the 1000 ms exchange timeout, or at once
 when the panel's CAN (Controller Area Network) controller is bus-off. Every
 exchange counts, not only the poll's read of the bench page: the write of
 ARM and THROTTLE that follows it, a page service, a servo refresh, the
-status read. While the bench is armed or an arm is waiting, the stop is
-latched as that exchange ends, and the link is taken down on the control
-task's next pass. A bank
+status read. One that ends unanswered takes the link down on the control
+task's next pass, and until then the panel sends nothing more on it. While
+the bench is armed or an arm is waiting, the stop is latched as that
+exchange ends, without waiting for the pass. A bank
 armed with no coprocessor connected, the simulated bench, is stopped the
 same way on the poll where a coprocessor first answers, before any ARM is
 written to it.

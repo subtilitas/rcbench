@@ -166,6 +166,16 @@ bool arming_write_failed(arming_t *a, bool answered)
     return true;
 }
 
+arming_quiet_t arming_exchange_unanswered(arming_t *a, bool link_up,
+                                          bool bank_armed)
+{
+    if (!link_up) {
+        return ARMING_QUIET_NOTHING;
+    }
+    return arming_link_lost(a, bank_armed) ? ARMING_QUIET_STOP
+                                           : ARMING_QUIET_LINK_DOWN;
+}
+
 bool arming_link_needed(const arming_t *a, bool bank_armed)
 {
     return a != NULL && (bank_armed || a->armed || a->arming);

@@ -123,10 +123,11 @@ Antwort wird nach dem Timeout von 1000 ms bemerkt, oder sofort, wenn der
 CAN-Controller (Controller Area Network) des Panels bus-off ist. Jeder
 Austausch zählt, nicht nur das Lesen der Bench-Page im Poll: das Schreiben
 von ARM und THROTTLE, das darauf folgt, ein Page-Dienst, ein Servo-Refresh,
-das Lesen von STATUS. Solange der Prüfstand scharf ist oder ein Schärfen
-wartet, rastet der Stopp ein, sobald dieser Austausch ohne Antwort endet,
-und der Link gilt beim nächsten Durchlauf des Control-Tasks als
-ausgefallen. Eine Bank,
+das Lesen von STATUS. Endet einer ohne Antwort, gilt der Link beim nächsten
+Durchlauf des Control-Tasks als ausgefallen, und bis dahin sendet das Panel
+nichts mehr darauf. Solange der Prüfstand scharf ist oder ein Schärfen
+wartet, rastet der Stopp ein, sobald dieser Austausch endet, ohne auf den
+Durchlauf zu warten. Eine Bank,
 die ohne angeschlossenen Koprozessor scharf ist, der simulierte Prüfstand,
 wird auf dieselbe Weise bei dem Poll gestoppt, bei dem ein Koprozessor zum
 ersten Mal antwortet, bevor ein ARM an ihn geschrieben wird.
