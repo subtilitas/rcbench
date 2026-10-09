@@ -110,9 +110,9 @@ connecting.
 The magnet is a diametrically magnetised disc centred over the chip. The
 AS5600 reports a field too weak or too strong in its STATUS register, and the
 panel treats either as no answer. The sensor reads at 0x36, which is fixed.
-That address is assumed free: it is outside the CH422G's command addresses in
-its datasheet, Waveshare's wiki reserves 0x30 to 0x3F on this bus, and it is
-not checked on hardware. The knob is off until SETUP, APPLICATION, Rotary
+On the Waveshare ESP32-S3 Touch LCD 7 the CH422G I/O expander answers at I2C
+addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes 0x36, so an AS5600
+cannot be read on that bus. The knob is off until SETUP, APPLICATION, Rotary
 knob is switched on. [Screens](Screens.md#application-the-rotary-knob)
 describes what it does.
 

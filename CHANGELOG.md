@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+## 0.15.0 - 2026-10-09
+
+The link protocol is 4.10. A 0.14 board still links and arms with a 0.15
+one, since only the protocol's major number has to match; the binding write
+on OUTPUTS needs both boards at 0.15, because the panel prepares the pages
+and commits them only on a 4.10 coprocessor, and the AS5600 encoder on a 4.9
+one. Flash both boards. The panel and the coprocessor keep an arm latch, a
+restarted coprocessor is not armed again, a touch has one owner from its
+press to its release, and an edit on OUTPUTS with a current sensor enabled
+no longer loses the binding. The log viewer's plot pans with one finger on
+request, and an AS5600 can serve as a rotary knob or as a servo's output
+encoder. The touch contact ownership, the arm latch and the OUTPUTS binding
+write have run on the host suite only; none of the AS5600 work has run on
+hardware.
+
 ### Fixed
 
 - **A restarted coprocessor is not armed again.** The coprocessor starts with
@@ -91,8 +106,11 @@ as before.
   reads STATUS, RAW ANGLE and MAGNITUDE as three transactions every 10 ms,
   each with a 5 ms bus timeout.
   `shared/bench/knob.c` decodes RAW ANGLE, STATUS and MAGNITUDE and maps
-  steps across the 4095 to 0 wrap. Not run on hardware; 0x36 is assumed free
-  next to the CH422G.
+  steps across the 4095 to 0 wrap. Not run on hardware. Known limitation: on the Waveshare ESP32-S3 Touch
+  LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20
+  to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36,
+  so an AS5600 knob cannot be read on that bus. Rotary knob is OFF by
+  default.
 
 ### Added
 

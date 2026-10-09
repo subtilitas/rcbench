@@ -1187,7 +1187,7 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Kommando auf den Frame (ein eben vollendetes Schärfen, ein Entschärfen, ein
   Zurücksetzen der Spitzen, ein Freigeben), wird die Bewegung des Knopfs in
   diesem Frame verworfen, nicht aufgehoben.
-- Angenommen wird, dass der Sensor ohne Kollision unter 0x36 antwortet: 0x36 liegt außerhalb der Kommandoadressen des CH422G in dessen Datenblatt, Waveshares Wiki reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware geprüft.
+- Bekannte Einschränkung: Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G des Boards an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse 0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht lesen. `Drehknopf` ist standardmäßig aus.
 
 ### ANSCHLÜSSE: die Strommonitore
 
