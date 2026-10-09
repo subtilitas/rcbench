@@ -17,6 +17,7 @@
 #include "log_name.h"
 #include "log_select.h"
 #include "log_viewer_screen.h"
+#include "settings.h"
 #include "ui_theme.h"
 
 #define W 800
@@ -205,6 +206,7 @@ static const ui_screen_t *screen(void)
  * buffer, and wiping the first one would compare a render against a blank. */
 static void reset_screen(void)
 {
+    settings_init();
     ui_theme_set(UI_THEME_DARK);
     g_no_card = false;
     g_empty_card = false;
@@ -1668,6 +1670,176 @@ TEST_CASE(a_third_finger_and_a_cancel_leave_the_view_alone)
 }
 
 
+/* Zoom to a quarter of LONG.CSV, then put the cursor at a known sample. */
+static int zoom_in_with_cursor(void)
+{
+    long_file();
+    two_down(350, 450);
+    two_move(200, 600);
+    two_up(200, 600);
+    tap(PV_TAP_X, 200);
+    return log_viewer_cursor();
+}
+
+/* One finger from x0 to x1 in steps of 25 px, then up. */
+/* The plot's width in pixels, as log_viewer_screen.c draws it. */
+#define PV_W_TEST 752
+
+static void drag(int x0, int x1)
+{
+    send(TOUCH_EVENT_DOWN, x0, 200);
+    const int dir = (x1 >= x0) ? 25 : -25;
+    for (int x = x0 + dir; (dir > 0) ? x < x1 : x > x1; x += dir) {
+        send(TOUCH_EVENT_MOVE, x, 200);
+    }
+    send(TOUCH_EVENT_MOVE, x1, 200);
+    send(TOUCH_EVENT_UP, x1, 200);
+}
+
+TEST_CASE(one_finger_drag_moves_the_cursor_while_the_setting_is_off)
+{
+    const int c0 = zoom_in_with_cursor();
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    CHECK_EQ(count, LONG_ROWS / 4);
+
+    drag(600, 200);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    CHECK_EQ(f2, first);
+    CHECK_EQ(n2, count);
+    CHECK(log_viewer_cursor() < c0);   /* the cursor followed the finger */
+    draw();
+}
+
+TEST_CASE(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on)
+{
+    const int c0 = zoom_in_with_cursor();
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    settings_set(SET_PLOT_PAN, 1.0f);
+
+    /* A drag of 100 px left, less the 10 px threshold, moves the view
+     * right by 90 px worth of samples; the cursor stays. */
+    drag(600, 500);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    CHECK_EQ(n2, count);
+    const int want = first + (90 * count + PV_W_TEST / 2) / PV_W_TEST;
+    CHECK(f2 >= want - 1 && f2 <= want + 1);
+    CHECK_EQ(log_viewer_cursor(), c0);
+    draw();
+
+    /* Dragging right brings earlier samples back. */
+    drag(300, 400);
+    int f3 = -1, n3 = -1;
+    log_viewer_window(&f3, &n3);
+    CHECK(f3 < f2);
+    CHECK_EQ(log_viewer_cursor(), c0);
+
+    /* The view stops at both ends of the file. */
+    for (int i = 0; i < 4; ++i) {
+        drag(100, 780);
+    }
+    log_viewer_window(&f3, &n3);
+    CHECK_EQ(f3, 0);
+    for (int i = 0; i < 8; ++i) {
+        drag(780, 24);
+    }
+    log_viewer_window(&f3, &n3);
+    CHECK_EQ(f3 + n3, LONG_ROWS);
+    CHECK_EQ(n3, count);
+    draw();
+}
+
+TEST_CASE(one_move_past_the_threshold_pans_by_what_lies_past_it)
+{
+    zoom_in_with_cursor();
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    settings_set(SET_PLOT_PAN, 1.0f);
+    /* Down, one move of 60 px, up: 50 px of pan. */
+    send(TOUCH_EVENT_DOWN, 600, 200);
+    send(TOUCH_EVENT_MOVE, 540, 200);
+    send(TOUCH_EVENT_UP, 540, 200);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    const int want = first + (50 * count + PV_W_TEST / 2) / PV_W_TEST;
+    CHECK(f2 >= want - 1 && f2 <= want + 1);
+    CHECK(f2 > first);
+}
+
+TEST_CASE(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on)
+{
+    zoom_in_with_cursor();
+    settings_set(SET_PLOT_PAN, 1.0f);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+
+    tap(PV_TAP_X, 200);
+    const int c1 = log_viewer_cursor();
+    CHECK(c1 >= first && c1 < first + count);
+
+    /* 8 px of travel stays under the threshold: the cursor follows, the
+     * view stays. */
+    send(TOUCH_EVENT_DOWN, 500, 200);
+    send(TOUCH_EVENT_MOVE, 504, 200);
+    send(TOUCH_EVENT_MOVE, 508, 200);
+    send(TOUCH_EVENT_UP, 508, 200);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    CHECK_EQ(f2, first);
+    CHECK_EQ(n2, count);
+    CHECK(log_viewer_cursor() >= first && log_viewer_cursor() < first + count);
+    draw();
+}
+
+TEST_CASE(a_view_that_shows_the_whole_file_is_not_panned_by_one_finger)
+{
+    long_file();
+    settings_set(SET_PLOT_PAN, 1.0f);
+    CHECK_EQ(log_viewer_cursor(), LONG_ROWS - 1);
+    drag(600, 200);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    CHECK_EQ(first, 0);
+    CHECK_EQ(count, LONG_ROWS);
+    CHECK(log_viewer_cursor() < LONG_ROWS - 1);   /* it selected */
+}
+
+TEST_CASE(a_second_finger_after_a_pan_zooms_and_a_cancel_ends_the_pan)
+{
+    zoom_in_with_cursor();
+    settings_set(SET_PLOT_PAN, 1.0f);
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    send(TOUCH_EVENT_DOWN, 600, 200);
+    send(TOUCH_EVENT_MOVE, 500, 200);
+    send(TOUCH_EVENT_MOVE, 400, 200);
+    int f2 = -1, n2 = -1;
+    log_viewer_window(&f2, &n2);
+    CHECK(f2 > first);
+
+    send_id(TOUCH_EVENT_DOWN, 2, 300, 200);        /* the pinch takes over */
+    send_id(TOUCH_EVENT_MOVE, 2, 460, 200);
+    log_viewer_window(&f2, &n2);
+    CHECK(n2 > count);                             /* zoomed out */
+    send_id(TOUCH_EVENT_UP, 2, 460, 200);
+    send_id(TOUCH_EVENT_UP, 1, 400, 200);
+
+    /* A touch loss mid-pan leaves the view where it is. */
+    send(TOUCH_EVENT_DOWN, 600, 200);
+    send(TOUCH_EVENT_MOVE, 500, 200);
+    send(TOUCH_EVENT_MOVE, 400, 200);
+    log_viewer_window(&first, &count);
+    screen()->cancel();
+    send(TOUCH_EVENT_MOVE, 300, 200);
+    log_viewer_window(&f2, &n2);
+    CHECK_EQ(f2, first);
+    CHECK_EQ(n2, count);
+    draw();
+}
+
 TEST_CASE(a_steep_trace_longer_than_the_plot_is_one_line)
 {
     /*
@@ -1772,6 +1944,12 @@ int main(void)
     RUN(two_fingers_moved_together_pan_and_pinching_zooms_out);
     RUN(the_arrows_still_pick_values_and_carry_the_view);
     RUN(a_third_finger_and_a_cancel_leave_the_view_alone);
+    RUN(one_finger_drag_moves_the_cursor_while_the_setting_is_off);
+    RUN(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on);
+    RUN(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on);
+    RUN(one_move_past_the_threshold_pans_by_what_lies_past_it);
+    RUN(a_view_that_shows_the_whole_file_is_not_panned_by_one_finger);
+    RUN(a_second_finger_after_a_pan_zooms_and_a_cancel_ends_the_pan);
     RUN(a_steep_trace_longer_than_the_plot_is_one_line);
     RUN(without_remove_there_is_no_delete);
     RUN(deleting_the_open_file_drops_what_was_read_from_it);

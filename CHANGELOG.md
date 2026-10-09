@@ -6,6 +6,12 @@ history is in git.
 
 ## Unreleased
 
+The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
+(Ein Finger schiebt), off by default. While it is on and the view is zoomed
+in, a finger that moves more than 10 px pans the view; a shorter touch still
+selects a value. With it off, one finger moves the cursor and two fingers pan,
+as before.
+
 ## 0.14.0 - 2026-10-09
 
 The link protocol is 4.8. A 0.13 board still links and arms with a 0.14
