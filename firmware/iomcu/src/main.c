@@ -638,6 +638,7 @@ static void tone_order(void)
  */
 static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
 static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
+static bool s_tone_no_core1;     /* core 1 did not start: no capture runs */
 
 static bool tone_rewire_as(bool keep_ring)
 {
@@ -664,7 +665,7 @@ static bool tone_rewire_as(bool keep_ring)
         }
         return true;
     }
-    if (!tone_cap_start(tone_page_pin(&s_tone))) {
+    if (s_tone_no_core1 || !tone_cap_start(tone_page_pin(&s_tone))) {
         return false;
     }
     if (keep_ring) {
@@ -718,6 +719,8 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
     const bool rewire = was_refused
                         || s_tone.cfg[LINK_TN_ENABLE] != was[LINK_TN_ENABLE]
                         || s_tone.cfg[LINK_TN_PIN] != was[LINK_TN_PIN];
+    uint16_t trial[LINK_TN_CONFIG_COUNT];
+    memcpy(trial, s_tone.cfg, sizeof(trial));
     bool wired = !rewire || tone_rewire();
     if (wired && rewire && s_supply_attach && !s_pd_open
         && supply_page_enabled(&s_supply)) {
@@ -747,6 +750,14 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
         /* The panel was refused and keeps its place: the beeps in the
          * ring stay readable across the restart of the old capture. */
         if (!tone_rewire_as(true)) {
+            if (s_tone_busy) {
+                /* Core 1 still in a pass: the trial capture runs on, so the
+                 * page says what runs and its pin stays reserved. */
+                tone_page_revert(&s_tone, trial, false);
+                reserve_held();
+                tone_order();
+                return LINK_NACK_BAD_VALUE;
+            }
             tone_page_refuse(&s_tone);
             reserve_held();
         }
@@ -1727,6 +1738,7 @@ int main(void)
             out_store_off();
             /* No core 1 known to run, so nothing reads the tap: its capture
              * is let go and the page says refused (FLAGS PIN_REFUSED). */
+            s_tone_no_core1 = true;   /* and every later start refused */
             if (tone_page_wanted(&s_tone)) {
                 tone_page_refuse(&s_tone);
                 (void)tone_rewire();

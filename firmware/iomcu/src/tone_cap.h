@@ -36,11 +36,12 @@
  */
 bool tone_cap_start(uint8_t pin);
 
-/** Mark the capture not running, so core 1 reads nothing from it from its
- *  next pass on; the state machine and the channel stay.  True when it was
- *  running.  The first step
- *  of taking the capture down: tell core 1, wait for it
- *  (tone_core1_quiesce()), then tone_cap_stop(). */
+/** Mark the capture not running, so the next order tells core 1 to read
+ *  nothing from it; the state machine and the channel stay, and
+ *  tone_cap_wr() and tone_cap_stalled() still read them for a pass already
+ *  under way.  True when it was running.  The first step of taking the
+ *  capture down: tell core 1, wait for it (tone_core1_quiesce()), then
+ *  tone_cap_stop(). */
 bool tone_cap_pause(void);
 
 /** Mark a paused capture running again, when core 1 did not acknowledge

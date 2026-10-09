@@ -145,8 +145,10 @@ const uint32_t *tone_cap_ring(void)
 
 uint32_t tone_cap_wr(void)
 {
+    /* Read while the channel is claimed, paused or not: a pass core 1 began
+     * before the pause finishes against the DMA's real position. */
     const int dma = s_dma;
-    if (!s_running || dma < 0) {
+    if (dma < 0) {
         return 0u;
     }
     const uint32_t a = (uint32_t)dma_channel_hw_addr((uint)dma)->write_addr;
@@ -156,7 +158,7 @@ uint32_t tone_cap_wr(void)
 bool tone_cap_stalled(void)
 {
     const int dma = s_dma;
-    if (!s_running || dma < 0) {
+    if (dma < 0) {
         return false;
     }
     const uint32_t bit = 1u << (PIO_FDEBUG_RXSTALL_LSB + s_sm);
