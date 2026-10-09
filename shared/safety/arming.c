@@ -29,10 +29,24 @@ static bool reached(uint32_t now_ms, uint32_t deadline_ms)
     return (int32_t)(deadline_ms - now_ms) <= 0;
 }
 
+/* Wrap-safe: true from the millisecond after `deadline` on. */
+static bool past(uint32_t now_ms, uint32_t deadline_ms)
+{
+    return (int32_t)(deadline_ms - now_ms) < 0;
+}
+
 bool arming_line_wanted(const arming_t *a, uint32_t now_ms)
 {
     return a != NULL && a->arming && a->line_wait_ms != 0u
-           && !a->line_trusted && reached(now_ms, a->settle_until_ms);
+           && !a->line_trusted && reached(now_ms, a->settle_until_ms)
+           && !past(now_ms, a->settle_until_ms + a->line_wait_ms);
+}
+
+void arming_line_nobody(arming_t *a)
+{
+    if (a != NULL) {
+        a->line_nobody = true;
+    }
 }
 
 void arming_line_report(arming_t *a, bool trusted)
@@ -221,6 +235,11 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
 
     arming_action_t act = ARMING_ACT_NONE;
 
+    /* For this step only: a link that comes up before the next one is
+     * asked like any other. */
+    const bool nobody = a->line_nobody;
+    a->line_nobody = false;
+
     arming_touch_poll(a, now_ms);
     const bool dead = arming_touch_dead(a, now_ms);
 
@@ -243,15 +262,24 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
 
     if (a->arming && reached(now_ms, a->settle_until_ms)) {
         const bool fit = !a->stopped && !arming_touch_dead(a, now_ms);
-        if (!fit || a->line_wait_ms == 0u || a->line_trusted) {
+        const uint32_t bound = a->settle_until_ms + a->line_wait_ms;
+        /*
+         * The far end's yes counts up to the bound and not after it.  The
+         * question is an exchange that can take 1000 ms to come back, and
+         * the bound is on when the bench may start driving: a yes that
+         * returns past it arms nothing.
+         */
+        const bool trusted = a->line_wait_ms == 0u || nobody
+                             || (a->line_trusted && !past(now_ms, bound));
+        if (!fit || trusted) {
             a->arming = false;
             if (fit) {
                 a->armed = true;
                 act = ARMING_ACT_ARM;
             }
-        } else if (reached(now_ms, a->settle_until_ms + a->line_wait_ms)) {
-            /* The far end has not come to trust the line.  Given up before
-             * CLEAR is written, so its latch stays set. */
+        } else if (reached(now_ms, bound)) {
+            /* The far end has not come to trust the line in time.  Given up
+             * before CLEAR is written, so its latch stays set. */
             a->arming = false;
             act = ARMING_ACT_GIVE_UP;
         }

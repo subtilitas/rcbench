@@ -803,6 +803,123 @@ TEST_CASE(a_write_nobody_answers_is_a_stop_and_a_refusal_is_not)
     CHECK(!arming_write_failed(NULL, true));
 }
 
+/*
+ * The question about the line is an exchange, and an exchange can take up
+ * to 1000 ms to come back.  A yes that comes back after the bound arms
+ * nothing: the bound is on when the bench may start driving, not on when
+ * the question was asked.
+ */
+TEST_CASE(a_trusted_report_past_the_bound_arms_nothing)
+{
+    const uint32_t bases[2] = { 1000u, 0xFFFFFFFFu - 249u };  /* and the wrap */
+    for (unsigned b = 0; b < 2u; ++b) {
+        const uint32_t t0 = bases[b];
+        const uint32_t bound = t0 + SETTLE_MS + WAIT_MS;
+
+        /* One millisecond inside: taken. */
+        init_asking(t0 - 10u);
+        arming_touch_seen(&a, t0);
+        arming_request_arm(&a, t0);
+        arming_touch_seen(&a, bound - 1u);
+        CHECK(arming_line_wanted(&a, bound - 1u));
+        arming_line_report(&a, true);
+        CHECK_EQ(arming_step(&a, bound - 1u), ARMING_ACT_ARM);
+
+        /* At the bound: taken. */
+        init_asking(t0 - 10u);
+        arming_touch_seen(&a, t0);
+        arming_request_arm(&a, t0);
+        arming_touch_seen(&a, bound);
+        CHECK(arming_line_wanted(&a, bound));
+        arming_line_report(&a, true);
+        CHECK_EQ(arming_step(&a, bound), ARMING_ACT_ARM);
+
+        /* One millisecond past: asked at the settle, answered late. */
+        init_asking(t0 - 10u);
+        arming_touch_seen(&a, t0);
+        arming_request_arm(&a, t0);
+        CHECK(arming_line_wanted(&a, t0 + SETTLE_MS));
+        arming_touch_seen(&a, bound + 1u);
+        arming_line_report(&a, true);
+        CHECK_EQ(arming_step(&a, bound + 1u), ARMING_ACT_GIVE_UP);
+        CHECK(!a.armed);
+        CHECK(!a.arming);
+        CHECK(!a.stopped);
+
+        /* And 700 ms past, an exchange that all but timed out. */
+        init_asking(t0 - 10u);
+        arming_touch_seen(&a, t0);
+        arming_request_arm(&a, t0);
+        CHECK(arming_line_wanted(&a, t0 + SETTLE_MS));
+        arming_touch_seen(&a, bound + 700u);
+        arming_line_report(&a, true);
+        CHECK_EQ(arming_step(&a, bound + 700u), ARMING_ACT_GIVE_UP);
+        CHECK(!a.armed);
+
+        /* Past the bound there is nothing left to ask. */
+        init_asking(t0 - 10u);
+        arming_touch_seen(&a, t0);
+        arming_request_arm(&a, t0);
+        CHECK(arming_line_wanted(&a, bound));
+        CHECK(!arming_line_wanted(&a, bound + 1u));
+    }
+}
+
+TEST_CASE(with_no_far_end_in_the_pass_the_settle_alone_decides)
+{
+    /* Not before the settle. */
+    init_asking(0);
+    arming_touch_seen(&a, 1000);
+    arming_request_arm(&a, 1000);
+    arming_touch_seen(&a, 1000 + SETTLE_MS - 1);
+    arming_line_nobody(&a);
+    CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS - 1), ARMING_ACT_NONE);
+    arming_touch_seen(&a, 1000 + SETTLE_MS);
+    arming_line_nobody(&a);
+    CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS), ARMING_ACT_ARM);
+
+    /* A pass a second late behind a probe nobody answered: still armed,
+     * one past the bound and 700 ms past it, and across the wrap. */
+    const uint32_t bases[2] = { 1000u, 0xFFFFFFFFu - 249u };
+    for (unsigned b = 0; b < 2u; ++b) {
+        const uint32_t bound = bases[b] + SETTLE_MS + WAIT_MS;
+        for (uint32_t late = 1u; late <= 701u; late += 700u) {
+            init_asking(bases[b] - 10u);
+            arming_touch_seen(&a, bases[b]);
+            arming_request_arm(&a, bases[b]);
+            arming_touch_seen(&a, bound + late);
+            arming_line_nobody(&a);
+            CHECK_EQ(arming_step(&a, bound + late), ARMING_ACT_ARM);
+        }
+    }
+
+    /* It holds for one step: a far end that answers by the next pass is
+     * asked, and past the bound its arm is given up. */
+    init_asking(0);
+    arming_touch_seen(&a, 1000);
+    arming_request_arm(&a, 1000);
+    arming_touch_seen(&a, 1000 + SETTLE_MS - 5);
+    arming_line_nobody(&a);
+    CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS - 5), ARMING_ACT_NONE);
+    arming_touch_seen(&a, 1000 + SETTLE_MS);
+    CHECK(arming_line_wanted(&a, 1000 + SETTLE_MS));
+    CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS), ARMING_ACT_NONE);
+    arming_touch_seen(&a, 1000 + SETTLE_MS + WAIT_MS + 1);
+    CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS + WAIT_MS + 1),
+             ARMING_ACT_GIVE_UP);
+
+    /* A stop still wins, and a null is harmless. */
+    init_asking(0);
+    arming_touch_seen(&a, 1000);
+    arming_request_arm(&a, 1000);
+    arming_stop(&a);
+    arming_touch_seen(&a, 1000 + SETTLE_MS);
+    arming_line_nobody(&a);
+    CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS), ARMING_ACT_NONE);
+    CHECK(!a.armed);
+    arming_line_nobody(NULL);
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -834,5 +951,7 @@ int main(void)
     RUN(the_bank_alone_being_armed_is_enough_for_a_link_stop);
     RUN(a_far_end_that_appears_stops_a_bank_armed_without_one);
     RUN(a_write_nobody_answers_is_a_stop_and_a_refusal_is_not);
+    RUN(a_trusted_report_past_the_bound_arms_nothing);
+    RUN(with_no_far_end_in_the_pass_the_settle_alone_decides);
     return test_summary("arming");
 }

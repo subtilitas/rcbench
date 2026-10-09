@@ -109,6 +109,8 @@ typedef struct {
      */
     uint32_t line_wait_ms;
     bool     line_trusted;    /**< reported for the arm that is waiting   */
+    bool     line_nobody;     /**< no far end in this pass; see
+                                   arming_line_nobody()                   */
     uint32_t last_touch_ms;
     uint32_t run_start_ms;    /**< 0 when not in a run                    */
     uint32_t run_seconds;     /**< held after the run ends                */
@@ -124,10 +126,12 @@ void arming_init(arming_t *a, uint32_t now_ms, uint32_t settle_ms);
  * Make an arm wait for the far end's word on the line, for at most
  * @p wait_ms past the settle.  0 turns the wait off.
  *
- * After the settle arming_line_wanted() is true on every pass until
- * arming_line_report() has said the line is trusted; arming_step() then
- * returns ARMING_ACT_ARM in that pass, or ARMING_ACT_GIVE_UP once the bound
- * has passed.
+ * From the settle to the bound arming_line_wanted() is true on every pass
+ * until arming_line_report() has said the line is trusted; arming_step()
+ * then returns ARMING_ACT_ARM in that pass.  At the bound without a yes,
+ * and past the bound whatever was reported, it returns ARMING_ACT_GIVE_UP:
+ * the report is an exchange that can come back late, and a yes that does
+ * arms nothing.
  */
 void arming_set_line_wait(arming_t *a, uint32_t wait_ms);
 
@@ -140,6 +144,15 @@ bool arming_line_wanted(const arming_t *a, uint32_t now_ms);
  * caller reports true.  Ignored unless an arm is waiting.
  */
 void arming_line_report(arming_t *a, bool trusted);
+
+/**
+ * There is no far end to ask in this pass: the next arming_step() lets the
+ * settle alone decide, bound or no bound.  Nothing can be stale where
+ * nothing was asked, and with no link the pass itself can be a second late
+ * behind an identity probe nobody answers.  Holds for that one step; a
+ * caller with no link says so before every step.
+ */
+void arming_line_nobody(arming_t *a);
 
 /** The touch controller answered. */
 void arming_touch_seen(arming_t *a, uint32_t now_ms);

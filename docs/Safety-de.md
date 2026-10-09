@@ -120,7 +120,9 @@ auf die Leitung wartet, rastet am Panel bei diesem Poll ein Stopp ein: die
 eigene Bank wird entschärft, das Gas geht auf null, eine gehaltene
 Servo-Position wird losgelassen, und der Heartbeat stoppt. Eine ausbleibende
 Antwort wird nach dem Timeout von 1000 ms bemerkt, oder sofort, wenn der
-CAN-Controller (Controller Area Network) des Panels bus-off ist. Eine Bank,
+CAN-Controller (Controller Area Network) des Panels bus-off ist. Beide
+Austausche eines Polls zählen: das Lesen der Bench-Page und das Schreiben
+von ARM und THROTTLE, das darauf folgt. Eine Bank,
 die ohne angeschlossenen Koprozessor scharf ist, der simulierte Prüfstand,
 wird auf dieselbe Weise bei dem Poll gestoppt, bei dem ein Koprozessor zum
 ersten Mal antwortet, bevor ein ARM an ihn geschrieben wird.
@@ -154,7 +156,8 @@ einmal je Durchlauf das Fault-Register von STATUS, bis das Heartbeat-Bit
 gelöscht ist, und schreibt erst dann CLEAR und den Frame, der schärft. Ist
 das Bit 300 ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
 das Schärfen mit `Koprozessor lehnte ARM ab` auf und schreibt nichts, der
-Latch des Koprozessors bleibt also gesetzt. Ein Austausch des Schärfens, auf
+Latch des Koprozessors bleibt also gesetzt. Eine Antwort, die später als
+diese 300 ms zurückkommt, wird nicht verwendet, was immer sie sagt. Ein Austausch des Schärfens, auf
 den niemand antwortet -- das Lesen von STATUS, das Freigeben des Servos,
 CLEAR oder der Frame, der schärft --, hat den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schärfen

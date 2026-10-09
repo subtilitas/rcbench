@@ -4021,8 +4021,9 @@ static void service_arming(bool link_up)
      */
     /*
      * An arm past its settle asks the far end whether it trusts the line,
-     * once a pass until it does; with no far end there is nobody to ask and
-     * the settle alone decides.  The exchange pumps, so a STOP can land in
+     * once a pass until it does or the bound has passed; a yes that comes
+     * back past the bound arms nothing.  With no far end there is nobody to
+     * ask and the settle alone decides, however late this pass is.  The exchange pumps, so a STOP can land in
      * it: the policy then holds no arm and drops the answer.
      *
      * A question nobody answers is the link going quiet under a waiting
@@ -4030,9 +4031,11 @@ static void service_arming(bool link_up)
      * left to the policy it would run past the bound and be given up, and
      * the poll would then find no arm to stop.
      */
-    if (arming_line_wanted(&s_arm, now_ms())) {
+    if (!link_up) {
+        arming_line_nobody(&s_arm);
+    } else if (arming_line_wanted(&s_arm, now_ms())) {
         bool answered = true;
-        const bool trusted = !link_up || far_line_trusted(&answered);
+        const bool trusted = far_line_trusted(&answered);
         if (answered) {
             arming_line_report(&s_arm, trusted);
         } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
@@ -6029,6 +6032,18 @@ static bool poll_bench(bench_state_t *bench)
                            && !arming_stopped(&s_arm)
                            && !atomic_load(&s_disarm_request);
         const bool written = control_write(armed, &ack);
+        if (!written && ack.op != LINK_OP_NACK) {
+            /*
+             * Nobody answered the write this poll exists for, so the poll
+             * has failed, whatever its read brought back.  poll_far_end()
+             * takes the link as down on this pass and stops an armed bench;
+             * waiting for the next poll's read to fail would leave the bank
+             * armed and the heartbeat running for another
+             * LINK_HOST_TIMEOUT_MS (1000 ms).  A refusal is an answer and
+             * is handled below.
+             */
+            return false;
+        }
         /*
          * The throttle's endpoints, when an edit or a link-up leaves them
          * owed -- after the control write, and only when that write put

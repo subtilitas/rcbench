@@ -111,7 +111,9 @@ answering while the bench is armed, or while an arm is waiting for the line,
 the panel latches a stop on that poll: its own bank is disarmed, the throttle
 goes to zero, a held servo position is let go and the heartbeat stops. A
 missing answer is noticed after the 1000 ms exchange timeout, or at once
-when the panel's CAN (Controller Area Network) controller is bus-off. A bank
+when the panel's CAN (Controller Area Network) controller is bus-off. Either
+exchange of a poll counts: the read of the bench page, and the write of ARM
+and THROTTLE that follows it. A bank
 armed with no coprocessor connected, the simulated bench, is stopped the
 same way on the poll where a coprocessor first answers, before any ARM is
 written to it.
@@ -142,7 +144,8 @@ The panel waits 100 ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that arms. If the bit has not cleared 300 ms after the hold completed, the
 panel gives the arm up with `coprocessor refused to arm` and writes nothing,
-so the coprocessor's latch stays set. An exchange of the arm that nobody
+so the coprocessor's latch stays set. An answer that comes back later than
+those 300 ms is not used, whatever it says. An exchange of the arm that nobody
 answers -- the STATUS read, the servo release, CLEAR or the frame that arms
 -- has waited the 1000 ms exchange timeout or did not reach the wire: that is
 the link going quiet under an arm, and the panel latches a stop as above. A

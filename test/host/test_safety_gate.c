@@ -456,6 +456,13 @@ static bool            p_link_up, p_endpoints_hold;
 static uint32_t        p_last_poll, p_stops_served;
 static unsigned        p_far_end_stops, p_arm_refused, p_arm_acked,
                        p_arm_gave_up, p_clear_sent, p_arm_unanswered;
+/* Which exchange of an arm went unanswered: the servo release, CLEAR, the
+ * frame that arms. */
+static unsigned        p_quiet_release, p_quiet_clear, p_quiet_frame;
+/* When a poll's write of ARM and THROTTLE first went unanswered, and when
+ * the panel first finished a far-end stop. */
+static uint32_t        p_write_quiet_at, p_stop_at;
+static bool            p_write_quiet, p_stop_seen;
 static uint32_t        p_extra_at, p_extra_ms;    /* one long pass, pumping */
 static uint32_t        p_pass_work_ms;            /* work in every pass     */
 static uint32_t        p_touch_out_at, p_touch_out_ms;
@@ -571,6 +578,10 @@ static void p_stop_here(void)
     outputs_arm(&p_out, false, T);
     p_throttle = 0;
     ++p_far_end_stops;
+    if (!p_stop_seen) {
+        p_stop_seen = true;
+        p_stop_at = T;
+    }
 }
 
 /* far_line_trusted() */
@@ -602,9 +613,11 @@ static void p_service_arming(void)
         p_stops_served = stops;
         p_throttle = 0;
     }
-    if (arming_line_wanted(&p_arm, T)) {
+    if (!p_link_up) {
+        arming_line_nobody(&p_arm);
+    } else if (arming_line_wanted(&p_arm, T)) {
         bool answered = true;
-        const bool trusted = !p_link_up || p_line_trusted(&answered);
+        const bool trusted = p_line_trusted(&answered);
         if (answered) {
             arming_line_report(&p_arm, trusted);
         } else if (arming_link_lost(&p_arm, outputs_armed(&p_out))) {
@@ -628,11 +641,18 @@ static void p_service_arming(void)
             outputs_arm(&p_out, true, T);   /* the simulator */
             break;
         }
+        /* servo_service(): the release of a held position, one exchange. */
+        if (!xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, 1, NULL, &ack)) {
+            ++p_quiet_release;
+            p_arm_write_failed(quiet);
+            break;
+        }
         const uint16_t magic = LINK_CLEAR_MAGIC;
         ++p_clear_sent;
         if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, &magic,
                    &ack)
               && ack.op == LINK_OP_ACK)) {
+            p_quiet_clear += w_unanswered != quiet;
             p_arm_write_failed(quiet);
             break;
         }
@@ -640,6 +660,7 @@ static void p_service_arming(void)
         if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_ARM, 3, regs,
                    &ack)
               && ack.op == LINK_OP_ACK)) {
+            p_quiet_frame += w_unanswered != quiet;
             p_arm_write_failed(quiet);
         } else {
             outputs_arm(&p_out, true, T);
@@ -673,7 +694,14 @@ static void p_poll_far_end(void)
                                && !arming_stopped(&p_arm);
             link_msg_t ack;
             const bool written = p_control_write(armed, &ack);
-            if (p_endpoints_hold && written && !armed) {
+            if (!written && ack.op != LINK_OP_NACK) {
+                if (!p_write_quiet) {
+                    p_write_quiet = true;
+                    p_write_quiet_at = T;
+                }
+                answered = false;       /* the poll has failed */
+            }
+            if (answered && p_endpoints_hold && written && !armed) {
                 link_msg_t cc;
                 if (xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, LINK_CT_COUNT,
                          NULL, &cc)) {
@@ -770,6 +798,8 @@ static void world_init(uint32_t t0)
     p_stops_served = 0;
     p_far_end_stops = p_arm_refused = p_arm_acked = p_arm_gave_up = 0;
     p_arm_unanswered = 0;
+    p_quiet_release = p_quiet_clear = p_quiet_frame = 0;
+    p_write_quiet = p_stop_seen = false;
     p_clear_sent = 0;
     p_extra_at = p_extra_ms = 0;
     p_touch_out_at = p_touch_out_ms = 0;
@@ -1110,6 +1140,7 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
     static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
     for (unsigned w = 0; w < 3u; ++w) {
         unsigned gave_up = 0, not_stopped = 0, armed = 0, unanswered = 0;
+        unsigned release = 0, clear = 0, frame = 0;
         for (uint32_t at = 5900u; at <= 6300u;
              at += (at >= 6090u && at < 6150u) ? 1u : 5u) {
             armed_at_70(0, wires[w]);
@@ -1136,6 +1167,9 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
                                  && !arming_heartbeat(&p_arm, T);
             not_stopped += !(sim || stopped) || p_arm_refused != 0u;
             unanswered += p_arm_unanswered;
+            release += p_quiet_release;
+            clear += p_quiet_clear;
+            frame += p_quiet_frame;
             /* And when the coprocessor is back, neither end is armed. */
             const unsigned edges = d_arm_edges;
             run_until(at + 9000u);
@@ -1146,8 +1180,12 @@ TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
             T_FAIL("wire %u: given up %u, not stopped %u, armed after the "
                    "return %u", w, gave_up, not_stopped, armed);
         }
-        /* The sweep did put the reset under the CLEAR or the arming frame. */
-        CHECK(unanswered >= 1u);
+        /* The sweep did put the reset under each exchange of the arm, and
+         * each of them ended in the stop counted above. */
+        CHECK(release >= 1u);
+        CHECK(clear >= 1u);
+        CHECK(frame >= 1u);
+        CHECK_EQ(unanswered, release + clear + frame);
     }
 }
 
@@ -1213,6 +1251,39 @@ TEST_CASE(a_touch_outage_disarms_and_the_next_arm_is_taken)
     }
 }
 
+TEST_CASE(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll)
+{
+    /* Armed at 70 %.  The poll's read is answered and the coprocessor goes
+     * down under the write of ARM and THROTTLE that follows it.  That poll
+     * has failed: the stop is latched in it, not at the next poll's
+     * timeout a second later. */
+    static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
+    for (unsigned w = 0; w < 3u; ++w) {
+        unsigned hit = 0, late = 0, armed = 0;
+        for (uint32_t ph = 0; ph < 110u; ++ph) {
+            armed_at_70(0, wires[w]);
+            e_reset_at = 3000u + ph;
+            e_boot_at = e_reset_at + 3000u;
+            e_reset_on = e_boot_on = true;
+            run_until(3000u + ph + 2500u);
+            if (p_write_quiet) {
+                ++hit;
+                late += !(p_stop_seen
+                          && (uint32_t)(p_stop_at - p_write_quiet_at) <= 5u
+                          && arming_stopped(&p_arm) && !outputs_armed(&p_out)
+                          && p_throttle == 0u
+                          && !arming_heartbeat(&p_arm, T));
+            }
+            run_until(3000u + ph + 9000u);
+            armed += d_arm_edges != 1u || outputs_driving(&d_bank)
+                     || outputs_armed(&p_out);
+        }
+        CHECK(hit >= 1u);
+        CHECK_EQ(late, 0);
+        CHECK_EQ(armed, 0);
+    }
+}
+
 int main(void)
 {
     RUN(a_start_is_latched_and_reports_no_fault);
@@ -1233,5 +1304,6 @@ int main(void)
     RUN(a_link_that_goes_while_an_arm_waits_is_a_stop);
     RUN(an_arm_the_far_end_never_trusts_is_given_up_latched);
     RUN(a_touch_outage_disarms_and_the_next_arm_is_taken);
+    RUN(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll);
     return test_summary("safety_gate");
 }
