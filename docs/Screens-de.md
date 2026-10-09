@@ -300,7 +300,8 @@ ESC und die Spalten des Fensters unter INA3221.
 
 ![Servo](img/de/servo.png)
 
-An beliebiger Stelle auf dem Bogen ziehen, um eine Stellung zu befehlen. Der
+Auf einem scharfen Prüfstand an beliebiger Stelle auf dem Bogen ziehen, um
+eine Stellung zu befehlen. Der
 kräftige Arm ist die gemessene Stellung, der blasse Arm die befohlene. Der
 Abstand zwischen beiden ist die Verzögerung des Servos selbst. Die Ringe um
 die Spitze pulsieren, solange das Servo angesteuert wird. Den Finger zu heben
@@ -334,13 +335,55 @@ gehaltenen Ausgang. Ohne Rückmeldung wird das Horn mit derselben Rate
 bewegt gezeichnet, bei 100 % sofort am Befehl.
 
 **Vor jeder Bewegung ARM.** Solange der Prüfstand nicht scharf ist, schreibt
-der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null: der Arm auf dem
-Bildschirm folgt dem Finger, das Servo nicht. Der Knopf ist ein
+der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null, und der
+Bildschirm nimmt keine Stellung an: Der befohlene Wert ändert sich nur,
+solange das Servo ihm folgt. Der Knopf ist ein
 Zwei-Sekunden-Halten, dieselbe Geste und dieselbe Blende wie auf MOTOR & ESC,
 und ein Druck darauf im scharfen Zustand schaltet unscharf. Das Verlassen des
 Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
 nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
 zurücklassen.
+
+Was jedes Bedienelement auf einem unscharfen Prüfstand tut:
+
+| Bedienelement | Unscharf | Scharf |
+| --- | --- | --- |
+| Das Zifferblatt | abgelehnt: kein Kommando, Horn und PULSBREITE bleiben | befiehlt die Stellung unter dem Finger |
+| Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Horn vom befohlenen Wert aus |
+| ZENTRIEREN | abgelehnt; gedimmt gezeichnet | befiehlt PULS CENTRE plus TRIM |
+| SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
+| FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert bleibt |
+| TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
+| OPTIONEN: TYP, FRAME RATE, PULS MIN, CENTRE und MAX, TRIM, WEG, REVERSE | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
+| SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
+| START TEST | abgelehnt: `ZUERST ARM` | startet den Lauf nach seinem Halten |
+
+Unscharf wird das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST
+ARM`. Horn und PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
+Neustart PULS CENTRE. Eine unscharf geänderte Pulsbreiten-Einstellung ändert
+die Mikrosekunden, die PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
+ihn nicht.
+
+Wird der Prüfstand scharf, wird der befohlene Wert zur Ruhelage, die die Pins
+treiben: die Mitte zwischen den Endpunkten des Kanals, 1500 us bei STANDARD
+PWM und 760 us bei NARROW 760, ohne TRIM. Ohne Rückmeldung wird das Horn
+sofort dort gezeichnet. Der erste Drag oder die erste Knopfdrehung nach einem
+ARM beginnt bei diesem Wert, gleich was der Bildschirm vorher zeigte; 1 %
+Knopfdrehung bei STANDARD PWM fordert 1510 us an. Ein Typ oder eine
+Pulsbreite, die auf einem scharfen Prüfstand vor der ersten Stellung geändert
+wird, verschiebt die Ruhelage und den Wert mit ihr.
+
+Ein Finger auf dem Zifferblatt bewegt nichts, wenn der Prüfstand scharf wird,
+unscharf wird oder stoppt, bis er abhebt und neu drückt. Eine Stellung, ein
+Sweep oder eine Pause, die der Bildschirm gepostet und das Panel noch nicht
+gesendet hat, wenn der Prüfstand unscharf wird oder stoppt, wird nicht
+gesendet, und eine Knopfdrehung in diesem Zustand wird zurückgenommen: Der
+Wert kehrt auf den vor der Drehung zurück.
+
+Nach FREIGEBEN auf einem scharfen Prüfstand stehen die Pins auf der Mitte,
+und Horn und PULSBREITE behalten die letzte Stellung. Ein Druck auf das
+Zifferblatt steuert das Servo wieder an; eine Knopfdrehung steuert es vom
+gezeigten Wert aus an, nicht von der Mitte.
 
 Die rechte Karte zeigt, was befohlen und gemessen ist, Typ und Bildwiederholrate,
 die gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
@@ -1221,6 +1264,12 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Kommando auf den Frame (ein eben vollendetes Schärfen, ein Entschärfen, ein
   Zurücksetzen der Spitzen, ein Freigeben), wird die Bewegung des Knopfs in
   diesem Frame verworfen, nicht aufgehoben.
+- Auf SERVO bewegt eine Drehung auf einem unscharfen Prüfstand nichts und
+  wird nicht aufgehoben. Das ARM setzt das Horn auf die Ruhelage, und die
+  nächste Drehung zählt von dort. Eine gepostete und noch nicht gesendete
+  Drehung wird zurückgenommen, wenn der Prüfstand unscharf wird oder stoppt.
+  Auf MOTOR & ESC bewegt der Knopf den Schieberegler auf einem unscharfen
+  Prüfstand, und das ARM setzt ihn auf 0 %.
 - Bekannte Einschränkung: Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G des Boards an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse 0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht lesen. `Drehknopf` ist standardmäßig aus.
 
 ### ANSCHLÜSSE: die Strommonitore

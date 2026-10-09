@@ -1436,6 +1436,10 @@ int main(int argc, char **argv)
         servo_sim_cfg_t cfg;
         servo_sim_defaults(&cfg);
         servo_sim_init(&ss, &cfg);
+        /* A position is taken only on an armed bench: armed for the move,
+         * and disarmed again with the horn where it was driven, which is
+         * what the disarmed views show. */
+        servo_screen_set_armed(true);
         servo_screen_set_commanded(38.0f);
         for (int i = 0; i < 200; ++i) {
             const float a = servo_sim_step(&ss, servo_screen_commanded(),
@@ -1443,6 +1447,9 @@ int main(int argc, char **argv)
             servo_screen_feedback((uint16_t)ss.position_us, a, true);
             ui_router_tick(0.01f);
         }
+        servo_screen_set_armed(false);
+        servo_cmd_t moved;
+        while (servo_screen_take(&moved)) { }
         /* The supply feeding it, from the panel's supply model, for the
          * live power plot. */
         supply_sim_t sm;

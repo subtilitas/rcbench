@@ -128,6 +128,14 @@ typedef struct {
  *  driving; see outputs_driving(). */
 #define OUT_DEFAULT_TIMEOUT_MS  500u
 
+/**
+ * The command a channel of @p role rests at, 0..OUT_SPAN of its own
+ * endpoints: 0 for a throttle, OUT_SPAN / 2 for a surface.  What an armed
+ * bank renders on a channel nobody commands, and what a screen that shows
+ * such a channel's value shows.
+ */
+uint16_t outputs_role_rest(out_role_t role);
+
 void outputs_init(outputs_t *o, uint32_t now_ms);
 
 /**

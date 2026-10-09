@@ -58,6 +58,16 @@ static void fresh(void)
     while (servo_screen_take(&junk)) { }
 }
 
+/* The same on an armed bench, with nothing waiting to be taken: a position
+ * input is taken only there. */
+static void fresh_armed(void)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_cmd_t junk;
+    while (servo_screen_take(&junk)) { }
+}
+
 static void ev(int x, int y, touch_event_type_t t, uint8_t id)
 {
     const touch_event_t e = { .type = t,
@@ -187,7 +197,7 @@ static void acked(uint32_t age_ms, servo_sweep_from_t from, uint32_t since_ms)
 TEST_CASE(a_touch_on_the_dial_points_the_horn_there)
 {
     for (int want = -90; want <= 90; want += 45) {
-        fresh();
+        fresh_armed();
         int x, y;
         dial_at((float)want, ARC_R - 30, &x, &y);
         ev(x, y, TOUCH_EVENT_DOWN, 1);
@@ -207,7 +217,7 @@ TEST_CASE(a_touch_on_the_dial_points_the_horn_there)
  * rather than jump when it lifts. */
 TEST_CASE(a_drag_keeps_commanding)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(0.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_DOWN, 1);
@@ -245,7 +255,7 @@ TEST_CASE(the_case_is_not_the_dial)
  * ignored, which is what a mechanical stop does. */
 TEST_CASE(the_travel_limit_clamps_rather_than_refuses)
 {
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_L_X, ROW_Y(4));             /* TRAVEL */
     keys("50");
@@ -268,7 +278,7 @@ TEST_CASE(the_travel_limit_clamps_rather_than_refuses)
 
 TEST_CASE(centre_and_release_post_their_own_commands)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(60.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_DOWN, 1);
@@ -516,7 +526,7 @@ TEST_CASE(the_hold_repaints_the_button_and_leaves_the_card_alone)
  */
 TEST_CASE(the_speed_travels_with_the_command_as_a_rate)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(20.0f, ARC_R - 20, &x, &y);
     tap(x, y);
@@ -534,7 +544,7 @@ TEST_CASE(the_speed_travels_with_the_command_as_a_rate)
 
 TEST_CASE(changing_the_type_says_the_position_again)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(45.0f, ARC_R - 20, &x, &y);
     tap(x, y);
@@ -551,7 +561,7 @@ TEST_CASE(changing_the_type_says_the_position_again)
 
 TEST_CASE(the_trim_says_the_position_again_while_it_is_held)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(0.0f, ARC_R - 20, &x, &y);
     tap(x, y);
@@ -630,21 +640,20 @@ TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
-TEST_CASE(arming_drops_a_position_held_before_it)
+TEST_CASE(a_dial_press_before_the_arm_is_not_held_after_it)
 {
     /*
-     * Dragging while disarmed commands a position, and arming discards it:
-     * the panel drops the held command and the slot so that an arm starts
-     * from nothing.  A screen still believing it was driving would say that
-     * discarded position again on the next change of type, trim or travel --
-     * onto a bench that is armed by then.  What the change says is the rest,
-     * under the new type.
+     * A press on the dial of a disarmed bench commands nothing, and the arm
+     * starts from nothing.  A screen believing it was driving would say a
+     * position on the next change of type, trim or travel -- onto a bench
+     * that is armed by then.  What the change says is the rest, under the
+     * new type.
      */
     fresh();
     int x, y;
     dial_at(60.0f, ARC_R - 20, &x, &y);
     tap(x, y);
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     servo_screen_set_armed(true);
     choose_type(1);
@@ -654,17 +663,17 @@ TEST_CASE(arming_drops_a_position_held_before_it)
 TEST_CASE(a_stop_on_a_bench_that_was_not_armed_still_lets_go)
 {
     /*
-     * Dragging while disarmed commands a position, and a STOP then changes
-     * nothing about the armed state -- there is nothing to disarm -- while
-     * the panel releases the slot all the same.  A screen still believing it
-     * was driving would say the released position again on the next change
-     * of type, trim or travel.
+     * A press on the dial of a disarmed bench commands nothing, and a STOP
+     * then changes nothing about the armed state -- there is nothing to
+     * disarm -- while the panel releases the slot all the same.  A screen
+     * believing it was driving would say a position on the next change of
+     * type, trim or travel.
      */
     fresh();
     int x, y;
     dial_at(-40.0f, ARC_R - 20, &x, &y);
     tap(x, y);
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     servo_screen_cancel_arm();       /* what a stop calls */
     choose_type(1);
@@ -771,7 +780,7 @@ TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
  */
 TEST_CASE(a_command_carries_the_endpoints_of_the_type_it_was_made_for)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(0.0f, ARC_R - 20, &x, &y);
     tap(x, y);
@@ -793,7 +802,7 @@ TEST_CASE(a_command_carries_the_endpoints_of_the_type_it_was_made_for)
 
 TEST_CASE(a_heli_type_waits_for_the_warning_held_two_seconds)
 {
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_L_X, ROW_Y(0));                    /* TYPE */
     tap(CH_X(3), CH_Y(3));                     /* HELI CYCLIC */
@@ -824,7 +833,7 @@ TEST_CASE(a_heli_type_waits_for_the_warning_held_two_seconds)
 TEST_CASE(every_profile_is_a_range_the_coprocessor_takes)
 {
     for (int t = 0; t < 5; ++t) {
-        fresh();
+        fresh_armed();
         choose_type(t);
         servo_screen_set_commanded(-90.0f);
         const servo_cmd_t c = last_cmd();
@@ -849,7 +858,7 @@ TEST_CASE(every_profile_is_a_range_the_coprocessor_takes)
 /* And a pulse width typed outside that range is refused at the keypad. */
 TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
 {
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
     keys("350");
@@ -880,7 +889,7 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
  */
 TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
 {
-    fresh();
+    fresh_armed();
     choose_type(4);                            /* HELI TAIL 760, 560 Hz */
     open_settings();
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
@@ -900,7 +909,7 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
     CHECK_EQ(c.max_us, 1270);
     CHECK_EQ(c.frame_hz, 560);
 
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
     keys("1700");                              /* 1000..2400 */
@@ -929,7 +938,7 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
  */
 TEST_CASE(each_side_of_centre_runs_to_its_own_end)
 {
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
     keys("1520");
@@ -1014,7 +1023,7 @@ TEST_CASE(standard_pwm_keeps_a_millisecond_between_pulses)
 {
     /* 1 / (2000 us + 1 ms) is 333 Hz: the list stops there, a custom rate
      * above it is refused, and at 333 Hz the longest pulse is 2003 us. */
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_L_X, ROW_Y(1));
     tap(CH_X(7), CH_Y(7));                     /* 333 Hz, the last */
@@ -1059,7 +1068,7 @@ TEST_CASE(a_restart_is_standard_pwm_at_50_hz)
 
 TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(45.0f, ARC_R - 20, &x, &y);
     tap(x, y);
@@ -1069,7 +1078,7 @@ TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
     tap(ROW_R_X, ROW_Y(4));                    /* REVERSE */
     CHECK(last_cmd().value_us < 1500);         /* said again, mirrored */
 
-    fresh();
+    fresh_armed();
     open_settings();
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
     keys("1520");
@@ -1126,19 +1135,21 @@ TEST_CASE(the_test_and_limit_settings_are_kept)
 TEST_CASE(the_overlay_leaves_the_right_card_working)
 {
     /* ARM, CENTRE and RELEASE work under the overlay; the dial under it
-     * does not. */
+     * does not.  CENTRE is a position, taken on an armed bench. */
     fresh();
     open_settings();
+    arm_press();
+    held(2.2f);
+    arm_release();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+    servo_screen_set_armed(true);
     tap(ARM_X + 40, 350 + 16);                 /* CENTRE */
     CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
     int x, y;
     dial_at(45.0f, ARC_R - 20, &x, &y);
     tap(x, y);                                 /* on the overlay, not the dial */
     CHECK(servo_screen_commanded() == 1500);
-    arm_press();
-    held(2.2f);
-    arm_release();
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
 TEST_CASE(the_tag_is_red_while_a_dangerous_profile_is_in_force)
@@ -1407,8 +1418,13 @@ TEST_CASE(a_refused_save_repaints_only_the_save_line)
  */
 TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
 {
-    fresh();
+    fresh_armed();
     two_buffers();
+    /* The arm's flash is spent a drawn frame at a time; past it. */
+    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES; ++i) {
+        scr->render((i % 2) ? &cv1 : &cv, i % 2);
+        scr->tick(1.0f / 39.0f);
+    }
     tap(ARM_X + 1, SPEED_Y);                   /* the slowest sweep, 10 % */
     int x, y;
     dial_at(60.0f, ARC_R - 20, &x, &y);
@@ -1432,7 +1448,7 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
  * where it is, and leaves the horn to a finger, a sweep and the settings. */
 TEST_CASE(the_knob_moves_the_horn_by_how_far_it_turned)
 {
-    fresh();
+    fresh_armed();
     servo_screen_knob(0.25f);
     const servo_cmd_t a = last_cmd();
     CHECK_EQ(a.kind, SERVO_CMD_POSITION);
@@ -1451,7 +1467,7 @@ TEST_CASE(the_knob_moves_the_horn_by_how_far_it_turned)
 
 TEST_CASE(the_knob_stops_at_the_servos_travel)
 {
-    fresh();
+    fresh_armed();
     servo_screen_knob(9.0f);
     const servo_cmd_t hi = last_cmd();
     servo_screen_knob(0.1f);
@@ -1481,7 +1497,7 @@ TEST_CASE(a_knob_that_does_not_turn_commands_nothing_on_the_servo)
 
 TEST_CASE(a_finger_on_the_dial_owns_the_horn_against_the_knob)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(0.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_DOWN, 1);
@@ -1499,7 +1515,7 @@ TEST_CASE(a_finger_on_the_dial_owns_the_horn_against_the_knob)
  * again when it is applied. */
 TEST_CASE(a_finger_that_lifted_in_the_frame_still_owned_the_dial)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(0.0f, ARC_R - 30, &x, &y);
     servo_screen_knob_frame();
@@ -1530,7 +1546,7 @@ TEST_CASE(a_finger_that_lifted_in_the_frame_still_owned_the_dial)
  * nothing; a position pending before the knob moved it stays pending. */
 TEST_CASE(a_withdrawn_knob_command_restores_the_horn)
 {
-    fresh();
+    fresh_armed();
     servo_screen_knob(0.25f);
     servo_screen_knob(0.25f);
     servo_screen_knob_cancel();
@@ -1546,7 +1562,7 @@ TEST_CASE(a_withdrawn_knob_command_restores_the_horn)
 
 TEST_CASE(a_withdrawn_knob_command_leaves_a_position_from_a_touch)
 {
-    fresh();
+    fresh_armed();
     int x, y;
     dial_at(20.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_DOWN, 1);
@@ -1573,7 +1589,7 @@ TEST_CASE(a_withdrawal_does_not_touch_a_command_posted_after_the_knob)
 
 TEST_CASE(the_knob_leaves_the_horn_to_the_settings_panel)
 {
-    fresh();
+    fresh_armed();
     open_settings();
     servo_screen_knob(0.4f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
@@ -1586,7 +1602,7 @@ TEST_CASE(the_knob_leaves_the_horn_to_the_settings_panel)
 /* The settings open and closed again inside the frame still own it. */
 TEST_CASE(a_turn_in_a_frame_where_the_settings_were_open_is_dropped)
 {
-    fresh();
+    fresh_armed();
     servo_screen_knob_frame();
     open_settings();
     close_settings();
@@ -3555,7 +3571,7 @@ static bool supply_cmd(supply_cmd_t *out)
  * opened the overlay for it closes it again: the dial works at once. */
 TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
 {
-    fresh();
+    fresh_armed();
     tap(SUP_V_X, SUP_ROW_Y);
     keys("5.5");
     CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
@@ -4511,6 +4527,69 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
         CHECK(b.released || (way == 5 && b.cmd != 1100u && b.cmd != 1900u));
         CHECK_EQ(b.ends, 1u);
         CHECK(strstr(b.report, "Result:         ABORTED") != NULL);
+    }
+}
+
+/*
+ * A run ended by a disarm, by a stop, which disarms, or by leaving the
+ * screen, which does too: no step of the run is said to the disarmed bench,
+ * only the release or the disarm and the OFF are, and the value shown stays
+ * where the run last drove the servo.  The arm after it starts at the rest.
+ */
+static void a_run_ends_disarmed(int way)
+{
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 2000 && b.cmd == 1500u; ++i) {
+        bench_frames(20u);
+    }
+    CHECK(b.cmd != 1500u);
+    const uint16_t driven = servo_screen_commanded();
+    CHECK_EQ(driven, b.cmd);
+
+    if (way == 1) {
+        servo_screen_cancel_arm();
+        CHECK_EQ(servo_screen_commanded(), driven);
+    } else if (way == 2) {
+        scr->leave();
+        CHECK_EQ(servo_screen_commanded(), driven);
+    }
+    servo_screen_set_armed(false);
+    int positions = 0, releases = 0, disarms = 0;
+    for (int i = 0; i < 100; ++i) {
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        scr->tick(0.02f);
+        servo_screen_service();
+        servo_cmd_t c;
+        while (servo_screen_take(&c)) {
+            if (c.kind == SERVO_CMD_RELEASE) {
+                ++releases;
+            } else if (c.kind == SERVO_CMD_DISARM) {
+                ++disarms;
+            } else {
+                ++positions;
+            }
+        }
+    }
+    CHECK(!servo_screen_testing());
+    CHECK_EQ(positions, 0);
+    /* Leaving posts its disarm over the run's release; the disarm lets go. */
+    CHECK_EQ(releases, (way == 2) ? 0 : 1);
+    CHECK_EQ(disarms, (way == 2) ? 1 : 0);
+    CHECK_EQ(servo_screen_commanded(), driven);
+
+    servo_screen_set_armed(true);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(a_run_ended_by_a_disarm_leaves_no_position_to_send)
+{
+    for (int way = 0; way < 3; ++way) {
+        a_run_ends_disarmed(way);
     }
 }
 
@@ -5523,9 +5602,10 @@ TEST_CASE(the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in)
 }
 
 /*
- * The knob's command waits while the bench arms.  The arm holds nothing,
- * and a withdrawal after it restores no drive from before it: a change of
- * SPEED on the armed bench says no position set on the disarmed one.
+ * A press on the dial and a turn of the knob on a disarmed bench command
+ * nothing.  The arm holds nothing, and a withdrawal after it restores no
+ * drive from before it: a change of SPEED on the armed bench says no
+ * position.
  */
 TEST_CASE(a_withdrawal_after_an_arm_restores_no_drive_from_before_it)
 {
@@ -5534,11 +5614,12 @@ TEST_CASE(a_withdrawal_after_an_arm_restores_no_drive_from_before_it)
     feed_to_screen(scr);
     int x, y;
     dial_at(40.0f, 110, &x, &y);
-    feed_tap(FEED_LONE, x, P(y));       /* disarmed: the horn's picture */
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    feed_tap(FEED_LONE, x, P(y));       /* disarmed: refused */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     servo_screen_knob_frame();
     servo_screen_knob(0.1f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
     servo_screen_set_armed(true);
     servo_screen_knob_cancel();
     scr->cancel();
@@ -5702,7 +5783,7 @@ int main(void)
     RUN(a_stop_abandons_a_hold_that_is_under_way);
     RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);
-    RUN(arming_drops_a_position_held_before_it);
+    RUN(a_dial_press_before_the_arm_is_not_held_after_it);
     RUN(a_stop_on_a_bench_that_was_not_armed_still_lets_go);
     RUN(a_stop_stops_the_screen_holding_anything);
     RUN(leaving_disarms_and_lets_go_of_the_output);
@@ -5807,6 +5888,7 @@ int main(void)
     RUN(a_run_through_the_screen_ends_and_restores_the_set_points);
     RUN(a_run_above_6_v_starts_through_the_hv_hold);
     RUN(every_way_out_of_a_run_switches_off_and_lets_go);
+    RUN(a_run_ended_by_a_disarm_leaves_no_position_to_send);
     RUN(the_runs_faces_draw_as_a_full_redraw_would);
     RUN(a_refused_start_says_why);
     RUN(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v);

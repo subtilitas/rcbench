@@ -339,6 +339,13 @@ static struct {
      * fade as the other screen's, because it is the same control.
      */
     bool       armed;
+    /* The bench as it last reported itself.  Apart from `armed`, which
+     * leave() clears for a disarm this screen has only asked for: the edge
+     * the commanded value follows is the bench's. */
+    bool       bench_armed;
+    /* The commanded value is the surface's rest and nothing has been
+     * commanded since: it follows the rest through a change of profile. */
+    bool       at_rest;
     ui_hold_t  arm;
     bool       arm_down;   /**< a press is on the ARM button          */
     int        arm_id;     /**< which contact it is                   */
@@ -726,6 +733,28 @@ static float clamp_travel(float deg)
     return deg;
 }
 
+/*
+ * The angle the pin drives on an armed bench while nothing commands it: the
+ * outputs layer's rest for a surface, in the range a command carries.  The
+ * midpoint of that range, so PULSE CENTRE without the trim: 1500 us for
+ * STANDARD PWM, 760 us for NARROW 760.
+ */
+static float rest_deg(void)
+{
+    return us_to_deg_f(cmd_to_us((float)outputs_role_rest(OUT_ROLE_SURFACE)));
+}
+
+/*
+ * Whether an input may change the commanded value: only while the servo
+ * follows it.  Not on a disarmed bench, whose pins carry no pulse, and not
+ * under a disarm waiting to be taken, which every position is dropped
+ * behind (post()).
+ */
+static bool value_live(void)
+{
+    return s.armed && s.pending.kind != SERVO_CMD_DISARM;
+}
+
 /* The fastest frame rate the profile in force allows with these pulses:
  * the pause rule, under the profile's own ceiling. */
 static uint16_t max_rate_for(int t, uint16_t max_us)
@@ -844,6 +873,9 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
      * has to follow the command rather than the screen being open. */
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
                  || kind == SERVO_CMD_SWEEP || kind == SERVO_CMD_HOLD);
+    if (s.driving) {
+        s.at_rest = false;
+    }
     /* Paused while the hold is the command in force: anything sent after it
      * replaces it at the far end, and the button goes with it. */
     if (s.paused != (kind == SERVO_CMD_HOLD)) {
@@ -1486,22 +1518,82 @@ static void reissue(void)
         post(SERVO_CMD_RELEASE, 0);
         s.arm_profile_rev = s.profile_rev;
     }
+    /* At rest since the arm: the value is the rest of the profile now in
+     * force, which is where the release above puts the pin. */
+    if (s.armed && s.at_rest) {
+        s.commanded_deg = rest_deg();
+    }
 }
 
-static void command(float deg)
+/* A position from an input.  Refused, with nothing changed and nothing
+ * posted, while the value is not live (value_live()). */
+static bool command(float deg)
 {
+    if (!value_live()) {
+        return false;
+    }
     s.commanded_deg = clamp_travel(deg);
     post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
     ++s.ctrl_rev;
+    return true;
+}
+
+static void knob_withdraw(void);
+
+/*
+ * A motion command still waiting to be taken as the bench stops driving --
+ * a disarm, or a stop -- is not sent: the pins carry no pulse, and a
+ * position written to a disarmed far end is a value nobody watches change.
+ * The knob's is withdrawn with the value it replaced; any other is dropped.
+ * A release, an arm and a disarm stay.
+ */
+static void drop_motion(void)
+{
+    knob_withdraw();
+    const servo_cmd_kind_t k = s.pending.kind;
+    if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTRE
+        || k == SERVO_CMD_SWEEP || k == SERVO_CMD_HOLD) {
+        /* What it was to end at the far end, the next command still ends. */
+        s.sweep_ended  = s.sweep_ended || s.pending.ends_sweep;
+        s.pending.kind = SERVO_CMD_NONE;
+    }
+    /* And no undo of a tap whose command went with it. */
+    s.toggle_live = false;
 }
 
 void servo_screen_set_armed(bool armed)
 {
+    const bool arm_edge = armed && !s.bench_armed;
+    s.bench_armed = armed;
+    if (arm_edge) {
+        /*
+         * The bench armed: the pins drive every surface at its rest, the
+         * release the arm pays having put them there, whatever this screen
+         * commanded before.  The value shown is that rest, and the first
+         * input starts from it.  Without feedback the horn is drawn there
+         * at once, as the output is: nothing slews to a rest it is
+         * already at.
+         */
+        s.commanded_deg = rest_deg();
+        s.at_rest       = true;
+        if (!s.have_feedback) {
+            s.shown_cmd = (float)outputs_role_rest(OUT_ROLE_SURFACE);
+            s.shown_deg = s.commanded_deg;
+            /* And where it was drawn before the arm is no part of where
+             * a sweep started after it begins. */
+            s.trail_n = 0u;
+        }
+        ++s.ctrl_rev;
+    }
     if (s.armed == armed) {
         return;
     }
     s.armed = armed;
     s.arm_in_flight = false;
+    /* A finger on the dial does not carry its drag across the edge: after
+     * an arm the first input is a new press, and a disarmed dial takes
+     * none. */
+    s.dragging = false;
     /*
      * Nothing is being held across this edge, in either direction.  An arm
      * starts from nothing -- the panel drops the position and the slot on the
@@ -1535,6 +1627,11 @@ void servo_screen_set_armed(bool armed)
          * the travel must not say a position again and rebuild a command
          * the stop had just released.
          */
+        s.at_rest = false;
+        drop_motion();
+        /* The flash says the bench armed; disarmed, it is over, so both
+         * buffers end on ARM's own colour. */
+        s.arm.flash_left = 0;
         if (ui_hold_left(&s.arm)) {
             /* The bench disarmed under a finger still down on the button, and
              * the hold ended with it; see ui_hold_left(). */
@@ -1562,8 +1659,13 @@ void servo_screen_cancel_arm(void)
      * count is the one it was asked under (ask_stands()). */
     ++s.stops;
     s.arm_in_flight = false;   /* the stop ends the arm on its way too */
-    /* A run ends, and START TEST's hold with it. */
+    /* A run ends, and START TEST's hold with it.  The stop disarms, so the
+     * value shown stays where the run last drove the servo, as after any
+     * disarm, rather than at the centre a run's end on an armed bench
+     * releases to. */
+    const float driven = s.commanded_deg;
     test_end_now(SERVO_TEST_AB_STOP);
+    s.commanded_deg = driven;
     if (s.test_down || s.test_hold.held_s > 0.0f) {
         ui_hold_reset(&s.test_hold);
         s.test_down = false;
@@ -1623,6 +1725,9 @@ void servo_screen_cancel_arm(void)
     /* Nor is what the knob found before the stop: a withdrawal after it
      * puts back no drive, while the screen still reads the bench as armed. */
     s.knob_had_driving = false;
+    /* A position not yet taken would be sent after the stop. */
+    drop_motion();
+    s.dragging = false;
     stop_sweep();
 }
 
@@ -1804,7 +1909,7 @@ void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
 
 void servo_screen_set_commanded(float deg)
 {
-    command(deg);
+    (void)command(deg);
 }
 
 /* ------------------------------------------------------------- the profile */
@@ -2248,7 +2353,11 @@ static void test_apply(const servo_test_do_t *d)
         supply_screen_ask_on();
     }
     if (d->command) {
-        s.commanded_deg = us_to_deg(d->cmd_us);
+        /* Under a disarm waiting to be taken the step is dropped (post()),
+         * and the value stays with it. */
+        if (value_live()) {
+            s.commanded_deg = us_to_deg(d->cmd_us);
+        }
         post(SERVO_CMD_POSITION, d->cmd_us);
         /* A step: the servo's own travel is what is timed, not SPEED's. */
         s.pending.slew_per_s = 0u;
@@ -2259,7 +2368,11 @@ static void test_apply(const servo_test_do_t *d)
     }
     if (d->release) {
         post(SERVO_CMD_RELEASE, 0);
-        s.commanded_deg = 0.0f;
+        /* The horn is drawn released only where the pin follows: a run a
+         * disarm ended leaves the value where the run last drove it. */
+        if (value_live()) {
+            s.commanded_deg = 0.0f;
+        }
         ++s.ctrl_rev;
     }
 }
@@ -2828,7 +2941,10 @@ static void keypad_done(ui_keypad_result_t r, float v)
             break;
         case KT_TRAVEL:
             s.travel_deg = (float)lroundf(v);
-            s.commanded_deg = clamp_travel(s.commanded_deg);
+            /* Disarmed, the value shown stays what was last driven. */
+            if (s.armed) {
+                s.commanded_deg = clamp_travel(s.commanded_deg);
+            }
             reissue();
             break;
         case KT_RATE:
@@ -3197,7 +3313,7 @@ void servo_screen_knob_frame(void)
     knob_note_owner();
 }
 
-void servo_screen_knob_cancel(void)
+static void knob_withdraw(void)
 {
     if (!s.knob_live) {
         return;
@@ -3219,11 +3335,21 @@ void servo_screen_knob_cancel(void)
     }
 }
 
+void servo_screen_knob_cancel(void)
+{
+    knob_withdraw();
+}
+
 void servo_screen_knob(float span_fraction)
 {
     knob_note_owner();
     if (span_fraction == 0.0f || s.dragging || s.knob_finger
         || s.knob_owned) {
+        return;
+    }
+    /* A turn while the value is not live moves nothing and is not kept:
+     * the next turn after an arm starts from the value the arm set. */
+    if (!value_live()) {
         return;
     }
     /*
@@ -3240,7 +3366,7 @@ void servo_screen_knob(float span_fraction)
     const bool  had_cmd  = s.pending.kind == SERVO_CMD_POSITION;
     const bool  was_driving = s.driving;
     const uint32_t posts = s.post_count;
-    command(before + span_fraction * 2.0f * s.travel_deg);
+    (void)command(before + span_fraction * 2.0f * s.travel_deg);
     if (s.post_count != posts) {
         if (!was_knob) {
             s.knob_prev_deg = before;
@@ -3340,6 +3466,12 @@ static void event_body(const touch_event_t *evt)
         }
         float deg;
         if (!s.ov_open && on_the_dial(px, py, &deg)) {
+            /* Refused while the value is not live: the press is the dial's
+             * and takes no drag, so a bench armed under it moves nothing
+             * until the next press. */
+            if (!value_live()) {
+                return;
+            }
             /* A finger on the dial takes the horn from a sweep, and from a
              * run. */
             test_end_now(SERVO_TEST_AB_OPERATOR);
@@ -3347,10 +3479,14 @@ static void event_body(const touch_event_t *evt)
             s.dragging = true;
             s.knob_finger = true;
             s.drag_id  = evt->point.id;
-            command(deg);
+            (void)command(deg);
             return;
         }
         if (gfx_rect_contains(s.centre_btn, px, py)) {
+            /* A position like any other, and refused like one. */
+            if (!value_live()) {
+                return;
+            }
             test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.commanded_deg = 0.0f;
@@ -3440,7 +3576,7 @@ static void event_body(const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_MOVE) {
             float deg;
             if (on_the_dial(px, py, &deg)) {
-                command(deg);
+                (void)command(deg);
             }
             return;
         }
@@ -3752,7 +3888,12 @@ static void draw_left(gfx_canvas_t *c)
                   gfx_lerp(ui_theme_color(UI_C_PANEL),
                            ui_theme_color(UI_C_ACCENT), 70));
     }
-    draw_horn(c, s.shown_deg, ui_theme_color(UI_C_ACCENT));
+    /* Dimmed while the bench is disarmed, as a button that takes no press
+     * is: the dial takes none either. */
+    draw_horn(c, s.shown_deg,
+              s.armed ? ui_theme_color(UI_C_ACCENT)
+                      : gfx_lerp(ui_theme_color(UI_C_PANEL),
+                                 ui_theme_color(UI_C_ACCENT), 120));
 
     char deg[16];
     snprintf(deg, sizeof(deg), "%+.1f", (double)s.shown_deg);
@@ -3764,6 +3905,12 @@ static void draw_left(gfx_canvas_t *c)
                           ui_theme_color(UI_C_ACCENT), 30));
     gfx_text(c, PAD + 52 + dw, H - 70, "DEG",
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* Why the dial takes no press, in the words START TEST's line uses. */
+    if (!s.armed) {
+        gfx_text(c, PAD + 46, H - 36,
+                 ui_servo_str(SERVO_STR_START_NOT_ARMED), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
     if (s.test_box) {
         draw_test_box(c);
     }
@@ -3990,8 +4137,10 @@ static void draw_right(gfx_canvas_t *c, bool power)
              (unsigned)s.max_us);
     row(c, 322, TR(SV_RANGE), buf);
 
+    /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
+     * is disarmed. */
     ui_button(c, s.centre_btn, TR(SV_CENTRE_BTN), ui_theme_color(UI_C_ACCENT),
-              false, true);
+              false, s.armed);
     /* PAUSE while a sweep runs, in the accent; PAUSED (PAUSIERT) while it
      * is paused, filled in the warning colour, so the two read apart by
      * fill as well as by the word. */
@@ -4894,11 +5043,14 @@ static void leave(void)
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */
+    const float driven = s.commanded_deg;
     test_end_now(SERVO_TEST_AB_LEFT);
+    s.commanded_deg = driven;   /* disarmed: the value last driven stays */
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
     post(SERVO_CMD_DISARM, 0);
     s.armed = false;
+    s.at_rest = false;
     ui_hold_reset(&s.arm);
     s.arm_down = false;
     /* The supply's output stays as it is, as leaving SUPPLY keeps it; a
