@@ -371,6 +371,10 @@ hold against a real servo's jitter, and the mounting.
 Every ending switches the output off, releases the servo to its centre, and
 still writes the report, marked ABORTED with the reason. The bench stays armed
 unless the ending was a disarm, STOP or leaving the screen, which disarm.
+A step the run has posted and the panel has not sent when the bench disarms
+or stops is not sent. After a run ended by a disarm, STOP or leaving the
+screen, the horn and COMMANDED stay at the position the run last drove;
+after an ending that leaves the bench armed they show the centre.
 Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
 reading taken after that in which the supply itself reports the output off, no ON is on its way and
@@ -563,6 +567,40 @@ NOT MEASURABLE verdict have not run on hardware. Beyond that the host suite
 holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving
 it, and the CSV read back by the log viewer's parser. Not measured: the PD
 mini's averaging, and the command's delay to the pin.
+
+## The commanded position follows the armed bench
+
+The SERVO screen's commanded position changes only while the bench is armed,
+which is while a pin follows it.
+
+| Bench | Commanded position |
+| --- | --- |
+| disarmed | the position last driven; the dial, the rotary knob, CENTRE and SWEEP are refused and nothing is sent |
+| at the arm | the surface's rest: the midpoint of the channel's endpoints, without TRIM |
+| armed | what the dial, the knob, CENTRE, a sweep or a run commands |
+
+| TYPE | Endpoints | Value at the arm |
+| --- | --- | ---: |
+| STANDARD PWM | 1000 to 2000 us | 1500 us |
+| NARROW 760 | 660 to 860 us | 760 us |
+| WIDE | 800 to 2200 us | 1500 us |
+| HELI CYCLIC | 820 to 2220 us | 1520 us |
+
+The rest is `outputs_role_rest()` in `shared/outputs/outputs.c`, the value
+the coprocessor renders on an armed channel nobody commands, put through the
+range the screen's commands carry. That range is centred on PULSE CENTRE, so
+a PULSE CENTRE set off the middle of PULSE MIN and MAX is the value at the
+arm. TRIM moves commanded positions and not the rest: with TRIM +20 the arm
+shows 1500 us and a position at 0 deg is 1520 us.
+
+A sweep ends at a disarm and its last drawn position stays on screen; no
+position of it is sent after the disarm. The controls, one by one:
+[Screens](Screens.md#servo).
+
+Not run on hardware: that the pin is at the rest when the bench reports
+armed. The panel centres the surfaces before it arms and the screen shows
+the rest when the bench reports armed; the time between the two on a bench
+is not measured.
 
 ## Sweep and SPEED
 

@@ -44,6 +44,7 @@
 #include "ui_screen.h"
 #include "motor_screen.h"
 #include "ui_theme.h"
+#include "ui_widgets.h"
 
 #define W 800
 #define H 480
@@ -120,7 +121,6 @@ int main(int argc, char **argv)
         supply_screen_set_output(true);
     } else if (servo) {
         start = SCREEN_SERVO;
-        servo_screen_set_commanded(38.0f);
     }
     /* The screens that carry no mode of their own: what one steady frame of
      * each costs once both framebuffers hold its chrome. */
@@ -162,6 +162,18 @@ int main(int argc, char **argv)
         }
     }
     ui_router_goto(start);
+
+    if (servo) {
+        /* A position is taken only on an armed bench.  The arm's flash
+         * repaints ARM for UI_HOLD_FLASH_FRAMES drawn frames, which are no
+         * part of a steady frame: it is spent here, before the warm renders. */
+        servo_screen_set_armed(true);
+        servo_screen_set_commanded(38.0f);
+        for (int f = 0; f < 2 * UI_HOLD_FLASH_FRAMES; ++f) {
+            ui_router_tick(0.0f);
+            ui_router_render(&c, f & 1);
+        }
+    }
 
     /* The plot advances only while the bench is armed, and every motor mode
      * but "held" measures a running one, so the arm comes before the warm

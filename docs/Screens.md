@@ -254,7 +254,7 @@ columns under INA3221.
 
 ![Servo](img/servo.png)
 
-Drag anywhere on the sweep to command a position. The solid arm is the measured
+On an armed bench, drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
 driven. Lifting the finger does not let go: the screen keeps saying the last
@@ -282,12 +282,50 @@ feedback the horn is drawn moving at the same rate, and at 100% at the
 command at once.
 
 **ARM before anything moves.** While the bench is not armed the coprocessor
-writes a pulse of length zero to every PWM pin, so the horn on screen follows
-the finger and the servo does not. The button is a two-second hold, the same
+writes a pulse of length zero to every PWM pin, and the screen takes no
+position: the commanded value changes only while the servo follows it. The
+button is a two-second hold, the same
 gesture and the same fade as the one on MOTOR & ESC, and a press on it while
 armed disarms. Leaving the screen disarms and lets go of the pin: a screen
 that is not visible must not be holding a servo somewhere, or leaving the
 bench armed behind it.
+
+What each control does on a disarmed bench:
+
+| Control | Disarmed | Armed |
+| --- | --- | --- |
+| The dial | refused: no command, the horn and COMMANDED stay | commands the position under the finger |
+| Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
+| CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
+| SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
+| RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown stays |
+| SPEED | set; sends nothing | set; a held position is sent again at the new rate |
+| SETTINGS: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
+| SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
+| START TEST | refused: `ARM FIRST` | starts the run after its hold |
+
+Disarmed, the horn is drawn dimmed and the left card reads `ARM FIRST`. The
+horn and COMMANDED show the position last driven; after a restart, PULSE
+CENTRE. A pulse-width setting changed while disarmed changes the
+microseconds COMMANDED shows for that angle, and TRAVEL does not clamp it.
+
+When the bench arms, the commanded value becomes the rest the pins drive:
+the midpoint of the channel's endpoints, 1500 us for STANDARD PWM and 760 us
+for NARROW 760, without TRIM. Without feedback the horn is drawn there at
+once. The first drag or knob turn after an arm starts from that value,
+whatever the screen showed before; a 1 % turn of the knob on STANDARD PWM
+asks for 1510 us. A type or pulse width changed on an armed bench before the
+first position moves the rest, and the value with it.
+
+A finger on the dial when the bench arms, disarms or stops moves nothing
+until it lifts and presses again. A position, a sweep or a pause the screen
+has posted and the panel has not sent when the bench disarms or stops is not
+sent, and a knob turn in that state is withdrawn: the value returns to the
+one before the turn.
+
+After RELEASE on an armed bench the pins are at the centre and the horn and
+COMMANDED keep the last position. A press on the dial drives the servo
+again; a knob turn drives it from the value shown, not from the centre.
 
 The right card shows what is commanded and measured, the type and frame rate
 in force -- in the danger colour while they are ones that can destroy a servo
@@ -1085,6 +1123,11 @@ across a third of its travel from -travel to +travel.
   command waits for the frame (an arm that has just completed, a disarm, a
   peak reset, a release), the knob's motion in that frame is dropped, not
   held.
+- On SERVO a turn on a disarmed bench moves nothing and is not kept. The arm
+  sets the horn to the rest, and the next turn counts from there. A turn
+  posted and not yet sent when the bench disarms or stops is withdrawn. On
+  MOTOR & ESC the knob moves the slider on a disarmed bench, and the arm
+  returns it to 0 %.
 - Known limitation: On the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus. The Rotary knob setting is OFF by default.
 
 ### INTERFACES: the current monitors

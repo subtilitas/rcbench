@@ -44,7 +44,7 @@ const out_driver_def_t *out_driver(out_driver_t d)
     return &k_drivers[d];
 }
 
-static uint16_t rest_for(out_role_t role)
+uint16_t outputs_role_rest(out_role_t role)
 {
     return (role == OUT_ROLE_THROTTLE) ? 0u : (uint16_t)(OUT_SPAN / 2u);
 }
@@ -64,7 +64,7 @@ void outputs_init(outputs_t *o, uint32_t now_ms)
          * surface slamming to an endpoint is the worse of the two.
          */
         c->role   = OUT_ROLE_SURFACE;
-        c->rest   = rest_for(c->role);
+        c->rest   = outputs_role_rest(c->role);
         c->actual = c->rest;
         c->command = c->rest;
         c->min_us = 1000u;
@@ -181,7 +181,7 @@ bool outputs_set_role(outputs_t *o, uint8_t ch, out_role_t role)
         return true;   /* setting the role it has is not a role change */
     }
     c->role = role;
-    c->rest = rest_for(role);
+    c->rest = outputs_role_rest(role);
     /*
      * A role change moves where rest is, and a channel sitting at the old
      * rest is idle, not commanded.  A channel left at a throttle's zero after

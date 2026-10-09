@@ -357,13 +357,29 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   also, wenn der Prüfstand scharf meldet. Ein Prüfstand, der ohne dieses
   Halten scharf wird, wie bei einem Knüppel-Lauf auf PROGRAMMER, setzt den
   Schieberegler auf null, wenn er scharf meldet.
+- Die befohlene Stellung des SERVO-Bildschirms ändert sich nur auf einem
+  scharfen Prüfstand. Unscharf werden das Zifferblatt, der Drehknopf,
+  ZENTRIEREN und SWEEP abgelehnt: Nichts wird gepostet, und das Horn und die
+  gezeigte Pulsbreite bleiben auf der zuletzt gefahrenen Stellung. Bei einem
+  ARM wird der Wert zur Ruhelage der Ruderfläche, die die Pins treiben,
+  sobald das ARM seine Freigabe bezahlt hat: die Mitte zwischen den
+  Endpunkten des Kanals, 1500 us über 1000 bis 2000 us und 760 us über 660
+  bis 860 us. Die erste Eingabe nach einem ARM beginnt dort. Ein laufender
+  Drag endet bei einem ARM, einem DISARM und einem STOP. Eine Stellung, ein
+  Sweep oder ein Hold, die der Bildschirm gepostet und die Anwendung bei
+  einem DISARM oder STOP noch nicht abgeholt hat, wird verworfen. FREIGEBEN
+  auf einem scharfen Prüfstand zentriert die Pins und lässt den gezeigten
+  Wert stehen; eine Knopfdrehung danach zählt vom gezeigten Wert.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
   Regeln. Er schärft nie: Das einzige Schärfen ist der ARM-Hold. Ein
   Entschärfen setzt das Gas auf null, der Knopf bewegt von dort aus weiter,
-  und das Verlassen des Bildschirms entschärft. Die erste Messung nach dem
+  und das Verlassen des Bildschirms entschärft. Auf SERVO bewegt eine
+  Drehung auf einem unscharfen Prüfstand nichts und wird nicht aufgehoben,
+  und der Knopf bewegt von der Ruhelage aus weiter, die das ARM setzt. Die
+  erste Messung nach dem
   Einschalten, eine Messung, die der Sensor markiert (kein Magnet, zu
   schwach, zu stark, Magnitude 0), eine Messung, die nicht eintrifft, und ein
   Sprung über 90 deg zwischen zwei Messungen setzen jeweils die Referenz neu

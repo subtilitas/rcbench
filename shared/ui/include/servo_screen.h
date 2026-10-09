@@ -109,9 +109,12 @@ const ui_screen_t *servo_screen(void);
 /**
  * Move the horn by @p span_fraction of its travel (-travel to +travel),
  * from the rotary knob (knob.h).  Relative to the commanded angle.  Nothing
- * happens for a zero fraction, while a finger is on the dial, while the
+ * happens for a zero fraction, on a disarmed bench, under a disarm waiting
+ * to be taken, while a finger is on the dial, while the
  * settings panel is open, or while a sweep (running or paused) or a test run owns the horn: the
- * knob does not take the horn from them as a finger does.  It posts the
+ * knob does not take the horn from them as a finger does.  A turn that moves
+ * nothing is not kept: the first turn after an arm starts from the value the
+ * arm set.  It posts the
  * position command a touch does and never arms.  It posts only into an empty
  * slot or over a position: any other pending command (a release, an arm, a
  * disarm) stays and the knob's motion is dropped.
@@ -134,7 +137,9 @@ void servo_screen_knob_frame(void);
  * position that was pending before the knob moved it is pending again with
  * that angle, and the output is held or idle as it was before the knob.  On
  * a bench that is disarmed by then the output is idle whatever the knob
- * found.  A command posted since, or already taken, is left alone.
+ * found.  A command posted since, or already taken, is left alone.  A disarm
+ * and a stop withdraw it themselves (servo_screen_set_armed(),
+ * servo_screen_cancel_arm()).
  */
 void servo_screen_knob_cancel(void);
 
@@ -160,6 +165,16 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * The screen does not decide whether it is armed: arming is asked of the
  * policy and the answer comes back from the bench, the same way MOTOR & ESC
  * learns it.
+ *
+ * The commanded value follows the bench.  At every arm it becomes the rest
+ * the pins drive -- outputs_role_rest() across the range a command carries,
+ * 1500 us for STANDARD PWM and 760 us for NARROW 760 -- and without
+ * feedback the horn is drawn there at once.  While the bench is disarmed no
+ * input changes it: the dial, the knob, CENTRE, SWEEP and
+ * servo_screen_set_commanded() post nothing and move nothing, and the value
+ * shown is the one last driven.  At a disarm a drag ends, and a position, a
+ * sweep or a hold still waiting to be taken is not sent; the knob's is
+ * withdrawn with the value it replaced.
  */
 void servo_screen_set_armed(bool armed);
 
@@ -168,7 +183,8 @@ void servo_screen_set_armed(bool armed);
  *
  * Separate from servo_screen_set_armed() because a stop on a bench that was
  * not armed changes nothing about whether it is armed, and the gesture must
- * end all the same.
+ * end all the same.  A drag ends, and a position, a sweep or a hold still
+ * waiting to be taken is not sent, as at a disarm.
  */
 void servo_screen_cancel_arm(void);
 
@@ -314,10 +330,9 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms);
 uint32_t servo_screen_curve_ms(void);
 
 /**
- * Set the commanded angle without a touch event.
- *
- * Restores the position at start-up, so a boot does not centre a surface the
- * operator has set.
+ * Set the commanded angle without a touch event, for the application and
+ * for tests.  A position like the dial's: taken on an armed bench, and
+ * refused with nothing changed on a disarmed one.
  */
 void servo_screen_set_commanded(float deg);
 

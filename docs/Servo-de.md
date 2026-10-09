@@ -401,7 +401,12 @@ Haltezeit gegen das Zittern eines echten Servos, und die Montage.
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
 schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
 Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen der Seite, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
+Verlassen der Seite, die entschärfen. Ein Schritt, den der Lauf gepostet und
+das Panel noch nicht gesendet hat, wenn der Prüfstand unscharf wird oder
+stoppt, wird nicht gesendet. Nach einem Lauf, den ein Disarm, STOP oder das
+Verlassen der Seite beendet hat, bleiben Horn und PULSBREITE auf der
+Stellung, die der Lauf zuletzt gefahren hat; nach einem Ende, das den
+Prüfstand scharf lässt, zeigen sie die Mitte. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das Netzteil selbst den Ausgang
 aus meldet,
@@ -534,6 +539,43 @@ Darüber hinaus prüft die Host-Suite die Engine gegen `servo_sim` und
 `supply_sim`, die Seite SERVO, die sie führt, und die CSV, vom Parser der
 Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
+
+## Die befohlene Stellung folgt dem scharfen Prüfstand
+
+Die befohlene Stellung des SERVO-Bildschirms ändert sich nur, solange der
+Prüfstand scharf ist, also solange ein Pin ihr folgt.
+
+| Prüfstand | Befohlene Stellung |
+| --- | --- |
+| unscharf | die zuletzt gefahrene Stellung; Zifferblatt, Drehknopf, ZENTRIEREN und SWEEP werden abgelehnt, und nichts wird gesendet |
+| beim ARM | die Ruhelage der Ruderfläche: die Mitte zwischen den Endpunkten des Kanals, ohne TRIM |
+| scharf | was Zifferblatt, Knopf, ZENTRIEREN, ein Sweep oder ein Lauf befehlen |
+
+| TYP | Endpunkte | Wert beim ARM |
+| --- | --- | ---: |
+| STANDARD PWM | 1000 bis 2000 us | 1500 us |
+| NARROW 760 | 660 bis 860 us | 760 us |
+| WIDE | 800 bis 2200 us | 1500 us |
+| HELI CYCLIC | 820 bis 2220 us | 1520 us |
+
+Die Ruhelage ist `outputs_role_rest()` in `shared/outputs/outputs.c`, der
+Wert, den der Koprozessor auf einem scharfen Kanal ausgibt, den niemand
+kommandiert, umgerechnet über den Bereich, den die Kommandos des Bildschirms
+tragen. Dieser Bereich ist auf PULS CENTRE zentriert; ein PULS CENTRE abseits
+der Mitte zwischen PULS MIN und MAX ist also der Wert beim ARM. TRIM
+verschiebt befohlene Stellungen und nicht die Ruhelage: Mit TRIM +20 zeigt
+das ARM 1500 us, und eine Stellung bei 0 deg ist 1520 us.
+
+Ein Sweep endet bei einem Disarm, und seine zuletzt gezeichnete Stellung
+bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Disarm
+gesendet. Die Bedienelemente im Einzelnen:
+[Bildschirme](Screens-de.md#servo).
+
+Nicht auf Hardware gelaufen: dass der Pin auf der Ruhelage steht, wenn der
+Prüfstand scharf meldet. Das Panel zentriert die Ruderflächen, bevor es
+scharf schaltet, und der Bildschirm zeigt die Ruhelage, wenn der Prüfstand
+scharf meldet; die Zeit zwischen beidem ist auf einem Prüfstand nicht
+gemessen.
 
 ## Sweep und TEMPO
 

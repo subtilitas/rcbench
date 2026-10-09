@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- **A servo position changes only on an armed bench.** On SERVO the dial,
+  the rotary knob, CENTRE and SWEEP are refused while the bench is disarmed:
+  nothing is sent, and the horn and COMMANDED stay at the position last
+  driven. CENTRE is drawn dimmed with SWEEP, the horn is drawn dimmed and
+  the left card reads `ARM FIRST`. At every arm the commanded value becomes
+  the rest the pins drive, the midpoint of the channel's endpoints (1500 us
+  for STANDARD PWM, 760 us for NARROW 760), and the first drag or knob turn
+  starts from it. A knob turn made while disarmed is not kept. A drag ends
+  at an arm, a disarm and a stop, and a position, a sweep or a pause posted
+  and not yet sent at a disarm or a stop is not sent. A bench disarmed while
+  ARM's flash runs shows ARM in its own green. Host suite only; not run on
+  hardware.
+
 ## 0.15.0 - 2026-10-09
 
 The link protocol is 4.10. A 0.14 board still links and arms with a 0.15
