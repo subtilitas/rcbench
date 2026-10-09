@@ -73,6 +73,7 @@
 #include "picker_screen.h"
 #include "programmer_screen.h"
 #include "rcbench_version.h"
+#include "safety_gate.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -2581,6 +2582,32 @@ static void log_post(log_row_t *row)
 /* ---------------------------------------------------- asking the far end */
 
 /*
+ * Every request to the far end goes through exchange(), and every way
+ * exchange() ends without an answer goes through exchange_unanswered():
+ * a frame that did not reach the wire, or a request that waited out
+ * LINK_HOST_TIMEOUT_MS (1000 ms).  A refusal is an answer.  No caller
+ * reports a missing answer to the link-loss rule and none can forget to.
+ * Control task only, and app_main before that task exists.
+ *
+ * s_unanswered counts them.  An arm compares it across its own exchanges to
+ * tell a far end that refused from a link that went quiet; see
+ * arm_write_failed().
+ *
+ * s_link_is_up is whether a far end is held to be answering: set when an
+ * identity probe is answered, cleared when poll_far_end() takes the link
+ * down.
+ *
+ * s_link_quiet is set by an exchange that ended unanswered with the link
+ * up, and is the only thing poll_far_end() reads to take the link down.
+ * While it is set exchange() sends nothing and answers false at once, so
+ * the rest of the pass does not wait out a timeout per exchange.
+ */
+static uint32_t s_unanswered;
+static bool     s_link_is_up;
+static bool     s_link_quiet;
+static void exchange_unanswered(void);
+
+/*
  * Put a built request on the wire and wait for its answer.  Blocking, and
  * short: the link is host-polled, so there is never a second request in
  * flight, and a transaction is well under one panel frame.
@@ -2593,10 +2620,17 @@ static void log_post(log_row_t *row)
 static bool exchange(link_host_t *host, const link_msg_t *req,
                      link_msg_t *reply)
 {
+    if (s_link_quiet) {
+        /* The link went quiet earlier in this pass.  Not sent, not counted
+         * and not judged again: the exchange that found it out was. */
+        link_host_abandon(host);
+        return false;
+    }
     link_can_frame_t out[LINK_CAN_MAX_FRAMES];
     const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
     if (n == 0) {
         link_host_abandon(host);
+        exchange_unanswered();
         return false;
     }
     const uint32_t sent_us = (uint32_t)esp_timer_get_time();
@@ -2605,6 +2639,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
             /* Nothing reached the wire, so there is nothing to wait for.
              * Leaving it outstanding would refuse every later request. */
             link_host_abandon(host);
+            exchange_unanswered();
             return false;
         }
     }
@@ -2654,6 +2689,7 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
          */
         (void)link_host_tick(host, now_ms());
         if (!link_host_pending(host)) {
+            exchange_unanswered();
             return false;
         }
     }
@@ -3139,6 +3175,100 @@ static void endpoints_service(bool far_disarmed)
     }
     if (reply.op != LINK_OP_ACK) {
         control_alert(TR(ALERT_PULSE_REFUSED));
+    }
+}
+
+/*
+ * Whether the far end trusts the heartbeat, asked of its STATUS page.
+ *
+ * An arm waits for this before CLEAR is written.  The heartbeat is withheld
+ * while a stop is latched, and after it resumes the far end's monitor needs
+ * five edges, 100 to 125 ms at a 5 ms pass and longer on a slower one: a
+ * fixed wait is right for one pass period and refused at the next.  One
+ * register, one frame each way.
+ *
+ * @p answered is false when nobody answered.  That exchange has then waited
+ * LINK_HOST_TIMEOUT_MS (1000 ms), past the arm's whole bound, and it is the
+ * link that is gone and not the line that is distrusted.
+ */
+static bool far_line_trusted(bool *answered)
+{
+    link_msg_t st = { 0 };
+    *answered = read_regs(&s_host, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1u, &st);
+    return *answered && st.op == LINK_OP_DATA
+           && safety_gate_line_trusted(st.regs[0]);
+}
+
+/*
+ * A stop the policy has just latched for the far end -- a refused ARM, a
+ * link that went quiet, a far end that appeared under an armed bank -- as
+ * it is finished at this end.
+ *
+ * The command goes to zero here rather than through the policy:
+ * arming_stop_from_far_end() clears a->armed itself, and arming_step()'s
+ * disarm is gated on a->armed, so ARMING_ACT_DISARM cannot follow and the
+ * throttle would keep its last value, to be written again with the next
+ * ARM = 1.
+ */
+static void far_end_stop_here(void)
+{
+    outputs_arm(&s_out, false, now_ms());
+    throttle_to_zero();
+    servo_let_go();
+    control_alert(TR(ALERT_COPRO_DISARMED));
+}
+
+/*
+ * An arm that did not go through: a release or a rate the far end did not
+ * take, a CLEAR or an arming frame that did not come back acknowledged.
+ *
+ * @p quiet_before is s_unanswered as the arm began.  Unchanged, every
+ * exchange of the arm was answered and the far end refused: the panel stays
+ * disarmed and says @p alert.  Changed, one of them waited out its timeout
+ * or never reached the wire: the link went quiet under this arm, and the
+ * far end may have taken a frame and lost only the acknowledgement.  That
+ * is a stop, heartbeat withheld, and exchange_unanswered() has already made
+ * it where the exchange ended; what is left here is the arm the policy
+ * handed out with ARMING_ACT_ARM, which arming_link_lost() takes back
+ * without counting a second stop.  A refusal is arming_refused().
+ */
+static void arm_write_failed(uint32_t quiet_before, const char *alert)
+{
+    if (s_unanswered == quiet_before && !s_link_quiet) {
+        (void)arming_write_failed(&s_arm, true);
+        control_alert(alert);
+    } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+        far_end_stop_here();
+    }
+}
+
+/*
+ * An exchange ended with no answer: exchange()'s one way out for it.
+ *
+ * What it means is arming_exchange_unanswered()'s decision, host-tested for
+ * every kind of exchange, state and place in a pass.  With the link up the
+ * link is gone, and s_link_quiet says so to the rest of the pass and to
+ * poll_far_end(); under an armed bench or a waiting arm the stop is latched
+ * here as well, where the exchange ended, so the bank and the heartbeat do
+ * not wait for the poll.  With the link down it was a probe, and a bank
+ * armed with no coprocessor -- the simulated bench -- runs on through it.
+ * Only memory is touched; nothing here sends.
+ */
+static void exchange_unanswered(void)
+{
+    ++s_unanswered;
+    switch (arming_exchange_unanswered(&s_arm, s_link_is_up,
+                                       outputs_armed(&s_out))) {
+    case ARMING_QUIET_STOP:
+        far_end_stop_here();
+        s_link_quiet = true;
+        break;
+    case ARMING_QUIET_LINK_DOWN:
+        s_link_quiet = true;
+        break;
+    case ARMING_QUIET_NOTHING:
+    default:
+        break;
     }
 }
 
@@ -3776,8 +3906,10 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
     publish_throttle_ramp();
     (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
-    arming_init(&s_arm, now_ms(),
-                HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
+    arming_init(&s_arm, now_ms(), HEARTBEAT_SETTLE_MS);
+    /* And past the settle an arm waits for the far end's own word on the
+     * line; see far_line_trusted(). */
+    arming_set_line_wait(&s_arm, ARMING_LINE_WAIT_MS);
     /* The supply starts switched off, its readings those of an off output. */
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
@@ -3942,6 +4074,30 @@ static void service_arming(bool link_up)
      * policy's, not this loop's: a latched stop, dead touch, or an arm that
      * finished settling.
      */
+    /*
+     * An arm past its settle asks the far end whether it trusts the line,
+     * once a pass until it does or the bound has passed; a yes that comes
+     * back past the bound arms nothing.  With no far end there is nobody to
+     * ask and the settle alone decides, however late this pass is.  The exchange pumps, so a STOP can land in
+     * it: the policy then holds no arm and drops the answer.
+     *
+     * A question nobody answers is the link going quiet under a waiting
+     * arm, and is stopped here as poll_far_end() stops it on its own edge:
+     * left to the policy it would run past the bound and be given up, and
+     * the poll would then find no arm to stop.
+     */
+    if (!link_up) {
+        arming_line_nobody(&s_arm);
+    } else if (arming_line_wanted(&s_arm, now_ms())) {
+        bool answered = true;
+        const bool trusted = far_line_trusted(&answered);
+        if (answered) {
+            arming_line_report(&s_arm, trusted);
+        } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+            far_end_stop_here();
+        }
+    }
+
     const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
     switch (arming_step(&s_arm, now_ms())) {
     case ARMING_ACT_DISARM:
@@ -3958,6 +4114,7 @@ static void service_arming(bool link_up)
         break;
     case ARMING_ACT_ARM: {
         link_msg_t ack = { 0 };
+        const uint32_t quiet = s_unanswered;
         /*
          * An arm starts from nothing, and this is where that is made true
          * rather than hoped for.  ARM and THROTTLE travel in one
@@ -3992,16 +4149,15 @@ static void service_arming(bool link_up)
              * by anybody and nothing at the far end is being armed either, so
              * refusing would leave the panel unable to arm its own bank --
              * the simulator included -- until a coprocessor answered again.
-             * What the far end must not do meanwhile is arm; see poll_bench().
+             * What the far end must not do meanwhile is arm; see
+             * poll_far_end().
              */
-            arming_refused(&s_arm);
-            control_alert(TR(ALERT_SERVO_NOT_RELEASED));
+            arm_write_failed(quiet, TR(ALERT_SERVO_NOT_RELEASED));
         } else if (link_up && !servo_rate_settled()) {
             /* The far end may hold a rate faster than the surfaces' servos
              * take, and nothing here knows otherwise; refused like an
              * unpaid release, and asked again on the next attempt. */
-            arming_refused(&s_arm);
-            control_alert(TR(ALERT_SERVO_RATE));
+            arm_write_failed(quiet, TR(ALERT_SERVO_RATE));
         } else if (link_up) {
             /*
              * Two exchanges: CLEAR on its own, then the frame that arms.
@@ -4019,18 +4175,37 @@ static void service_arming(bool link_up)
              * THROTTLE and the pole count together, so the run starts on the
              * count that was sent or does not start; control_arm() says why.
              */
-            if (!control_clear_failsafe(&ack)) {
-                arming_refused(&s_arm);
+            /*
+             * And the arm's deadline, the one its wait for the line ended
+             * at, is asked again before each of the two writes: the
+             * exchanges above and the CLEAR are answered in about a
+             * millisecond and can be answered up to LINK_HOST_TIMEOUT_MS
+             * (1000 ms) late.  Past it the arm is given up and nothing
+             * further is written (arming_handshake_open()): before CLEAR
+             * as a refusal, after it as a stop, whose withheld heartbeat
+             * sets the far end's latch again.  The frame that arms is the
+             * limit: acknowledged late, it has armed the far end, at rest.
+             */
+            if (!arming_handshake_open(&s_arm, now_ms(), false)) {
                 control_alert(TR(ALERT_ARM_REFUSED));
+                break;
+            }
+            if (!control_clear_failsafe(&ack)) {
+                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
                 break;
             }
             if (arming_stopped(&s_arm) || atomic_load(&s_disarm_request)) {
                 /* Stopped or disarmed while the clear was in flight.  No
                  * alert: the operator asked for this and knows. */
                 arming_refused(&s_arm);
-            } else if (!control_arm(&ack)) {
-                arming_refused(&s_arm);
+                break;
+            }
+            if (!arming_handshake_open(&s_arm, now_ms(), true)) {
                 control_alert(TR(ALERT_ARM_REFUSED));
+                break;
+            }
+            if (!control_arm(&ack)) {
+                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
             } else {
                 outputs_arm(&s_out, true, now_ms());
                 arm_applied();
@@ -4041,6 +4216,11 @@ static void service_arming(bool link_up)
         }
         break;
     }
+    case ARMING_ACT_GIVE_UP:
+        /* The far end did not come to trust the line inside the bound.
+         * Nothing was written, CLEAR included, so its arm latch stands. */
+        control_alert(TR(ALERT_ARM_REFUSED));
+        break;
     default:
         break;
     }
@@ -5904,10 +6084,11 @@ static bool poll_bench(bench_state_t *bench)
         (void)poles_service();
         /*
          * Not while a surface at the far end is still holding a position and
-         * owed a release.  A bank armed with no link -- the simulator, or a
-         * cable pulled -- reaches this the moment one answers, and the far end
-         * would render that old command before the centre arrived.
-         * servo_service() pays the debt every pass, so this holds for one.
+         * owed a release: the far end would render that old command before
+         * the centre arrived.  servo_service() pays the debt every pass, so
+         * this holds for one.  A bank armed with no link does not reach
+         * this: poll_far_end() stops it on the edge where one answers, as
+         * it stops an armed bench on the edge where the link goes.
          * Nor while the rate the surfaces run at is not known: the far end
          * may hold a heli rate from before a panel restart, and
          * servo_service() settles that every pass too.  And not after a
@@ -5945,20 +6126,12 @@ static bool poll_bench(bench_state_t *bench)
         tone_link_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
-             * The coprocessor is in failsafe or has lost the heartbeat.  A
-             * stop latches at this end too.
-             *
-             * The command goes to zero here rather than through the policy:
-             * arming_stop_from_far_end() clears a->armed itself, and
-             * arming_step()'s disarm is gated on a->armed, so
-             * ARMING_ACT_DISARM cannot follow and the throttle would keep
-             * its last value.
+             * The coprocessor is in failsafe, has lost the heartbeat or
+             * holds its arm latch -- it started again, or the line was
+             * distrusted for a moment.  A stop latches at this end too.
              */
-            outputs_arm(&s_out, false, now_ms());
-            throttle_to_zero();
-            servo_let_go();
             arming_stop_from_far_end(&s_arm);
-            control_alert(TR(ALERT_COPRO_DISARMED));
+            far_end_stop_here();
         }
     }
     return answered;
@@ -6333,19 +6506,54 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
                          uint32_t *last_poll, uint32_t *last_status)
 {
     bool new_sample = false;
-    if ((uint32_t)(now_ms() - *last_poll) >= (*link_up ? 50u : 1000u)) {
+    /*
+     * Whether the link is up is read from one thing: s_link_quiet, which
+     * exchange() sets when any request ends unanswered with the link up --
+     * the bench read or the control write of this poll, a page service, a
+     * servo refresh, a command's write, the status read, a slice of the
+     * photograph, an exchange of an arm.  A poll's own return value is
+     * whether a bench sample or an identity arrived and takes no part.
+     *
+     * Set since the last poll, it is this poll's answer at once: ahead of
+     * the 50 ms gate, and without a read that would wait another
+     * LINK_HOST_TIMEOUT_MS (1000 ms) to learn the same.  An armed bench has
+     * been stopped already, where the exchange ended.
+     */
+    if (s_link_quiet
+        || (uint32_t)(now_ms() - *last_poll) >= (*link_up ? 50u : 1000u)) {
         *last_poll = now_ms();
         link_msg_t reply;
-        bool answered;
-        if (*link_up) {
+        bool answered = false;
+        if (s_link_quiet) {
+            /* Nothing is asked. */
+        } else if (*link_up) {
             answered = poll_bench(bench);
         } else {
             answered = probe_identity(&reply);
+        }
+        if (s_link_quiet) {
+            /* Before this poll or inside it.  Taken down here and the
+             * latch released: the next request is the identity probe. */
+            answered = false;
+            s_link_quiet = false;
+            s_link_is_up = false;
         }
         if (answered != *link_up) {
             ESP_LOGI(TAG, "coprocessor %s",
                      answered ? "answered" : "went quiet");
             if (answered) {
+                /* From here on an unanswered exchange is a link lost,
+                 * link_came_up()'s own included. */
+                s_link_is_up = true;
+                /*
+                 * A bank armed with no link -- the simulator's -- is
+                 * stopped before anything is written: the far end was
+                 * never asked to arm, and the ARM this bank writes at
+                 * every poll would ask it now, at this end's throttle.
+                 */
+                if (arming_link_found(&s_arm, outputs_armed(&s_out))) {
+                    far_end_stop_here();
+                }
                 link_came_up(&reply);
             }
         }
@@ -6367,6 +6575,17 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /*
+             * An armed bench stops with the link, and so does an arm still
+             * waiting for the line.  The far end has failed safe on its own
+             * 200 ms of silence, or it has started again; either way the
+             * bank and the command kept here would be written to it as
+             * ARM = 1 at the first poll it answers, with nobody having
+             * asked.  The stop also withholds the heartbeat.
+             */
+            if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
+                far_end_stop_here();
+            }
             /* A sweep or a hold ends with the link, here as on the screen
              * and at the far end: kept, it would be said again when the
              * link comes back and start motion nobody asked for. */
@@ -6400,6 +6619,9 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
          */
         new_sample = *link_up && answered;
         *link_up = answered;
+        if (!answered) {
+            s_link_is_up = false;
+        }
 
         /*
          * The status page is read a tenth as often as the bench page: a status

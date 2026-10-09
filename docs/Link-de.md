@@ -33,6 +33,14 @@ Verkehr stoppt den Stillezähler, hebt das Failsafe aber nicht auf; verlassen
 wird es durch das Schreiben von 0x5AFE in das Register CLEAR der
 Control-Page.
 
+Der Koprozessor hält außerdem einen Arm-Latch. Er wird bei jedem Start
+gesetzt, an der Flanke in die Stille auf dem Link, wenn dem Heartbeat nicht
+mehr vertraut wird, und durch ein ARM, das der Koprozessor abweist. Solange
+er gesetzt ist, wird ein Schreiben von ARM mit NOT_ARMED abgewiesen. Dasselbe
+CLEAR löst ihn. Er ist nicht das Failsafe: STATUS meldet ihn nicht, und das
+ON der Versorgung liest ihn nicht. Die Regeln stehen in
+[Sicherheit](Safety-de.md#arm-latch).
+
 ### Bus off
 
 Ein CAN-Transmitter, der kein Acknowledge bekommt, wiederholt von sich aus und
@@ -369,8 +377,28 @@ Endpunkte außerhalb von 400..2500 µs werden mit BAD_VALUE abgewiesen. Ein
 Kommando außerhalb seines Bereichs wird begrenzt. Zwei Slots auf einem Pin
 oder zwei Slots, die denselben Kanal ausgeben, werden abgewiesen. Über das
 Schärfen entscheidet der Koprozessor: ein Schreiben von ARM wird mit
-NOT_ARMED abgewiesen, solange der Link im Failsafe ist oder dem Heartbeat
-nicht vertraut wird.
+NOT_ARMED abgewiesen, solange der Link im Failsafe ist, dem Heartbeat nicht
+vertraut wird oder der Arm-Latch gesetzt ist.
+
+Solange der Prüfstand scharf ist -- die Bank treibt, oder das Register ARM
+ist gesetzt -- wird ein Schreiben auf OUTPUTS, das irgendein Register ändert,
+mit BAD_VALUE abgewiesen, ebenso ein Schreiben auf CHAN_CFG, das die Rolle
+eines Kanals ändert oder Rolle, Slew oder Endpunkte eines Kanals mit der
+Rolle Throttle. Slew und Endpunkte einer Surface werden scharf angenommen,
+ebenso ein Schreiben der geltenden Page; ein scharfes Schreiben der
+geltenden OUTPUTS-Page bindet nichts neu. Die Regel steht in
+`outputs_chan_cfg_armed_check()` und `outputs_slots_armed_check()`, unter
+`test_link_pages`.
+
+Der Arm-Latch und die Ablehnung im scharfen Zustand ändern kein Register und
+keinen Frame, die Protokollversion bleibt also 4.9. Was eine Gegenstelle
+sieht, die vor ihnen gebaut wurde:
+
+| Panel | Koprozessor | Verhalten |
+| --- | --- | --- |
+| älter | dieser Stand | der Link kommt hoch und der Prüfstand schärft: dieses Panel schreibt vor jedem Schärfen CLEAR. Sein erstes Schärfen nach einem STOP kann einmal mit NOT_ARMED abgewiesen werden, weil es feste 100 ms wartet; die Ablehnung lässt den Latch gesetzt, und das zweite Halten schärft. Ein ARM = 1, das es nach einem Neustart des Koprozessors schreibt, wird abgewiesen, und bei ihm rastet ein Stopp ein |
+| dieser Stand | älter | der Link kommt hoch und der Prüfstand schärft. Das Panel stoppt an der Flanke, an der der Link ausfällt; ein Neustart, den es bemerkt, schärft also nichts. Ein Neustart, den es nicht bemerkt -- die Anfrage wird wiederholt, bis der Koprozessor wieder antwortet --, wird vom nächsten Poll wieder scharf geschaltet, wie zwischen zwei älteren Ständen. Ein Heartbeat, dem kürzer als ein Poll-Abstand nicht vertraut wurde, setzt dort keinen Latch |
+| ein anderer Host | dieser Stand | ein ARM ohne CLEAR seit dem Start des Koprozessors wird mit NOT_ARMED abgewiesen; ein Schreiben auf CHAN_CFG oder OUTPUTS wie oben wird mit BAD_VALUE abgewiesen, solange ARM gesetzt ist |
 
 Ein Schärfen vom Panel sind zwei Transaktionen. CLEAR geht zuerst und allein:
 der Koprozessor prüft ARM gegen sein Failsafe, bevor er ein CLEAR aus
@@ -383,7 +411,13 @@ THROTTLE; eine während eines Laufs geänderte Polzahl geht beim nächsten Poll
 in einem eigenen Write. Die Regeln der Page -- der Throttle-Bereich, die
 Polzahl, die CLEAR-Magic, ARM im Failsafe abgewiesen, und dass eine
 Ablehnung nichts speichert -- stehen in `shared/link/link_control.c`, unter
-`test_link_pages`.
+`test_link_pages`. Ob der Prüfstand schärfen darf und was den Latch setzt
+und löst, steht in `shared/safety/safety_gate.c`, unter `test_safety_gate`.
+
+Vor dem CLEAR wartet das Panel, bis der Koprozessor dem Heartbeat vertraut:
+100 ms nach dem vollendeten Halten liest es einmal je Durchlauf von 5 ms das
+Register 1 von STATUS, bis Bit 4 gelöscht ist, höchstens 200 ms länger. Der
+Koprozessor füllt die Register 0 und 1 von STATUS beim Lesen.
 
 ### Bit Timing
 

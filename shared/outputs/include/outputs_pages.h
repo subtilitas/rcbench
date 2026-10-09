@@ -86,6 +86,28 @@ uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
 uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
                            uint8_t bound_after);
 
+/**
+ * Whether a CHAN_CFG or OUTPUTS write is refused because the bench is
+ * armed: 0, or LINK_NACK_BAD_VALUE, the reason the SENSE page gives for the
+ * same rule.  @p regs is the page in force and @p next the page as the
+ * write would leave it.  Always 0 while @p armed is false.
+ *
+ * OUTPUTS: any change.  A slot rebound under a driving bank takes a pin
+ * away from an output, or hands one a pin, in the middle of a run.
+ *
+ * CHAN_CFG: a change of any channel's role, and any change to a channel
+ * whose role is throttle -- endpoints that move under a running motor move
+ * its throttle.  A surface's slew and endpoints are taken armed: the SERVO
+ * screen states the range with every position it commands, and its SPEED is
+ * the slew.
+ *
+ * A write of the page in force is taken on both.
+ */
+uint8_t outputs_chan_cfg_armed_check(const uint16_t *regs,
+                                     const uint16_t *next, bool armed);
+uint8_t outputs_slots_armed_check(const uint16_t *regs, const uint16_t *next,
+                                  bool armed);
+
 /* --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
 void    outputs_chan_cfg_defaults(uint16_t *regs);
 uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,

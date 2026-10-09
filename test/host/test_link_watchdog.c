@@ -537,6 +537,77 @@ TEST_CASE(silence_before_the_first_request_is_not_silence)
     CHECK(d.failsafe);
 }
 
+/*
+ * A start is not a silence.  The device comes up out of failsafe, so STATUS
+ * reports no link fault and the supply's ON is taken, and with its arm
+ * latch set, so the ARM a panel goes on writing across a coprocessor
+ * restart arms nothing.
+ */
+TEST_CASE(a_start_sets_the_arm_latch_and_not_the_failsafe)
+{
+    fresh_dev(1000);
+    CHECK(!dev.failsafe);
+    CHECK(!dev.silent);
+    CHECK(link_dev_arm_latched(&dev));
+
+    /* Traffic does not release it, and neither does time. */
+    for (uint32_t t = 1000; t <= 3000; t += 50) {
+        poll_at(t);
+        CHECK(!link_dev_tick(&dev, t));
+    }
+    CHECK(link_dev_arm_latched(&dev));
+    CHECK(!dev.failsafe);
+
+    link_dev_clear_failsafe(&dev, 3000);
+    CHECK(!link_dev_arm_latched(&dev));
+}
+
+TEST_CASE(the_silence_edge_sets_the_arm_latch_with_the_failsafe)
+{
+    fresh_dev(1000);
+    link_dev_clear_failsafe(&dev, 1000);
+    CHECK(!link_dev_arm_latched(&dev));
+
+    CHECK(!link_dev_tick(&dev, 1000 + LINK_DEV_SILENCE_MS - 1));
+    CHECK(!link_dev_arm_latched(&dev));
+    CHECK(link_dev_tick(&dev, 1000 + LINK_DEV_SILENCE_MS));
+    CHECK(dev.failsafe);
+    CHECK(link_dev_arm_latched(&dev));
+
+    /* Traffic returns: both stay until the clear, which lifts both. */
+    poll_at(2000);
+    CHECK(dev.failsafe);
+    CHECK(link_dev_arm_latched(&dev));
+    link_dev_clear_failsafe(&dev, 2000);
+    CHECK(!dev.failsafe);
+    CHECK(!link_dev_arm_latched(&dev));
+
+    /* And across the millisecond wrap. */
+    fresh_dev(0xFFFFFF80u);
+    link_dev_clear_failsafe(&dev, 0xFFFFFF80u);
+    CHECK(!link_dev_tick(&dev, 0xFFFFFF80u + LINK_DEV_SILENCE_MS - 1u));
+    CHECK(!link_dev_arm_latched(&dev));
+    CHECK(link_dev_tick(&dev, 0xFFFFFF80u + LINK_DEV_SILENCE_MS));
+    CHECK(link_dev_arm_latched(&dev));
+}
+
+TEST_CASE(the_arm_latch_can_be_set_without_a_failsafe)
+{
+    fresh_dev(0);
+    link_dev_clear_failsafe(&dev, 0);
+    link_dev_latch_arm(&dev);
+    CHECK(link_dev_arm_latched(&dev));
+    CHECK(!dev.failsafe);                 /* STATUS and the supply's gate */
+    CHECK(!dev.silent);
+    link_dev_latch_arm(&dev);             /* again: still one latch */
+    link_dev_clear_failsafe(&dev, 10);
+    CHECK(!link_dev_arm_latched(&dev));
+
+    /* A null device is latched and takes no latch. */
+    link_dev_latch_arm(NULL);
+    CHECK(link_dev_arm_latched(NULL));
+}
+
 int main(void)
 {
     RUN(the_coprocessor_fails_safe_after_two_hundred_milliseconds);
@@ -559,5 +630,8 @@ int main(void)
     RUN(the_host_watchdog_survives_the_millisecond_wrap);
     RUN(the_coprocessor_gives_up_long_before_the_panel_does);
     RUN(silence_before_the_first_request_is_not_silence);
+    RUN(a_start_sets_the_arm_latch_and_not_the_failsafe);
+    RUN(the_silence_edge_sets_the_arm_latch_with_the_failsafe);
+    RUN(the_arm_latch_can_be_set_without_a_failsafe);
     return test_summary("link_watchdog");
 }

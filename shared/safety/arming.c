@@ -16,6 +16,46 @@ void arming_init(arming_t *a, uint32_t now_ms, uint32_t settle_ms)
     a->last_touch_ms = now_ms;
 }
 
+void arming_set_line_wait(arming_t *a, uint32_t wait_ms)
+{
+    if (a != NULL) {
+        a->line_wait_ms = wait_ms;
+    }
+}
+
+/* Wrap-safe: true from the millisecond `deadline` on, for half the range. */
+static bool reached(uint32_t now_ms, uint32_t deadline_ms)
+{
+    return (int32_t)(deadline_ms - now_ms) <= 0;
+}
+
+/* Wrap-safe: true from the millisecond after `deadline` on. */
+static bool past(uint32_t now_ms, uint32_t deadline_ms)
+{
+    return (int32_t)(deadline_ms - now_ms) < 0;
+}
+
+bool arming_line_wanted(const arming_t *a, uint32_t now_ms)
+{
+    return a != NULL && a->arming && a->line_wait_ms != 0u
+           && !a->line_trusted && reached(now_ms, a->settle_until_ms)
+           && !past(now_ms, a->settle_until_ms + a->line_wait_ms);
+}
+
+void arming_line_nobody(arming_t *a)
+{
+    if (a != NULL) {
+        a->line_nobody = true;
+    }
+}
+
+void arming_line_report(arming_t *a, bool trusted)
+{
+    if (a != NULL && a->arming) {
+        a->line_trusted = trusted;
+    }
+}
+
 void arming_touch_seen(arming_t *a, uint32_t now_ms)
 {
     if (a != NULL) {
@@ -81,6 +121,9 @@ void arming_request_arm(arming_t *a, uint32_t now_ms)
     a->stopped         = false;
     a->arming          = true;
     a->settle_until_ms = now_ms + a->settle_ms;
+    /* The far end's word is asked for afresh: one given for an earlier arm
+     * says nothing about a line that has been withheld since. */
+    a->line_trusted    = false;
 }
 
 void arming_request_disarm(arming_t *a)
@@ -108,6 +151,70 @@ void arming_stop_from_far_end(arming_t *a)
         a->arming  = false;
         a->armed   = false;
     }
+}
+
+bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared)
+{
+    if (a == NULL || !a->armed) {
+        return false;
+    }
+    if (!a->handshake_bounded || !past(now_ms, a->handshake_until_ms)) {
+        return true;
+    }
+    if (cleared) {
+        /* The far end's latch is released and nothing on the wire sets it
+         * again: the line is withheld, and its monitor does. */
+        arming_stop_from_far_end(a);
+    } else {
+        arming_refused(a);
+    }
+    return false;
+}
+
+bool arming_write_failed(arming_t *a, bool answered)
+{
+    if (a == NULL) {
+        return false;
+    }
+    if (answered) {
+        arming_refused(a);
+        return false;
+    }
+    arming_stop_from_far_end(a);
+    return true;
+}
+
+arming_quiet_t arming_exchange_unanswered(arming_t *a, bool link_up,
+                                          bool bank_armed)
+{
+    if (!link_up) {
+        return ARMING_QUIET_NOTHING;
+    }
+    return arming_link_lost(a, bank_armed) ? ARMING_QUIET_STOP
+                                           : ARMING_QUIET_LINK_DOWN;
+}
+
+bool arming_link_needed(const arming_t *a, bool bank_armed)
+{
+    return a != NULL && (bank_armed || a->armed || a->arming);
+}
+
+bool arming_link_lost(arming_t *a, bool bank_armed)
+{
+    if (!arming_link_needed(a, bank_armed)) {
+        return false;
+    }
+    arming_stop_from_far_end(a);
+    return true;
+}
+
+bool arming_link_found(arming_t *a, bool bank_armed)
+{
+    if (a == NULL || !(bank_armed || a->armed)) {
+        return false;
+    }
+    arming_stop_from_far_end(a);
+    return true;
 }
 
 void arming_touch_poll(arming_t *a, uint32_t now_ms)
@@ -161,6 +268,11 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
 
     arming_action_t act = ARMING_ACT_NONE;
 
+    /* For this step only: a link that comes up before the next one is
+     * asked like any other. */
+    const bool nobody = a->line_nobody;
+    a->line_nobody = false;
+
     arming_touch_poll(a, now_ms);
     const bool dead = arming_touch_dead(a, now_ms);
 
@@ -181,11 +293,32 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
         act = ARMING_ACT_DISARM;
     }
 
-    if (a->arming && (int32_t)(a->settle_until_ms - now_ms) <= 0) {
-        a->arming = false;
-        if (!a->stopped && !arming_touch_dead(a, now_ms)) {
-            a->armed = true;
-            act = ARMING_ACT_ARM;
+    if (a->arming && reached(now_ms, a->settle_until_ms)) {
+        const bool fit = !a->stopped && !arming_touch_dead(a, now_ms);
+        const uint32_t bound = a->settle_until_ms + a->line_wait_ms;
+        /*
+         * The far end's yes counts up to the bound and not after it.  The
+         * question is an exchange that can take 1000 ms to come back, and
+         * the bound is on when the bench may start driving: a yes that
+         * returns past it arms nothing.
+         */
+        const bool trusted = a->line_wait_ms == 0u || nobody
+                             || (a->line_trusted && !past(now_ms, bound));
+        if (!fit || trusted) {
+            a->arming = false;
+            if (fit) {
+                a->armed = true;
+                act = ARMING_ACT_ARM;
+                /* The same deadline goes with the arm into its handshake,
+                 * unless nobody was asked. */
+                a->handshake_until_ms = bound;
+                a->handshake_bounded  = a->line_wait_ms != 0u && !nobody;
+            }
+        } else if (reached(now_ms, bound)) {
+            /* The far end has not come to trust the line in time.  Given up
+             * before CLEAR is written, so its latch stays set. */
+            a->arming = false;
+            act = ARMING_ACT_GIVE_UP;
         }
     }
 
