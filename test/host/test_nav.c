@@ -2003,6 +2003,154 @@ TEST_CASE(leaving_or_a_touch_loss_ends_a_set_point_drag)
     }
 }
 
+/*
+ * A release the finger did not make: the router's, for a contact the screen
+ * owns that reaches the band, and the tracker's, for a contact that jumps.
+ * Both are where the contact was last seen, which can be on the control it
+ * pressed.  They end the press and activate nothing: not a tile, not the
+ * home tag, not the alert strip, not the splash's skip.  STOP takes either.
+ */
+TEST_CASE(a_release_made_for_the_finger_activates_nothing_but_stop)
+{
+    fresh();
+    to_overview();
+    feed_reset();
+
+    /* A tile, 90 px under the band, carried into the band in one report. */
+    finger(FEED_LONE, 110, UI_BAND_H + 90);
+    finger(FEED_LONE, 110, UI_BAND_H - 8);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    /* The same px by px: the last point in the body is on the tile. */
+    finger(FEED_LONE, 110, UI_BAND_H + 30);
+    glide(FEED_LONE, 110, UI_BAND_H - 8, 4);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* A tile, and the contact next reported off every tile. */
+    finger(FEED_LONE, 110, UI_BAND_H + 90);
+    finger(FEED_LONE, 110, UI_BAND_H + 90 + 121);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    lift(FEED_LONE);
+
+    /* The tap after it is a tap. */
+    feed_tap(FEED_LONE, 110, UI_BAND_H + 90);
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+
+    /* The home tag, and the contact next reported in the body. */
+    finger(FEED_LONE, UI_TAG_X + 20, UI_TAG_Y + UI_TAG_H / 2);
+    finger(FEED_LONE, 400, 300);
+    lift(FEED_LONE);
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+    feed_tap(FEED_LONE, UI_TAG_X + 20, UI_TAG_Y + UI_TAG_H / 2);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* The alert strip. */
+    ui_router_set_alert("supply not answering -- output off");
+    finger(FEED_LONE, 400, H - 10);
+    finger(FEED_LONE, 400, 200);
+    lift(FEED_LONE);
+    CHECK(ui_router_alert() != NULL);
+    feed_tap(FEED_LONE, 400, H - 10);
+    CHECK(ui_router_alert() == NULL);
+
+    /* STOP: the release the tracker makes over it is a stop. */
+    const gfx_rect_t stop = ui_band_stop_rect();
+    CHECK(!ui_router_take_stop());
+    finger(FEED_LONE, stop.x + stop.w / 2, stop.y + stop.h / 2);
+    finger(FEED_LONE, 200, 300);
+    CHECK(ui_router_take_stop());
+    lift(FEED_LONE);
+
+    /* The splash's skip. */
+    fresh();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_WARN, "");
+    }
+    feed_reset();
+    finger(FEED_LONE, 100, 100);
+    finger(FEED_LONE, 600, 400);
+    CHECK(!splash_screen_done());
+    lift(FEED_LONE);
+    CHECK(splash_screen_done());
+}
+
+/* Everything the panel shows, as one number. */
+static uint32_t panel_look(void)
+{
+    uint32_t h = 2166136261u;
+    ui_router_invalidate();
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    for (int i = 0; i < W * H; ++i) {
+        h = (h ^ (uint32_t)fb[i]) * 16777619u;
+    }
+    return h;
+}
+
+/* MOTOR & ESC: RESET PEAKS takes a release the finger made.  DISARM takes
+ * any: disarming is not held back by how the release came about. */
+TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
+{
+    /* Mirrored from motor_screen.c: the right rail's two buttons. */
+    const int rail_x = 676, arm_y = UI_BAND_H + 318, reset_y = UI_BAND_H + 402;
+    fresh();
+    to_overview();
+    ui_router_goto(SCREEN_MOTOR);
+    feed_reset();
+    motor_cmd_t c;
+    while (motor_screen_poll_cmd(&c)) { }
+
+    finger(FEED_LONE, rail_x, reset_y);
+    finger(FEED_LONE, 300, UI_BAND_H + 120);  /* the plot */
+    CHECK_EQ(feed_ups, 1);                    /* the tracker's release */
+    lift(FEED_LONE);
+    CHECK(!motor_screen_poll_cmd(&c));
+    feed_tap(FEED_LONE, rail_x, reset_y);
+    CHECK(motor_screen_poll_cmd(&c));
+    CHECK_EQ(c.kind, MOTOR_CMD_RESET_PEAKS);
+
+    motor_screen_set_armed(true);
+    while (motor_screen_poll_cmd(&c)) { }
+    finger(FEED_LONE, rail_x, arm_y);
+    finger(FEED_LONE, 300, UI_BAND_H + 120);
+    CHECK(motor_screen_poll_cmd(&c));
+    CHECK_EQ(c.kind, MOTOR_CMD_DISARM);
+    lift(FEED_LONE);
+    motor_screen_set_armed(false);
+}
+
+/* SERVO: SETTINGS and the overlay's CLOSE lie 24 px and 27 px under the
+ * band.  Carried into it, they are released for the screen where they were
+ * pressed, and neither acts. */
+TEST_CASE(servo_settings_and_close_carried_into_the_band_do_nothing)
+{
+    /* Mirrored from servo_screen.c. */
+    const int set_x = 734, set_y = UI_BAND_H + 24;
+    const int close_x = 439, close_y = UI_BAND_H + 27;
+    fresh();
+    to_overview();
+    ui_router_goto(SCREEN_SERVO);
+    feed_reset();
+    const uint32_t shut = panel_look();
+
+    finger(FEED_LONE, set_x, set_y);
+    finger(FEED_LONE, set_x, UI_BAND_H - 8);
+    lift(FEED_LONE);
+    CHECK_EQ(panel_look(), shut);
+    feed_tap(FEED_LONE, set_x, set_y);
+    const uint32_t open = panel_look();
+    CHECK(open != shut);
+
+    finger(FEED_LONE, close_x, close_y);
+    finger(FEED_LONE, close_x, UI_BAND_H - 8);
+    lift(FEED_LONE);
+    CHECK_EQ(panel_look(), open);
+    feed_tap(FEED_LONE, close_x, close_y);
+    CHECK_EQ(panel_look(), shut);
+}
+
 int main(void)
 {
     RUN(the_navigation_count_sees_away_and_back);
@@ -2072,5 +2220,8 @@ int main(void)
     RUN(an_output_off_press_that_leaves_by_the_band_asks_for_nothing);
     RUN(an_output_on_hold_that_leaves_by_the_band_switches_nothing_on);
     RUN(leaving_or_a_touch_loss_ends_a_set_point_drag);
+    RUN(a_release_made_for_the_finger_activates_nothing_but_stop);
+    RUN(reset_peaks_needs_the_fingers_release_and_disarm_does_not);
+    RUN(servo_settings_and_close_carried_into_the_band_do_nothing);
     return test_summary("nav");
 }

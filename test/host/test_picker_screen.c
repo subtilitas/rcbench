@@ -19,6 +19,7 @@
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "ui_theme.h"
+#include "touch_feed.h"
 
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
 #define SCREEN_W 800
@@ -237,6 +238,26 @@ TEST_CASE(a_release_somewhere_else_acts_not_at_all)
     touch_event_t u = { TOUCH_EVENT_UP, { 0, SCREEN_W / 2, SCREEN_H / 2, 40 } };
     scr()->event(&u);
     CHECK_EQ(s_applied, before);
+}
+
+/* A contact the tracker ends for a jump: its release is on the button it
+ * pressed and the finger did not make it.  The pin stays as it was. */
+TEST_CASE(a_release_the_tracker_makes_for_a_jump_binds_nothing)
+{
+    fresh();
+    render();
+    int bx, by;
+    CHECK(button_point(4u, &bx, &by));
+    const int before = s_applied;
+    feed_reset();
+    feed_to_screen(scr());
+    finger(FEED_LONE, bx, by + UI_BAND_H);
+    finger(FEED_LONE, SCREEN_W / 2, SCREEN_H / 2 + UI_BAND_H);
+    CHECK_EQ(feed_ups, 1);                    /* the tracker's release */
+    lift(FEED_LONE);
+    CHECK_EQ(s_applied, before);
+    feed_tap(FEED_LONE, bx, by + UI_BAND_H);
+    CHECK_EQ(s_applied, before + 1);
 }
 
 TEST_CASE(a_board_that_does_not_say_where_its_pads_are_is_not_drawn)
@@ -584,5 +605,6 @@ int main(void)
     RUN(the_marks_do_not_get_in_the_way_of_the_buttons);
     RUN(null_events_are_refused_rather_than_dereferenced);
     RUN(a_cancelled_press_toggles_nothing);
+    RUN(a_release_the_tracker_makes_for_a_jump_binds_nothing);
     return test_summary("picker_screen");
 }

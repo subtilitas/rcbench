@@ -46,7 +46,10 @@ void touch_tracker_reset(touch_tracker_t *t);
 /**
  * Diff the current contact set against the previous one and emit
  * DOWN/MOVE/UP events.  A MOVE is only produced when the contact actually
- * changed position.
+ * changed position.  The UP of a contact missing from the frame carries no
+ * flag: a lift and a contact the controller left out of one report look the
+ * same.  The UP made for a jump carries TOUCH_FLAG_NO_TAP, and the DOWN that
+ * follows it TOUCH_FLAG_JUMP.
  *
  * @return number of events written to @p out (never more than @p max_out;
  *         events past the limit are dropped, but the tracker state still

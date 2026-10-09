@@ -634,7 +634,8 @@ static void event(const touch_event_t *evt)
                 post(MOTOR_CMD_DISARM, 0.0f);
             }
         }
-        if (was == 2 && gfx_rect_contains(s.reset_rect, x, y)) {
+        if (was == 2 && touch_event_is_tap_up(evt)
+            && gfx_rect_contains(s.reset_rect, x, y)) {
             post(MOTOR_CMD_RESET_PEAKS, 0.0f);
             /* The peaks start again from the live reading: a measurement
              * only once one is. */

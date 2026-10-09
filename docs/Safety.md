@@ -251,10 +251,24 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   abandoned, and the distance travelled on the band is not applied. Without
   that release the drag stays latched to its track id, and a later contact
   with the same id that crosses from the band into the body moves the value
-  by its own distance from the first drag's origin. STOP and the home tag
+  by its own distance from the first drag's origin. The release carries a
+  mark (`TOUCH_FLAG_NO_TAP`), and so does the release the tracker makes for a
+  contact that is more than 120 px from where the previous report had it.
+  A marked release ends a press or a drag and activates no control: the
+  finger did not lift there. Four controls take it all the same, because
+  they stop something: STOP, DISARM on MOTOR & ESC and on SERVO, OUTPUT OFF,
+  and START TEST while a servo test runs. STOP and the home tag
   answer to a press that lands on them: a contact that slides onto STOP from
   the body presses nothing. The table holds 5 contacts, the number the GT911
   reports; a sixth is handed to no screen.
+- A control that changes a setting acts on a tap, not on the press. On SETUP
+  a `-` or `+` key steps when the finger that pressed it lifts inside it, no
+  more than 8 px from the press in x and in y; the list scrolls from
+  anywhere, the keys included, and a scroll changes no value. A key held
+  steps from 0.45 s after the press. PROGRAMMER's controls follow the same
+  rule, DEFAULTS and the stick timing's keys included. ABORT of a stick run
+  acts on the press, and so does every stop on the bench screens: stopping
+  never waits for a lift that may not come.
 - The screens do not rely on the router for it. Every press ends a drag on a
   slider or on the SERVO dial that is still latched, wherever the press
   lands, and leaving SERVO ends a dial drag. SUPPLY holds one press at a

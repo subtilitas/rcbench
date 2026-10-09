@@ -109,8 +109,9 @@ void ui_router_tick(float dt_s);
  * that was down when the screen changed or gestures were cancelled, reaches
  * no screen.  A contact the screen owns that reaches the band (y below
  * UI_BAND_H) is released for the screen with an UP at the last point the
- * screen was handed, and is the router's from then on.  STOP and the home
- * tag answer to a DOWN on them only.
+ * screen was handed, flagged TOUCH_FLAG_NO_TAP, and is the router's from
+ * then on.  A flagged UP ends a press or a drag and activates no control.
+ * STOP and the home tag answer to a DOWN on them only.
  */
 void ui_router_event(const touch_event_t *evt);
 

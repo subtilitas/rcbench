@@ -138,8 +138,9 @@ static void event(const touch_event_t *evt)
         s.have_press = false;
         s.pressed    = -1;
         s.drawn_mask = 0;
-        /* A press that slid off its tile is not a tap on that tile. */
-        if (was >= 0 && hit == was) {
+        /* A press that slid off its tile is not a tap on that tile, and
+         * neither is a release the finger did not make. */
+        if (was >= 0 && hit == was && touch_event_is_tap_up(evt)) {
             ui_router_goto(k_tiles[was].id);
         }
     }

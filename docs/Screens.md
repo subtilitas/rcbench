@@ -28,9 +28,17 @@ A touch belongs to what it came down on until it lifts. The band is the top
   released at the last point it had on the screen. A drag on a slider or on
   the SERVO dial ends with the value it had at that point, and the distance
   travelled on the band is not added. A hold on ARM or OUTPUT ON is abandoned.
-  A button acts as for a finger lifted at that point: one the finger had
-  left asks for nothing. The touch is not picked up again when the finger
+  A button, a key, a tile, a tab or a list row under that point is not
+  pressed: the release is the panel's and not the finger's. Three controls
+  take it, because they stop something: DISARM, OUTPUT OFF and START TEST
+  while a servo test runs. The touch is not picked up again when the finger
   comes back down onto the screen; lift and press again.
+- A contact that is more than 120 px (the x and the y distance added) from
+  where the previous report had it is taken as a lift there and a new press
+  here. The touch controller is read every 10 ms; its report interval on the
+  panel is not measured. That lift presses nothing either, with the same
+  three exceptions and STOP. The new press is a press like any other, except
+  on a key of the SETUP list, where it scrolls and steps nothing.
 - STOP and the home tag answer to a press that lands on them. A finger that
   slides onto STOP from the screen stops nothing.
 - A second finger on STOP, on the home tag or on the alert band is answered
@@ -892,6 +900,18 @@ mark and their own colour, and the WRITE button shows how many are staged:
 
 Steppers stop at the ends of a list; they do not wrap.
 
+Every control on PROGRAMMER takes a tap. It acts when the finger lifts
+inside the control it pressed, no more than 8 px from the press in x and in
+y. A finger that comes down on a control and travels on presses nothing, and
+neither does one that crosses a control. One finger at a time presses a
+control. Three controls act on the press:
+
+- HOLD TO RUN: its 2 s hold starts at the press.
+- ABORT of a stick run, on the run's page and on a manual step's prompt. It
+  stops a motor, so it does not wait for the lift, and it answers a second
+  finger.
+- The keys of the search keyboard, which follow their own press and lift.
+
 Going back one level drops the connection. Back climbs one level at a time; the
 band's home tag leaves the screen.
 
@@ -1056,6 +1076,12 @@ selects a value as with the setting off, and a pan leaves the cursor where it
 was. A view that shows the whole run is not panned: one finger moves the
 cursor. A second finger on the plot starts a zoom, as before.
 
+A button or a row on LOGS takes a tap. It acts when the finger that pressed
+it lifts inside it, having been no more than 8 px from the press in x and in
+y. A vertical drag of more than 8 px on the file list or on the column list
+scrolls it and selects nothing. On those two views one finger at a time
+presses; a second finger does nothing.
+
 DELETE removes the selected file from the card. It asks first: a second panel
 names the file and its size, and only its own DELETE, pressed and released on
 that button, removes the file. CANCEL, or leaving the screen, closes the
@@ -1110,6 +1136,38 @@ German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
 default and is described under the log viewer.
+
+### Keys and the list
+
+A row's `-` and `+` keys (`<` and `>` on a switch or a choice) change its
+value by one step. A changed value is in force at once; SAVE decides whether
+it survives a restart ([Keeping the values](#keeping-the-values)).
+
+- **Tap.** A key steps once when the finger lifts. The lift counts when the
+  finger is the one that pressed the key, is inside the key, and is no more
+  than 8 px from the press in x and in y. The key is drawn pressed from the
+  press on.
+- **Hold.** A key held steps for the first time 0.45 s after the press, then
+  8 times a second, and 30 times a second from 2.25 s after the press. Held
+  for 1.00 s it has stepped 5 times, for 3.00 s 38 times. The lift after a
+  hold adds no step. The hold ends when the finger is more than 8 px from the
+  press or outside the key.
+- **Scroll.** A vertical drag of more than 8 px that starts anywhere on the
+  list scrolls it, the key columns included. A scroll changes no value. The
+  bar at the list's right edge shows the position and takes no touch.
+- A key is its column, 44 px wide, over the 54 px of its row. The 4 px
+  between two rows belong to no key.
+- One finger at a time. While one presses or scrolls, a second finger does
+  nothing on this screen.
+
+Two limits:
+
+- A finger that rests on a key for 0.45 s or longer and then scrolls has
+  stepped the key: that is a hold.
+- A contact the touch controller leaves out of one report arrives as a lift
+  and a new press. If the new press is on a key and lifts there without
+  moving, it is a tap. How often the GT911 drops a moving contact from a
+  report is not measured.
 
 ### APPLICATION: the rotary knob
 
