@@ -511,8 +511,10 @@ static void read_enc(sense_sched_t *s)
 {
     sense_enc_t *e = &s->enc;
     if (as5600_state(&e->dev) != SENSE_PART_ONLINE) {
-        /* Offline: the next reading starts the still time afresh. */
-        e->anchored = false;
+        /* Offline: the next reading starts the still time afresh, and the
+         * angle of before the outage is not shown as a reading again. */
+        e->anchored   = false;
+        e->have_angle = false;
         return;
     }
     const uint32_t slot = e->slots++;
@@ -527,6 +529,9 @@ static void read_enc(sense_sched_t *s)
     }
     if (as5600_read_raw(&e->dev, &raw) != SENSE_OK) {
         sense_part_sample_failed(&e->dev.part, fails);
+        if (as5600_state(&e->dev) != SENSE_PART_ONLINE) {
+            e->have_angle = false;
+        }
         return;
     }
     const uint64_t at_ms = stamp(s) / 1000u;

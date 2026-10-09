@@ -5161,6 +5161,53 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     free(shown);
 }
 
+/* The MEASURED row of the right card, copied out of the frame. */
+static void measured_row(gfx_color_t *out)
+{
+    for (int y = 0; y < 20; ++y) {
+        memcpy(out + y * 292, fb + (size_t)(64 + y) * W + 502,
+               292 * sizeof(gfx_color_t));
+    }
+}
+
+/* With the encoder on in SETUP and no valid reading, the MEASURED row shows
+ * the dashes, not the angle of the pulse position. */
+TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback)
+{
+    fresh();
+    gfx_color_t *a = malloc(20 * 292 * sizeof(gfx_color_t));
+    gfx_color_t *b = malloc(20 * 292 * sizeof(gfx_color_t));
+
+    /* Encoder off: the feedback's angle is on show and follows it. */
+    servo_screen_feedback(1700u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(a);
+    servo_screen_feedback(1300u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(b);
+    CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+
+    /* Encoder on, no reading: dashes, whatever the feedback says. */
+    settings_set(SET_ENC_EN, 1.0f);
+    servo_invalidate();
+    servo_screen_feedback(1700u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(a);
+    servo_screen_feedback(1300u, 0.2f, true);
+    scr->render(&cv, 0);
+    measured_row(b);
+    CHECK_EQ(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)), 0);
+
+    /* A reading puts the encoder's angle there. */
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false };
+    servo_screen_encoder(&e);
+    scr->render(&cv, 0);
+    measured_row(b);
+    CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+    free(a);
+    free(b);
+}
+
 TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
 {
     fresh();
@@ -5287,6 +5334,7 @@ int main(void)
 {
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
+    RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);

@@ -513,6 +513,46 @@ TEST_CASE(a_status_that_answers_does_not_hide_failing_angle_reads)
     CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_OFFLINE);
     CHECK_EQ((uint32_t)(s.enc.slots - slots), (uint32_t)SENSE_FAILS);
     CHECK_EQ(s.enc.samples, samples);              /* no angle was taken */
+    CHECK(!s.enc.have_angle);                      /* the old one is gone */
+}
+
+/* The part answers STATUS again after an outage and its RAW ANGLE reads
+ * still fail: it is online, but the angle of before the outage is not a
+ * reading of now. */
+TEST_CASE(an_angle_from_before_an_outage_is_not_valid_when_the_part_returns)
+{
+    rig(false);
+    tick();                                        /* the probe */
+    ticks(20u);
+    CHECK(s.enc.have_angle);
+    fb.fail_with = SENSE_NACK;
+    unsigned guard = 0u;
+    while (as5600_state(&s.enc.dev) == SENSE_PART_ONLINE && guard++ < 40u) {
+        const bool field = (s.enc.slots % SENSE_ENC_MAG_EVERY)
+                           == SENSE_ENC_MAG_EVERY - 1u;
+        fb.fail_at = fb.transactions + (field ? 1u : 2u);
+        tick();
+    }
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_OFFLINE);
+    fb.fail_at = 0u;
+    /* The retry: STATUS answers, every RAW ANGLE read fails. */
+    const uint32_t slots = s.enc.slots;
+    guard = 0u;
+    while (s.enc.slots == slots && guard++ < 3000u) {
+        const bool off = as5600_state(&s.enc.dev) != SENSE_PART_ONLINE;
+        const bool field = (s.enc.slots % SENSE_ENC_MAG_EVERY)
+                           == SENSE_ENC_MAG_EVERY - 1u;
+        fb.fail_at = ((s.ticks & 1u) != 0u)
+            ? fb.transactions + (off ? 1u : 0u) + (field ? 1u : 2u) : 0u;
+        tick();
+    }
+    CHECK(s.enc.slots == slots + 1u);
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_ONLINE);
+    CHECK(!s.enc.have_angle);                      /* not VALID */
+    fb.fail_at = 0u;
+    fb.fail_with = SENSE_OK;
+    ticks(10u);
+    CHECK(s.enc.have_angle);                       /* a new read restores it */
 }
 
 TEST_CASE(the_still_time_saturates_at_65535)
@@ -665,6 +705,7 @@ int main(void)
     RUN(a_ramp_keeps_restarting_it_and_a_stop_lets_it_count);
     RUN(a_part_gone_offline_has_no_still_time_and_returns_afresh);
     RUN(a_status_that_answers_does_not_hide_failing_angle_reads);
+    RUN(an_angle_from_before_an_outage_is_not_valid_when_the_part_returns);
     RUN(the_still_time_saturates_at_65535);
     RUN(the_encoder_alone_opens_the_bus_and_reaches_the_snapshot);
     RUN(a_set_up_without_the_encoder_leaves_its_snapshot_empty);

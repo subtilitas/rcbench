@@ -3919,12 +3919,13 @@ static void draw_right(gfx_canvas_t *c, bool power)
     char buf[24];
     snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
     row(c, 44, TR(SV_COMMANDED), buf);
-    /* The horn's angle from the encoder where one reads, else from the
-     * feedback. */
+    /* The horn's angle from the encoder where one reads.  With the encoder
+     * off in SETUP, from the feedback; with it on and not reading, the
+     * dashes: the pulse position is not the horn's angle then. */
     if (enc_shown()) {
         snprintf(buf, sizeof(buf), "%+.1f deg", (double)enc_deg_now());
         row(c, 68, TR(SV_MEASURED), buf);
-    } else if (s.have_feedback) {
+    } else if (s.have_feedback && !settings_get_bool(SET_ENC_EN)) {
         snprintf(buf, sizeof(buf), "%+.1f deg", (double)s.measured_deg);
         row(c, 68, TR(SV_MEASURED), buf);
     } else {
