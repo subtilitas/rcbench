@@ -43,6 +43,9 @@
 #include "sense_page.h"
 #include "servo_page.h"
 #include "supply_page.h"
+#include "tone_cap.h"
+#include "tone_core1.h"
+#include "tone_page.h"
 #include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -80,6 +83,12 @@ static bool          s_supply_attach;
  * gives it its orders and publishes what it hands back.
  */
 static sense_page_t  s_sense;
+/*
+ * The TONE page: the phase tap's set-up, kept, and the beeps core 1 hears
+ * on it.  Core 0 owns the PIO state machine and the DMA ring
+ * (tone_cap.c); core 1 reads the ring and detects (tone_core1.c).
+ */
+static tone_page_t   s_tone;
 /* Core 1's last snapshot.  The pins it said it still holds are the page's
  * (sense_page_held()): a bus moved or closed keeps its old pins from the
  * outputs until core 1 has let them go, about 1 ms. */
@@ -201,12 +210,15 @@ static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static void save_outputs(const iomcu_state_t *s)
 {
     out_store_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
     /* And the supply's wiring, so a restart can still switch a module off. */
     memcpy(cfg.supply, &s_supply.regs[LINK_SP_ENABLE], sizeof(cfg.supply));
     /* And the sensor bus's set-up, so its pins stay held across one. */
     memcpy(cfg.sense, &s_sense.sense[LINK_SN_ENABLE], sizeof(cfg.sense));
+    /* And the phase tap's. */
+    memcpy(cfg.tone, s_tone.cfg, sizeof(cfg.tone));
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -236,24 +248,36 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
-/*
- * The silicon made to agree with the bank, every slot at the rate it runs
- * at: its own, or the SERVO page's for a PWM surface.
- */
-static void hw_apply(void)
+/* The slots the silicon has bound, one bit each. */
+static uint8_t bound_slots(void)
 {
-    uint16_t rate[OUT_MAX_SLOTS];
-    outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
-    outputs_hw_apply(&s_outputs, rate);
-    /* And the SERVO_SENSE page told which slots render frames, so a
-     * capture never arms on one the silicon left unbound. */
     uint8_t bound = 0u;
     for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (outputs_hw_bound(i)) {
             bound |= (uint8_t)(1u << i);
         }
     }
-    sense_page_bound(&s_sense, bound);
+    return bound;
+}
+
+/*
+ * The silicon made to agree with the bank, every slot at the rate it runs
+ * at: its own, or the SERVO page's for a PWM surface.  Only the slots in
+ * @p may_bind are bound; hw_apply() binds every one.
+ */
+static void hw_apply_only(uint8_t may_bind)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
+    outputs_hw_apply_only(&s_outputs, rate, may_bind);
+    /* And the SERVO_SENSE page told which slots render frames, so a
+     * capture never arms on one the silicon left unbound. */
+    sense_page_bound(&s_sense, bound_slots());
+}
+
+static void hw_apply(void)
+{
+    hw_apply_only(0xFFu);
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -299,15 +323,16 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 }
 
 /*
- * What no output may have: the board's own pins, and the ones the supply
- * and the sensor bus hold now -- the page's, and the ones core 1 has not
- * let go of yet.
+ * What no output may have: the board's own pins, and the ones the supply,
+ * the sensor bus and the phase tap hold now -- the pages', and the ones
+ * core 1 has not let go of yet.
  */
 static void reserve_held(void)
 {
     outputs_reserve_pins(&s_outputs, s_base_reserved
                                      | supply_page_pins(&s_supply)
-                                     | sense_page_held(&s_sense));
+                                     | sense_page_held(&s_sense)
+                                     | tone_page_pins(&s_tone));
 }
 
 /* ------------------------------------------------------------- core 1 */
@@ -539,7 +564,8 @@ static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
     uint16_t was[LINK_SN_CONFIG_COUNT];
     memcpy(was, s_sense.sense, sizeof(was));
     const uint8_t nack = sense_page_write(&s_sense, off, n, in, &s_outputs,
-                                          supply_page_pins(&s_supply));
+                                          supply_page_pins(&s_supply)
+                                          | tone_page_pins(&s_tone));
     if (nack != 0u) {
         return nack;
     }
@@ -580,6 +606,168 @@ static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
                                                  : -1);
     s_edge_set = false;
     sense_order();
+    return 0u;
+}
+
+/* ------------------------------------------------------------ the phase tap */
+
+/* The pins the tap may not take: the supply's, and the sensor bus's with the
+ * ones core 1 has not let go of yet. */
+static uint64_t tone_taken(void)
+{
+    return supply_page_pins(&s_supply) | sense_page_held(&s_sense);
+}
+
+/* Core 1's order from the page, running when the capture does. */
+static void tone_order(void)
+{
+    tone_cmd_t cmd;
+    tone_page_cmd(&s_tone, tone_cap_running(), &cmd);
+    tone_core1_order(&cmd, tone_cap_start_us());
+}
+
+/*
+ * The capture made to agree with the page: stopped, then started on the
+ * page's pin if the tap is enabled and not refused, else the pin left an
+ * input with its pull-down on.  False when the tap is enabled and the
+ * wiring could not take its pin (no PIO state machine, no DMA channel).
+ * Core 1 is told first that nothing runs and given up to
+ * TONE_CORE1_WAIT_US to finish the pass it is in, then the capture is torn
+ * down, and core 1 is told again once the capture runs: it never reads a
+ * ring that is being started over.
+ */
+static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
+static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
+static bool s_tone_no_core1;     /* core 1 did not start: no capture runs */
+
+static bool tone_rewire_as(bool keep_ring)
+{
+    s_tone_busy = false;
+    if (!keep_ring) {
+        s_tone_was_us = tone_cap_start_us();
+    }
+    const bool was_running = tone_cap_pause();
+    tone_order();
+    if (!tone_core1_quiesce() && was_running) {
+        /* Core 1 did not finish its pass in time and may still read the
+         * capture: nothing is taken down, the capture runs on as it was,
+         * and the caller puts the set-up back. */
+        tone_cap_resume();
+        tone_order();
+        s_tone_busy = true;
+        return false;
+    }
+    tone_cap_stop();
+    reserve_held();
+    if (!tone_page_wanted(&s_tone)) {
+        if (tone_page_pin_free(&s_tone, &s_outputs, tone_taken())) {
+            tone_cap_rest(tone_page_pin(&s_tone));
+        }
+        return true;
+    }
+    if (s_tone_no_core1 || !tone_cap_start(tone_page_pin(&s_tone))) {
+        return false;
+    }
+    if (keep_ring) {
+        tone_page_recapture(&s_tone,
+                            (uint32_t)((tone_cap_start_us() - s_tone_was_us)
+                                       / 1000u));
+    } else {
+        tone_page_capture(&s_tone);
+    }
+    tone_order();
+    return true;
+}
+
+static bool tone_rewire(void)
+{
+    return tone_rewire_as(false);
+}
+
+static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    tone_core1_sync(&s_tone);
+    tone_page_read(&s_tone, off, n, out);
+}
+
+/*
+ * The tap's set-up: judged by the page against the bank and the other
+ * pages' pins, then the capture started or moved, the pin reserved, the
+ * set-up saved and core 1 told.  A change of ENABLE or of the pin, and a
+ * write that tries a refused tap again, rewire the capture; the wiring
+ * failing there puts the old set-up back and refuses the write.  A change
+ * of a range only reaches core 1.  Taken
+ * armed or not: the tap is an input.
+ */
+static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    (void)ctx;
+    /* The pins core 1 still holds, as of its last tick. */
+    sense_sync();
+    tone_core1_sync(&s_tone);
+    uint16_t was[LINK_TN_CONFIG_COUNT];
+    memcpy(was, s_tone.cfg, sizeof(was));
+    const bool was_refused = s_tone.refused;
+    const uint16_t gen = s_tone.gen;
+    const uint8_t nack = tone_page_write(&s_tone, off, n, in, &s_outputs,
+                                         tone_taken());
+    if (nack != 0u || s_tone.gen == gen) {
+        return nack;
+    }
+    const bool rewire = was_refused
+                        || s_tone.cfg[LINK_TN_ENABLE] != was[LINK_TN_ENABLE]
+                        || s_tone.cfg[LINK_TN_PIN] != was[LINK_TN_PIN];
+    uint16_t trial[LINK_TN_CONFIG_COUNT];
+    memcpy(trial, s_tone.cfg, sizeof(trial));
+    bool wired = !rewire || tone_rewire();
+    if (wired && rewire && s_supply_attach && !s_pd_open
+        && supply_page_enabled(&s_supply)) {
+        /* The supply's wiring waits for flash with its UART closed, and
+         * attaches once saved: the capture may not take the PIO room that
+         * attach needs.  Tried, and let go again. */
+        wired = pd_uart_open(supply_page_tx(&s_supply),
+                             supply_page_rx(&s_supply),
+                             supply_page_uart_baud(&s_supply));
+        if (wired) {
+            pd_uart_close();
+        }
+    }
+    if (!wired && s_tone_busy) {
+        /* Core 1 still in a pass: the capture was not touched and runs as
+         * the set-up it had, which the page shows again. */
+        tone_page_revert(&s_tone, was, was_refused);
+        reserve_held();
+        tone_order();
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (!wired) {
+        /* No state machine or channel for that pin, or none left for a
+         * supply waiting to attach: the set-up as it was, and the capture
+         * as it was. */
+        tone_page_revert(&s_tone, was, was_refused);
+        /* The panel was refused and keeps its place: the beeps in the
+         * ring stay readable across the restart of the old capture. */
+        if (!tone_rewire_as(true)) {
+            if (s_tone_busy) {
+                /* Core 1 still in a pass: the trial capture runs on, so the
+                 * page says what runs and its pin stays reserved. */
+                tone_page_revert(&s_tone, trial, false);
+                reserve_held();
+                tone_order();
+                return LINK_NACK_BAD_VALUE;
+            }
+            tone_page_refuse(&s_tone);
+            reserve_held();
+        }
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (!rewire) {
+        reserve_held();
+        tone_order();
+    }
+    save_outputs(&s_state);
     return 0u;
 }
 
@@ -632,6 +820,10 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     if (sense_page_slots_check(&s_sense, next) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    /* Nor on the phase tap's pin while the tap runs. */
+    if (tone_page_slots_check(&s_tone, next) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* Nor a slot bound beside a surface at another rate. */
     if (outputs_slots_rate_check(&s_outputs, next,
                                  servo_page_hz(&s_servo)) != 0u) {
@@ -639,26 +831,30 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     }
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
+    const uint8_t bound_before = bound_slots();
     memcpy(s->slots, next, sizeof(next));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
     hw_apply();
     /*
-     * With the supply's UART holding two PIO state machines, a slot the
-     * bank took that the silicon could not bind is refused rather than kept
-     * unbound: a restart binds the outputs first, and the supply would be
-     * the one left out.
+     * A slot the bank took that the silicon could not bind is refused
+     * rather than kept unbound, whatever holds what it needs: a PIO state
+     * machine, instruction memory or DMA channel of the phase tap or the
+     * supply's UART, a PWM slice, a pin.  The slots this write changed and
+     * the ones it unbound are judged; one an earlier write or a restart left
+     * unbound does not refuse a write that did not touch it.  A restart
+     * binds the outputs first, so a binding kept here that the silicon
+     * refused would take the resource from the tap or the supply there.
+     * outputs_bind_check() in shared/ decides; this is the glue.
      */
-    bool refused = false;
+    uint8_t watch = (uint8_t)(outputs_slots_changed(prev, next)
+                              | bound_before);
     if (s_pd_open) {
-        for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
-            if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
-                && !outputs_hw_bound(i)) {
-                refused = true;
-            }
-        }
-    } else if (s_supply_attach) {
+        watch = 0xFFu;   /* the UART holds two state machines: every slot */
+    }
+    bool refused = outputs_bind_check(&s_outputs, watch, bound_slots()) != 0u;
+    if (!refused && !s_pd_open && s_supply_attach) {
         /* The supply's UART waits for its save: the slots must leave it a
          * PIO block, tried now, or the attach would fail unseen. */
         refused = !pd_uart_open(supply_page_tx(&s_supply),
@@ -667,9 +863,12 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
         pd_uart_close();
     }
     if (refused) {
+        /* The bank as it was, and the silicon bound exactly as before: a
+         * slot unbound then, retried by the trial, may not keep what a
+         * slot bound then needs back. */
         memcpy(s->slots, prev, sizeof(prev));
         outputs_slots_apply(&s_outputs, s->slots);
-        hw_apply();
+        hw_apply_only(bound_before);
         return LINK_NACK_BAD_VALUE;
     }
     save_outputs(s);
@@ -891,6 +1090,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE,     LINK_SN_COUNT,  sense_read,     sense_write },
     { LINK_PAGE_SERVO_SENSE, LINK_SS_COUNT, servo_sense_read,
       servo_sense_write },
+    { LINK_PAGE_TONE,      LINK_TN_COUNT,  tone_read,      tone_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1405,6 +1605,8 @@ int main(void)
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
     sense_page_init(&s_sense);
+    tone_page_init(&s_tone);
+    tone_core1_init();
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
@@ -1442,11 +1644,26 @@ int main(void)
      * the slots and the supply, so a pin either already holds is refused and
      * the page starts with both parts off.  The bank is not armed yet, so
      * nothing refuses it for that.
+     *
+     * And the phase tap's, last, the same way: a pin an output, the supply
+     * or the sensor bus holds is refused, the tap does not run, and FLAGS
+     * says so.  Its capture starts after their PIO programs, so it takes
+     * what state machine they leave: when the outputs and an enabled tap
+     * need more than the silicon has, the outputs bind and the tap is the
+     * one left out, with the TONE page's flag bit 1 (LINK_TN_PIN_REFUSED)
+     * set until a write tries it again.  An OUTPUTS write at run time
+     * cannot reach that state with the tap running: it is refused, so the
+     * order here and the one at run time agree.
      */
     if (have_saved) {
         (void)sense_page_write(&s_sense, LINK_SN_ENABLE,
                                (uint8_t)LINK_SN_CONFIG_COUNT, saved.sense,
                                &s_outputs, supply_page_pins(&s_supply));
+        reserve_held();
+        tone_page_restore(&s_tone, saved.tone, &s_outputs, tone_taken());
+    }
+    if (!tone_rewire()) {
+        tone_page_refuse(&s_tone);
         reserve_held();
     }
 #if IOMCU_SENSE_BRINGUP
@@ -1519,6 +1736,14 @@ int main(void)
             out_store_core1_parkable();   /* windows park core 1 from now */
         } else {
             out_store_off();
+            /* No core 1 known to run, so nothing reads the tap: its capture
+             * is let go and the page says refused (FLAGS PIN_REFUSED). */
+            s_tone_no_core1 = true;   /* and every later start refused */
+            if (tone_page_wanted(&s_tone)) {
+                tone_page_refuse(&s_tone);
+                (void)tone_rewire();
+                reserve_held();
+            }
         }
     }
 
@@ -1546,6 +1771,8 @@ int main(void)
          * than a frame takes to arrive, and the failsafe has to fire on time
          * whether or not anything is arriving. */
         can_service(now);
+        /* Core 1's beeps and status into the TONE page. */
+        tone_core1_sync(&s_tone);
 
         /*
          * Two independent watchdogs, and both before the bank is armed.  The

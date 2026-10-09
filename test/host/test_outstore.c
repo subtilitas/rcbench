@@ -23,6 +23,7 @@
 #include "out_store_map.h"
 #include "out_store_rec.h"
 #include "sense_page.h"
+#include "tone_page.h"
 
 /* A small geometry: the rules are the same at 2 x 16, and a case that has to
  * fill a sector reads better with four slots in it. */
@@ -453,28 +454,51 @@ static void numbered(out_store_t *c, uint16_t base)
 }
 
 /* Each version appends to the one before: 64 registers of bindings, then
- * 4 of supply wiring, then 12 of sensor set-up. */
+ * 4 of supply wiring, then 12 of sensor set-up, then 7 of the phase tap's
+ * and a spare to keep the set a whole number of 32-bit words. */
 TEST_CASE(each_record_version_carries_the_one_before_and_more)
 {
     CHECK_EQ(out_store_cfg_size(3u), 128u);
     CHECK_EQ(out_store_cfg_size(4u), 136u);
     CHECK_EQ(out_store_cfg_size(5u), 160u);
+    CHECK_EQ(out_store_cfg_size(6u), 176u);
+    CHECK_EQ(OUT_STORE_VERSION, 6u);
     CHECK_EQ(out_store_cfg_size(OUT_STORE_VERSION), sizeof(out_store_t));
+    CHECK_EQ(sizeof(out_store_t) % 4u, 0u);
     CHECK_EQ(out_store_cfg_size(2u), 0u);
-    CHECK_EQ(out_store_cfg_size(6u), 0u);
+    CHECK_EQ(out_store_cfg_size(7u), 0u);
     /* A header of 20 bytes and the newest configuration fit one 256-byte
      * flash page. */
     CHECK(20u + sizeof(out_store_t) <= 256u);
 }
 
-TEST_CASE(a_version_5_record_reads_back_whole)
+TEST_CASE(a_version_6_record_reads_back_whole)
 {
     out_store_t in;
     out_store_t out;
     numbered(&in, 0x1000u);
     memset(&out, 0, sizeof(out));
-    CHECK(out_store_cfg_read(5u, &in, &out));
+    CHECK(out_store_cfg_read(6u, &in, &out));
     CHECK_EQ(memcmp(&in, &out, sizeof(in)), 0);
+}
+
+TEST_CASE(a_version_5_record_keeps_its_sensors_and_leaves_the_tap_off)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x1800u);
+    memset(&out, 0xA5, sizeof(out));
+    CHECK(out_store_cfg_read(5u, &in, &out));
+    CHECK_EQ(memcmp(out.slots, in.slots, sizeof(in.slots)), 0);
+    CHECK_EQ(memcmp(out.chan_cfg, in.chan_cfg, sizeof(in.chan_cfg)), 0);
+    CHECK_EQ(memcmp(out.supply, in.supply, sizeof(in.supply)), 0);
+    CHECK_EQ(memcmp(out.sense, in.sense, sizeof(in.sense)), 0);
+    uint16_t want[LINK_TN_CONFIG_COUNT];
+    tone_page_defaults(want);
+    CHECK_EQ(memcmp(out.tone, want, sizeof(want)), 0);
+    CHECK_EQ(out.tone[LINK_TN_ENABLE], 0u);
+    CHECK_EQ(out.tone[LINK_TN_PIN], 22u);
+    CHECK_EQ(out.spare, 0u);
 }
 
 TEST_CASE(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off)
@@ -491,6 +515,7 @@ TEST_CASE(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off)
     sense_page_defaults(want);
     CHECK_EQ(memcmp(out.sense, want, sizeof(want)), 0);
     CHECK_EQ(out.sense[LINK_SN_ENABLE], 0u);
+    CHECK_EQ(out.tone[LINK_TN_ENABLE], 0u);
 }
 
 TEST_CASE(a_version_3_record_keeps_its_bindings_and_leaves_the_rest_off)
@@ -520,10 +545,10 @@ TEST_CASE(a_record_of_another_version_reads_as_nothing)
     memset(&out, 0x5A, sizeof(out));
     was = out;
     CHECK(!out_store_cfg_read(2u, &in, &out));
-    CHECK(!out_store_cfg_read(6u, &in, &out));
-    CHECK(!out_store_cfg_read(5u, NULL, &out));
+    CHECK(!out_store_cfg_read(7u, &in, &out));
+    CHECK(!out_store_cfg_read(6u, NULL, &out));
     CHECK_EQ(memcmp(&out, &was, sizeof(out)), 0);
-    CHECK(!out_store_cfg_read(5u, &in, NULL));
+    CHECK(!out_store_cfg_read(6u, &in, NULL));
 }
 
 int main(void)
@@ -545,7 +570,8 @@ int main(void)
     RUN(a_power_cut_during_a_save_leaves_the_record_before_it);
     RUN(a_power_cut_during_an_erase_leaves_the_live_record);
     RUN(each_record_version_carries_the_one_before_and_more);
-    RUN(a_version_5_record_reads_back_whole);
+    RUN(a_version_6_record_reads_back_whole);
+    RUN(a_version_5_record_keeps_its_sensors_and_leaves_the_tap_off);
     RUN(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off);
     RUN(a_version_3_record_keeps_its_bindings_and_leaves_the_rest_off);
     RUN(a_record_of_another_version_reads_as_nothing);

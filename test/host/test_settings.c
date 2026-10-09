@@ -455,6 +455,50 @@ TEST_CASE(a_load_tells_the_observer_every_setting_at_its_default)
     settings_set_observer(NULL);
 }
 
+/*
+ * The phase tap's rows are the TONE page's: every range inside what the
+ * page takes and every default the page's own, so a tap the operator turns
+ * on without touching anything else is the set-up the page holds at boot.
+ */
+TEST_CASE(the_phase_tap_settings_are_the_tone_pages)
+{
+    settings_set_store(NULL);
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_TONE_EN), 0);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), (int)LINK_TN_DEFAULT_PIN);
+    CHECK_EQ(settings_get_int(SET_TONE_F_MIN), (int)LINK_TN_DEFAULT_F_MIN);
+    CHECK_EQ(settings_get_int(SET_TONE_F_MAX), (int)LINK_TN_DEFAULT_F_MAX);
+    CHECK_EQ(settings_get_int(SET_TONE_SPLIT), (int)LINK_TN_DEFAULT_SPLIT);
+    CHECK_EQ(settings_get_int(SET_TONE_GAP), (int)LINK_TN_DEFAULT_GAP_MS);
+    CHECK_EQ(settings_get_int(SET_TONE_PERIODS),
+             (int)LINK_TN_DEFAULT_PERIODS);
+
+    const setting_def_t *d = settings_def(SET_TONE_F_MIN);
+    CHECK_EQ((int)d->min, (int)LINK_TN_F_MIN_LO);
+    CHECK_EQ((int)d->max, (int)LINK_TN_F_MIN_HI);
+    d = settings_def(SET_TONE_F_MAX);
+    CHECK((int)d->min > (int)LINK_TN_F_MIN_LO);
+    CHECK_EQ((int)d->max, (int)LINK_TN_F_MAX_HI);
+    d = settings_def(SET_TONE_SPLIT);
+    CHECK_EQ((int)d->min, 0);
+    CHECK_EQ((int)d->max, (int)LINK_TN_SPLIT_MAX);
+    d = settings_def(SET_TONE_GAP);
+    CHECK_EQ((int)d->min, (int)LINK_TN_GAP_MS_MIN);
+    CHECK_EQ((int)d->max, (int)LINK_TN_GAP_MS_MAX);
+    d = settings_def(SET_TONE_PERIODS);
+    CHECK_EQ((int)d->min, (int)LINK_TN_PERIODS_MIN);
+    CHECK_EQ((int)d->max, (int)LINK_TN_PERIODS_MAX);
+    /* The defaults lie on the grid a value is held to: a stored value is
+     * coerced onto it, and a default off it would not read back. */
+    d = settings_def(SET_TONE_F_MIN);
+    CHECK_EQ((LINK_TN_DEFAULT_F_MIN - (int)d->min) % (int)d->step, 0);
+    d = settings_def(SET_TONE_F_MAX);
+    CHECK_EQ((LINK_TN_DEFAULT_F_MAX - (int)d->min) % (int)d->step, 0);
+    /* Pins as far as the coprocessor's bank. */
+    CHECK_EQ((int)settings_def(SET_TONE_PIN)->min, 0);
+    CHECK_EQ((int)settings_def(SET_TONE_PIN)->max, 47);
+}
+
 TEST_CASE(observer_fires_only_on_real_changes)
 {
     fresh_model();
@@ -1264,6 +1308,7 @@ int main(void)
     RUN(value_text_renders_every_type);
     RUN(store_round_trips_and_coerces_stale_values);
     RUN(a_load_tells_the_observer_every_setting_at_its_default);
+    RUN(the_phase_tap_settings_are_the_tone_pages);
     RUN(observer_fires_only_on_real_changes);
     RUN(a_pole_count_edit_reaches_the_observer);
     RUN(startup_delivers_the_stored_pole_count);

@@ -221,6 +221,36 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
     return outputs_servo_rate_check(&s_trial, servo_hz);
 }
 
+uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next)
+{
+    uint8_t mask = 0u;
+    if (prev == NULL || next == NULL) {
+        return 0xFFu;
+    }
+    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+        if (prev[i] != next[i]) {
+            mask |= (uint8_t)(1u << (i / LINK_OS_STRIDE));
+        }
+    }
+    return mask;
+}
+
+uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
+                           uint8_t bound_after)
+{
+    if (o == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        const uint8_t bit = (uint8_t)(1u << i);
+        if (o->slot[i].driver != OUT_DRIVER_NONE
+            && (watch & bit) != 0u && (bound_after & bit) == 0u) {
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
+    return 0u;
+}
+
 /* -------------------------------------------------------------- OUTPUTS */
 
 void outputs_slots_defaults(uint16_t *regs)

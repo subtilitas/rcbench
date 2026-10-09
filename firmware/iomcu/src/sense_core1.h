@@ -6,6 +6,8 @@
  * Core 1 runs one loop and nothing else: each 1 ms it takes core 0's
  * latest order, runs one step of sense_svc (shared/sense/sense_svc.h) --
  * the schedule, the parts, the bus clear -- and hands back a snapshot.
+ * It then runs one pass of the phase tap's tone service (tone_core1.h),
+ * which reads the capture ring and has no part in the bus.
  *
  * The hand-over is two structs, one each way, each copied whole under one
  * hardware-sync spin lock with interrupts off on the core that holds it.

@@ -64,6 +64,7 @@
 #include "pdmini.h"
 #include "sense_link.h"
 #include "sense_page.h"
+#include "tone_link.h"
 #include "supply_link.h"
 #include "supply_page.h"
 #include "supply_screen.h"
@@ -517,6 +518,9 @@ static struct {
      * frame took it was never shown.  See sense_link_alerts(). */
     uint32_t      alert_gen;
     uint32_t      alert_taken;
+    /* The phase tap as the control task last read it, for the stick run's
+     * page. */
+    tone_readout_t tone;
 } s_snap;
 
 static void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
@@ -924,6 +928,40 @@ static sense_setup_t sense_wanted(void)
     return w;
 }
 
+/*
+ * The phase tap's set-up, as SETUP INTERFACES left it, for the control
+ * task's TONE writes (tone_link.h).  Seven values do not fit an atomic
+ * word, so the copy is taken under a spinlock both ways, as the current
+ * monitors' is.  Written by the settings observer on app_main, read once a
+ * poll by the control task.
+ */
+static portMUX_TYPE  s_tone_mux = portMUX_INITIALIZER_UNLOCKED;
+static tone_setup_t  s_tone_want;
+
+static void publish_tone(void)
+{
+    const tone_setup_t w = {
+        .enable      = settings_get_bool(SET_TONE_EN),
+        .pin         = (uint8_t)settings_get_int(SET_TONE_PIN),
+        .f_min_hz    = (uint16_t)settings_get_int(SET_TONE_F_MIN),
+        .f_max_hz    = (uint16_t)settings_get_int(SET_TONE_F_MAX),
+        .split_pct   = (uint8_t)settings_get_int(SET_TONE_SPLIT),
+        .gap_ms      = (uint8_t)settings_get_int(SET_TONE_GAP),
+        .min_periods = (uint8_t)settings_get_int(SET_TONE_PERIODS),
+    };
+    taskENTER_CRITICAL(&s_tone_mux);
+    s_tone_want = w;
+    taskEXIT_CRITICAL(&s_tone_mux);
+}
+
+static tone_setup_t tone_wanted(void)
+{
+    taskENTER_CRITICAL(&s_tone_mux);
+    const tone_setup_t w = s_tone_want;
+    taskEXIT_CRITICAL(&s_tone_mux);
+    return w;
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_MOTOR_POLES) {
@@ -941,6 +979,11 @@ static void settings_changed(setting_id_t id)
         case SET_INA3221_CH:
         case SET_SENSE_SDA:  case SET_SENSE_SCL:
             publish_sense();
+            break;
+        case SET_TONE_EN:    case SET_TONE_PIN:   case SET_TONE_F_MIN:
+        case SET_TONE_F_MAX: case SET_TONE_SPLIT: case SET_TONE_GAP:
+        case SET_TONE_PERIODS:
+            publish_tone();
             break;
         default:
             break;
@@ -1678,6 +1721,7 @@ static bool bring_up(void)
     publish_endpoints();
     publish_pdmini();
     publish_sense();
+    publish_tone();
     settings_apply_ui();
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
@@ -3319,6 +3363,9 @@ static supply_link_t  s_supply_link;
 /* The current monitors' pages, SENSE and SERVO_SENSE (4.7); see
  * sense_link_service().  Control task only. */
 static sense_link_t   s_sense_link;
+/* The phase tap's page, TONE (4.8); see tone_link_service().  Control task
+ * only. */
+static tone_link_t    s_tone_link;
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
@@ -3730,6 +3777,7 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
     supply_link_init(&s_supply_link);
     sense_link_init(&s_sense_link);
+    tone_link_init(&s_tone_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
     s_pump_live = true;
@@ -5659,6 +5707,97 @@ static void sense_link_service(bool idle, bench_state_t *bench)
     }
 }
 
+/* The tone alert posted and not yet seen taken: its number in the alert
+ * slot (0 none) and its event.  Control task only. */
+static uint32_t s_tone_alert_gen;
+static uint16_t s_tone_alert_ev;
+
+/*
+ * What the TONE page said that the operator is told, one event at a time
+ * into a free alert slot and followed until a frame has taken it, as
+ * sense_link_alerts() does for the current monitors.
+ */
+static void tone_link_alerts(void)
+{
+    snap_lock();
+    const bool     slot_free = !s_snap.alert_pending;
+    const uint32_t posted    = s_snap.alert_gen;
+    const uint32_t taken     = s_snap.alert_taken;
+    snap_unlock();
+    if (s_tone_alert_gen != 0u) {
+        if ((int32_t)(taken - s_tone_alert_gen) >= 0) {
+            s_tone_alert_gen = 0u;                   /* shown */
+        } else if (posted != s_tone_alert_gen) {
+            tone_link_event_back(&s_tone_link, s_tone_alert_ev);
+            s_tone_alert_gen = 0u;                   /* replaced unseen */
+        } else {
+            return;                                  /* not taken yet */
+        }
+    }
+    if (!slot_free) {
+        return;
+    }
+    const uint16_t ev = tone_link_event(&s_tone_link, now_ms());
+    if (ev == 0u) {
+        return;
+    }
+    s_tone_alert_ev = ev;
+    char line[ALERT_MAX];
+    if ((ev & TONE_LINK_EV_NO_PAGE) != 0u) {
+        s_tone_alert_gen = control_alert_numbered(TR(ALERT_NO_TONE_PAGE));
+    } else if ((ev & TONE_LINK_EV_PIN_REFUSED) != 0u) {
+        snprintf(line, sizeof(line), TR(ALERT_TONE_PIN),
+                 tone_link_pin(&s_tone_link), tone_link_f_min(&s_tone_link),
+                 tone_link_f_max(&s_tone_link));
+        s_tone_alert_gen = control_alert_numbered(line);
+    } else if ((ev & TONE_LINK_EV_SETUP_REFUSED) != 0u) {
+        s_tone_alert_gen = control_alert_numbered(TR(ALERT_TONE_SETUP));
+    } else if ((ev & TONE_LINK_EV_PIN_BUSY) != 0u) {
+        snprintf(line, sizeof(line), TR(ALERT_TONE_BUSY),
+                 tone_link_pin(&s_tone_link));
+        s_tone_alert_gen = control_alert_numbered(line);
+    } else if ((ev & TONE_LINK_EV_OVERRUN) != 0u) {
+        s_tone_alert_gen = control_alert_numbered(TR(ALERT_TONE_OVERRUN));
+    }
+}
+
+/*
+ * The phase tap's page: the set-up SETUP names written when it differs
+ * from what TONE holds, registers 8 to 23 read at 20 Hz and the beeps
+ * taken by number (tone_link.h).  From poll_bench(); a coprocessor older
+ * than 4.8 is sent nothing.  A tap change is taken armed or not, so no
+ * idle gate.
+ */
+static void tone_link_service(void)
+{
+    const tone_setup_t w = tone_wanted();
+    tone_link_want(&s_tone_link, &w, now_ms());
+    for (int k = 0; k < 8; ++k) {
+        tone_link_op_t op;
+        if (!tone_link_next(&s_tone_link, now_ms(), &op)) {
+            break;
+        }
+        link_msg_t reply = { 0 };
+        const bool answered =
+            op.write ? write_regs(&s_host, op.page, op.off, op.n, op.regs,
+                                  &reply)
+                     : read_regs(&s_host, op.page, op.off, op.n, &reply);
+        int result = TONE_LINK_NO_ANSWER;
+        if (answered) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : TONE_LINK_ACK;
+        }
+        tone_link_done(&s_tone_link, result,
+                       (answered && reply.op == LINK_OP_DATA) ? reply.regs
+                                                              : NULL,
+                       now_ms());
+        if (result == TONE_LINK_NO_ANSWER) {
+            break;
+        }
+    }
+    tone_link_alerts();
+}
+
 /*
  * The bench page, and the control page in the same pass.
  *
@@ -5722,6 +5861,8 @@ static bool poll_bench(bench_state_t *bench)
          * while the bank drives. */
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
+        /* And the phase tap's: an input, taken armed or not. */
+        tone_link_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A
@@ -6010,6 +6151,14 @@ static void link_came_up(const link_msg_t *reply)
     sense_link_came_up(&s_sense_link, reply->regs[LINK_ID_PROTOCOL_MINOR],
                        now_ms());
     sense_link_alerts();
+    /* And the phase tap's page (4.8), the same way. */
+    {
+        const tone_setup_t tw = tone_wanted();
+        tone_link_want(&s_tone_link, &tw, now_ms());
+    }
+    tone_link_came_up(&s_tone_link, reply->regs[LINK_ID_PROTOCOL_MINOR],
+                      now_ms());
+    tone_link_alerts();
 
     /*
      * A board this build ships no catalogue for describes its own pins, so a
@@ -6153,6 +6302,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* And the monitors' pages: nothing on them is known until the
              * link comes back, and the ESC's figures go with the readings. */
             sense_link_lost(&s_sense_link);
+            tone_link_lost(&s_tone_link);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;
         }
@@ -6289,6 +6439,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
                          + (uint32_t)s_bring.dev_resyncs;
     s_snap.run_seconds = arming_run_seconds(&s_arm);
     s_snap.mcu_temp_c  = s_mcu_c;
+    tone_link_readout(&s_tone_link, now_ms(), &s_snap.tone);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to
@@ -6873,6 +7024,11 @@ void app_main(void)
          * count tells an operator's STOP from the bench's own. */
         programmer_screen_bench(now_ms(), armed_now, stops_now, pressed_now,
                                 link_now);
+        /* The phase tap's readout for the run's page, copied under the
+         * lock from the snapshot. */
+        snap_lock();
+        programmer_screen_tone(&s_snap.tone);
+        snap_unlock();
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */

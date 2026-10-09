@@ -68,6 +68,24 @@ uint8_t outputs_chan_cfg_rate_check(const outputs_t *o,
 uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
                                  uint16_t servo_hz);
 
+/**
+ * The slots, one bit each, whose four OUTPUTS registers differ between
+ * @p prev and @p next.
+ */
+uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
+
+/**
+ * Whether an OUTPUTS write the bank has taken must be refused because the
+ * silicon did not bind it: LINK_NACK_BAD_VALUE when a slot of @p o with a
+ * driver is not set in @p bound_after and is set in @p watch, else 0.
+ * @p watch is the slots the write changed plus the slots that were bound
+ * before it, so a slot an earlier write or a restart left unbound does not
+ * refuse a write that never touched it.  A @p watch of 0xFF covers every
+ * slot.
+ */
+uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
+                           uint8_t bound_after);
+
 /* --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
 void    outputs_chan_cfg_defaults(uint16_t *regs);
 uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,

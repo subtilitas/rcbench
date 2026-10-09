@@ -10,8 +10,10 @@
 # ina228_calibrate() and publishes the snapshot; the coprocessor runs them.
 #
 # The tone detector, tone.c, turns the edges of one ESC motor phase into
-# beeps and their pitch.  Nothing calls it yet.
-set(SRCS sense_bus.c ina228.c ina3221.c sense_sched.c sense_svc.c tone.c)
+# beeps and their pitch.  edge_ring.c reads the words the phase tap's PIO
+# program leaves in its DMA ring, and tone_svc.c is the pass core 1 runs to
+# feed the detector with them; shared/outputs holds the TONE page.
+set(SRCS sense_bus.c ina228.c ina3221.c sense_sched.c sense_svc.c tone.c edge_ring.c tone_svc.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)
