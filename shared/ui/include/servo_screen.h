@@ -106,6 +106,37 @@ void servo_invalidate(void);
 
 const ui_screen_t *servo_screen(void);
 
+/**
+ * Move the horn by @p span_fraction of its travel (-travel to +travel),
+ * from the rotary knob (knob.h).  Relative to the commanded angle.  Nothing
+ * happens for a zero fraction, while a finger is on the dial, while the
+ * settings panel is open, or while a sweep (running or paused) or a test run owns the horn: the
+ * knob does not take the horn from them as a finger does.  It posts the
+ * position command a touch does and never arms.  It posts only into an empty
+ * slot or over a position: any other pending command (a release, an arm, a
+ * disarm) stays and the knob's motion is dropped.
+ */
+void servo_screen_knob(float span_fraction);
+
+/**
+ * Start of a frame, before its touch events: forget that a finger owned the
+ * dial or that the settings, a sweep or a test owned the horn.  The knob
+ * moves nothing in a frame in which a finger owned the dial at any point,
+ * including a press and release inside it, or in which the settings were
+ * open, a sweep or a test ran at any point, even if it ended before the
+ * turn is applied.
+ */
+void servo_screen_knob_frame(void);
+
+/**
+ * Withdraw the knob's position command if it is still waiting to be taken:
+ * the commanded angle returns to its value from before the knob, and a
+ * position that was pending before the knob moved it is pending again with
+ * that angle, and the output is held or idle as it was before the knob.  A
+ * command posted since, or already taken, is left alone.
+ */
+void servo_screen_knob_cancel(void);
+
 /** Take the pending command, if any.  Cleared by reading. */
 bool servo_screen_take(servo_cmd_t *out);
 

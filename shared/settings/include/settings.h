@@ -65,6 +65,8 @@ typedef enum {
     SET_UNITS,
     SET_DIM_AFTER,
     SET_PLOT_PAN,
+    SET_KNOB_EN,
+    SET_KNOB_SCALE,
     /* --- interfaces ---------------------------------------------------- */
     SET_INA228_EN,
     SET_INA228_ADDR,

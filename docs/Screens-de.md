@@ -81,7 +81,8 @@ Prüfstand schaltet nicht scharf. Wenn alle Schritte geantwortet haben,
 Zwei Spalten. Der Plot und das Gas nehmen die linke, die vier Anzeigen und
 die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
-konkurrieren.
+konkurrieren. Bei eingeschaltetem Drehknopf bewegt dessen Drehung das Gas
+([der Knopf](#anwendung-der-drehknopf)).
 ### Der Plot zeigt einen Lauf
 
 ![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
@@ -251,7 +252,9 @@ SERVO_HOLD_MS, ein Servo bleibt also stehen, wo es hingestellt wurde. Erst
 **FREIGEBEN**, die Schaltfläche, führt die Ruderflächen auf die Mitte zurück --
 und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
 ihres Wegs. Beendet werden die Flanken durch ein Entschärfen oder durch das
-Verlassen des Bildschirms, was entschärft.
+Verlassen des Bildschirms, was entschärft. Bei eingeschaltetem Drehknopf
+bewegt dessen Drehung das Horn von dort aus, wo es steht
+([der Knopf](#anwendung-der-drehknopf)).
 
 Der Bildschirm treibt die Kanäle, die die Bindung als Ruderflächen markiert,
 und weder einen festen Pin noch ein festes Protokoll. Die acht Kanäle von PPM
@@ -1097,6 +1100,52 @@ bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
 Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht bei der
 Logansicht beschrieben.
+
+### ANWENDUNG: der Drehknopf
+
+Ein magnetischer Winkelsensor AS5600 am I2C-Anschluss des Panels (I2C:
+Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
+das Gas auf MOTOR & ESC, das Horn auf SERVO. Verdrahtung:
+[Bauen](Building-de.md#verdrahtung-des-drehknopfs). Andere Bildschirme
+ignorieren ihn.
+
+| Einstellung | Bereich | Standard |
+| --- | --- | --- |
+| `Drehknopf` | AUS, EIN | AUS |
+| `Knopf-Skala` | 90 bis 720 deg in Schritten von 10 | 270 deg |
+
+`Knopf-Skala` ist der Knopfwinkel, der den Regler über seinen ganzen Weg
+bewegt. Bei 270 deg bewegt eine Vierteldrehung das Gas um 33,3 Punkte und das
+Horn über ein Drittel seines Wegs von -Weg bis +Weg.
+
+- Der Knopf bewegt einen Wert um die Strecke, die er gedreht wird, nie auf
+  die Stelle, auf die er zeigt. Eine Drehung addiert sich zum Gas oder zum
+  Winkel des Horns und endet bei 0 und 100 % oder am Wegende. Über ein Ende
+  hinaus und zurück gedreht, bewegt sich der Wert vom Ende aus.
+- Er schärft nie. ARM bleibt derselbe Hold auf derselben Taste.
+- Die erste Messung nach dem Einschalten und die erste nach einem Ausfall des
+  Sensors setzen eine Referenz und bewegen nichts; ein Knopf, der verdreht
+  zurückkommt, lässt den Regler also nicht springen.
+- Der Sensor wird alle 10 ms gelesen, und alle 100 ms, solange er nicht
+  antwortet. Eine Messung ohne erkannten Magneten, mit zu schwachem oder zu
+  starkem Magneten oder mit Magnitude 0 gilt als keine Antwort. Ein Sprung von
+  mehr als 90 deg zwischen zwei Messungen gilt als Störung und wird verworfen.
+- Ein Finger auf dem Gas-Track oder dem SERVO-Zifferblatt besitzt den Wert,
+  solange er aufliegt, und für den ganzen Frame, in dem er das Bedienelement
+  berührt hat, auch wenn er in diesem Frame abhebt. Auf SERVO nimmt der Knopf das Horn nicht aus einem
+  laufenden oder pausierten Sweep, einem Testlauf oder dem offenen
+  Einstellungsfeld.
+- Ein Frame, der Touch-Ereignisse verloren hat, verwirft die Bewegung des
+  Knopfs zusammen mit den Gesten, ebenso ein Frame, in dem der Router
+  überhaupt navigiert hat, auch weg vom Bildschirm und zurück. Das Kommando
+  des Knopfs geht mit dem nächsten Frame hinaus; findet dieser Frame zuerst
+  verlorene Touch-Ereignisse, wird das Kommando zurückgenommen, und der
+  Regler kehrt auf seinen Wert vor dem Knopf zurück.
+- Der Knopf ersetzt nur ein Gas oder eine Horn-Position. Wartet ein anderes
+  Kommando auf den Frame (ein eben vollendetes Schärfen, ein Entschärfen, ein
+  Zurücksetzen der Spitzen, ein Freigeben), wird die Bewegung des Knopfs in
+  diesem Frame verworfen, nicht aufgehoben.
+- Angenommen wird, dass der Sensor ohne Kollision unter 0x36 antwortet: 0x36 liegt außerhalb der Kommandoadressen des CH422G in dessen Datenblatt, Waveshares Wiki reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware geprüft.
 
 ### ANSCHLÜSSE: die Strommonitore
 

@@ -191,6 +191,7 @@ abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 4 272 | 848 |
 | `runlog` | `log_task` | 4 096 | 2 896 | 176 |
 | `artkeep` | `art_keep_task` | 4 096 | 944 | 2 128 |
+| `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 744 | 1 328 |
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb

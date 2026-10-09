@@ -216,6 +216,36 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Ein Entschärfen setzt das Gas auf null, damit ein Scharfschalten bei null
   beginnt und nicht dort, wo der letzte Lauf aufgehört hat.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
+- Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
+  standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
+  die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
+  Regeln. Er schärft nie: Das einzige Schärfen ist der ARM-Hold. Ein
+  Entschärfen setzt das Gas auf null, der Knopf bewegt von dort aus weiter,
+  und das Verlassen des Bildschirms entschärft. Die erste Messung nach dem
+  Einschalten, eine Messung, die der Sensor markiert (kein Magnet, zu
+  schwach, zu stark, Magnitude 0), eine Messung, die nicht eintrifft, und ein
+  Sprung über 90 deg zwischen zwei Messungen setzen jeweils die Referenz neu
+  und bewegen nichts; ein Knopf, der nicht mehr antwortet, trägt also nichts
+  mehr bei, und kein letzter Wert bleibt als Kommando stehen. Ein Finger auf
+  Track oder Zifferblatt besitzt den Wert gegenüber dem Knopf für den ganzen
+  Frame, in dem er das Bedienelement berührt hat, und auf SERVO besitzen ein
+  Sweep, ein Testlauf und das Einstellungsfeld das Horn. Ein Frame, der
+  Touch-Ereignisse verloren hat, oder in dem der Router überhaupt navigiert
+  hat, verwirft die Bewegung des Knopfs. Das Kommando des Knopfs geht mit dem
+  nächsten Frame hinaus; findet dieser Frame zuerst verlorene
+  Touch-Ereignisse, wird das Kommando zurückgenommen, und der Wert kehrt auf
+  den Stand vor dem Knopf zurück. Der Knopf ersetzt nie ein
+  anderes wartendes Kommando als ein Gas oder eine Horn-Position: Ein
+  vollendetes Schärfen, ein Entschärfen, ein Freigeben und ein Zurücksetzen
+  der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
+  Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
+  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout; ein Sensor, der den
+  gemeinsamen I2C-Bus festhält, verzögert das Lesen des Touch also um höchstens
+  5 ms gegenüber den 150 ms, auf die der Heartbeat überwacht wird. Angenommen
+  wird, dass der Sensor ohne Kollision unter 0x36 antwortet: 0x36 liegt
+  außerhalb der Kommandoadressen des CH422G in dessen Datenblatt, Waveshares
+  Wiki reserviert auf diesem Bus 0x30 bis 0x3F, und es ist nicht an Hardware
+  geprüft.
 - Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
   und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.

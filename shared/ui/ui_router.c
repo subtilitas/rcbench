@@ -33,6 +33,7 @@
 
 static struct {
     ui_screen_id_t    current;
+    uint32_t          nav_count;      /**< navigations since init           */
     ui_bench_status_t status;
     char              alert[UI_ALERT_MAX];
     bool              has_alert;
@@ -117,6 +118,7 @@ void ui_router_goto(ui_screen_id_t id)
         old->leave();
     }
     s.current = id;
+    ++s.nav_count;
     const ui_screen_t *now = screen_for(id);
     if (now != NULL && now->enter != NULL) {
         now->enter();
@@ -129,6 +131,7 @@ void ui_router_goto(ui_screen_id_t id)
 }
 
 ui_screen_id_t ui_router_current(void) { return s.current; }
+uint32_t ui_router_navigations(void) { return s.nav_count; }
 
 void ui_router_invalidate(void)
 {

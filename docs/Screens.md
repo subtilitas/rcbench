@@ -79,7 +79,8 @@ of 1.6 s; a tap skips the hold.
 
 Two columns. The plot and the throttle take the left, the four readouts and
 the controls take a rail on the right, so reading the numbers and working the
-throttle do not compete for the same part of the screen.
+throttle do not compete for the same part of the screen. With the rotary knob
+on, turning it moves the throttle ([the knob](#application-the-rotary-knob)).
 ### The plot covers one run
 
 ![Motor and ESC, telemetry held](img/motor-held.png)
@@ -233,7 +234,8 @@ driven. Lifting the finger does not let go: the screen keeps saying the last
 position every SERVO_HOLD_MS, so a servo stays where it was put. **RELEASE**,
 the button, is what returns the surfaces to centre -- and even that leaves the
 pins bound and driving, at the middle of their travel. A disarm, or leaving
-the screen, which disarms, is what stops the edges.
+the screen, which disarms, is what stops the edges. With the rotary knob on,
+turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)).
 
 The screen drives the channels the binding marks as surfaces, not a fixed pin
 and not a fixed protocol. PPM's eight channels are surfaces too, so a bound
@@ -1006,6 +1008,49 @@ German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
 default and is described under the log viewer.
+
+### APPLICATION: the rotary knob
+
+An AS5600 magnetic angle sensor on the panel's I2C terminal (I2C:
+Inter-Integrated Circuit) turns the slider of the bench screen on top: the
+throttle on MOTOR & ESC, the horn on SERVO. Wiring:
+[Building](Building.md#rotary-knob-wiring). Other screens ignore it.
+
+| Setting | Range | Default |
+| --- | --- | --- |
+| Rotary knob | OFF, ON | OFF |
+| Knob scale | 90 to 720 deg in steps of 10 | 270 deg |
+
+Knob scale is the knob angle that moves the slider across its whole span.
+At 270 deg a quarter turn moves the throttle 33.3 points, and the horn
+across a third of its travel from -travel to +travel.
+
+- The knob moves a value by how far it turns, never to where it points. A
+  turn adds to the throttle or the horn's angle and stops at 0 and 100 % or
+  at the travel limit. Turning past an end and back moves the value from the
+  end.
+- It never arms. ARM is the same hold on the same button.
+- The first reading after power-up and the first one after the sensor stopped
+  answering set a reference and move nothing, so a knob that comes back
+  turned does not jump the slider.
+- The sensor is read every 10 ms, and every 100 ms while it does not answer.
+  A reading with no magnet detected, a magnet too weak or too strong, or a
+  magnitude of 0 counts as no answer. A step of more than 90 deg between two
+  readings counts as a glitch and is dropped.
+- A finger on the throttle track or on the SERVO dial owns the value while it
+  is down, and for the whole frame in which it touched the control, also when
+  it lifts in that frame. On SERVO the knob does not take the horn from a running or paused
+  sweep, a test run, or the open settings panel.
+- A frame that lost touch events drops the knob's motion with its gestures,
+  and so does a frame in which the router navigated at all, also away from
+  the screen and back to it. The knob's command goes out with the next frame;
+  if that frame finds lost touch events first, the command is withdrawn and
+  the slider returns to its value from before the knob.
+- The knob replaces only a throttle or a horn position. While another
+  command waits for the frame (an arm that has just completed, a disarm, a
+  peak reset, a release), the knob's motion in that frame is dropped, not
+  held.
+- The sensor is assumed to answer at 0x36 without a clash: 0x36 is outside the CH422G's command addresses in its datasheet, Waveshare's wiki reserves 0x30 to 0x3F on this bus, and this is not checked on hardware.
 
 ### INTERFACES: the current monitors
 

@@ -177,6 +177,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 4,272 | 848 |
 | `runlog` | `log_task` | 4,096 | 2,896 | 176 |
 | `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
+| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,744 | 1,328 |
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside

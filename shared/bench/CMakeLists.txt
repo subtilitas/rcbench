@@ -15,6 +15,7 @@ set(SRCS
     supply_link.c
     sense_link.c
     tone_link.c
+    knob.c
 )
 
 if(ESP_PLATFORM)

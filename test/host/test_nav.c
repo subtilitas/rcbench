@@ -64,6 +64,25 @@ static void to_overview(void)
     ui_router_goto(SCREEN_OVERVIEW);
 }
 
+/* The count moves on every switch to another screen, so away and back to the
+ * same screen reads as a change although the screen is the same. */
+TEST_CASE(the_navigation_count_sees_away_and_back)
+{
+    fresh();
+    const uint32_t n0 = ui_router_navigations();
+    ui_router_goto(SCREEN_SPLASH);              /* already there */
+    CHECK_EQ(ui_router_navigations(), n0);
+    to_overview();
+    CHECK(ui_router_navigations() != n0);
+
+    const uint32_t n1 = ui_router_navigations();
+    const ui_screen_id_t here = ui_router_current();
+    ui_router_goto(SCREEN_MOTOR);
+    ui_router_goto(here);
+    CHECK_EQ(ui_router_current(), here);
+    CHECK_EQ(ui_router_navigations(), n1 + 2u);
+}
+
 TEST_CASE(the_router_starts_on_the_splash)
 {
     fresh();
@@ -1102,6 +1121,7 @@ TEST_CASE(cancelling_gestures_lets_go_of_the_band)
 
 int main(void)
 {
+    RUN(the_navigation_count_sees_away_and_back);
     RUN(the_router_starts_on_the_splash);
     RUN(the_splash_has_no_band_and_everything_else_does);
     RUN(no_screen_can_draw_over_the_band);

@@ -87,6 +87,33 @@ void motor_screen_set_esc_kv(int kv);
 float motor_screen_throttle(void);
 void motor_screen_set_throttle(float pct);
 
+/**
+ * Move the throttle by @p span_fraction of the slider's span, from the
+ * rotary knob (knob.h).  Relative: the value changes by how far the knob
+ * turned.  Nothing happens for a zero fraction or while a finger is
+ * dragging the slider.  It posts the same throttle command a touch does and
+ * never arms.  It posts only into an empty slot or over a throttle: any other
+ * pending command (an arm, a disarm, a peak reset) stays and the knob's
+ * motion is dropped.
+ */
+void motor_screen_knob(float span_fraction);
+
+/**
+ * Start of a frame, before its touch events: forget that a finger owned the
+ * slider.  The knob moves nothing in a frame in which a finger owned the
+ * slider at any point, including a press and release inside it, because the
+ * touch has already set the value the knob would move.
+ */
+void motor_screen_knob_frame(void);
+
+/**
+ * Withdraw the knob's throttle command if it is still waiting to be taken:
+ * the slider returns to its value from before the knob, and a throttle that
+ * was pending before the knob moved it is pending again with that value.  A
+ * command posted by a touch since, or already taken, is left alone.
+ */
+void motor_screen_knob_cancel(void);
+
 /** True when a command was waiting; clears it. */
 bool motor_screen_poll_cmd(motor_cmd_t *out);
 
