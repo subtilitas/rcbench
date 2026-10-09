@@ -6,6 +6,23 @@ history is in git.
 
 ## Unreleased
 
+## 0.14.0 - 2026-10-09
+
+The link protocol is 4.8. A 0.13 board still links and arms with a 0.14
+one, since only the protocol's major number has to match; the current
+monitors and the phase tap need both boards at 0.14, because the panel
+reads SENSE only from a 4.7 coprocessor and TONE only from a 4.8 one. The
+coprocessor reads an INA228 in the ESC's power path and an INA3221 on the
+servo rail over I2C at 400 kHz, and the panel sets them up under SETUP →
+INTERFACES and shows them on MOTOR & ESC, in alerts and in the run log.
+The coprocessor captures an ESC's beeps on one motor phase (the phase tap,
+GP22 by default), and the panel sets it up under SETUP → INTERFACES and
+shows it on PROGRAMMER → ESC STICK; stick programming still counts beeps
+from the supply current. The servo test no longer fails small servos it
+cannot measure, the coprocessor refuses the module's own pins, and the log
+viewer zooms and pans with two fingers. None of the sensor or tap work has
+run on hardware.
+
 ### Added
 
 - **TONE link page and the phase tap's capture (protocol 4.8).** TONE

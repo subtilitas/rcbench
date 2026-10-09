@@ -286,9 +286,12 @@ Widerstände 2,2 kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
-**Das Bring-up-Image bauen.** Das Panel kann die SENSE-Page noch nicht
-schreiben. Dieser Build gibt beide Bauteile mit den Vorgaben der Page frei,
-solange im Flash keine Konfiguration liegt; er speichert nichts:
+**Am Panel einrichten.** SETUP → ANSCHLÜSSE: `INA228` und `INA3221` auf ON.
+Die übrigen Sensoreinstellungen passen ab Werk zu den Modulen oben: INA228
+auf 0x45 mit 200 µΩ, INA3221 auf 0x40 mit 0,1 Ω, SDA an GP16 und SCL an
+GP17. Ohne Panel gibt die Build-Option `IOMCU_SENSE_BRINGUP=ON` beide
+Bauteile mit den Vorgaben der Page frei, solange im Flash keine
+Konfiguration liegt:
 
 ```bash
 cmake -S firmware/iomcu -B firmware/iomcu/build-sense -DIOMCU_SENSE_BRINGUP=ON
