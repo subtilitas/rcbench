@@ -100,6 +100,10 @@ uint16_t out_stage_held_crc(const out_stage_t *st)
     return (st != NULL) ? out_stage_crc(st->cfg, st->slots) : 0u;
 }
 
+/* The bank from before a commit.  Static rather than on the stack, which on
+ * the coprocessor is the link loop's. */
+static outputs_t s_held;
+
 uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
                          const uint16_t *cfg_in_force,
                          const out_stage_ops_t *ops, void *ctx)
@@ -119,6 +123,9 @@ uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
      * points at. */
     uint16_t prev[LINK_CC_COUNT];
     memcpy(prev, cfg_in_force, sizeof(prev));
+    if (ops->bank != NULL) {
+        s_held = *ops->bank;
+    }
 
     /* CHAN_CFG first: it says what a channel is, and a slot that starts
      * rendering a channel whose role has not arrived rests it wrongly. */
@@ -128,6 +135,12 @@ uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
     }
     nack = ops->take_slots(ctx, st->slots);
     if (nack != 0u) {
+        /* The bank whole, not the old page applied again: a role taken and
+         * given back would rest the channel instead of returning it to the
+         * command it held. */
+        if (ops->bank != NULL) {
+            *ops->bank = s_held;
+        }
         ops->put_cfg(ctx, prev);
         return nack;
     }

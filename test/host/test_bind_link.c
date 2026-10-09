@@ -99,6 +99,9 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     window(((far_t *)ctx)->slots, off, n, out);
 }
 
+/* The coprocessor's bank: the channels' roles, commands and outputs. */
+static outputs_t s_bank;
+
 /* The two pages' whole-page rules, as firmware/iomcu/src/main.c orders
  * them, less the ones that need its silicon: refuse_slots stands for a
  * bind the silicon refuses. */
@@ -109,6 +112,8 @@ static uint8_t take_cfg(void *ctx, const uint16_t *next)
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(f->cfg, next, sizeof(f->cfg));
+    /* The roles reach the bank, where a role change rests the channel. */
+    outputs_chan_cfg_apply(&s_bank, f->cfg);
     far_changed();
     return 0u;
 }
@@ -137,7 +142,9 @@ static void put_cfg(void *ctx, const uint16_t *prev)
 static unsigned s_keeps;
 static void keep(void *ctx) { (void)ctx; ++s_keeps; }
 
-static const out_stage_ops_t k_ops = { take_cfg, take_slots, put_cfg, keep };
+static const out_stage_ops_t k_ops = {
+    take_cfg, take_slots, put_cfg, keep, &s_bank,
+};
 
 static uint8_t cfg_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
@@ -456,6 +463,8 @@ static void fresh_at(uint16_t minor, uint32_t ms0)
     memcpy(far.saved_cfg, s_old.cfg, sizeof(far.cfg));
     memcpy(far.saved_slots, s_old.slots, sizeof(far.slots));
     out_stage_init(&far.stage, far.cfg, far.slots);
+    outputs_init(&s_bank, now_ms());
+    outputs_chan_cfg_apply(&s_bank, far.cfg);
 
     link_dev_init(&dev, k_pages,
                   (minor >= LINK_MINOR_BIND) ? 6u : 3u, &far, now_ms());
@@ -980,6 +989,50 @@ TEST_CASE(a_refused_commit_leaves_both_pages_as_they_were)
     CHECK_EQ(bind_link_write(&host, &k_port, 10u, bad.cfg, bad.slots, NULL),
              BIND_REFUSED);
     CHECK_EQ(bus.exchanges, 10u);
+    CHECK(far_holds(&s_old));
+}
+
+/*
+ * A refused commit leaves the channels as they were, not only the pages.
+ * The new binding makes channel 1 a surface where it was a throttle, and a
+ * role change rests a disarmed channel.  Taking the old page again would
+ * give the role back and leave the channel at the old role's rest; the
+ * commit puts the bank back whole, command and output with the role.
+ */
+TEST_CASE(a_refused_commit_leaves_each_channels_command_as_it_was)
+{
+    fresh(10u);
+    CHECK_EQ(s_old.cfg[1u * LINK_CC_STRIDE + LINK_CC_ROLE],
+             LINK_CC_ROLE_THROTTLE);
+    CHECK_EQ(s_new.cfg[1u * LINK_CC_STRIDE + LINK_CC_ROLE],
+             LINK_CC_ROLE_SURFACE);
+    CHECK(outputs_set(&s_bank, 1u, 250u, now_ms()));
+    CHECK(outputs_set(&s_bank, 2u, 700u, now_ms()));
+    const outputs_t before = s_bank;
+
+    far.refuse_slots = true;
+    CHECK_EQ(write_new(10u), BIND_REFUSED);
+    CHECK(far_holds(&s_old));
+    CHECK_EQ(outputs_command(&s_bank, 1u), 250u);
+    CHECK_EQ(outputs_command(&s_bank, 2u), 700u);
+    CHECK_EQ(s_bank.channel[1].role, OUT_ROLE_THROTTLE);
+    CHECK(memcmp(&before, &s_bank, sizeof(before)) == 0);
+
+    /* A commit that is taken does move the role, and rests the channel. */
+    far.refuse_slots = false;
+    CHECK_EQ(write_new(10u), BIND_WRITTEN);
+    CHECK_EQ(s_bank.channel[1].role, OUT_ROLE_SURFACE);
+    CHECK(outputs_command(&s_bank, 1u) != 250u);
+
+    /* Without a bank the commit still orders and puts back the pages. */
+    fresh(10u);
+    out_stage_ops_t ops = k_ops;
+    ops.bank = NULL;
+    out_stage_t st;
+    out_stage_init(&st, s_new.cfg, s_new.slots);
+    far.refuse_slots = true;
+    CHECK_EQ(out_stage_commit(&st, out_stage_held_crc(&st), far.cfg, &ops,
+                              &far), LINK_NACK_BAD_VALUE);
     CHECK(far_holds(&s_old));
 }
 
@@ -1879,6 +1932,7 @@ int main(void)
     RUN(an_older_coprocessor_can_be_left_with_pages_no_binding_describes);
     RUN(a_refused_rate_reset_is_refused_and_writes_no_page);
     RUN(a_refused_commit_leaves_both_pages_as_they_were);
+    RUN(a_refused_commit_leaves_each_channels_command_as_it_was);
     RUN(a_commit_over_pages_prepared_in_part_is_refused);
     RUN(the_commit_crc_is_ccitt_false_over_low_byte_first);
     RUN(the_prepared_pages_start_from_defaults_or_from_what_is_given);

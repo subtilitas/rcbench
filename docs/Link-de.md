@@ -271,7 +271,8 @@ Ein Schreiben von `COMMIT`:
    OUTPUTS-Schreibens — scharf, die Pins des Netzteils, des Sensorbusses und
    des Phasenabgriffs, die SERVO-Rate, was das Silizium bindet — und setzt
    sie in Kraft, oder lehnt mit BAD_VALUE ab und setzt die CHAN_CFG-Page von
-   vor dem Commit zurück;
+   vor dem Commit zurück, und mit ihr Rolle, Kommando und Ausgang jedes
+   Kanals, wie sie waren;
 4. wird bestätigt, und die Bindung wird einmal gespeichert.
 
 Die geltenden Pages sind also nach jedem Ende der Folge beide die alte

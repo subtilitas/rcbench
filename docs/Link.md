@@ -249,7 +249,8 @@ A write of `COMMIT`:
 3. judges the prepared OUTPUTS page by every rule of an OUTPUTS write —
    armed, the supply's, the sensor bus's and the phase tap's pins, the SERVO
    rate, what the silicon binds — and puts it in force, or refuses with
-   BAD_VALUE and puts the CHAN_CFG page of before the commit back;
+   BAD_VALUE and puts the CHAN_CFG page of before the commit back, and with
+   it every channel's role, command and output as they were;
 4. is acknowledged, and the binding is saved once.
 
 So the pages in force are both the old binding or both the new one after
