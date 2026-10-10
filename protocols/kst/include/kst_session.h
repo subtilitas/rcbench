@@ -205,10 +205,12 @@ kst_ses_t kst_session_read_all(kst_session_t *s);
  * Run a plan.  The plan is copied.
  *
  * Refused before any frame: no programming mode, no backup, a plan that is
- * not consistent, an edit or release plan that writes 0x1D against its
- * kind, breaks a hard rule or starts from an image that fails the
- * fingerprint, a locked session, a restore whose target is not the backup,
- * an unchecked restore without @p confirm_unchecked.
+ * not the one kst_plan.h builds for its kind, start, target and unlock set
+ * (the planner is run again and its writes, their order, the settled marks
+ * and the unchecked mark are compared), an edit or release plan that starts
+ * from an image that fails the fingerprint, a locked session, a restore
+ * whose target is not the backup, an unchecked restore without
+ * @p confirm_unchecked.
  *
  * Then:
  *   1. Read all.  The servo must equal the plan's start image.

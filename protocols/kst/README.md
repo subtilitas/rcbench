@@ -175,7 +175,7 @@ servo and line model in `test/host/kst_sim.h`.
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c` and
-`test_kst_session.c`, 150 cases. The table in `STATUS.md` has the line
+`test_kst_session.c`, 152 cases. The table in `STATUS.md` has the line
 coverage per file.
 
 ```sh

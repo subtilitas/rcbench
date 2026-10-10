@@ -417,6 +417,28 @@ TEST_CASE(a_pass_without_a_single_reply_is_no_servo)
     CHECK_EQ(g_ses.has_image, 1);
 }
 
+TEST_CASE(a_servo_that_goes_silent_in_a_later_pass_is_no_servo)
+{
+    /* The supply drops after pass 1 and after pass 2. */
+    for (unsigned pass = 1; pass < KST_READ_PASSES; ++pass) {
+        unsigned frames;
+
+        up(&g_sim, &g_ses);
+        CHECK_EQ(kst_session_read_all(&g_ses), KST_SES_BUSY);
+        while (g_sim.busy || g_sim.n_reads < 96u + 32u * pass) {
+            CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+            g_sim.now_us += 100u;
+        }
+        frames = g_sim.n_frames;
+        g_sim.powered = false;
+        CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_NO_SERVO);
+        /* The read ends with the silent pass. */
+        CHECK_EQ(g_sim.n_frames, frames + 32u);
+        CHECK_EQ(g_ses.has_image, 1);
+        conduct(&g_sim);
+    }
+}
+
 TEST_CASE(a_lost_reply_is_followed_by_20_ms_of_silence)
 {
     up(&g_sim, &g_ses);
@@ -943,13 +965,26 @@ TEST_CASE(a_plan_that_no_planner_builds_is_refused)
     plan.target.r[0x01] = 251;
     plan.target.r[0x02] = 251;
     CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_ERR_BAD_PLAN);
-    plan.step[0].value = 250;
-    plan.step[1].value = 250;
-    plan.target.r[0x01] = 250;
-    plan.target.r[0x02] = 250;
+    /* Raw 250 is the limit: the planner's plan for it is taken. */
+    plan = edit_plan(&g_ses, KST_F_DUTY, 250);
+    CHECK_EQ(plan.n, 2);
     CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
     kst_session_abort(&g_ses);
     CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_ABORTED);
+    /* The same 2 writes in the other order. */
+    {
+        const kst_write_t first = plan.step[0];
+
+        plan.step[0].reg = plan.step[1].reg;
+        plan.step[1].reg = first.reg;
+        CHECK_EQ(kst_session_write(&g_ses, &plan, false),
+                 KST_SES_ERR_BAD_PLAN);
+    }
+    /* A settled mark moved to the write that tears the pair. */
+    plan = edit_plan(&g_ses, KST_F_DUTY, 250);
+    CHECK_EQ(plan.step[0].settled, 0);
+    plan.step[0].settled = 1;
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_ERR_BAD_PLAN);
     /* A locked field without its unlock. */
     plan = good;
     plan.step[0].reg = 0x04;
@@ -965,6 +1000,10 @@ TEST_CASE(a_plan_that_no_planner_builds_is_refused)
     /* A restore to something that is not the backup. */
     plan = good;
     plan.kind = KST_PLAN_RESTORE;
+    CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_ERR_BAD_PLAN);
+    /* The planner's own restore plan to an image that is not the backup. */
+    CHECK_EQ(kst_plan_restore(&g_ses.image, &good.target, &plan), KST_PLAN_OK);
+    CHECK_EQ(plan.unchecked, 0);
     CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_ERR_BAD_PLAN);
 
     CHECK_EQ(g_sim.n_frames, frames);
@@ -1033,6 +1072,13 @@ TEST_CASE(an_unchecked_restore_needs_its_confirmation)
     CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_ERR_UNCONFIRMED);
     CHECK_EQ(g_ses.result, KST_SES_ERR_UNCONFIRMED);
     CHECK_EQ(g_sim.n_writes, 0);
+    /* The mark cleared by the caller: not the planner's plan, with or
+     * without the confirmation. */
+    plan.unchecked = 0;
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_ERR_BAD_PLAN);
+    CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_ERR_BAD_PLAN);
+    CHECK_EQ(g_sim.n_writes, 0);
+    plan.unchecked = 1;
     CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_BUSY);
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
     CHECK(servo_holds(&g_sim, &first));
@@ -1203,6 +1249,19 @@ TEST_CASE(an_abort_after_the_first_write_locks_and_before_it_does_not)
     CHECK_EQ(g_sim.n_writes, 0);
     CHECK_EQ(g_ses.locked, 0);
 
+    /* In the gap before the first write frame: the read of the start image
+     * is done and nothing is written. */
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
+    while (g_sim.busy || g_sim.n_reads < 96u + 40u + 96u) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+        g_sim.now_us += 100u;
+    }
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_ses.locked, 0);
+
     CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
     while (g_sim.n_writes < 1u) {
         CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
@@ -1215,6 +1274,53 @@ TEST_CASE(an_abort_after_the_first_write_locks_and_before_it_does_not)
     CHECK_EQ(g_sim.reg[0x01], 0xF5);
     CHECK_EQ(g_ses.locked, 1);
     CHECK_EQ(g_ses.step_index, 0);
+    conduct(&g_sim);
+}
+
+TEST_CASE(a_restore_with_nothing_to_write_unlocks)
+{
+    kst_plan_t plan;
+    kst_plan_t restore;
+
+    /* The write lands and the abort after it locks the session; the servo
+     * is then put back from outside. */
+    up(&g_sim, &g_ses);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
+    while (g_sim.n_writes < 1u) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+        g_sim.now_us += 100u;
+    }
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_ses.locked, 1);
+    g_sim.reg[0x03] = 20;
+    read_all(&g_sim, &g_ses);
+    CHECK_EQ(g_ses.locked, 1);
+    CHECK_EQ(kst_plan_restore(&g_ses.image, &g_ses.backup, &restore),
+             KST_PLAN_OK);
+    CHECK_EQ(restore.n, 0);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &restore), KST_SES_OK);
+    CHECK_EQ(g_sim.n_writes, 1);
+    CHECK_EQ(g_ses.locked, 0);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+
+    /* An edit with nothing to write does not unlock. */
+    up(&g_sim, &g_ses);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
+    while (g_sim.n_writes < 1u) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+        g_sim.now_us += 100u;
+    }
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    g_sim.reg[0x03] = 20;
+    read_all(&g_sim, &g_ses);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 20);
+    CHECK_EQ(plan.n, 0);
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_ERR_LOCKED);
+    CHECK_EQ(g_ses.locked, 1);
     conduct(&g_sim);
 }
 
@@ -1266,6 +1372,17 @@ TEST_CASE(a_driver_that_refuses_a_frame_ends_the_operation)
     CHECK_EQ(g_sim.n_writes, 0);
     CHECK_EQ(g_sim.reg[0x03], 20);
     CHECK_EQ(g_sim.n_overlap, 0);
+    /* No write frame left the driver: the servo is not in doubt. */
+    CHECK_EQ(g_ses.locked, 0);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+
+    /* The second write frame refused: one write is on the servo. */
+    plan = edit_plan(&g_ses, KST_F_DUTY, 200);
+    sim_add_fault(&g_sim, SIM_WRITE, -1, 1, 1, SIM_F_START_FAIL, 0);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_ERR_DRIVER);
+    CHECK_EQ(g_sim.n_writes, 2);
+    CHECK_EQ(g_sim.reg[0x02], 200);
+    CHECK_EQ(g_ses.locked, 1);
 }
 
 TEST_CASE(a_driver_that_never_finishes_ends_the_operation)
@@ -1463,6 +1580,7 @@ int main(void)
     RUN(three_equal_reads_in_5_are_enough_and_2_are_not);
     RUN(a_first_read_that_fails_leaves_no_backup);
     RUN(a_pass_without_a_single_reply_is_no_servo);
+    RUN(a_servo_that_goes_silent_in_a_later_pass_is_no_servo);
     RUN(a_lost_reply_is_followed_by_20_ms_of_silence);
     RUN(a_reply_outside_its_time_or_rate_is_not_taken);
     RUN(a_write_is_read_before_read_back_twice_and_verified_in_full);
@@ -1492,6 +1610,7 @@ int main(void)
     RUN(an_abort_in_the_entry_wait_sends_nothing);
     RUN(an_abort_never_cuts_a_frame);
     RUN(an_abort_after_the_first_write_locks_and_before_it_does_not);
+    RUN(a_restore_with_nothing_to_write_unlocks);
     RUN(a_power_cycle_leaves_the_mode_and_ends_what_runs);
     RUN(a_driver_that_refuses_a_frame_ends_the_operation);
     RUN(a_driver_that_never_finishes_ends_the_operation);

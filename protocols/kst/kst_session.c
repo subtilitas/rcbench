@@ -53,7 +53,8 @@ static void txn_begin(kst_session_t *s, kst_expect_t expect, uint8_t reg,
                       uint8_t value)
 {
     /* Every register here is one a frame can address: a read counts up to
-     * KST_REG_MAX, and plan_is_sound() has built each write frame once. */
+     * KST_REG_MAX, and a plan that passed plan_is_sound() holds the planner's
+     * writes, registers 0x01 to KST_REG_MAX. */
     if (expect == KST_EXPECT_READ) {
         (void)kst_frame_read(reg, &s->frame);
     } else if (expect == KST_EXPECT_WRITE) {
@@ -126,6 +127,10 @@ static bool txn_step(kst_session_t *s)
             s->fault = 1;
             s->t_state = T_IDLE;
             return true;
+        }
+        if (expect == KST_EXPECT_WRITE) {
+            /* From here the servo may hold part of a plan. */
+            s->dirty = 1;
         }
         s->t_start = t;
         s->t_limit = (kst_frame_duration_ns(&s->frame) + window) / 1000u
@@ -222,7 +227,7 @@ static bool read_advance(kst_session_t *s)
     if (s->reg == KST_REG_COUNT) {
         s->reg = 0;
         s->pass++;
-        if (s->pass == 1u && s->vals_ok[0] == 0u) {
+        if (s->vals_ok[s->pass - 1u] == 0u) {
             s->bad_regs = ALL_REGS;
             s->read_result = KST_SES_ERR_NO_SERVO;
             s->reading = 0;
@@ -332,7 +337,6 @@ static void write_start(kst_session_t *s)
 {
     const kst_write_t *w = &s->plan.step[s->step_index];
 
-    s->dirty = 1;
     txn_begin(s, KST_EXPECT_WRITE, w->reg, w->value);
     s->phase = W_WROTE;
 }
@@ -412,6 +416,11 @@ static void write_advance(kst_session_t *s)
         }
         s->expect = plan->start;
         if (plan->n == 0u) {
+            /* The servo holds the backup: a restore with nothing to write
+             * has succeeded as one with writes does. */
+            if (plan->kind == KST_PLAN_RESTORE) {
+                s->locked = 0;
+            }
             finish(s, KST_SES_OK);
             break;
         }
@@ -649,39 +658,44 @@ kst_ses_t kst_session_verify(kst_session_t *s, const kst_image_t *expected)
     return KST_SES_BUSY;
 }
 
-/* A plan as kst_plan.h builds one: every write to a register a frame can
- * address, each from the value the write before left, ending on the
- * target; 0x1D only in the two kinds that may write it. */
+/* A plan as kst_plan.h builds one.  The planner is run again on the plan's
+ * start, target and unlock set, and the plan has to be the one it gives:
+ * the same writes in the same order, the same settled marks and the same
+ * unchecked mark.  A plan changed after it was built, in its order or in
+ * the mark that asks for a confirmation, is not that plan. */
 static bool plan_is_sound(const kst_plan_t *plan)
 {
-    kst_image_t img;
-    kst_frame_t frame;
+    kst_plan_t built;
+    kst_plan_result_t r;
 
-    if (plan->n > KST_PLAN_MAX_STEPS || plan->kind > KST_PLAN_RELEASE_PAIRING) {
+    switch (plan->kind) {
+    case KST_PLAN_EDIT:
+        r = kst_plan_edit(&plan->start, &plan->target, plan->unlocked,
+                          &built, NULL);
+        break;
+    case KST_PLAN_RESTORE:
+        r = kst_plan_restore(&plan->start, &plan->target, &built);
+        break;
+    case KST_PLAN_RELEASE_PAIRING:
+        r = kst_plan_release_pairing(&plan->start, &built);
+        break;
+    default:
         return false;
     }
-    img = plan->start;
-    for (unsigned i = 0; i < plan->n; ++i) {
-        const kst_write_t *w = &plan->step[i];
+    if (r != KST_PLAN_OK || built.n != plan->n
+        || built.unchecked != plan->unchecked
+        || built.unlocked != plan->unlocked
+        || diff_mask(&built.target, &plan->target) != 0u) {
+        return false;
+    }
+    for (unsigned i = 0; i < built.n; ++i) {
+        const kst_write_t *a = &built.step[i];
+        const kst_write_t *b = &plan->step[i];
 
-        if (!kst_frame_write(w->reg, w->value, &frame)
-            || w->prev != img.r[w->reg]
-            || (w->reg == KST_REG_NODE_ADDR && plan->kind == KST_PLAN_EDIT)) {
+        if (a->reg != b->reg || a->value != b->value || a->prev != b->prev
+            || a->settled != b->settled) {
             return false;
         }
-        img.r[w->reg] = w->value;
-    }
-    if (diff_mask(&img, &plan->target) != 0u) {
-        return false;
-    }
-    if (plan->kind == KST_PLAN_RELEASE_PAIRING) {
-        img = plan->start;
-        img.r[KST_REG_NODE_ADDR] = 0x00;
-        return diff_mask(&img, &plan->target) == 0u;
-    }
-    if (plan->kind == KST_PLAN_EDIT) {
-        return (kst_limits_edit(&plan->start, &plan->target, plan->unlocked,
-                                NULL) & KST_RULES_HARD) == 0u;
     }
     return true;
 }
@@ -701,9 +715,6 @@ static kst_ses_t write_gate(const kst_session_t *s, const kst_plan_t *plan,
         }
         return plan->unchecked != 0u && !confirm_unchecked
                    ? KST_SES_ERR_UNCONFIRMED : KST_SES_OK;
-    }
-    if (plan->unchecked != 0u) {
-        return KST_SES_ERR_BAD_PLAN;
     }
     if (s->locked != 0u) {
         return KST_SES_ERR_LOCKED;
