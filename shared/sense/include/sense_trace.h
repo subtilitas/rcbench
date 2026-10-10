@@ -54,6 +54,13 @@
  * same way.  Core 1 not seen past the time SENSE_TRACE_STALL_MS after
  * it: the line is written all the same, and the end line says so.
  *
+ * Times are counts of 0.1 ms modulo 2^32, compared as the later of two
+ * that lie less than 2^31 (59.6 h) apart.  None is kept to be compared
+ * for longer: a slot's last change is forgotten once the slot is seen
+ * SENSE_TRACE_HOLD_MS past it, and a trace the console has not taken
+ * SENSE_TRACE_OWED_MAX_T after its end is dropped with the triggers that
+ * waited for it.
+ *
  * Triggers.
  *   cmd   a PWM slot renders another pulse width than in the pass before,
  *         SENSE_TRACE_HOLD_MS or more after that slot's last change
@@ -167,6 +174,10 @@ extern "C" {
 #define SENSE_TRACE_PERIOD_US 1000u
 /** The most records a record's count of missing ones holds. */
 #define SENSE_TRACE_LOST_MAX  0xFFFFFFu
+/** A trace whose end lies this far back, 0.1 ms, and whose lines the
+ *  console has not taken is dropped as with no console: 29.8 h, half of
+ *  what two times can lie apart and still be told which is the later. */
+#define SENSE_TRACE_OWED_MAX_T (1u << 30)
 
 /** What a record holds. */
 typedef enum {
@@ -197,7 +208,11 @@ typedef enum {
 
 /** One record: 12 bytes. */
 typedef struct {
-    uint32_t t;      /**< the newest sample's time, 0.1 ms                 */
+    uint32_t t;      /**< 0.1 ms.  A sample's and its voltage's: when
+                          the sample was read.  A set-up record's: the
+                          start of the tick the change was seen in, or
+                          the time of the last record kept since then.
+                          No record's lies before the one before it.      */
     int32_t  v;      /**< as its kind says                                 */
     uint32_t meta;   /**< the kind in bits 31-24; below it the records
                           dropped just before this one, saturating        */
@@ -216,6 +231,9 @@ typedef struct {
     uint32_t cfg, shunt;  /**< the set-up as last seen                     */
     bool     cfg_owed;    /**< its record is still to be written           */
     bool     shunt_owed;
+    uint32_t cfg_t, shunt_t;        /**< the tick an owed one was seen in  */
+    bool     cfg_newer, shunt_newer; /**< a record was kept since then     */
+    uint32_t kept_t;      /**< the time of the last record kept            */
 } sense_trace_src_t;
 
 /** A trigger line waiting. */
@@ -230,7 +248,9 @@ typedef struct {
 typedef struct {
     bool     have;        /**< pulse is one seen                           */
     uint16_t ch;          /**< of this output channel                      */
-    bool     changed;     /**< changed_t is a change seen                  */
+    bool     changed;     /**< changed_t is a change seen, and the slot
+                               has not been seen SENSE_TRACE_HOLD_MS past
+                               it                                          */
     bool     slewed;      /**< the command's pulse changed after its
                                trigger: its end is still to be said        */
     uint16_t pulse;

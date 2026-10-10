@@ -19,7 +19,9 @@ coprocessor and the other way round.
   Core 1 samples as in the released image and copies each sample into a
   ring of 4096 records (49,152 bytes); no bus transaction is added. A
   change of the part's set-up or state is a record in the same ring and
-  keeps its place among the samples. Core 0
+  keeps its place among the samples, with the start time of the tick it
+  was seen in. A trace whose lines a connected console has not taken
+  29.8 h after its end is dropped. Core 0
   writes whole lines into the room the console's 64-byte transmit buffer
   has, and nothing without a terminal. A trigger line and the end line
   wait until core 1 has finished a tick that started at or after their

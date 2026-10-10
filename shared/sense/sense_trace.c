@@ -51,37 +51,56 @@ static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
     r->meta = ((uint32_t)kind << 24) | p->lost;
     p->lost = 0u;
     atomic_store_explicit(&tr->head, head + 1u, memory_order_release);
+    p->kept_t      = t;
+    p->shunt_newer = true;
+    p->cfg_newer   = true;
     return true;
 }
 
 /* The set-up and the state as they stand: a record for each that moved,
  * the shunt's first, written again at the next call while the ring has
- * no room for it. */
-static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt)
+ * no room for it.  A record's time is the start of the tick the change
+ * was seen in, @p tick_t then: a tick with no sample has a time all the
+ * same, and a trigger between the last sample and the change lies before
+ * the change.  A record kept since, while this one found no room, moves
+ * it to that record's time: the ring's times never run back. */
+static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
+                    uint32_t tick_t)
 {
     sense_trace_src_t *p = &tr->src;
     if (shunt != p->shunt) {
-        p->shunt      = shunt;
-        p->shunt_owed = true;
+        p->shunt = shunt;
+        if (!p->shunt_owed) {
+            p->shunt_owed  = true;
+            p->shunt_t     = tick_t;
+            p->shunt_newer = false;
+        }
     }
     if (cfg != p->cfg) {
-        p->cfg      = cfg;
-        p->cfg_owed = true;
+        p->cfg = cfg;
+        if (!p->cfg_owed) {
+            p->cfg_owed  = true;
+            p->cfg_t     = tick_t;
+            p->cfg_newer = false;
+        }
     }
     if (p->shunt_owed
-        && push(tr, SENSE_TRACE_SHUNT, p->t, (int32_t)p->shunt)) {
+        && push(tr, SENSE_TRACE_SHUNT,
+                p->shunt_newer ? p->kept_t : p->shunt_t,
+                (int32_t)p->shunt)) {
         p->shunt_owed = false;
     }
     /* After the shunt's, never before it: the other core can free a
      * place between the two. */
     if (p->cfg_owed && !p->shunt_owed
-        && push(tr, SENSE_TRACE_CFG, p->t, (int32_t)p->cfg)) {
+        && push(tr, SENSE_TRACE_CFG, p->cfg_newer ? p->kept_t : p->cfg_t,
+                (int32_t)p->cfg)) {
         p->cfg_owed = false;
     }
 }
 
-/* The tick's records, when it has any. */
-static void feed(sense_trace_t *tr, const sense_sched_t *s)
+/* The tick's records, when it has any.  @p tick_t is its start. */
+static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
 {
     sense_trace_src_t *p = &tr->src;
     if (s == NULL) {
@@ -91,13 +110,13 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s)
         p->n_v  = 0u;
         p->n_hi = 0u;
         p->n_lo = 0u;
-        publish(tr, 0u, 0u);
+        publish(tr, 0u, 0u, tick_t);
         return;
     }
     const bool online = ina3221_state(&s->i3221) == SENSE_PART_ONLINE;
     publish(tr, (uint32_t)s->i3221.config | (online ? 1u << 16 : 0u)
                     | ((uint32_t)s->i3221_resets << 24),
-            s->i3221.shunt_uohm);
+            s->i3221.shunt_uohm, tick_t);
 
     /* CH1's sample of this tick, when there is one: the schedule keeps it
      * newest in its history.  A set-up empties the history, so the head
@@ -163,11 +182,11 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s,
     if (tr->buf == NULL) {
         return;
     }
-    feed(tr, s);
+    const uint32_t tick_t = (uint32_t)(tick_us / 100u);
+    feed(tr, s, tick_t);
     /* After the tick's records, never before them: every record still to
      * come is of a later tick, so of this time or later. */
-    atomic_store_explicit(&tr->fed, (uint32_t)(tick_us / 100u),
-                          memory_order_release);
+    atomic_store_explicit(&tr->fed, tick_t, memory_order_release);
 }
 
 /* ------------------------------------------------------------- core 0 */
@@ -406,6 +425,11 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
         /* Still for long enough, or let go: where a slewed command had
          * got to is its end. */
         slew_ends(o, w, ch);
+    }
+    if (held) {
+        /* Seen past the hold: the time is not looked at again, however
+         * long the slot then stays as it is. */
+        w->changed = false;
     }
     if (pulse_us == w->pulse) {
         return false;
@@ -886,7 +910,13 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
     if (tr->buf == NULL) {
         return 0u;
     }
-    if (!connected && o->stage != SENSE_TRACE_IDLE) {
+    const uint32_t now_t = to_t(now_us);
+    /* No console, or one that has taken nothing for so long that the
+     * trace's times are about to lose their order. */
+    if (o->stage != SENSE_TRACE_IDLE
+        && (!connected
+            || (int32_t)(now_t - o->end_t)
+                   >= (int32_t)SENSE_TRACE_OWED_MAX_T)) {
         to_idle(tr);
         o->wait_n    = 0u;
         o->wait_lost = 0u;
@@ -896,7 +926,6 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
         idle(tr);
         return 0u;
     }
-    const uint32_t now_t = to_t(now_us);
     size_t n = 0u;
     for (;;) {
         line_t l;
