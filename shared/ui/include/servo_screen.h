@@ -224,11 +224,23 @@ const char *servo_screen_type_name(void);
 void servo_screen_supply(const supply_state_t *s);
 
 /**
+ * servo_screen_supply() with the meter @p id and its change count
+ * @p changes as decided at the poll that took the sample, for samples that
+ * waited on a queue.  A sample whose count is ahead of the meter in force
+ * brings its meter with it, as servo_screen_source() would.  One whose
+ * count is behind was taken under a meter replaced since: the automatic
+ * test reads it and it is the supply's last reading on the line and in the
+ * row, and it is no point of the plot.
+ */
+void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
+                            uint32_t changes);
+
+/**
  * The servo rail's meter, as servo_source.h decides it, every frame before
  * that frame's windows and supply samples.  @p changes is
  * servo_source_changes() of the same poll: the meter is taken unless the one
- * in force was decided at a later count, which a window's can be
- * (servo_screen_window()).
+ * in force was decided at a later count, which a window's or a supply
+ * sample's can be (servo_screen_window(), servo_screen_supply_at()).
  *
  * The CURRENT row, the line over the plot and the plot show that meter's
  * reading.  SERVO_SOURCE_INA3221: the last CH1 window -- mean current, mean

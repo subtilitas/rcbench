@@ -4206,6 +4206,9 @@ static struct {
     bool     enc_anchored;
     uint16_t enc_anchor;
     uint32_t enc_anchor_ms;
+    /* The supply's samples arrive with a meter count one behind the one in
+     * force (servo_screen_supply_at()). */
+    bool     behind;
 } b;
 
 static void bench_fresh(void)
@@ -4311,7 +4314,13 @@ static void bench_frames(uint32_t ms)
             st.mode   = b.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
             st.samples  = ++b.samples;
             st.taken_ms = b.now;
-            servo_screen_supply(&st);
+            if (b.behind) {
+                /* Taken under a meter replaced since. */
+                servo_screen_supply_at(&st, SERVO_SOURCE_INA3221,
+                                       meter_changes - 1u);
+            } else {
+                servo_screen_supply(&st);
+            }
         }
         if (b.enc) {
             const int counts = (int)lroundf(
@@ -6600,6 +6609,60 @@ TEST_CASE(a_window_is_shown_under_the_meter_of_its_poll)
         CHECK(row_reads("1.10 A", UI_C_TEXT));
     }
 
+    /* The supply's samples wait on a queue as well.  One taken under a
+     * meter replaced since is the supply's last reading and no point; one
+     * ahead of the snapshot brings its meter. */
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.v = 6.0f;
+    fresh();
+    servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    servo_screen_window(&w1, SERVO_SOURCE_INA3221, 2u);
+    servo_screen_source(SERVO_SOURCE_PDMINI, 3u);       /* the snapshot */
+    CHECK_EQ(servo_screen_power_points(), 0);
+    st.i = 0.5f; st.p = 3.0f;
+    servo_screen_supply_at(&st, SERVO_SOURCE_INA3221, 2u);
+    CHECK_EQ(servo_screen_power_points(), 0);
+    CHECK(row_reads("0.50 A", UI_C_TEXT));
+    CHECK(line_supply("6.00 V", "0.50 A", "3.0 W"));
+    st.i = 0.6f; st.p = 3.6f;
+    servo_screen_supply_at(&st, SERVO_SOURCE_PDMINI, 3u);
+    CHECK_EQ(servo_screen_power_points(), 1);
+    CHECK_NEAR(servo_screen_power_sample(1, 0), 0.6f, 1e-6f);
+    CHECK(row_reads("0.60 A", UI_C_TEXT));
+    /* Ahead of the snapshot, to the INA3221 and back. */
+    st.i = 0.7f; st.p = 4.2f;
+    servo_screen_supply_at(&st, SERVO_SOURCE_INA3221, 4u);
+    CHECK_EQ(servo_screen_power_points(), 0);
+    CHECK(line_ina("5.00 V", "1.10 A", "5.5 W"));       /* w1, kept */
+    servo_screen_source(SERVO_SOURCE_PDMINI, 3u);        /* older */
+    CHECK(line_ina("5.00 V", "1.10 A", "5.5 W"));
+    st.i = 0.8f; st.p = 4.8f;
+    servo_screen_supply_at(&st, SERVO_SOURCE_PDMINI, 5u);
+    CHECK_EQ(servo_screen_power_points(), 1);
+    CHECK(row_reads("0.80 A", UI_C_TEXT));
+    /* A window of count 4 behind it is dropped; the supply's trace stays. */
+    servo_screen_window(&w2, SERVO_SOURCE_INA3221, 4u);
+    CHECK_EQ(servo_screen_power_points(), 1);
+    CHECK(row_reads("0.80 A", UI_C_TEXT));
+    /* A sample with no tag is one of the meter in force. */
+    st.i = 0.9f; st.p = 5.4f;
+    servo_screen_supply(&st);
+    CHECK_EQ(servo_screen_power_points(), 2);
+    servo_screen_supply_at(NULL, SERVO_SOURCE_INA3221, 9u);
+    CHECK_EQ(servo_screen_power_points(), 2);
+    CHECK(row_reads("0.90 A", UI_C_TEXT));
+    /* Across 2^32. */
+    fresh();
+    servo_screen_source(SERVO_SOURCE_PDMINI, 0u);
+    servo_screen_supply_at(&st, SERVO_SOURCE_INA3221, 0xFFFFFFFFu);
+    CHECK_EQ(servo_screen_power_points(), 0);            /* behind 0 */
+    CHECK(line_supply("6.00 V", "0.90 A", "5.4 W"));
+    servo_screen_supply_at(&st, SERVO_SOURCE_PDMINI, 0u);
+    CHECK_EQ(servo_screen_power_points(), 1);
+
     /* A window while the link is down is dropped with its meter. */
     fresh();
     servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
@@ -6801,8 +6864,10 @@ TEST_CASE(the_plot_keeps_one_point_for_each_window)
 }
 
 /* One run of the automatic test with @p changing: the meter changed every
- * 300 ms and two windows handed over every 100 ms while it runs. */
-static void a_short_run(bool changing)
+ * 300 ms and two windows handed over every 100 ms while it runs.  With
+ * @p behind every supply sample of the run was taken under a meter
+ * replaced since. */
+static void a_short_run(bool changing, bool behind)
 {
     static const servo_source_id_t k_src[4] = {
         SERVO_SOURCE_INA3221, SERVO_SOURCE_PDMINI, SERVO_SOURCE_INA3221,
@@ -6811,6 +6876,11 @@ static void a_short_run(bool changing)
     bench_fresh();
     short_runs();
     supply_screen_put(5.5f, 1.5f);
+    if (behind) {
+        meter(SERVO_SOURCE_INA3221);
+        meter(SERVO_SOURCE_PDMINI);
+        b.behind = true;
+    }
     hold_start(2.3f);
     for (int i = 0; i < 600 && servo_screen_testing(); ++i) {
         if (changing) {
@@ -6831,7 +6901,7 @@ static void a_short_run(bool changing)
  * and the screen draws the meter's reading as a full redraw would. */
 TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
 {
-    a_short_run(false);
+    a_short_run(false, false);
     CHECK(!servo_screen_testing());
     CHECK(strstr(b.report, "Result:         PASS") != NULL);
     static char report[sizeof(b.report)];
@@ -6839,7 +6909,7 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     const unsigned csv = b.csv, txt = b.txt;
     CHECK(csv > 50u);
 
-    a_short_run(true);
+    a_short_run(true, false);
     CHECK(!servo_screen_testing());
     CHECK_EQ(b.opens, 1u);
     CHECK_EQ(b.ends, 1u);
@@ -6848,6 +6918,15 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     CHECK_STR_EQ(b.report, report);
     CHECK(strstr(b.report, "Supply:         PD mini") != NULL);
     CHECK(!b.out);
+
+    /* Samples taken under a meter replaced since are no points of the
+     * plot, and the run reads every one of them. */
+    a_short_run(false, true);
+    CHECK(!servo_screen_testing());
+    CHECK_EQ(b.csv, csv);
+    CHECK_EQ(b.txt, txt);
+    CHECK_STR_EQ(b.report, report);
+    CHECK_EQ(servo_screen_power_points(), 0);
 
     /* Mid-run, on each meter: the right card as a full redraw draws it,
      * and the row the meter's. */

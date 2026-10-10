@@ -491,10 +491,11 @@ eine nicht gilt.
   ankommt.
 - Der Plot wird geleert, wenn der INA3221 das Messgerät wird und wenn er es
   nicht mehr ist: die Kurve gehört dem Messgerät, das die Zeile nennt. Jedes
-  Fenster trägt das Messgerät des Polls, der es genommen hat: ein Fenster
-  von vor dem Wechsel zum INA3221 ist kein Punkt seiner Kurve, und keines
-  von danach fehlt. Die Skala des Plots beginnt bei 0, und ein negativer
-  Strom wird an seinem unteren Rand gezeichnet.
+  Fenster und jedes Sample des Netzteils trägt das Messgerät des Polls, der
+  es genommen hat: ein Messwert von vor dem Wechsel zu seinem Messgerät ist
+  kein Punkt der Kurve, und keiner von danach fehlt. Die Skala des Plots
+  beginnt bei 0, und ein negativer Strom wird an seinem unteren Rand
+  gezeichnet.
 - Der Wert der Zeile STROM wird neu gezeichnet, wenn sich seine Ziffern oder
   seine Farbe ändern, und für sich allein.
 

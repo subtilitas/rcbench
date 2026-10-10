@@ -59,8 +59,9 @@ coprocessor and the other way round.
   mean in the warning colour. A reading that did not arrive is `---` in the
   row and `--` on the line; a link that goes down takes the INA3221's last
   window with it. The plot is emptied when the INA3221 becomes or stops
-  being the meter, and each window carries the meter of the poll that took
-  it, so the trace holds that meter's windows and no others. The row's value is repainted by itself when its digits
+  being the meter, and each window and supply sample carries the meter of
+  the poll that took it, so the trace holds the readings taken under the
+  meter it names and no others. The row's value is repainted by itself when its digits
   or colour change; `frame_cost.py servo-current` measures an armed frame
   with a window at 4,056 cache-line fills and CI holds it to 4,500. The
   automatic test reads the supply whichever meter the rail has. Host suite

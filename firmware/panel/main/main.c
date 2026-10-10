@@ -508,7 +508,14 @@ static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
  * 400 ms out of date is worth less than one that is current.
  */
 static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
-/* The supply's samples, one entry each, for the same reason. */
+/* The supply's samples, one entry each, for the same reason; each with the
+ * servo rail's meter and its change count as last decided when the sample
+ * was queued (servo_screen_supply_at()). */
+typedef struct {
+    supply_state_t    st;
+    servo_source_id_t source;
+    uint32_t          changes;
+} supply_item_t;
 static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
 static QueueHandle_t     s_enc_q;     /**< control task -> app_main */
@@ -3808,10 +3815,15 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
  * queue is full, as the bench's do. */
 static void supply_queue_sample(void)
 {
-    if (xQueueSend(s_supply_q, &s_supply, 0) != pdTRUE) {
-        supply_state_t stale;
+    const supply_item_t item = {
+        .st      = s_supply,
+        .source  = servo_source_id(&s_servo_source),
+        .changes = servo_source_changes(&s_servo_source),
+    };
+    if (xQueueSend(s_supply_q, &item, 0) != pdTRUE) {
+        supply_item_t stale;
         (void)xQueueReceive(s_supply_q, &stale, 0);
-        (void)xQueueSend(s_supply_q, &s_supply, 0);
+        (void)xQueueSend(s_supply_q, &item, 0);
     }
 }
 
@@ -7495,7 +7507,7 @@ void app_main(void)
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
-    s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_state_t));
+    s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_item_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
     s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_win_item_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
@@ -7757,13 +7769,14 @@ void app_main(void)
         while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) {
             servo_screen_window(&win.win, win.source, win.changes);
         }
-        supply_state_t sup;
-        while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
+        supply_item_t sup_item;
+        while (xQueueReceive(s_supply_q, &sup_item, 0) == pdTRUE) {
+            const supply_state_t sup = sup_item.st;
             supply_screen_set_output(sup.output);
             supply_screen_push(&sup);
-            /* And the SERVO screen's live power plot: the supply feeds the
-             * servo under test. */
-            servo_screen_supply(&sup);
+            /* And the SERVO screen's servo test and, while the supply is
+             * the servo rail's meter, its live power plot. */
+            servo_screen_supply_at(&sup, sup_item.source, sup_item.changes);
             /* And a stick run, which counts beeps in every reading. */
             programmer_screen_supply(&sup);
             supply_seen = sup.output;

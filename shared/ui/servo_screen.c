@@ -2032,11 +2032,10 @@ static servo_test_reading_t test_reading_of(const supply_state_t *st)
     return r;
 }
 
-void servo_screen_supply(const supply_state_t *st)
+/* One sample of the supply.  @p in_force: it was taken under the meter in
+ * force, and not under one replaced since. */
+static void supply_sample(const supply_state_t *st, bool in_force)
 {
-    if (st == NULL) {
-        return;
-    }
     s.sup = *st;
     s.have_sup = true;
     /* A restore waits for a sample taken after the run's OFF went in which
@@ -2059,7 +2058,13 @@ void servo_screen_supply(const supply_state_t *st)
     if (s.source == SERVO_SOURCE_INA3221) {
         return;
     }
-    rail_plot();
+    if (in_force) {
+        rail_plot();
+    } else {
+        /* The supply's last reading all the same, on the line and in the
+         * row; no point of a trace that began after it was taken. */
+        ++s.power_rev;
+    }
     cur_follow();
 }
 
@@ -2095,6 +2100,21 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
 void servo_screen_source(servo_source_id_t id, uint32_t changes)
 {
     (void)source_take(id, changes);
+}
+
+void servo_screen_supply(const supply_state_t *st)
+{
+    if (st != NULL) {
+        supply_sample(st, true);
+    }
+}
+
+void servo_screen_supply_at(const supply_state_t *st, servo_source_id_t id,
+                            uint32_t changes)
+{
+    if (st != NULL) {
+        supply_sample(st, source_take(id, changes));
+    }
 }
 
 void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,

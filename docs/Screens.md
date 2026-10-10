@@ -442,11 +442,11 @@ one fails.
 - A link that goes down takes the INA3221's last window with it: `---`
   and `--` until the meter changes or a window arrives over the link.
 - The plot is emptied when the INA3221 becomes the meter and when it stops
-  being it: the trace is of the meter the line names. Each window carries
-  the meter of the poll that took it, so a window taken before the INA3221
-  became the meter is no point of its trace, and none taken after is left
-  out. The plot's scale starts at 0, and a negative current is drawn on its
-  lower edge.
+  being it: the trace is of the meter the line names. Each window and
+  each supply sample carries the meter of the poll that took it, so a
+  reading taken before its meter became the rail's is no point of the
+  trace, and none taken after is left out. The plot's scale starts at 0,
+  and a negative current is drawn on its lower edge.
 - The CURRENT row's value is repainted when its digits or its colour change,
   and by itself.
 
