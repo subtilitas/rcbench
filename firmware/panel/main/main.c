@@ -7492,7 +7492,7 @@ void app_main(void)
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
-                     && s_enc_q != NULL
+                     && s_enc_q != NULL && s_win_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
                      && s_note_q != NULL && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);

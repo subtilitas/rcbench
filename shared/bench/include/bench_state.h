@@ -79,10 +79,17 @@ typedef struct {
      * a row, so each window reaches the log once, keyed by its number.
      * Per channel the mean and highest current in mA, signed, and the
      * lowest bus voltage in mV, as the page carries them; bit n-1 of
-     * servo_ok says CHn's window holds readings.  Not on the BENCH page.
+     * servo_ok says CHn's window holds readings.  Bit n-1 of
+     * servo_no_current says it holds no current sample, and of
+     * servo_no_voltage no voltage sample: the figures of that quantity
+     * read 0 and are not readings, and the log leaves their cells empty.
+     * SERVO_WIN says which for CH1; SERVO_SENSE's flags do not, and both
+     * stay 0 for a channel read from it.  Not on the BENCH page.
      */
     bool     servo_new;
     uint8_t  servo_ok;
+    uint8_t  servo_no_current;
+    uint8_t  servo_no_voltage;
     uint16_t servo_window;
     int16_t  servo_mean_ma[3];
     int16_t  servo_max_ma[3];

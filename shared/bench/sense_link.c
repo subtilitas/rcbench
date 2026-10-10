@@ -53,6 +53,7 @@ static void forget_reads(sense_link_t *s)
     s->win_restart = false;
     s->win_have    = false;
     s->win_valid   = false;
+    s->win_stands  = false;
     s->winq_n      = 0u;
     ++s->setups;
 }
@@ -299,13 +300,12 @@ bool sense_link_win_on(const sense_link_t *s)
 }
 
 /* The registers a SENSE status read takes: to the page's last when it has
- * the encoder enabled, or the INA3221 on a coprocessor with RESETS; else
- * to ESC_FLAGS. */
+ * the encoder enabled, or while the ring is read, for RESETS; else to
+ * ESC_FLAGS. */
 static unsigned status_count(const sense_link_t *s)
 {
-    const uint16_t en = s->held[LINK_SN_ENABLE];
-    return ((en & LINK_SN_EN_AS5600) != 0u
-            || (s->win_page && (en & LINK_SN_EN_I3221) != 0u))
+    return ((s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u
+            || sense_link_win_on(s))
                ? SENSE_LINK_STATUS_COUNT
                : SENSE_LINK_STATUS_COUNT_V48;
 }
@@ -653,6 +653,11 @@ static void judge_win(sense_link_t *s, const uint16_t *regs, unsigned n,
     const uint16_t newest = regs[LINK_SW_WINDOW];
     if (!s->win_have || newest != s->win_newest) {
         s->win_moved_ms = now_ms;
+        s->win_stands   = false;
+    } else if ((uint32_t)(now_ms - s->win_moved_ms) >= SENSE_LINK_STALE_MS) {
+        /* Latched, so a number that stands for 2^32 ms does not read as
+         * one that has just moved. */
+        s->win_stands = true;
     }
     s->win_have   = true;
     s->win_newest = newest;
@@ -1011,6 +1016,10 @@ void sense_link_win_bench(const sense_link_t *s, const sense_link_win_t *w,
     b->servo_new    = true;
     b->servo_window = w->number;
     b->servo_ok     = (w->current || w->voltage) ? 0x01u : 0u;
+    /* A window can close with one quantity and not the other: the one it
+     * lacks reads 0 on the page and is no reading. */
+    b->servo_no_current = (uint8_t)(w->current ? 0u : 0x01u);
+    b->servo_no_voltage = (uint8_t)(w->voltage ? 0u : 0x01u);
     b->servo_mean_ma[0] = w->mean_ma;
     b->servo_max_ma[0]  = w->max_ma;
     b->servo_min_mv[0]  = w->min_mv;
@@ -1053,6 +1062,8 @@ bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
     b->servo_new    = true;
     b->servo_window = window;
     b->servo_ok     = servo_ok(s);
+    b->servo_no_current = 0u;
+    b->servo_no_voltage = 0u;
     for (size_t i = 0u; i < LINK_SS_CHANNELS; ++i) {
         servo_channel(s, i, b);
     }
@@ -1087,7 +1098,7 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
     out->resets    = out->resets_read
                          ? LINK_SN_RESETS_I3221(s->status[ST(LINK_SN_RESETS)])
                          : 0u;
-    out->win       = sense_link_win_on(s) && s->win_have;
+    out->win       = sense_link_win_on(s) && s->win_have && !s->win_stands;
     out->win_valid = out->win && s->win_valid;
     out->win_ms    = s->win_moved_ms;
 }

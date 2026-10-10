@@ -299,7 +299,9 @@ measured is an empty cell. `window` and the nine channel columns are the
 INA3221's 50 ms window -- per channel the mean and highest current and the
 lowest bus voltage -- on the first row after the panel read it and on no
 other, so each window is in the file once, under its number; a channel the
-window has no readings of is empty. With a coprocessor of protocol 4.11 and
+window has no readings of is empty, and so are CH1's current cells or its
+voltage cell for a window that holds no sample of that quantity. With a
+coprocessor of protocol 4.11 and
 CH1 enabled every CH1 window is in the file while two reads lie at most
 200 ms apart, and a step in `window` of more than 1 is a window that was
 lost or a number the coprocessor skipped. A window taken while the bench

@@ -760,6 +760,8 @@ TEST_CASE(a_window_only_row_carries_the_window_and_no_sample)
     b.clipped = true;
     b.servo_new    = true;
     b.servo_ok     = 0x05u;
+    b.servo_no_current = 0x04u;
+    b.servo_no_voltage = 0x01u;
     b.servo_window = 65535u;
     b.servo_mean_ma[0] = -12;
     b.servo_max_ma[0]  = 1638;
@@ -783,6 +785,8 @@ TEST_CASE(a_window_only_row_carries_the_window_and_no_sample)
     bench_state_log_row(&b, false, &out);
     CHECK(out.servo_new);
     CHECK_EQ(out.servo_ok, 0x05u);
+    CHECK_EQ(out.servo_no_current, 0x04u);
+    CHECK_EQ(out.servo_no_voltage, 0x01u);
     CHECK_EQ(out.servo_window, 65535u);
     CHECK_EQ(out.servo_mean_ma[0], -12);
     CHECK_EQ(out.servo_max_ma[0], 1638);

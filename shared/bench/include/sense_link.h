@@ -51,7 +51,7 @@
  * The window ring.  While the page of a 4.11 coprocessor enables the
  * INA3221 with CH1, SERVO_WIN's registers 0 to 15 -- the header and the two
  * newest windows -- are read every SENSE_LINK_WIN_MS, and SENSE's status
- * read goes to register 31 for RESETS.  Each CH1 window number is handed
+ * read goes to register 31 for RESETS, as it does with the encoder.  Each CH1 window number is handed
  * over once, oldest first (sense_link_take_win()):
  *
  *   - a read that owes one or two windows hands them over;
@@ -279,7 +279,9 @@ typedef struct {
     uint16_t flags;       /**< its FLAGS                                  */
     bool     resets_read; /**< it carried RESETS (4.11)                   */
     uint8_t  resets;      /**< the INA3221's count, modulo 256            */
-    bool     win;         /**< SERVO_WIN showed a window under this set-up */
+    /** SERVO_WIN showed a window under this set-up, and no read has found
+     *  its number standing for SENSE_LINK_STALE_MS. */
+    bool     win;
     bool     win_valid;   /**< the newest closed with current samples     */
     uint32_t win_ms;      /**< when the newest number last moved          */
 } sense_link_meter_t;
@@ -337,6 +339,8 @@ typedef struct {
     bool     win_valid;       /**< its newest entry holds current       */
     uint16_t win_newest;
     uint32_t win_moved_ms;    /**< when win_newest last moved           */
+    bool     win_stands;      /**< a read found it SENSE_LINK_STALE_MS
+                                   old or more; until it moves          */
     uint8_t  winq_n;          /**< windows waiting in winq, oldest first */
     sense_link_win_t winq[LINK_SW_RING];
     uint16_t setups;          /**< set-ups taken and links lost         */
@@ -492,8 +496,10 @@ unsigned sense_link_windows(const sense_link_t *s);
 /**
  * A ring window into @p b's log fields: servo_new set, its number, CH1's
  * mean and highest current and lowest bus voltage with servo_ok bit 0 set
- * while the window holds samples, and CH2's and CH3's figures from
- * SERVO_SENSE's last read when that read shows the same window number.
+ * while the window holds samples, servo_no_current and servo_no_voltage
+ * bit 0 for the quantity it holds no sample of, and CH2's and CH3's
+ * figures from SERVO_SENSE's last read when that read shows the same
+ * window number.
  */
 void sense_link_win_bench(const sense_link_t *s, const sense_link_win_t *w,
                           bench_state_t *b);

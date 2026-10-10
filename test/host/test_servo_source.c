@@ -723,6 +723,47 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
     CHECK_EQ(dropped, 2u);
 }
 
+/* The coprocessor's schedule stops: the window number stands while every
+ * read is answered.  The PD mini from 200 ms on, and still 2^32 ms later,
+ * when the tick has come round to within 200 ms of the last move. */
+TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
+{
+    chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
+    CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
+    ch.exch_ms = 0u;                    /* core 1 no longer ticks */
+    unsigned held_for = 0u;
+    while (held_for < 40u) {
+        chain_far_late(50u);
+        if (chain_step(0u, true) != SERVO_SOURCE_INA3221) {
+            break;
+        }
+        ++held_for;
+    }
+    CHECK(held_for >= 3u && held_for <= 4u);        /* under 200 ms */
+    CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NO_WINDOW);
+    for (unsigned i = 0u; i < 20u; ++i) {
+        chain_far_late(50u);
+        CHECK_EQ(chain_step(0u, true), SERVO_SOURCE_PDMINI);
+    }
+    sense_link_meter_t m;
+    sense_link_meter(&ch.sl, &m);
+    CHECK(!m.win);
+    /* The tick 2^32 ms on, less what brings the last move to 100 ms ago. */
+    ch.tick0 += (uint32_t)(0u - (chain_now() - m.win_ms)) + 100u;
+    sense_link_meter(&ch.sl, &m);
+    CHECK_EQ((uint32_t)(chain_now() - m.win_ms), 100u);
+    for (unsigned i = 0u; i < 40u; ++i) {
+        chain_far_late(50u);
+        CHECK_EQ(chain_step(0u, true), SERVO_SOURCE_PDMINI);
+        CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NO_WINDOW);
+    }
+    /* The schedule runs again: the number moves, and 1000 ms later the
+     * INA3221 is the meter. */
+    ch.exch_ms = 1u;
+    const unsigned n = until(SERVO_SOURCE_INA3221, 60u);
+    CHECK(n >= 18u && n <= 22u);
+}
+
 /* A 4.10 coprocessor: the PD mini is read, nothing is sent to SERVO_WIN,
  * and the operator is told once.  Again after a link lost and back. */
 TEST_CASE(a_4_10_coprocessor_is_never_the_ina3221s_and_is_said_once)
@@ -786,6 +827,7 @@ int main(void)
     RUN(a_reset_repaired_between_two_reads_shows_in_the_count);
     RUN(a_setup_the_page_does_not_hold_drops_to_the_pd_mini);
     RUN(reads_that_age_past_200_ms_drop_to_the_pd_mini);
+    RUN(a_window_number_that_stands_stays_stale_across_the_tick_wrap);
     RUN(a_4_10_coprocessor_is_never_the_ina3221s_and_is_said_once);
     RUN(a_link_lost_is_the_model_and_its_return_settles_again);
     return test_summary("servo_source");

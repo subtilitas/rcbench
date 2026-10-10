@@ -299,16 +299,19 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
      * The INA3221's window, on the row that first carries it and on no
      * other: its number, then per channel the mean and highest current and
      * the lowest bus voltage, empty for a channel the window has no
-     * readings of.  A row with no new window has these cells empty.
+     * readings of, and for the quantity a window holds no sample of.  A
+     * row with no new window has these cells empty.
      */
     const bool win = b->servo_new;
     fits = fits && cell(line, cap, &n, win, (float)b->servo_window, 0);
     for (unsigned c = 0u; c < 3u; ++c) {
         const bool ch = win && (b->servo_ok & (1u << c)) != 0u;
+        const bool i  = ch && (b->servo_no_current & (1u << c)) == 0u;
+        const bool v  = ch && (b->servo_no_voltage & (1u << c)) == 0u;
         fits = fits
-               && cell(line, cap, &n, ch, (float)b->servo_mean_ma[c] / 1000.0f, 3)
-               && cell(line, cap, &n, ch, (float)b->servo_max_ma[c] / 1000.0f, 3)
-               && cell(line, cap, &n, ch, (float)b->servo_min_mv[c] / 1000.0f, 3);
+               && cell(line, cap, &n, i, (float)b->servo_mean_ma[c] / 1000.0f, 3)
+               && cell(line, cap, &n, i, (float)b->servo_max_ma[c] / 1000.0f, 3)
+               && cell(line, cap, &n, v, (float)b->servo_min_mv[c] / 1000.0f, 3);
     }
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;

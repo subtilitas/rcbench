@@ -119,6 +119,8 @@ void bench_state_log_row(const bench_state_t *b, bool whole,
     memset(out, 0, sizeof(*out));
     out->servo_new    = b->servo_new;
     out->servo_ok     = b->servo_ok;
+    out->servo_no_current = b->servo_no_current;
+    out->servo_no_voltage = b->servo_no_voltage;
     out->servo_window = b->servo_window;
     memcpy(out->servo_mean_ma, b->servo_mean_ma, sizeof(out->servo_mean_ma));
     memcpy(out->servo_max_ma, b->servo_max_ma, sizeof(out->servo_max_ma));

@@ -329,7 +329,9 @@ Zelle. `window` und die neun Kanalspalten sind das 50-ms-Fenster des
 INA3221 -- je Kanal der mittlere und der höchste Strom und die niedrigste
 Busspannung -- in der ersten Zeile, nachdem das Panel es gelesen hat, und in
 keiner anderen, sodass jedes Fenster einmal in der Datei steht, unter seiner
-Nummer; ein Kanal ohne Messwerte im Fenster ist leer. Mit einem Koprozessor
+Nummer; ein Kanal ohne Messwerte im Fenster ist leer, ebenso die
+Stromzellen oder die Spannungszelle von CH1 für ein Fenster, das von dieser
+Größe keine Messung hält. Mit einem Koprozessor
 mit Protokoll 4.11 und eingeschaltetem CH1 steht jedes Fenster von CH1 in
 der Datei, solange zwei Lesezugriffe höchstens 200 ms auseinanderliegen,
 und ein Schritt in `window` von mehr als 1 ist ein verlorenes Fenster oder
