@@ -95,7 +95,7 @@ set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link)
+foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -127,3 +127,24 @@ target_compile_definitions(test_esc_profiles PRIVATE
 target_compile_definitions(test_tone_pio PRIVATE
     "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/tone_cap.pio\""
     "TONE_CAP_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/tone_cap_words.txt\"")
+
+# tools/sense_trace.py, the host side of the coprocessor's SENSE_TRACE
+# build.  sense_trace_replay is the program the tool drives: the move rules
+# of shared/servo, linked.  sense_trace_gen writes the console log the
+# trace code gives for servo_sim's servo, which is the fixture the tool is
+# tested on; the test fails when the checked-in fixture is not what the
+# generator writes.
+add_executable(sense_trace_replay sense_trace_replay.c)
+target_link_libraries(sense_trace_replay PRIVATE ${UNDER_TEST})
+add_executable(sense_trace_gen sense_trace_gen.c)
+target_link_libraries(sense_trace_gen PRIVATE ${UNDER_TEST})
+target_include_directories(sense_trace_gen PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}")
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME sense_trace_tool
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_sense_trace_tool.py"
+            --replay $<TARGET_FILE:sense_trace_replay>
+            --gen $<TARGET_FILE:sense_trace_gen>
+            --fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+            --work "${CMAKE_CURRENT_BINARY_DIR}/sense_trace_tool")

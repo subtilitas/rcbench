@@ -139,6 +139,10 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 \
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
+
+# coprocessor, debug build that prints INA3221 CH1's 1 ms samples
+cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
+cmake --build firmware/iomcu/build-trace
 ```
 
 The coprocessor build produces `rcbench-iomcu.uf2`. Copy it to the module's
@@ -162,17 +166,20 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a German string overflows where it is drawn ([Language](Language.md)) |
 | `tools/frame_cost.py` | measures cache-line fills per frame under cachegrind; `--check-doc` holds the table in [Performance](Performance.md) |
 | `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow ([Performance](Performance.md#stacks)) |
+| `tools/sense_trace.py` | reads a captured console of a coprocessor built with `-DSENSE_TRACE=ON`: checks each trace of INA3221 CH1's 1 ms samples against its end line, writes one CSV (comma-separated values) file per trace, and replays every move through `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; `--servo-csv` adds the arrival less the AS5600's travel time ([First run](FirstRun.md#89-ch1s-1-ms-samples-on-the-console)) |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error |
 
 `gen_font.py` looks for the font in `RCBENCH_FONT_DIR`, then
 `~/.local/share/fonts`, then the system font directories. `frame_cost.py` needs
-`valgrind`; the other tools need a C compiler and Pillow.
+`valgrind`; the other tools need a C compiler and Pillow. `sense_trace.py`
+needs CMake and a C compiler: it builds `test/host/sense_trace_replay.c`
+into `build-trace/` unless `--replay` names a built one.
 
 ## CI
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check; coprocessor build on pico-sdk 2.3.0; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check; coprocessor build on pico-sdk 2.3.0, and once more with `-DSENSE_TRACE=ON`, failing when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | mirrors `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release, and carries the build guide PDFs over from the latest release |
 

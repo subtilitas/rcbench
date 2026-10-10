@@ -403,6 +403,130 @@ travel times -- is armed by the panel's servo test, which does not use it
 yet. A travel time against a scope on the PWM pin and on the shunt waits
 for that.
 
+### 8.9 CH1's 1 ms samples on the console
+
+A coprocessor image built with `-DSENSE_TRACE=ON` prints INA3221 CH1's
+1 ms samples on its USB (Universal Serial Bus) console as text. The link
+carries 50 ms windows only, so this build is the one way to see the single
+samples. It is a debug build: a released image is built without the option
+and holds none of its code. `tools/sense_trace.py` reads the captured
+console. None of this has run on hardware.
+
+**What starts a trace.**
+
+| Trigger | Trace |
+| --- | --- |
+| a PWM (pulse-width modulation) output renders another pulse width than in the pass before, 50 ms or more after that output's last change | 4 s from the frame that carries the pulse; trigger line `$C` |
+| `t` typed on the console | 10 s; trigger line `$K` |
+| the capture's PWM edge | 4 s; trigger line `$E`. No released panel arms the capture, so this trigger does not occur with one |
+
+Every MOVE of the automatic servo test is a changed pulse, so a test with
+the released panel is traced without a capture. A trigger during a trace
+adds its line and moves the end to 4 s (10 s for `t`) after itself when
+that is later: moves less than 4 s apart are one trace. `x` on the console
+ends a trace. Each trace also holds the samples of up to 64 ms before its
+trigger.
+
+**What it costs.** Core 1 reads CH1 every 1 ms as in the released image
+and copies the sample into a ring of 4096 records (49,152 bytes; 3.9 s of
+1000 samples and 50 bus voltages a second). No bus transaction is added
+to the tick. Core 0 writes whole lines into the room the console's 64-byte
+transmit buffer has, and nothing when no terminal is connected, so its
+loop does not wait for the host. A full ring drops the newest record: the
+trace has a `$L n=` line where records are missing and their sum in its
+end line. The time a pass of core 0 gains from writing the lines is not
+measured.
+
+**The lines** (`shared/sense/sense_trace.h` has every field):
+
+```text
+$T v=1 n=2 trig=cmd t=220200 ms=22020 len=4000
+$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
+$C t=220200 ch=0 us=1800
+-810,289
+10,277
+v5952
+10,289
+$Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
+```
+
+A sample line is the time since the sample before it in 0.1 ms and the
+shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line is 8
+bytes with a 3-digit code; with the voltage lines a trace is about 8.6
+bytes a sample, 8.6 kB a second.
+
+**Have to hand:** the bench of the steps above with the PD mini (WeAct PD
+Power Mini V1) at a limit of 2.00 A, the INA3221's CH1 with its 0.1 Ω
+shunt in the servo's supply, an AS5600 on the servo's shaft, the servos to
+measure, and a terminal program that writes every byte it receives to a
+file, without timestamps, and raises DTR (data terminal ready): PuTTY
+(Session, Logging, "All session output") or `picocom -g run.log`.
+
+1. Build the image:
+
+   ```bash
+   export PICO_SDK_PATH=/path/to/pico-sdk
+   cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
+   cmake --build firmware/iomcu/build-trace
+   ```
+
+2. Flash `firmware/iomcu/build-trace/rcbench-iomcu.uf2`: hold BOOTSEL,
+   plug the module in, copy the file to its drive.
+3. Open the coprocessor's USB serial port in the terminal, logging to a
+   new file. Within 3 s it prints a line starting `rcbench-iomcu:`. On the
+   panel, SETUP → INTERFACES: `INA3221` and `AS5600` ON.
+4. Noise, no servo: with no servo connected and the supply's output on at
+   6.00 V, type `t`. 10 s later the console prints a line starting `$Z`.
+5. Noise, servo at rest: connect the servo, arm, leave it at the centre,
+   supply on at 4.80 V. Type `t` and wait for the `$Z` line.
+6. Moves: on the SERVO screen's TEST page set LENGTH BY to MOVEMENTS,
+   MOVEMENTS 20, DWELL 1000 ms, STEP 4.8 V on and every other step and
+   BROWN-OUT off. START TEST. The trace runs from the first move to 4 s
+   after the last; wait for its `$Z` line.
+7. Close the log file. Keep it together with the test's `BENCHnnn.CSV`
+   from the SD card. A log file of its own for each test keeps the pairing
+   of the two unambiguous.
+8. Repeat steps 5 to 7 at 6.00 V with STEP 6.0 V, and both for each servo.
+9. On the host, for each pair of files:
+
+   ```bash
+   python3 tools/sense_trace.py run-mg90s-4v8.log --servo-csv BENCH012.CSV
+   ```
+
+**Good:** every trace reads `counts match the end line` and `0 records
+missing`; the exit code is 0.
+
+**What the tool prints.** Per trace: the samples and voltages read against
+the end line; the mean, the standard deviation and the largest distance
+from the mean of the samples before the first command, as read and through
+a moving mean of 4 and of 8 samples; then every move replayed through
+`shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the
+band at 0.02, 0.05 and 0.10 A: seen or not, and the arrival in ms from the
+frame. With `--servo-csv`, the arrival less the encoder's `travel angle
+(ms)` per move, and its median per setting. One `<log>-trace-<n>.csv` per
+trace holds time in ms, current in A and the bus voltage in V.
+
+**Write down:** the tool's output for each run. Its figures are what the
+capture's filter length (`SENSE_CAP_FILTER_N`, 4), the arrival band
+(`SERVO_MOVE_BAND_A`, 0.05 A) and the threshold's floor
+(`SERVO_MOVE_MIN_A`, 0.020 A) are to be chosen from: all three are chosen,
+not measured.
+
+**Not known:**
+
+- The encoder's travel time counts from the command as the panel issues
+  it, the trace's arrival from the PWM frame at the pin. The difference
+  the tool prints contains the time between the two: up to one poll and
+  one frame, not measured.
+- A command's frame time is computed from the PWM counter read after the
+  pulse is written. A frame that ends between the two puts that one
+  command's time one frame (20 ms at 50 Hz) late. How often: not measured.
+- The two files have different clocks. The tool pairs rows and commands by
+  the spacing of the moves; when two offsets pair equally many it says so,
+  exits 1 and takes `--csv-offset`.
+- Whether a terminal keeps up with 8.6 kB a second without loss. A trace
+  whose line counts do not match its end line is reported and exits 1.
+
 ---
 
 ## 9. When something goes wrong

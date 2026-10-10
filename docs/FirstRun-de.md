@@ -428,6 +428,141 @@ gestempelt und die Stellzeiten -- schaltet der Servotest des Panels scharf,
 der sie noch nicht nutzt. Eine Stellzeit gegen ein Oszilloskop am PWM-Pin
 und am Shunt wartet darauf.
 
+### 8.9 Die 1-ms-Samples von CH1 auf der Konsole
+
+Ein Koprozessor-Image, das mit `-DSENSE_TRACE=ON` gebaut ist, druckt die
+1-ms-Samples von INA3221 CH1 als Text auf seine USB-Konsole (Universal
+Serial Bus). Der Link überträgt nur 50-ms-Fenster; dieser Build ist der
+einzige Weg zu den einzelnen Samples. Er ist ein Debug-Build: ein
+veröffentlichtes Image wird ohne die Option gebaut und enthält nichts von
+ihrem Code. `tools/sense_trace.py` liest die mitgeschnittene Konsole.
+Nichts davon ist auf Hardware gelaufen.
+
+**Was einen Trace startet.**
+
+| Trigger | Trace |
+| --- | --- |
+| ein PWM-Ausgang (Pulsweitenmodulation) gibt eine andere Pulsbreite aus als im Durchlauf davor, 50 ms oder mehr nach der letzten Änderung dieses Ausgangs | 4 s ab dem Frame, der den Puls trägt; Triggerzeile `$C` |
+| `t` auf der Konsole getippt | 10 s; Triggerzeile `$K` |
+| die PWM-Flanke des Capture | 4 s; Triggerzeile `$E`. Kein veröffentlichtes Panel schaltet das Capture scharf, mit einem solchen kommt dieser Trigger nicht vor |
+
+Jedes MOVE des automatischen Servotests ist eine geänderte Pulsbreite: ein
+Test mit dem veröffentlichten Panel wird ohne Capture aufgezeichnet. Ein
+Trigger während eines Trace fügt seine Zeile ein und verschiebt das Ende
+auf 4 s (bei `t` 10 s) nach sich selbst, wenn das später liegt: Bewegungen
+mit weniger als 4 s Abstand sind ein Trace. `x` auf der Konsole beendet
+einen Trace. Jeder Trace enthält auch die Samples von bis zu 64 ms vor
+seinem Trigger.
+
+**Was es kostet.** Core 1 liest CH1 jede 1 ms wie im veröffentlichten
+Image und kopiert das Sample in einen Ring aus 4096 Einträgen (49.152
+Bytes; 3,9 s bei 1000 Samples und 50 Busspannungen je Sekunde). Der Tick
+bekommt keine Bus-Transaktion dazu. Core 0 schreibt ganze Zeilen in den
+Platz, den der 64-Byte-Sendepuffer der Konsole hat, und nichts, wenn kein
+Terminal verbunden ist: seine Schleife wartet nicht auf den Host. Ein
+voller Ring verwirft den neuesten Eintrag: der Trace hat eine Zeile
+`$L n=`, wo Einträge fehlen, und ihre Summe in seiner Endzeile. Um wie
+viel ein Durchlauf von Core 0 durch das Schreiben der Zeilen länger wird,
+ist nicht gemessen.
+
+**Die Zeilen** (`shared/sense/sense_trace.h` nennt jedes Feld):
+
+```text
+$T v=1 n=2 trig=cmd t=220200 ms=22020 len=4000
+$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
+$C t=220200 ch=0 us=1800
+-810,289
+10,277
+v5952
+10,289
+$Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
+```
+
+Eine Sample-Zeile ist die Zeit seit dem Sample davor in 0,1 ms und der
+Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile hat
+8 Bytes bei einem dreistelligen Code; mit den Spannungszeilen sind es etwa
+8,6 Bytes je Sample, 8,6 kB je Sekunde.
+
+**Bereitlegen:** den Aufbau der Schritte oben mit dem PD mini (WeAct PD
+Power Mini V1) bei einer Grenze von 2,00 A, CH1 des INA3221 mit seinem
+0,1-Ω-Shunt in der Versorgung des Servos, einen AS5600 auf der Welle des
+Servos, die zu messenden Servos und ein Terminalprogramm, das jedes
+empfangene Byte ohne Zeitstempel in eine Datei schreibt und DTR (Data
+Terminal Ready) setzt: PuTTY (Session, Logging, "All session output") oder
+`picocom -g run.log`.
+
+1. Das Image bauen:
+
+   ```bash
+   export PICO_SDK_PATH=/path/to/pico-sdk
+   cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
+   cmake --build firmware/iomcu/build-trace
+   ```
+
+2. `firmware/iomcu/build-trace/rcbench-iomcu.uf2` flashen: BOOTSEL halten,
+   das Modul anstecken, die Datei auf sein Laufwerk kopieren.
+3. Den USB-Seriell-Port des Koprozessors im Terminal öffnen und in eine
+   neue Datei mitschneiden. Innerhalb von 3 s druckt er eine Zeile, die
+   mit `rcbench-iomcu:` beginnt. Am Panel SETUP → ANSCHLÜSSE: `INA3221` und
+   `AS5600` auf ON.
+4. Rauschen ohne Servo: kein Servo angeschlossen, der Ausgang des Netzteils
+   an bei 6,00 V, `t` tippen. 10 s später druckt die Konsole eine Zeile,
+   die mit `$Z` beginnt.
+5. Rauschen mit ruhendem Servo: das Servo anschließen, scharf schalten, in
+   der Mitte lassen, Netzteil an bei 4,80 V. `t` tippen und auf die Zeile
+   `$Z` warten.
+6. Bewegungen: auf der Seite TEST des Bildschirms SERVO LÄNGE NACH auf
+   BEWEGUNGEN, BEWEGUNGEN 20, VERWEILEN 1000 ms, STUFE 4.8 V an, jede
+   andere Stufe und BROWN-OUT aus. TEST STARTEN. Der Trace läuft von der
+   ersten Bewegung bis 4 s nach der letzten; auf seine Zeile `$Z` warten.
+7. Die Mitschnittdatei schließen. Sie zusammen mit der `BENCHnnn.CSV` des
+   Tests von der SD-Karte aufheben. Eine eigene Mitschnittdatei je Test
+   hält die Zuordnung der beiden eindeutig.
+8. Die Schritte 5 bis 7 bei 6,00 V mit STUFE 6.0 V wiederholen, und beides
+   für jedes Servo.
+9. Am Host, für jedes Dateipaar:
+
+   ```bash
+   python3 tools/sense_trace.py run-mg90s-4v8.log --servo-csv BENCH012.CSV
+   ```
+
+**Gut:** jeder Trace meldet `counts match the end line` und `0 records
+missing`; der Exit-Code ist 0.
+
+**Was das Tool druckt.** Je Trace: die gelesenen Samples und Spannungen
+gegen die Endzeile; Mittelwert, Standardabweichung und größter Abstand vom
+Mittelwert der Samples vor dem ersten Kommando, wie gelesen und durch
+einen gleitenden Mittelwert über 4 und über 8 Samples; dann jede Bewegung
+durch `shared/servo/servo_move.c` gespielt, mit dem Filter bei 1, 4 und 8
+Samples und dem Band bei 0,02, 0,05 und 0,10 A: gesehen oder nicht, und
+die Ankunft in ms ab dem Frame. Mit `--servo-csv` die Ankunft abzüglich
+der `travel angle (ms)` des Encoders je Bewegung und ihr Median je
+Einstellung. Je Trace eine `<log>-trace-<n>.csv` mit Zeit in ms, Strom in A
+und Busspannung in V.
+
+**Aufschreiben:** die Ausgabe des Tools für jeden Lauf. Aus ihren Zahlen
+sind die Filterlänge des Capture (`SENSE_CAP_FILTER_N`, 4), das
+Ankunftsband (`SERVO_MOVE_BAND_A`, 0,05 A) und die Untergrenze der
+Schwelle (`SERVO_MOVE_MIN_A`, 0,020 A) zu wählen: alle drei sind gewählt,
+nicht gemessen.
+
+**Nicht bekannt:**
+
+- Die Stellzeit des Encoders zählt ab dem Kommando, wie das Panel es
+  ausgibt, die Ankunft des Trace ab dem PWM-Frame am Pin. Die Differenz,
+  die das Tool druckt, enthält die Zeit zwischen beiden: bis zu einem Poll
+  und einem Frame, nicht gemessen.
+- Die Frame-Zeit eines Kommandos wird aus dem PWM-Zähler berechnet, der
+  nach dem Schreiben des Pulses gelesen wird. Ein Frame, der zwischen
+  beidem endet, setzt die Zeit dieses einen Kommandos einen Frame (20 ms
+  bei 50 Hz) zu spät. Wie oft: nicht gemessen.
+- Die beiden Dateien haben verschiedene Uhren. Das Tool ordnet Zeilen und
+  Kommandos über die Abstände der Bewegungen zu; passen zwei Versätze
+  gleich gut, sagt es das, endet mit 1 und nimmt `--csv-offset`.
+- Ob ein Terminal 8,6 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
+  dessen Zeilenzahlen nicht zu seiner Endzeile passen, wird gemeldet und
+  endet mit 1.
+
 ---
 
 ## 9. Wenn etwas schiefgeht
