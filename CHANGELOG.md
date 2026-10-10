@@ -90,6 +90,20 @@ coprocessor and the other way round.
   from PD mini` once per link-up for a 4.7 to 4.10 coprocessor, and
   `INA3221 reset itself -- check its supply` once per reset. Host suite
   only; not run on hardware.
+- **The profile generator and the card reader are held to one verdict.**
+  The host suite's `esc_parity` test (`test/host/fuzz_parity.py`, Python 3)
+  changes the profiles of record in structure and in text, 1500 cases from
+  each of 2 fixed seeds, and fails on a file `tools/gen_esc_profiles.py`
+  and `esc_profile_parse()` read differently. 6.2 s on one x86-64 host,
+  8.1 s in the sanitizer build; ctest stops it after 120 s. It is not in
+  the coverage build. `tools/mutate.py` copies the generator beside the
+  suite.
+- **Heartbeat cases at the limits.** `test_heartbeat` holds an interval of
+  3, 4, 150 and 151 ms, the 150 ms of silence, the run of 4 good intervals,
+  the counters, the generator's 20 ms period and its resume after a stop,
+  each at tick 0 and across the wrap of the millisecond count. The suite
+  fails on each of the 36 mutants `tools/mutate.py` makes of
+  `shared/safety/heartbeat.c`; `heartbeat.c` is unchanged.
 
 ### Changed
 
@@ -268,6 +282,12 @@ coprocessor and the other way round.
 
 ### Fixed
 
+- **`tools/gen_esc_profiles.py` refuses two malformed profiles it ended
+  on with a Python exception.** An `applies_to` entry that is a list or an
+  object raised `TypeError`, and a file nested about 1,000 levels or deeper
+  raised `RecursionError`. Both are refused with the generator's own
+  message, as the card reader refuses them; nesting is checked before the
+  NUL check, so a file with both faults names the nesting.
 - **A current monitor that resets itself is found and set up again.** An
   INA228 or INA3221 whose supply dips answers every read afterwards on its
   power-on set-up, and stayed online on it until the coprocessor restarted

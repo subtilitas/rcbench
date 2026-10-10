@@ -250,7 +250,16 @@ puts 8 guard pixels above, below and beside a canvas, so a pixel written
 off the canvas fails the plain build and not only the sanitizer one.
 `test_fuzz_engines` runs 600 random servo tests and 2400 random stick
 programming runs from 3 fixed seeds and checks at every step what a caller
-relies on; a failure states the seed and the case number. A case that is
+relies on; a failure states the seed and the case number. ctest runs one
+test more that is no suite binary and not in the coverage build:
+`esc_parity` (`test/host/fuzz_parity.py`, Python 3) changes the profiles
+of record in structure and in text, 1500 cases from each of 2 fixed seeds,
+reads each with `tools/gen_esc_profiles.py` and, through
+`test/host/esc_parse_dump.c`, with `esc_profile_parse()`, and fails on a
+file one takes and the other refuses or the two read differently. It
+takes 6.2 s on one x86-64 host, 8.1 s in the sanitizer build, and ctest
+stops it after 120 s. `tools/mutate.py --files shared/safety/heartbeat.c
+--max-mutants 0` makes 36 mutants and the suite fails on each. A case that is
 defined and not run fails the build (`-Werror=unused-function`).
 `tools/check_docs.py` holds this list to `test/host/CMakeLists.txt`.
 ctest runs one case more that is not a binary of the suite:

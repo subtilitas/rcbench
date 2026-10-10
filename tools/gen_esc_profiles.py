@@ -246,8 +246,13 @@ def check(path: pathlib.Path) -> dict:
                        parse_constant=no_constant)
     except Bad as e:
         raise Bad(f"{w}: {e}") from None
-    no_nul(d, w)
+    except RecursionError:
+        # json.loads() follows nesting with its own stack and gives up near
+        # 1,000 levels; the card reader refuses the file at 17.
+        raise Bad(f"{w}: nested deeper than {MAX_DEPTH}") from None
+    # Depth first: no_nul() follows every level there is.
     no_deeper(d, w)
+    no_nul(d, w)
     want(isinstance(d, dict), w, "not an object")
     num(d, "schema", w, 1, null_ok=False, lo=1)
     pid = text(d, "id", w)
@@ -377,8 +382,10 @@ def check(path: pathlib.Path) -> dict:
         want(re.fullmatch(r"[a-z0-9_]{1,32}", key) is not None, f"{iw}.key",
              "not 1-32 of a-z 0-9 _")
         applies = optional(it, "applies_to", iw, list, [])
+        # A string first: a list or an object is not hashable.
         want(len(applies) <= 255
-             and all(x in names for x in applies), f"{iw}.applies_to",
+             and all(isinstance(x, str) and x in names for x in applies),
+             f"{iw}.applies_to",
              "not a list of this profile's model names")
         when = optional(it, "applies_when", iw, str, "")
         seen.setdefault(number, []).append(bool(applies) or when != "")
@@ -580,6 +587,9 @@ def self_test() -> list[str]:
         "v_min over 1000000": at('"v_min_mv": 5500', '"v_min_mv": 1000001'),
         "nested 17": at(head, head + ' "n": ' + "[" * 16 + "1" + "]" * 16
                         + ","),
+        # Past the depth json.loads() itself follows.
+        "nested 3000": at(head, head + ' "n": ' + "[" * 3000 + "1"
+                          + "]" * 3000 + ","),
         "verified 0": at('"verified": false', '"verified": 0'),
         "default 1": at('"number": 1,\n          "name": "disabled',
                         '"number": 1, "default": 1,\n'

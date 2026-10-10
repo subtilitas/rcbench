@@ -283,9 +283,9 @@ jobs:
 
       # The tools in tools/ are held to the same standard as the C: each of
       # them can fail a build, so a bug in one is a bug in the gate.  Their
-      # tests are held to it too.
+      # tests are held to it too, and the script of the host suite.
       - name: ruff
-        run: ruff check tools/ test/tools/
+        run: ruff check tools/ test/tools/ test/host/
 
   tools:
     name: Tool tests

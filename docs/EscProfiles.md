@@ -194,6 +194,9 @@ python3 tools/gen_esc_profiles.py --check
 CI (continuous integration) runs `--check`. The host suite parses every file
 with the panel's reader and compares the result with the generated table,
 field by field, so the generator and the card reader accept the same files.
+The suite's `esc_parity` test changes those files 3000 times, in structure
+and in text, and fails on a result the generator and the card reader read
+differently.
 
 ## Current limitations
 
