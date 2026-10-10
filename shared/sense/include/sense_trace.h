@@ -106,6 +106,11 @@
  *       The trace ends: S sample lines, V voltage lines, X records
  *       missing, A trigger lines, B triggers that found the trigger queue
  *       full.  e is the reason: its time, a changed set-up, the console.
+ *       A trace that ends at a changed set-up leaves the triggers after
+ *       the change to the next trace, and with them those that found the
+ *       queue full after it; with such on both sides of the change both
+ *       traces count all of them.  A trace that ends between a slewed
+ *       command's $C line and its $D line has the $C line alone.
  *       A capital letter: core 1 was not seen past the end, or past a
  *       trigger line's time, within SENSE_TRACE_STALL_MS, so a sample of
  *       before that time can be missing or stand behind the line.
@@ -255,16 +260,15 @@ typedef struct {
     bool     lost_shown;  /**< the $L line of the record at the tail is
                                written                                     */
     uint32_t n_s, n_v, n_m, n_lost, n_mlost;
+    uint32_t mlost_t[2];  /**< the first and the last time of the n_mlost
+                               triggers that found the queue full          */
     sense_trace_mark_t q[SENSE_TRACE_MARKS];
     uint8_t  q_n, q_head;
     /* Triggers at or past the end of a trace still being written. */
-    struct {
-        uint8_t  kind;
-        uint64_t at_us;
-        uint16_t ch, us;
-    } wait[SENSE_TRACE_MARKS];
+    sense_trace_mark_t wait[SENSE_TRACE_MARKS];
     uint8_t  wait_n;
     uint32_t wait_lost;   /**< of them, those that found no place          */
+    uint32_t wait_lost_t[2]; /**< their first and last time                */
     uint32_t abandoned;   /**< traces dropped with no console              */
     uint32_t scanned;     /**< idle: records looked at for a set-up record */
     sense_trace_watch_t watch[SENSE_TRACE_SLOTS];

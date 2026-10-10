@@ -1631,6 +1631,162 @@ TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
     CHECK(sense_trace_active(&tr));
 }
 
+/* A trace by the console, 100 ms written and then the console behind:
+ * the set-up changes after @p before ms of that and @p after ms pass. */
+static void behind_at_a_change(unsigned before, unsigned after)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    stall(before);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    stall(after);
+}
+
+TEST_CASE(a_trigger_lost_after_a_changed_set_up_is_counted_in_the_next_trace)
+{
+    /* The trigger queue fills with commands of after the change, and two
+     * more find it full: the trace that ended before them all counts
+     * none, the trace they start counts both. */
+    behind_at_a_change(200u, 50u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 2u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + k * 100u,
+                            (uint16_t)k, 1500u);
+    }
+    CHECK_EQ(tr.out.n_mlost, 2u);
+    stall(50u);
+    run(600u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(5u);
+    CHECK(!sense_trace_active(&tr));
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_ml, 0u);
+    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strstr(rest, " m=8 ml=2 e=k\r\n") != NULL);
+
+    /* One of before the change and one of after it, the queue full of
+     * commands of before it, and a trigger that waits for the next
+     * trace: both traces count both. */
+    behind_at_a_change(100u, 0u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 1u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
+                            g_us - 50000u + k * 100u, (uint16_t)k, 1500u);
+    }
+    stall(50u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 9u, 1500u);
+    CHECK_EQ(tr.out.n_mlost, 2u);
+    const uint64_t far_us = g_us + 20000000u;
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, far_us, 0u, 0u);
+    CHECK_EQ(tr.out.wait_n, 1u);
+    for (unsigned k = 0u; k < 2000u && tr.out.id == 1u; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK_EQ(tr.out.n_mlost, 2u);
+    (void)first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, SENSE_TRACE_MARKS);
+    CHECK_EQ(seen.z_ml, 2u);
+
+    /* The one of before the change alone: the trace it was lost in. */
+    behind_at_a_change(100u, 50u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 1u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
+                            g_us - 100000u + k * 100u, (uint16_t)k, 1500u);
+    }
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, far_us + 1000000u, 0u, 0u);
+    for (unsigned k = 0u; k < 2000u && tr.out.id == 1u; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK_EQ(tr.out.n_mlost, 0u);
+    (void)first_trace_only();
+    parse();
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_ml, 1u);
+
+    /* One of after the change with no trigger left to start a trace: no
+     * trace follows, and the one that ended says it. */
+    behind_at_a_change(100u, 0u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
+                            g_us - 50000u + k * 100u, (uint16_t)k, 1500u);
+    }
+    stall(50u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 9u, 1500u);
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    run(2000u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(a_slewed_commands_end_goes_with_its_command_into_the_next_trace)
+{
+    /* The command and the end of its slew, both after the change the
+     * console has not come to: the next trace has both lines. */
+    behind_at_a_change(200u, 50u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1500u, g_us - 200000u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 5u, 1600u);
+    stall(10u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
+    const uint32_t d_t = (uint32_t)(g_us / 100u);
+    stall(60u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
+    CHECK_EQ(tr.out.q_n, 2u);
+    run(600u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c + seen.n_d, 0u);
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=5 us=1610\r\n",
+             (unsigned long)d_t);
+    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strstr(rest, " ch=5 us=1600\r\n") != NULL);
+    CHECK(strstr(rest, want) != NULL);
+}
+
+TEST_CASE(a_trigger_past_the_next_traces_end_overwrites_none_that_waited)
+{
+    /* The console behind for 12 s.  Two commands after a changed set-up,
+     * 5 s apart, and one past the end the trace seems to have: the first
+     * starts the next trace, the second lies past that trace's end and
+     * waits, and the third still waits behind it. */
+    behind_at_a_change(100u, 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 1u, 1100u);
+    stall(5000u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 2u, 1200u);
+    const uint64_t third_us = g_us + 6000000u;
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, third_us, 3u, 1300u);
+    CHECK_EQ(tr.out.q_n, 2u);
+    CHECK_EQ(tr.out.wait_n, 1u);
+    for (unsigned k = 0u; k < 4000u && tr.out.id == 1u; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[0].ch, 2u);
+    CHECK_EQ(tr.out.wait[0].us, 1200u);
+    CHECK_EQ(tr.out.wait[1].ch, 3u);
+    CHECK_EQ(tr.out.wait[1].us, 1300u);
+    CHECK(tr.out.wait[1].at_us == third_us);
+}
+
 TEST_CASE(records_dropped_before_a_set_up_record_are_said_in_its_trace)
 {
     rig();
@@ -2218,6 +2374,9 @@ int main(void)
     RUN(a_stop_on_a_full_ring_counts_what_was_dropped_before_it);
     RUN(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed);
     RUN(a_command_after_a_changed_set_up_is_the_next_traces);
+    RUN(a_trigger_lost_after_a_changed_set_up_is_counted_in_the_next_trace);
+    RUN(a_slewed_commands_end_goes_with_its_command_into_the_next_trace);
+    RUN(a_trigger_past_the_next_traces_end_overwrites_none_that_waited);
     RUN(records_dropped_before_a_set_up_record_are_said_in_its_trace);
     RUN(a_state_change_under_a_backlog_keeps_its_place);
     RUN(a_set_up_record_with_no_room_is_written_when_there_is_room);

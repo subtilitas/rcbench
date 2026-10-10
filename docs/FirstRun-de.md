@@ -625,8 +625,19 @@ gewählt, nicht gemessen.
   bei 50 Hz) zu spät. Wie oft: nicht gemessen.
 - Teil B: die beiden Dateien haben verschiedene Uhren. Das Tool ordnet Zeilen und
   Kommandos über die Abstände der Bewegungen zu; ordnen zwei Versätze
-  gleich viele Zeilen zu und geben eine Zeile verschiedenen Bewegungen,
-  sagt es das, endet mit 1 und nimmt `--csv-offset`.
+  gleich viele Zeilen zu, aber nicht dieselben Zeilen denselben
+  Bewegungen, sagt es das, endet mit 1 und nimmt `--csv-offset`.
+- Ein Mitschnitt mit einem Neustart des Koprozessors darin hat eine Uhr je
+  Boot. Das Tool ordnet die Bewegungen jedes Boots für sich zu. Liegen die
+  Zeilen eines späteren Boots nicht hinter denen des Boots davor, ordnet
+  es keine Zeile zu, sagt das und endet mit 1: den Teil des Mitschnitts
+  jedes Boots mit seinem Teil der CSV-Datei auswerten.
+- Kommandos im Abstand von höchstens 30 ms, etwa zwei Ausgänge in einem
+  Frame, ändern den Strom gemeinsam. Das Tool listet sie und spielt
+  keines davon nach. Ein Kommando, das später als das auf das Kommando
+  eines anderen Ausgangs folgt, bevor dessen Servo angekommen ist, wird
+  mit dem Strom des ersten Servos darin nachgespielt; das Tool
+  unterscheidet beide nicht.
 - Ob ein Terminal 8,6 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
   dessen Zeilenzahlen nicht zu seiner Endzeile passen, wird gemeldet und
   endet mit 1.

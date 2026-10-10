@@ -17,8 +17,13 @@ terminal capture of that console and, for each trace in it:
      at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A, and
      prints for each setting whether the move is seen and when it arrives.
 
-A move is a trigger line: an edge line when the trace has any, a command
-line otherwise.  A slewed command's destination is its $D line's pulse.
+A move is a command line, at the time of its edge line when the trace has
+one within 30 ms of it; an edge line with no command line that near is a
+move too.  A slewed command's destination is its $D line's pulse.
+Commands within 30 ms of each other change the current together: none of
+them is replayed.  A move that follows another output's move before that
+one arrived carries its current too; the tool does not tell these apart,
+and the earlier move reads `cut`.
 A trace with a problem -- lines that do not match its end line, no end
 line, trigger lines that were not written -- is not replayed; its CSV file
 is still written.  Neither is a move with records missing among its samples or
@@ -51,8 +56,12 @@ arrival less that travel time is printed per move, with the median per
 setting.  The two files have different clocks.  The offset between them is
 found from the moves themselves: the one that pairs the most rows with a
 command, each within --pair-ms.  Equally spaced moves pair equally well
-one move along; the tool says so when two offsets pair as many rows with
-different moves, and --csv-offset sets it by hand.
+one move along; the tool says so when two offsets pair as many rows and
+not the same rows with the same moves, and --csv-offset sets it by hand.
+A log with a restart of the coprocessor in it has a clock for each boot:
+each boot's moves are paired on their own, and the rows of a later boot
+lie after those of an earlier one.  Where they do not, no row is paired
+and the tool says so.
 
 The replay is a host program that links the repository's own code,
 test/host/sense_trace_replay.c.  --replay names a built one; without it
@@ -65,8 +74,9 @@ Usage:
 
 Exit code: 0; 1 when the log holds no trace, a trace has a problem (it
 does not match its end line, or its end line's reason is a capital
-letter), or the servo test's rows pair with the moves in more than one
-way; 2 when the replay cannot be built or run, or an argument is refused.
+letter), the servo test's rows pair with the moves in more than one way,
+or two boots' rows lie among each other; 2 when the replay cannot be
+built or run, or an argument is refused.
 """
 
 from __future__ import annotations
@@ -97,6 +107,7 @@ T_PER_MS = 10               # the trace counts 0.1 ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
 EDGE_PAIR_MS = 30           # an edge line's command line lies this close
+TOGETHER_MS = 30            # commands this close are one change of current
 REF_FILTER = 4              # the capture's: SENSE_CAP_FILTER_N,
 REF_BAND_A = 0.05           # SERVO_MOVE_BAND_A
 SETTLE_HOLD_MS = 100        # the encoder finds a settle this long after it
@@ -356,33 +367,52 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     edges = [m for m in tr.marks if m[0] == "E"]
     # A slewed command's line carries its first pulse; its $D line the one
     # it ended at, which is the end the servo is then held at.  The $D
-    # line is the next one written for that channel after its $C line;
-    # its time is the last pulse change, which can lie before the frame
-    # time the $C line carries.
-    cmds = []
-    last: dict[int | None, list] = {}
+    # line's time is the last pulse change, which can lie before the frame
+    # time its $C line carries, and the lines stand in the order of their
+    # times: the $D line is of the latest command of its channel that
+    # lies no more than a frame's lateness after it, whichever of the two
+    # lines comes first.
+    cmds = [list(m) for m in tr.marks if m[0] == "C"]
+    ended: set[int] = set()
     for mark in tr.marks:
-        if mark[0] == "C":
-            cmds.append(list(mark))
-            last[mark[2]] = cmds[-1]
-        elif mark[0] == "D" and mark[2] in last:
-            last.pop(mark[2])[3] = mark[3]
+        if mark[0] != "D":
+            continue
+        mine = [k for k, c in enumerate(cmds)
+                if c[2] == mark[2]
+                and c[1] <= mark[1] + EDGE_PAIR_MS * T_PER_MS]
+        if mine:
+            k = max(mine, key=lambda k: cmds[k][1])
+            if k not in ended:
+                ended.add(k)
+                cmds[k][3] = mark[3]
+    # An edge line and the command line nearest to it, before or after,
+    # are one move at the edge's time: a command's time is computed and
+    # can lie a frame late, the edge's is stamped.  A command line is one
+    # edge's at most, the nearest first; a command with no edge line is a
+    # move at its own time.
+    near = sorted((abs(c[1] - e[1]), ke, kc)
+                  for ke, e in enumerate(edges)
+                  for kc, c in enumerate(cmds)
+                  if abs(c[1] - e[1]) <= EDGE_PAIR_MS * T_PER_MS)
+    of_edge: dict[int, int] = {}
+    for _, ke, kc in near:
+        if ke not in of_edge and kc not in of_edge.values():
+            of_edge[ke] = kc
     moves = []
-    if edges:
-        for _, t, _, _ in edges:
-            # The command line of this edge: the nearest one, before or
-            # after.  A command's time is computed and can lie a frame
-            # late; the edge's is stamped.
-            near = [c for c in cmds
-                    if abs(c[1] - t) <= EDGE_PAIR_MS * T_PER_MS]
-            near.sort(key=lambda c: abs(c[1] - t))
-            ch, us = (near[0][2], near[0][3]) if near else (None, None)
-            moves.append(Move(tr, t, ch, us))
-    else:
-        moves = [Move(tr, t, ch, us) for _, t, ch, us in cmds]
+    for ke, e in enumerate(edges):
+        ch, us = cmds[of_edge[ke]][2:4] if ke in of_edge else (None, None)
+        moves.append(Move(tr, e[1], ch, us))
+    moves += [Move(tr, c[1], c[2], c[3]) for kc, c in enumerate(cmds)
+              if kc not in of_edge.values()]
     moves.sort(key=lambda mv: mv.t)
     if not moves:
         return []
+    # Commands this close change the current together: no sample is one's
+    # and not the other's.
+    together = set()
+    for k in range(len(moves) - 1):
+        if moves[k + 1].t - moves[k].t <= TOGETHER_MS * T_PER_MS:
+            together.update((k, k + 1))
 
     idle = window(tr, -(1 << 62), moves[0].t)
     idle_a, _, idle_dev = spread(idle)
@@ -407,6 +437,9 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
             mv.why_not = "records are missing among its samples"
         elif any(mv.first <= at <= mv.last for at, _, _ in tr.states):
             mv.why_not = "the part's state changed inside it"
+        if k in together:
+            mv.why_not = (f"another command within {TOGETHER_MS} ms, the "
+                          "current is of both")
         # The destination's holding level: where a later-known hold at
         # that pulse width was left from, the idle level until then.
         mv.ref_a, mv.ref_from = idle_a, "idle level"
@@ -537,7 +570,7 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
 
     A row's command lies its travel time and the encoder's 100 ms hold
     before the row.  Returns the rows paired and whether another offset
-    pairs as many rows with other moves.
+    pairs as many rows and not the same rows with the same moves.
     """
     if not moves or not rows:
         return 0, False
@@ -588,12 +621,11 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
                            frozenset((j, i) for j, i, _ in got)))
         best = max(scored, key=lambda s: s[:3])
         offset = best[2]
-        # Another offset that pairs as many is a second answer when it
-        # gives a row to a move this offset does not put it at, however
-        # close the two offsets lie; it is the same answer when every pair
-        # of it is within the tolerance here too, however far apart.
-        here = {(j, i) for j, i, _ in pairs(offset)}
-        tie = any(n == best[0] and not which <= here
+        # Another offset that pairs as many is the same answer when it
+        # gives the same rows to the same moves, however far apart the two
+        # offsets lie, and a second answer when it does not, however
+        # close.
+        tie = any(n == best[0] and which != best[3]
                   for n, _, _, which in scored)
     got = one_each(pairs(offset))
     for j, i, _ in got:
@@ -869,27 +901,43 @@ def main() -> int:
         rows = read_travel(args.servo_csv)
         n_rows = len(rows)
         # Each boot of the coprocessor has a clock of its own: its moves
-        # are paired on their own, with the rows no earlier boot took.
-        paired, tie = 0, False
+        # are paired on their own, each boot with every row.  The file's
+        # rows and the log's boots are both in the order of time, so a
+        # later boot's rows lie after an earlier boot's; where they do
+        # not, a boot took rows of another and nothing tells which.
+        paired, tie, mixed = 0, False, False
         boots = sorted({mv.tr.boot for mv in all_moves})
+        last_row = -1
         for boot in boots:
             mine = [mv for mv in all_moves if mv.tr.boot == boot]
             n, t = pair_rows(mine, rows, args.pair_ms / 1000.0,
                              args.csv_offset if boot == boots[0] else None)
-            taken = {mv.horn_row for mv in mine if mv.horn_row is not None}
-            rows = [r for k, r in enumerate(rows) if k not in taken]
+            taken = [mv.horn_row for mv in mine if mv.horn_row is not None]
+            if taken:
+                mixed = mixed or min(taken) <= last_row
+                last_row = max(last_row, *taken)
             paired += n
             tie = tie or t
+        if mixed:
+            for mv in all_moves:
+                mv.horn_ms = mv.horn_row = None
+            paired = 0
         have_horn = paired > 0
         if len(boots) > 1:
             out.append(f"the coprocessor restarted {len(boots) - 1} time(s) "
                        "in the log: each boot is paired on its own clock")
         out.append(f"{args.servo_csv}: {n_rows} travel time(s), "
                    f"{paired} paired with a move")
-        if tie:
+        if mixed:
+            out.append("  PROBLEM: the rows that pair with one boot's moves "
+                       "do not lie after those of the boot before it; no "
+                       "row is paired. Give each boot's part of the log "
+                       "with its part of the CSV file")
+            ambiguous = True
+        elif tie:
             out.append("  PROBLEM: another offset between the two clocks "
-                       "pairs as many rows with other moves; set "
-                       "--csv-offset")
+                       "pairs as many rows, and not the same rows with the "
+                       "same moves; set --csv-offset")
             ambiguous = True
     for tr, moves, csv in per_trace:
         report_trace(tr, moves, csv, out)

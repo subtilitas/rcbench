@@ -16,12 +16,14 @@ with CR LF and with LF line ends; a log cut off inside a trace, with a
 sample line missing, with a trace starting inside another, with records
 the coprocessor dropped, with no trace, with another format version and
 with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
-count; clipped samples; edge lines taken before command lines, each with
-the command line nearest to it; a trace with trigger lines not written,
-a move with records missing inside it and a slewed command; what the
-traces alone give; a servo
-CSV that pairs at two offsets, one set by hand, and one without the
-columns.
+count; clipped samples; edge lines with the command line nearest to
+each, a command line with no edge line and an edge line with no command
+line; commands within 30 ms of each other; a trace with trigger lines not
+written, a move with records missing inside it and a slewed command with
+its $D line before and after its $C line; what the traces alone give; a
+servo CSV that pairs at two offsets, one set by hand, and one without the
+columns; two boots whose rows lie in their order, among each other and
+alike.
 
 Regenerate the fixtures after a change that moves them:
 
@@ -387,10 +389,73 @@ def an_edge_takes_the_command_line_nearest_to_it() -> None:
     check("move 1 at -20.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
     check("move 3 at 1980.0 ms, channel 2 to 1900 us" in r.stdout
           and "(held before move 2)" in r.stdout, "move 3's level")
-    # 31 ms apart is another command's.
+    # 31 ms apart is another command's: the edge is a move with no
+    # channel, and the command a move at its own time.
     r = tool(str(work("far.log", synthetic(1000, moves, edges=True,
                                            edge_after=-310))), "--no-csv")
     check("move 1 at -31.0 ms, edge" in r.stdout, r.stdout[-900:])
+    check("move 2 at 0.0 ms, channel 2 to 1900 us" in r.stdout
+          and "move 6 at 2000.0 ms, channel 2 to 1900 us" in r.stdout,
+          "the commands are moves")
+
+
+def a_command_with_no_edge_line_is_a_move() -> None:
+    # Three commands, an edge line for the first and the third: the
+    # second is a move at its command line's time.
+    lines = synthetic(1000, [(0, 1900), (1000, 1100), (2000, 1900)],
+                      edges=True).splitlines()
+    at = [k for k, line in enumerate(lines) if line.startswith("$E")][1]
+    del lines[at]
+    lines[-1] = lines[-1].replace("m=6", "m=5")
+    r = tool(str(work("noedge.log", "\n".join(lines) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 12.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
+    check("move 2 at 1000.0 ms, channel 2 to 1100 us" in r.stdout, "move 2")
+    check("move 3 at 2012.0 ms, channel 2 to 1900 us: before 0.120 A, "
+          "holding 0.120 A (held before move 2)" in r.stdout, "move 3")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["3/3", "3/3", "101.0", "113.0", "101.0"],
+          f"{arrival[(1, '0.05')]}")
+    # A command line is one edge's: of two edge lines within 30 ms of it
+    # the nearer has its channel and pulse, the other none.
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)],
+                      edges=True).splitlines()
+    at = next(k for k, line in enumerate(lines) if line.startswith("$E"))
+    t = int(lines[at].split("=")[1])
+    lines.insert(at + 1, f"$E t={t + 100}")
+    lines[-1] = lines[-1].replace("m=4", "m=5")
+    r = tool(str(work("twoedge.log", "\n".join(lines) + "\n")), "--no-csv")
+    check("move 1 at 12.0 ms, channel 2 to 1900 us" in r.stdout
+          and "move 2 at 22.0 ms, edge" in r.stdout
+          and "move 3 at 1012.0 ms, channel 2 to 1100 us" in r.stdout,
+          r.stdout[-900:])
+
+
+def commands_within_30_ms_are_not_replayed() -> None:
+    # Two outputs commanded in one frame, and one alone 1 s later.
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    at = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+    lines.insert(at + 1, lines[at].replace("ch=2", "ch=3"))
+    lines[-1] = lines[-1].replace("m=2", "m=3")
+    r = tool(str(work("frame.log", "\n".join(lines) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    for n, ch in ((1, 2), (2, 3)):
+        check(f"move {n} at 0.0 ms, channel {ch} to 1900 us: another "
+              "command within 30 ms, the current is of both, not replayed"
+              in r.stdout, f"move {n}")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["1/3", "1/3", "-", "-", "113.0"],
+          f"{arrival[(1, '0.05')]}")
+    # 30 ms apart is together.  31 ms is not: both are replayed, the
+    # first ends at the second, and the second starts inside the first's
+    # current and does not come back to its level.
+    for apart, want in ((30, ["1/3", "1/3", "-", "-", "113.0"]),
+                        (31, ["2/3", "1/3", "cut", "cut", "113.0"])):
+        text = synthetic(1000, [(0, 1900), (apart, 1100), (1000, 1500)])
+        r = tool(str(work(f"apart{apart}.log", text)), "--no-csv")
+        arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+        check(arrival[(1, "0.05")] == want,
+              f"{apart} ms: {arrival[(1, '0.05')]}")
 
 
 def the_traces_alone_say_which_settings_time_every_move() -> None:
@@ -567,6 +632,28 @@ def a_slewed_command_ends_at_its_d_line() -> None:
     check("move 3 at 2000.0 ms, channel 2 to 1900 us: before 0.120 A, "
           "holding 0.120 A (held before move 2)" in r.stdout,
           "move 3's level")
+    # The lines in the order of their times, each $D line before its $C
+    # line: the same moves.
+    swapped = list(lines)
+    for k in range(len(swapped) - 1):
+        if swapped[k].startswith("$C") and swapped[k + 1].startswith("$D"):
+            swapped[k], swapped[k + 1] = swapped[k + 1], swapped[k]
+    check(swapped != lines, "swapped")
+    s = tool(str(work("slew2.log", "\n".join(swapped) + "\n")), "--no-csv")
+    check(s.returncode == 0 and s.stdout.splitlines()[1:]
+          == r.stdout.splitlines()[1:], "the same report")
+    # A $D line of another channel, and one with no command before it,
+    # change no move.
+    odd = list(lines)
+    at = next(k for k, line in enumerate(odd) if line.startswith("$C"))
+    odd.insert(at, "$D t=100 ch=2 us=1234")
+    odd.insert(at + 2, odd[at + 1].replace("ch=2", "ch=7")
+               .replace("$C", "$D").replace("us=1501", "us=1777"))
+    odd[-1] = odd[-1].replace("m=6", "m=8")
+    r = tool(str(work("slew3.log", "\n".join(odd) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1900 us" in r.stdout
+          and "1234" not in r.stdout and "1777" not in r.stdout, "move 1")
 
 
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
@@ -606,17 +693,22 @@ def the_servo_csv_pairs_by_time() -> None:
     total = setting_rows(r.stdout, "all traces, 4 move(s):")
     check(total[(4, "0.05")][2:] == ["+13.0", "ms", "over", "2", "move(s)"],
           "the median over the two")
-    # Two rows nearest to one move: the nearer one is the move's, and the
-    # count is of moves, with the offset found and with it given.
+    # Two rows nearest to one move: with the offset given the nearer one
+    # is the move's, and the count is of moves.  With the offset to find
+    # either row may be the move's: two answers.
     twice = work("twice.csv", "\n".join(
         [rows[0], rows[1], rows[1].replace("10.055", "10.105")]
         + rows[2:]) + "\n")
-    for extra in ([], ["--csv-offset", "12.345"]):
+    check(twice.read_text().count("\n") == 6, "a row more")
+    for extra, code in (([], 1), (["--csv-offset", "12.345"], 0)):
         r = tool(log, "--servo-csv", str(twice), "--no-csv", *extra)
+        check(r.returncode == code, f"{extra}: exit {r.returncode}")
         check("5 travel time(s), 4 paired with a move" in r.stdout,
               f"{extra}: {r.stdout.splitlines()[1]}")
-        diff = setting_rows(r.stdout, "  arrival less the horn's travel")
-        check(diff[(1, "0.05")] == ["+10.0"] * 4, f"{diff[(1, '0.05')]}")
+        check(("PROBLEM: another offset" in r.stdout) == (code == 1),
+              f"{extra}: the tie")
+    diff = setting_rows(r.stdout, "  arrival less the horn's travel")
+    check(diff[(1, "0.05")] == ["+10.0"] * 4, f"{diff[(1, '0.05')]}")
     # Spacings that differ between the files: commands 1.6 s apart in the
     # trace, rows 1.8 s apart.  Only an offset between the two that put a
     # row on a command pairs both.
@@ -695,14 +787,25 @@ def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
                                    None)
     check(n == 3 and not tie, f"{n} paired, tie {tie}")
     check([mv.horn_row for mv in moves] == [0, 1, 2], "each its own")
-    # Two rows that both lie at one command are one answer too: the
-    # nearer is the command's at every offset that pairs as many.
+    # Two rows that both lie at one command: either may be the command's,
+    # with other commands paired and with none.
     moves = [At(0.0), At(1.0), At(2.5)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.04, 1.0, 2.5),
                                    0.15, None)
-    check(n == 3 and not tie, f"{n} paired, tie {tie}")
-    check([mv.horn_row for mv in moves] == [0, 2, 3],
-          f"{[mv.horn_row for mv in moves]}")
+    check(n == 3 and tie, f"{n} paired, tie {tie}")
+    moves = [At(0.0)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05), 0.15, None)
+    check(n == 1 and tie, f"{n} paired, tie {tie}")
+    # One row and one command: one answer.
+    moves = [At(0.0)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(7.0), 0.15, None)
+    check(n == 1 and not tie and moves[0].horn_row == 0,
+          f"{n} paired, tie {tie}")
+    # No row, and no command.
+    check(sense_trace.pair_rows([At(0.0)], [], 0.15, None) == (0, False),
+          "no row")
+    check(sense_trace.pair_rows([], rows_at(0.0), 0.15, None) == (0, False),
+          "no command")
     # An offset given by hand is the answer.
     moves = [At(0.0), At(0.05)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05, 0.10), 0.15,
@@ -798,6 +901,51 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     check(total[(1, "0.05")][:3] == ["6/6", "6/6", "+23.0"],
           f"{total[(1, '0.05')]}")
 
+    def csv_of(*blocks: tuple[float, tuple[float, ...]]) -> str:
+        out = [head]
+        for base, at in blocks:
+            for cmd in at:
+                out.append(f"{base + cmd + 0.090 + 0.1:.3f}" + ";" * 14
+                           + "90")
+        return "\n".join(out) + "\n"
+
+    def no_row_paired(r: subprocess.CompletedProcess, what: str) -> None:
+        check(r.returncode == 1, f"{what}: exit {r.returncode}")
+        check("more than one way" in r.stderr, f"{what}: {r.stderr}")
+        check("arrival less the horn" not in r.stdout, f"{what}: compared")
+    # The first boot's rows are not in the file, and its two moves lie
+    # as two of the second boot's: each boot pairs with the same rows.
+    # No row is paired.
+    short = synthetic(900000, [(0, 1900), (700, 1100)])
+    r = tool(str(work("boots2.log", short + b)), "--no-csv", "--servo-csv",
+             str(work("boots2.csv", csv_of((80.0, (0.0, 0.7, 1.9))))))
+    no_row_paired(r, "the same rows")
+    check("3 travel time(s), 0 paired with a move" in r.stdout
+          and "PROBLEM: the rows that pair with one boot's moves do not "
+          "lie after those of the boot before it" in r.stdout,
+          r.stdout[:500])
+    # The rows of the second boot before those of the first.
+    r = tool(str(work("boots.log", a + b)), "--no-csv", "--servo-csv",
+             str(work("boots3.csv", csv_of((50.0, (0.0, 0.7, 1.9)),
+                                           (80.0, (0.0, 1.0, 2.5))))))
+    no_row_paired(r, "the other order")
+    check("6 travel time(s), 0 paired with a move" in r.stdout,
+          r.stdout[:500])
+    # Two boots with the same moves: either block of rows fits each.
+    r = tool(str(work("boots4.log", a + a.replace("t=900000", "t=3000"))),
+             "--no-csv", "--servo-csv",
+             str(work("boots4.csv", csv_of((50.0, (0.0, 1.0, 2.5)),
+                                           (80.0, (0.0, 1.0, 2.5))))))
+    no_row_paired(r, "alike")
+    check("6 travel time(s), 0 paired with a move" in r.stdout,
+          r.stdout[:500])
+    # An offset by hand is the first boot's: the second is found.
+    r = tool(str(work("boots.log", a + b)), "--no-csv", "--servo-csv",
+             str(work("boots.csv", "\n".join(rows) + "\n")),
+             "--csv-offset", "40")
+    check(r.returncode == 0 and "6 paired with a move" in r.stdout,
+          f"by hand: exit {r.returncode}")
+
 
 def a_floor_is_a_current_above_zero() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
@@ -853,6 +1001,8 @@ CASES = [
     clipped_samples_are_said_and_time_no_arrival,
     edge_lines_are_the_moves_when_there_are_any,
     an_edge_takes_the_command_line_nearest_to_it,
+    a_command_with_no_edge_line_is_a_move,
+    commands_within_30_ms_are_not_replayed,
     the_traces_alone_say_which_settings_time_every_move,
     a_trace_with_trigger_lines_not_written_is_not_replayed,
     a_move_with_records_missing_inside_it_is_not_replayed,

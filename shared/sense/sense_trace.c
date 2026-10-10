@@ -274,12 +274,29 @@ static void extend(sense_trace_out_t *o, uint32_t end_t)
     }
 }
 
+/* @p add more triggers that found a queue full, the first of them at
+ * @p first and the last at @p last, onto a count and its two times. */
+static void lost_add(uint32_t *n, uint32_t span[2], uint32_t add,
+                     uint32_t first, uint32_t last)
+{
+    if (add == 0u) {
+        return;
+    }
+    if (*n == 0u || (int32_t)(first - span[0]) < 0) {
+        span[0] = first;
+    }
+    if (*n == 0u || (int32_t)(last - span[1]) > 0) {
+        span[1] = last;
+    }
+    *n = (add > UINT32_MAX - *n) ? UINT32_MAX : *n + add;
+}
+
 /* A line for the console's queue, or counted when it is full. */
 static void mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
                  uint64_t at_us, uint16_t ch, uint16_t us)
 {
     if (o->q_n >= SENSE_TRACE_MARKS) {
-        ++o->n_mlost;
+        lost_add(&o->n_mlost, o->mlost_t, 1u, t, t);
         return;
     }
     sense_trace_mark_t *m =
@@ -336,10 +353,11 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
         /* The trace under way is over at this trigger's time and its
          * lines are not all written: the trigger is the next trace's. */
         if (o->wait_n >= SENSE_TRACE_MARKS) {
-            ++o->wait_lost;
+            lost_add(&o->wait_lost, o->wait_lost_t, 1u, t, t);
             return;
         }
         o->wait[o->wait_n].kind  = (uint8_t)kind;
+        o->wait[o->wait_n].t     = t;
         o->wait[o->wait_n].at_us = at_us;
         o->wait[o->wait_n].ch    = ch;
         o->wait[o->wait_n].us    = us;
@@ -544,7 +562,7 @@ static void line_mark(const sense_trace_mark_t *m, line_t *l)
 }
 
 static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
-                     bool stalled, line_t *l)
+                     bool stalled, uint32_t n_mlost, line_t *l)
 {
     static const char k_sure[]    = { '?', 't', 's', 'k' };
     static const char k_stalled[] = { '?', 'T', 'S', 'K' };
@@ -554,7 +572,7 @@ static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
     put_kv(l, " v=", o->n_v, 9999999u);
     put_kv(l, " l=", o->n_lost, 99999999u);
     put_kv(l, " m=", o->n_m, 9999u);
-    put_kv(l, " ml=", o->n_mlost, 9999u);
+    put_kv(l, " ml=", n_mlost, 9999u);
     put_s(l, " e=");
     put_c(l, k_why[why]);
     put_eol(l);
@@ -576,8 +594,41 @@ typedef enum {
 static act_t ends(const sense_trace_out_t *o, bool stalled, line_t *l)
 {
     line_end(o, o->stopped ? SENSE_TRACE_END_KEY : SENSE_TRACE_END_TIME,
-             stalled, l);
+             stalled, o->n_mlost, l);
     return ACT_END;
+}
+
+/* Whether a trigger is left for a trace of its own when this one ends:
+ * one that waited, or -- unless the console stopped this trace -- one
+ * whose line is not written. */
+static bool next_starts(const sense_trace_out_t *o)
+{
+    if (o->wait_n > 0u) {
+        return true;
+    }
+    for (uint8_t k = 0u; k < o->q_n && !o->stopped; ++k) {
+        if (o->q[(o->q_head + k) % SENSE_TRACE_MARKS].kind
+            != SENSE_TRACE_MARK_DEST) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* A trace that ends at a set-up record of time @p cut: the trigger lines
+ * not written are all of after @p cut, and so the next trace's.  Whether
+ * a trigger that found the queue full is the next trace's too, and
+ * whether all of them are.  With no trigger left no trace follows, and
+ * the count stays here. */
+static bool lost_past(const sense_trace_out_t *o, uint32_t cut)
+{
+    return o->n_mlost > 0u && (int32_t)(o->mlost_t[1] - cut) > 0
+           && next_starts(o);
+}
+
+static bool lost_all_past(const sense_trace_out_t *o, uint32_t cut)
+{
+    return lost_past(o, cut) && (int32_t)(o->mlost_t[0] - cut) > 0;
 }
 
 /* With the ring empty, whether a record of before @p t can still come:
@@ -664,7 +715,8 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         /* Another shunt or Configuration: the samples after it are not
          * this header's. */
         if (changes_setup(o, r)) {
-            line_end(o, SENSE_TRACE_END_SETUP, false, l);
+            line_end(o, SENSE_TRACE_END_SETUP, false,
+                     lost_all_past(o, r->t) ? 0u : o->n_mlost, l);
             return ACT_END_SETUP;
         }
         if (META_KIND(r->meta) == SENSE_TRACE_CFG
@@ -707,38 +759,57 @@ static void to_idle(sense_trace_t *tr)
 }
 
 /* The end line is written: the triggers that waited for it start the
- * next trace, in their order, over what the ring holds since the end. */
-static void ended(sense_trace_t *tr)
+ * next trace, in their order, over what the ring holds since the end.
+ * @p cut is the time of the set-up record the trace ended at, NULL for a
+ * trace that ended on its time. */
+static void ended(sense_trace_t *tr, const uint32_t *cut)
 {
     sense_trace_out_t *o = &tr->out;
     /* The trigger lines the trace ended before are triggers still: the
      * first of them, then the ones that waited.  Not after the console's
-     * stop: it ends what was asked for before it. */
+     * stop: it ends what was asked for before it.  Both are taken out of
+     * the queues first: a trigger past the next trace's end waits again. */
     sense_trace_mark_t left[SENSE_TRACE_MARKS];
+    sense_trace_mark_t waited[SENSE_TRACE_MARKS];
     uint8_t n_left = 0u;
-    for (uint8_t k = 0u; k < o->q_n; ++k) {
-        const sense_trace_mark_t *m =
-            &o->q[(o->q_head + k) % SENSE_TRACE_MARKS];
-        if (m->kind != SENSE_TRACE_MARK_DEST && !o->stopped) {
-            left[n_left++] = *m;
-        }
+    for (uint8_t k = 0u; k < o->q_n && !o->stopped; ++k) {
+        left[n_left++] = o->q[(o->q_head + k) % SENSE_TRACE_MARKS];
     }
     const uint8_t n = o->wait_n;
-    const uint32_t lost = o->wait_lost;
+    memcpy(waited, o->wait, n * sizeof(waited[0]));
+    /* The triggers that found a queue full and are the next trace's. */
+    uint32_t lost = 0u;
+    uint32_t lost_t[2] = { 0u, 0u };
+    if (cut != NULL && lost_past(o, *cut)) {
+        lost_add(&lost, lost_t, o->n_mlost, o->mlost_t[0], o->mlost_t[1]);
+    }
+    lost_add(&lost, lost_t, o->wait_lost, o->wait_lost_t[0],
+             o->wait_lost_t[1]);
     to_idle(tr);
     o->wait_n    = 0u;
     o->wait_lost = 0u;
     for (uint8_t k = 0u; k < n_left; ++k) {
-        sense_trace_trigger(tr, (sense_trace_trig_t)left[k].kind,
-                            left[k].at_us, left[k].ch, left[k].us);
+        if (left[k].kind != SENSE_TRACE_MARK_DEST) {
+            sense_trace_trigger(tr, (sense_trace_trig_t)left[k].kind,
+                                left[k].at_us, left[k].ch, left[k].us);
+        }
     }
     for (uint8_t k = 0u; k < n; ++k) {
-        sense_trace_trigger(tr, (sense_trace_trig_t)o->wait[k].kind,
-                            o->wait[k].at_us, o->wait[k].ch, o->wait[k].us);
+        sense_trace_trigger(tr, (sense_trace_trig_t)waited[k].kind,
+                            waited[k].at_us, waited[k].ch, waited[k].us);
     }
-    if (n + n_left > 0u) {
-        o->n_mlost += lost;
+    if (o->stage == SENSE_TRACE_IDLE) {
+        return;
     }
+    /* Where a slewed command ended is said in the trace its time is in. */
+    for (uint8_t k = 0u; k < n_left; ++k) {
+        if (left[k].kind == SENSE_TRACE_MARK_DEST
+            && open_at(o, left[k].t)) {
+            mark(o, SENSE_TRACE_MARK_DEST, left[k].t, 0u, left[k].ch,
+                 left[k].us);
+        }
+    }
+    lost_add(&o->n_mlost, o->mlost_t, lost, lost_t[0], lost_t[1]);
 }
 
 /* The line @p act stood for is written. */
@@ -775,12 +846,15 @@ static void commit(sense_trace_t *tr, act_t act)
     case ACT_END_SETUP:
         /* The record goes with the trace it ended.  One that follows it
          * is the next header's, with the records it says were dropped. */
-        pop(tr);
-        ended(tr);
+        {
+            const uint32_t cut = r->t;
+            pop(tr);
+            ended(tr, &cut);
+        }
         break;
     case ACT_END:
     default:
-        ended(tr);
+        ended(tr, NULL);
         break;
     }
 }

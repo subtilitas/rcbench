@@ -579,9 +579,19 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   pulse is written. A frame that ends between the two puts that one
   command's time one frame (20 ms at 50 Hz) late. How often: not measured.
 - Part B: the two files have different clocks. The tool pairs rows and commands by
-  the spacing of the moves; when two offsets pair equally many rows and
-  give a row to different moves it says so, exits 1 and takes
+  the spacing of the moves; when two offsets pair equally many rows, and
+  not the same rows with the same moves, it says so, exits 1 and takes
   `--csv-offset`.
+- A log with a restart of the coprocessor in it has one clock per boot.
+  The tool pairs each boot's moves on their own. When the rows of a later
+  boot do not lie after those of the boot before it, it pairs no row, says
+  so and exits 1: evaluate each boot's part of the log with its part of
+  the CSV file.
+- Commands within 30 ms of each other, as two outputs written in one
+  frame, change the current together. The tool lists them and replays
+  none of them. A command that follows another output's command later
+  than that, before the first servo arrived, is replayed with the first
+  servo's current in it; the tool does not tell the two apart.
 - Whether a terminal keeps up with 8.6 kB a second without loss. A trace
   whose line counts do not match its end line is reported and exits 1.
 
