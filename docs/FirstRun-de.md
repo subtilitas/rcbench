@@ -470,7 +470,9 @@ ihren Platz zwischen den Samples. Core 0 schreibt ganze Zeilen in den
 Platz, den der 64-Byte-Sendepuffer der Konsole hat, und nichts, wenn kein
 Terminal verbunden ist: seine Schleife wartet nicht auf den Host. Ein
 voller Ring verwirft den neuesten Eintrag: der Trace hat eine Zeile
-`$L n=`, wo Einträge fehlen, und ihre Summe in seiner Endzeile. Um wie
+`$L n=`, wo Einträge fehlen, und ihre Summe in seiner Endzeile. Die
+Endzeile zählt jeden verworfenen Eintrag von vor dem Ende des Trace, ob
+danach noch ein Eintrag in den Ring kam oder nicht. Um wie
 viel ein Durchlauf von Core 0 durch das Schreiben der Zeilen länger wird,
 ist nicht gemessen.
 

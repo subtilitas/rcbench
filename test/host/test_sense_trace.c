@@ -633,7 +633,8 @@ TEST_CASE(a_ring_full_by_exactly_0_1_and_many_records)
 TEST_CASE(the_dropped_records_are_named_where_they_are_missing)
 {
     fill(8u + 3u);
-    /* A trace reads the ring out; the next sample kept carries the 3. */
+    /* A trace reads the ring out; the next sample kept carries the 3,
+     * and they are said once. */
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us, 0u, 0u);
     for (unsigned k = 0; k < 20u; ++k) {
         pass();
@@ -651,10 +652,13 @@ TEST_CASE(the_dropped_records_are_named_where_they_are_missing)
     /* The gap shows in the times: 8 samples, 3 missing, then the rest. */
     CHECK_EQ(seen.t[7], 200010u + 70u);
     CHECK_EQ(seen.t[8], 200010u + 110u);
-    CHECK(strstr(g_log, "\r\n$L n=3\r\n40,300\r\n") != NULL);
-    /* The trigger's line stands behind the 8 samples from before it. */
-    CHECK(strstr(g_log, "10,300\r\n$K t=") != NULL);
-    CHECK(strstr(g_log, "$K t=") < strstr(g_log, "$L n=3"));
+    /* The ring read out with no record kept since: the line for the 3
+     * stands behind the 8 samples, before the trigger's line, which
+     * waits for core 1 to pass its time. */
+    CHECK(strstr(g_log, "10,300\r\n$L n=3\r\n$K t=") != NULL);
+    CHECK(strstr(g_log, "\r\n40,300\r\n") != NULL);
+    CHECK_EQ(tr.out.drops_seen, 3u);
+    CHECK_EQ(tr.out.ahead, 0u);
 }
 
 TEST_CASE(each_gap_in_a_trace_has_its_line)
@@ -2041,6 +2045,8 @@ TEST_CASE(records_dropped_before_a_set_up_record_are_said_in_its_trace)
     g_ring[(head + 1u) & tr.mask] = (sense_trace_rec_t){
         t, (int32_t)(tr.src.cfg ^ 0x8u),
         ((uint32_t)SENSE_TRACE_CFG << 24) | 5u };
+    tr.src.dropped += 5u;
+    atomic_store(&tr.drops, tr.src.dropped);
     atomic_store(&tr.head, head + 2u);
     pass();
     CHECK(!sense_trace_active(&tr));
@@ -2480,6 +2486,433 @@ TEST_CASE(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come)
     CHECK_EQ(seen.z_m, 2u);
 }
 
+/* --------------------------- records dropped with none kept after them */
+
+/* Core 1's tick with no sample in it: the trace is fed the tick's time
+ * and no record. */
+static void tick_empty(void)
+{
+    sense_trace_feed(&tr, &v.sched, g_us);
+    g_us += 1000u;
+}
+
+/* Core 0 alone, at one time, until it has nothing more to write. */
+static void drain(void)
+{
+    for (unsigned k = 0; k < 40u; ++k) {
+        pass();
+    }
+}
+
+/* With the ring read out, every record core 1 dropped is counted once:
+ * by the records read, or by the $L line written ahead of the one to
+ * come. */
+static void check_drops_accounted(void)
+{
+    CHECK_EQ(sense_trace_held(&tr), 0u);
+    CHECK_EQ((uint32_t)atomic_load(&tr.drops), tr.src.dropped);
+    CHECK_EQ(tr.out.drops_seen + tr.out.ahead, tr.src.dropped);
+    CHECK_EQ(tr.out.ahead, tr.src.lost);
+}
+
+/* On a ring of 8: an edge's trace whose last 10 ticks before its end
+ * find no room.  Returns the records dropped. */
+static uint32_t lose_before_the_end(void)
+{
+    run(20u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3990u);
+    CHECK_EQ(tr.src.lost, 0u);
+    stall(10u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    CHECK(tr.src.lost >= 2u);
+    return tr.src.lost;
+}
+
+/* The trace after: a key's, stopped, with no record missing. */
+static void check_the_next_trace_counts_none(void)
+{
+    const size_t len = g_len;
+    run(5u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    const char *next = &g_log[len];
+    CHECK(strstr(next, "$T ") != NULL);
+    CHECK(strstr(next, "$L ") == NULL);
+    CHECK(strstr(next, " l=0 m=1 ml=0 e=k\r\n") != NULL);
+    CHECK_EQ(tr.out.ahead, 0u);
+    CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+}
+
+TEST_CASE(records_dropped_before_the_end_with_none_kept_since_are_in_the_end_line)
+{
+    /* The count from 0, and across its wrap at 2^32. */
+    for (unsigned wrap = 0u; wrap < 2u; ++wrap) {
+        rig_size(8u);
+        if (wrap != 0u) {
+            tr.src.dropped    = UINT32_MAX - 1u;
+            tr.out.drops_seen = UINT32_MAX - 1u;
+            atomic_store(&tr.drops, UINT32_MAX - 1u);
+        }
+        const uint32_t lost = lose_before_the_end();
+        /* The first tick that starts at the end has no sample: core 1 is
+         * past the end, and the count rides on no record. */
+        tick_empty();
+        CHECK_EQ(tr.src.lost, lost);
+        drain();
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(sense_trace_held(&tr), 0u);
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.z_e, 't');
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        /* The $L line stands behind the last sample, before the end
+         * line. */
+        const char *l_at = strstr(g_log, "$L n=");
+        const char *z_at = strstr(g_log, "$Z n=");
+        CHECK(l_at != NULL && z_at != NULL && l_at < z_at);
+        CHECK(strchr(l_at, ',') == NULL);
+        CHECK_EQ(tr.out.ahead, lost);
+        check_drops_accounted();
+        /* The record that carries the count comes later: it is not said
+         * again, in no trace. */
+        check_the_next_trace_counts_none();
+        parse();
+        CHECK_EQ(seen.n_l, 1u);
+        if (wrap != 0u) {
+            CHECK(tr.src.dropped < 100u);
+        }
+    }
+}
+
+/* On a ring of 8 with a trace under way and the console taking nothing:
+ * the ticks up to and with the first that drops a record. */
+static unsigned ticks_to_the_first_drop(void)
+{
+    unsigned n = 0u;
+    while (tr.src.lost == 0u && n < 100u) {
+        tick();
+        pass_as(0u, true);
+        ++n;
+    }
+    return n;
+}
+
+TEST_CASE(a_record_dropped_in_the_last_tick_before_the_end_and_in_the_first_at_it)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    const unsigned n = ticks_to_the_first_drop();
+    CHECK(n >= 4u && n < 100u);
+    /* The same again, with a trace that ends @p past ms after the start
+     * of the tick that drops: 1, the last tick before the end; 0, the
+     * first tick at it. */
+    for (unsigned past = 0u; past < 2u; ++past) {
+        rig_size(8u);
+        run(20u);
+        const uint64_t drop_us = g_us + 20000u + (n - 1u) * 1000u;
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE,
+                            drop_us + past * 1000u
+                                - SENSE_TRACE_EDGE_MS * 1000u, 0u, 0u);
+        run(20u);
+        CHECK_EQ(ticks_to_the_first_drop(), n);
+        CHECK_EQ(g_us, drop_us + 1000u);
+        const uint32_t lost = tr.src.lost;
+        CHECK(lost >= 1u && lost <= 2u);
+        drain();
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        if (past != 0u) {
+            /* Core 1 is not past the end: the $L line is written, the
+             * end line waits. */
+            CHECK(sense_trace_active(&tr));
+            CHECK_EQ(seen.n_z, 0u);
+            tick_empty();
+            drain();
+            parse();
+        }
+        /* At the end the dropped record is not of before it; the end
+         * line counts it all the same, and the next trace does not. */
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.z_e, 't');
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        check_drops_accounted();
+        check_the_next_trace_counts_none();
+    }
+}
+
+TEST_CASE(records_dropped_in_a_traces_first_tick_are_said_once)
+{
+    /* The ring full of samples from before the trigger, and the tick the
+     * trigger falls in drops its sample. */
+    fill(8u);
+    CHECK_EQ(tr.src.lost, 0u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us + 500u, 0u, 0u);
+    sense_svc_step(&v, &cmd, &snap);
+    v.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+    tr.src.n_v = 0u;
+    sense_trace_feed(&tr, &v.sched, g_us);
+    g_us += 1000u;
+    CHECK_EQ(tr.src.lost, 1u);
+    drain();
+    /* The 8, then the line for the one dropped; the trigger's line
+     * waits for core 1 to pass its time. */
+    CHECK(strstr(g_log, "10,300\r\n$L n=1\r\n") != NULL);
+    CHECK(strstr(g_log, "$K t=") == NULL);
+    run(5u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, 1u);
+    CHECK_EQ(seen.n_s, 8u + 5u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(tr.out.drops_seen, 1u);
+    CHECK_EQ(tr.out.ahead, 0u);
+}
+
+TEST_CASE(records_dropped_before_a_second_trigger_are_said_once_in_the_longer_trace)
+{
+    rig_size(8u);
+    const uint32_t lost = lose_before_the_end();
+    drain();
+    /* Core 1 is not past the end: the line is written, the trace open. */
+    CHECK(sense_trace_active(&tr));
+    CHECK(strstr(g_log, "$L n=") != NULL);
+    CHECK_EQ(tr.out.ahead, lost);
+    /* A second trigger 1 ms before the end moves the end; the next
+     * record kept carries the count that is said already. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us - 1000u, 0u, 0u);
+    run(50u);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.ahead, 0u);
+    /* A second gap in the same trace has a line of its own, with the
+     * record the first tick after it drops before core 0's pass. */
+    stall(12u);
+    CHECK(tr.src.lost >= 2u);
+    run(50u);
+    const uint32_t again = tr.src.dropped - lost;
+    CHECK(again >= 3u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.n_e, 2u);
+    CHECK_EQ(seen.n_l, 2u);
+    CHECK_EQ(seen.lost, lost + again);
+    CHECK_EQ(seen.z_l, lost + again);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+    CHECK_EQ(tr.src.dropped, lost + again);
+}
+
+TEST_CASE(records_dropped_before_a_stop_and_a_stall_are_in_the_end_line)
+{
+    /* The console's stop, core 1 past it with no record. */
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(30u);
+    uint32_t lost = tr.src.lost;
+    CHECK(lost > 20u);
+    sense_trace_key(&tr, 'x', g_us);
+    tick_empty();
+    drain();
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    check_drops_accounted();
+    check_the_next_trace_counts_none();
+    /* Core 1 away from before the end: the end line comes
+     * SENSE_TRACE_STALL_MS after it, with the count. */
+    rig_size(8u);
+    lost = lose_before_the_end();
+    drain();
+    CHECK(strstr(g_log, "$L n=") != NULL);
+    parked(SENSE_TRACE_STALL_MS - 1u);
+    CHECK(sense_trace_active(&tr));
+    parked(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 'T');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    check_drops_accounted();
+    check_the_next_trace_counts_none();
+}
+
+TEST_CASE(a_set_up_record_that_found_no_room_before_the_end_is_counted_there)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(20u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    /* The set-up changes with the ring full: its record waits on core 1,
+     * counted with each tick it finds no room in. */
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
+        tick();
+    }
+    CHECK(tr.src.shunt_owed);
+    stall(5u);
+    CHECK(tr.src.shunt_owed);
+    /* The stop, and core 1 past it with the record still not in. */
+    sense_trace_key(&tr, 'x', g_us);
+    tick_empty();
+    CHECK(tr.src.shunt_owed);
+    const uint32_t lost = tr.src.lost;
+    drain();
+    CHECK(!sense_trace_active(&tr));
+    CHECK_EQ(held_of(SENSE_TRACE_SHUNT), 0u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.lost, lost);
+    CHECK_EQ(seen.z_l, lost);
+    CHECK_EQ(seen.shunt, I3221_UOHM);
+    check_drops_accounted();
+    /* The record comes with the next tick; the next trace has its
+     * set-up and counts none missing. */
+    const size_t len = g_len;
+    run(30u);
+    CHECK(!tr.src.shunt_owed && !tr.src.cfg_owed);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(strstr(&g_log[len], "$L ") == NULL);
+    CHECK(strstr(&g_log[len], " shunt_uohm=50000 ") != NULL);
+    CHECK(strstr(&g_log[len], " l=0 ") != NULL);
+    CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+}
+
+TEST_CASE(records_dropped_in_a_trace_that_is_dropped_are_said_where_they_are_missing)
+{
+    /* No console, and a console that took nothing for 29.8 h. */
+    for (unsigned how = 0u; how < 2u; ++how) {
+        rig_size(8u);
+        run(20u);
+        sense_trace_key(&tr, 't', g_us);
+        run(20u);
+        stall(30u);
+        const uint32_t lost = tr.src.lost;
+        CHECK(lost > 20u);
+        if (how == 0u) {
+            pass_as(SENSE_TRACE_LINE_MAX, false);
+        } else {
+            g_us += ((uint64_t)SENSE_TRACE_OWED_MAX_T + 100000u) * 100u;
+            pass();
+        }
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(tr.out.abandoned, 1u);
+        CHECK(strstr(g_log, "$Z ") == NULL);
+        /* The next record kept carries the count, and is one of those
+         * from before the next trigger. */
+        g_len = 0u;
+        tick();
+        CHECK_EQ(tr.src.lost, 0u);
+        sense_trace_key(&tr, 't', g_us);
+        run(20u);
+        sense_trace_key(&tr, 'x', g_us);
+        run(3u);
+        CHECK(!sense_trace_active(&tr));
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_t, 1u);
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        CHECK(strstr(g_log, "$L n=") < strstr(g_log, "$K t="));
+        CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+        CHECK_EQ(tr.out.ahead, 0u);
+    }
+}
+
+TEST_CASE(a_count_said_in_a_trace_that_is_dropped_is_said_again_in_the_next)
+{
+    /* Said with no record kept since, and said before its record with
+     * the record's own line not written. */
+    for (unsigned how = 0u; how < 2u; ++how) {
+        rig_size(8u);
+        const uint32_t lost = lose_before_the_end();
+        if (how == 0u) {
+            drain();
+            CHECK_EQ(tr.out.ahead, lost);
+        } else {
+            /* Room for one line a pass, a record kept behind the 8, and
+             * the passes up to its $L line. */
+            pass_as(9u, true);
+            tick();
+            CHECK_EQ(tr.src.lost, 0u);
+            for (unsigned k = 0u; k < 20u && !tr.out.lost_shown; ++k) {
+                pass_as(9u, true);
+            }
+            CHECK(tr.out.lost_shown);
+            CHECK_EQ(sense_trace_held(&tr), 1u);
+        }
+        CHECK(sense_trace_active(&tr));
+        CHECK(strstr(g_log, "$L n=") != NULL);
+        /* The console goes: the trace has no end line. */
+        pass_as(SENSE_TRACE_LINE_MAX, false);
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(tr.out.abandoned, 1u);
+        g_len = 0u;
+        if (how == 0u) {
+            tick();
+        }
+        CHECK_EQ(sense_trace_held(&tr), 1u);
+        /* The record the count rides on is the next trace's first. */
+        sense_trace_key(&tr, 't', g_us);
+        run(20u);
+        sense_trace_key(&tr, 'x', g_us);
+        run(3u);
+        CHECK(!sense_trace_active(&tr));
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        CHECK(strstr(g_log, "$L n=") < strchr(g_log, ','));
+        CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+        CHECK_EQ(tr.out.ahead, 0u);
+    }
+}
+
 TEST_CASE(a_stop_drops_the_trigger_lines_past_it)
 {
     /* With the console keeping up, and with 100 ms of samples waiting. */
@@ -2574,6 +3007,14 @@ int main(void)
     RUN(a_record_that_comes_late_is_still_its_traces);
     RUN(a_core_that_stays_away_ends_the_trace_and_the_end_line_says_so);
     RUN(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come);
+    RUN(records_dropped_before_the_end_with_none_kept_since_are_in_the_end_line);
+    RUN(a_record_dropped_in_the_last_tick_before_the_end_and_in_the_first_at_it);
+    RUN(records_dropped_in_a_traces_first_tick_are_said_once);
+    RUN(records_dropped_before_a_second_trigger_are_said_once_in_the_longer_trace);
+    RUN(records_dropped_before_a_stop_and_a_stall_are_in_the_end_line);
+    RUN(a_set_up_record_that_found_no_room_before_the_end_is_counted_there);
+    RUN(records_dropped_in_a_trace_that_is_dropped_are_said_where_they_are_missing);
+    RUN(a_count_said_in_a_trace_that_is_dropped_is_said_again_in_the_next);
     RUN(a_stop_drops_the_trigger_lines_past_it);
     RUN(a_stop_before_a_traces_own_trigger_keeps_its_line);
     RUN(every_ch1_sample_and_voltage_is_taken_once);

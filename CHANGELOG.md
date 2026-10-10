@@ -28,7 +28,8 @@ coprocessor and the other way round.
   time, 100 ms at most; an end line written without that carries its
   reason as a capital letter, and the tool reports the trace as a
   problem. A full ring drops records, and the
-  trace says where and how many. A trace is about 8.6 bytes a sample. The
+  trace says where and how many; its end line counts every one from
+  before its end. A trace is about 8.6 bytes a sample. The
   option is off by default: a released image holds none of this code, and
   CI fails when it does. `tools/sense_trace.py` checks a captured console
   against each trace's end line, writes a CSV file per trace, and replays

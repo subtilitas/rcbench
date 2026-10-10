@@ -441,7 +441,8 @@ same ring, so it keeps its place among the samples. Core 0 writes whole lines in
 transmit buffer has, and nothing when no terminal is connected, so its
 loop does not wait for the host. A full ring drops the newest record: the
 trace has a `$L n=` line where records are missing and their sum in its
-end line. The time a pass of core 0 gains from writing the lines is not
+end line. The end line counts every dropped record from before the
+trace's end, with or without a record kept after it. The time a pass of core 0 gains from writing the lines is not
 measured.
 
 **The lines** (`shared/sense/sense_trace.h` has every field):

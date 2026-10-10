@@ -18,6 +18,7 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
     atomic_init(&tr->head, 0u);
     atomic_init(&tr->tail, 0u);
     atomic_init(&tr->fed, 0u);
+    atomic_init(&tr->drops, 0u);
     if (buf == NULL || size < 2u || size > (1u << 24)
         || (size & (size - 1u)) != 0u) {
         return false;
@@ -40,8 +41,13 @@ static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
     const uint32_t tail =
         (uint32_t)atomic_load_explicit(&tr->tail, memory_order_acquire);
     if (head - tail > tr->mask) {
+        /* The count core 0 reads moves with the one the next record
+         * carries, and stops with it. */
         if (p->lost < SENSE_TRACE_LOST_MAX) {
             ++p->lost;
+            ++p->dropped;
+            atomic_store_explicit(&tr->drops, p->dropped,
+                                  memory_order_release);
         }
         return false;
     }
@@ -184,8 +190,9 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s,
     }
     const uint32_t tick_t = (uint32_t)(tick_us / 100u);
     feed(tr, s, tick_t);
-    /* After the tick's records, never before them: every record still to
-     * come is of a later tick, so of this time or later. */
+    /* After the tick's records and the count of those it dropped, never
+     * before them: every record still to come, kept or dropped, is of a
+     * later tick, so of this time or later. */
     atomic_store_explicit(&tr->fed, tick_t, memory_order_release);
 }
 
@@ -251,13 +258,24 @@ static bool is_setup(const sense_trace_rec_t *r)
     return META_KIND(r->meta) >= SENSE_TRACE_CFG;
 }
 
+/* The records dropped before @p r that no $L line has said yet. */
+static uint32_t lost_before(const sense_trace_out_t *o,
+                            const sense_trace_rec_t *r)
+{
+    const uint32_t lost = META_LOST(r->meta);
+    return (lost > o->ahead) ? lost - o->ahead : 0u;
+}
+
 /* The record at the tail leaves the ring; a set-up record leaves what it
- * says behind. */
+ * says behind.  Every record leaves here, in a trace and out of one: the
+ * count of dropped records it carried is read. */
 static void pop(sense_trace_t *tr)
 {
     sense_trace_out_t *o = &tr->out;
     const uint32_t tail = tail_of(tr);
     const sense_trace_rec_t *r = &tr->buf[tail & tr->mask];
+    o->drops_seen += META_LOST(r->meta);
+    o->ahead       = 0u;
     if (META_KIND(r->meta) == SENSE_TRACE_CFG) {
         o->cfg = (uint32_t)r->v;
     } else if (META_KIND(r->meta) == SENSE_TRACE_SHUNT) {
@@ -609,6 +627,7 @@ typedef enum {
     ACT_MARK,
     ACT_MARK_STALLED, /* a trigger line, core 1 not seen past its time */
     ACT_LOST,       /* the $L line of the record at the tail         */
+    ACT_LOST_AHEAD, /* a $L line with no record kept since the drop  */
     ACT_REC,        /* the record at the tail, with or without a line */
     ACT_END,        /* the end line, on the trace's time             */
     ACT_END_SETUP,  /* the end line, at a set-up record              */
@@ -669,9 +688,17 @@ static past_t past(uint32_t fed_t, uint32_t now_t, uint32_t t)
                ? STALLED : NOT_YET;
 }
 
+static void line_lost(uint32_t n, line_t *l)
+{
+    put_kv(l, "$L n=", n, SENSE_TRACE_LOST_MAX);
+    put_eol(l);
+}
+
 /* The next line of the trace under way into @p l, and what it stands
- * for.  Changes nothing. */
-static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
+ * for; for ACT_LOST_AHEAD the records it counts into @p ahead.  Changes
+ * nothing else. */
+static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l,
+                       uint32_t *ahead)
 {
     const sense_trace_out_t *o = &tr->out;
     l->n = 0u;
@@ -679,10 +706,16 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         line_start(o, l);
         return ACT_STAGE;
     }
-    /* Core 1's progress before the ring, never after it: a ring found
-     * empty then holds no record of a tick this progress counts. */
+    /* Core 1's progress, then its drops, then the ring, in this order.
+     * A ring found empty last was empty all the while: it holds no record
+     * of a tick the progress counts, core 1 dropped none in between, and
+     * the drops read are those up to the last record read out of it and
+     * since.  A drop core 1 adds after the read is of a tick the progress
+     * read does not count. */
     const uint32_t fed_t =
         (uint32_t)atomic_load_explicit(&tr->fed, memory_order_acquire);
+    const uint32_t drops =
+        (uint32_t)atomic_load_explicit(&tr->drops, memory_order_acquire);
     const sense_trace_rec_t *r = peek(tr);
     if (o->stage == SENSE_TRACE_HEAD_H) {
         /* The set-up as it stands at the trace's first record: a set-up
@@ -691,12 +724,20 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
             line_setup(o, l);
             return ACT_STAGE;
         }
-        if (META_LOST(r->meta) != 0u && !o->lost_shown) {
-            put_kv(l, "$L n=", META_LOST(r->meta), SENSE_TRACE_LOST_MAX);
-            put_eol(l);
+        if (lost_before(o, r) != 0u && !o->lost_shown) {
+            line_lost(lost_before(o, r), l);
             return ACT_LOST;
         }
         return ACT_REC;
+    }
+    /* Records dropped with none kept since: no record carries their
+     * count yet, and none may come before the trace's end.  Said here,
+     * behind the last record written and before any line that waits for
+     * core 1, the end line among them. */
+    if (r == NULL && drops - o->drops_seen - o->ahead != 0u) {
+        *ahead = drops - o->drops_seen - o->ahead;
+        line_lost(*ahead, l);
+        return ACT_LOST_AHEAD;
     }
     /* A trigger line in the order of its time: behind the records of
      * before it, so a record that ends the trace before the trigger
@@ -716,7 +757,8 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         }
     }
     if (r == NULL) {
-        /* A record of before the end may still be on its way. */
+        /* A record of before the end may still be on its way.  None that
+         * was dropped is unsaid here. */
         const past_t due = past(fed_t, now_t, o->end_t);
         if (due == NOT_YET) {
             return ACT_NONE;
@@ -725,9 +767,8 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
     }
     /* Records dropped before this one: said before it, and before the
      * end line when this one lies past the end. */
-    if (META_LOST(r->meta) != 0u && !o->lost_shown) {
-        put_kv(l, "$L n=", META_LOST(r->meta), SENSE_TRACE_LOST_MAX);
-        put_eol(l);
+    if (lost_before(o, r) != 0u && !o->lost_shown) {
+        line_lost(lost_before(o, r), l);
         return ACT_LOST;
     }
     if (at_or_past(r->t, o->end_t)) {
@@ -836,8 +877,9 @@ static void ended(sense_trace_t *tr, const uint32_t *cut)
     lost_add(&o->n_mlost, o->mlost_t, lost, lost_t[0], lost_t[1]);
 }
 
-/* The line @p act stood for is written. */
-static void commit(sense_trace_t *tr, act_t act)
+/* The line @p act stood for is written; @p ahead is ACT_LOST_AHEAD's
+ * count. */
+static void commit(sense_trace_t *tr, act_t act, uint32_t ahead)
 {
     sense_trace_out_t *o = &tr->out;
     const sense_trace_rec_t *r = peek(tr);
@@ -855,8 +897,14 @@ static void commit(sense_trace_t *tr, act_t act)
         ++o->n_m;
         break;
     case ACT_LOST:
-        o->n_lost    += META_LOST(r->meta);
+        o->n_lost    += lost_before(o, r);
         o->lost_shown = true;
+        break;
+    case ACT_LOST_AHEAD:
+        /* The next record kept carries these and no others: the ring was
+         * empty, so it finds room. */
+        o->n_lost += ahead;
+        o->ahead  += ahead;
         break;
     case ACT_REC:
         if (META_KIND(r->meta) == SENSE_TRACE_BUS) {
@@ -920,6 +968,11 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
         to_idle(tr);
         o->wait_n    = 0u;
         o->wait_lost = 0u;
+        /* A $L line of this trace is in no trace that has an end line:
+         * the records it counted are said again where their record
+         * stands. */
+        o->lost_shown = false;
+        o->ahead      = 0u;
         ++o->abandoned;
     }
     if (o->stage == SENSE_TRACE_IDLE) {
@@ -929,13 +982,14 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
     size_t n = 0u;
     for (;;) {
         line_t l;
-        const act_t act = next_line(tr, now_t, &l);
+        uint32_t ahead = 0u;
+        const act_t act = next_line(tr, now_t, &l, &ahead);
         if (act == ACT_NONE || l.n > room - n) {
             break;
         }
         memcpy(&out[n], l.s, l.n);
         n += l.n;
-        commit(tr, act);
+        commit(tr, act, ahead);
         if (act == ACT_END || act == ACT_END_SETUP) {
             break;
         }

@@ -18,7 +18,7 @@
  *           samples.  At most 4 records a call, 2 while the set-up
  *           stands.  A full ring drops the record and counts it; the call
  *           never waits.  A set-up record that found no room is written
- *           again at the next call.
+ *           again at the next call, and counted each time it finds none.
  *   Core 0  sense_trace_trigger(), sense_trace_pulse(), sense_trace_key()
  *           and sense_trace_pump(), from the main loop.  The pump hands
  *           back whole lines, never more bytes than the caller has room
@@ -27,8 +27,25 @@
  * The ring is single-producer, single-consumer and lock-free: core 1
  * writes a record and then moves head, core 0 reads a record and then
  * moves tail, each index stored with release and loaded with acquire
- * ordering.  Nothing else passes between the cores.  The ring's size is
- * the caller's, a power of two.
+ * ordering.  Two counts pass beside the ring, both core 1's: the records
+ * dropped so far (drops) and the start of the last tick whose records are
+ * in (fed).  The ring's size is the caller's, a power of two.
+ *
+ * Dropped records.  The first record kept after a drop carries the count
+ * of the records dropped before it, and a $L line stands before its
+ * line.  A drop with no record kept after it is in drops alone: core 1
+ * adds to drops at the drop and stores fed at the end of the tick, core 0
+ * reads fed, then drops, then the ring's head.  A ring found empty after
+ * the two holds every record kept before them, so drops less the counts
+ * those records carried is what was dropped since the last of them; core
+ * 0 writes a $L line for it at once and takes it off the count of the
+ * record that carries it later.  No end line is written before that: an
+ * end line counts every dropped record whose time lies before the
+ * trace's end.  It can also count records dropped at or after the end, up
+ * to the first record kept there; no later trace counts them again.  A
+ * trace that is dropped writes no end line, and its $L lines count for
+ * nothing: a later trace that holds the record a count rides on says the
+ * count again.
  *
  * A trace.  With no trace running the pump keeps the newest
  * SENSE_TRACE_PRE records, none of them older than the last change of
@@ -108,7 +125,9 @@
  *                        sample line before it
  *   $S on=B rst=K        the part's state or reset count changed here:
  *                        the samples above it were taken before
- *   $L n=X               X records are missing here: the ring was full
+ *   $L n=X               X records are missing here: the ring was full.
+ *                        With no record kept since, the line stands
+ *                        behind the last record written.
  *   $Z n=N s=S v=V l=X m=A ml=B e=t|s|k|T|S|K
  *       The trace ends: S sample lines, V voltage lines, X records
  *       missing, A trigger lines, B triggers that found the trigger queue
@@ -228,6 +247,8 @@ typedef struct {
     uint16_t n_hi, n_lo;  /**< and CH1 samples clipped at each end         */
     int64_t  v_sum;       /**< and their sum, µV                           */
     uint32_t lost;        /**< records dropped since the last one kept     */
+    uint32_t dropped;     /**< every count of lost, modulo 2^32: what
+                               sense_trace_t.drops holds                   */
     uint32_t cfg, shunt;  /**< the set-up as last seen                     */
     bool     cfg_owed;    /**< its record is still to be written           */
     bool     shunt_owed;
@@ -279,6 +300,11 @@ typedef struct {
     uint32_t cfg, shunt;  /**< the set-up as it stands at the ring's tail  */
     bool     lost_shown;  /**< the $L line of the record at the tail is
                                written                                     */
+    uint32_t drops_seen;  /**< the counts of dropped records that the
+                               records read out of the ring carried,
+                               modulo 2^32                                 */
+    uint32_t ahead;       /**< of the count the next record to be read
+                               carries, what a $L line has said already    */
     uint32_t n_s, n_v, n_m, n_lost, n_mlost;
     uint32_t mlost_t[2];  /**< the first and the last time of the n_mlost
                                triggers that found the queue full          */
@@ -299,9 +325,13 @@ typedef struct {
     uint32_t          mask;       /**< the size less 1                     */
     atomic_uint_fast32_t head;    /**< records written; core 1 moves it    */
     atomic_uint_fast32_t tail;    /**< records read; core 0 moves it       */
+    atomic_uint_fast32_t drops;   /**< records dropped, modulo 2^32: the
+                                       sum of the counts the records kept
+                                       carry and of the count the next one
+                                       will; core 1 moves it, at the drop  */
     atomic_uint_fast32_t fed;     /**< the start, 0.1 ms, of the last tick
                                        whose records are in; core 1 moves
-                                       it                                  */
+                                       it, after the tick's drops          */
     sense_trace_src_t src;
     sense_trace_out_t out;
 } sense_trace_t;
