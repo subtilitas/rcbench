@@ -1,9 +1,9 @@
 /*
- * The SENSE and SERVO_SENSE link pages at the coprocessor: the I2C bus of
- * the two current monitors and the output encoder, its set-up and what
- * they last read, and the servo rail's channels with a move capture.  The
- * registers are in
- * link_pages.h (LINK_SN_*, LINK_SS_*).
+ * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the coprocessor: the
+ * I2C bus of the two current monitors and the output encoder, its set-up
+ * and what they last read, the servo rail's channels with a move capture,
+ * and CH1's last four windows.  The registers are in
+ * link_pages.h (LINK_SN_*, LINK_SS_*, LINK_SW_*).
  *
  * The set-up is refused while the bank is armed, on pins that are not one
  * I2C block's SDA and SCL, and on pins the board, an output or the SUPPLY
@@ -70,6 +70,9 @@ extern "C" {
 typedef struct {
     uint16_t sense[LINK_SN_COUNT];   /**< the SENSE page          */
     uint16_t servo[LINK_SS_COUNT];   /**< the SERVO_SENSE page    */
+    uint16_t win[LINK_SW_COUNT];     /**< the SERVO_WIN page; its capture
+                                          registers are servo's, filled
+                                          at the read                 */
     uint16_t cfg_gen;   /**< moves with each change of the set-up        */
     uint16_t cap_gen;   /**< moves with each arm and each end of a
                              capture's order                             */
@@ -116,9 +119,9 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
  *
  * A set-up taken clears every register core 1 fills -- FLAGS, PRESENT,
  * the IDs, ERRORS, the readings, the SERVO_SENSE windows and a finished
- * capture's result, CAP_ARM with it -- so nothing read under the old
- * set-up shows until core 1 has read under the new one.  The ESC's
- * telemetry and CAP_SEQ stay.
+ * capture's result, CAP_ARM with it, RESETS and the SERVO_WIN ring -- so
+ * nothing read under the old set-up shows until core 1 has read under the
+ * new one.  The ESC's telemetry and CAP_SEQ stay.
  */
 uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, const outputs_t *o,
@@ -135,8 +138,9 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
  * not the whole frame, CAP_ARM with bits it does not have, an INA3221
  * channel that is not 1 (LINK_SS_CAP_CH) or not read, an output channel
  * that is not a surface on a PWM slot bound to silicon
- * (sense_page_bound()), a level past 32767 mA, a movement or band of 0 or
- * past 32767 mA (BAD_VALUE); an arm while @p o is not driving (NOT_ARMED).
+ * (sense_page_bound()), a movement or band of 0 or past 32767 mA
+ * (BAD_VALUE); an arm while @p o is not driving (NOT_ARMED).  The holding
+ * level is signed mA and every value of it is taken, -32768 to 32767.
  * An arm restarts the capture: CAP_STATE armed, the results 0.
  */
 uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
@@ -149,6 +153,12 @@ void sense_page_bound(sense_page_t *p, uint8_t slots);
 
 void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
+
+/** A SERVO_WIN read: CH1's ring as last published, and the capture's
+ *  state, count and clipped bit as SERVO_SENSE reads them at this moment.
+ *  The page takes no write. */
+void sense_win_read(const sense_page_t *p, uint8_t off, uint8_t n,
+                    uint16_t *out);
 
 /**
  * One pass: a bank that is not @p driving ends a capture that has not
@@ -169,11 +179,12 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd);
 /**
  * What core 1 read into the read-only registers of both pages, when @p s
  * was taken under the set-up in force.  SENSE: FLAGS, PRESENT, the IDs,
- * ERRORS, the die temperature, DIAG_ALRT, and the charge and energy while
+ * ERRORS, the die temperature, DIAG_ALRT, the charge and energy while
  * they are the totals of run @p run_gen (sense_run_t.totals_ok), 0
- * otherwise.  SERVO_SENSE: each channel's last window and its flags, the
- * window number, and the capture when @p s was taken under the capture
- * order in force.  Values are rounded to their register's step and held
+ * otherwise, and RESETS.  SERVO_SENSE: each channel's last window and its
+ * flags, the window number, and the capture when @p s was taken under the
+ * capture order in force.  SERVO_WIN: CH1's ring, a clipped sample
+ * counted at the end of the range it read.  Values are rounded to their register's step and held
  * to its range.
  *
  * FLAGS bit 3 (LINK_SN_I228_CLIPPED) is set when the INA228's last window

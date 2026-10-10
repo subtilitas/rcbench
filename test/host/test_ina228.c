@@ -628,6 +628,66 @@ TEST_CASE(two_timeouts_in_a_row_stick_the_bus_and_one_does_not)
     CHECK(!sense_bus_recovery_due(&bus, 300));
 }
 
+/* ADC_CONFIG read back: as written, the part stays; the reset value twice
+ * in a row takes it offline until the next probe sets it up.  CONFIG does
+ * not tell at ADCRANGE 0, where the reset value is the value written. */
+TEST_CASE(a_setup_lost_to_a_reset_takes_the_part_offline)
+{
+    matek();
+    bool lost = true;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OFFLINE);   /* not probed */
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, 0u);
+    CHECK(ina228_step(&d, 0));
+    unsigned sent = fb.transactions;
+    lost = true;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, sent + 1u);
+    CHECK_EQ(part->reads[INA228_ADC_CONFIG], 2u);        /* probe, verify */
+
+    /* One read comes back wrong: read again, and no reset. */
+    part->glitch_reg   = INA228_ADC_CONFIG;
+    part->glitch_value = INA228_ADC_RESET;
+    part->glitch_n     = 1u;
+    sent = fb.transactions;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, sent + 2u);
+    CHECK_EQ(ina228_state(&d), SENSE_PART_ONLINE);
+
+    /* A read that fails on the wire is a failed transaction, no reset. */
+    fb.fail_with  = SENSE_NACK;
+    fb.fail_count = 1u;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_NACK);
+    CHECK(!lost);
+    part->glitch_n = 1u;
+    fb.fail_at = fb.transactions + 2u;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_NACK);
+    CHECK(!lost);
+    CHECK_EQ(ina228_state(&d), SENSE_PART_ONLINE);
+    fb.fail_at = 0u;
+
+    /* The part resets itself: ADCRANGE 0, ADC_CONFIG FB68h, SHUNT_CAL
+     * 1000h, which is the value the driver writes. */
+    (void)ina228_step(&d, 5000);
+    fake_reset228(part);
+    CHECK_EQ(part->reg[INA228_SHUNT_CAL], 0x1000u);
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OK);
+    CHECK(lost);
+    CHECK_EQ(ina228_state(&d), SENSE_PART_OFFLINE);
+    lost = true;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OFFLINE);
+    CHECK(!lost);
+    CHECK(!ina228_step(&d, 5999));
+    CHECK_EQ(part->reg[INA228_ADC_CONFIG], INA228_ADC_RESET);
+    CHECK(ina228_step(&d, 6000));
+    CHECK_EQ(part->reg[INA228_ADC_CONFIG], INA228_ADC_BENCH);
+    CHECK((part->reg[INA228_CONFIG] & INA228_CONFIG_ADCRANGE) != 0u);
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+}
+
 TEST_CASE(failed_transactions_are_counted_modulo_65536)
 {
     matek();
@@ -663,6 +723,7 @@ int main(void)
     RUN(a_failed_write_counts_like_a_failed_read);
     RUN(a_line_held_low_sticks_the_bus_until_a_recovery_frees_it);
     RUN(two_timeouts_in_a_row_stick_the_bus_and_one_does_not);
+    RUN(a_setup_lost_to_a_reset_takes_the_part_offline);
     RUN(failed_transactions_are_counted_modulo_65536);
     return test_summary("ina228");
 }

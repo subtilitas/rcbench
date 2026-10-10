@@ -8,7 +8,10 @@
  * 1408h refused before anything is written to it; the configuration read
  * back; a channel the set-up does not convert never read; three failures
  * in a row taking the part offline, a probe a second later bringing it
- * back; the INA228 and the INA3221 on one bus.
+ * back; the INA228 and the INA3221 on one bus; the current an end code
+ * stands for; and the Configuration read back -- a part on its reset value
+ * taken offline and probed a second later, one corrupted read no reset, a
+ * failed read a failed transaction.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -316,6 +319,100 @@ TEST_CASE(three_failed_reads_in_a_row_take_the_part_offline)
 
 /* ---------------------------------------------------------- one bus */
 
+/* The ends of the range as currents: codes 4095 and -4096 of 40 µV. */
+TEST_CASE(an_end_code_is_1638_milliamps_on_the_daokai_shunt)
+{
+    CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_HIGH), 1638000);
+    CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_LOW), -1638400);
+    CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_NONE), 0);
+    CHECK_EQ(ina3221_end_ua(5000u, SENSE_CLIP_HIGH), 32760000);  /* 5 mΩ */
+    CHECK_EQ(ina3221_end_ua(INA3221_SHUNT_MIN_UOHM, SENSE_CLIP_LOW),
+             -1638400000);
+    CHECK_EQ(ina3221_end_ua(0u, SENSE_CLIP_HIGH), 0);
+    /* One step past the last code that is a value. */
+    CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_HIGH)
+             - ina3221_current_ua(DAOKAI_UOHM, 4094).value, 400);
+}
+
+/* The Configuration read back: as written, the part stays; the reset
+ * value twice in a row takes it offline until the next probe sets it up. */
+TEST_CASE(a_configuration_lost_to_a_reset_takes_the_part_offline)
+{
+    daokai(INA3221_CONFIG_BENCH_CH1);
+    bool lost = true;
+    /* Not probed yet: nothing is sent. */
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OFFLINE);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, 0u);
+    CHECK(ina3221_step(&d, 0));
+    unsigned sent = fb.transactions;
+    lost = true;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, sent + 1u);        /* one read when it holds */
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_ONLINE);
+
+    /* One read comes back wrong: read again, and no reset. */
+    part->glitch_reg   = INA3221_CONFIG;
+    part->glitch_value = INA3221_CONFIG_RESET;
+    part->glitch_n     = 1u;
+    sent = fb.transactions;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, sent + 2u);
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_ONLINE);
+
+    /* The read fails on the wire: a failed transaction, no reset. */
+    fb.fail_with  = SENSE_NACK;
+    fb.fail_count = 1u;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_NACK);
+    CHECK(!lost);
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_ONLINE);
+    /* The second read fails after a first that differed. */
+    part->glitch_n = 1u;
+    fb.fail_at = fb.transactions + 2u;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_NACK);
+    CHECK(!lost);
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_ONLINE);
+    fb.fail_at = 0u;
+
+    /* The part resets itself. */
+    (void)ina3221_step(&d, 5000);
+    fake_reset3221(part);
+    sent = fb.transactions;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(lost);
+    CHECK_EQ(fb.transactions, sent + 2u);
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_OFFLINE);
+    sense_value_t v = { 7, SENSE_CLIP_NONE };
+    CHECK_EQ(ina3221_read_current(&d, 1u, &v), SENSE_OFFLINE);
+    lost = true;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OFFLINE);
+    CHECK(!lost);
+    /* Probed SENSE_RETRY_MS after the read that found it, and not before;
+     * the probe writes the set-up again. */
+    CHECK(!ina3221_step(&d, 5999));
+    CHECK_EQ(part->reg[INA3221_CONFIG], INA3221_CONFIG_RESET);
+    CHECK(ina3221_step(&d, 6000));
+    CHECK_EQ(part->reg[INA3221_CONFIG], INA3221_CONFIG_BENCH_CH1);
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+
+    /* Across the millisecond count's wrap. */
+    (void)ina3221_step(&d, 0xFFFFFF00u);
+    fake_reset3221(part);
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(lost);
+    CHECK(!ina3221_step(&d, 0xFFFFFF00u + 999u));
+    CHECK(ina3221_step(&d, 0xFFFFFF00u + 1000u));    /* 744 after the wrap */
+
+    /* A part that is not online is left as it is. */
+    sense_part_t p;
+    sense_part_init(&p, &bus, DAOKAI_ADDR);
+    sense_part_lost(&p);
+    CHECK_EQ(p.state, SENSE_PART_UNPROBED);
+}
+
 TEST_CASE(both_parts_share_one_bus_and_one_stuck_line)
 {
     fake_bus_init(&fb, &bus);
@@ -374,6 +471,8 @@ int main(void)
     RUN(a_channel_the_setup_does_not_convert_is_not_read);
     RUN(mask_enable_is_read_and_its_flags_clear);
     RUN(three_failed_reads_in_a_row_take_the_part_offline);
+    RUN(an_end_code_is_1638_milliamps_on_the_daokai_shunt);
+    RUN(a_configuration_lost_to_a_reset_takes_the_part_offline);
     RUN(both_parts_share_one_bus_and_one_stuck_line);
     return test_summary("ina3221");
 }

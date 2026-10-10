@@ -6,6 +6,23 @@ history is in git.
 
 ## Unreleased
 
+The link protocol is 4.11. A 4.10 panel links and arms with a 4.11
+coprocessor and the other way round.
+
+### Added
+
+- **The coprocessor keeps the last 4 windows of the servo's current.** The
+  new read-only page SERVO_WIN (0x31, protocol 4.11) holds the last 4
+  complete 50 ms windows of INA3221 CH1, 200 ms, newest first: for each the
+  mean, highest and lowest current in mA, the mean and lowest bus voltage in
+  mV, whether a window closed with that number, and how many of its samples
+  read an end of the range. SERVO_SENSE shows the last window alone, and a
+  host that reads it more than 50 ms apart misses windows. A clipped sample
+  counts in SERVO_WIN at the end of the range, 1.638 A or -1.6384 A on the
+  0.1 Ω shunt, and is counted; SERVO_SENSE's figures leave it out as
+  before. The page also carries the capture's state and count. The panel
+  does not read the page yet. Host suite only; not run on hardware.
+
 ### Changed
 
 - **Sensor SCL follows Sensor SDA, and a set-up the coprocessor does not
@@ -22,12 +39,24 @@ history is in git.
   The coprocessor's SENSE page refuses SDA and SCL that are not one I2C
   block's pair whatever ENABLE holds; with ENABLE 0 it took them and
   refused the part enabled afterwards. ENABLE 0 with SDA or SCL 0, a
-  panel's pins that are not set, is taken as before. Protocol 4.10, no
-  register changes. Host suite only; not run on hardware.
+  panel's pins that are not set, is taken as before. No register changes;
+  the protocol stays 4.11. Host suite only; not run on hardware.
 - **The INA3221 address hint names the A0 bridge.** The DAOKAI module ships
   with all four A0 solder bridges open and its address floats between 0x40
   and 0x41; 0x40, the default, needs A0 bridged to GND. The hint on SETUP
   and the INTERFACES table say so.
+- **A capture's holding level is a signed register.** SERVO_SENSE's
+  `CAP_HOLD_MA` takes -32768 to 32767 mA where it took 0 to 32767 and
+  refused the rest: an end that holds near 0 A reads below zero by the
+  INA3221's offset and can be armed. A value of 0 to 32767 means what it
+  meant. The panel arms no capture.
+- **The die temperature and the INA3221's flags are read 25 times a
+  second.** The INA228's DIETEMP and the INA3221's Mask/Enable give every
+  second of their 50 Hz slots to the read-back of a set-up register. Every
+  other read keeps its rate, and no tick takes more bus time: 690 µs at
+  most on an even tick, 742.5 µs in the tick that reads a set-up register a
+  second time.
+
 - **The throttle changes only on an armed bench.** On MOTOR & ESC the
   slider, its `-1` and `+1` steps and the rotary knob are refused while the
   bench is not armed: nothing is sent, and the slider and the readout stay
@@ -64,6 +93,23 @@ history is in git.
 
 ### Fixed
 
+- **A current monitor that resets itself is found and set up again.** An
+  INA228 or INA3221 whose supply dips answers every read afterwards on its
+  power-on set-up, and stayed online on it until the coprocessor restarted
+  or the set-up was written again. The INA228 then reads a quarter of the
+  current on the default MATEK set-up (200 µΩ, 204.8 A, ADCRANGE 1), with
+  the valid flags set and its charge and energy counting from 0 as the
+  run's: 25 A for 100 A in the host model. The INA3221 gives one CH1 result
+  every 6.6 ms where the bench reads one every 1 ms. The coprocessor reads
+  the INA228's ADC_CONFIG and the INA3221's Configuration back every 40 ms.
+  A value other than the one written, read twice in a row, takes the part
+  offline, empties the 50 ms window being filled from it, ends the INA228's
+  charge and energy for the run, ends a move capture as lost, and counts in
+  SENSE register 31 (`RESETS`, protocol 4.11: INA228 low byte, INA3221 high
+  byte, each modulo 256). The part is set up again 1000 ms later. Samples
+  read in the up to 40 ms before the reset is found stay in the window that
+  closed in that time. Host suite only; whether either module resets on a
+  supply dip is not measured.
 - **Scrolling the SETUP list changes no value.** A `-` or `+` key stepped
   its setting when the finger came down, and the list scrolls by a drag that
   starts anywhere on it, the key columns included (`-` at x 556 to 599, `+`

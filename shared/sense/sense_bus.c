@@ -185,6 +185,16 @@ void sense_part_sample_failed(sense_part_t *p, uint8_t before)
     }
 }
 
+void sense_part_lost(sense_part_t *p)
+{
+    if (p->state != SENSE_PART_ONLINE) {
+        return;
+    }
+    p->state    = SENSE_PART_OFFLINE;
+    p->fails    = 0u;
+    p->probe_at = p->now + SENSE_RETRY_MS;
+}
+
 /* ------------------------------------------------------------- codec */
 
 uint16_t sense_be16(const uint8_t *b)

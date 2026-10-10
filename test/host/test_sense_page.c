@@ -1,5 +1,5 @@
 /*
- * The SENSE and SERVO_SENSE link pages at the coprocessor.
+ * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the coprocessor.
  *
  * Under test: the set-up as a page starts; an INA228 shunt and maximum
  * taken exactly when the driver's ina228_calibrate() takes them, and the
@@ -14,7 +14,11 @@
  * snapshot published into both pages, rounded and held to the registers,
  * and only under the set-up and the capture order in force; the ESC's own
  * telemetry; BENCH from the INA228 at its existing scales while it is the
- * source, and to the end of a run it was online in; the capability bits.
+ * source, and to the end of a run it was online in; the capability bits;
+ * the reset counts in register 31; a holding level of any signed value;
+ * and SERVO_WIN: CH1's ring entry by entry, a skipped number reading 0,
+ * the clipped count held at 255, the capture's state as SERVO_SENSE reads
+ * it at that moment, and the page cleared by a set-up.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -584,8 +588,6 @@ TEST_CASE(a_capture_is_refused_what_it_cannot_time)
              LINK_NACK_BAD_VALUE);
     CHECK_EQ(arm(1u, 900u, 100u, 50u), LINK_NACK_BAD_VALUE);   /* no bit 7 */
     CHECK_EQ(arm(LINK_SS_ARM, 900u, 100u, 50u), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 32768u, 100u, 50u),
-             LINK_NACK_BAD_VALUE);
     CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 0u, 50u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 32768u, 50u),
              LINK_NACK_BAD_VALUE);
@@ -1247,7 +1249,7 @@ TEST_CASE(the_encoder_takes_the_same_pin_rules_as_the_parts)
     CHECK_EQ(bus(5u, 16u, 17u, 400u, 0u), 0u);
 }
 
-TEST_CASE(the_encoders_registers_are_26_to_31_and_read_only)
+TEST_CASE(the_encoders_registers_are_26_to_30_and_read_only)
 {
     CHECK_EQ(LINK_SN_ESC_FLAGS, 25);
     CHECK_EQ(LINK_SN_AS5600_FLAGS, 26);
@@ -1255,7 +1257,7 @@ TEST_CASE(the_encoders_registers_are_26_to_31_and_read_only)
     CHECK_EQ(LINK_SN_AS5600_MAGNITUDE, 28);
     CHECK_EQ(LINK_SN_AS5600_SAMPLES, 29);
     CHECK_EQ(LINK_SN_AS5600_STILL_MS, 30);
-    CHECK_EQ(LINK_SN_RESERVED_31, 31);
+    CHECK_EQ(LINK_SN_RESETS, 31);
     CHECK_EQ(LINK_SN_COUNT, 32);
     CHECK_EQ(LINK_SN_COUNT_V48, 26u);
     CHECK(LINK_SN_COUNT <= LINK_MAX_REGS);
@@ -1263,7 +1265,7 @@ TEST_CASE(the_encoders_registers_are_26_to_31_and_read_only)
     const uint16_t v[2] = { 1u, 2u };
     CHECK_EQ(sense_page_write(&pg, LINK_SN_AS5600_FLAGS, 1u, v, &o, 0u),
              LINK_NACK_READ_ONLY);
-    CHECK_EQ(sense_page_write(&pg, LINK_SN_RESERVED_31, 1u, v, &o, 0u),
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_RESETS, 1u, v, &o, 0u),
              LINK_NACK_READ_ONLY);
     CHECK_EQ(sense_page_write(&pg, LINK_SN_COUNT, 1u, v, &o, 0u),
              LINK_NACK_BAD_RANGE);
@@ -1290,7 +1292,7 @@ TEST_CASE(a_snapshot_fills_the_encoders_registers)
     CHECK_EQ(reg(LINK_SN_AS5600_MAGNITUDE), 1777u);
     CHECK_EQ(reg(LINK_SN_AS5600_SAMPLES), 65530u);
     CHECK_EQ(reg(LINK_SN_AS5600_STILL_MS), 321u);
-    CHECK_EQ(reg(LINK_SN_RESERVED_31), 0u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0u);           /* none found reset */
 
     /* The weak field and the missing magnet. */
     s.enc_status = AS5600_STATUS_ML;
@@ -1345,11 +1347,320 @@ TEST_CASE(a_new_set_up_clears_the_encoders_registers)
     }
 }
 
+/* ------------------------------------------------ protocol 4.11's three */
+
+/* The holding level is signed mA: an end that holds at -2 mA by the part's
+ * offset can be armed.  Every value of the register is a level. */
+TEST_CASE(a_capture_takes_a_holding_level_of_any_sign)
+{
+    static const struct { uint16_t reg; int32_t ua; } k[] = {
+        { 0x8000u, -32768000 }, { 0xFFFFu, -1000 }, { 0u, 0 },
+        { 32767u, 32767000 }, { 0xFFFEu, -2000 }, { 1u, 1000 },
+    };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        ready_to_capture();
+        CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), k[i].reg, 100u, 50u), 0u);
+        CHECK_EQ(sreg(LINK_SS_CAP_HOLD_MA), k[i].reg);
+        CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+        sense_cmd_t c;
+        memset(&c, 0, sizeof(c));
+        sense_page_cmd(&pg, &c);
+        CHECK(c.cap_on);
+        CHECK_EQ(c.cap.hold_ua, k[i].ua);
+        CHECK_EQ(c.cap.move_ua, 100000);
+        CHECK_EQ(c.cap.band_ua, 50000);
+    }
+    /* The threshold and the band stay 1 to 32767 mA. */
+    ready_to_capture();
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 0xFFFFu, 0xFFFFu, 50u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 0xFFFFu, 100u, 0x8000u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 0xFFFFu, 32767u, 32767u), 0u);
+}
+
+/* Register 31: the INA228's resets in the low byte, the INA3221's in the
+ * high byte, each modulo 256, and 0 again with a new set-up. */
+TEST_CASE(resets_are_counted_in_register_31)
+{
+    ready_to_capture();
+    sense_snap_t s = snapshot();
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0u);
+    s.i228_resets = 1u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0x0001u);
+    s.i3221_resets = 1u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0x0101u);
+    s.i228_resets = 255u;
+    s.i3221_resets = 254u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0xFEFFu);
+    CHECK_EQ(LINK_SN_RESETS_I228(reg(LINK_SN_RESETS)), 255u);
+    CHECK_EQ(LINK_SN_RESETS_I3221(reg(LINK_SN_RESETS)), 254u);
+    s.i228_resets = 0u;                          /* 255 and one more */
+    s.i3221_resets = 255u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0xFF00u);
+    s.i3221_resets = 0u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0u);
+
+    /* A new set-up: the count is the new one's. */
+    s.i228_resets = 3u;
+    s.i3221_resets = 2u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0x0203u);
+    outputs_arm(&o, false, 0u);
+    CHECK_EQ(i3221(0x40u, 500u, 5u, 0u), 0u);
+    CHECK_EQ(reg(LINK_SN_RESETS), 0u);
+    sense_page_publish(&pg, &s, 3u);             /* the old set-up's */
+    CHECK_EQ(reg(LINK_SN_RESETS), 0u);
+}
+
+static uint16_t wreg(unsigned i)
+{
+    uint16_t v = 0xFFFFu;
+    sense_win_read(&pg, (uint8_t)i, 1u, &v);
+    return v;
+}
+
+/* A ring entry of 50 samples at @p ma mA and 3 bus readings of 6 V. */
+static sense_ring_win_t ring_entry(int32_t ma)
+{
+    return (sense_ring_win_t){ .closed = true, .n_i = 50u, .n_v = 3u,
+        .i_mean_ua = ma * 1000, .i_min_ua = ma * 1000 - 20000,
+        .i_max_ua = ma * 1000 + 30000, .v_mean_uv = 6000000,
+        .v_min_uv = 5900000 };
+}
+
+TEST_CASE(servo_win_is_a_header_and_four_entries_of_six)
+{
+    CHECK_EQ(LINK_SW_WINDOW, 0);
+    CHECK_EQ(LINK_SW_FLAGS, 1);
+    CHECK_EQ(LINK_SW_CAP_STATE, 2);
+    CHECK_EQ(LINK_SW_CAP_SEQ, 3);
+    CHECK_EQ(LINK_SW_ENTRIES, 4);
+    CHECK_EQ(LINK_SW_E_STRIDE, 6);
+    CHECK_EQ(LINK_SW_RING, 4u);
+    CHECK_EQ(LINK_SW_RING, SENSE_WIN_RING);
+    CHECK_EQ(LINK_SW_COUNT, 28);
+    CHECK(LINK_SW_COUNT <= LINK_MAX_REGS);
+    CHECK_EQ(LINK_SW_ENTRY(0u, LINK_SW_E_MEAN_MA), 4u);
+    CHECK_EQ(LINK_SW_ENTRY(1u, LINK_SW_E_MEAN_MA), 10u);
+    CHECK_EQ(LINK_SW_ENTRY(3u, LINK_SW_E_FLAGS), 27u);
+    /* The newest two entries end at register 15: one read of 16. */
+    CHECK_EQ(LINK_SW_ENTRY(1u, LINK_SW_E_FLAGS), 15u);
+    CHECK_EQ(LINK_SW_HAVE, 0x01u);
+    CHECK_EQ(LINK_SW_CAP_CLIPPED, LINK_SS_CAP_CLIPPED);
+    CHECK_EQ(LINK_SW_E_CURRENT, 0x0100u);
+    CHECK_EQ(LINK_SW_E_VOLTAGE, 0x0200u);
+    CHECK_EQ(LINK_SW_E_CLIP_HI, 0x0400u);
+    CHECK_EQ(LINK_SW_E_CLIP_LO, 0x0800u);
+    CHECK_EQ(LINK_SW_E_CLOSED, 0x8000u);
+    CHECK_EQ(LINK_SW_E_CLIPPED(0x8D2Du), 0x2Du);
+
+    /* Before anything is read the page reads 0 throughout. */
+    fresh();
+    for (unsigned r = 0; r < LINK_SW_COUNT; ++r) {
+        CHECK_EQ(wreg(r), 0u);
+    }
+}
+
+TEST_CASE(a_snapshot_fills_servo_win)
+{
+    ready_to_capture();
+    sense_snap_t s = snapshot();
+    /* Window 77 the newest; 76 was skipped; 75 clipped at both ends; 74
+     * closed with the part offline. */
+    s.ring[0] = ring_entry(120);
+    s.ring[2] = (sense_ring_win_t){ .closed = true, .n_i = 50u, .n_clip = 45u,
+        .n_v = 2u, .clip_hi = true, .clip_lo = true, .i_mean_ua = 1474499,
+        .i_min_ua = -1638400, .i_max_ua = 1638000, .v_mean_uv = 4500500,
+        .v_min_uv = 3992000 };
+    s.ring[3] = (sense_ring_win_t){ .closed = true };
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_WINDOW), 77u);
+    CHECK_EQ(wreg(LINK_SW_WINDOW), sreg(LINK_SS_WINDOW));
+    CHECK_EQ(wreg(LINK_SW_FLAGS), LINK_SW_HAVE);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), sreg(LINK_SS_CAP_STATE));
+    CHECK_EQ(wreg(LINK_SW_CAP_SEQ), 4u);
+
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MEAN_MA)), 120u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MAX_MA)), 150u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MIN_MA)), 100u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MEAN_MV)), 6000u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MIN_MV)), 5900u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_FLAGS)),
+             (uint16_t)(LINK_SW_E_CLOSED | LINK_SW_E_CURRENT
+                        | LINK_SW_E_VOLTAGE));
+    /* A skipped number: 0 throughout, CLOSED clear. */
+    for (unsigned r = 0; r < LINK_SW_E_STRIDE; ++r) {
+        CHECK_EQ(wreg(LINK_SW_ENTRY(1u, r)), 0u);
+    }
+    /* Clipped: rounded to the mA, signed, with its count. */
+    CHECK_EQ(wreg(LINK_SW_ENTRY(2u, LINK_SW_E_MEAN_MA)), 1474u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(2u, LINK_SW_E_MAX_MA)), 1638u);
+    CHECK_EQ((int16_t)wreg(LINK_SW_ENTRY(2u, LINK_SW_E_MIN_MA)), -1638);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(2u, LINK_SW_E_MEAN_MV)), 4501u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(2u, LINK_SW_E_MIN_MV)), 3992u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(2u, LINK_SW_E_FLAGS)),
+             (uint16_t)(LINK_SW_E_CLOSED | LINK_SW_E_CURRENT
+                        | LINK_SW_E_VOLTAGE | LINK_SW_E_CLIP_HI
+                        | LINK_SW_E_CLIP_LO | 45u));
+    /* Closed and empty: the part gave nothing in that window. */
+    CHECK_EQ(wreg(LINK_SW_ENTRY(3u, LINK_SW_E_FLAGS)), LINK_SW_E_CLOSED);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(3u, LINK_SW_E_MEAN_MA)), 0u);
+
+    /* A read of the whole page, and one past its end: nothing stored. */
+    uint16_t out[LINK_SW_COUNT + 1u];
+    memset(out, 0xEE, sizeof(out));
+    sense_win_read(&pg, 0u, (uint8_t)LINK_SW_COUNT, out);
+    CHECK_EQ(out[LINK_SW_WINDOW], 77u);
+    CHECK_EQ(out[LINK_SW_ENTRY(2u, LINK_SW_E_MAX_MA)], 1638u);
+    CHECK_EQ(out[LINK_SW_COUNT], 0xEEEEu);
+    memset(out, 0xEE, sizeof(out));
+    sense_win_read(&pg, 1u, (uint8_t)LINK_SW_COUNT, out);
+    CHECK_EQ(out[0], 0xEEEEu);
+    sense_win_read(NULL, 0u, 1u, out);
+    sense_win_read(&pg, 0u, 1u, NULL);
+    CHECK_EQ(out[0], 0xEEEEu);
+
+    /* The clipped count is the entry's low byte: 0, 1, 44, 45, 50 as they
+     * are, and held at 255. */
+    static const struct { uint16_t n, reg; } k[] = {
+        { 0u, 0u }, { 1u, 1u }, { 44u, 44u }, { 45u, 45u }, { 50u, 50u },
+        { 255u, 255u }, { 256u, 255u }, { 65535u, 255u },
+    };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        s.ring[0] = ring_entry(1000);
+        s.ring[0].n_clip  = k[i].n;
+        s.ring[0].clip_hi = k[i].n > 0u;
+        sense_page_publish(&pg, &s, 3u);
+        const uint16_t f = wreg(LINK_SW_ENTRY(0u, LINK_SW_E_FLAGS));
+        CHECK_EQ(LINK_SW_E_CLIPPED(f), k[i].reg);
+        CHECK_EQ((f & LINK_SW_E_CLIP_HI) != 0u, k[i].n > 0u);
+        CHECK_EQ(f & LINK_SW_E_CLIP_LO, 0u);
+        CHECK((f & LINK_SW_E_CLOSED) != 0u);
+        /* The figures are passed on as they are, clipped or not. */
+        CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MEAN_MA)), 1000u);
+    }
+
+    /* Signed mA held to the register: -32767 to 32767. */
+    s.ring[0] = ring_entry(0);
+    s.ring[0].i_mean_ua = -1500;
+    s.ring[0].i_min_ua  = -40000000;
+    s.ring[0].i_max_ua  = 40000000;
+    s.ring[0].n_v       = 0u;
+    s.ring[0].v_mean_uv = 0;
+    s.ring[0].v_min_uv  = 0;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ((int16_t)wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MEAN_MA)), -2);
+    CHECK_EQ((int16_t)wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MIN_MA)), -32767);
+    CHECK_EQ((int16_t)wreg(LINK_SW_ENTRY(0u, LINK_SW_E_MAX_MA)), 32767);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(0u, LINK_SW_E_FLAGS)),
+             (uint16_t)(LINK_SW_E_CLOSED | LINK_SW_E_CURRENT));
+
+    /* The window number across 65535 to 0. */
+    s.win[SENSE_SRC_CH1].number = 65535u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_WINDOW), 65535u);
+    s.win[SENSE_SRC_CH1].number = 0u;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_WINDOW), 0u);
+    CHECK_EQ(wreg(LINK_SW_FLAGS), LINK_SW_HAVE);    /* 0 is a number */
+
+    /* No window closed yet: nothing, whatever the ring holds. */
+    s.have_win = false;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_FLAGS), 0u);
+    for (unsigned r = LINK_SW_ENTRIES; r < LINK_SW_COUNT; ++r) {
+        CHECK_EQ(wreg(r), 0u);
+    }
+}
+
+/* The capture's three read as SERVO_SENSE reads them now: an arm shows in
+ * the same pass, before core 1 has answered it, and a disarm, a finished
+ * capture and a stopped bank the same. */
+TEST_CASE(servo_win_shows_the_capture_as_servo_sense_does)
+{
+    ready_to_capture();
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    sense_snap_t s = snapshot();                 /* arrived, CAP_SEQ 4 */
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_ARRIVED);
+    CHECK_EQ(wreg(LINK_SW_CAP_SEQ), 4u);
+    CHECK_EQ(wreg(LINK_SW_FLAGS) & LINK_SW_CAP_CLIPPED, 0u);
+
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+    /* The snapshot of before the arm does not step it back. */
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+    CHECK_EQ(wreg(LINK_SW_WINDOW), 77u);
+
+    s.cap_gen = pg.cap_gen;
+    s.cap_state = SENSE_CAP_LATE;
+    s.cap_seq = 5u;
+    s.cap_clipped = true;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_LATE);
+    CHECK_EQ(wreg(LINK_SW_CAP_SEQ), 5u);
+    CHECK_EQ(wreg(LINK_SW_FLAGS),
+             (uint16_t)(LINK_SW_HAVE | LINK_SW_CAP_CLIPPED));
+
+    /* The next arm clears the clipped bit; a disarm reads idle. */
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK_EQ(wreg(LINK_SW_FLAGS), LINK_SW_HAVE);
+    const uint16_t off = 0u;
+    CHECK_EQ(sense_servo_write(&pg, LINK_SS_CAP_ARM, 1u, &off, &o), 0u);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
+    CHECK_EQ(wreg(LINK_SW_CAP_SEQ), 5u);
+
+    /* A bank that stops driving ends an unfinished capture here too. */
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+    outputs_arm(&o, false, 0u);
+    CHECK(sense_page_step(&pg, false));
+    CHECK_EQ(wreg(LINK_SW_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
+}
+
+/* A set-up taken clears the ring: no window of the old shunt is read as
+ * one of the new.  CAP_SEQ counts on. */
+TEST_CASE(a_new_set_up_clears_servo_win)
+{
+    ready_to_capture();
+    sense_snap_t s = snapshot();
+    for (unsigned k = 0; k < LINK_SW_RING; ++k) {
+        s.ring[k] = ring_entry(100 + (int32_t)k);
+    }
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(3u, LINK_SW_E_MEAN_MA)), 103u);
+    outputs_arm(&o, false, 0u);
+    (void)sense_page_step(&pg, false);
+    /* The set-up in force written again, and a refused one: kept. */
+    CHECK_EQ(i3221(0x40u, 1000u, 5u, 0u), 0u);
+    CHECK_EQ(i3221(0x44u, 1000u, 5u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(3u, LINK_SW_E_MEAN_MA)), 103u);
+
+    CHECK_EQ(i3221(0x40u, 500u, 5u, 0u), 0u);
+    for (unsigned r = 0; r < LINK_SW_COUNT; ++r) {
+        CHECK_EQ(wreg(r), (r == LINK_SW_CAP_SEQ) ? 4u : 0u);
+    }
+    sense_page_publish(&pg, &s, 3u);             /* the old set-up's */
+    CHECK_EQ(wreg(LINK_SW_FLAGS), 0u);
+    s.cfg_gen = pg.cfg_gen;
+    sense_page_publish(&pg, &s, 3u);
+    CHECK_EQ(wreg(LINK_SW_FLAGS), LINK_SW_HAVE);
+    CHECK_EQ(wreg(LINK_SW_ENTRY(3u, LINK_SW_E_MEAN_MA)), 103u);
+}
+
 int main(void)
 {
     RUN(the_encoder_is_bit_2_of_the_bus_frame);
     RUN(the_encoder_takes_the_same_pin_rules_as_the_parts);
-    RUN(the_encoders_registers_are_26_to_31_and_read_only);
+    RUN(the_encoders_registers_are_26_to_30_and_read_only);
     RUN(a_snapshot_fills_the_encoders_registers);
     RUN(a_new_set_up_clears_the_encoders_registers);
     RUN(a_page_starts_with_both_parts_off_at_the_modules_defaults);
@@ -1382,5 +1693,11 @@ int main(void)
     RUN(the_escs_own_telemetry_goes_to_its_registers);
     RUN(bench_carries_the_ina228_while_it_answers);
     RUN(the_capabilities_follow_the_set_up);
+    RUN(a_capture_takes_a_holding_level_of_any_sign);
+    RUN(resets_are_counted_in_register_31);
+    RUN(servo_win_is_a_header_and_four_entries_of_six);
+    RUN(a_snapshot_fills_servo_win);
+    RUN(servo_win_shows_the_capture_as_servo_sense_does);
+    RUN(a_new_set_up_clears_servo_win);
     return test_summary("sense_page");
 }
