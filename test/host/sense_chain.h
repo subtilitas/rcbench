@@ -61,23 +61,23 @@ typedef struct {
 
 static chain_t ch;
 
-static uint32_t chain_now(void)
+static inline uint32_t chain_now(void)
 {
     return (uint32_t)(ch.tick0 + (uint32_t)(ch.us / 1000u));
 }
 
-static uint64_t chain_clock(void *ctx)
+static inline uint64_t chain_clock(void *ctx)
 {
     (void)ctx;
     return ch.us;
 }
 
-static void chain_recover(void *ctx)
+static inline void chain_recover(void *ctx)
 {
     (void)ctx;
 }
 
-static bool chain_open(void *ctx, uint8_t sda, uint8_t scl)
+static inline bool chain_open(void *ctx, uint8_t sda, uint8_t scl)
 {
     (void)ctx;
     (void)sda;
@@ -85,26 +85,26 @@ static bool chain_open(void *ctx, uint8_t sda, uint8_t scl)
     return true;
 }
 
-static void chain_close(void *ctx)
+static inline void chain_close(void *ctx)
 {
     (void)ctx;
 }
 
-static sense_err_t chain_ask(void *ctx, uint8_t addr)
+static inline sense_err_t chain_ask(void *ctx, uint8_t addr)
 {
     return (fake_find((fake_bus_t *)ctx, addr) != NULL) ? SENSE_OK
                                                          : SENSE_NACK;
 }
 
 /* The mean CH1 reads over window @p number, mA. */
-static int chain_mean_ma(uint16_t number)
+static inline int chain_mean_ma(uint16_t number)
 {
     return 100 + 2 * (int)(number % 500u);
 }
 
 /* The coprocessor, @p ms milliseconds: the order from the page, one tick
  * of core 1, and what it read into the pages. */
-static void chain_far(unsigned ms)
+static inline void chain_far(unsigned ms)
 {
     for (unsigned i = 0u; i < ms; ++i) {
         sense_cmd_t cmd;
@@ -131,13 +131,13 @@ static void chain_far(unsigned ms)
 
 /* The coprocessor's tick held for @p ms: its clock runs and nothing is
  * read. */
-static void chain_far_late(unsigned ms)
+static inline void chain_far_late(unsigned ms)
 {
     ch.us += (uint64_t)ms * 1000u;
 }
 
 /* The coprocessor as it starts: no window, the page's set-up kept. */
-static void chain_far_boot(void)
+static inline void chain_far_boot(void)
 {
     const sense_svc_io_t io = {
         .sched = { { fake_read, fake_write, &ch.fb }, chain_clock,
@@ -158,7 +158,7 @@ static void chain_far_boot(void)
 
 /* The set-up SETUP names in every case here: the INA3221 at 0x40 on
  * GP16 and GP17 with 0.1 Ohm, channels @p channels. */
-static sense_setup_t chain_setup(uint8_t channels)
+static inline sense_setup_t chain_setup(uint8_t channels)
 {
     const sense_setup_t w = {
         .i228 = false, .i3221 = true, .sda = 16, .scl = 17,
@@ -174,7 +174,8 @@ static sense_setup_t chain_setup(uint8_t channels)
  * @p minor that holds the set-up already, and a panel that has not linked.
  * The panel's tick reads @p tick0 now.
  */
-static void chain_start(uint16_t minor, uint32_t tick0, uint8_t channels)
+static inline void chain_start(uint16_t minor, uint32_t tick0,
+                               uint8_t channels)
 {
     memset(&ch, 0, sizeof(ch));
     sense_bus_t scratch;
@@ -204,13 +205,13 @@ static void chain_start(uint16_t minor, uint32_t tick0, uint8_t channels)
 }
 
 /* The link comes up: the panel has read the coprocessor's minor. */
-static void chain_link_up(void)
+static inline void chain_link_up(void)
 {
     sense_link_came_up(&ch.sl, ch.minor, chain_now());
 }
 
 /* One exchange as the coprocessor answers it, after the time it takes. */
-static int chain_exchange(const sense_link_op_t *op, uint16_t *regs)
+static inline int chain_exchange(const sense_link_op_t *op, uint16_t *regs)
 {
     chain_far(ch.exch_ms);
     ch.poll_frames += 1u + (op->write ? 0u : ((unsigned)op->n + 3u) / 4u);
@@ -264,7 +265,7 @@ static int chain_exchange(const sense_link_op_t *op, uint16_t *regs)
 
 /* One poll of the control task: every exchange owed, as
  * sense_link_service() makes them.  Returns the milliseconds it took. */
-static unsigned chain_poll(void)
+static inline unsigned chain_poll(void)
 {
     const uint64_t began = ch.us;
     ch.poll_frames = 0u;
@@ -284,7 +285,7 @@ static unsigned chain_poll(void)
 }
 
 /* A poll, and the rest of @p period_ms until the next one starts. */
-static void chain_cycle(unsigned period_ms)
+static inline void chain_cycle(unsigned period_ms)
 {
     const unsigned spent = chain_poll();
     if (spent < period_ms) {

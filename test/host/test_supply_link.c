@@ -23,6 +23,7 @@
 #include "pdmini.h"
 #include "supply_link.h"
 #include "supply_page.h"
+#include "tick_wrap.h"
 
 static outputs_t     o;
 static supply_page_t pg;    /* the coprocessor's end */
@@ -621,6 +622,56 @@ TEST_CASE(a_wiring_moves_on_its_count_or_its_word)
     CHECK(!supply_link_wiring_moved(NULL, 3u, 0u));
 }
 
+/* A read is asked for again SUPPLY_LINK_READ_MS after the last one was
+ * asked for, wherever the clock is. */
+static void a_read_is_due_at_the_interval(uint32_t t0)
+{
+    fresh();
+    CHECK(supply_link_read_due(&sl, t0));       /* none asked for yet */
+    supply_link_read(&sl, NULL, t0);            /* asked, not answered */
+    CHECK(!supply_link_read_due(&sl, t0 + 1u));
+    CHECK(!supply_link_read_due(&sl, t0 + SUPPLY_LINK_READ_MS - 1u));
+    CHECK(supply_link_read_due(&sl, t0 + SUPPLY_LINK_READ_MS));
+}
+
+TEST_CASE(a_read_is_due_at_its_interval_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_read_is_due_at_the_interval,
+                                  SUPPLY_LINK_READ_MS / 2u);
+}
+
+/* The supply answers for SUPPLY_LINK_STALE_MS less 1 ms after a read and
+ * is not answering at SUPPLY_LINK_STALE_MS, wherever the clock is. */
+static void a_read_is_fresh_until_the_stale_time(uint32_t t0)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 9000u, 800u);
+    pump(true);
+    drv.st.online = true;
+    drv.st.output = true;
+    drv.st.v_mv   = 8990u;
+    drv.st.i_ma   = 800u;
+    now = t0;
+    far_step_and_read(true);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    supply_link_state(&sl, t0 + 1u, &st);
+    CHECK(st.online);
+    supply_link_state(&sl, t0 + SUPPLY_LINK_STALE_MS - 1u, &st);
+    CHECK(st.online);
+    CHECK_EQ(st.ok, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    supply_link_state(&sl, t0 + SUPPLY_LINK_STALE_MS, &st);
+    CHECK(!st.online);
+    CHECK_EQ(st.ok, 0u);
+}
+
+TEST_CASE(a_read_goes_stale_at_its_time_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_read_is_fresh_until_the_stale_time,
+                                  SUPPLY_LINK_STALE_MS / 2u);
+}
+
 int main(void)
 {
     RUN(an_off_then_the_wiring_then_the_command);
@@ -640,5 +691,7 @@ int main(void)
     RUN(an_output_switched_off_for_a_sag_is_said_with_its_numbers);
     RUN(an_edit_followed_before_a_write_keeps_an_on_off_the_old_pins);
     RUN(a_wiring_moves_on_its_count_or_its_word);
+    RUN(a_read_is_due_at_its_interval_across_the_tick_wrap);
+    RUN(a_read_goes_stale_at_its_time_across_the_tick_wrap);
     return test_summary("supply_link");
 }

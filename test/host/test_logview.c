@@ -1797,6 +1797,87 @@ TEST_CASE(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on
     draw();
 }
 
+/* The cursor a tap at @p x gives in the view as it is. */
+static int cursor_under(int x)
+{
+    tap(x, 200);
+    return log_viewer_cursor();
+}
+
+/* A slide of exactly the 10 px threshold is still a tap that moved: the
+ * cursor follows the finger and the view stays.  1 px more is a pan: the
+ * cursor is back where it was before the press. */
+TEST_CASE(a_slide_of_10_px_moves_the_cursor_and_11_px_pans)
+{
+    for (int dir = -1; dir <= 1; dir += 2) {
+        zoom_in_with_cursor();
+        settings_set(SET_PLOT_PAN, 1.0f);
+        int first = -1, count = -1;
+        log_viewer_window(&first, &count);
+        const int at_end = cursor_under(500 + dir * 10);
+        const int c0     = cursor_under(300);
+        CHECK(at_end != c0);
+
+        send(TOUCH_EVENT_DOWN, 500, 200);
+        send(TOUCH_EVENT_MOVE, 500 + dir * 10, 200);
+        CHECK_EQ(log_viewer_cursor(), at_end);
+        send(TOUCH_EVENT_UP, 500 + dir * 10, 200);
+        int f2 = -1, n2 = -1;
+        log_viewer_window(&f2, &n2);
+        CHECK_EQ(f2, first);
+        CHECK_EQ(n2, count);
+        CHECK_EQ(log_viewer_cursor(), at_end);
+
+        (void)cursor_under(300);
+        send(TOUCH_EVENT_DOWN, 500, 200);
+        send(TOUCH_EVENT_MOVE, 500 + dir * 11, 200);
+        CHECK_EQ(log_viewer_cursor(), c0);
+        send(TOUCH_EVENT_UP, 500 + dir * 11, 200);
+        CHECK_EQ(log_viewer_cursor(), c0);
+    }
+}
+
+/* A pan that ends a fraction of a sample past the end of the file leaves
+ * the view on the last samples: 1 to 9 px past the threshold, at 7.52 px a
+ * sample, from a view that already ends on the last one. */
+TEST_CASE(a_pan_a_fraction_of_a_sample_past_the_end_stops_at_the_end)
+{
+    zoom_in_with_cursor();
+    settings_set(SET_PLOT_PAN, 1.0f);
+    for (int i = 0; i < 8; ++i) {
+        drag(780, 24);
+    }
+    int first = -1, count = -1;
+    log_viewer_window(&first, &count);
+    CHECK_EQ(count, LONG_ROWS / 4);
+    CHECK_EQ(first, LONG_ROWS - LONG_ROWS / 4);
+    for (int px = 1; px <= 9; ++px) {
+        send(TOUCH_EVENT_DOWN, 600, 200);
+        send(TOUCH_EVENT_MOVE, 600 - 10 - px, 200);
+        send(TOUCH_EVENT_UP, 600 - 10 - px, 200);
+        int f2 = -1, n2 = -1;
+        log_viewer_window(&f2, &n2);
+        CHECK_EQ(f2, first);
+        CHECK_EQ(n2, count);
+    }
+    /* And the same at the start. */
+    for (int i = 0; i < 8; ++i) {
+        drag(24, 780);
+    }
+    log_viewer_window(&first, &count);
+    CHECK_EQ(first, 0);
+    CHECK_EQ(count, LONG_ROWS / 4);
+    for (int px = 1; px <= 9; ++px) {
+        send(TOUCH_EVENT_DOWN, 300, 200);
+        send(TOUCH_EVENT_MOVE, 300 + 10 + px, 200);
+        send(TOUCH_EVENT_UP, 300 + 10 + px, 200);
+        int f2 = -1, n2 = -1;
+        log_viewer_window(&f2, &n2);
+        CHECK_EQ(f2, 0);
+        CHECK_EQ(n2, count);
+    }
+}
+
 TEST_CASE(a_view_that_shows_the_whole_file_is_not_panned_by_one_finger)
 {
     long_file();
@@ -2163,6 +2244,8 @@ int main(void)
     RUN(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on);
     RUN(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on);
     RUN(one_move_past_the_threshold_pans_by_what_lies_past_it);
+    RUN(a_slide_of_10_px_moves_the_cursor_and_11_px_pans);
+    RUN(a_pan_a_fraction_of_a_sample_past_the_end_stops_at_the_end);
     RUN(a_view_that_shows_the_whole_file_is_not_panned_by_one_finger);
     RUN(a_second_finger_after_a_pan_zooms_and_a_cancel_ends_the_pan);
     RUN(a_steep_trace_longer_than_the_plot_is_one_line);

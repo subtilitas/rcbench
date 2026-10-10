@@ -221,7 +221,7 @@ headers to compile each file, and cppcheck's style class over `firmware/`,
 which reports 12 findings there with cppcheck 2.17. `docs.yml` and `release.yml` with the wait
 for CI have not run.
 
-The host suite is 82 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 83 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -233,12 +233,21 @@ The host suite is 82 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter` and `test_log_cadence`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence` and `test_fuzz_engines`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
-event sequence the tracker does not emit. `tools/check_docs.py` holds
-this list to `test/host/CMakeLists.txt`.
+event sequence the tracker does not emit. `test/host/tick_wrap.h` runs a
+case with the clock started at tick 0 and again a chosen number of ms
+before the 32-bit millisecond count wraps at 2^32 ms, and a failure names
+the start it happened at. `test/host/guard_canvas.h`
+puts 8 guard pixels above, below and beside a canvas, so a pixel written
+off the canvas fails the plain build and not only the sanitizer one.
+`test_fuzz_engines` runs 600 random servo tests and 2400 random stick
+programming runs from 3 fixed seeds and checks at every step what a caller
+relies on; a failure states the seed and the case number. A case that is
+defined and not run fails the build (`-Werror=unused-function`).
+`tools/check_docs.py` holds this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
@@ -287,7 +296,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 2363 | 2255 | 95.4% |
+| `shared/ui/programmer_screen.c` | 2363 | 2262 | 95.7% |
 | `shared/ui/log_viewer_screen.c` | 1022 | 961 | 94.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 370 | 368 | 99.5% |
@@ -307,14 +316,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
-| `shared/servo/servo_test.c` | 783 | 768 | 98.1% |
-| `shared/servo/servo_report.c` | 554 | 550 | 99.3% |
+| `shared/servo/servo_test.c` | 783 | 769 | 98.2% |
+| `shared/servo/servo_report.c` | 554 | 554 | 100.0% |
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 893 | 844 | 94.5% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 1039 | 1005 | 96.7% |
+| `shared/esc/esc_stick.c` | 1039 | 1007 | 96.9% |
 | `shared/esc/esc_sim.c` | 367 | 343 | 93.5% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
@@ -323,7 +332,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/dshot/dshot_edt.c` | 33 | 33 | 100.0% |
 | `shared/ppm/ppm.c` | 42 | 42 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
-| `shared/can/can_selftest.c` | 145 | 134 | 92.4% |
+| `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
 | `shared/link/link_bringup.c` | 61 | 61 | 100.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
@@ -336,8 +345,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/artwork/art_store.c` | 104 | 96 | 92.3% |
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
-| `shared/outputs/outputs.c` | 192 | 184 | 95.8% |
-| `shared/outputs/outputs_pages.c` | 225 | 214 | 95.1% |
+| `shared/outputs/outputs.c` | 192 | 189 | 98.4% |
+| `shared/outputs/outputs_pages.c` | 225 | 216 | 96.0% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
 | `shared/outputs/servo_page.c` | 183 | 181 | 98.9% |
@@ -350,7 +359,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/tone_page.c` | 241 | 241 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
-| `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
+| `shared/bench/pdmini.c` | 553 | 545 | 98.5% |
 | `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
 | `shared/bench/sense_link.c` | 776 | 748 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
@@ -367,7 +376,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/sense/tone.c` | 372 | 372 | 100.0% |
 | `shared/sense/edge_ring.c` | 43 | 43 | 100.0% |
 | `shared/sense/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **26948** | **26201** | **97.2%** |
+| **total** | **26948** | **26224** | **97.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

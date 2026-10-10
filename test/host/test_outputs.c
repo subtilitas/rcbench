@@ -1404,6 +1404,76 @@ TEST_CASE(a_pin_past_the_bank_reaches_no_slice)
     CHECK(!out_pwm_same_compare(255u, 0u));
 }
 
+/*
+ * Each driver number on the wire reaches the bank as that driver, and reads
+ * back from the bank as the number written: one slot per driver on one page.
+ */
+TEST_CASE(each_driver_number_on_the_wire_is_that_driver_in_the_bank)
+{
+    static const struct {
+        uint16_t     wire;
+        out_driver_t bank;
+        uint16_t     rate;
+        uint16_t     pin;
+    } k_slot[] = {
+        { LINK_DRIVER_PWM,         OUT_DRIVER_PWM,         50u,  4u },
+        { LINK_DRIVER_PPM,         OUT_DRIVER_PPM,         40u,  9u },
+        { LINK_DRIVER_DSHOT,       OUT_DRIVER_DSHOT,       300u, 13u },
+        { LINK_DRIVER_DSHOT_BIDIR, OUT_DRIVER_DSHOT_BIDIR, 600u, 15u },
+    };
+    const unsigned n = sizeof(k_slot) / sizeof(k_slot[0]);
+    fresh_pages();
+    for (unsigned i = 0; i < n; ++i) {
+        const uint16_t in[LINK_OS_STRIDE] = {
+            [LINK_OS_DRIVER]  = k_slot[i].wire,
+            [LINK_OS_PIN]     = k_slot[i].pin,
+            [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(i, 1),
+            [LINK_OS_RATE_HZ] = k_slot[i].rate,
+        };
+        CHECK_EQ(outputs_slots_write(slots, (uint8_t)(i * LINK_OS_STRIDE),
+                                     LINK_OS_STRIDE, in), 0);
+    }
+    outputs_slots_apply(&o, slots);
+    for (unsigned i = 0; i < n; ++i) {
+        CHECK_EQ(o.slot[i].driver, k_slot[i].bank);
+        CHECK_EQ(o.slot[i].pin, k_slot[i].pin);
+        CHECK_EQ(o.slot[i].rate_hz, k_slot[i].rate);
+        CHECK_EQ(link_driver_of(o.slot[i].driver), k_slot[i].wire);
+    }
+    /* The two DShot drivers differ in the one thing the pin is asked:
+     * whether it is read back. */
+    CHECK(!out_driver(o.slot[2].driver)->reads_back);
+    CHECK(out_driver(o.slot[3].driver)->reads_back);
+    for (unsigned i = n; i < LINK_OUT_SLOTS; ++i) {
+        CHECK_EQ(o.slot[i].driver, OUT_DRIVER_NONE);
+    }
+}
+
+/*
+ * A keepalive says a channel is still watched and leaves what it was asked:
+ * it holds the silence timeout off for 500 ms from its own time, the
+ * command and the other channels are as they were, and a channel the bank
+ * does not have is refused.
+ */
+TEST_CASE(a_keepalive_holds_off_the_timeout_and_changes_no_command)
+{
+    fresh();
+    outputs_arm(&o, true, 1000u);
+    CHECK(outputs_set(&o, 0, 800u, 1000u));
+    CHECK(outputs_set(&o, 1, 300u, 1000u));
+    CHECK(outputs_keepalive(&o, 0, 1400u));
+    CHECK_EQ(o.channel[0].command, 800u);
+    CHECK(!outputs_overdue(&o, 0, 1000u + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK(outputs_overdue(&o, 1, 1000u + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK(!outputs_overdue(&o, 0, 1400u + OUT_DEFAULT_TIMEOUT_MS - 1u));
+    CHECK(outputs_overdue(&o, 0, 1400u + OUT_DEFAULT_TIMEOUT_MS));
+    /* The last channel is one; the one past it is not. */
+    CHECK(outputs_keepalive(&o, (uint8_t)(OUT_MAX_CHANNELS - 1u), 1400u));
+    CHECK(!outputs_overdue(&o, (uint8_t)(OUT_MAX_CHANNELS - 1u), 1899u));
+    CHECK(!outputs_keepalive(&o, (uint8_t)OUT_MAX_CHANNELS, 1400u));
+    CHECK(!outputs_keepalive(NULL, 0, 1400u));
+}
+
 int main(void)
 {
     RUN(a_channel_write_keeps_only_the_channels_it_named_alive);
@@ -1452,6 +1522,7 @@ int main(void)
     RUN(writing_off_a_page_end_is_refused);
     RUN(boot_arms_an_uncommanded_surface_at_its_centre);
     RUN(a_narrow_servo_arms_at_its_centre_not_its_stop);
+    RUN(a_failsafe_leaves_an_uncommanded_surface_reading_its_centre);
     RUN(a_zero_page_applied_as_commands_reaches_the_endpoint);
     RUN(the_mirror_leaves_a_throttle_at_zero);
     RUN(the_mirror_refuses_a_null_side);
@@ -1464,5 +1535,7 @@ int main(void)
     RUN(a_servo_rate_outside_the_pwm_range_is_refused);
     RUN(a_servo_rate_that_would_split_a_slice_is_refused);
     RUN(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused);
+    RUN(each_driver_number_on_the_wire_is_that_driver_in_the_bank);
+    RUN(a_keepalive_holds_off_the_timeout_and_changes_no_command);
     return test_summary("outputs");
 }

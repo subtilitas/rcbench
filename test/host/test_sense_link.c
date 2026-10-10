@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "tick_wrap.h"
 
 #include "link_msg.h"
 #include "link_pages.h"
@@ -1734,6 +1735,98 @@ TEST_CASE(encoder_events_come_after_the_current_monitors)
              SENSE_LINK_EV_ENC_SILENT);
 }
 
+/* The second of two events waits SENSE_LINK_EVENT_GAP_MS from the first
+ * and not 1 ms less, wherever on the clock the first was handed out. */
+static void the_second_event_waits_the_gap(uint32_t t0)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    want(&w);
+    polls(12);
+    far_flags(LINK_SN_BUS_OPEN);
+    polls((int)(SENSE_LINK_GRACE_MS / 50u) + 2);
+    CHECK_EQ(sl.events, (uint16_t)(SENSE_LINK_EV_I228_SILENT
+                                   | SENSE_LINK_EV_I3221_SILENT));
+    CHECK_EQ(sense_link_event(&sl, t0), SENSE_LINK_EV_I228_SILENT);
+    CHECK_EQ(sense_link_event(&sl, t0 + 1u), 0u);
+    CHECK_EQ(sense_link_event(&sl, t0 + SENSE_LINK_EVENT_GAP_MS - 1u), 0u);
+    CHECK_EQ(sense_link_event(&sl, t0 + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_I3221_SILENT);
+}
+
+TEST_CASE(an_event_waits_its_gap_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(the_second_event_waits_the_gap,
+                                  SENSE_LINK_EVENT_GAP_MS / 2u);
+}
+
+/* The ESC's telemetry is handed over for SENSE_LINK_STALE_MS less 1 ms
+ * after the read that brought it and the totals for SENSE_LINK_TOTALS_MS
+ * less 1 ms, wherever on the clock that read was. */
+static void a_status_read_is_fresh_for_its_time(uint32_t t0)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    want(&w);
+    polls(14);
+    sense_page_esc(&pg, true, 24.37f, true, 31.5f);
+    pg.sense[LINK_SN_I228_CHARGE_LO] = 0x2345u;
+    pg.sense[LINK_SN_I228_ENERGY_LO] = 0x0002u;
+    now = t0;                                   /* the read is taken here */
+    const uint32_t reads_before = sense_link_reads(&sl);
+    polls(1);
+    CHECK_EQ(sense_link_reads(&sl), reads_before + 1u);
+    bool v_ok = false;
+    bool i_ok = false;
+    float v = 0.0f;
+    float a = 0.0f;
+    CHECK(sense_link_esc(&sl, t0 + 1u, &v_ok, &v, &i_ok, &a));
+    CHECK(sense_link_esc(&sl, t0 + SENSE_LINK_STALE_MS - 1u, &v_ok, &v,
+                         &i_ok, &a));
+    CHECK_NEAR(v, 24.37f, 0.006f);
+    CHECK(!sense_link_esc(&sl, t0 + SENSE_LINK_STALE_MS, &v_ok, &v, &i_ok,
+                          &a));
+    int32_t mah = 0;
+    uint32_t wh = 0u;
+    CHECK(sense_link_totals(&sl, t0 + 1u, &mah, &wh));
+    CHECK(sense_link_totals(&sl, t0 + SENSE_LINK_TOTALS_MS - 1u, &mah, &wh));
+    CHECK_EQ(wh, 2u);
+    CHECK(!sense_link_totals(&sl, t0 + SENSE_LINK_TOTALS_MS, &mah, &wh));
+}
+
+TEST_CASE(a_status_read_is_fresh_for_its_time_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_status_read_is_fresh_for_its_time,
+                                  SENSE_LINK_TOTALS_MS / 2u);
+    at_tick_0_and_before_the_wrap(a_status_read_is_fresh_for_its_time,
+                                  SENSE_LINK_STALE_MS / 2u);
+}
+
+/* The encoder's angle the same: handed over for SENSE_LINK_STALE_MS less
+ * 1 ms after its read. */
+static void an_angle_is_fresh_for_its_time(uint32_t t0)
+{
+    enc_wanted(9u);
+    far_enc(ENC_OK, 2345u, 10u, 120u);
+    now = t0;
+    polls(1);
+    sense_link_enc_t e;
+    CHECK(sense_link_enc(&sl, t0 + 1u, &e));
+    CHECK_EQ(e.taken_ms, t0);
+    CHECK(sense_link_enc(&sl, t0 + SENSE_LINK_STALE_MS - 1u, &e));
+    CHECK_EQ(e.raw, 2345u);
+    CHECK(!sense_link_enc(&sl, t0 + SENSE_LINK_STALE_MS, &e));
+}
+
+TEST_CASE(an_angle_is_fresh_for_its_time_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(an_angle_is_fresh_for_its_time,
+                                  SENSE_LINK_STALE_MS / 2u);
+}
+
 int main(void)
 {
     RUN(the_encoder_is_enabled_only_on_a_4_9_coprocessor);
@@ -1782,5 +1875,8 @@ RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
     RUN(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);
+    RUN(an_event_waits_its_gap_across_the_tick_wrap);
+    RUN(a_status_read_is_fresh_for_its_time_across_the_tick_wrap);
+    RUN(an_angle_is_fresh_for_its_time_across_the_tick_wrap);
     return test_summary("sense_link");
 }

@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "tick_wrap.h"
 
 #include "link_msg.h"
 #include "link_pages.h"
@@ -238,7 +239,8 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
 
 static const pdmini_io_t k_io = { m_attach, m_detach, m_send, NULL };
 
-static void fresh(void)
+/* The module powered and the driver started at tick @p t0. */
+static void fresh_at(uint32_t t0)
 {
     memset(&m, 0, sizeof(m));
     m.powered  = true;
@@ -249,8 +251,13 @@ static void fresh(void)
     m.ma[0] = 1000u;
     m.switch_to = -1;
     m.id_says   = -1;
-    now = 1000u;
+    now = t0;
     pdmini_init(&d, &k_io, now);
+}
+
+static void fresh(void)
+{
+    fresh_at(1000u);
 }
 
 /* @p ms milliseconds: the module settles and talks, the driver steps. */
@@ -1779,6 +1786,187 @@ TEST_CASE(a_sag_under_an_output_not_live_is_not_counted)
     CHECK_EQ(d.sag_reads, 0u);
 }
 
+/*
+ * A write of the output is read back PDMINI_CONFIRM_MS after it went out
+ * and not 1 ms later: the state read that confirms it is on the wire
+ * PDMINI_CONFIRM_MS and the PDMINI_ATTACH_MS of its own hand-over after the
+ * write, with nothing else on the line at that time.
+ */
+TEST_CASE(the_confirming_read_goes_out_250_ms_after_the_write)
+{
+    fresh();
+    run(1260u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(1u);
+    CHECK_EQ(m.en_writes, 1u);
+    const uint32_t wrote = now;
+    CHECK_EQ(d.en_at, wrote);
+    const unsigned states = m.reads[PDMINI_READ_STATE];
+    while (m.reads[PDMINI_READ_STATE] == states && now - wrote < 2000u) {
+        run(1u, false);
+    }
+    CHECK_EQ(now - wrote, PDMINI_CONFIRM_MS + PDMINI_ATTACH_MS);
+    run(50u, false);
+    CHECK(pdmini_status(&d)->output);
+}
+
+/* --------------------------------------------------- across the wrap */
+
+/* What a session did, as the module and the driver's status count it. */
+typedef struct {
+    unsigned sends, en_writes, data_writes;
+    unsigned whos, states, displays, inputs, ids, datas;
+    uint32_t on_ms, attach_max;
+    uint32_t may_ms;          /* how long pdmini_may_be_on() said so */
+    uint16_t samples;
+    bool     online, output, stuck;
+} session_t;
+
+static uint32_t g_may_ms;
+
+/* @p ms of run(), counting the milliseconds the output may be on. */
+static void srun(uint32_t ms)
+{
+    for (uint32_t k = 0; k < ms; ++k) {
+        run(1u, false);
+        g_may_ms += pdmini_may_be_on(&d) ? 1u : 0u;
+    }
+}
+
+/* srun() until the driver has written OUTPUT_EN once more, at most 3 s. */
+static void srun_to_en_write(void)
+{
+    const unsigned n = m.en_writes + 1u;
+    for (unsigned k = 0u; m.en_writes < n && k < 3000u; ++k) {
+        srun(1u);
+    }
+}
+
+/*
+ * A session with every timer of the driver in it:
+ *   a WHO_AM_I that drips at 40 ms a byte and is given up at PDMINI_TXN_MS;
+ *   one at 12 ms a byte, which outlasts PDMINI_REPLY_MS and is waited for a
+ *   byte at a time; an ON confirmed after the module's 200 ms; display,
+ *   state, input and slot reads at their intervals; an OFF; an ON the
+ *   module loses, cancelled before its argument is known and watched for
+ *   PDMINI_WATCH_MS; the argument learnt a second time; an ON the module
+ *   loses, cancelled and settled by the read PDMINI_CONFIRM_MS after the
+ *   OFF; a module that goes quiet and is identified again.
+ */
+static session_t session(uint32_t t0)
+{
+    fresh_at(t0);
+    /* pdmini_init() leaves the four poll stamps at tick 0, so the first
+     * poll of each is due by the tick itself: at once for a driver started
+     * late on the clock, up to its period after tick 0 for one started
+     * there.  Stamped with the start, the session depends on differences
+     * alone, which is what is compared. */
+    d.last_display = d.last_state = d.last_input = d.last_slot = t0;
+    g_may_ms = 0u;
+    m.settle_ms = 200u;
+    m.v_mv = 5010u;
+    m.i_ma = 250u;
+    m.byte_gap = 40u;
+    srun(700u);
+    m.byte_gap = 12u;
+    srun(900u);
+    m.byte_gap = 0u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    srun(1700u);
+    pdmini_want(&d, false, 5000u, 1000u);
+    srun(700u);
+
+    m.ignore_en = 1u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    srun_to_en_write();
+    pdmini_want(&d, false, 5000u, 1000u);
+    srun(1500u);
+
+    pdmini_want(&d, true, 5000u, 1000u);
+    srun(1500u);
+    pdmini_want(&d, false, 5000u, 1000u);
+    srun(700u);
+
+    m.ignore_en = 1u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    srun_to_en_write();
+    pdmini_want(&d, false, 5000u, 1000u);
+    srun(900u);
+
+    m.powered = false;
+    srun(1500u);
+    m.powered = true;
+    srun(1500u);
+    const pdmini_status_t *st = pdmini_status(&d);
+    const session_t k = {
+        .sends = m.sends, .en_writes = m.en_writes,
+        .data_writes = m.data_writes,
+        .whos = m.reads[PDMINI_WHO_AM_I], .states = m.reads[PDMINI_READ_STATE],
+        .displays = m.reads[PDMINI_READ_DISPLAY],
+        .inputs = m.reads[PDMINI_READ_INPUT], .ids = m.reads[PDMINI_READ_ID],
+        .datas = m.reads[PDMINI_READ_DATA],
+        .on_ms = m.on_ms, .attach_max = m.attach_max, .may_ms = g_may_ms,
+        .samples = st->samples, .online = st->online, .output = st->output,
+        .stuck = st->stuck,
+    };
+    return k;
+}
+
+static session_t g_session;
+static uint32_t  g_session_ms;
+static bool      g_session_have;
+
+static void a_session_counts_the_same(uint32_t t0)
+{
+    if (t0 == 0u && g_session_have) {
+        return;                         /* the session at tick 0 is kept */
+    }
+    const session_t k = session(t0);
+    if (t0 == 0u) {
+        g_session      = k;
+        g_session_ms   = now;
+        g_session_have = true;
+        /* The session is one that does what its comment says. */
+        CHECK(k.online);
+        CHECK(!k.output);
+        CHECK(k.whos >= 3u);
+        CHECK_EQ(k.attach_max, PDMINI_ATTACH_MS + PDMINI_TXN_MS);
+        CHECK_EQ(k.en_writes, 7u);
+        CHECK(k.on_ms > 2000u);
+        CHECK(k.may_ms > k.on_ms);
+        CHECK(k.samples >= 40u);
+        return;
+    }
+    CHECK_EQ(k.sends, g_session.sends);
+    CHECK_EQ(k.en_writes, g_session.en_writes);
+    CHECK_EQ(k.data_writes, g_session.data_writes);
+    CHECK_EQ(k.whos, g_session.whos);
+    CHECK_EQ(k.states, g_session.states);
+    CHECK_EQ(k.displays, g_session.displays);
+    CHECK_EQ(k.inputs, g_session.inputs);
+    CHECK_EQ(k.ids, g_session.ids);
+    CHECK_EQ(k.datas, g_session.datas);
+    CHECK_EQ(k.on_ms, g_session.on_ms);
+    CHECK_EQ(k.attach_max, g_session.attach_max);
+    CHECK_EQ(k.may_ms, g_session.may_ms);
+    CHECK_EQ(k.samples, g_session.samples);
+    CHECK_EQ(k.online, g_session.online);
+    CHECK_EQ(k.output, g_session.output);
+    CHECK_EQ(k.stuck, g_session.stuck);
+    CHECK_EQ(now - t0, g_session_ms);
+}
+
+/* The 2^32 ms wrap at every 11 ms of the session: no timer of the driver
+ * fires earlier or later for it. */
+TEST_CASE(a_session_is_the_same_wherever_the_tick_wraps_in_it)
+{
+    g_session_have = false;
+    at_tick_0_and_before_the_wrap(a_session_counts_the_same, 1u);
+    for (uint32_t k = 5u; k < g_session_ms && !t_case_failed; k += 11u) {
+        at_tick_0_and_before_the_wrap(a_session_counts_the_same, k);
+    }
+}
+
 int main(void)
 {
     RUN(the_crc_matches_every_value_the_sheet_prints);
@@ -1845,5 +2033,7 @@ int main(void)
     RUN(a_failed_input_read_neither_counts_nor_clears_a_sag);
     RUN(an_unknown_input_switches_nothing_off);
     RUN(a_sag_under_an_output_not_live_is_not_counted);
+    RUN(the_confirming_read_goes_out_250_ms_after_the_write);
+    RUN(a_session_is_the_same_wherever_the_tick_wraps_in_it);
     return test_summary("pdmini");
 }

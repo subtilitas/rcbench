@@ -21,6 +21,7 @@
 #include "esc_profile.h"
 #include "esc_sim.h"
 #include "esc_stick.h"
+#include "tick_wrap.h"
 
 /* ------------------------------------------------------------ the rig */
 
@@ -53,6 +54,8 @@ typedef struct {
     uint32_t lcg;
     bool     readings_stop;
     int32_t  extra_ma;        /* added to every reading, on or off    */
+    int32_t  off_ma;          /* what the module reads while off      */
+    unsigned no_current;      /* the next readings carry no current   */
     uint32_t late_once_at;    /* one reading this late, at this time  */
     uint32_t late_once_by;
     uint32_t skew_ms;         /* readings stamped this far ahead      */
@@ -99,7 +102,8 @@ static esc_stick_change_t change(uint8_t item, uint8_t value)
     return c;
 }
 
-static void rig(const char *id)
+/* The bench with its clock at @p t0. */
+static void rig_at(const char *id, uint32_t t0)
 {
     memset(&r, 0, sizeof(r));
     r.p = esc_profiles_find(id);
@@ -111,11 +115,16 @@ static void rig(const char *id)
     esc_sim_defaults(&c);
     c.wait_hand = true;         /* the menu starts at the pull */
     esc_sim_init(&r.sim, r.p, &c);
-    r.now = 1000u;
+    r.now = t0;
     r.link = true;
     r.online = true;
     r.read_iv = 50u;
     r.lcg = 7u;
+}
+
+static void rig(const char *id)
+{
+    rig_at(id, 1000u);
 }
 
 static esc_stick_bench_t bench(void)
@@ -169,11 +178,14 @@ static void tick(void)
         r.seq += 1u + r.skip;
         esc_stick_sample_t s = {
             .seq = r.seq, .at_ms = r.now + r.skew_ms,
-            .ma = (r.supply_on ? ma : 0) + r.extra_ma,
-            .current_ok = true, .output = r.asked,
+            .ma = (r.supply_on ? ma : r.off_ma) + r.extra_ma,
+            .current_ok = r.no_current == 0u, .output = r.asked,
             .reported_on = r.supply_on, .online = r.online,
         };
         esc_stick_sample(&r.e, &s);
+        if (r.no_current > 0u) {
+            r.no_current--;
+        }
         r.lcg = r.lcg * 1103515245u + 12345u;
         const uint32_t j = (r.jitter > 0u) ? (r.lcg >> 8) % (r.jitter + 1u)
                                            : 0u;
@@ -3073,6 +3085,230 @@ TEST_CASE(no_step_is_asked_on_an_old_reading)
     ended_safe();
 }
 
+/* ------------------------------------------- limits to the reading */
+
+/*
+ * The supply is off at a current of ESC_STICK_OFF_MA and not 1 mA above
+ * it: a module that reads 20 mA while off is taken as off and the run
+ * stores its value; one that reads 21 mA never is, and the run ends with
+ * SUPPLY STAYS ON before anything is powered.
+ */
+TEST_CASE(the_supply_is_off_at_20_ma_and_not_at_21)
+{
+    rig("sunrise-pro");
+    r.off_ma = ESC_STICK_OFF_MA;
+    esc_stick_change_t c[1] = { change(2, 5) };
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 5);
+
+    rig("sunrise-pro");
+    r.off_ma = ESC_STICK_OFF_MA + 1;
+    CHECK(start(c, 1));
+    run_for(240000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    CHECK_EQ(r.e.entries, 0);
+    CHECK_EQ(r.on_n, 0u);
+    ended_safe();
+}
+
+/* Until the readings asked to come without a current have been given. */
+static void run_out_no_current(void)
+{
+    while (r.no_current > 0u && esc_stick_running(&r.e)) {
+        tick();
+    }
+}
+
+/*
+ * A reading without a current is a reading missed.  One spoils the group
+ * it falls in and the run goes on; ESC_STICK_LATE_RUN less one in a row
+ * still do; ESC_STICK_LATE_RUN in a row end the run at that reading, not
+ * one later.
+ */
+TEST_CASE(a_reading_without_a_current_is_a_reading_missed)
+{
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.no_current = 1u;
+    run_out_no_current();
+    CHECK(esc_stick_running(&r.e));
+    CHECK_EQ(r.e.late_run, 1u);
+    run_for(400000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
+    CHECK_EQ(r.sim.stores, 1u);
+
+    rig("hobbywing-flyfun-8item");
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.no_current = ESC_STICK_LATE_RUN - 1u;
+    run_out_no_current();
+    CHECK(esc_stick_running(&r.e));
+    CHECK_EQ(r.e.late_run, ESC_STICK_LATE_RUN - 1u);
+    uint32_t seq = r.seq;
+    while (r.seq == seq && esc_stick_running(&r.e)) {
+        tick();                                 /* one with a current */
+    }
+    CHECK_EQ(r.e.late_run, 0u);
+    seq = r.seq;
+    r.no_current = ESC_STICK_LATE_RUN + 2u;
+    run_for(5000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_RATE);
+    CHECK_EQ(r.seq - seq, ESC_STICK_LATE_RUN);
+    CHECK_EQ(r.sim.stores, 0u);
+    ended_safe();
+}
+
+/* Readings a count shows the panel never saw end the run the same way: at
+ * the ESC_STICK_LATE_RUN-th in a row. */
+TEST_CASE(the_third_late_reading_in_a_row_ends_the_run)
+{
+    rig("hobbywing-flyfun-8item");
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    const uint32_t seq = r.seq;
+    r.skip = 1u;                                /* the count steps by 2 */
+    run_for(5000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_RATE);
+    CHECK_EQ((r.seq - seq) / 2u, ESC_STICK_LATE_RUN);
+    ended_safe();
+}
+
+/* How long a flyfun run takes from its start to its first reading in the
+ * item menu. */
+#define STALE_PROFILE "hobbywing-flyfun-8item"
+
+static uint32_t ms_to_the_menu(void)
+{
+    rig_at(STALE_PROFILE, 0u);
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ITEMS);
+    return r.e.read_ms;
+}
+
+/*
+ * Readings that stop in a powered phase end the run ESC_STICK_STALE_MS
+ * after the last one: still running at 1000 ms, ended at 1001 ms, and
+ * ended safe.
+ */
+static void readings_stop_in_the_menu(uint32_t t0)
+{
+    rig_at(STALE_PROFILE, t0);
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ITEMS);
+    const uint32_t last = r.e.read_ms;
+    r.readings_stop = true;
+    while (r.now - last <= ESC_STICK_STALE_MS) {
+        tick();                     /* the step at r.now, then r.now + 1 */
+    }
+    CHECK(esc_stick_running(&r.e)); /* stepped at last + 1000 */
+    tick();
+    CHECK(!esc_stick_running(&r.e));
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+    CHECK_EQ(r.now - 1u - last, ESC_STICK_STALE_MS + 1u);
+    ended_safe();
+}
+
+TEST_CASE(readings_that_stop_end_the_run_at_1001_ms_across_the_tick_wrap)
+{
+    /* The last reading 500 ms before the wrap. */
+    at_tick_0_and_before_the_wrap(readings_stop_in_the_menu,
+                                  ms_to_the_menu() + 500u);
+}
+
+/*
+ * The same with the supply off and a person asked to act at the ESC: no
+ * reading for ESC_STICK_STALE_MS says the supply is still off, and the run
+ * ends 1001 ms after the last one with nothing powered.
+ */
+static void readings_stop_while_a_step_is_asked(uint32_t t0)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+    };
+    rig_hand("kontronik-jazz", k, 1);
+    r.now = t0;
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_OFF);
+    const uint32_t seq = r.seq;
+    while (r.seq == seq) {
+        tick();                     /* to a reading taken in the phase */
+    }
+    const uint32_t last = r.e.read_ms;
+    r.readings_stop = true;
+    while (r.now - last <= ESC_STICK_STALE_MS) {
+        tick();
+    }
+    CHECK(esc_stick_running(&r.e));
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_OFF);
+    tick();
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+    CHECK_EQ(r.now - 1u - last, ESC_STICK_STALE_MS + 1u);
+    CHECK_EQ(r.e.entries, 0);
+    CHECK_EQ(r.on_n, 0u);
+    ended_safe();
+}
+
+TEST_CASE(readings_that_stop_before_the_power_end_the_run_at_1001_ms)
+{
+    /* How long the run takes to ask for the step, for a last reading
+     * 500 ms before the wrap. */
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+    };
+    rig_hand("kontronik-jazz", k, 1);
+    r.now = 0u;
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+    at_tick_0_and_before_the_wrap(readings_stop_while_a_step_is_asked,
+                                  r.now + 550u);
+}
+
+/* A whole run across the wrap stores what a run at tick 0 stores, in the
+ * same time: every wait of the run is a difference of two times. */
+static uint32_t g_run_ms;
+
+static void a_whole_run_stores_its_value(uint32_t t0)
+{
+    rig_at("sunrise-pro", t0);
+    esc_stick_change_t c[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(c, 2));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 4);
+    CHECK_EQ(r.e.entries, 2);
+    ended_safe();
+    if (t0 == 0u) {
+        g_run_ms = r.now;
+    } else {
+        CHECK_EQ(r.now - t0, g_run_ms);
+        CHECK(r.now < t0);                      /* it did wrap */
+    }
+}
+
+TEST_CASE(a_run_takes_the_same_time_across_the_tick_wrap)
+{
+    /* The wrap half way through the run at tick 0. */
+    rig_at("sunrise-pro", 0u);
+    esc_stick_change_t c[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(c, 2));
+    run_for(240000u);
+    at_tick_0_and_before_the_wrap(a_whole_run_stores_its_value, r.now / 2u);
+}
+
 int main(void)
 {
     RUN(beeps_make_a_group_that_silence_ends);
@@ -3151,5 +3387,11 @@ int main(void)
     RUN(no_step_is_asked_on_an_old_reading);
     RUN(a_value_makes_its_moves_after_the_selection);
     RUN(a_car_mode_selects_at_full_and_stores_at_the_brake);
+    RUN(the_supply_is_off_at_20_ma_and_not_at_21);
+    RUN(a_reading_without_a_current_is_a_reading_missed);
+    RUN(the_third_late_reading_in_a_row_ends_the_run);
+    RUN(readings_that_stop_end_the_run_at_1001_ms_across_the_tick_wrap);
+    RUN(readings_that_stop_before_the_power_end_the_run_at_1001_ms);
+    RUN(a_run_takes_the_same_time_across_the_tick_wrap);
     return test_summary("esc_stick");
 }

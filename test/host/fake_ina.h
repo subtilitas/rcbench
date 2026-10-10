@@ -87,7 +87,7 @@ typedef struct {
     unsigned    bad_width;       /* reads of a width the register lacks    */
 } fake_bus_t;
 
-static void fake_reset228(fake_part_t *p)
+static inline void fake_reset228(fake_part_t *p)
 {
     memset(p->reg, 0, sizeof p->reg);
     p->reg[INA228_ADC_CONFIG] = INA228_ADC_RESET;
@@ -97,7 +97,7 @@ static void fake_reset228(fake_part_t *p)
     p->charge = 0u;
 }
 
-static void fake_reset3221(fake_part_t *p)
+static inline void fake_reset3221(fake_part_t *p)
 {
     memset(p->reg, 0, sizeof p->reg);
     p->reg[INA3221_CONFIG]      = INA3221_CONFIG_RESET;
@@ -107,8 +107,8 @@ static void fake_reset3221(fake_part_t *p)
     }
 }
 
-static fake_part_t *fake_add(fake_bus_t *b, fake_kind_t kind, uint8_t addr,
-                             double shunt_ohm)
+static inline fake_part_t *fake_add(fake_bus_t *b, fake_kind_t kind,
+                                    uint8_t addr, double shunt_ohm)
 {
     fake_part_t *p = &b->part[b->n++];
     memset(p, 0, sizeof *p);
@@ -129,7 +129,7 @@ static fake_part_t *fake_add(fake_bus_t *b, fake_kind_t kind, uint8_t addr,
     return p;
 }
 
-static fake_part_t *fake_find(fake_bus_t *b, uint8_t addr)
+static inline fake_part_t *fake_find(fake_bus_t *b, uint8_t addr)
 {
     for (size_t i = 0; i < b->n; ++i) {
         if (b->part[i].present && b->part[i].addr == addr) {
@@ -139,7 +139,7 @@ static fake_part_t *fake_find(fake_bus_t *b, uint8_t addr)
     return NULL;
 }
 
-static int64_t fake_sat(double v, int64_t lo, int64_t hi)
+static inline int64_t fake_sat(double v, int64_t lo, int64_t hi)
 {
     const double r = floor(v + 0.5);
     if (r >= (double)hi) {
@@ -151,7 +151,7 @@ static int64_t fake_sat(double v, int64_t lo, int64_t hi)
     return (int64_t)r;
 }
 
-static void fake_put(uint8_t *buf, size_t n, uint64_t v)
+static inline void fake_put(uint8_t *buf, size_t n, uint64_t v)
 {
     for (size_t i = 0; i < n; ++i) {
         buf[i] = (uint8_t)(v >> (8u * (n - 1u - i)));
@@ -160,7 +160,7 @@ static void fake_put(uint8_t *buf, size_t n, uint64_t v)
 
 /* ------------------------------------------------------------- INA228 */
 
-static size_t fake_width228(uint8_t reg)
+static inline size_t fake_width228(uint8_t reg)
 {
     switch (reg) {
     case INA228_VSHUNT: case INA228_VBUS: case INA228_CURRENT: case INA228_POWER:
@@ -172,13 +172,13 @@ static size_t fake_width228(uint8_t reg)
     }
 }
 
-static double fake_lsb228(const fake_part_t *p)   /* CURRENT_LSB, A */
+static inline double fake_lsb228(const fake_part_t *p)   /* CURRENT_LSB, A */
 {
     const double k = (p->reg[INA228_CONFIG] & INA228_CONFIG_ADCRANGE) ? 4.0 : 1.0;
     return (double)p->reg[INA228_SHUNT_CAL] / (13107.2e6 * p->shunt_ohm * k);
 }
 
-static uint64_t fake_value228(const fake_part_t *p, uint8_t reg)
+static inline uint64_t fake_value228(const fake_part_t *p, uint8_t reg)
 {
     const bool narrow = (p->reg[INA228_CONFIG] & INA228_CONFIG_ADCRANGE) != 0u;
     const double vsh_lsb = narrow ? 78.125e-9 : 312.5e-9;
@@ -222,7 +222,7 @@ static uint64_t fake_value228(const fake_part_t *p, uint8_t reg)
     }
 }
 
-static void fake_write228(fake_part_t *p, uint8_t reg, uint16_t v)
+static inline void fake_write228(fake_part_t *p, uint8_t reg, uint16_t v)
 {
     if (reg == INA228_CONFIG) {
         if ((v & INA228_CONFIG_RST) != 0u) {
@@ -244,7 +244,7 @@ static void fake_write228(fake_part_t *p, uint8_t reg, uint16_t v)
 /* ------------------------------------------------------------ INA3221 */
 
 /* A shunt or bus register, 1 to 6, converted now. */
-static uint16_t fake_convert3221(const fake_part_t *p, uint8_t reg)
+static inline uint16_t fake_convert3221(const fake_part_t *p, uint8_t reg)
 {
     const unsigned ch = (unsigned)(reg - 1u) / 2u;
     int64_t code;
@@ -258,7 +258,7 @@ static uint16_t fake_convert3221(const fake_part_t *p, uint8_t reg)
 
 /* With a clock: the six registers as held, converted again once the cycle
  * of the Configuration in force has passed. */
-static uint16_t fake_held3221(fake_part_t *p, uint8_t reg)
+static inline uint16_t fake_held3221(fake_part_t *p, uint8_t reg)
 {
     const uint64_t now   = *p->clock_us;
     const uint32_t cycle = ina3221_cycle_us(p->reg[INA3221_CONFIG]);
@@ -277,7 +277,7 @@ static uint16_t fake_held3221(fake_part_t *p, uint8_t reg)
     return p->held[reg];
 }
 
-static uint64_t fake_value3221(fake_part_t *p, uint8_t reg)
+static inline uint64_t fake_value3221(fake_part_t *p, uint8_t reg)
 {
     if (reg >= INA3221_SHUNT1 && reg <= 0x06u) {
         return (p->clock_us != NULL) ? fake_held3221(p, reg)
@@ -297,7 +297,7 @@ static uint64_t fake_value3221(fake_part_t *p, uint8_t reg)
     return p->reg[reg];
 }
 
-static void fake_write3221(fake_part_t *p, uint8_t reg, uint16_t v)
+static inline void fake_write3221(fake_part_t *p, uint8_t reg, uint16_t v)
 {
     if (reg == INA3221_CONFIG && p->clock_us != NULL) {
         p->conv_at = *p->clock_us;           /* a cycle starts */
@@ -311,7 +311,7 @@ static void fake_write3221(fake_part_t *p, uint8_t reg, uint16_t v)
 
 /* -------------------------------------------------------------- wire */
 
-static sense_err_t fake_fault(fake_bus_t *b)
+static inline sense_err_t fake_fault(fake_bus_t *b)
 {
     ++b->transactions;
     if (b->low) {
@@ -328,8 +328,8 @@ static sense_err_t fake_fault(fake_bus_t *b)
 }
 
 /* The AS5600's registers as bytes: one register a read. */
-static bool fake_read5600(const fake_part_t *p, uint8_t reg, uint8_t *buf,
-                          size_t n)
+static inline bool fake_read5600(const fake_part_t *p, uint8_t reg,
+                                 uint8_t *buf, size_t n)
 {
     uint16_t v;
     size_t   want;
@@ -353,8 +353,8 @@ static bool fake_read5600(const fake_part_t *p, uint8_t reg, uint8_t *buf,
     return true;
 }
 
-static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
-                             uint8_t *buf, size_t n)
+static inline sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
+                                    uint8_t *buf, size_t n)
 {
     fake_bus_t *b = (fake_bus_t *)ctx;
     const sense_err_t e = fake_fault(b);
@@ -387,8 +387,8 @@ static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
     return SENSE_OK;
 }
 
-static sense_err_t fake_write(void *ctx, uint8_t addr, uint8_t reg,
-                              const uint8_t *buf, size_t n)
+static inline sense_err_t fake_write(void *ctx, uint8_t addr, uint8_t reg,
+                                     const uint8_t *buf, size_t n)
 {
     fake_bus_t *b = (fake_bus_t *)ctx;
     const sense_err_t e = fake_fault(b);
@@ -416,7 +416,7 @@ static sense_err_t fake_write(void *ctx, uint8_t addr, uint8_t reg,
     return SENSE_OK;
 }
 
-static void fake_bus_init(fake_bus_t *b, sense_bus_t *bus)
+static inline void fake_bus_init(fake_bus_t *b, sense_bus_t *bus)
 {
     memset(b, 0, sizeof *b);
     const sense_i2c_t io = { fake_read, fake_write, b };
