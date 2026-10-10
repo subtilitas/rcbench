@@ -15,6 +15,7 @@ set(SRCS
     pdmini.c
     supply_link.c
     sense_link.c
+    servo_source.c
     tone_link.c
     knob.c
 )

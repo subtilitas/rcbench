@@ -290,6 +290,13 @@ Zeile, und ohne Messwert keine:
   im Mittel 52,9 ms auf einem Prüfstand, etwa 19 Zeilen je Sekunde. Andere
   Prüfstände sind nicht gemessen.
 - Ohne Link ist ein Messwert ein Schritt des Modells, alle 50 ms.
+- Ein Messwert ist eine Zeile. Wird der INA3221 über den Fenster-Ring
+  gelesen (Koprozessor-Protokoll 4.11, CH1 eingeschaltet), schreibt ein
+  Poll, der mehr als ein 50-ms-Fenster bringt, für jedes eine Zeile: die
+  Zeilen eines Polls tragen dieselbe `time`, der Messwert steht in der
+  letzten davon mit dem neuesten Fenster, und die Zeilen davor halten
+  `window` und die Kanalspalten und sind sonst leer. Bei einem Poll von
+  53 ms schreibt einer von 17 Polls zwei Zeilen.
 - Sonst hält nichts eine Zeile zurück. Eine Zeile, die die Queue zur Karte
   nicht aufnimmt, wird verworfen und gezählt, und das Band meldet es am Ende
   des Laufs (siehe [Logs](#logs)).
@@ -322,7 +329,22 @@ Zelle. `window` und die neun Kanalspalten sind das 50-ms-Fenster des
 INA3221 -- je Kanal der mittlere und der höchste Strom und die niedrigste
 Busspannung -- in der ersten Zeile, nachdem das Panel es gelesen hat, und in
 keiner anderen, sodass jedes Fenster einmal in der Datei steht, unter seiner
-Nummer; ein Kanal ohne Messwerte im Fenster ist leer. Der Log-Viewer
+Nummer; ein Kanal ohne Messwerte im Fenster ist leer, ebenso die
+Stromzellen oder die Spannungszelle von CH1 für ein Fenster, das von dieser
+Größe keine Messung hält. Mit einem Koprozessor
+mit Protokoll 4.11 und eingeschaltetem CH1 steht jedes Fenster von CH1 in
+der Datei, solange zwei Lesezugriffe höchstens 200 ms auseinanderliegen,
+und ein Schritt in `window` von mehr als 1 ist ein verlorenes Fenster oder
+eine Nummer, die der Koprozessor übersprungen hat. Ein Fenster, das bei
+nicht scharfem Prüfstand genommen wurde, steht in keiner Datei. Die Werte
+von CH1 zählen eine übersteuerte Messung am Ende des Bereichs, 1,638 A am
+0,1-Ω-Shunt, und behalten das Vorzeichen eines negativen Stroms. CH2 und
+CH3 stehen in der Zeile ihres Fensters, wenn das Panel beide Pages
+innerhalb dieses Fensters gelesen hat, und sind leer in einer Zeile, die
+der Poll nachgeholt hat. Mit einem älteren Koprozessor oder ohne CH1 halten
+die Spalten das letzte Fenster jedes Lesens: ein Poll, der länger als 50 ms
+dauert, überspringt Fenster, 1 von 17 bei 53 ms, und eine übersteuerte
+Messung bleibt aus den Werten heraus. Der Log-Viewer
 gruppiert `ina voltage`, `ina current` und `esc current` unter INA228 und
 ESC und die Spalten des Fensters unter INA3221.
 
@@ -1436,7 +1458,20 @@ und mit eingeschaltetem INA228 verliert die Kachel MOTOR & ESC ihre Marke
 Solange ein Monitor eingeschaltet ist, liest das Panel die 14
 Nur-Lese-Register der SENSE-Page alle 50 ms; solange der INA3221
 eingeschaltet ist, die Kanalfenster der SERVO_SENSE-Page alle 50 ms, jedes 50-ms-Fenster
-einmal. Das
+einmal. Mit einem Koprozessor mit Protokoll 4.11 und CH1 unter den Kanälen
+des INA3221 liest es außerdem alle 50 ms SERVO_WIN, das die letzten vier
+Fenster von CH1 hält, und SENSE bis Register 31
+([Link](Link-de.md#der-fenster-ring)).
+
+Die Servo-Schiene hat zu jeder Zeit ein Messgerät: CH1 des INA3221, solange
+er mit CH1 eingeschaltet ist, der Koprozessor Protokoll 4.11 spricht, der
+Koprozessor die Einstellung hält, das Bauteil als INA3221 an einem Bus
+antwortet, der nicht hängt, in den letzten 200 ms ein Fenster mit
+Strommessungen geschlossen hat, sein Reset-Zähler steht und all das seit
+1000 ms gilt; sonst der PD mini. Der SERVO-Bildschirm und der Servotest
+lesen den PD mini, welches es auch ist.
+
+Das
 Band sagt, was sie zeigen, jedes einmal und eines nach dem anderen: das
 Dringendste zuerst und das nächste frühestens 5 s später, sodass zwei
 gleichzeitige beide gesagt werden. In dieser Reihenfolge:
@@ -1455,6 +1490,8 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `INA228-Strom am Ende des Messbereichs -- Strom ist eine Grenze` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Scharfschalten das Ende seines Bereichs gelesen |
 | `INA3221 CH1 übersteuert bei 1.64 A -- Strom ist eine Grenze` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
 | `Speicher des Koprozessors aus -- Einstellungen gelten bis zum Neustart` | STATUS-Fehlerbit 6: der Koprozessor speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
+| `Koprozessor älter als 4.11 -- Servostrom vom PD mini gelesen` | der INA3221 ist mit CH1 eingeschaltet, und der Koprozessor spricht Protokoll 4.7 bis 4.10: er hat keinen Fenster-Ring, und der PD mini ist das Messgerät der Servo-Schiene. Gesagt beim Link-Aufbau und wenn der INA3221 eingeschaltet wird, während er antwortet |
+| `INA3221 hat sich zurückgesetzt -- Versorgung prüfen` | der Koprozessor fand den INA3221 mit seiner Einschalt-Konfiguration und hat ihn 1000 ms später neu eingestellt; einmal je Reset gesagt. Die Fenster dieser 1000 ms halten keine Messungen |
 
 Eine abgelehnte Einstellung wird erst wieder geschrieben, wenn sie sich unter
 SETUP ändert. Pins, die das Paar eines I2C-Blocks sind und abgelehnt wurden,

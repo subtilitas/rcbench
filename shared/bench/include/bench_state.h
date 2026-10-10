@@ -74,15 +74,22 @@ typedef struct {
     bool     clipped;
 
     /*
-     * One 50 ms window of the INA3221's channels, from SERVO_SENSE, for
-     * the log: servo_new while it has not been written to a row, so each
-     * window reaches the log once, keyed by its number.  Per channel the
-     * mean and highest current in mA, signed, and the lowest bus voltage
-     * in mV, as the page carries them; bit n-1 of servo_ok says CHn's
-     * window holds readings.  Not on the BENCH page.
+     * One 50 ms window of the INA3221's channels, from SERVO_WIN (CH1) and
+     * SERVO_SENSE, for the log: servo_new while it has not been written to
+     * a row, so each window reaches the log once, keyed by its number.
+     * Per channel the mean and highest current in mA, signed, and the
+     * lowest bus voltage in mV, as the page carries them; bit n-1 of
+     * servo_ok says CHn's window holds readings.  Bit n-1 of
+     * servo_no_current says it holds no current sample, and of
+     * servo_no_voltage no voltage sample: the figures of that quantity
+     * read 0 and are not readings, and the log leaves their cells empty.
+     * SERVO_WIN says which for CH1; SERVO_SENSE's flags do not, and both
+     * stay 0 for a channel read from it.  Not on the BENCH page.
      */
     bool     servo_new;
     uint8_t  servo_ok;
+    uint8_t  servo_no_current;
+    uint8_t  servo_no_voltage;
     uint16_t servo_window;
     int16_t  servo_mean_ma[3];
     int16_t  servo_max_ma[3];
@@ -117,6 +124,16 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
  * marked as this run's.  Either pointer may be NULL.
  */
 void bench_state_run_starts(bench_state_t *b, uint16_t *regs);
+
+/**
+ * One row of the bench log from @p b, into @p out.  With @p whole the
+ * sample as it is.  Without, the INA3221's window alone -- servo_new and
+ * the servo_ fields -- and every other field 0 with no flag set, which the
+ * log writes as empty cells: the row of a window that closed before the
+ * newest one of its pass.
+ */
+void bench_state_log_row(const bench_state_t *b, bool whole,
+                         bench_state_t *out);
 
 /** Clear the peaks without disturbing the live readings. */
 void bench_state_reset_peaks(bench_state_t *b);

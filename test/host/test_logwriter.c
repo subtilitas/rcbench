@@ -16,6 +16,7 @@
 #include "log_csv.h"
 #include "log_numbers.h"
 #include "log_writer.h"
+#include "sense_chain.h"
 #include "telemetry_sim.h"
 
 /* ------------------------------------------------------------- the sink */
@@ -749,6 +750,408 @@ TEST_CASE(a_sink_that_needs_no_commit_still_writes_the_whole_run)
     CHECK_EQ(an.row_count, 120);
 }
 
+/* ------------------------------------------- one row per INA3221 window */
+
+/*
+ * One pass of the control task's log step, as advance_model_and_log() in
+ * the panel's main.c makes it: the row decision, then one row for each
+ * window the poll handed over and one when it handed over none, the sample
+ * in the last.  Returns the rows written.
+ */
+static unsigned log_pass(log_writer_t *w, log_cadence_t *cad,
+                         bench_state_t *bench, bool new_sample, bool run)
+{
+    float t_s = 0.0f;
+    const bool logged = log_cadence_row(cad, chain_now(), new_sample, run,
+                                        &t_s);
+    const unsigned windows = sense_link_windows(&ch.sl);
+    const unsigned rows    = log_cadence_rows(windows);
+    unsigned written = 0u;
+    for (unsigned k = 0u; k < rows; ++k) {
+        if (k < windows) {
+            (void)sense_link_take_window(&ch.sl, bench);
+        }
+        if (logged) {
+            bench_state_t row;
+            bench_state_log_row(bench, k + 1u == rows, &row);
+            const bool ok = log_writer_row(w, t_s, &row);
+            log_cadence_posted(cad, ok);
+            written += ok ? 1u : 0u;
+        }
+        bench->servo_new = false;
+    }
+    return written;
+}
+
+/* What a bench log holds, read back cell by cell. */
+typedef struct {
+    unsigned rows;
+    unsigned with_sample;     /* rows with a voltage cell                */
+    unsigned with_window;     /* rows with a window number               */
+    unsigned stepped;         /* window numbers not one after the last   */
+    unsigned wrong;           /* a ch1 current that is another window's  */
+    unsigned back;            /* a time before the row before            */
+    unsigned same_time;       /* rows at the time of the row before      */
+    unsigned bare;            /* window rows with no sample              */
+    unsigned no_current;      /* window rows with the ch1 currents empty */
+    unsigned no_voltage;      /* window rows with the ch1 voltage empty  */
+    unsigned zero_v;          /* a ch1 voltage written as 0              */
+    unsigned half;            /* one of ch1 current and ch1 max empty    */
+    long     first, last;     /* window numbers                          */
+} log_read_t;
+
+static void read_log(log_read_t *r)
+{
+    memset(r, 0, sizeof(*r));
+    r->first = r->last = -1;
+    double last_t = -1.0;
+    const char *p = strchr(g_mem.buf, '\n') + 1;       /* past the header */
+    while (*p != '\0') {
+        const char *end = strchr(p, '\n');
+        char cell[22][24];
+        unsigned n = 0u;
+        const char *c = p;
+        while (c <= end && n < 22u) {
+            const char *sep = c;
+            while (sep < end && *sep != ';') {
+                ++sep;
+            }
+            const size_t len = (size_t)(sep - c);
+            memcpy(cell[n], c, len);
+            cell[n][len] = '\0';
+            ++n;
+            c = sep + 1;
+        }
+        CHECK_EQ(n, 22u);
+        ++r->rows;
+        const double t = atof(cell[0]);
+        if (t < last_t) {
+            ++r->back;
+        }
+        if (t == last_t) {
+            ++r->same_time;
+        }
+        last_t = t;
+        const bool sample = cell[1][0] != '\0';
+        if (sample) {
+            ++r->with_sample;
+        }
+        if (cell[12][0] != '\0') {
+            const long win = atol(cell[12]);
+            ++r->with_window;
+            if (r->last >= 0 && ((r->last + 1) & 0xFFFF) != win) {
+                ++r->stepped;
+            }
+            if (r->first < 0) {
+                r->first = win;
+            }
+            r->last = win;
+            if (cell[13][0] == '\0') {
+                ++r->no_current;
+            } else if (lround(atof(cell[13]) * 1000.0)
+                       != chain_mean_ma((uint16_t)win)) {
+                ++r->wrong;
+            }
+            if ((cell[13][0] == '\0') != (cell[14][0] == '\0')) {
+                ++r->half;
+            }
+            if (cell[15][0] == '\0') {
+                ++r->no_voltage;
+            } else if (atof(cell[15]) == 0.0) {
+                ++r->zero_v;
+            }
+            if (!sample) {
+                ++r->bare;
+            }
+        }
+        p = end + 1;
+    }
+}
+
+/* A bench sample that every poll brings, with a voltage to tell its row. */
+static bench_state_t log_sample(void)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags   = LINK_BN_VOLTAGE_OK;
+    b.voltage = 12.0f;
+    b.valid   = true;
+    return b;
+}
+
+/*
+ * An armed bench polled every 53 ms for 20 s, the tick wrapping inside the
+ * run: every 50 ms window of the INA3221 is one row, in order and under
+ * its own number, every poll's sample is in exactly one row, and the poll
+ * that catches a window up writes two rows at one time.
+ */
+TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    chain_start(LINK_PROTOCOL_MINOR, 0xFFFFE000u, 0x01u);
+    chain_far(400u);
+    chain_link_up();
+    bench_state_t bench = log_sample();
+    log_cadence_t cad;
+    log_cadence_init(&cad, chain_now());
+    /* Disarmed: the windows are taken and none is logged. */
+    for (unsigned i = 0u; i < 20u; ++i) {
+        chain_cycle(53u);
+        CHECK_EQ(log_pass(&w, &cad, &bench, true, false), 0u);
+        CHECK_EQ(sense_link_windows(&ch.sl), 0u);
+    }
+    CHECK_EQ(g_mem.len, 0u);
+    const uint16_t before = bench.servo_window;   /* the last one taken */
+    log_cadence_run_start(&cad, chain_now());
+    const uint64_t began = ch.us;
+    unsigned most = 0u;
+    for (unsigned i = 0u; i < 380u; ++i) {
+        chain_cycle(53u);
+        const unsigned n = log_pass(&w, &cad, &bench, true, true);
+        CHECK(n >= 1u);
+        if (n > most) {
+            most = n;
+        }
+    }
+    CHECK(chain_now() < 0x00010000u);           /* across the tick wrap */
+    CHECK_EQ(most, 2u);
+
+    log_read_t r;
+    read_log(&r);
+    const unsigned closed = (unsigned)((ch.us - began) / 50000u);
+    CHECK(r.with_window + 1u >= closed && r.with_window <= closed + 1u);
+    CHECK_EQ(r.rows, r.with_window);            /* no row without one */
+    CHECK_EQ(r.with_sample, 380u);              /* each sample once   */
+    CHECK_EQ(r.bare, r.rows - 380u);
+    CHECK_EQ(r.same_time, r.bare);
+    CHECK(r.bare >= 20u);                       /* 3 ms a poll in 50  */
+    CHECK_EQ(r.stepped, 0u);
+    CHECK_EQ(r.wrong, 0u);
+    CHECK_EQ(r.back, 0u);
+    /* The run's first window is the one after the last taken before it:
+     * a window taken while disarmed is in no row. */
+    CHECK_EQ((uint16_t)((uint16_t)r.first - before), 1u);
+    CHECK_EQ(log_cadence_sent(&cad), r.rows);
+    CHECK_EQ(log_cadence_lost(&cad), 0);
+    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+
+    /* And the reader takes the file: its time column, no ragged row. */
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.n_columns, 22);
+    CHECK_EQ(an.ragged_rows, 0);
+    CHECK_EQ(an.time_index, 0);
+    CHECK_EQ(an.row_count, (int)r.rows);
+}
+
+/*
+ * Polls 150 ms apart: three windows a poll, three rows at one time, the
+ * sample in the last.  And a poll without a window is still a row.
+ */
+TEST_CASE(a_poll_that_brings_three_windows_writes_three_rows)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    chain_start(LINK_PROTOCOL_MINOR, 1000u, 0x01u);
+    chain_far(400u);
+    chain_link_up();
+    bench_state_t bench = log_sample();
+    log_cadence_t cad;
+    log_cadence_init(&cad, chain_now());
+    for (unsigned i = 0u; i < 8u; ++i) {
+        chain_cycle(150u);
+        (void)log_pass(&w, &cad, &bench, true, false);
+    }
+    log_cadence_run_start(&cad, chain_now());
+    for (unsigned i = 0u; i < 100u; ++i) {
+        chain_cycle(150u);
+        CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 3u);
+    }
+    log_read_t r;
+    read_log(&r);
+    CHECK_EQ(r.rows, 300u);
+    CHECK_EQ(r.with_window, 300u);
+    CHECK_EQ(r.with_sample, 100u);
+    CHECK_EQ(r.bare, 200u);
+    CHECK_EQ(r.same_time, 200u);
+    CHECK_EQ(r.stepped, 0u);
+    CHECK_EQ(r.wrong, 0u);
+    CHECK_EQ(r.back, 0u);
+    /* The sample is in the row of the newest window: the third of each. */
+    const char *row = strchr(g_mem.buf, '\n') + 1;
+    for (unsigned k = 0u; k < 3u; ++k) {
+        const char *sep = strchr(row, ';');
+        CHECK_EQ(sep[1] == ';', k < 2u);       /* voltage cell empty */
+        row = strchr(row, '\n') + 1;
+    }
+
+    /* A poll with no window -- SERVO_WIN's reply lost -- is one row with
+     * the window cells empty, and the windows follow in the next. */
+    fresh(-1);
+    w = writer();
+    ch.lose_win = 1u;
+    chain_cycle(53u);
+    CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 1u);
+    chain_cycle(53u);
+    CHECK(log_pass(&w, &cad, &bench, true, true) >= 2u);
+    read_log(&r);
+    CHECK_EQ(r.with_sample, 2u);
+    CHECK_EQ(r.with_window, r.rows - 1u);
+    CHECK_EQ(r.stepped, 0u);
+    /* A pass without a sample writes nothing. */
+    const size_t len = g_mem.len;
+    CHECK_EQ(log_pass(&w, &cad, &bench, false, true), 0u);
+    CHECK_EQ(g_mem.len, len);
+}
+
+/* The coprocessor's next snapshot: window @p number of CH1 closed with
+ * @p n_i current samples of @p ma and @p n_v voltage samples of @p mv,
+ * published into its pages as core 0 does. */
+static void far_window(uint16_t number, uint16_t n_i, int32_t ma,
+                       uint16_t n_v, int32_t mv)
+{
+    for (unsigned k = SENSE_WIN_RING - 1u; k > 0u; --k) {
+        ch.snap.ring[k] = ch.snap.ring[k - 1u];
+    }
+    sense_ring_win_t *e = &ch.snap.ring[0];
+    memset(e, 0, sizeof(*e));
+    e->closed = true;
+    e->n_i = n_i;
+    e->n_v = n_v;
+    e->i_mean_ua = e->i_min_ua = e->i_max_ua = ma * 1000;
+    e->v_mean_uv = e->v_min_uv = mv * 1000;
+    sense_window_t *win = &ch.snap.win[SENSE_SRC_CH1];
+    memset(win, 0, sizeof(*win));
+    win->number = number;
+    win->n_i = n_i;
+    win->n_v = n_v;
+    win->i_mean_ua = win->i_min_ua = win->i_max_ua = ma * 1000;
+    win->v_mean_uv = win->v_min_uv = mv * 1000;
+    ch.snap.have_win = true;
+    sense_page_publish(&ch.pg, &ch.snap, 0u);
+}
+
+/*
+ * A window that holds current samples and no voltage sample, or the other
+ * way round, writes the cells it has and leaves the others empty: a
+ * quantity nothing measured is not a 0 in the file.  From the
+ * coprocessor's page through the panel's read into the row.
+ */
+TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    chain_start(LINK_PROTOCOL_MINOR, 1000u, 0x01u);
+    chain_far(400u);
+    chain_link_up();
+    bench_state_t bench;
+    memset(&bench, 0, sizeof(bench));
+    log_cadence_t cad;
+    log_cadence_init(&cad, chain_now());
+    for (unsigned i = 0u; i < 8u; ++i) {
+        chain_cycle(53u);
+        (void)log_pass(&w, &cad, &bench, true, false);
+    }
+    /* From here the coprocessor's snapshots are written by hand: its
+     * schedule stands, and the exchanges take no time. */
+    ch.exch_ms = 0u;
+    chain_far_late(50u);
+    (void)chain_poll();                 /* the last one it closed itself */
+    (void)log_pass(&w, &cad, &bench, true, false);
+    const uint16_t n0 = (uint16_t)(ch.snap.win[SENSE_SRC_CH1].number + 1u);
+    static const struct { uint16_t n_i; int32_t ma; uint16_t n_v; int32_t mv; }
+    k_win[] = {
+        { 12u, 412, 0u, 0 },        /* current and no voltage       */
+        { 0u, 0, 2u, 5874 },        /* voltage and no current       */
+        { 0u, 0, 0u, 0 },           /* closed with no sample        */
+        { 50u, -3, 3u, 6000 },      /* both                         */
+        { 50u, 0, 3u, 0 },          /* both, and both read 0        */
+    };
+    for (unsigned i = 0u; i < sizeof(k_win) / sizeof(k_win[0]); ++i) {
+        far_window((uint16_t)(n0 + i), k_win[i].n_i, k_win[i].ma,
+                   k_win[i].n_v, k_win[i].mv);
+        chain_far_late(50u);
+        (void)chain_poll();
+        CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 1u);
+    }
+    /* Two windows in one poll: the row of the one caught up as well. */
+    far_window((uint16_t)(n0 + 5u), 9u, 77, 0u, 0);
+    far_window((uint16_t)(n0 + 6u), 50u, 80, 3u, 6000);
+    chain_far_late(50u);
+    (void)chain_poll();
+    CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 2u);
+
+    char want[512];
+    snprintf(want, sizeof(want),
+             ";;;;;;;;;;;;%u;0.412;0.412;;;;;;;\n"
+             ";;;;;;;;;;;;%u;;;5.874;;;;;;\n"
+             ";;;;;;;;;;;;%u;;;;;;;;;\n"
+             ";;;;;;;;;;;;%u;-0.003;-0.003;6.000;;;;;;\n"
+             ";;;;;;;;;;;;%u;0.000;0.000;0.000;;;;;;\n"
+             ";;;;;;;;;;;;%u;0.077;0.077;;;;;;;\n"
+             ";;;;;;;;;;;;%u;0.080;0.080;6.000;;;;;;\n",
+             (unsigned)n0, (unsigned)(uint16_t)(n0 + 1u),
+             (unsigned)(uint16_t)(n0 + 2u), (unsigned)(uint16_t)(n0 + 3u),
+             (unsigned)(uint16_t)(n0 + 4u), (unsigned)(uint16_t)(n0 + 5u),
+             (unsigned)(uint16_t)(n0 + 6u));
+    /* Each row without its time. */
+    char got[512];
+    size_t n = 0u;
+    for (const char *p = strchr(g_mem.buf, '\n') + 1; *p != '\0';) {
+        const char *end = strchr(p, '\n');
+        const char *at = strchr(p, ';');
+        memcpy(got + n, at, (size_t)(end - at) + 1u);
+        n += (size_t)(end - at) + 1u;
+        p = end + 1;
+    }
+    got[n] = '\0';
+    CHECK_STR_EQ(got, want);
+}
+
+/*
+ * The INA3221 resets itself at every phase of a window and is set up again
+ * 1000 ms later, part way into a window.  No row carries a voltage of 0,
+ * and none a mean current without the highest.
+ */
+TEST_CASE(a_part_that_comes_back_mid_window_writes_no_zero_voltage)
+{
+    for (unsigned phase = 0u; phase < 50u; ++phase) {
+        fresh(-1);
+        log_writer_t w = writer();
+        chain_start(LINK_PROTOCOL_MINOR, 1000u, 0x01u);
+        chain_far(400u);
+        chain_link_up();
+        bench_state_t bench = log_sample();
+        log_cadence_t cad;
+        log_cadence_init(&cad, chain_now());
+        for (unsigned i = 0u; i < 8u; ++i) {
+            chain_cycle(53u);
+            (void)log_pass(&w, &cad, &bench, true, false);
+        }
+        chain_far(phase);
+        log_cadence_run_start(&cad, chain_now());
+        fake_reset3221(ch.i3221);
+        for (unsigned i = 0u; i < 40u; ++i) {
+            chain_cycle(53u);
+            (void)log_pass(&w, &cad, &bench, true, true);
+        }
+        log_read_t r;
+        read_log(&r);
+        CHECK_EQ(r.zero_v, 0u);
+        CHECK_EQ(r.half, 0u);
+        CHECK_EQ(r.wrong, 0u);
+        CHECK_EQ(r.stepped, 0u);
+        CHECK(r.no_current >= 19u);             /* the 1000 ms offline */
+        CHECK(r.no_voltage >= r.no_current);
+    }
+}
+
 int main(void)
 {
     RUN(a_written_run_reads_back);
@@ -771,5 +1174,9 @@ int main(void)
     RUN(a_commit_by_hand_keeps_the_tail_and_an_empty_one_costs_nothing);
     RUN(a_commit_the_sink_refuses_latches_the_writer);
     RUN(a_sink_that_needs_no_commit_still_writes_the_whole_run);
+    RUN(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll);
+    RUN(a_poll_that_brings_three_windows_writes_three_rows);
+    RUN(a_window_without_voltage_samples_has_an_empty_voltage_cell);
+    RUN(a_part_that_comes_back_mid_window_writes_no_zero_voltage);
     return test_summary("logwriter");
 }

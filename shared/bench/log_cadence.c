@@ -51,6 +51,11 @@ bool log_cadence_row(log_cadence_t *c, uint32_t now_ms, bool new_sample,
     return true;
 }
 
+unsigned log_cadence_rows(unsigned windows)
+{
+    return (windows > 0u) ? windows : 1u;
+}
+
 void log_cadence_posted(log_cadence_t *c, bool taken)
 {
     if (taken) {

@@ -224,6 +224,35 @@ TEST_CASE(every_row_is_counted_as_sent_or_lost)
     CHECK_EQ(log_cadence_lost(&c), 2);
 }
 
+/* A pass that writes rows writes one for each INA3221 window handed over
+ * in it, and one when none was: a sample is never without its row. */
+TEST_CASE(a_pass_writes_one_row_for_each_window_and_one_without)
+{
+    CHECK_EQ(log_cadence_rows(0u), 1u);
+    CHECK_EQ(log_cadence_rows(1u), 1u);
+    CHECK_EQ(log_cadence_rows(2u), 2u);
+    CHECK_EQ(log_cadence_rows(3u), 3u);
+    CHECK_EQ(log_cadence_rows(4u), 4u);
+    CHECK_EQ(log_cadence_rows(LINK_SW_RING), LINK_SW_RING);
+
+    /* The rows of one pass carry the pass's time, and each is counted. */
+    log_cadence_t c;
+    log_cadence_init(&c, 0xFFFFFF00u);
+    float t = -1.0f;
+    CHECK(log_cadence_row(&c, 0xFFFFFF00u + 150u, true, true, &t));
+    const unsigned rows = log_cadence_rows(3u);
+    for (unsigned k = 0u; k < rows; ++k) {
+        log_cadence_posted(&c, k != 1u);
+    }
+    CHECK_NEAR(t, 0.150, 1e-6);
+    CHECK_EQ(log_cadence_sent(&c), 2);
+    CHECK_EQ(log_cadence_lost(&c), 1);
+    /* A pass without a sample writes none, whatever was handed over. */
+    CHECK(!log_cadence_row(&c, 0xFFFFFF00u + 155u, false, true, &t));
+    CHECK(log_cadence_row(&c, 50u, true, true, &t));    /* past the wrap */
+    CHECK_NEAR(t, 0.306, 1e-6);
+}
+
 /* ---------------------------------------------- the control loop's grid */
 
 #define PASS_MS        5u      /* the loop's delay, on a 1 ms tick          */
@@ -626,6 +655,7 @@ int main(void)
     RUN(a_run_longer_than_the_ticks_range_keeps_counting);
     RUN(a_run_start_zeroes_the_time_and_the_counts);
     RUN(every_row_is_counted_as_sent_or_lost);
+    RUN(a_pass_writes_one_row_for_each_window_and_one_without);
     RUN(every_sample_is_a_row_with_a_command_every_1750_ms);
     RUN(every_sample_is_a_row_with_commands_at_random_times);
     RUN(every_sample_is_a_row_with_no_command);

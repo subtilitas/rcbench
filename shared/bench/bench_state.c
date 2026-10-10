@@ -106,6 +106,27 @@ void bench_state_run_starts(bench_state_t *b, uint16_t *regs)
     }
 }
 
+void bench_state_log_row(const bench_state_t *b, bool whole,
+                         bench_state_t *out)
+{
+    if (b == NULL || out == NULL) {
+        return;
+    }
+    if (whole) {
+        *out = *b;
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    out->servo_new    = b->servo_new;
+    out->servo_ok     = b->servo_ok;
+    out->servo_no_current = b->servo_no_current;
+    out->servo_no_voltage = b->servo_no_voltage;
+    out->servo_window = b->servo_window;
+    memcpy(out->servo_mean_ma, b->servo_mean_ma, sizeof(out->servo_mean_ma));
+    memcpy(out->servo_max_ma, b->servo_max_ma, sizeof(out->servo_max_ma));
+    memcpy(out->servo_min_mv, b->servo_min_mv, sizeof(out->servo_min_mv));
+}
+
 void bench_state_reset_peaks(bench_state_t *b)
 {
     if (b == NULL) {

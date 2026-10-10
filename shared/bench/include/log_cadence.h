@@ -10,7 +10,12 @@
  * The rules:
  *
  * - One row per sample.  A pass that brought a sample of an armed bench
- *   writes exactly one row; a pass that brought none writes none.
+ *   writes at least one row; a pass that brought none writes none.
+ * - One row per INA3221 window.  A pass that writes rows writes one for
+ *   each window handed over in it (log_cadence_rows()): the sample is in
+ *   the last, with the newest window, and each row before it carries its
+ *   window alone.  The rows of one pass carry the same time; the window
+ *   number orders them.
  * - No gate of its own.  What bounds the row rate is what bounds the sample
  *   rate: the poll's period with the link up, LOG_CADENCE_MODEL_MS for the
  *   model with the link down.
@@ -83,6 +88,13 @@ void log_cadence_run_start(log_cadence_t *c, uint32_t now_ms);
  */
 bool log_cadence_row(log_cadence_t *c, uint32_t now_ms, bool new_sample,
                      bool bench_run, float *t_s);
+
+/**
+ * How many rows a pass writes that log_cadence_row() granted: one for each
+ * of the @p windows INA3221 windows handed over in the pass, and one for a
+ * pass with none.  Each is posted and counted with log_cadence_posted().
+ */
+unsigned log_cadence_rows(unsigned windows);
 
 /** What the logger's queue did with a row: @p taken, or refused as full. */
 void log_cadence_posted(log_cadence_t *c, bool taken);

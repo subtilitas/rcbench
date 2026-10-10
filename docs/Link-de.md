@@ -128,8 +128,8 @@ gelaufen. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
 bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
-SERVO_SENSE schreibt es keine Messung, und an SERVO_WIN (0x31) sendet es
-nichts.
+SERVO_SENSE schreibt es keine Messung. SERVO_WIN (0x31) liest es an einem
+Koprozessor mit 4.11: [Der Fenster-Ring](#der-fenster-ring).
 
 Die Page weist SDA und SCL, die nicht das Paar eines Blocks sind, ab, was
 auch immer ENABLE hält; ein Koprozessor von 0.15.0 oder älter nimmt sie mit
@@ -463,9 +463,90 @@ ein zweites Mal gelesen wird, hat 742,5 µs.
 
 | Panel | Koprozessor | SERVO_WIN (0x31), `RESETS` und `CAP_HOLD_MA` |
 | --- | --- | --- |
-| 4.11 | 4.11 | bedient. Das Panel dieses Builds sendet nichts an SERVO_WIN, liest Register 31 nur mit den Registern des Encoders und nutzt es nicht, und schaltet keine Messung scharf |
-| 4.11 | 4.10 oder älter | der Koprozessor beantwortet eine Anfrage an 0x31 mit BAD_PAGE; ein Host liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
+| 4.11 | 4.11 | bedient. Solange SENSE den INA3221 mit CH1 freigibt, liest das Panel dieses Builds SERVO_WIN bei jedem Poll und von SENSE die Register 12 bis 31, darunter `RESETS`. Es schaltet keine Messung scharf |
+| 4.11 | 4.10 oder älter | der Koprozessor beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `Koprozessor älter als 4.11 -- Servostrom vom PD mini gelesen`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
 | 4.10 oder älter | 4.11 | das Panel liest 0x31 nie und liest Register 31 als reserviertes Register, das es übergeht. Ein Haltestrom, den es schreibt, 0 bis 32767 mA, bedeutet dasselbe. Ein zurückgesetzt gefundenes Bauteil liest 1000 ms lang offline und dann wieder online |
+
+**Die Lesezugriffe des Panels.** `shared/bench/sense_link.c` nimmt jede
+Fensternummer von CH1 einmal und gibt die Fenster weiter, das älteste
+zuerst. Es liest SERVO_WIN, solange die Minor des Koprozessors 11 oder mehr
+ist und SENSE den INA3221 mit CH1 freigibt; ohne CH1 oder an einem älteren
+Koprozessor sind die Fenster die von SERVO_SENSE, das letzte je Lesen.
+
+- Bei jedem Poll liest es die Register 0 bis 15, den Kopf und die zwei
+  neuesten Fenster.
+- Sind 100 ms oder mehr vergangen, seit ein Lesen zuletzt kein Fenster
+  schuldig blieb, kann ein drittes Fenster geschlossen sein, und gelesen
+  wird die ganze Page, die Register 0 bis 27, an Stelle der Register 0 bis
+  15. Jedes Fenster kommt dann aus einer Antwort. Einträge aus zwei
+  Antworten werden nicht zusammengesetzt: ein Fenster, das dazwischen
+  schließt, verschiebt jeden Eintrag um eine Nummer.
+- Ein Lesen der Register 0 bis 15, dem mehr als zwei Fenster fehlen, gibt
+  nichts weiter, und im selben Poll folgt ein Lesen der ganzen Page.
+- Eine Fensternummer, die mehr als 4 hinter der neuesten liegt, hat den
+  Ring verlassen. Sie wird als verloren gezählt und nicht weitergegeben.
+  Bei Lesezugriffen im Abstand von höchstens 200 ms geht keines verloren;
+  bei 250 ms Abstand eines von fünf.
+- Ein Eintrag mit gelöschtem Bit 15 wird als kein Fenster weitergegeben und
+  nicht gezählt. Eine übersprungene Nummer, die den Ring vor einem Lesen
+  verlassen hat, zählt wie ein verlorenes Fenster: die Page sagt nicht
+  mehr, was sie war.
+- Eine auf dem Link verlorene Antwort ändert nichts: dem nächsten Lesen
+  fehlen dieselben Fenster und die seither geschlossenen.
+- Das erste Lesen nach einem Link-up gibt nichts weiter. Die Weitergabe
+  beginnt mit dem Fenster nach dem neuesten, das dieses Lesen zeigt; ein
+  Fenster, das vor dem Verlust des Links genommen wurde, wird also nicht
+  noch einmal genommen.
+- Nach einer Konfiguration, die das Panel geschrieben hat, nach einem Lesen
+  mit gelöschtem Bit 0 in `FLAGS` und wenn die neueste Nummer hinter der
+  zuletzt genommenen liegt, hat der Ring neu begonnen: jeder geschlossene
+  Eintrag des nächsten Lesens wird weitergegeben.
+- Höchstens 4 Fenster warten auf die Control-Task. Sie nimmt sie in jedem
+  Durchlauf, keines wartet also länger als einen Durchlauf.
+
+CH2 und CH3 haben keinen Ring. Ihre Werte sind das letzte Fenster von
+SERVO_SENSE, und das Log des Prüfstands schreibt sie in die Zeile, deren
+Fensternummer dieses Lesen zeigte. Schließt ein Fenster zwischen dem Lesen
+von SERVO_SENSE und dem von SERVO_WIN eines Polls, hat die Zeile des
+dazwischen geschlossenen Fensters keine Werte von CH2 und CH3.
+
+**Das Messgerät der Servo-Schiene.** `shared/bench/servo_source.c`
+entscheidet einmal je Poll, welches Messgerät die Servo-Schiene misst. CH1
+des INA3221 ist das Messgerät, solange alles Folgende gilt:
+
+| # | Bedingung |
+| ---: | --- |
+| 1 | SETUP ANSCHLÜSSE hat den INA3221 eingeschaltet, mit CH1 unter seinen Kanälen |
+| 2 | die Protokoll-Minor des Koprozessors ist 11 oder mehr |
+| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen |
+| 4 | das letzte Lesen von SENSE ist jünger als 200 ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
+| 5 | das neueste Fenster von SERVO_WIN hält Strommessungen, und seine Nummer hat sich vor weniger als 200 ms bewegt |
+| 6 | das Byte des INA3221 in `RESETS` hat sich seit dem Poll davor nicht bewegt |
+| 7 | die Bedingungen 1 bis 6 gelten seit 1000 ms ohne Unterbrechung |
+
+Das Messgerät ist der PD mini ab dem ersten Poll, in dem eine von 1 bis 6
+nicht gilt, und wieder der INA3221 1000 ms, nachdem alle gelten. Antwortet
+kein Koprozessor, ist es das Modell des Panels. Ein übersteuertes Fenster
+und ein negativer Strom sind Messwerte und keine Bedingung. Die Antwort
+steht im Snapshot der Control-Task mit der Zahl der verlorenen Fenster, und
+die Fenster liegen in einer Queue zur Render-Task, 8 tief; ist sie voll,
+fällt das älteste weg. Kein Bildschirm liest das eine oder das andere: der
+SERVO-Bildschirm und der Servotest lesen den PD mini.
+
+`test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
+Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im
+Abstand von 50, 53, 55, 100, 150, 199 und 200 ms ohne verlorenes Fenster,
+von 201 und 250 ms mit einer Zahl verlorener Fenster gleich den fehlenden
+Nummern, eine verlorene Antwort in einem, zwei und drei Polls
+hintereinander, die Fensternummer über 65535 hinweg, die Lesezugriffe über
+den Überlauf des Ticks bei 2^32 ms, eine geschriebene Konfiguration, ein
+Neustart des Koprozessors, ein verspäteter Takt des Koprozessors, ein
+verlorener und wiedergekehrter Link, ein Bauteil, das sich zurücksetzt, und
+ein Koprozessor mit 4.10. `test_servo_source` hält jede Bedingung, die
+allein nicht gilt, ein Lesen, das mit 199 ms frisch ist und mit 200 und
+201 ms nicht, den INA3221 zurück bei 1000 ms und nicht bei 999 ms, einen
+zwischen zwei Lesungen behobenen Reset und jeden Timer über den Überlauf
+des Ticks. Nicht auf Hardware gelaufen.
 
 `shared/sense/sense_sched.c` hält den Ring und führt die Rücklesungen aus,
 unter `test_sense_sched`: der Ring nach 1, 4, 5 und 6 Fenstern, über Fenster
@@ -687,7 +768,26 @@ eingeschaltet ist, liest das Panel die Register 12 bis 25 von SENSE (14
 Register, ein Anfrage-Frame und vier Daten-Frames) mit 20 Hz, etwa 1,6 %, mit
 freigegebenem Ausgangsencoder die Register 12 bis 31 (20 Register, ein
 Anfrage-Frame und fünf Daten-Frames), etwa 1,9 %, und solange der INA3221 eingeschaltet ist, die Register 0 bis 13 von SERVO_SENSE
-mit 20 Hz, jedes 50-ms-Fenster, etwa 1,6 %: zusammen etwa 3,2 %. Solange der
+mit 20 Hz, jedes 50-ms-Fenster, etwa 1,6 %: zusammen etwa 3,2 %.
+
+An einem Koprozessor mit 4.11 und mit dem INA3221 auf CH1 liest das Panel
+außerdem die Register 0 bis 15 von SERVO_WIN mit 20 Hz (16 Register, ein
+Anfrage-Frame und vier Daten-Frames, 0,78 ms Buszeit je Poll, etwa 1,6 %),
+und das Lesen von SENSE geht für `RESETS` bis Register 31 (ein Daten-Frame
+mehr, 0,16 ms, etwa 0,3 %). Die drei Lesezugriffe sind dann 16 Frames je
+Poll, 2,5 ms, etwa 5,0 % des Busses, gegen 10 Frames und 3,1 % ohne den
+Ring. Ein Poll, der 100 ms oder mehr nach dem letzten Lesen beginnt, das
+kein Fenster schuldig blieb, liest stattdessen die ganze Page, 28 Register,
+ein Anfrage-Frame und sieben Daten-Frames: 19 Frames, 2,9 ms. Ein Lesen der
+Register 0 bis 15 mit folgendem Lesen der ganzen Page, nach einem Ring, der
+neu begonnen hat, sind 24 Frames, 3,7 ms, einmal. Mit dem Lesen von BENCH
+und dem von TONE sind die Lesezugriffe eines Polls höchstens 34 Frames,
+5,3 ms Buszeit im 50-ms-Poll, und SERVO_WIN ist ein Austausch mehr darin.
+Der Ring hält 200 ms, die Fenster überstehen also einen Poll, der viermal
+so lange dauert wie seine Periode. `test_sense_windows` hält die Zahl der
+Frames. Die Dauer eines Austauschs auf dem Prüfstand ist nicht gemessen.
+
+Solange der
 Tap freigegeben ist, sind das Lesen der Register 8 bis 23 von TONE (16
 Register, ein Anfrage-Frame und vier Daten-Frames wie beim BENCH-Lesen) mit
 20 Hz etwa 1,7 % mehr, unter 2 %, für die drei Pages zusammen 4,9 %, und das Lesen von

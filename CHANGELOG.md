@@ -20,8 +20,30 @@ coprocessor and the other way round.
   host that reads it more than 50 ms apart misses windows. A clipped sample
   counts in SERVO_WIN at the end of the range, 1.638 A or -1.6384 A on the
   0.1 Ω shunt, and is counted; SERVO_SENSE's figures leave it out as
-  before. The page also carries the capture's state and count. The panel
-  does not read the page yet. Host suite only; not run on hardware.
+  before. The page also carries the capture's state and count. Host suite
+  only; not run on hardware.
+- **The bench log has every 50 ms window of the servo's current.** On a
+  4.11 coprocessor with INA3221 CH1 enabled the panel reads SERVO_WIN every
+  poll and takes each window number once, in order. A poll that brings more
+  than one window writes one row for each: the rows of one poll carry the
+  same `time`, the sample is in the last, and the rows before it hold the
+  window alone. No window is lost while two reads lie at most 200 ms apart,
+  and a reply lost on the link loses none; beyond the ring's 4 windows the
+  lost ones are counted. A log read from SERVO_SENSE alone, as with an
+  older coprocessor or with CH1 off, skips 1 window in 17 at a 53 ms poll.
+  CH1's figures in the log count a clipped sample at the end of the range,
+  1.638 A on the 0.1 Ω shunt. The read costs 6 CAN frames more per poll,
+  0.93 ms of bus time, 16 frames in place of 10.
+- **The panel names the servo rail's meter.** Once per poll it is the
+  INA3221's CH1, the PD mini or the model: the INA3221 after 1000 ms in
+  which it is on with CH1, the coprocessor speaks 4.11 and holds the
+  set-up, the part is online and identified on a bus that is not stuck, a
+  window with current samples closed in the last 200 ms and its reset count
+  stands. The band says `coprocessor older than 4.11 -- servo current read
+  from PD mini` once per link-up for a 4.7 to 4.10 coprocessor, and
+  `INA3221 reset itself -- check its supply` once per reset. The SERVO
+  screen and the servo test read the PD mini as before. Host suite only;
+  not run on hardware.
 
 ### Changed
 
