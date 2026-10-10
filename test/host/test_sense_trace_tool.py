@@ -341,7 +341,7 @@ def times_run_across_the_wrap_of_the_count() -> None:
 
 
 def clipped_samples_are_said_and_time_no_arrival() -> None:
-    r = tool(str(work("clip.log", synthetic(1000, [(0, 1900)], high=4094))),
+    r = tool(str(work("clip.log", synthetic(1000, [(0, 1900)], high=4095))),
              "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
     check("100 sample(s) at the end of the range: at or past it"
@@ -350,6 +350,17 @@ def clipped_samples_are_said_and_time_no_arrival() -> None:
     # Seen at the first clipped sample; arrived at the first with a value.
     check(arrival[(1, "0.05")] == ["1/1", "1/1", "113.0"],
           f"{arrival[(1, '0.05')]}")
+    # The last code before the end is a value: nothing is said, and the
+    # bottom's end code is a clip as the top's is.
+    r = tool(str(work("near.log", synthetic(1000, [(0, 1900)], high=4094))),
+             "--no-csv")
+    check("at the end of the range" not in r.stdout, "4094 is a value")
+    r = tool(str(work("low.log", synthetic(1000, [(0, 1900)], high=-4096))),
+             "--no-csv")
+    check("100 sample(s) at the end of the range" in r.stdout, "-4096")
+    r = tool(str(work("low2.log", synthetic(1000, [(0, 1900)], high=-4095))),
+             "--no-csv")
+    check("at the end of the range" not in r.stdout, "-4095 is a value")
 
 
 def edge_lines_are_the_moves_when_there_are_any() -> None:
@@ -605,6 +616,21 @@ def the_servo_csv_pairs_by_time() -> None:
               f"{extra}: {r.stdout.splitlines()[1]}")
         diff = setting_rows(r.stdout, "  arrival less the horn's travel")
         check(diff[(1, "0.05")] == ["+10.0"] * 4, f"{diff[(1, '0.05')]}")
+    # Spacings that differ between the files: commands 1.6 s apart in the
+    # trace, rows 1.8 s apart.  Only an offset between the two that put a
+    # row on a command pairs both.
+    def shifted(row: str, by: float) -> str:
+        cells = row.split(";")
+        cells[0] = f"{float(cells[0]) + by:.3f}"
+        return ";".join(cells)
+    apart = work("apart.csv", "\n".join(
+        [rows[0], shifted(rows[2], -0.1), shifted(rows[3], 0.1)]) + "\n")
+    r = tool(log, "--servo-csv", str(apart), "--no-csv", "--csv-offset",
+             "12.345")
+    check("2 travel time(s), 2 paired with a move" in r.stdout, "by hand")
+    r = tool(log, "--servo-csv", str(apart), "--no-csv", "--pair-ms", "120")
+    check("2 travel time(s), 2 paired with a move" in r.stdout,
+          f"found: {r.stdout.splitlines()[1]}")
     # An offset that pairs nothing, and a decimal comma.
     r = tool(log, "--servo-csv", str(two), "--csv-offset", "0", "--no-csv")
     check(r.returncode == 0 and "0 paired with a move" in r.stdout

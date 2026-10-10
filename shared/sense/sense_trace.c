@@ -90,6 +90,8 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
         p->have = false;
         p->win  = 0u;
         p->n_v  = 0u;
+        p->n_hi = 0u;
+        p->n_lo = 0u;
         publish(tr, 0u, 0u);
         return;
     }
@@ -101,6 +103,21 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
     /* CH1's sample of this tick, when there is one: the schedule keeps it
      * newest in its history.  A set-up empties the history, so the head
      * alone does not tell a new sample from the last one. */
+    /* What the window being filled gained in this tick.  A window that
+     * closed, or was emptied, counts from nothing. */
+    const sense_acc_t *a = &s->acc[SENSE_SRC_CH1];
+    const bool same = s->win == p->win && a->n_v >= p->n_v
+                      && a->n_hi >= p->n_hi && a->n_lo >= p->n_lo;
+    const uint16_t base_n   = same ? p->n_v : 0u;
+    const int64_t  base_sum = same ? p->v_sum : 0;
+    /* A clipped sample is counted there and nowhere else: the history
+     * holds the end of the range for it, as it does for a value there. */
+    sense_trace_kind_t kind = SENSE_TRACE_CURRENT;
+    if (a->n_hi != (same ? p->n_hi : 0u)) {
+        kind = SENSE_TRACE_CLIP_HI;
+    } else if (a->n_lo != (same ? p->n_lo : 0u)) {
+        kind = SENSE_TRACE_CLIP_LO;
+    }
     bool kept = false;
     if (s->ch1_n == 0u) {
         p->have = false;
@@ -112,21 +129,13 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
             p->have = true;
             p->head = s->ch1_head;
             p->t    = c->t;
-            kept    = push(tr, SENSE_TRACE_CURRENT, c->t, c->ua);
+            kept    = push(tr, kind, c->t, c->ua);
         }
     }
 
-    /* CH1's bus voltage of this tick: what the window being filled gained.
-     * A window that closed, or was emptied, counts from nothing.  Kept
-     * only behind the current sample of its tick: a voltage line belongs
-     * to the sample line before it. */
-    const sense_acc_t *a = &s->acc[SENSE_SRC_CH1];
-    uint16_t base_n   = p->n_v;
-    int64_t  base_sum = p->v_sum;
-    if (s->win != p->win || a->n_v < p->n_v) {
-        base_n   = 0u;
-        base_sum = 0;
-    }
+    /* CH1's bus voltage of this tick.  Kept only behind the current
+     * sample of its tick: a voltage line belongs to the sample line
+     * before it. */
     if (kept && a->n_v == base_n + 1u) {
         /* One voltage, µV: it fits 32 bits, and the division is the
          * processor's. */
@@ -135,6 +144,8 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
     }
     p->win   = s->win;
     p->n_v   = a->n_v;
+    p->n_hi  = a->n_hi;
+    p->n_lo  = a->n_lo;
     p->v_sum = a->v_sum;
 }
 
@@ -582,6 +593,14 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         put_i(l, r->v);
         put_eol(l);
         break;
+    case SENSE_TRACE_CLIP_HI:
+    case SENSE_TRACE_CLIP_LO:
+        /* The end codes of the 13-bit range: no value reads them. */
+        put_i(l, (int32_t)(r->t - o->last_t));
+        put_s(l, (META_KIND(r->meta) == SENSE_TRACE_CLIP_HI) ? ",4095"
+                                                              : ",-4096");
+        put_eol(l);
+        break;
     case SENSE_TRACE_CURRENT:
     default:
         put_i(l, (int32_t)(r->t - o->last_t));
@@ -642,7 +661,7 @@ static void commit(sense_trace_t *tr, act_t act)
     case ACT_REC:
         if (META_KIND(r->meta) == SENSE_TRACE_BUS) {
             ++o->n_v;
-        } else if (META_KIND(r->meta) == SENSE_TRACE_CURRENT) {
+        } else if (!is_setup(r)) {
             ++o->n_s;
             o->last_t = r->t;
         }

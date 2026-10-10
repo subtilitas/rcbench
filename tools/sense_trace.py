@@ -87,9 +87,11 @@ BANDS_A = (0.02, 0.05, 0.10)
 # The capture's: SERVO_MOVE_TIMEOUT_MS + SENSE_CAP_LAG_MS, SENSE_CAP_SETTLE_N.
 WINDOW_MS = 3005
 SETTLE_N = 10
-# A code at an end of the 13-bit range less a step: the sample is clipped,
-# or one step from it.
-CLIP_CODE = 4094
+# The end codes of the 13-bit range: a clipped sample, at or past that end.
+# The capture judges one as the last value before the end.
+CLIP_HI = 4095
+CLIP_LO = -4096
+CLIP_AS = 4094
 T_PER_MS = 10               # the trace counts 0.1 ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
@@ -440,10 +442,11 @@ def replay(binary: pathlib.Path, moves: list[Move]) -> None:
                     f"{SETTLE_N} {n}")
                 for k in range(mv.first, mv.last):
                     code = tr.code[k]
-                    clip = (1 if code >= CLIP_CODE
-                            else -1 if code <= -CLIP_CODE else 0)
+                    clip = (1 if code >= CLIP_HI
+                            else -1 if code <= CLIP_LO else 0)
+                    at = CLIP_AS * clip if clip else code
                     lines.append(f"s {tr.t[k] + REPLAY_BASE} "
-                                 f"{tr.microamps(code)} {clip}")
+                                 f"{tr.microamps(at)} {clip}")
                 lines.append("e")
                 order.append((mv, (n, band)))
     if not order:
@@ -542,14 +545,17 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
 
     tie = False
     if offset is None:
+        # Every offset that puts one row on one command, and between two
+        # of them that lie within the tolerance of each other the middle:
+        # the spacings of the two files differ a little, and the offset
+        # that pairs the most can lie between.
+        offs = sorted({m - c for c in cmd_csv for m in cmd_log})
+        offs += [(a + b) / 2 for a, b in zip(offs, offs[1:], strict=False)
+                 if b - a <= 2 * pair_s]
         scored = []
-        for c in cmd_csv:
-            for m in cmd_log:
-                got = one_each(pairs(m - c))
-                scored.append((len(got), -sum(e for _, _, e in got),
-                               m - c))
-        if not scored:
-            return 0, False
+        for off in offs:
+            got = one_each(pairs(off))
+            scored.append((len(got), -sum(e for _, _, e in got), off))
         best = max(scored)
         offset = best[2]
         tie = any(n == best[0] and abs(off - offset) > pair_s
@@ -599,7 +605,7 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
         out.append(f"  after sample {at}: part "
                    f"{'online' if online else 'not online'}, reset count "
                    f"{resets}")
-    clipped = sum(1 for c in tr.code if abs(c) >= CLIP_CODE)
+    clipped = sum(1 for c in tr.code if c >= CLIP_HI or c <= CLIP_LO)
     if clipped:
         out.append(f"  {clipped} sample(s) at the end of the range: at or "
                    "past it")

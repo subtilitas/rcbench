@@ -9,7 +9,8 @@
  *           run.  It reads the schedule's memory and nothing else: no bus
  *           transaction, no clock.  CH1's newest sample comes out of the
  *           schedule's own history (sense_sched_t.ch1), CH1's newest bus
- *           voltage out of the window being filled.  A voltage is kept
+ *           voltage and whether the sample was clipped out of the window
+ *           being filled.  A voltage is kept
  *           only with the current sample of its tick, so each voltage
  *           line belongs to the sample line before it.  The INA3221's
  *           set-up and state go into the ring as records of their own
@@ -83,8 +84,9 @@
  *                        sample's, 0.1 ms, for the first sample less the
  *                        header's T (negative for a sample from before
  *                        the trigger); I is the shunt code, 40 µV a step:
- *                        I * 40 / R amps.  A sample at the end of the
- *                        range reads 4094 or -4094.
+ *                        I * 40 / R amps.  A clipped sample reads the
+ *                        end of the range it is at or past, 4095 or
+ *                        -4096; 4094 and -4095 are values.
  *   vU                   CH1's bus voltage, U mV, read in the tick of the
  *                        sample line before it
  *   $S on=B rst=K        the part's state or reset count changed here:
@@ -151,6 +153,8 @@ extern "C" {
 typedef enum {
     SENSE_TRACE_CURRENT = 0,  /**< a CH1 sample, µA                        */
     SENSE_TRACE_BUS,          /**< CH1's bus voltage, mV                   */
+    SENSE_TRACE_CLIP_HI,      /**< a CH1 sample at the top of the range    */
+    SENSE_TRACE_CLIP_LO,      /**< one at the bottom                       */
     SENSE_TRACE_CFG,          /**< the Configuration in bits 15-0, online
                                    in bit 16, the reset count in 31-24    */
     SENSE_TRACE_SHUNT,        /**< CH1's shunt, µΩ                         */
@@ -187,6 +191,7 @@ typedef struct {
     uint32_t t;           /**< its time                                    */
     uint64_t win;         /**< the window the voltage count is of          */
     uint16_t n_v;         /**< CH1 voltages in it at the last call         */
+    uint16_t n_hi, n_lo;  /**< and CH1 samples clipped at each end         */
     int64_t  v_sum;       /**< and their sum, µV                           */
     uint32_t lost;        /**< records dropped since the last one kept     */
     uint32_t cfg, shunt;  /**< the set-up as last seen                     */

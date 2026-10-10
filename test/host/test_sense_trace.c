@@ -1746,8 +1746,33 @@ TEST_CASE(a_clipped_sample_reads_the_end_of_the_range)
     run(2u);
     parse();
     CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.code[0], 4095);
+    CHECK_EQ(seen.code[seen.n_s - 1u], -4096);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The last values before the ends are values: 4094 steps of 0.4 mA,
+     * and 4095 the other way. */
+    g_len = 0u;
+    i3221->amps[0] = 1.6376;
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    i3221->amps[0] = -1.638;
+    run(100u);
+    /* And across a window's close, a clipped sample again. */
+    i3221->amps[0] = 5.0;
+    run(120u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
     CHECK_EQ(seen.code[0], 4094);
-    CHECK_EQ(seen.code[seen.n_s - 1u], -4094);
+    CHECK_EQ(seen.code[seen.n_s - 130u], -4095);
+    for (unsigned k = seen.n_s - 120u; k < seen.n_s; ++k) {
+        if (seen.code[k] != 4095) {
+            T_FAIL("sample %u reads %ld", k, (long)seen.code[k]);
+            break;
+        }
+    }
 }
 
 TEST_CASE(the_code_is_the_one_the_current_came_from)
