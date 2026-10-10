@@ -35,6 +35,7 @@ rcbench/
     openyge/              OpenYGE-Framing, CRC, Status und Parameter-Cache; kein Pin-Treiber
     pdmini/               PD-mini-Treiber · PIO-UART
     phase_tap/            ESC-Ton-Detektor · Leser des Flankenrings · PIO-Capture
+    kst/                  KST-Servo-Programmierung: Frames, Register, Grenzen, Schreibpläne, Session; kein Pin-Treiber
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)
@@ -79,6 +80,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` | ✔ | ✔ | ✔ |
+| `kst` | | | ✔ |
 
 ## Toolchains
 

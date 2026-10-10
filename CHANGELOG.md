@@ -6,6 +6,24 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- `protocols/kst/`: the protocol core for programming KST and Chaservo
+  servos over the signal wire. Frame coding, the reply decoder with one
+  result code per failed check, the 32-register image with raw and displayed
+  values, a layout fingerprint, 24 hard and 25 soft limits, write planning
+  for fields that lie in 2 registers, and a non-blocking session that reads
+  every write back and undoes a plan whose write does not take. The module
+  includes C standard headers only and reaches the wire through a driver of
+  3 functions. It has no pin driver; no link page or screen uses it, and no
+  firmware image contains it. The host suite runs it against a servo and
+  line model (`test_kst_wire`, `test_kst_reg`, `test_kst_plan`,
+  `test_kst_session`) and links its 5 headers from C++11
+  (`kst_headers_cxx`); no frame of it has been sent to a servo. The timing
+  and the register layout come from 1 programming card and 1 servo of
+  unidentified model, and the effect of a register on servo motion is not
+  measured. ([README](protocols/kst/README.md))
+
 ### Changed
 
 - **Every interface to external hardware is a module under `protocols/`.**
