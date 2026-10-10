@@ -36,8 +36,10 @@ Current limitations:
   English. `test_text` checks that every refusal the compiled-in profiles
   produce has a German entry.
 - Two English help lines on SETUP are longer than the 36 cells the row
-  shows and are cut there: Capacity's and Rated kV's. `render_ui.py --fit`
-  lists them as notes.
+  shows and are cut there: Capacity's, 38 characters, and Rated kV's, 55.
+  On the log import's column list the range `2392.0..14639.0rpm` is 144 px
+  wide in a 140 px box, in both languages. `render_ui.py --fit` lists the
+  three as `known`.
 
 ## Numbers
 
@@ -189,7 +191,7 @@ python3 tools/render_ui.py --fit
 ```
 
 builds the renderer with `GFX_TEXT_TRACE`, draws all 82 views in English and
-in German, and fails when a German string
+in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
 - is cut at the edge of the area it is drawn in,
@@ -201,10 +203,12 @@ in German, and fails when a German string
   (`outputs-protocol`) is exempt, because the list covers the pins beside
   it by design.
 
-English findings are listed as notes: English is the layout the screens were
-drawn for. A German finding English shares word for word is the layout's,
-not the translation's, and is a note too. The check also fails on a string
-with no declared width that no view draws.
+The three English overflows above are in `KNOWN_OVERFLOWS` in the tool,
+each with its view, its string and its measurement. They are printed as
+`known` and do not fail; a German finding that equals one word for word is
+the same string in the same place and does not fail either. An entry the
+check no longer finds fails until it is taken off the list. The check also
+fails on a string with no declared width that no view draws.
 
 ```bash
 python3 tools/check_formats.py

@@ -295,6 +295,9 @@ static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
     for (uint8_t c = 0; c < n; ++c) {
         us[c] = outputs_pulse_us(o, (uint8_t)(s->first_channel + c));
     }
+    /* cppcheck-suppress uninitvar
+     * The loop above fills the n entries out_ppm_write() reads; with n at 0
+     * it reads none. */
     (void)out_ppm_write(s->pin, us, n);
 }
 

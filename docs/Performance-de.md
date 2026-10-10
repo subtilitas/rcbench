@@ -164,6 +164,11 @@ jeden Modus an eine Obergrenze:
 | die drei `-sim`-Modi | 2 800 | ein Watermark, das über die volle Canvas hinauswächst |
 | die acht `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |
 
+`tools/check_docs.py` hält diese Tabelle an den `--max-lines`-Argumenten in
+`.github/workflows/ci.yml`: eine abweichende Obergrenze, ein Modus, den CI
+hält und der hier keine Zeile hat, und eine Zeile, die CI nicht ausführt,
+schlagen jeweils fehl.
+
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
 Simulations-Watermark auf den tatsächlich neu gezeichneten Bereich zu
@@ -205,12 +210,70 @@ decken ab, was das Werkzeug nicht sieht, und jede Tiefe oben ist deshalb eine
 Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
-  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 169
+  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 176
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
   der ELF-Datei stehen;
 - Rekursion, die das Werkzeug einmal zählt.
+
+CI führt das Werkzeug auf dem Build mit ESP-IDF v5.4 mit `--check-doc` aus;
+das schlägt fehl, wenn die Tabelle oben oder die Zahl der Aufrufe über einen
+Zeiger von diesem Build abweicht.
+
+### Der Koprozessor
+
+`tools/stack_check.py --iomcu` liest das RP2350-Image auf dieselbe Weise.
+Kern 0 führt `main()` auf dem Main-Stack des pico-sdk aus: 2048 Bytes,
+`__StackBottom` bis `__StackTop` in der ELF-Datei. Kern 1 führt
+`core1_main()` auf dem 4096 Bytes großen Array aus, das sein Start übergibt.
+Keiner der beiden Stacks hat eine Schutzzone. Ein Interrupt läuft auf dem
+Stack des Kerns, den er unterbricht; jedem Kern werden deshalb seine tiefste
+Kette und ein Interrupt angerechnet: ein Exception-Frame von 108 Bytes und
+der tiefste Handler, den das Image installiert. CI führt das Werkzeug nach
+dem Koprozessor-Build aus und schlägt fehl, wenn Kette, ein Interrupt und
+eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
+
+| Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Kern 0 | `main` | 2 048 | 1 292 | 384 | 116 |
+| Kern 1 | `core1_main` | 4 096 | 640 | 384 | 2 816 |
+
+Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
+Keine Prüfung hält diese Tabelle am Build: ihre Tiefen ändern sich mit dem
+Compiler (ARM GNU 14.2 gibt Kern 1 eine Kette von 644 Bytes), und CI baut das
+Image mit dem Compiler aus dem Paket des Runners. Die Ausgabe des Werkzeugs
+im CI-Log ist der aktuelle Wert.
+
+Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet:
+`main` (352 Bytes), `can_service` (344), `link_dev_dispatch`, `slots_write`,
+`slots_take`, `outputs_hw_apply_only`, `out_dshot_bind` und die Belegung
+einer PIO-State-Machine (PIO: Programmable Input/Output) im pico-sdk. Der
+tiefste Handler ist der des USB-Controllers, `dcd_rp2040_irq`, mit 276
+Bytes.
+
+Jede Tiefe ist eine Untergrenze:
+
+- Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
+  Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
+  Links liest: 69 solche Aufrufe sind von `main` aus erreichbar;
+- eine Kette endet an `panic()` des pico-sdk, das eine Meldung ausgibt und
+  den Kern anhält. Mit den 228 Bytes, die `panic()` und seine Aufrufe
+  belegen, ist die Kette von Kern 0 1 516 Bytes tief und ein Interrupt 528
+  Bytes, 2 044 der 2 048;
+- der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
+  außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
+  die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug
+  schlägt bei einem `strstr()`-Aufruf unter `shared/` oder
+  `firmware/iomcu/src` fehl, dessen Suchmuster kein Stringliteral unter 255
+  Zeichen ist;
+- 17 handgeschriebene Rechenroutinen des pico-sdk tragen in der ELF-Datei
+  keine Größe, und ihre Frames werden nicht gelesen;
+- gezählt wird ein Interrupt, kein zweiter auf dem ersten;
+- Rekursion wird einmal gezählt.
+
+Unter den 2048 Bytes von Kern 0 liegen weitere 2048 Bytes desselben
+RAM-Bereichs (`SCRATCH_Y`), die in diesem Image nichts enthalten.
 
 `-v` listet sie alle auf, und die tiefste Kette jeder Task.
 

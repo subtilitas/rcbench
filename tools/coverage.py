@@ -4,15 +4,24 @@
 The pure-C core under shared/ builds and runs on the host.  This script
 builds the suite with gcov instrumentation, runs it, and renders the result
 into the block between the ``coverage:start`` and ``coverage:end`` markers in
-STATUS.md.  The README badge comes from Codecov, which measures the same
-build in CI (continuous integration).
+STATUS.md, and the total into the block between the same markers in
+README.md and README-de.md.  The README badge comes from Codecov, which
+measures the same build in CI (continuous integration).
 
-    python3 tools/coverage.py            # update the STATUS.md table
-    python3 tools/coverage.py --check    # fail if the table is out of date
+    python3 tools/coverage.py            # update the table and the figures
+    python3 tools/coverage.py --check    # fail if any of them is out of date
     python3 tools/coverage.py --json coverage.json
 
 ``--check`` is what CI runs: drift fails the build rather than being
 committed by a bot.
+
+Every C file under shared/ has to be in the measurement.  A file is in
+TRACKED and has counters, or is in DATA_ONLY and holds no function.  A file
+in neither list, a file the suite does not compile, a TRACKED file no test
+links (it has no counters, and is measured at 0%), and a DATA_ONLY file that
+holds a function each fail the run.
+
+SPDX-License-Identifier: MIT
 """
 
 from __future__ import annotations
@@ -29,6 +38,8 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 TEST_DIR = REPO / "test" / "host"
 BUILD_DIR = TEST_DIR / "build"
 STATUS = REPO / "STATUS.md"
+SHARED = REPO / "shared"
+READMES = {"en": REPO / "README.md", "de": REPO / "README-de.md"}
 
 # The table lives in the running record.  This tool is the offline gate (the
 # floors below) and the per-file breakdown; Codecov reports the same
@@ -146,13 +157,19 @@ TRACKED = [
     "shared/sense/tone_svc.c",
 ]
 
-# Sources that are compiled into the suite but deliberately not measured.
-# Anything else that is instrumented and missing from TRACKED is an omission,
-# not a decision -- see check_tracked_is_complete().
-UNTRACKED_OK = {
-    "greatest.h",
-    # Test scaffolding, not code under test.
-    "fake_wire.c",
+# Sources under shared/ that are tables and hold no function: gcc gives them
+# no counter, so there is nothing to measure.  Anything else under shared/
+# that is missing from TRACKED is an omission, not a decision -- see
+# completeness().
+DATA_ONLY = {
+    # Glyph bitmaps written by tools/gen_font.py.
+    "shared/gfx/gfx_font8x16.c",
+    "shared/gfx/gfx_font16x28.c",
+    "shared/gfx/gfx_font_num24x30.c",
+    # The ESC profile tables written by tools/gen_esc_profiles.py.
+    "shared/esc/esc_profiles_gen.c",
+    # The German string tables; ui_text.c holds the lookups.
+    "shared/ui/ui_text_de.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it
@@ -197,41 +214,81 @@ def build_and_run() -> None:
     run(["ctest", "--output-on-failure"], cwd=BUILD_DIR)
 
 
-def find_gcda(source: pathlib.Path) -> pathlib.Path:
-    """CMake mangles object paths, so locate the data file by basename."""
-    wanted = source.name + ".gcda"
-    matches = sorted(p for p in BUILD_DIR.rglob(wanted))
-    if not matches:
-        sys.exit(f"no {wanted} under {BUILD_DIR}; "
-                 "was the suite built and run?")
-    return matches[0]
+def library_sources() -> list[str]:
+    """Every C file under shared/, as TRACKED spells it."""
+    return sorted(p.relative_to(REPO).as_posix()
+                  for p in SHARED.rglob("*.c"))
 
 
-def check_tracked_is_complete() -> None:
-    """Every instrumented source must be in TRACKED.
+def build_files(suffix: str) -> dict[str, pathlib.Path]:
+    """Source basename -> its .gcno or .gcda in the build.  CMake mangles
+    object paths, so a file is found by basename; only the libraries are
+    instrumented, so a test file has neither."""
+    return {p.name[: -len(suffix)]: p
+            for p in sorted(BUILD_DIR.rglob("*" + suffix))}
 
-    measure() looks only at TRACKED, so an unlisted file would be absent from
-    both the numerator and the denominator.
+
+def holds_code(gcno: pathlib.Path) -> bool:
+    """Whether the translation unit behind @p gcno has a function."""
+    proc = subprocess.run(["gcov", "-n", gcno.name], cwd=gcno.parent,
+                          capture_output=True, text=True)
+    return LINES_RE.search(proc.stdout) is not None
+
+
+def completeness(sources: list[str], tracked: list[str],
+                 data_only: set[str], compiled: set[str],
+                 counted: set[str], with_code: set[str]) -> list[str]:
+    """What keeps the measurement from covering every source: one line per
+    problem.  @p compiled, @p counted and @p with_code are basenames: the
+    sources with a .gcno, with a .gcda, and the DATA_ONLY ones whose .gcno
+    holds a function.
+
+    measure() looks only at TRACKED, so a file missing from it is absent
+    from the total and from the floors.
     """
-    instrumented = {p.name[: -len(".gcda")] for p in BUILD_DIR.rglob("*.gcda")}
-    tracked = {pathlib.Path(rel).name for rel in TRACKED}
-    missing = sorted(instrumented - tracked - UNTRACKED_OK)
-    if missing:
-        sys.exit(
-            "these sources are built into the host suite but missing from "
-            "TRACKED in tools/coverage.py, so they count towards neither the "
-            "badge nor the floor:\n  " + "\n  ".join(missing)
-        )
+    problems = []
+    names = [pathlib.Path(rel).name for rel in sources]
+    for name in sorted({n for n in names if names.count(n) > 1}):
+        problems.append(f"two sources under shared/ are named {name}; the "
+                        "build's counters are found by that name")
+    for rel in sorted(set(tracked) & data_only):
+        problems.append(f"{rel} is in TRACKED and in DATA_ONLY")
+    for rel in sorted((set(tracked) | data_only) - set(sources)):
+        problems.append(f"{rel} is listed in tools/coverage.py and is not "
+                        "under shared/")
+    for rel in sources:
+        name = pathlib.Path(rel).name
+        if rel not in tracked and rel not in data_only:
+            problems.append(
+                f"{rel} is in neither TRACKED nor DATA_ONLY in "
+                "tools/coverage.py, so it counts towards neither the total "
+                "nor a floor")
+        elif name not in compiled:
+            problems.append(f"{rel} is not compiled into the host suite: "
+                            "the build has no .gcno for it")
+        elif rel in data_only and name in with_code:
+            problems.append(f"{rel} is in DATA_ONLY and holds a function; "
+                            "move it to TRACKED")
+        elif rel in tracked and name not in counted:
+            problems.append(f"{rel} has no counters: no test links code "
+                            "from it, and it is measured at 0%")
+    return problems
 
 
 def measure() -> dict[str, dict[str, float]]:
     results: dict[str, dict[str, float]] = {}
+    notes, data = build_files(".gcno"), build_files(".gcda")
 
     for rel in TRACKED:
         src = REPO / rel
-        gcda = find_gcda(src)
+        # A source no test links has no .gcda; its .gcno alone gives the
+        # line count, none of them run.
+        gcda = data.get(src.name, notes.get(src.name))
+        if gcda is None:
+            sys.exit(f"no {src.name}.gcno under {BUILD_DIR}; "
+                     "was the suite built and run?")
         proc = subprocess.run(
-            ["gcov", str(gcda)],
+            ["gcov", gcda.name],
             cwd=gcda.parent, capture_output=True, text=True,
         )
         # gcov prints one "File '...'" / "Lines executed:..." pair per source
@@ -284,6 +341,35 @@ def render(results: dict[str, dict[str, float]]) -> tuple[str, float]:
     return body, total_pct
 
 
+def thousands(n: int, sep: str) -> str:
+    return f"{n:,}".replace(",", sep)
+
+
+def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
+    """The figure the README carries: the total, what it is a share of, and
+    the two floors."""
+    lines = sum(int(r["lines"]) for r in results.values())
+    covered = sum(int(r["covered"]) for r in results.values())
+    pct = (100.0 * covered / lines) if lines else 0.0
+    if lang == "de":
+        text = ("Zeilenabdeckung von `shared/` durch die Host-Suite: "
+                "**%s %%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
+                "%d %% gesamt oder unter %d %% in einer Datei fehl. Die "
+                "Tabelle je Datei steht in "
+                "[STATUS.md](STATUS.md#tests-and-ci)."
+                % (("%.1f" % pct).replace(".", ","),
+                   thousands(covered, " "), thousands(lines, " "),
+                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE))
+    else:
+        text = ("Host-suite line coverage of `shared/`: **%.1f%%**, %s of %s "
+                "lines in %d files. CI fails below %d%% in total or below "
+                "%d%% in any file. [STATUS.md](STATUS.md#tests-and-ci) has "
+                "the table per file."
+                % (pct, thousands(covered, ","), thousands(lines, ","),
+                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE))
+    return "\n" + text + "\n"
+
+
 def splice(text: str, body: str, start: str, end: str, what: str) -> str:
     if start not in text or end not in text:
         sys.exit(f"{what} is missing the {start} / {end} markers")
@@ -295,7 +381,8 @@ def splice(text: str, body: str, start: str, end: str, what: str) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
-                    help="fail if the STATUS.md table would change")
+                    help="fail if the STATUS.md table or a README figure "
+                         "would change")
     ap.add_argument("--json", type=pathlib.Path,
                     help="also write the raw numbers here")
     ap.add_argument("--skip-build", action="store_true",
@@ -305,7 +392,12 @@ def main() -> int:
     if not args.skip_build:
         build_and_run()
 
-    check_tracked_is_complete()
+    notes, data = build_files(".gcno"), build_files(".gcda")
+    incomplete = completeness(
+        library_sources(), TRACKED, DATA_ONLY, set(notes), set(data),
+        {pathlib.Path(rel).name for rel in DATA_ONLY
+         if pathlib.Path(rel).name in notes
+         and holds_code(notes[pathlib.Path(rel).name])})
 
     results = measure()
     body, total_pct = render(results)
@@ -316,8 +408,13 @@ def main() -> int:
             indent=2) + "\n")
 
     targets = [(STATUS, body, START, END)]
+    targets += [(path, render_readme(results, lang), START, END)
+                for lang, path in READMES.items()]
 
     failed = False
+    for line in incomplete:
+        print(line, file=sys.stderr)
+        failed = True
     for path, content, start, end in targets:
         original = path.read_text()
         updated = splice(original, content, start, end, path.name)

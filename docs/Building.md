@@ -11,8 +11,8 @@ coprocessor firmware (pico-sdk).
 ```
 rcbench/
   docs/                   wiki source, English and German
-  tools/                  render_ui · coverage · check_docs · frame_cost
-                          gen_font · wiki_links
+  tools/                  the checks, generators and measurements below
+  test/tools/             pytest cases for the tools
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     gfx/                  rasteriser and three fonts
     touch/                coordinate and event mapping
@@ -154,27 +154,38 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 
 | Tool | Purpose |
 | --- | --- |
-| `tools/coverage.py` | measures host-suite line coverage, enforces the floors (94% total, 85% per file) and writes the table in `STATUS.md`; `--check` fails on drift |
-| `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every `shared/` module, every source file carries an SPDX (Software Package Data Exchange) line, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
+| `tools/coverage.py` | measures host-suite line coverage, enforces the floors (94% total, 85% per file) and writes the table in `STATUS.md` and the figure in `README.md` and `README-de.md`; `--check` fails on drift, and on a C file under `shared/` that is not in the measurement or has no counters |
+| `tools/mutate.py` | changes one line of `shared/` at a time in a copy of the tree (a comparison flipped, a bound plus or minus 1, a stored assignment dropped), builds and runs the host suite and reports the changes the suite passes with; by default the lines changed since `origin/main`, at most 60 mutants and 2700 s; CI runs it on pull requests and does not fail on a survivor |
+| `tools/check_sanitizers.py` | configures the sanitizer build and fails unless every compile command under `shared/` and `test/host/` carries `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` and `-fno-omit-frame-pointer`, and no other flag of that family |
+| `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every `shared/` module, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, the ceiling table in [Performance](Performance.md) matches the `--max-lines` arguments in `ci.yml`, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
 | `tools/wiki_links.py` | rewrites `Page.md` links to `Page` for the wiki, where pages are addressed by title |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
 | `tools/gen_font.py` | regenerates the three embedded fonts from DejaVu Sans Mono, the two text faces with the German letters; `--check` fails if the committed tables differ |
-| `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a German string overflows where it is drawn ([Language](Language.md)) |
+| `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
 | `tools/frame_cost.py` | measures cache-line fills per frame under cachegrind; `--check-doc` holds the table in [Performance](Performance.md) |
-| `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow ([Performance](Performance.md#stacks)) |
+| `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the coprocessor image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack |
+| `tools/pinmap_check.py` | checks the IO board's draft pin map, `hardware/docs/pinmap.json`, against the pin functions in the pico-sdk's `io_bank0.h`; needs a pico-sdk checkout |
+| `tools/gen_board_art.py`, `tools/gen_esc_profiles.py` | generate the checked-in board artwork and ESC profile tables from their PNG and JSON sources; `--check` fails if the committed tables differ |
+| `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
+| `test/tools/` | pytest cases for the tools above: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error |
 
 `gen_font.py` looks for the font in `RCBENCH_FONT_DIR`, then
 `~/.local/share/fonts`, then the system font directories. `frame_cost.py` needs
-`valgrind`; the other tools need a C compiler and Pillow.
+`valgrind`; the other tools need a C compiler and Pillow. `mutate.py` needs
+git and CMake as well, and `ci_gate.py` the `gh` command.
 
 ## CI
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check; coprocessor build on pico-sdk 2.3.0; firmware artifacts including a merged panel image for offset 0 |
-| `docs.yml` | push to `main` touching `docs/` | mirrors `docs/` to the GitHub wiki |
-| `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release, and carries the build guide PDFs over from the latest release |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy and cppcheck over `shared/`, cppcheck's warning, performance and portability classes over `firmware/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check, v5.4 with the stack table of this wiki; coprocessor build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores; firmware artifacts including a merged panel image for offset 0 |
+| `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
+| `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, and carries the build guide PDFs over from the latest release |
+
+clang-tidy does not run over `firmware/`: it compiles each file and needs
+the ESP-IDF and pico-sdk headers, which the analysis job does not have.
+cppcheck's style class does not run over `firmware/` either.
 
 Every check runs locally;
 [CONTRIBUTING.md](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md)

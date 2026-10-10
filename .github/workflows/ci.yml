@@ -73,8 +73,9 @@ jobs:
           cmake --build test/host/build-san -j"$(nproc)"
           ctest --test-dir test/host/build-san --output-on-failure
 
-      # Fails when the table in STATUS.md does not match the measurement,
-      # rather than committing a fixup.
+      # Fails when the table in STATUS.md or the figure in README.md and
+      # README-de.md does not match the measurement, rather than committing a
+      # fixup, and when a source under shared/ is not in the measurement.
       - name: Coverage is current
         run: python3 tools/coverage.py --check --json coverage.json
 
@@ -88,11 +89,14 @@ jobs:
           gcovr --root . --filter 'shared/' --exclude '.*font.*' \
                 --cobertura coverage.xml --print-summary
 
+      # A failed upload fails the job: the badge in the README is Codecov's,
+      # and an upload that fails quietly leaves it at an older commit's
+      # figure under a green build.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           files: coverage.xml
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
@@ -183,9 +187,11 @@ jobs:
       - name: The committed screenshots match the current render
         run: python3 tools/render_ui.py --check
 
-      # A German string longer than its field is cut or runs into its
-      # neighbour; this draws every view in both languages and measures.
-      - name: Every German string fits where it is drawn
+      # A string longer than its field is cut or runs into its neighbour;
+      # this draws every view in both languages and measures.  The English
+      # overflows the layout has are listed by name in the tool and printed;
+      # any other fails, in either language.
+      - name: Every string fits where it is drawn
         run: python3 tools/render_ui.py --fit
 
       - uses: actions/upload-artifact@v7
@@ -237,16 +243,91 @@ jobs:
             $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
             $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
 
+      # The firmware is hardware access and wiring, and cppcheck reads it
+      # without the vendor SDKs (software development kits): a header it
+      # cannot find is skipped.  The bug-shaped classes run; the style class
+      # does not, and clang-tidy does not run over firmware/ at all, because
+      # it compiles each file and needs every ESP-IDF and pico-sdk header to
+      # do it.  The panel's main.c is checked on its own with the main task's
+      # stack size defined: it refuses to compile under 8192.
+      - name: cppcheck over the firmware
+        run: |
+          cppcheck --error-exitcode=1 --std=c11 --quiet \
+            --enable=warning,performance,portability \
+            --inline-suppr --suppressions-list=.cppcheck-suppress \
+            --check-level=exhaustive \
+            $(git ls-files 'shared/**/include' 'firmware/**/include' \
+                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
+            -Ifirmware/iomcu/src -Ifirmware/panel/main \
+            $(git ls-files 'firmware/**/*.c' | grep -v '^firmware/panel/main/main\.c$')
+          cppcheck --error-exitcode=1 --std=c11 --quiet \
+            --enable=warning,performance,portability \
+            --inline-suppr --suppressions-list=.cppcheck-suppress \
+            --check-level=exhaustive \
+            -DCONFIG_ESP_MAIN_TASK_STACK_SIZE=8192 \
+            $(git ls-files 'shared/**/include' 'firmware/**/include' \
+                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
+            -Ifirmware/panel/main \
+            firmware/panel/main/main.c
+
       # A translated format reaches snprintf() through a table lookup, which
       # -Wformat cannot see; this compiles shared/ again with the English
       # literals in place and fails on any format warning.
       - name: Every translated format matches its call
         run: python3 tools/check_formats.py
 
-      # The six tools in tools/ are held to the same standard as the C: each
-      # of them can fail a build, so a bug in one is a bug in the gate.
+      # The tools in tools/ are held to the same standard as the C: each of
+      # them can fail a build, so a bug in one is a bug in the gate.  Their
+      # tests are held to it too.
       - name: ruff
-        run: ruff check tools/
+        run: ruff check tools/ test/tools/
+
+  tools:
+    name: Tool tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # The runner image carries git, cmake and a C compiler, which the
+      # end-to-end cases of the mutation tool build a three-file project
+      # with; a case skips when one is missing.
+      - name: Install pytest
+        run: python3 -m pip install --upgrade --quiet pytest
+
+      # The checks are a gate, so each rule of a check has a case that
+      # breaks it: a flag taken out of the sanitizer build, a source left
+      # out of the coverage measurement, a number in a page that differs
+      # from its constant, an overflow that is not a known one.
+      - name: pytest
+        run: python3 -m pytest test/tools -q
+
+  # What the suite does not notice in the lines a pull request changes.  It
+  # reports and does not fail on a survivor: the job fails only when the
+  # tool cannot run.  The run is bounded at 2700 s by the tool's defaults.
+  mutation:
+    name: Mutation check of the changed lines (advisory)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The base branch has to be here to diff against.
+          fetch-depth: 0
+
+      - name: Mutate the changed lines of shared/
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: |
+          python3 tools/mutate.py --base "$BASE" --json mutation.json \
+            --summary "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation
+          path: mutation.json
+          if-no-files-found: warn
 
   panel:
     name: Panel (ESP-IDF ${{ matrix.idf }})
@@ -289,6 +370,12 @@ jobs:
       # each ESP-IDF release brings its own toolchain and its own frames.
       - name: Every task's stack holds its deepest call chain
         run: python3 tools/stack_check.py firmware/panel/build
+
+      # The table in docs/Performance.md is measured on ESP-IDF v5.4, so it
+      # is held to that build and not to the other.
+      - name: The stack table in the docs is this build's
+        if: matrix.idf == 'v5.4'
+        run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
       - uses: actions/upload-artifact@v7
         with:
@@ -341,6 +428,13 @@ jobs:
           git clone --depth 1 -b "$PICO_SDK_TAG" --recursive \
             --shallow-submodules https://github.com/raspberrypi/pico-sdk.git
 
+      # The IO board's draft pin map against the functions the RP2350 has on
+      # each pin, read from the SDK's io_bank0.h.  Here because this job has
+      # the SDK.
+      - name: The pin map asks nothing the RP2350 cannot do
+        run: python3 tools/pinmap_check.py hardware/docs/pinmap.json
+             --sdk pico-sdk
+
       - name: Build
         env:
           PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
@@ -349,6 +443,12 @@ jobs:
           cmake --build firmware/iomcu/build -j"$(nproc)"
           ls -l firmware/iomcu/build/rcbench-iomcu.uf2
           sha256sum firmware/iomcu/build/rcbench-iomcu.uf2
+
+      # Core 0 runs main() on 2048 bytes with no guard under them, and an
+      # interrupt lands on the same stack.  Read out of the ELF: each core's
+      # deepest call chain, one interrupt, and 256 bytes, against its stack.
+      - name: Each core's stack holds its deepest call chain and an interrupt
+        run: python3 tools/stack_check.py --iomcu firmware/iomcu/build
 
       - uses: actions/upload-artifact@v7
         with:
