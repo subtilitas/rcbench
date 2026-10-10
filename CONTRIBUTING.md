@@ -69,8 +69,9 @@ python3 tools/mutate.py               # what the suite misses in the changed lin
 # After a panel build, on ESP-IDF v5.4 for --check-doc: task stacks, and the
 # table in docs/Performance.md.
 python3 tools/stack_check.py firmware/panel/build --check-doc
-# After a coprocessor build: the stacks of its two cores.
-python3 tools/stack_check.py --iomcu firmware/iomcu/build
+# After a coprocessor build: the stacks of its two cores, and core 0's row
+# in docs/Performance.md.
+python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
 python3 tools/pinmap_check.py hardware/docs/pinmap.json --sdk "$PICO_SDK_PATH"
 

@@ -82,9 +82,11 @@ irq_add_shared_handler(), and charges each core one interrupt: a 108-byte
 exception frame and the deepest handler's chain.  The check fails when a
 core's deepest chain, one interrupt and a margin of 256 bytes exceed its
 stack, and when a handler is installed in a form the tool does not read.
-The handlers of a page are followed through the link's page table.  A chain
-ends at panic(), which does not return, and one call the firmware's
-arguments never take is left out by name (NOT_TAKEN).  Calls through a
+The handlers of a page are followed through the link's page table.  The
+pico-sdk's panic() and what it calls to print are part of a chain like any
+other function: a core that halts still writes below its stack pointer.  One
+call the firmware's arguments never take is left out by name (NOT_TAKEN).
+Calls through a
 register, hand-written functions, functions that size a frame at run time
 and recursion are counted and named, as for the panel.
 
@@ -99,6 +101,9 @@ and recursion are counted and named, as for the panel.
                                         and hold the panel's table in
                                         docs/Performance.md and its German
                                         page to this build
+    tools/stack_check.py --iomcu [BUILD] --check-doc
+                                        and hold core 0's row of the
+                                        coprocessor table in the same pages
 
 SPDX-License-Identifier: MIT
 """
@@ -684,13 +689,6 @@ def long_needles() -> list:
     return out
 
 
-# Functions that do not return.  The pico-sdk's panic() prints and halts the
-# core in a breakpoint loop, so what it and its callees put on the stack is
-# the last thing a halted image does; a chain is measured to the call and
-# not into it.  A name here that is no function in the image fails the
-# check.
-NO_RETURN = ("panic",)
-
 # What a core's stack keeps free beyond its deepest chain and one interrupt:
 # room for calls through a pointer, which the graph does not follow, and for
 # a second interrupt on top of the first.
@@ -1025,19 +1023,6 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
         funcs[a[0]].calls.discard(b[0])
         out.append(f"not taken: {caller} -> {callee} "
                    f"({funcs[b[0]].frame} bytes): {why}")
-    halts = set()
-    for name in NO_RETURN:
-        addrs = by_name.get(name, [])
-        if len(addrs) != 1:
-            fails.append(f"NO_RETURN: {name} is {len(addrs)} functions in "
-                         f"the ELF, not 1")
-        halts |= set(addrs)
-    halting = 0
-    for f in funcs.values():
-        halting += len(f.calls & halts)
-        f.calls -= halts
-    out.append(f"not followed: {halting} calls to "
-               f"{', '.join(NO_RETURN)}(), which does not return")
     for where in long_needles():
         fails.append(f"{where}: a strstr() needle that is not a string "
                      f"literal under {NEEDLE_LIMIT} characters")
@@ -1170,9 +1155,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
 # ------------------------------------------------- the tables in the docs --
 
 # The panel's task table in each language, and the sentence that counts the
-# calls through a pointer reachable from the main task.  The coprocessor's
-# table is not held: its depths move with the compiler, and CI builds that
-# image with the runner's packaged one.
+# calls through a pointer reachable from the main task.
 PERFORMANCE = (
     (ROOT / "docs" / "Performance.md",
      "| Task | Entry | Stack (bytes) | Deepest chain (bytes) | "
@@ -1239,6 +1222,40 @@ def check_panel_doc(rows: dict, pointer_calls: int) -> list:
     return out
 
 
+# The coprocessor's table in each language and the name of core 0's row.
+# Core 0's row is held: stack, deepest chain, one interrupt, spare.  Core
+# 1's is not: its chain moves with the compiler, 640 bytes with
+# arm-none-eabi-gcc 13.2.1 and 644 with 14.2.
+IOMCU_PERFORMANCE = (
+    (ROOT / "docs" / "Performance.md",
+     "| Core | Entry | Stack (bytes) | Deepest chain (bytes) | "
+     "One interrupt (bytes) | Spare below the margin (bytes) |",
+     "core 0"),
+    (ROOT / "docs" / "Performance-de.md",
+     "| Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | "
+     "Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |",
+     "Kern 0"),
+)
+
+
+def check_iomcu_doc(rows: list) -> list:
+    """Core 0's row of the coprocessor table in Performance.md and its
+    German page against iomcu_check()'s rows."""
+    measured = [list(r[2:]) for r in rows if r[0] == CORE0[0]]
+    if len(measured) != 1:
+        return ["core 0 is not measured; its row in the docs is not held"]
+    out = []
+    for page, header, name in IOMCU_PERFORMANCE:
+        said = doc_rows(page.read_text(encoding="utf-8"), header)
+        if said is None or name not in said:
+            out.append(f"{page.name}: no coprocessor table with a row for "
+                       f"{name}")
+        elif said[name] != measured[0]:
+            out.append(f"{page.name}: the coprocessor table gives {name} "
+                       f"as {said[name]}; measured {measured[0]}")
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
@@ -1248,17 +1265,17 @@ def main() -> int:
     ap.add_argument("--iomcu", action="store_true",
                     help="BUILD is a coprocessor build: check its two cores")
     ap.add_argument("--check-doc", action="store_true",
-                    help="also fail when the panel's task table in "
-                         "docs/Performance.md or docs/Performance-de.md "
+                    help="also fail when the panel's task table, or with "
+                         "--iomcu core 0's row of the coprocessor table, "
+                         "in docs/Performance.md or docs/Performance-de.md "
                          "differs from this build")
     args = ap.parse_args()
 
     if args.iomcu:
-        if args.check_doc:
-            die("--check-doc holds the panel's table; the coprocessor's "
-                "is not held")
         build = Path(args.build or IOMCU_DIR / "build")
         rows, fails, out = iomcu_check(build, args.verbose)
+        if args.check_doc:
+            fails += check_iomcu_doc(rows)
         print(f"stack_check: {build / IOMCU_ELF}")
         print("\n".join(out))
         for f in fails:

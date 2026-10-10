@@ -224,8 +224,9 @@ Zeiger von diesem Build abweicht.
 ### Der Koprozessor
 
 `tools/stack_check.py --iomcu` liest das RP2350-Image auf dieselbe Weise.
-Kern 0 führt `main()` auf dem Main-Stack des pico-sdk aus: 2048 Bytes,
-`__StackBottom` bis `__StackTop` in der ELF-Datei. Kern 1 führt
+Kern 0 führt `main()` auf dem Main-Stack des pico-sdk aus: 4096 Bytes,
+`__StackBottom` bis `__StackTop` in der ELF-Datei, festgelegt durch
+`PICO_STACK_SIZE=0x1000` in `firmware/iomcu/CMakeLists.txt`. Kern 1 führt
 `core1_main()` auf dem 4096 Bytes großen Array aus, das sein Start übergibt.
 Keiner der beiden Stacks hat eine Schutzzone. Ein Interrupt läuft auf dem
 Stack des Kerns, den er unterbricht; jedem Kern werden deshalb seine tiefste
@@ -236,31 +237,29 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 2 048 | 1 292 | 384 | 116 |
-| Kern 1 | `core1_main` | 4 096 | 640 | 384 | 2 816 |
+| Kern 0 | `main` | 4 096 | 1 516 | 528 | 1 796 |
+| Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
-Keine Prüfung hält diese Tabelle am Build: ihre Tiefen ändern sich mit dem
-Compiler (ARM GNU 14.2 gibt Kern 1 eine Kette von 644 Bytes), und CI baut das
-Image mit dem Compiler aus dem Paket des Runners. Die Ausgabe des Werkzeugs
-im CI-Log ist der aktuelle Wert.
+CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
+Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
+gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
+Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 
-Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet:
-`main` (352 Bytes), `can_service` (344), `link_dev_dispatch`, `slots_write`,
-`slots_take`, `outputs_hw_apply_only`, `out_dshot_bind` und die Belegung
-einer PIO-State-Machine (PIO: Programmable Input/Output) im pico-sdk. Der
-tiefste Handler ist der des USB-Controllers, `dcd_rp2040_irq`, mit 276
-Bytes.
+Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
+im pico-sdk scheitert: `main` (352 Bytes), `can_service` (344),
+`link_dev_dispatch`, `slots_write`, `slots_take`, `outputs_hw_apply_only`,
+`out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
+Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
+aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
+`low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
+`panic()`.
 
 Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 69 solche Aufrufe sind von `main` aus erreichbar;
-- eine Kette endet an `panic()` des pico-sdk, das eine Meldung ausgibt und
-  den Kern anhält. Mit den 228 Bytes, die `panic()` und seine Aufrufe
-  belegen, ist die Kette von Kern 0 1 516 Bytes tief und ein Interrupt 528
-  Bytes, 2 044 der 2 048;
+  Links liest: 70 solche Aufrufe sind von `main` aus erreichbar;
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug
@@ -272,8 +271,12 @@ Jede Tiefe ist eine Untergrenze:
 - gezählt wird ein Interrupt, kein zweiter auf dem ersten;
 - Rekursion wird einmal gezählt.
 
-Unter den 2048 Bytes von Kern 0 liegen weitere 2048 Bytes desselben
-RAM-Bereichs (`SCRATCH_Y`), die in diesem Image nichts enthalten.
+Der Stack von Kern 0 ist der gesamte RAM-Bereich `SCRATCH_Y`, 0x20081000
+bis 0x20082000; das Image legt nichts anderes hinein, und der Link schlägt
+fehl, sobald etwas hineingelegt wird. Darunter, in `SCRATCH_X`, liegt das
+4096 Bytes große Array, das das pico-sdk als eigenen Stack für Kern 1
+reserviert und auf dem dieses Image nicht läuft. Dieselbe Definition
+bestimmt die Größe dieses Arrays.
 
 `-v` listet sie alle auf, und die tiefste Kette jeder Task.
 

@@ -205,3 +205,26 @@ def test_both_pages_carry_the_task_table_and_the_count():
         text = page.read_text(encoding="utf-8")
         assert sc.doc_rows(text, header), page.name
         assert re.search(sentence, " ".join(text.split())), page.name
+
+
+def test_both_pages_carry_core_0s_row_of_the_coprocessor_table():
+    for page, header, name in sc.IOMCU_PERFORMANCE:
+        said = sc.doc_rows(page.read_text(encoding="utf-8"), header)
+        assert said and len(said[name]) == 4, page.name
+
+
+def test_core_0s_row_is_held_to_the_measurement():
+    page, header, name = sc.IOMCU_PERFORMANCE[0]
+    said = sc.doc_rows(page.read_text(encoding="utf-8"), header)[name]
+    core1 = ("core 1", "core1_main", 1, 2, 3, 4)
+    assert sc.check_iomcu_doc([("core 0", "main", *said), core1]) == []
+    moved = [said[0], said[1] + 8, said[2], said[3] - 8]
+    out = sc.check_iomcu_doc([("core 0", "main", *moved), core1])
+    assert len(out) == 2 and out[0] == (
+        f"Performance.md: the coprocessor table gives core 0 as {said}; "
+        f"measured {moved}")
+
+
+def test_a_run_that_did_not_measure_core_0_does_not_hold_its_row():
+    assert sc.check_iomcu_doc([("core 1", "core1_main", 1, 2, 3, 4)]) == [
+        "core 0 is not measured; its row in the docs is not held"]

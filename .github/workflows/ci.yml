@@ -449,11 +449,13 @@ jobs:
           ls -l firmware/iomcu/build/rcbench-iomcu.uf2
           sha256sum firmware/iomcu/build/rcbench-iomcu.uf2
 
-      # Core 0 runs main() on 2048 bytes with no guard under them, and an
+      # Core 0 runs main() on 4096 bytes with no guard under them, and an
       # interrupt lands on the same stack.  Read out of the ELF: each core's
-      # deepest call chain, one interrupt, and 256 bytes, against its stack.
+      # deepest call chain, one interrupt, and 256 bytes, against its stack;
+      # and core 0's row in docs/Performance.md against this build.
       - name: Each core's stack holds its deepest call chain and an interrupt
         run: python3 tools/stack_check.py --iomcu firmware/iomcu/build
+             --check-doc
 
       - uses: actions/upload-artifact@v7
         with:

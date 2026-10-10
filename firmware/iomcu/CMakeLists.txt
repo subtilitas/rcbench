@@ -66,6 +66,14 @@ add_executable(rcbench-iomcu
 )
 target_include_directories(rcbench-iomcu PRIVATE include src)
 
+# Core 0's stack: 4096 bytes, all of the SCRATCH_Y region at 0x20081000.  The
+# SDK's default is 2048, and the deepest chain from main() with panic() and
+# one interrupt on top is 2044 (tools/stack_check.py --iomcu).  The SDK's own
+# core 1 stack takes its size from the same definition and fills SCRATCH_X;
+# core 1 runs on the array sense_core1.c passes.  The link fails when
+# anything else is placed in either region.
+target_compile_definitions(rcbench-iomcu PRIVATE PICO_STACK_SIZE=0x1000)
+
 # A bring-up build for the current monitors: with no part enabled in flash,
 # both are enabled at the SENSE page's defaults for that boot, not saved.
 # Off in every image that is released; docs/FirstRun.md §8 uses it.

@@ -209,8 +209,9 @@ that build.
 ### The coprocessor
 
 `tools/stack_check.py --iomcu` reads the RP2350 image the same way. Core 0
-runs `main()` on the pico-sdk's main stack: 2048 bytes, `__StackBottom` to
-`__StackTop` in the ELF. Core 1 runs `core1_main()` on the 4096-byte array
+runs `main()` on the pico-sdk's main stack: 4096 bytes, `__StackBottom` to
+`__StackTop` in the ELF, set by `PICO_STACK_SIZE=0x1000` in
+`firmware/iomcu/CMakeLists.txt`. Core 1 runs `core1_main()` on the 4096-byte array
 its launch passes. Neither stack has a guard. An interrupt runs on the stack
 of the core it interrupts, so each core is charged its deepest chain and one
 interrupt: a 108-byte exception frame and the deepest handler the image
@@ -219,29 +220,28 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 2,048 | 1,292 | 384 | 116 |
-| core 1 | `core1_main` | 4,096 | 640 | 384 | 2,816 |
+| core 0 | `main` | 4,096 | 1,516 | 528 | 1,796 |
+| core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
-13.2.1. No check holds this table to the build: its depths move with the
-compiler (ARM GNU 14.2 gives core 1 a chain of 644 bytes), and CI builds the
-image with the runner's packaged one. The tool's output in the CI log is the
-current figure.
+13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row
+differs from that build. Core 1's row is not held: its chain moves with the
+compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
+runner's packaged one.
 
-Core 0's deepest chain is a request that binds an output: `main` (352
-bytes), `can_service` (344), `link_dev_dispatch`, `slots_write`,
-`slots_take`, `outputs_hw_apply_only`, `out_dshot_bind` and the pico-sdk's
-claim of a PIO (programmable input/output) state machine. The deepest
-handler is the USB controller's, `dcd_rp2040_irq`, at 276 bytes.
+Core 0's deepest chain is a request that binds an output and fails in the
+pico-sdk: `main` (352 bytes), `can_service` (344), `link_dev_dispatch`,
+`slots_write`, `slots_take`, `outputs_hw_apply_only`, `out_dshot_bind`, the
+pico-sdk's claim of a PIO (programmable input/output) state machine, and
+`panic()` with what it calls to print, 228 bytes. The deepest handler is
+the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
+ends in `panic()` as well.
 
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 69 such calls
+  handler, which the tool reads out of the link's page table: 70 such calls
   are reachable from `main`;
-- a chain ends at the pico-sdk's `panic()`, which prints and halts the
-  core. With the 228 bytes `panic()` and its callees take, core 0's chain is
-  1,516 bytes and an interrupt 528 bytes, 2,044 of the 2,048;
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
   `strstr()` calls it for a needle of 255 characters or more, and the two
   needles in the firmware are 3 and 5 characters. The tool fails on a
@@ -252,8 +252,11 @@ Each depth is a lower bound:
 - one interrupt is counted, not a second one on top of it;
 - recursion is counted once.
 
-Under core 0's 2048 bytes lie another 2048 bytes of the same RAM region
-(`SCRATCH_Y`), which hold nothing in this image.
+Core 0's stack is the whole of the RAM region `SCRATCH_Y`, 0x20081000 to
+0x20082000; the image places nothing else in it, and the link fails when
+something is. Below it, in `SCRATCH_X`, lies the 4096-byte array the
+pico-sdk reserves as its own core 1 stack, which this image does not run
+on. The same definition sizes that array.
 
 `-v` lists all of them, and each task's deepest chain.
 

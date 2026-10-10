@@ -24,8 +24,10 @@ coprocessor and the other way round.
 - **A stack check for the coprocessor.** `tools/stack_check.py --iomcu`
   reads each core's deepest call chain and the deepest interrupt handler
   out of the RP2350 image and fails when chain, one interrupt and 256 bytes
-  exceed the core's stack. Core 0: 1292 bytes and 384 for an interrupt on
-  2048. CI runs it after the coprocessor build.
+  exceed the core's stack. The pico-sdk's `panic()` and what it calls to
+  print are part of a chain. With `--check-doc` it holds core 0's row of
+  the table in `docs/Performance.md` and its German page. CI runs it after
+  the coprocessor build.
 - **The coverage figure in the READMEs.** `README.md` and `README-de.md`
   state the total, the line counts and the two floors; `tools/coverage.py`
   writes them and `--check` fails when they differ from the measurement.
@@ -66,6 +68,11 @@ coprocessor and the other way round.
 
 ### Changed
 
+- **Coprocessor core 0 runs on a 4096-byte stack.** `PICO_STACK_SIZE` is
+  0x1000 in `firmware/iomcu/CMakeLists.txt`; the pico-sdk's default is
+  2048 bytes. The deepest chain from `main()` is 1516 bytes and one
+  interrupt 528. The stack fills the RAM region `SCRATCH_Y`, 0x20081000 to
+  0x20082000.
 - **The wiki and a release wait for CI.** `docs.yml` and `release.yml`
   start as before, on a push to `main` that touches `docs/` and on a `v*`
   tag, and their first step waits for the CI run on the same commit, at
