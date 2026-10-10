@@ -96,6 +96,97 @@ TEST_CASE(the_crc_seed_is_xmodem_and_not_the_links_own)
     CHECK(OPENYGE_CRC_INIT != LINK_CRC_INIT);
 }
 
+/*
+ * The module carries its own CRC, so it is held to the published check
+ * value by itself and to the link's routine, an independent copy of the
+ * polynomial, at every length a frame can have.
+ */
+TEST_CASE(the_modules_own_crc_gives_the_published_check_value)
+{
+    CHECK_EQ(openyge_crc(OPENYGE_CRC_INIT, "123456789", 9), 0x31C3);
+    /* One byte with only its top bit set. */
+    const uint8_t top = 0x80u;
+    CHECK_EQ(openyge_crc(OPENYGE_CRC_INIT, &top, 1), 0x9188);
+    /* Zeros into a zero accumulator stay zero: nothing to shift out. */
+    const uint8_t zeros[OPENYGE_MAX_FRAME] = { 0 };
+    CHECK_EQ(openyge_crc(OPENYGE_CRC_INIT, zeros, sizeof(zeros)), 0x0000);
+}
+
+TEST_CASE(an_empty_fold_returns_the_accumulator_and_reads_nothing)
+{
+    CHECK_EQ(openyge_crc(OPENYGE_CRC_INIT, "", 0), OPENYGE_CRC_INIT);
+    CHECK_EQ(openyge_crc(0x1234u, NULL, 0), 0x1234);
+    CHECK_EQ(openyge_crc(0xFFFFu, NULL, 0), 0xFFFF);
+}
+
+TEST_CASE(the_modules_crc_agrees_with_the_links_at_every_frame_length)
+{
+    uint8_t buf[OPENYGE_MAX_FRAME];
+    for (size_t i = 0; i < sizeof(buf); ++i) {
+        buf[i] = (uint8_t)(0xA5u ^ (i * 37u));
+    }
+    for (size_t len = 0; len <= sizeof(buf); ++len) {
+        CHECK_EQ(openyge_crc(OPENYGE_CRC_INIT, buf, len),
+                 link_crc(OPENYGE_CRC_INIT, buf, len));
+    }
+    /* Every bit of the accumulator set, and every bit of the data. */
+    memset(buf, 0xFF, sizeof(buf));
+    CHECK_EQ(openyge_crc(0xFFFFu, buf, sizeof(buf)),
+             link_crc(0xFFFFu, buf, sizeof(buf)));
+}
+
+TEST_CASE(a_crc_folded_in_pieces_is_the_crc_folded_whole)
+{
+    uint8_t buf[OPENYGE_MAX_FRAME];
+    for (size_t i = 0; i < sizeof(buf); ++i) {
+        buf[i] = (uint8_t)(i * 151u + 3u);
+    }
+    const uint16_t whole = openyge_crc(OPENYGE_CRC_INIT, buf, sizeof(buf));
+    for (size_t cut = 0; cut <= sizeof(buf); ++cut) {
+        const uint16_t head = openyge_crc(OPENYGE_CRC_INIT, buf, cut);
+        CHECK_EQ(openyge_crc(head, buf + cut, sizeof(buf) - cut), whole);
+    }
+}
+
+/* The longest frame the decoder takes, 140 bytes, is checked with the
+ * module's CRC over 138 of them; a length byte of 141 is refused unread. */
+TEST_CASE(the_crc_covers_a_frame_of_the_longest_length_and_no_longer)
+{
+    uint8_t f[OPENYGE_MAX_FRAME + 1u];
+    for (size_t i = 0; i < sizeof(f); ++i) {
+        f[i] = (uint8_t)(i + 1u);
+    }
+    f[0] = OPENYGE_SYNC;
+    f[1] = OPENYGE_VERSION;
+    f[2] = OPENYGE_FT_TELE_AUTO;
+    f[3] = (uint8_t)OPENYGE_MAX_FRAME;
+    const uint16_t crc = openyge_crc(OPENYGE_CRC_INIT, f,
+                                     OPENYGE_MAX_FRAME - 2u);
+    f[OPENYGE_MAX_FRAME - 2u] = (uint8_t)(crc & 0xFFu);
+    f[OPENYGE_MAX_FRAME - 1u] = (uint8_t)(crc >> 8);
+
+    /* The CRC holds and the payload is 132 bytes, not 26: rejected by
+     * shape, which the decoder reaches only past a CRC that verifies. */
+    openyge_decoder_t d;
+    openyge_decoder_reset(&d);
+    openyge_frame_t out;
+    for (size_t i = 0; i < OPENYGE_MAX_FRAME; ++i) {
+        CHECK(!openyge_decode_byte(&d, f[i], &out));
+    }
+    CHECK_EQ(d.rejected, 1u);
+    CHECK_EQ(d.crc_errors, 0u);
+    CHECK_EQ(d.frames, 0u);
+
+    /* One bit of the stored CRC changed: the same frame fails its check. */
+    openyge_decoder_reset(&d);
+    f[OPENYGE_MAX_FRAME - 1u] ^= 0x80u;
+    for (size_t i = 0; i < OPENYGE_MAX_FRAME; ++i) {
+        CHECK(!openyge_decode_byte(&d, f[i], &out));
+    }
+    CHECK_EQ(d.crc_errors, 1u);
+    CHECK_EQ(d.rejected, 0u);
+}
+
 TEST_CASE(a_v3_telemetry_frame_decodes_to_its_numbers)
 {
     uint8_t pay[OPENYGE_TELEMETRY_BYTES], buf[64];
@@ -443,6 +534,11 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 int main(void)
 {
     RUN(the_crc_seed_is_xmodem_and_not_the_links_own);
+    RUN(the_modules_own_crc_gives_the_published_check_value);
+    RUN(an_empty_fold_returns_the_accumulator_and_reads_nothing);
+    RUN(the_modules_crc_agrees_with_the_links_at_every_frame_length);
+    RUN(a_crc_folded_in_pieces_is_the_crc_folded_whole);
+    RUN(the_crc_covers_a_frame_of_the_longest_length_and_no_longer);
     RUN(a_v3_telemetry_frame_decodes_to_its_numbers);
     RUN(temperatures_below_zero_decode_as_negative);
     RUN(negative_duty_and_throttle_survive_the_decode);

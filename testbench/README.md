@@ -723,13 +723,13 @@ the same specification as the firmware would agree with the firmware for the
 same wrong reason.
 
 The first check is a round trip against the tree's own builder:
-`shared/dshot/dshot_frame.c` makes a frame from a value and a cyclic
+`protocols/dshot/dshot_frame.c` makes a frame from a value and a cyclic
 redundancy check, the host suite emits it as a waveform, and the decoder must
 read back what went in. It needs no hardware and can be done before the bench
 exists.
 
 **That check is necessary and it is not sufficient.** The production path
-calls the same builder -- `firmware/iomcu/src/out_dshot.c` -- so decoder and
+calls the same builder -- `protocols/dshot/rp2350/out_dshot.c` -- so decoder and
 firmware can agree on a bit order or a checksum convention that is wrong in
 the same way, and the round trip would pass. It proves transcription, not
 convention.

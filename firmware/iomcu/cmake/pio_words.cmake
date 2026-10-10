@@ -1,7 +1,8 @@
 # Fail the build when pioasm's words for a PIO program differ from the ones
 # the host suite runs.
 #
-# test/host/test_tone_pio.c assembles src/tone_cap.pio with a small
+# test/host/test_tone_pio.c assembles
+# protocols/phase_tap/rp2350/tone_cap.pio with a small
 # assembler and runs the words in a model of the state machine.  This holds
 # pioasm's output for the same file to the list the host test is held to, so
 # the model runs what the chip runs.

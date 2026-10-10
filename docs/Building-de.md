@@ -25,10 +25,15 @@ rcbench/
     safety/               Heartbeat-Generator (Panel) und -Monitor (Koprozessor)
     servo/                Endlagen- und Abgleichsuche · Servomodell
     can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
-    sbus/                 S.BUS-Decoder
-    openyge/              OpenYGE-Framing, Status und Parameter-Cache
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
     sense/                Treiber für die Strommonitore INA228 und INA3221
+  protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
+    dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
+    ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
+    sbus/                 S.BUS-Decoder; kein Pin-Treiber
+    openyge/              OpenYGE-Framing, CRC, Status und Parameter-Cache; kein Pin-Treiber
+    pdmini/               PD-mini-Treiber · PIO-UART
+    phase_tap/            ESC-Ton-Detektor · Leser des Flankenrings · PIO-Capture
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)
@@ -37,13 +42,18 @@ rcbench/
 ```
 
 Module unter `shared/` enthalten die Logik und haben keine
-Hardwareabhängigkeit. Alles, was Hardware anfasst, liegt unter `firmware/`.
+Hardwareabhängigkeit. Ein Modul unter `protocols/` ist ein Interface zu
+externer Hardware und so gebaut, dass es in ein anderes pico-sdk-Projekt
+kopiert wird: sein Kern bindet nur C-Standard-Header ein, sein Ordner
+`rp2350/` nur den Kern und das pico-sdk. Alles andere, was Hardware anfasst,
+liegt unter `firmware/`. `tools/check_protocols.py` hält jedes Modul daran
+([CONTRIBUTING](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md#where-code-goes)).
 
-### Ein Verzeichnis, drei Builds
+### Zwei Verzeichnisse, drei Builds
 
-Jedes Modul unter `shared/` bringt eine `CMakeLists.txt` mit, die unter
-`ESP_PLATFORM` eine IDF-Komponente registriert und sonst eine statische
-Bibliothek:
+Jedes Modul unter `shared/` und `protocols/` bringt eine `CMakeLists.txt`
+mit, die unter `ESP_PLATFORM` eine IDF-Komponente registriert und sonst eine
+statische Bibliothek:
 
 ```cmake
 if(ESP_PLATFORM)
@@ -54,9 +64,12 @@ else()
 endif()
 ```
 
-Das Panel setzt `EXTRA_COMPONENT_DIRS` auf `shared/`; Koprozessor und
-Host-Suite holen die Module, die sie brauchen, per `add_subdirectory()`.
-Includes sind flach: `#include "gfx.h"`.
+Das Panel setzt `EXTRA_COMPONENT_DIRS` auf `shared/` und auf jedes Modul
+unter `protocols/`, das es nennt; Koprozessor und Host-Suite holen die
+Module, die sie brauchen, per `add_subdirectory()`. Ein Modul mit einem
+Ordner `rp2350/` fügt seinen Pin-Treiber nur in einem pico-sdk-Build hinzu,
+als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
+`#include "gfx.h"`.
 
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
@@ -64,7 +77,7 @@ Includes sind flach: `#include "gfx.h"`.
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
-| `sense` | ✔ | ✔ | ✔ |
+| `sense` · `pdmini` · `phase_tap` | ✔ | ✔ | ✔ |
 
 ## Toolchains
 
@@ -160,10 +173,11 @@ bis 32 GPIO (General-Purpose Input/Output).
 
 | Werkzeug | Zweck |
 | --- | --- |
-| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94 % gesamt, 85 % je Datei) und schreibt die Tabelle in `STATUS.md` und den Wert in `README.md` und `README-de.md`; `--check` schlägt bei Abweichung fehl, ebenso bei einer C-Datei unter `shared/`, die nicht in der Messung steht oder keine Zähler hat |
-| `tools/mutate.py` | ändert in einer Kopie des Baums jeweils eine Zeile von `shared/` (ein Vergleich umgedreht, eine Grenze plus oder minus 1, eine gespeicherte Zuweisung entfernt), baut die Host-Suite, führt sie aus und meldet die Änderungen, mit denen die Suite besteht; standardmäßig die seit `origin/main` geänderten Zeilen, höchstens 60 Mutanten und 2700 s; CI führt es bei Pull Requests aus und schlägt bei einem Überlebenden nicht fehl |
-| `tools/check_sanitizers.py` | konfiguriert den Sanitizer-Build und schlägt fehl, wenn nicht jeder Compile-Befehl unter `shared/` und `test/host/` `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` und `-fno-omit-frame-pointer` trägt und kein anderes Flag dieser Familie |
-| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, die Tabelle der Obergrenzen in [Performance](Performance-de.md) stimmt mit den `--max-lines`-Argumenten in `ci.yml` überein, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
+| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94 % gesamt, 85 % je Datei) und schreibt die Tabelle in `STATUS.md` und den Wert in `README.md` und `README-de.md`; `--check` schlägt bei Abweichung fehl, ebenso bei einer C-Datei unter `shared/` oder einer Kern-Datei unter `protocols/`, die nicht in der Messung steht oder keine Zähler hat |
+| `tools/mutate.py` | ändert in einer Kopie des Baums jeweils eine Zeile von `shared/` oder eines Kerns unter `protocols/` (ein Vergleich umgedreht, eine Grenze plus oder minus 1, eine gespeicherte Zuweisung entfernt), baut die Host-Suite, führt sie aus und meldet die Änderungen, mit denen die Suite besteht; standardmäßig die seit `origin/main` geänderten Zeilen, höchstens 60 Mutanten und 2700 s; CI führt es bei Pull Requests aus und schlägt bei einem Überlebenden nicht fehl |
+| `tools/check_sanitizers.py` | konfiguriert den Sanitizer-Build und schlägt fehl, wenn nicht jeder Compile-Befehl unter `shared/`, `protocols/` und `test/host/` `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` und `-fno-omit-frame-pointer` trägt und kein anderes Flag dieser Familie |
+| `tools/check_protocols.py` | hält jedes Modul unter `protocols/` an der Regel, nach der es in einem anderen pico-sdk-Projekt gebaut wird: eine Kern-Datei bindet nur C-Standard-Header und die eigenen Header des Kerns ein, eine Datei unter `rp2350/` außerdem die Treiber-Header des Moduls, sein erzeugtes `.pio.h` und pico-sdk-Header, der Header eines Treibers bindet keinen pico-sdk-Header ein, jeder öffentliche Header trägt `extern "C"` und kompiliert für sich als C11 und als C++17 mit `-Wall -Wextra -Werror`, das Modul hat eine `README.md`, und seine CMake-Dateien nennen kein anderes Modul; `--check` gibt nur die gebrochenen Regeln aus |
+| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, die Tabelle der Obergrenzen in [Performance](Performance-de.md) stimmt mit den `--max-lines`-Argumenten in `ci.yml` überein, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt `Page.md`-Links zu `Page` um, für das Wiki, das Seiten über ihren Titel adressiert |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
 | `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts aus DejaVu Sans Mono neu, die beiden Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
@@ -189,7 +203,7 @@ gebautes Programm nennt.
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy und cppcheck über `shared/`, die Klassen warning, performance und portability von cppcheck über `firmware/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks, v5.4 mit der Stack-Tabelle dieses Wikis; Koprozessor-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, und ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/` und die Kerne unter `protocols/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks, v5.4 mit der Stack-Tabelle dieses Wikis; Koprozessor-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, und ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen, erstellt ein Release und übernimmt die PDFs der Bauanleitung vom letzten Release |
 

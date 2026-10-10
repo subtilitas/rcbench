@@ -657,14 +657,15 @@ POINTER_TABLES = {
 #
 # newlib's strstr() hands a needle of 255 characters or more to
 # two_way_long_needle(), whose frame holds a 1024-byte shift table.  Every
-# needle in shared/ and firmware/iomcu is a string literal under that.
+# needle in shared/, protocols/ and firmware/iomcu is a string literal
+# under that.
 NOT_TAKEN = {
     ("strstr", "two_way_long_needle"): (
         ("outbind_board_to_regs",),
         "every strstr() needle is a literal shorter than 255 characters"),
 }
 NEEDLE_LIMIT = 255
-NEEDLE_DIRS = (ROOT / "shared", IOMCU_DIR / "src")
+NEEDLE_DIRS = (ROOT / "shared", ROOT / "protocols", IOMCU_DIR / "src")
 
 
 def long_needles() -> list:

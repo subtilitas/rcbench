@@ -1,5 +1,5 @@
 /*
- * The tone detector (shared/sense/tone.c) against synthetic phase taps.
+ * The tone detector (protocols/phase_tap/tone.c) against synthetic phase taps.
  *
  * A phase is modelled as the intervals it is driven, at the supply voltage
  * or, floating against a resistor star, at half of it.  The front end is

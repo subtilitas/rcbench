@@ -58,6 +58,10 @@ def test_tally_counts_each_half_and_names_the_wrong_files(tmp_path):
     good = " ".join(GOOD)
     entries = [
         {"directory": str(tmp_path), "file": "shared/a/a.c", "command": good},
+        {"directory": str(tmp_path), "file": "protocols/p/p.c",
+         "command": good},
+        {"directory": str(tmp_path), "file": "protocols/p/q.c",
+         "command": "cc -c q.c"},
         {"directory": str(tmp_path), "file": "shared/a/b.c",
          "command": "cc -fsanitize=address -c b.c"},
         {"directory": str(tmp_path), "file": "test/host/t.c",
@@ -65,6 +69,7 @@ def test_tally_counts_each_half_and_names_the_wrong_files(tmp_path):
         {"directory": "/elsewhere", "file": "x.c", "command": "cc -c x.c"},
     ]
     counts, wrong = cs.tally(entries, tmp_path)
-    assert counts == {"shared": [1, 2], "test/host": [1, 1]}
-    assert list(wrong) == ["b.c"]
+    assert counts == {"shared": [1, 2], "protocols": [1, 2],
+                      "test/host": [1, 1]}
+    assert list(wrong) == ["q.c", "b.c"]
     assert "no -fsanitize=undefined" in wrong["b.c"]

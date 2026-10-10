@@ -1,0 +1,124 @@
+;
+; The phase tap's edge capture (../include/edge_ring.h, tone_svc.h): one
+; state machine on one input pin, no pin driven.
+;
+; X is a free-running tick counter, one decrement every 4 clock cycles
+; (26.7 ns at 150 MHz).  On each edge of the pin the machine pushes a word,
+; bits 31..1 the low 31 bits of X and bit 0 the level after the edge, with
+; the capture's hold-off applied: a fall is pushed only once the line has
+; stayed low for the hold-off, and a low that ends sooner is never pushed,
+; the pulse around it going on.  A pushed fall carries the count of the
+; instant it fell, not of the instant it qualified.  A rise is pushed as it
+; is seen.  tone_holdoff_edge() (../tone.c) is the same rule on
+; ticks; test_tone_pio runs this program, assembled from this file, against
+; it.
+;
+; Timing.  Every `jmp x--` in this file lies on a cycle that is a multiple
+; of 4 from the first: every path through the program, the edge paths and
+; the hold-off path included, spends 4 cycles between two decrements, so X
+; keeps time whatever the line does.  Instruction by instruction, with c0
+; the cycle of a loop's decrement:
+;
+;   low loop      c0 jmp x--   c1 jmp pin   c2-c3 jmp low [1]
+;   high loop     c0 jmp x--   c1 jmp pin   c2-c3 jmp high [1]
+;   rise          taken from c1; c2 in x, 31 (the stamp)  c3 set y, 1
+;                 c4 jmp x--   c5 in y, 1   c6-c7 push [1]   high loop at c8
+;   fall          taken from the high loop's c1; c2 in x, 31 (the stamp)
+;                 c3 mov y, osr; the hold loop starts at c4:
+;   hold loop     c0 jmp x--   c1 jmp pin (rose: swallow)   c2 nop
+;                 c3 jmp y--, a 4-cycle loop; Y falls through on 0 at c4:
+;   fall pushed   c4 jmp x--   c5 in null, 1   c6-c7 push [1]   low loop at c8
+;   swallowed     taken from the hold loop's c1; c2 mov isr, null
+;                 c3 jmp high; the high loop at c4
+;
+; The line is sampled at c1 of every loop pass and nowhere else.  The
+; three paths that push or swallow skip one sample each (the rise's c5, the
+; pushed fall's c5), so an edge that falls in that window is seen one tick
+; later; the stamp is the count at the sample that saw it.  The input
+; synchroniser adds 2 cycles to every edge, which cancels in every
+; difference.
+;
+; Hold-off.  OSR holds the hold-off H in ticks less 2, set once before the
+; machine runs (tone_cap_program_init()).  A fall's stamp is F.  The hold
+; loop samples the line at F-1, F-2, ... and counts Y down once a pass; it
+; falls through, and pushes, after the pass that samples F-H+1 with the line
+; still low.  A rise first sampled at F-H or later, a low of H ticks on the
+; stamps, is therefore kept, and an earlier one swallowed.  In cycles a low
+; of H ticks (1200 at H = 300) is always kept, and one of 4H-4 never; the
+; edge's place on the 4-cycle grid decides between.
+;
+; X starts at 0 and the machine at `low`: the line is taken as low, and a
+; line already high is a rise at once.  Autopush is off and the ISR shifts
+; left; push noblock drops a word when the FIFO (first in, first out) is
+; full, which sets FDEBUG.RXSTALL.
+;
+; Instruction words: 22 of a block's 32.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program tone_cap
+
+rise:
+    in x, 31
+    set y, 1
+    jmp x--, rise_a
+rise_a:
+    in y, 1
+    push noblock [1]
+high:
+    jmp x--, high_a
+high_a:
+    jmp pin, high_b
+    in x, 31
+    mov y, osr
+hold:
+    jmp x--, hold_a
+hold_a:
+    jmp pin, swallow
+    nop
+    jmp y--, hold
+    jmp x--, report
+report:
+    in null, 1
+    push noblock [1]
+public low:
+    jmp x--, low_a
+low_a:
+    jmp pin, rise
+    jmp low [1]
+high_b:
+    jmp high [1]
+swallow:
+    mov isr, null
+    jmp high
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+/* OSR is loaded into Y at a fall and the hold loop runs Y + 2 passes. */
+#define TONE_CAP_HOLD_BIAS 2u
+
+/*
+ * Start the machine on @p pin, stopped: the pad an input for the PIO, the
+ * counter at 0, the hold-off of @p hold_ticks (at least 2) in the OSR, the
+ * program at `low`.  The caller enables it.
+ */
+static inline void tone_cap_program_init(PIO pio, uint sm, uint offset,
+                                         uint pin, uint hold_ticks)
+{
+    pio_sm_config c = tone_cap_program_get_default_config(offset);
+    sm_config_set_jmp_pin(&c, pin);
+    /* Left shift, no autopush: every push is in the program. */
+    sm_config_set_in_shift(&c, false, false, 32);
+    sm_config_set_clkdiv(&c, 1.0f);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
+    pio_gpio_init(pio, pin);
+    pio_sm_init(pio, sm, offset + tone_cap_offset_low, &c);
+    pio_sm_put(pio, sm, hold_ticks - TONE_CAP_HOLD_BIAS);
+    pio_sm_exec(pio, sm, pio_encode_pull(false, false));
+    pio_sm_exec(pio, sm, pio_encode_mov(pio_x, pio_null));
+    pio_sm_exec(pio, sm, pio_encode_mov(pio_y, pio_null));
+    pio_sm_exec(pio, sm, pio_encode_jmp(offset + tone_cap_offset_low));
+}
+%}

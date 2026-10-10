@@ -1,6 +1,6 @@
 /*
  * The phase tap's PIO (programmable input/output) program, run on the host
- * (firmware/iomcu/src/tone_cap.pio).
+ * (protocols/phase_tap/rp2350/tone_cap.pio).
  *
  * The program is assembled here from its source by a small assembler for
  * the instructions it uses, and run by a cycle-counting model of the state
@@ -15,7 +15,7 @@
  *  - the count: every decrement of X lies exactly 4 cycles after the one
  *    before, on every path, over streams of every shape, so X keeps time
  *    whatever the line does and over its wrap;
- *  - the words equal those of tone_holdoff_edge() (shared/sense/tone.c)
+ *  - the words equal those of tone_holdoff_edge() (protocols/phase_tap/tone.c)
  *    fed with the edges the program sampled, at the ticks it stamped,
  *    including the lows at and beside the hold-off and edges that arrive
  *    during the push and swallow paths;

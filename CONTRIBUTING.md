@@ -60,6 +60,7 @@ python3 tools/gen_font.py --check
 python3 tools/gen_board_art.py --check
 python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
+python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 tools/research/session.py check  # the research scripts against their plan
@@ -78,25 +79,32 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json --sdk "$PICO_SDK_PATH"
 cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
          $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
-         $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
+         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/)
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-clang-tidy -p test/host/build $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
+clang-tidy -p test/host/build \
+         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/)
 ruff check tools/ test/tools/ test/host/
 ```
 
-cppcheck also runs over `firmware/`, with the warning, performance and
-portability classes and without the style class; the two commands are in
-`.github/workflows/ci.yml`. clang-tidy does not run over `firmware/`: it
-needs the ESP-IDF and pico-sdk headers.
+cppcheck also runs over `firmware/` and the pin drivers in
+`protocols/*/rp2350/`, with the warning, performance and portability
+classes and without the style class; the two commands are in
+`.github/workflows/ci.yml`. clang-tidy does not run over `firmware/` or a
+pin driver: it needs the ESP-IDF and pico-sdk headers.
 
 A change fails if:
 
 - coverage drops below 94% overall, or any single file below 85%
   (`stub_screen.c` is exempt by name);
-- a C file under `shared/` is in neither `TRACKED` nor `DATA_ONLY` in
+- a C file under `shared/`, or under `protocols/` outside a module's
+  `rp2350/` folder, is in neither `TRACKED` nor `DATA_ONLY` in
   `tools/coverage.py`, is not compiled into the host suite, or is linked by
   no test, or the coverage figure in `README.md` or `README-de.md` differs
   from the measurement;
+- a module under `protocols/` breaks a rule of
+  [Where code goes](#where-code-goes): `tools/check_protocols.py` names the
+  file and the include, the header that does not compile as C11 or C++17,
+  or the part that is missing;
 - a screen's render changes and the committed images in `docs/img/` were not
   regenerated with `tools/render_ui.py`. Review the new images before
   committing them;
@@ -142,9 +150,11 @@ Formatting is not enforced. Match the file you are in.
 
 ## Mutation check
 
-`tools/mutate.py` changes one line of `shared/` at a time in a copy of the
+`tools/mutate.py` changes one line of `shared/` or of a core under
+`protocols/` at a time in a copy of the
 tree, builds the host suite and runs it. The copy holds `shared/`,
-`test/host/`, `firmware/iomcu/` and `tools/gen_esc_profiles.py`. It takes the lines the working tree
+`protocols/`, `test/host/`, `firmware/iomcu/` and
+`tools/gen_esc_profiles.py`. It takes the lines the working tree
 changes against the merge base with `origin/main` (`--base` for another
 ref, `--files` for every line of the files named) and makes three kinds of
 change: a comparison flipped to its neighbour, an integer or an upper-case
@@ -171,8 +181,30 @@ pull request why the two lines behave the same.
   FreeRTOS types. It compiles into the panel firmware, the coprocessor firmware
   and the host suite from one directory. Everything that decides something
   belongs there, so it is tested on the host.
+- `protocols/` holds one module per interface to external hardware: a
+  wire protocol, and the RP2350 PIO (programmable input/output) program
+  that puts it on a pin. A module is built in other pico-sdk projects, C
+  and C++, without the rest of this repository. `protocols/<name>/` holds
+  three parts:
+  - a core in C11 that includes C standard headers and its own headers
+    only, declares its interface inside `extern "C"`, and is tested by the
+    host suite;
+  - the pin driver in `protocols/<name>/rp2350/`: the `.pio` program and
+    the C around it. It includes the module's core and pico-sdk headers
+    only. Its header includes no pico-sdk header;
+  - a `README.md`: what the module does, its constraints with numbers, its
+    interface, and the CMake lines that add it to another project.
+
+  A module's `CMakeLists.txt` builds the library `rcbench_<name>` and, in a
+  pico-sdk build, the INTERFACE library `rcbench_<name>_rp2350`. It names no
+  other module. A limit a module shares with this project is the module's
+  own constant, and the caller holds the two equal with a `_Static_assert`.
+  A module without a pin driver says so in its `README.md`.
+- Everything specific to this project stays outside `protocols/` and calls
+  the module: link pages, the binding of an output to a pin, arming, STOP,
+  the stores and the screens.
 - `firmware/` is hardware access and wiring. A rule in a firmware file belongs
-  in `shared/` with a test.
+  in `shared/` or in a protocol core, with a test.
 
 ## Style
 

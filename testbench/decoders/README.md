@@ -9,7 +9,7 @@ So a DShot decoder belongs here, and it is written against evidence rather
 than against the same specification the firmware was written from — otherwise
 the two agree for the same wrong reason and the measurement proves nothing.
 
-**How it is checked without hardware.** `shared/dshot/dshot_frame.c` builds a
+**How it is checked without hardware.** `protocols/dshot/dshot_frame.c` builds a
 frame from a throttle value and a cyclic redundancy check. The host suite can
 emit that frame as a waveform, and the decoder must read back the value and
 the check that went in. A decoder that passes that is worth pointing at the

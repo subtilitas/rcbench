@@ -31,6 +31,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SHARED = ROOT / "shared"
+PROTOCOLS = ROOT / "protocols"
 DEF = SHARED / "ui" / "include" / "ui_text.def"
 UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 REPORT = SHARED / "servo" / "servo_report.c"
@@ -99,6 +100,10 @@ def main() -> int:
 
         includes = []
         for d in sorted(tree.glob("*/include")):
+            includes += ["-I", str(d)]
+        # The protocol modules' headers, which shared/ includes: read where
+        # they are, since no lookup is swapped in them.
+        for d in sorted(PROTOCOLS.glob("*/include")):
             includes += ["-I", str(d)]
         sources = sorted(p for p in tree.rglob("*.c")
                          if not p.name.startswith("gfx_font"))

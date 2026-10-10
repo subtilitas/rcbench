@@ -34,8 +34,8 @@ typedef struct {
     /*
      * Extended telemetry, which an ESC only sends after it has been asked.
      * When to ask, when to stop and when to read replies as extended frames
-     * is dshot_edt_*() in shared/dshot, where the host suite holds it against
-     * a model of AM32's command handling.  Bidirectional slots only.
+     * is dshot_edt_*() in protocols/dshot, where the host suite holds it
+     * against a model of AM32's command handling.  Bidirectional slots only.
      */
     dshot_edt_t edt;
     /* PWM only: the pulse rendered on the last pass, for the capture's
@@ -513,3 +513,17 @@ bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
     *age_ms = now_ms() - s_telem[slot].edt_ms[kind];
     return true;
 }
+
+/*
+ * The protocol modules carry their own limits, so that they build without
+ * this project.  The bank's limits are the same numbers: a slot the bank can
+ * hold is a pin a driver can bind, and a width the bank passes is a width
+ * the PPM frame carries.
+ */
+_Static_assert(OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS,
+               "the DShot driver binds fewer pins than the bank has slots");
+_Static_assert(OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS,
+               "the PPM driver binds fewer pins than the bank has slots");
+_Static_assert(PPM_CHANNEL_MIN_US == OUT_FLOOR_US
+                   && PPM_CHANNEL_MAX_US == OUT_CEILING_US,
+               "the PPM channel range is not the bank's range");
