@@ -61,7 +61,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 
 ## Building
 
-The host suite needs a C compiler and CMake:
+The host suite needs a C compiler, CMake and Python 3:
 
 ```bash
 cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug

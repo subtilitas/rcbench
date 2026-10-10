@@ -130,3 +130,22 @@ target_compile_definitions(test_esc_profiles PRIVATE
 target_compile_definitions(test_tone_pio PRIVATE
     "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/tone_cap.pio\""
     "TONE_CAP_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/tone_cap_words.txt\"")
+
+# The profile generator against the card reader: fuzz_parity.py changes the
+# profiles of record, reads each result with tools/gen_esc_profiles.py and,
+# through esc_parse_dump, with esc_profile_parse(), and fails on a file the
+# two read differently.  2 fixed seeds of 1500 cases each: 6.2 s measured on
+# one x86-64 host, 8.1 s in the sanitizer build, stopped after 120 s.
+# Not in the coverage build: the cases follow Python's random module, and
+# the figure in STATUS.md is what the C suites reach on any Python.
+if(NOT ENABLE_COVERAGE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_executable(esc_parse_dump esc_parse_dump.c)
+    target_link_libraries(esc_parse_dump PRIVATE rcbench_esc)
+    target_compile_options(esc_parse_dump PRIVATE ${STRICT})
+    add_test(NAME esc_parity
+             COMMAND ${Python3_EXECUTABLE}
+                     "${CMAKE_CURRENT_SOURCE_DIR}/fuzz_parity.py"
+                     $<TARGET_FILE:esc_parse_dump>)
+    set_tests_properties(esc_parity PROPERTIES TIMEOUT 120)
+endif()

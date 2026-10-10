@@ -28,10 +28,10 @@ left alone.  The same tree and arguments give the same mutants in the same
 order: there is no random choice.  Above --max-mutants (60) the tool takes
 every k-th mutant of the sorted list.
 
-The working tree is never written.  The tool copies shared/, test/host and
-firmware/iomcu into a temporary directory, builds there, and removes the
-directory on every way out: the end of the run, an error, Ctrl-C and
-SIGTERM.
+The working tree is never written.  The tool copies shared/, test/host,
+firmware/iomcu and tools/gen_esc_profiles.py into a temporary directory,
+builds there, and removes the directory on every way out: the end of the
+run, an error, Ctrl-C and SIGTERM.
 
 Run time is bounded.  The unmutated configure, build and suite run first,
 at most --timeout (300 s) each.  No mutant starts after --budget (1200 s)
@@ -65,9 +65,11 @@ from dataclasses import asdict, dataclass
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
-# What the host build reads: the code under test, the suite, and the
-# coprocessor's pin header and PIO program, which two tests read.
-COPIED = ("shared", "test/host", "firmware/iomcu")
+# What the host build reads: the code under test, the suite, the
+# coprocessor's pin header and PIO program, which two tests read, and the
+# profile generator, which the esc_parity test holds the card reader to.
+COPIED = ("shared", "test/host", "firmware/iomcu",
+          "tools/gen_esc_profiles.py")
 # Where a mutant is made.
 MUTATED = "shared"
 SUFFIXES = (".c", ".h")

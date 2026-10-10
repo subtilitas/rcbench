@@ -63,7 +63,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 
 ## Bauen
 
-Die Host-Suite braucht einen C-Compiler und CMake:
+Die Host-Suite braucht einen C-Compiler, CMake und Python 3:
 
 ```bash
 cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
