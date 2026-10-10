@@ -9,8 +9,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One run per ref, the newest: a push to a pull request cancels the run of
+# the push before it.  A push to main is the exception and has a group of its
+# own, so its run is never cancelled: docs.yml waits for the run on its
+# commit, and a later push to main that does not touch docs/ starts no
+# docs.yml run to publish in its place.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
   cancel-in-progress: true
 
 permissions:
@@ -256,7 +261,7 @@ jobs:
             --enable=warning,performance,portability \
             --inline-suppr --suppressions-list=.cppcheck-suppress \
             --check-level=exhaustive \
-            $(git ls-files 'shared/**/include' 'firmware/**/include' \
+            $(git ls-files 'shared/**/include/*' 'firmware/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             -Ifirmware/iomcu/src -Ifirmware/panel/main \
             $(git ls-files 'firmware/**/*.c' | grep -v '^firmware/panel/main/main\.c$')
@@ -265,7 +270,7 @@ jobs:
             --inline-suppr --suppressions-list=.cppcheck-suppress \
             --check-level=exhaustive \
             -DCONFIG_ESP_MAIN_TASK_STACK_SIZE=8192 \
-            $(git ls-files 'shared/**/include' 'firmware/**/include' \
+            $(git ls-files 'shared/**/include/*' 'firmware/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             -Ifirmware/panel/main \
             firmware/panel/main/main.c

@@ -11,9 +11,11 @@ run and to stop unless it passed.
 It asks GitHub for the runs of the CI workflow on COMMIT, every 30 s:
 
 - one of them passed: exit 0;
-- every one of them ended and none passed: exit 1;
 - one is queued or running: wait, at most 5400 s from the start;
-- there is none: wait for one to appear, at most 600 s.
+- there is none, or every one ended and none passed: wait 600 s for a run
+  to appear, then exit 1.  The workflow and the CI run of the same push
+  start together, so an older failed run on the commit can be listed before
+  the run this push started is.
 
 A run that is re-run counts as running again.  Only runs started by a push
 or by hand count: a pull request's run is listed under the head commit of
@@ -55,7 +57,11 @@ def verdict(runs: list[dict], waited_s: float, appear_s: float = APPEAR_S,
     running = [r for r in runs if r.get("status") != "completed"]
     if not running:
         ended = ", ".join(sorted({str(r.get("conclusion")) for r in runs}))
-        return "fail", f"CI ended on this commit without a pass: {ended}"
+        if waited_s >= appear_s:
+            return "fail", ("CI ended on this commit without a pass: "
+                            + ended)
+        return "wait", (f"CI ended without a pass ({ended}); waiting "
+                        f"{appear_s:.0f} s for another run to appear")
     if waited_s >= timeout_s:
         return "fail", f"CI has not ended after {timeout_s:.0f} s"
     return "wait", f"{len(running)} CI run(s) queued or running"

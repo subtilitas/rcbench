@@ -80,14 +80,15 @@ def test_the_english_figure():
     assert cov.render_readme(RESULTS, "en") == (
         "\nHost-suite line coverage of `shared/`: **97.0%**, 3,245 of 3,345 "
         "lines in 2 files. CI fails below 94% in total or below 85% in any "
-        "file. [STATUS.md](STATUS.md#tests-and-ci) has the table per "
-        "file.\n")
+        "file; exempt from the per-file floor: `stub_screen.c`. "
+        "[STATUS.md](STATUS.md#tests-and-ci) has the table per file.\n")
 
 
 def test_the_german_figure_uses_a_decimal_comma_and_spaced_thousands():
     text = cov.render_readme(RESULTS, "de")
     assert "**97,0 %**, 3 245 von 3 345 Zeilen in 2 Dateien" in text
-    assert "unter 94 % gesamt oder unter 85 % in einer Datei" in text
+    assert "unter 94 % gesamt oder unter 85 % in einer Datei fehl; " \
+           "ausgenommen von der Grenze je Datei: `stub_screen.c`." in text
 
 
 def test_the_table_totals_its_rows(monkeypatch):

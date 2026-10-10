@@ -333,6 +333,9 @@ class Bench:
         self.build = root / "build"
         self.jobs = jobs
         self.timeout = timeout
+        # Set when a build was stopped at the time limit: what it was
+        # writing may be half written and newer than its sources.
+        self.dirty = False
 
     def copy(self) -> None:
         names = git("ls-files", "-z", "--cached", "--others",
@@ -365,10 +368,19 @@ class Bench:
         copy holds the original again afterwards."""
         path = self.root / mutant.path
         original = path.read_text(encoding="utf-8")
+        if self.dirty:
+            code, out = run(["cmake", "--build", str(self.build),
+                             "--clean-first", "-j", str(self.jobs)],
+                            self.root, self.timeout)
+            if code != 0:
+                raise Stop("the copy does not rebuild after a build that "
+                           "was stopped:\n" + (out or "")[-2000:])
+            self.dirty = False
         try:
             path.write_text(apply(original, mutant), encoding="utf-8")
             code, out = self.compile()
             if code is None:
+                self.dirty = True
                 return "nobuild", "the build was stopped at the time limit"
             if code != 0:
                 return "nobuild", "does not compile"

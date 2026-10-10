@@ -98,7 +98,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/`: **97.2%**, 26,201 of 26,948 lines in 105 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/`: **97.3%**, 26,224 of 26,948 lines in 105 files. CI fails below 94% in total or below 85% in any file; exempt from the per-file floor: `stub_screen.c`. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

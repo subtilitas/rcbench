@@ -92,7 +92,8 @@ coprocessor and the other way round.
   the ESP-IDF v5.4 build; the count reads 176.
 - **CI.** `pinmap_check.py` runs in the coprocessor job. cppcheck's
   warning, performance and portability classes run over `firmware/`. A
-  failed Codecov upload fails the host job.
+  failed Codecov upload fails the host job. The CI run of a push to `main`
+  is not cancelled by a later push.
 
 - **The automatic servo test reads the servo rail's meter, and one meter
   per run.** A run started while the INA3221 is the rail's meter and the

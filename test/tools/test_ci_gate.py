@@ -25,14 +25,22 @@ def test_a_pass_counts_beside_a_failed_or_a_running_run():
     assert state([RUNNING, PASSED]) == "pass"
 
 
-def test_a_failed_run_stops_the_workflow():
-    assert gate.verdict([FAILED], 0) == (
+def test_a_failed_run_stops_the_workflow_after_the_grace_period():
+    assert gate.verdict([FAILED], gate.APPEAR_S) == (
         "fail", "CI ended on this commit without a pass: failure")
 
 
+def test_an_older_failed_run_does_not_stop_the_workflow_at_once():
+    """The run this push started may not be listed yet."""
+    assert state([FAILED], 0) == "wait"
+    assert state([FAILED], gate.APPEAR_S - 1) == "wait"
+    assert state([FAILED, QUEUED], gate.APPEAR_S) == "wait"
+    assert state([FAILED, PASSED], 5) == "pass"
+
+
 def test_a_cancelled_run_stops_the_workflow():
-    assert state([CANCELLED]) == "fail"
-    assert state([CANCELLED, FAILED]) == "fail"
+    assert state([CANCELLED], gate.APPEAR_S) == "fail"
+    assert state([CANCELLED, FAILED], gate.APPEAR_S) == "fail"
 
 
 @pytest.mark.parametrize("run", [RUNNING, QUEUED])
@@ -89,6 +97,8 @@ def test_the_gate_polls_until_ci_ends(monkeypatch):
 
 def test_the_gate_fails_when_ci_fails(monkeypatch, capsys):
     monkeypatch.setattr(gate, "ci_runs", lambda *a: [FAILED])
+    monkeypatch.setattr(gate, "APPEAR_S", 0)
+    monkeypatch.setattr(gate.verdict, "__defaults__", (0, gate.TIMEOUT_S))
     assert gate.main(["--repo", "o/r", "--sha", "b" * 40]) == 1
     assert "::error::CI ended on this commit without a pass" in (
         capsys.readouterr().out)

@@ -218,7 +218,11 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 Not in CI: clang-tidy over `firmware/`, which needs the ESP-IDF and pico-sdk
 headers to compile each file, and cppcheck's style class over `firmware/`,
-which reports 12 findings there with cppcheck 2.17. `docs.yml` and `release.yml` with the wait
+which reports 12 findings there with cppcheck 2.17. The cppcheck step over
+`shared/` passes no include directory: its pathspec `shared/**/include`
+matches no file, so headers are not resolved there. With them resolved
+cppcheck 2.17 reports 2 style findings (`ui_theme.h:136`,
+`servo_screen.c:468`). The step over `firmware/` passes all 25. `docs.yml` and `release.yml` with the wait
 for CI have not run.
 
 The host suite is 83 binaries, one line per case: `test_gfx`, `test_touch_map`,

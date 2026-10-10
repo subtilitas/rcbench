@@ -351,22 +351,26 @@ def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
     lines = sum(int(r["lines"]) for r in results.values())
     covered = sum(int(r["covered"]) for r in results.values())
     pct = (100.0 * covered / lines) if lines else 0.0
+    exempt = ", ".join("`%s`" % pathlib.Path(rel).name
+                       for rel in sorted(FILE_FLOOR_EXEMPT))
     if lang == "de":
         text = ("Zeilenabdeckung von `shared/` durch die Host-Suite: "
                 "**%s %%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
-                "%d %% gesamt oder unter %d %% in einer Datei fehl. Die "
-                "Tabelle je Datei steht in "
-                "[STATUS.md](STATUS.md#tests-and-ci)."
+                "%d %% gesamt oder unter %d %% in einer Datei fehl; "
+                "ausgenommen von der Grenze je Datei: %s. Die Tabelle je "
+                "Datei steht in [STATUS.md](STATUS.md#tests-and-ci)."
                 % (("%.1f" % pct).replace(".", ","),
                    thousands(covered, " "), thousands(lines, " "),
-                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE))
+                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE,
+                   exempt))
     else:
         text = ("Host-suite line coverage of `shared/`: **%.1f%%**, %s of %s "
                 "lines in %d files. CI fails below %d%% in total or below "
-                "%d%% in any file. [STATUS.md](STATUS.md#tests-and-ci) has "
-                "the table per file."
+                "%d%% in any file; exempt from the per-file floor: %s. "
+                "[STATUS.md](STATUS.md#tests-and-ci) has the table per file."
                 % (pct, thousands(covered, ","), thousands(lines, ","),
-                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE))
+                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE,
+                   exempt))
     return "\n" + text + "\n"
 
 
