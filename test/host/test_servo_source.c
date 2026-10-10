@@ -84,6 +84,51 @@ TEST_CASE(the_meter_is_the_model_until_a_coprocessor_answers)
     CHECK_EQ(SERVO_SOURCE_EVENT_GAP_MS, 5000u);
 }
 
+/* Every change of meter is counted once, and a step that leaves the meter
+ * as it is counts nothing. */
+TEST_CASE(a_change_of_meter_is_counted_once)
+{
+    servo_source_init(&src);
+    CHECK_EQ(servo_source_changes(&src), 0u);
+    CHECK_EQ(servo_source_changes(NULL), 0u);
+    /* No coprocessor: the model stays. */
+    (void)servo_source_step(&src, 0u, false, 11u, NULL);
+    (void)servo_source_step(&src, 50u, false, 11u, NULL);
+    CHECK_EQ(servo_source_changes(&src), 0u);
+    /* The link up: the PD mini while the INA3221 settles, 20 polls. */
+    uint32_t now = hold(100u, 1000u);
+    CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_PDMINI);
+    CHECK_EQ(servo_source_changes(&src), 1u);
+    /* Settled: the INA3221, and it stays for 2 s of polls. */
+    now = hold(now, 2000u);
+    CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_INA3221);
+    CHECK_EQ(servo_source_changes(&src), 2u);
+    /* One poll without a fresh window: the PD mini, at once. */
+    sense_link_meter_t m = good(now);
+    m.win_valid = false;
+    CHECK_EQ(servo_source_step(&src, now, true, 11u, &m),
+             SERVO_SOURCE_PDMINI);
+    CHECK_EQ(servo_source_changes(&src), 3u);
+    CHECK_EQ(servo_source_step(&src, now + 50u, true, 11u, &m),
+             SERVO_SOURCE_PDMINI);
+    CHECK_EQ(servo_source_changes(&src), 3u);
+    /* Back after 1000 ms, and gone with the link. */
+    now = hold(now + 100u, 1050u);
+    CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_INA3221);
+    CHECK_EQ(servo_source_changes(&src), 4u);
+    (void)servo_source_step(&src, now, false, 0u, NULL);
+    CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_MODEL);
+    CHECK_EQ(servo_source_changes(&src), 5u);
+    /* The count runs through 2^32. */
+    src.changes = 0xFFFFFFFFu;
+    m = good(now + 50u);
+    (void)servo_source_step(&src, now + 50u, true, 11u, &m);
+    CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_PDMINI);
+    CHECK_EQ(servo_source_changes(&src), 0u);
+    servo_source_init(&src);
+    CHECK_EQ(servo_source_changes(&src), 0u);
+}
+
 /* The INA3221 is the meter 1000 ms after every condition holds: not at
  * 999 ms, at 1000 and at 1001 ms.  At tick 0 and across the wrap. */
 TEST_CASE(the_ina3221_is_the_meter_after_1000_ms_of_good_readings)
@@ -812,6 +857,7 @@ TEST_CASE(a_link_lost_is_the_model_and_its_return_settles_again)
 int main(void)
 {
     RUN(the_meter_is_the_model_until_a_coprocessor_answers);
+    RUN(a_change_of_meter_is_counted_once);
     RUN(the_ina3221_is_the_meter_after_1000_ms_of_good_readings);
     RUN(a_meter_that_stays_outlasts_the_tick_wrap);
     RUN(each_condition_failing_alone_drops_to_the_pd_mini);

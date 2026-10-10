@@ -86,15 +86,21 @@
 
 /*
  * The right card, top to bottom: the readings, the type and frame rate in
- * force, the supply's live power, its set points and output switch, then the
- * servo's controls.
+ * force, the servo rail's live power, the supply's set points and output
+ * switch, then the servo's controls.
  */
 #define RC_X      (RCARD_X + 12)
 #define RC_W      (RCARD_W - 24)
 #define SETB_W    96
+/* The CURRENT row, whose value is repainted by itself. */
+#define CUR_Y     92
 #define TAG_Y     118
 #define TAG_H     24
 #define PWR_TXT_Y 150
+/* The line over the plot: the meter's name, 8 cells of 8 px for SUPPLY and
+ * NETZTEIL and 11 for INA3221 CH1, then the three readings (k_line_w). */
+#define PWR_LAB_W     64
+#define PWR_LAB_W_INA 88
 #define PWR_Y     170
 #define PWR_H     48
 /* The supply's set points, each a value the keypad opens on, and OUTPUT ON
@@ -231,12 +237,23 @@ static const ov_row_t k_rows[] = {
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
-/* The power plot's series: the supply's voltage, current and power. */
+/* The power plot's series: the servo rail's voltage, current and power. */
 enum { PS_V = 0, PS_A, PS_W, PS_COUNT };
 static const ui_plot_series_t k_power[PS_COUNT] = {
     { "V", "V", 0, 2, 5.0f, 0 },
     { "A", "A", 0, 2, 0.5f, 0 },
     { "W", "W", 0, 1, 5.0f, 0 },
+};
+
+/*
+ * The widths of the three readings on the line over the plot, in px of 8 px
+ * cells.  Beside SUPPLY 68 each.  Beside INA3221 CH1 60, 64 and 56, which
+ * hold the widest reading of the part's registers: `65.54 V`, `-32.77 A`,
+ * and a power of 7 cells, `-99.9 W` or `-2147 W`.
+ */
+static const uint8_t k_line_w[2][PS_COUNT] = {
+    { 68, 68, 68 },
+    { 60, 64, 56 },
 };
 
 /* What a press is on, in the overlay and the panels it opens. */
@@ -299,7 +316,6 @@ static struct {
     float    shown_deg;    /**< what the horn is drawn at              */
     float    shown_cmd;    /**< the same, as the far end's command     */
     float    measured_deg;
-    float    current_a;
     bool     have_feedback;
     /* The output encoder's last reading (servo_screen_encoder()). */
     bool     enc_valid;
@@ -311,7 +327,6 @@ static struct {
     int      drag_id;
 
     int      shown_q_deg; /**< the position as drawn, in tenths          */
-    int      shown_q_a;   /**< the current as drawn, in hundredths        */
     bool     driving;     /**< the output is being held somewhere */
     float    pulse;       /**< phase of the grip's breathing      */
     int      drawn_pulse[2];
@@ -357,12 +372,28 @@ static struct {
     gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
     ui_slider_t speed;
 
-    /* The supply's live power, beside the servo it feeds. */
+    /* The servo rail's live power, from its meter (rail_now()): the line
+     * of readings and the plot under it. */
     ui_plot_t      power;
     supply_state_t sup;
     bool           have_sup;
     uint32_t       power_rev;
     uint32_t       drawn_power[2];
+    /* The meter, as the panel last said it (servo_screen_source()), and the
+     * INA3221's last CH1 window (servo_screen_window()). */
+    servo_source_id_t source;
+    /* The change count the meter in force was decided at
+     * (servo_source_changes()): an answer from an earlier poll is not taken
+     * over it. */
+    bool              have_changes;
+    uint32_t          changes;
+    sense_link_win_t  win;
+    bool              have_win;
+    /* The CURRENT row: what it shows (cur_key_of()), and its own count of
+     * changes, so a changed digit repaints its value and not the card. */
+    int32_t        cur_key;
+    uint32_t       cur_rev;
+    uint32_t       drawn_cur[2];
 
     /*
      * The supply's set points and output, SUPPLY's own: OUTPUT ON is the
@@ -1802,18 +1833,17 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
 
     /*
      * A reading counts as new only if it is drawn differently: compare at
-     * the precision shown, tenths of a degree and hundredths of an amp.
-     * Feedback arrives at the poll rate whether or not the servo moved, and
-     * a revision bump per reading would repaint the 488x418 card at that
-     * rate and never reach the grip's clipped repaint.
+     * the precision shown, tenths of a degree.  Feedback arrives at the
+     * poll rate whether or not the servo moved, and a revision bump per
+     * reading would repaint the 488x418 card at that rate and never reach
+     * the grip's clipped repaint.  The current is not drawn from here: the
+     * CURRENT row reads the servo rail's meter (rail_now()).
      */
+    (void)current_a;
     const int q_deg = (int)(deg * 10.0f + (deg >= 0.0f ? 0.5f : -0.5f));
-    const int q_a   = (int)(current_a * 100.0f + 0.5f);
-    const bool same = valid && s.have_feedback
-                      && q_deg == s.shown_q_deg && q_a == s.shown_q_a;
+    const bool same = valid && s.have_feedback && q_deg == s.shown_q_deg;
 
     s.measured_deg  = deg;
-    s.current_a     = current_a;
     s.have_feedback = valid;
     /*
      * The arm is drawn where the servo reports it, with no easing: easing
@@ -1839,7 +1869,6 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     }
     if (!same) {
         s.shown_q_deg = q_deg;
-        s.shown_q_a   = q_a;
         ++s.ctrl_rev;
     }
 }
@@ -1886,6 +1915,102 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     }
 }
 
+/* What the servo rail's meter reads, at the precision it is drawn with. */
+typedef struct {
+    bool    v_ok, i_ok;
+    float   v;        /**< V                                              */
+    float   i;        /**< A, signed                                      */
+    float   p;        /**< W                                              */
+    int32_t q_a;      /**< the current in hundredths of an amp, signed    */
+    bool    clipped;  /**< a sample read an end of the meter's range      */
+} rail_t;
+
+/* @p x in units of 1/@p per, rounded half away from zero, for the digits of
+ * a reading; held to +-10^8 so the count fits whatever the float holds. */
+static int32_t fixed_of(float x, float per)
+{
+    const float q = x * per;
+    if (!(q > -1.0e8f)) {
+        return -100000000;
+    }
+    if (!(q < 1.0e8f)) {
+        return 100000000;
+    }
+    return (int32_t)lroundf(q);
+}
+
+/*
+ * The servo rail as its meter reads it.  With the INA3221 as the meter, its
+ * last CH1 window: the mean bus voltage at the load side of the shunt, the
+ * mean current and their product.  Otherwise the supply's last sample, which
+ * is the PD mini's reading or the model's.  Only what arrived: a quantity
+ * with no reading is not ok and is drawn as dashes and as a gap.
+ */
+static rail_t rail_now(void)
+{
+    rail_t r;
+    memset(&r, 0, sizeof(r));
+    if (s.source == SERVO_SOURCE_INA3221) {
+        if (!s.have_win || !s.link_up) {
+            return r;
+        }
+        r.v_ok    = s.win.voltage;
+        r.i_ok    = s.win.current;
+        r.v       = (float)s.win.mean_mv / 1000.0f;
+        r.i       = (float)s.win.mean_ma / 1000.0f;
+        r.p       = r.v * r.i;
+        r.clipped = r.i_ok && (s.win.clip_hi || s.win.clip_lo);
+        const int32_t ma = s.win.mean_ma;
+        r.q_a     = (ma >= 0) ? (ma + 5) / 10 : -((5 - ma) / 10);
+        return r;
+    }
+    if (!s.have_sup || !s.sup.online) {
+        return r;
+    }
+    /* A reading that is not a number is no reading. */
+    r.v_ok = (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u && isfinite(s.sup.v);
+    r.i_ok = (s.sup.ok & SUPPLY_OK_CURRENT) != 0u && isfinite(s.sup.i);
+    r.v    = s.sup.v;
+    r.i    = s.sup.i;
+    r.p    = s.sup.p;
+    r.q_a  = r.i_ok ? fixed_of(s.sup.i, 100.0f) : 0;
+    return r;
+}
+
+/* What the CURRENT row shows: the dashes, or the digits and their colour. */
+#define CUR_KEY_NONE INT32_MIN
+static int32_t cur_key_of(const rail_t *r)
+{
+    return r->i_ok ? r->q_a * 2 + (r->clipped ? 1 : 0) : CUR_KEY_NONE;
+}
+
+/* The CURRENT row after its meter or the meter's reading changed: redrawn
+ * only when what it shows did, hundredths of an amp and the colour. */
+static void cur_follow(void)
+{
+    const rail_t r = rail_now();
+    const int32_t key = cur_key_of(&r);
+    if (key != s.cur_key) {
+        s.cur_key = key;
+        ++s.cur_rev;
+    }
+}
+
+/* One point of the plot from the meter's reading: a quantity that did not
+ * arrive is a gap, not a zero. */
+static void rail_plot(void)
+{
+    const rail_t r = rail_now();
+    const float v[PS_COUNT] = {
+        r.v_ok ? r.v : NAN,
+        r.i_ok ? r.i : NAN,
+        (r.v_ok && r.i_ok) ? r.p : NAN,
+    };
+    ui_plot_push(&s.power, v);
+    ui_plot_update_scales(&s.power, RC_W);
+    ++s.power_rev;
+}
+
 static servo_test_reading_t test_reading_of(const supply_state_t *st)
 {
     servo_test_reading_t r;
@@ -1907,11 +2032,10 @@ static servo_test_reading_t test_reading_of(const supply_state_t *st)
     return r;
 }
 
-void servo_screen_supply(const supply_state_t *st)
+/* One sample of the supply.  @p in_force: it was taken under the meter in
+ * force, and not under one replaced since. */
+static void supply_sample(const supply_state_t *st, bool in_force)
 {
-    if (st == NULL) {
-        return;
-    }
     s.sup = *st;
     s.have_sup = true;
     /* A restore waits for a sample taken after the run's OFF went in which
@@ -1928,17 +2052,103 @@ void servo_screen_supply(const supply_state_t *st)
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
                        s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
-    /* Only what arrived: a reading that did not is a gap, not a zero. */
-    const bool v_ok = st->online && (st->ok & SUPPLY_OK_VOLTAGE) != 0u;
-    const bool i_ok = st->online && (st->ok & SUPPLY_OK_CURRENT) != 0u;
-    const float v[PS_COUNT] = {
-        v_ok ? st->v : NAN,
-        i_ok ? st->i : NAN,
-        (v_ok && i_ok) ? st->p : NAN,
-    };
-    ui_plot_push(&s.power, v);
-    ui_plot_update_scales(&s.power, RC_W);
-    ++s.power_rev;
+    /* The line, the plot and the CURRENT row are the supply's while it is
+     * the rail's meter; with the INA3221 as the meter they are fed by its
+     * windows (servo_screen_window()). */
+    if (s.source == SERVO_SOURCE_INA3221) {
+        return;
+    }
+    if (in_force) {
+        rail_plot();
+    } else {
+        /* The supply's last reading all the same, on the line and in the
+         * row; no point of a trace that began after it was taken. */
+        ++s.power_rev;
+    }
+    cur_follow();
+}
+
+/*
+ * The meter @p id as decided at change count @p changes, unless the meter in
+ * force was decided at a later one: the snapshot, the windows and the
+ * supply's samples reach the render task on three paths, and each can be
+ * the oldest.  Returns whether it is the meter in force.
+ */
+static bool source_take(servo_source_id_t id, uint32_t changes)
+{
+    const int32_t ahead = s.have_changes ? (int32_t)(changes - s.changes) : 0;
+    if (ahead < 0) {
+        return false;
+    }
+    s.have_changes = true;
+    s.changes      = changes;
+    /* More than one change ahead: changes went by unseen, and another meter
+     * may have been the rail's in between, whatever the meter is called on
+     * both sides of them. */
+    const bool skipped = ahead > 1;
+    if (id == s.source && !skipped) {
+        return true;
+    }
+    const bool was_ina = (s.source == SERVO_SOURCE_INA3221);
+    const bool now_ina = (id == SERVO_SOURCE_INA3221);
+    s.source = id;
+    if (was_ina != now_ina || skipped) {
+        /* The two meters do not agree, and the label names one of them:
+         * the trace starts again with the meter it is labelled with. */
+        ui_plot_clear(&s.power);
+        ++s.power_rev;
+    }
+    if (skipped) {
+        /* And a window kept from before them is not this meter's. */
+        s.have_win = false;
+    }
+    cur_follow();
+    return true;
+}
+
+void servo_screen_source(servo_source_id_t id, uint32_t changes)
+{
+    (void)source_take(id, changes);
+}
+
+void servo_screen_supply(const supply_state_t *st)
+{
+    if (st != NULL) {
+        supply_sample(st, true);
+    }
+}
+
+void servo_screen_supply_at(const supply_state_t *st, servo_source_id_t id,
+                            uint32_t changes)
+{
+    if (st != NULL) {
+        supply_sample(st, source_take(id, changes));
+    }
+}
+
+void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
+                         uint32_t changes)
+{
+    /* A window that was queued before the link went down is not the rail's
+     * reading now, and neither is one taken under a meter that has been
+     * replaced since. */
+    if (w == NULL || !s.link_up || !source_take(id, changes)) {
+        return;
+    }
+    s.win      = *w;
+    s.have_win = true;
+    if (s.source != SERVO_SOURCE_INA3221) {
+        return;
+    }
+    rail_plot();
+    cur_follow();
+}
+
+int servo_screen_power_points(void) { return s.power.filled; }
+
+float servo_screen_power_sample(int series, int back)
+{
+    return ui_plot_sample(&s.power, series, back);
 }
 
 uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
@@ -2020,6 +2230,7 @@ void servo_invalidate(void)
         s.drawn_ctrl[b]  = UINT32_MAX;
         s.drawn_arm[b]   = UINT32_MAX;
         s.drawn_power[b] = UINT32_MAX;
+        s.drawn_cur[b]   = UINT32_MAX;
         s.drawn_sup[b]   = UINT32_MAX;
         s.drawn_warn[b]  = UINT32_MAX;
         s.drawn_ask[b]   = UINT32_MAX;
@@ -2060,6 +2271,8 @@ static void reset(void)
     s.speed_pct     = 100;
     s.surfaces      = true;
     s.link_up       = true;     /* until the panel says otherwise */
+    s.source        = SERVO_SOURCE_MODEL;   /* likewise */
+    s.cur_key       = CUR_KEY_NONE;
     s.shown_cmd     = (float)OUT_SPAN / 2.0f;
     /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
      * session before it used. */
@@ -2657,6 +2870,13 @@ void servo_screen_set_link(bool up)
             s.shown_q_enc = 0x7FFF;
             ++s.ctrl_rev;
         }
+        /* And the INA3221's last window is not the rail's reading now: the
+         * dashes in the row and on the line while it is the meter. */
+        s.have_win = false;
+        if (s.source == SERVO_SOURCE_INA3221) {
+            ++s.power_rev;
+        }
+        cur_follow();
         /*
          * A sweep or a pause: the far end stops a sweep and lets a hold go
          * 500 ms after the last write it heard, and the surfaces rest.  The
@@ -4027,36 +4247,90 @@ static gfx_rect_t power_rect(void)
                          (int16_t)(PWR_Y + PWR_H - PWR_TXT_Y + 2) };
 }
 
-/* The supply's voltage, current and power, read and plotted. */
+/* @p q, a signed count of 10^-@p places of @p unit, as text: the sign kept,
+ * and a reading that rounds to nothing drawn without one. */
+static void fixed_text(char *out, size_t n, int32_t q, int places,
+                       const char *unit)
+{
+    const int32_t  scale = (places == 2) ? 100 : 10;
+    const uint32_t mag   = (q < 0) ? (uint32_t)(-(int64_t)q) : (uint32_t)q;
+    snprintf(out, n, "%s%u.%0*u %s", (q < 0) ? "-" : "",
+             (unsigned)(mag / (uint32_t)scale), places,
+             (unsigned)(mag % (uint32_t)scale), unit);
+}
+
+/* The servo rail's voltage, current and power, read and plotted, under the
+ * name of its meter: the supply, or INA3221 CH1 while that is the meter. */
 static void draw_power(gfx_canvas_t *c)
 {
     const gfx_rect_t r = power_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    gfx_text(c, RC_X, PWR_TXT_Y, TR(SV_SUPPLY), UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    const bool v_ok = s.have_sup && s.sup.online
-                      && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
-    const bool i_ok = s.have_sup && s.sup.online
-                      && (s.sup.ok & SUPPLY_OK_CURRENT) != 0u;
-    char v[12], a[12], w[12];
-    if (v_ok) { snprintf(v, sizeof(v), "%.2f V", (double)s.sup.v); }
-    else      { snprintf(v, sizeof(v), "-- V"); }
-    if (i_ok) { snprintf(a, sizeof(a), "%.2f A", (double)s.sup.i); }
-    else      { snprintf(a, sizeof(a), "-- A"); }
-    if (v_ok && i_ok) { snprintf(w, sizeof(w), "%.1f W", (double)s.sup.p); }
-    else              { snprintf(w, sizeof(w), "-- W"); }
-    /* Each in its trace's colour, so the numbers name the lines. */
+    const bool ina = (s.source == SERVO_SOURCE_INA3221);
+    gfx_text(c, RC_X, PWR_TXT_Y, ina ? TR(SV_SOURCE_INA) : TR(SV_SUPPLY),
+             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    const rail_t m = rail_now();
+    char v[20], a[20], w[20];
+    if (m.v_ok) { snprintf(v, sizeof(v), "%.2f V", (double)m.v); }
+    else        { snprintf(v, sizeof(v), "-- V"); }
+    if (m.i_ok) { fixed_text(a, sizeof(a), m.q_a, 2, "A"); }
+    else        { snprintf(a, sizeof(a), "-- A"); }
+    const uint8_t *fw = k_line_w[ina ? 1 : 0];
+    if (m.v_ok && m.i_ok) {
+        /* Tenths of a watt, and whole watts where those do not fit. */
+        const float p = isfinite(m.p) ? m.p : 0.0f;
+        fixed_text(w, sizeof(w), fixed_of(p, 10.0f), 1, "W");
+        if (gfx_text_width(UI_FONT_LABEL, w, 1) > fw[PS_W]) {
+            snprintf(w, sizeof(w), "%ld W", (long)fixed_of(p, 1.0f));
+        }
+    } else {
+        snprintf(w, sizeof(w), "-- W");
+    }
+    /* Each in its trace's colour, so the numbers name the lines; a current
+     * from a window with a sample at an end of the range in the warning
+     * colour. */
     const gfx_color_t col[PS_COUNT] = { ui_theme_color(UI_C_VOLT),
                                         ui_theme_color(UI_C_CURR),
                                         ui_theme_color(UI_C_POWER) };
     const char *txt[PS_COUNT] = { v, a, w };
+    int x = RC_X + (ina ? PWR_LAB_W_INA : PWR_LAB_W);
     for (int k = 0; k < PS_COUNT; ++k) {
         s.power.series[k].color = col[k];
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 64 + k * 68), PWR_TXT_Y,
-                                     68, 16 },
-                    txt[k], UI_FONT_LABEL, col[k], 1, GFX_ALIGN_RIGHT);
+        const gfx_color_t tc = (k == PS_A && m.clipped)
+                                   ? ui_theme_color(UI_C_WARN) : col[k];
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, PWR_TXT_Y, fw[k], 16 },
+                    txt[k], UI_FONT_LABEL, tc, 1, GFX_ALIGN_RIGHT);
+        x += fw[k];
     }
     ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
+}
+
+/* The value of the CURRENT row, where row() draws a row's value. */
+static gfx_rect_t cur_val_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(CUR_Y + 5),
+                         (int16_t)(RC_W - 80), 16 };
+}
+
+/* The rail's current as its meter reads it, signed, in hundredths of an
+ * amp; in the warning colour from a clipped window. */
+static void cur_value(gfx_canvas_t *c)
+{
+    const rail_t m = rail_now();
+    char buf[20];
+    if (m.i_ok) { fixed_text(buf, sizeof(buf), m.q_a, 2, "A"); }
+    else        { snprintf(buf, sizeof(buf), "---"); }
+    gfx_text_in(c, cur_val_rect(), buf, UI_FONT_LABEL,
+                m.clipped ? ui_theme_color(UI_C_WARN)
+                          : ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_RIGHT);
+}
+
+/* The same over its own background: the row's repaint between two repaints
+ * of the card. */
+static void draw_cur_value(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = cur_val_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    cur_value(c);
 }
 
 /* OUTPUT ON and OFF in SUPPLY's colours: off is the green the hold fades
@@ -4174,12 +4448,8 @@ static void draw_right(gfx_canvas_t *c, bool power)
     } else {
         row(c, 68, TR(SV_MEASURED), "---");
     }
-    if (s.have_feedback) {
-        snprintf(buf, sizeof(buf), "%.2f A", (double)s.current_a);
-        row(c, 92, TR(SV_CURRENT), buf);
-    } else {
-        row(c, 92, TR(SV_CURRENT), "---");
-    }
+    row(c, CUR_Y, TR(SV_CURRENT), NULL);
+    cur_value(c);
 
     draw_tag(c);
     if (power) {
@@ -5014,6 +5284,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_arm[buf]   = s.arm_rev;
         s.drawn_sup[buf]   = s.sup_rev;
         s.drawn_power[buf] = s.power_rev;
+        s.drawn_cur[buf]   = s.cur_rev;
         s.drawn_warn[buf]  = s.warn.rev;
         s.drawn_ask[buf]   = s.ask.rev;
         s.drawn_test[buf]  = s.test_rev;
@@ -5033,8 +5304,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     /*
      * Otherwise only what moved on its own, each clipped to itself: ARM's
-     * fade, the warning's hold, the power plot, the save line and the
-     * grip.  The right card is 292 x 420 and the fades run for two seconds:
+     * fade, the warning's hold, the power plot, the CURRENT row, the save
+     * line and the grip.  The right card is 292 x 420 and the fades run for two seconds:
      * asking for whole cards every frame would spend most of the panel's
      * bandwidth on a button.
      */
@@ -5048,6 +5319,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (s.drawn_power[buf] != s.power_rev) {
         s.drawn_power[buf] = s.power_rev;
         clipped(c, power_rect(), draw_power);
+    }
+    if (s.drawn_cur[buf] != s.cur_rev) {
+        s.drawn_cur[buf] = s.cur_rev;
+        clipped(c, cur_val_rect(), draw_cur_value);
     }
     if (s.drawn_sup[buf] != s.sup_rev) {
         s.drawn_sup[buf] = s.sup_rev;

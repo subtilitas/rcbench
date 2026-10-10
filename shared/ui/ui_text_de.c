@@ -793,6 +793,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_MEASURED]            = "GEMESSEN",
     [TX_SV_CURRENT]             = "STROM",
     [TX_SV_SUPPLY]              = "NETZTEIL",
+    [TX_SV_SOURCE_INA]          = "INA3221 CH1",
     [TX_SV_SET]                 = "SOLL",
     [TX_SV_SPEED]               = "TEMPO",
     [TX_SV_SPEED_LIMITS]        = "TEMPO BEGRENZT DEN SWEEP",

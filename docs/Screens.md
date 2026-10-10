@@ -405,9 +405,52 @@ turn in a frame in which RELEASE waits is dropped.
 
 The right card shows what is commanded and measured, the type and frame rate
 in force -- in the danger colour while they are ones that can destroy a servo
-not made for them -- and the supply that feeds the servo: its voltage, current
-and power, read and plotted over the last 13 s. Without a supply sample the
-readings are `--`.
+not made for them -- and the servo rail as its meter reads it: voltage,
+current and power on the line over the plot, plotted over the last 13 s, and
+the current again in the CURRENT row.
+
+| The servo rail's meter | Name on the line | CURRENT, the line and the plot show |
+| --- | --- | --- |
+| INA3221 CH1 | `INA3221 CH1` | CH1's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
+| the PD mini | `SUPPLY` | the supply's last sample. One point per sample |
+| the model, while no coprocessor answers | `SUPPLY` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
+
+![The INA3221 as the meter](img/servo-ina.png)
+
+Which meter it is is decided once per poll
+([the current monitors](#interfaces-the-current-monitors)): the INA3221
+1000 ms after its conditions hold, the PD mini from the first poll in which
+one fails.
+
+- A current is signed and shown in hundredths of an amp: `0.41 A`,
+  `-0.02 A`, `-1.64 A`. A reading that rounds to zero is `0.00 A`. The
+  power on the line is signed in tenths of a watt. Beside `INA3221 CH1` the
+  three readings have 60, 64 and 56 px, 7, 8 and 7 characters: a power of
+  more than 7 characters in tenths, `-100.0 W` and beyond or `1000.0 W` and
+  beyond, is shown in whole watts.
+- A reading that did not arrive is `---` in the CURRENT row, `--` on the
+  line and a gap in the plot: no sample yet, a supply that does not answer,
+  no window since the link came up, a window without samples of that
+  quantity.
+- A window in which a sample read an end of the INA3221's range, 1.638 A or
+  -1.638 A on a 0.1 Ω shunt, shows its mean as it is, in the warning colour
+  in the CURRENT row and on the line. The clipped samples count in that mean
+  at the end of the range.
+
+  ![A clipped window](img/servo-clipped.png)
+
+- A link that goes down takes the INA3221's last window with it: `---`
+  and `--` until the meter changes or a window arrives over the link.
+- The plot is emptied when the INA3221 becomes the meter and when it stops
+  being it: the trace is of the meter the line names. Each window and
+  each supply sample carries the meter of the poll that took it, so a
+  reading taken before its meter became the rail's is no point of the
+  trace, and none taken after is left out. The plot's scale starts at 0,
+  and a negative current is drawn on its lower edge.
+- The CURRENT row's value is repainted when its digits or its colour change,
+  and by itself.
+
+The automatic test reads the supply whichever meter the rail has.
 
 MEASURED is the horn's angle from the centre count while AS5600 is on in
 SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0 deg`,
@@ -1332,8 +1375,9 @@ The servo rail has one meter at a time: the INA3221's CH1 while it is on
 with CH1, the coprocessor speaks protocol 4.11, the coprocessor holds the
 set-up, the part answers as an INA3221 on a bus that is not stuck, a window
 with current samples closed in the last 200 ms, its reset count stands, and
-all of that has held for 1000 ms; the PD mini otherwise. The SERVO screen
-and the servo test read the PD mini whichever it is.
+all of that has held for 1000 ms; the PD mini otherwise. The SERVO screen's
+CURRENT row, line and plot show the meter's reading ([Servo](#servo)); the
+servo test reads the PD mini whichever it is.
 
 The band says what they show, each once and one at a time: the most
 pressing first, and the next no sooner than 5 s later, so two at once are

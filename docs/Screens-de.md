@@ -451,9 +451,56 @@ Knopfdrehung in einem Frame, in dem FREIGEBEN wartet, wird verworfen.
 
 Die rechte Karte zeigt, was befohlen und gemessen ist, Typ und Bildwiederholrate,
 die gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
-nicht dafür gebaut ist -- und das Netzteil, das das Servo versorgt: Spannung,
-Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
-vom Netzteil stehen dort `--`.
+nicht dafür gebaut ist -- und die Servo-Schiene, wie ihr Messgerät sie misst:
+Spannung, Strom und Leistung in der Zeile über dem Plot, über die letzten 13 s
+geplottet, und den Strom noch einmal in der Zeile STROM.
+
+| Messgerät der Servo-Schiene | Name in der Zeile | STROM, die Zeile und der Plot zeigen |
+| --- | --- | --- |
+| INA3221 CH1 | `INA3221 CH1` | das letzte 50-ms-Fenster von CH1: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
+| der PD mini | `NETZTEIL` | das letzte Sample des Netzteils. Ein Punkt je Sample |
+| das Modell, solange kein Koprozessor antwortet | `NETZTEIL` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo SETUP ANSCHLÜSSE den PD mini einschaltet, der ohne Link nicht antwortet |
+
+![Der INA3221 als Messgerät](img/de/servo-ina.png)
+
+Welches Messgerät es ist, wird einmal je Poll entschieden
+([die Strommonitore](#anschlüsse-die-strommonitore)): der INA3221 1000 ms,
+nachdem seine Bedingungen gelten, der PD mini ab dem ersten Poll, in dem
+eine nicht gilt.
+
+- Ein Strom hat ein Vorzeichen und wird in Hundertstel Ampere gezeigt:
+  `0.41 A`, `-0.02 A`, `-1.64 A`. Ein Messwert, der auf null rundet, ist
+  `0.00 A`. Die Leistung in der Zeile hat ein Vorzeichen und Zehntel Watt.
+  Neben `INA3221 CH1` haben die drei Messwerte 60, 64 und 56 px, 7, 8 und
+  7 Zeichen: eine Leistung, die in Zehnteln mehr als 7 Zeichen braucht, ab
+  `-100.0 W` und ab `1000.0 W`, wird in ganzen Watt gezeigt.
+- Ein Messwert, der nicht ankam, ist `---` in der Zeile STROM, `--` in der
+  Zeile über dem Plot und eine Lücke im Plot: noch kein Sample, ein Netzteil,
+  das nicht antwortet, kein Fenster seit dem Link-Aufbau, ein Fenster ohne
+  Messungen dieser Größe.
+- Ein Fenster, in dem eine Messung ein Ende des Messbereichs des INA3221
+  las, 1,638 A oder -1,638 A an einem Shunt von 0,1 Ω, zeigt seinen
+  Mittelwert, wie er ist, in der Warnfarbe in der Zeile STROM und in der
+  Zeile über dem Plot. Die übersteuerten Messungen zählen in diesem
+  Mittelwert mit dem Ende des Bereichs.
+
+  ![Ein übersteuertes Fenster](img/de/servo-clipped.png)
+
+- Ein Link, der ausfällt, nimmt das letzte Fenster des INA3221 mit: `---`
+  und `--`, bis das Messgerät wechselt oder ein Fenster über den Link
+  ankommt.
+- Der Plot wird geleert, wenn der INA3221 das Messgerät wird und wenn er es
+  nicht mehr ist: die Kurve gehört dem Messgerät, das die Zeile nennt. Jedes
+  Fenster und jedes Sample des Netzteils trägt das Messgerät des Polls, der
+  es genommen hat: ein Messwert von vor dem Wechsel zu seinem Messgerät ist
+  kein Punkt der Kurve, und keiner von danach fehlt. Die Skala des Plots
+  beginnt bei 0, und ein negativer Strom wird an seinem unteren Rand
+  gezeichnet.
+- Der Wert der Zeile STROM wird neu gezeichnet, wenn sich seine Ziffern oder
+  seine Farbe ändern, und für sich allein.
+
+Der automatische Test liest das Netzteil, welches Messgerät die Schiene auch
+hat.
 
 GEMESSEN ist der Winkel des Horns ab dem Mittenwert, solange AS5600 in SETUP,
 ANSCHLÜSSE eingeschaltet ist, der Sensor antwortet und seinen Magneten
@@ -1468,8 +1515,9 @@ er mit CH1 eingeschaltet ist, der Koprozessor Protokoll 4.11 spricht, der
 Koprozessor die Einstellung hält, das Bauteil als INA3221 an einem Bus
 antwortet, der nicht hängt, in den letzten 200 ms ein Fenster mit
 Strommessungen geschlossen hat, sein Reset-Zähler steht und all das seit
-1000 ms gilt; sonst der PD mini. Der SERVO-Bildschirm und der Servotest
-lesen den PD mini, welches es auch ist.
+1000 ms gilt; sonst der PD mini. Die Zeile STROM, die Zeile über dem Plot
+und der Plot des SERVO-Bildschirms zeigen den Messwert des Messgeräts
+([Servo](#servo)); der Servotest liest den PD mini, welches es auch ist.
 
 Das
 Band sagt, was sie zeigen, jedes einmal und eines nach dem anderen: das

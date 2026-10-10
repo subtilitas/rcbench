@@ -41,12 +41,31 @@ coprocessor and the other way round.
   window with current samples closed in the last 200 ms and its reset count
   stands. The band says `coprocessor older than 4.11 -- servo current read
   from PD mini` once per link-up for a 4.7 to 4.10 coprocessor, and
-  `INA3221 reset itself -- check its supply` once per reset. The SERVO
-  screen and the servo test read the PD mini as before. Host suite only;
-  not run on hardware.
+  `INA3221 reset itself -- check its supply` once per reset. The servo test
+  reads the PD mini. Host suite only; not run on hardware.
 
 ### Changed
 
+- **The SERVO screen shows the servo rail's meter.** The CURRENT row, the
+  line over the plot and the plot show the reading of the meter the panel
+  names: with the INA3221 as the meter, CH1's 50 ms windows -- the mean
+  current, the mean bus voltage at the load side of the shunt and their
+  product, one point of the plot per window -- under the name
+  `INA3221 CH1`; otherwise the supply's samples under `SUPPLY`, the PD
+  mini's or the model's. The CURRENT row no longer shows the feedback's
+  current, which no firmware supplied: it read `---` on every panel. A
+  current is signed, in hundredths of an amp, and `-0.02 A` is shown as
+  that. A window with a sample at an end of the INA3221's range shows its
+  mean in the warning colour. A reading that did not arrive is `---` in the
+  row and `--` on the line; a link that goes down takes the INA3221's last
+  window with it. The plot is emptied when the INA3221 becomes or stops
+  being the meter, and each window and supply sample carries the meter of
+  the poll that took it, so the trace holds the readings taken under the
+  meter it names and no others. The row's value is repainted by itself when its digits
+  or colour change; `frame_cost.py servo-current` measures an armed frame
+  with a window at 4,056 cache-line fills and CI holds it to 4,500. The
+  automatic test reads the supply whichever meter the rail has. Host suite
+  only; not run on hardware.
 - **Sensor SCL follows Sensor SDA, and a set-up the coprocessor does not
   hold is marked on its row.** On SETUP > INTERFACES Sensor SDA steps
   through −1, 0, 4, 6, 14, 16, 18, 20 and 26 and stops at both ends: −1

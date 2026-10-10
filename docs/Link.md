@@ -483,10 +483,20 @@ while all of these hold:
 The meter is the PD mini from the first poll in which one of 1 to 6 fails,
 and the INA3221 again 1000 ms after they all hold. With no coprocessor
 answering it is the panel's model. A clipped window and a negative current
-are readings and no condition. The answer is in the control task's snapshot
+are readings and no condition. The module counts the changes of the meter,
+modulo 2^32. The answer and that count are in the control task's snapshot
 with the count of windows lost, and the windows are on a queue to the
-render task, 8 deep, the oldest dropped when it is full. No screen reads
-either: the SERVO screen and the servo test read the PD mini.
+render task, 8 deep, the oldest dropped when it is full, each with the
+answer and the count of the poll that took it; the supply's samples carry
+them on their queue as well. The SERVO screen takes the snapshot's answer,
+every window and every supply sample once per frame and shows the meter's
+reading in its CURRENT row, line and plot ([Screens](Screens.md#servo)). Of
+two answers it keeps the one with the later count. A window whose count is
+behind the meter in force is dropped, and a supply sample whose count is
+behind is no point of the plot: the snapshot and the queues are three
+paths, and each can be the oldest. A count more than one ahead of the one
+in force means changes the screen did not see, and it empties the plot
+whatever the meter is. The servo test reads the PD mini, every sample.
 
 `test_sense_windows` runs the modelled INA3221, the coprocessor's schedule
 and pages and `sense_link` on one clock: polls 50, 53, 55, 100, 150, 199 and

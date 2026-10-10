@@ -88,6 +88,7 @@ enum {
 typedef struct {
     servo_source_id_t  id;
     servo_source_why_t why;
+    uint32_t changes;       /**< times id has changed, modulo 2^32        */
     bool     up;            /**< a coprocessor answered at the last step  */
     bool     good;          /**< conditions 1 to 6 held at the last step  */
     uint32_t good_ms;       /**< since when                               */
@@ -114,6 +115,13 @@ servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
 
 /** The meter as of the last step. */
 servo_source_id_t servo_source_id(const servo_source_t *s);
+
+/**
+ * How many times the meter has changed since servo_source_init(), modulo
+ * 2^32.  It orders two answers taken at different polls: of two counts the
+ * one that is ahead by less than 2^31 is the later.
+ */
+uint32_t servo_source_changes(const servo_source_t *s);
 
 /** Why the INA3221 is not the meter, as of the last step. */
 servo_source_why_t servo_source_why(const servo_source_t *s);
