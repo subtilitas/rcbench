@@ -384,11 +384,12 @@ def the_traces_alone_say_which_settings_time_every_move() -> None:
     every = ", ".join(f"filter {n} band {band} A" for n, band in SETTINGS)
     check("settings that see every move and time its arrival: " + every
           in out, "all nine")
-    med = setting_rows(out, "median arrival, and its distance from filter "
-                            "4 band 0.05 A")
+    med = setting_rows(out, "median arrival, and the median distance from "
+                            "filter 4 band 0.05 A")
     for n, band in SETTINGS:
         late = n - 1
-        check(med[(n, band)] == [f"{500 + late}.0", f"{late - 3:+d}.0"],
+        check(med[(n, band)] == [f"{500 + late}.0", "4", f"{late - 3:+d}.0",
+                                 "4"],
               f"median at {n} {band}: {med[(n, band)]}")
     check("latest less earliest arrival of one move across the settings: "
           "median 7.0 ms, largest 7.0 ms over 4 move(s)" in out,
@@ -430,7 +431,7 @@ def a_move_with_records_missing_inside_it_is_not_replayed() -> None:
     r = tool(str(work("gap.log", "\n".join(body) + "\n")), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
     check("move 1 at 0.0 ms, channel 2 to 1900 us: records are missing "
-          "inside it, not replayed" in r.stdout, "said")
+          "among its samples, not replayed" in r.stdout, "said")
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["1/2", "1/2", "-", "113.0"],
           f"{arrival[(1, '0.05')]}")
@@ -438,6 +439,89 @@ def a_move_with_records_missing_inside_it_is_not_replayed() -> None:
           in r.stdout, "counted")
     check("settings that see every move and time its arrival: none"
           in r.stdout, "no setting sees every move")
+
+
+def gap(lines: list[str], at: int) -> list[str]:
+    """@p lines with the 3 sample lines before line @p at dropped."""
+    code = lines[at].split(",")[1]
+    body = lines[:at - 3] + ["$L n=3", f"40,{code}"] + lines[at + 1:-1]
+    n = sum(1 for line in body if sense_trace.RE_S.match(line))
+    return body + [f"$Z n=1 s={n} v=0 l=3 m=2 ml=0 e=t"]
+
+
+def records_missing_at_the_ends_of_a_moves_samples() -> None:
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    cmd2 = next(k for k, line in enumerate(lines)
+                if line.startswith("$C") and "us=1100" in line)
+    # The last 3 samples before the second command: the end of the first
+    # move's samples, and inside the 50 ms the second takes its level
+    # from.
+    r = tool(str(work("gap-end.log", "\n".join(gap(lines, cmd2 - 1)) + "\n")),
+             "--no-csv")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
+          f"before the command: {arrival[(1, '0.05')]}")
+    # The 3 samples before the first of the second move's 50 ms: the
+    # first move's samples, and the edge of the second's.
+    r = tool(str(work("gap-edge.log",
+                      "\n".join(gap(lines, cmd2 - 50)) + "\n")), "--no-csv")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
+          f"at the window's edge: {arrival[(1, '0.05')]}")
+    # 100 ms before the second command: the first move alone.
+    r = tool(str(work("gap-one.log",
+                      "\n".join(gap(lines, cmd2 - 100)) + "\n")), "--no-csv")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["1/2", "1/2", "-", "113.0"],
+          f"the first alone: {arrival[(1, '0.05')]}")
+
+
+def a_move_the_part_went_offline_in_is_not_replayed() -> None:
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    first = next(k for k, line in enumerate(lines) if line == "10,2000")
+    # Offline 50 ms into the first burst, back 30 ms of samples later.
+    body = (lines[:first + 50] + ["$S on=0 rst=0"]
+            + lines[first + 50:first + 80] + ["$S on=1 rst=0"]
+            + lines[first + 80:])
+    r = tool(str(work("offline.log", "\n".join(body) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-500:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1900 us: the part's state "
+          "changed inside it, not replayed" in r.stdout, "said")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["1/2", "1/2", "-", "113.0"],
+          f"{arrival[(1, '0.05')]}")
+
+
+def settings_are_compared_on_the_moves_both_time() -> None:
+    # Two moves: a burst of 100 ms, and one of a single sample 0.04 A
+    # above the level, which a mean of 4 samples does not lift past the
+    # threshold of 0.020 A: the second is timed by filter 1 alone.
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)], high=400).splitlines()
+    cmd2 = next(k for k, line in enumerate(lines)
+                if line.startswith("$C") and "us=1100" in line)
+    quiet = 0
+    for k in range(cmd2, len(lines)):
+        if lines[k] == "10,400":
+            quiet += 1
+            if quiet > 1:
+                lines[k] = "10,300"
+    r = tool(str(work("subset.log", "\n".join(lines) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-500:]}")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")][:2] == ["2/2", "2/2"]
+          and arrival[(4, "0.05")][:2] == ["1/2", "1/2"]
+          and arrival[(8, "0.05")][:2] == ["1/2", "1/2"],
+          f"{arrival[(1, '0.05')]} {arrival[(8, '0.05')]}")
+    med = setting_rows(r.stdout, "median arrival, and the median distance "
+                                 "from filter 4 band 0.05 A")
+    # Filter 1 times both moves, the reference one of them: the distance
+    # is over that one move, 1 ms, not the medians' 50.5 ms.
+    check(med[(1, "0.05")] == ["63.5", "2", "-1.0", "1"],
+          f"filter 1: {med[(1, '0.05')]}")
+    check(med[(4, "0.05")] == ["114.0", "1", "+0.0", "1"],
+          f"the reference: {med[(4, '0.05')]}")
+    check(med[(8, "0.05")][1] == "1" and med[(8, "0.05")][3] == "1",
+          f"filter 8: {med[(8, '0.05')]}")
 
 
 def a_slewed_command_ends_at_its_d_line() -> None:
@@ -450,7 +534,8 @@ def a_slewed_command_ends_at_its_d_line() -> None:
         lines.append(line)
         m = sense_trace.RE_MARK.match(line)
         if m and m.group(1) == "C":
-            lines.append(f"$D t={int(m.group(2)) + 3000} ch=2 "
+            # The last change before the frame the $C line is timed at.
+            lines.append(f"$D t={int(m.group(2)) - 150} ch=2 "
                          f"us={ends[int(m.group(4))]}")
     lines[-1] = lines[-1].replace("m=3", "m=6")
     r = tool(str(work("slew.log", "\n".join(lines) + "\n")), "--no-csv")
@@ -500,6 +585,17 @@ def the_servo_csv_pairs_by_time() -> None:
     total = setting_rows(r.stdout, "all traces, 4 move(s):")
     check(total[(4, "0.05")][2:] == ["+13.0", "ms", "over", "2", "move(s)"],
           "the median over the two")
+    # Two rows nearest to one move: the nearer one is the move's, and the
+    # count is of moves, with the offset found and with it given.
+    twice = work("twice.csv", "\n".join(
+        [rows[0], rows[1], rows[1].replace("10.055", "10.105")]
+        + rows[2:]) + "\n")
+    for extra in ([], ["--csv-offset", "12.345"]):
+        r = tool(log, "--servo-csv", str(twice), "--no-csv", *extra)
+        check("5 travel time(s), 4 paired with a move" in r.stdout,
+              f"{extra}: {r.stdout.splitlines()[1]}")
+        diff = setting_rows(r.stdout, "  arrival less the horn's travel")
+        check(diff[(1, "0.05")] == ["+10.0"] * 4, f"{diff[(1, '0.05')]}")
     # An offset that pairs nothing, and a decimal comma.
     r = tool(log, "--servo-csv", str(two), "--csv-offset", "0", "--no-csv")
     check(r.returncode == 0 and "0 paired with a move" in r.stdout
@@ -572,6 +668,9 @@ CASES = [
     the_traces_alone_say_which_settings_time_every_move,
     a_trace_with_trigger_lines_not_written_is_not_replayed,
     a_move_with_records_missing_inside_it_is_not_replayed,
+    records_missing_at_the_ends_of_a_moves_samples,
+    a_move_the_part_went_offline_in_is_not_replayed,
+    settings_are_compared_on_the_moves_both_time,
     a_slewed_command_ends_at_its_d_line,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,

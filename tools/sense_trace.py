@@ -20,9 +20,10 @@ terminal capture of that console and, for each trace in it:
 A move is a trigger line: an edge line when the trace has any, a command
 line otherwise.  A slewed command's destination is its $D line's pulse.
 A trace whose end line counts trigger lines that were not written is not
-replayed, and neither is a move with records missing among its samples:
-the rules count samples.  Its levels are taken from the trace as the servo test
-takes them from its meter:
+replayed.  Neither is a move with records missing among its samples or
+with a change of the part's state inside it: the rules count samples,
+and the capture ends lost when the part goes offline.  A move's levels
+are taken from the trace as the servo test takes them from its meter:
 
   level before   the mean of the 50 ms before the command
   holding level  the mean of the 200 ms before the command that last left
@@ -329,14 +330,19 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     if tr.shunt_uohm == 0 or (tr.end is not None and tr.end["ml"]):
         return []
     edges = [m for m in tr.marks if m[0] == "E"]
-    cmds = [list(m) for m in tr.marks if m[0] == "C"]
     # A slewed command's line carries its first pulse; its $D line the one
-    # it ended at, which is the end the servo is then held at.
-    for _, t, ch, us in sorted((m for m in tr.marks if m[0] == "D"),
-                               key=lambda m: m[1]):
-        mine = [c for c in cmds if c[2] == ch and c[1] <= t]
-        if mine:
-            max(mine, key=lambda c: c[1])[3] = us
+    # it ended at, which is the end the servo is then held at.  The $D
+    # line is the next one written for that channel after its $C line;
+    # its time is the last pulse change, which can lie before the frame
+    # time the $C line carries.
+    cmds = []
+    last: dict[int | None, list] = {}
+    for mark in tr.marks:
+        if mark[0] == "C":
+            cmds.append(list(mark))
+            last[mark[2]] = cmds[-1]
+        elif mark[0] == "D" and mark[2] in last:
+            last.pop(mark[2])[3] = mark[3]
     moves = []
     if edges:
         for _, t, _, _ in edges:
@@ -369,10 +375,14 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
         nxt = moves[k + 1].t if k + 1 < len(moves) else None
         mv.last = len(tr.t) if nxt is None else next(
             (i for i, t in enumerate(tr.t) if t >= nxt), len(tr.t))
-        # The rules count samples, not time: a move with samples missing
-        # inside it is not judged.
-        if any(mv.first < gap < mv.last for gap in tr.gaps):
-            mv.why_not = "records are missing inside it"
+        # The rules count samples, not time: a move with records missing
+        # among its samples, or at either end of them, is not judged.  The
+        # capture ends lost when the part goes offline; so does a move
+        # here.
+        if any(mv.first <= gap <= mv.last for gap in tr.gaps):
+            mv.why_not = "records are missing among its samples"
+        elif any(mv.first <= at <= mv.last for at, _, _ in tr.states):
+            mv.why_not = "the part's state changed inside it"
         # The destination's holding level: where a later-known hold at
         # that pulse width was left from, the idle level until then.
         mv.ref_a, mv.ref_from = idle_a, "idle level"
@@ -520,23 +530,29 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
                 got.append((j, i, err))
         return got
 
+    def one_each(got: list[tuple[int, int, float]]) -> list:
+        """A move takes one row: the nearest of those that chose it."""
+        best: dict[int, tuple[int, int, float]] = {}
+        for j, i, err in got:
+            if i not in best or err < best[i][2]:
+                best[i] = (j, i, err)
+        return sorted(best.values())
+
     tie = False
     if offset is None:
         scored = []
         for c in cmd_csv:
             for m in cmd_log:
-                got = pairs(m - c)
-                # Two rows on one move is not a pairing.
-                if len({i for _, i, _ in got}) == len(got):
-                    scored.append((len(got), -sum(e for _, _, e in got),
-                                   m - c))
+                got = one_each(pairs(m - c))
+                scored.append((len(got), -sum(e for _, _, e in got),
+                               m - c))
         if not scored:
             return 0, False
         best = max(scored)
         offset = best[2]
         tie = any(n == best[0] and abs(off - offset) > pair_s
                   for n, _, off in scored)
-    got = pairs(offset)
+    got = one_each(pairs(offset))
     for j, i, _ in got:
         moves[order[i]].horn_ms = rows[j][1]
     return len(got), tie
@@ -661,14 +677,27 @@ def report_spread(moves: list[Move], out: list[str]) -> None:
                + (", ".join(f"filter {n} band {band:.2f} A"
                             for n, band in full) if full else "none"))
     ref = (REF_FILTER, REF_BAND_A)
-    if ref in medians:
-        out.append(f"median arrival, and its distance from filter "
+    if medians:
+        # A distance is taken move by move, over the moves both settings
+        # time: two medians over different moves compare the moves.
+        out.append(f"median arrival, and the median distance from filter "
                    f"{REF_FILTER} band {REF_BAND_A:.2f} A (the capture's "
-                   "setting):")
-        out.append("    filter  band A   median ms  distance ms")
+                   "setting) over the moves both time:")
+        out.append("    filter  band A   median ms  moves  distance ms  "
+                   "moves")
         for (n, band), med in medians.items():
-            out.append(f"    {n:>6}  {band:6.2f}  {med:10.1f}  "
-                       f"{med - medians[ref]:+11.1f}")
+            timed = 0
+            both = []
+            for mv in moves:
+                mine = mv.results.get((n, band), {}).get("arrive_ms")
+                theirs = mv.results.get(ref, {}).get("arrive_ms")
+                timed += mine is not None
+                if mine is not None and theirs is not None:
+                    both.append(mine - theirs)
+            dist = (f"{statistics.median(both):+11.1f}" if both
+                    else f"{'-':>11}")
+            out.append(f"    {n:>6}  {band:6.2f}  {med:10.1f}  {timed:>5}  "
+                       f"{dist}  {len(both):>5}")
     spreads = []
     for mv in moves:
         times = [r["arrive_ms"] for r in mv.results.values()
