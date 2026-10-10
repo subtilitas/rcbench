@@ -326,7 +326,8 @@ static const sense_trace_rec_t *rec(unsigned k)
 /* Samples and voltages the ring holds. */
 static unsigned held_data(void)
 {
-    return held_of(SENSE_TRACE_CURRENT) + held_of(SENSE_TRACE_BUS);
+    return held_of(SENSE_TRACE_CURRENT) + held_of(SENSE_TRACE_BUS)
+           + held_of(SENSE_TRACE_CLIP_HI) + held_of(SENSE_TRACE_CLIP_LO);
 }
 
 /* ------------------------------------------------------------- core 1 */
@@ -953,7 +954,7 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
     CHECK(sense_trace_pulse(&tr, 2u, 6u, 1600u, g_us + 100000u));
     CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1610u, g_us + 101000u));
     CHECK(sense_trace_pulse(&tr, 2u, 6u, 1100u, g_us + 151000u));
-    run(10u);
+    run(200u);
     parse();
     CHECK_EQ(seen.n_d, 2u);
     CHECK_EQ(seen.dest_us, 1610u);
@@ -1773,41 +1774,50 @@ TEST_CASE(a_pulse_is_the_one_the_frame_can_carry)
 TEST_CASE(every_line_at_its_longest_fits)
 {
     rig();
-    /* A clipped sample at the end of the range, and the longest numbers
-     * a header, a trigger and an end line carry. */
-    i3221->amps[0] = 5.0;
-    g_us = ((uint64_t)UINT32_MAX - 30000u) * 100u;
+    /* A clipped sample at the bottom of the range, and the longest
+     * numbers a header, a trigger and an end line carry: the millisecond
+     * tick and the 0.1 ms count both at 10 digits. */
+    i3221->amps[0] = -5.0;
+    g_us = (uint64_t)4294964295u * 1000u;
     run(100u);
     v.sched.i3221.shunt_uohm = UINT32_MAX;
     run(5u);
     tr.out.id = 65534u;
-    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE,
-                        (uint64_t)UINT32_MAX * 1000u, 0u, 0u);
-    tr.out.t0 = UINT32_MAX;
+    const uint32_t t = (uint32_t)(g_us / 100u);
+    CHECK(t >= 4000000000u && g_us / 1000u >= 4000000000u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
     tr.out.len_ms = 123456u;
-    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
-                        (uint64_t)UINT32_MAX * 100u, 65535u, 65535u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 65535u, 65535u);
     /* A slew's end at the longest numbers. */
     tr.out.watch[0].have = tr.out.watch[0].changed = true;
     tr.out.watch[0].slewed = true;
     tr.out.watch[0].ch = 65535u;
     tr.out.watch[0].pulse = 65535u;
-    tr.out.watch[0].changed_t = UINT32_MAX;
+    tr.out.watch[0].changed_t = t;
     (void)sense_trace_pulse(&tr, 0u, 65535u, 65535u,
-                            (uint64_t)(SENSE_TRACE_HOLD_MS * 10u) * 100u);
+                            g_us + SENSE_TRACE_HOLD_MS * 1000u);
     run(20u);
     tr.out.n_s = tr.out.n_v = tr.out.n_lost = UINT32_MAX - 1u;
     tr.out.n_m = tr.out.n_mlost = UINT32_MAX;
     sense_trace_key(&tr, 'x', g_us);
-    run(2u);
-    CHECK(strstr(g_log, "$T v=1 n=65535 trig=edge t=4294967295 "
-                        "ms=4294967295 len=99999\r\n") != NULL);
-    CHECK(strstr(g_log, "$C t=4294967295 ch=65535 us=65535\r\n") != NULL);
-    CHECK(strstr(g_log, "$D t=4294967295 ch=65535 us=65535\r\n") != NULL);
+    run(3u);
+    char want[80];
+    snprintf(want, sizeof(want), "$T v=1 n=65535 trig=edge t=%lu ms=%lu "
+             "len=99999\r\n", (unsigned long)t,
+             (unsigned long)((uint64_t)4294964295u + 105u));
+    CHECK_EQ(strlen(want), SENSE_TRACE_LINE_MAX - 1u);
+    CHECK(strncmp(g_log, want, strlen(want)) == 0);
+    snprintf(want, sizeof(want), "$C t=%lu ch=65535 us=65535\r\n",
+             (unsigned long)t);
+    CHECK(strstr(g_log, want) != NULL);
+    snprintf(want, sizeof(want), "$D t=%lu ch=65535 us=65535\r\n",
+             (unsigned long)t);
+    CHECK(strstr(g_log, want) != NULL);
     CHECK(strstr(g_log, "$E t=") != NULL);
     CHECK(strstr(g_log, "$Z n=65535 s=99999999 v=9999999 l=99999999 m=9999 "
                         "ml=9999 e=k\r\n") != NULL);
     CHECK(strstr(g_log, "$H dt_us=1000 shunt_uohm=4294967295 cfg=0x") != NULL);
+    CHECK(strstr(g_log, ",-4096\r\n") != NULL);
     parse();
     CHECK_EQ(seen.n_bad, 0u);          /* none past SENSE_TRACE_LINE_MAX */
     CHECK(!g_partial);
@@ -1853,6 +1863,90 @@ TEST_CASE(a_clipped_sample_reads_the_end_of_the_range)
             break;
         }
     }
+}
+
+TEST_CASE(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped)
+{
+    rig();
+    i3221->amps[0] = 5.0;
+    for (unsigned k = 0; k < 120u; ++k) {
+        tick();
+    }
+    /* By hand, a tick in which CH1 read a clipped sample and a later
+     * read crossed the window's end: the sample is in the history, its
+     * count in the ring's newest window, and the window being filled is
+     * empty. */
+    sense_sched_t *sc = &v.sched;
+    const uint16_t before = (uint16_t)(sc->acc[SENSE_SRC_CH1].n_hi
+                                       + sc->acc[SENSE_SRC_CH1].n_lo);
+    unsigned held = held_data();
+    sc->ring_at = sc->win;
+    sc->ring[0].n_clip = (uint16_t)(before + 1u);
+    sc->win += 1u;
+    memset(&sc->acc[SENSE_SRC_CH1], 0, sizeof(sc->acc[SENSE_SRC_CH1]));
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = sc->ch_clip_ua;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sense_trace_feed(&tr, sc);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CLIP_HI);
+    /* The same at the bottom of the range. */
+    g_us += 1000u;
+    held = held_data();
+    sc->ring_at = sc->win;
+    sc->ring[0].n_clip = 1u;
+    sc->win += 1u;
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = -sc->ch_clip_ua;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sense_trace_feed(&tr, sc);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CLIP_LO);
+    /* A window that closed with no more clips than were seen: a value. */
+    g_us += 1000u;
+    held = held_data();
+    sc->ring_at = sc->win;
+    sc->ring[0].n_clip = 0u;
+    sc->win += 1u;
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = sc->ch_clip_ua;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sense_trace_feed(&tr, sc);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CURRENT);
+}
+
+TEST_CASE(trigger_lines_are_written_in_the_order_of_their_times)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* Two slots change in one pass; the slot looked at first has the
+     * later frame.  A third trigger lies between them. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 18000u, 1u, 1100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 2000u, 2u, 1900u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us + 9000u, 0u, 0u);
+    run(100u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.mark_t[0], t0);
+    CHECK_EQ(seen.mark_t[1], t0 + 1000u + 20u);
+    CHECK_EQ(seen.mark_t[2], t0 + 1000u + 90u);
+    CHECK_EQ(seen.mark_t[3], t0 + 1000u + 180u);
+    CHECK_EQ(seen.mark_ch, 1u);
+    CHECK_EQ(seen.z_m, 4u);
+    /* Each behind the samples of before its time: 2 ms, 9 ms and 18 ms
+     * of them. */
+    const char *c2 = strstr(g_log, " ch=2 us=1900\r\n");
+    const char *e = strstr(g_log, "$E t=");
+    const char *c1 = strstr(g_log, " ch=1 us=1100\r\n");
+    CHECK(c2 != NULL && e != NULL && c1 != NULL && c2 < e && e < c1);
+    unsigned between = 0u;
+    for (const char *at = c2; at < c1; ++at) {
+        between += (*at == ',');
+    }
+    CHECK_EQ(between, 16u);
 }
 
 TEST_CASE(the_code_is_the_one_the_current_came_from)
@@ -1920,6 +2014,8 @@ int main(void)
     RUN(a_pulse_is_the_one_the_frame_can_carry);
     RUN(every_line_at_its_longest_fits);
     RUN(a_clipped_sample_reads_the_end_of_the_range);
+    RUN(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped);
+    RUN(trigger_lines_are_written_in_the_order_of_their_times);
     RUN(the_code_is_the_one_the_current_came_from);
     return test_summary("sense_trace");
 }

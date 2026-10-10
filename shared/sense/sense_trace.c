@@ -118,6 +118,11 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
     } else if (a->n_lo != (same ? p->n_lo : 0u)) {
         kind = SENSE_TRACE_CLIP_LO;
     }
+    /* The sample was read, and a later read of the same tick closed the
+     * window it was counted in: that window's count is the ring's. */
+    const bool closed = s->win != p->win && s->have_last
+                        && s->ring_at == p->win
+                        && s->ring[0].n_clip > p->n_hi + p->n_lo;
     bool kept = false;
     if (s->ch1_n == 0u) {
         p->have = false;
@@ -129,6 +134,10 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
             p->have = true;
             p->head = s->ch1_head;
             p->t    = c->t;
+            if (closed && kind == SENSE_TRACE_CURRENT) {
+                kind = (c->ua > 0) ? SENSE_TRACE_CLIP_HI
+                                   : SENSE_TRACE_CLIP_LO;
+            }
             kept    = push(tr, kind, c->t, c->ua);
         }
     }
@@ -267,8 +276,22 @@ static void mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
     m->t     = t;
     m->at_us = at_us;
     m->ch    = ch;
-    m->us   = us;
+    m->us    = us;
     ++o->q_n;
+    /* In the order of their times: two slots' frames need not start in
+     * the order the slots are looked at. */
+    for (unsigned k = o->q_n - 1u; k > 0u; --k) {
+        sense_trace_mark_t *later =
+            &o->q[(o->q_head + k) % SENSE_TRACE_MARKS];
+        sense_trace_mark_t *earlier =
+            &o->q[(o->q_head + k - 1u) % SENSE_TRACE_MARKS];
+        if ((int32_t)(later->t - earlier->t) >= 0) {
+            break;
+        }
+        const sense_trace_mark_t swap = *later;
+        *later   = *earlier;
+        *earlier = swap;
+    }
 }
 
 void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
@@ -563,11 +586,19 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
     }
     /* A trigger line in the order of its time: behind the records of
      * before it, so a record that ends the trace before the trigger
-     * ends it before the trigger's line. */
-    if (o->q_n > 0u
-        && (r == NULL || !((int32_t)(r->t - o->q[o->q_head].t) < 0))) {
-        line_mark(&o->q[o->q_head], l);
-        return ACT_MARK;
+     * ends it before the trigger's line.  With the ring empty it waits
+     * for its time, and for the tick that may bring a record of before
+     * it: a frame's start lies ahead when its command is seen. */
+    if (o->q_n > 0u) {
+        const uint32_t mark_t = o->q[o->q_head].t;
+        const bool due = (r != NULL)
+            ? at_or_past(r->t, mark_t)
+            : at_or_past(now_t, mark_t + SENSE_TRACE_END_WAIT_MS
+                                         * SENSE_TRACE_T_PER_MS);
+        if (due) {
+            line_mark(&o->q[o->q_head], l);
+            return ACT_MARK;
+        }
     }
     if (r == NULL) {
         /* A record of before the end may still be on its way. */
