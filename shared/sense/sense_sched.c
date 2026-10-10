@@ -513,9 +513,10 @@ static void read_i228(sense_sched_t *s, uint32_t n)
 }
 
 /* The INA228's ADC_CONFIG read back.  A part found reset is offline from
- * here: the window being filled holds samples at the reset range and is
- * emptied, the voltage of its last slot pairs with no current, and the
- * totals are no longer the run's. */
+ * here.  The read-back is stamped as any read: the windows are rolled to
+ * the time it was done, and the one being filled then is emptied -- it
+ * holds samples at the reset range.  The voltage of the last slot pairs
+ * with no current, and the totals are no longer the run's. */
 static void verify_i228(sense_sched_t *s)
 {
     bool lost = false;
@@ -523,6 +524,7 @@ static void verify_i228(sense_sched_t *s)
     if (!lost) {
         return;
     }
+    (void)stamp(s);
     ++s->i228_resets;
     acc_clear(&s->acc[SENSE_SRC_INA228]);
     s->have_vbus     = false;
@@ -531,7 +533,7 @@ static void verify_i228(sense_sched_t *s)
 
 /* The INA3221's Configuration read back.  A part found reset is offline
  * from here, which ends a capture as lost (cap_step()); the windows being
- * filled from it are emptied. */
+ * filled from it at the time the read-back was done are emptied. */
 static void verify_i3221(sense_sched_t *s)
 {
     bool lost = false;
@@ -539,6 +541,7 @@ static void verify_i3221(sense_sched_t *s)
     if (!lost) {
         return;
     }
+    (void)stamp(s);
     ++s->i3221_resets;
     for (unsigned k = SENSE_SRC_CH1; k <= SENSE_SRC_CH3; ++k) {
         acc_clear(&s->acc[k]);

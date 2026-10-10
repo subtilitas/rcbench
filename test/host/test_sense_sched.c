@@ -1447,6 +1447,78 @@ TEST_CASE(a_reset_ina3221_is_emptied_counted_and_set_up_again)
     reset_then_back(((uint64_t)1u << 32) * 1000u - 210000u);
 }
 
+/* Ticks to the one that reads rotation slot @p slot, then the clock moved
+ * so that tick's fourth transaction -- the second read of a set-up
+ * register that differs -- ends 50 µs past the next window's end, at 100 µs
+ * a transaction.  The number of the window that ends. */
+static uint16_t to_slot_across_a_boundary(unsigned slot)
+{
+    while ((s.ticks & 1u) != 0u || s.rot % SENSE_ROTATION != slot) {
+        tick();
+    }
+    const uint64_t b_ms = s.t0_ms + SENSE_WINDOW_MS * (s.win + 1u);
+    g_xfer_us = 100u;
+    g_us = b_ms * 1000u - 350u;
+    return (uint16_t)s.win;
+}
+
+/* A read-back is stamped when it is done, as every read: one that ends
+ * past a window's end finds the reset in the next window, and that one is
+ * emptied.  The window that ended keeps what was read in it. */
+TEST_CASE(a_reset_found_past_a_window_end_empties_the_window_after)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(120u);
+    fake_reset3221(i3221);
+    uint16_t n = to_slot_across_a_boundary(19u);
+    const uint16_t held = s.acc[SENSE_SRC_CH1].n_i;
+    CHECK(held > 0u);
+    tick();
+    g_xfer_us = 0u;
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i3221_resets, 1u);
+    sense_window_t w;
+    sense_ring_win_t r;
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, n);
+    CHECK_EQ(w.n_i, held + 1u);                  /* and this tick's CH1 */
+    CHECK_EQ(w.i_mean_ua, 500000);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, held + 1u);
+    CHECK_EQ(s.acc[SENSE_SRC_CH1].n_i, 0u);
+    ticks(51u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, (uint16_t)(n + 1u));
+    CHECK_EQ(w.n_i, 0u);
+    CHECK(sense_sched_ring(&s, 1u, &r));         /* the window that ended */
+    CHECK_EQ(r.n_i, held + 1u);
+
+    /* The INA228 the same. */
+    rig(1u, true);
+    i228->amps[0] = 10.0;
+    ticks(120u);
+    fake_reset228(i228);
+    n = to_slot_across_a_boundary(11u);
+    const uint16_t held_v = s.acc[SENSE_SRC_INA228].n_v;
+    CHECK(held_v > 0u);
+    tick();
+    g_xfer_us = 0u;
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i228_resets, 1u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_EQ(w.number, n);
+    CHECK(w.n_v >= held_v);
+    CHECK_NEAR((double)w.v_mean_uv, 16.8e6, 200.0);
+    CHECK_EQ(s.acc[SENSE_SRC_INA228].n_i, 0u);
+    CHECK_EQ(s.acc[SENSE_SRC_INA228].n_v, 0u);
+    ticks(51u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_EQ(w.number, (uint16_t)(n + 1u));
+    CHECK_EQ(w.n_i, 0u);
+    CHECK_EQ(w.n_v, 0u);
+}
+
 /* The counts are 8 bits each on the link and run on from 255 to 0. */
 TEST_CASE(the_reset_counts_run_on_across_255)
 {
@@ -1796,6 +1868,7 @@ int main(void)
     RUN(a_ring_entry_counts_its_clipped_samples);
     RUN(an_ina3221_reset_is_found_within_one_rotation);
     RUN(a_reset_ina3221_is_emptied_counted_and_set_up_again);
+    RUN(a_reset_found_past_a_window_end_empties_the_window_after);
     RUN(the_reset_counts_run_on_across_255);
     RUN(one_corrupted_read_back_is_no_reset);
     RUN(a_reset_ina228_is_found_and_set_up_again);
