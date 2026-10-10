@@ -344,4 +344,4 @@ def test_a_mutant_that_does_not_build_is_neither_killed_nor_survived(tiny):
 
 def test_the_tools_own_tree_is_never_the_copy():
     assert mu.REPO == pathlib.Path(mu.__file__).resolve().parent.parent
-    assert mu.MUTATED in mu.COPIED
+    assert set(mu.MUTATED) <= set(mu.COPIED)

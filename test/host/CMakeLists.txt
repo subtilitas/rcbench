@@ -60,6 +60,11 @@ add_subdirectory("${SHARED}/ppm"      ppm)
 add_subdirectory("${SHARED}/esc"      esc)
 add_subdirectory("${SHARED}/sense"    sense)
 
+# Protocol cores that include nothing from this project.  They are held to
+# the same flags and counted in the same coverage figure.
+set(PROTOCOLS "${CMAKE_CURRENT_SOURCE_DIR}/../../protocols")
+add_subdirectory("${PROTOCOLS}/kst" kst)
+
 set(UNDER_TEST
     rcbench_gfx
     rcbench_touch
@@ -79,6 +84,7 @@ set(UNDER_TEST
     rcbench_ppm
     rcbench_esc
     rcbench_sense
+    kst_protocol
 )
 
 foreach(lib ${UNDER_TEST})
@@ -95,7 +101,7 @@ set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines)
+foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -130,6 +136,25 @@ target_compile_definitions(test_esc_profiles PRIVATE
 target_compile_definitions(test_tone_pio PRIVATE
     "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/tone_cap.pio\""
     "TONE_CAP_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/tone_cap_words.txt\"")
+
+# The headers of protocols/kst as C++: a driver may be written in it.  The
+# program includes all 5, calls one function of each module and links against
+# the C library, so a header that is not valid C++ fails the build and a
+# missing extern "C" guard fails the link.  Without a C++ compiler the check
+# is not built.
+include(CheckLanguage)
+check_language(CXX)
+if(CMAKE_CXX_COMPILER)
+    enable_language(CXX)
+    add_executable(kst_headers_cxx kst_headers.cpp)
+    target_link_libraries(kst_headers_cxx PRIVATE kst_protocol)
+    target_compile_options(kst_headers_cxx PRIVATE -Wall -Wextra -Werror)
+    set_target_properties(kst_headers_cxx PROPERTIES
+        CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+    add_test(NAME kst_headers_cxx COMMAND kst_headers_cxx)
+else()
+    message(STATUS "No C++ compiler: the KST headers are not checked as C++")
+endif()
 
 # tools/sense_trace.py, the host side of the coprocessor's SENSE_TRACE
 # build.  sense_trace_replay is the program the tool drives: the move rules

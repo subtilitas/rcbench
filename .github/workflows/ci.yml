@@ -67,7 +67,8 @@ jobs:
       # because the flags differ.
       # A test executable instrumented against uninstrumented libraries
       # builds and passes while checking almost nothing, so the flags are
-      # proved to reach shared/ before the run that would report success.
+      # proved to reach shared/ and protocols/ before the run that would
+      # report success.
       - name: Sanitizers reach the code under test
         run: python3 tools/check_sanitizers.py --check
 
@@ -80,7 +81,8 @@ jobs:
 
       # Fails when the table in STATUS.md or the figure in README.md and
       # README-de.md does not match the measurement, rather than committing a
-      # fixup, and when a source under shared/ is not in the measurement.
+      # fixup, and when a source under shared/ or
+      # protocols/ is not in the measurement.
       - name: Coverage is current
         run: python3 tools/coverage.py --check --json coverage.json
 
@@ -91,7 +93,8 @@ jobs:
       - name: Coverage report for Codecov
         run: |
           pipx install gcovr || python3 -m pip install --quiet gcovr
-          gcovr --root . --filter 'shared/' --exclude '.*font.*' \
+          gcovr --root . --filter 'shared/' --filter 'protocols/' \
+                --exclude '.*font.*' \
                 --cobertura coverage.xml --print-summary
 
       # A failed upload fails the job: the badge in the README is Codecov's,
@@ -235,7 +238,8 @@ jobs:
       - name: clang-tidy
         run: |
           clang-tidy -p test/host/build --quiet \
-            $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
+            $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
+                | grep -v 'gfx_font')
 
       # cppcheck sees different things: it is weaker on flow and better at
       # arithmetic and at the shapes that look wrong on their own.
@@ -245,8 +249,10 @@ jobs:
             --enable=warning,style,performance,portability \
             --inline-suppr --suppressions-list=.cppcheck-suppress \
             --check-level=exhaustive \
-            $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
-            $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
+            $(git ls-files 'shared/**/include' 'protocols/**/include' \
+                | sed 's|^|-I|' | sort -u) \
+            $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
+                | grep -v 'gfx_font')
 
       # The firmware is hardware access and wiring, and cppcheck reads it
       # without the vendor SDKs (software development kits): a header it
@@ -320,7 +326,7 @@ jobs:
           # The base branch has to be here to diff against.
           fetch-depth: 0
 
-      - name: Mutate the changed lines of shared/
+      - name: Mutate the changed lines of shared/ and protocols/
         env:
           BASE: origin/${{ github.base_ref }}
         run: |

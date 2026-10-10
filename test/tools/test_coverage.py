@@ -1,5 +1,5 @@
-"""coverage.py: every source under shared/ is in the measurement, and the
-README figure is rendered from it."""
+"""coverage.py: every source under shared/ and protocols/ is in the
+measurement, and the README figure is rendered from it."""
 
 import pytest
 
@@ -49,7 +49,7 @@ def test_a_table_that_holds_a_function_fails():
 def test_a_listed_file_that_is_gone_fails():
     out = problems(tracked=TRACKED + ["shared/a/gone.c"])
     assert out == ["shared/a/gone.c is listed in tools/coverage.py and is "
-                   "not under shared/"]
+                   "not under shared/ or protocols/"]
 
 
 def test_a_file_in_both_lists_fails():
@@ -60,11 +60,13 @@ def test_a_file_in_both_lists_fails():
 def test_two_sources_of_one_name_fail():
     out = problems(sources=SOURCES + ["shared/b/a.c"],
                    tracked=TRACKED + ["shared/b/a.c"])
-    assert out[0].startswith("two sources under shared/ are named a.c")
+    assert out[0].startswith(
+        "two sources under shared/ or protocols/ are named a.c")
 
 
 def test_the_lists_name_every_source_in_the_tree():
-    """TRACKED and DATA_ONLY together are the C files under shared/."""
+    """TRACKED and DATA_ONLY together are the C files under shared/ and
+    protocols/."""
     listed = set(cov.TRACKED) | cov.DATA_ONLY
     assert listed == set(cov.library_sources())
     assert len(cov.TRACKED) == len(set(cov.TRACKED))
@@ -78,9 +80,10 @@ RESULTS = {
 
 def test_the_english_figure():
     assert cov.render_readme(RESULTS, "en") == (
-        "\nHost-suite line coverage of `shared/`: **97.0%**, 3,245 of 3,345 "
-        "lines in 2 files. CI fails below 94% in total or below 85% in any "
-        "file; exempt from the per-file floor: `stub_screen.c`. "
+        "\nHost-suite line coverage of `shared/` and `protocols/`: **97.0%**, "
+        "3,245 of 3,345 lines in 2 files. CI fails below 94% in total or "
+        "below 85% in any file; exempt from the per-file floor: "
+        "`stub_screen.c`. "
         "[STATUS.md](STATUS.md#tests-and-ci) has the table per file.\n")
 
 

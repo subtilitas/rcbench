@@ -6,6 +6,27 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- `protocols/kst/`: the protocol core for programming KST and Chaservo
+  servos over the signal wire. Frame coding, the reply decoder with one
+  result code per failed check, the 32-register image with raw and displayed
+  values, a layout fingerprint, 24 hard and 25 soft limits, write planning
+  for fields that lie in 2 registers, and a non-blocking session that reads
+  every write back and undoes a plan whose write does not take. The folder
+  includes no file of this project and reaches the wire through a driver of
+  3 functions. No pin driver, link page or screen uses it, and no firmware
+  image contains it. The host suite runs it against a servo and line model
+  (`test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`);
+  no frame of it has been sent to a servo. The timing and the register
+  layout come from 1 programming card and 1 servo of unidentified model,
+  and the effect of a register on servo motion is not measured.
+  ([README](protocols/kst/README.md))
+- The coverage floors, the mutation check, the sanitizer flag check, the
+  SPDX and `#define` scans, clang-tidy and cppcheck cover `protocols/` as
+  they cover `shared/`. The host build compiles the headers of
+  `protocols/kst/` as C++11 when the host has a C++ compiler.
+
 ## 0.16.0 - 2026-10-10
 
 The link protocol is 4.11. A 0.15 board still links and arms with a 0.16

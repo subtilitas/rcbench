@@ -77,10 +77,12 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json --sdk "$PICO_SDK_PATH"
 
 cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
-         $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
-         $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
+         $(git ls-files 'shared/**/include' 'protocols/**/include' \
+             | sed 's|^|-I|' | sort -u) \
+         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v gfx_font)
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-clang-tidy -p test/host/build $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
+clang-tidy -p test/host/build \
+         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v gfx_font)
 ruff check tools/ test/tools/ test/host/
 ```
 
@@ -93,7 +95,7 @@ A change fails if:
 
 - coverage drops below 94% overall, or any single file below 85%
   (`stub_screen.c` is exempt by name);
-- a C file under `shared/` is in neither `TRACKED` nor `DATA_ONLY` in
+- a C file under `shared/` or `protocols/` is in neither `TRACKED` nor `DATA_ONLY` in
   `tools/coverage.py`, is not compiled into the host suite, or is linked by
   no test, or the coverage figure in `README.md` or `README-de.md` differs
   from the measurement;
@@ -142,8 +144,9 @@ Formatting is not enforced. Match the file you are in.
 
 ## Mutation check
 
-`tools/mutate.py` changes one line of `shared/` at a time in a copy of the
-tree, builds the host suite and runs it. The copy holds `shared/`,
+`tools/mutate.py` changes one line of `shared/` or `protocols/` at a time in
+a copy of the tree, builds the host suite and runs it. The copy holds
+`shared/`, `protocols/`,
 `test/host/`, `firmware/iomcu/` and `tools/gen_esc_profiles.py`. It takes the lines the working tree
 changes against the merge base with `origin/main` (`--base` for another
 ref, `--files` for every line of the files named) and makes three kinds of

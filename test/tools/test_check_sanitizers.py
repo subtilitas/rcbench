@@ -55,6 +55,7 @@ def test_an_entry_is_read_as_a_command_or_as_arguments():
 def test_tally_counts_each_half_and_names_the_wrong_files(tmp_path):
     (tmp_path / "shared" / "a").mkdir(parents=True)
     (tmp_path / "test" / "host").mkdir(parents=True)
+    (tmp_path / "protocols" / "k").mkdir(parents=True)
     good = " ".join(GOOD)
     entries = [
         {"directory": str(tmp_path), "file": "shared/a/a.c", "command": good},
@@ -62,9 +63,12 @@ def test_tally_counts_each_half_and_names_the_wrong_files(tmp_path):
          "command": "cc -fsanitize=address -c b.c"},
         {"directory": str(tmp_path), "file": "test/host/t.c",
          "command": good},
+        {"directory": str(tmp_path), "file": "protocols/k/k.c",
+         "command": good},
         {"directory": "/elsewhere", "file": "x.c", "command": "cc -c x.c"},
     ]
     counts, wrong = cs.tally(entries, tmp_path)
-    assert counts == {"shared": [1, 2], "test/host": [1, 1]}
+    assert counts == {"shared": [1, 2], "protocols": [1, 1],
+                      "test/host": [1, 1]}
     assert list(wrong) == ["b.c"]
     assert "no -fsanitize=undefined" in wrong["b.c"]

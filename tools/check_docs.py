@@ -804,7 +804,7 @@ C_COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 # Where a constant the docs quote is defined.  Every #define with a value in
 # these trees is read; one defined with two different values is ambiguous
 # and counts as unknown, so a fact that names it fails.
-DEFINE_DIRS = ("shared", "firmware")
+DEFINE_DIRS = ("shared", "protocols", "firmware")
 
 LINK_PAGES_H = "shared/link/include/link_pages.h"
 CI_YML = REPO / ".github" / "workflows" / "ci.yml"
@@ -812,7 +812,7 @@ CI_YML = REPO / ".github" / "workflows" / "ci.yml"
 
 def defines() -> dict[str, str | None]:
     """NAME -> the text of its value, for every #define with one under
-    shared/ and firmware/; None where two definitions disagree."""
+    shared/, protocols/ and firmware/; None where two definitions disagree."""
     import os
     found: dict[str, str | None] = {}
     for base in DEFINE_DIRS:
@@ -1236,7 +1236,7 @@ def check_spdx(problems: list[str]) -> None:
     licence line.  A new file without one fails the build.
     """
     import os
-    for base in ("shared", "firmware", "test"):
+    for base in ("shared", "protocols", "firmware", "test"):
         for dp, dn, fn in os.walk(REPO / base):
             # Prune build trees in place (build, build-san, build-cov) so the
             # walk never reaches a toolchain's own probe files.

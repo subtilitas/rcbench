@@ -2,9 +2,9 @@
 """Mutate the lines a change touches and report what the host suite misses.
 
 A test that runs a line does not have to notice when the line is wrong.
-This tool changes one line of shared/ at a time, builds the host suite and
-runs it.  A mutant the suite fails is killed.  A mutant the suite passes
-survived: no test tells the changed line from the original.
+This tool changes one line of shared/ or protocols/ at a time, builds the
+host suite and runs it.  A mutant the suite fails is killed.  A mutant the
+suite passes survived: no test tells the changed line from the original.
 
     python3 tools/mutate.py                    # changed since origin/main
     python3 tools/mutate.py --base v0.14.0     # since another ref
@@ -13,8 +13,8 @@ survived: no test tells the changed line from the original.
     python3 tools/mutate.py --list             # the mutants, without a run
 
 The lines are those the working tree changes against the merge base of
-HEAD and --base, in the C files and headers under shared/.  Three kinds of
-mutant, each a change to one line:
+HEAD and --base, in the C files and headers under shared/ and protocols/.
+Three kinds of mutant, each a change to one line:
 
 - flip: a comparison becomes its neighbour, `<` and `<=`, `>` and `>=`,
   `==` and `!=`;
@@ -28,10 +28,10 @@ left alone.  The same tree and arguments give the same mutants in the same
 order: there is no random choice.  Above --max-mutants (60) the tool takes
 every k-th mutant of the sorted list.
 
-The working tree is never written.  The tool copies shared/, test/host,
-firmware/iomcu and tools/gen_esc_profiles.py into a temporary directory,
-builds there, and removes the directory on every way out: the end of the
-run, an error, Ctrl-C and SIGTERM.
+The working tree is never written.  The tool copies shared/, protocols/,
+test/host, firmware/iomcu and tools/gen_esc_profiles.py into a temporary
+directory, builds there, and removes the directory on every way out: the end
+of the run, an error, Ctrl-C and SIGTERM.
 
 Run time is bounded.  The unmutated configure, build and suite run first,
 at most --timeout (300 s) each.  No mutant starts after --budget (1200 s)
@@ -68,10 +68,10 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 # What the host build reads: the code under test, the suite, the
 # coprocessor's pin header and PIO program, which two tests read, and the
 # profile generator, which the esc_parity test holds the card reader to.
-COPIED = ("shared", "test/host", "firmware/iomcu",
+COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",
           "tools/gen_esc_profiles.py")
 # Where a mutant is made.
-MUTATED = "shared"
+MUTATED = ("shared", "protocols")
 SUFFIXES = (".c", ".h")
 
 DEFAULT_BASE = "origin/main"
@@ -410,11 +410,12 @@ def candidates(base: str, files: list[str]) -> list[Mutant]:
     else:
         fork = git("merge-base", base, "HEAD").strip()
         diff = git("diff", "-U0", "--no-color", "--no-ext-diff", fork,
-                   "--", MUTATED)
+                   "--", *MUTATED)
         wanted = dict(changed_lines(diff))
     out: list[Mutant] = []
     for name in sorted(wanted):
-        if not name.startswith(MUTATED + "/") or not name.endswith(SUFFIXES):
+        if (not name.startswith(tuple(m + "/" for m in MUTATED))
+                or not name.endswith(SUFFIXES)):
             continue
         path = REPO / name
         if path.is_file():
