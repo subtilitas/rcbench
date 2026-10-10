@@ -259,7 +259,10 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
  * repainted, alone, when its digits or its colour change.
  *
  * A change to or from the INA3221 empties the plot: its trace is of the
- * meter its label names.  The plot's scale starts at 0, so a negative
+ * meter its label names.  So does a count more than one ahead of the one
+ * in force, with the same meter or another: changes went by unseen, and
+ * another meter may have been the rail's in between.  The INA3221's last
+ * window is then forgotten as well.  The plot's scale starts at 0, so a negative
  * current is drawn on its lower edge.
  */
 void servo_screen_source(servo_source_id_t id, uint32_t changes);

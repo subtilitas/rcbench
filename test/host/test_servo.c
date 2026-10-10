@@ -6600,13 +6600,71 @@ TEST_CASE(a_window_is_shown_under_the_meter_of_its_poll)
         servo_screen_window(&w2, SERVO_SOURCE_PDMINI, at);     /* older */
         CHECK(row_reads("1.10 A", UI_C_TEXT));
         CHECK_EQ(servo_screen_power_points(), 1);
+        /* 2^31 - 1 ahead of at + 1 is the last count that is later; so far
+         * ahead, the window from before it is forgotten. */
         servo_screen_source(SERVO_SOURCE_PDMINI, at + 0x80000000u);
-        CHECK(row_reads("0.40 A", UI_C_TEXT));  /* 2^31 - 1 ahead of at + 1 */
+        CHECK(row_reads("0.40 A", UI_C_TEXT));
         servo_screen_source(SERVO_SOURCE_INA3221, at + 0x80000001u);
+        CHECK(row_reads("---", UI_C_TEXT));
+        servo_screen_window(&w1, SERVO_SOURCE_INA3221, at + 0x80000001u);
         CHECK(row_reads("1.10 A", UI_C_TEXT));
         /* 2^31 ahead reads as behind. */
         servo_screen_source(SERVO_SOURCE_PDMINI, at + 1u);
         CHECK(row_reads("1.10 A", UI_C_TEXT));
+    }
+
+    /* Changes that went by unseen: a count two or more ahead empties the
+     * plot whatever the meter is, since another may have been the rail's
+     * in between, and the INA3221's window from before them is not shown. */
+    static const uint32_t k_from[] = { 2u, 0xFFFFFFFEu, 0xFFFFFFFFu };
+    for (size_t i = 0u; i < sizeof(k_from) / sizeof(k_from[0]); ++i) {
+        const uint32_t n = k_from[i];
+        fresh();
+        servo_screen_source(SERVO_SOURCE_INA3221, n);
+        servo_screen_window(&w1, SERVO_SOURCE_INA3221, n);
+        servo_screen_window(&w2, SERVO_SOURCE_INA3221, n);
+        CHECK_EQ(servo_screen_power_points(), 2);
+        servo_screen_source(SERVO_SOURCE_INA3221, n);       /* the same */
+        CHECK_EQ(servo_screen_power_points(), 2);
+        /* INA3221, PD mini, INA3221 between two snapshots. */
+        servo_screen_source(SERVO_SOURCE_INA3221, n + 2u);
+        CHECK_EQ(servo_screen_power_points(), 0);
+        CHECK(row_reads("---", UI_C_TEXT));
+        CHECK(line_ina("-- V", "-- A", "-- W"));
+        /* The PD mini's interval, arriving behind it, shows nothing. */
+        servo_screen_window(&w3, SERVO_SOURCE_PDMINI, n + 1u);
+        CHECK(row_reads("---", UI_C_TEXT));
+        servo_screen_window(&w3, SERVO_SOURCE_INA3221, n + 2u);
+        CHECK_EQ(servo_screen_power_points(), 1);
+        CHECK(row_reads("1.30 A", UI_C_TEXT));
+        /* A window that is itself two ahead: the same, then its point. */
+        servo_screen_window(&w1, SERVO_SOURCE_INA3221, n + 4u);
+        CHECK_EQ(servo_screen_power_points(), 1);
+        CHECK(row_reads("1.10 A", UI_C_TEXT));
+
+        /* The supply's trace likewise: PD mini, INA3221, PD mini; and PD
+         * mini, INA3221, model, where the name does not change either. */
+        for (int to = 0; to < 2; ++to) {
+            fresh();
+            servo_screen_source(SERVO_SOURCE_PDMINI, n);
+            rail_supply(6.0f, 0.4f);
+            rail_supply(6.0f, 0.4f);
+            CHECK_EQ(servo_screen_power_points(), 2);
+            servo_screen_source(to == 0 ? SERVO_SOURCE_PDMINI
+                                        : SERVO_SOURCE_MODEL, n + 2u);
+            CHECK_EQ(servo_screen_power_points(), 0);
+            CHECK(row_reads("0.40 A", UI_C_TEXT));   /* its last reading */
+            rail_supply(6.0f, 0.5f);
+            CHECK_EQ(servo_screen_power_points(), 1);
+        }
+        /* One ahead between the PD mini and the model: the supply's trace
+         * goes on. */
+        fresh();
+        servo_screen_source(SERVO_SOURCE_PDMINI, n);
+        rail_supply(6.0f, 0.4f);
+        servo_screen_source(SERVO_SOURCE_MODEL, n + 1u);
+        rail_supply(6.0f, 0.4f);
+        CHECK_EQ(servo_screen_power_points(), 2);
     }
 
     /* The supply's samples wait on a queue as well.  One taken under a

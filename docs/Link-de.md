@@ -540,8 +540,10 @@ dem Plot ([Screens](Screens-de.md#servo)). Von zwei Antworten behält er die
 mit dem späteren Zähler. Ein Fenster, dessen Zähler hinter dem geltenden
 Messgerät liegt, verwirft er, und ein Sample des Netzteils, dessen Zähler
 dahinter liegt, ist kein Punkt des Plots: Snapshot und Queues sind drei
-Wege, und jeder kann der älteste sein. Der Servotest liest den PD mini,
-jedes Sample.
+Wege, und jeder kann der älteste sein. Ein Zähler, der dem geltenden um
+mehr als eins voraus ist, bedeutet Wechsel, die der Bildschirm nicht gesehen
+hat, und leert den Plot, welches Messgerät es auch ist. Der Servotest liest
+den PD mini, jedes Sample.
 
 `test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
 Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im

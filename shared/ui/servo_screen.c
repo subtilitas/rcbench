@@ -2070,28 +2070,37 @@ static void supply_sample(const supply_state_t *st, bool in_force)
 
 /*
  * The meter @p id as decided at change count @p changes, unless the meter in
- * force was decided at a later one: the snapshot and the windows reach the
- * render task on two paths, and either can be the older.  Returns whether
- * it is the meter in force.
+ * force was decided at a later one: the snapshot, the windows and the
+ * supply's samples reach the render task on three paths, and each can be
+ * the oldest.  Returns whether it is the meter in force.
  */
 static bool source_take(servo_source_id_t id, uint32_t changes)
 {
-    if (s.have_changes && (int32_t)(changes - s.changes) < 0) {
+    const int32_t ahead = s.have_changes ? (int32_t)(changes - s.changes) : 0;
+    if (ahead < 0) {
         return false;
     }
     s.have_changes = true;
     s.changes      = changes;
-    if (id == s.source) {
+    /* More than one change ahead: changes went by unseen, and another meter
+     * may have been the rail's in between, whatever the meter is called on
+     * both sides of them. */
+    const bool skipped = ahead > 1;
+    if (id == s.source && !skipped) {
         return true;
     }
     const bool was_ina = (s.source == SERVO_SOURCE_INA3221);
     const bool now_ina = (id == SERVO_SOURCE_INA3221);
     s.source = id;
-    if (was_ina != now_ina) {
+    if (was_ina != now_ina || skipped) {
         /* The two meters do not agree, and the label names one of them:
          * the trace starts again with the meter it is labelled with. */
         ui_plot_clear(&s.power);
         ++s.power_rev;
+    }
+    if (skipped) {
+        /* And a window kept from before them is not this meter's. */
+        s.have_win = false;
     }
     cur_follow();
     return true;
