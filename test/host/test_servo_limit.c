@@ -15,21 +15,28 @@
 
 #include "servo_limit.h"
 #include "servo_sim.h"
+#include "tick_wrap.h"
 
 #define SAMPLE_MS 5u   /* a 200 Hz current sensor */
 
 /* Run the search to a conclusion, or until it has plainly hung.  Returns the
  * number of milliseconds it took. */
-static uint32_t search(servo_limit_t *lf, servo_sim_t *sim, uint32_t budget_ms)
+static uint32_t search_from(servo_limit_t *lf, servo_sim_t *sim,
+                            uint32_t budget_ms, uint32_t t0)
 {
     uint32_t t = 0;
     uint16_t cmd = lf->cmd_us;
     while (lf->state == SERVO_LIMIT_RUNNING && t < budget_ms) {
-        const float a = servo_sim_step(sim, cmd, t);
-        cmd = servo_limit_step(lf, a, t);
+        const float a = servo_sim_step(sim, cmd, t0 + t);
+        cmd = servo_limit_step(lf, a, t0 + t);
         t += SAMPLE_MS;
     }
     return t;
+}
+
+static uint32_t search(servo_limit_t *lf, servo_sim_t *sim, uint32_t budget_ms)
+{
+    return search_from(lf, sim, budget_ms, 0u);
 }
 
 static void setup(servo_limit_t *lf, servo_sim_t *sim, bool positive)
@@ -421,6 +428,68 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK_NEAR(servo_limit_progress(NULL), 0.0f, 0.001f);
 }
 
+/* The search's settle, measure and stall times are differences of two
+ * times: a search with the 2^32 ms wrap inside it finds the endpoint a
+ * search at tick 0 finds, after the same time. */
+static uint32_t g_search_ms;
+
+static void a_search_finds_the_upper_stop(uint32_t t0)
+{
+    servo_limit_t lf;
+    servo_sim_t sim;
+    setup(&lf, &sim, true);
+    const uint32_t took = search_from(&lf, &sim, 60000, t0);
+    CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
+    CHECK_EQ(lf.limit_us, 1855);
+    if (t0 == 0u) {
+        g_search_ms = took;
+    } else {
+        CHECK_EQ(took, g_search_ms);
+        CHECK((uint32_t)(t0 + took) < t0);      /* it did wrap */
+    }
+}
+
+TEST_CASE(a_search_takes_the_same_time_across_the_tick_wrap)
+{
+    /* Each start puts the wrap in another settle or measure of the search:
+     * 1 ms, 62 ms and 2501 ms after the start. */
+    static const uint32_t k_before[] = { 1u, 62u, 2501u };
+    for (unsigned i = 0; i < sizeof(k_before) / sizeof(k_before[0]); ++i) {
+        at_tick_0_and_before_the_wrap(a_search_finds_the_upper_stop,
+                                      k_before[i]);
+    }
+}
+
+/* The stall timer the same: a current above stall_above_a ends the search
+ * stall_ms after it rose and not 1 ms earlier, wherever the clock is. */
+static void a_held_servo_times_out(uint32_t t0)
+{
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 1500, true);
+    lc.hard_limit_a  = 5.0f;
+    lc.knee_ratio    = 50.0f;   /* the knee test sees nothing */
+    lc.knee_margin_a = 50.0f;
+    lc.stall_above_a = 0.5f;
+    servo_limit_t lf;
+    servo_limit_init(&lf, &lc);
+    (void)servo_limit_step(&lf, 1.0f, t0);      /* elevated from here */
+    (void)servo_limit_step(&lf, 1.0f, t0 + 1u);
+    CHECK_EQ(lf.state, SERVO_LIMIT_RUNNING);
+    (void)servo_limit_step(&lf, 1.0f, t0 + lc.stall_ms - 1u);
+    CHECK_EQ(lf.state, SERVO_LIMIT_RUNNING);
+    (void)servo_limit_step(&lf, 1.0f, t0 + lc.stall_ms);
+    CHECK_EQ(lf.state, SERVO_LIMIT_FAULT);
+    CHECK_EQ(lf.fault, SERVO_LIMIT_FAULT_STALL);
+    CHECK_EQ(lf.cmd_us, 1500);
+}
+
+TEST_CASE(a_held_servo_ends_the_search_at_stall_ms_across_the_tick_wrap)
+{
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 1500, true);
+    at_tick_0_and_before_the_wrap(a_held_servo_times_out, lc.stall_ms / 2u);
+}
+
 int main(void)
 {
     RUN(it_finds_the_upper_stop_and_stops_short_of_it);
@@ -439,5 +508,7 @@ int main(void)
     RUN(the_search_takes_a_workable_amount_of_time);
     RUN(progress_runs_from_nothing_to_all_of_it);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
+    RUN(a_search_takes_the_same_time_across_the_tick_wrap);
+    RUN(a_held_servo_ends_the_search_at_stall_ms_across_the_tick_wrap);
     return test_summary("servo_limit");
 }

@@ -19,20 +19,26 @@
 #include "link_pages.h"
 #include "outputs.h"
 #include "servo_page.h"
+#include "tick_wrap.h"
 
 static outputs_t    o;
 static servo_page_t pg;
 
 #define T0 1000u
 
-/* Channel 0 a surface, channel 1 a throttle, the bench armed at T0. */
-static void fresh(bool armed)
+/* Channel 0 a surface, channel 1 a throttle, the bench armed at @p t0. */
+static void fresh_at(bool armed, uint32_t t0)
 {
-    outputs_init(&o, T0);
+    outputs_init(&o, t0);
     CHECK(outputs_set_role(&o, 0, OUT_ROLE_SURFACE));
     CHECK(outputs_set_role(&o, 1, OUT_ROLE_THROTTLE));
-    outputs_arm(&o, armed, T0);
+    outputs_arm(&o, armed, t0);
     servo_page_init(&pg);
+}
+
+static void fresh(bool armed)
+{
+    fresh_at(armed, T0);
 }
 
 /* A sweep's four registers, written as the panel writes them: one frame. */
@@ -727,6 +733,87 @@ TEST_CASE(the_curve_over_a_hold_starts_from_its_beginning)
     CHECK_EQ(say(LINK_SV_RESUME, T0 + 400u), LINK_NACK_BAD_VALUE);
 }
 
+/*
+ * The panel's silence ends a sweep after 500 ms wherever the clock is: still
+ * running 1 ms and 500 ms after the last write, stopped at 501 ms.
+ */
+static void a_sweep_outlasts_500_ms_of_silence(uint32_t t0)
+{
+    fresh_at(true, t0);
+    CHECK_EQ(sweep(SWEEP_TRIANGLE, 1000u, 400u, 0u, t0), 0u);
+    CHECK(servo_page_step(&pg, &o, t0 + 1u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_TRIANGLE);
+    CHECK(servo_page_step(&pg, &o, t0 + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_TRIANGLE);
+    CHECK(!servo_page_step(&pg, &o, t0 + OUT_DEFAULT_TIMEOUT_MS + 1u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+}
+
+TEST_CASE(a_sweep_ends_on_500_ms_of_silence_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_sweep_outlasts_500_ms_of_silence, 250u);
+}
+
+/* A hold the same: kept 1 ms and 500 ms after its last repeat, let go at
+ * 501 ms, and the surface stamped with the repeat's time while it lasts. */
+static void a_hold_outlasts_500_ms_of_silence(uint32_t t0)
+{
+    fresh_at(true, t0);
+    CHECK_EQ(sweep(SWEEP_SQUARE, 1000u, 400u, 0u, t0), 0u);
+    CHECK(servo_page_step(&pg, &o, t0 + 10u));
+    const uint32_t th = t0 + 20u;
+    CHECK_EQ(say(LINK_SV_HOLD, th), 0u);
+    CHECK(!servo_page_step(&pg, &o, th + 1u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
+    CHECK_EQ(o.channel[0].last_command_ms, th);
+    CHECK(!servo_page_step(&pg, &o, th + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
+    CHECK(!servo_page_step(&pg, &o, th + OUT_DEFAULT_TIMEOUT_MS + 1u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    /* Nothing is left to resume. */
+    CHECK_EQ(say(LINK_SV_RESUME, th + OUT_DEFAULT_TIMEOUT_MS + 2u),
+             LINK_NACK_BAD_VALUE);
+}
+
+TEST_CASE(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_hold_outlasts_500_ms_of_silence, 270u);
+}
+
+/* A finished sweep's centre is commanded for 500 ms after the last repeat
+ * and not at 501 ms: the surface's stamp follows the pass up to there. */
+static void a_finished_sweep_is_stamped_for_500_ms(uint32_t t0)
+{
+    fresh_at(true, t0);
+    const uint16_t two = 2u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP_MOVES, 1u, &two, &o, t0), 0u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, t0), 0u);
+    uint32_t t = t0;
+    while (servo_page_step(&pg, &o, t) && t - t0 < 5000u) {
+        if ((t - t0) % 100u == 0u) {
+            CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, t), 0u);
+        }
+        ++t;
+    }
+    CHECK_EQ(t - t0, 750u);
+    const uint32_t tr = t0 + 800u;              /* the last repeat */
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, tr), 0u);
+    CHECK(!servo_page_step(&pg, &o, tr + 1u));
+    CHECK_EQ(o.channel[0].last_command_ms, tr + 1u);
+    CHECK(!servo_page_step(&pg, &o, tr + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK_EQ(o.channel[0].last_command_ms, tr + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK(!servo_page_step(&pg, &o, tr + OUT_DEFAULT_TIMEOUT_MS + 1u));
+    CHECK_EQ(o.channel[0].last_command_ms, tr + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
+}
+
+TEST_CASE(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap)
+{
+    /* The last repeat 250 ms before the wrap. */
+    at_tick_0_and_before_the_wrap(a_finished_sweep_is_stamped_for_500_ms,
+                                  1050u);
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -753,5 +840,8 @@ int main(void)
     RUN(a_position_after_a_let_go_hold_needs_the_stop_first);
     RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
+    RUN(a_sweep_ends_on_500_ms_of_silence_across_the_tick_wrap);
+    RUN(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap);
+    RUN(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap);
     return test_summary("servo_page");
 }

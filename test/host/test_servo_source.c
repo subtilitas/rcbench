@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "tick_wrap.h"
 
 #include "sense_chain.h"
 #include "servo_source.h"
@@ -854,6 +855,49 @@ TEST_CASE(a_link_lost_is_the_model_and_its_return_settles_again)
     }
 }
 
+/* The schedule stops with every read answered: the window number that
+ * stands is CH1's window for SENSE_LINK_STALE_MS less 1 ms after it last
+ * moved and no window from then on, with the wrap inside that time. */
+static void a_standing_number_is_no_window_at_500_ms(uint32_t t0)
+{
+    chain_fresh(LINK_PROTOCOL_MINOR, t0);
+    CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
+    ch.exch_ms = 0u;                    /* core 1 no longer ticks */
+    sense_link_meter_t m;
+    sense_link_meter(&ch.sl, &m);
+    CHECK(m.win);
+    /* The windows closed before the stop are read in the first polls; the
+     * number last moves in one of them. */
+    uint32_t moved = m.win_ms;
+    unsigned with = 0u, without = 0u;
+    for (unsigned i = 0u; i < 30u; ++i) {
+        chain_far_late(50u);
+        (void)chain_step(0u, true);     /* read at chain_now() */
+        sense_link_meter(&ch.sl, &m);
+        if (i < 3u) {
+            moved = m.win_ms;
+        }
+        CHECK_EQ(m.win_ms, moved);
+        const bool fresh_now = (uint32_t)(chain_now() - moved)
+                               < SENSE_LINK_STALE_MS;
+        CHECK_EQ(m.win, fresh_now);
+        with    += m.win ? 1u : 0u;
+        without += m.win ? 0u : 1u;
+    }
+    CHECK(with >= 9u && with <= 12u);
+    CHECK(without >= 18u);
+}
+
+TEST_CASE(a_standing_window_number_goes_stale_at_500_ms_across_the_tick_wrap)
+{
+    /* How long the chain takes to make the INA3221 the meter, for a stop
+     * 250 ms before the wrap. */
+    chain_fresh(LINK_PROTOCOL_MINOR, 0u);
+    CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
+    at_tick_0_and_before_the_wrap(a_standing_number_is_no_window_at_500_ms,
+                                  chain_now() + 250u);
+}
+
 int main(void)
 {
     RUN(the_meter_is_the_model_until_a_coprocessor_answers);
@@ -876,5 +920,6 @@ int main(void)
     RUN(a_window_number_that_stands_stays_stale_across_the_tick_wrap);
     RUN(a_4_10_coprocessor_is_never_the_ina3221s_and_is_said_once);
     RUN(a_link_lost_is_the_model_and_its_return_settles_again);
+    RUN(a_standing_window_number_goes_stale_at_500_ms_across_the_tick_wrap);
     return test_summary("servo_source");
 }

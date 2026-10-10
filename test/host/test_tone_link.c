@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "tick_wrap.h"
 
 #include "link_msg.h"
 #include "link_pages.h"
@@ -241,11 +242,12 @@ static void want(const tone_setup_t *w)
     tone_link_want(&tl, w, now);
 }
 
-static void fresh(uint16_t m)
+/* The link up at tick @p t0 with a coprocessor speaking 4.@p m. */
+static void fresh_at(uint16_t m, uint32_t t0)
 {
     fake_init();
     tone_link_init(&tl);
-    now = 10000u;
+    now = t0;
     minor = m;
     writes = reads = to_tone = 0u;
     lose_next = false;
@@ -253,6 +255,11 @@ static void fresh(uint16_t m)
     const tone_setup_t w = setup_default();
     want(&w);
     tone_link_came_up(&tl, minor, now);
+}
+
+static void fresh(uint16_t m)
+{
+    fresh_at(m, 10000u);
 }
 
 /* One poll of the control task: every exchange owed, then 50 ms on. */
@@ -1434,6 +1441,164 @@ TEST_CASE(null_arguments_are_taken)
     CHECK(!tone_link_next(&tl, now, &op));
 }
 
+/* --------------------------------------------------- across the wrap */
+
+/* The set-up rests TONE_LINK_SETTLE_MS before it is written and the status
+ * is read once a 50 ms poll, with the 2^32 ms wrap inside the rest. */
+static void the_tap_is_written_and_read(uint32_t t0)
+{
+    fresh_at(8u, t0);
+    polls(2);
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(5);
+    CHECK_EQ(writes, 0u);
+    polls(6);
+    CHECK_EQ(writes, 1u);
+    CHECK(tone_link_settled(&tl));
+    const unsigned before = reads;
+    polls(20);
+    CHECK_EQ(reads - before, 20u);
+}
+
+TEST_CASE(the_set_up_rests_and_is_read_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(the_tap_is_written_and_read, 300u);
+}
+
+/* The status is asked for again TONE_LINK_READ_MS after it was last asked
+ * for and not 1 ms sooner; tap_on() leaves the last one asked at t0 + 650. */
+static void the_status_is_due_at_its_interval(uint32_t t0)
+{
+    fresh_at(8u, t0);
+    tap_on();
+    const uint32_t asked = now - 50u;
+    CHECK_EQ(asked, t0 + 650u);
+    tone_link_op_t op;
+    CHECK(!tone_link_next(&tl, asked + 1u, &op));
+    CHECK(!tone_link_next(&tl, asked + TONE_LINK_READ_MS - 1u, &op));
+    CHECK(tone_link_next(&tl, asked + TONE_LINK_READ_MS, &op));
+    CHECK_EQ(op.kind, TONE_LINK_OP_STATUS);
+}
+
+TEST_CASE(the_status_is_due_at_its_interval_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(the_status_is_due_at_its_interval,
+                                  650u + TONE_LINK_READ_MS / 2u);
+}
+
+/* A status is the tap's state for TONE_LINK_STALE_MS less 1 ms and no
+ * longer; the last one came at t0 + 650. */
+static void a_status_goes_stale_at_its_time(uint32_t t0)
+{
+    fresh_at(8u, t0);
+    tap_on();
+    const uint32_t had = now - 50u;
+    tone_readout_t r;
+    tone_link_readout(&tl, had + 1u, &r);
+    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    tone_link_readout(&tl, had + TONE_LINK_STALE_MS - 1u, &r);
+    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    tone_link_readout(&tl, had + TONE_LINK_STALE_MS, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+}
+
+TEST_CASE(a_status_goes_stale_at_its_time_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_status_goes_stale_at_its_time,
+                                  650u + TONE_LINK_STALE_MS / 2u);
+}
+
+/* The second of two events waits TONE_LINK_EVENT_GAP_MS from the first and
+ * not 1 ms less, wherever on the clock the first was handed out. */
+static void the_second_event_waits_the_gap(uint32_t t0)
+{
+    fresh(8u);
+    tap_on();
+    fk.flags = LINK_TN_RUNNING | LINK_TN_PIN_REFUSED | LINK_TN_OVERRUN;
+    polls(3);
+    CHECK_EQ(tone_link_event(&tl, t0), TONE_LINK_EV_PIN_BUSY);
+    CHECK_EQ(tone_link_event(&tl, t0 + 1u), 0u);
+    CHECK_EQ(tone_link_event(&tl, t0 + TONE_LINK_EVENT_GAP_MS - 1u), 0u);
+    CHECK_EQ(tone_link_event(&tl, t0 + TONE_LINK_EVENT_GAP_MS),
+             TONE_LINK_EV_OVERRUN);
+}
+
+TEST_CASE(an_event_waits_its_gap_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(the_second_event_waits_the_gap,
+                                  TONE_LINK_EVENT_GAP_MS / 2u);
+}
+
+/* The polls, of @p n, at which a write went out. */
+typedef struct {
+    unsigned n;
+    unsigned at[8];
+} write_polls_t;
+
+static write_polls_t polls_writing(int n)
+{
+    write_polls_t w = { 0u, { 0u } };
+    for (int i = 0; i < n; ++i) {
+        const unsigned before = writes;
+        poll_once();
+        if (writes != before && w.n < 8u) {
+            w.at[w.n++] = (unsigned)i;
+        }
+    }
+    return w;
+}
+
+/* A first frame refused for its pin is offered again every
+ * TONE_LINK_RETRY_MS, 100 polls, with the wrap inside the first wait or
+ * the second. */
+static void a_refused_pin_is_offered_every_5_s(uint32_t t0)
+{
+    fresh_at(8u, t0);
+    fk.bad_pin = 22;
+    polls(2);
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    const write_polls_t wp = polls_writing(330);
+    CHECK_EQ(wp.n, 4u);
+    for (unsigned i = 1u; i < wp.n; ++i) {
+        CHECK_EQ(wp.at[i] - wp.at[i - 1u], TONE_LINK_RETRY_MS / 50u);
+    }
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 0u);
+}
+
+TEST_CASE(a_refused_pin_is_offered_every_5_s_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_refused_pin_is_offered_every_5_s, 3000u);
+    at_tick_0_and_before_the_wrap(a_refused_pin_is_offered_every_5_s, 8000u);
+}
+
+/* A saved tap that met a busy pin at boot the same. */
+static void a_saved_tap_is_offered_every_5_s(uint32_t t0)
+{
+    fresh_at(8u, t0);
+    fk.bad_pin = LINK_TN_DEFAULT_PIN;
+    fk.cfg[LINK_TN_ENABLE] = LINK_TN_EN_TAP;
+    fk.flags = LINK_TN_PIN_REFUSED;
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    const write_polls_t wp = polls_writing(330);
+    CHECK_EQ(wp.n, 3u);
+    for (unsigned i = 1u; i < wp.n; ++i) {
+        CHECK_EQ(wp.at[i] - wp.at[i - 1u], TONE_LINK_RETRY_MS / 50u);
+    }
+    CHECK_EQ(fk.captures, 0u);
+}
+
+TEST_CASE(a_saved_tap_is_offered_every_5_s_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_saved_tap_is_offered_every_5_s, 3000u);
+    at_tick_0_and_before_the_wrap(a_saved_tap_is_offered_every_5_s, 8000u);
+}
+
 int main(void)
 {
     RUN(nothing_is_sent_to_a_4_7_coprocessor);
@@ -1481,5 +1646,11 @@ int main(void)
     RUN(a_new_link_forgets_what_the_last_one_said);
     RUN(the_history_stays_across_a_lost_link);
     RUN(null_arguments_are_taken);
+    RUN(the_set_up_rests_and_is_read_across_the_tick_wrap);
+    RUN(the_status_is_due_at_its_interval_across_the_tick_wrap);
+    RUN(a_status_goes_stale_at_its_time_across_the_tick_wrap);
+    RUN(an_event_waits_its_gap_across_the_tick_wrap);
+    RUN(a_refused_pin_is_offered_every_5_s_across_the_tick_wrap);
+    RUN(a_saved_tap_is_offered_every_5_s_across_the_tick_wrap);
     return test_summary("tone_link");
 }
