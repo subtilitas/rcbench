@@ -613,7 +613,7 @@ TRAVEL TIME set to 800 ms:
 RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         MG90S
-Firmware:       rcbench 0.15.0
+Firmware:       rcbench 0.16.0
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
 Current:        PD mini

@@ -6,8 +6,29 @@ history is in git.
 
 ## Unreleased
 
-The link protocol is 4.11. A 4.10 panel links and arms with a 4.11
-coprocessor and the other way round.
+## 0.16.0 - 2026-10-10
+
+The link protocol is 4.11. A 0.15 board still links and arms with a 0.16
+one, since only the protocol's major number has to match. The SERVO_WIN page,
+the INA3221 as the servo rail's meter in the automatic servo test and in the
+bench log, and the `RESETS` count need both boards at 0.16: a 0.16 panel
+with a 4.10 coprocessor reads the PD mini as the meter and takes the
+INA3221's windows from SERVO_SENSE, and a 4.10 panel never reads the new
+page. The sensor pins are a pair: a 0.16 panel offers only pairs and works
+with either coprocessor, and a 0.15 panel paired with a 0.16 coprocessor
+sees the pins it sets refused at the edit. Flash both boards. The automatic
+servo test reads the INA3221's CH1 when it is the rail's meter, writes a CSV
+file of 19 columns (21 with the AS5600), and ends a run in which the supply
+reports constant current for 1 s. Sensor SCL follows Sensor SDA, a current
+monitor that resets itself is found and set up again, and coprocessor core 0
+runs on a 4096-byte stack. A coprocessor debug build, `-DSENSE_TRACE=ON`,
+prints the servo current's 1 ms samples, which `tools/sense_trace.py` reads
+and replays. CI and the tools hold more to the tree: `tools/mutate.py`,
+tests for the tools, `stack_check.py --iomcu`, `ci_gate.py` and the numbers
+`check_docs.py` takes from constants. Nothing in this release has run on
+hardware: the changes have run on the host suite only, the coprocessor's
+stack is not measured on a board, and whether either current monitor resets
+on a supply dip is not measured.
 
 ### Added
 
