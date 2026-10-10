@@ -512,9 +512,15 @@ static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
 static QueueHandle_t     s_enc_q;     /**< control task -> app_main */
-/* The INA3221's CH1 windows from the ring (sense_link_win_t), each number
- * once and in order.  Full means the renderer is SAMPLE_Q_LEN windows
- * behind, and the oldest is dropped. */
+/* The INA3221's CH1 windows from the ring, each number once and in order,
+ * each with the servo rail's meter and its change count as decided in the
+ * poll that took it (servo_screen_window()).  Full means the renderer is
+ * SAMPLE_Q_LEN windows behind, and the oldest is dropped. */
+typedef struct {
+    sense_link_win_t  win;
+    servo_source_id_t source;
+    uint32_t          changes;
+} servo_win_item_t;
 static QueueHandle_t     s_win_q;     /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
 
@@ -546,6 +552,7 @@ static struct {
     /* The servo rail's meter as of the last poll (servo_source.h), and the
      * CH1 windows that left the ring untaken since boot. */
     servo_source_id_t servo_source;
+    uint32_t      servo_source_changes;
     uint32_t      servo_win_lost;
 } s_snap;
 
@@ -6840,10 +6847,17 @@ static void servo_window_take(bench_state_t *bench)
         return;
     }
     sense_link_win_bench(&s_sense_link, &w, bench);
-    if (xQueueSend(s_win_q, &w, 0) != pdTRUE) {
-        sense_link_win_t stale;
+    /* With the meter as this poll decided it: the snapshot the render side
+     * reads can be older or newer than a window on the queue. */
+    const servo_win_item_t item = {
+        .win     = w,
+        .source  = servo_source_id(&s_servo_source),
+        .changes = servo_source_changes(&s_servo_source),
+    };
+    if (xQueueSend(s_win_q, &item, 0) != pdTRUE) {
+        servo_win_item_t stale;
         (void)xQueueReceive(s_win_q, &stale, 0);
-        (void)xQueueSend(s_win_q, &w, 0);
+        (void)xQueueSend(s_win_q, &item, 0);
     }
 }
 
@@ -6938,6 +6952,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.mcu_temp_c  = s_mcu_c;
     tone_link_readout(&s_tone_link, now_ms(), &s_snap.tone);
     s_snap.servo_source   = servo_source_id(&s_servo_source);
+    s_snap.servo_source_changes = servo_source_changes(&s_servo_source);
     s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
     snap_unlock();
 
@@ -7482,7 +7497,7 @@ void app_main(void)
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_state_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
-    s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(sense_link_win_t));
+    s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_win_item_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
@@ -7558,9 +7573,11 @@ void app_main(void)
         uint32_t arm_gen_now;
         bool     link_now;
         servo_source_id_t servo_source_now;
+        uint32_t servo_changes_now;
         snap_lock();
         link_now       = s_snap.link_up;
         servo_source_now = s_snap.servo_source;
+        servo_changes_now = s_snap.servo_source_changes;
         armed_now      = s_snap.armed;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
@@ -7732,12 +7749,13 @@ void app_main(void)
             servo_screen_encoder(&enc);
         }
         /* The servo rail's meter, then the INA3221's CH1 windows, each
-         * once: the SERVO screen's CURRENT row, line and plot show the
-         * meter's reading.  The servo test reads the supply. */
-        servo_screen_source(servo_source_now);
-        sense_link_win_t win;
+         * once with the meter of its poll: the SERVO screen's CURRENT row,
+         * line and plot show the meter's reading.  The servo test reads
+         * the supply. */
+        servo_screen_source(servo_source_now, servo_changes_now);
+        servo_win_item_t win;
         while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) {
-            servo_screen_window(&win);
+            servo_screen_window(&win.win, win.source, win.changes);
         }
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {

@@ -174,7 +174,7 @@ int main(int argc, char **argv)
         servo_screen_set_armed(true);
         servo_screen_set_commanded(38.0f);
         if (strcmp(mode, "servo-current") == 0) {
-            servo_screen_source(SERVO_SOURCE_INA3221);
+            servo_screen_source(SERVO_SOURCE_INA3221, 1u);
         }
         for (int f = 0; f < 2 * UI_HOLD_FLASH_FRAMES; ++f) {
             ui_router_tick(0.0f);
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
                     .max_ma  = 900, .min_ma = 20,
                     .mean_mv = 5980u, .min_mv = 5900u,
                 };
-                servo_screen_window(&w);
+                servo_screen_window(&w, SERVO_SOURCE_INA3221, 1u);
             }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);

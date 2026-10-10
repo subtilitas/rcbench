@@ -225,14 +225,19 @@ void servo_screen_supply(const supply_state_t *s);
 
 /**
  * The servo rail's meter, as servo_source.h decides it, every frame before
- * that frame's windows and supply samples.
+ * that frame's windows and supply samples.  @p changes is
+ * servo_source_changes() of the same poll: the meter is taken unless the one
+ * in force was decided at a later count, which a window's can be
+ * (servo_screen_window()).
  *
  * The CURRENT row, the line over the plot and the plot show that meter's
  * reading.  SERVO_SOURCE_INA3221: the last CH1 window -- mean current, mean
  * bus voltage at the load side of the shunt and their product -- under the
  * label INA3221 CH1.  SERVO_SOURCE_PDMINI and SERVO_SOURCE_MODEL: the
  * supply's last sample under the label SUPPLY, the PD mini's reading or the
- * model's.  SERVO_SOURCE_MODEL until the first call.
+ * model's.  SERVO_SOURCE_MODEL until the first call.  The name takes its
+ * cells from the readings beside it: beside INA3221 CH1 they are 60, 64 and
+ * 56 px wide, and a power wider than that is drawn in whole watts.
  *
  * The row is `---` and a reading on the line `--` while the meter has no
  * reading: no window since the link came up, a window without samples of
@@ -245,16 +250,24 @@ void servo_screen_supply(const supply_state_t *s);
  * meter its label names.  The plot's scale starts at 0, so a negative
  * current is drawn on its lower edge.
  */
-void servo_screen_source(servo_source_id_t id);
+void servo_screen_source(servo_source_id_t id, uint32_t changes);
 
 /**
  * One 50 ms window of INA3221 CH1 (sense_link_take_win()), each one once, in
- * the order they arrive.  While the INA3221 is the rail's meter each is one
- * point of the plot and the reading of the row and the line.  One that
- * arrives while the link is down is dropped, and a link that goes down takes
- * the last one with it (servo_screen_set_link()).
+ * the order they arrive, with the meter @p id and its change count
+ * @p changes as decided in the poll that took the window.
+ *
+ * The windows wait on a queue and the meter of servo_screen_source() is read
+ * from a snapshot, so either can be the older.  A window whose count is
+ * behind the meter in force was taken under a meter replaced since and is
+ * dropped.  One whose count is ahead brings its meter with it, as
+ * servo_screen_source() would.  While the INA3221 is the rail's meter each
+ * window taken is one point of the plot and the reading of the row and the
+ * line.  One that arrives while the link is down is dropped, and a link
+ * that goes down takes the last one with it (servo_screen_set_link()).
  */
-void servo_screen_window(const sense_link_win_t *w);
+void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
+                         uint32_t changes);
 
 /** How many points the power plot holds, and its series @p series (0 the
  *  voltage in V, 1 the current in A, 2 the power in W) @p back points

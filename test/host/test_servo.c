@@ -40,8 +40,14 @@ static gfx_color_t *fb;
 static gfx_canvas_t cv;
 static const ui_screen_t *scr;
 
+/* The servo rail's meter as the panel hands it over: the meter, and the
+ * count of its changes (servo_source_changes()). */
+static servo_source_id_t meter_id = SERVO_SOURCE_MODEL;
+static uint32_t meter_changes;
+
 static void fresh(void)
 {
+    meter_id = SERVO_SOURCE_MODEL;
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
     }
@@ -6062,14 +6068,23 @@ static bool line_reads(const char *label, int lab_w, const char *v,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     const char *txt[3] = { v, a, w };
     const ui_color_id_t col[3] = { UI_C_VOLT, a_col, UI_C_POWER };
-    const int fw = (RAIL_W - lab_w) / 3;
+    /* 68 px each beside SUPPLY; 60, 64 and 56 px beside INA3221 CH1. */
+    static const int k_fw[2][3] = { { 68, 68, 68 }, { 60, 64, 56 } };
+    const int *fw = k_fw[lab_w == LAB_INA ? 1 : 0];
+    int x = RAIL_X + lab_w;
+    bool fits = true;
     for (int k = 0; k < 3; ++k) {
-        gfx_text_in(&want_cv, (gfx_rect_t){ (int16_t)(RAIL_X + lab_w + k * fw),
-                                            LINE_Y, (int16_t)fw, 16 },
+        /* A reading wider than its field is cut at the left, and a cut
+         * minus sign is a wrong reading. */
+        fits = fits && (int)strlen(txt[k]) * 8 <= fw[k];
+        gfx_text_in(&want_cv, (gfx_rect_t){ (int16_t)x, LINE_Y,
+                                            (int16_t)fw[k], 16 },
                     txt[k], UI_FONT_LABEL, ui_theme_color(col[k]), 1,
                     GFX_ALIGN_RIGHT);
+        x += fw[k];
     }
-    return same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
+    return fits && x == RAIL_X + RAIL_W
+           && same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
 }
 
 static bool line_supply(const char *v, const char *a, const char *w)
@@ -6107,10 +6122,26 @@ static sense_link_win_t rail_win(int ma, unsigned mv)
     return w;
 }
 
+/* The meter the panel names, counted as servo_source.c counts it. */
+static void meter(servo_source_id_t id)
+{
+    if (id != meter_id) {
+        meter_id = id;
+        ++meter_changes;
+    }
+    servo_screen_source(id, meter_changes);
+}
+
+/* A window taken in a poll that decided the meter last named. */
+static void window(const sense_link_win_t *w)
+{
+    servo_screen_window(w, meter_id, meter_changes);
+}
+
 static void rail_window(int ma, unsigned mv)
 {
     const sense_link_win_t w = rail_win(ma, mv);
-    servo_screen_window(&w);
+    window(&w);
 }
 
 /* A pixel no part of the screen draws: one that is still there after a
@@ -6153,9 +6184,9 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
     for (int pass = 0; pass < 3; ++pass) {
         fresh();
         if (pass == 1) {
-            servo_screen_source(SERVO_SOURCE_PDMINI);
+            meter(SERVO_SOURCE_PDMINI);
         } else if (pass == 2) {
-            servo_screen_source(SERVO_SOURCE_MODEL);
+            meter(SERVO_SOURCE_MODEL);
         }
         /* No sample: the dashes. */
         CHECK(row_reads("---", UI_C_TEXT));
@@ -6237,7 +6268,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
 {
     fresh();
     rail_supply(6.0f, 0.4f);
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     /* No window yet: the dashes, whatever the supply reads. */
     CHECK(row_reads("---", UI_C_TEXT));
     CHECK(line_ina("-- V", "-- A", "-- W"));
@@ -6258,10 +6289,29 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     CHECK(line_ina("5.98 V", "0.41 A", "2.5 W"));
     CHECK_EQ(servo_screen_power_points(), 1);
 
-    /* The range of the register, and the widest readings the line holds. */
+    /* The range of the registers: every reading whole on the line, with
+     * its sign, the power in whole watts where tenths do not fit. */
     rail_window(32767, 26000u);
     CHECK(row_reads("32.77 A", UI_C_TEXT));
     CHECK(line_ina("26.00 V", "32.77 A", "851.9 W"));
+    rail_window(-32768, 26000u);
+    CHECK(row_reads("-32.77 A", UI_C_TEXT));
+    CHECK(line_ina("26.00 V", "-32.77 A", "-852 W"));
+    rail_window(-32768, 65535u);
+    CHECK(line_ina("65.54 V", "-32.77 A", "-2147 W"));
+    rail_window(32767, 65535u);
+    CHECK(line_ina("65.54 V", "32.77 A", "2147 W"));
+    /* Where the tenths stop fitting: 7 cells. */
+    rail_window(-9990, 10000u);
+    CHECK(line_ina("10.00 V", "-9.99 A", "-99.9 W"));
+    rail_window(-10000, 10000u);
+    CHECK(line_ina("10.00 V", "-10.00 A", "-100 W"));
+    rail_window(9999, 10000u);
+    CHECK(line_ina("10.00 V", "10.00 A", "100.0 W"));
+    rail_window(10000, 10005u);
+    CHECK(line_ina("10.01 V", "10.00 A", "100.1 W"));
+    rail_window(-10005, 10000u);                  /* -100.05 W */
+    CHECK(line_ina("10.00 V", "-10.01 A", "-100 W"));
     rail_window(1637, 5000u);
     CHECK(row_reads("1.64 A", UI_C_TEXT));
     rail_window(0, 0u);
@@ -6272,7 +6322,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
      * gap, and the power with it. */
     sense_link_win_t w = rail_win(300, 5000u);
     w.current = false;
-    servo_screen_window(&w);
+    window(&w);
     CHECK(row_reads("---", UI_C_TEXT));
     CHECK(line_ina("5.00 V", "-- A", "-- W"));
     CHECK(isnan(servo_screen_power_sample(1, 0)));
@@ -6280,11 +6330,11 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     CHECK_NEAR(servo_screen_power_sample(0, 0), 5.0f, 1e-6f);
     w = rail_win(300, 5000u);
     w.voltage = false;
-    servo_screen_window(&w);
+    window(&w);
     CHECK(row_reads("0.30 A", UI_C_TEXT));
     CHECK(line_ina("-- V", "0.30 A", "-- W"));
     CHECK(isnan(servo_screen_power_sample(0, 0)));
-    servo_screen_window(NULL);
+    servo_screen_window(NULL, meter_id, meter_changes);
     CHECK(row_reads("0.30 A", UI_C_TEXT));
 }
 
@@ -6299,7 +6349,7 @@ TEST_CASE(a_negative_current_is_shown_signed)
         { -32768, "-32.77 A" }, { -1, "0.00 A" }, { 1, "0.00 A" },
     };
     fresh();
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         rail_window(k[i].ma, 5000u);
         CHECK(row_reads(k[i].text, UI_C_TEXT));
@@ -6315,7 +6365,7 @@ TEST_CASE(a_negative_current_is_shown_signed)
     CHECK(line_ina("5.00 V", "0.00 A", "0.0 W"));       /* -0.02 W */
 
     /* The supply's reading keeps its sign as well. */
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     rail_supply(5.0f, -0.02f);
     CHECK(row_reads("-0.02 A", UI_C_TEXT));
     CHECK(line_supply("5.00 V", "-0.02 A", "-0.1 W"));
@@ -6330,7 +6380,7 @@ TEST_CASE(a_negative_current_is_shown_signed)
 TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
 {
     fresh();
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     rail_window(1590, 5900u);
     CHECK(row_reads("1.59 A", UI_C_TEXT));
 
@@ -6338,7 +6388,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     w.clip_hi = true;
     w.clipped = 7u;
     w.max_ma  = 1638;
-    servo_screen_window(&w);
+    window(&w);
     /* The same digits: the colour alone repaints the row. */
     CHECK(row_reads("1.59 A", UI_C_WARN));
     CHECK(line_reads("INA3221 CH1", LAB_INA, "5.90 V", "1.59 A", UI_C_WARN,
@@ -6353,7 +6403,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     w = rail_win(-1600, 5900u);
     w.clip_lo = true;
     w.clipped = 255u;
-    servo_screen_window(&w);
+    window(&w);
     CHECK(row_reads("-1.60 A", UI_C_WARN));
     CHECK(line_reads("INA3221 CH1", LAB_INA, "5.90 V", "-1.60 A", UI_C_WARN,
                      "-9.4 W"));
@@ -6362,21 +6412,21 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
      * window without current samples has no current to colour. */
     w = rail_win(700, 5900u);
     w.clipped = 3u;
-    servo_screen_window(&w);
+    window(&w);
     CHECK(row_reads("0.70 A", UI_C_TEXT));
     w = rail_win(700, 5900u);
     w.clip_hi = true;
     w.current = false;
-    servo_screen_window(&w);
+    window(&w);
     CHECK(row_reads("---", UI_C_TEXT));
     CHECK(line_ina("5.90 V", "-- A", "-- W"));
 
     /* The supply is never drawn clipped: the mark is the window's. */
     w = rail_win(1590, 5900u);
     w.clip_hi = true;
-    servo_screen_window(&w);
+    window(&w);
     CHECK(row_reads("1.59 A", UI_C_WARN));
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     rail_supply(6.0f, 1.59f);
     CHECK(row_reads("1.59 A", UI_C_TEXT));
     CHECK(line_supply("6.00 V", "1.59 A", "9.5 W"));
@@ -6398,7 +6448,7 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
             }
             fresh();
             two_buffers();
-            servo_screen_source(k_src[from]);
+            meter(k_src[from]);
             const bool from_ina = (k_src[from] == SERVO_SOURCE_INA3221);
             const bool to_ina   = (k_src[to] == SERVO_SOURCE_INA3221);
             /* Three readings of each kind: three points of the meter's. */
@@ -6416,7 +6466,7 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                 CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
             }
 
-            servo_screen_source(k_src[to]);
+            meter(k_src[to]);
             CHECK(both_whole());
             /* At once, from the reading the new meter last gave. */
             if (to_ina) {
@@ -6443,7 +6493,7 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                 CHECK_NEAR(servo_screen_power_sample(1, 0), 0.5f, 1e-6f);
             }
             /* The same meter said again changes nothing. */
-            servo_screen_source(k_src[to]);
+            meter(k_src[to]);
             CHECK_EQ(servo_screen_power_points(),
                      (from_ina != to_ina) ? 1 : 4);
         }
@@ -6455,14 +6505,110 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
     open_settings();
     rail_supply(6.0f, 0.4f);
     CHECK(both_whole());
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     rail_window(1200, 5000u);
     CHECK(both_whole());
     CHECK(row_reads("1.20 A", UI_C_TEXT));
     CHECK(line_ina("5.00 V", "1.20 A", "6.0 W"));
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     CHECK(both_whole());
     CHECK(row_reads("0.40 A", UI_C_TEXT));
+}
+
+/*
+ * The meter comes from the snapshot and the windows from a queue, so either
+ * can be the older.  A window taken under a meter that has been replaced is
+ * dropped; one taken under a later meter brings that meter with it; an
+ * answer older than the meter in force changes nothing.
+ */
+TEST_CASE(a_window_is_shown_under_the_meter_of_its_poll)
+{
+    const sense_link_win_t w1 = rail_win(1100, 5000u);
+    const sense_link_win_t w2 = rail_win(1200, 5000u);
+    const sense_link_win_t w3 = rail_win(1300, 5000u);
+
+    /* The snapshot ahead of the queue, PD mini to INA3221: the windows
+     * from before the change are not the INA3221's points. */
+    fresh();
+    servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
+    rail_supply(6.0f, 0.4f);
+    servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    servo_screen_window(&w1, SERVO_SOURCE_PDMINI, 1u);
+    CHECK_EQ(servo_screen_power_points(), 0);
+    CHECK(row_reads("---", UI_C_TEXT));
+    servo_screen_window(&w2, SERVO_SOURCE_INA3221, 2u);
+    CHECK_EQ(servo_screen_power_points(), 1);
+    CHECK(row_reads("1.20 A", UI_C_TEXT));
+
+    /* The queue ahead of the snapshot: the window brings its meter, and
+     * the snapshot that catches up changes nothing. */
+    fresh();
+    servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
+    rail_supply(6.0f, 0.4f);
+    servo_screen_window(&w1, SERVO_SOURCE_PDMINI, 1u);
+    CHECK_EQ(servo_screen_power_points(), 1);       /* the supply's */
+    servo_screen_window(&w2, SERVO_SOURCE_INA3221, 2u);
+    servo_screen_window(&w3, SERVO_SOURCE_INA3221, 2u);
+    CHECK_EQ(servo_screen_power_points(), 2);
+    CHECK_NEAR(servo_screen_power_sample(1, 1), 1.2f, 1e-6f);
+    CHECK_NEAR(servo_screen_power_sample(1, 0), 1.3f, 1e-6f);
+    CHECK(line_ina("5.00 V", "1.30 A", "6.5 W"));
+    /* The next frame's snapshot, read before that window's poll. */
+    servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
+    CHECK_EQ(servo_screen_power_points(), 2);
+    CHECK(row_reads("1.30 A", UI_C_TEXT));
+    servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    CHECK_EQ(servo_screen_power_points(), 2);
+
+    /* INA3221 to PD mini with windows still queued: they are dropped, the
+     * meter stays the PD mini and the plot the supply's. */
+    servo_screen_source(SERVO_SOURCE_PDMINI, 3u);
+    CHECK_EQ(servo_screen_power_points(), 0);
+    servo_screen_window(&w1, SERVO_SOURCE_INA3221, 2u);
+    CHECK_EQ(servo_screen_power_points(), 0);
+    CHECK(row_reads("0.40 A", UI_C_TEXT));
+    CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
+    /* Back at count 4: the window dropped at count 2 is not the reading. */
+    servo_screen_source(SERVO_SOURCE_INA3221, 4u);
+    CHECK(row_reads("1.30 A", UI_C_TEXT));          /* w3, taken at 2 */
+    servo_screen_window(&w2, SERVO_SOURCE_INA3221, 4u);
+    CHECK(row_reads("1.20 A", UI_C_TEXT));
+    CHECK_EQ(servo_screen_power_points(), 1);
+
+    /* The count across 2^32: 0 is after 0xFFFFFFFF, and 0xFFFFFFFF
+     * before 0; 2^31 - 1 ahead is the last count that is later. */
+    static const uint32_t k_at[] = { 0xFFFFFFFFu, 0x7FFFFFFFu, 0u, 5u };
+    for (size_t i = 0u; i < sizeof(k_at) / sizeof(k_at[0]); ++i) {
+        const uint32_t at = k_at[i];
+        fresh();
+        servo_screen_source(SERVO_SOURCE_PDMINI, at);
+        rail_supply(6.0f, 0.4f);
+        servo_screen_source(SERVO_SOURCE_INA3221, at + 1u);
+        servo_screen_window(&w1, SERVO_SOURCE_INA3221, at + 1u);
+        CHECK(row_reads("1.10 A", UI_C_TEXT));
+        servo_screen_source(SERVO_SOURCE_PDMINI, at);          /* older */
+        CHECK(row_reads("1.10 A", UI_C_TEXT));
+        servo_screen_window(&w2, SERVO_SOURCE_PDMINI, at);     /* older */
+        CHECK(row_reads("1.10 A", UI_C_TEXT));
+        CHECK_EQ(servo_screen_power_points(), 1);
+        servo_screen_source(SERVO_SOURCE_PDMINI, at + 0x80000000u);
+        CHECK(row_reads("0.40 A", UI_C_TEXT));  /* 2^31 - 1 ahead of at + 1 */
+        servo_screen_source(SERVO_SOURCE_INA3221, at + 0x80000001u);
+        CHECK(row_reads("1.10 A", UI_C_TEXT));
+        /* 2^31 ahead reads as behind. */
+        servo_screen_source(SERVO_SOURCE_PDMINI, at + 1u);
+        CHECK(row_reads("1.10 A", UI_C_TEXT));
+    }
+
+    /* A window while the link is down is dropped with its meter. */
+    fresh();
+    servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
+    servo_screen_set_link(false);
+    servo_screen_window(&w1, SERVO_SOURCE_INA3221, 2u);
+    servo_screen_set_link(true);
+    CHECK(line_supply("-- V", "-- A", "-- W"));
+    servo_screen_window(NULL, SERVO_SOURCE_INA3221, 2u);
+    CHECK(line_supply("-- V", "-- A", "-- W"));
 }
 
 /* A link that goes takes the INA3221's last window with it: the dashes,
@@ -6471,7 +6617,7 @@ TEST_CASE(link_loss_clears_the_current_row)
 {
     fresh();
     two_buffers();
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     rail_window(1200, 5000u);
     CHECK(row_reads("1.20 A", UI_C_TEXT));
     servo_screen_set_link(false);
@@ -6499,27 +6645,27 @@ TEST_CASE(link_loss_clears_the_current_row)
      * is the meter again. */
     for (int order = 0; order < 2; ++order) {
         fresh();
-        servo_screen_source(SERVO_SOURCE_INA3221);
+        meter(SERVO_SOURCE_INA3221);
         rail_supply(6.0f, 0.4f);
         rail_window(1200, 5000u);
         if (order == 0) {
             servo_screen_set_link(false);
-            servo_screen_source(SERVO_SOURCE_MODEL);
+            meter(SERVO_SOURCE_MODEL);
         } else {
-            servo_screen_source(SERVO_SOURCE_MODEL);
+            meter(SERVO_SOURCE_MODEL);
             servo_screen_set_link(false);
         }
         CHECK(row_reads("0.40 A", UI_C_TEXT));
         CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
         servo_screen_set_link(true);
-        servo_screen_source(SERVO_SOURCE_INA3221);
+        meter(SERVO_SOURCE_INA3221);
         CHECK(row_reads("---", UI_C_TEXT));
     }
 
     /* The supply's reading goes when its sample says it does not answer,
      * which is what the PD mini's samples say once the link is down. */
     fresh();
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     rail_supply(6.0f, 0.4f);
     servo_screen_set_link(false);
     supply_state_t st;
@@ -6534,7 +6680,7 @@ TEST_CASE(link_loss_clears_the_current_row)
 TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
 {
     fresh_armed();
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     rail_window(412, 5980u);
     scr->render(&cv, 0);
 
@@ -6578,7 +6724,7 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
 
     /* The supply as the meter: the same rule. */
     fresh_armed();
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     rail_supply(6.0f, 0.402f);
     scr->render(&cv, 0);
     mark_all();
@@ -6611,7 +6757,7 @@ TEST_CASE(the_plot_keeps_one_point_for_each_window)
 {
     for (int n = 0; n <= 4; ++n) {
         fresh();
-        servo_screen_source(SERVO_SOURCE_INA3221);
+        meter(SERVO_SOURCE_INA3221);
         rail_window(50, 4000u);
         scr->render(&cv, 0);
         CHECK_EQ(servo_screen_power_points(), 1);
@@ -6643,7 +6789,7 @@ TEST_CASE(the_plot_keeps_one_point_for_each_window)
     /* The supply's samples are the points while it is the meter, one each,
      * and the windows none. */
     fresh();
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     for (int k = 0; k < 4; ++k) {
         rail_supply(6.0f, 0.1f * (float)(k + 1));
         rail_window(900, 5000u);
@@ -6668,7 +6814,7 @@ static void a_short_run(bool changing)
     hold_start(2.3f);
     for (int i = 0; i < 600 && servo_screen_testing(); ++i) {
         if (changing) {
-            servo_screen_source(k_src[(i / 3) % 4]);
+            meter(k_src[(i / 3) % 4]);
             rail_window(2000 + i, 9000u);
             rail_window(-2000 - i, 9000u);
         }
@@ -6711,23 +6857,23 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     CHECK(servo_screen_testing());
     bench_frames(2000u);
     settle_drawn();
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     rail_window(-1640, 5000u);
     bench_frames(100u);
     CHECK(servo_screen_testing());
     CHECK(both_whole_in(502, 6, 292, 400));
     CHECK(row_reads("-1.64 A", UI_C_TEXT));
-    servo_screen_source(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_PDMINI);
     bench_frames(200u);
     CHECK(servo_screen_testing());
     CHECK(both_whole_in(502, 6, 292, 400));
     CHECK(!row_reads("-1.64 A", UI_C_TEXT));
-    servo_screen_source(SERVO_SOURCE_MODEL);
+    meter(SERVO_SOURCE_MODEL);
     bench_frames(200u);
     CHECK(servo_screen_testing());
     CHECK(both_whole_in(502, 6, 292, 400));
     /* The link going ends the run and clears the INA3221's row. */
-    servo_screen_source(SERVO_SOURCE_INA3221);
+    meter(SERVO_SOURCE_INA3221);
     rail_window(700, 5000u);
     servo_screen_set_link(false);
     CHECK(!servo_screen_testing());
@@ -6920,6 +7066,7 @@ int main(void)
     RUN(a_negative_current_is_shown_signed);
     RUN(a_clipped_window_draws_its_current_in_the_warning_colour);
     RUN(a_change_of_meter_repaints_the_row_the_line_and_the_plot);
+    RUN(a_window_is_shown_under_the_meter_of_its_poll);
     RUN(link_loss_clears_the_current_row);
     RUN(the_current_row_repaints_on_a_changed_digit_and_alone);
     RUN(the_plot_keeps_one_point_for_each_window);

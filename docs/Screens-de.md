@@ -471,6 +471,9 @@ eine nicht gilt.
 - Ein Strom hat ein Vorzeichen und wird in Hundertstel Ampere gezeigt:
   `0.41 A`, `-0.02 A`, `-1.64 A`. Ein Messwert, der auf null rundet, ist
   `0.00 A`. Die Leistung in der Zeile hat ein Vorzeichen und Zehntel Watt.
+  Neben `INA3221 CH1` haben die drei Messwerte 60, 64 und 56 px, 7, 8 und
+  7 Zeichen: eine Leistung, die in Zehnteln mehr als 7 Zeichen braucht, ab
+  `-100.0 W` und ab `1000.0 W`, wird in ganzen Watt gezeigt.
 - Ein Messwert, der nicht ankam, ist `---` in der Zeile STROM, `--` in der
   Zeile über dem Plot und eine Lücke im Plot: noch kein Sample, ein Netzteil,
   das nicht antwortet, kein Fenster seit dem Link-Aufbau, ein Fenster ohne
@@ -487,9 +490,11 @@ eine nicht gilt.
   und `--`, bis das Messgerät wechselt oder ein Fenster über den Link
   ankommt.
 - Der Plot wird geleert, wenn der INA3221 das Messgerät wird und wenn er es
-  nicht mehr ist: die Kurve gehört dem Messgerät, das die Zeile nennt. Die
-  Skala des Plots beginnt bei 0, und ein negativer Strom wird an seinem
-  unteren Rand gezeichnet.
+  nicht mehr ist: die Kurve gehört dem Messgerät, das die Zeile nennt. Jedes
+  Fenster trägt das Messgerät des Polls, der es genommen hat: ein Fenster
+  von vor dem Wechsel zum INA3221 ist kein Punkt seiner Kurve, und keines
+  von danach fehlt. Die Skala des Plots beginnt bei 0, und ein negativer
+  Strom wird an seinem unteren Rand gezeichnet.
 - Der Wert der Zeile STROM wird neu gezeichnet, wenn sich seine Ziffern oder
   seine Farbe ändern, und für sich allein.
 

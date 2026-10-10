@@ -1476,7 +1476,7 @@ int main(int argc, char **argv)
             const bool clip = strcmp(view, "servo-clipped") == 0;
             servo_sim_t ws;
             servo_sim_init(&ws, &cfg);
-            servo_screen_source(SERVO_SOURCE_INA3221);
+            servo_screen_source(SERVO_SOURCE_INA3221, 1u);
             for (int i = 0; i < 260; ++i) {
                 const uint16_t cmd = ((i / 40) % 2 == 0) ? 1900u : 1100u;
                 float a = 0.0f;
@@ -1500,7 +1500,7 @@ int main(int argc, char **argv)
                 w.min_ma  = (int16_t)ma;
                 w.mean_mv = (uint16_t)(6000 - ma / 4);
                 w.min_mv  = w.mean_mv;
-                servo_screen_window(&w);
+                servo_screen_window(&w, SERVO_SOURCE_INA3221, 1u);
             }
         }
         /* A coprocessor that took the screen's 50 Hz. */

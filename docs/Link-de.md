@@ -527,13 +527,18 @@ des INA3221 ist das Messgerät, solange alles Folgende gilt:
 Das Messgerät ist der PD mini ab dem ersten Poll, in dem eine von 1 bis 6
 nicht gilt, und wieder der INA3221 1000 ms, nachdem alle gelten. Antwortet
 kein Koprozessor, ist es das Modell des Panels. Ein übersteuertes Fenster
-und ein negativer Strom sind Messwerte und keine Bedingung. Die Antwort
-steht im Snapshot der Control-Task mit der Zahl der verlorenen Fenster, und
+und ein negativer Strom sind Messwerte und keine Bedingung. Das Modul zählt
+die Wechsel des Messgeräts, modulo 2^32. Die Antwort und dieser Zähler
+stehen im Snapshot der Control-Task mit der Zahl der verlorenen Fenster, und
 die Fenster liegen in einer Queue zur Render-Task, 8 tief; ist sie voll,
-fällt das älteste weg. Der SERVO-Bildschirm nimmt die Antwort und jedes
-Fenster einmal je Frame und zeigt den Messwert des Messgeräts in seiner
-Zeile STROM, der Zeile über dem Plot und dem Plot
-([Screens](Screens-de.md#servo)). Der Servotest liest den PD mini.
+fällt das älteste weg. Jedes trägt die Antwort und den Zähler des Polls, der
+es genommen hat. Der SERVO-Bildschirm nimmt die Antwort des Snapshots und
+jedes Fenster einmal je Frame und zeigt den Messwert des Messgeräts in
+seiner Zeile STROM, der Zeile über dem Plot und dem Plot
+([Screens](Screens-de.md#servo)). Von zwei Antworten behält er die mit dem
+späteren Zähler, und ein Fenster, dessen Zähler hinter dem geltenden
+Messgerät liegt, verwirft er: Snapshot und Queue sind zwei Wege, und jeder
+kann der ältere sein. Der Servotest liest den PD mini.
 
 `test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
 Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im

@@ -98,7 +98,7 @@
 #define TAG_H     24
 #define PWR_TXT_Y 150
 /* The line over the plot: the meter's name, 8 cells of 8 px for SUPPLY and
- * NETZTEIL and 11 for INA3221 CH1, then the three readings. */
+ * NETZTEIL and 11 for INA3221 CH1, then the three readings (k_line_w). */
 #define PWR_LAB_W     64
 #define PWR_LAB_W_INA 88
 #define PWR_Y     170
@@ -245,6 +245,17 @@ static const ui_plot_series_t k_power[PS_COUNT] = {
     { "W", "W", 0, 1, 5.0f, 0 },
 };
 
+/*
+ * The widths of the three readings on the line over the plot, in px of 8 px
+ * cells.  Beside SUPPLY 68 each.  Beside INA3221 CH1 60, 64 and 56, which
+ * hold the widest reading of the part's registers: `65.54 V`, `-32.77 A`,
+ * and a power of 7 cells, `-99.9 W` or `-2147 W`.
+ */
+static const uint8_t k_line_w[2][PS_COUNT] = {
+    { 68, 68, 68 },
+    { 60, 64, 56 },
+};
+
 /* What a press is on, in the overlay and the panels it opens. */
 enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
        OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
@@ -371,6 +382,11 @@ static struct {
     /* The meter, as the panel last said it (servo_screen_source()), and the
      * INA3221's last CH1 window (servo_screen_window()). */
     servo_source_id_t source;
+    /* The change count the meter in force was decided at
+     * (servo_source_changes()): an answer from an earlier poll is not taken
+     * over it. */
+    bool              have_changes;
+    uint32_t          changes;
     sense_link_win_t  win;
     bool              have_win;
     /* The CURRENT row: what it shows (cur_key_of()), and its own count of
@@ -2047,10 +2063,21 @@ void servo_screen_supply(const supply_state_t *st)
     cur_follow();
 }
 
-void servo_screen_source(servo_source_id_t id)
+/*
+ * The meter @p id as decided at change count @p changes, unless the meter in
+ * force was decided at a later one: the snapshot and the windows reach the
+ * render task on two paths, and either can be the older.  Returns whether
+ * it is the meter in force.
+ */
+static bool source_take(servo_source_id_t id, uint32_t changes)
 {
+    if (s.have_changes && (int32_t)(changes - s.changes) < 0) {
+        return false;
+    }
+    s.have_changes = true;
+    s.changes      = changes;
     if (id == s.source) {
-        return;
+        return true;
     }
     const bool was_ina = (s.source == SERVO_SOURCE_INA3221);
     const bool now_ina = (id == SERVO_SOURCE_INA3221);
@@ -2062,13 +2089,21 @@ void servo_screen_source(servo_source_id_t id)
         ++s.power_rev;
     }
     cur_follow();
+    return true;
 }
 
-void servo_screen_window(const sense_link_win_t *w)
+void servo_screen_source(servo_source_id_t id, uint32_t changes)
+{
+    (void)source_take(id, changes);
+}
+
+void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
+                         uint32_t changes)
 {
     /* A window that was queued before the link went down is not the rail's
-     * reading now. */
-    if (w == NULL || !s.link_up) {
+     * reading now, and neither is one taken under a meter that has been
+     * replaced since. */
+    if (w == NULL || !s.link_up || !source_take(id, changes)) {
         return;
     }
     s.win      = *w;
@@ -4210,9 +4245,14 @@ static void draw_power(gfx_canvas_t *c)
     else        { snprintf(v, sizeof(v), "-- V"); }
     if (m.i_ok) { fixed_text(a, sizeof(a), m.q_a, 2, "A"); }
     else        { snprintf(a, sizeof(a), "-- A"); }
+    const uint8_t *fw = k_line_w[ina ? 1 : 0];
     if (m.v_ok && m.i_ok) {
-        fixed_text(w, sizeof(w), isfinite(m.p) ? fixed_of(m.p, 10.0f) : 0, 1,
-                   "W");
+        /* Tenths of a watt, and whole watts where those do not fit. */
+        const float p = isfinite(m.p) ? m.p : 0.0f;
+        fixed_text(w, sizeof(w), fixed_of(p, 10.0f), 1, "W");
+        if (gfx_text_width(UI_FONT_LABEL, w, 1) > fw[PS_W]) {
+            snprintf(w, sizeof(w), "%ld W", (long)fixed_of(p, 1.0f));
+        }
     } else {
         snprintf(w, sizeof(w), "-- W");
     }
@@ -4223,16 +4263,14 @@ static void draw_power(gfx_canvas_t *c)
                                         ui_theme_color(UI_C_CURR),
                                         ui_theme_color(UI_C_POWER) };
     const char *txt[PS_COUNT] = { v, a, w };
-    /* The longer name takes three cells from the three readings. */
-    const int lab_w = ina ? PWR_LAB_W_INA : PWR_LAB_W;
-    const int fw    = (RC_W - lab_w) / PS_COUNT;
+    int x = RC_X + (ina ? PWR_LAB_W_INA : PWR_LAB_W);
     for (int k = 0; k < PS_COUNT; ++k) {
         s.power.series[k].color = col[k];
         const gfx_color_t tc = (k == PS_A && m.clipped)
                                    ? ui_theme_color(UI_C_WARN) : col[k];
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + lab_w + k * fw),
-                                     PWR_TXT_Y, (int16_t)fw, 16 },
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, PWR_TXT_Y, fw[k], 16 },
                     txt[k], UI_FONT_LABEL, tc, 1, GFX_ALIGN_RIGHT);
+        x += fw[k];
     }
     ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
 }

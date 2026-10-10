@@ -424,7 +424,10 @@ one fails.
 
 - A current is signed and shown in hundredths of an amp: `0.41 A`,
   `-0.02 A`, `-1.64 A`. A reading that rounds to zero is `0.00 A`. The
-  power on the line is signed in tenths of a watt.
+  power on the line is signed in tenths of a watt. Beside `INA3221 CH1` the
+  three readings have 60, 64 and 56 px, 7, 8 and 7 characters: a power of
+  more than 7 characters in tenths, `-100.0 W` and beyond or `1000.0 W` and
+  beyond, is shown in whole watts.
 - A reading that did not arrive is `---` in the CURRENT row, `--` on the
   line and a gap in the plot: no sample yet, a supply that does not answer,
   no window since the link came up, a window without samples of that
@@ -439,8 +442,11 @@ one fails.
 - A link that goes down takes the INA3221's last window with it: `---`
   and `--` until the meter changes or a window arrives over the link.
 - The plot is emptied when the INA3221 becomes the meter and when it stops
-  being it: the trace is of the meter the line names. The plot's scale
-  starts at 0, and a negative current is drawn on its lower edge.
+  being it: the trace is of the meter the line names. Each window carries
+  the meter of the poll that took it, so a window taken before the INA3221
+  became the meter is no point of its trace, and none taken after is left
+  out. The plot's scale starts at 0, and a negative current is drawn on its
+  lower edge.
 - The CURRENT row's value is repainted when its digits or its colour change,
   and by itself.
 

@@ -46,13 +46,10 @@ static servo_source_why_t judge(uint32_t now_ms, uint16_t minor,
     return SERVO_SOURCE_WHY_NONE;
 }
 
-servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
-                                    bool link_up, uint16_t minor,
-                                    const sense_link_meter_t *m)
+static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
+                              bool link_up, uint16_t minor,
+                              const sense_link_meter_t *m)
 {
-    if (s == NULL) {
-        return SERVO_SOURCE_MODEL;
-    }
     if (!link_up || m == NULL) {
         /* Nothing answers: what was said about the coprocessor that did,
          * and not yet shown, goes with it. */
@@ -118,6 +115,25 @@ servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
     s->id  = SERVO_SOURCE_INA3221;
     s->why = SERVO_SOURCE_WHY_NONE;
     return s->id;
+}
+
+servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
+                                    bool link_up, uint16_t minor,
+                                    const sense_link_meter_t *m)
+{
+    if (s == NULL) {
+        return SERVO_SOURCE_MODEL;
+    }
+    const servo_source_id_t was = s->id;
+    if (step(s, now_ms, link_up, minor, m) != was) {
+        ++s->changes;
+    }
+    return s->id;
+}
+
+uint32_t servo_source_changes(const servo_source_t *s)
+{
+    return (s != NULL) ? s->changes : 0u;
 }
 
 servo_source_id_t servo_source_id(const servo_source_t *s)
