@@ -9,9 +9,15 @@
  *           run.  It reads the schedule's memory and nothing else: no bus
  *           transaction, no clock.  CH1's newest sample comes out of the
  *           schedule's own history (sense_sched_t.ch1), CH1's newest bus
- *           voltage out of the window being filled.  At most 2 records a
- *           call.  A full ring drops the record and counts it; the call
- *           never waits.
+ *           voltage out of the window being filled.  A voltage is kept
+ *           only with the current sample of its tick, so each voltage
+ *           line belongs to the sample line before it.  The INA3221's
+ *           set-up and state go into the ring as records of their own
+ *           when they change, so they keep their place among the
+ *           samples.  At most 4 records a call, 2 while the set-up
+ *           stands.  A full ring drops the record and counts it; the call
+ *           never waits.  A set-up record that found no room is written
+ *           again at the next call.
  *   Core 0  sense_trace_trigger(), sense_trace_pulse(), sense_trace_key()
  *           and sense_trace_pump(), from the main loop.  The pump hands
  *           back whole lines, never more bytes than the caller has room
@@ -20,24 +26,32 @@
  * The ring is single-producer, single-consumer and lock-free: core 1
  * writes a record and then moves head, core 0 reads a record and then
  * moves tail, each index stored with release and loaded with acquire
- * ordering.  Its size is the caller's, a power of two.
+ * ordering.  Nothing else passes between the cores.  The ring's size is
+ * the caller's, a power of two.
  *
  * A trace.  With no trace running the pump keeps the newest
- * SENSE_TRACE_PRE records and discards the rest.  A trigger starts a
+ * SENSE_TRACE_PRE records, none of them older than the last change of
+ * the set-up or the state, and discards the rest.  A trigger starts a
  * trace: the header, the records the ring holds from before the trigger,
  * then every record until the trace's end, SENSE_TRACE_EDGE_MS after a
  * command or a capture edge and SENSE_TRACE_KEY_MS after the console
  * command.  A trigger during a trace adds its line and moves the end to
  * its own when that lies later; it never shortens a trace and never
- * starts a second one.  A trace also ends when the INA3221's set-up
- * changes (another shunt or Configuration) and on the console's stop.
+ * starts a second one.  The console's stop moves the end to the time of
+ * the stop.  A trace also ends at a record that changes the INA3221's
+ * shunt or Configuration.  However a trace ends, every record from
+ * before its end is written first.  With the ring empty the end line
+ * waits SENSE_TRACE_END_WAIT_MS past the end, for the tick that may
+ * still bring a record of before it.
  *
  * Triggers.
  *   cmd   a PWM slot renders another pulse width than in the pass before,
  *         SENSE_TRACE_HOLD_MS or more after that slot's last change
  *         (sense_trace_pulse()).  Changes closer together are one slewed
  *         command: they move the trace's end and add no line.  A pulse
- *         going to 0 is the bank letting go, not a command.
+ *         going to 0 is the bank letting go, not a command.  The pulse is
+ *         the one the slice renders: no longer than its frame
+ *         (sense_trace_rendered()).
  *   edge  the capture's PWM edge, when a capture is armed.
  *   key   `t` on the console.  `x` ends a trace.
  *
@@ -53,8 +67,8 @@
  *   $H dt_us=1000 shunt_uohm=R cfg=0xCCCC on=B rst=K
  *       The sample period, CH1's shunt in micro-ohms, the Configuration
  *       value the driver holds and reads back every 40 ms, whether the
- *       part is online, and its reset count modulo 256.  All 0 with the
- *       bus closed.
+ *       part is online, and its reset count modulo 256: as they stand at
+ *       the trace's first record.  All 0 with the bus closed.
  *   $C t=T ch=C us=P     a cmd trigger: output channel C renders P µs in
  *                        the frame that starts at T
  *   $E t=T               an edge trigger
@@ -67,7 +81,8 @@
  *                        range reads 4094 or -4094.
  *   vU                   CH1's bus voltage, U mV, read in the tick of the
  *                        sample line before it
- *   $S on=B rst=K        the part's state or reset count changed
+ *   $S on=B rst=K        the part's state or reset count changed here:
+ *                        the samples above it were taken before
  *   $L n=X               X records are missing here: the ring was full
  *   $Z n=N s=S v=V l=X m=A ml=B e=t|s|k
  *       The trace ends: S sample lines, V voltage lines, X records
@@ -112,6 +127,9 @@ extern "C" {
 /** A slot's pulse changing this long after its last change is a command
  *  of its own, ms. */
 #define SENSE_TRACE_HOLD_MS     50u
+/** With the ring empty, the end line waits this long past the trace's
+ *  end, ms: 2 ticks of core 1. */
+#define SENSE_TRACE_END_WAIT_MS  2u
 /** PWM slots watched for a changed pulse: OUT_MAX_SLOTS. */
 #define SENSE_TRACE_SLOTS        8u
 /** Trigger lines waiting for the console. */
@@ -127,6 +145,9 @@ extern "C" {
 typedef enum {
     SENSE_TRACE_CURRENT = 0,  /**< a CH1 sample, µA                        */
     SENSE_TRACE_BUS,          /**< CH1's bus voltage, mV                   */
+    SENSE_TRACE_CFG,          /**< the Configuration in bits 15-0, online
+                                   in bit 16, the reset count in 31-24    */
+    SENSE_TRACE_SHUNT,        /**< CH1's shunt, µΩ                         */
 } sense_trace_kind_t;
 
 /** What started or extended a trace. */
@@ -146,8 +167,8 @@ typedef enum {
 
 /** One record: 12 bytes. */
 typedef struct {
-    uint32_t t;      /**< the sample's time, 0.1 ms                        */
-    int32_t  v;      /**< µA, or mV                                        */
+    uint32_t t;      /**< the newest sample's time, 0.1 ms                 */
+    int32_t  v;      /**< as its kind says                                 */
     uint32_t meta;   /**< the kind in bits 31-24; below it the records
                           dropped just before this one, saturating        */
 } sense_trace_rec_t;
@@ -161,8 +182,9 @@ typedef struct {
     uint16_t n_v;         /**< CH1 voltages in it at the last call         */
     int64_t  v_sum;       /**< and their sum, µV                           */
     uint32_t lost;        /**< records dropped since the last one kept     */
-    uint32_t cfg, shunt;  /**< as last published                           */
-    uint32_t seq;         /**< the publication's count                     */
+    uint32_t cfg, shunt;  /**< the set-up as last seen                     */
+    bool     cfg_owed;    /**< its record is still to be written           */
+    bool     shunt_owed;
 } sense_trace_src_t;
 
 /** A trigger line waiting. */
@@ -196,16 +218,15 @@ typedef struct {
     uint32_t t0, ms0, len_ms;
     uint32_t end_t;       /**< the trace ends at a sample at or past it    */
     uint32_t last_t;      /**< the last sample line's time                 */
-    uint8_t  end_why;     /**< sense_trace_end_t, once decided early       */
-    bool     info_have;   /**< cfg and shunt are this trace's              */
-    uint32_t cfg, shunt;
-    uint32_t shown;       /**< the state and reset count last written      */
+    bool     stopped;     /**< the console moved the end                   */
+    uint32_t cfg, shunt;  /**< the set-up as it stands at the ring's tail  */
     bool     lost_shown;  /**< the $L line of the record at the tail is
                                written                                     */
     uint32_t n_s, n_v, n_m, n_lost, n_mlost;
     sense_trace_mark_t q[SENSE_TRACE_MARKS];
     uint8_t  q_n, q_head;
     uint32_t abandoned;   /**< traces dropped with no console              */
+    uint32_t scanned;     /**< idle: records looked at for a set-up record */
     sense_trace_watch_t watch[SENSE_TRACE_SLOTS];
 } sense_trace_out_t;
 
@@ -214,12 +235,6 @@ typedef struct {
     uint32_t          mask;       /**< the size less 1                     */
     atomic_uint_fast32_t head;    /**< records written; core 1 moves it    */
     atomic_uint_fast32_t tail;    /**< records read; core 0 moves it       */
-    /* The INA3221's set-up, published by core 1: seq is odd while cfg and
-     * shunt are being written. */
-    atomic_uint_fast32_t info_seq;
-    atomic_uint_fast32_t info_cfg;   /**< Configuration in bits 15-0, online
-                                          in bit 16, the resets in 31-24  */
-    atomic_uint_fast32_t info_shunt; /**< µΩ                               */
     sense_trace_src_t src;
     sense_trace_out_t out;
 } sense_trace_t;
@@ -236,6 +251,11 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s);
  *  reads; @p ch and @p us are a cmd trigger's channel and pulse. */
 void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
                          uint64_t at_us, uint16_t ch, uint16_t us);
+
+/** The pulse a PWM slice renders when asked for @p pulse_us with its
+ *  counter wrapping at @p top: the frame's length at most, as the driver
+ *  clamps it. */
+uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top);
 
 /** Core 0, every pass, for each PWM slot: the pulse it renders, 0 for
  *  none.  True when this is a command: the caller then gives the time of

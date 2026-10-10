@@ -17,9 +17,6 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
     memset(tr, 0, sizeof(*tr));
     atomic_init(&tr->head, 0u);
     atomic_init(&tr->tail, 0u);
-    atomic_init(&tr->info_seq, 0u);
-    atomic_init(&tr->info_cfg, 0u);
-    atomic_init(&tr->info_shunt, 0u);
     if (buf == NULL || size < 2u || size > (1u << 24)
         || (size & (size - 1u)) != 0u) {
         return false;
@@ -31,8 +28,9 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
 
 /* ------------------------------------------------------------- core 1 */
 
-/* One record into the ring, or counted as dropped when it is full. */
-static void push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
+/* One record into the ring; false, and counted as dropped, when it is
+ * full. */
+static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
                  int32_t v)
 {
     sense_trace_src_t *p = &tr->src;
@@ -44,7 +42,7 @@ static void push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
         if (p->lost < SENSE_TRACE_LOST_MAX) {
             ++p->lost;
         }
-        return;
+        return false;
     }
     sense_trace_rec_t *r = &tr->buf[head & tr->mask];
     r->t    = t;
@@ -52,21 +50,33 @@ static void push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
     r->meta = ((uint32_t)kind << 24) | p->lost;
     p->lost = 0u;
     atomic_store_explicit(&tr->head, head + 1u, memory_order_release);
+    return true;
 }
 
-/* The set-up core 0 writes in the header, published when it moves. */
+/* The set-up and the state as they stand: a record for each that moved,
+ * the shunt's first, written again at the next call while the ring has
+ * no room for it. */
 static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt)
 {
     sense_trace_src_t *p = &tr->src;
-    if (cfg == p->cfg && shunt == p->shunt) {
-        return;
+    if (shunt != p->shunt) {
+        p->shunt      = shunt;
+        p->shunt_owed = true;
     }
-    p->cfg   = cfg;
-    p->shunt = shunt;
-    atomic_store_explicit(&tr->info_seq, ++p->seq, memory_order_release);
-    atomic_store_explicit(&tr->info_cfg, cfg, memory_order_relaxed);
-    atomic_store_explicit(&tr->info_shunt, shunt, memory_order_relaxed);
-    atomic_store_explicit(&tr->info_seq, ++p->seq, memory_order_release);
+    if (cfg != p->cfg) {
+        p->cfg      = cfg;
+        p->cfg_owed = true;
+    }
+    if (p->shunt_owed
+        && push(tr, SENSE_TRACE_SHUNT, p->t, (int32_t)p->shunt)) {
+        p->shunt_owed = false;
+    }
+    /* After the shunt's, never before it: the other core can free a
+     * place between the two. */
+    if (p->cfg_owed && !p->shunt_owed
+        && push(tr, SENSE_TRACE_CFG, p->t, (int32_t)p->cfg)) {
+        p->cfg_owed = false;
+    }
 }
 
 void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
@@ -91,6 +101,7 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
     /* CH1's sample of this tick, when there is one: the schedule keeps it
      * newest in its history.  A set-up empties the history, so the head
      * alone does not tell a new sample from the last one. */
+    bool kept = false;
     if (s->ch1_n == 0u) {
         p->have = false;
     } else {
@@ -101,12 +112,14 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
             p->have = true;
             p->head = s->ch1_head;
             p->t    = c->t;
-            push(tr, SENSE_TRACE_CURRENT, c->t, c->ua);
+            kept    = push(tr, SENSE_TRACE_CURRENT, c->t, c->ua);
         }
     }
 
     /* CH1's bus voltage of this tick: what the window being filled gained.
-     * A window that closed, or was emptied, counts from nothing. */
+     * A window that closed, or was emptied, counts from nothing.  Kept
+     * only behind the current sample of its tick: a voltage line belongs
+     * to the sample line before it. */
     const sense_acc_t *a = &s->acc[SENSE_SRC_CH1];
     uint16_t base_n   = p->n_v;
     int64_t  base_sum = p->v_sum;
@@ -114,10 +127,11 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
         base_n   = 0u;
         base_sum = 0;
     }
-    if (a->n_v == base_n + 1u) {
+    if (kept && a->n_v == base_n + 1u) {
         /* One voltage, µV: it fits 32 bits, and the division is the
          * processor's. */
-        push(tr, SENSE_TRACE_BUS, p->t, (int32_t)(a->v_sum - base_sum) / 1000);
+        (void)push(tr, SENSE_TRACE_BUS, p->t,
+                   (int32_t)(a->v_sum - base_sum) / 1000);
     }
     p->win   = s->win;
     p->n_v   = a->n_v;
@@ -137,10 +151,19 @@ static bool at_or_past(uint32_t a, uint32_t b)
     return (int32_t)(a - b) >= 0;
 }
 
+static uint32_t tail_of(const sense_trace_t *tr)
+{
+    return (uint32_t)atomic_load_explicit(&tr->tail, memory_order_relaxed);
+}
+
+static uint32_t head_of(const sense_trace_t *tr)
+{
+    return (uint32_t)atomic_load_explicit(&tr->head, memory_order_acquire);
+}
+
 uint32_t sense_trace_held(const sense_trace_t *tr)
 {
-    return (uint32_t)atomic_load_explicit(&tr->head, memory_order_acquire)
-           - (uint32_t)atomic_load_explicit(&tr->tail, memory_order_relaxed);
+    return head_of(tr) - tail_of(tr);
 }
 
 bool sense_trace_active(const sense_trace_t *tr)
@@ -160,40 +183,53 @@ int32_t sense_trace_code(int32_t ua, uint32_t shunt_uohm)
     return (int32_t)((num + half) / 40000000);
 }
 
+uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top)
+{
+    return (pulse_us > top) ? (uint16_t)top : pulse_us;
+}
+
 /* The record at the tail, or NULL for an empty ring. */
 static const sense_trace_rec_t *peek(const sense_trace_t *tr)
 {
-    const uint32_t tail =
-        (uint32_t)atomic_load_explicit(&tr->tail, memory_order_relaxed);
-    const uint32_t head =
-        (uint32_t)atomic_load_explicit(&tr->head, memory_order_acquire);
-    return (head == tail) ? NULL : &tr->buf[tail & tr->mask];
+    const uint32_t tail = tail_of(tr);
+    return (head_of(tr) == tail) ? NULL : &tr->buf[tail & tr->mask];
 }
 
+static bool is_setup(const sense_trace_rec_t *r)
+{
+    return META_KIND(r->meta) >= SENSE_TRACE_CFG;
+}
+
+/* The record at the tail leaves the ring; a set-up record leaves what it
+ * says behind. */
 static void pop(sense_trace_t *tr)
 {
-    const uint32_t tail =
-        (uint32_t)atomic_load_explicit(&tr->tail, memory_order_relaxed);
+    sense_trace_out_t *o = &tr->out;
+    const uint32_t tail = tail_of(tr);
+    const sense_trace_rec_t *r = &tr->buf[tail & tr->mask];
+    if (META_KIND(r->meta) == SENSE_TRACE_CFG) {
+        o->cfg = (uint32_t)r->v;
+    } else if (META_KIND(r->meta) == SENSE_TRACE_SHUNT) {
+        o->shunt = (uint32_t)r->v;
+    }
+    o->lost_shown = false;
     atomic_store_explicit(&tr->tail, tail + 1u, memory_order_release);
 }
 
-/* The published set-up; false while core 1 is writing it. */
-static bool info_read(const sense_trace_t *tr, uint32_t *cfg, uint32_t *shunt)
+/* Whether @p r changes the shunt or the Configuration, and not the state
+ * alone. */
+static bool changes_setup(const sense_trace_out_t *o,
+                          const sense_trace_rec_t *r)
 {
-    const uint32_t a =
-        (uint32_t)atomic_load_explicit(&tr->info_seq, memory_order_acquire);
-    *cfg   = (uint32_t)atomic_load_explicit(&tr->info_cfg,
-                                            memory_order_relaxed);
-    *shunt = (uint32_t)atomic_load_explicit(&tr->info_shunt,
-                                            memory_order_relaxed);
-    const uint32_t b =
-        (uint32_t)atomic_load_explicit(&tr->info_seq, memory_order_acquire);
-    return a == b && (a & 1u) == 0u;
+    if (META_KIND(r->meta) == SENSE_TRACE_SHUNT) {
+        return (uint32_t)r->v != o->shunt;
+    }
+    return ((uint32_t)r->v & 0xFFFFu) != (o->cfg & 0xFFFFu);
 }
 
 static void extend(sense_trace_out_t *o, uint32_t end_t)
 {
-    if ((int32_t)(end_t - o->end_t) > 0) {
+    if (!o->stopped && (int32_t)(end_t - o->end_t) > 0) {
         o->end_t = end_t;
     }
 }
@@ -211,16 +247,14 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
     const uint32_t end_t = t + len_ms * SENSE_TRACE_T_PER_MS;
     if (o->stage == SENSE_TRACE_IDLE) {
         ++o->id;
-        o->stage      = SENSE_TRACE_HEAD_T;
-        o->trig       = (uint8_t)kind;
-        o->t0         = t;
-        o->ms0        = (uint32_t)(at_us / 1000u);
-        o->len_ms     = len_ms;
-        o->end_t      = end_t;
-        o->last_t     = t;
-        o->end_why    = SENSE_TRACE_END_NONE;
-        o->info_have  = false;
-        o->lost_shown = false;
+        o->stage   = SENSE_TRACE_HEAD_T;
+        o->trig    = (uint8_t)kind;
+        o->t0      = t;
+        o->ms0     = (uint32_t)(at_us / 1000u);
+        o->len_ms  = len_ms;
+        o->end_t   = end_t;
+        o->last_t  = t;
+        o->stopped = false;
         o->n_s = o->n_v = o->n_m = o->n_lost = o->n_mlost = 0u;
         o->q_n = o->q_head = 0u;
     } else {
@@ -278,11 +312,18 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t pulse_us,
 
 void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us)
 {
+    sense_trace_out_t *o = &tr->out;
     if (c == 't' || c == 'T') {
         sense_trace_trigger(tr, SENSE_TRACE_TRIG_KEY, now_us, 0u, 0u);
-    } else if ((c == 'x' || c == 'X')
-               && tr->out.stage != SENSE_TRACE_IDLE) {
-        tr->out.end_why = SENSE_TRACE_END_KEY;
+    } else if ((c == 'x' || c == 'X') && o->stage != SENSE_TRACE_IDLE
+               && !o->stopped) {
+        /* The end moves to now, and stays: what the ring holds from
+         * before it is still written. */
+        const uint32_t now_t = to_t(now_us);
+        if ((int32_t)(now_t - o->end_t) < 0) {
+            o->end_t = now_t;
+        }
+        o->stopped = true;
     }
 }
 
@@ -409,58 +450,35 @@ static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
 
 /* What writing a line changes. */
 typedef enum {
-    ACT_NONE = 0,   /* nothing to write yet                 */
-    ACT_STAGE,      /* a header line: the stage moves on    */
-    ACT_STATE,      /* the $S line                          */
+    ACT_NONE = 0,   /* nothing to write yet                          */
+    ACT_STAGE,      /* a header line: the stage moves on             */
     ACT_MARK,
-    ACT_LOST,       /* the $L line of the record at the tail */
-    ACT_REC,        /* the record at the tail               */
-    ACT_END,
+    ACT_LOST,       /* the $L line of the record at the tail         */
+    ACT_REC,        /* the record at the tail, with or without a line */
+    ACT_END,        /* the end line, on the trace's time             */
+    ACT_END_SETUP,  /* the end line, at a set-up record              */
 } act_t;
 
-/* The next line of the trace under way into @p l, and what it stands
- * for.  Nothing is changed but the reason a trace ends early, which stays
- * decided. */
-static act_t next_line(sense_trace_t *tr, uint32_t now_t, line_t *l)
+/* The end line of a trace that ran to its end. */
+static act_t ends(const sense_trace_out_t *o, line_t *l)
 {
-    sense_trace_out_t *o = &tr->out;
-    uint32_t cfg = 0u;
-    uint32_t shunt = 0u;
-    const bool info = info_read(tr, &cfg, &shunt);
+    line_end(o, o->stopped ? SENSE_TRACE_END_KEY : SENSE_TRACE_END_TIME, l);
+    return ACT_END;
+}
+
+/* The next line of the trace under way into @p l, and what it stands
+ * for.  Changes nothing. */
+static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
+{
+    const sense_trace_out_t *o = &tr->out;
     l->n = 0u;
     if (o->stage == SENSE_TRACE_HEAD_T) {
         line_start(o, l);
         return ACT_STAGE;
     }
     if (o->stage == SENSE_TRACE_HEAD_H) {
-        if (!info) {
-            return ACT_NONE;
-        }
-        o->info_have = true;
-        o->cfg       = cfg;
-        o->shunt     = shunt;
-        o->shown     = cfg;
         line_setup(o, l);
         return ACT_STAGE;
-    }
-    /* Another shunt or Configuration: the samples after it are not this
-     * header's. */
-    if (info && o->end_why == SENSE_TRACE_END_NONE
-        && ((cfg & 0xFFFFu) != (o->cfg & 0xFFFFu) || shunt != o->shunt)) {
-        o->end_why = SENSE_TRACE_END_SETUP;
-    }
-    if (o->end_why != SENSE_TRACE_END_NONE) {
-        line_end(o, (sense_trace_end_t)o->end_why, l);
-        return ACT_END;
-    }
-    if (info && cfg != o->shown) {
-        /* The Configuration in it is the header's: only the state and the
-         * reset count differ. */
-        o->cfg = cfg;
-        put_s(l, "$S");
-        put_state(l, cfg);
-        put_eol(l);
-        return ACT_STATE;
     }
     if (o->q_n > 0u) {
         line_mark(&o->q[o->q_head], l);
@@ -468,45 +486,72 @@ static act_t next_line(sense_trace_t *tr, uint32_t now_t, line_t *l)
     }
     const sense_trace_rec_t *r = peek(tr);
     if (r == NULL) {
-        if (!at_or_past(now_t, o->end_t)) {
+        /* A record of before the end may still be on its way. */
+        if (!at_or_past(now_t, o->end_t + SENSE_TRACE_END_WAIT_MS
+                                          * SENSE_TRACE_T_PER_MS)) {
             return ACT_NONE;
         }
-        line_end(o, SENSE_TRACE_END_TIME, l);
-        return ACT_END;
+        return ends(o, l);
     }
-    if (at_or_past(r->t, o->end_t)) {
-        line_end(o, SENSE_TRACE_END_TIME, l);
-        return ACT_END;
-    }
+    /* Records dropped before this one: said before it, and before the
+     * end line when this one lies past the end. */
     if (META_LOST(r->meta) != 0u && !o->lost_shown) {
         put_kv(l, "$L n=", META_LOST(r->meta), SENSE_TRACE_LOST_MAX);
         put_eol(l);
         return ACT_LOST;
     }
-    if (META_KIND(r->meta) == SENSE_TRACE_BUS) {
+    if (at_or_past(r->t, o->end_t)) {
+        return ends(o, l);
+    }
+    switch ((sense_trace_kind_t)META_KIND(r->meta)) {
+    case SENSE_TRACE_SHUNT:
+    case SENSE_TRACE_CFG:
+        /* Another shunt or Configuration: the samples after it are not
+         * this header's. */
+        if (changes_setup(o, r)) {
+            line_end(o, SENSE_TRACE_END_SETUP, l);
+            return ACT_END_SETUP;
+        }
+        if (META_KIND(r->meta) == SENSE_TRACE_CFG
+            && (uint32_t)r->v != o->cfg) {
+            put_s(l, "$S");
+            put_state(l, (uint32_t)r->v);
+            put_eol(l);
+        }
+        break;
+    case SENSE_TRACE_BUS:
         put_c(l, 'v');
         put_i(l, r->v);
-    } else {
+        put_eol(l);
+        break;
+    case SENSE_TRACE_CURRENT:
+    default:
         put_i(l, (int32_t)(r->t - o->last_t));
         put_c(l, ',');
         put_i(l, sense_trace_code(r->v, o->shunt));
+        put_eol(l);
+        break;
     }
-    put_eol(l);
     return ACT_REC;
+}
+
+/* Idle from here: the scan for set-up records starts at the tail. */
+static void to_idle(sense_trace_t *tr)
+{
+    tr->out.stage   = SENSE_TRACE_IDLE;
+    tr->out.q_n     = 0u;
+    tr->out.scanned = tail_of(tr);
 }
 
 /* The line @p act stood for is written. */
 static void commit(sense_trace_t *tr, act_t act)
 {
     sense_trace_out_t *o = &tr->out;
-    const sense_trace_rec_t *r;
+    const sense_trace_rec_t *r = peek(tr);
     switch (act) {
     case ACT_STAGE:
         o->stage = (o->stage == SENSE_TRACE_HEAD_T) ? SENSE_TRACE_HEAD_H
                                                     : SENSE_TRACE_BODY;
-        break;
-    case ACT_STATE:
-        o->shown = o->cfg;
         break;
     case ACT_MARK:
         o->q_head = (uint8_t)((o->q_head + 1u) % SENSE_TRACE_MARKS);
@@ -514,27 +559,51 @@ static void commit(sense_trace_t *tr, act_t act)
         ++o->n_m;
         break;
     case ACT_LOST:
-        r = peek(tr);
         o->n_lost    += META_LOST(r->meta);
         o->lost_shown = true;
         break;
     case ACT_REC:
-        r = peek(tr);
         if (META_KIND(r->meta) == SENSE_TRACE_BUS) {
             ++o->n_v;
-        } else {
+        } else if (META_KIND(r->meta) == SENSE_TRACE_CURRENT) {
             ++o->n_s;
             o->last_t = r->t;
         }
-        o->lost_shown = false;
         pop(tr);
         break;
+    case ACT_END_SETUP:
+        /* The set-up's records go with the trace they ended: the next
+         * header carries what they say. */
+        while (r != NULL && is_setup(r)) {
+            pop(tr);
+            r = peek(tr);
+        }
+        to_idle(tr);
+        break;
     case ACT_END:
-        o->stage = SENSE_TRACE_IDLE;
-        break;
-    case ACT_NONE:
     default:
+        to_idle(tr);
         break;
+    }
+}
+
+/* No trace: the newest records stay for the one a trigger starts, none
+ * of them older than the last set-up or state record. */
+static void idle(sense_trace_t *tr)
+{
+    sense_trace_out_t *o = &tr->out;
+    const uint32_t head = head_of(tr);
+    for (; o->scanned != head; ++o->scanned) {
+        if (is_setup(&tr->buf[o->scanned & tr->mask])) {
+            while (tail_of(tr) != o->scanned + 1u) {
+                pop(tr);
+            }
+        }
+    }
+    const uint32_t keep = (tr->mask + 1u < 2u * SENSE_TRACE_PRE)
+                              ? (tr->mask + 1u) / 2u : SENSE_TRACE_PRE;
+    while (head - tail_of(tr) > keep) {
+        pop(tr);
     }
 }
 
@@ -546,17 +615,11 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
         return 0u;
     }
     if (!connected && o->stage != SENSE_TRACE_IDLE) {
-        o->stage = SENSE_TRACE_IDLE;
-        o->q_n   = 0u;
+        to_idle(tr);
         ++o->abandoned;
     }
     if (o->stage == SENSE_TRACE_IDLE) {
-        /* The newest records stay, for the trace a trigger starts. */
-        const uint32_t keep = (tr->mask + 1u < 2u * SENSE_TRACE_PRE)
-                                  ? (tr->mask + 1u) / 2u : SENSE_TRACE_PRE;
-        while (sense_trace_held(tr) > keep) {
-            pop(tr);
-        }
+        idle(tr);
         return 0u;
     }
     const uint32_t now_t = to_t(now_us);
@@ -570,7 +633,7 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
         memcpy(&out[n], l.s, l.n);
         n += l.n;
         commit(tr, act);
-        if (act == ACT_END) {
+        if (act == ACT_END || act == ACT_END_SETUP) {
             break;
         }
     }

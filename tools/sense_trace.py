@@ -34,6 +34,12 @@ The window is 3005 ms and the settle count 10 samples, as the capture's.
 A move whose samples end before the rules end it -- the next command, or
 the trace's end -- reads `cut`.
 
+From the traces alone the tool prints which settings see and time every
+move, each setting's median arrival and its distance from the capture's
+setting (filter 4, band 0.05 A), and how far apart the settings put one
+move's arrival.  Without --servo-csv no arrival is compared with the
+horn, and the report says so.
+
 With --servo-csv, a servo test's CSV file recorded with the output encoder
 on: each `travel angle (ms)` is paired with a move by time, and the
 arrival less that travel time is printed per move, with the median per
@@ -83,6 +89,8 @@ T_PER_MS = 10               # the trace counts 0.1 ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
 EDGE_PAIR_MS = 30           # an edge line's command line lies this close
+REF_FILTER = 4              # the capture's: SENSE_CAP_FILTER_N,
+REF_BAND_A = 0.05           # SERVO_MOVE_BAND_A
 SETTLE_HOLD_MS = 100        # the encoder finds a settle this long after it
 # Added to a trace's times for the replay, which counts in 32 bits from 0:
 # the samples from before the trigger stay above 0.
@@ -315,9 +323,13 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     moves = []
     if edges:
         for _, t, _, _ in edges:
+            # The command line of this edge: the nearest one, before or
+            # after.  A command's time is computed and can lie a frame
+            # late; the edge's is stamped.
             near = [c for c in cmds
-                    if -EDGE_PAIR_MS * T_PER_MS <= c[1] - t <= T_PER_MS]
-            ch, us = (near[-1][2], near[-1][3]) if near else (None, None)
+                    if abs(c[1] - t) <= EDGE_PAIR_MS * T_PER_MS]
+            near.sort(key=lambda c: abs(c[1] - t))
+            ch, us = (near[0][2], near[0][3]) if near else (None, None)
             moves.append(Move(tr, t, ch, us))
     else:
         moves = [Move(tr, t, ch, us) for _, t, ch, us in cmds]
@@ -608,7 +620,47 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
                 out.append(f"    {n:>6}  {band:6.2f}{'':16}{cells}")
 
 
-def report_summary(moves: list[Move], have_horn: bool,
+def report_spread(moves: list[Move], out: list[str]) -> None:
+    """What the traces alone decide: which settings time every move, and
+    how far the settings' arrivals lie apart."""
+    total = len(moves)
+    full = []
+    medians = {}
+    for n in FILTERS:
+        for band in BANDS_A:
+            times = [mv.results[(n, band)]["arrive_ms"] for mv in moves
+                     if (n, band) in mv.results
+                     and mv.results[(n, band)]["arrive_ms"] is not None]
+            if times:
+                medians[(n, band)] = statistics.median(times)
+            if len(times) == total:
+                full.append((n, band))
+    out.append("settings that see every move and time its arrival: "
+               + (", ".join(f"filter {n} band {band:.2f} A"
+                            for n, band in full) if full else "none"))
+    ref = (REF_FILTER, REF_BAND_A)
+    if ref in medians:
+        out.append(f"median arrival, and its distance from filter "
+                   f"{REF_FILTER} band {REF_BAND_A:.2f} A (the capture's "
+                   "setting):")
+        out.append("    filter  band A   median ms  distance ms")
+        for (n, band), med in medians.items():
+            out.append(f"    {n:>6}  {band:6.2f}  {med:10.1f}  "
+                       f"{med - medians[ref]:+11.1f}")
+    spreads = []
+    for mv in moves:
+        times = [r["arrive_ms"] for r in mv.results.values()
+                 if r["arrive_ms"] is not None]
+        if len(times) > 1:
+            spreads.append(max(times) - min(times))
+    if spreads:
+        out.append(f"latest less earliest arrival of one move across the "
+                   f"settings: median {statistics.median(spreads):.1f} ms, "
+                   f"largest {max(spreads):.1f} ms over {len(spreads)} "
+                   "move(s)")
+
+
+def report_summary(moves: list[Move], have_horn: bool, asked: bool,
                    out: list[str]) -> None:
     if not moves:
         return
@@ -633,6 +685,13 @@ def report_summary(moves: list[Move], have_horn: bool,
                          f"{len(diffs)} move(s)" if diffs
                          else "  no move with both times")
             out.append(line)
+    report_spread(moves, out)
+    if not have_horn:
+        out.append("not compared with the horn: "
+                   + ("no row of the servo test's CSV file pairs with a "
+                      "move" if asked else "no --servo-csv given")
+                   + ". An arrival is when the current is back at the "
+                   "holding level, which can lead or lag the horn.")
 
 
 def main() -> int:
@@ -710,7 +769,7 @@ def main() -> int:
             ambiguous = True
     for tr, moves, csv in per_trace:
         report_trace(tr, moves, csv, out)
-    report_summary(all_moves, have_horn, out)
+    report_summary(all_moves, have_horn, args.servo_csv is not None, out)
     print("\n".join(out))
     bad = sum(1 for tr in traces if tr.problems)
     if bad:

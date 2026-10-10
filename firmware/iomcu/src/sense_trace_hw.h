@@ -7,7 +7,7 @@
  * memory, the console and the PWM slice's counter.
  *
  * Core 1 calls sense_trace_hw_feed() after each tick's step: it reads the
- * schedule's memory and writes at most 2 records, 12 bytes each, into a
+ * schedule's memory and writes at most 4 records, 12 bytes each, into a
  * ring of SENSE_TRACE_HW_RING.  No bus transaction, no console.
  *
  * Core 0 calls the rest from the main loop.  sense_trace_hw_pass() writes
@@ -39,7 +39,8 @@ void sense_trace_hw_feed(const sense_svc_t *svc);
 
 /**
  * Core 0, straight after outputs_hw_service(): each bound PWM slot's
- * pulse of this pass.  A changed one is a command (sense_trace_pulse()),
+ * pulse of this pass, no longer than the slice's frame.  A changed one is
+ * a command (sense_trace_pulse()),
  * timed at the start of the frame that first carries it: now plus what
  * the slice's counter has left of its frame, 1 µs a count.  The counter
  * is read after the level was written, so a wrap between the two -- some

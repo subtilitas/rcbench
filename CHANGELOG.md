@@ -17,7 +17,9 @@ coprocessor and the other way round.
   a PWM output renders another pulse width or after a capture edge, and
   for 10 s after `t` on the console. A trigger during a trace extends it.
   Core 1 samples as in the released image and copies each sample into a
-  ring of 4096 records (49,152 bytes); no bus transaction is added. Core 0
+  ring of 4096 records (49,152 bytes); no bus transaction is added. A
+  change of the part's set-up or state is a record in the same ring and
+  keeps its place among the samples. Core 0
   writes whole lines into the room the console's 64-byte transmit buffer
   has, and nothing without a terminal. A full ring drops records, and the
   trace says where and how many. A trace is about 8.6 bytes a sample. The
@@ -25,10 +27,14 @@ coprocessor and the other way round.
   CI fails when it does. `tools/sense_trace.py` checks a captured console
   against each trace's end line, writes a CSV file per trace, and replays
   every move through the move rules (`shared/servo/servo_move.c`) with the
-  filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; with
-  a servo test's CSV file it prints each arrival less the AS5600's travel
-  time and the median per setting. [First run](docs/FirstRun.md) §8.9 has
-  the bench procedure. Host suite only; not run on hardware. Not measured:
+  filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A. From
+  the traces alone it prints which settings see and time every move, each
+  setting's median arrival and how far apart the settings put one move's
+  arrival, and says that no arrival is compared with the horn. With a
+  servo test's CSV file recorded with the AS5600 it prints each arrival
+  less the encoder's travel time and the median per setting.
+  [First run](docs/FirstRun.md) §8.9 has the bench procedure in two parts,
+  the first without an encoder. Host suite only; not run on hardware. Not measured:
   the time the lines add to a pass of core 0.
 - **The coprocessor keeps the last 4 windows of the servo's current.** The
   new read-only page SERVO_WIN (0x31, protocol 4.11) holds the last 4

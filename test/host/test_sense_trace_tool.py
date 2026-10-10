@@ -16,7 +16,8 @@ with CR LF and with LF line ends; a log cut off inside a trace, with a
 sample line missing, with a trace starting inside another, with records
 the coprocessor dropped, with no trace, with another format version and
 with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
-count; clipped samples; edge lines taken before command lines; a servo
+count; clipped samples; edge lines taken before command lines, each with
+the command line nearest to it; what the traces alone give; a servo
 CSV that pairs at two offsets, one set by hand, and one without the
 columns.
 
@@ -280,9 +281,10 @@ def another_version_and_a_trace_without_a_shunt() -> None:
 
 
 def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
-              high: int = 2000) -> str:
+              high: int = 2000, edge_after: int = 120) -> str:
     """A trace at @p t0: 0.12 A held, and after each (ms, us) command a
-    burst of @p high codes for 100 ms."""
+    burst of @p high codes for 100 ms.  With @p edges an edge line
+    @p edge_after tenths of a ms after each command line's time."""
     out = [f"$T v=1 n=1 trig=cmd t={t0} ms=0 len=4000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0"]
     n = 0
@@ -293,7 +295,7 @@ def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
                 t = (t0 + at * 10) & 0xFFFFFFFF
                 out.append(f"$C t={t} ch=2 us={us}")
                 if edges:
-                    out.append(f"$E t={(t + 120) & 0xFFFFFFFF}")
+                    out.append(f"$E t={(t + edge_after) & 0xFFFFFFFF}")
         moving = any(at + 13 <= ms < at + 113 for at, _ in moves)
         out.append(f"{-600 if n == 0 else 10},{high if moving else 300}")
         n += 1
@@ -349,6 +351,57 @@ def edge_lines_are_the_moves_when_there_are_any() -> None:
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["2/2", "2/2", "101.0", "101.0"],
           f"{arrival[(1, '0.05')]}")
+
+
+def an_edge_takes_the_command_line_nearest_to_it() -> None:
+    # A command line's time one frame late: 20 ms after its edge.  The
+    # edge still has its channel and pulse, and with them the level its
+    # end was held at.
+    moves = [(0, 1900), (1000, 1100), (2000, 1900)]
+    r = tool(str(work("late.log", synthetic(1000, moves, edges=True,
+                                            edge_after=-200))), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check("move 1 at -20.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
+    check("move 3 at 1980.0 ms, channel 2 to 1900 us" in r.stdout
+          and "(held before move 2)" in r.stdout, "move 3's level")
+    # 31 ms apart is another command's.
+    r = tool(str(work("far.log", synthetic(1000, moves, edges=True,
+                                           edge_after=-310))), "--no-csv")
+    check("move 1 at -31.0 ms, edge" in r.stdout, r.stdout[-900:])
+
+
+def the_traces_alone_say_which_settings_time_every_move() -> None:
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    out = r.stdout
+    check("not compared with the horn: no --servo-csv given. An arrival "
+          "is when the current is back at the holding level, which can "
+          "lead or lag the horn." in out, "said plainly")
+    check("arrival less the horn" not in out
+          and "median difference to the horn" not in out, "no comparison")
+    every = ", ".join(f"filter {n} band {band} A" for n, band in SETTINGS)
+    check("settings that see every move and time its arrival: " + every
+          in out, "all nine")
+    med = setting_rows(out, "median arrival, and its distance from filter "
+                            "4 band 0.05 A")
+    for n, band in SETTINGS:
+        late = n - 1
+        check(med[(n, band)] == [f"{500 + late}.0", f"{late - 3:+d}.0"],
+              f"median at {n} {band}: {med[(n, band)]}")
+    check("latest less earliest arrival of one move across the settings: "
+          "median 7.0 ms, largest 7.0 ms over 4 move(s)" in out,
+          "the spread")
+    # A floor no move passes: no setting times every move.
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--no-csv",
+             "--floor", "1.5")
+    check("settings that see every move and time its arrival: none"
+          in r.stdout, "none")
+    # Rows that pair with no move: said, and not compared.
+    rows = (ARGS.fixtures / "sense-trace-sim.csv").read_text()
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--no-csv",
+             "--servo-csv", str(work("off.csv", rows)), "--csv-offset", "0")
+    check("not compared with the horn: no row of the servo test's CSV "
+          "file pairs with a move." in r.stdout, "no row pairs")
 
 
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
@@ -456,6 +509,8 @@ CASES = [
     times_run_across_the_wrap_of_the_count,
     clipped_samples_are_said_and_time_no_arrival,
     edge_lines_are_the_moves_when_there_are_any,
+    an_edge_takes_the_command_line_nearest_to_it,
+    the_traces_alone_say_which_settings_time_every_move,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,
     a_floor_is_a_current_above_zero,

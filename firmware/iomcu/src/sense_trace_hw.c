@@ -40,16 +40,18 @@ void sense_trace_hw_outputs(const outputs_t *o)
         if (s->driver != OUT_DRIVER_PWM || !outputs_hw_bound(i)) {
             continue;
         }
-        /* The pulse outputs_hw_service() has just written to this pin. */
-        const uint16_t pulse =
-            drive ? outputs_pulse_us(o, s->first_channel) : 0u;
+        /* The pulse outputs_hw_service() has just written to this pin,
+         * held to the frame as out_pwm_write() holds it. */
+        const uint slice = pwm_gpio_to_slice_num(s->pin);
+        const uint32_t top = pwm_hw->slice[slice].top;
+        const uint16_t pulse = drive
+            ? sense_trace_rendered(outputs_pulse_us(o, s->first_channel), top)
+            : 0u;
         const uint64_t now = time_us_64();
         if (!sense_trace_pulse(&s_trace, i, pulse, now)) {
             continue;
         }
         /* The level takes effect at the wrap that ends this frame. */
-        const uint slice = pwm_gpio_to_slice_num(s->pin);
-        const uint32_t top = pwm_hw->slice[slice].top;
         const uint32_t count = pwm_get_counter(slice);
         const uint64_t frame = time_us_64() + (uint64_t)(top - count) + 1u;
         sense_trace_trigger(&s_trace, SENSE_TRACE_TRIG_CMD, frame,
