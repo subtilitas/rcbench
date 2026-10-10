@@ -38,16 +38,21 @@
  * command or a capture edge and SENSE_TRACE_KEY_MS after the console
  * command.  A trigger during a trace adds its line and moves the end to
  * its own when that lies later; it never shortens a trace.  The console's
- * stop moves the end to the time of the stop.  A trigger at or past a
+ * stop moves the end to the time of the stop, or to just past the
+ * trace's own trigger when that lies ahead; a trigger line whose time
+ * lies at or past that end is dropped.  A trigger at or past a
  * trace's end, or after its stop, is not that trace's, however much of
  * the trace the console still owes: it waits, up to SENSE_TRACE_MARKS of
  * them, and starts the next trace when the end line is written.  A
  * trace also ends at a record that changes the INA3221's shunt or
  * Configuration; a trigger whose line was not written by then starts the
- * next trace.  However a trace ends, every record from
+ * next trace, unless the console stopped this one.  However a trace ends, every record from
  * before its end is written first.  With the ring empty the end line
- * waits SENSE_TRACE_END_WAIT_MS past the end, for the tick that may
- * still bring a record of before it.
+ * waits for core 1: after each tick's records the feed publishes the
+ * time the tick started at, and a tick that started at or past the end
+ * brings no record of before it.  A trigger line waits for its time the
+ * same way.  Core 1 not seen past the time SENSE_TRACE_STALL_MS after
+ * it: the line is written all the same, and the end line says so.
  *
  * Triggers.
  *   cmd   a PWM slot renders another pulse width than in the pass before,
@@ -67,7 +72,7 @@
  * microsecond clock divided by 100, modulo 2^32: 0.1 ms, as the capture
  * counts.
  *
- *   $T v=1 n=N trig=cmd|edge|key t=T ms=M len=L
+ *   $T v=2 n=N trig=cmd|edge|key t=T ms=M len=L
  *       The trace numbered N (modulo 65536) starts.  T is the trigger's
  *       time, M the millisecond tick at it (modulo 2^32), L the length
  *       in ms the trigger asks for.
@@ -97,10 +102,13 @@
  *   $S on=B rst=K        the part's state or reset count changed here:
  *                        the samples above it were taken before
  *   $L n=X               X records are missing here: the ring was full
- *   $Z n=N s=S v=V l=X m=A ml=B e=t|s|k
+ *   $Z n=N s=S v=V l=X m=A ml=B e=t|s|k|T|S|K
  *       The trace ends: S sample lines, V voltage lines, X records
  *       missing, A trigger lines, B triggers that found the trigger queue
  *       full.  e is the reason: its time, a changed set-up, the console.
+ *       A capital letter: core 1 was not seen past the end, or past a
+ *       trigger line's time, within SENSE_TRACE_STALL_MS, so a sample of
+ *       before that time can be missing or stand behind the line.
  *       The counts saturate: S and X at 99999999, V at 9999999, A and B
  *       at 9999.
  *
@@ -126,7 +134,7 @@
 extern "C" {
 #endif
 
-#define SENSE_TRACE_FORMAT       1u
+#define SENSE_TRACE_FORMAT       2u
 /** The longest line, its CR LF included: the USB console's transmit
  *  buffer holds 64 bytes. */
 #define SENSE_TRACE_LINE_MAX    64u
@@ -140,9 +148,10 @@ extern "C" {
 /** A slot's pulse changing this long after its last change is a command
  *  of its own, ms. */
 #define SENSE_TRACE_HOLD_MS     50u
-/** With the ring empty, the end line waits this long past the trace's
- *  end, ms: 2 ticks of core 1. */
-#define SENSE_TRACE_END_WAIT_MS  2u
+/** With the ring empty, a line that waits for core 1 to pass its time
+ *  is written this long after that time at the latest, ms: 5 times the
+ *  19 ms a flash write parks core 1 for. */
+#define SENSE_TRACE_STALL_MS   100u
 /** PWM slots watched for a changed pulse: OUT_MAX_SLOTS. */
 #define SENSE_TRACE_SLOTS        8u
 /** Trigger lines waiting for the console. */
@@ -240,6 +249,8 @@ typedef struct {
     uint32_t end_t;       /**< the trace ends at a sample at or past it    */
     uint32_t last_t;      /**< the last sample line's time                 */
     bool     stopped;     /**< the console moved the end                   */
+    bool     stalled;     /**< a line was written without core 1 seen past
+                               its time                                    */
     uint32_t cfg, shunt;  /**< the set-up as it stands at the ring's tail  */
     bool     lost_shown;  /**< the $L line of the record at the tail is
                                written                                     */
@@ -264,6 +275,9 @@ typedef struct {
     uint32_t          mask;       /**< the size less 1                     */
     atomic_uint_fast32_t head;    /**< records written; core 1 moves it    */
     atomic_uint_fast32_t tail;    /**< records read; core 0 moves it       */
+    atomic_uint_fast32_t fed;     /**< the start, 0.1 ms, of the last tick
+                                       whose records are in; core 1 moves
+                                       it                                  */
     sense_trace_src_t src;
     sense_trace_out_t out;
 } sense_trace_t;
@@ -273,8 +287,11 @@ typedef struct {
 bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
                       uint32_t size);
 
-/** Core 1, after each tick of @p s; NULL while no bus is open. */
-void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s);
+/** Core 1, after each tick of @p s; NULL while no bus is open.
+ *  @p tick_us is the time the caller read before the tick, on the clock
+ *  the schedule reads: no time the tick's samples carry lies before it. */
+void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s,
+                      uint64_t tick_us);
 
 /** Core 0: a trigger of @p kind at @p at_us on the clock the schedule
  *  reads; @p ch and @p us are a cmd trigger's channel and pulse. */

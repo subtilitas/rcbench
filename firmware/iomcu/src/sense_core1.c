@@ -111,8 +111,8 @@ static void core1_main(void)
         sense_svc_step(&s_svc, &s_cmd, &s_snap);
 #if SENSE_TRACE
         /* The trace build: this tick's CH1 sample into the ring.  Memory
-         * only, after the reads. */
-        sense_trace_hw_feed(&s_svc);
+         * only, after the reads; the time is the one read above. */
+        sense_trace_hw_feed(&s_svc, now);
 #endif
         /* The phase tap's pass: the words the PIO left in its ring since
          * the last tick.  Nothing when no tap runs. */

@@ -457,7 +457,8 @@ die Pulsbreite in jedem Durchlauf: seine Zeile `$C` trägt die erste
 Pulsbreite, und eine Zeile `$D` die, bei der es endete, sobald der Ausgang
 50 ms still gehalten hat. Die Bewegungen des automatischen Tests sind
 Sprünge und haben keine. `x` auf der Konsole beendet
-einen Trace. Jeder Trace enthält auch die Samples von bis zu 64 ms vor
+einen Trace; eine Triggerzeile, deren Zeit auf dem Stopp oder danach
+liegt, entfällt. Jeder Trace enthält auch die Samples von bis zu 64 ms vor
 seinem Trigger.
 
 **Was es kostet.** Core 1 liest CH1 jede 1 ms wie im veröffentlichten
@@ -476,7 +477,7 @@ ist nicht gemessen.
 **Die Zeilen** (`shared/sense/sense_trace.h` nennt jedes Feld):
 
 ```text
-$T v=1 n=2 trig=cmd t=220200 ms=22020 len=4000
+$T v=2 n=2 trig=cmd t=220200 ms=22020 len=4000
 $H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
 -810,289
 10,277
@@ -489,6 +490,15 @@ $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 
 Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten:
 eine Triggerzeile folgt auf die Samples, die vor ihr genommen wurden.
+Core 0 schreibt eine Triggerzeile und die Endzeile, sobald Core 1 einen
+Tick beendet hat, der zur Zeit der Zeile oder danach begann. `e=` in der
+Endzeile ist der Grund für das Ende: `t` die Zeit, `s` ein geändertes
+Set-up, `k` die Konsole. Ein Großbuchstabe (`T`, `S`, `K`) sagt, dass
+Core 1 innerhalb von 100 ms nicht hinter der Zeit einer Triggerzeile oder
+dem Ende gesehen wurde und die Zeile trotzdem geschrieben ist: ein Sample
+von vor dieser Zeit kann fehlen oder hinter der Zeile stehen. Das Tool
+meldet einen solchen Trace als Problem und spielt keine seiner Bewegungen
+nach.
 
 Eine Sample-Zeile ist die Zeit seit dem Sample davor in 0,1 ms und der
 Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile hat
@@ -614,8 +624,9 @@ gewählt, nicht gemessen.
   beidem endet, setzt die Zeit dieses einen Kommandos einen Frame (20 ms
   bei 50 Hz) zu spät. Wie oft: nicht gemessen.
 - Teil B: die beiden Dateien haben verschiedene Uhren. Das Tool ordnet Zeilen und
-  Kommandos über die Abstände der Bewegungen zu; passen zwei Versätze
-  gleich gut, sagt es das, endet mit 1 und nimmt `--csv-offset`.
+  Kommandos über die Abstände der Bewegungen zu; ordnen zwei Versätze
+  gleich viele Zeilen zu und geben eine Zeile verschiedenen Bewegungen,
+  sagt es das, endet mit 1 und nimmt `--csv-offset`.
 - Ob ein Terminal 8,6 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
   dessen Zeilenzahlen nicht zu seiner Endzeile passen, wird gemeldet und
   endet mit 1.

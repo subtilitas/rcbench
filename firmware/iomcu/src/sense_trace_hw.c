@@ -27,9 +27,9 @@ void sense_trace_hw_init(void)
     (void)sense_trace_init(&s_trace, s_ring, SENSE_TRACE_HW_RING);
 }
 
-void sense_trace_hw_feed(const sense_svc_t *svc)
+void sense_trace_hw_feed(const sense_svc_t *svc, uint64_t tick_us)
 {
-    sense_trace_feed(&s_trace, svc->open ? &svc->sched : NULL);
+    sense_trace_feed(&s_trace, svc->open ? &svc->sched : NULL, tick_us);
 }
 
 void sense_trace_hw_outputs(const outputs_t *o)

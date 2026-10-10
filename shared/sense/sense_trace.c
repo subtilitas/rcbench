@@ -17,6 +17,7 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
     memset(tr, 0, sizeof(*tr));
     atomic_init(&tr->head, 0u);
     atomic_init(&tr->tail, 0u);
+    atomic_init(&tr->fed, 0u);
     if (buf == NULL || size < 2u || size > (1u << 24)
         || (size & (size - 1u)) != 0u) {
         return false;
@@ -79,12 +80,10 @@ static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt)
     }
 }
 
-void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
+/* The tick's records, when it has any. */
+static void feed(sense_trace_t *tr, const sense_sched_t *s)
 {
     sense_trace_src_t *p = &tr->src;
-    if (tr->buf == NULL) {
-        return;
-    }
     if (s == NULL) {
         /* No bus: the next schedule starts afresh. */
         p->have = false;
@@ -156,6 +155,19 @@ void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s)
     p->n_hi  = a->n_hi;
     p->n_lo  = a->n_lo;
     p->v_sum = a->v_sum;
+}
+
+void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s,
+                      uint64_t tick_us)
+{
+    if (tr->buf == NULL) {
+        return;
+    }
+    feed(tr, s);
+    /* After the tick's records, never before them: every record still to
+     * come is of a later tick, so of this time or later. */
+    atomic_store_explicit(&tr->fed, (uint32_t)(tick_us / 100u),
+                          memory_order_release);
 }
 
 /* ------------------------------------------------------------- core 0 */
@@ -315,6 +327,7 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
         o->end_t   = end_t;
         o->last_t  = t;
         o->stopped = false;
+        o->stalled = false;
         o->n_s = o->n_v = o->n_m = o->n_lost = o->n_mlost = 0u;
         o->q_n = o->q_head = 0u;
     } else if (open_at(o, t)) {
@@ -410,10 +423,14 @@ void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us)
     } else if ((c == 'x' || c == 'X') && o->stage != SENSE_TRACE_IDLE
                && !o->stopped) {
         /* The end moves to now, and stays: what the ring holds from
-         * before it is still written. */
-        const uint32_t now_t = to_t(now_us);
-        if ((int32_t)(now_t - o->end_t) < 0) {
-            o->end_t = now_t;
+         * before it is still written.  Not to before the trace's own
+         * trigger, which can lie ahead: its line is the trace's. */
+        uint32_t end_t = to_t(now_us);
+        if (!at_or_past(end_t, o->t0 + 1u)) {
+            end_t = o->t0 + 1u;
+        }
+        if ((int32_t)(end_t - o->end_t) < 0) {
+            o->end_t = end_t;
         }
         o->stopped = true;
     }
@@ -527,9 +544,11 @@ static void line_mark(const sense_trace_mark_t *m, line_t *l)
 }
 
 static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
-                     line_t *l)
+                     bool stalled, line_t *l)
 {
-    static const char k_why[] = { '?', 't', 's', 'k' };
+    static const char k_sure[]    = { '?', 't', 's', 'k' };
+    static const char k_stalled[] = { '?', 'T', 'S', 'K' };
+    const char *const k_why = (stalled || o->stalled) ? k_stalled : k_sure;
     put_kv(l, "$Z n=", o->id, 65535u);
     put_kv(l, " s=", o->n_s, 99999999u);
     put_kv(l, " v=", o->n_v, 9999999u);
@@ -546,6 +565,7 @@ typedef enum {
     ACT_NONE = 0,   /* nothing to write yet                          */
     ACT_STAGE,      /* a header line: the stage moves on             */
     ACT_MARK,
+    ACT_MARK_STALLED, /* a trigger line, core 1 not seen past its time */
     ACT_LOST,       /* the $L line of the record at the tail         */
     ACT_REC,        /* the record at the tail, with or without a line */
     ACT_END,        /* the end line, on the trace's time             */
@@ -553,10 +573,25 @@ typedef enum {
 } act_t;
 
 /* The end line of a trace that ran to its end. */
-static act_t ends(const sense_trace_out_t *o, line_t *l)
+static act_t ends(const sense_trace_out_t *o, bool stalled, line_t *l)
 {
-    line_end(o, o->stopped ? SENSE_TRACE_END_KEY : SENSE_TRACE_END_TIME, l);
+    line_end(o, o->stopped ? SENSE_TRACE_END_KEY : SENSE_TRACE_END_TIME,
+             stalled, l);
     return ACT_END;
+}
+
+/* With the ring empty, whether a record of before @p t can still come:
+ * NOT_YET while core 1 has not finished a tick that started at or past
+ * @p t, STALLED when it has not SENSE_TRACE_STALL_MS after @p t. */
+typedef enum { NOT_YET = 0, PASSED, STALLED } past_t;
+
+static past_t past(uint32_t fed_t, uint32_t now_t, uint32_t t)
+{
+    if (at_or_past(fed_t, t)) {
+        return PASSED;
+    }
+    return at_or_past(now_t, t + SENSE_TRACE_STALL_MS * SENSE_TRACE_T_PER_MS)
+               ? STALLED : NOT_YET;
 }
 
 /* The next line of the trace under way into @p l, and what it stands
@@ -569,6 +604,10 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         line_start(o, l);
         return ACT_STAGE;
     }
+    /* Core 1's progress before the ring, never after it: a ring found
+     * empty then holds no record of a tick this progress counts. */
+    const uint32_t fed_t =
+        (uint32_t)atomic_load_explicit(&tr->fed, memory_order_acquire);
     const sense_trace_rec_t *r = peek(tr);
     if (o->stage == SENSE_TRACE_HEAD_H) {
         /* The set-up as it stands at the trace's first record: a set-up
@@ -587,26 +626,27 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
     /* A trigger line in the order of its time: behind the records of
      * before it, so a record that ends the trace before the trigger
      * ends it before the trigger's line.  With the ring empty it waits
-     * for its time, and for the tick that may bring a record of before
-     * it: a frame's start lies ahead when its command is seen. */
-    if (o->q_n > 0u) {
+     * for core 1 to pass its time: a frame's start lies ahead when its
+     * command is seen, and a record of before it may be on its way. */
+    /* A trigger line at or past the end -- the console's stop moved the
+     * end before it -- is not this trace's. */
+    if (o->q_n > 0u && !at_or_past(o->q[o->q_head].t, o->end_t)) {
         const uint32_t mark_t = o->q[o->q_head].t;
-        const bool due = (r != NULL)
-            ? at_or_past(r->t, mark_t)
-            : at_or_past(now_t, mark_t + SENSE_TRACE_END_WAIT_MS
-                                         * SENSE_TRACE_T_PER_MS);
-        if (due) {
+        const past_t due = (r != NULL)
+            ? (at_or_past(r->t, mark_t) ? PASSED : NOT_YET)
+            : past(fed_t, now_t, mark_t);
+        if (due != NOT_YET) {
             line_mark(&o->q[o->q_head], l);
-            return ACT_MARK;
+            return (due == STALLED) ? ACT_MARK_STALLED : ACT_MARK;
         }
     }
     if (r == NULL) {
         /* A record of before the end may still be on its way. */
-        if (!at_or_past(now_t, o->end_t + SENSE_TRACE_END_WAIT_MS
-                                          * SENSE_TRACE_T_PER_MS)) {
+        const past_t due = past(fed_t, now_t, o->end_t);
+        if (due == NOT_YET) {
             return ACT_NONE;
         }
-        return ends(o, l);
+        return ends(o, due == STALLED, l);
     }
     /* Records dropped before this one: said before it, and before the
      * end line when this one lies past the end. */
@@ -616,7 +656,7 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         return ACT_LOST;
     }
     if (at_or_past(r->t, o->end_t)) {
-        return ends(o, l);
+        return ends(o, false, l);
     }
     switch ((sense_trace_kind_t)META_KIND(r->meta)) {
     case SENSE_TRACE_SHUNT:
@@ -624,7 +664,7 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         /* Another shunt or Configuration: the samples after it are not
          * this header's. */
         if (changes_setup(o, r)) {
-            line_end(o, SENSE_TRACE_END_SETUP, l);
+            line_end(o, SENSE_TRACE_END_SETUP, false, l);
             return ACT_END_SETUP;
         }
         if (META_KIND(r->meta) == SENSE_TRACE_CFG
@@ -672,13 +712,14 @@ static void ended(sense_trace_t *tr)
 {
     sense_trace_out_t *o = &tr->out;
     /* The trigger lines the trace ended before are triggers still: the
-     * first of them, then the ones that waited. */
+     * first of them, then the ones that waited.  Not after the console's
+     * stop: it ends what was asked for before it. */
     sense_trace_mark_t left[SENSE_TRACE_MARKS];
     uint8_t n_left = 0u;
     for (uint8_t k = 0u; k < o->q_n; ++k) {
         const sense_trace_mark_t *m =
             &o->q[(o->q_head + k) % SENSE_TRACE_MARKS];
-        if (m->kind != SENSE_TRACE_MARK_DEST) {
+        if (m->kind != SENSE_TRACE_MARK_DEST && !o->stopped) {
             left[n_left++] = *m;
         }
     }
@@ -710,6 +751,9 @@ static void commit(sense_trace_t *tr, act_t act)
         o->stage = (o->stage == SENSE_TRACE_HEAD_T) ? SENSE_TRACE_HEAD_H
                                                     : SENSE_TRACE_BODY;
         break;
+    case ACT_MARK_STALLED:
+        o->stalled = true;
+        /* fall through */
     case ACT_MARK:
         o->q_head = (uint8_t)((o->q_head + 1u) % SENSE_TRACE_MARKS);
         --o->q_n;

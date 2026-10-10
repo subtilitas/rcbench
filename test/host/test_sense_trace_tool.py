@@ -268,23 +268,23 @@ def a_log_with_no_trace() -> None:
 
 
 def another_version_and_a_trace_without_a_shunt() -> None:
-    text = ("$T v=2 n=7 trig=key t=100 ms=10 len=10000\n"
+    text = ("$T v=3 n=7 trig=key t=100 ms=10 len=10000\n"
             "$H dt_us=1000 shunt_uohm=0 cfg=0x0000 on=0 rst=0\n"
             "$K t=100\n"
             "$Z n=7 s=0 v=0 l=0 m=1 ml=0 e=t\n")
-    r = tool(str(work("v2.log", text)))
+    r = tool(str(work("v3.log", text)))
     check(r.returncode == 1, f"exit {r.returncode}")
-    check("PROBLEM: format version 2; this tool reads version 1"
+    check("PROBLEM: format version 3; this tool reads version 2"
           in r.stdout, "the version")
     check("part not online" in r.stdout, "the part")
-    check(not (ARGS.work / "v2-trace-7.csv").exists(),
+    check(not (ARGS.work / "v3-trace-7.csv").exists(),
           "no CSV without a shunt")
     # A header lost by the terminal.
-    r = tool(str(work("noh.log", "$T v=1 n=1 trig=key t=100 ms=10 len=10\n"
+    r = tool(str(work("noh.log", "$T v=2 n=1 trig=key t=100 ms=10 len=10\n"
                                  "$Z n=1 s=0 v=0 l=0 m=0 ml=0 e=t\n")))
     check(r.returncode == 1 and "PROBLEM: no $H line" in r.stdout, "no $H")
     r = tool(str(work("otherz.log",
-                      "$T v=1 n=1 trig=key t=100 ms=10 len=10\n"
+                      "$T v=2 n=1 trig=key t=100 ms=10 len=10\n"
                       "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 "
                       "rst=0\n$Z n=2 s=0 v=0 l=0 m=0 ml=0 e=t\n")))
     check(r.returncode == 1
@@ -296,7 +296,7 @@ def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
     """A trace at @p t0: 0.12 A held, and after each (ms, us) command a
     burst of @p high codes for 100 ms.  With @p edges an edge line
     @p edge_after tenths of a ms after each command line's time."""
-    out = [f"$T v=1 n=1 trig=cmd t={t0} ms=0 len=4000",
+    out = [f"$T v=2 n=1 trig=cmd t={t0} ms=0 len=4000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0"]
     n = 0
     last = moves[-1][0] + 600
@@ -594,7 +594,7 @@ def the_servo_csv_pairs_by_time() -> None:
     check(r.returncode == 1, f"exit {r.returncode}")
     check("PROBLEM: another offset between the two clocks pairs as many"
           in r.stdout, "the tie is said")
-    check("more than one offset" in r.stderr, r.stderr)
+    check("more than one way" in r.stderr, r.stderr)
     # Set by hand: the CSV's clock is 12.345 s behind.
     r = tool(log, "--servo-csv", str(two), "--csv-offset", "12.345",
              "--no-csv")
@@ -662,6 +662,109 @@ def the_offset_that_pairs_the_most_is_found_between_the_obvious() -> None:
     check(n == 3, f"{n} paired")
     check([mv.horn_row for mv in moves[:3]] == [0, 1, 2],
           f"{[mv.horn_row for mv in moves]}")
+
+
+def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
+    class At:
+        def __init__(self, abs_s: float) -> None:
+            self.abs_s = abs_s
+            self.horn_ms = None
+            self.horn_row = None
+
+    def rows_at(*cmds: float) -> list[tuple[float, float]]:
+        return [(c + 0.1 + 0.1, 100.0) for c in cmds]
+    # Commands 50 ms apart, rows whose commands lie at 0, 0.05 and 0.10 s:
+    # rows 1 and 2 fit as exactly as rows 2 and 3, at offsets 50 ms apart,
+    # which is inside the 150 ms a pair may lie apart.
+    moves = [At(0.0), At(0.05)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05, 0.10), 0.15,
+                                   None)
+    check(n == 2 and tie, f"{n} paired, tie {tie}")
+    # The other direction: more commands than rows.
+    moves = [At(0.0), At(0.05), At(0.10)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05), 0.15, None)
+    check(n == 2 and tie, f"{n} paired, tie {tie}")
+    # One row, two commands far apart: either may be its command.
+    moves = [At(0.0), At(5.0)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0), 0.15, None)
+    check(n == 1 and tie, f"{n} paired, tie {tie}")
+    # As many rows as commands, 50 ms apart: one answer, however many
+    # offsets inside the tolerance give it.
+    moves = [At(0.0), At(0.05), At(0.10)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05, 0.10), 0.15,
+                                   None)
+    check(n == 3 and not tie, f"{n} paired, tie {tie}")
+    check([mv.horn_row for mv in moves] == [0, 1, 2], "each its own")
+    # Two rows that both lie at one command are one answer too: the
+    # nearer is the command's at every offset that pairs as many.
+    moves = [At(0.0), At(1.0), At(2.5)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.04, 1.0, 2.5),
+                                   0.15, None)
+    check(n == 3 and not tie, f"{n} paired, tie {tie}")
+    check([mv.horn_row for mv in moves] == [0, 2, 3],
+          f"{[mv.horn_row for mv in moves]}")
+    # An offset given by hand is the answer.
+    moves = [At(0.0), At(0.05)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05, 0.10), 0.15,
+                                   -0.05)
+    check(n == 2 and not tie, f"{n} paired, tie {tie}")
+    check([mv.horn_row for mv in moves] == [1, 2], "rows 2 and 3")
+
+
+def pairing_arguments_are_checked() -> None:
+    log = str(ARGS.fixtures / "sense-trace-sim.log")
+    csv = str(ARGS.fixtures / "sense-trace-sim.csv")
+    for bad in ("0", "-1", "nan", "inf", "-inf"):
+        r = tool(log, "--servo-csv", csv, "--no-csv", f"--pair-ms={bad}")
+        check(r.returncode == 2 and "--pair-ms is a time above 0 ms"
+              in r.stderr, f"--pair-ms {bad}: exit {r.returncode}")
+    for bad in ("nan", "inf", "-inf"):
+        r = tool(log, "--servo-csv", csv, "--no-csv", f"--csv-offset={bad}")
+        check(r.returncode == 2 and "--csv-offset is a number of seconds"
+              in r.stderr, f"--csv-offset {bad}: exit {r.returncode}")
+    # An offset with nothing to pair.
+    r = tool(log, "--no-csv", "--csv-offset", "12.345")
+    check(r.returncode == 2 and "--csv-offset needs --servo-csv"
+          in r.stderr, f"exit {r.returncode}")
+    # A negative offset and a small tolerance are values.
+    r = tool(log, "--servo-csv", csv, "--no-csv", "--csv-offset", "-3",
+             "--pair-ms", "0.5")
+    check(r.returncode == 0 and "0 paired with a move" in r.stdout,
+          f"exit {r.returncode}")
+    # Cells that are no travel time: not a number, not finite, below 0.
+    rows = pathlib.Path(csv).read_text().splitlines()
+
+    def with_travel(row: str, travel: str) -> str:
+        cells = row.split(";")
+        cells[14] = travel
+        return ";".join(cells)
+    odd = work("odd.csv", "\n".join(
+        [rows[0], with_travel(rows[1], "nan"), with_travel(rows[2], "inf"),
+         with_travel(rows[3], "-5"), rows[4]]) + "\n")
+    r = tool(log, "--servo-csv", str(odd), "--no-csv", "--csv-offset",
+             "12.345")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check("1 travel time(s), 1 paired with a move" in r.stdout,
+          r.stdout.splitlines()[1])
+
+
+def a_capital_end_reason_is_a_problem() -> None:
+    text = synthetic(1000, [(0, 1900), (1000, 1100)])
+    for letter, words in (("T", "its time"), ("K", "the console"),
+                          ("S", "a changed set-up")):
+        late = text.replace(" e=t\n", f" e={letter}\n")
+        check(late != text, "the end line is there")
+        r = tool(str(work(f"late{letter}.log", late)), "--no-csv")
+        check(r.returncode == 1, f"e={letter}: exit {r.returncode}")
+        check(f"ended by {words}" in r.stdout, f"e={letter}: the reason")
+        check("PROBLEM: the sampling core was not seen past a trigger line "
+              "or the end in time" in r.stdout, f"e={letter}: said")
+        check("no move of this trace is replayed" in r.stdout,
+              f"e={letter}: not replayed")
+    # A letter that is no reason is no end line.
+    r = tool(str(work("lateX.log", text.replace(" e=t\n", " e=X\n"))),
+             "--no-csv")
+    check(r.returncode == 1 and "no end line" in r.stdout, "e=X")
 
 
 def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
@@ -760,6 +863,9 @@ CASES = [
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,
     the_offset_that_pairs_the_most_is_found_between_the_obvious,
+    offsets_that_give_rows_to_other_moves_are_two_answers,
+    pairing_arguments_are_checked,
+    a_capital_end_reason_is_a_problem,
     a_restart_of_the_coprocessor_is_a_clock_of_its_own,
     a_floor_is_a_current_above_zero,
     a_replay_that_cannot_run_is_exit_2,

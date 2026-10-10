@@ -21,7 +21,11 @@ coprocessor and the other way round.
   change of the part's set-up or state is a record in the same ring and
   keeps its place among the samples. Core 0
   writes whole lines into the room the console's 64-byte transmit buffer
-  has, and nothing without a terminal. A full ring drops records, and the
+  has, and nothing without a terminal. A trigger line and the end line
+  wait until core 1 has finished a tick that started at or after their
+  time, 100 ms at most; an end line written without that carries its
+  reason as a capital letter, and the tool reports the trace as a
+  problem. A full ring drops records, and the
   trace says where and how many. A trace is about 8.6 bytes a sample. The
   option is off by default: a released image holds none of this code, and
   CI fails when it does. `tools/sense_trace.py` checks a captured console

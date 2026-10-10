@@ -51,8 +51,8 @@ arrival less that travel time is printed per move, with the median per
 setting.  The two files have different clocks.  The offset between them is
 found from the moves themselves: the one that pairs the most rows with a
 command, each within --pair-ms.  Equally spaced moves pair equally well
-one move along; the tool says so when two offsets tie, and --csv-offset
-sets it by hand.
+one move along; the tool says so when two offsets pair as many rows with
+different moves, and --csv-offset sets it by hand.
 
 The replay is a host program that links the repository's own code,
 test/host/sense_trace_replay.c.  --replay names a built one; without it
@@ -63,9 +63,10 @@ Usage:
     python3 tools/sense_trace.py console.log --servo-csv SERVO003.CSV
     python3 tools/sense_trace.py console.log --out traces --floor 0.004
 
-Exit code: 0; 1 when the log holds no trace, a trace does not match its
-end line, or the servo test's rows pair with the moves at more than one
-offset; 2 when the replay cannot be built or run.
+Exit code: 0; 1 when the log holds no trace, a trace has a problem (it
+does not match its end line, or its end line's reason is a capital
+letter), or the servo test's rows pair with the moves in more than one
+way; 2 when the replay cannot be built or run, or an argument is refused.
 """
 
 from __future__ import annotations
@@ -81,7 +82,7 @@ import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
-FORMAT = 1
+FORMAT = 2
 FILTERS = (1, 4, 8)
 BANDS_A = (0.02, 0.05, 0.10)
 # The capture's: SERVO_MOVE_TIMEOUT_MS + SENSE_CAP_LAG_MS, SENSE_CAP_SETTLE_N.
@@ -113,8 +114,10 @@ RE_V = re.compile(r"^v(-?\d+)$")
 RE_STATE = re.compile(r"^\$S on=([01]) rst=(\d+)$")
 RE_L = re.compile(r"^\$L n=(\d+)$")
 RE_Z = re.compile(r"^\$Z n=(\d+) s=(\d+) v=(\d+) l=(\d+) m=(\d+) ml=(\d+) "
-                  r"e=([tsk?])$")
+                  r"e=([tskTSK?])$")
 
+# A capital letter: the coprocessor wrote a line without having seen its
+# sampling core past that line's time.
 END_WORDS = {"t": "its time", "s": "a changed set-up", "k": "the console"}
 
 
@@ -258,6 +261,10 @@ def check(tr: Trace) -> None:
     if end["ml"]:
         tr.problems.append(f"{end['ml']} trigger line(s) were not written: "
                            "a move may be missing")
+    if str(end["e"]).isupper():
+        tr.problems.append("the sampling core was not seen past a trigger "
+                           "line or the end in time: a sample of before it "
+                           "may be missing or stand behind the line")
     # The end line's counts stop at these values.
     for key, have, what, top in (
             ("s", len(tr.t), "sample", 99999999),
@@ -492,10 +499,12 @@ def replay(binary: pathlib.Path, moves: list[Move]) -> None:
 # --- the servo test's CSV ----------------------------------------------------
 
 def number(text: str) -> float | None:
+    """A cell's number; None for anything else, `nan` and `inf` too."""
     try:
-        return float(text.strip().replace(",", "."))
+        value = float(text.strip().replace(",", "."))
     except ValueError:
         return None
+    return value if math.isfinite(value) else None
 
 
 def read_travel(path: pathlib.Path) -> list[tuple[float, float]]:
@@ -513,7 +522,7 @@ def read_travel(path: pathlib.Path) -> list[tuple[float, float]]:
         if len(cells) <= max(t_col, a_col):
             continue
         when, travel = number(cells[t_col]), number(cells[a_col])
-        if when is not None and travel is not None:
+        if when is not None and travel is not None and travel >= 0.0:
             out.append((when, travel))
     if t_col is None:
         sys.exit(f"sense_trace: {path} has no `time (s)` and `travel angle "
@@ -528,7 +537,7 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
 
     A row's command lies its travel time and the encoder's 100 ms hold
     before the row.  Returns the rows paired and whether another offset
-    pairs as many.
+    pairs as many rows with other moves.
     """
     if not moves or not rows:
         return 0, False
@@ -575,11 +584,17 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
         scored = []
         for off in offs:
             got = one_each(pairs(off))
-            scored.append((len(got), -sum(e for _, _, e in got), off))
-        best = max(scored)
+            scored.append((len(got), -sum(e for _, _, e in got), off,
+                           frozenset((j, i) for j, i, _ in got)))
+        best = max(scored, key=lambda s: s[:3])
         offset = best[2]
-        tie = any(n == best[0] and abs(off - offset) > pair_s
-                  for n, _, off in scored)
+        # Another offset that pairs as many is a second answer when it
+        # gives a row to a move this offset does not put it at, however
+        # close the two offsets lie; it is the same answer when every pair
+        # of it is within the tolerance here too, however far apart.
+        here = {(j, i) for j, i, _ in pairs(offset)}
+        tie = any(n == best[0] and not which <= here
+                  for n, _, _, which in scored)
     got = one_each(pairs(offset))
     for j, i, _ in got:
         moves[order[i]].horn_ms = rows[j][1]
@@ -619,7 +634,8 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
                    f"{'online' if tr.online else 'not online'}, reset "
                    f"count {tr.resets}")
     if tr.end is not None:
-        out.append(f"  ended by {END_WORDS.get(str(tr.end['e']), '?')}"
+        out.append("  ended by "
+                   f"{END_WORDS.get(str(tr.end['e']).lower(), '?')}"
                    + (f"; {tr.end['ml']} trigger line(s) not written"
                       if tr.end["ml"] else ""))
     for at, online, resets in tr.states:
@@ -805,6 +821,12 @@ def main() -> int:
     args = ap.parse_args()
     if not math.isfinite(args.floor) or args.floor <= 0.0:
         ap.error("--floor is a current above 0 A")
+    if not math.isfinite(args.pair_ms) or args.pair_ms <= 0.0:
+        ap.error("--pair-ms is a time above 0 ms")
+    if args.csv_offset is not None and not math.isfinite(args.csv_offset):
+        ap.error("--csv-offset is a number of seconds")
+    if args.csv_offset is not None and args.servo_csv is None:
+        ap.error("--csv-offset needs --servo-csv")
 
     try:
         text = args.log.read_text(encoding="utf-8", errors="replace")
@@ -866,7 +888,8 @@ def main() -> int:
                    f"{paired} paired with a move")
         if tie:
             out.append("  PROBLEM: another offset between the two clocks "
-                       "pairs as many; set --csv-offset")
+                       "pairs as many rows with other moves; set "
+                       "--csv-offset")
             ambiguous = True
     for tr, moves, csv in per_trace:
         report_trace(tr, moves, csv, out)
@@ -877,8 +900,8 @@ def main() -> int:
         print(f"sense_trace: {bad} trace(s) with a problem",
               file=sys.stderr)
     if ambiguous:
-        print("sense_trace: the servo test's rows pair with the moves at "
-              "more than one offset", file=sys.stderr)
+        print("sense_trace: the servo test's rows pair with the moves in "
+              "more than one way", file=sys.stderr)
     return 1 if bad or ambiguous else 0
 
 

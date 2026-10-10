@@ -34,8 +34,9 @@
 /** Core 0, before core 1 starts. */
 void sense_trace_hw_init(void);
 
-/** Core 1, after each step of @p svc. */
-void sense_trace_hw_feed(const sense_svc_t *svc);
+/** Core 1, after each step of @p svc; @p tick_us is the time the tick
+ *  started at, as the loop read it. */
+void sense_trace_hw_feed(const sense_svc_t *svc, uint64_t tick_us);
 
 /**
  * Core 0, straight after outputs_hw_service(): each bound PWM slot's

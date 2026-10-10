@@ -165,7 +165,7 @@ int main(int argc, char **argv)
         part->amps[0]  = (double)amps;
         part->volts[0] = 6.0 - 0.4 * (double)amps;
         sense_svc_step(&svc, &cmd, &snap);
-        sense_trace_feed(&tr, svc.open ? &svc.sched : NULL);
+        sense_trace_feed(&tr, svc.open ? &svc.sched : NULL, g_us);
 
         /* The horn within 12 µs of its end: the encoder's travel time,
          * on a row 100 ms and up to 50 ms later. */

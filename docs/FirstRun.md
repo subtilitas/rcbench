@@ -429,7 +429,8 @@ that is later: moves less than 4 s apart are one trace. A command that is
 slewed changes the pulse in every pass: its `$C` line has the first pulse,
 and a `$D` line the pulse it ended at, once the output has held still for
 50 ms. The automatic test's moves are steps and have none. `x` on the console
-ends a trace. Each trace also holds the samples of up to 64 ms before its
+ends a trace; a trigger line whose time lies at or after the stop is
+dropped. Each trace also holds the samples of up to 64 ms before its
 trigger.
 
 **What it costs.** Core 1 reads CH1 every 1 ms as in the released image
@@ -446,7 +447,7 @@ measured.
 **The lines** (`shared/sense/sense_trace.h` has every field):
 
 ```text
-$T v=1 n=2 trig=cmd t=220200 ms=22020 len=4000
+$T v=2 n=2 trig=cmd t=220200 ms=22020 len=4000
 $H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
 -810,289
 10,277
@@ -458,7 +459,14 @@ $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
 
 The lines after the first two stand in the order of their times: a trigger
-line follows the samples taken before it.
+line follows the samples taken before it. Core 0 writes a trigger line and
+the end line once core 1 has finished a tick that started at or after the
+line's time. The end line's `e=` is the reason the trace ended: `t` its
+time, `s` a changed set-up, `k` the console. A capital letter (`T`, `S`,
+`K`) says that core 1 was not seen past a trigger line's time or the end
+within 100 ms and the line was written all the same: a sample from before
+that time can be missing or stand after the line. The tool reports such a
+trace as a problem and replays none of its moves.
 
 A sample line is the time since the sample before it in 0.1 ms and the
 shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line is 8
@@ -571,8 +579,9 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   pulse is written. A frame that ends between the two puts that one
   command's time one frame (20 ms at 50 Hz) late. How often: not measured.
 - Part B: the two files have different clocks. The tool pairs rows and commands by
-  the spacing of the moves; when two offsets pair equally many it says so,
-  exits 1 and takes `--csv-offset`.
+  the spacing of the moves; when two offsets pair equally many rows and
+  give a row to different moves it says so, exits 1 and takes
+  `--csv-offset`.
 - Whether a terminal keeps up with 8.6 kB a second without loss. A trace
   whose line counts do not match its end line is reported and exits 1.
 
