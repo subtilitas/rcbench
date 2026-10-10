@@ -794,6 +794,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_CURRENT]             = "STROM",
     [TX_SV_SUPPLY]              = "NETZTEIL",
     [TX_SV_SOURCE_INA]          = "INA3221 CH1",
+    [TX_SV_METER_MODEL]         = "MODELL",
     [TX_SV_SET]                 = "SOLL",
     [TX_SV_SPEED]               = "TEMPO",
     [TX_SV_SPEED_LIMITS]        = "TEMPO BEGRENZT DEN SWEEP",
@@ -1167,6 +1168,13 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_AB_SET_NOT_TAKEN] = "Sollwert 3 s nicht bestätigt",
     [SERVO_STR_AB_CAP]           = "Stufe über Spannungsobergrenze",
     [SERVO_STR_AB_STALL]         = "1 s über BLOCKIERT AB",
+    [SERVO_STR_AB_CC]            = "1 s im Konstantstrom",
+    [SERVO_STR_AB_WIN_STALE]     = "0.5 s kein INA3221-Fenster",
+    [SERVO_STR_AB_INA_RESET]     = "INA3221 setzte sich zurück",
+    [SERVO_STR_AB_INA_SILENT]    = "INA3221 antwortet nicht",
+    [SERVO_STR_AB_INA_NO_WINDOW] = "INA3221-Fenster ohne Strom",
+    [SERVO_STR_AB_INA_SETUP]     = "INA3221-Einstellung fehlt",
+    [SERVO_STR_AB_INA_METER]     = "INA3221 misst nicht mehr",
     [SERVO_STR_START_NO_STEPS]   = "KEINE STUFE GEWÄHLT",
     [SERVO_STR_START_ABOVE_CAP]  = "STUFE ÜBER DEN OBERGRENZEN",
     [SERVO_STR_START_NO_SUPPLY]  = "NETZTEIL ANTWORTET NICHT",
@@ -1239,9 +1247,9 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_OFF]            = "AUS",
     [SERVO_STR_R_PER_STEP]       = "ERGEBNISSE JE STUFE (Ströme in A, "
                                    "Zeiten in ms)",
-    /* Over the columns of the step lines: 0, 7, 15, 22, 29, 36, 43, 51, 59,
-     * 66, 74, 80 and 85, as the English. */
-    [SERVO_STR_R_COLUMNS]        = "Soll V Ist V   Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.",
+    /* Over the columns of the step lines: 0, 7, 15, 22, 29, 36, 43, 50, 58,
+     * 66, 73, 81, 87 and 92, as the English. */
+    [SERVO_STR_R_COLUMNS]        = "Soll V Ist V   V min  Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.",
     [SERVO_STR_R_STEP_NOT_RUN]   = "%5.2f  nicht gelaufen",
     [SERVO_STR_R_CUT_SHORT]      = " (verkürzt)",
     [SERVO_STR_R_NO_STEP]        = "Keine Stufe lief.",
@@ -1333,6 +1341,58 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_UNM_POSITION_ENC] = "Position: der AS5600 misst das "
                                      "Ruderhorn; die Stellzeit aus dem Strom "
                                      "steht neben der aus dem Winkel.",
+
+    [SERVO_STR_R_LOG_WIN]        = "Log:             die .CSV mit der Nummer "
+                                   "dieser Datei, eine Zeile je Fenster des "
+                                   "INA3221",
+    [SERVO_STR_R_SUPPLY_PDMINI]  = "PD mini",
+    [SERVO_STR_R_CURRENT]        = "Strom:           %s",
+    [SERVO_STR_R_CURRENT_INA]    = "Strom:           INA3221 CH1, Shunt %.1f "
+                                   "mOhm, Bereich %.3f A",
+    [SERVO_STR_R_VOLTAGE]        = "Spannung:        %s",
+    [SERVO_STR_R_VOLTAGE_INA]    = "Spannung:        INA3221 CH1, Lastseite "
+                                   "des Shunts",
+    [SERVO_STR_R_SHUNT]          = "Shunt:           bis %.3f V fallen am "
+                                   "Bereichsende an ihm ab; der Sollwert "
+                                   "wird dafür nicht angehoben",
+    [SERVO_STR_R_INA_UNUSED]     = "INA3221:         nicht verwendet: %s",
+    [SERVO_STR_R_INA_OLD]        = "der Koprozessor ist älter als Link-"
+                                   "Protokoll 4.11",
+    [SERVO_STR_R_INA_NOT_HELD]   = "der Koprozessor hält seine Einstellung "
+                                   "nicht",
+    [SERVO_STR_R_INA_SILENT]     = "er antwortet nicht",
+    [SERVO_STR_R_INA_NO_WINDOW]  = "kein Fenster mit Strom in den letzten "
+                                   "200 ms",
+    [SERVO_STR_R_INA_RESET]      = "er hat sich zurückgesetzt",
+    [SERVO_STR_R_INA_SETTLING]   = "er arbeitet seit weniger als 1 s",
+    [SERVO_STR_R_INA_MODEL]      = "das Netzteil ist vom Panel simuliert",
+    [SERVO_STR_R_READINGS_WIN]   = "Messwerte:       %.1f /s Fenster vom "
+                                   "INA3221 geschlossen, %.1f /s erreichten "
+                                   "den Test",
+    [SERVO_STR_R_SKIPPED_WIN]    = "Übersprungen:    %lu Fenster des INA3221 "
+                                   "erreichten den Test nie",
+    [SERVO_STR_R_RESOLUTION_WIN] = "Auflösung:       ein Fenster alle %lu "
+                                   "ms: eine Stellzeit ist um bis zu zwei "
+                                   "Fenster und den Poll, der sie liest, zu "
+                                   "lang",
+    [SERVO_STR_R_CLIPPED]        = "Übersteuert:     %lu Fenster enthalten "
+                                   "einen Messwert am Bereichsende, %.3f A: "
+                                   "ihre Werte sind eine Untergrenze",
+    [SERVO_STR_R_CC]             = "Konstantstrom:   %lu Messwerte des "
+                                   "Netzteils, längste Folge %lu ms",
+    [SERVO_STR_R_NEGATIVE]       = "Strom in Ruhe negativ: Richtung des "
+                                   "Shunts",
+    [SERVO_STR_R_LIM_STALL_LIMIT] = "BLOCKIERT AB %.2f A unerreichbar: "
+                                    "Strombegrenzung %.2f A",
+    [SERVO_STR_R_LIM_STALL_RANGE] = "BLOCKIERT AB %.2f A unerreichbar: "
+                                    "INA3221-Bereich %.3f A",
+    [SERVO_STR_R_UNM_POSITION_INA] = "Position: nichts misst das Ruderhorn; "
+                                     "jedes Ergebnis ist der Strom des "
+                                     "INA3221 auf CH1.",
+    [SERVO_STR_R_UNM_PEAKS_INA]  = "Strom zwischen zwei 1-ms-Messwerten von "
+                                   "CH1: ein Fenster enthält deren Mittel, "
+                                   "Höchst- und Tiefstwert.",
+    [SERVO_STR_R_METER_MODEL]    = "Modell des Panels",
 };
 
 const ui_language_t ui_lang_de = {

@@ -61,6 +61,10 @@ typedef struct {
     uint8_t  trip;
     bool     drain;
     bool     frozen;         /* the supply's count and current stand still */
+    bool     cc_limits;      /* the supply holds its current limit: a load
+                                that wants more reads the limit, in CC   */
+    unsigned cc_readings;    /* readings it gave in CC                   */
+    uint32_t on_ms;          /* how long the output was on               */
     uint16_t sample_step;    /* how far its count moves a reading */
     float    frozen_a;
     float    set_v_max;      /* the highest voltage ever asked */
@@ -159,13 +163,27 @@ static void rig_fresh(void)
     g.drain = true;
 }
 
+/* The ';' before cell @p idx (0-based, idx at least 1) of a CSV row, or
+ * NULL when the row has fewer cells. */
+static const char *csv_cell(const char *line, unsigned idx)
+{
+    const char *p = line;
+    for (unsigned k = 0u; k < idx; ++k) {
+        p = strchr(k == 0u ? p : p + 1, ';');
+        if (p == NULL) {
+            return NULL;
+        }
+    }
+    return p;
+}
+
 static void keep_csv(const char *line)
 {
     if (g.check_rows && line[0] >= '0' && line[0] <= '9') {
         /* A row with a settle on it was taken at or after the reading that
          * found the settle (the row's time is from the run's start). */
-        const char *last = strrchr(line, ';');
-        if (last != NULL && last[1] != '\0') {
+        const char *last = csv_cell(line, 14u);
+        if (last != NULL && last[1] != ';') {
             unsigned long sec = 0u, ms = 0u;
             CHECK_EQ(sscanf(line, "%lu.%lu", &sec, &ms), 2);
             const uint32_t at = g.t.start_ms + (uint32_t)(sec * 1000u + ms);
@@ -230,6 +248,12 @@ static servo_test_reading_t reading(float amps)
     r.i      = st.output ? amps : 0.0f;
     r.v      = st.output ? st.set_v - r.i * SUPPLY_SIM_SOURCE_OHMS : 0.0f;
     r.mode   = st.output ? 1u : 0u;
+    if (g.cc_limits && st.output && r.i > st.set_i) {
+        /* As supply.c models it: the reading is the limit, the mode CC. */
+        r.i    = st.set_i;
+        r.mode = 2u;
+        ++g.cc_readings;
+    }
     r.trip   = g.trip;
     if (g.frozen) {
         /* A page read with no new module reading behind it: the count and
@@ -283,6 +307,9 @@ static void frame(void)
 {
     g.now += FRAME_MS;
     const bool out = g.sup.output;
+    if (out) {
+        g.on_ms += FRAME_MS;
+    }
     const bool moves = out && g.armed && g.sup.set_v >= g.brownout_v;
     /* A servo without enough voltage stays where it is. */
     const uint16_t cmd = moves ? g.cmd_us : (uint16_t)(g.servo.position_us + 0.5f);
@@ -1357,15 +1384,15 @@ TEST_CASE(the_csv_reads_back_in_the_viewer)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 13);
+    CHECK_EQ(an.n_columns, 19);
     CHECK_EQ(an.delimiter, ';');
     CHECK_EQ(an.ragged_rows, 0);
     CHECK_EQ(an.time_index, 0);
     CHECK_EQ(an.row_count, (int)g.csv - 1);
     CHECK(an.columns[9].numeric);        /* current (A) */
     CHECK(an.columns[0].monotonic);
-    /* An arrival carries its travel time. */
-    CHECK(strstr(g.csv_text, ";CV;700\n") != NULL);
+    /* An arrival carries its travel time, and every row its meter. */
+    CHECK(strstr(g.csv_text, ";CV;700;PDMINI;;;;;\n") != NULL);
 }
 
 /* The words come from one table. */
@@ -1418,12 +1445,19 @@ TEST_CASE(the_words_come_from_one_table)
  * Brown-out voltages under the recorded 5.00 V replay its response, so a
  * replay says nothing about a servo below 5.00 V.
  *
+ * A third recording is a whole file, untrimmed: an MS24 digital servo on
+ * 0.14.0 (fixtures/servo-ms24-pdmini.csv), 4.80 and 6.00 V for 60 s and the
+ * brown-out walk down to 3.00 V, eleven voltages, each replayed as it was
+ * recorded.  The PD mini reported constant current in two spells of five
+ * readings, 0.43 s each, at 0.004 to 0.342 A: the mode column is replayed
+ * with the readings.
+ *
  * With RP_PRINT set in the environment each replay prints its report: the
  * sample in docs/Servo.md is the MG90S's, with TRAVEL TIME at 800 ms.
  */
-#define RP_ROWS     1000u
+#define RP_ROWS     2048u
 #define RP_SEGS     48u
-#define RP_STEPS    3u
+#define RP_STEPS    16u
 #define RP_EVERY_MS 105u
 #define RP_GAP_MS   400u        /* longer between two rows is a trim */
 
@@ -1431,6 +1465,7 @@ typedef struct {
     uint32_t at;            /* ms after the command */
     float    v, i;
     bool     set;           /* in SET: the set point not yet read back */
+    uint8_t  mode;          /* 1 CV, 2 CC, as the supply reported it */
 } rp_row_t;
 
 typedef struct {
@@ -1477,10 +1512,11 @@ static bool rp_load(rp_rec_t *r, const char *name)
     rp_seg_t *seg = NULL;
     while (ok && fgets(line, sizeof(line), f) != NULL) {
         double ts, set, v, lim, i;
-        char test[16], phase[16];
+        char test[16], phase[16], mode[8];
         unsigned step, cmd;
-        if (sscanf(line, "%lf;%15[^;];%u;%15[^;];%u;;%lf;%lf;%lf;%lf", &ts,
-                   test, &step, phase, &cmd, &set, &v, &lim, &i) != 9) {
+        if (sscanf(line, "%lf;%15[^;];%u;%15[^;];%u;;%lf;%lf;%lf;%lf;%*f;"
+                         "%7[^;]", &ts, test, &step, phase, &cmd, &set, &v,
+                   &lim, &i, mode) != 10) {
             ok = false;
             break;
         }
@@ -1519,6 +1555,7 @@ static bool rp_load(rp_rec_t *r, const char *name)
         r->rows[r->n_rows].v  = (float)v;
         r->rows[r->n_rows].i  = (float)i;
         r->rows[r->n_rows].set = strcmp(phase, "SET") == 0;
+        r->rows[r->n_rows].mode = (strcmp(mode, "CC") == 0) ? 2u : 1u;
         ++r->n_rows;
         ++seg->n;
         t_was = t;
@@ -1536,6 +1573,7 @@ typedef struct {
     unsigned         next;      /* its next row */
     unsigned         cursor;    /* the next recorded move to look at */
     float            v, i;      /* the last reading */
+    uint8_t          mode;      /* and the supply's mode in it */
     uint32_t         last_at;
     uint16_t         samples;
     float            set_v;     /* the set point asked */
@@ -1565,8 +1603,12 @@ static void rp_command(rp_play_t *p, const servo_test_t *t,
                        const servo_test_do_t *d, uint32_t now)
 {
     if (d->set || p->step == NULL) {
+        /* A brown-out voltage by its place in the walk. */
         const servo_test_step_t *s = &t->steps[t->step];
-        p->step = rp_step_for(p->rec, s->brownout, t->step);
+        p->step = rp_step_for(p->rec, s->brownout,
+                              s->brownout ? (unsigned)t->step
+                                                - t->cfg.step_count
+                                          : t->step);
         p->seg = (p->step != NULL) ? &p->step->prep : NULL;
         p->cursor = 0u;
     } else {
@@ -1607,6 +1649,7 @@ static void rp_readings(rp_play_t *p, servo_test_t *t, uint32_t now)
             }
             p->v = row->v;
             p->i = row->i * p->scale;
+            p->mode = row->mode;
             /* The set point read back where the recording read it. */
             if (!row->set) {
                 p->set_read = p->set_v;
@@ -1627,7 +1670,7 @@ static void rp_readings(rp_play_t *p, servo_test_t *t, uint32_t now)
         r.i = p->i;
         r.set_v = p->set_read;
         r.set_i = 2.0f;
-        r.mode = 1u;
+        r.mode = (p->mode != 0u) ? p->mode : 1u;
         r.output = true;
         r.online = true;
         r.ok = true;
@@ -1762,6 +1805,69 @@ TEST_CASE(a_servo_moving_under_the_threshold_is_not_failed)
     CHECK(strstr(g_rp_report, "NICHT BESTANDEN") == NULL);
     CHECK(strstr(g_rp_report, "Ergebnis:        NICHT MESSBAR - bei ")
           != NULL);
+}
+
+/* The MS24's whole recording.  Its two spells of constant current, 0.43 s
+ * each during a move, end nothing and fail nothing: the run passes as it
+ * did on the bench, and the report counts them.  The recorded LIMITS page
+ * had STALL AT at 3.00 A over a current limit of 2.00 A, which the report
+ * says cannot be reached. */
+TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
+{
+    CHECK(rp_load(&g_rec, "servo-ms24-pdmini.csv"));
+    CHECK_EQ(g_rec.n_steps, 13u);
+    CHECK_EQ(g_rec.n_rows, 1734u);
+    unsigned cc_rows = 0u;
+    for (unsigned k = 0; k < g_rec.n_rows; ++k) {
+        cc_rows += (g_rec.rows[k].mode == 2u) ? 1u : 0u;
+    }
+    CHECK_EQ(cc_rows, 10u);
+    servo_test_cfg_t c;
+    rp_cfg(&c);
+    c.stall_a = 3.0f;
+    rp_run(&g_rp, &g_rec, 1.0f, &c, g_rp_report, sizeof(g_rp_report));
+    if (getenv("RP_PRINT") != NULL) {
+        fputs(g_rp_report, stdout);
+    }
+    CHECK_EQ(g_rp.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(servo_test_verdict(&g_rp), SERVO_TEST_PASS);
+    for (unsigned k = 0; k < 2u; ++k) {
+        rp_check_step(&g_rp.steps[k], 20u);
+        CHECK_EQ(g_rp.steps[k].no_rise, 0u);
+    }
+    /* The recorded report's figures: idle 0.004 and 0.023 A, the highest
+     * reading 0.353 and 0.390 A.  The 6.00 V step's current is still
+     * falling through IDLE, so its mean depends on where IDLE begins
+     * between two readings. */
+    CHECK_NEAR(g_rp.steps[0].idle.sum / (float)g_rp.steps[0].idle.n, 0.004f,
+               0.002f);
+    CHECK_NEAR(g_rp.steps[1].idle.sum / (float)g_rp.steps[1].idle.n, 0.032f,
+               0.012f);
+    CHECK_NEAR(g_rp.steps[0].peak_a, 0.353f, 0.0005f);
+    CHECK_NEAR(g_rp.steps[1].peak_a, 0.390f, 0.0005f);
+    CHECK_NEAR(g_rp.stall_peak_a, 0.390f, 0.0005f);
+    /* The walk ran every voltage down to 3.00 V. */
+    float moved = 0.0f;
+    bool stopped = true;
+    CHECK(servo_test_brownout(&g_rp, &moved, &stopped));
+    CHECK_NEAR(moved, 3.0f, 0.001f);
+    CHECK(!stopped);
+    /* Each spell is five readings from its first to its last, 425 and
+     * 405 ms; the second step replays its moves until its 60 s are over,
+     * so the spell in it can come more than once. */
+    CHECK(g_rp.cc_readings >= 10u);
+    CHECK_EQ(g_rp.cc_readings % 5u, 0u);
+    CHECK_EQ(g_rp.cc_longest_ms, 425u);
+    CHECK(!g_rp.stalled);
+    char want[96];
+    snprintf(want, sizeof(want), "Const. current: %lu supply readings, "
+             "longest stretch 425 ms\n", (unsigned long)g_rp.cc_readings);
+    CHECK(strstr(g_rp_report, want) != NULL);
+    CHECK(strstr(g_rp_report, "Result:         PASS\n") != NULL);
+    CHECK(strstr(g_rp_report, "Stall threshold  highest 0.390 A, STALL AT "
+                              "3.00 A: PASS\n") != NULL);
+    CHECK(strstr(g_rp_report, "STALL AT 3.00 A cannot be reached: current "
+                              "limit 2.00 A\n") != NULL);
 }
 
 /* The MG90S's recording with every current three times as large, as an
@@ -1974,7 +2080,8 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
     /* Side by side: the current's table is there too. */
     CHECK(strstr(g.report, "RESULTS PER STEP (currents in A, times in ms)") != NULL);
 
-    /* The CSV has two more columns, and the settle on the row after it. */
+    /* The CSV has two more columns before the meter's six, and the settle
+     * on the row after it. */
     CHECK(strncmp(g.csv_text, servo_test_csv_header_enc(),
                   strlen(servo_test_csv_header_enc())) == 0);
     CHECK(strstr(servo_test_csv_header_enc(), ";travel (ms);angle (deg);travel angle (ms)") != NULL);
@@ -1988,18 +2095,18 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
         for (const char *q = p + 1; q < e; ++q) {
             fields += (*q == ';') ? 1u : 0u;
         }
-        CHECK_EQ(fields, 15u);
+        CHECK_EQ(fields, 21u);
         ++rows;
-        const char *last = e;
-        while (last > p + 1 && last[-1] != ';') {
-            --last;
+        /* Cells 13 and 14: the angle and the settle. */
+        const char *angle = csv_cell(p + 1, 13u);
+        const char *settle = csv_cell(p + 1, 14u);
+        CHECK(angle != NULL && settle != NULL);
+        if (angle == NULL || settle == NULL) {
+            break;
         }
-        const char *prev = last - 1;
-        while (prev > p + 1 && prev[-1] != ';') {
-            --prev;
-        }
-        with_settle += (last < e) ? 1u : 0u;
-        with_angle += (prev < last - 1) ? 1u : 0u;
+        with_settle += (settle[1] != ';') ? 1u : 0u;
+        with_angle += (angle[1] != ';') ? 1u : 0u;
+        CHECK(strncmp(csv_cell(p + 1, 15u), ";PDMINI;;;;;\n", 13) == 0);
         p = e;
     }
     CHECK(rows > 40u);
@@ -2035,7 +2142,7 @@ TEST_CASE(without_the_encoder_the_run_and_its_files_are_as_before)
         for (const char *q = p + 1; q < e; ++q) {
             fields += (*q == ';') ? 1u : 0u;
         }
-        CHECK_EQ(fields, 13u);
+        CHECK_EQ(fields, 19u);
         p = e;
     }
 }
@@ -2299,16 +2406,13 @@ TEST_CASE(rows_older_than_the_encoders_readings_still_get_their_angle)
         if (e == NULL) {
             break;
         }
-        const char *last = e;
-        while (last > p + 1 && last[-1] != ';') {
-            --last;
-        }
-        const char *prev = last - 1;
-        while (prev > p + 1 && prev[-1] != ';') {
-            --prev;
+        const char *angle = csv_cell(p + 1, 13u);
+        CHECK(angle != NULL);
+        if (angle == NULL) {
+            break;
         }
         ++rows;
-        with_angle += (prev < last - 1) ? 1u : 0u;
+        with_angle += (angle[1] != ';') ? 1u : 0u;
         p = e;
     }
     CHECK(rows > 40u);
@@ -2624,6 +2728,175 @@ TEST_CASE(readings_with_a_weak_field_are_used_and_counted)
     CHECK_EQ(g.t.enc_strong, 1u);
 }
 
+/* ------------------------------------------------- stall and the limits */
+
+/* A LIMITS value as settings.c holds it: snapped to its 0.01 A step in
+ * float, which for 0.05 A is 0.049999997. */
+static float limit_held(unsigned ma)
+{
+    return 0.0f + roundf(((float)ma / 1000.0f - 0.0f) / 0.01f) * 0.01f;
+}
+
+/* A servo binding at its high end against a supply whose current limit is
+ * STALL AT, both 2.00 A as shipped: no reading is above STALL AT, the
+ * supply reads constant current, and the run ends on that. */
+TEST_CASE(a_servo_held_at_the_current_limit_ends_the_run)
+{
+    rig_fresh();
+    g.cc_limits = true;
+    g.servo.cfg.stop_hi_us = 1850u;     /* 50 us short of the high end */
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.steps_v[0] = 6.0f;
+    c.by_moves   = false;
+    c.time_s     = 60u;
+    c.i_limit    = 2.0f;
+    c.stall_a    = 2.0f;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK(g.cc_readings > 0u);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_ABORTED);
+    CHECK_EQ(g.t.why, SERVO_TEST_AB_CC);
+    CHECK(strstr(g.report, "Result:         ABORTED - constant current for "
+                           "1 s") != NULL);
+    CHECK(strstr(g.report, "Result:         PASS") == NULL);
+    CHECK(g.off_asked);
+    CHECK(g.released);
+    CHECK(!g.sup.output);
+    /* On for the set point, SETTLE, IDLE, the two moves to the stop and the
+     * second of constant current, not for the step's 60 s. */
+    CHECK(g.on_ms < 8000u);
+}
+
+/* A reading of the same number of mA as a LIMITS value is not above it:
+ * idle and holding currents of 0.050 A against limits of 0.05 A pass, and
+ * 0.051 A fails. */
+TEST_CASE(a_reading_equal_to_a_limit_passes_it)
+{
+    for (unsigned ma = 50u; ma <= 51u; ++ma) {
+        servo_test_t t;
+        servo_test_cfg_t c;
+        cfg_defaults(&c);
+        c.step_count = 1u;
+        c.settle_ms  = 0u;
+        c.moves      = 2u;
+        c.idle_max_a = limit_held(50u);
+        c.hold_max_a = limit_held(50u);
+        servo_test_init(&t);
+        uint32_t now = 1000u, next = now;
+        uint16_t samples = 1u;
+        servo_test_reading_t r;
+        memset(&r, 0, sizeof(r));
+        r.v = 4.8f;
+        r.set_v = 4.8f;
+        r.output = true;
+        r.online = true;
+        r.ok = true;
+        r.mode = 1u;
+        r.taken_ms = now;
+        CHECK_EQ(servo_test_start(&t, &c, now, &r, 1.0f, 20.0f),
+                 SERVO_TEST_START_OK);
+        uint32_t cmd_at = now;
+        bool moved = false;         /* a move was commanded */
+        for (int k = 0; k < 20000 && servo_test_running(&t); ++k) {
+            now += 10u;
+            if (now >= next) {
+                next += 100u;
+                r.samples = ++samples;
+                r.taken_ms = now;
+                /* 0.3 A for 300 ms from 40 ms after a command, the level
+                 * under test otherwise. */
+                const uint32_t dt = now - cmd_at;
+                r.i = (moved && dt >= 40u && dt < 340u)
+                          ? 0.3f : (float)ma / 1000.0f;
+                servo_test_reading(&t, &r, 0u);
+            }
+            const servo_test_in_t in = { true, 20.0f };
+            servo_test_do_t d;
+            servo_test_step(&t, now, &in, &d);
+            if (d.command && d.cmd_us != CENTRE) {
+                cmd_at = now;
+                moved  = true;
+            }
+            while (servo_test_peek(&t, NULL) != SERVO_TEST_OUT_NONE) {
+                servo_test_pop(&t);
+            }
+        }
+        CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
+        CHECK(t.steps[0].idle.n >= 9u);
+        CHECK_EQ(servo_test_verdict(&t),
+                 (ma == 50u) ? SERVO_TEST_PASS : SERVO_TEST_FAIL);
+        char line[SERVO_TEST_LINE_MAX];
+        bool idle_seen = false, hold_seen = false;
+        for (unsigned k = 0; servo_report_line(&t, k, line, sizeof(line));
+             ++k) {
+            if (strncmp(line, "Idle current ", 13) == 0) {
+                idle_seen = true;
+                CHECK(strstr(line, (ma == 50u) ? ": PASS" : ": FAIL") != NULL);
+            }
+            if (strncmp(line, "Holding current ", 16) == 0) {
+                hold_seen = true;
+                CHECK(strstr(line, (ma == 50u) ? ": PASS" : ": FAIL") != NULL);
+            }
+        }
+        CHECK(idle_seen && hold_seen);
+    }
+}
+
+/* One reading of the same number of mA as STALL AT is not a stall, for
+ * each of the 99 values STALL AT takes, 0.10 to 5.00 A in steps of 0.05 A,
+ * as settings.c holds them; 1 mA more is. */
+TEST_CASE(a_reading_equal_to_stall_at_is_not_a_stall)
+{
+    unsigned at_equal = 0u, above = 0u;
+    for (unsigned ma = 100u; ma <= 5000u; ma += 50u) {
+        for (unsigned over = 0u; over <= 1u; ++over) {
+            servo_test_t t;
+            servo_test_cfg_t c;
+            cfg_defaults(&c);
+            c.step_count = 1u;
+            c.settle_ms  = 0u;
+            c.report     = false;
+            c.stall_a = 0.1f + roundf(((float)ma / 1000.0f - 0.1f) / 0.05f)
+                                   * 0.05f;
+            servo_test_init(&t);
+            servo_test_reading_t r;
+            memset(&r, 0, sizeof(r));
+            r.v = 4.8f;
+            r.set_v = 4.8f;
+            r.output = true;
+            r.online = true;
+            r.ok = true;
+            r.mode = 1u;
+            r.taken_ms = 1000u;
+            (void)servo_test_start(&t, &c, 1000u, &r, 1.0f, 20.0f);
+            const servo_test_in_t in = { true, 20.0f };
+            servo_test_do_t d;
+            /* SET takes the first reading; SETTLE of 0 ms ends at the next
+             * pass; the reading after is IDLE's. */
+            r.samples = 1u;
+            r.taken_ms = 1010u;
+            servo_test_reading(&t, &r, 0u);
+            servo_test_step(&t, 1020u, &in, &d);
+            CHECK_EQ(t.phase, SERVO_TEST_PH_IDLE);
+            r.samples = 2u;
+            r.taken_ms = 1030u;
+            r.i = (float)(ma + over) / 1000.0f;
+            servo_test_reading(&t, &r, 0u);
+            if (t.stalled) {
+                if (over != 0u) {
+                    ++above;
+                } else {
+                    ++at_equal;
+                }
+            }
+        }
+    }
+    CHECK_EQ(at_equal, 0u);
+    CHECK_EQ(above, 99u);
+}
+
 
 int main(void)
 {
@@ -2679,7 +2952,11 @@ int main(void)
     RUN(a_micro_servo_on_the_pd_mini_is_seen_moving);
     RUN(a_servo_moving_under_the_threshold_is_not_failed);
     RUN(a_standard_servo_on_the_pd_mini_passes);
+    RUN(a_recorded_run_with_spells_of_constant_current_passes);
     RUN(a_reading_at_the_deadline_is_late);
+    RUN(a_servo_held_at_the_current_limit_ends_the_run);
+    RUN(a_reading_equal_to_a_limit_passes_it);
+    RUN(a_reading_equal_to_stall_at_is_not_a_stall);
     free(g.csv_text);
     return test_summary("servo_test");
 }

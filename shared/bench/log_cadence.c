@@ -37,6 +37,11 @@ void log_cadence_run_start(log_cadence_t *c, uint32_t now_ms)
     c->lost    = 0u;
 }
 
+bool log_cadence_bench_run(bool bench_kind, bool servo_test)
+{
+    return bench_kind && !servo_test;
+}
+
 bool log_cadence_row(log_cadence_t *c, uint32_t now_ms, bool new_sample,
                      bool bench_run, float *t_s)
 {

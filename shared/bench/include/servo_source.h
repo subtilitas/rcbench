@@ -28,6 +28,14 @@
  * A clipped reading and a negative current are readings: neither is a
  * condition here.
  *
+ * Why the INA3221 last stopped being the meter is kept with the change
+ * count it happened at (servo_source_dropped()), so a consumer that saw
+ * the meter change after the step that changed it still learns the
+ * condition: a reset shows as a condition for one step only.  A reset
+ * count that moved in that step is the reason kept, whichever condition
+ * failed first: the coprocessor takes a part it found reset offline in the
+ * read that counts the reset.
+ *
  * Two things are said to the operator, each once (servo_source_event()):
  * the INA3221 is on with CH1 and the coprocessor has SENSE and is older
  * than 4.11, at the link-up and when the part is switched on while such a
@@ -89,10 +97,14 @@ typedef struct {
     servo_source_id_t  id;
     servo_source_why_t why;
     uint32_t changes;       /**< times id has changed, modulo 2^32        */
+    servo_source_why_t dropped;  /**< why the INA3221 last stopped being
+                                      the meter; NONE while it never did  */
+    uint32_t dropped_at;    /**< changes as that step left it             */
     bool     up;            /**< a coprocessor answered at the last step  */
     bool     good;          /**< conditions 1 to 6 held at the last step  */
     uint32_t good_ms;       /**< since when                               */
     bool     resets_known;  /**< resets was read under set-up setups      */
+    bool     reset_step;    /**< the reset count moved in the last step   */
     uint8_t  resets;        /**< the INA3221's reset count, as last read  */
     uint16_t setups;        /**< sense_link_meter_t.setups, likewise      */
     bool     old_told;      /**< the older coprocessor is said            */
@@ -125,6 +137,16 @@ uint32_t servo_source_changes(const servo_source_t *s);
 
 /** Why the INA3221 is not the meter, as of the last step. */
 servo_source_why_t servo_source_why(const servo_source_t *s);
+
+/**
+ * Why the INA3221 last stopped being the meter: SERVO_SOURCE_WHY_RESET
+ * when its reset count moved in that step, else the condition that failed
+ * in it, or SERVO_SOURCE_WHY_NO_LINK.  @p at, when not NULL, takes
+ * servo_source_changes() as that step left it.  SERVO_SOURCE_WHY_NONE while
+ * the INA3221 has not stopped being the meter since servo_source_init().
+ */
+servo_source_why_t servo_source_dropped(const servo_source_t *s,
+                                        uint32_t *at);
 
 /**
  * One event for the alert band, the older coprocessor before the reset,

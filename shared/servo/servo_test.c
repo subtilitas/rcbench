@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void mean_add(servo_test_mean_t *m, float v)
@@ -79,10 +80,85 @@ void servo_test_meter_pdmini(servo_test_meter_t *m)
         return;
     }
     memset(m, 0, sizeof(*m));
+    m->kind        = (uint8_t)SERVO_TEST_METER_PDMINI;
     snprintf(m->name, sizeof(m->name), "PD mini");
     m->lag_ms      = SERVO_TEST_PDMINI_LAG_MS;
     m->repeats     = true;
     m->upper_bound = true;
+}
+
+void servo_test_meter_model(servo_test_meter_t *m)
+{
+    if (m == NULL) {
+        return;
+    }
+    servo_test_meter_pdmini(m);
+    m->kind    = (uint8_t)SERVO_TEST_METER_MODEL;
+    snprintf(m->name, sizeof(m->name), "model");
+    m->lag_ms  = 0u;
+    m->repeats = false;
+}
+
+void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm)
+{
+    if (m == NULL) {
+        return;
+    }
+    memset(m, 0, sizeof(*m));
+    m->kind        = (uint8_t)SERVO_TEST_METER_INA3221;
+    snprintf(m->name, sizeof(m->name), "INA3221 CH1");
+    m->span_ms     = SERVO_TEST_WIN_MS;
+    m->lag_ms      = SERVO_TEST_WIN_MS;
+    m->repeats     = false;
+    m->upper_bound = true;
+    m->shunt_dmohm = shunt_dmohm;
+    if (shunt_dmohm > 0u) {
+        /* uV over 0.1 mOhm is 10 mA. */
+        const uint32_t ma = SERVO_TEST_INA3221_END_UV * 10u / shunt_dmohm;
+        m->range_ma = (ma > 0xFFFFu) ? (uint16_t)0xFFFFu : (uint16_t)ma;
+    }
+}
+
+/* A current in whole mA, held to a range every reading lies in. */
+static long whole_ma(float a)
+{
+    if (!(a > -1.0e6f)) {
+        return (a < 0.0f) ? -1000000000L : 0L;      /* and not a number */
+    }
+    if (!(a < 1.0e6f)) {
+        return 1000000000L;
+    }
+    return lroundf(a * 1000.0f);
+}
+
+bool servo_test_over_a(float a, float limit_a)
+{
+    return whole_ma(fabsf(a)) > whole_ma(limit_a);
+}
+
+bool servo_test_stall_unreachable(const servo_test_cfg_t *cfg,
+                                  bool *by_limit, bool *by_range)
+{
+    bool limit = false, range = false;
+    if (cfg != NULL) {
+        const long stall = whole_ma(cfg->stall_a);
+        limit = cfg->i_limit > 0.0f && stall >= whole_ma(cfg->i_limit);
+        range = cfg->meter.kind == (uint8_t)SERVO_TEST_METER_INA3221
+                && cfg->meter.range_ma > 0u
+                && stall >= (long)cfg->meter.range_ma;
+    }
+    if (by_limit != NULL) {
+        *by_limit = limit;
+    }
+    if (by_range != NULL) {
+        *by_range = range;
+    }
+    return limit || range;
+}
+
+static bool on_windows(const servo_test_t *t)
+{
+    return t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
 }
 
 /* The step's threshold, once its idle readings are in: the larger of the
@@ -308,6 +384,21 @@ void servo_test_abort(servo_test_t *t, servo_test_abort_t why,
     }
 }
 
+void servo_test_meter_now(servo_test_t *t, const servo_test_meter_now_t *m,
+                          uint32_t now_ms)
+{
+    if (!servo_test_running(t) || m == NULL || !on_windows(t)
+        || (m->ina3221 && m->changes == t->cfg.meter_changes)) {
+        return;
+    }
+    servo_test_abort_t why = SERVO_TEST_AB_INA_METER;
+    if (m->dropped != SERVO_TEST_AB_NONE
+        && (int32_t)(m->dropped_at - t->cfg.meter_changes) > 0) {
+        why = m->dropped;
+    }
+    finish(t, why, now_ms);
+}
+
 static void command(servo_test_t *t, uint16_t us, uint32_t now_ms)
 {
     t->cmd_us = us;
@@ -373,6 +464,7 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
         .filter_n = 1u,
     };
     servo_move_begin(&t->move, &mc);
+    t->move_peak_now = 0.0f;
     command(t, end ? t->cfg.end_hi_us : t->cfg.end_lo_us, now_ms);
     enc_open(t, end, counted, now_ms);
     t->phase = SERVO_TEST_PH_MOVE;
@@ -409,8 +501,12 @@ static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
             t->travel_now_ms = (ms > 0u) ? ms : 1u;
             s->move.sum += t->move.sum;
             s->move.n   += t->move.n;
-            if (t->move.peak > s->move_peak_a) {
-                s->move_peak_a = t->move.peak;
+            /* On the INA3221 the peak is a window's 1 ms sample, not the
+             * highest window mean. */
+            const float peak = on_windows(t) ? t->move_peak_now
+                                             : t->move.peak;
+            if (fabsf(peak) > fabsf(s->move_peak_a)) {
+                s->move_peak_a = peak;
             }
         } else if (rose) {
             ++s->timeouts;
@@ -578,14 +674,24 @@ servo_test_start_t servo_test_start(servo_test_t *t,
     return SERVO_TEST_START_OK;
 }
 
-/* One row of the CSV, for a reading. */
-static void log_row(servo_test_t *t, const servo_test_reading_t *r,
-                    uint16_t position_us)
+/* One reading of the run's meter: a reading of the supply, or a window. */
+typedef struct {
+    float    i;         /* A, signed: the reading, a window's mean        */
+    float    i_peak;    /* the sample of the largest magnitude in it      */
+    float    v, v_min;  /* V: the reading, and the lowest in it           */
+    uint32_t at;        /* when the panel had it                          */
+    uint32_t from;      /* when it began: at, less the meter's span       */
+} sample_t;
+
+/* One row of the CSV, for a reading: the columns every run has, the
+ * encoder's two where it is on, and the meter's six in @p tail. */
+static void log_row(servo_test_t *t, const sample_t *m, uint8_t mode,
+                    uint16_t position_us, const char *tail)
 {
     static const char *const k_mode[] = { "OFF", "CV", "CC" };
     const servo_test_step_t *s = cur(t);
-    const uint32_t since = ((int32_t)(r->taken_ms - t->start_ms) > 0)
-                               ? r->taken_ms - t->start_ms : 0u;
+    const uint32_t since = ((int32_t)(m->at - t->start_ms) > 0)
+                               ? m->at - t->start_ms : 0u;
     char pos[8] = "";
     if (position_us != 0u) {
         snprintf(pos, sizeof(pos), "%u", (unsigned)position_us);
@@ -602,59 +708,67 @@ static void log_row(servo_test_t *t, const servo_test_reading_t *r,
              servo_str(s->brownout ? SERVO_STR_TEST_BROWNOUT
                                    : SERVO_STR_TEST_STEP),
              (unsigned)t->step + 1u, servo_test_phase_name(t->phase),
-             (unsigned)t->cmd_us, pos, (double)s->set_v, (double)r->v,
-             (double)t->cfg.i_limit, (double)r->i, (double)(r->v * r->i),
-             (r->mode < 3u) ? k_mode[r->mode] : "", travel);
+             (unsigned)t->cmd_us, pos, (double)s->set_v, (double)m->v,
+             (double)t->cfg.i_limit, (double)m->i, (double)(m->v * m->i),
+             (mode < 3u) ? k_mode[mode] : "", travel);
     if (t->cfg.enc_on) {
         /* The angle, while it is a reading younger than the start angle may
          * be, and the settle once, on the row after it was found. */
         const size_t used = strlen(line);
         char angle[12] = "";
         float deg = 0.0f;
-        if (servo_test_enc_at(t, r->taken_ms, &deg)) {
+        if (servo_test_enc_at(t, m->at, &deg)) {
             snprintf(angle, sizeof(angle), "%.2f", (double)deg);
         }
         char settle[12] = "";
         /* On the first row taken at or after the reading that found it:
          * a row older than that reading waits for the next. */
         if (t->enc_travel_now_ms != 0u
-            && (int32_t)(r->taken_ms - t->enc_travel_at_ms) >= 0) {
+            && (int32_t)(m->at - t->enc_travel_at_ms) >= 0) {
             snprintf(settle, sizeof(settle), "%lu",
                      (unsigned long)t->enc_travel_now_ms);
             t->enc_travel_now_ms = 0u;
         }
         snprintf(line + used, sizeof(line) - used, ";%s;%s", angle, settle);
     }
+    const size_t used = strlen(line);
+    snprintf(line + used, sizeof(line) - used, ";%s;%s",
+             servo_test_meter_word(t->cfg.meter.kind), tail);
     put_line(t, SERVO_TEST_OUT_CSV, line);
 }
 
-/* A new reading, measured by the phase it falls in. */
-static void measure(servo_test_t *t, const servo_test_reading_t *r)
+/* A new reading of the meter, measured by the phase it falls in. */
+static void measure(servo_test_t *t, const sample_t *m)
 {
     servo_test_step_t *s = cur(t);
-    const float i = r->i;
-    const uint32_t at = r->taken_ms;
+    const float i = m->i;
+    const uint32_t at = m->at;
 
     if (t->phase != SERVO_TEST_PH_SET && t->phase != SERVO_TEST_PH_SETTLE) {
-        mean_add(&s->v, r->v);
-        if (i > s->peak_a) {
-            s->peak_a = i;
+        if (s->v.n == 0u || m->v_min < s->v_min) {
+            s->v_min = m->v_min;
         }
-        if (!s->brownout && i > t->stall_peak_a) {
+        mean_add(&s->v, m->v);
+        if (fabsf(m->i_peak) > fabsf(s->peak_a)) {
+            s->peak_a = m->i_peak;
+        }
+        if (!s->brownout && fabsf(i) > fabsf(t->stall_peak_a)) {
             t->stall_peak_a = i;
         }
     }
     /* STALL AT, wherever the run is: counted on a characterisation step,
-     * and ending the run once it lasts. */
-    if (i > t->cfg.stall_a) {
+     * and ending the run once it lasts.  The time counts from the start of
+     * the first reading above it, so a window counts its 50 ms. */
+    if (servo_test_over_a(i, t->cfg.stall_a)) {
         if (!s->brownout && t->phase != SERVO_TEST_PH_SET
             && t->phase != SERVO_TEST_PH_SETTLE) {
             t->stalled = true;
         }
         if (!t->stalling) {
             t->stalling       = true;
-            t->stall_since_ms = at;
-        } else if (at - t->stall_since_ms >= SERVO_TEST_STALL_ABORT_MS) {
+            t->stall_since_ms = m->from;
+        }
+        if (at - t->stall_since_ms >= SERVO_TEST_STALL_ABORT_MS) {
             finish(t, SERVO_TEST_AB_STALL, at);
             return;
         }
@@ -663,34 +777,58 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
     }
 
     switch (t->phase) {
-    case SERVO_TEST_PH_SET:
-        if (t->on_seen && fabsf(r->set_v - s->set_v) <= SERVO_TEST_SET_TOL_V) {
-            t->phase    = SERVO_TEST_PH_SETTLE;
-            t->phase_ms = at;
-        }
-        break;
     case SERVO_TEST_PH_IDLE:
-        if ((int32_t)(at - t->phase_ms) >= 0) {
+        /* A window that began before the phase is not in it. */
+        if ((int32_t)(m->from - t->phase_ms) >= 0) {
             mean_add(&s->idle, i);
             s->idle_sq += i * i;
         }
         break;
     case SERVO_TEST_PH_MOVE:
         /* Movement and arrival by servo_move's rules; a reading taken
-         * before the command is not the move. */
+         * before the command is not the move.  The window open at the
+         * command is. */
+        if ((int32_t)(at - t->cmd_ms) >= 0
+            && fabsf(m->i_peak) > fabsf(t->move_peak_now)) {
+            t->move_peak_now = m->i_peak;
+        }
         servo_move_sample(&t->move, at, i, SERVO_MOVE_CLIP_NONE);
         if (servo_move_arrived(&t->move)) {
             end_move(t, true, t->move.end_t);
         }
         break;
-    case SERVO_TEST_PH_HOLD:
-        if ((int32_t)(at - t->hold_from_ms) > 0) {
+    case SERVO_TEST_PH_HOLD: {
+        /* A reading after the one that showed the arrival; a window that
+         * began at or after it. */
+        const bool in = on_windows(t)
+                            ? (int32_t)(m->from - t->hold_from_ms) >= 0
+                            : (int32_t)(at - t->hold_from_ms) > 0;
+        if (in) {
             mean_add(&t->hold_now, i);
             mean_add(&s->hold[t->end], i);
         }
         break;
+    }
     default:
         break;
+    }
+}
+
+/* A reading count that moved from @p was to @p now: what the meter took
+ * since, and what of it never reached the run. */
+static void count_step(servo_test_t *t, uint16_t was, uint16_t now)
+{
+    const uint16_t step = (uint16_t)(now - was);
+    /* A step of half the range or more is the count starting again after a
+     * coprocessor restart, not readings taken: counted as one. */
+    const bool restarted = step >= 0x8000u;
+    t->module_samples += restarted ? 1u : step;
+    /* Readings the meter took between two the test saw: not measured, and
+     * counted for the report.  A move between them is timed from the next
+     * one that arrives, so the interval the report states is the measured
+     * one, skips included. */
+    if (!restarted && step > 1u) {
+        t->skipped += (uint32_t)step - 1u;
     }
 }
 
@@ -700,7 +838,7 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
     if (!servo_test_running(t) || r == NULL) {
         return;
     }
-    /* The supply's state, on every sample. */
+    /* The supply's state, on every sample and on either meter. */
     if (!r->online) {
         finish(t, SERVO_TEST_AB_SUPPLY_LOST, r->taken_ms);
         return;
@@ -715,32 +853,104 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
     }
     /* A new reading only once: the sample count moved, and both values
      * arrived. */
-    if (!r->ok || (t->have_reading && r->samples == t->samples)) {
+    if (!r->ok || (t->sup_have && r->samples == t->sup_samples)) {
+        return;
+    }
+    const bool     had = t->sup_have;
+    const uint16_t was = t->sup_samples;
+    t->sup_have    = true;
+    t->sup_samples = r->samples;
+    t->sup_ms      = r->taken_ms;
+    t->sup_mode    = r->mode;
+
+    /* The set point read back ends SET, whichever meter measures. */
+    if (t->phase == SERVO_TEST_PH_SET && t->on_seen
+        && fabsf(r->set_v - cur(t)->set_v) <= SERVO_TEST_SET_TOL_V) {
+        t->phase    = SERVO_TEST_PH_SETTLE;
+        t->phase_ms = r->taken_ms;
+    }
+
+    if (!on_windows(t)) {
+        if (had) {
+            count_step(t, was, r->samples);
+        } else {
+            t->first_ms = r->taken_ms;
+        }
+        t->have_reading = true;
+        t->samples      = r->samples;
+        t->last_ms      = r->taken_ms;
+        ++t->readings;
+
+        const sample_t m = { r->i, r->i, r->v, r->v, r->taken_ms,
+                             r->taken_ms };
+        measure(t, &m);
+        log_row(t, &m, r->mode, position_us, ";;;;");
+        if (!servo_test_running(t)) {
+            return;
+        }
+    }
+
+    /* Constant current: the supply holds its limit, and the voltage the
+     * step names is not at the servo.  Counted, and ending the run once it
+     * lasts, whatever STALL AT is. */
+    if (r->mode == 2u) {
+        ++t->cc_readings;
+        if (!t->cc_on) {
+            t->cc_on       = true;
+            t->cc_since_ms = r->taken_ms;
+        }
+        const uint32_t held = r->taken_ms - t->cc_since_ms;
+        if (held > t->cc_longest_ms) {
+            t->cc_longest_ms = held;
+        }
+        if (held >= SERVO_TEST_CC_ABORT_MS) {
+            finish(t, SERVO_TEST_AB_CC, r->taken_ms);
+        }
+    } else {
+        t->cc_on = false;
+    }
+}
+
+void servo_test_window(servo_test_t *t, const servo_test_win_t *w,
+                       uint16_t position_us)
+{
+    if (!servo_test_running(t) || w == NULL || !on_windows(t)) {
+        return;
+    }
+    /* A window only once, and only one that holds both quantities. */
+    if (!w->current || !w->voltage
+        || (t->have_reading && w->number == t->samples)) {
         return;
     }
     if (t->have_reading) {
-        const uint16_t step = (uint16_t)(r->samples - t->samples);
-        /* A step of half the range or more is the count starting again
-         * after a coprocessor restart, not readings taken: counted as one. */
-        const bool restarted = step >= 0x8000u;
-        t->module_samples += restarted ? 1u : step;
-        /* Readings the supply took between two the test saw: not measured,
-         * and counted for the report.  A move between them is timed from
-         * the next one that arrives, so the interval the report states is
-         * the measured one, skips included. */
-        if (!restarted && step > 1u) {
-            t->skipped += (uint32_t)step - 1u;
-        }
+        count_step(t, t->samples, w->number);
     } else {
-        t->first_ms = r->taken_ms;
+        t->first_ms = w->taken_ms;
     }
     t->have_reading = true;
-    t->samples      = r->samples;
-    t->last_ms      = r->taken_ms;
+    t->samples      = w->number;
+    t->last_ms      = w->taken_ms;
     ++t->readings;
+    if (w->clipped != 0u) {
+        ++t->clipped;
+    }
 
-    measure(t, r);
-    log_row(t, r, position_us);
+    /* The sample of the largest magnitude, with its sign. */
+    const int peak_ma = (abs((int)w->min_ma) > abs((int)w->max_ma))
+                            ? (int)w->min_ma : (int)w->max_ma;
+    const sample_t m = {
+        (float)w->mean_ma / 1000.0f, (float)peak_ma / 1000.0f,
+        (float)w->mean_mv / 1000.0f, (float)w->min_mv / 1000.0f,
+        w->taken_ms, w->taken_ms - SERVO_TEST_WIN_MS,
+    };
+    measure(t, &m);
+    char tail[64];
+    snprintf(tail, sizeof(tail), "%u;%.3f;%.3f;%.3f;%u", (unsigned)w->number,
+             (double)w->max_ma / 1000.0, (double)w->min_ma / 1000.0,
+             (double)w->min_mv / 1000.0, (unsigned)w->clipped);
+    /* The supply's mode as its last reading had it; none before one. */
+    log_row(t, &m, t->sup_have ? t->sup_mode : (uint8_t)0xFFu, position_us,
+            tail);
 }
 
 bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg)
@@ -832,9 +1042,17 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
         }
     }
     if (servo_test_running(t)) {
-        const uint32_t heard = t->have_reading ? t->last_ms : t->start_ms;
+        const uint32_t heard = t->sup_have ? t->sup_ms : t->start_ms;
         if ((int32_t)(now_ms - heard) > (int32_t)SERVO_TEST_STALE_MS) {
             finish(t, SERVO_TEST_AB_STALE, now_ms);
+        }
+    }
+    if (servo_test_running(t) && on_windows(t)) {
+        /* The meter's own silence: at SERVO_TEST_WIN_STALE_MS without a
+         * window, not after it. */
+        const uint32_t heard = t->have_reading ? t->last_ms : t->start_ms;
+        if ((int32_t)(now_ms - heard) >= (int32_t)SERVO_TEST_WIN_STALE_MS) {
+            finish(t, SERVO_TEST_AB_WIN_STALE, now_ms);
         }
     }
     if (servo_test_running(t)) {
@@ -855,6 +1073,9 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
         case SERVO_TEST_PH_IDLE:
             if (in_phase >= SERVO_TEST_IDLE_MS) {
                 if (cur(t)->idle.n == 0u) {
+                    /* No reading in all of IDLE.  On the INA3221 the run
+                     * has ended before this, 500 ms after its last
+                     * window. */
                     finish(t, SERVO_TEST_AB_STALE, now_ms);
                     break;
                 }
@@ -901,11 +1122,11 @@ servo_test_verdict_t servo_test_verdict(const servo_test_t *t)
     float a;
     uint32_t ms;
     if (t->cfg.idle_max_a > 0.0f && servo_test_max_idle(t, &a)
-        && a > t->cfg.idle_max_a) {
+        && servo_test_over_a(a, t->cfg.idle_max_a)) {
         fail = true;
     }
     if (t->cfg.hold_max_a > 0.0f && servo_test_max_hold(t, &a)
-        && a > t->cfg.hold_max_a) {
+        && servo_test_over_a(a, t->cfg.hold_max_a)) {
         fail = true;
     }
     /* A meter whose travel times are an upper bound cannot fail one. */
@@ -967,7 +1188,7 @@ bool servo_test_max_idle(const servo_test_t *t, float *a)
         const servo_test_step_t *s = &t->steps[k];
         if (!s->brownout && s->idle.n > 0u) {
             const float v = mean_of(&s->idle);
-            if (!any || v > best) {
+            if (!any || fabsf(v) > fabsf(best)) {
                 best = v;
             }
             any = true;
@@ -988,7 +1209,7 @@ bool servo_test_max_hold(const servo_test_t *t, float *a)
         for (unsigned e = 0; e < 2u && !s->brownout; ++e) {
             if (s->hold[e].n > 0u) {
                 const float v = mean_of(&s->hold[e]);
-                if (!any || v > best) {
+                if (!any || fabsf(v) > fabsf(best)) {
                     best = v;
                 }
                 any = true;
@@ -1046,6 +1267,19 @@ bool servo_test_brownout(const servo_test_t *t, float *moved_v, bool *stopped)
         *stopped = none;
     }
     return any;
+}
+
+bool servo_test_negative_at_rest(const servo_test_t *t)
+{
+    for (unsigned k = 0; t != NULL && k < t->step_count; ++k) {
+        const servo_test_step_t *s = &t->steps[k];
+        /* In whole mA, as the limits are compared. */
+        if (s->idle.n > 0u
+            && whole_ma(mean_of(&s->idle)) < -whole_ma(SERVO_TEST_NEG_IDLE_A)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool servo_test_rates(const servo_test_t *t, float *per_s,

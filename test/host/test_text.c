@@ -351,12 +351,55 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* How many cells @p s takes, as the 8 px face draws it. */
+static int cells_of(const char *s)
+{
+    int n = 0;
+    for (uint32_t c = gfx_utf8_next(&s); c != 0u; c = gfx_utf8_next(&s)) {
+        ++n;
+    }
+    return n;
+}
+
+/* A run's reason is a line of the SERVO screen's result box, 250 px for
+ * 31 cells, and the two lines that say STALL AT cannot be reached go
+ * across the settings card under START TEST, 468 px for 58 cells with
+ * their numbers in: in every language. */
+TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
+{
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        const ui_language_t *t = ui_text_table((ui_lang_t)l);
+        const char *const *table = (t != NULL) ? t->servo : NULL;
+        for (int why = SERVO_TEST_AB_NONE + 1; why < SERVO_TEST_AB_COUNT;
+             ++why) {
+            const char *s = servo_str_in(
+                table, servo_test_abort_str((servo_test_abort_t)why));
+            if (s[0] == '\0' || cells_of(s) > 31) {
+                T_FAIL("language %d: reason %d \"%s\" is %d cells", l, why,
+                       s, cells_of(s));
+            }
+        }
+        char line[SERVO_TEST_LINE_MAX];
+        snprintf(line, sizeof(line),
+                 servo_str_in(table, SERVO_STR_R_LIM_STALL_LIMIT), 5.0, 3.0);
+        CHECK(cells_of(line) <= 58);
+        snprintf(line, sizeof(line),
+                 servo_str_in(table, SERVO_STR_R_LIM_STALL_RANGE), 5.0,
+                 32.76);
+        CHECK(cells_of(line) <= 58);
+    }
+    CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_CC),
+                 "constant current for 1 s");
+    CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_INA_METER),
+                 "INA3221 no longer the meter");
+}
+
 /* The step table's heading names each column where the step lines' format
  * puts it, in every language. */
 TEST_CASE(the_report_columns_line_up)
 {
-    static const int k_cols[] = { 0, 7, 15, 22, 29, 36, 43, 51, 59, 66, 74, 80,
-                                  85 };
+    static const int k_cols[] = { 0, 7, 15, 22, 29, 36, 43, 50, 58, 66, 73, 81,
+                                  87, 92 };
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
         const ui_language_t *t = ui_text_table((ui_lang_t)l);
         const char *head = servo_str_in(t != NULL ? t->servo : NULL,
@@ -529,6 +572,7 @@ int main(void)
     RUN(a_padded_label_is_as_wide_as_the_longest);
     RUN(the_report_is_translated_and_the_csv_is_not);
     RUN(the_report_columns_line_up);
+    RUN(a_runs_reasons_fit_where_the_screen_draws_them);
     RUN(the_report_labels_line_up);
     RUN(every_stick_refusal_is_translated);
     RUN(every_bus_verdict_has_a_heading);

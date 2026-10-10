@@ -389,6 +389,13 @@ static struct {
     uint32_t          changes;
     sense_link_win_t  win;
     bool              have_win;
+    /* Why the INA3221 is not the meter now, and why and at which change
+     * count it last stopped being it (servo_screen_source_why(),
+     * servo_screen_source_dropped()). */
+    servo_source_why_t src_why;
+    bool               have_drop;
+    servo_source_why_t drop_why;
+    uint32_t           drop_at;
     /* The CURRENT row: what it shows (cur_key_of()), and its own count of
      * changes, so a changed digit repaints its value and not the card. */
     int32_t        cur_key;
@@ -597,6 +604,7 @@ static struct {
     bool      test_online_seen;  /**< the supply answering, likewise    */
     bool      test_box;      /**< the left card shows the run          */
     bool      test_seen;     /**< the run was running when last looked */
+    bool      test_on_ina;   /**< the run reads the INA3221's windows   */
     /*
      * SUPPLY's set points go back to what they were before a run once it
      * is over, whichever screen is up (servo_screen_service()): only once
@@ -1511,6 +1519,7 @@ void servo_screen_set_sweep(bool able)
  * servo whose maximum is 860 while the screen shows the new range.
  */
 static void test_end_now(servo_test_abort_t why);
+static void test_tell(void);
 static void ask_disarm(void);
 
 static void reissue(void)
@@ -2048,10 +2057,12 @@ static void supply_sample(const supply_state_t *st, bool in_force)
         && (int32_t)(test_reading_of(st).taken_ms - s.restore_ms) >= 0) {
         s.restore_stage = RS_OFF_SEEN;
     }
-    /* The run's reading, with the horn's position where it is measured. */
+    /* The run's reading, with the horn's position where it is measured;
+     * the supply's state alone in a run on the INA3221. */
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
                        s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+    test_tell();
     /* The line, the plot and the CURRENT row are the supply's while it is
      * the rail's meter; with the INA3221 as the meter they are fed by its
      * windows (servo_screen_window()). */
@@ -2074,12 +2085,62 @@ static void supply_sample(const supply_state_t *st, bool in_force)
  * supply's samples reach the render task on three paths, and each can be
  * the oldest.  Returns whether it is the meter in force.
  */
+static void test_apply(const servo_test_do_t *d);
+static void test_ended(void);
+
+/* A run's abort for the condition that took the INA3221 off the rail. */
+static servo_test_abort_t test_abort_of(servo_source_why_t why)
+{
+    switch (why) {
+    case SERVO_SOURCE_WHY_NO_LINK:   return SERVO_TEST_AB_LINK;
+    case SERVO_SOURCE_WHY_OFF:
+    case SERVO_SOURCE_WHY_OLD:
+    case SERVO_SOURCE_WHY_NOT_HELD:  return SERVO_TEST_AB_INA_SETUP;
+    case SERVO_SOURCE_WHY_SILENT:    return SERVO_TEST_AB_INA_SILENT;
+    case SERVO_SOURCE_WHY_NO_WINDOW: return SERVO_TEST_AB_INA_NO_WINDOW;
+    case SERVO_SOURCE_WHY_RESET:     return SERVO_TEST_AB_INA_RESET;
+    default:                         return SERVO_TEST_AB_INA_METER;
+    }
+}
+
+/*
+ * The run against the meter @p id decided at change count @p changes: a
+ * run on the INA3221 ends when the meter changed under it
+ * (servo_test_meter_now()), and what that asks -- the output off, the servo
+ * let go -- is done before the window or the sample that brought the
+ * answer is looked at.
+ */
+static void test_meter_follow(servo_source_id_t id, uint32_t changes)
+{
+    if (!servo_test_running(&s.test)) {
+        return;
+    }
+    const servo_test_meter_now_t m = {
+        .ina3221    = id == SERVO_SOURCE_INA3221,
+        .changes    = changes,
+        .dropped    = s.have_drop ? test_abort_of(s.drop_why)
+                                  : SERVO_TEST_AB_NONE,
+        .dropped_at = s.drop_at,
+    };
+    servo_test_meter_now(&s.test, &m, test_now());
+    test_tell();
+    if (servo_test_running(&s.test)) {
+        return;
+    }
+    const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
+    servo_test_do_t d;
+    servo_test_step(&s.test, test_now(), &in, &d);
+    test_apply(&d);
+    test_ended();
+}
+
 static bool source_take(servo_source_id_t id, uint32_t changes)
 {
     const int32_t ahead = s.have_changes ? (int32_t)(changes - s.changes) : 0;
     if (ahead < 0) {
         return false;
     }
+    test_meter_follow(id, changes);
     s.have_changes = true;
     s.changes      = changes;
     /* More than one change ahead: changes went by unseen, and another meter
@@ -2092,6 +2153,9 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
     const bool was_ina = (s.source == SERVO_SOURCE_INA3221);
     const bool now_ina = (id == SERVO_SOURCE_INA3221);
     s.source = id;
+    if (was_ina != now_ina && s.ov_open) {
+        ++s.ctrl_rev;           /* the line under START TEST names a range */
+    }
     if (was_ina != now_ina || skipped) {
         /* The two meters do not agree, and the label names one of them:
          * the trace starts again with the meter it is labelled with. */
@@ -2109,6 +2173,23 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
 void servo_screen_source(servo_source_id_t id, uint32_t changes)
 {
     (void)source_take(id, changes);
+}
+
+void servo_screen_source_why(servo_source_why_t why)
+{
+    s.src_why = why;
+}
+
+void servo_screen_source_dropped(servo_source_why_t why, uint32_t at)
+{
+    if (why == SERVO_SOURCE_WHY_NONE) {
+        return;
+    }
+    if (!s.have_drop || (int32_t)(at - s.drop_at) > 0) {
+        s.have_drop = true;
+        s.drop_why  = why;
+        s.drop_at   = at;
+    }
 }
 
 void servo_screen_supply(const supply_state_t *st)
@@ -2139,6 +2220,24 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
     s.have_win = true;
     if (s.source != SERVO_SOURCE_INA3221) {
         return;
+    }
+    if (s.test_on_ina) {
+        /* The run's reading, stamped where the panel had it. */
+        const servo_test_win_t tw = {
+            .number   = w->number,
+            .current  = w->current,
+            .voltage  = w->voltage,
+            .clipped  = w->clipped,
+            .mean_ma  = w->mean_ma,
+            .max_ma   = w->max_ma,
+            .min_ma   = w->min_ma,
+            .mean_mv  = w->mean_mv,
+            .min_mv   = w->min_mv,
+            .taken_ms = (w->taken_ms != 0u) ? w->taken_ms : test_now(),
+        };
+        servo_test_window(&s.test, &tw,
+                          s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+        test_tell();
     }
     rail_plot();
     cur_follow();
@@ -2264,6 +2363,7 @@ static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     servo_test_init(&s.test);
+    test_tell();                /* a run the reset took with it is over */
     s.test_sig = test_signature();
     servo_invalidate();
     s.drawn_mask    = 0;
@@ -2557,6 +2657,28 @@ static void test_ends(uint16_t *end_lo, uint16_t *end_hi)
         (float)lo + span * (float)(SWEEP_CENTRE + sw.amplitude) / k);
 }
 
+/* Whether a run started now reads the INA3221: it is the rail's meter,
+ * and the supply it measures is not the panel's model. */
+static bool test_on_ina_now(void)
+{
+    return s.link_up && s.source == SERVO_SOURCE_INA3221
+           && !supply_screen_model();
+}
+
+/* Why the INA3221 is not the meter, as a run's report states it. */
+static servo_test_ina_t test_ina_why(void)
+{
+    switch (s.src_why) {
+    case SERVO_SOURCE_WHY_OLD:       return SERVO_TEST_INA_OLD;
+    case SERVO_SOURCE_WHY_NOT_HELD:  return SERVO_TEST_INA_NOT_HELD;
+    case SERVO_SOURCE_WHY_SILENT:    return SERVO_TEST_INA_SILENT;
+    case SERVO_SOURCE_WHY_NO_WINDOW: return SERVO_TEST_INA_NO_WINDOW;
+    case SERVO_SOURCE_WHY_RESET:     return SERVO_TEST_INA_RESET;
+    case SERVO_SOURCE_WHY_SETTLING:  return SERVO_TEST_INA_SETTLING;
+    default:                         return SERVO_TEST_INA_NONE;
+    }
+}
+
 static void test_cfg(servo_test_cfg_t *c)
 {
     memset(c, 0, sizeof(*c));
@@ -2596,18 +2718,55 @@ static void test_cfg(servo_test_cfg_t *c)
     c->enc_centre = (uint16_t)settings_get_int(SET_ENC_CENTRE);
     c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
     c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
-    /* The current is the PD mini's, whose travel times are an upper bound.
-     * The model stands in for it: no lag of its own, and its travel times
-     * held to what a run on the PD mini can check. */
-    servo_test_meter_pdmini(&c->meter);
-    if (c->model) {
-        c->meter.lag_ms  = 0u;
-        c->meter.repeats = false;
+    /* The meter the run reads to its end: the servo rail's as the panel
+     * last said it.  The INA3221's CH1 windows while it is the meter of a
+     * measured supply; else the PD mini's own readings, whose travel times
+     * are an upper bound; and with the supply modelled, the model, which
+     * stands in for the PD mini with no lag of its own. */
+    if (test_on_ina_now()) {
+        servo_test_meter_ina3221(
+            &c->meter,
+            (uint16_t)lroundf(settings_get(SET_INA3221_MOHM) * 10.0f));
+        c->meter_changes = s.changes;
+    } else if (c->model) {
+        servo_test_meter_model(&c->meter);
+    } else {
+        servo_test_meter_pdmini(&c->meter);
+    }
+    /* And why not the INA3221, where SETUP has it on. */
+    if (c->meter.kind != (uint8_t)SERVO_TEST_METER_INA3221
+        && settings_get_bool(SET_INA3221_EN)) {
+        c->ina_why = c->model ? (uint8_t)SERVO_TEST_INA_MODEL
+                              : (uint8_t)test_ina_why();
     }
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     /* The report in the language showing at the start; the CSV in English
      * whatever it is. */
     c->text = ui_servo_table();
+}
+
+/*
+ * Whether a run is under way, told to the panel where it changes
+ * (servo_screen_on_testing()): after every call that can start or end the
+ * engine's run.  Kept outside the screen's state, which a reset clears.
+ */
+static void (*s_testing_told)(bool running);
+static bool s_testing_last;
+
+static void test_tell(void)
+{
+    const bool running = servo_test_running(&s.test);
+    if (running != s_testing_last) {
+        s_testing_last = running;
+        if (s_testing_told != NULL) {
+            s_testing_told(running);
+        }
+    }
+}
+
+void servo_screen_on_testing(void (*told)(bool running))
+{
+    s_testing_told = told;
 }
 
 /* What the run asked for, done the way a finger does it here. */
@@ -2704,6 +2863,7 @@ static void test_end_now(servo_test_abort_t why)
         return;
     }
     servo_test_abort(&s.test, why, test_now());
+    test_tell();
     const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
@@ -2783,6 +2943,7 @@ static void test_begin(void)
     const float i0 = supply_screen_set_i();
     const servo_test_start_t why = servo_test_start(
         &s.test, &c, test_now(), &last, caps.v_min, caps.v_max);
+    test_tell();
     if (why != SERVO_TEST_START_OK) {
         s.test_note = (int)SERVO_STR_START_OK + (int)why;
         ++s.ctrl_rev;
@@ -2799,6 +2960,7 @@ static void test_begin(void)
     s.test_i0      = i0;
     s.test_restore = false;
     s.test_seen    = true;
+    s.test_on_ina  = c.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
     s.test_file    = 0;
     s.test_report  = false;
     s.test_box     = true;
@@ -4153,6 +4315,14 @@ static void draw_test_box(gfx_canvas_t *c)
     ui_button(c, test_btn_rect(), running ? TR(SV_STOP_TEST) : TR(SUP_CLOSE),
               running ? ui_theme_color(UI_C_DANGER)
                       : ui_theme_color(UI_C_PANEL_HI), false, true);
+    /* The meter the run reads or read, beside the button, flush right. */
+    const char *meter =
+        (t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_MODEL)
+            ? TR(SV_METER_MODEL) : t->cfg.meter.name;
+    const gfx_rect_t btn = test_btn_rect();
+    const int mw = gfx_text_width(&gfx_font_8x16, meter, 1);
+    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 8, meter, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
 static void draw_left(gfx_canvas_t *c)
@@ -4692,6 +4862,16 @@ static void draw_test_lines(gfx_canvas_t *c)
                  test_needs_hv() ? TR(SV_TAP_HV) : TR(SV_HOLD_START));
     }
     gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
+
+    /* A STALL AT the run's readings cannot pass, across the card under
+     * both columns: the current limit first, then the meter's range. */
+    servo_test_cfg_t tc;
+    test_cfg(&tc);
+    char note[96];
+    if (servo_test_stall_note(&tc, note, sizeof(note))) {
+        gfx_text(c, OV_X + 10, y + 36, note, &gfx_font_8x16,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
 }
 
 static void draw_page(gfx_canvas_t *c)
@@ -4988,6 +5168,7 @@ static void test_tick(void)
     const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
+    test_tell();
     test_apply(&d);
     test_ended();
     test_restore_service();

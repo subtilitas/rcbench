@@ -217,7 +217,9 @@ const char *servo_screen_type_name(void);
 
 /**
  * One sample of the supply that feeds the servo.  The automatic test reads
- * every one.  While the servo rail's meter is not the INA3221
+ * every one: as its reading in a run on the PD mini or the model, and for
+ * the supply's state alone in a run on the INA3221.  While the servo rail's
+ * meter is not the INA3221
  * (servo_screen_source()) it is also the rail's reading: the CURRENT row,
  * the line over the plot and one point of the plot.
  */
@@ -268,6 +270,41 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
 void servo_screen_source(servo_source_id_t id, uint32_t changes);
 
 /**
+ * @p told is called with true when a run of the automatic test starts and
+ * with false when it ends, inside the call that starts or ends it -- a
+ * touch event, a window, a supply sample, the meter, the link, a tick --
+ * and not at the next frame.  The panel's control task writes no bench log
+ * row between the two (log_cadence_bench_run()).  NULL for none.  It is
+ * called from the task that runs the screen and must not call back into
+ * it.
+ */
+void servo_screen_on_testing(void (*told)(bool running));
+
+/**
+ * Why the INA3221 is not the servo rail's meter now (servo_source_why()),
+ * every frame with servo_screen_source().  A run started on the PD mini
+ * with the INA3221 on in SETUP states it in its report.
+ */
+void servo_screen_source_why(servo_source_why_t why);
+
+/**
+ * Why the INA3221 last stopped being the meter, and the change count of
+ * that step (servo_source_dropped()), as decided at the same poll as the
+ * meter handed over next: before servo_screen_source(), and before each
+ * servo_screen_window() and servo_screen_supply_at().  SERVO_SOURCE_WHY_NONE
+ * says nothing.
+ *
+ * The automatic test reads the meter that was the rail's at its start
+ * until it ends (servo_test_meter_now()).  A run on the INA3221 ends when a
+ * meter handed over is not the INA3221 or carries another change count
+ * than the run's start: ABORTED, with the condition this call named for a
+ * change after the start, the output asked off and the servo let go.  A
+ * run on the PD mini or the model goes on with it whatever the meter
+ * becomes.
+ */
+void servo_screen_source_dropped(servo_source_why_t why, uint32_t at);
+
+/**
  * One 50 ms window of INA3221 CH1 (sense_link_take_win()), each one once, in
  * the order they arrive, with the meter @p id and its change count
  * @p changes as decided in the poll that took the window.
@@ -280,6 +317,10 @@ void servo_screen_source(servo_source_id_t id, uint32_t changes);
  * window taken is one point of the plot and the reading of the row and the
  * line.  One that arrives while the link is down is dropped, and a link
  * that goes down takes the last one with it (servo_screen_set_link()).
+ *
+ * A run of the automatic test that started with the INA3221 as the meter
+ * reads these windows and no supply sample: each one taken under the meter
+ * in force is its reading.
  */
 void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
                          uint32_t changes);

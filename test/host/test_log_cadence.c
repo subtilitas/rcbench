@@ -30,6 +30,49 @@ TEST_CASE(the_constants_are_the_sample_rate_and_the_totals_cap)
                BENCH_TOTALS_MAX_STEP_S, 1e-9);
 }
 
+/* The bench log records an armed bench while no automatic servo test
+ * runs: the test's own file holds its readings, and the bench log's rows
+ * stop for it and start again after it, their time stepping over it. */
+TEST_CASE(the_bench_log_writes_no_row_while_a_servo_test_runs)
+{
+    CHECK(log_cadence_bench_run(true, false));
+    CHECK(!log_cadence_bench_run(true, true));
+    CHECK(!log_cadence_bench_run(false, false));
+    CHECK(!log_cadence_bench_run(false, true));
+
+    /* An armed bench sampled every 50 ms, a test from 1000 to 3000 ms. */
+    log_cadence_t c;
+    log_cadence_init(&c, 0xFFFFFC00u);
+    log_cadence_run_start(&c, 0xFFFFFC00u);
+    unsigned rows = 0u;
+    float last = 0.0f, first_after = 0.0f, last_before = 0.0f;
+    for (uint32_t ms = 50u; ms <= 4000u; ms += 50u) {
+        const bool testing = ms >= 1000u && ms < 3000u;
+        float t = -1.0f;
+        const bool row = log_cadence_row(
+            &c, (uint32_t)(0xFFFFFC00u + ms), true,
+            log_cadence_bench_run(true, testing), &t);
+        CHECK_EQ(row, !testing);
+        if (row) {
+            ++rows;
+            log_cadence_posted(&c, true);
+            if (ms < 1000u) {
+                last_before = t;
+            } else if (first_after == 0.0f) {
+                first_after = t;
+            }
+            last = t;
+        }
+    }
+    /* 19 rows before, 21 after, none between; the time runs on. */
+    CHECK_EQ(rows, 40u);
+    CHECK_EQ(log_cadence_sent(&c), 40u);
+    CHECK_EQ(log_cadence_lost(&c), 0u);
+    CHECK_NEAR(last_before, 0.950, 1e-6);
+    CHECK_NEAR(first_after, 3.000, 1e-6);
+    CHECK_NEAR(last, 4.000, 1e-6);
+}
+
 /* The gate at @p since ms after it last opened, from tick @p t0. */
 static bool model_at(uint32_t t0, uint32_t since, bool link_up, float *step)
 {
@@ -644,6 +687,7 @@ TEST_CASE(a_queue_one_short_of_full_loses_nothing)
 int main(void)
 {
     RUN(the_constants_are_the_sample_rate_and_the_totals_cap);
+    RUN(the_bench_log_writes_no_row_while_a_servo_test_runs);
     RUN(the_model_steps_at_50_ms_and_not_before);
     RUN(the_models_step_is_the_time_passed_up_to_one_second);
     RUN(the_models_clock_moves_with_the_link_up_and_takes_no_step);

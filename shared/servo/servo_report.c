@@ -46,6 +46,15 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_AB_SET_NOT_TAKEN] = "set point not read back in 3 s",
     [SERVO_STR_AB_CAP]           = "step above the voltage cap",
     [SERVO_STR_AB_STALL]         = "above STALL AT for 1 s",
+    /* The run's reasons are also a line of the SERVO screen's result box:
+     * 31 characters at most. */
+    [SERVO_STR_AB_CC]            = "constant current for 1 s",
+    [SERVO_STR_AB_WIN_STALE]     = "no INA3221 window for 0.5 s",
+    [SERVO_STR_AB_INA_RESET]     = "INA3221 reset itself",
+    [SERVO_STR_AB_INA_SILENT]    = "INA3221 not answering",
+    [SERVO_STR_AB_INA_NO_WINDOW] = "INA3221 window without current",
+    [SERVO_STR_AB_INA_SETUP]     = "INA3221 set-up not held",
+    [SERVO_STR_AB_INA_METER]     = "INA3221 no longer the meter",
     [SERVO_STR_START_OK]         = "",
     [SERVO_STR_START_NO_STEPS]   = "NO STEP CHOSEN",
     [SERVO_STR_START_ABOVE_CAP]  = "A STEP IS OUTSIDE THE CAPS",
@@ -117,9 +126,9 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_PER_STEP]       = "RESULTS PER STEP (currents in A, times "
                                    "in ms)",
     /* Over the columns of the step lines' format in step_lines(). */
-    [SERVO_STR_R_COLUMNS]        = "Set V  Meas V  Idle   Thresh Moving "
-                                   "Peak   Hold lo Hold hi Travel Longest "
-                                   "Moves Late Unseen",
+    [SERVO_STR_R_COLUMNS]        = "Set V  Meas V  V min  Idle   Thresh "
+                                   "Moving Peak   Hold lo Hold hi Travel "
+                                   "Longest Moves Late Unseen",
     [SERVO_STR_R_STEP_NOT_RUN]   = "%5.2f  not run",
     [SERVO_STR_R_CUT_SHORT]      = " (cut short)",
     [SERVO_STR_R_NO_STEP]        = "No step ran.",
@@ -210,6 +219,56 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_UNM_POSITION_ENC] = "Position: the AS5600 measures the horn; "
                                      "the current's travel time is reported "
                                      "beside the angle's.",
+
+    /* The meter. */
+    [SERVO_STR_R_LOG_WIN]        = "Log:            the .CSV with this "
+                                   "file's number, one row per INA3221 "
+                                   "window",
+    [SERVO_STR_R_SUPPLY_PDMINI]  = "PD mini",
+    [SERVO_STR_R_CURRENT]        = "Current:        %s",
+    [SERVO_STR_R_CURRENT_INA]    = "Current:        INA3221 CH1, shunt %.1f "
+                                   "mOhm, range %.3f A",
+    [SERVO_STR_R_VOLTAGE]        = "Voltage:        %s",
+    [SERVO_STR_R_VOLTAGE_INA]    = "Voltage:        INA3221 CH1, load side "
+                                   "of the shunt",
+    [SERVO_STR_R_SHUNT]          = "Shunt:          up to %.3f V lost across "
+                                   "it at the range; the set point is not "
+                                   "raised for it",
+    [SERVO_STR_R_INA_UNUSED]     = "INA3221:        not used: %s",
+    [SERVO_STR_R_INA_OLD]        = "the coprocessor is older than link "
+                                   "protocol 4.11",
+    [SERVO_STR_R_INA_NOT_HELD]   = "the coprocessor does not hold its set-up",
+    [SERVO_STR_R_INA_SILENT]     = "it does not answer",
+    [SERVO_STR_R_INA_NO_WINDOW]  = "no window with current in the last 200 "
+                                   "ms",
+    [SERVO_STR_R_INA_RESET]      = "it reset itself",
+    [SERVO_STR_R_INA_SETTLING]   = "it has worked for less than 1 s",
+    [SERVO_STR_R_INA_MODEL]      = "the supply is the panel's model",
+    [SERVO_STR_R_READINGS_WIN]   = "Readings:       %.1f /s windows closed by "
+                                   "the INA3221, %.1f /s reached the test",
+    [SERVO_STR_R_SKIPPED_WIN]    = "Skipped:        %lu windows the INA3221 "
+                                   "closed never reached the test",
+    [SERVO_STR_R_RESOLUTION_WIN] = "Resolution:     one window every %lu ms: "
+                                   "a travel time is late by up to two "
+                                   "windows and the poll that reads them",
+    [SERVO_STR_R_CLIPPED]        = "Clipped:        %lu windows hold a sample "
+                                   "at an end of the range, %.3f A: their "
+                                   "figures are a lower bound",
+    [SERVO_STR_R_CC]             = "Const. current: %lu supply readings, "
+                                   "longest stretch %lu ms",
+    [SERVO_STR_R_NEGATIVE]       = "Current reads negative at rest: shunt "
+                                   "direction",
+    [SERVO_STR_R_LIM_STALL_LIMIT] = "STALL AT %.2f A cannot be reached: "
+                                    "current limit %.2f A",
+    [SERVO_STR_R_LIM_STALL_RANGE] = "STALL AT %.2f A cannot be reached: "
+                                    "INA3221 range %.3f A",
+    [SERVO_STR_R_UNM_POSITION_INA] = "Position: nothing measures the horn; "
+                                     "every result is the INA3221's current "
+                                     "on CH1.",
+    [SERVO_STR_R_UNM_PEAKS_INA]  = "Current between two 1 ms samples of CH1: "
+                                   "a window holds their mean, highest and "
+                                   "lowest.",
+    [SERVO_STR_R_METER_MODEL]    = "the panel's model",
 };
 
 const char *servo_str_in(const char *const *table, servo_str_t id)
@@ -282,17 +341,33 @@ const char *servo_test_start_name(servo_test_start_t why)
     return servo_str(servo_test_start_str(why));
 }
 
+/* The columns every run has, the encoder's, and the meter's: the last
+ * group follows whatever is before it, so a column of an older file keeps
+ * its place. */
+#define CSV_BASE  "time (s);test;step;phase;command (us);position (us);" \
+                  "set (V);voltage (V);limit (A);current (A);power (W);" \
+                  "mode;travel (ms)"
+#define CSV_ENC   ";angle (deg);travel angle (ms)"
+#define CSV_METER ";meter;window;current max (A);current min (A);" \
+                  "voltage min (V);clipped"
+
 const char *servo_test_csv_header(void)
 {
-    return "time (s);test;step;phase;command (us);position (us);set (V);"
-           "voltage (V);limit (A);current (A);power (W);mode;travel (ms)";
+    return CSV_BASE CSV_METER;
 }
 
 const char *servo_test_csv_header_enc(void)
 {
-    return "time (s);test;step;phase;command (us);position (us);set (V);"
-           "voltage (V);limit (A);current (A);power (W);mode;travel (ms);"
-           "angle (deg);travel angle (ms)";
+    return CSV_BASE CSV_ENC CSV_METER;
+}
+
+const char *servo_test_meter_word(uint8_t kind)
+{
+    switch ((servo_test_meter_kind_t)kind) {
+    case SERVO_TEST_METER_INA3221: return "INA3221";
+    case SERVO_TEST_METER_MODEL:   return "MODEL";
+    default:                       return "PDMINI";
+    }
 }
 
 /* ------------------------------------------------------------- the report */
@@ -416,14 +491,53 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, S(R_FIRMWARE), g->firmware);
         return true;
     }
+    const bool ina = g->meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
     if (here(c)) {
-        snprintf(b, n, "%s", S(R_LOG));
+        snprintf(b, n, "%s", ina ? S(R_LOG_WIN) : S(R_LOG));
+        return true;
+    }
+    /* The supply, and what measures: a run on the INA3221 is still fed by
+     * the PD mini. */
+    const char *meter = g->model ? S(R_METER_MODEL)
+                        : (g->meter.name[0] != '\0') ? g->meter.name : "--";
+    if (here(c)) {
+        snprintf(b, n, S(R_SUPPLY), g->model ? S(R_SUPPLY_MODEL)
+                                    : ina    ? S(R_SUPPLY_PDMINI) : meter);
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, S(R_SUPPLY), g->model ? S(R_SUPPLY_MODEL)
-                                    : (g->meter.name[0] != '\0')
-                                          ? g->meter.name : "--");
+        if (ina) {
+            snprintf(b, n, S(R_CURRENT_INA),
+                     (double)g->meter.shunt_dmohm / 10.0,
+                     (double)g->meter.range_ma / 1000.0);
+        } else {
+            snprintf(b, n, S(R_CURRENT), meter);
+        }
+        return true;
+    }
+    if (here(c)) {
+        if (ina) {
+            snprintf(b, n, "%s", S(R_VOLTAGE_INA));
+        } else {
+            snprintf(b, n, S(R_VOLTAGE), meter);
+        }
+        return true;
+    }
+    if (ina && here(c)) {
+        snprintf(b, n, S(R_SHUNT),
+                 (double)SERVO_TEST_INA3221_END_UV / 1000000.0);
+        return true;
+    }
+    if (!ina && g->ina_why != (uint8_t)SERVO_TEST_INA_NONE
+        && g->ina_why < (uint8_t)SERVO_TEST_INA_COUNT && here(c)) {
+        snprintf(b, n, S(R_INA_UNUSED),
+                 servo_str_in(c->text,
+                              (servo_str_t)((int)SERVO_STR_R_INA_OLD
+                                            + (int)g->ina_why - 1)));
+        return true;
+    }
+    if (servo_test_negative_at_rest(t) && here(c)) {
+        snprintf(b, n, "%s", S(R_NEGATIVE));
         return true;
     }
     if (g->enc_on && here(c)) {
@@ -436,19 +550,22 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     const bool rated = servo_test_rates(t, &per_s, &module_s, &every);
     if (here(c)) {
         if (rated) {
-            snprintf(b, n, S(R_READINGS), (double)module_s, (double)per_s);
+            snprintf(b, n, ina ? S(R_READINGS_WIN) : S(R_READINGS),
+                     (double)module_s, (double)per_s);
         } else {
             snprintf(b, n, "%s", S(R_READINGS_FEW));
         }
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, S(R_SKIPPED), (unsigned long)t->skipped);
+        snprintf(b, n, ina ? S(R_SKIPPED_WIN) : S(R_SKIPPED),
+                 (unsigned long)t->skipped);
         return true;
     }
     if (here(c)) {
         if (rated) {
-            snprintf(b, n, S(R_RESOLUTION), (unsigned long)every);
+            snprintf(b, n, ina ? S(R_RESOLUTION_WIN) : S(R_RESOLUTION),
+                     (unsigned long)every);
         } else {
             snprintf(b, n, "%s", S(R_RESOLUTION_UNKNOWN));
         }
@@ -465,6 +582,16 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     }
     if (g->meter.upper_bound && here(c)) {
         snprintf(b, n, "%s", S(R_UPPER_BOUND));
+        return true;
+    }
+    if (ina && t->clipped > 0u && here(c)) {
+        snprintf(b, n, S(R_CLIPPED), (unsigned long)t->clipped,
+                 (double)g->meter.range_ma / 1000.0);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, S(R_CC), (unsigned long)t->cc_readings,
+                 (unsigned long)t->cc_longest_ms);
         return true;
     }
     if (here(c)) {
@@ -611,11 +738,13 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
             snprintf(b, n, S(R_STEP_NOT_RUN), (double)s->set_v);
             return true;
         }
-        char vm[16], idle[16], thr[16], move[16], lo[16], hi[16];
+        char vm[16], vlow[16], idle[16], thr[16], move[16], lo[16], hi[16];
         if (s->v.n > 0u) {
             snprintf(vm, sizeof(vm), "%.2f", (double)(s->v.sum / (float)s->v.n));
+            snprintf(vlow, sizeof(vlow), "%.2f", (double)s->v_min);
         } else {
             snprintf(vm, sizeof(vm), "--");
+            snprintf(vlow, sizeof(vlow), "--");
         }
         amps(idle, sizeof(idle), &s->idle);
         if (s->move_a > 0.0f) {
@@ -645,9 +774,10 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
         /* A step none of whose moves showed movement is not measurable. */
         const bool none = s->moves > 0u && s->no_rise == s->moves;
         snprintf(b, n,
-                 "%5.2f  %6s  %-6s %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u %4u "
-                 "%6u%s%s%s",
-                 (double)s->set_v, vm, idle, thr, move, peak, lo, hi, mean_ms,
+                 "%5.2f  %6s  %-6s %-6s %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u "
+                 "%4u %6u%s%s%s",
+                 (double)s->set_v, vm, vlow, idle, thr, move, peak, lo, hi,
+                 mean_ms,
                  max_ms, (unsigned)s->moves, (unsigned)s->timeouts,
                  (unsigned)s->no_rise, s->done ? "" : S(R_CUT_SHORT),
                  none ? " " : "", none ? S(NOT_MEASURABLE) : "");
@@ -837,6 +967,34 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
+/* STALL AT against the current limit, or against the meter's range. */
+static void stall_line(const cursor_t *c, const servo_test_cfg_t *g,
+                       bool by_limit)
+{
+    if (by_limit) {
+        snprintf(c->buf, c->n, S(R_LIM_STALL_LIMIT), (double)g->stall_a,
+                 (double)g->i_limit);
+    } else {
+        snprintf(c->buf, c->n, S(R_LIM_STALL_RANGE), (double)g->stall_a,
+                 (double)g->meter.range_ma / 1000.0);
+    }
+}
+
+bool servo_test_stall_note(const servo_test_cfg_t *cfg, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    bool by_limit = false;
+    if (!servo_test_stall_unreachable(cfg, &by_limit, NULL)) {
+        return false;
+    }
+    const cursor_t c = { 0u, 0u, buf, n, cfg->text };
+    stall_line(&c, cfg, by_limit);
+    return true;
+}
+
 static bool limit_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_test_cfg_t *g = &t->cfg;
@@ -856,7 +1014,8 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
         char lim[24];
         limit_a(c, lim, sizeof(lim), g->idle_max_a);
         snprintf(b, n, S(R_LIM_IDLE), (double)a, lim,
-                 verdict_word(c, g->idle_max_a > 0.0f, m, a > g->idle_max_a));
+                 verdict_word(c, g->idle_max_a > 0.0f, m,
+                              servo_test_over_a(a, g->idle_max_a)));
         return true;
     }
     if (here(c)) {
@@ -864,7 +1023,8 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
         char lim[24];
         limit_a(c, lim, sizeof(lim), g->hold_max_a);
         snprintf(b, n, S(R_LIM_HOLD), (double)a, lim,
-                 verdict_word(c, g->hold_max_a > 0.0f, m, a > g->hold_max_a));
+                 verdict_word(c, g->hold_max_a > 0.0f, m,
+                              servo_test_over_a(a, g->hold_max_a)));
         return true;
     }
     if (here(c)) {
@@ -896,6 +1056,17 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         snprintf(b, n, S(R_LIM_STALL), (double)t->stall_peak_a,
                  (double)g->stall_a, t->stalled ? S(FAIL) : S(PASS));
+        return true;
+    }
+    /* A STALL AT no reading can pass, said beside its line. */
+    bool by_limit = false, by_range = false;
+    (void)servo_test_stall_unreachable(g, &by_limit, &by_range);
+    if (by_limit && here(c)) {
+        stall_line(c, g, true);
+        return true;
+    }
+    if (by_range && here(c)) {
+        stall_line(c, g, false);
         return true;
     }
     if (here(c)) {
@@ -937,12 +1108,14 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
 
 static bool unmeasured_lines(const servo_test_t *t, cursor_t *c)
 {
+    const bool ina = t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
     const servo_str_t k_lines[] = {
         SERVO_STR_COUNT,            /* the blank line before the heading */
         SERVO_STR_R_UNM_HEAD,
         t->cfg.enc_on ? SERVO_STR_R_UNM_POSITION_ENC
+        : ina         ? SERVO_STR_R_UNM_POSITION_INA
                       : SERVO_STR_R_UNM_POSITION,
-        SERVO_STR_R_UNM_PEAKS,
+        ina ? SERVO_STR_R_UNM_PEAKS_INA : SERVO_STR_R_UNM_PEAKS,
         SERVO_STR_R_UNM_PATH,
     };
     for (size_t k = 0; k < sizeof(k_lines) / sizeof(k_lines[0]); ++k) {

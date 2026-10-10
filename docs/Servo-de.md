@@ -101,9 +101,10 @@ ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
-sind simuliert. Solange der INA3221 das Messgerät der Servo-Schiene ist,
-zeigen die Zeile STROM und der Plot des Bildschirms seine Fenster
-([Screens](Screens-de.md#servo)); der Lauf liest trotzdem das Netzteil.
+sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
+Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen CH1
+des INA3221, in 50-ms-Fenstern: siehe
+[Der Strommesser des Laufs](#der-strommesser-des-laufs).
 
 TEST STARTEN auf der TEST-Seite von SERVO startet ihn;
 [Bildschirme](Screens-de.md#servo) beschreibt die Bedienung. Die Engine ist
@@ -236,6 +237,10 @@ unter der Schwelle bewegen.
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000 ms | für den Sollwert und für das Einschalten |
 | `SERVO_TEST_STALE_MS` | 1500 ms | kein neuer Messwert beendet den Lauf |
 | `SERVO_TEST_STALL_ABORT_MS` | 1000 ms | so lange über BLOCKIERT AB beendet den Lauf |
+| `SERVO_TEST_CC_ABORT_MS` | 1000 ms | so lange Netzteil im Konstantstrom beendet den Lauf |
+| `SERVO_TEST_WIN_STALE_MS` | 500 ms | ein Lauf am INA3221: so lange kein Fenster beendet ihn |
+| `SERVO_TEST_WIN_MS` | 50 ms | ein Fenster des INA3221 |
+| `SERVO_TEST_NEG_IDLE_A` | 0,020 A | ein Ruhestrom unter minus diesem Wert wird als Richtung des Shunts berichtet |
 | `SERVO_TEST_BROWNOUT_START_V` | 5,00 V | wo der Brown-out-Lauf beginnt |
 | `SERVO_TEST_BROWNOUT_STEP_V` | 0,20 V | jeder Schritt abwärts |
 | `SERVO_TEST_BROWNOUT_FLOOR_V` | 3,00 V | die niedrigste verlangte Spannung |
@@ -283,6 +288,115 @@ Messwerte wiederholen, ob Stellzeiten eine Obergrenze sind); ein schnellerer
 Stromsensor setzt seine eigenen Werte und lässt STELLZEIT prüfen. Ein Lauf
 am Netzteilmodell des Panels nennt keine eigene Verzögerung und prüft
 STELLZEIT wie der PD mini: gar nicht.
+
+Am INA3221 ist ein Messwert ein Fenster, gezählt an der Nummer des Fensters:
+springt sie zwischen zwei Fenstern, die der Lauf bekam, um mehr als eins,
+zählt die Zeile `Übersprungen` die fehlenden. Das Panel nimmt jedes Fenster
+einmal und in Reihenfolge; die Queue zum Bildschirm fasst 8, ein Frame von
+mehr als 400 ms verliert also die ältesten. Die Zeit eines Fensters ist der
+späteste Zeitpunkt, zu dem es geschlossen haben kann: die Panelzeit des
+Lesens, das es brachte, abzüglich 50 ms für jedes Fenster, das nach ihm
+schloss und im selben Lesen kam. Fenster, die zusammen ankommen, liegen im
+Lauf und in der CSV also 50 ms auseinander, wie die, die einzeln ankommen.
+
+### Der Strommesser des Laufs
+
+Ein Lauf liest von TEST STARTEN bis zu seinem Ende ein Messgerät: das
+Messgerät der Servo-Schiene, wie das Panel es beim Start des Laufs nennt
+([Link](Link-de.md#der-fenster-ring)).
+
+| | PD mini | INA3221 CH1 |
+| --- | --- | --- |
+| Der Lauf liest es, wenn | der INA3221 bei TEST STARTEN nicht das Messgerät der Schiene ist oder das Netzteil das Modell des Panels ist | der INA3221 bei TEST STARTEN das Messgerät der Schiene ist und das Netzteil der PD mini |
+| Ein Messwert | ein Messwert des Netzteils, alle 102 bis 106 ms | ein 50-ms-Fenster von CH1, 20 je Sekunde |
+| Strom | der Messwert | das Mittel des Fensters. Die Spitze ist der höchste oder der tiefste 1-ms-Messwert des Fensters, je nachdem, welcher weiter von null liegt |
+| Spannung | der Messwert am Ausgang des Netzteils | die Busspannung von CH1 an der Lastseite des Shunts: das Mittel des Fensters in `Ist V`, sein tiefster Messwert in `V min` |
+| RUHE und HOLD | die Messwerte, die in der Phase genommen wurden | die Fenster, die ganz in der Phase liegen; eines, das vor ihr begann, gehört zu keiner. Am modellierten Prüfstand der Host-Suite liegen in den 1000 ms von RUHE 19 bis 20 Fenster und in 600 ms Halten 11 bis 12 |
+| BEWEGEN | die Messwerte ab dem Befehl | die Fenster ab dem, das beim Befehl offen ist |
+| Stellzeit | bis zum Messwert, der die Ankunft zeigt: um bis zu einen Messwert und etwa 300 ms Verzögerung zu lang | bis zum Fenster, das die Ankunft zeigt: um bis zu zwei Fenster und den Poll, der sie liest, zu lang, 145 ms |
+| STELLZEIT | berichtet, nicht geprüft | berichtet, nicht geprüft |
+| Eine Bewegung ist verspätet nach | 3300 ms | 3050 ms |
+| Spannung und Strom des Netzteils | jede Zahl und jede Zeile | nicht verwendet und nicht geloggt |
+| Zustand des Netzteils: antwortet, Ausgang, Abschaltung, zurückgelesener Sollwert, Modus | gelesen | gelesen |
+
+Am INA3221 misst das Panel eine Bewegung aus den Fenstern. Die
+Bewegungsaufzeichnung des Koprozessors, die eine Bewegung in 1 ms ab dem
+PWM-Frame misst, verwendet der Lauf nicht.
+
+- **Bis zum Ende gehalten.** Ein Lauf am INA3221 endet ABGEBROCHEN, wenn der
+  INA3221 nicht mehr das Messgerät der Schiene ist, mit der Bedingung, die
+  ausfiel, als Grund (siehe
+  [Was einen Lauf beendet](#was-einen-lauf-beendet)), und wenn ihn 500 ms
+  lang kein Fenster erreicht (`SERVO_TEST_WIN_STALE_MS`). Er läuft nie mit
+  dem PD mini weiter: die beiden Messgeräte stimmen nicht überein. In einem
+  aufgezeichneten Lauf eines MS24 war der höchste Messwert des PD mini
+  0,390 A und der höchste 1-ms-Messwert des INA3221 1,637 A. Ein Lauf am PD
+  mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
+- **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem der INA3221 in
+  SETUP an ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
+  `der Koprozessor ist älter als Link-Protokoll 4.11`, `der Koprozessor hält
+  seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
+  den letzten 200 ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
+  als 1 s` oder `das Netzteil ist vom Panel simuliert`.
+- **Strom mit Vorzeichen.** Ein negativer Strom ist ein Messwert.
+  RUHESTROM, HALTESTROM, BLOCKIERT AB und die Spitze nehmen seinen Betrag,
+  CSV und Bericht behalten das Vorzeichen. Ein Lauf, dessen Ruhestrom in
+  einer Stufe unter -0,020 A liegt (`SERVO_TEST_NEG_IDLE_A`), hat die
+  Berichtszeile `Strom in Ruhe negativ: Richtung des Shunts`.
+- **Übersteuern.** Der INA3221 liest eine Shuntspannung bis 163,8 mV:
+  1,638 A an einem Shunt von 0,1 Ω, 3,276 A an 0,05 Ω. Ein Messwert an einem
+  Ende dieses Bereichs zählt in seinem Fenster mit dem Bereichsende, und das
+  Fenster ist ein Messwert wie jeder andere: sein Mittel, seine Spitze und
+  sein Platz im Urteil sind die Werte, die der Baustein lieferte. Die Spalte
+  `clipped` der CSV nennt die Zahl solcher Messwerte im Fenster, die
+  Berichtszeile `Übersteuert` die Zahl der Fenster mit einem; ihre Werte
+  sind eine Untergrenze. Wie viele Messwerte eines Fensters übersteuert
+  sind, entscheidet nichts. Ein Servo, das mehr zieht als der Bereich, liest
+  sich als das Bereichsende. Welcher Shunt bestückt ist, entscheidet, was
+  dieses Messgerät zeigen kann.
+- **Der Spannungsabfall am Shunt.** `Ist V` und `V min` werden hinter dem
+  Shunt gemessen. Der Sollwert wird für den Abfall nicht angehoben: am
+  Bereichsende fallen am Shunt 0,164 V ab, bei jedem Shuntwert, und die
+  Berichtszeile `Shunt` sagt das.
+
+### Blockieren und Konstantstrom
+
+| Regel | Bedingung | Wirkung |
+| --- | --- | --- |
+| BLOCKIERT AB | ein Messwert nach EINSCHWINGEN in einer Spannungsstufe, dessen Betrag über BLOCKIERT AB liegt | NICHT BESTANDEN |
+| 1 s über BLOCKIERT AB | Messwerte über BLOCKIERT AB über 1000 ms (`SERVO_TEST_STALL_ABORT_MS`) ohne einen bei oder unter dem Wert, in jeder Phase und im Brown-out-Lauf | der Lauf endet, `1 s über BLOCKIERT AB` |
+| 1 s Konstantstrom | das Netzteil meldet in jedem Messwert Konstantstrom (CC, constant current), 1000 ms (`SERVO_TEST_CC_ABORT_MS`) ab dem ersten | der Lauf endet, `1 s im Konstantstrom`, gleich wie BLOCKIERT AB steht |
+| Konstantstrom unter 1 s | | nichts endet und nichts fällt durch; die Berichtszeile `Konstantstrom` nennt die Zahl solcher Messwerte und die längste Folge vom ersten bis zum letzten |
+| BLOCKIERT AB bei oder über der Strombegrenzung | bei TEST STARTEN | der Lauf startet. Die TEST-Seite und der Bericht sagen `BLOCKIERT AB 3.00 A unerreichbar: Strombegrenzung 2.00 A` |
+| BLOCKIERT AB bei oder über dem Bereich des INA3221 | bei TEST STARTEN mit dem INA3221 als Messgerät | der Lauf startet. Die TEST-Seite und der Bericht sagen `BLOCKIERT AB 2.00 A unerreichbar: INA3221-Bereich 1.638 A` |
+
+- Jeder Vergleich eines Stroms mit RUHESTROM, HALTESTROM und BLOCKIERT AB
+  geschieht in ganzen mA, im Urteil wie im Bericht: ein Messwert von 0,050 A
+  gegen eine Grenze von 0,05 A besteht, 0,051 A nicht.
+- Am PD mini zählen die 1000 ms ab dem ersten Messwert über BLOCKIERT AB:
+  ein Messwert 999 ms später lässt den Lauf laufen, einer 1000 ms später
+  beendet ihn.
+- Am INA3221 ist der Messwert das Mittel des Fensters, gleich wie hoch sein
+  höchster Messwert ist, und die 1000 ms zählen ab dem Beginn des ersten
+  Fensters über BLOCKIERT AB: 20 Fenster in Folge beenden den Lauf.
+- Ein Netzteil im Konstantstrom hält seine Strombegrenzung; kein Messwert
+  liegt also über einem BLOCKIERT AB bei oder über dieser Grenze. BLOCKIERT
+  AB und der Startstrom des Netzteils stehen beide ab Werk auf 2,00 A. Die
+  Konstantstrom-Regel beendet einen solchen Lauf: ein Servo am Anschlag,
+  das die Grenze zieht, beendet ihn 1,0 bis 1,1 s, nachdem das Netzteil
+  Konstantstrom meldet.
+- Mit dem INA3221 an seinem 0,1-Ω-Shunt und BLOCKIERT AB auf dem Werkswert
+  2,00 A ist BLOCKIERT AB unerreichbar. Ein Servo am Anschlag, das weniger
+  zieht als die Grenze des Netzteils und mehr als 1,638 A, liest sich den
+  ganzen Lauf als 1,638 A; der Bericht hat dann die Zeile `Übersteuert` und
+  die Zeile `unerreichbar`. BLOCKIERT AB auf 1,60 A oder tiefer oder ein
+  Shunt von 0,05 Ω legt BLOCKIERT AB in den Bereich.
+
+Nicht gemessen: was der PD mini mit einem Servo am Anschlag meldet
+(Konstantstrom oder Überstrom, und ob er selbst abschaltet) und wie lange er
+nach einem Einschaltstrom Konstantstrom hält. Im aufgezeichneten Lauf des
+MS24 hielt er ihn zweimal 0,43 s lang während gesunder Bewegungen, bei 0,004
+bis 0,342 A.
 
 ### Der Ausgangsencoder
 
@@ -438,6 +552,17 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `Sollwert 3 s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
 | `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder der Eingang des PD mini abzüglich seiner Reserve |
 | `1 s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
+| `1 s im Konstantstrom` | das Netzteil meldete `SERVO_TEST_CC_ABORT_MS` lang Konstantstrom |
+| `0.5 s kein INA3221-Fenster` | ein Lauf am INA3221: `SERVO_TEST_WIN_STALE_MS` ohne ein Fenster mit Strom und Spannung. Ein Durchlauf 499 ms nach dem letzten Fenster lässt den Lauf laufen, einer bei 500 ms beendet ihn |
+| `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich bewegt |
+| `INA3221 antwortet nicht` | ein Lauf am INA3221: kein Lesen von SENSE in 200 ms zeigt den Baustein online und erkannt an einem Bus, der nicht hängt |
+| `INA3221-Fenster ohne Strom` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200 ms |
+| `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der Koprozessor hält die Einstellung nicht mehr, oder SETUP hat den INA3221 aus |
+| `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
+
+Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
+INA3221 das Messgerät der Schiene ist. Die Gründe des Netzteils gelten an
+beiden Messgeräten: sein Zustand wird in jedem Lauf gelesen.
 
 Eine Stufe wird nie über der Grenze verlangt: ein Lauf, dessen Stufen
 außerhalb des Bereichs des Netzteils liegen, wird bei START abgelehnt, und
@@ -451,7 +576,7 @@ beurteilt) NICHT BESTANDEN, wenn eines davon zutrifft:
 - der höchste Ruhestrom liegt über RUHESTROM;
 - der höchste Haltestrom liegt über HALTESTROM;
 - die längste Stellzeit liegt über STELLZEIT, wo der Strommesser
-  Stellzeiten misst (nicht der PD mini);
+  Stellzeiten misst (nicht der PD mini und nicht die Fenster des INA3221);
 - ein Messwert nach EINSCHWINGEN liegt über BLOCKIERT AB;
 - eine gezählte Bewegung war verspätet: Bewegung erkannt, keine Ankunft
   binnen des Fensters, 3000 ms plus der Verzögerung des Strommessers.
@@ -471,15 +596,19 @@ MESSBAR, nicht NICHT BESTANDEN. Kam keine Bewegung an, gibt es keine
 längste Stellzeit, und die Zeile `Stellzeit` lautet `längste --` und
 `nicht gemessen, keine Bewegung kam an`, an jedem Strommesser.
 
-Ein Wert 0 auf der GRENZEN-Seite wird nicht geprüft; BLOCKIERT AB immer.
+Ein Wert 0 auf der GRENZEN-Seite wird nicht geprüft; BLOCKIERT AB immer. Ein
+Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
+[Blockieren und Konstantstrom](#blockieren-und-konstantstrom).
 
 ### Dateien
 
 Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein scharfer
 Prüfstand, und die eigene Task der SD-Karte schreibt seine Dateien:
-`BENCHnnn.CSV`, eine Zeile je Messwert des Netzteils, und mit BERICHT an
-(PRÜFLING-Seite) `BENCHnnn.TXT`. Das eigene Lauflog eines scharfen Prüfstands
-läuft daneben in einer eigenen Datei weiter. Eine Nummer, die nur ein
+`BENCHnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
+BERICHT an (PRÜFLING-Seite) `BENCHnnn.TXT`. Ein Lauf ist eine CSV: das eigene
+Lauflog des scharfen Prüfstands schreibt keine Zeile, solange ein Lauf
+läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
+wieder, wenn der Lauf endet. Eine Nummer, die nur ein
 `BENCHnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
 vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
 Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
@@ -491,21 +620,33 @@ Prüfstands:
 
 | Spalte | Einheit | Bedeutung |
 | --- | --- | --- |
-| `time (s)` | s | wann der Messwert genommen wurde, ab Laufbeginn |
+| `time (s)` | s | wann das Panel den Messwert hatte, ab Laufbeginn |
 | `test` | | `STEP` oder `BROWN-OUT` |
 | `step` | | die Stufe, 1 bis n in der Reihenfolge des Laufs |
 | `phase` | | `SET`, `SETTLE`, `IDLE`, `MOVE` oder `HOLD` |
 | `command (us)` | us | der befohlene Impuls |
 | `position (us)` | us | die gemessene Stellung; leer, weil nichts sie misst |
 | `set (V)` | V | die Spannung der Stufe |
-| `voltage (V)` | V | am Ausgang |
+| `voltage (V)` | V | die des Messgeräts: am Ausgang des Netzteils, oder die mittlere Busspannung von CH1 im Fenster |
 | `limit (A)` | A | die Strombegrenzung |
-| `current (A)` | A | aus dem Ausgang |
+| `current (A)` | A | der des Messgeräts, mit Vorzeichen: der Messwert des Netzteils, oder das Mittel des Fensters |
 | `power (W)` | W | Spannung mal Strom |
-| `mode` | | `CV`, `CC` oder `OFF` |
+| `mode` | | der des Netzteils: `CV`, `CC` oder `OFF`. Am INA3221 der Modus des letzten Messwerts des Netzteils, leer vor dem ersten |
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
 | `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte, aus dem neuesten Messwert, der zur Zeit der Zeile oder davor genommen wurde; leer, wenn dieser älter als 500 ms ist oder fehlt |
 | `travel angle (ms)` | ms | nur mit AS5600 an: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
+| `meter` | | `INA3221`, `PDMINI` oder `MODEL`, in jeder Zeile |
+| `window` | | am INA3221: die Nummer des Fensters, modulo 65536; ein Schritt von mehr als 1 sind Fenster, die den Lauf nie erreichten |
+| `current max (A)` | A | am INA3221: der höchste 1-ms-Messwert des Fensters |
+| `current min (A)` | A | am INA3221: sein tiefster |
+| `voltage min (V)` | V | am INA3221: der tiefste Messwert der Busspannung im Fenster |
+| `clipped` | | am INA3221: Messwerte des Fensters an einem Bereichsende, bei 255 gehalten |
+
+Die letzten sechs Spalten folgen auf alles davor: Spalten 14 bis 19 ohne
+AS5600, 16 bis 21 mit. Am PD mini und am Modell sind die fünf nach `meter`
+leer. Eine Datei aus der Zeit vor diesen Spalten, 13 breit oder 15 mit
+AS5600, liest die Log-Ansicht wie zuvor: ihr Parser nimmt die Spalten aus
+der Kopfzeile.
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
 deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in
@@ -517,9 +658,9 @@ der [englischen Seite](Servo.md#files); auf Deutsch lauten seine Stufen:
 ```
 Ergebnis:        BESTANDEN
 ...
-Soll V Ist V   Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.
- 4.80    4.80  0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
- 6.00    6.00  0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
+Soll V Ist V   V min  Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.
+ 4.80    4.80  4.80   0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
+ 6.00    6.00  5.99   0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
 ```
 
 Dieselbe Wiedergabe eines 1102HB, das 0,015 bis 0,029 A hält und in
@@ -546,6 +687,21 @@ Darüber hinaus prüft die Host-Suite die Engine gegen `servo_sim` und
 `supply_sim`, die Seite SERVO, die sie führt, und die CSV, vom Parser der
 Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
+
+Kein Lauf am INA3221 ist auf Hardware gelaufen. `test_servo_test_win` fährt
+einen auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
+Zeitplan und Seiten des Koprozessors machen daraus Fenster, `sense_link`
+nimmt jedes einmal und `servo_source` nennt das Messgerät, neben einem
+Modell des PD mini, das alle 104 ms gelesen wird. Zwei Aufzeichnungen von
+einem Prüfstand auf 0.14.0 werden wiedergegeben: die ganze CSV eines MS24 am
+PD mini (`servo-ms24-pdmini.csv`) mit ihren zwei Abschnitten im
+Konstantstrom, und das daneben geschriebene Prüfstandslog
+(`servo-ms24-windows.csv`), das 1309 der 3817 Fenster enthält, die der
+INA3221 schloss, und einen Lauf am INA3221 an seiner ersten Lücke von 500 ms
+beendet. Nicht am Prüfstand gemessen: wie weit ein Fenster hinter dem Horn
+liegt, ob das 50-ms-Mittel die Bewegungen eines Servos zeigt, die der PD mini
+nicht zeigt, was CH1 mit einem Servo am Anschlag liest, und die
+Konstantstrom-Regel an einem PD mini.
 
 ## Die befohlene Stellung folgt dem scharfen Prüfstand
 

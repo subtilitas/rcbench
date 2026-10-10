@@ -314,6 +314,7 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "SETTLE"),
     ("Servo-de.md", "IDLE"),
     ("Servo-de.md", "MOVE"),
+    ("Servo-de.md", "MODEL"),
     ("Servo-de.md", "OFF"),
     ("EscProfiles-de.md", "none"),
     ("StickProgramming-de.md", "none"),

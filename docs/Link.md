@@ -496,7 +496,17 @@ behind the meter in force is dropped, and a supply sample whose count is
 behind is no point of the plot: the snapshot and the queues are three
 paths, and each can be the oldest. A count more than one ahead of the one
 in force means changes the screen did not see, and it empties the plot
-whatever the meter is. The servo test reads the PD mini, every sample.
+whatever the meter is. An automatic servo test reads the meter in force
+when it starts, to its end: a run on the INA3221 ends when a window, a
+supply sample or the snapshot brings another meter or another change count
+([Servo](Servo.md#the-meter)). The panel keeps why the INA3221 last stopped
+being the meter with the count of that poll (`servo_source_dropped()`) and
+hands it over with each of the three, so the run's report names the
+condition: a reset count that moved in that poll is the reason kept, since
+the coprocessor takes a part it found reset offline in the same read. Each
+window is stamped with the latest it can have closed: the panel's tick at
+the read, less 50 ms for each window after it in that read
+(`sense_link_win_t.taken_ms`).
 
 `test_sense_windows` runs the modelled INA3221, the coprocessor's schedule
 and pages and `sense_link` on one clock: polls 50, 53, 55, 100, 150, 199 and
