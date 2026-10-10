@@ -11,8 +11,10 @@
  * nothing to read ended lost and counted, and the count running on
  * across set-ups; the address scan -- online parts not asked, repeated
  * each SENSE_RETRY_MS while a part is missing, not on a stuck bus nor
- * during a capture, and a fault part way keeping what it found; and every
- * snapshot field.
+ * during a capture, and a fault part way keeping what it found; CH1's ring
+ * and the reset counts in the snapshot, a part found reset reported
+ * offline and its capture lost, and both starting again with a set-up; and
+ * every snapshot field.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -540,6 +542,92 @@ TEST_CASE(the_bus_notes_an_outside_answer)
 /* ------------------------------------------------------------- snapshot */
 
 /* Before a first order: nothing open, every field 0. */
+/* ------------------------------------------- the ring and the resets */
+
+/* The snapshot carries CH1's last four windows, newest first, and the
+ * counts of parts found reset.  Both are the set-up's: a new one starts
+ * them again. */
+TEST_CASE(the_snapshot_carries_the_ring_and_the_reset_counts)
+{
+    rig();
+    step();
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(!snap.ring[k].closed);
+    }
+    CHECK_EQ(snap.i228_resets, 0u);
+    CHECK_EQ(snap.i3221_resets, 0u);
+    /* Window n draws 0.1 A times n + 1; the step at 50 ms closes the
+     * first. */
+    for (unsigned n = 0; n < 6u; ++n) {
+        i3221->amps[0] = 0.1 * (double)(n + 1u);
+        steps((n == 0u) ? 49u : 50u);
+    }
+    step();
+    CHECK(snap.have_win);
+    CHECK_EQ(snap.win[SENSE_SRC_CH1].number, 5u);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(snap.ring[k].closed);
+        CHECK_EQ(snap.ring[k].n_i, 50u);
+        CHECK_EQ(snap.ring[k].i_mean_ua, 100000 * (int32_t)(6u - k));
+    }
+    CHECK_EQ(snap.ring[0].i_mean_ua, snap.win[SENSE_SRC_CH1].i_mean_ua);
+
+    /* The INA3221 resets itself: offline within a rotation, counted,
+     * rescanned and still present, and online again a second on. */
+    fake_reset3221(i3221);
+    steps(SENSE_ROTATION * 2u);
+    CHECK_EQ(snap.i3221, SENSE_PART_OFFLINE);
+    CHECK_EQ(snap.i3221_resets, 1u);
+    CHECK_EQ(snap.i228_resets, 0u);
+    CHECK_EQ(snap.i228, SENSE_PART_ONLINE);
+    CHECK((snap.present & BIT(I3221_ADDR)) != 0u);
+    steps(1000u);
+    CHECK_EQ(snap.i3221, SENSE_PART_ONLINE);
+    CHECK_EQ(snap.i3221_resets, 1u);
+    fake_reset228(i228);
+    steps(SENSE_ROTATION * 2u);
+    CHECK_EQ(snap.i228, SENSE_PART_OFFLINE);
+    CHECK_EQ(snap.i228_resets, 1u);
+    CHECK(!snap.run.totals_ok);
+
+    /* A new set-up: a fresh schedule, an empty ring, the counts 0. */
+    cmd.cfg_gen = 2u;
+    step();
+    CHECK(!snap.have_win);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(!snap.ring[k].closed);
+    }
+    CHECK_EQ(snap.i228_resets, 0u);
+    CHECK_EQ(snap.i3221_resets, 0u);
+    /* A closed bus reads nothing. */
+    cmd.cfg_gen = 3u;
+    cmd.parts.ina228_en = false;
+    cmd.parts.ina3221_en = false;
+    steps(60u);
+    CHECK(!snap.open);
+    CHECK(!snap.ring[0].closed);
+    CHECK_EQ(snap.i3221_resets, 0u);
+}
+
+/* A capture under way when the INA3221 is found reset ends lost, through
+ * the service as through the schedule. */
+TEST_CASE(a_reset_under_a_capture_reports_it_lost)
+{
+    rig();
+    steps(60u);
+    cmd.cap_gen = 1u;
+    cmd.cap_on  = true;
+    step();
+    CHECK_EQ(snap.cap_state, SENSE_CAP_ARMED);
+    const uint16_t seq = snap.cap_seq;
+    fake_reset3221(i3221);
+    steps(SENSE_ROTATION * 2u);
+    CHECK_EQ(snap.i3221, SENSE_PART_OFFLINE);
+    CHECK_EQ(snap.cap_state, SENSE_CAP_LOST);
+    CHECK_EQ(snap.cap_seq, (uint16_t)(seq + 1u));
+    CHECK_EQ(snap.i3221_resets, 1u);
+}
+
 TEST_CASE(a_service_starts_closed)
 {
     rig();
@@ -569,6 +657,8 @@ int main(void)
     RUN(a_line_held_under_the_scan_starts_the_recovery);
     RUN(timeouts_under_the_scan_count_towards_stuck);
     RUN(the_bus_notes_an_outside_answer);
+    RUN(the_snapshot_carries_the_ring_and_the_reset_counts);
+    RUN(a_reset_under_a_capture_reports_it_lost);
     RUN(a_service_starts_closed);
     return test_summary("sense_svc");
 }

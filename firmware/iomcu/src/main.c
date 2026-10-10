@@ -633,6 +633,14 @@ static void servo_sense_read(void *ctx, uint8_t off, uint8_t n,
     sense_servo_read(&s_sense, off, n, out);
 }
 
+/* CH1's last four windows.  Read only: the page has no write handler. */
+static void servo_win_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_sync();
+    sense_win_read(&s_sense, off, n, out);
+}
+
 /*
  * A capture armed or disarmed.  An arm watches its output channel for the
  * edge: the first pass that renders a changed pulse there stamps the frame
@@ -1236,6 +1244,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_BIND_CFG,  LINK_CC_COUNT,  bind_cfg_read,  bind_cfg_write },
     { LINK_PAGE_BIND_OUT,  LINK_OS_COUNT,  bind_out_read,  bind_out_write },
     { LINK_PAGE_BIND,      LINK_BD_COUNT,  bind_read,      bind_write },
+    { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT,  servo_win_read, NULL },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1391,7 +1400,8 @@ static void can_service(uint32_t now)
  * The current monitors as the pages show them, with can_report() every 3 s,
  * while either part is enabled: what a bench session reads before the
  * panel has a screen for them.  The registers as published, in their own
- * units: FLAGS, PRESENT and the IDs in hex, BENCH's 10 mV and 10 mA, CH1's
+ * units: FLAGS, PRESENT and the IDs in hex, the reset counts of the INA228
+ * and the INA3221, BENCH's 10 mV and 10 mA, CH1's
  * mA and mV, times in 0.1 ms.
  */
 static void sense_report(void)
@@ -1404,10 +1414,13 @@ static void sense_report(void)
     const uint16_t *v = s_sense.servo;
     const uint16_t *b = s_state.bench;
     printf("rcbench-iomcu: sense flags 0x%04X present 0x%04X ids 0x%04X "
-           "0x%04X errors %u | bench %u cV %u cA %u mAh %u dWh flags 0x%02X "
-           "| temp %d dC\n",
+           "0x%04X errors %u resets %u %u | bench %u cV %u cA %u mAh %u dWh "
+           "flags 0x%02X | temp %d dC\n",
            n[LINK_SN_FLAGS], n[LINK_SN_PRESENT], n[LINK_SN_I228_ID],
-           n[LINK_SN_I3221_ID], n[LINK_SN_ERRORS], b[LINK_BN_VOLTAGE_CV],
+           n[LINK_SN_I3221_ID], n[LINK_SN_ERRORS],
+           (unsigned)LINK_SN_RESETS_I228(n[LINK_SN_RESETS]),
+           (unsigned)LINK_SN_RESETS_I3221(n[LINK_SN_RESETS]),
+           b[LINK_BN_VOLTAGE_CV],
            b[LINK_BN_CURRENT_CA], b[LINK_BN_CHARGE_MAH], b[LINK_BN_ENERGY_DWH],
            b[LINK_BN_FLAGS], (int)(int16_t)n[LINK_SN_I228_TEMP_DC]);
     printf("rcbench-iomcu: sense window %u CH1 %d mA %u mV ch_flags 0x%02X | "

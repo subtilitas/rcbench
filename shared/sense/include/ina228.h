@@ -255,6 +255,18 @@ sense_err_t ina228_read_charge(ina228_t *d, int64_t *uc);
  *  of the second write leaves RSTACC set; the call is to be repeated. */
 sense_err_t ina228_clear_totals(ina228_t *d);
 
+/** ADC_CONFIG read back against the value written.  A part that resets
+ *  itself answers with INA228_ADC_RESET at either range, and CONFIG with
+ *  0, which is also what ADCRANGE 0 writes: ADC_CONFIG is the register
+ *  that tells.  Such a part computes CURRENT at ADCRANGE 0, a quarter of
+ *  the truth for a set-up at ADCRANGE 1.  Another value than the one
+ *  written is read a second time at once, so one corrupted read is no
+ *  reset; when both differ the part is taken offline (sense_part_lost()),
+ *  @p lost is set and SENSE_OK returned.  @p lost is false otherwise.  One
+ *  transaction, two on a first mismatch: 120 µs of bus time each at
+ *  400 kHz. */
+sense_err_t ina228_verify(ina228_t *d, bool *lost);
+
 #ifdef __cplusplus
 }
 #endif

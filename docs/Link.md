@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.10. The
+coprocessor transmits only in answer to a request. Protocol version 4.11. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -88,7 +88,8 @@ the two minors are. The panel reads the coprocessor's minor at link-up and
 uses nothing that minor does not have: SERVO's frame rate from 4.1, its
 sweep from 4.2, SUPPLY from 4.3, the sweep's RESUME from 4.6, SENSE and
 SERVO_SENSE from 4.7, TONE from 4.8, SENSE's output encoder from 4.9, BIND_CFG,
-BIND_OUT and BIND from 4.10. The
+BIND_OUT and BIND from 4.10, SERVO_WIN, SENSE's `RESETS` and a signed
+`CAP_HOLD_MA` from 4.11. The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -117,7 +118,7 @@ hardware. This build's panel reads SENSE's registers 0 to 11 at every
 link-up, writes the set-up from SETUP INTERFACES one frame at a time where it
 differs (`shared/bench/sense_link.c`, `test_sense_link`), and reads the
 identity page again after a write is taken. It writes no capture to
-SERVO_SENSE.
+SERVO_SENSE and sends nothing to SERVO_WIN (0x31).
 
 TONE (0x2D) is its own page, and 4.8 moves nothing else:
 
@@ -177,7 +178,7 @@ to the bus time of a second: 44.0 % in all, 66.8 % with the pair.
 | 28 | `AS5600_MAGNITUDE` | the CORDIC (coordinate rotation digital computer) magnitude, 12 bits, read at 20 Hz; 0 until read |
 | 29 | `AS5600_SAMPLES` | angle reads, modulo 65536: two reads of the page with the same count are one sample |
 | 30 | `AS5600_STILL_MS` | how long the angle has stayed within 12 counts (1.05 degrees) of an anchor, in ms, saturating at 65535; 0 without a sample and while MD is clear |
-| 31 | reserved | 0 |
+| 31 | `RESETS` | since 4.11, and not the encoder's: the current monitors found reset, the INA228 in the low byte and the INA3221 in the high byte, each modulo 256, since the set-up in force was taken. [The window ring](#the-window-ring) has the rule. A 4.10 or older coprocessor reads 0 |
 
 The anchor is the angle at the last sample that lay more than 12 counts from
 the previous anchor, taken on the circle across the 4095 to 0 wrap. A move
@@ -314,6 +315,115 @@ sequence through a model of the 2-frame buffer with a 20 ms deaf window
 opened at every 125 µs, a frame lost at each of the 18 positions, the
 timeouts across the 2^32 ms wrap. Not run on hardware.
 
+### The window ring
+
+SERVO_WIN (0x31) is new in 4.11. 4.11 also gives SENSE's register 31 a
+meaning, `RESETS`, and makes SERVO_SENSE's `CAP_HOLD_MA` a signed register.
+No page and no register moves.
+
+SERVO_SENSE shows the last 50 ms window of each channel and no other. A host
+whose reads lie more than 50 ms apart misses a window there. SERVO_WIN holds
+the last 4 complete windows of INA3221 CH1, the servo under test, 200 ms. A
+host that takes each window number once misses none while two of its reads
+lie at most 200 ms apart. A read ends nothing, so a reply lost on the link
+loses nothing. The page is read only: every write is refused with READ_ONLY.
+
+| Register | Name | Reads |
+| ---: | --- | --- |
+| 0 | `WINDOW` | the number of the newest complete window, modulo 65536: the number SERVO_SENSE's register 12 shows |
+| 1 | `FLAGS` | bit 0 a window has closed under the set-up in force, so `WINDOW` is a number; bit 7 SERVO_SENSE's register 13 bit 7, a sample of the capture's move read an end of the range |
+| 2 | `CAP_STATE` | SERVO_SENSE's register 18 as it reads at this moment |
+| 3 | `CAP_SEQ` | SERVO_SENSE's register 19 |
+| 4 + 6 k | `MEAN_MA` | entry k, 0 to 3, is window number `WINDOW` - k modulo 65536: the mean current in mA, signed |
+| 5 + 6 k | `MAX_MA` | the highest current sample in mA, signed |
+| 6 + 6 k | `MIN_MA` | the lowest current sample in mA, signed |
+| 7 + 6 k | `MEAN_MV` | the mean bus voltage in mV, at the load side of the shunt |
+| 8 + 6 k | `MIN_MV` | the lowest bus voltage sample in mV |
+| 9 + 6 k | `E_FLAGS` | bit 15 a window closed with this number; bit 8 it holds current samples; bit 9 it holds voltage samples; bit 10 a current sample read the top of the range, 163.8 mV across the shunt; bit 11 one read the bottom; bits 0 to 7 the number of current samples that read an end, held at 255 |
+
+The page is 28 registers. Registers 0 to 15 are the header and the two
+newest windows: one request and four data frames, as a BENCH read. Currents
+are rounded to the mA and held to -32767 to 32767, voltages to 0 to 65535 mV.
+The coprocessor reads CH1's current every 1 ms and its bus voltage every
+20 ms: a window holds up to 50 current samples and 2 or 3 voltage samples.
+
+An entry with bit 15 clear reads 0 in all six registers. Its number never
+closed: the coprocessor's 1 ms tick ran late by 50 ms or more and no sample
+fell in that window, or the number lies before the first window of the
+set-up. An entry with bit 15 set and bits 8 and 9 clear closed with no
+sample: the INA3221 was not online.
+
+A clipped current sample counts in an entry as the reading it is, the end of
+the range: 4095 steps of 40 µV across the shunt at the top and 4096 at the
+bottom, 1.638 A and -1.6384 A on the 0.1 Ω shunt. It enters the mean, the
+highest and the lowest at that value, and bits 0 to 7 count it. The current
+was at least that; by how much more is not known. SERVO_SENSE's registers 0
+to 11 leave a clipped sample out of their figures, so the two pages differ
+for a window with a clipped sample, and only for such a window. The
+coprocessor applies no rule to the count.
+
+`CAP_STATE`, `CAP_SEQ` and bit 7 of `FLAGS` are SERVO_SENSE's as that page
+reads in the same pass: an arm reads armed (1) here from the write's
+acknowledgement on, and a capture that has ended shows in the read that
+fetches the windows.
+
+Nothing is kept: a coprocessor restart reads 0 throughout, and so does a
+SENSE set-up taken, until the first window closes under it.
+
+**A part that resets itself.** Both current monitors answer every read after
+a reset of their own, on their power-on set-up. The INA228 then computes its
+current at ADCRANGE 0: a set-up at ADCRANGE 1, any whose shunt voltage at
+the maximum current is at most 40.96 mV, the MATEK default among them, reads
+a quarter of the current. The INA3221 converts all three channels at 1.1 ms,
+one CH1 result every 6.6 ms where the bench set-up gives one every 280 µs
+(CH1 alone) to 840 µs (three channels). The INA228 resets when its supply
+falls under about 1.26 V (TI SLYS021A §7.4.2).
+
+The coprocessor reads the INA228's ADC_CONFIG and the INA3221's
+Configuration back, each once in 40 ms. A value other than the one written
+is read a second time in the same tick, so one corrupted read is no reset.
+When both reads differ:
+
+- the part loses ONLINE in SENSE's `FLAGS` and is probed and set up again
+  1000 ms later;
+- its byte of `RESETS` (SENSE register 31) counts one: the INA228 in the low
+  byte, the INA3221 in the high byte, each modulo 256, since the set-up in
+  force was taken. The count shows a reset found and repaired between two
+  reads of `FLAGS`;
+- the windows being filled from the part are emptied. For the INA3221 the
+  SERVO_WIN entry of that window reads closed with no sample, and so do the
+  entries of the next 1000 ms;
+- for the INA228, charge and energy read 0 and BENCH bit 6 stays clear until
+  the next arm, and BENCH's voltage, current and power read empty while the
+  part is offline;
+- a capture under way ends lost (state 8) and counts in `CAP_SEQ`.
+
+A reset is found within 40 ms. The samples read between the reset and its
+detection lie in the window before the emptied one when a window boundary
+falls between them: the INA228's at a quarter for a set-up at ADCRANGE 1,
+the INA3221's right in value and each up to 6.6 ms old.
+
+The two read-backs take the slots of the INA228's die temperature and the
+INA3221's Mask/Enable in every second pass of the schedule's rotation: those
+two are read at 25 Hz, and every other rate is unchanged. A read-back is one
+2-byte read, 120 µs. An even tick stays at 690 µs of bus time; the tick in
+which a set-up register is read a second time is 742.5 µs.
+
+| Panel | Coprocessor | SERVO_WIN (0x31), `RESETS` and `CAP_HOLD_MA` |
+| --- | --- | --- |
+| 4.11 | 4.11 | served. This build's panel sends nothing to SERVO_WIN, reads register 31 only with the encoder's registers and does not use it, and arms no capture |
+| 4.11 | 4.10 or older | the coprocessor answers a request to 0x31 with BAD_PAGE; a host reads the minor at link-up and sends nothing there below 11. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
+| 4.10 or older | 4.11 | the panel never reads 0x31 and reads register 31 as a reserved register it ignores. A holding level it writes, 0 to 32767 mA, means the same. A part found reset reads offline for 1000 ms and then online again |
+
+`shared/sense/sense_sched.c` keeps the ring and runs the read-backs, under
+`test_sense_sched`: the ring after 1, 4, 5 and 6 windows, across window
+65535, with a tick late by 49, 50 and 51 ms and by 5 windows, with 0, 1, 44,
+45 and 50 clipped samples; a reset found at each of the 40 ticks of a
+rotation, the part back at 1000 ms and not at 999 ms, across the 2^32 ms
+wrap; the bus time of every tick. `shared/outputs/sense_page.c` holds the
+page, under `test_sense_page` and `test_link_pages`. Not run on hardware:
+the page, and whether either module resets on a dip of its supply.
+
 ### Identifier
 
 A 29-bit extended identifier carries the whole address, so a read is a frame
@@ -376,12 +486,13 @@ Clearing a latched failsafe is such a side effect.
 | 0x28 | PADS | read | the pads that are not pins, one register each: the pad number in 6 bits, what it is in 2 (0 no pad and the list ends, 1 ground, 2 a rail, 3 neither), and the rail in 8 bits of tenths of a volt. Zero volts on a rail means it is not a fixed voltage, which is not the same as a ground's 0 V. 32 slots, in pad order |
 | 0x29 | SERVO | read, write | register 0: the frame rate in Hz of every PWM output whose first channel is a surface, 40 to 560, or 0 for each slot's own rate from OUTPUTS; refused with BAD_VALUE, and nothing changes, when it would leave a PWM slice asked for two rates, and while it is not 0 so is a CHAN_CFG or OUTPUTS write that would (since 4.1). Registers 1 to 4, one frame: a sweep of the surfaces -- curve (0 stopped, 1 square, 2 sine, 3 triangle), speed in thousandths of a cycle a second (50 to 5000), amplitude in command units either side of the centre (0 to 500), hold at each end in ms (0 to 5000); a sweep starts or changes only from all four written together, refused with BAD_VALUE otherwise, and with NOT_ARMED on a disarmed bench; 0 in register 1 alone stops it, and 4 alone holds every surface where its output is, under the same disarm and 500 ms rules. A sweep running when the hold begins keeps its phase (since 4.6): how far into the curve it was, and so its point, its dwell and the ends reached; one that has made its movements is held at the centre it ended on. A write is judged against the page as the coprocessor's next pass would leave it at that moment: a sweep past its last movement, unwritten for 500 ms or disarmed has ended, even when the write is served before the pass that ends it. 5 alone (RESUME, since 4.6) carries that sweep on from the kept phase; the surfaces are commanded along the curve again at once and slew there from where they were held, at their own rate. RESUME is refused with BAD_VALUE when no phase is kept -- no sweep was running when the hold began, or the hold ended by a write of 0, a curve written over it, a disarm, 500 ms unwritten or a restart -- and when registers 2 to 5 no longer read what the paused sweep runs, and with NOT_ARMED on a disarmed bench. A 4.5 coprocessor refuses 5 with BAD_VALUE. Register 5: the ends a sweep started after it reaches before it stops, 0 for no end. Register 6, read only: the ends the sweep has reached. A sweep stops on a write of 0, on a disarm and when it has not been written for 500 ms, leaving each surface where its output has got to; repeating it keeps its curve going, and a sweep that has made its movements is not started again by a repeat (since 4.2). Nothing is kept: a coprocessor restart reads 0 throughout |
 | 0x2A | SUPPLY | read, write | a WeAct PD Power Mini V1 Buck on a PIO (programmable input/output) UART on two of the coprocessor's pins (since 4.3). Registers 0 to 3, one frame: enable, the GPIO that transmits (to the module's DM) and the one that receives (its DP), and the module's UART Baudrate setting, 0 to 6 for 9600, 19200, 38400, 57600, 115200, 230400 and 460800 baud, or 7 (since 4.4) to find it: the UART tries the next rate after every WHO_AM_I without a valid answer, starting at 19200, until a module has answered once; refused with BAD_VALUE on a pin that is reserved, bound to an output or the other pin, and for any change while the output is asked on or may be on (bit 6 of the flags). Since 4.5, a change while a module has answered is acknowledged and held: registers 0 to 3 read the wiring in force and flag bit 8 is set until a state read of the module sent after the change answers, at most about 1.2 s; a read showing the output off takes the change, one showing it on or failing refuses it, and bit 9 is set until the next write of registers 0 to 3. Such a change comes alone, without registers 4 to 6, and an ON is refused with BAD_VALUE while one is held. A host older than 4.5 that writes the wiring again while it is held is acknowledged and the hold goes on. The pins are no output's while held. Registers 4 to 6, one frame: output (1 on) and the set points in mV and mA, up to 20000 mV and 3000 mA; an ON is refused with NOT_ARMED without a live heartbeat, and while wiring just written is not yet in flash (a save is taken 400 ms after the last write), and the output goes off when the heartbeat stops. Registers 7 to 16, read only: flags (bit 0 online, bit 1 output on, bits 3..2 mode 0 normal, 1 constant current, 2 overcurrent, bit 4 an output that would not switch, bit 5 set points that would not take, bit 6 an output on or possibly on -- read on, an ON not yet confirmed, or an OFF owed to a module that stopped answering, bit 7 an output the module switched off by itself while ON was asked, held off until OUTPUT is written 0, since 4.5 bit 8 a wiring change held for a state read and bit 9 one that read refused, bit 10 an output switched off because the module's input read under the set point plus 500 mV on 2 input reads in a row, held off until OUTPUT is written 0), the output's mV and mA, the set points read back, the input's state and mV, readings taken and transactions failed modulo 65536, and (since 4.4) the rate in use, 0 to 6, or 7 while AUTO has found none. Register 17 (since 4.4), written alone as 1 with the output asked off and the supply enabled, restarts the module (SYSTEM_RESET) once it has answered and its output reads off; it reads 0. The wiring is kept in the coprocessor's flash and driven at boot with the output off, so a module left on is switched off after a restart; the command is not kept |
-| 0x2B | SENSE | read, write | two I2C (Inter-Integrated Circuit) current monitors on one bus on two of the coprocessor's pins, a TI INA228 in the ESC's power path and a TI INA3221 on the servo rail (since 4.7). Registers 0 to 3, one frame: enable (bit 0 INA228, bit 1 INA3221, bit 2 the AS5600 output encoder since 4.9), the SDA GPIO, the SCL GPIO, and the clock, 400 kHz and no other value: at 100 kHz one read takes 480 to 750 µs and the coprocessor's 1 ms schedule does not fit. The schedule reads INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or at 1000 Hz for a synchronised pair, the INA228's current and voltage at 500 Hz each, and everything else at 50 Hz. Both modules carry pull-ups on SDA and SCL, and they add in parallel: the DAOKAI INA3221 has 10 kΩ to its VS (3.3 V); the MATEK INA228's pull-up value and rail are unknown. The combined value must stay above about 1 kΩ: an I2C output sinks 3 mA at 0.4 V, and (3.3 V − 0.4 V) / 3 mA is 967 Ω. Below 10 kΩ it shortens the rise time: the 300 ns rise limit at 400 kHz allows 35 pF of bus with 10 kΩ alone, and more with less. SDA's GPIO number mod 4 is 0 or 2 and SCL is the GPIO after it, one I2C block's pair (GP16 and GP17 by default). Registers 4 to 7, one frame: the INA228's address, 0x40 to 0x4F (default 0x45, the MATEK I2C-INA-BM's as shipped; its solder bridges give 0x44 or 0x41); its shunt in µΩ, 50 to 20000 (default 200); the current its range is set for in 0.1 A, 10 to 3000 (1.0 to 300.0 A, the bench's design maximum; default 2048). The maximum chooses ADCRANGE only: 1 while the shunt's voltage at it is at most 40.96 mV, 0 up to 163.84 mV, and above that the write is refused. CURRENT_LSB is the shunt ADC's step divided by the shunt (78.125 nV or 312.5 nV over R), so CURRENT and the shunt voltage clip together, and SHUNT_CAL is 4096 at either range. A shunt whose full scale at the chosen range passes 2000 A is refused as well, so below 81.92 µΩ only ADCRANGE 1 is taken; the rule is the driver's, `ina228_calibrate()`; register 7 reserved. Registers 8 to 11, one frame: the INA3221's address, 0x40 to 0x43 (default 0x40); its shunt in 0.1 mΩ, 50 to 10000 (5 mΩ to 1 Ω, default 1000, the 0.1 Ω that reads to 1.638 A); the channels read, bits 0..2 for CH1 to CH3, at least one while enabled (default CH1); register 11 reserved. The reserved registers read 0 and take only 0. Refused with BAD_VALUE: a value out of range, SDA and SCL not one block's pair, a pin that is reserved, bound to an output or held by SUPPLY, both parts on one address while both are enabled, and any change while the bank is armed; a write of the set-up in force is taken. The pins are no output's while any part is enabled, and an OUTPUTS write binding one is refused. Registers 12 to 25, read only: flags (bit 0 INA228 online, bit 1 its last identity read was an INA228's, bit 2 something else answers at its address, bit 3 a current read at the end of its range in the last 50 ms window or since the run's arm, so BENCH's current and power, or their peaks, are bounds and not values; bits 4 to 6 the same three for the INA3221; bit 8 the bus is open on its pins, bit 9 SDA is held low and being clocked free), the addresses that answered the last scan (bit n for 0x40 + n), the INA228's DEVICE_ID and the INA3221's die ID as read, transactions failed modulo 65536, the INA228's die temperature in 0.1 °C (signed) and DIAG_ALRT, its charge in 0.01 mAh (signed, 32 bit, registers 19 and 20, low first) and energy in 0.01 Wh (32 bit, registers 21 and 22, low first) since the run's arm, the ESC's own telemetry voltage (10 mV) and current (10 mA), and their valid bits (bit 0 voltage, bit 1 current). Registers 26 to 31, read only, since 4.9: the output encoder's flags, RAW ANGLE, MAGNITUDE, sample count and still time in ms, and a reserved register (see below). Registers 0 to 11 are kept in the coprocessor's flash |
-| 0x2C | SERVO_SENSE | read, write | the INA3221's channels and a move timed on the coprocessor's clock (since 4.7). Registers 0 to 11, read only, four a channel from CH1: mean current (mA, signed), highest current (mA, signed), mean bus voltage (mV) and lowest bus voltage (mV) over the last 50 ms window, the voltage at the load side of the shunt. Register 12, read only: the window number modulo 65536; a read does not end a window. Register 13, read only: bits 0..2 a channel's window holds readings, bits 4..6 one of them read the top of the range (163.8 mV across the shunt), which makes that channel's mean and highest current lower bounds, bit 7 the same of the capture. Registers 14 to 17, one frame: a capture -- bit 7 set, the INA3221 channel in bits 0..1, CH1 only (2 and 3 are refused; the field stays for a channel read fast enough later), and the output channel (0 to 7) in bits 8..10 whose next changed command starts the timing; the holding level the move ends at, 0 to 32767 mA; the movement threshold and the arrival band, each 1 to 32767 mA. An arm is the whole frame and restarts a capture already running. 0 in register 14 disarms and is never refused; written at the head of the frame, the other three are not stored. Refused with BAD_VALUE: any other write that is not the whole frame, other bits set in register 14, a value out of range, a channel other than CH1 or one SENSE does not read, and an output channel that is not a surface on a PWM slot the coprocessor has bound (a pin whose compare register another pin holds is not); with NOT_ARMED on a disarmed bank. A bank that stops driving ends a capture that has not finished. Registers 18 to 24, read only: the state (0 idle, 1 armed, 2 waiting for movement, 3 moving, 4 arrived, 5 settled on an end stop, 6 late: movement and no arrival within 3000 ms plus the meter's lag, 7 unseen: no movement in that time, 8 lost: the INA3221 stopped answering, or no PWM edge came within 3000 ms of the arm), captures finished modulo 65536, the time from the PWM frame carrying the new pulse to movement and to arrival in 0.1 ms, resolved to CH1's 1 ms sample interval, the highest and mean filtered current of the move (mA, signed), and the samples in it. Nothing is kept: a coprocessor restart reads 0 throughout |
+| 0x2B | SENSE | read, write | two I2C (Inter-Integrated Circuit) current monitors on one bus on two of the coprocessor's pins, a TI INA228 in the ESC's power path and a TI INA3221 on the servo rail (since 4.7). Registers 0 to 3, one frame: enable (bit 0 INA228, bit 1 INA3221, bit 2 the AS5600 output encoder since 4.9), the SDA GPIO, the SCL GPIO, and the clock, 400 kHz and no other value: at 100 kHz one read takes 480 to 750 µs and the coprocessor's 1 ms schedule does not fit. The schedule reads INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or at 1000 Hz for a synchronised pair, the INA228's current and voltage at 500 Hz each, its die temperature, the INA3221's Mask/Enable and each part's set-up register read back (since 4.11) at 25 Hz each, and everything else at 50 Hz. Both modules carry pull-ups on SDA and SCL, and they add in parallel: the DAOKAI INA3221 has 10 kΩ to its VS (3.3 V); the MATEK INA228's pull-up value and rail are unknown. The combined value must stay above about 1 kΩ: an I2C output sinks 3 mA at 0.4 V, and (3.3 V − 0.4 V) / 3 mA is 967 Ω. Below 10 kΩ it shortens the rise time: the 300 ns rise limit at 400 kHz allows 35 pF of bus with 10 kΩ alone, and more with less. SDA's GPIO number mod 4 is 0 or 2 and SCL is the GPIO after it, one I2C block's pair (GP16 and GP17 by default). Registers 4 to 7, one frame: the INA228's address, 0x40 to 0x4F (default 0x45, the MATEK I2C-INA-BM's as shipped; its solder bridges give 0x44 or 0x41); its shunt in µΩ, 50 to 20000 (default 200); the current its range is set for in 0.1 A, 10 to 3000 (1.0 to 300.0 A, the bench's design maximum; default 2048). The maximum chooses ADCRANGE only: 1 while the shunt's voltage at it is at most 40.96 mV, 0 up to 163.84 mV, and above that the write is refused. CURRENT_LSB is the shunt ADC's step divided by the shunt (78.125 nV or 312.5 nV over R), so CURRENT and the shunt voltage clip together, and SHUNT_CAL is 4096 at either range. A shunt whose full scale at the chosen range passes 2000 A is refused as well, so below 81.92 µΩ only ADCRANGE 1 is taken; the rule is the driver's, `ina228_calibrate()`; register 7 reserved. Registers 8 to 11, one frame: the INA3221's address, 0x40 to 0x43 (default 0x40); its shunt in 0.1 mΩ, 50 to 10000 (5 mΩ to 1 Ω, default 1000, the 0.1 Ω that reads to 1.638 A); the channels read, bits 0..2 for CH1 to CH3, at least one while enabled (default CH1); register 11 reserved. The reserved registers read 0 and take only 0. Refused with BAD_VALUE: a value out of range, SDA and SCL not one block's pair, a pin that is reserved, bound to an output or held by SUPPLY, both parts on one address while both are enabled, and any change while the bank is armed; a write of the set-up in force is taken. The pins are no output's while any part is enabled, and an OUTPUTS write binding one is refused. Registers 12 to 25, read only: flags (bit 0 INA228 online, bit 1 its last identity read was an INA228's, bit 2 something else answers at its address, bit 3 a current read at the end of its range in the last 50 ms window or since the run's arm, so BENCH's current and power, or their peaks, are bounds and not values; bits 4 to 6 the same three for the INA3221; bit 8 the bus is open on its pins, bit 9 SDA is held low and being clocked free), the addresses that answered the last scan (bit n for 0x40 + n), the INA228's DEVICE_ID and the INA3221's die ID as read, transactions failed modulo 65536, the INA228's die temperature in 0.1 °C (signed) and DIAG_ALRT, its charge in 0.01 mAh (signed, 32 bit, registers 19 and 20, low first) and energy in 0.01 Wh (32 bit, registers 21 and 22, low first) since the run's arm, the ESC's own telemetry voltage (10 mV) and current (10 mA), and their valid bits (bit 0 voltage, bit 1 current). Registers 26 to 30, read only, since 4.9: the output encoder's flags, RAW ANGLE, MAGNITUDE, sample count and still time in ms (see below). Register 31, read only, since 4.11: `RESETS`, the current monitors found reset, the INA228 in the low byte and the INA3221 in the high byte, each modulo 256 ([The window ring](#the-window-ring)); a 4.10 or older coprocessor reads 0. Registers 0 to 11 are kept in the coprocessor's flash |
+| 0x2C | SERVO_SENSE | read, write | the INA3221's channels and a move timed on the coprocessor's clock (since 4.7). Registers 0 to 11, read only, four a channel from CH1: mean current (mA, signed), highest current (mA, signed), mean bus voltage (mV) and lowest bus voltage (mV) over the last 50 ms window, the voltage at the load side of the shunt. Register 12, read only: the window number modulo 65536; a read does not end a window. Register 13, read only: bits 0..2 a channel's window holds readings, bits 4..6 one of them read the top of the range (163.8 mV across the shunt), which makes that channel's mean and highest current lower bounds, bit 7 the same of the capture. Registers 14 to 17, one frame: a capture -- bit 7 set, the INA3221 channel in bits 0..1, CH1 only (2 and 3 are refused; the field stays for a channel read fast enough later), and the output channel (0 to 7) in bits 8..10 whose next changed command starts the timing; the holding level the move ends at in mA, signed, -32768 to 32767 (since 4.11; 0 to 32767 before it, a larger value refused); the movement threshold and the arrival band, each 1 to 32767 mA. An arm is the whole frame and restarts a capture already running. 0 in register 14 disarms and is never refused; written at the head of the frame, the other three are not stored. Refused with BAD_VALUE: any other write that is not the whole frame, other bits set in register 14, a value out of range, a channel other than CH1 or one SENSE does not read, and an output channel that is not a surface on a PWM slot the coprocessor has bound (a pin whose compare register another pin holds is not); with NOT_ARMED on a disarmed bank. A bank that stops driving ends a capture that has not finished. Registers 18 to 24, read only: the state (0 idle, 1 armed, 2 waiting for movement, 3 moving, 4 arrived, 5 settled on an end stop, 6 late: movement and no arrival within 3000 ms plus the meter's lag, 7 unseen: no movement in that time, 8 lost: the INA3221 stopped answering, or no PWM edge came within 3000 ms of the arm), captures finished modulo 65536, the time from the PWM frame carrying the new pulse to movement and to arrival in 0.1 ms, resolved to CH1's 1 ms sample interval, the highest and mean filtered current of the move (mA, signed), and the samples in it. Nothing is kept: a coprocessor restart reads 0 throughout |
 | 0x2D | TONE | read, write | the beeps of an ESC heard on one motor phase, through a series resistor and a zener clamp on one coprocessor GPIO, stamped by a PIO state machine at 26.7 ns (since 4.8). Registers 0 to 3, one frame: enable (bit 0), the GPIO (default 22, pad 29), the lowest tone heard in Hz (50 to 2000, default 400) and the highest (above the lowest, to 6900, default 6500). Registers 4 to 7, one frame: the pitch change in percent that starts a new beep without a silence (0 splits on silence only, 50 at most, default 8), the silence that ends a beep in ms (1 to 100 and at least the period of the lowest tone, default 3), the tone periods that make a beep (1 to 64, default 3), and register 7 reserved. The reserved register reads 0 and takes only 0. Refused with BAD_VALUE: a value out of range, a combination the detector refuses (a silence shorter than the lowest tone's period), and, while the tap is enabled, a GPIO past the bank (63), reserved, bound to an output, held by SENSE or SUPPLY, or an ADC (analog-to-digital converter) pin: GP26 to GP29 of the RP2350A and GP40 to GP47 of the RP2354B, which are not fault tolerant. The GPIO is no output's while the tap is enabled, and an OUTPUTS, SENSE or SUPPLY write that takes it is refused. A change is taken armed or not: the tap is an input and drives nothing. Registers 8 to 12, read only: flags (bit 0 the capture runs, bit 1 the tap is enabled and its pin could not be taken, bit 2 the capture ring or the state machine's FIFO overran since the capture started, bit 3 a run of bursts is under way, bit 4 the last window held a tone), the window number modulo 65536 (windows of 8 ms), the last window's tone in 0.1 Hz (0 for none) and the tone periods in it, and the number of the newest beep. The coprocessor keeps the last 64 beeps and numbers them 1 to 65535, then from 1 again; the newest number is 0 before the first beep. Register 13, EVT_SEL, is the one writable register after register 7 and is not kept: the number of the beep that registers 14 to 21 show. A read consumes no beep, so a reply lost on the link loses nothing. Registers 14 to 21, read only: EVT_SEL again while that beep is among the 64, else 0 with registers 15 to 21 reading 0; the beep's first rise in ms since the capture started (32 bit, registers 15 and 16, low first); its length to its last edge in 0.1 ms; its mean pitch in 0.1 Hz; its bursts; the carrier it was chopped at in 100 Hz steps (0 unchopped); flags (bit 0 it began at a pitch change with no silence before it, bit 1 it ended at one). Registers 22 and 23, read only: beeps lost, and lows shorter than 500 ns that the detector ignored, each modulo 65536. The capture's 8 µs hold-off removes every low shorter than 8 µs before the detector sees it, so register 23 reads 0 on the tap. The capture starts when the tap is enabled or its pin changes, and then empties the 64. Registers 0 to 6 are kept in the coprocessor's flash and the tap starts at boot. While the tap is disabled the pin is an input with its pull-down on (32 to 86 kΩ), and it stays on while the tap runs |
 | 0x2E | BIND_CFG | read, write | a CHAN_CFG page prepared and not in force (since 4.10): the registers and the value rules of CHAN_CFG. [A binding taken whole](#a-binding-taken-whole) has the three pages |
 | 0x2F | BIND_OUT | read, write | an OUTPUTS page prepared and not in force (since 4.10): the registers and the value rules of OUTPUTS |
 | 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared |
+| 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch, bit 6

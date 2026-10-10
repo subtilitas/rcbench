@@ -404,7 +404,9 @@ TEST_CASE(the_encoder_moves_no_other_reads_rate)
     ticks(1000u);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
     CHECK_EQ(i3221->reads[INA3221_BUS1], 50u);
-    CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 50u);
+    /* Mask/Enable and the Configuration read-back share a slot. */
+    CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 25u);
+    CHECK_EQ(i3221->reads[INA3221_CONFIG], 25u);
     CHECK_EQ(enc->reads[AS5600_REG_RAW_ANGLE], 500u);
 }
 

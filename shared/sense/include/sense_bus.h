@@ -29,9 +29,12 @@
  * - A part online or offline.  A part is probed (identity read, set-up
  *   written and read back) before anything else is said to it.
  *   SENSE_FAILS failed transactions in a row take an online part offline:
- *   6 ms of readings at 500 Hz.  A part that is not online is probed again
- *   every SENSE_RETRY_MS.  Nothing is acted on here: an offline part is
- *   reported, its readings stop, and the bench is not disarmed.
+ *   6 ms of readings at 500 Hz.  So does a set-up register that reads back
+ *   another value than the one written, twice in a row: the part reset
+ *   itself and runs on its power-on set-up (sense_part_lost()).  A part
+ *   that is not online is probed again every SENSE_RETRY_MS.  Nothing is
+ *   acted on here: an offline part is reported, its readings stop, and the
+ *   bench is not disarmed.
  *
  * Pure C, no SDK (software development kit): host-tested against a fake
  * bus in test_ina228 and test_ina3221.
@@ -164,6 +167,11 @@ sense_err_t sense_part_write16(sense_part_t *p, uint8_t reg, uint16_t value);
  *  is the part's fails count taken ahead of the sample.  A part that the
  *  failed read took offline is left as it is. */
 void sense_part_sample_failed(sense_part_t *p, uint8_t before);
+
+/** An online part that answers and no longer holds the set-up written to
+ *  it: offline, and probed again SENSE_RETRY_MS on.  Nothing for a part
+ *  that is not online. */
+void sense_part_lost(sense_part_t *p);
 
 /* ------------------------------------------------------------- codec */
 

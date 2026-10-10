@@ -195,6 +195,9 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
     out->diag        = s->diag;
     out->have_win    = s->have_last;
     memcpy(out->win, s->last, sizeof(out->win));
+    memcpy(out->ring, s->ring, sizeof(out->ring));
+    out->i228_resets  = s->i228_resets;
+    out->i3221_resets = s->i3221_resets;
     out->run         = s->run;
     out->enc         = as5600_state(&s->enc.dev);
     if (s->cfg.as5600_en) {

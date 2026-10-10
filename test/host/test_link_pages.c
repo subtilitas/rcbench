@@ -505,6 +505,36 @@ TEST_CASE(the_encoder_extends_the_sense_page_without_moving_it)
     CHECK_EQ(LINK_SN_EN_ALL, 7u);
 }
 
+/*
+ * Protocol 4.11 adds the SERVO_WIN page after the BIND pages, gives SENSE's
+ * reserved register 31 a meaning and makes CAP_HOLD_MA signed.  Nothing
+ * moves: every page number an earlier minor had is where it was, and SENSE
+ * and SERVO_SENSE keep their sizes.
+ */
+TEST_CASE(servo_win_extends_the_map_without_moving_it)
+{
+    CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
+    CHECK(LINK_PROTOCOL_MINOR >= 11u);
+    CHECK_EQ(LINK_MINOR_SERVO_WIN, 11u);
+    CHECK_EQ(LINK_MINOR_BIND, 10u);
+    CHECK_EQ(LINK_PAGE_SENSE, 0x2B);
+    CHECK_EQ(LINK_PAGE_SERVO_SENSE, 0x2C);
+    CHECK_EQ(LINK_PAGE_TONE, 0x2D);
+    CHECK_EQ(LINK_PAGE_BIND_CFG, 0x2E);
+    CHECK_EQ(LINK_PAGE_BIND_OUT, 0x2F);
+    CHECK_EQ(LINK_PAGE_BIND, 0x30);
+    CHECK_EQ(LINK_PAGE_SERVO_WIN, 0x31);
+    CHECK_EQ(LINK_SN_COUNT, 32);
+    CHECK_EQ(LINK_SN_RESETS, 31);
+    CHECK_EQ(LINK_SS_COUNT, 25);
+    CHECK_EQ(LINK_SS_CAP_HOLD_MA, 15);
+    CHECK_EQ(LINK_SW_COUNT, 28);
+    CHECK(LINK_SW_COUNT <= LINK_MAX_REGS);
+    /* The header and the two newest windows are 16 registers: the read a
+     * poll makes, four data frames as the BENCH read. */
+    CHECK_EQ(LINK_SW_ENTRIES + 2 * LINK_SW_E_STRIDE, 16);
+}
+
 /* Two flags join BENCH at the bits that were free, and none of the old
  * ones changes: a 4.6 panel reads the same voltage, current and validity
  * from a 4.7 coprocessor and ignores what it does not know. */
@@ -686,6 +716,93 @@ TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
 
 /* The coprocessor's TONE handler is the page's rules and nothing more. */
 static tone_page_t s_tone;
+
+static void servo_win_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_win_read(&s_sense, off, n, out);
+}
+
+/* A 4.11 coprocessor: the 4.7 pages and SERVO_WIN, read only. */
+static const link_page_t k_pages_411[] = {
+    { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
+    { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
+    { LINK_PAGE_SENSE,    LINK_SN_COUNT, sense_read,    sense_write },
+    { LINK_PAGE_SERVO_SENSE, LINK_SS_COUNT, servo_sense_read,
+      servo_sense_write },
+    { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT, servo_win_read, NULL },
+};
+
+TEST_CASE(servo_win_is_served_read_only)
+{
+    fresh();
+    outputs_init(&s_out, 0u);
+    sense_page_init(&s_sense);
+    link_dev_init(&dev, k_pages_411, 5, &g, 0);
+    /* A window published, as core 1's snapshot does. */
+    sense_snap_t snap;
+    memset(&snap, 0, sizeof(snap));
+    snap.have_win = true;
+    snap.win[SENSE_SRC_CH1].number = 41u;
+    snap.ring[0] = (sense_ring_win_t){ .closed = true, .n_i = 50u,
+        .n_clip = 2u, .clip_hi = true, .i_mean_ua = 345000,
+        .i_min_ua = -2000, .i_max_ua = 1638000 };
+    sense_page_publish(&s_sense, &snap, 0u);
+
+    link_msg_t r;
+    /* The poll's read, 16 registers, and the whole page. */
+    CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, 16, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+    CHECK_EQ(r.count, 16);
+    CHECK_EQ(r.regs[LINK_SW_WINDOW], 41u);
+    CHECK_EQ(r.regs[LINK_SW_FLAGS], LINK_SW_HAVE);
+    CHECK_EQ(r.regs[LINK_SW_CAP_STATE], (uint16_t)LINK_CAP_IDLE);
+    CHECK_EQ(r.regs[LINK_SW_ENTRY(0u, LINK_SW_E_MEAN_MA)], 345u);
+    CHECK_EQ(r.regs[LINK_SW_ENTRY(0u, LINK_SW_E_MAX_MA)], 1638u);
+    CHECK_EQ((int16_t)r.regs[LINK_SW_ENTRY(0u, LINK_SW_E_MIN_MA)], -2);
+    CHECK_EQ(r.regs[LINK_SW_ENTRY(0u, LINK_SW_E_FLAGS)],
+             (uint16_t)(LINK_SW_E_CLOSED | LINK_SW_E_CURRENT
+                        | LINK_SW_E_CLIP_HI | 2u));
+    CHECK_EQ(r.regs[LINK_SW_ENTRY(1u, LINK_SW_E_FLAGS)], 0u);
+    CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, LINK_SW_COUNT, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+    CHECK_EQ(r.count, LINK_SW_COUNT);
+    /* Past the page's end. */
+    CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, LINK_SW_COUNT + 1, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_RANGE);
+
+    /* Every write is refused, header or entry, and changes nothing. */
+    const uint16_t v[4] = { 1u, 2u, 3u, 4u };
+    CHECK(write_page(LINK_PAGE_SERVO_WIN, LINK_SW_WINDOW, 4, v, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_READ_ONLY);
+    CHECK(write_page(LINK_PAGE_SERVO_WIN, LINK_SW_ENTRIES, 1, v, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_READ_ONLY);
+    CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, 4, &r));
+    CHECK_EQ(r.regs[LINK_SW_WINDOW], 41u);
+}
+
+/*
+ * A 4.11 panel and a 4.10 or older coprocessor.  The coprocessor has no
+ * SERVO_WIN page and answers BAD_PAGE, which is why a panel sends nothing
+ * there below minor 11; SENSE's register 31 reads 0, and SERVO_SENSE is
+ * where it was.
+ */
+TEST_CASE(an_older_coprocessor_has_no_servo_win_page_and_says_so)
+{
+    fresh_47();
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, 16, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+    CHECK(ask_read(LINK_PAGE_SERVO_SENSE, 0, LINK_SS_COUNT, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+    CHECK(ask_read(LINK_PAGE_SENSE, LINK_SN_RESETS, 1, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+    CHECK_EQ(r.regs[0], 0u);
+}
 
 static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
@@ -933,6 +1050,9 @@ int main(void)
     RUN(the_tone_page_extends_the_map_without_moving_it);
     RUN(the_encoder_extends_the_sense_page_without_moving_it);
     RUN(the_bench_flags_add_bits_5_and_6_and_move_none);
+    RUN(servo_win_extends_the_map_without_moving_it);
+    RUN(servo_win_is_served_read_only);
+    RUN(an_older_coprocessor_has_no_servo_win_page_and_says_so);
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
     RUN(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor);

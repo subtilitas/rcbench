@@ -21,17 +21,37 @@
  *   INA228 CURRENT, VBUS, alternating                 500 Hz each
  *   INA3221 CH2, CH3 current, sense_sched_fast_pair() 1000 Hz each
  *   CH2, CH3 current (pair off), CH1 to CH3 bus
- *   voltage, INA228 DIETEMP, DIAG_ALRT, ENERGY,
- *   CHARGE, INA3221 Mask/Enable                       50 Hz each
+ *   voltage, INA228 DIAG_ALRT, ENERGY, CHARGE         50 Hz each
+ *   INA228 DIETEMP, ADC_CONFIG, INA3221 Mask/Enable,
+ *   Configuration                                     25 Hz each
  *
  * Every tick reads CH1, the pair when on and one INA228 register, and
- * every second tick one item of the 50 Hz rotation: at most 690 µs of bus
- * time a tick without the encoder.  Bus time over a second, arithmetic
- * only: 32.9 %, 55.7 % with the pair.  Not counted: the controller's own
+ * every second tick one item of the rotation: SENSE_ROTATION slots, 40 ms,
+ * in which DIETEMP shares its slot with ADC_CONFIG and Mask/Enable with
+ * Configuration.  At most 690 µs of bus time a tick without the encoder;
+ * the tick in which a set-up register is read a second time is 742.5 µs.
+ * Bus time over a second, arithmetic only: 32.9 %, 55.7 % with the pair,
+ * a read-back as long as the read whose slot it takes.  Not counted: the
+ * controller's own
  * time between transactions, not measured.  The bus runs at 400 kHz only: at 100 kHz a
  * read takes 480 to 750 µs, and the tick does not fit.  A probe is 10
  * transactions on the INA228, 1.1 ms, and 4 on the INA3221: the ticks it
  * covers run late.
+ *
+ * A part that reset itself.  Both parts answer every read after a reset
+ * of their own (supply under about 1.26 V at the INA228, SLYS021A §7.4.2),
+ * on their power-on set-up: the INA228 at ADCRANGE 0, where a set-up at
+ * ADCRANGE 1 reads a quarter of the current; the INA3221 on all three
+ * channels with 1.1 ms conversions, a CH1 result every 6.6 ms.  The
+ * rotation reads ADC_CONFIG and Configuration back (ina228_verify(),
+ * ina3221_verify()).  A part found on another value than the one written
+ * goes offline and is probed and set up again SENSE_RETRY_MS on; its
+ * resets are counted modulo 256 (i228_resets, i3221_resets); the windows
+ * being filled from it are emptied; the INA228's totals are no longer the
+ * run's; and a capture under way ends lost.  A reset is found within one
+ * rotation, 40 ms: the samples read in that time are in the window before
+ * the one emptied when a window boundary lies between -- the INA228's at
+ * the reset range, the INA3221's right in value and up to 6.6 ms old.
  *
  * A channel the INA3221's set-up does not enable, and a part that is
  * disabled, not online or on a stuck bus, is not read: its windows stay
@@ -51,6 +71,15 @@
  * nothing: the last complete window stays readable until the next one
  * closes.  A tick late by more than a window leaves the windows it missed
  * out, so their numbers are skipped.
+ *
+ * The ring.  CH1's last SENSE_WIN_RING complete windows, newest first:
+ * entry k is the window numbered k before the newest, and reads not closed
+ * for a number that was skipped or lies before the first window.  A ring
+ * entry counts every CH1 sample: a clipped one is the end of the range it
+ * read (ina3221_end_ua(): 1.638 A or -1.6384 A on the 0.1 Ω shunt) in the
+ * mean, the highest and the lowest, and is counted in n_clip.  The ring's
+ * figures and sense_sched_window()'s differ in a window with a clipped
+ * sample, and only there.
  *
  * The run.  sense_sched_arm() is the edge into driving: the run's lowest
  * INA228 voltage and highest current and power start again, and the
@@ -141,8 +170,11 @@ extern "C" {
 #endif
 
 #define SENSE_WINDOW_MS      50u   /**< one window                        */
-/** Items in the 50 Hz rotation; one is read every 2 ms. */
-#define SENSE_ROTATION       10u
+/** Slots in the rotation; one is read every 2 ms, so a rotation is 40 ms.
+ *  An item read at 50 Hz has two of them. */
+#define SENSE_ROTATION       20u
+/** CH1 windows the ring keeps: 200 ms. */
+#define SENSE_WIN_RING        4u
 /** The capture's filter: a moving mean of 4 samples, 4 ms.  A step shows
  *  half after 1.5 samples and whole after 3: a fall from a moving current
  *  far above the band arrives 3 ms late.  Chosen, not measured: the noise
@@ -217,9 +249,23 @@ typedef struct {
 typedef struct {
     int64_t  i_sum, v_sum;
     uint16_t n_i, n_v;
+    uint16_t n_hi, n_lo;  /**< current samples at the top, at the bottom  */
     bool     clip_hi, clip_lo;
     int32_t  i_min, i_max, v_min;
 } sense_acc_t;
+
+/** One CH1 window as the ring keeps it. */
+typedef struct {
+    bool     closed;      /**< a window closed with this entry's number   */
+    uint16_t n_i;         /**< current samples, clipped ones among them   */
+    uint16_t n_clip;      /**< of them at an end of the range             */
+    uint16_t n_v;         /**< voltage samples                            */
+    bool     clip_hi;     /**< a current sample at the top of the range   */
+    bool     clip_lo;     /**< one at the bottom                          */
+    int32_t  i_mean_ua, i_min_ua, i_max_ua;   /**< a clipped sample at the
+                               end of the range it read; 0 with n_i 0     */
+    int32_t  v_mean_uv, v_min_uv;             /**< 0 with n_v 0           */
+} sense_ring_win_t;
 
 /** The run since sense_sched_arm(), from the INA228. */
 typedef struct {
@@ -319,6 +365,8 @@ typedef struct {
     ina228_setup_err_t  i228_setup;   /**< INA228_SETUP_OK when disabled  */
     ina3221_setup_err_t i3221_setup;
     int32_t  ch_clip_ua;     /**< a clipped INA3221 sample is at least this */
+    int32_t  ch_top_ua;      /**< the top code of the INA3221's range     */
+    int32_t  ch_bottom_ua;   /**< the bottom code                         */
     uint32_t ticks;
     uint32_t rot;            /**< rotation items read                     */
     bool     started;
@@ -327,6 +375,11 @@ typedef struct {
     sense_acc_t    acc[SENSE_SRC_COUNT];
     sense_window_t last[SENSE_SRC_COUNT];
     bool     have_last;
+    /* CH1's last windows, newest first; ring_at numbers entry 0. */
+    sense_ring_win_t ring[SENSE_WIN_RING];
+    uint64_t ring_at;
+    uint8_t  i228_resets;    /**< INA228 found reset, modulo 256           */
+    uint8_t  i3221_resets;   /**< the INA3221, modulo 256                  */
     bool     fast_pair;
     bool     have_vbus;      /**< vbus_uv is the last INA228 slot's voltage */
     int32_t  vbus_uv;
@@ -362,6 +415,12 @@ void sense_sched_arm(sense_sched_t *s);
 /** The last complete window of @p src; false before one has closed. */
 bool sense_sched_window(const sense_sched_t *s, sense_src_t src,
                         sense_window_t *out);
+
+/** CH1's window numbered @p back before the newest complete one, @p back
+ *  under SENSE_WIN_RING; false, and @p out not closed, for a number that
+ *  was skipped, lies before the first window, or before one has closed. */
+bool sense_sched_ring(const sense_sched_t *s, unsigned back,
+                      sense_ring_win_t *out);
 
 /** Arm a capture on CH1 with @p levels; rise_ua SENSE_CAP_RISE_AUTO takes
  *  the level before the command from CH1.  Refused, and nothing changed,
