@@ -488,7 +488,13 @@ def run_seed(parse_dump, seed, count):
     return problems, both_ok, both_bad
 
 
-def main():
+def least(count):
+    """The fewest of @count cases that reach each verdict in a run that
+    compares something: 1 in 20, and 1 at least."""
+    return max(1, count // 20)
+
+
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("parse_dump", help="the esc_parse_dump binary")
     ap.add_argument("--seed", type=int, action="append",
@@ -496,7 +502,9 @@ def main():
                          "(default: %s)" % ", ".join(map(str, SEEDS)))
     ap.add_argument("--count", type=int, default=COUNT,
                     help="cases for each seed (default: %d)" % COUNT)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
+    if args.count < 1:
+        ap.error("--count: not 1 or more")
     # As the generator's main() does: a whole number of any length.
     if hasattr(sys, "set_int_max_str_digits"):
         sys.set_int_max_str_digits(0)
@@ -513,8 +521,9 @@ def main():
             print("... and %d more" % (len(problems) - 5))
         failed = failed or bool(problems)
         # A run in which nothing is taken, or nothing refused, compares
-        # nothing: the cases have stopped reaching both verdicts.
-        if both_ok < args.count // 20 or both_bad < args.count // 20:
+        # nothing: the cases have stopped reaching both verdicts.  So a
+        # run of under 20 cases fails unless it has one of each.
+        if both_ok < least(args.count) or both_bad < least(args.count):
             print("seed %d: too few cases reach one of the verdicts"
                   % seed)
             failed = True
