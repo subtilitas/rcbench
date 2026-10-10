@@ -15,6 +15,15 @@ a run ends is held to esc_stick_reason_is_fault().  A German page that
 quotes an interface string in backticks quotes the German the screen shows,
 not its English.
 
+Numbers a page states are held to the constant that sets them: the link
+protocol's version, the heartbeat and link timings, the heartbeat and CAN
+pins, the coverage floors and the stack margin, each as one sentence in
+FACTS below; every table row that names a C constant; the ceiling table in
+Performance.md against the --max-lines arguments in ci.yml; and the pin
+counts in hardware/docs/Pins.md against pinmap.json.  A sentence in FACTS
+that is reworded so its pattern matches nowhere fails, so a check does not
+lapse with an edit.
+
     python3 tools/check_docs.py
 
 Prints one line per problem and exits 1 if there were any.  Frame-cost numbers
@@ -786,6 +795,442 @@ def check_red_light_tables(problems: list[str]) -> None:
                                 f"row for {word}, which is no end of a run")
 
 
+# --- numbers the docs state, held to the constants that set them -------------
+
+DEFINE_RE = re.compile(
+    r"^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]+((?:[^\n\\]|\\\n)+)$", re.M)
+C_COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
+
+# Where a constant the docs quote is defined.  Every #define with a value in
+# these trees is read; one defined with two different values is ambiguous
+# and counts as unknown, so a fact that names it fails.
+DEFINE_DIRS = ("shared", "firmware")
+
+LINK_PAGES_H = "shared/link/include/link_pages.h"
+CI_YML = REPO / ".github" / "workflows" / "ci.yml"
+
+
+def defines() -> dict[str, str | None]:
+    """NAME -> the text of its value, for every #define with one under
+    shared/ and firmware/; None where two definitions disagree."""
+    import os
+    found: dict[str, str | None] = {}
+    for base in DEFINE_DIRS:
+        for dp, dn, fn in os.walk(REPO / base):
+            dn[:] = sorted(d for d in dn if not d.startswith("build")
+                           and d != "managed_components")
+            for f in sorted(fn):
+                if not f.endswith((".c", ".h")):
+                    continue
+                text = C_COMMENT.sub(" ", read(pathlib.Path(dp) / f))
+                for name, value in DEFINE_RE.findall(text):
+                    value = " ".join(value.replace("\\\n", " ").split())
+                    if not value:
+                        continue
+                    if name in found and found[name] != value:
+                        found[name] = None
+                    else:
+                        found[name] = value
+    return found
+
+
+C_NUMBER = re.compile(
+    r"\b(0[xX][0-9A-Fa-f]+|\d+\.\d*(?:[eE][-+]?\d+)?|\d+)[uUlLfF]*\b")
+
+
+def constant(name: str, table: dict[str, str | None],
+             depth: int = 0) -> float | None:
+    """The value of the #define @p name: a number, another constant, or
+    arithmetic over both.  None when it is not one, or not known."""
+    import ast
+    text = table.get(name)
+    if text is None or depth > 8:
+        return None
+    # GPIO_NUM_6 is ESP-IDF's name for pin 6.
+    text = re.sub(r"\bGPIO_NUM_(\d+)\b", r"\1", text)
+    text = re.sub(r"\(\s*(?:u?int\d+_t|unsigned|int|float)\s*\)", "", text)
+
+    def number(m: re.Match[str]) -> str:
+        raw = m.group(1)
+        return str(int(raw, 16)) if raw[:2].lower() == "0x" else raw
+
+    text = C_NUMBER.sub(number, text)
+
+    def evaluate(node: ast.AST) -> float | None:
+        if isinstance(node, ast.Expression):
+            return evaluate(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value,
+                                                         (int, float)):
+            return float(node.value)
+        if isinstance(node, ast.Name):
+            return constant(node.id, table, depth + 1)
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            inner = evaluate(node.operand)
+            return None if inner is None else -inner
+        if isinstance(node, ast.BinOp):
+            a, b = evaluate(node.left), evaluate(node.right)
+            if a is None or b is None:
+                return None
+            if isinstance(node.op, ast.Add):
+                return a + b
+            if isinstance(node.op, ast.Sub):
+                return a - b
+            if isinstance(node.op, ast.Mult):
+                return a * b
+            if isinstance(node.op, ast.Div) and b != 0:
+                return a / b
+        return None
+
+    try:
+        return evaluate(ast.parse(text.strip(), mode="eval"))
+    except SyntaxError:
+        return None
+
+
+def doc_number(text: str, german: bool) -> float | None:
+    """A number as a page writes it: 15,600 and 0.020 in English, 15 600 and
+    0,020 in German."""
+    text = re.sub(r"[\s  ]", "", text)
+    text = text.replace(",", ".") if german else text.replace(",", "")
+    try:
+        return float(text)
+    except ValueError:
+        return WORDS_DE.get(text.lower()) if german else as_number(text)
+
+
+WORDS_DE = {
+    "eine": 1, "zwei": 2, "drei": 3, "vier": 4, "fünf": 5, "sechs": 6,
+    "sieben": 7, "acht": 8, "neun": 9, "zehn": 10, "elf": 11, "zwölf": 12,
+}
+
+
+def python_constant(tool: str, name: str) -> float | None:
+    """A number a tool assigns to a module-level name."""
+    m = re.search(rf"^{name}\s*=\s*([0-9.]+)\s*$",
+                  read(REPO / "tools" / tool), re.M)
+    return float(m.group(1)) if m else None
+
+
+# One statement a page makes: the page, a pattern over its text with line
+# breaks folded to spaces, and what each group has to read.  A value is a
+# constant's name, arithmetic over constants, a number, or (name, factor)
+# for a constant in another unit.  A pattern that matches nowhere fails: a
+# reworded sentence takes its check along.
+N = r"(\d[\d,.]*)"
+FACTS = [
+    # The link protocol's version.
+    ("docs/Link.md", rf"Protocol version {N}\.{N}\.",
+     ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
+    ("docs/Link-de.md", rf"Protokollversion {N}\.{N}\.",
+     ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
+    ("STATUS.md", rf"Protocol version {N}\.{N}\.",
+     ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
+    # The heartbeat.
+    ("docs/Safety.md", rf"\| Panel edge interval \| {N} ms \|",
+     ("HEARTBEAT_PERIOD_MS",)),
+    ("docs/Safety-de.md", rf"\| Flankenabstand des Panels \| {N} ms \|",
+     ("HEARTBEAT_PERIOD_MS",)),
+    ("docs/Safety.md", rf"\| Accepted interval \| {N}–{N} ms \|",
+     ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS")),
+    ("docs/Safety-de.md", rf"\| Akzeptierter Abstand \| {N}–{N} ms \|",
+     ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS")),
+    ("docs/Safety.md",
+     rf"\| Good intervals before the line is trusted \| {N} \| {N} ms",
+     ("HEARTBEAT_GOOD_RUN", "HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS")),
+    ("docs/Safety-de.md",
+     rf"\| Gute Abstände, bevor der Leitung vertraut wird \| {N} \| {N} ms",
+     ("HEARTBEAT_GOOD_RUN", "HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS")),
+    ("docs/Safety.md", rf"The panel waits {N} ms, then reads the STATUS",
+     ("HEARTBEAT_SETTLE_MS",)),
+    ("docs/Safety-de.md", rf"Das Panel wartet {N} ms, liest dann",
+     ("HEARTBEAT_SETTLE_MS",)),
+    ("docs/Safety.md",
+     rf"one interval under {N} ms or over {N} ms, or {N} ms without an edge",
+     ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS",
+      "HEARTBEAT_MAX_GAP_MS")),
+    ("docs/Safety-de.md",
+     rf"ein Abstand unter {N} ms oder über {N} ms, oder {N} ms ohne Flanke",
+     ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS",
+      "HEARTBEAT_MAX_GAP_MS")),
+    ("STATUS.md", rf"\({N} to {N} ms between edges",
+     ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS")),
+    ("STATUS.md", rf"The task runs every {N} ms; the line edges every {N} ms",
+     ("CONTROL_PERIOD_MS", "HEARTBEAT_PERIOD_MS")),
+    ("docs/Safety.md", rf"runs every {N} ms on the core that does not draw",
+     ("CONTROL_PERIOD_MS",)),
+    ("docs/Safety-de.md", rf"alle {N} ms auf dem Kern läuft, der nicht",
+     ("CONTROL_PERIOD_MS",)),
+    # The link's two time limits.
+    ("docs/Safety.md", rf"Coprocessor silence watchdog, {N} ms",
+     ("LINK_DEV_SILENCE_MS",)),
+    ("docs/Safety-de.md", rf"Stille-Watchdog des Koprozessors, {N} ms",
+     ("LINK_DEV_SILENCE_MS",)),
+    ("docs/Safety.md", rf"\| Link silence \| {N} ms without a request",
+     ("LINK_DEV_SILENCE_MS",)),
+    ("docs/Safety-de.md", rf"\| Stille auf dem Link \| {N} ms ohne Anfrage",
+     ("LINK_DEV_SILENCE_MS",)),
+    ("docs/Link.md", rf"failsafe values after {N} ms without a request",
+     ("LINK_DEV_SILENCE_MS",)),
+    ("STATUS.md", rf"fails safe after {N} ms of link silence",
+     ("LINK_DEV_SILENCE_MS",)),
+    ("docs/Safety.md", rf"after the {N} ms exchange timeout",
+     ("LINK_HOST_TIMEOUT_MS",)),
+    ("docs/Safety-de.md", rf"nach dem Timeout von {N} ms bemerkt",
+     ("LINK_HOST_TIMEOUT_MS",)),
+    ("STATUS.md", rf"the panel escalates after {N} s\.",
+     (("LINK_HOST_TIMEOUT_MS", 0.001),)),
+    # Pins.
+    ("docs/Safety.md", rf"The safety line is panel GPIO{N} ",
+     ("PANEL_HEARTBEAT_PIN",)),
+    ("docs/Safety-de.md", rf"Die Sicherheitsleitung ist GPIO{N} ",
+     ("PANEL_HEARTBEAT_PIN",)),
+    ("docs/Safety.md", rf"coprocessor's GP{N} by a direct wire",
+     ("IOMCU_HEARTBEAT_PIN",)),
+    ("docs/Safety-de.md", rf"den GP{N} des Koprozessors",
+     ("IOMCU_HEARTBEAT_PIN",)),
+    ("STATUS.md", rf"control task drives GPIO{N} \(J8\)",
+     ("PANEL_HEARTBEAT_PIN",)),
+    ("docs/Link.md", rf"on GPIO{N} \(RX\) and GPIO{N} \(TX\)",
+     ("PANEL_CAN_PIN_RX", "PANEL_CAN_PIN_TX")),
+    ("docs/Link-de.md", rf"auf GPIO{N} \(RX\) und GPIO{N} \(TX",
+     ("PANEL_CAN_PIN_RX", "PANEL_CAN_PIN_TX")),
+    ("docs/Link.md",
+     rf"SCK GP{N}, MOSI GP{N}, MISO GP{N}, CS GP{N}, INT GP{N};",
+     ("IOMCU_CAN_PIN_SCK", "IOMCU_CAN_PIN_MOSI", "IOMCU_CAN_PIN_MISO",
+      "IOMCU_CAN_PIN_CS", "IOMCU_CAN_PIN_INT")),
+    ("docs/Link-de.md",
+     rf"SCK GP{N}, MOSI GP{N}, MISO GP{N}, CS GP{N}, INT GP{N};",
+     ("IOMCU_CAN_PIN_SCK", "IOMCU_CAN_PIN_MOSI", "IOMCU_CAN_PIN_MISO",
+      "IOMCU_CAN_PIN_CS", "IOMCU_CAN_PIN_INT")),
+    ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N} Mbit/s",
+     (("IOMCU_CAN_BITRATE", 1e-6),)),
+    ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N} Mbit/s",
+     (("PANEL_CAN_BITRATE", 1e-6),)),
+    # Limits a check enforces.
+    ("CONTRIBUTING.md",
+     rf"coverage drops below {N}% overall, or any single file below {N}%",
+     ("coverage.py:MIN_TOTAL_COVERAGE", "coverage.py:MIN_FILE_COVERAGE")),
+    ("STATUS.md", rf"Coverage floors: {N}% overall, {N}% for every file",
+     ("coverage.py:MIN_TOTAL_COVERAGE", "coverage.py:MIN_FILE_COVERAGE")),
+    ("codecov.yml", rf"{N}% overall and {N}% for any single file",
+     ("coverage.py:MIN_TOTAL_COVERAGE", "coverage.py:MIN_FILE_COVERAGE")),
+    ("codecov.yml", rf"project: default: target: {N}%",
+     ("coverage.py:MIN_TOTAL_COVERAGE",)),
+    ("CONTRIBUTING.md", rf"exceeds its stack less {N} bytes",
+     ("stack_check.py:MARGIN",)),
+    ("STATUS.md", rf"deepest call chain to its stack less {N} bytes",
+     ("stack_check.py:MARGIN",)),
+    ("docs/Performance.md", rf"exceeds its stack less {N} bytes",
+     ("stack_check.py:MARGIN",)),
+    ("docs/Performance-de.md", rf"abzüglich {N} Bytes überschreitet",
+     ("stack_check.py:MARGIN",)),
+]
+
+
+def fact_value(want, table: dict[str, str | None]) -> float | None:
+    factor = 1.0
+    if isinstance(want, tuple):
+        want, factor = want
+    if isinstance(want, (int, float)):
+        return float(want) * factor
+    if ":" in want:
+        tool, name = want.split(":")
+        value = python_constant(tool, name)
+    else:
+        value = constant("", {**table, "": want})
+    return None if value is None else value * factor
+
+
+def same(a: float, b: float) -> bool:
+    return abs(a - b) <= 1e-6 * max(1.0, abs(a), abs(b))
+
+
+def check_facts(problems: list[str], facts=None,
+                table: dict[str, str | None] | None = None) -> None:
+    """Every statement in FACTS reads what its constant is."""
+    table = defines() if table is None else table
+    for page, pattern, wants in (FACTS if facts is None else facts):
+        path = REPO / page
+        name = path.name
+        # Comment markers of a YAML file go with the line breaks.
+        text = " ".join(re.sub(r"^\s*#", "", read(path), flags=re.M).split())
+        matches = list(re.finditer(pattern, text))
+        if not matches:
+            problems.append(f"{name}: no statement matches /{pattern}/, "
+                            f"which held {', '.join(map(str, wants))}")
+            continue
+        german = name.endswith(DE_SUFFIX)
+        for m in matches:
+            for group, want in zip(m.groups(), wants, strict=True):
+                value = fact_value(want, table)
+                label = want[0] if isinstance(want, tuple) else want
+                if value is None:
+                    problems.append(f"{name}: {label} is not a constant "
+                                    "with one value in the tree")
+                    continue
+                said = doc_number(group, german)
+                if said is None or not same(said, value):
+                    problems.append(
+                        f"{name}: says {group} in '{m.group(0)}'; "
+                        f"{label} makes it {value:g}")
+
+
+CONSTANT_ROW = re.compile(
+    r"^\|\s*`([A-Z][A-Z0-9_]+)`\s*\|\s*([-+]?\d[\d.,  ]*?)\s*"
+    r"([A-Za-zµ%°]*)\s*\|", re.M)
+
+
+def check_constant_tables(problems: list[str],
+                          table: dict[str, str | None] | None = None,
+                          docs: list[pathlib.Path] | None = None) -> None:
+    """A table row that gives a C constant by name gives its value: the
+    servo test's constants in Servo.md and Servo-de.md, and any row of the
+    same shape, `| \\`NAME\\` | 1000 ms |`, on any page."""
+    table = defines() if table is None else table
+    for page in (linked_pages() if docs is None else docs):
+        german = page.name.endswith(DE_SUFFIX)
+        text = read(page)
+        for m in CONSTANT_ROW.finditer(text):
+            name, said_text = m.group(1), m.group(2)
+            if name not in table:
+                continue                  # a register or a label, no #define
+            line = text.count("\n", 0, m.start()) + 1
+            value = constant(name, table)
+            said = doc_number(said_text, german)
+            if value is None:
+                problems.append(f"{page.name}:{line}: {name} is not a "
+                                "constant with one value in the tree")
+            elif said is None or not same(said, value):
+                problems.append(f"{page.name}:{line}: gives {name} as "
+                                f"{said_text.strip()}; the header says "
+                                f"{value:g}")
+
+
+# --- the ceiling table -------------------------------------------------------
+
+CEILING_PAGES = (
+    (DOCS / "Performance.md", "| Modes | Ceiling (fills) | Catches |"),
+    (DOCS / "Performance-de.md", "| Modi | Obergrenze (Fills) | Fängt |"),
+)
+
+
+def ci_ceilings(text: str) -> list[tuple[frozenset[str], int]]:
+    """(modes, ceiling) for every frame_cost.py call with --max-lines in
+    the CI workflow."""
+    folded = re.sub(r"\n\s+(?=&&|--|[a-z])", " ", text)
+    out = []
+    for m in re.finditer(
+            r"tools/frame_cost\.py ([a-z0-9 -]*?)\s*--max-lines (\d+)",
+            folded):
+        out.append((frozenset(m.group(1).split()), int(m.group(2))))
+    return out
+
+
+def doc_ceilings(text: str, header: str, german: bool):
+    """(named modes, count, suffix, ceiling) for every row of the ceiling
+    table: the modes a row names in backticks, or how many it speaks of
+    and the suffix they share."""
+    if header not in text:
+        return None
+    rows = text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]
+    out = []
+    for row in rows:
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        quoted = re.findall(r"`([a-z0-9-]+)`", cells[0])
+        suffix = next((q for q in quoted if q.startswith("-")), None)
+        named = frozenset(q for q in quoted if not q.startswith("-"))
+        count = None
+        if not named:
+            for word in re.findall(r"\w+", cells[0]):
+                n = doc_number(word, german)
+                if n is not None:
+                    count = int(n)
+                    break
+        ceiling = doc_number(cells[1], german)
+        out.append((named, count, suffix,
+                    None if ceiling is None else int(ceiling), cells[0]))
+    return out
+
+
+def check_ceilings(problems: list[str], ci_text: str | None = None,
+                   pages=None) -> None:
+    """The ceiling table in Performance.md gives, for every mode CI holds,
+    the ceiling CI holds it to, and has no row CI does not run."""
+    calls = ci_ceilings(read(CI_YML) if ci_text is None else ci_text)
+    if not calls:
+        problems.append("ci.yml: no frame_cost.py call with --max-lines")
+        return
+    for page, header in (CEILING_PAGES if pages is None else pages):
+        german = page.name.endswith(DE_SUFFIX)
+        rows = doc_ceilings(read(page), header, german)
+        if rows is None:
+            problems.append(f"{page.name}: no table headed '{header}'")
+            continue
+        left = list(calls)
+        for named, count, suffix, ceiling, label in rows:
+            hit = None
+            for call in left:
+                modes, limit = call
+                if named:
+                    fits = modes == named
+                else:
+                    fits = (count == len(modes) and all(
+                        mode.endswith(suffix) if suffix else "-" not in mode
+                        for mode in modes))
+                if fits:
+                    hit = call
+                    break
+            if hit is None:
+                problems.append(f"{page.name}: the ceiling table's row "
+                                f"'{label}' is no frame_cost.py call in "
+                                "ci.yml")
+                continue
+            left.remove(hit)
+            if ceiling != hit[1]:
+                problems.append(f"{page.name}: the ceiling table gives "
+                                f"'{label}' as {ceiling}; ci.yml holds it "
+                                f"to {hit[1]}")
+        for modes, limit in left:
+            problems.append(f"{page.name}: the ceiling table has no row "
+                            f"for {', '.join(sorted(modes))}, which ci.yml "
+                            f"holds to {limit}")
+
+
+# --- the IO board's pin count ------------------------------------------------
+
+PINMAP = HARDWARE / "docs" / "pinmap.json"
+PIN_ROWS = {"main": "Main coprocessor", "measurement":
+            "Measurement coprocessor"}
+
+
+def check_pin_counts(problems: list[str]) -> None:
+    """Pins.md's count of the GPIO each coprocessor uses is the number of
+    pins pinmap.json gives it, and STATUS.md repeats the same two."""
+    import json
+    chips = {c.get("chip"): len(c.get("pins", []))
+             for c in json.loads(read(PINMAP)).get("chips", [])}
+    text = read(HARDWARE / "docs" / "Pins.md")
+    for chip, label in PIN_ROWS.items():
+        m = re.search(rf"^\| {label} \| (\d+) of (\d+) \| (\d+)", text, re.M)
+        if m is None:
+            problems.append(f"Pins.md: no row for the {label.lower()}")
+            continue
+        used, total, free = (int(g) for g in m.groups())
+        if used != chips.get(chip) or free != total - used:
+            problems.append(
+                f"Pins.md: says the {label.lower()} uses {used} of {total} "
+                f"with {free} free; pinmap.json gives it {chips.get(chip)}")
+    m = re.search(r"uses (\d+) and (\d+) of their (\d+) GPIO",
+                  " ".join(read(REPO / "STATUS.md").split()))
+    if m is None:
+        problems.append("STATUS.md: no 'uses <N> and <N> of their 48 GPIO'")
+    elif (int(m.group(1)), int(m.group(2))) != (chips.get("main"),
+                                                chips.get("measurement")):
+        problems.append(f"STATUS.md: says {m.group(0)}; pinmap.json gives "
+                        f"{chips.get('main')} and "
+                        f"{chips.get('measurement')}")
+
+
 def check_spdx(problems: list[str]) -> None:
     """Every source file carries an SPDX (Software Package Data Exchange)
     licence line.  A new file without one fails the build.
@@ -819,6 +1264,11 @@ def main() -> int:
     check_compile_table(problems)
     check_screenshot_count(problems)
     check_red_light_tables(problems)
+    table = defines()
+    check_facts(problems, table=table)
+    check_constant_tables(problems, table=table)
+    check_ceilings(problems)
+    check_pin_counts(problems)
     check_spdx(problems)
 
     for problem in problems:

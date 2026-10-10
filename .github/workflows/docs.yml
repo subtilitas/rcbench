@@ -6,6 +6,12 @@ name: Docs
 #
 # The wiki must exist before the first run: create one page by hand in the
 # repository's Wiki tab, otherwise the clone below fails with 404.
+#
+# A push to main starts this workflow and CI (continuous integration) at the
+# same moment.  The job waits for the CI run on its commit and publishes
+# only when that run passed, so a page reaches the wiki after check_docs.py
+# and the rest of CI have held it to the tree, and a commit CI fails
+# publishes nothing.  A manual run is held to the same rule.
 
 on:
   push:
@@ -21,6 +27,8 @@ concurrency:
 
 permissions:
   contents: write
+  # To read the CI run of the commit being published.
+  actions: read
 
 jobs:
   publish:
@@ -30,6 +38,15 @@ jobs:
       - uses: actions/checkout@v6
         with:
           path: source
+
+      # Before anything is cloned or pushed.  ci_gate.py waits up to 5400 s
+      # for the CI run on this commit and fails unless one passed.
+      - name: CI passed on this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: python3 source/tools/ci_gate.py --repo "$REPO" --sha "$SHA"
 
       # A wiki with no page does not exist as a git repository and cannot be
       # created over the API (application programming interface), only by

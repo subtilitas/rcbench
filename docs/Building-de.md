@@ -11,8 +11,8 @@ Koprozessor-Firmware (pico-sdk).
 ```
 rcbench/
   docs/                   Wiki-Quelle, Englisch und Deutsch
-  tools/                  render_ui · coverage · check_docs · frame_cost
-                          gen_font · wiki_links
+  tools/                  die Prüfungen, Generatoren und Messungen unten
+  test/tools/             pytest-Fälle für die Werkzeuge
   shared/                 reines C: kein ESP-IDF, kein pico-sdk, keine FreeRTOS-Typen
     gfx/                  Rasterizer und drei Fonts
     touch/                Koordinaten- und Event-Mapping
@@ -156,28 +156,39 @@ bis 32 GPIO (General-Purpose Input/Output).
 
 | Werkzeug | Zweck |
 | --- | --- |
-| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94 % gesamt, 85 % je Datei) und schreibt die Tabelle in `STATUS.md`; `--check` schlägt bei Abweichung fehl |
-| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
+| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94 % gesamt, 85 % je Datei) und schreibt die Tabelle in `STATUS.md` und den Wert in `README.md` und `README-de.md`; `--check` schlägt bei Abweichung fehl, ebenso bei einer C-Datei unter `shared/`, die nicht in der Messung steht oder keine Zähler hat |
+| `tools/mutate.py` | ändert in einer Kopie des Baums jeweils eine Zeile von `shared/` (ein Vergleich umgedreht, eine Grenze plus oder minus 1, eine gespeicherte Zuweisung entfernt), baut die Host-Suite, führt sie aus und meldet die Änderungen, mit denen die Suite besteht; standardmäßig die seit `origin/main` geänderten Zeilen, höchstens 60 Mutanten und 2700 s; CI führt es bei Pull Requests aus und schlägt bei einem Überlebenden nicht fehl |
+| `tools/check_sanitizers.py` | konfiguriert den Sanitizer-Build und schlägt fehl, wenn nicht jeder Compile-Befehl unter `shared/` und `test/host/` `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` und `-fno-omit-frame-pointer` trägt und kein anderes Flag dieser Familie |
+| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, die Tabelle der Obergrenzen in [Performance](Performance-de.md) stimmt mit den `--max-lines`-Argumenten in `ci.yml` überein, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt `Page.md`-Links zu `Page` um, für das Wiki, das Seiten über ihren Titel adressiert |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
 | `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts aus DejaVu Sans Mono neu, die beiden Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
-| `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein deutscher Text dort überläuft, wo er gezeichnet wird ([Sprache](Language-de.md)) |
+| `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
 | `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) |
-| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann ([Performance](Performance-de.md#stacks)) |
+| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das Koprozessor-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der Koprozessor-Tabelle |
+| `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/pinmap.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
+| `tools/gen_board_art.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Board-Grafik und der ESC-Profile aus ihren PNG- und JSON-Quellen; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
+| `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
+| `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
 
 `gen_font.py` sucht den Font in `RCBENCH_FONT_DIR`, dann in
 `~/.local/share/fonts`, dann in den Systemfontverzeichnissen. `frame_cost.py`
 braucht `valgrind`; die übrigen Werkzeuge brauchen einen C-Compiler und
-Pillow.
+Pillow. `mutate.py` braucht außerdem git und CMake, `ci_gate.py` das
+Kommando `gh`.
 
 ## CI
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy, cppcheck und ruff; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks; Koprozessor-Build mit pico-sdk 2.3.0; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
-| `docs.yml` | Push auf `main`, der `docs/` berührt | spiegelt `docs/` ins GitHub-Wiki |
-| `release.yml` | Tag `v*` | baut beide Images, packt sie mit Prüfsummen, erstellt ein Release und übernimmt die PDFs der Bauanleitung vom letzten Release |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy und cppcheck über `shared/`, die Klassen warning, performance und portability von cppcheck über `firmware/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks, v5.4 mit der Stack-Tabelle dieses Wikis; Koprozessor-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
+| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen, erstellt ein Release und übernimmt die PDFs der Bauanleitung vom letzten Release |
+
+clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
+die Header von ESP-IDF und pico-sdk, die der Analyse-Job nicht hat. Die
+Klasse style von cppcheck läuft ebenfalls nicht über `firmware/`.
 
 Jede Prüfung läuft lokal;
 [CONTRIBUTING.md](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md)

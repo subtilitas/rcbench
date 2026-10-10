@@ -154,6 +154,10 @@ would repaint identical pixels, drawing slower would drop samples. CI
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
 | the eight `-chrome` modes | 45,000 | a full repaint growing |
 
+`tools/check_docs.py` holds this table to the `--max-lines` arguments in
+`.github/workflows/ci.yml`: a ceiling that differs, a mode CI holds with no
+row here, and a row CI does not run each fail.
+
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the
 region that was repainted.
@@ -191,12 +195,68 @@ the deepest frame. The other
 bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table: 169 such calls are
+  which the tool reads out of every screen's table: 176 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
   the ELF;
 - recursion, which the tool counts once.
+
+CI runs the tool with `--check-doc` on the ESP-IDF v5.4 build, which fails
+when the table above or the count of calls through a pointer differs from
+that build.
+
+### The coprocessor
+
+`tools/stack_check.py --iomcu` reads the RP2350 image the same way. Core 0
+runs `main()` on the pico-sdk's main stack: 4096 bytes, `__StackBottom` to
+`__StackTop` in the ELF, set by `PICO_STACK_SIZE=0x1000` in
+`firmware/iomcu/CMakeLists.txt`. Core 1 runs `core1_main()` on the 4096-byte array
+its launch passes. Neither stack has a guard. An interrupt runs on the stack
+of the core it interrupts, so each core is charged its deepest chain and one
+interrupt: a 108-byte exception frame and the deepest handler the image
+installs. CI runs the tool after the coprocessor build and fails when a
+core's chain, one interrupt and a margin of 256 bytes exceed its stack.
+
+| Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| core 0 | `main` | 4,096 | 1,516 | 528 | 1,796 |
+| core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
+
+Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
+13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row
+differs from that build. Core 1's row is not held: its chain moves with the
+compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
+runner's packaged one.
+
+Core 0's deepest chain is a request that binds an output and fails in the
+pico-sdk: `main` (352 bytes), `can_service` (344), `link_dev_dispatch`,
+`slots_write`, `slots_take`, `outputs_hw_apply_only`, `out_dshot_bind`, the
+pico-sdk's claim of a PIO (programmable input/output) state machine, and
+`panic()` with what it calls to print, 228 bytes. The deepest handler is
+the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
+ends in `panic()` as well.
+
+Each depth is a lower bound:
+
+- calls through a register are not followed, except a page's read and write
+  handler, which the tool reads out of the link's page table: 70 such calls
+  are reachable from `main`;
+- the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
+  `strstr()` calls it for a needle of 255 characters or more, and the two
+  needles in the firmware are 3 and 5 characters. The tool fails on a
+  `strstr()` call under `shared/` or `firmware/iomcu/src` whose needle is
+  not a string literal under 255 characters;
+- 17 hand-written arithmetic routines of the pico-sdk carry no size in the
+  ELF, and their frames are not read;
+- one interrupt is counted, not a second one on top of it;
+- recursion is counted once.
+
+Core 0's stack is the whole of the RAM region `SCRATCH_Y`, 0x20081000 to
+0x20082000; the image places nothing else in it, and the link fails when
+something is. Below it, in `SCRATCH_X`, lies the 4096-byte array the
+pico-sdk reserves as its own core 1 stack, which this image does not run
+on. The same definition sizes that array.
 
 `-v` lists all of them, and each task's deepest chain.
 

@@ -342,6 +342,8 @@ bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out)
     }
     s->armed = false;
     uint32_t line = 0u;
+    /* cppcheck-suppress uninitvar
+     * The loop above fills the n words dshot_rx_bits() reads. */
     if (!dshot_rx_bits(cap, n, DSHOT_RX_OVERSAMPLE, &line)) {
         return false;
     }

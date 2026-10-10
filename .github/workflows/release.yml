@@ -2,6 +2,13 @@ name: Release
 
 # A tag ships both processors.  The panel refuses to arm when the protocol
 # versions disagree, so a release with one image is not runnable.
+#
+# A pushed tag starts this workflow and CI (continuous integration) at the
+# same moment.  The first job waits for the CI run on the tagged commit and
+# every other job needs it, so nothing is built or published until the host
+# suite, the sanitizer run, the coverage floors, the analysers and the
+# checks on the docs have passed on that commit, and nothing at all when
+# they fail.  A manual run for a tag is held to the same rule.
 
 on:
   push:
@@ -22,6 +29,8 @@ concurrency:
 
 permissions:
   contents: write
+  # To read the CI run of the tagged commit.
+  actions: read
 
 env:
   PICO_SDK_TAG: '2.3.0'
@@ -79,6 +88,26 @@ jobs:
           sha=$(git rev-parse HEAD)
           echo "the tag is $sha, and every job below builds it"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      # The gate is the workflow's own copy, not the tag's: a manual run for
+      # a tag older than the gate still has one.  On a tag push the two are
+      # the same commit.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: gate
+          sparse-checkout: tools/ci_gate.py
+          sparse-checkout-cone-mode: false
+
+      # ci_gate.py waits up to 5400 s for the CI run on the pinned commit
+      # and fails unless one passed.  The image jobs and the publish job
+      # need this job, so a failure here builds and publishes nothing.
+      - name: CI passed on this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ steps.pin.outputs.sha }}
+        run: python3 gate/tools/ci_gate.py --repo "$REPO" --sha "$SHA"
 
   panel:
     needs: [version]
