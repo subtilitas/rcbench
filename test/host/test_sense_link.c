@@ -1023,11 +1023,6 @@ TEST_CASE(every_window_reaches_the_log_once)
     CHECK(!sense_link_take_window(NULL, &b));
 }
 
-/*
- * Pins an output holds: the bus frame is refused and said once, and
- * offered again every SENSE_LINK_BUS_RETRY_MS, so freeing the pin on
- * OUTPUTS lets it through without an edit.
- */
 /* ------------------------------------------------- what the page holds */
 
 #define ROWS_ALL 0x03FFu
@@ -1227,6 +1222,66 @@ TEST_CASE(a_part_the_page_cannot_enable_is_unheld)
     CHECK_EQ(to_sense, 0u);
 }
 
+/*
+ * The rest after an edit and the retry of refused pins, each with the
+ * 2^32 ms tick wrapping inside it: the mark stays and goes at the same
+ * poll as away from the wrap.
+ */
+TEST_CASE(a_row_is_unheld_for_the_same_time_across_the_tick_wrap)
+{
+    /* An edit 250 ms before the wrap: resting at 450 ms, written by 550. */
+    fresh(9u);
+    polls(2);
+    now = 0xFFFFFFFFu - 249u;
+    sense_setup_t w = setup_default();
+    w.sda = 18;
+    w.scl = 19;
+    want(&w);
+    CHECK_EQ(sense_link_unheld(&sl), SENSE_LINK_ROW_PINS);
+    polls(9);
+    CHECK_EQ(now, 200u);
+    CHECK_EQ(sense_link_unheld(&sl), SENSE_LINK_ROW_PINS);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 16u);
+    polls(2);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 18u);
+
+    /* Pins an output holds, refused 1000 ms before the wrap: marked until
+     * the retry SENSE_LINK_BUS_RETRY_MS later, which is past it, finds
+     * the pin free. */
+    fresh(9u);
+    polls(2);
+    o.slot[0].driver = OUT_DRIVER_PWM;
+    o.slot[0].pin    = 18u;
+    now = 0xFFFFFFFFu - 1499u;
+    w.i3221 = true;
+    want(&w);
+    const uint16_t refused = SENSE_LINK_ROW_PINS | SENSE_LINK_ROW_I3221;
+    polls(10);
+    CHECK_EQ(sense_link_events(&sl), 0u);       /* resting: not written */
+    CHECK_EQ(now, 0xFFFFFFFFu - 999u);
+    polls(1);                                   /* written and refused */
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_BUS_REFUSED);
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+    o.slot[0].driver = OUT_DRIVER_NONE;
+    const unsigned before = writes;
+    polls((int)(SENSE_LINK_BUS_RETRY_MS / 50u) - 1);
+    CHECK_EQ(now, 4000u);                       /* the tick has wrapped */
+    CHECK_EQ(writes, before);                   /* 4950 ms: not offered */
+    CHECK_EQ(sense_link_unheld(&sl), refused);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 16u);
+    polls(1);                                   /* 5000 ms: offered, taken */
+    CHECK_EQ(writes, before + 1u);
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 18u);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I3221);
+}
+
+/*
+ * Pins an output holds: the bus frame is refused and said once, and
+ * offered again every SENSE_LINK_BUS_RETRY_MS, so freeing the pin on
+ * OUTPUTS lets it through without an edit.
+ */
 TEST_CASE(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free)
 {
     fresh(7u);
@@ -1723,6 +1778,7 @@ RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);
     RUN(refused_pins_stay_unheld_across_a_lost_link_and_a_restart);
     RUN(a_refused_part_frame_leaves_its_rows_and_its_switch_unheld);
     RUN(a_part_the_page_cannot_enable_is_unheld);
+    RUN(a_row_is_unheld_for_the_same_time_across_the_tick_wrap);
     RUN(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free);
     RUN(the_store_off_is_said_once_per_link);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);

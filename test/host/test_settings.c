@@ -2280,6 +2280,24 @@ TEST_CASE(a_tap_on_sensor_sda_steps_to_the_next_pin_and_scl_with_it)
     feed_tap(FEED_LONE, XP, y);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 0);
     CHECK_EQ(settings_get_int(SET_SENSE_SCL), 1);
+    /* Held on "+": to 26, the last pin, and no further. */
+    finger(FEED_LONE, XP, y);
+    for (int i = 0; i < 300; ++i) {
+        idle(REPORT_S);
+        const int sda = settings_get_int(SET_SENSE_SDA);
+        if (!settings_sense_sda_valid(sda) || sda < 0) {
+            T_FAIL("held at %d", sda);
+        }
+        CHECK_EQ(settings_get_int(SET_SENSE_SCL), sda + 1);
+    }
+    lift(FEED_LONE);
+    CHECK_EQ(settings_get_int(SET_SENSE_SDA), 26);
+    CHECK_EQ(settings_get_int(SET_SENSE_SCL), 27);
+    feed_tap(FEED_LONE, XP, y);
+    CHECK_EQ(settings_get_int(SET_SENSE_SDA), 26);
+    feed_tap(FEED_LONE, XM, y);
+    CHECK_EQ(settings_get_int(SET_SENSE_SDA), 20);
+    CHECK_EQ(settings_get_int(SET_SENSE_SCL), 21);
 }
 
 /* Sensor SCL's row has no keys: a tap or a hold where the other rows have
