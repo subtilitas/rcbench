@@ -1592,6 +1592,14 @@ def a_state_line_that_changes_nothing_is_damage() -> None:
         text, 400, "$S on=0 rst=0", "$S on=0 rst=0"))), "--no-csv")
     check(r.returncode == 1 and "$S line(s) that change nothing" in r.stdout,
           f"exit {r.returncode}")
+    # Records missing between the two: the coprocessor compares a state
+    # record with the last one it read, so the second line is none of its.
+    lines = text.splitlines()
+    gap = counted(lines[:400] + ["$S on=0 rst=0", "$L n=2", "$S on=0 rst=0"]
+                  + lines[400:], lost=2)
+    r = tool(str(work("s-gap.log", "\n".join(gap) + "\n")), "--no-csv")
+    check(r.returncode == 1 and "PROBLEM: 1 $S line(s) that change nothing"
+          in r.stdout, f"behind $L: exit {r.returncode}")
     r = tool(str(work("s-two.log", with_line(
         text, 400, "$S on=0 rst=0", "$S on=1 rst=1"))), "--no-csv")
     check(r.returncode == 0, f"two changes: exit {r.returncode}")

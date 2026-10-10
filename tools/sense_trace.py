@@ -413,8 +413,11 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur.lost += f[0]
             cur.gaps.append(len(cur.t))
         elif kind == "S":
-            # The coprocessor writes the line for a state that is another
-            # than the one before it.
+            # The coprocessor writes the line for a state record that
+            # differs from the last state record it read, the one its last
+            # $H or $S line says.  A state record that is missing was never
+            # read: behind a $L line too, a $S line says another state than
+            # the line before it.
             if (f[0], f[1]) == cur.state:
                 cur.same_state += 1
             cur.state = (f[0], f[1])
