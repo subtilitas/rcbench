@@ -81,7 +81,7 @@ cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portabi
          $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 clang-tidy -p test/host/build $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
-ruff check tools/ test/tools/
+ruff check tools/ test/tools/ test/host/
 ```
 
 cppcheck also runs over `firmware/`, with the warning, performance and
@@ -128,12 +128,23 @@ The suite also runs under AddressSanitizer and UBSan
 (UndefinedBehaviorSanitizer). Run a parser change that way before pushing; the
 parsers are fed malformed input by design.
 
+The `esc_parity` test of the suite needs Python 3. It reads 3000 changed
+profiles with `tools/gen_esc_profiles.py` and with the card reader and
+fails on a file the two read differently. A change to a rule of one of the
+two changes the other in the same pull request. A failure prints the seed,
+the case number and the file:
+
+```bash
+python3 test/host/fuzz_parity.py test/host/build/esc_parse_dump --seed 1 --count 1500
+```
+
 Formatting is not enforced. Match the file you are in.
 
 ## Mutation check
 
 `tools/mutate.py` changes one line of `shared/` at a time in a copy of the
-tree, builds the host suite and runs it. It takes the lines the working tree
+tree, builds the host suite and runs it. The copy holds `shared/`,
+`test/host/`, `firmware/iomcu/` and `tools/gen_esc_profiles.py`. It takes the lines the working tree
 changes against the merge base with `origin/main` (`--base` for another
 ref, `--files` for every line of the files named) and makes three kinds of
 change: a comparison flipped to its neighbour, an integer or an upper-case

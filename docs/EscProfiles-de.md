@@ -200,7 +200,9 @@ python3 tools/gen_esc_profiles.py --check
 CI (Continuous Integration) führt `--check` aus. Die Host-Suite liest jede
 Datei mit dem Leser des Panels und vergleicht das Ergebnis Feld für Feld mit
 der erzeugten Tabelle, damit Generator und Kartenleser dieselben Dateien
-annehmen.
+annehmen. Der Test `esc_parity` der Suite ändert diese Dateien 3000-mal, in
+Struktur und Text, und schlägt bei einem Ergebnis fehl, das Generator und
+Kartenleser verschieden lesen.
 
 ## Aktuelle Einschränkungen
 
