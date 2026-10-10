@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "tick_wrap.h"
 
 #include "analyser_screen.h"
 #include "ui_screen.h"
@@ -261,6 +262,59 @@ TEST_CASE(a_frame_after_silence_is_live_again)
     CHECK(count_of(ui_theme_color(UI_C_OK)) > 0);
 }
 
+/* A sum of the frame buffer: two renders with the same sum are taken as
+ * the same picture. */
+static uint32_t picture(void)
+{
+    uint32_t sum = 2166136261u;
+    for (int i = 0; i < W * H; ++i) {
+        sum = (sum ^ fb[i]) * 16777619u;
+    }
+    return sum;
+}
+
+/* Frames @p every ms apart, the first one that long after @p t0, for
+ * @p ms; the picture then. */
+static uint32_t stream(uint32_t t0, uint32_t every, uint32_t ms)
+{
+    fresh();
+    for (uint32_t t = every; t <= ms; t += every) {
+        push_at(t0 + t, 1024, -1, 0, false, false);
+    }
+    scr->render(&cv, 0);
+    return picture();
+}
+
+/*
+ * RATE is the frames of a whole second.  A stream of 100 frames a second
+ * shows the same picture 1250 ms and 2500 ms after its start whether it
+ * began at tick 0 or 500 ms or 1500 ms before the 2^32 ms wrap, and a
+ * stream of 50 frames a second shows another: the trace is as long as the
+ * screen keeps it in all of them, so the pictures differ in the rate alone.
+ */
+static uint32_t g_rate_100[2];
+
+static void a_stream_shows_its_rate(uint32_t t0)
+{
+    static const uint32_t k_at[2] = { 1250u, 2500u };
+    for (unsigned i = 0; i < 2u; ++i) {
+        const uint32_t at_100 = stream(t0, 10u, k_at[i]);
+        const uint32_t at_50  = stream(t0, 20u, 2u * k_at[i]);
+        CHECK(at_100 != at_50);
+        if (t0 == 0u) {
+            g_rate_100[i] = at_100;
+        } else {
+            CHECK_EQ(at_100, g_rate_100[i]);
+        }
+    }
+}
+
+TEST_CASE(the_rate_is_counted_per_second_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_stream_shows_its_rate, 500u);
+    at_tick_0_and_before_the_wrap(a_stream_shows_its_rate, 1500u);
+}
+
 int main(void)
 {
     RUN(a_failsafe_frame_is_not_drawn_like_a_live_one);
@@ -271,5 +325,6 @@ int main(void)
     RUN(a_frame_after_silence_is_live_again);
     RUN(a_cancelled_tab_press_does_not_switch_the_pane);
     RUN(a_cancelled_tab_press_already_drawn_is_redrawn_released);
+    RUN(the_rate_is_counted_per_second_across_the_tick_wrap);
     return test_summary("analyser");
 }

@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "tick_wrap.h"
 
 #include "can_selftest.h"
 #include "link_pages.h"
@@ -576,6 +577,29 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK(can_selftest_hint((can_selftest_verdict_t)99)[0] == '\0');
 }
 
+/* A probe is waited for until its timeout and not 1 ms less, wherever the
+ * clock is: nothing times out at 1 ms or at 49 ms of 50, the probe is given
+ * up at 50 ms, and the next one goes out then. */
+static void a_probe_is_given_up_at_its_timeout(uint32_t t0)
+{
+    can_selftest_t st;
+    can_selftest_init(&st, 50);
+    link_can_frame_t a, b;
+    CHECK(can_selftest_probe(&st, t0, &a));
+    CHECK(!can_selftest_tick(&st, t0 + 1u));
+    CHECK(!can_selftest_tick(&st, t0 + 49u));
+    CHECK_EQ(st.timed_out, 0);
+    CHECK_EQ(can_selftest_probe(&st, t0 + 49u, &b), false);
+    CHECK(can_selftest_tick(&st, t0 + 50u));
+    CHECK_EQ(st.timed_out, 1);
+    CHECK(can_selftest_probe(&st, t0 + 50u, &b));
+}
+
+TEST_CASE(a_probe_times_out_at_its_timeout_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_probe_is_given_up_at_its_timeout, 25u);
+}
+
 int main(void)
 {
     RUN(a_good_bus_echoes_everything_and_says_so);
@@ -598,5 +622,6 @@ int main(void)
     RUN(status_and_echo_traffic_do_not_answer_each_other);
     RUN(the_status_exchange_never_outranks_real_traffic);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
+    RUN(a_probe_times_out_at_its_timeout_across_the_tick_wrap);
     return test_summary("can_selftest");
 }

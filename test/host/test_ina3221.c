@@ -455,6 +455,20 @@ TEST_CASE(both_parts_share_one_bus_and_one_stuck_line)
     CHECK_EQ(ua.value, 42000000);
 }
 
+/* The smallest shunt taken is INA3221_SHUNT_MIN_UOHM itself; 1 uOhm under
+ * it is refused. */
+TEST_CASE(a_shunt_of_100_uohm_is_taken_and_99_is_not)
+{
+    fake_bus_init(&fb, &bus);
+    CHECK_EQ(ina3221_init(&d, &bus, 0x43u, INA3221_SHUNT_MIN_UOHM,
+                          INA3221_CONFIG_BENCH_CH1),
+             INA3221_SETUP_OK);
+    CHECK_EQ(d.shunt_uohm, INA3221_SHUNT_MIN_UOHM);
+    CHECK_EQ(ina3221_init(&d, &bus, 0x43u, INA3221_SHUNT_MIN_UOHM - 1u,
+                          INA3221_CONFIG_BENCH_CH1),
+             INA3221_SETUP_NO_SHUNT);
+}
+
 int main(void)
 {
     RUN(registers_hold_thirteen_bits_in_15_to_3);
@@ -474,5 +488,6 @@ int main(void)
     RUN(an_end_code_is_1638_milliamps_on_the_daokai_shunt);
     RUN(a_configuration_lost_to_a_reset_takes_the_part_offline);
     RUN(both_parts_share_one_bus_and_one_stuck_line);
+    RUN(a_shunt_of_100_uohm_is_taken_and_99_is_not);
     return test_summary("ina3221");
 }

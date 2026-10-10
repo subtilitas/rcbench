@@ -2898,6 +2898,81 @@ TEST_CASE(a_reading_equal_to_stall_at_is_not_a_stall)
 }
 
 
+/* A reading count that steps by half its range or more is the count
+ * starting again, counted as one reading and nothing skipped; a step one
+ * short of that is that many readings taken, all but one of them skipped. */
+TEST_CASE(a_count_step_of_half_the_range_is_a_restart_and_one_less_is_not)
+{
+    static const uint16_t k_step[] = { 0x8000u, 0x7FFFu };
+    for (unsigned k = 0; k < 2u; ++k) {
+        rig_fresh();
+        servo_test_cfg_t c;
+        cfg_defaults(&c);
+        c.step_count = 1u;
+        CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+        run_ms(3000u);
+        const uint32_t taken   = g.t.module_samples;
+        const uint32_t skipped = g.t.skipped;
+        const uint32_t seen    = g.t.readings;
+        /* The next reading's count is k_step[k] past the last one's. */
+        g.samples = (uint16_t)(g.samples + k_step[k] - 1u);
+        while (g.t.readings == seen && servo_test_running(&g.t)) {
+            frame();
+        }
+        CHECK_EQ(g.t.readings, seen + 1u);
+        const bool restart = k_step[k] >= 0x8000u;
+        CHECK_EQ(g.t.module_samples - taken, restart ? 1u : k_step[k]);
+        CHECK_EQ(g.t.skipped - skipped, restart ? 0u : k_step[k] - 1u);
+    }
+}
+
+/*
+ * A run asks for its first set point, the output on and the centre at its
+ * start, and the first step hands that over.  A run that ends before that
+ * step, or in it, hands over off and release and none of the three: the
+ * supply is not switched on, set or the servo commanded by a run that is
+ * over.
+ */
+TEST_CASE(a_run_ended_before_its_first_step_asks_nothing_on)
+{
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    servo_test_do_t d;
+
+    /* What was pending, from a run left to take its first step. */
+    rig_fresh();
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    const servo_test_in_t armed = { true, g.v_max };
+    servo_test_step(&g.t, g.now + FRAME_MS, &armed, &d);
+    CHECK(servo_test_running(&g.t));
+    CHECK(d.set && d.on && d.command);
+    CHECK(!d.off && !d.release);
+
+    /* Aborted between the start and the first step. */
+    rig_fresh();
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    servo_test_abort(&g.t, SERVO_TEST_AB_STOP, g.now);
+    servo_test_step(&g.t, g.now + FRAME_MS, &armed, &d);
+    CHECK(!servo_test_running(&g.t));
+    CHECK_EQ(g.t.why, SERVO_TEST_AB_STOP);
+    CHECK(d.off && d.release);
+    CHECK(!d.on);
+    CHECK(!d.set);
+    CHECK(!d.command);
+
+    /* A bench that is disarmed when the first step comes. */
+    rig_fresh();
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    const servo_test_in_t disarmed = { false, g.v_max };
+    servo_test_step(&g.t, g.now + FRAME_MS, &disarmed, &d);
+    CHECK(!servo_test_running(&g.t));
+    CHECK_EQ(g.t.why, SERVO_TEST_AB_DISARMED);
+    CHECK(d.off && d.release);
+    CHECK(!d.on);
+    CHECK(!d.set);
+    CHECK(!d.command);
+}
+
 int main(void)
 {
     RUN(an_angle_is_counted_from_the_centre_round_the_circle);
@@ -2957,6 +3032,8 @@ int main(void)
     RUN(a_servo_held_at_the_current_limit_ends_the_run);
     RUN(a_reading_equal_to_a_limit_passes_it);
     RUN(a_reading_equal_to_stall_at_is_not_a_stall);
+    RUN(a_count_step_of_half_the_range_is_a_restart_and_one_less_is_not);
+    RUN(a_run_ended_before_its_first_step_asks_nothing_on);
     free(g.csv_text);
     return test_summary("servo_test");
 }
