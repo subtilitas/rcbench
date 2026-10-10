@@ -41,8 +41,10 @@
  * stop moves the end to the time of the stop.  A trigger at or past a
  * trace's end, or after its stop, is not that trace's, however much of
  * the trace the console still owes: it waits, up to SENSE_TRACE_MARKS of
- * them, and starts the next trace when the end line is written.  A trace also ends at a record that changes the INA3221's
- * shunt or Configuration.  However a trace ends, every record from
+ * them, and starts the next trace when the end line is written.  A
+ * trace also ends at a record that changes the INA3221's shunt or
+ * Configuration; a trigger whose line was not written by then starts the
+ * next trace.  However a trace ends, every record from
  * before its end is written first.  With the ring empty the end line
  * waits SENSE_TRACE_END_WAIT_MS past the end, for the tick that may
  * still bring a record of before it.
@@ -74,6 +76,9 @@
  *       value the driver holds and reads back every 40 ms, whether the
  *       part is online, and its reset count modulo 256: as they stand at
  *       the trace's first record.  All 0 with the bus closed.
+ *   The lines after these two are in the order of their times: a trigger
+ *   line stands behind the samples taken before its time, the first
+ *   trigger's behind the samples from before the trigger.
  *   $C t=T ch=C us=P     a cmd trigger: output channel C renders P µs in
  *                        the frame that starts at T
  *   $D t=T ch=C us=P     channel C's slewed command ended at P µs; T is
@@ -203,6 +208,7 @@ typedef struct {
 typedef struct {
     uint8_t  kind;        /**< sense_trace_trig_t                          */
     uint32_t t;
+    uint64_t at_us;       /**< a trigger's time as it was given            */
     uint16_t ch, us;      /**< a cmd trigger's channel and pulse           */
 } sense_trace_mark_t;
 

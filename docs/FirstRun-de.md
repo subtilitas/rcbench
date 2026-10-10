@@ -478,13 +478,17 @@ ist nicht gemessen.
 ```text
 $T v=1 n=2 trig=cmd t=220200 ms=22020 len=4000
 $H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
-$C t=220200 ch=0 us=1800
 -810,289
 10,277
 v5952
 10,289
+$C t=220200 ch=0 us=1800
+10,303
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
+
+Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten:
+eine Triggerzeile folgt auf die Samples, die vor ihr genommen wurden.
 
 Eine Sample-Zeile ist die Zeit seit dem Sample davor in 0,1 ms und der
 Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile hat

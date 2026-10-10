@@ -133,6 +133,7 @@ class Trace:
         self.trig = trig
         self.t0 = t0                # as printed, modulo 2^32
         self.t0_abs = t0_abs        # 0.1 ms, unwrapped across the log
+        self.boot = 0               # restarts of the coprocessor before it
         self.ms = ms
         self.length = length
         self.version = FORMAT
@@ -170,6 +171,8 @@ def parse_log(text: str) -> tuple[list[Trace], int]:
     cur: Trace | None = None
     other = 0
     last_t0: tuple[int, int] | None = None      # printed, unwrapped
+    last_n = 0
+    boot = 0
     for raw in text.splitlines():
         line = raw.strip()
         m = RE_T.match(line)
@@ -178,12 +181,21 @@ def parse_log(text: str) -> tuple[list[Trace], int]:
                 cur.problems.append("no end line: the next trace starts "
                                     "inside it")
             t0 = int(m.group(4))
-            # Later traces lie later: the count runs on modulo 2^32.
+            number = int(m.group(2))
+            # The coprocessor numbers its traces from 1: a number that is
+            # not the one before plus one is a restart, and its clock a
+            # new one.  Within a boot later traces lie later: the count
+            # runs on modulo 2^32.
+            if last_t0 is not None and number != (last_n % 65536) + 1:
+                boot += 1
+                last_t0 = None
+            last_n = number
             t0_abs = t0 if last_t0 is None else (
                 last_t0[1] + ((t0 - last_t0[0]) & 0xFFFFFFFF))
             last_t0 = (t0, t0_abs)
-            cur = Trace(int(m.group(2)), m.group(3), t0, t0_abs,
+            cur = Trace(number, m.group(3), t0, t0_abs,
                         int(m.group(5)), int(m.group(6)))
+            cur.boot = boot
             cur.version = int(m.group(1))
             if cur.version != FORMAT:
                 cur.problems.append(f"format version {cur.version}; this "
@@ -314,6 +326,7 @@ class Move:
         self.why_not = ""           # why it is not replayed
         self.results: dict[tuple[int, float], dict] = {}
         self.horn_ms: float | None = None
+        self.horn_row: int | None = None
 
     @property
     def abs_s(self) -> float:
@@ -545,13 +558,20 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
 
     tie = False
     if offset is None:
-        # Every offset that puts one row on one command, and between two
-        # of them that lie within the tolerance of each other the middle:
-        # the spacings of the two files differ a little, and the offset
-        # that pairs the most can lie between.
-        offs = sorted({m - c for c in cmd_csv for m in cmd_log})
-        offs += [(a + b) / 2 for a, b in zip(offs, offs[1:], strict=False)
-                 if b - a <= 2 * pair_s]
+        # The pairing changes only where a row comes to a command's
+        # tolerance or passes from one command to the next: every offset
+        # between two such places is tried once, with the offsets that
+        # put a row on a command.
+        marks = set()
+        for c in cmd_csv:
+            marks.update(m - c - pair_s for m in cmd_log)
+            marks.update(m - c + pair_s for m in cmd_log)
+            marks.update((a + b) / 2 - c for a, b in
+                         zip(cmd_log, cmd_log[1:], strict=False))
+        edges = sorted(marks)
+        offs = sorted({m - c for c in cmd_csv for m in cmd_log}
+                      | {(a + b) / 2 for a, b in
+                         zip(edges, edges[1:], strict=False)})
         scored = []
         for off in offs:
             got = one_each(pairs(off))
@@ -563,6 +583,7 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
     got = one_each(pairs(offset))
     for j, i, _ in got:
         moves[order[i]].horn_ms = rows[j][1]
+        moves[order[i]].horn_row = j
     return len(got), tie
 
 
@@ -769,8 +790,9 @@ def main() -> int:
     ap.add_argument("--servo-csv", type=pathlib.Path,
                     help="a servo test's CSV file with `travel angle (ms)`")
     ap.add_argument("--csv-offset", type=float,
-                    help="coprocessor time less CSV time, s (default: "
-                         "found from the moves)")
+                    help="coprocessor time less CSV time, s, for the "
+                         "log's first boot (default: found from the "
+                         "moves)")
     ap.add_argument("--pair-ms", type=float, default=150.0,
                     help="a row and a command pair within this (default "
                          "150 ms)")
@@ -823,10 +845,24 @@ def main() -> int:
     ambiguous = False
     if args.servo_csv is not None:
         rows = read_travel(args.servo_csv)
-        paired, tie = pair_rows(all_moves, rows, args.pair_ms / 1000.0,
-                                args.csv_offset)
+        n_rows = len(rows)
+        # Each boot of the coprocessor has a clock of its own: its moves
+        # are paired on their own, with the rows no earlier boot took.
+        paired, tie = 0, False
+        boots = sorted({mv.tr.boot for mv in all_moves})
+        for boot in boots:
+            mine = [mv for mv in all_moves if mv.tr.boot == boot]
+            n, t = pair_rows(mine, rows, args.pair_ms / 1000.0,
+                             args.csv_offset if boot == boots[0] else None)
+            taken = {mv.horn_row for mv in mine if mv.horn_row is not None}
+            rows = [r for k, r in enumerate(rows) if k not in taken]
+            paired += n
+            tie = tie or t
         have_horn = paired > 0
-        out.append(f"{args.servo_csv}: {len(rows)} travel time(s), "
+        if len(boots) > 1:
+            out.append(f"the coprocessor restarted {len(boots) - 1} time(s) "
+                       "in the log: each boot is paired on its own clock")
+        out.append(f"{args.servo_csv}: {n_rows} travel time(s), "
                    f"{paired} paired with a move")
         if tie:
             out.append("  PROBLEM: another offset between the two clocks "

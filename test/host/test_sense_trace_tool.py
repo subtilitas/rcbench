@@ -335,7 +335,8 @@ def times_run_across_the_wrap_of_the_count() -> None:
     check(arrival[(1, "0.05")] == ["2/2", "2/2", "113.0", "113.0"],
           f"the arrivals: {arrival[(1, '0.05')]}")
     # A second trace later in the log lies later, wrap or not.
-    two = synthetic(t0, [(0, 1900)]) + synthetic(5000, [(0, 1100)])
+    two = (synthetic(t0, [(0, 1900)])
+           + synthetic(5000, [(0, 1100)]).replace(" n=1 ", " n=2 "))
     traces, _ = sense_trace.parse_log(two)
     check(traces[1].t0_abs - traces[0].t0_abs == 5200, "0.52 s on")
 
@@ -646,6 +647,55 @@ def the_servo_csv_pairs_by_time() -> None:
     check(r.returncode != 0 and "travel angle (ms)" in r.stderr, r.stderr)
 
 
+def the_offset_that_pairs_the_most_is_found_between_the_obvious() -> None:
+    class At:
+        def __init__(self, abs_s: float) -> None:
+            self.abs_s = abs_s
+            self.horn_ms = None
+            self.horn_row = None
+    # Commands at 0.22, 0.32, 0.49 and 0.85 s; rows whose commands lie at
+    # 0, 0.09 and 0.14 s.  An offset of 0.27 s pairs all three, each with
+    # a move of its own; no offset that puts a row on a command does.
+    moves = [At(t) for t in (0.22, 0.32, 0.49, 0.85)]
+    rows = [(c + 0.1 + 0.1, 100.0) for c in (0.0, 0.09, 0.14)]
+    n, _ = sense_trace.pair_rows(moves, rows, 0.15, None)
+    check(n == 3, f"{n} paired")
+    check([mv.horn_row for mv in moves[:3]] == [0, 1, 2],
+          f"{[mv.horn_row for mv in moves]}")
+
+
+def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
+    # Two boots in one log: the second numbers its traces from 1 again
+    # and its clock starts low.
+    a = synthetic(900000, [(0, 1900), (1000, 1100), (2500, 1900)])
+    b = synthetic(3000, [(0, 1900), (700, 1100), (1900, 1900)])
+    traces, _ = sense_trace.parse_log(a + b)
+    check([tr.boot for tr in traces] == [0, 1], "two boots")
+    check(traces[1].t0_abs == 3000, "the second boot's own clock")
+    # Trace numbers that run on are one boot.
+    traces, _ = sense_trace.parse_log(a + b.replace("n=1 ", "n=2 "))
+    check([tr.boot for tr in traces] == [0, 0], "one boot")
+    head = ("time (s);test;step;phase;command (us);position (us);set (V);"
+            "voltage (V);limit (A);current (A);power (W);mode;travel (ms);"
+            "angle (deg);travel angle (ms)")
+    rows = [head]
+    # The CSV's clock: 50 s at the first boot's first command, 80 s at
+    # the second's.
+    for base, at in ((50.0, (0.0, 1.0, 2.5)), (80.0, (0.0, 0.7, 1.9))):
+        for cmd in at:
+            rows.append(f"{base + cmd + 0.090 + 0.1:.3f}" + ";" * 14 + "90")
+    r = tool(str(work("boots.log", a + b)), "--no-csv", "--servo-csv",
+             str(work("boots.csv", "\n".join(rows) + "\n")))
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[:400]}")
+    check("6 travel time(s), 6 paired with a move" in r.stdout,
+          r.stdout.splitlines()[1])
+    check("the coprocessor restarted 1 time(s) in the log" in r.stdout,
+          "said")
+    total = setting_rows(r.stdout, "all traces, 6 move(s):")
+    check(total[(1, "0.05")][:3] == ["6/6", "6/6", "+23.0"],
+          f"{total[(1, '0.05')]}")
+
+
 def a_floor_is_a_current_above_zero() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     for bad in ("0", "-0.01", "nan"):
@@ -709,6 +759,8 @@ CASES = [
     a_slewed_command_ends_at_its_d_line,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,
+    the_offset_that_pairs_the_most_is_found_between_the_obvious,
+    a_restart_of_the_coprocessor_is_a_clock_of_its_own,
     a_floor_is_a_current_above_zero,
     a_replay_that_cannot_run_is_exit_2,
 ]

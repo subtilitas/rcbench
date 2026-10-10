@@ -650,7 +650,10 @@ TEST_CASE(the_dropped_records_are_named_where_they_are_missing)
     /* The gap shows in the times: 8 samples, 3 missing, then the rest. */
     CHECK_EQ(seen.t[7], 200010u + 70u);
     CHECK_EQ(seen.t[8], 200010u + 110u);
-    CHECK(strstr(g_log, "10,300\r\n$L n=3\r\n40,300\r\n") != NULL);
+    CHECK(strstr(g_log, "\r\n$L n=3\r\n40,300\r\n") != NULL);
+    /* The trigger's line stands behind the 8 samples from before it. */
+    CHECK(strstr(g_log, "10,300\r\n$K t=") != NULL);
+    CHECK(strstr(g_log, "$K t=") < strstr(g_log, "$L n=3"));
 }
 
 TEST_CASE(each_gap_in_a_trace_has_its_line)
@@ -1590,6 +1593,83 @@ TEST_CASE(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed)
     }
 }
 
+TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* The console is behind when the set-up changes, and still behind
+     * when a command comes 50 ms later: the trace looks open, and ended
+     * before the command. */
+    stall(200u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    stall(50u);
+    const uint32_t t1 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 4u, 1900u);
+    stall(50u);
+    run(500u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The command's own trace, under the new set-up. */
+    char want[64];
+    snprintf(want, sizeof(want), "$T v=1 n=2 trig=cmd t=%lu ",
+             (unsigned long)t1);
+    CHECK(strncmp(rest, want, strlen(want)) == 0);
+    CHECK(strstr(rest, "shunt_uohm=50000 ") != NULL);
+    CHECK(strstr(rest, " ch=4 us=1900\r\n") != NULL);
+    CHECK(strstr(rest, ",150\r\n") != NULL);
+    CHECK(strstr(rest, ",300\r\n") == NULL);
+    CHECK(sense_trace_active(&tr));
+}
+
+TEST_CASE(records_dropped_before_a_set_up_record_are_said_in_its_trace)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(50u);
+    /* By hand, what core 1 leaves when the ring had one place between
+     * its two set-up records: the shunt's, then 5 records dropped, then
+     * the Configuration's with their count. */
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    const uint32_t t = g_ring[(head - 1u) & tr.mask].t;
+    g_ring[head & tr.mask] = (sense_trace_rec_t){
+        t, 50000, (uint32_t)SENSE_TRACE_SHUNT << 24 };
+    g_ring[(head + 1u) & tr.mask] = (sense_trace_rec_t){
+        t, (int32_t)(tr.src.cfg ^ 0x8u),
+        ((uint32_t)SENSE_TRACE_CFG << 24) | 5u };
+    atomic_store(&tr.head, head + 2u);
+    pass();
+    CHECK(!sense_trace_active(&tr));
+    CHECK(strstr(g_log, " l=0 m=1 ml=0 e=s\r\n") != NULL);
+    /* The next trace starts in the same pass: its header has both
+     * records' set-up, and the 5 are said before it. */
+    const size_t len = g_len;
+    sense_trace_key(&tr, 't', g_us);
+    pass();
+    pass();
+    sense_trace_key(&tr, 'x', g_us);
+    g_us += 5000u;
+    pass();
+    const char *next = &g_log[len];
+    const char *l_at = strstr(next, "$L n=5\r\n");
+    const char *h_at = strstr(next, "$H dt_us=1000 shunt_uohm=50000 cfg=0x");
+    CHECK(l_at != NULL && h_at != NULL && l_at < h_at);
+    CHECK(strstr(next, " l=5 m=1 ml=0 e=k\r\n") != NULL);
+    char cfg[16];
+    snprintf(cfg, sizeof(cfg), "cfg=0x%04X ",
+             (unsigned)((tr.src.cfg ^ 0x8u) & 0xFFFFu));
+    CHECK(strstr(next, cfg) != NULL);
+}
+
 TEST_CASE(a_state_change_under_a_backlog_keeps_its_place)
 {
     rig();
@@ -1832,6 +1912,8 @@ int main(void)
     RUN(a_slot_that_changes_hands_is_watched_afresh);
     RUN(a_stop_on_a_full_ring_counts_what_was_dropped_before_it);
     RUN(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed);
+    RUN(a_command_after_a_changed_set_up_is_the_next_traces);
+    RUN(records_dropped_before_a_set_up_record_are_said_in_its_trace);
     RUN(a_state_change_under_a_backlog_keeps_its_place);
     RUN(a_set_up_record_with_no_room_is_written_when_there_is_room);
     RUN(idle_keeps_no_record_from_before_a_set_up);

@@ -255,7 +255,7 @@ static void extend(sense_trace_out_t *o, uint32_t end_t)
 
 /* A line for the console's queue, or counted when it is full. */
 static void mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
-                 uint16_t ch, uint16_t us)
+                 uint64_t at_us, uint16_t ch, uint16_t us)
 {
     if (o->q_n >= SENSE_TRACE_MARKS) {
         ++o->n_mlost;
@@ -263,9 +263,10 @@ static void mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
     }
     sense_trace_mark_t *m =
         &o->q[(o->q_head + o->q_n) % SENSE_TRACE_MARKS];
-    m->kind = (uint8_t)kind;
-    m->t    = t;
-    m->ch   = ch;
+    m->kind  = (uint8_t)kind;
+    m->t     = t;
+    m->at_us = at_us;
+    m->ch    = ch;
     m->us   = us;
     ++o->q_n;
 }
@@ -309,7 +310,7 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
         ++o->wait_n;
         return;
     }
-    mark(o, kind, t, ch, us);
+    mark(o, kind, t, at_us, ch, us);
 }
 
 /* A slewed command of @p w has ended, at its last change: said in the
@@ -318,7 +319,7 @@ static void slew_ends(sense_trace_out_t *o, sense_trace_watch_t *w,
                       uint16_t ch)
 {
     if (w->slewed && open_at(o, w->changed_t)) {
-        mark(o, SENSE_TRACE_MARK_DEST, w->changed_t, ch, w->pulse);
+        mark(o, SENSE_TRACE_MARK_DEST, w->changed_t, 0u, ch, w->pulse);
     }
     w->slewed = false;
 }
@@ -545,15 +546,29 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l)
         line_start(o, l);
         return ACT_STAGE;
     }
+    const sense_trace_rec_t *r = peek(tr);
     if (o->stage == SENSE_TRACE_HEAD_H) {
-        line_setup(o, l);
-        return ACT_STAGE;
+        /* The set-up as it stands at the trace's first record: a set-up
+         * record at the tail goes into the header, not into the trace. */
+        if (r == NULL || !is_setup(r)) {
+            line_setup(o, l);
+            return ACT_STAGE;
+        }
+        if (META_LOST(r->meta) != 0u && !o->lost_shown) {
+            put_kv(l, "$L n=", META_LOST(r->meta), SENSE_TRACE_LOST_MAX);
+            put_eol(l);
+            return ACT_LOST;
+        }
+        return ACT_REC;
     }
-    if (o->q_n > 0u) {
+    /* A trigger line in the order of its time: behind the records of
+     * before it, so a record that ends the trace before the trigger
+     * ends it before the trigger's line. */
+    if (o->q_n > 0u
+        && (r == NULL || !((int32_t)(r->t - o->q[o->q_head].t) < 0))) {
         line_mark(&o->q[o->q_head], l);
         return ACT_MARK;
     }
-    const sense_trace_rec_t *r = peek(tr);
     if (r == NULL) {
         /* A record of before the end may still be on its way. */
         if (!at_or_past(now_t, o->end_t + SENSE_TRACE_END_WAIT_MS
@@ -625,16 +640,31 @@ static void to_idle(sense_trace_t *tr)
 static void ended(sense_trace_t *tr)
 {
     sense_trace_out_t *o = &tr->out;
+    /* The trigger lines the trace ended before are triggers still: the
+     * first of them, then the ones that waited. */
+    sense_trace_mark_t left[SENSE_TRACE_MARKS];
+    uint8_t n_left = 0u;
+    for (uint8_t k = 0u; k < o->q_n; ++k) {
+        const sense_trace_mark_t *m =
+            &o->q[(o->q_head + k) % SENSE_TRACE_MARKS];
+        if (m->kind != SENSE_TRACE_MARK_DEST) {
+            left[n_left++] = *m;
+        }
+    }
     const uint8_t n = o->wait_n;
     const uint32_t lost = o->wait_lost;
     to_idle(tr);
     o->wait_n    = 0u;
     o->wait_lost = 0u;
+    for (uint8_t k = 0u; k < n_left; ++k) {
+        sense_trace_trigger(tr, (sense_trace_trig_t)left[k].kind,
+                            left[k].at_us, left[k].ch, left[k].us);
+    }
     for (uint8_t k = 0u; k < n; ++k) {
         sense_trace_trigger(tr, (sense_trace_trig_t)o->wait[k].kind,
                             o->wait[k].at_us, o->wait[k].ch, o->wait[k].us);
     }
-    if (n > 0u) {
+    if (n + n_left > 0u) {
         o->n_mlost += lost;
     }
 }
@@ -668,12 +698,9 @@ static void commit(sense_trace_t *tr, act_t act)
         pop(tr);
         break;
     case ACT_END_SETUP:
-        /* The set-up's records go with the trace they ended: the next
-         * header carries what they say. */
-        while (r != NULL && is_setup(r)) {
-            pop(tr);
-            r = peek(tr);
-        }
+        /* The record goes with the trace it ended.  One that follows it
+         * is the next header's, with the records it says were dropped. */
+        pop(tr);
         ended(tr);
         break;
     case ACT_END:

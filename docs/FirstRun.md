@@ -448,13 +448,17 @@ measured.
 ```text
 $T v=1 n=2 trig=cmd t=220200 ms=22020 len=4000
 $H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
-$C t=220200 ch=0 us=1800
 -810,289
 10,277
 v5952
 10,289
+$C t=220200 ch=0 us=1800
+10,303
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
+
+The lines after the first two stand in the order of their times: a trigger
+line follows the samples taken before it.
 
 A sample line is the time since the sample before it in 0.1 ms and the
 shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line is 8
