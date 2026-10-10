@@ -576,6 +576,22 @@ bool tone_link_settled(const tone_link_t *t)
     return t->known && write_owed(t, regs, false) == TONE_LINK_OP_NONE;
 }
 
+uint8_t tone_link_unheld(const tone_link_t *t)
+{
+    if (t == NULL || !t->up || !t->want_set) {
+        return 0u;
+    }
+    if (!t->page) {
+        return (t->want[LINK_TN_ENABLE] != 0u) ? (uint8_t)TONE_LINK_ROWS_TAP
+                                               : 0u;
+    }
+    if (!t->known) {
+        return 0u;
+    }
+    return (uint8_t)((frame0_differs(t) ? TONE_LINK_ROWS_TAP : 0u)
+                     | (frame1_differs(t) ? TONE_LINK_ROWS_BEEP : 0u));
+}
+
 unsigned tone_link_beeps(const tone_link_t *t, tone_beep_t *out, unsigned max)
 {
     if (t == NULL || out == NULL) {

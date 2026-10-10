@@ -15,6 +15,8 @@
 #ifndef RCBENCH_LINK_PAGES_H
 #define RCBENCH_LINK_PAGES_H
 
+#include <stdbool.h>
+
 #include "link_msg.h"
 
 #ifdef __cplusplus
@@ -327,11 +329,14 @@ enum {
  *     registers long for a later minor to give them a meaning.
  *
  *     Refused with BAD_VALUE: a value out of its range, SDA and SCL not one
- *     I2C block's pair, a pin past the bank, reserved, bound to an output or
- *     held by the SUPPLY page, the two parts on one address while both are
- *     enabled, and any change while the bank is armed -- the bus opened
- *     again stops the readings for some milliseconds mid-run.  The pins are
- *     no output's while either part is enabled.
+ *     I2C block's pair (link_sn_pins_pair()) whatever ENABLE holds, and
+ *     while a part is enabled a pin past the bank, reserved, bound to an
+ *     output or held by the SUPPLY page, the two parts on one address while
+ *     both are enabled, and any change while the bank is armed -- the bus
+ *     opened again stops the readings for some milliseconds mid-run.  One
+ *     frame that is not a pair is taken: ENABLE 0 with SDA or SCL 0, which
+ *     is how a panel writes pins that are not set.  The pins are no
+ *     output's while a part is enabled.
  *
  *     FLAGS onwards are read only: FLAGS (link_sense_flag_t); PRESENT, bit
  *     n for address 0x40 + n answering the last scan; the ID the INA228
@@ -444,6 +449,18 @@ enum {
 #define LINK_SN_I3221_DMOHM_MIN    50u
 #define LINK_SN_I3221_DMOHM_MAX 10000u
 #define LINK_SN_I3221_CH_ALL     0x07u
+
+/**
+ * Whether @p sda and @p scl are one I2C block's pair: SDA a GPIO whose
+ * number mod 4 is 0 or 2, SCL the GPIO after it.  The one rule for the
+ * page, the bus that opens the pins, the panel's writes and the values
+ * SETUP offers.  It does not say the pins are free, or that the board has
+ * them.
+ */
+static inline bool link_sn_pins_pair(unsigned sda, unsigned scl)
+{
+    return (sda % 2u) == 0u && scl == sda + 1u;
+}
 
 /** What the coprocessor says about the bus and the two parts. */
 typedef enum {

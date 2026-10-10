@@ -11,6 +11,8 @@
 #include "hardware/sync.h"
 #include "pico/stdlib.h"
 
+#include "link_pages.h"
+
 static i2c_inst_t *s_i2c;
 static uint8_t     s_sda;
 static uint8_t     s_scl;
@@ -45,7 +47,7 @@ bool sense_i2c_open(uint8_t sda, uint8_t scl)
 {
     sense_i2c_close();
     if (sda >= NUM_BANK0_GPIOS || scl >= NUM_BANK0_GPIOS
-        || (sda % 2u) != 0u || scl != (uint8_t)(sda + 1u)) {
+        || !link_sn_pins_pair(sda, scl)) {
         return false;
     }
     s_i2c = I2C_INSTANCE((sda / 2u) % 2u);

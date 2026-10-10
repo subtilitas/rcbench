@@ -13,6 +13,7 @@
 #include "ina228.h"
 #include "ina3221.h"
 #include "link_msg.h"
+#include "link_pages.h"
 
 /* The INA3221's shunt full scale, 163.8 mV, in uV: 4095 steps of 40 uV. */
 #define I3221_FULL_SCALE_UV 163800uL
@@ -129,11 +130,21 @@ static bool pin_free(const sense_page_t *p, const outputs_t *o,
     return true;
 }
 
-/* SDA one I2C block's data pin and SCL its clock: the I2C function sits at
- * pin mod 4, 0 and 2 the data lines, each with its clock on the pin after. */
-static bool one_block(uint16_t sda, uint16_t scl)
+/*
+ * Whether the set-up's pins are ones the bus can ever open: one I2C block's
+ * pair, link_sn_pins_pair().  Judged whatever is enabled, so the page holds
+ * no pair a later enable is refused for.  One set-up that is not a pair
+ * passes: nothing enabled and SDA or SCL 0, which is what a panel writes
+ * for pins that are not set (sense_link.c writes 0 for a pin at -1).
+ */
+static bool pins_ok(const uint16_t *c)
 {
-    return (sda % 2u) == 0u && scl == (uint16_t)(sda + 1u);
+    const uint16_t sda = c[LINK_SN_SDA_PIN];
+    const uint16_t scl = c[LINK_SN_SCL_PIN];
+    if (link_sn_pins_pair(sda, scl)) {
+        return true;
+    }
+    return c[LINK_SN_ENABLE] == 0u && (sda == 0u || scl == 0u);
 }
 
 /* The values themselves, whatever is enabled: a set-up kept in flash is
@@ -222,7 +233,7 @@ uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
     if (outputs_driving(o)) {
         return LINK_NACK_BAD_VALUE;
     }
-    if (!values_ok(next)) {
+    if (!values_ok(next) || !pins_ok(next)) {
         return LINK_NACK_BAD_VALUE;
     }
     const uint16_t en = next[LINK_SN_ENABLE];
@@ -234,8 +245,7 @@ uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
         return LINK_NACK_BAD_VALUE;
     }
     if (en != 0u
-        && (!one_block(next[LINK_SN_SDA_PIN], next[LINK_SN_SCL_PIN])
-            || !pin_free(p, o, next[LINK_SN_SDA_PIN], taken)
+        && (!pin_free(p, o, next[LINK_SN_SDA_PIN], taken)
             || !pin_free(p, o, next[LINK_SN_SCL_PIN], taken))) {
         return LINK_NACK_BAD_VALUE;
     }

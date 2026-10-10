@@ -1262,16 +1262,31 @@ INA3221 on the servo rail. Their rows are at the top of INTERFACES:
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
 | INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300 A is the bench's design maximum; the coprocessor refuses more. Its refusal of a range past 2000 A full scale stays, and 300 A on the smallest shunt, 50 µΩ, does not reach it |
 | INA3221 | ON, OFF | OFF | the servo rail's three channels |
-| INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module as shipped |
+| INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
 | INA3221 shunt | 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | one a channel; the DAOKAI's R100 reads to 1.64 A |
 | INA3221 channels | CH1, CH1+2+3 | CH1 | CH1 is the servo test's; CH2 and CH3 a synchronised pair's |
-| Sensor SDA | −1, 0 to 47 | 16 | coprocessor GPIO (general-purpose input/output); −1 until wired |
-| Sensor SCL | −1, 0 to 47 | 17 | the GPIO after SDA |
+| Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | coprocessor GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
+| Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
 
 ![INTERFACES, the INA3221 and the bus's pins](img/setup-sensors.png)
 
 SDA and SCL are one I2C block's pair: SDA's GPIO number mod 4 is 0 or 2, and
-SCL is the GPIO after it. The bus runs at 400 kHz, which is not a setting:
+SCL is the GPIO after it. Sensor SDA takes only the pins of such a pair that
+the RP2350-CAN brings out and does not reserve: GP2 is left out because GP3
+is the heartbeat, GP8 to GP12 are the CAN controller's, and GP22, GP24 and
+GP28 because the module does not bring out GP23, GP25 and GP29. The rule is
+the one the coprocessor's SENSE page judges a write by
+(`link_sn_pins_pair()`, `settings_sense_sda_valid()`). A pin an output, the
+PD mini or the phase tap holds is offered all the same, and the coprocessor
+refuses it. With Sensor SDA at −1 the panel writes ENABLE 0, SDA 0 and SCL 0
+to the page.
+
+Stored settings: the `sns_scl` key is not read. Sensor SCL is derived from
+the stored Sensor SDA, and the key is saved with the derived value. A stored
+Sensor SDA outside the values above loads as 16, with no alert and without
+marking the settings as changed.
+
+The bus runs at 400 kHz, which is not a setting:
 the coprocessor takes no other clock. A reading at the top of the INA3221's
 range, 163.8 mV across the shunt, is shown as clipped and never as a value.
 
@@ -1299,7 +1314,7 @@ both said. In order:
 | `coprocessor has no SENSE page -- current monitors not read` | a monitor is enabled and the coprocessor speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
 | `sensor SDA or SCL not set -- see SETUP INTERFACES` | a monitor is enabled with a pin at −1; neither is enabled on the page |
 | `INA228 and INA3221 both at 0x40 -- see SETUP INTERFACES` | both enabled on one address; neither is enabled on the page |
-| `sensor pins GP5/GP6 refused -- see SETUP INTERFACES` | the coprocessor refused the pins: not one I2C block's pair, reserved, bound to an output or held by the PD mini; both monitors stay off |
+| `sensor pins GP16/GP17 refused -- see SETUP INTERFACES` | the coprocessor refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
 | `INA228 shunt or max current refused -- see SETUP INTERFACES` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
 | `INA3221 set-up refused -- see SETUP INTERFACES` | the INA3221 stays off |
 | `sensor bus stuck: SDA held low -- clocking it free` | the coprocessor found SDA held low and clocks it free |
@@ -1315,6 +1330,31 @@ board holds one, are offered again every 5 s without another alert, so
 freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not disarm the bench: nothing trips on the
 monitors' readings.
+
+#### A row the coprocessor does not hold
+
+![INTERFACES, pins the coprocessor has not taken](img/setup-unheld.png)
+
+A row whose value is not the one the coprocessor's page holds is marked: its
+edge and its value are drawn in the warning colour, and its help line reads
+`Not taken by the coprocessor`. The panel compares the set-up it asks for
+with the one the page last acknowledged or read back (`sense_link_unheld()`,
+`tone_link_unheld()`). The mark covers the current monitors' rows, Sensor
+SDA and Sensor SCL (one mark, the pins are one frame), AS5600, and the phase
+tap's rows in two groups: Phase tap, Tap pin and the two tones, and Tap
+pitch split, Tap gap and Tap min periods.
+
+| The mark shows | Until |
+| --- | --- |
+| from an edit | the write is acknowledged: 500 ms after the last edit, and for the current monitors only once the bench is disarmed |
+| on a value the coprocessor refused | the value is changed to one it takes; for pins held elsewhere, until the 5 s retry is taken |
+| on INA228, INA3221 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, both monitors on one address, a coprocessor older than the part |
+| after a coprocessor restart or a link-up, on what its page reads differently | the panel has written it |
+
+No row is marked while no coprocessor answers, or before the page has been
+read after a link-up: there is nothing to compare with. AS5600 centre is the
+panel's own and is never marked. The alert on the band is separate and stays
+as described above.
 
 ### INTERFACES: the output encoder
 

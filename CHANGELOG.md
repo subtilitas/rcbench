@@ -25,6 +25,26 @@ coprocessor and the other way round.
 
 ### Changed
 
+- **Sensor SCL follows Sensor SDA, and a set-up the coprocessor does not
+  hold is marked on its row.** On SETUP > INTERFACES Sensor SDA steps
+  through −1, 0, 4, 6, 14, 16, 18, 20 and 26 and stops at both ends: −1
+  for no sensor bus, and the SDA pins of an I2C block's pair that the
+  RP2350-CAN brings out and does not reserve. Sensor SCL is the GPIO after
+  it, shown without keys. A stored `sns_scl` is not read; a stored
+  Sensor SDA outside those values loads as 16. A row whose value the
+  coprocessor's page does not hold (not written yet, or refused) has its
+  edge and value in the warning colour and reads `Not taken by the
+  coprocessor`, until the page holds it: the current monitors' rows, the
+  two pins, AS5600 and the phase tap's rows. The 30 s alert is unchanged.
+  The coprocessor's SENSE page refuses SDA and SCL that are not one I2C
+  block's pair whatever ENABLE holds; with ENABLE 0 it took them and
+  refused the part enabled afterwards. ENABLE 0 with SDA or SCL 0, a
+  panel's pins that are not set, is taken as before. No register changes;
+  the protocol stays 4.11. Host suite only; not run on hardware.
+- **The INA3221 address hint names the A0 bridge.** The DAOKAI module ships
+  with all four A0 solder bridges open and its address floats between 0x40
+  and 0x41; 0x40, the default, needs A0 bridged to GND. The hint on SETUP
+  and the INTERFACES table say so.
 - **A capture's holding level is a signed register.** SERVO_SENSE's
   `CAP_HOLD_MA` takes -32768 to 32767 mA where it took 0 to 32767 and
   refused the rest: an end that holds near 0 A reads below zero by the

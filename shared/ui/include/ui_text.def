@@ -278,6 +278,7 @@ UI_TEXT(SET_SAVED,                  0, "SAVED")
 UI_TEXT(SET_WHEN_IDLE,             24, "WHEN IDLE")
 UI_TEXT(SET_NOT_SAVED,             26, "NOT SAVED")
 UI_TEXT(SET_SAVE,                   0, "SAVE")
+UI_TEXT(SET_UNHELD,                 0, "Not taken by the coprocessor")
 
 /* ------------------------------------------------ plots and hero cards */
 UI_TEXT(PLOT_NOW,                   0, "NOW")

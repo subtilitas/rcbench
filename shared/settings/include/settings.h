@@ -194,16 +194,36 @@ void settings_set_store(const settings_store_t *store);
 void settings_set_observer(settings_observer_fn fn);
 
 const setting_def_t *settings_def(setting_id_t id);
+
+/** Whether @p id follows another setting: settings_set() and
+ *  settings_adjust() leave it, and SETUP draws its row without keys.
+ *  Sensor SCL, which is the GPIO after Sensor SDA. */
+bool settings_derived(setting_id_t id);
 const char *settings_category_name(setting_cat_t cat);
 
 float settings_get(setting_id_t id);
 int   settings_get_int(setting_id_t id);
 bool  settings_get_bool(setting_id_t id);
 
-/** Clamped to the schema; enums wrap. Fires the observer when it changes. */
+/** Clamped to the schema; enums wrap. Fires the observer when it changes.
+ *  A derived setting is left as it is. */
 void settings_set(setting_id_t id, float value);
-/** Step by @p steps increments. Booleans and enums cycle. */
+/** Step by @p steps increments. Booleans and enums cycle.  Sensor SDA
+ *  steps from one value settings_sense_sda_valid() takes to the next and
+ *  stops at the first and the last. */
 void settings_adjust(setting_id_t id, int steps);
+
+/**
+ * Whether Sensor SDA takes @p gpio: -1, the bus's pins not set, or a
+ * coprocessor GPIO the sensor bus can have its SDA on with SCL on the GPIO
+ * after it.  That is one I2C block's pair, link_sn_pins_pair() -- the rule
+ * the coprocessor's SENSE page judges a write by -- on two pins the
+ * RP2350-CAN brings out and does not reserve, outbind_reserved_mask(): the
+ * mask the coprocessor reserves at boot.  0, 4, 6, 14, 16, 18, 20 and 26.
+ * A pin an output, the supply or the phase tap holds is not known here;
+ * the page refuses it and SETUP marks the row.
+ */
+bool settings_sense_sda_valid(int gpio);
 
 /** Restore one category, or all of them, to the schema defaults. */
 void settings_reset(setting_cat_t cat);
