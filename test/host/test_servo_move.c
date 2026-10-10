@@ -479,6 +479,28 @@ TEST_CASE(a_modelled_stop_is_reached_settled_at_1_khz)
     CHECK(ms <= 650u + 4u);
 }
 
+/* A window that holds clips at both ends has no value, and the move says
+ * so by itself: with the first clip taken before the command, where it
+ * marks nothing, the sample that completes the pair after the command
+ * marks the move clipped and ends the run of settled samples. */
+TEST_CASE(a_window_clipped_at_both_ends_marks_the_move_clipped)
+{
+    servo_move_t m;
+    servo_move_cfg_t c = {
+        .cmd_t = 100u, .window_t = 30030u, .rise_a = 0.10f, .ref_a = 0.10f,
+        .move_a = 0.30f, .band_a = 0.05f, .settle_n = 10u, .filter_n = 4u,
+    };
+    servo_move_begin(&m, &c);
+    CHECK_EQ(servo_move_sample(&m, 90u, 1.6f, SERVO_MOVE_CLIP_HIGH),
+             SERVO_MOVE_WAITING);
+    CHECK(!m.clipped);
+    CHECK_EQ(servo_move_sample(&m, 100u, -1.6f, SERVO_MOVE_CLIP_LOW),
+             SERVO_MOVE_WAITING);
+    CHECK(m.clipped);
+    CHECK_EQ(m.run_n, 0u);
+    CHECK_EQ(m.n, 0u);
+}
+
 int main(void)
 {
     RUN(the_threshold_is_three_noises_or_twenty_milliamps);
@@ -498,5 +520,6 @@ int main(void)
     RUN(primed_samples_fill_the_filter);
     RUN(a_modelled_move_is_timed_within_the_filter_at_1_khz);
     RUN(a_modelled_stop_is_reached_settled_at_1_khz);
+    RUN(a_window_clipped_at_both_ends_marks_the_move_clipped);
     return test_summary("servo_move");
 }

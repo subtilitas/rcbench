@@ -699,6 +699,37 @@ TEST_CASE(failed_transactions_are_counted_modulo_65536)
     CHECK_EQ(bus.errors, 1);
 }
 
+/* A recovery that freed the bus is over with the first transaction that
+ * goes through: a line that sticks again 1 ms later is recovered at once,
+ * not SENSE_RECOVER_MS after the recovery before. */
+TEST_CASE(a_bus_that_sticks_again_after_a_good_transaction_is_recovered_at_once)
+{
+    matek();
+    CHECK(ina228_step(&d, 0));
+    sense_value_t ua = { 0, SENSE_CLIP_NONE };
+    fb.low = true;
+    CHECK_EQ(ina228_read_current(&d, &ua), SENSE_BUS_LOW);
+    CHECK(sense_bus_recovery_due(&bus, 1000));
+    fb.low = false;
+    sense_bus_recovered(&bus, 1000);
+    uint8_t buf[3];
+    CHECK_EQ(sense_bus_read(&bus, MATEK_ADDR, INA228_VBUS, buf, 3), SENSE_OK);
+    CHECK(!bus.stuck);
+
+    fb.low = true;
+    CHECK_EQ(sense_bus_read(&bus, MATEK_ADDR, INA228_VBUS, buf, 3),
+             SENSE_BUS_LOW);
+    CHECK(bus.stuck);
+    CHECK(sense_bus_recovery_due(&bus, 1001));
+    /* And that recovery, its test failing, is followed by the next one
+     * SENSE_RECOVER_MS later. */
+    sense_bus_recovered(&bus, 1001);
+    CHECK_EQ(sense_bus_read(&bus, MATEK_ADDR, INA228_VBUS, buf, 3),
+             SENSE_BUS_LOW);
+    CHECK(!sense_bus_recovery_due(&bus, 1001u + SENSE_RECOVER_MS - 1u));
+    CHECK(sense_bus_recovery_due(&bus, 1001u + SENSE_RECOVER_MS));
+}
+
 int main(void)
 {
     RUN(registers_decode_most_significant_byte_first_with_their_signs);
@@ -725,5 +756,6 @@ int main(void)
     RUN(two_timeouts_in_a_row_stick_the_bus_and_one_does_not);
     RUN(a_setup_lost_to_a_reset_takes_the_part_offline);
     RUN(failed_transactions_are_counted_modulo_65536);
+    RUN(a_bus_that_sticks_again_after_a_good_transaction_is_recovered_at_once);
     return test_summary("ina228");
 }

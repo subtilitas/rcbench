@@ -94,8 +94,6 @@ static void rig_size(uint32_t size)
     i3221 = fake_add(&fb, FAKE_INA3221, I3221_ADDR, 0.1);
     i3221->volts[0] = 6.0;
     i3221->amps[0]  = 0.12;
-    /* Unused here, and the header's own. */
-    (void)fake_reset228;
     g_us = 20000000u;
     const sense_svc_io_t io = {
         .sched = { { fake_read, fake_write, &fb }, now_us, recover, &fb },

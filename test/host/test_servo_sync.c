@@ -15,19 +15,26 @@
 
 #include "servo_sim.h"
 #include "servo_sync.h"
+#include "tick_wrap.h"
 
 #define SAMPLE_MS 5u
 
-static uint32_t run(servo_sync_t *sy, servo_pair_t *pair, uint32_t budget_ms)
+static uint32_t run_from(servo_sync_t *sy, servo_pair_t *pair,
+                         uint32_t budget_ms, uint32_t t0)
 {
     uint32_t t = 0;
     uint16_t a = 1500, b = 1500;
     while (sy->state == SERVO_SYNC_RUNNING && t < budget_ms) {
-        const float amps = servo_pair_step(pair, a, b, t);
-        servo_sync_step(sy, amps, t, &a, &b);
+        const float amps = servo_pair_step(pair, a, b, t0 + t);
+        servo_sync_step(sy, amps, t0 + t, &a, &b);
         t += SAMPLE_MS;
     }
     return t;
+}
+
+static uint32_t run(servo_sync_t *sy, servo_pair_t *pair, uint32_t budget_ms)
+{
+    return run_from(sy, pair, budget_ms, 0u);
 }
 
 /* What the surface has to absorb, in microseconds, once the corrections the
@@ -327,6 +334,42 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK_NEAR(servo_pair_disagreement(NULL, 1500, 1500), 0.0f, 0.001f);
 }
 
+/* The search's settle and measure times are differences of two times: a
+ * search with the 2^32 ms wrap inside it gives the corrections a search at
+ * tick 0 gives, after the same time. */
+static servo_sync_t g_at_0;
+static uint32_t     g_at_0_ms;
+
+static void a_search_gives_its_corrections(uint32_t t0)
+{
+    servo_sync_t sy;
+    servo_pair_t pair;
+    setup(&sy, &pair);
+    const uint32_t took = run_from(&sy, &pair, 300000, t0);
+    CHECK_EQ(sy.state, SERVO_SYNC_DONE);
+    if (t0 == 0u) {
+        g_at_0    = sy;
+        g_at_0_ms = took;
+    } else {
+        CHECK_EQ(took, g_at_0_ms);
+        CHECK_EQ(sy.trim_us, g_at_0.trim_us);
+        CHECK_EQ(sy.travel_hi_us, g_at_0.travel_hi_us);
+        CHECK_EQ(sy.travel_lo_us, g_at_0.travel_lo_us);
+        CHECK((uint32_t)(t0 + took) < t0);      /* it did wrap */
+    }
+}
+
+TEST_CASE(a_search_takes_the_same_time_across_the_tick_wrap)
+{
+    /* Each start puts the wrap in another settle or measure of the search:
+     * 1 ms, 130 ms and 2501 ms after the start. */
+    static const uint32_t k_before[] = { 1u, 130u, 2501u };
+    for (unsigned i = 0; i < sizeof(k_before) / sizeof(k_before[0]); ++i) {
+        at_tick_0_and_before_the_wrap(a_search_gives_its_corrections,
+                                      k_before[i]);
+    }
+}
+
 int main(void)
 {
     RUN(the_uncorrected_pair_really_was_fighting);
@@ -341,5 +384,6 @@ int main(void)
     RUN(the_search_takes_a_workable_amount_of_time);
     RUN(progress_runs_from_nothing_to_all_of_it);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
+    RUN(a_search_takes_the_same_time_across_the_tick_wrap);
     return test_summary("servo_sync");
 }

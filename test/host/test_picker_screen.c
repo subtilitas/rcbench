@@ -81,11 +81,6 @@ static bool pad_point_on(uint16_t board, uint8_t gpio, int *x, int *y)
 
 /* The button belonging to a pad is on the pad's own side, straight out from
  * it. Walking away from the board finds it without knowing the tiers. */
-static bool pad_point(uint8_t gpio, int *x, int *y)
-{
-    return pad_point_on(BOARD, gpio, x, y);
-}
-
 static bool button_point_on(uint16_t board, uint8_t gpio, int *bxp, int *byp)
 {
     int px, py;

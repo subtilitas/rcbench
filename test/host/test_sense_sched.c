@@ -762,6 +762,27 @@ TEST_CASE(windows_and_captures_run_on_across_the_wraps)
     CHECK(s.cap.arrive_t <= 5040u);
 }
 
+/* The windows are numbered from the schedule's start in 64 bits: 2^32 ms
+ * and 250 ms after it the open window is number (2^32 + 250) / 50, not 5,
+ * and the page's 16 bits carry that number's low half. */
+TEST_CASE(the_window_number_counts_on_2_32_ms_after_the_start)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(100u);
+    CHECK(s.win == 1u);                 /* the tick at 99 ms */
+    g_us += (((uint64_t)1u << 32) + 150u) * 1000u;
+    const uint64_t want = (((uint64_t)1u << 32) + 250u) / SENSE_WINDOW_MS;
+    tick();                             /* at 2^32 + 250 ms */
+    CHECK(s.win == want);
+    ticks(50u);
+    CHECK(s.win == want + 1u);
+    sense_window_t w;
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, (uint16_t)want);
+    CHECK_EQ(w.number, 47190u);
+}
+
 /* A probe of a part back from offline can cross a window boundary: the
  * INA228's 10 transactions take about 1.1 ms.  The window is rolled again
  * after it, so the CH1 sample read past the boundary is the next
@@ -1852,6 +1873,7 @@ int main(void)
     RUN(one_failed_ina228_read_ends_the_runs_totals);
     RUN(a_failed_voltage_read_leaves_the_next_current_without_power);
     RUN(windows_and_captures_run_on_across_the_wraps);
+    RUN(the_window_number_counts_on_2_32_ms_after_the_start);
     RUN(a_sample_after_a_probe_across_a_boundary_is_the_next_windows);
     RUN(a_read_batch_across_a_boundary_splits_between_the_windows);
     RUN(an_arrival_at_the_deadline_is_late);

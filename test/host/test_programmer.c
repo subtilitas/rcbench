@@ -3527,6 +3527,95 @@ TEST_CASE(a_programmer_control_released_for_the_finger_is_not_pressed)
     ui_router_goto(SCREEN_OVERVIEW);
 }
 
+/* The supply's own range, in place of the PPS default's 3.3 to 21 V. */
+static void supply_gives(float v_min, float v_max)
+{
+    supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
+    caps.v_min = v_min;
+    caps.v_max = v_max;
+    supply_screen_set_caps(&caps);
+}
+
+/* RUN held on the profile page: whether a run started. */
+static bool run_starts(void)
+{
+    const uint32_t before = programmer_screen_stick_runs();
+    scr->tick(0.02f);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    return programmer_screen_stick_runs() == before + 1u;
+}
+
+/*
+ * A voltage the supply can give is not refused: the profile's 7.6 V runs on
+ * a supply whose highest voltage is 7.6 V and on one whose lowest is 7.6 V.
+ * 0.01 V the other side of either is refused, with the reason on the page.
+ */
+TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
+{
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    supply_gives(3.3f, 7.6f);
+    CHECK(run_starts());
+    CHECK_EQ(programmer_screen_stick()->out.supply_mv, 7600u);
+
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    supply_gives(3.3f, 7.59f);
+    CHECK(!run_starts());
+    CHECK_STR_EQ(programmer_screen_stick_note(),
+                 "7.60 V is above the SUPPLY cap of 7.59 V");
+
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    supply_gives(7.6f, 21.0f);
+    CHECK(run_starts());
+
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    supply_gives(7.61f, 21.0f);
+    CHECK(!run_starts());
+    CHECK_STR_EQ(programmer_screen_stick_note(),
+                 "VOLTAGE is below the supply's 7.61 V");
+}
+
+/* The list the same: a profile that needs 7.6 V opens on a supply whose
+ * highest voltage is 7.6 V, and 0.01 V under it the row is a refused one
+ * that says what it needs. */
+TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
+{
+    fresh();
+    supply_gives(3.3f, 7.6f);
+    descend_to_hobbywing();
+    CHECK(programmer_screen_stick_page() != NULL);
+
+    fresh();
+    supply_gives(3.3f, 7.59f);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
+    bool found = false;
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+        if (p != NULL && strcmp(p->id, "hobbywing-flyfun-8item") == 0) {
+            found = true;
+            const char *why = programmer_screen_stick_row_why(i);
+            CHECK(why != NULL);
+            if (why != NULL) {
+                CHECK_STR_EQ(why, "needs 7.6 V, cap 7.5 V");
+            }
+            break;
+        }
+    }
+    CHECK(found);
+    open_model("hobbywing-flyfun-8item", NULL);
+    CHECK(programmer_screen_stick_page() == NULL);
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -3592,5 +3681,7 @@ int main(void)
     RUN(a_manual_step_takes_done_as_a_tap_and_abort_on_the_press);
     RUN(hold_to_run_keeps_its_two_seconds);
     RUN(a_programmer_control_released_for_the_finger_is_not_pressed);
+    RUN(a_voltage_equal_to_the_supplys_cap_or_minimum_runs);
+    RUN(a_profile_at_the_supplys_cap_opens_from_the_list);
     return test_summary("programmer");
 }

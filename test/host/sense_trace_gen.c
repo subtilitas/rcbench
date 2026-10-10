@@ -108,7 +108,6 @@ int main(int argc, char **argv)
     sense_bus_t scratch;
     fake_bus_init(&fb, &scratch);
     fake_part_t *part = fake_add(&fb, FAKE_INA3221, 0x40u, 0.1);
-    (void)fake_reset228;
     const sense_svc_io_t io = {
         .sched = { { fake_read, fake_write, &fb }, now_us, recover, &fb },
         .open = open_bus, .close = close_bus, .ask = ask,

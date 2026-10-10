@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "guard_canvas.h"
 
 #include "busfault_screen.h"
 #include "ui_theme.h"
@@ -257,28 +258,50 @@ TEST_CASE(the_report_is_kept_and_handed_back)
     CHECK(busfault_screen_report() == NULL);
 }
 
+/* The canvas of the two cases below, inside its guard rows and columns. */
+static gfx_color_t    s_gpx[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
+static guard_canvas_t s_g;
+static gfx_canvas_t   s_gc;
+
+/* A frame that painted the whole canvas and nothing beside it, and its sum. */
+static uint32_t whole_frame(void)
+{
+    CHECK_EQ(guard_canvas_touched(&s_g), 0u);
+    CHECK_EQ(guard_canvas_unpainted(&s_g), 0u);
+    return guard_canvas_sum(&s_g);
+}
+
 TEST_CASE(every_verdict_renders)
 {
     /*
      * Each verdict draws a different list, and a list drawn from a table
-     * indexed by verdict is where an out-of-range read would live. Rendering
-     * every one of them, the running verdict included, is what the sanitiser
-     * build is for.
+     * indexed by verdict is where an out-of-range read would live.  Every
+     * one of them, the running verdict included, paints the whole canvas
+     * and no pixel beside it, draws the same picture again off the cached
+     * chrome, and draws a picture no other verdict draws.
      */
     static const can_selftest_verdict_t k[] = {
         CAN_SELFTEST_RUNNING, CAN_SELFTEST_OK, CAN_SELFTEST_SILENT,
         CAN_SELFTEST_CORRUPT, CAN_SELFTEST_LOSSY, CAN_SELFTEST_DROPPED,
     };
+    uint32_t sum[sizeof(k) / sizeof(k[0])];
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         fresh();
+        guard_canvas_init(&s_g, &s_gc, s_gpx, SCREEN_W, SCREEN_H);
         busfault_report_t r = { .verdict = k[i], .sent = 1000 };
         r.have_remote = (i % 2) == 0;
         r.bus_off = (i % 3) == 0;
         r.remote_overflows = (uint16_t)i;
         busfault_screen_set(&r);
-        scr()->render(&s_c, 0);
-        scr()->render(&s_c, 1);
-        scr()->render(&s_c, 0);   /* and again, off the cached chrome */
+        scr()->render(&s_gc, 0);
+        sum[i] = whole_frame();
+        scr()->render(&s_gc, 1);
+        (void)whole_frame();
+        scr()->render(&s_gc, 0);  /* and again, off the cached chrome */
+        CHECK_EQ(whole_frame(), sum[i]);
+        for (size_t j = 0; j < i; ++j) {
+            CHECK(sum[i] != sum[j]);
+        }
     }
 }
 
@@ -289,14 +312,17 @@ TEST_CASE(a_lost_link_renders_every_controller_state)
      * from the controller's state, so each of the five has to draw. A state
      * the switch does not cover would fall through to whatever the default
      * arm says, and on this screen that is the text an operator photographs
-     * and sends.
+     * and sends.  Each state paints the whole canvas, no pixel beside it,
+     * and a picture of its own.
      */
     static const busfault_bus_t k[] = {
         BUSFAULT_BUS_UNKNOWN, BUSFAULT_BUS_RUNNING, BUSFAULT_BUS_RECOVERING,
         BUSFAULT_BUS_STOPPED, BUSFAULT_BUS_OFF,
     };
+    uint32_t sum[sizeof(k) / sizeof(k[0])];
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         fresh();
+        guard_canvas_init(&s_g, &s_gc, s_gpx, SCREEN_W, SCREEN_H);
         busfault_report_t r = { .kind = BUSFAULT_LINK_LOST, .bus = k[i] };
         r.down_s     = (uint32_t)(i * 7u);
         r.polls      = 5323;
@@ -304,8 +330,13 @@ TEST_CASE(a_lost_link_renders_every_controller_state)
         r.recoveries = (uint32_t)(i * 2u);
         r.tx_errors  = (uint32_t)(i * 64u);
         busfault_screen_set(&r);
-        scr()->render(&s_c, 0);
-        scr()->render(&s_c, 1);
+        scr()->render(&s_gc, 0);
+        sum[i] = whole_frame();
+        scr()->render(&s_gc, 1);
+        (void)whole_frame();
+        for (size_t j = 0; j < i; ++j) {
+            CHECK(sum[i] != sum[j]);
+        }
     }
 }
 

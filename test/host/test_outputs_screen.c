@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "guard_canvas.h"
 
 #include "link_pages.h"
 #include "outputs_pages.h"
@@ -394,28 +395,45 @@ TEST_CASE(nothing_can_be_ticked_while_the_protocol_is_off)
 
 /* --------------------------------------------------------------- rendering */
 
+/* Every protocol with every pin ticked, and its list open over that:
+ * each frame paints the whole canvas and no pixel beside it, and each
+ * protocol's grid is a picture of its own. */
 TEST_CASE(every_state_renders_without_reading_off_the_canvas)
 {
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    guard_canvas_t g;
+    gfx_canvas_t c;
+    uint32_t sum[OUTBIND_PROTOS];
 
     fresh();
     for (int p = 0; p < (int)OUTBIND_PROTOS; ++p) {
+        guard_canvas_init(&g, &c, px, 800, 432);
         choose_proto(p);
-        for (uint8_t g = 0; g < 29u; ++g) {
-            if (outbind_index_of(OUTBIND_BOARD_PICO_HEADER, g) < outbind_pin_count(OUTBIND_BOARD_PICO_HEADER)) {
-                tap_pin(g);
+        for (uint8_t pin = 0; pin < 29u; ++pin) {
+            if (outbind_index_of(OUTBIND_BOARD_PICO_HEADER, pin) < outbind_pin_count(OUTBIND_BOARD_PICO_HEADER)) {
+                tap_pin(pin);
             }
         }
         scr()->render(&c, 0);
+        CHECK_EQ(guard_canvas_touched(&g), 0u);
+        CHECK_EQ(guard_canvas_unpainted(&g), 0u);
+        sum[p] = guard_canvas_sum(&g);
+        for (int q = 0; q < p; ++q) {
+            CHECK(sum[p] != sum[q]);
+        }
         /* And with the list open over the top of whatever was chosen. */
         tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
         scr()->render(&c, 1);
+        CHECK_EQ(guard_canvas_touched(&g), 0u);
+        CHECK_EQ(guard_canvas_unpainted(&g), 0u);
+        CHECK(guard_canvas_sum(&g) != sum[p]);
         tap(700, 400);
     }
     for (int r = 0; r <= (int)OUTPUTS_REFUSED; ++r) {
         outputs_screen_set_result((outputs_result_t)r);
         scr()->render(&c, 2);
+        CHECK_EQ(guard_canvas_touched(&g), 0u);
+        CHECK_EQ(guard_canvas_unpainted(&g), 0u);
     }
 }
 
