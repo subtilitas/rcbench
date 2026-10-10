@@ -425,7 +425,10 @@ on the servo's shaft.
 Every MOVE of the automatic servo test is a changed pulse, so a test with
 the released panel is traced without a capture. A trigger during a trace
 adds its line and moves the end to 4 s (10 s for `t`) after itself when
-that is later: moves less than 4 s apart are one trace. `x` on the console
+that is later: moves less than 4 s apart are one trace. A command that is
+slewed changes the pulse in every pass: its `$C` line has the first pulse,
+and a `$D` line the pulse it ended at, once the output has held still for
+50 ms. The automatic test's moves are steps and have none. `x` on the console
 ends a trace. Each trace also holds the samples of up to 64 ms before its
 trigger.
 

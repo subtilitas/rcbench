@@ -48,7 +48,9 @@
  *   cmd   a PWM slot renders another pulse width than in the pass before,
  *         SENSE_TRACE_HOLD_MS or more after that slot's last change
  *         (sense_trace_pulse()).  Changes closer together are one slewed
- *         command: they move the trace's end and add no line.  A pulse
+ *         command: they move the trace's end, and once the slot has held
+ *         still for SENSE_TRACE_HOLD_MS a $D line gives the pulse the
+ *         command ended at.  A pulse
  *         going to 0 is the bank letting go, not a command.  The pulse is
  *         the one the slice renders: no longer than its frame
  *         (sense_trace_rendered()).
@@ -71,6 +73,8 @@
  *       the trace's first record.  All 0 with the bus closed.
  *   $C t=T ch=C us=P     a cmd trigger: output channel C renders P µs in
  *                        the frame that starts at T
+ *   $D t=T ch=C us=P     channel C's slewed command ended at P µs; T is
+ *                        its last change.  Counted with the trigger lines.
  *   $E t=T               an edge trigger
  *   $K t=T               a key trigger
  *   D,I                  a CH1 sample: D is its time less the previous
@@ -155,6 +159,7 @@ typedef enum {
     SENSE_TRACE_TRIG_CMD = 0,
     SENSE_TRACE_TRIG_EDGE,
     SENSE_TRACE_TRIG_KEY,
+    SENSE_TRACE_MARK_DEST,    /**< no trigger: a slewed command's end      */
 } sense_trace_trig_t;
 
 /** Why a trace ended. */
@@ -198,6 +203,8 @@ typedef struct {
 typedef struct {
     bool     have;        /**< pulse is one seen                           */
     bool     changed;     /**< changed_t is a change seen                  */
+    bool     slewed;      /**< the command's pulse changed after its
+                               trigger: its end is still to be said        */
     uint16_t pulse;
     uint32_t changed_t;   /**< its last change, 0.1 ms                     */
 } sense_trace_watch_t;
@@ -257,11 +264,11 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
  *  clamps it. */
 uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top);
 
-/** Core 0, every pass, for each PWM slot: the pulse it renders, 0 for
- *  none.  True when this is a command: the caller then gives the time of
+/** Core 0, every pass, for each PWM slot: the output channel @p ch it
+ *  renders and the pulse, 0 for none.  True when this is a command: the caller then gives the time of
  *  the frame that carries it to sense_trace_trigger(). */
-bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t pulse_us,
-                       uint64_t now_us);
+bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
+                       uint16_t pulse_us, uint64_t now_us);
 
 /** Core 0: a character from the console. */
 void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us);

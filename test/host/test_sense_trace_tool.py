@@ -17,7 +17,9 @@ sample line missing, with a trace starting inside another, with records
 the coprocessor dropped, with no trace, with another format version and
 with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
 count; clipped samples; edge lines taken before command lines, each with
-the command line nearest to it; what the traces alone give; a servo
+the command line nearest to it; a trace with trigger lines not written,
+a move with records missing inside it and a slewed command; what the
+traces alone give; a servo
 CSV that pairs at two offsets, one set by hand, and one without the
 columns.
 
@@ -404,6 +406,63 @@ def the_traces_alone_say_which_settings_time_every_move() -> None:
           "file pairs with a move." in r.stdout, "no row pairs")
 
 
+def a_trace_with_trigger_lines_not_written_is_not_replayed() -> None:
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    lines[-1] = lines[-1].replace("ml=0", "ml=1")
+    r = tool(str(work("ml.log", "\n".join(lines) + "\n")), "--no-csv")
+    check(r.returncode == 1, f"exit {r.returncode}")
+    check("PROBLEM: 1 trigger line(s) were not written: a move may be "
+          "missing, so no move of this trace is replayed" in r.stdout,
+          "said")
+    check("arrival, ms from the command" not in r.stdout
+          and "settings that see every move" not in r.stdout,
+          "no replay")
+
+
+def a_move_with_records_missing_inside_it_is_not_replayed() -> None:
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    # 3 records dropped 50 ms into the first move's burst.
+    first = next(k for k, line in enumerate(lines) if line == "10,2000")
+    at = first + 50
+    body = (lines[:at] + ["$L n=3", "40,2000"] + lines[at + 4:-1])
+    n = sum(1 for line in body if sense_trace.RE_S.match(line))
+    body.append(f"$Z n=1 s={n} v=0 l=3 m=2 ml=0 e=t")
+    r = tool(str(work("gap.log", "\n".join(body) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1900 us: records are missing "
+          "inside it, not replayed" in r.stdout, "said")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["1/2", "1/2", "-", "113.0"],
+          f"{arrival[(1, '0.05')]}")
+    check("1 move(s) not replayed; they count as not seen below"
+          in r.stdout, "counted")
+    check("settings that see every move and time its arrival: none"
+          in r.stdout, "no setting sees every move")
+
+
+def a_slewed_command_ends_at_its_d_line() -> None:
+    # Three commands on a slewed channel: each $C line has the slew's
+    # first pulse, each $D line the pulse it ended at.
+    moves = [(0, 1501), (1000, 1799), (2000, 1101)]
+    ends = {1501: 1900, 1799: 1100, 1101: 1900}
+    lines = []
+    for line in synthetic(1000, moves).splitlines():
+        lines.append(line)
+        m = sense_trace.RE_MARK.match(line)
+        if m and m.group(1) == "C":
+            lines.append(f"$D t={int(m.group(2)) + 3000} ch=2 "
+                         f"us={ends[int(m.group(4))]}")
+    lines[-1] = lines[-1].replace("m=3", "m=6")
+    r = tool(str(work("slew.log", "\n".join(lines) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
+    check("move 2 at 1000.0 ms, channel 2 to 1100 us" in r.stdout, "move 2")
+    # Back at 1900 us: the level it was held at before move 2.
+    check("move 3 at 2000.0 ms, channel 2 to 1900 us: before 0.120 A, "
+          "holding 0.120 A (held before move 2)" in r.stdout,
+          "move 3's level")
+
+
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
     # The second command 50 ms into the first move's burst; the third
     # with no burst at all.
@@ -511,6 +570,9 @@ CASES = [
     edge_lines_are_the_moves_when_there_are_any,
     an_edge_takes_the_command_line_nearest_to_it,
     the_traces_alone_say_which_settings_time_every_move,
+    a_trace_with_trigger_lines_not_written_is_not_replayed,
+    a_move_with_records_missing_inside_it_is_not_replayed,
+    a_slewed_command_ends_at_its_d_line,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,
     a_floor_is_a_current_above_zero,

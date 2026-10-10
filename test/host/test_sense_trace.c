@@ -170,7 +170,7 @@ static void run(unsigned ms)
 /* ------------------------------------------------- the console, parsed */
 
 typedef struct {
-    unsigned n_t, n_h, n_z, n_c, n_e, n_k, n_l, n_st, n_bad;
+    unsigned n_t, n_h, n_z, n_c, n_e, n_k, n_d, n_l, n_st, n_bad;
     unsigned n_s, n_v;
     unsigned long lost;         /* the $L lines' sum                  */
     /* The last $T, $H and $Z. */
@@ -187,6 +187,8 @@ typedef struct {
     int      mv_last;
     unsigned long mark_t[32];   /* every trigger line's time          */
     unsigned mark_ch, mark_us;  /* the last $C line's                 */
+    unsigned long dest_t;       /* the last $D line's                 */
+    unsigned dest_ch, dest_us;
     unsigned n_mark;
     unsigned long st_on, st_rst;
     unsigned st_at;             /* sample lines before the first $S   */
@@ -226,6 +228,12 @@ static void parse_line(const char *l)
         p->mark_ch = b;
         p->mark_us = c;
         p->mark_t[p->n_mark++ % 32u] = a;
+    } else if (sscanf(l, "$D t=%lu ch=%u us=%u%n", &a, &b, &c, &end) == 3
+               && l[end] == '\0') {
+        ++p->n_d;
+        p->dest_t  = a;
+        p->dest_ch = b;
+        p->dest_us = c;
     } else if (sscanf(l, "$E t=%lu%n", &a, &end) == 1 && l[end] == '\0') {
         ++p->n_e;
         p->mark_t[p->n_mark++ % 32u] = a;
@@ -339,7 +347,7 @@ TEST_CASE(a_ring_is_a_power_of_two)
     tick();
     sense_trace_feed(&t2, &v.sched);
     sense_trace_trigger(&t2, SENSE_TRACE_TRIG_KEY, g_us, 0u, 0u);
-    CHECK(!sense_trace_pulse(&t2, 0u, 1500u, g_us));
+    CHECK(!sense_trace_pulse(&t2, 0u, 5u, 1500u, g_us));
     CHECK(!sense_trace_active(&t2));
     CHECK_EQ(sense_trace_pump(&t2, g_us, true, out, sizeof(out)), 0u);
     CHECK(sense_trace_init(&t2, r, 2u));
@@ -850,38 +858,38 @@ TEST_CASE(a_slots_pulse_is_a_command_after_it_held_still)
     rig();
     uint64_t us = g_us;
     /* The first pulse seen is where the watch starts. */
-    CHECK(!sense_trace_pulse(&tr, 2u, 1500u, us));
-    CHECK(!sense_trace_pulse(&tr, 2u, 1500u, us + 1000u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1500u, us));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 1000u));
     /* The first change is a command, whenever it comes. */
     us += 2000u;
-    CHECK(sense_trace_pulse(&tr, 2u, 1900u, us));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us));
     /* 49.9 ms after it: the same command still slewing. */
-    CHECK(!sense_trace_pulse(&tr, 2u, 1890u, us + 49900u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1890u, us + 49900u));
     /* 50.0 ms after that one: a command of its own. */
     us += 49900u;
-    CHECK(sense_trace_pulse(&tr, 2u, 1100u, us + 50000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1100u, us + 50000u));
     us += 50000u;
     /* And 50.1 ms. */
-    CHECK(sense_trace_pulse(&tr, 2u, 1900u, us + 50100u));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us + 50100u));
     us += 50100u;
     /* The bank letting go is no command; the pulse after it is one once
      * the slot has held still. */
-    CHECK(!sense_trace_pulse(&tr, 2u, 0u, us + 100000u));
-    CHECK(sense_trace_pulse(&tr, 2u, 1500u, us + 200000u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 100000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 200000u));
     us += 200000u;
-    CHECK(!sense_trace_pulse(&tr, 2u, 0u, us + 1000u));
-    CHECK(!sense_trace_pulse(&tr, 2u, 1500u, us + 2000u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 1000u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 2000u));
     /* Each slot is watched on its own; one past the last is none. */
-    CHECK(!sense_trace_pulse(&tr, 7u, 1500u, us));
-    CHECK(sense_trace_pulse(&tr, 7u, 1501u, us));
-    CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 1500u, us));
-    CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 1501u, us));
+    CHECK(!sense_trace_pulse(&tr, 7u, 5u, 1500u, us));
+    CHECK(sense_trace_pulse(&tr, 7u, 5u, 1501u, us));
+    CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 5u, 1500u, us));
+    CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 5u, 1501u, us));
     /* The hold across the 0.1 ms count's wrap. */
     us = ((uint64_t)1u << 32) * 100u - 20000u;
-    CHECK(sense_trace_pulse(&tr, 0u, 1500u, us) == false);
-    CHECK(sense_trace_pulse(&tr, 0u, 1600u, us));
-    CHECK(!sense_trace_pulse(&tr, 0u, 1700u, us + 49900u));
-    CHECK(sense_trace_pulse(&tr, 0u, 1800u, us + 49900u + 50000u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1500u, us) == false);
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, us));
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1700u, us + 49900u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1800u, us + 49900u + 50000u));
 }
 
 TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
@@ -889,11 +897,11 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
     rig();
     run(300u);
     const uint32_t t0 = (uint32_t)(g_us / 100u);
-    CHECK(!sense_trace_pulse(&tr, 0u, 1100u, g_us));
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1100u, g_us));
     /* 800 us of travel at 1 us a millisecond: a change every pass. */
     unsigned commands = 0u;
     for (unsigned k = 1u; k <= 800u; ++k) {
-        if (sense_trace_pulse(&tr, 0u, (uint16_t)(1100u + k), g_us)) {
+        if (sense_trace_pulse(&tr, 0u, 5u, (uint16_t)(1100u + k), g_us)) {
             sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u,
                                 (uint16_t)(1100u + k));
             ++commands;
@@ -901,19 +909,62 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
         run(1u);
     }
     CHECK_EQ(commands, 1u);
-    /* Open 4 s past the last change, not past the first. */
-    run(3990u);
+    /* Open 4 s past the last change, not past the first.  The slot
+     * renders its last pulse in every pass. */
+    for (unsigned k = 0; k < 3990u; ++k) {
+        CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1900u, g_us));
+        run(1u);
+    }
     CHECK(sense_trace_active(&tr));
     run(20u);
     CHECK(!sense_trace_active(&tr));
     parse();
     CHECK_EQ(seen.n_bad, 0u);
     CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1101u);
     CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 7990u + 40000u - 10u);
+    /* Where the slew ended, once the slot had held still: one line, at
+     * the last change, with the pulse it ended at. */
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_ch, 5u);
+    CHECK_EQ(seen.dest_us, 1900u);
+    CHECK_EQ(seen.dest_t, t0 + 7990u);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK(strstr(g_log, "$D t=") > strstr(g_log, "$C t="));
+    /* A slew that is let go before it held still ends where it was, and
+     * one a new command follows ends before that command's line. */
+    g_len = 0u;
+    sense_trace_key(&tr, 't', g_us);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1500u, g_us) == false);
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1510u, g_us));
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1520u, g_us));
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 0u, g_us));
+    run(10u);
+    parse();
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_us, 1520u);
+    CHECK_EQ(seen.dest_ch, 6u);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1600u, g_us + 100000u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1610u, g_us + 101000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1100u, g_us + 151000u));
+    run(10u);
+    parse();
+    CHECK_EQ(seen.n_d, 2u);
+    CHECK_EQ(seen.dest_us, 1610u);
+    /* A step is no slew: no $D line. */
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1100u, g_us + 400000u));
+    run(10u);
+    parse();
+    CHECK_EQ(seen.n_d, 2u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
     /* With no trace under way a slew starts none. */
-    CHECK(!sense_trace_pulse(&tr, 1u, 1500u, g_us));
-    CHECK(sense_trace_pulse(&tr, 1u, 1501u, g_us));
-    CHECK(!sense_trace_pulse(&tr, 1u, 1502u, g_us + 1000u));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1501u, g_us));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1502u, g_us + 1000u));
     CHECK(!sense_trace_active(&tr));
 }
 
@@ -1509,11 +1560,11 @@ TEST_CASE(a_pulse_is_the_one_the_frame_can_carry)
     CHECK_EQ(sense_trace_rendered(65535u, 70000u), 65535u);
     /* Two endpoints past the frame render the same pulse: no command. */
     rig();
-    CHECK(!sense_trace_pulse(&tr, 0u, sense_trace_rendered(1900u, 1784u),
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, sense_trace_rendered(1900u, 1784u),
                              g_us));
-    CHECK(!sense_trace_pulse(&tr, 0u, sense_trace_rendered(2000u, 1784u),
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, sense_trace_rendered(2000u, 1784u),
                              g_us + 100000u));
-    CHECK(sense_trace_pulse(&tr, 0u, sense_trace_rendered(1500u, 1784u),
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, sense_trace_rendered(1500u, 1784u),
                             g_us + 200000u));
 }
 
@@ -1534,6 +1585,13 @@ TEST_CASE(every_line_at_its_longest_fits)
     tr.out.len_ms = 123456u;
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
                         (uint64_t)UINT32_MAX * 100u, 65535u, 65535u);
+    /* A slew's end at the longest numbers. */
+    tr.out.watch[0].have = tr.out.watch[0].changed = true;
+    tr.out.watch[0].slewed = true;
+    tr.out.watch[0].pulse = 65535u;
+    tr.out.watch[0].changed_t = UINT32_MAX;
+    (void)sense_trace_pulse(&tr, 0u, 65535u, 65535u,
+                            (uint64_t)(SENSE_TRACE_HOLD_MS * 10u) * 100u);
     run(20u);
     tr.out.n_s = tr.out.n_v = tr.out.n_lost = UINT32_MAX - 1u;
     tr.out.n_m = tr.out.n_mlost = UINT32_MAX;
@@ -1542,6 +1600,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     CHECK(strstr(g_log, "$T v=1 n=65535 trig=edge t=4294967295 "
                         "ms=4294967295 len=99999\r\n") != NULL);
     CHECK(strstr(g_log, "$C t=4294967295 ch=65535 us=65535\r\n") != NULL);
+    CHECK(strstr(g_log, "$D t=4294967295 ch=65535 us=65535\r\n") != NULL);
     CHECK(strstr(g_log, "$E t=") != NULL);
     CHECK(strstr(g_log, "$Z n=65535 s=99999999 v=9999999 l=99999999 m=9999 "
                         "ml=9999 e=k\r\n") != NULL);

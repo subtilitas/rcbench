@@ -148,7 +148,7 @@ int main(int argc, char **argv)
             sense_trace_key(&tr, 'x', g_us);
         }
         const uint16_t pulse = pulse_at(ms);
-        if (sense_trace_pulse(&tr, 0u, pulse, g_us)) {
+        if (sense_trace_pulse(&tr, 0u, 0u, pulse, g_us)) {
             frame_us = (g_us / FRAME_US + 1u) * FRAME_US;
             next = pulse;
             sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, frame_us, 0u,

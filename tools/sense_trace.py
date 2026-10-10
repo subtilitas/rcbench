@@ -18,7 +18,10 @@ terminal capture of that console and, for each trace in it:
      prints for each setting whether the move is seen and when it arrives.
 
 A move is a trigger line: an edge line when the trace has any, a command
-line otherwise.  Its levels are taken from the trace as the servo test
+line otherwise.  A slewed command's destination is its $D line's pulse.
+A trace whose end line counts trigger lines that were not written is not
+replayed, and neither is a move with records missing among its samples:
+the rules count samples.  Its levels are taken from the trace as the servo test
 takes them from its meter:
 
   level before   the mean of the 50 ms before the command
@@ -100,7 +103,7 @@ RE_T = re.compile(r"^\$T v=(\d+) n=(\d+) trig=(cmd|edge|key) t=(\d+) "
                   r"ms=(\d+) len=(\d+)$")
 RE_H = re.compile(r"^\$H dt_us=(\d+) shunt_uohm=(\d+) cfg=0x([0-9A-F]{4}) "
                   r"on=([01]) rst=(\d+)$")
-RE_MARK = re.compile(r"^\$([CEK]) t=(\d+)(?: ch=(\d+) us=(\d+))?$")
+RE_MARK = re.compile(r"^\$([CEKD]) t=(\d+)(?: ch=(\d+) us=(\d+))?$")
 RE_S = re.compile(r"^(-?\d+),(-?\d+)$")
 RE_V = re.compile(r"^v(-?\d+)$")
 RE_STATE = re.compile(r"^\$S on=([01]) rst=(\d+)$")
@@ -142,6 +145,7 @@ class Trace:
         self.n_volts = 0
         self.marks: list[tuple[str, int, int | None, int | None]] = []
         self.lost = 0
+        self.gaps: list[int] = []           # samples read before each $L
         self.states: list[tuple[int, int, int]] = []
         self.end: dict[str, int | str] | None = None
         self.problems: list[str] = []
@@ -207,6 +211,7 @@ def parse_log(text: str) -> tuple[list[Trace], int]:
                               ch, us))
         elif (m := RE_L.match(line)):
             cur.lost += int(m.group(1))
+            cur.gaps.append(len(cur.t))
         elif (m := RE_STATE.match(line)):
             cur.states.append((len(cur.t), int(m.group(1)),
                                int(m.group(2))))
@@ -234,6 +239,10 @@ def check(tr: Trace) -> None:
     end = tr.end
     if end["n"] != tr.number:
         tr.problems.append(f"the end line is trace {end['n']}'s")
+    if end["ml"]:
+        tr.problems.append(f"{end['ml']} trigger line(s) were not written: "
+                           "a move may be missing, so no move of this "
+                           "trace is replayed")
     # The end line's counts stop at these values.
     for key, have, what, top in (
             ("s", len(tr.t), "sample", 99999999),
@@ -299,6 +308,7 @@ class Move:
         self.move_a = 0.0
         self.first = 0              # samples fed: [first, last)
         self.last = 0
+        self.why_not = ""           # why it is not replayed
         self.results: dict[tuple[int, float], dict] = {}
         self.horn_ms: float | None = None
 
@@ -316,10 +326,17 @@ def window(tr: Trace, lo: int, hi: int) -> list[float]:
 def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     """The trace's moves with their levels; none for a trace without a
     shunt or without commands."""
-    if tr.shunt_uohm == 0:
+    if tr.shunt_uohm == 0 or (tr.end is not None and tr.end["ml"]):
         return []
     edges = [m for m in tr.marks if m[0] == "E"]
-    cmds = [m for m in tr.marks if m[0] == "C"]
+    cmds = [list(m) for m in tr.marks if m[0] == "C"]
+    # A slewed command's line carries its first pulse; its $D line the one
+    # it ended at, which is the end the servo is then held at.
+    for _, t, ch, us in sorted((m for m in tr.marks if m[0] == "D"),
+                               key=lambda m: m[1]):
+        mine = [c for c in cmds if c[2] == ch and c[1] <= t]
+        if mine:
+            max(mine, key=lambda c: c[1])[3] = us
     moves = []
     if edges:
         for _, t, _, _ in edges:
@@ -345,11 +362,17 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
         before = window(tr, mv.t - HOLD_MS * T_PER_MS, mv.t)
         hold.append(spread(before)[::2] if before else None)
         mv.rise_a = statistics.fmean(rise) if rise else None
+        if not rise:
+            mv.why_not = "no sample in the 50 ms before it"
         mv.first = next((i for i, t in enumerate(tr.t)
                          if t >= mv.t - RISE_MS * T_PER_MS), len(tr.t))
         nxt = moves[k + 1].t if k + 1 < len(moves) else None
         mv.last = len(tr.t) if nxt is None else next(
             (i for i, t in enumerate(tr.t) if t >= nxt), len(tr.t))
+        # The rules count samples, not time: a move with samples missing
+        # inside it is not judged.
+        if any(mv.first < gap < mv.last for gap in tr.gaps):
+            mv.why_not = "records are missing inside it"
         # The destination's holding level: where a later-known hold at
         # that pulse width was left from, the idle level until then.
         mv.ref_a, mv.ref_from = idle_a, "idle level"
@@ -393,7 +416,7 @@ def replay(binary: pathlib.Path, moves: list[Move]) -> None:
     lines = []
     order = []
     for mv in moves:
-        if mv.rise_a is None:
+        if mv.why_not:
             continue
         tr = mv.tr
         for n in FILTERS:
@@ -577,10 +600,9 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
     for k, mv in enumerate(moves):
         to = (f"channel {mv.ch} to {mv.us} us" if mv.us is not None
               else "edge")
-        if mv.rise_a is None:
+        if mv.why_not:
             out.append(f"    move {k + 1} at {mv.t / T_PER_MS:.1f} ms, "
-                       f"{to}: no sample in the 50 ms before it, not "
-                       "replayed")
+                       f"{to}: {mv.why_not}, not replayed")
             continue
         horn = (f", horn {mv.horn_ms:.0f} ms" if mv.horn_ms is not None
                 else "")
@@ -666,6 +688,10 @@ def report_summary(moves: list[Move], have_horn: bool, asked: bool,
         return
     total = len(moves)
     out.append(f"all traces, {total} move(s):")
+    skipped = sum(1 for mv in moves if mv.why_not)
+    if skipped:
+        out.append(f"  {skipped} move(s) not replayed; they count as not "
+                   "seen below")
     out.append("    filter  band A   seen  arrived"
                + ("  median difference to the horn" if have_horn else ""))
     for n in FILTERS:

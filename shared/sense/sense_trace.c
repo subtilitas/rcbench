@@ -234,6 +234,23 @@ static void extend(sense_trace_out_t *o, uint32_t end_t)
     }
 }
 
+/* A line for the console's queue, or counted when it is full. */
+static void mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
+                 uint16_t ch, uint16_t us)
+{
+    if (o->q_n >= SENSE_TRACE_MARKS) {
+        ++o->n_mlost;
+        return;
+    }
+    sense_trace_mark_t *m =
+        &o->q[(o->q_head + o->q_n) % SENSE_TRACE_MARKS];
+    m->kind = (uint8_t)kind;
+    m->t    = t;
+    m->ch   = ch;
+    m->us   = us;
+    ++o->q_n;
+}
+
 void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
                          uint64_t at_us, uint16_t ch, uint16_t us)
 {
@@ -260,21 +277,22 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
     } else {
         extend(o, end_t);
     }
-    if (o->q_n >= SENSE_TRACE_MARKS) {
-        ++o->n_mlost;
-        return;
-    }
-    sense_trace_mark_t *m =
-        &o->q[(o->q_head + o->q_n) % SENSE_TRACE_MARKS];
-    m->kind = (uint8_t)kind;
-    m->t    = t;
-    m->ch   = ch;
-    m->us   = us;
-    ++o->q_n;
+    mark(o, kind, t, ch, us);
 }
 
-bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t pulse_us,
-                       uint64_t now_us)
+/* A slewed command of @p w has ended, at its last change: said in the
+ * trace under way. */
+static void slew_ends(sense_trace_out_t *o, sense_trace_watch_t *w,
+                      uint16_t ch)
+{
+    if (w->slewed && o->stage != SENSE_TRACE_IDLE) {
+        mark(o, SENSE_TRACE_MARK_DEST, w->changed_t, ch, w->pulse);
+    }
+    w->slewed = false;
+}
+
+bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
+                       uint16_t pulse_us, uint64_t now_us)
 {
     sense_trace_out_t *o = &tr->out;
     if (tr->buf == NULL || slot >= SENSE_TRACE_SLOTS) {
@@ -287,6 +305,16 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t pulse_us,
         w->pulse = pulse_us;
         return false;
     }
+    const uint32_t now_t = to_t(now_us);
+    const bool held = !w->changed
+                      || at_or_past(now_t, w->changed_t
+                                    + SENSE_TRACE_HOLD_MS
+                                      * SENSE_TRACE_T_PER_MS);
+    if (held || pulse_us == 0u) {
+        /* Still for long enough, or let go: where a slewed command had
+         * got to is its end. */
+        slew_ends(o, w, ch);
+    }
     if (pulse_us == w->pulse) {
         return false;
     }
@@ -294,16 +322,12 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t pulse_us,
     if (pulse_us == 0u) {
         return false;
     }
-    const uint32_t now_t = to_t(now_us);
-    const bool fresh = !w->changed
-                       || at_or_past(now_t, w->changed_t
-                                     + SENSE_TRACE_HOLD_MS
-                                       * SENSE_TRACE_T_PER_MS);
     w->changed   = true;
     w->changed_t = now_t;
-    if (fresh) {
+    if (held) {
         return true;
     }
+    w->slewed = true;
     if (o->stage != SENSE_TRACE_IDLE) {
         extend(o, now_t + SENSE_TRACE_EDGE_MS * SENSE_TRACE_T_PER_MS);
     }
@@ -422,11 +446,12 @@ static void line_setup(const sense_trace_out_t *o, line_t *l)
 
 static void line_mark(const sense_trace_mark_t *m, line_t *l)
 {
-    static const char k_tag[] = { 'C', 'E', 'K' };
+    static const char k_tag[] = { 'C', 'E', 'K', 'D' };
     put_c(l, '$');
     put_c(l, k_tag[m->kind]);
     put_kv(l, " t=", m->t, UINT32_MAX);
-    if (m->kind == SENSE_TRACE_TRIG_CMD) {
+    if (m->kind == SENSE_TRACE_TRIG_CMD
+        || m->kind == SENSE_TRACE_MARK_DEST) {
         put_kv(l, " ch=", m->ch, 65535u);
         put_kv(l, " us=", m->us, 65535u);
     }

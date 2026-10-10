@@ -452,7 +452,11 @@ Jedes MOVE des automatischen Servotests ist eine geänderte Pulsbreite: ein
 Test mit dem veröffentlichten Panel wird ohne Capture aufgezeichnet. Ein
 Trigger während eines Trace fügt seine Zeile ein und verschiebt das Ende
 auf 4 s (bei `t` 10 s) nach sich selbst, wenn das später liegt: Bewegungen
-mit weniger als 4 s Abstand sind ein Trace. `x` auf der Konsole beendet
+mit weniger als 4 s Abstand sind ein Trace. Ein Kommando mit Slew ändert
+die Pulsbreite in jedem Durchlauf: seine Zeile `$C` trägt die erste
+Pulsbreite, und eine Zeile `$D` die, bei der es endete, sobald der Ausgang
+50 ms still gehalten hat. Die Bewegungen des automatischen Tests sind
+Sprünge und haben keine. `x` auf der Konsole beendet
 einen Trace. Jeder Trace enthält auch die Samples von bis zu 64 ms vor
 seinem Trigger.
 

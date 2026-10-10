@@ -48,7 +48,7 @@ void sense_trace_hw_outputs(const outputs_t *o)
             ? sense_trace_rendered(outputs_pulse_us(o, s->first_channel), top)
             : 0u;
         const uint64_t now = time_us_64();
-        if (!sense_trace_pulse(&s_trace, i, pulse, now)) {
+        if (!sense_trace_pulse(&s_trace, i, s->first_channel, pulse, now)) {
             continue;
         }
         /* The level takes effect at the wrap that ends this frame. */
