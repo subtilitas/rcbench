@@ -217,3 +217,42 @@ def test_the_tree_passes_the_new_checks():
     cd.check_ceilings(problems)
     cd.check_pin_counts(problems)
     assert problems == []
+
+
+def modules_tree(tree, shared, protocols, listed):
+    for root, names in (("shared", shared), ("protocols", protocols)):
+        for name in names:
+            (tree / root / name).mkdir(parents=True)
+    (tree / "docs").mkdir()
+    (tree / "docs" / "Building.md").write_text(
+        "```\n" + "".join("    %s/   text\n" % n for n in listed) + "```\n",
+        encoding="utf-8")
+    problems = []
+    cd.check_shared_modules(problems)
+    return problems
+
+
+def test_the_tree_lists_the_modules_of_both_roots(tree, monkeypatch):
+    monkeypatch.setattr(cd, "DOCS", tree / "docs")
+    assert modules_tree(tree, ["gfx"], ["ppm"], ["gfx", "ppm"]) == []
+    assert cd.shared_modules() == ["gfx", "ppm"]
+    assert cd.module_dirs()["ppm"] == tree / "protocols" / "ppm"
+
+
+def test_a_protocol_module_the_tree_omits_fails(tree, monkeypatch):
+    monkeypatch.setattr(cd, "DOCS", tree / "docs")
+    assert modules_tree(tree, ["gfx"], ["ppm", "kst"], ["gfx", "ppm"]) == [
+        "Building.md: the tree omits protocols/kst/"]
+
+
+def test_one_name_in_both_roots_fails(tree, monkeypatch):
+    monkeypatch.setattr(cd, "DOCS", tree / "docs")
+    out = modules_tree(tree, ["ppm"], ["ppm"], ["ppm"])
+    assert out == ["protocols/ppm/ and shared/ppm/ share a name; the builds "
+                   "name a module by its folder"]
+
+
+def test_a_tree_without_protocols_is_read(tree, monkeypatch):
+    monkeypatch.setattr(cd, "DOCS", tree / "docs")
+    assert modules_tree(tree, ["gfx"], [], []) == [
+        "Building.md: the tree omits shared/gfx/"]

@@ -345,3 +345,12 @@ def test_a_mutant_that_does_not_build_is_neither_killed_nor_survived(tiny):
 def test_the_tools_own_tree_is_never_the_copy():
     assert mu.REPO == pathlib.Path(mu.__file__).resolve().parent.parent
     assert set(mu.MUTATED) <= set(mu.COPIED)
+
+
+def test_a_protocol_core_is_mutated_and_its_pin_driver_is_not():
+    core = mu.candidates("unused", [str(mu.REPO / "protocols/ppm/ppm.c")])
+    assert core and {m.path for m in core} == {"protocols/ppm/ppm.c"}
+    assert mu.candidates(
+        "unused", [str(mu.REPO / "protocols/ppm/rp2350/out_ppm.c")]) == []
+    assert mu.candidates(
+        "unused", [str(mu.REPO / "firmware/iomcu/src/out_pwm.c")]) == []

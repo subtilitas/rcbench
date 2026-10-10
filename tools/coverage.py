@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Measure host-test line coverage, enforce the floors, and keep the table.
 
-The pure-C code under shared/ and protocols/ builds and runs on the host.
-This script builds the suite with gcov instrumentation, runs it, and renders
-the result into the block between the ``coverage:start`` and
-``coverage:end`` markers in STATUS.md, and the total into the block between
-the same markers in README.md and README-de.md.  The README badge comes from
-Codecov, which measures the same build in CI (continuous integration).
+The pure-C core under shared/ and the protocol cores under protocols/ build
+and run on the host.  This script
+builds the suite with gcov instrumentation, runs it, and renders the result
+into the block between the ``coverage:start`` and ``coverage:end`` markers in
+STATUS.md, and the total into the block between the same markers in
+README.md and README-de.md.  The README badge comes from Codecov, which
+measures the same build in CI (continuous integration).
 
     python3 tools/coverage.py            # update the table and the figures
     python3 tools/coverage.py --check    # fail if any of them is out of date
@@ -15,8 +16,9 @@ Codecov, which measures the same build in CI (continuous integration).
 ``--check`` is what CI runs: drift fails the build rather than being
 committed by a bot.
 
-Every C file under shared/ and protocols/ has to be in the measurement.  A
-file is in
+Every C file under shared/ and protocols/ has to be in the measurement,
+except a module's rp2350/ folder: a pin driver is compiled by the
+coprocessor build only.  A file is in
 TRACKED and has counters, or is in DATA_ONLY and holds no function.  A file
 in neither list, a file the suite does not compile, a TRACKED file no test
 links (it has no counters, and is measured at 0%), and a DATA_ONLY file that
@@ -39,8 +41,10 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 TEST_DIR = REPO / "test" / "host"
 BUILD_DIR = TEST_DIR / "build"
 STATUS = REPO / "STATUS.md"
-# The folders whose C files are measured.
-SOURCE_DIRS = ("shared", "protocols")
+SHARED = REPO / "shared"
+PROTOCOLS = REPO / "protocols"
+# The folder of a protocol module that holds its pin driver.
+PIN_DRIVER = "rp2350"
 READMES = {"en": REPO / "README.md", "de": REPO / "README-de.md"}
 
 # The table lives in the running record.  This tool is the offline gate (the
@@ -99,19 +103,24 @@ TRACKED = [
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
     "shared/servo/servo_report.c",
-    "shared/openyge/openyge_frame.c",
-    "shared/openyge/openyge_status.c",
-    "shared/openyge/openyge_params.c",
+    "protocols/openyge/openyge_frame.c",
+    "protocols/openyge/openyge_status.c",
+    "protocols/openyge/openyge_params.c",
     "shared/esc/esc_json.c",
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
     "shared/esc/esc_sim.c",
     "shared/servo/servo_sim.c",
-    "shared/sbus/sbus.c",
-    "shared/dshot/dshot_frame.c",
-    "shared/dshot/dshot_telem.c",
-    "shared/dshot/dshot_edt.c",
-    "shared/ppm/ppm.c",
+    "protocols/sbus/sbus.c",
+    "protocols/dshot/dshot_frame.c",
+    "protocols/dshot/dshot_telem.c",
+    "protocols/dshot/dshot_edt.c",
+    "protocols/ppm/ppm.c",
+    "protocols/kst/kst_wire.c",
+    "protocols/kst/kst_reg.c",
+    "protocols/kst/kst_limits.c",
+    "protocols/kst/kst_plan.c",
+    "protocols/kst/kst_session.c",
     "shared/can/can_timing.c",
     "shared/can/can_selftest.c",
     "shared/can/mcp2515.c",
@@ -140,7 +149,7 @@ TRACKED = [
     "shared/outputs/tone_page.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
-    "shared/bench/pdmini.c",
+    "protocols/pdmini/pdmini.c",
     "shared/bench/supply_link.c",
     "shared/bench/sense_link.c",
     "shared/bench/servo_source.c",
@@ -155,19 +164,15 @@ TRACKED = [
     "shared/sense/sense_sched.c",
     "shared/sense/sense_svc.c",
     "shared/sense/sense_trace.c",
-    "shared/sense/tone.c",
-    "shared/sense/edge_ring.c",
-    "shared/sense/tone_svc.c",
-    "protocols/kst/kst_wire.c",
-    "protocols/kst/kst_reg.c",
-    "protocols/kst/kst_limits.c",
-    "protocols/kst/kst_plan.c",
-    "protocols/kst/kst_session.c",
+    "protocols/phase_tap/tone.c",
+    "protocols/phase_tap/edge_ring.c",
+    "protocols/phase_tap/tone_svc.c",
 ]
 
-# Sources that are tables and hold no function: gcc gives them no counter,
-# so there is nothing to measure.  Anything else under SOURCE_DIRS that is
-# missing from TRACKED is an omission, not a decision -- see
+# Sources under shared/ that are tables and hold no function: gcc gives them
+# no counter, so there is nothing to measure.  Anything else under shared/
+# or protocols/ that is missing from TRACKED is an omission, not a decision
+# -- see
 # completeness().
 DATA_ONLY = {
     # Glyph bitmaps written by tools/gen_font.py.
@@ -223,10 +228,12 @@ def build_and_run() -> None:
 
 
 def library_sources() -> list[str]:
-    """Every C file under SOURCE_DIRS, as TRACKED spells it."""
+    """Every C file under shared/ and every protocol core's C file under
+    protocols/, as TRACKED spells it."""
+    cores = [p for p in PROTOCOLS.rglob("*.c")
+             if PIN_DRIVER not in p.relative_to(PROTOCOLS).parts]
     return sorted(p.relative_to(REPO).as_posix()
-                  for base in SOURCE_DIRS
-                  for p in (REPO / base).rglob("*.c"))
+                  for p in [*SHARED.rglob("*.c"), *cores])
 
 
 def build_files(suffix: str) -> dict[str, pathlib.Path]:
@@ -258,9 +265,9 @@ def completeness(sources: list[str], tracked: list[str],
     problems = []
     names = [pathlib.Path(rel).name for rel in sources]
     for name in sorted({n for n in names if names.count(n) > 1}):
-        problems.append(f"two sources under shared/ or protocols/ are "
-                        f"named {name}; the build's counters are found "
-                        "by that name")
+        problems.append("two sources under shared/ and protocols/ are "
+                        f"named {name}; the build's counters are found by "
+                        "that name")
     for rel in sorted(set(tracked) & data_only):
         problems.append(f"{rel} is in TRACKED and in DATA_ONLY")
     for rel in sorted((set(tracked) | data_only) - set(sources)):
@@ -376,9 +383,9 @@ def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
                    exempt))
     else:
         text = ("Host-suite line coverage of `shared/` and `protocols/`: "
-                "**%.1f%%**, %s of %s lines in %d files. CI fails below "
-                "%d%% in total or below %d%% in any file; exempt from the "
-                "per-file floor: %s. "
+                "**%.1f%%**, %s of %s lines in %d files. "
+                "CI fails below %d%% in total or below "
+                "%d%% in any file; exempt from the per-file floor: %s. "
                 "[STATUS.md](STATUS.md#tests-and-ci) has the table per file."
                 % (pct, thousands(covered, ","), thousands(lines, ","),
                    len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE,

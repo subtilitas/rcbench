@@ -494,24 +494,56 @@ def check_quoted_labels(problems: list[str]) -> None:
                     f"shows as `{shown}`")
 
 
-def check_shared_modules(problems: list[str]) -> None:
-    """Building.md's tree lists every module under shared/.
+# The two directories three build systems read: the project's own pure-C
+# modules, and the protocol modules that are also built outside this
+# repository (CONTRIBUTING.md, "Where code goes").
+MODULE_ROOTS = ("shared", "protocols")
 
-    shared/ is the one directory three build systems read, so an undocumented
+
+def module_dirs() -> dict[str, pathlib.Path]:
+    """Module name -> its directory, over MODULE_ROOTS.  The three builds
+    name a module by its last path element, so a name is in one root."""
+    found: dict[str, pathlib.Path] = {}
+    for root in MODULE_ROOTS:
+        base = REPO / root
+        if not base.is_dir():
+            continue
+        for p in sorted(base.iterdir()):
+            if p.is_dir():
+                found.setdefault(p.name, p)
+    return found
+
+
+def check_shared_modules(problems: list[str]) -> None:
+    """Building.md's tree lists every module under shared/ and protocols/,
+    and no module name is in both.
+
+    They are the directories three build systems read, so an undocumented
     module is one a build can miss.
     """
     doc = DOCS / "Building.md"
     text = read(doc)
-    for module in sorted(p.name for p in (REPO / "shared").iterdir()
-                         if p.is_dir()):
-        if not re.search(rf"^\s+{re.escape(module)}/", text, re.M):
-            problems.append(f"{doc.name}: the tree omits shared/{module}/")
+    seen: dict[str, str] = {}
+    for root in MODULE_ROOTS:
+        base = REPO / root
+        if not base.is_dir():
+            continue
+        for module in sorted(p.name for p in base.iterdir() if p.is_dir()):
+            if module in seen:
+                problems.append(f"{root}/{module}/ and {seen[module]}/"
+                                f"{module}/ share a name; the builds name a "
+                                "module by its folder")
+            seen.setdefault(module, root)
+            if not re.search(rf"^\s+{re.escape(module)}/", text, re.M):
+                problems.append(f"{doc.name}: the tree omits "
+                                f"{root}/{module}/")
 
 
 # --- the compile table -------------------------------------------------------
 
-# The host suite spells the path "${SHARED}/gfx", the coprocessor
-# ".../../shared/link": the last path element is the module either way.
+# The host suite spells the path "${SHARED}/gfx" or "${PROTOCOLS}/ppm", the
+# coprocessor ".../../shared/link": the last path element is the module
+# either way.
 MODULE_DIR_RE = re.compile(r'add_subdirectory\(\s*"[^"]*?/(\w+)"')
 REQUIRES_RE = re.compile(r"REQUIRES\s+([^)\n]+)")
 TABLE_ROW_RE = re.compile(
@@ -519,7 +551,8 @@ TABLE_ROW_RE = re.compile(
 
 
 def shared_modules() -> list[str]:
-    return sorted(p.name for p in (REPO / "shared").iterdir() if p.is_dir())
+    """Every module under shared/ and protocols/, by name."""
+    return sorted(module_dirs())
 
 
 def modules_built_by(cmake: pathlib.Path) -> set[str]:
@@ -527,9 +560,10 @@ def modules_built_by(cmake: pathlib.Path) -> set[str]:
 
 
 def panel_modules() -> set[str]:
-    """The shared/ modules the panel compiles: main's REQUIRES, closed over
-    each module's own REQUIRES."""
-    shared = set(shared_modules())
+    """The modules the panel compiles: main's REQUIRES, closed over each
+    module's own REQUIRES."""
+    dirs = module_dirs()
+    shared = set(dirs)
     wanted = set()
     text = read(REPO / "firmware" / "panel" / "main" / "CMakeLists.txt")
     for req in REQUIRES_RE.findall(text):
@@ -537,8 +571,7 @@ def panel_modules() -> set[str]:
     frontier = list(wanted)
     while frontier:
         mod = frontier.pop()
-        for req in REQUIRES_RE.findall(read(REPO / "shared" / mod
-                                            / "CMakeLists.txt")):
+        for req in REQUIRES_RE.findall(read(dirs[mod] / "CMakeLists.txt")):
             for dep in set(req.split()) & shared:
                 if dep not in wanted:
                     wanted.add(dep)
@@ -591,7 +624,8 @@ def check_compile_table(problems: list[str]) -> None:
         for mod in table:
             if mod not in truth:
                 problems.append(f"{doc.name}: the compile table names "
-                                f"`{mod}`, which is not under shared/")
+                                f"`{mod}`, which is not under shared/ "
+                                "or protocols/")
 
 
 def check_screenshot_count(problems: list[str]) -> None:
@@ -812,7 +846,8 @@ CI_YML = REPO / ".github" / "workflows" / "ci.yml"
 
 def defines() -> dict[str, str | None]:
     """NAME -> the text of its value, for every #define with one under
-    shared/, protocols/ and firmware/; None where two definitions disagree."""
+    shared/, protocols/ and firmware/; None where two definitions
+    disagree."""
     import os
     found: dict[str, str | None] = {}
     for base in DEFINE_DIRS:

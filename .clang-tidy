@@ -1,4 +1,4 @@
-# Static analysis for shared/ and protocols/, the pure-C code.
+# Static analysis for shared/ and protocols/, the pure-C core.
 #
 # The check list is curated: the analyser, the bug-shaped checks, and the
 # portability checks that matter to code compiled by three toolchains for two

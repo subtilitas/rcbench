@@ -380,10 +380,10 @@ ist über diesen einen ESC hinaus unbestätigt:
 
 | | |
 | --- | --- |
-| Frames, Group Code, Prüfsumme, Drehzahl, Sampler | `shared/dshot/` |
-| PPM-Frame-Layout | `shared/ppm/` |
+| Frames, Group Code, Prüfsumme, Drehzahl, Sampler | `protocols/dshot/` |
+| PPM-Frame-Layout | `protocols/ppm/` |
 | Weg, Rolle, Ruhelage, Slew, Arming, Timeout | `shared/outputs/` |
 | Welchen PWM-Slice und -Kanal ein GPIO erreicht | `shared/outputs/out_pwm_map.c` |
-| PIO-Programme | `firmware/iomcu/src/ppm.pio`, `dshot.pio` |
-| Backends für Hardware-PWM, PPM und DShot | `firmware/iomcu/src/out_*.c` |
+| PIO-Programme und ihre Treiber für PPM und DShot | `protocols/ppm/rp2350/`, `protocols/dshot/rp2350/` |
+| Backend für Hardware-PWM | `firmware/iomcu/src/out_pwm.c` |
 | Bindung der Bank an die Pins | `firmware/iomcu/src/outputs_hw.c` |

@@ -20,8 +20,8 @@ Everything that parses input somebody else produced:
 | Module | Input |
 | --- | --- |
 | `shared/logfile` | CSV (comma-separated values) from an SD card |
-| `shared/sbus`, and the receiver decoders that follow it | frames from a receiver |
-| `shared/openyge` | ESC (electronic speed controller) telemetry and parameter frames |
+| `protocols/sbus`, and the receiver decoders that follow it | frames from a receiver |
+| `protocols/openyge` | ESC (electronic speed controller) telemetry and parameter frames |
 | `shared/link` | CAN (Controller Area Network) frames between the two boards |
 
 All of these are fed malformed input by the test suite, which runs under

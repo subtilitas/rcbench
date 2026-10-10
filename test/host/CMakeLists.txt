@@ -38,6 +38,9 @@ if(ENABLE_SANITIZERS)
 endif()
 
 set(SHARED "${CMAKE_CURRENT_SOURCE_DIR}/../../shared")
+# The modules that leave this repository whole: a protocol core and, for
+# the coprocessor only, its pin driver (CONTRIBUTING.md, "Where code goes").
+set(PROTOCOLS "${CMAKE_CURRENT_SOURCE_DIR}/../../protocols")
 
 # Each module's CMakeLists answers to whichever build system is asking; out
 # here that is the add_library() branch.
@@ -52,18 +55,16 @@ add_subdirectory("${SHARED}/bench"    bench)
 add_subdirectory("${SHARED}/outputs"  outputs)
 add_subdirectory("${SHARED}/safety"   safety)
 add_subdirectory("${SHARED}/servo"    servo)
-add_subdirectory("${SHARED}/openyge"  openyge)
+add_subdirectory("${PROTOCOLS}/openyge"  openyge)
 add_subdirectory("${SHARED}/can"      can)
-add_subdirectory("${SHARED}/sbus"     sbus)
-add_subdirectory("${SHARED}/dshot"    dshot)
-add_subdirectory("${SHARED}/ppm"      ppm)
+add_subdirectory("${PROTOCOLS}/sbus"     sbus)
+add_subdirectory("${PROTOCOLS}/dshot"    dshot)
+add_subdirectory("${PROTOCOLS}/ppm"      ppm)
+add_subdirectory("${PROTOCOLS}/pdmini"   pdmini)
+add_subdirectory("${PROTOCOLS}/phase_tap" phase_tap)
+add_subdirectory("${PROTOCOLS}/kst"      kst)
 add_subdirectory("${SHARED}/esc"      esc)
 add_subdirectory("${SHARED}/sense"    sense)
-
-# Protocol cores that include nothing from this project.  They are held to
-# the same flags and counted in the same coverage figure.
-set(PROTOCOLS "${CMAKE_CURRENT_SOURCE_DIR}/../../protocols")
-add_subdirectory("${PROTOCOLS}/kst" kst)
 
 set(UNDER_TEST
     rcbench_gfx
@@ -82,9 +83,11 @@ set(UNDER_TEST
     rcbench_sbus
     rcbench_dshot
     rcbench_ppm
+    rcbench_pdmini
+    rcbench_phase_tap
     rcbench_esc
     rcbench_sense
-    kst_protocol
+    rcbench_kst
 )
 
 foreach(lib ${UNDER_TEST})
@@ -134,7 +137,7 @@ target_compile_definitions(test_esc_profiles PRIVATE
 # The phase tap's PIO program, assembled from its source by the test and
 # held to the words pioasm gives (the firmware build checks the same file).
 target_compile_definitions(test_tone_pio PRIVATE
-    "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/tone_cap.pio\""
+    "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/phase_tap/rp2350/tone_cap.pio\""
     "TONE_CAP_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/tone_cap_words.txt\"")
 
 # The headers of protocols/kst as C++: a driver may be written in it.  The
@@ -147,7 +150,7 @@ check_language(CXX)
 if(CMAKE_CXX_COMPILER)
     enable_language(CXX)
     add_executable(kst_headers_cxx kst_headers.cpp)
-    target_link_libraries(kst_headers_cxx PRIVATE kst_protocol)
+    target_link_libraries(kst_headers_cxx PRIVATE rcbench_kst)
     target_compile_options(kst_headers_cxx PRIVATE -Wall -Wextra -Werror)
     set_target_properties(kst_headers_cxx PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)

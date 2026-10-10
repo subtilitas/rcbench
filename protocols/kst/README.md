@@ -1,17 +1,23 @@
-# protocols/kst
+# kst
 
 The protocol core for programming KST and Chaservo servos over the signal
 wire: frame coding, reply decoding, the register model, limits, write
-planning and the session state machine. It has no hardware access. A driver
-with 3 functions connects it to a pin.
+planning and the session state machine.
 
-Not in this folder: a pin driver, a link page and a user interface. No
-firmware image contains this code.
+| Part | Files | Depends on |
+|---|---|---|
+| Core | `kst_wire.c`, `kst_reg.c`, `kst_limits.c`, `kst_plan.c`, `kst_session.c`, 5 headers under `include/` | C11 standard headers |
+| RP2350 pin driver | none | |
+
+The module has no pin driver. A driver with 3 functions (`kst_driver_t`)
+connects the core to a pin. No link page and no screen uses the module, and
+no firmware image contains it.
 
 ## Constraints
 
-- Plain C11 that also compiles as C++11. Every header has `extern "C"`
-  guards. `test/host/kst_headers.cpp` holds this in the host build.
+- Plain C11. Every header has `extern "C"` guards and compiles by itself as
+  C11 and as C++17 (`tools/check_protocols.py`). `test/host/kst_headers.cpp`
+  calls each of the 5 parts from C++11 and links against the C library.
 - Includes `<stdint.h>`, `<stdbool.h>`, `<stddef.h>` and `<string.h>` and
   no other file outside this folder.
 - No heap, no floating point, no global or static mutable state. Two
@@ -120,6 +126,15 @@ entry, keep it stopped until the servo's supply was off, check the supply
 voltage, store the backup image and a journal of the running plan
 (`step_index`), and ask for the confirmations of soft rules and of an
 unchecked restore.
+
+## Use in another pico-sdk project
+
+```cmake
+add_subdirectory(protocols/kst)
+target_link_libraries(my_target PRIVATE rcbench_kst)
+```
+
+The caller supplies a `kst_driver_t` for its pin.
 
 ## What is measured and what is not
 

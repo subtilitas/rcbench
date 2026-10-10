@@ -1,10 +1,11 @@
 /*
- * The CRC-16 (cyclic redundancy check) the OpenYGE codec uses.  The panel
- * link itself carries no CRC: CAN (Controller Area Network) has a CRC, an
- * acknowledge slot and retransmission in silicon.  OpenYGE needs the same
- * polynomial with a different seed, and the check values tell the two apart.
- * The routine is tested against the published check value rather than
- * against itself.
+ * The CRC-16 (cyclic redundancy check) of the stores and transfers.  The
+ * panel link itself carries no CRC: CAN (Controller Area Network) has a CRC,
+ * an acknowledge slot and retransmission in silicon.  OpenYGE has the same
+ * polynomial with a different seed, and the check values tell the two apart;
+ * its module carries a routine of its own (openyge_crc()), which
+ * test_openyge_frame holds to this one.  The routine is tested against the
+ * published check value rather than against itself.
  *
  * SPDX-License-Identifier: MIT
  */

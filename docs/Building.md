@@ -26,14 +26,16 @@ rcbench/
     safety/               heartbeat generator (panel) and monitor (coprocessor)
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
-    sbus/                 S.BUS decoder
-    dshot/                DShot frames · GCR decode · eRPM
-    ppm/                  PPM frame layout
-    openyge/              OpenYGE framing, status and parameter cache
     esc/                  ESC programming profiles, their JSON reader and registry
     sense/                INA228 and INA3221 current monitor drivers
-  protocols/              pure C that includes no file of this project
-    kst/                  KST servo programming: frames, registers, limits, write plans, session
+  protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
+    dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
+    ppm/                  PPM frame layout · PIO and DMA driver
+    sbus/                 S.BUS decoder; no pin driver
+    openyge/              OpenYGE framing, CRC, status and parameter cache; no pin driver
+    pdmini/               PD mini driver · PIO UART
+    phase_tap/            ESC tone detector · edge ring reader · PIO capture
+    kst/                  KST servo programming: frames, registers, limits, write plans, session; no pin driver
   firmware/
     panel/                ESP-IDF project (ESP32-S3)
     iomcu/                pico-sdk project (RP2350)
@@ -42,12 +44,18 @@ rcbench/
 ```
 
 Modules under `shared/` contain the logic and have no hardware dependency.
-Everything that touches hardware is under `firmware/`.
+A module under `protocols/` is one interface to external hardware, built
+to be copied into another pico-sdk project: its core includes C standard
+headers only, and its `rp2350/` folder includes the core and the pico-sdk
+only. Everything else that touches hardware is under `firmware/`.
+`tools/check_protocols.py` holds each module to that
+([CONTRIBUTING](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md#where-code-goes)).
 
-### One directory, three builds
+### Two directories, three builds
 
-Each module under `shared/` carries a `CMakeLists.txt` that registers an IDF
-component under `ESP_PLATFORM` and a plain static library otherwise:
+Each module under `shared/` and `protocols/` carries a `CMakeLists.txt`
+that registers an IDF component under `ESP_PLATFORM` and a plain static
+library otherwise:
 
 ```cmake
 if(ESP_PLATFORM)
@@ -58,9 +66,11 @@ else()
 endif()
 ```
 
-The panel sets `EXTRA_COMPONENT_DIRS` to `shared/`; the coprocessor and the
-host suite use `add_subdirectory()` for the modules they need. Includes are
-flat: `#include "gfx.h"`.
+The panel sets `EXTRA_COMPONENT_DIRS` to `shared/` and to each module under
+`protocols/` it names; the coprocessor and the host suite use
+`add_subdirectory()` for the modules they need. A module with an `rp2350/`
+folder adds its pin driver as the INTERFACE library `rcbench_<module>_rp2350`
+in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
@@ -68,7 +78,8 @@ flat: `#include "gfx.h"`.
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
-| `sense` | ✔ | ✔ | ✔ |
+| `sense` · `pdmini` · `phase_tap` | ✔ | ✔ | ✔ |
+| `kst` | | | ✔ |
 
 ## Toolchains
 
@@ -160,10 +171,11 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 
 | Tool | Purpose |
 | --- | --- |
-| `tools/coverage.py` | measures host-suite line coverage, enforces the floors (94% total, 85% per file) and writes the table in `STATUS.md` and the figure in `README.md` and `README-de.md`; `--check` fails on drift, and on a C file under `shared/` or `protocols/` that is not in the measurement or has no counters |
-| `tools/mutate.py` | changes one line of `shared/` or `protocols/` at a time in a copy of the tree (a comparison flipped, a bound plus or minus 1, a stored assignment dropped), builds and runs the host suite and reports the changes the suite passes with; by default the lines changed since `origin/main`, at most 60 mutants and 2700 s; CI runs it on pull requests and does not fail on a survivor |
+| `tools/coverage.py` | measures host-suite line coverage, enforces the floors (94% total, 85% per file) and writes the table in `STATUS.md` and the figure in `README.md` and `README-de.md`; `--check` fails on drift, and on a C file under `shared/` or a core file under `protocols/` that is not in the measurement or has no counters |
+| `tools/mutate.py` | changes one line of `shared/` or of a core under `protocols/` at a time in a copy of the tree (a comparison flipped, a bound plus or minus 1, a stored assignment dropped), builds and runs the host suite and reports the changes the suite passes with; by default the lines changed since `origin/main`, at most 60 mutants and 2700 s; CI runs it on pull requests and does not fail on a survivor |
 | `tools/check_sanitizers.py` | configures the sanitizer build and fails unless every compile command under `shared/`, `protocols/` and `test/host/` carries `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` and `-fno-omit-frame-pointer`, and no other flag of that family |
-| `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every `shared/` module, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, the ceiling table in [Performance](Performance.md) matches the `--max-lines` arguments in `ci.yml`, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
+| `tools/check_protocols.py` | holds every module under `protocols/` to the rule that lets it be built in another pico-sdk project: a core file includes C standard headers and the core's own headers only, a file under `rp2350/` also the module's driver headers, its generated `.pio.h` and pico-sdk headers, a driver's header includes no pico-sdk header, every public header carries `extern "C"` and compiles by itself as C11 and as C++17 with `-Wall -Wextra -Werror`, the module has a `README.md`, and its CMake files name no other module; `--check` prints the broken rules only |
+| `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every module under `shared/` and `protocols/`, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, the ceiling table in [Performance](Performance.md) matches the `--max-lines` arguments in `ci.yml`, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
 | `tools/wiki_links.py` | rewrites `Page.md` links to `Page` for the wiki, where pages are addressed by title |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
 | `tools/gen_font.py` | regenerates the three embedded fonts from DejaVu Sans Mono, the two text faces with the German letters; `--check` fails if the committed tables differ |
@@ -188,7 +200,7 @@ into `build-trace/` unless `--replay` names a built one.
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy and cppcheck over `shared/` and `protocols/`, cppcheck's warning, performance and portability classes over `firmware/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check, v5.4 with the stack table of this wiki; coprocessor build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, and once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, wiki-link, frame-cost, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/` and the cores under `protocols/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check, v5.4 with the stack table of this wiki; coprocessor build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, and once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, and carries the build guide PDFs over from the latest release |
 

@@ -12,7 +12,6 @@ set(SRCS
     log_writer.c
     log_cadence.c
     supply.c
-    pdmini.c
     supply_link.c
     sense_link.c
     servo_source.c

@@ -1,5 +1,5 @@
 /*
- * The tone service core 1 runs for the phase tap (shared/sense/tone_svc.c).
+ * The tone service core 1 runs for the phase tap (protocols/phase_tap/tone_svc.c).
  *
  * The capture is modelled as the PIO program leaves it: raw edges go
  * through the hold-off rule (tone_holdoff_edge(), which test_tone_pio holds

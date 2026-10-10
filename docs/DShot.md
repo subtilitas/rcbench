@@ -376,10 +376,10 @@ is unconfirmed beyond that one ESC:
 
 | | |
 | --- | --- |
-| Frames, group code, checksum, speed, sampler | `shared/dshot/` |
-| PPM frame layout | `shared/ppm/` |
+| Frames, group code, checksum, speed, sampler | `protocols/dshot/` |
+| PPM frame layout | `protocols/ppm/` |
 | Travel, role, rest, slew, arming, timeout | `shared/outputs/` |
 | Which PWM slice and channel a GPIO reaches | `shared/outputs/out_pwm_map.c` |
-| PIO programs | `firmware/iomcu/src/ppm.pio`, `dshot.pio` |
-| Hardware PWM, PPM and DShot backends | `firmware/iomcu/src/out_*.c` |
+| PIO programs and their drivers for PPM and DShot | `protocols/ppm/rp2350/`, `protocols/dshot/rp2350/` |
+| Hardware PWM backend | `firmware/iomcu/src/out_pwm.c` |
 | Binding the bank to the pins | `firmware/iomcu/src/outputs_hw.c` |

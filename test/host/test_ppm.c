@@ -11,6 +11,7 @@
  */
 #include "greatest.h"
 
+#include "outputs.h"   /* the bank's range, held equal to the module's */
 #include "ppm.h"
 
 /* What a receiver would make of the runs: mark to mark is one channel. */
@@ -119,6 +120,42 @@ TEST_CASE(a_channel_outside_the_range_a_servo_takes_is_refused)
     CHECK_EQ(ppm_frame(ch, 2u, &cfg, runs, PPM_MAX_RUNS), 0u);
 }
 
+/*
+ * The module names its own range, so that it builds without the output
+ * bank.  The bank clamps to OUT_FLOOR_US..OUT_CEILING_US before a width
+ * reaches a frame: a module range narrower than that refuses a width the
+ * bank passes, and a wider one carries a width no output is allowed.
+ */
+TEST_CASE(the_modules_channel_range_is_the_banks_and_both_ends_are_carried)
+{
+    CHECK_EQ(PPM_CHANNEL_MIN_US, OUT_FLOOR_US);
+    CHECK_EQ(PPM_CHANNEL_MAX_US, OUT_CEILING_US);
+    CHECK_EQ(PPM_CHANNEL_MIN_US, 400u);
+    CHECK_EQ(PPM_CHANNEL_MAX_US, 2500u);
+
+    uint16_t ch[2] = { 1500u, 1500u };
+    uint16_t runs[PPM_MAX_RUNS];
+    const ppm_cfg_t cfg = PPM_CFG_DEFAULT();
+
+    /* Each end is carried as it is, one microsecond past it is refused. */
+    ch[1] = (uint16_t)PPM_CHANNEL_MIN_US;
+    CHECK_EQ(ppm_frame(ch, 2u, &cfg, runs, PPM_MAX_RUNS), 6u);
+    CHECK_EQ((uint32_t)runs[2] + runs[3], PPM_CHANNEL_MIN_US);
+    ch[1] = (uint16_t)(PPM_CHANNEL_MIN_US - 1u);
+    CHECK_EQ(ppm_frame(ch, 2u, &cfg, runs, PPM_MAX_RUNS), 0u);
+
+    ch[1] = (uint16_t)PPM_CHANNEL_MAX_US;
+    CHECK_EQ(ppm_frame(ch, 2u, &cfg, runs, PPM_MAX_RUNS), 6u);
+    CHECK_EQ((uint32_t)runs[2] + runs[3], PPM_CHANNEL_MAX_US);
+    ch[1] = (uint16_t)(PPM_CHANNEL_MAX_US + 1u);
+    CHECK_EQ(ppm_frame(ch, 2u, &cfg, runs, PPM_MAX_RUNS), 0u);
+
+    /* The shortest frame is counted with the module's own ceiling. */
+    CHECK_EQ(ppm_min_frame_us(PPM_MAX_CHANNELS, &cfg),
+             PPM_MAX_CHANNELS * PPM_CHANNEL_MAX_US + PPM_DEFAULT_MARK_US
+                 + PPM_SYNC_MIN_US);
+}
+
 TEST_CASE(a_mark_that_would_not_fit_inside_its_channel_is_refused)
 {
     /* A 600 us mark and a 500 us channel is a mark that runs into the next
@@ -171,6 +208,7 @@ int main(void)
     RUN(a_frame_whose_sync_gap_would_be_too_short_is_refused);
     RUN(the_shortest_usable_frame_is_reported_before_it_is_needed);
     RUN(a_channel_outside_the_range_a_servo_takes_is_refused);
+    RUN(the_modules_channel_range_is_the_banks_and_both_ends_are_carried);
     RUN(a_mark_that_would_not_fit_inside_its_channel_is_refused);
     RUN(the_defaults_fill_in_field_by_field);
     RUN(a_count_or_a_buffer_that_does_not_fit_is_refused);

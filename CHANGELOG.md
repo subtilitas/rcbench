@@ -13,19 +13,38 @@ history is in git.
   result code per failed check, the 32-register image with raw and displayed
   values, a layout fingerprint, 24 hard and 25 soft limits, write planning
   for fields that lie in 2 registers, and a non-blocking session that reads
-  every write back and undoes a plan whose write does not take. The folder
-  includes no file of this project and reaches the wire through a driver of
-  3 functions. No pin driver, link page or screen uses it, and no firmware
-  image contains it. The host suite runs it against a servo and line model
-  (`test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`);
-  no frame of it has been sent to a servo. The timing and the register
-  layout come from 1 programming card and 1 servo of unidentified model,
-  and the effect of a register on servo motion is not measured.
-  ([README](protocols/kst/README.md))
-- The coverage floors, the mutation check, the sanitizer flag check, the
-  SPDX and `#define` scans, clang-tidy and cppcheck cover `protocols/` as
-  they cover `shared/`. The host build compiles the headers of
-  `protocols/kst/` as C++11 when the host has a C++ compiler.
+  every write back and undoes a plan whose write does not take. The module
+  includes C standard headers only and reaches the wire through a driver of
+  3 functions. It has no pin driver; no link page or screen uses it, and no
+  firmware image contains it. The host suite runs it against a servo and
+  line model (`test_kst_wire`, `test_kst_reg`, `test_kst_plan`,
+  `test_kst_session`) and links its 5 headers from C++11
+  (`kst_headers_cxx`); no frame of it has been sent to a servo. The timing
+  and the register layout come from 1 programming card and 1 servo of
+  unidentified model, and the effect of a register on servo motion is not
+  measured. ([README](protocols/kst/README.md))
+
+### Changed
+
+- **Every interface to external hardware is a module under `protocols/`.**
+  `protocols/dshot`, `ppm`, `sbus`, `openyge`, `pdmini` and `phase_tap`
+  each hold a core in C11 that includes C standard headers only, the
+  RP2350 pin driver in `rp2350/` where one exists (`dshot`, `ppm`,
+  `pdmini`, `phase_tap`) and a `README.md` with the CMake lines for another
+  pico-sdk project. The driver of a module is the INTERFACE library
+  `rcbench_<name>_rp2350`. `openyge` carries its CRC-16/XMODEM
+  (`openyge_crc()`), `ppm` its channel range (400 us to 2500 us) and the
+  DShot and PPM drivers their pin count (8, set by `OUT_DSHOT_MAX_PINS`
+  and `OUT_PPM_MAX_PINS`); `outputs_hw.c` holds each equal to the output
+  bank's constant at compile time. No wire, link page or public function
+  name differs, and the four PIO programs assemble to the same words. The
+  rule is in `CONTRIBUTING.md`, "Where code goes".
+- **`tools/check_protocols.py --check` holds the modules to the rule.** It
+  fails on an include that leaves a module, on a pico-sdk header outside
+  `rp2350/` or in a driver's header, on a public header without
+  `extern "C"` or one that does not compile by itself as C11 and as C++17,
+  on a module without a `README.md`, and on a CMake file that names another
+  module. CI runs it in the host suite job.
 
 ## 0.16.0 - 2026-10-10
 

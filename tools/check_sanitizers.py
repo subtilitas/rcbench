@@ -38,8 +38,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SUITE = ROOT / "test" / "host"
 
 # Every translation unit the sanitizer build compiles is expected to carry
-# the flags.  All parts matter: shared/ and protocols/ are where the faults
-# are, and test/host/ is where the harness that reaches them lives.
+# the flags.  Every part matters: shared/ and protocols/ are where the
+# faults are, and test/host/ is where the harness that reaches them lives.
 EXPECTED = ("shared", "protocols", "test/host")
 
 # What ENABLE_SANITIZERS=ON has to put on every compile command: both
@@ -104,7 +104,7 @@ def compile_commands(build: Path) -> list[dict]:
 
 
 def bucket(path: Path, root: Path = ROOT) -> str | None:
-    """Which part of the tree a translation unit belongs to, if any."""
+    """Which part of the tree a translation unit belongs to, if either."""
     try:
         rel = path.resolve().relative_to(root).as_posix()
     except ValueError:
@@ -116,7 +116,7 @@ def bucket(path: Path, root: Path = ROOT) -> str | None:
 
 
 def tally(entries: list[dict], root: Path = ROOT) -> tuple[dict, dict]:
-    """({half: [instrumented, compiled]}, {file: what is wrong with its
+    """({part: [instrumented, compiled]}, {file: what is wrong with its
     flags}) over a compile database."""
     counts = {name: [0, 0] for name in EXPECTED}
     wrong: dict[str, list[str]] = {}
