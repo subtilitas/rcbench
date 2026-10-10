@@ -33,11 +33,11 @@ in its order, nothing before, between or after them, each number in the
 range the coprocessor holds it in and written as the coprocessor writes it.
 A line ends LF or CR LF.  Between a trace's $T and $Z line stand its lines
 and the coprocessor's other console lines, which start `rcbench-iomcu:`;
-anything else there is damage.  So are a second $H line, a line before the
-$H line, a trace length or sample period version 2 does not write, a
-sample timed before the one before it, a second voltage for one sample, a
-$S line that repeats the state before it, and a line of a trace outside a
-trace.
+anything else there is damage.  So are a second $H line, a line other than
+$L before the $H line, a trace length or sample period version 2 does not
+write, a sample timed before the one before it, a second voltage for one
+sample, a $S line that repeats the state before it, and a line of a trace
+outside a trace.
 A trace with a problem -- damage, lines that do not match its end line, no
 end line, trigger lines that were not written -- is not replayed; its CSV
 file is still written.
@@ -277,7 +277,7 @@ class Trace:
         # What the lines themselves say is wrong: (line number, text) of
         # the lines that are no line of a trace, and counts.
         self.bad: list[tuple[int, str]] = []
-        self.early = 0              # lines before the $H line
+        self.early = 0              # lines other than $L before the $H line
         self.setups = 0             # $H lines
         self.back = 0               # samples timed before the one before
         self.same_state = 0         # $S lines that change nothing
@@ -386,7 +386,10 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur.have_setup = True
             cur.state = (cur.online, cur.resets)
             continue
-        if not cur.have_setup:
+        # The coprocessor writes the $H line when the set-up records at
+        # the trace's start are read, and a $L line for the records
+        # missing before one of them: no other line stands before it.
+        if not cur.have_setup and kind != "L":
             cur.early += 1
         if kind == "s":
             if cur.t and f[0] < 0:
@@ -395,6 +398,8 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur.t.append(prev + f[0])
             cur.code.append(f[1])
         elif kind == "v":
+            # The coprocessor keeps a voltage only behind the sample of
+            # its tick: one a sample.
             cur.n_volts += 1
             if cur.t:
                 if len(cur.t) - 1 in cur.mv:
@@ -441,7 +446,8 @@ def check(tr: Trace) -> None:
     elif tr.shunt_uohm == 0 and tr.code:
         tr.problems.append("samples with a shunt of 0")
     if tr.early:
-        tr.problems.append(f"{tr.early} line(s) before the $H line")
+        tr.problems.append(f"{tr.early} line(s) other than $L before "
+                           "the $H line")
     if tr.setups > 1:
         tr.problems.append(f"{tr.setups} $H lines")
     if tr.version == FORMAT:

@@ -1496,9 +1496,37 @@ def a_trace_has_one_set_up_line_before_its_records() -> None:
     late = "\n".join([lines[0], lines[2], lines[1]] + lines[3:]) + "\n"
     r = tool(str(work("hlate.log", late)), "--no-csv")
     check(r.returncode == 1
-          and "PROBLEM: 1 line(s) before the $H line" in r.stdout,
+          and "PROBLEM: 1 line(s) other than $L before the $H line"
+          in r.stdout,
           f"late: exit {r.returncode}")
     check("no move of this trace is replayed" in r.stdout, "not replayed")
+    # Records missing before a set-up record at the trace's start: the
+    # coprocessor writes their $L line before the $H line.  The trace is
+    # whole, and the records are missing at the start of its samples.
+    for n_lost in (1, 2):
+        ahead = counted([lines[0]] + ["$L n=3"] * n_lost + lines[1:],
+                        lost=3 * n_lost)
+        traces, _, _ = sense_trace.parse_log("\n".join(ahead) + "\n")
+        sense_trace.check(traces[0])
+        check(traces[0].problems == [], f"{n_lost}: {traces[0].problems}")
+        check(traces[0].lost == 3 * n_lost and traces[0].gaps == [0] * n_lost,
+              f"{n_lost}: {traces[0].lost} at {traces[0].gaps}")
+        r = tool(str(work("lahead.log", "\n".join(ahead) + "\n")),
+                 "--no-csv")
+        check(r.returncode == 0 and "PROBLEM" not in r.stdout,
+              f"{n_lost}: exit {r.returncode}: {r.stdout[:400]}")
+        check("records are missing before the first command, not replayed"
+              in r.stdout,
+              f"{n_lost}: {r.stdout[-1500:-800]}")
+    # Every other line type before the $H line is damage.
+    for line in ("10,300", "v6000", "$C t=1000 ch=2 us=1900", "$E t=1000",
+                 "$S on=0 rst=0"):
+        traces, _, _ = sense_trace.parse_log(
+            "\n".join([lines[0], line] + lines[1:]) + "\n")
+        sense_trace.check(traces[0])
+        check("1 line(s) other than $L before the $H line"
+              in traces[0].problems,
+              f"{line!r}: {traces[0].problems}")
 
 
 def a_trace_length_and_a_sample_period_are_version_2s() -> None:

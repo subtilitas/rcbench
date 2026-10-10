@@ -598,11 +598,13 @@ vor, zwischen oder hinter den Feldern und mit jeder Zahl in dem Bereich,
 in dem der Koprozessor sie hält: eine Zeile `$C` oder `$D` hat `ch=` und
 `us=`, eine Zeile `$E` oder `$K` keines von beiden. Eine Zeile endet mit
 LF oder CR LF. Alles andere ist ein Schaden. Ebenso eine zweite Zeile
-`$H`, eine Zeile vor der Zeile `$H`, eine andere Trace-Länge als 4000 ms
-(10000 ms bei `t`), eine andere Sample-Periode als 1000 µs, ein Sample mit
-einer Zeit vor dem Sample davor, eine zweite Spannung zu einem Sample,
-eine Zeile `$S`, die den Zustand davor wiederholt, und eine Zeile eines
-Trace außerhalb eines Trace. Das Tool druckt eine Zeile `PROBLEM:` mit der
+`$H`, eine andere Zeile als `$L` vor der Zeile `$H`, eine andere
+Trace-Länge als 4000 ms (10000 ms bei `t`), eine andere Sample-Periode als
+1000 µs, ein Sample mit einer Zeit vor dem Sample davor, eine zweite
+Spannung zu einem Sample, eine Zeile `$S`, die den Zustand davor
+wiederholt, und eine Zeile eines Trace außerhalb eines Trace. Eine Zeile
+`$L` vor der Zeile `$H` zählt Records, die vor dem ersten Sample des Trace
+fehlen, und keine Bewegung dieses Trace wird nachgespielt. Das Tool druckt eine Zeile `PROBLEM:` mit der
 Anzahl und der Nummer der ersten solchen Zeile, spielt keine Bewegung
 dieses Trace nach und endet mit 1.
 

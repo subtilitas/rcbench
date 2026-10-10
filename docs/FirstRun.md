@@ -557,11 +557,14 @@ own, which starts `rcbench-iomcu:`. A line is whole with every field of
 its type in its order, nothing before, between or after the fields, and
 each number in the range the coprocessor holds it in: a `$C` or `$D` line
 has `ch=` and `us=`, a `$E` or `$K` line has neither. A line ends LF or
-CR LF. Anything else is damage. So are a second `$H` line, a line before
-the `$H` line, a trace length other than 4000 ms (10000 ms for `t`), a
-sample period other than 1000 µs, a sample timed before the one before
-it, a second voltage for one sample, a `$S` line that repeats the state
-before it, and a line of a trace outside a trace. The tool prints a
+CR LF. Anything else is damage. So are a second `$H` line, a line other
+than `$L` before the `$H` line, a trace length other than 4000 ms
+(10000 ms for `t`), a sample period other than 1000 µs, a sample timed
+before the one before it, a second voltage for one sample, a `$S` line
+that repeats the state before it, and a line of a trace outside a trace.
+A `$L` line before the `$H` line counts records missing before the
+trace's first sample, and no move of that trace is replayed. The tool
+prints a
 `PROBLEM:` line with the count and the number of the first such line,
 replays no move of that trace and exits 1.
 
