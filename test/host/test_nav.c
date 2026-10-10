@@ -1636,9 +1636,11 @@ typedef enum { END_STOP, END_DISARM, END_ARM, END_HOME, END_LOSS } ender_t;
 /*
  * A drag on the throttle track, then one of the things that end a run or a
  * gesture, in the order the panel's frame does them.  From there the finger
- * still on the track moves nothing, a later contact with its id moves
- * nothing on its way from the band into the body, the knob has the throttle
- * again, and a fresh drag moves it by its own travel.
+ * still on the track moves nothing, and a later contact with its id moves
+ * nothing on its way from the band into the body.  On a bench the ender
+ * left disarmed the knob and a fresh drag move nothing either; armed, the
+ * knob has the throttle again, and a fresh drag moves it by its own travel.
+ * The press before an arm is on a disarmed bench, and takes no drag.
  */
 static void a_throttle_drag_then(ender_t e)
 {
@@ -1653,8 +1655,9 @@ static void a_throttle_drag_then(ender_t e)
     finger(0, 300, M_TRACK_Y);
     glide(0, 340, M_TRACK_Y, 8);
     const float dragged = motor_screen_throttle();
-    CHECK_NEAR(dragged, 40.0f * M_PX_PCT, 0.01f);
+    CHECK_NEAR(dragged, (e == END_ARM) ? 0.0f : 40.0f * M_PX_PCT, 0.01f);
     float want = dragged;
+    bool disarmed = false;
 
     switch (e) {
     case END_STOP:
@@ -1667,6 +1670,7 @@ static void a_throttle_drag_then(ender_t e)
         drain_motor();
         motor_screen_set_armed(false);
         want = 0.0f;
+        disarmed = true;
         break;
     case END_ARM:
         motor_screen_set_armed(true);
@@ -1676,6 +1680,7 @@ static void a_throttle_drag_then(ender_t e)
         feed_tap(1, home.x + home.w / 2, home.y + home.h / 2);
         CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
         ui_router_goto(SCREEN_MOTOR);
+        disarmed = true;        /* asked for; the bench has not answered */
         break;
     case END_LOSS:
         motor_screen_knob_cancel();
@@ -1697,6 +1702,21 @@ static void a_throttle_drag_then(ender_t e)
     CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
     CHECK(!motor_posted(NULL));
 
+    if (disarmed) {
+        /* Not armed: no control moves the throttle.  The bench's answer to
+         * a disarm asked for by leaving returns it to zero. */
+        CHECK(!knob_moves_the_throttle());
+        finger(0, 200, M_TRACK_Y);
+        glide(0, 240, M_TRACK_Y, 8);
+        lift(0);
+        CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
+        CHECK(!motor_posted(NULL));
+        motor_screen_set_armed(false);
+        want = 0.0f;
+        CHECK_NEAR(motor_screen_throttle(), want, 0.001f);
+        motor_screen_set_armed(true);
+        drain_motor();
+    }
     CHECK(knob_moves_the_throttle());
 
     finger(0, 200, M_TRACK_Y);

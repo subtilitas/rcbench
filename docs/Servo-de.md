@@ -130,7 +130,10 @@ PULS MIN 1000 us, MAX 2000 us) sind das 1100 und 1900 us. KURVE und TEMPO
 gelten nur für SWEEP.
 
 Auch ein Lauf, der zu Ende geht, schaltet den Ausgang aus und gibt das Servo
-zur Mitte frei. Die ersten beiden Bewegungen einer Stufe, von der Mitte zum
+zur Mitte frei. Auf dem Prüfstand, den er scharf zurücklässt, ist der
+gezeigte befohlene Wert dann die Ruhelage, wie nach FREIGEBEN: 1500 us bei
+STANDARD PWM, gleich welcher TRIM, und der nächste Drag oder die nächste
+Knopfdrehung beginnt dort. Die ersten beiden Bewegungen einer Stufe, von der Mitte zum
 unteren Ende und weiter zum oberen, werden nicht gezählt: sie messen den Haltestrom an jedem
 Ende. Danach gehen die gezählten Bewegungen von Ende zu Ende, BEWEGUNGEN viele
 oder für TESTZEIT, wie LÄNGE NACH sagt, höchstens 1000 je Stufe.
@@ -406,7 +409,9 @@ das Panel noch nicht gesendet hat, wenn der Prüfstand unscharf wird oder
 stoppt, wird nicht gesendet. Nach einem Lauf, den ein Disarm, STOP oder das
 Verlassen der Seite beendet hat, bleiben Horn und PULSBREITE auf der
 Stellung, die der Lauf zuletzt gefahren hat; nach einem Ende, das den
-Prüfstand scharf lässt, zeigen sie die Mitte. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
+Prüfstand scharf lässt, zeigen sie die Ruhelage, in die die Freigabe die Pins
+stellt, 1500 us bei STANDARD PWM, gleich welcher TRIM, und der nächste Drag
+oder die nächste Knopfdrehung beginnt dort. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das Netzteil selbst den Ausgang
 aus meldet,

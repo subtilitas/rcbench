@@ -336,6 +336,43 @@ TEST_CASE(nothing_moves_the_value_under_a_disarm_not_yet_taken)
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
+/*
+ * A DISARM taken and not yet answered: the bench still reads armed here for
+ * the frames its answer takes.  Every position stays refused through them,
+ * and RELEASE is sent and moves no value.  The bench's report of the disarm
+ * leaves the value last driven, and the arm after it takes input again.
+ */
+TEST_CASE(nothing_moves_the_value_between_a_disarm_and_its_answer)
+{
+    fresh();
+    CHECK(arm());
+    drag(10.0f, 40.0f);
+    const uint16_t driven = took().value_us;
+    CHECK(driven > 1700);
+    frames(40);
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    for (int frame = 0; frame < 5; ++frame) {
+        servo_screen_set_armed(true);           /* not yet answered */
+        drag(-60.0f, -30.0f);
+        knob(0.2f);
+        feed_tap(FEED_LONE, CENTRE_X, BTN_Y);
+        feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_NONE);
+        CHECK_EQ(servo_screen_commanded(), driven);
+        feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+        CHECK_EQ(servo_screen_commanded(), driven);
+    }
+    servo_screen_set_armed(false);
+    CHECK_EQ(servo_screen_commanded(), driven);
+    CHECK(every_input_is_refused());
+    CHECK(arm());
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    knob(0.01f);
+    CHECK_EQ(took().value_us, 1510);
+}
+
 /* ---------------------------------------------------------- the arm edge */
 
 /* STANDARD PWM: the arm sets the value to the rest the outputs layer
@@ -642,6 +679,92 @@ TEST_CASE(a_sweep_not_yet_sent_is_dropped_by_a_stop)
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
+/* Every command taken over @p n frames, as a bit per kind. */
+static unsigned kinds_over(int n)
+{
+    unsigned seen = 0u;
+    for (int i = 0; i < n; ++i) {
+        ui_router_tick(0.026f);
+        for (servo_cmd_t c = took(); c.kind != SERVO_CMD_NONE; c = took()) {
+            seen |= 1u << (unsigned)c.kind;
+        }
+    }
+    return seen;
+}
+
+#define DRIVES ((1u << SERVO_CMD_POSITION) | (1u << SERVO_CMD_CENTRE) \
+                | (1u << SERVO_CMD_SWEEP) | (1u << SERVO_CMD_HOLD))
+
+/*
+ * DISARM tapped while a sweep runs, or while one is paused: the sweep ends
+ * at the tap, not at the bench's answer.  Until that answer no frame, no
+ * tap on the sweep button, no change of SPEED and no trim posts anything
+ * that drives, and the value stays where the tap found it.
+ */
+TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
+{
+    for (int paused = 0; paused < 2; ++paused) {
+        fresh();
+        CHECK(arm());
+        CHECK_EQ(start_sweep(), SERVO_CMD_SWEEP);
+        frames(12);
+        uint16_t pause_seq = 0u;
+        if (paused) {
+            feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
+            const servo_cmd_t hold = took();
+            CHECK_EQ(hold.kind, SERVO_CMD_HOLD);
+            pause_seq = hold.pause_seq;
+            CHECK(servo_screen_paused());
+        }
+        feed_tap(FEED_LONE, ARM_X, ARM_Y);
+        CHECK(!servo_screen_sweeping());
+        CHECK(!servo_screen_paused());
+        CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+        const uint16_t left = servo_screen_commanded();
+
+        unsigned seen = kinds_over(40);
+        servo_screen_set_armed(true);           /* not yet answered */
+        feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
+        seen |= kinds_over(4);
+        feed_tap(FEED_LONE, 521, SPEED_Y);
+        seen |= kinds_over(4);
+        open_settings();
+        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
+        close_settings();
+        seen |= kinds_over(4);
+        /* The panel letting go of the pause it held: no value moves. */
+        servo_screen_released(pause_seq);
+        seen |= kinds_over(40);
+        CHECK_EQ(seen & DRIVES, 0u);
+        CHECK(!servo_screen_sweeping());
+        CHECK_EQ(servo_screen_commanded(), left + 5);   /* the trim's 5 us */
+
+        servo_screen_set_armed(false);
+        CHECK_EQ(kinds_over(4) & DRIVES, 0u);
+        CHECK(arm());
+        CHECK_EQ(servo_screen_commanded(), 1500);
+    }
+}
+
+/* A position held when DISARM is tapped is not said again by a change of
+ * SPEED or trim before the bench answers. */
+TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
+{
+    fresh();
+    CHECK(arm());
+    drag(10.0f, 40.0f);
+    drain();
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    feed_tap(FEED_LONE, 521, SPEED_Y);
+    unsigned seen = kinds_over(4);
+    open_settings();
+    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
+    close_settings();
+    seen |= kinds_over(4);
+    CHECK_EQ(seen & DRIVES, 0u);
+}
+
 /* ---------------------------------------------------------- the picture */
 
 static gfx_color_t px(int x, int y) { return fb[(size_t)y * W + x]; }
@@ -686,6 +809,37 @@ TEST_CASE(centre_and_the_horn_are_dimmed_while_disarmed)
     CHECK(arm_first_px() > 0);
 }
 
+/* From the DISARM tap to the bench's answer the position controls are
+ * refused, and drawn so, before the DISARM is taken and after. */
+TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
+{
+    fresh();
+    CHECK(arm());
+    frames(2 * UI_HOLD_FLASH_FRAMES);
+    const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);          /* DISARM, not yet taken */
+    for (int taken = 0; taken < 2; ++taken) {
+        if (taken) {
+            CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+            servo_screen_set_armed(true);       /* not yet answered */
+        }
+        ui_router_tick(0.026f);
+        ui_router_render(&cv, 0);
+        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+        CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
+        CHECK(arm_first_px() > 0);
+        picture(fb);
+        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+        CHECK(arm_first_px() > 0);
+    }
+    servo_screen_set_armed(false);
+    CHECK(arm());
+    frames(2 * UI_HOLD_FLASH_FRAMES);
+    picture(fb);
+    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
+    CHECK_EQ(arm_first_px(), 0);
+}
+
 /* A bench disarmed while ARM's flash runs shows ARM in its own green, not
  * the colour the flash was to settle on. */
 TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
@@ -720,17 +874,235 @@ TEST_CASE(release_speed_and_the_settings_work_while_disarmed)
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
-/* Released on an armed bench the value stays where it was put, and a press
- * on the dial drives the servo again. */
+/* ------------------------------------------------------------- RELEASE */
+
+/* The three profiles RELEASE is held to: STANDARD PWM, NARROW 760, and
+ * STANDARD PWM trimmed by +20 us, whose rest is not its 0 degrees. */
+enum { PROFILE_STANDARD = 0, PROFILE_NARROW, PROFILE_TRIMMED, PROFILE_COUNT };
+
+static void choose_profile(int profile)
+{
+    if (profile == PROFILE_NARROW) {
+        choose_narrow();
+    } else if (profile == PROFILE_TRIMMED) {
+        open_settings();
+        for (int i = 0; i < 4; ++i) {
+            feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));   /* +20 us */
+        }
+        close_settings();
+    }
+    drain();
+}
+
+/* The profile's rest, and the first 1 % of the knob from it: 1.8 degrees,
+ * 10 us of a 500 us half-travel and 2 us of a 100 us one. */
+static const uint16_t k_rest[PROFILE_COUNT]     = { 1500, 760, 1500 };
+static const uint16_t k_rest_1pct[PROFILE_COUNT] = { 1510, 762, 1510 };
+
+/* An armed bench of @p profile, driven 30 degrees off its centre. */
+static uint16_t armed_and_driven(int profile)
+{
+    fresh();
+    choose_profile(profile);
+    if (!arm()) {
+        return 0u;
+    }
+    drag(10.0f, 30.0f);
+    const uint16_t driven = took().value_us;
+    frames(40);
+    return driven;
+}
+
+/* RELEASE on an armed bench: the value is the rest the pins go to, as at
+ * an arm, and the horn is drawn there. */
+TEST_CASE(release_on_an_armed_bench_sets_the_value_to_the_rest)
+{
+    for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
+        const uint16_t driven = armed_and_driven(profile);
+        CHECK(driven > k_rest[profile] + 20);
+        CHECK_EQ(servo_screen_commanded(), driven);
+        feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+        CHECK_EQ(took().kind, SERVO_CMD_NONE);
+        CHECK_EQ(rest_us(), k_rest[profile]);
+        CHECK_EQ(servo_screen_commanded(), k_rest[profile]);
+        frames(2);
+        CHECK_EQ(servo_screen_drawn(), k_rest[profile]);
+        CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    }
+}
+
+/* The first 1 % turn of the knob after a RELEASE posts the rest plus 1 %,
+ * not the value before it plus 1 %. */
+TEST_CASE(the_first_knob_turn_after_a_release_starts_from_the_rest)
+{
+    for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
+        CHECK(armed_and_driven(profile) != 0u);
+        feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+        knob(0.01f);
+        const servo_cmd_t c = took();
+        CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+        CHECK_EQ(c.value_us, k_rest_1pct[profile]);
+        CHECK_EQ(servo_screen_commanded(), k_rest_1pct[profile]);
+    }
+}
+
+/* The first press on the dial after a RELEASE: the position under the
+ * finger, and the horn drawn from the rest towards it at SPEED. */
+TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
+{
+    for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
+        const uint16_t driven = armed_and_driven(profile);
+        CHECK(driven != 0u);
+        feed_tap(FEED_LONE, 521, SPEED_Y);  /* SPEED near its 10 % end */
+        drain();
+        feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+        frames(200);
+        CHECK_EQ(servo_screen_drawn(), k_rest[profile]);
+        int x, y, x2, y2;
+        dial_at(60.0f, &x, &y);
+        dial_at(70.0f, &x2, &y2);
+        finger(FEED_LONE, x, y);
+        const servo_cmd_t c = took();
+        CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+        CHECK(c.value_us > driven);
+        ui_router_tick(0.026f);
+        const uint16_t early = servo_screen_drawn();
+        CHECK(early >= k_rest[profile] && early < c.value_us);
+        glide(FEED_LONE, x2, y2, 8);
+        CHECK(took().value_us > c.value_us);
+        lift(FEED_LONE);
+    }
+}
+
+/* RELEASE tapped by a second finger while the first drags the dial: the
+ * drag ends, and its moves after it command nothing. */
+TEST_CASE(a_release_ends_a_drag_under_way)
+{
+    fresh();
+    CHECK(arm());
+    int x, y, x2, y2;
+    dial_at(20.0f, &x, &y);
+    dial_at(50.0f, &x2, &y2);
+    finger(1, x, y);
+    CHECK_EQ(took().kind, SERVO_CMD_POSITION);
+    feed_tap(2, RELEASE_X, BTN_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    glide(1, x2, y2, 8);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+    lift(1);
+    /* And the next press is taken. */
+    finger(FEED_LONE, x2, y2);
+    CHECK_EQ(took().kind, SERVO_CMD_POSITION);
+    lift(FEED_LONE);
+}
+
+/*
+ * One command waits at a time, so within a frame the later of a position
+ * and a RELEASE is the one sent.  A position and then RELEASE: the release
+ * goes, the position does not, and the value is the rest.
+ */
+TEST_CASE(a_release_after_a_position_in_one_frame_sends_the_release)
+{
+    for (int by_knob = 0; by_knob < 2; ++by_knob) {
+        fresh();
+        CHECK(arm());
+        if (by_knob) {
+            knob(0.2f);
+        } else {
+            int x, y;
+            dial_at(40.0f, &x, &y);
+            feed_tap(FEED_LONE, x, y);
+        }
+        CHECK(servo_screen_commanded() > 1600);
+        feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+        /* A withdrawal of the knob's turn puts nothing back. */
+        servo_screen_knob_cancel();
+        CHECK_EQ(servo_screen_commanded(), 1500);
+        CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+        CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    }
+}
+
+/* RELEASE and then a press on the dial: the position goes, the release
+ * does not, and the value is the position.  The knob does not post over a
+ * RELEASE: its turn is dropped and the release goes. */
+TEST_CASE(a_position_after_a_release_in_one_frame_sends_the_position)
+{
+    fresh();
+    CHECK(arm());
+    drag(10.0f, 30.0f);
+    drain();
+    feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+    int x, y;
+    dial_at(-40.0f, &x, &y);
+    feed_tap(FEED_LONE, x, y);
+    const servo_cmd_t c = took();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK(c.value_us < 1400);
+    CHECK_EQ(servo_screen_commanded(), c.value_us);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    /* Commanded, so no longer the rest: a trim says the position again. */
+    open_settings();
+    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +5 us */
+    close_settings();
+    CHECK_EQ(took().value_us, c.value_us + 5);
+
+    feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+    knob(0.2f);
+    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+}
+
+/* After a RELEASE the value follows the rest through a change of type, as
+ * after an arm: the release the change posts puts the pin there. */
+TEST_CASE(the_value_follows_the_rest_through_a_change_of_type_after_a_release)
+{
+    CHECK(armed_and_driven(PROFILE_STANDARD) != 0u);
+    feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    choose_narrow();
+    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(servo_screen_commanded(), 760);
+    knob(0.01f);
+    CHECK_EQ(took().value_us, 762);
+}
+
+/* RELEASE moves no value where the pins do not follow: on a bench disarmed
+ * after a move, and behind a disarm waiting to be taken, which it does not
+ * replace. */
+TEST_CASE(release_moves_no_value_on_a_bench_that_is_not_armed)
+{
+    const uint16_t driven = armed_and_driven(PROFILE_STANDARD);
+    CHECK(driven > 1600);
+    feed_tap(FEED_LONE, ARM_X, ARM_Y);          /* DISARM, not yet taken */
+    feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+    CHECK_EQ(servo_screen_commanded(), driven);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    servo_screen_set_armed(false);
+    feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(servo_screen_commanded(), driven);
+}
+
+/* Released on an armed bench the value is the rest, and a press on the
+ * dial drives the servo again. */
 TEST_CASE(a_press_on_the_dial_drives_a_released_servo_again)
 {
     fresh();
     CHECK(arm());
     drag(10.0f, 40.0f);
     const uint16_t driven = took().value_us;
+    CHECK(driven > 1700);
     feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
     CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
-    CHECK_EQ(servo_screen_commanded(), driven);
+    CHECK_EQ(servo_screen_commanded(), 1500);
     int x, y;
     dial_at(-20.0f, &x, &y);
     feed_tap(FEED_LONE, x, y);
@@ -746,6 +1118,7 @@ int main(void)
     RUN(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm);
     RUN(a_drag_does_not_cross_a_disarm_and_the_next_arm);
     RUN(nothing_moves_the_value_under_a_disarm_not_yet_taken);
+    RUN(nothing_moves_the_value_between_a_disarm_and_its_answer);
     RUN(an_arm_sets_the_value_to_the_channels_rest);
     RUN(an_arm_on_a_narrow_servo_sets_the_value_to_760_us);
     RUN(an_arm_sets_the_rest_and_not_the_trimmed_centre);
@@ -758,9 +1131,20 @@ int main(void)
     RUN(a_sweep_ended_by_a_disarm_leaves_nothing_to_send);
     RUN(a_pause_not_yet_sent_is_dropped_by_a_disarm);
     RUN(a_sweep_not_yet_sent_is_dropped_by_a_stop);
+    RUN(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap);
+    RUN(a_held_position_is_not_said_again_after_a_disarm_tap);
     RUN(centre_and_the_horn_are_dimmed_while_disarmed);
+    RUN(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer);
     RUN(a_disarm_during_the_arm_flash_leaves_the_button_green);
     RUN(release_speed_and_the_settings_work_while_disarmed);
+    RUN(release_on_an_armed_bench_sets_the_value_to_the_rest);
+    RUN(the_first_knob_turn_after_a_release_starts_from_the_rest);
+    RUN(the_first_dial_drag_after_a_release_starts_from_the_rest);
+    RUN(a_release_ends_a_drag_under_way);
+    RUN(a_release_after_a_position_in_one_frame_sends_the_release);
+    RUN(a_position_after_a_release_in_one_frame_sends_the_position);
+    RUN(the_value_follows_the_rest_through_a_change_of_type_after_a_release);
+    RUN(release_moves_no_value_on_a_bench_that_is_not_armed);
     RUN(a_press_on_the_dial_drives_a_released_servo_again);
     return test_summary("servo_arm");
 }

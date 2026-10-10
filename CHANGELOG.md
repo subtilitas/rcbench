@@ -28,6 +28,27 @@ history is in git.
   with all four A0 solder bridges open and its address floats between 0x40
   and 0x41; 0x40, the default, needs A0 bridged to GND. The hint on SETUP
   and the INTERFACES table say so.
+- **The throttle changes only on an armed bench.** On MOTOR & ESC the
+  slider, its `-1` and `+1` steps and the rotary knob are refused while the
+  bench is not armed: nothing is sent, and the slider and the readout stay
+  at 0.0 %. They are drawn dimmed and the line under the track reads
+  `ARM FIRST`. Not armed runs from the disarm until the bench reports armed,
+  so a control touched between a completed ARM hold and the bench's answer
+  is refused too, and so is one touched from a DISARM the screen asks for,
+  or a STOP on an armed bench, until the bench reports disarmed. SERVO's
+  position controls follow the same rule, from one definition both screens
+  read (`ui_value_gate.h`), and a sweep, a pause, a held position and a run
+  of the automatic test end where the DISARM or STOP is asked. The screen returns the throttle to 0 % at every disarm
+  itself and drops a throttle posted and not yet sent. A knob turn made
+  while not armed is not kept. Host suite only; not run on hardware.
+- **RELEASE on SERVO sets the value shown to the rest.** On an armed bench
+  RELEASE puts the pins at the rest, and the commanded value becomes that
+  rest, as at an arm: 1500 us for STANDARD PWM, 760 us for NARROW 760,
+  without TRIM. A drag under way ends, and the first drag or knob turn after
+  it starts from the rest, where it counted from the position before the
+  release. The release a run of the automatic test ends with and the one a
+  changed type sends on a resting bench do the same. On a disarmed bench
+  RELEASE is sent and the value stays. Host suite only; not run on hardware.
 - **A servo position changes only on an armed bench.** On SERVO the dial,
   the rotary knob, CENTRE and SWEEP are refused while the bench is disarmed:
   nothing is sent, and the horn and COMMANDED stay at the position last

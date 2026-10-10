@@ -51,12 +51,18 @@ void motor_screen_push(const bench_state_t *b);
  * disarm that has been asked for and not yet answered must not erase the run
  * it is ending.
  *
- * The hold that posts MOTOR_CMD_ARM returns the throttle slider to 0 %,
- * drops a throttle command waiting to be polled and ends a drag under way.
- * The change to armed does the same for an arm that hold did not ask for;
- * after the hold's ask it leaves the slider, whose value is from after the
- * ask, as it is.  The change to disarmed ends a drag under way and leaves
- * the value to the caller.  Reporting the same state again changes nothing.
+ * The throttle follows the bench, through ui_value_gate.h.  Outside
+ * UI_VALUE_LIVE no control changes the value: the slider, its -1 and +1
+ * buttons and motor_screen_knob() post nothing and move nothing, from the
+ * first frame to the bench's answer to an ARM, and from a MOTOR_CMD_DISARM
+ * being posted or motor_screen_cancel_arm() on an armed bench until this
+ * is called with false.  The change to disarmed returns the slider to 0 %, drops a
+ * throttle command waiting to be polled and ends a drag under way.
+ *
+ * The hold that posts MOTOR_CMD_ARM does the same.  The change to armed
+ * does it for an arm that hold did not ask for; after the hold's ask it
+ * leaves the slider, which only motor_screen_set_throttle() can have moved
+ * since, as it is.  Reporting the same state again changes nothing.
  */
 void motor_screen_set_armed(bool armed);
 
@@ -92,13 +98,16 @@ void motor_screen_cancel_arm(void);
 void motor_screen_set_esc_kv(int kv);
 
 float motor_screen_throttle(void);
+/** The application's hook: sets the slider on an armed or a disarmed bench
+ *  and posts nothing.  Not a control, and not held to the armed state. */
 void motor_screen_set_throttle(float pct);
 
 /**
  * Move the throttle by @p span_fraction of the slider's span, from the
  * rotary knob (knob.h).  Relative: the value changes by how far the knob
- * turned.  Nothing happens for a zero fraction or while a finger is
- * dragging the slider.  It posts the same throttle command a touch does and
+ * turned.  Nothing happens for a zero fraction, while a finger is dragging
+ * the slider, or while the bench is not armed: a turn made then is not kept
+ * for the next arm.  It posts the same throttle command a touch does and
  * never arms.  It posts only into an empty slot or over a throttle: any other
  * pending command (an arm, a disarm, a peak reset) stays and the knob's
  * motion is dropped.
