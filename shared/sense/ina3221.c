@@ -93,6 +93,15 @@ sense_value_t ina3221_current_ua(uint32_t shunt_uohm, int32_t code)
     return v;
 }
 
+int32_t ina3221_end_ua(uint32_t shunt_uohm, sense_clip_t end)
+{
+    if (end == SENSE_CLIP_NONE || shunt_uohm == 0u) {
+        return 0;
+    }
+    const int64_t code = (end == SENSE_CLIP_HIGH) ? CODE13_MAX : CODE13_MIN;
+    return (int32_t)(code * 40000000 / (int64_t)shunt_uohm);
+}
+
 int32_t ina3221_bus_mv(int32_t code)
 {
     return code * 8;
@@ -216,4 +225,19 @@ sense_err_t ina3221_read_bus(ina3221_t *d, uint8_t ch, int32_t *mv)
 sense_err_t ina3221_read_flags(ina3221_t *d, uint16_t *mask_enable)
 {
     return read_reg(d, INA3221_MASK_ENABLE, mask_enable);
+}
+
+sense_err_t ina3221_verify(ina3221_t *d, bool *lost)
+{
+    *lost = false;
+    for (unsigned k = 0; k < 2u; ++k) {
+        uint16_t back = 0u;
+        const sense_err_t e = read_reg(d, INA3221_CONFIG, &back);
+        if (e != SENSE_OK || back == d->config) {
+            return e;
+        }
+    }
+    sense_part_lost(&d->part);
+    *lost = true;
+    return SENSE_OK;
 }

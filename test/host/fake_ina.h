@@ -11,6 +11,13 @@
  * a reading past the end of a range stays at the end code, and RSTACC
  * reads back as written.
  *
+ * The INA3221's conversion timing, when a test gives the part a clock
+ * (clock_us): the shunt and bus registers hold their values until the
+ * cycle of the Configuration in force has passed (ina3221_cycle_us(): 280
+ * µs for CH1 alone at 140 µs, 6.6 ms on the reset value 7127h), and a
+ * write of Configuration or a reset starts a cycle.  Without a clock every
+ * read is a fresh conversion.
+ *
  * An AS5600 (ams DS000365) answers at 0x36: STATUS at 0x0B, RAW ANGLE at
  * 0x0C and ANGLE at 0x0E, AGC at 0x1A and MAGNITUDE at 0x1B.  A read is
  * one register: STATUS and AGC 1 byte, RAW ANGLE, ANGLE and MAGNITUDE 2
@@ -21,7 +28,10 @@
  *
  * Faults a test can give it: a part that is not there (NACK), the next n
  * transactions or the nth since the start failing with a chosen code, the lines held low, a part
- * that acknowledges writes and keeps none, and other identities.
+ * that acknowledges writes and keeps none, other identities, a part reset
+ * (fake_reset228(), fake_reset3221(): every register at its power-on
+ * value), and the next glitch_n reads of one register answering
+ * glitch_value in place of what the register holds.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -57,6 +67,13 @@ typedef struct {
     unsigned    reads[256];
     unsigned    writes[256];
     uint64_t    clocks;          /* of the reads: 9 * (3 + n) + 3 each     */
+    uint8_t     glitch_reg;      /* the next glitch_n reads of this        */
+    unsigned    glitch_n;        /* register answer glitch_value           */
+    uint16_t    glitch_value;
+    const uint64_t *clock_us;    /* INA3221: conversions take their time   */
+    bool        conv_have;       /* held[] holds a conversion              */
+    uint64_t    conv_at;         /* when the cycle under way began         */
+    uint16_t    held[7];         /* shunt and bus registers 1 to 6 as held */
 } fake_part_t;
 
 typedef struct {
@@ -85,6 +102,9 @@ static void fake_reset3221(fake_part_t *p)
     memset(p->reg, 0, sizeof p->reg);
     p->reg[INA3221_CONFIG]      = INA3221_CONFIG_RESET;
     p->reg[INA3221_MASK_ENABLE] = 0x0002u;
+    if (p->clock_us != NULL) {
+        p->conv_at = *p->clock_us;           /* a cycle starts */
+    }
 }
 
 static fake_part_t *fake_add(fake_bus_t *b, fake_kind_t kind, uint8_t addr,
@@ -223,17 +243,45 @@ static void fake_write228(fake_part_t *p, uint8_t reg, uint16_t v)
 
 /* ------------------------------------------------------------ INA3221 */
 
+/* A shunt or bus register, 1 to 6, converted now. */
+static uint16_t fake_convert3221(const fake_part_t *p, uint8_t reg)
+{
+    const unsigned ch = (unsigned)(reg - 1u) / 2u;
+    int64_t code;
+    if (((reg - 1u) & 1u) == 0u) {
+        code = fake_sat(p->amps[ch] * p->shunt_ohm / 40e-6, -4096, 4095);
+    } else {
+        code = fake_sat(p->volts[ch] / 8e-3, -4096, 4095);
+    }
+    return (uint16_t)((uint64_t)(code * 8) & 0xFFFFu);
+}
+
+/* With a clock: the six registers as held, converted again once the cycle
+ * of the Configuration in force has passed. */
+static uint16_t fake_held3221(fake_part_t *p, uint8_t reg)
+{
+    const uint64_t now   = *p->clock_us;
+    const uint32_t cycle = ina3221_cycle_us(p->reg[INA3221_CONFIG]);
+    if (!p->conv_have
+        || (cycle != 0u && now - p->conv_at >= (uint64_t)cycle)) {
+        for (uint8_t r = INA3221_SHUNT1; r <= 0x06u; ++r) {
+            p->held[r] = fake_convert3221(p, r);
+        }
+        if (p->conv_have && cycle != 0u) {
+            p->conv_at = now - (now - p->conv_at) % cycle;
+        } else {
+            p->conv_at = now;
+        }
+        p->conv_have = true;
+    }
+    return p->held[reg];
+}
+
 static uint64_t fake_value3221(fake_part_t *p, uint8_t reg)
 {
     if (reg >= INA3221_SHUNT1 && reg <= 0x06u) {
-        const unsigned ch = (unsigned)(reg - 1u) / 2u;
-        int64_t code;
-        if (((reg - 1u) & 1u) == 0u) {
-            code = fake_sat(p->amps[ch] * p->shunt_ohm / 40e-6, -4096, 4095);
-        } else {
-            code = fake_sat(p->volts[ch] / 8e-3, -4096, 4095);
-        }
-        return (uint64_t)(code * 8) & 0xFFFFu;
+        return (p->clock_us != NULL) ? fake_held3221(p, reg)
+                                     : fake_convert3221(p, reg);
     }
     if (reg == INA3221_MASK_ENABLE) {
         const uint16_t v = p->reg[reg];
@@ -251,6 +299,9 @@ static uint64_t fake_value3221(fake_part_t *p, uint8_t reg)
 
 static void fake_write3221(fake_part_t *p, uint8_t reg, uint16_t v)
 {
+    if (reg == INA3221_CONFIG && p->clock_us != NULL) {
+        p->conv_at = *p->clock_us;           /* a cycle starts */
+    }
     if (reg == INA3221_CONFIG && (v & INA3221_CONFIG_RST) != 0u) {
         fake_reset3221(p);
         return;
@@ -326,8 +377,12 @@ static sense_err_t fake_read(void *ctx, uint8_t addr, uint8_t reg,
     if (n != want) {
         ++b->bad_width;
     }
-    const uint64_t v = (p->kind == FAKE_INA228) ? fake_value228(p, reg)
-                                                : fake_value3221(p, reg);
+    uint64_t v = (p->kind == FAKE_INA228) ? fake_value228(p, reg)
+                                          : fake_value3221(p, reg);
+    if (p->glitch_n > 0u && reg == p->glitch_reg) {
+        --p->glitch_n;
+        v = p->glitch_value;
+    }
     fake_put(buf, n, v);
     return SENSE_OK;
 }

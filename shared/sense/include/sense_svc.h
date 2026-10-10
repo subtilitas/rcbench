@@ -47,6 +47,8 @@
  *   Snapshot every field from the schedule, with the generations the
  *            step has taken, so core 0 can tell a reading of the set-up,
  *            run and capture in force from one that came before them.
+ *            CH1's window ring and the two reset counts are the
+ *            schedule's, and start again with a set-up.
  *
  * Pure C, no SDK (software development kit).  Host-tested in
  * test_sense_svc.
@@ -100,6 +102,11 @@ typedef struct {
     uint16_t diag;               /**< its DIAG_ALRT as last read            */
     bool     have_win;           /**< a window has closed                   */
     sense_window_t win[SENSE_SRC_COUNT];
+    /** CH1's last windows, newest first: entry k is the window numbered k
+     *  before win[SENSE_SRC_CH1].number. */
+    sense_ring_win_t ring[SENSE_WIN_RING];
+    uint8_t  i228_resets;        /**< found reset under this set-up, mod 256 */
+    uint8_t  i3221_resets;
     sense_run_t run;
     sense_cap_state_t cap_state;
     uint16_t cap_seq;            /**< captures ended, modulo 65536          */

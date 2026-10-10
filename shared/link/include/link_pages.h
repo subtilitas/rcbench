@@ -50,6 +50,7 @@ typedef enum {
     LINK_PAGE_BIND_CFG  = 0x2E, /**< a CHAN_CFG page prepared, not in force  */
     LINK_PAGE_BIND_OUT  = 0x2F, /**< an OUTPUTS page prepared, not in force  */
     LINK_PAGE_BIND      = 0x30, /**< takes the two prepared pages as one     */
+    LINK_PAGE_SERVO_WIN = 0x31, /**< the servo rail's last CH1 windows, read-only */
 } link_page_id_t;
 
 /*
@@ -64,15 +65,19 @@ typedef enum {
  * coprocessor's minor does not have: SUPPLY from 4.3, SENSE and
  * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
  * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
- * BIND_CFG, BIND_OUT and BIND from 4.10.  A
+ * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
+ * and a signed CAP_HOLD_MA from 4.11.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 10u
+#define LINK_PROTOCOL_MINOR 11u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
+/** The first minor that serves SERVO_WIN, counts resets in SENSE register
+ *  31 and takes a negative CAP_HOLD_MA. */
+#define LINK_MINOR_SERVO_WIN 11u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -363,8 +368,17 @@ enum {
  *     a position, and the anchor starts afresh when MD returns.  A move that ends at time t_end, read at time t_read, shows
  *     STILL_MS = t_read - t_end to within the 2 ms sample interval, so the
  *     panel times the end of a move to the coprocessor's resolution
- *     whatever its own polling interval.  Register 31 is reserved: it reads
- *     0.
+ *     whatever its own polling interval.
+ *
+ *     RESETS (register 31, protocol 4.11) counts the times a current
+ *     monitor was found running on its power-on set-up and not the one
+ *     written to it: the INA228 in the low byte, the INA3221 in the high
+ *     byte, each modulo 256, since the set-up in force was taken.  The
+ *     coprocessor reads the INA228's ADC_CONFIG and the INA3221's
+ *     Configuration back every 40 ms; a part found reset loses ONLINE and
+ *     is set up again 1000 ms on.  The count shows a reset that was found
+ *     and repaired between two reads of FLAGS.  Before 4.11 the register
+ *     is reserved and reads 0.
  *
  *     ENABLE to register 11 are kept in the coprocessor's flash beside the
  *     bindings and the supply's wiring, and the bus is opened at boot. */
@@ -400,7 +414,7 @@ enum {
     LINK_SN_AS5600_MAGNITUDE = 28, /**< 12 bits; 0 until read               */
     LINK_SN_AS5600_SAMPLES  = 29,  /**< angle reads, modulo 65536           */
     LINK_SN_AS5600_STILL_MS = 30,  /**< within 12 counts of its anchor, ms  */
-    LINK_SN_RESERVED_31     = 31,  /**< reads 0                             */
+    LINK_SN_RESETS          = 31,  /**< protocol 4.11; reads 0 before it    */
     LINK_SN_COUNT           = 32,
 };
 /** The registers a 4.8 coprocessor's page has. */
@@ -451,6 +465,10 @@ typedef enum {
     LINK_SN_BUS_STUCK      = 1u << 9, /**< SDA held low, being clocked free */
 } link_sense_flag_t;
 
+/* RESETS' two counts, each modulo 256. */
+#define LINK_SN_RESETS_I228(r)  ((uint8_t)((r) & 0xFFu))
+#define LINK_SN_RESETS_I3221(r) ((uint8_t)(((r) >> 8) & 0xFFu))
+
 /** AS5600_FLAGS' bits (protocol 4.9). */
 typedef enum {
     /** Answering at 0x36 with a STATUS an AS5600 can give. */
@@ -490,7 +508,10 @@ typedef enum {
  *     set, the INA3221 channel in bits 0..1 (1: CH2 and CH3 are refused,
  *     LINK_SS_CAP_CH) and in bits 8..10 the
  *     output channel (0 to 7) whose next changed command starts the timing;
- *     the holding level the move ends at, 0 to 32767 mA; the distance from
+ *     the holding level the move ends at in mA, signed, -32768 to 32767
+ *     (protocol 4.11; before it 0 to 32767, and 32768 to 65535 refused):
+ *     a holding level near 0 A reads below zero by the part's offset; the
+ *     distance from
  *     the level before the command that counts as movement, and the band
  *     around the holding level that counts as arrival, each 1 to 32767 mA.
  *     An arm is the whole frame from CAP_ARM; an arm restarts a capture
@@ -575,6 +596,87 @@ typedef enum {
     LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering, or no PWM
                                  edge came within 3000 ms of the arm       */
 } link_cap_state_t;
+
+/* --- the SERVO_WIN page (protocol 4.11): the INA3221's CH1, the servo
+ *     under test, as its last four 50 ms windows.  Read only: every write
+ *     is refused with READ_ONLY.
+ *
+ *     SERVO_SENSE shows the last window alone, so a host whose reads lie
+ *     further apart than 50 ms misses windows.  Here a host takes each
+ *     window number once, and misses none while two of its reads lie at
+ *     most 200 ms apart.
+ *
+ *     WINDOW is the number of the newest complete window, modulo 65536,
+ *     the number SERVO_SENSE's WINDOW shows.  FLAGS bit 0 (LINK_SW_HAVE)
+ *     says a window has closed under the set-up in force, so WINDOW is a
+ *     number; bit 7 (LINK_SW_CAP_CLIPPED) is SERVO_SENSE's capture bit.
+ *     CAP_STATE and CAP_SEQ read as SERVO_SENSE's registers 18 and 19, so
+ *     one read shows the windows and whether a capture has ended.
+ *
+ *     Then four entries of six registers, newest first: entry k, from
+ *     register 4 + 6 k, is window number WINDOW - k.  Mean, highest and
+ *     lowest current in mA, signed; mean and lowest bus voltage in mV, at
+ *     the load side of the shunt; and the entry's flags.  The schedule
+ *     reads CH1's current every 1 ms and its bus voltage every 20 ms: a
+ *     window holds up to 50 current samples and 2 or 3 voltage samples.
+ *
+ *     An entry's flags: bit 15 (LINK_SW_E_CLOSED) a window closed with
+ *     this number -- clear for a number the coprocessor skipped because
+ *     its tick ran late by more than a window, and for a number before
+ *     the first window, and the entry then reads 0 throughout; bit 8
+ *     (LINK_SW_E_CURRENT) the window holds current samples; bit 9
+ *     (LINK_SW_E_VOLTAGE) it holds voltage samples; bit 10
+ *     (LINK_SW_E_CLIP_HI) a current sample read the top of the range,
+ *     163.8 mV across the shunt; bit 11 (LINK_SW_E_CLIP_LO) one read the
+ *     bottom; bits 0..7 the number of samples that did, held at 255.
+ *
+ *     A clipped sample counts in an entry as the reading it is: the end
+ *     of the range, 1.638 A or -1.6384 A on the 0.1 Ohm shunt, in the
+ *     mean, the highest and the lowest.  SERVO_SENSE's registers 0 to 11
+ *     leave a clipped sample out of their figures, so the two pages
+ *     differ for a window with a clipped sample, and only for such a
+ *     window.
+ *
+ *     A window being filled when the INA3221 is found reset (SENSE's
+ *     RESETS) is emptied: its entry is closed and holds no samples.
+ *
+ *     Not kept, and cleared by a SENSE set-up taken. */
+enum {
+    LINK_SW_WINDOW    = 0,
+    LINK_SW_FLAGS     = 1,
+    LINK_SW_CAP_STATE = 2,   /**< link_cap_state_t                       */
+    LINK_SW_CAP_SEQ   = 3,
+    LINK_SW_ENTRIES   = 4,   /**< entry k's registers start at 4 + 6 k   */
+    LINK_SW_COUNT     = 28,
+};
+/** The windows the page carries. */
+#define LINK_SW_RING 4u
+/* One entry's registers. */
+enum {
+    LINK_SW_E_MEAN_MA = 0,   /**< signed -- read as int16_t              */
+    LINK_SW_E_MAX_MA  = 1,   /**< signed                                 */
+    LINK_SW_E_MIN_MA  = 2,   /**< signed                                 */
+    LINK_SW_E_MEAN_MV = 3,
+    LINK_SW_E_MIN_MV  = 4,
+    LINK_SW_E_FLAGS   = 5,
+    LINK_SW_E_STRIDE  = 6,
+};
+/** Register @p r of the entry @p k windows before the newest. */
+#define LINK_SW_ENTRY(k, r) \
+    ((unsigned)LINK_SW_ENTRIES + (unsigned)(k) * LINK_SW_E_STRIDE + (unsigned)(r))
+
+/* FLAGS' bits. */
+#define LINK_SW_HAVE        0x01u
+#define LINK_SW_CAP_CLIPPED 0x80u
+
+/* An entry's flags. */
+#define LINK_SW_E_CLIPPED(f) ((uint8_t)((f) & 0xFFu))
+#define LINK_SW_E_CLIPPED_MAX 255u
+#define LINK_SW_E_CURRENT   0x0100u
+#define LINK_SW_E_VOLTAGE   0x0200u
+#define LINK_SW_E_CLIP_HI   0x0400u
+#define LINK_SW_E_CLIP_LO   0x0800u
+#define LINK_SW_E_CLOSED    0x8000u
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
  *     controller), heard on one motor phase.  One GPIO reads the phase

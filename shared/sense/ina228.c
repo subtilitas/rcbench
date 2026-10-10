@@ -377,3 +377,18 @@ sense_err_t ina228_clear_totals(ina228_t *d)
     }
     return sense_part_write16(&d->part, INA228_CONFIG, d->config);
 }
+
+sense_err_t ina228_verify(ina228_t *d, bool *lost)
+{
+    *lost = false;
+    for (unsigned k = 0; k < 2u; ++k) {
+        uint16_t back = 0u;
+        const sense_err_t e = read_reg16(d, INA228_ADC_CONFIG, &back);
+        if (e != SENSE_OK || back == d->adc_config) {
+            return e;
+        }
+    }
+    sense_part_lost(&d->part);
+    *lost = true;
+    return SENSE_OK;
+}

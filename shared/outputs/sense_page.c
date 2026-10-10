@@ -1,5 +1,5 @@
 /*
- * The SENSE and SERVO_SENSE link pages.  See sense_page.h.
+ * The SENSE, SERVO_SENSE and SERVO_WIN link pages.  See sense_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,6 +19,11 @@
 
 /* The largest current a register of signed mA carries. */
 #define MA_MAX 32767u
+
+_Static_assert(LINK_SW_RING == SENSE_WIN_RING,
+               "SERVO_WIN carries the schedule's ring");
+_Static_assert(LINK_SW_ENTRIES + LINK_SW_RING * LINK_SW_E_STRIDE
+               == LINK_SW_COUNT, "SERVO_WIN is its header and its entries");
 
 void sense_page_defaults(uint16_t *cfg)
 {
@@ -166,7 +171,8 @@ static bool values_ok(const uint16_t *c)
  * capture's result -- so no read shows a part online, or a value scaled by
  * the old shunt, before core 1 has read under the new one.  The ESC's own
  * telemetry (registers 23 to 25) is not the bus's and stays; the output
- * encoder's (26 to 31) goes with the rest.  CAP_SEQ
+ * encoder's (26 to 30) and RESETS (31) go with the rest, and so does the
+ * window ring.  CAP_SEQ
  * counts on across set-ups.  A capture under way cannot meet this: a
  * set-up is refused while the bank drives, and a stopped bank ends it.
  */
@@ -178,6 +184,7 @@ static void forget_readings(sense_page_t *p)
            (size_t)(LINK_SN_COUNT - LINK_SN_AS5600_FLAGS) * sizeof(uint16_t));
     memset(&p->servo[LINK_SS_CH_MEAN_MA], 0,
            (size_t)(LINK_SS_CH_FLAGS + 1) * sizeof(uint16_t));
+    memset(p->win, 0, sizeof(p->win));
     p->servo[LINK_SS_CAP_ARM]      = 0u;
     p->servo[LINK_SS_CAP_STATE]    = (uint16_t)LINK_CAP_IDLE;
     p->servo[LINK_SS_CAP_MOVE_T]   = 0u;
@@ -285,7 +292,7 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
     const uint8_t ch = LINK_SS_ARM_CH(arm);
     if ((arm & LINK_SS_ARM) == 0u
         || (arm & (uint16_t)~LINK_SS_ARM_BITS) != 0u || ch == 0u
-        || f[1] > MA_MAX || f[2] == 0u || f[2] > MA_MAX
+        || f[2] == 0u || f[2] > MA_MAX
         || f[3] == 0u || f[3] > MA_MAX) {
         return LINK_NACK_BAD_VALUE;
     }
@@ -363,6 +370,31 @@ void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
     }
 }
 
+void sense_win_read(const sense_page_t *p, uint8_t off, uint8_t n,
+                    uint16_t *out)
+{
+    if (p == NULL || out == NULL
+        || (unsigned)off + (unsigned)n > (unsigned)LINK_SW_COUNT) {
+        return;
+    }
+    for (uint8_t i = 0; i < n; ++i) {
+        const unsigned r = (unsigned)off + i;
+        uint16_t v = p->win[r];
+        /* The capture's three are SERVO_SENSE's, as that page reads now:
+         * an arm or a disarm shows here in the same pass. */
+        if (r == (unsigned)LINK_SW_FLAGS) {
+            if ((p->servo[LINK_SS_CH_FLAGS] & LINK_SS_CAP_CLIPPED) != 0u) {
+                v |= (uint16_t)LINK_SW_CAP_CLIPPED;
+            }
+        } else if (r == (unsigned)LINK_SW_CAP_STATE) {
+            v = p->servo[LINK_SS_CAP_STATE];
+        } else if (r == (unsigned)LINK_SW_CAP_SEQ) {
+            v = p->servo[LINK_SS_CAP_SEQ];
+        }
+        out[i] = v;
+    }
+}
+
 bool sense_page_step(sense_page_t *p, bool driving)
 {
     if (p == NULL || driving) {
@@ -422,7 +454,7 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
     cmd->cap_gen      = p->cap_gen;
     cmd->cap_on       = (v[LINK_SS_CAP_ARM] & LINK_SS_ARM) != 0u;
     cmd->cap.rise_ua  = SENSE_CAP_RISE_AUTO;
-    cmd->cap.hold_ua  = (int32_t)v[LINK_SS_CAP_HOLD_MA] * 1000;
+    cmd->cap.hold_ua  = (int32_t)(int16_t)v[LINK_SS_CAP_HOLD_MA] * 1000;
     cmd->cap.move_ua  = (int32_t)v[LINK_SS_CAP_MOVE_MA] * 1000;
     cmd->cap.band_ua  = (int32_t)v[LINK_SS_CAP_BAND_MA] * 1000;
 }
@@ -537,6 +569,8 @@ static void publish_sense(uint16_t *r, const sense_snap_t *s,
     }
     reg_32(&r[LINK_SN_I228_CHARGE_LO], charge);
     reg_32(&r[LINK_SN_I228_ENERGY_LO], energy);
+    r[LINK_SN_RESETS] = (uint16_t)(((unsigned)s->i3221_resets << 8)
+                                   | s->i228_resets);
 }
 
 static void publish_channels(uint16_t *r, const sense_snap_t *s)
@@ -564,6 +598,46 @@ static void publish_channels(uint16_t *r, const sense_snap_t *s)
     r[LINK_SS_CH_FLAGS] = flags;
 }
 
+/* CH1's ring into SERVO_WIN: the newest window's number, then each entry.
+ * The capture's registers are filled at the read (sense_win_read()). */
+static void publish_ring(uint16_t *r, const sense_snap_t *s)
+{
+    memset(r, 0, (size_t)LINK_SW_COUNT * sizeof(uint16_t));
+    if (!s->have_win) {
+        return;
+    }
+    r[LINK_SW_WINDOW] = s->win[SENSE_SRC_CH1].number;
+    r[LINK_SW_FLAGS]  = (uint16_t)LINK_SW_HAVE;
+    for (unsigned k = 0; k < LINK_SW_RING; ++k) {
+        const sense_ring_win_t *w = &s->ring[k];
+        if (!w->closed) {
+            continue;
+        }
+        uint16_t *e = &r[LINK_SW_ENTRY(k, 0)];
+        uint16_t f = (uint16_t)LINK_SW_E_CLOSED;
+        f |= (uint16_t)((w->n_clip > LINK_SW_E_CLIPPED_MAX)
+                        ? LINK_SW_E_CLIPPED_MAX : w->n_clip);
+        if (w->n_i > 0u) {
+            f |= (uint16_t)LINK_SW_E_CURRENT;
+        }
+        if (w->n_v > 0u) {
+            f |= (uint16_t)LINK_SW_E_VOLTAGE;
+        }
+        if (w->clip_hi) {
+            f |= (uint16_t)LINK_SW_E_CLIP_HI;
+        }
+        if (w->clip_lo) {
+            f |= (uint16_t)LINK_SW_E_CLIP_LO;
+        }
+        e[LINK_SW_E_MEAN_MA] = reg_i16(div_round(w->i_mean_ua, 1000));
+        e[LINK_SW_E_MAX_MA]  = reg_i16(div_round(w->i_max_ua, 1000));
+        e[LINK_SW_E_MIN_MA]  = reg_i16(div_round(w->i_min_ua, 1000));
+        e[LINK_SW_E_MEAN_MV] = reg_u16(div_round(w->v_mean_uv, 1000));
+        e[LINK_SW_E_MIN_MV]  = reg_u16(div_round(w->v_min_uv, 1000));
+        e[LINK_SW_E_FLAGS]   = f;
+    }
+}
+
 static void publish_capture(uint16_t *r, const sense_snap_t *s)
 {
     r[LINK_SS_CAP_STATE]    = (uint16_t)s->cap_state;
@@ -580,7 +654,7 @@ static void publish_capture(uint16_t *r, const sense_snap_t *s)
     }
 }
 
-/* The output encoder's registers 26 to 31.  The angle and its figures are
+/* The output encoder's registers 26 to 30.  The angle and its figures are
  * the snapshot's only for a part that is online or was: a part gone
  * offline keeps its last reading and loses ONLINE, and the still time
  * goes on counting from it. */
@@ -610,7 +684,6 @@ static void publish_enc(uint16_t *r, const sense_snap_t *s)
     r[LINK_SN_AS5600_MAGNITUDE] = s->enc_have_mag ? s->enc_magnitude : 0u;
     r[LINK_SN_AS5600_SAMPLES]   = s->enc_samples;
     r[LINK_SN_AS5600_STILL_MS]  = s->enc_have_angle ? s->enc_still_ms : 0u;
-    r[LINK_SN_RESERVED_31]      = 0u;
 }
 
 void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
@@ -628,6 +701,7 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
     publish_sense(p->sense, s, run_gen);
     publish_enc(p->sense, s);
     publish_channels(p->servo, s);
+    publish_ring(p->win, s);
     if (s->cap_gen == p->cap_gen) {
         publish_capture(p->servo, s);
     }

@@ -4,8 +4,15 @@
  * tick.
  *
  * Under test: the read rates, counted at the parts -- CH1 1000 Hz, the
- * INA228's current and voltage 500 Hz each, the rest 50 Hz, CH2 and CH3
- * at 1000 Hz while the pair runs; the 50 ms windows, their numbers and
+ * INA228's current and voltage 500 Hz each, the rest 50 Hz or 25 Hz, CH2
+ * and CH3 at 1000 Hz while the pair runs, and every tick of the rotation
+ * inside 1 ms of bus time; CH1's ring of four windows after 1, 4, 5 and 6
+ * of them, across window 65535, with the numbers a late tick skips, and
+ * its clipped samples counted at the end of the range; a part that reset
+ * itself found by the read-back of its set-up within one rotation,
+ * emptied, counted once, set up again after SENSE_RETRY_MS and across the
+ * millisecond count's wrap, and one corrupted read-back no reset; the
+ * 50 ms windows, their numbers and
  * their figures, a clipped sample kept out of them, across the 32-bit
  * millisecond wrap, and a sample read after a probe that crosses a window
  * boundary kept in the window after it; the run's peaks, power
@@ -23,6 +30,7 @@
 
 #include "greatest.h"
 
+#include "as5600.h"
 #include "fake_ina.h"
 #include "link_pages.h"
 #include "sense_sched.h"
@@ -149,10 +157,14 @@ TEST_CASE(each_register_is_read_at_its_rate)
     CHECK_EQ(i3221->reads[INA3221_BUS1], 50u);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1 + 2], 0u);   /* CH2: not enabled */
     CHECK_EQ(i3221->reads[INA3221_BUS1 + 4], 0u);     /* CH3 */
-    CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 50u);
+    /* Mask/Enable shares its slot with Configuration, DIETEMP its slot
+     * with ADC_CONFIG: 25 Hz each. */
+    CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 25u);
+    CHECK_EQ(i3221->reads[INA3221_CONFIG], 25u);
     CHECK_EQ(i228->reads[INA228_CURRENT], 500u);
     CHECK_EQ(i228->reads[INA228_VBUS], 500u);
-    CHECK_EQ(i228->reads[INA228_DIETEMP], 50u);
+    CHECK_EQ(i228->reads[INA228_DIETEMP], 25u);
+    CHECK_EQ(i228->reads[INA228_ADC_CONFIG], 25u);
     CHECK_EQ(i228->reads[INA228_DIAG_ALRT], 50u);
     CHECK_EQ(i228->reads[INA228_ENERGY], 50u);
     CHECK_EQ(i228->reads[INA228_CHARGE], 50u);
@@ -1049,6 +1061,779 @@ TEST_CASE(the_capture_states_are_the_links)
     CHECK_EQ((int)SENSE_CAP_LOST, (int)LINK_CAP_LOST);
 }
 
+/* ---------------------------------------------------------- the ring */
+
+/* Window @p n of a run: CH1 draws 0.1 A times n + 1 through its 50 ticks. */
+static void fill_window(unsigned n)
+{
+    i3221->amps[0] = 0.1 * (double)(n + 1u);
+    ticks(50u);
+}
+
+/* CH1's last four complete windows, newest first, each with its figures:
+ * after 1, 4, 5 and 6 windows. */
+TEST_CASE(the_ring_keeps_ch1s_last_four_windows)
+{
+    rig(1u, true);
+    sense_ring_win_t r;
+    sense_window_t w;
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(!sense_sched_ring(&s, k, &r));
+    }
+    fill_window(0u);
+    CHECK(!sense_sched_ring(&s, 0u, &r));        /* none has closed */
+
+    /* One window: the newest, and nothing behind it. */
+    fill_window(1u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK(r.closed);
+    CHECK_EQ(r.n_i, 50u);
+    CHECK_EQ(r.n_clip, 0u);
+    CHECK_EQ(r.n_v, 3u);
+    CHECK_EQ(r.i_mean_ua, 100000);
+    CHECK_EQ(r.i_min_ua, 100000);
+    CHECK_EQ(r.i_max_ua, 100000);
+    CHECK_EQ(r.v_mean_uv, 6000000);
+    CHECK_EQ(r.v_min_uv, 6000000);
+    CHECK(!r.clip_hi && !r.clip_lo);
+    for (unsigned k = 1u; k < SENSE_WIN_RING; ++k) {
+        CHECK(!sense_sched_ring(&s, k, &r));
+        CHECK(!r.closed);
+        CHECK_EQ(r.n_i, 0u);
+    }
+    CHECK(!sense_sched_ring(&s, SENSE_WIN_RING, &r));
+
+    /* Four: windows 3, 2, 1, 0. */
+    fill_window(2u);
+    fill_window(3u);
+    fill_window(4u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 3u);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(sense_sched_ring(&s, k, &r));
+        CHECK_EQ(r.i_mean_ua, 100000 * (int32_t)(4u - k));
+        CHECK_EQ(r.n_i, 50u);
+    }
+    /* The newest entry is the window SERVO_SENSE shows. */
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.i_mean_ua, w.i_mean_ua);
+    CHECK_EQ(r.i_max_ua, w.i_max_ua);
+    CHECK_EQ(r.v_mean_uv, w.v_mean_uv);
+    CHECK_EQ(r.v_min_uv, w.v_min_uv);
+    CHECK_EQ(r.n_v, w.n_v);
+
+    /* Five: window 0 has left the ring.  Six: window 1 has. */
+    fill_window(5u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 4u);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(sense_sched_ring(&s, k, &r));
+        CHECK_EQ(r.i_mean_ua, 100000 * (int32_t)(5u - k));
+    }
+    fill_window(6u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 5u);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(sense_sched_ring(&s, k, &r));
+        CHECK_EQ(r.i_mean_ua, 100000 * (int32_t)(6u - k));
+    }
+}
+
+/* The window number is 16 bits on the link: the ring runs on across
+ * 65535 to 0, an entry still the window numbered k before the newest. */
+TEST_CASE(the_ring_runs_on_across_window_65535)
+{
+    rig(1u, true);
+    fill_window(0u);
+    /* A tick late by 65532 windows: window 0 closes, and the next one
+     * filled is number 65533. */
+    g_us += (uint64_t)65532u * SENSE_WINDOW_MS * 1000u;
+    fill_window(1u);
+    fill_window(2u);                             /* 65534; closes 65533 */
+    sense_window_t w;
+    sense_ring_win_t r;
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 65533u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.i_mean_ua, 200000);
+    /* Window 0 lies 65533 numbers back, and the three before 65533 never
+     * were. */
+    for (unsigned k = 1u; k < SENSE_WIN_RING; ++k) {
+        CHECK(!sense_sched_ring(&s, k, &r));
+    }
+    fill_window(3u);                             /* 65535 */
+    fill_window(4u);                             /* 65536: number 0 */
+    fill_window(5u);                             /* 65537: number 1 */
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 0u);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(sense_sched_ring(&s, k, &r));      /* 0, 65535, 65534, 65533 */
+        CHECK_EQ(r.i_mean_ua, 100000 * (int32_t)(5u - k));
+    }
+    fill_window(6u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 1u);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(sense_sched_ring(&s, k, &r));      /* 1, 0, 65535, 65534 */
+        CHECK_EQ(r.i_mean_ua, 100000 * (int32_t)(6u - k));
+    }
+}
+
+/* Ticks at 0 to 99 ms, then the tick due at 100 ms comes @p late_ms late
+ * and the ticks after it 1 ms apart, up to the tick at @p until_ms. */
+static void late_tick(unsigned late_ms, unsigned until_ms)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(100u);
+    g_us += (uint64_t)late_ms * 1000u;
+    ticks(until_ms - 100u - late_ms + 1u);
+}
+
+/* A tick late by less than a window skips no number; one late by a window
+ * or more leaves out the windows that saw no tick, and the ring's places
+ * for their numbers read not closed. */
+TEST_CASE(a_late_tick_skips_numbers_and_the_ring_says_which)
+{
+    sense_window_t w;
+    sense_ring_win_t r;
+    /* 49 ms: the tick lands at 149 ms, in window 2.  Windows 0, 1 and 2
+     * all close; window 2 holds the one late sample. */
+    late_tick(49u, 150u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 2u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, 1u);
+    CHECK(sense_sched_ring(&s, 1u, &r));
+    CHECK_EQ(r.n_i, 50u);
+    CHECK(sense_sched_ring(&s, 2u, &r));
+    CHECK_EQ(r.n_i, 50u);
+    CHECK(!sense_sched_ring(&s, 3u, &r));
+
+    /* 50 ms: the tick lands at 150 ms, in window 3.  No tick fell in
+     * window 2: its number is skipped. */
+    late_tick(50u, 200u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 3u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, 50u);
+    CHECK(!sense_sched_ring(&s, 1u, &r));        /* window 2 */
+    CHECK(!r.closed);
+    CHECK_EQ(r.n_i, 0u);
+    CHECK_EQ(r.i_mean_ua, 0);
+    CHECK(sense_sched_ring(&s, 2u, &r));         /* window 1 */
+    CHECK_EQ(r.n_i, 50u);
+    CHECK(sense_sched_ring(&s, 3u, &r));         /* window 0 */
+
+    /* 51 ms: the same, window 3 one sample short. */
+    late_tick(51u, 200u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 3u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, 49u);
+    CHECK(!sense_sched_ring(&s, 1u, &r));
+    CHECK(sense_sched_ring(&s, 2u, &r));
+    CHECK(sense_sched_ring(&s, 3u, &r));
+
+    /* 5 windows: the tick lands at 350 ms, in window 7.  Window 1 closes
+     * then, with windows 2 to 6 skipped: at first the ring is windows 1
+     * and 0, and once window 7 closes it alone. */
+    late_tick(250u, 350u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 1u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK(sense_sched_ring(&s, 1u, &r));
+    CHECK(!sense_sched_ring(&s, 2u, &r));
+    late_tick(250u, 400u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, 7u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, 50u);
+    for (unsigned k = 1u; k < SENSE_WIN_RING; ++k) {
+        CHECK(!sense_sched_ring(&s, k, &r));     /* windows 6, 5, 4 */
+        CHECK(!r.closed);
+    }
+}
+
+/* A clipped sample is the reading it is: in a ring entry it counts at the
+ * end of the range, 1.638 A on the 0.1 Ω shunt, and the entry says how
+ * many of its samples did.  sense_sched_window() keeps them out. */
+TEST_CASE(a_ring_entry_counts_its_clipped_samples)
+{
+    static const unsigned k_clipped[] = { 0u, 1u, 44u, 45u, 50u };
+    for (unsigned c = 0; c < sizeof(k_clipped) / sizeof(k_clipped[0]); ++c) {
+        const unsigned n = k_clipped[c];
+        rig(1u, true);
+        for (unsigned k = 0; k < 50u; ++k) {
+            i3221->amps[0] = (k < n) ? 2.0 : 1.0;
+            tick();
+        }
+        i3221->amps[0] = 1.0;
+        tick();                                  /* closes window 0 */
+        sense_ring_win_t r;
+        CHECK(sense_sched_ring(&s, 0u, &r));
+        CHECK_EQ(r.n_i, 50u);
+        CHECK_EQ(r.n_clip, n);
+        CHECK_EQ(r.clip_hi, n > 0u);
+        CHECK(!r.clip_lo);
+        CHECK_EQ(r.i_max_ua, (n > 0u) ? 1638000 : 1000000);
+        CHECK_EQ(r.i_min_ua, (n == 50u) ? 1638000 : 1000000);
+        CHECK_EQ(r.i_mean_ua,
+                 (int32_t)(((int64_t)n * 1638000
+                            + (int64_t)(50u - n) * 1000000) / 50));
+        sense_window_t w;
+        CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+        CHECK_EQ(w.n_i, 50u - n);
+        CHECK_EQ(w.i_mean_ua, (n == 50u) ? 0 : 1000000);
+        CHECK_EQ(w.clip_hi, n > 0u);
+    }
+
+    /* The bottom of the range, and both ends in one window. */
+    rig(1u, true);
+    for (unsigned k = 0; k < 50u; ++k) {
+        i3221->amps[0] = (k < 3u) ? -2.0 : -1.0;
+        tick();
+    }
+    for (unsigned k = 0; k < 50u; ++k) {
+        i3221->amps[0] = (k == 7u) ? 2.0 : (k == 9u) ? -2.0 : 0.2;
+        tick();
+    }
+    tick();
+    sense_ring_win_t r;
+    CHECK(sense_sched_ring(&s, 1u, &r));
+    CHECK_EQ(r.n_i, 50u);
+    CHECK_EQ(r.n_clip, 3u);
+    CHECK(r.clip_lo && !r.clip_hi);
+    CHECK_EQ(r.i_min_ua, -1638400);
+    CHECK_EQ(r.i_max_ua, -1000000);
+    CHECK_EQ(r.i_mean_ua, (3 * -1638400 + 47 * -1000000) / 50);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_clip, 2u);
+    CHECK(r.clip_lo && r.clip_hi);
+    CHECK_EQ(r.i_max_ua, 1638000);
+    CHECK_EQ(r.i_min_ua, -1638400);
+    CHECK_EQ(r.i_mean_ua, (1638000 - 1638400 + 48 * 200000) / 50);
+
+    /* A window of nothing but the bottom. */
+    rig(1u, true);
+    i3221->amps[0] = -2.0;
+    ticks(51u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_clip, 50u);
+    CHECK_EQ(r.i_max_ua, -1638400);
+    CHECK_EQ(r.i_min_ua, -1638400);
+    CHECK_EQ(r.i_mean_ua, -1638400);
+}
+
+/* ------------------------------------------------- a part that reset */
+
+/* One rotation: a slot every second tick, 40 ms. */
+#define ROTATION_TICKS (SENSE_ROTATION * 2u)
+
+/* Ticks until the INA3221 leaves online, @p limit at most; how many. */
+static unsigned ticks_to_3221_offline(unsigned limit)
+{
+    unsigned n = 0u;
+    while (n < limit && ina3221_state(&s.i3221) == SENSE_PART_ONLINE) {
+        tick();
+        ++n;
+    }
+    return n;
+}
+
+static unsigned ticks_to_228_offline(unsigned limit)
+{
+    unsigned n = 0u;
+    while (n < limit && ina228_state(&s.i228) == SENSE_PART_ONLINE) {
+        tick();
+        ++n;
+    }
+    return n;
+}
+
+/* An INA3221 that resets itself answers every read, on its power-on
+ * Configuration.  The read-back finds it within one rotation, 40 ms,
+ * wherever in the rotation the reset falls, and counts it once. */
+TEST_CASE(an_ina3221_reset_is_found_within_one_rotation)
+{
+    for (unsigned phase = 0; phase < ROTATION_TICKS; ++phase) {
+        rig(1u, true);
+        i3221->amps[0] = 0.5;
+        ticks(200u + phase);
+        CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+        CHECK_EQ(s.i3221_resets, 0u);
+        fake_reset3221(i3221);
+        CHECK_EQ(i3221->reg[INA3221_CONFIG], INA3221_CONFIG_RESET);
+        const unsigned n = ticks_to_3221_offline(100u);
+        CHECK(n <= ROTATION_TICKS);
+        CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_OFFLINE);
+        CHECK_EQ(s.i3221_resets, 1u);
+        CHECK_EQ(s.i228_resets, 0u);
+        CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+        CHECK_EQ(s.bus.errors, 0u);              /* every read answered */
+    }
+}
+
+/* What a found reset does, from a clock at @p start_us: the window being
+ * filled is emptied, a capture under way ends lost, the reset is counted
+ * once, nothing is sent to the part for SENSE_RETRY_MS, and then it is
+ * set up again and read. */
+static void reset_then_back(uint64_t start_us)
+{
+    rig(1u, true);
+    g_us = start_us;
+    i3221->amps[0] = 0.12;
+    ticks(203u);
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+    sense_sched_cap_edge(&s, g_us);
+    ticks(2u);
+    CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
+    fake_reset3221(i3221);
+    CHECK(ticks_to_3221_offline(100u) <= ROTATION_TICKS);
+    CHECK_EQ(s.i3221_resets, 1u);
+    CHECK_EQ(s.cap.state, SENSE_CAP_LOST);
+    CHECK_EQ(s.cap.seq, 1u);
+    CHECK(!sense_sched_cap_arm(&s, &k_levels));
+    /* The window being filled holds nothing, of CH1 or its voltage. */
+    CHECK_EQ(s.acc[SENSE_SRC_CH1].n_i, 0u);
+    CHECK_EQ(s.acc[SENSE_SRC_CH1].n_v, 0u);
+    const uint64_t found_in = s.win;
+    const unsigned config_reads = i3221->reads[INA3221_CONFIG];
+    const unsigned ch1_reads = i3221->reads[INA3221_SHUNT1];
+
+    /* The window it was found in closes empty. */
+    sense_ring_win_t r;
+    ticks(50u);
+    CHECK(s.ring_at >= found_in);
+    CHECK(sense_sched_ring(&s, (unsigned)(s.ring_at - found_in), &r));
+    CHECK_EQ(r.n_i, 0u);
+    CHECK_EQ(r.n_v, 0u);
+    /* 999 ms after the tick that found it: still offline, nothing sent
+     * to it, and its Configuration still the reset value. */
+    ticks(949u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_OFFLINE);
+    CHECK_EQ(i3221->reads[INA3221_CONFIG], config_reads);
+    CHECK_EQ(i3221->reads[INA3221_SHUNT1], ch1_reads);
+    CHECK_EQ(i3221->reg[INA3221_CONFIG], INA3221_CONFIG_RESET);
+    for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
+        CHECK(sense_sched_ring(&s, k, &r));      /* closed, and empty */
+        CHECK_EQ(r.n_i, 0u);
+        CHECK_EQ(r.n_v, 0u);
+    }
+    /* 1000 ms: probed, set up again and read in that tick. */
+    tick();
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    CHECK_EQ(i3221->reg[INA3221_CONFIG], INA3221_CONFIG_BENCH_CH1);
+    CHECK_EQ(i3221->reads[INA3221_SHUNT1], ch1_reads + 1u);
+    /* 1001 ms, and on: online, the reset counted once, windows whole. */
+    tick();
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    ticks(150u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    CHECK_EQ(s.i3221_resets, 1u);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, 50u);
+    CHECK_EQ(r.i_mean_ua, 120000);
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+}
+
+TEST_CASE(a_reset_ina3221_is_emptied_counted_and_set_up_again)
+{
+    reset_then_back(10000000u);
+    /* The retry across the 32-bit millisecond count's wrap: the reset
+     * found about 500 ms before it. */
+    reset_then_back(((uint64_t)1u << 32) * 1000u - 750000u);
+    /* And the reset itself across it. */
+    reset_then_back(((uint64_t)1u << 32) * 1000u - 210000u);
+}
+
+/* Ticks to the one that reads rotation slot @p slot, then the clock moved
+ * so that tick's fourth transaction -- the second read of a set-up
+ * register that differs -- ends 50 µs past the next window's end, at 100 µs
+ * a transaction.  The number of the window that ends. */
+static uint16_t to_slot_across_a_boundary(unsigned slot)
+{
+    while ((s.ticks & 1u) != 0u || s.rot % SENSE_ROTATION != slot) {
+        tick();
+    }
+    const uint64_t b_ms = s.t0_ms + SENSE_WINDOW_MS * (s.win + 1u);
+    g_xfer_us = 100u;
+    g_us = b_ms * 1000u - 350u;
+    return (uint16_t)s.win;
+}
+
+/* A read-back is stamped when it is done, as every read: one that ends
+ * past a window's end finds the reset in the next window, and that one is
+ * emptied.  The window that ended keeps what was read in it. */
+TEST_CASE(a_reset_found_past_a_window_end_empties_the_window_after)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(120u);
+    fake_reset3221(i3221);
+    uint16_t n = to_slot_across_a_boundary(19u);
+    const uint16_t held = s.acc[SENSE_SRC_CH1].n_i;
+    CHECK(held > 0u);
+    tick();
+    g_xfer_us = 0u;
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i3221_resets, 1u);
+    sense_window_t w;
+    sense_ring_win_t r;
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, n);
+    CHECK_EQ(w.n_i, held + 1u);                  /* and this tick's CH1 */
+    CHECK_EQ(w.i_mean_ua, 500000);
+    CHECK(sense_sched_ring(&s, 0u, &r));
+    CHECK_EQ(r.n_i, held + 1u);
+    CHECK_EQ(s.acc[SENSE_SRC_CH1].n_i, 0u);
+    ticks(51u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, (uint16_t)(n + 1u));
+    CHECK_EQ(w.n_i, 0u);
+    CHECK(sense_sched_ring(&s, 1u, &r));         /* the window that ended */
+    CHECK_EQ(r.n_i, held + 1u);
+
+    /* The INA228 the same. */
+    rig(1u, true);
+    i228->amps[0] = 10.0;
+    ticks(120u);
+    fake_reset228(i228);
+    n = to_slot_across_a_boundary(11u);
+    const uint16_t held_v = s.acc[SENSE_SRC_INA228].n_v;
+    CHECK(held_v > 0u);
+    tick();
+    g_xfer_us = 0u;
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i228_resets, 1u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_EQ(w.number, n);
+    CHECK(w.n_v >= held_v);
+    CHECK_NEAR((double)w.v_mean_uv, 16.8e6, 200.0);
+    CHECK_EQ(s.acc[SENSE_SRC_INA228].n_i, 0u);
+    CHECK_EQ(s.acc[SENSE_SRC_INA228].n_v, 0u);
+    ticks(51u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_EQ(w.number, (uint16_t)(n + 1u));
+    CHECK_EQ(w.n_i, 0u);
+    CHECK_EQ(w.n_v, 0u);
+}
+
+/* The counts are 8 bits each on the link and run on from 255 to 0. */
+TEST_CASE(the_reset_counts_run_on_across_255)
+{
+    rig(1u, true);
+    ticks(100u);
+    s.i3221_resets = 254u;
+    s.i228_resets  = 255u;
+    fake_reset3221(i3221);
+    CHECK(ticks_to_3221_offline(100u) <= ROTATION_TICKS);
+    CHECK_EQ(s.i3221_resets, 255u);
+    CHECK_EQ(s.i228_resets, 255u);
+    ticks(1100u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    fake_reset3221(i3221);
+    CHECK(ticks_to_3221_offline(100u) <= ROTATION_TICKS);
+    CHECK_EQ(s.i3221_resets, 0u);
+    fake_reset228(i228);
+    CHECK(ticks_to_228_offline(100u) <= ROTATION_TICKS);
+    CHECK_EQ(s.i228_resets, 0u);
+    CHECK_EQ(s.i3221_resets, 0u);
+}
+
+/* One read of a set-up register that comes back wrong is read again at
+ * once and is no reset; two in a row are. */
+TEST_CASE(one_corrupted_read_back_is_no_reset)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(100u);
+    unsigned before = i3221->reads[INA3221_CONFIG];
+    i3221->glitch_reg   = INA3221_CONFIG;
+    i3221->glitch_value = INA3221_CONFIG_RESET;
+    i3221->glitch_n     = 1u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(i3221->glitch_n, 0u);
+    CHECK_EQ(i3221->reads[INA3221_CONFIG], before + 2u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    CHECK_EQ(s.i3221_resets, 0u);
+    i3221->glitch_n = 2u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i3221_resets, 1u);
+
+    rig(1u, true);
+    i228->amps[0] = 10.0;
+    ticks(3u);
+    sense_sched_arm(&s);
+    ticks(100u);
+    before = i228->reads[INA228_ADC_CONFIG];
+    i228->glitch_reg   = INA228_ADC_CONFIG;
+    i228->glitch_value = INA228_ADC_RESET;
+    i228->glitch_n     = 1u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(i228->reads[INA228_ADC_CONFIG], before + 2u);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+    CHECK_EQ(s.i228_resets, 0u);
+    CHECK(s.run.totals_ok);
+    i228->glitch_n = 2u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i228_resets, 1u);
+    CHECK(!s.run.totals_ok);
+
+    /* A read-back that fails on the wire is a failed transaction and no
+     * reset: the part stays online, and the INA228's totals end. */
+    rig(1u, true);
+    ticks(3u);
+    sense_sched_arm(&s);
+    ticks(100u);
+    CHECK(s.run.totals_ok);
+    while ((s.ticks & 1u) != 0u || s.rot % SENSE_ROTATION != 11u) {
+        tick();                                  /* to ADC_CONFIG's slot */
+    }
+    fb.fail_with = SENSE_NACK;
+    fb.fail_at = fb.transactions + 3u;           /* CH1, CURRENT, the item */
+    tick();
+    CHECK_EQ(s.bus.errors, 1u);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+    CHECK_EQ(s.i228_resets, 0u);
+    CHECK(!s.run.totals_ok);
+    while ((s.ticks & 1u) != 0u || s.rot % SENSE_ROTATION != 19u) {
+        tick();                                  /* to Configuration's */
+    }
+    fb.fail_at = fb.transactions + 3u;
+    tick();
+    CHECK_EQ(s.bus.errors, 2u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    CHECK_EQ(s.i3221_resets, 0u);
+}
+
+/* An INA228 that resets itself runs at ADCRANGE 0: with the MATEK set-up
+ * at ADCRANGE 1 its CURRENT reads a quarter.  The read-back of ADC_CONFIG
+ * finds it within one rotation: offline, its window emptied, the totals no
+ * longer the run's, and after SENSE_RETRY_MS set up again and reading the
+ * whole current.  No window shows the quarter. */
+static void i228_reset_then_back(uint64_t start_us)
+{
+    rig(1u, true);
+    g_us = start_us;
+    i228->amps[0] = 100.0;
+    ticks(3u);
+    sense_sched_arm(&s);
+    ticks(197u);                                 /* to a window's start */
+    sense_window_t w;
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_NEAR((double)w.i_mean_ua, 100.0e6, 1.0e6);
+    CHECK(s.run.totals_ok);
+    CHECK((i228->reg[INA228_CONFIG] & INA228_CONFIG_ADCRANGE) != 0u);
+
+    fake_reset228(i228);
+    const unsigned n = ticks_to_228_offline(100u);
+    CHECK(n <= ROTATION_TICKS);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i228_resets, 1u);
+    CHECK_EQ(s.i3221_resets, 0u);
+    CHECK(!s.run.totals_ok);
+    CHECK(!s.have_vbus);
+    CHECK_EQ(s.acc[SENSE_SRC_INA228].n_i, 0u);
+    CHECK_EQ(s.acc[SENSE_SRC_INA228].n_v, 0u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+
+    /* Every window from here to the part's return and past it: empty, or
+     * the whole current. */
+    unsigned whole = 0u;
+    uint16_t last = w.number;
+    for (unsigned k = 1u; k <= 1300u; ++k) {     /* ms since it was found */
+        if (k == 1000u) {                        /* 999 ms have passed */
+            CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+            CHECK_EQ(i228->reg[INA228_ADC_CONFIG], INA228_ADC_RESET);
+        }
+        tick();
+        if (k == 1000u) {
+            CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+            CHECK_EQ(i228->reg[INA228_ADC_CONFIG], INA228_ADC_BENCH);
+            CHECK((i228->reg[INA228_CONFIG] & INA228_CONFIG_ADCRANGE) != 0u);
+        }
+        CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+        if (w.number != last) {
+            last = w.number;
+            if (w.n_i > 0u) {
+                CHECK_NEAR((double)w.i_mean_ua, 100.0e6, 1.0e6);
+                ++whole;
+            }
+        }
+    }
+    CHECK(whole >= 4u);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+    CHECK_EQ(s.i228_resets, 1u);
+    /* The totals are a run's again from the next arm. */
+    CHECK(!s.run.totals_ok);
+    sense_sched_arm(&s);
+    tick();
+    CHECK(s.run.totals_ok);
+}
+
+TEST_CASE(a_reset_ina228_is_found_and_set_up_again)
+{
+    i228_reset_then_back(10000000u);
+    i228_reset_then_back(((uint64_t)1u << 32) * 1000u - 750000u);
+
+    /* Wherever in the rotation the reset falls. */
+    for (unsigned phase = 0; phase < ROTATION_TICKS; ++phase) {
+        rig(1u, true);
+        ticks(200u + phase);
+        fake_reset228(i228);
+        CHECK(ticks_to_228_offline(100u) <= ROTATION_TICKS);
+        CHECK_EQ(s.i228_resets, 1u);
+        CHECK_EQ(s.bus.errors, 0u);
+    }
+
+    /* A set-up at ADCRANGE 0, 300 A on 200 µΩ: CONFIG reads back as
+     * written after a reset, and ADC_CONFIG tells. */
+    sense_bus_t scratch;
+    fake_bus_init(&fb, &scratch);
+    i228  = fake_add(&fb, FAKE_INA228, I228_ADDR, 200e-6);
+    i3221 = fake_add(&fb, FAKE_INA3221, I3221_ADDR, 0.1);
+    const sense_sched_io_t io = { { timed_read, timed_write, &fb }, now_us,
+                                  NULL, NULL };
+    const sense_sched_cfg_t cfg = {
+        .ina228_en = true, .ina228_addr = I228_ADDR,
+        .ina228_shunt_uohm = I228_UOHM, .ina228_max_ma = 300000u,
+    };
+    g_us = 10000000u;
+    sense_sched_init(&s, &io, &cfg);
+    ticks(100u);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+    CHECK_EQ(i228->reg[INA228_CONFIG] & INA228_CONFIG_ADCRANGE, 0u);
+    fake_reset228(i228);
+    CHECK(ticks_to_228_offline(100u) <= ROTATION_TICKS);
+    CHECK_EQ(s.i228_resets, 1u);
+}
+
+/* Between the reset and the read-back that finds it the INA3221 converts
+ * on its power-on set-up: one CH1 result every 6.6 ms, read up to seven
+ * times over.  The values are right; the 1 ms samples repeat. */
+TEST_CASE(a_reset_ina3221_repeats_its_samples_until_it_is_found)
+{
+    rig(1u, true);
+    i3221->clock_us = &g_us;
+    g_xfer_us = 120u;                            /* a transaction's time */
+    /* A ramp of 0.4 mA, one step of the shunt register, a tick. */
+    unsigned distinct = 0u;
+    int32_t last = -1;
+    for (unsigned k = 0; k < 100u; ++k) {
+        i3221->amps[0] = 0.1 + 0.0004 * (double)k;
+        tick();
+        const int32_t ua = s.ch1[(s.ch1_head + SENSE_CH1_HISTORY - 1u)
+                                 % SENSE_CH1_HISTORY].ua;
+        distinct += (ua != last);
+        last = ua;
+    }
+    CHECK_EQ(distinct, 100u);                    /* 280 µs a result */
+
+    while (s.rot % SENSE_ROTATION != 0u) {
+        tick();                                  /* the read-back is done */
+    }
+    fake_reset3221(i3221);
+    distinct = 0u;
+    unsigned n = 0u;
+    while (ina3221_state(&s.i3221) == SENSE_PART_ONLINE && n < 100u) {
+        i3221->amps[0] = 0.2 + 0.0004 * (double)n;
+        tick();
+        const int32_t ua = s.ch1[(s.ch1_head + SENSE_CH1_HISTORY - 1u)
+                                 % SENSE_CH1_HISTORY].ua;
+        distinct += (ua != last);
+        last = ua;
+        ++n;
+    }
+    CHECK(n >= 38u && n <= ROTATION_TICKS);
+    CHECK(distinct >= 5u && distinct <= 7u);     /* 40 ms / 6.6 ms */
+}
+
+/* -------------------------------------------------------- bus time */
+
+/* The worst tick's reads, in clocks, over @p n ticks: all three parts. */
+static unsigned worst_tick_clocks(fake_part_t *enc, unsigned n, bool even_only)
+{
+    unsigned worst = 0u;
+    for (unsigned k = 0; k < n; ++k) {
+        const bool even = (s.ticks & 1u) == 0u;
+        const uint64_t c0 = i228->clocks + i3221->clocks
+                            + ((enc != NULL) ? enc->clocks : 0u);
+        tick();
+        const unsigned c = (unsigned)(i228->clocks + i3221->clocks
+                                      + ((enc != NULL) ? enc->clocks : 0u)
+                                      - c0);
+        if (c > worst && (even || !even_only)) {
+            worst = c;
+        }
+    }
+    return worst;
+}
+
+/* Every tick of the 20-slot rotation fits the 1 ms tick at 400 kHz, 2.5 µs
+ * a clock: with all three channels, the pair at 1000 Hz and the encoder.
+ * The read-backs take the slots of DIETEMP and Mask/Enable and are as
+ * long: an even tick stays at 690 µs, and the one that reads a set-up
+ * register twice is 742.5 µs. */
+TEST_CASE(every_tick_of_the_rotation_fits_a_millisecond)
+{
+    sense_bus_t scratch;
+    fake_bus_init(&fb, &scratch);
+    i228  = fake_add(&fb, FAKE_INA228, I228_ADDR, 200e-6);
+    i3221 = fake_add(&fb, FAKE_INA3221, I3221_ADDR, 0.1);
+    fake_part_t *enc = fake_add(&fb, FAKE_AS5600, AS5600_ADDR, 0.0);
+    const sense_sched_io_t io = { { timed_read, timed_write, &fb }, now_us,
+                                  NULL, NULL };
+    const sense_sched_cfg_t cfg = {
+        .ina228_en = true, .ina228_addr = I228_ADDR,
+        .ina228_shunt_uohm = I228_UOHM, .ina228_max_ma = I228_MA,
+        .ina3221_en = true, .ina3221_addr = I3221_ADDR,
+        .ina3221_shunt_uohm = I3221_UOHM, .ina3221_channels = 7u,
+        .as5600_en = true,
+    };
+    g_us = 10000000u;
+    g_xfer_us = 0u;
+    g_xfer_228_us = 0u;
+    g_switch_us = 0u;
+    sense_sched_init(&s, &io, &cfg);
+    ticks(2u);                                   /* the probes */
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_ONLINE);
+
+    /* The pair off: CH1 (48 clocks), the INA228's slot (57) and the
+     * longest item, ENERGY or CHARGE (75): 180 clocks, 450 µs. */
+    CHECK_EQ(worst_tick_clocks(enc, 1000u, true), 48u + 57u + 75u);
+    /* The pair on.  Even: 3 x 48 + 57 + 75 = 276 clocks, 690 µs.  Odd,
+     * with the encoder's field slot: 3 x 48 + 57 + 135 = 336, 840 µs. */
+    sense_sched_fast_pair(&s, true);
+    CHECK_EQ(worst_tick_clocks(enc, 1000u, true), 276u);
+    CHECK_EQ(worst_tick_clocks(enc, 1000u, false), 336u);
+    CHECK(336u * 25u < 10000u);                  /* 2.5 µs a clock: 1 ms */
+
+    /* Both read-backs read twice in every rotation: 3 x 48 + 57 + 2 x 48
+     * = 297 clocks, 742.5 µs, under the odd tick's 840 µs. */
+    unsigned worst = 0u;
+    for (unsigned k = 0; k < 50u; ++k) {
+        i3221->glitch_reg   = INA3221_CONFIG;
+        i3221->glitch_value = INA3221_CONFIG_RESET;
+        i3221->glitch_n     = 1u;
+        i228->glitch_reg    = INA228_ADC_CONFIG;
+        i228->glitch_value  = INA228_ADC_RESET;
+        i228->glitch_n      = 1u;
+        const unsigned c = worst_tick_clocks(enc, ROTATION_TICKS, true);
+        if (c > worst) {
+            worst = c;
+        }
+    }
+    CHECK_EQ(worst, 297u);
+    CHECK_EQ(s.i228_resets, 0u);
+    CHECK_EQ(s.i3221_resets, 0u);
+    CHECK_EQ(fb.bad_width, 0u);
+}
+
 int main(void)
 {
     RUN(each_register_is_read_at_its_rate);
@@ -1077,5 +1862,17 @@ int main(void)
     RUN(a_capture_with_no_ch1_level_before_the_edge_is_lost);
     RUN(a_capture_with_no_edge_ends_lost);
     RUN(the_capture_states_are_the_links);
+    RUN(the_ring_keeps_ch1s_last_four_windows);
+    RUN(the_ring_runs_on_across_window_65535);
+    RUN(a_late_tick_skips_numbers_and_the_ring_says_which);
+    RUN(a_ring_entry_counts_its_clipped_samples);
+    RUN(an_ina3221_reset_is_found_within_one_rotation);
+    RUN(a_reset_ina3221_is_emptied_counted_and_set_up_again);
+    RUN(a_reset_found_past_a_window_end_empties_the_window_after);
+    RUN(the_reset_counts_run_on_across_255);
+    RUN(one_corrupted_read_back_is_no_reset);
+    RUN(a_reset_ina228_is_found_and_set_up_again);
+    RUN(a_reset_ina3221_repeats_its_samples_until_it_is_found);
+    RUN(every_tick_of_the_rotation_fits_a_millisecond);
     return test_summary("sense_sched");
 }

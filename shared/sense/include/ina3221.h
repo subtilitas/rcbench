@@ -127,6 +127,11 @@ int32_t ina3221_code13(uint16_t raw);
  *  at either end (4095, -4096) is a clip. */
 sense_value_t ina3221_current_ua(uint32_t shunt_uohm, int32_t code);
 
+/** The current the end code of the range stands for, µA: code 4095 for
+ *  SENSE_CLIP_HIGH (1.638 A on 0.1 Ω), code -4096 for SENSE_CLIP_LOW
+ *  (-1.6384 A).  0 for SENSE_CLIP_NONE. */
+int32_t ina3221_end_ua(uint32_t shunt_uohm, sense_clip_t end);
+
 /** A bus code in mV, 8 mV a step. */
 int32_t ina3221_bus_mv(int32_t code);
 
@@ -172,6 +177,16 @@ sense_err_t ina3221_read_bus(ina3221_t *d, uint8_t ch, int32_t *mv);
 
 /** Mask/Enable as read; the read clears its flags. */
 sense_err_t ina3221_read_flags(ina3221_t *d, uint16_t *mask_enable);
+
+/** The Configuration register read back against the value written.  A
+ *  part that resets itself answers with INA3221_CONFIG_RESET: all three
+ *  channels, 1.1 ms conversions, a result every 6.6 ms.  Another value
+ *  than the one written is read a second time at once, so one corrupted
+ *  read is no reset; when both differ the part is taken offline
+ *  (sense_part_lost()), @p lost is set and SENSE_OK returned.  @p lost is
+ *  false otherwise.  One transaction, two on a first mismatch: 120 µs of
+ *  bus time each at 400 kHz. */
+sense_err_t ina3221_verify(ina3221_t *d, bool *lost);
 
 #ifdef __cplusplus
 }

@@ -20,12 +20,17 @@ typedef enum {
     ROT_ENERGY,
     ROT_CHARGE,
     ROT_FLAGS,
+    ROT_ADC,        /* the INA228's ADC_CONFIG read back      */
+    ROT_CONFIG,     /* the INA3221's Configuration read back  */
 } rot_t;
 
-/* The two parts take turns. */
+/* The two parts take turns.  Two passes of 10 slots: the second reads the
+ * set-up registers back where the first reads DIETEMP and Mask/Enable. */
 static const uint8_t k_rotation[SENSE_ROTATION] = {
     ROT_CH2_I, ROT_TEMP,   ROT_CH3_I, ROT_DIAG,   ROT_CH1_V,
     ROT_ENERGY, ROT_CH2_V, ROT_CHARGE, ROT_CH3_V, ROT_FLAGS,
+    ROT_CH2_I, ROT_ADC,    ROT_CH3_I, ROT_DIAG,   ROT_CH1_V,
+    ROT_ENERGY, ROT_CH2_V, ROT_CHARGE, ROT_CH3_V, ROT_CONFIG,
 };
 
 static void acc_clear(sense_acc_t *a)
@@ -37,10 +42,12 @@ static void acc_current(sense_acc_t *a, sense_value_t v)
 {
     if (v.clip == SENSE_CLIP_HIGH) {
         a->clip_hi = true;
+        ++a->n_hi;
         return;
     }
     if (v.clip == SENSE_CLIP_LOW) {
         a->clip_lo = true;
+        ++a->n_lo;
         return;
     }
     if (a->n_i == 0u || v.value < a->i_min) {
@@ -81,6 +88,57 @@ static void acc_close(const sense_acc_t *a, uint64_t number, sense_window_t *w)
     }
 }
 
+/* CH1's window into a ring entry: every sample counted, a clipped one as
+ * the end of the range it read. */
+static void ring_close(const sense_sched_t *s, const sense_acc_t *a,
+                       sense_ring_win_t *e)
+{
+    memset(e, 0, sizeof(*e));
+    e->closed  = true;
+    e->n_clip  = (uint16_t)(a->n_hi + a->n_lo);
+    e->n_i     = (uint16_t)(a->n_i + e->n_clip);
+    e->n_v     = a->n_v;
+    e->clip_hi = a->clip_hi;
+    e->clip_lo = a->clip_lo;
+    if (e->n_i > 0u) {
+        const int64_t sum = a->i_sum + (int64_t)a->n_hi * s->ch_top_ua
+                            + (int64_t)a->n_lo * s->ch_bottom_ua;
+        e->i_mean_ua = (int32_t)(sum / (int64_t)e->n_i);
+        /* The ends lie outside every sample with a value. */
+        if (a->n_hi > 0u) {
+            e->i_max_ua = s->ch_top_ua;
+        } else {
+            e->i_max_ua = (a->n_i > 0u) ? a->i_max : s->ch_bottom_ua;
+        }
+        if (a->n_lo > 0u) {
+            e->i_min_ua = s->ch_bottom_ua;
+        } else {
+            e->i_min_ua = (a->n_i > 0u) ? a->i_min : s->ch_top_ua;
+        }
+    }
+    if (a->n_v > 0u) {
+        e->v_mean_uv = (int32_t)(a->v_sum / (int64_t)a->n_v);
+        e->v_min_uv  = a->v_min;
+    }
+}
+
+/* Window @p number has closed with CH1's @p a: the ring moves on by as
+ * many places as numbers have passed, and the places of skipped numbers
+ * read not closed. */
+static void ring_push(sense_sched_t *s, uint64_t number, const sense_acc_t *a)
+{
+    const uint64_t step = s->have_last ? number - s->ring_at : SENSE_WIN_RING;
+    for (unsigned k = SENSE_WIN_RING; k-- > 0u;) {
+        if (k >= step) {
+            s->ring[k] = s->ring[k - step];
+        } else {
+            memset(&s->ring[k], 0, sizeof(s->ring[k]));
+        }
+    }
+    ring_close(s, a, &s->ring[0]);
+    s->ring_at = number;
+}
+
 void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
                       const sense_sched_cfg_t *cfg)
 {
@@ -106,6 +164,10 @@ void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
             /* The step below the top code: a clip is at least this. */
             s->ch_clip_ua = ina3221_current_ua(cfg->ina3221_shunt_uohm,
                                                4094).value;
+            s->ch_top_ua    = ina3221_end_ua(cfg->ina3221_shunt_uohm,
+                                             SENSE_CLIP_HIGH);
+            s->ch_bottom_ua = ina3221_end_ua(cfg->ina3221_shunt_uohm,
+                                             SENSE_CLIP_LOW);
         }
     }
 }
@@ -129,6 +191,17 @@ bool sense_sched_window(const sense_sched_t *s, sense_src_t src,
     }
     *out = s->last[src];
     return true;
+}
+
+bool sense_sched_ring(const sense_sched_t *s, unsigned back,
+                      sense_ring_win_t *out)
+{
+    memset(out, 0, sizeof(*out));
+    if (!s->have_last || back >= SENSE_WIN_RING) {
+        return false;
+    }
+    *out = s->ring[back];
+    return out->closed;
 }
 
 /* ------------------------------------------------------------ capture */
@@ -439,6 +512,42 @@ static void read_i228(sense_sched_t *s, uint32_t n)
     }
 }
 
+/* The INA228's ADC_CONFIG read back.  A part found reset is offline from
+ * here.  The read-back is stamped as any read: the windows are rolled to
+ * the time it was done, and the one being filled then is emptied -- it
+ * holds samples at the reset range.  The voltage of the last slot pairs
+ * with no current, and the totals are no longer the run's. */
+static void verify_i228(sense_sched_t *s)
+{
+    bool lost = false;
+    (void)i228_ok(s, ina228_verify(&s->i228, &lost));
+    if (!lost) {
+        return;
+    }
+    (void)stamp(s);
+    ++s->i228_resets;
+    acc_clear(&s->acc[SENSE_SRC_INA228]);
+    s->have_vbus     = false;
+    s->run.totals_ok = false;
+}
+
+/* The INA3221's Configuration read back.  A part found reset is offline
+ * from here, which ends a capture as lost (cap_step()); the windows being
+ * filled from it at the time the read-back was done are emptied. */
+static void verify_i3221(sense_sched_t *s)
+{
+    bool lost = false;
+    (void)ina3221_verify(&s->i3221, &lost);
+    if (!lost) {
+        return;
+    }
+    (void)stamp(s);
+    ++s->i3221_resets;
+    for (unsigned k = SENSE_SRC_CH1; k <= SENSE_SRC_CH3; ++k) {
+        acc_clear(&s->acc[k]);
+    }
+}
+
 /* The next rotation item. */
 static void read_rotation(sense_sched_t *s)
 {
@@ -469,6 +578,8 @@ static void read_rotation(sense_sched_t *s)
     case ROT_CHARGE:
         (void)i228_ok(s, ina228_read_charge(&s->i228, &s->run.charge_uc));
         break;
+    case ROT_ADC:    verify_i228(s);  break;
+    case ROT_CONFIG: verify_i3221(s); break;
     default:
         s->have_flags = ina3221_read_flags(&s->i3221, &s->flags) == SENSE_OK
                         || s->have_flags;
@@ -572,6 +683,7 @@ static void roll_windows(sense_sched_t *s, uint64_t now_ms)
     if (win == s->win) {
         return;
     }
+    ring_push(s, s->win, &s->acc[SENSE_SRC_CH1]);
     for (unsigned k = 0; k < SENSE_SRC_COUNT; ++k) {
         acc_close(&s->acc[k], s->win, &s->last[k]);
         acc_clear(&s->acc[k]);
