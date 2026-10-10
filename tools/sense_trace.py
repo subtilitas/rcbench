@@ -6,8 +6,9 @@ The SENSE_TRACE build prints INA3221 CH1's 1 ms samples on the USB console
 (shared/sense/sense_trace.h has the line format).  This tool takes a
 terminal capture of that console and, for each trace in it:
 
-  1. checks the lines against the trace's end line: sample lines, voltage
-     lines, trigger lines and the records the coprocessor says it dropped;
+  1. reads every line against the format, and checks the lines against
+     the trace's end line: sample lines, voltage lines, trigger lines and
+     the records the coprocessor says it dropped;
   2. writes one CSV file, `<log>-trace-<n>.csv`: time in ms from the
      trigger, current in A, and the bus voltage in V on the samples that
      have one;
@@ -27,12 +28,30 @@ Commands within 30 ms of each other change the current together: none of
 them is replayed.  A move that follows another output's move before that
 one arrived carries its current too; the tool does not tell these apart,
 and the earlier move reads `cut`.
-A trace with a problem -- lines that do not match its end line, no end
-line, trigger lines that were not written -- is not replayed; its CSV file
-is still written.  Neither is a move with records missing among its samples or
-with a change of the part's state inside it: the rules count samples,
-and the capture ends lost when the part goes offline.  A move's levels
-are taken from the trace as the servo test takes them from its meter:
+A line of a trace is a whole line of version 2: every field of its type,
+in its order, nothing before, between or after them, each number in the
+range the coprocessor holds it in and written as the coprocessor writes it.
+A line ends LF or CR LF.  Between a trace's $T and $Z line stand its lines
+and the coprocessor's other console lines, which start `rcbench-iomcu:`;
+anything else there is damage.  So are a second $H line, a line before the
+$H line, a trace length or sample period version 2 does not write, a
+sample timed before the one before it, a second voltage for one sample, a
+$S line that repeats the state before it, and a line of a trace outside a
+trace.
+A trace with a problem -- damage, lines that do not match its end line, no
+end line, trigger lines that were not written -- is not replayed; its CSV
+file is still written.
+
+The format has no check value.  A line cut inside its last number is a
+whole line with another number, and the tool reads it as one: a sample's
+code, a voltage, a command's pulse width, an edge's or a key's time, the
+reset count of a $H or $S line.  A cut anywhere else, and a lost sample,
+voltage or trigger line, is told.  A lost $S line is told when the next
+one repeats the state.  A log that stops between two traces is a log with
+fewer traces.
+
+A move's levels are taken from the trace as the servo test takes them from
+its meter:
 
   level before   the mean of the 50 ms before the command
   holding level  the mean of the 200 ms before the command that last left
@@ -43,7 +62,24 @@ are taken from the trace as the servo test takes them from its meter:
                  a sample from the mean before the first command, and the
                  same over the 200 ms before this command
 
-The window is 3005 ms and the settle count 10 samples, as the capture's.
+Each level is taken from the samples of one window, and each sample as
+the replay takes it: a clipped one as the last value before that end of
+the range.  The report says how many of a move's level samples are
+clipped.  A window with no sample, with records missing in it or at its
+ends, or with a change of the part's state in it gives no level, and no
+move that needs the level is replayed; the report names the window:
+
+  before the first command   every move's threshold, and the holding level
+                             of a move to a pulse width no move left
+  the 50 ms before a move    its level before
+  the 200 ms before a move   its threshold, and the holding level of each
+                             later move back to the pulse width it left
+  a move's samples           from 50 ms before it to the next move or the
+                             trace's end: what the replay is fed
+
+The rules count samples, and the capture ends lost when the part goes
+offline.  The window is 3005 ms and the settle count 10 samples, as the
+capture's.
 A move whose samples end before the rules end it -- the next command, or
 the trace's end -- reads `cut`.
 
@@ -80,11 +116,17 @@ Usage:
     python3 tools/sense_trace.py console.log --servo-csv SERVO003.CSV
     python3 tools/sense_trace.py console.log --out traces --floor 0.004
 
-Exit code: 0; 1 when the log holds no trace, a trace has a problem (it
-does not match its end line, or its end line's reason is a capital
-letter), the servo test's rows pair with the moves in more than one way,
-or two boots' rows lie among each other; 2 when the replay cannot be
-built or run, or an argument is refused.
+--floor is 0.000001 A to 1000 A, --pair-ms above 0 ms to 60000 ms,
+--csv-offset within 1e9 s of 0.
+
+Exit code: 0; 1 when the log cannot be read or holds no trace, a trace
+has a problem (damage, it does not match its end line, or its end line's
+reason is a capital letter), a line of a trace stands outside a trace,
+the servo test's rows pair with the moves in more than one way, or two
+boots' rows lie among each other; 2 when the replay cannot be built or
+run or answers another number of moves than it was sent, the servo
+test's CSV file cannot be read, a CSV file cannot be written, or an
+argument is refused.
 """
 
 from __future__ import annotations
@@ -121,21 +163,54 @@ TOGETHER_MS = 30            # commands this close are one change of current
 REF_FILTER = 4              # the capture's: SENSE_CAP_FILTER_N,
 REF_BAND_A = 0.05           # SERVO_MOVE_BAND_A
 SETTLE_HOLD_MS = 100        # the encoder finds a settle this long after it
-# Added to a trace's times for the replay, which counts in 32 bits from 0:
-# the samples from before the trigger stay above 0.
+# A move's time in the replay, which counts in 32 bits from 0; its samples
+# are timed from it, and those of the 50 ms before it stay above 0.
 REPLAY_BASE = 1000000
+# The ranges of the numbers on the command line.  The replay takes a
+# current as whole uA.
+FLOOR_MIN_A = 0.000001
+FLOOR_MAX_A = 1000.0
+PAIR_MAX_MS = 60000.0
+OFFSET_MAX_S = 1e9
 
-RE_T = re.compile(r"^\$T v=(\d+) n=(\d+) trig=(cmd|edge|key) t=(\d+) "
-                  r"ms=(\d+) len=(\d+)$")
-RE_H = re.compile(r"^\$H dt_us=(\d+) shunt_uohm=(\d+) cfg=0x([0-9A-F]{4}) "
-                  r"on=([01]) rst=(\d+)$")
-RE_MARK = re.compile(r"^\$([CEKD]) t=(\d+)(?: ch=(\d+) us=(\d+))?$")
-RE_S = re.compile(r"^(-?\d+),(-?\d+)$")
-RE_V = re.compile(r"^v(-?\d+)$")
-RE_STATE = re.compile(r"^\$S on=([01]) rst=(\d+)$")
-RE_L = re.compile(r"^\$L n=(\d+)$")
-RE_Z = re.compile(r"^\$Z n=(\d+) s=(\d+) v=(\d+) l=(\d+) m=(\d+) ml=(\d+) "
-                  r"e=([tskTSK?])$")
+# What version 2 writes, shared/sense/sense_trace.c: a trace's length by
+# its trigger, and the sample period.
+TRACE_MS = {"cmd": 4000, "edge": 4000, "key": 10000}
+PERIOD_US = 1000
+# The coprocessor's other console lines start with this; one can stand
+# between two lines of a trace.
+CONSOLE = "rcbench-iomcu:"
+
+# A line's grammar: every field it has, in its order, and nothing else.
+# A number is written without a sign it does not need and without leading
+# zeros; N is one from 0 up, INT one with a sign.
+N = r"(0|[1-9][0-9]*)"
+INT = r"(0|-?[1-9][0-9]*)"
+U16 = (0, 0xFFFF)
+U32 = (0, 0xFFFFFFFF)
+I32 = (-(1 << 31), (1 << 31) - 1)
+# The kind, the line, and each number's range as the coprocessor holds it
+# (None: text).  A sample's code is the 13-bit range.  The ranges keep
+# every line within the 62 characters the console writes before CR LF.
+GRAMMAR = (
+    ("s", re.compile(rf"{INT},{INT}"), (I32, (-4096, 4095))),
+    ("v", re.compile(rf"v{INT}"), (I32,)),
+    ("C", re.compile(rf"\$([CD]) t={N} ch={N} us={N}"),
+     (None, U32, U16, U16)),
+    ("E", re.compile(rf"\$([EK]) t={N}"), (None, U32)),
+    ("S", re.compile(rf"\$S on=([01]) rst={N}"), ((0, 1), (0, 255))),
+    ("L", re.compile(rf"\$L n={N}"), ((1, 0xFFFFFF),)),
+    ("T", re.compile(rf"\$T v=([0-9]) n={N} trig=(cmd|edge|key) t={N} "
+                     rf"ms={N} len={N}"),
+     ((0, 9), U16, None, U32, U32, (0, 99999))),
+    ("H", re.compile(rf"\$H dt_us={N} shunt_uohm={N} cfg=0x([0-9A-F]{{4}}) "
+                     rf"on=([01]) rst={N}"),
+     ((0, 9999), U32, None, (0, 1), (0, 255))),
+    ("Z", re.compile(rf"\$Z n={N} s={N} v={N} l={N} m={N} ml={N} "
+                     r"e=([tskTSK])"),
+     (U16, (0, 99999999), (0, 9999999), (0, 99999999), (0, 9999),
+      (0, 9999), None)),
+)
 
 # A capital letter: the coprocessor wrote a line without having seen its
 # sampling core past that line's time.
@@ -146,6 +221,27 @@ def s32(value: int) -> int:
     """@p value modulo 2^32 as a signed number."""
     value &= 0xFFFFFFFF
     return value - (1 << 32) if value & (1 << 31) else value
+
+
+def read_line(line: str) -> tuple[str, tuple] | None:
+    """A whole line of a trace as its kind and its fields; None for
+    anything else: a line cut short or with more than its fields, or a
+    number out of its range."""
+    for kind, regex, ranges in GRAMMAR:
+        m = regex.fullmatch(line)
+        if m is None:
+            continue
+        fields: list[int | str] = []
+        for text, limits in zip(m.groups(), ranges, strict=True):
+            if limits is None:
+                fields.append(text)
+                continue
+            value = int(text)
+            if not limits[0] <= value <= limits[1]:
+                return None
+            fields.append(value)
+        return kind, tuple(fields)
+    return None
 
 
 class Trace:
@@ -178,6 +274,15 @@ class Trace:
         self.states: list[tuple[int, int, int]] = []
         self.end: dict[str, int | str] | None = None
         self.problems: list[str] = []
+        # What the lines themselves say is wrong: (line number, text) of
+        # the lines that are no line of a trace, and counts.
+        self.bad: list[tuple[int, str]] = []
+        self.early = 0              # lines before the $H line
+        self.setups = 0             # $H lines
+        self.back = 0               # samples timed before the one before
+        self.same_state = 0         # $S lines that change nothing
+        self.two_volts = 0          # voltages behind a sample that has one
+        self.state: tuple[int, int] | None = None
 
     def amps(self, code: int) -> float:
         """The current of a shunt code: 40 uV a step across the shunt."""
@@ -188,31 +293,50 @@ class Trace:
         ua = abs(code) * 40000000 // self.shunt_uohm
         return ua if code >= 0 else -ua
 
+    def judged(self, k: int) -> tuple[int, int]:
+        """Sample @p k as the capture judges it: the current in uA, and 1
+        for a sample at or past the top of the range, -1 for one at or
+        past the bottom, 0 for a value.  A clipped sample is the last
+        value before that end.  Every level and the replay take a sample
+        from here."""
+        code = self.code[k]
+        clip = 1 if code >= CLIP_HI else -1 if code <= CLIP_LO else 0
+        return self.microamps(CLIP_AS * clip if clip else code), clip
 
-def parse_log(text: str) -> tuple[list[Trace], int]:
-    """The traces of a console log, and the lines that belong to none."""
+
+def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
+    """The traces of a console log, the lines that belong to none, and
+    (line number, text) of the lines of a trace that stand outside one.
+
+    A line ends LF or CR LF.  Inside a trace a line is a whole line of the
+    format, or one of the coprocessor's other console lines, or it is
+    counted as damage in Trace.bad; nothing is taken off a line before it
+    is read."""
     traces: list[Trace] = []
     cur: Trace | None = None
     other = 0
+    stray: list[tuple[int, str]] = []
     last_t0: tuple[int, int] | None = None      # printed, unwrapped
     last_n = 0
     last_ms = 0
     boot = 0
-    for raw in text.splitlines():
-        line = raw.strip()
-        m = RE_T.match(line)
-        if m:
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    for no, raw in enumerate(lines, 1):
+        line = raw[:-1] if raw.endswith("\r") else raw
+        got = read_line(line)
+        kind, f = got if got is not None else (None, ())
+        if kind == "T":
             if cur is not None:
                 cur.problems.append("no end line: the next trace starts "
                                     "inside it")
-            t0 = int(m.group(4))
-            number = int(m.group(2))
+            version, number, trig, t0, ms, length = f
             # Within a boot the millisecond tick and the trace number
             # both run on, modulo 2^32 and 65536, the number by more than
             # one past a trace no console took.  A tick that lies before
             # the last one's, or a number that is not past the last
             # one's, is a restart, and its clock a new one.
-            ms = int(m.group(5))
             ms_on = (ms - last_ms) & 0xFFFFFFFF
             n_on = (number - last_n) & 0xFFFF
             if last_t0 is not None and (ms_on >= 1 << 31
@@ -230,63 +354,114 @@ def parse_log(text: str) -> tuple[list[Trace], int]:
                 wraps = max(0, round((ms_on * T_PER_MS - on) / (1 << 32)))
                 t0_abs = last_t0[1] + on + (wraps << 32)
             last_t0 = (t0, t0_abs)
-            cur = Trace(number, m.group(3), t0, t0_abs,
-                        ms, int(m.group(6)))
+            cur = Trace(number, trig, t0, t0_abs, ms, length)
             cur.boot = boot
-            cur.version = int(m.group(1))
+            cur.version = version
             if cur.version != FORMAT:
                 cur.problems.append(f"format version {cur.version}; this "
                                     f"tool reads version {FORMAT}")
             traces.append(cur)
             continue
         if cur is None:
-            other += 1
+            # A line of a trace with no start line before it: the start
+            # line is lost, or cut short.
+            if got is not None or line.startswith("$"):
+                stray.append((no, line))
+            else:
+                other += 1
             continue
-        if (m := RE_S.match(line)):
+        if got is None:
+            if line.startswith(CONSOLE):
+                other += 1
+            else:
+                cur.bad.append((no, line))
+            continue
+        if kind == "H":
+            cur.setups += 1
+            if cur.setups > 1:
+                continue
+            (cur.period_us, cur.shunt_uohm, cfg, cur.online,
+             cur.resets) = f
+            cur.cfg = int(cfg, 16)
+            cur.have_setup = True
+            cur.state = (cur.online, cur.resets)
+            continue
+        if not cur.have_setup:
+            cur.early += 1
+        if kind == "s":
+            if cur.t and f[0] < 0:
+                cur.back += 1
             prev = cur.t[-1] if cur.t else 0
-            cur.t.append(prev + int(m.group(1)))
-            cur.code.append(int(m.group(2)))
-        elif (m := RE_V.match(line)):
+            cur.t.append(prev + f[0])
+            cur.code.append(f[1])
+        elif kind == "v":
             cur.n_volts += 1
             if cur.t:
-                cur.mv[len(cur.t) - 1] = int(m.group(1))
-        elif (m := RE_H.match(line)):
-            cur.period_us = int(m.group(1))
-            cur.shunt_uohm = int(m.group(2))
-            cur.cfg = int(m.group(3), 16)
-            cur.online = int(m.group(4))
-            cur.resets = int(m.group(5))
-            cur.have_setup = True
-        elif (m := RE_MARK.match(line)):
-            ch = int(m.group(3)) if m.group(3) is not None else None
-            us = int(m.group(4)) if m.group(4) is not None else None
-            cur.marks.append((m.group(1), s32(int(m.group(2)) - cur.t0),
-                              ch, us))
-        elif (m := RE_L.match(line)):
-            cur.lost += int(m.group(1))
+                if len(cur.t) - 1 in cur.mv:
+                    cur.two_volts += 1
+                cur.mv[len(cur.t) - 1] = f[0]
+        elif kind == "C":
+            cur.marks.append((f[0], s32(f[1] - cur.t0), f[2], f[3]))
+        elif kind == "E":
+            cur.marks.append((f[0], s32(f[1] - cur.t0), None, None))
+        elif kind == "L":
+            cur.lost += f[0]
             cur.gaps.append(len(cur.t))
-        elif (m := RE_STATE.match(line)):
-            cur.states.append((len(cur.t), int(m.group(1)),
-                               int(m.group(2))))
-        elif (m := RE_Z.match(line)):
-            cur.end = {"n": int(m.group(1)), "s": int(m.group(2)),
-                       "v": int(m.group(3)), "l": int(m.group(4)),
-                       "m": int(m.group(5)), "ml": int(m.group(6)),
-                       "e": m.group(7)}
-            cur = None
+        elif kind == "S":
+            # The coprocessor writes the line for a state that is another
+            # than the one before it.
+            if (f[0], f[1]) == cur.state:
+                cur.same_state += 1
+            cur.state = (f[0], f[1])
+            cur.states.append((len(cur.t), f[0], f[1]))
         else:
-            other += 1
+            cur.end = dict(zip(("n", "s", "v", "l", "m", "ml", "e"), f,
+                               strict=True))
+            cur = None
     if cur is not None:
         cur.problems.append("no end line: the log stops inside the trace")
-    return traces, other
+    return traces, other, stray
+
+
+def shown(line: str) -> str:
+    """A damaged line for the report: its first 40 characters."""
+    return repr(line if len(line) <= 40 else line[:40] + "...")
 
 
 def check(tr: Trace) -> None:
-    """The lines read against what the end line counts."""
+    """The lines read against the format and against what the end line
+    counts."""
+    if tr.bad:
+        no, line = tr.bad[0]
+        tr.problems.append(
+            f"{len(tr.bad)} line(s) that are no whole line of a trace, the "
+            f"first is line {no}: {shown(line)}")
     if not tr.have_setup:
         tr.problems.append("no $H line")
     elif tr.shunt_uohm == 0 and tr.code:
         tr.problems.append("samples with a shunt of 0")
+    if tr.early:
+        tr.problems.append(f"{tr.early} line(s) before the $H line")
+    if tr.setups > 1:
+        tr.problems.append(f"{tr.setups} $H lines")
+    if tr.version == FORMAT:
+        if tr.length != TRACE_MS[tr.trig]:
+            tr.problems.append(
+                f"a {tr.trig} trace of {tr.length} ms; version {FORMAT} "
+                f"writes {TRACE_MS[tr.trig]} ms")
+        if tr.have_setup and tr.period_us != PERIOD_US:
+            tr.problems.append(
+                f"a sample period of {tr.period_us} us; version {FORMAT} "
+                f"writes {PERIOD_US} us")
+    if tr.back:
+        tr.problems.append(f"{tr.back} sample line(s) timed before the "
+                           "sample before them")
+    if tr.two_volts:
+        tr.problems.append(f"{tr.two_volts} voltage line(s) behind a "
+                           "sample that has one")
+    if tr.same_state:
+        tr.problems.append(f"{tr.same_state} $S line(s) that change "
+                           "nothing: a line before them is missing")
     if tr.end is None:
         return
     end = tr.end
@@ -365,6 +540,7 @@ class Move:
         self.first = 0              # samples fed: [first, last)
         self.last = 0
         self.why_not = ""           # why it is not replayed
+        self.clipped = 0            # clipped samples in its levels
         self.results: dict[tuple[int, float], dict] = {}
         self.horn_ms: float | None = None
         self.horn_row: int | None = None
@@ -374,10 +550,41 @@ class Move:
         return (self.tr.t0_abs + self.t) / (T_PER_MS * 1000.0)
 
 
-def window(tr: Trace, lo: int, hi: int) -> list[float]:
-    """The currents of the samples with lo <= t < hi."""
-    return [tr.amps(c) for t, c in zip(tr.t, tr.code, strict=True)
-            if lo <= t < hi]
+class Level:
+    """The samples of one window a level is taken from: lo <= t < hi."""
+
+    def __init__(self, tr: Trace, lo: int | None, hi: int | None) -> None:
+        # A trace that is replayed has its samples in the order of time.
+        self.first = 0 if lo is None else bisect.bisect_left(tr.t, lo)
+        self.last = (len(tr.t) if hi is None
+                     else bisect.bisect_left(tr.t, hi))
+        got = [tr.judged(k) for k in range(self.first, self.last)]
+        self.amps = [ua / 1e6 for ua, _ in got]
+        self.clipped = {self.first + k for k, (_, clip) in enumerate(got)
+                        if clip}
+        self.why = ""
+        if not self.amps:
+            self.why = "no sample"
+        elif broken(self.first, self.last, tr.gaps):
+            self.why = "records are missing"
+        elif broken(self.first, self.last, [at for at, _, _ in tr.states]):
+            self.why = "the part's state changed"
+
+    @property
+    def mean(self) -> float:
+        return statistics.fmean(self.amps)
+
+    @property
+    def dev(self) -> float:
+        return spread(self.amps)[2]
+
+
+def broken(first: int, last: int, marks: list[int]) -> bool:
+    """Whether a $L or $S line stands among the samples [first, last) or
+    at either end of them.  A line is kept as the number of samples before
+    it.  At the ends counts: the records that are missing there can be the
+    window's, and the rules count samples."""
+    return any(first <= at <= last for at in marks)
 
 
 def pair_near(a: list[int], b: list[int], limit: int) -> dict[int, int]:
@@ -476,44 +683,70 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
         if moves[k + 1].t - moves[k].t <= TOGETHER_MS * T_PER_MS:
             together.update((k, k + 1))
 
-    idle = window(tr, -(1 << 62), moves[0].t)
-    idle_a, _, idle_dev = spread(idle)
-    hold: list[tuple[float, float] | None] = []
+    # Every level is a mean or a largest distance over one window of
+    # samples, each taken as the replay takes it: a clipped sample as the
+    # last value before that end of the range.  A window with no sample,
+    # with records missing in it or at its ends, or with a change of the
+    # part's state in it gives no level, and each move that needs the
+    # level is not replayed.  The windows and what needs them:
+    #
+    #   idle       the samples before the first move: every move's
+    #              threshold, and the holding level of a move to a pulse
+    #              width no move left before
+    #   rise k     the 50 ms before move k: its level before
+    #   hold k     the 200 ms before move k: its threshold, and the
+    #              holding level of each later move back to the pulse
+    #              width move k left
+    #   samples k  from 50 ms before move k to the next move, or the
+    #              trace's end: what the replay is fed
+    idle = Level(tr, None, moves[0].t)
+    hold: list[Level] = []
     for k, mv in enumerate(moves):
-        rise = window(tr, mv.t - RISE_MS * T_PER_MS, mv.t)
-        before = window(tr, mv.t - HOLD_MS * T_PER_MS, mv.t)
-        hold.append(spread(before)[::2] if before else None)
-        mv.rise_a = statistics.fmean(rise) if rise else None
-        if not rise:
-            mv.why_not = "no sample in the 50 ms before it"
-        mv.first = next((i for i, t in enumerate(tr.t)
-                         if t >= mv.t - RISE_MS * T_PER_MS), len(tr.t))
+        rise = Level(tr, mv.t - RISE_MS * T_PER_MS, mv.t)
+        hold.append(Level(tr, mv.t - HOLD_MS * T_PER_MS, mv.t))
+        mv.first = rise.first
         nxt = moves[k + 1].t if k + 1 < len(moves) else None
-        mv.last = len(tr.t) if nxt is None else next(
-            (i for i, t in enumerate(tr.t) if t >= nxt), len(tr.t))
+        mv.last = (len(tr.t) if nxt is None
+                   else bisect.bisect_left(tr.t, nxt))
+        # The destination's holding level: where the move that last left
+        # that pulse width left it from, the idle level when none did.
+        ref, mv.ref_from = idle, "idle level"
+        ref_where = "before the first command"
+        for j in range(k, 0, -1):
+            origin = moves[j - 1]
+            if (mv.us is not None and origin.us == mv.us
+                    and origin.ch == mv.ch):
+                ref = hold[j]
+                mv.ref_from = f"held before move {j + 1}"
+                ref_where = (f"in the 200 ms before move {j + 1}, its "
+                             "holding level")
+                break
+        needs = ((idle, "before the first command"),
+                 (rise, f"in the {RISE_MS} ms before it"),
+                 (hold[k], f"in the {HOLD_MS} ms before it"),
+                 (ref, ref_where))
+        whys = [f"{level.why} {where}" for level, where in needs
+                if level.why]
+        if k in together:
+            mv.why_not = (f"another command within {TOGETHER_MS} ms, the "
+                          "current is of both")
+        elif whys:
+            mv.why_not = whys[0]
         # The rules count samples, not time: a move with records missing
         # among its samples, or at either end of them, is not judged.  The
         # capture ends lost when the part goes offline; so does a move
         # here.
-        if any(mv.first <= gap <= mv.last for gap in tr.gaps):
+        elif broken(mv.first, mv.last, tr.gaps):
             mv.why_not = "records are missing among its samples"
-        elif any(mv.first <= at <= mv.last for at, _, _ in tr.states):
+        elif broken(mv.first, mv.last, [at for at, _, _ in tr.states]):
             mv.why_not = "the part's state changed inside it"
-        if k in together:
-            mv.why_not = (f"another command within {TOGETHER_MS} ms, the "
-                          "current is of both")
-        # The destination's holding level: where a later-known hold at
-        # that pulse width was left from, the idle level until then.
-        mv.ref_a, mv.ref_from = idle_a, "idle level"
-        for j in range(k, 0, -1):
-            origin = moves[j - 1]
-            if (mv.us is not None and origin.us == mv.us
-                    and origin.ch == mv.ch and hold[j] is not None):
-                mv.ref_a = hold[j][0]
-                mv.ref_from = f"held before move {j + 1}"
-                break
-        dev = hold[k][1] if hold[k] is not None else 0.0
-        mv.move_a = max(floor_a, idle_dev, dev)
+        if mv.why_not:
+            continue
+        mv.rise_a = rise.mean
+        mv.ref_a = ref.mean
+        mv.move_a = max(floor_a, idle.dev, hold[k].dev)
+        mv.clipped = len(set().union(*(level.clipped
+                                       for level, _ in needs)))
     return moves
 
 
@@ -550,18 +783,17 @@ def replay(binary: pathlib.Path, moves: list[Move]) -> None:
         tr = mv.tr
         for n in FILTERS:
             for band in BANDS_A:
+                # Times go to the replay from the move's own: none is
+                # below 0, wherever the trace's trigger lies.
                 lines.append(
-                    f"m {mv.t + REPLAY_BASE} {WINDOW_MS * T_PER_MS} "
+                    f"m {REPLAY_BASE} {WINDOW_MS * T_PER_MS} "
                     f"{round(mv.rise_a * 1e6)} {round(mv.ref_a * 1e6)} "
                     f"{round(mv.move_a * 1e6)} {round(band * 1e6)} "
                     f"{SETTLE_N} {n}")
                 for k in range(mv.first, mv.last):
-                    code = tr.code[k]
-                    clip = (1 if code >= CLIP_HI
-                            else -1 if code <= CLIP_LO else 0)
-                    at = CLIP_AS * clip if clip else code
-                    lines.append(f"s {tr.t[k] + REPLAY_BASE} "
-                                 f"{tr.microamps(at)} {clip}")
+                    ua, clip = tr.judged(k)
+                    lines.append(f"s {tr.t[k] - mv.t + REPLAY_BASE} "
+                                 f"{ua} {clip}")
                 lines.append("e")
                 order.append((mv, (n, band)))
     if not order:
@@ -573,8 +805,12 @@ def replay(binary: pathlib.Path, moves: list[Move]) -> None:
         detail = getattr(err, "stderr", "") or str(err)
         print(f"sense_trace: the replay failed: {detail}", file=sys.stderr)
         sys.exit(2)
-    out = proc.stdout.split("\n")
-    for (mv, setting), line in zip(order, out, strict=False):
+    out = proc.stdout.splitlines()
+    if len(out) != len(order):
+        print(f"sense_trace: the replay wrote {len(out)} line(s) for "
+              f"{len(order)} move(s) and settings", file=sys.stderr)
+        sys.exit(2)
+    for (mv, setting), line in zip(order, out, strict=True):
         f = line.split()
         if len(f) != 7:
             print(f"sense_trace: the replay wrote {line!r}",
@@ -705,8 +941,7 @@ def fmt_ms(value: float | None, state: str) -> str:
 
 
 def report_noise(tr: Trace, until: int | None, out: list[str]) -> None:
-    hi = until if until is not None else 1 << 62
-    amps = window(tr, -(1 << 62), hi)
+    amps = Level(tr, None, until).amps
     if not amps:
         return
     what = ("before the first command" if until is not None
@@ -767,7 +1002,10 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
                 else "")
         out.append(f"    move {k + 1} at {mv.t / T_PER_MS:.1f} ms, {to}: "
                    f"before {mv.rise_a:.3f} A, holding {mv.ref_a:.3f} A "
-                   f"({mv.ref_from}), threshold {mv.move_a:.3f} A{horn}")
+                   f"({mv.ref_from}), threshold {mv.move_a:.3f} A{horn}"
+                   + (f"; {mv.clipped} clipped sample(s) in these levels, "
+                      "each taken as the last value before the end of the "
+                      "range" if mv.clipped else ""))
     head = "".join(f" {'move ' + str(k + 1):>8}" for k in range(len(moves)))
     total = len(moves)
     out.append(f"  arrival, ms from the command:\n"
@@ -915,30 +1153,53 @@ def main() -> int:
     ap.add_argument("--no-csv", action="store_true",
                     help="write no CSV files")
     args = ap.parse_args()
-    if not math.isfinite(args.floor) or args.floor <= 0.0:
-        ap.error("--floor is a current above 0 A")
-    if not math.isfinite(args.pair_ms) or args.pair_ms <= 0.0:
-        ap.error("--pair-ms is a time above 0 ms")
-    if args.csv_offset is not None and not math.isfinite(args.csv_offset):
-        ap.error("--csv-offset is a number of seconds")
+    # Each number has a range: the replay takes currents as whole uA, and
+    # no time of a log or a CSV file is past the limits here.
+    if not FLOOR_MIN_A <= args.floor <= FLOOR_MAX_A:
+        ap.error(f"--floor is a current from {FLOOR_MIN_A:.6f} A to "
+                 f"{FLOOR_MAX_A:g} A")
+    if not 0.0 < args.pair_ms <= PAIR_MAX_MS:
+        ap.error(f"--pair-ms is a time above 0 ms, {PAIR_MAX_MS:g} ms at "
+                 "most")
+    if (args.csv_offset is not None
+            and not abs(args.csv_offset) <= OFFSET_MAX_S):
+        ap.error(f"--csv-offset is a number of seconds, {OFFSET_MAX_S:g} s "
+                 "from 0 at most")
     if args.csv_offset is not None and args.servo_csv is None:
         ap.error("--csv-offset needs --servo-csv")
 
     try:
-        text = args.log.read_text(encoding="utf-8", errors="replace")
+        # Bytes: a line's end is read as the console wrote it.
+        text = args.log.read_bytes().decode("utf-8", errors="replace")
     except OSError as err:
         print(f"sense_trace: {err}", file=sys.stderr)
         return 1
-    traces, other = parse_log(text)
+    rows: list[tuple[float, float]] = []
+    if args.servo_csv is not None:
+        try:
+            rows = read_travel(args.servo_csv)
+        except OSError as err:
+            print(f"sense_trace: {err}", file=sys.stderr)
+            return 2
+    traces, other, stray = parse_log(text)
     out = [f"{args.log}: {len(traces)} trace(s), {other} other line(s)"]
+    if stray:
+        no, line = stray[0]
+        out.append(f"PROBLEM: {len(stray)} line(s) of a trace outside a "
+                   f"trace, the first is line {no}: {shown(line)}; a trace's "
+                   "start line is missing or damaged")
     if not traces:
         print("\n".join(out))
         print("sense_trace: no trace in the log", file=sys.stderr)
         return 1
 
     out_dir = args.out if args.out is not None else args.log.parent
-    if not args.no_csv:
-        out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        if not args.no_csv:
+            out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as err:
+        print(f"sense_trace: {err}", file=sys.stderr)
+        return 2
     all_moves: list[Move] = []
     per_trace: list[tuple[Trace, list[Move], pathlib.Path | None]] = []
     names: dict[str, int] = {}
@@ -953,7 +1214,11 @@ def main() -> int:
             if names[name] > 1:         # the coprocessor restarted
                 name += f"-{names[name]}"
             csv = out_dir / f"{name}.csv"
-            write_csv(tr, csv)
+            try:
+                write_csv(tr, csv)
+            except OSError as err:
+                print(f"sense_trace: {err}", file=sys.stderr)
+                return 2
         per_trace.append((tr, moves, csv))
 
     if all_moves:
@@ -962,7 +1227,6 @@ def main() -> int:
     have_horn = False
     ambiguous = False
     if args.servo_csv is not None:
-        rows = read_travel(args.servo_csv)
         n_rows = len(rows)
         # Each boot of the coprocessor has a clock of its own: its moves
         # are paired on their own, each boot with every row.  The file's
@@ -1011,10 +1275,13 @@ def main() -> int:
     if bad:
         print(f"sense_trace: {bad} trace(s) with a problem",
               file=sys.stderr)
+    if stray:
+        print(f"sense_trace: {len(stray)} line(s) of a trace outside a "
+              "trace", file=sys.stderr)
     if ambiguous:
         print("sense_trace: the servo test's rows pair with the moves in "
               "more than one way", file=sys.stderr)
-    return 1 if bad or ambiguous else 0
+    return 1 if bad or stray or ambiguous else 0
 
 
 if __name__ == "__main__":

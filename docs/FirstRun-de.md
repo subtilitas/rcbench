@@ -532,9 +532,9 @@ PuTTY:
 Der Port ist USB CDC (Communications Device Class): die Geschwindigkeit
 wird nicht benutzt, jeder Wert geht. Der Koprozessor druckt nur, solange
 das Terminal DTR (Data Terminal Ready) hält; PuTTY tut das, solange der
-Port offen ist. Keine Zeitstempel im Mitschnitt: eine Zeile, vor der etwas
-steht, wird nicht gelesen. Eine Taste wird beim Drücken gesendet, ohne
-Enter.
+Port offen ist. Keine Zeitstempel im Mitschnitt: in einem Trace ist eine
+Zeile, vor der etwas steht, ein Schaden, und keine Bewegung dieses Trace
+wird nachgespielt. Eine Taste wird beim Drücken gesendet, ohne Enter.
 
 **Teil A: ohne den Encoder.**
 
@@ -589,6 +589,45 @@ Bewegung auseinanderlegen. Die Ausgabe endet mit `not compared with the
 horn`: ohne Encoder ist eine Ankunft der Strom zurück auf seinem
 Haltepegel, und das kann dem Arm vor- oder nachlaufen. Je Trace eine
 `<log>-trace-<n>.csv` mit Zeit in ms, Strom in A und Busspannung in V.
+
+**Was das Tool ablehnt.** Zwischen der Zeile `$T` und der Zeile `$Z` eines
+Trace ist jede Zeile eine ganze Zeile des Formats oder eine eigene
+Konsolenzeile des Koprozessors, die mit `rcbench-iomcu:` beginnt. Ganz ist
+eine Zeile mit jedem Feld ihres Typs in seiner Reihenfolge, mit nichts
+vor, zwischen oder hinter den Feldern und mit jeder Zahl in dem Bereich,
+in dem der Koprozessor sie hält: eine Zeile `$C` oder `$D` hat `ch=` und
+`us=`, eine Zeile `$E` oder `$K` keines von beiden. Eine Zeile endet mit
+LF oder CR LF. Alles andere ist ein Schaden. Ebenso eine zweite Zeile
+`$H`, eine Zeile vor der Zeile `$H`, eine andere Trace-Länge als 4000 ms
+(10000 ms bei `t`), eine andere Sample-Periode als 1000 µs, ein Sample mit
+einer Zeit vor dem Sample davor, eine zweite Spannung zu einem Sample,
+eine Zeile `$S`, die den Zustand davor wiederholt, und eine Zeile eines
+Trace außerhalb eines Trace. Das Tool druckt eine Zeile `PROBLEM:` mit der
+Anzahl und der Nummer der ersten solchen Zeile, spielt keine Bewegung
+dieses Trace nach und endet mit 1.
+
+Die Pegel einer Bewegung kommen aus vier Fenstern von Samples:
+
+| Fenster | Was daraus genommen wird |
+| --- | --- |
+| die Samples vor dem ersten Kommando des Trace | die Schwelle jeder Bewegung; der Haltepegel einer Bewegung zu einer Pulsbreite, die keine frühere Bewegung verlassen hat |
+| die 50 ms vor der Bewegung | ihr Pegel davor |
+| die 200 ms vor der Bewegung | ihre Schwelle; der Haltepegel jeder späteren Bewegung zurück zu der Pulsbreite, die diese Bewegung verlassen hat |
+| von 50 ms vor der Bewegung bis zur nächsten Bewegung oder zum Ende des Trace | die Samples, die das Nachspielen bekommt |
+
+Ein Fenster ohne Sample, mit einer Zeile `$L` darin oder an einem seiner
+Enden oder mit einer Zeile `$S` darin oder an einem seiner Enden gibt
+keinen Pegel. Jede Bewegung, die diesen Pegel braucht, meldet `not
+replayed` und nennt das Fenster. Ein Sample am Anschlag in einem Fenster
+zählt als 4094 Schritte zu diesem Ende des Bereichs, wie beim Nachspielen,
+und die Zeile der Bewegung sagt, wie viele ihrer Pegel-Samples am Anschlag
+liegen.
+
+`--floor` nimmt 0,000001 A bis 1000 A, `--pair-ms` mehr als 0 ms bis
+60000 ms, `--csv-offset` bis 1e9 s beiderseits von 0. Eine CSV-Datei des
+Servo-Tests, die nicht gelesen werden kann, eine CSV-Datei, die nicht
+geschrieben werden kann, und ein Nachspielen, das eine andere Zahl von
+Bewegungen beantwortet als es bekam, enden mit 2.
 
 **Aufschreiben:** die Ausgabe des Tools für jeden Mitschnitt. Teil A
 beantwortet: das Rauschen der 1-ms-Samples von CH1 ohne Servo und mit
@@ -652,6 +691,15 @@ gewählt, nicht gemessen.
 - Ob ein Terminal 8,6 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
   dessen Zeilenzahlen nicht zu seiner Endzeile passen, wird gemeldet und
   endet mit 1.
+- Das Zeilenformat hat keinen Prüfwert. Eine Zeile, die in ihrer letzten
+  Zahl abgeschnitten ist, ist eine ganze Zeile mit einer anderen Zahl, und
+  das Tool liest sie so: der Code eines Samples, eine Spannung, die
+  Pulsbreite einer Zeile `$C` oder `$D`, die Zeit einer Zeile `$E` oder
+  `$K`, der Reset-Zähler einer Zeile `$H` oder `$S`. Ein Schnitt an jeder
+  anderen Stelle einer Zeile wird gemeldet, ebenso eine verlorene Sample-,
+  Spannungs- oder Trigger-Zeile. Eine verlorene Zeile `$S` wird gemeldet,
+  wenn die nächste den Zustand wiederholt. Ein Mitschnitt, der zwischen
+  zwei Traces endet, liest sich wie ein Mitschnitt mit weniger Traces.
 
 ---
 

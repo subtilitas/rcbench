@@ -31,15 +31,23 @@ coprocessor and the other way round.
   trace says where and how many; its end line counts every one from
   before its end. A trace is about 8.6 bytes a sample. The
   option is off by default: a released image holds none of this code, and
-  CI fails when it does. `tools/sense_trace.py` checks a captured console
-  against each trace's end line, writes a CSV file per trace, and replays
+  CI fails when it does. `tools/sense_trace.py` reads every line of a
+  captured console against the format and each trace against its end
+  line: a line inside a trace that is neither a whole line of the format
+  nor a console line starting `rcbench-iomcu:` is damage, the trace is
+  reported, none of its moves is replayed and the exit code is 1. The
+  format has no check value, so a line cut inside its last number is read
+  as cut. The tool writes a CSV file per trace, and replays
   every move through the move rules (`shared/servo/servo_move.c`) with the
   filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A. From
   the traces alone it prints which settings see and time every move, each
   setting's median arrival and how far apart the settings put one move's
   arrival, and says that no arrival is compared with the horn. With a
   servo test's CSV file recorded with the AS5600 it prints each arrival
-  less the encoder's travel time and the median per setting.
+  less the encoder's travel time and the median per setting. A move is
+  not replayed when a window its levels come from has no sample, missing
+  records or a change of the part's state; a clipped sample in a level
+  counts as 4094 steps, as in the replay.
   [First run](docs/FirstRun.md) §8.9 has the bench procedure in two parts,
   the first without an encoder. Host suite only; not run on hardware. Not measured:
   the time the lines add to a pass of core 0.
