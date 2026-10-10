@@ -92,7 +92,7 @@ SOURCES = [
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
     "shared/servo/servo_report.c",
-    "shared/sbus/sbus.c",
+    "protocols/sbus/sbus.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_pwm_map.c",
@@ -242,7 +242,8 @@ INCLUDES = [
     "shared/settings/include",
     "shared/servo/include",
     "shared/esc/include",
-    "shared/sbus/include",
+    "protocols/sbus/include",
+    "protocols/pdmini/include",
 ]
 
 

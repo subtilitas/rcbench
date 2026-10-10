@@ -14,7 +14,7 @@ braucht.
 
 > Die Implementierung wird in einem eigenen Repository verfolgt. Diese Seite
 > ist die Spezifikation von Rang; sie geht zur Prüfung an YGE. Der Codec unter
-> `shared/openyge/` ist gebaut und getestet, aber nicht in die Firmware
+> `protocols/openyge/` ist gebaut und getestet, aber nicht in die Firmware
 > eingebunden.
 
 **° markiert eine erschlossene Bedeutung.** Diese Einträge stammen aus dem
@@ -91,8 +91,9 @@ Polynom, anderer Seed:
 | OpenYGE | 0x1021 | 0x0000 | keine | keiner | 0x31C3 |
 | rcbench-Link-CRC (`link_crc`) | 0x1021 | 0xFFFF | keine | keiner | 0x29B1 |
 
-`link_crc()` nimmt den Seed als erstes Argument, dieselbe Routine bedient also
-beide.
+`protocols/openyge` bringt die eigene Routine `openyge_crc()` mit, das Modul
+bindet also nichts vom Link ein. Die Host-Suite hält sie am Prüfwert und an
+`link_crc()` mit Seed 0, bei jeder Framelänge von 0 bis 140 Bytes.
 
 ---
 
@@ -185,7 +186,7 @@ eine unvollständige Tabelle nie als die Einstellungen des ESC ausgeben.
 - Steht ein Schreiben an, die ganze Tabelle zurückziehen und erst wieder
   veröffentlichen, wenn jeder Index neu gelesen ist.
 
-Der Cache in `shared/openyge/` ist durch eine 64-Bit-Bitmap auf 64 Parameter
+Der Cache in `protocols/openyge/` ist durch eine 64-Bit-Bitmap auf 64 Parameter
 begrenzt; die aktuelle Firmware hat 32.
 
 ### 5.2 Control-Payload: 4 Bytes
@@ -360,7 +361,7 @@ auseinandergehen. Eine daraus abgeschriebene Umsetzung erbt alle sechs.
 | 6. Falsch nummerierte Parameterkommentare | drei aufeinanderfolgende Einträge tragen die 26 |
 
 Die Referenz synchronisiert sich neu, indem sie ihren Puffer Byte für Byte
-verwirft. Der Decoder in `shared/openyge/` prüft jeden Sync-Kandidaten und
+verwirft. Der Decoder in `protocols/openyge/` prüft jeden Sync-Kandidaten und
 nimmt den frühesten vollständigen Frame; so wird ein Frame zurückgewonnen, der
 hinter Rauschen mit einem plausiblen Sync ankommt.
 
@@ -403,8 +404,8 @@ sind unabhängige Messungen.
 
 Gebaut, auf dem Host getestet, nicht eingebunden:
 
-    shared/openyge/
-      openyge_frame.c        encode and decode, reusing link_crc with seed 0
+    protocols/openyge/
+      openyge_frame.c        encode, decode and the CRC, openyge_crc()
       openyge_status.c       status1 -> state, subject, warnings, faults
       openyge_params.c       the parameter cache and its completeness rule
 

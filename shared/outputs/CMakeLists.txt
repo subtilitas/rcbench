@@ -7,10 +7,12 @@ set(SRCS outputs.c outputs_pages.c out_bind.c out_pwm_map.c out_store_map.c
          out_stage.c bind_link.c)
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link servo bench sense)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
+                           REQUIRES link servo bench sense pdmini phase_tap)
 else()
     add_library(rcbench_outputs STATIC ${SRCS})
     target_include_directories(rcbench_outputs PUBLIC include)
     target_link_libraries(rcbench_outputs PUBLIC rcbench_link rcbench_servo rcbench_bench
-                                                 rcbench_sense)
+                                                 rcbench_sense rcbench_pdmini
+                                                 rcbench_phase_tap)
 endif()

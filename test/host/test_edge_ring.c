@@ -1,6 +1,6 @@
 /*
  * The words the phase tap's PIO program pushes and the ring a DMA channel
- * collects them in (shared/sense/edge_ring.c).
+ * collects them in (protocols/phase_tap/edge_ring.c).
  *
  * Under test: the word's two fields; the 31-bit count extended to 64 bits
  * against an estimate of the present, across the counter's wrap every

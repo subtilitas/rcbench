@@ -5,10 +5,10 @@
  * follows a decoded request.
  *
  * The power path is not written.  This file runs on core 0 and holds the
- * wire, the failsafe and the output bank; the output protocols are in
- * out_pwm.c, out_ppm.c and out_dshot.c behind outputs_hw.c.  Core 1 reads
- * the current monitors on their I2C bus (sense_core1.c) and nothing else;
- * this file gives it its orders and publishes what it reads.
+ * wire, the failsafe and the output bank; the output protocols are out_pwm.c
+ * and the drivers in protocols/ppm and protocols/dshot, behind outputs_hw.c.
+ * Core 1 reads the current monitors on their I2C bus (sense_core1.c) and
+ * nothing else; this file gives it its orders and publishes what it reads.
  *
  * Nothing here models a reading.  A number this end publishes came off a
  * wire or a sensor, and a quantity nothing measures is left at zero with its
@@ -89,8 +89,8 @@ static bool          s_supply_attach;
 static sense_page_t  s_sense;
 /*
  * The TONE page: the phase tap's set-up, kept, and the beeps core 1 hears
- * on it.  Core 0 owns the PIO state machine and the DMA ring
- * (tone_cap.c); core 1 reads the ring and detects (tone_core1.c).
+ * on it.  Core 0 owns the PIO state machine and the DMA ring (tone_cap.c
+ * in protocols/phase_tap/rp2350); core 1 reads and detects (tone_core1.c).
  */
 static tone_page_t   s_tone;
 /* Core 1's last snapshot.  The pins it said it still holds are the page's

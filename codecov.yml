@@ -38,5 +38,7 @@ ignore:
   - "shared/gfx/gfx_font*.c"
   # Firmware is not built by the host suite and cannot be covered by it.
   - "firmware/**"
+  # A protocol module's pin driver is firmware too.
+  - "protocols/*/rp2350/**"
   - "test/**"
   - "tools/**"

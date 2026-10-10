@@ -2,7 +2,7 @@
  * Core 1's half of the phase tap, and the hand-over to core 0.
  *
  * Each tick of core 1's loop (sense_core1.c) runs one pass of the tone
- * service (shared/sense/tone_svc.h) on the capture ring (tone_cap.h): the
+ * service (protocols/phase_tap/include/tone_svc.h) on the capture ring (tone_cap.h): the
  * words written since the last pass into the detector, and the beeps it
  * finished and a status back to core 0.
  *

@@ -699,7 +699,7 @@ enum {
  *     controller), heard on one motor phase.  One GPIO reads the phase
  *     through a series resistor and a zener clamp; a PIO (programmable
  *     input/output) state machine stamps its edges at 26.7 ns, and
- *     shared/sense/tone.c turns them into beeps and their pitch.
+ *     protocols/phase_tap/tone.c turns them into beeps and their pitch.
  *
  *     ENABLE to F_MAX_HZ are one frame and SPLIT_PCT to register 7 the
  *     next.  ENABLE bit 0 runs the tap.  PIN is the GPIO.  F_MIN_HZ and

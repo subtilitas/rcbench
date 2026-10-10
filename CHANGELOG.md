@@ -6,6 +6,28 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- **Every interface to external hardware is a module under `protocols/`.**
+  `protocols/dshot`, `ppm`, `sbus`, `openyge`, `pdmini` and `phase_tap`
+  each hold a core in C11 that includes C standard headers only, the
+  RP2350 pin driver in `rp2350/` where one exists (`dshot`, `ppm`,
+  `pdmini`, `phase_tap`) and a `README.md` with the CMake lines for another
+  pico-sdk project. The driver of a module is the INTERFACE library
+  `rcbench_<name>_rp2350`. `openyge` carries its CRC-16/XMODEM
+  (`openyge_crc()`), `ppm` its channel range (400 us to 2500 us) and the
+  DShot and PPM drivers their pin count (8, set by `OUT_DSHOT_MAX_PINS`
+  and `OUT_PPM_MAX_PINS`); `outputs_hw.c` holds each equal to the output
+  bank's constant at compile time. No wire, link page or public function
+  name differs, and the four PIO programs assemble to the same words. The
+  rule is in `CONTRIBUTING.md`, "Where code goes".
+- **`tools/check_protocols.py --check` holds the modules to the rule.** It
+  fails on an include that leaves a module, on a pico-sdk header outside
+  `rp2350/` or in a driver's header, on a public header without
+  `extern "C"` or one that does not compile by itself as C11 and as C++17,
+  on a module without a `README.md`, and on a CMake file that names another
+  module. CI runs it in the host suite job.
+
 ## 0.16.0 - 2026-10-10
 
 The link protocol is 4.11. A 0.15 board still links and arms with a 0.16

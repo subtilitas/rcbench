@@ -4,9 +4,9 @@
 The suite runs a second time under AddressSanitizer and UBSan
 (UndefinedBehaviorSanitizer) to catch what -Werror cannot see: a parser fed
 a hostile frame reading off the end of a buffer, a signed shift overflowing,
-an unaligned access.  Those faults live in `shared/`, not in the test files
-that call it, so an instrumented test executable linked against
-uninstrumented libraries checks almost nothing.
+an unaligned access.  Those faults live in `shared/` and `protocols/`, not
+in the test files that call them, so an instrumented test executable linked
+against uninstrumented libraries checks almost nothing.
 
 CMake gives a directory its copy of COMPILE_OPTIONS as the directory is
 added, so flags set after the `add_subdirectory()` calls reach the
@@ -38,9 +38,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SUITE = ROOT / "test" / "host"
 
 # Every translation unit the sanitizer build compiles is expected to carry
-# the flags.  Both halves matter: shared/ is where the faults are, and
-# test/host/ is where the harness that reaches them lives.
-EXPECTED = ("shared", "test/host")
+# the flags.  Every part matters: shared/ and protocols/ are where the
+# faults are, and test/host/ is where the harness that reaches them lives.
+EXPECTED = ("shared", "protocols", "test/host")
 
 # What ENABLE_SANITIZERS=ON has to put on every compile command: both
 # sanitizers, and every finding fatal.  The frame pointer keeps a report's
@@ -104,7 +104,7 @@ def compile_commands(build: Path) -> list[dict]:
 
 
 def bucket(path: Path, root: Path = ROOT) -> str | None:
-    """Which half of the tree a translation unit belongs to, if either."""
+    """Which part of the tree a translation unit belongs to, if either."""
     try:
         rel = path.resolve().relative_to(root).as_posix()
     except ValueError:
@@ -116,7 +116,7 @@ def bucket(path: Path, root: Path = ROOT) -> str | None:
 
 
 def tally(entries: list[dict], root: Path = ROOT) -> tuple[dict, dict]:
-    """({half: [instrumented, compiled]}, {file: what is wrong with its
+    """({part: [instrumented, compiled]}, {file: what is wrong with its
     flags}) over a compile database."""
     counts = {name: [0, 0] for name in EXPECTED}
     wrong: dict[str, list[str]] = {}
