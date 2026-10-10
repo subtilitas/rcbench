@@ -542,8 +542,17 @@ Messgerät liegt, verwirft er, und ein Sample des Netzteils, dessen Zähler
 dahinter liegt, ist kein Punkt des Plots: Snapshot und Queues sind drei
 Wege, und jeder kann der älteste sein. Ein Zähler, der dem geltenden um
 mehr als eins voraus ist, bedeutet Wechsel, die der Bildschirm nicht gesehen
-hat, und leert den Plot, welches Messgerät es auch ist. Der Servotest liest
-den PD mini, jedes Sample.
+hat, und leert den Plot, welches Messgerät es auch ist. Ein automatischer
+Servotest liest das Messgerät, das bei seinem Start gilt, bis zu seinem
+Ende: ein Lauf am INA3221 endet, wenn ein Fenster, ein Sample des Netzteils
+oder der Snapshot ein anderes Messgerät oder einen anderen Wechselzähler
+bringt ([Servo](Servo-de.md#der-strommesser-des-laufs)). Das Panel behält,
+warum der INA3221 zuletzt aufhörte, das Messgerät zu sein, mit dem Zähler
+jenes Polls (`servo_source_dropped()`) und reicht es mit jedem der drei
+weiter, damit der Bericht des Laufs die Bedingung nennt: ein Reset-Zähler,
+der sich in jenem Poll bewegte, ist der Grund, der behalten wird, weil der
+Koprozessor einen Baustein, den er zurückgesetzt findet, im selben Lesen
+offline nimmt.
 
 `test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
 Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im

@@ -129,6 +129,9 @@ SCREENS = {
     "servo-hv":       ("servo-hv.png",       "servo", "dark"),
     "servo-run":      ("servo-run.png",      "servo", "dark"),
     "servo-result":   ("servo-result.png",   "servo", "dark"),
+    # A run that read the INA3221's CH1 windows: the meter named in the
+    # result box, the line and the plot.
+    "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
     "servo-paused":   ("servo-paused.png",   "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),

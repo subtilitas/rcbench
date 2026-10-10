@@ -602,7 +602,13 @@ under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
 before any warning opens) or LAST REPORT STILL WRITING, and follows the
-bench and the settings as they change.
+bench and the settings as they change. A third line, across the card under
+both columns, says when no reading can pass STALL AT: `STALL AT 2.00 A
+cannot be reached: current limit 2.00 A` while STALL AT is at or above the
+SET line's current limit, else `STALL AT 2.00 A cannot be reached: INA3221
+range 1.638 A` while the INA3221 is the rail's meter and STALL AT is at or
+above its range. START TEST stays open: see
+[Stall and constant current](Servo.md#stall-and-constant-current).
 It is a two-second hold,
 the gesture OUTPUT ON uses, because a run switches the supply on and moves
 the servo. With HV SERVO on and a step above 6.0 V chosen, a tap opens HV
@@ -611,8 +617,10 @@ its HOLD TO APPLY is held for 2 s. HV SERVO is for the session: every restart
 turns it off.
 
 The settings close as the run starts, and its step and phase show at the top
-of the left card. The run owns the servo and SUPPLY's set points and switch
-until it ends. It ends early, the output switched off and the servo released
+of the left card, with the meter the run reads beside STOP TEST: `PD mini`,
+`INA3221 CH1` or `MODEL`. It is the servo rail's meter at START TEST, and
+the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
+the servo and SUPPLY's set points and switch until it ends. It ends early, the output switched off and the servo released
 to its centre, on STOP TEST (on the left card or the TEST page), STOP, a
 disarm, the link going, leaving the screen, a finger on the dial, CENTRE,
 SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
@@ -634,6 +642,11 @@ the card took: `BENCHnnn.CSV`, and `+ .TXT` once the card has taken the
 report whole.
 
 ![A result](img/servo-result.png)
+
+A run that read the INA3221's windows names it there, as the line over the
+plot does:
+
+![A result on the INA3221](img/servo-result-ina.png)
 
 ### Settings
 

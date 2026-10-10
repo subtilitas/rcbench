@@ -321,7 +321,7 @@ static void drag(int x, int y0, int y1)
  * stops on the first step's movements, the result view runs it out and the
  * card takes its files as run 12.
  */
-static void servo_run_view(bool to_the_end)
+static void servo_run_view(bool to_the_end, bool ina)
 {
     servo_sim_t sv;
     servo_sim_cfg_t cfg;
@@ -342,6 +342,13 @@ static void servo_run_view(bool to_the_end)
     bool out = true;          /* the model's run above left it on */
     uint16_t cmd = 1500u;
     servo_screen_clock(now);
+    if (ina) {
+        /* The INA3221 on in SETUP and the rail's meter: the run reads its
+         * windows, one every 50 ms. */
+        settings_set(SET_INA3221_EN, 1.0f);
+        servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    }
+    uint16_t win_number = 0u;
     tap(136, UI_BAND_H + 27);                       /* TEST */
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = 369,
@@ -374,6 +381,23 @@ static void servo_run_view(bool to_the_end)
             }
         }
         const float a = out ? servo_sim_step(&sv, cmd, now) : 0.0f;
+        if (ina && (now / 50u) != ((now - 20u) / 50u)) {
+            const int ma = (int)(a * 1000.0f);
+            const int mv = out
+                ? (int)(supply_screen_set_v() * 1000.0f) - ma / 4 : 0;
+            sense_link_win_t w;
+            memset(&w, 0, sizeof(w));
+            w.number   = ++win_number;
+            w.current  = true;
+            w.voltage  = true;
+            w.mean_ma  = (int16_t)ma;
+            w.max_ma   = (int16_t)ma;
+            w.min_ma   = (int16_t)ma;
+            w.mean_mv  = (uint16_t)mv;
+            w.min_mv   = (uint16_t)mv;
+            w.taken_ms = now;
+            servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
+        }
         if (i % 5 == 0) {
             supply_state_t st;
             memset(&st, 0, sizeof(st));
@@ -1555,8 +1579,10 @@ int main(int argc, char **argv)
             tap(296, UI_BAND_H + 27);
             tap(100, UI_BAND_H + 71);
         } else if (strcmp(view, "servo-run") == 0
-                   || strcmp(view, "servo-result") == 0) {
-            servo_run_view(strcmp(view, "servo-result") == 0);
+                   || strcmp(view, "servo-result") == 0
+                   || strcmp(view, "servo-result-ina") == 0) {
+            servo_run_view(strcmp(view, "servo-run") != 0,
+                           strcmp(view, "servo-result-ina") == 0);
         }
     }
 
@@ -1571,6 +1597,7 @@ int main(int argc, char **argv)
                     && strcmp(view, "motor-held") != 0)
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
+                   || strcmp(view, "servo-result-ina") == 0
                    || strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0;
     ui_router_set_status(&st);

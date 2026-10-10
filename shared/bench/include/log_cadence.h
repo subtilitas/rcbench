@@ -25,6 +25,10 @@
  *   column.  The tick's wrap at 2^32 ms does not show in it.
  * - A row the queue refuses is counted as lost, a row it takes as sent.
  *   Every row log_cadence_row() grants is one or the other.
+ * - No bench row while an automatic servo test runs
+ *   (log_cadence_bench_run()).  The test writes its own file, one row per
+ *   reading of its meter, and the bench log's time column steps over the
+ *   test.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -73,6 +77,13 @@ bool log_cadence_model_due(log_cadence_t *c, uint32_t now_ms, bool link_up,
 
 /** A run starts: its time is 0 at @p now_ms and its row counts are 0. */
 void log_cadence_run_start(log_cadence_t *c, uint32_t now_ms);
+
+/**
+ * Whether the bench log records in this pass: the log's run is an armed
+ * bench's (@p bench_kind) and no automatic servo test is running
+ * (@p servo_test).  The answer is log_cadence_row()'s @p bench_run.
+ */
+bool log_cadence_bench_run(bool bench_kind, bool servo_test);
 
 /**
  * Whether this pass writes a bench row, once per pass and on every pass,

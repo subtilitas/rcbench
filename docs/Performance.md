@@ -176,12 +176,12 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 3,856 | 3,312 |
-| `control` | `control_task` | 6,144 | 4,272 | 848 |
-| `runlog` | `log_task` | 4,096 | 2,896 | 176 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 3,984 | 3,184 |
+| `control` | `control_task` | 6,144 | 3,904 | 1,216 |
+| `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
-| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,744 | 1,328 |
+| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
@@ -191,7 +191,7 @@ the deepest frame. The other
 bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table: 165 such calls are
+  which the tool reads out of every screen's table: 169 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

@@ -6,7 +6,34 @@
  * The servo is a PWM (pulse-width modulation) servo on the bench's surface
  * outputs, and the supply is the one SUPPLY drives: the PD mini, or the
  * panel's model of it.  Nothing measures the horn, so every result is read
- * off the supply's current, at the rate the supply reports it.
+ * off the servo rail's current, at the rate its meter reports it.
+ *
+ * The meter.  A run reads one meter from its start to its end, the one its
+ * configuration names (cfg.meter.kind):
+ *
+ *   PD mini   the supply's own readings (servo_test_reading()), about 10 a
+ *             second.  The model stands in for it with no coprocessor.
+ *   INA3221   the 50 ms windows of the INA3221's CH1
+ *             (servo_test_window()), 20 a second: each one's mean current
+ *             and mean bus voltage are the reading, its highest and lowest
+ *             1 ms sample give the peak, its lowest bus voltage the step's
+ *             lowest voltage.  The supply is still read for its state --
+ *             answering, output, trip, set point, mode -- and none of its
+ *             voltages or currents is used or logged.
+ *
+ * A reading is a point in time on the PD mini and 50 ms long on the
+ * INA3221 (cfg.meter.span_ms).  IDLE and HOLD take the windows that lie
+ * wholly inside them: a window that began before the phase is in neither.
+ * The window open at a command is MOVE's.  Moves are timed by the panel
+ * from the windows as from the supply's readings, so a travel time on the
+ * INA3221 is late by up to one window and one poll, an upper bound, and
+ * TRAVEL TIME is not checked.
+ *
+ * Signed current.  A negative current is a reading.  The limits, the peak
+ * and STALL AT compare its magnitude, in whole mA (servo_test_over_a()),
+ * and the CSV keeps the sign.  A clipped window -- a 1 ms sample at an end
+ * of the INA3221's range -- is a reading as well: its figures are the
+ * values the part gave, a lower bound, and the report counts such windows.
  *
  * Per voltage step, in this order:
  *
@@ -120,9 +147,24 @@
  * changing how it is driven, and touch events lost (the caller's,
  * servo_test_abort()), and by the supply (here): it stops answering, trips,
  * its output goes off, no new reading arrives for SERVO_TEST_STALE_MS, a
- * set point is not read back, a step above the voltage cap in force, or a
- * current above STALL AT for SERVO_TEST_STALL_ABORT_MS.  An aborted run is
- * reported as ABORTED with its reason and what it measured so far.
+ * set point is not read back, a step above the voltage cap in force, a
+ * current above STALL AT for SERVO_TEST_STALL_ABORT_MS, or the supply in
+ * constant current for SERVO_TEST_CC_ABORT_MS.  A run on the INA3221 also
+ * ends when no window arrives for SERVO_TEST_WIN_STALE_MS and when the
+ * INA3221 stops being the servo rail's meter (servo_test_meter_now()): it
+ * never goes on with another meter.  An aborted run is reported as ABORTED
+ * with its reason and what it measured so far, and nothing fed to it after
+ * its end changes either.
+ *
+ * Stall.  A reading whose magnitude is above STALL AT on a
+ * characterisation step fails the run, and readings above it for
+ * SERVO_TEST_STALL_ABORT_MS without one at or under it end the run.  On
+ * the INA3221 the reading is the window's mean and the time counts from
+ * the window's start, so 20 windows in a row end it.  A supply in constant
+ * current holds its current limit: with STALL AT at or above the limit no
+ * reading is above STALL AT, and the constant-current rule ends the run
+ * instead, whatever STALL AT is.  Constant current for less than
+ * SERVO_TEST_CC_ABORT_MS fails nothing: the report counts those readings.
  *
  * A state machine fed readings and stepped with the time, so the host suite
  * runs it against the servo and supply models; it moves nothing itself.
@@ -190,6 +232,18 @@ extern "C" {
 #define SERVO_TEST_STALE_MS          1500u
 /** Above STALL AT for this long ends the run. */
 #define SERVO_TEST_STALL_ABORT_MS    1000u
+/** The supply in constant current for this long ends the run. */
+#define SERVO_TEST_CC_ABORT_MS       1000u
+/** A run on the INA3221: no window for this long ends it, 10 windows. */
+#define SERVO_TEST_WIN_STALE_MS      500u
+/** One window of the INA3221: SENSE_WINDOW_MS. */
+#define SERVO_TEST_WIN_MS            50u
+/** A run whose idle current is below minus this says the shunt is fitted
+ *  the other way round. */
+#define SERVO_TEST_NEG_IDLE_A        0.020f
+/** The INA3221's shunt voltage at the end of its range, in microvolts:
+ *  code 4095 at 40 uV. */
+#define SERVO_TEST_INA3221_END_UV    163800u
 /** The most moves a step makes, LENGTH BY TIME included. */
 #define SERVO_TEST_MOVES_MAX         1000u
 
@@ -222,6 +276,19 @@ typedef struct {
     uint16_t samples;       /**< readings the supply took, mod 65536    */
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
 } servo_test_reading_t;
+
+/** One 50 ms window of INA3221 CH1, as the window ring carries it
+ *  (sense_link_win_t).  A clipped sample counts in the three currents at
+ *  the end of the range it read. */
+typedef struct {
+    uint16_t number;        /**< the window's, modulo 65536             */
+    bool     current;       /**< it holds current samples               */
+    bool     voltage;       /**< it holds bus voltage samples           */
+    uint8_t  clipped;       /**< samples at an end of the range         */
+    int16_t  mean_ma, max_ma, min_ma;   /**< mA, signed                 */
+    uint16_t mean_mv, min_mv;           /**< at the load side of the shunt */
+    uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
+} servo_test_win_t;
 
 /** Readings of the encoder kept for matching with the supply's rows.  The
  *  panel has one about every 40 ms, so 16 span 640 ms: more than
@@ -280,8 +347,36 @@ typedef struct {
 
 /* ------------------------------------------------------ what it is told */
 
+/** Which meter a run reads. */
+typedef enum {
+    SERVO_TEST_METER_PDMINI = 0,    /**< the supply's own readings      */
+    SERVO_TEST_METER_INA3221,       /**< CH1's 50 ms windows            */
+    SERVO_TEST_METER_MODEL,         /**< the panel's model of the supply */
+} servo_test_meter_kind_t;
+
+/** Why a run reads the PD mini with the INA3221 on in SETUP: the
+ *  condition of servo_source.h that does not hold. */
+typedef enum {
+    SERVO_TEST_INA_NONE = 0,    /**< not on in SETUP, or it is the meter */
+    SERVO_TEST_INA_OLD,         /**< the coprocessor is older than 4.11  */
+    SERVO_TEST_INA_NOT_HELD,    /**< it does not hold the set-up         */
+    SERVO_TEST_INA_SILENT,      /**< the part does not answer            */
+    SERVO_TEST_INA_NO_WINDOW,   /**< no fresh window with current        */
+    SERVO_TEST_INA_RESET,       /**< it reset itself                     */
+    SERVO_TEST_INA_SETTLING,    /**< working for less than 1 s           */
+    SERVO_TEST_INA_MODEL,       /**< the supply is the panel's model     */
+    SERVO_TEST_INA_COUNT
+} servo_test_ina_t;
+
 /** What reads the servo's current, for what its travel times are worth. */
 typedef struct {
+    uint8_t  kind;          /**< servo_test_meter_kind_t                */
+    uint16_t span_ms;       /**< how long one reading is: 0 for a point
+                                 in time, 50 for a window               */
+    uint16_t shunt_dmohm;   /**< the INA3221's shunt in 0.1 mOhm, as SETUP
+                                 holds it; 0 for none stated            */
+    uint16_t range_ma;      /**< the current at the end of its range; 0
+                                 for none stated                        */
     char     name[16];      /**< for the report: "PD mini"              */
     uint16_t lag_ms;        /**< from a change of current to the first
                                  reading that shows it, typical; 0 for
@@ -298,6 +393,22 @@ typedef struct {
 #define SERVO_TEST_PDMINI_LAG_MS     300u
 
 void servo_test_meter_pdmini(servo_test_meter_t *m);
+
+/** The panel's model of the supply: no lag of its own and no repeats, and
+ *  its travel times held to what a run on the PD mini can check. */
+void servo_test_meter_model(servo_test_meter_t *m);
+
+/** The INA3221's CH1 on a shunt of @p shunt_dmohm, in 0.1 mOhm (1000 for
+ *  0.1 Ohm, which ends the range at 1.638 A), read in 50 ms windows: a
+ *  change of current shows in the window that closes after it, up to 50 ms
+ *  later, and the panel times a move from the windows, so travel times are
+ *  an upper bound. */
+void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm);
+
+/** Whether @p a is above @p limit_a: both in whole mA, @p a by its
+ *  magnitude.  The one comparison the verdict and the report make of a
+ *  current against IDLE CURRENT, HOLD CURRENT and STALL AT. */
+bool servo_test_over_a(float a, float limit_a);
 
 typedef struct {
     /* What runs. */
@@ -340,6 +451,10 @@ typedef struct {
     uint8_t  travel_deg, range_pct;
     bool     model;         /**< the supply is the panel's model        */
     servo_test_meter_t meter;
+    uint32_t meter_changes; /**< the meter's change count at the start
+                                 (servo_test_meter_now())               */
+    uint8_t  ina_why;       /**< servo_test_ina_t: why the INA3221 that is
+                                 on in SETUP is not this run's meter    */
     char     firmware[16];
     /**
      * The report's language: a table of SERVO_STR_COUNT entries, each NULL
@@ -383,6 +498,16 @@ typedef enum {
     SERVO_TEST_AB_SET_NOT_TAKEN,
     SERVO_TEST_AB_CAP,
     SERVO_TEST_AB_STALL,
+    SERVO_TEST_AB_CC,           /**< the supply in constant current      */
+    /* A run on the INA3221. */
+    SERVO_TEST_AB_WIN_STALE,    /**< no window for SERVO_TEST_WIN_STALE_MS */
+    SERVO_TEST_AB_INA_RESET,    /**< the part reset itself               */
+    SERVO_TEST_AB_INA_SILENT,   /**< it stopped answering                */
+    SERVO_TEST_AB_INA_NO_WINDOW,/**< its windows hold no current         */
+    SERVO_TEST_AB_INA_SETUP,    /**< the coprocessor no longer holds its
+                                     set-up, or it is off in SETUP       */
+    SERVO_TEST_AB_INA_METER,    /**< it stopped being the meter, the
+                                     condition not known                 */
     SERVO_TEST_AB_COUNT
 } servo_test_abort_t;
 
@@ -418,14 +543,18 @@ typedef struct {
     bool     begun;         /**< its set point was asked                */
     bool     done;          /**< ran to its end                         */
     servo_test_mean_t v;    /**< the voltage after SETTLE               */
+    float    v_min;         /**< the lowest voltage after SETTLE, while
+                                 v holds a reading                      */
     servo_test_mean_t idle;
     float    idle_sq;       /**< the idle readings' squares, summed     */
     float    noise_a;       /**< the idle readings' standard deviation  */
     float    move_a;        /**< the threshold, once IDLE is over        */
     servo_test_mean_t move; /**< the readings while travelling          */
     servo_test_mean_t hold[2];   /**< at the low end, at the high end   */
-    float    move_peak_a;   /**< the highest reading while travelling   */
-    float    peak_a;        /**< the highest reading after SETTLE       */
+    float    move_peak_a;   /**< the reading of the largest magnitude
+                                 while travelling; on the INA3221 the 1 ms
+                                 sample                                 */
+    float    peak_a;        /**< likewise, of every reading after SETTLE */
     uint32_t travel_max_ms;
     uint32_t travel_sum_ms;
     uint16_t travels;       /**< moves that arrived                     */
@@ -453,8 +582,9 @@ typedef struct {
 
 /* --------------------------------------------------------- the outbox */
 
-/** The longest line a log row or a report line takes, terminator included. */
-#define SERVO_TEST_LINE_MAX 160u
+/** The longest line a log row or a report line takes, terminator included:
+ *  the CSV's header with the encoder's columns is 219 characters. */
+#define SERVO_TEST_LINE_MAX 224u
 /** Log rows waiting for the card.  A row is a reading, 10 to 20 a second. */
 #define SERVO_TEST_OUTBOX   16u
 
@@ -519,19 +649,34 @@ typedef struct {
     uint32_t enc_travel_now_ms;     /**< the settle to log, 0 for none   */
     uint32_t enc_travel_at_ms;      /**< the reading that found it       */
 
-    /* The readings. */
+    /* The meter's readings: the supply's, or the INA3221's windows. */
     bool     have_reading;
     uint16_t samples;
     uint32_t first_ms, last_ms;   /**< taken_ms of the first and last    */
     uint32_t readings;      /**< new readings during the run              */
     uint32_t module_samples;
-    uint32_t skipped;       /**< readings the supply took that never
+    uint32_t skipped;       /**< readings the meter took that never
                                  reached the test: its count stepped by
                                  more than one between two samples       */
+    uint32_t clipped;       /**< windows with a sample at an end of the
+                                 INA3221's range                         */
     bool     stalling;
     uint32_t stall_since_ms;
     bool     stalled;       /**< a characterisation reading over STALL AT */
-    float    stall_peak_a;  /**< the highest characterisation reading    */
+    float    stall_peak_a;  /**< the characterisation reading of the
+                                 largest magnitude                       */
+    float    move_peak_now; /**< the 1 ms sample of the largest magnitude
+                                 since the command, on the INA3221       */
+
+    /* The supply's state, on either meter. */
+    bool     sup_have;      /**< a reading of it arrived                 */
+    uint16_t sup_samples;
+    uint32_t sup_ms;        /**< taken_ms of its last new reading        */
+    uint8_t  sup_mode;      /**< its mode at that reading                */
+    bool     cc_on;         /**< its last new reading was constant current */
+    uint32_t cc_since_ms;
+    uint32_t cc_readings;   /**< new readings in constant current        */
+    uint32_t cc_longest_ms; /**< the longest stretch of them             */
 
     /* The outbox. */
     char     box[SERVO_TEST_OUTBOX][SERVO_TEST_LINE_MAX];
@@ -562,9 +707,46 @@ servo_test_start_t servo_test_start(servo_test_t *t,
 
 /** A sample of the supply, with @p position_us the horn's measured pulse
  *  width or 0 for none.  One that repeats the last reading's sample count
- *  is checked for the supply's state and measures nothing. */
+ *  is checked for the supply's state and measures nothing.  In a run on
+ *  the INA3221 no sample measures: each is the supply's state alone. */
 void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
                         uint16_t position_us);
+
+/**
+ * A window of INA3221 CH1, each number once and in order, with
+ * @p position_us as servo_test_reading() takes it.  The reading of a run on
+ * the INA3221, and nothing to any other run.  A window without current or
+ * without voltage samples, and one that repeats the last number, measures
+ * nothing and does not count as a window that arrived.
+ */
+void servo_test_window(servo_test_t *t, const servo_test_win_t *w,
+                       uint16_t position_us);
+
+/** The servo rail's meter as one poll of the panel decided it
+ *  (servo_source.h). */
+typedef struct {
+    bool     ina3221;       /**< the INA3221 is the meter                */
+    uint32_t changes;       /**< how often the meter has changed, modulo
+                                 2^32                                    */
+    /** Why the INA3221 last stopped being the meter -- one of the
+     *  SERVO_TEST_AB_INA_ reasons or SERVO_TEST_AB_LINK -- and the change
+     *  count that step left; SERVO_TEST_AB_NONE while it never did. */
+    servo_test_abort_t dropped;
+    uint32_t dropped_at;
+} servo_test_meter_now_t;
+
+/**
+ * The meter as a poll decided it, for every answer the caller has: with
+ * each window, each supply sample and each frame.  A run on the INA3221
+ * holds the change count of its start (cfg.meter_changes).  It ends, as
+ * servo_test_abort() ends a run, at the first answer that is not the
+ * INA3221 or carries another count: the meter changed under it, whatever
+ * it is now.  The reason is @p m->dropped when that drop came after the
+ * start, and SERVO_TEST_AB_INA_METER otherwise.  Nothing for a run on
+ * another meter, which goes on with the meter it started with.
+ */
+void servo_test_meter_now(servo_test_t *t, const servo_test_meter_now_t *m,
+                          uint32_t now_ms);
 
 /**
  * A reading of the output encoder, each one once.  Judged against the move
@@ -617,7 +799,8 @@ unsigned servo_test_steps_planned(const servo_test_t *t);
 unsigned servo_test_step_now(const servo_test_t *t);
 
 /** The highest, the longest and the lowest of a run, over its
- *  characterisation steps; false when none was measured. */
+ *  characterisation steps; false when none was measured.  A current is the
+ *  one of the largest magnitude, with its sign. */
 bool servo_test_max_idle(const servo_test_t *t, float *a);
 bool servo_test_max_hold(const servo_test_t *t, float *a);
 bool servo_test_max_travel(const servo_test_t *t, uint32_t *ms);
@@ -625,6 +808,17 @@ bool servo_test_max_travel(const servo_test_t *t, uint32_t *ms);
  *  it showed none. */
 bool servo_test_brownout(const servo_test_t *t, float *moved_v,
                          bool *stopped);
+
+/** Whether a step's idle current reads below -SERVO_TEST_NEG_IDLE_A: the
+ *  shunt is fitted the other way round. */
+bool servo_test_negative_at_rest(const servo_test_t *t);
+
+/** Whether STALL AT cannot be reached in a run of @p cfg: at or above the
+ *  current limit, where the supply holds the current (@p by_limit), or at
+ *  or above the end of the meter's range (@p by_range).  Either may be
+ *  NULL.  Compared in whole mA. */
+bool servo_test_stall_unreachable(const servo_test_cfg_t *cfg,
+                                  bool *by_limit, bool *by_range);
 
 /** Readings that reached the run per second, the supply's own per second,
  *  and the mean interval between two readings; false before two. */
@@ -681,6 +875,13 @@ typedef enum {
     SERVO_STR_AB_SET_NOT_TAKEN,
     SERVO_STR_AB_CAP,
     SERVO_STR_AB_STALL,
+    SERVO_STR_AB_CC,
+    SERVO_STR_AB_WIN_STALE,
+    SERVO_STR_AB_INA_RESET,
+    SERVO_STR_AB_INA_SILENT,
+    SERVO_STR_AB_INA_NO_WINDOW,
+    SERVO_STR_AB_INA_SETUP,
+    SERVO_STR_AB_INA_METER,
     SERVO_STR_START_OK,
     SERVO_STR_START_NO_STEPS,
     SERVO_STR_START_ABOVE_CAP,
@@ -780,6 +981,33 @@ typedef enum {
     SERVO_STR_R_ENC_NO_MAGNET,
     SERVO_STR_R_ENC_FIELD,
     SERVO_STR_R_UNM_POSITION_ENC,
+    /* The meter's. */
+    SERVO_STR_R_LOG_WIN,
+    SERVO_STR_R_SUPPLY_PDMINI,
+    SERVO_STR_R_CURRENT,
+    SERVO_STR_R_CURRENT_INA,
+    SERVO_STR_R_VOLTAGE,
+    SERVO_STR_R_VOLTAGE_INA,
+    SERVO_STR_R_SHUNT,
+    SERVO_STR_R_INA_UNUSED,
+    SERVO_STR_R_INA_OLD,
+    SERVO_STR_R_INA_NOT_HELD,
+    SERVO_STR_R_INA_SILENT,
+    SERVO_STR_R_INA_NO_WINDOW,
+    SERVO_STR_R_INA_RESET,
+    SERVO_STR_R_INA_SETTLING,
+    SERVO_STR_R_INA_MODEL,
+    SERVO_STR_R_READINGS_WIN,
+    SERVO_STR_R_SKIPPED_WIN,
+    SERVO_STR_R_RESOLUTION_WIN,
+    SERVO_STR_R_CLIPPED,
+    SERVO_STR_R_CC,
+    SERVO_STR_R_NEGATIVE,
+    SERVO_STR_R_LIM_STALL_LIMIT,
+    SERVO_STR_R_LIM_STALL_RANGE,
+    SERVO_STR_R_UNM_POSITION_INA,
+    SERVO_STR_R_UNM_PEAKS_INA,
+    SERVO_STR_R_METER_MODEL,
     SERVO_STR_COUNT
 } servo_str_t;
 
@@ -802,10 +1030,24 @@ const char *servo_test_abort_name(servo_test_abort_t why);
 const char *servo_test_verdict_name(servo_test_verdict_t v);
 const char *servo_test_start_name(servo_test_start_t why);
 
-/** The CSV's header row. */
+/** The CSV's header row: the 13 columns of every run, then the meter's
+ *  six -- meter, window, current max, current min, voltage min, clipped. */
 const char *servo_test_csv_header(void);
-/** And with the encoder's two columns, angle_deg and travel_angle_ms. */
+/** And with the encoder's two columns, angle_deg and travel_angle_ms,
+ *  between the two groups. */
 const char *servo_test_csv_header_enc(void);
+
+/** The word a row's meter column carries: INA3221, PDMINI or MODEL. */
+const char *servo_test_meter_word(uint8_t kind);
+
+/**
+ * The line that says STALL AT cannot be reached in a run of @p cfg, in the
+ * language of @p cfg->text, into @p buf: against the current limit where
+ * that is the reason, else against the meter's range
+ * (servo_test_stall_unreachable()).  False, and @p buf empty, when a
+ * reading can pass STALL AT.
+ */
+bool servo_test_stall_note(const servo_test_cfg_t *cfg, char *buf, size_t n);
 
 /** Line @p idx of the report into @p buf, in the language of
  *  @p t->cfg.text; false past the last. */

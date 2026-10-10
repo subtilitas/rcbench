@@ -41,11 +41,62 @@ coprocessor and the other way round.
   window with current samples closed in the last 200 ms and its reset count
   stands. The band says `coprocessor older than 4.11 -- servo current read
   from PD mini` once per link-up for a 4.7 to 4.10 coprocessor, and
-  `INA3221 reset itself -- check its supply` once per reset. The servo test
-  reads the PD mini. Host suite only; not run on hardware.
+  `INA3221 reset itself -- check its supply` once per reset. Host suite
+  only; not run on hardware.
 
 ### Changed
 
+- **The automatic servo test reads the servo rail's meter, and one meter
+  per run.** A run started while the INA3221 is the rail's meter and the
+  supply is the PD mini reads CH1's 50 ms windows, 20 a second: idle and
+  holding current from the windows that lie wholly in the phase, the peak
+  from a window's highest or lowest 1 ms sample, the step's voltage and the
+  new `V min` column from CH1's bus voltage at the load side of the shunt.
+  The supply is read for its state only, and none of its voltages or
+  currents is used or logged. Moves are timed by the panel from the
+  windows: a travel time is late by up to 145 ms, an upper bound, and
+  TRAVEL TIME is reported and not checked, as on the PD mini. A run on the
+  INA3221 ends ABORTED, the output off and the servo released, when the
+  INA3221 stops being the meter (`INA3221 reset itself`, `INA3221 not
+  answering`, `INA3221 window without current`, `INA3221 set-up not held`)
+  and when no window reaches it for 500 ms; it never goes on with the PD
+  mini. A run that starts on the PD mini reads it to its end. The report
+  names the supply, the meter of the current and of the voltage, the shunt
+  and its range, and, on the PD mini with the INA3221 on in SETUP, why the
+  INA3221 was not read. The result box on the SERVO screen names the meter.
+  A negative current is a reading: the limits, the peak and STALL AT take
+  its magnitude, the CSV keeps the sign, and a run whose idle current is
+  below -0.020 A says `Current reads negative at rest: shunt direction`. A
+  window with a sample at an end of the INA3221's range is a reading like
+  any other; the CSV counts its clipped samples and the report the clipped
+  windows. Host suite only; not run on hardware.
+- **A supply in constant current for 1 s ends a servo test.** A supply at
+  its current limit reads the limit, so no reading was above a STALL AT at
+  or above that limit, and both default to 2.00 A: a servo on a stop ran the
+  whole test and read PASS. A run ends `constant current for 1 s` once the
+  supply reports constant current in every reading for 1000 ms, on either
+  meter and whatever STALL AT is. A shorter spell ends and fails nothing;
+  the report's `Const. current` line counts its readings and gives the
+  longest stretch. A STALL AT at or above the current limit, or at or above
+  the INA3221's range (1.638 A on the 0.1 Ohm shunt, under the default
+  2.00 A), does not stop START TEST: the TEST page and the report say
+  `STALL AT 2.00 A cannot be reached: current limit 2.00 A`. Not measured:
+  what a PD mini reports with a servo on a stop.
+- **A reading equal to a LIMITS value passes it.** IDLE CURRENT, HOLD
+  CURRENT and STALL AT are compared in whole mA, by one function the
+  verdict and the report share. A reading of 0.050 A against a limit of
+  0.05 A read FAIL for 138 of the 500 values a limit takes, and for 8 of
+  STALL AT's 99, because the setting and the reading are different floats
+  for the same number of mA.
+- **The servo test's CSV names its meter.** Six columns follow the ones a
+  file had: `meter` (`INA3221`, `PDMINI` or `MODEL`) on every row, and on
+  the INA3221 `window`, `current max (A)`, `current min (A)`, `voltage min
+  (V)` and `clipped`. The first 13 columns, and the two of the AS5600 after
+  them, keep their places; the log viewer reads files with and without the
+  new columns. The report's step table has a `V min` column.
+- **One CSV per servo test.** The armed bench's own log writes no row while
+  a servo test runs; its time column steps over the test and its rows start
+  again when the test ends.
 - **The SERVO screen shows the servo rail's meter.** The CURRENT row, the
   line over the plot and the plot show the reading of the meter the panel
   names: with the INA3221 as the meter, CH1's 50 ms windows -- the mean
@@ -63,9 +114,8 @@ coprocessor and the other way round.
   the poll that took it, so the trace holds the readings taken under the
   meter it names and no others. The row's value is repainted by itself when its digits
   or colour change; `frame_cost.py servo-current` measures an armed frame
-  with a window at 4,056 cache-line fills and CI holds it to 4,500. The
-  automatic test reads the supply whichever meter the rail has. Host suite
-  only; not run on hardware.
+  with a window at 4,056 cache-line fills and CI holds it to 4,500. Host
+  suite only; not run on hardware.
 - **Sensor SCL follows Sensor SDA, and a set-up the coprocessor does not
   hold is marked on its row.** On SETUP > INTERFACES Sensor SDA steps
   through −1, 0, 4, 6, 14, 16, 18, 20 and 26 and stops at both ends: −1

@@ -515,6 +515,10 @@ typedef struct {
     supply_state_t    st;
     servo_source_id_t source;
     uint32_t          changes;
+    /* Why the INA3221 last stopped being the meter, and at which count
+     * (servo_source_dropped()), as of the same poll. */
+    servo_source_why_t dropped;
+    uint32_t          dropped_at;
 } supply_item_t;
 static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
@@ -527,6 +531,8 @@ typedef struct {
     sense_link_win_t  win;
     servo_source_id_t source;
     uint32_t          changes;
+    servo_source_why_t dropped;     /* as supply_item_t's */
+    uint32_t          dropped_at;
 } servo_win_item_t;
 static QueueHandle_t     s_win_q;     /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
@@ -560,6 +566,11 @@ static struct {
      * CH1 windows that left the ring untaken since boot. */
     servo_source_id_t servo_source;
     uint32_t      servo_source_changes;
+    /* Why the INA3221 is not the meter, and why and when it last stopped
+     * being it (servo_source_why(), servo_source_dropped()). */
+    servo_source_why_t servo_source_why;
+    servo_source_why_t servo_source_dropped;
+    uint32_t      servo_source_dropped_at;
     uint32_t      servo_win_lost;
 } s_snap;
 
@@ -2343,9 +2354,9 @@ static void log_close(void)
  * The automatic servo test's files: its CSV as BENCHnnn.CSV under the next
  * run number, and its report as BENCHnnn.TXT under the same number.  The
  * render loop hands the lines over through s_test_q (servo_screen_test_peek())
- * and this task writes them; the run's own log, if the bench is armed, goes
- * on beside it in a file of its own.  One test file is open at a time: the
- * CSV is closed before the report is opened.
+ * and this task writes them.  The armed bench's own log writes no row while
+ * a test runs (log_cadence_bench_run()), so a test is one CSV.  One test
+ * file is open at a time: the CSV is closed before the report is opened.
  */
 typedef struct {
     uint8_t kind;                        /* servo_test_out_t */
@@ -2354,6 +2365,9 @@ typedef struct {
 
 #define TEST_Q_LEN 24
 static QueueHandle_t s_test_q;           /**< render loop -> logger */
+/* An automatic servo test is running (servo_screen_testing()), from the
+ * render loop for the control task's bench log. */
+static atomic_bool s_servo_testing;
 /* OPENs the render loop queued, and those this task has answered with a
  * number in s_test_file (-1: not recorded). */
 static atomic_uint s_test_opens_sent;
@@ -3815,11 +3829,12 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
  * queue is full, as the bench's do. */
 static void supply_queue_sample(void)
 {
-    const supply_item_t item = {
+    supply_item_t item = {
         .st      = s_supply,
         .source  = servo_source_id(&s_servo_source),
         .changes = servo_source_changes(&s_servo_source),
     };
+    item.dropped = servo_source_dropped(&s_servo_source, &item.dropped_at);
     if (xQueueSend(s_supply_q, &item, 0) != pdTRUE) {
         supply_item_t stale;
         (void)xQueueReceive(s_supply_q, &stale, 0);
@@ -6861,11 +6876,12 @@ static void servo_window_take(bench_state_t *bench)
     sense_link_win_bench(&s_sense_link, &w, bench);
     /* With the meter as this poll decided it: the snapshot the render side
      * reads can be older or newer than a window on the queue. */
-    const servo_win_item_t item = {
+    servo_win_item_t item = {
         .win     = w,
         .source  = servo_source_id(&s_servo_source),
         .changes = servo_source_changes(&s_servo_source),
     };
+    item.dropped = servo_source_dropped(&s_servo_source, &item.dropped_at);
     if (xQueueSend(s_win_q, &item, 0) != pdTRUE) {
         servo_win_item_t stale;
         (void)xQueueReceive(s_win_q, &stale, 0);
@@ -6919,8 +6935,11 @@ static void advance_model_and_log(bool link_up, float emitted,
     bench_totals_show(&s_totals, bench);
     /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
     float t_s = 0.0f;
-    const bool logged = log_cadence_row(&s_log_cad, now_ms(), *new_sample,
-                                        s_log_kind == LOG_RUN_BENCH, &t_s);
+    const bool logged = log_cadence_row(
+        &s_log_cad, now_ms(), *new_sample,
+        log_cadence_bench_run(s_log_kind == LOG_RUN_BENCH,
+                              atomic_load(&s_servo_testing)),
+        &t_s);
     /* Every window is taken in the pass that brought it, logged or not:
      * the render side has each once, and a window taken before a run is
      * in none of its rows. */
@@ -6965,6 +6984,10 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     tone_link_readout(&s_tone_link, now_ms(), &s_snap.tone);
     s_snap.servo_source   = servo_source_id(&s_servo_source);
     s_snap.servo_source_changes = servo_source_changes(&s_servo_source);
+    s_snap.servo_source_why = servo_source_why(&s_servo_source);
+    s_snap.servo_source_dropped =
+        servo_source_dropped(&s_servo_source,
+                             &s_snap.servo_source_dropped_at);
     s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
     snap_unlock();
 
@@ -7547,9 +7570,10 @@ void app_main(void)
     /*
      * And the card, on the same core and below it: a card write must not be
      * able to delay the safety line, so it runs in the gaps the control task
-     * leaves rather than beside it on the core the renderer uses.
+     * leaves rather than beside it on the core the renderer uses.  Its
+     * stack holds one line of a servo test, SERVO_TEST_LINE_MAX bytes.
      */
-    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 4096,
+    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 4352,
                                             NULL, 3, NULL, 1) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
@@ -7590,6 +7614,10 @@ void app_main(void)
         link_now       = s_snap.link_up;
         servo_source_now = s_snap.servo_source;
         servo_changes_now = s_snap.servo_source_changes;
+        const servo_source_why_t servo_why_now = s_snap.servo_source_why;
+        const servo_source_why_t servo_dropped_now =
+            s_snap.servo_source_dropped;
+        const uint32_t servo_dropped_at_now = s_snap.servo_source_dropped_at;
         armed_now      = s_snap.armed;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
@@ -7762,11 +7790,16 @@ void app_main(void)
         }
         /* The servo rail's meter, then the INA3221's CH1 windows, each
          * once with the meter of its poll: the SERVO screen's CURRENT row,
-         * line and plot show the meter's reading.  The servo test reads
-         * the supply. */
+         * line and plot show the meter's reading, and a servo test reads
+         * the meter it started with.  Why the INA3221 last stopped being
+         * the meter goes in ahead of each, so a run that ends on the
+         * change names the condition. */
+        servo_screen_source_why(servo_why_now);
+        servo_screen_source_dropped(servo_dropped_now, servo_dropped_at_now);
         servo_screen_source(servo_source_now, servo_changes_now);
         servo_win_item_t win;
         while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) {
+            servo_screen_source_dropped(win.dropped, win.dropped_at);
             servo_screen_window(&win.win, win.source, win.changes);
         }
         supply_item_t sup_item;
@@ -7776,6 +7809,8 @@ void app_main(void)
             supply_screen_push(&sup);
             /* And the SERVO screen's servo test and, while the supply is
              * the servo rail's meter, its live power plot. */
+            servo_screen_source_dropped(sup_item.dropped,
+                                        sup_item.dropped_at);
             servo_screen_supply_at(&sup, sup_item.source, sup_item.changes);
             /* And a stick run, which counts beeps in every reading. */
             programmer_screen_supply(&sup);
@@ -7847,6 +7882,7 @@ void app_main(void)
         /* A servo test's end and the set points it put back, whichever
          * screen is up: after this frame's OFF went and its samples. */
         servo_screen_service();
+        atomic_store(&s_servo_testing, servo_screen_testing());
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.

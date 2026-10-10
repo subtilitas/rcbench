@@ -4209,7 +4209,18 @@ static struct {
     /* The supply's samples arrive with a meter count one behind the one in
      * force (servo_screen_supply_at()). */
     bool     behind;
+    /* The INA3221's CH1 windows: one every 50 ms with the servo's current,
+     * under the meter last named (meter()), while ina is set. */
+    bool     ina;
+    uint32_t win_next;
+    uint16_t win_number;
+    unsigned wins;
+    /* The supply holds its current limit, as supply.c models it. */
+    bool     limits;
+    char     csv_last[256];     /* the CSV's last line */
 } b;
+
+static void window(const sense_link_win_t *w);
 
 static void bench_fresh(void)
 {
@@ -4253,6 +4264,7 @@ static void bench_drain(void)
             if (b.csv == 0u) {
                 snprintf(b.csv_head, sizeof(b.csv_head), "%s", text);
             }
+            snprintf(b.csv_last, sizeof(b.csv_last), "%s", text);
             ++b.csv;
         } else if (o == SERVO_TEST_OUT_TXT) {
             ++b.txt;
@@ -4298,7 +4310,25 @@ static void bench_frames(uint32_t ms)
         if (servo_screen_testing() && supply_screen_set_v() > b.set_v_max) {
             b.set_v_max = supply_screen_set_v();
         }
-        const float amps = b.out ? servo_sim_step(&b.sv, b.cmd, b.now) : 0.0f;
+        float amps = b.out ? servo_sim_step(&b.sv, b.cmd, b.now) : 0.0f;
+        const bool cc = b.limits && amps > supply_screen_set_i();
+        if (cc) {
+            amps = supply_screen_set_i();
+        }
+        if (b.ina && (int32_t)(b.now - b.win_next) >= 0) {
+            b.win_next += 50u;
+            const int ma = (int)lroundf(amps * 1000.0f);
+            const unsigned mv = b.out
+                ? (unsigned)lroundf(supply_screen_set_v() * 1000.0f) : 0u;
+            const sense_link_win_t w = {
+                .number = ++b.win_number, .current = true, .voltage = true,
+                .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma,
+                .min_ma = (int16_t)ma, .mean_mv = (uint16_t)mv,
+                .min_mv = (uint16_t)mv, .taken_ms = b.now,
+            };
+            window(&w);
+            ++b.wins;
+        }
         if ((int32_t)(b.now - b.next) >= 0) {
             b.next += 100u;
             supply_state_t st;
@@ -4311,7 +4341,8 @@ static void bench_frames(uint32_t ms)
             st.v      = b.out ? st.set_v : 0.0f;
             st.i      = amps;
             st.p      = st.v * st.i;
-            st.mode   = b.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+            st.mode   = !b.out ? SUPPLY_MODE_OFF
+                        : cc   ? SUPPLY_MODE_CC : SUPPLY_MODE_CV;
             st.samples  = ++b.samples;
             st.taken_ms = b.now;
             if (b.behind) {
@@ -7017,6 +7048,309 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     CHECK(row_reads("---", UI_C_TEXT));
 }
 
+/* ------------------------------------- the run on the servo rail's meter */
+
+/* A bench with the INA3221 on in SETUP and the rail's meter, its windows
+ * arriving, ready for START TEST. */
+static void bench_on_ina(void)
+{
+    bench_fresh();
+    settings_set(SET_INA3221_EN, 1.0f);
+    short_runs();
+    meter(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_INA3221);
+    b.ina = true;
+    b.win_next = b.now;
+    bench_frames(200u);
+}
+
+static void run_out_bench(void)
+{
+    for (int i = 0; i < 200 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+}
+
+/* Pixels of @p col in the rows @p y0 to @p y0 + 15 of the left card. */
+static unsigned ink_in_row(int y0, ui_color_id_t col)
+{
+    scr->render(&cv, 0);
+    unsigned n = 0u;
+    for (int y = y0; y < y0 + 16; ++y) {
+        for (int x = 10; x < 495; ++x) {
+            n += (fb[(size_t)y * W + (size_t)x] == ui_theme_color(col)) ? 1u
+                                                                         : 0u;
+        }
+    }
+    return n;
+}
+
+/* With the INA3221 as the rail's meter at START TEST the run reads its
+ * windows: one row a window, the report naming it and the shunt SETUP
+ * holds, and the supply named as the supply. */
+TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
+{
+    bench_on_ina();
+    settings_set(SET_INA3221_MOHM, 50.0f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    const unsigned wins0 = b.wins;
+    run_out_bench();
+    CHECK(b.released);
+    CHECK(!b.out);
+    CHECK_EQ(b.opens, 1u);
+    CHECK_EQ(b.ends, 1u);
+    CHECK(strstr(b.report, "Result:         PASS") != NULL);
+    CHECK(strstr(b.report, "Supply:         PD mini\n") != NULL);
+    CHECK(strstr(b.report, "Current:        INA3221 CH1, shunt 50.0 mOhm, "
+                           "range 3.276 A\n") != NULL);
+    CHECK(strstr(b.report, "Voltage:        INA3221 CH1, load side of the "
+                           "shunt\n") != NULL);
+    CHECK(strstr(b.report, "INA3221:        not used") == NULL);
+    CHECK(strstr(b.csv_head, ";travel (ms);meter;window;current max (A);")
+          != NULL);
+    CHECK(strstr(b.csv_last, ";INA3221;") != NULL);
+    /* Every window that arrived while it ran is a row, and no supply
+     * reading is: 20 rows a second, not 10 or 30. */
+    CHECK(b.csv - 1u <= b.wins - wins0);
+    CHECK(b.csv - 1u + 40u >= b.wins - wins0);
+    /* The default STALL AT, 2.00 A, is at the supply's 2.00 A limit and
+     * under this shunt's range. */
+    CHECK(strstr(b.report, "STALL AT 2.00 A cannot be reached: current "
+                           "limit 2.00 A\n") != NULL);
+    CHECK(strstr(b.report, "INA3221 range") == NULL);
+}
+
+/* Each condition that takes the INA3221 off the rail ends a run that
+ * reads it, on whichever of the three paths the change arrives first: the
+ * frame's meter, a window, a supply sample.  The run is ABORTED with the
+ * condition, the output goes off, the servo is let go, and it does not
+ * carry on with the PD mini's readings, which arrive throughout. */
+TEST_CASE(the_meter_changing_ends_a_run_on_the_ina3221)
+{
+    static const struct {
+        servo_source_why_t why;
+        const char        *text;
+    } k_case[] = {
+        { SERVO_SOURCE_WHY_OFF,       "INA3221 set-up not held" },
+        { SERVO_SOURCE_WHY_OLD,       "INA3221 set-up not held" },
+        { SERVO_SOURCE_WHY_NOT_HELD,  "INA3221 set-up not held" },
+        { SERVO_SOURCE_WHY_SILENT,    "INA3221 not answering" },
+        { SERVO_SOURCE_WHY_NO_WINDOW, "INA3221 window without current" },
+        { SERVO_SOURCE_WHY_RESET,     "INA3221 reset itself" },
+        { SERVO_SOURCE_WHY_NO_LINK,   "link lost" },
+        { SERVO_SOURCE_WHY_SETTLING,  "INA3221 no longer the meter" },
+    };
+    for (size_t k = 0; k < sizeof(k_case) / sizeof(k_case[0]); ++k) {
+        for (int path = 0; path < 3; ++path) {
+            bench_on_ina();
+            hold_start(2.3f);
+            CHECK(servo_screen_testing());
+            bench_frames(3000u);
+            CHECK(servo_screen_testing());
+            CHECK(b.out);
+            /* A drop from before the run is not this run's. */
+            servo_screen_source_dropped(SERVO_SOURCE_WHY_RESET,
+                                        meter_changes - 1u);
+            meter(SERVO_SOURCE_INA3221);
+            CHECK(servo_screen_testing());
+            b.ina = false;
+            const unsigned rows = b.csv;
+            const servo_source_id_t to =
+                (k_case[k].why == SERVO_SOURCE_WHY_NO_LINK)
+                    ? SERVO_SOURCE_MODEL : SERVO_SOURCE_PDMINI;
+            servo_screen_source_dropped(k_case[k].why, meter_changes + 1u);
+            if (path == 0) {
+                meter(to);
+            } else if (path == 1) {
+                meter_id = to;
+                ++meter_changes;
+                const sense_link_win_t w = rail_win(100, 4800u);
+                window(&w);
+            } else {
+                meter_id = to;
+                ++meter_changes;
+                supply_state_t st;
+                memset(&st, 0, sizeof(st));
+                st.online = true;
+                st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+                st.output = true;
+                st.mode = SUPPLY_MODE_CV;
+                st.set_v = supply_screen_set_v();
+                st.samples = ++b.samples;
+                st.taken_ms = b.now;
+                servo_screen_supply_at(&st, meter_id, meter_changes);
+            }
+            CHECK(!servo_screen_testing());
+            bench_frames(2000u);
+            CHECK(!b.out);
+            CHECK(b.released);
+            char want[96];
+            snprintf(want, sizeof(want), "Result:         ABORTED - %s\n",
+                     k_case[k].text);
+            CHECK(strstr(b.report, want) != NULL);
+            /* No row after the end, and none of the PD mini's. */
+            CHECK(b.csv <= rows + 1u);
+            CHECK(strstr(b.csv_last, ";INA3221;") != NULL);
+            CHECK_EQ(b.ends, 1u);
+        }
+    }
+}
+
+/* A run that started on the PD mini reads it to its end: the INA3221
+ * becoming the rail's meter under it, its windows arriving, changes
+ * nothing.  With the INA3221 on in SETUP the report says why it was not
+ * read. */
+TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
+{
+    bench_fresh();
+    settings_set(SET_INA3221_EN, 1.0f);
+    short_runs();
+    meter(SERVO_SOURCE_PDMINI);
+    servo_screen_source_why(SERVO_SOURCE_WHY_SETTLING);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    bench_frames(2000u);
+    meter(SERVO_SOURCE_INA3221);
+    b.ina = true;
+    b.win_next = b.now;
+    bench_frames(1000u);
+    CHECK(servo_screen_testing());
+    /* And it stopping again, with a reason. */
+    servo_screen_source_dropped(SERVO_SOURCE_WHY_SILENT, meter_changes + 1u);
+    meter(SERVO_SOURCE_PDMINI);
+    CHECK(servo_screen_testing());
+    run_out_bench();
+    CHECK(strstr(b.report, "Result:         PASS") != NULL);
+    CHECK(strstr(b.report, "Current:        PD mini\n") != NULL);
+    CHECK(strstr(b.report, "INA3221:        not used: it has worked for "
+                           "less than 1 s\n") != NULL);
+    CHECK(strstr(b.csv_last, ";PDMINI;;;;;") != NULL);
+    /* About ten rows a second for the run, not the windows' twenty. */
+    CHECK(b.csv < b.samples);
+
+    /* The INA3221 off in SETUP: the line is not written. */
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    run_out_bench();
+    CHECK(strstr(b.report, "INA3221:") == NULL);
+}
+
+/* The supply is the panel's model: the run reads the model whatever the
+ * rail's meter is, and says why the INA3221 was not read. */
+TEST_CASE(a_run_on_the_modelled_supply_reads_the_model)
+{
+    bench_on_ina();
+    supply_screen_set_model(true);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    run_out_bench();
+    supply_screen_set_model(false);
+    CHECK(strstr(b.report, "Supply:         the panel's model: every "
+                           "reading is simulated\n") != NULL);
+    CHECK(strstr(b.report, "Current:        the panel's model\n") != NULL);
+    CHECK(strstr(b.report, "INA3221:        not used: the supply is the "
+                           "panel's model\n") != NULL);
+    CHECK(strstr(b.csv_last, ";MODEL;;;;;") != NULL);
+}
+
+/* The windows stopping while the meter is still named the INA3221: the
+ * run ends 500 ms after the last one. */
+TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
+{
+    bench_on_ina();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    bench_frames(3000u);
+    b.ina = false;
+    bench_frames(480u);
+    CHECK(servo_screen_testing());
+    bench_frames(60u);
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    CHECK(!b.out);
+    CHECK(b.released);
+    CHECK(strstr(b.report, "Result:         ABORTED - no INA3221 window "
+                           "for 0.5 s\n") != NULL);
+}
+
+/* A servo on a stop against a supply at its limit, through the screen
+ * with the shipped LIMITS page: STALL AT 2.00 A at a current limit of
+ * 2.00 A.  The supply reads constant current and the run ends on that, on
+ * either meter. */
+TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
+{
+    for (int ina = 0; ina < 2; ++ina) {
+        if (ina) {
+            bench_on_ina();
+        } else {
+            bench_fresh();
+            short_runs();
+        }
+        b.sv.cfg.stop_hi_us = 1850u;
+        b.limits = true;
+        CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 2.0f, 1e-6f);
+        CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-6f);
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        uint32_t ran = 0u;
+        for (; ran < 30000u && servo_screen_testing(); ran += 100u) {
+            bench_frames(100u);
+        }
+        CHECK(!servo_screen_testing());
+        CHECK(ran < 12000u);
+        bench_frames(1000u);
+        CHECK(!b.out);
+        CHECK(b.released);
+        CHECK(strstr(b.report, "Result:         ABORTED - constant current "
+                               "for 1 s\n") != NULL);
+        CHECK(strstr(b.report, "STALL AT 2.00 A cannot be reached: current "
+                               "limit 2.00 A\n") != NULL);
+    }
+}
+
+/* Under START TEST: a STALL AT that no reading can pass is said, in the
+ * warning colour, and START TEST stays open.  It goes with the edit that
+ * answers it and comes with the meter whose range is under STALL AT. */
+TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
+{
+    bench_fresh();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    /* START TEST's lines, mirrored from servo_screen.c: the plan 2 px
+     * under the top of row 7 (54 + 7 * 42), the state 18 px under the
+     * plan and the note 36 px under it. */
+    const int y = 54 + 7 * 42 + 2 + 36;
+    /* As shipped: 2.00 A at a limit of 2.00 A. */
+    CHECK(ink_in_row(y, UI_C_WARN) > 100u);
+    /* One step of STALL AT's 0.05 A under the limit. */
+    settings_set(SET_SERVO_STALL_A, 1.95f);
+    servo_invalidate();
+    CHECK_EQ(ink_in_row(y, UI_C_WARN), 0u);
+    /* The INA3221 on 0.1 Ohm reads to 1.638 A: 1.95 A is out of its
+     * reach, 1.60 A is in it and 1.65 A is not. */
+    meter(SERVO_SOURCE_PDMINI);
+    meter(SERVO_SOURCE_INA3221);
+    CHECK(ink_in_row(y, UI_C_WARN) > 100u);
+    settings_set(SET_SERVO_STALL_A, 1.60f);
+    servo_invalidate();
+    CHECK_EQ(ink_in_row(y, UI_C_WARN), 0u);
+    settings_set(SET_SERVO_STALL_A, 1.65f);
+    servo_invalidate();
+    CHECK(ink_in_row(y, UI_C_WARN) > 100u);
+    /* And the meter going takes the note with it. */
+    meter(SERVO_SOURCE_PDMINI);
+    CHECK_EQ(ink_in_row(y, UI_C_WARN), 0u);
+    /* Said, not refused: the run starts. */
+    close_settings();
+    settings_set(SET_SERVO_STALL_A, 2.0f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+}
+
 int main(void)
 {
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
@@ -7208,5 +7542,12 @@ int main(void)
     RUN(the_current_row_repaints_on_a_changed_digit_and_alone);
     RUN(the_plot_keeps_one_point_for_each_window);
     RUN(a_run_reads_the_supply_while_the_meter_changes);
+    RUN(a_run_started_under_the_ina3221_reads_its_windows);
+    RUN(the_meter_changing_ends_a_run_on_the_ina3221);
+    RUN(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter);
+    RUN(a_run_on_the_modelled_supply_reads_the_model);
+    RUN(a_run_on_the_ina3221_ends_when_its_windows_stop);
+    RUN(a_stalled_servo_at_the_shipped_limits_ends_the_run);
+    RUN(a_stall_at_out_of_reach_is_said_under_start_test);
     return test_summary("servo");
 }

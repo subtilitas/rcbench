@@ -50,6 +50,7 @@ static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
                               bool link_up, uint16_t minor,
                               const sense_link_meter_t *m)
 {
+    s->reset_step = false;
     if (!link_up || m == NULL) {
         /* Nothing answers: what was said about the coprocessor that did,
          * and not yet shown, goes with it. */
@@ -86,6 +87,7 @@ static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
     if (m->status && m->resets_read) {
         if (s->resets_known && m->resets != s->resets) {
             s->events |= SERVO_SOURCE_EV_RESET;
+            s->reset_step = true;
             if (why == SERVO_SOURCE_WHY_NONE) {
                 why = SERVO_SOURCE_WHY_RESET;
             }
@@ -127,8 +129,23 @@ servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
     const servo_source_id_t was = s->id;
     if (step(s, now_ms, link_up, minor, m) != was) {
         ++s->changes;
+        if (was == SERVO_SOURCE_INA3221) {
+            s->dropped    = s->reset_step ? SERVO_SOURCE_WHY_RESET : s->why;
+            s->dropped_at = s->changes;
+        }
     }
     return s->id;
+}
+
+servo_source_why_t servo_source_dropped(const servo_source_t *s, uint32_t *at)
+{
+    if (s == NULL) {
+        return SERVO_SOURCE_WHY_NONE;
+    }
+    if (at != NULL) {
+        *at = s->dropped_at;
+    }
+    return s->dropped;
 }
 
 uint32_t servo_source_changes(const servo_source_t *s)

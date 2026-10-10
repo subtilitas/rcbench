@@ -92,8 +92,8 @@ horn unless the output encoder is on (see below), so every result is read from
 the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
-the screen's CURRENT row and plot show its windows
-([Screens](Screens.md#servo)); the run reads the supply all the same.
+at START TEST and the supply is the PD mini, the run reads the INA3221's
+CH1 instead, in 50 ms windows: see [The meter](#the-meter).
 
 START TEST on the SERVO screen's TEST page starts it:
 [Screens](Screens.md#servo) describes the controls. The engine is
@@ -216,6 +216,10 @@ threshold.
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000 ms | for the set point, and for the output to come on |
 | `SERVO_TEST_STALE_MS` | 1500 ms | no new reading ends the run |
 | `SERVO_TEST_STALL_ABORT_MS` | 1000 ms | above STALL AT this long ends the run |
+| `SERVO_TEST_CC_ABORT_MS` | 1000 ms | the supply in constant current this long ends the run |
+| `SERVO_TEST_WIN_STALE_MS` | 500 ms | a run on the INA3221: no window this long ends it |
+| `SERVO_TEST_WIN_MS` | 50 ms | one window of the INA3221 |
+| `SERVO_TEST_NEG_IDLE_A` | 0.020 A | an idle current below minus this is reported as the shunt's direction |
 | `SERVO_TEST_BROWNOUT_START_V` | 5.00 V | where the brown-out walk starts |
 | `SERVO_TEST_BROWNOUT_STEP_V` | 0.20 V | each step down |
 | `SERVO_TEST_BROWNOUT_FLOOR_V` | 3.00 V | the lowest voltage asked |
@@ -259,6 +263,105 @@ readings repeat, whether travel times are an upper bound), so a faster
 current sensor sets its own and has TRAVEL TIME checked. A run on the
 panel's model states no lag of its own and checks TRAVEL TIME as the PD mini
 would: not at all.
+
+On the INA3221 a reading is a window, counted by the window's number: a
+number that steps by more than one between two windows the run got is
+counted on the `Skipped` line. The panel takes each window once and in
+order; the queue to the screen holds 8, so a frame longer than 400 ms loses
+the oldest.
+
+### The meter
+
+A run reads one meter from START TEST to its end: the servo rail's meter as
+the panel names it when the run starts
+([Link](Link.md#the-window-ring)).
+
+| | PD mini | INA3221 CH1 |
+| --- | --- | --- |
+| The run reads it when | the INA3221 is not the rail's meter at START TEST, or the supply is the panel's model | the INA3221 is the rail's meter at START TEST and the supply is the PD mini |
+| A reading | one reading of the supply, every 102 to 106 ms | one 50 ms window of CH1, 20 a second |
+| Current | the reading | the window's mean. The peak is the window's highest or lowest 1 ms sample, whichever lies further from zero |
+| Voltage | the reading at the supply's output | CH1's bus voltage at the load side of the shunt: the window's mean in `Meas V`, its lowest sample in `V min` |
+| IDLE and HOLD | the readings taken in the phase | the windows that lie wholly in the phase; one that began before it is in neither. On the host suite's modelled bench IDLE's 1000 ms hold 19 to 20 windows and a hold of 600 ms 11 to 12 |
+| MOVE | the readings from the command on | the windows from the one open at the command on |
+| Travel time | to the reading that shows the arrival: late by up to one reading and about 300 ms of lag | to the window that shows the arrival: late by up to two windows and the poll that reads them, 145 ms |
+| TRAVEL TIME | reported, not checked | reported, not checked |
+| A move is late after | 3300 ms | 3050 ms |
+| The supply's voltage and current | every figure and every row | not used and not logged |
+| The supply's state: answering, output, trip, set point read back, mode | read | read |
+
+On the INA3221 the panel times a move from the windows. The coprocessor's
+move capture, which times a move at 1 ms from the PWM frame, is not used by
+the run.
+
+- **Held to the end.** A run on the INA3221 ends ABORTED when the INA3221
+  stops being the rail's meter, with the condition that failed as its
+  reason (see [What ends a run](#what-ends-a-run)), and when no window
+  reaches it for 500 ms (`SERVO_TEST_WIN_STALE_MS`). It never goes on with
+  the PD mini: the two meters do not agree. In one recorded run of an MS24
+  the PD mini's highest reading was 0.390 A and the INA3221's highest 1 ms
+  sample 1.637 A. A run on the PD mini goes on with it when the INA3221
+  becomes the meter under it.
+- **Why not the INA3221.** A run on the PD mini with the INA3221 on in
+  SETUP has the report line `INA3221: not used: <reason>`: `the coprocessor
+  is older than link protocol 4.11`, `the coprocessor does not hold its
+  set-up`, `it does not answer`, `no window with current in the last 200
+  ms`, `it reset itself`, `it has worked for less than 1 s`, or `the supply
+  is the panel's model`.
+- **Signed current.** A negative current is a reading. IDLE CURRENT, HOLD
+  CURRENT, STALL AT and the peak take its magnitude, and the CSV and the
+  report keep the sign. A run whose idle current at any step is below
+  -0.020 A (`SERVO_TEST_NEG_IDLE_A`) has the report line `Current reads
+  negative at rest: shunt direction`.
+- **Clipping.** The INA3221 reads a shunt voltage up to 163.8 mV: 1.638 A on
+  a 0.1 Ω shunt, 3.276 A on 0.05 Ω. A sample at an end of that range counts
+  in its window at the end of the range, and the window is a reading like
+  any other: its mean, its peak and its place in the verdict are the values
+  the part gave. The CSV's `clipped` column holds the number of such samples
+  in the window, and the report's `Clipped` line the number of windows with
+  one; their figures are a lower bound. The number of clipped samples in a
+  window decides nothing. A servo that draws more than the range reads the
+  range. Which shunt is fitted decides what this meter can show.
+- **The shunt's drop.** `Meas V` and `V min` are measured behind the shunt.
+  The set point is not raised for the drop: at the end of the range the
+  shunt takes 0.164 V, on any shunt value, and the report's `Shunt` line
+  says so.
+
+### Stall and constant current
+
+| Rule | Condition | Effect |
+| --- | --- | --- |
+| STALL AT | a reading after SETTLE on a voltage step whose magnitude is above STALL AT | FAIL |
+| STALL AT for 1 s | readings above STALL AT for 1000 ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above STALL AT for 1 s` |
+| Constant current for 1 s | the supply reports constant current (CC) in every reading for 1000 ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1 s`, whatever STALL AT is |
+| Constant current for less than 1 s | | nothing ends and nothing fails; the report's `Const. current` line gives the number of such readings and the longest stretch from a first to a last |
+| STALL AT at or above the current limit | at START TEST | the run starts. The TEST page and the report say `STALL AT 3.00 A cannot be reached: current limit 2.00 A` |
+| STALL AT at or above the INA3221's range | at START TEST with the INA3221 as the meter | the run starts. The TEST page and the report say `STALL AT 2.00 A cannot be reached: INA3221 range 1.638 A` |
+
+- Every comparison of a current with IDLE CURRENT, HOLD CURRENT and STALL AT
+  is made in whole mA, in the verdict and in the report alike: a reading of
+  0.050 A against a limit of 0.05 A passes, and 0.051 A fails.
+- On the PD mini the 1000 ms count from the first reading above STALL AT:
+  a reading 999 ms later leaves the run running, one 1000 ms later ends it.
+- On the INA3221 the reading is the window's mean, whatever its highest
+  sample is, and the 1000 ms count from the start of the first window above
+  STALL AT: 20 windows in a row end the run.
+- A supply in constant current holds its current limit, so no reading lies
+  above a STALL AT at or above that limit. STALL AT and the supply's start
+  current both default to 2.00 A. The constant-current rule ends such a
+  run: a servo on a stop that draws the limit ends it 1.0 to 1.1 s after
+  the supply reports constant current.
+- With the INA3221 on its 0.1 Ω shunt and STALL AT at its default 2.00 A,
+  STALL AT cannot be reached. A servo on a stop that draws less than the
+  supply's limit and more than 1.638 A reads 1.638 A for the whole run; the
+  report then has the `Clipped` line and the `cannot be reached` line.
+  STALL AT at 1.60 A or lower, or a shunt of 0.05 Ω, puts STALL AT inside
+  the range.
+
+Not measured: what the PD mini reports with a servo on a stop (constant
+current or over-current, and whether it switches off by itself), and how
+long it holds constant current after an inrush. In the recorded MS24 run it
+held it for 0.43 s twice during healthy moves, at 0.004 to 0.342 A.
 
 ### The output encoder
 
@@ -405,6 +508,17 @@ left as they are.
 | `set point not read back in 3 s` | the supply did not take a step's voltage |
 | `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the PD mini's input less its headroom |
 | `above STALL AT for 1 s` | `SERVO_TEST_STALL_ABORT_MS` |
+| `constant current for 1 s` | the supply reported constant current for `SERVO_TEST_CC_ABORT_MS` |
+| `no INA3221 window for 0.5 s` | a run on the INA3221: `SERVO_TEST_WIN_STALE_MS` without a window that holds current and voltage. A pass 499 ms after the last window leaves the run running, one at 500 ms ends it |
+| `INA3221 reset itself` | a run on the INA3221: the part's reset count moved |
+| `INA3221 not answering` | a run on the INA3221: no SENSE read in 200 ms shows the part online and identified on a bus that is not stuck |
+| `INA3221 window without current` | a run on the INA3221: the newest window holds no current samples, or its number has stood for 200 ms |
+| `INA3221 set-up not held` | a run on the INA3221: the coprocessor no longer holds the set-up, or SETUP has the INA3221 off |
+| `INA3221 no longer the meter` | a run on the INA3221: the meter changed and the panel did not name the condition |
+
+The six reasons of a run on the INA3221 are the conditions under which the
+INA3221 is the rail's meter. The supply's reasons hold on either meter: its
+state is read in every run.
 
 A step is never asked above the cap: a run whose steps lie outside the
 supply's range is refused at START, and a cap that comes down during a run
@@ -418,7 +532,7 @@ when one of these holds:
 - the highest idle current is above IDLE CURRENT;
 - the highest holding current is above HOLD CURRENT;
 - the longest travel time is above TRAVEL TIME, where the current's meter
-  times travel (not the PD mini);
+  times travel (not the PD mini, and not the INA3221's windows);
 - a reading after SETTLE is above STALL AT;
 - a counted move was late: movement seen, no arrival within the window,
   3000 ms plus the meter's lag.
@@ -436,14 +550,18 @@ MEASURABLE, not FAIL. With no move arrived there is no longest travel time,
 and the `Travel time` line reads `longest --` and `not measured, no move
 arrived`, on any meter.
 
-A LIMITS value of 0 is not checked; STALL AT always is.
+A LIMITS value of 0 is not checked; STALL AT always is. A current is
+compared by its magnitude and in whole mA: see
+[Stall and constant current](#stall-and-constant-current).
 
 ### Files
 
 A run takes the next run number on the card, as an armed bench does, and the
-SD card's own task writes its files: `BENCHnnn.CSV`, one row per supply
-reading, and with the DUT page's REPORT on, `BENCHnnn.TXT`. An armed bench's
-own run log goes on beside it in a file of its own. A number carried by a
+SD card's own task writes its files: `BENCHnnn.CSV`, one row per reading of
+the run's meter, and with the DUT page's REPORT on, `BENCHnnn.TXT`. A run is
+one CSV: the armed bench's own run log writes no row while a run is under
+way. Its time column steps over the run and its rows start again when the
+run ends. A number carried by a
 `BENCHnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
 so no report is overwritten, and the log viewer's DELETE on a run removes its
 report with it. A run the card cannot
@@ -455,21 +573,33 @@ writes:
 
 | Column | Unit | What it is |
 | --- | --- | --- |
-| `time (s)` | s | when the reading was taken, from the run's start |
+| `time (s)` | s | when the panel had the reading, from the run's start |
 | `test` | | `STEP` or `BROWN-OUT` |
 | `step` | | the step, 1 to n in the order run |
 | `phase` | | `SET`, `SETTLE`, `IDLE`, `MOVE` or `HOLD` |
 | `command (us)` | us | the pulse commanded |
 | `position (us)` | us | the measured position; empty, as nothing measures it |
 | `set (V)` | V | the step's voltage |
-| `voltage (V)` | V | at the output |
+| `voltage (V)` | V | the meter's: at the supply's output, or CH1's mean bus voltage in the window |
 | `limit (A)` | A | the current limit |
-| `current (A)` | A | out of the output |
+| `current (A)` | A | the meter's, signed: the supply's reading, or the window's mean |
 | `power (W)` | W | voltage times current |
-| `mode` | | `CV`, `CC` or `OFF` |
+| `mode` | | the supply's: `CV`, `CC` or `OFF`. On the INA3221 the mode of the supply's last reading, empty before the first |
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
 | `angle (deg)` | deg | with AS5600 on only: the horn's angle from the centre count, from the newest reading taken at or before the row; empty when that reading is older than 500 ms or there is none |
 | `travel angle (ms)` | ms | with AS5600 on only: on the row after a move settled, its travel time from the angle |
+| `meter` | | `INA3221`, `PDMINI` or `MODEL`, on every row |
+| `window` | | on the INA3221: the window's number, modulo 65536; a step of more than 1 is windows that never reached the run |
+| `current max (A)` | A | on the INA3221: the window's highest 1 ms sample |
+| `current min (A)` | A | on the INA3221: its lowest |
+| `voltage min (V)` | V | on the INA3221: the lowest bus voltage sample in the window |
+| `clipped` | | on the INA3221: samples in the window at an end of the range, held at 255 |
+
+The last six columns follow whatever is before them: columns 14 to 19
+without AS5600, 16 to 21 with it. On the PD mini and the model the five
+after `meter` are empty. A file written before these columns, 13 wide or 15
+with AS5600, reads in the log viewer as before: its parser takes the columns
+from the header row.
 
 The report from the host suite's replay of an MG90S micro servo's run on
 the bench with the PD mini (`test/host/fixtures/servo-mg90s.csv`), with
@@ -482,12 +612,15 @@ Device:         MG90S
 Firmware:       rcbench 0.15.0
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
+Current:        PD mini
+Voltage:        PD mini
 Readings:       9.1 /s taken by the supply, 9.1 /s reached the test
 Skipped:        0 readings the supply took never reached the test
 Resolution:     one reading every 109 ms: a travel time is late by up to that
 Lag:            about 300 ms from a change of current to the reading that shows it
 Repeats:        a reading can repeat the last value for several readings
 Travel times:   an upper bound, not checked against the limit
+Const. current: 0 supply readings, longest stretch 0 ms
 Duration:       184.0 s
 Log rows:       1684 written, 0 lost to a full queue
 
@@ -505,9 +638,9 @@ Length:         60 s a step
 Limits:         idle OFF, holding OFF, travel 800 ms, stall 2.00 A
 
 RESULTS PER STEP (currents in A, times in ms)
-Set V  Meas V  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
- 4.80    4.80  0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
- 6.00    6.00  0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
+Set V  Meas V  V min  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
+ 4.80    4.80  4.80   0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
+ 6.00    6.00  5.99   0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
 Thresh: movement is a reading max(0.020 A, 3 x idle noise) from the level before the command.
 Arrival: after a reading Thresh above the end's holding level, the first back within 0.05 A of it.
 Late: moves seen moving that did not arrive within 3300 ms.
@@ -522,6 +655,7 @@ Idle current     highest 0.004 A, limit OFF: not checked
 Holding current  highest 0.001 A, limit OFF: not checked
 Travel time      longest 989 ms, limit 800 ms: upper bound, not checked against the limit
 Stall threshold  highest 0.077 A, STALL AT 2.00 A: PASS
+STALL AT 2.00 A cannot be reached: current limit 2.00 A
 Moves arrived    0 late: PASS
 Moves seen       0 unseen: PASS
 Brown-out start  movement seen at 5.00 V: PASS
@@ -540,9 +674,9 @@ holds 0.015 to 0.029 A and peaks at 0.039 to 0.044 A, reads:
 ```
 Result:         NOT MEASURABLE - 25 of 46 counted moves showed no movement in the current
 ...
-Set V  Meas V  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
- 4.80    4.80  0.015  0.020  0.025  0.037  0.028   0.015   687    772        22    0     13
- 6.00    5.99  0.003  0.020  0.027  0.042  0.029   0.017   636    688        24    0     12
+Set V  Meas V  V min  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
+ 4.80    4.80  4.79   0.015  0.020  0.025  0.037  0.028   0.015   687    772        22    0     13
+ 6.00    5.99  5.99   0.003  0.020  0.027  0.042  0.029   0.017   636    688        24    0     12
 ...
 No movement seen at 5.00 V, the first step: not measurable.
 ```
@@ -550,6 +684,25 @@ No movement seen at 5.00 V, the first step: not measurable.
 Its moves to the high end leave the low end's 0.028 A and never pass it by
 0.020 A: all of them are unseen. Its moves to the low end are seen and
 arrive. On 0.13.0 the same servo read FAIL with all 34 counted moves late.
+
+A run on the INA3221 has these lines in place of the PD mini's, here from
+the host suite's modelled bench:
+
+```
+Log:            the .CSV with this file's number, one row per INA3221 window
+Supply:         PD mini
+Current:        INA3221 CH1, shunt 100.0 mOhm, range 1.638 A
+Voltage:        INA3221 CH1, load side of the shunt
+Shunt:          up to 0.164 V lost across it at the range; the set point is not raised for it
+Readings:       20.0 /s windows closed by the INA3221, 20.0 /s reached the test
+Skipped:        0 windows the INA3221 closed never reached the test
+Resolution:     one window every 50 ms: a travel time is late by up to two windows and the poll that reads them
+Lag:            about 50 ms from a change of current to the reading that shows it
+Travel times:   an upper bound, not checked against the limit
+...
+Position: nothing measures the horn; every result is the INA3221's current on CH1.
+Current between two 1 ms samples of CH1: a window holds their mean, highest and lowest.
+```
 
 An aborted run reads `Result:
 ABORTED - <reason>`, and a step it cut short is marked `(cut short)`; one it
@@ -573,6 +726,19 @@ NOT MEASURABLE verdict have not run on hardware. Beyond that the host suite
 holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving
 it, and the CSV read back by the log viewer's parser. Not measured: the PD
 mini's averaging, and the command's delay to the pin.
+
+No run on the INA3221 has been made on hardware. `test_servo_test_win` runs
+one on the host: the modelled INA3221 carries `servo_sim`'s current, the
+coprocessor's schedule and pages turn it into windows, `sense_link` takes
+each once and `servo_source` names the meter, beside a model of the PD mini
+read every 104 ms. Two recordings from a bench on 0.14.0 are replayed: an
+MS24's whole CSV on the PD mini (`servo-ms24-pdmini.csv`), with its two
+spells of constant current, and the bench log written beside it
+(`servo-ms24-windows.csv`), which holds 1309 of the 3817 windows the
+INA3221 closed and ends a run on the INA3221 at its first gap of 500 ms.
+Not measured on a bench: a window's lag behind the horn, whether the 50 ms
+mean shows the moves of a servo that the PD mini does not, what CH1 reads
+with a servo on a stop, and the constant-current rule against a PD mini.
 
 ## The commanded position follows the armed bench
 

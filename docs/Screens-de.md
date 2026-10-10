@@ -669,7 +669,15 @@ KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus 
 und WEG fallen auf PULS CENTRE), STUFE ÜBER DEN OBERGRENZEN (eine
 gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
 Warnung aufgeht) oder LETZTER BERICHT SCHREIBT NOCH und folgt dem Prüfstand und
-den Einstellungen, wenn sie sich ändern. Es ist ein Halten über zwei Sekunden,
+den Einstellungen, wenn sie sich ändern. Eine dritte Zeile, quer über die
+Karte unter beiden Spalten, sagt, wenn kein Messwert BLOCKIERT AB
+überschreiten kann: `BLOCKIERT AB 2.00 A unerreichbar: Strombegrenzung
+2.00 A`, solange BLOCKIERT AB bei oder über der Strombegrenzung der Zeile
+SOLL liegt, sonst `BLOCKIERT AB 2.00 A unerreichbar: INA3221-Bereich
+1.638 A`, solange der INA3221 das Messgerät der Schiene ist und BLOCKIERT AB
+bei oder über seinem Bereich liegt. TEST STARTEN bleibt offen: siehe
+[Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
+Es ist ein Halten über zwei Sekunden,
 die Geste von AUSGANG EIN, weil ein Lauf das Netzteil einschaltet und das Servo
 bewegt. Ist HV SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
 stattdessen NUR HV-SERVOS mit der höchsten Stufe, und der Lauf startet erst,
@@ -677,8 +685,12 @@ nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. HV SERVO gilt für die Sitzun
 jeder Neustart schaltet es aus.
 
 Die Einstellungen schließen sich beim Start, und Stufe und Phase stehen oben
-auf der linken Karte. Der Lauf führt das Servo und die Sollwerte und den
-Schalter von SUPPLY, bis er endet. Er endet vorzeitig, mit ausgeschaltetem
+auf der linken Karte, daneben, neben TEST BEENDEN, das Messgerät, das der
+Lauf liest: `PD mini`, `INA3221 CH1` oder `MODELL`. Es ist das Messgerät der
+Servo-Schiene bei TEST STARTEN, und der Lauf liest es bis zu seinem Ende
+([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)). Der
+Lauf führt das Servo und die Sollwerte und den Schalter von SUPPLY, bis er
+endet. Er endet vorzeitig, mit ausgeschaltetem
 Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
 Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
 Verlassen der Seite, bei einem Finger auf der Skala, ZENTRIEREN, SWEEP,
@@ -703,6 +715,11 @@ Dateien, die die Karte angenommen hat: `BENCHnnn.CSV`, und `+ .TXT`, sobald
 die Karte den Bericht vollständig angenommen hat.
 
 ![Ein Ergebnis](img/de/servo-result.png)
+
+Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
+über dem Plot:
+
+![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
 ### Einstellungen
 
