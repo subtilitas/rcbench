@@ -227,9 +227,17 @@ static bool changes_setup(const sense_trace_out_t *o,
     return ((uint32_t)r->v & 0xFFFFu) != (o->cfg & 0xFFFFu);
 }
 
+/* Whether the trace under way is still open at @p t: not stopped, and
+ * @p t before its end.  The console may owe lines of a trace long over. */
+static bool open_at(const sense_trace_out_t *o, uint32_t t)
+{
+    return o->stage != SENSE_TRACE_IDLE && !o->stopped
+           && !at_or_past(t, o->end_t);
+}
+
 static void extend(sense_trace_out_t *o, uint32_t end_t)
 {
-    if (!o->stopped && (int32_t)(end_t - o->end_t) > 0) {
+    if ((int32_t)(end_t - o->end_t) > 0) {
         o->end_t = end_t;
     }
 }
@@ -274,8 +282,21 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
         o->stopped = false;
         o->n_s = o->n_v = o->n_m = o->n_lost = o->n_mlost = 0u;
         o->q_n = o->q_head = 0u;
-    } else {
+    } else if (open_at(o, t)) {
         extend(o, end_t);
+    } else {
+        /* The trace under way is over at this trigger's time and its
+         * lines are not all written: the trigger is the next trace's. */
+        if (o->wait_n >= SENSE_TRACE_MARKS) {
+            ++o->wait_lost;
+            return;
+        }
+        o->wait[o->wait_n].kind  = (uint8_t)kind;
+        o->wait[o->wait_n].at_us = at_us;
+        o->wait[o->wait_n].ch    = ch;
+        o->wait[o->wait_n].us    = us;
+        ++o->wait_n;
+        return;
     }
     mark(o, kind, t, ch, us);
 }
@@ -285,7 +306,7 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
 static void slew_ends(sense_trace_out_t *o, sense_trace_watch_t *w,
                       uint16_t ch)
 {
-    if (w->slewed && o->stage != SENSE_TRACE_IDLE) {
+    if (w->slewed && open_at(o, w->changed_t)) {
         mark(o, SENSE_TRACE_MARK_DEST, w->changed_t, ch, w->pulse);
     }
     w->slewed = false;
@@ -299,9 +320,14 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
         return false;
     }
     sense_trace_watch_t *w = &o->watch[slot];
+    if (w->have && w->ch != ch) {
+        /* Another output on this slot: nothing of the last one's holds. */
+        memset(w, 0, sizeof(*w));
+    }
     if (!w->have) {
         /* The first pulse seen is where the watch starts, not a change. */
         w->have  = true;
+        w->ch    = ch;
         w->pulse = pulse_us;
         return false;
     }
@@ -328,10 +354,17 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
         return true;
     }
     w->slewed = true;
-    if (o->stage != SENSE_TRACE_IDLE) {
+    if (open_at(o, now_t)) {
         extend(o, now_t + SENSE_TRACE_EDGE_MS * SENSE_TRACE_T_PER_MS);
     }
     return false;
+}
+
+void sense_trace_unwatch(sense_trace_t *tr, unsigned slot)
+{
+    if (slot < SENSE_TRACE_SLOTS) {
+        memset(&tr->out.watch[slot], 0, sizeof(tr->out.watch[slot]));
+    }
 }
 
 void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us)
@@ -568,6 +601,25 @@ static void to_idle(sense_trace_t *tr)
     tr->out.scanned = tail_of(tr);
 }
 
+/* The end line is written: the triggers that waited for it start the
+ * next trace, in their order, over what the ring holds since the end. */
+static void ended(sense_trace_t *tr)
+{
+    sense_trace_out_t *o = &tr->out;
+    const uint8_t n = o->wait_n;
+    const uint32_t lost = o->wait_lost;
+    to_idle(tr);
+    o->wait_n    = 0u;
+    o->wait_lost = 0u;
+    for (uint8_t k = 0u; k < n; ++k) {
+        sense_trace_trigger(tr, (sense_trace_trig_t)o->wait[k].kind,
+                            o->wait[k].at_us, o->wait[k].ch, o->wait[k].us);
+    }
+    if (n > 0u) {
+        o->n_mlost += lost;
+    }
+}
+
 /* The line @p act stood for is written. */
 static void commit(sense_trace_t *tr, act_t act)
 {
@@ -603,11 +655,11 @@ static void commit(sense_trace_t *tr, act_t act)
             pop(tr);
             r = peek(tr);
         }
-        to_idle(tr);
+        ended(tr);
         break;
     case ACT_END:
     default:
-        to_idle(tr);
+        ended(tr);
         break;
     }
 }
@@ -641,6 +693,8 @@ size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
     }
     if (!connected && o->stage != SENSE_TRACE_IDLE) {
         to_idle(tr);
+        o->wait_n    = 0u;
+        o->wait_lost = 0u;
         ++o->abandoned;
     }
     if (o->stage == SENSE_TRACE_IDLE) {

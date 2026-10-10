@@ -38,6 +38,9 @@ void sense_trace_hw_outputs(const outputs_t *o)
     for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
         const out_slot_t *s = &o->slot[i];
         if (s->driver != OUT_DRIVER_PWM || !outputs_hw_bound(i)) {
+            /* No PWM pulse of this slot's: what it rendered before is
+             * no measure for what it renders next. */
+            sense_trace_unwatch(&s_trace, i);
             continue;
         }
         /* The pulse outputs_hw_service() has just written to this pin,

@@ -143,7 +143,10 @@ add_executable(sense_trace_gen sense_trace_gen.c)
 target_link_libraries(sense_trace_gen PRIVATE ${UNDER_TEST})
 target_include_directories(sense_trace_gen PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}")
+# Registered where the tool is: a copy of the tree without tools/, as
+# tools/mutate.py makes one, builds the two programs and runs no tool.
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../tools/sense_trace.py")
 add_test(NAME sense_trace_tool
     COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/test_sense_trace_tool.py"
@@ -151,3 +154,4 @@ add_test(NAME sense_trace_tool
             --gen $<TARGET_FILE:sense_trace_gen>
             --fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
             --work "${CMAKE_CURRENT_BINARY_DIR}/sense_trace_tool")
+endif()

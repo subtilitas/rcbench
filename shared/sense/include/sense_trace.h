@@ -36,9 +36,11 @@
  * then every record until the trace's end, SENSE_TRACE_EDGE_MS after a
  * command or a capture edge and SENSE_TRACE_KEY_MS after the console
  * command.  A trigger during a trace adds its line and moves the end to
- * its own when that lies later; it never shortens a trace and never
- * starts a second one.  The console's stop moves the end to the time of
- * the stop.  A trace also ends at a record that changes the INA3221's
+ * its own when that lies later; it never shortens a trace.  The console's
+ * stop moves the end to the time of the stop.  A trigger at or past a
+ * trace's end, or after its stop, is not that trace's, however much of
+ * the trace the console still owes: it waits, up to SENSE_TRACE_MARKS of
+ * them, and starts the next trace when the end line is written.  A trace also ends at a record that changes the INA3221's
  * shunt or Configuration.  However a trace ends, every record from
  * before its end is written first.  With the ring empty the end line
  * waits SENSE_TRACE_END_WAIT_MS past the end, for the tick that may
@@ -202,6 +204,7 @@ typedef struct {
 /** One PWM slot's pulse as last seen. */
 typedef struct {
     bool     have;        /**< pulse is one seen                           */
+    uint16_t ch;          /**< of this output channel                      */
     bool     changed;     /**< changed_t is a change seen                  */
     bool     slewed;      /**< the command's pulse changed after its
                                trigger: its end is still to be said        */
@@ -232,6 +235,14 @@ typedef struct {
     uint32_t n_s, n_v, n_m, n_lost, n_mlost;
     sense_trace_mark_t q[SENSE_TRACE_MARKS];
     uint8_t  q_n, q_head;
+    /* Triggers at or past the end of a trace still being written. */
+    struct {
+        uint8_t  kind;
+        uint64_t at_us;
+        uint16_t ch, us;
+    } wait[SENSE_TRACE_MARKS];
+    uint8_t  wait_n;
+    uint32_t wait_lost;   /**< of them, those that found no place          */
     uint32_t abandoned;   /**< traces dropped with no console              */
     uint32_t scanned;     /**< idle: records looked at for a set-up record */
     sense_trace_watch_t watch[SENSE_TRACE_SLOTS];
@@ -265,10 +276,15 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
 uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top);
 
 /** Core 0, every pass, for each PWM slot: the output channel @p ch it
- *  renders and the pulse, 0 for none.  True when this is a command: the caller then gives the time of
+ *  renders and the pulse, 0 for none.  A slot seen with another channel
+ *  than before is watched afresh.  True when this is a command: the caller then gives the time of
  *  the frame that carries it to sense_trace_trigger(). */
 bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
                        uint16_t pulse_us, uint64_t now_us);
+
+/** Core 0: slot @p slot renders no PWM pulse of its own -- unbound, or
+ *  another driver's: the next pulse seen on it starts its watch afresh. */
+void sense_trace_unwatch(sense_trace_t *tr, unsigned slot);
 
 /** Core 0: a character from the console. */
 void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us);

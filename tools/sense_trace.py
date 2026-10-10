@@ -19,8 +19,9 @@ terminal capture of that console and, for each trace in it:
 
 A move is a trigger line: an edge line when the trace has any, a command
 line otherwise.  A slewed command's destination is its $D line's pulse.
-A trace whose end line counts trigger lines that were not written is not
-replayed.  Neither is a move with records missing among its samples or
+A trace with a problem -- lines that do not match its end line, no end
+line, trigger lines that were not written -- is not replayed; its CSV file
+is still written.  Neither is a move with records missing among its samples or
 with a change of the part's state inside it: the rules count samples,
 and the capture ends lost when the part goes offline.  A move's levels
 are taken from the trace as the servo test takes them from its meter:
@@ -242,8 +243,7 @@ def check(tr: Trace) -> None:
         tr.problems.append(f"the end line is trace {end['n']}'s")
     if end["ml"]:
         tr.problems.append(f"{end['ml']} trigger line(s) were not written: "
-                           "a move may be missing, so no move of this "
-                           "trace is replayed")
+                           "a move may be missing")
     # The end line's counts stop at these values.
     for key, have, what, top in (
             ("s", len(tr.t), "sample", 99999999),
@@ -327,7 +327,9 @@ def window(tr: Trace, lo: int, hi: int) -> list[float]:
 def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     """The trace's moves with their levels; none for a trace without a
     shunt or without commands."""
-    if tr.shunt_uohm == 0 or (tr.end is not None and tr.end["ml"]):
+    # A trace that does not match its end line has lines missing nobody
+    # can place: the rules count samples, so nothing of it is replayed.
+    if tr.shunt_uohm == 0 or tr.problems:
         return []
     edges = [m for m in tr.marks if m[0] == "E"]
     # A slewed command's line carries its first pulse; its $D line the one
@@ -603,6 +605,8 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
                    "past it")
     for p in tr.problems:
         out.append(f"  PROBLEM: {p}")
+    if tr.problems:
+        out.append("  no move of this trace is replayed")
     if not tr.problems:
         out.append("  counts match the end line")
     if csv is not None:

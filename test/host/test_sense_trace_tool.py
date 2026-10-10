@@ -203,6 +203,15 @@ def a_missing_line_does_not_match_the_end_line() -> None:
     check(r.returncode == 1, f"exit {r.returncode}")
     check("PROBLEM: 560 sample line(s) read, the end line counts 561"
           in r.stdout, "the sample count")
+    # A sample line the terminal lost inside the second trace's first
+    # move: nobody knows where, so no move of that trace is replayed.
+    move = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+    r = tool(str(work("short3.log", "\n".join(
+        lines[:move + 200] + lines[move + 201:]) + "\n")), "--no-csv")
+    check(r.returncode == 1, f"exit {r.returncode}")
+    check("no move of this trace is replayed" in r.stdout
+          and "arrival, ms from the command" not in r.stdout
+          and "all traces" not in r.stdout, "not replayed")
     volt = next(k for k, line in enumerate(lines) if line.startswith("v"))
     mark = next(k for k, line in enumerate(lines) if line.startswith("$C"))
     text = "\n".join(line for k, line in enumerate(lines)
@@ -413,8 +422,8 @@ def a_trace_with_trigger_lines_not_written_is_not_replayed() -> None:
     r = tool(str(work("ml.log", "\n".join(lines) + "\n")), "--no-csv")
     check(r.returncode == 1, f"exit {r.returncode}")
     check("PROBLEM: 1 trigger line(s) were not written: a move may be "
-          "missing, so no move of this trace is replayed" in r.stdout,
-          "said")
+          "missing" in r.stdout
+          and "no move of this trace is replayed" in r.stdout, "said")
     check("arrival, ms from the command" not in r.stdout
           and "settings that see every move" not in r.stdout,
           "no replay")

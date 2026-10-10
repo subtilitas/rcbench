@@ -1356,10 +1356,12 @@ TEST_CASE(a_stop_under_a_backlog_writes_what_came_before_it)
     stall(500u);
     sense_trace_key(&tr, 'x', g_us);
     CHECK(sense_trace_active(&tr));
-    /* A second stop and a trigger after it move nothing. */
+    /* A second stop and a changed pulse after it move nothing. */
     stall(50u);
     sense_trace_key(&tr, 'x', g_us);
-    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1500u, g_us - 200000u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, g_us - 10000u));
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
     run(200u);
     CHECK(!sense_trace_active(&tr));
     parse();
@@ -1373,6 +1375,126 @@ TEST_CASE(a_stop_under_a_backlog_writes_what_came_before_it)
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
     CHECK_EQ(seen.n_s, pre + 600u);
     CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 6000u - 10u);
+}
+
+/* The log cut after its first end line, so parse() sees one trace; the
+ * rest is returned. */
+static const char *first_trace_only(void)
+{
+    static char rest[1u << 16];
+    char *z = strstr(g_log, "$Z ");
+    rest[0] = '\0';
+    if (z != NULL && (z = strstr(z, "\r\n")) != NULL) {
+        snprintf(rest, sizeof(rest), "%s", z + 2);
+        z[2] = '\0';
+    }
+    return rest;
+}
+
+TEST_CASE(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3900u);
+    /* The console takes nothing from 100 ms before the end.  600 ms past
+     * the end a command comes: the 4 s trace is over, written or not. */
+    stall(700u);
+    CHECK(sense_trace_active(&tr));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 3u, 1900u);
+    /* And 1 ms before the end of that one, an edge: its own to extend. */
+    stall(100u);
+    run(1000u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.id, 1u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 40000u - 10u);
+    /* The next trace: the command's, with every sample since the first
+     * one's end before its own. */
+    char want[96];
+    snprintf(want, sizeof(want), "$T v=1 n=2 trig=cmd t=%lu ms=%lu len=4000",
+             (unsigned long)(t0 + 46000u), (unsigned long)(t0 + 46000u) / 10u);
+    CHECK(strncmp(rest, want, strlen(want)) == 0);
+    CHECK(strstr(rest, "$C t=") != NULL);
+    CHECK(strstr(rest, "\r\n-6000,300\r\n") != NULL);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.end_t, t0 + 46000u + 40000u);
+}
+
+TEST_CASE(a_start_after_a_stop_is_a_trace_of_its_own)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    stall(300u);
+    sense_trace_key(&tr, 'x', g_us);
+    stall(100u);
+    /* The stopped trace still has 300 ms to write when `t` comes. */
+    const uint32_t t1 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    /* More triggers than wait their turn: the ones with no place are
+     * counted in the trace they would have been in. */
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us + 1000u, 0u, 0u);
+    }
+    run(300u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.id, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.z_m, 1u);
+    char want[64];
+    snprintf(want, sizeof(want), "$T v=1 n=2 trig=key t=%lu ",
+             (unsigned long)t1);
+    CHECK(strncmp(rest, want, strlen(want)) == 0);
+    CHECK(strstr(rest, " m=8 ml=1 e=k\r\n") != NULL);
+    /* A console that goes away takes the waiting triggers with it. */
+    sense_trace_key(&tr, 't', g_us);
+    run(10u);
+    sense_trace_key(&tr, 'x', g_us);
+    sense_trace_key(&tr, 't', g_us);
+    tick();
+    pass_as(SENSE_TRACE_LINE_MAX, false);
+    run(20u);
+    CHECK(!sense_trace_active(&tr));
+}
+
+TEST_CASE(a_slot_that_changes_hands_is_watched_afresh)
+{
+    rig();
+    /* A slot let go of -- unbound, or another driver's -- and bound
+     * again: its first pulse is where the watch starts, not a command. */
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
+    sense_trace_unwatch(&tr, 1u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1900u, g_us + 1000000u));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1100u, g_us + 2000000u));
+    /* The same with another channel on the slot, and a slew of the old
+     * channel's has no end line under the new one's name. */
+    sense_trace_key(&tr, 't', g_us);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1110u, g_us + 2001000u));
+    CHECK(tr.out.watch[1].slewed);
+    CHECK(!sense_trace_pulse(&tr, 1u, 6u, 1700u, g_us + 3000000u));
+    CHECK(!tr.out.watch[1].slewed);
+    CHECK(!sense_trace_pulse(&tr, 1u, 6u, 1700u, g_us + 4000000u));
+    run(20u);
+    parse();
+    CHECK_EQ(seen.n_d, 0u);
+    CHECK(sense_trace_pulse(&tr, 1u, 6u, 1800u, g_us + 5000000u));
+    /* One past the last slot is none. */
+    sense_trace_unwatch(&tr, SENSE_TRACE_SLOTS);
 }
 
 TEST_CASE(a_stop_on_a_full_ring_counts_what_was_dropped_before_it)
@@ -1588,6 +1710,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     /* A slew's end at the longest numbers. */
     tr.out.watch[0].have = tr.out.watch[0].changed = true;
     tr.out.watch[0].slewed = true;
+    tr.out.watch[0].ch = 65535u;
     tr.out.watch[0].pulse = 65535u;
     tr.out.watch[0].changed_t = UINT32_MAX;
     (void)sense_trace_pulse(&tr, 0u, 65535u, 65535u,
@@ -1679,6 +1802,9 @@ int main(void)
     RUN(a_part_offline_and_a_reset_are_said_in_the_trace);
     RUN(a_trace_with_no_bus_has_a_header_and_ends_on_time);
     RUN(a_stop_under_a_backlog_writes_what_came_before_it);
+    RUN(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next);
+    RUN(a_start_after_a_stop_is_a_trace_of_its_own);
+    RUN(a_slot_that_changes_hands_is_watched_afresh);
     RUN(a_stop_on_a_full_ring_counts_what_was_dropped_before_it);
     RUN(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed);
     RUN(a_state_change_under_a_backlog_keeps_its_place);
