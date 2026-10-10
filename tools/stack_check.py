@@ -634,10 +634,13 @@ IRQ_INSTALLERS = ("irq_set_exclusive_handler", "irq_add_shared_handler")
 # row).  link_dev_dispatch() calls a page's read and write handler through
 # the link_page_t table firmware/iomcu/src/main.c passes to link_dev_init();
 # a write handler binds outputs and is the deepest thing a request reaches.
-# A caller here that makes no indirect call, or a table that is not rows of
-# that size holding function addresses, fails the check.
+# The last number is how many calls through the table the caller's source
+# makes: two of read and one of write in shared/link/link_dev.c.  A caller
+# here that makes no indirect call or more than that many, or a table that
+# is not rows of that size holding function addresses, fails the check: a
+# further call through a pointer is not one the table stands for.
 POINTER_TABLES = {
-    "link_dev_dispatch": ("k_pages", 12, (4, 8)),
+    "link_dev_dispatch": ("k_pages", 12, (4, 8), 3),
 }
 
 # Calls in the image that the firmware's arguments never take:
@@ -665,7 +668,12 @@ def long_needles() -> list:
     out = []
     for base in NEEDLE_DIRS:
         for src in sorted(base.rglob("*.c")):
-            text = src.read_text(encoding="utf-8")
+            raw = src.read_text(encoding="utf-8")
+            # Comments out, line breaks kept: a comment that names
+            # strstr() is not a call.
+            text = re.sub(r"/\*.*?\*/|//[^\n]*",
+                          lambda m: re.sub(r"[^\n]", " ", m.group(0)), raw,
+                          flags=re.S)
             for m in re.finditer(r"\bstrstr\s*\(", text):
                 args = call_args(text, m.end() - 1)
                 lit = (re.fullmatch(r'"((?:[^"\\]|\\.)*)"', args[1])
@@ -848,8 +856,16 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
     def inside(a: int) -> bool:
         return addr <= a < addr + size
 
-    cur = low = 0
-    regs = {}                   # register -> literal value loaded into it
+    def install(target: int, regs: dict) -> None:
+        """A call or a tail jump to an installer takes its handler from
+        r1."""
+        if target in installers:
+            if 1 in regs:
+                f.handlers.add(regs[1] & ~1)
+            else:
+                f.unread += 1
+
+    steps = []
     for lo, hi in code_spans(addr, size, marks):
         code = elf.read(lo, hi - lo)
         if code is None:
@@ -864,55 +880,63 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
                 hw2 = int.from_bytes(code[pc - lo + 2: pc - lo + 4],
                                      "little")
             n, kind, arg = thumb(pc, hw1, hw2)
-            if kind == "push":
-                cur += arg
-                low = max(low, cur)
-            elif kind == "pop":
-                cur = max(cur - arg[0], 0)
-                if arg[1]:
-                    cur, regs = low, {}
-            elif kind == "lit":
-                word = elf.read(arg[1], 4)
-                if word is None:
-                    regs.pop(arg[0], None)
-                else:
-                    regs[arg[0]] = int.from_bytes(word, "little")
-            elif kind == "call":
-                f.calls.add(arg)
-                if arg in installers:
-                    if 1 in regs:
-                        f.handlers.add(regs[1] & ~1)
-                    else:
-                        f.unread += 1
-                regs = {}
-            elif kind == "callx":
-                f.callx += 1
-                regs = {}
-            elif kind in ("branch", "jump"):
-                if not inside(arg):
-                    # A tail call: the jumping function has released its
-                    # frame, so adding the target's depth to this frame is
-                    # an upper bound.
-                    f.calls.add(arg)
-                    f.tails += 1
-                if kind == "jump":
-                    cur, regs = low, {}
-            elif kind == "jumplit":
-                word = elf.read(arg, 4)
-                if word is None:
-                    f.callx += 1
-                else:
-                    f.calls.add(int.from_bytes(word, "little") & ~1)
-                    f.tails += 1
-                cur, regs = low, {}
-            elif kind == "jumpx":
-                f.callx += 1
-                cur, regs = low, {}
-            elif kind == "end":
-                cur, regs = low, {}
-            elif kind == "dynamic":
-                f.dynamic = True
+            steps.append((pc, kind, arg))
             pc += n
+    # Where two paths meet, a register holds what either path loaded, so a
+    # literal loaded before a branch target is forgotten at it.
+    joins = {arg for _, kind, arg in steps
+             if kind in ("branch", "jump") and inside(arg)}
+
+    cur = low = 0
+    regs = {}                   # register -> literal value loaded into it
+    for pc, kind, arg in steps:
+        if pc in joins:
+            regs = {}
+        if kind == "push":
+            cur += arg
+            low = max(low, cur)
+        elif kind == "pop":
+            cur = max(cur - arg[0], 0)
+            if arg[1]:
+                cur, regs = low, {}
+        elif kind == "lit":
+            word = elf.read(arg[1], 4)
+            if word is None:
+                regs.pop(arg[0], None)
+            else:
+                regs[arg[0]] = int.from_bytes(word, "little")
+        elif kind == "call":
+            f.calls.add(arg)
+            install(arg, regs)
+            regs = {}
+        elif kind == "callx":
+            f.callx += 1
+            regs = {}
+        elif kind in ("branch", "jump"):
+            if not inside(arg):
+                # A tail call: the jumping function has released its
+                # frame, so adding the target's depth to this frame is
+                # an upper bound.
+                f.calls.add(arg)
+                f.tails += 1
+                install(arg, regs)
+            if kind == "jump":
+                cur, regs = low, {}
+        elif kind == "jumplit":
+            word = elf.read(arg, 4)
+            if word is None:
+                f.callx += 1
+            else:
+                f.calls.add(int.from_bytes(word, "little") & ~1)
+                f.tails += 1
+            cur, regs = low, {}
+        elif kind == "jumpx":
+            f.callx += 1
+            cur, regs = low, {}
+        elif kind == "end":
+            cur, regs = low, {}
+        elif kind == "dynamic":
+            f.dynamic = True
     f.frame = low
     return f
 
@@ -956,7 +980,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
     fails, out = [], []
     # The calls shared/link makes through the page table: every page's read
     # and write handler, read out of the table in the ELF.
-    for caller, (table, entry, offsets) in POINTER_TABLES.items():
+    for caller, (table, entry, offsets, sites) in POINTER_TABLES.items():
         addrs = by_name.get(caller, [])
         objs = [s for s in elf.symbols if s[3] == table
                 and s[1] == STT_OBJECT]
@@ -967,10 +991,11 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
             continue
         f = funcs[addrs[0]]
         raw = elf.read(objs[0][0], objs[0][2])
-        if f.callx == 0 or raw is None or len(raw) % entry:
-            fails.append(f"POINTER_TABLES: {caller} makes no indirect call, "
-                         f"or {table} is not rows of {entry} bytes; the "
-                         f"table no longer matches shared/link")
+        if not 0 < f.callx <= sites or raw is None or len(raw) % entry:
+            fails.append(f"POINTER_TABLES: {caller} makes {f.callx} "
+                         f"indirect calls, not 1 to {sites}, or {table} is "
+                         f"not rows of {entry} bytes; the table no longer "
+                         f"matches shared/link")
             continue
         for row in range(0, len(raw), entry):
             for off in offsets:

@@ -119,6 +119,35 @@ def test_an_install_without_a_literal_is_counted_as_unread():
     assert f.handlers == set() and f.unread == 1
 
 
+def test_a_handler_loaded_on_one_of_two_paths_is_not_taken_as_read():
+    # ldr r1, [pc, #8]; cbz r0, join; ldr r1, [pc, #8]; join: bl 0x1100.
+    # Two handlers reach the call; the tool reads neither and says so.
+    f = analyse([0x4902, 0xB100, 0x4902, 0xF000, 0xF87B],
+                installers={0x1100},
+                data={0x100C: 0x2001, 0x1010: 0x3001})
+    assert f.handlers == set() and f.unread == 1
+
+
+def test_an_installer_reached_by_a_tail_jump_installs_its_handler():
+    # ldr r1, [pc, #4]; b.w 0x1100
+    f = analyse([0x4901, 0xF000, 0xB87D], installers={0x1100},
+                data={0x1008: 0x2001})
+    assert f.handlers == {0x2000} and f.tails == 1
+    f = analyse([0xF000, 0xB87E], installers={0x1100})
+    assert f.unread == 1
+
+
+def test_a_comment_that_names_strstr_is_not_a_call(tmp_path, monkeypatch):
+    src = tmp_path / "a.c"
+    src.write_text('/* strstr() is slow */\n// strstr(a, b)\n'
+                   'char *p = strstr(s, "CAN");\n', encoding="utf-8")
+    monkeypatch.setattr(sc, "NEEDLE_DIRS", (tmp_path,))
+    monkeypatch.setattr(sc, "ROOT", tmp_path)
+    assert sc.long_needles() == []
+    src.write_text("char *p = strstr(s, needle);\n", encoding="utf-8")
+    assert sc.long_needles() == ["a.c:1"]
+
+
 def test_the_panel_decoder_reads_an_entry():
     # entry a1, 48
     assert sc.decode(0x42000000, 0x006136, 3) == ("entry", 48)
