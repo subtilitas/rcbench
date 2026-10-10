@@ -20,6 +20,7 @@ rcbench/
     settings/             typisiertes Schema und Werte
     logfile/              Zahlen- und CSV-Parsing
     link/                 Page-Protokoll · CAN-Framing · Watchdogs · Diagnose
+    artwork/              Cache des Panels für Platinenfotos
     bench/                bench_state · Telemetriesimulator · Log-Writer · Drehknopf-Decoder
     outputs/              Kanäle · Treibertabelle · Arming, Slew und Staleness
     safety/               Heartbeat-Generator (Panel) und -Monitor (Koprozessor)
