@@ -1,6 +1,6 @@
 /*
- * The panel's half of the SENSE and SERVO_SENSE link pages.  See
- * sense_link.h.
+ * The panel's half of the SENSE, SERVO_SENSE and SERVO_WIN link pages.
+ * See sense_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,6 +45,16 @@ static void forget_reads(sense_link_t *s)
     s->enc_online_seen = false;
     s->enc_magnet_told = false;
     s->enc_magnet      = 0u;
+    /* The ring's cursor goes too, and the windows not yet taken: they are
+     * of a set-up or a link that is gone. */
+    s->asked_win   = false;
+    s->win_all     = false;
+    s->win_synced  = false;
+    s->win_restart = false;
+    s->win_have    = false;
+    s->win_valid   = false;
+    s->winq_n      = 0u;
+    ++s->setups;
 }
 
 void sense_link_lost(sense_link_t *s)
@@ -55,6 +65,7 @@ void sense_link_lost(sense_link_t *s)
     s->up            = false;
     s->page          = false;
     s->enc_page      = false;
+    s->win_page      = false;
     s->known         = false;
     s->refused_bus   = false;
     s->bus_told      = false;
@@ -80,6 +91,7 @@ void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms)
     s->up   = true;
     s->page = minor >= SENSE_LINK_MINOR;
     s->enc_page = minor >= SENSE_LINK_ENC_MINOR;
+    s->win_page = minor >= SENSE_LINK_WIN_MINOR;
     s->setup_ms = now_ms;
     if (!s->page && (s->want_i228 || s->want_i3221)) {
         s->events |= SENSE_LINK_EV_NO_PAGE;
@@ -279,11 +291,21 @@ static bool due(bool asked, uint32_t asked_ms, uint32_t now_ms,
     return !asked || (uint32_t)(now_ms - asked_ms) >= every;
 }
 
-/* The registers a SENSE status read takes: to the encoder's last when the
- * page has it enabled, else to ESC_FLAGS. */
+bool sense_link_win_on(const sense_link_t *s)
+{
+    return s != NULL && s->win_page && s->known
+           && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
+           && (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u;
+}
+
+/* The registers a SENSE status read takes: to the page's last when it has
+ * the encoder enabled, or the INA3221 on a coprocessor with RESETS; else
+ * to ESC_FLAGS. */
 static unsigned status_count(const sense_link_t *s)
 {
-    return ((s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u)
+    const uint16_t en = s->held[LINK_SN_ENABLE];
+    return ((en & LINK_SN_EN_AS5600) != 0u
+            || (s->win_page && (en & LINK_SN_EN_I3221) != 0u))
                ? SENSE_LINK_STATUS_COUNT
                : SENSE_LINK_STATUS_COUNT_V48;
 }
@@ -355,6 +377,28 @@ bool sense_link_next(sense_link_t *s, uint32_t now_ms, bool idle,
         s->servo_asked_ms = now_ms;
         return true;
     }
+    /* The ring last: SERVO_SENSE's read of this poll shows a window number
+     * the ring's read then holds as well. */
+    if (sense_link_win_on(s)
+        && (s->win_all
+            || due(s->asked_win, s->win_asked_ms, now_ms,
+                   SENSE_LINK_WIN_MS))) {
+        /* The whole page at once when the cursor has stood long enough
+         * for a third window to close: one reply then carries every
+         * window owed, read at one moment. */
+        const bool all = s->win_all
+                         || (s->win_synced
+                             && (uint32_t)(now_ms - s->win_sync_ms)
+                                    >= SENSE_LINK_WIN_ALL_MS);
+        read_op(op, all ? SENSE_LINK_OP_WIN_ALL : SENSE_LINK_OP_WIN,
+                (uint8_t)LINK_PAGE_SERVO_WIN, 0u,
+                (uint8_t)(all ? (unsigned)LINK_SW_COUNT
+                              : SENSE_LINK_WIN_HEAD));
+        s->pending = op->kind;
+        s->asked_win = true;
+        s->win_asked_ms = now_ms;
+        return true;
+    }
     return false;
 }
 
@@ -389,6 +433,9 @@ static void written(sense_link_t *s, sense_link_op_kind_t w, int result,
         memcpy(&s->held[at], s->out, FRAME_N * sizeof(uint16_t));
         s->caps_owed = true;
         new_setup(s, now_ms);
+        /* The page empties its ring with a set-up it takes: whatever the
+         * ring shows from here on closed after this write. */
+        s->win_restart = true;
         return;
     }
     switch (w) {
@@ -562,6 +609,106 @@ static void judge_servo(sense_link_t *s)
     s->was_clipped = clipped;
 }
 
+/* Entry @p k of a SERVO_WIN read, whose newest number is @p newest. */
+static void win_entry(const uint16_t *regs, unsigned k, uint16_t newest,
+                      uint32_t now_ms, sense_link_win_t *w)
+{
+    const uint16_t *e = &regs[LINK_SW_ENTRY(k, 0)];
+    const uint16_t f = e[LINK_SW_E_FLAGS];
+    w->number   = (uint16_t)(newest - k);
+    w->current  = (f & LINK_SW_E_CURRENT) != 0u;
+    w->voltage  = (f & LINK_SW_E_VOLTAGE) != 0u;
+    w->clip_hi  = (f & LINK_SW_E_CLIP_HI) != 0u;
+    w->clip_lo  = (f & LINK_SW_E_CLIP_LO) != 0u;
+    w->clipped  = LINK_SW_E_CLIPPED(f);
+    w->mean_ma  = (int16_t)e[LINK_SW_E_MEAN_MA];
+    w->max_ma   = (int16_t)e[LINK_SW_E_MAX_MA];
+    w->min_ma   = (int16_t)e[LINK_SW_E_MIN_MA];
+    w->mean_mv  = e[LINK_SW_E_MEAN_MV];
+    w->min_mv   = e[LINK_SW_E_MIN_MV];
+    w->taken_ms = now_ms;
+}
+
+/*
+ * A SERVO_WIN read of @p n registers from 0: the windows it owes into the
+ * queue, oldest first, and the cursor after the last one taken.  A read
+ * that owes an entry it does not carry takes nothing and asks for the
+ * whole page.
+ */
+static void judge_win(sense_link_t *s, const uint16_t *regs, unsigned n,
+                      uint32_t now_ms)
+{
+    const unsigned carried = (n - (unsigned)LINK_SW_ENTRIES)
+                             / (unsigned)LINK_SW_E_STRIDE;
+    s->win_all = false;
+    if ((regs[LINK_SW_FLAGS] & LINK_SW_HAVE) == 0u) {
+        /* No window has closed under the set-up in force: the ring is
+         * empty, and what it shows next closed after this read. */
+        s->win_have    = false;
+        s->win_valid   = false;
+        s->win_synced  = false;
+        s->win_restart = true;
+        return;
+    }
+    const uint16_t newest = regs[LINK_SW_WINDOW];
+    if (!s->win_have || newest != s->win_newest) {
+        s->win_moved_ms = now_ms;
+    }
+    s->win_have   = true;
+    s->win_newest = newest;
+    const uint16_t f0 = regs[LINK_SW_ENTRY(0, LINK_SW_E_FLAGS)];
+    s->win_valid = (f0 & LINK_SW_E_CLOSED) != 0u
+                   && (f0 & LINK_SW_E_CURRENT) != 0u;
+
+    if (!s->win_synced && !s->win_restart) {
+        /* The first read of a link: the ring's windows may have been
+         * handed over before the link went. */
+        s->win_synced  = true;
+        s->win_next    = (uint16_t)(newest + 1u);
+        s->win_sync_ms = now_ms;
+        return;
+    }
+    /* Window numbers from the cursor to the newest. */
+    unsigned owed = LINK_SW_RING;
+    if (s->win_synced) {
+        owed = (uint16_t)(newest - s->win_next + 1u);
+        if (owed == 0u) {
+            s->win_sync_ms = now_ms;
+            return;
+        }
+        if (owed >= 0x8000u) {
+            /* The newest number lies behind the cursor: the ring started
+             * again between two reads, and all it holds is owed. */
+            s->win_synced  = false;
+            s->win_restart = true;
+            owed = LINK_SW_RING;
+        }
+    }
+    const unsigned in_ring = (owed > LINK_SW_RING) ? LINK_SW_RING : owed;
+    if (in_ring > carried) {
+        s->win_all = true;
+        return;
+    }
+    s->win_lost += (uint32_t)(owed - in_ring);
+    s->win_synced  = true;
+    s->win_restart = false;
+    for (unsigned k = in_ring; k-- > 0u;) {
+        if ((regs[LINK_SW_ENTRY(k, LINK_SW_E_FLAGS)] & LINK_SW_E_CLOSED)
+            == 0u) {
+            continue;                   /* a number that never closed */
+        }
+        if (s->winq_n >= LINK_SW_RING) {
+            /* Nobody took the last read's windows: this one and the
+             * newer stay owed on the page. */
+            s->win_next = (uint16_t)(newest - k);
+            return;
+        }
+        win_entry(regs, k, newest, now_ms, &s->winq[s->winq_n++]);
+    }
+    s->win_next    = (uint16_t)(newest + 1u);
+    s->win_sync_ms = now_ms;
+}
+
 void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
                      uint32_t now_ms)
 {
@@ -589,6 +736,17 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
         return;
     default:
         break;
+    }
+    if ((op == SENSE_LINK_OP_WIN || op == SENSE_LINK_OP_WIN_ALL)
+        && (result != SENSE_LINK_ACK || regs == NULL)) {
+        /* SERVO_WIN refused by a coprocessor that names 4.11: nothing
+         * more is sent to that page until the link comes up again, and
+         * the windows are SERVO_SENSE's. */
+        s->win_page = false;
+        s->win_all  = false;
+        s->win_have = false;
+        s->winq_n   = 0u;
+        return;
     }
     if (result != SENSE_LINK_ACK || regs == NULL) {
         /* A read refused: a coprocessor that names 4.7 and has not the
@@ -618,6 +776,12 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
         memcpy(s->servo, regs, sizeof(s->servo));
         s->have_servo = true;
         judge_servo(s);
+        break;
+    case SENSE_LINK_OP_WIN:
+        judge_win(s, regs, SENSE_LINK_WIN_HEAD, now_ms);
+        break;
+    case SENSE_LINK_OP_WIN_ALL:
+        judge_win(s, regs, (unsigned)LINK_SW_COUNT, now_ms);
         break;
     default:
         break;
@@ -779,34 +943,153 @@ bool sense_link_take_caps(sense_link_t *s, uint16_t *caps)
     return true;
 }
 
-bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
+bool sense_link_take_win(sense_link_t *s, sense_link_win_t *out)
 {
-    if (s == NULL || b == NULL || !s->have_servo) {
+    if (s == NULL || out == NULL || s->winq_n == 0u) {
         return false;
     }
-    const uint16_t flags = s->servo[LINK_SS_CH_FLAGS];
+    *out = s->winq[0];
+    --s->winq_n;
+    memmove(&s->winq[0], &s->winq[1], s->winq_n * sizeof(s->winq[0]));
+    return true;
+}
+
+uint32_t sense_link_win_lost(const sense_link_t *s)
+{
+    return (s != NULL) ? s->win_lost : 0u;
+}
+
+/* SERVO_SENSE's last read: the channels whose window holds readings,
+ * bit n-1 for CHn. */
+static uint8_t servo_ok(const sense_link_t *s)
+{
     uint8_t ok = 0u;
+    if (!s->have_servo) {
+        return 0u;
+    }
     for (unsigned ch = 1u; ch <= LINK_SS_CHANNELS; ++ch) {
-        if ((flags & LINK_SS_CH_VALID(ch)) != 0u) {
+        if ((s->servo[LINK_SS_CH_FLAGS] & LINK_SS_CH_VALID(ch)) != 0u) {
             ok |= (uint8_t)(1u << (ch - 1u));
         }
     }
-    const uint16_t window = s->servo[LINK_SS_WINDOW];
-    if (ok == 0u || (s->window_taken && window == s->window_last)) {
+    return ok;
+}
+
+/* Whether SERVO_SENSE's last read holds a window not taken yet. */
+static bool servo_window_new(const sense_link_t *s)
+{
+    return servo_ok(s) != 0u
+           && !(s->window_taken && s->servo[LINK_SS_WINDOW] == s->window_last);
+}
+
+unsigned sense_link_windows(const sense_link_t *s)
+{
+    if (s == NULL) {
+        return 0u;
+    }
+    if (sense_link_win_on(s)) {
+        return s->winq_n;
+    }
+    return servo_window_new(s) ? 1u : 0u;
+}
+
+/* Channel index @p i of SERVO_SENSE's last read into @p b. */
+static void servo_channel(const sense_link_t *s, size_t i, bench_state_t *b)
+{
+    const uint16_t *c = &s->servo[i * (size_t)LINK_SS_CH_STRIDE];
+    b->servo_mean_ma[i] = (int16_t)c[LINK_SS_CH_MEAN_MA];
+    b->servo_max_ma[i]  = (int16_t)c[LINK_SS_CH_MAX_MA];
+    b->servo_min_mv[i]  = c[LINK_SS_CH_MIN_MV];
+}
+
+void sense_link_win_bench(const sense_link_t *s, const sense_link_win_t *w,
+                          bench_state_t *b)
+{
+    if (s == NULL || w == NULL || b == NULL) {
+        return;
+    }
+    b->servo_new    = true;
+    b->servo_window = w->number;
+    b->servo_ok     = (w->current || w->voltage) ? 0x01u : 0u;
+    b->servo_mean_ma[0] = w->mean_ma;
+    b->servo_max_ma[0]  = w->max_ma;
+    b->servo_min_mv[0]  = w->min_mv;
+    /* CH2 and CH3 have no ring: theirs is SERVO_SENSE's one window, on
+     * the row of the same number. */
+    const uint8_t others = (s->have_servo
+                            && s->servo[LINK_SS_WINDOW] == w->number)
+                               ? (uint8_t)(servo_ok(s) & 0x06u) : 0u;
+    b->servo_ok |= others;
+    for (size_t i = 1u; i < LINK_SS_CHANNELS; ++i) {
+        if ((others & (1u << i)) != 0u) {
+            servo_channel(s, i, b);
+        } else {
+            b->servo_mean_ma[i] = 0;
+            b->servo_max_ma[i]  = 0;
+            b->servo_min_mv[i]  = 0u;
+        }
+    }
+}
+
+bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
+{
+    if (s == NULL || b == NULL) {
         return false;
     }
+    if (sense_link_win_on(s)) {
+        sense_link_win_t w;
+        if (!sense_link_take_win(s, &w)) {
+            return false;
+        }
+        sense_link_win_bench(s, &w, b);
+        return true;
+    }
+    if (!servo_window_new(s)) {
+        return false;
+    }
+    const uint16_t window = s->servo[LINK_SS_WINDOW];
     s->window_taken = true;
     s->window_last  = window;
     b->servo_new    = true;
     b->servo_window = window;
-    b->servo_ok     = ok;
+    b->servo_ok     = servo_ok(s);
     for (size_t i = 0u; i < LINK_SS_CHANNELS; ++i) {
-        const uint16_t *c = &s->servo[i * (size_t)LINK_SS_CH_STRIDE];
-        b->servo_mean_ma[i] = (int16_t)c[LINK_SS_CH_MEAN_MA];
-        b->servo_max_ma[i]  = (int16_t)c[LINK_SS_CH_MAX_MA];
-        b->servo_min_mv[i]  = c[LINK_SS_CH_MIN_MV];
+        servo_channel(s, i, b);
     }
     return true;
+}
+
+void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (s == NULL) {
+        return;
+    }
+    out->page   = s->page;
+    out->wanted = s->want_set && s->want_i3221
+                  && (s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u;
+    uint16_t regs[FRAME_N];
+    out->held = out->wanted && s->known
+                && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
+                && (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
+                && !s->refused_bus && !s->refused_i228 && !s->refused_i3221
+                && memcmp(s->want, s->held, sizeof(s->held)) == 0
+                && write_owed(s, regs) == SENSE_LINK_OP_NONE;
+    out->setups    = s->setups;
+    out->status    = s->have_status;
+    out->status_ms = s->status_ms;
+    out->flags     = sense_link_flags(s);
+    out->resets_read = s->have_status && s->win_page
+                       && status_count(s) == SENSE_LINK_STATUS_COUNT;
+    out->resets    = out->resets_read
+                         ? LINK_SN_RESETS_I3221(s->status[ST(LINK_SN_RESETS)])
+                         : 0u;
+    out->win       = sense_link_win_on(s) && s->win_have;
+    out->win_valid = out->win && s->win_valid;
+    out->win_ms    = s->win_moved_ms;
 }
 
 uint16_t sense_link_flags(const sense_link_t *s)

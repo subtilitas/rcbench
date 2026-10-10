@@ -265,6 +265,12 @@ without one:
   at the gate and the pass's own exchanges: 52.9 ms on average on one bench,
   about 19 rows per second. Other benches are not measured.
 - With the link down a sample is one step of the model, every 50 ms.
+- A sample is one row. With the INA3221 read through the window ring
+  (coprocessor protocol 4.11, CH1 enabled) a poll that brings more than one
+  50 ms window writes one row for each: the rows of one poll carry the same
+  `time`, the sample is in the last of them with the newest window, and the
+  rows before it hold `window` and the channel columns and are empty
+  otherwise. At a 53 ms poll one poll in 17 writes two rows.
 - Nothing else gates a row. A row the card's queue cannot take is dropped
   and counted, and the band says so at the run's end (see [Logs](#logs)).
 
@@ -293,7 +299,17 @@ measured is an empty cell. `window` and the nine channel columns are the
 INA3221's 50 ms window -- per channel the mean and highest current and the
 lowest bus voltage -- on the first row after the panel read it and on no
 other, so each window is in the file once, under its number; a channel the
-window has no readings of is empty. The log viewer groups `ina voltage`,
+window has no readings of is empty. With a coprocessor of protocol 4.11 and
+CH1 enabled every CH1 window is in the file while two reads lie at most
+200 ms apart, and a step in `window` of more than 1 is a window that was
+lost or a number the coprocessor skipped. A window taken while the bench
+was disarmed is in no file. CH1's figures count a clipped sample at the end
+of the range, 1.638 A on the 0.1 Ω shunt, and keep the sign of a negative
+current. CH2 and CH3 are on the row of their window when the panel read
+both pages within that window, and empty on a row the poll caught up. With
+an older coprocessor, or with CH1 off, the columns hold the last window of
+each read: a poll longer than 50 ms skips windows, 1 in 17 at 53 ms, and a
+clipped sample is left out of the figures. The log viewer groups `ina voltage`,
 `ina current` and `esc current` under INA228 and ESC, and the window's
 columns under INA3221.
 
@@ -1305,7 +1321,19 @@ mark.
 
 While a monitor is enabled, the panel reads SENSE's 14 read-only registers
 every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
-50 ms, each 50 ms window once. The band says what they show, each once and one at a time: the most
+50 ms, each 50 ms window once. With a coprocessor of protocol 4.11 and CH1
+among the INA3221's channels it also reads SERVO_WIN every 50 ms, which
+holds CH1's last four windows, and SENSE to register 31
+([Link](Link.md#the-window-ring)).
+
+The servo rail has one meter at a time: the INA3221's CH1 while it is on
+with CH1, the coprocessor speaks protocol 4.11, the coprocessor holds the
+set-up, the part answers as an INA3221 on a bus that is not stuck, a window
+with current samples closed in the last 200 ms, its reset count stands, and
+all of that has held for 1000 ms; the PD mini otherwise. The SERVO screen
+and the servo test read the PD mini whichever it is.
+
+The band says what they show, each once and one at a time: the most
 pressing first, and the next no sooner than 5 s later, so two at once are
 both said. In order:
 
@@ -1323,6 +1351,8 @@ both said. In order:
 | `INA228 current at the end of its range -- current is a bound` | the INA228 read the end of its range in the last 50 ms window or since the arm |
 | `INA3221 CH1 clipped at 1.64 A -- current is a bound` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
 | `coprocessor store off -- set-ups last until it restarts` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
+| `coprocessor older than 4.11 -- servo current read from PD mini` | the INA3221 is on with CH1 and the coprocessor speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
+| `INA3221 reset itself -- check its supply` | the coprocessor found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
 
 A refused set-up is not written again until it changes on SETUP. Pins that
 are one I2C block's pair, refused because an output, the PD mini or the

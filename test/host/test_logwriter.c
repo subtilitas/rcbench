@@ -16,6 +16,7 @@
 #include "log_csv.h"
 #include "log_numbers.h"
 #include "log_writer.h"
+#include "sense_chain.h"
 #include "telemetry_sim.h"
 
 /* ------------------------------------------------------------- the sink */
@@ -749,6 +750,252 @@ TEST_CASE(a_sink_that_needs_no_commit_still_writes_the_whole_run)
     CHECK_EQ(an.row_count, 120);
 }
 
+/* ------------------------------------------- one row per INA3221 window */
+
+/*
+ * One pass of the control task's log step, as advance_model_and_log() in
+ * the panel's main.c makes it: the row decision, then one row for each
+ * window the poll handed over and one when it handed over none, the sample
+ * in the last.  Returns the rows written.
+ */
+static unsigned log_pass(log_writer_t *w, log_cadence_t *cad,
+                         bench_state_t *bench, bool new_sample, bool run)
+{
+    float t_s = 0.0f;
+    const bool logged = log_cadence_row(cad, chain_now(), new_sample, run,
+                                        &t_s);
+    const unsigned windows = sense_link_windows(&ch.sl);
+    const unsigned rows    = log_cadence_rows(windows);
+    unsigned written = 0u;
+    for (unsigned k = 0u; k < rows; ++k) {
+        if (k < windows) {
+            (void)sense_link_take_window(&ch.sl, bench);
+        }
+        if (logged) {
+            bench_state_t row;
+            bench_state_log_row(bench, k + 1u == rows, &row);
+            const bool ok = log_writer_row(w, t_s, &row);
+            log_cadence_posted(cad, ok);
+            written += ok ? 1u : 0u;
+        }
+        bench->servo_new = false;
+    }
+    return written;
+}
+
+/* What a bench log holds, read back cell by cell. */
+typedef struct {
+    unsigned rows;
+    unsigned with_sample;     /* rows with a voltage cell                */
+    unsigned with_window;     /* rows with a window number               */
+    unsigned stepped;         /* window numbers not one after the last   */
+    unsigned wrong;           /* a ch1 current that is another window's  */
+    unsigned back;            /* a time before the row before            */
+    unsigned same_time;       /* rows at the time of the row before      */
+    unsigned bare;            /* window rows with no sample              */
+    long     first, last;     /* window numbers                          */
+} log_read_t;
+
+static void read_log(log_read_t *r)
+{
+    memset(r, 0, sizeof(*r));
+    r->first = r->last = -1;
+    double last_t = -1.0;
+    const char *p = strchr(g_mem.buf, '\n') + 1;       /* past the header */
+    while (*p != '\0') {
+        const char *end = strchr(p, '\n');
+        char cell[22][24];
+        unsigned n = 0u;
+        const char *c = p;
+        while (c <= end && n < 22u) {
+            const char *sep = c;
+            while (sep < end && *sep != ';') {
+                ++sep;
+            }
+            const size_t len = (size_t)(sep - c);
+            memcpy(cell[n], c, len);
+            cell[n][len] = '\0';
+            ++n;
+            c = sep + 1;
+        }
+        CHECK_EQ(n, 22u);
+        ++r->rows;
+        const double t = atof(cell[0]);
+        if (t < last_t) {
+            ++r->back;
+        }
+        if (t == last_t) {
+            ++r->same_time;
+        }
+        last_t = t;
+        const bool sample = cell[1][0] != '\0';
+        if (sample) {
+            ++r->with_sample;
+        }
+        if (cell[12][0] != '\0') {
+            const long win = atol(cell[12]);
+            ++r->with_window;
+            if (r->last >= 0 && ((r->last + 1) & 0xFFFF) != win) {
+                ++r->stepped;
+            }
+            if (r->first < 0) {
+                r->first = win;
+            }
+            r->last = win;
+            if (lround(atof(cell[13]) * 1000.0)
+                != chain_mean_ma((uint16_t)win)) {
+                ++r->wrong;
+            }
+            if (!sample) {
+                ++r->bare;
+            }
+        }
+        p = end + 1;
+    }
+}
+
+/* A bench sample that every poll brings, with a voltage to tell its row. */
+static bench_state_t log_sample(void)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags   = LINK_BN_VOLTAGE_OK;
+    b.voltage = 12.0f;
+    b.valid   = true;
+    return b;
+}
+
+/*
+ * An armed bench polled every 53 ms for 20 s, the tick wrapping inside the
+ * run: every 50 ms window of the INA3221 is one row, in order and under
+ * its own number, every poll's sample is in exactly one row, and the poll
+ * that catches a window up writes two rows at one time.
+ */
+TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    chain_start(LINK_PROTOCOL_MINOR, 0xFFFFE000u, 0x01u);
+    chain_far(400u);
+    chain_link_up();
+    bench_state_t bench = log_sample();
+    log_cadence_t cad;
+    log_cadence_init(&cad, chain_now());
+    /* Disarmed: the windows are taken and none is logged. */
+    for (unsigned i = 0u; i < 20u; ++i) {
+        chain_cycle(53u);
+        CHECK_EQ(log_pass(&w, &cad, &bench, true, false), 0u);
+        CHECK_EQ(sense_link_windows(&ch.sl), 0u);
+    }
+    CHECK_EQ(g_mem.len, 0u);
+    const uint16_t before = bench.servo_window;   /* the last one taken */
+    log_cadence_run_start(&cad, chain_now());
+    const uint64_t began = ch.us;
+    unsigned most = 0u;
+    for (unsigned i = 0u; i < 380u; ++i) {
+        chain_cycle(53u);
+        const unsigned n = log_pass(&w, &cad, &bench, true, true);
+        CHECK(n >= 1u);
+        if (n > most) {
+            most = n;
+        }
+    }
+    CHECK(chain_now() < 0x00010000u);           /* across the tick wrap */
+    CHECK_EQ(most, 2u);
+
+    log_read_t r;
+    read_log(&r);
+    const unsigned closed = (unsigned)((ch.us - began) / 50000u);
+    CHECK(r.with_window + 1u >= closed && r.with_window <= closed + 1u);
+    CHECK_EQ(r.rows, r.with_window);            /* no row without one */
+    CHECK_EQ(r.with_sample, 380u);              /* each sample once   */
+    CHECK_EQ(r.bare, r.rows - 380u);
+    CHECK_EQ(r.same_time, r.bare);
+    CHECK(r.bare >= 20u);                       /* 3 ms a poll in 50  */
+    CHECK_EQ(r.stepped, 0u);
+    CHECK_EQ(r.wrong, 0u);
+    CHECK_EQ(r.back, 0u);
+    /* The run's first window is the one after the last taken before it:
+     * a window taken while disarmed is in no row. */
+    CHECK_EQ((uint16_t)((uint16_t)r.first - before), 1u);
+    CHECK_EQ(log_cadence_sent(&cad), r.rows);
+    CHECK_EQ(log_cadence_lost(&cad), 0);
+    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+
+    /* And the reader takes the file: its time column, no ragged row. */
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.n_columns, 22);
+    CHECK_EQ(an.ragged_rows, 0);
+    CHECK_EQ(an.time_index, 0);
+    CHECK_EQ(an.row_count, (int)r.rows);
+}
+
+/*
+ * Polls 150 ms apart: three windows a poll, three rows at one time, the
+ * sample in the last.  And a poll without a window is still a row.
+ */
+TEST_CASE(a_poll_that_brings_three_windows_writes_three_rows)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    chain_start(LINK_PROTOCOL_MINOR, 1000u, 0x01u);
+    chain_far(400u);
+    chain_link_up();
+    bench_state_t bench = log_sample();
+    log_cadence_t cad;
+    log_cadence_init(&cad, chain_now());
+    for (unsigned i = 0u; i < 8u; ++i) {
+        chain_cycle(150u);
+        (void)log_pass(&w, &cad, &bench, true, false);
+    }
+    log_cadence_run_start(&cad, chain_now());
+    for (unsigned i = 0u; i < 100u; ++i) {
+        chain_cycle(150u);
+        CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 3u);
+    }
+    log_read_t r;
+    read_log(&r);
+    CHECK_EQ(r.rows, 300u);
+    CHECK_EQ(r.with_window, 300u);
+    CHECK_EQ(r.with_sample, 100u);
+    CHECK_EQ(r.bare, 200u);
+    CHECK_EQ(r.same_time, 200u);
+    CHECK_EQ(r.stepped, 0u);
+    CHECK_EQ(r.wrong, 0u);
+    CHECK_EQ(r.back, 0u);
+    /* The sample is in the row of the newest window: the third of each. */
+    const char *row = strchr(g_mem.buf, '\n') + 1;
+    for (unsigned k = 0u; k < 3u; ++k) {
+        const char *sep = strchr(row, ';');
+        CHECK_EQ(sep[1] == ';', k < 2u);       /* voltage cell empty */
+        row = strchr(row, '\n') + 1;
+    }
+
+    /* A poll with no window -- SERVO_WIN's reply lost -- is one row with
+     * the window cells empty, and the windows follow in the next. */
+    fresh(-1);
+    w = writer();
+    ch.lose_win = 1u;
+    chain_cycle(53u);
+    CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 1u);
+    chain_cycle(53u);
+    CHECK(log_pass(&w, &cad, &bench, true, true) >= 2u);
+    read_log(&r);
+    CHECK_EQ(r.with_sample, 2u);
+    CHECK_EQ(r.with_window, r.rows - 1u);
+    CHECK_EQ(r.stepped, 0u);
+    /* A pass without a sample writes nothing. */
+    const size_t len = g_mem.len;
+    CHECK_EQ(log_pass(&w, &cad, &bench, false, true), 0u);
+    CHECK_EQ(g_mem.len, len);
+}
+
 int main(void)
 {
     RUN(a_written_run_reads_back);
@@ -771,5 +1018,7 @@ int main(void)
     RUN(a_commit_by_hand_keeps_the_tail_and_an_empty_one_costs_nothing);
     RUN(a_commit_the_sink_refuses_latches_the_writer);
     RUN(a_sink_that_needs_no_commit_still_writes_the_whole_run);
+    RUN(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll);
+    RUN(a_poll_that_brings_three_windows_writes_three_rows);
     return test_summary("logwriter");
 }

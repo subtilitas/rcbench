@@ -67,6 +67,7 @@
 #include "pdmini.h"
 #include "sense_link.h"
 #include "sense_page.h"
+#include "servo_source.h"
 #include "tone_link.h"
 #include "supply_link.h"
 #include "supply_page.h"
@@ -511,6 +512,10 @@ static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
 static QueueHandle_t     s_enc_q;     /**< control task -> app_main */
+/* The INA3221's CH1 windows from the ring (sense_link_win_t), each number
+ * once and in order.  Full means the renderer is SAMPLE_Q_LEN windows
+ * behind, and the oldest is dropped. */
+static QueueHandle_t     s_win_q;     /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
 
 /* What the screen reads.  Written by the control task, copied by app_main. */
@@ -538,6 +543,10 @@ static struct {
     /* The phase tap as the control task last read it, for the stick run's
      * page. */
     tone_readout_t tone;
+    /* The servo rail's meter as of the last poll (servo_source.h), and the
+     * CH1 windows that left the ring untaken since boot. */
+    servo_source_id_t servo_source;
+    uint32_t      servo_win_lost;
 } s_snap;
 
 static void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
@@ -3553,6 +3562,9 @@ static supply_link_t  s_supply_link;
 /* The current monitors' pages, SENSE and SERVO_SENSE (4.7); see
  * sense_link_service().  Control task only. */
 static sense_link_t   s_sense_link;
+/* Which meter measures the servo rail, decided once per poll.  Control
+ * task only. */
+static servo_source_t s_servo_source;
 /* The phase tap's page, TONE (4.8); see tone_link_service().  Control task
  * only. */
 static tone_link_t    s_tone_link;
@@ -3969,6 +3981,7 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
     supply_link_init(&s_supply_link);
     sense_link_init(&s_sense_link);
+    servo_source_init(&s_servo_source);
     tone_link_init(&s_tone_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
@@ -5980,13 +5993,57 @@ static void enc_queue(void)
     }
 }
 
+/* The servo meter's alert posted and not yet seen taken: its number in the
+ * alert slot (0 none) and its event.  Control task only. */
+static uint32_t s_source_alert_gen;
+static uint32_t s_source_alert_ev;
+
+/*
+ * What the choice of the servo rail's meter says to the operator, one
+ * event at a time into a free alert slot and followed until a frame has
+ * taken it, as sense_link_alerts() does for the current monitors.
+ */
+static void servo_source_alerts(void)
+{
+    snap_lock();
+    const bool     slot_free = !s_snap.alert_pending;
+    const uint32_t posted    = s_snap.alert_gen;
+    const uint32_t taken     = s_snap.alert_taken;
+    snap_unlock();
+    if (s_source_alert_gen != 0u) {
+        if ((int32_t)(taken - s_source_alert_gen) >= 0) {
+            s_source_alert_gen = 0u;                 /* shown */
+        } else if (posted != s_source_alert_gen) {
+            servo_source_event_back(&s_servo_source, s_source_alert_ev);
+            s_source_alert_gen = 0u;                 /* replaced unseen */
+        } else {
+            return;                                  /* not taken yet */
+        }
+    }
+    if (!slot_free) {
+        return;
+    }
+    const uint32_t ev = servo_source_event(&s_servo_source, now_ms());
+    if (ev == 0u) {
+        return;
+    }
+    s_source_alert_ev = ev;
+    if ((ev & SERVO_SOURCE_EV_OLD) != 0u) {
+        s_source_alert_gen = control_alert_numbered(TR(ALERT_SERVO_METER_OLD));
+    } else {
+        s_source_alert_gen = control_alert_numbered(TR(ALERT_I3221_RESET));
+    }
+}
+
 /*
  * The current monitors' pages: the set-up SETUP names written when it
  * differs from what SENSE holds, the identity read again after a write is
- * taken, and SENSE's and SERVO_SENSE's readings read at their rates
- * (sense_link.h).  From poll_bench(), after the control write, so @p idle
- * -- the bank disarmed here and ARM written 0 there -- is this pass's.  A
- * coprocessor older than 4.7 is sent nothing.
+ * taken, and SENSE's, SERVO_SENSE's and SERVO_WIN's readings read at their
+ * rates (sense_link.h).  Then the servo rail's meter is chosen from what
+ * was read (servo_source.h).  From poll_bench(), after the control write,
+ * so @p idle -- the bank disarmed here and ARM written 0 there -- is this
+ * pass's.  A coprocessor older than 4.7 is sent nothing, and one older
+ * than 4.11 nothing on SERVO_WIN.
  *
  * With the INA228 as BENCH's source, @p bench gets the ESC's own figures
  * from the last SENSE read, the INA228's clipped flag, and its totals in
@@ -6034,6 +6091,11 @@ static void sense_link_service(bool idle, bench_state_t *bench)
     atomic_store(&s_sense_unheld,
                  (unsigned)sense_link_unheld(&s_sense_link));
     enc_queue();
+    sense_link_meter_t meter;
+    sense_link_meter(&s_sense_link, &meter);
+    (void)servo_source_step(&s_servo_source, now_ms(), true, s_far_minor,
+                            &meter);
+    servo_source_alerts();
 
     const bool sensed = (bench->flags & (uint16_t)LINK_BN_SENSED) != 0u;
     bool v_ok = false;
@@ -6044,8 +6106,6 @@ static void sense_link_service(bool idle, bench_state_t *bench)
         (void)sense_link_esc(&s_sense_link, now_ms(), &v_ok, &volts, &i_ok,
                              &amps);
     }
-    /* Each new INA3221 window, once, for the run's log. */
-    (void)sense_link_take_window(&s_sense_link, bench);
     bench_state_set_esc(bench, v_ok, volts, i_ok, amps,
                         sensed && (sense_link_flags(&s_sense_link)
                                    & LINK_SN_I228_CLIPPED) != 0u);
@@ -6705,6 +6765,8 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* And the monitors' pages: nothing on them is known until the
              * link comes back, and the ESC's figures go with the readings. */
             sense_link_lost(&s_sense_link);
+            (void)servo_source_step(&s_servo_source, now_ms(), false, 0u,
+                                    NULL);
             tone_link_lost(&s_tone_link);
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
@@ -6764,7 +6826,29 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
 }
 
 /*
- * The model's step, the run's totals and the bench log's row, each decided
+ * The INA3221's next window into @p bench's log fields, and a ring window
+ * onto the queue to the render side as well.  Control task only.
+ */
+static void servo_window_take(bench_state_t *bench)
+{
+    if (!sense_link_win_on(&s_sense_link)) {
+        (void)sense_link_take_window(&s_sense_link, bench);
+        return;
+    }
+    sense_link_win_t w;
+    if (!sense_link_take_win(&s_sense_link, &w)) {
+        return;
+    }
+    sense_link_win_bench(&s_sense_link, &w, bench);
+    if (xQueueSend(s_win_q, &w, 0) != pdTRUE) {
+        sense_link_win_t stale;
+        (void)xQueueReceive(s_win_q, &stale, 0);
+        (void)xQueueSend(s_win_q, &w, 0);
+    }
+}
+
+/*
+ * The model's step, the run's totals and the bench log's rows, each decided
  * for this pass.
  *
  * The model runs on its own 50 ms gate, not on the poll's.  The poll's runs
@@ -6774,8 +6858,9 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
  * the totals: a probe for the coprocessor's identity can hold this loop for
  * its whole 1000 ms timeout.
  *
- * The log has no gate: a pass that brought a sample writes one row, stamped
- * with the wall time since the arm; see log_cadence.h.
+ * The log has no gate: a pass that brought a sample writes one row for
+ * each INA3221 window the poll handed over and one row when it handed over
+ * none, stamped with the wall time since the arm; see log_cadence.h.
  */
 static void advance_model_and_log(bool link_up, float emitted,
                                   telemetry_sim_t *sim, bench_state_t *bench,
@@ -6808,12 +6893,23 @@ static void advance_model_and_log(bool link_up, float emitted,
     bench_totals_show(&s_totals, bench);
     /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
     float t_s = 0.0f;
-    if (log_cadence_row(&s_log_cad, now_ms(), *new_sample,
-                        s_log_kind == LOG_RUN_BENCH, &t_s)) {
-        log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = t_s };
-        row.u.bench = *bench;
-        log_post(&row);
-        /* The INA3221's window is in that row and in no later one. */
+    const bool logged = log_cadence_row(&s_log_cad, now_ms(), *new_sample,
+                                        s_log_kind == LOG_RUN_BENCH, &t_s);
+    /* Every window is taken in the pass that brought it, logged or not:
+     * the render side has each once, and a window taken before a run is
+     * in none of its rows. */
+    const unsigned windows = sense_link_windows(&s_sense_link);
+    const unsigned rows    = log_cadence_rows(windows);
+    for (unsigned k = 0u; k < rows; ++k) {
+        if (k < windows) {
+            servo_window_take(bench);
+        }
+        if (logged) {
+            log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = t_s };
+            bench_state_log_row(bench, k + 1u == rows, &row.u.bench);
+            log_post(&row);
+        }
+        /* The window is in that row and in no later one. */
         bench->servo_new = false;
     }
 }
@@ -6841,6 +6937,8 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.run_seconds = arming_run_seconds(&s_arm);
     s_snap.mcu_temp_c  = s_mcu_c;
     tone_link_readout(&s_tone_link, now_ms(), &s_snap.tone);
+    s_snap.servo_source   = servo_source_id(&s_servo_source);
+    s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to
@@ -7384,6 +7482,7 @@ void app_main(void)
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_state_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
+    s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(sense_link_win_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
@@ -7630,6 +7729,11 @@ void app_main(void)
         while (xQueueReceive(s_enc_q, &enc, 0) == pdTRUE) {
             servo_screen_encoder(&enc);
         }
+        /* The INA3221's CH1 windows are taken off their queue every frame.
+         * No screen reads them or the meter in the snapshot: the SERVO
+         * screen and the servo test read the supply. */
+        sense_link_win_t win;
+        while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) { }
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
             supply_screen_set_output(sup.output);

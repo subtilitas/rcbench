@@ -737,6 +737,79 @@ TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
     bench_state_set_esc(NULL, false, 0.0f, false, 0.0f, false);
 }
 
+/* A bench log row of a window that closed before the newest of its pass:
+ * the window and nothing of the sample, so the log writes the sample's
+ * cells empty.  The row of the newest is the sample whole. */
+TEST_CASE(a_window_only_row_carries_the_window_and_no_sample)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.voltage = 24.31f;
+    b.current = 31.2f;
+    b.power   = 758.0f;
+    b.rpm     = 12000.0f;
+    b.charge_mah = 420.0f;
+    b.energy_wh  = 9.5f;
+    b.flags   = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                           | LINK_BN_RPM_OK | LINK_BN_SENSED);
+    b.counted = (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+    b.valid   = true;
+    b.esc_voltage = 24.0f;
+    b.esc_current = 30.0f;
+    b.esc_ok  = 0x03u;
+    b.clipped = true;
+    b.servo_new    = true;
+    b.servo_ok     = 0x05u;
+    b.servo_window = 65535u;
+    b.servo_mean_ma[0] = -12;
+    b.servo_max_ma[0]  = 1638;
+    b.servo_min_mv[0]  = 5874u;
+    b.servo_mean_ma[2] = 300;
+    b.servo_max_ma[2]  = 310;
+    b.servo_min_mv[2]  = 5990u;
+
+    bench_state_t out;
+    memset(&out, 0xA5, sizeof(out));
+    bench_state_log_row(&b, true, &out);
+    CHECK_EQ(out.flags, b.flags);
+    CHECK_EQ(out.counted, b.counted);
+    CHECK_NEAR(out.voltage, 24.31f, 1e-6);
+    CHECK_NEAR(out.esc_current, 30.0f, 1e-6);
+    CHECK(out.servo_new);
+    CHECK_EQ(out.servo_window, 65535u);
+    CHECK_EQ(out.servo_mean_ma[0], -12);
+
+    memset(&out, 0xA5, sizeof(out));
+    bench_state_log_row(&b, false, &out);
+    CHECK(out.servo_new);
+    CHECK_EQ(out.servo_ok, 0x05u);
+    CHECK_EQ(out.servo_window, 65535u);
+    CHECK_EQ(out.servo_mean_ma[0], -12);
+    CHECK_EQ(out.servo_max_ma[0], 1638);
+    CHECK_EQ(out.servo_min_mv[0], 5874u);
+    CHECK_EQ(out.servo_mean_ma[1], 0);
+    CHECK_EQ(out.servo_mean_ma[2], 300);
+    CHECK_EQ(out.servo_max_ma[2], 310);
+    CHECK_EQ(out.servo_min_mv[2], 5990u);
+    /* Nothing of the sample: no flag, no count, no figure. */
+    CHECK_EQ(out.flags, 0u);
+    CHECK_EQ(out.counted, 0u);
+    CHECK_EQ(out.esc_ok, 0u);
+    CHECK(!out.valid);
+    CHECK(!out.clipped);
+    CHECK(out.voltage == 0.0f && out.current == 0.0f && out.rpm == 0.0f);
+    CHECK(out.charge_mah == 0.0f && out.energy_wh == 0.0f);
+    float v = 1.0f;
+    CHECK(!bench_state_ina_voltage(&out, &v));
+    CHECK(!bench_state_esc_current(&out, &v));
+
+    /* Nothing, no crash. */
+    memset(&out, 0xA5, sizeof(out));
+    bench_state_log_row(NULL, false, &out);
+    CHECK_EQ(out.servo_window, 0xA5A5u);
+    bench_state_log_row(&b, false, NULL);
+}
+
 int main(void)
 {
     RUN(every_field_survives_the_round_trip);
@@ -762,5 +835,6 @@ int main(void)
     RUN(the_finer_totals_replace_benchs_where_they_agree);
     RUN(the_totals_go_on_past_benchs_bounds);
     RUN(the_escs_figures_come_from_whichever_page_carries_them);
+    RUN(a_window_only_row_carries_the_window_and_no_sample);
     return test_summary("bench");
 }

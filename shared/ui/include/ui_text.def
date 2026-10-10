@@ -894,6 +894,8 @@ UI_TEXT(ALERT_SENSE_STUCK,         94, "sensor bus stuck: SDA held low -- clocki
 UI_TEXT(ALERT_SENSE_I228_CLIPPED,  94, "INA228 current at the end of its range -- current is a bound")
 UI_TEXT(ALERT_SENSE_I3221_CLIPPED, 94, "INA3221 CH%u clipped at %u.%02u A -- current is a bound")
 UI_TEXT(ALERT_ENC_OLD,             94, "coprocessor older than 4.9 -- AS5600 not read")
+UI_TEXT(ALERT_SERVO_METER_OLD,     94, "coprocessor older than 4.11 -- servo current read from PD mini")
+UI_TEXT(ALERT_I3221_RESET,         94, "INA3221 reset itself -- check its supply")
 UI_TEXT(ALERT_ENC_SILENT,          94, "AS5600 not answering at 0x36")
 UI_TEXT(ALERT_ENC_NO_MAGNET,       94, "AS5600 sees no magnet -- check the magnet on the horn shaft")
 UI_TEXT(ALERT_ENC_WEAK,            94, "AS5600 magnet too weak -- move it closer")

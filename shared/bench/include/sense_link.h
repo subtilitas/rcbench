@@ -1,7 +1,8 @@
 /*
- * The panel's half of the SENSE (0x2B) and SERVO_SENSE (0x2C) link pages,
- * protocol 4.7: what is written to SENSE, in what order, what is read from
- * both pages and how often, and what a read means for the operator.
+ * The panel's half of the SENSE (0x2B), SERVO_SENSE (0x2C) and SERVO_WIN
+ * (0x31) link pages: what is written to SENSE, in what order, what is read
+ * from the three pages and how often, and what a read means for the
+ * operator.
  *
  * The coprocessor reads the two current monitors and the output encoder (an
  * AS5600 angle sensor); the panel sets them up from SETUP INTERFACES and
@@ -9,7 +10,9 @@
  * SENSE_LINK_MINOR has neither page, and nothing is sent to it: not a write
  * and not a read.  One below SENSE_LINK_ENC_MINOR has no encoder: ENABLE
  * bit 2 is not written, SENSE 26 to 31 are not read, and an encoder enabled
- * on SETUP raises SENSE_LINK_EV_ENC_OLD.
+ * on SETUP raises SENSE_LINK_EV_ENC_OLD.  One below SENSE_LINK_WIN_MINOR
+ * has no SERVO_WIN and no RESETS: nothing is sent to SERVO_WIN, and the
+ * INA3221's windows are SERVO_SENSE's last one per read.
  *
  * The set-up is three frames of four registers: the bus (ENABLE to KHZ),
  * the INA228 (4 to 7) and the INA3221 (8 to 11).  The page judges every
@@ -39,11 +42,41 @@
  * SENSE write.
  *
  * While the page enables a part, SENSE 12 to 25 -- to 31 with the encoder
- * -- are read every SENSE_LINK_READ_MS and, while it enables the INA3221, SERVO_SENSE 0 to 13
- * every SENSE_LINK_SERVO_MS.  From those reads come the events the caller
- * tells the operator about, each once: a part enabled and not answering, a
- * part that answers with another identity, the bus stuck, and a reading
- * clipped at the top of its range.
+ * -- are read every SENSE_LINK_READ_MS and, while it enables the INA3221,
+ * SERVO_SENSE 0 to 13 every SENSE_LINK_SERVO_MS.  From those reads come
+ * the events the caller tells the operator about, each once: a part
+ * enabled and not answering, a part that answers with another identity,
+ * the bus stuck, and a reading clipped at the top of its range.
+ *
+ * The window ring.  While the page of a 4.11 coprocessor enables the
+ * INA3221 with CH1, SERVO_WIN's registers 0 to 15 -- the header and the two
+ * newest windows -- are read every SENSE_LINK_WIN_MS, and SENSE's status
+ * read goes to register 31 for RESETS.  Each CH1 window number is handed
+ * over once, oldest first (sense_link_take_win()):
+ *
+ *   - a read that owes one or two windows hands them over;
+ *   - SENSE_LINK_WIN_ALL_MS after the last read that left nothing owed,
+ *     the read is the whole page, 28 registers, so every window owed
+ *     comes from one reply.  Entries of two replies are not joined: a
+ *     window boundary between them shifts every entry by one number;
+ *   - a read of registers 0 to 15 that owes more than its two windows
+ *     hands nothing over and asks for the whole page in the same poll;
+ *   - a number more than LINK_SW_RING behind the newest has left the ring
+ *     and is counted (sense_link_win_lost());
+ *   - an entry whose CLOSED bit is clear is a number the coprocessor
+ *     skipped: nothing is handed over for it and nothing is counted.  A
+ *     skipped number that left the ring before a read is counted as a
+ *     window is: the page no longer says which it was;
+ *   - a reply lost on the link moves nothing: the next read owes the same
+ *     windows and those closed since;
+ *   - the first read after a link-up hands nothing over and starts after
+ *     the newest number it shows, so a window read before the link went is
+ *     not handed over again;
+ *   - a set-up this module wrote, a read without LINK_SW_HAVE, and a newest
+ *     number behind the last one handed over mean the ring started again:
+ *     every closed entry of the next read is owed;
+ *   - at most LINK_SW_RING windows wait to be taken; a read that brings
+ *     more leaves the rest owed on the page.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.
@@ -67,6 +100,8 @@ extern "C" {
 #define SENSE_LINK_MINOR 7u
 /** The protocol minor that has SENSE's output encoder. */
 #define SENSE_LINK_ENC_MINOR 9u
+/** The protocol minor that has SERVO_WIN and SENSE's RESETS. */
+#define SENSE_LINK_WIN_MINOR LINK_MINOR_SERVO_WIN
 
 /** How long a set-up rests after its last edit before it is written: a held
  *  + or - on SETUP steps a value about 30 times a second, and each write is
@@ -89,6 +124,20 @@ extern "C" {
  *  poll reads them and every 50 ms window is seen -- its mean the filter,
  *  its highest current and lowest voltage the spikes. */
 #define SENSE_LINK_SERVO_MS 40u
+
+/** SERVO_WIN's header and two newest windows are due this long after the
+ *  last read while the INA3221 is enabled with CH1: under the 50 ms poll,
+ *  so every poll reads them. */
+#define SENSE_LINK_WIN_MS 40u
+
+/** The registers of that read, and the windows they carry. */
+#define SENSE_LINK_WIN_HEAD ((unsigned)LINK_SW_ENTRY(2, 0))
+#define SENSE_LINK_WIN_HEAD_WINDOWS 2u
+
+/** The whole page is read instead once this long has passed since a read
+ *  last left no window owed: two windows, after which a third can have
+ *  closed. */
+#define SENSE_LINK_WIN_ALL_MS 100u
 
 /** A part enabled and not online this long after its set-up was taken, or
  *  first read, is said not to answer: the coprocessor scans the bus again
@@ -186,6 +235,8 @@ typedef enum {
     SENSE_LINK_OP_IDENTITY,     /**< IDENTITY, for the capability bits   */
     SENSE_LINK_OP_STATUS,       /**< SENSE 12 to 25, or to 31            */
     SENSE_LINK_OP_SERVO,        /**< SERVO_SENSE 0 to 13                 */
+    SENSE_LINK_OP_WIN,          /**< SERVO_WIN 0 to 15                   */
+    SENSE_LINK_OP_WIN_ALL,      /**< SERVO_WIN 0 to 27                   */
 } sense_link_op_kind_t;
 
 typedef struct {
@@ -196,10 +247,48 @@ typedef struct {
     uint16_t regs[4];         /**< a write's registers                 */
 } sense_link_op_t;
 
+/** One 50 ms window of INA3221 CH1, as SERVO_WIN carries it.  A clipped
+ *  sample counts in the three currents at the end of the range it read. */
+typedef struct {
+    uint16_t number;      /**< the window's, modulo 65536                 */
+    bool     current;     /**< it holds current samples                   */
+    bool     voltage;     /**< it holds bus voltage samples               */
+    bool     clip_hi;     /**< a sample read the top of the range         */
+    bool     clip_lo;     /**< a sample read the bottom                   */
+    uint8_t  clipped;     /**< samples at an end, held at 255             */
+    int16_t  mean_ma;     /**< mA, signed                                 */
+    int16_t  max_ma;
+    int16_t  min_ma;
+    uint16_t mean_mv;     /**< bus voltage at the load side of the shunt  */
+    uint16_t min_mv;
+    uint32_t taken_ms;    /**< when the panel had the read that brought it */
+} sense_link_win_t;
+
+/** What the servo rail's meter is chosen from (servo_source.h), as of the
+ *  last exchange. */
+typedef struct {
+    bool     page;        /**< the coprocessor has SENSE                  */
+    bool     wanted;      /**< SETUP has the INA3221 on with CH1          */
+    /** SENSE's registers 0 to 11 are the set-up asked, with the INA3221
+     *  enabled on CH1: no write owed and no frame refused. */
+    bool     held;
+    uint16_t setups;      /**< set-ups taken and links lost, modulo 65536:
+                               moves when the reads below start again     */
+    bool     status;      /**< a SENSE read answered under this set-up    */
+    uint32_t status_ms;   /**< when                                       */
+    uint16_t flags;       /**< its FLAGS                                  */
+    bool     resets_read; /**< it carried RESETS (4.11)                   */
+    uint8_t  resets;      /**< the INA3221's count, modulo 256            */
+    bool     win;         /**< SERVO_WIN showed a window under this set-up */
+    bool     win_valid;   /**< the newest closed with current samples     */
+    uint32_t win_ms;      /**< when the newest number last moved          */
+} sense_link_meter_t;
+
 typedef struct {
     bool     up;              /**< a coprocessor answers               */
     bool     page;            /**< the coprocessor has SENSE (4.7)     */
     bool     enc_page;        /**< and the encoder (4.9)               */
+    bool     win_page;        /**< and SERVO_WIN and RESETS (4.11)     */
 
     /* What is asked, as the page is to hold it. */
     bool     want_set;
@@ -233,6 +322,24 @@ typedef struct {
     uint32_t status_reads;    /**< SENSE reads answered, since init    */
     bool     window_taken;    /**< a window has gone to the log        */
     uint16_t window_last;     /**< the number of the last one          */
+
+    /* The window ring. */
+    bool     asked_win;
+    uint32_t win_asked_ms;
+    bool     win_all;         /**< the whole page is owed               */
+    bool     win_synced;      /**< win_next is the next number owed     */
+    bool     win_restart;     /**< every closed entry of the next read
+                                   is owed                              */
+    uint16_t win_next;
+    uint32_t win_sync_ms;     /**< when a read last left nothing owed   */
+    uint32_t win_lost;        /**< numbers that left the ring, since init */
+    bool     win_have;        /**< a read showed LINK_SW_HAVE           */
+    bool     win_valid;       /**< its newest entry holds current       */
+    uint16_t win_newest;
+    uint32_t win_moved_ms;    /**< when win_newest last moved           */
+    uint8_t  winq_n;          /**< windows waiting in winq, oldest first */
+    sense_link_win_t winq[LINK_SW_RING];
+    uint16_t setups;          /**< set-ups taken and links lost         */
     bool     caps_new;
     uint16_t caps;
 
@@ -359,13 +466,53 @@ bool sense_link_take_caps(sense_link_t *s, uint16_t *caps);
 /** FLAGS as last read, 0 before any read. */
 uint16_t sense_link_flags(const sense_link_t *s);
 
+/** Whether the INA3221's windows come from SERVO_WIN: the coprocessor has
+ *  the page and its SENSE page enables the INA3221 with CH1. */
+bool sense_link_win_on(const sense_link_t *s);
+
 /**
- * The INA3221's last window into @p b for the log, once per window: true
- * and servo_new set when the last SERVO_SENSE read holds a window with
- * readings whose number has not been taken before; false otherwise, @p b
- * untouched.
+ * The next CH1 window of the ring into @p out, oldest first, each number
+ * once: false when none waits, @p out untouched.
+ */
+bool sense_link_take_win(sense_link_t *s, sense_link_win_t *out);
+
+/** Window numbers that left the ring before a read took them, since init,
+ *  modulo 2^32: the windows lost, and with them any number the coprocessor
+ *  skipped that was out of the ring by the read.  A caller that compares
+ *  two counts has those of the time in between. */
+uint32_t sense_link_win_lost(const sense_link_t *s);
+
+/**
+ * How many windows sense_link_take_window() hands over now: the ring's
+ * waiting ones, or without the ring 1 while SERVO_SENSE's last read holds
+ * a window not taken yet.
+ */
+unsigned sense_link_windows(const sense_link_t *s);
+
+/**
+ * A ring window into @p b's log fields: servo_new set, its number, CH1's
+ * mean and highest current and lowest bus voltage with servo_ok bit 0 set
+ * while the window holds samples, and CH2's and CH3's figures from
+ * SERVO_SENSE's last read when that read shows the same window number.
+ */
+void sense_link_win_bench(const sense_link_t *s, const sense_link_win_t *w,
+                          bench_state_t *b);
+
+/**
+ * The INA3221's next window into @p b for the log, once per window; true
+ * and servo_new set, false and @p b untouched otherwise.
+ *
+ * With the ring (sense_link_win_on()): the next CH1 window, as
+ * sense_link_take_win() and sense_link_win_bench() give it.  Call until
+ * false: a poll brings up to LINK_SW_RING windows.
+ *
+ * Without it: SERVO_SENSE's last read, when it holds a window with
+ * readings whose number has not been taken before.
  */
 bool sense_link_take_window(sense_link_t *s, bench_state_t *b);
+
+/** What the servo rail's meter is chosen from, into @p out. */
+void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out);
 
 /** SENSE reads answered since init: a caller that compares two counts can
  *  tell a read made in between. */

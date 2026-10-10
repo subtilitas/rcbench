@@ -118,7 +118,8 @@ hardware. This build's panel reads SENSE's registers 0 to 11 at every
 link-up, writes the set-up from SETUP INTERFACES one frame at a time where it
 differs (`shared/bench/sense_link.c`, `test_sense_link`), and reads the
 identity page again after a write is taken. It writes no capture to
-SERVO_SENSE and sends nothing to SERVO_WIN (0x31).
+SERVO_SENSE. It reads SERVO_WIN (0x31) on a 4.11 coprocessor:
+[The window ring](#the-window-ring).
 
 The page refuses SDA and SCL that are not one block's pair whatever ENABLE
 holds; a coprocessor of 0.15.0 or older takes them with ENABLE 0 and refuses
@@ -423,9 +424,81 @@ which a set-up register is read a second time is 742.5 µs.
 
 | Panel | Coprocessor | SERVO_WIN (0x31), `RESETS` and `CAP_HOLD_MA` |
 | --- | --- | --- |
-| 4.11 | 4.11 | served. This build's panel sends nothing to SERVO_WIN, reads register 31 only with the encoder's registers and does not use it, and arms no capture |
-| 4.11 | 4.10 or older | the coprocessor answers a request to 0x31 with BAD_PAGE; a host reads the minor at link-up and sends nothing there below 11. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
+| 4.11 | 4.11 | served. While SENSE enables the INA3221 with CH1, this build's panel reads SERVO_WIN every poll and SENSE's registers 12 to 31, `RESETS` among them. It arms no capture |
+| 4.11 | 4.10 or older | the coprocessor answers a request to 0x31 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 11. It takes the INA3221's windows from SERVO_SENSE, the last one per read, reads the PD mini as the servo rail's meter and says once `coprocessor older than 4.11 -- servo current read from PD mini`. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
 | 4.10 or older | 4.11 | the panel never reads 0x31 and reads register 31 as a reserved register it ignores. A holding level it writes, 0 to 32767 mA, means the same. A part found reset reads offline for 1000 ms and then online again |
+
+**The panel's reads.** `shared/bench/sense_link.c` takes each CH1 window
+number once and hands the windows over oldest first. It reads SERVO_WIN
+while the coprocessor's minor is 11 or more and SENSE enables the INA3221
+with CH1; with CH1 off, or on an older coprocessor, the windows are
+SERVO_SENSE's last one per read.
+
+- Every poll it reads registers 0 to 15, the header and the two newest
+  windows.
+- When 100 ms or more have passed since a read last left no window owed, a
+  third window can have closed, and the read is the whole page, registers 0
+  to 27, in place of registers 0 to 15. Every window then comes from one
+  reply. Entries of two replies are not joined: a window that closes
+  between them shifts every entry by one number.
+- A read of registers 0 to 15 that owes more than two windows hands nothing
+  over and is followed by a read of the whole page in the same poll.
+- A window number more than 4 behind the newest has left the ring. It is
+  counted as lost and not handed over. With reads at most 200 ms apart none
+  is lost; with reads 250 ms apart one in five is.
+- An entry with bit 15 clear is handed over as no window and is not
+  counted. A skipped number that has left the ring before a read counts as
+  a lost one: the page no longer says which it was.
+- A reply lost on the link changes nothing: the next read owes the same
+  windows and the ones closed since.
+- The first read after a link-up hands nothing over. The hand-over starts
+  with the window after the newest that read shows, so a window taken
+  before the link went is not taken again.
+- After a set-up the panel wrote, after a read with `FLAGS` bit 0 clear,
+  and when the newest number lies behind the last one taken, the ring has
+  started again: every closed entry of the next read is handed over.
+- At most 4 windows wait for the control task. It takes them in every pass,
+  so none waits longer than a pass.
+
+CH2 and CH3 have no ring. Their figures are SERVO_SENSE's last window, and
+the bench log writes them on the row whose window number that read showed.
+When a window closes between the SERVO_SENSE read and the SERVO_WIN read of
+one poll, the row of the window that closed in between has no CH2 and CH3
+figures.
+
+**The servo rail's meter.** `shared/bench/servo_source.c` decides once per
+poll which meter measures the servo rail. The INA3221's CH1 is the meter
+while all of these hold:
+
+| # | Condition |
+| ---: | --- |
+| 1 | SETUP INTERFACES has the INA3221 on with CH1 among its channels |
+| 2 | the coprocessor's protocol minor is 11 or more |
+| 3 | SENSE's registers 0 to 11 are the set-up asked: no write owed, no frame refused |
+| 4 | the last SENSE read is less than 200 ms old, and its `FLAGS` have the INA3221's bits 4 and 5 set and bit 9 clear |
+| 5 | SERVO_WIN's newest window holds current samples and its number moved less than 200 ms ago |
+| 6 | the INA3221's byte of `RESETS` has not moved since the poll before |
+| 7 | conditions 1 to 6 have held for 1000 ms without a break |
+
+The meter is the PD mini from the first poll in which one of 1 to 6 fails,
+and the INA3221 again 1000 ms after they all hold. With no coprocessor
+answering it is the panel's model. A clipped window and a negative current
+are readings and no condition. The answer is in the control task's snapshot
+with the count of windows lost, and the windows are on a queue to the
+render task, 8 deep, the oldest dropped when it is full. No screen reads
+either: the SERVO screen and the servo test read the PD mini.
+
+`test_sense_windows` runs the modelled INA3221, the coprocessor's schedule
+and pages and `sense_link` on one clock: polls 50, 53, 55, 100, 150, 199 and
+200 ms apart with no window lost, 201 and 250 ms apart with the lost count
+equal to the numbers missing, a reply lost in one, two and three polls in a
+row, the window number across 65535, the reads across the 2^32 ms tick wrap,
+a set-up written, a coprocessor restart, a late coprocessor tick, a link
+lost and back, a part that resets itself, and a 4.10 coprocessor.
+`test_servo_source` holds each condition failing alone, a read fresh at
+199 ms and not at 200 and 201 ms, the INA3221 back at 1000 ms and not at
+999 ms, a reset repaired between two reads, and each timer across the tick
+wrap. Not run on hardware.
 
 `shared/sense/sense_sched.c` keeps the ring and runs the read-backs, under
 `test_sense_sched`: the ring after 1, 4, 5 and 6 windows, across window
@@ -629,7 +702,25 @@ frames) at 20 Hz, about 1.6%, with the output encoder enabled registers 12 to 31
 (20 registers, one request and five data frames), about 1.9%, and while the
 INA3221 is, SERVO_SENSE's
 registers 0 to 13 at 20 Hz, every 50 ms window, about 1.6%: about 3.2%
-together. While the tap is enabled, a read of TONE's registers 8 to 23 (16
+together.
+
+On a 4.11 coprocessor with the INA3221 enabled on CH1 the panel also reads
+SERVO_WIN's registers 0 to 15 at 20 Hz (16 registers, one request and four
+data frames, 0.78 ms of bus time a poll, about 1.6%), and SENSE's read goes
+to register 31 for `RESETS` (one data frame more, 0.16 ms, about 0.3%). The
+three reads are then 16 frames a poll, 2.5 ms, about 5.0% of the bus,
+against 10 frames and 3.1% without the ring. A poll that starts 100 ms or
+more after the last read that left no window owed reads the whole page
+instead, 28 registers, one request and seven data frames: 19 frames,
+2.9 ms. A read of registers 0 to 15 followed by the whole page, after a
+ring that started again, is 24 frames, 3.7 ms, once. With the BENCH read
+and the TONE read a poll's reads are at most 34 frames, 5.3 ms of bus time
+in the 50 ms poll, and SERVO_WIN is one exchange more in it. The ring holds
+200 ms, so the windows survive a poll that takes four times its period.
+`test_sense_windows` holds the frame counts. The time one exchange takes on
+the bench is not measured.
+
+While the tap is enabled, a read of TONE's registers 8 to 23 (16
 registers, one request and four data frames, as the BENCH read) at 20 Hz is
 about 1.7% more, under 2%, and 4.9% for the three pages together, and a read of EVT_SEL
 and registers 14 to 21 for each new beep is a write frame, a request and two
