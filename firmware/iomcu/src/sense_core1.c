@@ -15,6 +15,9 @@
 
 #include "sense_i2c.h"
 #include "tone_core1.h"
+#if SENSE_TRACE
+#include "sense_trace_hw.h"
+#endif
 
 /* --- shared between the cores, under s_lock --------------------------- */
 
@@ -106,6 +109,11 @@ static void core1_main(void)
         spin_unlock(s_lock, irq);
 
         sense_svc_step(&s_svc, &s_cmd, &s_snap);
+#if SENSE_TRACE
+        /* The trace build: this tick's CH1 sample into the ring.  Memory
+         * only, after the reads; the time is the one read above. */
+        sense_trace_hw_feed(&s_svc, now);
+#endif
         /* The phase tap's pass: the words the PIO left in its ring since
          * the last tick.  Nothing when no tap runs. */
         tone_core1_step();

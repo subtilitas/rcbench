@@ -11,6 +11,38 @@ coprocessor and the other way round.
 
 ### Added
 
+- **A coprocessor debug build prints the servo current's 1 ms samples.**
+  Built with `-DSENSE_TRACE=ON`, the coprocessor writes INA3221 CH1's 1 ms
+  samples and CH1's bus voltage as text on its USB console: for 4 s after
+  a PWM output renders another pulse width or after a capture edge, and
+  for 10 s after `t` on the console. A trigger during a trace extends it.
+  Core 1 samples as in the released image and copies each sample into a
+  ring of 4096 records (49,152 bytes); no bus transaction is added. A
+  change of the part's set-up or state is a record in the same ring and
+  keeps its place among the samples, with the start time of the tick it
+  was seen in. A trace whose lines a connected console has not taken
+  29.8 h after its end is dropped. Core 0
+  writes whole lines into the room the console's 64-byte transmit buffer
+  has, and nothing without a terminal. A trigger line and the end line
+  wait until core 1 has finished a tick that started at or after their
+  time, 100 ms at most; an end line written without that carries its
+  reason as a capital letter, and the tool reports the trace as a
+  problem. A full ring drops records, and the
+  trace says where and how many; its end line counts every one from
+  before its end. A trace is about 8.6 bytes a sample. The
+  option is off by default: a released image holds none of this code, and
+  CI fails when it does. `tools/sense_trace.py` checks a captured console
+  against each trace's end line, writes a CSV file per trace, and replays
+  every move through the move rules (`shared/servo/servo_move.c`) with the
+  filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A. From
+  the traces alone it prints which settings see and time every move, each
+  setting's median arrival and how far apart the settings put one move's
+  arrival, and says that no arrival is compared with the horn. With a
+  servo test's CSV file recorded with the AS5600 it prints each arrival
+  less the encoder's travel time and the median per setting.
+  [First run](docs/FirstRun.md) §8.9 has the bench procedure in two parts,
+  the first without an encoder. Host suite only; not run on hardware. Not measured:
+  the time the lines add to a pass of core 0.
 - **`tools/mutate.py`.** Changes one line of `shared/` at a time in a copy
   of the tree (a comparison flipped, a bound plus or minus 1, a stored
   assignment dropped), builds and runs the host suite and reports the

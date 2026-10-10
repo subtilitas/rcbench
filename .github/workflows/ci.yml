@@ -457,6 +457,26 @@ jobs:
         run: python3 tools/stack_check.py --iomcu firmware/iomcu/build
              --check-doc
 
+      # The debug build that prints INA3221 CH1's samples is not released,
+      # and nothing else compiles its firmware side: built here so it keeps
+      # building, under the target's -Werror, with its two stacks checked
+      # as the released image's are.  The image above must hold none of it.
+      - name: The trace build compiles, and the released image has no trace
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/iomcu -B firmware/iomcu/build-trace -G Ninja \
+            -DSENSE_TRACE=ON
+          cmake --build firmware/iomcu/build-trace -j"$(nproc)"
+          arm-none-eabi-nm firmware/iomcu/build-trace/rcbench-iomcu.elf \
+            | grep -q sense_trace_feed
+          if arm-none-eabi-nm firmware/iomcu/build/rcbench-iomcu.elf \
+              | grep -i sense_trace; then
+            echo "::error::the default image holds trace code"
+            exit 1
+          fi
+          python3 tools/stack_check.py --iomcu firmware/iomcu/build-trace
+
       - uses: actions/upload-artifact@v7
         with:
           name: iomcu

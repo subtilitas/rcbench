@@ -139,6 +139,10 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 \
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
+
+# coprocessor, debug build that prints INA3221 CH1's 1 ms samples
+cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
+cmake --build firmware/iomcu/build-trace
 ```
 
 Der Koprozessor-Build erzeugt `rcbench-iomcu.uf2`. Die Datei auf das
@@ -166,6 +170,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
 | `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) |
 | `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das Koprozessor-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der Koprozessor-Tabelle |
+| `tools/sense_trace.py` | liest die mitgeschnittene Konsole eines Koprozessors, der mit `-DSENSE_TRACE=ON` gebaut ist: prüft jeden Trace der 1-ms-Samples von INA3221 CH1 gegen seine Endzeile, schreibt je Trace eine CSV-Datei (Comma-Separated Values) und spielt jede Bewegung durch `shared/servo/servo_move.c`, mit dem Filter bei 1, 4 und 8 Samples und dem Band bei 0,02, 0,05 und 0,10 A; `--servo-csv` ergänzt die Ankunft abzüglich der Stellzeit des AS5600 ([Erster Lauf](FirstRun-de.md#89-die-1-ms-samples-von-ch1-auf-der-konsole)) |
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/pinmap.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_art.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Board-Grafik und der ESC-Profile aus ihren PNG- und JSON-Quellen; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
@@ -176,13 +181,15 @@ bis 32 GPIO (General-Purpose Input/Output).
 `~/.local/share/fonts`, dann in den Systemfontverzeichnissen. `frame_cost.py`
 braucht `valgrind`; die übrigen Werkzeuge brauchen einen C-Compiler und
 Pillow. `mutate.py` braucht außerdem git und CMake, `ci_gate.py` das
-Kommando `gh`.
+Kommando `gh`. `sense_trace.py` braucht CMake und einen C-Compiler: es baut
+`test/host/sense_trace_replay.c` nach `build-trace/`, wenn `--replay` kein
+gebautes Programm nennt.
 
 ## CI
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy und cppcheck über `shared/`, die Klassen warning, performance und portability von cppcheck über `firmware/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks, v5.4 mit der Stack-Tabelle dieses Wikis; Koprozessor-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy und cppcheck über `shared/`, die Klassen warning, performance und portability von cppcheck über `firmware/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks, v5.4 mit der Stack-Tabelle dieses Wikis; Koprozessor-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, und ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen, erstellt ein Release und übernimmt die PDFs der Bauanleitung vom letzten Release |
 

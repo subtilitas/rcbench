@@ -1,0 +1,3488 @@
+/*
+ * The trace of CH1's 1 ms samples (sense_trace.h), against the modelled
+ * INA3221 of fake_ina.h read by the coprocessor's sensor service, a clock
+ * the suite moves 1 ms a step, and a console that takes as many bytes a
+ * pass as the suite gives it.
+ *
+ * Under test: core 1's side -- every CH1 sample and every CH1 bus voltage
+ * taken once, with its time and value, across a window's close, an
+ * emptied window, a set-up and a closed bus; no bus transaction and no
+ * clock read added to the tick, at most 2 records a call; a ring full by
+ * exactly 0, 1 and many records, the dropped ones counted and never
+ * waited for.  Core 0's side -- the newest SENSE_TRACE_PRE records kept
+ * while idle; a trace from each trigger with its header, its records from
+ * before the trigger and its length; a trigger during a trace adding its
+ * line and moving the end, never back; the watch on a slot's pulse at
+ * SENSE_TRACE_HOLD_MS and one step either side; traces across the wrap
+ * of the millisecond tick and of the 0.1 ms count; whole lines only,
+ * whatever room the console has; a console with no room for seconds,
+ * inside a trace and across its end, and one not connected; a changed set-up, a part going offline and a reset
+ * during a trace, each in its place among the samples when the console
+ * is behind; the console's stop, which writes what came before it; a
+ * voltage kept only behind the sample of its tick; the pulse held to the
+ * frame; the trigger queue full by 0 and 1;
+ * every line at its longest inside SENSE_TRACE_LINE_MAX; and the shunt
+ * code back from every current ina3221_current_ua() gives.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include <stdio.h>
+#include <string.h>
+
+#include "greatest.h"
+
+#include "fake_ina.h"
+#include "sense_svc.h"
+#include "sense_trace.h"
+
+#define I3221_ADDR 0x40u
+#define I3221_UOHM 100000u
+#define RING       4096u
+#define MAX_S      20000u
+
+static fake_bus_t   fb;
+static fake_part_t *i3221;
+static sense_svc_t  v;
+static sense_cmd_t  cmd;
+static sense_snap_t snap;
+static uint64_t     g_us;
+static unsigned     g_clock_reads;
+
+static sense_trace_t     tr;
+static sense_trace_rec_t g_ring[RING];
+
+/* What the console took. */
+static char   g_log[1u << 20];
+static size_t g_len;
+static bool   g_partial;        /* a pump handed back less than a line */
+static size_t g_most;           /* the most bytes one pump handed back */
+
+static uint64_t now_us(void *ctx)
+{
+    (void)ctx;
+    ++g_clock_reads;
+    return g_us;
+}
+
+static void recover(void *ctx)
+{
+    (void)ctx;
+}
+
+static bool open_bus(void *ctx, uint8_t sda, uint8_t scl)
+{
+    (void)ctx;
+    (void)sda;
+    (void)scl;
+    return true;
+}
+
+static void close_bus(void *ctx)
+{
+    (void)ctx;
+}
+
+static sense_err_t ask(void *ctx, uint8_t addr)
+{
+    return (fake_find((fake_bus_t *)ctx, addr) != NULL) ? SENSE_OK
+                                                         : SENSE_NACK;
+}
+
+/* The INA3221 with CH1 on a 0.1 Ω shunt, 0.12 A and 6.0 V; the service
+ * with its bus not yet open; a trace over a ring of @p size. */
+static void rig_size(uint32_t size)
+{
+    sense_bus_t scratch;
+    fake_bus_init(&fb, &scratch);
+    i3221 = fake_add(&fb, FAKE_INA3221, I3221_ADDR, 0.1);
+    i3221->volts[0] = 6.0;
+    i3221->amps[0]  = 0.12;
+    g_us = 20000000u;
+    const sense_svc_io_t io = {
+        .sched = { { fake_read, fake_write, &fb }, now_us, recover, &fb },
+        .open = open_bus, .close = close_bus, .ask = ask,
+    };
+    sense_svc_init(&v, &io);
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.cfg_gen = 1u;
+    cmd.sda = 16u;
+    cmd.scl = 17u;
+    cmd.parts.ina3221_en = true;
+    cmd.parts.ina3221_addr = I3221_ADDR;
+    cmd.parts.ina3221_shunt_uohm = I3221_UOHM;
+    cmd.parts.ina3221_channels = 1u;
+    CHECK(sense_trace_init(&tr, g_ring, size));
+    g_len = 0u;
+    g_log[0] = '\0';
+    g_partial = false;
+    g_most = 0u;
+}
+
+static void rig(void)
+{
+    rig_size(RING);
+}
+
+/* Core 1's tick: the service, then the trace. */
+static void tick(void)
+{
+    sense_svc_step(&v, &cmd, &snap);
+    sense_trace_feed(&tr, v.open ? &v.sched : NULL, g_us);
+    g_us += 1000u;
+}
+
+/* Core 0's pass with @p room bytes of console. */
+static void pass_as(size_t room, bool connected)
+{
+    char buf[256];
+    const size_t n = sense_trace_pump(&tr, g_us, connected, buf, room);
+    if (n > room || n > sizeof(buf)) {
+        g_partial = true;
+        return;
+    }
+    if (n > 0u && (n < 2u || buf[n - 2u] != '\r' || buf[n - 1u] != '\n')) {
+        g_partial = true;
+    }
+    if (n > g_most) {
+        g_most = n;
+    }
+    if (g_len + n < sizeof(g_log)) {
+        memcpy(&g_log[g_len], buf, n);
+        g_len += n;
+        g_log[g_len] = '\0';
+    }
+}
+
+static void pass(void)
+{
+    pass_as(SENSE_TRACE_LINE_MAX, true);
+}
+
+/* @p ms of both cores, the console taking a buffer a pass. */
+static void run(unsigned ms)
+{
+    for (unsigned k = 0; k < ms; ++k) {
+        tick();
+        pass();
+    }
+}
+
+/* ------------------------------------------------- the console, parsed */
+
+typedef struct {
+    unsigned n_t, n_h, n_z, n_c, n_e, n_k, n_d, n_l, n_st, n_bad;
+    unsigned n_s, n_v;
+    unsigned long lost;         /* the $L lines' sum                  */
+    /* The last $T, $H and $Z. */
+    unsigned ver, id, len;
+    char     trig[8];
+    unsigned long t0, ms0;
+    unsigned long shunt, cfg, on, rst;
+    unsigned z_id, z_s, z_v, z_l, z_m, z_ml;
+    char     z_e;
+    /* The samples since the last $T. */
+    uint32_t t[MAX_S];
+    int32_t  code[MAX_S];
+    int      first_dt;
+    int      mv_last;
+    unsigned long mark_t[32];   /* every trigger line's time          */
+    unsigned mark_ch, mark_us;  /* the last $C line's                 */
+    unsigned long dest_t;       /* the last $D line's                 */
+    unsigned dest_ch, dest_us;
+    unsigned n_mark;
+    unsigned long st_on, st_rst;
+    unsigned st_at;             /* sample lines before the first $S   */
+} seen_t;
+
+static seen_t seen;
+
+static void parse_line(const char *l)
+{
+    seen_t *p = &seen;
+    char e = '\0';
+    int dt = 0;
+    int code = 0;
+    int mv = 0;
+    int end = 0;
+    unsigned long a = 0u;
+    unsigned b = 0u;
+    unsigned c = 0u;
+    if (sscanf(l, "$T v=%u n=%u trig=%7s t=%lu ms=%lu len=%u%n", &p->ver,
+               &p->id, p->trig, &p->t0, &p->ms0, &p->len, &end) == 6
+        && l[end] == '\0') {
+        ++p->n_t;
+        p->n_s = 0u;
+        p->n_v = 0u;
+    } else if (sscanf(l, "$H dt_us=1000 shunt_uohm=%lu cfg=0x%lx on=%lu "
+                         "rst=%lu%n", &p->shunt, &p->cfg, &p->on, &p->rst,
+                      &end) == 4 && l[end] == '\0') {
+        ++p->n_h;
+    } else if (sscanf(l, "$Z n=%u s=%u v=%u l=%u m=%u ml=%u e=%c%n",
+                      &p->z_id, &p->z_s, &p->z_v, &p->z_l, &p->z_m, &p->z_ml,
+                      &e, &end) == 7 && l[end] == '\0') {
+        p->z_e = e;
+        ++p->n_z;
+    } else if (sscanf(l, "$C t=%lu ch=%u us=%u%n", &a, &b, &c, &end) == 3
+               && l[end] == '\0') {
+        ++p->n_c;
+        p->mark_ch = b;
+        p->mark_us = c;
+        p->mark_t[p->n_mark++ % 32u] = a;
+    } else if (sscanf(l, "$D t=%lu ch=%u us=%u%n", &a, &b, &c, &end) == 3
+               && l[end] == '\0') {
+        ++p->n_d;
+        p->dest_t  = a;
+        p->dest_ch = b;
+        p->dest_us = c;
+    } else if (sscanf(l, "$E t=%lu%n", &a, &end) == 1 && l[end] == '\0') {
+        ++p->n_e;
+        p->mark_t[p->n_mark++ % 32u] = a;
+    } else if (sscanf(l, "$K t=%lu%n", &a, &end) == 1 && l[end] == '\0') {
+        ++p->n_k;
+        p->mark_t[p->n_mark++ % 32u] = a;
+    } else if (sscanf(l, "$L n=%lu%n", &a, &end) == 1 && l[end] == '\0') {
+        ++p->n_l;
+        p->lost += a;
+    } else if (sscanf(l, "$S on=%lu rst=%lu%n", &p->st_on, &p->st_rst, &end)
+               == 2 && l[end] == '\0') {
+        if (p->n_st == 0u) {
+            p->st_at = p->n_s;
+        }
+        ++p->n_st;
+    } else if (sscanf(l, "v%d%n", &mv, &end) == 1 && l[end] == '\0') {
+        ++p->n_v;
+        p->mv_last = mv;
+    } else if (sscanf(l, "%d,%d%n", &dt, &code, &end) == 2
+               && l[end] == '\0') {
+        const uint32_t prev = (p->n_s == 0u) ? (uint32_t)p->t0
+                                             : p->t[(p->n_s - 1u) % MAX_S];
+        if (p->n_s == 0u) {
+            p->first_dt = dt;
+        }
+        p->t[p->n_s % MAX_S]    = prev + (uint32_t)dt;
+        p->code[p->n_s % MAX_S] = code;
+        ++p->n_s;
+    } else {
+        ++p->n_bad;
+    }
+}
+
+/* Everything the console took, line by line, into seen. */
+static void parse(void)
+{
+    memset(&seen, 0, sizeof(seen));
+    const char *at = g_log;
+    for (;;) {
+        const char *eol = strstr(at, "\r\n");
+        if (eol == NULL) {
+            if (*at != '\0') {
+                ++seen.n_bad;       /* a line with no end */
+            }
+            return;
+        }
+        char line[128];
+        const size_t n = (size_t)(eol - at);
+        if (n >= sizeof(line) || n + 2u > SENSE_TRACE_LINE_MAX) {
+            ++seen.n_bad;
+        } else {
+            memcpy(line, at, n);
+            line[n] = '\0';
+            parse_line(line);
+        }
+        at = eol + 2;
+    }
+}
+
+/* Records of @p kind the ring holds. */
+static unsigned held_of(sense_trace_kind_t kind)
+{
+    unsigned n = 0u;
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    for (uint32_t k = (uint32_t)atomic_load(&tr.tail); k != head; ++k) {
+        if ((g_ring[k & tr.mask].meta >> 24) == (uint32_t)kind) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/* The @p k-th sample or voltage the ring holds, from its tail: the set-up's
+ * records are left out.  NULL past the last. */
+static const sense_trace_rec_t *rec(unsigned k)
+{
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    for (uint32_t i = (uint32_t)atomic_load(&tr.tail); i != head; ++i) {
+        const sense_trace_rec_t *r = &g_ring[i & tr.mask];
+        if ((r->meta >> 24) >= SENSE_TRACE_CFG) {
+            continue;
+        }
+        if (k-- == 0u) {
+            return r;
+        }
+    }
+    return NULL;
+}
+
+/* Samples and voltages the ring holds. */
+static unsigned held_data(void)
+{
+    return held_of(SENSE_TRACE_CURRENT) + held_of(SENSE_TRACE_BUS)
+           + held_of(SENSE_TRACE_CLIP_HI) + held_of(SENSE_TRACE_CLIP_LO);
+}
+
+/* ------------------------------------------------------------- core 1 */
+
+TEST_CASE(a_ring_is_a_power_of_two)
+{
+    sense_trace_t t2;
+    sense_trace_rec_t r[8];
+    char out[64];
+    CHECK(!sense_trace_init(&t2, NULL, 8u));
+    CHECK(!sense_trace_init(&t2, r, 0u));
+    CHECK(!sense_trace_init(&t2, r, 1u));
+    CHECK(!sense_trace_init(&t2, r, 6u));
+    CHECK(!sense_trace_init(&t2, r, (1u << 24) + 1u));
+    CHECK(!sense_trace_init(&t2, r, 1u << 25));
+    /* Refused, it takes nothing and gives nothing. */
+    rig();
+    tick();
+    sense_trace_feed(&t2, &v.sched, g_us);
+    sense_trace_trigger(&t2, SENSE_TRACE_TRIG_KEY, g_us, 0u, 0u);
+    CHECK(!sense_trace_pulse(&t2, 0u, 5u, 1500u, g_us));
+    CHECK(!sense_trace_active(&t2));
+    CHECK_EQ(sense_trace_pump(&t2, g_us, true, out, sizeof(out)), 0u);
+    CHECK(sense_trace_init(&t2, r, 2u));
+    CHECK(sense_trace_init(&t2, r, 8u));
+}
+
+TEST_CASE(every_ch1_sample_and_voltage_is_taken_once)
+{
+    rig();
+    for (unsigned k = 0; k < 1000u; ++k) {
+        i3221->amps[0] = 0.0004 * (double)(k % 2000u);
+        tick();
+    }
+    CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
+    CHECK_EQ(i3221->reads[INA3221_BUS1], 50u);
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 1000u);
+    CHECK_EQ(held_of(SENSE_TRACE_BUS), 50u);
+    /* Each sample 1 ms after the one before, at the value read. */
+    unsigned n = 0u;
+    for (unsigned k = 0u; k < held_data(); ++k) {
+        const sense_trace_rec_t *r = rec(k);
+        if ((r->meta >> 24) == SENSE_TRACE_BUS) {
+            CHECK_EQ(r->v, 6000);
+            continue;
+        }
+        CHECK_EQ(r->t, 200000u + 10u * n);
+        CHECK_EQ(r->v, 400 * (int32_t)n);
+        CHECK_EQ(r->meta & SENSE_TRACE_LOST_MAX, 0u);
+        ++n;
+    }
+    CHECK_EQ(n, 1000u);
+}
+
+TEST_CASE(the_feed_adds_no_bus_transaction_and_reads_no_clock)
+{
+    rig();
+    for (unsigned k = 0; k < 200u; ++k) {
+        sense_svc_step(&v, &cmd, &snap);
+        const unsigned bus = fb.transactions;
+        const unsigned clock = g_clock_reads;
+        const uint32_t held = sense_trace_held(&tr);
+        sense_trace_feed(&tr, &v.sched, g_us);
+        CHECK_EQ(fb.transactions, bus);
+        CHECK_EQ(g_clock_reads, clock);
+        /* The first tick brings the set-up's two records as well. */
+        CHECK(sense_trace_held(&tr) - held <= ((k == 0u) ? 4u : 2u));
+        g_us += 1000u;
+    }
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 200u);
+}
+
+TEST_CASE(a_tick_with_no_sample_feeds_none)
+{
+    rig();
+    i3221->present = false;
+    for (unsigned k = 0; k < 100u; ++k) {
+        tick();
+    }
+    CHECK_EQ(held_data(), 0u);
+    /* The part answers from its next probe on. */
+    i3221->present = true;
+    for (unsigned k = 0; k < 1000u; ++k) {
+        tick();
+    }
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
+    CHECK(held_of(SENSE_TRACE_CURRENT) > 0u);
+}
+
+TEST_CASE(a_set_up_and_a_closed_bus_lose_and_repeat_nothing)
+{
+    rig();
+    for (unsigned k = 0; k < 130u; ++k) {
+        tick();
+    }
+    /* A set-up: the schedule and its history start afresh. */
+    ++cmd.cfg_gen;
+    for (unsigned k = 0; k < 130u; ++k) {
+        tick();
+    }
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
+    CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
+    /* No part enabled: the bus closes and nothing is fed. */
+    const unsigned held = held_data();
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_en = false;
+    for (unsigned k = 0; k < 20u; ++k) {
+        tick();
+    }
+    CHECK(!v.open);
+    CHECK_EQ(held_data(), held);
+    CHECK_EQ(tr.src.cfg, 0u);
+    CHECK_EQ(tr.src.shunt, 0u);
+    /* And open again: every read once more. */
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_en = true;
+    for (unsigned k = 0; k < 130u; ++k) {
+        tick();
+    }
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
+    CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
+    CHECK_EQ(tr.src.shunt, I3221_UOHM);
+    /* The shunt went from none to 0.1 Ω, to none with the bus closed and
+     * back: a record each time, and one of the Configuration with it. */
+    CHECK_EQ(held_of(SENSE_TRACE_SHUNT), 3u);
+    CHECK(held_of(SENSE_TRACE_CFG) >= 3u);
+}
+
+TEST_CASE(a_voltage_is_taken_from_a_window_a_reset_emptied)
+{
+    rig();
+    for (unsigned k = 0; k < 300u; ++k) {
+        tick();
+    }
+    /* The part resets itself; the read-back finds it within 40 ms and
+     * empties CH1's window. */
+    fake_reset3221(i3221);
+    for (unsigned k = 0; k < 2000u; ++k) {
+        tick();
+    }
+    CHECK_EQ(v.sched.i3221_resets, 1u);
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
+    CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
+    for (unsigned k = 0u; k < held_data(); ++k) {
+        if ((rec(k)->meta >> 24) == SENSE_TRACE_BUS) {
+            CHECK_EQ(rec(k)->v, 6000);
+        }
+    }
+    CHECK_EQ(tr.src.cfg >> 24, 1u);
+}
+
+TEST_CASE(a_set_up_that_leaves_the_history_at_the_same_place)
+{
+    rig();
+    /* 51 samples leave the history's head at 1, where the first sample
+     * after a set-up leaves it again: that sample is a new one. */
+    for (unsigned k = 0; k < 51u; ++k) {
+        tick();
+    }
+    CHECK_EQ(v.sched.ch1_head, 1u);
+    ++cmd.cfg_gen;
+    tick();
+    CHECK_EQ(v.sched.ch1_head, 1u);
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 52u);
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
+}
+
+/* A tick by hand: a new CH1 sample 1 ms on, and the window being filled
+ * holding @p n_v voltages that sum to @p v_sum. */
+static void poke(uint16_t n_v, int64_t v_sum)
+{
+    sense_sched_t *sc = &v.sched;
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = 120000;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sc->acc[SENSE_SRC_CH1].n_v   = n_v;
+    sc->acc[SENSE_SRC_CH1].v_sum = v_sum;
+    sense_trace_feed(&tr, sc, g_us);
+    g_us += 1000u;
+}
+
+TEST_CASE(a_voltage_is_told_from_the_one_before_by_window_and_count)
+{
+    rig();
+    /* Two set-ups inside the first 50 ms: each schedule's first window
+     * is number 0 and holds one voltage after 10 ticks. */
+    for (unsigned k = 0; k < 10u; ++k) {
+        tick();
+    }
+    CHECK_EQ(v.sched.acc[SENSE_SRC_CH1].n_v, 1u);
+    ++cmd.cfg_gen;
+    i3221->volts[0] = 5.0;
+    for (unsigned k = 0; k < 10u; ++k) {
+        tick();
+    }
+    CHECK_EQ(v.sched.win, 0u);
+    CHECK_EQ(v.sched.acc[SENSE_SRC_CH1].n_v, 1u);
+    CHECK_EQ(i3221->reads[INA3221_BUS1], 2u);
+    CHECK_EQ(held_of(SENSE_TRACE_BUS), 2u);
+    int32_t mv[2] = { 0, 0 };
+    unsigned n = 0u;
+    for (unsigned k = 0u; k < held_data(); ++k) {
+        if ((rec(k)->meta >> 24) == SENSE_TRACE_BUS) {
+            mv[n++ % 2u] = rec(k)->v;
+        }
+    }
+    CHECK_EQ(mv[0], 6000);
+    CHECK_EQ(mv[1], 5000);
+    /* The next window with as many voltages as the one before: its one
+     * voltage is a new one, and the value is its own. */
+    unsigned held = held_data();
+    v.sched.win += 1u;
+    poke(1u, 4800000);
+    CHECK_EQ(held_data(), held + 2u);
+    CHECK_EQ(rec(held + 1u)->v, 4800);
+    /* A second in the same window: the sum's gain. */
+    poke(2u, 4800000 + 4700000);
+    CHECK_EQ(rec(held + 3u)->v, 4700);
+    /* No gain: the sample alone. */
+    poke(2u, 4800000 + 4700000);
+    CHECK_EQ(held_data(), held + 5u);
+    CHECK_EQ(rec(held + 4u)->meta >> 24, SENSE_TRACE_CURRENT);
+    /* The window emptied and one voltage read since: counted from
+     * nothing. */
+    poke(1u, 4600000);
+    CHECK_EQ(held_data(), held + 7u);
+    CHECK_EQ(rec(held + 6u)->v, 4600);
+}
+
+TEST_CASE(a_voltage_with_no_current_sample_of_its_tick_is_left_out)
+{
+    rig();
+    for (unsigned k = 0; k < 10u; ++k) {
+        tick();
+    }
+    /* CH1's current read failed in a tick whose bus voltage read went
+     * through: no sample line the voltage could stand behind. */
+    const unsigned held = held_data();
+    v.sched.acc[SENSE_SRC_CH1].n_v  += 1u;
+    v.sched.acc[SENSE_SRC_CH1].v_sum += 5900000;
+    sense_trace_feed(&tr, &v.sched, g_us);
+    CHECK_EQ(held_data(), held);
+    /* The voltage after it is its own, not the two together. */
+    poke((uint16_t)(v.sched.acc[SENSE_SRC_CH1].n_v + 1u),
+         v.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
+    CHECK_EQ(held_data(), held + 2u);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CURRENT);
+    CHECK_EQ(rec(held + 1u)->v, 5800);
+    /* A full ring that drops the sample drops its voltage with it. */
+    rig_size(8u);
+    for (unsigned k = 0; k < 8u; ++k) {
+        tick();
+    }
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    const uint32_t lost = tr.src.lost;
+    poke((uint16_t)(v.sched.acc[SENSE_SRC_CH1].n_v + 1u),
+         v.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
+    CHECK_EQ(tr.src.lost, lost + 1u);
+}
+
+/* A ring of 8 with nobody reading it, fed @p n CH1 samples. */
+static void fill(unsigned n)
+{
+    rig_size(8u);
+    /* The first tick's records -- the set-up's two and a sample -- read
+     * out, so the ring starts empty with the set-up known. */
+    tick();
+    pass();
+    atomic_store(&tr.tail, atomic_load(&tr.head));
+    tr.out.scanned = (uint32_t)atomic_load(&tr.head);
+    unsigned fed = 0u;
+    while (fed < n) {
+        sense_svc_step(&v, &cmd, &snap);
+        /* The voltage's read is left out: samples only. */
+        v.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+        tr.src.n_v = 0u;
+        sense_trace_feed(&tr, &v.sched, g_us);
+        g_us += 1000u;
+        ++fed;
+    }
+}
+
+TEST_CASE(a_ring_full_by_exactly_0_1_and_many_records)
+{
+    fill(7u);
+    CHECK_EQ(sense_trace_held(&tr), 7u);
+    CHECK_EQ(tr.src.lost, 0u);
+    fill(8u);                       /* full, none over */
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    CHECK_EQ(tr.src.lost, 0u);
+    fill(9u);                       /* 1 over */
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    CHECK_EQ(tr.src.lost, 1u);
+    fill(8u + 5000u);               /* many over */
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    CHECK_EQ(tr.src.lost, 5000u);
+    /* The records kept are the first 8: a full ring drops the newest. */
+    for (unsigned k = 0u; k < 8u; ++k) {
+        CHECK_EQ(rec(k)->t, 200010u + 10u * k);
+    }
+}
+
+TEST_CASE(the_dropped_records_are_named_where_they_are_missing)
+{
+    fill(8u + 3u);
+    /* A trace reads the ring out; the next sample kept carries the 3,
+     * and they are said once. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us, 0u, 0u);
+    for (unsigned k = 0; k < 20u; ++k) {
+        pass();
+    }
+    run(5u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.lost, 3u);
+    CHECK_EQ(seen.z_l, 3u);
+    CHECK_EQ(seen.n_s, 8u + 5u);
+    CHECK_EQ(seen.z_s, 8u + 5u);
+    /* The gap shows in the times: 8 samples, 3 missing, then the rest. */
+    CHECK_EQ(seen.t[7], 200010u + 70u);
+    CHECK_EQ(seen.t[8], 200010u + 110u);
+    /* The ring read out with no record kept since: the line for the 3
+     * stands behind the 8 samples, before the trigger's line, which
+     * waits for core 1 to pass its time. */
+    CHECK(strstr(g_log, "10,300\r\n$L n=3\r\n$K t=") != NULL);
+    CHECK(strstr(g_log, "\r\n40,300\r\n") != NULL);
+    CHECK_EQ(tr.out.drops_seen, 3u);
+    CHECK_EQ(tr.out.ahead, 0u);
+}
+
+TEST_CASE(each_gap_in_a_trace_has_its_line)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    /* Two stalls of 20 ms on a ring of 8, a second apart. */
+    for (unsigned gap = 0u; gap < 2u; ++gap) {
+        for (unsigned k = 0; k < 20u; ++k) {
+            tick();
+            pass_as(0u, true);
+        }
+        run(1000u);
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(2u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_l, 2u);
+    CHECK(seen.lost >= 24u && seen.lost <= 28u);
+    CHECK_EQ(seen.z_l, seen.lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+}
+
+TEST_CASE(a_count_of_dropped_records_saturates)
+{
+    fill(8u);
+    tr.src.lost = SENSE_TRACE_LOST_MAX - 1u;
+    sense_svc_step(&v, &cmd, &snap);
+    sense_trace_feed(&tr, &v.sched, g_us);
+    g_us += 1000u;
+    CHECK_EQ(tr.src.lost, SENSE_TRACE_LOST_MAX);
+    sense_svc_step(&v, &cmd, &snap);
+    sense_trace_feed(&tr, &v.sched, g_us);
+    CHECK_EQ(tr.src.lost, SENSE_TRACE_LOST_MAX);
+}
+
+/* ------------------------------------------------------------- core 0 */
+
+TEST_CASE(idle_keeps_the_newest_records)
+{
+    rig();
+    run(1000u);
+    CHECK_EQ(g_len, 0u);
+    CHECK_EQ(sense_trace_held(&tr), SENSE_TRACE_PRE);
+    const uint32_t tail = (uint32_t)atomic_load(&tr.tail);
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    CHECK_EQ(g_ring[(head - 1u) & tr.mask].t, 200000u + 9990u);
+    CHECK(g_ring[tail & tr.mask].t >= 200000u + 9990u - 630u);
+    /* A ring smaller than twice that keeps half of itself. */
+    rig_size(16u);
+    run(100u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+}
+
+TEST_CASE(the_console_command_gives_ten_seconds)
+{
+    rig();
+    run(500u);
+    sense_trace_key(&tr, 't', g_us);
+    CHECK(sense_trace_active(&tr));
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    run(10100u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK(!g_partial);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.n_h, 1u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.ver, SENSE_TRACE_FORMAT);
+    CHECK_EQ(seen.id, 1u);
+    CHECK_STR_EQ(seen.trig, "key");
+    CHECK_EQ(seen.t0, t0);
+    CHECK_EQ(seen.ms0, t0 / 10u);
+    CHECK_EQ(seen.len, SENSE_TRACE_KEY_MS);
+    CHECK_EQ(seen.shunt, I3221_UOHM);
+    CHECK_EQ(seen.cfg, v.sched.i3221.config);
+    CHECK_EQ(seen.on, 1u);
+    CHECK_EQ(seen.rst, 0u);
+    CHECK_EQ(seen.mark_t[0], t0);
+    /* The samples from before the trigger, then 10 s of them. */
+    CHECK(seen.first_dt < 0 && seen.first_dt >= -640);
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.n_s, pre + 10000u);
+    CHECK_EQ(seen.t[0], t0 + (uint32_t)seen.first_dt);
+    for (unsigned k = 1u; k < seen.n_s; ++k) {
+        if (seen.t[k] - seen.t[k - 1u] != 10u || seen.code[k] != 300) {
+            T_FAIL("sample %u at %lu reads %ld", k, (unsigned long)seen.t[k],
+                   (long)seen.code[k]);
+            break;
+        }
+    }
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 100000u - 10u);
+    CHECK_EQ(seen.mv_last, 6000);
+    CHECK_EQ(seen.z_id, 1u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.z_v, seen.n_v);
+    CHECK(seen.n_v >= 500u && seen.n_v <= 504u);
+    CHECK_EQ(seen.z_l, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_ml, 0u);
+    CHECK_EQ(seen.z_e, 't');
+    /* The lines as written. */
+    char want[160];
+    snprintf(want, sizeof(want),
+             "$T v=2 n=1 trig=key t=%lu ms=%lu len=10000\r\n"
+             "$H dt_us=1000 shunt_uohm=100000 cfg=0x%04X on=1 rst=0\r\n",
+             (unsigned long)t0, (unsigned long)(t0 / 10u),
+             (unsigned)v.sched.i3221.config);
+    CHECK(strncmp(g_log, want, strlen(want)) == 0);
+    /* Idle again: the newest records are kept for the next one. */
+    run(200u);
+    CHECK_EQ(sense_trace_held(&tr), SENSE_TRACE_PRE);
+}
+
+TEST_CASE(a_command_and_an_edge_give_four_seconds)
+{
+    rig();
+    run(300u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    /* The frame that carries the pulse starts 12.3 ms ahead. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 12300u, 3u, 1900u);
+    run(4100u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_STR_EQ(seen.trig, "cmd");
+    CHECK_EQ(seen.t0, t0 + 123u);
+    CHECK_EQ(seen.len, SENSE_TRACE_EDGE_MS);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_ch, 3u);
+    CHECK_EQ(seen.mark_us, 1900u);
+    CHECK_EQ(seen.mark_t[0], t0 + 123u);
+    /* The last sample is the last before the end: 4000 ms after the
+     * frame's start. */
+    CHECK(seen.t[seen.n_s - 1u] < t0 + 123u + 40000u);
+    CHECK(seen.t[seen.n_s - 1u] >= t0 + 123u + 40000u - 10u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.z_e, 't');
+
+    g_len = 0u;
+    const uint32_t t1 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(4100u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.id, 2u);
+    CHECK_STR_EQ(seen.trig, "edge");
+    CHECK_EQ(seen.n_e, 1u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t1 + 40000u - 10u);
+    CHECK_EQ(seen.z_id, 2u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+}
+
+TEST_CASE(a_trigger_during_a_trace_moves_its_end_and_never_back)
+{
+    rig();
+    run(300u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1100u);
+    run(3999u);
+    CHECK(sense_trace_active(&tr));
+    /* 1 ms before its end: a second command, and 4 s more. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1900u);
+    run(3999u);
+    CHECK(sense_trace_active(&tr));
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.n_c, 2u);
+    CHECK_EQ(seen.mark_t[1], t0 + 39990u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 39990u + 40000u - 10u);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+
+    /* A 10 s trace is not cut short by a command 1 s into it. */
+    g_len = 0u;
+    const uint32_t t1 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 'T', g_us);
+    run(1000u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us + 2000u, 0u, 0u);
+    run(9100u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_e, 1u);
+    CHECK_EQ(seen.mark_t[2], t1 + 10000u + 20u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t1 + 100000u - 10u);
+    CHECK_EQ(seen.z_m, 3u);
+}
+
+TEST_CASE(a_slots_pulse_is_a_command_after_it_held_still)
+{
+    rig();
+    uint64_t us = g_us;
+    /* The first pulse seen is where the watch starts. */
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1500u, us));
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 1000u));
+    /* The first change is a command, whenever it comes. */
+    us += 2000u;
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us));
+    /* 49.9 ms after it: the same command still slewing. */
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1890u, us + 49900u));
+    /* 50.0 ms after that one: a command of its own. */
+    us += 49900u;
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1100u, us + 50000u));
+    us += 50000u;
+    /* And 50.1 ms. */
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us + 50100u));
+    us += 50100u;
+    /* The bank letting go is no command; the pulse after it is one,
+     * 100 ms later and 1 ms later. */
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 100000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 200000u));
+    us += 200000u;
+    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 1000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 2000u));
+    /* Each slot is watched on its own; one past the last is none. */
+    CHECK(!sense_trace_pulse(&tr, 7u, 5u, 1500u, us));
+    CHECK(sense_trace_pulse(&tr, 7u, 5u, 1501u, us));
+    CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 5u, 1500u, us));
+    CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 5u, 1501u, us));
+    /* The hold across the 0.1 ms count's wrap. */
+    us = ((uint64_t)1u << 32) * 100u - 20000u;
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1500u, us) == false);
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, us));
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1700u, us + 49900u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1800u, us + 49900u + 50000u));
+}
+
+TEST_CASE(a_slot_still_for_longer_than_the_count_tells_is_a_command_again)
+{
+    /* A slot's pulse is seen every pass.  Still for 2^31 counts of
+     * 0.1 ms (59.6 h), 50 ms less and 50 ms more, and for 2^32 less
+     * 1 ms: the next change is a command each time. */
+    static const uint64_t still_us[] = {
+        ((uint64_t)1u << 31) * 100u - 50000u,
+        ((uint64_t)1u << 31) * 100u,
+        ((uint64_t)1u << 31) * 100u + 50000u,
+        ((uint64_t)1u << 32) * 100u - 1000u,
+    };
+    for (unsigned k = 0u; k < sizeof(still_us) / sizeof(still_us[0]); ++k) {
+        rig();
+        uint64_t us = g_us;
+        CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, us));
+        CHECK(sense_trace_pulse(&tr, 1u, 5u, 1900u, us + 1000u));
+        us += 1000u;
+        /* A pass 50 ms after the change, as every pass after it. */
+        CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1900u, us + 50000u));
+        CHECK(!tr.out.watch[1].changed);
+        CHECK(sense_trace_pulse(&tr, 1u, 5u, 1100u, us + still_us[k]));
+    }
+    /* A slewed command whose end is seen: said once, and the slot is a
+     * command's again whenever its next change comes. */
+    rig();
+    run(100u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 1000u));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 1000u, 5u, 1600u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1700u, g_us + 11000u));
+    CHECK(tr.out.watch[1].slewed);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1700u, g_us + 61000u));
+    CHECK(!tr.out.watch[1].slewed && !tr.out.watch[1].changed);
+    CHECK_EQ(tr.out.q_n, 2u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1700u, g_us + 70000u));
+    CHECK_EQ(tr.out.q_n, 2u);
+    /* Let go inside the hold: the last change is forgotten there, and
+     * the pulse after it is a command, at once and 50 ms later.  A
+     * change 1 ms after that command is its slew. */
+    rig();
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 1000u));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 0u, g_us + 2000u));
+    CHECK(!tr.out.watch[1].changed);
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 3000u));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 0u, g_us + 4000u));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 53000u));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1610u, g_us + 54000u));
+    CHECK(tr.out.watch[1].slewed);
+}
+
+/* The console takes nothing for @p ms. */
+static void stall(unsigned ms)
+{
+    for (unsigned k = 0; k < ms; ++k) {
+        tick();
+        pass_as(0u, true);
+    }
+}
+
+TEST_CASE(a_trace_the_console_never_takes_is_dropped_before_its_times_wrap)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    const uint64_t end_us = g_us - 100000u + 10000000u;
+    /* A trigger that waits behind it. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, end_us + 1000000u, 1u,
+                        1500u);
+    CHECK_EQ(tr.out.wait_n, 1u);
+    stall(100u);
+    /* 0.1 ms short of 2^30 counts after its end: still the trace. */
+    g_us = end_us + ((uint64_t)SENSE_TRACE_OWED_MAX_T - 1u) * 100u;
+    pass_as(0u, true);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.abandoned, 0u);
+    /* At it: dropped, with what waited. */
+    g_us += 100u;
+    pass_as(0u, true);
+    CHECK(!sense_trace_active(&tr));
+    CHECK_EQ(tr.out.abandoned, 1u);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    /* The next trigger is a trace of its own, far past the old end. */
+    g_len = 0u;
+    tick();
+    g_us += ((uint64_t)1u << 31) * 100u;
+    run(100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(10100u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.id, 2u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+}
+
+TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
+{
+    rig();
+    run(300u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1100u, g_us));
+    /* 800 us of travel at 1 us a millisecond: a change every pass. */
+    unsigned commands = 0u;
+    for (unsigned k = 1u; k <= 800u; ++k) {
+        if (sense_trace_pulse(&tr, 0u, 5u, (uint16_t)(1100u + k), g_us)) {
+            sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u,
+                                (uint16_t)(1100u + k));
+            ++commands;
+        }
+        run(1u);
+    }
+    CHECK_EQ(commands, 1u);
+    /* Open 4 s past the last change, not past the first.  The slot
+     * renders its last pulse in every pass. */
+    for (unsigned k = 0; k < 3990u; ++k) {
+        CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1900u, g_us));
+        run(1u);
+    }
+    CHECK(sense_trace_active(&tr));
+    run(20u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1101u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 7990u + 40000u - 10u);
+    /* Where the slew ended, once the slot had held still: one line, at
+     * the last change, with the pulse it ended at. */
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_ch, 5u);
+    CHECK_EQ(seen.dest_us, 1900u);
+    CHECK_EQ(seen.dest_t, t0 + 7990u);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK(strstr(g_log, "$D t=") > strstr(g_log, "$C t="));
+    /* A slew that is let go before it held still ends where it was, and
+     * one a new command follows ends before that command's line. */
+    g_len = 0u;
+    sense_trace_key(&tr, 't', g_us);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1500u, g_us) == false);
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1510u, g_us));
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1520u, g_us));
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 0u, g_us));
+    run(10u);
+    parse();
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_us, 1520u);
+    CHECK_EQ(seen.dest_ch, 6u);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1600u, g_us + 100000u));
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1610u, g_us + 101000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1100u, g_us + 151000u));
+    run(200u);
+    parse();
+    CHECK_EQ(seen.n_d, 2u);
+    CHECK_EQ(seen.dest_us, 1610u);
+    /* A step is no slew: no $D line. */
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1100u, g_us + 400000u));
+    run(10u);
+    parse();
+    CHECK_EQ(seen.n_d, 2u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    /* With no trace under way a slew starts none. */
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1501u, g_us));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1502u, g_us + 1000u));
+    CHECK(!sense_trace_active(&tr));
+}
+
+/* A trace of 4 s from an edge at @p edge_us, the clock 300 ms before it. */
+static void trace_at(uint64_t edge_us)
+{
+    rig();
+    g_us = edge_us - 300000u;
+    run(300u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, edge_us, 0u, 0u);
+    run(4100u);
+    parse();
+}
+
+TEST_CASE(a_trace_runs_across_the_millisecond_ticks_wrap)
+{
+    /* The edge 1 ms before the tick wraps at 2^32 ms. */
+    const uint64_t wrap_us = ((uint64_t)1u << 32) * 1000u;
+    trace_at(wrap_us - 1000u);
+    CHECK(!sense_trace_active(&tr));
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.ms0, 4294967295u);
+    CHECK_EQ(seen.t0, (uint32_t)((wrap_us - 1000u) / 100u));
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[seen.n_s - 1u], (uint32_t)seen.t0 + 40000u - 10u);
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.n_s, pre + 4000u);
+    /* At the wrap, and 1 ms past it. */
+    trace_at(wrap_us);
+    CHECK_EQ(seen.ms0, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], (uint32_t)seen.t0 + 40000u - 10u);
+    trace_at(wrap_us + 1000u);
+    CHECK_EQ(seen.ms0, 1u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], (uint32_t)seen.t0 + 40000u - 10u);
+}
+
+TEST_CASE(a_trace_runs_across_the_tenth_millisecond_counts_wrap)
+{
+    /* The count the lines carry wraps at 2^32 * 0.1 ms: 1 s into this
+     * trace, at its first sample, and 1 ms before its end. */
+    const uint64_t wrap_us = ((uint64_t)1u << 32) * 100u;
+    const uint64_t at[] = { wrap_us - 1000000u, wrap_us - 100u, wrap_us,
+                            wrap_us - 3999000u, wrap_us - 4000000u };
+    for (unsigned k = 0u; k < sizeof(at) / sizeof(at[0]); ++k) {
+        trace_at(at[k]);
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.t0, (uint32_t)(at[k] / 100u));
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        const unsigned pre = (unsigned)(-seen.first_dt + 9) / 10u;
+        CHECK_EQ(seen.n_s, pre + 4000u);
+        for (unsigned j = 1u; j < seen.n_s; ++j) {
+            if (seen.t[j] - seen.t[j - 1u] != 10u) {
+                T_FAIL("case %u: sample %u is not 1 ms on", k, j);
+                break;
+            }
+        }
+        CHECK((uint32_t)(seen.t[seen.n_s - 1u] - (uint32_t)seen.t0)
+              >= 40000u - 10u);
+        CHECK((uint32_t)(seen.t[seen.n_s - 1u] - (uint32_t)seen.t0) < 40000u);
+    }
+}
+
+TEST_CASE(the_pump_gives_whole_lines_into_the_room_it_has)
+{
+    /* Every room from none to more than a line, one pass a millisecond:
+     * no pump hands back part of a line or more than its room. */
+    for (size_t room = 0u; room <= 70u; ++room) {
+        rig();
+        run(100u);
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 15u, 2000u);
+        for (unsigned k = 0; k < 300u; ++k) {
+            tick();
+            pass_as(room, true);
+        }
+        CHECK(!g_partial);
+        CHECK(g_most <= room);
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        /* The header's lines are the longest: under their length nothing
+         * is written, and nothing is lost by waiting. */
+        if (room < strlen("$T v=2 n=1 trig=cmd t=201000 ms=20100 "
+                          "len=4000\r\n")) {
+            CHECK_EQ(g_len, 0u);
+        } else if (room >= 60u) {
+            CHECK_EQ(seen.n_t, 1u);
+            CHECK_EQ(seen.n_h, 1u);
+            CHECK_EQ(seen.n_c, 1u);
+            CHECK(seen.n_s > 300u);
+        }
+        CHECK(sense_trace_active(&tr));
+    }
+}
+
+TEST_CASE(a_console_with_no_room_loses_samples_and_says_how_many)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(1000u);
+    /* The console takes nothing for 6 s: the ring fills after about
+     * 3.9 s and the rest is dropped.  Nothing waits: every tick returns. */
+    for (unsigned k = 0; k < 6000u; ++k) {
+        tick();
+        pass_as(0u, true);
+    }
+    CHECK_EQ(sense_trace_held(&tr), RING);
+    CHECK(tr.src.lost > 2000u);
+    run(3200u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, seen.lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.z_v, seen.n_v);
+    /* What is written and what is missing are the 10 s: 10000 samples.
+     * A dropped sample's voltage is not written and not counted; a
+     * voltage that found the ring full behind its sample is counted. */
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK(seen.lost > 2000u);
+    CHECK(seen.n_s + seen.lost >= pre + 10000u);
+    CHECK(seen.n_s + seen.lost <= pre + 10000u + 4u);
+    /* The times run on across the gap. */
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 100000u - 10u);
+}
+
+TEST_CASE(a_console_with_no_room_across_the_end_ends_the_trace_there)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3000u);
+    /* No room from 1 s before the end to 1 s after it: the ring holds
+     * the 2 s, and the samples past the end are not the trace's. */
+    for (unsigned k = 0; k < 2000u; ++k) {
+        tick();
+        pass_as(0u, true);
+    }
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.src.lost, 0u);
+    run(400u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_l, 0u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 40000u - 10u);
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.n_s, pre + 4000u);
+}
+
+TEST_CASE(a_console_that_is_not_connected_drops_the_trace)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    for (unsigned k = 0; k < 5000u; ++k) {
+        tick();
+        pass_as(SENSE_TRACE_LINE_MAX, false);
+    }
+    CHECK_EQ(g_len, 0u);
+    CHECK(!sense_trace_active(&tr));
+    CHECK_EQ(tr.out.abandoned, 1u);
+    CHECK_EQ(sense_trace_held(&tr), SENSE_TRACE_PRE);
+    CHECK_EQ(tr.src.lost, 0u);
+    /* A trace under way when the console goes: dropped with no line, and
+     * the next one starts with a header of its own. */
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    const size_t len = g_len;
+    CHECK(len > 0u);
+    tick();
+    pass_as(SENSE_TRACE_LINE_MAX, false);
+    CHECK_EQ(g_len, len);
+    CHECK_EQ(tr.out.abandoned, 2u);
+    g_len = 0u;
+    sense_trace_key(&tr, 't', g_us);
+    run(10100u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.id, 3u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.z_l, 0u);
+}
+
+TEST_CASE(the_trigger_queue_full_by_0_and_1)
+{
+    rig();
+    run(100u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + k * 100u,
+                            (uint16_t)k, 1500u);
+    }
+    CHECK_EQ(tr.out.n_mlost, 0u);
+    run(50u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(2u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, SENSE_TRACE_MARKS);
+    CHECK_EQ(seen.z_m, SENSE_TRACE_MARKS);
+    CHECK_EQ(seen.z_ml, 0u);
+    CHECK_EQ(seen.z_e, 'k');
+
+    g_len = 0u;
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 1u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us + k * 100u, 0u,
+                            0u);
+    }
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    run(50u);
+    /* Room again: a later trigger has its line. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us, 0u, 0u);
+    run(50u);
+    sense_trace_key(&tr, 'X', g_us);
+    run(2u);
+    parse();
+    CHECK_EQ(seen.n_e, SENSE_TRACE_MARKS);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.z_m, SENSE_TRACE_MARKS + 1u);
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(the_consoles_stop_and_other_characters)
+{
+    rig();
+    run(100u);
+    /* No trace: a stop is nothing, and so is any other character. */
+    sense_trace_key(&tr, 'x', g_us);
+    sense_trace_key(&tr, 'q', g_us);
+    sense_trace_key(&tr, '\n', g_us);
+    sense_trace_key(&tr, -1, g_us);
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    CHECK_EQ(g_len, 0u);
+    sense_trace_key(&tr, 't', g_us);
+    run(500u);
+    sense_trace_key(&tr, 'q', g_us);
+    run(10u);
+    CHECK(sense_trace_active(&tr));
+    sense_trace_key(&tr, 'x', g_us);
+    run(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The stop is not kept for the next trace. */
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    CHECK(sense_trace_active(&tr));
+}
+
+TEST_CASE(a_changed_set_up_ends_a_trace)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(1000u);
+    /* Another shunt: the codes after it are not the header's. */
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    run(5u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.shunt, I3221_UOHM);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The next trace carries the new one: 0.12 A is 150 steps of 0.8 mA. */
+    g_len = 0u;
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(300u);
+    parse();
+    CHECK_EQ(seen.shunt, 50000u);
+    CHECK_EQ(seen.code[seen.n_s - 1u], 150);
+    /* The bus closed: the same. */
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_en = false;
+    run(5u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.z_e, 's');
+}
+
+TEST_CASE(a_part_offline_and_a_reset_are_said_in_the_trace)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(1000u);
+    /* The part stops answering: offline after 3 failed reads. */
+    i3221->present = false;
+    run(500u);
+    parse();
+    CHECK_EQ(seen.n_st, 1u);
+    CHECK_EQ(seen.st_on, 0u);
+    CHECK_EQ(seen.st_rst, 0u);
+    const unsigned n_s = seen.n_s;
+    /* And answers again from its next probe. */
+    i3221->present = true;
+    run(1500u);
+    parse();
+    CHECK_EQ(seen.n_st, 2u);
+    CHECK_EQ(seen.st_on, 1u);
+    CHECK(seen.n_s > n_s);
+    /* A reset of its own: found, counted, set up again. */
+    fake_reset3221(i3221);
+    run(2000u);
+    parse();
+    CHECK_EQ(seen.st_rst, 1u);
+    CHECK_EQ(seen.st_on, 1u);
+    CHECK(seen.n_st >= 4u);
+    run(6000u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The time across the outage is the samples' own. */
+    CHECK_EQ(seen.t[seen.n_s - 1u], (uint32_t)seen.t0 + 100000u - 10u);
+    /* Idle after a trace that held state records: the newest records
+     * stay, as before it. */
+    run(100u);
+    CHECK_EQ(sense_trace_held(&tr), SENSE_TRACE_PRE);
+}
+
+TEST_CASE(a_trace_with_no_bus_has_a_header_and_ends_on_time)
+{
+    rig();
+    cmd.parts.ina3221_en = false;
+    run(200u);
+    CHECK(!v.open);
+    sense_trace_key(&tr, 't', g_us);
+    /* With no record to end it, the end line waits for the tick that
+     * starts at the end. */
+    run(10000u);
+    CHECK(sense_trace_active(&tr));
+    run(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_h, 1u);
+    CHECK_EQ(seen.shunt, 0u);
+    CHECK_EQ(seen.cfg, 0u);
+    CHECK_EQ(seen.on, 0u);
+    CHECK_EQ(seen.n_s, 0u);
+    CHECK_EQ(seen.z_s, 0u);
+    CHECK_EQ(seen.z_v, 0u);
+    CHECK_EQ(seen.z_e, 't');
+}
+
+TEST_CASE(a_stop_under_a_backlog_writes_what_came_before_it)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* 500 ms of samples wait in the ring when the stop comes. */
+    stall(500u);
+    sense_trace_key(&tr, 'x', g_us);
+    CHECK(sense_trace_active(&tr));
+    /* A second stop and a changed pulse after it move nothing. */
+    stall(50u);
+    sense_trace_key(&tr, 'x', g_us);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1500u, g_us - 200000u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, g_us - 10000u));
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
+    run(200u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.z_l, 0u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* Every sample up to the stop, 600 ms after the trigger, and none
+     * after it. */
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.n_s, pre + 600u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 6000u - 10u);
+}
+
+/* The log cut after its first end line, so parse() sees one trace; the
+ * rest is returned. */
+static const char *first_trace_only(void)
+{
+    static char rest[1u << 16];
+    char *z = strstr(g_log, "$Z ");
+    rest[0] = '\0';
+    if (z != NULL && (z = strstr(z, "\r\n")) != NULL) {
+        snprintf(rest, sizeof(rest), "%s", z + 2);
+        z[2] = '\0';
+    }
+    return rest;
+}
+
+TEST_CASE(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3900u);
+    /* The console takes nothing from 100 ms before the end.  600 ms past
+     * the end a command comes: the 4 s trace is over, written or not. */
+    stall(700u);
+    CHECK(sense_trace_active(&tr));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 3u, 1900u);
+    /* And 1 ms before the end of that one, an edge: its own to extend. */
+    stall(100u);
+    run(1000u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.id, 1u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 40000u - 10u);
+    /* The next trace: the command's, with every sample since the first
+     * one's end before its own. */
+    char want[96];
+    snprintf(want, sizeof(want), "$T v=2 n=2 trig=cmd t=%lu ms=%lu len=4000",
+             (unsigned long)(t0 + 46000u), (unsigned long)(t0 + 46000u) / 10u);
+    CHECK(strncmp(rest, want, strlen(want)) == 0);
+    CHECK(strstr(rest, "$C t=") != NULL);
+    CHECK(strstr(rest, "\r\n-6000,300\r\n") != NULL);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.end_t, t0 + 46000u + 40000u);
+}
+
+TEST_CASE(a_start_after_a_stop_is_a_trace_of_its_own)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    stall(300u);
+    sense_trace_key(&tr, 'x', g_us);
+    stall(100u);
+    /* The stopped trace still has 300 ms to write when `t` comes. */
+    const uint32_t t1 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    /* More triggers than wait their turn: the ones with no place are
+     * counted in the trace they would have been in. */
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us + 1000u, 0u, 0u);
+    }
+    run(300u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.id, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.z_m, 1u);
+    char want[64];
+    snprintf(want, sizeof(want), "$T v=2 n=2 trig=key t=%lu ",
+             (unsigned long)t1);
+    CHECK(strncmp(rest, want, strlen(want)) == 0);
+    CHECK(strstr(rest, " m=8 ml=1 e=k\r\n") != NULL);
+    /* A console that goes away takes the waiting triggers with it. */
+    sense_trace_key(&tr, 't', g_us);
+    run(10u);
+    sense_trace_key(&tr, 'x', g_us);
+    sense_trace_key(&tr, 't', g_us);
+    tick();
+    pass_as(SENSE_TRACE_LINE_MAX, false);
+    run(20u);
+    CHECK(!sense_trace_active(&tr));
+}
+
+/* A stopped trace with 300 ms still to write: a trigger now waits. */
+static void owe_a_stopped_trace(void)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    stall(300u);
+    sense_trace_key(&tr, 'x', g_us);
+    stall(100u);
+    CHECK(sense_trace_active(&tr));
+}
+
+/* Channel 5's pulse on slot 0 in this pass, as the firmware gives it;
+ * whether it is a command. */
+static bool drive(uint16_t us)
+{
+    if (!sense_trace_pulse(&tr, 0u, 5u, us, g_us)) {
+        return false;
+    }
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 5u, us);
+    return true;
+}
+
+/* The console takes again until the trace numbered @p id is under way. */
+static void run_to_trace(unsigned id)
+{
+    for (unsigned k = 0u; k < 30000u && tr.out.id != id; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, id);
+}
+
+static void run_out(void)
+{
+    for (unsigned k = 0u; k < 30000u && sense_trace_active(&tr); ++k) {
+        run(1u);
+    }
+    CHECK(!sense_trace_active(&tr));
+}
+
+/* The log from the $T line of the trace numbered @p id on, parsed. */
+static void parse_from(unsigned id)
+{
+    char want[32];
+    snprintf(want, sizeof(want), "$T v=2 n=%u ", id);
+    const char *at = strstr(g_log, want);
+    CHECK(at != NULL);
+    if (at != NULL) {
+        g_len = strlen(at);
+        memmove(g_log, at, g_len + 1u);
+    }
+    parse();
+}
+
+static uint32_t now_t(void)
+{
+    return (uint32_t)(g_us / 100u);
+}
+
+TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    CHECK_EQ(tr.out.wait_n, 1u);
+    /* 30 ms of slew: one entry behind the command, at the last change. */
+    uint32_t t_last = 0u;
+    for (unsigned k = 1u; k <= 30u; ++k) {
+        stall(1u);
+        t_last = now_t();
+        CHECK(!drive((uint16_t)(1200u + k)));
+        CHECK_EQ(tr.out.wait_n, 2u);
+    }
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_STEP);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    /* Held still for 50 ms: the entry is the command's end. */
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1230u));
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    CHECK_EQ(tr.out.wait[1].us, 1230u);
+    run_to_trace(2u);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK(strcmp(seen.trig, "cmd") == 0);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1200u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_ch, 5u);
+    CHECK_EQ(seen.dest_us, 1230u);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+TEST_CASE(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    /* 4.5 s of slew with the console taking nothing, longer than the
+     * 4 s the command asks for. */
+    uint32_t t_last = 0u;
+    uint16_t us = 0u;
+    unsigned k = 0u;
+    for (; k < 4500u; ++k) {
+        stall(1u);
+        t_last = now_t();
+        us = (uint16_t)(1300u + (k & 1u));
+        CHECK(!drive(us));
+    }
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    CHECK((int32_t)(t_last - (t_cmd + 40000u)) > 0);
+    /* The console takes again; the slew goes on through the next
+     * trace's start and 20 ms past it. */
+    unsigned on = 0u;
+    for (; k < 40000u && on < 20u; ++k) {
+        run(1u);
+        t_last = now_t();
+        us = (uint16_t)(1300u + (k & 1u));
+        CHECK(!drive(us));
+        if (tr.out.id == 2u) {
+            ++on;
+        }
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    for (unsigned j = 0u; j < 60u; ++j) {
+        run(1u);
+        CHECK(!drive(us));
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1200u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, us);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+TEST_CASE(a_slew_that_stops_as_its_trace_starts_ends_in_that_trace)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    /* A change every pass while the command waits; the last one in the
+     * pass before the next trace starts. */
+    uint16_t us = 1200u;
+    uint32_t t_last = 0u;
+    while (tr.out.id == 1u && us < 3000u) {
+        ++us;
+        t_last = now_t();
+        CHECK(!drive(us));
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK(tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    for (unsigned j = 0u; j < 60u; ++j) {
+        CHECK(!drive(us));
+        run(1u);
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, us);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+TEST_CASE(a_command_with_no_line_has_no_end_line_either)
+{
+    /* Waiting: a command of the channel waits, the places fill, and the
+     * channel's next command finds none.  Its slew and its end are not
+     * the first command's. */
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1200u));
+    }
+    CHECK(!tr.out.watch[0].changed);
+    for (unsigned k = 1u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    }
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    CHECK(drive(1500u));
+    CHECK_EQ(tr.out.wait_lost, 1u);
+    CHECK(tr.out.watch[0].orphan);
+    stall(1u);
+    CHECK(!drive(1510u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1520u));
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.wait_lost, 1u);
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    for (unsigned k = 0u; k < tr.out.wait_n; ++k) {
+        CHECK(tr.out.wait[k].kind <= SENSE_TRACE_TRIG_KEY);
+    }
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1200u);
+    CHECK_EQ(seen.n_d, 0u);
+    CHECK_EQ(seen.z_ml, 1u);
+
+    /* In a trace: the same with the trigger queue full. */
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(50u);
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1200u));
+    }
+    while (tr.out.q_n < SENSE_TRACE_MARKS) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    }
+    CHECK_EQ(tr.out.n_mlost, 0u);
+    CHECK(drive(1500u));
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    CHECK(tr.out.watch[0].orphan);
+    stall(1u);
+    CHECK(!drive(1510u));
+    run(100u);
+    CHECK_EQ(tr.out.q_n, 0u);
+    CHECK(!drive(1510u));
+    CHECK(!tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.q_n, 0u);
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    /* The channel's next command has a line, and its end one. */
+    CHECK(drive(1800u));
+    CHECK(!tr.out.watch[0].orphan);
+    run(1u);
+    CHECK(!drive(1810u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!drive(1810u));
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 2u);
+    CHECK_EQ(seen.mark_us, 1800u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_us, 1810u);
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(a_waiting_slews_end_that_finds_no_place_is_counted)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    for (unsigned k = 1u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    }
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    /* A change is no line: not counted. */
+    stall(1u);
+    CHECK(!drive(1210u));
+    CHECK_EQ(tr.out.wait_lost, 0u);
+    /* The end is one. */
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1210u));
+    }
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    CHECK_EQ(tr.out.wait_lost, 1u);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_d, 0u);
+    CHECK_EQ(seen.n_e, SENSE_TRACE_MARKS - 1u);
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(a_slews_end_waits_again_with_a_command_that_waits_again)
+{
+    /* An edge waits, and 5 s after it a slewed command: past the end of
+     * the trace the edge starts, so it waits again, its end behind it. */
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    stall(5000u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    stall(1u);
+    const uint32_t t_last = now_t();
+    CHECK(!drive(1250u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1250u));
+    }
+    CHECK_EQ(tr.out.wait_n, 3u);
+    CHECK_EQ(tr.out.wait[2].kind, SENSE_TRACE_MARK_DEST);
+    run_to_trace(2u);
+    CHECK_EQ(tr.out.trig, SENSE_TRACE_TRIG_EDGE);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[0].kind, SENSE_TRACE_TRIG_CMD);
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    CHECK_EQ(tr.out.wait[1].us, 1250u);
+    run_to_trace(3u);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    run_out();
+    parse_from(3u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK(strcmp(seen.trig, "cmd") == 0);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, 1250u);
+    CHECK_EQ(seen.z_m, 2u);
+}
+
+TEST_CASE(the_pulse_after_the_bank_let_go_is_a_command_however_soon)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    CHECK(!drive(1500u));
+    run(1u);
+    CHECK(drive(1600u));
+    run(1u);
+    CHECK(!drive(1610u));
+    run(1u);
+    /* Let go 1 ms after a change: the slewed command ends where it was. */
+    CHECK(!drive(0u));
+    CHECK(!tr.out.watch[0].slewed && !tr.out.watch[0].changed);
+    run(1u);
+    /* Driven again 1 ms later, at the pulse it had: a command, and what
+     * follows within 50 ms its slew. */
+    CHECK(drive(1610u));
+    run(1u);
+    CHECK(!drive(1620u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!drive(1620u));
+    }
+    /* Let go while it stands still, and driven again at once. */
+    CHECK(!drive(0u));
+    run(1u);
+    CHECK(drive(1620u));
+    run(10u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 3u);
+    CHECK_EQ(seen.n_d, 2u);
+    CHECK_EQ(seen.dest_us, 1620u);
+    CHECK_EQ(seen.z_m, 6u);
+    CHECK(strstr(g_log, "us=1610\r\n") != NULL);
+}
+
+TEST_CASE(a_slot_that_changes_hands_is_watched_afresh)
+{
+    rig();
+    /* A slot let go of -- unbound, or another driver's -- and bound
+     * again: its first pulse is where the watch starts, not a command. */
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
+    sense_trace_unwatch(&tr, 1u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1900u, g_us + 1000000u));
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1100u, g_us + 2000000u));
+    /* The same with another channel on the slot, and a slew of the old
+     * channel's has no end line under the new one's name. */
+    sense_trace_key(&tr, 't', g_us);
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1110u, g_us + 2001000u));
+    CHECK(tr.out.watch[1].slewed);
+    CHECK(!sense_trace_pulse(&tr, 1u, 6u, 1700u, g_us + 3000000u));
+    CHECK(!tr.out.watch[1].slewed);
+    CHECK(!sense_trace_pulse(&tr, 1u, 6u, 1700u, g_us + 4000000u));
+    run(20u);
+    parse();
+    CHECK_EQ(seen.n_d, 0u);
+    CHECK(sense_trace_pulse(&tr, 1u, 6u, 1800u, g_us + 5000000u));
+    /* One past the last slot is none. */
+    sense_trace_unwatch(&tr, SENSE_TRACE_SLOTS);
+}
+
+/* The newest record of @p kind the ring holds, NULL for none. */
+static const sense_trace_rec_t *newest_of(sense_trace_kind_t kind)
+{
+    const sense_trace_rec_t *found = NULL;
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    for (uint32_t k = (uint32_t)atomic_load(&tr.tail); k != head; ++k) {
+        if ((g_ring[k & tr.mask].meta >> 24) == (uint32_t)kind) {
+            found = &g_ring[k & tr.mask];
+        }
+    }
+    return found;
+}
+
+TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
+{
+    /* The part offline: no sample for 2 s.  A command, and 300 ms after
+     * it another shunt: the command was given under the old one, and its
+     * line is in the trace that ends at the change. */
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(500u);
+    i3221->present = false;
+    run(2000u);
+    parse();
+    CHECK_EQ(seen.st_on, 0u);
+    const unsigned n_s = seen.n_s;
+    const uint32_t last_t = seen.t[n_s - 1u];
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 3u, 1700u);
+    const uint32_t cmd_t = (uint32_t)(g_us / 100u);
+    CHECK((int32_t)(cmd_t - last_t) > 10000);
+    run(300u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    const uint32_t seen_t = (uint32_t)(g_us / 100u);
+    tick();
+    const sense_trace_rec_t *r = newest_of(SENSE_TRACE_SHUNT);
+    CHECK(r != NULL);
+    if (r != NULL) {
+        CHECK_EQ(r->t, seen_t);
+    }
+    run(200u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_s, n_s);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_ch, 3u);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK_EQ(seen.z_ml, 0u);
+    CHECK(*rest == '\0');
+    CHECK(!sense_trace_active(&tr));
+
+    /* A command in the tick after the one the change was seen in is the
+     * next trace's. */
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(500u);
+    i3221->present = false;
+    run(2000u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    tick();
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 3u, 1700u);
+    run(200u);
+    rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strstr(rest, "shunt_uohm=50000 ") != NULL);
+
+    /* A closed bus has no sample at all: the record of its set-up has
+     * the time of the tick that found it closed. */
+    rig();
+    run(200u);
+    cmd.parts.ina3221_en = false;
+    ++cmd.cfg_gen;
+    for (unsigned k = 0u; k < 50u && v.open; ++k) {
+        tick();
+    }
+    CHECK(!v.open);
+    r = newest_of(SENSE_TRACE_SHUNT);
+    CHECK(r != NULL);
+    if (r != NULL) {
+        CHECK_EQ(r->t, (uint32_t)(g_us / 100u) - 10u);
+        CHECK_EQ(r->v, 0);
+    }
+}
+
+TEST_CASE(a_set_up_record_that_found_no_room_keeps_its_time_or_the_rings)
+{
+    /* The ring full when the set-up changes, and the console takes
+     * nothing for 5 ms: the record is written with the time of the tick
+     * the change was seen in. */
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(20u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    uint32_t first_t = 0u;
+    for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
+        first_t = (uint32_t)(g_us / 100u);
+        tick();
+    }
+    CHECK(tr.src.shunt_owed);
+    stall(5u);
+    CHECK(tr.src.shunt_owed);
+    CHECK(!tr.src.shunt_newer);
+    pass();
+    tick();
+    CHECK(!tr.src.shunt_owed);
+    const sense_trace_rec_t *r = newest_of(SENSE_TRACE_SHUNT);
+    CHECK(r != NULL);
+    if (r != NULL) {
+        CHECK_EQ(r->t, first_t);
+    }
+    /* A record kept while the shunt's found no room: the shunt's has
+     * that record's time, and no time in the ring runs back. */
+    tr.src.shunt = 1u;
+    tr.src.shunt_owed  = true;
+    tr.src.shunt_t     = (uint32_t)(g_us / 100u) - 500u;
+    tr.src.shunt_newer = true;
+    const uint32_t kept_t = tr.src.kept_t;
+    tr.src.shunt = 50000u;
+    pass();
+    tick();
+    CHECK(!tr.src.shunt_owed);
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    uint32_t before = 0u;
+    bool any = false;
+    bool found = false;
+    for (uint32_t k = (uint32_t)atomic_load(&tr.tail); k != head; ++k) {
+        const sense_trace_rec_t *q = &g_ring[k & tr.mask];
+        CHECK(!any || (int32_t)(q->t - before) >= 0);
+        if ((q->meta >> 24) == (uint32_t)SENSE_TRACE_SHUNT
+            && q->t == kept_t) {
+            found = true;
+        }
+        before = q->t;
+        any = true;
+    }
+    CHECK(found);
+}
+
+TEST_CASE(a_stop_on_a_full_ring_counts_what_was_dropped_before_it)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    /* 30 ms with no room on a ring of 8: records are dropped, and the
+     * count of them rides on the first record kept after the stop. */
+    stall(30u);
+    CHECK(tr.src.lost > 20u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(20u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK(seen.lost > 20u);
+    CHECK_EQ(seen.z_l, seen.lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The $L line stands before the end line, after the last sample. */
+    const char *l_at = strstr(g_log, "$L n=");
+    const char *z_at = strstr(g_log, "$Z n=");
+    CHECK(l_at != NULL && z_at != NULL && l_at < z_at);
+    CHECK(strchr(l_at, ',') == NULL);
+}
+
+TEST_CASE(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* 300 ms wait in the ring; then another shunt, and 100 ms more. */
+    stall(300u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    stall(100u);
+    for (unsigned k = 0; k < 300u && sense_trace_active(&tr); ++k) {
+        tick();
+        pass();
+    }
+    CHECK(!sense_trace_active(&tr));
+    /* A trigger in the pass the trace ended in, before the pump has run
+     * idle: the set-up's records went with the trace they ended. */
+    const size_t first_len = g_len;
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(strstr(&g_log[first_len], "shunt_uohm=50000 ") != NULL);
+    CHECK(strstr(&g_log[first_len], " e=k\r\n") != NULL);
+    g_log[first_len] = '\0';
+    g_len = first_len;
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.shunt, I3221_UOHM);
+    /* The 400 ms before the change, each at the header's scale, and no
+     * sample of the new set-up. */
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.n_s, pre + 400u);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 4000u - 10u);
+    for (unsigned k = 0u; k < seen.n_s; ++k) {
+        if (seen.code[k] != 300) {
+            T_FAIL("sample %u reads %ld", k, (long)seen.code[k]);
+            break;
+        }
+    }
+    /* The next trace has the new set-up in its header and its samples
+     * at its scale: none from before the change. */
+    g_len = 0u;
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.shunt, 50000u);
+    CHECK_EQ(seen.z_e, 'k');
+    for (unsigned k = 0u; k < seen.n_s; ++k) {
+        if (seen.code[k] != 150) {
+            T_FAIL("sample %u reads %ld", k, (long)seen.code[k]);
+            break;
+        }
+    }
+}
+
+TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* The console is behind when the set-up changes, and still behind
+     * when a command comes 50 ms later: the trace looks open, and ended
+     * before the command. */
+    stall(200u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    stall(50u);
+    const uint32_t t1 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 4u, 1900u);
+    stall(50u);
+    run(500u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The command's own trace, under the new set-up. */
+    char want[64];
+    snprintf(want, sizeof(want), "$T v=2 n=2 trig=cmd t=%lu ",
+             (unsigned long)t1);
+    CHECK(strncmp(rest, want, strlen(want)) == 0);
+    CHECK(strstr(rest, "shunt_uohm=50000 ") != NULL);
+    CHECK(strstr(rest, " ch=4 us=1900\r\n") != NULL);
+    CHECK(strstr(rest, ",150\r\n") != NULL);
+    CHECK(strstr(rest, ",300\r\n") == NULL);
+    CHECK(sense_trace_active(&tr));
+}
+
+/* A trace by the console, 100 ms written and then the console behind:
+ * the set-up changes after @p before ms of that and @p after ms pass. */
+static void behind_at_a_change(unsigned before, unsigned after)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    stall(before);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    stall(after);
+}
+
+TEST_CASE(a_trigger_lost_after_a_changed_set_up_is_counted_in_the_next_trace)
+{
+    /* The trigger queue fills with commands of after the change, and two
+     * more find it full: the trace that ended before them all counts
+     * none, the trace they start counts both. */
+    behind_at_a_change(200u, 50u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 2u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + k * 100u,
+                            (uint16_t)k, 1500u);
+    }
+    CHECK_EQ(tr.out.n_mlost, 2u);
+    stall(50u);
+    run(600u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(5u);
+    CHECK(!sense_trace_active(&tr));
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, 0u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_ml, 0u);
+    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strstr(rest, " m=8 ml=2 e=k\r\n") != NULL);
+
+    /* One of before the change and one of after it, the queue full of
+     * commands of before it, and a trigger that waits for the next
+     * trace: both traces count both. */
+    behind_at_a_change(100u, 0u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 1u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
+                            g_us - 50000u + k * 100u, (uint16_t)k, 1500u);
+    }
+    stall(50u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 9u, 1500u);
+    CHECK_EQ(tr.out.n_mlost, 2u);
+    const uint64_t far_us = g_us + 20000000u;
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, far_us, 0u, 0u);
+    CHECK_EQ(tr.out.wait_n, 1u);
+    for (unsigned k = 0u; k < 2000u && tr.out.id == 1u; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK_EQ(tr.out.n_mlost, 2u);
+    (void)first_trace_only();
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c, SENSE_TRACE_MARKS);
+    CHECK_EQ(seen.z_ml, 2u);
+
+    /* The one of before the change alone: the trace it was lost in. */
+    behind_at_a_change(100u, 50u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS + 1u; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
+                            g_us - 100000u + k * 100u, (uint16_t)k, 1500u);
+    }
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, far_us + 1000000u, 0u, 0u);
+    for (unsigned k = 0u; k < 2000u && tr.out.id == 1u; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK_EQ(tr.out.n_mlost, 0u);
+    (void)first_trace_only();
+    parse();
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_ml, 1u);
+
+    /* One of after the change with no trigger left to start a trace: no
+     * trace follows, and the one that ended says it. */
+    behind_at_a_change(100u, 0u);
+    for (unsigned k = 0u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD,
+                            g_us - 50000u + k * 100u, (uint16_t)k, 1500u);
+    }
+    stall(50u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 9u, 1500u);
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    run(2000u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(a_slewed_commands_end_goes_with_its_command_into_the_next_trace)
+{
+    /* The command and the end of its slew, both after the change the
+     * console has not come to: the next trace has both lines. */
+    behind_at_a_change(200u, 50u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1500u, g_us - 200000u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 5u, 1600u);
+    stall(10u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
+    const uint32_t d_t = (uint32_t)(g_us / 100u);
+    stall(60u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
+    CHECK_EQ(tr.out.q_n, 2u);
+    run(600u);
+    const char *rest = first_trace_only();
+    parse();
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.n_c + seen.n_d, 0u);
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=5 us=1610\r\n",
+             (unsigned long)d_t);
+    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strstr(rest, " ch=5 us=1600\r\n") != NULL);
+    CHECK(strstr(rest, want) != NULL);
+}
+
+TEST_CASE(a_trigger_past_the_next_traces_end_overwrites_none_that_waited)
+{
+    /* The console behind for 12 s.  Two commands after a changed set-up,
+     * 5 s apart, and one past the end the trace seems to have: the first
+     * starts the next trace, the second lies past that trace's end and
+     * waits, and the third still waits behind it. */
+    behind_at_a_change(100u, 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 1u, 1100u);
+    stall(5000u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 2u, 1200u);
+    const uint64_t third_us = g_us + 6000000u;
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, third_us, 3u, 1300u);
+    CHECK_EQ(tr.out.q_n, 2u);
+    CHECK_EQ(tr.out.wait_n, 1u);
+    for (unsigned k = 0u; k < 4000u && tr.out.id == 1u; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[0].ch, 2u);
+    CHECK_EQ(tr.out.wait[0].us, 1200u);
+    CHECK_EQ(tr.out.wait[1].ch, 3u);
+    CHECK_EQ(tr.out.wait[1].us, 1300u);
+    CHECK(tr.out.wait[1].at_us == third_us);
+}
+
+TEST_CASE(records_dropped_before_a_set_up_record_are_said_in_its_trace)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(50u);
+    /* By hand, what core 1 leaves when the ring had one place between
+     * its two set-up records: the shunt's, then 5 records dropped, then
+     * the Configuration's with their count. */
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    const uint32_t t = g_ring[(head - 1u) & tr.mask].t;
+    g_ring[head & tr.mask] = (sense_trace_rec_t){
+        t, 50000, (uint32_t)SENSE_TRACE_SHUNT << 24 };
+    g_ring[(head + 1u) & tr.mask] = (sense_trace_rec_t){
+        t, (int32_t)(tr.src.cfg ^ 0x8u),
+        ((uint32_t)SENSE_TRACE_CFG << 24) | 5u };
+    tr.src.dropped += 5u;
+    atomic_store(&tr.drops, tr.src.dropped);
+    atomic_store(&tr.head, head + 2u);
+    pass();
+    CHECK(!sense_trace_active(&tr));
+    CHECK(strstr(g_log, " l=0 m=1 ml=0 e=s\r\n") != NULL);
+    /* The next trace starts in the same pass: its header has both
+     * records' set-up, and the 5 are said before it. */
+    const size_t len = g_len;
+    sense_trace_key(&tr, 't', g_us);
+    pass();
+    pass();
+    sense_trace_key(&tr, 'x', g_us);
+    /* The first tick that starts past the stop ends it. */
+    run(5u);
+    const char *next = &g_log[len];
+    const char *l_at = strstr(next, "$L n=5\r\n");
+    const char *h_at = strstr(next, "$H dt_us=1000 shunt_uohm=50000 cfg=0x");
+    CHECK(l_at != NULL && h_at != NULL && l_at < h_at);
+    CHECK(strstr(next, " l=5 m=1 ml=0 e=k\r\n") != NULL);
+    char cfg[16];
+    snprintf(cfg, sizeof(cfg), "cfg=0x%04X ",
+             (unsigned)((tr.src.cfg ^ 0x8u) & 0xFFFFu));
+    CHECK(strstr(next, cfg) != NULL);
+}
+
+TEST_CASE(a_state_change_under_a_backlog_keeps_its_place)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* 200 ms wait in the ring when the part stops answering; it is
+     * offline 3 failed reads later. */
+    stall(200u);
+    i3221->present = false;
+    stall(300u);
+    run(600u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_st, 1u);
+    CHECK_EQ(seen.st_on, 0u);
+    /* The $S line stands after the last sample taken before the outage:
+     * 300 ms of them after the trigger. */
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.st_at, pre + 300u);
+    CHECK_EQ(seen.n_s, pre + 300u);
+}
+
+TEST_CASE(a_set_up_record_with_no_room_is_written_when_there_is_room)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(20u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    /* The ring is full when the set-up changes. */
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    stall(5u);
+    CHECK(tr.src.shunt_owed);
+    CHECK_EQ(held_of(SENSE_TRACE_SHUNT), 0u);
+    run(20u);
+    CHECK(!tr.src.shunt_owed && !tr.src.cfg_owed);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_l, seen.lost);
+    CHECK(seen.lost > 0u);
+    g_len = 0u;
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    parse();
+    CHECK_EQ(seen.shunt, 50000u);
+    CHECK_EQ(seen.code[seen.n_s - 1u], 150);
+}
+
+TEST_CASE(idle_keeps_no_record_from_before_a_set_up)
+{
+    rig();
+    run(500u);
+    CHECK_EQ(sense_trace_held(&tr), SENSE_TRACE_PRE);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    run(10u);
+    /* 10 samples of the new set-up, and the voltage read with them. */
+    CHECK(sense_trace_held(&tr) >= 10u && sense_trace_held(&tr) <= 11u);
+    CHECK_EQ(held_of(SENSE_TRACE_SHUNT) + held_of(SENSE_TRACE_CFG), 0u);
+    sense_trace_key(&tr, 't', g_us);
+    run(50u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.shunt, 50000u);
+    CHECK_EQ(seen.first_dt, -100);
+    CHECK_EQ(seen.code[0], 150);
+    CHECK_EQ(seen.z_e, 'k');
+}
+
+TEST_CASE(a_pulse_is_the_one_the_frame_can_carry)
+{
+    /* 560 Hz: a frame of 1785 counts, the counter wrapping at 1784. */
+    CHECK_EQ(sense_trace_rendered(2000u, 1784u), 1784u);
+    CHECK_EQ(sense_trace_rendered(1785u, 1784u), 1784u);
+    CHECK_EQ(sense_trace_rendered(1784u, 1784u), 1784u);
+    CHECK_EQ(sense_trace_rendered(1783u, 1784u), 1783u);
+    CHECK_EQ(sense_trace_rendered(0u, 1784u), 0u);
+    /* 50 Hz, and a counter's top above 16 bits. */
+    CHECK_EQ(sense_trace_rendered(2000u, 19999u), 2000u);
+    CHECK_EQ(sense_trace_rendered(65535u, 70000u), 65535u);
+    /* Two endpoints past the frame render the same pulse: no command. */
+    rig();
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, sense_trace_rendered(1900u, 1784u),
+                             g_us));
+    CHECK(!sense_trace_pulse(&tr, 0u, 5u, sense_trace_rendered(2000u, 1784u),
+                             g_us + 100000u));
+    CHECK(sense_trace_pulse(&tr, 0u, 5u, sense_trace_rendered(1500u, 1784u),
+                            g_us + 200000u));
+}
+
+TEST_CASE(every_line_at_its_longest_fits)
+{
+    rig();
+    /* A clipped sample at the bottom of the range, and the longest
+     * numbers a header, a trigger and an end line carry: the millisecond
+     * tick and the 0.1 ms count both at 10 digits. */
+    i3221->amps[0] = -5.0;
+    g_us = (uint64_t)4294964295u * 1000u;
+    run(100u);
+    v.sched.i3221.shunt_uohm = UINT32_MAX;
+    run(5u);
+    tr.out.id = 65534u;
+    const uint32_t t = (uint32_t)(g_us / 100u);
+    CHECK(t >= 4000000000u && g_us / 1000u >= 4000000000u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    tr.out.len_ms = 123456u;
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 65535u, 65535u);
+    /* A slew's end at the longest numbers. */
+    tr.out.watch[0].have = tr.out.watch[0].changed = true;
+    tr.out.watch[0].slewed = true;
+    tr.out.watch[0].ch = 65535u;
+    tr.out.watch[0].pulse = 65535u;
+    tr.out.watch[0].changed_t = t;
+    (void)sense_trace_pulse(&tr, 0u, 65535u, 65535u,
+                            g_us + SENSE_TRACE_HOLD_MS * 1000u);
+    run(20u);
+    tr.out.n_s = tr.out.n_v = tr.out.n_lost = UINT32_MAX - 1u;
+    tr.out.n_m = tr.out.n_mlost = UINT32_MAX;
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    char want[80];
+    snprintf(want, sizeof(want), "$T v=2 n=65535 trig=edge t=%lu ms=%lu "
+             "len=99999\r\n", (unsigned long)t,
+             (unsigned long)((uint64_t)4294964295u + 105u));
+    CHECK_EQ(strlen(want), SENSE_TRACE_LINE_MAX - 1u);
+    CHECK(strncmp(g_log, want, strlen(want)) == 0);
+    snprintf(want, sizeof(want), "$C t=%lu ch=65535 us=65535\r\n",
+             (unsigned long)t);
+    CHECK(strstr(g_log, want) != NULL);
+    snprintf(want, sizeof(want), "$D t=%lu ch=65535 us=65535\r\n",
+             (unsigned long)t);
+    CHECK(strstr(g_log, want) != NULL);
+    CHECK(strstr(g_log, "$E t=") != NULL);
+    CHECK(strstr(g_log, "$Z n=65535 s=99999999 v=9999999 l=99999999 m=9999 "
+                        "ml=9999 e=k\r\n") != NULL);
+    CHECK(strstr(g_log, "$H dt_us=1000 shunt_uohm=4294967295 cfg=0x") != NULL);
+    CHECK(strstr(g_log, ",-4096\r\n") != NULL);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);          /* none past SENSE_TRACE_LINE_MAX */
+    CHECK(!g_partial);
+}
+
+TEST_CASE(a_clipped_sample_reads_the_end_of_the_range)
+{
+    rig();
+    i3221->amps[0] = 5.0;
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    i3221->amps[0] = -5.0;
+    run(100u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(2u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.code[0], 4095);
+    CHECK_EQ(seen.code[seen.n_s - 1u], -4096);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The last values before the ends are values: 4094 steps of 0.4 mA,
+     * and 4095 the other way. */
+    g_len = 0u;
+    i3221->amps[0] = 1.6376;
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    i3221->amps[0] = -1.638;
+    run(100u);
+    /* And across a window's close, a clipped sample again. */
+    i3221->amps[0] = 5.0;
+    run(120u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.code[0], 4094);
+    CHECK_EQ(seen.code[seen.n_s - 130u], -4095);
+    for (unsigned k = seen.n_s - 120u; k < seen.n_s; ++k) {
+        if (seen.code[k] != 4095) {
+            T_FAIL("sample %u reads %ld", k, (long)seen.code[k]);
+            break;
+        }
+    }
+}
+
+TEST_CASE(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped)
+{
+    rig();
+    i3221->amps[0] = 5.0;
+    for (unsigned k = 0; k < 120u; ++k) {
+        tick();
+    }
+    /* By hand, a tick in which CH1 read a clipped sample and a later
+     * read crossed the window's end: the sample is in the history, its
+     * count in the ring's newest window, and the window being filled is
+     * empty. */
+    sense_sched_t *sc = &v.sched;
+    const uint16_t before = (uint16_t)(sc->acc[SENSE_SRC_CH1].n_hi
+                                       + sc->acc[SENSE_SRC_CH1].n_lo);
+    unsigned held = held_data();
+    sc->ring_at = sc->win;
+    sc->ring[0].n_clip = (uint16_t)(before + 1u);
+    sc->win += 1u;
+    memset(&sc->acc[SENSE_SRC_CH1], 0, sizeof(sc->acc[SENSE_SRC_CH1]));
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = sc->ch_clip_ua;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sense_trace_feed(&tr, sc, g_us);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CLIP_HI);
+    /* The same at the bottom of the range. */
+    g_us += 1000u;
+    held = held_data();
+    sc->ring_at = sc->win;
+    sc->ring[0].n_clip = 1u;
+    sc->win += 1u;
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = -sc->ch_clip_ua;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sense_trace_feed(&tr, sc, g_us);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CLIP_LO);
+    /* A window that closed with no more clips than were seen: a value. */
+    g_us += 1000u;
+    held = held_data();
+    sc->ring_at = sc->win;
+    sc->ring[0].n_clip = 0u;
+    sc->win += 1u;
+    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
+    sc->ch1[sc->ch1_head].ua = sc->ch_clip_ua;
+    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sense_trace_feed(&tr, sc, g_us);
+    CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CURRENT);
+}
+
+TEST_CASE(trigger_lines_are_written_in_the_order_of_their_times)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* Two slots change in one pass; the slot looked at first has the
+     * later frame.  A third trigger lies between them. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 18000u, 1u, 1100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 2000u, 2u, 1900u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us + 9000u, 0u, 0u);
+    run(100u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.mark_t[0], t0);
+    CHECK_EQ(seen.mark_t[1], t0 + 1000u + 20u);
+    CHECK_EQ(seen.mark_t[2], t0 + 1000u + 90u);
+    CHECK_EQ(seen.mark_t[3], t0 + 1000u + 180u);
+    CHECK_EQ(seen.mark_ch, 1u);
+    CHECK_EQ(seen.z_m, 4u);
+    /* Each behind the samples of before its time: 2 ms, 9 ms and 18 ms
+     * of them. */
+    const char *c2 = strstr(g_log, " ch=2 us=1900\r\n");
+    const char *e = strstr(g_log, "$E t=");
+    const char *c1 = strstr(g_log, " ch=1 us=1100\r\n");
+    CHECK(c2 != NULL && e != NULL && c1 != NULL && c2 < e && e < c1);
+    unsigned between = 0u;
+    for (const char *at = c2; at < c1; ++at) {
+        between += (*at == ',');
+    }
+    CHECK_EQ(between, 16u);
+}
+
+/* Core 1 does nothing for @p ms; core 0 passes. */
+static void parked(unsigned ms)
+{
+    for (unsigned k = 0; k < ms; ++k) {
+        g_us += 1000u;
+        pass();
+    }
+}
+
+TEST_CASE(a_record_that_comes_late_is_still_its_traces)
+{
+    rig();
+    run(200u);
+    const uint32_t t0 = (uint32_t)(g_us / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3999u);
+    /* The trace's last tick: core 1 reads its sample 1 ms before the end
+     * and is parked before it feeds the trace.  Core 0 finds the ring
+     * empty for 30 ms past the end. */
+    const uint64_t tick_us = g_us;
+    sense_svc_step(&v, &cmd, &snap);
+    parked(31u);
+    CHECK(sense_trace_active(&tr));
+    CHECK(strstr(g_log, "$Z ") == NULL);
+    /* The feed, with the time its tick started at: the record is the
+     * trace's, and the trace still open, core 1 not being past the end. */
+    sense_trace_feed(&tr, &v.sched, tick_us);
+    pass();
+    CHECK(sense_trace_active(&tr));
+    /* The next tick starts past the end. */
+    run(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0 + 40000u - 10u);
+    const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
+    CHECK_EQ(seen.n_s, pre + 4000u);
+}
+
+TEST_CASE(a_core_that_stays_away_ends_the_trace_and_the_end_line_says_so)
+{
+    rig();
+    run(200u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3990u);
+    /* 10 ms before the end core 1 stops for good.  The end line waits
+     * SENSE_TRACE_STALL_MS past the end, to the pass. */
+    parked(10u + SENSE_TRACE_STALL_MS - 1u);
+    CHECK(sense_trace_active(&tr));
+    parked(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 'T');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    /* The console's stop with core 1 away: the same wait, from the
+     * stop. */
+    g_len = 0u;
+    sense_trace_key(&tr, 't', g_us);
+    parked(50u);
+    sense_trace_key(&tr, 'x', g_us);
+    parked(SENSE_TRACE_STALL_MS - 1u);
+    CHECK(sense_trace_active(&tr));
+    parked(1u);
+    CHECK(!sense_trace_active(&tr));
+    CHECK(strstr(g_log, " e=K\r\n") != NULL);
+    /* Core 1 back: the next trace's end is its own again. */
+    g_len = 0u;
+    run(100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(50u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(1u);
+    CHECK(!sense_trace_active(&tr));
+    CHECK(strstr(g_log, " e=k\r\n") != NULL);
+}
+
+TEST_CASE(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    /* A command whose frame starts 5 ms on; core 1 is parked 1 ms before
+     * that, its sample of then read and not yet fed. */
+    const uint32_t mark_t = (uint32_t)((g_us + 5000u) / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 5000u, 3u, 1700u);
+    run(4u);
+    const uint64_t tick_us = g_us;
+    sense_svc_step(&v, &cmd, &snap);
+    parked(30u);
+    /* The line is not written past a sample still to come. */
+    CHECK(strstr(g_log, "$C ") == NULL);
+    sense_trace_feed(&tr, &v.sched, tick_us);
+    run(2u);
+    const char *c = strstr(g_log, "$C ");
+    CHECK(c != NULL);
+    sense_trace_key(&tr, 'x', g_us);
+    run(1u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.mark_t[1], mark_t);
+    /* Every sample line above the command's is of before its time. */
+    unsigned above = 0u;
+    for (const char *at = g_log; c != NULL && at < c; ++at) {
+        above += (*at == ',');
+    }
+    CHECK(above >= 1u);
+    CHECK((int32_t)(seen.t[above - 1u] - mark_t) < 0);
+    CHECK((int32_t)(seen.t[above] - mark_t) >= 0);
+
+    /* Core 1 away for good: the line is written SENSE_TRACE_STALL_MS
+     * after its time, and the end line says so although core 1 is back
+     * for the end. */
+    g_len = 0u;
+    run(100u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 5000u, 3u, 1300u);
+    parked(5u + SENSE_TRACE_STALL_MS - 1u);
+    CHECK(strstr(g_log, "$C ") == NULL);
+    parked(1u);
+    CHECK(strstr(g_log, "$C ") != NULL);
+    run(100u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 'K');
+    CHECK_EQ(seen.z_m, 2u);
+}
+
+/* --------------------------- records dropped with none kept after them */
+
+/* Core 1's tick with no sample in it: the trace is fed the tick's time
+ * and no record. */
+static void tick_empty(void)
+{
+    sense_trace_feed(&tr, &v.sched, g_us);
+    g_us += 1000u;
+}
+
+/* Core 0 alone, at one time, until it has nothing more to write. */
+static void drain(void)
+{
+    for (unsigned k = 0; k < 40u; ++k) {
+        pass();
+    }
+}
+
+/* With the ring read out, every record core 1 dropped is counted once:
+ * by the records read, or by the $L line written ahead of the one to
+ * come. */
+static void check_drops_accounted(void)
+{
+    CHECK_EQ(sense_trace_held(&tr), 0u);
+    CHECK_EQ((uint32_t)atomic_load(&tr.drops), tr.src.dropped);
+    CHECK_EQ(tr.out.drops_seen + tr.out.ahead, tr.src.dropped);
+    CHECK_EQ(tr.out.ahead, tr.src.lost);
+}
+
+/* On a ring of 8: an edge's trace whose last 10 ticks before its end
+ * find no room.  Returns the records dropped. */
+static uint32_t lose_before_the_end(void)
+{
+    run(20u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(3990u);
+    CHECK_EQ(tr.src.lost, 0u);
+    stall(10u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    CHECK(tr.src.lost >= 2u);
+    return tr.src.lost;
+}
+
+/* The trace after: a key's, stopped, with no record missing. */
+static void check_the_next_trace_counts_none(void)
+{
+    const size_t len = g_len;
+    run(5u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    const char *next = &g_log[len];
+    CHECK(strstr(next, "$T ") != NULL);
+    CHECK(strstr(next, "$L ") == NULL);
+    CHECK(strstr(next, " l=0 m=1 ml=0 e=k\r\n") != NULL);
+    CHECK_EQ(tr.out.ahead, 0u);
+    CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+}
+
+TEST_CASE(records_dropped_before_the_end_with_none_kept_since_are_in_the_end_line)
+{
+    /* The count from 0, and across its wrap at 2^32. */
+    for (unsigned wrap = 0u; wrap < 2u; ++wrap) {
+        rig_size(8u);
+        if (wrap != 0u) {
+            tr.src.dropped    = UINT32_MAX - 1u;
+            tr.out.drops_seen = UINT32_MAX - 1u;
+            atomic_store(&tr.drops, UINT32_MAX - 1u);
+        }
+        const uint32_t lost = lose_before_the_end();
+        /* The first tick that starts at the end has no sample: core 1 is
+         * past the end, and the count rides on no record. */
+        tick_empty();
+        CHECK_EQ(tr.src.lost, lost);
+        drain();
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(sense_trace_held(&tr), 0u);
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.z_e, 't');
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        /* The $L line stands behind the last sample, before the end
+         * line. */
+        const char *l_at = strstr(g_log, "$L n=");
+        const char *z_at = strstr(g_log, "$Z n=");
+        CHECK(l_at != NULL && z_at != NULL && l_at < z_at);
+        CHECK(strchr(l_at, ',') == NULL);
+        CHECK_EQ(tr.out.ahead, lost);
+        check_drops_accounted();
+        /* The record that carries the count comes later: it is not said
+         * again, in no trace. */
+        check_the_next_trace_counts_none();
+        parse();
+        CHECK_EQ(seen.n_l, 1u);
+        if (wrap != 0u) {
+            CHECK(tr.src.dropped < 100u);
+        }
+    }
+}
+
+/* On a ring of 8 with a trace under way and the console taking nothing:
+ * the ticks up to and with the first that drops a record. */
+static unsigned ticks_to_the_first_drop(void)
+{
+    unsigned n = 0u;
+    while (tr.src.lost == 0u && n < 100u) {
+        tick();
+        pass_as(0u, true);
+        ++n;
+    }
+    return n;
+}
+
+TEST_CASE(a_record_dropped_in_the_last_tick_before_the_end_and_in_the_first_at_it)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    const unsigned n = ticks_to_the_first_drop();
+    CHECK(n >= 4u && n < 100u);
+    /* The same again, with a trace that ends @p past ms after the start
+     * of the tick that drops: 1, the last tick before the end; 0, the
+     * first tick at it. */
+    for (unsigned past = 0u; past < 2u; ++past) {
+        rig_size(8u);
+        run(20u);
+        const uint64_t drop_us = g_us + 20000u + (n - 1u) * 1000u;
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE,
+                            drop_us + past * 1000u
+                                - SENSE_TRACE_EDGE_MS * 1000u, 0u, 0u);
+        run(20u);
+        CHECK_EQ(ticks_to_the_first_drop(), n);
+        CHECK_EQ(g_us, drop_us + 1000u);
+        const uint32_t lost = tr.src.lost;
+        CHECK(lost >= 1u && lost <= 2u);
+        drain();
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        if (past != 0u) {
+            /* Core 1 is not past the end: the $L line is written, the
+             * end line waits. */
+            CHECK(sense_trace_active(&tr));
+            CHECK_EQ(seen.n_z, 0u);
+            tick_empty();
+            drain();
+            parse();
+        }
+        /* At the end the dropped record is not of before it; the end
+         * line counts it all the same, and the next trace does not. */
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.z_e, 't');
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        check_drops_accounted();
+        check_the_next_trace_counts_none();
+    }
+}
+
+TEST_CASE(records_dropped_in_a_traces_first_tick_are_said_once)
+{
+    /* The ring full of samples from before the trigger, and the tick the
+     * trigger falls in drops its sample. */
+    fill(8u);
+    CHECK_EQ(tr.src.lost, 0u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us + 500u, 0u, 0u);
+    sense_svc_step(&v, &cmd, &snap);
+    v.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+    tr.src.n_v = 0u;
+    sense_trace_feed(&tr, &v.sched, g_us);
+    g_us += 1000u;
+    CHECK_EQ(tr.src.lost, 1u);
+    drain();
+    /* The 8, then the line for the one dropped; the trigger's line
+     * waits for core 1 to pass its time. */
+    CHECK(strstr(g_log, "10,300\r\n$L n=1\r\n") != NULL);
+    CHECK(strstr(g_log, "$K t=") == NULL);
+    run(5u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, 1u);
+    CHECK_EQ(seen.n_s, 8u + 5u);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(tr.out.drops_seen, 1u);
+    CHECK_EQ(tr.out.ahead, 0u);
+}
+
+TEST_CASE(records_dropped_before_a_second_trigger_are_said_once_in_the_longer_trace)
+{
+    rig_size(8u);
+    const uint32_t lost = lose_before_the_end();
+    drain();
+    /* Core 1 is not past the end: the line is written, the trace open. */
+    CHECK(sense_trace_active(&tr));
+    CHECK(strstr(g_log, "$L n=") != NULL);
+    CHECK_EQ(tr.out.ahead, lost);
+    /* A second trigger 1 ms before the end moves the end; the next
+     * record kept carries the count that is said already. */
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us - 1000u, 0u, 0u);
+    run(50u);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.ahead, 0u);
+    /* A second gap in the same trace has a line of its own, with the
+     * record the first tick after it drops before core 0's pass. */
+    stall(12u);
+    CHECK(tr.src.lost >= 2u);
+    run(50u);
+    const uint32_t again = tr.src.dropped - lost;
+    CHECK(again >= 3u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.n_e, 2u);
+    CHECK_EQ(seen.n_l, 2u);
+    CHECK_EQ(seen.lost, lost + again);
+    CHECK_EQ(seen.z_l, lost + again);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+    CHECK_EQ(tr.src.dropped, lost + again);
+}
+
+TEST_CASE(records_dropped_before_a_stop_and_a_stall_are_in_the_end_line)
+{
+    /* The console's stop, core 1 past it with no record. */
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(30u);
+    uint32_t lost = tr.src.lost;
+    CHECK(lost > 20u);
+    sense_trace_key(&tr, 'x', g_us);
+    tick_empty();
+    drain();
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    check_drops_accounted();
+    check_the_next_trace_counts_none();
+    /* Core 1 away from before the end: the end line comes
+     * SENSE_TRACE_STALL_MS after it, with the count. */
+    rig_size(8u);
+    lost = lose_before_the_end();
+    drain();
+    CHECK(strstr(g_log, "$L n=") != NULL);
+    parked(SENSE_TRACE_STALL_MS - 1u);
+    CHECK(sense_trace_active(&tr));
+    parked(1u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.z_e, 'T');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.z_l, lost);
+    CHECK_EQ(seen.z_s, seen.n_s);
+    check_drops_accounted();
+    check_the_next_trace_counts_none();
+}
+
+TEST_CASE(a_set_up_record_that_found_no_room_before_the_end_is_counted_there)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(20u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    /* The set-up changes with the ring full: its record waits on core 1,
+     * counted with each tick it finds no room in. */
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
+        tick();
+    }
+    CHECK(tr.src.shunt_owed);
+    stall(5u);
+    CHECK(tr.src.shunt_owed);
+    /* The stop, and core 1 past it with the record still not in. */
+    sense_trace_key(&tr, 'x', g_us);
+    tick_empty();
+    CHECK(tr.src.shunt_owed);
+    const uint32_t lost = tr.src.lost;
+    drain();
+    CHECK(!sense_trace_active(&tr));
+    CHECK_EQ(held_of(SENSE_TRACE_SHUNT), 0u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    CHECK_EQ(seen.n_l, 1u);
+    CHECK_EQ(seen.lost, lost);
+    CHECK_EQ(seen.z_l, lost);
+    CHECK_EQ(seen.shunt, I3221_UOHM);
+    check_drops_accounted();
+    /* The record comes with the next tick; the next trace has its
+     * set-up and counts none missing. */
+    const size_t len = g_len;
+    run(30u);
+    CHECK(!tr.src.shunt_owed && !tr.src.cfg_owed);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(strstr(&g_log[len], "$L ") == NULL);
+    CHECK(strstr(&g_log[len], " shunt_uohm=50000 ") != NULL);
+    CHECK(strstr(&g_log[len], " l=0 ") != NULL);
+    CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+}
+
+TEST_CASE(records_dropped_in_a_trace_that_is_dropped_are_said_where_they_are_missing)
+{
+    /* No console, and a console that took nothing for 29.8 h. */
+    for (unsigned how = 0u; how < 2u; ++how) {
+        rig_size(8u);
+        run(20u);
+        sense_trace_key(&tr, 't', g_us);
+        run(20u);
+        stall(30u);
+        const uint32_t lost = tr.src.lost;
+        CHECK(lost > 20u);
+        if (how == 0u) {
+            pass_as(SENSE_TRACE_LINE_MAX, false);
+        } else {
+            g_us += ((uint64_t)SENSE_TRACE_OWED_MAX_T + 100000u) * 100u;
+            pass();
+        }
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(tr.out.abandoned, 1u);
+        CHECK(strstr(g_log, "$Z ") == NULL);
+        /* The next record kept carries the count, and is one of those
+         * from before the next trigger. */
+        g_len = 0u;
+        tick();
+        CHECK_EQ(tr.src.lost, 0u);
+        sense_trace_key(&tr, 't', g_us);
+        run(20u);
+        sense_trace_key(&tr, 'x', g_us);
+        run(3u);
+        CHECK(!sense_trace_active(&tr));
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_t, 1u);
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        CHECK(strstr(g_log, "$L n=") < strstr(g_log, "$K t="));
+        CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+        CHECK_EQ(tr.out.ahead, 0u);
+    }
+}
+
+TEST_CASE(a_count_said_in_a_trace_that_is_dropped_is_said_again_in_the_next)
+{
+    /* Said with no record kept since, and said before its record with
+     * the record's own line not written. */
+    for (unsigned how = 0u; how < 2u; ++how) {
+        rig_size(8u);
+        const uint32_t lost = lose_before_the_end();
+        if (how == 0u) {
+            drain();
+            CHECK_EQ(tr.out.ahead, lost);
+        } else {
+            /* Room for one line a pass, a record kept behind the 8, and
+             * the passes up to its $L line. */
+            pass_as(9u, true);
+            tick();
+            CHECK_EQ(tr.src.lost, 0u);
+            for (unsigned k = 0u; k < 20u && !tr.out.lost_shown; ++k) {
+                pass_as(9u, true);
+            }
+            CHECK(tr.out.lost_shown);
+            CHECK_EQ(sense_trace_held(&tr), 1u);
+        }
+        CHECK(sense_trace_active(&tr));
+        CHECK(strstr(g_log, "$L n=") != NULL);
+        /* The console goes: the trace has no end line. */
+        pass_as(SENSE_TRACE_LINE_MAX, false);
+        CHECK(!sense_trace_active(&tr));
+        CHECK_EQ(tr.out.abandoned, 1u);
+        g_len = 0u;
+        if (how == 0u) {
+            tick();
+        }
+        CHECK_EQ(sense_trace_held(&tr), 1u);
+        /* The record the count rides on is the next trace's first. */
+        sense_trace_key(&tr, 't', g_us);
+        run(20u);
+        sense_trace_key(&tr, 'x', g_us);
+        run(3u);
+        CHECK(!sense_trace_active(&tr));
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.n_l, 1u);
+        CHECK_EQ(seen.lost, lost);
+        CHECK_EQ(seen.z_l, lost);
+        CHECK_EQ(seen.z_s, seen.n_s);
+        CHECK(strstr(g_log, "$L n=") < strchr(g_log, ','));
+        CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
+        CHECK_EQ(tr.out.ahead, 0u);
+    }
+}
+
+TEST_CASE(a_stop_drops_the_trigger_lines_past_it)
+{
+    /* With the console keeping up, and with 100 ms of samples waiting. */
+    for (unsigned backlog = 0u; backlog < 2u; ++backlog) {
+        rig();
+        run(200u);
+        sense_trace_key(&tr, 't', g_us);
+        run(100u);
+        if (backlog != 0u) {
+            stall(100u);
+        }
+        /* A command whose frame starts 18 ms on, and the stop before
+         * it. */
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 18000u, 1u,
+                            1100u);
+        sense_trace_key(&tr, 'x', g_us);
+        run(300u);
+        /* The trace ends without the command's line, and no trace starts
+         * from it. */
+        CHECK(!sense_trace_active(&tr));
+        parse();
+        CHECK_EQ(seen.n_bad, 0u);
+        CHECK_EQ(seen.n_t, 1u);
+        CHECK_EQ(seen.n_z, 1u);
+        CHECK_EQ(seen.n_c, 0u);
+        CHECK_EQ(seen.z_m, 1u);
+        CHECK_EQ(seen.z_ml, 0u);
+        CHECK_EQ(seen.z_e, 'k');
+        CHECK_EQ(seen.z_s, seen.n_s);
+    }
+}
+
+TEST_CASE(a_stop_before_a_traces_own_trigger_keeps_its_line)
+{
+    rig();
+    run(200u);
+    /* A command starts the trace; its frame starts 15 ms on.  The stop
+     * comes at once: the end is just past the frame's start. */
+    const uint32_t t0 = (uint32_t)((g_us + 15000u) / 100u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 15000u, 2u, 1900u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(14u);
+    CHECK(sense_trace_active(&tr));
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_t[0], t0);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+    /* The sample at the frame's start is the last. */
+    CHECK_EQ(seen.t[seen.n_s - 1u], t0);
+    /* A stop at the very time of the console's start. */
+    g_len = 0u;
+    run(100u);
+    sense_trace_key(&tr, 't', g_us);
+    sense_trace_key(&tr, 'x', g_us);
+    run(200u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.z_m, 1u);
+    CHECK_EQ(seen.z_e, 'k');
+}
+
+TEST_CASE(the_code_is_the_one_the_current_came_from)
+{
+    static const uint32_t k_shunt[] = { 200u, 1000u, 10000u, 30000u, 50000u,
+                                        100000u, 330000u, 1000000u,
+                                        20000000u };
+    for (unsigned k = 0u; k < sizeof(k_shunt) / sizeof(k_shunt[0]); ++k) {
+        for (int32_t code = -4095; code <= 4094; ++code) {
+            const sense_value_t ua = ina3221_current_ua(k_shunt[k], code);
+            if (sense_trace_code(ua.value, k_shunt[k]) != code) {
+                T_FAIL("shunt %lu code %ld comes back as %ld",
+                       (unsigned long)k_shunt[k], (long)code,
+                       (long)sense_trace_code(ua.value, k_shunt[k]));
+                break;
+            }
+        }
+    }
+    CHECK_EQ(sense_trace_code(120000, 0u), 0);
+}
+
+int main(void)
+{
+    RUN(a_ring_is_a_power_of_two);
+    RUN(a_record_that_comes_late_is_still_its_traces);
+    RUN(a_core_that_stays_away_ends_the_trace_and_the_end_line_says_so);
+    RUN(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come);
+    RUN(records_dropped_before_the_end_with_none_kept_since_are_in_the_end_line);
+    RUN(a_record_dropped_in_the_last_tick_before_the_end_and_in_the_first_at_it);
+    RUN(records_dropped_in_a_traces_first_tick_are_said_once);
+    RUN(records_dropped_before_a_second_trigger_are_said_once_in_the_longer_trace);
+    RUN(records_dropped_before_a_stop_and_a_stall_are_in_the_end_line);
+    RUN(a_set_up_record_that_found_no_room_before_the_end_is_counted_there);
+    RUN(records_dropped_in_a_trace_that_is_dropped_are_said_where_they_are_missing);
+    RUN(a_count_said_in_a_trace_that_is_dropped_is_said_again_in_the_next);
+    RUN(a_stop_drops_the_trigger_lines_past_it);
+    RUN(a_stop_before_a_traces_own_trigger_keeps_its_line);
+    RUN(every_ch1_sample_and_voltage_is_taken_once);
+    RUN(the_feed_adds_no_bus_transaction_and_reads_no_clock);
+    RUN(a_tick_with_no_sample_feeds_none);
+    RUN(a_set_up_and_a_closed_bus_lose_and_repeat_nothing);
+    RUN(a_voltage_is_taken_from_a_window_a_reset_emptied);
+    RUN(a_set_up_that_leaves_the_history_at_the_same_place);
+    RUN(a_voltage_is_told_from_the_one_before_by_window_and_count);
+    RUN(a_voltage_with_no_current_sample_of_its_tick_is_left_out);
+    RUN(a_ring_full_by_exactly_0_1_and_many_records);
+    RUN(the_dropped_records_are_named_where_they_are_missing);
+    RUN(each_gap_in_a_trace_has_its_line);
+    RUN(a_count_of_dropped_records_saturates);
+    RUN(idle_keeps_the_newest_records);
+    RUN(the_console_command_gives_ten_seconds);
+    RUN(a_command_and_an_edge_give_four_seconds);
+    RUN(a_trigger_during_a_trace_moves_its_end_and_never_back);
+    RUN(a_slots_pulse_is_a_command_after_it_held_still);
+    RUN(a_slot_still_for_longer_than_the_count_tells_is_a_command_again);
+    RUN(a_trace_the_console_never_takes_is_dropped_before_its_times_wrap);
+    RUN(a_slewed_command_is_one_line_and_holds_the_trace_open);
+    RUN(a_trace_runs_across_the_millisecond_ticks_wrap);
+    RUN(a_trace_runs_across_the_tenth_millisecond_counts_wrap);
+    RUN(the_pump_gives_whole_lines_into_the_room_it_has);
+    RUN(a_console_with_no_room_loses_samples_and_says_how_many);
+    RUN(a_console_with_no_room_across_the_end_ends_the_trace_there);
+    RUN(a_console_that_is_not_connected_drops_the_trace);
+    RUN(the_trigger_queue_full_by_0_and_1);
+    RUN(the_consoles_stop_and_other_characters);
+    RUN(a_changed_set_up_ends_a_trace);
+    RUN(a_part_offline_and_a_reset_are_said_in_the_trace);
+    RUN(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in);
+    RUN(a_set_up_record_that_found_no_room_keeps_its_time_or_the_rings);
+    RUN(a_trace_with_no_bus_has_a_header_and_ends_on_time);
+    RUN(a_stop_under_a_backlog_writes_what_came_before_it);
+    RUN(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next);
+    RUN(a_start_after_a_stop_is_a_trace_of_its_own);
+    RUN(a_slot_that_changes_hands_is_watched_afresh);
+    RUN(a_stop_on_a_full_ring_counts_what_was_dropped_before_it);
+    RUN(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed);
+    RUN(a_command_after_a_changed_set_up_is_the_next_traces);
+    RUN(a_trigger_lost_after_a_changed_set_up_is_counted_in_the_next_trace);
+    RUN(a_slewed_commands_end_goes_with_its_command_into_the_next_trace);
+    RUN(a_trigger_past_the_next_traces_end_overwrites_none_that_waited);
+    RUN(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace);
+    RUN(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open);
+    RUN(a_slew_that_stops_as_its_trace_starts_ends_in_that_trace);
+    RUN(a_command_with_no_line_has_no_end_line_either);
+    RUN(a_waiting_slews_end_that_finds_no_place_is_counted);
+    RUN(a_slews_end_waits_again_with_a_command_that_waits_again);
+    RUN(the_pulse_after_the_bank_let_go_is_a_command_however_soon);
+    RUN(records_dropped_before_a_set_up_record_are_said_in_its_trace);
+    RUN(a_state_change_under_a_backlog_keeps_its_place);
+    RUN(a_set_up_record_with_no_room_is_written_when_there_is_room);
+    RUN(idle_keeps_no_record_from_before_a_set_up);
+    RUN(a_pulse_is_the_one_the_frame_can_carry);
+    RUN(every_line_at_its_longest_fits);
+    RUN(a_clipped_sample_reads_the_end_of_the_range);
+    RUN(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped);
+    RUN(trigger_lines_are_written_in_the_order_of_their_times);
+    RUN(the_code_is_the_one_the_current_came_from);
+    return test_summary("sense_trace");
+}

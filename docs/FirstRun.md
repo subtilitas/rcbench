@@ -403,6 +403,207 @@ travel times -- is armed by the panel's servo test, which does not use it
 yet. A travel time against a scope on the PWM pin and on the shunt waits
 for that.
 
+### 8.9 CH1's 1 ms samples on the console
+
+A coprocessor image built with `-DSENSE_TRACE=ON` prints INA3221 CH1's
+1 ms samples on its USB (Universal Serial Bus) console as text. The link
+carries 50 ms windows only, so this build is the one way to see the single
+samples. It is a debug build: a released image is built without the option
+and holds none of its code. `tools/sense_trace.py` reads the captured
+console. None of this has run on hardware. The bench session has two
+parts: part A needs no encoder, part B repeats the moves with an AS5600
+on the servo's shaft.
+
+**What starts a trace.**
+
+| Trigger | Trace |
+| --- | --- |
+| a PWM (pulse-width modulation) output renders another pulse width than in the pass before, 50 ms or more after that output's last change | 4 s from the frame that carries the pulse; trigger line `$C` |
+| `t` typed on the console | 10 s; trigger line `$K` |
+| the capture's PWM edge | 4 s; trigger line `$E`. No released panel arms the capture, so this trigger does not occur with one |
+
+Every MOVE of the automatic servo test is a changed pulse, so a test with
+the released panel is traced without a capture. A trigger during a trace
+adds its line and moves the end to 4 s (10 s for `t`) after itself when
+that is later: moves less than 4 s apart are one trace. A command that is
+slewed changes the pulse in every pass: its `$C` line has the first pulse,
+and a `$D` line the pulse it ended at, once the output has held still for
+50 ms. A command that waits for the next trace takes its later changes
+with it: that trace ends 4 s after the last of them and has the `$D`
+line. An output that is let go ends a slewed command there; the next
+pulse on it is a command, however soon it comes. The automatic test's
+moves are steps and have no `$D` line. `x` on the console
+ends a trace; a trigger line whose time lies at or after the stop is
+dropped. Each trace also holds the samples of up to 64 ms before its
+trigger.
+
+**What it costs.** Core 1 reads CH1 every 1 ms as in the released image
+and copies the sample into a ring of 4096 records (49,152 bytes; 3.9 s of
+1000 samples and 50 bus voltages a second). No bus transaction is added
+to the tick. A change of the part's set-up or state is a record in the
+same ring, so it keeps its place among the samples. Core 0 writes whole lines into the room the console's 64-byte
+transmit buffer has, and nothing when no terminal is connected, so its
+loop does not wait for the host. A full ring drops the newest record: the
+trace has a `$L n=` line where records are missing and their sum in its
+end line. The end line counts every dropped record from before the
+trace's end, with or without a record kept after it. The time a pass of core 0 gains from writing the lines is not
+measured.
+
+**The lines** (`shared/sense/sense_trace.h` has every field):
+
+```text
+$T v=2 n=2 trig=cmd t=220200 ms=22020 len=4000
+$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
+-810,289
+10,277
+v5952
+10,289
+$C t=220200 ch=0 us=1800
+10,2378
+$Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
+```
+
+The lines after the first two stand in the order of their times: a trigger
+line follows the samples taken before it. Core 0 writes a trigger line and
+the end line once core 1 has finished a tick that started at or after the
+line's time. The end line's `e=` is the reason the trace ended: `t` its
+time, `s` a changed set-up, `k` the console. A capital letter (`T`, `S`,
+`K`) says that core 1 was not seen past a trigger line's time or the end
+within 100 ms and the line was written all the same: a sample from before
+that time can be missing or stand after the line. The tool reports such a
+trace as a problem and replays none of its moves.
+
+A sample line is the time since the sample before it in 0.1 ms and the
+shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line is 8
+bytes with a 3-digit code; with the voltage lines a trace is about 8.6
+bytes a sample, 8.6 kB a second.
+
+**Have to hand:** the PD mini (WeAct PD Power Mini V1) at a limit of
+2.00 A, the INA3221 module with CH1's 0.1 Ω shunt in the servo's supply,
+the servos to measure, and a Windows PC with PuTTY. Part A needs no
+encoder. Part B needs an AS5600 on the servo's shaft.
+
+**The terminal.** The console is the coprocessor module's own USB-C
+socket, the one the image is flashed through, not the panel's. In the
+Windows Device Manager it is under "Ports (COM & LPT)" as "USB Serial
+Device (COMn)", hardware ID `VID_2E8A`. PuTTY settings:
+
+| Where | Setting |
+| --- | --- |
+| Session | Connection type Serial, Serial line `COMn`, Speed 115200 |
+| Connection, Serial | Data bits 8, Stop bits 1, Parity None, Flow control None |
+| Session, Logging | "All session output", a new log file name for each run |
+
+The port is USB CDC (communications device class): the speed is not used,
+any value works. The coprocessor prints only while the terminal holds DTR
+(data terminal ready), which PuTTY does while the port is open. No
+timestamps in the log: a line with anything in front of it is not read. A
+key is sent when it is pressed, with no Enter.
+
+**Part A: without the encoder.**
+
+1. Build the image:
+
+   ```bash
+   export PICO_SDK_PATH=/path/to/pico-sdk
+   cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
+   cmake --build firmware/iomcu/build-trace
+   ```
+
+2. Flash `firmware/iomcu/build-trace/rcbench-iomcu.uf2`: hold BOOTSEL,
+   plug the module into the PC, copy the file to its drive.
+3. Open the port in PuTTY with logging on. Within 3 s it prints a line
+   starting `rcbench-iomcu:`. On the panel, SETUP → INTERFACES: `INA3221`
+   ON.
+4. Noise, no servo: with no servo connected and the supply's output on at
+   6.00 V, press `t`. 10 s later the console prints a line starting `$Z`.
+   Close PuTTY; this log is `noise.log`.
+5. Servo at rest: new log file. Connect the servo, arm, leave it at the
+   centre, supply on at 4.80 V. Press `t` and wait for the `$Z` line.
+6. Moves, in the same log: on the SERVO screen's TEST page set LENGTH BY
+   to MOVEMENTS, MOVEMENTS 20, DWELL 1000 ms, STEP 4.8 V on and every
+   other step and BROWN-OUT off. START TEST. The trace runs from the first
+   move to 4 s after the last; wait for its `$Z` line, then close PuTTY.
+7. Repeat steps 5 and 6 at 6.00 V with STEP 6.0 V, and both for each
+   servo: one log file per servo and voltage.
+8. On the host, for each log:
+
+   ```bash
+   python3 tools/sense_trace.py noise.log
+   python3 tools/sense_trace.py mg90s-4v8.log
+   ```
+
+**Good:** every trace reads `counts match the end line` and `0 records
+missing`; the exit code is 0.
+
+**What the tool prints.** Per trace: the samples and voltages read against
+the end line; the mean, the standard deviation and the largest distance
+from the mean of the samples before the first command, as read and through
+a moving mean of 4 and of 8 samples; then every move replayed through
+`shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the
+band at 0.02, 0.05 and 0.10 A: seen or not, and the arrival in ms from the
+frame. For the log as a whole: the settings that see every move and time
+its arrival, each setting's median arrival and its distance from the
+capture's setting (filter 4, band 0.05 A), and how far apart the settings
+put one move's arrival. It ends `not compared with the horn`: without an
+encoder an arrival is the current back at its holding level, which can
+lead or lag the horn. One `<log>-trace-<n>.csv` per trace holds time in
+ms, current in A and the bus voltage in V.
+
+**Write down:** the tool's output for each log. Part A answers: the noise
+of CH1's 1 ms samples with no servo and with a servo at rest, against the
+threshold's floor (`SERVO_MOVE_MIN_A`, 0.020 A); which filter lengths and
+bands see all 22 moves of each test (2 that place the servo and 20
+counted); and how much the arrival moves with the setting. It does not
+answer whether an arrival is the horn's.
+
+**Part B: with the AS5600.** The same moves with the encoder on the shaft.
+
+1. SETUP → INTERFACES: `AS5600` ON, with the bank disarmed. On the SERVO
+   screen's DUT page, with the servo at its neutral, tap ENC CENTRE.
+2. Repeat part A's steps 5 to 7.
+3. Keep each log together with its test's `BENCHnnn.CSV` from the SD card.
+4. On the host, for each pair:
+
+   ```bash
+   python3 tools/sense_trace.py mg90s-4v8.log --servo-csv BENCH012.CSV
+   ```
+
+The tool then also prints, per move, the arrival less the encoder's
+`travel angle (ms)`, and its median per setting. Part B answers what the
+capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
+(`SERVO_MOVE_BAND_A`, 0.05 A) are to be: both are chosen, not measured.
+
+**Not known:**
+
+- Part B: the encoder's travel time counts from the command as the panel
+  issues it, the trace's arrival from the PWM frame at the pin. The
+  difference the tool prints contains the time between the two: up to one
+  poll and one frame, not measured.
+- A command's frame time is computed from the PWM counter read after the
+  pulse is written. A frame that ends between the two puts that one
+  command's time one frame (20 ms at 50 Hz) late. How often: not measured.
+- Part B: the two files have different clocks. The tool pairs rows and commands by
+  the spacing of the moves; when two offsets pair equally many rows, and
+  not the same rows with the same moves, it says so, exits 1 and takes
+  `--csv-offset`.
+- A log with a restart of the coprocessor in it has one clock per boot.
+  The tool takes a `$T` line for a restart when its millisecond tick lies
+  before the last one's or its trace number is not past the last one's;
+  missing numbers are traces no console took, not a restart. A restart
+  after which neither goes back is not told.
+  The tool pairs each boot's moves on their own. When the rows of a later
+  boot do not lie after those of the boot before it, it pairs no row, says
+  so and exits 1: evaluate each boot's part of the log with its part of
+  the CSV file.
+- Commands within 30 ms of each other, as two outputs written in one
+  frame, change the current together. The tool lists them and replays
+  none of them. A command that follows another output's command later
+  than that, before the first servo arrived, is replayed with the first
+  servo's current in it; the tool does not tell the two apart.
+- Whether a terminal keeps up with 8.6 kB a second without loss. A trace
+  whose line counts do not match its end line is reported and exits 1.
+
 ---
 
 ## 9. When something goes wrong

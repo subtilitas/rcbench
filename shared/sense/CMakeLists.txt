@@ -14,12 +14,16 @@
 # beeps and their pitch.  edge_ring.c reads the words the phase tap's PIO
 # program leaves in its DMA ring, and tone_svc.c is the pass core 1 runs to
 # feed the detector with them; shared/outputs holds the TONE page.
+#
+# sense_trace.c turns CH1's 1 ms samples into text lines for a debug build
+# of the coprocessor (its SENSE_TRACE option).  The panel does not compile
+# it; a coprocessor image built without the option does not link it.
 set(SRCS sense_bus.c ina228.c ina3221.c as5600.c sense_sched.c sense_svc.c tone.c edge_ring.c tone_svc.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)
 else()
-    add_library(rcbench_sense STATIC ${SRCS})
+    add_library(rcbench_sense STATIC ${SRCS} sense_trace.c)
     target_include_directories(rcbench_sense PUBLIC include)
     target_link_libraries(rcbench_sense PUBLIC rcbench_servo)
 endif()

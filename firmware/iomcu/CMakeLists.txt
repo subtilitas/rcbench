@@ -84,6 +84,19 @@ else()
     target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_SENSE_BRINGUP=0)
 endif()
 
+# A debug build that prints INA3221 CH1's 1 ms samples on the USB console:
+# for 4 s after a changed servo pulse or a capture edge, and for 10 s after
+# `t` on the console (shared/sense/sense_trace.h, docs/FirstRun.md 8.9).
+# Off in every image that is released: with it off the image holds no trace
+# code.
+option(SENSE_TRACE "Print INA3221 CH1's 1 ms samples on the console" OFF)
+if(SENSE_TRACE)
+    target_sources(rcbench-iomcu PRIVATE src/sense_trace_hw.c)
+    target_compile_definitions(rcbench-iomcu PRIVATE SENSE_TRACE=1)
+else()
+    target_compile_definitions(rcbench-iomcu PRIVATE SENSE_TRACE=0)
+endif()
+
 # The PIO (programmable input/output) programs are assembled into headers at
 # build time, so the .pio file is the only copy of a program and nothing can
 # drift from it.  The generated headers land in the build tree.

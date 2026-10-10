@@ -1,0 +1,5 @@
+time (s);test;step;phase;command (us);position (us);set (V);voltage (V);limit (A);current (A);power (W);mode;travel (ms);angle (deg);travel angle (ms);meter;window;current max (A);current min (A);voltage min (V);clipped
+10.055;;;;1800;;;;;;;;;;240;;;;;;
+11.905;;;;1200;;;;;;;;;;490;;;;;;
+13.505;;;;1800;;;;;;;;;;490;;;;;;
+15.105;;;;1200;;;;;;;;;;490;;;;;;

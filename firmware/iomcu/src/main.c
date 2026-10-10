@@ -48,6 +48,9 @@
 #include "tone_core1.h"
 #include "tone_page.h"
 #include "xl2515.h"
+#if SENSE_TRACE
+#include "sense_trace_hw.h"
+#endif
 
 /* ------------------------------------------------------------- the pages */
 
@@ -1871,6 +1874,10 @@ int main(void)
     {
         sense_cmd_t first;
         sense_build(&first);
+#if SENSE_TRACE
+        /* The trace's ring, before core 1 can write to it. */
+        sense_trace_hw_init();
+#endif
         /*
          * A core 1 that did not register for the lock-out cannot be parked
          * for a flash window: flash_safe_execute() would refuse every one,
@@ -2014,6 +2021,11 @@ int main(void)
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */
         outputs_hw_service(&s_outputs);
+#if SENSE_TRACE
+        /* The trace build reads what this pass rendered: a changed pulse
+         * on a PWM slot starts or extends a trace. */
+        sense_trace_hw_outputs(&s_outputs);
+#endif
         /* The capture's edge, when this pass rendered it: to core 1, for
          * the capture order in force. */
         uint64_t edge_us;
@@ -2022,6 +2034,9 @@ int main(void)
             s_edge_gen = s_sense.cap_gen;
             s_edge_set = true;
             sense_order();
+#if SENSE_TRACE
+            sense_trace_hw_edge(edge_us);
+#endif
         }
 
         /* 50 Hz, which is faster than the panel polls, so a poll always finds
@@ -2119,6 +2134,12 @@ int main(void)
         }
 
         can_report(now);
+#if SENSE_TRACE
+        /* The trace build's console: one character in, and the lines the
+         * transmit buffer has room for.  Before the clock is read again,
+         * as the report is. */
+        sense_trace_hw_pass();
+#endif
 
         /*
          * The clock is re-read here, once, and this is the only place a pass
