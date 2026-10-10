@@ -626,7 +626,9 @@ static void win_entry(const uint16_t *regs, unsigned k, uint16_t newest,
     w->min_ma   = (int16_t)e[LINK_SW_E_MIN_MA];
     w->mean_mv  = e[LINK_SW_E_MEAN_MV];
     w->min_mv   = e[LINK_SW_E_MIN_MV];
-    w->taken_ms = now_ms;
+    /* The newest closed before this read; entry k closed k windows before
+     * the newest did. */
+    w->taken_ms = now_ms - (uint32_t)k * SENSE_LINK_WINDOW_MS;
 }
 
 /*

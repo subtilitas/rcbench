@@ -7097,6 +7097,18 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     const unsigned wins0 = b.wins;
+    /* A window without a stamp of its own is stamped where the screen has
+     * it, and is the run's reading as any other. */
+    bench_frames(1000u);
+    const unsigned rows0 = b.csv;
+    sense_link_win_t unstamped = rail_win(120, 4800u);
+    unstamped.number = (uint16_t)(b.win_number + 1u);
+    ++b.win_number;
+    window(&unstamped);
+    ++b.wins;
+    bench_frames(20u);
+    CHECK(b.csv >= rows0 + 1u);
+    CHECK(servo_screen_testing());
     run_out_bench();
     CHECK(b.released);
     CHECK(!b.out);
@@ -7237,6 +7249,48 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
     hold_start(2.3f);
     run_out_bench();
     CHECK(strstr(b.report, "INA3221:") == NULL);
+
+    /* Each condition the panel names for the INA3221 not being the meter,
+     * as the report of a run on the PD mini states it; the ones that are
+     * no reason of the part's -- it is off, or no coprocessor answers --
+     * write no line. */
+    static const struct {
+        servo_source_why_t why;
+        const char        *text;
+    } k_why[] = {
+        { SERVO_SOURCE_WHY_OLD, "the coprocessor is older than link "
+                                "protocol 4.11" },
+        { SERVO_SOURCE_WHY_NOT_HELD, "the coprocessor does not hold its "
+                                     "set-up" },
+        { SERVO_SOURCE_WHY_SILENT, "it does not answer" },
+        { SERVO_SOURCE_WHY_NO_WINDOW, "no window with current in the last "
+                                      "200 ms" },
+        { SERVO_SOURCE_WHY_RESET, "it reset itself" },
+        { SERVO_SOURCE_WHY_OFF, NULL },
+        { SERVO_SOURCE_WHY_NO_LINK, NULL },
+        { SERVO_SOURCE_WHY_NONE, NULL },
+    };
+    for (size_t k = 0; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {
+        bench_fresh();
+        settings_set(SET_INA3221_EN, 1.0f);
+        short_runs();
+        meter(SERVO_SOURCE_PDMINI);
+        servo_screen_source_why(k_why[k].why);
+        /* A drop without a condition says nothing. */
+        servo_screen_source_dropped(SERVO_SOURCE_WHY_NONE, meter_changes);
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        run_out_bench();
+        CHECK(strstr(b.report, "Current:        PD mini\n") != NULL);
+        if (k_why[k].text == NULL) {
+            CHECK(strstr(b.report, "INA3221:") == NULL);
+        } else {
+            char want[128];
+            snprintf(want, sizeof(want), "INA3221:        not used: %s\n",
+                     k_why[k].text);
+            CHECK(strstr(b.report, want) != NULL);
+        }
+    }
 }
 
 /* The supply is the panel's model: the run reads the model whatever the
@@ -7349,6 +7403,110 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     settings_set(SET_SERVO_STALL_A, 2.0f);
     hold_start(2.3f);
     CHECK(servo_screen_testing());
+}
+
+/* What servo_screen_on_testing() was told, and how often. */
+static struct {
+    bool     running;
+    unsigned starts, ends;
+} told;
+
+static void told_testing(bool running)
+{
+    told.running = running;
+    if (running) {
+        ++told.starts;
+    } else {
+        ++told.ends;
+    }
+}
+
+/* A run's start and its end are told inside the call that makes them, not
+ * a frame later: the hold that starts it, and each thing that ends it --
+ * the meter changing with a window or a supply sample, a supply reading
+ * that does not answer, the windows stopping at a tick, STOP TEST, the
+ * link, a disarm, and a reset of the screen. */
+TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
+{
+    for (int how = 0; how < 8; ++how) {
+        bench_on_ina();
+        memset(&told, 0, sizeof(told));
+        servo_screen_on_testing(told_testing);
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        /* Told by the event that completed the hold: no frame since. */
+        CHECK(told.running);
+        CHECK_EQ(told.starts, 1u);
+        bench_frames(3000u);
+        CHECK(told.running);
+        CHECK_EQ(told.ends, 0u);
+        b.ina = false;
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.output = true;
+        st.mode = SUPPLY_MODE_CV;
+        st.set_v = supply_screen_set_v();
+        st.samples = ++b.samples;
+        st.taken_ms = b.now;
+        switch (how) {
+        case 0: {                       /* a window under another meter */
+            servo_screen_source_dropped(SERVO_SOURCE_WHY_SILENT,
+                                        meter_changes + 1u);
+            meter_id = SERVO_SOURCE_PDMINI;
+            ++meter_changes;
+            const sense_link_win_t w = rail_win(100, 4800u);
+            window(&w);
+            break;
+        }
+        case 1:                         /* a supply sample under another */
+            meter_id = SERVO_SOURCE_PDMINI;
+            ++meter_changes;
+            servo_screen_supply_at(&st, meter_id, meter_changes);
+            break;
+        case 2:                         /* the supply not answering */
+            st.online = false;
+            servo_screen_supply(&st);
+            break;
+        case 3:                         /* no window for 500 ms: a tick */
+            b.now += 600u;
+            servo_screen_clock(b.now);
+            st.taken_ms = b.now;
+            servo_screen_supply(&st);
+            CHECK(told.running);
+            scr->tick(0.02f);
+            break;
+        case 4:                         /* the link */
+            servo_screen_set_link(false);
+            break;
+        case 5:                         /* a disarm */
+            servo_screen_set_armed(false);
+            break;
+        case 6:                         /* the screen left */
+            scr->leave();
+            break;
+        default:                        /* the screen reset under a run */
+            scr->reset();
+            break;
+        }
+        CHECK(!servo_screen_testing());
+        CHECK(!told.running);
+        CHECK_EQ(told.starts, 1u);
+        CHECK_EQ(told.ends, 1u);
+        /* And nothing more is told while no run starts. */
+        bench_frames(1000u);
+        CHECK_EQ(told.starts, 1u);
+        CHECK_EQ(told.ends, 1u);
+        servo_screen_on_testing(NULL);
+        servo_screen_set_link(true);
+    }
+    /* With nobody to tell, a run starts and ends as it does. */
+    bench_on_ina();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    servo_screen_set_armed(false);
+    CHECK(!servo_screen_testing());
 }
 
 int main(void)
@@ -7549,5 +7707,6 @@ int main(void)
     RUN(a_run_on_the_ina3221_ends_when_its_windows_stop);
     RUN(a_stalled_servo_at_the_shipped_limits_ends_the_run);
     RUN(a_stall_at_out_of_reach_is_said_under_start_test);
+    RUN(a_runs_start_and_end_are_told_where_they_happen);
     return test_summary("servo");
 }

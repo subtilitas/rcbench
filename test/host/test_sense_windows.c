@@ -575,6 +575,40 @@ TEST_CASE(a_part_that_resets_itself_hands_over_empty_windows)
     CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
 }
 
+/* The windows of one read are stamped 50 ms apart: the newest with the
+ * panel's tick at the read, each older one 50 ms before the one after it,
+ * the latest it can have closed.  Across the tick wrap as well. */
+TEST_CASE(the_windows_of_one_read_are_stamped_50_ms_apart)
+{
+    static const uint32_t k_tick0[] = { 1000u, 0xFFFFFF00u };
+    for (size_t i = 0u; i < 2u; ++i) {
+        running(50u, k_tick0[i]);
+        /* No poll for 170 ms: three windows close, and the next read
+         * brings them. */
+        chain_far(170u);
+        (void)chain_poll();
+        const uint32_t read = chain_now();
+        sense_link_win_t w[LINK_SW_RING];
+        unsigned n = 0u;
+        while (n < LINK_SW_RING && sense_link_take_win(&ch.sl, &w[n])) {
+            ++n;
+        }
+        CHECK(n >= 3u);
+        for (unsigned k = 0u; k < n; ++k) {
+            CHECK_EQ(w[k].number, (uint16_t)(w[0].number + k));
+            /* Within the poll's exchanges of the read, and 50 ms a
+             * window back from the newest. */
+            CHECK_EQ(w[k].taken_ms,
+                     w[n - 1u].taken_ms - (n - 1u - k) * SENSE_LINK_WINDOW_MS);
+        }
+        CHECK((uint32_t)(read - w[n - 1u].taken_ms) <= 6u);
+        if (i > 0u) {
+            CHECK(w[0].taken_ms > 0xFFFFFF00u || w[n - 1u].taken_ms < 1000u);
+        }
+    }
+    CHECK_EQ(SENSE_LINK_WINDOW_MS, SENSE_WINDOW_MS);
+}
+
 /* A clipped window and a negative current are readings: handed over as
  * the page carries them, signed, with the clipped samples counted. */
 TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
@@ -815,6 +849,7 @@ int main(void)
     RUN(a_link_back_to_a_restarted_coprocessor_invents_nothing);
     RUN(windows_not_taken_wait_and_those_past_the_ring_are_counted);
     RUN(a_part_that_resets_itself_hands_over_empty_windows);
+    RUN(the_windows_of_one_read_are_stamped_50_ms_apart);
     RUN(a_clipped_window_and_a_negative_current_are_plain_readings);
     RUN(nothing_is_sent_to_servo_win_on_a_4_10_coprocessor);
     RUN(a_coprocessor_that_refuses_servo_win_is_asked_once);

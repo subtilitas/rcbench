@@ -268,7 +268,11 @@ On the INA3221 a reading is a window, counted by the window's number: a
 number that steps by more than one between two windows the run got is
 counted on the `Skipped` line. The panel takes each window once and in
 order; the queue to the screen holds 8, so a frame longer than 400 ms loses
-the oldest.
+the oldest. A window's time is the latest it can have closed: the panel's
+time of the read that brought it, less 50 ms for each window that closed
+after it and came in the same read. Windows that arrive together are
+therefore 50 ms apart in the run and in the CSV, as the ones that arrive
+one a read are.
 
 ### The meter
 

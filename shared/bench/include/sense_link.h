@@ -247,6 +247,9 @@ typedef struct {
     uint16_t regs[4];         /**< a write's registers                 */
 } sense_link_op_t;
 
+/** One window of the coprocessor's, in ms: SENSE_WINDOW_MS. */
+#define SENSE_LINK_WINDOW_MS 50u
+
 /** One 50 ms window of INA3221 CH1, as SERVO_WIN carries it.  A clipped
  *  sample counts in the three currents at the end of the range it read. */
 typedef struct {
@@ -261,7 +264,11 @@ typedef struct {
     int16_t  min_ma;
     uint16_t mean_mv;     /**< bus voltage at the load side of the shunt  */
     uint16_t min_mv;
-    uint32_t taken_ms;    /**< when the panel had the read that brought it */
+    /** The latest the window can have closed, on the panel's tick: when
+     *  the panel had the read that brought it, less SENSE_LINK_WINDOW_MS
+     *  for each window that closed after it and came in the same read.
+     *  The windows of one read are 50 ms apart, oldest first. */
+    uint32_t taken_ms;
 } sense_link_win_t;
 
 /** What the servo rail's meter is chosen from (servo_source.h), as of the

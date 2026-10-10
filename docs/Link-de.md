@@ -552,7 +552,9 @@ jenes Polls (`servo_source_dropped()`) und reicht es mit jedem der drei
 weiter, damit der Bericht des Laufs die Bedingung nennt: ein Reset-Zähler,
 der sich in jenem Poll bewegte, ist der Grund, der behalten wird, weil der
 Koprozessor einen Baustein, den er zurückgesetzt findet, im selben Lesen
-offline nimmt.
+offline nimmt. Jedes Fenster trägt den spätesten Zeitpunkt, zu dem es
+geschlossen haben kann: den Tick des Panels beim Lesen, abzüglich 50 ms für
+jedes Fenster nach ihm in diesem Lesen (`sense_link_win_t.taken_ms`).
 
 `test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
 Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im

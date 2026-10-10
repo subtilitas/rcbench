@@ -287,7 +287,10 @@ typedef struct {
     uint8_t  clipped;       /**< samples at an end of the range         */
     int16_t  mean_ma, max_ma, min_ma;   /**< mA, signed                 */
     uint16_t mean_mv, min_mv;           /**< at the load side of the shunt */
-    uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
+    /** The latest it can have closed, on the run's clock
+     *  (sense_link_win_t.taken_ms): windows that arrive together carry
+     *  times 50 ms apart.  The window began SERVO_TEST_WIN_MS before. */
+    uint32_t taken_ms;
 } servo_test_win_t;
 
 /** Readings of the encoder kept for matching with the supply's rows.  The

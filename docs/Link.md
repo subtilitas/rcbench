@@ -503,7 +503,10 @@ supply sample or the snapshot brings another meter or another change count
 being the meter with the count of that poll (`servo_source_dropped()`) and
 hands it over with each of the three, so the run's report names the
 condition: a reset count that moved in that poll is the reason kept, since
-the coprocessor takes a part it found reset offline in the same read.
+the coprocessor takes a part it found reset offline in the same read. Each
+window is stamped with the latest it can have closed: the panel's tick at
+the read, less 50 ms for each window after it in that read
+(`sense_link_win_t.taken_ms`).
 
 `test_sense_windows` runs the modelled INA3221, the coprocessor's schedule
 and pages and `sense_link` on one clock: polls 50, 53, 55, 100, 150, 199 and

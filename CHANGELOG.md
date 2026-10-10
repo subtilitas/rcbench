@@ -64,6 +64,8 @@ coprocessor and the other way round.
   names the supply, the meter of the current and of the voltage, the shunt
   and its range, and, on the PD mini with the INA3221 on in SETUP, why the
   INA3221 was not read. The result box on the SERVO screen names the meter.
+  Windows that one read brings carry times 50 ms apart, each the latest it
+  can have closed.
   A negative current is a reading: the limits, the peak and STALL AT take
   its magnitude, the CSV keeps the sign, and a run whose idle current is
   below -0.020 A says `Current reads negative at rest: shunt direction`. A
@@ -96,7 +98,8 @@ coprocessor and the other way round.
   new columns. The report's step table has a `V min` column.
 - **One CSV per servo test.** The armed bench's own log writes no row while
   a servo test runs; its time column steps over the test and its rows start
-  again when the test ends.
+  again when the test ends. The SERVO screen tells the panel of a run's
+  start and end in the call that makes them.
 - **The SERVO screen shows the servo rail's meter.** The CURRENT row, the
   line over the plot and the plot show the reading of the meter the panel
   names: with the INA3221 as the meter, CH1's 50 ms windows -- the mean

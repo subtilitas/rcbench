@@ -817,6 +817,29 @@ TEST_CASE(no_supply_reading_for_1500_ms_ends_a_run_on_the_ina3221)
     }
 }
 
+/* The supply's readings stopping as IDLE begins, on the PD mini: IDLE has
+ * no reading to measure, and the run ends at IDLE's end, 1000 ms on, before
+ * the 1500 ms without a reading are over. */
+TEST_CASE(an_idle_without_a_reading_ends_a_run_on_the_pd_mini)
+{
+    servo_test_cfg_t c;
+    h_cfg(&c, false);
+    h_fresh(5000u);
+    h_start(&c);
+    CHECK(h_until(SERVO_TEST_PH_IDLE));
+    h.pd_on = false;
+    const uint32_t idle_from = h.t.phase_ms;
+    CHECK_EQ(h.t.steps[0].idle.n, 0u);
+    CHECK((uint32_t)(idle_from - h.t.sup_ms) < 500u);
+    while ((uint32_t)(h.now - idle_from) < SERVO_TEST_IDLE_MS - 1u) {
+        h_ms();
+    }
+    CHECK(servo_test_running(&h.t));
+    h_ms();
+    CHECK_EQ(h.t.end_ms, idle_from + SERVO_TEST_IDLE_MS);
+    h_check_ended(SERVO_TEST_AB_STALE);
+}
+
 /* ------------------------------------------------------------- stall */
 
 /* STALL AT is judged on the window's mean, in whole mA: a mean 1 mA under
@@ -1822,6 +1845,8 @@ typedef struct {
     item_t   q[Q_LEN];
     unsigned q_n;
     unsigned q_lost;
+    unsigned poll_every;    /* the panel polls every so many passes; 0 and
+                               1 every pass                             */
     unsigned passes;
     unsigned wins_taken;
     unsigned offs, releases;
@@ -1866,7 +1891,7 @@ static void b_push(const item_t *it)
 static void b_pass(void)
 {
     const uint64_t began = ch.us;
-    if (b.link_up) {
+    if (b.link_up && (b.poll_every < 2u || b.passes % b.poll_every == 0u)) {
         (void)chain_poll();
     }
     sense_link_meter_t m;
@@ -2166,6 +2191,78 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
     }
 }
 
+/* The time in ms of each row of @p csv after the header, at most @p cap. */
+static unsigned row_times(const char *csv, uint32_t *ms, unsigned cap)
+{
+    unsigned n = 0u;
+    for (const char *p = strchr(csv, '\n'); p != NULL && p[1] != '\0' && n < cap;
+         p = strchr(p + 1, '\n')) {
+        unsigned long s = 0u, frac = 0u;
+        if (sscanf(p + 1, "%lu.%lu", &s, &frac) == 2) {
+            ms[n++] = (uint32_t)(s * 1000u + frac);
+        }
+    }
+    return n;
+}
+
+/* A panel that polls every 150 ms gets three windows in a read.  Each is
+ * the run's reading at its own time, 50 ms apart: no two rows share a
+ * time, a hold holds the windows that closed in it, and windows over STALL
+ * AT end the run 1000 ms after the first began, as with a window a poll. */
+TEST_CASE(windows_that_arrive_together_keep_their_own_times)
+{
+    b_fresh(5000u);
+    b.poll_every = 150u / PASS_MS;
+    servo_test_cfg_t c;
+    b_cfg(&c);
+    c.step_count = 1u;
+    b_start(&c);
+    b_out();
+    CHECK_EQ(b.t.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(b.t.skipped, 0u);
+    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    static uint32_t ms[2000];
+    const unsigned n = row_times(b.out.csv, ms, 2000u);
+    CHECK_EQ(n, b.out.rows - 1u);
+    unsigned same = 0u, off = 0u;
+    for (unsigned k = 2u; k < n; ++k) {
+        const uint32_t step = ms[k] - ms[k - 1u];
+        same += (step == 0u) ? 1u : 0u;
+        /* 50 ms a window, give or take the exchanges of a poll. */
+        off += (step < 44u || step > 56u) ? 1u : 0u;
+    }
+    CHECK_EQ(same, 0u);
+    CHECK_EQ(off, 0u);
+    const servo_test_step_t *s = &b.t.steps[0];
+    CHECK_EQ(s->travels, 4u);
+    CHECK_EQ(s->timeouts, 0u);
+    /* IDLE's 1000 ms and the three 600 ms holds at an end hold the windows
+     * that closed in them, not one a read. */
+    CHECK(s->idle.n >= 17u && s->idle.n <= 20u);
+    CHECK(s->hold[0].n >= 27u && s->hold[0].n <= 36u);
+    CHECK(s->hold[1].n >= 27u && s->hold[1].n <= 36u);
+    CHECK_NEAR(s->idle.sum / (float)s->idle.n, 0.12f, 0.005f);
+    /* Late by the windows as before, and by up to the 150 ms to the read. */
+    CHECK(s->travel_max_ms >= 667u);
+    CHECK(s->travel_max_ms <= 667u + 2u * SERVO_TEST_WIN_MS + 150u + PASS_MS);
+
+    /* A servo on a stop: 20 windows over STALL AT in a row. */
+    b_fresh(5000u);
+    b.poll_every = 150u / PASS_MS;
+    b.servo.cfg.stop_hi_us = 1850u;
+    b_cfg(&c);
+    c.step_count = 1u;
+    b_start(&c);
+    b_out();
+    CHECK_EQ(b.t.why, SERVO_TEST_AB_STALL);
+    /* The window that ended it is the twentieth from the first over it:
+     * its time 1000 ms after that one began, give or take a poll's
+     * exchanges, whichever read brought it. */
+    const uint32_t over_for = b.t.end_ms - b.t.stall_since_ms;
+    CHECK(over_for >= 1000u && over_for <= 1006u);
+    b_check_ended(SERVO_TEST_AB_STALL);
+}
+
 /* The same bench before the INA3221 has been the meter for 1000 ms: the
  * run starts on the PD mini, reads it every 104 ms to its end, and the
  * INA3221 becoming the meter under it changes nothing. */
@@ -2378,6 +2475,7 @@ int main(void)
     RUN(a_window_without_both_quantities_is_no_reading);
     RUN(no_window_for_500_ms_ends_the_run);
     RUN(no_supply_reading_for_1500_ms_ends_a_run_on_the_ina3221);
+    RUN(an_idle_without_a_reading_ends_a_run_on_the_pd_mini);
     RUN(stall_at_is_judged_on_the_windows_mean);
     RUN(a_second_over_stall_at_ends_the_run_on_the_windows);
     RUN(a_second_over_stall_at_ends_the_run_on_the_pd_mini);
@@ -2392,6 +2490,7 @@ int main(void)
     RUN(the_csv_reads_back_in_the_viewer_old_and_new);
     RUN(a_recorded_log_with_windows_missing_ends_the_run_at_its_first_gap);
     RUN(a_full_run_on_the_ina3221_through_the_chain);
+    RUN(windows_that_arrive_together_keep_their_own_times);
     RUN(a_full_run_on_the_pd_mini_beside_a_working_ina3221);
     RUN(the_meter_failing_mid_run_never_switches_meter);
     RUN(a_part_that_resets_itself_ends_the_run);

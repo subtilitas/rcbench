@@ -1519,6 +1519,7 @@ void servo_screen_set_sweep(bool able)
  * servo whose maximum is 860 while the screen shows the new range.
  */
 static void test_end_now(servo_test_abort_t why);
+static void test_tell(void);
 static void ask_disarm(void);
 
 static void reissue(void)
@@ -2061,6 +2062,7 @@ static void supply_sample(const supply_state_t *st, bool in_force)
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
                        s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+    test_tell();
     /* The line, the plot and the CURRENT row are the supply's while it is
      * the rail's meter; with the INA3221 as the meter they are fed by its
      * windows (servo_screen_window()). */
@@ -2121,6 +2123,7 @@ static void test_meter_follow(servo_source_id_t id, uint32_t changes)
         .dropped_at = s.drop_at,
     };
     servo_test_meter_now(&s.test, &m, test_now());
+    test_tell();
     if (servo_test_running(&s.test)) {
         return;
     }
@@ -2234,6 +2237,7 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
         };
         servo_test_window(&s.test, &tw,
                           s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+        test_tell();
     }
     rail_plot();
     cur_follow();
@@ -2359,6 +2363,7 @@ static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     servo_test_init(&s.test);
+    test_tell();                /* a run the reset took with it is over */
     s.test_sig = test_signature();
     servo_invalidate();
     s.drawn_mask    = 0;
@@ -2740,6 +2745,30 @@ static void test_cfg(servo_test_cfg_t *c)
     c->text = ui_servo_table();
 }
 
+/*
+ * Whether a run is under way, told to the panel where it changes
+ * (servo_screen_on_testing()): after every call that can start or end the
+ * engine's run.  Kept outside the screen's state, which a reset clears.
+ */
+static void (*s_testing_told)(bool running);
+static bool s_testing_last;
+
+static void test_tell(void)
+{
+    const bool running = servo_test_running(&s.test);
+    if (running != s_testing_last) {
+        s_testing_last = running;
+        if (s_testing_told != NULL) {
+            s_testing_told(running);
+        }
+    }
+}
+
+void servo_screen_on_testing(void (*told)(bool running))
+{
+    s_testing_told = told;
+}
+
 /* What the run asked for, done the way a finger does it here. */
 static void test_apply(const servo_test_do_t *d)
 {
@@ -2834,6 +2863,7 @@ static void test_end_now(servo_test_abort_t why)
         return;
     }
     servo_test_abort(&s.test, why, test_now());
+    test_tell();
     const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
@@ -2913,6 +2943,7 @@ static void test_begin(void)
     const float i0 = supply_screen_set_i();
     const servo_test_start_t why = servo_test_start(
         &s.test, &c, test_now(), &last, caps.v_min, caps.v_max);
+    test_tell();
     if (why != SERVO_TEST_START_OK) {
         s.test_note = (int)SERVO_STR_START_OK + (int)why;
         ++s.ctrl_rev;
@@ -5137,6 +5168,7 @@ static void test_tick(void)
     const servo_test_in_t in = { value_live(), supply_screen_caps().v_max };
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
+    test_tell();
     test_apply(&d);
     test_ended();
     test_restore_service();

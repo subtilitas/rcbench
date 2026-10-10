@@ -293,7 +293,11 @@ Am INA3221 ist ein Messwert ein Fenster, gezählt an der Nummer des Fensters:
 springt sie zwischen zwei Fenstern, die der Lauf bekam, um mehr als eins,
 zählt die Zeile `Übersprungen` die fehlenden. Das Panel nimmt jedes Fenster
 einmal und in Reihenfolge; die Queue zum Bildschirm fasst 8, ein Frame von
-mehr als 400 ms verliert also die ältesten.
+mehr als 400 ms verliert also die ältesten. Die Zeit eines Fensters ist der
+späteste Zeitpunkt, zu dem es geschlossen haben kann: die Panelzeit des
+Lesens, das es brachte, abzüglich 50 ms für jedes Fenster, das nach ihm
+schloss und im selben Lesen kam. Fenster, die zusammen ankommen, liegen im
+Lauf und in der CSV also 50 ms auseinander, wie die, die einzeln ankommen.
 
 ### Der Strommesser des Laufs
 

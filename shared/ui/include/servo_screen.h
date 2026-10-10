@@ -270,6 +270,17 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
 void servo_screen_source(servo_source_id_t id, uint32_t changes);
 
 /**
+ * @p told is called with true when a run of the automatic test starts and
+ * with false when it ends, inside the call that starts or ends it -- a
+ * touch event, a window, a supply sample, the meter, the link, a tick --
+ * and not at the next frame.  The panel's control task writes no bench log
+ * row between the two (log_cadence_bench_run()).  NULL for none.  It is
+ * called from the task that runs the screen and must not call back into
+ * it.
+ */
+void servo_screen_on_testing(void (*told)(bool running));
+
+/**
  * Why the INA3221 is not the servo rail's meter now (servo_source_why()),
  * every frame with servo_screen_source().  A run started on the PD mini
  * with the INA3221 on in SETUP states it in its report.

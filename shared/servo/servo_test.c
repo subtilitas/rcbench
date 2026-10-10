@@ -1073,8 +1073,10 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
         case SERVO_TEST_PH_IDLE:
             if (in_phase >= SERVO_TEST_IDLE_MS) {
                 if (cur(t)->idle.n == 0u) {
-                    finish(t, on_windows(t) ? SERVO_TEST_AB_WIN_STALE
-                                            : SERVO_TEST_AB_STALE, now_ms);
+                    /* No reading in all of IDLE.  On the INA3221 the run
+                     * has ended before this, 500 ms after its last
+                     * window. */
+                    finish(t, SERVO_TEST_AB_STALE, now_ms);
                     break;
                 }
                 set_threshold(cur(t));

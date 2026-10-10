@@ -2365,9 +2365,16 @@ typedef struct {
 
 #define TEST_Q_LEN 24
 static QueueHandle_t s_test_q;           /**< render loop -> logger */
-/* An automatic servo test is running (servo_screen_testing()), from the
- * render loop for the control task's bench log. */
+/* An automatic servo test is running, for the control task's bench log:
+ * stored by the SERVO screen in the call that starts or ends a run
+ * (servo_screen_on_testing()), so a row is neither written into a run nor
+ * left out after it by a frame's length. */
 static atomic_bool s_servo_testing;
+
+static void servo_testing_told(bool running)
+{
+    atomic_store(&s_servo_testing, running);
+}
 /* OPENs the render loop queued, and those this task has answered with a
  * number in s_test_file (-1: not recorded). */
 static atomic_uint s_test_opens_sent;
@@ -7502,6 +7509,7 @@ void app_main(void)
 
     ui_theme_set(UI_THEME_DARK);
     ui_router_init();
+    servo_screen_on_testing(servo_testing_told);
     /*
      * The outputs screen hands its choice back through here.  It runs on
      * app_main and the link belongs to the control task, so this queues the
@@ -7882,7 +7890,6 @@ void app_main(void)
         /* A servo test's end and the set points it put back, whichever
          * screen is up: after this frame's OFF went and its samples. */
         servo_screen_service();
-        atomic_store(&s_servo_testing, servo_screen_testing());
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
