@@ -13,6 +13,10 @@
  *   overview  the menu, whose tiles are chrome and are never in a frame
  *   servo     the servo card, whose arm and grip are drawn from coverage
  *   servo-grip  the same, repainting only the breathing grip
+ *   servo-current  the same as servo-grip with the INA3221 as the servo
+ *             rail's meter and a window every frame whose current differs
+ *             in the digits shown: the grip, the CURRENT row's value, the
+ *             line and the plot, each clipped to itself
  *   supply    the supply screen with its output on, a sample every frame
  *   supply-chrome  the same, repainted in full every frame
  *   sim       the same steady state with the SIMULATION watermark over it,
@@ -169,6 +173,9 @@ int main(int argc, char **argv)
          * part of a steady frame: it is spent here, before the warm renders. */
         servo_screen_set_armed(true);
         servo_screen_set_commanded(38.0f);
+        if (strcmp(mode, "servo-current") == 0) {
+            servo_screen_source(SERVO_SOURCE_INA3221);
+        }
         for (int f = 0; f < 2 * UI_HOLD_FLASH_FRAMES; ++f) {
             ui_router_tick(0.0f);
             ui_router_render(&c, f & 1);
@@ -228,6 +235,19 @@ int main(int argc, char **argv)
                 servo_screen_set_commanded(38.0f + (float)((i % 20) - 10));
             }
             servo_screen_feedback(servo_screen_commanded(), 0.4f, true);
+            if (strcmp(mode, "servo-current") == 0) {
+                /* A window in every frame: 20 close a second and the panel
+                 * draws 39 frames, into two buffers in turn, so each window
+                 * is painted twice and no frame is without one. */
+                const sense_link_win_t w = {
+                    .number  = (uint16_t)i,
+                    .current = true, .voltage = true,
+                    .mean_ma = (int16_t)(300 + 37 * (i % 9)),
+                    .max_ma  = 900, .min_ma = 20,
+                    .mean_mv = 5980u, .min_mv = 5900u,
+                };
+                servo_screen_window(&w);
+            }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);
             continue;

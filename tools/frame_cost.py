@@ -117,7 +117,8 @@ INCLUDES = [
 ]
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
-         "overview", "servo", "servo-grip", "supply", "supply-chrome",
+         "overview", "servo", "servo-grip", "servo-current", "supply",
+         "supply-chrome",
          "analyser", "logs", "settings", "battery", "balance",
          "programmer", "balance-sim", "settings-sim", "battery-sim",
          "analyser-chrome", "logs-chrome", "settings-chrome",

@@ -101,7 +101,9 @@ ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
-sind simuliert.
+sind simuliert. Solange der INA3221 das Messgerät der Servo-Schiene ist,
+zeigen die Zeile STROM und der Plot des Bildschirms seine Fenster
+([Screens](Screens-de.md#servo)); der Lauf liest trotzdem das Netzteil.
 
 TEST STARTEN auf der TEST-Seite von SERVO startet ihn;
 [Bildschirme](Screens-de.md#servo) beschreibt die Bedienung. Die Engine ist

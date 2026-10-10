@@ -91,7 +91,9 @@ below which it no longer moves (brown-out). Nothing on the bench measures the
 horn unless the output encoder is on (see below), so every result is read from
 the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
-and its numbers are simulated.
+and its numbers are simulated. While the INA3221 is the servo rail's meter
+the screen's CURRENT row and plot show its windows
+([Screens](Screens.md#servo)); the run reads the supply all the same.
 
 START TEST on the SERVO screen's TEST page starts it:
 [Screens](Screens.md#servo) describes the controls. The engine is

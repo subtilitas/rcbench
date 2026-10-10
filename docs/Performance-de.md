@@ -37,6 +37,7 @@ chrome          32,953     4119 KiB    108.2       7.8
 overview           909      114 KiB      3.0      39.0
 servo           15,390     1924 KiB     50.5      19.5
 servo-grip        3,035      379 KiB     10.0      39.0
+servo-current        4,056      507 KiB     13.3      39.0
 supply           8,502     1063 KiB     27.9      19.5
 supply-chrome       31,405     3926 KiB    103.1       7.8
 analyser           855      107 KiB      2.8      39.0
@@ -73,6 +74,7 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | das Menü, Chrome gecacht |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
+| `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
 | `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
@@ -157,6 +159,7 @@ jeden Modus an eine Obergrenze:
 | `overview` | 2 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `servo` | 17 000 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 4 000 | ein Atmen, das die ganze Karte neu zeichnet |
+| `servo-current` | 4 500 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | die sieben Bildschirmmodi | 1 200 | einen Bildschirm, der neu zu zeichnen begonnen hat |
 | die drei `-sim`-Modi | 2 800 | ein Watermark, das über die volle Canvas hinauswächst |
 | die acht `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |

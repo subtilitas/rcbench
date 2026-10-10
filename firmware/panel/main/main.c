@@ -7557,8 +7557,10 @@ void app_main(void)
         uint32_t pressed_now;
         uint32_t arm_gen_now;
         bool     link_now;
+        servo_source_id_t servo_source_now;
         snap_lock();
         link_now       = s_snap.link_up;
+        servo_source_now = s_snap.servo_source;
         armed_now      = s_snap.armed;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
@@ -7729,11 +7731,14 @@ void app_main(void)
         while (xQueueReceive(s_enc_q, &enc, 0) == pdTRUE) {
             servo_screen_encoder(&enc);
         }
-        /* The INA3221's CH1 windows are taken off their queue every frame.
-         * No screen reads them or the meter in the snapshot: the SERVO
-         * screen and the servo test read the supply. */
+        /* The servo rail's meter, then the INA3221's CH1 windows, each
+         * once: the SERVO screen's CURRENT row, line and plot show the
+         * meter's reading.  The servo test reads the supply. */
+        servo_screen_source(servo_source_now);
         sense_link_win_t win;
-        while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) { }
+        while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) {
+            servo_screen_window(&win);
+        }
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
             supply_screen_set_output(sup.output);

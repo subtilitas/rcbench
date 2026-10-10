@@ -485,8 +485,10 @@ and the INA3221 again 1000 ms after they all hold. With no coprocessor
 answering it is the panel's model. A clipped window and a negative current
 are readings and no condition. The answer is in the control task's snapshot
 with the count of windows lost, and the windows are on a queue to the
-render task, 8 deep, the oldest dropped when it is full. No screen reads
-either: the SERVO screen and the servo test read the PD mini.
+render task, 8 deep, the oldest dropped when it is full. The SERVO screen
+takes the answer and every window once per frame and shows the meter's
+reading in its CURRENT row, line and plot ([Screens](Screens.md#servo)).
+The servo test reads the PD mini.
 
 `test_sense_windows` runs the modelled INA3221, the coprocessor's schedule
 and pages and `sense_link` on one clock: polls 50, 53, 55, 100, 150, 199 and

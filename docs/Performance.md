@@ -36,6 +36,7 @@ chrome          32,953     4119 KiB    108.2       7.8
 overview           909      114 KiB      3.0      39.0
 servo           15,390     1924 KiB     50.5      19.5
 servo-grip        3,035      379 KiB     10.0      39.0
+servo-current        4,056      507 KiB     13.3      39.0
 supply           8,502     1063 KiB     27.9      19.5
 supply-chrome       31,405     3926 KiB    103.1       7.8
 analyser           855      107 KiB      2.8      39.0
@@ -72,6 +73,7 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | the menu, chrome cached |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
+| `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | one steady frame of that screen, chrome cached |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
@@ -147,6 +149,7 @@ would repaint identical pixels, drawing slower would drop samples. CI
 | `overview` | 2,000 | a chrome-cached screen that has started repainting |
 | `servo` | 17,000 | the arm and grip drawing growing |
 | `servo-grip` | 4,000 | a breath repainting the whole card |
+| `servo-current` | 4,500 | a changed digit of the current repainting the whole card |
 | the seven per-screen modes | 1,200 | a screen that has started repainting |
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
 | the eight `-chrome` modes | 45,000 | a full repaint growing |

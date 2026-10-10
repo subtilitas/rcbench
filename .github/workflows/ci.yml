@@ -149,10 +149,13 @@ jobs:
       # The servo card draws its arm and grip from coverage; 17,000 catches
       # that growing.  A breath repaints a clipped box and nothing else, and
       # 4,000 catches a revision bump on every poll that puts the whole card
-      # back in the frame.
+      # back in the frame.  A window of the INA3221 in every frame repaints
+      # the CURRENT row's value, the line and the plot beside the grip, each
+      # clipped; 4,500 catches a changed digit that repaints the card.
       - name: The servo card is drawn, and its grip is only breathed on
         run: python3 tools/frame_cost.py servo --max-lines 17000
              && python3 tools/frame_cost.py servo-grip --max-lines 4000
+             && python3 tools/frame_cost.py servo-current --max-lines 4500
 
       # Every screen caches its chrome, so a steady frame is a few hundred
       # fills; 1,200 catches one that has started repainting.  The watermark

@@ -113,6 +113,11 @@ SCREENS = {
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
+    # The INA3221 as the servo rail's meter: its name over the plot and
+    # CH1's windows in the CURRENT row, the line and the plot; and the same
+    # with the last window clipped, its current in the warning colour.
+    "servo-ina":      ("servo-ina.png",      "servo", "dark"),
+    "servo-clipped":  ("servo-clipped.png",  "servo", "dark"),
     "servo-settings": ("servo-settings.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),

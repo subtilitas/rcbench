@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "sense_link.h"
+#include "servo_source.h"
 #include "servo_test.h"
 #include "supply.h"
 #include "ui_screen.h"
@@ -156,7 +158,9 @@ bool servo_screen_take(servo_cmd_t *out);
  */
 void servo_screen_encoder(const servo_test_enc_t *e);
 
-/** What the output is actually doing, from the bench or from the model. */
+/** What the output is actually doing, from the bench or from the model.
+ *  @p current_a is not shown: the CURRENT row reads the servo rail's meter
+ *  (servo_screen_source()). */
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 
 /**
@@ -211,9 +215,52 @@ uint16_t servo_screen_drawn(void);
 uint16_t servo_screen_frame_hz(void);
 const char *servo_screen_type_name(void);
 
-/** One sample of the supply that feeds the servo, for the live power plot
- *  on the right card. */
+/**
+ * One sample of the supply that feeds the servo.  The automatic test reads
+ * every one.  While the servo rail's meter is not the INA3221
+ * (servo_screen_source()) it is also the rail's reading: the CURRENT row,
+ * the line over the plot and one point of the plot.
+ */
 void servo_screen_supply(const supply_state_t *s);
+
+/**
+ * The servo rail's meter, as servo_source.h decides it, every frame before
+ * that frame's windows and supply samples.
+ *
+ * The CURRENT row, the line over the plot and the plot show that meter's
+ * reading.  SERVO_SOURCE_INA3221: the last CH1 window -- mean current, mean
+ * bus voltage at the load side of the shunt and their product -- under the
+ * label INA3221 CH1.  SERVO_SOURCE_PDMINI and SERVO_SOURCE_MODEL: the
+ * supply's last sample under the label SUPPLY, the PD mini's reading or the
+ * model's.  SERVO_SOURCE_MODEL until the first call.
+ *
+ * The row is `---` and a reading on the line `--` while the meter has no
+ * reading: no window since the link came up, a window without samples of
+ * that quantity, a supply that does not answer.  A current is signed and
+ * drawn in hundredths of an amp; one from a window with a sample at an end
+ * of the INA3221's range is drawn in the warning colour.  The row is
+ * repainted, alone, when its digits or its colour change.
+ *
+ * A change to or from the INA3221 empties the plot: its trace is of the
+ * meter its label names.  The plot's scale starts at 0, so a negative
+ * current is drawn on its lower edge.
+ */
+void servo_screen_source(servo_source_id_t id);
+
+/**
+ * One 50 ms window of INA3221 CH1 (sense_link_take_win()), each one once, in
+ * the order they arrive.  While the INA3221 is the rail's meter each is one
+ * point of the plot and the reading of the row and the line.  One that
+ * arrives while the link is down is dropped, and a link that goes down takes
+ * the last one with it (servo_screen_set_link()).
+ */
+void servo_screen_window(const sense_link_win_t *w);
+
+/** How many points the power plot holds, and its series @p series (0 the
+ *  voltage in V, 1 the current in A, 2 the power in W) @p back points
+ *  before the newest: ui_plot_sample().  For tests. */
+int   servo_screen_power_points(void);
+float servo_screen_power_sample(int series, int back);
 
 /** What became of a frame rate the panel wrote to the SERVO page. */
 typedef enum {

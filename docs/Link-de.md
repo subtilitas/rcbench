@@ -530,8 +530,10 @@ kein Koprozessor, ist es das Modell des Panels. Ein übersteuertes Fenster
 und ein negativer Strom sind Messwerte und keine Bedingung. Die Antwort
 steht im Snapshot der Control-Task mit der Zahl der verlorenen Fenster, und
 die Fenster liegen in einer Queue zur Render-Task, 8 tief; ist sie voll,
-fällt das älteste weg. Kein Bildschirm liest das eine oder das andere: der
-SERVO-Bildschirm und der Servotest lesen den PD mini.
+fällt das älteste weg. Der SERVO-Bildschirm nimmt die Antwort und jedes
+Fenster einmal je Frame und zeigt den Messwert des Messgeräts in seiner
+Zeile STROM, der Zeile über dem Plot und dem Plot
+([Screens](Screens-de.md#servo)). Der Servotest liest den PD mini.
 
 `test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
 Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im

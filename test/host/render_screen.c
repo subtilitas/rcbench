@@ -1464,6 +1464,45 @@ int main(int argc, char **argv)
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
         }
+        /*
+         * The INA3221 as the servo rail's meter: 13 s of CH1's windows from
+         * a servo of the same model stepped between two positions every
+         * 2 s, the bus voltage 0.25 V lower for each amp.  In the clipped
+         * view the last window holds samples at the top of the range of a
+         * 0.1 Ohm shunt, 1.638 A.
+         */
+        if (strcmp(view, "servo-ina") == 0
+            || strcmp(view, "servo-clipped") == 0) {
+            const bool clip = strcmp(view, "servo-clipped") == 0;
+            servo_sim_t ws;
+            servo_sim_init(&ws, &cfg);
+            servo_screen_source(SERVO_SOURCE_INA3221);
+            for (int i = 0; i < 260; ++i) {
+                const uint16_t cmd = ((i / 40) % 2 == 0) ? 1900u : 1100u;
+                float a = 0.0f;
+                for (int k = 0; k < 5; ++k) {
+                    a = servo_sim_step(&ws, cmd,
+                                       (uint32_t)(i * 50 + k * 10));
+                }
+                int ma = (int)(a * 1000.0f);
+                sense_link_win_t w;
+                memset(&w, 0, sizeof(w));
+                w.number  = (uint16_t)i;
+                w.current = true;
+                w.voltage = true;
+                if (clip && i == 259) {
+                    ma = 1590;
+                    w.clip_hi = true;
+                    w.clipped = 31u;
+                }
+                w.mean_ma = (int16_t)ma;
+                w.max_ma  = (int16_t)(w.clip_hi ? 1638 : ma);
+                w.min_ma  = (int16_t)ma;
+                w.mean_mv = (uint16_t)(6000 - ma / 4);
+                w.min_mv  = w.mean_mv;
+                servo_screen_window(&w);
+            }
+        }
         /* A coprocessor that took the screen's 50 Hz. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
         /* The output encoder on, its centre at count 3000 and the horn
@@ -1497,7 +1536,9 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0) {
             servo_sweep_view(strcmp(view, "servo-paused") == 0);
-        } else if (strcmp(view, "servo") != 0) {
+        } else if (strcmp(view, "servo") != 0
+                   && strcmp(view, "servo-ina") != 0
+                   && strcmp(view, "servo-clipped") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);
         }
