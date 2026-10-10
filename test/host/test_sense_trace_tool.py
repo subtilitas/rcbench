@@ -881,6 +881,59 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     # Trace numbers that run on are one boot.
     traces, _ = sense_trace.parse_log(a + b.replace("n=1 ", "n=2 "))
     check([tr.boot for tr in traces] == [0, 0], "one boot")
+
+    def numbered(text: str, n: int, ms: int) -> str:
+        return (text.replace("n=1 ", f"n={n} ")
+                .replace(" ms=0 ", f" ms={ms} "))
+
+    def boots_of(*parts: tuple[int, int]) -> list[int]:
+        traces, _ = sense_trace.parse_log("".join(
+            numbered(b, n, ms) for n, ms in parts))
+        return [tr.boot for tr in traces]
+    # Numbers missing between two traces are traces no console took: one
+    # boot, by 1, by many and across the number's wrap from 65535 to 0.
+    check(boots_of((1, 5000), (2, 9000), (7, 20000), (300, 90000))
+          == [0, 0, 0, 0], "gaps")
+    check(boots_of((65534, 5000), (65535, 9000), (0, 20000), (1, 30000))
+          == [0, 0, 0, 0], "65535 to 0")
+    check(boots_of((65530, 5000), (4, 9000)) == [0, 0], "a gap at the wrap")
+    check(boots_of((1, 5000), (32768, 9000)) == [0, 0], "32767 on")
+    # A number that is not past the last one's is a restart: the same,
+    # one less, and 32768 on, which is 32768 back.
+    check(boots_of((3, 5000), (3, 9000)) == [0, 1], "the same number")
+    check(boots_of((3, 5000), (2, 9000)) == [0, 1], "a number back")
+    check(boots_of((1, 5000), (32769, 9000)) == [0, 1], "32768 on")
+    # A millisecond tick that lies before the last one's is a restart,
+    # whatever the number: by 1 ms, and by 2^31 ms, which is as far on.
+    check(boots_of((1, 5000), (2, 4999)) == [0, 1], "1 ms back")
+    check(boots_of((1, 5000), (2, 5000)) == [0, 0], "the same tick")
+    check(boots_of((1, 5000), (2, 4999 + (1 << 31))) == [0, 0],
+          "2^31 ms less 1 on")
+    check(boots_of((1, 5000), (2, 5000 + (1 << 31))) == [0, 1],
+          "2^31 ms back")
+    # The tick across its wrap is one boot.
+    check(boots_of((1, (1 << 32) - 3000), (2, 2000)) == [0, 0],
+          "the tick's wrap")
+    check(boots_of((1, 5000), (2, 9000), (1, 3000), (3, 8000), (2, 9000))
+          == [0, 0, 1, 1, 2], "two restarts")
+    # Two traces of one boot 6 days apart: the 0.1 ms count wrapped once
+    # between them, and the millisecond tick says so.
+    day = 86400000
+    first = numbered(a, 1, 5000)
+    later_t = (900000 + 6 * day * 10) & 0xFFFFFFFF
+    later = numbered(a.replace("t=900000 ", f"t={later_t} "), 2,
+                     5000 + 6 * day)
+    traces, _ = sense_trace.parse_log(first + later)
+    check([tr.boot for tr in traces] == [0, 0], "one boot")
+    check(traces[1].t0_abs - traces[0].t0_abs == 6 * day * 10,
+          f"{traces[1].t0_abs - traces[0].t0_abs} apart")
+    # 2 days apart: no wrap, with the tick and without it.
+    later_t = 900000 + 2 * day * 10
+    for ms in (5000 + 2 * day, 5000):
+        later = numbered(a.replace("t=900000 ", f"t={later_t} "), 2, ms)
+        traces, _ = sense_trace.parse_log(first + later)
+        check(traces[1].t0_abs - traces[0].t0_abs == 2 * day * 10,
+              f"ms={ms}: {traces[1].t0_abs - traces[0].t0_abs} apart")
     head = ("time (s);test;step;phase;command (us);position (us);set (V);"
             "voltage (V);limit (A);current (A);power (W);mode;travel (ms);"
             "angle (deg);travel angle (ms)")

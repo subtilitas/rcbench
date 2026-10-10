@@ -628,7 +628,12 @@ gewählt, nicht gemessen.
   gleich viele Zeilen zu, aber nicht dieselben Zeilen denselben
   Bewegungen, sagt es das, endet mit 1 und nimmt `--csv-offset`.
 - Ein Mitschnitt mit einem Neustart des Koprozessors darin hat eine Uhr je
-  Boot. Das Tool ordnet die Bewegungen jedes Boots für sich zu. Liegen die
+  Boot. Das Tool nimmt eine Zeile `$T` als Neustart, wenn ihr
+  Millisekunden-Tick vor dem der letzten liegt oder ihre Trace-Nummer
+  nicht hinter der letzten; fehlende Nummern sind Traces, die keine
+  Konsole abnahm, kein Neustart. Ein Neustart, nach dem keines von beiden
+  zurückgeht, wird nicht erkannt.
+  Das Tool ordnet die Bewegungen jedes Boots für sich zu. Liegen die
   Zeilen eines späteren Boots nicht hinter denen des Boots davor, ordnet
   es keine Zeile zu, sagt das und endet mit 1: den Teil des Mitschnitts
   jedes Boots mit seinem Teil der CSV-Datei auswerten.

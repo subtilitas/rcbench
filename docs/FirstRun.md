@@ -583,6 +583,10 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   not the same rows with the same moves, it says so, exits 1 and takes
   `--csv-offset`.
 - A log with a restart of the coprocessor in it has one clock per boot.
+  The tool takes a `$T` line for a restart when its millisecond tick lies
+  before the last one's or its trace number is not past the last one's;
+  missing numbers are traces no console took, not a restart. A restart
+  after which neither goes back is not told.
   The tool pairs each boot's moves on their own. When the rows of a later
   boot do not lie after those of the boot before it, it pairs no row, says
   so and exits 1: evaluate each boot's part of the log with its part of

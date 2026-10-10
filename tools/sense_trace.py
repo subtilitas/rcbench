@@ -61,7 +61,12 @@ not the same rows with the same moves, and --csv-offset sets it by hand.
 A log with a restart of the coprocessor in it has a clock for each boot:
 each boot's moves are paired on their own, and the rows of a later boot
 lie after those of an earlier one.  Where they do not, no row is paired
-and the tool says so.
+and the tool says so.  A restart is a $T line whose millisecond tick
+lies before the last one's, or whose trace number is not past the last
+one's; both count modulo their range, 2^32 ms and 65536, and the later
+of two is the one less than half the range on: 24.8 days, 32768 traces.
+Numbers that are missing are no restart: a trace with no console has a
+number and no line.  A restart after which neither goes back is not told.
 
 The replay is a host program that links the repository's own code,
 test/host/sense_trace_replay.c.  --replay names a built one; without it
@@ -186,6 +191,7 @@ def parse_log(text: str) -> tuple[list[Trace], int]:
     other = 0
     last_t0: tuple[int, int] | None = None      # printed, unwrapped
     last_n = 0
+    last_ms = 0
     boot = 0
     for raw in text.splitlines():
         line = raw.strip()
@@ -196,19 +202,31 @@ def parse_log(text: str) -> tuple[list[Trace], int]:
                                     "inside it")
             t0 = int(m.group(4))
             number = int(m.group(2))
-            # The coprocessor numbers its traces from 1: a number that is
-            # not the one before plus one is a restart, and its clock a
-            # new one.  Within a boot later traces lie later: the count
-            # runs on modulo 2^32.
-            if last_t0 is not None and number != (last_n % 65536) + 1:
+            # Within a boot the millisecond tick and the trace number
+            # both run on, modulo 2^32 and 65536, the number by more than
+            # one past a trace no console took.  A tick that lies before
+            # the last one's, or a number that is not past the last
+            # one's, is a restart, and its clock a new one.
+            ms = int(m.group(5))
+            ms_on = (ms - last_ms) & 0xFFFFFFFF
+            n_on = (number - last_n) & 0xFFFF
+            if last_t0 is not None and (ms_on >= 1 << 31
+                                        or not 0 < n_on < 1 << 15):
                 boot += 1
                 last_t0 = None
-            last_n = number
-            t0_abs = t0 if last_t0 is None else (
-                last_t0[1] + ((t0 - last_t0[0]) & 0xFFFFFFFF))
+            last_n, last_ms = number, ms
+            if last_t0 is None:
+                t0_abs = t0
+            else:
+                # Later traces lie later.  The 0.1 ms count wraps every
+                # 4.97 days; the millisecond tick says how often it did
+                # between the two.
+                on = (t0 - last_t0[0]) & 0xFFFFFFFF
+                wraps = max(0, round((ms_on * T_PER_MS - on) / (1 << 32)))
+                t0_abs = last_t0[1] + on + (wraps << 32)
             last_t0 = (t0, t0_abs)
             cur = Trace(number, m.group(3), t0, t0_abs,
-                        int(m.group(5)), int(m.group(6)))
+                        ms, int(m.group(6)))
             cur.boot = boot
             cur.version = int(m.group(1))
             if cur.version != FORMAT:
