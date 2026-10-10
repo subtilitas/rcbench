@@ -497,8 +497,9 @@ Device (COMn)", hardware ID `VID_2E8A`. PuTTY settings:
 The port is USB CDC (communications device class): the speed is not used,
 any value works. The coprocessor prints only while the terminal holds DTR
 (data terminal ready), which PuTTY does while the port is open. No
-timestamps in the log: a line with anything in front of it is not read. A
-key is sent when it is pressed, with no Enter.
+timestamps in the log: inside a trace a line with anything in front of it
+is damage, and no move of that trace is replayed. A key is sent when it is
+pressed, with no Enter.
 
 **Part A: without the encoder.**
 
@@ -549,6 +550,44 @@ put one move's arrival. It ends `not compared with the horn`: without an
 encoder an arrival is the current back at its holding level, which can
 lead or lag the horn. One `<log>-trace-<n>.csv` per trace holds time in
 ms, current in A and the bus voltage in V.
+
+**What the tool refuses.** Between a trace's `$T` and `$Z` line every
+line is a whole line of the format or a console line of the coprocessor's
+own, which starts `rcbench-iomcu:`. A line is whole with every field of
+its type in its order, nothing before, between or after the fields, and
+each number in the range the coprocessor holds it in: a `$C` or `$D` line
+has `ch=` and `us=`, a `$E` or `$K` line has neither. A line ends LF or
+CR LF. Anything else is damage. So are a second `$H` line, a line other
+than `$L` before the `$H` line, a trace length other than 4000 ms
+(10000 ms for `t`), a sample period other than 1000 µs, a sample timed
+before the one before it, a second voltage for one sample, a `$S` line
+that repeats the state before it, and a line of a trace outside a trace.
+A `$L` line before the `$H` line counts records missing before the
+trace's first sample, and no move of that trace is replayed. The tool
+prints a
+`PROBLEM:` line with the count and the number of the first such line,
+replays no move of that trace and exits 1.
+
+A move's levels come from four windows of samples:
+
+| Window | What is taken from it |
+| --- | --- |
+| the samples before the trace's first command | every move's threshold; the holding level of a move to a pulse width that no earlier move left |
+| the 50 ms before the move | its level before |
+| the 200 ms before the move | its threshold; the holding level of each later move back to the pulse width this move left |
+| from 50 ms before the move to the next move or the trace's end | the samples the replay is fed |
+
+A window with no sample, with a `$L` line in it or at either end, or with
+a `$S` line in it or at either end gives no level. Each move that needs
+that level reads `not replayed`, with the window named. A clipped sample
+in a window counts as 4094 steps towards that end of the range, as in the
+replay, and the move's line says how many of its level samples are
+clipped.
+
+`--floor` takes 0.000001 A to 1000 A, `--pair-ms` more than 0 ms up to
+60000 ms, `--csv-offset` up to 1e9 s either side of 0. A servo CSV file
+that cannot be read, a CSV file that cannot be written and a replay that
+answers another number of moves than it was sent exit 2.
 
 **Write down:** the tool's output for each log. Part A answers: the noise
 of CH1's 1 ms samples with no servo and with a servo at rest, against the
@@ -603,6 +642,14 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   servo's current in it; the tool does not tell the two apart.
 - Whether a terminal keeps up with 8.6 kB a second without loss. A trace
   whose line counts do not match its end line is reported and exits 1.
+- The line format has no check value. A line cut inside its last number
+  is a whole line with another number, and the tool reads it as that: a
+  sample's code, a voltage, the pulse width of a `$C` or `$D` line, the
+  time of a `$E` or `$K` line, the reset count of a `$H` or `$S` line. A
+  cut anywhere else in a line is reported, and so is a lost sample,
+  voltage or trigger line. A lost `$S` line is reported when the next one
+  repeats the state. A log that stops between two traces reads as a log
+  with fewer traces.
 
 ---
 

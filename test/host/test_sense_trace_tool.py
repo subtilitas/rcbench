@@ -23,7 +23,18 @@ written, a move with records missing inside it and a slewed command with
 its $D line before and after its $C line; what the traces alone give; a
 servo CSV that pairs at two offsets, one set by hand, and one without the
 columns; two boots whose rows lie in their order, among each other and
-alike.
+alike; the grammar of every line type, with each field missing, doubled,
+out of its range and out of its order; lines that are no line of a trace
+inside a trace and a trace's lines outside one; line ends; a second $H
+line and one after a record; a trace length and a sample period version 2
+does not write; samples out of the order of time and two voltages for
+one; a $S line that changes nothing; clipped samples, missing records and
+a state change in each window a move's levels come from, and a trace with
+no sample before its first command; a replay that answers fewer moves
+than sent; files that cannot be read or written; the range of every
+number on the command line; and every line of a log with every line type
+cut at every byte, which is damage or changes nothing, but for a cut
+inside a line's last number.
 
 Regenerate the fixtures after a change that moves them:
 
@@ -71,6 +82,11 @@ def work(name: str, text: str | None = None) -> pathlib.Path:
     return path
 
 
+def is_sample(line: str) -> bool:
+    got = sense_trace.read_line(line)
+    return got is not None and got[0] == "s"
+
+
 def fixture_log() -> str:
     return (ARGS.fixtures / "sense-trace-sim.log").read_text("ascii")
 
@@ -103,7 +119,7 @@ def the_fixtures_are_what_the_generator_writes() -> None:
           "fixtures/sense-trace-sim.csv is not what sense_trace_gen writes")
     # About 8 bytes a sample, line end included.
     samples = sum(1 for line in raw.split(b"\r\n")
-                  if sense_trace.RE_S.match(line.decode("ascii")))
+                  if is_sample(line.decode("ascii")))
     check(samples == 561 + 8881, f"{samples} sample lines")
     check(len(raw) / samples < 8.7, "more than 8.7 bytes a sample")
 
@@ -263,7 +279,11 @@ def dropped_records_are_counted_against_the_end_line() -> None:
 def a_log_with_no_trace() -> None:
     r = tool(str(work("none.log", "rcbench-iomcu: CAN up\n10,300\nv6000\n")))
     check(r.returncode == 1, f"exit {r.returncode}")
-    check("0 trace(s), 3 other line(s)" in r.stdout, r.stdout)
+    # A sample line and a voltage line with no trace around them are a
+    # trace's lines whose start line is lost.
+    check("0 trace(s), 1 other line(s)" in r.stdout, r.stdout)
+    check("PROBLEM: 2 line(s) of a trace outside a trace, the first is "
+          "line 2: '10,300'" in r.stdout, r.stdout)
     check("no trace in the log" in r.stderr, r.stderr)
     r = tool(str(ARGS.work / "not-there.log"))
     check(r.returncode == 1 and "sense_trace:" in r.stderr, "a missing file")
@@ -321,7 +341,7 @@ def times_run_across_the_wrap_of_the_count() -> None:
     # The trigger 20 ms before the 0.1 ms count wraps; the second command
     # 1 s after it.
     t0 = (1 << 32) - 200
-    traces, other = sense_trace.parse_log(
+    traces, other, _ = sense_trace.parse_log(
         synthetic(t0, [(0, 1900), (1000, 1100)]))
     check(other == 0 and len(traces) == 1, "one trace")
     tr = traces[0]
@@ -339,7 +359,7 @@ def times_run_across_the_wrap_of_the_count() -> None:
     # A second trace later in the log lies later, wrap or not.
     two = (synthetic(t0, [(0, 1900)])
            + synthetic(5000, [(0, 1100)]).replace(" n=1 ", " n=2 "))
-    traces, _ = sense_trace.parse_log(two)
+    traces, _, _ = sense_trace.parse_log(two)
     check(traces[1].t0_abs - traces[0].t0_abs == 5200, "0.52 s on")
 
 
@@ -559,7 +579,7 @@ def a_move_with_records_missing_inside_it_is_not_replayed() -> None:
     first = next(k for k, line in enumerate(lines) if line == "10,2000")
     at = first + 50
     body = (lines[:at] + ["$L n=3", "40,2000"] + lines[at + 4:-1])
-    n = sum(1 for line in body if sense_trace.RE_S.match(line))
+    n = sum(1 for line in body if is_sample(line))
     body.append(f"$Z n=1 s={n} v=0 l=3 m=2 ml=0 e=t")
     r = tool(str(work("gap.log", "\n".join(body) + "\n")), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
@@ -578,7 +598,7 @@ def gap(lines: list[str], at: int) -> list[str]:
     """@p lines with the 3 sample lines before line @p at dropped."""
     code = lines[at].split(",")[1]
     body = lines[:at - 3] + ["$L n=3", f"40,{code}"] + lines[at + 1:-1]
-    n = sum(1 for line in body if sense_trace.RE_S.match(line))
+    n = sum(1 for line in body if is_sample(line))
     return body + [f"$Z n=1 s={n} v=0 l=3 m=2 ml=0 e=t"]
 
 
@@ -601,9 +621,19 @@ def records_missing_at_the_ends_of_a_moves_samples() -> None:
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
           f"at the window's edge: {arrival[(1, '0.05')]}")
-    # 100 ms before the second command: the first move alone.
-    r = tool(str(work("gap-one.log",
+    # 100 ms before the second command: the first move's samples, and
+    # the 200 ms the second takes its threshold from.
+    r = tool(str(work("gap-hold.log",
                       "\n".join(gap(lines, cmd2 - 100)) + "\n")), "--no-csv")
+    check("move 2 at 1000.0 ms, channel 2 to 1100 us: records are missing "
+          "in the 200 ms before it, not replayed" in r.stdout,
+          r.stdout[-900:])
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
+          f"in the 200 ms: {arrival[(1, '0.05')]}")
+    # 250 ms before the second command: the first move alone.
+    r = tool(str(work("gap-one.log",
+                      "\n".join(gap(lines, cmd2 - 250)) + "\n")), "--no-csv")
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["1/2", "1/2", "-", "113.0"],
           f"the first alone: {arrival[(1, '0.05')]}")
@@ -665,11 +695,11 @@ def a_slewed_command_ends_at_its_d_line() -> None:
     lines = []
     for line in synthetic(1000, moves).splitlines():
         lines.append(line)
-        m = sense_trace.RE_MARK.match(line)
-        if m and m.group(1) == "C":
+        got = sense_trace.read_line(line)
+        if got is not None and got[1][0] == "C":
             # The last change before the frame the $C line is timed at.
-            lines.append(f"$D t={int(m.group(2)) - 150} ch=2 "
-                         f"us={ends[int(m.group(4))]}")
+            lines.append(f"$D t={got[1][1] - 150} ch=2 "
+                         f"us={ends[got[1][3]]}")
     lines[-1] = lines[-1].replace("m=3", "m=6")
     r = tool(str(work("slew.log", "\n".join(lines) + "\n")), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
@@ -897,11 +927,11 @@ def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
 def pairing_arguments_are_checked() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     csv = str(ARGS.fixtures / "sense-trace-sim.csv")
-    for bad in ("0", "-1", "nan", "inf", "-inf"):
+    for bad in ("0", "-1", "nan", "inf", "-inf", "60000.001", "1e308"):
         r = tool(log, "--servo-csv", csv, "--no-csv", f"--pair-ms={bad}")
         check(r.returncode == 2 and "--pair-ms is a time above 0 ms"
               in r.stderr, f"--pair-ms {bad}: exit {r.returncode}")
-    for bad in ("nan", "inf", "-inf"):
+    for bad in ("nan", "inf", "-inf", "1e300", "-1.1e9"):
         r = tool(log, "--servo-csv", csv, "--no-csv", f"--csv-offset={bad}")
         check(r.returncode == 2 and "--csv-offset is a number of seconds"
               in r.stderr, f"--csv-offset {bad}: exit {r.returncode}")
@@ -955,11 +985,11 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     # and its clock starts low.
     a = synthetic(900000, [(0, 1900), (1000, 1100), (2500, 1900)])
     b = synthetic(3000, [(0, 1900), (700, 1100), (1900, 1900)])
-    traces, _ = sense_trace.parse_log(a + b)
+    traces, _, _ = sense_trace.parse_log(a + b)
     check([tr.boot for tr in traces] == [0, 1], "two boots")
     check(traces[1].t0_abs == 3000, "the second boot's own clock")
     # Trace numbers that run on are one boot.
-    traces, _ = sense_trace.parse_log(a + b.replace("n=1 ", "n=2 "))
+    traces, _, _ = sense_trace.parse_log(a + b.replace("n=1 ", "n=2 "))
     check([tr.boot for tr in traces] == [0, 0], "one boot")
 
     def numbered(text: str, n: int, ms: int) -> str:
@@ -967,7 +997,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
                 .replace(" ms=0 ", f" ms={ms} "))
 
     def boots_of(*parts: tuple[int, int]) -> list[int]:
-        traces, _ = sense_trace.parse_log("".join(
+        traces, _, _ = sense_trace.parse_log("".join(
             numbered(b, n, ms) for n, ms in parts))
         return [tr.boot for tr in traces]
     # Numbers missing between two traces are traces no console took: one
@@ -1003,7 +1033,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     later_t = (900000 + 6 * day * 10) & 0xFFFFFFFF
     later = numbered(a.replace("t=900000 ", f"t={later_t} "), 2,
                      5000 + 6 * day)
-    traces, _ = sense_trace.parse_log(first + later)
+    traces, _, _ = sense_trace.parse_log(first + later)
     check([tr.boot for tr in traces] == [0, 0], "one boot")
     check(traces[1].t0_abs - traces[0].t0_abs == 6 * day * 10,
           f"{traces[1].t0_abs - traces[0].t0_abs} apart")
@@ -1011,7 +1041,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     later_t = 900000 + 2 * day * 10
     for ms in (5000 + 2 * day, 5000):
         later = numbered(a.replace("t=900000 ", f"t={later_t} "), 2, ms)
-        traces, _ = sense_trace.parse_log(first + later)
+        traces, _, _ = sense_trace.parse_log(first + later)
         check(traces[1].t0_abs - traces[0].t0_abs == 2 * day * 10,
               f"ms={ms}: {traces[1].t0_abs - traces[0].t0_abs} apart")
     head = ("time (s);test;step;phase;command (us);position (us);set (V);"
@@ -1082,9 +1112,17 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
 
 def a_floor_is_a_current_above_zero() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
-    for bad in ("0", "-0.01", "nan"):
-        r = tool(log, "--floor", bad, "--no-csv")
-        check(r.returncode == 2, f"--floor {bad}: exit {r.returncode}")
+    # The replay takes the threshold as whole uA: below 1 uA it is 0,
+    # and past 1000 A it is no current of a servo.
+    for bad in ("0", "-0.01", "nan", "inf", "-inf", "1e30", "1000.1",
+                "0.0000009"):
+        r = tool(log, f"--floor={bad}", "--no-csv")
+        check(r.returncode == 2 and "--floor is a current from 0.000001 A "
+              "to 1000 A" in r.stderr,
+              f"--floor {bad}: exit {r.returncode}: {r.stderr}")
+    for good in ("0.000001", "1000"):
+        r = tool(log, "--floor", good, "--no-csv")
+        check(r.returncode == 0, f"--floor {good}: exit {r.returncode}")
     # A floor above the travel current: no move is seen.
     r = tool(log, "--floor", "1.5", "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}")
@@ -1118,6 +1156,843 @@ def a_replay_that_cannot_run_is_exit_2() -> None:
                        capture_output=True, text=True)
     check(r.returncode == 0
           and r.stdout == "arrived 10 30 500000 500000 2 0\n", r.stdout)
+
+
+# --- the format's grammar ----------------------------------------------------
+
+# The longest line of each type, and each number at an end of its range.
+WHOLE = {
+    "$T v=2 n=65535 trig=edge t=4294967295 ms=4294967295 len=99999": "T",
+    "$T v=0 n=0 trig=key t=0 ms=0 len=0": "T",
+    "$H dt_us=9999 shunt_uohm=4294967295 cfg=0xFFFF on=1 rst=255": "H",
+    "$H dt_us=0 shunt_uohm=0 cfg=0x0000 on=0 rst=0": "H",
+    "$C t=0 ch=65535 us=65535": "C",
+    "$D t=4294967295 ch=0 us=0": "C",
+    "$E t=0": "E",
+    "$K t=4294967295": "E",
+    "$S on=0 rst=255": "S",
+    "$S on=1 rst=0": "S",
+    "$L n=1": "L",
+    "$L n=16777215": "L",
+    "$Z n=65535 s=99999999 v=9999999 l=99999999 m=9999 ml=9999 e=K": "Z",
+    "$Z n=0 s=0 v=0 l=0 m=0 ml=0 e=t": "Z",
+    "-2147483648,-4096": "s",
+    "2147483647,4095": "s",
+    "0,0": "s",
+    "v-2147483648": "v",
+    "v2147483647": "v",
+    "v0": "v",
+}
+
+# No line of a trace: a field missing, one too many, fields in another
+# order, a number out of its range or written another way, a character
+# before, between or after the fields.
+NOT_WHOLE = [
+    # $T
+    "$T v=2 n=1 trig=cmd t=1 ms=1",
+    "$T v=2 n=1 trig=cmd t=1 ms=1 len=",
+    "$T v=2 n=1 trig=cmd t=1 len=4000",
+    "$T v=2 n=1 trig=cmd t=1 ms=1 len=4000 x=1",
+    "$T v=2 n=1 trig=cmd t=1 ms=1 len=4000 ",
+    " $T v=2 n=1 trig=cmd t=1 ms=1 len=4000",
+    "$T  v=2 n=1 trig=cmd t=1 ms=1 len=4000",
+    "$T n=1 v=2 trig=cmd t=1 ms=1 len=4000",
+    "$T v=10 n=1 trig=cmd t=1 ms=1 len=4000",
+    "$T v=2 n=65536 trig=cmd t=1 ms=1 len=4000",
+    "$T v=2 n=01 trig=cmd t=1 ms=1 len=4000",
+    "$T v=2 n=1 trig=tap t=1 ms=1 len=4000",
+    "$T v=2 n=1 trig=CMD t=1 ms=1 len=4000",
+    "$T v=2 n=1 trig=cmd t=4294967296 ms=1 len=4000",
+    "$T v=2 n=1 trig=cmd t=1 ms=4294967296 len=4000",
+    "$T v=2 n=1 trig=cmd t=1 ms=-1 len=4000",
+    "$T v=2 n=1 trig=cmd t=1 ms=1 len=100000",
+    # $H
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0 rst=0",
+    "$H dt_us=10000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0",
+    "$H dt_us=1000 shunt_uohm=4294967296 cfg=0x4007 on=1 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4a07 on=1 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x407 on=1 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x04007 on=1 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=4007 on=1 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=2 rst=0",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=256",
+    "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=00",
+    # $C and $D carry a channel and a pulse width
+    "$C t=1",
+    "$C t=1 ch=2",
+    "$C t=1 ch=2 us=",
+    "$C t=1 us=1500",
+    "$C t=1 us=1500 ch=2",
+    "$C t=1 ch=2 us=1500 us=1500",
+    "$C t=1 ch=65536 us=1500",
+    "$C t=1 ch=2 us=65536",
+    "$C t=4294967296 ch=2 us=1500",
+    "$C t=1 ch=2 us=01500",
+    "$C t=1 ch=2 us=-1500",
+    "$C t=1 ch=2 us=1500 ",
+    "$C t=1  ch=2 us=1500",
+    "$D t=1",
+    "$D t=1 ch=2",
+    "$D t=1 ch=2 us=",
+    "$D t=1 ch=2 us=65536",
+    # $E and $K carry a time and nothing else
+    "$E",
+    "$E t=",
+    "$E t=-1",
+    "$E t=01",
+    "$E t=4294967296",
+    "$E t=1 ch=2",
+    "$E t=1 ch=2 us=1500",
+    "$K",
+    "$K t=",
+    "$K t=1 ch=2 us=1500",
+    "$K t=1 ",
+    # $S
+    "$S",
+    "$S on=1",
+    "$S on=1 rst=",
+    "$S rst=0 on=1",
+    "$S on=2 rst=0",
+    "$S on=1 rst=256",
+    "$S on=1 rst=0 x",
+    # $L
+    "$L",
+    "$L n=",
+    "$L n=0",
+    "$L n=16777216",
+    "$L n=03",
+    "$L n=3 n=3",
+    # $Z
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=0",
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=0 e=",
+    "$Z n=1 s=1 v=0 l=0 m=0 e=t",
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=0 e=t e=t",
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=0 e=?",
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=0 e=X",
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=0 e=tt",
+    "$Z n=65536 s=1 v=0 l=0 m=0 ml=0 e=t",
+    "$Z n=1 s=100000000 v=0 l=0 m=0 ml=0 e=t",
+    "$Z n=1 s=1 v=10000000 l=0 m=0 ml=0 e=t",
+    "$Z n=1 s=1 v=0 l=100000000 m=0 ml=0 e=t",
+    "$Z n=1 s=1 v=0 l=0 m=10000 ml=0 e=t",
+    "$Z n=1 s=1 v=0 l=0 m=0 ml=10000 e=t",
+    "$Z n=1 s=01 v=0 l=0 m=0 ml=0 e=t",
+    # sample lines
+    "10",
+    "10,",
+    ",300",
+    "10,-",
+    "-,300",
+    "10,300,1",
+    "10, 300",
+    "10,300 ",
+    " 10,300",
+    "010,300",
+    "10,0300",
+    "-0,300",
+    "10,-0",
+    "+10,300",
+    "10.0,300",
+    "1e1,300",
+    "10,4096",
+    "10,-4097",
+    "2147483648,0",
+    "-2147483649,0",
+    # voltage lines
+    "v",
+    "v-",
+    "v06000",
+    "v-0",
+    "v+6000",
+    "v2147483648",
+    "v-2147483649",
+    "V6000",
+    "v6000 ",
+    "v 6000",
+    "v6000,1",
+    # no type of line
+    "",
+    " ",
+    "$",
+    "$X t=1",
+    "$t v=2 n=1 trig=cmd t=1 ms=1 len=4000",
+    "hello",
+    "10;300",
+]
+
+
+def judged(text: str) -> tuple[bool, list]:
+    """What the tool makes of a log, short of the replay: whether it
+    reports damage, and every value a report is made from.  The replay's
+    answer follows from the moves' levels and samples."""
+    traces, other, stray = sense_trace.parse_log(text)
+    damaged = bool(stray) or not traces
+    result: list = [other]
+    for tr in traces:
+        sense_trace.check(tr)
+        damaged = damaged or bool(tr.problems)
+        moves = sense_trace.find_moves(tr, 0.020)
+        result.append((
+            tr.number, tr.trig, tr.t0_abs, tr.boot, tr.ms, tr.length,
+            tr.version, tr.period_us, tr.shunt_uohm, tr.cfg, tr.online,
+            tr.resets, tuple(tr.t), tuple(tr.code),
+            tuple(sorted(tr.mv.items())), tr.n_volts, tuple(tr.marks),
+            tr.lost, tuple(tr.gaps), tuple(tr.states),
+            tuple(sorted(tr.end.items())) if tr.end else None,
+            tuple((mv.t, mv.ch, mv.us, mv.why_not, mv.rise_a, mv.ref_a,
+                   mv.ref_from, mv.move_a, mv.first, mv.last, mv.clipped)
+                  for mv in moves)))
+    return damaged, result
+
+
+def with_line(text: str, at: int, *lines: str) -> str:
+    """@p text with @p lines put in before its line @p at, from 0."""
+    body = text.splitlines()
+    return "\n".join(body[:at] + list(lines) + body[at:]) + "\n"
+
+
+def counted(lines: list[str], lost: int = 0) -> list[str]:
+    """@p lines with the end line counting what stands before it."""
+    kinds = [sense_trace.read_line(line) for line in lines[:-1]]
+    n = {k: sum(1 for got in kinds if got is not None and got[0] in k)
+         for k in ("s", "v", "CE")}
+    return lines[:-1] + [f"$Z n=1 s={n['s']} v={n['v']} l={lost} "
+                         f"m={n['CE']} ml=0 e=t"]
+
+
+def every_line_type_has_one_grammar() -> None:
+    for line, kind in WHOLE.items():
+        got = sense_trace.read_line(line)
+        check(got is not None and got[0] == kind, f"{line!r}: {got}")
+    base = synthetic(1000, [(0, 1900), (1000, 1100)])
+    check(not judged(base)[0], "the trace itself is whole")
+    for line in NOT_WHOLE:
+        check(sense_trace.read_line(line) is None, f"{line!r} is read")
+        # Inside a trace it is damage, whatever the counts say.
+        traces, _, _ = sense_trace.parse_log(with_line(base, 3, line))
+        sense_trace.check(traces[0])
+        check(any("1 line(s) that are no whole line of a trace, the first "
+                  f"is line 4: {sense_trace.shown(line)}" in p
+                  for p in traces[0].problems),
+              f"{line!r} inside a trace: {traces[0].problems}")
+        check(sense_trace.find_moves(traces[0], 0.020) == [],
+              f"{line!r}: replayed")
+
+
+def the_longest_line_of_each_type_is_62_characters() -> None:
+    # The console's line is 64 bytes with CR LF.  The ranges of the
+    # numbers keep each type within it: no line the grammar reads is
+    # longer.
+    longest = {}
+    for line, kind in WHOLE.items():
+        longest[kind] = max(longest.get(kind, 0), len(line))
+    check(longest == {"T": 61, "H": 59, "C": 25, "E": 15, "S": 15, "L": 13,
+                      "Z": 61, "s": 17, "v": 12}, f"{longest}")
+    # One more digit anywhere is out of a range.
+    for line in WHOLE:
+        for k, c in enumerate(line):
+            if c.isdigit() and line[k - 1] in "=,v-" and c != "0":
+                more = line[:k] + c + line[k:]
+                check(sense_trace.read_line(more) is None
+                      or len(more) <= 62, f"{more!r} is read")
+
+
+def a_line_that_is_no_line_of_a_trace_is_damage() -> None:
+    lines = fixture_log().splitlines()
+    move = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+    text = "\n".join(lines[:move] + ["hello", ""] + lines[move:]) + "\n"
+    r = tool(str(work("foreign.log", text)), "--no-csv")
+    check(r.returncode == 1, f"exit {r.returncode}")
+    check("PROBLEM: 2 line(s) that are no whole line of a trace, the first "
+          f"is line {move + 1}: 'hello'" in r.stdout, r.stdout[-900:])
+    check("no move of this trace is replayed" in r.stdout
+          and "arrival, ms from the command" not in r.stdout, "not replayed")
+    check("1 trace(s) with a problem" in r.stderr, r.stderr)
+    # A long one is shown by its first 40 characters.
+    r = tool(str(work("long.log", with_line(fixture_log(), move, "x" * 90))),
+             "--no-csv")
+    check(f"line {move + 1}: '{'x' * 40}...'" in r.stdout, r.stdout[-900:])
+    # The coprocessor's own console line inside a trace is none of the
+    # trace's and no damage.
+    r = tool(str(work("console.log", with_line(
+        synthetic(1000, [(0, 1900)]), 30, "rcbench-iomcu: CAN up"))),
+        "--no-csv")
+    check(r.returncode == 0 and "1 trace(s), 1 other line(s)" in r.stdout,
+          f"exit {r.returncode}: {r.stdout[:200]}")
+
+
+def a_command_line_without_its_channel_and_pulse_is_damage() -> None:
+    text = synthetic(1000, [(0, 1900), (1000, 1100)], edges=True)
+    whole = "$C t=1000 ch=2 us=1900"
+    check(whole in text, "the command line is there")
+    edge = "$E t=1120"
+    check(edge in text, "the edge line is there")
+    for was, cut in ((whole, "$C t=1000"), (whole, "$C t=1000 ch=2"),
+                     (whole, "$C t=1000 ch=2 us="),
+                     (whole, "$D t=1000"), (whole, "$D t=1000 ch=2"),
+                     (edge, "$E t=1120 ch=2 us=1900"),
+                     (edge, "$K t=1120 ch=2 us=1900"),
+                     (edge, "$E t=1120 ch=2")):
+        at = text.splitlines().index(was) + 1
+        r = tool(str(work("mark.log", text.replace(was, cut))), "--no-csv")
+        check(r.returncode == 1, f"{cut!r}: exit {r.returncode}")
+        check("PROBLEM: 1 line(s) that are no whole line of a trace, the "
+              f"first is line {at}: {cut!r}" in r.stdout,
+              f"{cut!r}: {r.stdout[:700]}")
+        # The line is no trigger line: the end line counts one more.
+        check("PROBLEM: 3 trigger line(s) read, the end line counts 4"
+              in r.stdout, f"{cut!r}: counted")
+        check("no move of this trace is replayed" in r.stdout
+              and "arrival, ms from the command" not in r.stdout,
+              f"{cut!r}: replayed")
+
+
+def a_line_end_is_lf_or_cr_lf_and_nothing_is_taken_off_a_line() -> None:
+    text = synthetic(1000, [(0, 1900)])
+
+    def run(name: str, raw: str) -> subprocess.CompletedProcess:
+        return tool(str(work(name, raw)), "--no-csv")
+    whole = run("eol-lf.log", text)
+    check(whole.returncode == 0, f"exit {whole.returncode}")
+    # The last line without its end is the same line.
+    r = run("eol-open.log", text[:-1])
+    check(r.returncode == 0
+          and r.stdout.splitlines()[1:] == whole.stdout.splitlines()[1:],
+          f"no last line end: exit {r.returncode}")
+    # CR CR LF, as a terminal that translates twice writes it.
+    r = run("eol-crcrlf.log", text.replace("\n", "\r\r\n"))
+    check(r.returncode == 1 and "outside a trace" in r.stdout,
+          f"CR CR LF: exit {r.returncode}")
+    # CR alone ends no line.
+    r = run("eol-cr.log", text.replace("\n", "\r"))
+    check(r.returncode == 1 and "no trace in the log" in r.stderr,
+          f"CR: exit {r.returncode}")
+    one = text.replace("10,300\n", "10,300\r\r\n", 1)
+    r = run("eol-one.log", one)
+    check(r.returncode == 1 and "1 line(s) that are no whole line of a "
+          "trace, the first is line 4: '10,300\\r'" in r.stdout,
+          f"one CR CR LF: {r.stdout[:500]}")
+    for name, was, bad in (("lead", "10,300\n", " 10,300\n"),
+                           ("trail", "10,300\n", "10,300 \n"),
+                           ("tab", "10,300\n", "10,300\t\n"),
+                           ("end", " e=t\n", " e=t \n"),
+                           ("head", "$H dt_us", " $H dt_us")):
+        check(was in text, f"{name}: the line is there")
+        r = run(f"eol-{name}.log", text.replace(was, bad, 1))
+        check(r.returncode == 1 and "no whole line of a trace" in r.stdout,
+              f"{name}: exit {r.returncode}")
+
+
+def a_trace_has_one_set_up_line_before_its_records() -> None:
+    text = synthetic(1000, [(0, 1900)])
+    lines = text.splitlines()
+    r = tool(str(work("h2.log", with_line(text, 40, lines[1]))), "--no-csv")
+    check(r.returncode == 1 and "PROBLEM: 2 $H lines" in r.stdout,
+          f"two: exit {r.returncode}")
+    # The set-up line after the first sample.
+    late = "\n".join([lines[0], lines[2], lines[1]] + lines[3:]) + "\n"
+    r = tool(str(work("hlate.log", late)), "--no-csv")
+    check(r.returncode == 1
+          and "PROBLEM: 1 line(s) other than $L before the $H line"
+          in r.stdout,
+          f"late: exit {r.returncode}")
+    check("no move of this trace is replayed" in r.stdout, "not replayed")
+    # Records missing before a set-up record at the trace's start: the
+    # coprocessor writes their $L line before the $H line.  The trace is
+    # whole, and the records are missing at the start of its samples.
+    for n_lost in (1, 2):
+        ahead = counted([lines[0]] + ["$L n=3"] * n_lost + lines[1:],
+                        lost=3 * n_lost)
+        traces, _, _ = sense_trace.parse_log("\n".join(ahead) + "\n")
+        sense_trace.check(traces[0])
+        check(traces[0].problems == [], f"{n_lost}: {traces[0].problems}")
+        check(traces[0].lost == 3 * n_lost and traces[0].gaps == [0] * n_lost,
+              f"{n_lost}: {traces[0].lost} at {traces[0].gaps}")
+        r = tool(str(work("lahead.log", "\n".join(ahead) + "\n")),
+                 "--no-csv")
+        check(r.returncode == 0 and "PROBLEM" not in r.stdout,
+              f"{n_lost}: exit {r.returncode}: {r.stdout[:400]}")
+        check("records are missing before the first command, not replayed"
+              in r.stdout,
+              f"{n_lost}: {r.stdout[-1500:-800]}")
+    # Every other line type before the $H line is damage.
+    for line in ("10,300", "v6000", "$C t=1000 ch=2 us=1900", "$E t=1000",
+                 "$S on=0 rst=0"):
+        traces, _, _ = sense_trace.parse_log(
+            "\n".join([lines[0], line] + lines[1:]) + "\n")
+        sense_trace.check(traces[0])
+        check("1 line(s) other than $L before the $H line"
+              in traces[0].problems,
+              f"{line!r}: {traces[0].problems}")
+
+
+def a_trace_length_and_a_sample_period_are_version_2s() -> None:
+    text = synthetic(1000, [(0, 1900)])
+    for was, bad, said in (
+            (" len=4000\n", " len=400\n",
+             "PROBLEM: a cmd trace of 400 ms; version 2 writes 4000 ms"),
+            (" len=4000\n", " len=10000\n",
+             "PROBLEM: a cmd trace of 10000 ms; version 2 writes 4000 ms"),
+            (" trig=cmd ", " trig=key ",
+             "PROBLEM: a key trace of 4000 ms; version 2 writes 10000 ms"),
+            (" trig=cmd ", " trig=edge ", None),
+            ("dt_us=1000 ", "dt_us=100 ",
+             "PROBLEM: a sample period of 100 us; version 2 writes 1000 us"),
+            ("dt_us=1000 ", "dt_us=2000 ",
+             "PROBLEM: a sample period of 2000 us; version 2 writes 1000 "
+             "us")):
+        check(was in text, f"{was!r} is there")
+        r = tool(str(work("len.log", text.replace(was, bad))), "--no-csv")
+        if said is None:
+            check(r.returncode == 0, f"{bad!r}: exit {r.returncode}")
+            continue
+        check(r.returncode == 1 and said in r.stdout,
+              f"{bad!r}: exit {r.returncode}: {r.stdout[:400]}")
+        check("no move of this trace is replayed" in r.stdout,
+              f"{bad!r}: replayed")
+
+
+def samples_lie_in_the_order_of_time_with_one_voltage_each() -> None:
+    lines = synthetic(1000, [(0, 1900)]).splitlines()
+    # The first sample's time is from the trigger and lies before it.
+    check(lines[2] == "-600,300", lines[2])
+    back = lines[:30] + ["-10,300"] + lines[31:]
+    r = tool(str(work("back.log", "\n".join(back) + "\n")), "--no-csv")
+    check(r.returncode == 1 and "PROBLEM: 1 sample line(s) timed before the "
+          "sample before them" in r.stdout, f"exit {r.returncode}")
+    same = lines[:30] + ["0,300"] + lines[31:]
+    r = tool(str(work("same.log", "\n".join(same) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"the same time: exit {r.returncode}")
+    two = counted(lines[:30] + ["v6000", "v6001"] + lines[30:])
+    r = tool(str(work("v2.log", "\n".join(two) + "\n")), "--no-csv")
+    check(r.returncode == 1 and "PROBLEM: 1 voltage line(s) behind a sample "
+          "that has one" in r.stdout, f"exit {r.returncode}")
+    # A voltage before the first sample line is its sample's, which the
+    # trace starts after.
+    first = counted(lines[:2] + ["v6000"] + lines[2:30] + ["v6001"]
+                    + lines[30:])
+    r = tool(str(work("v0.log", "\n".join(first) + "\n")), "--no-csv")
+    check(r.returncode == 0 and "2 voltages" in r.stdout,
+          f"exit {r.returncode}: {r.stdout[:300]}")
+
+
+def a_state_line_that_changes_nothing_is_damage() -> None:
+    text = synthetic(1000, [(0, 1900)])
+    # The set-up line says online, reset count 0.
+    r = tool(str(work("s-same.log", with_line(text, 400, "$S on=1 rst=0"))),
+             "--no-csv")
+    check(r.returncode == 1 and "PROBLEM: 1 $S line(s) that change nothing: "
+          "a line before them is missing" in r.stdout,
+          f"exit {r.returncode}")
+    # Off and on again, with the $S line between the two lost.
+    r = tool(str(work("s-lost.log", with_line(
+        text, 400, "$S on=0 rst=0", "$S on=0 rst=0"))), "--no-csv")
+    check(r.returncode == 1 and "$S line(s) that change nothing" in r.stdout,
+          f"exit {r.returncode}")
+    # Records missing between the two: the coprocessor compares a state
+    # record with the last one it read, so the second line is none of its.
+    lines = text.splitlines()
+    gap = counted(lines[:400] + ["$S on=0 rst=0", "$L n=2", "$S on=0 rst=0"]
+                  + lines[400:], lost=2)
+    r = tool(str(work("s-gap.log", "\n".join(gap) + "\n")), "--no-csv")
+    check(r.returncode == 1 and "PROBLEM: 1 $S line(s) that change nothing"
+          in r.stdout, f"behind $L: exit {r.returncode}")
+    r = tool(str(work("s-two.log", with_line(
+        text, 400, "$S on=0 rst=0", "$S on=1 rst=1"))), "--no-csv")
+    check(r.returncode == 0, f"two changes: exit {r.returncode}")
+
+
+def lines_of_a_trace_outside_a_trace_are_damage() -> None:
+    lines = fixture_log().splitlines()
+    start = next(k for k, line in enumerate(lines) if line.startswith("$T"))
+    end = next(k for k, line in enumerate(lines) if line.startswith("$Z"))
+    # The first trace's start line cut short: its lines stand outside a
+    # trace, and the second trace is read.
+    cut = lines[:start] + ["$T v=2 n=1 trig=key"] + lines[start + 1:]
+    r = tool(str(work("stray.log", "\n".join(cut) + "\n")), "--no-csv")
+    check(r.returncode == 1, f"exit {r.returncode}")
+    check("1 trace(s), 2 other line(s)" in r.stdout, r.stdout[:200])
+    check(f"PROBLEM: {end - start + 1} line(s) of a trace outside a trace, "
+          f"the first is line {start + 1}: '$T v=2 n=1 trig=key'; a trace's "
+          "start line is missing or damaged" in r.stdout, r.stdout[:400])
+    check(f"{end - start + 1} line(s) of a trace outside a trace"
+          in r.stderr, r.stderr)
+    check("trace 2:" in r.stdout and "counts match the end line" in r.stdout,
+          "the second trace")
+    # The start line lost whole.
+    r = tool(str(work("stray2.log",
+                      "\n".join(lines[:start] + lines[start + 1:]) + "\n")),
+             "--no-csv")
+    check(r.returncode == 1
+          and f"PROBLEM: {end - start} line(s) of a trace outside a trace"
+          in r.stdout, f"exit {r.returncode}")
+    # A line that starts as a trace's does after the last trace too.
+    r = tool(str(work("stray3.log", fixture_log() + "$Z n=3\n")), "--no-csv")
+    check(r.returncode == 1
+          and "PROBLEM: 1 line(s) of a trace outside a trace" in r.stdout,
+          f"exit {r.returncode}")
+
+
+# --- the windows a move's levels are taken from ------------------------------
+
+def moves_of(text: str) -> list:
+    traces, _, stray = sense_trace.parse_log(text)
+    check(len(traces) == 1 and not stray, "one trace")
+    sense_trace.check(traces[0])
+    check(not traces[0].problems, str(traces[0].problems))
+    return sense_trace.find_moves(traces[0], 0.020)
+
+
+def clipped_samples_in_a_level_are_the_last_value_before_the_end() -> None:
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    cmd1 = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+    cmd2 = next(k for k, line in enumerate(lines)
+                if line.startswith("$C") and "us=1100" in line)
+    # 0.1 Ohm: a code is 0.4 mA.  The end codes are 4095 and -4096; the
+    # capture judges a sample at either as 4094 steps towards that end.
+    for code, last in ((4095, 4094), (-4096, -4094)):
+        # The 50 ms before the first command clipped: 50 of the 60 samples
+        # before it, which are the idle level's and the 200 ms's too.
+        body = (lines[:cmd1 - 50] + [f"10,{code}"] * 50 + lines[cmd1:])
+        moves = moves_of("\n".join(body) + "\n")
+        a = last * 0.0004
+        idle = (10 * 0.12 + 50 * a) / 60
+        dev = max(abs(a - idle), abs(0.12 - idle))
+        mv = moves[0]
+        check(mv.why_not == "", mv.why_not)
+        check(abs(mv.rise_a - a) < 1e-9, f"{code}: before {mv.rise_a}")
+        check(abs(mv.ref_a - idle) < 1e-9, f"{code}: holding {mv.ref_a}")
+        check(abs(mv.move_a - dev) < 1e-9, f"{code}: threshold {mv.move_a}")
+        check(mv.clipped == 50, f"{code}: {mv.clipped} clipped")
+        # The second move: its threshold has the idle level's distance.
+        check(abs(moves[1].move_a - dev) < 1e-9 and moves[1].clipped == 50,
+              f"{code}: move 2 {moves[1].move_a} {moves[1].clipped}")
+        # The 200 ms before the second command, 5 samples of them: the
+        # level the first move is held at is not the second's destination,
+        # so the second's levels alone have them.
+        body = (lines[:cmd2 - 100] + [f"10,{code}"] * 5
+                + lines[cmd2 - 95:])
+        moves = moves_of("\n".join(body) + "\n")
+        hold = (195 * 0.12 + 5 * a) / 200
+        check(moves[0].clipped == 0, f"{code}: move 1 {moves[0].clipped}")
+        check(moves[1].clipped == 5
+              and abs(moves[1].move_a - abs(a - hold)) < 1e-9
+              and abs(moves[1].rise_a - 0.12) < 1e-9,
+              f"{code}: move 2 {moves[1].move_a}")
+    # The levels and the replay take one sample one way: the level before
+    # is the samples the replay is fed first.
+    body = lines[:cmd1 - 50] + ["10,4095"] * 50 + lines[cmd1:]
+    r = tool(str(work("clip-level.log", "\n".join(body) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check("move 1 at 0.0 ms, channel 2 to 1900 us: before 1.638 A, holding "
+          "1.385 A (idle level), threshold 1.265 A; 50 clipped sample(s) in "
+          "these levels, each taken as the last value before the end of the "
+          "range" in r.stdout, r.stdout[:1200])
+    r = tool(str(work("clip-none.log", "\n".join(lines) + "\n")), "--no-csv")
+    check("clipped sample(s) in these levels" not in r.stdout, "none said")
+
+
+def three_moves() -> tuple[list[str], list[int]]:
+    """A trace of three moves, out, back and out, and the lines of its
+    command lines."""
+    lines = synthetic(1000, [(0, 1900), (1000, 1100),
+                             (2000, 1900)]).splitlines()
+    return lines, [k for k, line in enumerate(lines)
+                   if line.startswith("$C")]
+
+
+def whys(text: str) -> list[str]:
+    return [mv.why_not for mv in moves_of(text)]
+
+
+def records_missing_in_a_level_window_stop_each_move_that_needs_it() -> None:
+    lines, cmd = three_moves()
+    check(whys("\n".join(lines) + "\n") == ["", "", ""], "whole")
+
+    def lost(at: int) -> list[str]:
+        """Why each move is not replayed with the 3 samples before line
+        @p at dropped."""
+        code = lines[at].split(",")[1]
+        body = counted(lines[:at - 3] + ["$L n=3", f"40,{code}"]
+                       + lines[at + 1:], lost=3)
+        return whys("\n".join(body) + "\n")
+    # Among the samples before the first command, before the 50 ms: the
+    # idle level, which every move's threshold has.
+    idle = "records are missing before the first command"
+    check(lost(cmd[0] - 54) == [idle, idle, idle], f"{lost(cmd[0] - 54)}")
+    # Before the first sample of all: the start of those samples.
+    body = counted(lines[:2] + ["$L n=3"] + lines[2:], lost=3)
+    check(whys("\n".join(body) + "\n") == [idle, idle, idle],
+          "before the trace")
+    # 100 ms before the second command: outside its 50 ms and its samples,
+    # inside its 200 ms; the third move returns to the pulse width the
+    # second left and takes its holding level from the same window.
+    check(lost(cmd[1] - 100) == [
+        "records are missing among its samples",
+        "records are missing in the 200 ms before it",
+        "records are missing in the 200 ms before move 2, its holding "
+        "level"], f"{lost(cmd[1] - 100)}")
+    # At the start of the second move's 200 ms.
+    check(lost(cmd[1] - 200)[1:] == [
+        "records are missing in the 200 ms before it",
+        "records are missing in the 200 ms before move 2, its holding "
+        "level"], f"{lost(cmd[1] - 200)}")
+    # Before the 200 ms: the first move alone.
+    check(lost(cmd[1] - 205) == ["records are missing among its samples",
+                                 "", ""], f"{lost(cmd[1] - 205)}")
+    # In the second move's 50 ms.
+    check(lost(cmd[1] - 20)[1] == "records are missing in the 50 ms before "
+          "it", f"{lost(cmd[1] - 20)}")
+    # 100 ms before the third command: the second move's samples and the
+    # third's 200 ms.
+    check(lost(cmd[2] - 100) == [
+        "", "records are missing among its samples",
+        "records are missing in the 200 ms before it"],
+        f"{lost(cmd[2] - 100)}")
+    # The report says it, and counts the moves as not seen.
+    code = lines[cmd[1] - 100].split(",")[1]
+    body = counted(lines[:cmd[1] - 103] + ["$L n=3", f"40,{code}"]
+                   + lines[cmd[1] - 99:], lost=3)
+    r = tool(str(work("gap-ref.log", "\n".join(body) + "\n")), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[:500]}")
+    check("move 3 at 2000.0 ms, channel 2 to 1900 us: records are missing "
+          "in the 200 ms before move 2, its holding level, not replayed"
+          in r.stdout, r.stdout[:1500])
+    check("3 move(s) not replayed; they count as not seen below"
+          in r.stdout, "counted")
+
+
+def a_state_change_in_a_level_window_stops_each_move_that_needs_it() -> None:
+    lines, cmd = three_moves()
+
+    def changed(at: int) -> list[str]:
+        body = (lines[:at] + ["$S on=0 rst=0", "$S on=1 rst=1"]
+                + lines[at:])
+        return whys("\n".join(body) + "\n")
+    idle = "the part's state changed before the first command"
+    check(changed(cmd[0] - 55) == [idle, idle, idle],
+          f"{changed(cmd[0] - 55)}")
+    check(changed(cmd[1] - 100) == [
+        "the part's state changed inside it",
+        "the part's state changed in the 200 ms before it",
+        "the part's state changed in the 200 ms before move 2, its holding "
+        "level"], f"{changed(cmd[1] - 100)}")
+    check(changed(cmd[1] - 20)[1] == "the part's state changed in the 50 ms "
+          "before it", f"{changed(cmd[1] - 20)}")
+    check(changed(cmd[1] - 210) == ["the part's state changed inside it",
+                                    "", ""], f"{changed(cmd[1] - 210)}")
+    # Before the first sample of all: the start of those samples.
+    check(changed(2) == [idle, idle, idle], f"{changed(2)}")
+
+
+def a_trace_that_starts_at_its_first_command_has_no_idle_level() -> None:
+    lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
+    cmd1 = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+    check(lines[cmd1 + 1] == "10,300", lines[cmd1 + 1])
+    body = counted(lines[:2] + [lines[cmd1], "0,300"] + lines[cmd1 + 2:])
+    text = "\n".join(body) + "\n"
+    # No sample before the first command: no idle level, and no
+    # threshold for either move.
+    check(whys(text) == ["no sample before the first command"] * 2,
+          f"{whys(text)}")
+    r = tool(str(work("no-idle.log", text)), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[:500]}")
+    check("move 2 at 1000.0 ms, channel 2 to 1100 us: no sample before the "
+          "first command, not replayed" in r.stdout, r.stdout[:900])
+    check("arrival, ms from the command" in r.stdout
+          and "2 move(s) not replayed" in r.stdout, "the table")
+    # One sample before it is a level.
+    body = counted(lines[:2] + ["-10,300", lines[cmd1]] + lines[cmd1 + 1:])
+    check(whys("\n".join(body) + "\n") == ["", ""], "one sample")
+
+
+def a_replay_that_answers_fewer_moves_than_sent_is_exit_2() -> None:
+    log = str(ARGS.fixtures / "sense-trace-sim.log")
+    for name, script, lines in (
+            ("one", "cat > /dev/null\n"
+                    "echo 'arrived 10 30 500000 500000 2 0'\n", 1),
+            ("none", "cat > /dev/null\n", 0)):
+        fake = work(f"replay-{name}.sh", "#!/bin/sh\n" + script)
+        fake.chmod(0o755)
+        r = subprocess.run([sys.executable, str(TOOL), "--replay", str(fake),
+                            "--no-csv", log], capture_output=True, text=True)
+        check(r.returncode == 2 and f"the replay wrote {lines} line(s) for "
+              "36 move(s) and settings" in r.stderr,
+              f"{name}: exit {r.returncode}: {r.stderr}")
+
+
+def a_file_that_cannot_be_read_or_written_is_exit_2() -> None:
+    log = str(ARGS.fixtures / "sense-trace-sim.log")
+    r = tool(log, "--no-csv", "--servo-csv", str(ARGS.work / "no-such.csv"))
+    check(r.returncode == 2 and r.stderr.startswith("sense_trace: ")
+          and "Traceback" not in r.stderr and r.stdout == "",
+          f"--servo-csv: exit {r.returncode}: {r.stderr}")
+    # A directory below a file.
+    below = work("a-file", "x\n") / "below"
+    r = tool(log, "--out", str(below))
+    check(r.returncode == 2 and r.stderr.startswith("sense_trace: ")
+          and "Traceback" not in r.stderr,
+          f"--out: exit {r.returncode}: {r.stderr}")
+
+
+# --- a line cut at each byte -------------------------------------------------
+
+def every_type_log() -> str:
+    """A log with every type of line: a key trace with voltages, state
+    changes and dropped records, and a command trace with an edge line, a
+    slewed command and a console line inside it."""
+    key = ["$T v=2 n=7 trig=key t=50000 ms=5000 len=10000",
+           "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=12",
+           "$K t=50012"]
+    for k in range(40):
+        key.append(f"{-300 if k == 0 else 10},{300 + k % 7}")
+        if k % 10 == 3:
+            key.append(f"v{6012 + k}")
+        if k == 12:
+            key.append("$S on=0 rst=12")
+        if k == 15:
+            key.append("$S on=1 rst=13")
+        if k == 25:
+            key += ["$L n=12", "130,301"]
+    n = {kind: sum(1 for line in key
+                   if sense_trace.read_line(line)[0] == kind)
+         for kind in "sv"}
+    key.append(f"$Z n=7 s={n['s']} v={n['v']} l=12 m=1 ml=0 e=k")
+    cmd = ["$T v=2 n=8 trig=cmd t=90000 ms=9000 len=4000",
+           "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=13"]
+    for ms in range(-60, 130):
+        if ms == 0:
+            cmd += ["$C t=90000 ch=2 us=1900", "$E t=90120"]
+        if ms == 5:
+            cmd.append("rcbench-iomcu: CAN up")
+        if ms == 20:
+            cmd.append("$D t=89990 ch=2 us=1950")
+        cmd.append(f"{-600 if ms == -60 else 10},"
+                   f"{2000 if 13 <= ms < 53 else 300 + ms % 3}")
+        if ms % 50 == 0:
+            cmd.append(f"v{6000 + ms}")
+    n = {kind: sum(1 for line in cmd
+                   if (sense_trace.read_line(line) or "x")[0] == kind)
+         for kind in "sv"}
+    cmd.append(f"$Z n=8 s={n['s']} v={n['v']} l=0 m=3 ml=0 e=t")
+    return "\n".join(["rcbench-iomcu: SENSE_TRACE", *key,
+                      "rcbench-iomcu: between", *cmd,
+                      "rcbench-iomcu: after"]) + "\n"
+
+
+def last_number_cut(whole: str, cut: str) -> bool:
+    """Whether @p cut is the line @p whole with digits off its last
+    number and nothing else changed: a whole line of the same type."""
+    a = sense_trace.read_line(whole)
+    b = sense_trace.read_line(cut)
+    return (a is not None and b is not None and a[0] == b[0]
+            and a[1][:-1] == b[1][:-1] and isinstance(a[1][-1], int)
+            and str(abs(a[1][-1])).startswith(str(abs(b[1][-1]))))
+
+
+def a_line_cut_at_any_byte_is_damage_or_changes_nothing() -> None:
+    text = every_type_log()
+    damaged, whole = judged(text)
+    check(not damaged, "the log is whole")
+    moves = whole[2][-1]
+    check(len(whole) == 3 and len(moves) == 1 and moves[0][3] == ""
+          and moves[0][2] == 1950, f"two traces, one move: {moves}")
+    lines = text.splitlines()
+    kinds = {(sense_trace.read_line(line) or "-")[0] for line in lines}
+    check(kinds == set("THCESLZsv-"), f"every type: {sorted(kinds)}")
+    # Each line cut to each shorter length, its line end kept: the tool
+    # reports damage or makes the same of the log.  The format has no
+    # check value, so one kind of cut is neither: digits off the last
+    # number of a line whose value nothing else in the trace repeats.
+    unseen: dict[str, int] = {}
+    cuts = 0
+    for at, line in enumerate(lines):
+        for k in range(len(line)):
+            cuts += 1
+            got = judged("\n".join(lines[:at] + [line[:k]]
+                                   + lines[at + 1:]) + "\n")
+            if got[0] or got[1] == whole:
+                continue
+            check(last_number_cut(line, line[:k]),
+                  f"line {at + 1} {line!r} cut to {line[:k]!r} is read as "
+                  "another log")
+            kind = sense_trace.read_line(line)[0]
+            unseen[kind] = unseen.get(kind, 0) + 1
+    # What cannot be told: sample codes, voltages, the pulse widths of
+    # $C and $D, the times of $E and $K, the reset counts of $H and $S.
+    # A cut of $T's length, $L's count and every number of $Z is told.
+    check(set(unseen) == set("svCESH"), f"{unseen}")
+    check(sum(unseen.values()) == UNSEEN_CUTS and cuts == ALL_CUTS,
+          f"{sum(unseen.values())} of {cuts} cuts: {unseen}")
+    # The log stopping at each byte: damage, the same, or a log that
+    # stops between its two traces, which is a log of one trace, or
+    # after them, which is a log with a console line fewer.
+    between = text.index("rcbench-iomcu: between")
+    second = text.index("$T v=2 n=8")
+    after = text.index("rcbench-iomcu: after")
+    for k in range(len(text)):
+        got = judged(text[:k])
+        if got[0] or got[1] == whole:
+            continue
+        check((between - 1 <= k <= second and len(got[1]) == 2
+               and got[1][1] == whole[1])
+              or (k >= after - 1 and got[1][1:] == whole[1:]),
+              f"the log cut at byte {k} is read as another log")
+    check(judged(text[:-1])[1] == whole, "without the last line end")
+
+
+# The cuts of every_type_log()'s lines, and those of them no check tells.
+ALL_CUTS = 1924
+UNSEEN_CUTS = 544
+
+
+def a_fixture_line_cut_at_any_byte_is_no_other_line() -> None:
+    # Every line of the fixture at every length: no whole line, or the
+    # line with digits off its last number.  Never a line of another
+    # type, and never one with another field changed.
+    lines = fixture_log().splitlines()
+    seen: set[str] = set()
+    inside = False
+    last = 0
+    for line in lines:
+        if line.startswith("$T"):
+            inside = True
+        if line in seen:
+            continue
+        seen.add(line)
+        whole = sense_trace.read_line(line)
+        check(whole is not None or not inside
+              or line.startswith("rcbench-iomcu:"), f"{line!r}")
+        for k in range(len(line)):
+            cut = sense_trace.read_line(line[:k])
+            if cut is None:
+                continue
+            check(last_number_cut(line, line[:k]),
+                  f"{line!r} cut to {line[:k]!r} is another line")
+            last += 1
+    check(len(seen) == 118 and last == 292, f"{len(seen)} lines, {last}")
+    # The fixture's lines that are no sample and no voltage, cut at each
+    # byte in the log itself: damage or the same, but for the last number
+    # of $C, $K and $H.
+    text = fixture_log()
+    damaged, whole = judged(text)
+    check(not damaged, "the fixture is whole")
+    for at, line in enumerate(lines):
+        got = sense_trace.read_line(line)
+        if got is not None and got[0] in "sv":
+            continue
+        for k in range(len(line)):
+            cut = judged("\n".join(lines[:at] + [line[:k]]
+                                   + lines[at + 1:]) + "\n")
+            if cut[0] or cut[1] == whole:
+                continue
+            check(got is not None and got[0] in "CEH"
+                  and last_number_cut(line, line[:k]),
+                  f"line {at + 1} {line!r} cut to {line[:k]!r} is read as "
+                  "another log")
 
 
 CASES = [
@@ -1154,6 +2029,24 @@ CASES = [
     a_restart_of_the_coprocessor_is_a_clock_of_its_own,
     a_floor_is_a_current_above_zero,
     a_replay_that_cannot_run_is_exit_2,
+    every_line_type_has_one_grammar,
+    the_longest_line_of_each_type_is_62_characters,
+    a_line_that_is_no_line_of_a_trace_is_damage,
+    a_command_line_without_its_channel_and_pulse_is_damage,
+    a_line_end_is_lf_or_cr_lf_and_nothing_is_taken_off_a_line,
+    a_trace_has_one_set_up_line_before_its_records,
+    a_trace_length_and_a_sample_period_are_version_2s,
+    samples_lie_in_the_order_of_time_with_one_voltage_each,
+    a_state_line_that_changes_nothing_is_damage,
+    lines_of_a_trace_outside_a_trace_are_damage,
+    clipped_samples_in_a_level_are_the_last_value_before_the_end,
+    records_missing_in_a_level_window_stop_each_move_that_needs_it,
+    a_state_change_in_a_level_window_stops_each_move_that_needs_it,
+    a_trace_that_starts_at_its_first_command_has_no_idle_level,
+    a_replay_that_answers_fewer_moves_than_sent_is_exit_2,
+    a_file_that_cannot_be_read_or_written_is_exit_2,
+    a_line_cut_at_any_byte_is_damage_or_changes_nothing,
+    a_fixture_line_cut_at_any_byte_is_no_other_line,
 ]
 
 
