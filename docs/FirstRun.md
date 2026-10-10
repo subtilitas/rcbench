@@ -428,7 +428,11 @@ adds its line and moves the end to 4 s (10 s for `t`) after itself when
 that is later: moves less than 4 s apart are one trace. A command that is
 slewed changes the pulse in every pass: its `$C` line has the first pulse,
 and a `$D` line the pulse it ended at, once the output has held still for
-50 ms. The automatic test's moves are steps and have none. `x` on the console
+50 ms. A command that waits for the next trace takes its later changes
+with it: that trace ends 4 s after the last of them and has the `$D`
+line. An output that is let go ends a slewed command there; the next
+pulse on it is a command, however soon it comes. The automatic test's
+moves are steps and have no `$D` line. `x` on the console
 ends a trace; a trigger line whose time lies at or after the stop is
 dropped. Each trace also holds the samples of up to 64 ms before its
 trigger.

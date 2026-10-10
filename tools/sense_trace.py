@@ -19,7 +19,10 @@ terminal capture of that console and, for each trace in it:
 
 A move is a command line, at the time of its edge line when the trace has
 one within 30 ms of it; an edge line with no command line that near is a
-move too.  A slewed command's destination is its $D line's pulse.
+move too.  An edge line is one command's and a command line one edge's:
+as many of them are paired as can be, and of the ways to pair that many
+the one with the least distance in sum.  A slewed command's destination is
+its $D line's pulse.
 Commands within 30 ms of each other change the current together: none of
 them is replayed.  A move that follows another output's move before that
 one arrived carries its current too; the tool does not tell these apart,
@@ -112,6 +115,8 @@ T_PER_MS = 10               # the trace counts 0.1 ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
 EDGE_PAIR_MS = 30           # an edge line's command line lies this close
+PAIR_ROUND_S = 1e-9         # a row at --pair-ms from its command is within
+                            # it, whatever the sums that got there rounded
 TOGETHER_MS = 30            # commands this close are one change of current
 REF_FILTER = 4              # the capture's: SENSE_CAP_FILTER_N,
 REF_BAND_A = 0.05           # SERVO_MOVE_BAND_A
@@ -375,6 +380,50 @@ def window(tr: Trace, lo: int, hi: int) -> list[float]:
             if lo <= t < hi]
 
 
+def pair_near(a: list[int], b: list[int], limit: int) -> dict[int, int]:
+    """Index in @p a to index in @p b for times no more than @p limit
+    apart, each index in one pair at most: as many pairs as there can be,
+    and of the ways to pair that many the least distance in sum.
+
+    Both lists are taken in the order of their times.  Two pairs that
+    cross can be uncrossed without a pair farther apart than the farther
+    of the two and with no more distance in sum, so the pairs looked at
+    keep that order.
+    """
+    ia = sorted(range(len(a)), key=lambda k: (a[k], k))
+    ib = sorted(range(len(b)), key=lambda k: (b[k], k))
+    # best[i][j]: (pairs, -distance, step) for the first i of a and the
+    # first j of b.
+    best = [[(0, 0, "")] * (len(ib) + 1) for _ in range(len(ia) + 1)]
+    for i in range(len(ia) + 1):
+        for j in range(len(ib) + 1):
+            if i == 0 and j == 0:
+                continue
+            tries = []
+            if i > 0 and j > 0:
+                far = abs(a[ia[i - 1]] - b[ib[j - 1]])
+                if far <= limit:
+                    n, d, _ = best[i - 1][j - 1]
+                    tries.append((n + 1, d - far, "pair"))
+            if i > 0:
+                tries.append((*best[i - 1][j][:2], "a"))
+            if j > 0:
+                tries.append((*best[i][j - 1][:2], "b"))
+            best[i][j] = max(tries, key=lambda t: t[:2])
+    out: dict[int, int] = {}
+    i, j = len(ia), len(ib)
+    while i > 0 or j > 0:
+        step = best[i][j][2]
+        if step == "pair":
+            out[ia[i - 1]] = ib[j - 1]
+            i, j = i - 1, j - 1
+        elif step == "a":
+            i -= 1
+        else:
+            j -= 1
+    return out
+
+
 def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     """The trace's moves with their levels; none for a trace without a
     shunt or without commands."""
@@ -403,19 +452,14 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
             if k not in ended:
                 ended.add(k)
                 cmds[k][3] = mark[3]
-    # An edge line and the command line nearest to it, before or after,
-    # are one move at the edge's time: a command's time is computed and
-    # can lie a frame late, the edge's is stamped.  A command line is one
-    # edge's at most, the nearest first; a command with no edge line is a
-    # move at its own time.
-    near = sorted((abs(c[1] - e[1]), ke, kc)
-                  for ke, e in enumerate(edges)
-                  for kc, c in enumerate(cmds)
-                  if abs(c[1] - e[1]) <= EDGE_PAIR_MS * T_PER_MS)
-    of_edge: dict[int, int] = {}
-    for _, ke, kc in near:
-        if ke not in of_edge and kc not in of_edge.values():
-            of_edge[ke] = kc
+    # An edge line and a command line near it, before or after, are one
+    # move at the edge's time: a command's time is computed and can lie a
+    # frame late, the edge's is stamped.  A command line is one edge's at
+    # most, and no edge goes without a command that pairing the lines
+    # another way would give it; a command with no edge line is a move at
+    # its own time.
+    of_edge = pair_near([e[1] for e in edges], [c[1] for c in cmds],
+                        EDGE_PAIR_MS * T_PER_MS)
     moves = []
     for ke, e in enumerate(edges):
         ch, us = cmds[of_edge[ke]][2:4] if ke in of_edge else (None, None)
@@ -604,7 +648,7 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
             near = [i for i in (at - 1, at) if 0 <= i < len(cmd_log)]
             i = min(near, key=lambda i: abs(cmd_log[i] - c - off))
             err = abs(cmd_log[i] - c - off)
-            if err <= pair_s:
+            if err <= pair_s + PAIR_ROUND_S:
                 got.append((j, i, err))
         return got
 
@@ -619,8 +663,9 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
     tie = False
     if offset is None:
         # The pairing changes only where a row comes to a command's
-        # tolerance or passes from one command to the next: every offset
-        # between two such places is tried once, with the offsets that
+        # tolerance or passes from one command to the next: every such
+        # place is tried, where a row lies at the tolerance itself, and
+        # every offset between two of them once, with the offsets that
         # put a row on a command.
         marks = set()
         for c in cmd_csv:
@@ -630,6 +675,7 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
                          zip(cmd_log, cmd_log[1:], strict=False))
         edges = sorted(marks)
         offs = sorted({m - c for c in cmd_csv for m in cmd_log}
+                      | set(edges)
                       | {(a + b) / 2 for a, b in
                          zip(edges, edges[1:], strict=False)})
         scored = []

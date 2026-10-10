@@ -880,13 +880,13 @@ TEST_CASE(a_slots_pulse_is_a_command_after_it_held_still)
     /* And 50.1 ms. */
     CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us + 50100u));
     us += 50100u;
-    /* The bank letting go is no command; the pulse after it is one once
-     * the slot has held still. */
+    /* The bank letting go is no command; the pulse after it is one,
+     * 100 ms later and 1 ms later. */
     CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 100000u));
     CHECK(sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 200000u));
     us += 200000u;
     CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 1000u));
-    CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 2000u));
+    CHECK(sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 2000u));
     /* Each slot is watched on its own; one past the last is none. */
     CHECK(!sense_trace_pulse(&tr, 7u, 5u, 1500u, us));
     CHECK(sense_trace_pulse(&tr, 7u, 5u, 1501u, us));
@@ -936,16 +936,19 @@ TEST_CASE(a_slot_still_for_longer_than_the_count_tells_is_a_command_again)
     CHECK_EQ(tr.out.q_n, 2u);
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1700u, g_us + 70000u));
     CHECK_EQ(tr.out.q_n, 2u);
-    /* Let go inside the hold: no command when it is driven again at
-     * once, one when it is driven 50 ms after its last change. */
+    /* Let go inside the hold: the last change is forgotten there, and
+     * the pulse after it is a command, at once and 50 ms later.  A
+     * change 1 ms after that command is its slew. */
     rig();
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
     CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 1000u));
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 0u, g_us + 2000u));
-    CHECK(tr.out.watch[1].changed);
-    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 3000u));
+    CHECK(!tr.out.watch[1].changed);
+    CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 3000u));
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 0u, g_us + 4000u));
     CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 53000u));
+    CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1610u, g_us + 54000u));
+    CHECK(tr.out.watch[1].slewed);
 }
 
 /* The console takes nothing for @p ms. */
@@ -1565,6 +1568,410 @@ TEST_CASE(a_start_after_a_stop_is_a_trace_of_its_own)
     pass_as(SENSE_TRACE_LINE_MAX, false);
     run(20u);
     CHECK(!sense_trace_active(&tr));
+}
+
+/* A stopped trace with 300 ms still to write: a trigger now waits. */
+static void owe_a_stopped_trace(void)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(100u);
+    stall(300u);
+    sense_trace_key(&tr, 'x', g_us);
+    stall(100u);
+    CHECK(sense_trace_active(&tr));
+}
+
+/* Channel 5's pulse on slot 0 in this pass, as the firmware gives it;
+ * whether it is a command. */
+static bool drive(uint16_t us)
+{
+    if (!sense_trace_pulse(&tr, 0u, 5u, us, g_us)) {
+        return false;
+    }
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 5u, us);
+    return true;
+}
+
+/* The console takes again until the trace numbered @p id is under way. */
+static void run_to_trace(unsigned id)
+{
+    for (unsigned k = 0u; k < 30000u && tr.out.id != id; ++k) {
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, id);
+}
+
+static void run_out(void)
+{
+    for (unsigned k = 0u; k < 30000u && sense_trace_active(&tr); ++k) {
+        run(1u);
+    }
+    CHECK(!sense_trace_active(&tr));
+}
+
+/* The log from the $T line of the trace numbered @p id on, parsed. */
+static void parse_from(unsigned id)
+{
+    char want[32];
+    snprintf(want, sizeof(want), "$T v=2 n=%u ", id);
+    const char *at = strstr(g_log, want);
+    CHECK(at != NULL);
+    if (at != NULL) {
+        g_len = strlen(at);
+        memmove(g_log, at, g_len + 1u);
+    }
+    parse();
+}
+
+static uint32_t now_t(void)
+{
+    return (uint32_t)(g_us / 100u);
+}
+
+TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    CHECK_EQ(tr.out.wait_n, 1u);
+    /* 30 ms of slew: one entry behind the command, at the last change. */
+    uint32_t t_last = 0u;
+    for (unsigned k = 1u; k <= 30u; ++k) {
+        stall(1u);
+        t_last = now_t();
+        CHECK(!drive((uint16_t)(1200u + k)));
+        CHECK_EQ(tr.out.wait_n, 2u);
+    }
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_STEP);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    /* Held still for 50 ms: the entry is the command's end. */
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1230u));
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    CHECK_EQ(tr.out.wait[1].us, 1230u);
+    run_to_trace(2u);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK(strcmp(seen.trig, "cmd") == 0);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1200u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_ch, 5u);
+    CHECK_EQ(seen.dest_us, 1230u);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+TEST_CASE(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    /* 4.5 s of slew with the console taking nothing, longer than the
+     * 4 s the command asks for. */
+    uint32_t t_last = 0u;
+    uint16_t us = 0u;
+    unsigned k = 0u;
+    for (; k < 4500u; ++k) {
+        stall(1u);
+        t_last = now_t();
+        us = (uint16_t)(1300u + (k & 1u));
+        CHECK(!drive(us));
+    }
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    CHECK((int32_t)(t_last - (t_cmd + 40000u)) > 0);
+    /* The console takes again; the slew goes on through the next
+     * trace's start and 20 ms past it. */
+    unsigned on = 0u;
+    for (; k < 40000u && on < 20u; ++k) {
+        run(1u);
+        t_last = now_t();
+        us = (uint16_t)(1300u + (k & 1u));
+        CHECK(!drive(us));
+        if (tr.out.id == 2u) {
+            ++on;
+        }
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK(sense_trace_active(&tr));
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    for (unsigned j = 0u; j < 60u; ++j) {
+        run(1u);
+        CHECK(!drive(us));
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1200u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, us);
+    CHECK_EQ(seen.z_e, 't');
+    CHECK_EQ(seen.z_s, seen.n_s);
+    CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+TEST_CASE(a_slew_that_stops_as_its_trace_starts_ends_in_that_trace)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    /* A change every pass while the command waits; the last one in the
+     * pass before the next trace starts. */
+    uint16_t us = 1200u;
+    uint32_t t_last = 0u;
+    while (tr.out.id == 1u && us < 3000u) {
+        ++us;
+        t_last = now_t();
+        CHECK(!drive(us));
+        run(1u);
+    }
+    CHECK_EQ(tr.out.id, 2u);
+    CHECK(tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    for (unsigned j = 0u; j < 60u; ++j) {
+        CHECK(!drive(us));
+        run(1u);
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, us);
+    CHECK_EQ(seen.z_m, 2u);
+    CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+TEST_CASE(a_command_with_no_line_has_no_end_line_either)
+{
+    /* Waiting: a command of the channel waits, the places fill, and the
+     * channel's next command finds none.  Its slew and its end are not
+     * the first command's. */
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1200u));
+    }
+    CHECK(!tr.out.watch[0].changed);
+    for (unsigned k = 1u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    }
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    CHECK(drive(1500u));
+    CHECK_EQ(tr.out.wait_lost, 1u);
+    CHECK(tr.out.watch[0].orphan);
+    stall(1u);
+    CHECK(!drive(1510u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1520u));
+    }
+    CHECK(!tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.wait_lost, 1u);
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    for (unsigned k = 0u; k < tr.out.wait_n; ++k) {
+        CHECK(tr.out.wait[k].kind <= SENSE_TRACE_TRIG_KEY);
+    }
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.mark_us, 1200u);
+    CHECK_EQ(seen.n_d, 0u);
+    CHECK_EQ(seen.z_ml, 1u);
+
+    /* In a trace: the same with the trigger queue full. */
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(50u);
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1200u));
+    }
+    while (tr.out.q_n < SENSE_TRACE_MARKS) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    }
+    CHECK_EQ(tr.out.n_mlost, 0u);
+    CHECK(drive(1500u));
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    CHECK(tr.out.watch[0].orphan);
+    stall(1u);
+    CHECK(!drive(1510u));
+    run(100u);
+    CHECK_EQ(tr.out.q_n, 0u);
+    CHECK(!drive(1510u));
+    CHECK(!tr.out.watch[0].slewed);
+    CHECK_EQ(tr.out.q_n, 0u);
+    CHECK_EQ(tr.out.n_mlost, 1u);
+    /* The channel's next command has a line, and its end one. */
+    CHECK(drive(1800u));
+    CHECK(!tr.out.watch[0].orphan);
+    run(1u);
+    CHECK(!drive(1810u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!drive(1810u));
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 2u);
+    CHECK_EQ(seen.mark_us, 1800u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_us, 1810u);
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(a_waiting_slews_end_that_finds_no_place_is_counted)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    CHECK(drive(1200u));
+    for (unsigned k = 1u; k < SENSE_TRACE_MARKS; ++k) {
+        sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    }
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    /* A change is no line: not counted. */
+    stall(1u);
+    CHECK(!drive(1210u));
+    CHECK_EQ(tr.out.wait_lost, 0u);
+    /* The end is one. */
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1210u));
+    }
+    CHECK_EQ(tr.out.wait_n, SENSE_TRACE_MARKS);
+    CHECK_EQ(tr.out.wait_lost, 1u);
+    run_out();
+    parse_from(2u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_d, 0u);
+    CHECK_EQ(seen.n_e, SENSE_TRACE_MARKS - 1u);
+    CHECK_EQ(seen.z_ml, 1u);
+}
+
+TEST_CASE(a_slews_end_waits_again_with_a_command_that_waits_again)
+{
+    /* An edge waits, and 5 s after it a slewed command: past the end of
+     * the trace the edge starts, so it waits again, its end behind it. */
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    stall(5000u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    stall(1u);
+    const uint32_t t_last = now_t();
+    CHECK(!drive(1250u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1250u));
+    }
+    CHECK_EQ(tr.out.wait_n, 3u);
+    CHECK_EQ(tr.out.wait[2].kind, SENSE_TRACE_MARK_DEST);
+    run_to_trace(2u);
+    CHECK_EQ(tr.out.trig, SENSE_TRACE_TRIG_EDGE);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[0].kind, SENSE_TRACE_TRIG_CMD);
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[1].t, t_last);
+    CHECK_EQ(tr.out.wait[1].us, 1250u);
+    run_to_trace(3u);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    CHECK_EQ(tr.out.end_t, t_last + 40000u);
+    run_out();
+    parse_from(3u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_t, 1u);
+    CHECK(strcmp(seen.trig, "cmd") == 0);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, 1250u);
+    CHECK_EQ(seen.z_m, 2u);
+}
+
+TEST_CASE(the_pulse_after_the_bank_let_go_is_a_command_however_soon)
+{
+    rig();
+    run(200u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    CHECK(!drive(1500u));
+    run(1u);
+    CHECK(drive(1600u));
+    run(1u);
+    CHECK(!drive(1610u));
+    run(1u);
+    /* Let go 1 ms after a change: the slewed command ends where it was. */
+    CHECK(!drive(0u));
+    CHECK(!tr.out.watch[0].slewed && !tr.out.watch[0].changed);
+    run(1u);
+    /* Driven again 1 ms later, at the pulse it had: a command, and what
+     * follows within 50 ms its slew. */
+    CHECK(drive(1610u));
+    run(1u);
+    CHECK(!drive(1620u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!drive(1620u));
+    }
+    /* Let go while it stands still, and driven again at once. */
+    CHECK(!drive(0u));
+    run(1u);
+    CHECK(drive(1620u));
+    run(10u);
+    sense_trace_key(&tr, 'x', g_us);
+    run(3u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 3u);
+    CHECK_EQ(seen.n_d, 2u);
+    CHECK_EQ(seen.dest_us, 1620u);
+    CHECK_EQ(seen.z_m, 6u);
+    CHECK(strstr(g_log, "us=1610\r\n") != NULL);
 }
 
 TEST_CASE(a_slot_that_changes_hands_is_watched_afresh)
@@ -3060,6 +3467,13 @@ int main(void)
     RUN(a_trigger_lost_after_a_changed_set_up_is_counted_in_the_next_trace);
     RUN(a_slewed_commands_end_goes_with_its_command_into_the_next_trace);
     RUN(a_trigger_past_the_next_traces_end_overwrites_none_that_waited);
+    RUN(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace);
+    RUN(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open);
+    RUN(a_slew_that_stops_as_its_trace_starts_ends_in_that_trace);
+    RUN(a_command_with_no_line_has_no_end_line_either);
+    RUN(a_waiting_slews_end_that_finds_no_place_is_counted);
+    RUN(a_slews_end_waits_again_with_a_command_that_waits_again);
+    RUN(the_pulse_after_the_bank_let_go_is_a_command_however_soon);
     RUN(records_dropped_before_a_set_up_record_are_said_in_its_trace);
     RUN(a_state_change_under_a_backlog_keeps_its_place);
     RUN(a_set_up_record_with_no_room_is_written_when_there_is_room);

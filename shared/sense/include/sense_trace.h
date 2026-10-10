@@ -84,8 +84,14 @@
  *         (sense_trace_pulse()).  Changes closer together are one slewed
  *         command: they move the trace's end, and once the slot has held
  *         still for SENSE_TRACE_HOLD_MS a $D line gives the pulse the
- *         command ended at.  A pulse
- *         going to 0 is the bank letting go, not a command.  The pulse is
+ *         command ended at.  A command that waits for the next trace
+ *         takes its later changes with it: that trace ends
+ *         SENSE_TRACE_EDGE_MS after the last of them and has the $D
+ *         line; they take one of the SENSE_TRACE_MARKS places.  A
+ *         command whose trigger found a queue full has no $D line.  A
+ *         pulse going to 0 is the bank letting go, not a command: a
+ *         slewed command ends there, and the next pulse is a command
+ *         however soon it comes.  The pulse is
  *         the one the slice renders: no longer than its frame
  *         (sense_trace_rendered()).
  *   edge  the capture's PWM edge, when a capture is armed.
@@ -215,6 +221,8 @@ typedef enum {
     SENSE_TRACE_TRIG_EDGE,
     SENSE_TRACE_TRIG_KEY,
     SENSE_TRACE_MARK_DEST,    /**< no trigger: a slewed command's end      */
+    SENSE_TRACE_MARK_STEP,    /**< no trigger and no line: the last change
+                                   so far of a slewed command that waits   */
 } sense_trace_trig_t;
 
 /** Why a trace ended. */
@@ -274,6 +282,8 @@ typedef struct {
                                it                                          */
     bool     slewed;      /**< the command's pulse changed after its
                                trigger: its end is still to be said        */
+    bool     orphan;      /**< the command's trigger found a queue full:
+                               its end is not said                         */
     uint16_t pulse;
     uint32_t changed_t;   /**< its last change, 0.1 ms                     */
 } sense_trace_watch_t;
@@ -310,7 +320,8 @@ typedef struct {
                                triggers that found the queue full          */
     sense_trace_mark_t q[SENSE_TRACE_MARKS];
     uint8_t  q_n, q_head;
-    /* Triggers at or past the end of a trace still being written. */
+    /* Triggers at or past the end of a trace still being written, and
+     * behind a slewed command among them its last change or its end. */
     sense_trace_mark_t wait[SENSE_TRACE_MARKS];
     uint8_t  wait_n;
     uint32_t wait_lost;   /**< of them, those that found no place          */

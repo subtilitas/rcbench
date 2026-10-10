@@ -455,8 +455,12 @@ auf 4 s (bei `t` 10 s) nach sich selbst, wenn das später liegt: Bewegungen
 mit weniger als 4 s Abstand sind ein Trace. Ein Kommando mit Slew ändert
 die Pulsbreite in jedem Durchlauf: seine Zeile `$C` trägt die erste
 Pulsbreite, und eine Zeile `$D` die, bei der es endete, sobald der Ausgang
-50 ms still gehalten hat. Die Bewegungen des automatischen Tests sind
-Sprünge und haben keine. `x` auf der Konsole beendet
+50 ms still gehalten hat. Ein Kommando, das auf den nächsten Trace wartet,
+nimmt seine späteren Änderungen mit: dieser Trace endet 4 s nach der
+letzten davon und enthält die Zeile `$D`. Ein Ausgang, der losgelassen
+wird, beendet dort ein Kommando mit Slew; der nächste Puls auf ihm ist ein
+Kommando, wie bald er auch kommt. Die Bewegungen des automatischen Tests
+sind Sprünge und haben keine Zeile `$D`. `x` auf der Konsole beendet
 einen Trace; eine Triggerzeile, deren Zeit auf dem Stopp oder danach
 liegt, entfällt. Jeder Trace enthält auch die Samples von bis zu 64 ms vor
 seinem Trigger.

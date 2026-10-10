@@ -431,6 +431,53 @@ def a_command_with_no_edge_line_is_a_move() -> None:
           r.stdout[-900:])
 
 
+def edges_and_commands_are_paired_as_many_as_can_be() -> None:
+    limit = 300
+    pair = sense_trace.pair_near
+    # Commands at 80 and 115 ms, edges at 100 and 140 ms: the nearest
+    # pair of all, 100 with 115, leaves the edge at 140 ms none.
+    check(pair([1000, 1400], [800, 1150], limit) == {0: 0, 1: 1},
+          f"{pair([1000, 1400], [800, 1150], limit)}")
+    # The same with the lists not in the order of their times.
+    check(pair([1400, 1000], [1150, 800], limit) == {0: 0, 1: 1}, "order")
+    # The limit itself pairs, 0.1 ms more does not.
+    check(pair([1000], [700], limit) == {0: 0}, "at the limit")
+    check(pair([1000], [699], limit) == {}, "past it")
+    check(pair([1000], [1300], limit) == {0: 0}, "at the limit, after")
+    check(pair([1000], [1301], limit) == {}, "past it, after")
+    # With as many pairs either way, the least distance in sum: of two
+    # edges at one command the nearer has it, and of two commands at one
+    # edge the nearer.
+    check(pair([1000, 1100], [1090], limit) == {1: 0}, "two edges")
+    check(pair([1000], [900, 1020], limit) == {0: 1}, "two commands")
+    # A chain: every line within the limit of two others, one way to pair
+    # all three.
+    check(pair([1000, 1250, 1500], [1240, 1490, 1740], limit)
+          == {0: 0, 1: 1, 2: 2}, "the chain")
+    # None of either.
+    check(pair([], [5], limit) == {} and pair([5], [], limit) == {}, "none")
+    # Lines at one time: each edge one command.
+    check(sorted(pair([1000, 1000], [1000, 1000], limit).values()) == [0, 1],
+          "equal times")
+    # Through the tool: the commands' lines 20 ms and 25 ms before their
+    # edges, 35 ms apart.
+    out = synthetic(1000, [(0, 1900), (35, 1100), (1000, 1500)]
+                    ).splitlines()
+    # Edge lines at 20 ms and 60 ms, each behind the samples of before
+    # it: 15 sample lines before the second command's line, and 25 after.
+    second = next(k for k, line in enumerate(out)
+                  if line.startswith("$C t=1350 "))
+    out.insert(second + 26, "$E t=1600")
+    out.insert(second - 15, "$E t=1200")
+    out[-1] = out[-1].replace("m=3", "m=5")
+    r = tool(str(work("chain.log", "\n".join(out) + "\n")), "--no-csv")
+    check("move 1 at 20.0 ms, channel 2 to 1900 us" in r.stdout
+          and "move 2 at 60.0 ms, channel 2 to 1100 us" in r.stdout
+          and "move 3 at 1000.0 ms, channel 2 to 1500 us" in r.stdout,
+          r.stdout[-1200:])
+    check(", edge" not in r.stdout, "no edge without its command")
+
+
 def commands_within_30_ms_are_not_replayed() -> None:
     # Two outputs commanded in one frame, and one alone 1 s later.
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
@@ -756,6 +803,39 @@ def the_offset_that_pairs_the_most_is_found_between_the_obvious() -> None:
           f"{[mv.horn_row for mv in moves]}")
 
 
+def an_offset_that_puts_rows_at_the_tolerance_itself_is_tried() -> None:
+    class At:
+        def __init__(self, abs_s: float) -> None:
+            self.abs_s = abs_s
+            self.horn_ms = None
+            self.horn_row = None
+
+    def rows_at(*cmds: float) -> list[tuple[float, float]]:
+        # The command lies the travel time and the 100 ms hold before
+        # the row: both exact in binary.
+        return [(c + 0.5, 400.0) for c in cmds]
+    # Commands at 0 and 1 s, rows whose commands lie at 0 and 0.75 s, 125
+    # ms allowed: only the offset of 0.125 s pairs both, each at the
+    # tolerance itself.
+    moves = [At(0.0), At(1.0)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.75), 0.125, None)
+    check(n == 2 and not tie, f"{n} paired, tie {tie}")
+    check([mv.horn_row for mv in moves] == [0, 1], "each its own")
+    # 1 ms less allowed: no offset pairs both.
+    moves = [At(0.0), At(1.0)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.75), 0.124, None)
+    check(n == 1 and tie, f"{n} paired, tie {tie}")
+    # Times that are not exact in binary: 0.3 s apart and 0.1 s apart,
+    # 100 ms allowed.
+    moves = [At(0.1), At(0.4)]
+    n, tie = sense_trace.pair_rows(moves, rows_at(0.7, 0.8), 0.1, None)
+    check(n == 2 and not tie, f"{n} paired, tie {tie}")
+    # An offset given by hand that puts a row at the tolerance pairs it.
+    moves = [At(0.0), At(1.0)]
+    n, _ = sense_trace.pair_rows(moves, rows_at(0.0, 0.75), 0.125, 0.125)
+    check(n == 2, f"{n} paired by hand")
+
+
 def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
     class At:
         def __init__(self, abs_s: float) -> None:
@@ -1055,6 +1135,7 @@ CASES = [
     edge_lines_are_the_moves_when_there_are_any,
     an_edge_takes_the_command_line_nearest_to_it,
     a_command_with_no_edge_line_is_a_move,
+    edges_and_commands_are_paired_as_many_as_can_be,
     commands_within_30_ms_are_not_replayed,
     the_traces_alone_say_which_settings_time_every_move,
     a_trace_with_trigger_lines_not_written_is_not_replayed,
@@ -1066,6 +1147,7 @@ CASES = [
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,
     the_offset_that_pairs_the_most_is_found_between_the_obvious,
+    an_offset_that_puts_rows_at_the_tolerance_itself_is_tried,
     offsets_that_give_rows_to_other_moves_are_two_answers,
     pairing_arguments_are_checked,
     a_capital_end_reason_is_a_problem,
