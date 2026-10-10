@@ -10,14 +10,17 @@ shows.
     python3 tools/render_ui.py                   # every screen into docs/img/
     python3 tools/render_ui.py overview -o /tmp/overview.png --lang en
     python3 tools/render_ui.py --check           # the committed images match
-    python3 tools/render_ui.py --fit             # every German string fits
+    python3 tools/render_ui.py --fit             # every string fits
 
 Every screen is rendered in English into docs/img/ and in German into
 docs/img/de/.  --fit builds the renderer with GFX_TEXT_TRACE, draws every
-view in both languages and fails when a German string is wider than its box,
-is cut at the edge of the area it is drawn in, runs past the shape it is
-printed on, overlaps another string, or is painted over by a fill drawn after
-it.
+view in both languages and fails when a string is wider than its box, is cut
+at the edge of the area it is drawn in, runs past the shape it is printed
+on, overlaps another string, or is painted over by a fill drawn after it.
+The English overflows in KNOWN_OVERFLOWS are listed and do not fail; one of
+them that no longer overflows fails until it is taken off the list.
+
+SPDX-License-Identifier: MIT
 """
 
 from __future__ import annotations
@@ -284,6 +287,27 @@ MIN_SHAPE = 8
 # beside it by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol"}
 
+# English overflows the layout has today: (view, string, finding), word for
+# word as --fit prints them.  Each is a defect of the screen, listed here so
+# the check holds every other string; none is a decision that the overflow
+# is wanted.  An entry that --fit no longer finds fails, so the list cannot
+# outlive its defects.
+#
+# SETUP shows 36 cells of a help line and two English help lines are 38 and
+# 55 characters: Capacity's and Rated kV's.  The log import's column range
+# is 18 characters in a 140 px box.
+_CUT = "is cut at the edge of its area (252 to %d, area 236 to 546)"
+KNOWN_OVERFLOWS = {
+    (view, text, _CUT % right)
+    for view in ("setup", "setup-dirty", "setup-light")
+    for text, right in (
+        ("Used for the remaining-charge estimate", 556),
+        ("Used when the ESC reports none; 0 shows the field empty", 692),
+    )
+} | {
+    ("logs-import", "2392.0..14639.0rpm", "is 144 px wide in a 140 px box"),
+}
+
 
 class Rect:
     def __init__(self, x, y, w, h):
@@ -425,12 +449,29 @@ def fit_problems(items, overlay=False):
     return problems
 
 
+def judge(findings, known, views):
+    """Tag every finding and name the stale waivers.
+
+    @p findings is [(lang, view, string, why)].  A finding fails in either
+    language unless @p known holds it word for word: a German finding that
+    equals a known English one is the same string in the same place -- a
+    number from the data, say -- and is the layout's, not the
+    translation's.  Returns ([(tag, lang, view, string, why)], [stale])
+    where tag is "FAIL" or "known" and stale is every entry of @p known for
+    a view in @p views that English did not produce."""
+    english = {(v, s, w) for lang, v, s, w in findings if lang == "en"}
+    judged = [("known" if (view, s, why) in known else "FAIL",
+               lang, view, s, why) for lang, view, s, why in findings]
+    stale = sorted(k for k in known if k[0] in views and k not in english)
+    return judged, stale
+
+
 def fit(views, langs) -> int:
     """Render every view in every language with the trace on and report
-    every string that overflows.  A German overflow fails; English is the
-    layout the screens were drawn for, and its findings are listed so they
-    are seen.  A table string with no declared width has to be drawn by
-    some view, or nothing measures it."""
+    every string that overflows.  An overflow fails in either language,
+    except the English ones in KNOWN_OVERFLOWS and their German copies.  A
+    table string with no declared width has to be drawn by some view, or
+    nothing measures it."""
     failed = False
     with tempfile.TemporaryDirectory() as td:
         tmp = pathlib.Path(td)
@@ -442,10 +483,7 @@ def fit(views, langs) -> int:
             _, name, cells = line.split()
             ids[name] = int(cells)
         seen = {lang: set() for lang in langs}
-        # English first: a finding English shares word for word is the
-        # layout's, not the translation's -- a number from the data, say --
-        # and is listed with English's rather than failing German.
-        english = {}
+        findings = []
         for lang in sorted(langs, key=lambda x: x != "en"):
             for name in views:
                 filename, screen, theme = SCREENS[name]
@@ -454,12 +492,16 @@ def fit(views, langs) -> int:
                 items, used = read_trace(trace)
                 seen[lang] |= used
                 for s, why in fit_problems(items, name in OVERLAY_VIEWS):
-                    if lang == "en":
-                        english.setdefault(name, set()).add((s, why))
-                    shared = (s, why) in english.get(name, set())
-                    tag = "note" if lang == "en" or shared else "FAIL"
-                    print(f"{tag} {lang} {name}: {s!r} {why}")
-                    failed = failed or tag == "FAIL"
+                    findings.append((lang, name, s, why))
+        judged, stale = judge(findings, KNOWN_OVERFLOWS, set(views))
+        for tag, lang, name, s, why in judged:
+            print(f"{tag} {lang} {name}: {s!r} {why}")
+            failed = failed or tag == "FAIL"
+        if "en" in langs:
+            for name, s, why in stale:
+                print(f"FAIL en {name}: {s!r} is in KNOWN_OVERFLOWS and "
+                      f"no longer {why}; take it off the list")
+                failed = True
         for lang in langs:
             if lang == "en":
                 continue
@@ -470,7 +512,9 @@ def fit(views, langs) -> int:
                       "draws it")
                 failed = True
     if not failed:
-        print("every string fits")
+        known = sum(1 for tag, *_ in judged if tag == "known")
+        print("every string fits" if not known else
+              f"every string fits, except the {known} known overflows above")
     return 1 if failed else 0
 
 
@@ -492,8 +536,8 @@ def main() -> int:
     ap.add_argument("--check", action="store_true",
                     help="fail if any render differs from the committed image")
     ap.add_argument("--fit", action="store_true",
-                    help="fail if a translated string overflows where it is "
-                         "drawn")
+                    help="fail if a string overflows where it is drawn, in "
+                         "either language")
     args = ap.parse_args()
 
     if not shutil.which("cc"):

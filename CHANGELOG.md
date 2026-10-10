@@ -36,6 +36,28 @@ coprocessor and the other way round.
   [First run](docs/FirstRun.md) §8.9 has the bench procedure in two parts,
   the first without an encoder. Host suite only; not run on hardware. Not measured:
   the time the lines add to a pass of core 0.
+- **`tools/mutate.py`.** Changes one line of `shared/` at a time in a copy
+  of the tree (a comparison flipped, a bound plus or minus 1, a stored
+  assignment dropped), builds and runs the host suite and reports the
+  changes the suite passes with. By default the lines changed since
+  `origin/main`, at most 60 mutants, a run within 2700 s. CI runs it on
+  pull requests and does not fail on a survivor.
+- **Tests for the tools.** `test/tools/` holds pytest cases for
+  `coverage.py`, `check_docs.py`, `check_sanitizers.py`, `render_ui.py`,
+  `stack_check.py`, `mutate.py`, `ci_gate.py`, `pinmap_check.py` and
+  `wiki_links.py`; CI runs them in a job of their own.
+- **A stack check for the coprocessor.** `tools/stack_check.py --iomcu`
+  reads each core's deepest call chain and the deepest interrupt handler
+  out of the RP2350 image and fails when chain, one interrupt and 256 bytes
+  exceed the core's stack. The pico-sdk's `panic()` and what it calls to
+  print are part of a chain. With `--check-doc` it holds core 0's row of
+  the table in `docs/Performance.md` and its German page. CI runs it after
+  the coprocessor build.
+- **The coverage figure in the READMEs.** `README.md` and `README-de.md`
+  state the total, the line counts and the two floors; `tools/coverage.py`
+  writes them and `--check` fails when they differ from the measurement.
+- **`tools/ci_gate.py`.** Waits for the CI run on a commit and fails unless
+  one passed.
 - **The coprocessor keeps the last 4 windows of the servo's current.** The
   new read-only page SERVO_WIN (0x31, protocol 4.11) holds the last 4
   complete 50 ms windows of INA3221 CH1, 200 ms, newest first: for each the
@@ -70,6 +92,40 @@ coprocessor and the other way round.
   only; not run on hardware.
 
 ### Changed
+
+- **Coprocessor core 0 runs on a 4096-byte stack.** `PICO_STACK_SIZE` is
+  0x1000 in `firmware/iomcu/CMakeLists.txt`; the pico-sdk's default is
+  2048 bytes. The deepest chain from `main()` is 1516 bytes and one
+  interrupt 528. The stack fills the RAM region `SCRATCH_Y`, 0x20081000 to
+  0x20082000.
+- **The wiki and a release wait for CI.** `docs.yml` and `release.yml`
+  start as before, on a push to `main` that touches `docs/` and on a `v*`
+  tag, and their first step waits for the CI run on the same commit, at
+  most 5400 s. Nothing is published when that run fails, is cancelled or
+  does not exist after 600 s. A manual run is held to the same rule.
+- **`coverage.py --check` fails on a source that is not measured.** A C
+  file under `shared/` that is in neither of the tool's two lists, that the
+  suite does not compile, or that no test links fails the check; a file no
+  test links is measured at 0%.
+- **`check_sanitizers.py` holds the flags whole.** Every compile command of
+  the sanitizer build carries `-fsanitize=address,undefined`,
+  `-fno-sanitize-recover=all` and `-fno-omit-frame-pointer` and no other
+  flag of that family; a build with AddressSanitizer alone fails.
+- **`check_docs.py` holds numbers to constants.** The protocol version, the
+  heartbeat and link timings, the heartbeat and CAN pins, the coverage
+  floors and the stack margin the pages state, every table row that names
+  a C constant, the frame-cost ceiling table against `ci.yml`, and the IO
+  board's pin counts against `pinmap.json`.
+- **`render_ui.py --fit` fails on an English overflow.** Three English
+  overflows the layout has are listed by name in the tool and printed as
+  `known`; any other fails, in either language.
+- **`stack_check.py --check-doc`.** Holds the task table and the count of
+  calls through a pointer in `docs/Performance.md` and its German page to
+  the ESP-IDF v5.4 build; the count reads 176.
+- **CI.** `pinmap_check.py` runs in the coprocessor job. cppcheck's
+  warning, performance and portability classes run over `firmware/`. A
+  failed Codecov upload fails the host job. The CI run of a push to `main`
+  is not cancelled by a later push.
 
 - **The automatic servo test reads the servo rail's meter, and one meter
   per run.** A run started while the INA3221 is the rail's meter and the

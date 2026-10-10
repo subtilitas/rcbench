@@ -138,10 +138,12 @@ rcbench/
   .clang-tidy  .cppcheck-suppress  ruff.toml  codecov.yml
   docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
-                          gen_font · gen_board_art · wiki_links
-                          check_sanitizers · check_formats · stack_check
-                          sense_trace
+                          gen_font · gen_board_art · gen_esc_profiles
+                          wiki_links · check_sanitizers · check_formats
+                          stack_check · pinmap_check · mutate · ci_gate
+                          jlc_stock · sense_trace
                           research/ (component research scripts)
+  test/tools/             pytest cases for the tools
   hardware/               board design record: README, STATUS, docs/
   testbench/              the measurement bench: README, WIRING, host scripts,
                           decoders. Nothing on it has been run
@@ -211,9 +213,18 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, German fit, translated-format, docs, wiki-link and research-script checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor, and a second with `-DSENSE_TRACE=ON` that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
-| `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
-| `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; clang-tidy and cppcheck over `shared/`, cppcheck's warning, performance and portability classes over `firmware/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel, each with the task stack check; the pico-sdk build of the coprocessor with `pinmap_check.py` and the stack check of its two cores, and a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
+| `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400 s) and publishes `docs/` to the GitHub wiki when it passed |
+| `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release |
+
+Not in CI: clang-tidy over `firmware/`, which needs the ESP-IDF and pico-sdk
+headers to compile each file, and cppcheck's style class over `firmware/`,
+which reports 12 findings there with cppcheck 2.17. The cppcheck step over
+`shared/` passes no include directory: its pathspec `shared/**/include`
+matches no file, so headers are not resolved there. With them resolved
+cppcheck 2.17 reports 2 style findings (`ui_theme.h:136`,
+`servo_screen.c:468`). The step over `firmware/` passes all 25. `docs.yml` and `release.yml` with the wait
+for CI have not run.
 
 The host suite is 84 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
@@ -248,12 +259,22 @@ ctest runs one case more that is not a binary of the suite:
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 164 committed screenshots to the current
+below and of the figure in the two READMEs, and on a C file under `shared/`
+that is in neither of its two lists, is not compiled, or has no counters.
+`render_ui.py --check` holds 164 committed screenshots to the current
 render, 82 in English and the same 82 in German, and `render_ui.py --fit`
-fails on a German string that overflows where it is drawn; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
+fails on a string that overflows where it is drawn, in either language,
+except the 3 English overflows it lists as known; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
-3984 of 8192.
+3984 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
+one interrupt and 256 bytes to the core's stack: core 0 reaches 1516 of
+4096 with 528 for an interrupt. `check_docs.py` holds the protocol version,
+the heartbeat and link timings, the heartbeat and CAN pins, the coverage
+floors, the stack margin, the servo test's constants and the frame-cost
+ceilings the pages state to the headers, the tools and `ci.yml`.
+`check_sanitizers.py` holds every compile command of the sanitizer build to
+`-fsanitize=address,undefined -fno-sanitize-recover=all`.
 
 <!-- coverage:start -->
 | File | Lines | Covered | Coverage |
@@ -392,7 +413,8 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Touch ownership on the panel | the router gives each contact one owner from its press to its release, and a contact that leaves the screen body by the status band is released at its last point in the body; tested on the host through the tracker. That release, and the one the tracker makes for a contact more than 120 px from its previous report, is marked (`TOUCH_FLAG_NO_TAP`) and activates no control except STOP, DISARM, OUTPUT OFF and START TEST while a servo test runs. SETUP's keys, PROGRAMMER's controls and LOGS's buttons and rows act on a tap: a release by the contact that pressed, inside the control, no more than 8 px from the press in x and in y; a swipe matrix of 3528 swipes down SETUP's key columns changes no setting (`test_settings`). None of it has run on a panel. The track id the GT911 gives a lone finger on successive touches is not measured: the host cases assume the same id each time, which is the condition under which a latched drag takes a later contact for its own. Not measured either: the GT911's report interval on the panel, and how often it leaves a moving contact out of a report | a log of the id of 20 successive lone touches, then the sequences of the ownership cases in `test/host/test_nav.c` replayed by a touch injector under a camera; on SETUP INTERFACES, swipes down the `-` column at three speeds with every value read before and after, a tap and a 1 s hold |
 | The automatic servo test's threshold has not run on hardware | 0.13.0 ran on the bench with the PD mini, from a tester, on three servos: the MS24 (moving 0.16 to 0.18 A) passed; the MG90S (holding 0.001 A, moving 0.04 to 0.077 A) and the 1102HB (holding 0.015 to 0.029 A, peaking at 0.039 to 0.044 A) moved but read FAIL, every move late, because movement was a reading 0.10 A from the level before the command. The threshold is per step, max(0.020 A, 3 x the idle noise), and a move with no movement is unseen, not late. Replays of the MG90S's and the 1102HB's CSVs in the host suite (`test/host/fixtures/`) give PASS, 41 and 41 moves timed at 771 to 989 ms, and NOT MEASURABLE, 21 of 46 moves timed (those to the low end) and none late. A move has 3000 ms plus the meter's lag to arrive: 3300 ms on the PD mini. Not run on hardware: the threshold, NOT MEASURABLE, the 1102HB's moves to the high end (never 0.020 A past the 0.028 A before them), and the brown-out walk below 5.00 V. With SETTLE at 500 ms the IDLE readings can still carry the move to the centre, which raises the threshold (0.026 A on the 1102HB at 5.00 V). The PD mini's travel times are an upper bound; the command's delay from the panel to the pin is inside every one and is not measured | a bench run on this build with the MG90S and the 1102HB, and a faster current sensor (INA219, INA3221 or INA228, planned) for travel times that TRAVEL TIME can check |
 | The PD mini has never run | the driver, the coprocessor's SUPPLY page and PIO UART, and the panel's half of the page are tested on the host against a modelled module; none of it has driven a module. The protocol is the vendor's sheet and the bench station's notes (#223); its timings are the vendor's Python driver's, not measured. Not measured either: whether a live module goes to ERR when its input sags under the set point, which the switch-off on 2 low input reads assumes; and whether its button or AUTO OUT switch it on while the UART is attached, which the state read before a wiring change assumes | a bench run against the module: identify, set points read back, ON and OFF, a heartbeat stop, a pulled cable, the input lowered under a live set point in 0.5 V steps |
-| The release publishes without waiting for CI | `release.yml` and `ci.yml` both trigger on a `v*` tag and run in parallel. `release.yml`'s publish job needs only its own two build jobs, so the host suite, the sanitizer run, the coverage floors, clang-tidy, cppcheck, ruff, `check_docs.py`, the frame-cost ceilings and the screenshot check cannot stop `gh release create`. Both files build the two images with the same steps, so the artefacts are the ones CI would have built; what is unguarded is everything CI checks that is not a build. A tag added a `version` job that refuses a tag not matching `rcbench_version.h`, which is the narrow case that was worth making structural | a `workflow_run` trigger on a successful CI run for tag refs, or the host suite folded into `release.yml` as a job the builds need. Until then: confirm CI is green on the commit before pushing the tag |
+| Three English strings overflow | SETUP shows 36 cells of a help line, and Capacity's help is 38 characters and Rated kV's 55, so both are cut on the panel; on the log import's column list the range `2392.0..14639.0rpm` is 144 px wide in a 140 px box. `render_ui.py --fit` lists the three by name (`KNOWN_OVERFLOWS`) and fails on any other overflow in either language | shorter help lines or a second line on SETUP, a wider or abbreviated range on the import list; then the entries off the list |
+| Coprocessor core 0's stack | `stack_check.py --iomcu` measures 1516 bytes for the deepest chain and 528 for one interrupt on the 4096-byte stack, 1796 bytes above the 256-byte margin. The figure is a lower bound: 70 calls through a register are not followed. The stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image built with another option set is measured only when CI builds it | a high-water mark read on a board; a decision on stack guards |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |
 | No ESC reports its kV | the ESC screen shows the rated kV, what the motor turns per volt, and the ratio of the two as EFF, an estimate documented as such in [Screens](docs/Screens.md). The rated value is read from the connected ESC when it reports one and from `SET_MOTOR_KV` when it does not; nothing calls `motor_screen_set_esc_kv()` yet, so it is whatever the operator entered, and zero draws the field empty | an ESC parameter set on the link. The OpenYGE cache is built and unconnected; BLHeli_32's parameters are not published |
