@@ -332,9 +332,11 @@ function usbtap(d: Dwg): void {
   d.add(`<g filter="${d.u('sh')}"><path d="M44 30H216Q222 30 222 36V112Q222 118 216 118H178V204Q178 210 172 210H88Q82 210 82 204V118H44Q38 118 38 112V36Q38 30 44 30Z" fill="${d.pcb('black')}"/></g>`);
   // The 2 USB-C sockets. A data file that lists them as the pins IN and OUT gets a wire point at the mouth of
   // each socket and its label; a data file without them gets the print of the part.
-  const sockets: Array<[string, number, number, 'W' | 'E']> = [['IN', 80, 28, 'W'], ['OUT', 180, 232, 'E']];
-  for (const [id, lx, ax, side] of sockets) {
-    d.add(d.has(id) ? d.pin(id, ax, 80, side, lx, 46, { sz: 11, a: 'middle' }) : d.text(lx, 46, id, { sz: 11, a: 'middle' }));
+  // The label of a pin names the socket in words and is wider than a socket: it stands above the board, IN from the
+  // left edge and OUT up to the right edge.
+  const sockets: Array<[string, number, number, 'W' | 'E', number, 'start' | 'end']> = [['IN', 80, 28, 'W', 8, 'start'], ['OUT', 180, 232, 'E', 252, 'end']];
+  for (const [id, lx, ax, side, px, anchor] of sockets) {
+    d.add(d.has(id) ? d.pin(id, ax, 80, side, px, 20, { sz: 11, a: anchor, f: INK }) : d.text(lx, 46, id, { sz: 11, a: 'middle' }));
   }
   d.add(d.usbc(28, 52, 92, 56, 'W'), d.usbc(140, 52, 92, 56, 'E'));
   d.add(d.smd(130, 44, 'r', 0, 0.7));

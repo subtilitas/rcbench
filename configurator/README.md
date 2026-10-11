@@ -211,6 +211,8 @@ wire point of `drawings/anchors.json`.
 | Colour | Supply plus red, supply minus black with a light casing, signals in the other colours of `drawings/wires.ts`. No signal is red or black. |
 | Wire number | In a chip at both ends of the wire. |
 | Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |
+| Cable | A wire on the net `pd_in` is a USB-C cable between 2 sockets: a grey sheath of 7 px around a red core of 3 px. The nets are the table `CABLE_NETS` in `drawings/wires.ts`. |
+| Between | A part with `between` in the data file, with both named parts on its side of the coprocessor, makes that side 3 columns wide: the first named part alone in the outermost column, the part in the middle column, the second named part in the inner column. The T-plug stands between the PD charger and the PD mini. |
 | Component | A wire of kind `component` in the data file is drawn as the component: a body of 12 px by 20 px on 2 leads with right-angle bends, 1 wire number, and a text of up to 2 lines. Between 2 pins of 1 part the body stands beside that part and the picture is 192 px wider for a text of 18 characters. The band is at end `a` of the wire. |
 | Not drawn | A wire with 1 end (`b: null`), such as the address bridge 31 on the INA3221 board. Its table row carries the note. |
 
@@ -295,7 +297,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The wiring picture shows them. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 46 files, 451.5 kB.
+Drawing folder: 46 files, 451.7 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 

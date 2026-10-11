@@ -50,10 +50,20 @@ export const PLUS = 'red';
 /** Colour of every ground and supply minus wire. No signal wire has it. */
 export const MINUS = 'black';
 
-/** Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3 V and VBUS of the coprocessor. */
+/**
+ * Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3 V and VBUS of the
+ * coprocessor, and the V pin of a strip of the Osoyoo breakout board.
+ */
 export const PLUS_NETS: ReadonlySet<string> = new Set([
-  'batt_pos', 'pd_in', 'pd_out', 'servo_v', 'servo_shunt', 'esc_shunt', '3v3', 'vbus',
+  'batt_pos', 'pd_in', 'pd_out', 'servo_v', 'servo_shunt', 'esc_shunt', '3v3', 'vbus', 'strip_v',
 ]);
+/**
+ * Nets that run in a USB-C cable between 2 sockets. A wire on one of them stands for the whole cable:
+ * it is drawn as a sheath in the colour `SHEATH` around a core in the colour of its net.
+ */
+export const CABLE_NETS: ReadonlySet<string> = new Set(['pd_in']);
+/** Palette colour of the sheath of a cable. */
+export const SHEATH = 'grey';
 /** Nets of ground and supply minus. */
 export const MINUS_NETS: ReadonlySet<string> = new Set(['gnd', 'batt_neg', 'esc_neg']);
 

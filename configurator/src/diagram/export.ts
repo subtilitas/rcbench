@@ -12,7 +12,7 @@
 
 import type { Catalogue, Lang, Setup } from '../../contract.ts';
 import type { Anchors } from '../../drawings/generate.ts';
-import { PALETTE } from '../../drawings/wires.ts';
+import { PALETTE, SHEATH } from '../../drawings/wires.ts';
 import { esc, tx } from '../i18n.ts';
 import { ANCHORS } from './anchors.ts';
 import { CAP, THICK, THIN } from './layout.ts';
@@ -69,7 +69,8 @@ function wireMarkup(wire: Routed, lang: Lang): string {
   for (const path of wire.paths) {
     const d = lineOf(path);
     if (colour?.casing) out += `<path d="${d}" ${line} stroke="${colour.casing}" stroke-width="${width + 2}"/>`;
-    out += `<path d="${d}" ${line} stroke="${stroke}" stroke-width="${width}"${wire.kind === 'stub' ? ' stroke-dasharray="5 4"' : ''}/>`;
+    if (wire.cable) out += `<path d="${d}" ${line} stroke="${PALETTE[SHEATH]!.core}" stroke-width="${width}"/>`;
+    out += `<path d="${d}" ${line} stroke="${stroke}" stroke-width="${wire.cable ? THIN : width}"${wire.kind === 'stub' ? ' stroke-dasharray="5 4"' : ''}/>`;
   }
   if (wire.body) {
     const [body, band] = bodyRects(wire.body);

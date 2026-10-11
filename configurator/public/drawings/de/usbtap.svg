@@ -15,8 +15,8 @@
 </defs>
 <rect width="260" height="324" rx="10" fill="#efebe3"/>
 <g filter="url(#tpl-sh)"><path d="M44 30H216Q222 30 222 36V112Q222 118 216 118H178V204Q178 210 172 210H88Q82 210 82 204V118H44Q38 118 38 112V36Q38 30 44 30Z" fill="url(#tpl-pcb-black)"/></g>
-<text x="80" y="46" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="middle">IN</text>
-<text x="180" y="46" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="middle">OUT</text>
+<text id="tpl-lbl-IN" x="8" y="20" font-size="11" font-weight="600" fill="#24262b" text-anchor="start">IN, USB-C-Buchse</text>
+<text id="tpl-lbl-OUT" x="252" y="20" font-size="11" font-weight="600" fill="#24262b" text-anchor="end">OUT, USB-C-Buchse</text>
 <g filter="url(#tpl-s3)"><rect x="28" y="52" width="92" height="56" rx="5" fill="url(#tpl-tin)"/></g><rect x="28.5" y="52.5" width="91" height="55" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="64.8" y="64.3" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="64.8" y="87.8" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="28" y="55" width="5" height="50" fill="#2a2c31"/>
 <g filter="url(#tpl-s3)"><rect x="140" y="52" width="92" height="56" rx="5" fill="url(#tpl-tin)"/></g><rect x="140.5" y="52.5" width="91" height="55" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="176.8" y="64.3" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="176.8" y="87.8" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="227" y="55" width="5" height="50" fill="#2a2c31"/>
 <g transform="translate(130,44) rotate(0) scale(0.7)" filter="url(#tpl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#tpl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>

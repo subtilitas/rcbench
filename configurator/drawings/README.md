@@ -6,7 +6,7 @@ Generator and check of the part drawings of the bench configurator.
   boards outside it. The coprocessor and the INA228 have 2 boards each.
 - Each drawing is 1 SVG (Scalable Vector Graphics) file per language: English
   in `public/drawings/<file>.svg`, German in `public/drawings/de/<file>.svg`.
-- `anchors.json` holds the wire point of each of the 175 pins in px of the
+- `anchors.json` holds the wire point of each of the 177 pins in px of the
   viewBox of its drawing.
 - The generator reads the data file and nothing else: no file, no clock, no
   random number. The same data file gives the same bytes.

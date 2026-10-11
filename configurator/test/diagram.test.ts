@@ -4,10 +4,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Lang, Selection, Setup } from '../contract.ts';
-import { MINUS, MINUS_NETS, PLUS, PLUS_NETS, withoutWirePoint } from '../drawings/wires.ts';
+import { CABLE_NETS, MINUS, MINUS_NETS, PALETTE, PLUS, PLUS_NETS, SHEATH, withoutWirePoint } from '../drawings/wires.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
 import { ANCHORS } from '../src/diagram/anchors.ts';
-import { BAND, CLEAR, THICK, THIN, pitch } from '../src/diagram/layout.ts';
+import { BAND, CLEAR, THICK, THIN, columnsOf, pitch } from '../src/diagram/layout.ts';
 import { BODY, LABEL, TEXT_CHAR, bayOf, diagramOf, simplify } from '../src/diagram/route.ts';
 import type { Diagram, Pt } from '../src/diagram/route.ts';
 import { RADIUS, baselines, bodyRects, legend, pathOf, picture, swatch } from '../src/diagram/picture.ts';
@@ -549,7 +549,7 @@ test('pathOf rounds a right angle by 2 px, never by more than half a segment', (
 test('a wire that carries load current is thick, in the scene and in the markup, and the legend names both widths', () => {
   // Every wire of the data file: the class power is the load current of the ESC or of the servo.
   const load = CATALOGUE.wires.filter((w) => w.cls === 'power').map((w) => w.n);
-  assert.deepEqual(load, [9, 10, 14, 15, 19, 20, 21, 22, 23, 28, 29, 30, 45, 46, 47, 56, 57, 58]);
+  assert.deepEqual(load, [9, 10, 14, 15, 19, 20, 21, 22, 23, 28, 29, 30, 45, 46, 47, 56, 57, 58, 59, 60, 61, 62, 63]);
   const seen = new Map<number, boolean>();
   for (const s of samples) for (const w of sceneOf(s.setup, ANCHORS).wires) seen.set(w.n, w.thick);
   for (const w of CATALOGUE.wires) {
@@ -559,7 +559,7 @@ test('a wire that carries load current is thick, in the scene and in the markup,
   // No signal and no supply of a board is thick.
   for (const w of CATALOGUE.wires) if (seen.get(w.n)) assert.equal(w.cls, 'power');
   const html = picture(view(FULL));
-  const classes = new Map([...html.matchAll(/<g class="dw k-\w+( thick)?" data-wire="(\d+)"/g)].map((m) => [Number(m[2]), m[1] !== undefined]));
+  const classes = new Map([...html.matchAll(/<g class="dw k-\w+( thick)?(?: cable)?" data-wire="(\d+)"/g)].map((m) => [Number(m[2]), m[1] !== undefined]));
   for (const [n, thick] of classes) assert.equal(thick, load.includes(n), `wire ${n}`);
   assert.ok([...classes.values()].filter(Boolean).length >= 6, `${[...classes.values()].filter(Boolean).length} thick wires`);
   for (const lang of ['en', 'de'] as Lang[]) {
@@ -567,6 +567,101 @@ test('a wire that carries load current is thick, in the scene and in the markup,
     assert.match(l, /stroke-width="7"\/><\/svg><span>[^<]+<\/span><\/li><li>.*?stroke-width="3"\/><\/svg><span>/);
     assert.ok(l.includes(lang === 'en' ? 'power line' : 'Leistungsleitung') && l.includes(lang === 'en' ? 'signal' : 'Signal'));
     assert.ok(picture(view({}, lang)).includes(l));
+  }
+});
+
+test('a part between 2 parts stands in the column between theirs: charger, T-plug, PD mini from left to right', () => {
+  const tap = CATALOGUE.parts.find((p) => p.id === 'usbtap')!;
+  assert.deepEqual(tap.between, ['charger', 'pdmini']);
+  let seen = 0;
+  for (const s of samples) {
+    const scene = sceneOf(s.setup, ANCHORS);
+    const ids = new Set(scene.parts.map((p) => p.id));
+    const d = diagramOf(scene);
+    const col = (id: string): number => d.parts.find((p) => p.id === id)!.col;
+    const centre = col('copro');
+    if (!ids.has('usbtap') || !ids.has('charger') || !ids.has('pdmini')) {
+      // Without the 3 parts a side has at most 2 columns.
+      assert.ok(centre <= 2, describe(s.selection));
+      continue;
+    }
+    seen++;
+    assert.deepEqual([col('charger'), col('usbtap'), col('pdmini'), centre], [0, 1, 2, 3], describe(s.selection));
+    // The charger stands alone in its column.
+    assert.deepEqual(d.parts.filter((p) => p.col === 0).map((p) => p.id), ['charger']);
+    const box = (id: string) => d.parts.find((p) => p.id === id)!;
+    assert.ok(box('charger').x + box('charger').w < box('usbtap').x && box('usbtap').x + box('usbtap').w < box('pdmini').x);
+    // Both cables of the path are drawn, each from the east side of a part to the west side of the next.
+    for (const [n, from, to] of [[19, 'charger', 'usbtap'], [63, 'usbtap', 'pdmini']] as Array<[number, string, string]>) {
+      const w = d.wires.find((x) => x.n === n);
+      assert.ok(w, `wire ${n}: ${describe(s.selection)}`);
+      assert.deepEqual(w.ends.map((e) => [e.part, e.side]), [[from, 'E'], [to, 'W']]);
+      const first = w.paths[0]![0]!;
+      const last = w.paths[0]!.at(-1)!;
+      assert.ok(first[0] < last[0], `wire ${n} runs left to right`);
+    }
+  }
+  assert.ok(seen >= 10, `${seen} setups with the 3 parts`);
+});
+
+test('the between rule at its limits: a missing neighbour, the right side, a part that names itself', () => {
+  const part = (id: string, column: 'L' | 'C' | 'R', order: number, between?: [string, string]) =>
+    ({ id, file: `${id}.svg`, w: 120, h: 120, column, order, name: { en: id, de: id }, ...(between ? { between } : {}) });
+  const pin = (p: string) => ({ part: p, pin: 'X', x: 0, y: 60, side: 'E' as const });
+  const wire = (n: number, a: string, b: string) => ({ n, kind: 'wire' as const, colour: 'red', thick: false, a: [pin(a)], b: [pin(b)] });
+  const cols = (parts: ReturnType<typeof part>[], wires: ReturnType<typeof wire>[]): string[][] =>
+    columnsOf({ parts, wires, undrawn: [] }).cols.map((c) => c.map((p) => p.id));
+  const mcu = part('mcu', 'C', 0);
+  const wires = [wire(1, 'a', 'm'), wire(2, 'm', 'b'), wire(3, 'm', 'mcu'), wire(4, 'x', 'mcu'), wire(5, 'y', 'a')];
+  // Left side: first neighbour outermost, the part, the second neighbour beside the centre.
+  assert.deepEqual(
+    cols([part('a', 'L', 3), part('m', 'L', 2, ['a', 'b']), part('b', 'L', 1), part('x', 'L', 4), part('y', 'L', 5), mcu], wires),
+    [['a'], ['m', 'y'], ['b', 'x'], ['mcu']],
+  );
+  // Right side: mirrored, the first neighbour outermost.
+  assert.deepEqual(
+    cols([mcu, part('a', 'R', 3), part('m', 'R', 2, ['a', 'b']), part('b', 'R', 1), part('x', 'R', 4), part('y', 'R', 5)], wires),
+    [['mcu'], ['b', 'x'], ['m', 'y'], ['a']],
+  );
+  // A neighbour that is not in the setup, or stands on the other side: 2 columns as without the field.
+  const two = [['a', 'y'], ['m', 'x'], ['mcu']];
+  assert.deepEqual(cols([part('a', 'L', 3), part('m', 'L', 2, ['a', 'b']), part('x', 'L', 4), part('y', 'L', 5), mcu], wires.filter((w) => w.n !== 2)), two);
+  assert.deepEqual(
+    cols([part('a', 'L', 3), part('m', 'L', 2, ['a', 'b']), part('x', 'L', 4), part('y', 'L', 5), mcu, part('b', 'R', 1)], wires),
+    [...two, ['b']],
+  );
+  // A part that names itself or 1 part twice: 2 columns.
+  assert.deepEqual(cols([part('a', 'L', 3), part('m', 'L', 2, ['a', 'm']), part('x', 'L', 4), part('y', 'L', 5), mcu], wires.filter((w) => w.n !== 2)), two);
+  assert.deepEqual(cols([part('a', 'L', 3), part('m', 'L', 2, ['a', 'a']), part('x', 'L', 4), part('y', 'L', 5), mcu], wires.filter((w) => w.n !== 2)), two);
+});
+
+test('a wire on a cable net is a USB-C cable: a grey sheath around its core, in the scene, the markup and the legend', () => {
+  const cables = CATALOGUE.wires.filter((w) => CABLE_NETS.has(w.net));
+  assert.deepEqual(cables.map((w) => [w.n, w.kind, w.a, w.b]), [[19, 'wire', 'charger.USB', 'usbtap.IN'], [63, 'wire', 'usbtap.OUT', 'pdmini.USB']]);
+  const seen = new Set<number>();
+  for (const s of samples) {
+    for (const w of sceneOf(s.setup, ANCHORS).wires) {
+      assert.equal(w.cable === true, cables.some((c) => c.n === w.n), `wire ${w.n}`);
+      if (w.cable) seen.add(w.n);
+    }
+  }
+  assert.deepEqual([...seen].sort(), [19, 63]);
+  const html = picture(view(FULL));
+  const sheath = PALETTE[SHEATH]!.core;
+  for (const m of html.matchAll(/<g class="dw k-\w+(?: thick)?( cable)?" data-wire="(\d+)"[^>]*>(.*?)<\/g>/g)) {
+    const cable = Number(m[2]) === 19 || Number(m[2]) === 63;
+    assert.equal(m[1] !== undefined, cable, `wire ${m[2]}`);
+    assert.equal(m[3]!.includes('class="sheath"'), cable, `wire ${m[2]}`);
+    if (!cable) continue;
+    // Sheath below the core, the core in the colour of supply plus.
+    assert.match(m[3]!, new RegExp(`<path class="sheath" d="[^"]+" stroke="${sheath}"/><path class="core" d="[^"]+" stroke="${PALETTE[PLUS]!.core}"/>`));
+  }
+  assert.equal([...html.matchAll(/class="sheath"/g)].length, 2);
+  // No sheath in a picture without the PD mini.
+  assert.ok(!picture(view({})).includes('class="sheath"'));
+  for (const lang of ['en', 'de'] as Lang[]) {
+    const l = legend(lang);
+    assert.ok(l.includes(`stroke="${sheath}" stroke-width="${THICK}"/><path d="M3 6H31" stroke="${PALETTE[PLUS]!.core}" stroke-width="${THIN}"/></svg><span>${STRINGS.dlCable[lang === 'en' ? 0 : 1]}</span>`), l);
   }
 });
 
@@ -683,7 +778,7 @@ test('the picture carries a title, a description, the table as its text and 1 fo
     const html = picture(v);
     assert.match(html, /<svg class="picture"[^>]* aria-labelledby="dia-t" aria-describedby="dia-d wires-cap"/);
     assert.match(html, /<title id="dia-t">[^<]+<\/title><desc id="dia-d">[^<]+<\/desc>/);
-    const groups = [...html.matchAll(/<g class="dw k-(\w+)(?: thick)?" data-wire="(\d+)"[^>]* tabindex="(-?\d)" role="button" aria-pressed="false" aria-label="([^"]+)">/g)];
+    const groups = [...html.matchAll(/<g class="dw k-(\w+)(?: thick)?(?: cable)?" data-wire="(\d+)"[^>]* tabindex="(-?\d)" role="button" aria-pressed="false" aria-label="([^"]+)">/g)];
     const drawn = v.setup.wires.filter((w) => w.n !== 31);
     assert.deepEqual(groups.map((g) => Number(g[2])), drawn.map((w) => w.n));
     // 1 wire is in the tab order; the arrow keys reach the others.

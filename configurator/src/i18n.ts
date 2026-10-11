@@ -169,6 +169,7 @@ const S = {
   dlTitle: ['Legend of the wiring picture', 'Legende des Verdrahtungsbilds'],
   dlPower: ['power line: carries the current of the ESC or of the servo', 'Leistungsleitung: führt den Strom des ESC oder des Servos'],
   dlSignal: ['signal, and the supply of a board', 'Signal und Versorgung einer Platine'],
+  dlCable: ['USB-C cable between 2 sockets', 'USB-C-Kabel zwischen 2 Buchsen'],
   dlPlus: ['red: supply plus', 'Rot: Versorgung Plus'],
   dlMinus: ['black: ground and supply minus', 'Schwarz: GND und Versorgung Minus'],
   diaWire: ['Wire {n}: {a} to {b}', 'Draht {n}: {a} nach {b}'],

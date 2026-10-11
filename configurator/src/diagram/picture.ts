@@ -4,7 +4,7 @@
 // current is drawn `THICK` px wide, every other wire `THIN` px.
 
 import type { Lang } from '../../contract.ts';
-import { MINUS, PALETTE, PLUS } from '../../drawings/wires.ts';
+import { MINUS, PALETTE, PLUS, SHEATH } from '../../drawings/wires.ts';
 import { esc, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { endName, targetName } from '../names.ts';
@@ -91,12 +91,13 @@ function wireMarkup(wire: Routed, label: string, first: boolean, lang: Lang): st
   const colour = wire.colour === null ? undefined : PALETTE[wire.colour];
   const stroke = colour ? colour.core : 'currentColor';
   const mid = middle(wire);
-  let out = `<g class="dw k-${wire.kind}${wire.thick ? ' thick' : ''}" data-wire="${wire.n}" data-c="${f(mid[0])} ${f(mid[1])}" tabindex="${first ? 0 : -1}" role="button" aria-pressed="false" aria-label="${esc(label)}">`
+  let out = `<g class="dw k-${wire.kind}${wire.thick ? ' thick' : ''}${wire.cable ? ' cable' : ''}" data-wire="${wire.n}" data-c="${f(mid[0])} ${f(mid[1])}" tabindex="${first ? 0 : -1}" role="button" aria-pressed="false" aria-label="${esc(label)}">`
     + `<title>${esc(label)}</title>`;
   for (const path of wire.paths) {
     const d = pathOf(path);
     out += `<path class="hit" d="${d}"/>`;
     if (colour?.casing) out += `<path class="case" d="${d}" stroke="${colour.casing}"/>`;
+    if (wire.cable) out += `<path class="sheath" d="${d}" stroke="${PALETTE[SHEATH]!.core}"/>`;
     out += `<path class="core" d="${d}" stroke="${stroke}"/>`;
   }
   if (wire.body) {
@@ -134,7 +135,7 @@ export function pictureSvg(
     + `<g class="vp"><g class="parts">${parts}</g><g class="wires">${wires}</g></g></svg>`;
 }
 
-/** The legend below the picture: the 2 stroke widths and the 2 supply colours. */
+/** The legend below the picture: the 2 stroke widths, the USB-C cable and the 2 supply colours. */
 export function legend(lang: Lang): string {
   const line = (width: number, colour: string, casing: string | null): string =>
     `<svg class="lg" width="34" height="12" viewBox="0 0 34 12" aria-hidden="true" focusable="false">`
@@ -144,6 +145,7 @@ export function legend(lang: Lang): string {
   const minus = PALETTE[MINUS]!;
   const items: Array<[string, Key]> = [
     [line(THICK, 'currentColor', null), 'dlPower'],
+    [line(THIN, plus.core, null).replace('<path', `<path d="M3 6H31" stroke="${PALETTE[SHEATH]!.core}" stroke-width="${THICK}"/><path`), 'dlCable'],
     [line(THIN, 'currentColor', null), 'dlSignal'],
     [line(THIN, plus.core, plus.casing), 'dlPlus'],
     [line(THIN, minus.core, minus.casing), 'dlMinus'],

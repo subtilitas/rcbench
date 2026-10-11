@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Lang } from '../contract.ts';
-import { MINUS, MINUS_NETS, PALETTE, PLUS, PLUS_NETS } from '../drawings/wires.ts';
+import { CABLE_NETS, MINUS, MINUS_NETS, PALETTE, PLUS, PLUS_NETS, SHEATH } from '../drawings/wires.ts';
 import { CATALOGUE } from '../src/core.ts';
 import { ANCHORS } from '../src/diagram/anchors.ts';
 import { FONT, INK, exportSvg, lineOf, pictureDiagram, widthOf } from '../src/diagram/export.ts';
@@ -46,7 +46,7 @@ test('the export form uses the elements and attributes of the painter subset and
 });
 
 test('the export form draws a load wire 7 px wide, every other wire 3 px, plus red and minus black', () => {
-  const seen = { thick: 0, thin: 0, plus: 0, minus: 0 };
+  const seen = { thick: 0, thin: 0, plus: 0, minus: 0, cable: 0 };
   for (const sample of some) {
     const d = diagramOf(sceneOf(sample.setup, ANCHORS));
     const svg = exportSvg(d, 'en', new Map());
@@ -58,8 +58,15 @@ test('the export form draws a load wire 7 px wide, every other wire 3 px, plus r
       const core = new RegExp(`stroke="${colour ? colour.core : INK}" stroke-width="(\\d+)"`).exec(groups[i]!);
       assert.ok(core, `wire ${wire.n}: no core line in its colour`);
       const width = Number(core[1]);
-      assert.equal(width, carriesLoad(wire) ? THICK : wire.kind === 'component' ? 2 : THIN, `wire ${wire.n}`);
-      assert.equal(width, widthOf(routed));
+      // A USB-C cable: a sheath of the width of the wire, and inside it a core of 3 px in the colour of its net.
+      const cable = CABLE_NETS.has(wire.net) && wire.kind === 'wire';
+      assert.equal(routed.cable === true, cable, `wire ${wire.n}: cable`);
+      assert.equal(width, cable ? THIN : carriesLoad(wire) ? THICK : wire.kind === 'component' ? 2 : THIN, `wire ${wire.n}`);
+      if (cable) {
+        assert.ok(groups[i]!.indexOf(`stroke="${PALETTE[SHEATH]!.core}" stroke-width="${widthOf(routed)}"`) >= 0, `wire ${wire.n}: sheath`);
+        assert.ok(groups[i]!.indexOf(`stroke="${PALETTE[SHEATH]!.core}"`) < groups[i]!.indexOf(`stroke="${colour!.core}"`), `wire ${wire.n}: sheath below core`);
+        seen.cable++;
+      } else assert.equal(width, widthOf(routed));
       if (colour?.casing) assert.ok(groups[i]!.includes(`stroke="${colour.casing}" stroke-width="${width + 2}"`), `wire ${wire.n}: casing`);
       assert.equal(routed.colour === PLUS, PLUS_NETS.has(wire.net) && wire.kind !== 'component', `wire ${wire.n}: plus`);
       assert.equal(routed.colour === MINUS, MINUS_NETS.has(wire.net) && wire.kind !== 'component', `wire ${wire.n}: minus`);
@@ -94,7 +101,7 @@ test('a name with markup characters is escaped, and the form of the page is refu
   assert.throws(() => paintSvg('<svg viewBox="0 0 9 9"><image href="drawings/tap.svg" x="0" y="0" width="9" height="9"/></svg>', css(), fonts()), SvgError);
 });
 
-test('the whole export takes the export form: 1 page for the picture, text from 2.1 pt to 6.2 pt', async () => {
+test('the whole export takes the export form: 1 page for the picture, text from 1.9 pt to 6.2 pt', async () => {
   const pt = async (sample: typeof SMALLEST, lang: Lang): Promise<number> => {
     const made = await build(viewOf(sample.selection, sample.setup, lang), { diagram: pictureDiagram });
     assert.equal(made.laid.plan.flat().filter((b) => b.kind === 'drawing').length, 1);
@@ -105,7 +112,7 @@ test('the whole export takes the export form: 1 page for the picture, text from 
     const small = await pt(SMALLEST, lang);
     const large = await pt(LARGEST, lang);
     assert.ok(small > 6 && small < 6.2, `smallest ${small.toFixed(2)} pt`);
-    assert.ok(large > 2.0 && large < 2.2, `largest ${large.toFixed(2)} pt`);
+    assert.ok(large > 1.9 && large < 2.1, `largest ${large.toFixed(2)} pt`);
   }
 });
 

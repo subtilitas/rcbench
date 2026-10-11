@@ -56,6 +56,8 @@ export type Routed = {
   colour: string | null;
   /** True for a wire that carries load current. It has the stroke width `THICK`. */
   thick: boolean;
+  /** True for a USB-C cable: a sheath as wide as the wire around a core of `THIN` px. */
+  cable?: boolean;
   paths: Pt[][];
   labels: Label[];
   ends: ScenePin[];
@@ -421,7 +423,7 @@ const bodyLen = (span: number): number => Math.max(BODY.band + 4, Math.min(BODY.
 
 function realise(plan: Plan, p: Placement): Routed {
   const { wire } = plan;
-  const base = { n: wire.n, kind: wire.kind, colour: wire.colour, thick: wire.thick };
+  const base = { n: wire.n, kind: wire.kind, colour: wire.colour, thick: wire.thick, ...(wire.cable ? { cable: true } : {}) };
   if (plan.mode === 'open') {
     const leads = plan.ends.map((e) => lead(e, p));
     return {
