@@ -311,6 +311,48 @@ test('the sweep draws every part with a drawing and every wire with 2 points', (
   assert.ok(wires.size >= 50, `${wires.size} wires`);
 });
 
+/** Parts that the data file connects with no wire. Each stands in the picture without a connection. */
+const UNWIRED: string[] = ['sd', 'usb', 'wire'];
+/**
+ * Parts that stand without a connection in some setups: the setup holds the part and none of its wires, because
+ * the `when` of every wire of the part is false there.
+ */
+const IDLE: string[] = ['sim', 'usbtap'];
+
+test('every part of a picture has a drawn connection, apart from the parts the data file connects with no wire', () => {
+  const alone = new Set<string>();
+  const wired = new Set<string>();
+  const touches = (end: string | null, id: string): boolean => end !== null && end.startsWith(`${id}.`);
+  for (const s of samples) {
+    const scene = sceneOf(s.setup, ANCHORS);
+    const d = diagramOf(scene);
+    const drawn = new Set(d.wires.map((w) => w.n));
+    const ends = new Set<string>();
+    for (const w of scene.wires) {
+      if (!drawn.has(w.n)) continue;
+      for (const pin of [...w.a, ...(w.b ?? [])]) ends.add(pin.part);
+    }
+    for (const p of d.parts) {
+      if (ends.has(p.id)) wired.add(p.id);
+      else {
+        alone.add(p.id);
+        // A part stands alone only when the setup holds no wire of it.
+        const own = s.setup.wires.filter((w) => touches(w.a, p.id) || touches(w.b, p.id));
+        assert.deepEqual(own.map((w) => w.n), [], `${p.id} in ${describe(s.selection)}`);
+      }
+    }
+  }
+  assert.deepEqual([...alone].sort(), [...UNWIRED, ...IDLE].sort());
+  for (const id of IDLE) assert.ok(wired.has(id), `${id} has a wire in no setup`);
+  // An exception holds in every setup: a listed part has a wire in none.
+  for (const id of UNWIRED) assert.ok(!wired.has(id), `${id} has a wire in a setup`);
+  // The data file gives a listed part no end of a wire.
+  for (const id of UNWIRED) {
+    const used = CATALOGUE.wires.filter((w) => touches(w.a, id) || touches(w.b, id));
+    assert.deepEqual(used.map((w) => w.n), [], id);
+  }
+});
+
 test('every component of the data file is in the picture of every setup that holds it, on both boards of the coprocessor', () => {
   const components = CATALOGUE.wires.filter((w) => w.kind === 'component');
   assert.deepEqual(components.map((w) => w.n), [53]);
