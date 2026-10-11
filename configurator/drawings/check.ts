@@ -25,6 +25,10 @@ const BARE_AMP = /&(?!(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);)/;
 
 /** A character outside the Char production of XML 1.0, or half of a surrogate pair. */
 const ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+/** True for a code point of the Char production of XML 1.0. */
+const xmlChar = (cp: number): boolean =>
+  cp === 0x9 || cp === 0xA || cp === 0xD || (cp >= 0x20 && cp <= 0xD7FF) || (cp >= 0xE000 && cp <= 0xFFFD) || (cp >= 0x10000 && cp <= 0x10FFFF);
+const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Elements that run code, load a file or carry a style sheet, by local name. */
 const ACTIVE = new Set(['image', 'foreignobject', 'iframe', 'object', 'embed', 'audio', 'video', 'link', 'style']);
 
@@ -34,12 +38,17 @@ const unescape = (s: string): string =>
 /**
  * Well-formedness of the subset of XML the generator writes: one root element,
  * every element closed in order, every attribute quoted, no stray `<` or `&`
- * in text or in an attribute value, no character XML 1.0 forbids.
+ * in text or in an attribute value, no character XML 1.0 forbids, written
+ * out or as a numeric reference.
  * Returns the first defect or null.
  */
 export function malformed(svg: string): string | null {
   const illegal = ILLEGAL.exec(svg);
   if (illegal) return `character U+${illegal[0].charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')} at offset ${illegal.index} is not a character of XML 1.0`;
+  for (const m of svg.matchAll(/&#(x[0-9a-fA-F]+|\d+);/g)) {
+    const cp = m[1]!.startsWith('x') ? Number.parseInt(m[1]!.slice(1), 16) : Number.parseInt(m[1]!, 10);
+    if (!xmlChar(cp)) return `character reference ${m[0]} at offset ${m.index} names no character of XML 1.0`;
+  }
   const stack: string[] = [];
   let roots = 0;
   let at = 0;
@@ -74,8 +83,11 @@ export function malformed(svg: string): string | null {
   return null;
 }
 
-/** One SVG file: self-contained, well formed, ids prefixed, title, description, viewBox, font. */
-export function checkSvg(where: string, svg: string, rec: DrawingRecord): Finding[] {
+/**
+ * One SVG file: self-contained, well formed, an `svg` root in the SVG namespace,
+ * ids prefixed, title, description, viewBox, font, and the language when given.
+ */
+export function checkSvg(where: string, svg: string, rec: DrawingRecord, lang?: Lang): Finding[] {
   const out: Finding[] = [];
   const fail = (msg: string): void => { out.push({ id: 'svg', msg: `${where}: ${msg}` }); };
   const bad = malformed(svg);
@@ -95,9 +107,14 @@ export function checkSvg(where: string, svg: string, rec: DrawingRecord): Findin
   for (const m of svg.matchAll(/https?:\/\/[^\s"<]+/g)) {
     if (m[0] !== 'http://www.w3.org/2000/svg') fail(`external address ${m[0]}`);
   }
+  // A base address moves every "#id" reference to another file.
+  if (/\s(?:[\w.-]+:)?base\s*=/i.test(svg)) fail('contains a base address attribute');
   const first = /<[A-Za-z][^>]*>/.exec(svg)?.[0] ?? '';
+  const rootName = /^<([^\s/>]+)/.exec(first)?.[1] ?? '';
   /** Attributes of the root element. */
   const root = new Map([...first.matchAll(/\s([\w:.-]+)="([^"]*)"/g)].map((m) => [m[1]!, m[2]!]));
+  if (rootName !== 'svg' || root.get('xmlns') !== SVG_NS) fail(`the root element is not svg in the namespace ${SVG_NS}`);
+  if (lang !== undefined && (root.get('lang') !== lang || root.get('xml:lang') !== lang)) fail(`the root element does not state the language ${lang} in lang and xml:lang`);
   const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]!);
   const set = new Set(ids);
   if (set.size !== ids.length) fail('an id is given twice');
@@ -313,7 +330,7 @@ export function checkAll(catalogue: Catalogue, files: Files, expected: Files = f
       const svg = files.svgs[path];
       if (svg === undefined) { out.push({ id: 'svg', msg: `${path}: file is missing` }); continue; }
       svgs[lang] = svg;
-      out.push(...checkSvg(path, svg, rec));
+      out.push(...checkSvg(path, svg, rec, lang));
     }
     out.push(...checkRecord(file, rec, svgs));
   }

@@ -98,7 +98,7 @@ A pin with `only` is on the drawing of the board it names and on no other.
 | `contrast` | A colour of the palette is below 3:1 on 1 of the 5 backgrounds. |
 | `neighbour` | 2 wires that end on neighbouring pins of 1 drawing share a colour. 2 plus wires and 2 minus wires are exempt. |
 | `anchor` | An anchor lies outside its viewBox, has no side, or its label text is missing, empty, doubled or different in the SVG file. |
-| `svg` | A file is missing, not well formed, not self-contained, or lacks title, description, viewBox or the id prefix. |
+| `svg` | A file is missing, not well formed, not self-contained, has no `svg` root in the SVG namespace, or lacks title, description, viewBox, font stack, language or the id prefix. |
 | `drift` | A committed file differs from the output of the generator, is missing, or is not a file of the generator. |
 
 The generator stops with an error, and the check with it, when:
