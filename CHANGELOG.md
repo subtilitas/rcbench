@@ -54,6 +54,10 @@ history is in git.
   mini the line asks for the update and the session stays. Whether a KST
   servo follows PWM in programming mode, whether a written value acts
   before the next power-up, and the wait a servo needs are not measured.
+- Servo programmer and ARM: CONNECT is refused on a bench that is armed,
+  asked to arm or has a finger on ARM, and ARM takes no press while the
+  programmer holds the port. A card put in after the panel started is
+  mounted when the programmer opens or one of its actions is tapped.
 - Servo programmer, files: FILES saves the servo's 32 registers as a servo
   file in the folder `KST` on the SD card under a preset name (`KST001` on)
   that the text keyboard changes, and never replaces a file. The first

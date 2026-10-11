@@ -96,6 +96,14 @@ void kst_panel_feed(const kst_prog_feed_t *f);
  *  below KST_PANEL_STD_MV, and one set above it goes back to
  *  KST_PROG_SUPPLY_MV. */
 void kst_panel_set_hv(bool on);
+/** The bench is armed or asked to arm: CONNECT is refused with
+ *  KST_PROG_MSG_NEED_DISARM.  The caller takes no arm while
+ *  kst_panel_holds_port(). */
+void kst_panel_bench_armed(bool armed);
+/** True once after the overlay was opened or one of its actions tapped
+ *  while the feed reports no card: the caller, which has the card, tries to
+ *  mount one. */
+bool kst_panel_card_look(void);
 bool kst_panel_take(kst_prog_cmd_t *out);
 /** The servo files: a request for the task that has the card, and what it
  *  made of it (kst_card_run()). */

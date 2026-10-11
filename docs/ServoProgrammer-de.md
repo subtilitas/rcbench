@@ -51,6 +51,12 @@ bevor man sich auf ein Schreiben verlässt.
 - Der Port ist in PWM (Pulsweitenmodulation) oder im Programmieren, nie in
   beidem. Solange der Port im Programmieren ist, sendet der Tester keinen
   Puls darauf.
+- Programmieren und ein Prüfstand unter ARM schließen sich aus.
+  **VERBINDEN** wird abgelehnt mit
+  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM gilt,
+  angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
+  gehalten wird, von **VERBINDEN** bis er PWM meldet, nimmt **ARM** keinen
+  Druck an.
 - Antwortet ein PD mini, stellt der Port die Versorgung des Servos bei
   **VERBINDEN** ([die Versorgung](#die-versorgung)). Ohne einen stellt der
   Prüfstand die Versorgung nicht, und der Programmierer nimmt sie, wie sie
@@ -553,6 +559,7 @@ wiederherstellbar.
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2 s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert, nichts aufs Servo.` |
+| Eine Karte, die nach dem Start des Panels eingesteckt wird | das Panel versucht, eine Karte einzubinden, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES LESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN AUF SERVO FREIGEBEN** oder die Schreibzeile, solange keine eingebunden ist. Das Tippen, das die Karte findet, liest noch keine Karte; das nächste hat sie, und eine offene Schreibseite wechselt zur Seite mit der Datei |
 
 ### Laden
 
@@ -816,6 +823,14 @@ Codes.
 - An keinem Servo getestet. Jede Aussage über das Verhalten eines Servos
   auf dieser Seite ist die des Modells.
 - Kein Chaservo-Servo ist gelesen worden.
+- Der Datensatz eines unterbrochenen Schreibens wird einmal von der Karte
+  gelesen, beim Start des Panels. Eine später eingesteckte Karte wird für
+  Dateien verwendet, und ein Datensatz darauf wird erst nach dem nächsten
+  Start des Panels gelesen.
+- Eine Karte, die im Betrieb entnommen und wieder eingesteckt wird, wird
+  nicht erneut eingebunden.
+- Wie lange ein Einbindeversuch ohne Karte den Bildschirm anhält, ist nicht
+  gemessen.
 - Nicht auf Hardware gelaufen: kein Firmware-Image hat diesen Code mit
   einem Servo, einer Karte oder einem PD mini ausgeführt.
 - Ob ein KST-Servo PWM folgt, während es im Programmiermodus ist, ist nicht

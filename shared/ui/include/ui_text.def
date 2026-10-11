@@ -1032,6 +1032,7 @@ UI_TEXT(KP_M_LEAVE_SUPPLY_2,       58, "STOP ends the session and switches the s
 UI_TEXT(KP_M_LEFT_NO_WAIT,         58, "Coprocessor older than 4.15: no wait before PWM applied.")
 UI_TEXT(KP_M_LEFT_DOUBT,           58, "The session was in doubt: no wait before PWM applied.")
 UI_TEXT(KP_M_LEAVE_CUT,            58, "Leaving was interrupted before the wait ended.")
+UI_TEXT(KP_M_NEED_DISARM,          58, "DISARM first: the port is not taken on an armed bench.")
 UI_TEXT(KP_M_STORE_FAILED,         58, "The card took no file. Nothing was written to the servo.")
 UI_TEXT(KP_M_FILE_BAD,             58, "KST.TXT on the card is not readable. It is not used.")
 UI_TEXT(KP_M_JOURNAL,              58, "A write was interrupted. The servo may be half written.")

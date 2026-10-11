@@ -159,6 +159,7 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_LEFT_NO_WAIT]    = { TX_KP_M_LEFT, TX_KP_M_LEFT_NO_WAIT },
     [KST_PROG_MSG_LEFT_DOUBT]      = { TX_KP_M_LEFT, TX_KP_M_LEFT_DOUBT },
     [KST_PROG_MSG_LEAVE_CUT]       = { TX_KP_M_LEAVE_CUT, -1 },
+    [KST_PROG_MSG_NEED_DISARM]     = { TX_KP_M_NEED_DISARM, -1 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -320,6 +321,8 @@ static struct {
     bool       open;
     ui_tabs_t  tabs;
     bool       hv;             /* HV SERVO: above KST_PANEL_STD_MV may be set */
+    bool       loaded;         /* the options were read from the settings   */
+    bool       card_look;      /* a card is asked for and none is mounted   */
 
     ui_keypad_t kp;
     int        kp_row;
@@ -1470,6 +1473,8 @@ static void act(const row_t *r)
     kst_prog_t *p = &k.prog;
     const kst_prog_state_t st = kst_prog_state(p);
 
+    /* A card put in since the last look is found before the next tap. */
+    k.card_look = k.card_look || (p->fed && !p->f.card);
     switch (r->what) {
     case A_PORT:
         if (st == KST_PROG_PWM) {
@@ -1929,12 +1934,24 @@ void kst_panel_init(gfx_rect_t area)
     ui_tabs_init_text(&k.tabs, k_pages, PG_COUNT, tabs_rect());
     k.kp.pressed = -1;
     k.tk.pressed = -1;
-    options_load();
+}
+
+/* The options are read where the settings are there: at a screen entry and
+ * at an opening, never at kst_panel_init(), which runs before the settings
+ * are loaded.  A session keeps the values it began with, except one found
+ * running by a panel that has read none yet. */
+static void options_fresh(void)
+{
+    if (!k.loaded || !kst_panel_holds_port()) {
+        options_load();
+        k.loaded = true;
+    }
 }
 
 void kst_panel_screen_entry(void)
 {
     kst_prog_screen_entry(&k.prog);
+    options_fresh();
     ++k.rev;
 }
 
@@ -1942,10 +1959,9 @@ void kst_panel_open(void)
 {
     if (!k.open) {
         k.open = true;
-        if (!kst_panel_holds_port()) {
-            /* The settings may have gone back to their defaults. */
-            options_load();
-        }
+        /* The settings may have gone back to their defaults. */
+        options_fresh();
+        k.card_look = k.card_look || (k.prog.fed && !k.prog.f.card);
         ++k.rev;
     }
 }
@@ -2057,6 +2073,19 @@ void kst_panel_set_hv(bool on)
 bool kst_panel_take(kst_prog_cmd_t *out)
 {
     return kst_prog_take(&k.prog, out);
+}
+
+void kst_panel_bench_armed(bool armed)
+{
+    kst_prog_bench_armed(&k.prog, armed);
+}
+
+bool kst_panel_card_look(void)
+{
+    const bool look = k.card_look;
+
+    k.card_look = false;
+    return look;
 }
 
 bool kst_panel_card_take(kst_prog_card_req_t *out)

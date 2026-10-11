@@ -202,6 +202,8 @@ enum {
                                        answering: no wait was applied       */
     KST_PROG_MSG_LEAVE_CUT,       /**< the wait of a LEAVE was cut: an
                                        abort, a disarm or the supply off    */
+    KST_PROG_MSG_NEED_DISARM,     /**< the bench is armed or asked to arm:
+                                       the port is not taken               */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -396,6 +398,7 @@ typedef struct {
     uint8_t writes;           /**< fields the write on its way changes */
     uint8_t restoring;        /**< kst_prog_from_t of that write  */
     bool chain_read;          /**< READ_ALL follows the ENTER     */
+    bool armed;               /**< kst_prog_bench_armed()         */
     bool leave_doubt;         /**< the exit runs without LEAVE: the
                                    port asks for a read or holds a
                                    servo in doubt, no PD mini answers */
@@ -543,8 +546,12 @@ void kst_prog_discard(kst_prog_t *p);
 
 /** Take programming port @p port, from 0, with the supply set by
  *  kst_prog_supply_set().  KST_PROG_MSG_NEED_TARGET while the feed's target
- *  is not that port. */
+ *  is not that port, KST_PROG_MSG_NEED_DISARM on an armed bench. */
 kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port);
+/** The bench is armed or asked to arm.  Programming and an armed bench are
+ *  exclusive: no port is taken while this is set, and the caller takes no
+ *  arm while a port is held. */
+void kst_prog_bench_armed(kst_prog_t *p, bool armed);
 /** What an ENTER asks of the PD mini: @p mv and its current limit @p ma.
  *  The port checks the range.  KST_PROG_SUPPLY_MV and KST_PROG_SUPPLY_MA
  *  after kst_prog_init(). */

@@ -7536,6 +7536,13 @@ static void kst_ui_service(void)
     snap_unlock();
     kst_panel_feed(&feed);
 
+    /* A card put in after the boot is mounted here, on the task RESCAN
+     * mounts one on: once for an opening of the programmer or a tap on one
+     * of its actions while none is mounted. */
+    if (kst_panel_card_look() && !storage_mounted()) {
+        (void)storage_init();
+    }
+
     kst_prog_cmd_t cmd;
     while (kst_panel_take(&cmd)) {
         if (xQueueSend(s_kst_q, &cmd, 0) != pdTRUE) {

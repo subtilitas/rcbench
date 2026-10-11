@@ -46,6 +46,10 @@ before a write is relied on.
 - One servo at a time.
 - The port is in PWM (pulse-width modulation) or in programming, never both.
   While the port is in programming, the tester sends no pulse to it.
+- Programming and an armed bench are exclusive. **CONNECT** on a bench that
+  is armed, asked to arm or has a finger on **ARM** is refused with
+  `DISARM first: the port is not taken on an armed bench.` While the port
+  is held, from **CONNECT** until it reports PWM, **ARM** takes no press.
 - With a PD mini answering, the port sets the servo's supply at **CONNECT**
   ([the supply](#the-supply)). Without one the supply is not the bench's to
   set, and the programmer takes it as it is.
@@ -517,6 +521,7 @@ servo held before the write are then not recoverable from the bench.
 | The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved, nothing written to the servo.` |
+| A card put in after the panel started | the panel tries to mount a card when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row while none is mounted. The tap that finds the card still reads no card; the next one has it, and an open write page changes to the page with the file |
 
 ### Loading
 
@@ -766,6 +771,11 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - Untested on a servo. Every statement about a servo's behaviour on this
   page is the model's.
 - No Chaservo servo has been read.
+- The record of an interrupted write is read from the card once, when the
+  panel starts. A card put in later is used for files, and a record on it
+  is not read until the panel starts again.
+- A card taken out and put back while the panel runs is not mounted again.
+- The time a mount attempt without a card holds the screen is not measured.
 - Not run on hardware: neither firmware image has run this code with a
   servo, a card or a PD mini.
 - Whether a KST servo follows PWM while it is in programming mode is not

@@ -38,6 +38,8 @@ static const gfx_rect_t AREA = { 6, 6, 488, 420 };
 #define PROG_X 632
 #define SETB_X 734
 #define BTN_Y  24
+#define ARM_X  648
+#define ARM_Y  404
 
 enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED };
 
@@ -962,12 +964,14 @@ TEST_CASE(the_wait_before_pwm_is_a_row_with_limits_and_is_kept)
         settings_set(SET_SERVO_PROG_V, 5.5f);
         settings_set(SET_SERVO_PROG_I, 0.8f);
         kst_panel_init(AREA);
+        kst_panel_open();
         CHECK_EQ(kst_prog_wait_ms(M), 2500u);
         CHECK_EQ(kst_prog_supply_mv(M), 5500u);
         CHECK_EQ(kst_prog_supply_ma(M), 800u);
         /* A stored voltage above a standard servo's waits for HV SERVO. */
         settings_set(SET_SERVO_PROG_V, 7.4f);
         kst_panel_init(AREA);
+        kst_panel_screen_entry();
         CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
         settings_init();
     }
@@ -3283,7 +3287,7 @@ static void texts_in(ui_lang_t lang)
     CHECK_EQ(kst_panel_message_lines(&m, t), 0);
     /* The fixed messages, the answers of start, the outcome kinds, the
      * port's refusals and the session's results. */
-    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_LEAVE_CUT));
+    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_NEED_DISARM));
     CHECK(family_ok(KST_PROG_MSG_START, (unsigned)KST_LINK_START_NO_OP + 1u));
     CHECK(family_ok(KST_PROG_MSG_OUT, (unsigned)KST_LINK_OUT_DROPPED + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PORT + 1u));
@@ -3494,6 +3498,151 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK(!kst_panel_is_open());
 }
 
+TEST_CASE(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry)
+{
+    for (int wait = 0; wait <= 10000; wait += 2500) {
+        fresh_screen();
+        link_up();
+        screen_tap(PROG_X, BTN_Y);
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK(kst_panel_holds_port());
+        /* The panel starts again: its screens are set up before the
+         * settings are read, and the port is still in programming. */
+        scr->reset();
+        CHECK_EQ(kst_prog_wait_ms(M), KST_PROG_WAIT_MS);
+        settings_set(SET_SERVO_PROG_WAIT, (float)wait);
+        settings_set(SET_SERVO_PROG_V, 5.5f);
+        settings_set(SET_SERVO_PROG_I, 0.8f);
+        scr->enter();
+        settle();
+        CHECK(kst_panel_holds_port());
+        CHECK(kst_panel_is_open());
+        CHECK_EQ(kst_prog_wait_ms(M), (uint32_t)wait);
+        CHECK_EQ(kst_prog_supply_mv(M), 5500u);
+        CHECK_EQ(kst_prog_supply_ma(M), 800u);
+        /* A session that began with its values keeps them over the settings
+         * until it ends. */
+        settings_set(SET_SERVO_PROG_WAIT, 77.0f);
+        scr->leave();
+        scr->enter();
+        settle();
+        CHECK_EQ(kst_prog_wait_ms(M), (uint32_t)wait);
+    }
+    settings_init();
+}
+
+TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
+{
+    servo_cmd_t c;
+    bool armed = false;
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh_screen();
+        ui_text_set_language((ui_lang_t)lang);
+        link_up();
+        screen_tap(PROG_X, BTN_Y);
+        /* Armed: CONNECT is refused by name and nothing is sent. */
+        servo_screen_set_armed(true);
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_NEED_DISARM);
+        CHECK_STR_EQ(said(), TR(KP_M_NEED_DISARM));
+        CHECK_EQ(g_rig.starts, 0);
+        CHECK(!kst_panel_holds_port());
+        /* A finger on ARM is an arm on its way: the same. */
+        servo_screen_set_armed(false);
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+        ticks(0.5f);
+        CHECK_EQ(kst_prog_connect(M, RIG_PORT), KST_PROG_MSG_NEED_DISARM);
+        ev(ARM_X + 300, ARM_Y, TOUCH_EVENT_MOVE, 2);
+        ev(ARM_X + 300, ARM_Y, TOUCH_EVENT_UP, 2);
+        ticks(0.1f);
+        /* Disarmed: the port is taken. */
+        while (servo_screen_take(&c)) { }
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK(g_rig.starts > 0);
+        CHECK(kst_panel_holds_port());
+        /* And ARM takes no hold while it is held. */
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+        ticks(2.5f);
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+        scr->render(&cv, 0);
+        while (servo_screen_take(&c)) {
+            armed = armed || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(!armed);
+        /* The port left, ARM is taken again. */
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        settle();
+        CHECK(!kst_panel_holds_port());
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+        ticks(2.5f);
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+        while (servo_screen_take(&c)) {
+            armed = armed || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(armed);
+        armed = false;
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_port_found_held_ends_a_hold_of_arm)
+{
+    servo_cmd_t c;
+
+    fresh_screen();
+    link_up();
+    screen_tap(PROG_X, BTN_Y);
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK(kst_panel_holds_port());
+    /* The panel starts again and a finger is on ARM before the port's page
+     * is read. */
+    scr->reset();
+    scr->enter();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+    settle();
+    CHECK(kst_panel_holds_port());
+    ticks(2.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+    while (servo_screen_take(&c)) {
+        CHECK(c.kind != SERVO_CMD_ARM);
+    }
+}
+
+TEST_CASE(a_tap_with_no_card_asks_for_a_look_once)
+{
+    fresh();
+    /* Nothing is known of the card before the first feed. */
+    CHECK(!kst_panel_card_look());
+    link_up();
+    /* The opening is one. */
+    card_out();
+    kst_panel_close();
+    kst_panel_open();
+    CHECK(kst_panel_card_look());
+    CHECK(!kst_panel_card_look());
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK(kst_panel_holds_port());
+    CHECK(kst_panel_card_look());
+    CHECK(!kst_panel_card_look());
+    /* FILES with no card says so and asks for the look. */
+    tap(val(PG_SERVO, 1, 1));
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+    CHECK(kst_panel_card_look());
+    CHECK(!kst_panel_card_look());
+    /* With a card no look is asked for. */
+    card_in();
+    tap(val(PG_SERVO, 1, 0));
+    settle();
+    CHECK(!kst_panel_card_look());
+}
+
 TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
 {
     const gfx_rect_t apply = (fresh_screen(), kst_panel_apply_rect());
@@ -3531,6 +3680,7 @@ int main(void)
     RUN(a_coprocessor_without_leave_gets_a_stated_message);
     RUN(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester);
     RUN(the_wait_before_pwm_is_a_row_with_limits_and_is_kept);
+    RUN(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry);
     RUN(a_count_of_1_is_said_in_the_singular);
     RUN(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held);
     RUN(the_tabs_show_their_fields);
@@ -3596,6 +3746,9 @@ int main(void)
     RUN(every_state_is_drawn_in_both_languages);
     RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
+    RUN(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm);
+    RUN(a_port_found_held_ends_a_hold_of_arm);
+    RUN(a_tap_with_no_card_asks_for_a_look_once);
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     return test_summary("kst_panel");
 }

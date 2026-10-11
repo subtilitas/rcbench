@@ -1110,6 +1110,9 @@ static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
     if (p->f.stopped) {
         return KST_PROG_MSG_STOPPED;
     }
+    if (p->armed) {
+        return KST_PROG_MSG_NEED_DISARM;
+    }
     return p->f.target == port + 1u ? KST_PROG_MSG_NONE
                                     : KST_PROG_MSG_NEED_TARGET;
 }
@@ -1134,6 +1137,11 @@ kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
     r = request(p, LINK_KST_OP_ENTER);
     send(p, &r);
     return KST_PROG_MSG_NONE;
+}
+
+void kst_prog_bench_armed(kst_prog_t *p, bool armed)
+{
+    p->armed = armed;
 }
 
 void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)

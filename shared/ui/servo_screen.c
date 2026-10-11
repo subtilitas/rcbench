@@ -377,6 +377,7 @@ static struct {
     gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
     gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
     bool       kst_shown;        /* the programmer had the left card    */
+    bool       kst_held;         /* and the port: ARM takes no press    */
     uint32_t   drawn_kst[2], drawn_kst_hold[2];
     ui_slider_t speed;
 
@@ -3236,6 +3237,19 @@ static void open_keypad(int target, const char *title, const char *unit,
     s.kp_target = target;
 }
 
+/* Armed, asked to arm, or a finger on ARM: the programmer takes no port. */
+static bool bench_arming(void)
+{
+    return s.gate.armed || s.gate.arm_asked || s.arm_down;
+}
+
+/* ARM takes no press while the programmer holds the port: programming and
+ * an armed bench are exclusive.  DISARM is always taken. */
+static bool arm_locked(void)
+{
+    return kst_panel_holds_port() && !s.gate.armed;
+}
+
 /*
  * What the tester drives changes only on a bench at rest: disarmed, no test
  * and no sweep, and the port not in the programmer's hands.  The port's
@@ -3893,6 +3907,7 @@ static void event_body(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
+    kst_panel_bench_armed(bench_arming());
     const int px = evt->point.x, py = evt->point.y;
 
     /* The programmer's own press first, then the overlay's. */
@@ -4028,6 +4043,10 @@ static void event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (arm_locked()) {
+                /* Programming and an armed bench are exclusive. */
+                return;
+            }
             if (s.arm_down) {
                 /* The gesture belongs to the contact that began it.  A second
                  * finger, or a palm, taking it over would leave the first
@@ -4488,7 +4507,7 @@ static gfx_color_t arm_fill(void)
 static void draw_arm(gfx_canvas_t *c)
 {
     ui_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-              s.arm_down, true);
+              s.arm_down, !arm_locked());
 }
 
 static gfx_rect_t power_rect(void)
@@ -5296,9 +5315,14 @@ static void tick_body(float dt_s)
      * port is in programming.  PWM and programming are exclusive states of
      * that port, so the way back is asked for there and nowhere else. */
     kst_panel_set_hv(s.test_hv);
+    kst_panel_bench_armed(bench_arming());
     kst_panel_tick(dt_s);
     if (kst_panel_holds_port() && !kst_panel_is_open()) {
         kst_panel_open();
+    }
+    if (kst_panel_holds_port() != s.kst_held) {
+        s.kst_held = kst_panel_holds_port();
+        ++s.arm_rev;
     }
     if (kst_panel_is_open() != s.kst_shown) {
         s.kst_shown = kst_panel_is_open();
@@ -5355,6 +5379,11 @@ static void tick_body(float dt_s)
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
         ++s.ctrl_rev;
+    }
+    if (s.arm_down && arm_locked() && ui_hold_leave(&s.arm)) {
+        /* The port was found held under a hold of ARM: no arm is sent. */
+        s.arm_down = false;
+        ++s.arm_rev;
     }
     if (s.arm_down && !s.gate.armed) {
         ++s.arm_rev;

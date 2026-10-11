@@ -1037,6 +1037,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_KP_M_LEFT_NO_WAIT]        = "Koprozessor älter als 4.15: kein Warten vor PWM.",
     [TX_KP_M_LEFT_DOUBT]          = "Die Sitzung war unklar: kein Warten vor PWM.",
     [TX_KP_M_LEAVE_CUT]           = "Verlassen wurde vor Ende der Wartezeit unterbrochen.",
+    [TX_KP_M_NEED_DISARM]         = "Erst DISARM: bei ARM wird der Port nicht übernommen.",
     [TX_KP_M_STORE_FAILED]       = "Die Karte nahm keine Datei. Nichts ging aufs Servo.",
     [TX_KP_M_FILE_BAD]           = "KST.TXT auf der Karte ist nicht lesbar, bleibt ungenutzt.",
     [TX_KP_M_JOURNAL]            = "Schreiben unterbrochen. Servo ist evtl. halb beschrieben.",
