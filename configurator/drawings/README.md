@@ -95,7 +95,7 @@ pin carries its print and no anchor.
 | `pin-without-anchor` | A pin of the data file has no anchor in a drawing of its part. |
 | `anchor-without-pin` | An anchor names no pin of the data file. A drawing with `part: null` is skipped. |
 | `label` | A label differs from the label of the pin in the data file, in English or German. |
-| `map` | A `catalogueMap` names a pin the data file does not have; a drawing with `names: "catalogue"` carries a `catalogueMap`; a drawing with `names: "board print"` and a part carries none. |
+| `map` | A `catalogueMap` names a pin the data file does not have; a drawing with `names: "catalogue"` carries a `catalogueMap`; a drawing with `names: "board print"` and a part carries none; 2 pins of the data file map to 1 pin of the drawing, or 1 names it twice. |
 | `no-drawing` | A part, or 1 of the 2 boards of a part, has no drawing; or a drawing shows a board that no option selects. |
 | `release` | `anchors.json` is of another release than the data file. |
 | `wire-end` | An end of a wire has no anchor. The end of a stub whose pin maps to `null` is skipped. |

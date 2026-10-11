@@ -295,6 +295,8 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
     if (rec.catalogueMap && rec.names !== 'board print') fail('map', `${file}: a drawing with the names of the data file carries a catalogueMap`);
     if (!rec.catalogueMap && rec.names === 'board print') fail('map', `${file}: a drawing with the print of its board carries no catalogueMap`);
     if (rec.catalogueMap && rec.names === 'board print') {
+      // A pin of the drawing belongs to 1 pin of the data file: 2 that share it would put their wires on 1 pad.
+      const owner = new Map<string, string>();
       for (const id of Object.keys(expected)) {
         if (!(id in rec.catalogueMap)) { fail('pin-without-anchor', `${file}: catalogue pin ${id} is not in catalogueMap`); continue; }
         const to = rec.catalogueMap[id];
@@ -302,6 +304,10 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
         if (to !== null && to !== undefined && to.length === 0) fail('pin-without-anchor', `${file}: catalogue pin ${id} maps to no pin of the drawing`);
         for (const n of to ?? []) {
           if (!rec.pins[n]) fail('pin-without-anchor', `${file}: catalogue pin ${id} maps to ${n}, which has no anchor`);
+          const first = owner.get(n);
+          if (first === id) fail('map', `${file}: catalogue pin ${id} maps to ${n} twice`);
+          else if (first !== undefined) fail('map', `${file}: catalogue pins ${first} and ${id} map to the pin ${n} of the drawing`);
+          else owner.set(n, id);
         }
       }
       for (const id of Object.keys(rec.catalogueMap)) {

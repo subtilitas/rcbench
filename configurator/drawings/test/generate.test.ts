@@ -129,6 +129,26 @@ test('every SVG is well formed and carries a title and a description in its lang
   }
 });
 
+test('the description of every file is the text of its drawing in the language of the file', () => {
+  const plain = (s: string): string => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  let n = 0;
+  for (const entry of LIST) {
+    assert.notEqual(entry.desc.en, entry.desc.de, entry.file);
+    for (const lang of LANGS) {
+      const path = pathOf(`${entry.file}.svg`, lang);
+      const svg = out.svgs[path]!;
+      const root = /^<svg[^>]*>/.exec(svg)![0];
+      assert.ok(root.includes(` lang="${lang}"`) && root.includes(` xml:lang="${lang}"`), path);
+      const desc = /<desc id="[^"]+">([^<]*)<\/desc>/.exec(svg)!;
+      assert.equal(plain(desc[1]!), entry.desc[lang], path);
+      // Not the text of the other language.
+      for (const other of LANGS) if (other !== lang) assert.notEqual(plain(desc[1]!), entry.desc[other], path);
+      n++;
+    }
+  }
+  assert.equal(n, Object.keys(out.svgs).length);
+});
+
 test('a drawing of 1 of 2 boards names the board in its title', () => {
   for (const lang of LANGS) {
     const svg = out.svgs[pathOf('ina228--xt90.svg', lang)]!;
@@ -203,6 +223,29 @@ test('the generator refuses a catalogue pin that no drawing shows', () => {
   const servo = c.parts.find((p) => p.id === 'servo')!;
   servo.pins.push({ ...servo.pins[0]!, id: 'EXTRA' });
   assert.throws(() => generate(c), /servo: pins not drawn: EXTRA/);
+});
+
+test('a pin in the pin list of the coprocessor is a pin the drawings owe: the generator refuses it, the check reports it', () => {
+  assert.deepEqual(part('copro').pins, []);
+  const c = clone();
+  const copro = c.parts.find((p) => p.id === 'copro')!;
+  copro.pins.push({ ...part('servo').pins[0]!, id: 'EXTRA' });
+  for (const variant of [null, 'osoyoo']) {
+    const pins = cataloguePins(c, copro, variant);
+    assert.ok('EXTRA' in pins, String(variant));
+    // The 40 pads and the CAN poles stay.
+    assert.ok('pad.1' in pins && 'pad.40' in pins && Object.keys(pins).some((id) => id.startsWith('can.')));
+    assert.equal(Object.keys(pins).length, Object.keys(cataloguePins(CATALOGUE, part('copro'), variant)).length + 1);
+  }
+  assert.throws(() => generate(c), /copro[^:]*: pins not drawn: EXTRA/);
+  // A pin limited to the other board is owed by the drawing of that board only.
+  const d = clone();
+  const key = part('copro').variantName?.option;
+  if (key !== undefined) {
+    d.parts.find((p) => p.id === 'copro')!.pins.push({ ...part('servo').pins[0]!, id: 'ONE', only: { [key]: 'osoyoo' } as never });
+    assert.ok(!('ONE' in cataloguePins(d, d.parts.find((p) => p.id === 'copro')!, null)));
+    assert.ok('ONE' in cataloguePins(d, d.parts.find((p) => p.id === 'copro')!, 'osoyoo'));
+  }
 });
 
 test('the generator refuses a drawing whose part left the catalogue', () => {
