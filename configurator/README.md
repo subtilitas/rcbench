@@ -156,7 +156,7 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 |---|---|
 | Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. |
 | What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
-| Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use. |
+| Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
 The footer holds the state of the project and the trademark notice.
 

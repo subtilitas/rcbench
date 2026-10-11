@@ -228,6 +228,10 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
   for (const id of TEST_OBJECTS) {
     assert.equal(setup.power.some((p) => p.source.feeds === id), present.has(id), `power sources of ${id} for ${where}`);
     if (present.has(id)) assert.ok(setup.power.some((p) => p.source.feeds === id && p.used), `no source of ${id} in use for ${where}`);
+    // One source per test object is in use, or the sources of one choice.
+    const inUse = setup.power.filter((p) => p.source.feeds === id && p.used).map((p) => p.source);
+    assert.ok(inUse.length <= 1 || inUse.every((s) => s.choice !== undefined && s.choice === inUse[0]!.choice),
+      `sources ${inUse.map((s) => s.id).join(', ')} of ${id} are in use at once for ${where}`);
   }
   // The functions every setup runs are enabled in every setup.
   assert.deepEqual(setup.functions.filter((f) => f.enabled && alwaysOn(catalogue, f.fn)).map((f) => f.fn.id), BASE, where);
@@ -357,6 +361,7 @@ test('the sweep reports a servo fed from the bench without the warning, and a pl
   failsSweep((c) => { c.wires[58]!.when = { has: 'servo' }; }, /power wire 59 ends on pad\.40|servo\.POS/);
   failsSweep((c) => { c.powerSources = c.powerSources.filter((s) => s.feeds !== 'esc'); }, /power sources of esc|no source of esc/);
   failsSweep((c) => { c.powerSources = c.powerSources.filter((s) => s.id !== 'copro-5v'); }, /no source of servo in use/);
+  failsSweep((c) => { delete c.powerSources.find((s) => s.id === 'own-supply')!.choice; }, /sources lipo-2s, own-supply of servo are in use at once/);
 });
 
 test('the sweep reports a second power wire on a supply pin and a missing centre wire', () => {

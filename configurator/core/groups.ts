@@ -277,12 +277,18 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
   const without = (gone: Set<PartId>, options: Record<OptionKey, string>): Selection => {
     const stay = new Set(start.functions.filter((id) => !(needs.get(id) as PartId[]).some((p) => gone.has(p))));
     const kept = new Set(start.owned);
+    const freed = new Set<PartId>();
     for (const id of start.functions) {
       if (stay.has(id)) continue;
       for (const p of needs.get(id) as PartId[]) if (selectable.has(p)) kept.add(p);
-      // The test object of a function that goes off stays connected.
       const object = drives.get(id);
-      const plain = object === undefined ? null : plainDrive(catalogue, object);
+      if (object !== undefined) freed.add(object);
+    }
+    // The test object of a function that goes off stays connected: by a
+    // function that stays and drives it, else by the tick of its plain drive.
+    for (const object of freed) {
+      if ([...stay].some((id) => drives.get(id) === object)) continue;
+      const plain = plainDrive(catalogue, object);
       if (plain !== null) stay.add(plain);
     }
     return {

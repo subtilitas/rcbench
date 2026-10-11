@@ -107,7 +107,7 @@ function power(view: View): string {
     h += `<h4>${esc(powerTitle(view, group.feeds))}</h4><ul class="parts power" id="power-${group.feeds}">`;
     for (const { source, used } of group.sources) {
       const numbers = powerNumbers(lang, source);
-      h += `<li id="pw-${esc(source.id)}"><div><b>${esc(tx(lang, source.label))}</b>${used ? ` <span class="tag">${esc(t(lang, 'gIn'))}</span>` : ''}`
+      h += `<li id="pw-${esc(source.id)}"><div><b>${esc(tx(lang, source.label))}</b>${used ? ` <span class="tag">${esc(t(lang, source.choice === undefined ? 'gIn' : 'gInOne'))}</span>` : ''}`
         + `${numbers ? `<small>${esc(numbers)}</small>` : ''}`
         + `<span class="why">${esc(tx(lang, source.text))}</span>`
         + `<ul class="plain">${powerLines(lang, source).map((x) => `<li><span class="kind">${esc(x.kind)}:</span> ${esc(x.text)}</li>`).join('')}</ul>`

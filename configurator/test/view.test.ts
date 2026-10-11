@@ -507,7 +507,7 @@ test('the result lists the power sources that fit the connected test objects, ea
           const item = html.slice(at, next < 0 ? html.indexOf('<h3', at) : next);
           assert.ok(item.includes(`<b>${esc(entry.source.label[lang])}</b>`), entry.source.id);
           assert.ok(item.includes(esc(entry.source.text[lang])), entry.source.id);
-          assert.equal(item.includes(`<span class="tag">${STRINGS.gIn[col(lang)]}</span>`), entry.used, `${what}: ${entry.source.id}`);
+          assert.equal(item.includes(`<span class="tag">${STRINGS[entry.source.choice === undefined ? 'gIn' : 'gInOne'][col(lang)]}</span>`), entry.used, `${what}: ${entry.source.id}`);
           for (const line of [...entry.source.pros, ...entry.source.cons, ...entry.source.unknowns]) assert.ok(item.includes(esc(line[lang])), entry.source.id);
           assert.equal(count(item, '<span class="kind">'), entry.source.pros.length + entry.source.cons.length + entry.source.unknowns.length, entry.source.id);
           // No source repeats the state of the project.

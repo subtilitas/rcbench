@@ -18,6 +18,7 @@ const S = {
   gBase: ['Runs on the base setup', 'Läuft auf dem Grundaufbau'],
   gNeeds: ['Needs: ', 'Braucht: '],
   gIn: ['In this setup', 'Im Aufbau'],
+  gInOne: ['In this setup: one of these', 'Im Aufbau: eine davon'],
   gVariant: ['{p}: one of {x}.', '{p}: wahlweise {x}.'],
   gAlso: ['Also needs: {x}.', 'Braucht außerdem: {x}.'],
   gOneOf: ['Also needs, by variant: {x}.', 'Braucht außerdem, je nach Variante: {x}.'],

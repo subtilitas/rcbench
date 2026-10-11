@@ -413,6 +413,10 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.ok(partIds(external).includes('ssup'));
   assert.ok(ids(external).includes('servo-external') && !ids(external).includes(WARNING));
   assert.deepEqual(used(external), ['lipo-2s', 'own-supply']);
+  // The 2 external sources are one choice: the setup has 1 servo supply and does not state which of them it is.
+  assert.deepEqual(external.power.filter((p) => p.source.choice !== undefined).map((p) => [p.source.id, p.source.choice, p.used]),
+    [['lipo-2s', 'servo-supply', true], ['own-supply', 'servo-supply', true]]);
+  assert.equal(external.parts.filter((r) => r.part.id === 'ssup').length, 1);
 
   const pin = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench' }));
   assert.deepEqual(partIds(pin), [...LOCKED, 'servo']);
