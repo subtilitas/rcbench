@@ -2,12 +2,12 @@
 
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
 import { STRINGS, t } from '../src/i18n.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
-/** The functions with a tick: those that need a part. */
-const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+/** The functions with a tick: those that need a part of the bench or connect a test object. */
+const FUNCTIONS = CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id);
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const BASE_WIRES = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }).wires.length;
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
@@ -90,27 +90,29 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
-    test('the base setup lists the functions that need no part, in both languages', async ({ page }) => {
+    test('the base setup lists the functions every setup runs, in both languages', async ({ page }) => {
       const seen = watch(page);
-      const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+      const base = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f));
       for (const lang of ['en', 'de'] as const) {
         await open(page, `#v=1&l=${lang}`);
         await expect(page.locator('#g-base legend')).toHaveText(STRINGS.gBase[lang === 'en' ? 0 : 1]);
         await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
-        await expect(page.locator('#g-base input')).toHaveCount(0);
+        await expect(page.locator('#g-base ul.base input')).toHaveCount(0);
+        // The group holds the 2 ticks that connect a test object, and no other control.
+        expect(await page.locator('#g-base input').evaluateAll((list) => list.map((el) => el.id))).toEqual(['f-servo', 'f-esc']);
         for (const fn of base) {
           await expect(page.locator(`#f-${fn.id}`)).toHaveCount(0);
           await expect(page.locator('#result')).toContainText(fn.name[lang]);
         }
         const empty = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
         await expect(page.locator('.sum p')).toHaveText(t(lang, 'sum', { p: empty.parts.length, w: empty.wires.length, f: base.length }));
-        await expect(page.locator('#result h4')).toHaveText([CATALOGUE.baseFunction[lang]]);
+        await expect(page.locator('#result h4:has(+ ul.plain)')).toHaveText([CATALOGUE.baseFunction[lang]]);
         await fits(page);
       }
       // A tick keeps the list and adds the second heading.
       await open(page, '#v=1&f=servo');
       await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
-      await expect(page.locator('#result h4')).toHaveCount(2);
+      await expect(page.locator('#result h4:has(+ ul.plain)')).toHaveCount(2);
       await expect(page.locator('#does-base li')).toHaveCount(base.length);
       for (const fn of base) await expect(page.locator('#result')).toContainText(fn.name.en);
       expect(seen).toEqual({ foreign: [], errors: [] });

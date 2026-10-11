@@ -14,7 +14,7 @@
 //   page   a proposal or wording of this page; never a hardware fact
 
 import type {
-  Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, Rule, Src, Stage, Text, Wire,
+  Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, PowerSource, Rule, Src, Stage, Text, Wire,
 } from '../contract.ts';
 
 const TAG = 'v0.16.0';
@@ -71,8 +71,9 @@ const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
 // ---------------------------------------------------------------------------
 // Parts. Catalogue order is display order.
 //
-// hardware: 'run' needs a statement in the docs of the release that the part
-// has run on hardware. A part without such a statement is 'not-run'.
+// The servo and the ESC with its motor are test objects: a visitor connects
+// and tests them, the bench needs neither. Every other part is hardware of
+// the bench, the supplies and the motor simulator included.
 // ---------------------------------------------------------------------------
 
 const parts: Part[] = [
@@ -84,7 +85,6 @@ const parts: Part[] = [
     locked: true,
     selectable: false,
     release: 'released',
-    hardware: 'run',
     slot: { column: 'L', order: 1, sub: same('ESP32-S3-Touch-LCD-7') },
     pins: [
       // Prints as photo 01 of the owner shows them: the CAN socket reads H and
@@ -116,7 +116,6 @@ const parts: Part[] = [
     locked: true,
     selectable: false,
     release: 'released',
-    hardware: 'run',
     // Drawn in the centre from `pads`, not as a column module.
     slot: { column: 'none', order: 0, sub: same('RP2350-CAN') },
     pins: [],
@@ -158,7 +157,6 @@ const parts: Part[] = [
     locked: true,
     selectable: false,
     release: 'released',
-    hardware: 'run',
     slot: { column: 'none', order: 1 },
     pins: [],
     src: guide('also-needed'),
@@ -174,7 +172,6 @@ const parts: Part[] = [
     locked: true,
     selectable: false,
     release: 'released',
-    hardware: 'run',
     slot: { column: 'none', order: 2 },
     pins: [],
     src: guide('also-needed'),
@@ -185,9 +182,9 @@ const parts: Part[] = [
     short: same('Servo'),
     role: t('Device under test.', 'Prüfling.'),
     locked: false,
-    selectable: true,
+    selectable: false,
+    testObject: true,
     release: 'released',
-    hardware: 'run',
     slot: { column: 'L', order: 4 },
     pins: [
       pin('SIG', t('signal', 'Signal'), guide('wires')),
@@ -200,12 +197,14 @@ const parts: Part[] = [
     id: 'ssup',
     name: t('Servo supply (yours)', 'Servoversorgung (eigene)'),
     short: t('Servo supply', 'Servoversorgung'),
-    role: t('Voltage within the rating of the servo.', 'Spannung innerhalb der Nennwerte des Servos.'),
+    role: t(
+      'A 2S LiPo battery or another supply that matches the servo. Voltage within the rating of the servo.',
+      'Ein 2S-LiPo-Akku oder eine andere Versorgung, die zum Servo passt. Spannung innerhalb der Nennwerte des Servos.',
+    ),
     locked: false,
     selectable: false,
     release: 'released',
-    hardware: 'run',
-    slot: { column: 'L', order: 8 },
+    slot: { column: 'L', order: 9 },
     pins: [
       pin('POS', same('+'), guide('stage-1')),
       pin('NEG', same('−'), guide('stage-1')),
@@ -221,9 +220,9 @@ const parts: Part[] = [
       'Prüfling. ESC: elektronischer Drehzahlsteller.',
     ),
     locked: false,
-    selectable: true,
+    selectable: false,
+    testObject: true,
     release: 'released',
-    hardware: 'run',
     slot: { column: 'L', order: 5 },
     // Signal lead, power leads and phase wires form 3 groups.
     pins: [
@@ -246,8 +245,7 @@ const parts: Part[] = [
     locked: false,
     selectable: false,
     release: 'released',
-    hardware: 'run',
-    slot: { column: 'L', order: 9 },
+    slot: { column: 'L', order: 10 },
     pins: [
       pin('POS', same('+'), guide('wires')),
       pin('NEG', same('−'), guide('wires')),
@@ -268,9 +266,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    // STATUS.md line 107 states a run against a module; line 424 states the
-    // opposite. The check entry `pdmini-state` carries the contradiction.
-    hardware: 'run',
     slot: { column: 'L', order: 6, sub: t('UART through the T-plug', 'UART über den T-Stecker') },
     // The serial lines D+ and D− and their ground leave the USB-C socket
     // through the T-plug, the part `usbtap`.
@@ -298,8 +293,7 @@ const parts: Part[] = [
     locked: false,
     selectable: false,
     release: 'released',
-    hardware: 'run',
-    slot: { column: 'L', order: 7 },
+    slot: { column: 'L', order: 8 },
     pins: [pin('USB', same('USB-C'), guide('wires'))],
     src: guide('also-needed'),
   },
@@ -314,7 +308,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
     slot: {
       column: 'R',
       order: 14,
@@ -365,7 +358,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
     slot: { column: 'R', order: 15 },
     pins: [
       pin('VCC', same('VCC'), guide('stage-4')),
@@ -397,7 +389,6 @@ const parts: Part[] = [
     locked: false,
     selectable: false,
     release: 'released',
-    hardware: 'not-run',
     slot: { column: 'R', order: 16, sub: t('one per bus line', 'je Busleitung einer') },
     pins: [
       pin('SDA', t('R1, to SDA', 'R1, nach SDA'), guide('wires')),
@@ -414,7 +405,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
     slot: { column: 'R', order: 12 },
     // Pin names are those of the MATEK board. The header of the module with
     // XT90 plugs prints L A V G 5: L is SCL, A is SDA, V is the 3.3 V supply
@@ -471,7 +461,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'run',
     slot: {
       column: 'L',
       order: 2,
@@ -494,7 +483,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
     slot: { column: 'L', order: 3, sub: t('NC contact', 'Öffner (NC)') },
     // 3 tabs in a row: C, NO, NC, named from the wiring diagram of the
     // seller, not from a measurement. The 2 outer tabs C and NC form the NC
@@ -535,8 +523,7 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
-    slot: { column: 'L', order: 10, sub: t('no ground wire', 'kein Massedraht') },
+    slot: { column: 'L', order: 11, sub: t('no ground wire', 'kein Massedraht') },
     pins: [
       pin('A', t('corner A', 'Ecke A'), guide('wires')),
       pin('B', t('corner B', 'Ecke B'), guide('wires')),
@@ -558,7 +545,6 @@ const parts: Part[] = [
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
     slot: { column: 'R', order: 13, sub: t('4.7 kΩ, 0.25 W', '4,7 kΩ, 0,25 W') },
     pins: [
       pin('IN', t('resistor, end 1', 'Widerstand, Ende 1'), guide('tap')),
@@ -574,15 +560,18 @@ const parts: Part[] = [
     ),
     short: t('T-plug', 'T-Stecker'),
     role: t(
-      'Sits between the USB-C PD charger and the PD mini. Brings GND, D+ and D− to the coprocessor.',
-      'Sitzt zwischen USB-C-PD-Ladegerät und PD mini. Führt GND, D+ und D− zum Koprozessor.',
+      'Sits between the USB-C PD charger and the PD mini: the charger on the socket IN, a USB-C cable from the socket OUT to the PD mini. Brings GND, D+ and D− to the coprocessor.',
+      'Sitzt zwischen USB-C-PD-Ladegerät und PD mini: das Ladegerät an der Buchse IN, ein USB-C-Kabel von der Buchse OUT zum PD mini. Führt GND, D+ und D− zum Koprozessor.',
     ),
+    between: ['charger', 'pdmini'],
     locked: false,
     selectable: true,
     release: 'released',
-    hardware: 'not-run',
-    slot: { column: 'L', order: 11, sub: t('UART of the PD mini', 'UART des PD mini') },
+    slot: { column: 'L', order: 7, sub: t('UART of the PD mini', 'UART des PD mini') },
     pins: [
+      // Both ends of the power path are USB-C sockets with the print IN and OUT.
+      pin('OUT', t('OUT, USB-C socket', 'OUT, USB-C-Buchse'), OWNER),
+      pin('IN', t('IN, USB-C socket', 'IN, USB-C-Buchse'), OWNER),
       pin('G', same('G'), OWNER),
       // D− is the receive line of the PD mini, D+ its transmit line.
       pin('DP', same('D+'), OWNER),
@@ -695,6 +684,21 @@ const SENSOR_ESC_NEG = t(
 );
 /** The INA228 module with XT90 plugs is in the setup: its shunt is in the minus line. */
 const XT90_SHUNT: Cond = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] };
+/** A servo without the PD mini: its plus comes from the visitor's supply or from the bench. */
+const SERVO_NO_PD: Cond[] = [{ has: 'servo' }, { not: { has: 'pdmini' } }];
+const SERVO_EXTERNAL: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'external' }] };
+/** The bench itself feeds the servo: the 5 V pin, or the V pin of a strip of the Osoyoo breakout board. */
+const SERVO_BENCH: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'bench' }] };
+const SERVO_5V_PIN: Cond = { all: [SERVO_BENCH, { opt: 'connection', is: 'pads' }] };
+const SERVO_STRIP: Cond = { all: [SERVO_BENCH, { opt: 'connection', is: 'osoyoo' }] };
+const SERVO_BENCH_NOTE = t(
+  'For a small servo. The servo draws its current from the supply that also powers the logic.',
+  'Für ein kleines Servo. Das Servo zieht seinen Strom aus der Versorgung, die auch die Logik speist.',
+);
+const STRIP_V = t(
+  'V pin of the S V G strip at GP2 of the Osoyoo breakout board',
+  'V-Pin der S-V-G-Leiste an GP2 der Osoyoo-Breakout-Platine',
+);
 
 const wires: Wire[] = [
   {
@@ -776,14 +780,14 @@ const wires: Wire[] = [
       'Within the rated voltage of the servo.',
       'Innerhalb der Nennspannung des Servos.',
     ),
-    when: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }, { not: { has: 'ina3221' } }] },
+    when: { all: [SERVO_EXTERNAL, { not: { has: 'ina3221' } }] },
     stage: 1, route: { kind: 'O', lane: 0 }, src: guide('stage-1'),
   },
   {
     n: 10, kind: 'wire', a: 'ssup.NEG', b: 'servo.NEG', net: 'gnd', cls: 'power',
     signal: SERVO_POWER,
     note: null,
-    when: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }] },
+    when: SERVO_EXTERNAL,
     stage: 1, route: { kind: 'O', lane: 1 }, src: guide('stage-1'),
   },
   {
@@ -851,13 +855,13 @@ const wires: Wire[] = [
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'L', lane: 11 }, src: OWNER,
   },
   {
-    n: 19, kind: 'wire', a: 'charger.USB', b: 'pdmini.USB', net: 'pd_in', cls: 'power',
+    n: 19, kind: 'wire', a: 'charger.USB', b: 'usbtap.IN', net: 'pd_in', cls: 'power',
     signal: t('PD in', 'PD-Eingang'),
     note: t(
-      'Through the T-plug. Output is at most input less 0.5 V.',
-      'Über den T-Stecker. Ausgang höchstens Eingang minus 0,5 V.',
+      'USB-C cable of the charger, plugged into the socket IN.',
+      'USB-C-Kabel des Ladegeräts, in die Buchse IN gesteckt.',
     ),
-    when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: guide('wires'),
+    when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
   },
   {
     n: 20, kind: 'wire', a: 'pdmini.OP', b: 'servo.POS', net: 'pd_out', cls: 'power',
@@ -927,7 +931,7 @@ const wires: Wire[] = [
     n: 29, kind: 'wire', a: 'ssup.POS', b: 'ina3221.C1A', net: 'servo_v', cls: 'power',
     signal: t('servo power, up to 26 V', 'Servoversorgung, bis 26 V'),
     note: SHUNT_SERVO,
-    when: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }, { has: 'ina3221' }] },
+    when: { all: [SERVO_EXTERNAL, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'X', left: 12, right: 16, channel: 0 }, src: guide('wires'),
   },
   {
@@ -1158,11 +1162,53 @@ const wires: Wire[] = [
     when: { all: [{ has: 'esc' }, XT90_SHUNT] },
     stage: 5, route: { kind: 'X', left: 18, right: 22, channel: 6 }, src: OWNER,
   },
+  // The servo fed by the bench itself. Wires 59 and 60: the 5 V pin of the
+  // coprocessor board. Wires 61 and 62: the V pin of the strip at the servo
+  // pin of the Osoyoo breakout board; the strip is no pad of the coprocessor,
+  // so the wire ends in the drawing as a stub with its target in words.
+  {
+    n: 59, kind: 'wire', a: 'servo.POS', b: 'pad.40', net: 'vbus', cls: 'power',
+    signal: t('servo power, 5 V from USB', 'Servoversorgung, 5 V von USB'),
+    note: SERVO_BENCH_NOTE,
+    when: { all: [SERVO_5V_PIN, { not: { has: 'ina3221' } }] },
+    stage: 1, route: { kind: 'X', left: 12, right: 16, channel: 0 }, src: OWNER,
+  },
+  {
+    n: 60, kind: 'wire', a: 'pad.40', b: 'ina3221.C1A', net: 'vbus', cls: 'power',
+    signal: t('servo power, 5 V from USB', 'Servoversorgung, 5 V von USB'),
+    note: SERVO_BENCH_NOTE,
+    when: { all: [SERVO_5V_PIN, { has: 'ina3221' }] },
+    stage: 3, route: { kind: 'R', lane: 16 }, src: OWNER,
+  },
+  {
+    n: 61, kind: 'stub', a: 'servo.POS', b: null, to: STRIP_V, net: 'strip_v', cls: 'power',
+    signal: t('servo power, 5 V by the jumper', 'Servoversorgung, 5 V je nach Jumper'),
+    note: SERVO_BENCH_NOTE,
+    when: { all: [SERVO_STRIP, { not: { has: 'ina3221' } }] },
+    stage: 1, route: { kind: 'S' }, src: OWNER,
+  },
+  {
+    n: 62, kind: 'stub', a: 'ina3221.C1A', b: null, to: STRIP_V, net: 'strip_v', cls: 'power',
+    signal: t('servo power, 5 V by the jumper', 'Servoversorgung, 5 V je nach Jumper'),
+    note: SERVO_BENCH_NOTE,
+    when: { all: [SERVO_STRIP, { has: 'ina3221' }] },
+    stage: 3, route: { kind: 'S' }, src: OWNER,
+  },
+  // The second half of the power path of the PD mini. Wire 19 is the first:
+  // charger to the socket IN of the T-plug.
+  {
+    n: 63, kind: 'wire', a: 'usbtap.OUT', b: 'pdmini.USB', net: 'pd_in', cls: 'power',
+    signal: t('PD in', 'PD-Eingang'),
+    note: t(
+      'USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at most input less 0.5 V.',
+      'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini höchstens Eingang minus 0,5 V.',
+    ),
+    when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
+  },
 ];
 
 // ---------------------------------------------------------------------------
-// Functions. hardware: 'run' needs a statement of a hardware run in the docs
-// of the release; `src` is that statement, or the statement that none exists.
+// Functions. `src` is the statement of the function in the docs of the release.
 //
 // A function with `needs: []` runs on the panel and the coprocessor alone. It
 // is enabled in every setup and the page offers no tick for it.
@@ -1172,31 +1218,29 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], hardware: 'run', src: repo('STATUS.md', 110, 'run on hardware at 1 Mbit/s with zero errors at either end'),
+    needs: [], src: repo('STATUS.md', 110, 'CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only; the check entry `interlock-state` carries both.
-    needs: [], hardware: 'not-run', src: repo('STATUS.md', 113, 'released by CLEAR alone; not run on hardware'),
+    needs: [], src: repo('STATUS.md', 113, 'The decision to arm is `shared/safety/safety_gate.c`'),
   },
   {
     id: 'stop', group: 'bench',
     name: t('STOP command over the link', 'STOP-Befehl über die Verbindung'),
-    needs: [], hardware: 'not-run', src: repo('README.md', 41, 'the link is written and not run on hardware'),
+    needs: [], src: repo('README.md', 36, 'and a STOP command over the link'),
   },
   {
     id: 'bind', group: 'bench',
     name: t('Bind protocols to pads on the OUTPUTS screen', 'Protokolle auf dem OUTPUTS-Bildschirm an Pads binden'),
-    // The runs are those of earlier builds. The check entry `bind-state`
-    // states what of the release has not run.
-    needs: [], hardware: 'run', src: repo('STATUS.md', 117, 'Run on hardware on earlier builds'),
+    needs: [], src: repo('STATUS.md', 117, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
     name: t('Send PWM and DShot signals on bound pads', 'PWM- und DShot-Signale auf gebundenen Pads ausgeben'),
-    needs: [], hardware: 'run', src: repo('STATUS.md', 114, 'PWM has swung a servo and plain DShot has run a motor'),
+    needs: [], src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
@@ -1204,91 +1248,94 @@ const functions: Fn[] = [
       'Servo signal: sweep (square, sine, triangle) and frame rates other than 50 Hz',
       'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und andere Frame-Raten als 50 Hz',
     ),
-    needs: [], hardware: 'not-run',
-    src: repo('STATUS.md', 105, 'A frame rate other than 50 Hz and the sweep have not been tried on hardware'),
+    needs: [],
+    src: repo('STATUS.md', 105, 'a sweep (square, sine or triangle, run by the coprocessor)'),
   },
   {
     id: 'ppm', group: 'bench',
     name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
-    needs: [], hardware: 'not-run', src: repo('STATUS.md', 114, 'PPM has driven nothing'),
+    needs: [], src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'settings', group: 'bench',
     name: t('Settings on the SETUP screen, kept in the flash of the panel', 'Einstellungen auf dem SETUP-Bildschirm, im Flash des Panels gespeichert'),
-    needs: [], hardware: 'run',
-    src: repo('STATUS.md', 99, 'confirmed on hardware: a save writes and the next boot reports what it loaded'),
+    needs: [],
+    src: repo('STATUS.md', 99, 'The panel loads and saves the values in NVS'),
   },
   {
     id: 'language', group: 'bench',
     name: t('User interface in English or German', 'Bedienoberfläche auf Englisch oder Deutsch'),
     // The check entry `language-state` carries the state.
-    needs: [], hardware: 'not-run', src: repo('STATUS.md', 98, 'built and tested on the host: English and German'),
+    needs: [], src: repo('STATUS.md', 98, 'English and German, chosen by SETUP'),
   },
   {
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel. The check entry
     // `profiles-state` carries it.
-    needs: [], hardware: 'not-run', src: repo('STATUS.md', 126, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 126, '72 families, 451 models, from 153 manuals'),
   },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: ['servo'], hardware: 'run', src: repo('STATUS.md', 114, 'PWM has swung a servo'),
+    needs: [], drives: 'servo', src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
     // docs/Servo.md names three runs of 0.13.0; docs/Screens.md line 753
     // states the opposite. The check entry `servotest-state` carries it.
-    needs: ['servo', 'pdmini'], hardware: 'run', src: repo('docs/Servo.md', 722, 'Three runs of 0.13.0 on the bench with the PD mini'),
+    // The test reads the current of the PD mini (docs/Servo.md, line 92).
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 92, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1 ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['servo', 'ina3221'], hardware: 'not-run', src: repo('docs/Servo.md', 734, 'No run on the INA3221 has been made on hardware'),
+    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 119, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Servohorns'),
-    needs: ['servo', 'as5600'], hardware: 'not-run', src: repo('STATUS.md', 121, 'Output encoder (AS5600) | built and host-tested, not run on hardware'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 121, 'Output encoder (AS5600)'),
   },
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: ['esc'], hardware: 'run', src: repo('STATUS.md', 114, 'plain DShot has run a motor'),
+    needs: [], drives: 'esc', src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['esc', 'ina228'], hardware: 'not-run', src: repo('STATUS.md', 119, 'None of this has run on hardware'),
+    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 119, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'stick', group: 'esc',
     name: t('ESC STICK programming', 'ESC-STICK-Programmierung'),
-    needs: ['esc', 'pdmini'], forces: { escPower: 'pd' }, hardware: 'not-run',
-    src: repo('STATUS.md', 433, 'Stick programming has met no ESC'),
+    // The bench powers the ESC from the PD mini and counts the beeps from the
+    // supply current (docs/StickProgramming.md, line 6).
+    needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
+    src: repo('STATUS.md', 127, 'the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Read the beeps of the ESC (phase tap)', 'ESC-Töne lesen (Phasenabgriff)'),
-    needs: ['esc', 'sim', 'tap'], hardware: 'not-run', src: repo('STATUS.md', 122, 'Not run on hardware: the PIO program'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 122, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
     name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
-    needs: ['pdmini'], hardware: 'run', src: repo('STATUS.md', 107, 'It ran against a module on the beta bench on 2026-10-06'),
+    needs: ['pdmini'], src: repo('STATUS.md', 107, 'the coprocessor runs it on a PIO UART on the pins the SUPPLY page'),
   },
   {
     id: 'logs', group: 'bench',
     name: t('Run logs on a card', 'Laufprotokolle auf Karte'),
-    needs: ['sd'], hardware: 'run', src: repo('docs/Servo.md', 738, 'Two recordings from a bench on 0.14.0'),
+    needs: ['sd'], src: repo('STATUS.md', 101, 'Logger | built: a run is written while armed'),
   },
   {
     id: 'estop', group: 'bench',
     name: t('Emergency stop button', 'Not-Aus-Taster'),
     // The docs of the release hold no statement of a run with the button.
-    needs: ['estop'], hardware: 'not-run', src: guide('stage-5'),
+    needs: ['estop'], src: guide('stage-5'),
   },
 ];
 
@@ -1321,7 +1368,7 @@ const rules: Rule[] = [
   },
   {
     id: 'servo-supply',
-    when: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }] },
+    when: SERVO_EXTERNAL,
     adds: 'ssup',
     because: same('Servo'),
     src: guide('stage-1'),
@@ -1386,22 +1433,6 @@ const checks: Check[] = [
       'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
     ),
     when: { has: 'pdmini' }, src: OWNER,
-  },
-  {
-    id: 'pdmini-state', kind: 'unknown',
-    text: t(
-      'PD mini: STATUS.md states in one row a run against a module on 2026-10-06 and in another row that the PD mini has never run. The page shows no tag for it.',
-      'PD mini: STATUS.md nennt in einer Zeile einen Lauf an einem Modul am 2026-10-06 und in einer anderen Zeile, dass der PD mini nie gelaufen ist. Die Seite zeigt dafür keine Kennzeichnung.',
-    ),
-    when: { has: 'pdmini' }, src: repo('STATUS.md', 424, '| The PD mini has never run |'),
-  },
-  {
-    id: 'servotest-state', kind: 'unknown',
-    text: t(
-      'Automatic servo test: Servo.md names three runs of release 0.13.0 on a bench; Screens.md states that the test has not run on hardware. The page shows no tag for it. The movement threshold of 0.16.0 has not run on hardware.',
-      'Automatischer Servotest: Servo.md nennt drei Läufe von Release 0.13.0 auf einem Prüfstand; Screens.md gibt an, dass der Test nicht auf Hardware gelaufen ist. Die Seite zeigt dafür keine Kennzeichnung. Die Bewegungsschwelle von 0.16.0 ist nicht auf Hardware gelaufen.',
-    ),
-    when: { all: [{ has: 'servo' }, { has: 'pdmini' }] }, src: repo('docs/Screens.md', 753, 'The automatic test has not run on hardware'),
   },
   {
     id: 'pd-shared', kind: 'unknown',
@@ -1507,50 +1538,83 @@ const checks: Check[] = [
   {
     id: 'osoyoo-labels', kind: 'unknown',
     text: t(
-      'Osoyoo breakout board: the terminal labels are read from one photo and partly legible. The board is not in the build guide and has not run on hardware.',
-      'Osoyoo-Breakout-Platine: Die Klemmenbeschriftung stammt von einem Foto und ist teilweise lesbar. Die Platine steht nicht in der Bauanleitung und ist nicht auf Hardware gelaufen.',
+      'Osoyoo breakout board: the terminal labels are read from one photo and partly legible. The board is not in the build guide.',
+      'Osoyoo-Breakout-Platine: Die Klemmenbeschriftung stammt von einem Foto und ist teilweise lesbar. Die Platine steht nicht in der Bauanleitung.',
     ),
     when: { opt: 'connection', is: 'osoyoo' }, src: photo('05'),
   },
   {
-    id: 'interlock-state', kind: 'note',
-    text: t(
-      'ARM and the heartbeat interlock: arming works on the bring-up bench with the line between J8 of the panel and GP3 of the coprocessor fitted. The decision to arm, with its latch at a start, on link silence, on a distrusted heartbeat and on a refused ARM, is tested on the host and has not run on hardware. The page marks the function "Not run on hardware".',
-      'ARM und Heartbeat-Verriegelung: ARM funktioniert auf dem Bring-up-Aufbau mit der Leitung zwischen J8 des Panels und GP3 des Koprozessors. Die Entscheidung über ARM, mit ihrer Sperre bei einem Start, bei stiller Verbindung, bei einem nicht vertrauenswürdigen Heartbeat und bei einem abgelehnten ARM, ist auf dem Host getestet und nicht auf Hardware gelaufen. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
-    ),
-    when: null, src: repo('README.md', 38, 'so arming works there'),
-  },
-  {
-    id: 'language-state', kind: 'note',
-    text: t(
-      'Interface language: the tables, the fonts and the fit check of the German interface are tested on the host. The German interface has not been read on a panel. The page marks the function "Not run on hardware".',
-      'Sprache der Bedienoberfläche: Die Tabellen, die Schriften und die Passprüfung der deutschen Oberfläche sind auf dem Host getestet. Die deutsche Oberfläche wurde nicht auf einem Panel gelesen. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
-    ),
-    when: null, src: repo('STATUS.md', 434, 'The German interface has not been read on a panel'),
-  },
-  {
-    id: 'profiles-state', kind: 'unknown',
-    text: t(
-      'ESC profile list: the docs of release 0.16.0 state host tests of the reader and the registry and no run of the list on a panel. The page marks the function "Not run on hardware".',
-      'ESC-Profilliste: Die Dokumente von Release 0.16.0 nennen Host-Tests des Lesers und der Registry und keinen Lauf der Liste auf einem Panel. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
-    ),
-    when: null, src: repo('STATUS.md', 126, 'The reader and the registry are tested on the host'),
-  },
-  {
-    id: 'bind-state', kind: 'note',
-    text: t(
-      'Output binding: the bindings behind the servo and motor runs were made on earlier builds. The write of release 0.16.0, prepared pages put in force by 1 commit, has not run on hardware.',
-      'Bindung der Ausgänge: Die Bindungen hinter den Servo- und Motorläufen entstanden auf früheren Builds. Das Schreiben von Release 0.16.0, vorbereitete Seiten und 1 Commit, ist nicht auf Hardware gelaufen.',
-    ),
-    when: null, src: repo('STATUS.md', 117, 'Not run on hardware: the prepared pages and the commit'),
-  },
-  {
     id: 'osoyoo-terminals', kind: 'note',
     text: t(
-      'Use the screw terminals only. What the V pins of the G V S rows carry is not stated. Plug no servo lead and no ESC lead there.',
-      'Nur die Schraubklemmen verwenden. Was die V-Pins der G-V-S-Reihen führen, ist nicht angegeben. Dort kein Servokabel und kein ESC-Kabel stecken.',
+      'Osoyoo breakout board: every IO has a strip of 3 pins. From the terminal inward: S, V, G. The DC-DC converter of the board feeds the V pins; a jumper sets them to 3.3 V or 5 V. An ESC lead goes to S and G only: the V pin in the middle stays free.',
+      'Osoyoo-Breakout-Platine: Jeder IO hat eine Leiste mit 3 Pins. Von der Klemme nach innen: S, V, G. Der DC-DC-Wandler der Platine speist die V-Pins; ein Jumper stellt sie auf 3,3 V oder 5 V. Ein ESC-Kabel geht nur an S und G: Der V-Pin in der Mitte bleibt frei.',
     ),
-    when: { opt: 'connection', is: 'osoyoo' }, src: PAGE,
+    when: { opt: 'connection', is: 'osoyoo' }, src: OWNER,
+  },
+  {
+    id: 'strip-esc', kind: 'note',
+    text: t(
+      'Osoyoo breakout board: the ESC lead uses the S and G pins of the strip at GP5 only. The V pin in the middle carries 3.3 V or 5 V and stays free: the plus wire of the ESC lead is connected nowhere.',
+      'Osoyoo-Breakout-Platine: Das ESC-Kabel nutzt nur die Pins S und G der Leiste an GP5. Der V-Pin in der Mitte führt 3,3 V oder 5 V und bleibt frei: Die Plusader des ESC-Kabels wird nirgends angeschlossen.',
+    ),
+    when: { all: [{ has: 'esc' }, { opt: 'connection', is: 'osoyoo' }] }, src: OWNER,
+  },
+  {
+    id: 'servo-external', kind: 'note',
+    text: t(
+      'Servo supply: a 2S LiPo battery or another external supply that matches the servo. A small servo can run from the bench itself: variant "Servo power", B.',
+      'Servoversorgung: ein 2S-LiPo-Akku oder eine andere externe Versorgung, die zum Servo passt. Ein kleines Servo kann vom Prüfstand selbst laufen: Variante „Servoversorgung“, B.',
+    ),
+    when: SERVO_EXTERNAL, src: OWNER,
+  },
+  {
+    id: 'servo-bench-supply', kind: 'note',
+    text: t(
+      'The bench itself feeds the servo. The servo then draws its current from the supply that also powers the logic. This is prone to problems. For anything but a small servo use a 2S LiPo battery or another external supply that matches the servo.',
+      'Der Prüfstand selbst speist das Servo. Das Servo zieht seinen Strom dann aus der Versorgung, die auch die Logik speist. Das ist störanfällig. Für alles außer einem kleinen Servo einen 2S-LiPo-Akku oder eine andere externe Versorgung verwenden, die zum Servo passt.',
+    ),
+    when: SERVO_BENCH, src: OWNER,
+  },
+  {
+    id: 'servo-5v-pin', kind: 'unknown',
+    text: t(
+      'Current limit of the 5 V pin of the coprocessor board (VBUS, pad 40): not stated. How much current a small servo is: not stated.',
+      'Stromgrenze des 5-V-Pins der Koprozessor-Platine (VBUS, Pad 40): nicht angegeben. Wie viel Strom ein kleines Servo ist: nicht angegeben.',
+    ),
+    when: SERVO_5V_PIN, src: OWNER,
+  },
+  {
+    id: 'strip-jumper', kind: 'measure',
+    text: t(
+      'Osoyoo breakout board: set the jumper to 5 V for the servo. Measure the V pin of the strip at GP2 to GND before the servo is plugged in: about 5 V.',
+      'Osoyoo-Breakout-Platine: Den Jumper für das Servo auf 5 V setzen. Vor dem Einstecken des Servos den V-Pin der Leiste an GP2 gegen GND messen: etwa 5 V.',
+    ),
+    when: SERVO_STRIP, src: OWNER,
+  },
+  {
+    id: 'strip-plug', kind: 'note',
+    text: t(
+      'Osoyoo breakout board: the servo lead plugs onto the strip at GP2. S carries the signal of wire 7, V the plus of wire 61 and G the GND of wire 8. The plug replaces these 3 wires.',
+      'Osoyoo-Breakout-Platine: Das Servokabel steckt auf der Leiste an GP2. S führt das Signal von Draht 7, V das Plus von Draht 61 und G das GND von Draht 8. Der Stecker ersetzt diese 3 Drähte.',
+    ),
+    when: { all: [SERVO_STRIP, { not: { has: 'ina3221' } }] }, src: OWNER,
+  },
+  {
+    id: 'strip-supply', kind: 'unknown',
+    text: t(
+      'Osoyoo breakout board: what feeds the DC-DC converter and its input range are not stated. Its output current is not stated. Whether the jumper sets the whole board or a group of strips is not stated. The page treats the V pins as fed from the supply of the logic.',
+      'Osoyoo-Breakout-Platine: Was den DC-DC-Wandler speist und sein Eingangsbereich sind nicht angegeben. Sein Ausgangsstrom ist nicht angegeben. Ob der Jumper die ganze Platine oder eine Gruppe von Leisten stellt, ist nicht angegeben. Die Seite behandelt die V-Pins als aus der Versorgung der Logik gespeist.',
+    ),
+    when: SERVO_STRIP, src: OWNER,
+  },
+  {
+    id: 'esc-programming-power', kind: 'unknown',
+    text: t(
+      'ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release 0.16.0 powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.',
+      'ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release 0.16.0 versorgt den ESC aus dem PD mini und zählt die Töne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.',
+    ),
+    when: { all: [{ has: 'esc' }, { has: 'pdmini' }, { opt: 'escPower', is: 'pd' }] },
+    src: repo('docs/StickProgramming.md', 6, 'PD mini'),
   },
 ];
 
@@ -1715,6 +1779,189 @@ const pinDefaults: PinDefault[] = [
   { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
 
+// ---------------------------------------------------------------------------
+// Power sources: what feeds a test object and the logic, with advantages,
+// drawbacks and unknowns. `label` is the short name; `text` stands on its
+// own. Every other line is one sentence.
+//
+// The numbers of the PD mini are vendor values. No source states a current
+// for the 5 V pin or for the V pins of the Osoyoo breakout board.
+// ---------------------------------------------------------------------------
+
+const VENDOR = t('Vendor values, not measured.', 'Herstellerangaben, nicht gemessen.');
+const OWN_SUPPLY_TEXT = t(
+  'GND joins the GND of the bench. The signal comes from the bench. Plus goes to the servo only, through channel 1 of the INA3221 when it is fitted.',
+  'GND liegt an GND des Prüfstands. Das Signal kommt vom Prüfstand. Plus geht nur an das Servo, über Kanal 1 des INA3221, wenn er eingebaut ist.',
+);
+const NOT_SET = t('The bench does not set it.', 'Der Prüfstand stellt sie nicht.');
+const LOGIC_DRAW = t(
+  'It draws from the supply that also powers the logic.',
+  'Sie zieht aus der Versorgung, die auch die Logik speist.',
+);
+const LOGIC_PEAK = t(
+  'A current peak of the servo can drop the logic voltage and reset the boards.',
+  'Eine Stromspitze des Servos kann die Logikspannung einbrechen lassen und die Platinen zurücksetzen.',
+);
+const ESC_SIGNAL_ONLY = t(
+  'The bench gives the ESC signal and ground only.',
+  'Der Prüfstand gibt dem ESC nur Signal und Masse.',
+);
+
+const powerSources: PowerSource[] = [
+  {
+    id: 'usb', feeds: 'logic',
+    label: t('USB, 5 V, one supply per board', 'USB, 5 V, je Platine eine Versorgung'),
+    text: t(
+      'The panel and the coprocessor each run from their own USB-C cable. The panel is on a charger of at least 2 A with a short cable.',
+      'Panel und Koprozessor laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 2 A.',
+    ),
+    volts: { min: 5, max: 5 }, amps: null, basis: null,
+    pros: [t('Each board has its own supply.', 'Jede Platine hat ihre eigene Versorgung.')],
+    cons: [t(
+      'A servo on the 5 V pin or on a V pin of the Osoyoo breakout board draws from it.',
+      'Ein Servo am 5-V-Pin oder an einem V-Pin der Osoyoo-Breakout-Platine zieht daraus.',
+    )],
+    unknowns: [t('Current the coprocessor board draws: not stated.', 'Strom, den die Koprozessor-Platine zieht: nicht angegeben.')],
+    when: null, used: { has: 'usb' }, src: guide('also-needed'),
+  },
+  {
+    id: 'copro-5v', feeds: 'servo',
+    label: t('5 V pin of the coprocessor board (VBUS, pad 40)', '5-V-Pin der Koprozessor-Platine (VBUS, Pad 40)'),
+    text: t(
+      'For a small servo. The plus of the servo goes to VBUS, the 5 V of the USB cable of the coprocessor. Signal and GND come from the pads of the coprocessor.',
+      'Für ein kleines Servo. Das Plus des Servos geht an VBUS, die 5 V des USB-Kabels des Koprozessors. Signal und GND kommen von den Pads des Koprozessors.',
+    ),
+    volts: { min: 5, max: 5 }, amps: null, basis: null,
+    pros: [t('It needs no further part.', 'Sie braucht kein weiteres Teil.')],
+    cons: [
+      LOGIC_DRAW,
+      LOGIC_PEAK,
+      t('The voltage is fixed at 5 V.', 'Die Spannung liegt fest bei 5 V.'),
+      t('The bench does not limit the current.', 'Der Prüfstand begrenzt den Strom nicht.'),
+    ],
+    unknowns: [t('Current limit of the 5 V pin: not stated.', 'Stromgrenze des 5-V-Pins: nicht angegeben.')],
+    when: { opt: 'connection', is: 'pads' }, used: SERVO_5V_PIN, src: OWNER,
+  },
+  {
+    id: 'strip-v', feeds: 'servo',
+    label: t('V pin of the S V G strip of the Osoyoo breakout board', 'V-Pin der S-V-G-Leiste der Osoyoo-Breakout-Platine'),
+    text: t(
+      'For a small servo. Every IO of the board has a strip with the pins S, V and G. The DC-DC converter of the board feeds the V pins; a jumper sets 3.3 V or 5 V. The servo lead plugs onto the strip of its pin.',
+      'Für ein kleines Servo. Jeder IO der Platine hat eine Leiste mit den Pins S, V und G. Der DC-DC-Wandler der Platine speist die V-Pins; ein Jumper stellt 3,3 V oder 5 V. Das Servokabel steckt auf der Leiste seines Pins.',
+    ),
+    volts: { min: 3.3, max: 5, steps: [3.3, 5] }, amps: null, basis: null,
+    pros: [
+      t('The servo plugs straight in.', 'Das Servo wird direkt eingesteckt.'),
+      t('It needs no soldering and no further part.', 'Sie braucht kein Löten und kein weiteres Teil.'),
+    ],
+    cons: [
+      t('The jumper needs a check before a servo is plugged in.', 'Der Jumper muss vor dem Einstecken eines Servos geprüft werden.'),
+      t(
+        'The page treats it as drawing from the supply that also powers the logic, because the feed of the converter is not stated.',
+        'Die Seite behandelt sie als Last an der Versorgung, die auch die Logik speist, weil die Speisung des Wandlers nicht angegeben ist.',
+      ),
+      LOGIC_PEAK,
+      t('The bench does not limit the current.', 'Der Prüfstand begrenzt den Strom nicht.'),
+    ],
+    unknowns: [
+      t('What feeds the DC-DC converter, and its input range: not stated.', 'Was den DC-DC-Wandler speist, und sein Eingangsbereich: nicht angegeben.'),
+      t('Output current of the converter: not stated.', 'Ausgangsstrom des Wandlers: nicht angegeben.'),
+      t('Whether the jumper sets the whole board or a group of strips: not stated.', 'Ob der Jumper die ganze Platine oder eine Gruppe von Leisten stellt: nicht angegeben.'),
+    ],
+    when: { opt: 'connection', is: 'osoyoo' }, used: SERVO_STRIP, src: OWNER,
+  },
+  {
+    id: 'pd-servo', feeds: 'servo',
+    label: t('PD mini from a USB-C PD charger', 'PD mini an einem USB-C-PD-Ladegerät'),
+    text: t(
+      'The bench sets the output of the PD mini over a UART. The output is at most the input voltage less 0.5 V. PD: USB Power Delivery.',
+      'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang liegt höchstens bei Eingangsspannung minus 0,5 V. PD: USB Power Delivery.',
+    ),
+    volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
+    pros: [
+      t('The bench sets the voltage and the current limit.', 'Der Prüfstand stellt Spannung und Stromgrenze.'),
+      t('It is separate from the supply of the logic.', 'Sie ist von der Versorgung der Logik getrennt.'),
+      t('The automatic servo test reads its current.', 'Der automatische Servotest liest ihren Strom.'),
+    ],
+    cons: [
+      t('The current ends at 3 A.', 'Der Strom endet bei 3 A.'),
+      t('A wrong voltage setting can exceed the rating of the servo.', 'Eine falsch gestellte Spannung kann die Nennwerte des Servos überschreiten.'),
+      t('It needs a USB-C PD charger, the T-plug and 3 UART wires.', 'Sie braucht ein USB-C-PD-Ladegerät, den T-Stecker und 3 UART-Drähte.'),
+    ],
+    unknowns: [],
+    when: null, used: { all: [{ has: 'servo' }, { has: 'pdmini' }] }, src: guide('wires'),
+  },
+  {
+    id: 'lipo-2s', feeds: 'servo',
+    label: t('2S LiPo battery', '2S-LiPo-Akku'),
+    text: t(
+      `For a power servo that is rated for it. ${OWN_SUPPLY_TEXT.en}`,
+      `Für ein starkes Servo, das dafür ausgelegt ist. ${OWN_SUPPLY_TEXT.de}`,
+    ),
+    volts: { min: 6, max: 8.4 }, amps: null, basis: null,
+    pros: [t('It delivers the stall current of a servo.', 'Er liefert den Blockierstrom eines Servos.')],
+    cons: [
+      t('It has no current limit: a fuse is advised.', 'Er hat keine Strombegrenzung: Eine Sicherung ist ratsam.'),
+      t('It fits only a servo rated for 8.4 V.', 'Er passt nur zu einem Servo, das für 8,4 V ausgelegt ist.'),
+      t('The voltage changes with the state of charge.', 'Die Spannung ändert sich mit dem Ladezustand.'),
+      NOT_SET,
+    ],
+    unknowns: [],
+    when: null, used: SERVO_EXTERNAL, src: OWNER,
+  },
+  {
+    id: 'own-supply', feeds: 'servo',
+    label: t('External supply that matches the servo', 'Externe Versorgung, die zum Servo passt'),
+    text: t(
+      `A bench supply or a BEC. BEC: battery eliminator circuit. ${OWN_SUPPLY_TEXT.en}`,
+      `Ein Labornetzteil oder ein BEC. BEC: Battery Eliminator Circuit. ${OWN_SUPPLY_TEXT.de}`,
+    ),
+    volts: null, amps: null, basis: null,
+    pros: [t('Voltage and current limit are chosen for the servo.', 'Spannung und Stromgrenze werden für das Servo gewählt.')],
+    cons: [t('It is a further device.', 'Sie ist ein weiteres Gerät.'), NOT_SET],
+    unknowns: [],
+    when: null, used: SERVO_EXTERNAL, src: OWNER,
+  },
+  {
+    id: 'esc-battery', feeds: 'esc',
+    label: t("A: the ESC's own battery", 'A: eigener Akku des ESC'),
+    text: t(
+      `${ESC_SIGNAL_ONLY.en} The battery feeds the ESC, through the INA228 when it is fitted.`,
+      `${ESC_SIGNAL_ONLY.de} Der Akku speist den ESC, über den INA228, wenn er eingebaut ist.`,
+    ),
+    volts: null, amps: null, basis: null,
+    pros: [t('It delivers the current of a running motor.', 'Er liefert den Strom eines laufenden Motors.')],
+    cons: [
+      t('The bench sets no voltage and no current limit.', 'Der Prüfstand stellt keine Spannung und keine Stromgrenze.'),
+      t('STOP does not switch it off.', 'STOP schaltet ihn nicht ab.'),
+    ],
+    unknowns: [],
+    when: null, used: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'battery' }] }, src: guide('safety'),
+  },
+  {
+    id: 'pd-esc', feeds: 'esc',
+    label: t('B: PD mini from a USB-C PD charger', 'B: PD mini an einem USB-C-PD-Ladegerät'),
+    text: t(
+      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output is at most the input voltage less 0.5 V.`,
+      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang liegt höchstens bei Eingangsspannung minus 0,5 V.`,
+    ),
+    volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
+    pros: [
+      t('The bench sets the voltage and the current limit.', 'Der Prüfstand stellt Spannung und Stromgrenze.'),
+      t('STOP switches its output off.', 'STOP schaltet seinen Ausgang ab.'),
+      t('ESC STICK programming counts the beeps from its current.', 'Die ESC-STICK-Programmierung zählt die Töne an seinem Strom.'),
+    ],
+    cons: [
+      t('The current ends at 3 A.', 'Der Strom endet bei 3 A.'),
+    ],
+    unknowns: [t(
+      'Servo and ESC on the one output at the same time: not stated.',
+      'Servo und ESC gleichzeitig an dem einen Ausgang: nicht angegeben.',
+    )],
+    when: null, used: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'pd' }] }, src: guide('safety'),
+  },
+];
+
 /** The text each repository anchor of this file names, in the order of the anchors. */
 export const ANCHOR_TEXTS: ReadonlyArray<AnchorText> = Object.freeze(anchorTexts);
 
@@ -1747,4 +1994,5 @@ export const CATALOGUE: Catalogue = deepFreeze({
     'Ohne weitere Hardware: Panel und Koprozessor allein',
   ),
   pinDefaults,
+  powerSources,
 });

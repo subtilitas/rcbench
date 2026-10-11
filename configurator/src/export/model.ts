@@ -2,15 +2,18 @@
 // of blocks. Pure: no document, no fonts, no page geometry. Every fact comes
 // from the catalogue and the setup; chrome strings come from the string tables.
 //
-// Section order: title, safety, parts, functions, wiring, order, nir.
+// Section order: title, safety, parts, tested, power, functions, wiring,
+// order, nir.
 
 import type { Check, Lang, OptionKey, SignalClass } from '../../contract.ts';
 import { formatHash } from '../hash.ts';
 import { LEGEND, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
-import { endName, targetName } from '../names.ts';
+import { benchParts, endName, powerGroups, powerNumbers, targetName, testObjectsOf } from '../names.ts';
 import type { NameCtx } from '../names.ts';
-import { VARIANTS, reasonText, variantNotRun } from '../view/chooser.ts';
+import {
+  VARIANTS, powerLines, powerTitle, reasonText, runsOnBase, usedByText,
+} from '../view/chooser.ts';
 import type { View } from '../view/chooser.ts';
 import { wiringDiagram } from './diagram.ts';
 import type { Diagram } from './diagram.ts';
@@ -45,7 +48,7 @@ export type Block =
   | { kind: 'drawing'; svg: string }
   | { kind: 'table'; caption: string; head: string[]; noteLabel: string; rows: Row[] };
 
-export type SectionId = 'title' | 'safety' | 'parts' | 'functions' | 'wiring' | 'order' | 'nir';
+export type SectionId = 'title' | 'safety' | 'parts' | 'tested' | 'power' | 'functions' | 'wiring' | 'order' | 'nir';
 export type Section = { id: SectionId; blocks: Block[] };
 export type Doc = {
   lang: Lang;
@@ -58,7 +61,9 @@ export type Doc = {
   sections: Section[];
 };
 
-export const SECTION_ORDER: readonly SectionId[] = ['title', 'safety', 'parts', 'functions', 'wiring', 'order', 'nir'];
+export const SECTION_ORDER: readonly SectionId[] = [
+  'title', 'safety', 'parts', 'tested', 'power', 'functions', 'wiring', 'order', 'nir',
+];
 
 const KIND: Record<Check['kind'], Key> = { measure: 'kM', unknown: 'kU', note: 'kN' };
 
@@ -109,50 +114,85 @@ function titleSection(view: View, url: string, now: Date): Section {
   const f = setup.functions.filter((x) => x.enabled).length;
   const variants: Item[] = setup.options.filter((o) => o.visible).map((o) => ({
     runs: [{ text: variantText(lang, o.key, o.value) }],
-    tags: variantNotRun(o.key, o.value) ? [t(lang, 'nrh')] : [],
+    tags: [],
     lines: [],
   }));
   const blocks: Block[] = [
     { kind: 'title', text: p(lang, 'docTitle') },
     para(p(lang, 'release', { r: catalogue.release })),
+    para(t(lang, 'devState')),
     para(p(lang, 'date', { d: isoDate(now) })),
     { kind: 'link', label: p(lang, 'link'), url },
-    para(t(lang, f === 1 ? 'sum1' : 'sum', { p: setup.parts.length, w: setup.wires.length, f })),
+    para(t(lang, f === 1 ? 'sum1' : 'sum', { p: benchParts(setup).length, w: setup.wires.length, f })),
   ];
   if (variants.length > 0) blocks.push(heading(t(lang, 'variants'), 3), { kind: 'list', items: variants, bullet: true });
   return { id: 'title', blocks };
 }
 
+/** One part or test object: name, tags, role, then the line `why`. */
+function partItem(view: View, r: View['setup']['parts'][number], why: string): Item {
+  const { lang, options } = view;
+  const part = r.part;
+  const variant = part.variantName ? part.variantName.names[options[part.variantName.option]] : undefined;
+  const tags: string[] = [];
+  if (part.release !== 'released') tags.push(t(lang, 'nir'));
+  const lines: Sub[] = [];
+  if (part.role) lines.push({ text: tx(lang, part.role), muted: true });
+  if (why !== '') lines.push({ text: why, muted: false });
+  return { runs: [{ text: tx(lang, part.name) + (variant ? `, ${tx(lang, variant)}` : ''), bold: true }], tags, lines };
+}
+
+/** The bench hardware of the setup. A test object is no part to list here. */
 function partsSection(view: View): Section {
-  const { lang, setup, options } = view;
-  const items: Item[] = setup.parts.map((r) => {
-    const part = r.part;
-    const variant = part.variantName ? part.variantName.names[options[part.variantName.option]] : undefined;
-    const tags: string[] = [];
-    if (part.hardware === 'not-run' || (part.id === 'copro' && options.connection === 'osoyoo')) tags.push(t(lang, 'nrh'));
-    if (part.release !== 'released') tags.push(t(lang, 'nir'));
-    const lines: Sub[] = [];
-    if (part.role) lines.push({ text: tx(lang, part.role), muted: true });
-    const reason = reasonText(r, view);
-    if (reason !== '') lines.push({ text: reason, muted: false });
-    return { runs: [{ text: tx(lang, part.name) + (variant ? `, ${tx(lang, variant)}` : ''), bold: true }], tags, lines };
-  });
+  const { lang, setup } = view;
+  const items: Item[] = benchParts(setup).map((r) => partItem(view, r, reasonText(r, view)));
   const blocks: Block[] = [heading(t(lang, 'parts'))];
   if (items.length === 0) blocks.push(para(p(lang, 'noParts')));
   else blocks.push(para(p(lang, 'quantity'), true), { kind: 'list', items, bullet: false });
   return { id: 'parts', blocks };
 }
 
+/** The test objects of the setup, each with the functions that use it. */
+function testedSection(view: View): Section {
+  const { lang, setup } = view;
+  const items: Item[] = testObjectsOf(setup).map((r) => partItem(view, r, usedByText(view, r)));
+  return {
+    id: 'tested',
+    blocks: [
+      heading(t(lang, 'tested')),
+      para(t(lang, 'testedHint'), true),
+      items.length === 0 ? para(t(lang, 'testedNone')) : { kind: 'list', items, bullet: false },
+    ],
+  };
+}
+
+/** The power sources of the logic and of each connected test object, as the catalogue states them. */
+function powerSection(view: View): Section {
+  const { lang, setup } = view;
+  const blocks: Block[] = [heading(t(lang, 'power')), para(t(lang, 'powerHint'), true)];
+  for (const group of powerGroups(setup)) {
+    const items: Item[] = group.sources.map(({ source, used }) => {
+      const numbers = powerNumbers(lang, source);
+      const lines: Sub[] = [];
+      if (numbers !== '') lines.push({ text: numbers, muted: true });
+      lines.push({ text: tx(lang, source.text), muted: false });
+      for (const line of powerLines(lang, source)) lines.push({ text: `${line.kind}: ${line.text}`, muted: false });
+      return { runs: [{ text: tx(lang, source.label), bold: true }], tags: used ? [t(lang, 'gIn')] : [], lines };
+    });
+    blocks.push(heading(powerTitle(view, group.feeds), 3), { kind: 'list', items, bullet: false });
+  }
+  return { id: 'power', blocks };
+}
+
 function functionsSection(view: View): Section {
   const { lang, catalogue, setup, options } = view;
-  const tag = (notRun: boolean): string[] => (notRun ? [t(lang, 'nrh')] : []);
-  // As on the page: the functions that need no part under the heading of the
-  // catalogue, then the functions the parts of the setup enable.
+  // As on the page: the functions every setup runs under the heading of the
+  // catalogue, then the functions the parts and test objects of the setup enable.
   const entry = (f: (typeof setup.functions)[number]): Item =>
-    ({ runs: [{ text: tx(lang, f.fn.name) }], tags: tag(f.fn.hardware === 'not-run'), lines: [] });
+    ({ runs: [{ text: tx(lang, f.fn.name) }], tags: [], lines: [] });
   const on = setup.functions.filter((f) => f.enabled);
-  const base: Item[] = on.filter((f) => f.fn.needs.length === 0).map(entry);
-  const withParts: Item[] = on.filter((f) => f.fn.needs.length > 0).map(entry);
+  const base: Item[] = on.filter((f) => runsOnBase(catalogue, f)).map(entry);
+  const withParts: Item[] = on.filter((f) => !runsOnBase(catalogue, f)).map(entry);
   const enabled: Block[] = [];
   if (base.length > 0) enabled.push(heading(tx(lang, catalogue.baseFunction), 3), { kind: 'list', items: base, bullet: true });
   if (withParts.length > 0) enabled.push(heading(t(lang, 'withParts'), 3), { kind: 'list', items: withParts, bullet: true });
@@ -169,7 +209,11 @@ function functionsSection(view: View): Section {
     for (const [key, value] of Object.entries(f.fn.forces ?? {}) as Array<[OptionKey, string]>) {
       if (options[key] !== value) lines.push({ text: p(lang, 'needsVariant') + variantText(lang, key, value), muted: false });
     }
-    return { runs: [{ text: tx(lang, f.fn.name) }], tags: tag(f.fn.hardware === 'not-run'), lines };
+    const object = f.fn.drives === undefined ? undefined : catalogue.parts.find((x) => x.id === f.fn.drives);
+    if (object && !setup.parts.some((r) => r.part.id === object.id)) {
+      lines.push({ text: p(lang, 'notConnected') + tx(lang, object.short), muted: false });
+    }
+    return { runs: [{ text: tx(lang, f.fn.name) }], tags: [], lines };
   });
   return {
     id: 'functions',
@@ -258,6 +302,8 @@ export function documentModel(view: View, url: string, now: Date, diagram: Diagr
     titleSection(view, url, now),
     { id: 'safety', blocks: [{ kind: 'safety', title: t(lang, 'safety'), notes: catalogue.safety.map((s) => boldRuns(tx(lang, s.text))) }] },
     partsSection(view),
+    testedSection(view),
+    powerSection(view),
     functionsSection(view),
     wiringSection(view, diagram),
     orderSection(view),

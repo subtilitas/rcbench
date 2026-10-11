@@ -129,15 +129,33 @@ test('the catalogue passes against the repository at the release tag', (t) => {
 
 test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.equal(CATALOGUE.parts.length, 19);
-  assert.equal(CATALOGUE.parts.filter((p) => p.selectable).length, 11);
+  assert.equal(CATALOGUE.parts.filter((p) => p.selectable).length, 9);
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
+  assert.deepEqual(CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id), ['servo', 'esc']);
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
-  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 58 }, (_, i) => i + 1));
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 63 }, (_, i) => i + 1));
   assert.equal(CATALOGUE.functions.length, 21);
-  assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 10);
+  // 12 functions need no part beyond the base setup: 10 run on every setup, 2 drive a test object.
+  assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 12);
+  assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives !== undefined).map((f) => f.id), ['servo', 'esc']);
+  assert.deepEqual(
+    CATALOGUE.functions.filter((f) => f.drives !== undefined).map((f) => [f.id, f.drives, f.needs]),
+    [
+      ['servo', 'servo', []], ['servotest', 'servo', ['pdmini']], ['servocur', 'servo', ['ina3221']],
+      ['angle', 'servo', ['as5600']], ['esc', 'esc', []], ['escpow', 'esc', ['ina228']],
+      ['stick', 'esc', ['pdmini']], ['tap', 'esc', ['sim', 'tap']],
+    ],
+  );
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 25);
+  assert.equal(CATALOGUE.checks.length, 27);
+  assert.deepEqual(
+    CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
+    [
+      ['usb', 'logic'], ['copro-5v', 'servo'], ['strip-v', 'servo'], ['pd-servo', 'servo'], ['lipo-2s', 'servo'],
+      ['own-supply', 'servo'], ['esc-battery', 'esc'], ['pd-esc', 'esc'],
+    ],
+  );
   assert.equal(CATALOGUE.stages.length, 5);
   assert.equal(CATALOGUE.safety.length, 7);
   assert.equal(CATALOGUE.release, '0.16.0');
@@ -250,20 +268,15 @@ test('a drawing is an SVG file without script, reference or raster', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
-    'osoyoo-labels', 'profiles-state',
+    'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
+    'osoyoo-labels', 'servo-5v-pin', 'strip-supply', 'esc-programming-power',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
   assert.deepEqual(unconfirmed, ['ina3221.LP', 'as5600.GPO']);
-  assert.deepEqual(
-    CATALOGUE.parts.filter((p) => p.hardware === 'not-run').map((p) => p.id),
-    ['ina3221', 'as5600', 'pull', 'ina228', 'estop', 'sim', 'tap', 'usbtap'],
-  );
-  assert.deepEqual(
-    CATALOGUE.functions.filter((f) => f.hardware === 'not-run').map((f) => f.id),
-    ['interlock', 'stop', 'sweep', 'ppm', 'language', 'profiles', 'servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
-  );
+  // No entry states whether a part or a function has run on hardware: the page states that once, for the project.
+  for (const entry of [...CATALOGUE.parts, ...CATALOGUE.functions]) assert.ok(!('hardware' in entry), entry.id);
+  assert.deepEqual(CATALOGUE.checks.filter((k) => k.id.endsWith('-state')).map((k) => k.id), []);
   // No part is without a stated role. The pins with one option value only are
   // the 2 supply pins of the INA228 board and the 2 minus poles of the module
   // with XT90 plugs.
@@ -454,6 +467,181 @@ test('references: unknown parts and option values are reported', () => {
   reports(checkRefs(both), 'part.panel', /locked/);
 });
 
+test('references: a test object is driven, never needed, added, locked or ticked', () => {
+  assert.deepEqual(checkRefs(CATALOGUE).filter((f) => f.level === 'error'), []);
+  const fn = (c: Catalogue, id: string): Catalogue['functions'][number] => c.functions.find((f) => f.id === id)!;
+  const part = (c: Catalogue, id: string): Catalogue['parts'][number] => c.parts.find((x) => x.id === id)!;
+
+  const needs = copy();
+  fn(needs, 'servotest').needs = ['servo', 'pdmini'];
+  reports(checkRefs(needs), 'function.servotest', /needs the test object servo/);
+
+  const drives = copy();
+  fn(drives, 'servotest').drives = 'pdmini';
+  reports(checkRefs(drives), 'function.servotest', /drives pdmini, which is no test object/);
+  fn(drives, 'servotest').drives = 'gimbal';
+  reports(checkRefs(drives), 'function.servotest', /drives gimbal, which is no test object/);
+
+  const adds = copy();
+  adds.rules[0]!.adds = 'servo';
+  reports(checkRefs(adds), `rule.${adds.rules[0]!.id}`, /adds the test object servo/);
+
+  for (const key of ['locked', 'selectable'] as const) {
+    const fixed = copy();
+    part(fixed, 'esc')[key] = true;
+    reports(checkRefs(fixed), 'part.esc', /a test object is neither locked nor selectable/);
+  }
+
+  // A test object needs a function that drives it on the base setup: the tick that connects it.
+  const noTick = copy();
+  fn(noTick, 'servo').needs = ['sd'];
+  reports(checkRefs(noTick), 'part.servo', /without a function that drives it on the base setup/);
+  const undriven = copy();
+  delete fn(undriven, 'esc').drives;
+  reports(checkRefs(undriven), 'part.esc', /without a function that drives it on the base setup/);
+});
+
+test('references: a power source feeds the logic or a test object, with an advantage, a drawback and ordered numbers', () => {
+  const source = (c: Catalogue, id: string): Catalogue['powerSources'][number] => c.powerSources.find((x) => x.id === id)!;
+
+  const twice = copy();
+  twice.powerSources.push(structuredClone(source(twice, 'usb')));
+  reports(checkRefs(twice), 'power.usb', /twice/);
+
+  const feeds = copy();
+  source(feeds, 'lipo-2s').feeds = 'pdmini' as never;
+  reports(checkRefs(feeds), 'power.lipo-2s', /feeds pdmini, which is neither the logic nor a test object/);
+
+  const pros = copy();
+  source(pros, 'copro-5v').pros = [];
+  reports(checkRefs(pros), 'power.copro-5v', /no advantage/);
+  const cons = copy();
+  source(cons, 'copro-5v').cons = [];
+  reports(checkRefs(cons), 'power.copro-5v', /no drawback/);
+
+  const volts = copy();
+  source(volts, 'pd-esc').volts = { min: 20, max: 1 };
+  reports(checkRefs(volts), 'power.pd-esc', /voltage range/);
+  source(volts, 'pd-esc').volts = { min: 0, max: 20 };
+  reports(checkRefs(volts), 'power.pd-esc', /voltage range/);
+  const amps = copy();
+  source(amps, 'pd-esc').amps = { min: 3, max: 0.05 };
+  reports(checkRefs(amps), 'power.pd-esc', /current range/);
+  source(amps, 'pd-esc').amps = { min: null, max: 0 } as never;
+  reports(checkRefs(amps), 'power.pd-esc', /current range/);
+
+  const basis = copy();
+  const bare = source(basis, 'pd-esc');
+  bare.volts = null;
+  bare.amps = null;
+  assert.notEqual(bare.basis, null);
+  reports(checkRefs(basis), 'power.pd-esc', /a basis without a number/);
+
+  const when = copy();
+  source(when, 'strip-v').when = { has: 'gimbal' };
+  reports(checkRefs(when), 'power.strip-v', /gimbal/);
+  const used = copy();
+  source(used, 'strip-v').used = { opt: 'connection', is: 'rail' } as never;
+  reports(checkRefs(used), 'power.strip-v', /connection=rail/);
+
+  // Every test object has a source, and so has the logic.
+  const none = copy();
+  none.powerSources = none.powerSources.filter((x) => x.feeds !== 'esc');
+  reports(checkRefs(none), 'part.esc', /a test object without a power source/);
+  const logic = copy();
+  logic.powerSources = logic.powerSources.filter((x) => x.feeds !== 'logic');
+  reports(checkRefs(logic), 'power', /no power source of the logic/);
+});
+
+/** Ids of the parts a condition names with `has`, outside every `not`. */
+function causes(cond: unknown): string[] {
+  if (cond === null || typeof cond !== 'object') return [];
+  const c = cond as { has?: string; all?: unknown[]; any?: unknown[] };
+  if (typeof c.has === 'string') return [c.has];
+  return [...(c.all ?? []), ...(c.any ?? [])].flatMap(causes);
+}
+
+/** The part ids at the ends of a wire. A pad of the coprocessor is no part. */
+const partsOn = (w: Catalogue['wires'][number]): string[] =>
+  [w.a, w.b].filter((e): e is string => e !== null && !/^(pad|can)\./.test(e)).map((e) => e.split('.')[0]!);
+
+/** The nets of a wire. Ground joins every part of the bench, so it shows no cause. */
+const netsOn = (w: Catalogue['wires'][number]): string[] => [w.net, ...(w.netB ? [w.netB] : [])].filter((n) => n !== 'gnd');
+
+/** Whether a wire joins part `p` to part `q`, or to a net other than ground that a wire of `q` is on. */
+function joined(c: Catalogue, p: string, q: string): boolean {
+  const nets = new Set(c.wires.filter((w) => partsOn(w).includes(q)).flatMap(netsOn));
+  return c.wires.some((w) => partsOn(w).includes(p) && (partsOn(w).includes(q) || netsOn(w).some((n) => nets.has(n))));
+}
+
+/** Whether a wire has one end on part `p` and the other on part `q`. */
+const direct = (c: Catalogue, p: string, q: string): boolean =>
+  c.wires.some((w) => partsOn(w).includes(p) && partsOn(w).includes(q));
+
+/** The parts a rule adds for another part without a wire to that part or its net. */
+function looseAdds(c: Catalogue): string[] {
+  const out: string[] = [];
+  for (const rule of c.rules) {
+    const from = causes(rule.when).filter((id) => id !== rule.adds);
+    if (from.length > 0 && !from.some((id) => joined(c, rule.adds, id))) out.push(`${rule.id}: ${rule.adds} has no wire to ${from.join(', ')}`);
+  }
+  return out;
+}
+
+/** The parts that sit between 2 parts without a wire to each of them. */
+function looseBetween(c: Catalogue): string[] {
+  const out: string[] = [];
+  for (const part of c.parts) {
+    const role = `${part.role?.en ?? ''} ${part.role?.de ?? ''}`;
+    if (/sits between|sitzt zwischen/i.test(role) && !part.between) out.push(`${part.id}: the role says "between" and the part names no 2 parts`);
+    for (const id of part.between ?? []) {
+      if (!direct(c, part.id, id)) out.push(`${part.id}: no wire to ${id}`);
+    }
+  }
+  return out;
+}
+
+test('a part that a rule adds for another part has a wire to that part or to its net', () => {
+  assert.deepEqual(looseAdds(CATALOGUE), []);
+  // Every rule names a part as its cause, so every rule is held to this.
+  for (const rule of CATALOGUE.rules) assert.ok(causes(rule.when).length > 0, rule.id);
+  // The PD charger is joined to the PD mini by the net of the T-plug, the T-plug by a wire.
+  assert.ok(!direct(CATALOGUE, 'charger', 'pdmini'));
+  assert.ok(joined(CATALOGUE, 'charger', 'pdmini'));
+  assert.ok(direct(CATALOGUE, 'usbtap', 'pdmini'));
+
+  // Without the wire from the socket OUT, the T-plug keeps its UART wires to pads and its ground, and has none to the PD mini.
+  const cut = copy();
+  cut.wires = cut.wires.filter((w) => w.n !== 63);
+  assert.deepEqual(looseAdds(cut), ['pd-charger: charger has no wire to pdmini', 'pd-tplug: usbtap has no wire to pdmini']);
+  const alone = copy();
+  alone.wires = alone.wires.filter((w) => w.n !== 19);
+  assert.deepEqual(looseAdds(alone), ['pd-charger: charger has no wire to pdmini']);
+});
+
+test('a part that sits between 2 parts has a wire to each of them', () => {
+  assert.deepEqual(looseBetween(CATALOGUE), []);
+  const plug = CATALOGUE.parts.find((p) => p.id === 'usbtap')!;
+  assert.deepEqual(plug.between, ['charger', 'pdmini']);
+  assert.deepEqual(plug.pins.map((p) => p.id), ['OUT', 'IN', 'G', 'DP', 'DM', 'V']);
+  // The path as it is built: charger to IN, OUT to the PD mini, on 1 net.
+  const path = CATALOGUE.wires.filter((w) => w.net === 'pd_in').map((w) => [w.n, w.a, w.b, w.kind]);
+  assert.deepEqual(path, [[19, 'charger.USB', 'usbtap.IN', 'wire'], [63, 'usbtap.OUT', 'pdmini.USB', 'wire']]);
+  for (const w of CATALOGUE.wires.filter((x) => x.net === 'pd_in')) {
+    assert.ok(!/T-plug|T-Stecker/.test(`${w.note?.en} ${w.note?.de}`), `wire ${w.n} names the T-plug in its note`);
+  }
+
+  const noIn = copy();
+  noIn.wires.find((w) => w.n === 19)!.b = 'pdmini.USB';
+  assert.deepEqual(looseBetween(noIn), ['usbtap: no wire to charger']);
+  const noOut = copy();
+  noOut.wires = noOut.wires.filter((w) => w.n !== 63);
+  assert.deepEqual(looseBetween(noOut), ['usbtap: no wire to pdmini']);
+  const unnamed = copy();
+  delete unnamed.parts.find((p) => p.id === 'usbtap')!.between;
+  assert.deepEqual(looseBetween(unnamed), ['usbtap: the role says "between" and the part names no 2 parts']);
+});
+
 // --- invariant 5: text ------------------------------------------------------
 
 test('text: a missing German string is reported', () => {
@@ -513,7 +701,9 @@ test('text: the walk reaches every kind of string', () => {
     'parts.panel.pins.CANH.label', 'parts.ina228.variantName.names.xt90', 'pads.11.reserved',
     'wires.1.signal', 'wires.1.note', 'wires.13.to', 'functions.servo.name',
     'rules.esc-pd.because', 'checks.can-60.text', 'stages.1.title', 'safety.0.text',
-    'notInRelease.kst.text', 'baseFunction',
+    'notInRelease.kst.text', 'baseFunction', 'powerSources.usb.label', 'powerSources.usb.text',
+    'powerSources.copro-5v.pros.0', 'powerSources.copro-5v.cons.0', 'powerSources.copro-5v.unknowns.0',
+    'powerSources.pd-servo.basis',
   ]) {
     assert.ok(ids.includes(id), `${id} is not walked`);
   }
@@ -539,7 +729,7 @@ test('src: every item carries one', () => {
     CATALOGUE.parts.length + pins + CATALOGUE.pads.length + CATALOGUE.wires.length
       + CATALOGUE.functions.length + CATALOGUE.rules.length + CATALOGUE.checks.length
       + CATALOGUE.stages.length + CATALOGUE.safety.length + CATALOGUE.notInRelease.length
-      + CATALOGUE.pinDefaults.length,
+      + CATALOGUE.pinDefaults.length + CATALOGUE.powerSources.length,
   );
 
   const c = copy();
