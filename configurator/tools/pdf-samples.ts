@@ -12,7 +12,7 @@ import type { Lang } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
 import { buildPdf } from '../src/export/build.ts';
 import { formatHash } from '../src/hash.ts';
-import { optionsOf } from '../src/names.ts';
+import { benchParts, optionsOf, testObjectsOf } from '../src/names.ts';
 import { sweep } from '../test/geometry.ts';
 import type { Sample } from '../test/geometry.ts';
 
@@ -39,5 +39,5 @@ for (const [sample, lang] of picks) {
   const made = await buildPdf({ view, url, now: new Date(), css, fonts });
   const path = join(folder, made.fileName);
   writeFileSync(path, made.bytes);
-  console.log(`${path}: ${made.bytes.length} bytes, ${made.laid.pages.length} pages, ${setup.parts.length} parts, ${setup.wires.length} wires`);
+  console.log(`${path}: ${made.bytes.length} bytes, ${made.laid.pages.length} pages, ${benchParts(setup).length} parts, ${testObjectsOf(setup).length} test objects, ${setup.wires.length} wires`);
 }

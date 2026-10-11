@@ -29,14 +29,14 @@ function largest(): Selection {
 
 /**
  * A link that names every id of the list "not in a release" as a function and
- * as a part, next to the first function of a release and the first function with a part
- * that has not run on hardware. No id of the list is a function or a part of
- * the catalogue: the page ignores each and reports it.
+ * as a part, next to the first function of a release and the first function
+ * that needs a part. No id of the list is a function or a part of the
+ * catalogue: the page ignores each and reports it.
  */
 function notInRelease(): Case {
   const listed = CATALOGUE.notInRelease.map((n) => n.id);
-  const notRun = CATALOGUE.functions.find((f) => f.hardware === 'not-run' && f.needs.length > 0)?.id;
-  const functions = [FUNCTIONS[0] as string, ...(notRun ? [notRun] : [])];
+  const withPart = CATALOGUE.functions.find((f) => f.needs.length > 0 && f.id !== FUNCTIONS[0])?.id;
+  const functions = [FUNCTIONS[0] as string, ...(withPart ? [withPart] : [])];
   return {
     name: 'not in a release',
     selection: selectionOf({ functions }),

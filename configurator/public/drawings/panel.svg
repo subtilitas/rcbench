@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 380 290" width="380" height="290" role="img" aria-labelledby="pnl-t" aria-describedby="pnl-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="pnl-t">Waveshare ESP32-S3-Touch-LCD-7 panel</title>
+<desc id="pnl-d">Illustration of the back of the panel: connector J8 with GND and GPIO6, CAN connector with CAN H and CAN L.</desc>
+<defs>
+<linearGradient id="pnl-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="pnl-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="pnl-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="pnl-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="pnl-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="pnl-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="pnl-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="pnl-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="pnl-plate" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9dee2"/><stop offset="0.5" stop-color="#c3c9ce"/><stop offset="1" stop-color="#a9b0b6"/></linearGradient>
+<linearGradient id="pnl-pcb-blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3069bb"/><stop offset="0.5" stop-color="#1f4f97"/><stop offset="1" stop-color="#173c76"/></linearGradient>
+</defs>
+<rect width="380" height="290" rx="10" fill="#efebe3"/>
+<g filter="url(#pnl-sh)"><rect x="12" y="14" width="356" height="262" rx="12" fill="#1a2733"/></g>
+<rect x="28" y="26" width="324" height="238" rx="4" fill="url(#pnl-plate)"/>
+<circle cx="46" cy="48" r="7" fill="url(#pnl-ring)"/><circle cx="46" cy="48" r="5" fill="#70777e" stroke="#6d737b"/>
+<circle cx="338" cy="44" r="7" fill="url(#pnl-ring)"/><circle cx="338" cy="44" r="5" fill="#70777e" stroke="#6d737b"/>
+<circle cx="46" cy="244" r="7" fill="url(#pnl-ring)"/><circle cx="46" cy="244" r="5" fill="#70777e" stroke="#6d737b"/>
+<circle cx="338" cy="248" r="7" fill="url(#pnl-ring)"/><circle cx="338" cy="248" r="5" fill="#70777e" stroke="#6d737b"/>
+<rect x="150" y="14" width="56" height="46" fill="#c9862f"/><rect x="166" y="26" width="22" height="18" rx="1" fill="#1b1c20"/>
+<g filter="url(#pnl-sh)"><rect x="66" y="54" width="240" height="204" rx="4" fill="url(#pnl-pcb-blue)"/></g><rect x="66.5" y="54.5" width="239" height="203" rx="4" fill="none" stroke="#fff" stroke-opacity=".10"/>
+<circle cx="84" cy="70" r="6.3" fill="url(#pnl-ring)"/><circle cx="84" cy="70" r="4.5" fill="#70777e" stroke="#6d737b"/>
+<circle cx="288" cy="70" r="6.3" fill="url(#pnl-ring)"/><circle cx="288" cy="70" r="4.5" fill="#70777e" stroke="#6d737b"/>
+<circle cx="84" cy="240" r="6.3" fill="url(#pnl-ring)"/><circle cx="84" cy="240" r="4.5" fill="#70777e" stroke="#6d737b"/>
+<g filter="url(#pnl-s3)"><rect x="100" y="62" width="40" height="34" rx="2" fill="url(#pnl-tin)"/></g><path d="M106 70H134M106 78H126" stroke="#8e959d" stroke-width="1.5"/>
+<g filter="url(#pnl-s3)"><rect x="58" y="108" width="30" height="22" rx="5" fill="url(#pnl-tin)"/></g><rect x="58.5" y="108.5" width="29" height="21" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="70" y="112.8" width="9" height="3.1" rx="2" fill="#7d848c"/><rect x="70" y="122.1" width="9" height="3.1" rx="2" fill="#7d848c"/><rect x="58" y="111" width="5" height="16" fill="#2a2c31"/>
+<g filter="url(#pnl-s3)"><rect x="58" y="150" width="30" height="22" rx="5" fill="url(#pnl-tin)"/></g><rect x="58.5" y="150.5" width="29" height="21" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="70" y="154.8" width="9" height="3.1" rx="2" fill="#7d848c"/><rect x="70" y="164.1" width="9" height="3.1" rx="2" fill="#7d848c"/><rect x="58" y="153" width="5" height="16" fill="#2a2c31"/>
+<g filter="url(#pnl-s3)"><rect x="72" y="196" width="52" height="54" rx="2" fill="url(#pnl-tin)"/></g><rect x="72" y="250" width="52" height="14" fill="#1b1c20"/><path d="M78 260V254H86V260H94V254H102V260H110V254H118" fill="none" stroke="#c9a54a" stroke-width="1.2"/>
+<rect x="148" y="112" width="56" height="62" fill="#a9a6a0"/><rect x="148" y="174" width="56" height="14" fill="#c9862f"/><rect x="142" y="188" width="68" height="9" rx="1" fill="#e9e6de" filter="url(#pnl-s2)"/>
+<g transform="translate(176,86) rotate(0)" filter="url(#pnl-s2)"><rect x="-11" y="-4.3" width="22" height="2.6" fill="url(#pnl-tin)"/><rect x="-11" y="-1.3" width="22" height="2.6" fill="url(#pnl-tin)"/><rect x="-11" y="1.7" width="22" height="2.6" fill="url(#pnl-tin)"/><rect x="-8" y="-6" width="16" height="12" rx="1.5" fill="url(#pnl-body)"/><rect x="-8" y="-6" width="16" height="1.9" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-4" cy="-2" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<g transform="translate(212,84) rotate(0)" filter="url(#pnl-s2)"><rect x="-14" y="-5.5" width="28" height="2.6" fill="url(#pnl-tin)"/><rect x="-14" y="-2.7" width="28" height="2.6" fill="url(#pnl-tin)"/><rect x="-14" y="0.1" width="28" height="2.6" fill="url(#pnl-tin)"/><rect x="-14" y="2.9" width="28" height="2.6" fill="url(#pnl-tin)"/><rect x="-11" y="-7" width="22" height="14" rx="1.5" fill="url(#pnl-body)"/><rect x="-11" y="-7" width="22" height="2.2" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-7" cy="-3" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<g transform="translate(120,120) rotate(0) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(120,136) rotate(0) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(104,152) rotate(90) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(120,170) rotate(0) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(150,226) rotate(0)" filter="url(#pnl-s2)"><rect x="-13" y="-6.1" width="26" height="2.6" fill="url(#pnl-tin)"/><rect x="-13" y="-2.9" width="26" height="2.6" fill="url(#pnl-tin)"/><rect x="-13" y="0.3" width="26" height="2.6" fill="url(#pnl-tin)"/><rect x="-13" y="3.5" width="26" height="2.6" fill="url(#pnl-tin)"/><rect x="-10" y="-8" width="20" height="16" rx="1.5" fill="url(#pnl-body)"/><rect x="-10" y="-8" width="20" height="2.6" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-6" cy="-4" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<g transform="translate(182,214) rotate(0) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(182,230) rotate(0) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(206,222) rotate(90) scale(0.8)" filter="url(#pnl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pnl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<rect x="138" y="244" width="22" height="9" rx="1" fill="#1b1c20"/><rect x="170" y="244" width="22" height="9" rx="1" fill="#1b1c20"/>
+<rect x="212" y="238" width="9" height="14" rx="1" fill="#e2b93b"/><rect x="232" y="238" width="9" height="14" rx="1" fill="#e2b93b"/>
+<g filter="url(#pnl-s3)"><rect x="280" y="84" width="30" height="60" rx="2" fill="#f4f1e8"/></g><rect x="284" y="87" width="18" height="54" fill="#d9d5c9"/>
+<rect x="288" y="92" width="12" height="8" rx="1" fill="url(#pnl-gold)" stroke="#6b5a1e" stroke-width=".6"/>
+<rect x="288" y="110" width="12" height="8" rx="1" fill="url(#pnl-gold)" stroke="#6b5a1e" stroke-width=".6"/>
+<rect x="290" y="129.8" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+<text id="pnl-lbl-J8G" x="274" y="118.5" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">J8 GND</text>
+<text id="pnl-lbl-J8S" x="274" y="100.5" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">J8 GPIO6 (print AD)</text>
+<g filter="url(#pnl-s3)"><rect x="280" y="150" width="30" height="44" rx="2" fill="#f4f1e8"/></g><rect x="284" y="153" width="18" height="38" fill="#d9d5c9"/>
+<rect x="288" y="159" width="12" height="8" rx="1" fill="url(#pnl-gold)" stroke="#6b5a1e" stroke-width=".6"/>
+<rect x="288" y="177" width="12" height="8" rx="1" fill="url(#pnl-gold)" stroke="#6b5a1e" stroke-width=".6"/>
+<text id="pnl-lbl-CANH" x="274" y="167.5" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">CAN H</text>
+<text id="pnl-lbl-CANL" x="274" y="185.5" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">CAN L</text>
+<g filter="url(#pnl-s3)"><rect x="280" y="200" width="30" height="34" rx="2" fill="#f4f1e8"/></g><rect x="284" y="203" width="18" height="28" fill="#d9d5c9"/>
+<rect x="290" y="205.8" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+<rect x="290" y="212.3" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+<rect x="290" y="218.8" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+<rect x="290" y="225.3" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+<g filter="url(#pnl-s3)"><rect x="280" y="238" width="30" height="18" rx="2" fill="#f4f1e8"/></g><rect x="284" y="241" width="18" height="12" fill="#d9d5c9"/>
+<rect x="290" y="241.8" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+<rect x="290" y="248.3" width="8" height="4.4" rx="1" fill="url(#pnl-tin)"/>
+</svg>

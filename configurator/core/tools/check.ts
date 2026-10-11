@@ -208,7 +208,37 @@ export function checkRefs(c: Catalogue): Finding[] {
     const added = parts.get(rule.adds);
     if (!added) out.push(err(`rule.${rule.id}`, `adds the unknown part ${rule.adds}`));
     else if (added.locked) out.push(err(`rule.${rule.id}`, `adds the locked part ${rule.adds}`));
+    else if (added.testObject === true) out.push(err(`rule.${rule.id}`, `adds the test object ${rule.adds}`));
   }
+
+  // Power sources: each feeds the logic or a test object; each test object has one.
+  for (const id of duplicates(c.powerSources.map((s) => s.id))) out.push(err(`power.${id}`, 'the id is used twice'));
+  for (const source of c.powerSources) {
+    const id = `power.${source.id}`;
+    if (source.choice !== undefined) {
+      const same = c.powerSources.filter((s) => s.choice === source.choice);
+      if (same.length < 2) out.push(err(id, `the choice ${source.choice} holds 1 source`));
+      if (same.some((s) => s.feeds !== source.feeds)) out.push(err(id, `the choice ${source.choice} feeds more than 1 thing`));
+    }
+    cond(id, source.when);
+    cond(id, source.used);
+    if (source.feeds !== 'logic' && parts.get(source.feeds)?.testObject !== true) {
+      out.push(err(id, `feeds ${source.feeds}, which is neither the logic nor a test object`));
+    }
+    if (source.pros.length === 0) out.push(err(id, 'no advantage'));
+    if (source.cons.length === 0) out.push(err(id, 'no drawback'));
+    if (source.volts && (source.volts.min > source.volts.max || source.volts.min <= 0)) out.push(err(id, 'the voltage range is not ordered'));
+    if (source.amps && ((source.amps.min ?? 0) > source.amps.max || source.amps.max <= 0)) out.push(err(id, 'the current range is not ordered'));
+    if ((source.volts === null && source.amps === null) !== (source.basis === null) && source.basis !== null) {
+      out.push(err(id, 'a basis without a number'));
+    }
+  }
+  for (const part of c.parts) {
+    if (part.testObject === true && !c.powerSources.some((s) => s.feeds === part.id)) {
+      out.push(err(`part.${part.id}`, 'a test object without a power source'));
+    }
+  }
+  if (c.parts.length > 0 && !c.powerSources.some((s) => s.feeds === 'logic')) out.push(err('power', 'no power source of the logic'));
 
   const forced = new Map<string, string>();
   for (const fn of c.functions) {
@@ -216,6 +246,10 @@ export function checkRefs(c: Catalogue): Finding[] {
     if (fn.needs.length === 0 && fn.forces !== undefined) out.push(err(id, 'needs no part and forces an option'));
     for (const partId of fn.needs) {
       if (!parts.has(partId)) out.push(err(id, `needs the unknown part ${partId}`));
+      else if (parts.get(partId)?.testObject === true) out.push(err(id, `needs the test object ${partId}; a test object belongs in \`drives\``));
+    }
+    if (fn.drives !== undefined && parts.get(fn.drives)?.testObject !== true) {
+      out.push(err(id, `drives ${fn.drives}, which is no test object`));
     }
     optionMap(id, fn.forces);
     for (const [key, value] of Object.entries(fn.forces ?? {})) {
@@ -231,6 +265,10 @@ export function checkRefs(c: Catalogue): Finding[] {
     const id = `part.${part.id}`;
     if (part.release !== 'released') out.push(err(id, 'only released parts are in `parts`'));
     if (part.locked && part.selectable) out.push(err(id, 'a locked part is not selectable'));
+    if (part.testObject === true && (part.locked || part.selectable)) out.push(err(id, 'a test object is neither locked nor selectable'));
+    if (part.testObject === true && !c.functions.some((f) => f.drives === part.id && f.needs.every((p) => parts.get(p)?.locked === true))) {
+      out.push(err(id, 'a test object without a function that drives it on the base setup'));
+    }
     for (const picture of part.pictures ?? []) optionMap(`${id}.picture.${picture.file}`, picture.only);
     for (const pin of part.pins) optionMap(`${id}.${pin.id}`, pin.only);
     if (part.variantName) {
@@ -366,6 +404,7 @@ export function collectAnchors(c: Catalogue): Anchor[] {
   for (const fn of c.functions) out.push({ id: `function.${fn.id}`, src: fn.src, pageAllowed: false });
   for (const rule of c.rules) out.push({ id: `rule.${rule.id}`, src: rule.src, pageAllowed: true });
   for (const check of c.checks) out.push({ id: `check.${check.id}`, src: check.src, pageAllowed: true });
+  for (const source of c.powerSources) out.push({ id: `power.${source.id}`, src: source.src, pageAllowed: false });
   for (const stage of c.stages) out.push({ id: `stage.${stage.n}`, src: stage.src, pageAllowed: false });
   c.safety.forEach((note, i) => out.push({ id: `safety.${i}`, src: note.src, pageAllowed: false }));
   for (const item of c.notInRelease) {

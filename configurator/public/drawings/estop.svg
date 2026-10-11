@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 340 200" width="340" height="200" role="img" aria-labelledby="est-t" aria-describedby="est-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="est-t">Emergency stop button, latching, 1 NO and 1 NC contact</title>
+<desc id="est-d">Illustration of the emergency stop button from the side: red head, nut, switch body, solder tabs.</desc>
+<defs>
+<linearGradient id="est-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="est-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="est-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="est-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="est-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="est-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="est-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="est-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="est-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0564a"/><stop offset="0.5" stop-color="#c2221b"/><stop offset="1" stop-color="#7f0f0c"/></linearGradient>
+<linearGradient id="est-chr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fafbfc"/><stop offset="0.3" stop-color="#c9ced4"/><stop offset="0.7" stop-color="#8b929a"/><stop offset="1" stop-color="#d9dde1"/></linearGradient>
+<linearGradient id="est-clr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe6f5"/><stop offset="0.5" stop-color="#8fc1e6"/><stop offset="1" stop-color="#4f8fc4"/></linearGradient>
+</defs>
+<rect width="340" height="200" rx="10" fill="#efebe3"/>
+<g filter="url(#est-sh)"><path d="M22 58Q22 40 44 40H96Q112 40 118 58L124 62V138L118 142Q112 160 96 160H44Q22 160 22 142Z" fill="url(#est-red)"/></g>
+<path d="M34 52Q60 44 104 52" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>
+<rect x="124" y="54" width="14" height="92" rx="3" fill="url(#est-chr)"/>
+<rect x="138" y="70" width="74" height="60" fill="url(#est-chr)"/><path d="M178 70V130M184 70V130M190 70V130M196 70V130M202 70V130M208 70V130" stroke="#7d848c" stroke-width="1.2"/>
+<g filter="url(#est-s3)"><rect x="146" y="56" width="28" height="88" rx="3" fill="url(#est-chr)"/></g><path d="M146 80H174M146 120H174" stroke="#7d848c" stroke-width="1"/>
+<rect x="212" y="66" width="38" height="68" rx="5" fill="url(#est-clr)" stroke="#3f77a8" stroke-width="1"/><rect x="232" y="72" width="18" height="56" rx="2" fill="#2f6fb0" opacity=".7"/>
+<rect x="250" y="66.5" width="40" height="11" rx="2" fill="url(#est-gold)" stroke="#6b5a1e" stroke-width=".6" filter="url(#est-s2)"/><circle cx="283" cy="72" r="2.8" fill="#efebe3" stroke="#6b5a1e" stroke-width=".6"/>
+<rect x="250" y="96.5" width="24" height="7" rx="2" fill="url(#est-gold)" stroke="#6b5a1e" stroke-width=".6" filter="url(#est-s2)"/><circle cx="267" cy="100" r="1.6" fill="#efebe3" stroke="#6b5a1e" stroke-width=".6"/>
+<rect x="250" y="122.5" width="40" height="11" rx="2" fill="url(#est-gold)" stroke="#6b5a1e" stroke-width=".6" filter="url(#est-s2)"/><circle cx="283" cy="128" r="2.8" fill="#efebe3" stroke="#6b5a1e" stroke-width=".6"/>
+<text id="est-lbl-NC1" x="332" y="58" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">C, outer tab</text>
+<text x="282" y="104" font-size="11" font-weight="600" fill="#8a8f97" text-anchor="start">NO</text>
+<text id="est-lbl-NC2" x="332" y="152" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">NC, outer tab</text>
+</svg>

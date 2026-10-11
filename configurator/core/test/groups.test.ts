@@ -6,7 +6,9 @@ import { test } from 'node:test';
 
 import type { Catalogue, Cond, Fn, Options, Part, Rule, Selection, Setup, Src } from '../../contract.ts';
 import { CATALOGUE } from '../catalogue.ts';
-import { baseParts, deselectEffect, groups, removalEffect, removalIsPlain } from '../groups.ts';
+import {
+  alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect, removalIsPlain, testObjects,
+} from '../groups.ts';
 import type { Removal } from '../groups.ts';
 import { DEFAULT_OPTIONS, OPTION_VALUES, resolve } from '../resolve.ts';
 
@@ -16,12 +18,20 @@ const text = (s: string) => ({ en: s, de: s });
 function part(id: string, flags: Partial<Part> = {}): Part {
   return {
     id, name: text(id), short: text(id), role: null, locked: false, selectable: true, release: 'released',
-    hardware: 'run', slot: { column: 'none', order: 0 }, pins: [], src: SRC, ...flags,
+    slot: { column: 'none', order: 0 }, pins: [], src: SRC, ...flags,
   };
 }
 
-function fn(id: string, needs: string[], forces?: Partial<Options>): Fn {
-  return { id, group: 'bench', name: text(id), needs, hardware: 'run', src: SRC, ...(forces ? { forces } : {}) };
+function fn(id: string, needs: string[], forces?: Partial<Options>, drives?: string): Fn {
+  return {
+    id, group: 'bench', name: text(id), needs, src: SRC, ...(forces ? { forces } : {}),
+    ...(drives === undefined ? {} : { drives }),
+  };
+}
+
+/** A test object: what a visitor connects and tests. */
+function object(id: string): Part {
+  return part(id, { selectable: false, testObject: true });
 }
 
 function rule(id: string, when: Cond, adds: string): Rule {
@@ -31,7 +41,7 @@ function rule(id: string, when: Cond, adds: string): Rule {
 function catalogue(parts: Part[], functions: Fn[], rules: Rule[] = []): Catalogue {
   return {
     release: '0.0.0', hashVersion: 1, parts, pads: [], wires: [], functions, rules, checks: [], stages: [],
-    safety: [], notInRelease: [], baseFunction: text('base'), pinDefaults: [],
+    safety: [], notInRelease: [], baseFunction: text('base'), pinDefaults: [], powerSources: [],
   };
 }
 
@@ -47,7 +57,8 @@ const off = (effect: Removal): string[] => effect.functionsOff.map((f) => f.id);
 
 const OPTION_SETS: Options[] = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
-    OPTION_VALUES.escPower.map((escPower) => ({ connection, ina228Board, escPower }))));
+    OPTION_VALUES.escPower.flatMap((escPower) =>
+      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower })))));
 
 // ---------------------------------------------------------------------------
 // groups
@@ -154,8 +165,167 @@ test('groups of the data file: every function is in exactly one group, keyed by 
   // The INA228 board is one of 2 boards, and an ESC takes its power from one of 2 sources.
   const escpow = g.find((x) => x.functions.includes('escpow'));
   assert.deepEqual(escpow?.variants, [{ part: 'ina228', option: 'ina228Board', values: ['matek', 'xt90'] }]);
-  assert.deepEqual(g.find((x) => x.key === 'esc')?.oneOf, [['batt'], ['pdmini', 'charger', 'usbtap']]);
-  assert.deepEqual(g.find((x) => x.key === 'servo')?.also, ['ssup']);
+  assert.deepEqual(escpow?.oneOf, [['batt'], ['pdmini', 'charger', 'usbtap']]);
+  // A servo takes its power from the servo supply or, under the other variant, from the bench.
+  assert.deepEqual(g.find((x) => x.key === 'ina3221')?.oneOf, [['ssup'], []]);
+  // No group names a test object: not as a part it needs, not as a part the rules add.
+  const objects = testObjects(CATALOGUE);
+  assert.deepEqual(objects, ['servo', 'esc']);
+  for (const x of g) {
+    for (const id of [...x.key.split('+'), ...x.parts, ...x.also, ...x.oneOf.flat(), ...x.variants.map((v) => v.part)]) {
+      assert.ok(!objects.includes(id), `${x.key}: ${id}`);
+    }
+  }
+  assert.deepEqual(g.map((x) => x.key), ['', 'pdmini', 'ina3221', 'as5600', 'ina228', 'sd', 'estop', 'sim+tap']);
+  // The first group: the 10 functions every setup runs, then the 2 that drive a test object on the base setup.
+  assert.deepEqual(g[0]?.functions.filter((id) => !alwaysOn(CATALOGUE, CATALOGUE.functions.find((f) => f.id === id) as Fn)), ['servo', 'esc']);
+  assert.equal(g[0]?.functions.length, 12);
+  assert.deepEqual([plainDrive(CATALOGUE, 'servo'), plainDrive(CATALOGUE, 'esc'), plainDrive(CATALOGUE, 'sd')], ['servo', 'esc', null]);
+  assert.deepEqual(g.find((x) => x.key === 'pdmini')?.functions, ['servotest', 'stick', 'supply']);
+});
+
+// ---------------------------------------------------------------------------
+// Test objects on fixtures
+// ---------------------------------------------------------------------------
+
+const RIG = catalogue(
+  [
+    ...BASE, object('servo'), object('esc'), part('meter'), part('horn'), part('feed', { selectable: false }),
+    part('pack', { selectable: false }),
+  ],
+  [
+    fn('ui', []), fn('move', [], undefined, 'servo'), fn('current', ['meter'], undefined, 'servo'),
+    fn('both', ['meter', 'horn'], undefined, 'servo'), fn('spin', [], undefined, 'esc'),
+    fn('thrust', ['horn'], undefined, 'esc'), fn('read', ['meter']),
+  ],
+  [rule('feed', { has: 'servo' }, 'feed'), rule('pack', { has: 'esc' }, 'pack')],
+);
+
+test('test objects: a function with a test object only is in the group without a part, and is ticked', () => {
+  const g = groups(RIG);
+  assert.deepEqual(g.map((x) => [x.key, x.functions]), [
+    ['', ['ui', 'move', 'spin']], ['meter', ['current', 'read']], ['horn', ['thrust']], ['meter+horn', ['both']],
+  ]);
+  // No group lists a test object, also not as a part the rules add next to it.
+  assert.deepEqual(g.map((x) => [x.parts, x.also, x.oneOf]), [
+    [[], [], [[], ['feed'], ['pack']]], [['meter'], [], [['feed'], []]], [['horn'], ['pack'], []], [['meter', 'horn'], ['feed'], []],
+  ]);
+  assert.deepEqual(testObjects(RIG), ['servo', 'esc']);
+  assert.deepEqual(RIG.functions.filter((f) => alwaysOn(RIG, f)).map((f) => f.id), ['ui']);
+  assert.deepEqual([plainDrive(RIG, 'servo'), plainDrive(RIG, 'esc'), plainDrive(RIG, 'meter'), plainDrive(RIG, 'nope')], ['move', 'spin', null, null]);
+
+  // Not ticked, the function is off: the test object is not connected. It misses no part.
+  const none = resolve(RIG, select());
+  assert.deepEqual(on(none), ['ui']);
+  assert.deepEqual(none.functions.find((f) => f.fn.id === 'move')?.missing, []);
+  assert.deepEqual(partIds(none), ['panel', 'copro']);
+  // Ticked, it connects the test object; the rules read it as a part of the setup.
+  const moved = resolve(RIG, select(['move']));
+  assert.deepEqual(partIds(moved), ['panel', 'copro', 'servo', 'feed']);
+  assert.deepEqual(on(moved), ['ui', 'move']);
+});
+
+test('test objects: a test object and 1 part, and 2 test objects in one setup', () => {
+  // The part alone enables the function that needs no test object only.
+  const meter = resolve(RIG, select([], ['meter']));
+  assert.deepEqual(on(meter), ['ui', 'read']);
+  assert.deepEqual(meter.functions.find((f) => f.fn.id === 'current')?.missing, []);
+  // With the test object connected the part enables the function that drives it.
+  const one = resolve(RIG, select(['current']));
+  assert.deepEqual(partIds(one), ['panel', 'copro', 'servo', 'meter', 'feed']);
+  assert.deepEqual(on(one), ['ui', 'move', 'current', 'read']);
+  const two = resolve(RIG, select(['move', 'thrust']));
+  assert.deepEqual(partIds(two), ['panel', 'copro', 'servo', 'esc', 'horn', 'feed', 'pack']);
+  assert.deepEqual(on(two), ['ui', 'move', 'spin', 'thrust']);
+  // A test object is no part a visitor owns: the id is ignored.
+  const owned = resolve(RIG, select([], ['servo', 'esc', 'horn']));
+  assert.deepEqual([partIds(owned), on(owned), owned.ignored], [['panel', 'copro', 'horn'], ['ui'], ['esc', 'servo']]);
+});
+
+test('test objects: a test object is not removable, and stays when a part of its function leaves', () => {
+  for (const id of ['servo', 'esc']) {
+    const refused = removalEffect(RIG, select(['move', 'spin']), id);
+    assert.equal(refused.refused, 'testObject', id);
+    assert.deepEqual(refused.selection, select(['move', 'spin']), id);
+    assert.ok(!removalIsPlain(refused));
+  }
+  // Refused also where the test object is not in the setup.
+  assert.equal(removalEffect(RIG, select(), 'servo').refused, 'testObject');
+
+  // The meter leaves: its function goes off, the servo stays through the function that drives it alone.
+  const meter = removalEffect(RIG, select(['current']), 'meter');
+  assert.equal(meter.refused, null);
+  assert.deepEqual(meter.selection, select(['move']));
+  assert.deepEqual([off(meter), meter.partsOut, meter.partsIn, meter.partsKept, meter.objectsOut], [['current', 'read'], [], [], [], []]);
+  assert.deepEqual(partIds(resolve(RIG, meter.selection)), ['panel', 'copro', 'servo', 'feed']);
+  // 2 test objects, 1 shared part: both stay, the other part of a function stays as an owned part.
+  const horn = removalEffect(RIG, select(['both', 'thrust']), 'horn');
+  assert.deepEqual(horn.selection, select(['move', 'spin'], ['meter']));
+  assert.deepEqual([off(horn), horn.partsOut, horn.partsKept, horn.objectsOut], [['both', 'thrust'], [], ['meter'], []]);
+  assert.deepEqual(on(resolve(RIG, horn.selection)), ['ui', 'move', 'current', 'spin', 'read']);
+  // A part the rules add for the test object is held: no removal of bench hardware ends the rule.
+  assert.equal(removalEffect(RIG, select(['move']), 'feed').refused, 'held');
+});
+
+test('test objects: without a function that drives it alone, the test object leaves with the function', () => {
+  const c = catalogue(
+    [...BASE, object('servo'), part('meter'), part('feed', { selectable: false })],
+    [fn('current', ['meter'], undefined, 'servo'), fn('read', ['meter'])],
+    [rule('feed', { has: 'servo' }, 'feed')],
+  );
+  assert.equal(plainDrive(c, 'servo'), null);
+  const effect = removalEffect(c, select(['current']), 'meter');
+  assert.equal(effect.refused, null);
+  assert.deepEqual(effect.selection, select());
+  assert.deepEqual([off(effect), effect.partsOut, effect.objectsOut], [['current', 'read'], ['feed'], ['servo']]);
+  assert.ok(!removalIsPlain(effect));
+  // An owned part that enables nothing leaves alone, and the removal is plain.
+  const plain = removalEffect(catalogue([...BASE, object('servo'), part('meter')], [fn('m', ['meter'], undefined, 'servo')]), select([], ['meter']), 'meter');
+  assert.deepEqual([plain.refused, plain.functionsOff, plain.objectsOut], [null, [], []]);
+  assert.ok(removalIsPlain(plain));
+});
+
+test('test objects: a removal adds the tick of the plain drive only when no function that stays drives the test object', () => {
+  const pick = (functions: string[]): Selection => ({ functions, owned: [], options: { ...DEFAULT_OPTIONS } }) as Selection;
+  const after = (functions: string[], gone: string): string[] => removalEffect(CATALOGUE, pick(functions), gone).selection.functions;
+  // The angle check stays and drives the servo: no further tick.
+  assert.deepEqual(after(['servotest', 'angle'], 'pdmini'), ['angle']);
+  // The test alone: the servo stays connected by the tick of the plain drive.
+  assert.deepEqual(after(['servotest'], 'pdmini'), ['servo']);
+  // A tick of the plain drive that stands before stays as it is.
+  assert.deepEqual(after(['servo', 'servotest', 'angle'], 'pdmini'), ['servo', 'angle']);
+  // Both functions go: 1 tick for the servo.
+  assert.deepEqual(after(['servocur', 'angle'], 'as5600').includes('servo'), false);
+  // 2 test objects: the function that stays drives the servo, none drives the ESC.
+  const two = after(['angle', 'escpow'], 'ina228');
+  assert.deepEqual(two, ['angle', 'esc']);
+  for (const functions of [['servotest', 'angle'], ['servotest'], ['angle', 'escpow']]) {
+    const gone = functions.includes('escpow') ? 'ina228' : 'pdmini';
+    const effect = removalEffect(CATALOGUE, pick(functions), gone);
+    assert.deepEqual(effect.objectsOut, [], functions.join());
+    const setup = resolve(CATALOGUE, effect.selection);
+    for (const id of testObjects(CATALOGUE)) {
+      const before = resolve(CATALOGUE, pick(functions)).parts.some((r) => r.part.id === id);
+      assert.equal(setup.parts.some((r) => r.part.id === id), before, `${id} after ${functions.join()}`);
+    }
+  }
+});
+
+test('test objects: deselecting the last function that drives one disconnects it', () => {
+  const last = deselectEffect(RIG, select(['current']), 'current');
+  assert.deepEqual(last.selection, select());
+  assert.deepEqual([last.stillOn, last.functionsOff, last.partsOut, last.partsStay, last.objectsOut], [false, ['move', 'read'], ['meter', 'feed'], [], ['servo']]);
+  // Another function still drives it: the function goes off for its part, the test object stays.
+  const other = deselectEffect(RIG, select(['current', 'move']), 'current');
+  assert.deepEqual([other.stillOn, other.functionsOff, other.partsOut, other.objectsOut], [false, ['read'], ['meter'], []]);
+  // The function that drives it alone, next to one with a part: it stays on.
+  const plain = deselectEffect(RIG, select(['current', 'move']), 'move');
+  assert.deepEqual([plain.stillOn, plain.functionsOff, plain.partsOut, plain.partsStay, plain.objectsOut], [true, [], [], [], []]);
+  // The only function: it goes off with the test object and the part the rules add for it.
+  const only = deselectEffect(RIG, select(['spin']), 'spin');
+  assert.deepEqual([only.stillOn, only.functionsOff, only.partsOut, only.objectsOut], [false, [], ['pack'], ['esc']]);
+  // A function that is not chosen changes nothing.
+  assert.deepEqual(deselectEffect(RIG, select(['spin']), 'move').objectsOut, []);
 });
 
 // ---------------------------------------------------------------------------
@@ -544,10 +714,13 @@ test('deselect: a function without a part stays on', () => {
 
 const SELECTABLE = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const LOCKED = new Set(baseParts(CATALOGUE));
-/** The functions the base setup runs: no part beyond it. */
-const ON_BASE = CATALOGUE.functions.filter((f) => f.needs.every((p) => LOCKED.has(p))).map((f) => f.id);
-/** The functions that need a part beyond the base setup. The sweeps go over every set of them. */
+/** The functions every setup runs: no part beyond the base setup and no test object. */
+const ON_BASE = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
+/** The functions a visitor ticks: a part beyond the base setup or a test object. The sweeps go over every set of them. */
 const FUNCTIONS = CATALOGUE.functions.filter((f) => !ON_BASE.includes(f.id)).map((f) => f.id);
+const OBJECTS = testObjects(CATALOGUE);
+/** The function that drives each test object on the base setup. */
+const PLAIN = new Map(OBJECTS.map((id) => [plainDrive(CATALOGUE, id) as string, id]));
 
 function subset(ids: string[], mask: number): string[] {
   return ids.filter((_, i) => (mask & (1 << i)) !== 0);
@@ -577,6 +750,11 @@ function assertRemovals(selection: Selection): number {
       assert.equal(effect.refused, 'base', `${id} of ${where}`);
       continue;
     }
+    if (OBJECTS.includes(id)) {
+      assert.equal(effect.refused, 'testObject', `${id} of ${where}`);
+      assert.deepEqual(effect.selection.functions, CATALOGUE.functions.map((f) => f.id).filter((f) => selection.functions.includes(f)), `${id} of ${where}`);
+      continue;
+    }
     count += 1;
     const what = `removing ${id} from ${where}`;
     assert.equal(effect.refused, null, what);
@@ -586,6 +764,10 @@ function assertRemovals(selection: Selection): number {
     assert.ok(!is.includes(id), `${what}: the part is still there`);
     // The lists are the difference of the two setups.
     assert.deepEqual(effect.partsOut, was.filter((p) => p !== id && !is.includes(p)), what);
+    // No test object leaves by the removal of a part: the function that drives it alone keeps it.
+    assert.deepEqual(effect.objectsOut, [], what);
+    assert.deepEqual(OBJECTS.filter((p) => was.includes(p)), OBJECTS.filter((p) => is.includes(p)), what);
+    assert.ok(effect.partsOut.every((p) => !OBJECTS.includes(p)) && effect.partsKept.every((p) => !OBJECTS.includes(p)), what);
     assert.deepEqual(effect.partsIn, is.filter((p) => !was.includes(p)), what);
     assert.deepEqual(off(effect), on(before).filter((f) => !on(after).includes(f)), what);
     // A function the base setup runs is on before and after, whatever leaves.
@@ -599,15 +781,22 @@ function assertRemovals(selection: Selection): number {
     if (effect.functionsOn.length > 0) {
       assert.ok(effect.partsIn.length > 0 || effect.options.length > 0, `${what}: a function comes on without a cause`);
     }
-    assert.ok(effect.functionsOn.every((f) => !selection.functions.includes(f)), what);
+    assert.ok(effect.functionsOn.every((f) => !selection.functions.includes(f) && !PLAIN.has(f)), what);
     // A function goes off only because one of its parts leaves or its variant changes.
     for (const f of effect.functionsOff) {
       const needs = (CATALOGUE.functions.find((x) => x.id === f.id) as Fn).needs;
       assert.ok(needs.some((p) => p === id || effect.partsOut.includes(p)) || effect.options.length > 0, `${what}: ${f.id}`);
       assert.equal(f.chosen, selection.functions.includes(f.id), `${what}: ${f.id}`);
     }
-    // The selection shrinks: no function is added, a part is added only as a kept part.
-    assert.ok(effect.selection.functions.every((f) => selection.functions.includes(f)), what);
+    // The selection shrinks: a part is added only as a kept part, and a function
+    // only to keep the test object of a chosen function that goes off.
+    for (const f of effect.selection.functions.filter((x) => !selection.functions.includes(x))) {
+      const kept = PLAIN.get(f);
+      assert.ok(kept !== undefined, `${what}: ${f} is added`);
+      const left = selection.functions.filter((x) => !effect.selection.functions.includes(x));
+      assert.ok(left.some((x) => CATALOGUE.functions.find((y) => y.id === x)?.drives === kept), `${what}: ${f} is added without a cause`);
+      assert.ok(on(before).includes(f), `${what}: ${f} was not on`);
+    }
     assert.deepEqual(effect.selection.owned.filter((p) => !selection.owned.includes(p)), effect.partsKept, what);
     // Only a part that a rule adds, and no visitor can own, comes in.
     for (const p of effect.partsIn) {
@@ -646,9 +835,9 @@ test('sweep over the data file: every part beyond the base is removable from eve
 
 test('sweep over the data file: the functions the base setup runs change no removal', () => {
   assert.ok(ON_BASE.length > 0, 'the data file holds no function without a part');
-  assert.deepEqual(groups(CATALOGUE)[0]?.functions, ON_BASE);
-  // The same in the terms of the page: these are the functions that name no part at all.
-  assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id), ON_BASE);
+  assert.deepEqual(groups(CATALOGUE)[0]?.functions, [...ON_BASE, ...PLAIN.keys()]);
+  // The same in the terms of the page: these are the functions that name no part and no test object.
+  assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives === undefined).map((f) => f.id), ON_BASE);
   const strip = (effect: Removal): unknown => ({ ...effect, selection: { ...effect.selection, functions: effect.selection.functions.filter((f) => !ON_BASE.includes(f)) } });
   let count = 0;
   for (let mask = 0; mask < 2 ** FUNCTIONS.length; mask++) {
@@ -685,8 +874,8 @@ test('sweep over the data file: every set of the functions the base setup runs i
       const effect = deselectEffect(CATALOGUE, selection, id);
       assert.equal(effect.changed, selection.functions.includes(id));
       assert.deepEqual(
-        [effect.stillOn, effect.functionsOff, effect.partsOut, effect.partsIn, effect.partsStay],
-        [effect.changed, [], [], [], []],
+        [effect.stillOn, effect.functionsOff, effect.partsOut, effect.partsIn, effect.partsStay, effect.objectsOut],
+        [effect.changed, [], [], [], [], []],
         `deselecting ${id} from ${selection.functions.join()}`,
       );
     }
@@ -734,7 +923,13 @@ test('sweep over the data file: deselecting a function is the selection without 
       assert.deepEqual(effect.selection.functions, selection.functions.filter((f) => f !== id), what);
       assert.equal(effect.stillOn, on(after).includes(id), what);
       assert.deepEqual(effect.functionsOff, on(before).filter((f) => f !== id && !on(after).includes(f)), what);
-      assert.deepEqual(effect.partsOut, partIds(before).filter((p) => !partIds(after).includes(p)), what);
+      const gone = partIds(before).filter((p) => !partIds(after).includes(p));
+      assert.deepEqual(effect.partsOut, gone.filter((p) => !OBJECTS.includes(p)), what);
+      assert.deepEqual(effect.objectsOut, gone.filter((p) => OBJECTS.includes(p)), what);
+      // A test object leaves exactly when no function that stays chosen drives it.
+      const drives = (CATALOGUE.functions.find((f) => f.id === id) as Fn).drives;
+      const still = effect.selection.functions.some((f) => CATALOGUE.functions.find((x) => x.id === f)?.drives === drives);
+      assert.deepEqual(effect.objectsOut, drives !== undefined && !still ? [drives] : [], what);
       const needs = (CATALOGUE.functions.find((f) => f.id === id) as Fn).needs.filter((p) => !LOCKED.has(p));
       // Each part of the function either stays or leaves.
       assert.deepEqual([...effect.partsStay, ...effect.partsOut.filter((p) => needs.includes(p))].sort(), [...needs].sort(), what);

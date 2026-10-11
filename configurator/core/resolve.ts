@@ -6,8 +6,8 @@
 // Output arrays are in catalogue order, never in input order.
 
 import type {
-  Catalogue, OptionKey, Options, PartId, Reason, ResolvedFunction, ResolvedOption,
-  ResolvedPart, Selection, Setup, Unknown,
+  Catalogue, Cond, OptionKey, Options, PartId, Reason, ResolvedFunction, ResolvedOption,
+  ResolvedPart, ResolvedPower, Selection, Setup, Unknown,
 } from '../contract.ts';
 import { holds } from './cond.ts';
 
@@ -19,23 +19,29 @@ export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K
   connection: Object.freeze(['pads', 'osoyoo'] as const),
   ina228Board: Object.freeze(['matek', 'xt90'] as const),
   escPower: Object.freeze(['battery', 'pd'] as const),
+  servoPower: Object.freeze(['external', 'bench'] as const),
 });
 
 export const OPTION_KEYS: ReadonlyArray<OptionKey> = Object.freeze(
-  ['connection', 'ina228Board', 'escPower'] as const,
+  ['connection', 'ina228Board', 'escPower', 'servoPower'] as const,
 );
 
 export const DEFAULT_OPTIONS: Options = Object.freeze({
   connection: 'pads',
   ina228Board: 'matek',
   escPower: 'battery',
+  servoPower: 'external',
 });
 
-/** The part whose presence makes an option visible. `null`: always visible. */
-const OPTION_PART: { readonly [K in OptionKey]: PartId | null } = {
+/**
+ * The setups that show an option. `null`: every setup. The servo supply is a
+ * choice while a servo is connected and no PD mini feeds it.
+ */
+const OPTION_WHEN: { readonly [K in OptionKey]: Cond | null } = {
   connection: null,
-  ina228Board: 'ina228',
-  escPower: 'esc',
+  ina228Board: { has: 'ina228' },
+  escPower: { has: 'esc' },
+  servoPower: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }] },
 };
 
 /** A printable form of a selection entry that is not a known id. */
@@ -73,7 +79,8 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     else ignored.add(describe(entry));
   }
 
-  // Owned parts: only parts listed under "Parts you own".
+  // Owned parts: only parts listed under "Parts you own". A test object is
+  // none of them.
   const selectable = new Set(catalogue.parts.filter((p) => p.selectable).map((p) => p.id));
   const owned = new Set<string>();
   for (const entry of list(field(selection, 'owned'))) {
@@ -92,7 +99,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
   }
 
   // Reasons per part. Insertion follows the order of work: locked parts,
-  // parts of chosen functions, owned parts, then rules.
+  // parts and test objects of chosen functions, owned parts, then rules.
   // An id the catalogue does not hold adds nothing; a function that needs it
   // lists it as missing.
   const partIds = new Set(catalogue.parts.map((p) => p.id));
@@ -110,6 +117,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
   for (const fn of catalogue.functions) {
     if (!chosen.has(fn.id)) continue;
     for (const id of fn.needs) add(id, { kind: 'function', id: fn.id });
+    if (fn.drives !== undefined) add(fn.drives, { kind: 'function', id: fn.id });
   }
   for (const part of catalogue.parts) {
     if (owned.has(part.id)) add(part.id, { kind: 'owned' });
@@ -121,6 +129,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     connection: null,
     ina228Board: null,
     escPower: null,
+    servoPower: null,
   };
   for (const fn of catalogue.functions) {
     if (!chosen.has(fn.id) || !fn.forces) continue;
@@ -163,18 +172,26 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     const optionsHold = OPTION_KEYS.every(
       (key) => forces[key] === undefined || forces[key] === options[key],
     );
-    return { fn, chosen: chosen.has(fn.id), enabled: missing.length === 0 && optionsHold, missing };
+    // A function that drives a test object runs when that object is connected.
+    const connected = fn.drives === undefined || reasons.has(fn.drives);
+    return { fn, chosen: chosen.has(fn.id), enabled: missing.length === 0 && optionsHold && connected, missing };
   });
 
   const resolvedOptions: ResolvedOption[] = OPTION_KEYS.map((key) => {
-    const gate = OPTION_PART[key];
+    const gate = OPTION_WHEN[key];
     return {
       key,
       value: options[key],
-      visible: gate === null || reasons.has(gate),
+      visible: gate === null || holds(gate, ctx),
       forcedBy: forcedBy[key],
     };
   });
+
+  // Power sources: those of the logic and of each connected test object.
+  const power: ResolvedPower[] = list(catalogue.powerSources)
+    .map((entry) => entry as ResolvedPower['source'])
+    .filter((source) => (source.feeds === 'logic' || reasons.has(source.feeds)) && holds(source.when, ctx))
+    .map((source) => ({ source, used: holds(source.used, ctx) }));
 
   return {
     parts,
@@ -183,6 +200,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     wires,
     checks,
     unknown,
+    power,
     conflicts: [],
     ignored: [...ignored].sort(),
   };

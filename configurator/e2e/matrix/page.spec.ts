@@ -26,7 +26,8 @@ for (const setup of SETUPS) {
     await expect(page.locator(`${SEL.baseRows} :is(input, button, a, select, [tabindex])`)).toHaveCount(0);
     await expect(page.locator(SEL.doesBase)).toHaveCount(BASE_FUNCTIONS.length);
     for (const id of BASE_FUNCTIONS) expect(shown.hash.split(/[=,&]/)).toEqual(setup.hash?.split(/[=,&]/).includes(id) ? expect.arrayContaining([id]) : expect.not.arrayContaining([id]));
-    await expect(page.locator(SEL.drawing)).toHaveAttribute('aria-label', /\S/);
+    await expect(page.locator(SEL.picture)).toBeVisible();
+    await expect(page.locator(SEL.picture)).toHaveAccessibleName(/\S/);
 
     await expectNoHorizontalScroll(page);
     // Open sections and the end of the page are inside the viewport as well.
@@ -79,10 +80,14 @@ for (const setup of SETUPS) {
     for (const hidden of ['#choose', SEL.bar, '.lang', SEL.copy, SEL.print, SEL.pdf, SEL.pdfStatus, SEL.reset]) {
       await expect(page.locator(hidden), hidden).toBeHidden();
     }
-    // No control of the chooser is left on paper.
-    expect(await page.locator('input:visible, button:visible, select:visible, summary:visible').count()).toBe(0);
+    // No control of the chooser is left on paper. The number of a wire in the table is a button that marks
+    // the wire in the picture: it stays, as the number of its row.
+    expect(await page.locator('input:visible, button:not(.wn):visible, select:visible, summary:visible').count()).toBe(0);
+    await expect(page.locator(`${SEL.row} button.wn:visible`)).toHaveCount(shown.wires.length);
     await expect(page.locator('.printonly')).toBeVisible();
     await expect(page.locator('.printonly')).toContainText(shown.hash);
+    // Both views of the wiring are on paper.
+    await expect(page.locator(SEL.picture)).toBeVisible();
     await expect(page.locator(SEL.drawing)).toBeVisible();
     await expect(page.locator(SEL.row)).toHaveCount(shown.wires.length);
     if (shown.wires.length > 0) await expect(page.locator(SEL.row).first()).toBeVisible();

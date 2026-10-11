@@ -147,6 +147,52 @@ svg .pill rect { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
 svg .pill text { font-size: 11px; font-weight: 700; text-anchor: middle; }
 svg .dot { fill: var(--ink); }
 
+/* Wiring picture. The box shows the whole picture; pan and zoom move the group .vp inside it. */
+.views, .tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+button.seg, button.tool { font: inherit; font-size: 15px; min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; border-radius: 6px; }
+button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.dia { border: 1px solid var(--hair); border-radius: 8px; background: var(--surface); overflow: hidden; touch-action: pan-y; cursor: grab; max-width: 100%; }
+.dia.zoomed { touch-action: none; }
+.dia svg { display: block; width: 100%; height: auto; max-height: 80vh; color: var(--ink); user-select: none; -webkit-user-select: none; }
+.dia image { pointer-events: none; }
+.dia .cap { font-size: 13px; font-weight: 700; fill: var(--ink); }
+.dia path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.dia .hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; }
+.dia .core { stroke-width: 3; }
+.dia .case { stroke-width: 5; }
+.dia .thick .core { stroke-width: 7; }
+.dia .thick .case { stroke-width: 9; }
+.dia .cable .sheath { stroke-width: 7; }
+.dia .cable .core { stroke-width: 3; }
+.dia .k-stub .core { stroke-dasharray: 5 4; }
+.dia .k-component .core { stroke-width: 2; }
+.dia .cb { fill: #d8643a; stroke: var(--ink); stroke-width: 1; }
+.dia .cbd { fill: #17181c; }
+.dia .ct { font-size: 10px; font-weight: 600; fill: var(--ink); }
+.dia .nb { fill: var(--surface); stroke-width: 1.5; }
+.dia .nt { font-size: 9px; font-weight: 700; text-anchor: middle; fill: var(--ink); }
+/* A wire with the keyboard focus carries the focus outline of the page around its box. */
+.dia .dw { cursor: pointer; transition: opacity .15s; }
+.dia .dw:focus:not(:focus-visible) { outline: none; }
+.dia .has-on .dw { opacity: .25; }
+.dia .has-on .dw.on { opacity: 1; }
+.dia .dw.on .core { stroke-width: 6; }
+.dia .dw.on .case { stroke-width: 8; }
+.dia .dw.thick.on .core { stroke-width: 10; }
+.dia .dw.thick.on .case { stroke-width: 12; }
+.dia .dw.cable.on .sheath { stroke-width: 10; }
+.dia .dw.cable.on .core { stroke-width: 4; }
+#dia-legend { margin: 8px 0 0; color: var(--ink); }
+#dia-legend .lg { flex: none; }
+#dia-legend .lg path { fill: none; stroke-linecap: round; }
+.dia .dw.on .nb, .dia .dw.marked .nb { stroke: var(--ink); stroke-width: 2.5; }
+.dia .dw:focus-visible .nb { stroke: var(--accent); stroke-width: 3; }
+.dia .dw:focus-visible .hit { stroke: var(--accent); stroke-opacity: .35; }
+@media (prefers-reduced-motion: reduce) { .dia .dw { transition: none; } }
+button.wn { font: inherit; display: inline-flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; min-height: 44px; padding: 2px; border: 0; border-radius: 6px; background: none; color: inherit; cursor: pointer; }
+table.wires tr.on { background: var(--note-bg); }
+table.wires tr.marked td.n b { background: var(--ink); color: var(--surface); }
+
 table.wires { border-collapse: collapse; width: 100%; font-size: 14.5px; background: var(--surface); }
 table.wires caption { text-align: left; color: var(--muted); font-size: 13.5px; padding: 6px 0; background: var(--bg); }
 table.wires th, table.wires td { border: 1px solid var(--hair); padding: 6px 8px; text-align: left; vertical-align: top; }
@@ -168,7 +214,7 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   table.wires thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   table.wires, table.wires tbody { display: block; }
   table.wires caption { display: block; }
-  table.wires tr { display: grid; grid-template-columns: 40px minmax(0, 1fr); border-top: 1px solid var(--hair); padding: 6px 0; }
+  table.wires tr { display: grid; grid-template-columns: 48px minmax(0, 1fr); border-top: 1px solid var(--hair); padding: 6px 0; }
   table.wires td { display: block; border: 0; padding: 1px 0; grid-column: 2; }
   table.wires td.n { grid-column: 1; grid-row: 1 / span 5; }
   table.wires td[data-l]::before { content: attr(data-l) " "; color: var(--muted); font-size: 13px; }
@@ -199,6 +245,15 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   .page { display: block; padding: 0; max-width: none; }
   #result { margin-top: 0; }
   .pan { overflow: visible; border: 0; }
+  /* Both views print. The picture takes a landscape page of its own, fitted to its width, in the fit view. */
+  @page wide { size: A4 landscape; margin: 10mm; }
+  .views, .tools, #dia-hint { display: none !important; }
+  .view[hidden] { display: block !important; }
+  #view-pic { page: wide; break-before: page; break-after: page; }
+  .dia { border: 0; overflow: visible; }
+  .dia svg { max-height: 180mm; }
+  .dia .vp { transform: none !important; }
+  .dia .has-on .dw { opacity: 1; }
   .pan svg { width: 100%; height: auto; }
   tr, li, .stage, .safety { break-inside: avoid; }
   .parts li.pic { display: block; }

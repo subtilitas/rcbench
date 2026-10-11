@@ -1,11 +1,46 @@
 // Names of wire ends as the table and the drawing's titles show them.
 
-import type { Catalogue, EndRef, Lang, Options, Pad, Pin, Setup, Wire } from '../contract.ts';
+import type {
+  Catalogue, EndRef, Lang, Options, Pad, Pin, PowerSource, ResolvedPart, ResolvedPower, Setup, Wire,
+} from '../contract.ts';
 import { t, tx } from './i18n.ts';
 
 export type NameCtx = { lang: Lang; catalogue: Catalogue; options: Options };
 
-const FALLBACK: Options = { connection: 'pads', ina228Board: 'matek', escPower: 'battery' };
+const FALLBACK: Options = { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external' };
+
+/** The bench hardware of a setup: its parts without the test objects. */
+export function benchParts(setup: Setup): ResolvedPart[] {
+  return setup.parts.filter((r) => r.part.testObject !== true);
+}
+
+/** The test objects a setup connects. */
+export function testObjectsOf(setup: Setup): ResolvedPart[] {
+  return setup.parts.filter((r) => r.part.testObject === true);
+}
+
+/** The power sources of a setup by what they feed, in the order of the setup. */
+export function powerGroups(setup: Setup): Array<{ feeds: PowerSource['feeds']; sources: ResolvedPower[] }> {
+  const out: Array<{ feeds: PowerSource['feeds']; sources: ResolvedPower[] }> = [];
+  for (const entry of setup.power) {
+    const group = out.find((g) => g.feeds === entry.source.feeds);
+    if (group) group.sources.push(entry);
+    else out.push({ feeds: entry.source.feeds, sources: [entry] });
+  }
+  return out;
+}
+
+/** Voltage and current of a power source as text: "1 to 20 V, 0.05 to 3 A. Vendor values, not measured." Empty without a number. */
+export function powerNumbers(lang: Lang, source: PowerSource): string {
+  const num = (v: number): string => (lang === 'de' ? String(v).replace('.', ',') : String(v));
+  const span = (min: number, max: number): string => (min === max ? num(min) : t(lang, 'pwTo', { a: num(min), b: num(max) }));
+  const out: string[] = [];
+  const { volts, amps } = source;
+  if (volts) out.push(`${volts.steps ? volts.steps.map(num).join(` ${t(lang, 'pwOr')} `) : span(volts.min, volts.max)} V`);
+  if (amps) out.push(`${amps.min === null ? t(lang, 'pwUpTo', { a: num(amps.max) }) : span(amps.min, amps.max)} A`);
+  if (out.length === 0) return '';
+  return `${out.join(', ')}.${source.basis ? ` ${tx(lang, source.basis)}` : ''}`;
+}
 
 /** Option values of a setup as one record. */
 export function optionsOf(setup: Setup): Options {
