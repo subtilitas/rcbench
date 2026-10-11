@@ -3,10 +3,15 @@
 
 import type { Core } from '../contract.ts';
 import { CATALOGUE } from './catalogue.ts';
-import { baseParts, deselectEffect, groups, removalEffect, removalIsPlain } from './groups.ts';
+import {
+  alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect, removalIsPlain, testObjects,
+} from './groups.ts';
 import { DEFAULT_OPTIONS, resolve } from './resolve.ts';
 
-export { CATALOGUE, DEFAULT_OPTIONS, resolve, baseParts, deselectEffect, groups, removalEffect, removalIsPlain };
+export {
+  CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect,
+  removalIsPlain, testObjects,
+};
 export type { Deselect, Group, GroupVariant, OptionChange, Refusal, Removal } from './groups.ts';
 
 const core: Core = Object.freeze({ CATALOGUE, resolve, DEFAULT_OPTIONS });

@@ -142,9 +142,38 @@ function measure(): Contrast {
     note('wire', label(wire), over(stroke, bg), bg, 3);
   }
 
+  // Wires of the wiring picture, of its legend and of the colour samples of the table. A wire is a core
+  // with, for some colours, a casing: the colour of the 2 that stands out more is the one that counts.
+  const best = (colours: Array<Rgba | null>, bg: number[]): number[] | null => {
+    let out: number[] | null = null;
+    for (const c of colours) {
+      if (!c || c[3] === 0) continue;
+      const fg = over(c, bg);
+      if (!out || ratio(fg, bg) > ratio(out, bg)) out = fg;
+    }
+    return out;
+  };
+  for (const wire of document.querySelectorAll<SVGElement>('svg.picture g.dw, #dia-legend svg.lg')) {
+    if (!shown(wire)) continue;
+    const bg = behind(wire.closest('svg'));
+    const strokes = [...wire.querySelectorAll<SVGPathElement>('path:not(.hit)')].map((p) => parse(getComputedStyle(p).stroke, label(p)));
+    const fg = best(strokes, bg);
+    if (fg) note('wire', label(wire), fg, bg, 3);
+  }
+  for (const sample of document.querySelectorAll<SVGRectElement>('svg.sw rect')) {
+    if (!shown(sample)) continue;
+    const style = getComputedStyle(sample);
+    const bg = behind(sample.closest('svg'));
+    const fg = best([parse(style.fill, label(sample)), style.stroke === 'none' ? null : parse(style.stroke, label(sample))], bg);
+    if (fg) note('wire', label(sample), fg, bg, 3);
+  }
+
   // Outlines of the boxes and the wire numbers of the drawings.
   for (const shape of document.querySelectorAll<SVGGeometryElement>('svg rect, svg circle')) {
     if (!shown(shape)) continue;
+    // A colour sample is measured above as a wire. The number of a wire of the picture stands on a plate
+    // with a border in the colour of the wire: the number is measured as text, the wire as a wire.
+    if (shape.closest('svg.sw') || shape.matches('svg.picture rect.nb')) continue;
     const style = getComputedStyle(shape);
     if (style.stroke === 'none' || Number.parseFloat(style.strokeWidth) === 0) continue;
     const stroke = parse(style.stroke, label(shape));

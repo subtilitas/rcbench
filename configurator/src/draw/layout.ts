@@ -63,7 +63,7 @@ export const SPEC_GEO: Geometry = {
 };
 
 /**
- * The geometry the page draws. It differs from SPEC_GEO in 5 places, each of
+ * The geometry the page draws. It differs from SPEC_GEO in 6 places, each of
  * which removes a collision that test/layout.test.ts finds in SPEC_GEO:
  *
  * - Module tops sit on a 20 px grid that starts at y = 34. Every module pin row
@@ -81,6 +81,10 @@ export const SPEC_GEO: Geometry = {
  *   on a right module is at x = 750 and lanes 19 and 20 pass through it. The 3
  *   minus wires of the INA228 module with XT90 plugs use lanes 1 and 0 in place
  *   of 21 and 22, which lie outside the gutter.
+ * - The 2 wires of the servo supply from pad 40: wire 59 uses right lane 5 and
+ *   wire 60 right lane 13. Wire 59 runs the height of the coprocessor; lane 5
+ *   holds wire 24 of the INA3221 board only, and wire 59 is absent with that
+ *   board. Wire 60 is absent with wires 28 and 29, which use lane 13.
  * - The pill of a component between 2 pads sits 8 px from its line. It then
  *   ends 3 px before right lane 0, which wire 58 uses.
  */
@@ -89,7 +93,9 @@ export const GEO: Geometry = {
   moduleTop: 34, snap: 20,
   channel0: 549, channelPitch: 10,
   outerPillPitch: 21, zPill: 8,
-  laneFix: { 10: 2, 21: 2, 14: 1, 22: 1, 28: 13, 29: 13, 30: 14, 45: 16, 46: 16, 47: 17, 51: 18, 56: 1, 57: 1, 58: 0 },
+  laneFix: {
+    10: 2, 21: 2, 14: 1, 22: 1, 28: 13, 29: 13, 30: 14, 45: 16, 46: 16, 47: 17, 51: 18, 56: 1, 57: 1, 58: 0, 59: 5, 60: 13,
+  },
 };
 
 export type PinBox = {

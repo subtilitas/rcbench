@@ -16,10 +16,14 @@ for (const setup of SETUPS) {
     expect(walkProblems(walk)).toEqual([]);
 
     const ids = walk.stops.map((s) => s.what);
-    // The controls every setup has: each function, the section of owned parts, the PDF export, the drawing, "Start over".
-    for (const what of [...FUNCTIONS.map((id) => `input${SEL.fn(id)}`), `summary${SEL.ownSummary}`, `button${SEL.pdf}`, `div${SEL.pan}`, `button${SEL.reset}`]) {
+    // The controls every setup has: each function, the section of owned parts, the PDF export, the switch of the 2 views,
+    // the box of the wiring picture, "Start over". The schematic is hidden and is no stop: `views.spec.ts` walks it.
+    for (const what of [...FUNCTIONS.map((id) => `input${SEL.fn(id)}`), `summary${SEL.ownSummary}`, `button${SEL.pdf}`, `button${SEL.view('pic')}`, `button${SEL.view('sch')}`, `div${SEL.dia}`, `button${SEL.reset}`]) {
       expect(ids, `${what} is no stop`).toContain(what);
     }
+    expect(ids).not.toContain(`div${SEL.pan}`);
+    // The wires of the picture are 1 stop: the arrow keys move between them.
+    expect(ids.filter((what) => what === 'g').length).toBe(await page.locator(SEL.pictureWire).count() > 0 ? 1 : 0);
     // Both languages are buttons with a name.
     expect(walk.stops.filter((s) => s.region === 'header' && s.role === 'button').length).toBe(2);
     // The chooser comes before the result, the footer with the link to the trademark notice ends the result,

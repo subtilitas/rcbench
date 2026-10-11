@@ -9,11 +9,19 @@ import { formatHash } from '../../src/hash.ts';
 
 /** The selectors of the page the tests share. A change of the markup is made here once. */
 export const SEL = {
+  /** The wiring picture: the view the page opens on. */
+  picture: 'svg.picture',
+  /** The schematic: the view behind `SEL.view('sch')`. */
   drawing: 'svg.drawing',
   wire: 'svg.drawing path.w:not(.x)',
+  /** A wire of the wiring picture: 1 group per wire. */
+  pictureWire: 'svg.picture g.dw',
+  /** The box of the wiring picture. */
+  dia: '#dia',
   row: 'table.wires tbody tr',
   rowNumber: 'table.wires tbody tr td.n b',
-  part: '.parts li',
+  // The cards of the bench parts and of the test objects. The cards of the power sources are no parts.
+  part: '.parts:not(.power) > li',
   notice: '.msg:not(#note)',
   note: '#note',
   summary: '#result .sum p',
@@ -35,6 +43,7 @@ export const SEL = {
   question: '#rmwarn',
   yes: '#rm-yes',
   no: '#rm-no',
+  view: (id: 'pic' | 'sch'): string => `#v-${id}`,
   fn: (id: string): string => `#f-${id}`,
   owned: (id: string): string => `#p-${id}`,
   remove: (id: string): string => `#rm-${id}`,
@@ -42,10 +51,10 @@ export const SEL = {
   lang: (lang: Lang): string => `.lang button[data-lang="${lang}"]`,
 } as const;
 
-/** The functions with a tick: those that need a part. */
-export const FUNCTIONS: string[] = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
-/** The functions that need no part: a list without controls, in no hash. */
-export const BASE_FUNCTIONS: string[] = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+/** The functions with a tick: those that need a part or drive a test object. */
+export const FUNCTIONS: string[] = CATALOGUE.functions.filter((f) => f.needs.length > 0 || f.drives !== undefined).map((f) => f.id);
+/** The functions that need no part and drive no test object: a list without controls, in no hash. */
+export const BASE_FUNCTIONS: string[] = CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives === undefined).map((f) => f.id);
 export const OWNED: string[] = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 
 /** A selection from the parts of one: what is left out is empty or the default. */
@@ -67,13 +76,21 @@ export function hashOf(selection: Selection, lang?: Lang): string {
 }
 
 /**
- * Loads the page with a hash and waits for the drawing. A navigation that
- * changes the hash alone does not load the page, so the page starts from blank.
+ * Loads the page with a hash and waits for the wiring picture, the view the page opens on.
+ * A navigation that changes the hash alone does not load the page, so the page starts from blank.
  */
 export async function openHash(page: Page, hash: string): Promise<void> {
   await page.goto('about:blank');
   await page.goto(`./${hash}`);
+  await page.locator(SEL.picture).waitFor();
+}
+
+/** Switches from the wiring picture to the schematic and waits for it. */
+export async function showSchematic(page: Page): Promise<void> {
+  await page.locator(SEL.view('sch')).click();
+  await expect(page.locator(SEL.view('sch'))).toHaveAttribute('aria-pressed', 'true');
   await page.locator(SEL.drawing).waitFor();
+  await expect(page.locator(SEL.picture)).toBeHidden();
 }
 
 /** Loads the page with a selection. */
@@ -176,7 +193,8 @@ export function expectedOf(selection: Selection): Pick<Shown, 'functions' | 'own
   return {
     functions: inOrder(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), FUNCTIONS),
     owned: CATALOGUE.parts.filter((p) => p.selectable && setup.parts.some((r) => r.part.id === p.id)).map((p) => p.id),
-    removable: inOrder(setup.parts.filter((p) => !p.part.locked).map((p) => p.part.id), PARTS),
+    // A test object has no remove control: it leaves with the tick of its function.
+    removable: inOrder(setup.parts.filter((p) => !p.part.locked && p.part.testObject !== true).map((p) => p.part.id), PARTS),
     // A variant group the resolver states as visible, with its value. No other group is on the page.
     options: Object.fromEntries(setup.options.filter((o) => o.visible).map((o) => [o.key, o.value])),
     parts: inOrder(setup.parts.map((p) => p.part.id), PARTS),

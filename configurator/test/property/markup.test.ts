@@ -11,7 +11,8 @@
 //  4. No link and no image leaves the page folder.
 //  5. The text holds no placeholder, no "undefined", no banned word and no
 //     exclamation mark, and data text reaches the page escaped.
-//  6. The summary states the count of parts, wires and functions of the setup.
+//  6. The summary states the count of bench parts, wires and functions of the
+//     setup. A test object is no bench part and is not counted.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -177,7 +178,8 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
       if (value === undefined || value.startsWith('#')) continue;
       // The link to the trademark notice leaves the page when the visitor follows it. The page loads nothing from it.
       if (key === 'href' && tag.name === 'a' && value === NOTICE_URL && tag.attrs.get('rel') === 'noopener noreferrer') continue;
-      if (!/^pictures\/[a-z0-9-]+\.(webp|svg)$/.test(value)) out.push(`<${tag.name} ${key}="${value}"> leaves the page folder`);
+      // A picture of a part, or a part drawing of the wiring picture in the language of the page.
+      if (!/^pictures\/[a-z0-9-]+\.(webp|svg)$/.test(value) && !/^drawings\/(de\/)?[a-z0-9-]+\.svg$/.test(value)) out.push(`<${tag.name} ${key}="${value}"> leaves the page folder`);
     }
     if (tag.attrs.has('srcset') || tag.attrs.has('action') || tag.attrs.has('formaction')) out.push(`<${tag.name}> loads from an attribute outside the rule`);
     if (['script', 'iframe', 'object', 'embed', 'link', 'style', 'form', 'base', 'meta'].includes(tag.name)) out.push(`the page renders <${tag.name}>`);
@@ -207,7 +209,7 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
   // 6
   const f = v.setup.functions.filter((x) => x.enabled).length;
   const expected = (f === 1 ? STRINGS.sum1 : STRINGS.sum)[v.lang === 'en' ? 0 : 1]
-    .replace('{p}', String(v.setup.parts.length)).replace('{w}', String(v.setup.wires.length)).replace('{f}', String(f));
+    .replace('{p}', String(v.setup.parts.filter((p) => p.part.testObject !== true).length)).replace('{w}', String(v.setup.wires.length)).replace('{f}', String(f));
   if (summary(v) !== expected) out.push(`the summary is "${summary(v)}", the setup gives "${expected}"`);
   if (!visible.includes(expected)) out.push(`the page does not show "${expected}"`);
   const rows = doc.tags.filter((t) => t.name === 'tr').length - 1;

@@ -39,7 +39,7 @@ for (const setup of SETUPS) {
     await openCase(page, setup);
     const before = await expectSetup(page, selection);
     await page.reload();
-    await page.locator(SEL.drawing).waitFor();
+    await page.locator(SEL.picture).waitFor();
     expect(await expectSetup(page, selection)).toEqual(before);
 
     // A setup the visitor makes on the page survives the reload as well, with the other language.
@@ -56,7 +56,7 @@ for (const setup of SETUPS) {
     // The page states what left with the function. The statement is not part of the link.
     expect(made.note !== '').toBe(off && deselectEffect(CATALOGUE, selection, first).changed);
     await page.reload();
-    await page.locator(SEL.drawing).waitFor();
+    await page.locator(SEL.picture).waitFor();
     expect(await expectSetup(page, toggled)).toEqual({ ...made, note: '' });
     expectQuiet(seen);
   });
@@ -78,7 +78,7 @@ for (const setup of SETUPS) {
     // Away from the page and back to it.
     await page.goto('about:blank');
     await page.goBack();
-    await page.locator(SEL.drawing).waitFor();
+    await page.locator(SEL.picture).waitFor();
     expect(await expectSetup(page, second)).toEqual(next);
     await page.goBack();
     expect(await expectSetup(page, selection)).toEqual(first);

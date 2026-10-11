@@ -1,12 +1,15 @@
-// Groups of functions by the parts they need, and the effect of taking a
-// function or a part out of a selection.
+// Groups of functions by the bench hardware they need, and the effect of
+// taking a function or a part out of a selection.
+//
+// A test object is no part of a group and no part that leaves by a removal:
+// it is in a setup while a chosen function drives it.
 //
 // Pure, like the resolver: no I/O, no clock, no random number, no global
 // state. Every result is derived from the catalogue through `resolve`; no
 // group and no effect is listed by hand. Output arrays are in catalogue order.
 
 import type {
-  Catalogue, Cond, FunctionId, OptionKey, Options, PartId, Selection, Setup,
+  Catalogue, Cond, Fn, FunctionId, OptionKey, Options, PartId, Selection, Setup,
 } from '../contract.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from './resolve.ts';
 
@@ -16,9 +19,10 @@ export type GroupVariant = { part: PartId; option: OptionKey; values: string[] }
 /**
  * The functions that need the same set of parts beyond the base setup.
  *
- * - `parts`: that set. Empty for the functions the base setup runs.
+ * - `parts`: that set, bench hardware only. Empty for the functions that
+ *   need no part beyond the base setup.
  * - `variants`: parts of the set that are one of several boards.
- * - `also`: parts the rules add to the set under every variant.
+ * - `also`: parts the rules add to the set under every variant. No test object.
  * - `oneOf`: parts the rules add under some variants only, one entry per
  *   distinct set. An empty entry is a variant that adds no part. Empty when
  *   every variant adds the same parts.
@@ -40,9 +44,10 @@ export type OptionChange = { key: OptionKey; from: string; to: string };
  * - `unknown`: the catalogue holds no part of this id.
  * - `base`: the part belongs to the base setup.
  * - `absent`: the part is not in the setup of the selection.
+ * - `testObject`: the part is a test object; it leaves when no chosen function drives it.
  * - `held`: a rule adds the part and no removal of a part and no other variant ends it.
  */
-export type Refusal = 'unknown' | 'base' | 'absent' | 'held';
+export type Refusal = 'unknown' | 'base' | 'testObject' | 'absent' | 'held';
 
 /**
  * What removing one part does to a selection.
@@ -56,7 +61,10 @@ export type Refusal = 'unknown' | 'base' | 'absent' | 'held';
  * - `partsOut`: other parts that leave with it.
  * - `partsIn`: parts the rules add once it is gone.
  * - `partsKept`: parts of a function that goes off which stay, as owned parts.
+ * - `objectsOut`: test objects that leave: no function that drives them stays.
  * - `options`: variants of the setup that change.
+ *
+ * The part lists hold bench hardware only.
  */
 export type Removal = {
   part: PartId;
@@ -67,6 +75,7 @@ export type Removal = {
   partsOut: PartId[];
   partsIn: PartId[];
   partsKept: PartId[];
+  objectsOut: PartId[];
   options: OptionChange[];
 };
 
@@ -78,6 +87,9 @@ export type Removal = {
  * - `functionsOff`: other functions that go off with it.
  * - `partsOut`: parts that leave. `partsIn`: parts the rules add.
  * - `partsStay`: parts of the function that stay in the setup.
+ * - `objectsOut`: test objects that leave.
+ *
+ * The part lists hold bench hardware only.
  */
 export type Deselect = {
   fn: FunctionId;
@@ -88,11 +100,36 @@ export type Deselect = {
   partsOut: PartId[];
   partsIn: PartId[];
   partsStay: PartId[];
+  objectsOut: PartId[];
 };
 
 /** The parts of the base setup: every setup holds them. */
 export function baseParts(catalogue: Catalogue): PartId[] {
   return catalogue.parts.filter((p) => p.locked).map((p) => p.id);
+}
+
+/** The test objects of a catalogue: what a visitor connects and tests. */
+export function testObjects(catalogue: Catalogue): PartId[] {
+  return catalogue.parts.filter((p) => p.testObject === true).map((p) => p.id);
+}
+
+/**
+ * True for a function every setup runs: it needs no part beyond the base
+ * setup and drives no test object. A selection does not hold such a function.
+ */
+export function alwaysOn(catalogue: Catalogue, fn: Fn): boolean {
+  const base = baseParts(catalogue);
+  return fn.drives === undefined && fn.needs.every((id) => base.includes(id));
+}
+
+/**
+ * The function that drives test object `id` and needs no part beyond the
+ * base setup. A selection that holds it keeps the test object connected.
+ */
+export function plainDrive(catalogue: Catalogue, id: PartId): FunctionId | null {
+  const base = baseParts(catalogue);
+  const fn = catalogue.functions.find((f) => f.drives === id && f.needs.every((p) => base.includes(p)));
+  return fn ? fn.id : null;
 }
 
 /** Every combination of option values, the default combination first. */
@@ -140,8 +177,9 @@ export function groups(catalogue: Catalogue): Group[] {
       if (part?.variantName && values.length > 1) group.variants.push({ part: id, option: part.variantName.option, values });
     }
     // What the rules add: the setup of each function alone, under every
-    // combination of variants, without the base parts and the group's parts.
-    const named = new Set(group.parts);
+    // combination of variants, without the base parts, the group's parts and
+    // the test objects.
+    const named = new Set([...group.parts, ...testObjects(catalogue)]);
     const extras = new Map<string, PartId[]>();
     for (const fn of group.functions) {
       for (const options of sets) {
@@ -205,7 +243,9 @@ function atoms(cond: Cond, parts: Set<PartId>, keys: Set<OptionKey>): void {
  *
  * The part leaves the owned parts. Every chosen function that needs it leaves
  * the selection; the other parts of such a function stay as owned parts where
- * the catalogue lets a visitor own them. Where a rule still adds the part,
+ * the catalogue lets a visitor own them, and its test object stays connected
+ * through the function that drives it without a further part. A test object
+ * itself is refused. Where a rule still adds the part,
  * the smallest change of what the rule reads releases it: another value of a
  * variant, else the removal of a part. A variant that a function forces
  * changes with a part of that function. No part comes in except by a rule,
@@ -220,25 +260,39 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
   const start = own(catalogue, selection, before);
   const refuse = (refused: Refusal): Removal => ({
     part: partId, refused, selection: start, functionsOff: [], functionsOn: [], partsOut: [], partsIn: [],
-    partsKept: [], options: [],
+    partsKept: [], objectsOut: [], options: [],
   });
   const part = catalogue.parts.find((p) => p.id === partId);
   if (!part) return refuse('unknown');
   if (part.locked) return refuse('base');
+  if (part.testObject === true) return refuse('testObject');
   if (!before.parts.some((r) => r.part.id === partId)) return refuse('absent');
 
   const locked = new Set(baseParts(catalogue));
   const selectable = new Set(catalogue.parts.filter((p) => p.selectable).map((p) => p.id));
   const needs = new Map(catalogue.functions.map((f) => [f.id, f.needs]));
+  const drives = new Map(catalogue.functions.map((f) => [f.id, f.drives]));
+  const objects = new Set(testObjects(catalogue));
   /** The selection without the parts of `gone`, under `options`. */
   const without = (gone: Set<PartId>, options: Record<OptionKey, string>): Selection => {
-    const functions = start.functions.filter((id) => !(needs.get(id) as PartId[]).some((p) => gone.has(p)));
+    const stay = new Set(start.functions.filter((id) => !(needs.get(id) as PartId[]).some((p) => gone.has(p))));
     const kept = new Set(start.owned);
+    const freed = new Set<PartId>();
     for (const id of start.functions) {
-      if (!functions.includes(id)) for (const p of needs.get(id) as PartId[]) if (selectable.has(p)) kept.add(p);
+      if (stay.has(id)) continue;
+      for (const p of needs.get(id) as PartId[]) if (selectable.has(p)) kept.add(p);
+      const object = drives.get(id);
+      if (object !== undefined) freed.add(object);
+    }
+    // The test object of a function that goes off stays connected: by a
+    // function that stays and drives it, else by the tick of its plain drive.
+    for (const object of freed) {
+      if ([...stay].some((id) => drives.get(id) === object)) continue;
+      const plain = plainDrive(catalogue, object);
+      if (plain !== null) stay.add(plain);
     }
     return {
-      functions,
+      functions: catalogue.functions.map((f) => f.id).filter((id) => stay.has(id)),
       owned: catalogue.parts.map((p) => p.id).filter((id) => kept.has(id) && !gone.has(id)),
       options: { ...options } as Options,
     };
@@ -291,7 +345,9 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
       }
     }
     for (const id of parts) {
-      if (!locked.has(id) && !gone.has(id) && setup.parts.some((r) => r.part.id === id)) enqueue({ gone: new Set([...gone, id]), options });
+      if (!locked.has(id) && !objects.has(id) && !gone.has(id) && setup.parts.some((r) => r.part.id === id)) {
+        enqueue({ gone: new Set([...gone, id]), options });
+      }
     }
   }
   if (next === null) return refuse('held');
@@ -307,9 +363,10 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
     selection: next,
     functionsOff: before.functions.filter((f) => f.enabled && !on.has(f.fn.id)).map((f) => ({ id: f.fn.id, chosen: f.chosen })),
     functionsOn: after.functions.filter((f) => f.enabled && !ran.has(f.fn.id)).map((f) => f.fn.id),
-    partsOut: was.filter((id) => id !== partId && !is.includes(id)),
+    partsOut: was.filter((id) => id !== partId && !is.includes(id) && !objects.has(id)),
     partsIn: is.filter((id) => !was.includes(id)),
     partsKept: next.owned.filter((id) => !start.owned.includes(id)),
+    objectsOut: was.filter((id) => !is.includes(id) && objects.has(id)),
     options: optionChanges(before, after),
   };
 }
@@ -317,14 +374,15 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
 /** True when the removal changes nothing but the part itself. */
 export function removalIsPlain(effect: Removal): boolean {
   return effect.refused === null && effect.functionsOff.length === 0 && effect.functionsOn.length === 0
-    && effect.partsOut.length === 0
+    && effect.partsOut.length === 0 && effect.objectsOut.length === 0
     && effect.partsIn.length === 0 && effect.partsKept.length === 0 && effect.options.length === 0;
 }
 
 /**
  * The effect of taking function `fnId` out of the visitor's own selection.
  * Its parts stay where another chosen function, an owned part or a rule
- * still brings them.
+ * still brings them. Its test object stays while another chosen function
+ * drives it.
  */
 export function deselectEffect(catalogue: Catalogue, selection: Selection, fnId: FunctionId): Deselect {
   const before = resolve(catalogue, selection);
@@ -333,6 +391,7 @@ export function deselectEffect(catalogue: Catalogue, selection: Selection, fnId:
   if (!fn || !start.functions.includes(fnId)) {
     return {
       fn: fnId, changed: false, selection: start, stillOn: false, functionsOff: [], partsOut: [], partsIn: [], partsStay: [],
+      objectsOut: [],
     };
   }
   const next: Selection = { ...start, functions: start.functions.filter((id) => id !== fnId) };
@@ -341,14 +400,16 @@ export function deselectEffect(catalogue: Catalogue, selection: Selection, fnId:
   const is = partIds(after);
   const on = enabled(after);
   const base = new Set(baseParts(catalogue));
+  const objects = new Set(testObjects(catalogue));
   return {
     fn: fnId,
     changed: true,
     selection: next,
     stillOn: on.has(fnId),
     functionsOff: before.functions.filter((f) => f.enabled && f.fn.id !== fnId && !on.has(f.fn.id)).map((f) => f.fn.id),
-    partsOut: was.filter((id) => !is.includes(id)),
+    partsOut: was.filter((id) => !is.includes(id) && !objects.has(id)),
     partsIn: is.filter((id) => !was.includes(id)),
     partsStay: is.filter((id) => fn.needs.includes(id) && !base.has(id)),
+    objectsOut: was.filter((id) => !is.includes(id) && objects.has(id)),
   };
 }

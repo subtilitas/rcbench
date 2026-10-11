@@ -16,13 +16,15 @@
 //     the option names that function.
 //  4. Every part names at least one reason, and each reason is true.
 //  5. Every function that is not enabled names the parts that are missing, or
-//     an option it forces has another value.
+//     an option it forces has another value, or the test object it drives is
+//     not connected.
 //  6. Every wire ends on a pad, a CAN terminal, or a pin of a part in the
 //     setup that exists under the options of the setup.
 //  7. No pin and no pad carries two nets.
 //  8. No two wires join the same two ends, and no pin has two stubs.
 //  9. The two entry modes agree: the functions a set of parts enables resolve
-//     to parts of that set, plus replacement parts the setup names.
+//     to parts of that set, plus replacement parts the setup names. A test
+//     object is no part to own: the tick of its plain drive connects it.
 // 10. A setup holds released parts only, and no id of the "not in a release"
 //     list.
 
@@ -34,6 +36,7 @@ import type {
 } from '../../../contract.ts';
 import { CATALOGUE } from '../../catalogue.ts';
 import { holds } from '../../cond.ts';
+import { plainDrive } from '../../groups.ts';
 import { OPTION_KEYS, OPTION_VALUES, resolve } from '../../resolve.ts';
 import {
   CASE_LIMIT, MIXED, OPTION_SETS, SEED, enumerate, generator, sample, shuffled, spaceOf, subset,
@@ -124,6 +127,7 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       escPower: selection.options.escPower,
       ina228Board: selection.options.ina228Board,
       connection: selection.options.connection,
+      servoPower: selection.options.servoPower,
     },
   };
   assert.deepEqual(resolve(catalogue, mixed), setup, `another input order differs for ${where}`);
@@ -149,7 +153,9 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       } else if (reason.kind === 'function') {
         const fn = FUNCTIONS.get(reason.id);
         assert.ok(fn && chosen.has(fn.id), `${p.part.id} names the function ${reason.id}, which is not chosen, for ${where}`);
-        assert.ok(fn.needs.includes(p.part.id), `${p.part.id} names the function ${reason.id}, which does not need it, for ${where}`);
+        assert.ok(fn.needs.includes(p.part.id) || fn.drives === p.part.id,
+          `${p.part.id} names the function ${reason.id}, which neither needs nor drives it, for ${where}`);
+        assert.equal(fn.drives === p.part.id, p.part.testObject === true, `${p.part.id} and the function ${reason.id} disagree on the test object for ${where}`);
       } else if (reason.kind === 'rule') {
         const rule = RULES.get(reason.id);
         assert.ok(rule && rule.adds === p.part.id, `${p.part.id} names the rule ${reason.id}, which does not add it, for ${where}`);
@@ -166,6 +172,11 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
     if (part.locked) assert.ok(present.has(part.id), `the locked part ${part.id} is missing for ${where}`);
     if (owned.has(part.id)) assert.ok(present.has(part.id), `the ticked part ${part.id} is missing for ${where}`);
   }
+  // A test object is connected by a chosen function that drives it, and by nothing else.
+  for (const p of setup.parts) {
+    if (p.part.testObject !== true) continue;
+    assert.ok(p.addedBy.every((r) => r.kind === 'function'), `the test object ${p.part.id} names a reason that is no function for ${where}`);
+  }
 
   // 5: a function that is not enabled names what is missing.
   assert.equal(setup.functions.length, catalogue.functions.length);
@@ -175,14 +186,17 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       assert.ok(f.fn.needs.includes(id) && !present.has(id), `${f.fn.id} misses ${id} wrongly for ${where}`);
     }
     const unmet = OPTION_KEYS.filter((key) => f.fn.forces?.[key] !== undefined && f.fn.forces[key] !== options[key]);
+    const loose = f.fn.drives !== undefined && !present.has(f.fn.drives);
     if (f.enabled) {
       assert.ok(f.fn.needs.every((id) => present.has(id)), `${f.fn.id} is enabled without its parts for ${where}`);
       assert.deepEqual(unmet, [], `${f.fn.id} is enabled against an option for ${where}`);
+      assert.ok(!loose, `${f.fn.id} is enabled without the test object ${f.fn.drives} for ${where}`);
     } else {
-      assert.ok(f.missing.length > 0 || unmet.length > 0, `${f.fn.id} is not enabled and names nothing for ${where}`);
+      assert.ok(f.missing.length > 0 || unmet.length > 0 || loose, `${f.fn.id} is not enabled and names nothing for ${where}`);
     }
     if (f.chosen) {
       assert.deepEqual(f.missing, [], `${f.fn.id} is chosen and misses a part for ${where}`);
+      assert.ok(!loose, `${f.fn.id} is chosen and its test object is not connected for ${where}`);
       // A chosen function loses an option only to a chosen function that names itself.
       for (const key of unmet) {
         const by = setup.options.find((o) => o.key === key)?.forcedBy ?? null;
@@ -345,7 +359,7 @@ test('the space is counted before it is walked', () => {
     `${SPACE.functionCases} + ${SPACE.partCases} + ${MIXED} cases are over ${CASE_LIMIT}: sample the subsets`);
   assert.ok(SPACE.productCases > CASE_LIMIT, 'the product of both spaces fits: enumerate it');
   assert.ok(SPACE.functions.length > 0 && SPACE.selectable.length > 0);
-  assert.equal(OPTION_SETS.length, 8);
+  assert.equal(OPTION_SETS.length, 16);
 });
 
 test('the generator gives the same cases for the same seed', () => {
@@ -475,7 +489,10 @@ test('property 9, the other way: the parts of a set of functions enable those fu
   for (const c of enumerate(SPACE.functions, 'functions')) {
     const byFunctions = resolve(CATALOGUE, c.selection);
     const owned = byFunctions.parts.filter((p) => p.part.selectable).map((p) => p.part.id);
-    const byParts = resolve(CATALOGUE, { functions: [], owned, options: optionsOf(byFunctions) });
+    // A test object is no part to own: the tick of its plain drive connects it.
+    const drives = byFunctions.parts.filter((p) => p.part.testObject === true).map((p) => plainDrive(CATALOGUE, p.part.id));
+    assert.ok(drives.every((id) => id !== null), `a test object has no plain drive for ${c.where}`);
+    const byParts = resolve(CATALOGUE, { functions: drives as string[], owned, options: optionsOf(byFunctions) });
     assert.deepEqual([...partIds(byParts)], [...partIds(byFunctions)], `the parts differ for ${c.where}`);
     assert.deepEqual(byParts.wires, byFunctions.wires, `the wires differ for ${c.where}`);
     const enabled = new Set(enabledIds(byParts));
@@ -548,9 +565,12 @@ test('properties 2 and 3 report a part or a function that leaves without a cause
   // The servo supply leaves for the PD mini: the cause is named.
   assert.deepEqual(assertGrows(before, after, 'servo plus servotest').left, ['ssup']);
 
-  // A part a function holds.
+  // A test object a function holds.
   const noServo: Setup = { ...after, parts: after.parts.filter((p) => p.part.id !== 'servo') };
-  assert.throws(() => assertGrows(before, noServo, 'x'), /servo can be ticked and leaves the setup/);
+  assert.throws(() => assertGrows(before, noServo, 'x'), /servo is held by "function" and leaves the setup/);
+  // A part a function holds, which the visitor can tick.
+  const noPd: Setup = { ...after, parts: after.parts.filter((p) => p.part.id !== 'pdmini') };
+  assert.throws(() => assertGrows(after, noPd, 'x'), /pdmini can be ticked and leaves the setup/);
   // A locked part.
   const noPanel: Setup = { ...after, parts: after.parts.filter((p) => p.part.id !== 'panel') };
   assert.throws(() => assertGrows(before, noPanel, 'x'), /panel is held by "always" and leaves the setup/);
