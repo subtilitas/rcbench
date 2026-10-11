@@ -557,12 +557,11 @@ kst_prog_res_t kst_prog_result_class(unsigned result)
     case KST_SES_ERR_UNCONFIRMED:
     case KST_SES_ERR_CHANGED:
     case KST_SES_ERR_NO_PLAN:
-        /* Refused before a frame. */
-        return KST_PROG_RES_CLEAN;
     case KST_SES_ERR_WRITE_FAILED:
     case KST_SES_ERR_ROLLED_BACK:
-        /* Read back at the last settled step: with no step counted done
-         * that is the image the write started from. */
+        /* Refused before a frame; or, the last two, read back at the last
+         * settled step: with no step counted done that is the image the
+         * write started from. */
         return KST_PROG_RES_CLEAN;
     case KST_SES_BUSY:
     case KST_SES_ERR_NO_SERVO:
