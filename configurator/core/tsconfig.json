@@ -11,6 +11,8 @@
     "erasableSyntaxOnly": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "skipLibCheck": true
   },
   "include": ["*.ts", "tools/*.ts", "test/*.ts", "../contract.ts"]

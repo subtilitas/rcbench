@@ -7,9 +7,9 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import type { Catalogue } from '../../contract.ts';
-import { CATALOGUE } from '../catalogue.ts';
+import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import {
-  BANNED_WORDS, RELEASE_TAG, checkAll, checkCounts, checkEnds, checkFunctions, checkIds,
+  ANCHOR_TEXT_MIN, BANNED_WORDS, RELEASE_TAG, checkAll, checkCounts, checkEnds, checkFunctions, checkIds,
   OWNER_STATEMENTS, checkRefs, checkRoutes, checkSrc, checkString, checkTexts, checkTree, collectAnchors,
   collectTexts, gitTree, parseFirmwarePads, parseFirmwarePins, parseSettingDefault, wireTable,
 } from '../tools/check.ts';
@@ -37,7 +37,8 @@ function reports(findings: Finding[], id: string, pattern: RegExp): void {
 /**
  * A stand-in for the repository at the release tag, built from the data:
  * the firmware tables hold the rows the data names, on the lines it names.
- * Every other path is a file of 2000 lines.
+ * Every other path is a file of 2000 lines. Each line an anchor names holds
+ * the text of that anchor.
  */
 function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = () => {}): Tree {
   const filler = (): string[] => Array.from({ length: 2000 }, () => '/* text */');
@@ -72,6 +73,13 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
   iomcu[42] = '#define IOMCU_HEARTBEAT_PIN  3';
 
   const files = new Map<string, string[]>([[OUT_BIND, outBind], [SETTINGS, settings], [IOMCU_PINS, iomcu]]);
+  const squash = (s: string): string => s.replace(/\s+/g, ' ').trim();
+  for (const text of ANCHOR_TEXTS) {
+    const held = files.get(text.path) ?? filler();
+    files.set(text.path, held);
+    const line = held[text.line - 1] ?? '';
+    if (!squash(line).includes(squash(text.has))) held[text.line - 1] = `${line} /* ${text.has} */`;
+  }
   edit(files);
   const known = new Set(collectAnchors(c).flatMap((a) => (a.src?.kind === 'repo' ? [a.src.path] : [])));
   return {
@@ -427,7 +435,8 @@ test('src: a broken repository anchor is reported', () => {
   line.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2001, tag: 'v0.16.0' };
   reports(checkSrc(line, tree).findings, 'function.servo', /past the end/);
   line.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2000, tag: 'v0.16.0' };
-  assert.deepEqual(checkSrc(line, tree).findings, []);
+  const lastLine = [...ANCHOR_TEXTS, { path: 'STATUS.md', line: 2000, has: 'text' }];
+  assert.deepEqual(checkSrc(line, tree, lastLine).findings, []);
 
   const zero = copy();
   zero.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 0, tag: 'v0.16.0' };
@@ -449,6 +458,75 @@ test('src: a broken repository anchor is reported', () => {
   const absolute = copy();
   absolute.functions[0]!.src = { kind: 'repo', path: '/etc/passwd', line: 1, tag: 'v0.16.0' };
   reports(checkSrc(absolute, tree).findings, 'function.servo', /no repository path/);
+});
+
+test('src: a repository anchor names a text, and the line at the tag holds it', () => {
+  const tree = fakeTree(CATALOGUE);
+  const moved = copy();
+  const at = (line: number): Catalogue['functions'][number]['src'] => (
+    { kind: 'repo', path: 'docs/Building.md', line, tag: 'v0.16.0' }
+  );
+
+  // A line that is present and holds another row: no text is named for it.
+  moved.functions[0]!.src = at(106);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /Building\.md:106 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /Building\.md:106 names no text/);
+  reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
+
+  // A named text that the line does not hold.
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106, has: '| PGO | GND |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:106 does not hold "\| PGO \| GND \|" at v0\.16\.0/);
+  reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
+  // Without the tree the text is not compared.
+  assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
+
+  // Every text named for the line is compared.
+  const rows = fakeTree(CATALOGUE, (files) => {
+    lines(files, 'docs/Building.md')[105] = '|  DIR |   GND or VCC, never open |';
+  });
+  const dir = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106, has: '| DIR | GND or VCC' }];
+  assert.deepEqual(checkSrc(moved, rows, dir).findings, []);
+  reports(checkSrc(moved, rows, [...dir, ...wrong]).findings, 'function.servo', /does not hold "\| PGO/);
+
+  // A text under the shortest length names nothing.
+  assert.equal(ANCHOR_TEXT_MIN, 4);
+  const short = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106, has: ' |  D ' }];
+  reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
+  const none = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106 } as { path: string; line: number; has: string }];
+  reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
+
+  // A row of the data moved off its line in the tree.
+  const shifted = fakeTree(CATALOGUE, (files) => {
+    const doc = lines(files, 'docs/Building.md');
+    doc.splice(105, 0, '| DIR | GND or VCC, never open |');
+  });
+  const found = checkSrc(CATALOGUE, shifted).findings;
+  reports(found, 'part.as5600.GPO', /Building\.md:107 does not hold "\| PGO \| GND \|"/);
+  reports(found, 'part.as5600.OUT', /Building\.md:108 does not hold/);
+  reports(found, 'wire.54', /Building\.md:107 does not hold/);
+  reports(found, 'check.as5600-board', /Building\.md:107 does not hold/);
+});
+
+test('src: every repository anchor of the data names a text of its own', () => {
+  const anchors = collectAnchors(CATALOGUE).filter((a) => a.src?.kind === 'repo');
+  assert.equal(ANCHOR_TEXTS.length, anchors.length);
+  assert.ok(Object.isFrozen(ANCHOR_TEXTS));
+  for (const text of ANCHOR_TEXTS) {
+    assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
+    assert.ok(Object.isFrozen(text));
+  }
+  // The AS5600 rows of docs/Building.md at the tag: 106 DIR, 107 PGO, 108 OUT.
+  const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
+  const line = (pin: string): number | null => {
+    const src = as5600?.pins.find((p) => p.id === pin)?.src;
+    return src?.kind === 'repo' ? src.line : null;
+  };
+  assert.equal(line('GPO'), 107);
+  assert.equal(line('OUT'), 108);
+  const strap = CATALOGUE.wires.find((w) => w.n === 54)?.src;
+  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 107, tag: 'v0.16.0' });
+  const board = CATALOGUE.checks.find((k) => k.id === 'as5600-board')?.src;
+  assert.deepEqual(board, strap);
 });
 
 test('src: guide, photo and page rules', () => {

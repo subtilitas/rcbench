@@ -85,10 +85,17 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | Wire ends | A wire end is not a pad or a declared pin of a part, or a power wire ends on a signal pad. |
 | References | A function, rule, condition or stage names an id that does not exist. |
 | Text | A string is empty in one language, starts or ends with white space, or holds an exclamation mark, a listed marketing word, a character outside the allowed set or a tag other than `<b>` in a safety note. |
-| Sources | A record has no source, a file or line does not exist at the tag, the line is empty, or a build guide section, a photo or the date of an owner statement is not known. |
+| Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 16, right 0 to 20, outer 0 to 7, channel 0 to 4). |
 | Tree | The pads, the reserved pins, the heartbeat pin or a pin default differ from the firmware sources at the tag. |
+
+Each repository anchor in `catalogue.ts` is `repo(path, line, text)`. The text
+is 4 characters or more of the cited line, and it states the fact the record
+takes from that line. The check compares it with the file at the tag, with each
+run of white space read as one space. The texts are the export `ANCHOR_TEXTS`;
+they are not part of `CATALOGUE`. Build guide sections, photos and owner
+statements are checked by id, number and date only.
 
 A release tag newer than `v0.16.0` is a warning.
 

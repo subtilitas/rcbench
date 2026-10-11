@@ -28,7 +28,17 @@ function same(s: string): Text {
   return { en: s, de: s };
 }
 
-function repo(path: string, line: number): Src {
+/** A text that a line of the repository holds at the release tag. */
+export type AnchorText = { path: string; line: number; has: string };
+
+const anchorTexts: AnchorText[] = [];
+
+/**
+ * A line of the repository at the release tag. `has` is a text of that line
+ * which states the fact; `tools/check.ts` compares it with the tagged file.
+ */
+function repo(path: string, line: number, has: string): Src {
+  anchorTexts.push(Object.freeze({ path, line, has }));
   return { kind: 'repo', path, line, tag: TAG };
 }
 
@@ -80,8 +90,8 @@ const parts: Part[] = [
       // The docs name no print for the two CAN terminals of the panel.
       pin('CANH', same('CAN H'), guide('wires'), false),
       pin('CANL', same('CAN L'), guide('wires'), false),
-      pin('J8G', same('J8 GND'), repo(BOARD_PINS, 189)),
-      pin('J8S', same('J8 GPIO6'), repo(BOARD_PINS, 189)),
+      pin('J8G', same('J8 GND'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
+      pin('J8S', same('J8 GPIO6'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
     ],
     src: guide('parts'),
   },
@@ -303,11 +313,11 @@ const parts: Part[] = [
     slot: { column: 'R', order: 15 },
     pins: [
       pin('VCC', same('VCC'), guide('stage-4')),
-      pin('OUT', same('OUT'), repo('docs/Building.md', 107)),
+      pin('OUT', same('OUT'), repo('docs/Building.md', 108, '| OUT | not connected')),
       pin('GND', same('GND'), guide('stage-4')),
       // docs/Building.md names this pin PGO and ties it to GND. The print on
       // the board is not confirmed.
-      pin('GPO', same('GPO'), repo('docs/Building.md', 106), false),
+      pin('GPO', same('GPO'), repo('docs/Building.md', 107, '| PGO | GND |'), false),
       pin('SDA', same('SDA'), guide('stage-4')),
       pin('SCL', same('SCL'), guide('stage-4')),
       pin('DIR', same('DIR'), guide('stage-4')),
@@ -517,7 +527,9 @@ const pads: Pad[] = PAD_ROWS.map(([n, name, gpio, line]): Pad => {
     name,
     gpio,
     breakoutLabel: BREAKOUT_LABELS[n] ?? name,
-    src: repo(OUT_BIND, line),
+    // The row of the firmware table opens with the GPIO and the pad, or with
+    // the pad and its kind.
+    src: repo(OUT_BIND, line, gpio !== null ? `{ ${gpio}, ${n},` : `{ ${n}, LINK_PAD_`),
   };
   // GP8 to GP12 are the interrupt and the SPI bus of the CAN controller.
   if (gpio !== null && gpio >= 8 && gpio <= 12) pad.reserved = CAN_RESERVED;
@@ -774,14 +786,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo(SETTINGS, 160),
+    src: repo('docs/FirstRun.md', 289, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo(SETTINGS, 163),
+    src: repo('docs/FirstRun.md', 290, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -969,7 +981,7 @@ const wires: Wire[] = [
       'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
-    src: repo(SETTINGS, 190),
+    src: repo(SETTINGS, 190, 'GP22 is pad 29'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
@@ -990,7 +1002,7 @@ const wires: Wire[] = [
       'docs/Building.md names the pin PGO. No wire to the coprocessor.',
       'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.',
     ),
-    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 106),
+    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 107, '| PGO | GND |'),
   },
 ];
 
@@ -1003,55 +1015,55 @@ const functions: Fn[] = [
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: ['servo'], hardware: 'run', src: repo('STATUS.md', 114),
+    needs: ['servo'], hardware: 'run', src: repo('STATUS.md', 114, 'PWM has swung a servo'),
   },
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
     // docs/Servo.md names three runs of 0.13.0; docs/Screens.md line 753
     // states the opposite. The check entry `servotest-state` carries it.
-    needs: ['servo', 'pdmini'], hardware: 'run', src: repo('docs/Servo.md', 722),
+    needs: ['servo', 'pdmini'], hardware: 'run', src: repo('docs/Servo.md', 722, 'Three runs of 0.13.0 on the bench with the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1 ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['servo', 'ina3221'], hardware: 'not-run', src: repo('docs/Servo.md', 734),
+    needs: ['servo', 'ina3221'], hardware: 'not-run', src: repo('docs/Servo.md', 734, 'No run on the INA3221 has been made on hardware'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Servohorns'),
-    needs: ['servo', 'as5600'], hardware: 'not-run', src: repo('STATUS.md', 121),
+    needs: ['servo', 'as5600'], hardware: 'not-run', src: repo('STATUS.md', 121, 'Output encoder (AS5600) | built and host-tested, not run on hardware'),
   },
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: ['esc'], hardware: 'run', src: repo('STATUS.md', 114),
+    needs: ['esc'], hardware: 'run', src: repo('STATUS.md', 114, 'plain DShot has run a motor'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['esc', 'ina228'], hardware: 'not-run', src: repo('STATUS.md', 119),
+    needs: ['esc', 'ina228'], hardware: 'not-run', src: repo('STATUS.md', 119, 'None of this has run on hardware'),
   },
   {
     id: 'stick', group: 'esc',
     name: t('ESC STICK programming', 'ESC-STICK-Programmierung'),
     needs: ['esc', 'pdmini'], forces: { escPower: 'pd' }, hardware: 'not-run',
-    src: repo('STATUS.md', 433),
+    src: repo('STATUS.md', 433, 'Stick programming has met no ESC'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Read the beeps of the ESC (phase tap)', 'ESC-Töne lesen (Phasenabgriff)'),
-    needs: ['esc', 'sim', 'tap'], hardware: 'not-run', src: repo('STATUS.md', 122),
+    needs: ['esc', 'sim', 'tap'], hardware: 'not-run', src: repo('STATUS.md', 122, 'Not run on hardware: the PIO program'),
   },
   {
     id: 'supply', group: 'bench',
     name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
-    needs: ['pdmini'], hardware: 'run', src: repo('STATUS.md', 107),
+    needs: ['pdmini'], hardware: 'run', src: repo('STATUS.md', 107, 'It ran against a module on the beta bench on 2026-10-06'),
   },
   {
     id: 'logs', group: 'bench',
     name: t('Run logs on a card', 'Laufprotokolle auf Karte'),
-    needs: ['sd'], hardware: 'run', src: repo('docs/Servo.md', 738),
+    needs: ['sd'], hardware: 'run', src: repo('docs/Servo.md', 738, 'Two recordings from a bench on 0.14.0'),
   },
   {
     id: 'estop', group: 'bench',
@@ -1138,7 +1150,7 @@ const checks: Check[] = [
       'Both boards run the same release. With different protocol versions the panel shows "protocol mismatch -- will not arm".',
       'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel "protocol mismatch -- will not arm".',
     ),
-    when: null, src: repo('docs/Link.md', 79),
+    when: null, src: repo('docs/Link.md', 79, 'protocol mismatch -- will not arm'),
   },
   {
     id: 'servo-pin', kind: 'note',
@@ -1146,7 +1158,7 @@ const checks: Check[] = [
       'GP2 for the servo is a proposal of this page. The example of the build guide is GP0. GP0 and GP16 share a compare register, and GP16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
       'GP2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GP0. GP0 und GP16 teilen sich ein Vergleichsregister, und GP16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
     ),
-    when: { has: 'servo' }, src: repo('docs/DShot.md', 110),
+    when: { has: 'servo' }, src: repo('docs/DShot.md', 110, 'Six of those pairs are both free on the header the coprocessor offers: GP0 and'),
   },
   {
     id: 'pd-pins', kind: 'note',
@@ -1162,7 +1174,7 @@ const checks: Check[] = [
       'PD mini: STATUS.md states in one row a run against a module on 2026-10-06 and in another row that the PD mini has never run. The page shows no tag for it.',
       'PD mini: STATUS.md nennt in einer Zeile einen Lauf an einem Modul am 2026-10-06 und in einer anderen Zeile, dass der PD mini nie gelaufen ist. Die Seite zeigt dafür keine Kennzeichnung.',
     ),
-    when: { has: 'pdmini' }, src: repo('STATUS.md', 424),
+    when: { has: 'pdmini' }, src: repo('STATUS.md', 424, '| The PD mini has never run |'),
   },
   {
     id: 'servotest-state', kind: 'unknown',
@@ -1170,7 +1182,7 @@ const checks: Check[] = [
       'Automatic servo test: Servo.md names three runs of release 0.13.0 on a bench; Screens.md states that the test has not run on hardware. The page shows no tag for it. The movement threshold of 0.16.0 has not run on hardware.',
       'Automatischer Servotest: Servo.md nennt drei Läufe von Release 0.13.0 auf einem Prüfstand; Screens.md gibt an, dass der Test nicht auf Hardware gelaufen ist. Die Seite zeigt dafür keine Kennzeichnung. Die Bewegungsschwelle von 0.16.0 ist nicht auf Hardware gelaufen.',
     ),
-    when: { all: [{ has: 'servo' }, { has: 'pdmini' }] }, src: repo('docs/Screens.md', 753),
+    when: { all: [{ has: 'servo' }, { has: 'pdmini' }] }, src: repo('docs/Screens.md', 753, 'The automatic test has not run on hardware'),
   },
   {
     id: 'pd-shared', kind: 'unknown',
@@ -1195,7 +1207,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 291),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 291, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1230,7 +1242,7 @@ const checks: Check[] = [
       'AS5600 board: pull-ups on the board are not known. The print of the pin GPO, named PGO in Building.md, is not confirmed. It is tied to GND.',
       'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO, in Building.md PGO genannt, ist nicht bestätigt. Er liegt an GND.',
     ),
-    when: { has: 'as5600' }, src: repo('docs/Building.md', 106),
+    when: { has: 'as5600' }, src: repo('docs/Building.md', 107, '| PGO | GND |'),
   },
   {
     id: 'tap-ground', kind: 'measure',
@@ -1375,7 +1387,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Programmieranschluss für KST- und Chaservo-Servos: auf main, in keinem Release.',
     ),
     release: 'main',
-    src: repo('STATUS.md', 492),
+    src: repo('STATUS.md', 492, 'KST servo programming'),
   },
   {
     id: 'knob',
@@ -1411,7 +1423,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 530),
+    src: repo('STATUS.md', 530, 'BLHeli_S and AM32, Hitec on the servo side | screen built; no protocol on a wire'),
   },
 ];
 
@@ -1423,25 +1435,28 @@ const notInRelease: Catalogue['notInRelease'] = [
 // ---------------------------------------------------------------------------
 
 const pinDefaults: PinDefault[] = [
-  { signal: 'heartbeat', gpio: 3, pad: 5, choice: 'fixed', role: 'input', allowed: [3], src: repo(IOMCU_PINS, 43) },
+  { signal: 'heartbeat', gpio: 3, pad: 5, choice: 'fixed', role: 'input', allowed: [3], src: repo(IOMCU_PINS, 43, '#define IOMCU_HEARTBEAT_PIN 3') },
   {
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
     allowed: [-1, 0, 4, 6, 14, 16, 18, 20, 26],
-    src: repo(SETTINGS, 160),
+    src: repo(SETTINGS, 160, '"sns_sda", "Sensor SDA"'),
   },
   {
     signal: 'scl', gpio: 17, pad: 22, choice: 'default', role: 'bus',
     // SCL follows SDA: the GPIO after it.
     allowed: [-1, 1, 5, 7, 15, 17, 19, 21, 27],
-    src: repo(SETTINGS, 163),
+    src: repo(SETTINGS, 163, '"sns_scl", "Sensor SCL"'),
   },
-  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 190) },
+  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 190, '"tone_pin", "Tap pin"') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
   { signal: 'pd_tx', gpio: 7, pad: 10, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
   { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
+
+/** The text each repository anchor of this file names, in the order of the anchors. */
+export const ANCHOR_TEXTS: ReadonlyArray<AnchorText> = Object.freeze(anchorTexts);
 
 /** Freezes a value and everything it holds. */
 function deepFreeze<T>(value: T): T {

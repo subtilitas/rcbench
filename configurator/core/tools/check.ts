@@ -12,9 +12,10 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type {
-  Catalogue, Cond, OptionKey, Pad, PinDefault, Src, Text, Wire,
+  Catalogue, Cond, OptionKey, Pad, PinDefault, Src, Wire,
 } from '../../contract.ts';
-import { CATALOGUE } from '../catalogue.ts';
+import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
+import type { AnchorText } from '../catalogue.ts';
 import { optionsIn, partsIn, requiresOption } from '../cond.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from '../resolve.ts';
 
@@ -382,8 +383,22 @@ function lineCount(content: string): number {
 
 export type SrcResult = { findings: Finding[]; repoAnchors: number; repoChecked: number };
 
-/** Checks every `src`. With `tree` null the repository anchors are counted, not read. */
-export function checkSrc(c: Catalogue, tree: Tree | null): SrcResult {
+/** The shortest text an anchor may name, in characters. */
+export const ANCHOR_TEXT_MIN = 4;
+
+/** A line or a text with each run of white space as one space. */
+function squash(s: string): string {
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Checks every `src`. With `tree` null the repository anchors are counted, not read.
+ * `texts` names for each repository anchor a text its line holds at the tag;
+ * a line that is present and holds another row of the document is an error.
+ */
+export function checkSrc(
+  c: Catalogue, tree: Tree | null, texts: ReadonlyArray<AnchorText> = ANCHOR_TEXTS,
+): SrcResult {
   const findings: Finding[] = [];
   let repoAnchors = 0;
   let repoChecked = 0;
@@ -410,7 +425,14 @@ export function checkSrc(c: Catalogue, tree: Tree | null): SrcResult {
           findings.push(err(id, `src ${src.path} has no line number`));
           break;
         }
-        if (tree === null) break;
+        const named = texts.filter((x) => x.path === src.path && x.line === src.line);
+        const unnamed = named.length === 0
+          || named.some((x) => typeof x.has !== 'string' || squash(x.has).length < ANCHOR_TEXT_MIN);
+        const noText = `src ${src.path}:${src.line} names no text of ${ANCHOR_TEXT_MIN} characters or more that the line holds`;
+        if (tree === null) {
+          if (unnamed) findings.push(err(id, noText));
+          break;
+        }
         repoChecked += 1;
         const content = tree.read(src.path);
         if (content === null) {
@@ -419,6 +441,15 @@ export function checkSrc(c: Catalogue, tree: Tree | null): SrcResult {
           findings.push(err(id, `src ${src.path}:${src.line} is past the end of the file (${lineCount(content)} lines)`));
         } else if ((content.split('\n')[src.line - 1] ?? '').trim() === '') {
           findings.push(err(id, `src ${src.path}:${src.line} is an empty line`));
+        } else if (unnamed) {
+          findings.push(err(id, noText));
+        } else {
+          const held = squash(content.split('\n')[src.line - 1] ?? '');
+          for (const text of named) {
+            if (!held.includes(squash(text.has))) {
+              findings.push(err(id, `src ${src.path}:${src.line} does not hold "${text.has}" at ${RELEASE_TAG}`));
+            }
+          }
         }
         break;
       }
@@ -811,7 +842,9 @@ function guarded(name: string, run: () => Finding[]): Finding[] {
   }
 }
 
-export function checkAll(c: Catalogue, tree: Tree | null, strict = false): Report {
+export function checkAll(
+  c: Catalogue, tree: Tree | null, strict = false, texts: ReadonlyArray<AnchorText> = ANCHOR_TEXTS,
+): Report {
   const findings: Finding[] = [
     ...guarded('ids', () => checkIds(c)),
     ...guarded('ends', () => checkEnds(c)),
@@ -825,7 +858,7 @@ export function checkAll(c: Catalogue, tree: Tree | null, strict = false): Repor
   let repoAnchors = 0;
   let repoChecked = 0;
   findings.push(...guarded('src', () => {
-    const result = checkSrc(c, tree);
+    const result = checkSrc(c, tree, texts);
     repoAnchors = result.repoAnchors;
     repoChecked = result.repoChecked;
     return result.findings;
