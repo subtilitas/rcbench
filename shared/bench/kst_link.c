@@ -78,7 +78,7 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
         } else if (kind == KST_LINK_OUT_DONE) {
             const uint16_t *r = k->results;
 
-            o->result = (kst_ses_t)(k->end_status[LINK_KS_RESULT] & 0xFFu);
+            o->result = (uint8_t)(k->end_status[LINK_KS_RESULT] & 0xFFu);
             o->frames = LINK_KS_FRAMES_OF(k->end_status[LINK_KS_OP]);
             o->fail_reg = (uint8_t)(r[RES(LINK_KS_FAIL)] & 0xFFu);
             o->steps_done = (uint8_t)(r[RES(LINK_KS_FAIL)] >> 8);
