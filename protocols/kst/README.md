@@ -2,12 +2,12 @@
 
 Programming KST and Chaservo servos over the signal wire. The two brands
 share one protocol and one register set. The core holds frame coding, reply
-decoding, the register model, limits, write planning and the session state
-machine. The pin driver puts the wire on one RP2350 pin.
+decoding, the register model, limits, write planning, the session state
+machine and the configuration file. The pin driver puts the wire on one RP2350 pin.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `kst_wire.c`, `kst_reg.c`, `kst_limits.c`, `kst_plan.c`, `kst_session.c`, `kst_pio.c`, 6 headers under `include/` | C11 standard headers |
+| Core | `kst_wire.c`, `kst_reg.c`, `kst_limits.c`, `kst_plan.c`, `kst_session.c`, `kst_pio.c`, `kst_file.c`, 7 headers under `include/` | C11 standard headers |
 | RP2350 pin driver | `rp2350/kst_line.pio`, `rp2350/kst_line.c`, `rp2350/kst_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 A driver with 3 functions (`kst_driver_t`) connects the core to a pin;
@@ -18,7 +18,7 @@ hardware: no frame of this code has been sent to a servo.
 
 - Plain C11. Every header has `extern "C"` guards and compiles by itself as
   C11 and as C++17 (`tools/check_protocols.py`). `test/host/kst_headers.cpp`
-  calls each of the 6 parts from C++11 and links against the C library.
+  calls each of the 7 parts from C++11 and links against the C library.
 - Includes `<stdint.h>`, `<stdbool.h>`, `<stddef.h>` and `<string.h>` and
   no other file outside this folder.
 - No heap, no floating point, no global or static mutable state. Two
@@ -33,11 +33,12 @@ hardware: no frame of this code has been sent to a servo.
 | Header | Contents |
 | --- | --- |
 | `kst_wire.h` | the 27-bit read, write and sync frames as half-cell levels; the decoder for the 11-bit reply, 13 result codes |
-| `kst_reg.h` | the 32-register image, the field table with access class and unit, raw and displayed values, the layout fingerprint with 9 rules |
+| `kst_reg.h` | the 32-register image, the field table with access class and unit, raw and displayed values, the servo type, the layout fingerprint with 9 rules |
 | `kst_limits.h` | 49 rules with stable numbers: 24 hard (0 to 23), 25 soft (24 to 48) |
 | `kst_plan.h` | the order of single-register writes for an edit, a restore and a pairing release; at most 33 writes |
 | `kst_session.h` | programming-mode entry, read of all registers, plan execution with read-back and roll-back, verify |
 | `kst_pio.h` | the arithmetic of the pin driver, without hardware access: the counts for a system clock, a frame as the words the PIO (programmable input/output) program reads, the program's stamps as a capture |
+| `kst_file.h` | a register image as a text file of 35 lines, its parser with 15 refusal codes, and the check of a file against a servo: type, access classes, limits |
 
 ## Wire
 
@@ -208,6 +209,183 @@ the folder names a file outside it.
 The caller's part on the pin: stop every other use of the pin before
 `kst_line_open()`, and hold it stopped until the servo's supply was off.
 
+## Configuration file
+
+`kst_file.h` turns the 32 registers of a servo into a text file and back.
+The module works on buffers the caller holds: no file access, no heap, no
+`stdio`. A written file has 35 lines and fewer than 1024 bytes; the one
+below has 808. `kst_file_parse()` refuses a text above 3432 bytes
+(`KST_FILE_MAX`). It holds one `kst_file_t`, 320 bytes, on its stack; a
+`kst_file_load_t` is 80 bytes.
+
+```text
+KST servo configuration, format 1
+Type: V6
+Max. Duty = 96 %
+Boost = 300.0 us
+Stretch = x1
+Soft_Start = 1
+20k_sel = 1 [not loaded]
+spd_sel = 0
+Dead Band = 2.0 us
+Lock = 1 [not loaded]
+Allow Uncont = 0
+Pulse Lower = 900.0 us
+Pulse Upper = 2100.0 us
+Neutral = 1500.2 us
+Reversion = 0
+Uncontrolled Pos = 1500.0 us
+Uncontrolled Time = 2.0 s
+Left Angle = 150
+Right Angle = 150
+prot1_cancle = 0 [not loaded]
+prot1en = 0 [not loaded]
+prot1_time = 0.1 s [not loaded]
+prot1_pwm = 0 % [not loaded]
+prot_pot_err = 0 of 12 [not loaded]
+pot_sam_times = 0 [not loaded]
+prot_pwm_err = 0 of 8 [not loaded]
+SPD = 1.0 %
+node_addr = 16 [not loaded]
+Servo / Gyro Servo = 0 [not loaded]
+registers 32
+00: 00 F5 F5 14 48 77 04 65
+08: 41 A4 0D 80 53 07 14 00
+10: 96 96 00 01 01 00 00 00
+18: 00 00 00 0A 00 10 00 00
+checksum FE83C002
+```
+
+| Lines | Content |
+| --- | --- |
+| 1 | `KST servo configuration, format 1`: the format version |
+| 2 | `Type: V6` or `Type: V8`: the servo type of the registers |
+| 3 to 29 | one line per named field, in the order of the field table: name, ` = `, the displayed value and its unit. A field no load writes carries ` [not loaded]`. A raw value without a displayed one is written as `raw 6, no displayed value` |
+| 30 | `registers 32` |
+| 31 to 34 | 8 registers each: the address of the first one, then 2 upper-case hexadecimal digits per register |
+| 35 | `checksum` and 8 upper-case hexadecimal digits |
+
+The characters are ASCII (American Standard Code for Information
+Interchange) 0x20 to 0x7E. A line has 64 characters or fewer. Every line,
+the last one included, ends with LF (line feed, 0x0A). The checksum is
+CRC-32 (cyclic redundancy check) as IEEE 802.3 defines it, over every line
+before the checksum line, with each line end counted as one LF.
+
+### Servo type
+
+`kst_type()` gives the type of an image: V6 with `20k_sel` (register 0x04
+bit 6) set, V8 with it clear. No other register enters. The mapping rests
+on the factory defaults the manufacturer states, 20 kHz drive for V6.0 and
+333 Hz drive for V8.0. It is read on 1 servo, whose bit is set; no V8.0
+servo has been read. `20k_sel` is a locked field: no file and no edit
+changes it.
+
+### The 3 kinds of file
+
+A line whose first word is `checksum` decides how a text is read.
+
+| Kind | Condition | What is taken |
+| --- | --- | --- |
+| `KST_FILE_VERIFIED` | a checksum line, and its value fits | the 4 register lines. The field lines are not interpreted. The type line has to state the type of the registers |
+| `KST_FILE_EDITED_TYPED` | no checksum line; a type line or a register block | the field lines, as input a person made |
+| `KST_FILE_EDITED_UNTYPED` | no checksum line, no type line, no register block | the field lines; the file states no servo type |
+
+A file with a checksum line whose value does not fit is refused as damaged
+(`KST_FILE_ERR_CHECKSUM`). A verified file has LF on every line or CR LF
+(carriage return, 0x0D, then LF) on every line; a transfer that converts
+every line end keeps the checksum valid.
+
+A person changes a file by removing the checksum line, or writes one from
+nothing:
+
+```text
+KST servo configuration, format 1
+# left aileron
+Type: V6
+Neutral = 1520 us
+dead band = 3,0
+Reversion = 1
+```
+
+- Line 1 is the header, unchanged.
+- A field line is `<name> = <value>`; `:` is taken for `=`. The name is
+  compared without case and without spaces.
+- The value is a number in the field's unit. A unit with tenths takes a
+  full stop or a comma and 1 decimal place. The unit may be left out.
+  `raw <n>` gives the raw value. A trailing `[...]` is ignored.
+- `#` starts a comment that runs to the end of the line. Empty lines are
+  skipped. LF and CR LF may both occur.
+- A field without a line keeps the servo's value.
+- A name the field table does not have, a name given twice and a value the
+  field does not encode refuse the file with the line number.
+- The type line and the register block may each stay or go. The block
+  states the type and gives no value. A type line that contradicts the
+  block refuses the file.
+- The last line ends with a line end. A text that stops inside a line is
+  refused as truncated.
+
+A written file cut between 2 lines before the register block has no
+checksum line and reads as an edited file with fewer field lines.
+
+### Loading
+
+`kst_file_load()` holds a parsed file against the image read from the
+connected servo and gives the image to write.
+
+1. Type. A file that states a type loads into a servo of that type and
+   into no other (`KST_FILE_LOAD_TYPE_MISMATCH`). A file that states no
+   type passes this step.
+2. Values. Only editable fields are taken: all of them from a verified
+   file's registers, the named ones from an edited file's lines. An edited
+   value becomes a raw value through `kst_field_raw_from_display()`, as a
+   keypad entry does; a value the servo already displays changes nothing.
+   A locked field is never taken from a file. Where the file holds another
+   value for one, the field is reported in `skipped` and the load goes on:
+   the protection block, `Servo / Gyro Servo`, `Lock` and `node_addr` deny
+   no load.
+3. Limits. The target passes `kst_limits_edit()`, the check an edit made by
+   hand passes. A broken hard rule refuses the whole file
+   (`KST_FILE_LOAD_HARD_LIMIT`) and names the field and, for an edited
+   file, its line. Soft rules come back in `rules` for the caller to have
+   confirmed.
+
+`Max. Duty` is displayed in whole per cent and held in 255 raw steps, so
+`Max. Duty = 10 %` converts to raw 25, 1 below hard limit 26, and is
+refused; 11 % to 98 % load.
+
+The target goes to `kst_plan_edit()` like an edit made by hand.
+
+### Refusals
+
+`kst_file_parse()` returns one of these and the line number.
+
+| Code | Name | Condition |
+| --- | --- | --- |
+| 1 | `KST_FILE_ERR_ARG` | a NULL argument |
+| 2 | `KST_FILE_ERR_OVERSIZED` | more than 3432 bytes |
+| 3 | `KST_FILE_ERR_NOT_KST` | line 1 is not the header |
+| 4 | `KST_FILE_ERR_VERSION` | the version is not a number from 1 up |
+| 5 | `KST_FILE_ERR_NEWER` | a version above 1 |
+| 6 | `KST_FILE_ERR_TRUNCATED` | the text ends inside a line or inside the register block |
+| 7 | `KST_FILE_ERR_LINE_END` | checksum line present: LF and CR LF in one file |
+| 8 | `KST_FILE_ERR_MALFORMED` | a line is not what the format has at that place |
+| 9 | `KST_FILE_ERR_REG_COUNT` | the register count is not 32 |
+| 10 | `KST_FILE_ERR_CHECKSUM` | the checksum line's value does not fit |
+| 11 | `KST_FILE_ERR_TRAILING` | bytes follow the checksum line |
+| 12 | `KST_FILE_ERR_NAME` | edited file: no field has that name |
+| 13 | `KST_FILE_ERR_DUPLICATE` | edited file: the field, the type or the register block is given twice |
+| 14 | `KST_FILE_ERR_VALUE` | edited file: not a number in the field's unit, a value the field does not encode, or a type other than V6 and V8 |
+| 15 | `KST_FILE_ERR_TYPE` | the type line contradicts the registers |
+
+A damaged verified file may be refused with code 8 before its checksum is
+compared. A one-byte change never leaves a written file verified. 2
+one-byte changes turn it into an edited file with the same values: `#` in
+place of the `c` of `checksum`, and `#` in place of the line end before it.
+
+Where the files are kept is the caller's choice. In this repository
+`shared/logfile/kst_store.c` names, saves, lists and loads them on the
+panel's card.
+
 ## What is measured and what is not
 
 Measured, on 1 programming card and 1 servo of unidentified model:
@@ -240,6 +418,9 @@ Not measured:
 - The encoding of `prot1_time` and `prot1_pwm` on write: there is no
   conversion from a displayed value for them.
 - Supply voltage limits during programming.
+- The servo type of a V8.0 servo. `kst_type()` takes `20k_sel` for the
+  type on the manufacturer's stated defaults; the 1 servo read has the
+  bit set.
 
 No frame of this code has been sent to a servo, and the pin driver has not
 run on a chip. The tests run against the servo and line model in
@@ -263,7 +444,7 @@ port path the servo is connected through:
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c`,
-`test_kst_session.c` and `test_kst_pio.c`, 169 cases. The table in
+`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 216 cases. The table in
 `STATUS.md` has the line coverage per file. The pin driver's C file is not
 in the host build.
 
