@@ -191,6 +191,29 @@ bool kst_field_display(kst_field_id_t id, uint16_t raw, int32_t *display);
 bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
                                 uint16_t *raw);
 
+/* --- servo type ----------------------------------------------------------- */
+
+/**
+ * The servo type of an image.  A servo answers no model number.  The type
+ * is one bit: 20k_sel, register 04 bit 6.  The manufacturer states the
+ * factory default of that bit as set for the V6.0 series (20 kHz drive) and
+ * clear for the V8.0 series (333 Hz drive).  The mapping rests on that
+ * statement.  It is read on 1 servo, whose bit is set; no V8.0 servo is
+ * measured.  A servo whose 20k_sel was changed by another tool reads as the
+ * other type.
+ */
+typedef enum {
+    KST_TYPE_V8 = 0,   /**< 20k_sel clear */
+    KST_TYPE_V6 = 1,   /**< 20k_sel set */
+    KST_TYPE_NONE = 2, /**< no image, or a file that states no type */
+} kst_type_t;
+
+/** The type of @p img; KST_TYPE_NONE for NULL. */
+kst_type_t kst_type(const kst_image_t *img);
+
+/** "V8", "V6", and "" for any other value. */
+const char *kst_type_name(kst_type_t type);
+
 /* --- layout fingerprint --------------------------------------------------- */
 
 /**

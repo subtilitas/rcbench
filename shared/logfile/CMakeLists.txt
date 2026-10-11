@@ -15,6 +15,7 @@ set(SRCS
     log_csv.c
     log_fields.c
     log_name.c
+    kst_store.c
 )
 
 if(ESP_PLATFORM)

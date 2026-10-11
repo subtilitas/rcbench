@@ -68,6 +68,30 @@ history is in git.
   Host suite only (`test_kst_port`, `test_prog_port`, `test_kst_link`); no
   frame has been sent to a servo and no pulse of a port is measured.
   ([Link](docs/Link.md#the-kst-programming-port))
+- **A servo configuration as a text file.** `protocols/kst/kst_file.c`
+  writes the 32 registers of a KST or Chaservo servo as 35 lines of ASCII
+  (American Standard Code for Information Interchange) text, fewer than
+  1024 bytes: one line per field with its value and unit, the registers
+  in hexadecimal and a CRC-32 (cyclic redundancy check) line. A file with
+  a fitting checksum is read from its registers; one with a wrong
+  checksum is refused as damaged; one without the line is read as a
+  person's input, field line by field line, with 15 refusal codes and the
+  line number. `kst_file_load()` holds a file against the connected
+  servo: a file of the other servo type is denied, only editable fields
+  are taken, a hard-limit violation refuses the file and names field and
+  line, soft-limit findings are returned, and a locked field that differs
+  is reported and not written. `kst_type()` gives the servo type, V6 or
+  V8, from `20k_sel` (register 0x04 bit 6); the mapping rests on the
+  manufacturer's stated defaults and is read on 1 servo.
+  `shared/logfile/kst_store.c` keeps the files in the directory `KST` of
+  the card as `<name>.TXT`: it proposes `KST001` to `KST999`, checks a
+  name of 32 characters or fewer with 5 distinct refusals, never
+  replaces a file, and lists the files sorted by name. The name `KST`,
+  in any case, is refused and `KST.TXT` is left out of the list: the file
+  is a caller's record of a write under way. No screen uses
+  either, and the panel has no card functions wired to the store. Host
+  suite only (`test_kst_file`, `test_kst_store`).
+  ([README](protocols/kst/README.md#configuration-file))
 
 ### Changed
 
