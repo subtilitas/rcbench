@@ -1,0 +1,976 @@
+// Static invariants 1 to 10 on the catalogue, and proof that each check
+// reports a broken copy of the data.
+
+import assert from 'node:assert/strict';
+import { dirname } from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import type { Catalogue, Picture } from '../../contract.ts';
+import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
+import {
+  ANCHOR_TEXT_MIN, BANNED_WORDS, RELEASE_TAG, checkAll, checkCounts, checkEnds, checkFunctions, checkIds,
+  OWNER_STATEMENTS, checkRefs, checkRoutes, checkSrc, checkString, checkTexts, checkTree, collectAnchors,
+  collectTexts, gitTree, parseFirmwarePads, parseFirmwarePins, parseSettingDefault, wireTable,
+} from '../tools/check.ts';
+import type { Finding, Tree } from '../tools/check.ts';
+import { PICTURE_DIR, checkPictures, pictureFolder, webpInfo } from '../tools/pictures.ts';
+import type { PictureFolder } from '../tools/pictures.ts';
+import { BEGIN, END, MEASURED, figure, parseLcov, percent, replaceFigure } from '../tools/coverage.ts';
+
+const OUT_BIND = 'shared/outputs/out_bind.c';
+const SETTINGS = 'shared/settings/settings.c';
+const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
+
+function copy(): Catalogue {
+  return structuredClone(CATALOGUE);
+}
+
+function errors(findings: Finding[]): string[] {
+  return findings.filter((f) => f.level === 'error').map((f) => `${f.id}: ${f.msg}`);
+}
+
+/** Asserts that at least one error names `id` and matches `pattern`. */
+function reports(findings: Finding[], id: string, pattern: RegExp): void {
+  const hit = findings.some((f) => f.level === 'error' && f.id === id && pattern.test(f.msg));
+  assert.ok(hit, `no error "${id}" matching ${pattern}; got: ${errors(findings).join(' | ') || 'none'}`);
+}
+
+/**
+ * A stand-in for the repository at the release tag, built from the data:
+ * the firmware tables hold the rows the data names, on the lines it names.
+ * Every other path is a file of 2000 lines. Each line an anchor names holds
+ * the text of that anchor.
+ */
+function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = () => {}): Tree {
+  const filler = (): string[] => Array.from({ length: 2000 }, () => '/* text */');
+  const heartbeat = c.pinDefaults.find((d) => d.signal === 'heartbeat')?.gpio;
+
+  const outBind = filler();
+  for (const pad of c.pads) {
+    const line = pad.src.kind === 'repo' ? pad.src.line : 0;
+    if (pad.gpio !== null) {
+      const reserved = pad.reserved !== undefined || pad.gpio === heartbeat;
+      outBind[line - 1] = `    { ${pad.gpio}, ${pad.n}, ${reserved}, ${reserved ? '"used"' : 'NULL'} },`;
+    } else {
+      const kind = pad.name === 'GND' ? 'GROUND' : 'POWER';
+      const name = pad.name === 'GND' ? '' : `   /* ${pad.name} */`;
+      outBind[line - 1] = `    { ${pad.n}, LINK_PAD_${kind}, 0 },${name}`;
+    }
+  }
+
+  const settings = filler();
+  const entry = (line: number, key: string, def: number): void => {
+    settings[line - 2] = `    [${key}] = {`;
+    settings[line - 1] = `        "key", "Name", "Help", "GPIO",`;
+    settings[line] = `        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
+  };
+  entry(160, 'SET_SENSE_SDA', 16);
+  entry(163, 'SET_SENSE_SCL', 17);
+  entry(190, 'SET_TONE_PIN', 22);
+  entry(225, 'SET_PDMINI_TX', -1);
+  entry(228, 'SET_PDMINI_RX', -1);
+
+  const iomcu = filler();
+  iomcu[42] = '#define IOMCU_HEARTBEAT_PIN  3';
+
+  const files = new Map<string, string[]>([[OUT_BIND, outBind], [SETTINGS, settings], [IOMCU_PINS, iomcu]]);
+  const squash = (s: string): string => s.replace(/\s+/g, ' ').trim();
+  for (const text of ANCHOR_TEXTS) {
+    const held = files.get(text.path) ?? filler();
+    files.set(text.path, held);
+    const line = held[text.line - 1] ?? '';
+    if (!squash(line).includes(squash(text.has))) held[text.line - 1] = `${line} /* ${text.has} */`;
+  }
+  edit(files);
+  const known = new Set(collectAnchors(c).flatMap((a) => (a.src?.kind === 'repo' ? [a.src.path] : [])));
+  return {
+    read: (path) => {
+      const lines = files.get(path);
+      if (lines) return `${lines.join('\n')}\n`;
+      return known.has(path) ? `${filler().join('\n')}\n` : null;
+    },
+    newestTag: RELEASE_TAG,
+  };
+}
+
+function lines(files: Map<string, string[]>, path: string): string[] {
+  const found = files.get(path);
+  assert.ok(found, `${path} is in the stand-in tree`);
+  return found;
+}
+
+// --- the data as it is ------------------------------------------------------
+
+test('the catalogue passes every static check', () => {
+  const report = checkAll(CATALOGUE, null);
+  assert.deepEqual(report.findings, []);
+  assert.equal(report.repoChecked, 0);
+  assert.ok(report.repoAnchors > 0);
+});
+
+test('the catalogue passes against the stand-in tree', () => {
+  const report = checkAll(CATALOGUE, fakeTree(CATALOGUE), true);
+  assert.deepEqual(report.findings, []);
+  assert.equal(report.repoChecked, report.repoAnchors);
+});
+
+test('the catalogue passes against the repository at the release tag', (t) => {
+  const tree = gitTree(dirname(fileURLToPath(import.meta.url)));
+  if (tree === null) {
+    t.skip(`git or the tag ${RELEASE_TAG} is absent`);
+    return;
+  }
+  assert.deepEqual(errors(checkAll(CATALOGUE, tree, true).findings), []);
+});
+
+test('counts: parts, pads, wires, functions, stages, safety notes', () => {
+  assert.equal(CATALOGUE.parts.length, 19);
+  assert.equal(CATALOGUE.parts.filter((p) => p.selectable).length, 11);
+  assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
+  assert.equal(CATALOGUE.pads.length, 40);
+  assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 54 }, (_, i) => i + 1));
+  assert.equal(CATALOGUE.functions.length, 11);
+  assert.equal(CATALOGUE.rules.length, 6);
+  assert.equal(CATALOGUE.checks.length, 20);
+  assert.equal(CATALOGUE.stages.length, 5);
+  assert.equal(CATALOGUE.safety.length, 7);
+  assert.equal(CATALOGUE.release, '0.16.0');
+  assert.equal(CATALOGUE.hashVersion, 1);
+});
+
+/** A picture folder built from a map of names to bytes. */
+function folderOf(files: Record<string, Uint8Array>): PictureFolder {
+  return { names: Object.keys(files).sort(), read: (name) => files[name] ?? null };
+}
+
+/** A lossy WebP header of the given size, 30 bytes. */
+function webp(width: number, height: number): Uint8Array {
+  const b = new Uint8Array(30);
+  b.set([...'RIFF'].map((ch) => ch.charCodeAt(0)), 0);
+  b.set([...'WEBPVP8 '].map((ch) => ch.charCodeAt(0)), 8);
+  b.set([0x9d, 0x01, 0x2a, width & 0xff, width >> 8, height & 0xff, height >> 8], 23);
+  return b;
+}
+
+const svg = (body: string, size = 'width="480" height="400"'): Uint8Array =>
+  new TextEncoder().encode(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400" ${size}>${body}</svg>`);
+
+test('the pictures of the parts are the files of the picture folder', () => {
+  const folder = pictureFolder(PICTURE_DIR);
+  assert.deepEqual(errors(checkPictures(CATALOGUE, folder)), []);
+  const pictures = CATALOGUE.parts.flatMap((p) => p.pictures ?? []);
+  assert.equal(pictures.filter((p) => p.kind === 'photo').length, 12);
+  assert.equal(pictures.filter((p) => p.kind === 'drawing').length, 0);
+  assert.equal(folder.names.length, 24);
+  // The check tool runs the same check.
+  assert.deepEqual(errors(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folder).findings), []);
+  reports(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folderOf({})).findings,
+    'part.panel.picture.01-panel-back', /01-panel-back\.webp is missing/);
+});
+
+test('a picture record is held to its files', () => {
+  const one = (picture: Picture): Catalogue => {
+    const c = copy();
+    for (const part of c.parts) delete part.pictures;
+    c.parts[0]!.pictures = [picture];
+    return c;
+  };
+  const alt = { en: 'Panel', de: 'Panel' };
+  const photo: Picture = { kind: 'photo', file: 'p', alt, width: 480, height: 300 };
+  const good = { 'p.webp': webp(1600, 1000), 'p-thumb.webp': webp(480, 300) };
+  const id = 'part.panel.picture.p';
+  assert.deepEqual(errors(checkPictures(one(photo), folderOf(good))), []);
+
+  reports(checkPictures(one(photo), folderOf({ 'p.webp': good['p.webp'] })), id, /p-thumb\.webp is missing/);
+  reports(checkPictures(one(photo), folderOf({ 'p-thumb.webp': good['p-thumb.webp'] })), id, /p\.webp is missing/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p.webp': new TextEncoder().encode('JFIF'.repeat(10)) })), id, /p\.webp is not a WebP file/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p-thumb.webp': webp(640, 300) })), id, /640 px wide/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p-thumb.webp': webp(480, 301) })), id, /480 x 301 px; the record says 480 x 300/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p.jpg': webp(1, 1) })), 'picture.p.jpg', /no part names this file/);
+  reports(checkPictures(one({ ...photo, alt: { en: 'Panel', de: ' ' } }), folderOf(good)), id, /no alt text in de/);
+  reports(checkPictures(one({ ...photo, file: 'P.webp' }), folderOf(good)), 'part.panel.picture.P.webp', /file name/);
+  reports(checkPictures(one({ ...photo, kind: 'scan' as 'photo' }), folderOf(good)), id, /kind scan/);
+  reports(checkPictures(one({ ...photo, width: 0 }), folderOf(good)), id, /positive whole numbers/);
+
+  // A file with an Exif or XMP chunk is refused.
+  const extended = new Uint8Array(30);
+  extended.set([...'RIFF'].map((ch) => ch.charCodeAt(0)), 0);
+  extended.set([...'WEBPVP8X'].map((ch) => ch.charCodeAt(0)), 8);
+  extended.set([0x08], 20);
+  extended.set([0xdf, 0x01, 0x00, 0x2b, 0x01, 0x00], 24);
+  assert.deepEqual(webpInfo(extended), { width: 480, height: 300, metadata: true });
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p-thumb.webp': extended })), id, /Exif or XMP/);
+  assert.equal(webpInfo(new Uint8Array(10)), null);
+
+  // More than 2 pictures for one set of options.
+  const three = one(photo);
+  three.parts[0]!.pictures = [photo, photo, { ...photo, only: { connection: 'osoyoo' } }];
+  reports(checkPictures(three, folderOf(good)), 'part.panel', /3 pictures apply/);
+  const split = one(photo);
+  split.parts[0]!.pictures = [photo, { ...photo, only: { connection: 'pads' } }, { ...photo, only: { connection: 'osoyoo' } }];
+  assert.deepEqual(errors(checkPictures(split, folderOf(good))), []);
+  const value = one({ ...photo, only: { connection: 'rail' as 'pads' } });
+  reports(checkRefs(value), 'part.panel.picture.p', /connection=rail/);
+});
+
+test('a drawing is an SVG file without script, reference or raster', () => {
+  const drawing: Picture = { kind: 'drawing', file: 'd', alt: { en: 'Board', de: 'Platine' }, width: 480, height: 400 };
+  const c = copy();
+  for (const part of c.parts) delete part.pictures;
+  c.parts[0]!.pictures = [drawing];
+  const id = 'part.panel.picture.d';
+  const run = (bytes: Uint8Array): Finding[] => checkPictures(c, folderOf({ 'd.svg': bytes }));
+
+  assert.deepEqual(errors(run(svg('<defs><g id="a"><rect width="4" height="4" fill="url(#g)"/></g></defs><use href="#a"/>'))), []);
+  reports(run(svg('<script>alert(1)</script>')), id, /holds a script/);
+  reports(run(svg('<rect onload="x()"/>')), id, /event attribute/);
+  reports(run(svg('<image href="#a"/>')), id, /loads or embeds/);
+  reports(run(svg('<foreignObject/>')), id, /loads or embeds/);
+  reports(run(svg('<use href="other.svg#a"/>')), id, /refers to "other\.svg#a"/);
+  reports(run(svg('<use xlink:href="https://example.org/a.svg#a"/>')), id, /refers to "https:\/\/example\.org/);
+  reports(run(svg('<rect fill="url(pattern.svg#p)"/>')), id, /refers to "pattern\.svg#p"/);
+  reports(run(svg('<rect fill="url(data:image/png;base64,AAAA)"/>')), id, /data URL/);
+  reports(run(svg('<text>//example.org/x</text>')), id, /names the address/);
+  reports(run(svg('', 'width="480" height="338"')), id, /480 x 338 px; the record says 480 x 400/);
+  reports(run(new TextEncoder().encode('<html><svg width="480" height="400"></svg></html>')), id, /is no SVG file/);
+  reports(run(new Uint8Array([0xff, 0xfe, 0xfd])), id, /not UTF-8/);
+  reports(checkPictures(c, folderOf({})), id, /d\.svg is missing/);
+  // A WebP file does not stand in for a drawing, and an SVG file not for a photo.
+  reports(checkPictures(c, folderOf({ 'd.webp': webp(480, 400), 'd-thumb.webp': webp(480, 400) })), id, /d\.svg is missing/);
+  c.parts[0]!.pictures = [{ ...drawing, kind: 'photo' }];
+  reports(checkPictures(c, folderOf({ 'd.svg': svg('') })), id, /d\.webp is missing/);
+});
+
+test('every unknown of the data is a check entry of kind unknown', () => {
+  const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
+  assert.deepEqual(unknown, [
+    'panel-terminals', 'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups',
+    'ina228-xt90-pads', 'as5600-board', 'estop-tabs', 'osoyoo-labels',
+  ]);
+  const unconfirmed = CATALOGUE.parts.flatMap((part) =>
+    part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
+  assert.deepEqual(unconfirmed, [
+    'panel.CANH', 'panel.CANL', 'ina3221.LP', 'as5600.GPO', 'estop.NC1', 'estop.NC2',
+  ]);
+  assert.deepEqual(
+    CATALOGUE.parts.filter((p) => p.hardware === 'not-run').map((p) => p.id),
+    ['ina3221', 'as5600', 'pull', 'ina228', 'estop', 'sim', 'tap', 'usbtap'],
+  );
+  assert.deepEqual(
+    CATALOGUE.functions.filter((f) => f.hardware === 'not-run').map((f) => f.id),
+    ['servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
+  );
+  // No part is without a stated role, and no pin exists with one option value only.
+  assert.deepEqual(CATALOGUE.parts.filter((p) => p.role === null && p.selectable).map((p) => p.id), []);
+  assert.deepEqual(CATALOGUE.parts.flatMap((p) => p.pins.filter((q) => q.only !== undefined)), []);
+});
+
+// --- invariant 1 ------------------------------------------------------------
+
+test('ids: a repeated part id, a bad pattern and a wire number out of order are reported', () => {
+  const twice = copy();
+  twice.parts[5]!.id = 'servo';
+  reports(checkIds(twice), 'part.servo', /twice/);
+
+  const pattern = copy();
+  pattern.functions[0]!.id = 'Servo_1';
+  reports(checkIds(pattern), 'function.Servo_1', /match/);
+
+  const pin = copy();
+  pin.parts[0]!.pins[1]!.id = 'CANH';
+  reports(checkIds(pin), 'part.panel.CANH', /twice/);
+
+  const lower = copy();
+  lower.parts[0]!.pins[0]!.id = 'canh';
+  reports(checkIds(lower), 'part.panel.canh', /match/);
+
+  const order = copy();
+  order.wires[10]!.n = 3;
+  reports(checkIds(order), 'wire.3', /ascending/);
+
+  const signal = copy();
+  signal.pinDefaults[1]!.signal = 'heartbeat';
+  reports(checkIds(signal), 'pin.heartbeat', /twice/);
+});
+
+// --- invariants 2, 4, 9 -----------------------------------------------------
+
+test('wire ends: an undeclared pin, a pad out of range and a reserved pad are reported', () => {
+  const pin = copy();
+  pin.wires[6]!.b = 'servo.SIGNAL';
+  reports(checkEnds(pin), 'wire.7', /not a declared pin/);
+
+  const part = copy();
+  part.wires[6]!.b = 'gimbal.SIG';
+  reports(checkEnds(part), 'wire.7', /not a declared pin/);
+
+  const deep = copy();
+  deep.wires[6]!.b = 'servo.SIG.X';
+  reports(checkEnds(deep), 'wire.7', /not a declared pin/);
+
+  const pad = copy();
+  pad.wires[6]!.a = 'pad.41';
+  reports(checkEnds(pad), 'wire.7', /not a pad/);
+
+  const zero = copy();
+  zero.wires[6]!.a = 'pad.0';
+  reports(checkEnds(zero), 'wire.7', /not a pad/);
+
+  // Pad 11 is GP8, a CAN pin of the board.
+  const reserved = copy();
+  reserved.wires[6]!.a = 'pad.11';
+  reports(checkEnds(reserved), 'wire.7', /reserved/);
+});
+
+test('wire shape: stub, wire and component each need their fields', () => {
+  const stub = copy();
+  delete stub.wires[12]!.to;
+  reports(checkEnds(stub), 'wire.13', /`to`/);
+
+  const stubEnd = copy();
+  stubEnd.wires[12]!.b = 'esc.SG';
+  reports(checkEnds(stubEnd), 'wire.13', /no second end/);
+
+  const open = copy();
+  open.wires[0]!.b = null;
+  reports(checkEnds(open), 'wire.1', /two ends/);
+
+  const component = copy();
+  delete component.wires[52]!.netB;
+  reports(checkEnds(component), 'wire.53', /netB/);
+
+  const route = copy();
+  route.wires[0]!.route = { kind: 'S' };
+  reports(checkRoutes(route), 'wire.1', /stub/);
+});
+
+test('a wire on a pin of one board variant requires that variant', () => {
+  // The data holds no such pin; the supply pin of the INA228 stands in.
+  const copy = (): Catalogue => {
+    const c = structuredClone(CATALOGUE);
+    const v5 = c.parts.find((p) => p.id === 'ina228')?.pins.find((p) => p.id === 'V5');
+    assert.ok(v5);
+    v5.only = { ina228Board: 'matek' };
+    return c;
+  };
+  assert.deepEqual(checkEnds(CATALOGUE), []);
+  const c = copy();
+  reports(checkEnds(c), 'wire.41', /ina228Board=matek/);
+
+  const required = copy();
+  required.wires[40]!.when = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] };
+  assert.deepEqual(checkEnds(required), []);
+
+  const other = copy();
+  other.wires[40]!.when = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] };
+  reports(checkEnds(other), 'wire.41', /ina228Board=matek/);
+
+  // An alternative that holds without the variant does not require it.
+  const any = copy();
+  any.wires[40]!.when = { any: [{ opt: 'ina228Board', is: 'matek' }, { has: 'ina228' }] };
+  reports(checkEnds(any), 'wire.41', /ina228Board=matek/);
+
+  const always = copy();
+  always.wires[40]!.when = null;
+  reports(checkEnds(always), 'wire.41', /ina228Board=matek/);
+});
+
+// --- invariant 3 ------------------------------------------------------------
+
+test('references: unknown parts and option values are reported', () => {
+  const needs = copy();
+  needs.functions[0]!.needs = ['servo', 'gimbal'];
+  reports(checkRefs(needs), 'function.servo', /unknown part gimbal/);
+
+  const empty = copy();
+  empty.functions[0]!.needs = [];
+  reports(checkRefs(empty), 'function.servo', /needs no part/);
+
+  const adds = copy();
+  adds.rules[0]!.adds = 'gimbal';
+  reports(checkRefs(adds), 'rule.esc-pd', /unknown part gimbal/);
+
+  const locked = copy();
+  locked.rules[0]!.adds = 'panel';
+  reports(checkRefs(locked), 'rule.esc-pd', /locked/);
+
+  const has = copy();
+  has.wires[6]!.when = { all: [{ has: 'servo' }, { not: { any: [{ has: 'gimbal' }] } }] };
+  reports(checkRefs(has), 'wire.7', /unknown part gimbal/);
+
+  const value = copy();
+  value.checks[0]!.when = { opt: 'escPower', is: 'batt' };
+  reports(checkRefs(value), 'check.can-60', /escPower=batt/);
+
+  const forces = copy();
+  forces.functions[6]!.forces = { escPower: 'mains' as 'pd' };
+  reports(checkRefs(forces), 'function.stick', /escPower=mains/);
+
+  const clash = copy();
+  clash.functions[0]!.forces = { escPower: 'battery' };
+  reports(checkRefs(clash), 'function.stick', /another function forces/);
+
+  const only = copy();
+  only.parts[13]!.pins[0]!.only = { ina228Board: 'bifrc' as 'xt90' };
+  reports(checkRefs(only), 'part.ina228.V5', /ina228Board=bifrc/);
+
+  const variant = copy();
+  variant.parts[13]!.variantName!.names['bifrc'] = { en: 'Board', de: 'Platine' };
+  reports(checkRefs(variant), 'part.ina228', /ina228Board=bifrc/);
+
+  const release = copy();
+  release.parts[4]!.release = 'planned';
+  reports(checkRefs(release), 'part.servo', /released/);
+
+  const both = copy();
+  both.parts[0]!.selectable = true;
+  reports(checkRefs(both), 'part.panel', /locked/);
+});
+
+// --- invariant 5: text ------------------------------------------------------
+
+test('text: a missing German string is reported', () => {
+  const missing = copy();
+  delete (missing.parts[4]!.name as Partial<{ en: string; de: string }>).de;
+  reports(checkTexts(missing), 'parts.servo.name.de', /missing or empty/);
+
+  const empty = copy();
+  empty.wires[0]!.signal.de = '';
+  reports(checkTexts(empty), 'wires.1.signal.de', /missing or empty/);
+
+  const blank = copy();
+  blank.checks[0]!.text.de = '   ';
+  reports(checkTexts(blank), 'checks.can-60.text.de', /missing or empty/);
+
+  const english = copy();
+  english.baseFunction.en = '';
+  reports(checkTexts(english), 'baseFunction.en', /missing or empty/);
+
+  const extra = copy();
+  (extra.baseFunction as Record<string, string>)['fr'] = 'Interface';
+  reports(checkTexts(extra), 'baseFunction', /key fr/);
+});
+
+test('text: exclamation marks, banned words, foreign characters and tags are reported', () => {
+  assert.deepEqual(checkString('x', 'Twist CAN H and CAN L together.', false), []);
+  reports(checkString('x', 'No propeller!', false), 'x', /exclamation/);
+  for (const word of BANNED_WORDS) {
+    reports(checkString('x', `A ${word} thing.`, false), 'x', new RegExp(`"${word}"`));
+    reports(checkString('x', `${word[0]!.toUpperCase()}${word.slice(1)}, it is.`, false), 'x', /word/);
+  }
+  // Whole words only: "adjust" and "Vereinfachung" hold a banned word and pass.
+  assert.deepEqual(checkString('x', 'Adjust the trim. Vereinfachung, justieren.', false), []);
+
+  reports(checkString('x', 'Fertig \u{1F600}', false), 'x', /U\+1F600/);
+  reports(checkString('x', 'two\nlines', false), 'x', /U\+000A/);
+  reports(checkString('x', 'tab\there', false), 'x', /U\+0009/);
+  reports(checkString('x', 'CJK 中', false), 'x', /U\+4E2D/);
+  assert.deepEqual(checkString('x', '120 Ω, 200 µΩ, 2 × 2,2 kΩ, −1, SETUP → OUTPUTS, 0,5 V – „Text“', false), []);
+
+  reports(checkString('x', ' leading', false), 'x', /white space/);
+  reports(checkString('x', '<b>Bold</b> in a wire note.', false), 'x', /tag <b>/);
+  reports(checkString('x', 'A <i>tag</i> in a safety note.', true), 'x', /tag <i>/);
+  reports(checkString('x', '<b>Open and never closed.', true), 'x', /unbalanced/);
+  reports(checkString('x', '<a href="x">link</a>', true), 'x', /tag <a href/);
+  assert.deepEqual(checkString('x', '<b>No propeller.</b> The motor screwed down.', true), []);
+  // A comparison is not a tag.
+  assert.deepEqual(checkString('x', 'Output < input, 3 > 2.', false), []);
+  reports(checkString('x', undefined, false), 'x', /missing/);
+  reports(checkString('x', 7, false), 'x', /missing/);
+});
+
+test('text: the walk reaches every kind of string', () => {
+  const ids = collectTexts(CATALOGUE).map((t) => t.id);
+  for (const id of [
+    'parts.panel.name', 'parts.panel.short', 'parts.panel.role', 'parts.panel.slot.sub',
+    'parts.panel.pins.CANH.label', 'parts.ina228.variantName.names.xt90', 'pads.11.reserved',
+    'wires.1.signal', 'wires.1.note', 'wires.13.to', 'functions.servo.name',
+    'rules.esc-pd.because', 'checks.can-60.text', 'stages.1.title', 'safety.0.text',
+    'notInRelease.kst.text', 'baseFunction',
+  ]) {
+    assert.ok(ids.includes(id), `${id} is not walked`);
+  }
+  assert.equal(new Set(ids).size, ids.length);
+
+  const safety = copy();
+  safety.safety[0]!.text.en = 'No propeller!';
+  reports(checkTexts(safety), 'safety.0.text.en', /exclamation/);
+
+  const wire = copy();
+  wire.wires[0]!.note = { en: '<b>Twist</b> the pair.', de: 'Das Paar verdrillen.' };
+  reports(checkTexts(wire), 'wires.1.note.en', /tag/);
+});
+
+// --- invariant 5: source anchors --------------------------------------------
+
+test('src: every item carries one', () => {
+  const anchors = collectAnchors(CATALOGUE);
+  assert.ok(anchors.every((a) => a.src !== undefined));
+  const pins = CATALOGUE.parts.reduce((n, p) => n + p.pins.length, 0);
+  assert.equal(
+    anchors.length,
+    CATALOGUE.parts.length + pins + CATALOGUE.pads.length + CATALOGUE.wires.length
+      + CATALOGUE.functions.length + CATALOGUE.rules.length + CATALOGUE.checks.length
+      + CATALOGUE.stages.length + CATALOGUE.safety.length + CATALOGUE.notInRelease.length
+      + CATALOGUE.pinDefaults.length,
+  );
+
+  const c = copy();
+  delete (c.wires[0] as Partial<Catalogue['wires'][number]>).src;
+  reports(checkSrc(c, null).findings, 'wire.1', /no src/);
+});
+
+test('src: a broken repository anchor is reported', () => {
+  const tree = fakeTree(CATALOGUE);
+
+  const path = copy();
+  path.functions[0]!.src = { kind: 'repo', path: 'docs/Gone.md', line: 3, tag: 'v0.16.0' };
+  reports(checkSrc(path, tree).findings, 'function.servo', /does not exist/);
+
+  const line = copy();
+  line.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2001, tag: 'v0.16.0' };
+  reports(checkSrc(line, tree).findings, 'function.servo', /past the end/);
+  line.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2000, tag: 'v0.16.0' };
+  const lastLine = [...ANCHOR_TEXTS, { path: 'STATUS.md', line: 2000, has: 'text' }];
+  assert.deepEqual(checkSrc(line, tree, lastLine).findings, []);
+
+  const zero = copy();
+  zero.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 0, tag: 'v0.16.0' };
+  reports(checkSrc(zero, tree).findings, 'function.servo', /no line number/);
+
+  const blank = copy();
+  const emptyLine = fakeTree(CATALOGUE, (files) => {
+    files.set('STATUS.md', ['# Status', '', 'text']);
+  });
+  blank.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2, tag: 'v0.16.0' };
+  reports(checkSrc(blank, emptyLine).findings, 'function.servo', /empty line/);
+  blank.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 4, tag: 'v0.16.0' };
+  reports(checkSrc(blank, emptyLine).findings, 'function.servo', /STATUS\.md:4 is past the end of the file \(3 lines\)/);
+
+  const tag = copy();
+  tag.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 3, tag: 'v0.15.0' as 'v0.16.0' };
+  reports(checkSrc(tag, tree).findings, 'function.servo', /v0\.15\.0/);
+
+  const absolute = copy();
+  absolute.functions[0]!.src = { kind: 'repo', path: '/etc/passwd', line: 1, tag: 'v0.16.0' };
+  reports(checkSrc(absolute, tree).findings, 'function.servo', /no repository path/);
+});
+
+test('src: a repository anchor names a text, and the line at the tag holds it', () => {
+  const tree = fakeTree(CATALOGUE);
+  const moved = copy();
+  const at = (line: number): Catalogue['functions'][number]['src'] => (
+    { kind: 'repo', path: 'docs/Building.md', line, tag: 'v0.16.0' }
+  );
+
+  // A line that is present and holds another row: no text is named for it.
+  moved.functions[0]!.src = at(106);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /Building\.md:106 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /Building\.md:106 names no text/);
+  reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
+
+  // A named text that the line does not hold.
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106, has: '| PGO | GND |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:106 does not hold "\| PGO \| GND \|" at v0\.16\.0/);
+  reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
+  // Without the tree the text is not compared.
+  assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
+
+  // Every text named for the line is compared.
+  const rows = fakeTree(CATALOGUE, (files) => {
+    lines(files, 'docs/Building.md')[105] = '|  DIR |   GND or VCC, never open |';
+  });
+  const dir = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106, has: '| DIR | GND or VCC' }];
+  assert.deepEqual(checkSrc(moved, rows, dir).findings, []);
+  reports(checkSrc(moved, rows, [...dir, ...wrong]).findings, 'function.servo', /does not hold "\| PGO/);
+
+  // A text under the shortest length names nothing.
+  assert.equal(ANCHOR_TEXT_MIN, 4);
+  const short = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106, has: ' |  D ' }];
+  reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
+  const none = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 106 } as { path: string; line: number; has: string }];
+  reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
+
+  // A row of the data moved off its line in the tree.
+  const shifted = fakeTree(CATALOGUE, (files) => {
+    const doc = lines(files, 'docs/Building.md');
+    doc.splice(105, 0, '| DIR | GND or VCC, never open |');
+  });
+  const found = checkSrc(CATALOGUE, shifted).findings;
+  reports(found, 'part.as5600.GPO', /Building\.md:107 does not hold "\| PGO \| GND \|"/);
+  reports(found, 'part.as5600.OUT', /Building\.md:108 does not hold/);
+  reports(found, 'wire.54', /Building\.md:107 does not hold/);
+  reports(found, 'check.as5600-board', /Building\.md:107 does not hold/);
+});
+
+test('src: every repository anchor of the data names a text of its own', () => {
+  const anchors = collectAnchors(CATALOGUE).filter((a) => a.src?.kind === 'repo');
+  assert.equal(ANCHOR_TEXTS.length, anchors.length);
+  assert.ok(Object.isFrozen(ANCHOR_TEXTS));
+  for (const text of ANCHOR_TEXTS) {
+    assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
+    assert.ok(Object.isFrozen(text));
+  }
+  // The AS5600 rows of docs/Building.md at the tag: 106 DIR, 107 PGO, 108 OUT.
+  const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
+  const line = (pin: string): number | null => {
+    const src = as5600?.pins.find((p) => p.id === pin)?.src;
+    return src?.kind === 'repo' ? src.line : null;
+  };
+  assert.equal(line('GPO'), 107);
+  assert.equal(line('OUT'), 108);
+  const strap = CATALOGUE.wires.find((w) => w.n === 54)?.src;
+  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 107, tag: 'v0.16.0' });
+  const board = CATALOGUE.checks.find((k) => k.id === 'as5600-board')?.src;
+  assert.deepEqual(board, strap);
+});
+
+test('src: guide, photo and page rules', () => {
+  const section = copy();
+  section.stages[0]!.src = { kind: 'guide', section: 'stage-6' };
+  reports(checkSrc(section, null).findings, 'stage.1', /stage-6/);
+
+  // Photo 09 has no check entry of kind unknown.
+  const photo = copy();
+  photo.parts[4]!.pins[0]!.src = { kind: 'photo', file: '09' };
+  reports(checkSrc(photo, null).findings, 'part.servo.SIG', /photo 09/);
+
+  // Photo 15 has one, until its kind changes.
+  const kind = copy();
+  kind.parts[4]!.pins[0]!.src = { kind: 'photo', file: '15' };
+  assert.deepEqual(checkSrc(kind, null).findings, []);
+  kind.checks.find((k) => k.id === 'ina228-xt90-pads')!.kind = 'note';
+  reports(checkSrc(kind, null).findings, 'part.servo.SIG', /photo 15/);
+
+  // An owner statement is named by a date of the list.
+  const stated = copy();
+  assert.deepEqual(stated.parts.find((p) => p.id === 'usbtap')?.src, { kind: 'owner', date: '2026-10-11' });
+  assert.deepEqual(OWNER_STATEMENTS, ['2026-10-11']);
+  stated.parts[4]!.src = { kind: 'owner', date: '2026-10-11' };
+  assert.deepEqual(checkSrc(stated, null).findings, []);
+  stated.parts[4]!.src = { kind: 'owner', date: '2026-10-12' };
+  reports(checkSrc(stated, null).findings, 'part.servo', /owner statement "2026-10-12"/);
+  stated.parts[4]!.src = { kind: 'owner' } as unknown as Catalogue['parts'][number]['src'];
+  reports(checkSrc(stated, null).findings, 'part.servo', /owner statement "undefined"/);
+
+  const name = copy();
+  name.parts[4]!.src = { kind: 'photo', file: 'IMG_0412.jpg' };
+  reports(checkSrc(name, null).findings, 'part.servo', /no photo number/);
+
+  for (const [id, edit] of [
+    ['part.servo', (c: Catalogue) => { c.parts[4]!.src = { kind: 'page' }; }],
+    ['part.servo.SIG', (c: Catalogue) => { c.parts[4]!.pins[0]!.src = { kind: 'page' }; }],
+    ['pad.1', (c: Catalogue) => { c.pads[0]!.src = { kind: 'page' }; }],
+    ['wire.1', (c: Catalogue) => { c.wires[0]!.src = { kind: 'page' }; }],
+    ['function.servo', (c: Catalogue) => { c.functions[0]!.src = { kind: 'page' }; }],
+    ['stage.1', (c: Catalogue) => { c.stages[0]!.src = { kind: 'page' }; }],
+    ['safety.0', (c: Catalogue) => { c.safety[0]!.src = { kind: 'page' }; }],
+    ['notInRelease.kst', (c: Catalogue) => { c.notInRelease[0]!.src = { kind: 'page' }; }],
+    ['pin.sda', (c: Catalogue) => { c.pinDefaults[1]!.src = { kind: 'page' }; }],
+  ] as Array<[string, (c: Catalogue) => void]>) {
+    const c = copy();
+    edit(c);
+    reports(checkSrc(c, null).findings, id, /not allowed/);
+  }
+
+  const other = copy();
+  (other.parts[4] as { src: unknown }).src = { kind: 'forum', url: 'x' };
+  reports(checkSrc(other, null).findings, 'part.servo', /unknown kind/);
+});
+
+test('src: without the repository the anchors are counted; --strict makes that an error', () => {
+  const report = checkAll(CATALOGUE, null);
+  assert.equal(report.repoChecked, 0);
+  assert.equal(report.repoAnchors, collectAnchors(CATALOGUE).filter((a) => a.src?.kind === 'repo').length);
+  assert.deepEqual(report.findings, []);
+  reports(checkAll(CATALOGUE, null, true).findings, 'repository', /absent/);
+});
+
+// --- the data file against the tree ------------------------------------------
+
+test('tree: the firmware parsers read the table formats of the release', () => {
+  const outBind = [
+    'static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {',
+    '    {  0,  1, false, NULL },',
+    '    {  3,  5, true,  "heartbeat" },',
+    '};',
+    'static const outbind_pad_t k_pico_pads[] = {',
+    '    {  3, LINK_PAD_GROUND, 0  },',
+    '    { 36, LINK_PAD_POWER,  33 },   /* 3V3 */',
+    '    { 39, LINK_PAD_POWER,  0  },   /* VSYS: an input, not a fixed rail */',
+    '};',
+  ].join('\n');
+  assert.deepEqual(parseFirmwarePins(outBind), [
+    { gpio: 0, pad: 1, reserved: false, line: 2 },
+    { gpio: 3, pad: 5, reserved: true, line: 3 },
+  ]);
+  assert.deepEqual(parseFirmwarePads(outBind), [
+    { pad: 3, ground: true, name: null, line: 6 },
+    { pad: 36, ground: false, name: '3V3', line: 7 },
+    { pad: 39, ground: false, name: 'VSYS', line: 8 },
+  ]);
+  const settings = [
+    '    [SET_SENSE_SDA] = {',
+    '        "sns_sda", "Sensor SDA", "Coprocessor GPIO; -1: no sensor bus", "GPIO",',
+    '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },',
+  ].join('\n');
+  assert.deepEqual(parseSettingDefault(settings, 'SET_SENSE_SDA'), { def: 16, line: 1 });
+  assert.equal(parseSettingDefault(settings, 'SET_TONE_PIN'), null);
+  assert.equal(parseSettingDefault('    [SET_TONE_PIN] = {\n', 'SET_TONE_PIN'), null);
+  assert.deepEqual(parseFirmwarePins(''), []);
+});
+
+test('tree: a data file that is stale against the firmware tables is reported', () => {
+  assert.deepEqual(checkTree(CATALOGUE, fakeTree(CATALOGUE)), []);
+
+  // The firmware reserves GP5, the ESC signal pin of the data.
+  const reservedNow = fakeTree(CATALOGUE, (files) => {
+    lines(files, OUT_BIND)[37] = '    { 5, 7, true, "tacho" },';
+  });
+  reports(checkTree(CATALOGUE, reservedNow), 'pad.7', /reserves GP5/);
+
+  // The firmware frees a pad the data marks reserved.
+  const freed = fakeTree(CATALOGUE, (files) => {
+    lines(files, OUT_BIND)[40] = '    { 8, 11, false, NULL },';
+  });
+  reports(checkTree(CATALOGUE, freed), 'pad.11', /does not reserve GP8/);
+
+  // A pad carries another GPIO.
+  const moved = fakeTree(CATALOGUE, (files) => {
+    lines(files, OUT_BIND)[32] = '    { 23, 1, false, NULL },';
+  });
+  reports(checkTree(CATALOGUE, moved), 'pad.1', /GP0 in the data and GP23/);
+
+  // A row moves by one line: the anchor of the data is stale.
+  const shifted = fakeTree(CATALOGUE, (files) => {
+    const text = lines(files, OUT_BIND);
+    text[59] = text[32]!;
+    text[32] = '/* text */';
+  });
+  reports(checkTree(CATALOGUE, shifted), 'pad.1', /not the row of this pad/);
+
+  // A row is gone.
+  const gone = fakeTree(CATALOGUE, (files) => {
+    lines(files, OUT_BIND)[57] = '/* text */';
+  });
+  reports(checkTree(CATALOGUE, gone), 'pad.34', /no GPIO on this pad/);
+  reports(checkTree(CATALOGUE, gone), 'pads', /lists 39 pads/);
+
+  // A ground pad is a power pad, and a named pad has another name.
+  const power = fakeTree(CATALOGUE, (files) => {
+    lines(files, OUT_BIND)[85] = '    { 3, LINK_PAD_POWER, 50 },';
+    lines(files, OUT_BIND)[98] = '    { 40, LINK_PAD_POWER, 50 },   /* VUSB */';
+  });
+  reports(checkTree(CATALOGUE, power), 'pad.3', /ground/);
+  reports(checkTree(CATALOGUE, power), 'pad.40', /VBUS in the data and VUSB/);
+
+  const full = fakeTree(CATALOGUE);
+  const noFile: Tree = {
+    read: (path) => (path === OUT_BIND ? null : full.read(path)),
+    newestTag: RELEASE_TAG,
+  };
+  reports(checkTree(CATALOGUE, noFile), 'pads', /out_bind\.c does not exist/);
+  const noSettings: Tree = {
+    read: (path) => (path === SETTINGS ? null : full.read(path)),
+    newestTag: RELEASE_TAG,
+  };
+  reports(checkTree(CATALOGUE, noSettings), 'pins', /settings\.c does not exist/);
+});
+
+test('tree: stale pin defaults are reported', () => {
+  const sda = fakeTree(CATALOGUE, (files) => {
+    lines(files, SETTINGS)[160] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+  });
+  reports(checkTree(CATALOGUE, sda), 'pin.sda', /GP16 in the data and 18/);
+
+  // The firmware has a default for a pin the data calls a proposal.
+  const pd = fakeTree(CATALOGUE, (files) => {
+    lines(files, SETTINGS)[225] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
+  });
+  reports(checkTree(CATALOGUE, pd), 'pin.pd_tx', /proposal in the data/);
+
+  const renamed = fakeTree(CATALOGUE, (files) => {
+    lines(files, SETTINGS)[188] = '    [SET_TAP_PIN] = {';
+  });
+  reports(checkTree(CATALOGUE, renamed), 'pin.tap', /no SET_TONE_PIN/);
+
+  const anchor = copy();
+  anchor.pinDefaults[1]!.src = { kind: 'repo', path: SETTINGS, line: 170, tag: 'v0.16.0' };
+  reports(checkTree(anchor, fakeTree(CATALOGUE)), 'pin.sda', /not inside SET_SENSE_SDA/);
+
+  const heartbeat = fakeTree(CATALOGUE, (files) => {
+    lines(files, IOMCU_PINS)[42] = '#define IOMCU_HEARTBEAT_PIN  4';
+  });
+  reports(checkTree(CATALOGUE, heartbeat), 'pin.heartbeat', /GP3 in the data and GP4/);
+
+  const undefinedPin = fakeTree(CATALOGUE, (files) => {
+    lines(files, IOMCU_PINS)[42] = '/* text */';
+  });
+  reports(checkTree(CATALOGUE, undefinedPin), 'pin.heartbeat', /no IOMCU_HEARTBEAT_PIN/);
+});
+
+test('tree: a newer release tag is a warning, not an error', () => {
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.17.0' };
+  const findings = checkTree(CATALOGUE, tree);
+  assert.deepEqual(findings, [
+    { level: 'warn', id: 'release', msg: 'the data describes 0.16.0; the newest release tag is v0.17.0' },
+  ]);
+  assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
+});
+
+// --- invariant 6 ------------------------------------------------------------
+
+test('counts: a missing safety note, stage or pad is reported', () => {
+  const safety = copy();
+  safety.safety.pop();
+  reports(checkCounts(safety), 'safety', /6 entries/);
+
+  const stages = copy();
+  stages.stages.reverse();
+  reports(checkCounts(stages), 'stage.5', /in order/);
+  stages.stages.pop();
+  reports(checkCounts(stages), 'stages', /4 entries/);
+
+  const pads = copy();
+  pads.pads.splice(10, 1);
+  reports(checkCounts(pads), 'pads', /39 entries/);
+  reports(checkCounts(pads), 'pad.12', /in order/);
+
+  const gpio = copy();
+  gpio.pads[0]!.gpio = 1;
+  reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
+
+  const release = copy();
+  release.release = '0.17.0';
+  reports(checkCounts(release), 'release', /0\.17\.0/);
+  release.release = 'next';
+  reports(checkCounts(release), 'release', /version number/);
+
+  const hash = copy();
+  (hash as { hashVersion: number }).hashVersion = 2;
+  reports(checkCounts(hash), 'hashVersion', /not 1/);
+});
+
+// --- invariant 7 ------------------------------------------------------------
+
+test('functions: one that cannot be enabled on its own is reported', () => {
+  assert.deepEqual(checkFunctions(CATALOGUE), []);
+  // A need that no step adds: the id is unknown to the catalogue.
+  const c = copy();
+  c.functions[0]!.needs = ['servo', 'gimbal'];
+  reports(checkFunctions(c), 'function.servo', /not enabled; missing: gimbal/);
+
+  // A forced value outside the option is reported by the reference check.
+  const forced = copy();
+  forced.functions[6]!.forces = { escPower: 'nowhere' as 'pd' };
+  assert.deepEqual(checkFunctions(forced), []);
+  reports(checkRefs(forced), 'function.stick', /escPower=nowhere/);
+});
+
+// --- invariant 10 -----------------------------------------------------------
+
+test('routes: a repeated slot order and a lane out of range are reported', () => {
+  const slot = copy();
+  slot.parts[4]!.slot.order = slot.parts[6]!.slot.order;
+  reports(checkRoutes(slot), `slot.L.${slot.parts[6]!.slot.order}`, /twice/);
+
+  for (const [index, route, pattern] of [
+    [0, { kind: 'L', lane: 17 }, /lane 17 is outside 0 to 16/],
+    [0, { kind: 'L', lane: -1 }, /lane -1/],
+    [0, { kind: 'L', lane: 1.5 }, /lane 1.5/],
+    [23, { kind: 'R', lane: 21 }, /lane 21 is outside 0 to 20/],
+    [8, { kind: 'O', lane: 8 }, /lane 8 is outside 0 to 7/],
+    [27, { kind: 'X', left: 17, right: 16, channel: 0 }, /left lane 17/],
+    [27, { kind: 'X', left: 12, right: 21, channel: 0 }, /right lane 21/],
+    [27, { kind: 'X', left: 12, right: 16, channel: 5 }, /channel 5/],
+  ] as Array<[number, Catalogue['wires'][number]['route'], RegExp]>) {
+    const c = copy();
+    c.wires[index]!.route = route;
+    reports(checkRoutes(c), `wire.${c.wires[index]!.n}`, pattern);
+  }
+
+  // The limits themselves pass.
+  const limits = copy();
+  limits.wires[0]!.route = { kind: 'L', lane: 16 };
+  limits.wires[23]!.route = { kind: 'R', lane: 20 };
+  limits.wires[8]!.route = { kind: 'O', lane: 7 };
+  limits.wires[27]!.route = { kind: 'X', left: 0, right: 0, channel: 4 };
+  assert.deepEqual(checkRoutes(limits), []);
+});
+
+// --- the wire table and a catalogue that is not a catalogue -------------------
+
+test('the wire table prints one row per wire in the column order of the specification', () => {
+  const rows = wireTable(CATALOGUE).trimEnd().split('\n');
+  assert.equal(rows.length, 2 + CATALOGUE.wires.length);
+  assert.equal(rows[0], '| No. | From | To | Class | Route | Lane | Stage | Present when |');
+  assert.equal(rows[2], '| 1 | panel.CANH | can.H | canh | L | 0 | 1 | always |');
+  assert.equal(rows[5], '| 4 | panel.J8S | pad.5 | hb | L | 3 | 1 | not estop |');
+  assert.equal(rows[14], '| 13 | esc.BEC | (nothing) | nc | S |  | 1 | esc |');
+  assert.equal(rows[15], '| 14 | batt.POS | esc.POS | power | O | 2 | 1 | esc and escPower=battery and not ina228 |');
+  assert.equal(rows[29], '| 28 | pdmini.OP | ina3221.C1A | power | X | L12, R16, C0 | 3 | servo and pdmini and ina3221 |');
+  assert.equal(rows[17], '| 16 | pad.10 | usbtap.DM | uart | L | 9 | 2 | pdmini |');
+  assert.equal(rows[18], '| 17 | usbtap.DP | pad.9 | uart | L | 10 | 2 | pdmini |');
+  assert.equal(rows[19], '| 18 | pad.18 | usbtap.G | gnd | L | 11 | 2 | pdmini |');
+  assert.equal(rows[42], '| 41 | pad.40 | ina228.V5 | logic | R | 0 | 5 | ina228 |');
+  assert.equal(rows[54], '| 53 | pad.29 | pad.28 | phase | Z |  | 5 | tap |');
+  assert.equal(rows[55], '| 54 | as5600.GPO | (GND, on the board) | gnd | S |  | 4 | as5600 |');
+
+  const nested = copy();
+  nested.wires[0]!.when = { all: [{ any: [{ has: 'esc' }, { has: 'servo' }] }, { not: { all: [{ has: 'sd' }] } }] };
+  assert.match(wireTable(nested), /\| \(esc or servo\) and not \(sd\) \|/);
+});
+
+test('a catalogue with a missing table gives findings, not an exception', () => {
+  const broken = copy();
+  delete (broken as Partial<Catalogue>).wires;
+  const report = checkAll(broken, null);
+  assert.ok(report.findings.some((f) => f.level === 'error' && /check stopped/.test(f.msg)));
+});
+
+// --- the coverage tool ------------------------------------------------------
+
+test('coverage: the lcov report is read per file', () => {
+  const report = ['TN:', 'SF:cond.ts', 'DA:1,1', 'LH:51', 'LF:51', 'end_of_record',
+    'SF:/work/core/resolve.ts', 'LH:183', 'LF:184', 'end_of_record', 'SF:open.ts', 'LF:3'].join('\n');
+  assert.deepEqual(parseLcov(report, '/work/core'), [
+    { file: 'cond.ts', found: 51, hit: 51 },
+    { file: 'resolve.ts', found: 184, hit: 183 },
+  ]);
+  assert.deepEqual(parseLcov('', '/work/core'), []);
+});
+
+test('coverage: the percentage rounds down, so 100.0 means every line', () => {
+  assert.equal(percent(184, 184), '100.0');
+  assert.equal(percent(1999, 2000), '99.9');
+  assert.equal(percent(19999, 20000), '99.9');
+  assert.equal(percent(1, 3), '33.3');
+  assert.equal(percent(0, 10), '0.0');
+  assert.equal(percent(0, 0), '0.0');
+});
+
+test('coverage: the figure names each measured file and fails without its record', () => {
+  const block = figure([
+    { file: 'resolve.ts', found: 184, hit: 183 },
+    { file: 'cond.ts', found: 51, hit: 51 },
+    { file: 'catalogue.ts', found: 9, hit: 9 },
+  ]);
+  assert.ok(block.startsWith(BEGIN) && block.endsWith(END));
+  assert.match(block, /\| `resolve\.ts` \| 183 \| 184 \| 99\.4 % \|/);
+  assert.match(block, /\| `cond\.ts` \| 51 \| 51 \| 100\.0 % \|/);
+  assert.doesNotMatch(block, /catalogue/);
+  assert.throws(() => figure([{ file: 'cond.ts', found: 51, hit: 51 }]), /no record for resolve\.ts/);
+  assert.deepEqual(MEASURED, ['resolve.ts', 'cond.ts']);
+});
+
+test('coverage: the block between the markers is replaced, and only there', () => {
+  const readme = `# Title\n\n${BEGIN}\nold\n${END}\n\nRest.\n`;
+  const next = replaceFigure(readme, `${BEGIN}\nnew\n${END}`);
+  assert.equal(next, `# Title\n\n${BEGIN}\nnew\n${END}\n\nRest.\n`);
+  assert.equal(replaceFigure(next ?? '', `${BEGIN}\nnew\n${END}`), next);
+  assert.equal(replaceFigure('# Title\n', 'x'), null);
+  assert.equal(replaceFigure(`${END}\n${BEGIN}\n`, 'x'), null);
+  assert.equal(replaceFigure(`${BEGIN}\n`, 'x'), null);
+});

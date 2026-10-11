@@ -1,0 +1,184 @@
+name: Configurator
+
+# Checks, builds and publishes the bench configurator under configurator/.
+#
+# - core: type check, test suite, static checks on the data file against the
+#   tree at the release tag, and the coverage figure in
+#   configurator/core/README.md.
+# - build: type check and unit tests of the page, the Vite build, the size
+#   budget (250 kB initial, 1 MB total). The built page is an artifact of
+#   every run.
+# - smoke: Playwright against the built page at 360 px and 1280 px width.
+# - deploy: publishes the built page to GitHub Pages. It runs on a push to
+#   main only. A pull request builds and tests and publishes nothing.
+#
+# The repository setting "Pages source: GitHub Actions" is a precondition of
+# the deploy job.
+
+on:
+  pull_request:
+    paths:
+      - 'configurator/**'
+      - '.github/workflows/pages.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'configurator/**'
+      - '.github/workflows/pages.yml'
+
+# A newer push to a pull request replaces the run in progress. A run on main
+# finishes, so a deployment is never cut off.
+concurrency:
+  group: configurator-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Configurator core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: configurator/core
+    steps:
+      # The data file anchors every fact to a file and line at a release tag.
+      # The check reads those files from git, so the clone holds the full
+      # history and the tags.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # configurator/core has no dependency and no lock file.  The compiler
+      # and the Node.js type declarations go into the runner's temporary
+      # folder at pinned versions.
+      - name: Install the type checker
+        run: >
+          npm install --no-save --no-package-lock --no-audit --no-fund
+          --prefix "$RUNNER_TEMP/tsc"
+          typescript@7.0.2 @types/node@24.19.2
+
+      - name: Type check
+        run: >
+          "$RUNNER_TEMP/tsc/node_modules/.bin/tsc" --noEmit -p tsconfig.json
+          --typeRoots "$RUNNER_TEMP/tsc/node_modules/@types" --types node
+
+      - name: Test suite
+        run: npm test
+
+      # --strict fails when git or the release tag is absent, so the anchors
+      # are always read.
+      - name: Check the data file
+        run: npm run check -- --strict
+
+      - name: Check the coverage figure
+        run: npm run coverage -- --check
+
+  build:
+    name: Configurator page
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: configurator
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: configurator/package-lock.json
+
+      # A stand-in for the core carries reduced data.  A page built on it
+      # would show a reduced wiring as if it were complete.
+      - name: Refuse a build on a stand-in for the core
+        run: |
+          test ! -e src/stub
+          grep -q "from '../core/index.ts'" src/core.ts
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests and the geometry sweep
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Size budget
+        run: npm run size
+
+      - name: Keep the built page
+        uses: actions/upload-artifact@v7
+        with:
+          name: configurator-dist
+          path: configurator/dist
+          if-no-files-found: error
+          retention-days: 14
+
+  smoke:
+    name: Configurator smoke test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: configurator
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: configurator/package-lock.json
+
+      - run: npm ci
+
+      # The test runs against the files of the build job, the same files the
+      # deploy job publishes.
+      - uses: actions/download-artifact@v8
+        with:
+          name: configurator-dist
+          path: configurator/dist
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test at 360 px and 1280 px
+        run: npm run e2e
+
+  deploy:
+    name: Publish to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [core, build, smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: configurator-dist
+          path: dist
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
