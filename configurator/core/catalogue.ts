@@ -683,9 +683,11 @@ const SHUNT_SERVO = t(
   'The shunt sits in the plus wire of the servo.',
   'Der Shunt sitzt in der Plusleitung des Servos.',
 );
+// Holds for both INA228 boards: the shunt of the MATEK board is in this line,
+// the module with XT90 plugs passes it from plug to plug.
 const SENSOR_ESC = t(
-  'The sensor sits in the plus line of the ESC.',
-  'Der Sensor sitzt in der Plusleitung des ESC.',
+  'The plus line of the ESC runs through the sensor board.',
+  'Die Plusleitung des ESC läuft durch das Sensor-Board.',
 );
 const SENSOR_ESC_NEG = t(
   'The shunt of this module sits in the minus line of the ESC.',
