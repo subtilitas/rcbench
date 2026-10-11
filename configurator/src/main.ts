@@ -296,5 +296,15 @@ window.addEventListener('hashchange', () => {
 });
 window.addEventListener('resize', updatePanHint);
 
+// The space the page keeps free above its lower edge follows the rendered height of the bottom bar.
+const bottomBar = byId('bar');
+if (bottomBar && typeof ResizeObserver === 'function') {
+  new ResizeObserver(() => {
+    const height = Math.ceil(bottomBar.getBoundingClientRect().height);
+    if (height > 0) document.documentElement.style.setProperty('--bar-clear', `${height}px`);
+    else document.documentElement.style.removeProperty('--bar-clear');
+  }).observe(bottomBar);
+}
+
 readHash();
 render();

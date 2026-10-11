@@ -19,9 +19,11 @@ between them.
   "Trademark notice", in German "Markenhinweis". It is the 1 link of the page
   to another origin. The page loads nothing from it. The Tab key reaches it
   as the last control of the result.
-- Below 1024 px width a bar of 56 px height is fixed to the bottom of the
-  viewport. A control that takes the focus scrolls to at least 16 px above
-  the bar (`scroll-padding-bottom`).
+- Below 1024 px width a bar is fixed to the bottom of the viewport. Its
+  height is 57 px with labels of 1 line; the labels wrap at a large text
+  size and the bar grows. The page keeps the rendered height of the bar plus
+  16 px free at its lower edge (`padding-bottom`, `scroll-padding-bottom`): a
+  control that takes the focus scrolls to above the bar.
 - The page is served under the base path `/rcbench/`.
 
 ## Layout

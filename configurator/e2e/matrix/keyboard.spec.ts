@@ -48,3 +48,30 @@ for (const setup of SETUPS) {
     expect(hiddenStops(await keyboardWalk(page))).toEqual([]);
   });
 }
+
+// A large text size wraps the labels of the bar and the bar grows. The free space follows its rendered height.
+test('largest: no control is hidden under a bottom bar of 3 times its height', async ({ page }, info) => {
+  const setup = SETUPS.find((s) => s.name === 'largest');
+  if (!setup) throw new Error('no setup "largest"');
+  await openCase(page, setup);
+  await page.addStyleTag({ content: '.bar a { min-height: 168px; }' });
+  const { phone } = cellOf(info);
+  if (phone) {
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingBottom)).toBe('185px');
+    expect(await page.evaluate(() => getComputedStyle(document.body).paddingBottom)).toBe('185px');
+  } else {
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingBottom)).toBe('0px');
+  }
+  const walk = await keyboardWalk(page);
+  expect(hiddenStops(walk)).toEqual([]);
+  if (phone) {
+    // The link to the trademark notice ends the document: it lies above the bar while it has the focus.
+    await page.locator(SEL.noticeLink).focus();
+    const gap = await page.evaluate((sel) => {
+      const link = document.querySelector(sel.link)?.getBoundingClientRect();
+      const bar = document.querySelector(sel.bar)?.getBoundingClientRect();
+      return link && bar ? bar.top - link.bottom : -1;
+    }, { link: SEL.noticeLink, bar: SEL.bar });
+    expect(gap).toBeGreaterThanOrEqual(0);
+  }
+});

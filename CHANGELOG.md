@@ -250,8 +250,9 @@ history is in git.
   protocol on the PROGRAMMER screen names the maker and the series, "Hitec
   servo, D-series", in German "Hitec-Servo, D-Serie", and no model.
 - Configurator: below 1024 px width a control that takes the focus scrolls
-  to above the bottom bar. The page sets `scroll-padding-bottom` to the
-  bar's 56 px plus 16 px. The keyboard tests of the 4 phone cells in
+  to above the bottom bar. The page sets `scroll-padding-bottom` and the
+  space under the footer to the rendered height of the bar plus 16 px,
+  73 px with labels of 1 line. The keyboard tests of the 4 phone cells in
   `e2e/matrix/keyboard.spec.ts` run (60 tests).
 
 ## 0.16.0 - 2026-10-10
