@@ -405,7 +405,12 @@ typedef struct {
     bool chain_read;          /**< READ_ALL follows the ENTER     */
     bool armed;               /**< kst_prog_bench_armed()         */
     kst_field_set_t wrote;    /**< fields the session's writes set
-                                   out to change                    */
+                                   out to change: of the writes
+                                   whose command was taken          */
+    kst_field_set_t held_wrote;  /**< those of the write that is
+                                      held, not taken yet           */
+    kst_field_set_t wrote_before; /**< wrote before the command on
+                                       its way was taken            */
     bool wrote_known;         /**< the session began under this
                                    model: wrote is all of them      */
     bool leave_doubt;         /**< the exit runs without LEAVE: the

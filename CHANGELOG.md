@@ -66,7 +66,7 @@ history is in git.
 - Servo programmer, backups: the session's backup is not offered and not
   restored once a read shows another servo than the one it was read from,
   a servo that differs in a field no write of the session set out to
-  change. LEAVE and CONNECT begin a session with that servo's own backup.
+  change. A write that did not start counts as none. LEAVE and CONNECT begin a session with that servo's own backup.
 - Servo programmer, files: FILES saves the servo's 32 registers as a servo
   file in the folder `KST` on the SD card under a preset name (`KST001` on)
   that the text keyboard changes, and never replaces a file. The first

@@ -677,7 +677,9 @@ eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
 enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
 gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
 Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
-Backup zurück. Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
+Backup zurück. Ein Schreiben, das die Karte, ein Stopp oder der Koprozessor
+nicht starten lässt, zählt nicht als Schreiben: seine Felder unterscheiden
+die Servos weiterhin. Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
 nicht geschrieben hat, werden nicht unterschieden. Nach einem
 Verbindungsverlust oder einem Start des Panels unter einer Sitzung sind die
 Schreibvorgänge der Sitzung nicht bekannt, und der Vergleich findet nicht

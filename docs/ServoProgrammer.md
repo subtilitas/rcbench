@@ -633,6 +633,8 @@ it.` `LEAVE, then CONNECT: a session with its own backup.` The write
 switch goes off, the restore list does not hold the session's backup, and
 no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
 backup is this servo's. A read of the first servo brings its backup back.
+A write that the card, a stop or the coprocessor keeps from starting counts
+as no write: its fields still tell the servos apart.
 Two servos equal in every field the session did not write are not told
 apart. After a link loss or a start of the panel under a session the
 session's writes are not known, and the comparison is not made.

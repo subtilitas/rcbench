@@ -145,6 +145,8 @@ static void session_gone(kst_prog_t *p)
     p->load_skipped = 0;
     p->journal_other = false;
     p->wrote = 0;
+    p->held_wrote = 0;
+    p->wrote_before = 0;
     p->wrote_known = false;
 }
 
@@ -285,9 +287,10 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
 {
     const bool save = kst_prog_save_first(p) && p->f.card;
 
-    /* What the servo may hold other than its backup from here on. */
-    p->wrote |= p->have_servo ? differ(&p->servo, target)
-                              : ~(kst_field_set_t)0;
+    /* What the servo may hold other than its backup once the command is
+     * taken: a write the card keeps from starting changes no field. */
+    p->held_wrote = p->have_servo ? differ(&p->servo, target)
+                                  : ~(kst_field_set_t)0;
     p->held = *req;
     p->held_target = *target;
     p->held_no_file = kst_prog_save_first(p) && !p->f.card;
@@ -435,6 +438,8 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_ENTER:
         /* A session that begins here: every write of it is seen. */
         p->wrote = 0;
+        p->held_wrote = 0;
+        p->wrote_before = 0;
         p->wrote_known = true;
         if (p->chain_read) {
             const kst_link_request_t r = request(p, LINK_KST_OP_READ_ALL);
@@ -618,6 +623,7 @@ static void not_started(kst_prog_t *p, unsigned id, unsigned arg)
     if (is_write(p->op)) {
         write_failed(p, &o);
     }
+    p->held_wrote = 0;
     p->wait = W_NONE;
     p->cmd_ready = false;
     p->chain_read = false;
@@ -688,6 +694,8 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                    && p->op == LINK_KST_OP_LEAVE) {
             leave_old(p);
         } else {
+            /* The coprocessor refused it: no field was written. */
+            p->wrote = p->wrote_before;
             not_started(p, KST_PROG_MSG_START + (unsigned)f->answer, 0);
         }
     }
@@ -802,6 +810,12 @@ bool kst_prog_take(kst_prog_t *p, kst_prog_cmd_t *out)
     p->cmd_fetch = false;
     *out = p->cmd;
     p->cmd_ready = false;
+    /* From here the command may reach the servo. */
+    if (out->kind == KST_PROG_CMD_START) {
+        p->wrote_before = p->wrote;
+        p->wrote |= p->held_wrote;
+        p->held_wrote = 0;
+    }
     return true;
 }
 

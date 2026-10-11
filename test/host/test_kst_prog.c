@@ -1069,6 +1069,162 @@ TEST_CASE(a_field_the_session_wrote_does_not_make_another_servo)
     CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
 }
 
+/* Servo B on the port: it differs from the session's servo in the duty
+ * alone, and the session's backup is not B's. */
+static void duty_swapped_is_another_servo(void)
+{
+    kst_prog_restore_t plan;
+
+    CHECK_EQ(g_sim.n_writes, 0);
+    g_sim.reg[KST_REG_DUTY] = 190;
+    g_sim.reg[KST_REG_DUTY_COPY] = 190;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
+    CHECK(kst_prog_backup_other(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_BACKUP_OTHER);
+}
+
+/* A write the card kept from starting changed no field: the field it was
+ * to change still tells another servo from the session's. */
+TEST_CASE(a_write_the_backup_file_stopped_leaves_no_field_written)
+{
+    up_enabled();
+    g_card = true;
+    g_fc.fails = KST_PROG_CARD_FULL;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_FULL);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK_EQ(g_p.held_wrote, 0);
+    g_fc.fails = KST_PROG_CARD_OK;
+    duty_swapped_is_another_servo();
+}
+
+TEST_CASE(a_write_the_journal_stopped_leaves_no_field_written)
+{
+    /* The card takes the backup file and fails at the record. */
+    up_enabled();
+    g_card = true;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 2000u && g_fc.saves == 0; ++i) {
+        frame();
+    }
+    CHECK_EQ(g_fc.saves, 1);
+    g_card_fails = true;
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK_EQ(g_p.held_wrote, 0);
+    g_card_fails = false;
+    duty_swapped_is_another_servo();
+
+    /* The card never answers for the record: KST_PROG_STORE_MS. */
+    up_enabled();
+    g_card = true;
+    g_card_silent = true;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(KST_PROG_STORE_MS + 400u);
+    CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
+    CHECK_EQ(g_p.wrote, 0);
+    g_card_silent = false;
+    g_p.file_busy = false;
+    duty_swapped_is_another_servo();
+}
+
+TEST_CASE(a_write_that_was_not_taken_or_was_refused_leaves_no_field_written)
+{
+    kst_prog_cmd_t cmd;
+
+    /* The control task takes no command: the wait for it ends. */
+    up_enabled();
+    g_card = false;
+    frame();
+    g_deaf = true;
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(g_p.held_wrote != 0u);
+    CHECK_EQ(g_p.wrote, 0);
+    frames(KST_PROG_START_MS + 5u);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK_EQ(g_p.held_wrote, 0);
+    g_deaf = false;
+    duty_swapped_is_another_servo();
+
+    /* The coprocessor refuses the start. */
+    up_enabled();
+    g_card = false;
+    frame();
+    g_deaf = true;
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_START);
+    CHECK(g_p.wrote != 0u);
+    g_answer = KST_LINK_START_BUSY;
+    g_answer_id = cmd.id;
+    frame();
+    CHECK_EQ(msg(), KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    CHECK_EQ(g_p.wrote, 0);
+    g_deaf = false;
+    g_answer = KST_LINK_START_OK;
+    duty_swapped_is_another_servo();
+}
+
+/* A write whose command was taken counts from then on, whatever comes of
+ * it: the answer that never arrives leaves its fields written. */
+TEST_CASE(a_write_that_was_taken_has_its_fields_written)
+{
+    kst_prog_cmd_t cmd;
+
+    up_enabled();
+    g_card = false;
+    frame();
+    g_deaf = true;
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK(g_p.wrote != 0u);
+    CHECK_EQ(g_p.held_wrote, 0);
+    frames(KST_PROG_START_MS + 5u);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(g_p.wrote != 0u);
+    g_deaf = false;
+    /* The duty holds a third value: the session's servo still. */
+    g_sim.reg[KST_REG_DUTY] = 190;
+    g_sim.reg[KST_REG_DUTY_COPY] = 190;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_backup_other(&g_p));
+
+    /* The same with a card: backup file, record, then the command. */
+    up_enabled();
+    g_card = true;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(g_p.wrote != 0u);
+    g_sim.reg[KST_REG_DUTY] = 190;
+    g_sim.reg[KST_REG_DUTY_COPY] = 190;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_backup_other(&g_p));
+}
+
 /* ------------------------------------------------------- the armed bench */
 
 TEST_CASE(nothing_is_sent_on_a_bench_the_feed_reports_armed)
@@ -4185,6 +4341,10 @@ int main(void)
     RUN(the_sessions_backup_is_not_restored_to_another_servo);
     RUN(a_servo_put_back_has_its_backup_again);
     RUN(a_field_the_session_wrote_does_not_make_another_servo);
+    RUN(a_write_the_backup_file_stopped_leaves_no_field_written);
+    RUN(a_write_the_journal_stopped_leaves_no_field_written);
+    RUN(a_write_that_was_not_taken_or_was_refused_leaves_no_field_written);
+    RUN(a_write_that_was_taken_has_its_fields_written);
     RUN(nothing_is_sent_on_a_bench_the_feed_reports_armed);
     RUN(the_bench_takes_no_arm_while_a_port_is_out_of_pwm);
     RUN(the_journal_reaches_the_card_before_the_write_is_sent);
