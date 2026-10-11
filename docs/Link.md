@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.14. The
+coprocessor transmits only in answer to a request. Protocol version 4.15. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -92,7 +92,8 @@ BIND_OUT and BIND from 4.10, SERVO_WIN, SENSE's `RESETS` and a signed
 `CAP_HOLD_MA` from 4.11, KST from 4.12, PROG, KST's programming ports,
 SUPPLY's flag bit 11 and SERVO_SENSE's port bit from 4.13. From 4.14 the programming port
 plans a write over several passes and reports results 33 to 35; the panel
-writes nothing differently for it. The
+writes nothing differently for it. The operation LEAVE and write register 28
+of that page are sent from 4.15. The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -620,10 +621,10 @@ KST (0x32) is new in 4.12 and names a programming port since 4.13. The page
 runs the programming protocol of
 [`protocols/kst`](../protocols/kst/README.md) for KST and Chaservo servos,
 which share one protocol and one register set, on one port of
-[PROG](#the-programming-ports) at a time. A port is in PWM or in
-PROGRAMMING, never both: a servo in programming mode still follows PWM
-pulses. A standard servo port is no programming port and a command that
-names one is refused.
+[PROG](#the-programming-ports) at a time. A port renders PWM pulses or runs
+the programming protocol, never both. Whether a KST or Chaservo servo in
+programming mode follows PWM pulses is not measured. A standard servo port
+is no programming port and a command that names one is refused.
 
 The session runs on the coprocessor with the module's planner and limits.
 The panel writes an operation and the images it needs. It reads the state,
@@ -670,9 +671,10 @@ run in the host suite against a servo, line and supply model.
 | PWM | 0 | the PWM generator | the panel's, on SUPPLY | when ENTER or REBOOT is taken |
 | STOPPING | 1 | the PWM generator, rendering no pulse: a pulse in progress completes | unchanged | after 50 ms |
 | LOW | 2 | the wire driver, driven low | set for programming, see below | after 100 ms and when the supply reads as asked |
-| PROGRAMMING | 3 | the wire driver: low, a frame, or an input for a reply window | on, held by the port | on POWER_CYCLED or REBOOT, and when the supply goes off; before the first frame also on ABORT, a stop or a failed entry |
+| PROGRAMMING | 3 | the wire driver: low, a frame, or an input for a reply window | on, held by the port | on POWER_CYCLED, REBOOT or LEAVE, and when the supply goes off; before the first frame also on ABORT, a stop or a failed entry |
 | RAIL_OFF | 4 | the wire driver, or the PWM generator rendering no pulse after a REBOOT in PWM | off | 2000 ms after the supply reads off |
 | RAIL_WAIT | 5 | as RAIL_OFF | on, at the set points it had | 1000 ms after the supply reads on, to PWM |
+| LEAVING | 6 | the wire driver, driven low | as it is: not switched, no set point written | after the wait of write register 28, to PWM (since 4.15) |
 
 The entry sequence of the session holds the line low for another 100 ms
 after LOW. From LOW on the generator does not have the pin. Every source of
@@ -744,13 +746,68 @@ switches the PD mini off when the heartbeat stops, and the port switches
 nothing on while the heartbeat is not trusted. A servo without power is in
 no mode, so a port that returns to PWM this way has bit 4 clear.
 
+#### Leaving without a supply cycle
+
+LEAVE (operation 10, since 4.15) returns a port from PROGRAMMING to PWM with
+the supply as it is. The port sends no frame, switches nothing and writes no
+set point. An output that is on stays on at its voltage and current limit,
+also one that ENTER switched on or lowered. With no PD mini answering the
+port does the same. POWER_CYCLED and REBOOT stay as they are.
+
+A LEAVE that is taken puts the port in LEAVING. The wire driver holds the
+pin low for the wait in write register 28 (`LEAVE_MS`), 0 to 10,000 ms,
+counted from the command. The wait is 100 ms until a panel writes the
+register, and the register keeps what was written until the coprocessor
+restarts. The register takes every value: a LEAVE that finds more than 10,000 in it is refused with LEAVE_MS,
+the port stays in PROGRAMMING, and the value is not clamped. A write to the
+register while the port waits is for the next LEAVE. After the wait the
+generator has the pin, the port is in PWM with bits 4 and 5 clear and result
+0, and the port's pulse is back as its `PWM` bit and `TARGET` say. A wait of
+0 ms ends at the next pass of the main loop. The time left is not on the
+page: all 32 read registers are in use. A panel counts it from its own
+clock.
+
+Not measured on a KST or Chaservo servo: the time the line has to be low
+before the first PWM pulse, whether the servo follows PWM while it is in
+programming mode, and whether a written value acts before the servo's next
+power-up. Bit 4 clear after a LEAVE says that the port holds no session. It
+does not say that the servo has left programming mode.
+
+| The port at the command | LEAVE |
+| --- | --- |
+| the heartbeat not trusted or the link silent, in any state | refused with UNSAFE |
+| PWM | refused with NOT_PROGRAMMING |
+| STOPPING, LOW, RAIL_OFF, RAIL_WAIT, LEAVING | refused with BUSY; a wait that runs is not started again |
+| PROGRAMMING, an operation runs or plans | refused with BUSY. The operation goes on; ABORT ends it |
+| PROGRAMMING, another port named | refused with PORT |
+| PROGRAMMING, bit 5 set | refused with MUST_READ: a session that was cut is not left before a READ_ALL has succeeded |
+| PROGRAMMING, bit 9 set | refused with LOCKED: a servo that a write left in doubt is left by RESTORE and then LEAVE, or by a supply cycle |
+| PROGRAMMING, register 28 above 10,000 | refused with LEAVE_MS |
+| PROGRAMMING, none of these | taken: LEAVING, bit 3 set, result 1 |
+
+A refused LEAVE changes nothing: no frame, no supply command, the pin and
+the state as they were.
+
+| In LEAVING | The supply | The port |
+| --- | --- | --- |
+| The wait ends | as it is | PWM with bits 4 and 5 clear, result 0 |
+| ABORT | as it is | PROGRAMMING with result 19, the session as LEAVE found it, bit 5 not set |
+| A disarm | as it is | PROGRAMMING with result 19 and bit 5 set |
+| The heartbeat lost or the link silent, no PD mini answering | untouched | PROGRAMMING with result 19 and bit 5 set |
+| The supply reads off or is asked off (the panel's STOP, a lost heartbeat, the PD mini's own protection) | kept off for 2000 ms, not switched on again | RAIL_OFF, then PWM with bits 4 and 5 clear and result 19 |
+| The PD mini stops answering | untouched | the wait goes on |
+| Any other command | as it is | refused with BUSY |
+
+A stop in the pass in which the wait ends comes first: the port is in
+PROGRAMMING.
+
 #### Registers
 
 A read gives these registers:
 
 | Register | Name | Reads |
 | ---: | --- | --- |
-| 0 | `STATE` | bits 0 to 2 the state. Bit 3 an operation runs. Bit 4 a frame was sent since the servo was last without power. Bit 5 a stop or an abort cut the session: READ_ALL comes before anything else. Bit 6 an image was read. Bit 7 the session holds a backup. Bit 8 the image has the known layout. Bit 9 only RESTORE is accepted. Bit 10 a PD mini answers and the port switches the servo's supply. Bit 11 registers 16 to 31 show the backup. Bits 12 to 15 the programming port |
+| 0 | `STATE` | bits 0 to 2 the state. Bit 3 an operation runs. Bit 4 a frame was sent since the servo was last without power or the port was last left with LEAVE. Bit 5 a stop or an abort cut the session: READ_ALL comes before anything else. Bit 6 an image was read. Bit 7 the session holds a backup. Bit 8 the image has the known layout. Bit 9 only RESTORE is accepted. Bit 10 a PD mini answers and the port switches the servo's supply. Bit 11 registers 16 to 31 show the backup. Bits 12 to 15 the programming port |
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
 | 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the frames it has sent, held at 4095 |
 | 3 | `RESULT` | low byte the result of that operation, 1 while it runs, 35 while a WRITE or a RESTORE plans (since 4.14). High byte why the last command taken started nothing, 0 when it started |
@@ -777,16 +834,17 @@ A write sees other registers:
 | 25 | `VIEW` | 0: the read's registers 16 to 31 show the image last read. 1: the backup. In force when written |
 | 26 | `SUPPLY_MV` | the supply voltage of an ENTER, mV (since 4.13). The panel's default is 5000 |
 | 27 | `SUPPLY_MA` | the current limit of an ENTER that switches the supply on, mA (since 4.13) |
+| 28 | `LEAVE_MS` | the wait of a LEAVE with the line low, 0 to 10,000 ms (since 4.15). 100 until it is written |
 
 The check is the link's CRC-16 (cyclic redundancy check), seeded 0xFFFF,
 over each register's low byte and then its high byte (`link_kst_crc()`).
 
 Registers 0 to 3 are the command: one frame, written as exactly those 4
-registers and taken whole or not at all. Registers 4 to 27 are written in
-any windows before the command. A write that reaches register 28 or higher
+registers and taken whole or not at all. Registers 4 to 28 are written in
+any windows before the command. A write that reaches register 29 or higher
 is refused with READ_ONLY, a window that touches registers 0 to 3 and is
 not exactly them with BAD_RANGE. A command with a reserved bit, an operation
-outside 1 to 9, the confirmation on another operation than RESTORE, a `KEY`
+outside 1 to 10, the confirmation on another operation than RESTORE, a `KEY`
 that is neither 0 nor 0x57A5 or a `SEQ` other than the page's plus 1 is
 refused with BAD_VALUE and changes nothing. The frame last taken, sent
 again, is acknowledged and does nothing, so a command whose answer was lost
@@ -804,6 +862,7 @@ became of it is in `RESULT`.
 | ABORT | 7 | ends the running operation. In STOPPING and LOW the port returns to PWM. In RAIL_OFF the supply is not switched on again, in RAIL_WAIT it is switched off, and the cycle ends with result 19. Taken in every state; register 2 does not name it |
 | POWER_CYCLED | 8 | in PROGRAMMING: cycles the supply and returns the port to PWM. With no PD mini answering or the PD mini asked off: the operator's word that the servo was without power, to PWM at once |
 | REBOOT | 9 | cycles the supply, in PROGRAMMING and in PWM (since 4.13) |
+| LEAVE | 10 | in PROGRAMMING with no operation running: holds the line low for the wait of register 28 and returns the port to PWM. The supply is not switched (since 4.15) |
 
 The result in the low byte of `RESULT` is the session's `kst_ses_t`: 0 done,
 1 running, 4 no servo answered, 5 not in programming mode, 6 a register
@@ -838,6 +897,8 @@ ended.
 | NO_PIN | 16 | the port holds no pin, for an ENTER and for a REBOOT in PWM (since 4.13) |
 | SUPPLY_RANGE | 17 | the staged supply voltage or current is outside what ENTER takes (since 4.13) |
 | NO_SUPPLY | 18 | a REBOOT with no PD mini answering or the PD mini asked off (since 4.13) |
+| LEAVE_MS | 19 | a LEAVE with more than 10,000 ms in register 28 (since 4.15) |
+| LOCKED | 20 | a LEAVE while only RESTORE is accepted (since 4.15) |
 
 Values 3 and 4 are not given. A result the session knows without a plan
 (5, 7, 8, 9, and 10 for a RESTORE whose staged image is not the backup) is
@@ -871,10 +932,12 @@ an armed bank, SUPPLY's output written 0, and the command ABORT from
 | PROGRAMMING | the running operation ends with result 19: a frame on the wire is finished, which takes at most 12 ms, and no other starts. The pin is driven low or an input afterwards. After a first frame bit 5 is set and the port stays PROGRAMMING; before it the port returns to PWM. The supply stays on | the operation ends the same way. The supply is off: the port keeps it off for 2000 ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING with bit 5 set | as the panel's STOP |
 | RAIL_OFF | nothing: the cycle goes on | the supply stays off; after the 2000 ms the port is in PWM with result 19 | as the panel's STOP |
 | RAIL_WAIT | nothing: the cycle goes on | the supply is switched off; the port is in PWM with result 19 | as the panel's STOP |
+| LEAVING | the wait ends with result 19 and the port is in PROGRAMMING with bit 5 set. The supply stays on | the wait ends the same way. The supply is off: the port keeps it off for 2000 ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING | as the panel's STOP |
 
 While bit 5 is set the port takes ENTER, READ_ALL, ABORT, POWER_CYCLED and
 REBOOT only, until a READ_ALL has succeeded. ABORT alone has the effect of
-a disarm in STOPPING, LOW and PROGRAMMING.
+a disarm in STOPPING, LOW and PROGRAMMING. In LEAVING it returns the port to
+PROGRAMMING without bit 5.
 
 An operation that plans is an operation in PROGRAMMING, and the row above
 holds for it: a disarm, the panel's STOP, a lost heartbeat, a silent link,
@@ -900,16 +963,19 @@ SUPPLY.
 
 | Panel | Coprocessor | KST (0x32) |
 | --- | --- | --- |
-| 4.14 | 4.14 | served |
-| 4.14 | 4.13 | served. The coprocessor plans inside the command's frame: the panel's module never reports PLANNING, and a request without an order of writes is the refusal PLAN_NO_PATH |
-| 4.13 | 4.14 | served. The panel's module reads an operation that plans as one that runs, and results 33 and 34 as results it has no name for |
-| 4.13 or 4.14 | 4.12 | the page names an output channel there; the panel's module reads the minor at link-up and sends nothing below 13, not a write and not a read |
-| 4.13 or 4.14 | 4.11 or older | no page: the coprocessor answers a request to 0x32 with BAD_PAGE, and the panel sends none |
-| 4.12 | 4.13 or 4.14 | a 4.12 command has bit 6 clear and is refused with PORT; a write to register 26 or 27 never comes. The port stays in PWM |
-| 4.11 or older | 4.13 or 4.14 | the panel never reads or writes 0x32; the port stays in PWM |
+| 4.15 | 4.15 | served |
+| 4.15 | 4.14 | served without LEAVE. A 4.14 coprocessor refuses operation 10 with BAD_VALUE and a write to register 28 with READ_ONLY: the panel's module sends neither and answers the request with `KST_LINK_START_NO_OP`. POWER_CYCLED and REBOOT are the ways out |
+| 4.14 | 4.15 | served. The panel sends no operation 10 and no register 28, and the port is never in LEAVING |
+| 4.14 or 4.15 | 4.13 | served, from 4.15 without LEAVE as above. The coprocessor plans inside the command's frame: the panel's module never reports PLANNING, and a request without an order of writes is the refusal PLAN_NO_PATH |
+| 4.13 | 4.14 or 4.15 | served. The panel's module reads an operation that plans as one that runs, and results 33 and 34 as results it has no name for |
+| 4.13 to 4.15 | 4.12 | the page names an output channel there; the panel's module reads the minor at link-up and sends nothing below 13, not a write and not a read |
+| 4.13 to 4.15 | 4.11 or older | no page: the coprocessor answers a request to 0x32 with BAD_PAGE, and the panel sends none |
+| 4.12 | 4.13 to 4.15 | a 4.12 command has bit 6 clear and is refused with PORT; a write to register 26 or 27 never comes. The port stays in PWM |
+| 4.11 or older | 4.13 to 4.15 | the panel never reads or writes 0x32; the port stays in PWM |
 
-`shared/bench/kst_link.c` is the panel's half. A request names the port
-and, for ENTER, the supply voltage and current. It stages the registers,
+`shared/bench/kst_link.c` is the panel's half. A request names the port,
+for ENTER the supply voltage and current, and for LEAVE the wait, which the
+module refuses above 10,000 ms before anything is sent. It stages the registers,
 sends the command with the next `SEQ`, reads registers 0 to 3 every 50 ms
 while an operation runs or the port is out of PWM and every 500 ms otherwise
 (one request and one data frame, 0.31 ms of bus time), and after an
@@ -932,10 +998,16 @@ no order of writes, one above the work cap, a write without the key, a PD
 mini absent, slow, silent
 and refusing, an ABORT in RAIL_OFF and in RAIL_WAIT, the supply found on above, at and under the programming
 voltage, a link lost in RAIL_OFF and in RAIL_WAIT, the counters at their
-ends and every timer across the 2^32 ms wrap. `test_kst_link` runs the panel's module through the dispatcher
+ends and every timer across the 2^32 ms wrap. For LEAVE they run the
+command in every state, with a PD mini on, switched on by the entry, silent
+and absent, during a frame and while the port plans, with bit 5 and with bit
+9 set, waits of 0, 1, 100 and 10,000 ms, the refusal at 10,001 ms, and an
+ABORT, a disarm, a lost heartbeat and a supply switched off in the wait.
+`test_kst_link` runs the panel's module through the dispatcher
 against the port: whole sessions, a write from PLANNING to its end, results
-33 and 34, an abort and a stop while it plans, lost answers, a stale `SEQ`, a restart of
-the coprocessor and a 4.12 and a 4.11 coprocessor.
+33 and 34, an abort and a stop while it plans, a LEAVE with its wait and
+one aborted in the wait, lost answers, a stale `SEQ`, a restart of
+the coprocessor and a 4.14, a 4.13, a 4.12 and a 4.11 coprocessor.
 
 ### Identifier
 

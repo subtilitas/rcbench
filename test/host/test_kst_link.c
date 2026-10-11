@@ -1033,6 +1033,281 @@ TEST_CASE(a_stop_at_the_coprocessor_shows_as_an_aborted_operation)
     conduct();
 }
 
+/* --- from PROGRAMMING to PWM without a supply cycle (4.15) ---------------------- */
+
+static kst_link_request_t leave_after(unsigned wait_ms)
+{
+    kst_link_request_t r = request(LINK_KST_OP_LEAVE);
+
+    r.leave_ms = (uint16_t)wait_ms;
+    return r;
+}
+
+TEST_CASE(a_leave_sends_its_wait_and_then_the_command)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    uint32_t t;
+
+    fresh();
+    g_supply.online = true;
+    g_supply.off = true;
+    g_supply.vin_mv = 20000u;
+    link_up();
+    CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
+    CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+    CHECK_EQ(g_supply_sets, 1);
+    CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
+
+    /* The wait of another operation is not sent. */
+    r = request(LINK_KST_OP_READ_ALL);
+    r.leave_ms = 999u;
+    CHECK_EQ(run(&r).result, KST_SES_OK);
+    CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
+
+    g_writes = 0;
+    g_cmds = 0;
+    r = leave_after(250);
+    t = g_ms;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_SENDING);
+    until_phase(KST_LINK_RUNNING);
+    /* Register 28, then the command: the port waits what was sent. */
+    CHECK_EQ(g_writes, 2);
+    CHECK_EQ(g_cmds, 1);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_CMD],
+             LINK_KS_W_CMD_OF(LINK_KST_OP_LEAVE, CH));
+    CHECK_EQ(g_port.leave_ms, 250);
+    CHECK_EQ(g_port.wait_ms, 250);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_LEAVING);
+    run_ms(100);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.phase, KST_LINK_RUNNING);
+    CHECK_EQ(ro.port, LINK_KST_LEAVING);
+    CHECK_EQ(ro.port_no, CH);
+    CHECK_EQ(ro.op, LINK_KST_OP_LEAVE);
+    CHECK((ro.flags & LINK_KS_F_BUSY) != 0u);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_LEAVE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK((uint32_t)(g_ms - t) >= 250u);
+    CHECK((uint32_t)(g_ms - t) < 250u + 150u);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    /* The supply the entry switched on is on and was not set again. */
+    CHECK(g_supply.asked_on);
+    CHECK_EQ(g_supply_sets, 1);
+    CHECK_EQ(g_cmds, 1);
+    run_ms(600);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PWM);
+    CHECK((ro.flags & (LINK_KS_F_IN_MODE | LINK_KS_F_MUST_READ)) == 0u);
+
+    /* A wait of 0 ms, and the whole range. */
+    CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
+    CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+    r = leave_after(0);
+    t = g_ms;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(g_port.leave_ms, 0);
+    CHECK((uint32_t)(g_ms - t) < 150u);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
+    CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+    r = leave_after(LINK_KST_LEAVE_MS_MAX);
+    t = g_ms;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK((uint32_t)(g_ms - t) >= LINK_KST_LEAVE_MS_MAX);
+    CHECK((uint32_t)(g_ms - t) < LINK_KST_LEAVE_MS_MAX + 150u);
+    CHECK_EQ(g_supply_sets, 1);
+    conduct();
+}
+
+TEST_CASE(a_leave_with_a_wait_above_10_000_ms_sends_nothing)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    up();
+    run_ms(5);
+    g_writes = 0;
+    r = leave_after(LINK_KST_LEAVE_MS_MAX + 1u);
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
+    r = leave_after(0xFFFFu);
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    run_ms(500);
+    CHECK_EQ(g_writes, 0);
+    CHECK(!kst_link_outcome(&g_k, &out));
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
+    /* The field is the leave's: another operation does not look at it. */
+    r = request(LINK_KST_OP_READ_ALL);
+    r.leave_ms = 0xFFFFu;
+    CHECK_EQ(run(&r).result, KST_SES_OK);
+
+    /* A register another panel left out of range: the page refuses the
+     * command, and this module's own value replaces it. */
+    g_port.leave_ms = 10001u;
+    CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
+                 .op = LINK_KST_OP_LEAVE, .port = CH,
+                 .leave_ms = LINK_KST_LEAVE_MS_MAX }),
+             KST_LINK_START_OK);
+    until_phase(KST_LINK_RUNNING);
+    CHECK_EQ(g_port.wait_ms, LINK_KST_LEAVE_MS_MAX);
+    kst_link_abort(&g_k);
+    out = outcome();
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+}
+
+/* A coprocessor of 4.13 or 4.14 has the page, answers operation 10 with a
+ * NACK and has no register 28. */
+TEST_CASE(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15)
+{
+    const uint16_t minors[2] = { KST_LINK_MINOR, LINK_MINOR_KST_LEAVE - 1u };
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    CHECK_EQ(LINK_MINOR_KST_LEAVE, 15u);
+    for (unsigned i = 0; i < 2u; ++i) {
+        fresh();
+        kst_link_came_up(&g_k, minors[i]);
+        until_phase(KST_LINK_READY);
+        CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
+        CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+        run_ms(5);
+        g_writes = 0;
+        r = leave_after(100);
+        CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_NO_OP);
+        CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+        run_ms(500);
+        CHECK_EQ(g_writes, 0);
+        CHECK(!kst_link_outcome(&g_k, &out));
+        CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+        /* The range is checked first. */
+        r = leave_after(LINK_KST_LEAVE_MS_MAX + 1u);
+        CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
+        /* The exits a 4.13 coprocessor has stay. */
+        out = run_op(LINK_KST_OP_POWER_CYCLED);
+        CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+        CHECK_EQ(out.result, KST_SES_OK);
+        CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    }
+
+    /* The link lost and up again at 4.15: the minor is the new one. */
+    kst_link_lost(&g_k);
+    r = leave_after(100);
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_DOWN);
+    kst_link_came_up(&g_k, LINK_MINOR_KST_LEAVE);
+    until_phase(KST_LINK_READY);
+    CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
+    CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    /* And lost again, the module forgets it. */
+    kst_link_lost(&g_k);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
+    until_phase(KST_LINK_READY);
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_NO_OP);
+}
+
+TEST_CASE(the_page_says_why_a_leave_started_nothing)
+{
+    kst_link_request_t r = leave_after(100);
+    kst_link_outcome_t out;
+
+    fresh();
+    link_up();
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.refusal, LINK_KST_REF_NOT_PROGRAMMING);
+    CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
+    CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+    /* A stop at the coprocessor between operations: the read first. */
+    g_stop = true;
+    ms();
+    g_stop = false;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.refusal, LINK_KST_REF_MUST_READ);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    conduct();
+}
+
+TEST_CASE(an_abort_ends_a_leave_that_waits)
+{
+    kst_link_request_t r = leave_after(2000);
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    unsigned frames;
+
+    up();
+    frames = g_sim.n_frames;
+    g_cmds = 0;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_phase(KST_LINK_RUNNING);
+    run_ms(300);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_LEAVING);
+    kst_link_abort(&g_k);
+    ms();
+    CHECK_EQ(g_cmds, 2);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_LEAVE);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    run_ms(5);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PROGRAMMING);
+    CHECK((ro.flags & LINK_KS_F_IN_MODE) != 0u);
+    CHECK((ro.flags & LINK_KS_F_MUST_READ) == 0u);
+    run_ms(3000);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    CHECK_EQ(g_sim.n_frames, frames);
+
+    /* An abort before the command drops the request: nothing of it
+     * reaches the page but, at most, the wait. */
+    g_cmds = 0;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    kst_link_abort(&g_k);
+    CHECK(kst_link_outcome(&g_k, &out));
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK_EQ(out.op, LINK_KST_OP_LEAVE);
+    run_ms(300);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_CMD] & 0xFu, LINK_KST_OP_ABORT);
+
+    /* A stop at the coprocessor in the wait shows as aborted, and the
+     * read comes first. */
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_phase(KST_LINK_RUNNING);
+    run_ms(300);
+    g_stop = true;
+    ms();
+    g_stop = false;
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_LEAVE);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.refusal, LINK_KST_REF_MUST_READ);
+    conduct();
+}
+
 /* --- a write the coprocessor plans (4.14) --------------------------------------- */
 
 /* An edit of 86,312 units of planning, as test_kst_session has it: 864
@@ -1447,6 +1722,11 @@ int main(void)
     RUN(an_abort_ends_the_operation_that_runs);
     RUN(an_abort_with_a_stale_seq_is_sent_again);
     RUN(a_stop_at_the_coprocessor_shows_as_an_aborted_operation);
+    RUN(a_leave_sends_its_wait_and_then_the_command);
+    RUN(a_leave_with_a_wait_above_10_000_ms_sends_nothing);
+    RUN(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15);
+    RUN(the_page_says_why_a_leave_started_nothing);
+    RUN(an_abort_ends_a_leave_that_waits);
     RUN(a_write_shows_as_planning_until_its_plan_is_there);
     RUN(a_request_without_an_order_of_writes_is_a_result);
     RUN(a_plan_over_the_cap_is_a_result);

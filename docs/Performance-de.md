@@ -262,8 +262,8 @@ Ein Schreibkommando an den Programmierport für KST-Servos erreicht 1 304 Bytes:
 `kst_port_write` (88), `kst_session_edit` (40) und der Start eines
 Planer-Jobs, 312 Bytes ab `kst_plan_edit_begin`: `kst_plan_edit_begin`
 (40), die Grenzwertprüfung `kst_limits_edit` (248), `load` (16) und
-`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 984 Bytes: `main`,
-`kst_port_step` (56), `kst_session_step` (256) und ein Slice des Planers,
+`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 1 016 Bytes: `main`,
+`kst_port_step` (48), `step_programming` (40), `kst_session_step` (256) und ein Slice des Planers,
 208 Bytes ab `kst_plan_step`. Der Planer ruft sich nicht selbst auf. Der
 Job des Planers, der Plan und das bereitgestellte Image liegen im Zustand
 der Session und des Ports, nicht auf dem Stack.

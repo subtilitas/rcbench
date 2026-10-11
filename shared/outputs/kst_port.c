@@ -29,7 +29,8 @@ _Static_assert(LINK_KST_RESULT_SUPPLY > KST_SES_ERR_NO_PLAN,
                "the supply's result is no kst_ses_t");
 _Static_assert(LINK_KS_W_SUPPLY_MV == LINK_KS_W_VIEW + 1
                && LINK_KS_W_SUPPLY_MA == LINK_KS_W_VIEW + 2
-               && LINK_KS_W_COUNT == LINK_KS_W_VIEW + 3,
+               && LINK_KS_W_LEAVE_MS == LINK_KS_W_VIEW + 3
+               && LINK_KS_W_COUNT == LINK_KS_W_VIEW + 4,
                "the registers after the staged ones");
 
 #define NO_REG 0xFFu
@@ -269,6 +270,13 @@ static void on_stop(kst_port_t *p)
     case LINK_KST_LOW:
         back_out(p, (uint8_t)KST_SES_ERR_ABORTED);
         break;
+    case LINK_KST_LEAVING:
+        /* The leave ends where a stop finds a port that holds a servo: in
+         * PROGRAMMING, which this pass then steps. */
+        p->state = (uint8_t)LINK_KST_PROGRAMMING;
+        op_end(p, KST_SES_ERR_ABORTED);
+        p->must_read = 1;
+        break;
     case LINK_KST_PROGRAMMING:
         cut(p);
         if (p->framed != 0u) {
@@ -451,6 +459,10 @@ static link_kst_refusal_t dispatch(kst_port_t *p, link_kst_op_t op,
             supply_off(p);
             go_pwm(p);
             op_end(p, KST_SES_ERR_ABORTED);
+        } else if (state == LINK_KST_LEAVING) {
+            /* Nothing was cut: the session is as the LEAVE found it. */
+            p->state = (uint8_t)LINK_KST_PROGRAMMING;
+            op_end(p, KST_SES_ERR_ABORTED);
         }
         return LINK_KST_REF_NONE;
     }
@@ -505,6 +517,21 @@ static link_kst_refusal_t dispatch(kst_port_t *p, link_kst_op_t op,
     if (p->must_read != 0u && op != LINK_KST_OP_ENTER
         && op != LINK_KST_OP_READ_ALL) {
         return LINK_KST_REF_MUST_READ;
+    }
+    if (op == LINK_KST_OP_LEAVE) {
+        /* The servo keeps its supply and is not read again: one a write
+         * left in doubt is not handed to the PWM generator. */
+        if (p->session.locked != 0u) {
+            return LINK_KST_REF_LOCKED;
+        }
+        if (p->leave_ms > LINK_KST_LEAVE_MS_MAX) {
+            return LINK_KST_REF_LEAVE_MS;
+        }
+        op_begin(p, op);
+        p->wait_ms = p->leave_ms;
+        p->t0_ms = now_ms;
+        p->state = (uint8_t)LINK_KST_LEAVING;
+        return LINK_KST_REF_NONE;
     }
     if (op == LINK_KST_OP_ENTER) {
         op_begin(p, op);
@@ -584,6 +611,8 @@ uint8_t kst_port_write(kst_port_t *p, uint8_t off, uint8_t n,
             p->supply_mv = in[i];
         } else if (at == LINK_KS_W_SUPPLY_MA) {
             p->supply_ma = in[i];
+        } else if (at == LINK_KS_W_LEAVE_MS) {
+            p->leave_ms = in[i];
         } else if (at - LINK_KS_W_IMAGE < LINK_KS_W_STAGED) {
             p->staged[at - LINK_KS_W_IMAGE] = in[i];
         }
@@ -803,6 +832,23 @@ static void step_programming(kst_port_t *p, uint32_t now_ms)
     }
 }
 
+/* A LEAVE waits with the line low.  The supply is read for one thing: a
+ * servo found without power ends as it does in PROGRAMMING. */
+static void step_leaving(kst_port_t *p, uint32_t now_ms)
+{
+    supply_port_view_t v;
+
+    if (p->watch != 0u && supply_view(p, &v) && (!v.asked_on || v.off)) {
+        p->state = (uint8_t)LINK_KST_PROGRAMMING;
+        step_programming(p, now_ms);
+        return;
+    }
+    if ((uint32_t)(now_ms - p->t0_ms) >= p->wait_ms) {
+        go_pwm(p);
+        op_end(p, KST_SES_OK);
+    }
+}
+
 static void step_rail_off(kst_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
@@ -921,6 +967,9 @@ void kst_port_step(kst_port_t *p, bool safe, bool stop, uint32_t now_ms)
     case LINK_KST_RAIL_WAIT:
         step_rail_wait(p, now_ms);
         break;
+    case LINK_KST_LEAVING:
+        step_leaving(p, now_ms);
+        break;
     case LINK_KST_PWM:
     default:
         break;
@@ -942,6 +991,7 @@ bool kst_port_init(kst_port_t *p, const kst_port_hw_t *hw)
         return false;
     }
     p->hw = *hw;
+    p->leave_ms = (uint16_t)LINK_KST_LEAVE_MS_DEFAULT;
     session_fresh(p);
     return true;
 }
