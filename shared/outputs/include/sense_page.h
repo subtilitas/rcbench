@@ -79,6 +79,8 @@ typedef struct {
     bool     sensed;    /**< BENCH carries the INA228's numbers          */
     uint8_t  bound;     /**< bit n: output slot n is bound to silicon
                              (sense_page_bound()); 0 until told           */
+    uint8_t  ports;     /**< bit n: programming port n renders a pulse
+                             (sense_page_ports()); 0 until told           */
     uint64_t held;      /**< the pins core 1 still holds, as of its last
                              snapshot, whatever set-up it was under      */
 } sense_page_t;
@@ -138,7 +140,9 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
  * not the whole frame, CAP_ARM with bits it does not have, an INA3221
  * channel that is not 1 (LINK_SS_CAP_CH) or not read, an output channel
  * that is not a surface on a PWM slot bound to silicon
- * (sense_page_bound()), a movement or band of 0 or past 32767 mA
+ * (sense_page_bound()), with LINK_SS_ARM_PORT a programming port that
+ * renders no pulse (sense_page_ports()), a movement or band of 0 or past
+ * 32767 mA
  * (BAD_VALUE); an arm while @p o is not driving (NOT_ARMED).  The holding
  * level is signed mA and every value of it is taken, -32768 to 32767.
  * An arm restarts the capture: CAP_STATE armed, the results 0.
@@ -150,6 +154,18 @@ uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
  *  only on a PWM slot that renders frames.  The coprocessor says so after
  *  every change of the bindings; until it does, no slot counts as bound. */
 void sense_page_bound(sense_page_t *p, uint8_t slots);
+
+/** Which programming ports render a pulse while the bank drives (bit n
+ *  port n): bound to the PWM generator, switched on in LINK_PG_PWM and not
+ *  held by the KST port.  A capture with LINK_SS_ARM_PORT arms only on one
+ *  of them.  Until told, none. */
+void sense_page_ports(sense_page_t *p, uint8_t ports);
+
+/** Whether the capture in CAP_ARM names a programming port that renders
+ *  no pulse now: its PWM switched off, its pin gone, or the KST port on
+ *  the pin.  The caller ends such a capture as it ends one whose bank
+ *  stopped driving, with sense_page_step(p, false). */
+bool sense_page_port_gone(const sense_page_t *p);
 
 void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);

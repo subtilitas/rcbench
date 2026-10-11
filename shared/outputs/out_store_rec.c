@@ -8,6 +8,7 @@
 
 #include <string.h>
 
+#include "prog_port.h"
 #include "sense_page.h"
 #include "supply_page.h"
 #include "tone_page.h"
@@ -26,10 +27,19 @@ _Static_assert(offsetof(out_store_t, tone)
                   + LINK_SN_CONFIG_COUNT * sizeof(uint16_t),
                "the configuration has no padding before the tone set-up");
 
+_Static_assert(offsetof(out_store_t, prog)
+               == offsetof(out_store_t, tone)
+                  + (LINK_TN_CONFIG_COUNT + 1u) * sizeof(uint16_t),
+               "the configuration has no padding before the ports");
+_Static_assert(sizeof(((out_store_t *)0)->prog)
+               == sizeof(uint16_t[PROG_PORT_KEPT_COUNT]),
+               "the kept registers of the programming ports");
+
 size_t out_store_cfg_size(uint16_t version)
 {
     switch (version) {
     case OUT_STORE_VERSION:    return sizeof(out_store_t);
+    case OUT_STORE_VERSION_V6: return offsetof(out_store_t, prog);
     case OUT_STORE_VERSION_V5: return offsetof(out_store_t, tone);
     case OUT_STORE_VERSION_V4: return offsetof(out_store_t, sense);
     case OUT_STORE_VERSION_V3: return offsetof(out_store_t, supply);
@@ -50,6 +60,7 @@ bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out)
     memcpy(out->supply, &supply.regs[LINK_SP_ENABLE], sizeof(out->supply));
     sense_page_defaults(out->sense);
     tone_page_defaults(out->tone);
+    prog_port_defaults(out->prog, PROG_PORT_DEFAULT_PIN);
     /* And over it, everything the record does carry. */
     memcpy(out, cfg, size);
     return true;

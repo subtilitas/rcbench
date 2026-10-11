@@ -313,6 +313,69 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
     CHECK(outputs_overdue(&o, 0, t));
 }
 
+/* The tester pointed at a programming port: the sweep and the hold command
+ * that channel and no standard servo port, and pointing it elsewhere ends
+ * a sweep as a SWEEP of 0 does. */
+TEST_CASE(a_target_names_the_channels_the_sweep_commands)
+{
+    fresh(true);
+    CHECK(outputs_set_role(&o, 9, OUT_ROLE_SURFACE));
+    CHECK(outputs_set(&o, 0, 500u, T0));
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 250u));
+    CHECK_EQ(o.channel[9].command, 900u);
+    CHECK_EQ(o.channel[0].command, 500u);
+    CHECK_EQ(o.channel[0].last_command_ms, T0);
+    CHECK_EQ(o.channel[10].last_command_ms, T0);
+    /* The same target again changes nothing. */
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_SINE);
+    /* The hold is the port's too. */
+    const uint16_t hold = LINK_SV_HOLD;
+    CHECK(outputs_set_slew(&o, 9, 200u));
+    for (uint32_t t = T0 + 250u; t <= T0 + 300u; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &hold, &o, T0 + 300u),
+             0u);
+    CHECK_EQ(o.channel[9].command, outputs_actual(&o, 9));
+    CHECK_EQ(o.channel[0].command, 500u);
+    /* Back to the standard servo ports: the held sweep is over, and the
+     * port stays where its output is. */
+    const uint16_t at = outputs_actual(&o, 9);
+    CHECK(servo_page_target(&pg, &o, 0u, 0u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    CHECK_EQ(o.channel[9].command, at);
+    const uint16_t resume = LINK_SV_RESUME;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &resume, &o, T0 + 301u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 400u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 650u));
+    CHECK_EQ(o.channel[0].command, 900u);
+    CHECK_EQ(o.channel[9].command, at);
+    /* A running sweep moved to a port leaves the surfaces it moved where
+     * their outputs are. */
+    outputs_step(&o, T0 + 650u);
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    CHECK_EQ(o.channel[0].command, outputs_actual(&o, 0));
+    CHECK(!servo_page_step(&pg, &o, T0 + 700u));
+    /* The last channel of the bank, and a range that runs off it. */
+    CHECK(servo_page_target(&pg, &o, (uint8_t)(OUT_MAX_CHANNELS - 1u), 1u));
+    CHECK(!servo_page_target(&pg, &o, (uint8_t)OUT_MAX_CHANNELS, 1u));
+    CHECK(!servo_page_target(&pg, &o, 9u, 8u));
+    CHECK(!servo_page_target(&pg, &o, 255u, 255u));
+    CHECK_EQ(pg.target_first, OUT_MAX_CHANNELS - 1u);
+    CHECK(!servo_page_target(NULL, &o, 9u, 1u));
+    CHECK(!servo_page_target(&pg, NULL, 9u, 1u));
+    /* A count of 0 is the standard servo ports whatever the first. */
+    CHECK(servo_page_target(&pg, &o, 5u, 0u));
+    CHECK_EQ(pg.target_first, 0u);
+    CHECK_EQ(pg.target_n, 0u);
+}
+
 /* The sweep register alone: 0, HOLD or RESUME. */
 static uint8_t say(uint16_t v, uint32_t now)
 {
@@ -827,6 +890,7 @@ int main(void)
     RUN(a_sweep_starts_only_from_all_four_registers);
     RUN(a_finished_sweep_keeps_its_centre_while_repeated);
     RUN(hold_keeps_the_surfaces_where_their_outputs_are);
+    RUN(a_target_names_the_channels_the_sweep_commands);
     RUN(resume_carries_a_held_sweep_on_in_phase);
     RUN(resume_keeps_the_movements_reached);
     RUN(resume_slews_from_where_the_surfaces_were_held);

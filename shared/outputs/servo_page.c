@@ -39,15 +39,39 @@ static bool same_curve(const sweep_cfg_t *a, const sweep_cfg_t *b)
            && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
 }
 
+/* The channels the sweep and the hold command: the standard servo ports,
+ * or the range servo_page_target() named. */
+static uint8_t target_first(const servo_page_t *p)
+{
+    return (p->target_n != 0u) ? p->target_first : 0u;
+}
+
+static uint8_t target_end(const servo_page_t *p)
+{
+    return (p->target_n != 0u) ? (uint8_t)(p->target_first + p->target_n)
+                               : (uint8_t)LINK_OUT_CHANNELS;
+}
+
+/* Every surface of the target commanded to @p cmd. */
+static void command_surfaces(const servo_page_t *p, outputs_t *o,
+                             uint16_t cmd, uint32_t now_ms)
+{
+    for (uint8_t ch = target_first(p); ch < target_end(p); ++ch) {
+        if (o->channel[ch].role == OUT_ROLE_SURFACE) {
+            (void)outputs_set(o, ch, cmd, now_ms);
+        }
+    }
+}
+
 /*
  * Every surface held where its output has got to.  The last command a sweep
  * left would otherwise be slewed towards for as long again as the channel's
  * own timeout, past the moment the sweep stopped.  The channel's clock is
  * left alone, so it rests when it would have.
  */
-static void freeze_surfaces(outputs_t *o)
+static void freeze_surfaces(const servo_page_t *p, outputs_t *o)
 {
-    for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
+    for (uint8_t ch = target_first(p); ch < target_end(p); ++ch) {
         if (o->channel[ch].role == OUT_ROLE_SURFACE) {
             o->channel[ch].command = outputs_actual(o, ch);
         }
@@ -181,12 +205,12 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         if (!p->holding) {
             if (p->sweep.running) {
                 sweep_pause(&p->sweep, now_ms);
-                freeze_surfaces(o);
+                freeze_surfaces(p, o);
             } else if (p->finished) {
                 sweep_stop(&p->sweep);
             } else {
                 sweep_stop(&p->sweep);
-                freeze_surfaces(o);
+                freeze_surfaces(p, o);
             }
         }
         p->holding  = true;
@@ -202,7 +226,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
              * two, and the servo must not go on towards the curve's last
              * target meanwhile. */
             if (p->sweep.running) {
-                freeze_surfaces(o);
+                freeze_surfaces(p, o);
             }
             sweep_stop(&p->sweep);
             p->finished = false;
@@ -255,7 +279,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
             sweep_stop(&p->sweep);
             p->regs[LINK_SV_SWEEP] = 0u;
         } else {
-            for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
+            for (uint8_t ch = target_first(p); ch < target_end(p); ++ch) {
                 if (o->channel[ch].role == OUT_ROLE_SURFACE) {
                     (void)outputs_set(o, ch, o->channel[ch].command,
                                       p->heard_ms);
@@ -274,9 +298,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      */
     if (p != NULL && o != NULL && p->finished && outputs_armed(o)
         && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS) {
-        (void)outputs_set_role_channels(o, OUT_ROLE_SURFACE,
-                                        (uint8_t)LINK_OUT_CHANNELS,
-                                        (uint16_t)SWEEP_CENTRE, now_ms);
+        command_surfaces(p, o, (uint16_t)SWEEP_CENTRE, now_ms);
     }
     if (p == NULL || o == NULL || !p->sweep.running) {
         if (p != NULL) {
@@ -292,7 +314,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
     if (!outputs_armed(o)
         || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
         sweep_stop(&p->sweep);
-        freeze_surfaces(o);
+        freeze_surfaces(p, o);
         p->regs[LINK_SV_SWEEP] = 0u;
         return false;
     }
@@ -301,13 +323,38 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
     const uint32_t done = sweep_moves(&p->sweep, now_ms);
     p->regs[LINK_SV_SWEEP_DONE] = (done > 0xFFFFu) ? 0xFFFFu : (uint16_t)done;
     /* The last pass puts the surfaces at the centre the sweep ends on. */
-    (void)outputs_set_role_channels(o, OUT_ROLE_SURFACE,
-                                    (uint8_t)LINK_OUT_CHANNELS, cmd, now_ms);
+    command_surfaces(p, o, cmd, now_ms);
     if (!running) {
         p->regs[LINK_SV_SWEEP] = 0u;
         p->finished = true;
     }
     return running;
+}
+
+bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
+                       uint8_t count)
+{
+    if (p == NULL || o == NULL
+        || (unsigned)first + (unsigned)count > OUT_MAX_CHANNELS) {
+        return false;
+    }
+    if (count == 0u) {
+        first = 0u;
+    }
+    if (first == p->target_first && count == p->target_n) {
+        return true;
+    }
+    /* Stopped as a SWEEP of 0 stops it, on the channels it moved. */
+    if (p->sweep.running) {
+        freeze_surfaces(p, o);
+    }
+    sweep_stop(&p->sweep);
+    p->holding  = false;
+    p->finished = false;
+    p->regs[LINK_SV_SWEEP] = 0u;
+    p->target_first = first;
+    p->target_n     = count;
+    return true;
 }
 
 uint16_t servo_page_hz(const servo_page_t *p)
