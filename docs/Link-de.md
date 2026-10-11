@@ -128,8 +128,7 @@ BENCH: hört er auf zu antworten, bleiben diese Felder leer, statt zur
 Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der
 Pegel vor dem Befehl der Mittelwert von CH1 über die 50 ms vor der Flanke;
 eine Messung, die scharfgeschaltet wird, während der INA3221 CH1 nicht
-liest, endet sofort als verloren und zählt in CAP_SEQ. Nichts davon ist auf Hardware
-gelaufen. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
+liest, endet sofort als verloren und zählt in CAP_SEQ. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
 bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
@@ -170,10 +169,7 @@ Direct Memory Access), Core 1 liest den Ring im 1-ms-Takt und lässt den
 Detektor laufen, und Core 0 trägt die fertigen Beeps und den Status in die
 Page ein. Die Page, der Ring-Leser, der Service und das PIO-Programm, in einem
 taktgenauen Modell der State Machine ausgeführt, sind auf dem Host getestet
-(`test_tone_page`, `test_edge_ring`, `test_tone_svc`, `test_tone_pio`). Nicht
-auf Hardware gelaufen: das PIO-Programm, der DMA-Ring, das Pad und die
-Z-Diode, der Durchlauf auf Core 1, das Laden aus dem Flash und die Töne
-jedes ESC.
+(`test_tone_page`, `test_edge_ring`, `test_tone_svc`, `test_tone_pio`).
 
 Der Ausgangsencoder gehört zu SENSE, und 4.9 verschiebt sonst nichts: ENABLE
 bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
@@ -256,10 +252,6 @@ Folge mit fehlschlagendem RAW-ANGLE-Lesen nehmen das Bauteil offline (3
 fehlgeschlagene Transaktionen in Folge, wie bei den INA-Bauteilen). Das Panel liest die Register 12
 bis 31 alle 40 ms, solange der Encoder auf der Page freigegeben ist. Die
 Register 26 bis 31 sind nur lesbar; ein Schreiben wird mit READ_ONLY abgewiesen.
-
-Nicht auf Hardware gelaufen: der AS5600 am Bus neben den INA-Bauteilen, seine
-Adresse, die Pull-ups, die Zeit des Ablaufs auf dem Bus, das Messintervall und
-die Toleranz von 12 Schritten gegen das Rauschen eines echten Servos.
 
 ### Eine Bindung als Ganzes
 
@@ -360,7 +352,7 @@ abgebaut, und die geltende Bindung bleibt unverändert.
 `shared/outputs/bind_link.c` die des Panels, unter `test_bind_link`: die
 Folge durch ein Modell des 2-Frame-Puffers mit einem tauben Fenster von
 20 ms, geöffnet alle 125 µs, ein verlorener Frame an jeder der 18 Stellen,
-die Timeouts über den Überlauf bei 2^32 ms. Nicht auf Hardware gelaufen.
+die Timeouts über den Überlauf bei 2^32 ms.
 
 ### Der Fenster-Ring
 
@@ -428,7 +420,8 @@ erste Fenster schließt.
 nach einem eigenen Reset jedes Lesen, mit ihrer Einschalt-Konfiguration. Der
 INA228 rechnet seinen Strom dann mit ADCRANGE 0: eine Konfiguration mit
 ADCRANGE 1, jede, deren Shuntspannung beim Maximalstrom höchstens 40,96 mV
-beträgt, darunter die MATEK-Voreinstellung, liest ein Viertel des Stroms.
+beträgt, darunter die Voreinstellung des MATEK I2C-INA-BM, liest ein Viertel
+des Stroms.
 Der INA3221 wandelt alle drei Kanäle mit 1,1 ms, ein CH1-Ergebnis alle
 6,6 ms, wo die Konfiguration des Prüfstands eines alle 280 µs (CH1 allein)
 bis 840 µs (drei Kanäle) gibt. Der INA228 setzt sich zurück, wenn seine
@@ -575,7 +568,7 @@ ein Koprozessor mit 4.10. `test_servo_source` hält jede Bedingung, die
 allein nicht gilt, ein Lesen, das mit 199 ms frisch ist und mit 200 und
 201 ms nicht, den INA3221 zurück bei 1000 ms und nicht bei 999 ms, einen
 zwischen zwei Lesungen behobenen Reset und jeden Timer über den Überlauf
-des Ticks. Nicht auf Hardware gelaufen.
+des Ticks.
 
 `shared/sense/sense_sched.c` hält den Ring und führt die Rücklesungen aus,
 unter `test_sense_sched`: der Ring nach 1, 4, 5 und 6 Fenstern, über Fenster
@@ -584,9 +577,7 @@ Takt, mit 0, 1, 44, 45 und 50 Messungen am Ende des Bereichs; ein Reset,
 gefunden an jedem der 40 Takte einer Rotation, das Bauteil zurück bei
 1000 ms und nicht bei 999 ms, über den Überlauf bei 2^32 ms; die Buszeit
 jedes Takts. `shared/outputs/sense_page.c` hält die Page, unter
-`test_sense_page` und `test_link_pages`. Nicht auf Hardware gelaufen: die
-Page, und ob eines der Module sich bei einem Einbruch seiner Versorgung
-zurücksetzt.
+`test_sense_page` und `test_link_pages`.
 
 ### Die Programmierports
 
@@ -597,8 +588,9 @@ von zwei Dingen, nie beides:
 
 - PWM (Pulsweitenmodulation): ein Servopuls aus dem PWM-Generator, der auch
   die Standard-Servoports treibt.
-- PROGRAMMING: das Leitungsprotokoll von
-  [KST](#der-programmierport-für-servos-von-kst-und-chaservo).
+- PROGRAMMING: das Leitungsprotokoll für KST- und Chaservo-Servos, das die
+  Servo-Programmier-Page (`KST`, 0x32) fährt, siehe
+  [Der Programmierport für Servos von KST und Chaservo](#der-programmierport-für-servos-von-kst-und-chaservo).
 
 Die Page hält 4 Ports. Register 0 sagt, wie viele der Build hat; der
 Bring-up-Build hat 1. `shared/outputs/prog_port.c` hält die Regeln.
@@ -621,7 +613,8 @@ Scharfschalten, die Begrenzung auf 0 bis 1000, der Slew, die Endpunkte und
 der Kommando-Timeout von 500 ms sind die der Bank und wirken auf einen Port
 wie auf einen Standard-Servoport. Ein Port gibt einen Puls aus, solange die
 Bank scharf ist, sein `PWM`-Bit gesetzt ist, der Generator seinen Pin hat
-und KST den Port in PWM hält. Jeder Port läuft mit der Frame-Rate von SERVO
+und die Servo-Programmier-Page den Port in PWM hält. Jeder Port läuft mit
+der Frame-Rate von SERVO
 (Register 0 von SERVO), oder mit 50 Hz, solange dieses 0 liest.
 
 Der Servotester erreicht einen Port auf drei Wegen:
@@ -651,7 +644,8 @@ gespeicherter Slot mit einem solchen Bereich startet ungebunden. Zwei Ports
 dürfen einen Slice teilen: beide
 laufen mit der einen Port-Rate. Ein `PIN` wird nicht geändert, solange die
 Bank scharf ist, das `PWM`-Bit des Ports gesetzt ist, er das `TARGET` ist
-oder KST nicht in PWM steht. `PWM` und `TARGET` nennen nur Ports, deren Pin
+oder die Servo-Programmier-Page den Port nicht in PWM hält. `PWM` und
+`TARGET` nennen nur Ports, deren Pin
 der Generator hat. Ein Schreiben, das ein Register eines Ports erreicht, den
 der Build nicht hat, wird mit BAD_VALUE abgewiesen, ein Schreiben von
 Register 0 oder 1 mit READ_ONLY. Ein abgewiesenes Schreiben ändert nichts.
@@ -679,7 +673,8 @@ ist. Kein Puls eines Ports ist an Hardware gemessen.
 
 ### Der Programmierport für Servos von KST und Chaservo
 
-KST (0x32) ist neu in 4.12 und nennt seit 4.13 einen Programmierport. Die
+Die Servo-Programmier-Page (`KST`, 0x32) ist neu in 4.12 und nennt seit 4.13
+einen Programmierport. Die
 Page fährt das Programmierprotokoll aus
 [`protocols/kst`](../protocols/kst/README.md) für KST- und Chaservo-Servos,
 die ein Protokoll und einen Registersatz teilen, auf einem Port von
@@ -1055,7 +1050,7 @@ ausschalten, und ein Servo, das 2000 ms ohne Spannung war, hat den
 Programmiermodus verlassen, wenn 2000 ms genügen, was nicht gemessen ist.
 Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 
-| Panel | Koprozessor | KST (0x32) |
+| Panel | Koprozessor | Servo-Programmier-Page (`KST`, 0x32) |
 | --- | --- | --- |
 | 4.15 | 4.15 | bedient |
 | 4.15 | 4.14 | bedient ohne LEAVE. Ein 4.14-Koprozessor weist die Operation 10 mit BAD_VALUE und ein Schreiben auf Register 28 mit READ_ONLY ab: das Modul des Panels sendet keines von beiden und beantwortet die Anfrage mit `KST_LINK_START_NO_OP`. POWER_CYCLED und REBOOT sind die Wege hinaus |
@@ -1084,7 +1079,7 @@ bevor etwas gesendet wird. `shared/bench/supply_link.c` nimmt ein Kommando,
 das der Port auf SUPPLY hinterlassen hat, als das angeforderte und schreibt
 sein eigenes nicht darüber (`supply_link_adopted()`). Kein Bildschirm dieses
 Builds ruft `kst_link` auf; das Panel dieses Builds sendet also nichts an
-KST oder PROG.
+die Servo-Programmier-Page oder an PROG.
 
 `test_kst_port` fährt den Port und die Page gegen das Servo- und das
 Versorgungsmodell: jeden Übergang und jede Abweisung, einen Stopp in jedem
@@ -1182,7 +1177,7 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x2F | BIND_OUT | lesen, schreiben | eine vorbereitete OUTPUTS-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von OUTPUTS |
 | 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist |
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
-| 0x32 | KST | lesen, schreiben | das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](#der-programmierport-für-servos-von-kst-und-chaservo) nennt die Regeln. Nichts wird gehalten |
+| 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](#der-programmierport-für-servos-von-kst-und-chaservo) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des Koprozessors gehalten |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
