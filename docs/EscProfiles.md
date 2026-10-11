@@ -109,8 +109,8 @@ JSON. The panel does not load them.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 to 60000, or null |
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
-| `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 YGE profiles, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
-| `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection stores. Set in the 8 YGE mode setups, where the stick back to minimum stores the mode |
+| `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 profiles for YGE ESCs, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
+| `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection stores. Set in the 8 mode setups of YGE ESCs, where the stick back to minimum stores the mode |
 | `scheme.select.within_ms` | 0 to 60000: the time after the tone in which the move counts, or null when not stated |
 | `scheme.value_select` | two-stage menus only: `select` picks the item, then `value_select.throttle` (`min`, `mid`, `max`, `none`) stores the value sounded; `within_ms` as for `select`. Absent or null: the `select` move stores the value |
 | `scheme.changes_per_entry` | `one`, `many` |
@@ -172,8 +172,8 @@ interface is German, else in English. Every step of record has its German.
 The screen shows `when` in the interface language. What a run does with
 each step is in [Stick programming](StickProgramming.md#manual-steps).
 
-24 profiles hold steps: the 22 Kontronik families, `turnigy-aquastar` (its
-switch at full throttle) and `greatplanes-electrifly-c-series` (its on/off
+24 profiles hold steps: the 22 families of Kontronik ESCs, `turnigy-aquastar`
+(its switch at full throttle) and `greatplanes-electrifly-c-series` (its on/off
 button). `graupner-brushless-control-t`, whose menu is read from LEDs, and
 `hacker-master-senstrol`, which needs its motor's identification chip, a
 second channel and a JetiBox, are `assisted` with none: no step a person can
@@ -200,7 +200,7 @@ differently.
 
 ## Current limitations
 
-- No profile has run against an ESC. Item and value numbers, defaults and
+- Item and value numbers, defaults and
   entry gestures are as the manuals state them, and some manuals disagree
   with each other; each profile's `notes` names the conflicts.
 - The beep fields (`beep_ms`, `gap_ms`, `group_gap_ms`) are null in every
@@ -209,7 +209,7 @@ differently.
 - The bench supply is the PD mini, at most 20 V. ESCs whose minimum input is
   above that, such as 6S-and-up YGE Opto and Navy models, need an external
   supply.
-- Where a profile's menu is told apart by pitch rather than by count (Hitec,
-  Mystery, Readytosky), the supply current may not separate the items. This
-  is not measured.
+- Where a profile's menu is told apart by pitch rather than by count (the
+  profiles for Hitec, Mystery and Readytosky ESCs), the supply current may not
+  separate the items. This is not measured.
 - A card changed while the panel runs is read at the next start.

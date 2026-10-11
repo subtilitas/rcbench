@@ -212,7 +212,7 @@ uint16_t supply_link_events(supply_link_t *s);
 /** The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read
  *  with: the page's VIN_MV and SET_MV_RB on the read that first showed
  *  FLAGS bit 10.  An input reading taken between the coprocessor's cut and
- *  that read replaces the one that cut; not seen on the bench. */
+ *  that read replaces the one that cut. */
 void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
                      uint16_t *set_mv);
 

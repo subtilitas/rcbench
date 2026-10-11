@@ -899,7 +899,7 @@
       "rank": 1,
       "part": "RP2354B",
       "option": "",
-      "reason": "The only candidate: two PIO state machines run quad_edge.pio (19 words) and decode 20 Mcounts/s at 6 of the 15 clk_sys cycles an edge allows at 150 MHz, by the RP2350 datasheet's instruction timing and P2's cycle model; no external decoder from an allowlisted maker is in the jlcparts copy. Not run on hardware; the program is not in the tree. With rank 1 of encoder input the A-to-B spacing at 5 MHz stays at 41 ns or more, above the 14 ns the model decodes"
+      "reason": "The only candidate: two PIO state machines run quad_edge.pio (19 words) and decode 20 Mcounts/s at 6 of the 15 clk_sys cycles an edge allows at 150 MHz, by the RP2350 datasheet's instruction timing and P2's cycle model; no external decoder from an allowlisted maker is in the jlcparts copy. The program is not in the tree. With rank 1 of encoder input the A-to-B spacing at 5 MHz stays at 41 ns or more, above the 14 ns the model decodes"
      }
     ],
     "new_candidates": [],

@@ -750,9 +750,8 @@ Current limitations:
 
 - Until the screen sends a position, the pins run at the rate the SERVO page
   holds, which after a restart or a new binding is 50 Hz.
-- The automatic test has not run on hardware, and on the panel's supply
-  model its currents are the model's load, not the servo's: a run there
-  measures the model. [What is not measured](Servo.md#not-run-on-hardware).
+- On the panel's supply model the automatic test's currents are the model's load, not the servo's: a run there
+  measures the model. [What is not measured](Servo.md#what-is-not-measured).
 - The supply on the right card is SUPPLY's: the PD mini when SETUP enables
   it, the panel's model otherwise, whose voltage, current and power are
   simulated, not measured.
@@ -768,8 +767,7 @@ input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
 the PD mini enabled on SETUP under INTERFACES, the header says PD MINI. With
 it disabled, the panel runs a model of a supply in its place: the header
-says SUPPLY MODEL and the menu tile is marked MODELLED. The PD mini ran
-against a module on 0.10.0 and 0.10.1; nothing added after 0.10.1 has.
+says SUPPLY MODEL and the menu tile is marked MODELLED.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
 power over the last 27 s. The rail shows the readings, the run's lowest
@@ -978,9 +976,10 @@ Every protocol row names its transport. There is no autodetection:
 
 ![The protocols of a class](img/programmer-protocols.png)
 
-BLHeli_32 is not in the ESC list. The bench identifies and drives these ESCs
-and sends the DShot special commands, but cannot read their parameters:
-[BLHeli_32 parameters](BLHeli32.md).
+The ESC list has no entry for ESCs with BLHeli_32 firmware. The bench
+identifies and drives these ESCs and sends the DShot special commands, but
+cannot read their parameters:
+[Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
 
 Nothing is editable until a device has answered:
 
@@ -991,8 +990,8 @@ row's help under the list:
 
 ![Connected](img/programmer-params.png)
 
-Each firmware shows its settings in its own units. BLHeli_S shows timing as
-named steps; the others show degrees of advance:
+The settings of each firmware appear in its own units. The table for BLHeli_S
+firmware shows timing as named steps; the others show degrees of advance:
 
 ![Degrees rather than named steps](img/programmer-am32.png)
 
@@ -1474,7 +1473,7 @@ when a magnet that read weak or strong goes missing or a missing one comes
 back weak or strong: the angle stops with the first and returns with the
 second. The sensor's
 DIR pin sets the direction its count rises in; the panel takes the count to
-rise with the servo's pulse width. Not run on hardware.
+rise with the servo's pulse width.
 
 ### INTERFACES: the phase tap
 

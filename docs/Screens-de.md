@@ -828,9 +828,8 @@ Aktuelle Einschränkungen:
 
 - Bis die Seite eine Stellung sendet, laufen die Pins mit der Rate, die die
   SERVO-Page hält; nach einem Neustart oder einer neuen Bindung sind das 50 Hz.
-- Der automatische Test ist nicht auf Hardware gelaufen, und am
-  Netzteilmodell des Panels sind seine Ströme die Last des Modells, nicht die
-  des Servos: ein Lauf dort misst das Modell. [Was nicht gemessen ist](Servo-de.md#nicht-auf-hardware-gelaufen).
+- Am Netzteilmodell des Panels sind die Ströme des automatischen Tests die Last des Modells, nicht die
+  des Servos: ein Lauf dort misst das Modell. [Was nicht gemessen ist](Servo-de.md#was-nicht-gemessen-ist).
 - Das Netzteil auf der rechten Karte ist das von SUPPLY: der PD mini, wenn
   SETUP ihn einschaltet, sonst das Modell des Panels, dessen Spannung, Strom
   und Leistung simuliert und nicht gemessen sind.
@@ -848,8 +847,7 @@ Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
 abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
-SIMULIERT. Gegen ein Modul lief der PD mini mit 0.10.0 und 0.10.1; nichts,
-was nach 0.10.1 hinzukam.
+SIMULIERT.
 
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
 Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
@@ -1081,9 +1079,10 @@ es nicht:
 
 ![Die Protokolle einer Klasse](img/de/programmer-protocols.png)
 
-BLHeli_32 steht nicht in der ESC-Liste. Der Prüfstand erkennt diese ESCs,
-steuert sie an und sendet die DShot Special Commands, kann ihre Parameter aber
-nicht lesen: [BLHeli_32-Parameter](BLHeli32-de.md).
+Die ESC-Liste hat keinen Eintrag für ESCs mit BLHeli_32-Firmware. Der
+Prüfstand erkennt diese ESCs, steuert sie an und sendet die DShot Special
+Commands, kann ihre Parameter aber nicht lesen:
+[Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).
 
 Bevor ein Gerät geantwortet hat, ist nichts editierbar:
 
@@ -1094,8 +1093,9 @@ der Hilfe zur ausgewählten Zeile unter der Liste:
 
 ![Verbunden](img/de/programmer-params.png)
 
-Jede Firmware zeigt ihre Einstellungen in ihren eigenen Einheiten. BLHeli_S
-zeigt das Timing als benannte Stufen, die anderen in Grad Vorzündung:
+Die Einstellungen jeder Firmware erscheinen in ihren eigenen Einheiten. Die
+Tabelle für BLHeli_S-Firmware zeigt das Timing als benannte Stufen, die
+anderen in Grad Vorzündung:
 
 ![Grad statt benannter Stufen](img/de/programmer-am32.png)
 
@@ -1622,8 +1622,7 @@ einmal, wenn ein als schwach oder stark gelesener Magnet verschwindet oder ein
 fehlender schwach oder stark zurückkommt: mit dem ersten hört der Winkel auf,
 mit dem zweiten kommt er wieder. Der DIR-Pin
 des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
-nimmt an, dass er mit der Pulsbreite des Servos steigt. Nicht auf Hardware
-gelaufen.
+nimmt an, dass er mit der Pulsbreite des Servos steigt.
 
 ### ANSCHLÜSSE: der Phasenabgriff
 
