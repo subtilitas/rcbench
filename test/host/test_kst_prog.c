@@ -3198,6 +3198,77 @@ TEST_CASE(a_file_the_card_did_not_take_is_written_again)
     CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
 }
 
+TEST_CASE(a_plan_that_ends_without_a_plan_wrote_nothing)
+{
+    static const uint8_t results[] = {
+        LINK_KST_RESULT_NO_PATH, LINK_KST_RESULT_TOO_COMPLEX,
+    };
+
+    for (unsigned i = 0; i < sizeof(results); ++i) {
+        kst_link_outcome_t o;
+
+        by_hand();
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        answer(KST_LINK_START_OK);
+        /* The port plans. */
+        g_f.rd.phase = KST_LINK_PLANNING;
+        g_f.rd.flags |= LINK_KS_F_BUSY;
+        pass(1);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+        CHECK(kst_prog_planning(&g_p));
+        g_f.rd.phase = KST_LINK_READY;
+        g_f.rd.flags &= (uint16_t)~LINK_KS_F_BUSY;
+        memset(&o, 0, sizeof(o));
+        o.kind = KST_LINK_OUT_DONE;
+        o.op = LINK_KST_OP_WRITE;
+        o.taken = true;
+        o.result = results[i];
+        o.fail_reg = 0xFF;
+        end(&o);
+        CHECK_EQ(msg(), KST_PROG_MSG_SES + (unsigned)results[i]);
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        CHECK(!kst_prog_planning(&g_p));
+        /* The servo is as it was read: no record, no read owed, the
+         * pending value kept, and the next write is taken. */
+        CHECK(!kst_prog_journal(&g_p));
+        CHECK(!kst_prog_in_doubt(&g_p));
+        CHECK(kst_prog_editable(&g_p));
+        CHECK_EQ(kst_prog_changes(&g_p), 1);
+        CHECK(kst_prog_write_enabled(&g_p));
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    }
+}
+
+TEST_CASE(a_port_that_reports_busy_is_not_timed_out)
+{
+    kst_prog_cmd_t cmd;
+
+    by_hand();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    g_f.rd.phase = KST_LINK_PLANNING;
+    g_f.rd.flags |= LINK_KS_F_BUSY;
+    pass(KST_PROG_RUN_MS);
+    pass(KST_PROG_RUN_MS);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+    /* Busy gone and no outcome: the time runs from the last busy feed. */
+    g_f.rd.phase = KST_LINK_RUNNING;
+    g_f.rd.flags &= (uint16_t)~LINK_KS_F_BUSY;
+    pass(KST_PROG_RUN_MS - 1u);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+    pass(1);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+    CHECK(kst_prog_in_doubt(&g_p));
+}
+
 TEST_CASE(a_command_nobody_answers_is_given_up)
 {
     answer_never_comes(1000u);
@@ -3704,6 +3775,8 @@ int main(void)
     RUN(a_read_the_link_gave_up_on_asks_for_a_read);
     RUN(no_backup_is_taken_while_an_operation_runs);
     RUN(a_file_the_card_did_not_take_is_written_again);
+    RUN(a_plan_that_ends_without_a_plan_wrote_nothing);
+    RUN(a_port_that_reports_busy_is_not_timed_out);
     RUN(a_command_nobody_answers_is_given_up);
     RUN(the_waits_hold_across_the_tick_wrap);
     RUN(the_command_counter_skips_0_when_it_wraps);

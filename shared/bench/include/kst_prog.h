@@ -85,7 +85,8 @@ extern "C" {
 /** A command without an answer from the control task for this long is
  *  given up. */
 #define KST_PROG_START_MS 2000u
-/** An operation without an outcome for this long is aborted. */
+/** An operation without an outcome for this long is aborted.  The time
+ *  counts from the last feed in which the port reported it busy. */
 #define KST_PROG_RUN_MS 30000u
 /** The file not written for this long: the write to the servo is not
  *  sent. */
@@ -117,7 +118,8 @@ typedef enum {
  * What the screen says.  The four ranges at the end take a code of the
  * link module or the core: KST_PROG_MSG_START + kst_link_start_t,
  * KST_PROG_MSG_OUT + kst_link_outcome_kind_t, KST_PROG_MSG_REF +
- * link_kst_refusal_t and KST_PROG_MSG_SES + kst_ses_t.  A message is a
+ * link_kst_refusal_t and KST_PROG_MSG_SES + the result byte of the
+ * outcome (a kst_ses_t or a LINK_KST_RESULT_*).  A message is a
  * number and not an enum for that reason: most of its values lie between
  * the names.
  */
@@ -445,6 +447,9 @@ void kst_prog_screen_entry(kst_prog_t *p);
 kst_prog_state_t kst_prog_state(const kst_prog_t *p);
 /** The operation on its way or running; LINK_KST_OP_NONE for none. */
 link_kst_op_t kst_prog_op(const kst_prog_t *p);
+/** The coprocessor plans the order of a write's or a restore's writes: no
+ *  frame goes to the servo yet. */
+bool kst_prog_planning(const kst_prog_t *p);
 /** The last message. */
 const kst_prog_msg_t *kst_prog_message(const kst_prog_t *p);
 

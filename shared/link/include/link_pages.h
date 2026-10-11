@@ -72,12 +72,15 @@ typedef enum {
  * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
  * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
  * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12, and PROG, the port
- * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  A
+ * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  From
+ * 4.14 KST plans a write after the command's frame and reports
+ * LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
+ * differently for it.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 13u
+#define LINK_PROTOCOL_MINOR 14u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -90,6 +93,11 @@ typedef enum {
  *  command and in CAP_ARM, and says in SUPPLY FLAGS that a port holds the
  *  supply. */
 #define LINK_MINOR_PROG 13u
+/** The first minor whose KST page plans a WRITE and a RESTORE over several
+ *  passes: LINK_KST_RESULT_PLANNING while it does, LINK_KST_RESULT_NO_PATH
+ *  and LINK_KST_RESULT_TOO_COMPLEX as results.  Minor 13 plans inside the
+ *  command's frame and refuses with LINK_KST_REF_PLAN_NO_PATH. */
+#define LINK_MINOR_KST_PLAN 14u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1283,9 +1291,11 @@ enum {
                               (link_kst_op_t), bits 0-11 the frames it has
                               sent, held at 4095 */
     LINK_KS_RESULT = 3,  /**< low byte the result of that operation
-                              (kst_ses_t; 1 while it runs), high byte why
-                              the last command taken started nothing
-                              (link_kst_refusal_t; 0: it started) */
+                              (kst_ses_t or a LINK_KST_RESULT_*; 1 while it
+                              runs, LINK_KST_RESULT_PLANNING while it
+                              plans), high byte why the last command taken
+                              started nothing (link_kst_refusal_t; 0: it
+                              started) */
     LINK_KS_FAIL  = 4,   /**< low byte the register the result names, 0xFF
                               none; high byte the writes of the plan done */
     LINK_KS_DIFF_LO = 5, /**< bit n: register n differs from what the
@@ -1367,6 +1377,16 @@ enum {
 /** LINK_KS_RESULT's low byte when the supply did not switch in time.
  *  Above every kst_ses_t. */
 #define LINK_KST_RESULT_SUPPLY 32u
+/** 4.14: a WRITE or a RESTORE has no order of writes in which every image
+ *  in between is valid.  Nothing was sent. */
+#define LINK_KST_RESULT_NO_PATH 33u
+/** 4.14: the planner spent its work (KST_PLAN_WORK_CAP units) before it
+ *  had a plan or knew there is none.  Nothing was sent. */
+#define LINK_KST_RESULT_TOO_COMPLEX 34u
+/** 4.14: LINK_KS_RESULT's low byte while a WRITE or a RESTORE plans:
+ *  LINK_KS_F_BUSY is set and no frame has gone out.  1 follows when the
+ *  plan is there.  Never the result of an operation that has ended. */
+#define LINK_KST_RESULT_PLANNING 35u
 
 /** The CRC of @p n page registers, low byte first, seeded 0xFFFF. */
 static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
@@ -1453,8 +1473,10 @@ typedef enum {
     LINK_KST_REF_PLAN_RULES = 12,   /**< the target breaks a hard rule */
     LINK_KST_REF_PLAN_R00 = 13,     /**< the target differs in register 0 */
     LINK_KST_REF_PLAN_PAIRING = 14, /**< an edit differs in register 0x1D */
-    LINK_KST_REF_PLAN_NO_PATH = 15, /**< no order of writes with valid
-                                         images in between */
+    LINK_KST_REF_PLAN_NO_PATH = 15, /**< 4.12 and 4.13 only: no order of
+                                         writes with valid images in
+                                         between.  From 4.14 that is the
+                                         result LINK_KST_RESULT_NO_PATH */
     LINK_KST_REF_NO_PIN = 16,    /**< 4.13: the port has no bound pin */
     LINK_KST_REF_SUPPLY_RANGE = 17, /**< 4.13: the staged supply voltage or
                                          current is not one the PD mini

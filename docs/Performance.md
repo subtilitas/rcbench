@@ -238,13 +238,29 @@ pico-sdk's claim of a PIO (programmable input/output) state machine, and
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
 ends in `panic()` as well.
 
-A write command to the programming port for KST and Chaservo servos reaches 1,408 bytes: `main`,
-`can_service`, `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
-`kst_session_write` (56) and the write planner of `protocols/kst`, 464
-bytes from `kst_plan_edit` down: `build` (160), `detour` (72), `search`
-(56) and the limit check `kst_limits_image` (112). The planner does not
-recurse. The plan, the staged image and the plan the session compares
-against are held in the port's and the session's state, not on the stack.
+A write command to the programming port for KST and Chaservo servos reaches 1,304 bytes: `main`
+(464), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
+`kst_port_write` (88), `kst_session_edit` (40) and the start of a planner
+job, 312 bytes from `kst_plan_edit_begin` down: `kst_plan_edit_begin`
+(40), the limit check `kst_limits_edit` (248), `load` (16) and
+`kst_field_get` (8). A pass that plans reaches 984 bytes: `main`,
+`kst_port_step` (56), `kst_session_step` (256) and one slice of the
+planner, 208 bytes from `kst_plan_step` down. The planner does not
+recurse. The planner's job, the plan and the staged image are held in the
+session's and the port's state, not on the stack.
+
+The port plans a write in slices. The write command checks the request and
+starts the planner's job, 64 us of planner work. Each pass of core 0's
+main loop then runs 1 slice in `kst_session_step()`, 100 to 109 units of
+work: 892 us at most, 816 us the longest found. The planning ends after
+216,000 units, at most 2,161 passes, with a plan, with no plan, or with
+the result "too complex" when the units are spent first. The costliest
+request found takes 120,136 units, at most 1,202 passes and 397 to 647 ms
+of planner time. All times are for 150 MHz, computed in an emulator from
+the instructions executed with ARM GNU 14.2 at -O3, and not measured on
+hardware. The time of a pass with the link, the heartbeat and the outputs
+in it is not measured. The heartbeat gap that switches every output off is
+150 ms.
 
 Each depth is a lower bound:
 

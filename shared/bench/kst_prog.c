@@ -487,7 +487,10 @@ static void write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
                    || o->result == KST_SES_ERR_BAD_PLAN
                    || o->result == KST_SES_ERR_UNCONFIRMED
                    || o->result == KST_SES_ERR_CHANGED
-                   || o->result == KST_SES_ERR_WRITE_FAILED);
+                   || o->result == KST_SES_ERR_WRITE_FAILED
+                   /* The planner ended without a plan: no frame went. */
+                   || o->result == LINK_KST_RESULT_NO_PATH
+                   || o->result == LINK_KST_RESULT_TOO_COMPLEX);
         break;
     default:
         break;
@@ -658,6 +661,12 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         }
     }
 
+    if (p->wait == W_OUTCOME && up && f->rd.known
+        && (f->rd.flags & LINK_KS_F_BUSY) != 0u) {
+        /* The port says the operation runs or plans: the wait for its
+         * outcome counts from the last time it said so. */
+        p->wait_ms = f->now_ms;
+    }
     if (p->wait == W_ANSWER
         && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_START_MS) {
         not_started(p, KST_PROG_MSG_TIMEOUT, 0);
@@ -767,6 +776,12 @@ kst_prog_state_t kst_prog_state(const kst_prog_t *p)
     default:
         return KST_PROG_LEAVING;
     }
+}
+
+bool kst_prog_planning(const kst_prog_t *p)
+{
+    return kst_prog_state(p) == KST_PROG_WORKING
+        && p->f.rd.phase == KST_LINK_PLANNING;
 }
 
 link_kst_op_t kst_prog_op(const kst_prog_t *p)
@@ -1192,6 +1207,9 @@ static kst_prog_msg_id_t plan_message(kst_plan_result_t r, kst_rules_t broken,
     case KST_PLAN_ERR_PAIRING:
         return (kst_prog_msg_id_t)(KST_PROG_MSG_REF
                                    + LINK_KST_REF_PLAN_PAIRING);
+    case KST_PLAN_ERR_TOO_COMPLEX:
+        return (kst_prog_msg_id_t)(KST_PROG_MSG_SES
+                                   + LINK_KST_RESULT_TOO_COMPLEX);
     default:
         return (kst_prog_msg_id_t)(KST_PROG_MSG_REF
                                    + LINK_KST_REF_PLAN_NO_PATH);

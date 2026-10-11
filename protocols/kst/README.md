@@ -23,12 +23,32 @@ hardware: no frame of this code has been sent to a servo.
   no other file outside this folder.
 - No heap, no floating point, no global or static mutable state. Two
   sessions on two drivers run side by side.
-- A session object is 648 bytes on a 32-bit target and 672 bytes on x86-64.
-  A plan is 208 bytes, a capture 200 bytes, a frame 18 bytes.
-- The planner does not recurse. `kst_plan_edit()` and what it calls take
-  464 bytes of stack in the RP2350 coprocessor image of this repository,
-  built with ARM GNU 14.2, and `kst_session_write()` adds 56 bytes
-  above it. Not measured with another compiler or option set.
+- A session object is 848 bytes on a 32-bit target and 864 bytes on x86-64.
+  A plan is 208 bytes, a planner job 176 bytes, a capture 200 bytes, a
+  frame 18 bytes.
+- The planner does not recurse. Stack in the RP2350 coprocessor image of
+  this repository, built with ARM GNU 14.2: `kst_plan_step()` and what it
+  calls 208 bytes, `kst_plan_edit_begin()` 312, `kst_session_edit()` 352,
+  `kst_session_restore()` 192 and `kst_session_step()` 528. That image
+  does not call `kst_plan_edit()`, `kst_plan_restore()` or
+  `kst_session_write()`; their stack in it is not measured. Not measured
+  with another compiler or option set.
+- The planner works in slices. `kst_plan_step(job, budget)` returns
+  `KST_PLAN_BUSY` after `budget` to `budget + 9` units of work; a unit is a
+  fixed piece of the search, the same on every target. The session takes
+  `KST_PLAN_SLICE_UNITS` (100) per `kst_session_step()` call. On a
+  Cortex-M33 at 150 MHz the costliest slice found over the 71 costliest
+  requests found is 816 us, and a begin call 64 us. The costliest single
+  unit found is 1,228 cycles, which puts a slice of 109 units at 892 us or
+  less. The figures are computed in an emulator from the instructions
+  executed, as 1 cycle per instruction, 1 more per load and per store and
+  2 per basic block, with ARM GNU 14.2 at -O3. Not measured on hardware.
+- A session stops planning after `KST_PLAN_WORK_CAP` (216,000) units, at
+  most 2,161 slices, with `KST_PLAN_ERR_TOO_COMPLEX`. The costliest request
+  found takes 120,136 units, so the cap is 1.8 times that. A request above
+  120,136 units is not ruled out. `kst_plan_edit()`, `kst_plan_restore()`
+  and `kst_session_write()` run the planner to its end without a cap:
+  397 to 647 ms for the costliest request found, by the same estimate.
 - `kst_session_write()` checks a plan against the planner's, which it
   builds into the session's own copy of the running plan. A plan handed to
   it must not be that copy or overlap it (`KST_SES_ERR_ARG`).
@@ -42,8 +62,8 @@ hardware: no frame of this code has been sent to a servo.
 | `kst_wire.h` | the 27-bit read, write and sync frames as half-cell levels; the decoder for the 11-bit reply, 13 result codes |
 | `kst_reg.h` | the 32-register image, the field table with access class and unit, raw and displayed values, the servo type, the layout fingerprint with 9 rules |
 | `kst_limits.h` | 49 rules with stable numbers: 24 hard (0 to 23), 25 soft (24 to 48) |
-| `kst_plan.h` | the order of single-register writes for an edit, a restore and a pairing release; at most 33 writes |
-| `kst_session.h` | programming-mode entry, read of all registers, plan execution with read-back and roll-back, verify |
+| `kst_plan.h` | the order of single-register writes for an edit, a restore and a pairing release; at most 33 writes; in one call or in slices with a work budget |
+| `kst_session.h` | programming-mode entry, read of all registers, planning in slices, plan execution with read-back and roll-back, verify |
 | `kst_pio.h` | the arithmetic of the pin driver, without hardware access: the counts for a system clock, a frame as the words the PIO (programmable input/output) program reads, the program's stamps as a capture |
 | `kst_file.h` | a register image as a text file of 35 lines, its parser with 15 refusal codes, and the check of a file against a servo: type, access classes, limits |
 
@@ -110,13 +130,21 @@ while (kst_session_step(&s) == KST_SES_BUSY) { }
 kst_image_t target = s.image;
 kst_field_edit(&target, KST_F_DEAD_BAND, 50);
 
-kst_plan_t plan;
-kst_rules_t violated;
-if (kst_plan_edit(&s.image, &target, 0, &plan, &violated) == KST_PLAN_OK) {
-    kst_session_write(&s, &plan, false);
-    while (kst_session_step(&s) == KST_SES_BUSY) { }
+if (kst_session_edit(&s, &target, 0) == KST_SES_BUSY) {
+    while (kst_session_step(&s) == KST_SES_BUSY) { /* plans, then writes */ }
 }
 ```
+
+`kst_session_edit()`, `kst_session_restore()` and
+`kst_session_release_pairing()` plan inside the session and run the plan:
+the planner runs once per operation and the session executes the plan it
+built. A request the planner refuses without a search ends the call with
+`KST_SES_ERR_NO_PLAN`; `plan_result` holds the planner's code and
+`plan_rules` the hard rules a target breaks. A search that finds no order
+of writes, or that reaches the cap, ends the operation with the same code
+and `plan_result` `KST_PLAN_ERR_NO_PATH` or `KST_PLAN_ERR_TOO_COMPLEX`.
+While `planning` is set no frame is on the wire, and `kst_session_abort()`
+ends the operation with nothing sent.
 
 `kst_limits_edit(&s.backup, &target, unlocked, &refused)` returns the hard
 and soft rules a target breaks. A plan whose target breaks a hard rule is
@@ -360,7 +388,8 @@ connected servo and gives the image to write.
 `Max. Duty = 10 %` converts to raw 25, 1 below hard limit 26, and is
 refused; 11 % to 98 % load.
 
-The target goes to `kst_plan_edit()` like an edit made by hand.
+The target goes to `kst_session_edit()` or `kst_plan_edit()` like an edit
+made by hand.
 
 ### Refusals
 
@@ -463,7 +492,7 @@ notice is in the repository's
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c`,
-`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 218 cases. The table in
+`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 254 cases. The table in
 `STATUS.md` has the line coverage per file. The pin driver's C file is not
 in the host build.
 

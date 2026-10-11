@@ -1425,6 +1425,37 @@ TEST_CASE(a_write_the_servo_does_not_take_names_the_register)
     ui_text_set_language(UI_LANG_EN);
 }
 
+TEST_CASE(the_working_line_says_planning_while_the_port_plans)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        kst_prog_feed_t f;
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(!kst_prog_planning(M));
+        /* The page as a port that plans shows it: busy, 0 frames. */
+        f = M->f;
+        f.rd.phase = KST_LINK_PLANNING;
+        f.rd.flags |= LINK_KS_F_BUSY;
+        f.rd.frames = 0u;
+        kst_panel_feed(&f);
+        show();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_WORKING);
+        CHECK(kst_prog_planning(M));
+        CHECK_STR_EQ(status(0), TR(KP_STATE_PLANNING));
+        /* The first frame: the count is back. */
+        f.rd.phase = KST_LINK_RUNNING;
+        f.rd.frames = 1u;
+        kst_panel_feed(&f);
+        show();
+        CHECK(!kst_prog_planning(M));
+        CHECK_STR_EQ(status(0), TR(KP_STATE_WORKING_ONE));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(the_working_line_counts_the_frames)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -3155,7 +3186,16 @@ static void texts_in(ui_lang_t lang)
         CHECK_EQ(kst_panel_message_lines(&m, t), 1);
         CHECK(t[0][0] != '\0');
     }
-    CHECK(family_ok(KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY, 1u));
+    /* The supply's result and the planner's two. */
+    CHECK(family_ok(KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY, 3u));
+    m.id = (uint16_t)(KST_PROG_MSG_SES + LINK_KST_RESULT_NO_PATH);
+    m.reg = 0xFFu;
+    CHECK_EQ(kst_panel_message_lines(&m, t), 1);
+    CHECK_STR_EQ(t[0], TR(KP_R_PLAN_NO_PATH));
+    m.id = (uint16_t)(KST_PROG_MSG_SES + LINK_KST_RESULT_TOO_COMPLEX);
+    CHECK_EQ(kst_panel_message_lines(&m, t), 2);
+    CHECK_STR_EQ(t[0], TR(KP_S_TOO_COMPLEX));
+    CHECK_STR_EQ(t[1], TR(KP_S_TOO_COMPLEX_2));
     CHECK(family_ok(KST_PROG_MSG_SES, (unsigned)KST_SES_ERR_ABORTED + 1u));
     /* A hard limit's message is the rule's line. */
     for (unsigned rule = 0; rule < (unsigned)KST_RULE_COUNT; ++rule) {
@@ -3387,6 +3427,7 @@ int main(void)
     RUN(with_a_card_the_values_before_the_write_go_to_it_first);
     RUN(a_card_that_takes_no_file_stops_the_write);
     RUN(a_write_the_servo_does_not_take_names_the_register);
+    RUN(the_working_line_says_planning_while_the_port_plans);
     RUN(the_working_line_counts_the_frames);
     RUN(port_is_abort_while_an_operation_runs);
     RUN(stop_aborts_a_write_and_the_servo_must_be_read);

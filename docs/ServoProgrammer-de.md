@@ -99,6 +99,7 @@ Bedienelement außer **SCHLIESSEN** ist aus.
 | Programmieren | `Port 1 ist im Programmiermodus: kein PWM darauf.` | nur Frames |
 | Programmieren, die Versorgung gelesen | `Port 1 im Programmiermodus, kein PWM: 5,00 V, 37 mA.` | nur Frames |
 | Arbeiten | `Arbeite: 12 Frames.` | die Frames des laufenden Vorgangs |
+| Arbeiten, der Koprozessor plant | `Plane die Schreibfolge. Noch kein Frame gesendet.` | nichts: ein Koprozessor der Link-Version 4.14 plant ein Schreiben oder ein Zurückspielen vor seinem ersten Frame |
 | Verlassen | `Verlasse den Programmiermodus. PWM ist noch nicht an.` | nichts, bis der Port PWM meldet |
 
 **VERBINDEN** nimmt den Port aus PWM, stellt die Versorgung, wo ein PD mini
@@ -171,7 +172,7 @@ folgen dem, was der Port gestellt hat.
 
 Ohne PD mini werden die Spannung und die Stromgrenze gespeichert und nicht
 angewendet. **WARTEN VOR PWM** wird gespeichert und von einem Koprozessor
-der Link-Version 4.13 nicht angewendet ([Verlassen](#verlassen)).
+der Link-Version 4.13 oder 4.14 nicht angewendet ([Verlassen](#verlassen)).
 
 ## Reiter SERVO
 
@@ -392,6 +393,8 @@ nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
 
 | Meldung | Das Servo |
 | --- | --- |
+| `Keine sichere Schreibfolge führt zu diesen Werten.` | hält, was es hielt; nichts wurde gesendet |
+| `Zu viele Änderungen für einen Plan. Nichts geschrieben.` `Änderung teilen: weniger Werte auf einmal schreiben.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216 000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
 | `Schreiben nicht übernommen. Nichts ist halb geschrieben.` | hält, was es hielt |
 | `Schreiben nicht übernommen. Der Wert ist wieder wie zuvor.` | hält, was es hielt |
 | `Schreiben nicht übernommen und nicht rückgängig zu machen.` | ist unklar: [zurückspielen](#ein-unterbrochenes-schreiben) |
@@ -739,7 +742,7 @@ während des Verlassens beendet es als
 
 ### Mit PD mini
 
-Ein Koprozessor der Link-Version 4.13 hat keinen Vorgang, der den Port vom
+Ein Koprozessor der Link-Version 4.13 oder 4.14 hat keinen Vorgang, der den Port vom
 Programmieren zu PWM nimmt und die Versorgung an lässt: seine 2 Vorgänge
 für diesen Schritt schalten die Versorgung aus und wieder ein. Das Panel sendet keinen von
 beiden. **VERLASSEN** und **SCHLIESSEN** öffnen keine Seite und antworten
@@ -755,7 +758,7 @@ Sitzung: die Versorgung bleibt 2000 ms aus, und der Port ist wieder in PWM.
 
 [**WARTEN VOR PWM**](#die-versorgung) ist die Zeit, in der der Port seinen
 Pin ohne Puls hält, zwischen dem Ende des Programmierens und dem ersten
-Puls, 0 bis 10 000 ms. Ein Koprozessor der Link-Version 4.13 nimmt keinen
+Puls, 0 bis 10 000 ms. Ein Koprozessor der Link-Version 4.13 oder 4.14 nimmt keinen
 solchen Wert an: das Panel speichert ihn und wendet ihn nirgends an. Das
 Warten, das ein KST-Servo braucht, ist nicht gemessen.
 
@@ -769,7 +772,7 @@ Warten, das ein KST-Servo braucht, ist nicht gemessen.
 | Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` |
 | Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` |
 | 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
-| 30 s kein Ergebnis eines Vorgangs | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
 Zeile. [Die Link-Page](Link-de.md#der-programmierport-für-servos-von-kst-und-chaservo) listet die
@@ -791,7 +794,7 @@ Codes.
 - Antwortet ein PD mini, wird der Port nicht aus dem Programmierer
   verlassen: **STOP** oder der ausgeschaltete Ausgang der Versorgung
   beendet die Sitzung, mit ausgeschalteter Versorgung.
-- **WARTEN VOR PWM** wird gespeichert und von der Link-Version 4.13 nicht
+- **WARTEN VOR PWM** wird gespeichert und von den Link-Versionen 4.13 und 4.14 nicht
   angewendet. Das Warten, das ein KST-Servo braucht, ist nicht gemessen.
 - Ohne PD mini werden die Programmierspannung und die Stromgrenze nicht
   angewendet.

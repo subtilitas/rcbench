@@ -223,7 +223,10 @@ static const int16_t k_ses[] = {
     [KST_SES_ERR_VERIFY]       = TX_KP_S_VERIFY,
     [KST_SES_ERR_DRIVER]       = TX_KP_S_DRIVER,
     [KST_SES_ERR_ABORTED]      = TX_KP_S_ABORTED,
+    [KST_SES_ERR_NO_PLAN]      = TX_KP_R_PLAN_NO_PATH,
     [LINK_KST_RESULT_SUPPLY]   = TX_KP_S_SUPPLY,
+    [LINK_KST_RESULT_NO_PATH]  = TX_KP_R_PLAN_NO_PATH,
+    [LINK_KST_RESULT_TOO_COMPLEX] = TX_KP_S_TOO_COMPLEX,
 };
 #define SES_COUNT ((unsigned)(sizeof(k_ses) / sizeof(k_ses[0])))
 
@@ -738,6 +741,8 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
             second = TX_KP_M_READ_ONLY_2;
         } else if (id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_LOCKED) {
             second = TX_KP_S_LOCKED_2;
+        } else if (id == KST_PROG_MSG_SES + LINK_KST_RESULT_TOO_COMPLEX) {
+            second = TX_KP_S_TOO_COMPLEX_2;
         } else if (do_not_use(id)) {
             second = TX_KP_M_DO_NOT_USE;
         }
@@ -1960,6 +1965,7 @@ static uint32_t signature(void)
     const kst_prog_t *p = &k.prog;
     const uint32_t part[] = {
         (uint32_t)kst_prog_state(p), (uint32_t)kst_prog_op(p),
+        kst_prog_planning(p),
         kst_prog_message(p)->seq, p->f.rd.flags, p->f.rd.frames,
         p->f.rd.port_no, kst_prog_have_servo(p), kst_prog_editable(p),
         (uint32_t)kst_prog_changed(p),
@@ -2206,7 +2212,9 @@ static void state_line(char *out, size_t n)
         }
         break;
     case KST_PROG_WORKING:
-        if (p->f.rd.frames == 1u) {
+        if (kst_prog_planning(p)) {
+            snprintf(out, n, "%s", TR(KP_STATE_PLANNING));
+        } else if (p->f.rd.frames == 1u) {
             snprintf(out, n, "%s", TR(KP_STATE_WORKING_ONE));
         } else {
             snprintf(out, n, TR(KP_STATE_WORKING), (unsigned)p->f.rd.frames);

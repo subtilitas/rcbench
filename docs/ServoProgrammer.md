@@ -90,6 +90,7 @@ PORT.`, and every control but **CLOSE** is off.
 | Programming | `Port 1 is in programming mode: no PWM on it.` | frames only |
 | Programming, the supply read | `Port 1 in programming mode, no PWM: 5.00 V, 37 mA.` | frames only |
 | Working | `Working: 12 frames.` | frames of the running operation |
+| Working, the coprocessor plans | `Planning the order of the writes. No frame sent yet.` | nothing: a coprocessor of link version 4.14 plans a write or a restore before its first frame |
 | Leaving | `Leaving programming mode. PWM is not on yet.` | nothing until the port reports PWM |
 
 **CONNECT** takes the port out of PWM, sets the supply where a PD mini
@@ -155,7 +156,7 @@ the port set.
 
 Without a PD mini the voltage and the current limit are stored and not
 applied. **WAIT BEFORE PWM** is stored and not applied by a coprocessor of
-link version 4.13 ([leaving](#leaving)).
+link version 4.13 or 4.14 ([leaving](#leaving)).
 
 ## SERVO tab
 
@@ -368,6 +369,8 @@ written; register 1D is written by **RELEASE PAIRING** only.
 
 | Message | The servo |
 | --- | --- |
+| `No safe order of writes leads to these values.` | holds what it held; nothing was sent |
+| `Too many changes to plan at once. Nothing was written.` `Split the change: write fewer values at a time.` | holds what it held; nothing was sent. The planner stops after 216,000 units of work without a verdict. The session goes on and the pending values stay |
 | `A write did not take. Nothing is half written.` | holds what it held |
 | `A write did not take. The value is back as it was.` | holds what it held |
 | `A write did not take and could not be undone.` | is in doubt: [restore](#an-interrupted-write) |
@@ -691,7 +694,7 @@ ends it as [a stop](#stops-and-losses).
 
 ### With a PD mini
 
-A coprocessor of link version 4.13 has no operation that takes the port
+A coprocessor of link version 4.13 or 4.14 has no operation that takes the port
 from programming to PWM and leaves the supply on: its 2 operations for
 that step both cycle the supply. The panel sends neither. **LEAVE** and **CLOSE** open no page and
 answer `With a PD mini the port cannot be left in this version.` and `STOP
@@ -706,7 +709,7 @@ stays off for 2000 ms and the port is in PWM again.
 
 [**WAIT BEFORE PWM**](#the-supply) is the time the port keeps its pin
 without a pulse between the end of programming and the first pulse, 0 to
-10 000 ms. A coprocessor of link version 4.13 takes no such value: the
+10 000 ms. A coprocessor of link version 4.13 or 4.14 takes no such value: the
 panel stores it and applies it nowhere. The wait a KST servo needs is not
 measured.
 
@@ -720,7 +723,7 @@ measured.
 | The coprocessor starts again | its session and backup are gone; `The coprocessor restarted. CONNECT and READ ALL.` |
 | The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. READ ALL.` |
 | 3 exchanges with the coprocessor in a row stay unanswered | `No answer from the coprocessor. READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
-| No result of an operation for 30 s | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
+| No result of an operation for 30 s, counted from the last time the port reported the operation running or planning | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 
 Every refusal of the port and every result of the session has its own
 line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) lists the codes.
@@ -740,7 +743,7 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - With a PD mini answering, the port is not left from the programmer:
   **STOP** or the supply's output switched off ends the session, with the
   supply off.
-- **WAIT BEFORE PWM** is stored and not applied by link version 4.13. The
+- **WAIT BEFORE PWM** is stored and not applied by link versions 4.13 and 4.14. The
   wait a KST servo needs is not measured.
 - Without a PD mini the programming voltage and the current limit are not
   applied.

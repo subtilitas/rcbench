@@ -78,7 +78,7 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
         } else if (kind == KST_LINK_OUT_DONE) {
             const uint16_t *r = k->results;
 
-            o->result = (kst_ses_t)(k->end_status[LINK_KS_RESULT] & 0xFFu);
+            o->result = (uint8_t)(k->end_status[LINK_KS_RESULT] & 0xFFu);
             o->frames = LINK_KS_FRAMES_OF(k->end_status[LINK_KS_OP]);
             o->fail_reg = (uint8_t)(r[RES(LINK_KS_FAIL)] & 0xFFu);
             o->steps_done = (uint8_t)(r[RES(LINK_KS_FAIL)] >> 8);
@@ -523,9 +523,21 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
 
 /* --- what the screen reads ---------------------------------------------------- */
 
+/* The phase as the screen sees it: an operation that runs and has sent no
+ * frame yet plans. */
+static kst_link_phase_t phase_shown(const kst_link_t *k)
+{
+    if (k->phase == (uint8_t)KST_LINK_RUNNING
+        && (k->status[LINK_KS_STATE] & LINK_KS_F_BUSY) != 0u
+        && (k->status[LINK_KS_RESULT] & 0xFFu) == LINK_KST_RESULT_PLANNING) {
+        return KST_LINK_PLANNING;
+    }
+    return (kst_link_phase_t)k->phase;
+}
+
 kst_link_phase_t kst_link_phase(const kst_link_t *k)
 {
-    return k != NULL ? (kst_link_phase_t)k->phase : KST_LINK_DOWN;
+    return k != NULL ? phase_shown(k) : KST_LINK_DOWN;
 }
 
 bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out)
@@ -547,7 +559,7 @@ void kst_link_readout(const kst_link_t *k, kst_link_readout_t *r)
     if (k == NULL) {
         return;
     }
-    r->phase = (kst_link_phase_t)k->phase;
+    r->phase = phase_shown(k);
     r->have_image = k->have_image;
     r->have_backup = k->have_backup;
     if (k->known) {
