@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280" width="420" height="280" role="img" aria-labelledby="ixt-t" aria-describedby="ixt-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="ixt-t">INA228-Akkustromsensor, INA228-Modul mit XT90-Steckern (Aufdruck: BIFRC V1.1)</title>
+<desc id="ixt-d">Illustration des INA228-Moduls mit 2 XT90-Steckern und 5-poliger Leiste mit dem Aufdruck L A V G 5.</desc>
+<defs>
+<linearGradient id="ixt-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="ixt-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="ixt-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="ixt-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="ixt-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="ixt-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="ixt-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="ixt-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="ixt-pcb-blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3069bb"/><stop offset="0.5" stop-color="#1f4f97"/><stop offset="1" stop-color="#173c76"/></linearGradient>
+<linearGradient id="ixt-sol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset="0.3" stop-color="#b9bec5"/><stop offset="0.7" stop-color="#8e959d"/><stop offset="1" stop-color="#d7dbe0"/></linearGradient>
+<linearGradient id="ixt-xt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7cf4a"/><stop offset="0.5" stop-color="#e9b520"/><stop offset="1" stop-color="#c79412"/></linearGradient>
+</defs>
+<rect width="420" height="280" rx="10" fill="#efebe3"/>
+<g filter="url(#ixt-sh)"><rect x="60" y="14" width="300" height="252" rx="12" fill="#17181c"/></g>
+<rect x="70" y="24" width="280" height="232" rx="6" fill="url(#ixt-pcb-blue)"/>
+<circle cx="90" cy="48" r="8.4" fill="url(#ixt-ring)"/><circle cx="90" cy="48" r="6" fill="#8e959d" stroke="#6d737b"/>
+<circle cx="330" cy="48" r="8.4" fill="url(#ixt-ring)"/><circle cx="330" cy="48" r="6" fill="#8e959d" stroke="#6d737b"/>
+<circle cx="90" cy="232" r="8.4" fill="url(#ixt-ring)"/><circle cx="90" cy="232" r="6" fill="#8e959d" stroke="#6d737b"/>
+<circle cx="330" cy="232" r="8.4" fill="url(#ixt-ring)"/><circle cx="330" cy="232" r="6" fill="#8e959d" stroke="#6d737b"/>
+<rect x="145.5" y="37" width="9" height="14" rx="1.5" fill="url(#ixt-tin)"/>
+<rect x="161.5" y="37" width="9" height="14" rx="1.5" fill="url(#ixt-tin)"/>
+<rect x="188" y="44" width="16" height="16" rx="1.5" fill="url(#ixt-tin)"/>
+<rect x="218" y="39" width="12" height="10" rx="1.5" fill="url(#ixt-tin)"/>
+<rect x="236" y="39" width="12" height="10" rx="1.5" fill="url(#ixt-tin)"/>
+<rect x="218" y="55" width="12" height="10" rx="1.5" fill="url(#ixt-tin)"/>
+<rect x="236" y="55" width="12" height="10" rx="1.5" fill="url(#ixt-tin)"/>
+<circle cx="300" cy="44" r="3.1" fill="url(#ixt-ring)"/><circle cx="300" cy="44" r="1.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="300" cy="62" r="3.1" fill="url(#ixt-ring)"/><circle cx="300" cy="62" r="1.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<rect x="138" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 142 82)"/>
+<rect x="152" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 156 82)"/>
+<rect x="166" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 170 82)"/>
+<rect x="180" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 184 82)"/>
+<rect x="194" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 198 82)"/>
+<rect x="208" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 212 82)"/>
+<rect x="222" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 226 82)"/>
+<rect x="236" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 240 82)"/>
+<rect x="250" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 254 82)"/>
+<rect x="264" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 268 82)"/>
+<rect x="278" y="80" width="9" height="4" rx="2" fill="#efebe3" transform="rotate(-40 282 82)"/>
+<rect x="126" y="96" width="168" height="24" rx="6" fill="url(#ixt-sol)" filter="url(#ixt-s2)"/>
+<rect x="126" y="150" width="56" height="24" rx="6" fill="url(#ixt-sol)" filter="url(#ixt-s2)"/><rect x="238" y="150" width="56" height="24" rx="6" fill="url(#ixt-sol)" filter="url(#ixt-s2)"/>
+<g filter="url(#ixt-s3)"><rect x="176" y="142" width="68" height="40" rx="2" fill="url(#ixt-copper)"/></g><rect x="196" y="142" width="28" height="40" fill="#a8672f" opacity=".55"/>
+<rect x="118" y="100" width="22" height="16" rx="8" fill="url(#ixt-gold)"/><rect x="118" y="154" width="22" height="16" rx="8" fill="url(#ixt-gold)"/><g filter="url(#ixt-s3)"><rect x="12" y="88" width="118" height="94" rx="5" fill="url(#ixt-xt)"/></g><rect x="18" y="96" width="50" height="78" rx="3" fill="#d8a516" opacity=".6"/>
+<rect x="280" y="100" width="22" height="16" rx="8" fill="url(#ixt-gold)"/><rect x="280" y="154" width="22" height="16" rx="8" fill="url(#ixt-gold)"/><g filter="url(#ixt-s3)"><rect x="290" y="88" width="118" height="94" rx="5" fill="url(#ixt-xt)"/></g><rect x="352" y="96" width="50" height="78" rx="3" fill="#d8a516" opacity=".6"/>
+<text id="ixt-lbl-BAT" x="48" y="113" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">BAT+</text>
+<text id="ixt-lbl-ESC" x="372" y="113" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">ESC+</text>
+<text x="48" y="167" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">BAT−</text>
+<text x="372" y="167" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">ESC−</text>
+<circle cx="140" cy="88" r="5" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="140" y="91.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">+</text>
+<circle cx="140" cy="190" r="5" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="140" y="193.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">−</text>
+<g transform="translate(134,218) rotate(0)" filter="url(#ixt-s2)"><rect x="-15" y="-8.6" width="30" height="2.6" fill="url(#ixt-tin)"/><rect x="-15" y="-5" width="30" height="2.6" fill="url(#ixt-tin)"/><rect x="-15" y="-1.3" width="30" height="2.6" fill="url(#ixt-tin)"/><rect x="-15" y="2.4" width="30" height="2.6" fill="url(#ixt-tin)"/><rect x="-15" y="6" width="30" height="2.6" fill="url(#ixt-tin)"/><rect x="-12" y="-11" width="24" height="22" rx="1.5" fill="url(#ixt-body)"/><rect x="-12" y="-11" width="24" height="3.5" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-8" cy="-7" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<g transform="translate(110,206) rotate(90) scale(0.7)" filter="url(#ixt-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ixt-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(110,228) rotate(90) scale(0.7)" filter="url(#ixt-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ixt-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(158,206) rotate(90) scale(0.7)" filter="url(#ixt-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ixt-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(158,228) rotate(90) scale(0.7)" filter="url(#ixt-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ixt-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<rect x="170" y="213" width="148" height="22" rx="1" fill="none" stroke="#f2f2f2" stroke-width="1.2"/>
+<circle cx="184" cy="224" r="7.5" fill="url(#ixt-ring)"/><circle cx="184" cy="224" r="3.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="184" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="184" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">L</text>
+<text id="ixt-lbl-SCL" x="184" y="207" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">SCL</text>
+<circle cx="214" cy="224" r="7.5" fill="url(#ixt-ring)"/><circle cx="214" cy="224" r="3.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="214" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="214" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">A</text>
+<text id="ixt-lbl-SDA" x="214" y="207" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">SDA</text>
+<circle cx="244" cy="224" r="7.5" fill="url(#ixt-ring)"/><circle cx="244" cy="224" r="3.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="244" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="244" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">V</text>
+<text id="ixt-lbl-V5" x="244" y="207" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">5V</text>
+<circle cx="274" cy="224" r="7.5" fill="url(#ixt-ring)"/><circle cx="274" cy="224" r="3.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="274" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="274" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">G</text>
+<text id="ixt-lbl-G" x="274" y="207" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">G</text>
+<circle cx="304" cy="224" r="4.7" fill="url(#ixt-ring)"/><circle cx="304" cy="224" r="2.1" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="304" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<text x="304" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">5</text>
+</svg>

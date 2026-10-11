@@ -28,7 +28,9 @@ between them.
 | `src/draw/svg.ts` | SVG (Scalable Vector Graphics) markup of the drawing. |
 | `src/view/` | Chooser, result document, table. |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
-| `test/` | Unit tests, run by `node --test`. |
+| `drawings/` | Generator and check of the part drawings, anchor table, wire palette. See `drawings/README.md`. |
+| `public/drawings/` | The part drawings, written by `npm run drawings`: 23 SVG files in English, 23 in German under `de/`. |
+| `test/`, `drawings/test/` | Unit tests, run by `node --test`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/shots.ts` | Screenshots of the build. |
@@ -42,7 +44,9 @@ cd configurator
 npm ci
 npm run typecheck   # tsc --noEmit
 npm test            # unit tests
-npm run build       # writes dist/
+npm run drawings    # writes public/drawings/ and drawings/anchors.json
+npm run drawings:check   # fails on a finding or on drift, writes nothing
+npm run build       # runs the drawings check, then writes dist/
 npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB
 npx playwright install chromium
 npm run e2e         # smoke test at 360 px and 1280 px width
@@ -91,7 +95,7 @@ that touch `configurator/` or the workflow file.
 | Job | Does |
 |---|---|
 | `core` | Type check, tests, data check and coverage figure of `core/`. |
-| `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, build, size check. Keeps `dist/` as artifact `configurator-dist` for 14 days. |
+| `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, drawings check, build, size check. Keeps `dist/` as artifact `configurator-dist` for 14 days. |
 | `smoke` | Playwright against the artifact of `build`. |
 | `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the 3 other jobs pass. |
 
@@ -126,6 +130,19 @@ holds each record to the files of `public/pictures/`.
 Picture folder: 24 files, 1916.8 kB.
 
 `test/pictures.test.ts` fails when this line differs from the folder.
+
+## Part drawings
+
+`public/drawings/` holds 1 drawing per part and board of the data file, and 2
+drawings of boards outside it (INA219, ADXL345). `drawings/anchors.json` gives
+the wire point of every pin in px of the drawing. The files are committed.
+`npm run drawings:check` fails when they differ from the output of the
+generator or from the data file. The page does not show the drawings. They
+count against the 1 MB of the size budget.
+
+Drawing folder: 46 files, 448.8 kB.
+
+`drawings/test/cli.test.ts` fails when this line differs from the folder.
 
 ## Limits
 

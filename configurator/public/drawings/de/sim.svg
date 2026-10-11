@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 264" width="300" height="264" role="img" aria-labelledby="sim-t" aria-describedby="sim-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="sim-t">Motorsimulator, selbst gebaut: 3 Widerstände, 470 Ω, 2 W</title>
+<desc id="sim-d">Illustration des Motorsimulators: 3 Widerstände zu einem Dreieck gelötet, Ecken A, B und C.</desc>
+<defs>
+<linearGradient id="sim-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="sim-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="sim-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="sim-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="sim-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="sim-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="sim-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="sim-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="sim-ax-4f93c8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.3" stop-color="#4f93c8"/><stop offset="0.7" stop-color="#4f93c8"/><stop offset="1" stop-color="#000000"/></linearGradient>
+</defs>
+<rect width="300" height="264" rx="10" fill="#efebe3"/>
+<path d="M150 62L62 196" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M150 62L62 196" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/><g transform="translate(106,129) rotate(123.3)" filter="url(#sim-s3)"><rect x="-39" y="-10" width="78" height="20" rx="9.09090909090909" fill="#4f93c8"/><rect x="-25.9" y="-10" width="5" height="20" fill="#e2c21f"/><rect x="-15" y="-10" width="5" height="20" fill="#7d3fb0"/><rect x="-4.1" y="-10" width="5" height="20" fill="#6b4423"/><rect x="20.9" y="-10" width="5" height="20" fill="#c9a54a"/><rect x="-39" y="-10" width="78" height="20" rx="9.09090909090909" fill="url(#sim-ax-4f93c8)" opacity=".28"/></g>
+<path d="M62 196L238 196" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M62 196L238 196" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/><g transform="translate(150,196) rotate(0)" filter="url(#sim-s3)"><rect x="-39" y="-10" width="78" height="20" rx="9.09090909090909" fill="#4f93c8"/><rect x="-25.9" y="-10" width="5" height="20" fill="#e2c21f"/><rect x="-15" y="-10" width="5" height="20" fill="#7d3fb0"/><rect x="-4.1" y="-10" width="5" height="20" fill="#6b4423"/><rect x="20.9" y="-10" width="5" height="20" fill="#c9a54a"/><rect x="-39" y="-10" width="78" height="20" rx="9.09090909090909" fill="url(#sim-ax-4f93c8)" opacity=".28"/></g>
+<path d="M238 196L150 62" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M238 196L150 62" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/><g transform="translate(194,129) rotate(-123.3)" filter="url(#sim-s3)"><rect x="-39" y="-10" width="78" height="20" rx="9.09090909090909" fill="#4f93c8"/><rect x="-25.9" y="-10" width="5" height="20" fill="#e2c21f"/><rect x="-15" y="-10" width="5" height="20" fill="#7d3fb0"/><rect x="-4.1" y="-10" width="5" height="20" fill="#6b4423"/><rect x="20.9" y="-10" width="5" height="20" fill="#c9a54a"/><rect x="-39" y="-10" width="78" height="20" rx="9.09090909090909" fill="url(#sim-ax-4f93c8)" opacity=".28"/></g>
+<path d="M150 62L150 28" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M150 62L150 28" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M62 196L30 214" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M62 196L30 214" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M238 196L270 214" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M238 196L270 214" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>
+<circle cx="150" cy="62" r="7" fill="url(#sim-ring)" stroke="#6d737b" stroke-width=".6" filter="url(#sim-s2)"/>
+<circle cx="62" cy="196" r="7" fill="url(#sim-ring)" stroke="#6d737b" stroke-width=".6" filter="url(#sim-s2)"/>
+<circle cx="238" cy="196" r="7" fill="url(#sim-ring)" stroke="#6d737b" stroke-width=".6" filter="url(#sim-s2)"/>
+<circle cx="150" cy="28" r="7" fill="#efebe3" stroke="url(#sim-tin)" stroke-width="3"/><circle cx="150" cy="28" r="8.5" fill="none" stroke="#6d737b" stroke-width=".6"/>
+<circle cx="30" cy="214" r="7" fill="#efebe3" stroke="url(#sim-tin)" stroke-width="3"/><circle cx="30" cy="214" r="8.5" fill="none" stroke="#6d737b" stroke-width=".6"/>
+<circle cx="270" cy="214" r="7" fill="#efebe3" stroke="url(#sim-tin)" stroke-width="3"/><circle cx="270" cy="214" r="8.5" fill="none" stroke="#6d737b" stroke-width=".6"/>
+<text id="sim-lbl-A" x="166" y="32" font-size="13" font-weight="600" fill="#24262b" text-anchor="start">Ecke A</text>
+<text id="sim-lbl-B" x="20" y="244" font-size="13" font-weight="600" fill="#24262b" text-anchor="start">Ecke B</text>
+<text id="sim-lbl-C" x="280" y="244" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">Ecke C</text>
+</svg>

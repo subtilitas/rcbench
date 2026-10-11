@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 324" width="260" height="324" role="img" aria-labelledby="tpl-t" aria-describedby="tpl-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="tpl-t">USB-C tap with 3-wire lead, the T-plug of the PD mini</title>
+<desc id="tpl-d">Illustration of the T-plug: USB-C sockets IN and OUT, third socket with a plug board that has the pads G, D+, D− and V.</desc>
+<defs>
+<linearGradient id="tpl-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="tpl-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="tpl-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="tpl-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="tpl-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="tpl-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="tpl-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="tpl-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="tpl-pcb-black" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24262b"/><stop offset="0.5" stop-color="#17181c"/><stop offset="1" stop-color="#101114"/></linearGradient>
+<linearGradient id="tpl-pcb-green" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#35a35e"/><stop offset="0.5" stop-color="#1f7d43"/><stop offset="1" stop-color="#166131"/></linearGradient>
+</defs>
+<rect width="260" height="324" rx="10" fill="#efebe3"/>
+<g filter="url(#tpl-sh)"><path d="M44 30H216Q222 30 222 36V112Q222 118 216 118H178V204Q178 210 172 210H88Q82 210 82 204V118H44Q38 118 38 112V36Q38 30 44 30Z" fill="url(#tpl-pcb-black)"/></g>
+<text x="80" y="46" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="middle">IN</text>
+<text x="180" y="46" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="middle">OUT</text>
+<g filter="url(#tpl-s3)"><rect x="28" y="52" width="92" height="56" rx="5" fill="url(#tpl-tin)"/></g><rect x="28.5" y="52.5" width="91" height="55" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="64.8" y="64.3" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="64.8" y="87.8" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="28" y="55" width="5" height="50" fill="#2a2c31"/>
+<g filter="url(#tpl-s3)"><rect x="140" y="52" width="92" height="56" rx="5" fill="url(#tpl-tin)"/></g><rect x="140.5" y="52.5" width="91" height="55" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="176.8" y="64.3" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="176.8" y="87.8" width="27.6" height="7.8" rx="2" fill="#7d848c"/><rect x="227" y="55" width="5" height="50" fill="#2a2c31"/>
+<g transform="translate(130,44) rotate(0) scale(0.7)" filter="url(#tpl-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#tpl-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g filter="url(#tpl-s3)"><rect x="96" y="124" width="68" height="82" rx="5" fill="url(#tpl-tin)"/></g><rect x="96.5" y="124.5" width="67" height="81" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="111" y="160.9" width="9.5" height="24.6" rx="2" fill="#7d848c"/><rect x="139.5" y="160.9" width="9.5" height="24.6" rx="2" fill="#7d848c"/><rect x="99" y="201" width="62" height="5" fill="#2a2c31"/>
+<g filter="url(#tpl-s3)"><rect x="102" y="198" width="56" height="50" rx="6" fill="url(#tpl-tin)"/><rect x="98" y="240" width="64" height="12" rx="3" fill="#17181c"/></g><rect x="118" y="210" width="24" height="8" rx="2" fill="#7d848c"/>
+<g filter="url(#tpl-s3)"><rect x="76" y="250" width="108" height="56" rx="3" fill="url(#tpl-pcb-green)"/></g>
+<path d="M112 252V258M118 252V258M124 252V258M130 252V258M136 252V258M142 252V258M148 252V258" stroke="#f2f2f2" stroke-opacity=".6" stroke-width="1.5"/>
+<rect x="83.5" y="281" width="15" height="20" rx="2" fill="url(#tpl-tin)"/>
+<text id="tpl-lbl-G" x="91" y="274" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">G</text>
+<rect x="109.5" y="281" width="15" height="20" rx="2" fill="url(#tpl-tin)"/>
+<text id="tpl-lbl-DP" x="117" y="274" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">D+</text>
+<rect x="135.5" y="281" width="15" height="20" rx="2" fill="url(#tpl-tin)"/>
+<text id="tpl-lbl-DM" x="143" y="274" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">D−</text>
+<rect x="161.5" y="281" width="15" height="20" rx="2" fill="url(#tpl-tin)"/>
+<text id="tpl-lbl-V" x="169" y="274" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">V</text>
+</svg>

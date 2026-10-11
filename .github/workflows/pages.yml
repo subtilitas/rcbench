@@ -5,9 +5,9 @@ name: Configurator
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, and the coverage figure in
 #   configurator/core/README.md.
-# - build: type check and unit tests of the page, the Vite build, the size
-#   budget (250 kB initial, 1 MB total). The built page is an artifact of
-#   every run.
+# - build: type check and unit tests of the page, the check of the part
+#   drawings against the data file, the Vite build, the size budget (250 kB
+#   initial, 1 MB total). The built page is an artifact of every run.
 # - smoke: Playwright against the built page at 360 px and 1280 px width.
 # - deploy: publishes the built page to GitHub Pages. It runs on a push to
 #   main only. A pull request builds and tests and publishes nothing.
@@ -111,6 +111,13 @@ jobs:
 
       - name: Unit tests and the geometry sweep
         run: npm test
+
+      # Fails when a pin of the data file has no anchor, an anchor has no
+      # pin, a label differs in English or German, a wire end has no anchor,
+      # a wire colour is below 3:1 on a page background, or a committed
+      # drawing differs from the output of the generator.
+      - name: Check the part drawings against the data file
+        run: npm run drawings:check
 
       - name: Build
         run: npm run build

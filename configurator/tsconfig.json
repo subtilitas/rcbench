@@ -15,5 +15,5 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
-  "include": ["src", "core", "contract.ts", "test", "e2e", "tools", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "core", "drawings", "contract.ts", "test", "e2e", "tools", "vite.config.ts", "playwright.config.ts"]
 }

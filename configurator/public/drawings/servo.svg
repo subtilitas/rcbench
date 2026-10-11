@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 224" width="320" height="224" role="img" aria-labelledby="srv-t" aria-describedby="srv-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="srv-t">Servo (yours)</title>
+<desc id="srv-d">Illustration of a servo with its 3-wire lead: signal, plus, minus.</desc>
+<defs>
+<linearGradient id="srv-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="srv-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="srv-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="srv-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="srv-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="srv-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="srv-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="srv-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="srv-sv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b4250"/><stop offset="0.5" stop-color="#232831"/><stop offset="1" stop-color="#15181e"/></linearGradient>
+<linearGradient id="srv-lab" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f1ea"/><stop offset="1" stop-color="#dcd8cd"/></linearGradient>
+</defs>
+<rect width="320" height="224" rx="10" fill="#efebe3"/>
+<g filter="url(#srv-sh)"><rect x="38" y="24" width="64" height="176" rx="4" fill="#2b303a"/><rect x="34" y="44" width="72" height="136" rx="6" fill="url(#srv-sv)"/></g>
+<circle cx="70" cy="34" r="4.9" fill="url(#srv-ring)"/><circle cx="70" cy="34" r="3.5" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="70" cy="190" r="4.9" fill="url(#srv-ring)"/><circle cx="70" cy="190" r="3.5" fill="#efebe3" stroke="#6d737b"/>
+<rect x="42" y="118" width="56" height="50" rx="3" fill="url(#srv-lab)" opacity=".9"/><rect x="50" y="130" width="40" height="5" rx="2" fill="#b9b4a6"/><rect x="50" y="142" width="26" height="5" rx="2" fill="#cfcabd"/>
+<g filter="url(#srv-s3)"><path d="M62 78L66 30Q70 24 74 30L78 78Q84 86 78 94Q70 100 62 94Q56 86 62 78Z" fill="#e9e6de"/></g><circle cx="70" cy="84" r="5" fill="url(#srv-ring)"/><circle cx="70" cy="62" r="1.8" fill="#8e959d"/><circle cx="70" cy="50" r="1.8" fill="#8e959d"/><circle cx="70" cy="38" r="1.8" fill="#8e959d"/>
+<path d="M106 156C150 156 150 64 196 64H268" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,1.5)"/><path d="M106 156C150 156 150 64 196 64H268" fill="none" stroke="#e58a1f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M106 156C150 156 150 64 196 64H268" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,-0.9)"/>
+<rect x="266" y="60" width="20" height="8" rx="2.8" fill="url(#srv-gold)" stroke="#5d646c" stroke-width=".6" filter="url(#srv-s2)"/>
+<text id="srv-lbl-SIG" x="282" y="52" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">signal</text>
+<path d="M106 162C150 162 150 112 196 112H268" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,1.5)"/><path d="M106 162C150 162 150 112 196 112H268" fill="none" stroke="#c8261d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M106 162C150 162 150 112 196 112H268" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,-0.9)"/>
+<rect x="266" y="108" width="20" height="8" rx="2.8" fill="url(#srv-gold)" stroke="#5d646c" stroke-width=".6" filter="url(#srv-s2)"/>
+<text id="srv-lbl-POS" x="282" y="100" font-size="17" font-weight="600" fill="#24262b" text-anchor="end">+</text>
+<path d="M106 168C150 168 150 160 196 160H268" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,1.5)"/><path d="M106 168C150 168 150 160 196 160H268" fill="none" stroke="#6b4423" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M106 168C150 168 150 160 196 160H268" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,-0.9)"/>
+<rect x="266" y="156" width="20" height="8" rx="2.8" fill="url(#srv-gold)" stroke="#5d646c" stroke-width=".6" filter="url(#srv-s2)"/>
+<text id="srv-lbl-NEG" x="282" y="148" font-size="17" font-weight="600" fill="#24262b" text-anchor="end">−</text>
+</svg>

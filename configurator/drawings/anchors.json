@@ -1,0 +1,2057 @@
+{
+ "release": "0.16.0",
+ "files": {
+  "adxl345.svg": {
+   "part": null,
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    262,
+    310
+   ],
+   "names": "board print",
+   "pins": {
+    "GND": {
+     "x": 45,
+     "y": 32.5,
+     "side": "W",
+     "labelId": "adx-lbl-GND",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "VCC": {
+     "x": 45,
+     "y": 67.5,
+     "side": "W",
+     "labelId": "adx-lbl-VCC",
+     "label": {
+      "en": "VCC",
+      "de": "VCC"
+     }
+    },
+    "CS": {
+     "x": 45,
+     "y": 102.5,
+     "side": "W",
+     "labelId": "adx-lbl-CS",
+     "label": {
+      "en": "CS",
+      "de": "CS"
+     }
+    },
+    "INT1": {
+     "x": 45,
+     "y": 137.5,
+     "side": "W",
+     "labelId": "adx-lbl-INT1",
+     "label": {
+      "en": "INT1",
+      "de": "INT1"
+     }
+    },
+    "INT2": {
+     "x": 45,
+     "y": 172.5,
+     "side": "W",
+     "labelId": "adx-lbl-INT2",
+     "label": {
+      "en": "INT2",
+      "de": "INT2"
+     }
+    },
+    "SDO": {
+     "x": 45,
+     "y": 207.5,
+     "side": "W",
+     "labelId": "adx-lbl-SDO",
+     "label": {
+      "en": "SDO",
+      "de": "SDO"
+     }
+    },
+    "SDA": {
+     "x": 45,
+     "y": 242.5,
+     "side": "W",
+     "labelId": "adx-lbl-SDA",
+     "label": {
+      "en": "SDA",
+      "de": "SDA"
+     }
+    },
+    "SCL": {
+     "x": 45,
+     "y": 277.5,
+     "side": "W",
+     "labelId": "adx-lbl-SCL",
+     "label": {
+      "en": "SCL",
+      "de": "SCL"
+     }
+    }
+   }
+  },
+  "as5600.svg": {
+   "part": "as5600",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    326,
+    284
+   ],
+   "names": "catalogue",
+   "pins": {
+    "GND": {
+     "x": 106,
+     "y": 66,
+     "side": "N",
+     "labelId": "as5-lbl-GND",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "OUT": {
+     "x": 140,
+     "y": 66,
+     "side": "N",
+     "labelId": "as5-lbl-OUT",
+     "label": {
+      "en": "OUT",
+      "de": "OUT"
+     }
+    },
+    "VCC": {
+     "x": 174,
+     "y": 66,
+     "side": "N",
+     "labelId": "as5-lbl-VCC",
+     "label": {
+      "en": "VCC",
+      "de": "VCC"
+     }
+    },
+    "GPO": {
+     "x": 89,
+     "y": 214,
+     "side": "S",
+     "labelId": "as5-lbl-GPO",
+     "label": {
+      "en": "GPO",
+      "de": "GPO"
+     }
+    },
+    "SDA": {
+     "x": 123,
+     "y": 214,
+     "side": "S",
+     "labelId": "as5-lbl-SDA",
+     "label": {
+      "en": "SDA",
+      "de": "SDA"
+     }
+    },
+    "SCL": {
+     "x": 157,
+     "y": 214,
+     "side": "S",
+     "labelId": "as5-lbl-SCL",
+     "label": {
+      "en": "SCL",
+      "de": "SCL"
+     }
+    },
+    "DIR": {
+     "x": 191,
+     "y": 214,
+     "side": "S",
+     "labelId": "as5-lbl-DIR",
+     "label": {
+      "en": "DIR",
+      "de": "DIR"
+     }
+    }
+   }
+  },
+  "batt.svg": {
+   "part": "batt",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    290,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {
+    "POS": {
+     "x": 260,
+     "y": 72,
+     "side": "E",
+     "labelId": "bat-lbl-POS",
+     "label": {
+      "en": "+",
+      "de": "+"
+     }
+    },
+    "NEG": {
+     "x": 260,
+     "y": 132,
+     "side": "E",
+     "labelId": "bat-lbl-NEG",
+     "label": {
+      "en": "−",
+      "de": "−"
+     }
+    }
+   }
+  },
+  "charger.svg": {
+   "part": "charger",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    240,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {
+    "USB": {
+     "x": 160,
+     "y": 100,
+     "side": "E",
+     "labelId": "chg-lbl-USB",
+     "label": {
+      "en": "USB-C",
+      "de": "USB-C"
+     }
+    }
+   }
+  },
+  "copro--osoyoo.svg": {
+   "part": "copro",
+   "variant": "osoyoo",
+   "viewBox": [
+    0,
+    0,
+    480,
+    820
+   ],
+   "names": "catalogue",
+   "pins": {
+    "pad.1": {
+     "x": 22,
+     "y": 84,
+     "side": "W",
+     "labelId": "cos-lbl-pad-1",
+     "label": {
+      "en": "GP0",
+      "de": "GP0"
+     }
+    },
+    "pad.40": {
+     "x": 458,
+     "y": 84,
+     "side": "E",
+     "labelId": "cos-lbl-pad-40",
+     "label": {
+      "en": "VBUS",
+      "de": "VBUS"
+     }
+    },
+    "pad.2": {
+     "x": 22,
+     "y": 118,
+     "side": "W",
+     "labelId": "cos-lbl-pad-2",
+     "label": {
+      "en": "GP1",
+      "de": "GP1"
+     }
+    },
+    "pad.39": {
+     "x": 458,
+     "y": 118,
+     "side": "E",
+     "labelId": "cos-lbl-pad-39",
+     "label": {
+      "en": "VSYS",
+      "de": "VSYS"
+     }
+    },
+    "pad.3": {
+     "x": 22,
+     "y": 152,
+     "side": "W",
+     "labelId": "cos-lbl-pad-3",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.38": {
+     "x": 458,
+     "y": 152,
+     "side": "E",
+     "labelId": "cos-lbl-pad-38",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.4": {
+     "x": 22,
+     "y": 186,
+     "side": "W",
+     "labelId": "cos-lbl-pad-4",
+     "label": {
+      "en": "GP2",
+      "de": "GP2"
+     }
+    },
+    "pad.37": {
+     "x": 458,
+     "y": 186,
+     "side": "E",
+     "labelId": "cos-lbl-pad-37",
+     "label": {
+      "en": "3V3.EN",
+      "de": "3V3.EN"
+     }
+    },
+    "pad.5": {
+     "x": 22,
+     "y": 220,
+     "side": "W",
+     "labelId": "cos-lbl-pad-5",
+     "label": {
+      "en": "GP3",
+      "de": "GP3"
+     }
+    },
+    "pad.36": {
+     "x": 458,
+     "y": 220,
+     "side": "E",
+     "labelId": "cos-lbl-pad-36",
+     "label": {
+      "en": "3V3",
+      "de": "3V3"
+     }
+    },
+    "pad.6": {
+     "x": 22,
+     "y": 254,
+     "side": "W",
+     "labelId": "cos-lbl-pad-6",
+     "label": {
+      "en": "GP4",
+      "de": "GP4"
+     }
+    },
+    "pad.35": {
+     "x": 458,
+     "y": 254,
+     "side": "E",
+     "labelId": "cos-lbl-pad-35",
+     "label": {
+      "en": "ADC.REF",
+      "de": "ADC.REF"
+     }
+    },
+    "pad.7": {
+     "x": 22,
+     "y": 288,
+     "side": "W",
+     "labelId": "cos-lbl-pad-7",
+     "label": {
+      "en": "GP5",
+      "de": "GP5"
+     }
+    },
+    "pad.34": {
+     "x": 458,
+     "y": 288,
+     "side": "E",
+     "labelId": "cos-lbl-pad-34",
+     "label": {
+      "en": "28 A2",
+      "de": "28 A2"
+     }
+    },
+    "pad.8": {
+     "x": 22,
+     "y": 322,
+     "side": "W",
+     "labelId": "cos-lbl-pad-8",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.33": {
+     "x": 458,
+     "y": 322,
+     "side": "E",
+     "labelId": "cos-lbl-pad-33",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.9": {
+     "x": 22,
+     "y": 356,
+     "side": "W",
+     "labelId": "cos-lbl-pad-9",
+     "label": {
+      "en": "GP6",
+      "de": "GP6"
+     }
+    },
+    "pad.32": {
+     "x": 458,
+     "y": 356,
+     "side": "E",
+     "labelId": "cos-lbl-pad-32",
+     "label": {
+      "en": "27 A1",
+      "de": "27 A1"
+     }
+    },
+    "pad.10": {
+     "x": 22,
+     "y": 390,
+     "side": "W",
+     "labelId": "cos-lbl-pad-10",
+     "label": {
+      "en": "GP7",
+      "de": "GP7"
+     }
+    },
+    "pad.31": {
+     "x": 458,
+     "y": 390,
+     "side": "E",
+     "labelId": "cos-lbl-pad-31",
+     "label": {
+      "en": "26 A0",
+      "de": "26 A0"
+     }
+    },
+    "pad.11": {
+     "x": 22,
+     "y": 424,
+     "side": "W",
+     "labelId": "cos-lbl-pad-11",
+     "label": {
+      "en": "GP8",
+      "de": "GP8"
+     }
+    },
+    "pad.30": {
+     "x": 458,
+     "y": 424,
+     "side": "E",
+     "labelId": "cos-lbl-pad-30",
+     "label": {
+      "en": "RUN",
+      "de": "RUN"
+     }
+    },
+    "pad.12": {
+     "x": 22,
+     "y": 458,
+     "side": "W",
+     "labelId": "cos-lbl-pad-12",
+     "label": {
+      "en": "GP9",
+      "de": "GP9"
+     }
+    },
+    "pad.29": {
+     "x": 458,
+     "y": 458,
+     "side": "E",
+     "labelId": "cos-lbl-pad-29",
+     "label": {
+      "en": "GP22",
+      "de": "GP22"
+     }
+    },
+    "pad.13": {
+     "x": 22,
+     "y": 492,
+     "side": "W",
+     "labelId": "cos-lbl-pad-13",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.28": {
+     "x": 458,
+     "y": 492,
+     "side": "E",
+     "labelId": "cos-lbl-pad-28",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.14": {
+     "x": 22,
+     "y": 526,
+     "side": "W",
+     "labelId": "cos-lbl-pad-14",
+     "label": {
+      "en": "GP10",
+      "de": "GP10"
+     }
+    },
+    "pad.27": {
+     "x": 458,
+     "y": 526,
+     "side": "E",
+     "labelId": "cos-lbl-pad-27",
+     "label": {
+      "en": "GP21",
+      "de": "GP21"
+     }
+    },
+    "pad.15": {
+     "x": 22,
+     "y": 560,
+     "side": "W",
+     "labelId": "cos-lbl-pad-15",
+     "label": {
+      "en": "GP11",
+      "de": "GP11"
+     }
+    },
+    "pad.26": {
+     "x": 458,
+     "y": 560,
+     "side": "E",
+     "labelId": "cos-lbl-pad-26",
+     "label": {
+      "en": "GP20",
+      "de": "GP20"
+     }
+    },
+    "pad.16": {
+     "x": 22,
+     "y": 594,
+     "side": "W",
+     "labelId": "cos-lbl-pad-16",
+     "label": {
+      "en": "GP12",
+      "de": "GP12"
+     }
+    },
+    "pad.25": {
+     "x": 458,
+     "y": 594,
+     "side": "E",
+     "labelId": "cos-lbl-pad-25",
+     "label": {
+      "en": "GP19",
+      "de": "GP19"
+     }
+    },
+    "pad.17": {
+     "x": 22,
+     "y": 628,
+     "side": "W",
+     "labelId": "cos-lbl-pad-17",
+     "label": {
+      "en": "GP13",
+      "de": "GP13"
+     }
+    },
+    "pad.24": {
+     "x": 458,
+     "y": 628,
+     "side": "E",
+     "labelId": "cos-lbl-pad-24",
+     "label": {
+      "en": "GP18",
+      "de": "GP18"
+     }
+    },
+    "pad.18": {
+     "x": 22,
+     "y": 662,
+     "side": "W",
+     "labelId": "cos-lbl-pad-18",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.23": {
+     "x": 458,
+     "y": 662,
+     "side": "E",
+     "labelId": "cos-lbl-pad-23",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.19": {
+     "x": 22,
+     "y": 696,
+     "side": "W",
+     "labelId": "cos-lbl-pad-19",
+     "label": {
+      "en": "GP14",
+      "de": "GP14"
+     }
+    },
+    "pad.22": {
+     "x": 458,
+     "y": 696,
+     "side": "E",
+     "labelId": "cos-lbl-pad-22",
+     "label": {
+      "en": "GP17",
+      "de": "GP17"
+     }
+    },
+    "pad.20": {
+     "x": 22,
+     "y": 730,
+     "side": "W",
+     "labelId": "cos-lbl-pad-20",
+     "label": {
+      "en": "GP15",
+      "de": "GP15"
+     }
+    },
+    "pad.21": {
+     "x": 458,
+     "y": 730,
+     "side": "E",
+     "labelId": "cos-lbl-pad-21",
+     "label": {
+      "en": "GP16",
+      "de": "GP16"
+     }
+    },
+    "can.H": {
+     "x": 190.7,
+     "y": 614,
+     "side": "S",
+     "labelId": "cos-lbl-can-H",
+     "label": {
+      "en": "CAN H",
+      "de": "CAN H"
+     }
+    },
+    "can.L": {
+     "x": 282.7,
+     "y": 614,
+     "side": "S",
+     "labelId": "cos-lbl-can-L",
+     "label": {
+      "en": "CAN L",
+      "de": "CAN L"
+     }
+    }
+   }
+  },
+  "copro.svg": {
+   "part": "copro",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    340,
+    790
+   ],
+   "names": "catalogue",
+   "pins": {
+    "pad.1": {
+     "x": 46,
+     "y": 110,
+     "side": "W",
+     "labelId": "cop-lbl-pad-1",
+     "label": {
+      "en": "GP0",
+      "de": "GP0"
+     }
+    },
+    "pad.40": {
+     "x": 294,
+     "y": 110,
+     "side": "E",
+     "labelId": "cop-lbl-pad-40",
+     "label": {
+      "en": "VBUS",
+      "de": "VBUS"
+     }
+    },
+    "pad.2": {
+     "x": 46,
+     "y": 140,
+     "side": "W",
+     "labelId": "cop-lbl-pad-2",
+     "label": {
+      "en": "GP1",
+      "de": "GP1"
+     }
+    },
+    "pad.39": {
+     "x": 294,
+     "y": 140,
+     "side": "E",
+     "labelId": "cop-lbl-pad-39",
+     "label": {
+      "en": "VSYS",
+      "de": "VSYS"
+     }
+    },
+    "pad.3": {
+     "x": 46,
+     "y": 170,
+     "side": "W",
+     "labelId": "cop-lbl-pad-3",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.38": {
+     "x": 294,
+     "y": 170,
+     "side": "E",
+     "labelId": "cop-lbl-pad-38",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.4": {
+     "x": 46,
+     "y": 200,
+     "side": "W",
+     "labelId": "cop-lbl-pad-4",
+     "label": {
+      "en": "GP2",
+      "de": "GP2"
+     }
+    },
+    "pad.37": {
+     "x": 294,
+     "y": 200,
+     "side": "E",
+     "labelId": "cop-lbl-pad-37",
+     "label": {
+      "en": "3V3_EN",
+      "de": "3V3_EN"
+     }
+    },
+    "pad.5": {
+     "x": 46,
+     "y": 230,
+     "side": "W",
+     "labelId": "cop-lbl-pad-5",
+     "label": {
+      "en": "GP3",
+      "de": "GP3"
+     }
+    },
+    "pad.36": {
+     "x": 294,
+     "y": 230,
+     "side": "E",
+     "labelId": "cop-lbl-pad-36",
+     "label": {
+      "en": "3V3",
+      "de": "3V3"
+     }
+    },
+    "pad.6": {
+     "x": 46,
+     "y": 260,
+     "side": "W",
+     "labelId": "cop-lbl-pad-6",
+     "label": {
+      "en": "GP4",
+      "de": "GP4"
+     }
+    },
+    "pad.35": {
+     "x": 294,
+     "y": 260,
+     "side": "E",
+     "labelId": "cop-lbl-pad-35",
+     "label": {
+      "en": "VREF",
+      "de": "VREF"
+     }
+    },
+    "pad.7": {
+     "x": 46,
+     "y": 290,
+     "side": "W",
+     "labelId": "cop-lbl-pad-7",
+     "label": {
+      "en": "GP5",
+      "de": "GP5"
+     }
+    },
+    "pad.34": {
+     "x": 294,
+     "y": 290,
+     "side": "E",
+     "labelId": "cop-lbl-pad-34",
+     "label": {
+      "en": "GP28",
+      "de": "GP28"
+     }
+    },
+    "pad.8": {
+     "x": 46,
+     "y": 320,
+     "side": "W",
+     "labelId": "cop-lbl-pad-8",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.33": {
+     "x": 294,
+     "y": 320,
+     "side": "E",
+     "labelId": "cop-lbl-pad-33",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.9": {
+     "x": 46,
+     "y": 350,
+     "side": "W",
+     "labelId": "cop-lbl-pad-9",
+     "label": {
+      "en": "GP6",
+      "de": "GP6"
+     }
+    },
+    "pad.32": {
+     "x": 294,
+     "y": 350,
+     "side": "E",
+     "labelId": "cop-lbl-pad-32",
+     "label": {
+      "en": "GP27",
+      "de": "GP27"
+     }
+    },
+    "pad.10": {
+     "x": 46,
+     "y": 380,
+     "side": "W",
+     "labelId": "cop-lbl-pad-10",
+     "label": {
+      "en": "GP7",
+      "de": "GP7"
+     }
+    },
+    "pad.31": {
+     "x": 294,
+     "y": 380,
+     "side": "E",
+     "labelId": "cop-lbl-pad-31",
+     "label": {
+      "en": "GP26",
+      "de": "GP26"
+     }
+    },
+    "pad.11": {
+     "x": 46,
+     "y": 410,
+     "side": "W",
+     "labelId": "cop-lbl-pad-11",
+     "label": {
+      "en": "GP8",
+      "de": "GP8"
+     }
+    },
+    "pad.30": {
+     "x": 294,
+     "y": 410,
+     "side": "E",
+     "labelId": "cop-lbl-pad-30",
+     "label": {
+      "en": "RUN",
+      "de": "RUN"
+     }
+    },
+    "pad.12": {
+     "x": 46,
+     "y": 440,
+     "side": "W",
+     "labelId": "cop-lbl-pad-12",
+     "label": {
+      "en": "GP9",
+      "de": "GP9"
+     }
+    },
+    "pad.29": {
+     "x": 294,
+     "y": 440,
+     "side": "E",
+     "labelId": "cop-lbl-pad-29",
+     "label": {
+      "en": "GP22",
+      "de": "GP22"
+     }
+    },
+    "pad.13": {
+     "x": 46,
+     "y": 470,
+     "side": "W",
+     "labelId": "cop-lbl-pad-13",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.28": {
+     "x": 294,
+     "y": 470,
+     "side": "E",
+     "labelId": "cop-lbl-pad-28",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.14": {
+     "x": 46,
+     "y": 500,
+     "side": "W",
+     "labelId": "cop-lbl-pad-14",
+     "label": {
+      "en": "GP10",
+      "de": "GP10"
+     }
+    },
+    "pad.27": {
+     "x": 294,
+     "y": 500,
+     "side": "E",
+     "labelId": "cop-lbl-pad-27",
+     "label": {
+      "en": "GP21",
+      "de": "GP21"
+     }
+    },
+    "pad.15": {
+     "x": 46,
+     "y": 530,
+     "side": "W",
+     "labelId": "cop-lbl-pad-15",
+     "label": {
+      "en": "GP11",
+      "de": "GP11"
+     }
+    },
+    "pad.26": {
+     "x": 294,
+     "y": 530,
+     "side": "E",
+     "labelId": "cop-lbl-pad-26",
+     "label": {
+      "en": "GP20",
+      "de": "GP20"
+     }
+    },
+    "pad.16": {
+     "x": 46,
+     "y": 560,
+     "side": "W",
+     "labelId": "cop-lbl-pad-16",
+     "label": {
+      "en": "GP12",
+      "de": "GP12"
+     }
+    },
+    "pad.25": {
+     "x": 294,
+     "y": 560,
+     "side": "E",
+     "labelId": "cop-lbl-pad-25",
+     "label": {
+      "en": "GP19",
+      "de": "GP19"
+     }
+    },
+    "pad.17": {
+     "x": 46,
+     "y": 590,
+     "side": "W",
+     "labelId": "cop-lbl-pad-17",
+     "label": {
+      "en": "GP13",
+      "de": "GP13"
+     }
+    },
+    "pad.24": {
+     "x": 294,
+     "y": 590,
+     "side": "E",
+     "labelId": "cop-lbl-pad-24",
+     "label": {
+      "en": "GP18",
+      "de": "GP18"
+     }
+    },
+    "pad.18": {
+     "x": 46,
+     "y": 620,
+     "side": "W",
+     "labelId": "cop-lbl-pad-18",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.23": {
+     "x": 294,
+     "y": 620,
+     "side": "E",
+     "labelId": "cop-lbl-pad-23",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "pad.19": {
+     "x": 46,
+     "y": 650,
+     "side": "W",
+     "labelId": "cop-lbl-pad-19",
+     "label": {
+      "en": "GP14",
+      "de": "GP14"
+     }
+    },
+    "pad.22": {
+     "x": 294,
+     "y": 650,
+     "side": "E",
+     "labelId": "cop-lbl-pad-22",
+     "label": {
+      "en": "GP17",
+      "de": "GP17"
+     }
+    },
+    "pad.20": {
+     "x": 46,
+     "y": 680,
+     "side": "W",
+     "labelId": "cop-lbl-pad-20",
+     "label": {
+      "en": "GP15",
+      "de": "GP15"
+     }
+    },
+    "pad.21": {
+     "x": 294,
+     "y": 680,
+     "side": "E",
+     "labelId": "cop-lbl-pad-21",
+     "label": {
+      "en": "GP16",
+      "de": "GP16"
+     }
+    },
+    "can.H": {
+     "x": 118,
+     "y": 770,
+     "side": "S",
+     "labelId": "cop-lbl-can-H",
+     "label": {
+      "en": "CAN H",
+      "de": "CAN H"
+     }
+    },
+    "can.L": {
+     "x": 210,
+     "y": 770,
+     "side": "S",
+     "labelId": "cop-lbl-can-L",
+     "label": {
+      "en": "CAN L",
+      "de": "CAN L"
+     }
+    }
+   }
+  },
+  "esc.svg": {
+   "part": "esc",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    370,
+    344
+   ],
+   "names": "catalogue",
+   "pins": {
+    "SIG": {
+     "x": 338,
+     "y": 46,
+     "side": "E",
+     "labelId": "esc-lbl-SIG",
+     "label": {
+      "en": "signal",
+      "de": "Signal"
+     }
+    },
+    "BEC": {
+     "x": 338,
+     "y": 82,
+     "side": "E",
+     "labelId": "esc-lbl-BEC",
+     "label": {
+      "en": "centre wire (BEC +)",
+      "de": "Mittelader (BEC +)"
+     }
+    },
+    "SG": {
+     "x": 338,
+     "y": 118,
+     "side": "E",
+     "labelId": "esc-lbl-SG",
+     "label": {
+      "en": "signal ground",
+      "de": "Signalmasse"
+     }
+    },
+    "POS": {
+     "x": 338,
+     "y": 154,
+     "side": "E",
+     "labelId": "esc-lbl-POS",
+     "label": {
+      "en": "+",
+      "de": "+"
+     }
+    },
+    "NEG": {
+     "x": 338,
+     "y": 190,
+     "side": "E",
+     "labelId": "esc-lbl-NEG",
+     "label": {
+      "en": "−",
+      "de": "−"
+     }
+    },
+    "A": {
+     "x": 338,
+     "y": 226,
+     "side": "E",
+     "labelId": "esc-lbl-A",
+     "label": {
+      "en": "phase A",
+      "de": "Phase A"
+     }
+    },
+    "B": {
+     "x": 338,
+     "y": 262,
+     "side": "E",
+     "labelId": "esc-lbl-B",
+     "label": {
+      "en": "phase B",
+      "de": "Phase B"
+     }
+    },
+    "C": {
+     "x": 338,
+     "y": 298,
+     "side": "E",
+     "labelId": "esc-lbl-C",
+     "label": {
+      "en": "phase C",
+      "de": "Phase C"
+     }
+    }
+   }
+  },
+  "estop.svg": {
+   "part": "estop",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    340,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {
+    "NC1": {
+     "x": 283,
+     "y": 72,
+     "side": "E",
+     "labelId": "est-lbl-NC1",
+     "label": {
+      "en": "NC tab 1",
+      "de": "NC-Fahne 1"
+     }
+    },
+    "NC2": {
+     "x": 283,
+     "y": 128,
+     "side": "E",
+     "labelId": "est-lbl-NC2",
+     "label": {
+      "en": "NC tab 2",
+      "de": "NC-Fahne 2"
+     }
+    }
+   }
+  },
+  "ina219.svg": {
+   "part": null,
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    300,
+    284
+   ],
+   "names": "board print",
+   "pins": {
+    "T.Vin-": {
+     "x": 130.5,
+     "y": 56.6,
+     "side": "N",
+     "labelId": "i219-lbl-T-VinM",
+     "label": {
+      "en": "Vin-",
+      "de": "Vin-"
+     }
+    },
+    "T.Vin+": {
+     "x": 167.5,
+     "y": 56.6,
+     "side": "N",
+     "labelId": "i219-lbl-T-VinP",
+     "label": {
+      "en": "Vin+",
+      "de": "Vin+"
+     }
+    },
+    "Vcc": {
+     "x": 85.1,
+     "y": 239.8,
+     "side": "S",
+     "labelId": "i219-lbl-Vcc",
+     "label": {
+      "en": "Vcc",
+      "de": "Vcc"
+     }
+    },
+    "Gnd": {
+     "x": 113.3,
+     "y": 239.8,
+     "side": "S",
+     "labelId": "i219-lbl-Gnd",
+     "label": {
+      "en": "Gnd",
+      "de": "Gnd"
+     }
+    },
+    "Scl": {
+     "x": 141.4,
+     "y": 239.8,
+     "side": "S",
+     "labelId": "i219-lbl-Scl",
+     "label": {
+      "en": "Scl",
+      "de": "Scl"
+     }
+    },
+    "Sda": {
+     "x": 169.6,
+     "y": 239.8,
+     "side": "S",
+     "labelId": "i219-lbl-Sda",
+     "label": {
+      "en": "Sda",
+      "de": "Sda"
+     }
+    },
+    "Vin-": {
+     "x": 197.7,
+     "y": 239.8,
+     "side": "S",
+     "labelId": "i219-lbl-VinM",
+     "label": {
+      "en": "Vin-",
+      "de": "Vin-"
+     }
+    },
+    "Vin+": {
+     "x": 225.8,
+     "y": 239.8,
+     "side": "S",
+     "labelId": "i219-lbl-VinP",
+     "label": {
+      "en": "Vin+",
+      "de": "Vin+"
+     }
+    }
+   }
+  },
+  "ina228--matek.svg": {
+   "part": "ina228",
+   "variant": "matek",
+   "viewBox": [
+    0,
+    0,
+    340,
+    262
+   ],
+   "names": "catalogue",
+   "pins": {
+    "ESC": {
+     "x": 42,
+     "y": 69,
+     "side": "W",
+     "labelId": "imt-lbl-ESC",
+     "label": {
+      "en": "ESC+",
+      "de": "ESC+"
+     }
+    },
+    "BAT": {
+     "x": 298,
+     "y": 69,
+     "side": "E",
+     "labelId": "imt-lbl-BAT",
+     "label": {
+      "en": "BAT+",
+      "de": "BAT+"
+     }
+    },
+    "V5": {
+     "x": 30,
+     "y": 153,
+     "side": "W",
+     "labelId": "imt-lbl-V5",
+     "label": {
+      "en": "5V",
+      "de": "5V"
+     }
+    },
+    "SCL": {
+     "x": 30,
+     "y": 171,
+     "side": "W",
+     "labelId": "imt-lbl-SCL",
+     "label": {
+      "en": "SCL",
+      "de": "SCL"
+     }
+    },
+    "SDA": {
+     "x": 30,
+     "y": 189,
+     "side": "W",
+     "labelId": "imt-lbl-SDA",
+     "label": {
+      "en": "SDA",
+      "de": "SDA"
+     }
+    },
+    "G": {
+     "x": 30,
+     "y": 207,
+     "side": "W",
+     "labelId": "imt-lbl-G",
+     "label": {
+      "en": "G",
+      "de": "G"
+     }
+    }
+   }
+  },
+  "ina228--xt90.svg": {
+   "part": "ina228",
+   "variant": "xt90",
+   "viewBox": [
+    0,
+    0,
+    420,
+    280
+   ],
+   "names": "catalogue",
+   "pins": {
+    "BAT": {
+     "x": 12,
+     "y": 108,
+     "side": "W",
+     "labelId": "ixt-lbl-BAT",
+     "label": {
+      "en": "BAT+",
+      "de": "BAT+"
+     }
+    },
+    "ESC": {
+     "x": 408,
+     "y": 108,
+     "side": "E",
+     "labelId": "ixt-lbl-ESC",
+     "label": {
+      "en": "ESC+",
+      "de": "ESC+"
+     }
+    },
+    "SCL": {
+     "x": 184,
+     "y": 224,
+     "side": "S",
+     "labelId": "ixt-lbl-SCL",
+     "label": {
+      "en": "SCL",
+      "de": "SCL"
+     }
+    },
+    "SDA": {
+     "x": 214,
+     "y": 224,
+     "side": "S",
+     "labelId": "ixt-lbl-SDA",
+     "label": {
+      "en": "SDA",
+      "de": "SDA"
+     }
+    },
+    "V5": {
+     "x": 244,
+     "y": 224,
+     "side": "S",
+     "labelId": "ixt-lbl-V5",
+     "label": {
+      "en": "5V",
+      "de": "5V"
+     }
+    },
+    "G": {
+     "x": 274,
+     "y": 224,
+     "side": "S",
+     "labelId": "ixt-lbl-G",
+     "label": {
+      "en": "G",
+      "de": "G"
+     }
+    }
+   }
+  },
+  "ina3221.svg": {
+   "part": "ina3221",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    480,
+    444
+   ],
+   "names": "board print",
+   "pins": {
+    "VIN3+": {
+     "x": 70.3,
+     "y": 79.9,
+     "side": "N",
+     "labelId": "ina-lbl-VIN3P",
+     "label": {
+      "en": "VIN3+",
+      "de": "VIN3+"
+     }
+    },
+    "VIN3-": {
+     "x": 127,
+     "y": 79.9,
+     "side": "N",
+     "labelId": "ina-lbl-VIN3M",
+     "label": {
+      "en": "VIN3-",
+      "de": "VIN3-"
+     }
+    },
+    "VIN2+": {
+     "x": 202.6,
+     "y": 79.9,
+     "side": "N",
+     "labelId": "ina-lbl-VIN2P",
+     "label": {
+      "en": "VIN2+",
+      "de": "VIN2+"
+     }
+    },
+    "VIN2-": {
+     "x": 263.5,
+     "y": 79.9,
+     "side": "N",
+     "labelId": "ina-lbl-VIN2M",
+     "label": {
+      "en": "VIN2-",
+      "de": "VIN2-"
+     }
+    },
+    "VIN1+": {
+     "x": 343.3,
+     "y": 79.9,
+     "side": "N",
+     "labelId": "ina-lbl-VIN1P",
+     "label": {
+      "en": "VIN1+",
+      "de": "VIN1+"
+     }
+    },
+    "VIN1-": {
+     "x": 404.2,
+     "y": 79.9,
+     "side": "N",
+     "labelId": "ina-lbl-VIN1M",
+     "label": {
+      "en": "VIN1-",
+      "de": "VIN1-"
+     }
+    },
+    "PAD1": {
+     "x": 61.9,
+     "y": 245.8,
+     "side": "W",
+     "labelId": "ina-lbl-PAD1",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "PAD2": {
+     "x": 61.9,
+     "y": 306.7,
+     "side": "W",
+     "labelId": "ina-lbl-PAD2",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "PAD3": {
+     "x": 61.9,
+     "y": 363.4,
+     "side": "W",
+     "labelId": "ina-lbl-PAD3",
+     "label": {
+      "en": "VPU",
+      "de": "VPU"
+     }
+    },
+    "VS": {
+     "x": 152.2,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-VS",
+     "label": {
+      "en": "VS",
+      "de": "VS"
+     }
+    },
+    "GND": {
+     "x": 181.3,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-GND",
+     "label": {
+      "en": "GND",
+      "de": "GND"
+     }
+    },
+    "SCL": {
+     "x": 210.4,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-SCL",
+     "label": {
+      "en": "SCL",
+      "de": "SCL"
+     }
+    },
+    "SDA": {
+     "x": 239.5,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-SDA",
+     "label": {
+      "en": "SDA",
+      "de": "SDA"
+     }
+    },
+    "PV": {
+     "x": 268.6,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-PV",
+     "label": {
+      "en": "PV",
+      "de": "PV"
+     }
+    },
+    "CRI": {
+     "x": 297.7,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-CRI",
+     "label": {
+      "en": "CRI",
+      "de": "CRI"
+     }
+    },
+    "WAR": {
+     "x": 326.8,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-WAR",
+     "label": {
+      "en": "WAR",
+      "de": "WAR"
+     }
+    },
+    "TC": {
+     "x": 355.9,
+     "y": 382.3,
+     "side": "S",
+     "labelId": "ina-lbl-TC",
+     "label": {
+      "en": "TC",
+      "de": "TC"
+     }
+    }
+   },
+   "catalogueMap": {
+    "A0": null,
+    "VS": [
+     "VS"
+    ],
+    "SCL": [
+     "SCL"
+    ],
+    "SDA": [
+     "SDA"
+    ],
+    "GND": [
+     "GND"
+    ],
+    "C1A": [
+     "VIN1+"
+    ],
+    "C1B": [
+     "VIN1-"
+    ],
+    "LP": [
+     "PAD1",
+     "PAD2",
+     "PAD3"
+    ]
+   }
+  },
+  "panel.svg": {
+   "part": "panel",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    380,
+    290
+   ],
+   "names": "catalogue",
+   "pins": {
+    "J8G": {
+     "x": 294,
+     "y": 114,
+     "side": "E",
+     "labelId": "pnl-lbl-J8G",
+     "label": {
+      "en": "J8 GND",
+      "de": "J8 GND"
+     }
+    },
+    "J8S": {
+     "x": 294,
+     "y": 96,
+     "side": "E",
+     "labelId": "pnl-lbl-J8S",
+     "label": {
+      "en": "J8 GPIO6",
+      "de": "J8 GPIO6"
+     }
+    },
+    "CANH": {
+     "x": 294,
+     "y": 163,
+     "side": "E",
+     "labelId": "pnl-lbl-CANH",
+     "label": {
+      "en": "CAN H",
+      "de": "CAN H"
+     }
+    },
+    "CANL": {
+     "x": 294,
+     "y": 181,
+     "side": "E",
+     "labelId": "pnl-lbl-CANL",
+     "label": {
+      "en": "CAN L",
+      "de": "CAN L"
+     }
+    }
+   }
+  },
+  "pdmini.svg": {
+   "part": "pdmini",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    350,
+    244
+   ],
+   "names": "catalogue",
+   "pins": {
+    "USB": {
+     "x": 18,
+     "y": 60,
+     "side": "W",
+     "labelId": "pdm-lbl-USB",
+     "label": {
+      "en": "USB-C in",
+      "de": "USB-C Eingang"
+     }
+    },
+    "ON": {
+     "x": 320,
+     "y": 44,
+     "side": "E",
+     "labelId": "pdm-lbl-ON",
+     "label": {
+      "en": "OUT −",
+      "de": "OUT −"
+     }
+    },
+    "OP": {
+     "x": 320,
+     "y": 122,
+     "side": "E",
+     "labelId": "pdm-lbl-OP",
+     "label": {
+      "en": "OUT +",
+      "de": "OUT +"
+     }
+    }
+   }
+  },
+  "pull.svg": {
+   "part": "pull",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    310,
+    192
+   ],
+   "names": "catalogue",
+   "pins": {
+    "SDA": {
+     "x": 42,
+     "y": 58,
+     "side": "W",
+     "labelId": "pul-lbl-SDA",
+     "label": {
+      "en": "R1, to SDA",
+      "de": "R1, nach SDA"
+     }
+    },
+    "SCL": {
+     "x": 42,
+     "y": 134,
+     "side": "W",
+     "labelId": "pul-lbl-SCL",
+     "label": {
+      "en": "R2, to SCL",
+      "de": "R2, nach SCL"
+     }
+    },
+    "V": {
+     "x": 276,
+     "y": 96,
+     "side": "E",
+     "labelId": "pul-lbl-V",
+     "label": {
+      "en": "R1 and R2, to 3V3",
+      "de": "R1 und R2, nach 3V3"
+     }
+    }
+   }
+  },
+  "sd.svg": {
+   "part": "sd",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    200,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {}
+  },
+  "servo.svg": {
+   "part": "servo",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    320,
+    224
+   ],
+   "names": "catalogue",
+   "pins": {
+    "SIG": {
+     "x": 286,
+     "y": 64,
+     "side": "E",
+     "labelId": "srv-lbl-SIG",
+     "label": {
+      "en": "signal",
+      "de": "Signal"
+     }
+    },
+    "POS": {
+     "x": 286,
+     "y": 112,
+     "side": "E",
+     "labelId": "srv-lbl-POS",
+     "label": {
+      "en": "+",
+      "de": "+"
+     }
+    },
+    "NEG": {
+     "x": 286,
+     "y": 160,
+     "side": "E",
+     "labelId": "srv-lbl-NEG",
+     "label": {
+      "en": "−",
+      "de": "−"
+     }
+    }
+   }
+  },
+  "sim.svg": {
+   "part": "sim",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    300,
+    264
+   ],
+   "names": "catalogue",
+   "pins": {
+    "A": {
+     "x": 150,
+     "y": 28,
+     "side": "N",
+     "labelId": "sim-lbl-A",
+     "label": {
+      "en": "corner A",
+      "de": "Ecke A"
+     }
+    },
+    "B": {
+     "x": 30,
+     "y": 214,
+     "side": "W",
+     "labelId": "sim-lbl-B",
+     "label": {
+      "en": "corner B",
+      "de": "Ecke B"
+     }
+    },
+    "C": {
+     "x": 270,
+     "y": 214,
+     "side": "E",
+     "labelId": "sim-lbl-C",
+     "label": {
+      "en": "corner C",
+      "de": "Ecke C"
+     }
+    }
+   }
+  },
+  "ssup.svg": {
+   "part": "ssup",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    230,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {
+    "POS": {
+     "x": 196,
+     "y": 70,
+     "side": "E",
+     "labelId": "ssu-lbl-POS",
+     "label": {
+      "en": "+",
+      "de": "+"
+     }
+    },
+    "NEG": {
+     "x": 196,
+     "y": 130,
+     "side": "E",
+     "labelId": "ssu-lbl-NEG",
+     "label": {
+      "en": "−",
+      "de": "−"
+     }
+    }
+   }
+  },
+  "tap.svg": {
+   "part": "tap",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    300,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {
+    "IN": {
+     "x": 42,
+     "y": 66,
+     "side": "W",
+     "labelId": "tap-lbl-IN",
+     "label": {
+      "en": "resistor, end 1",
+      "de": "Widerstand, Ende 1"
+     }
+    },
+    "OUT": {
+     "x": 258,
+     "y": 66,
+     "side": "E",
+     "labelId": "tap-lbl-OUT",
+     "label": {
+      "en": "resistor, end 2",
+      "de": "Widerstand, Ende 2"
+     }
+    }
+   }
+  },
+  "usb.svg": {
+   "part": "usb",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    280,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {}
+  },
+  "usbtap.svg": {
+   "part": "usbtap",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    260,
+    324
+   ],
+   "names": "catalogue",
+   "pins": {
+    "G": {
+     "x": 91,
+     "y": 298,
+     "side": "S",
+     "labelId": "tpl-lbl-G",
+     "label": {
+      "en": "G",
+      "de": "G"
+     }
+    },
+    "DP": {
+     "x": 117,
+     "y": 298,
+     "side": "S",
+     "labelId": "tpl-lbl-DP",
+     "label": {
+      "en": "D+",
+      "de": "D+"
+     }
+    },
+    "DM": {
+     "x": 143,
+     "y": 298,
+     "side": "S",
+     "labelId": "tpl-lbl-DM",
+     "label": {
+      "en": "D−",
+      "de": "D−"
+     }
+    },
+    "V": {
+     "x": 169,
+     "y": 298,
+     "side": "S",
+     "labelId": "tpl-lbl-V",
+     "label": {
+      "en": "V",
+      "de": "V"
+     }
+    }
+   }
+  },
+  "wire.svg": {
+   "part": "wire",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    290,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {}
+  }
+ }
+}
