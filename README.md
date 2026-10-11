@@ -52,7 +52,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the coprocessor; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured |
 | Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the coprocessor drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
-| Programmer | BLHeli_S, AM32, ESCape32, VESC and Hitec parameter tables; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC |
+| Programmer | parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
 | Battery | per-cell spread and verdict | screen built; cell monitor not fitted |
 | Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while armed or while the supply's output is on | built |
@@ -133,6 +133,25 @@ trademarks of their respective manufacturers. The names are used in this
 project in a purely descriptive way, to document compatibility with the
 respective servos. This project is not affiliated with the named
 manufacturers and is neither supported nor sponsored by them.
+
+Every other name of a maker, product, protocol or firmware in this
+repository is a name or trademark of its owner. Each appears only to
+describe compatibility, to identify a part, to credit the source of a font
+or to name a design or protocol reference. This covers:
+
+- the servo makers and brands Futaba, Feetech and Dynamixel;
+- the ESC (electronic speed controller) makers YGE, Kontronik, Hobbywing,
+  Hacker, Jeti, Castle Creations, Graupner, Multiplex and Spektrum;
+- the protocol and firmware names OpenYGE, S.BUS, S.BUS2, JETI EX Bus, SRXL2,
+  DShot, KISS, BLHeli_S, BLHeli_32, AM32, ESCape32 and VESC;
+- the board, module and component makers Waveshare, Raspberry Pi, Espressif,
+  WeAct, Osoyoo, Matek, DAOKAI and Texas Instruments;
+- the distributors Digi-Key, LCSC and JLCPCB;
+- every other maker, product, protocol and firmware name in this repository.
+  The section "Trademarks" of [NOTICE](NOTICE) has the list.
+
+This project is not connected with any of the owners and is neither supported
+nor sponsored by any of them.
 
 ### Disclaimer
 

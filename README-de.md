@@ -53,7 +53,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom Koprozessor gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen |
 | Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der Koprozessor steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Analyser | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
-| Programmierer | Parametertabellen für BLHeli_S, AM32, ESCape32, VESC und Hitec; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels |
+| Programmierer | Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
 | Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden im scharfen Zustand oder bei eingeschaltetem Netzteil-Ausgang aufgezeichnet | gebaut |
@@ -137,6 +137,27 @@ der jeweiligen Hersteller. Die Namen werden in diesem Projekt ausschließlich
 beschreibend verwendet, um die Kompatibilität mit den jeweiligen Servos zu
 dokumentieren. Dieses Projekt steht in keiner Verbindung zu den genannten
 Herstellern und wird von ihnen weder unterstützt noch gesponsert.
+
+Jeder andere Name eines Herstellers, eines Produkts, eines Protokolls oder
+einer Firmware in diesem Repository ist ein Name oder eine Marke seines
+Inhabers. Jeder steht nur dort, um Kompatibilität zu beschreiben, ein Teil
+zu bezeichnen, die Quelle einer Schrift anzugeben oder eine Design- oder
+Protokoll-Referenz zu nennen. Das gilt für:
+
+- die Servo-Hersteller und -Marken Futaba, Feetech und Dynamixel;
+- die ESC-Hersteller (Electronic Speed Controller) YGE, Kontronik, Hobbywing,
+  Hacker, Jeti, Castle Creations, Graupner, Multiplex und Spektrum;
+- die Protokoll- und Firmware-Namen OpenYGE, S.BUS, S.BUS2, JETI EX Bus,
+  SRXL2, DShot, KISS, BLHeli_S, BLHeli_32, AM32, ESCape32 und VESC;
+- die Hersteller von Boards, Modulen und Bauteilen Waveshare, Raspberry Pi,
+  Espressif, WeAct, Osoyoo, Matek, DAOKAI und Texas Instruments;
+- die Distributoren Digi-Key, LCSC und JLCPCB;
+- jeden anderen Hersteller-, Produkt-, Protokoll- und Firmware-Namen in
+  diesem Repository. Der Abschnitt „Trademarks“ in [NOTICE](NOTICE) enthält
+  die Liste.
+
+Dieses Projekt steht mit keinem der Inhaber in Verbindung und wird von keinem
+von ihnen unterstützt oder gesponsert.
 
 ### Haftungsausschluss
 

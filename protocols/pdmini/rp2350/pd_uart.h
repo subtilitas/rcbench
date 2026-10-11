@@ -2,6 +2,10 @@
  * The PD mini's UART on two PIO (programmable input/output) state
  * machines, on whichever two pins the caller names.
  *
+ * Implements the UART protocol of the WeAct PD Power Mini V1 Buck module.
+ * WeAct is a name or trademark of its owner; it is used here only to say
+ * which module this driver works with (NOTICE, "Trademarks").
+ *
  * pd_uart_open() claims the state machines and leaves the pins at rest:
  * inputs with a pull-down.  The driver attaches the UART for a transaction
  * and detaches it after; pdmini_io_t's callbacks are the three below.
