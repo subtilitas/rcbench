@@ -29,7 +29,7 @@ Die ursprüngliche Anforderungsliste:
 | ESC-Programmierer (AM32 und BLHeli_S gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) | Bildschirm gebaut und tabellengesteuert für BLHeli_S, AM32, ESCape32 und VESC; kein Protokoll wird gesendet. BLHeli_32-Parameter werden nicht unterstützt: [BLHeli_32](BLHeli32-de.md). |
 | Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am Koprozessor, auf einer gemeinsamen Zeitbasis abgetastet | Bildschirm und Platzierungsanleitungen gebaut; die Messung wartet auf die Sensoren |
 | Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll | Bildschirm gebaut und steuert über den Link. PWM hat auf dem Aufbau-Prüfstand ein Servo vom Panel aus bewegt; keine Impulsbreite, Rahmenperiode oder Jitter wurde an einem Messgerät gelesen, und die seriellen Protokolle haben nichts getrieben |
-| Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden | Hitec-Tabelle im Programmierer-Bildschirm; KST (ein Servohersteller) auf Wunsch des Eigentümers zurückgestellt |
+| Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden | Hitec-Tabelle im Programmierer-Bildschirm; KST und Chaservo (zwei Servomarken mit einem Programmierprotokoll): der Protokollkern, der RP2350-Pin-Treiber, der Programmierport des Koprozessors mit der Link-Page 0x32 und das Link-Modul des Panels sind gebaut und auf dem Host gegen ein Servo- und Leitungsmodell getestet; kein Bildschirm nutzt sie, und nichts ist auf Hardware gemessen |
 | Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert | Gebaut: Durchsehen, Importansicht, Plot. Läufe werden auf die Karte geschrieben, solange der Prüfstand scharf ist. |
 
 ## Nicht geplant
@@ -40,7 +40,6 @@ Die ursprüngliche Anforderungsliste:
 - **BLHeli_32-Parameter.** Die zum Lesen nötigen Informationen sind nicht
   veröffentlicht; eine Anfrage an den Rechteinhaber wurde im August 2026
   abgelehnt. [Details](BLHeli32-de.md).
-- **KST-Servoprogrammierung.** Auf Wunsch des Eigentümers zurückgestellt.
 
 ## Lizenzregel
 

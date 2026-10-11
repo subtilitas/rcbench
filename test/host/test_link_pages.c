@@ -804,6 +804,105 @@ TEST_CASE(an_older_coprocessor_has_no_servo_win_page_and_says_so)
     CHECK_EQ(r.regs[0], 0u);
 }
 
+/*
+ * Protocol 4.12 adds the KST page after SERVO_WIN and moves nothing.  The
+ * page is 32 registers to read and 26 to write, both inside one message,
+ * and its write map is three windows of whole frames: the command, the
+ * image and the unlock set.
+ */
+TEST_CASE(kst_extends_the_map_without_moving_it)
+{
+    CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 12u);
+    CHECK_EQ(LINK_MINOR_KST, 12u);
+    CHECK_EQ(LINK_MINOR_SERVO_WIN, 11u);
+    CHECK_EQ(LINK_PAGE_SERVO_WIN, 0x31);
+    CHECK_EQ(LINK_PAGE_KST, 0x32);
+    CHECK_EQ(LINK_SW_COUNT, 28);
+    CHECK_EQ(LINK_KS_COUNT, 32);
+    CHECK(LINK_KS_COUNT <= LINK_MAX_REGS);
+    CHECK(LINK_KS_W_COUNT <= LINK_KS_COUNT);
+    /* The status a poll reads is one frame, the results three, the image
+     * four: 16 registers hold the 32 servo registers. */
+    CHECK_EQ(LINK_KS_FAIL, 4);
+    CHECK_EQ(LINK_KS_IMAGE, 16);
+    CHECK_EQ(LINK_KS_IMAGE + LINK_KS_IMAGE_REGS, LINK_KS_COUNT);
+    CHECK_EQ(LINK_KS_W_CMD_FRAME, 4u);
+    CHECK_EQ(LINK_KS_W_IMAGE, 4);
+    CHECK_EQ(LINK_KS_W_UNLOCK, 20);
+    CHECK_EQ(LINK_KS_W_START_CRC, 24);
+    CHECK_EQ(LINK_KS_W_VIEW, 25);
+    CHECK_EQ(LINK_KS_W_COUNT, 26);
+    /* The state, its flags and the channel share register 0 and do not
+     * overlap. */
+    const uint16_t flags = LINK_KS_F_BUSY | LINK_KS_F_IN_MODE
+                           | LINK_KS_F_MUST_READ | LINK_KS_F_IMAGE
+                           | LINK_KS_F_BACKUP | LINK_KS_F_FP_OK
+                           | LINK_KS_F_LOCKED | LINK_KS_F_RAIL
+                           | LINK_KS_F_VIEW_BACKUP;
+    CHECK_EQ(flags, 0x0FF8u);
+    CHECK_EQ(LINK_KS_STATE_OF(0xA7FDu), 5u);
+    CHECK_EQ(LINK_KS_CHANNEL_OF(0xA7FDu), 10u);
+    CHECK(LINK_KST_RAIL_WAIT < 8);
+    CHECK_EQ(LINK_KS_OP_OF(0x8FFFu), (unsigned)LINK_KST_OP_POWER_CYCLED);
+    CHECK_EQ(LINK_KS_FRAMES_OF(0x8FFFu), 4095u);
+    CHECK(LINK_KST_OP_COUNT <= 16);
+    /* The key a write carries is neither of the values a cleared or a
+     * stuck register reads. */
+    CHECK(LINK_KST_WRITE_KEY != 0u);
+    CHECK(LINK_KST_WRITE_KEY != 0xFFFFu);
+    CHECK(LINK_KST_WRITE_KEY != 1u);
+}
+
+/* The check over the staged registers: a changed register, a swapped pair
+ * and a shorter run each give another value. */
+TEST_CASE(the_kst_staged_check_tells_a_change_a_swap_and_a_length)
+{
+    uint16_t v[LINK_KS_W_STAGED];
+    for (unsigned i = 0; i < LINK_KS_W_STAGED; i++) {
+        v[i] = (uint16_t)(0x1100u + i);
+    }
+    const uint16_t whole = link_kst_crc(v, LINK_KS_W_STAGED);
+    CHECK_EQ(link_kst_crc(v, LINK_KS_W_STAGED), whole);
+    CHECK(link_kst_crc(v, LINK_KS_W_STAGED - 1u) != whole);
+    for (unsigned i = 0; i < LINK_KS_W_STAGED; i++) {
+        for (unsigned bit = 0; bit < 16u; bit++) {
+            v[i] ^= (uint16_t)(1u << bit);
+            CHECK(link_kst_crc(v, LINK_KS_W_STAGED) != whole);
+            v[i] ^= (uint16_t)(1u << bit);
+        }
+    }
+    const uint16_t t = v[3];
+    v[3] = v[4];
+    v[4] = t;
+    CHECK(link_kst_crc(v, LINK_KS_W_STAGED) != whole);
+}
+
+/*
+ * A 4.12 panel and a 4.11 coprocessor.  The coprocessor has no KST page and
+ * answers BAD_PAGE to a read and to a command, which is why a panel sends
+ * nothing there below minor 12; SERVO_WIN is where it was.
+ */
+TEST_CASE(a_4_11_coprocessor_has_no_kst_page_and_says_so)
+{
+    fresh();
+    outputs_init(&s_out, 0u);
+    sense_page_init(&s_sense);
+    link_dev_init(&dev, k_pages_411, 5, &g, 0);
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_KST, 0, LINK_KS_W_CMD_FRAME, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+    const uint16_t cmd[LINK_KS_W_CMD_FRAME] = {
+        (uint16_t)LINK_KST_OP_ENTER, 1u, 0u, 0u };
+    CHECK(write_page(LINK_PAGE_KST, LINK_KS_W_CMD, LINK_KS_W_CMD_FRAME, cmd,
+                     &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+    CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, LINK_SW_COUNT, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+}
+
 static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -1053,6 +1152,9 @@ int main(void)
     RUN(servo_win_extends_the_map_without_moving_it);
     RUN(servo_win_is_served_read_only);
     RUN(an_older_coprocessor_has_no_servo_win_page_and_says_so);
+    RUN(kst_extends_the_map_without_moving_it);
+    RUN(the_kst_staged_check_tells_a_change_a_swap_and_a_length);
+    RUN(a_4_11_coprocessor_has_no_kst_page_and_says_so);
     RUN(the_sense_pages_are_served_and_refuse_whole);
     RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
     RUN(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor);

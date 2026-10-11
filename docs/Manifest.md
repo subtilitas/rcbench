@@ -29,7 +29,7 @@ The original requirement list, in German:
 | ESC programmer (AM32 and BLHeli_S required) | One-wire half-duplex bootloader protocol at 19,200 baud on a PIO (programmable input/output) state machine | Screen built and table-driven for BLHeli_S, AM32, ESCape32 and VESC; no protocol is transmitted. BLHeli_32 parameters are not supported: [BLHeli_32](BLHeli32.md). |
 | Balancing with accelerometer and index sensor | Both sensors on the coprocessor, sampled on one timebase | Screen and placement guides built; the measurement waits on the sensors |
 | Servo tester with S.BUS and other protocols | Hardware PWM (pulse-width modulation) outputs; one PIO program per serial protocol | Screen built and commanding over the link. PWM has swung a servo from the panel on the bring-up bench; no pulse width, frame period or jitter has been read on an instrument, and the serial protocols have driven nothing |
-| Servo programming | The Hitec D-series protocol is published; other brands need a programmer to capture | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
+| Servo programming | The Hitec D-series protocol is published; other brands need a programmer to capture | Hitec table in the programmer screen; KST and Chaservo (two servo brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port and link page 0x32 and the panel's link module are built and host-tested against a servo and line model; no screen uses them, and nothing is measured on hardware |
 | Log viewer for several formats | `shared/logfile`: a CSV (comma-separated values) reader that accepts decimal comma or point, a units row and ragged rows | Built: browse, import view, plot. Runs are recorded to the card while the bench is armed. |
 
 ## Not planned
@@ -40,7 +40,6 @@ The original requirement list, in German:
 - **BLHeli_32 parameters.** The information needed to read them is not
   published; a request to the rights holder was declined in August 2026.
   [Details](BLHeli32.md).
-- **KST servo programming.** Held at the owner's request.
 
 ## Licensing rule
 

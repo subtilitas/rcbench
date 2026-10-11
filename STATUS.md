@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.11. [Reference](docs/Link.md).
+4.12. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -126,7 +126,7 @@ is taken in a gap ahead of the save that needs it.
 | ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
 | Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20 V the list opens 23, one needing 22.8 V, and refuses 4 more model rows of families that open, each needing 22.8 V; 4 model rows that state no voltage rating open with a warning from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list shows the makers, then one maker's models by current, voltage and name, each opening its family's profile at the model's own cell count; a search over maker and family or maker and model filters both levels, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. Profiles list the steps a person does at the ESC (`manual`: a jumper, a button) with when each is due; 24 carry them, and the 10 Kontronik profiles that run ask for each with a prompt (DONE, ABORT, 60 s), powered only with the stick at motor-off; each value is powered up from the stick position the manual programs it from (`entry_throttle`: the Kontronik car modes at MID), the stick moved only with the supply off. MANUAL INTERVENTION REQUIRED on a profile's page and a MANUAL tag in the list show the steps. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
-| Servo programmer | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
+| Servo programmer | Hitec table in the programmer screen; KST and Chaservo (two servo brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port and link page 0x32 and the panel's link module are built and host-tested against a servo and line model; no screen uses them, and nothing is measured on hardware: [the port](docs/Link.md#the-kst-programming-port), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
 
 ## The tree
 
@@ -183,7 +183,8 @@ rcbench/
                           words, ring reader and service
                           · rp2350: tone_cap.pio · tone_cap
     kst/                  KST servo programming: frames, registers,
-                          limits, write plans, session; no pin driver
+                          limits, write plans, session
+                          · rp2350: kst_line.pio · kst_line
 
   firmware/panel/         ESP-IDF
     main/                 main.c · selftest.c
@@ -208,8 +209,7 @@ rcbench/
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
-| `sense` · `pdmini` · `phase_tap` | ✔ | ✔ | ✔ |
-| `kst` | | | ✔ |
+| `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -239,7 +239,7 @@ cppcheck 2.17 reports 2 style findings (`ui_theme.h:136`,
 `servo_screen.c:468`). The step over `firmware/` passes all 25. `docs.yml` and `release.yml` with the wait
 for CI have not run.
 
-The host suite is 88 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 91 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -251,7 +251,7 @@ The host suite is 88 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan` and `test_kst_session`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port` and `test_kst_link`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -275,9 +275,15 @@ stops it after 120 s. `tools/mutate.py --files shared/safety/heartbeat.c
 --max-mutants 0` makes 36 mutants and the suite fails on each. A case that is
 defined and not run fails the build (`-Werror=unused-function`).
 `tools/check_docs.py` holds this list to `test/host/CMakeLists.txt`.
-The 4 `test_kst_*` binaries run `protocols/kst/` against the servo and
-line model in `test/host/kst_sim.h`; no servo is connected. ctest also
-builds and runs `kst_headers_cxx`, which calls the module through its 5
+The 7 `test_kst_*` binaries run against the servo and line model in
+`test/host/kst_sim.h`; no servo is connected. 4 run the core of
+`protocols/kst/`. `test_kst_pio` runs the pin driver's arithmetic and its
+PIO (programmable input/output) program, word by word, in a model of the
+state machine; the coprocessor build fails when the assembled program
+differs from the words the test runs. `test_kst_port` runs the
+coprocessor's programming port and its page, and `test_kst_link` the
+panel's module through the dispatcher against that port. ctest also
+builds and runs `kst_headers_cxx`, which calls the module through its 6
 headers from C++11, when the host has a C++ compiler.
 ctest runs one case more that is not a binary of the suite:
 `sense_trace_tool`, `tools/sense_trace.py` on a synthetic console log
@@ -294,7 +300,7 @@ except the 3 English overflows it lists as known; `frame_cost.py` holds a bench 
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 3984 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
-one interrupt and 256 bytes to the core's stack: core 0 reaches 1516 of
+one interrupt and 256 bytes to the core's stack: core 0 reaches 2392 of
 4096 with 528 for an interrupt. `check_docs.py` holds the protocol version,
 the heartbeat and link timings, the heartbeat and CAN pins, the coverage
 floors, the stack margin, the servo test's constants and the frame-cost
@@ -370,6 +376,9 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_limits.c` | 127 | 127 | 100.0% |
 | `protocols/kst/kst_plan.c` | 239 | 239 | 100.0% |
 | `protocols/kst/kst_session.c` | 479 | 479 | 100.0% |
+| `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
+| `shared/outputs/kst_port.c` | 378 | 376 | 99.5% |
+| `shared/bench/kst_link.c` | 360 | 357 | 99.2% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
@@ -416,7 +425,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **28731** | **28007** | **97.5%** |
+| **total** | **29552** | **28823** | **97.5%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -445,7 +454,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The automatic servo test's threshold has not run on hardware | 0.13.0 ran on the bench with the PD mini, from a tester, on three servos: the MS24 (moving 0.16 to 0.18 A) passed; the MG90S (holding 0.001 A, moving 0.04 to 0.077 A) and the 1102HB (holding 0.015 to 0.029 A, peaking at 0.039 to 0.044 A) moved but read FAIL, every move late, because movement was a reading 0.10 A from the level before the command. The threshold is per step, max(0.020 A, 3 x the idle noise), and a move with no movement is unseen, not late. Replays of the MG90S's and the 1102HB's CSVs in the host suite (`test/host/fixtures/`) give PASS, 41 and 41 moves timed at 771 to 989 ms, and NOT MEASURABLE, 21 of 46 moves timed (those to the low end) and none late. A move has 3000 ms plus the meter's lag to arrive: 3300 ms on the PD mini. Not run on hardware: the threshold, NOT MEASURABLE, the 1102HB's moves to the high end (never 0.020 A past the 0.028 A before them), and the brown-out walk below 5.00 V. With SETTLE at 500 ms the IDLE readings can still carry the move to the centre, which raises the threshold (0.026 A on the 1102HB at 5.00 V). The PD mini's travel times are an upper bound; the command's delay from the panel to the pin is inside every one and is not measured | a bench run on this build with the MG90S and the 1102HB, and a faster current sensor (INA219, INA3221 or INA228, planned) for travel times that TRAVEL TIME can check |
 | The PD mini has never run | the driver, the coprocessor's SUPPLY page and PIO UART, and the panel's half of the page are tested on the host against a modelled module; none of it has driven a module. The protocol is the vendor's sheet and the bench station's notes (#223); its timings are the vendor's Python driver's, not measured. Not measured either: whether a live module goes to ERR when its input sags under the set point, which the switch-off on 2 low input reads assumes; and whether its button or AUTO OUT switch it on while the UART is attached, which the state read before a wiring change assumes | a bench run against the module: identify, set points read back, ON and OFF, a heartbeat stop, a pulled cable, the input lowered under a live set point in 0.5 V steps |
 | Three English strings overflow | SETUP shows 36 cells of a help line, and Capacity's help is 38 characters and Rated kV's 55, so both are cut on the panel; on the log import's column list the range `2392.0..14639.0rpm` is 144 px wide in a 140 px box. `render_ui.py --fit` lists the three by name (`KNOWN_OVERFLOWS`) and fails on any other overflow in either language | shorter help lines or a second line on SETUP, a wider or abbreviated range on the import list; then the entries off the list |
-| Coprocessor core 0's stack | `stack_check.py --iomcu` measures 1516 bytes for the deepest chain and 528 for one interrupt on the 4096-byte stack, 1796 bytes above the 256-byte margin. The figure is a lower bound: 70 calls through a register are not followed. The stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image built with another option set is measured only when CI builds it | a high-water mark read on a board; a decision on stack guards |
+| Coprocessor core 0's stack | `stack_check.py --iomcu` measures 2392 bytes for the deepest chain and 528 for one interrupt on the 4096-byte stack, 920 bytes above the 256-byte margin. The figure is a lower bound: 91 calls through a register are not followed. The stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image built with another option set is measured only when CI builds it | a high-water mark read on a board; a decision on stack guards |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |
 | No ESC reports its kV | the ESC screen shows the rated kV, what the motor turns per volt, and the ratio of the two as EFF, an estimate documented as such in [Screens](docs/Screens.md). The rated value is read from the connected ESC when it reports one and from `SET_MOTOR_KV` when it does not; nothing calls `motor_screen_set_esc_kv()` yet, so it is whatever the operator entered, and zero draws the field empty | an ESC parameter set on the link. The OpenYGE cache is built and unconnected; BLHeli_32's parameters are not published |
@@ -511,7 +520,6 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
   976 KiB per frame of PSRAM traffic in [the budget](docs/Performance.md).
   The other direction, a browser elsewhere reading this interface, is in the
   [open items](#open-items).
-- **KST servo programming.** Held at the owner's request.
 - **A ramp on the physical throttle.** `Ramp limit` (5 to 300 %/s, default
   55) sets the slew on the panel's own throttle bank, which is the modelled
   bench: `telemetry_sim_step()` reads it and nothing else does, and only

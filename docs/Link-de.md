@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.11. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.12. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -97,7 +97,7 @@ Koprozessors beim Link-up und nutzt nichts, was diese Minor nicht hat: die
 Frame Rate von SERVO ab 4.1, seinen Sweep ab 4.2, SUPPLY ab 4.3, RESUME des
 Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder von SENSE ab 4.9,
 BIND_CFG, BIND_OUT und BIND ab 4.10, SERVO_WIN, `RESETS` von SENSE und ein
-vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11. Der Koprozessor liest
+vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11, KST ab 4.12. Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
 
@@ -582,6 +582,191 @@ jedes Takts. `shared/outputs/sense_page.c` hält die Page, unter
 Page, und ob eines der Module sich bei einem Einbruch seiner Versorgung
 zurücksetzt.
 
+### Der KST-Programmierport
+
+KST (0x32) ist neu in 4.12. Keine Page und kein Register wandert. Die Page
+ist der Programmierport für KST- und Chaservo-Servos, die ein Protokoll und
+einen Registersatz teilen. Ein Ausgangskanal zur Zeit verlässt PWM
+(Pulsweitenmodulation) und trägt das Programmierprotokoll aus
+[`protocols/kst`](../protocols/kst/README.md). Ein Kanal ist PWM oder
+PROGRAMMING, nie beides: ein Servo im Programmiermodus folgt weiterhin
+PWM-Pulsen.
+
+Die Session läuft auf dem Koprozessor mit dem Planer und den Grenzen des
+Moduls. Das Panel schreibt eine Operation und die Images, die sie braucht.
+Es liest den Zustand, das Ergebnis und die 32 Register des Servos. Es sendet
+keinen Registerschreibzugriff. `shared/outputs/kst_port.c` hält die Regeln.
+Nichts wird im Flash gehalten: nach einem Neustart des Koprozessors steht
+der Port in PWM ohne Session und mit gelöschtem Bit 4 in Register 0, gleich
+in welchem Modus das Servo ist.
+
+Kein Frame ist an ein Servo gesendet worden. Der Port, die Page und das
+Modul des Panels laufen in der Host-Suite gegen ein Servo- und
+Leitungsmodell.
+
+| Zustand | Wert | Der Pin des Kanals | Endet |
+| --- | ---: | --- | --- |
+| PWM | 0 | der PWM-Slot | wenn ENTER angenommen ist |
+| STOPPING | 1 | der PWM-Slot, ohne Puls: ein laufender Puls endet | nach 50 ms |
+| LOW | 2 | der Leitungstreiber, auf Low getrieben | nach 100 ms |
+| PROGRAMMING | 3 | der Leitungstreiber: Low, ein Frame oder Eingang für ein Antwortfenster | mit POWER_CYCLED; vor dem ersten Frame auch mit ABORT, einem Stopp oder einem fehlgeschlagenen Einstieg |
+| RAIL_OFF | 4 | der Leitungstreiber; die Servoschiene ist aus | nach 6000 ms; nur mit geschalteter Schiene |
+| RAIL_WAIT | 5 | der Leitungstreiber; die Schiene ist an | nach 3000 ms, nach PWM |
+
+Die Einstiegssequenz der Session hält die Leitung nach LOW weitere 100 ms
+auf Low. Ab LOW ist der Slot ungebunden. Jede Quelle eines PWM-Kommandos
+(das Panel, der Sweep, der automatische Test, der Sync) endet am Slot,
+keine erreicht also den Pin; die SERVO-Page nimmt ein solches Kommando
+weiterhin an. Ein Schreiben auf OUTPUTS, das einen Slot ändert, wird
+abgewiesen, solange der Port nicht in PWM steht, wie unter einer scharfen
+Bank, und der Koprozessor schreibt in dieser Zeit kein Flash.
+
+Nach dem ersten Frame kann das Servo im Programmiermodus sein, bis seine
+Versorgung aus war. Bit 4 von Register 0 sagt das, und der Kanal bleibt
+PROGRAMMING bis POWER_CYCLED. Das Bring-up-Modul hat keinen Schalter für
+eine Servoschiene: dort ist POWER_CYCLED das Wort des Bedieners, dass das
+Servo ohne Spannung war, Bit 10 liest 0, und RAIL_OFF und RAIL_WAIT werden
+nicht betreten. Die Servoversorgung am Bring-up-Prüfstand ist der PD mini,
+den das Panel auf der SUPPLY-Page schaltet; der Koprozessor weiß nicht,
+welche Last er speist, und schaltet ihn nicht für den Port.
+
+Ein Lesen gibt diese Register:
+
+| Register | Name | Liest |
+| ---: | --- | --- |
+| 0 | `STATE` | Bits 0 bis 2 der Zustand. Bit 3 eine Operation läuft. Bit 4 ein Frame wurde gesendet, seit das Servo zuletzt ohne Spannung war. Bit 5 ein Stopp oder ein Abbruch hat die Session unterbrochen: READ_ALL kommt vor allem anderen. Bit 6 ein Image ist gelesen. Bit 7 die Session hält ein Backup. Bit 8 das Image hat das bekannte Layout. Bit 9 nur RESTORE wird angenommen. Bit 10 die Hardware schaltet die Servoschiene. Bit 11 die Register 16 bis 31 zeigen das Backup. Bits 12 bis 15 der Kanal |
+| 1 | `SEQ` | die `SEQ` des zuletzt angenommenen Kommandos; 0 beim Start |
+| 2 | `OP` | Bits 12 bis 15 die zuletzt gestartete Operation, Bits 0 bis 11 die Frames, die sie gesendet hat, gehalten bei 4095 |
+| 3 | `LINK_KS_RESULT` | Low-Byte das Ergebnis dieser Operation, 1 solange sie läuft. High-Byte der Grund, aus dem das zuletzt angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
+| 4 | `LINK_KS_FAIL` | Low-Byte das Servoregister, das das Ergebnis nennt, 0xFF für keines. High-Byte die erledigten Schreibzugriffe des Plans |
+| 5, 6 | `DIFF` | Bit n: Servoregister n weicht von dem ab, was die Operation erwartet hat. Register 5 hält die Servoregister 0 bis 15 |
+| 7, 8 | `BAD` | Bit n: Servoregister n hat keine 3 gleichen Lesungen in 5 |
+| 9 | `FP_RULES` | Bit n: Regel n des Layout-Fingerprints ist verletzt |
+| 10, 11 | `FP_REGS` | Bit n: Servoregister n weicht vom Fingerprint ab |
+| 12, 13 | `HALF_MIN_NS`, `HALF_MAX_NS` | die kürzeste und die längste Halbzelle, gemessen an den Antworten des Servos, seit der Port den Kanal genommen hat, ns; 0 vor der ersten Antwort |
+| 14, 15 | `DELAY_MIN_US`, `DELAY_MAX_US` | die letzte Flanke eines Lese-Frames bis zur ersten Flanke seiner Antwort, µs; 0 vor der ersten |
+| 16 bis 31 | `IMAGE` | Servoregister 2 k im Low-Byte von Register 16 + k, 2 k + 1 im High-Byte. Das zuletzt gelesene Image, oder das Backup, solange `VIEW` 1 ist; 0 solange es keines gibt |
+
+Ein Schreiben sieht andere Register:
+
+| Register | Name | Nimmt |
+| ---: | --- | --- |
+| 0 | `CMD` | Bits 0 bis 3 die Operation, Bit 7 die Bestätigung eines ungeprüften Restore (nur RESTORE), Bits 8 bis 11 der Kanal; jedes andere Bit 0 |
+| 1 | `SEQ` | die `SEQ` der Page plus 1, modulo 65536 |
+| 2 | `KEY` | 0x57A5 für WRITE, RESTORE und RELEASE, sonst 0 |
+| 3 | `CRC` | die Prüfsumme über die Register 4 bis 24, für WRITE, RESTORE, RELEASE und VERIFY; für die anderen nicht angesehen |
+| 4 bis 19 | `IMAGE` | gepackt wie die Register 16 bis 31 des Lesens: das Ziel eines WRITE, das Backup eines RESTORE, das Image, das ein VERIFY erwartet |
+| 20 bis 23 | `UNLOCK` | Low-Wort zuerst: die Felder, die ein WRITE über die editierbare Klasse hinaus ändern darf, Bit n für Feld n von `kst_field_id_t` |
+| 24 | `START_CRC` | die Prüfsumme über die 16 Register des Images, von dem das Panel geplant hat, wie das Lesen sie gab |
+| 25 | `VIEW` | 0: die Register 16 bis 31 des Lesens zeigen das zuletzt gelesene Image. 1: das Backup. Gilt ab dem Schreiben |
+
+Die Prüfsumme ist die CRC-16 (zyklische Redundanzprüfung) des Links,
+Startwert 0xFFFF, über das Low-Byte und dann das High-Byte jedes Registers
+(`link_kst_crc()`).
+
+Die Register 0 bis 3 sind das Kommando: ein Frame, geschrieben als genau
+diese 4 Register und ganz oder gar nicht angenommen. Die Register 4 bis 25
+werden in beliebigen Fenstern vor dem Kommando geschrieben. Ein Schreiben,
+das Register 26 oder höher erreicht, wird mit READ_ONLY abgewiesen, ein
+Fenster, das die Register 0 bis 3 berührt und nicht genau sie ist, mit
+BAD_RANGE. Ein Kommando mit einem reservierten Bit, einer Operation
+außerhalb von 1 bis 8, der Bestätigung an einer anderen Operation als
+RESTORE, einem `KEY`, der weder 0 noch 0x57A5 ist, oder einer `SEQ`, die
+nicht die der Page plus 1 ist, wird mit BAD_VALUE abgewiesen und ändert
+nichts. Der zuletzt angenommene Frame, noch einmal gesendet, wird quittiert
+und tut nichts; ein Kommando, dessen Antwort verloren ging, wird also
+unverändert noch einmal gesendet. Ein angenommenes Kommando wird quittiert;
+was aus ihm wurde, steht in `LINK_KS_RESULT`.
+
+| Operation | Wert | Tut |
+| --- | ---: | --- |
+| ENTER | 1 | in PWM: nimmt den Kanal und fährt die Einstiegssequenz. In PROGRAMMING: fährt die Einstiegssequenz noch einmal |
+| READ_ALL | 2 | liest die 32 Register, jedes bis 3 von höchstens 5 Lesungen übereinstimmen. Das erste Image einer Session ist ihr Backup |
+| WRITE | 3 | plant vom gelesenen Image zum bereitgestellten Image und fährt den Plan: jeder Schreibzugriff wird zurückgelesen, und einer, der nicht greift, wird rückgängig gemacht |
+| RESTORE | 4 | fährt den Plan zurück zum bereitgestellten Backup. Die Session nimmt ihn an, wenn das bereitgestellte Image gleich dem Backup ist, das sie hält |
+| RELEASE | 5 | löst das Pairing |
+| VERIFY | 6 | liest alle Register und vergleicht sie mit dem bereitgestellten Image |
+| ABORT | 7 | beendet die laufende Operation. In STOPPING und LOW kehrt der Kanal nach PWM zurück. In jedem Zustand angenommen; Register 2 nennt es nicht |
+| POWER_CYCLED | 8 | das Servo war ohne Spannung: der Kanal kehrt nach PWM zurück, mit geschalteter Schiene nachdem der Port sie aus- und eingeschaltet hat |
+
+Das Ergebnis im Low-Byte von `LINK_KS_RESULT` ist das `kst_ses_t` der Session: 0
+fertig, 1 läuft, 4 kein Servo hat geantwortet, 5 nicht im Programmiermodus,
+6 ein Register ohne 3 gleiche Lesungen, 7 kein Backup, 8 das Layout ist
+nicht das bekannte, 9 auf einen Restore gesperrt, 10 ein Plan, den die
+Session nicht annimmt, 11 ein Restore, der die Bestätigung braucht, 12 das
+Image des Servos hat sich seit dem Lesen geändert, 13 ein Schreibzugriff
+hat nicht gegriffen und nichts ist geändert, 14 ein Plan rückgängig
+gemacht, 15 ein Plan zum Teil rückgängig gemacht, 16 ein Register hat sich
+geändert, das der Plan nicht geschrieben hat, 17 das Image weicht nach dem
+Plan ab, 18 der Leitungstreiber ist ausgefallen oder ließ sich nicht
+öffnen, 19 abgebrochen.
+
+| Abweisung | Wert | Das Kommando hat nichts gestartet, weil |
+| --- | ---: | --- |
+| BUSY | 1 | eine Operation läuft oder der Port zwischen zwei Zuständen ist |
+| CHANNEL | 2 | der Kanal auf keinem gebundenen PWM-Slot liegt oder nicht der ist, den der Port hält |
+| THROTTLE | 3 | die Rolle des Kanals ein Gas ist |
+| NO_REPLY_PATH | 4 | der Pfad des Pins keine Antwort zum Pin zurückträgt |
+| UNSAFE | 5 | dem Heartbeat nicht vertraut wird oder der Link still ist |
+| NOT_PROGRAMMING | 6 | der Port keinen Kanal hält |
+| NO_ENABLE | 7 | WRITE, RESTORE oder RELEASE ohne den Key |
+| STAGED | 8 | die Register 4 bis 24 nicht die Prüfsumme haben, die das Kommando nennt |
+| START | 9 | das gelesene Image nicht das ist, von dem das Panel geplant hat |
+| MUST_READ | 10 | ein Stopp oder ein Abbruch die Session unterbrochen hat und seitdem kein READ_ALL gelungen ist |
+| NO_IMAGE | 11 | kein Image gelesen ist, von dem geplant werden kann |
+| PLAN_RULES | 12 | das Ziel eine harte Regel verletzt |
+| PLAN_R00 | 13 | das Ziel in Servoregister 0x00 abweicht |
+| PLAN_PAIRING | 14 | ein WRITE in Servoregister 0x1D abweicht |
+| PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält |
+
+NO_ENABLE wird vor jedem anderen Grund geprüft. Das Panel sendet den Key
+nur, solange sein Schalter ENABLE WRITE TO SERVO an ist; ein Kommando, das
+den Koprozessor ohne ihn erreicht, schreibt also in keinem Zustand des
+Ports. Kein Bildschirm dieses Builds hält diesen Schalter.
+
+NO_REPLY_PATH gibt dieser Build nie: der Pin-Katalog hat kein Attribut für
+die Richtung des Pfads eines Pins, und jeder Pin des Bring-up-Moduls ist ein
+blanker GPIO (General-Purpose Input/Output). Ein Servo hinter einem Puffer,
+der nur ausgibt, beendet ENTER mit Ergebnis 4.
+
+Ein Stopp ist der Failsafe, der verlorene Heartbeat, der stille Link oder
+die entschärfte Bank. In STOPPING und LOW kehrt der Kanal mit Ergebnis 19
+nach PWM zurück. In PROGRAMMING endet die laufende Operation mit Ergebnis
+19: ein Frame auf der Leitung wird beendet, was höchstens 12 ms dauert, und
+kein weiterer beginnt. Der Pin ist danach auf Low getrieben oder Eingang.
+Ist in der Session ein Frame hinausgegangen, wird Bit 5 gesetzt, und bis
+ein READ_ALL gelungen ist, nimmt der Port nur ENTER, READ_ALL, ABORT und
+POWER_CYCLED. ABORT hat dieselbe Wirkung. Ein Entschärfen wird als Flanke
+gesehen: der Port stoppt einmal und nimmt wieder Kommandos, während die
+Bank entschärft bleibt. Solange dem Heartbeat nicht vertraut wird oder der
+Link still ist, beginnt kein Frame, und jede Operation außer ABORT und
+POWER_CYCLED wird mit UNSAFE abgewiesen.
+
+| Panel | Koprozessor | KST (0x32) |
+| --- | --- | --- |
+| 4.12 | 4.12 | bedient |
+| 4.12 | 4.11 oder älter | der Koprozessor beantwortet eine Anfrage an 0x32 mit BAD_PAGE; das Modul des Panels liest die Minor beim Link-up und sendet unter 12 nichts dorthin |
+| 4.11 oder älter | 4.12 | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
+
+`shared/bench/kst_link.c` ist die Hälfte des Panels. Es stellt die Register
+bereit, sendet das Kommando mit der nächsten `SEQ`, liest die Register 0
+bis 3 alle 50 ms, solange eine Operation läuft, und sonst alle 500 ms (eine
+Anfrage und ein Daten-Frame, 0,31 ms Buszeit), und liest nach einer
+Operation die Register 4 bis 15, das Backup und das Image. Es sendet ein
+Kommando bis zu 3-mal noch einmal, wenn keine Antwort kommt, und liest
+`SEQ` nach einer Abweisung mit BAD_VALUE neu. Es weist WRITE, RESTORE und
+RELEASE ohne den Schalter des Aufrufers ab, bevor etwas gesendet wird. Kein
+Bildschirm dieses Builds ruft es auf; das Panel dieses Builds sendet also
+nichts an die Page.
+
+`test_kst_port` fährt den Port und die Page gegen das Servomodell: jeden
+Übergang und jede Abweisung, einen Stopp in jedem Zustand und mitten in
+einem Frame, ein Schreiben ohne den Key, die Zähler an ihren Enden und
+jeden Timer über den Überlauf bei 2^32 ms. `test_kst_link` fährt das Modul
+des Panels durch den Dispatcher gegen den Port: ganze Sessions, verlorene
+Antworten, eine veraltete `SEQ`, einen Neustart des Koprozessors und einen
+4.11-Koprozessor.
+
 ### Identifier
 
 Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
@@ -653,6 +838,7 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x2F | BIND_OUT | lesen, schreiben | eine vorbereitete OUTPUTS-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von OUTPUTS |
 | 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist |
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
+| 0x32 | KST | lesen, schreiben | der Programmierport für KST- und Chaservo-Servos (seit 4.12). Ein Lesen gibt 32 Register: Zustand, Flags und Kanal, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 26: das Kommando in den Registern 0 bis 3, ein Frame, und das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25. [Der KST-Programmierport](#der-kst-programmierport) nennt die Regeln. Nichts wird gehalten |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,

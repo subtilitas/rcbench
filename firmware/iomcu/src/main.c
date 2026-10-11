@@ -27,6 +27,8 @@
 #include "bench_state.h"
 #include "can_selftest.h"
 #include "heartbeat.h"
+#include "kst_line.h"
+#include "kst_port.h"
 #include "link_dev.h"
 #include "link_pages.h"
 #include "dshot.h"
@@ -109,6 +111,17 @@ static uint64_t      s_edge_us;
 /* What the board and this file hold, before the supply and the sensor bus
  * take their pins. */
 static uint64_t      s_base_reserved;
+/*
+ * The KST page: the programming port for KST and Chaservo servos
+ * (shared/outputs/kst_port.h) and the wire driver it hands its channel's
+ * pin to (protocols/kst/rp2350).  Not kept: a restart finds the port in
+ * PWM (pulse-width modulation) with no session.
+ */
+static kst_port_t    s_kst;
+static kst_line_t    s_kst_line;
+/* The bank was asked to drive on the last pass: its falling edge stops a
+ * session. */
+static bool          s_kst_armed;
 static link_dev_t    s_dev;
 
 /*
@@ -292,7 +305,10 @@ static void hw_apply_only(uint8_t may_bind)
 {
     uint16_t rate[OUT_MAX_SLOTS];
     outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
-    outputs_hw_apply_only(&s_outputs, rate, may_bind);
+    /* Never the slot whose pin the KST port holds: whatever page asks, the
+     * pin is the wire driver's until the port gives it back. */
+    outputs_hw_apply_only(&s_outputs, rate,
+                          (uint8_t)(may_bind & ~kst_port_pin_mask(&s_kst)));
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
     sense_page_bound(&s_sense, bound_slots());
@@ -307,6 +323,63 @@ static void hw_apply(void)
 static bool bank_armed(const iomcu_state_t *s)
 {
     return outputs_driving(&s_outputs) || s->control[LINK_CT_ARM] != 0u;
+}
+
+/* ----------------------------------------------------------------- KST */
+
+/*
+ * The port's hardware.  kst_port.c decides; these do what it says.
+ *
+ * No servo rail is switched from here: the module has bare GPIOs
+ * (general-purpose inputs/outputs) and no rail switch, so `rail` stays NULL
+ * and the power cycle is the operator's to confirm.
+ */
+static bool kst_hw_bound(void *ctx, uint8_t slot)
+{
+    (void)ctx;
+    return outputs_hw_bound(slot);
+}
+
+/* The pin catalogue has no direction attribute: every pin a PWM slot is
+ * bound to is a bare GPIO of the module and can be read. */
+static bool kst_hw_reply_path(void *ctx, uint8_t pin)
+{
+    (void)ctx;
+    (void)pin;
+    return true;
+}
+
+/* The slot's pin from PWM to the wire driver.  The port is past
+ * LINK_KST_STOPPING, so hw_apply() releases the slot and leaves it
+ * unbound; the open drives the pad low. */
+static bool kst_hw_take(void *ctx, uint8_t slot, uint8_t pin)
+{
+    (void)ctx;
+    (void)slot;
+    hw_apply();
+    return kst_line_open(&s_kst_line, pin) == KST_LINE_OK;
+}
+
+/* And back: the port is in LINK_KST_PWM, so hw_apply() binds the slot as
+ * the bank has it now. */
+static void kst_hw_give(void *ctx)
+{
+    (void)ctx;
+    kst_line_close(&s_kst_line);
+    hw_apply();
+}
+
+static void kst_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    kst_port_read(&s_kst, off, n, out);
+}
+
+static uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
+                         const uint16_t *in)
+{
+    (void)ctx;
+    return kst_port_write(&s_kst, off, n, in, &s_outputs, s_now_ms);
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -867,8 +940,10 @@ static uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
      * old pins back once core 1 has let them go. */
     sense_sync();
     /* No slot changes under an armed bank, and the binding in force,
-     * written again, is taken without binding anything anew. */
-    if (bank_armed(s)) {
+     * written again, is taken without binding anything anew.  Nor while
+     * the KST port holds a channel: its slot is unbound on purpose, and a
+     * new binding could hand its pin to another driver. */
+    if (bank_armed(s) || kst_port_state(&s_kst) != LINK_KST_PWM) {
         return outputs_slots_armed_check(s->slots, next, true);
     }
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
@@ -1248,6 +1323,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_BIND_OUT,  LINK_OS_COUNT,  bind_out_read,  bind_out_write },
     { LINK_PAGE_BIND,      LINK_BD_COUNT,  bind_read,      bind_write },
     { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT,  servo_win_read, NULL },
+    { LINK_PAGE_KST,       LINK_KS_COUNT,  kst_read,       kst_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1773,6 +1849,19 @@ int main(void)
      */
     outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
+    /* The KST port, in PWM, before the first binding asks it for the slot
+     * it holds. */
+    kst_line_init(&s_kst_line);
+    const kst_port_hw_t kst_hw = {
+        .ctx        = NULL,
+        .bound      = kst_hw_bound,
+        .reply_path = kst_hw_reply_path,
+        .take       = kst_hw_take,
+        .give       = kst_hw_give,
+        .rail       = NULL,
+        .driver     = kst_line_driver(&s_kst_line),
+    };
+    (void)kst_port_init(&s_kst, &kst_hw);
     hw_apply();
     /*
      * The PD mini's wiring, as last written, driven with the output off: a
@@ -1965,6 +2054,15 @@ int main(void)
          * the host wrote it.
          */
         outputs_arm(&s_outputs, gate.arm, now);
+        /*
+         * The KST port: a failsafe edge and a disarm stop its session, and
+         * no frame starts while the heartbeat or the link is not trusted.
+         * Then its channel's slot renders no pulse, from this pass on.
+         */
+        kst_port_step(&s_kst, safety_gate_supply_ok(&s_beat, &s_dev),
+                      gate.off || (s_kst_armed && !gate.arm), now);
+        s_kst_armed = gate.arm;
+        outputs_hw_hold(kst_port_hold_mask(&s_kst));
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -2079,9 +2177,12 @@ int main(void)
         /* And the supply, asked on or perhaps on: its UART replies would
          * overrun the 8-byte FIFO in a 19 ms window, and an OFF asked over
          * the link would wait for it. */
+        /* And a KST session: a flash write stalls the pass that steps
+         * it. */
         const bool driving = outputs_driving(&s_outputs)
                              || s_supply.regs[LINK_SP_OUTPUT] != 0u
-                             || (s_pd_open && pdmini_may_be_on(&s_pd));
+                             || (s_pd_open && pdmini_may_be_on(&s_pd))
+                             || kst_port_state(&s_kst) != LINK_KST_PWM;
         const out_store_step_t step = out_store_tick(driving, quiet, now);
         switch (step) {
         case OUT_STORE_WROTE:

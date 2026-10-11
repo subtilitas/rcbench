@@ -47,6 +47,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-iomcu
@@ -108,6 +109,17 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/phase_tap/rp2350/tone_cap.pio.h
             -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/tone_cap_words.txt
             -DNAME=tone_cap
+            -DTEST=test_tone_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
+# The KST line program, the same way (test/host/test_kst_pio.c,
+# fixtures/kst_line_words.txt).
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/kst/rp2350/kst_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/kst_line_words.txt
+            -DNAME=kst_line
+            -DTEST=test_kst_pio
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
 
@@ -140,6 +152,8 @@ target_link_libraries(rcbench-iomcu
     rcbench_ppm_rp2350
     rcbench_pdmini_rp2350
     rcbench_phase_tap_rp2350
+    rcbench_kst
+    rcbench_kst_rp2350
     rcbench_bench
     rcbench_safety
     rcbench_servo

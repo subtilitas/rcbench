@@ -11,7 +11,7 @@ set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../shared")
 # The protocol modules are named one by one: a module the panel has no use
 # for is not a component of this build.  Only a module's core is compiled
 # here; its rp2350/ folder belongs to a pico-sdk build.
-foreach(module dshot openyge pdmini phase_tap ppm sbus)
+foreach(module dshot kst openyge pdmini phase_tap ppm sbus)
     list(APPEND EXTRA_COMPONENT_DIRS
          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/${module}")
 endforeach()

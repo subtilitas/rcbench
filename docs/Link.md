@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.11. The
+coprocessor transmits only in answer to a request. Protocol version 4.12. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -89,7 +89,7 @@ uses nothing that minor does not have: SERVO's frame rate from 4.1, its
 sweep from 4.2, SUPPLY from 4.3, the sweep's RESUME from 4.6, SENSE and
 SERVO_SENSE from 4.7, TONE from 4.8, SENSE's output encoder from 4.9, BIND_CFG,
 BIND_OUT and BIND from 4.10, SERVO_WIN, SENSE's `RESETS` and a signed
-`CAP_HOLD_MA` from 4.11. The
+`CAP_HOLD_MA` from 4.11, KST from 4.12. The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -529,6 +529,180 @@ wrap; the bus time of every tick. `shared/outputs/sense_page.c` holds the
 page, under `test_sense_page` and `test_link_pages`. Not run on hardware:
 the page, and whether either module resets on a dip of its supply.
 
+### The KST programming port
+
+KST (0x32) is new in 4.12. No page and no register moves. The page is the
+programming port for KST and Chaservo servos, which share one protocol and
+one register set. One output channel at a time leaves PWM (pulse-width
+modulation) and carries the programming protocol of
+[`protocols/kst`](../protocols/kst/README.md). A channel is PWM or
+PROGRAMMING, never both: a servo in programming mode still follows PWM
+pulses.
+
+The session runs on the coprocessor with the module's planner and limits.
+The panel writes an operation and the images it needs. It reads the state,
+the result and the servo's 32 registers. It sends no register write.
+`shared/outputs/kst_port.c` holds the rules. Nothing is kept in flash: after
+a restart of the coprocessor the port is in PWM with no session and bit 4 of
+register 0 clear, whatever mode the servo is in.
+
+No frame has been sent to a servo. The port, the page and the panel's module
+run in the host suite against a servo and line model.
+
+| State | Value | The channel's pin | Ends |
+| --- | ---: | --- | --- |
+| PWM | 0 | the PWM slot | when ENTER is taken |
+| STOPPING | 1 | the PWM slot, rendering no pulse: a pulse in progress completes | after 50 ms |
+| LOW | 2 | the wire driver, driven low | after 100 ms |
+| PROGRAMMING | 3 | the wire driver: low, a frame, or an input for a reply window | on POWER_CYCLED; before the first frame also on ABORT, a stop or a failed entry |
+| RAIL_OFF | 4 | the wire driver; the servo rail is off | after 6000 ms; only with a switched rail |
+| RAIL_WAIT | 5 | the wire driver; the rail is on | after 3000 ms, to PWM |
+
+The entry sequence of the session holds the line low for another 100 ms
+after LOW. From LOW on the slot is unbound. Every source of a PWM command
+(the panel, the sweep, the automatic test, the sync) ends at the slot, so
+none reaches the pin; the SERVO page still takes such a command. A write of
+OUTPUTS that changes a slot is refused while the port is out of PWM, as
+under an armed bank, and the coprocessor writes no flash in that time.
+
+After the first frame the servo may be in programming mode until its supply
+was off. Bit 4 of register 0 says so and the channel stays PROGRAMMING until
+POWER_CYCLED. The bring-up module has no switch for a servo rail: there
+POWER_CYCLED is the operator's word that the servo was without power, bit 10
+reads 0 and RAIL_OFF and RAIL_WAIT are not entered. The servo supply on the
+bring-up bench is the PD mini, which the panel switches on the SUPPLY page;
+the coprocessor does not know which load it feeds and does not switch it
+for the port.
+
+A read gives these registers:
+
+| Register | Name | Reads |
+| ---: | --- | --- |
+| 0 | `STATE` | bits 0 to 2 the state. Bit 3 an operation runs. Bit 4 a frame was sent since the servo was last without power. Bit 5 a stop or an abort cut the session: READ_ALL comes before anything else. Bit 6 an image was read. Bit 7 the session holds a backup. Bit 8 the image has the known layout. Bit 9 only RESTORE is accepted. Bit 10 the hardware switches the servo rail. Bit 11 registers 16 to 31 show the backup. Bits 12 to 15 the channel |
+| 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
+| 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the frames it has sent, held at 4095 |
+| 3 | `RESULT` | low byte the result of that operation, 1 while it runs. High byte why the last command taken started nothing, 0 when it started |
+| 4 | `FAIL` | low byte the servo register the result names, 0xFF for none. High byte the writes of the plan that are done |
+| 5, 6 | `DIFF` | bit n: servo register n differs from what the operation expected. Register 5 holds servo registers 0 to 15 |
+| 7, 8 | `BAD` | bit n: servo register n has no 3 equal reads in 5 |
+| 9 | `FP_RULES` | bit n: rule n of the layout fingerprint is broken |
+| 10, 11 | `FP_REGS` | bit n: servo register n deviates from the fingerprint |
+| 12, 13 | `HALF_MIN_NS`, `HALF_MAX_NS` | the lowest and highest half-cell measured on the servo's replies since the port took the channel, ns; 0 before the first reply |
+| 14, 15 | `DELAY_MIN_US`, `DELAY_MAX_US` | the last edge of a read frame to the first edge of its reply, µs; 0 before the first |
+| 16 to 31 | `IMAGE` | servo register 2 k in the low byte of register 16 + k, 2 k + 1 in the high byte. The image last read, or the backup while `VIEW` is 1; 0 while there is none |
+
+A write sees other registers:
+
+| Register | Name | Takes |
+| ---: | --- | --- |
+| 0 | `CMD` | bits 0 to 3 the operation, bit 7 the confirmation of an unchecked restore (RESTORE only), bits 8 to 11 the channel; every other bit 0 |
+| 1 | `SEQ` | the page's `SEQ` plus 1, modulo 65536 |
+| 2 | `KEY` | 0x57A5 for WRITE, RESTORE and RELEASE, else 0 |
+| 3 | `CRC` | the check over registers 4 to 24, for WRITE, RESTORE, RELEASE and VERIFY; not looked at for the others |
+| 4 to 19 | `IMAGE` | packed as the read's registers 16 to 31: the target of a WRITE, the backup of a RESTORE, the image a VERIFY expects |
+| 20 to 23 | `UNLOCK` | low word first: the fields a WRITE may change beyond the editable class, bit n for field n of `kst_field_id_t` |
+| 24 | `START_CRC` | the check over the 16 registers of the image the panel planned from, as the read gave them |
+| 25 | `VIEW` | 0: the read's registers 16 to 31 show the image last read. 1: the backup. In force when written |
+
+The check is the link's CRC-16 (cyclic redundancy check), seeded 0xFFFF,
+over each register's low byte and then its high byte (`link_kst_crc()`).
+
+Registers 0 to 3 are the command: one frame, written as exactly those 4
+registers and taken whole or not at all. Registers 4 to 25 are written in
+any windows before the command. A write that reaches register 26 or higher
+is refused with READ_ONLY, a window that touches registers 0 to 3 and is
+not exactly them with BAD_RANGE. A command with a reserved bit, an operation
+outside 1 to 8, the confirmation on another operation than RESTORE, a `KEY`
+that is neither 0 nor 0x57A5 or a `SEQ` other than the page's plus 1 is
+refused with BAD_VALUE and changes nothing. The frame last taken, sent
+again, is acknowledged and does nothing, so a command whose answer was lost
+is sent again as it was. A command that is taken is acknowledged; what
+became of it is in `RESULT`.
+
+| Operation | Value | Does |
+| --- | ---: | --- |
+| ENTER | 1 | in PWM: takes the channel and runs the entry sequence. In PROGRAMMING: runs the entry sequence again |
+| READ_ALL | 2 | reads the 32 registers, each until 3 of at most 5 reads agree. The first image of a session is its backup |
+| WRITE | 3 | plans from the image read to the staged image and runs the plan: every write is read back, and a write that does not take is undone |
+| RESTORE | 4 | runs the plan back to the staged backup. The session accepts it when the staged image equals the backup it holds |
+| RELEASE | 5 | releases the pairing |
+| VERIFY | 6 | reads all registers and compares them with the staged image |
+| ABORT | 7 | ends the running operation. In STOPPING and LOW the channel returns to PWM. Taken in every state; register 2 does not name it |
+| POWER_CYCLED | 8 | the servo was without power: the channel returns to PWM, with a switched rail after the port has cycled it |
+
+The result in the low byte of `RESULT` is the session's `kst_ses_t`: 0 done,
+1 running, 4 no servo answered, 5 not in programming mode, 6 a register
+without 3 equal reads, 7 no backup, 8 the layout is not the known one, 9
+locked to a restore, 10 a plan the session does not accept, 11 a restore
+that needs the confirmation, 12 the servo's image changed since it was
+read, 13 a write did not take and nothing changed, 14 a plan undone, 15 a
+plan undone in part, 16 a register changed that the plan did not write, 17
+the image differs after the plan, 18 the wire driver failed or could not be
+opened, 19 aborted.
+
+| Refusal | Value | The command started nothing because |
+| --- | ---: | --- |
+| BUSY | 1 | an operation runs or the port is between two states |
+| CHANNEL | 2 | the channel is on no bound PWM slot, or is not the one the port holds |
+| THROTTLE | 3 | the channel's role is a throttle |
+| NO_REPLY_PATH | 4 | the pin's path carries no reply back to the pin |
+| UNSAFE | 5 | the heartbeat is not trusted or the link is silent |
+| NOT_PROGRAMMING | 6 | the port holds no channel |
+| NO_ENABLE | 7 | WRITE, RESTORE or RELEASE without the key |
+| STAGED | 8 | registers 4 to 24 do not have the check the command names |
+| START | 9 | the image read is not the one the panel planned from |
+| MUST_READ | 10 | a stop or an abort cut the session and no READ_ALL has succeeded since |
+| NO_IMAGE | 11 | no image was read to plan from |
+| PLAN_RULES | 12 | the target breaks a hard rule |
+| PLAN_R00 | 13 | the target differs in servo register 0x00 |
+| PLAN_PAIRING | 14 | a WRITE differs in servo register 0x1D |
+| PLAN_NO_PATH | 15 | no order of writes keeps every image in between valid |
+
+NO_ENABLE is checked before every other reason. The panel sends the key only
+while its switch ENABLE WRITE TO SERVO is on, so a command that reaches the
+coprocessor without it writes nothing in any state of the port. No screen
+holds that switch in this build.
+
+NO_REPLY_PATH is never given by this build: the pin catalogue has no
+attribute for the direction of a pin's path, and every pin of the bring-up
+module is a bare GPIO (general-purpose input/output). A servo behind an
+output-only buffer ends ENTER with result 4.
+
+A stop is the failsafe, the heartbeat lost, the link silent or the bank
+disarmed. In STOPPING and LOW the channel returns to PWM with result 19. In
+PROGRAMMING the running operation ends with result 19: a frame on the wire
+is finished, which takes at most 12 ms, and no other starts. The pin is
+driven low or an input afterwards. When a frame has gone out in the session,
+bit 5 is set, and until a READ_ALL has succeeded the port takes ENTER,
+READ_ALL, ABORT and POWER_CYCLED only. ABORT has the same effect. A disarm
+is seen as an edge: the port stops once and takes commands again while the
+bank stays disarmed. While the heartbeat is not trusted or the link is
+silent no frame starts and every operation but ABORT and POWER_CYCLED is
+refused with UNSAFE.
+
+| Panel | Coprocessor | KST (0x32) |
+| --- | --- | --- |
+| 4.12 | 4.12 | served |
+| 4.12 | 4.11 or older | the coprocessor answers a request to 0x32 with BAD_PAGE; the panel's module reads the minor at link-up and sends nothing there below 12 |
+| 4.11 or older | 4.12 | the panel never reads or writes 0x32; the port stays in PWM |
+
+`shared/bench/kst_link.c` is the panel's half. It stages the registers,
+sends the command with the next `SEQ`, reads registers 0 to 3 every 50 ms
+while an operation runs and every 500 ms otherwise (one request and one data
+frame, 0.31 ms of bus time), and after an operation reads registers 4 to
+15, the backup and the image. It sends a command again up to 3 times when
+no answer comes and reads `SEQ` again after a refusal with BAD_VALUE. It
+refuses WRITE, RESTORE and RELEASE without the caller's switch before
+anything is sent. No screen calls it in this build, so this build's panel
+sends nothing to the page.
+
+`test_kst_port` runs the port and the page against the servo model: every
+transition and every refusal, a stop in each state and in the middle of a
+frame, a write without the key, the counters at their ends and every timer
+across the 2^32 ms wrap. `test_kst_link` runs the panel's module through the
+dispatcher against the port: whole sessions, lost answers, a stale `SEQ`, a
+restart of the coprocessor and a 4.11 coprocessor.
+
 ### Identifier
 
 A 29-bit extended identifier carries the whole address, so a read is a frame
@@ -598,6 +772,7 @@ Clearing a latched failsafe is such a side effect.
 | 0x2F | BIND_OUT | read, write | an OUTPUTS page prepared and not in force (since 4.10): the registers and the value rules of OUTPUTS |
 | 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared |
 | 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
+| 0x32 | KST | read, write | the programming port for KST and Chaservo servos (since 4.12). A read gives 32 registers: state, flags and channel, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 26: the command in registers 0 to 3, one frame, and the staged image, unlock set and start check in 4 to 25. [The KST programming port](#the-kst-programming-port) has the rules. Nothing is kept |
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch, bit 6

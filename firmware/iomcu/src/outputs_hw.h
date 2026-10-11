@@ -56,6 +56,15 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
 void outputs_hw_service(const outputs_t *o);
 
 /**
+ * The slots that render no PWM (pulse-width modulation) pulse, one bit
+ * each, whatever the bank asks: a held slot is written a pulse of 0, as a
+ * disarmed bank writes it, so the pulse in progress completes and the pin
+ * rests low.  The KST programming port holds its channel's slot this way
+ * (shared/outputs/kst_port.h).  Other drivers are not held.
+ */
+void outputs_hw_hold(uint8_t slots);
+
+/**
  * Watch output channel @p ch for a move capture's edge; a negative @p ch
  * stops watching.  The first later pass that renders a pulse other than
  * the one before it on @p ch's PWM slot writes it stamped
