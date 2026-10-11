@@ -100,10 +100,12 @@ the row states whether the function stays active and which of its parts stay
 or leave.
 
 Every part of the result beyond the base setup has a button "Remove". "Parts
-you own" removes a part by its tick. A part that takes nothing with it leaves
-at once. Otherwise a question opens under the control. It lists the functions
-that go off with the state of each, the other parts that leave or come in and
-the option that changes. Its 2 answers are "Remove part and these functions"
+you own" removes a part by its tick. Every removal opens a question under the
+control; no part leaves without the confirming answer. The question lists the
+functions that go off with the state of each, the other parts that leave or
+come in and the option that changes. For a part that takes nothing with it, it
+states "No function goes off and no other part leaves." Its 2 answers are
+"Remove part and these functions", or "Remove part" when no function goes off,
 and "Keep". The focus moves to "Keep". "Keep" and the Escape key return the
 focus to the control. The question has the role `alertdialog` and does not
 trap the focus.
