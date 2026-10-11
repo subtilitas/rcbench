@@ -178,6 +178,16 @@ jobs:
       - name: Smoke test at 360 px and 1280 px
         run: npm run e2e
 
+      # 3 setups of the wiring picture as the browser draws them. The files
+      # are not committed.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: configurator-diagram-shots
+          path: configurator/test-results/diagram-shots
+          if-no-files-found: warn
+          retention-days: 14
+
   deploy:
     name: Publish to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

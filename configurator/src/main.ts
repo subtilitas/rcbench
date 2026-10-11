@@ -2,13 +2,14 @@
 
 import './style.css';
 import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve } from './core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, removalIsPlain, resolve } from './core.ts';
+import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
 import { formatHash, parseHash, reportIds } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { optionsOf } from './names.ts';
-import { chooser } from './view/chooser.ts';
-import type { View } from './view/chooser.ts';
+import { chooser, deselectText } from './view/chooser.ts';
+import type { Pending, View } from './view/chooser.ts';
 import { result, resultError, summary } from './view/result.ts';
 import type { Mode, Notice } from './view/result.ts';
 import { install, sync } from './diagram/control.ts';
@@ -22,6 +23,10 @@ let lang: Lang = startLang;
 let notices: Array<(l: Lang) => Notice> = [];
 /** The view of the wiring. Not part of the link. */
 let mode: Mode = 'pic';
+/** A removal that waits for an answer. Not part of the link. */
+let pending: Pending | null = null;
+/** The effect of the last function taken out of the selection. Not part of the link. */
+let note: Deselect | null = null;
 
 /** x in drawing px that the pan box centres on first: midway between the panel's pins and pad 1. */
 const PAN_START = 351;
@@ -47,6 +52,8 @@ function readHash(): void {
   const parsed = parseHash(location.hash, DEFAULT_OPTIONS);
   lang = parsed.lang ?? startLang;
   notices = [];
+  pending = null;
+  note = null;
   if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
   const setup = tryResolve(parsed.selection);
   selection = known(parsed.selection);
@@ -93,7 +100,9 @@ function render(focusId?: string): void {
   const setup = tryResolve(selection);
   let sub = '';
   if (setup) {
-    const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+    const asked = pending;
+    if (asked && !setup.parts.some((r) => r.part.id === asked.part)) pending = null;
+    const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, pending, note };
     choose.innerHTML = chooser(view, ownOpen);
     res.innerHTML = result(view, location.href, notices.map((n) => n(lang)), mode);
     sub = `<small>${t(lang, 'bSub', { p: setup.parts.length, w: setup.wires.length })}</small>`;
@@ -111,6 +120,8 @@ function render(focusId?: string): void {
   sync();
   syncPdf(lang, location.href);
   if (focusId) byId(focusId)?.focus({ preventScroll: true });
+  // The question opens under its control; it is brought into view with its 2 answers.
+  if (focusId === 'rm-no') byId('rmwarn')?.scrollIntoView({ block: 'nearest' });
 }
 
 function announce(text: string): void {
@@ -118,9 +129,58 @@ function announce(text: string): void {
   if (live) live.textContent = text;
 }
 
-function announceSummary(): void {
+/** Announces `said`, then the counts of the setup. */
+function announceSummary(said: (view: View) => string = () => ''): void {
   const setup = tryResolve(selection);
-  if (setup) announce(summary({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }));
+  if (!setup) return;
+  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+  announce(`${said(view)} ${summary(view)}`.trim());
+}
+
+/** The control a closed question returns the focus to. */
+const origin = (asked: Pending): string => (asked.at === 'own' ? `p-${asked.part}` : `rm-${asked.part}`);
+
+/** Closes the question without a change: the part stays. */
+function keepPart(): void {
+  const asked = pending;
+  if (!asked) return;
+  pending = null;
+  render(origin(asked));
+}
+
+/** Applies a removal. The focus goes to `focusId`. */
+function applyRemoval(effect: Removal, focusId: string): void {
+  const part = CATALOGUE.parts.find((p) => p.id === effect.part);
+  selection = effect.selection;
+  pending = null;
+  note = null;
+  notices = [];
+  writeHash();
+  render(focusId);
+  announceSummary((view) => t(view.lang, 'rmDone', { p: part ? part.short[view.lang] : effect.part }));
+}
+
+/**
+ * Removes a part: at once when nothing else changes, else after the question
+ * under the control that asked. `at` names the list of that control.
+ */
+function requestRemoval(part: string, at: Pending['at']): void {
+  const effect = removalEffect(CATALOGUE, selection, part);
+  const back = at === 'own' ? `p-${part}` : 'h-parts';
+  if (removalIsPlain(effect)) applyRemoval(effect, back);
+  else if (effect.refused === null || effect.refused === 'held') {
+    pending = { part, at };
+    note = null;
+    render('rm-no');
+  } else render(at === 'own' ? back : undefined);
+}
+
+function confirmRemoval(): void {
+  const asked = pending;
+  if (!asked) return;
+  const effect = removalEffect(CATALOGUE, selection, asked.part);
+  if (effect.refused !== null) keepPart();
+  else applyRemoval(effect, asked.at === 'own' ? `p-${asked.part}` : 'h-parts');
 }
 
 function showLinkField(): void {
@@ -171,12 +231,21 @@ document.addEventListener('click', (event) => {
     render(el.id);
   } else if (el.id === 'b-print') {
     window.print();
+  } else if (el.dataset.rm) {
+    if (pending?.at === 'result' && pending.part === el.dataset.rm) keepPart();
+    else requestRemoval(el.dataset.rm, 'result');
+  } else if (el.id === 'rm-yes') {
+    confirmRemoval();
+  } else if (el.id === 'rm-no') {
+    keepPart();
   } else if (el.id === 'b-pdf') {
     const setup = tryResolve(selection);
     if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, location.href);
   } else if (el.id === 'b-reset') {
     selection = base();
     notices = [];
+    pending = null;
+    note = null;
     writeHash();
     render('b-reset');
     announceSummary();
@@ -193,14 +262,32 @@ document.addEventListener('change', (event) => {
     return;
   }
   const { f, p, o } = input.dataset;
-  if (f) selection = { ...selection, functions: toggle(selection.functions, f, input.checked) };
-  else if (p) selection = { ...selection, owned: toggle(selection.owned, p, input.checked) };
+  if (p && !input.checked) {
+    // The tick comes off a part of the setup: the removal decides what follows.
+    requestRemoval(p, 'own');
+    return;
+  }
+  let left: Deselect | null = null;
+  if (f && input.checked) selection = { ...selection, functions: toggle(selection.functions, f, true) };
+  else if (f) {
+    const effect = deselectEffect(CATALOGUE, selection, f);
+    selection = effect.selection;
+    if (effect.changed) left = effect;
+  } else if (p) selection = { ...selection, owned: toggle(selection.owned, p, true) };
   else if (o) selection = { ...selection, options: { ...selection.options, [o as OptionKey]: input.value } as Options };
   else return;
   notices = [];
+  pending = null;
+  note = left;
   writeHash();
   render(input.id);
-  announceSummary();
+  announceSummary((view) => (left ? deselectText(view, left) : ''));
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !pending) return;
+  event.preventDefault();
+  keepPart();
 });
 
 window.addEventListener('hashchange', () => {
