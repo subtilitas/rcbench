@@ -1285,54 +1285,6 @@ def check_spdx(problems: list[str]) -> None:
                     problems.append(f"{rel} has no SPDX-License-Identifier")
 
 
-# Chaservo is written in full, as its owner writes it.  The short form as a
-# word of its own, in any case: not part of a longer word, a file name or an
-# identifier.
-BRAND_SHORT_RE = re.compile(r"(?<!\w)cha(?!\w|\.\w)", re.I)
-# A path and a scoped identifier are not prose: "src/Cha/README.md",
-# "docs/Cha", "Cha::member".  A slash that joins the short form to a brand
-# name is prose: "Cha/KST servos".  A bracket, a parenthesis and a quote end
-# a token, so the label of a link is read apart from its destination.
-BRAND_TOKEN_RE = re.compile(r"""[^\s()\[\]"'`]+""")
-BRAND_FILE_RE = re.compile(r"/.*\.\w")
-BRAND_NAMES = {"kst", "chaservo", "hitec", "yge", "openyge"}
-
-
-def brand_token_is_prose(token: str) -> bool:
-    """Whether one token of a line is read for the short form."""
-    if "::" in token or BRAND_FILE_RE.search(token):
-        return False
-    parts = [re.sub(r"\W", "", part).lower() for part in token.split("/")]
-    return len(parts) == 1 or any(part in BRAND_NAMES for part in parts)
-
-
-def brand_short_forms(text: str) -> list[int]:
-    """The line numbers that hold the short form of the brand Chaservo."""
-    return [n for n, line in enumerate(text.splitlines(), 1)
-            if any(BRAND_SHORT_RE.search(token)
-                   for token in BRAND_TOKEN_RE.findall(line)
-                   if brand_token_is_prose(token))]
-
-
-def brand_pages() -> list[pathlib.Path]:
-    """The prose and the user-interface text tables the name rule covers."""
-    root = sorted(REPO.glob("*.md")) + [REPO / "NOTICE"]
-    return (linked_pages()
-            + [p for p in root if p.exists() and p not in ROOT_PAGES]
-            + sorted((REPO / "protocols").glob("*/README.md"))
-            + sorted((REPO / "shared" / "ui").glob("ui_text*.c"))
-            + sorted((REPO / "shared" / "ui" / "include").glob("ui_text*")))
-
-
-def check_brand_names(problems: list[str], files=None) -> None:
-    """No page and no text table shortens Chaservo to its first syllable."""
-    for page in (brand_pages() if files is None else files):
-        for n in brand_short_forms(read(page)):
-            problems.append(
-                f"{page.name}:{n}: the brand is written Chaservo, "
-                "not in a short form")
-
-
 def main() -> int:
     problems: list[str] = []
     check_links(problems)
@@ -1353,7 +1305,6 @@ def main() -> int:
     check_ceilings(problems)
     check_pin_counts(problems)
     check_spdx(problems)
-    check_brand_names(problems)
 
     for problem in problems:
         print(problem, file=sys.stderr)

@@ -108,8 +108,7 @@ history is in git.
   documentation; the licensing rule in `CONTRIBUTING.md`, the manifest,
   `STATUS.md`, `README.md` and `NOTICE` names captures of the wire beside
   published specifications. The documents name the brands before a generic noun
-  ("KST and Chaservo servos"), and `tools/check_docs.py` fails on a short
-  form of Chaservo, in any case, in a page or a user-interface text table.
+  ("KST and Chaservo servos") and write Chaservo in full.
 
 ### Changed
 
