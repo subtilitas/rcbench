@@ -27,8 +27,11 @@ hardware: no frame of this code has been sent to a servo.
   A plan is 208 bytes, a capture 200 bytes, a frame 18 bytes.
 - The planner does not recurse. `kst_plan_edit()` and what it calls take
   464 bytes of stack in the RP2350 coprocessor image of this repository,
-  built with ARM GNU 14.2, and `kst_session_write()` adds 256 bytes
+  built with ARM GNU 14.2, and `kst_session_write()` adds 56 bytes
   above it. Not measured with another compiler or option set.
+- `kst_session_write()` checks a plan against the planner's, which it
+  builds into the session's own copy of the running plan. A plan handed to
+  it must not be that copy or overlap it (`KST_SES_ERR_ARG`).
 - Non-blocking: `kst_session_step()` reads the clock, polls the driver and
   returns. It never waits.
 

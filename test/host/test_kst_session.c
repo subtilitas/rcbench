@@ -2022,6 +2022,44 @@ TEST_CASE(a_restore_and_a_release_are_taken_as_the_planner_built_them)
                0u, 90u, 324u, 47573u, 8u, 9u);
 }
 
+/* The session checks a plan against the planner's, built into its own
+ * copy: a plan that is that copy, or lies across it, cannot be checked. */
+TEST_CASE(the_sessions_own_copy_is_not_a_plan_to_run)
+{
+    kst_plan_t plan;
+    unsigned frames;
+
+    up(&g_sim, &g_ses);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+    frames = g_sim.n_frames;
+    /* the plan that ran last, handed back */
+    CHECK_EQ(kst_session_write(&g_ses, &g_ses.plan, false), KST_SES_ERR_ARG);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_ARG);
+    /* a plan whose last byte is the copy's first, and the other way round */
+    CHECK_EQ(kst_session_write(
+                 &g_ses,
+                 (const kst_plan_t *)(const void *)((const uint8_t *)&g_ses.plan
+                                                    - sizeof(plan) + 1u),
+                 false), KST_SES_ERR_ARG);
+    CHECK_EQ(kst_session_write(
+                 &g_ses,
+                 (const kst_plan_t *)(const void *)((const uint8_t *)&g_ses.plan
+                                                    + sizeof(plan) - 1u),
+                 false), KST_SES_ERR_ARG);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_ses.locked, 0);
+    /* A refused plan leaves the planner's work in the copy; the next plan
+     * replaces it and runs. */
+    plan = edit_plan(&g_ses, KST_F_BOOST, 20);
+    plan.step[0].value ^= 1u;
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_ERR_BAD_PLAN);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 21);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &plan.target));
+    conduct(&g_sim);
+}
+
 int main(void)
 {
     RUN(a_driver_without_all_3_functions_is_refused);
@@ -2080,5 +2118,6 @@ int main(void)
     RUN(two_sessions_run_side_by_side);
     RUN(an_edit_plan_is_taken_as_the_planner_built_it_and_in_no_other_form);
     RUN(a_restore_and_a_release_are_taken_as_the_planner_built_them);
+    RUN(the_sessions_own_copy_is_not_a_plan_to_run);
     return test_summary("kst_session");
 }

@@ -237,7 +237,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 600 | 528 | 1 712 |
+| Kern 0 | `main` | 4 096 | 1 556 | 528 | 1 756 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -245,20 +245,26 @@ CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
 Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
-Auch die Kette von Kern 0 ändert sich damit: ARM GNU 14.2 ergibt 1 608
-Bytes, und die Frames unten stammen aus diesem Build.
+Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
+für Kern 0 1 556 Bytes ergibt.
 
-Die tiefste Kette von Kern 0 ist ein Schreibkommando an den
-KST-Programmierport: `main` (392 Bytes), `can_service` (344),
-`link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
-`kst_session_write` (256) und der Schreibplaner aus `protocols/kst`, 464
-Bytes ab `kst_plan_edit`: `build` (160), `detour` (72), `search` (56) und
-die Grenzwertprüfung `kst_limits_image` (112). Der Planer ruft sich nicht
-selbst auf. Der Plan und das bereitgestellte Image liegen im Zustand des
-Ports, nicht auf dem Stack; `kst_session_write` hält in seinem Frame einen
-zweiten Plan von 208 Bytes zum Vergleich. Der tiefste Handler ist der Worker des USB-Stacks,
+Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
+im pico-sdk scheitert: `main` (392 Bytes), `can_service` (344),
+`link_dev_dispatch`, `slots_write`, `slots_take`, `outputs_hw_apply_only`,
+`out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
+Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
+aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
+
+Ein Schreibkommando an den KST-Programmierport erreicht 1 408 Bytes: `main`,
+`can_service`, `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
+`kst_session_write` (56) und der Schreibplaner aus `protocols/kst`, 464
+Bytes ab `kst_plan_edit`: `build` (160), `detour` (72), `search` (56) und
+die Grenzwertprüfung `kst_limits_image` (112). Der Planer ruft sich nicht
+selbst auf. Der Plan, das bereitgestellte Image und der Plan, mit dem die
+Session vergleicht, liegen im Zustand des Ports und der Session, nicht auf
+dem Stack.
 
 Jede Tiefe ist eine Untergrenze:
 
