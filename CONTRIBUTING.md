@@ -25,9 +25,8 @@ reading GPL source cannot be relicensed by rewording it.
 A protocol with no published description and no capture of its wire is not
 implemented. The programming protocol of KST and Chaservo servos has no
 published description and is written from captures made on hardware the
-project owns. BLHeli_32's
-parameters and JETI's remote configuration are recorded as not planned for this
-reason.
+project owns. The parameters of ESCs with BLHeli_32 firmware and remote
+configuration over JETI EX Bus are recorded as not planned for this reason.
 
 ## Safety-relevant code
 
