@@ -1290,8 +1290,10 @@ def check_spdx(problems: list[str]) -> None:
 # identifier.
 BRAND_SHORT_RE = re.compile(r"(?<!\w)cha(?!\w|\.\w)", re.I)
 # A path with a file name in it and a scoped identifier are not prose:
-# "src/Cha/README.md", "Cha::member".  "Cha/KST servos" is.
-BRAND_EXEMPT_RE = re.compile(r"\S*(?:/\S*\.\w|::)\S*")
+# "src/Cha/README.md", "Cha::member".  "Cha/KST servos" is, and so is the
+# label of a link: a bracket, a parenthesis and a quote end the exempt run.
+BRAND_EXEMPT_RE = re.compile(
+    r"""[^\s()\[\]"'`]*(?:/[^\s()\[\]"'`]*\.\w|::)[^\s()\[\]"'`]*""")
 
 
 def brand_short_forms(text: str) -> list[int]:
