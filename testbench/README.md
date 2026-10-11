@@ -44,9 +44,9 @@ Six things the tree does that only an instrument can confirm:
 
 And the programmer's four ESC protocols and one servo protocol, which the
 panel can drive but which no test exercises against a device: the one-wire
-bootloader protocol of BLHeli_S and AM32 firmware (19,200 baud), the text
-command line of ESCape32 firmware over the signal line, the framed packets of
-VESC firmware (115,200 baud) and the Hitec D-series servo protocol.
+bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud), the
+text command line of ESCape32 firmware over the signal line, the framed
+packets of VESC firmware (115,200 baud) and the Hitec D-series servo protocol.
 
 ---
 
