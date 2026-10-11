@@ -22,7 +22,8 @@ history is in git.
   and the register layout come from 1 programming card and 1 servo of
   unidentified model, and the effect of a register on servo motion is not
   measured. ([README](protocols/kst/README.md))
-- `protocols/kst/rp2350/`: the RP2350 pin driver for the KST wire. 1 PIO
+- `protocols/kst/rp2350/`: the RP2350 pin driver for the signal wire of
+  KST and Chaservo servos. 1 PIO
   (programmable input/output) state machine with a program of 24 words and
   2 DMA (direct memory access) channels per line, no interrupt. It clocks a
   frame out at 25.40 us per half-cell, releases the pad, stamps every level
@@ -85,7 +86,7 @@ history is in git.
   are 4.13 or later, and no LEAVE is sent unless both are 4.15.
   Host suite only (`test_kst_port`, `test_prog_port`, `test_kst_link`); no
   frame has been sent to a servo and no pulse of a port is measured.
-  ([Link](docs/Link.md#the-kst-programming-port))
+  ([Link](docs/Link.md#the-programming-port-for-kst-and-chaservo-servos))
 - **A servo configuration as a text file.** `protocols/kst/kst_file.c`
   writes the 32 registers of a KST or Chaservo servo as 35 lines of ASCII
   (American Standard Code for Information Interchange) text, fewer than
@@ -110,11 +111,27 @@ history is in git.
   either, and the panel has no card functions wired to the store. Host
   suite only (`test_kst_file`, `test_kst_store`).
   ([README](protocols/kst/README.md#configuration-file))
+- **A trademark notice and a disclaimer.** `README.md` and `README-de.md`
+  carry the section "Legal notice and disclaimer": KST, CHASERVO and Hitec
+  are marks of their manufacturers, the names are used descriptively for
+  compatibility, the project has no connection to the manufacturers, and
+  the author accepts no liability, to the extent the law permits, for
+  damage to servos, to connected hardware or from operating the hardware.
+  `NOTICE` has the section "Trademarks" with the same paragraph and one
+  sentence for every other product and company name;
+  `protocols/kst/README.md`, the 7 public headers of `protocols/kst`, its
+  pin driver's header and `protocols/openyge/include/openyge.h` carry a
+  short form. The protocol of KST and Chaservo servos is implemented from
+  wire captures of hardware the project owns, with no vendor code or
+  documentation; the licensing rule in `CONTRIBUTING.md`, the manifest,
+  `STATUS.md`, `README.md` and `NOTICE` names captures of the wire beside
+  published specifications. The documents name the brands before a generic noun
+  ("KST and Chaservo servos") and write Chaservo in full.
 
 ### Changed
 
-- **The write planner for KST servos works in slices and a session plans its own
-  writes.** `kst_plan_edit_begin()` and `kst_plan_restore_begin()` start a
+- **The write planner for KST and Chaservo servos works in slices and a
+  session plans its own writes.** `kst_plan_edit_begin()` and `kst_plan_restore_begin()` start a
   job in 176 bytes the caller holds, and `kst_plan_step(job, budget)`
   returns `KST_PLAN_BUSY` after `budget` to `budget + 9` units of work, a
   unit being a fixed piece of the search. `kst_session_edit()`,
@@ -144,7 +161,8 @@ history is in git.
   reaches 1,304 bytes of stack and a pass that plans 1,016. The time of a
   pass is not measured on hardware.
   ([Performance](docs/Performance.md#the-coprocessor))
-- **The write planner for KST servos takes 488 bytes of stack, down from 1,272.**
+- **The write planner for KST and Chaservo servos takes 488 bytes of
+  stack, down from 1,272.**
   Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
   the coprocessor image built with ARM GNU 14.2; 176 of them are the job
   state. The search over write
@@ -158,8 +176,8 @@ history is in git.
 - **`kst_session_write()` takes 56 bytes of stack, down from 256.** The
   session builds the planner's plan for the comparison into its own copy
   of the running plan, which no operation reads at that time, and holds no
-  second 208-byte plan in its frame. A write command to the KST
-  programming port reaches 1,432 bytes of core 0's stack with ARM GNU
+  second 208-byte plan in its frame. A write command to the
+  programming port for KST and Chaservo servos reaches 1,432 bytes of core 0's stack with ARM GNU
   14.2, down from 2,416, and is no longer core 0's deepest chain: that is
   a request that binds an output, 1,556 bytes of 4,096 on the image CI
   builds, down from 2,392. The session takes and refuses the same plans

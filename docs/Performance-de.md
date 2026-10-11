@@ -257,7 +257,7 @@ aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 
-Ein Schreibkommando an den Programmierport für KST-Servos erreicht 1 304 Bytes: `main`
+Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 304 Bytes: `main`
 (464), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
 `kst_port_write` (88), `kst_session_edit` (40) und der Start eines
 Planer-Jobs, 312 Bytes ab `kst_plan_edit_begin`: `kst_plan_edit_begin`

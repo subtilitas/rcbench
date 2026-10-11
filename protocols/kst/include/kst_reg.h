@@ -1,6 +1,11 @@
 /*
  * KST servo programming protocol: the register image and its fields.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * A servo holds 32 registers of 8 bits.  This file names every bit of them
  * as a field, converts a field's raw value to the value the vendor tool
  * shows and back, and checks an image against the layout the wire readings

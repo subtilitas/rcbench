@@ -1,6 +1,11 @@
 /*
  * KST servo programming protocol: the order of the writes for a change.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * A plan is the list of single-register writes that takes a servo from one
  * image to another.  A write frame carries no checksum and a field can lie
  * in two registers, so the order matters: between two writes the servo holds
