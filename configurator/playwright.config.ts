@@ -4,7 +4,8 @@ import type { Project } from '@playwright/test';
 // One browser. The server is `vite preview` on the built page, on port 4173.
 // E2E_PORT names another port, for a machine where 4173 is taken.
 //
-// smoke    e2e/smoke.spec.ts, as a visitor with default settings.
+// smoke    the specs directly in e2e/ (smoke, select, export), one after the
+//          other, as a visitor with default settings.
 // corpus   e2e/matrix/corpus.spec.ts, each stored link once.
 // matrix   the other specs of e2e/matrix in 8 cells: phone (360 x 740 px) and
 //          desktop (1280 x 800 px), English and German, light and dark, each
@@ -48,7 +49,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'smoke', testMatch: 'smoke.spec.ts', fullyParallel: false },
+    { name: 'smoke', testMatch: /e2e[\\/][^\\/]+\.spec\.ts$/, fullyParallel: false },
     { name: 'corpus', testMatch: 'matrix/corpus.spec.ts', use: { locale: 'en-GB', reducedMotion: 'reduce' } },
     ...matrix,
   ],

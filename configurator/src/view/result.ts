@@ -5,7 +5,8 @@ import type { Catalogue, Check, Lang, OptionKey, Options, Part, Picture } from '
 import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { drawing, sample } from '../draw/svg.ts';
-import { reasonText } from './chooser.ts';
+import { PDF_STATUS } from '../export/button.ts';
+import { reasonText, removeControl, statusText } from './chooser.ts';
 import type { View } from './chooser.ts';
 import { wiresTable } from './table.ts';
 
@@ -61,7 +62,7 @@ function picture(p: Picture, lang: Lang): string {
 
 function parts(view: View): string {
   const { lang, setup, options } = view;
-  let h = `<h3>${esc(t(lang, 'parts'))}</h3><ul class="parts">`;
+  let h = `<h3 id="h-parts" tabindex="-1">${esc(t(lang, 'parts'))}</h3><ul class="parts">`;
   for (const r of setup.parts) {
     const p = r.part;
     let name = tx(lang, p.name);
@@ -71,7 +72,7 @@ function parts(view: View): string {
     const shown = picturesOf(p, options);
     h += `<li${shown.length > 0 ? ' class="pic"' : ''}><div><b>${esc(name)}</b>${notRun ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
       + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
-      + `<span class="why">${esc(reasonText(r, view))}</span></div>`
+      + `<span class="why">${esc(reasonText(r, view))}</span>${removeControl(view, p)}</div>`
       + (shown.length > 0 ? `<div class="pics">${shown.map((x) => picture(x, lang)).join('')}</div>` : '')
       + '</li>';
   }
@@ -81,7 +82,8 @@ function parts(view: View): string {
 function does(view: View): string {
   const { lang, catalogue, setup } = view;
   const items = setup.functions.filter((f) => f.enabled).map((f) =>
-    `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}</li>`);
+    `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
+    + ` <small>${esc(statusText(view, f))}</small></li>`);
   return `<h3>${esc(t(lang, 'does'))}</h3><ul class="plain"><li>${esc(tx(lang, catalogue.baseFunction))}</li>${items.join('')}</ul>`;
 }
 
@@ -129,8 +131,9 @@ function order(view: View): string {
 export function result(view: View, url: string, notices: Notice[]): string {
   const { lang, catalogue } = view;
   return head(lang, url, notices)
-    + `<div class="sum"><p>${esc(summary(view))}</p>${button(lang, 'b-copy', 'copy')}${button(lang, 'b-print', 'print')}${button(lang, 'b-reset', 'reset')}</div>`
+    + `<div class="sum"><p>${esc(summary(view))}</p>${button(lang, 'b-copy', 'copy')}${button(lang, 'b-print', 'print')}${button(lang, 'b-pdf', 'pdf')}${button(lang, 'b-reset', 'reset')}</div>`
     + `<p class="linkbox" id="linkbox" hidden><label for="linkfield">${esc(t(lang, 'linkField'))}</label> <input id="linkfield" type="text" readonly></p>`
+    + PDF_STATUS
     + safety(lang, catalogue)
     + parts(view)
     + does(view)

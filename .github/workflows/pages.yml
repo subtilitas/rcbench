@@ -130,6 +130,19 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      # 2 files of the PDF export for a look at the result: the setup with the
+      # fewest wires in English and the setup with the most wires in German.
+      - name: Write the PDF samples
+        run: node tools/pdf-samples.ts pdf-samples
+
+      - name: Keep the PDF samples
+        uses: actions/upload-artifact@v7
+        with:
+          name: configurator-pdf-samples
+          path: configurator/pdf-samples/*.pdf
+          if-no-files-found: error
+          retention-days: 14
+
   smoke:
     name: Configurator smoke test
     needs: build

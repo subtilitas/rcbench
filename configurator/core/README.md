@@ -17,7 +17,8 @@ data and is not asserted.
 | `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 11 functions, 6 rules, 21 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
-| `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
+| `groups.ts` | `groups(catalogue)` groups the functions by the parts they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
+| `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
 | `tools/pictures.ts` | The check of the picture records against the files of `../public/pictures/`. |
 | `tools/coverage.ts` | Measures line coverage and keeps the figure below current. |
@@ -46,6 +47,48 @@ The order of work:
 
 `conflicts` is always empty: the data holds no pair of parts that exclude each
 other.
+
+## Groups and removal
+
+`groups.ts` is pure and reads the catalogue through `resolve` alone. It holds
+no list of functions or parts.
+
+`groups(catalogue)` returns one group per set of parts that a function needs
+beyond the base setup. The base setup is the locked parts. Each function is in
+exactly one group. Order: the group without a part first, then by the count of
+parts, then by the catalogue position of the parts. A group also names:
+
+| Field | Content |
+| --- | --- |
+| `variants` | Parts of the group that are one of 2 or more boards, with the option that picks the board. |
+| `also` | Parts the rules add under every option combination. |
+| `oneOf` | Alternative sets of parts the rules add, one per option combination, when they differ. |
+
+`removalEffect(catalogue, selection, partId)` returns the selection without
+the part and the difference of the 2 setups. It does not change its input.
+
+| Field | Content |
+| --- | --- |
+| `refused` | `null`, or why no removal exists: `unknown` id, `base` part, `absent` from the setup, `held` by a rule that no removal ends. |
+| `selection` | The selection after the removal. A refused removal returns the selection as given. |
+| `functionsOff` | Functions that go off, each with `chosen`: true for a function of the selection, false for one the parts brought. |
+| `functionsOn` | Functions that come on with a part the rules add or with an option that changes. |
+| `partsOut`, `partsIn` | Other parts that leave, and parts the rules add. |
+| `partsKept` | Parts of a dropped function that stay; the selection holds them as owned parts. |
+| `options` | Options that both setups show and that differ. |
+
+The steps of a removal:
+
+1. The part leaves the owned parts. Every chosen function that needs it leaves the selection.
+2. Other selectable parts of a dropped function stay as owned parts.
+3. A part that a rule still adds leaves by a change of what its rules read: another value of an option, or the removal of a part. An option that a function forces changes with a part of that function.
+4. The search is breadth first with option values before parts. The result is a smallest set of changes. The resolver decides whether a change releases the part.
+5. The removal is `held` when no set of changes releases the part. A rule on the absence of a part holds its part: a removal adds no part.
+
+`removalIsPlain(effect)` is true when the part leaves and nothing else
+changes. `deselectEffect(catalogue, selection, functionId)` returns the
+selection without the function, whether the function stays on, and which of
+its parts stay or leave.
 
 ## Commands
 
@@ -125,6 +168,19 @@ declared pin of a part that is present, catalogue order of every output array.
 The sweep refuses a catalogue with more than 16 selectable parts or 16
 functions.
 
+`test/groups.test.ts` runs every removal the data file allows:
+
+- 2048 sets of functions times 2 values of `escPower`, each part of each setup removed.
+- 2048 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
+- 1500 mixed selections from a fixed seed under all 8 option combinations.
+- 2048 sets of functions, each function deselected.
+
+Each removal is checked for: no refusal for a part beyond the base setup, the
+part gone, the reported lists equal to the difference of the 2 setups, a cause
+for every function that goes off or comes on, and the function set restored
+when the part and the parts that left with it are added back. The suite takes
+about 27 s on one core of the build host.
+
 Further tests cover the empty selection, the full selection, each part and
 each function alone, unknown ids, a missing German string, a broken source
 anchor and a data file that differs from the firmware tables.
@@ -160,7 +216,7 @@ reachable, English and German for every text, no word of the list in
 
 ## Coverage
 
-Line coverage of the resolver, measured by `node --test --experimental-test-coverage`.
+Line coverage of the resolver and the groups, measured by `node --test --experimental-test-coverage`.
 `tools/check.ts` and `catalogue.ts` are not part of the figure.
 
 <!-- coverage:begin -->
@@ -168,6 +224,7 @@ Line coverage of the resolver, measured by `node --test --experimental-test-cove
 | --- | ---: | ---: | ---: |
 | `resolve.ts` | 189 | 189 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
+| `groups.ts` | 354 | 354 | 100.0 % |
 <!-- coverage:end -->
 
 ## Unknown in the data
