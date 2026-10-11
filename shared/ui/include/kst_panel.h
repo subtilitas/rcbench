@@ -39,6 +39,9 @@ extern "C" {
 #endif
 
 /** Lines a message takes at most, and the bytes of one. */
+/** The highest supply voltage a standard servo is rated for, mV: a
+ *  programming voltage above it needs HV SERVO and a 2 s hold. */
+#define KST_PANEL_STD_MV 6000u
 #define KST_PANEL_MSG_LINES 3
 #define KST_PANEL_LINE      96
 
@@ -85,6 +88,10 @@ uint32_t kst_panel_hold_revision(void);
 /* --- the control task's side ------------------------------------------------ */
 
 void kst_panel_feed(const kst_prog_feed_t *f);
+/** HV SERVO of the SERVO screen: off, the programming voltage stays at or
+ *  below KST_PANEL_STD_MV, and one set above it goes back to
+ *  KST_PROG_SUPPLY_MV. */
+void kst_panel_set_hv(bool on);
 bool kst_panel_take(kst_prog_cmd_t *out);
 /** The servo files: a request for the task that has the card, and what it
  *  made of it (kst_card_run()). */
@@ -130,6 +137,11 @@ int kst_panel_page(void);
 /** Line @p i of the open warning page, entry @p i of the open list; NULL
  *  past the last and while none is open. */
 const char *kst_panel_warning_line(int i);
+/** The SERVO tab's line @p i under its rows: 0 the port's state, 1 what
+ *  explains it; NULL where the tab draws none. */
+const char *kst_panel_status_line(int i);
+/** The text on the button of the row at @p page, @p row, @p col. */
+const char *kst_panel_button(int page, int row, int col);
 /** The label of the row at @p page, @p row, @p col as it is drawn now. */
 const char *kst_panel_label(int page, int row, int col);
 const char *kst_panel_choice_label(int i);

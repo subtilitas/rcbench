@@ -144,7 +144,8 @@ typedef struct {
 
     /* --- private ----------------------------------------------------------- */
     kst_driver_t drv;
-    kst_plan_t plan;         /**< the running plan, copied */
+    kst_plan_t plan;         /**< the running plan, copied; between
+                                  operations the planner's work space */
     kst_image_t expect;      /**< verify: expected; write: image so far */
     kst_image_t read;        /**< result of the read passes */
     kst_frame_t frame;
@@ -202,15 +203,16 @@ kst_ses_t kst_session_enter(kst_session_t *s);
 kst_ses_t kst_session_read_all(kst_session_t *s);
 
 /**
- * Run a plan.  The plan is copied.
+ * Run a plan.  The plan is copied.  @p plan must not be the session's own
+ * copy or overlap it: that is answered with KST_SES_ERR_ARG.
  *
  * Refused before any frame: no programming mode, no backup, a plan that is
  * not the one kst_plan.h builds for its kind, start, target and unlock set
- * (the planner is run again and its writes, their order, the settled marks
- * and the unchecked mark are compared), an edit or release plan that starts
- * from an image that fails the fingerprint, a locked session, a restore
- * whose target is not the backup, an unchecked restore without
- * @p confirm_unchecked.
+ * (the planner is run again, into the session's own copy, and its writes,
+ * their order, the settled marks and the unchecked mark are compared), an
+ * edit or release plan that starts from an image that fails the
+ * fingerprint, a locked session, a restore whose target is not the backup,
+ * an unchecked restore without @p confirm_unchecked.
  *
  * Then:
  *   1. Read all.  The servo must equal the plan's start image.

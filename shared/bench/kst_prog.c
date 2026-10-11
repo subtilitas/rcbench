@@ -68,6 +68,7 @@ static kst_prog_level_t level_of(unsigned id)
     case KST_PROG_MSG_RESTORED:
     case KST_PROG_MSG_RELEASED:
     case KST_PROG_MSG_LEFT:
+    case KST_PROG_MSG_REBOOTED:
     case KST_PROG_MSG_SAVED:
     case KST_PROG_MSG_LOADED:
     case KST_PROG_MSG_LOADED_EDITED:
@@ -217,7 +218,11 @@ static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
 
     memset(&r, 0, sizeof(r));
     r.op = op;
-    r.channel = p->channel;
+    r.port = p->port;
+    if (op == LINK_KST_OP_ENTER) {
+        r.supply_mv = p->supply_mv;
+        r.supply_ma = p->supply_ma;
+    }
     r.write_enabled = p->write_enabled;
     return r;
 }
@@ -252,7 +257,7 @@ static void write_go(kst_prog_t *p)
         }
         p->journal = true;
         p->journal_open = true;
-        p->journal_ch = p->channel;
+        p->journal_port = p->port;
         p->journal_target = p->held_target;
     }
     if (p->journal && p->f.card) {
@@ -356,7 +361,7 @@ static void adopt(kst_prog_t *p)
  */
 static bool journal_fits(const kst_prog_t *p)
 {
-    if (p->channel != p->journal_ch) {
+    if (p->port != p->journal_port) {
         return false;
     }
     for (unsigned id = 0; id < KST_F_COUNT; ++id) {
@@ -385,7 +390,7 @@ static void read_done(kst_prog_t *p)
          * one. */
         p->journal_open = true;
         p->write_enabled = false;
-        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_ch + 1u);
+        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
     } else if (p->journal && same(&p->servo, &p->journal_img)) {
         journal_clear(p);
         (void)say(p, KST_PROG_MSG_JOURNAL_SAME, 0);
@@ -452,6 +457,10 @@ static void done_ok(kst_prog_t *p, unsigned op)
         session_gone(p);
         (void)say(p, KST_PROG_MSG_LEFT, 0);
         break;
+    case LINK_KST_OP_REBOOT:
+        session_gone(p);
+        (void)say(p, KST_PROG_MSG_REBOOTED, 0);
+        break;
     default:
         break;
     }
@@ -513,7 +522,7 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         if (p->journal && p->journal_open
             && (o->kind == KST_LINK_OUT_NO_ANSWER
                 || o->kind == KST_LINK_OUT_RESTARTED)) {
-            (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_ch + 1u);
+            (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_port + 1u);
             said = true;
         }
     }
@@ -583,6 +592,8 @@ void kst_prog_init(kst_prog_t *p)
 {
     memset(p, 0, sizeof(*p));
     p->msg.reg = 0xFFu;
+    p->supply_mv = KST_PROG_SUPPLY_MV;
+    p->supply_ma = KST_PROG_SUPPLY_MA;
 }
 
 void kst_prog_screen_entry(kst_prog_t *p)
@@ -692,7 +703,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                 session_gone(p);
             }
         } else {
-            p->channel = f->rd.channel;
+            p->port = f->rd.port_no;
         }
     }
     /* A panel that started on a held port: the images the port holds are
@@ -741,8 +752,9 @@ kst_prog_state_t kst_prog_state(const kst_prog_t *p)
         if (p->op == LINK_KST_OP_ENTER) {
             return KST_PROG_ENTERING;
         }
-        return p->op == LINK_KST_OP_POWER_CYCLED ? KST_PROG_LEAVING
-                                                 : KST_PROG_WORKING;
+        return p->op == LINK_KST_OP_POWER_CYCLED
+                    || p->op == LINK_KST_OP_REBOOT ? KST_PROG_LEAVING
+                                                   : KST_PROG_WORKING;
     }
     switch (p->f.rd.port) {
     case LINK_KST_PWM:
@@ -794,9 +806,9 @@ bool kst_prog_write_enabled(const kst_prog_t *p)
     return p->write_enabled;
 }
 
-uint8_t kst_prog_channel(const kst_prog_t *p)
+uint8_t kst_prog_port(const kst_prog_t *p)
 {
-    return p->channel;
+    return p->port;
 }
 
 bool kst_prog_journal(const kst_prog_t *p)
@@ -809,9 +821,9 @@ bool kst_prog_journal_other(const kst_prog_t *p)
     return p->journal && p->journal_other;
 }
 
-uint8_t kst_prog_journal_channel(const kst_prog_t *p)
+uint8_t kst_prog_journal_port(const kst_prog_t *p)
 {
-    return p->journal_ch;
+    return p->journal_port;
 }
 
 bool kst_prog_in_doubt(const kst_prog_t *p)
@@ -1039,26 +1051,71 @@ void kst_prog_discard(kst_prog_t *p)
 
 /* --------------------------------------------------------------- operations */
 
-kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t channel)
+/* What keeps the tester's port from an ENTER or a REBOOT. */
+static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
+{
+    if (p->f.stopped) {
+        return KST_PROG_MSG_STOPPED;
+    }
+    return p->f.target == port + 1u ? KST_PROG_MSG_NONE
+                                    : KST_PROG_MSG_NEED_TARGET;
+}
+
+kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
 {
     kst_link_request_t r;
     kst_prog_msg_id_t m = idle(p);
 
     if (m == KST_PROG_MSG_NONE) {
-        /* The port holds a channel already. */
+        /* The port is in programming mode already. */
         m = (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
     } else if (m == KST_PROG_MSG_NEED_PORT) {
-        m = p->f.stopped ? KST_PROG_MSG_STOPPED : KST_PROG_MSG_NONE;
+        m = from_pwm(p, port);
     }
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, 0);
     }
     session_gone(p);
-    p->channel = channel;
+    p->port = port;
     p->chain_read = true;
     r = request(p, LINK_KST_OP_ENTER);
     send(p, &r);
     return KST_PROG_MSG_NONE;
+}
+
+kst_prog_msg_id_t kst_prog_reboot(kst_prog_t *p, uint8_t port)
+{
+    kst_link_request_t r;
+    kst_prog_msg_id_t m = idle(p);
+
+    if (m == KST_PROG_MSG_NEED_PORT) {
+        m = from_pwm(p, port);
+        if (m == KST_PROG_MSG_NONE) {
+            p->port = port;
+        }
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        return say(p, m, 0);
+    }
+    r = request(p, LINK_KST_OP_REBOOT);
+    send(p, &r);
+    return KST_PROG_MSG_NONE;
+}
+
+void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)
+{
+    p->supply_mv = mv;
+    p->supply_ma = ma;
+}
+
+uint16_t kst_prog_supply_mv(const kst_prog_t *p)
+{
+    return p->supply_mv;
+}
+
+uint16_t kst_prog_supply_ma(const kst_prog_t *p)
+{
+    return p->supply_ma;
 }
 
 kst_prog_msg_id_t kst_prog_read(kst_prog_t *p)
@@ -1129,7 +1186,7 @@ static kst_prog_msg_id_t write_ready(const kst_prog_t *p, unsigned *arg)
     }
     if (kst_prog_journal_other(p)) {
         /* A read changes nothing about it. */
-        *arg = p->journal_ch + 1u;
+        *arg = p->journal_port + 1u;
         return KST_PROG_MSG_JOURNAL_OTHER;
     }
     if (!p->have_servo || kst_prog_in_doubt(p)) {
@@ -1298,7 +1355,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     memset(out, 0, sizeof(*out));
     out->from = (uint8_t)from;
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_ch + 1u);
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = KST_PROG_MSG_NO_RESTORE;
@@ -1376,7 +1433,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     }
     m = idle_safe(p);
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_ch + 1u);
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = KST_PROG_MSG_NO_RESTORE;
@@ -1454,7 +1511,7 @@ static kst_prog_msg_id_t load_ready(const kst_prog_t *p, unsigned *arg)
                    : KST_PROG_MSG_NEED_PORT;
     }
     if (kst_prog_journal_other(p)) {
-        *arg = p->journal_ch + 1u;
+        *arg = p->journal_port + 1u;
         return KST_PROG_MSG_JOURNAL_OTHER;
     }
     if (!p->have_servo || kst_prog_in_doubt(p)) {
@@ -1826,8 +1883,8 @@ size_t kst_prog_file_text(const kst_prog_t *p, char *out, size_t n)
     if (p->journal) {
         at = put_image(at, "journal=", &p->journal_img);
         at = put_image(at, "target=", &p->journal_target);
-        at = put(at, "channel=");
-        at = put_hex(at, p->journal_ch, 1);
+        at = put(at, "port=");
+        at = put_hex(at, p->journal_port, 1);
         *at++ = '\n';
     }
     {
@@ -1929,7 +1986,7 @@ static bool take_image(const char *s, size_t left, const char *key,
 
 typedef struct {
     bool journal;
-    uint8_t journal_ch;
+    uint8_t journal_port;
     kst_image_t journal_img;
     kst_image_t journal_target;
 } loaded_t;
@@ -1965,15 +2022,15 @@ static bool parse(loaded_t *into, const char *text, size_t len)
             return false;
         }
         at += 7u + 65u;
-        if (len - at != 10u || memcmp(text + at, "channel=", 8) != 0
-            || text[at + 9u] != '\n') {
+        if (len - at != 7u || memcmp(text + at, "port=", 5) != 0
+            || text[at + 6u] != '\n') {
             return false;
         }
-        v = take_hex(text + at + 8u, 1);
+        v = take_hex(text + at + 5u, 1);
         if (v < 0) {
             return false;
         }
-        into->journal_ch = (uint8_t)v;
+        into->journal_port = (uint8_t)v;
         into->journal = true;
     }
     return true;
@@ -1999,12 +2056,12 @@ bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
     }
     p->journal = got.journal;
     p->journal_open = got.journal;
-    p->journal_ch = got.journal_ch;
+    p->journal_port = got.journal_port;
     p->journal_img = got.journal_img;
     p->journal_target = got.journal_target;
     p->journal_other = false;
     if (p->journal) {
-        (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_ch + 1u);
+        (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_port + 1u);
     }
     return true;
 }

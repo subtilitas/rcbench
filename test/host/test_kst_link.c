@@ -21,14 +21,13 @@
 #include "link_msg.h"
 #include "tick_wrap.h"
 
-#define CH    3u
-#define SLOT  2u
-#define PIN   7u
-#define CH_THROTTLE 0u
+#define CH    0u     /* the programming port */
+#define PIN   13u
+#define MV    5000u
+#define MA    1000u
 
 static sim_t g_sim;
 static kst_port_t g_port;
-static outputs_t g_out;
 static link_dev_t g_dev;
 static kst_link_t g_k;
 static uint32_t g_ms;
@@ -46,24 +45,21 @@ static uint8_t  g_nack_stage;       /* the answer to a staged window, or 0 */
 
 /* ------------------------------------------------------------- coprocessor */
 
-static bool hw_bound(void *ctx, uint8_t slot)
+/* The PD mini: it reads back what it was asked for at once. */
+static supply_port_view_t g_supply;
+static unsigned g_supply_sets;
+
+static uint8_t hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    (void)slot;
-    return true;
+    (void)port;
+    return PIN;
 }
 
-static bool hw_path(void *ctx, uint8_t pin)
+static bool hw_take(void *ctx, uint8_t port, uint8_t pin)
 {
     (void)ctx;
-    (void)pin;
-    return true;
-}
-
-static bool hw_take(void *ctx, uint8_t slot, uint8_t pin)
-{
-    (void)ctx;
-    (void)slot;
+    (void)port;
     (void)pin;
     return true;
 }
@@ -71,6 +67,29 @@ static bool hw_take(void *ctx, uint8_t slot, uint8_t pin)
 static void hw_give(void *ctx)
 {
     (void)ctx;
+}
+
+static void hw_supply(void *ctx, supply_port_view_t *out)
+{
+    (void)ctx;
+    *out = g_supply;
+}
+
+static bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
+{
+    (void)ctx;
+    g_supply_sets++;
+    if (on && !g_supply.online) {
+        return false;
+    }
+    g_supply.asked_on = on;
+    g_supply.on = on;
+    g_supply.off = !on;
+    if (on) {
+        g_supply.set_mv = mv;
+        g_supply.set_ma = ma;
+    }
+    return true;
 }
 
 static void page_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -86,7 +105,7 @@ static uint8_t page_write(void *ctx, uint8_t off, uint8_t n,
     if (g_nack_stage != 0u && off >= LINK_KS_W_IMAGE) {
         return g_nack_stage;
     }
-    return kst_port_write(&g_port, off, n, in, &g_out, g_ms);
+    return kst_port_write(&g_port, off, n, in, g_ms);
 }
 
 static const link_page_t k_pages[] = {
@@ -98,10 +117,12 @@ static void port_fresh(void)
     kst_port_hw_t hw;
 
     memset(&hw, 0, sizeof(hw));
-    hw.bound = hw_bound;
-    hw.reply_path = hw_path;
+    hw.ports = 1u;
+    hw.pin = hw_pin;
     hw.take = hw_take;
     hw.give = hw_give;
+    hw.supply = hw_supply;
+    hw.supply_set = hw_supply_set;
     hw.driver = sim_driver(&g_sim);
     CHECK(kst_port_init(&g_port, &hw));
 }
@@ -109,17 +130,9 @@ static void port_fresh(void)
 static void fresh_at(uint32_t t0, uint8_t pages)
 {
     sim_init(&g_sim);
-    memset(&g_out, 0, sizeof(g_out));
-    g_out.slot[0].driver = OUT_DRIVER_PWM;
-    g_out.slot[0].first_channel = CH_THROTTLE;
-    g_out.slot[0].channels = 1;
-    g_out.slot[0].pin = 4;
-    g_out.channel[CH_THROTTLE].role = OUT_ROLE_THROTTLE;
-    g_out.slot[SLOT].driver = OUT_DRIVER_PWM;
-    g_out.slot[SLOT].first_channel = CH;
-    g_out.slot[SLOT].channels = 1;
-    g_out.slot[SLOT].pin = PIN;
-    g_out.channel[CH].role = OUT_ROLE_SURFACE;
+    /* No PD mini answers until a case brings one. */
+    memset(&g_supply, 0, sizeof(g_supply));
+    g_supply_sets = 0;
     port_fresh();
     g_ms = t0;
     link_dev_init(&g_dev, k_pages, pages, NULL, g_ms);
@@ -239,7 +252,9 @@ static kst_link_request_t request(link_kst_op_t op)
 
     memset(&r, 0, sizeof(r));
     r.op = op;
-    r.channel = CH;
+    r.port = CH;
+    r.supply_mv = MV;
+    r.supply_ma = MA;
     return r;
 }
 
@@ -336,13 +351,15 @@ TEST_CASE(a_session_from_entry_to_the_power_cycle)
     CHECK_EQ(out.fail_reg, 0xFF);
     CHECK(out.frames > 0u);
     CHECK_EQ(g_cmds, 1);
-    CHECK_EQ(g_writes, 2);            /* the command and VIEW */
+    CHECK_EQ(g_writes, 3);            /* the supply, the command, VIEW */
+    CHECK_EQ(g_port.supply_mv, MV);
+    CHECK_EQ(g_port.supply_ma, MA);
     CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
     CHECK(!kst_link_outcome(&g_k, &out));
     run_ms(5);
     kst_link_readout(&g_k, &ro);
     CHECK_EQ(ro.port, LINK_KST_PROGRAMMING);
-    CHECK_EQ(ro.channel, CH);
+    CHECK_EQ(ro.port_no, CH);
     CHECK((ro.flags & LINK_KS_F_IN_MODE) != 0u);
     CHECK_EQ(ro.op, LINK_KST_OP_ENTER);
     CHECK(ro.have_results);
@@ -486,35 +503,159 @@ TEST_CASE(a_write_without_the_switch_sends_nothing)
     CHECK_EQ(g_sim.reg[0x05], 0x77);
 }
 
-TEST_CASE(nothing_is_sent_to_a_coprocessor_of_protocol_4_11)
+/*
+ * A 4.12 coprocessor has the page and takes an output channel where this
+ * panel names a port; a 4.11 one has no page.  Neither is sent anything.
+ */
+TEST_CASE(nothing_is_sent_to_a_coprocessor_before_protocol_4_13)
 {
+    const uint16_t minors[3] = { 0u, LINK_MINOR_KST - 1u, LINK_MINOR_KST };
     kst_link_request_t r = request(LINK_KST_OP_ENTER);
     kst_link_outcome_t out;
     kst_link_xfer_t x;
     kst_link_readout_t ro;
 
-    fresh();
-    kst_link_came_up(&g_k, LINK_MINOR_KST - 1u);
-    CHECK(!kst_link_has_page(&g_k));
-    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_NO_PAGE);
-    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_NO_PAGE);
-    CHECK_EQ(kst_link_fetch(&g_k), KST_LINK_START_NO_PAGE);
-    kst_link_abort(&g_k);
-    run_ms(2000);
-    CHECK(!kst_link_next(&g_k, g_ms, &x));
-    CHECK_EQ(g_sent, 0);
-    CHECK_EQ(g_dev.requests, 0);
-    CHECK(!kst_link_outcome(&g_k, &out));
-    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_NO_PAGE);
-    kst_link_readout(&g_k, &ro);
-    CHECK_EQ(ro.phase, KST_LINK_NO_PAGE);
-    CHECK(!ro.known);
-    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(KST_LINK_MINOR, LINK_MINOR_KST + 1u);
+    for (unsigned i = 0; i < 3u; ++i) {
+        fresh();
+        kst_link_came_up(&g_k, minors[i]);
+        CHECK(!kst_link_has_page(&g_k));
+        CHECK_EQ(kst_link_phase(&g_k), KST_LINK_NO_PAGE);
+        CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_NO_PAGE);
+        r.op = LINK_KST_OP_REBOOT;
+        CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_NO_PAGE);
+        r.op = LINK_KST_OP_ENTER;
+        CHECK_EQ(kst_link_fetch(&g_k), KST_LINK_START_NO_PAGE);
+        kst_link_abort(&g_k);
+        run_ms(2000);
+        CHECK(!kst_link_next(&g_k, g_ms, &x));
+        CHECK_EQ(g_sent, 0);
+        CHECK_EQ(g_dev.requests, 0);
+        CHECK(!kst_link_outcome(&g_k, &out));
+        CHECK_EQ(kst_link_phase(&g_k), KST_LINK_NO_PAGE);
+        kst_link_readout(&g_k, &ro);
+        CHECK_EQ(ro.phase, KST_LINK_NO_PAGE);
+        CHECK(!ro.known);
+        CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+        CHECK_EQ(g_port.seq, 0);
+    }
 
-    /* The same panel on a 4.12 coprocessor. */
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    /* The same panel on a 4.13 coprocessor. */
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
     CHECK(kst_link_has_page(&g_k));
     until_phase(KST_LINK_READY);
+}
+
+/*
+ * The other way round: the command of a 4.12 panel, an operation and an
+ * output channel, on this coprocessor.  The page takes the frame and
+ * starts nothing.
+ */
+TEST_CASE(the_command_of_a_4_12_panel_starts_nothing)
+{
+    link_msg_t req, rep;
+    uint16_t st[LINK_KS_W_CMD_FRAME];
+
+    fresh();
+    for (unsigned ch = 0; ch < 16u; ++ch) {
+        memset(&req, 0, sizeof(req));
+        memset(&rep, 0, sizeof(rep));
+        req.op = LINK_OP_WRITE;
+        req.page = LINK_PAGE_KST;
+        req.offset = LINK_KS_W_CMD;
+        req.count = LINK_KS_W_CMD_FRAME;
+        req.regs[LINK_KS_W_CMD] = (uint16_t)(LINK_KST_OP_ENTER | (ch << 8));
+        req.regs[LINK_KS_W_SEQ] = (uint16_t)(ch + 1u);
+        CHECK(link_dev_dispatch(&g_dev, &req, &rep, g_ms));
+        CHECK_EQ(rep.op, LINK_OP_ACK);
+        run_ms(200);
+        kst_port_read(&g_port, 0, LINK_KS_W_CMD_FRAME, st);
+        CHECK_EQ(LINK_KS_STATE_OF(st[LINK_KS_STATE]), LINK_KST_PWM);
+        CHECK_EQ(st[LINK_KS_SEQ], ch + 1u);
+        CHECK_EQ(st[LINK_KS_RESULT] >> 8, LINK_KST_REF_PORT);
+        CHECK_EQ(LINK_KS_OP_OF(st[LINK_KS_OP]), LINK_KST_OP_NONE);
+    }
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 0);
+    CHECK_EQ(g_sim.n_frames, 0);
+}
+
+/* The supply of an entry goes out before its command, and a reboot is an
+ * operation like the others. */
+TEST_CASE(an_entry_sets_the_supply_and_a_reboot_cycles_it)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    uint32_t t;
+
+    fresh();
+    g_supply.online = true;
+    g_supply.off = true;
+    g_supply.vin_mv = 20000u;
+    link_up();
+    kst_link_readout(&g_k, &ro);
+    CHECK((ro.flags & LINK_KS_F_RAIL) != 0u);
+
+    /* A voltage the port does not give: refused, and nothing switched. */
+    r = request(LINK_KST_OP_ENTER);
+    r.supply_mv = KST_PORT_SUPPLY_MAX_MV + 1u;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.refusal, LINK_KST_REF_SUPPLY_RANGE);
+    CHECK_EQ(g_supply_sets, 0);
+
+    r.supply_mv = 6000u;
+    r.supply_ma = 1500u;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK(g_supply.asked_on);
+    CHECK_EQ(g_supply.set_mv, 6000);
+    CHECK_EQ(g_supply.set_ma, 1500);
+    CHECK_EQ(g_supply_sets, 1);
+
+    /* The supply of another operation is not sent. */
+    g_writes = 0;
+    r = request(LINK_KST_OP_READ_ALL);
+    r.supply_mv = 8000u;
+    out = run(&r);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(g_writes, 1 + 2);        /* the command, VIEW twice */
+    CHECK_EQ(g_port.supply_mv, 6000);
+
+    t = g_ms;
+    out = run_op(LINK_KST_OP_REBOOT);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_REBOOT);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK((uint32_t)(g_ms - t) >= KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS);
+    CHECK((uint32_t)(g_ms - t)
+          < KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS + 300u);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK(g_supply.asked_on);
+    CHECK_EQ(g_supply.set_mv, 6000);
+    CHECK_EQ(g_supply_sets, 3);
+    run_ms(600);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PWM);
+    CHECK_EQ(ro.port_no, CH);
+
+    /* From PWM, and a supply that fails shows as the result. */
+    out = run_op(LINK_KST_OP_REBOOT);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(g_supply_sets, 5);
+    CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
+                 .op = LINK_KST_OP_REBOOT, .port = CH }),
+             KST_LINK_START_OK);
+    until_phase(KST_LINK_RUNNING);
+    run_ms(KST_PORT_RAIL_OFF_MS / 2u);
+    g_supply.online = false;
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ((unsigned)out.result, LINK_KST_RESULT_SUPPLY);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    conduct();
 }
 
 TEST_CASE(a_coprocessor_that_refuses_the_page_is_left_alone)
@@ -522,9 +663,9 @@ TEST_CASE(a_coprocessor_that_refuses_the_page_is_left_alone)
     kst_link_request_t r = request(LINK_KST_OP_ENTER);
     kst_link_outcome_t out;
 
-    /* It reports 4.12 and answers BAD_PAGE. */
+    /* It reports 4.13 and answers BAD_PAGE. */
     fresh_at(0u, 0u);
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
     run_ms(2000);
     CHECK_EQ(g_sent, 1);
     CHECK_EQ(g_writes, 0);
@@ -546,7 +687,7 @@ TEST_CASE(start_answers_why_it_sends_nothing)
     CHECK_EQ(kst_link_start(NULL, &r), KST_LINK_START_ARG);
     CHECK_EQ(kst_link_start(&g_k, NULL), KST_LINK_START_ARG);
     CHECK_EQ(kst_link_fetch(NULL), KST_LINK_START_ARG);
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
     CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_BUSY);
     CHECK_EQ(kst_link_fetch(&g_k), KST_LINK_START_BUSY);
     until_phase(KST_LINK_READY);
@@ -558,7 +699,12 @@ TEST_CASE(start_answers_why_it_sends_nothing)
     r = request(LINK_KST_OP_COUNT);
     CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
     r = request(LINK_KST_OP_ENTER);
-    r.channel = 16;
+    r.port = LINK_PG_PORTS_MAX;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
+    r.port = LINK_PG_PORTS_MAX - 1u;
+    r.op = LINK_KST_OP_REBOOT;
+    r.write_enabled = true;
+    r.confirm = true;
     CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
     r = request(LINK_KST_OP_WRITE);
     r.write_enabled = true;
@@ -608,11 +754,17 @@ TEST_CASE(the_page_says_why_a_command_started_nothing)
     fresh();
     link_up();
     r = request(LINK_KST_OP_ENTER);
-    r.channel = CH_THROTTLE;
+    /* A port the model has and this coprocessor does not. */
+    r.port = 1u;
     out = run(&r);
     CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
     CHECK_EQ(out.op, LINK_KST_OP_ENTER);
-    CHECK_EQ(out.refusal, LINK_KST_REF_THROTTLE);
+    CHECK_EQ(out.refusal, LINK_KST_REF_PORT);
+    /* No reboot without a PD mini. */
+    out = run_op(LINK_KST_OP_REBOOT);
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.op, LINK_KST_OP_REBOOT);
+    CHECK_EQ(out.refusal, LINK_KST_REF_NO_SUPPLY);
     CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
     out = run_op(LINK_KST_OP_READ_ALL);
     CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
@@ -698,7 +850,7 @@ TEST_CASE(three_exchanges_without_an_answer_give_the_operation_up)
     /* The command taken and every answer after it lost: the operation
      * runs at the coprocessor, and the page says so when it is read. */
     CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
-                 .op = LINK_KST_OP_READ_ALL, .channel = CH }),
+                 .op = LINK_KST_OP_READ_ALL, .port = CH }),
              KST_LINK_START_OK);
     until_phase(KST_LINK_RUNNING);
     g_lose_any = KST_LINK_RETRIES;
@@ -717,7 +869,7 @@ TEST_CASE(an_unanswered_page_is_asked_again_without_an_outcome)
     kst_link_outcome_t out;
 
     fresh();
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
     g_lose_any = 7;
     run_ms(7u * KST_LINK_POLL_MS - 10u);
     CHECK_EQ(g_sent, 7);
@@ -727,7 +879,7 @@ TEST_CASE(an_unanswered_page_is_asked_again_without_an_outcome)
 
     /* A read acknowledged without registers counts as no answer. */
     kst_link_lost(&g_k);
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
     for (unsigned i = 0; i < 4u; ++i) {
         kst_link_xfer_t x;
 
@@ -818,7 +970,7 @@ TEST_CASE(an_abort_ends_the_operation_that_runs)
     up();
     g_cmds = 0;
     CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
-                 .op = LINK_KST_OP_READ_ALL, .channel = CH }),
+                 .op = LINK_KST_OP_READ_ALL, .port = CH }),
              KST_LINK_START_OK);
     until_phase(KST_LINK_RUNNING);
     run_ms(40);
@@ -861,7 +1013,7 @@ TEST_CASE(a_stop_at_the_coprocessor_shows_as_an_aborted_operation)
 
     up();
     CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
-                 .op = LINK_KST_OP_READ_ALL, .channel = CH }),
+                 .op = LINK_KST_OP_READ_ALL, .port = CH }),
              KST_LINK_START_OK);
     until_phase(KST_LINK_RUNNING);
     run_ms(40);
@@ -874,7 +1026,7 @@ TEST_CASE(a_stop_at_the_coprocessor_shows_as_an_aborted_operation)
 
     /* What the screen is told when it writes next. */
     out = run(&(kst_link_request_t){ .op = LINK_KST_OP_VERIFY,
-                                     .channel = CH });
+                                     .port = CH });
     CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
     CHECK_EQ(out.refusal, LINK_KST_REF_MUST_READ);
     conduct();
@@ -887,7 +1039,7 @@ TEST_CASE(a_coprocessor_that_started_again_ends_the_operation)
 
     up();
     CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
-                 .op = LINK_KST_OP_READ_ALL, .channel = CH }),
+                 .op = LINK_KST_OP_READ_ALL, .port = CH }),
              KST_LINK_START_OK);
     until_phase(KST_LINK_RUNNING);
     run_ms(20);
@@ -942,7 +1094,7 @@ TEST_CASE(a_lost_link_ends_the_operation_and_keeps_the_images)
 
     up();
     CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
-                 .op = LINK_KST_OP_READ_ALL, .channel = CH }),
+                 .op = LINK_KST_OP_READ_ALL, .port = CH }),
              KST_LINK_START_OK);
     until_phase(KST_LINK_RUNNING);
     kst_link_lost(&g_k);
@@ -959,7 +1111,7 @@ TEST_CASE(a_lost_link_ends_the_operation_and_keeps_the_images)
     /* Lost with nothing on its way: no outcome. */
     kst_link_lost(&g_k);
     CHECK(!kst_link_outcome(&g_k, &out));
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
     until_phase(KST_LINK_READY);
     CHECK(!kst_link_outcome(&g_k, &out));
 }
@@ -1007,7 +1159,7 @@ static void poll_case(uint32_t t0)
     uint32_t t = t0;
 
     fresh_at(t0, 1u);
-    kst_link_came_up(&g_k, LINK_MINOR_KST);
+    kst_link_came_up(&g_k, KST_LINK_MINOR);
 
     /* No answer: asked again KST_LINK_POLL_MS later. */
     CHECK(kst_link_next(&g_k, t, &x));
@@ -1031,7 +1183,7 @@ static void poll_case(uint32_t t0)
     status_regs(LINK_KST_PROGRAMMING, regs);
     kst_link_done(&g_k, KST_LINK_ACK, regs);
 
-    /* With a channel held: KST_LINK_POLL_MS. */
+    /* With the port held: KST_LINK_POLL_MS. */
     CHECK(!kst_link_next(&g_k, t + 1u, &x));
     CHECK(!kst_link_next(&g_k, t + KST_LINK_POLL_MS - 1u, &x));
     t += KST_LINK_POLL_MS;
@@ -1062,7 +1214,9 @@ int main(void)
     RUN(a_session_from_entry_to_the_power_cycle);
     RUN(a_release_of_pairing_is_planned_at_the_coprocessor);
     RUN(a_write_without_the_switch_sends_nothing);
-    RUN(nothing_is_sent_to_a_coprocessor_of_protocol_4_11);
+    RUN(nothing_is_sent_to_a_coprocessor_before_protocol_4_13);
+    RUN(the_command_of_a_4_12_panel_starts_nothing);
+    RUN(an_entry_sets_the_supply_and_a_reboot_cycles_it);
     RUN(a_coprocessor_that_refuses_the_page_is_left_alone);
     RUN(start_answers_why_it_sends_nothing);
     RUN(the_page_says_why_a_command_started_nothing);

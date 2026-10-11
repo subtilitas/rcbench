@@ -186,29 +186,61 @@ static uint16_t servo(kst_field_id_t id)
     return kst_field_get(&img, id);
 }
 
-static void type_channel(int ch)
-{
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_EQ(kst_panel_editor(), 1);
-    if (ch >= 10) {
-        key(UI_KEY_1);
-    }
-    key((ui_key_t[]){ UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
-                      UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8,
-                      UI_KEY_9 }[ch % 10]);
-    key(UI_KEY_OK);
-}
-
-/* The link up, CH4 typed, CONNECT, the servo read. */
+/* The link up, CONNECT, the servo read. */
 static void connected(void)
 {
     link_up();
-    type_channel((int)RIG_CH + 1);
     CHECK_EQ(kst_panel_editor(), 0);
     tap(val(PG_SERVO, 0, 1));
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_have_servo(M));
+}
+
+/* The SERVO tab's line @p i under its rows, "" for none. */
+static const char *status(int i)
+{
+    const char *t = kst_panel_status_line(i);
+
+    return t != NULL ? t : "";
+}
+
+/* The tenths of a second the state line counts down with text @p id, -1
+ * while it reads something else. */
+static int tenths(ui_text_id_t id)
+{
+    char want[KST_PANEL_LINE];
+
+    for (unsigned t = 0; t <= 99u; ++t) {
+        snprintf(want, sizeof(want), ui_tr(id), t / 10u, t % 10u);
+        if (strcmp(want, status(0)) == 0) {
+            return (int)t;
+        }
+    }
+    return -1;
+}
+
+/* MORE, and the entry @p i of its list. */
+static void more(int i)
+{
+    tap(kst_panel_tab_rect(PG_SERVO));
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_rect(i));
+}
+
+/* Digits, a dot for '.', then OK. */
+static void type(const char *t)
+{
+    static const ui_key_t d[] = { UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3,
+                                  UI_KEY_4, UI_KEY_5, UI_KEY_6, UI_KEY_7,
+                                  UI_KEY_8, UI_KEY_9 };
+
+    key(UI_KEY_CLR);
+    for (; *t != '\0'; ++t) {
+        key(*t == '.' ? UI_KEY_DOT : d[*t - '0']);
+    }
+    key(UI_KEY_OK);
 }
 
 /* ENABLE WRITE TO SERVO through its page. */
@@ -341,69 +373,95 @@ TEST_CASE(a_coprocessor_without_the_page_leaves_the_programmer_unavailable)
     CHECK(!kst_panel_is_open());
 }
 
-TEST_CASE(the_channel_is_typed_inside_1_to_16)
+TEST_CASE(programming_is_locked_until_the_port_is_the_testers_target)
 {
-    fresh();
-    link_up();
-    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_EQ(kst_panel_editor(), 1);
-    CHECK_NEAR(kst_panel_keypad()->min, 1.0f, 0.001f);
-    CHECK_NEAR(kst_panel_keypad()->max, 16.0f, 0.001f);
-    /* 17 and 0 are not channels: the keypad stays and names the range. */
-    key(UI_KEY_1);
-    key(UI_KEY_7);
-    key(UI_KEY_OK);
-    CHECK_EQ(kst_panel_editor(), 1);
-    CHECK(kst_panel_keypad()->refused);
-    key(UI_KEY_CLR);
-    key(UI_KEY_0);
-    key(UI_KEY_OK);
-    CHECK_EQ(kst_panel_editor(), 1);
-    key(UI_KEY_CLR);
-    key(UI_KEY_1);
-    key(UI_KEY_6);
-    key(UI_KEY_OK);
-    CHECK_EQ(kst_panel_editor(), 0);
-    /* CANCEL leaves the channel as it was. */
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_NEAR(kst_panel_keypad()->value, 16.0f, 0.001f);
-    key(UI_KEY_3);
-    key(UI_KEY_CANCEL);
-    CHECK_EQ(kst_panel_editor(), 0);
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_NEAR(kst_panel_keypad()->value, 16.0f, 0.001f);
-    key(UI_KEY_CANCEL);
-    /* CH16 is no PWM output of this bench: the port says so. */
-    tap(val(PG_SERVO, 0, 1));
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_CHANNEL);
-    CHECK_STR_EQ(said(), TR(KP_R_CHANNEL));
-    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    char want[KST_PANEL_LINE];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.target = 0u;
+        link_up();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK_STR_EQ(status(0), TR(KP_NEED_TARGET));
+        CHECK_STR_EQ(status(1), TR(KP_NEED_TARGET_2));
+        /* No row takes a tap: nothing is asked of the port. */
+        for (int row = 0; row < 5; ++row) {
+            for (int col = 0; col < 2; ++col) {
+                tap(val(PG_SERVO, row, col));
+                CHECK_EQ(kst_panel_editor(), 0);
+            }
+        }
+        settle();
+        CHECK_EQ(g_rig.starts, 0);
+        CHECK(!kst_panel_holds_port());
+        /* The model says the same to whoever asks it. */
+        CHECK_EQ(kst_prog_connect(M, RIG_PORT), KST_PROG_MSG_NEED_TARGET);
+        CHECK_STR_EQ(said(), TR(KP_NEED_TARGET));
+        CHECK_EQ(kst_prog_reboot(M, RIG_PORT), KST_PROG_MSG_NEED_TARGET);
+        /* Another port as the target is not this one. */
+        g_rig.target = 2u + RIG_PORT;
+        settle();
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(g_rig.starts, 1);
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_PORT);
+        CHECK_STR_EQ(said(), TR(KP_R_PORT));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        /* The port as the target: the rows are live. */
+        g_rig.target = 1u + RIG_PORT;
+        settle();
+        snprintf(want, sizeof(want), TR(KP_STATE_PWM_AS_IS), RIG_PORT + 1u);
+        CHECK_STR_EQ(status(0), want);
+        CHECK_STR_EQ(status(1), "");
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        /* The target moves while the port is held: nothing is locked. */
+        g_rig.target = 0u;
+        settle();
+        snprintf(want, sizeof(want), TR(KP_STATE_PROGRAMMING), RIG_PORT + 1u);
+        CHECK_STR_EQ(status(0), want);
+        tap(val(PG_SERVO, 1, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_READ);
+        tap(val(PG_SERVO, 0, 1));
+        CHECK_EQ(kst_panel_editor(), 3);
+        hold(2.1f);
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK_STR_EQ(status(0), TR(KP_NEED_TARGET));
+    }
 }
 
-TEST_CASE(a_throttle_channel_is_refused_with_the_reason)
+TEST_CASE(a_port_without_a_pin_is_refused_by_name)
 {
-    fresh();
-    link_up();
-    /* CH1, the channel the overlay starts on, is the throttle. */
-    tap(val(PG_SERVO, 0, 1));
-    settle();
-    CHECK_EQ(g_rig.starts, 1);
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_THROTTLE);
-    CHECK_STR_EQ(said(), TR(KP_R_THROTTLE));
-    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
-    CHECK(!kst_panel_holds_port());
-    tap(kst_panel_close_rect());
-    CHECK(!kst_panel_is_open());
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.no_pin = true;
+        link_up();
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(g_rig.starts, 1);
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
+        CHECK_STR_EQ(said(), TR(KP_R_NO_PIN));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK(!kst_panel_holds_port());
+        /* REBOOT SERVO finds the same before it looks for a supply. */
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
+        tap(kst_panel_close_rect());
+        CHECK(!kst_panel_is_open());
+    }
 }
 
-TEST_CASE(a_channel_without_a_servo_says_so_and_gives_the_output_back)
+TEST_CASE(a_port_without_a_servo_says_so_and_gives_the_port_back)
 {
     fresh();
     g_rig.sim.powered = false;
     link_up();
-    type_channel((int)RIG_CH + 1);
     tap(val(PG_SERVO, 0, 1));
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_NO_SERVO);
@@ -421,20 +479,455 @@ TEST_CASE(a_channel_without_a_servo_says_so_and_gives_the_output_back)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
 }
 
+TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
+{
+    char want[KST_PANEL_LINE];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        link_up();
+        /* 5.0 V and 1000 mA until they are set. */
+        snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 5u, 0u,
+                 1000u);
+        CHECK_STR_EQ(status(0), want);
+        tap(val(PG_SERVO, 2, 1));
+        CHECK_EQ(choices(), 2);
+        snprintf(want, sizeof(want), TR(KP_SUPPLY_V), 5u, 0u);
+        CHECK_STR_EQ(kst_panel_choice_label(0), want);
+        snprintf(want, sizeof(want), TR(KP_SUPPLY_A), 1000u);
+        CHECK_STR_EQ(kst_panel_choice_label(1), want);
+        tap(kst_panel_choice_rect(0));
+        CHECK_EQ(kst_panel_editor(), 1);
+        CHECK_STR_EQ(kst_panel_keypad()->title, TR(KP_PROG_VOLTAGE));
+        CHECK_NEAR(kst_panel_keypad()->value, 5.0f, 0.001f);
+        CHECK_NEAR(kst_panel_keypad()->min,
+                   (float)PDMINI_V_MIN_MV / 1000.0f, 0.001f);
+        CHECK_NEAR(kst_panel_keypad()->max,
+                   (float)KST_PANEL_STD_MV / 1000.0f, 0.001f);
+        /* 6.1 V and 0.9 V cannot be entered. */
+        type("6.1");
+        CHECK_EQ(kst_panel_editor(), 1);
+        CHECK(kst_panel_keypad()->refused);
+        type("0.9");
+        CHECK_EQ(kst_panel_editor(), 1);
+        CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+        /* The ends can, and neither asks for a hold. */
+        type("6.0");
+        CHECK_EQ(kst_panel_editor(), 0);
+        CHECK_EQ(kst_prog_supply_mv(M), 6000u);
+        more(0);
+        type("1.0");
+        CHECK_EQ(kst_panel_editor(), 0);
+        CHECK_EQ(kst_prog_supply_mv(M), 1000u);
+        /* CANCEL keeps what was set. */
+        more(0);
+        key(UI_KEY_4);
+        key(UI_KEY_CANCEL);
+        CHECK_EQ(kst_prog_supply_mv(M), 1000u);
+        more(0);
+        type("4.8");
+        snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 4u, 8u,
+                 1000u);
+        CHECK_STR_EQ(status(0), want);
+        CHECK_EQ(g_rig.sup_sets, 0);
+        /* CONNECT sets it, and the line shows what the supply reads. */
+        g_rig.load_ma = 37u;
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(g_rig.sup_on);
+        CHECK_EQ(g_rig.sup_mv, 4800u);
+        CHECK_EQ(g_rig.sup_ma, 1000u);
+        snprintf(want, sizeof(want), TR(KP_STATE_PROG_V), RIG_PORT + 1u, 4u,
+                 80u, 37u);
+        CHECK_STR_EQ(status(0), want);
+        /* In programming mode MORE is the servo's list. */
+        tap(val(PG_SERVO, 2, 1));
+        CHECK_EQ(choices(), 3);
+        CHECK(choice(TR(KP_VERIFY)) >= 0);
+        tap(kst_panel_choice_cancel_rect());
+        CHECK_EQ(kst_prog_supply_mv(M), 4800u);
+    }
+}
+
+TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
+{
+    char want[KST_PANEL_LINE];
+
+    fresh();
+    g_rig.rail = true;
+    kst_panel_set_hv(true);
+    link_up();
+    more(0);
+    CHECK_NEAR(kst_panel_keypad()->max,
+               (float)KST_PORT_SUPPLY_MAX_MV / 1000.0f, 0.001f);
+    type("8.5");
+    CHECK_EQ(kst_panel_editor(), 1);
+    CHECK(kst_panel_keypad()->refused);
+    /* 6.1 V is the first that asks. */
+    type("6.1");
+    CHECK_EQ(kst_panel_editor(), 3);
+    snprintf(want, sizeof(want), TR(KP_SUPPLY_V), 6u, 1u);
+    CHECK_STR_EQ(kst_panel_warning_line(0), want);
+    CHECK(warns(TR(SV_HV_1)));
+    CHECK(warns(TR(SV_HV_4)));
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+    /* 1.9 s is not a hold; CANCEL sets nothing. */
+    hold(1.9f);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+    if (kst_panel_editor() == 3) {
+        tap(kst_panel_cancel_rect());
+    }
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+    /* The port's highest, held. */
+    more(0);
+    type("8.4");
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
+    tap(val(PG_SERVO, 0, 1));
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MAX_MV);
+    /* HV SERVO off while the port is held changes nothing on the servo;
+     * the next CONNECT asks for 5.0 V again. */
+    kst_panel_set_hv(false);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+    CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MAX_MV);
+
+    /* HV SERVO off closes the keypad and the page that offer more. */
+    fresh();
+    g_rig.rail = true;
+    kst_panel_set_hv(true);
+    link_up();
+    more(0);
+    CHECK_EQ(kst_panel_editor(), 1);
+    kst_panel_set_hv(false);
+    CHECK_EQ(kst_panel_editor(), 0);
+    kst_panel_set_hv(true);
+    more(0);
+    type("7.4");
+    CHECK_EQ(kst_panel_editor(), 3);
+    kst_panel_set_hv(false);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+    more(0);
+    CHECK_NEAR(kst_panel_keypad()->max, (float)KST_PANEL_STD_MV / 1000.0f,
+               0.001f);
+    type("7.4");
+    CHECK_EQ(kst_panel_editor(), 1);
+    key(UI_KEY_CANCEL);
+    /* A value inside the standard range stays when HV SERVO goes. */
+    more(0);
+    type("5.5");
+    kst_panel_set_hv(true);
+    kst_panel_set_hv(false);
+    CHECK_EQ(kst_prog_supply_mv(M), 5500u);
+}
+
+TEST_CASE(the_current_limit_is_typed_inside_50_to_3000_ma)
+{
+    char want[KST_PANEL_LINE];
+
+    fresh();
+    g_rig.rail = true;
+    link_up();
+    more(1);
+    CHECK_EQ(kst_panel_editor(), 1);
+    CHECK_STR_EQ(kst_panel_keypad()->title, TR(KP_PROG_CURRENT));
+    CHECK_NEAR(kst_panel_keypad()->min, (float)PDMINI_I_MIN_MA, 0.001f);
+    CHECK_NEAR(kst_panel_keypad()->max, (float)PDMINI_I_MAX_MA, 0.001f);
+    type("49");
+    CHECK_EQ(kst_panel_editor(), 1);
+    CHECK(kst_panel_keypad()->refused);
+    type("3001");
+    CHECK_EQ(kst_panel_editor(), 1);
+    CHECK_EQ(kst_prog_supply_ma(M), KST_PROG_SUPPLY_MA);
+    type("50");
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_supply_ma(M), 50u);
+    more(1);
+    type("3000");
+    CHECK_EQ(kst_prog_supply_ma(M), 3000u);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+    snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 5u, 0u,
+             3000u);
+    CHECK_STR_EQ(status(0), want);
+    tap(val(PG_SERVO, 0, 1));
+    settle();
+    CHECK_EQ(g_rig.sup_ma, 3000u);
+    CHECK_EQ(g_rig.sup_mv, KST_PROG_SUPPLY_MV);
+}
+
+TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        /* A 5 V source: 5.0 V out is 500 mV too much. */
+        g_rig.vin_mv = 5000u;
+        link_up();
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_RANGE);
+        CHECK_STR_EQ(said(), TR(KP_R_SUPPLY_RANGE));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK_EQ(g_rig.sup_sets, 0);
+        /* 4.5 V is what it can give. */
+        more(0);
+        type("4.5");
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK_EQ(g_rig.sup_mv, 4500u);
+    }
+}
+
+TEST_CASE(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line)
+{
+    char want[KST_PANEL_LINE];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        g_rig.rail_deaf = true;
+        link_up();
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY);
+        snprintf(want, sizeof(want), TR(KP_S_SUPPLY),
+                 (unsigned)KST_PORT_SUPPLY_MS);
+        CHECK_STR_EQ(said(), want);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK(!kst_panel_holds_port());
+    }
+}
+
+TEST_CASE(reboot_servo_without_a_supply_to_switch_says_so)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        /* No PD mini, the tester on the port. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        link_up();
+        CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), TR(KP_REBOOT));
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_REBOOT_GO));
+        tap(val(PG_SERVO, 0, 0));
+        CHECK_EQ(kst_panel_editor(), 0);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
+        CHECK_STR_EQ(said(), TR(KP_R_NO_SUPPLY));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        /* The same in programming mode: the session stays. */
+        tap(val(PG_SERVO, 0, 1));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        tap(val(PG_SERVO, 0, 0));
+        CHECK_EQ(kst_panel_editor(), 0);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_have_servo(M));
+        /* The way out is the operator's word. */
+        tap(val(PG_SERVO, 0, 1));
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK(warns(TR(KP_LEAVE_UNPLUG_1)));
+        hold(2.1f);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+
+        /* A PD mini that is off has nothing to switch either. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        link_up();
+        tap(val(PG_SERVO, 0, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        hold(2.1f);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
+        CHECK_STR_EQ(said(), TR(KP_R_NO_SUPPLY));
+        CHECK_EQ(g_rig.sup_sets, 0);
+    }
+}
+
+TEST_CASE(reboot_servo_counts_the_supply_off_and_the_servo_up)
+{
+    char want[KST_PANEL_LINE];
+    int a, b;
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        g_rig.sup_on = true;
+        g_rig.sup_mv = 5000u;
+        link_up();
+        tap(val(PG_SERVO, 0, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        /* The page names both times as the port keeps them. */
+        snprintf(want, sizeof(want), TR(KP_LEAVE_RAIL_1),
+                 (unsigned)(KST_PORT_RAIL_OFF_MS / 1000u),
+                 (unsigned)(KST_PORT_RAIL_WAIT_MS / 1000u));
+        CHECK(warns(want));
+        CHECK(warns(TR(KP_LEAVE_RAIL_2)));
+        /* CANCEL and a short hold switch nothing. */
+        hold(1.9f);
+        if (kst_panel_editor() == 3) {
+            tap(kst_panel_cancel_rect());
+        }
+        settle();
+        CHECK_EQ(g_rig.starts, 0);
+        CHECK(g_rig.sup_on);
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        CHECK_EQ(kst_panel_editor(), 0);
+        rig_frames(300);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+        CHECK(!g_rig.sup_on);
+        /* Off: the line counts down from 2.0 s. */
+        a = tenths(TX_KP_STATE_RAIL_OFF);
+        CHECK(a > 0 && a <= (int)(KST_PORT_RAIL_OFF_MS / 100u));
+        rig_frames(500);
+        b = tenths(TX_KP_STATE_RAIL_OFF);
+        CHECK(b >= 0 && a - b >= 4 && a - b <= 6);
+        /* No row takes a tap while the supply is switched. */
+        tap(val(PG_SERVO, 0, 0));
+        tap(val(PG_SERVO, 0, 1));
+        CHECK_EQ(kst_panel_editor(), 0);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+        /* On: the servo starts, 1.0 s. */
+        rig_frames((unsigned)KST_PORT_RAIL_OFF_MS - 600u);
+        CHECK(g_rig.sup_on);
+        a = tenths(TX_KP_STATE_RAIL_WAIT);
+        CHECK(a > 0 && a <= (int)(KST_PORT_RAIL_WAIT_MS / 100u));
+        rig_frames(300);
+        b = tenths(TX_KP_STATE_RAIL_WAIT);
+        CHECK(b >= 0 && a - b >= 2 && a - b <= 4);
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK_EQ(msg(), KST_PROG_MSG_REBOOTED);
+        CHECK_STR_EQ(said(), TR(KP_M_REBOOTED));
+        CHECK_EQ(tenths(TX_KP_STATE_RAIL_OFF), -1);
+        CHECK_EQ(tenths(TX_KP_STATE_RAIL_WAIT), -1);
+        CHECK_EQ(g_rig.starts, 1);
+    }
+}
+
+TEST_CASE(reboot_servo_in_programming_mode_is_the_way_out)
+{
+    fresh();
+    g_rig.rail = true;
+    connected();
+    CHECK(g_rig.sup_on);
+    tap(val(PG_SERVO, 0, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_LEAVE_1)));
+    CHECK(warns(TR(KP_LEAVE_RAIL_2)));
+    CHECK(!warns(TR(KP_LEAVE_UNPLUG_1)));
+    hold(2.1f);
+    rig_frames(300);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+    CHECK(tenths(TX_KP_STATE_RAIL_OFF) > 0);
+    CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 1), TR(KP_LEAVE));
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_STR_EQ(said(), TR(KP_M_LEFT));
+    CHECK(g_rig.sup_on);
+    CHECK(!kst_prog_have_servo(M));
+    CHECK(!kst_panel_holds_port());
+}
+
+TEST_CASE(stop_and_a_lost_link_end_the_supply_cycle_with_their_lines)
+{
+    /* STOP while the supply is off. */
+    fresh();
+    g_rig.rail = true;
+    g_rig.sup_on = true;
+    link_up();
+    tap(val(PG_SERVO, 0, 0));
+    hold(2.1f);
+    rig_frames(500);
+    CHECK(tenths(TX_KP_STATE_RAIL_OFF) > 0);
+    rig_stop(true);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_ABORTED);
+    CHECK_STR_EQ(said(), TR(KP_S_ABORTED));
+    CHECK_EQ(tenths(TX_KP_STATE_RAIL_OFF), -1);
+    /* Stopped, the row says why it does nothing. */
+    tap(val(PG_SERVO, 0, 0));
+    if (kst_panel_editor() == 3) {
+        hold(2.1f);
+    }
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
+
+    /* The link goes while the servo starts. */
+    fresh();
+    g_rig.rail = true;
+    g_rig.sup_on = true;
+    link_up();
+    tap(val(PG_SERVO, 0, 0));
+    hold(2.1f);
+    rig_frames((unsigned)KST_PORT_RAIL_OFF_MS + 400u);
+    CHECK(tenths(TX_KP_STATE_RAIL_WAIT) > 0);
+    rig_link_lost();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_DOWN);
+    CHECK_STR_EQ(status(0), TR(KP_ST_DOWN));
+    CHECK_EQ(kst_panel_editor(), 0);
+    /* No row asks anything of a link that is down. */
+    tap(val(PG_SERVO, 0, 0));
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 0);
+}
+
+TEST_CASE(a_count_of_1_is_said_in_the_singular)
+{
+    char want[KST_PANEL_LINE];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        enable();
+        edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
+        show();
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 4, 0), TR(KP_WRITE_ONE));
+        tap(val(PG_SERVO, 4, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        hold(2.1f);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+        CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
+        /* Two are a count. */
+        edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 1u));
+        edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+        show();
+        snprintf(want, sizeof(want), TR(KP_WRITE_N), 2u);
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 4, 0), want);
+    }
+}
+
 TEST_CASE(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held)
 {
     fresh();
     connected();
     /* Two requests: into the mode, then the read. */
     CHECK_EQ(g_rig.starts, 2);
-    CHECK_EQ(kst_prog_channel(M), RIG_CH);
+    CHECK_EQ(kst_prog_port(M), RIG_PORT);
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
     CHECK_STR_EQ(said(), TR(KP_M_READ));
     CHECK(kst_panel_holds_port());
     CHECK(!kst_prog_write_enabled(M));
-    /* The channel is fixed while it is held. */
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 1), TR(KP_LEAVE));
     /* CLOSE asks for the way back to PWM; CANCEL stays. */
     tap(kst_panel_close_rect());
     CHECK(kst_panel_is_open());
@@ -943,7 +1436,6 @@ TEST_CASE(port_is_abort_while_an_operation_runs)
 {
     fresh();
     link_up();
-    type_channel((int)RIG_CH + 1);
     tap(val(PG_SERVO, 0, 1));
     rig_frames(40);
     show();
@@ -1495,7 +1987,7 @@ TEST_CASE(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them)
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED);
     CHECK_EQ(lines(t), 2);
-    snprintf(want, sizeof(want), TR(KP_M_LOADED), "LOW", 1u);
+    snprintf(want, sizeof(want), TR(KP_M_LOADED_ONE), "LOW");
     CHECK_STR_EQ(t[0], want);
     CHECK_STR_EQ(t[1], TR(KP_EDIT_NOTE_2));
     CHECK_EQ(draft(KST_F_DUTY), servo(KST_F_DUTY) - 1u);
@@ -1548,10 +2040,10 @@ TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
         pick("UN");
         CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
         CHECK_EQ(lines(t), 3);
-        snprintf(want, sizeof(want), TR(KP_M_LOADED), "UN", 1u);
+        snprintf(want, sizeof(want), TR(KP_M_LOADED_ONE), "UN");
         CHECK_STR_EQ(t[0], want);
         CHECK_STR_EQ(t[1], TR(KP_FILE_UNTYPED));
-        snprintf(want, sizeof(want), TR(KP_FILE_STAY), 1u);
+        snprintf(want, sizeof(want), "%s", TR(KP_FILE_STAY_ONE));
         CHECK_STR_EQ(t[2], want);
         CHECK_EQ(kst_prog_load_skipped(M), KST_FIELD_BIT(KST_F_20K_SEL));
         CHECK_EQ(draft(KST_F_20K_SEL), servo(KST_F_20K_SEL));
@@ -1629,7 +2121,6 @@ TEST_CASE(the_servo_type_is_shown_once_the_servo_is_read)
             link_up();
             /* Nothing read: no type. */
             CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), "SERVO");
-            type_channel((int)RIG_CH + 1);
             tap(val(PG_SERVO, 0, 1));
             settle();
             snprintf(want, sizeof(want), TR(KP_SERVO_V), type);
@@ -1723,7 +2214,7 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
     /* The page of a soft limit, with the file's name and kind. */
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SOFT);
-    snprintf(want, sizeof(want), TR(KP_FILE_DIFF), "UP", 1u);
+    snprintf(want, sizeof(want), TR(KP_FILE_DIFF_ONE), "UP");
     CHECK_STR_EQ(kst_panel_warning_line(0), want);
     CHECK(warns(TR(KP_FILE_EDITED)));
     CHECK(warns(kst_panel_rule_text(KST_S_DUTY_RAISED)));
@@ -1857,7 +2348,7 @@ TEST_CASE(a_file_that_holds_the_servos_values_changes_nothing)
     pick("PAIR");
     CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SAME);
     CHECK_EQ(lines(t), 2);
-    snprintf(want, sizeof(want), TR(KP_FILE_STAY), 1u);
+    snprintf(want, sizeof(want), "%s", TR(KP_FILE_STAY_ONE));
     CHECK_STR_EQ(t[1], want);
     CHECK_EQ(kst_prog_changes(M), 0);
     rig_frames(50);
@@ -1881,7 +2372,6 @@ TEST_CASE(a_load_waits_for_a_servo_that_is_read)
     fresh();
     g_rig.sim.reg[0x06] = 0x05u;
     link_up();
-    type_channel((int)RIG_CH + 1);
     tap(val(PG_SERVO, 0, 1));
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_READ_ONLY);
@@ -2282,23 +2772,23 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     CHECK(kst_panel_file_load(file, len));
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
     CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
-    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2), (unsigned)RIG_CH + 1u);
+    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2), (unsigned)RIG_PORT + 1u);
     CHECK_STR_EQ(t[1], second);
     img = rig_servo();
     other_20k(&img);
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
     link_up();
-    tap(val(PG_SERVO, 0, 1));           /* CONNECT, no channel typed */
+    tap(val(PG_SERVO, 0, 1));           /* CONNECT */
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
-    CHECK_EQ(kst_prog_channel(M), RIG_CH);
+    CHECK_EQ(kst_prog_port(M), RIG_PORT);
 
     /* Another servo is on it. */
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
     CHECK_STR_EQ(said(), TR(KP_M_JOURNAL_OTHER));
     CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
     snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2),
-             (unsigned)RIG_CH + 1u);
+             (unsigned)RIG_PORT + 1u);
     CHECK_STR_EQ(t[1], second);
     show();
     /* Nothing is edited, and the switch does not open a write. */
@@ -2382,7 +2872,6 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_shown_and_never_written)
     fresh();
     g_rig.sim.reg[0x06] = 0x05u;
     link_up();
-    type_channel((int)RIG_CH + 1);
     tap(val(PG_SERVO, 0, 1));
     settle();
     CHECK(kst_prog_have_servo(M));
@@ -2587,10 +3076,20 @@ static void texts_in(ui_lang_t lang)
     CHECK_EQ(kst_panel_message_lines(&m, t), 0);
     /* The fixed messages, the answers of start, the outcome kinds, the
      * port's refusals and the session's results. */
-    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_LOADED_UNTYPED));
+    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_REBOOTED));
     CHECK(family_ok(KST_PROG_MSG_START, (unsigned)KST_LINK_START_NO_IMAGE + 1u));
     CHECK(family_ok(KST_PROG_MSG_OUT, (unsigned)KST_LINK_OUT_DROPPED + 1u));
-    CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PLAN_NO_PATH + 1u));
+    CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PORT + 1u));
+    CHECK(family_ok(KST_PROG_MSG_REF + LINK_KST_REF_UNSAFE,
+                    (unsigned)LINK_KST_REF_NO_SUPPLY + 1u
+                        - (unsigned)LINK_KST_REF_UNSAFE));
+    /* 3 and 4 are refusals no port gives: they are a line all the same. */
+    for (unsigned gap = 3u; gap < (unsigned)LINK_KST_REF_UNSAFE; ++gap) {
+        m.id = (uint16_t)(KST_PROG_MSG_REF + gap);
+        CHECK_EQ(kst_panel_message_lines(&m, t), 1);
+        CHECK(t[0][0] != '\0');
+    }
+    CHECK(family_ok(KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY, 1u));
     CHECK(family_ok(KST_PROG_MSG_SES, (unsigned)KST_SES_ERR_ABORTED + 1u));
     /* A hard limit's message is the rule's line. */
     for (unsigned rule = 0; rule < (unsigned)KST_RULE_COUNT; ++rule) {
@@ -2698,9 +3197,10 @@ TEST_CASE(program_opens_the_programmer_over_the_left_card_and_closes_it)
     screen_tap(PROG_X, BTN_Y);
     CHECK(kst_panel_is_open());
     /* The overlay takes the taps on the left card. */
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_EQ(kst_panel_editor(), 1);
-    key(UI_KEY_CANCEL);
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
     screen_tap(PROG_X, BTN_Y);
     CHECK(!kst_panel_is_open());
     /* SETTINGS takes its place. */
@@ -2713,19 +3213,19 @@ TEST_CASE(program_opens_the_programmer_over_the_left_card_and_closes_it)
     screen_tap(SETB_X, BTN_Y);
     screen_tap(PROG_X, BTN_Y);
     CHECK(kst_panel_is_open());
-    tap(val(PG_SERVO, 0, 0));
-    CHECK_EQ(kst_panel_editor(), 1);
-    key(UI_KEY_CANCEL);
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
 }
 
-TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_holds_a_channel)
+TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 {
     servo_cmd_t junk;
 
     fresh_screen();
     link_up();
     screen_tap(PROG_X, BTN_Y);
-    type_channel((int)RIG_CH + 1);
     tap(val(PG_SERVO, 0, 1));
     settle();
     CHECK(kst_panel_holds_port());
@@ -2772,7 +3272,6 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
 
     link_up();
     screen_tap(PROG_X, BTN_Y);
-    type_channel((int)RIG_CH + 1);
     tap(val(PG_SERVO, 0, 1));
     settle();
     tap(val(PG_SERVO, 3, 0));
@@ -2790,9 +3289,19 @@ int main(void)
 {
     RUN(without_a_link_nothing_on_the_servo_tab_takes_a_tap);
     RUN(a_coprocessor_without_the_page_leaves_the_programmer_unavailable);
-    RUN(the_channel_is_typed_inside_1_to_16);
-    RUN(a_throttle_channel_is_refused_with_the_reason);
-    RUN(a_channel_without_a_servo_says_so_and_gives_the_output_back);
+    RUN(programming_is_locked_until_the_port_is_the_testers_target);
+    RUN(a_port_without_a_pin_is_refused_by_name);
+    RUN(a_port_without_a_servo_says_so_and_gives_the_port_back);
+    RUN(the_programming_voltage_is_typed_inside_1_to_6_v);
+    RUN(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold);
+    RUN(the_current_limit_is_typed_inside_50_to_3000_ma);
+    RUN(a_supply_that_cannot_give_the_voltage_is_refused_by_name);
+    RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line);
+    RUN(reboot_servo_without_a_supply_to_switch_says_so);
+    RUN(reboot_servo_counts_the_supply_off_and_the_servo_up);
+    RUN(reboot_servo_in_programming_mode_is_the_way_out);
+    RUN(stop_and_a_lost_link_end_the_supply_cycle_with_their_lines);
+    RUN(a_count_of_1_is_said_in_the_singular);
     RUN(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held);
     RUN(the_tabs_show_their_fields);
     RUN(a_locked_value_takes_no_tap);
@@ -2854,7 +3363,7 @@ int main(void)
     RUN(every_message_refusal_result_and_rule_has_a_line_in_german);
     RUN(every_state_is_drawn_in_both_languages);
     RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
-    RUN(the_programmer_stays_on_the_screen_while_the_port_holds_a_channel);
+    RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     return test_summary("kst_panel");
 }

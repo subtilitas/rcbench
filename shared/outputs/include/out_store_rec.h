@@ -14,6 +14,8 @@
  *   5  and the current monitors' set-up, SENSE's registers 0 to 11
  *      (protocol 4.7).
  *   6  and the phase tap's set-up, TONE's registers 0 to 6 (protocol 4.8).
+ *   7  and the programming ports' pin, slew and endpoints, 4 registers for
+ *      each of the PROG page's 4 ports (protocol 4.13).
  *
  * Each version appends to the one before, so a record's configuration is
  * the version before's with fields after it.  A save always writes the
@@ -34,7 +36,8 @@
 extern "C" {
 #endif
 
-#define OUT_STORE_VERSION    6u
+#define OUT_STORE_VERSION    7u
+#define OUT_STORE_VERSION_V6 6u
 #define OUT_STORE_VERSION_V5 5u
 #define OUT_STORE_VERSION_V4 4u
 #define OUT_STORE_VERSION_V3 3u
@@ -42,7 +45,8 @@ extern "C" {
 /** What is kept: the two pages that describe the outputs; the PD mini's
  *  wiring -- SUPPLY's ENABLE to BAUD -- so a module left on can be switched
  *  off after a restart before any panel has written the page; and the
- *  current monitors' set-up; and the phase tap's set-up.  The supply's
+ *  current monitors' set-up; and the phase tap's set-up; and where the
+ *  programming ports are and how their pulse is shaped.  The supply's
  *  command is not kept. */
 typedef struct {
     uint16_t slots[LINK_OS_COUNT];
@@ -51,12 +55,14 @@ typedef struct {
     uint16_t sense[LINK_SN_CONFIG_COUNT];
     uint16_t tone[LINK_TN_CONFIG_COUNT];
     uint16_t spare;   /**< 0; makes the set a whole number of 32-bit words */
+    uint16_t prog[LINK_PG_PORTS_MAX * 4u]; /**< prog_port_kept() */
 } out_store_t;
 
 /**
  * How many bytes of configuration a record of @p version carries, from the
  * start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5, 176 for
- * 6 (two of them spare).  0 for a version this build does not read.
+ * 6 (two of them spare), 208 for 7.  0 for a version this build does not
+ * read.
  */
 size_t out_store_cfg_size(uint16_t version);
 
@@ -66,7 +72,8 @@ size_t out_store_cfg_size(uint16_t version);
  * version does not carry starts as its page does: the supply disabled at
  * the module's 19200 baud, both current monitors off at their defaults
  * (sense_page_defaults()), the phase tap off at its defaults
- * (tone_page_defaults()).
+ * (tone_page_defaults()), programming port 0 on PROG_PORT_DEFAULT_PIN and
+ * the other ports without a pin (prog_port_defaults()).
  *
  * False for a version this build does not read, and @p out is untouched.
  */

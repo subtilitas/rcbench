@@ -23,19 +23,26 @@
 #include "link_dev.h"
 #include "link_msg.h"
 
-#define CH    3u
-#define SLOT  2u
-#define PIN   7u
-#define CH_THROTTLE 0u
+#define CH    0u          /* the programming port the servo is on */
+#define PIN   13u
+#define VIN_MV 20000u     /* the PD mini's input */
 
 static sim_t g_sim;
 static kst_port_t g_port;
-static outputs_t g_out;
 static link_dev_t g_dev;
 static kst_link_t g_k;
 static kst_prog_t g_p;
 static uint32_t g_ms;
 static bool g_safe, g_stop;
+
+/* The PD mini as the port sees it; it reads what it is asked at once. */
+static bool g_rail;            /* a PD mini answers */
+static bool g_rail_deaf;       /* it takes no request */
+static bool g_rail_stuck;      /* it takes a request and does not follow */
+static bool g_no_pin;          /* the generator has no pin for the port */
+static bool g_sup_on;
+static uint16_t g_sup_mv, g_sup_ma;
+static uint8_t g_target;       /* LINK_PG_TARGET as the control task reads */
 
 /* The control task's side of the programmer. */
 static uint32_t g_outcomes;
@@ -59,24 +66,16 @@ static unsigned g_starts_at_save;   /* g_starts when a save was asked */
 
 /* ------------------------------------------------------------- coprocessor */
 
-static bool hw_bound(void *ctx, uint8_t slot)
+static uint8_t hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    (void)slot;
-    return true;
+    return (port == CH && !g_no_pin) ? PIN : 0xFFu;
 }
 
-static bool hw_path(void *ctx, uint8_t pin)
+static bool hw_take(void *ctx, uint8_t port, uint8_t pin)
 {
     (void)ctx;
-    (void)pin;
-    return true;
-}
-
-static bool hw_take(void *ctx, uint8_t slot, uint8_t pin)
-{
-    (void)ctx;
-    (void)slot;
+    (void)port;
     (void)pin;
     return true;
 }
@@ -84,6 +83,33 @@ static bool hw_take(void *ctx, uint8_t slot, uint8_t pin)
 static void hw_give(void *ctx)
 {
     (void)ctx;
+}
+
+static void hw_supply(void *ctx, supply_port_view_t *out)
+{
+    (void)ctx;
+    memset(out, 0, sizeof(*out));
+    out->online = g_rail;
+    out->asked_on = g_sup_on;
+    out->on = g_rail && g_sup_on && !g_rail_stuck;
+    out->off = !g_sup_on && !g_rail_stuck;
+    out->set_mv = g_sup_mv;
+    out->set_ma = g_sup_ma;
+    out->vin_mv = g_rail ? VIN_MV : 0u;
+}
+
+static bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
+{
+    (void)ctx;
+    if (!g_rail || g_rail_deaf) {
+        return false;
+    }
+    g_sup_on = on;
+    if (on) {
+        g_sup_mv = mv;
+        g_sup_ma = ma;
+    }
+    return true;
 }
 
 static void page_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -96,7 +122,7 @@ static uint8_t page_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
     (void)ctx;
-    return kst_port_write(&g_port, off, n, in, &g_out, g_ms);
+    return kst_port_write(&g_port, off, n, in, g_ms);
 }
 
 static const link_page_t k_pages[] = {
@@ -108,10 +134,12 @@ static void port_fresh(void)
     kst_port_hw_t hw;
 
     memset(&hw, 0, sizeof(hw));
-    hw.bound = hw_bound;
-    hw.reply_path = hw_path;
+    hw.ports = 1u;
+    hw.pin = hw_pin;
     hw.take = hw_take;
     hw.give = hw_give;
+    hw.supply = hw_supply;
+    hw.supply_set = hw_supply_set;
     hw.driver = sim_driver(&g_sim);
     CHECK(kst_port_init(&g_port, &hw));
 }
@@ -119,17 +147,14 @@ static void port_fresh(void)
 static void fresh_at(uint32_t t0)
 {
     sim_init(&g_sim);
-    memset(&g_out, 0, sizeof(g_out));
-    g_out.slot[0].driver = OUT_DRIVER_PWM;
-    g_out.slot[0].first_channel = CH_THROTTLE;
-    g_out.slot[0].channels = 1;
-    g_out.slot[0].pin = 4;
-    g_out.channel[CH_THROTTLE].role = OUT_ROLE_THROTTLE;
-    g_out.slot[SLOT].driver = OUT_DRIVER_PWM;
-    g_out.slot[SLOT].first_channel = CH;
-    g_out.slot[SLOT].channels = 1;
-    g_out.slot[SLOT].pin = PIN;
-    g_out.channel[CH].role = OUT_ROLE_SURFACE;
+    g_rail = false;
+    g_rail_deaf = false;
+    g_rail_stuck = false;
+    g_no_pin = false;
+    g_sup_on = false;
+    g_sup_mv = 0;
+    g_sup_ma = 0;
+    g_target = 1u + CH;
     port_fresh();
     g_ms = t0;
     link_dev_init(&g_dev, k_pages, 1u, NULL, g_ms);
@@ -199,6 +224,7 @@ static void publish(void)
     f.outcome = g_outcome;
     f.stopped = g_stopped;
     f.card = g_card;
+    f.target = g_target;
     kst_prog_feed(&g_p, &f);
 }
 
@@ -379,7 +405,7 @@ TEST_CASE(a_connect_enters_and_reads_the_servo)
     CHECK(kst_prog_editable(&g_p));
     CHECK(same(kst_prog_servo(&g_p), &sv));
     CHECK(same(kst_prog_draft(&g_p), &sv));
-    CHECK_EQ(kst_prog_channel(&g_p), CH);
+    CHECK_EQ(kst_prog_port(&g_p), CH);
     CHECK_EQ(kst_prog_changes(&g_p), 0);
     CHECK(!kst_prog_write_enabled(&g_p));
     CHECK(!kst_prog_in_doubt(&g_p));
@@ -414,23 +440,30 @@ TEST_CASE(a_coprocessor_without_the_page_is_named)
              KST_PROG_MSG_START + KST_LINK_START_DOWN);
 }
 
-TEST_CASE(the_port_says_why_a_channel_is_not_taken)
+TEST_CASE(the_port_says_why_a_port_is_not_taken)
 {
     fresh_at(0u);
     link_up();
-    CHECK_EQ(kst_prog_connect(&g_p, CH_THROTTLE), KST_PROG_MSG_NONE);
+    /* The build has 1 port. */
+    g_target = CH + 2u;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH + 1u), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_THROTTLE);
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_PORT);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
-    CHECK_EQ(kst_prog_connect(&g_p, 9u), KST_PROG_MSG_NONE);
+    /* The port holds no pin. */
+    g_target = CH + 1u;
+    frame();
+    g_no_pin = true;
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_CHANNEL);
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     /* No read follows an entry that was refused. */
     CHECK_EQ(g_starts, 2);
 }
 
-TEST_CASE(no_servo_on_the_channel_is_a_message)
+TEST_CASE(no_servo_on_the_port_is_a_message)
 {
     fresh_at(0u);
     g_sim.powered = false;
@@ -969,7 +1002,7 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
                  "0000000000000A00100000\n") != NULL);
     CHECK(strstr(g_file,
                  "target=00C8C81448770465") != NULL);
-    CHECK(strstr(g_file, "\nchannel=3\ncheck=") != NULL);
+    CHECK(strstr(g_file, "\nport=0\ncheck=") != NULL);
     CHECK(strstr(g_file, "\n00=") == NULL);
     memcpy(at_write, g_file, sizeof(at_write));
     settle();
@@ -1256,7 +1289,7 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     frame();
     g_p.journal = true;
     g_p.journal_open = true;
-    g_p.journal_ch = CH;
+    g_p.journal_port = CH;
     g_p.journal_img = sv;
     g_p.journal_target = sv;
     g_p.journal_target.r[0x03] ^= 0x01u;
@@ -1271,7 +1304,7 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
     CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
-    CHECK_EQ(kst_prog_journal_channel(&g_p), CH);
+    CHECK_EQ(kst_prog_journal_port(&g_p), CH);
     frame();
     CHECK(kst_prog_in_doubt(&g_p));
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
@@ -1390,7 +1423,7 @@ TEST_CASE(a_journal_of_another_channel_is_not_this_servos)
     frame();
     g_p.journal = true;
     g_p.journal_open = true;
-    g_p.journal_ch = CH + 1u;
+    g_p.journal_port = CH + 1u;
     g_p.journal_img = sv;
     g_p.journal_target = sv;
     g_p.journal_target.r[0x03] ^= 0x01u;
@@ -1651,7 +1684,7 @@ static void by_hand(void)
     g_f.rd.phase = KST_LINK_READY;
     g_f.rd.known = true;
     g_f.rd.port = LINK_KST_PROGRAMMING;
-    g_f.rd.channel = CH;
+    g_f.rd.port_no = CH;
     g_f.rd.flags = LINK_KS_F_IN_MODE | LINK_KS_F_IMAGE | LINK_KS_F_BACKUP
                  | LINK_KS_F_FP_OK;
     g_f.have_image = true;
@@ -2191,7 +2224,7 @@ TEST_CASE(a_load_needs_a_servo_that_is_read_and_may_be_written)
     g_p.journal = true;
     g_p.journal_open = true;
     g_p.journal_other = true;
-    g_p.journal_ch = 6;
+    g_p.journal_port = 6;
     CHECK_EQ(kst_prog_load(&g_p, "F"), KST_PROG_MSG_JOURNAL_OTHER);
     CHECK_EQ(kst_prog_message(&g_p)->arg, 7);
     /* While an operation waits. */
@@ -3033,7 +3066,7 @@ TEST_CASE(a_file_the_card_did_not_take_is_written_again)
     pass(0);
     g_p.journal = true;
     g_p.journal_open = true;
-    g_p.journal_ch = CH;
+    g_p.journal_port = CH;
     g_p.journal_img = g_p.servo;
     g_p.journal_target = g_p.servo;
     kst_prog_forget(&g_p);
@@ -3178,7 +3211,7 @@ static size_t text_of(char *out, bool journal)
 
     kst_prog_init(&p);
     p.journal = journal;
-    p.journal_ch = 15;
+    p.journal_port = 15;
     p.journal_img = sim_bench_image();
     p.journal_img.r[0x05] = 0xABu;
     p.journal_target = sim_bench_image();
@@ -3205,7 +3238,7 @@ TEST_CASE(the_file_text_is_read_back_as_it_was_written)
         CHECK_EQ(kst_prog_message(&p)->id,
                  journal ? KST_PROG_MSG_JOURNAL : KST_PROG_MSG_NONE);
         if (journal) {
-            CHECK_EQ(p.journal_ch, 15);
+            CHECK_EQ(p.journal_port, 15);
             CHECK_EQ(p.journal_img.r[0x05], 0xAB);
             CHECK_EQ(p.journal_target.r[0x1F], 0xCD);
         }
@@ -3285,7 +3318,7 @@ TEST_CASE(the_file_is_written_once_per_change_and_only_to_a_card)
     CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
     g_p.journal = true;
     g_p.journal_open = true;
-    g_p.journal_ch = CH;
+    g_p.journal_port = CH;
     g_p.journal_img = g_p.servo;
     g_p.journal_target = g_p.servo;
     kst_prog_forget(&g_p);
@@ -3298,12 +3331,275 @@ TEST_CASE(the_file_is_written_once_per_change_and_only_to_a_card)
     CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
 }
 
+/* ------------------------------------------- the port, the target, the supply */
+
+TEST_CASE(a_connect_needs_the_port_as_the_testers_target)
+{
+    fresh_at(0u);
+    link_up();
+    /* The SERVO screen drives the servo outputs. */
+    g_target = 0u;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NEED_TARGET);
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_TARGET);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NEED_TARGET);
+    CHECK_EQ(g_starts, 0);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    /* Another port than the one asked for. */
+    g_target = CH + 2u;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NEED_TARGET);
+    CHECK_EQ(g_starts, 0);
+    /* STOP is said before the target. */
+    g_stopped = true;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_STOPPED);
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_STOPPED);
+    g_stopped = false;
+    g_target = CH + 1u;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    /* The target moves under a held port: nothing is taken away. */
+    g_target = 0u;
+    frame();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_have_servo(&g_p));
+    CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_VERIFIED);
+}
+
+TEST_CASE(a_connect_sets_the_supply_it_was_given)
+{
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    CHECK_EQ(kst_prog_supply_mv(&g_p), KST_PROG_SUPPLY_MV);
+    CHECK_EQ(kst_prog_supply_ma(&g_p), KST_PROG_SUPPLY_MA);
+    CHECK_EQ(kst_prog_supply_mv(&g_p), 5000);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(g_sup_on);
+    CHECK_EQ(g_sup_mv, 5000);
+    CHECK_EQ(g_sup_ma, 1000);
+
+    /* Another voltage and limit, at the port's ends. */
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    kst_prog_supply_set(&g_p, KST_PORT_SUPPLY_MAX_MV, PDMINI_I_MAX_MA);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK_EQ(g_sup_mv, KST_PORT_SUPPLY_MAX_MV);
+    CHECK_EQ(g_sup_ma, PDMINI_I_MAX_MA);
+
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    kst_prog_supply_set(&g_p, PDMINI_V_MIN_MV, PDMINI_I_MIN_MA);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(g_sup_mv, PDMINI_V_MIN_MV);
+    CHECK_EQ(g_sup_ma, PDMINI_I_MIN_MA);
+}
+
+TEST_CASE(a_supply_outside_the_ports_range_is_refused_by_name)
+{
+    static const uint16_t bad[][2] = {
+        { KST_PORT_SUPPLY_MAX_MV + 1u, 1000u },
+        { PDMINI_V_MIN_MV - 1u, 1000u },
+        { 5000u, PDMINI_I_MAX_MA + 1u },
+        { 5000u, PDMINI_I_MIN_MA - 1u },
+    };
+
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        fresh_at(0u);
+        g_rail = true;
+        link_up();
+        kst_prog_supply_set(&g_p, bad[i][0], bad[i][1]);
+        CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_RANGE);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+        CHECK(!g_sup_on);
+        /* No read is chained to it. */
+        CHECK_EQ(g_starts, 1);
+    }
+    /* With no PD mini the supply is not touched and nothing is refused. */
+    fresh_at(0u);
+    link_up();
+    kst_prog_supply_set(&g_p, KST_PORT_SUPPLY_MAX_MV + 1u, 1000u);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(!g_sup_on);
+}
+
+TEST_CASE(a_supply_that_does_not_switch_on_ends_the_connect_with_result_32)
+{
+    fresh_at(0u);
+    g_rail = true;
+    g_rail_stuck = true;
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_ENTERING);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK_EQ(g_starts, 1);
+}
+
+TEST_CASE(a_reboot_from_programming_mode_ends_the_session)
+{
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+    /* Nothing else starts under it. */
+    CHECK_EQ(kst_prog_reboot(&g_p, CH),
+             KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    CHECK_EQ(kst_prog_connect(&g_p, CH),
+             KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REBOOTED);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_INFO);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    CHECK(g_sup_on);
+}
+
+TEST_CASE(a_reboot_with_the_tester_on_the_port_switches_the_supply)
+{
+    uint32_t t0;
+
+    fresh_at(0u);
+    g_rail = true;
+    g_sup_on = true;
+    g_sup_mv = 5000;
+    g_sup_ma = 1000;
+    link_up();
+    t0 = g_ms;
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REBOOTED);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(g_sup_on);
+    /* Off for 2000 ms and 1000 ms for the servo to start. */
+    CHECK(g_ms - t0 >= KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS);
+    CHECK(g_ms - t0 < KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS + 500u);
+}
+
+TEST_CASE(a_reboot_with_nothing_to_switch_is_refused_by_name)
+{
+    /* No PD mini, the tester on the port. */
+    fresh_at(0u);
+    link_up();
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+
+    /* A PD mini whose output is off. */
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
+
+    /* No pin is said before the supply. */
+    fresh_at(0u);
+    g_rail = true;
+    g_sup_on = true;
+    g_no_pin = true;
+    link_up();
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
+
+    /* No PD mini in programming mode: the session stays. */
+    fresh_at(0u);
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_have_servo(&g_p));
+}
+
+TEST_CASE(a_supply_that_does_not_switch_off_keeps_the_session)
+{
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    g_rail_stuck = true;
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_have_servo(&g_p));
+    /* The leave still ends the session. */
+    g_rail_stuck = false;
+    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+}
+
+TEST_CASE(an_abort_in_the_supply_cycle_ends_it_with_the_reason)
+{
+    fresh_at(0u);
+    g_rail = true;
+    g_sup_on = true;
+    g_sup_mv = 5000;
+    g_sup_ma = 1000;
+    link_up();
+    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 500u; ++i) {
+        frame();
+    }
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+    kst_prog_abort(&g_p);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_ABORTED);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+}
+
 int main(void)
 {
     RUN(a_connect_enters_and_reads_the_servo);
     RUN(a_coprocessor_without_the_page_is_named);
-    RUN(the_port_says_why_a_channel_is_not_taken);
-    RUN(no_servo_on_the_channel_is_a_message);
+    RUN(the_port_says_why_a_port_is_not_taken);
+    RUN(no_servo_on_the_port_is_a_message);
+    RUN(a_connect_needs_the_port_as_the_testers_target);
+    RUN(a_connect_sets_the_supply_it_was_given);
+    RUN(a_supply_outside_the_ports_range_is_refused_by_name);
+    RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_result_32);
+    RUN(a_reboot_from_programming_mode_ends_the_session);
+    RUN(a_reboot_with_the_tester_on_the_port_switches_the_supply);
+    RUN(a_reboot_with_nothing_to_switch_is_refused_by_name);
+    RUN(a_supply_that_does_not_switch_off_keeps_the_session);
+    RUN(an_abort_in_the_supply_cycle_ends_it_with_the_reason);
     RUN(an_edit_inside_the_limits_changes_the_draft_only);
     RUN(a_value_beyond_a_hard_limit_is_not_taken);
     RUN(a_value_beyond_a_soft_limit_waits_for_the_confirmation);

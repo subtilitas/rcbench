@@ -31,7 +31,6 @@
 #define WIDE_W   200          /* a wide row's value */
 #define STEP_W   44           /* its minus and plus keys */
 #define LINE_H   18
-#define CHANNELS 16
 
 /* The plus and minus keys repeat as SETUP's do. */
 #define REPEAT_DELAY_S 0.45f
@@ -44,7 +43,7 @@ enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
 
 enum {
-    A_CHANNEL = 0, A_PORT, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
+    A_REBOOT = 0, A_PORT, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
     A_WRITE
 };
 
@@ -55,7 +54,7 @@ typedef struct {
 } row_t;
 
 static const row_t k_rows[] = {
-    { PG_SERVO, 0, 0, 0, K_ACT, A_CHANNEL, TX_KP_CHANNEL, NULL },
+    { PG_SERVO, 0, 0, 0, K_ACT, A_REBOOT, TX_KP_REBOOT, NULL },
     { PG_SERVO, 0, 1, 0, K_ACT, A_PORT, -1, "PORT" },
     { PG_SERVO, 1, 0, 0, K_ACT, A_READ, -1, "SERVO" },
     { PG_SERVO, 1, 1, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
@@ -153,6 +152,8 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_LOADED]          = { TX_KP_M_LOADED, -1 },
     [KST_PROG_MSG_LOADED_EDITED]   = { TX_KP_M_LOADED, TX_KP_FILE_EDITED },
     [KST_PROG_MSG_LOADED_UNTYPED]  = { TX_KP_M_LOADED, TX_KP_FILE_UNTYPED },
+    [KST_PROG_MSG_NEED_TARGET]     = { TX_KP_NEED_TARGET, TX_KP_NEED_TARGET_2 },
+    [KST_PROG_MSG_REBOOTED]        = { TX_KP_M_REBOOTED, -1 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -181,9 +182,7 @@ static const int16_t k_out[] = {
 static const int16_t k_ref[] = {
     [LINK_KST_REF_NONE]            = TX_KP_O_DONE,
     [LINK_KST_REF_BUSY]            = TX_KP_R_BUSY,
-    [LINK_KST_REF_CHANNEL]         = TX_KP_R_CHANNEL,
-    [LINK_KST_REF_THROTTLE]        = TX_KP_R_THROTTLE,
-    [LINK_KST_REF_NO_REPLY_PATH]   = TX_KP_R_NO_REPLY_PATH,
+    [LINK_KST_REF_PORT]            = TX_KP_R_PORT,
     [LINK_KST_REF_UNSAFE]          = TX_KP_R_UNSAFE,
     [LINK_KST_REF_NOT_PROGRAMMING] = TX_KP_R_NOT_PROGRAMMING,
     [LINK_KST_REF_NO_ENABLE]       = TX_KP_M_NEED_ENABLE,
@@ -195,6 +194,9 @@ static const int16_t k_ref[] = {
     [LINK_KST_REF_PLAN_R00]        = TX_KP_R_PLAN_R00,
     [LINK_KST_REF_PLAN_PAIRING]    = TX_KP_R_PLAN_PAIRING,
     [LINK_KST_REF_PLAN_NO_PATH]    = TX_KP_R_PLAN_NO_PATH,
+    [LINK_KST_REF_NO_PIN]          = TX_KP_R_NO_PIN,
+    [LINK_KST_REF_SUPPLY_RANGE]    = TX_KP_R_SUPPLY_RANGE,
+    [LINK_KST_REF_NO_SUPPLY]       = TX_KP_R_NO_SUPPLY,
 };
 #define REF_COUNT ((unsigned)(sizeof(k_ref) / sizeof(k_ref[0])))
 
@@ -219,6 +221,7 @@ static const int16_t k_ses[] = {
     [KST_SES_ERR_VERIFY]       = TX_KP_S_VERIFY,
     [KST_SES_ERR_DRIVER]       = TX_KP_S_DRIVER,
     [KST_SES_ERR_ABORTED]      = TX_KP_S_ABORTED,
+    [LINK_KST_RESULT_SUPPLY]   = TX_KP_S_SUPPLY,
 };
 #define SES_COUNT ((unsigned)(sizeof(k_ses) / sizeof(k_ses[0])))
 
@@ -284,13 +287,16 @@ enum {
 enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES };
 #define FILES_SAVE (-1)       /* the list's first entry: a new file */
 #define FILES_NEXT (-2)       /* its last: the files behind these   */
-enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE };
+enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE, MORE_VOLTAGE,
+       MORE_CURRENT };
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
 enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
-       W_CHECK };
+       W_CHECK, W_REBOOT, W_HV };
 
-#define KP_CHANNEL (-1)       /* the keypad edits the channel, not a row */
+/* The keypad edits what an ENTER asks of the supply, not a row. */
+#define KP_VOLTAGE (-1)
+#define KP_CURRENT (-2)
 #define CHOICE_MAX 8
 #define WARN_LINES 9
 /* The lines a page gives to the warnings of soft limits. */
@@ -301,7 +307,9 @@ static struct {
     gfx_rect_t area;
     bool       open;
     ui_tabs_t  tabs;
-    uint8_t    channel;        /* 0 to 15, the one CONNECT takes */
+    bool       hv;             /* HV SERVO: above KST_PANEL_STD_MV may be set */
+    uint8_t    rail;           /* the port's state the countdown is of */
+    uint32_t   rail_ms;        /* when it was first read */
 
     ui_keypad_t kp;
     int        kp_row;
@@ -333,6 +341,7 @@ static struct {
         char      lines[WARN_LINES][KST_PANEL_LINE];
         uint8_t   level[WARN_LINES];
         bool      no_file;      /* the page says: no card, no file */
+        uint16_t  mv;           /* W_HV: the voltage the hold sets */
         kst_prog_restore_t plan;
     } warn;
 
@@ -358,6 +367,21 @@ static unsigned ones(uint64_t v)
         ++n;
     }
     return n;
+}
+
+/* The programming port the overlay works on: the SERVO screen's target,
+ * and the first port while that is the servo outputs. */
+static uint8_t port_no(void)
+{
+    const uint8_t t = k.prog.f.target;
+
+    return t != 0u ? (uint8_t)(t - 1u) : 0u;
+}
+
+/* The SERVO screen's tester drives a programming port. */
+static bool on_port(void)
+{
+    return k.prog.f.target != 0u;
 }
 
 static bool flag(uint16_t f)
@@ -634,6 +658,34 @@ static bool do_not_use(unsigned id)
         || id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_VERIFY;
 }
 
+/* The lines that count: 1 has its own text. */
+static void stay_line(char *out, unsigned n)
+{
+    if (n == 1u) {
+        snprintf(out, KST_PANEL_LINE, "%s", TR(KP_STAY_ONE));
+    } else {
+        snprintf(out, KST_PANEL_LINE, TR(KP_STAY), n);
+    }
+}
+
+static void file_stay_line(char *out, unsigned n)
+{
+    if (n == 1u) {
+        snprintf(out, KST_PANEL_LINE, "%s", TR(KP_FILE_STAY_ONE));
+    } else {
+        snprintf(out, KST_PANEL_LINE, TR(KP_FILE_STAY), n);
+    }
+}
+
+static void write_n(char *out, size_t size, unsigned n)
+{
+    if (n == 1u) {
+        snprintf(out, size, "%s", TR(KP_WRITE_ONE));
+    } else {
+        snprintf(out, size, TR(KP_WRITE_N), n);
+    }
+}
+
 int kst_panel_message_lines(const kst_prog_msg_t *m,
                             char out[KST_PANEL_MSG_LINES][KST_PANEL_LINE])
 {
@@ -683,7 +735,8 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
                && id - KST_PROG_MSG_START < START_COUNT) {
         first = k_start[id - KST_PROG_MSG_START];
     }
-    if (first < 0) {
+    /* A number the tables leave out between two names has no line. */
+    if (first <= 0) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_UNKNOWN), id);
         return n;
     }
@@ -691,13 +744,26 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
      * tools/check_formats.py holds each to its argument. */
     switch (first) {
     case TX_KP_M_WRITTEN:
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_WRITTEN), arg);
+        if (arg == 1u) {
+            snprintf(out[n++], KST_PANEL_LINE, "%s", TR(KP_M_WRITTEN_ONE));
+        } else {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_WRITTEN), arg);
+        }
         break;
     case TX_KP_M_VERIFY_DIFF:
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_VERIFY_DIFF), arg);
+        if (arg == 1u) {
+            snprintf(out[n++], KST_PANEL_LINE, "%s",
+                     TR(KP_M_VERIFY_DIFF_ONE));
+        } else {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_VERIFY_DIFF), arg);
+        }
         break;
     case TX_KP_O_NACK:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_O_NACK), arg);
+        break;
+    case TX_KP_S_SUPPLY:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_S_SUPPLY),
+                 (unsigned)KST_PORT_SUPPLY_MS);
         break;
     case TX_KP_M_SAVED:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_SAVED),
@@ -712,8 +778,13 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
                  kst_prog_card_name(&k.prog));
         break;
     case TX_KP_M_LOADED:
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOADED),
-                 kst_prog_card_name(&k.prog), arg & 0xFFu);
+        if ((arg & 0xFFu) == 1u) {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOADED_ONE),
+                     kst_prog_card_name(&k.prog));
+        } else {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOADED),
+                     kst_prog_card_name(&k.prog), arg & 0xFFu);
+        }
         break;
     default:
         snprintf(out[n++], KST_PANEL_LINE, "%s",
@@ -724,9 +795,9 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         || id == KST_PROG_MSG_LOAD_REFUSED) {
         snprintf(out[n++], KST_PANEL_LINE, "%s", kst_panel_rule_text(arg));
     } else if (id == KST_PROG_MSG_NO_RESTORE && arg != 0u) {
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_STAY), arg);
+        stay_line(out[n++], arg);
     } else if (id == KST_PROG_MSG_LOAD_SAME && arg != 0u) {
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_FILE_STAY), arg);
+        file_stay_line(out[n++], arg);
     }
     if (second == TX_KP_M_JOURNAL_2) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_2), arg);
@@ -738,7 +809,7 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     }
     if (first == TX_KP_M_LOADED && n < KST_PANEL_MSG_LINES) {
         if ((arg >> 8) != 0u) {
-            snprintf(out[n++], KST_PANEL_LINE, TR(KP_FILE_STAY), arg >> 8);
+            file_stay_line(out[n++], arg >> 8);
         } else if (second < 0) {
             snprintf(out[n++], KST_PANEL_LINE, "%s", TR(KP_EDIT_NOTE_2));
         }
@@ -823,8 +894,12 @@ static void warn_rules(kst_rules_t rules, int room)
     }
     for (int i = 0; i < n; ++i) {
         if (n > room && i == room - 1) {
-            snprintf(warn_line(KST_PROG_WARN), KST_PANEL_LINE,
-                     TR(KP_CHECK_MORE), (unsigned)(n - i));
+            if (n - i == 1) {
+                warn_text(KST_PROG_WARN, TR(KP_CHECK_MORE_ONE));
+            } else {
+                snprintf(warn_line(KST_PROG_WARN), KST_PANEL_LINE,
+                         TR(KP_CHECK_MORE), (unsigned)(n - i));
+            }
             break;
         }
         warn_text(KST_PROG_WARN, ui_tr((ui_text_id_t)lines[i]));
@@ -921,8 +996,13 @@ static void warn_file(void)
     const int kind = kind_text(kst_prog_load_kind(p));
 
     warn_open(W_SOFT, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD));
-    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_FILE_DIFF),
-             kst_prog_card_name(p), differing(kst_prog_soft_image(p)));
+    if (differing(kst_prog_soft_image(p)) == 1u) {
+        snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE,
+                 TR(KP_FILE_DIFF_ONE), kst_prog_card_name(p));
+    } else {
+        snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_FILE_DIFF),
+                 kst_prog_card_name(p), differing(kst_prog_soft_image(p)));
+    }
     if (kind >= 0) {
         warn_text(KST_PROG_INFO, ui_tr((ui_text_id_t)kind));
     }
@@ -933,8 +1013,7 @@ static void warn_write(void)
 {
     char title[64];
 
-    snprintf(title, sizeof(title), TR(KP_WRITE_N),
-             kst_prog_changes(&k.prog));
+    write_n(title, sizeof(title), kst_prog_changes(&k.prog));
     warn_open(W_WRITE, true, title, TR(KP_HOLD_WRITE));
     warn_horn();
     warn_text(KST_PROG_INFO, TR(KP_WRITE_1));
@@ -955,13 +1034,14 @@ static void warn_restore(const kst_prog_restore_t *plan)
     warn_text(KST_PROG_INFO, ui_tr(from_text(plan->from)));
     if (plan->writes == 0xFFu) {
         warn_text(KST_PROG_INFO, TR(KP_RESTORE_ALL));
+    } else if (plan->writes == 1u) {
+        warn_text(KST_PROG_INFO, TR(KP_RESTORE_ONE));
     } else {
         snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_RESTORE_N),
                  (unsigned)plan->writes);
     }
     if (plan->stay != 0u) {
-        snprintf(warn_line(KST_PROG_WARN), KST_PANEL_LINE, TR(KP_STAY),
-                 (unsigned)plan->stay);
+        stay_line(warn_line(KST_PROG_WARN), (unsigned)plan->stay);
     }
     if (plan->unchecked) {
         warn_text(KST_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
@@ -1020,11 +1100,37 @@ static void warn_leave(void)
     }
 }
 
+/* The tester has the port and a PD mini answers: the supply goes off and
+ * on under every servo it feeds. */
+static void warn_reboot(void)
+{
+    warn_open(W_REBOOT, false, TR(KP_REBOOT), TR(KP_HOLD_CYCLE));
+    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_LEAVE_RAIL_1),
+             (unsigned)(KST_PORT_RAIL_OFF_MS / 1000u),
+             (unsigned)(KST_PORT_RAIL_WAIT_MS / 1000u));
+    warn_text(KST_PROG_WARN, TR(KP_LEAVE_RAIL_2));
+}
+
+/* A programming voltage above what a standard servo is rated for. */
+static void warn_hv(uint16_t mv)
+{
+    warn_open(W_HV, true, TR(KP_PROG_VOLTAGE), TR(SV_HOLD_TO_APPLY));
+    k.warn.mv = mv;
+    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_SUPPLY_V),
+             (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+    warn_text(KST_PROG_WARN, TR(SV_HV_1));
+    warn_text(KST_PROG_WARN, TR(SV_HV_2));
+    warn_text(KST_PROG_WARN, TR(SV_HV_3));
+    warn_text(KST_PROG_DANGER, TR(SV_HV_4));
+    warn_text(KST_PROG_INFO, TR(SV_HV_5));
+}
+
 /* The hold completed: what the page asked for. */
 static void warn_apply(void)
 {
     const int kind = k.warn.kind;
     const kst_prog_restore_t plan = k.warn.plan;
+    const uint16_t mv = k.warn.mv;
     /* The card left the slot under a page that promised a file: the page
      * comes back with what a write without one leaves out, and nothing is
      * sent before its own hold. */
@@ -1063,6 +1169,14 @@ static void warn_apply(void)
             warn_release();
         } else {
             (void)kst_prog_release(&k.prog);
+        }
+        break;
+    case W_REBOOT:
+        (void)kst_prog_reboot(&k.prog, port_no());
+        break;
+    case W_HV:
+        if (k.hv) {
+            kst_prog_supply_set(&k.prog, mv, kst_prog_supply_ma(&k.prog));
         }
         break;
     default:
@@ -1234,13 +1348,36 @@ static void edit_field(const row_t *r)
     k.kp_row = (int)(r - k_rows);
 }
 
+/* The highest programming voltage the keypad takes: a standard servo's
+ * until HV SERVO is on, then the port's. */
+static uint16_t supply_max_mv(void)
+{
+    return k.hv ? (uint16_t)KST_PORT_SUPPLY_MAX_MV
+                : (uint16_t)KST_PANEL_STD_MV;
+}
+
 static void keypad_done(float v)
 {
-    if (k.kp_row == KP_CHANNEL) {
-        const int ch = (int)lroundf(v);
+    if (k.kp_row == KP_VOLTAGE) {
+        const long mv = lroundf(v * 10.0f) * 100L;
 
-        if (ch >= 1 && ch <= CHANNELS) {
-            k.channel = (uint8_t)(ch - 1);
+        if (mv < (long)PDMINI_V_MIN_MV || mv > (long)supply_max_mv()) {
+            return;
+        }
+        if (mv > (long)KST_PANEL_STD_MV) {
+            warn_hv((uint16_t)mv);
+        } else {
+            kst_prog_supply_set(&k.prog, (uint16_t)mv,
+                                kst_prog_supply_ma(&k.prog));
+        }
+        return;
+    }
+    if (k.kp_row == KP_CURRENT) {
+        const long ma = lroundf(v);
+
+        if (ma >= (long)PDMINI_I_MIN_MA && ma <= (long)PDMINI_I_MAX_MA) {
+            kst_prog_supply_set(&k.prog, kst_prog_supply_mv(&k.prog),
+                                (uint16_t)ma);
         }
         return;
     }
@@ -1277,16 +1414,19 @@ static void act(const row_t *r)
     const kst_prog_state_t st = kst_prog_state(p);
 
     switch (r->what) {
-    case A_CHANNEL:
-        if (st == KST_PROG_PWM) {
-            ui_keypad_open(&k.kp, k.area, TR(KP_CHANNEL), "",
-                           (float)(k.channel + 1u), 1.0f, (float)CHANNELS, 0);
-            k.kp_row = KP_CHANNEL;
+    case A_REBOOT:
+        if (!flag(LINK_KS_F_RAIL)) {
+            /* No supply to switch: the port says so. */
+            (void)kst_prog_reboot(p, port_no());
+        } else if (st == KST_PROG_PROGRAMMING) {
+            warn_leave();
+        } else {
+            warn_reboot();
         }
         break;
     case A_PORT:
         if (st == KST_PROG_PWM) {
-            (void)kst_prog_connect(p, k.channel);
+            (void)kst_prog_connect(p, port_no());
         } else if (st == KST_PROG_PROGRAMMING) {
             warn_leave();
         } else if (st == KST_PROG_ENTERING || st == KST_PROG_WORKING) {
@@ -1313,9 +1453,21 @@ static void act(const row_t *r)
         break;
     case A_MORE:
         choice_open(C_MORE, TR(KP_MORE));
-        choice_add(TR(KP_VERIFY), MORE_VERIFY);
-        choice_add(TR(KP_DISCARD), MORE_DISCARD);
-        choice_add(TR(KP_RELEASE_TITLE), MORE_RELEASE);
+        if (st == KST_PROG_PWM) {
+            char label[KST_PANEL_LINE];
+            const unsigned mv = kst_prog_supply_mv(p);
+
+            snprintf(label, sizeof(label), TR(KP_SUPPLY_V), mv / 1000u,
+                     mv % 1000u / 100u);
+            choice_add(label, MORE_VOLTAGE);
+            snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
+                     (unsigned)kst_prog_supply_ma(p));
+            choice_add(label, MORE_CURRENT);
+        } else {
+            choice_add(TR(KP_VERIFY), MORE_VERIFY);
+            choice_add(TR(KP_DISCARD), MORE_DISCARD);
+            choice_add(TR(KP_RELEASE_TITLE), MORE_RELEASE);
+        }
         break;
     case A_ENABLE:
         if (kst_prog_write_enabled(p)) {
@@ -1377,6 +1529,17 @@ static void choice_done(int value)
         } else {
             (void)kst_prog_load(p, kst_prog_file_name(p, (unsigned)value));
         }
+    } else if (value == MORE_VOLTAGE) {
+        ui_keypad_open(&k.kp, k.area, TR(KP_PROG_VOLTAGE), "V",
+                       (float)kst_prog_supply_mv(p) / 1000.0f,
+                       (float)PDMINI_V_MIN_MV / 1000.0f,
+                       (float)supply_max_mv() / 1000.0f, 1);
+        k.kp_row = KP_VOLTAGE;
+    } else if (value == MORE_CURRENT) {
+        ui_keypad_open(&k.kp, k.area, TR(KP_PROG_CURRENT), "mA",
+                       (float)kst_prog_supply_ma(p), (float)PDMINI_I_MIN_MA,
+                       (float)PDMINI_I_MAX_MA, 0);
+        k.kp_row = KP_CURRENT;
     } else if (value == MORE_VERIFY) {
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {
@@ -1405,10 +1568,12 @@ static bool row_live(const row_t *r)
         return kst_prog_editable(p) && st == KST_PROG_PROGRAMMING;
     }
     switch (r->what) {
-    case A_CHANNEL:
-        return st == KST_PROG_PWM;
+    case A_REBOOT:
+        return st == KST_PROG_PROGRAMMING
+            || (st == KST_PROG_PWM && on_port());
     case A_PORT:
-        return st == KST_PROG_PWM || st == KST_PROG_PROGRAMMING
+        return (st == KST_PROG_PWM && on_port())
+            || st == KST_PROG_PROGRAMMING
             || st == KST_PROG_ENTERING || st == KST_PROG_WORKING;
     case A_READ:
     case A_FILES:
@@ -1418,7 +1583,8 @@ static bool row_live(const row_t *r)
             || kst_prog_restore_offered(p, KST_PROG_FROM_SESSION)
             || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL);
     case A_MORE:
-        return st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p);
+        return (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p))
+            || (st == KST_PROG_PWM && on_port());
     case A_ENABLE:
         return kst_prog_write_enabled(p)
             || (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p));
@@ -1749,13 +1915,40 @@ uint32_t kst_panel_hold_revision(void)
 }
 
 /* Everything of the model a render shows, as one number. */
+/* What is left of the supply's off time or of the servo's start, counted
+ * from the frame that first read the state; 0 outside both. */
+static uint32_t rail_left_ms(void)
+{
+    const kst_prog_t *p = &k.prog;
+    const uint32_t all = k.rail == LINK_KST_RAIL_OFF  ? KST_PORT_RAIL_OFF_MS
+                       : k.rail == LINK_KST_RAIL_WAIT ? KST_PORT_RAIL_WAIT_MS
+                       : 0u;
+    const uint32_t gone = (uint32_t)(p->f.now_ms - k.rail_ms);
+
+    return gone < all ? all - gone : 0u;
+}
+
+static void rail_follow(void)
+{
+    const kst_prog_t *p = &k.prog;
+    const uint8_t now = p->fed && p->f.rd.known
+                        && (p->f.rd.port == LINK_KST_RAIL_OFF
+                            || p->f.rd.port == LINK_KST_RAIL_WAIT)
+                            ? (uint8_t)p->f.rd.port : 0u;
+
+    if (now != k.rail) {
+        k.rail = now;
+        k.rail_ms = p->f.now_ms;
+    }
+}
+
 static uint32_t signature(void)
 {
     const kst_prog_t *p = &k.prog;
     const uint32_t part[] = {
         (uint32_t)kst_prog_state(p), (uint32_t)kst_prog_op(p),
         kst_prog_message(p)->seq, p->f.rd.flags, p->f.rd.frames,
-        p->f.rd.channel, kst_prog_have_servo(p), kst_prog_editable(p),
+        p->f.rd.port_no, kst_prog_have_servo(p), kst_prog_editable(p),
         (uint32_t)kst_prog_changed(p),
         (uint32_t)(kst_prog_changed(p) >> 32),
         kst_prog_backed_up(p), p->journal, kst_prog_in_doubt(p),
@@ -1763,6 +1956,9 @@ static uint32_t signature(void)
         kst_prog_card_busy(p), kst_prog_files_seq(p),
         (uint32_t)kst_prog_load_skipped(p),
         (uint32_t)(kst_prog_load_skipped(p) >> 32),
+        p->f.target, p->f.supply_read, p->f.out_mv, p->f.out_ma,
+        kst_prog_supply_mv(p), kst_prog_supply_ma(p), k.hv,
+        rail_left_ms() / 100u,
     };
     uint32_t h = 2166136261u;
 
@@ -1798,6 +1994,31 @@ static void model_moved(void)
 void kst_panel_feed(const kst_prog_feed_t *f)
 {
     kst_prog_feed(&k.prog, f);
+    rail_follow();
+    model_moved();
+}
+
+void kst_panel_set_hv(bool on)
+{
+    if (on == k.hv) {
+        return;
+    }
+    k.hv = on;
+    if (!on) {
+        if (kst_prog_supply_mv(&k.prog) > KST_PANEL_STD_MV) {
+            kst_prog_supply_set(&k.prog, KST_PROG_SUPPLY_MV,
+                                kst_prog_supply_ma(&k.prog));
+        }
+        /* An editor that offers what HV SERVO allowed. */
+        if (k.kp.open && k.kp_row == KP_VOLTAGE) {
+            k.kp.open = false;
+        }
+        if (k.warn.open && k.warn.kind == W_HV) {
+            k.warn.open = false;
+            k.warn.down = false;
+            ui_hold_reset(&k.warn.hold);
+        }
+    }
     model_moved();
 }
 
@@ -1832,12 +2053,6 @@ void kst_panel_file_done(bool ok)
 bool kst_panel_file_load(const char *text, size_t len)
 {
     const bool ok = kst_prog_file_load(&k.prog, text, len);
-
-    /* An interrupted write: CHANNEL stands on its output. */
-    if (ok && k.prog.journal
-        && kst_prog_journal_channel(&k.prog) < CHANNELS) {
-        k.channel = kst_prog_journal_channel(&k.prog);
-    }
 
     model_moved();
     return ok;
@@ -1880,7 +2095,7 @@ static int standing(const char *out[2], bool *warn)
     if (kst_prog_journal(p)) {
         /* Static: the caller draws the line after this returns. */
         static char second[KST_PANEL_LINE];
-        const unsigned ch = (unsigned)kst_prog_journal_channel(p) + 1u;
+        const unsigned ch = (unsigned)kst_prog_journal_port(p) + 1u;
 
         if (kst_prog_journal_other(p)) {
             out[0] = TR(KP_M_JOURNAL_OTHER);
@@ -1940,7 +2155,8 @@ static void draw_message(gfx_canvas_t *c)
 static void state_line(char *out, size_t n)
 {
     const kst_prog_t *p = &k.prog;
-    const unsigned ch = (unsigned)kst_prog_channel(p) + 1u;
+    const unsigned ch = (unsigned)kst_prog_port(p) + 1u;
+    const uint32_t left = rail_left_ms();
 
     switch (kst_prog_state(p)) {
     case KST_PROG_DOWN:
@@ -1953,21 +2169,77 @@ static void state_line(char *out, size_t n)
         snprintf(out, n, "%s", TR(KP_STATE_SYNC));
         break;
     case KST_PROG_PWM:
-        snprintf(out, n, TR(KP_STATE_PWM), (unsigned)k.channel + 1u);
+        if (!on_port()) {
+            snprintf(out, n, "%s", TR(KP_NEED_TARGET));
+        } else if (flag(LINK_KS_F_RAIL)) {
+            snprintf(out, n, TR(KP_STATE_PWM), (unsigned)port_no() + 1u,
+                     (unsigned)(kst_prog_supply_mv(p) / 1000u),
+                     (unsigned)(kst_prog_supply_mv(p) % 1000u / 100u),
+                     (unsigned)kst_prog_supply_ma(p));
+        } else {
+            snprintf(out, n, TR(KP_STATE_PWM_AS_IS),
+                     (unsigned)port_no() + 1u);
+        }
         break;
     case KST_PROG_ENTERING:
         snprintf(out, n, TR(KP_STATE_ENTERING), ch);
         break;
     case KST_PROG_PROGRAMMING:
-        snprintf(out, n, TR(KP_STATE_PROGRAMMING), ch);
+        if (p->f.supply_read) {
+            snprintf(out, n, TR(KP_STATE_PROG_V), ch,
+                     (unsigned)(p->f.out_mv / 1000u),
+                     (unsigned)(p->f.out_mv % 1000u / 10u),
+                     (unsigned)p->f.out_ma);
+        } else {
+            snprintf(out, n, TR(KP_STATE_PROGRAMMING), ch);
+        }
         break;
     case KST_PROG_WORKING:
         snprintf(out, n, TR(KP_STATE_WORKING), (unsigned)p->f.rd.frames);
         break;
     default:
-        snprintf(out, n, "%s", TR(KP_STATE_LEAVING));
+        if (k.rail == LINK_KST_RAIL_OFF) {
+            snprintf(out, n, TR(KP_STATE_RAIL_OFF), (unsigned)(left / 1000u),
+                     (unsigned)(left % 1000u / 100u));
+        } else if (k.rail == LINK_KST_RAIL_WAIT) {
+            snprintf(out, n, TR(KP_STATE_RAIL_WAIT), (unsigned)(left / 1000u),
+                     (unsigned)(left % 1000u / 100u));
+        } else {
+            snprintf(out, n, "%s", TR(KP_STATE_LEAVING));
+        }
         break;
     }
+}
+
+/* The line under the state: what the state needs, or the servo's type. */
+static const char *state_second(bool *type)
+{
+    const kst_prog_t *p = &k.prog;
+
+    *type = false;
+    if (kst_prog_state(p) == KST_PROG_NO_PAGE) {
+        return TR(KP_NO_PAGE_2);
+    }
+    if (kst_prog_state(p) == KST_PROG_PWM && !on_port()) {
+        return TR(KP_NEED_TARGET_2);
+    }
+    if (servo_type() != 0u) {
+        *type = true;
+        return servo_type() == 6u ? TR(KP_TYPE_V6) : TR(KP_TYPE_V8);
+    }
+    return NULL;
+}
+
+const char *kst_panel_status_line(int i)
+{
+    static char buf[KST_PANEL_LINE];
+    bool type;
+
+    if (i == 0) {
+        state_line(buf, sizeof(buf));
+        return buf;
+    }
+    return i == 1 ? state_second(&type) : NULL;
 }
 
 /* What stands until it is dealt with, over the last message. */
@@ -1988,16 +2260,15 @@ static void draw_notes(gfx_canvas_t *c)
     const kst_prog_t *p = &k.prog;
     const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
     char buf[KST_PANEL_LINE];
+    bool type;
 
     switch (k.tabs.selected) {
     case PG_SERVO:
         state_line(buf, sizeof(buf));
         line(c, 0, buf, ui_theme_color(UI_C_TEXT));
-        if (kst_prog_state(p) == KST_PROG_NO_PAGE) {
-            line(c, 1, TR(KP_NO_PAGE_2), faint);
-        } else if (servo_type() != 0u) {
-            line(c, 1, servo_type() == 6u ? TR(KP_TYPE_V6) : TR(KP_TYPE_V8),
-                 ui_theme_color(UI_C_ACCENT));
+        if (state_second(&type) != NULL) {
+            line(c, 1, state_second(&type),
+                 type ? ui_theme_color(UI_C_ACCENT) : faint);
         }
         if (kst_prog_backed_up(p)) {
             snprintf(buf, sizeof(buf), TR(KP_BACKUP_FILE),
@@ -2027,8 +2298,12 @@ static void draw_notes(gfx_canvas_t *c)
             }
         }
         if (kst_prog_load_skipped(p) != 0u) {
-            snprintf(buf, sizeof(buf), TR(KP_LOCKED_SKIPPED),
-                     ones(kst_prog_load_skipped(p)));
+            if (ones(kst_prog_load_skipped(p)) == 1u) {
+                snprintf(buf, sizeof(buf), "%s", TR(KP_LOCKED_SKIPPED_ONE));
+            } else {
+                snprintf(buf, sizeof(buf), TR(KP_LOCKED_SKIPPED),
+                         ones(kst_prog_load_skipped(p)));
+            }
             line(c, 3, buf, ui_theme_color(UI_C_WARN));
         }
         break;
@@ -2045,10 +2320,8 @@ static void act_value(const row_t *r, char *out, size_t n)
     const kst_prog_state_t st = kst_prog_state(p);
 
     switch (r->what) {
-    case A_CHANNEL:
-        snprintf(out, n, "%u", st == KST_PROG_PWM || !kst_panel_holds_port()
-                                   ? (unsigned)k.channel + 1u
-                                   : (unsigned)kst_prog_channel(p) + 1u);
+    case A_REBOOT:
+        snprintf(out, n, "%s", TR(KP_REBOOT_GO));
         break;
     case A_PORT:
         snprintf(out, n, "%s",
@@ -2072,9 +2345,21 @@ static void act_value(const row_t *r, char *out, size_t n)
         snprintf(out, n, "%s", kst_prog_write_enabled(p) ? TR(ON) : TR(OFF));
         break;
     default:
-        snprintf(out, n, TR(KP_WRITE_N), kst_prog_changes(p));
+        write_n(out, n, kst_prog_changes(p));
         break;
     }
+}
+
+const char *kst_panel_button(int page, int row, int col)
+{
+    static char buf[40];
+    const row_t *r = row_at(page, row, col);
+
+    if (r == NULL || r->kind != K_ACT) {
+        return NULL;
+    }
+    act_value(r, buf, sizeof(buf));
+    return buf;
 }
 
 static void draw_row(gfx_canvas_t *c, int i)

@@ -80,30 +80,90 @@ history is in git.
   those words. Not run on a chip.
   ([README](protocols/kst/README.md#rp2350-pin-driver))
 - **A programming port for KST and Chaservo servos on the coprocessor.**
-  Link page KST (0x32, protocol 4.12) takes one output channel out of PWM
-  (pulse-width modulation) and runs the programming session on its pin: the
-  slot renders no pulse for 50 ms, the pin is held low for 100 ms, then the
-  wire driver has it. A channel is PWM or programming, never both, and the
-  sweep, the automatic test and the sync reach no pin the port holds. After
-  the first frame the channel returns to PWM only on the panel's word that
-  the servo was without power; the bring-up module switches no servo rail.
+  A programming port is an output of its own kind with its own pin, no
+  standard servo port. Link page PROG (0x33) holds 4 ports, 1 in the
+  bring-up build, on GP13 unless another pin is stored. In PWM
+  (pulse-width modulation) the port renders a servo pulse from the bank's
+  generator: a manual command, the SERVO page's sweep and hold through
+  `TARGET`, and a SERVO_SENSE capture reach it, and a `PWM` bit switches
+  the pulse. A port's pin and a slot's pin are refused both ways.
+  Link page KST (0x32) runs the programming session on one port: the port
+  renders no pulse for 50 ms, the pin is held low for 100 ms, then the wire
+  driver has it. A port is PWM or programming, never both. The servo's
+  supply is the PD mini of the SUPPLY page: ENTER switches it on at the
+  voltage the panel stages, 1000 to 8400 mV, or lowers an output that is
+  on above it, and never raises one. POWER_CYCLED and the operation REBOOT
+  switch it off for 2000 ms and on again, and the port returns to PWM
+  1000 ms after it reads on. Both times are set values; what a KST servo
+  needs is not measured. With no PD mini answering the port switches
+  nothing and POWER_CYCLED is the operator's word. The supply ends off
+  when the heartbeat or the link is lost.
   The session runs on the coprocessor with the core's planner and limits:
   the panel sends an operation and a target image, not register writes. A
   write, a restore and a pairing release are refused unless the command
   carries the key 0x57A5, which the panel sends only with its write switch
   on. A stop, a disarm, a lost heartbeat or a silent link ends the running
   operation after the frame on the wire, at most 12 ms, and the port then
-  accepts a read of all registers before any write. Throttle channels are
-  refused. `shared/bench/kst_link.c` is the panel's half: it stages the
-  images, sends the command, polls every 50 ms and fetches the image and
-  the results.
-  The link protocol is 4.12. A panel and a coprocessor of 4.11 and 4.12
-  link and arm in both combinations, and nothing is sent to 0x32 unless
-  both have it.
-  Host suite only (`test_kst_port`, `test_kst_link`); no frame has been
-  sent to a servo. ([Link](docs/Link.md#the-kst-programming-port))
+  accepts a read of all registers before any write.
+  `shared/bench/kst_link.c` is the panel's half: it stages the images and
+  the supply, sends the command, polls every 50 ms and fetches the image
+  and the results. No screen uses it, so the panel sends nothing to either
+  page.
+  The link protocol is 4.13. Every combination of a 4.13 and an older
+  panel and coprocessor links and arms, and nothing is sent to 0x32 or
+  0x33 unless both are 4.13.
+  Host suite only (`test_kst_port`, `test_prog_port`, `test_kst_link`); no
+  frame has been sent to a servo and no pulse of a port is measured.
+  ([Link](docs/Link.md#the-kst-programming-port))
+- **A servo configuration as a text file.** `protocols/kst/kst_file.c`
+  writes the 32 registers of a KST or Chaservo servo as 35 lines of ASCII
+  (American Standard Code for Information Interchange) text, fewer than
+  1024 bytes: one line per field with its value and unit, the registers
+  in hexadecimal and a CRC-32 (cyclic redundancy check) line. A file with
+  a fitting checksum is read from its registers; one with a wrong
+  checksum is refused as damaged; one without the line is read as a
+  person's input, field line by field line, with 15 refusal codes and the
+  line number. `kst_file_load()` holds a file against the connected
+  servo: a file of the other servo type is denied, only editable fields
+  are taken, a hard-limit violation refuses the file and names field and
+  line, soft-limit findings are returned, and a locked field that differs
+  is reported and not written. `kst_type()` gives the servo type, V6 or
+  V8, from `20k_sel` (register 0x04 bit 6); the mapping rests on the
+  manufacturer's stated defaults and is read on 1 servo.
+  `shared/logfile/kst_store.c` keeps the files in the directory `KST` of
+  the card as `<name>.TXT`: it proposes `KST001` to `KST999`, checks a
+  name of 32 characters or fewer with 5 distinct refusals, never
+  replaces a file, and lists the files sorted by name. The name `KST`,
+  in any case, is refused and `KST.TXT` is left out of the list: the file
+  is a caller's record of a write under way. No screen uses
+  either, and the panel has no card functions wired to the store. Host
+  suite only (`test_kst_file`, `test_kst_store`).
+  ([README](protocols/kst/README.md#configuration-file))
 
 ### Changed
+
+- **The KST write planner takes 464 bytes of stack, down from 1,272.**
+  Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
+  the coprocessor image built with ARM GNU 14.2. The search over write
+  orders is a loop over one working image with three 7-byte arrays, not a
+  recursion of 7 levels with an image copy each, and the search for an
+  extra write keeps a 256-bit set of candidates in place of a 512-byte
+  cost table. Every plan is the same byte for byte: `test_kst_plan` pins a
+  digest over the result, the violated rules and the whole plan of
+  495,068 planner calls. No function signature differs.
+  ([Performance](docs/Performance.md#the-coprocessor))
+- **`kst_session_write()` takes 56 bytes of stack, down from 256.** The
+  session builds the planner's plan for the comparison into its own copy
+  of the running plan, which no operation reads at that time, and holds no
+  second 208-byte plan in its frame. A write command to the KST
+  programming port reaches 1,408 bytes of core 0's stack with ARM GNU
+  14.2, down from 2,416, and is no longer core 0's deepest chain: that is
+  a request that binds an output, 1,556 bytes of 4,096 on the image CI
+  builds, down from 2,392. The session takes and refuses the same plans
+  with the same results: `test_kst_session` pins a digest over the answers
+  to 120,671 calls with the planner's plans and with every single-member
+  change of each. One answer is added: a plan that is the session's own
+  copy, or overlaps it, is refused with `KST_SES_ERR_ARG`.
 
 - **Every interface to external hardware is a module under `protocols/`.**
   `protocols/dshot`, `ppm`, `sbus`, `openyge`, `pdmini` and `phase_tap`

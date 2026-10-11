@@ -73,6 +73,9 @@
 extern "C" {
 #endif
 
+/** The supply an ENTER asks for until it is set otherwise. */
+#define KST_PROG_SUPPLY_MV 5000u
+#define KST_PROG_SUPPLY_MA 1000u
 /** The file text's size, with its terminator. */
 #define KST_PROG_FILE_MAX 400u
 /** A command without an answer from the control task for this long is
@@ -179,11 +182,15 @@ enum {
                                          locked fields that differ and stay   */
     KST_PROG_MSG_LOADED_EDITED,   /**< the same for a file edited by hand   */
     KST_PROG_MSG_LOADED_UNTYPED,  /**< and for one that names no servo type */
+    KST_PROG_MSG_NEED_TARGET,     /**< the SERVO screen's target is not the
+                                       programming port                     */
+    KST_PROG_MSG_REBOOTED,        /**< the port switched the supply off and
+                                       on; the tester has the port          */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
     KST_PROG_MSG_SES   = 0x80,
-    KST_PROG_MSG_END   = 0xA0
+    KST_PROG_MSG_END   = 0xB0
 };
 
 typedef enum {
@@ -325,8 +332,16 @@ typedef struct {
     kst_link_start_t answer;   /**< what kst_link_start() said */
     uint32_t outcomes;         /**< counts kst_link_outcome() handing one out */
     kst_link_outcome_t outcome;
+    bool     supply_read;      /**< out_mv and out_ma are a reading of the
+                                    PD mini                               */
+    uint16_t out_mv;           /**< its output, mV                        */
+    uint16_t out_ma;           /**< and the current it gives, mA          */
     bool stopped;              /**< STOP is latched: no heartbeat */
     bool card;                 /**< a card takes the file */
+    uint8_t target;            /**< what the SERVO screen's tester drives
+                                    as the coprocessor reads it: 0 the
+                                    standard servo ports, 1 + n
+                                    programming port n */
 } kst_prog_feed_t;
 
 typedef struct {
@@ -343,7 +358,7 @@ typedef struct {
     bool journal_open;        /**< and the servo was not compared  */
     bool journal_other;       /**< the servo read is not the journal's */
     bool need_read;           /**< the servo's image is in doubt   */
-    uint8_t journal_ch;
+    uint8_t journal_port;
     kst_image_t journal_img;     /**< the servo before the write   */
     kst_image_t journal_target;  /**< and what the write was to leave */
 
@@ -352,7 +367,9 @@ typedef struct {
     bool backed_up;           /**< a file holds this session's servo */
     bool no_file;             /**< a write went with no card for one */
     bool held_no_file;        /**< and the held write is such a one  */
-    uint8_t channel;
+    uint8_t port;
+    uint16_t supply_mv;       /**< what an ENTER asks of the PD mini */
+    uint16_t supply_ma;
 
     uint8_t wait;             /**< what is awaited                */
     uint8_t op;               /**< link_kst_op_t on its way       */
@@ -432,7 +449,7 @@ bool kst_prog_editable(const kst_prog_t *p);
 const kst_image_t *kst_prog_servo(const kst_prog_t *p);
 const kst_image_t *kst_prog_draft(const kst_prog_t *p);
 bool kst_prog_write_enabled(const kst_prog_t *p);
-uint8_t kst_prog_channel(const kst_prog_t *p);
+uint8_t kst_prog_port(const kst_prog_t *p);
 /** A write was interrupted and the servo was not compared since. */
 bool kst_prog_journal(const kst_prog_t *p);
 /**
@@ -444,7 +461,7 @@ bool kst_prog_journal(const kst_prog_t *p);
  */
 bool kst_prog_journal_other(const kst_prog_t *p);
 /** The channel of the interrupted write, from 0. */
-uint8_t kst_prog_journal_channel(const kst_prog_t *p);
+uint8_t kst_prog_journal_port(const kst_prog_t *p);
 /** The servo may hold part of a write: a journal stands, the port asks for
  *  a read, an operation timed out, or the session is locked. */
 bool kst_prog_in_doubt(const kst_prog_t *p);
@@ -498,7 +515,20 @@ void kst_prog_discard(kst_prog_t *p);
 
 /* --- operations: KST_PROG_MSG_NONE when taken, else the message set ------- */
 
-kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t channel);
+/** Take programming port @p port, from 0, with the supply set by
+ *  kst_prog_supply_set().  KST_PROG_MSG_NEED_TARGET while the feed's target
+ *  is not that port. */
+kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port);
+/** The port switches the servo's supply off and on.  From programming mode
+ *  it ends the session; with the tester on the port it needs the target as
+ *  kst_prog_connect() does.  The port refuses it where no PD mini answers. */
+kst_prog_msg_id_t kst_prog_reboot(kst_prog_t *p, uint8_t port);
+/** What an ENTER asks of the PD mini: @p mv and its current limit @p ma.
+ *  The port checks the range.  KST_PROG_SUPPLY_MV and KST_PROG_SUPPLY_MA
+ *  after kst_prog_init(). */
+void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma);
+uint16_t kst_prog_supply_mv(const kst_prog_t *p);
+uint16_t kst_prog_supply_ma(const kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_read(kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p);
 /** The switch.  On is taken with a servo read that passes the

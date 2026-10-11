@@ -662,34 +662,37 @@ kst_ses_t kst_session_verify(kst_session_t *s, const kst_image_t *expected)
  * start, target and unlock set, and the plan has to be the one it gives:
  * the same writes in the same order, the same settled marks and the same
  * unchecked mark.  A plan changed after it was built, in its order or in
- * the mark that asks for a confirmation, is not that plan. */
-static bool plan_is_sound(const kst_plan_t *plan)
+ * the mark that asks for a confirmation, is not that plan.
+ *
+ * The planner builds into @p built, which is the session's own plan: no
+ * operation runs, so nothing reads it, and a second plan of 208 bytes is
+ * not on the stack.  @p plan does not overlap it. */
+static bool plan_is_sound(const kst_plan_t *plan, kst_plan_t *built)
 {
-    kst_plan_t built;
     kst_plan_result_t r;
 
     switch (plan->kind) {
     case KST_PLAN_EDIT:
         r = kst_plan_edit(&plan->start, &plan->target, plan->unlocked,
-                          &built, NULL);
+                          built, NULL);
         break;
     case KST_PLAN_RESTORE:
-        r = kst_plan_restore(&plan->start, &plan->target, &built);
+        r = kst_plan_restore(&plan->start, &plan->target, built);
         break;
     case KST_PLAN_RELEASE_PAIRING:
-        r = kst_plan_release_pairing(&plan->start, &built);
+        r = kst_plan_release_pairing(&plan->start, built);
         break;
     default:
         return false;
     }
-    if (r != KST_PLAN_OK || built.n != plan->n
-        || built.unchecked != plan->unchecked
-        || built.unlocked != plan->unlocked
-        || diff_mask(&built.target, &plan->target) != 0u) {
+    if (r != KST_PLAN_OK || built->n != plan->n
+        || built->unchecked != plan->unchecked
+        || built->unlocked != plan->unlocked
+        || diff_mask(&built->target, &plan->target) != 0u) {
         return false;
     }
-    for (unsigned i = 0; i < built.n; ++i) {
-        const kst_write_t *a = &built.step[i];
+    for (unsigned i = 0; i < built->n; ++i) {
+        const kst_write_t *a = &built->step[i];
         const kst_write_t *b = &plan->step[i];
 
         if (a->reg != b->reg || a->value != b->value || a->prev != b->prev
@@ -700,13 +703,25 @@ static bool plan_is_sound(const kst_plan_t *plan)
     return true;
 }
 
-static kst_ses_t write_gate(const kst_session_t *s, const kst_plan_t *plan,
+/* True when @p plan shares a byte with the session's own plan. */
+static bool plan_is_own(const kst_session_t *s, const kst_plan_t *plan)
+{
+    const uintptr_t own = (uintptr_t)&s->plan;
+    const uintptr_t given = (uintptr_t)plan;
+
+    return given < own + sizeof(s->plan) && own < given + sizeof(*plan);
+}
+
+static kst_ses_t write_gate(kst_session_t *s, const kst_plan_t *plan,
                             bool confirm_unchecked)
 {
     if (s->has_backup == 0u) {
         return KST_SES_ERR_NO_BACKUP;
     }
-    if (!plan_is_sound(plan)) {
+    if (plan_is_own(s, plan)) {
+        return KST_SES_ERR_ARG;
+    }
+    if (!plan_is_sound(plan, &s->plan)) {
         return KST_SES_ERR_BAD_PLAN;
     }
     if (plan->kind == KST_PLAN_RESTORE) {

@@ -542,7 +542,7 @@ static bool kst_file_view(const char *v)
 
 /*
  * The programmer on SERVO, driven by taps against the simulated servo of
- * kst_sim.h on CH4.  Geometry from kst_panel.h; PROGRAM is left of SETTINGS
+ * kst_sim.h on programming port 1.  Geometry from kst_panel.h; PROGRAM is left of SETTINGS
  * at the top of the right card.
  */
 static void kst_view(const char *view)
@@ -567,12 +567,6 @@ static void kst_view(const char *view)
     if (v[0] == '\0' || nopage) {
         return;
     }
-    ktap(kst_panel_value_rect(0, 0, 0));            /* CHANNEL */
-    kkey(UI_KEY_4);
-    if (strcmp(v, "-channel") == 0) {
-        return;
-    }
-    kkey(UI_KEY_OK);
     ktap(kst_panel_value_rect(0, 0, 1));            /* CONNECT */
     if (strcmp(v, "-working") == 0) {
         rig_frames(40);
@@ -699,7 +693,7 @@ static void kst_view(const char *view)
         return;
     }
     if (strcmp(v, "-other") == 0) {
-        /* Another servo on the channel: 20k_sel is not the journal's. */
+        /* Another servo on the port: 20k_sel is not the journal's. */
         kst_image_t img;
 
         memcpy(img.r, g_rig.sim.reg, sizeof(img.r));

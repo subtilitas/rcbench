@@ -208,7 +208,10 @@ Ein **Servo** nehmen, nicht den ESC. Ein Servo ist der gutmütige Fall und der,
 den das Oszilloskop am leichtesten liest.
 
 **Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13 bis
-GP22 und GP26 bis GP28.
+GP22 und GP26 bis GP28. GP13 ist der Pin des Programmierports an einem
+Koprozessor, der keinen gespeichert hat, und wird für einen Output
+verweigert, bis der Pin des Ports verlegt ist
+([Link](Link-de.md#die-programmierports)).
 **Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN), GP23, GP24, GP25
 und GP29 (vom Modul belegt, nicht auf der Stiftleiste) und GP30 aufwärts (nicht
 im Bauteil).

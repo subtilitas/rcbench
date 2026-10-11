@@ -1,5 +1,5 @@
 /*
- * A bench for the KST and Cha servo programmer's overlay (kst_panel.h): the
+ * A bench for the overlay that programs KST and Chaservo servos (kst_panel.h): the
  * simulated servo of kst_sim.h, the coprocessor's programming port, link
  * dispatch and the panel's link module, with rig_frame() as the panel's
  * control task and its card.
@@ -26,14 +26,25 @@
 #include "link_dev.h"
 #include "link_msg.h"
 
-#define RIG_CH    3u          /* the servo's channel, CH4 on the screen */
-#define RIG_SLOT  2u
-#define RIG_PIN   7u
+#define RIG_PORT  0u          /* the programming port the servo is on */
+#define RIG_PIN   13u
+#define RIG_VIN_MV 20000u     /* the PD mini's input */
 
 typedef struct {
     sim_t sim;
     kst_port_t port;
-    outputs_t out;
+
+    /* The PD mini as the port sees it.  It reads what it is asked at
+     * once. */
+    bool rail;                 /* a PD mini answers */
+    bool rail_deaf;            /* it takes no request */
+    bool no_pin;               /* the generator has no pin for the port */
+    bool sup_on;
+    uint16_t sup_mv, sup_ma;
+    unsigned sup_sets;
+    uint16_t vin_mv;           /* its input; 0 is RIG_VIN_MV */
+    uint16_t load_ma;          /* the current the servo draws */
+    uint8_t target;            /* LINK_PG_TARGET as the control task reads */
     link_dev_t dev;
     kst_link_t link;
     uint32_t ms;
@@ -60,17 +71,16 @@ typedef struct {
 
 static rig_t g_rig;
 
-static inline bool rig_hw_true1(void *ctx, uint8_t a)
+static inline uint8_t rig_hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    (void)a;
-    return true;
+    return (port == RIG_PORT && !g_rig.no_pin) ? RIG_PIN : 0xFFu;
 }
 
-static inline bool rig_hw_take(void *ctx, uint8_t slot, uint8_t pin)
+static inline bool rig_hw_take(void *ctx, uint8_t port, uint8_t pin)
 {
     (void)ctx;
-    (void)slot;
+    (void)port;
     (void)pin;
     return true;
 }
@@ -78,6 +88,36 @@ static inline bool rig_hw_take(void *ctx, uint8_t slot, uint8_t pin)
 static inline void rig_hw_give(void *ctx)
 {
     (void)ctx;
+}
+
+static inline void rig_hw_supply(void *ctx, supply_port_view_t *out)
+{
+    (void)ctx;
+    memset(out, 0, sizeof(*out));
+    out->online = g_rig.rail;
+    out->asked_on = g_rig.sup_on;
+    out->on = g_rig.rail && g_rig.sup_on;
+    out->off = !g_rig.sup_on;
+    out->set_mv = g_rig.sup_mv;
+    out->set_ma = g_rig.sup_ma;
+    out->vin_mv = !g_rig.rail ? 0u
+                : g_rig.vin_mv != 0u ? g_rig.vin_mv : RIG_VIN_MV;
+}
+
+static inline bool rig_hw_supply_set(void *ctx, bool on, uint16_t mv,
+                                     uint16_t ma)
+{
+    (void)ctx;
+    if (!g_rig.rail || g_rig.rail_deaf) {
+        return false;
+    }
+    g_rig.sup_sets++;
+    g_rig.sup_on = on;
+    if (on) {
+        g_rig.sup_mv = mv;
+        g_rig.sup_ma = ma;
+    }
+    return true;
 }
 
 static inline void rig_page_read(void *ctx, uint8_t off, uint8_t n,
@@ -91,7 +131,7 @@ static inline uint8_t rig_page_write(void *ctx, uint8_t off, uint8_t n,
                                      const uint16_t *in)
 {
     (void)ctx;
-    return kst_port_write(&g_rig.port, off, n, in, &g_rig.out, g_rig.ms);
+    return kst_port_write(&g_rig.port, off, n, in, g_rig.ms);
 }
 
 static const link_page_t k_rig_pages[] = {
@@ -104,30 +144,24 @@ static inline void rig_port_fresh(void)
     kst_port_hw_t hw;
 
     memset(&hw, 0, sizeof(hw));
-    hw.bound = rig_hw_true1;
-    hw.reply_path = rig_hw_true1;
+    hw.ports = 1u;
+    hw.pin = rig_hw_pin;
     hw.take = rig_hw_take;
     hw.give = rig_hw_give;
+    hw.supply = rig_hw_supply;
+    hw.supply_set = rig_hw_supply_set;
     hw.driver = sim_driver(&g_rig.sim);
     (void)kst_port_init(&g_rig.port, &hw);
     link_dev_init(&g_rig.dev, k_rig_pages, 1u, NULL, g_rig.ms);
 }
 
-/* A servo on CH4, a throttle on CH1, the link down, an empty card. */
+/* A servo on programming port 1, the SERVO screen's target the port, no PD
+ * mini, the link down, an empty card. */
 static inline void rig_fresh(void)
 {
     memset(&g_rig, 0, sizeof(g_rig));
     sim_init(&g_rig.sim);
-    g_rig.out.slot[0].driver = OUT_DRIVER_PWM;
-    g_rig.out.slot[0].first_channel = 0u;
-    g_rig.out.slot[0].channels = 1;
-    g_rig.out.slot[0].pin = 4;
-    g_rig.out.channel[0].role = OUT_ROLE_THROTTLE;
-    g_rig.out.slot[RIG_SLOT].driver = OUT_DRIVER_PWM;
-    g_rig.out.slot[RIG_SLOT].first_channel = RIG_CH;
-    g_rig.out.slot[RIG_SLOT].channels = 1;
-    g_rig.out.slot[RIG_SLOT].pin = RIG_PIN;
-    g_rig.out.channel[RIG_CH].role = OUT_ROLE_SURFACE;
+    g_rig.target = 1u + RIG_PORT;
     g_rig.safe = true;
     g_rig.card = true;
     rig_port_fresh();
@@ -180,6 +214,10 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->outcome = g_rig.outcome;
     f->stopped = g_rig.stopped;
     f->card = g_rig.card;
+    f->target = g_rig.target;
+    f->supply_read = g_rig.rail && g_rig.sup_on;
+    f->out_mv = f->supply_read ? g_rig.sup_mv : 0u;
+    f->out_ma = f->supply_read ? g_rig.load_ma : 0u;
 }
 
 /* 1 ms: the coprocessor, one exchange, the control task and the card. */
