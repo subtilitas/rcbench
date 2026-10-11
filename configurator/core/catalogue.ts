@@ -42,6 +42,13 @@ function photo(file: string): Src {
 
 const PAGE: Src = { kind: 'page' };
 
+/** A statement of the project owner, by its date. */
+function owner(date: string): Src {
+  return { kind: 'owner', date };
+}
+
+const OWNER = owner('2026-10-11');
+
 function pin(id: string, label: Text, src: Src, confirmed = true): Pin {
   return { id, label, confirmed, src };
 }
@@ -214,8 +221,8 @@ const parts: Part[] = [
   {
     id: 'pdmini',
     name: t(
-      'WeAct Studio PD Power Mini V1 Buck module with its T-plug',
-      'WeAct-Studio-PD-Power-Mini-V1-Buck-Modul mit T-Stecker',
+      'WeAct Studio PD Power Mini V1 Buck module',
+      'WeAct-Studio-PD-Power-Mini-V1-Buck-Modul',
     ),
     short: same('PD mini'),
     role: t(
@@ -229,11 +236,9 @@ const parts: Part[] = [
     // opposite. The check entry `pdmini-state` carries the contradiction.
     hardware: 'run',
     slot: { column: 'L', order: 6, sub: t('UART through the T-plug', 'UART über den T-Stecker') },
+    // The serial lines D+ and D− and their ground leave the USB-C socket
+    // through the T-plug, the part `usbtap`.
     pins: [
-      // DM is the receive line of the module, DP its transmit line.
-      pin('DM', same('D− (DM)'), repo(SETTINGS, 225)),
-      pin('DP', same('D+ (DP)'), repo(SETTINGS, 228)),
-      pin('G', same('GND'), guide('wires')),
       pin('USB', t('USB-C in', 'USB-C Eingang'), guide('wires')),
       pin('OP', same('OUT +'), guide('wires')),
       pin('ON', same('OUT −'), guide('wires')),
@@ -300,7 +305,8 @@ const parts: Part[] = [
       pin('VCC', same('VCC'), guide('stage-4')),
       pin('OUT', same('OUT'), repo('docs/Building.md', 107)),
       pin('GND', same('GND'), guide('stage-4')),
-      // The build guide lists no wire for this pin; docs/Building.md names it PGO.
+      // docs/Building.md names this pin PGO and ties it to GND. The print on
+      // the board is not confirmed.
       pin('GPO', same('GPO'), repo('docs/Building.md', 106), false),
       pin('SDA', same('SDA'), guide('stage-4')),
       pin('SCL', same('SCL'), guide('stage-4')),
@@ -335,11 +341,12 @@ const parts: Part[] = [
     release: 'released',
     hardware: 'not-run',
     slot: { column: 'R', order: 12 },
-    // Pin names are those of the MATEK board. With ina228Board = xt90 the pads
-    // for SDA and SCL are not stated; the check entry `ina228-xt90` says so.
+    // Pin names are those of the MATEK board. The module with XT90 plugs is
+    // wired the same; the names printed on it are not confirmed, and the check
+    // entry `ina228-xt90-pads` says so.
     pins: [
-      { id: 'V5', label: same('5V'), confirmed: true, only: { ina228Board: 'matek' }, src: guide('wires') },
-      { id: 'G', label: same('G'), confirmed: true, only: { ina228Board: 'matek' }, src: guide('wires') },
+      pin('V5', same('5V'), guide('wires')),
+      pin('G', same('G'), guide('wires')),
       pin('SDA', same('SDA'), guide('wires')),
       pin('SCL', same('SCL'), guide('wires')),
       pin('BAT', same('BAT+'), guide('wires')),
@@ -447,27 +454,29 @@ const parts: Part[] = [
   },
   {
     id: 'usbtap',
-    name: t('USB-C tap with 3-wire lead', 'USB-C-Abgriff mit 3-adriger Leitung'),
-    short: t('USB-C tap', 'USB-C-Abgriff'),
-    // The role of this part is not stated. The page draws no wire for it.
-    role: null,
+    name: t(
+      'USB-C tap with 3-wire lead, the T-plug of the PD mini',
+      'USB-C-Abgriff mit 3-adriger Leitung, der T-Stecker des PD mini',
+    ),
+    short: t('T-plug', 'T-Stecker'),
+    role: t(
+      'Sits between the USB-C PD charger and the PD mini. Brings GND, D+ and D− to the coprocessor.',
+      'Sitzt zwischen USB-C-PD-Ladegerät und PD mini. Führt GND, D+ und D− zum Koprozessor.',
+    ),
     locked: false,
     selectable: true,
     release: 'released',
     hardware: 'not-run',
-    slot: {
-      column: 'L',
-      order: 11,
-      dashed: true,
-      sub: t('role not stated', 'Aufgabe nicht angegeben'),
-    },
+    slot: { column: 'L', order: 11, sub: t('UART of the PD mini', 'UART des PD mini') },
     pins: [
-      pin('G', same('G'), photo('04'), false),
-      pin('DP', same('D+'), photo('04'), false),
-      pin('DM', same('D−'), photo('04'), false),
-      pin('V', same('V'), photo('04'), false),
+      pin('G', same('G'), OWNER),
+      // D− is the receive line of the PD mini, D+ its transmit line.
+      pin('DP', same('D+'), OWNER),
+      pin('DM', same('D−'), OWNER),
+      // No wire.
+      pin('V', same('V'), OWNER),
     ],
-    src: photo('04'),
+    src: OWNER,
   },
 ];
 
@@ -527,6 +536,10 @@ const V33_EN = '3.3 V';
 const V33_DE = '3,3 V';
 
 const PROPOSED = t('Pin proposed by this page.', 'Pin ist ein Vorschlag dieser Seite.');
+const STATED = t(
+  'Pin from an owner statement of 2026-10-11.',
+  'Pin aus einer Angabe des Projektinhabers vom 2026-10-11.',
+);
 const EXAMPLE = t(
   "Pin from the build guide's example.",
   'Pin aus dem Beispiel der Bauanleitung.',
@@ -679,30 +692,30 @@ const wires: Wire[] = [
     stage: 1, route: { kind: 'O', lane: 3 }, src: guide('wires'),
   },
   {
-    n: 16, kind: 'wire', a: 'pad.19', b: 'pdmini.DM', net: 'pd_tx', cls: 'uart',
+    n: 16, kind: 'wire', a: 'pad.10', b: 'usbtap.DM', net: 'pd_tx', cls: 'uart',
     signal: t(`UART TX, ${V33_EN}`, `UART TX, ${V33_DE}`),
     note: t(
-      `Named from the coprocessor. ${PROPOSED.en} Optional 1 kΩ in series.`,
-      `Vom Koprozessor aus benannt. ${PROPOSED.de} Optional 1 kΩ in Reihe.`,
+      `Named from the coprocessor: its TX goes to D− of the T-plug. ${STATED.en} Optional 1 kΩ in series.`,
+      `Vom Koprozessor aus benannt: sein TX geht an D− des T-Steckers. ${STATED.de} Optional 1 kΩ in Reihe.`,
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'L', lane: 9 }, pin: 'proposal',
-    src: PAGE,
+    src: OWNER,
   },
   {
-    n: 17, kind: 'wire', a: 'pdmini.DP', b: 'pad.20', net: 'pd_rx', cls: 'uart',
+    n: 17, kind: 'wire', a: 'usbtap.DP', b: 'pad.9', net: 'pd_rx', cls: 'uart',
     signal: t(`UART RX, ${V33_EN}`, `UART RX, ${V33_DE}`),
     note: t(
-      `${PROPOSED.en} Optional 1 kΩ in series.`,
-      `${PROPOSED.de} Optional 1 kΩ in Reihe.`,
+      `${STATED.en} Optional 1 kΩ in series.`,
+      `${STATED.de} Optional 1 kΩ in Reihe.`,
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'L', lane: 10 }, pin: 'proposal',
-    src: PAGE,
+    src: OWNER,
   },
   {
-    n: 18, kind: 'wire', a: 'pad.18', b: 'pdmini.G', net: 'gnd', cls: 'gnd',
+    n: 18, kind: 'wire', a: 'pad.18', b: 'usbtap.G', net: 'gnd', cls: 'gnd',
     signal: GND,
-    note: t('Through the T-plug.', 'Über den T-Stecker.'),
-    when: { has: 'pdmini' }, stage: 2, route: { kind: 'L', lane: 11 }, src: guide('wires'),
+    note: null,
+    when: { has: 'pdmini' }, stage: 2, route: { kind: 'L', lane: 11 }, src: OWNER,
   },
   {
     n: 19, kind: 'wire', a: 'charger.USB', b: 'pdmini.USB', net: 'pd_in', cls: 'power',
@@ -872,14 +885,14 @@ const wires: Wire[] = [
     n: 41, kind: 'wire', a: 'pad.40', b: 'ina228.V5', net: 'vbus', cls: 'logic',
     signal: t('supply, 5 V', 'Versorgung, 5 V'),
     note: t('The MATEK board needs 4 to 9 V.', 'Die MATEK-Platine braucht 4 bis 9 V.'),
-    when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] },
+    when: { has: 'ina228' },
     stage: 5, route: { kind: 'R', lane: 0 }, src: guide('wires'),
   },
   {
     n: 42, kind: 'wire', a: 'pad.38', b: 'ina228.G', net: 'gnd', cls: 'gnd',
     signal: GND,
     note: null,
-    when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] },
+    when: { has: 'ina228' },
     stage: 5, route: { kind: 'R', lane: 1 }, src: guide('wires'),
   },
   {
@@ -967,6 +980,17 @@ const wires: Wire[] = [
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'Z' }, pin: 'default',
     src: guide('wires'),
+  },
+  {
+    n: 54, kind: 'stub', a: 'as5600.GPO', b: null,
+    to: t('GND, on the board', 'GND, auf der Platine'),
+    net: 'gnd', cls: 'gnd',
+    signal: t('GPO strap', 'GPO-Brücke'),
+    note: t(
+      'docs/Building.md names the pin PGO. No wire to the coprocessor.',
+      'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.',
+    ),
+    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 106),
   },
 ];
 
@@ -1058,6 +1082,13 @@ const rules: Rule[] = [
     src: guide('also-needed'),
   },
   {
+    id: 'pd-tplug',
+    when: { has: 'pdmini' },
+    adds: 'usbtap',
+    because: t('UART of the PD mini', 'UART des PD mini'),
+    src: OWNER,
+  },
+  {
     id: 'servo-supply',
     when: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }] },
     adds: 'ssup',
@@ -1120,10 +1151,10 @@ const checks: Check[] = [
   {
     id: 'pd-pins', kind: 'note',
     text: t(
-      'GP14 and GP15 for the PD mini are proposals of this page. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
-      'GP14 und GP15 für den PD mini sind Vorschläge dieser Seite. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
+      'GP7 (PD mini TX) and GP6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
+      'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
     ),
-    when: { has: 'pdmini' }, src: repo(SETTINGS, 225),
+    when: { has: 'pdmini' }, src: OWNER,
   },
   {
     id: 'pdmini-state', kind: 'unknown',
@@ -1159,6 +1190,14 @@ const checks: Check[] = [
     when: { has: 'ina3221' }, src: guide('wires'),
   },
   {
+    id: 'ina3221-pullups', kind: 'unknown',
+    text: t(
+      'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
+      'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
+    ),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 291),
+  },
+  {
     id: 'matek-pullup', kind: 'measure',
     text: t(
       'MATEK board: the pull-up rail is not known. With the board powered and the coprocessor not connected, SDA and SCL read 3.3 V or less to GND.',
@@ -1168,10 +1207,19 @@ const checks: Check[] = [
     src: guide('wires'),
   },
   {
-    id: 'ina228-xt90', kind: 'unknown',
+    id: 'ina228-xt90', kind: 'note',
     text: t(
-      'INA228 module with XT90 plugs: address, supply voltage and the pads for SDA and SCL are not stated. The header print reads L A V G 5. The drawing shows no supply wire for it.',
-      'INA228-Modul mit XT90-Steckern: Adresse, Versorgungsspannung und die Pads für SDA und SCL sind nicht angegeben. Der Aufdruck der Leiste lautet L A V G 5. Die Zeichnung zeigt dafür keinen Versorgungsdraht.',
+      'INA228 module with XT90 plugs: wired as the MATEK I2C-INA-BM board, with supply, GND, SDA and SCL on the sensor bus and the same I2C address. This comes from an owner statement of 2026-10-11.',
+      'INA228-Modul mit XT90-Steckern: verdrahtet wie die MATEK-I2C-INA-BM-Platine, mit Versorgung, GND, SDA und SCL am Sensorbus und derselben I2C-Adresse. Das stammt aus einer Angabe des Projektinhabers vom 2026-10-11.',
+    ),
+    when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
+    src: OWNER,
+  },
+  {
+    id: 'ina228-xt90-pads', kind: 'unknown',
+    text: t(
+      'INA228 module with XT90 plugs: the pad names printed on the board are not confirmed. The header print reads L A V G 5. The drawing uses the pad names of the MATEK board.',
+      'INA228-Modul mit XT90-Steckern: Die auf der Platine gedruckten Padnamen sind nicht bestätigt. Der Aufdruck der Leiste lautet L A V G 5. Die Zeichnung verwendet die Padnamen der MATEK-Platine.',
     ),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
     src: photo('15'),
@@ -1179,8 +1227,8 @@ const checks: Check[] = [
   {
     id: 'as5600-board', kind: 'unknown',
     text: t(
-      'AS5600 board: pull-ups on the board are not known. GPO: the build guide lists no wire; Building.md ties PGO to GND. The page draws no wire.',
-      'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. GPO: Die Bauanleitung nennt keinen Draht; Building.md legt PGO an GND. Die Seite zeichnet keinen Draht.',
+      'AS5600 board: pull-ups on the board are not known. The print of the pin GPO, named PGO in Building.md, is not confirmed. It is tied to GND.',
+      'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO, in Building.md PGO genannt, ist nicht bestätigt. Er liegt an GND.',
     ),
     when: { has: 'as5600' }, src: repo('docs/Building.md', 106),
   },
@@ -1209,12 +1257,12 @@ const checks: Check[] = [
     when: { has: 'estop' }, src: photo('11'),
   },
   {
-    id: 'usbtap-role', kind: 'unknown',
+    id: 'usbtap-v', kind: 'note',
     text: t(
-      'USB-C tap: its role is not stated. The pad names G, D+, D− and V are read from one photo. The page draws no wire for it.',
-      'USB-C-Abgriff: Seine Aufgabe ist nicht angegeben. Die Padnamen G, D+, D− und V stammen von einem Foto. Die Seite zeichnet dafür keinen Draht.',
+      'T-plug: the V pad carries no wire. Without the PD mini the T-plug has no wire.',
+      'T-Stecker: Das Pad V bekommt keinen Draht. Ohne den PD mini hat der T-Stecker keinen Draht.',
     ),
-    when: { has: 'usbtap' }, src: photo('04'),
+    when: { has: 'usbtap' }, src: OWNER,
   },
   {
     id: 'osoyoo-labels', kind: 'unknown',
@@ -1391,8 +1439,8 @@ const pinDefaults: PinDefault[] = [
   { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 190) },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
-  { signal: 'pd_tx', gpio: 14, pad: 19, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: repo(SETTINGS, 225) },
-  { signal: 'pd_rx', gpio: 15, pad: 20, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: repo(SETTINGS, 228) },
+  { signal: 'pd_tx', gpio: 7, pad: 10, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
+  { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
 
 export const CATALOGUE: Catalogue = {

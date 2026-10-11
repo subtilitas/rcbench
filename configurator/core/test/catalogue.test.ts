@@ -10,7 +10,7 @@ import type { Catalogue } from '../../contract.ts';
 import { CATALOGUE } from '../catalogue.ts';
 import {
   BANNED_WORDS, RELEASE_TAG, checkAll, checkCounts, checkEnds, checkFunctions, checkIds,
-  checkRefs, checkRoutes, checkSrc, checkString, checkTexts, checkTree, collectAnchors,
+  OWNER_STATEMENTS, checkRefs, checkRoutes, checkSrc, checkString, checkTexts, checkTree, collectAnchors,
   collectTexts, gitTree, parseFirmwarePads, parseFirmwarePins, parseSettingDefault, wireTable,
 } from '../tools/check.ts';
 import type { Finding, Tree } from '../tools/check.ts';
@@ -120,9 +120,10 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
-  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 53 }, (_, i) => i + 1));
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 54 }, (_, i) => i + 1));
   assert.equal(CATALOGUE.functions.length, 11);
-  assert.equal(CATALOGUE.rules.length, 5);
+  assert.equal(CATALOGUE.rules.length, 6);
+  assert.equal(CATALOGUE.checks.length, 20);
   assert.equal(CATALOGUE.stages.length, 5);
   assert.equal(CATALOGUE.safety.length, 7);
   assert.equal(CATALOGUE.release, '0.16.0');
@@ -139,14 +140,13 @@ test('no part carries a photo', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'panel-terminals', 'pdmini-state', 'servotest-state', 'pd-shared', 'ina228-xt90',
-    'as5600-board', 'estop-tabs', 'usbtap-role', 'osoyoo-labels',
+    'panel-terminals', 'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups',
+    'ina228-xt90-pads', 'as5600-board', 'estop-tabs', 'osoyoo-labels',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
   assert.deepEqual(unconfirmed, [
     'panel.CANH', 'panel.CANL', 'ina3221.LP', 'as5600.GPO', 'estop.NC1', 'estop.NC2',
-    'usbtap.G', 'usbtap.DP', 'usbtap.DM', 'usbtap.V',
   ]);
   assert.deepEqual(
     CATALOGUE.parts.filter((p) => p.hardware === 'not-run').map((p) => p.id),
@@ -156,7 +156,9 @@ test('every unknown of the data is a check entry of kind unknown', () => {
     CATALOGUE.functions.filter((f) => f.hardware === 'not-run').map((f) => f.id),
     ['servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
   );
-  assert.equal(CATALOGUE.parts.find((p) => p.id === 'usbtap')?.role, null);
+  // No part is without a stated role, and no pin exists with one option value only.
+  assert.deepEqual(CATALOGUE.parts.filter((p) => p.role === null && p.selectable).map((p) => p.id), []);
+  assert.deepEqual(CATALOGUE.parts.flatMap((p) => p.pins.filter((q) => q.only !== undefined)), []);
 });
 
 // --- invariant 1 ------------------------------------------------------------
@@ -239,9 +241,25 @@ test('wire shape: stub, wire and component each need their fields', () => {
 });
 
 test('a wire on a pin of one board variant requires that variant', () => {
+  // The data holds no such pin; the supply pin of the INA228 stands in.
+  const copy = (): Catalogue => {
+    const c = structuredClone(CATALOGUE);
+    const v5 = c.parts.find((p) => p.id === 'ina228')?.pins.find((p) => p.id === 'V5');
+    assert.ok(v5);
+    v5.only = { ina228Board: 'matek' };
+    return c;
+  };
+  assert.deepEqual(checkEnds(CATALOGUE), []);
   const c = copy();
-  c.wires[40]!.when = { has: 'ina228' };
   reports(checkEnds(c), 'wire.41', /ina228Board=matek/);
+
+  const required = copy();
+  required.wires[40]!.when = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] };
+  assert.deepEqual(checkEnds(required), []);
+
+  const other = copy();
+  other.wires[40]!.when = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] };
+  reports(checkEnds(other), 'wire.41', /ina228Board=matek/);
 
   // An alternative that holds without the variant does not require it.
   const any = copy();
@@ -443,10 +461,23 @@ test('src: guide, photo and page rules', () => {
   photo.parts[4]!.pins[0]!.src = { kind: 'photo', file: '09' };
   reports(checkSrc(photo, null).findings, 'part.servo.SIG', /photo 09/);
 
-  // Photo 04 has one, until its kind changes.
+  // Photo 15 has one, until its kind changes.
   const kind = copy();
-  kind.checks.find((k) => k.id === 'usbtap-role')!.kind = 'note';
-  reports(checkSrc(kind, null).findings, 'part.usbtap.G', /photo 04/);
+  kind.parts[4]!.pins[0]!.src = { kind: 'photo', file: '15' };
+  assert.deepEqual(checkSrc(kind, null).findings, []);
+  kind.checks.find((k) => k.id === 'ina228-xt90-pads')!.kind = 'note';
+  reports(checkSrc(kind, null).findings, 'part.servo.SIG', /photo 15/);
+
+  // An owner statement is named by a date of the list.
+  const stated = copy();
+  assert.deepEqual(stated.parts.find((p) => p.id === 'usbtap')?.src, { kind: 'owner', date: '2026-10-11' });
+  assert.deepEqual(OWNER_STATEMENTS, ['2026-10-11']);
+  stated.parts[4]!.src = { kind: 'owner', date: '2026-10-11' };
+  assert.deepEqual(checkSrc(stated, null).findings, []);
+  stated.parts[4]!.src = { kind: 'owner', date: '2026-10-12' };
+  reports(checkSrc(stated, null).findings, 'part.servo', /owner statement "2026-10-12"/);
+  stated.parts[4]!.src = { kind: 'owner' } as unknown as Catalogue['parts'][number]['src'];
+  reports(checkSrc(stated, null).findings, 'part.servo', /owner statement "undefined"/);
 
   const name = copy();
   name.parts[4]!.src = { kind: 'photo', file: 'IMG_0412.jpg' };
@@ -704,7 +735,12 @@ test('the wire table prints one row per wire in the column order of the specific
   assert.equal(rows[14], '| 13 | esc.BEC | (nothing) | nc | S |  | 1 | esc |');
   assert.equal(rows[15], '| 14 | batt.POS | esc.POS | power | O | 2 | 1 | esc and escPower=battery and not ina228 |');
   assert.equal(rows[29], '| 28 | pdmini.OP | ina3221.C1A | power | X | L12, R16, C0 | 3 | servo and pdmini and ina3221 |');
+  assert.equal(rows[17], '| 16 | pad.10 | usbtap.DM | uart | L | 9 | 2 | pdmini |');
+  assert.equal(rows[18], '| 17 | usbtap.DP | pad.9 | uart | L | 10 | 2 | pdmini |');
+  assert.equal(rows[19], '| 18 | pad.18 | usbtap.G | gnd | L | 11 | 2 | pdmini |');
+  assert.equal(rows[42], '| 41 | pad.40 | ina228.V5 | logic | R | 0 | 5 | ina228 |');
   assert.equal(rows[54], '| 53 | pad.29 | pad.28 | phase | Z |  | 5 | tap |');
+  assert.equal(rows[55], '| 54 | as5600.GPO | (GND, on the board) | gnd | S |  | 4 | as5600 |');
 
   const nested = copy();
   nested.wires[0]!.when = { all: [{ any: [{ has: 'esc' }, { has: 'servo' }] }, { not: { all: [{ has: 'sd' }] } }] };

@@ -35,6 +35,9 @@ export const GUIDE_SECTIONS: ReadonlyArray<string> = [
   'stage-1', 'stage-2', 'stage-3', 'stage-4', 'stage-5', 'tap',
 ];
 
+/** Dates of the owner statements a source may name. */
+export const OWNER_STATEMENTS: ReadonlyArray<string> = ['2026-10-11'];
+
 export const BANNED_WORDS: ReadonlyArray<string> = [
   'powerful', 'seamless', 'simply', 'just', 'easy', 'robust', 'mächtig', 'nahtlos', 'einfach',
 ];
@@ -434,6 +437,11 @@ export function checkSrc(c: Catalogue, tree: Tree | null): SrcResult {
       case 'page':
         if (!pageAllowed) findings.push(err(id, 'src "page" is not allowed on this item'));
         break;
+      case 'owner':
+        if (!OWNER_STATEMENTS.includes(src.date)) {
+          findings.push(err(id, `src names the owner statement "${String(src.date)}", which is not in the list`));
+        }
+        break;
       default:
         findings.push(err(id, `src has the unknown kind "${String((src as { kind?: unknown }).kind)}"`));
     }
@@ -599,13 +607,20 @@ export function checkPins(c: Catalogue): Finding[] {
       else if (wire.pin !== pin.choice) out.push(err(id, `pin choice is ${String(wire.pin)}; pad ${n} (${pin.signal}) is ${pin.choice}`));
     }
     if (wire.pin === 'proposal') {
-      if (!wire.note || !wire.note.en.includes('Pin proposed by this page.')) {
-        out.push(err(id, 'a proposed pin has the note "Pin proposed by this page."'));
+      // A pin that is no firmware default comes from this page or from an
+      // owner statement. The wire and a check entry say which.
+      const stated = wire.src?.kind === 'owner';
+      const sentence = stated ? 'Pin from an owner statement of ' : 'Pin proposed by this page.';
+      const word = stated ? /owner statement/ : /propos/;
+      if (!wire.note || !wire.note.en.includes(sentence)) {
+        out.push(err(id, `a pin that is no firmware default has the note "${sentence}"`));
       }
       for (const n of gpioEnds) {
         const name = pads.get(n)?.name ?? '';
-        const named = c.checks.some((k) => new RegExp(`\\b${name}\\b`).test(k.text.en) && /propos/.test(k.text.en));
-        if (!named) out.push(err(id, `no check entry states that ${name} is a proposal`));
+        const named = c.checks.some((k) => new RegExp(`\\b${name}\\b`).test(k.text.en) && word.test(k.text.en));
+        if (!named) {
+          out.push(err(id, `no check entry states that ${name} is ${stated ? 'from an owner statement' : 'a proposal'}`));
+        }
       }
     }
     if (wire.pin === 'example' && (!wire.note || !wire.note.en.includes("Pin from the build guide's example."))) {

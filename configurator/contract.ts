@@ -8,6 +8,7 @@ export type Src =
   | { kind: 'repo'; path: string; line: number; tag: 'v0.16.0' }
   | { kind: 'guide'; section: string }
   | { kind: 'photo'; file: string }
+  | { kind: 'owner'; date: string }
   | { kind: 'page' };
 
 export type Release = 'released' | 'main' | 'planned';

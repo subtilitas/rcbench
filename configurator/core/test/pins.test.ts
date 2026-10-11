@@ -44,8 +44,8 @@ test('the pin table of the catalogue is legal', () => {
       ['tap', 22, 29, 'default'],
       ['esc', 5, 7, 'example'],
       ['servo', 2, 4, 'proposal'],
-      ['pd_tx', 14, 19, 'proposal'],
-      ['pd_rx', 15, 20, 'proposal'],
+      ['pd_tx', 7, 10, 'proposal'],
+      ['pd_rx', 6, 9, 'proposal'],
     ],
   );
 });
@@ -228,7 +228,8 @@ test('wires and the pin table agree', () => {
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.pin === 'proposal').map((w) => w.n), [7, 16, 17]);
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.pin === 'example').map((w) => w.n), [11]);
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.pin === 'fixed').map((w) => w.n), [4, 6]);
-  assert.deepEqual(CATALOGUE.wires.filter((w) => w.src.kind === 'page').map((w) => w.n), [7, 16, 17]);
+  assert.deepEqual(CATALOGUE.wires.filter((w) => w.src.kind === 'page').map((w) => w.n), [7]);
+  assert.deepEqual(CATALOGUE.wires.filter((w) => w.src.kind === 'owner').map((w) => w.n), [16, 17, 18]);
 
   const choice = copy();
   choice.wires[6]!.pin = 'default';
@@ -258,7 +259,16 @@ test('wires and the pin table agree', () => {
 
   const noNote = copy();
   noNote.wires[15]!.note = null;
-  reports(checkPins(noNote), 'wire.16', /Pin proposed by this page/);
+  reports(checkPins(noNote), 'wire.16', /Pin from an owner statement of/);
+
+  // The note follows the source: a page proposal on an owner pin, and the reverse.
+  const wrongNote = copy();
+  wrongNote.wires[15]!.note = { en: 'Pin proposed by this page.', de: 'Pin ist ein Vorschlag dieser Seite.' };
+  reports(checkPins(wrongNote), 'wire.16', /Pin from an owner statement of/);
+  const wrongSrc = copy();
+  wrongSrc.wires[6]!.src = { kind: 'owner', date: '2026-10-11' };
+  reports(checkPins(wrongSrc), 'wire.7', /Pin from an owner statement of/);
+  reports(checkPins(wrongSrc), 'wire.7', /no check entry states that GP2 is from an owner statement/);
 
   const example = copy();
   example.wires[10]!.note = null;
@@ -271,6 +281,6 @@ test('wires and the pin table agree', () => {
 
   const pd = copy();
   pd.checks = pd.checks.filter((k) => k.id !== 'pd-pins');
-  reports(checkPins(pd), 'wire.16', /GP14 is a proposal/);
-  reports(checkPins(pd), 'wire.17', /GP15 is a proposal/);
+  reports(checkPins(pd), 'wire.16', /GP7 is from an owner statement/);
+  reports(checkPins(pd), 'wire.17', /GP6 is from an owner statement/);
 });

@@ -5,8 +5,8 @@ checks on both. It has no runtime dependency and no build step. Node.js 24 runs
 the TypeScript files directly.
 
 The data describes release 0.16.0. Every record carries a source: a file and
-line at the tag `v0.16.0`, a section of the build guide, or a photo taken for
-the build guide. A fact that no source confirms is marked as unknown in the
+line at the tag `v0.16.0`, a section of the build guide, a photo taken for
+the build guide, or a dated statement of the project owner. A fact that no source confirms is marked as unknown in the
 data and is not asserted.
 
 ## Files
@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 53 wires, 11 functions, 5 rules, 18 check entries, 5 stages, 7 safety notes, 8 pin defaults. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 54 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
@@ -81,7 +81,7 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | Wire ends | A wire end is not a pad or a declared pin of a part, or a power wire ends on a signal pad. |
 | References | A function, rule, condition or stage names an id that does not exist. |
 | Text | A string is empty in one language, starts or ends with white space, or holds an exclamation mark, a listed marketing word, a character outside the allowed set or a tag other than `<b>` in a safety note. |
-| Sources | A record has no source, a file or line does not exist at the tag, the line is empty, or a build guide section or photo is not known. |
+| Sources | A record has no source, a file or line does not exist at the tag, the line is empty, or a build guide section, a photo or the date of an owner statement is not known. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 16, right 0 to 20, outer 0 to 7, channel 0 to 4). |
 | Tree | The pads, the reserved pins, the heartbeat pin or a pin default differ from the firmware sources at the tag. |
@@ -130,8 +130,11 @@ Line coverage of the resolver, measured by `node --test --experimental-test-cove
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `CANH` and `CANL` of the panel, `LP` of the INA3221 board, `GPO` of the AS5600 board, `NC1` and `NC2` of the emergency stop switch, and the 4 pins of the USB breakout. No source at `v0.16.0` shows their position.
-- Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, USB breakout.
+- Pins marked unconfirmed: `CANH` and `CANL` of the panel, `LP` of the INA3221 board, `GPO` of the AS5600 board, `NC1` and `NC2` of the emergency stop switch. No source at `v0.16.0` shows their position.
+- Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, T-plug of the PD mini.
 - Functions with the state "not run on hardware": servo current, angle, ESC power, stick programming, tap, emergency stop.
-- The pins for the servo signal (GP2) and the PD board serial lines (GP14, GP15) are proposals of this data file. The firmware default for both PD pins is -1 (off), and the repository names no servo pin.
-- Check entries of kind `unknown` state each open point in the text of a setup.
+- The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
+- The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
+- The INA228 module with XT90 plugs is wired as the MATEK board per the same owner statement. The pad names printed on it are not confirmed.
+- With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
+- 9 check entries of kind `unknown` state each open point in the text of a setup.

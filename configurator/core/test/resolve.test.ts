@@ -95,7 +95,7 @@ test('everything selected: every function and every part you own', () => {
   assert.ok(setup.functions.every((f) => f.chosen && f.enabled && f.missing.length === 0));
   assert.deepEqual(wireNumbers(setup), [
     1, 2, 3, 5, 6, 7, 8, 11, 12, 13, 16, 17, 18, 19, 21, 23, 24, 25, 26, 27, 28, 30, 31, 32,
-    33, 34, 35, 36, 37, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53,
+    33, 34, 35, 36, 37, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54,
   ]);
   assert.deepEqual(setup.ignored, []);
   assert.ok(setup.parts.filter((p) => p.part.selectable).every((p) => p.ownedTick));
@@ -103,11 +103,10 @@ test('everything selected: every function and every part you own', () => {
 
 test('everything selected on the other value of each option', () => {
   const setup = resolve(CATALOGUE, select([], SELECTABLE, { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd' }));
-  assert.ok(!wireNumbers(setup).includes(41));
-  assert.ok(!wireNumbers(setup).includes(42));
-  assert.ok(wireNumbers(setup).includes(43));
+  // The module with XT90 plugs is wired as the MATEK board.
+  for (const n of [41, 42, 43, 44]) assert.ok(wireNumbers(setup).includes(n), `wire ${n}`);
   const ids = setup.checks.map((c) => c.id);
-  for (const id of ['ina228-xt90', 'osoyoo-labels', 'osoyoo-terminals', 'pd-shared']) assert.ok(ids.includes(id), id);
+  for (const id of ['ina228-xt90', 'ina228-xt90-pads', 'osoyoo-labels', 'osoyoo-terminals', 'pd-shared']) assert.ok(ids.includes(id), id);
   assert.ok(!ids.includes('matek-pullup'));
 });
 
@@ -115,7 +114,7 @@ test('every single part you own resolves to itself, what it needs, and the locke
   const expected: Record<string, string[]> = {
     servo: ['servo', 'ssup'],
     esc: ['esc', 'batt'],
-    pdmini: ['pdmini', 'charger'],
+    pdmini: ['pdmini', 'charger', 'usbtap'],
     ina3221: ['ina3221'],
     as5600: ['as5600', 'pull'],
     ina228: ['pull', 'ina228'],
@@ -179,7 +178,22 @@ test('rule: a servo without the PD mini adds the servo supply; with it, none', (
   assert.deepEqual(part(supplied, 'charger').addedBy, [
     { kind: 'rule', id: 'pd-charger', because: { en: 'PD mini', de: 'PD mini' } },
   ]);
+  // The T-plug carries the serial lines of the PD mini.
+  assert.ok(partIds(supplied).includes('usbtap'));
+  assert.deepEqual(part(supplied, 'usbtap').addedBy, [
+    { kind: 'rule', id: 'pd-tplug', because: { en: 'UART of the PD mini', de: 'UART des PD mini' } },
+  ]);
+  assert.equal(part(supplied, 'usbtap').derived, true);
+  assert.equal(part(supplied, 'usbtap').ownedTick, false);
   assert.deepEqual(wireNumbers(supplied), [1, 2, 3, 4, 7, 8, 16, 17, 18, 19, 20, 21]);
+  assert.deepEqual(
+    supplied.wires.filter((w) => [16, 17, 18].includes(w.n)).map((w) => [w.a, w.b]),
+    [['pad.10', 'usbtap.DM'], ['usbtap.DP', 'pad.9'], ['pad.18', 'usbtap.G']],
+  );
+  // Owned without the PD mini it has no wire.
+  const tapAlone = resolve(CATALOGUE, select([], ['usbtap']));
+  assert.deepEqual(wireNumbers(tapAlone), [1, 2, 3, 4]);
+  assert.ok(tapAlone.checks.some((c) => c.id === 'usbtap-v'));
 });
 
 test('rule: the ESC takes its battery, or with ESC power B the PD mini and its charger', () => {
@@ -188,7 +202,7 @@ test('rule: the ESC takes its battery, or with ESC power B the PD mini and its c
   assert.deepEqual(wireNumbers(battery), [1, 2, 3, 4, 11, 12, 13, 14, 15]);
 
   const pd = resolve(CATALOGUE, select(['esc'], [], { escPower: 'pd' }));
-  assert.deepEqual(partIds(pd), [...LOCKED, 'esc', 'pdmini', 'charger']);
+  assert.deepEqual(partIds(pd), [...LOCKED, 'esc', 'pdmini', 'charger', 'usbtap']);
   assert.deepEqual(part(pd, 'pdmini').addedBy, [
     { kind: 'rule', id: 'esc-pd', because: { en: 'ESC power B', de: 'ESC-Versorgung B' } },
   ]);
@@ -215,7 +229,7 @@ test('rule: a sensor on the bus without the INA3221 adds the pull-ups', () => {
 test('rules run once and in order: a rule reads the part an earlier rule adds', () => {
   // esc-pd adds the PD mini; pd-charger, after it, adds the charger; servo-supply sees the PD mini.
   const setup = resolve(CATALOGUE, select(['servo', 'esc'], [], { escPower: 'pd' }));
-  assert.deepEqual(partIds(setup), [...LOCKED, 'servo', 'esc', 'pdmini', 'charger']);
+  assert.deepEqual(partIds(setup), [...LOCKED, 'servo', 'esc', 'pdmini', 'charger', 'usbtap']);
 
   // With the order reversed one pass is not complete: the charger is missing.
   const reversed: Catalogue = { ...CATALOGUE, rules: [...CATALOGUE.rules].reverse() };
@@ -319,12 +333,13 @@ test('the INA228 board variant selects the supply wires and the check entry', ()
   assert.ok([41, 42, 43, 44, 45, 47].every((n) => wireNumbers(matek).includes(n)));
   assert.ok(!wireNumbers(matek).includes(14));
   assert.ok(matek.checks.some((c) => c.id === 'matek-pullup'));
-  assert.ok(!matek.unknown.some((u) => u.id === 'ina228-xt90'));
+  assert.ok(!matek.checks.some((c) => c.id.startsWith('ina228-xt90')));
 
   const xt90 = resolve(CATALOGUE, select(['escpow'], [], { ina228Board: 'xt90' }));
-  assert.ok([41, 42].every((n) => !wireNumbers(xt90).includes(n)));
-  assert.ok([43, 44, 45, 47].every((n) => wireNumbers(xt90).includes(n)));
-  assert.ok(xt90.unknown.some((u) => u.id === 'ina228-xt90'));
+  assert.deepEqual(wireNumbers(xt90), wireNumbers(matek));
+  assert.ok(xt90.unknown.some((u) => u.id === 'ina228-xt90-pads'));
+  assert.equal(xt90.checks.find((c) => c.id === 'ina228-xt90')?.kind, 'note');
+  assert.ok(!xt90.checks.some((c) => c.id === 'matek-pullup'));
 });
 
 // --- wires --------------------------------------------------------------------
@@ -346,8 +361,8 @@ test('the INA3221 moves the plus wire of the servo through its shunt', () => {
 test('the unknown list is the checks of kind unknown, in data order', () => {
   const setup = resolve(CATALOGUE, select(FUNCTIONS, SELECTABLE, { connection: 'osoyoo', ina228Board: 'xt90' }));
   assert.deepEqual(setup.unknown.map((u) => u.id), [
-    'panel-terminals', 'pdmini-state', 'servotest-state', 'pd-shared', 'ina228-xt90',
-    'as5600-board', 'estop-tabs', 'usbtap-role', 'osoyoo-labels',
+    'panel-terminals', 'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups',
+    'ina228-xt90-pads', 'as5600-board', 'estop-tabs', 'osoyoo-labels',
   ]);
   for (const u of setup.unknown) {
     const check = setup.checks.find((c) => c.id === u.id);
