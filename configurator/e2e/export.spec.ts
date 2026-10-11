@@ -169,6 +169,32 @@ test.describe('PDF export, failure paths and limits', () => {
     expect(seen.foreign).toEqual([]);
   });
 
+  test('the link in the PDF holds no id of a function without a tick', async ({ page }) => {
+    const seen = watch(page);
+    const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+    expect(base.length).toBeGreaterThan(0);
+    // A link that names every function: the page keeps its address until a change.
+    const opened = `#v=1&f=${CATALOGUE.functions.map((f) => f.id).join(',')}`;
+    await open(page, opened);
+    expect(new URL(page.url()).hash).toBe(opened);
+    const waiting = page.waitForEvent('download');
+    await page.locator('#b-pdf').click();
+    const pdf = await parse(await waiting);
+    const text = pdf.text.replace(/\s+/g, '');
+    expect(text).toContain(`#v=1&f=${FUNCTIONS.join(',')}`);
+    expect(text).not.toContain(opened);
+    // The document lists each of these functions as enabled.
+    for (const f of base) expect(pdf.text.replace(/\s+/g, ' ')).toContain(f.name.en);
+    // The same setup without these ids in the link gives the same file name.
+    const first = (await waiting).suggestedFilename();
+    await open(page, `#v=1&f=${FUNCTIONS.join(',')}`);
+    const again = page.waitForEvent('download');
+    await page.locator('#b-pdf').click();
+    expect((await again).suggestedFilename()).toBe(first);
+    expect(seen.errors).toEqual([]);
+    expect(seen.foreign).toEqual([]);
+  });
+
   test('a double click and clicks during the export start 1 download', async ({ page }) => {
     const seen = watch(page);
     await open(page, FULL);

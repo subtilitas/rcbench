@@ -188,7 +188,7 @@ export chunk on the first use.
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
 | Wire table | The header row repeats on every page. No row is split. |
-| Metadata | Title, document language, creator. Links: the share link. |
+| Metadata | Title, document language, creator. Links: the share link, written without the ids of the functions that need no part. |
 | Output | The same bytes for the same setup, language, share link and date. |
 | Size | 44 kB for the smallest setup (4 pages), 64 kB for the largest (8 pages). |
 

@@ -63,6 +63,22 @@ function readHash(): void {
   if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
 }
 
+/**
+ * The link the PDF prints: the address of the page without the ids of the
+ * functions that need no part. The page keeps the link that opened it until
+ * a change, so such an id can stand in the address.
+ */
+function shareUrl(): string {
+  const at = location.href.indexOf('#');
+  if (at < 0) return location.href;
+  const keys = location.href.slice(at + 1).split('&').flatMap((key) => {
+    if (!key.startsWith('f=')) return [key];
+    const ids = key.slice(2).split(',').filter((id) => !BASE_IDS.has(id));
+    return ids.length > 0 ? [`f=${ids.join(',')}`] : [];
+  });
+  return `${location.href.slice(0, at)}#${keys.join('&')}`;
+}
+
 function writeHash(): void {
   history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE)}`);
 }
@@ -116,7 +132,7 @@ function render(focusId?: string): void {
   const pan = byId('pan');
   if (pan) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
   updatePanHint();
-  syncPdf(lang, location.href);
+  syncPdf(lang, shareUrl());
   if (focusId) byId(focusId)?.focus({ preventScroll: true });
   // The question opens under its control; it is brought into view with its 2 answers.
   if (focusId === 'rm-no') byId('rmwarn')?.scrollIntoView({ block: 'nearest' });
@@ -235,7 +251,7 @@ document.addEventListener('click', (event) => {
     keepPart();
   } else if (el.id === 'b-pdf') {
     const setup = tryResolve(selection);
-    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, location.href);
+    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, shareUrl());
   } else if (el.id === 'b-reset') {
     selection = base();
     notices = [];
