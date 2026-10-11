@@ -75,31 +75,64 @@ function copro(d: Dwg): void {
   canTerminal(d, 30 + 134, 40 + 664);
 }
 
+/** The 3 rows of the servo strips of the breakout board, from the screw terminal inward. */
+export const STRIP_ROWS = ['S', 'V', 'G'] as const;
+export type StripRow = (typeof STRIP_ROWS)[number];
+const STRIP = { pitch: 34, y0: 84, left: [126, 135, 144], right: [344, 335, 326], colours: ['#1c4fa8', '#b3261e', '#17181c'] } as const;
+
+/**
+ * The pin of a servo strip of `copro--osoyoo.svg` in px of the drawing: the pin of
+ * row S, V or G beside the screw terminal of a pad, 1 to 40. A plug leaves towards
+ * the viewer, so the point carries the side of the board edge of its pad.
+ */
+export function stripPoint(pad: number, row: StripRow): { x: number; y: number; side: 'W' | 'E' } {
+  if (!Number.isInteger(pad) || pad < 1 || pad > 40) throw new Error(`pad ${pad}: the breakout board has the pads 1 to 40`);
+  const left = pad <= 20;
+  const i = STRIP_ROWS.indexOf(row);
+  return { x: (left ? STRIP.left : STRIP.right)[i]!, y: STRIP.y0 + STRIP.pitch * (left ? pad - 1 : 40 - pad), side: left ? 'W' : 'E' };
+}
+
 function coproOsoyoo(d: Dwg): void {
   d.add(d.board(16, 16, 448, 788, 'blue', 8));
   d.add(d.hole(112, 40, 8), d.hole(368, 40, 8), d.hole(112, 780, 8), d.hole(368, 780, 8));
-  const pitch = 34, y0 = 84;
+  const { pitch, y0 } = STRIP;
   d.add(`<g filter="${d.u('s3')}"><rect x="20" y="${y0 - pitch / 2 - 2}" width="38" height="${20 * pitch + 4}" rx="2" fill="#1f7a41"/><rect x="422" y="${y0 - pitch / 2 - 2}" width="38" height="${20 * pitch + 4}" rx="2" fill="#1f7a41"/></g>`);
-  // G V S rows of the carrier: on the real board, not used by the bench.
-  d.add(`<rect x="122" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="#1c4fa8"/><rect x="131" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="#b3261e"/><rect x="140" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="#17181c"/>`);
-  d.add(`<rect x="322" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="#17181c"/><rect x="331" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="#b3261e"/><rect x="340" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="#1c4fa8"/>`);
+  // Servo strips: 1 plug point with the pins S, V and G beside every screw terminal.
+  // V comes from the DC-DC converter of the carrier; a jumper selects 3.3 V or 5 V.
+  for (const xs of [STRIP.left, STRIP.right]) {
+    xs.forEach((x, i) => {
+      d.add(`<rect x="${x - 4}" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="${STRIP.colours[i]}"/>`);
+      d.add(d.text(x, y0 + 19 * pitch + 26, STRIP_ROWS[i]!, { sz: 9, a: 'middle' }));
+    });
+  }
   for (let i = 0; i < 20; i++) {
     const y = y0 + pitch * i;
     const nl = i + 1, nr = 40 - i;
     d.add(d.pole(39, y, 34, pitch, 'W'), d.pole(441, y, 34, pitch, 'E'));
     d.add(d.pin(`pad.${nl}`, 22, y, 'W', 64, y + 4.5, { sz: 13 }));
     d.add(d.pin(`pad.${nr}`, 458, y, 'E', 416, y + 4.5, { sz: 13, a: 'end' }));
-    for (const x of [126, 135, 144, 326, 335, 344]) d.add(`<circle cx="${x}" cy="${y}" r="2.6" fill="${d.u('gold')}"/>`);
+    for (const row of STRIP_ROWS) {
+      for (const p of [stripPoint(nl, row), stripPoint(nr, row)]) d.add(`<circle cx="${p.x}" cy="${p.y}" r="2.6" fill="${d.u('gold')}"/>`);
+    }
   }
   // socket strips and the module
   rpBoard(d, 163, 150, 0.55, 'header');
   canTerminal(d, 163 + 134 * 0.55, 548);
-  // Carrier parts at the USB end: DC jack at the board edge, switch, LED, 2 capacitors, inductor.
-  // The 2-pole VIN terminal of the carrier is not drawn.
+  // Carrier parts at the USB end, in the order of photo 05 from the DC jack across the board:
+  // DC jack at the board edge, switch, LED, the 3-pin voltage jumper, 2 capacitors, and the
+  // DC-DC converter: an 8-pin chip and its inductor. The group is not to scale.
+  // The 2-pole VIN terminal and the 3 x 3 pin header of the carrier are not drawn.
   d.add(`<g filter="${d.u('s3')}"><rect x="170" y="20" width="44" height="68" rx="3" fill="#1b1c20"/><rect x="178" y="20" width="28" height="12" fill="#0b0b0d"/></g>`);
-  d.add(`<g filter="${d.u('s2')}"><rect x="232" y="30" width="40" height="18" rx="2" fill="${d.u('tin')}"/><rect x="238" y="34" width="28" height="10" fill="#17181c"/><rect x="240" y="34" width="12" height="10" fill="#e9e6de"/></g>`, d.smd(296, 39, 'led'), d.smd(296, 60, 'r'));
-  d.add(`<g filter="${d.u('s3')}"><circle cx="246" cy="84" r="16" fill="${d.u('tin')}"/><path d="M233 74A16 16 0 0 1 259 74Z" fill="#1b1c20"/><circle cx="290" cy="100" r="13" fill="${d.u('tin')}"/><path d="M280 92A13 13 0 0 1 300 92Z" fill="#1b1c20"/></g>`);
-  d.add(`<rect x="176" y="98" width="34" height="30" rx="4" fill="#33363c" filter="${d.u('s2')}"/><circle cx="193" cy="113" r="9" fill="#4a4e56"/>`);
+  d.add(`<g filter="${d.u('s2')}"><rect x="232" y="30" width="40" height="18" rx="2" fill="${d.u('tin')}"/><rect x="238" y="34" width="28" height="10" fill="#17181c"/><rect x="240" y="34" width="12" height="10" fill="#e9e6de"/></g>`, d.smd(296, 39, 'led'), d.smd(296, 52, 'r'));
+  // Jumper: 3 pins, the cap on 2 of them. The print of its 2 positions is not legible in photo 05.
+  d.add(`<g filter="${d.u('s2')}"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="222" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>`);
+  for (const x of [228, 239, 250]) d.add(`<circle cx="${x}" cy="68" r="2.2" fill="${d.u('gold')}"/>`);
+  d.add(d.text(239, 90, '3V3 / 5V', { sz: 9, a: 'middle' }));
+  const cap = (x: number, y: number): string => `<circle cx="${x}" cy="${y}" r="11" fill="${d.u('tin')}"/><path d="M${x - 9} ${y - 7}A11 11 0 0 1 ${x + 9} ${y - 7}Z" fill="#1b1c20"/>`;
+  d.add(`<g filter="${d.u('s3')}">${cap(279, 76)}${cap(305, 76)}</g>`);
+  d.add(d.chip(262, 113, 18, 16, { n: 4, leg: 3 }));
+  d.add(`<rect x="284" y="98" width="30" height="30" rx="4" fill="#33363c" filter="${d.u('s2')}"/><circle cx="299" cy="113" r="9" fill="#4a4e56"/>`);
+  d.add(d.text(281, 142, 'DC-DC', { sz: 9, a: 'middle' }));
 }
 
 // ---------------------------------------------------------------- panel
@@ -629,7 +662,7 @@ export const LIST: Entry[] = [
   { file: 'copro', part: 'copro', pfx: 'cop', w: 340, h: 790, draw: copro,
     desc: T('Illustration of the RP2350-CAN board: pads 1 to 20 down the left edge, pads 40 to 21 down the right edge, CAN screw terminal at the bottom.', 'Illustration der RP2350-CAN-Platine: Pads 1 bis 20 an der linken Kante abwärts, Pads 40 bis 21 an der rechten Kante abwärts, CAN-Schraubklemme unten.') },
   { file: 'copro--osoyoo', part: 'copro', variant: 'osoyoo', pfx: 'cos', w: 480, h: 820, draw: coproOsoyoo, breakout: true,
-    desc: T('Illustration of the RP2350-CAN board in the Osoyoo breakout board: 20 screw terminals on each long edge, CAN screw terminal on the module.', 'Illustration der RP2350-CAN-Platine in der Osoyoo-Breakout-Platine: je 20 Schraubklemmen an den langen Kanten, CAN-Schraubklemme am Modul.') },
+    desc: T('Illustration of the RP2350-CAN board in the Osoyoo breakout board: 20 screw terminals on each long edge, beside each a servo plug point with the pins S, V and G, a jumper for 3.3 V or 5 V on V, CAN screw terminal on the module.', 'Illustration der RP2350-CAN-Platine in der Osoyoo-Breakout-Platine: je 20 Schraubklemmen an den langen Kanten, daneben je ein Servo-Steckplatz mit den Pins S, V und G, ein Jumper für 3,3 V oder 5 V an V, CAN-Schraubklemme am Modul.') },
   { file: 'sd', part: 'sd', pfx: 'sdc', w: 200, h: 200, draw: sd,
     desc: T('Illustration of a microSD card.', 'Illustration einer microSD-Karte.') },
   { file: 'estop', part: 'estop', pfx: 'est', w: 340, h: 200, draw: estop,

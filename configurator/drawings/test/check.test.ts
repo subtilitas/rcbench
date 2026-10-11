@@ -318,6 +318,24 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   assert.deepEqual(f(svg), []);
   const add = (s: string): string => svg.replace('</svg>', `${s}</svg>`);
   has(f(add('<script>1</script>')), 'svg', /script element/);
+  has(f(add('<svg:script>1</svg:script>')), 'svg', /script element/);
+  has(f(add('<x:SCRIPT/>')), 'svg', /script element/);
+  has(f(add('<svg:image href="#a"/>')), 'svg', /contains an image/);
+  has(f(add('<h:foreignObject/>')), 'svg', /contains an image/);
+  assert.deepEqual(f(add('<g><scripted/></g>')).filter((x) => /script element/.test(x.msg)), []);
+  has(f(add('<rect fill="URL(evil.png)"/>')), 'svg', /leaves the file/);
+  has(f(add('<rect fill="Url( \'a.svg#b\')"/>')), 'svg', /leaves the file/);
+  has(f(add('<rect fill="URL(#nothing)"/>')), 'svg', /reference to missing id nothing/);
+  // The font stack, the title and the description are stated on the root element.
+  has(f(svg.replace(/ font-family="[^"]*"/, '')), 'svg', /root element does not state a font stack/);
+  has(f(svg.replace(/ font-family="[^"]*"/, '').replace('</svg>', '<g font-family="system-ui, sans-serif"/></svg>')), 'svg', /root element does not state a font stack/);
+  const moved = (name: string): string => {
+    const attr = new RegExp(` ${name}="[^"]*"`).exec(svg)![0];
+    return svg.replace(attr, '').replace('</svg>', `<g${attr}/></svg>`);
+  };
+  has(f(moved('aria-labelledby')), 'svg', /does not name the title/);
+  has(f(moved('aria-describedby')), 'svg', /does not name the description/);
+  has(f(moved('viewBox')), 'svg', /viewBox differs/);
   has(f(add('<rect onclick="x"/>')), 'svg', /event handler/);
   has(f(add('<image href="a.png"/>')), 'svg', /contains an image/);
   has(f(add('<use href="other.svg#a"/>')), 'svg', /reference "other\.svg#a" leaves the file/);
@@ -351,6 +369,13 @@ test('the well-formedness check accepts the subset the generator writes and name
   assert.match(malformed('<svg><g a="&"/></svg>')!, /bare & in an attribute/);
   assert.equal(malformed('<svg a="x &amp; y &#38; &#x26; &lt;"><g b="&quot;"/></svg>'), null);
   assert.match(malformed('<svg>a > b</svg>')!, /bare >/);
+  assert.match(malformed('<svg>a\u0000b</svg>')!, /character U\+0000 at offset 6 is not a character of XML 1\.0/);
+  assert.match(malformed('<svg a="\u001F"/>')!, /U\+001F/);
+  assert.match(malformed('<svg>\u000B</svg>')!, /U\+000B/);
+  assert.match(malformed('<svg>\uFFFE</svg>')!, /U\+FFFE/);
+  assert.match(malformed('<svg>\uD83D</svg>')!, /U\+D83D/);
+  assert.match(malformed('<svg>\uDE00x</svg>')!, /U\+DE00/);
+  assert.equal(malformed('<svg a="\t">\n\r\u0020\u00A0\uD83D\uDE00\uFFFD</svg>'), null);
   assert.match(malformed('x<svg></svg>')!, /text outside the root element/);
   assert.match(malformed('<svg></svg>x')!, /text outside the root element/);
   assert.match(malformed('<svg>< g></svg>')!, /not a tag/);

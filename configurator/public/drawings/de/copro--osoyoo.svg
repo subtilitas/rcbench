@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 820" width="480" height="820" role="img" aria-labelledby="cos-t" aria-describedby="cos-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
 <title id="cos-t">Waveshare-RP2350-CAN-Platine, Osoyoo-Schraubklemmen-Breakout-Platine</title>
-<desc id="cos-d">Illustration der RP2350-CAN-Platine in der Osoyoo-Breakout-Platine: je 20 Schraubklemmen an den langen Kanten, CAN-Schraubklemme am Modul.</desc>
+<desc id="cos-d">Illustration der RP2350-CAN-Platine in der Osoyoo-Breakout-Platine: je 20 Schraubklemmen an den langen Kanten, daneben je ein Servo-Steckplatz mit den Pins S, V und G, ein Jumper für 3,3 V oder 5 V an V, CAN-Schraubklemme am Modul.</desc>
 <defs>
 <linearGradient id="cos-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
 <linearGradient id="cos-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
@@ -20,208 +20,218 @@
 <circle cx="112" cy="780" r="11.2" fill="url(#cos-ring)"/><circle cx="112" cy="780" r="8" fill="#efebe3" stroke="#6d737b"/>
 <circle cx="368" cy="780" r="11.2" fill="url(#cos-ring)"/><circle cx="368" cy="780" r="8" fill="#efebe3" stroke="#6d737b"/>
 <g filter="url(#cos-s3)"><rect x="20" y="65" width="38" height="684" rx="2" fill="#1f7a41"/><rect x="422" y="65" width="38" height="684" rx="2" fill="#1f7a41"/></g>
-<rect x="122" y="70" width="8" height="674" fill="#1c4fa8"/><rect x="131" y="70" width="8" height="674" fill="#b3261e"/><rect x="140" y="70" width="8" height="674" fill="#17181c"/>
-<rect x="322" y="70" width="8" height="674" fill="#17181c"/><rect x="331" y="70" width="8" height="674" fill="#b3261e"/><rect x="340" y="70" width="8" height="674" fill="#1c4fa8"/>
+<rect x="122" y="70" width="8" height="674" fill="#1c4fa8"/>
+<text x="126" y="756" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">S</text>
+<rect x="131" y="70" width="8" height="674" fill="#b3261e"/>
+<text x="135" y="756" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">V</text>
+<rect x="140" y="70" width="8" height="674" fill="#17181c"/>
+<text x="144" y="756" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">G</text>
+<rect x="340" y="70" width="8" height="674" fill="#1c4fa8"/>
+<text x="344" y="756" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">S</text>
+<rect x="331" y="70" width="8" height="674" fill="#b3261e"/>
+<text x="335" y="756" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">V</text>
+<rect x="322" y="70" width="8" height="674" fill="#17181c"/>
+<text x="326" y="756" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">G</text>
 <rect x="22" y="67" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="79" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="84" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 76.9L46.1 91.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="67" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="79" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="84" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 76.9L448.1 91.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-1" x="64" y="88.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP0</text>
 <text id="cos-lbl-pad-40" x="416" y="88.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">VBUS</text>
 <circle cx="126" cy="84" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="84" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="84" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="84" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="84" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="84" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="84" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="84" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="101" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="113" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="118" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 110.9L46.1 125.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="101" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="113" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="118" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 110.9L448.1 125.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-2" x="64" y="122.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP1</text>
 <text id="cos-lbl-pad-39" x="416" y="122.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">VSYS</text>
 <circle cx="126" cy="118" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="118" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="118" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="118" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="118" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="118" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="118" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="118" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="135" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="147" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="152" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 144.9L46.1 159.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="135" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="147" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="152" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 144.9L448.1 159.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-3" x="64" y="156.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GND</text>
 <text id="cos-lbl-pad-38" x="416" y="156.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GND</text>
 <circle cx="126" cy="152" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="152" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="152" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="152" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="152" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="152" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="152" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="152" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="169" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="181" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="186" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 178.9L46.1 193.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="169" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="181" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="186" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 178.9L448.1 193.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-4" x="64" y="190.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP2</text>
 <text id="cos-lbl-pad-37" x="416" y="190.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">3V3.EN</text>
 <circle cx="126" cy="186" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="186" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="186" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="186" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="186" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="186" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="186" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="186" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="203" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="215" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="220" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 212.9L46.1 227.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="203" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="215" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="220" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 212.9L448.1 227.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-5" x="64" y="224.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP3</text>
 <text id="cos-lbl-pad-36" x="416" y="224.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">3V3</text>
 <circle cx="126" cy="220" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="220" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="220" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="220" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="220" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="220" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="220" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="220" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="237" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="249" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="254" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 246.9L46.1 261.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="237" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="249" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="254" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 246.9L448.1 261.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-6" x="64" y="258.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP4</text>
 <text id="cos-lbl-pad-35" x="416" y="258.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">ADC.REF</text>
 <circle cx="126" cy="254" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="254" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="254" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="254" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="254" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="254" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="254" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="254" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="271" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="283" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="288" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 280.9L46.1 295.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="271" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="283" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="288" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 280.9L448.1 295.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-7" x="64" y="292.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP5</text>
 <text id="cos-lbl-pad-34" x="416" y="292.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">28 A2</text>
 <circle cx="126" cy="288" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="288" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="288" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="288" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="288" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="288" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="288" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="288" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="305" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="317" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="322" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 314.9L46.1 329.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="305" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="317" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="322" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 314.9L448.1 329.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-8" x="64" y="326.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GND</text>
 <text id="cos-lbl-pad-33" x="416" y="326.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GND</text>
 <circle cx="126" cy="322" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="322" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="322" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="322" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="322" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="322" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="322" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="322" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="339" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="351" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="356" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 348.9L46.1 363.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="339" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="351" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="356" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 348.9L448.1 363.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-9" x="64" y="360.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP6</text>
 <text id="cos-lbl-pad-32" x="416" y="360.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">27 A1</text>
 <circle cx="126" cy="356" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="356" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="356" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="356" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="356" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="356" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="356" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="356" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="373" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="385" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="390" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 382.9L46.1 397.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="373" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="385" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="390" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 382.9L448.1 397.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-10" x="64" y="394.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP7</text>
 <text id="cos-lbl-pad-31" x="416" y="394.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">26 A0</text>
 <circle cx="126" cy="390" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="390" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="390" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="390" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="390" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="390" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="390" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="390" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="407" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="419" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="424" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 416.9L46.1 431.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="407" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="419" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="424" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 416.9L448.1 431.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-11" x="64" y="428.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP8</text>
 <text id="cos-lbl-pad-30" x="416" y="428.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">RUN</text>
 <circle cx="126" cy="424" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="424" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="424" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="424" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="424" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="424" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="424" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="424" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="441" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="453" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="458" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 450.9L46.1 465.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="441" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="453" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="458" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 450.9L448.1 465.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-12" x="64" y="462.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP9</text>
 <text id="cos-lbl-pad-29" x="416" y="462.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP22</text>
 <circle cx="126" cy="458" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="458" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="458" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="458" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="458" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="458" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="458" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="458" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="475" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="487" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="492" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 484.9L46.1 499.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="475" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="487" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="492" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 484.9L448.1 499.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-13" x="64" y="496.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GND</text>
 <text id="cos-lbl-pad-28" x="416" y="496.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GND</text>
 <circle cx="126" cy="492" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="492" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="492" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="492" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="492" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="492" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="492" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="492" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="509" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="521" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="526" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 518.9L46.1 533.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="509" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="521" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="526" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 518.9L448.1 533.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-14" x="64" y="530.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP10</text>
 <text id="cos-lbl-pad-27" x="416" y="530.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP21</text>
 <circle cx="126" cy="526" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="526" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="526" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="526" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="526" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="526" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="526" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="526" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="543" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="555" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="560" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 552.9L46.1 567.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="543" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="555" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="560" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 552.9L448.1 567.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-15" x="64" y="564.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP11</text>
 <text id="cos-lbl-pad-26" x="416" y="564.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP20</text>
 <circle cx="126" cy="560" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="560" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="560" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="560" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="560" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="560" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="560" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="560" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="577" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="589" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="594" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 586.9L46.1 601.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="577" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="589" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="594" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 586.9L448.1 601.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-16" x="64" y="598.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP12</text>
 <text id="cos-lbl-pad-25" x="416" y="598.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP19</text>
 <circle cx="126" cy="594" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="594" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="594" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="594" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="594" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="594" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="594" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="594" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="611" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="623" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="628" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 620.9L46.1 635.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="611" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="623" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="628" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 620.9L448.1 635.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-17" x="64" y="632.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP13</text>
 <text id="cos-lbl-pad-24" x="416" y="632.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP18</text>
 <circle cx="126" cy="628" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="628" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="628" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="628" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="628" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="628" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="628" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="628" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="645" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="657" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="662" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 654.9L46.1 669.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="645" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="657" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="662" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 654.9L448.1 669.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-18" x="64" y="666.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GND</text>
 <text id="cos-lbl-pad-23" x="416" y="666.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GND</text>
 <circle cx="126" cy="662" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="662" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="662" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="662" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="662" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="662" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="662" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="662" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="679" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="691" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="696" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 688.9L46.1 703.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="679" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="691" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="696" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 688.9L448.1 703.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-19" x="64" y="700.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP14</text>
 <text id="cos-lbl-pad-22" x="416" y="700.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP17</text>
 <circle cx="126" cy="696" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="696" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="696" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="696" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="696" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="696" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="696" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="696" r="2.6" fill="url(#cos-gold)"/>
 <rect x="22" y="713" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="22" y="725" width="7" height="10" fill="#0f3d1e"/><circle cx="39" cy="730" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M31.9 722.9L46.1 737.1" stroke="#4a5058" stroke-width="2"/>
 <rect x="424" y="713" width="34" height="34" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="451" y="725" width="7" height="10" fill="#0f3d1e"/><circle cx="441" cy="730" r="10.2" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M433.9 722.9L448.1 737.1" stroke="#4a5058" stroke-width="2"/>
 <text id="cos-lbl-pad-20" x="64" y="734.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="start">GP15</text>
 <text id="cos-lbl-pad-21" x="416" y="734.5" font-size="13" font-weight="600" fill="#f2f2f2" text-anchor="end">GP16</text>
 <circle cx="126" cy="730" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="344" cy="730" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="135" cy="730" r="2.6" fill="url(#cos-gold)"/>
+<circle cx="335" cy="730" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="144" cy="730" r="2.6" fill="url(#cos-gold)"/>
 <circle cx="326" cy="730" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="335" cy="730" r="2.6" fill="url(#cos-gold)"/>
-<circle cx="344" cy="730" r="2.6" fill="url(#cos-gold)"/>
 <g transform="translate(163,150) scale(0.55)"><g filter="url(#cos-sh)"><rect x="0" y="0" width="280" height="720" rx="6" fill="url(#cos-pcb-blue)"/></g><rect x="0.5" y="0.5" width="279" height="719" rx="6" fill="none" stroke="#fff" stroke-opacity=".10"/><g fill="none" stroke="#2a5aa6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M134 40V110M134 140V200M134 262V300M134 345V362M134 410V432M134 470V500M134 530V650"/><path d="M112 230H96V180M158 230H176V300M112 386H98V450M156 386H172V330"/></g><g filter="url(#cos-s3)"><rect x="104" y="-12" width="60" height="48" rx="5" fill="url(#cos-tin)"/></g><rect x="104.5" y="-11.5" width="59" height="47" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="117.2" y="9.6" width="8.4" height="14.4" rx="2" fill="#7d848c"/><rect x="142.4" y="9.6" width="8.4" height="14.4" rx="2" fill="#7d848c"/><rect x="107" y="-12" width="54" height="5" fill="#2a2c31"/><g filter="url(#cos-s2)"><rect x="103.5" y="53.5" width="17" height="17" rx="2" fill="url(#cos-tin)"/><circle cx="112" cy="62" r="5.1" fill="#1c1d21"/><circle cx="110.6" cy="60.6" r="2" fill="#fff" opacity=".12"/></g><g filter="url(#cos-s2)"><rect x="147.5" y="53.5" width="17" height="17" rx="2" fill="url(#cos-tin)"/><circle cx="156" cy="62" r="5.1" fill="#1c1d21"/><circle cx="154.6" cy="60.6" r="2" fill="#fff" opacity=".12"/></g><text x="112" y="84" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle">BOOT</text><text x="156" y="84" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle">RESET</text><g transform="translate(112,100) rotate(0) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g><g transform="translate(156,100) rotate(0) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g><g transform="translate(134,128) rotate(0)" filter="url(#cos-s2)"><rect x="-18" y="-7.9" width="36" height="2.6" fill="url(#cos-tin)"/><rect x="-18" y="-3.5" width="36" height="2.6" fill="url(#cos-tin)"/><rect x="-18" y="0.9" width="36" height="2.6" fill="url(#cos-tin)"/><rect x="-18" y="5.3" width="36" height="2.6" fill="url(#cos-tin)"/><rect x="-14" y="-11" width="28" height="22" rx="1.5" fill="url(#cos-body)"/><rect x="-14" y="-11" width="28" height="3.5" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-10" cy="-7" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g><g filter="url(#cos-s2)"><rect x="119" y="162" width="30" height="12" rx="3" fill="url(#cos-tin)"/></g><g transform="translate(110,190) rotate(90) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g><g transform="translate(158,190) rotate(90) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g><g transform="translate(134,232) rotate(0)" filter="url(#cos-s2)"><rect x="-26" y="-18.5" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-26" y="-12.8" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-26" y="-7" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-26" y="-1.3" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-26" y="4.5" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-26" y="10.2" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-26" y="16" width="52" height="2.6" fill="url(#cos-tin)"/><rect x="-18.5" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="-12.8" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="-7" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="-1.3" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="4.5" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="10.2" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="16" y="-26" width="2.6" height="52" fill="url(#cos-tin)"/><rect x="-23" y="-23" width="46" height="46" rx="1.5" fill="url(#cos-body)"/><rect x="-23" y="-23" width="46" height="7.4" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-19" cy="-19" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="8" text-anchor="middle"><text y="2.8">RP2350</text></g></g><g transform="translate(108,276) rotate(0) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g><g transform="translate(160,276) rotate(0) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g><g transform="translate(120,304) rotate(0)" filter="url(#cos-s2)"><rect x="-11" y="-4.3" width="22" height="2.6" fill="url(#cos-tin)"/><rect x="-11" y="-1.3" width="22" height="2.6" fill="url(#cos-tin)"/><rect x="-11" y="1.7" width="22" height="2.6" fill="url(#cos-tin)"/><rect x="-8" y="-6" width="16" height="12" rx="1.5" fill="url(#cos-body)"/><rect x="-8" y="-6" width="16" height="1.9" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-4" cy="-2" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g><rect x="138" y="294" width="22" height="22" rx="3" fill="#33363c" filter="url(#cos-s2)"/><circle cx="149" cy="305" r="6" fill="#4a4e56"/><g filter="url(#cos-s2)"><rect x="121" y="330.5" width="26" height="11" rx="3" fill="url(#cos-tin)"/></g><g transform="translate(134,386) rotate(0)" filter="url(#cos-s2)"><rect x="-20" y="-12.6" width="40" height="2.6" fill="url(#cos-tin)"/><rect x="-20" y="-7" width="40" height="2.6" fill="url(#cos-tin)"/><rect x="-20" y="-1.3" width="40" height="2.6" fill="url(#cos-tin)"/><rect x="-20" y="4.4" width="40" height="2.6" fill="url(#cos-tin)"/><rect x="-20" y="10" width="40" height="2.6" fill="url(#cos-tin)"/><rect x="-12.6" y="-20" width="2.6" height="40" fill="url(#cos-tin)"/><rect x="-7" y="-20" width="2.6" height="40" fill="url(#cos-tin)"/><rect x="-1.3" y="-20" width="2.6" height="40" fill="url(#cos-tin)"/><rect x="4.4" y="-20" width="2.6" height="40" fill="url(#cos-tin)"/><rect x="10" y="-20" width="2.6" height="40" fill="url(#cos-tin)"/><rect x="-17" y="-17" width="34" height="34" rx="1.5" fill="url(#cos-body)"/><rect x="-17" y="-17" width="34" height="5.4" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-13" cy="-13" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6.5" text-anchor="middle"><text y="2.3">XL2515</text></g></g><g transform="translate(110,422) rotate(0) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g><g transform="translate(158,422) rotate(0) scale(0.8)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g><g transform="translate(134,452) rotate(0)" filter="url(#cos-s2)"><rect x="-19" y="-8.5" width="38" height="2.6" fill="url(#cos-tin)"/><rect x="-19" y="-3.7" width="38" height="2.6" fill="url(#cos-tin)"/><rect x="-19" y="1.1" width="38" height="2.6" fill="url(#cos-tin)"/><rect x="-19" y="5.9" width="38" height="2.6" fill="url(#cos-tin)"/><rect x="-15" y="-12" width="30" height="24" rx="1.5" fill="url(#cos-body)"/><rect x="-15" y="-12" width="30" height="3.8" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-11" cy="-8" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="5.5" text-anchor="middle"><text y="-1.3">SIT65</text><text y="5.2">HVD230</text></g></g><g filter="url(#cos-s2)"><rect x="117" y="497" width="34" height="18" rx="2" fill="url(#cos-tin)"/><rect x="122" y="501" width="24" height="10" fill="#17181c"/><rect x="133" y="501" width="11" height="10" fill="#e9e6de"/></g><rect x="115.5" y="534" width="9" height="12" rx="1.5" fill="url(#cos-tin)"/><rect x="129.5" y="534" width="9" height="12" rx="1.5" fill="url(#cos-tin)"/><rect x="143.5" y="534" width="9" height="12" rx="1.5" fill="url(#cos-tin)"/><text x="134" y="584" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="middle" letter-spacing=".3">RP2350-CAN</text><rect x="5" y="52" width="22" height="606" rx="2" fill="#17181c"/><rect x="253" y="52" width="22" height="606" rx="2" fill="#17181c"/><circle cx="16" cy="70" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="70" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="100" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="100" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="130" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="130" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="160" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="160" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="190" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="190" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="220" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="220" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="250" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="250" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="280" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="280" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="310" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="310" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="340" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="340" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="370" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="370" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="400" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="400" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="430" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="430" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="460" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="460" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="490" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="490" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="520" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="520" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="550" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="550" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="580" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="580" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="610" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="610" r="5" fill="url(#cos-gold)"/><circle cx="16" cy="640" r="5" fill="url(#cos-gold)"/><circle cx="264" cy="640" r="5" fill="url(#cos-gold)"/></g>
 <g filter="url(#cos-s3)"><rect x="165.7" y="548" width="142" height="66" rx="2" fill="#1f7a41"/></g>
 <rect x="167.7" y="548" width="46" height="66" fill="url(#cos-term)" stroke="#145a2c" stroke-width="1"/><rect x="185.7" y="607" width="10" height="7" fill="#0f3d1e"/><circle cx="190.7" cy="581" r="13.8" fill="url(#cos-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M181 571.3L200.4 590.7" stroke="#4a5058" stroke-width="2"/>
@@ -234,7 +244,14 @@
 <g filter="url(#cos-s3)"><rect x="170" y="20" width="44" height="68" rx="3" fill="#1b1c20"/><rect x="178" y="20" width="28" height="12" fill="#0b0b0d"/></g>
 <g filter="url(#cos-s2)"><rect x="232" y="30" width="40" height="18" rx="2" fill="url(#cos-tin)"/><rect x="238" y="34" width="28" height="10" fill="#17181c"/><rect x="240" y="34" width="12" height="10" fill="#e9e6de"/></g>
 <g transform="translate(296,39) rotate(0) scale(1)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
-<g transform="translate(296,60) rotate(0) scale(1)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
-<g filter="url(#cos-s3)"><circle cx="246" cy="84" r="16" fill="url(#cos-tin)"/><path d="M233 74A16 16 0 0 1 259 74Z" fill="#1b1c20"/><circle cx="290" cy="100" r="13" fill="url(#cos-tin)"/><path d="M280 92A13 13 0 0 1 300 92Z" fill="#1b1c20"/></g>
-<rect x="176" y="98" width="34" height="30" rx="4" fill="#33363c" filter="url(#cos-s2)"/><circle cx="193" cy="113" r="9" fill="#4a4e56"/>
+<g transform="translate(296,52) rotate(0) scale(1)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g filter="url(#cos-s2)"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="222" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>
+<circle cx="228" cy="68" r="2.2" fill="url(#cos-gold)"/>
+<circle cx="239" cy="68" r="2.2" fill="url(#cos-gold)"/>
+<circle cx="250" cy="68" r="2.2" fill="url(#cos-gold)"/>
+<text x="239" y="90" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">3V3 / 5V</text>
+<g filter="url(#cos-s3)"><circle cx="279" cy="76" r="11" fill="url(#cos-tin)"/><path d="M270 69A11 11 0 0 1 288 69Z" fill="#1b1c20"/><circle cx="305" cy="76" r="11" fill="url(#cos-tin)"/><path d="M296 69A11 11 0 0 1 314 69Z" fill="#1b1c20"/></g>
+<g transform="translate(262,113) rotate(0)" filter="url(#cos-s2)"><rect x="-12" y="-6.1" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-12" y="-2.9" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-12" y="0.3" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-12" y="3.5" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-9" y="-8" width="18" height="16" rx="1.5" fill="url(#cos-body)"/><rect x="-9" y="-8" width="18" height="2.6" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-5" cy="-4" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<rect x="284" y="98" width="30" height="30" rx="4" fill="#33363c" filter="url(#cos-s2)"/><circle cx="299" cy="113" r="9" fill="#4a4e56"/>
+<text x="281" y="142" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">DC-DC</text>
 </svg>
