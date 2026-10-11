@@ -63,7 +63,7 @@ export const SPEC_GEO: Geometry = {
 };
 
 /**
- * The geometry the page draws. It differs from SPEC_GEO in 4 places, each of
+ * The geometry the page draws. It differs from SPEC_GEO in 5 places, each of
  * which removes a collision that test/layout.test.ts finds in SPEC_GEO:
  *
  * - Module tops sit on a 20 px grid that starts at y = 34. Every module pin row
@@ -76,16 +76,20 @@ export const SPEC_GEO: Geometry = {
  * - Outer lanes: wires 10 and 21 use lane 2, wires 14 and 22 use lane 1. The
  *   second pill on OUT + of the PD mini then covers lanes of its own pin only.
  *   The second pill of an outer edge sits 21 px from the first.
- * - Right lanes of the 5 wires that cross under the coprocessor: 13, 14, 16,
- *   17, 18 in place of 16 to 20. The cross mark of a stub on a right module is
- *   at x = 750 and lanes 19 and 20 pass through it.
+ * - Right lanes of the 5 wires that cross under the coprocessor from the left
+ *   modules: 13, 14, 16, 17, 18 in place of 16 to 20. The cross mark of a stub
+ *   on a right module is at x = 750 and lanes 19 and 20 pass through it. The 3
+ *   minus wires of the INA228 module with XT90 plugs use lanes 1 and 0 in place
+ *   of 21 and 22, which lie outside the gutter.
+ * - The pill of a component between 2 pads sits 8 px from its line. It then
+ *   ends 3 px before right lane 0, which wire 58 uses.
  */
 export const GEO: Geometry = {
   ...SPEC_GEO,
   moduleTop: 34, snap: 20,
   channel0: 549, channelPitch: 10,
-  outerPillPitch: 21,
-  laneFix: { 10: 2, 21: 2, 14: 1, 22: 1, 28: 13, 29: 13, 30: 14, 45: 16, 46: 16, 47: 17, 51: 18 },
+  outerPillPitch: 21, zPill: 8,
+  laneFix: { 10: 2, 21: 2, 14: 1, 22: 1, 28: 13, 29: 13, 30: 14, 45: 16, 46: 16, 47: 17, 51: 18, 56: 1, 57: 1, 58: 0 },
 };
 
 export type PinBox = {
@@ -210,12 +214,15 @@ export function layout(setup: Setup, catalogue: Catalogue, lang: Lang, geo: Geom
     const subFit = !pinless && subText.length * SUB_CHAR > room ? room : null;
     const h = pinless
       ? geo.head + Math.max(0, sub.length - 1) * SUB_LINE
-      : geo.head + part.pins.length * geo.pinPitch + geo.pinPad;
-    const pins = part.pins.map((pin, i): PinBox => {
+      : geo.head + part.pins.filter((pin) => pinPresent(pin, options)).length * geo.pinPitch + geo.pinPad;
+    // A pin of another board variant takes no row.
+    let row = 0;
+    const pins = part.pins.map((pin): PinBox => {
       const ref = `${part.id}.${pin.id}`;
-      const py = y + geo.head + i * geo.pinPitch + geo.pinPitch / 2;
+      const py = y + geo.head + row * geo.pinPitch + geo.pinPitch / 2;
       const present = pinPresent(pin, options);
       if (present) {
+        row += 1;
         anchors.set(ref, {
           y: py,
           inner: column === 'L' ? x + geo.moduleW : x,
@@ -226,7 +233,7 @@ export function layout(setup: Setup, catalogue: Catalogue, lang: Lang, geo: Geom
       }
       return {
         id: pin.id,
-        label: tx(lang, pin.label) + (pinUnconfirmed(part, pin, options) ? ' ?' : ''),
+        label: tx(lang, pin.label) + (pinUnconfirmed(pin) ? ' ?' : ''),
         x: column === 'L' ? x + geo.moduleW - 8 : x + 8,
         y: py,
         anchor: column === 'L' ? 'end' : 'start',
