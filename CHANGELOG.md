@@ -71,6 +71,29 @@ history is in git.
 
 ### Changed
 
+- **The KST write planner takes 464 bytes of stack, down from 1,272.**
+  Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
+  the coprocessor image built with ARM GNU 14.2. The search over write
+  orders is a loop over one working image with three 7-byte arrays, not a
+  recursion of 7 levels with an image copy each, and the search for an
+  extra write keeps a 256-bit set of candidates in place of a 512-byte
+  cost table. Every plan is the same byte for byte: `test_kst_plan` pins a
+  digest over the result, the violated rules and the whole plan of
+  495,068 planner calls. No function signature differs.
+  ([Performance](docs/Performance.md#the-coprocessor))
+- **`kst_session_write()` takes 56 bytes of stack, down from 256.** The
+  session builds the planner's plan for the comparison into its own copy
+  of the running plan, which no operation reads at that time, and holds no
+  second 208-byte plan in its frame. A write command to the KST
+  programming port reaches 1,408 bytes of core 0's stack with ARM GNU
+  14.2, down from 2,416, and is no longer core 0's deepest chain: that is
+  a request that binds an output, 1,556 bytes of 4,096 on the image CI
+  builds, down from 2,392. The session takes and refuses the same plans
+  with the same results: `test_kst_session` pins a digest over the answers
+  to 120,671 calls with the planner's plans and with every single-member
+  change of each. One answer is added: a plan that is the session's own
+  copy, or overlaps it, is refused with `KST_SES_ERR_ARG`.
+
 - **Every interface to external hardware is a module under `protocols/`.**
   `protocols/dshot`, `ppm`, `sbus`, `openyge`, `pdmini` and `phase_tap`
   each hold a core in C11 that includes C standard headers only, the
