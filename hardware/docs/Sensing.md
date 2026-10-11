@@ -76,7 +76,7 @@ input network for a reversed lead.
 | Encoder decode | RP2354B, 2 PIO state machines | none: no external decoder from an allowed maker is in the parts database |
 | Rotation from the ESC, rotation inputs, BENCH rpm source, servo measured position | RP2354B | none |
 
-The encoder decode is not run on hardware and its program is not in the tree.
+The encoder decode's program is not in the tree.
 
 ## R12: temperature, external ports and store
 

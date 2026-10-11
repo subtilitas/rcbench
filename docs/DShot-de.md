@@ -336,14 +336,9 @@ Die Implementierung ist aus der veröffentlichten Beschreibung des Protokolls
 geschrieben. Alles Folgende wird von der Host-Suite gegen Frames geprüft, die
 derselbe Code baut; das belegt die Arithmetik und nicht die Leitung.
 
-Zwei Dinge stehen nicht auf dieser Liste, jedes gegen einen ESC und ohne
-Messgerät am Pin, also jedes ein Indiz und keine Messung.
+Eine Lesung steht nicht auf dieser Liste. Sie ist gegen einen ESC und ohne Messgerät am Pin, also ein Indiz und keine Messung.
 
-- **Einfaches DShot hat auf dem Aufbau-Prüfstand einen Motor vom Panel aus
-  laufen lassen**, damit liegt sein Bit-Timing innerhalb der Toleranz dieses
-  einen ESC.
-- **Bidirektionales DShot600 hat auf dem Prüfstand eines Testers geantwortet**
-  (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
+- **Bidirektionales DShot600 gegen einen ESC** (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
   AM32-Konfigurator zeigt es gekürzt als `JUPITER_35A_F42`), an einem
   4S-Pack, gebunden auf GP0. Version 0.8.2 hat seine Drehzahl dekodiert
   (2593 rpm). Version 0.9.1 hat mit der wiederholten Anfrage oben seine

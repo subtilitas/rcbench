@@ -21,8 +21,7 @@
  *                panel's controller is bus-off), or is retransmitted until
  *                the coprocessor answers.
  *
- * Nothing here has run on hardware; the model's numbers are the firmware's
- * constants and not measurements.
+ * The model's numbers are the firmware's constants and not measurements.
  *
  * SPDX-License-Identifier: MIT
  */

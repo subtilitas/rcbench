@@ -11,14 +11,14 @@ processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
 RP2350 coprocessor (measurement, outputs, and every protocol with timing
 requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
-**Status: under construction.** The panel boots, every screen exists, and the
-CAN link runs on hardware. The output drivers are built and an armed bank
-drives every bound pin at its role's rest whether or not anything commands it;
-a motor and a servo have each been run from the panel on a bring-up bench.
-What is unmeasured is the timing on an instrument -- no bit width, frame
-period or reply delay in this tree has been seen on a scope or an analyser.
-Most other measurements wait on parts that are not fitted. Screens showing
-simulated values are marked SIMULATION.
+**Status: under construction.** The project is under development and its
+functions are not verified on hardware. The panel boots and every screen
+exists. The output drivers are built and an armed bank drives every bound pin
+at its role's rest whether or not anything commands it. What is unmeasured is
+the timing on an instrument -- no bit width, frame period or reply delay in
+this tree has been seen on a scope or an analyser. Most other measurements
+wait on parts that are not fitted. Screens showing simulated values are marked
+SIMULATION.
 
 [STATUS.md](STATUS.md) records what is built, what is open and what is not
 planned.
@@ -35,10 +35,9 @@ single press.
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
 outputs, the coprocessor's own link watchdog, and a STOP command over the link.
 The line between the panel's J8 and the coprocessor's GP3 is fitted on the
-bring-up bench, so arming works there. The heartbeat's retriggerable
+bring-up bench. The heartbeat's retriggerable
 monostable is on no board, so firmware at both ends is the only thing gating
-the outputs and there is no hardware backstop behind it. The STOP command over
-the link is written and not run on hardware.
+the outputs and there is no hardware backstop behind it.
 [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) specifies all
 three.
 
@@ -49,15 +48,15 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 
 | Screen | Function | State |
 | --- | --- | --- |
-| Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry, run against one AM32 ESC; simulated values while no coprocessor answers |
-| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the coprocessor; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report | screen built and commanding over the link; drives the pins bound as surfaces, run on a bring-up bench, timing unmeasured |
-| Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the coprocessor drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise; ran against a module on 0.10.0 and 0.10.1, nothing after 0.10.1 has |
+| Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry; simulated values while no coprocessor answers |
+| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the coprocessor; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured |
+| Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the coprocessor drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
-| Programmer | parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card; none run against an ESC. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC; never against an ESC |
+| Programmer | parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
 | Battery | per-cell spread and verdict | screen built; cell monitor not fitted |
 | Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while armed or while the supply's output is on | built |
-| Setup | settings in both themes, stored in NVS | built; persistence confirmed on hardware |
+| Setup | settings in both themes, stored in NVS | built |
 
 ## Building
 
