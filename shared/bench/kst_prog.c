@@ -1319,12 +1319,40 @@ bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from)
     return p->have_servo && !same(src, &p->servo);
 }
 
+/* What a restore from a record or a file writes: the servo's image with
+ * the editable fields of @p src.  Returns the fields that change and gives
+ * the ones that differ and stay in @p stay. */
+static unsigned editable_target(const kst_prog_t *p, const kst_image_t *src,
+                                kst_image_t *target, unsigned *stay)
+{
+    unsigned writes = 0;
+
+    *target = p->servo;
+    *stay = 0;
+    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
+        const kst_field_id_t fid = (kst_field_id_t)id;
+
+        if (kst_field_get(src, fid) == kst_field_get(&p->servo, fid)
+            || id == KST_F_DUTY_COPY) {
+            continue;
+        }
+        if (editable(fid)) {
+            (void)kst_field_edit(target, fid, kst_field_get(src, fid));
+            writes++;
+        } else {
+            (*stay)++;
+        }
+    }
+    return writes;
+}
+
 kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
                                         kst_prog_restore_t *out)
 {
     const kst_image_t *src = source(p, from);
     kst_image_t target;
     kst_rules_t hard;
+    unsigned stay;
     unsigned arg = 0;
     kst_prog_msg_id_t m = idle_safe(p);
 
@@ -1368,21 +1396,8 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, arg);
     }
-    target = p->servo;
-    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
-        const kst_field_id_t fid = (kst_field_id_t)id;
-
-        if (kst_field_get(src, fid) == kst_field_get(&p->servo, fid)
-            || id == KST_F_DUTY_COPY) {
-            continue;
-        }
-        if (editable(fid)) {
-            (void)kst_field_edit(&target, fid, kst_field_get(src, fid));
-            out->writes++;
-        } else {
-            out->stay++;
-        }
-    }
+    out->writes = (uint8_t)editable_target(p, src, &target, &stay);
+    out->stay = (uint8_t)stay;
     if (out->writes == 0u) {
         return say(p, KST_PROG_MSG_NO_RESTORE, out->stay);
     }
@@ -1390,11 +1405,55 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     if (hard != 0u) {
         return say(p, KST_PROG_MSG_RESTORE_REFUSED, lowest(hard));
     }
+    /* The pending values stay as they are until the restore is confirmed:
+     * a page that is cancelled leaves nothing of the backup behind. */
     out->soft = soft_new(p, &target);
+    return KST_PROG_MSG_NONE;
+}
+
+/* The confirmed restore from a record or a file: its values become the
+ * pending ones and go out as an ordinary write.  A restore that does not
+ * start leaves the pending values as they were. */
+static kst_prog_msg_id_t restore_editable(kst_prog_t *p, kst_prog_from_t from,
+                                          const kst_image_t *src)
+{
+    const kst_image_t keep = p->draft;
+    const bool soft = p->soft;
+    const bool soft_load = p->soft_load;
+    kst_image_t target;
+    unsigned stay;
+    unsigned arg = 0;
+    kst_prog_msg_id_t m = idle_safe(p);
+
+    if (m == KST_PROG_MSG_NONE && p->journal_other) {
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+    }
+    if (m == KST_PROG_MSG_NONE && src == NULL) {
+        m = KST_PROG_MSG_NO_RESTORE;
+    }
+    if (m == KST_PROG_MSG_NONE) {
+        m = write_ready(p, &arg);
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        return say(p, m, arg);
+    }
+    if (editable_target(p, src, &target, &stay) == 0u) {
+        return say(p, KST_PROG_MSG_NO_RESTORE, stay);
+    }
+    if (hard_new(p, &target) != 0u) {
+        return say(p, KST_PROG_MSG_RESTORE_REFUSED,
+                   lowest(hard_new(p, &target)));
+    }
+    p->draft = target;
     p->soft = false;
     p->soft_load = false;
-    p->draft = target;
-    return KST_PROG_MSG_NONE;
+    m = write_draft(p, from);
+    if (m != KST_PROG_MSG_NONE) {
+        p->draft = keep;
+        p->soft = soft;
+        p->soft_load = soft_load;
+    }
+    return m;
 }
 
 kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
@@ -1405,7 +1464,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     kst_prog_msg_id_t m;
 
     if (plan->from != KST_PROG_FROM_SESSION) {
-        return write_draft(p, (kst_prog_from_t)plan->from);
+        return restore_editable(p, (kst_prog_from_t)plan->from, src);
     }
     m = idle_safe(p);
     if (m == KST_PROG_MSG_NONE && p->journal_other) {

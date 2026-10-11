@@ -1604,6 +1604,46 @@ TEST_CASE(the_record_of_an_interrupted_write_is_discarded_only_by_its_entry)
     CHECK_STR_EQ(said(), TR(KP_M_FORGOTTEN));
 }
 
+TEST_CASE(a_restore_from_the_record_that_is_cancelled_leaves_no_value_pending)
+{
+    int at;
+    int sent;
+
+    /* A later session on the servo the cut write left: the session's
+     * backup is gone, the record's is offered. */
+    fresh();
+    cut_write();
+    come_back();
+    tap(val(PG_SERVO, 0, 0));                       /* LEAVE */
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(M->journal);
+    tap(val(PG_SERVO, 0, 0));                       /* CONNECT */
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    enable();
+    CHECK_EQ(kst_prog_changes(M), 0);
+    sent = (int)g_rig.sim.n_writes;
+
+    tap(val(PG_SERVO, 2, 0));
+    at = choice(TR(KP_FROM_JOURNAL));
+    CHECK(at >= 0);
+    tap(kst_panel_choice_rect(at));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_FROM_JOURNAL)));
+    /* The page is a question: nothing of the record is pending on it. */
+    CHECK_EQ(kst_prog_changes(M), 0);
+    hold(1.9f);
+    tap(kst_panel_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_changes(M), 0);
+    rig_frames(50);
+    CHECK_EQ((int)g_rig.sim.n_writes, sent);
+    CHECK(M->journal);
+}
+
 TEST_CASE(a_coprocessor_that_restarts_ends_the_session_and_says_so)
 {
     fresh();
@@ -3352,6 +3392,7 @@ int main(void)
     RUN(stop_aborts_a_write_and_the_servo_must_be_read);
     RUN(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use);
     RUN(the_record_of_an_interrupted_write_is_discarded_only_by_its_entry);
+    RUN(a_restore_from_the_record_that_is_cancelled_leaves_no_value_pending);
     RUN(a_coprocessor_that_restarts_ends_the_session_and_says_so);
     RUN(an_open_page_goes_when_the_link_goes);
     RUN(files_lists_the_card_under_the_entry_that_saves);

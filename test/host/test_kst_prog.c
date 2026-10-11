@@ -1250,6 +1250,12 @@ TEST_CASE(a_later_session_writes_the_journals_image_back)
              KST_PROG_MSG_NONE);
     CHECK(plan.writes >= 1u);
     CHECK_EQ(plan.stay, 0);
+    /* A plan is a count: the pending values take nothing of the record
+     * until the restore starts, and a restore that is refused leaves
+     * them alone too. */
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
     settle();
