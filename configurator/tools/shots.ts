@@ -32,6 +32,12 @@ try {
           await page.goto(`http://localhost:4174/rcbench/#${hash}&l=${lang}`);
           await page.reload();
           await page.locator('svg.drawing').waitFor();
+          // A full-page screenshot does not scroll, so pictures far below the
+          // viewport are loaded here.
+          await page.evaluate(() => Promise.all([...document.images].map((img) => {
+            img.loading = 'eager';
+            return img.decode().catch(() => undefined);
+          })));
           const file = join(out, `${name}-${width}-${theme}-${lang}.png`);
           await page.screenshot({ path: file, fullPage: true });
           console.log(file);

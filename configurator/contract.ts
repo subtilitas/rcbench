@@ -33,6 +33,25 @@ export type Pin = {
   src: Src;
 };
 
+/**
+ * A picture of a part in the picture folder of the page.
+ *
+ * - photo: `<file>.webp` and `<file>-thumb.webp`, the thumb 480 px wide.
+ * - drawing: `<file>.svg`.
+ *
+ * `width` and `height` are the pixel size of the file a part card shows: the
+ * thumb of a photo, the file of a drawing. `only` limits the picture to the
+ * options it names.
+ */
+export type Picture = {
+  kind: 'photo' | 'drawing';
+  file: string;
+  alt: Text;
+  width: number;
+  height: number;
+  only?: Partial<Options>;
+};
+
 export type Part = {
   id: PartId;
   name: Text;
@@ -45,7 +64,8 @@ export type Part = {
   slot: { column: 'L' | 'R' | 'none'; order: number; dashed?: boolean; sub?: Text };
   pins: Pin[];
   variantName?: { option: OptionKey; names: Record<string, Text> };
-  photo?: { file: string; alt: Text };
+  /** Pictures of the part, the main one first. At most 2 apply to one set of options. */
+  pictures?: Picture[];
   src: Src;
 };
 

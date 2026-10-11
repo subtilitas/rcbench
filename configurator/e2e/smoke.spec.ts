@@ -233,7 +233,9 @@ for (const size of SIZES) {
       await expect(page.locator('.msg')).not.toHaveText(english ?? '');
       await page.locator('.lang button[data-lang=en]').click();
       await expect(page.locator('.msg')).toHaveText(english ?? '');
-      await expect(page.locator('#result img')).toHaveCount(0);
+      // The markup of the link is text: the only images are the pictures of the parts.
+      await expect(page.locator('img:not([src^="pictures/"])')).toHaveCount(0);
+      await expect(page.locator('img[onerror]')).toHaveCount(0);
       await expect(page.locator('#f-servo')).toBeChecked();
       await page.locator('#f-esc').check();
       await expect(page.locator('.msg')).toHaveCount(0);
@@ -285,6 +287,124 @@ for (const size of SIZES) {
     });
   });
 }
+
+test.describe('pictures', () => {
+  const pictureRequests = (page: Page): string[] => {
+    const seen: string[] = [];
+    page.on('request', (r) => {
+      if (r.resourceType() === 'image' || /\/pictures\//.test(r.url())) seen.push(new URL(r.url()).pathname);
+    });
+    return seen;
+  };
+  // FULL sets the Osoyoo board and the XT90 module, so every picture shows.
+  const ALL = FULL;
+
+  // The browser fetches a lazy image some distance before it scrolls into view.
+  // Chromium uses 1250 px on a fast connection and 2500 px on a slow one.
+  const LAZY_REACH = 3000;
+
+  test('at 360 px no picture is in the first screen and none far below it loads before a scroll', async ({ page }) => {
+    await page.setViewportSize(SIZES[0]);
+    const seen = pictureRequests(page);
+    const foreign = watch(page);
+    await open(page, ALL);
+    await page.waitForLoadState('networkidle');
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    const images = await page.evaluate(() => [...document.querySelectorAll<HTMLImageElement>('.parts img')].map((img) => ({
+      path: new URL(img.src).pathname,
+      top: img.getBoundingClientRect().top,
+      lazy: img.loading === 'lazy' && img.decoding === 'async',
+    })));
+    expect(images).toHaveLength(11);
+    for (const image of images) {
+      expect(image.lazy, image.path).toBe(true);
+      // Above the fold: the first screen of 360 x 800 px holds no picture.
+      expect(image.top, image.path).toBeGreaterThan(SIZES[0].height);
+    }
+    const far = images.filter((image) => image.top > SIZES[0].height + LAZY_REACH).map((image) => image.path);
+    expect(far.length).toBeGreaterThan(0);
+    expect(seen.filter((path) => far.includes(path))).toEqual([]);
+    // The full file loads on a tap on the thumb only.
+    expect(seen.filter((path) => !path.endsWith('-thumb.webp') && !path.endsWith('.svg'))).toEqual([]);
+
+    const last = page.locator('.parts img').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect.poll(() => last.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    expect(seen).toContain(far[far.length - 1]);
+    expect(seen.filter((path) => !path.endsWith('-thumb.webp') && !path.endsWith('.svg'))).toEqual([]);
+    await fits(page);
+    expect(foreign).toEqual({ foreign: [], errors: [] });
+  });
+
+  for (const size of SIZES) {
+    test(`${size.width} px: every picture of the full selection loads, fits and links to its full file`, async ({ page }) => {
+      await page.setViewportSize(size);
+      const foreign = watch(page);
+      for (const lang of ['en', 'de']) {
+        await open(page, `${ALL}&l=${lang}`);
+        const cards = await page.evaluate(async () => {
+          const out: Array<{ src: string; href: string; alt: string; ok: boolean; ratio: number; shown: number; card: number }> = [];
+          for (const img of document.querySelectorAll<HTMLImageElement>('.parts img')) {
+            img.loading = 'eager';
+            await img.decode();
+            const box = img.getBoundingClientRect();
+            out.push({
+              src: img.getAttribute('src') ?? '',
+              href: img.closest('a')?.getAttribute('href') ?? '',
+              alt: img.alt,
+              ok: img.naturalWidth === Number(img.getAttribute('width')) && img.naturalHeight === Number(img.getAttribute('height')),
+              ratio: (box.width / box.height) / (img.naturalWidth / img.naturalHeight),
+              shown: box.width,
+              card: img.closest('li')!.getBoundingClientRect().width,
+            });
+          }
+          return out;
+        });
+        // Panel 1, coprocessor 2, PD mini 1, INA3221 1, AS5600 1, INA228 2, emergency stop 2, T-plug 1.
+        expect(cards.map((c) => c.src)).toHaveLength(11);
+        for (const c of cards) {
+          expect(c.ok, c.src).toBe(true);
+          expect(c.alt.length, c.src).toBeGreaterThan(20);
+          expect(Math.abs(c.ratio - 1), c.src).toBeLessThan(0.02);
+          expect(c.shown, c.src).toBeLessThanOrEqual(Math.min(320, c.card));
+          expect(c.href, c.src).toBe(c.src.replace('-thumb.webp', '.webp'));
+        }
+        const drawing = page.locator('.parts img[src$="ina3221.svg"]');
+        await expect(drawing).toHaveAttribute('alt', lang === 'en'
+          ? 'Illustration of the INA3221 board: header A0, VS, SCL, SDA, GND; 3 channels with pads 1 and 2; 3 large pads.'
+          : 'Illustration der INA3221-Platine: Leiste A0, VS, SCL, SDA, GND; 3 Kanäle mit den Pads 1 und 2; 3 große Pads.');
+        await expect(page.locator('.parts .ph, .parts figcaption')).toHaveCount(0);
+        await expect(page.locator('.parts li:not(.pic) img')).toHaveCount(0);
+        await fits(page);
+      }
+      // The MATEK board has no picture.
+      await open(page, `#v=1&f=${FUNCTIONS.join(',')}`);
+      await expect(page.locator('.parts img[src*="current-sensor"]')).toHaveCount(0);
+      await expect(page.locator('.parts img[src*="breakout"]')).toHaveCount(0);
+
+      // Print: a thumb is at most 40 mm wide, 151.2 px at 96 px per inch.
+      await open(page, ALL);
+      await page.emulateMedia({ media: 'print' });
+      const widest = await page.evaluate(() => Math.max(...[...document.querySelectorAll('.parts img')].map((img) => img.getBoundingClientRect().width)));
+      expect(widest).toBeGreaterThan(100);
+      expect(widest).toBeLessThanOrEqual(151.2);
+      expect(foreign).toEqual({ foreign: [], errors: [] });
+    });
+  }
+
+  test('a tap on a thumb opens the full file from the same origin', async ({ page }) => {
+    await page.setViewportSize(SIZES[0]);
+    await open(page, '');
+    const link = page.locator('.parts li.pic a').first();
+    await expect(link).toHaveAttribute('href', 'pictures/01-panel-back.webp');
+    const response = await page.request.get(new URL('pictures/01-panel-back.webp', page.url()).href);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toBe('image/webp');
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForURL('**/rcbench/pictures/01-panel-back.webp');
+  });
+});
 
 test.describe('German browser', () => {
   test.use({ viewport: SIZES[0], locale: 'de-DE' });

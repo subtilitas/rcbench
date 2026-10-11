@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400" width="480" height="400" role="img" aria-labelledby="ina-t" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="ina-t">Illustration of the INA3221 board: header A0, VS, SCL, SDA, GND; 3 channels with pads 1 and 2; 3 large pads.</title>
+<defs>
+<linearGradient id="ina-pcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24262b"/><stop offset=".55" stop-color="#17181c"/><stop offset="1" stop-color="#101114"/></linearGradient>
+<linearGradient id="ina-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<radialGradient id="ina-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="ina-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="ina-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="ina-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<g id="ina-pad"><circle r="14.5" fill="url(#ina-ring)"/><circle r="7" fill="#ece8e0"/><circle r="7" fill="none" stroke="#6d737b" stroke-width="1"/></g>
+<g id="ina-via"><circle r="6" fill="url(#ina-ring)"/><circle r="2.8" fill="#ece8e0"/></g>
+<g id="ina-hole"><circle r="13.5" fill="url(#ina-ring)"/><circle r="9.5" fill="#ece8e0"/><circle r="9.5" fill="none" stroke="#6d737b" stroke-width="1"/></g>
+<g id="ina-shunt" filter="url(#ina-s2)"><rect x="-27" y="-13" width="54" height="26" rx="2" fill="url(#ina-tin)"/><rect x="-18" y="-13" width="36" height="26" fill="url(#ina-body)"/><rect x="-18" y="-13" width="36" height="5" fill="#fff" opacity=".07"/></g>
+<g id="ina-r" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g id="ina-c" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g id="ina-led" filter="url(#ina-s2)"><rect x="-4.5" y="-8" width="9" height="16" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
+<g id="ina-br"><rect x="-4" y="-10" width="8" height="8" rx="1" fill="url(#ina-tin)"/><rect x="-4" y="1" width="8" height="8" rx="1" fill="url(#ina-tin)"/></g>
+</defs>
+<rect width="480" height="400" rx="10" fill="#efebe3"/>
+<g filter="url(#ina-sh)"><rect x="66" y="18" width="348" height="364" rx="5" fill="url(#ina-pcb)"/></g>
+<rect x="66.5" y="18.5" width="347" height="363" rx="5" fill="none" stroke="#fff" stroke-opacity=".10"/>
+<g fill="none" stroke="#2c2f35" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M146 75H178M146 165H178M146 255H178"/><path d="M232 75L262 150M232 165H250M232 255L262 190"/><path d="M290 150L314 126M300 170H314M290 190L314 214"/><path d="M332 104H342M332 148H342M332 192H342"/><path d="M276 196V262"/>
+</g>
+<rect x="84" y="35" width="62" height="80" fill="none" stroke="#f2f2f2" stroke-width="1.6"/><use href="#ina-pad" x="115" y="55"/><use href="#ina-pad" x="115" y="95"/>
+<rect x="152" y="54" width="18" height="42" fill="#f2f2f2"/><text transform="translate(165,75) rotate(-90)" text-anchor="middle" font-size="12" font-weight="600" fill="#15161a">CH1</text>
+<use href="#ina-shunt" x="205" y="75"/><use href="#ina-c" x="205" y="100"/>
+<rect x="84" y="125" width="62" height="80" fill="none" stroke="#f2f2f2" stroke-width="1.6"/><use href="#ina-pad" x="115" y="145"/><use href="#ina-pad" x="115" y="185"/>
+<rect x="152" y="144" width="18" height="42" fill="#f2f2f2"/><text transform="translate(165,165) rotate(-90)" text-anchor="middle" font-size="12" font-weight="600" fill="#15161a">CH2</text>
+<use href="#ina-shunt" x="205" y="165"/><use href="#ina-c" x="205" y="190"/><use href="#ina-r" transform="translate(243,143) rotate(90)"/>
+<rect x="84" y="215" width="62" height="80" fill="none" stroke="#f2f2f2" stroke-width="1.6"/><use href="#ina-pad" x="115" y="235"/><use href="#ina-pad" x="115" y="275"/>
+<rect x="152" y="234" width="18" height="42" fill="#f2f2f2"/><text transform="translate(165,255) rotate(-90)" text-anchor="middle" font-size="12" font-weight="600" fill="#15161a">CH3</text>
+<use href="#ina-shunt" x="205" y="255"/><use href="#ina-c" x="205" y="280"/><use href="#ina-r" transform="translate(243,233) rotate(90)"/>
+<g transform="translate(276,170) rotate(45)" filter="url(#ina-s2)"><rect x="-21" y="-21" width="42" height="42" rx="1.5" fill="url(#ina-tin)"/><g fill="#101114"><rect x="-21" y="-14" width="42" height="2.2"/><rect x="-21" y="-7.4" width="42" height="2.2"/><rect x="-21" y="-.8" width="42" height="2.2"/><rect x="-21" y="5.8" width="42" height="2.2"/><rect x="-21" y="12.4" width="42" height="2.2"/><rect x="-14" y="-21" width="2.2" height="42"/><rect x="-7.4" y="-21" width="2.2" height="42"/><rect x="-.8" y="-21" width="2.2" height="42"/><rect x="5.8" y="-21" width="2.2" height="42"/><rect x="12.4" y="-21" width="2.2" height="42"/></g><rect x="-18" y="-18" width="36" height="36" rx="2" fill="url(#ina-body)"/><circle cx="-12" cy="-12" r="1.8" fill="#6a6e76"/><g fill="#8b9098" font-size="5.5" text-anchor="middle"><text y="-2">INA</text><text y="5">3221</text></g></g>
+<use href="#ina-c" x="322" y="104"/>
+<use href="#ina-r" x="322" y="126"/>
+<use href="#ina-r" x="322" y="148"/>
+<use href="#ina-c" x="322" y="170"/>
+<use href="#ina-r" x="322" y="192"/>
+<use href="#ina-r" x="322" y="214"/>
+<g id="ina-header" font-size="10" font-weight="600" fill="#f2f2f2" text-anchor="end">
+<rect x="386" y="78" width="12" height="12" fill="url(#ina-ring)"/><circle cx="392" cy="84" r="2.8" fill="#ece8e0"/><text x="378" y="87.5">A0</text>
+<use href="#ina-via" x="392" y="110"/><text x="378" y="113.5">VS</text>
+<use href="#ina-via" x="392" y="136"/><text x="378" y="139.5">SCL</text>
+<use href="#ina-via" x="392" y="162"/><text x="378" y="165.5">SDA</text>
+<use href="#ina-via" x="392" y="188"/><text x="378" y="191.5">GND</text>
+<use href="#ina-via" x="392" y="214"/>
+<use href="#ina-via" x="392" y="240"/>
+<use href="#ina-via" x="392" y="266"/>
+<use href="#ina-via" x="392" y="292"/>
+</g>
+<g id="ina-bridge" font-size="7.5" font-weight="600" fill="#f2f2f2" text-anchor="middle"><text x="240" y="50" font-size="9" text-anchor="end">A0</text>
+<use href="#ina-br" x="256" y="46"/><text x="256" y="68">GND</text>
+<use href="#ina-br" x="280" y="46"/><text x="280" y="68">SDA</text>
+<use href="#ina-br" x="304" y="46"/><text x="304" y="68">SCL</text>
+<use href="#ina-br" x="328" y="46"/><text x="328" y="68">VS</text>
+</g>
+<use href="#ina-hole" x="196" y="44"/><use href="#ina-hole" x="386" y="50"/><use href="#ina-hole" x="112" y="344"/>
+<use href="#ina-led" x="256" y="282"/>
+<use href="#ina-led" x="278" y="282"/>
+<use href="#ina-led" x="300" y="282"/>
+<use href="#ina-led" x="322" y="282"/>
+<use href="#ina-r" x="352" y="262"/><use href="#ina-r" x="352" y="282"/>
+<rect x="222" y="314" width="176" height="56" fill="none" stroke="#f2f2f2" stroke-width="1.6"/><g id="ina-large" font-size="10" font-weight="600" fill="#f2f2f2" text-anchor="middle">
+<use href="#ina-pad" x="254" y="346"/><text x="254" y="308">GND</text>
+<use href="#ina-pad" x="310" y="346"/><text x="310" y="308">GND</text>
+<use href="#ina-pad" x="366" y="346"/><text x="366" y="308">VPU</text>
+</g></svg>

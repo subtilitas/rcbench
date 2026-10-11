@@ -7,7 +7,8 @@ between them.
 
 - No server, no account, no storage. The selection lives in the URL hash.
 - No run-time dependency. The page loads 3 files from its own origin and sends
-  no request to another origin.
+  no request to another origin. A picture loads from the same origin when its
+  part card comes near the viewport.
 - English and German. The start language follows the browser.
 - Light and dark theme follow the system setting. Print gives an A4 document.
 - The page is served under the base path `/rcbench/`.
@@ -26,6 +27,7 @@ between them.
 | `src/draw/layout.ts` | Geometry of the drawing: modules, pads, lanes, wires, pills. |
 | `src/draw/svg.ts` | SVG (Scalable Vector Graphics) markup of the drawing. |
 | `src/view/` | Chooser, result document, table. |
+| `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `test/` | Unit tests, run by `node --test`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
 | `tools/size.ts` | Size check of the build. |
@@ -41,7 +43,7 @@ npm ci
 npm run typecheck   # tsc --noEmit
 npm test            # unit tests
 npm run build       # writes dist/
-npm run size        # initial load at most 250 kB, dist/ at most 1 MB
+npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB
 npx playwright install chromium
 npm run e2e         # smoke test at 360 px and 1280 px width
 npm run dev         # http://localhost:5173/rcbench/
@@ -95,10 +97,44 @@ that touch `configurator/` or the workflow file.
 
 The `deploy` job needs the repository setting "Pages source: GitHub Actions".
 
+## Pictures
+
+A part of the data file names its pictures in `pictures`. `core/tools/check.ts`
+holds each record to the files of `public/pictures/`.
+
+| Kind | Files | A part card shows |
+|---|---|---|
+| `photo` | `<file>.webp` and `<file>-thumb.webp`, 480 px wide | the thumb, as a link to `<file>.webp` |
+| `drawing` | `<file>.svg` | the drawing, as a link to the same file |
+
+- A card shows at most 2 pictures, at most 320 px wide on screen and 40 mm wide in print.
+- A part without a picture shows no image and no frame.
+- A picture with `only` shows for the named option value: the Osoyoo breakout
+  board, the INA228 module with XT90 plugs.
+- The photos hold no Exif and no XMP metadata. The check fails on a file that does.
+- `ina3221.svg` is an illustration. Its component layout is not that of the
+  board. `test/pictures.test.ts` compares its header labels with the pins of
+  the data file. Replacing it by a photo is a change of the `pictures` record
+  and of the files.
+- The pictures are not part of the size budget. The initial load holds no
+  picture: `npm run size` fails when `index.html` references one. Each image
+  is `loading="lazy"`; the browser fetches it when its card comes near the
+  viewport (Chromium: 1250 px, 2500 px on a slow connection). The smoke test
+  fails at 360 px width when a picture lies in the first screen, when a
+  picture more than 3000 px below it loads before a scroll, or when a full
+  file loads without a tap.
+
+Picture folder: 21 files, 1473.3 kB.
+
+`test/pictures.test.ts` fails when this line differs from the folder.
+
 ## Limits
 
 - The page draws 1 servo and 1 ESC (electronic speed controller).
-- Part cards show a hatched placeholder. The repository holds no part photos.
+- 8 of 19 parts have a picture. INA3221 board: an illustration, no photo.
+  MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap
+  and cables: no picture.
+- Photo `02-pd-mini`: the left third is out of focus.
 - The drawing has no zoom control. Below 1024 px width it scrolls sideways in its box.
 - 11 wires use a lane that differs from the `route` in the data file: wires 10,
   14, 21, 22, 28, 29, 30, 45, 46, 47 and 51. The table is `GEO.laneFix` in

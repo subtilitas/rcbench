@@ -1,7 +1,7 @@
 // The result document: notices, summary, safety, parts, functions, wiring,
 // checks, build order, footer. Returns markup; main.ts owns the document.
 
-import type { Catalogue, Check, Lang } from '../../contract.ts';
+import type { Catalogue, Check, Lang, OptionKey, Options, Part, Picture } from '../../contract.ts';
 import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { drawing, sample } from '../draw/svg.ts';
@@ -36,6 +36,29 @@ const button = (lang: Lang, id: string, key: Key): string =>
 
 const footer = (lang: Lang): string => `<footer>${esc(t(lang, 'foot'))}</footer>`;
 
+/** Folder of the picture files, relative to the page. */
+export const PICTURES = 'pictures/';
+const PICTURES_MAX = 2;
+
+/** The pictures a part card shows for the options of the setup, the main one first. */
+export function picturesOf(part: Part, options: Options): Picture[] {
+  return (part.pictures ?? [])
+    .filter((p) => Object.entries(p.only ?? {}).every(([key, value]) => options[key as OptionKey] === value))
+    .slice(0, PICTURES_MAX);
+}
+
+/**
+ * One picture of a card: the 480 px thumb of a photo or the drawing, as a link
+ * to the full file. The browser loads the file when the card comes near the
+ * viewport.
+ */
+function picture(p: Picture, lang: Lang): string {
+  const shown = p.kind === 'photo' ? `${p.file}-thumb.webp` : `${p.file}.svg`;
+  const full = p.kind === 'photo' ? `${p.file}.webp` : `${p.file}.svg`;
+  return `<a href="${PICTURES}${esc(full)}"><img src="${PICTURES}${esc(shown)}" width="${p.width}" height="${p.height}"`
+    + ` loading="lazy" decoding="async" alt="${esc(tx(lang, p.alt))}"></a>`;
+}
+
 function parts(view: View): string {
   const { lang, setup, options } = view;
   let h = `<h3>${esc(t(lang, 'parts'))}</h3><ul class="parts">`;
@@ -45,12 +68,12 @@ function parts(view: View): string {
     const variant = p.variantName ? p.variantName.names[options[p.variantName.option]] : undefined;
     if (variant) name += `, ${tx(lang, variant)}`;
     const notRun = p.hardware === 'not-run' || (p.id === 'copro' && options.connection === 'osoyoo');
-    const photo = p.photo
-      ? `<img class="ph" src="photos/${esc(p.photo.file)}" width="48" height="48" alt="${esc(tx(lang, p.photo.alt))}">`
-      : '<span class="ph" aria-hidden="true"></span>';
-    h += `<li>${photo}<div><b>${esc(name)}</b>${notRun ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
+    const shown = picturesOf(p, options);
+    h += `<li${shown.length > 0 ? ' class="pic"' : ''}><div><b>${esc(name)}</b>${notRun ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
       + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
-      + `<span class="why">${esc(reasonText(r, view))}</span></div></li>`;
+      + `<span class="why">${esc(reasonText(r, view))}</span></div>`
+      + (shown.length > 0 ? `<div class="pics">${shown.map((x) => picture(x, lang)).join('')}</div>` : '')
+      + '</li>';
   }
   return `${h}</ul>`;
 }
