@@ -472,8 +472,10 @@ that is full, that fails the write or that leaves the slot between the
 request and the file ends the write with the lines of the table above, and
 nothing is written to the servo. Freeing space on the card or removing the
 card lets the write go. The SERVO tab then names the file: `Backup file of
-this session: KST003.` A save by hand of the same image counts as that
-file. A read that finds other values makes the next write save again.
+this session: KST003.` A save by hand before the first write of the
+session counts as that file. A save by hand after a write holds the written
+values and leaves the line as it is. A read that finds other values makes
+the next write save again.
 
 A servo in doubt is the exception: its image is not worth a file, and the
 restore of the session's backup runs without one.

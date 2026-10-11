@@ -70,6 +70,7 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
         o->kind = kind;
         o->op = (link_kst_op_t)k->op;
         o->nack = nack;
+        o->taken = k->taken;
         o->fail_reg = 0xFFu;
         if (kind == KST_LINK_OUT_REFUSED) {
             o->refusal =
@@ -211,6 +212,7 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
     k->stage_at = op_staged(r->op) ? 0u : (uint8_t)STAGE_WINDOWS;
     k->active = true;
     k->verdict = false;
+    k->taken = false;
     k->phase = (uint8_t)KST_LINK_SENDING;
     return KST_LINK_START_OK;
 }
@@ -485,6 +487,7 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
             k->poll_now = true;
         } else {
             k->verdict = true;
+            k->taken = true;
         }
         break;
     case X_RESULTS:

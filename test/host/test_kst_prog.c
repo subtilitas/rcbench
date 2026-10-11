@@ -2360,6 +2360,33 @@ TEST_CASE(a_file_saved_by_hand_is_the_sessions_and_no_other_is_written)
     CHECK_EQ(g_fc.saves, 1);
     CHECK_EQ(g_fc.n, 1);
     CHECK_STR_EQ(kst_prog_backup_name(&g_p), "MINE");
+    /* A save after the write holds the written servo: the session's
+     * backup stays the file of the servo as it was found. */
+    save("LATER");
+    CHECK_EQ(g_fc.saves, 2);
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "MINE");
+}
+
+TEST_CASE(a_save_after_the_first_write_does_not_rename_the_backup)
+{
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "KST001");
+    save("AFTER");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "KST001");
+    /* Before any write, a second save by hand leaves the first named. */
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    save("ONE");
+    save("TWO");
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "ONE");
 }
 
 TEST_CASE(a_first_write_with_no_card_goes_without_a_file)
@@ -2879,8 +2906,31 @@ TEST_CASE(every_kind_of_outcome_is_a_message)
         o.op = LINK_KST_OP_WRITE;
         end(&o);
         CHECK_EQ(kst_prog_journal(&g_p), open);
+        CHECK_EQ(kst_prog_in_doubt(&g_p), open);
         CHECK_EQ(msg(), open ? (unsigned)KST_PROG_MSG_JOURNAL
                              : KST_PROG_MSG_OUT + (unsigned)kinds[i]);
+    }
+    /* A frame refused after the command was acknowledged: the write may
+     * have run.  The record stays and a read comes first. */
+    {
+        kst_link_outcome_t o;
+
+        by_hand();
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        answer(KST_LINK_START_OK);
+        memset(&o, 0, sizeof(o));
+        o.kind = KST_LINK_OUT_NACK;
+        o.op = LINK_KST_OP_WRITE;
+        o.nack = 5;
+        o.taken = true;
+        end(&o);
+        CHECK(kst_prog_journal(&g_p));
+        CHECK(kst_prog_in_doubt(&g_p));
+        CHECK(!kst_prog_editable(&g_p));
+        CHECK_EQ(msg(), KST_PROG_MSG_OUT + (unsigned)KST_LINK_OUT_NACK);
+        CHECK_EQ(kst_prog_message(&g_p)->arg, 5);
     }
     /* A read that says it succeeded and brought no image. */
     {
@@ -3625,6 +3675,7 @@ int main(void)
     RUN(a_servo_that_goes_while_its_file_is_read_takes_nothing);
     RUN(the_first_write_saves_the_servo_to_the_card_first);
     RUN(a_file_saved_by_hand_is_the_sessions_and_no_other_is_written);
+    RUN(a_save_after_the_first_write_does_not_rename_the_backup);
     RUN(a_first_write_with_no_card_goes_without_a_file);
     RUN(a_pairing_release_with_no_card_goes_without_a_file);
     RUN(a_card_put_in_after_a_write_takes_the_servo_as_the_session_found_it);

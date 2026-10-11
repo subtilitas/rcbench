@@ -468,9 +468,13 @@ static void write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
 
     switch (o->kind) {
     case KST_LINK_OUT_REFUSED:
-    case KST_LINK_OUT_NACK:
     case KST_LINK_OUT_DROPPED:
         nothing = true;
+        break;
+    case KST_LINK_OUT_NACK:
+        /* A frame refused after the command was acknowledged: the write
+         * may have run, and no result of it was read. */
+        nothing = !o->taken;
         break;
     case KST_LINK_OUT_DONE:
         nothing = o->steps_done == 0u
@@ -1760,9 +1764,10 @@ static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     if (ok) {
         name_copy(p->card_name, d->name);
     }
-    /* A save by hand after a write that went with no card holds the
-     * written servo, not the one the session found: it is no backup. */
-    if (ok && (p->card_auto || !p->no_file)) {
+    /* A save by hand is the session's backup while it holds the servo as
+     * the session found it: before the first write, and with no backup
+     * named yet.  A later one holds the written servo and is no backup. */
+    if (ok && (p->card_auto || (!p->written && !p->backed_up))) {
         p->backed_up = p->have_servo;
         p->no_file = false;
         name_copy(p->backup, d->name);

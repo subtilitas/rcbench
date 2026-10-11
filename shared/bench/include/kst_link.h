@@ -136,6 +136,8 @@ typedef struct {
     link_kst_op_t      op;
     link_kst_refusal_t refusal;   /**< KST_LINK_OUT_REFUSED               */
     uint8_t  nack;                /**< KST_LINK_OUT_NACK: link_nack_t     */
+    bool     taken;               /**< the page acknowledged the command:
+                                       the operation may have run         */
     kst_ses_t result;             /**< KST_LINK_OUT_DONE                  */
     uint8_t  fail_reg;            /**< the register result names; 0xFF none */
     uint8_t  steps_done;          /**< writes of the plan done            */
@@ -191,6 +193,7 @@ typedef struct {
     bool     active;           /**< an operation is on its way            */
     bool     verdict;          /**< its command was taken; the status that
                                     says what became of it is owed        */
+    bool     taken;            /**< its command was acknowledged          */
     uint8_t  op;               /**< link_kst_op_t                         */
     uint8_t  stage_at;         /**< staged windows written, to STAGE_WINDOWS */
     uint16_t staged[LINK_KS_W_STAGED];

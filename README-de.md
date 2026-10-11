@@ -102,7 +102,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 33 016 von 33 797 Zeilen in 121 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl; ausgenommen von der Grenze je Datei: `stub_screen.c`. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 33 022 von 33 803 Zeilen in 121 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl; ausgenommen von der Grenze je Datei: `stub_screen.c`. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

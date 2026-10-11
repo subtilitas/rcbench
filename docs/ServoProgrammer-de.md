@@ -505,8 +505,10 @@ entnommen wird, beendet das Schreiben mit den Zeilen der Tabelle oben, und
 nichts wird auf das Servo geschrieben. Platz auf der Karte schaffen oder
 die Karte entnehmen lässt das Schreiben laufen. Der Reiter SERVO nennt die
 Datei danach: `Backup-Datei dieser Sitzung: KST003.` Ein Speichern von Hand
-desselben Abbilds zählt als diese Datei. Ein Lesen, das andere Werte
-findet, lässt das nächste Schreiben erneut speichern.
+vor dem ersten Schreiben der Sitzung zählt als diese Datei. Ein Speichern
+von Hand nach einem Schreiben enthält die geschriebenen Werte und lässt die
+Zeile unverändert. Ein Lesen, das andere Werte findet, lässt das nächste
+Schreiben erneut speichern.
 
 Ein unklares Servo ist die Ausnahme: sein Abbild ist keine Datei wert, und
 das Zurückspielen des Backups der Sitzung läuft ohne eine.

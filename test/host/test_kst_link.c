@@ -901,6 +901,7 @@ TEST_CASE(a_command_with_a_stale_seq_is_refused_and_the_page_read_again)
     out = run_op(LINK_KST_OP_READ_ALL);
     CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
     CHECK_EQ(out.nack, LINK_NACK_BAD_VALUE);
+    CHECK(!out.taken);
     CHECK_EQ(g_sim.n_reads, 96);
     until_phase(KST_LINK_READY);
     out = run_op(LINK_KST_OP_READ_ALL);
@@ -921,12 +922,42 @@ TEST_CASE(a_staged_window_the_page_refuses_ends_the_operation)
     out = run(&r);
     CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
     CHECK_EQ(out.nack, LINK_NACK_BAD_RANGE);
+    CHECK(!out.taken);
     CHECK_EQ(g_cmds, 0);
     CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
     g_nack_stage = 0;
     out = run(&r);
     CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
     CHECK_EQ(out.result, KST_SES_OK);
+    CHECK(out.taken);
+}
+
+TEST_CASE(a_frame_refused_after_the_command_says_the_command_was_taken)
+{
+    kst_link_outcome_t out;
+    unsigned reads;
+
+    up();
+    run_ms(2);
+    g_cmds = 0;
+    reads = (unsigned)g_sim.n_reads;
+    /* A read stages nothing: the first write past the command is the
+     * one that picks what the image registers show. */
+    g_nack_stage = LINK_NACK_BAD_RANGE;
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
+    CHECK_EQ(out.nack, LINK_NACK_BAD_RANGE);
+    CHECK_EQ(g_cmds, 1);
+    CHECK(out.taken);
+    /* The operation ran at the servo. */
+    CHECK_EQ((unsigned)g_sim.n_reads, reads + 96u);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    g_nack_stage = 0;
+    /* The next operation starts with the mark clear. */
+    g_port.seq = (uint16_t)(g_port.seq + 5u);
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
+    CHECK(!out.taken);
 }
 
 TEST_CASE(an_abort_before_the_command_drops_the_request)
@@ -1226,6 +1257,7 @@ int main(void)
     RUN(an_unanswered_page_is_asked_again_without_an_outcome);
     RUN(a_command_with_a_stale_seq_is_refused_and_the_page_read_again);
     RUN(a_staged_window_the_page_refuses_ends_the_operation);
+    RUN(a_frame_refused_after_the_command_says_the_command_was_taken);
     RUN(an_abort_before_the_command_drops_the_request);
     RUN(an_abort_ends_the_operation_that_runs);
     RUN(an_abort_with_a_stale_seq_is_sent_again);
