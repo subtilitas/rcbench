@@ -8,8 +8,14 @@
 
 import type { Scene, ScenePart } from './scene.ts';
 
-/** Pitch of 2 parallel wires. */
-export const U = 8;
+/** Stroke width of a signal wire. */
+export const THIN = 3;
+/** Stroke width of a wire that carries load current. */
+export const THICK = 7;
+/** Clear distance between the edges of 2 wires that run side by side. */
+export const CLEAR = 5;
+/** Pitch of 2 parallel signal wires, and the grid of the part boxes. */
+export const U = THIN + CLEAR;
 /** Strip around a part that holds the wire numbers. No wire runs along it. */
 export const BAND = 40;
 /** Height of the name strip above a drawing. */
@@ -25,9 +31,10 @@ export type Columns = { cols: ScenePart[][]; centre: number };
 
 /**
  * Tracks per gap and per channel, and whether a wire end faces them.
- * `gaps[c][j]`: tracks in gap j of column c. `chans[i]`: tracks in channel i.
+ * `gaps[c][j]`: stroke widths of the tracks in gap j of column c, top to bottom.
+ * `chans[i]`: stroke widths of the tracks in channel i, left to right.
  */
-export type Sizes = { gaps: number[][]; chans: number[]; gapEnds: boolean[][]; chanEnds: boolean[] };
+export type Sizes = { gaps: number[][][]; chans: number[][]; gapEnds: boolean[][]; chanEnds: boolean[] };
 
 /** A placed part. `x, y, w, h`: name strip and drawing. `ix, iy, iw, ih`: the drawing. */
 export type Box = {
@@ -39,9 +46,26 @@ export type Box = {
 export type Placement = {
   w: number; h: number;
   boxes: Record<string, Box>;
-  cols: Array<{ x: number; w: number; gapY: number[]; gapH: number[] }>;
-  chans: Array<{ x: number; w: number }>;
+  cols: Array<{ x: number; w: number; gapY: number[]; gapH: number[]; gapOff: number[][] }>;
+  chans: Array<{ x: number; w: number; off: number[] }>;
 };
+
+/** Distance between the centre lines of 2 wires that run side by side. */
+export const pitch = (a: number, b: number): number => (a + b) / 2 + CLEAR;
+
+/** Centre lines of tracks of the given stroke widths, from the start of their strip. Neighbours keep `CLEAR` edge to edge. */
+export function offsets(widths: ReadonlyArray<number>): number[] {
+  const out: number[] = [];
+  let edge = U - THIN / 2;
+  for (const w of widths) {
+    out.push(edge + w / 2);
+    edge += w + CLEAR;
+  }
+  return out;
+}
+
+/** Width of the strip that `offsets` fills: 1 pitch per signal track and 1 pitch of margin. */
+export const span = (widths: ReadonlyArray<number>): number => widths.reduce((n, w) => n + w + CLEAR, U);
 
 const up = (v: number): number => Math.ceil(v / U) * U;
 const byOrder = (p: ScenePart, q: ScenePart): number => p.order - q.order || (p.id < q.id ? -1 : 1);
@@ -85,20 +109,24 @@ export function columnsOf(scene: Scene): Columns {
 /** Sizes without a wire: the first placement, which the router reads for directions only. */
 export function emptySizes(columns: Columns): Sizes {
   return {
-    gaps: columns.cols.map((c) => new Array<number>(c.length + 1).fill(0)),
-    chans: new Array<number>(columns.cols.length + 1).fill(0),
+    gaps: columns.cols.map((c) => Array.from({ length: c.length + 1 }, (): number[] => [])),
+    chans: Array.from({ length: columns.cols.length + 1 }, (): number[] => []),
     gapEnds: columns.cols.map((c) => new Array<boolean>(c.length + 1).fill(false)),
     chanEnds: new Array<boolean>(columns.cols.length + 1).fill(false),
   };
 }
 
-/** Width of a channel or height of a gap: 2 bands and 1 pitch per track, or the bands alone below wire ends. */
-function room(tracks: number, ends: boolean, unused: number): number {
-  if (tracks > 0) return 2 * BAND + U * (tracks + 1);
+/** Width of a channel or height of a gap: 2 bands and the strip of its tracks, or the bands alone below wire ends. */
+function room(tracks: ReadonlyArray<number>, ends: boolean, unused: number): number {
+  if (tracks.length > 0) return 2 * BAND + up(span(tracks));
   return ends ? 2 * BAND : unused;
 }
 
-export function place(columns: Columns, sizes: Sizes): Placement {
+/**
+ * `shifts[c]`: px that column c starts lower than its centred place. The router
+ * moves a column when a line of it meets a line of the column before it.
+ */
+export function place(columns: Columns, sizes: Sizes, shifts: ReadonlyArray<number> = []): Placement {
   const count = columns.cols.length;
   const widths = columns.cols.map((c) => up(Math.max(...c.map((p) => p.w))));
   const gapH = columns.cols.map((c, ci) => sizes.gaps[ci]!.map((tracks, j) =>
@@ -112,12 +140,12 @@ export function place(columns: Columns, sizes: Sizes): Placement {
   let x = EDGE;
   for (let i = 0; i <= count; i++) {
     const w = room(sizes.chans[i]!, sizes.chanEnds[i]!, i === 0 || i === count ? 0 : CHANNEL);
-    chans.push({ x, w });
+    chans.push({ x, w, off: offsets(sizes.chans[i]!) });
     x += w;
     if (i === count) break;
     const parts = columns.cols[i]!;
     const gapY: number[] = [];
-    let y = EDGE + Math.floor((highest - heights[i]!) / 2 / U) * U;
+    let y = EDGE + Math.floor((highest - heights[i]!) / 2 / U) * U + (shifts[i] ?? 0);
     parts.forEach((p, idx) => {
       gapY.push(y);
       y += gapH[i]![idx]!;
@@ -127,18 +155,18 @@ export function place(columns: Columns, sizes: Sizes): Placement {
       y += h;
     });
     gapY.push(y);
-    cols.push({ x, w: widths[i]!, gapY, gapH: gapH[i]! });
+    cols.push({ x, w: widths[i]!, gapY, gapH: gapH[i]!, gapOff: sizes.gaps[i]!.map((g) => offsets(g)) });
     x += widths[i]!;
   }
-  return { w: x + EDGE, h: highest + 2 * EDGE, boxes, cols, chans };
+  return { w: x + EDGE, h: highest + 2 * EDGE + Math.max(0, ...shifts), boxes, cols, chans };
 }
 
-/** y of track `i` of gap `gap` in column `col`. Columns alternate by half a pitch, so 2 columns never share a line. */
+/** y of track `i` of gap `gap` in column `col`. */
 export function trackY(p: Placement, col: number, gap: number, i: number): number {
-  return p.cols[col]!.gapY[gap]! + BAND + U * (i + 1) + (col % 2) * (U / 2);
+  return p.cols[col]!.gapY[gap]! + BAND + p.cols[col]!.gapOff[gap]![i]!;
 }
 
 /** x of track `i` of channel `chan`. */
 export function trunkX(p: Placement, chan: number, i: number): number {
-  return p.chans[chan]!.x + BAND + U * (i + 1);
+  return p.chans[chan]!.x + BAND + p.chans[chan]!.off[i]!;
 }

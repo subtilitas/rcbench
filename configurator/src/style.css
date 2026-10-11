@@ -137,6 +137,8 @@ button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-acc
 .dia .hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; }
 .dia .core { stroke-width: 3; }
 .dia .case { stroke-width: 5; }
+.dia .thick .core { stroke-width: 7; }
+.dia .thick .case { stroke-width: 9; }
 .dia .k-stub .core { stroke-dasharray: 5 4; }
 .dia .k-component .core { stroke-width: 2; }
 .dia .sym { fill: var(--surface); stroke: currentColor; stroke-width: 2; }
@@ -146,6 +148,12 @@ button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-acc
 .dia .has-on .dw:not(.on) { opacity: .25; }
 .dia .dw.on .core { stroke-width: 6; }
 .dia .dw.on .case { stroke-width: 8; }
+.dia .dw.thick.on .core { stroke-width: 10; }
+.dia .dw.thick.on .case { stroke-width: 12; }
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 8px 0 0; padding: 0; font-size: 13px; color: var(--ink); }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend .lg { flex: none; }
+.legend .lg path { fill: none; stroke-linecap: round; }
 .dia .dw.on .nb, .dia .dw.marked .nb { stroke: var(--ink); stroke-width: 2.5; }
 .dia .dw:focus-visible .nb { stroke: var(--accent); stroke-width: 3; }
 .dia .dw:focus-visible .hit { stroke: var(--accent); stroke-opacity: .35; }

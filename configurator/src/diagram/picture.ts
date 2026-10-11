@@ -1,24 +1,24 @@
-// The pictorial wiring view as markup: the part drawings side by side, each
-// wire from pad to pad in its palette colour with its number at both ends.
+// The pictorial wiring view as markup: the part drawings side by side on a
+// plain ground, each wire from pad to pad in horizontal and vertical runs, in
+// its palette colour, with its number at both ends. A wire that carries load
+// current is drawn `THICK` px wide, every other wire `THIN` px.
 
 import type { Lang } from '../../contract.ts';
-import { PALETTE } from '../../drawings/wires.ts';
+import { MINUS, PALETTE, PLUS } from '../../drawings/wires.ts';
 import { esc, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { endName, targetName } from '../names.ts';
 import type { View } from '../view/chooser.ts';
 import { ANCHORS } from './anchors.ts';
-import { CAP } from './layout.ts';
+import { CAP, THICK, THIN } from './layout.ts';
 import { LABEL, diagramOf } from './route.ts';
 import type { Diagram, Pt, Routed } from './route.ts';
 import { sceneOf } from './scene.ts';
 
 /** Folder of the part drawings, relative to the page. German drawings lie in `de/` below it. */
 export const DRAWINGS = 'drawings/';
-/** Stroke width of a wire in px of the picture. A casing adds 1 px on each side. */
-export const WIRE = 3;
-/** Radius of a wire corner. */
-const RADIUS = 6;
+/** Radius of a wire corner in px. */
+export const RADIUS = 2;
 /** Estimated width of 1 character of a part name, in px. */
 const NAME_CHAR = 7.4;
 
@@ -75,7 +75,7 @@ function wireMarkup(wire: Routed, label: string, first: boolean): string {
   const colour = wire.colour === null ? undefined : PALETTE[wire.colour];
   const stroke = colour ? colour.core : 'currentColor';
   const mid = middle(wire);
-  let out = `<g class="dw k-${wire.kind}" data-wire="${wire.n}" data-c="${f(mid[0])} ${f(mid[1])}" tabindex="${first ? 0 : -1}" role="button" aria-pressed="false" aria-label="${esc(label)}">`
+  let out = `<g class="dw k-${wire.kind}${wire.thick ? ' thick' : ''}" data-wire="${wire.n}" data-c="${f(mid[0])} ${f(mid[1])}" tabindex="${first ? 0 : -1}" role="button" aria-pressed="false" aria-label="${esc(label)}">`
     + `<title>${esc(label)}</title>`;
   for (const path of wire.paths) {
     const d = pathOf(path);
@@ -111,6 +111,24 @@ export function pictureSvg(
     + `<g class="vp"><g class="parts">${parts}</g><g class="wires">${wires}</g></g></svg>`;
 }
 
+/** The legend below the picture: the 2 stroke widths and the 2 supply colours. */
+export function legend(lang: Lang): string {
+  const line = (width: number, colour: string, casing: string | null): string =>
+    `<svg class="lg" width="34" height="12" viewBox="0 0 34 12" aria-hidden="true" focusable="false">`
+    + (casing ? `<path d="M3 6H31" stroke="${casing}" stroke-width="${width + 2}"/>` : '')
+    + `<path d="M3 6H31" stroke="${colour}" stroke-width="${width}"/></svg>`;
+  const plus = PALETTE[PLUS]!;
+  const minus = PALETTE[MINUS]!;
+  const items: Array<[string, Key]> = [
+    [line(THICK, 'currentColor', null), 'dlPower'],
+    [line(THIN, 'currentColor', null), 'dlSignal'],
+    [line(THIN, plus.core, plus.casing), 'dlPlus'],
+    [line(THIN, minus.core, minus.casing), 'dlMinus'],
+  ];
+  return `<ul class="legend" id="dia-legend" aria-label="${esc(t(lang, 'dlTitle'))}">`
+    + items.map(([mark, key]) => `<li>${mark}<span>${esc(t(lang, key))}</span></li>`).join('') + '</ul>';
+}
+
 const TOOLS: ReadonlyArray<readonly [string, Key, string]> = [
   ['out', 'zOut', '−'], ['in', 'zIn', '+'], ['fit', 'zFit', ''],
   ['left', 'mLeft', '←'], ['up', 'mUp', '↑'], ['down', 'mDown', '↓'], ['right', 'mRight', '→'],
@@ -134,6 +152,7 @@ export function picture(view: View): string {
     + `<div class="dia" id="dia" tabindex="0" role="group" aria-label="${esc(t(lang, 'diaBox'))}">`
     + pictureSvg(d, lang, names, labels, title, desc)
     + '</div>'
+    + legend(lang)
     + `<p class="hint" id="dia-hint">${esc(t(lang, 'diaHint'))}`
     + (d.undrawn.length > 0 ? ` ${esc(t(lang, 'diaUndrawn', { n: d.undrawn.join(', ') }))}` : '')
     + '</p>';

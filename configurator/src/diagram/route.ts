@@ -1,20 +1,27 @@
 // The router of the pictorial wiring view. Pure and deterministic.
 //
-// A wire leaves its pad on the edge the drawing names, on a line of its own
-// (its lane). From an east or west edge it runs straight into the channel
-// beside the column. From a north or south edge it runs into the gap above or
-// below the part, turns on a track of its own and runs to a channel. In a
-// channel it runs on a vertical track of its own. To reach a channel further
-// away it crosses each column between through a gap, on a track of its own.
+// Every wire is a chain of horizontal and vertical segments. A wire leaves its
+// pad at a right angle to the edge the drawing names, on a line of its own (its
+// lane). From an east or west edge it runs straight into the channel beside
+// the column. From a north or south edge it runs into the gap above or below
+// the part, turns on a track of its own and runs to a channel. In a channel it
+// runs on a vertical track of its own. To reach a channel further away it
+// crosses each column between through a gap, on a track of its own.
 //
 // What this gives by construction:
 // - a wire crosses no part other than the 2 it ends on,
-// - 2 wires never share a line: tracks and lanes are 8 px apart, and lines of
-//   neighbouring columns are 4 px apart,
-// - 2 wires on 1 pad leave it side by side.
+// - tracks and lanes keep `CLEAR` px between the edges of 2 wires, whatever
+//   their stroke widths, so a bundle is a set of parallel lines,
+// - 2 wires on 1 pad end on it side by side and leave it side by side.
+//
+// 2 horizontal lines that enter 1 channel from its 2 sides at 1 height do not
+// meet when the line from the left turns before the line from the right. The
+// order of the tracks of a channel follows from that. When no order separates
+// a pair, the column right of the channel moves down by a few px. A pair that
+// is left after `SHIFTS` is listed in `clashes`.
 
 import type { Side } from '../../drawings/lib.ts';
-import { BAND, U, columnsOf, emptySizes, place, trackY, trunkX } from './layout.ts';
+import { BAND, THICK, THIN, columnsOf, emptySizes, offsets, pitch, place, trackY, trunkX } from './layout.ts';
 import type { Box, Columns, Placement, Sizes } from './layout.ts';
 import type { Scene, ScenePin, SceneWire } from './scene.ts';
 
@@ -33,6 +40,8 @@ export type Routed = {
   n: number;
   kind: SceneWire['kind'];
   colour: string | null;
+  /** True for a wire that carries load current. It has the stroke width `THICK`. */
+  thick: boolean;
   paths: Pt[][];
   labels: Label[];
   ends: ScenePin[];
@@ -48,12 +57,16 @@ export type Diagram = {
   columns: string[][];
   /** Index of the coprocessor column. */
   centre: number;
+  /** Pairs of wire numbers whose lines overlap in a channel because no order of its tracks separates them. */
+  clashes: Array<[number, number]>;
 };
 
 /** Size of a wire number. */
 export const LABEL = { w: 16, h: 11 };
-/** Distance of the bend that leads from a pad to its lane. */
-const KNEE = 12;
+/** Steps in px a column moves down to keep its lines off the lines of the column before it. */
+export const SHIFTS: ReadonlyArray<number> = [0, 4, 8, 12, 16, 20, 24, 28, 32];
+/** Distance between 2 bends that lead from pads of 1 edge to lanes away from them. */
+const JOG = 12;
 
 type End = {
   n: number;
@@ -62,8 +75,14 @@ type End = {
   box: Box;
   /** True for an east or west edge. */
   flat: boolean;
+  /** Stroke width of the wire. */
+  w: number;
   /** Lane in px of the drawing: y for a flat end, x otherwise. */
   lane: number;
+  /** Place of the wire end on its pad, along the edge, from the wire point. Not 0 when the pad holds several wires. */
+  off: number;
+  /** Count of the bends between the pad and the bend of this end. Used when the lane does not start on the pad. */
+  depth: number;
   /** Step of the wire number away from the edge, so that numbers of neighbouring lanes do not overlap. */
   level: number;
   chan: number;
@@ -90,7 +109,7 @@ function endOf(wire: SceneWire, which: number, pin: ScenePin, p: Placement): End
   const box = p.boxes[pin.part]!;
   const flat = isFlat(pin.side);
   return {
-    n: wire.n, which, pin, box, flat, lane: 0, level: 0,
+    n: wire.n, which, pin, box, flat, w: wire.thick ? THICK : THIN, lane: 0, off: 0, depth: 0, level: 0,
     chan: -1, gap: flat ? -1 : box.idx + (pin.side === 'S' ? 1 : 0), track: -1, hint: 0,
   };
 }
@@ -121,7 +140,12 @@ function plans(scene: Scene, p: Placement): Plan[] {
   return out;
 }
 
-/** Lanes and number steps of the ends on each edge of each part. */
+/**
+ * Lanes and number steps of the ends on each edge of each part. The wires of
+ * 1 pad lie side by side, centred on the wire point. A lane starts on its pad
+ * unless the pads of the edge are closer than their wires are wide: then it
+ * moves along the edge and the lead bends once.
+ */
 function lanes(all: End[]): void {
   const edges = new Map<string, End[]>();
   for (const e of all) {
@@ -132,20 +156,20 @@ function lanes(all: End[]): void {
     const along = (e: End): number => (e.flat ? e.pin.y : e.pin.x);
     ends.sort((p, q) => along(p) - along(q) || (p.pin.pin < q.pin.pin ? -1 : p.pin.pin > q.pin.pin ? 1 : 0)
       || p.hint - q.hint || p.n - q.n || p.which - q.which);
-    const flat = ends[0]!.flat;
-    // Lines of a flat edge alternate by half a pitch from column to column.
-    const offset = flat ? (ends[0]!.box.col % 2) * (U / 2) : 0;
-    const clear = flat ? LABEL.h + 1 : LABEL.w + 1;
-    let previous = -Infinity;
+    const clear = ends[0]!.flat ? LABEL.h + 1 : LABEL.w + 1;
     for (let i = 0; i < ends.length; i++) {
       const e = ends[i]!;
-      const group = ends.filter((x) => x.pin.pin === e.pin.pin);
-      const ideal = along(e) + (group.indexOf(e) - (group.length - 1) / 2) * U;
-      e.lane = Math.max(Math.round((ideal - offset) / U) * U + offset, previous + U);
-      previous = e.lane;
+      const group = ends.filter((x) => x.pin.pin === e.pin.pin && along(x) === along(e));
+      const lines = offsets(group.map((x) => x.w));
+      e.off = lines[group.indexOf(e)]! - (lines[0]! + lines[lines.length - 1]!) / 2;
+      const before = ends[i - 1];
+      e.lane = Math.max(along(e) + e.off, before ? before.lane + pitch(before.w, e.w) : -Infinity);
       const taken = ends.slice(0, i).filter((x) => e.lane - x.lane < clear).map((x) => x.level);
       e.level = [0, 1, 2].find((level) => !taken.includes(level)) ?? 0;
     }
+    // A lead that bends further along the edge bends nearer to its pad, so that no lead meets the lane of another.
+    const bent = ends.filter((e) => e.lane !== along(e) + e.off);
+    bent.forEach((e, i) => { e.depth = bent.length - 1 - i; });
   }
 }
 
@@ -185,7 +209,7 @@ function crossings(list: Plan[], p: Placement): void {
  * the same way from crossing.
  */
 function gapTracks(list: Plan[], sizes: Sizes): void {
-  type Entry = { role: number; left: boolean; x: number; n: number; k: number; set: (track: number) => void };
+  type Entry = { role: number; left: boolean; x: number; n: number; k: number; w: number; set: (track: number) => void };
   const gaps = new Map<string, Entry[]>();
   const add = (col: number, gap: number, entry: Entry): void => {
     const key = `${col}|${gap}`;
@@ -199,12 +223,12 @@ function gapTracks(list: Plan[], sizes: Sizes): void {
         continue;
       }
       add(e.box.col, e.gap, {
-        role: e.pin.side === 'S' ? 0 : 2, left: e.chan === e.box.col, x: e.box.ix + e.lane, n: e.n, k: e.which,
+        role: e.pin.side === 'S' ? 0 : 2, left: e.chan === e.box.col, x: e.box.ix + e.lane, n: e.n, k: e.which, w: e.w,
         set: (track) => { e.track = track; },
       });
     }
     plan.cross.forEach((cross, k) => add(cross.col, cross.gap, {
-      role: 1, left: false, x: 0, n: plan.wire.n, k, set: (track) => { cross.track = track; },
+      role: 1, left: false, x: 0, n: plan.wire.n, k, w: plan.wire.thick ? THICK : THIN, set: (track) => { cross.track = track; },
     }));
   }
   for (const [key, entries] of gaps) {
@@ -217,76 +241,119 @@ function gapTracks(list: Plan[], sizes: Sizes): void {
     });
     entries.forEach((entry, i) => entry.set(i));
     const [col, gap] = key.split('|').map(Number) as [number, number];
-    sizes.gaps[col]![gap] = entries.length;
+    sizes.gaps[col]![gap] = entries.map((entry) => entry.w);
   }
 }
 
-/** Tracks of each channel. The order nests wires that enter and leave on 1 side, and keeps 2 wires that run the same way from crossing. */
-function chanTracks(list: Plan[], p: Placement, sizes: Sizes): void {
-  type Term = { left: boolean; y: number };
-  type Entry = { group: number; key: number; n: number; k: number; trunk: Trunk };
-  const chans = new Map<number, Entry[]>();
+/** The channels each wire runs through, and the stroke widths each channel has to hold. */
+function trunks(list: Plan[], sizes: Sizes): void {
   for (const plan of list) {
     for (const e of plan.ends) {
       if (e.flat && plan.mode !== 'wire') sizes.chanEnds[position(e)] = true;
     }
     if (plan.mode !== 'wire') continue;
     const [a, b] = plan.ends as [End, End];
-    const endTerm = (e: End): Term => ({ left: e.flat ? e.pin.side === 'E' : e.chan === e.box.col + 1, y: hintY(e, p) });
-    const crossTerm = (c: Cross, chan: number): Term => ({ left: c.col === chan - 1, y: gapMid(p, c.col, c.gap) });
     const step = Math.sign(b.chan - a.chan);
     const hops = Math.abs(b.chan - a.chan);
     for (let k = 0; k <= hops; k++) {
       const chan = a.chan + k * step;
-      const t1 = k === 0 ? endTerm(a) : crossTerm(plan.cross[k - 1]!, chan);
-      const t2 = k === hops ? endTerm(b) : crossTerm(plan.cross[k]!, chan);
-      const span = Math.abs(t1.y - t2.y);
+      plan.trunks.push({ chan, index: -1 });
+      sizes.chans[chan]!.push(plan.wire.thick ? THICK : THIN);
+    }
+  }
+}
+
+/**
+ * Order of the tracks of each channel, on the final placement. The first
+ * order nests wires that enter and leave on 1 side and keeps 2 wires that run
+ * the same way from crossing. Then a wire whose line from the left lies at the
+ * height of a line of another wire from the right takes a track left of it.
+ */
+function chanTracks(list: Plan[], p: Placement, only = -1): Array<[number, number]> {
+  type Term = { left: boolean; y: number };
+  type Entry = { group: number; key: number; n: number; k: number; w: number; terms: [Term, Term]; trunk: Trunk };
+  const chans = new Map<number, Entry[]>();
+  for (const plan of list) {
+    if (plan.mode !== 'wire') continue;
+    const [a, b] = plan.ends as [End, End];
+    const endTerm = (e: End): Term => ({
+      left: e.flat ? e.pin.side === 'E' : e.chan === e.box.col + 1,
+      y: e.flat ? e.box.iy + e.lane : trackY(p, e.box.col, e.gap, e.track),
+    });
+    const crossTerm = (c: Cross, chan: number): Term => ({ left: c.col === chan - 1, y: trackY(p, c.col, c.gap, c.track) });
+    plan.trunks.forEach((trunk, k) => {
+      if (only >= 0 && trunk.chan !== only) return;
+      const t1 = k === 0 ? endTerm(a) : crossTerm(plan.cross[k - 1]!, trunk.chan);
+      const t2 = k === plan.trunks.length - 1 ? endTerm(b) : crossTerm(plan.cross[k]!, trunk.chan);
+      const reach = Math.abs(t1.y - t2.y);
       let group: number;
       let key: number;
       if (t1.left && t2.left) {
         group = 0;
-        key = span;
+        key = reach;
       } else if (!t1.left && !t2.left) {
         group = 3;
-        key = -span;
+        key = -reach;
       } else {
         const left = t1.left ? t1 : t2;
         const right = t1.left ? t2 : t1;
         group = left.y > right.y ? 1 : 2;
         key = left.y > right.y ? left.y : -left.y;
       }
-      const trunk: Trunk = { chan, index: -1 };
-      plan.trunks.push(trunk);
-      chans.set(chan, [...(chans.get(chan) ?? []), { group, key, n: plan.wire.n, k, trunk }]);
-    }
+      const entry: Entry = { group, key, n: plan.wire.n, k, w: plan.wire.thick ? THICK : THIN, terms: [t1, t2], trunk };
+      chans.set(trunk.chan, [...(chans.get(trunk.chan) ?? []), entry]);
+    });
   }
+  const clashes: Array<[number, number]> = [];
   for (const [chan, entries] of chans) {
     entries.sort((p1, p2) => p1.group - p2.group || p1.key - p2.key || p1.n - p2.n || p1.k - p2.k);
-    entries.forEach((entry, i) => { entry.trunk.index = i; });
-    sizes.chans[chan] = entries.length;
+    // first[j]: the entries that take a track left of entry j.
+    const first = entries.map(() => new Set<number>());
+    entries.forEach((left, i) => entries.forEach((right, j) => {
+      if (i === j) return;
+      const near = left.terms.some((s) => s.left
+        && right.terms.some((t) => !t.left && Math.abs(s.y - t.y) < pitch(left.w, right.w)));
+      if (near) first[j]!.add(i);
+    }));
+    const order: number[] = [];
+    const done = new Set<number>();
+    while (order.length < entries.length) {
+      const open = entries.map((_, i) => i).filter((i) => !done.has(i));
+      const free = open.find((i) => [...first[i]!].every((j) => done.has(j)));
+      const pick = free ?? open[0]!;
+      if (free === undefined) {
+        for (const j of first[pick]!) {
+          if (!done.has(j)) clashes.push([Math.min(entries[pick]!.n, entries[j]!.n), Math.max(entries[pick]!.n, entries[j]!.n)]);
+        }
+      }
+      done.add(pick);
+      order.push(pick);
+    }
+    order.forEach((i, at) => { entries[i]!.trunk.index = at; });
+    p.chans[chan]!.off = offsets(order.map((i) => entries[i]!.w));
   }
+  return clashes.sort((p1, p2) => p1[0] - p2[0] || p1[1] - p2[1]);
 }
 
-/** Points from the pad to the edge of its lane, and the place of the wire number. */
+/** Points from the pad to the start of its lane, and the place of the wire number. */
 function lead(e: End, p: Placement): { points: Pt[]; label: Label; reach: Pt } {
   const box = p.boxes[e.pin.part]!;
-  const ax = box.ix + e.pin.x;
-  const ay = box.iy + e.pin.y;
   const dir = sign(e.pin.side);
-  const points: Pt[] = [[ax, ay]];
+  const bend = JOG * (1 + e.depth);
   if (e.flat) {
+    const ax = box.ix + e.pin.x;
+    const from = box.iy + e.pin.y + e.off;
     const y = box.iy + e.lane;
     const edge = dir > 0 ? box.x + box.w : box.x;
-    const knee = Math.min(KNEE, Math.max(0, dir > 0 ? edge - ax : ax - edge));
-    if (y !== ay) points.push([ax + dir * knee, y]);
+    const points: Pt[] = y === from ? [[ax, y]] : [[ax, from], [ax + dir * bend, from], [ax + dir * bend, y]];
     const label = { x: edge + dir * (LABEL.w / 2 + 3 + e.level * LABEL.w), y };
     return { points, label, reach: [edge + dir * (BAND - 2), y] };
   }
+  const ay = box.iy + e.pin.y;
+  const from = box.ix + e.pin.x + e.off;
   const x = box.ix + e.lane;
   const edge = dir > 0 ? box.y + box.h : box.y;
-  const inner = dir > 0 ? box.iy + box.ih : box.iy;
-  const knee = Math.min(KNEE, Math.max(0, dir > 0 ? inner - ay : ay - inner));
-  if (x !== ax) points.push([x, ay + dir * knee]);
+  const points: Pt[] = x === from ? [[x, ay]] : [[from, ay], [from, ay + dir * bend], [x, ay + dir * bend]];
   const label = { x, y: edge + dir * (LABEL.h / 2 + 3 + e.level * (LABEL.h + 1)) };
   return { points, label, reach: [x, edge + dir * (BAND - 2)] };
 }
@@ -309,7 +376,7 @@ export function simplify(points: Pt[]): Pt[] {
 
 function realise(plan: Plan, p: Placement): Routed {
   const { wire } = plan;
-  const base = { n: wire.n, kind: wire.kind, colour: wire.colour };
+  const base = { n: wire.n, kind: wire.kind, colour: wire.colour, thick: wire.thick };
   if (plan.mode === 'open') {
     const leads = plan.ends.map((e) => lead(e, p));
     return {
@@ -354,9 +421,21 @@ export function diagramOf(scene: Scene): Diagram {
   lanes(list.flatMap((plan) => plan.ends));
   crossings(list, first);
   gapTracks(list, sizes);
-  chanTracks(list, first, sizes);
-  const final = place(columns, sizes);
+  trunks(list, sizes);
+  // Channel c lies between the columns c - 1 and c. Each column takes the first shift that leaves its channel without a clash.
+  const shifts = columns.cols.map(() => 0);
+  for (let c = 1; c < columns.cols.length; c++) {
+    for (const shift of SHIFTS) {
+      shifts[c] = shift;
+      const trial = place(columns, sizes, shifts);
+      rebind(list, trial);
+      if (chanTracks(list, trial, c).length === 0) break;
+      shifts[c] = 0;
+    }
+  }
+  const final = place(columns, sizes, shifts);
   rebind(list, final);
+  const clashes = chanTracks(list, final);
   const files = new Map(scene.parts.map((part) => [part.id, part.file]));
   return {
     w: final.w,
@@ -366,5 +445,6 @@ export function diagramOf(scene: Scene): Diagram {
     undrawn: [...scene.undrawn],
     columns: columns.cols.map((c) => c.map((part) => part.id)),
     centre: columns.centre,
+    clashes,
   };
 }

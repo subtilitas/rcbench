@@ -18,7 +18,14 @@ export type ScenePin = { part: string; pin: string; x: number; y: number; side: 
  * `a` and `b` list the wire points of an end. An end has more than 1 point when the
  * board offers several pads for it. `b` is null for a wire that ends open.
  */
-export type SceneWire = { n: number; kind: Wire['kind']; colour: string | null; a: ScenePin[]; b: ScenePin[] | null };
+export type SceneWire = { n: number; kind: Wire['kind']; colour: string | null; thick: boolean; a: ScenePin[]; b: ScenePin[] | null };
+
+/**
+ * True for a wire that carries load current: the supply of the ESC or of the
+ * servo, plus and minus. The data file marks these wires with the class
+ * `power`. The supply of a board from 3.3 V or VBUS has the class `logic`.
+ */
+export const carriesLoad = (wire: Pick<Wire, 'cls' | 'kind'>): boolean => wire.kind !== 'component' && wire.cls === 'power';
 
 /** `undrawn`: numbers of the wires with an end that has no wire point on a drawing. */
 export type Scene = { parts: ScenePart[]; wires: SceneWire[]; undrawn: number[] };
@@ -67,7 +74,7 @@ export function sceneOf(setup: Pick<Setup, 'parts' | 'options' | 'wires'>, ancho
       undrawn.push(wire.n);
       continue;
     }
-    wires.push({ n: wire.n, kind: wire.kind, colour: colourOf(wire), a, b });
+    wires.push({ n: wire.n, kind: wire.kind, colour: colourOf(wire), thick: carriesLoad(wire), a, b });
   }
   return { parts, wires, undrawn };
 }
