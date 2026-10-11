@@ -1,0 +1,69 @@
+sense-trace-sim.log: 2 trace(s), 2 other line(s)
+sense-trace-sim.csv: 4 travel time(s), 4 paired with a move
+trace 1: trigger key at tick 20400 ms, 561 samples over 560.0 ms, 28 voltages, 0 records missing
+  shunt 0.1 Ohm, Configuration 0x4007, part online, reset count 0
+  ended by the console
+  counts match the end line
+  noise of the whole trace, 561 samples:
+    filter 1: mean 0.1204 A, standard deviation 0.0058 A, largest distance from the mean 0.0104 A
+    filter 4: mean 0.1204 A, standard deviation 0.0029 A, largest distance from the mean 0.0093 A
+    filter 8: mean 0.1203 A, standard deviation 0.0020 A, largest distance from the mean 0.0061 A
+trace 2: trigger cmd at tick 22020 ms, 8881 samples over 8880.0 ms, 444 voltages, 0 records missing
+  shunt 0.1 Ohm, Configuration 0x4007, part online, reset count 0
+  ended by its time
+  counts match the end line
+  noise before the first command, 81 samples:
+    filter 1: mean 0.1190 A, standard deviation 0.0057 A, largest distance from the mean 0.0106 A
+    filter 4: mean 0.1192 A, standard deviation 0.0030 A, largest distance from the mean 0.0069 A
+    filter 8: mean 0.1193 A, standard deviation 0.0020 A, largest distance from the mean 0.0048 A
+  4 move(s), time from the trace's trigger:
+    move 1 at 0.0 ms, channel 0 to 1800 us: before 0.119 A, holding 0.119 A (idle level), threshold 0.020 A, horn 240 ms
+    move 2 at 1600.0 ms, channel 0 to 1200 us: before 0.121 A, holding 0.119 A (idle level), threshold 0.020 A, horn 490 ms
+    move 3 at 3200.0 ms, channel 0 to 1800 us: before 0.120 A, holding 0.120 A (held before move 2), threshold 0.020 A, horn 490 ms
+    move 4 at 4800.0 ms, channel 0 to 1200 us: before 0.121 A, holding 0.120 A (held before move 3), threshold 0.020 A, horn 490 ms
+  arrival, ms from the command:
+    filter  band A   seen  arrived   move 1   move 2   move 3   move 4
+         1    0.02    4/4      4/4    250.0    500.0    500.0    500.0
+         1    0.05    4/4      4/4    250.0    500.0    500.0    500.0
+         1    0.10    4/4      4/4    250.0    500.0    500.0    500.0
+         4    0.02    4/4      4/4    253.0    503.0    503.0    503.0
+         4    0.05    4/4      4/4    253.0    503.0    503.0    503.0
+         4    0.10    4/4      4/4    253.0    503.0    503.0    503.0
+         8    0.02    4/4      4/4    257.0    507.0    507.0    507.0
+         8    0.05    4/4      4/4    257.0    507.0    507.0    507.0
+         8    0.10    4/4      4/4    257.0    507.0    507.0    507.0
+  arrival less the horn's travel time (AS5600), ms:
+    filter  band A                   move 1   move 2   move 3   move 4
+         1    0.02                    +10.0    +10.0    +10.0    +10.0
+         1    0.05                    +10.0    +10.0    +10.0    +10.0
+         1    0.10                    +10.0    +10.0    +10.0    +10.0
+         4    0.02                    +13.0    +13.0    +13.0    +13.0
+         4    0.05                    +13.0    +13.0    +13.0    +13.0
+         4    0.10                    +13.0    +13.0    +13.0    +13.0
+         8    0.02                    +17.0    +17.0    +17.0    +17.0
+         8    0.05                    +17.0    +17.0    +17.0    +17.0
+         8    0.10                    +17.0    +17.0    +17.0    +17.0
+all traces, 4 move(s):
+    filter  band A   seen  arrived  median difference to the horn
+         1    0.02    4/4      4/4     +10.0 ms over 4 move(s)
+         1    0.05    4/4      4/4     +10.0 ms over 4 move(s)
+         1    0.10    4/4      4/4     +10.0 ms over 4 move(s)
+         4    0.02    4/4      4/4     +13.0 ms over 4 move(s)
+         4    0.05    4/4      4/4     +13.0 ms over 4 move(s)
+         4    0.10    4/4      4/4     +13.0 ms over 4 move(s)
+         8    0.02    4/4      4/4     +17.0 ms over 4 move(s)
+         8    0.05    4/4      4/4     +17.0 ms over 4 move(s)
+         8    0.10    4/4      4/4     +17.0 ms over 4 move(s)
+settings that see every move and time its arrival: filter 1 band 0.02 A, filter 1 band 0.05 A, filter 1 band 0.10 A, filter 4 band 0.02 A, filter 4 band 0.05 A, filter 4 band 0.10 A, filter 8 band 0.02 A, filter 8 band 0.05 A, filter 8 band 0.10 A
+median arrival, and the median distance from filter 4 band 0.05 A (the capture's setting) over the moves both time:
+    filter  band A   median ms  moves  distance ms  moves
+         1    0.02       500.0      4         -3.0      4
+         1    0.05       500.0      4         -3.0      4
+         1    0.10       500.0      4         -3.0      4
+         4    0.02       503.0      4         +0.0      4
+         4    0.05       503.0      4         +0.0      4
+         4    0.10       503.0      4         +0.0      4
+         8    0.02       507.0      4         +4.0      4
+         8    0.05       507.0      4         +4.0      4
+         8    0.10       507.0      4         +4.0      4
+latest less earliest arrival of one move across the settings: median 7.0 ms, largest 7.0 ms over 4 move(s)

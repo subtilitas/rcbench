@@ -586,8 +586,41 @@ in a window counts as 4094 steps towards that end of the range, as in the
 replay, and the move's line says how many of its level samples are
 clipped.
 
+**More than one output.** `ch=` in a `$C` or `$D` line is the output
+channel, not the pin: the channels count from 0 over the bound pins in
+ascending pin order, 1 channel per PWM pin. With GP0, GP1, GP2 and GP4
+bound, GP2 is channel 2 and GP4 is channel 3. The shunt carries the
+current of every servo on the supply, and the SERVO screen commands every
+servo output in the same frame. The tool replays no command that has
+another command within 30 ms of it, so with 2 servo outputs bound it
+replays no move. `--loaded-channel N` names a channel with a servo
+connected to its pin; the option repeats, 1 channel each:
+
+```bash
+python3 tools/sense_trace.py mg90s-4v8.log --loaded-channel 2
+```
+
+The `$C` and `$D` lines of every other channel are then no moves and
+count for no 30 ms. A `$E` line has no channel: the commands of the named
+channels take their edge lines first, and an edge line left within 30 ms
+of another channel's command is left out. The report's second line names
+the channels and counts what is left out:
+
+```text
+loaded channel(s) 2: 25 command line(s) of channel(s) 1, 3 left out
+```
+
+It ends `no command line of channel(s) N` for a named channel that no `$C`
+line of the log has; the exit code stays 0. Two named channels commanded
+within 30 ms of each other are not replayed. Without the option every
+channel counts. The tool does not check that a named channel's pin has a
+servo on it: a servo on a channel that is not named moves in the replayed
+current.
+
 `--floor` takes 0.000001 A to 1000 A, `--pair-ms` more than 0 ms up to
-60000 ms, `--csv-offset` up to 1e9 s either side of 0. A servo CSV file
+60000 ms, `--csv-offset` up to 1e9 s either side of 0, `--loaded-channel`
+a whole number from 0 to 65535 with no sign and no leading zero; any
+other value exits 2. A servo CSV file
 that cannot be read, a CSV file that cannot be written and a replay that
 answers another number of moves than it was sent exit 2.
 
@@ -639,7 +672,8 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   the CSV file.
 - Commands within 30 ms of each other, as two outputs written in one
   frame, change the current together. The tool lists them and replays
-  none of them. A command that follows another output's command later
+  none of them, unless `--loaded-channel` leaves all but one of them
+  out. A command that follows another output's command later
   than that, before the first servo arrived, is replayed with the first
   servo's current in it; the tool does not tell the two apart.
 - Whether a terminal keeps up with 8.6 kB a second without loss. A trace
