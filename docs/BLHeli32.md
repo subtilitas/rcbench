@@ -1,9 +1,10 @@
-# BLHeli_32 parameters
+# Parameters of ESCs with BLHeli_32 firmware
 
 <sub>**English** · [Deutsch](BLHeli32-de.md)</sub>
 
-BLHeli_32 is not in the programmer's ESC (electronic speed controller) list.
-This page states what the bench does with a BLHeli_32 ESC and what it does not.
+The programmer's ESC (electronic speed controller) list has no entry for
+BLHeli_32 firmware. This page states what the bench does with an ESC that runs
+BLHeli_32 firmware and what it does not.
 
 ## Supported
 
@@ -27,4 +28,4 @@ item is closed.
 
 ## Alternative
 
-An ESC reflashed to AM32 is fully supported by the programmer.
+An ESC reflashed to AM32 firmware is fully supported by the programmer.

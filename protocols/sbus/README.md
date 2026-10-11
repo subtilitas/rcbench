@@ -1,6 +1,6 @@
 # sbus
 
-Futaba S.BUS: a decoder for 16 channels in a frame of 25 bytes.
+A decoder for the Futaba S.BUS protocol: 16 channels in a frame of 25 bytes.
 
 | Part | Files | Depends on |
 |---|---|---|

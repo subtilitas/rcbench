@@ -292,30 +292,32 @@ dreht sich also nichts, während sie hinausgeht:
   die ein ESC bei einem Neustart vergisst, und zwischen zwei Läufen kann ein
   anderer ESC angesteckt werden.
 
-Das Wiederholen ist für AM32. AM32 2.21 nimmt ein Command nur an, solange es
-scharf ist und der Motor steht, und es schaltet sich nach 1 s Throttle null
-selbst scharf, gezählt ab dem ersten Frame, den es hört (`Src/dshot.c:157`,
+Das Wiederholen ist für ESCs mit AM32-Firmware. Ein ESC mit AM32 2.21 nimmt
+ein Command nur an, solange er scharf ist und der Motor steht, und er schaltet
+sich nach 1 s Throttle null selbst scharf, gezählt ab dem ersten Frame, den er
+hört (`Src/dshot.c:157`,
 `Src/main.c:1353-1356`). Ein nicht scharfer Prüfstand sendet keine Frames, und
-AM32 startet nach 0,5 s ohne Frame neu, wenn es scharf ist, und nach 2 s, wenn
-nicht. Jeder Lauf beginnt also mit einem AM32, das nicht scharf ist. Eine
-Anfrage nur in den ersten 10 ms eines Laufs kommt an, bevor AM32 sie annehmen
-kann. `test_dshot_edt` prüft den Ablauf gegen ein Modell dieser Regeln: ein
-AM32, das aus der Stille bei Throttle null startet, nimmt die dritte Anfrage
-an, 1,02 s nach Beginn des Laufs. Die Drehzahl hängt davon nicht ab: AM32
-beantwortet einen bidirektionalen Frame mit einer Periode, ob gefragt wurde
-oder nicht.
+die AM32-Firmware startet nach 0,5 s ohne Frame neu, wenn der ESC scharf ist,
+und nach 2 s, wenn nicht. Jeder Lauf beginnt also mit einem ESC, der nicht
+scharf ist. Eine Anfrage nur in den ersten 10 ms eines Laufs kommt an, bevor
+der ESC sie annehmen kann. `test_dshot_edt` prüft den Ablauf gegen ein Modell
+dieser Regeln: ein ESC mit AM32-Firmware, der aus der Stille bei Throttle null
+startet, nimmt die dritte Anfrage an, 1,02 s nach Beginn des Laufs. Die
+Drehzahl hängt davon nicht ab: ein ESC mit AM32-Firmware beantwortet einen
+bidirektionalen Frame mit einer Periode, ob gefragt wurde oder nicht.
 
 Gelesen werden Antworten als Extended Telemetry ab der ersten Wiederholung der
-ersten Anfrage. AM32 beantwortet Command 13 einmal, mit einem Status-Frame
+ersten Anfrage. Ein ESC mit AM32-Firmware beantwortet Command 13 einmal, mit
+einem Status-Frame
 (`0xE00`) nach der sechsten Wiederholung, und als Drehzahl gelesen wäre dieser
 Frame eine Periode von null und keine Antwort.
 
 Jeder der zehn Frames trägt das Telemetry-Bit gesetzt. Bei einem Wert von 1
-bis 47 markiert dieses Bit den Frame für die BLHeli_S-Familie (Bluejay) als
+bis 47 markiert dieses Bit den Frame für die BLHeli_S-Firmware-Familie (Bluejay) als
 Command: sie verwirft ein Command mit gelöschtem Telemetry-Bit und setzt dabei
 ihren Wiederholungszähler zurück, sodass zehn Frames ohne das Bit nie die
-sechs Wiederholungen erreichen, die ihr Command-Handler zählt. AM32 hat diese
-Sperre nicht und nimmt beide Frames an. An einem bidirektionalen Pin lautet
+sechs Wiederholungen erreichen, die ihr Command-Handler zählt. Die
+AM32-Firmware hat diese Sperre nicht und nimmt beide Frames an. An einem bidirektionalen Pin lautet
 der Frame mit dem Bit `0x01B5` und ohne es `0x01A4` -- andere Nutzdaten und
 ein anderes Prüfsummen-Nibble. `test_dshot_frame` hält dieses Wort fest. Die
 zweite Bedeutung des Bits ist eine Anforderung auf der separaten seriellen
@@ -360,8 +362,8 @@ ist über diesen einen ESC hinaus unbestätigt:
   und Temperatur (1 °C je Zählwert) sowie die Stress-, Status- und
   Debug-Frames; nur die Spannung (0,25 V je Zählwert) ist gegen einen Wert
   gelesen, den der Tester kannte;
-- ob andere ESCs als AM32 Command 13 unter der wiederholten Anfrage annehmen:
-  Bluejay und BLHeli_32 sind ungetestet;
+- ob ESCs mit anderer Firmware als AM32 Command 13 unter der wiederholten
+  Anfrage annehmen: ESCs mit Bluejay- und BLHeli_32-Firmware sind ungetestet;
 - ob der Hinweis "mindestens 35 ms warten" in der Spezifikation zu Command 13
   oder zu Command 12 (Save Settings) gehört. Die Tabelle lässt beide Lesarten
   zu, und der Prüfstand wartet in keinem Fall: auf die zehnte Wiederholung
