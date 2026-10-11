@@ -62,9 +62,16 @@ history is in git.
   the supply, sends the command, polls every 50 ms and fetches the image
   and the results. No screen uses it, so the panel sends nothing to either
   page.
-  The link protocol is 4.13. Every combination of a 4.13 and an older
-  panel and coprocessor links and arms, and nothing is sent to 0x32 or
-  0x33 unless both are 4.13.
+  The port plans a WRITE and a RESTORE after the command's frame, one
+  slice of the planner in each pass of the coprocessor's main loop: bit 3
+  of register 0 is set and the result reads 35 while it plans, and a
+  request ends with result 33 when no order of writes exists and 34 when
+  216,000 units of planner work are spent first. A stop, a disarm, an
+  ABORT, a lost heartbeat, a silent link or a supply found off ends the
+  planning at the next pass with nothing sent.
+  The link protocol is 4.14; PROG and the ports are 4.13. Every
+  combination of a 4.14 and an older panel and coprocessor links and arms,
+  and nothing is sent to 0x32 or 0x33 unless both are 4.13 or later.
   Host suite only (`test_kst_port`, `test_prog_port`, `test_kst_link`); no
   frame has been sent to a servo and no pulse of a port is measured.
   ([Link](docs/Link.md#the-kst-programming-port))
@@ -120,10 +127,11 @@ history is in git.
   result is known: the costliest run found takes 397 to 647 ms by the
   same estimate, down from 1.2 to 3.0 s.
   The programming port of the coprocessor (`shared/outputs/kst_port.c`)
-  calls `kst_plan_edit()`, `kst_plan_restore()` and
-  `kst_session_write()`: a write command runs the planner to its end
-  twice inside core 0's main loop, and a run above the heartbeat gap of
-  150 ms switches every output off and sets the arm latch.
+  calls `kst_session_edit()`, `kst_session_restore()` and
+  `kst_session_release_pairing()`: a write command starts the planner's
+  job, and each pass of core 0's main loop runs 1 slice. A write command
+  reaches 1,304 bytes of stack and a pass that plans 984. The time of a
+  pass is not measured on hardware.
   ([Performance](docs/Performance.md#the-coprocessor))
 - **The KST write planner takes 488 bytes of stack, down from 1,272.**
   Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on

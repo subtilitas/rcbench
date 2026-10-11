@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.13. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.14. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -99,7 +99,9 @@ Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder vo
 BIND_CFG, BIND_OUT und BIND ab 4.10, SERVO_WIN, `RESETS` von SENSE und ein
 vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11, KST ab 4.12, PROG, die
 Programmierports von KST, Flag-Bit 11 von SUPPLY und das Port-Bit von
-SERVO_SENSE ab 4.13. Der Koprozessor liest
+SERVO_SENSE ab 4.13. Ab 4.14 plant KST einen Schreibauftrag über mehrere
+Durchläufe und meldet die Ergebnisse 33 bis 35; das Panel schreibt dafür
+nichts anders. Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
 
@@ -693,6 +695,38 @@ Nichts wird im Flash gehalten: nach einem Neustart des Koprozessors steht
 der Port in PWM ohne Session und mit gelöschtem Bit 4 in Register 0, gleich
 in welchem Modus das Servo ist, und die Versorgung ist aus angefordert.
 
+Die Session plant ein WRITE und ein RESTORE selbst (seit 4.14). Der Frame
+des Kommandos prüft den Auftrag und bereitet den Job des Planers vor, 64 us
+Planerarbeit. Ein Ziel, das der Planer ohne Suche abweist, wird dort
+abgewiesen (PLAN_RULES, PLAN_R00, PLAN_PAIRING), und keine Operation
+startet. Jeder andere Auftrag startet die Operation, und jeder Durchlauf
+der Hauptschleife von Kern 0 fährt dann einen Slice des Planers: 100 bis
+109 Einheiten Arbeit, höchstens 892 us. Solange der Port plant, ist Bit 3
+von Register 0 gesetzt, das Low-Byte von `LINK_KS_RESULT` liest 35, der
+Frame-Zähler liest 0, und kein Frame geht an das Servo. Das Planen endet
+nach höchstens 216 000 Einheiten, 2 161 Durchläufen:
+
+- mit einem Plan: `LINK_KS_RESULT` liest 1, und die Session liest das Servo
+  und schreibt;
+- ohne eine Reihenfolge von Schreibzugriffen, die jedes Image dazwischen
+  gültig hält: Ergebnis 33;
+- mit verbrauchten 216 000 Einheiten, bevor eines von beiden feststeht:
+  Ergebnis 34. Ob der Auftrag einen Plan hat, ist dann nicht bekannt;
+- ein RESTORE, dessen Ergebnis sich nicht prüfen lässt, ohne die
+  Bestätigung: Ergebnis 11.
+
+Bei den Ergebnissen 33, 34 und 11 wird nichts an das Servo gesendet, die
+Session ist nicht gesperrt, und das nächste WRITE wird ohne READ_ALL
+angenommen. Der teuerste gefundene Auftrag braucht 120 136 Einheiten,
+höchstens 1 202 Durchläufe und 397 bis 647 ms Planerzeit. Die Zeiten sind in
+einem Emulator aus den ausgeführten Instruktionen für 150 MHz berechnet
+([Performance](Performance-de.md#der-koprozessor)) und nicht auf Hardware
+gemessen. Die Zeit eines Durchlaufs mit dem Rest der Hauptschleife ist
+nicht gemessen; die Planzeit an einem Prüfstand ist also nicht bekannt. Ein
+4.13-Koprozessor fährt die ganze Suche im Frame des Kommandos und
+beantwortet einen Auftrag ohne Reihenfolge von Schreibzugriffen mit der
+Abweisung PLAN_NO_PATH.
+
 Kein Frame ist an ein Servo gesendet worden. Der Port, die Page und das
 Modul des Panels laufen in der Host-Suite gegen ein Servo-, Leitungs- und
 Versorgungsmodell.
@@ -795,7 +829,7 @@ Ein Lesen gibt diese Register:
 | 0 | `STATE` | Bits 0 bis 2 der Zustand. Bit 3 eine Operation läuft. Bit 4 ein Frame wurde gesendet, seit das Servo zuletzt ohne Spannung war. Bit 5 ein Stopp oder ein Abbruch hat die Session unterbrochen: READ_ALL kommt vor allem anderen. Bit 6 ein Image ist gelesen. Bit 7 die Session hält ein Backup. Bit 8 das Image hat das bekannte Layout. Bit 9 nur RESTORE wird angenommen. Bit 10 ein PD mini antwortet, und der Port schaltet die Versorgung des Servos. Bit 11 die Register 16 bis 31 zeigen das Backup. Bits 12 bis 15 der Programmierport |
 | 1 | `SEQ` | die `SEQ` des zuletzt angenommenen Kommandos; 0 beim Start |
 | 2 | `OP` | Bits 12 bis 15 die zuletzt gestartete Operation, Bits 0 bis 11 die Frames, die sie gesendet hat, gehalten bei 4095 |
-| 3 | `LINK_KS_RESULT` | Low-Byte das Ergebnis dieser Operation, 1 solange sie läuft. High-Byte der Grund, aus dem das zuletzt angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
+| 3 | `LINK_KS_RESULT` | Low-Byte das Ergebnis dieser Operation, 1 solange sie läuft, 35 solange ein WRITE oder ein RESTORE plant (seit 4.14). High-Byte der Grund, aus dem das zuletzt angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
 | 4 | `LINK_KS_FAIL` | Low-Byte das Servoregister, das das Ergebnis nennt, 0xFF für keines. High-Byte die erledigten Schreibzugriffe des Plans |
 | 5, 6 | `DIFF` | Bit n: Servoregister n weicht von dem ab, was die Operation erwartet hat. Register 5 hält die Servoregister 0 bis 15 |
 | 7, 8 | `BAD` | Bit n: Servoregister n hat keine 3 gleichen Lesungen in 5 |
@@ -842,8 +876,8 @@ was aus ihm wurde, steht in `LINK_KS_RESULT`.
 | --- | ---: | --- |
 | ENTER | 1 | in PWM: nimmt den Pin des Ports, setzt die Versorgung und fährt die Einstiegssequenz. In PROGRAMMING: fährt die Einstiegssequenz noch einmal |
 | READ_ALL | 2 | liest die 32 Register, jedes bis 3 von höchstens 5 Lesungen übereinstimmen. Das erste Image einer Session ist ihr Backup |
-| WRITE | 3 | plant vom gelesenen Image zum bereitgestellten Image und fährt den Plan: jeder Schreibzugriff wird zurückgelesen, und einer, der nicht greift, wird rückgängig gemacht |
-| RESTORE | 4 | fährt den Plan zurück zum bereitgestellten Backup. Die Session nimmt ihn an, wenn das bereitgestellte Image gleich dem Backup ist, das sie hält |
+| WRITE | 3 | plant vom gelesenen Image zum bereitgestellten Image, ein Slice je Durchlauf (seit 4.14), und fährt den Plan: jeder Schreibzugriff wird zurückgelesen, und einer, der nicht greift, wird rückgängig gemacht |
+| RESTORE | 4 | plant zurück zum Backup, das die Session hält, und fährt den Plan. Ein bereitgestelltes Image, das nicht dieses Backup ist, beendet es mit Ergebnis 10 |
 | RELEASE | 5 | löst das Pairing |
 | VERIFY | 6 | liest alle Register und vergleicht sie mit dem bereitgestellten Image |
 | ABORT | 7 | beendet die laufende Operation. In STOPPING und LOW kehrt der Port nach PWM zurück. In RAIL_OFF wird die Versorgung nicht wieder eingeschaltet, in RAIL_WAIT wird sie ausgeschaltet, und der Ablauf endet mit Ergebnis 19. In jedem Zustand angenommen; Register 2 nennt es nicht |
@@ -860,8 +894,12 @@ hat nicht gegriffen und nichts ist geändert, 14 ein Plan rückgängig
 gemacht, 15 ein Plan zum Teil rückgängig gemacht, 16 ein Register hat sich
 geändert, das der Plan nicht geschrieben hat, 17 das Image weicht nach dem
 Plan ab, 18 der Leitungstreiber ist ausgefallen oder ließ sich nicht
-öffnen, 19 abgebrochen. 32 ist das eigene des Ports (seit 4.13): die
-Versorgung hat nicht rechtzeitig geschaltet.
+öffnen, 19 abgebrochen. 32 bis 35 sind die eigenen des Ports. 32 (seit
+4.13): die Versorgung hat nicht rechtzeitig geschaltet. 33 (seit 4.14):
+keine Reihenfolge von Schreibzugriffen hält jedes Image dazwischen gültig.
+34 (seit 4.14): der Planer hat 216 000 Einheiten Arbeit verbraucht, bevor er
+einen Plan hatte oder wusste, dass es keinen gibt. 35 (seit 4.14): die
+Operation plant; es ist nie das Ergebnis einer beendeten Operation.
 
 | Abweisung | Wert | Das Kommando hat nichts gestartet, weil |
 | --- | ---: | --- |
@@ -877,12 +915,16 @@ Versorgung hat nicht rechtzeitig geschaltet.
 | PLAN_RULES | 12 | das Ziel eine harte Regel verletzt |
 | PLAN_R00 | 13 | das Ziel in Servoregister 0x00 abweicht |
 | PLAN_PAIRING | 14 | ein WRITE in Servoregister 0x1D abweicht |
-| PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält |
+| PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält (nur 4.12 und 4.13; seit 4.14 Ergebnis 33) |
 | NO_PIN | 16 | der Port keinen Pin hält, bei einem ENTER und bei einem REBOOT in PWM (seit 4.13) |
 | SUPPLY_RANGE | 17 | die bereitgestellte Versorgungsspannung oder der Strom außerhalb dessen liegt, was ENTER nimmt (seit 4.13) |
 | NO_SUPPLY | 18 | ein REBOOT, bei dem kein PD mini antwortet oder der PD mini aus angefordert ist (seit 4.13) |
 
-Die Werte 3 und 4 werden nicht gegeben. NO_ENABLE wird vor jedem anderen
+Die Werte 3 und 4 werden nicht gegeben. Ein Ergebnis, das die Session ohne
+Plan kennt (5, 7, 8, 9 und 10 bei einem RESTORE, dessen bereitgestelltes
+Image nicht das Backup ist), wird vor PLAN_RULES, PLAN_R00 und PLAN_PAIRING
+gegeben (seit 4.14): eine gesperrte Session beantwortet ein WRITE mit
+Ergebnis 9, gleich welches Ziel es hat. NO_ENABLE wird vor jedem anderen
 Grund geprüft. Das Panel sendet den Key nur, solange sein Schalter ENABLE
 WRITE TO SERVO an ist; ein Kommando, das den Koprozessor ohne ihn erreicht,
 schreibt also in keinem Zustand des Ports. Kein Bildschirm dieses Builds
@@ -916,7 +958,23 @@ Kommando ABORT aus `kst_link_abort()`.
 
 Solange Bit 5 gesetzt ist, nimmt der Port nur ENTER, READ_ALL, ABORT,
 POWER_CYCLED und REBOOT, bis ein READ_ALL gelungen ist. ABORT allein hat in
-STOPPING, LOW und PROGRAMMING die Wirkung eines Entschärfens. Ein
+STOPPING, LOW und PROGRAMMING die Wirkung eines Entschärfens.
+
+Eine Operation, die plant, ist eine Operation in PROGRAMMING, und die Zeile
+oben gilt für sie: ein Entschärfen, das STOP des Panels, ein verlorener
+Heartbeat, ein stiller Link, ein ABORT und eine aus vorgefundene Versorgung
+beenden das Planen im nächsten Durchlauf mit Ergebnis 19. Kein Frame wurde
+gesendet und kein Register geschrieben, und die Session ist nicht gesperrt.
+Bit 5 ist gesetzt wie nach einem abgeschnittenen Frame, weil die Session
+Frames gesendet hat, bevor sie plante. Die Versorgung bleibt nach einem
+Entschärfen oder einem ABORT allein an. Nach dem STOP des Panels, einem
+verlorenen Heartbeat oder einem stillen Link ist sie aus, und wenn ein PD
+mini antwortet, hält der Port sie 2000 ms aus und kehrt mit gelöschten Bits
+4 und 5 nach PWM zurück. POWER_CYCLED und REBOOT beenden das Planen und
+laufen dann. Jedes andere Kommando wird mit BUSY abgewiesen, und das Planen
+geht weiter. Ein PD mini, der nicht mehr antwortet, beendet es nicht.
+
+Ein
 Entschärfen wird als Flanke gesehen: der Port stoppt einmal und nimmt wieder
 Kommandos, während die Bank entschärft bleibt; ein Servo wird also an einem
 entschärften Prüfstand gelesen und geschrieben. Solange dem Heartbeat nicht
@@ -931,11 +989,13 @@ Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 
 | Panel | Koprozessor | KST (0x32) |
 | --- | --- | --- |
-| 4.13 | 4.13 | bedient |
-| 4.13 | 4.12 | die Page nennt dort einen Ausgangskanal; das Modul des Panels liest die Minor beim Link-up und sendet unter 13 nichts, kein Schreiben und kein Lesen |
-| 4.13 | 4.11 oder älter | keine Page: der Koprozessor beantwortet eine Anfrage an 0x32 mit BAD_PAGE, und das Panel sendet keine |
-| 4.12 | 4.13 | ein Kommando von 4.12 hat Bit 6 gelöscht und wird mit PORT abgewiesen; ein Schreiben auf Register 26 oder 27 kommt nie. Der Port bleibt in PWM |
-| 4.11 oder älter | 4.13 | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
+| 4.14 | 4.14 | bedient |
+| 4.14 | 4.13 | bedient. Der Koprozessor plant im Frame des Kommandos: das Modul des Panels meldet nie PLANNING, und ein Auftrag ohne Reihenfolge von Schreibzugriffen ist die Abweisung PLAN_NO_PATH |
+| 4.13 | 4.14 | bedient. Das Modul des Panels liest eine Operation, die plant, als eine, die läuft, und die Ergebnisse 33 und 34 als Ergebnisse, für die es keinen Namen hat |
+| 4.13 oder 4.14 | 4.12 | die Page nennt dort einen Ausgangskanal; das Modul des Panels liest die Minor beim Link-up und sendet unter 13 nichts, kein Schreiben und kein Lesen |
+| 4.13 oder 4.14 | 4.11 oder älter | keine Page: der Koprozessor beantwortet eine Anfrage an 0x32 mit BAD_PAGE, und das Panel sendet keine |
+| 4.12 | 4.13 oder 4.14 | ein Kommando von 4.12 hat Bit 6 gelöscht und wird mit PORT abgewiesen; ein Schreiben auf Register 26 oder 27 kommt nie. Der Port bleibt in PWM |
+| 4.11 oder älter | 4.13 oder 4.14 | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
 
 `shared/bench/kst_link.c` ist die Hälfte des Panels. Eine Anfrage nennt den
 Port und, für ENTER, Spannung und Strom der Versorgung. Es stellt die
@@ -943,7 +1003,9 @@ Register bereit, sendet das Kommando mit der nächsten `SEQ`, liest die
 Register 0 bis 3 alle 50 ms, solange eine Operation läuft oder der Port
 nicht in PWM steht, und sonst alle 500 ms (eine Anfrage und ein Daten-Frame,
 0,31 ms Buszeit), und liest nach einer Operation die Register 4 bis 15, das
-Backup und das Image. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
+Backup und das Image. Seine Phase ist PLANNING, solange die zuletzt
+gelesene Page Bit 3 gesetzt und Ergebnis 35 hat, und RUNNING vor dem ersten
+Lesen und ab dem Plan. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
 keine Antwort kommt, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
 Es weist WRITE, RESTORE und RELEASE ohne den Schalter des Aufrufers ab,
 bevor etwas gesendet wird. `shared/bench/supply_link.c` nimmt ein Kommando,
@@ -954,12 +1016,19 @@ KST oder PROG.
 
 `test_kst_port` fährt den Port und die Page gegen das Servo- und das
 Versorgungsmodell: jeden Übergang und jede Abweisung, einen Stopp in jedem
-Zustand und mitten in einem Frame, ein Schreiben ohne den Key, einen PD
+Zustand und mitten in einem Frame, ein Schreiben, das 864 Durchläufe lang
+mit je einem Slice plant, ein ABORT, ein Entschärfen, einen verlorenen
+Heartbeat, eine abgeschaltete Versorgung, ein POWER_CYCLED, ein REBOOT und
+ein zweites Kommando während des Planens, einen Auftrag ohne Reihenfolge
+von Schreibzugriffen, einen über der Arbeitsgrenze, ein Schreiben ohne den
+Key, einen PD
 mini, der fehlt, langsam ist, schweigt oder ablehnt, ein ABORT in RAIL_OFF
 und in RAIL_WAIT, die Versorgung an vorgefunden über, auf und unter der
 Programmierspannung, einen Link, der in RAIL_OFF und in RAIL_WAIT verloren
 geht, die Zähler an ihren Enden und jeden Timer über den Überlauf bei 2^32 ms. `test_kst_link` fährt das
-Modul des Panels durch den Dispatcher gegen den Port: ganze Sessions,
+Modul des Panels durch den Dispatcher gegen den Port: ganze Sessions, ein
+Schreiben von PLANNING bis zum Ende, die Ergebnisse 33 und 34, einen
+Abbruch und einen Stopp während des Planens,
 verlorene Antworten, eine veraltete `SEQ`, einen Neustart des Koprozessors
 und einen 4.12- und einen 4.11-Koprozessor.
 

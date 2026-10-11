@@ -868,6 +868,17 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_KST_REF_SUPPLY_RANGE, 17);
     CHECK_EQ(LINK_KST_REF_NO_SUPPLY, 18);
     CHECK_EQ(LINK_KST_RESULT_SUPPLY, 32);
+    /* 4.14 adds results and moves no register: a write's planning runs
+     * after the command's frame.  The refusal 4.13 gave keeps its number. */
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 14u);
+    CHECK_EQ(LINK_MINOR_KST_PLAN, 14u);
+    CHECK_EQ(LINK_KST_RESULT_NO_PATH, 33);
+    CHECK_EQ(LINK_KST_RESULT_TOO_COMPLEX, 34);
+    CHECK_EQ(LINK_KST_RESULT_PLANNING, 35);
+    CHECK_EQ(LINK_KST_REF_PLAN_RULES, 12);
+    CHECK_EQ(LINK_KST_REF_PLAN_R00, 13);
+    CHECK_EQ(LINK_KST_REF_PLAN_PAIRING, 14);
+    CHECK_EQ(LINK_KST_REF_PLAN_NO_PATH, 15);
     /* The key a write carries is neither of the values a cleared or a
      * stuck register reads. */
     CHECK(LINK_KST_WRITE_KEY != 0u);
@@ -883,7 +894,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
  */
 TEST_CASE(prog_extends_the_map_without_moving_it)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 13u);
+    CHECK(LINK_PROTOCOL_MINOR >= 13u);
     CHECK_EQ(LINK_MINOR_PROG, 13u);
     CHECK_EQ(LINK_PAGE_KST, 0x32);
     CHECK_EQ(LINK_PAGE_PROG, 0x33);

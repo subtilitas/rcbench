@@ -94,6 +94,37 @@
  * image this session read and the staged registers, with the planner and
  * the limits of protocols/kst; the panel sends no register write.
  *
+ * The session plans a WRITE and a RESTORE itself and runs its own plan
+ * (kst_session_edit(), kst_session_restore()).  The command's frame checks
+ * the request and prepares the job: a target the planner refuses without a
+ * search (register 0x00, pairing, a hard rule) is refused there, with
+ * LINK_KST_REF_PLAN_R00, _PAIRING or _RULES, and no operation starts.
+ * Every other request starts the operation, and each pass then does one
+ * slice of the planner, KST_PLAN_SLICE_UNITS (100) to 109 units of work,
+ * and nothing else of the session.  While it plans, LINK_KS_F_BUSY is set,
+ * LINK_KS_RESULT's low byte is LINK_KST_RESULT_PLANNING and no frame goes
+ * out.  The planning ends after KST_PLAN_WORK_CAP (216,000) units at most,
+ * 2,161 passes:
+ *
+ *   - with a plan: the session reads the servo and writes, as before;
+ *   - with no order of writes that keeps every image in between valid:
+ *     the result LINK_KST_RESULT_NO_PATH, nothing sent;
+ *   - with the cap spent before a verdict: LINK_KST_RESULT_TOO_COMPLEX,
+ *     nothing sent.  The request is not known to have no plan;
+ *   - a RESTORE whose result cannot be checked, without the confirmation:
+ *     KST_SES_ERR_UNCONFIRMED, nothing sent.
+ *
+ * A slice is 892 us or less and the frame's part 64 us on a Cortex-M33 at
+ * 150 MHz, computed from the instructions executed (docs/Performance.md);
+ * not measured on hardware.  A RELEASE has one write at most and no
+ * search.
+ *
+ * A stop, an ABORT, a POWER_CYCLED, a REBOOT and a supply found off end an
+ * operation that plans as they end one that sends: at the next pass, with
+ * KST_SES_ERR_ABORTED, nothing sent and the session not locked.  The rest
+ * is what the paragraphs above say for PROGRAMMING, LINK_KS_F_MUST_READ
+ * included.  A command while it plans is refused with LINK_KST_REF_BUSY.
+ *
  * Commands: registers 0 to 3 of a write, one frame.  SEQ is LINK_KS_SEQ
  * plus 1; the frame just taken, sent again, is acknowledged and does
  * nothing; any other SEQ is refused with LINK_NACK_BAD_VALUE.  A command
@@ -171,8 +202,8 @@ typedef struct {
 typedef struct {
     kst_port_hw_t hw;
     kst_session_t session;
-    kst_plan_t plan;     /**< work space of a command: not on the stack */
-    kst_image_t work;    /**< the staged image of that command */
+    kst_image_t work;    /**< the staged image of a command: not on the
+                              stack */
     uint16_t staged[LINK_KS_W_STAGED];
     uint16_t last_cmd[LINK_KS_W_CMD_FRAME];
     uint32_t t0_ms;
@@ -189,14 +220,12 @@ typedef struct {
     uint8_t  port;
     uint8_t  pin;
     uint8_t  op;         /**< link_kst_op_t of the last operation started */
-    uint8_t  result;     /**< kst_ses_t of that operation, or
-                              LINK_KST_RESULT_SUPPLY */
+    uint8_t  result;     /**< kst_ses_t of that operation, or a
+                              LINK_KST_RESULT_* */
     uint8_t  refusal;    /**< link_kst_refusal_t of the last command */
     uint8_t  fail_reg;
     uint8_t  steps_done;
     uint8_t  seen_step;
-    uint8_t  plan_n;
-    uint8_t  plan_reg[KST_PLAN_MAX_STEPS];
     uint8_t  busy;       /**< an operation runs */
     uint8_t  running;    /**< it is the session's */
     uint8_t  leaving;    /**< why PROGRAMMING ends when the session has */
@@ -235,7 +264,8 @@ void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
  * One pass.  @p safe: the heartbeat is trusted and the link is not silent.
  * @p stop: the bank was switched off or disarmed since the last pass.
  * Steps the session and the port's timers; a pass every 1 ms or faster
- * keeps the session's pacing.
+ * keeps the session's pacing.  A pass does one slice of planning at most
+ * and never a whole search.
  */
 void kst_port_step(kst_port_t *p, bool safe, bool stop, uint32_t now_ms);
 

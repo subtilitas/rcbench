@@ -25,7 +25,7 @@ _Static_assert(KST_REG_COUNT == 2u * LINK_KS_IMAGE_REGS, "image registers");
 _Static_assert(LINK_KS_W_IMAGE + LINK_KS_W_STAGED == LINK_KS_W_VIEW,
                "staged registers");
 
-_Static_assert(LINK_KST_RESULT_SUPPLY > KST_SES_ERR_ABORTED,
+_Static_assert(LINK_KST_RESULT_SUPPLY > KST_SES_ERR_NO_PLAN,
                "the supply's result is no kst_ses_t");
 _Static_assert(LINK_KS_W_SUPPLY_MV == LINK_KS_W_VIEW + 1
                && LINK_KS_W_SUPPLY_MA == LINK_KS_W_VIEW + 2
@@ -185,8 +185,8 @@ static void session_done(kst_port_t *p, kst_ses_t r)
     case KST_SES_ERR_WRITE_FAILED:
     case KST_SES_ERR_ROLLED_BACK:
     case KST_SES_ERR_TORN:
-        p->fail_reg = p->seen_step < p->plan_n ? p->plan_reg[p->seen_step]
-                                               : NO_REG;
+        p->fail_reg = p->seen_step < s->plan.n
+                          ? s->plan.step[p->seen_step].reg : NO_REG;
         break;
     case KST_SES_ERR_READ:
         p->fail_reg = lowest_bit(s->bad_regs);
@@ -204,6 +204,12 @@ static void session_done(kst_port_t *p, kst_ses_t r)
         p->must_read = 0;
     }
     op_end(p, r);
+    if (r == KST_SES_ERR_NO_PLAN) {
+        /* The planner's verdict, as the page numbers it. */
+        p->result = s->plan_result == (uint8_t)KST_PLAN_ERR_TOO_COMPLEX
+                        ? (uint8_t)LINK_KST_RESULT_TOO_COMPLEX
+                        : (uint8_t)LINK_KST_RESULT_NO_PATH;
+    }
 }
 
 /* What a session function returned when asked to start. */
@@ -357,34 +363,43 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
     return LINK_KST_REF_NONE;
 }
 
-static link_kst_refusal_t plan_refusal(kst_plan_result_t r)
+/* Why the planner took a request without a search. */
+static link_kst_refusal_t plan_refusal(uint8_t plan_result)
 {
-    switch (r) {
-    case KST_PLAN_OK:          return LINK_KST_REF_NONE;
+    switch ((kst_plan_result_t)plan_result) {
     case KST_PLAN_ERR_R00:     return LINK_KST_REF_PLAN_R00;
     case KST_PLAN_ERR_PAIRING: return LINK_KST_REF_PLAN_PAIRING;
-    case KST_PLAN_ERR_NO_PATH: return LINK_KST_REF_PLAN_NO_PATH;
-    case KST_PLAN_ERR_ARG:
-    case KST_PLAN_ERR_RULES:
     default:                   return LINK_KST_REF_PLAN_RULES;
     }
 }
 
-/* A write to the servo: the plan from the image read to what is staged. */
+/*
+ * A write to the servo.  The session plans it, from the image it read to
+ * what is staged, one slice of the planner in each pass, and runs its own
+ * plan.  This call checks the request and prepares the job: no search runs
+ * in the command's frame.
+ */
 static link_kst_refusal_t start_plan(kst_port_t *p, link_kst_op_t op,
                                      bool confirm)
 {
     kst_session_t *s = &p->session;
-    kst_plan_t *plan = &p->plan;
     kst_image_t *staged = &p->work;
-    kst_plan_result_t r;
+    kst_ses_t r;
 
     if (s->has_image == 0u) {
         return LINK_KST_REF_NO_IMAGE;
     }
     image_from_regs(&p->staged[0], staged);
     if (op == LINK_KST_OP_RESTORE) {
-        r = kst_plan_restore(&s->image, staged, plan);
+        /* The session restores its own backup: a staged image that is
+         * another one is no restore. */
+        if (s->in_mode != 0u && s->has_backup != 0u
+            && memcmp(staged->r, s->backup.r, sizeof(staged->r)) != 0) {
+            op_begin(p, op);
+            session_done(p, KST_SES_ERR_BAD_PLAN);
+            return LINK_KST_REF_NONE;
+        }
+        r = kst_session_restore(s, confirm);
     } else {
         uint16_t regs[LINK_KS_IMAGE_REGS];
         const uint16_t *u = &p->staged[LINK_KS_W_UNLOCK - LINK_KS_W_IMAGE];
@@ -398,19 +413,14 @@ static link_kst_refusal_t start_plan(kst_port_t *p, link_kst_op_t op,
             != p->staged[LINK_KS_W_START_CRC - LINK_KS_W_IMAGE]) {
             return LINK_KST_REF_START;
         }
-        r = op == LINK_KST_OP_WRITE
-                ? kst_plan_edit(&s->image, staged, unlocked, plan, NULL)
-                : kst_plan_release_pairing(&s->image, plan);
+        r = op == LINK_KST_OP_WRITE ? kst_session_edit(s, staged, unlocked)
+                                    : kst_session_release_pairing(s);
     }
-    if (r != KST_PLAN_OK) {
-        return plan_refusal(r);
+    if (r == KST_SES_ERR_NO_PLAN) {
+        return plan_refusal(s->plan_result);
     }
     op_begin(p, op);
-    p->plan_n = plan->n;
-    for (unsigned i = 0; i < plan->n; ++i) {
-        p->plan_reg[i] = plan->step[i].reg;
-    }
-    session_started(p, kst_session_write(s, plan, confirm));
+    session_started(p, r);
     return LINK_KST_REF_NONE;
 }
 
@@ -606,6 +616,15 @@ static uint16_t state_reg(const kst_port_t *p)
     return r;
 }
 
+/* The operation the page names is a write whose plan the session still
+ * builds: no frame of it has gone out. */
+static bool plans(const kst_port_t *p)
+{
+    return p->running != 0u && p->session.planning != 0u
+           && (p->op == (uint8_t)LINK_KST_OP_WRITE
+               || p->op == (uint8_t)LINK_KST_OP_RESTORE);
+}
+
 void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
                    uint16_t *out)
 {
@@ -622,7 +641,9 @@ void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
     all[LINK_KS_STATE] = state_reg(p);
     all[LINK_KS_SEQ] = p->seq;
     all[LINK_KS_OP] = (uint16_t)(((uint16_t)p->op << 12) | p->frames);
-    all[LINK_KS_RESULT] = (uint16_t)(((uint16_t)p->refusal << 8) | p->result);
+    all[LINK_KS_RESULT] = (uint16_t)(((uint16_t)p->refusal << 8)
+                                     | (plans(p) ? LINK_KST_RESULT_PLANNING
+                                                 : p->result));
     all[LINK_KS_FAIL] = (uint16_t)(((uint16_t)p->steps_done << 8)
                                    | p->fail_reg);
     all[LINK_KS_DIFF_LO] = (uint16_t)(s->diff_regs & 0xFFFFu);

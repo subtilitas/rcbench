@@ -1,6 +1,6 @@
 /*
- * The panel's half of the KST (0x32) link page, protocol 4.13: the
- * programming ports for KST and Chaservo servos.
+ * The panel's half of the KST (0x32) link page, protocol 4.13 and 4.14:
+ * the programming ports for KST and Chaservo servos.
  *
  * The session with the servo runs at the coprocessor
  * (shared/outputs/kst_port.h).  The panel names an operation, and for a
@@ -21,11 +21,19 @@
  *   3. registers 0 to 3 are read: the command started the operation or the
  *      page says why not;
  *   4. registers 0 to 3 are read every KST_LINK_POLL_MS until the operation
- *      has ended;
+ *      has ended.  A 4.14 coprocessor plans a WRITE and a RESTORE first,
+ *      for 2,161 of its passes at most: the phase is KST_LINK_PLANNING
+ *      while the page says so, and KST_LINK_RUNNING after it;
  *   5. registers 4 to 15 are read, the backup when the page holds one, and
  *      the image.  The page is left showing the image.
  *
  * kst_link_outcome() then hands out how it went, once.
+ *
+ * A request with no order of writes ends differently by the coprocessor's
+ * minor.  4.14: KST_LINK_OUT_DONE with the result LINK_KST_RESULT_NO_PATH,
+ * or LINK_KST_RESULT_TOO_COMPLEX when the planner's work was spent before
+ * it knew.  4.13: KST_LINK_OUT_REFUSED with LINK_KST_REF_PLAN_NO_PATH.
+ * Nothing was sent to the servo in each case.
  *
  * A write to the servo is sent only with write_enabled set in the request:
  * the state of the switch ENABLE WRITE TO SERVO.  Without it the request
@@ -85,6 +93,9 @@ typedef enum {
     KST_LINK_SENDING,    /**< the staged registers and the command go out */
     KST_LINK_RUNNING,    /**< the operation runs at the coprocessor       */
     KST_LINK_FETCHING,   /**< the results and the images are read         */
+    KST_LINK_PLANNING,   /**< the operation runs at the coprocessor and has
+                              sent no frame yet: its plan is being built.
+                              KST_LINK_RUNNING follows                    */
 } kst_link_phase_t;
 
 /** What kst_link_start() and kst_link_fetch() answer. */
@@ -136,7 +147,10 @@ typedef struct {
     link_kst_op_t      op;
     link_kst_refusal_t refusal;   /**< KST_LINK_OUT_REFUSED               */
     uint8_t  nack;                /**< KST_LINK_OUT_NACK: link_nack_t     */
-    kst_ses_t result;             /**< KST_LINK_OUT_DONE                  */
+    kst_ses_t result;             /**< KST_LINK_OUT_DONE: the low byte of
+                                       LINK_KS_RESULT, a kst_ses_t or
+                                       LINK_KST_RESULT_SUPPLY, _NO_PATH or
+                                       _TOO_COMPLEX                       */
     uint8_t  fail_reg;            /**< the register result names; 0xFF none */
     uint8_t  steps_done;          /**< writes of the plan done            */
     uint16_t frames;              /**< frames the operation sent, to 4095 */
@@ -177,7 +191,9 @@ typedef struct {
     bool     up;
     bool     page;
     bool     known;            /**< status was read since the link came up */
-    uint8_t  phase;            /**< kst_link_phase_t                      */
+    uint8_t  phase;            /**< kst_link_phase_t, never
+                                    KST_LINK_PLANNING: that is
+                                    KST_LINK_RUNNING here                 */
     uint8_t  pending;          /**< the exchange in flight                */
     uint8_t  tries;            /**< exchanges unanswered in a row         */
 
@@ -263,7 +279,8 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x);
  *  or KST_LINK_NO_ANSWER. */
 void kst_link_done(kst_link_t *k, int result, const uint16_t *regs);
 
-/** Where the module is. */
+/** Where the module is.  KST_LINK_PLANNING while the operation runs and
+ *  the page last read says it plans. */
 kst_link_phase_t kst_link_phase(const kst_link_t *k);
 
 /** How the last operation went, once: false while there is nothing new. */

@@ -29,9 +29,10 @@ hardware: no frame of this code has been sent to a servo.
 - The planner does not recurse. Stack in the RP2350 coprocessor image of
   this repository, built with ARM GNU 14.2: `kst_plan_step()` and what it
   calls 208 bytes, `kst_plan_edit_begin()` 312, `kst_session_edit()` 352,
-  `kst_session_step()` 528, `kst_plan_edit()` 488 with the job it holds,
-  and `kst_session_write()` 56 bytes above that. Not measured with another
-  compiler or option set.
+  `kst_session_restore()` 192 and `kst_session_step()` 528. That image
+  does not call `kst_plan_edit()`, `kst_plan_restore()` or
+  `kst_session_write()`; their stack in it is not measured. Not measured
+  with another compiler or option set.
 - The planner works in slices. `kst_plan_step(job, budget)` returns
   `KST_PLAN_BUSY` after `budget` to `budget + 9` units of work; a unit is a
   fixed piece of the search, the same on every target. The session takes

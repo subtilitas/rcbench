@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.13. The
+coprocessor transmits only in answer to a request. Protocol version 4.14. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -90,7 +90,9 @@ sweep from 4.2, SUPPLY from 4.3, the sweep's RESUME from 4.6, SENSE and
 SERVO_SENSE from 4.7, TONE from 4.8, SENSE's output encoder from 4.9, BIND_CFG,
 BIND_OUT and BIND from 4.10, SERVO_WIN, SENSE's `RESETS` and a signed
 `CAP_HOLD_MA` from 4.11, KST from 4.12, PROG, KST's programming ports,
-SUPPLY's flag bit 11 and SERVO_SENSE's port bit from 4.13. The
+SUPPLY's flag bit 11 and SERVO_SENSE's port bit from 4.13. From 4.14 KST
+plans a write over several passes and reports results 33 to 35; the panel
+writes nothing differently for it. The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -631,6 +633,35 @@ a restart of the coprocessor the port is in PWM with no session and bit 4 of
 register 0 clear, whatever mode the servo is in, and the supply is asked
 off.
 
+The session plans a WRITE and a RESTORE itself (since 4.14). The command's
+frame checks the request and prepares the planner's job, 64 us of planner
+work. A target the planner refuses without a search is refused there
+(PLAN_RULES, PLAN_R00, PLAN_PAIRING) and no operation starts. Every other
+request starts the operation, and each pass of core 0's main loop then does
+one slice of the planner: 100 to 109 units of work, 892 us at most. While
+the port plans, bit 3 of register 0 is set, the low byte of `RESULT` reads
+35, the frame count reads 0 and no frame goes to the servo. The planning
+ends after 216,000 units at most, 2,161 passes:
+
+- with a plan: `RESULT` reads 1 and the session reads the servo and writes;
+- with no order of writes that keeps every image in between valid: result
+  33;
+- with the 216,000 units spent before either is known: result 34. The
+  request is not known to have no plan;
+- a RESTORE whose result cannot be checked, without the confirmation:
+  result 11.
+
+Nothing is sent to the servo for results 33, 34 and 11, the session is not
+locked, and the next WRITE is taken without a READ_ALL. The costliest
+request found takes 120,136 units, 1,202 passes at most and 397 to 647 ms
+of planner time. The times are computed in an emulator from the
+instructions executed at 150 MHz
+([Performance](Performance.md#the-coprocessor)) and not measured on
+hardware. The time of a pass with the rest of the main loop in it is not
+measured, so the planning time on a bench is not known. A 4.13 coprocessor
+runs the whole search inside the command's frame and answers a request
+without an order of writes with the refusal PLAN_NO_PATH.
+
 No frame has been sent to a servo. The port, the page and the panel's module
 run in the host suite against a servo, line and supply model.
 
@@ -722,7 +753,7 @@ A read gives these registers:
 | 0 | `STATE` | bits 0 to 2 the state. Bit 3 an operation runs. Bit 4 a frame was sent since the servo was last without power. Bit 5 a stop or an abort cut the session: READ_ALL comes before anything else. Bit 6 an image was read. Bit 7 the session holds a backup. Bit 8 the image has the known layout. Bit 9 only RESTORE is accepted. Bit 10 a PD mini answers and the port switches the servo's supply. Bit 11 registers 16 to 31 show the backup. Bits 12 to 15 the programming port |
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
 | 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the frames it has sent, held at 4095 |
-| 3 | `RESULT` | low byte the result of that operation, 1 while it runs. High byte why the last command taken started nothing, 0 when it started |
+| 3 | `RESULT` | low byte the result of that operation, 1 while it runs, 35 while a WRITE or a RESTORE plans (since 4.14). High byte why the last command taken started nothing, 0 when it started |
 | 4 | `FAIL` | low byte the servo register the result names, 0xFF for none. High byte the writes of the plan that are done |
 | 5, 6 | `DIFF` | bit n: servo register n differs from what the operation expected. Register 5 holds servo registers 0 to 15 |
 | 7, 8 | `BAD` | bit n: servo register n has no 3 equal reads in 5 |
@@ -766,8 +797,8 @@ became of it is in `RESULT`.
 | --- | ---: | --- |
 | ENTER | 1 | in PWM: takes the port's pin, sets the supply and runs the entry sequence. In PROGRAMMING: runs the entry sequence again |
 | READ_ALL | 2 | reads the 32 registers, each until 3 of at most 5 reads agree. The first image of a session is its backup |
-| WRITE | 3 | plans from the image read to the staged image and runs the plan: every write is read back, and a write that does not take is undone |
-| RESTORE | 4 | runs the plan back to the staged backup. The session accepts it when the staged image equals the backup it holds |
+| WRITE | 3 | plans from the image read to the staged image, one slice a pass (since 4.14), and runs the plan: every write is read back, and a write that does not take is undone |
+| RESTORE | 4 | plans back to the backup the session holds and runs the plan. A staged image that is not that backup ends it with result 10 |
 | RELEASE | 5 | releases the pairing |
 | VERIFY | 6 | reads all registers and compares them with the staged image |
 | ABORT | 7 | ends the running operation. In STOPPING and LOW the port returns to PWM. In RAIL_OFF the supply is not switched on again, in RAIL_WAIT it is switched off, and the cycle ends with result 19. Taken in every state; register 2 does not name it |
@@ -782,8 +813,12 @@ that needs the confirmation, 12 the servo's image changed since it was
 read, 13 a write did not take and nothing changed, 14 a plan undone, 15 a
 plan undone in part, 16 a register changed that the plan did not write, 17
 the image differs after the plan, 18 the wire driver failed or could not be
-opened, 19 aborted. 32 is the port's own (since 4.13): the supply did not
-switch in time.
+opened, 19 aborted. 32 to 35 are the port's own. 32 (since 4.13): the
+supply did not switch in time. 33 (since 4.14): no order of writes keeps
+every image in between valid. 34 (since 4.14): the planner spent 216,000
+units of work before it had a plan or knew there is none. 35 (since 4.14):
+the operation plans; it is never the result of an operation that has
+ended.
 
 | Refusal | Value | The command started nothing because |
 | --- | ---: | --- |
@@ -799,12 +834,16 @@ switch in time.
 | PLAN_RULES | 12 | the target breaks a hard rule |
 | PLAN_R00 | 13 | the target differs in servo register 0x00 |
 | PLAN_PAIRING | 14 | a WRITE differs in servo register 0x1D |
-| PLAN_NO_PATH | 15 | no order of writes keeps every image in between valid |
+| PLAN_NO_PATH | 15 | no order of writes keeps every image in between valid (4.12 and 4.13 only; result 33 since 4.14) |
 | NO_PIN | 16 | the port holds no pin, for an ENTER and for a REBOOT in PWM (since 4.13) |
 | SUPPLY_RANGE | 17 | the staged supply voltage or current is outside what ENTER takes (since 4.13) |
 | NO_SUPPLY | 18 | a REBOOT with no PD mini answering or the PD mini asked off (since 4.13) |
 
-Values 3 and 4 are not given. NO_ENABLE is checked before every other
+Values 3 and 4 are not given. A result the session knows without a plan
+(5, 7, 8, 9, and 10 for a RESTORE whose staged image is not the backup) is
+given before PLAN_RULES, PLAN_R00 and PLAN_PAIRING (since 4.14): a locked
+session answers a WRITE with result 9 whatever the target is. NO_ENABLE is
+checked before every other
 reason. The panel sends the key only while its switch ENABLE WRITE TO SERVO
 is on, so a command that reaches the coprocessor without it writes nothing
 in any state of the port. No screen holds that switch in this build.
@@ -835,7 +874,19 @@ an armed bank, SUPPLY's output written 0, and the command ABORT from
 
 While bit 5 is set the port takes ENTER, READ_ALL, ABORT, POWER_CYCLED and
 REBOOT only, until a READ_ALL has succeeded. ABORT alone has the effect of
-a disarm in STOPPING, LOW and PROGRAMMING. A disarm is seen as an edge: the port stops once and takes commands
+a disarm in STOPPING, LOW and PROGRAMMING.
+
+An operation that plans is an operation in PROGRAMMING, and the row above
+holds for it: a disarm, the panel's STOP, a lost heartbeat, a silent link,
+an ABORT and a supply found off end the planning at the next pass with
+result 19. No frame was sent and no register written, and the session is
+not locked. Bit 5 is set as after a cut frame, because the session sent
+frames before it planned. The supply stays on after a disarm or an ABORT
+alone. After the panel's STOP, a lost heartbeat or a silent link it is off,
+and with a PD mini answering the port keeps it off for 2000 ms and returns
+to PWM with bits 4 and 5 clear. POWER_CYCLED and REBOOT end the planning
+and then run. Every other command is refused with BUSY and the planning
+goes on. A PD mini that stops answering does not end it. A disarm is seen as an edge: the port stops once and takes commands
 again while the bank stays disarmed, so a servo is read and written on a
 disarmed bench. While the heartbeat is not trusted or the link is silent no
 frame starts and every operation but ABORT and POWER_CYCLED is refused with
@@ -849,18 +900,22 @@ SUPPLY.
 
 | Panel | Coprocessor | KST (0x32) |
 | --- | --- | --- |
-| 4.13 | 4.13 | served |
-| 4.13 | 4.12 | the page names an output channel there; the panel's module reads the minor at link-up and sends nothing below 13, not a write and not a read |
-| 4.13 | 4.11 or older | no page: the coprocessor answers a request to 0x32 with BAD_PAGE, and the panel sends none |
-| 4.12 | 4.13 | a 4.12 command has bit 6 clear and is refused with PORT; a write to register 26 or 27 never comes. The port stays in PWM |
-| 4.11 or older | 4.13 | the panel never reads or writes 0x32; the port stays in PWM |
+| 4.14 | 4.14 | served |
+| 4.14 | 4.13 | served. The coprocessor plans inside the command's frame: the panel's module never reports PLANNING, and a request without an order of writes is the refusal PLAN_NO_PATH |
+| 4.13 | 4.14 | served. The panel's module reads an operation that plans as one that runs, and results 33 and 34 as results it has no name for |
+| 4.13 or 4.14 | 4.12 | the page names an output channel there; the panel's module reads the minor at link-up and sends nothing below 13, not a write and not a read |
+| 4.13 or 4.14 | 4.11 or older | no page: the coprocessor answers a request to 0x32 with BAD_PAGE, and the panel sends none |
+| 4.12 | 4.13 or 4.14 | a 4.12 command has bit 6 clear and is refused with PORT; a write to register 26 or 27 never comes. The port stays in PWM |
+| 4.11 or older | 4.13 or 4.14 | the panel never reads or writes 0x32; the port stays in PWM |
 
 `shared/bench/kst_link.c` is the panel's half. A request names the port
 and, for ENTER, the supply voltage and current. It stages the registers,
 sends the command with the next `SEQ`, reads registers 0 to 3 every 50 ms
 while an operation runs or the port is out of PWM and every 500 ms otherwise
 (one request and one data frame, 0.31 ms of bus time), and after an
-operation reads registers 4 to 15, the backup and the image. It sends a
+operation reads registers 4 to 15, the backup and the image. Its phase is
+PLANNING while the page last read has bit 3 set and result 35, and RUNNING
+before the first read and from the plan on. It sends a
 command again up to 3 times when no answer comes and reads `SEQ` again after
 a refusal with BAD_VALUE. It refuses WRITE, RESTORE and RELEASE without the
 caller's switch before anything is sent. `shared/bench/supply_link.c` takes
@@ -870,11 +925,16 @@ build, so this build's panel sends nothing to KST or PROG.
 
 `test_kst_port` runs the port and the page against the servo and supply
 models: every transition and every refusal, a stop in each state and in the
-middle of a frame, a write without the key, a PD mini absent, slow, silent
+middle of a frame, a write that plans for 864 passes with one slice in
+each, an ABORT, a disarm, a lost heartbeat, a supply switched off, a
+POWER_CYCLED, a REBOOT and a second command while it plans, a request with
+no order of writes, one above the work cap, a write without the key, a PD
+mini absent, slow, silent
 and refusing, an ABORT in RAIL_OFF and in RAIL_WAIT, the supply found on above, at and under the programming
 voltage, a link lost in RAIL_OFF and in RAIL_WAIT, the counters at their
 ends and every timer across the 2^32 ms wrap. `test_kst_link` runs the panel's module through the dispatcher
-against the port: whole sessions, lost answers, a stale `SEQ`, a restart of
+against the port: whole sessions, a write from PLANNING to its end, results
+33 and 34, an abort and a stop while it plans, lost answers, a stale `SEQ`, a restart of
 the coprocessor and a 4.12 and a 4.11 coprocessor.
 
 ### Identifier
