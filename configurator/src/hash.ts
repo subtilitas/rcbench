@@ -83,12 +83,13 @@ export function parseHash(hash: string, defaults: Options): Parsed {
 
 /**
  * The hash of a selection, without '#'. Ids stand in catalogue order; ids the
- * catalogue does not know are left out. `lang` is written when it is not the
+ * catalogue does not know are left out, and so is a function that needs no
+ * part: it has no tick. `lang` is written when it is not the
  * language the page starts in without a hash.
  */
 export function formatHash(selection: Selection, lang: Lang, startLang: Lang, catalogue: Catalogue): string {
   const keys = [`v=${HASH_VERSION}`];
-  const f = catalogue.functions.map((x) => x.id).filter((id) => selection.functions.includes(id));
+  const f = catalogue.functions.filter((x) => x.needs.length > 0).map((x) => x.id).filter((id) => selection.functions.includes(id));
   const p = catalogue.parts.filter((x) => x.selectable).map((x) => x.id).filter((id) => selection.owned.includes(id));
   const o = TOKENS.filter((x) => selection.options[x[1]] === x[2]).map((x) => x[0]);
   if (f.length > 0) keys.push(`f=${f.join(',')}`);
@@ -103,4 +104,19 @@ export function reportIds(ids: string[]): string {
   const unique = [...new Set(ids)];
   const shown = unique.slice(0, MAX_REPORTED).map((id) => (id.length > 32 ? `${id.slice(0, 32)}…` : id));
   return shown.join(', ') + (unique.length > MAX_REPORTED ? ', …' : '');
+}
+
+/**
+ * A hash as it goes into a document, with '#'. The page keeps the link that
+ * opened it until a change, so its address can name a function that needs no
+ * part. Such a hash is written again from its selection, which leaves these
+ * ids out; its language key stays. Every other hash is returned as it is.
+ */
+export function shareHash(hash: string, defaults: Options, catalogue: Catalogue): string {
+  const parsed = parseHash(hash, defaults);
+  const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && f.needs.length === 0));
+  if (!named) return hash;
+  const lang = parsed.lang;
+  // The start language is set so that a language key in the hash is written and none is added.
+  return `#${formatHash(parsed.selection, lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue)}`;
 }

@@ -11,7 +11,8 @@ import { STRINGS } from '../src/i18n.ts';
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const LANGS = ['en', 'de'] as const;
 type Lang = (typeof LANGS)[number];
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+// The ticks of the page: a function that needs no part has no tick and is in no link.
+const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
 const NAME = /^rcbench-setup-[0-9a-f]{8}-(en|de)\.pdf$/;
@@ -165,6 +166,32 @@ test.describe('PDF export, failure paths and limits', () => {
     const pdf = await parse(await waiting);
     expect(pdf.pages).toBeGreaterThanOrEqual(2);
     expect(pdf.lang).toBe('en');
+    expect(seen.errors).toEqual([]);
+    expect(seen.foreign).toEqual([]);
+  });
+
+  test('the link in the PDF holds no id of a function without a tick', async ({ page }) => {
+    const seen = watch(page);
+    const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+    expect(base.length).toBeGreaterThan(0);
+    // A link that names every function: the page keeps its address until a change.
+    const opened = `#v=1&f=${CATALOGUE.functions.map((f) => f.id).join(',')}`;
+    await open(page, opened);
+    expect(new URL(page.url()).hash).toBe(opened);
+    const waiting = page.waitForEvent('download');
+    await page.locator('#b-pdf').click();
+    const pdf = await parse(await waiting);
+    const text = pdf.text.replace(/\s+/g, '');
+    expect(text).toContain(`#v=1&f=${FUNCTIONS.join(',')}`);
+    expect(text).not.toContain(opened);
+    // The document lists each of these functions as enabled.
+    for (const f of base) expect(pdf.text.replace(/\s+/g, ' ')).toContain(f.name.en);
+    // The same setup without these ids in the link gives the same file name.
+    const first = (await waiting).suggestedFilename();
+    await open(page, `#v=1&f=${FUNCTIONS.join(',')}`);
+    const again = page.waitForEvent('download');
+    await page.locator('#b-pdf').click();
+    expect((await again).suggestedFilename()).toBe(first);
     expect(seen.errors).toEqual([]);
     expect(seen.foreign).toEqual([]);
   });

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Lang, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
-import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds } from '../src/hash.ts';
+import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareHash } from '../src/hash.ts';
 import { describe, sweep } from './geometry.ts';
 
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -39,8 +39,9 @@ test('every selection of the sweep survives format and parse', () => {
 });
 
 test('the full selection survives format and parse', () => {
+  // Every tick of the page: the functions that need a part.
   const full: Selection = {
-    functions: CATALOGUE.functions.map((f) => f.id),
+    functions: CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id),
     owned: CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id),
     options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd' },
   };
@@ -149,4 +150,71 @@ test('a notice names at most MAX_REPORTED ids, each cut to 32 characters', () =>
   const many = Array.from({ length: MAX_REPORTED + 1 }, (_, i) => `x${i}`);
   assert.equal(reportIds(many), `${many.slice(0, MAX_REPORTED).join(', ')}, …`);
   assert.equal(reportIds(['z'.repeat(40)]), `${'z'.repeat(32)}…`);
+});
+
+test('a link written without the functions that need no part resolves to the same parts and wires', () => {
+  const hash = 'v=1&f=servo,esc&p=sd';
+  const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+  assert.equal(parsed.badVersion, false);
+  assert.deepEqual(parsed.unknown, []);
+  assert.deepEqual(parsed.selection, { functions: ['servo', 'esc'], owned: ['sd'], options: { ...DEFAULT_OPTIONS } });
+  const setup = resolve(CATALOGUE, parsed.selection);
+  assert.deepEqual(setup.ignored, []);
+  assert.deepEqual(setup.parts.map((p) => p.part.id), ['panel', 'copro', 'usb', 'wire', 'servo', 'ssup', 'esc', 'batt', 'sd']);
+  assert.deepEqual(setup.wires.map((w) => w.n), [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  assert.deepEqual(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), ['servo', 'esc']);
+  // The functions that need no part are enabled and are not part of the link.
+  const base = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  assert.equal(base.length, 10);
+  for (const id of base) assert.ok(setup.functions.find((f) => f.fn.id === id)?.enabled, id);
+  const written = formatHash(parsed.selection, 'en', 'en', CATALOGUE);
+  assert.equal(written, hash);
+  assert.ok(base.every((id) => !written.includes(id)));
+  assert.equal(HASH_VERSION, 1);
+});
+
+test('a function that needs no part is never written into the hash', () => {
+  const ids = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  // A link that names such ids parses without a notice.
+  const parsed = parseHash(`#v=1&f=link,servo,${ids.join(',')}`, DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.unknown, []);
+  assert.ok(parsed.selection.functions.includes('link'));
+  // It resolves to the parts and wires of the ticks alone.
+  const withIds = resolve(CATALOGUE, parsed.selection);
+  const ticks = resolve(CATALOGUE, { ...base(), functions: ['servo'] });
+  assert.deepEqual(withIds.ignored, []);
+  assert.deepEqual(withIds.parts.map((p) => p.part.id), ticks.parts.map((p) => p.part.id));
+  assert.deepEqual(withIds.wires.map((w) => w.n), ticks.wires.map((w) => w.n));
+  // The hash written back holds the tick alone.
+  assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE), 'v=1&f=servo');
+  assert.equal(formatHash({ ...base(), functions: ids }, 'en', 'en', CATALOGUE), 'v=1');
+  for (const id of ids) {
+    assert.equal(formatHash({ ...base(), functions: [id, 'esc'] }, 'en', 'en', CATALOGUE), 'v=1&f=esc', id);
+  }
+});
+
+test('the hash of a document holds no id of a function that needs no part, in every spelling of the link', () => {
+  const ids = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  const share = (hash: string): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE);
+  // A hash without such an id is returned as it is, also in a spelling the page does not write.
+  for (const hash of ['', '#', '#v=1', '#v=1&f=servo,esc&p=sd', '#v=1&l=en', '#l=de&v=1&f=esc', '#v=1&f=servo%2Cesc', '#v=2&f=link', '#v=1&f=nothere', `#v=1&f=${'x'.repeat(2100)}`]) {
+    assert.equal(share(hash), hash, hash);
+  }
+  for (const id of ids) {
+    // Alone, beside ticks on both sides, encoded, with a key before it, and with parts, options and a language.
+    assert.equal(share(`#v=1&f=${id}`), '#v=1', id);
+    assert.equal(share(`#v=1&f=servo,${id},esc`), '#v=1&f=servo,esc', id);
+    assert.equal(share(`#v=1&f=${id}%2Cservo`), '#v=1&f=servo', id);
+    assert.equal(share(`#v=1&f=servo%2C${id}`), '#v=1&f=servo', id);
+    assert.equal(share(`#v=1&f=%73ervo,${id.replace(/^./, (c) => `%${c.charCodeAt(0).toString(16)}`)}`), '#v=1&f=servo', id);
+    assert.equal(share(`#l=de&f=${id},esc&v=1`), '#v=1&f=esc&l=de', id);
+    assert.equal(share(`#v=1&f=${id},esc&p=sd&o=osoyoo,pd&l=en`), '#v=1&f=esc&p=sd&o=osoyoo,pd&l=en', id);
+    assert.equal(share(`#v=1&f=${id},esc&p=sd&o=osoyoo,pd`), '#v=1&f=esc&p=sd&o=osoyoo,pd', id);
+  }
+  assert.equal(share(`#v=1&f=${CATALOGUE.functions.map((f) => f.id).join(',')}`), `#v=1&f=${CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id).join(',')}`);
+  // The result names the same parts and wires as the link.
+  const before = resolve(CATALOGUE, parseHash(`#v=1&f=${ids.join('%2C')},servo&o=osoyoo`, DEFAULT_OPTIONS).selection);
+  const after = resolve(CATALOGUE, parseHash(share(`#v=1&f=${ids.join('%2C')},servo&o=osoyoo`), DEFAULT_OPTIONS).selection);
+  assert.deepEqual(after.parts.map((p) => p.part.id), before.parts.map((p) => p.part.id));
+  assert.deepEqual(after.wires.map((w) => w.n), before.wires.map((w) => w.n));
 });

@@ -6,7 +6,7 @@ import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { drawing, sample } from '../draw/svg.ts';
 import { PDF_STATUS } from '../export/button.ts';
-import { reasonText, removeControl, statusText } from './chooser.ts';
+import { reasonText, removeControl, runsOnBase, statusText } from './chooser.ts';
 import type { View } from './chooser.ts';
 import { wiresTable } from './table.ts';
 import { picture as wiringPicture } from '../diagram/picture.ts';
@@ -83,12 +83,19 @@ function parts(view: View): string {
   return `${h}</ul>`;
 }
 
+/** The enabled functions: those that need no part first, then those of the parts of the setup. */
 function does(view: View): string {
   const { lang, catalogue, setup } = view;
-  const items = setup.functions.filter((f) => f.enabled).map((f) =>
-    `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
-    + ` <small>${esc(statusText(view, f))}</small></li>`);
-  return `<h3>${esc(t(lang, 'does'))}</h3><ul class="plain"><li>${esc(tx(lang, catalogue.baseFunction))}</li>${items.join('')}</ul>`;
+  // A function with parts states how it is in the setup; the heading states it for the others.
+  const list = (base: boolean): string => setup.functions
+    .filter((f) => f.enabled && runsOnBase(catalogue, f) === base)
+    .map((f) => `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
+      + `${base ? '' : ` <small>${esc(statusText(view, f))}</small>`}</li>`)
+    .join('');
+  const [base, rest] = [list(true), list(false)];
+  return `<h3>${esc(t(lang, 'does'))}</h3>`
+    + (base ? `<h4>${esc(tx(lang, catalogue.baseFunction))}</h4><ul class="plain" id="does-base">${base}</ul>` : '')
+    + (rest ? `<h4>${esc(t(lang, 'withParts'))}</h4><ul class="plain" id="does-parts">${rest}</ul>` : '');
 }
 
 function wiring(view: View, mode: Mode): string {
