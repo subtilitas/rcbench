@@ -3,10 +3,7 @@
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
 Beide Platinen mit gestecktem Heartbeat-Draht unter Strom, und jede Zahl unten
-an einem Messgerät gelesen. Geschrieben für 0.8.1. Ein Servo und ein Motor
-sind auf dem Aufbau-Prüfstand vom Panel aus gelaufen; was hier nichts getan
-hat, ist ein Oszilloskop oder einen Logikanalysator an einen Pin zu legen.
-Deshalb sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist,
+an einem Messgerät gelesen. Geschrieben für 0.8.1. Jeder Schritt sagt, wie „gut“ aussieht und was aufzuschreiben ist,
 wenn es das nicht tut.
 
 Die Liste von oben nach unten abarbeiten. Jeder Schritt setzt voraus, dass
@@ -166,8 +163,7 @@ Auf der Panel-Konsole, in dieser Reihenfolge:
 - **Der Heartbeat darf davon nicht gestört werden.** Die Übertragung ist in
   Scheiben geteilt und das Flash-Schreiben läuft auf einer eigenen Task genau
   deswegen. **Fällt der Heartbeat in dieser Minute aus, anhalten und
-  aufschreiben** — das ist das Wichtigste, was dieser erste Lauf finden kann,
-  und es ist Code, der noch nie gelaufen ist.
+  aufschreiben** — das ist das Wichtigste, was dieser erste Lauf finden kann.
 
 Beim **zweiten** Link-Aufbau ist das Foto schon behalten und nichts davon
 passiert. Wer es ganz überspringen will: ein Koprozessor ohne einkompiliertes
@@ -194,11 +190,7 @@ Verriegelung, nicht einen Pin.
 6. **Touch abdecken / sterben lassen** → nach **500 ms** Stille ist Armen
    gesperrt.
 
-Jeder dieser Punkte ist host-getestet. **Keine der Zahlen unten wurde an
-einem Messgerät gesehen.** Ein Servo und ein Motor sind seither auf einem
-Aufbau-Prüfstand vom Panel aus gelaufen, ein Pin treibt also; was kein
-Oszilloskop und kein Logikanalysator gelesen hat, ist irgendeine Impulsbreite,
-Rahmenperiode oder Antwortverzögerung in diesem Baum.
+Jeder dieser Punkte ist host-getestet. **Keine der Zahlen unten wurde an einem Messgerät gesehen:** kein Oszilloskop und kein Logikanalysator hat irgendeine Impulsbreite, Rahmenperiode oder Antwortverzögerung in diesem Baum gelesen.
 
 ---
 
@@ -279,7 +271,7 @@ Code baut. Für jede einen echten Wert aufschreiben:
 
 Core 1 des Koprozessors liest einen INA228 im Leistungspfad des ESC und
 einen INA3221 an der Servoversorgung über I2C (Inter-Integrated Circuit) mit
-400 kHz, jede 1 ms. Das ist nicht auf Hardware gelaufen. Jeder Schritt unten
+400 kHz, jede 1 ms. Jeder Schritt unten
 sagt, wie gut aussieht; alles andere ist ein Befund zum Aufschreiben.
 
 **Bereitlegen:** das MATEK I2C-INA-BM (INA228, 200 µΩ) auf der Adresse, mit
@@ -439,7 +431,7 @@ Serial Bus). Der Link überträgt nur 50-ms-Fenster; dieser Build ist der
 einzige Weg zu den einzelnen Samples. Er ist ein Debug-Build: ein
 veröffentlichtes Image wird ohne die Option gebaut und enthält nichts von
 ihrem Code. `tools/sense_trace.py` liest die mitgeschnittene Konsole.
-Nichts davon ist auf Hardware gelaufen. Die Messung am Prüfstand hat zwei
+Die Messung am Prüfstand hat zwei
 Teile: Teil A braucht keinen Encoder, Teil B wiederholt die Bewegungen mit
 einem AS5600 auf der Welle des Servos.
 
@@ -751,7 +743,7 @@ gewählt, nicht gemessen.
 | Arm verweigert, Draht gesteckt | Heartbeat hat noch keine 4 Flanken, oder Lücke über 150 ms. GP3 messen. |
 | Arm verweigert, kein offensichtlicher Grund | Touch 500 ms tot sperrt es. Das Panel berühren. |
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
-| Heartbeat fällt in der ersten Minute aus | **Die Artwork-Übertragung oder der Flash-Keeper.** Neuester Code, nie gelaufen. Siehe §4. |
+| Heartbeat fällt in der ersten Minute aus | **Die Artwork-Übertragung oder der Flash-Keeper.** Siehe §4. |
 | Display friert kurz ein | Ein Flash-Schreiben. Einmalig erwartet, wenn das Foto behalten wird. |
 | Koprozessor bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |

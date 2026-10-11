@@ -161,7 +161,6 @@
  * in, and the SUPPLY page starts with the PD mini asked off.
  *
  * Pure logic: the pin, the driver and the supply are behind kst_port_hw_t.
- * Nothing here has run on hardware.
  *
  * SPDX-License-Identifier: MIT
  */

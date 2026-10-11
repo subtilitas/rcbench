@@ -128,8 +128,7 @@ BENCH: hört er auf zu antworten, bleiben diese Felder leer, statt zur
 Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der
 Pegel vor dem Befehl der Mittelwert von CH1 über die 50 ms vor der Flanke;
 eine Messung, die scharfgeschaltet wird, während der INA3221 CH1 nicht
-liest, endet sofort als verloren und zählt in CAP_SEQ. Nichts davon ist auf Hardware
-gelaufen. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
+liest, endet sofort als verloren und zählt in CAP_SEQ. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
 bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
@@ -170,10 +169,7 @@ Direct Memory Access), Core 1 liest den Ring im 1-ms-Takt und lässt den
 Detektor laufen, und Core 0 trägt die fertigen Beeps und den Status in die
 Page ein. Die Page, der Ring-Leser, der Service und das PIO-Programm, in einem
 taktgenauen Modell der State Machine ausgeführt, sind auf dem Host getestet
-(`test_tone_page`, `test_edge_ring`, `test_tone_svc`, `test_tone_pio`). Nicht
-auf Hardware gelaufen: das PIO-Programm, der DMA-Ring, das Pad und die
-Z-Diode, der Durchlauf auf Core 1, das Laden aus dem Flash und die Töne
-jedes ESC.
+(`test_tone_page`, `test_edge_ring`, `test_tone_svc`, `test_tone_pio`).
 
 Der Ausgangsencoder gehört zu SENSE, und 4.9 verschiebt sonst nichts: ENABLE
 bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
@@ -256,10 +252,6 @@ Folge mit fehlschlagendem RAW-ANGLE-Lesen nehmen das Bauteil offline (3
 fehlgeschlagene Transaktionen in Folge, wie bei den INA-Bauteilen). Das Panel liest die Register 12
 bis 31 alle 40 ms, solange der Encoder auf der Page freigegeben ist. Die
 Register 26 bis 31 sind nur lesbar; ein Schreiben wird mit READ_ONLY abgewiesen.
-
-Nicht auf Hardware gelaufen: der AS5600 am Bus neben den INA-Bauteilen, seine
-Adresse, die Pull-ups, die Zeit des Ablaufs auf dem Bus, das Messintervall und
-die Toleranz von 12 Schritten gegen das Rauschen eines echten Servos.
 
 ### Eine Bindung als Ganzes
 
@@ -360,7 +352,7 @@ abgebaut, und die geltende Bindung bleibt unverändert.
 `shared/outputs/bind_link.c` die des Panels, unter `test_bind_link`: die
 Folge durch ein Modell des 2-Frame-Puffers mit einem tauben Fenster von
 20 ms, geöffnet alle 125 µs, ein verlorener Frame an jeder der 18 Stellen,
-die Timeouts über den Überlauf bei 2^32 ms. Nicht auf Hardware gelaufen.
+die Timeouts über den Überlauf bei 2^32 ms.
 
 ### Der Fenster-Ring
 
@@ -575,7 +567,7 @@ ein Koprozessor mit 4.10. `test_servo_source` hält jede Bedingung, die
 allein nicht gilt, ein Lesen, das mit 199 ms frisch ist und mit 200 und
 201 ms nicht, den INA3221 zurück bei 1000 ms und nicht bei 999 ms, einen
 zwischen zwei Lesungen behobenen Reset und jeden Timer über den Überlauf
-des Ticks. Nicht auf Hardware gelaufen.
+des Ticks.
 
 `shared/sense/sense_sched.c` hält den Ring und führt die Rücklesungen aus,
 unter `test_sense_sched`: der Ring nach 1, 4, 5 und 6 Fenstern, über Fenster
@@ -584,9 +576,7 @@ Takt, mit 0, 1, 44, 45 und 50 Messungen am Ende des Bereichs; ein Reset,
 gefunden an jedem der 40 Takte einer Rotation, das Bauteil zurück bei
 1000 ms und nicht bei 999 ms, über den Überlauf bei 2^32 ms; die Buszeit
 jedes Takts. `shared/outputs/sense_page.c` hält die Page, unter
-`test_sense_page` und `test_link_pages`. Nicht auf Hardware gelaufen: die
-Page, und ob eines der Module sich bei einem Einbruch seiner Versorgung
-zurücksetzt.
+`test_sense_page` und `test_link_pages`.
 
 ### Die Programmierports
 

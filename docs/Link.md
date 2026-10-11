@@ -117,8 +117,7 @@ run that starts with the INA228 answering keeps it as BENCH's source to the
 run's end: if it stops answering, those fields go empty rather than back to
 the ESC's telemetry. A capture's level before the command is CH1's mean
 over the 50 ms before the edge; an arm while the INA3221 is not reading CH1
-ends at once as lost and counts in CAP_SEQ. None of this has run on
-hardware. This build's panel reads SENSE's registers 0 to 11 at every
+ends at once as lost and counts in CAP_SEQ. This build's panel reads SENSE's registers 0 to 11 at every
 link-up, writes the set-up from SETUP INTERFACES one frame at a time where it
 differs (`shared/bench/sense_link.c`, `test_sense_link`), and reads the
 identity page again after a write is taken. It writes no capture to
@@ -156,9 +155,7 @@ and its DMA (direct memory access) channel, core 1 reads the ring on its 1 ms
 tick and runs the detector, and core 0 takes the finished beeps and the status
 into the page. The page, the ring reader, the service and the PIO program, run
 in a cycle-counting model of the state machine, are host-tested
-(`test_tone_page`, `test_edge_ring`, `test_tone_svc`, `test_tone_pio`). Not run
-on hardware: the PIO program, the DMA ring, the pad and the zener, the core 1
-pass, the restore from flash, and every ESC's tones.
+(`test_tone_page`, `test_edge_ring`, `test_tone_svc`, `test_tone_pio`).
 
 The output encoder is part of SENSE, and 4.9 moves nothing else: ENABLE gains
 bit 2 and the page grows from 26 registers to 32, 26 to 30 new and 31
@@ -235,10 +232,6 @@ ANGLE read fails take the part offline (3 failed transactions in a row, as for
 the INA parts). The panel reads registers 12
 to 31 every 40 ms while the encoder is enabled on the page. Registers 26 to 31
 are read only; a write is refused with READ_ONLY.
-
-Not run on hardware: the AS5600 on the bus beside the INA parts, its address,
-the pull-ups, the schedule's time on the bus, the sample interval, and the
-12-count tolerance against a real servo's noise.
 
 ### A binding taken whole
 
@@ -331,7 +324,7 @@ with the link taken down and the binding in force unchanged.
 `shared/outputs/bind_link.c` the panel's, under `test_bind_link`: the
 sequence through a model of the 2-frame buffer with a 20 ms deaf window
 opened at every 125 µs, a frame lost at each of the 18 positions, the
-timeouts across the 2^32 ms wrap. Not run on hardware.
+timeouts across the 2^32 ms wrap.
 
 ### The window ring
 
@@ -523,7 +516,7 @@ lost and back, a part that resets itself, and a 4.10 coprocessor.
 `test_servo_source` holds each condition failing alone, a read fresh at
 199 ms and not at 200 and 201 ms, the INA3221 back at 1000 ms and not at
 999 ms, a reset repaired between two reads, and each timer across the tick
-wrap. Not run on hardware.
+wrap.
 
 `shared/sense/sense_sched.c` keeps the ring and runs the read-backs, under
 `test_sense_sched`: the ring after 1, 4, 5 and 6 windows, across window
@@ -531,8 +524,7 @@ wrap. Not run on hardware.
 45 and 50 clipped samples; a reset found at each of the 40 ticks of a
 rotation, the part back at 1000 ms and not at 999 ms, across the 2^32 ms
 wrap; the bus time of every tick. `shared/outputs/sense_page.c` holds the
-page, under `test_sense_page` and `test_link_pages`. Not run on hardware:
-the page, and whether either module resets on a dip of its supply.
+page, under `test_sense_page` and `test_link_pages`.
 
 ### The programming ports
 
