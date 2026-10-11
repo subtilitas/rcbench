@@ -14,10 +14,13 @@
     "test": "node --test \"test/**/*.test.ts\" \"drawings/test/*.test.ts\"",
     "drawings": "node drawings/cli.ts",
     "drawings:check": "node drawings/cli.ts --check",
-    "e2e": "playwright test",
+    "e2e": "playwright test --project=smoke",
+    "e2e:matrix": "playwright test --project=lib --project=corpus --project=matrix-*",
+    "corpus": "node test/corpus/tool.ts",
     "size": "node tools/size.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.64.0",
     "@types/node": "24.19.2",
     "pdfjs-dist": "6.4.299",
