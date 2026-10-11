@@ -5,7 +5,7 @@
 # builds in any project.  A pin driver implements kst_driver_t; rp2350/
 # holds the one for the RP2350.
 set(SRCS kst_wire.c kst_reg.c kst_limits.c kst_plan.c kst_session.c
-         kst_pio.c)
+         kst_pio.c kst_file.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
