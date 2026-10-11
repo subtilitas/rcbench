@@ -80,8 +80,10 @@ for (const setup of SETUPS) {
     for (const hidden of ['#choose', SEL.bar, '.lang', SEL.copy, SEL.print, SEL.pdf, SEL.pdfStatus, SEL.reset]) {
       await expect(page.locator(hidden), hidden).toBeHidden();
     }
-    // No control of the chooser is left on paper.
-    expect(await page.locator('input:visible, button:visible, select:visible, summary:visible').count()).toBe(0);
+    // No control of the chooser is left on paper. The number of a wire in the table is a button that marks
+    // the wire in the picture: it stays, as the number of its row.
+    expect(await page.locator('input:visible, button:not(.wn):visible, select:visible, summary:visible').count()).toBe(0);
+    await expect(page.locator(`${SEL.row} button.wn:visible`)).toHaveCount(shown.wires.length);
     await expect(page.locator('.printonly')).toBeVisible();
     await expect(page.locator('.printonly')).toContainText(shown.hash);
     // Both views of the wiring are on paper.

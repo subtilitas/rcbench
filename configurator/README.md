@@ -52,7 +52,7 @@ stays on the part.
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
 | `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
-| `e2e/matrix/` | Playwright tests of 17 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
+| `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
@@ -244,9 +244,9 @@ the widths and colours of the page. `test/diagram-export.test.ts` paints it
 for every 97th setup of the export test sample and its 2 ends, in both
 languages. The PDF export shows the schematic, not
 the picture: scaled to the 510 pt text width of an A4 page, the 12 px text of
-the picture measures 6.1 pt for the setup with the fewest wires and 2.3 pt
-for the setup with the most (picture 880 px to 2720 px wide). A landscape
-page gives at most 3.3 pt for the widest picture. The swap is 1 line in
+the picture measures 6.1 pt for the setup with the fewest wires and 2.0 pt
+for the setup with the most (picture 880 px to 3104 px wide). A landscape
+page gives at most 2.9 pt for the widest picture. The swap is 1 line in
 `src/export/diagram.ts`.
 
 ## Workflow
