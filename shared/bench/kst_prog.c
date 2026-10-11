@@ -285,7 +285,7 @@ static void write_go(kst_prog_t *p)
 static void send_write(kst_prog_t *p, const kst_link_request_t *req,
                        const kst_image_t *target)
 {
-    const bool save = kst_prog_save_first(p) && p->f.card;
+    const bool save = kst_prog_save_first(p) && !kst_prog_save_none(p);
 
     /* What the servo may hold other than its backup once the command is
      * taken: a write the card keeps from starting changes no field. */
@@ -293,7 +293,7 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
                                   : ~(kst_field_set_t)0;
     p->held = *req;
     p->held_target = *target;
-    p->held_no_file = kst_prog_save_first(p) && !p->f.card;
+    p->held_no_file = kst_prog_save_none(p);
     p->op = (uint8_t)req->op;
     if (save) {
         p->wait = W_SAVE;
@@ -954,18 +954,32 @@ bool kst_prog_no_file(const kst_prog_t *p)
     return p->no_file && !p->backed_up;
 }
 
-/* The image the file before a write takes.  After a write that went with
- * no card the servo no longer holds what the session found: the session's
- * backup does, while the coprocessor keeps it. */
+/* Whether the servo may hold other values than the session found: after
+ * a write that went with no card, and in a session whose writes this model
+ * did not all see, one the coprocessor kept over a link loss or a start of
+ * the panel.  The session's backup holds the servo as found then. */
+static bool maybe_written(const kst_prog_t *p)
+{
+    return p->no_file || !p->wrote_known;
+}
+
+/* The image the file before a write takes: the servo as the session found
+ * it. */
 static const kst_image_t *file_image(const kst_prog_t *p)
 {
-    return p->card_auto && p->no_file && p->f.have_backup ? &p->f.backup
-                                                          : &p->servo;
+    return p->card_auto && maybe_written(p) && p->f.have_backup
+         ? &p->f.backup : &p->servo;
 }
 
 bool kst_prog_save_first(const kst_prog_t *p)
 {
     return p->have_servo && !p->backed_up && !kst_prog_in_doubt(p);
+}
+
+bool kst_prog_save_none(const kst_prog_t *p)
+{
+    return kst_prog_save_first(p)
+        && (!p->f.card || (maybe_written(p) && !p->f.have_backup));
 }
 
 kst_field_set_t kst_prog_changed(const kst_prog_t *p)
@@ -1253,6 +1267,12 @@ kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p)
     return KST_PROG_MSG_NONE;
 }
 
+bool kst_prog_restore_only(const kst_prog_t *p)
+{
+    return kst_prog_state(p) == KST_PROG_PROGRAMMING
+        && flag(p, LINK_KS_F_LOCKED) && p->f.have_backup;
+}
+
 kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
 {
     kst_prog_msg_id_t m;
@@ -1263,7 +1283,7 @@ kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
     }
     m = idle_safe(p);
     if (m == KST_PROG_MSG_NONE) {
-        if (flag(p, LINK_KS_F_LOCKED) && p->f.have_backup) {
+        if (kst_prog_restore_only(p)) {
             /* The session's restore is the one write a locked session
              * takes, whatever the servo holds now. */
         } else if (!p->have_servo) {
@@ -1914,8 +1934,14 @@ static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     }
     /* A save by hand is the session's backup while it holds the servo as
      * the session found it: before the first write, and with no backup
-     * named yet.  A later one holds the written servo and is no backup. */
-    if (ok && (p->card_auto || (!p->written && !p->backed_up))) {
+     * named yet.  A later one holds the written servo and is no backup.
+     * In a session whose writes are not all known the servo is as found
+     * only while it equals the session's backup. */
+    if (ok && (p->card_auto
+               || (!p->written && !p->backed_up
+                   && (p->wrote_known
+                       || (p->f.have_backup
+                           && same(&p->f.backup, &p->servo)))))) {
         p->backed_up = p->have_servo;
         p->no_file = false;
         name_copy(p->backup, d->name);

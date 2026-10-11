@@ -69,6 +69,8 @@ history is in git.
   a servo that differs in a field no write of the session set out to
   change. A write that did not start, or that the coprocessor ends with
   no register written, counts as none. LEAVE and CONNECT begin a session with that servo's own backup.
+  A locked session whose backup the panel holds takes ENABLE WRITE TO
+  SERVO with no servo read, for the restore of that backup alone.
 - Servo programmer, files: FILES saves the servo's 32 registers as a servo
   file in the folder `KST` on the SD card under a preset name (`KST001` on)
   that the text keyboard changes, and never replaces a file. The first
@@ -78,7 +80,10 @@ history is in git.
   file is saved and that the session's backup lives in the bench until the
   session ends or the bench loses power, and the SERVO tab shows `No backup
   file: no card. Session restore only.` until a card takes the file at a
-  later write. A file is loaded from a sorted list of the folder's first 64
+  later write. That file holds the servo as the session found it, also
+  after a link loss or a panel start under a session the coprocessor
+  keeps; the servo as last read is not saved as the backup file once it
+  may hold written values. A file is loaded from a sorted list of the folder's first 64
   files, 5 a page, that names each file's servo type, V6 or V8 after the
   20k_sel field. Its editable values become the pending changes and reach
   the servo through the ordinary write only; a file of the other type, a

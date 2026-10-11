@@ -3020,6 +3020,142 @@ TEST_CASE(a_card_put_in_after_a_write_takes_the_servo_as_the_session_found_it)
     CHECK_EQ(g_fc.saves, 2);
 }
 
+/* The link goes and comes back under a session the coprocessor keeps. */
+static void link_gap(void)
+{
+    kst_link_lost(&g_k);
+    g_safe = false;
+    frames(200);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_DOWN);
+    g_safe = true;
+    kst_link_came_up(&g_k, LINK_PROTOCOL_MINOR);
+    settle();
+    frames(600);
+}
+
+/* A first write with no card, a link loss the coprocessor's session
+ * survives, a read, a card: the file the next write saves holds the servo
+ * as the session found it, not the written one. */
+TEST_CASE(a_session_kept_over_a_link_loss_saves_the_servo_as_found)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up_enabled();
+    g_card = false;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(kst_prog_no_file(&g_p));
+
+    link_gap();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK(!kst_prog_save_first(&g_p));
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(kst_prog_have_servo(&g_p));
+    CHECK_EQ(kst_prog_servo(&g_p)->r[KST_REG_DUTY], 200);
+    CHECK(g_p.f.have_backup);
+    CHECK(same(&g_p.f.backup, &sv));
+
+    /* A save by hand holds the written servo: it is not the backup. */
+    g_card = true;
+    frame();
+    save("NOW");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_EQ(g_fc.file[0].img.r[KST_REG_DUTY], 200);
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK(kst_prog_save_first(&g_p));
+    CHECK(!kst_prog_save_none(&g_p));
+
+    /* The next write saves the image the session began with. */
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 198);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo().r[KST_REG_DUTY], 198);
+    CHECK_EQ(g_fc.saves, 2);
+    CHECK(same(&g_fc.file[1].img, &sv));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), g_fc.file[1].name);
+    CHECK(!kst_prog_no_file(&g_p));
+}
+
+/* The same gap in a session that wrote nothing: the servo is as found, and
+ * a save by hand is the session's backup. */
+TEST_CASE(a_save_by_hand_after_a_link_loss_is_the_backup_of_an_unwritten_servo)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up();
+    link_gap();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(kst_prog_have_servo(&g_p));
+    save("A");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK(same(&g_fc.file[0].img, &sv));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "A");
+    CHECK(!kst_prog_save_first(&g_p));
+}
+
+/* The coprocessor starts again in the gap: its session and its backup are
+ * gone, and the session that follows saves the servo as it finds it. */
+TEST_CASE(a_session_that_ended_over_a_link_loss_is_followed_by_one_with_its_own_file)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up_enabled();
+    g_card = false;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(kst_prog_no_file(&g_p));
+
+    kst_link_lost(&g_k);
+    g_safe = false;
+    frames(200);
+    port_fresh();
+    g_safe = true;
+    kst_link_came_up(&g_k, LINK_PROTOCOL_MINOR);
+    settle();
+    frames(600);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_no_file(&g_p));
+
+    g_card = true;
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_have_servo(&g_p));
+    CHECK(g_p.wrote_known);
+    CHECK_EQ(kst_prog_servo(&g_p)->r[KST_REG_DUTY], 200);
+    /* The backup held is this session's. */
+    frames(600);
+    CHECK(g_p.f.have_backup);
+    CHECK(same(&g_p.f.backup, kst_prog_servo(&g_p)));
+    CHECK(kst_prog_save_first(&g_p));
+    CHECK(!kst_prog_save_none(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 198);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, 1);
+    /* What this session found: the servo the one before it wrote. */
+    CHECK_EQ(g_fc.file[0].img.r[KST_REG_DUTY], 200);
+    CHECK(!same(&g_fc.file[0].img, &sv));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK(!kst_prog_no_file(&g_p));
+}
+
 TEST_CASE(a_card_put_in_after_a_write_and_full_ends_the_next_write)
 {
     static const struct {
@@ -3058,6 +3194,7 @@ TEST_CASE(a_card_put_in_after_a_write_and_full_ends_the_next_write)
 TEST_CASE(the_file_after_a_write_is_of_the_backup_while_the_session_holds_it)
 {
     kst_prog_card_req_t req;
+    char text[KST_PROG_FILE_MAX];
 
     /* The session holds its backup: the file is of it. */
     by_hand();
@@ -3076,17 +3213,45 @@ TEST_CASE(the_file_after_a_write_is_of_the_backup_while_the_session_holds_it)
     CHECK(same(&req.image, &g_f.backup));
     CHECK(!same(&req.image, kst_prog_servo(&g_p)));
 
-    /* It does not: the file is of the servo as read. */
+    /* It does not, after a write with no card or in a session whose
+     * writes are not all known: the servo as read is not the servo as
+     * found, and the write goes with no file. */
+    for (unsigned i = 0; i < 2u; ++i) {
+        by_hand();
+        g_p.backed_up = false;
+        g_p.no_file = i == 0u;
+        g_p.wrote_known = i == 0u;
+        g_p.written = true;
+        g_f.card = true;
+        g_f.have_backup = false;
+        g_f.rd.flags &= (uint16_t)~LINK_KS_F_BACKUP;
+        pass(1);
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        edit(KST_F_DUTY, 200);
+        CHECK(kst_prog_save_first(&g_p));
+        CHECK(kst_prog_save_none(&g_p));
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        CHECK(!kst_prog_card_take(&g_p, &req));
+        /* The record of the write goes to the card; no image does. */
+        CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+        kst_prog_file_done(&g_p, true);
+        answer(KST_LINK_START_OK);
+        CHECK(kst_prog_no_file(&g_p));
+        CHECK(!kst_prog_backed_up(&g_p));
+    }
+
+    /* A session that began here and wrote with a file or not at all: the
+     * servo as read is the servo as found, with no backup held either. */
     by_hand();
     g_p.backed_up = false;
-    g_p.no_file = true;
-    g_p.written = true;
+    g_p.wrote_known = true;
     g_f.card = true;
     g_f.have_backup = false;
     g_f.rd.flags &= (uint16_t)~LINK_KS_F_BACKUP;
     pass(1);
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     edit(KST_F_DUTY, 200);
+    CHECK(!kst_prog_save_none(&g_p));
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK(kst_prog_card_take(&g_p, &req));
     CHECK_EQ(req.op, KST_PROG_CARD_SAVE);
@@ -4576,6 +4741,9 @@ int main(void)
     RUN(a_first_write_with_no_card_goes_without_a_file);
     RUN(a_pairing_release_with_no_card_goes_without_a_file);
     RUN(a_card_put_in_after_a_write_takes_the_servo_as_the_session_found_it);
+    RUN(a_session_kept_over_a_link_loss_saves_the_servo_as_found);
+    RUN(a_save_by_hand_after_a_link_loss_is_the_backup_of_an_unwritten_servo);
+    RUN(a_session_that_ended_over_a_link_loss_is_followed_by_one_with_its_own_file);
     RUN(a_card_put_in_after_a_write_and_full_ends_the_next_write);
     RUN(the_file_after_a_write_is_of_the_backup_while_the_session_holds_it);
     RUN(a_write_with_no_card_that_does_not_start_leaves_no_line);

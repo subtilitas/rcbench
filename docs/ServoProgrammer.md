@@ -350,6 +350,15 @@ release, and the coprocessor refuses one that arrives without the switch's
 key. Reading, **VERIFY**, saving to a file and loading a file work with
 the switch off.
 
+The switch takes its tap with a servo read. A session the coprocessor has
+locked after an interrupted write takes it with no servo read as well, once
+the panel holds the session's backup: this is the state of a panel that
+starts under such a session. The switch then opens one write, the restore
+of the session's backup. An edit, a write of values, a pairing release and
+a load of a file stay refused until a read and the end of the lock.
+**READ ALL** in that state reads the servo and shows its values; the lock
+stays, and no value is edited.
+
 ## Writing
 
 **WRITE n VALUES** counts the fields in which the draft differs from the
@@ -533,7 +542,10 @@ servo held before the write are then not recoverable from the bench.
 
 | Case | Result |
 | --- | --- |
-| A card is mounted later in the session | the next write, restore or pairing release saves the backup file first. The file holds the session's backup, the image read before the first write, while the coprocessor holds it; without it the file holds the servo as last read. The line on the SERVO tab changes to the file's name |
+| A card is mounted later in the session | the next write, restore or pairing release saves the backup file first. The file holds the session's backup, the image read before the first write. The line on the SERVO tab changes to the file's name |
+| The link goes and comes back, or the panel starts, under a session the coprocessor keeps | the writes of the session are not known to the panel. The next write, restore or pairing release saves the backup file first, and the file holds the session's backup, not the servo as last read. A save through **FILES** counts as the backup file only while the servo equals the session's backup |
+| The servo may hold written values and the panel does not hold the session's backup | the write goes without a file, and its page carries the three lines above: the servo as last read is not saved as the backup file |
+| The coprocessor starts again | its session and the session's backup are gone. **CONNECT** begins a session, and its first write saves the servo as that session finds it |
 | A save through **FILES** after a write without a card | saves the servo as it stands; it does not count as the backup file |
 | The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |

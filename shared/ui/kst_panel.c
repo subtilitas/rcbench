@@ -974,7 +974,7 @@ static void warn_enable(void)
  * it goes without, and its page says so. */
 static bool no_card(void)
 {
-    return kst_prog_save_first(&k.prog) && !k.prog.f.card;
+    return kst_prog_save_none(&k.prog);
 }
 
 /* What a write with no card leaves out, on the page whose hold sends it. */
@@ -1661,7 +1661,8 @@ static bool row_live(const row_t *r)
             || (st == KST_PROG_PWM && on_port());
     case A_ENABLE:
         return kst_prog_write_enabled(p)
-            || (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p));
+            || (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p))
+            || kst_prog_restore_only(p);
     default:
         return st == KST_PROG_PROGRAMMING && kst_prog_changes(p) != 0u;
     }

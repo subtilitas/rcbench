@@ -533,10 +533,13 @@ const char *kst_prog_backup_name(const kst_prog_t *p);
  *  holds the servo as the session found it: the session's backup is the
  *  one copy.  Ends with the next file a write saves. */
 bool kst_prog_no_file(const kst_prog_t *p);
-/** The next write saves the servo's image to a file first.  A mounted card
- *  that does not take the file ends the write; with no card mounted the
- *  write goes without a file. */
+/** The next write saves the servo as the session found it to a file
+ *  first.  A mounted card that does not take the file ends the write. */
 bool kst_prog_save_first(const kst_prog_t *p);
+/** That write goes without the file: no card is mounted, or the servo may
+ *  hold other values than the session found and the session's backup, the
+ *  image the file takes then, is not fetched. */
+bool kst_prog_save_none(const kst_prog_t *p);
 
 /** The fields in which the draft differs from the servo, register 01's
  *  copy of Max. Duty left out. */
@@ -595,8 +598,12 @@ uint16_t kst_prog_supply_ma(const kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_read(kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p);
 /** The switch.  On is taken with a servo read that passes the
- *  fingerprint. */
+ *  fingerprint, and by a locked session that holds its backup. */
 kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on);
+/** The session is locked and its backup is held: the switch is taken with
+ *  no servo read, and the restore of that backup is the one write that
+ *  goes.  Every other write waits for a read and for the lock to end. */
+bool kst_prog_restore_only(const kst_prog_t *p);
 /** Whether kst_prog_write() would be sent, without sending it. */
 kst_prog_msg_id_t kst_prog_write_check(kst_prog_t *p);
 /** Write the draft.  The first write of a session saves the servo's image

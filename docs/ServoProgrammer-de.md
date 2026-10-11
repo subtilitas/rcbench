@@ -375,6 +375,16 @@ ab, das ohne den Schlüssel des Schalters ankommt. Lesen, **PRÜFEN**, das
 Speichern in eine Datei und das Laden einer Datei arbeiten bei
 ausgeschaltetem Schalter.
 
+Der Schalter nimmt seinen Tipp mit einem gelesenen Servo an. Eine Sitzung,
+die der Koprozessor nach einem unterbrochenen Schreiben gesperrt hat, nimmt
+ihn auch ohne gelesenes Servo an, sobald das Panel das Backup der Sitzung
+hält: das ist der Zustand eines Panels, das unter einer solchen Sitzung
+startet. Der Schalter öffnet dann ein Schreiben, das Zurückspielen des
+Backups der Sitzung. Ein Ändern, ein Schreiben von Werten, ein Lösen des
+Pairings und das Laden einer Datei bleiben abgelehnt bis zu einem Lesen und
+dem Ende der Sperre. **ALLES LESEN** liest in diesem Zustand das Servo und
+zeigt seine Werte; die Sperre bleibt, und kein Wert wird geändert.
+
 ## Schreiben
 
 **n WERTE SCHREIBEN** zählt die Felder, in denen der Entwurf vom Servo
@@ -573,7 +583,10 @@ wiederherstellbar.
 
 | Fall | Ergebnis |
 | --- | --- |
-| Eine Karte wird später in der Sitzung eingehängt | das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei. Die Datei hält das Backup der Sitzung, das vor dem ersten Schreiben gelesene Abbild, solange der Koprozessor es hält; ohne es hält die Datei das Servo, wie es zuletzt gelesen wurde. Die Zeile im Reiter SERVO wechselt zum Dateinamen |
+| Eine Karte wird später in der Sitzung eingehängt | das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei. Die Datei hält das Backup der Sitzung, das vor dem ersten Schreiben gelesene Abbild. Die Zeile im Reiter SERVO wechselt zum Dateinamen |
+| Der Link fällt weg und kommt wieder, oder das Panel startet, unter einer Sitzung, die der Koprozessor hält | die Schreiben der Sitzung sind dem Panel nicht bekannt. Das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei, und die Datei hält das Backup der Sitzung, nicht das Servo, wie es zuletzt gelesen wurde. Ein Speichern über **DATEIEN** zählt nur als Backup-Datei, solange das Servo dem Backup der Sitzung gleicht |
+| Das Servo kann geschriebene Werte halten, und das Panel hält das Backup der Sitzung nicht | das Schreiben geht ohne Datei, und seine Seite trägt die drei Zeilen oben: das Servo, wie es zuletzt gelesen wurde, wird nicht als Backup-Datei gespeichert |
+| Der Koprozessor startet neu | seine Sitzung und das Backup der Sitzung sind weg. **VERBINDEN** beginnt eine Sitzung, und ihr erstes Schreiben speichert das Servo, wie diese Sitzung es vorfindet |
 | Ein Speichern über **DATEIEN** nach einem Schreiben ohne Karte | speichert das Servo, wie es steht; es zählt nicht als Backup-Datei |
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2 s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |

@@ -764,6 +764,118 @@ TEST_CASE(the_fetched_backup_redraws_restore)
     CHECK_EQ(kst_panel_editor(), 2);
 }
 
+/* A panel that starts under a locked session, its backup fetched and no
+ * servo read. */
+static void restart_locked(void)
+{
+    fresh();
+    cut_write();
+    come_back();
+    tap(val(PG_SERVO, 1, 0));           /* READ ALL: the session locks */
+    settle();
+    CHECK((M->f.rd.flags & LINK_KS_F_LOCKED) != 0u);
+    kst_link_init(&g_rig.link);
+    kst_panel_init(AREA);
+    kst_panel_open();
+    g_rig.outcomes = 0;
+    g_rig.answer_id = 0;
+    g_rig.safe = true;
+    kst_link_came_up(&g_rig.link, LINK_PROTOCOL_MINOR);
+    for (unsigned i = 0; i < 60000u && !M->f.have_backup; ++i) {
+        rig_frame();
+    }
+    rig_frames(600);                    /* the fetch ends */
+    tick(0.02f);
+    show();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK(M->f.have_backup);
+    CHECK(!kst_prog_have_servo(M));
+    CHECK(kst_prog_restore_only(M));
+}
+
+/* The session's restore from there: the switch, then the restore. */
+static void restore_locked(void)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_image_t now = rig_servo();
+
+    CHECK(memcmp(now.r, sv.r, sizeof(now.r)) != 0);
+    tap(val(PG_SERVO, 2, 0));
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_FROM_SESSION)));
+    hold(1.9f);
+    rig_frames(50);
+    now = rig_servo();
+    CHECK(memcmp(now.r, sv.r, sizeof(now.r)) != 0);
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+    now = rig_servo();
+    CHECK(memcmp(now.r, sv.r, sizeof(now.r)) == 0);
+    CHECK((M->f.rd.flags & LINK_KS_F_LOCKED) == 0u);
+}
+
+/* The switch of a locked session takes its tap with no servo read: the
+ * restore of the held backup is the way out, and the one write it opens. */
+TEST_CASE(a_locked_session_found_at_the_start_is_enabled_and_restored)
+{
+    unsigned writes;
+
+    restart_locked();
+    writes = g_rig.sim.n_writes;
+    /* RESTORE with the switch off says what it needs. */
+    tap(val(PG_SERVO, 2, 0));
+    tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    /* The switch takes the tap and its hold. */
+    tap(val(PG_SERVO, 3, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(1.9f);
+    CHECK(!kst_prog_write_enabled(M));
+    hold(2.1f);
+    CHECK(kst_prog_write_enabled(M));
+    /* It opens no other write: nothing is edited, written, released or
+     * loaded with no servo read. */
+    CHECK(!kst_prog_editable(M));
+    CHECK_EQ(kst_prog_edit(M, KST_F_DEAD_BAND, 3), KST_PROG_EDIT_REFUSED);
+    CHECK_EQ(kst_prog_write_check(M), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_release_check(M), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_load(M, "KST001"), KST_PROG_MSG_NEED_READ);
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 0);
+    tap(val(PG_SERVO, 2, 1));           /* MORE needs a servo read */
+    CHECK_EQ(kst_panel_editor(), 0);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, writes);
+    restore_locked();
+}
+
+/* READ ALL in that state reads the servo and leaves the lock: the values
+ * are shown, none is edited, and the restore is still the one write. */
+TEST_CASE(a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock)
+{
+    unsigned writes;
+
+    restart_locked();
+    writes = g_rig.sim.n_writes;
+    tap(val(PG_SERVO, 1, 0));
+    settle();
+    CHECK(kst_prog_have_servo(M));
+    CHECK(kst_prog_in_doubt(M));
+    CHECK((M->f.rd.flags & LINK_KS_F_LOCKED) != 0u);
+    CHECK(!kst_prog_editable(M));
+    CHECK(kst_prog_restore_only(M));
+    enable();
+    CHECK_EQ(kst_prog_edit(M, KST_F_DEAD_BAND, 3), KST_PROG_EDIT_REFUSED);
+    CHECK_EQ(kst_prog_write_check(M), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_release_check(M), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(g_rig.sim.n_writes, writes);
+    restore_locked();
+}
+
 TEST_CASE(the_current_limit_is_typed_inside_50_to_3000_ma)
 {
     char want[KST_PANEL_LINE];
@@ -3955,6 +4067,8 @@ int main(void)
     RUN(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v);
     RUN(a_confirmed_voltage_above_6_v_is_not_kept);
     RUN(the_fetched_backup_redraws_restore);
+    RUN(a_locked_session_found_at_the_start_is_enabled_and_restored);
+    RUN(a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock);
     RUN(the_current_limit_is_typed_inside_50_to_3000_ma);
     RUN(a_supply_that_cannot_give_the_voltage_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line);
