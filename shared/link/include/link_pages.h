@@ -55,6 +55,7 @@ typedef enum {
     LINK_PAGE_BIND      = 0x30, /**< takes the two prepared pages as one     */
     LINK_PAGE_SERVO_WIN = 0x31, /**< the servo rail's last CH1 windows, read-only */
     LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
+    LINK_PAGE_PROG      = 0x33, /**< the programming ports: pin, pulse, target */
 } link_page_id_t;
 
 /*
@@ -70,12 +71,13 @@ typedef enum {
  * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
  * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
  * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
- * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12.  A
+ * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12, and PROG, the port
+ * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 12u
+#define LINK_PROTOCOL_MINOR 13u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -84,6 +86,10 @@ typedef enum {
 #define LINK_MINOR_SERVO_WIN 11u
 /** The first minor that serves KST. */
 #define LINK_MINOR_KST 12u
+/** The first minor that serves PROG, names a programming port in a KST
+ *  command and in CAP_ARM, and says in SUPPLY FLAGS that a port holds the
+ *  supply. */
+#define LINK_MINOR_PROG 13u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -296,6 +302,10 @@ enum {
 #define LINK_SP_WIRE_WAIT    0x100u  /**< protocol 4.5 */
 #define LINK_SP_WIRE_REFUSED 0x200u  /**< protocol 4.5 */
 #define LINK_SP_SAGGED       0x400u  /**< protocol 4.5 */
+/** Protocol 4.13: a programming port holds OUTPUT, SET_MV and SET_MA.  A
+ *  write of them is refused unless it leaves OUTPUT 0 and SET_MV no
+ *  higher. */
+#define LINK_SP_PORT         0x800u
 
 /* --- the SENSE page (protocol 4.7): two I2C (Inter-Integrated Circuit)
  *     current monitors on one bus the coprocessor runs on two of its pins,
@@ -590,7 +600,8 @@ enum {
 #define LINK_SS_CAP_CLIPPED    0x80u
 
 /* CAP_ARM: bit 7, the INA3221 channel (1 to 3) and the output channel
- * (0 to 7). */
+ * (0 to 7).  With bit 11 (4.13) the number in bits 8 to 10 is a programming
+ * port of the PROG page, 0 to 3. */
 #define LINK_SS_ARM            0x80u
 #define LINK_SS_ARM_OF(ch, out) \
     ((uint16_t)(LINK_SS_ARM | ((unsigned)(ch) & 0x03u) \
@@ -598,7 +609,9 @@ enum {
 #define LINK_SS_ARM_CH(r)      ((uint8_t)((r) & 0x03u))
 #define LINK_SS_ARM_OUT(r)     ((uint8_t)(((r) >> 8) & 0x07u))
 /** Every bit CAP_ARM may carry. */
-#define LINK_SS_ARM_BITS       0x0783u
+#define LINK_SS_ARM_BITS       0x0F83u
+/** Bits 8 to 10 name a programming port, not an output channel. */
+#define LINK_SS_ARM_PORT       0x0800u
 /** The one INA3221 channel a capture is taken on; CH2 and CH3 are refused
  *  with BAD_VALUE, the field kept for a channel read fast enough later. */
 #define LINK_SS_CAP_CH         1u
@@ -1248,8 +1261,8 @@ typedef enum {
 /* --------------------------------------------------------------------- KST */
 /*
  * The KST page (0x32, since 4.12): the programming port for KST and
- * Chaservo servos.  One output channel at a time leaves PWM (pulse-width
- * modulation) and carries the servo's programming protocol
+ * Chaservo servos.  One programming port (the PROG page) at a time leaves
+ * PWM (pulse-width modulation) and carries the servo's programming protocol
  * (protocols/kst).  The session runs at the coprocessor: the panel writes
  * an operation and the images it needs, and reads the state, the result
  * and the servo's 32 registers.  shared/outputs/kst_port.h holds the
@@ -1264,7 +1277,7 @@ typedef enum {
  */
 enum {
     LINK_KS_STATE = 0,   /**< bits 0-2 link_kst_state_t, bits 3-11 the
-                              LINK_KS_F_* flags, bits 12-15 the channel */
+                              LINK_KS_F_* flags, bits 12-15 the port */
     LINK_KS_SEQ   = 1,   /**< the SEQ of the last command taken; 0 at start */
     LINK_KS_OP    = 2,   /**< bits 12-15 the last operation started
                               (link_kst_op_t), bits 0-11 the frames it has
@@ -1300,9 +1313,10 @@ enum {
 
 /** What a write of the page takes. */
 enum {
-    LINK_KS_W_CMD = 0,   /**< bits 0-3 link_kst_op_t, bit 7 the confirmation
+    LINK_KS_W_CMD = 0,   /**< bits 0-3 link_kst_op_t, bit 6
+                              LINK_KS_W_CMD_PORT, bit 7 the confirmation
                               of an unchecked restore, bits 8-11 the
-                              channel; every other bit 0 */
+                              programming port; every other bit 0 */
     LINK_KS_W_SEQ = 1,   /**< LINK_KS_SEQ + 1 modulo 65536 */
     LINK_KS_W_KEY = 2,   /**< LINK_KST_WRITE_KEY for an operation that
                               writes to the servo, else 0 */
@@ -1321,7 +1335,10 @@ enum {
     LINK_KS_W_VIEW = 25,      /**< what LINK_KS_IMAGE shows: 0 the image
                                    last read, 1 the backup.  Not staged:
                                    in force when written */
-    LINK_KS_W_COUNT = 26,
+    LINK_KS_W_SUPPLY_MV = 26, /**< 4.13: the supply voltage of an ENTER,
+                                   in mV.  Not covered by the CRC */
+    LINK_KS_W_SUPPLY_MA = 27, /**< 4.13: and its current limit, in mA */
+    LINK_KS_W_COUNT = 28,
 };
 
 /** Registers of the command, from LINK_KS_W_CMD: one frame. */
@@ -1336,10 +1353,20 @@ enum {
 #define LINK_KST_WRITE_KEY 0x57A5u
 
 #define LINK_KS_STATE_OF(r)   ((uint8_t)((r) & 0x7u))
-#define LINK_KS_CHANNEL_OF(r) ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_KS_PORT_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))
 #define LINK_KS_OP_OF(r)      ((uint8_t)(((r) >> 12) & 0xFu))
 #define LINK_KS_FRAMES_OF(r)  ((uint16_t)((r) & 0xFFFu))
 #define LINK_KS_W_CMD_CONFIRM 0x0080u
+/** Bits 8-11 of the command name a programming port (4.13).  Every command
+ *  but ABORT carries it; one without it names an output channel, which is
+ *  no programming port, and is refused with LINK_KST_REF_PORT. */
+#define LINK_KS_W_CMD_PORT    0x0040u
+#define LINK_KS_W_CMD_OF(op, port) \
+    ((uint16_t)((unsigned)(op) | LINK_KS_W_CMD_PORT \
+                | (((unsigned)(port) & 0xFu) << 8)))
+/** LINK_KS_RESULT's low byte when the supply did not switch in time.
+ *  Above every kst_ses_t. */
+#define LINK_KST_RESULT_SUPPLY 32u
 
 /** The CRC of @p n page registers, low byte first, seeded 0xFFFF. */
 static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
@@ -1354,14 +1381,15 @@ static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
     return crc;
 }
 
-/** Where the port's channel is. */
+/** Where the programming port is. */
 typedef enum {
-    LINK_KST_PWM = 0,      /**< the channel renders PWM; no port */
+    LINK_KST_PWM = 0,      /**< the port's pin is the PWM generator's */
     LINK_KST_STOPPING = 1, /**< PWM renders no pulse; the running one ends */
-    LINK_KST_LOW = 2,      /**< the pin is the driver's and held low */
+    LINK_KST_LOW = 2,      /**< the pin is the driver's and held low; the
+                                supply is set */
     LINK_KST_PROGRAMMING = 3, /**< the pin carries frames and no PWM */
-    LINK_KST_RAIL_OFF = 4, /**< the servo rail is switched off */
-    LINK_KST_RAIL_WAIT = 5, /**< the rail is on again; the servo starts */
+    LINK_KST_RAIL_OFF = 4, /**< the servo's supply is switched off */
+    LINK_KST_RAIL_WAIT = 5, /**< the supply is on again; the servo starts */
 } link_kst_state_t;
 
 enum {
@@ -1376,17 +1404,17 @@ enum {
     LINK_KS_F_BACKUP    = 0x0080u, /**< the session holds a backup */
     LINK_KS_F_FP_OK     = 0x0100u, /**< the image has the known layout */
     LINK_KS_F_LOCKED    = 0x0200u, /**< only a restore is accepted */
-    LINK_KS_F_RAIL      = 0x0400u, /**< the hardware switches the servo
-                                        rail: a confirmed power cycle is
-                                        one the port makes */
+    LINK_KS_F_RAIL      = 0x0400u, /**< a PD mini answers: the port
+                                        switches the servo's supply, and a
+                                        power cycle is one the port makes */
     LINK_KS_F_VIEW_BACKUP = 0x0800u, /**< LINK_KS_IMAGE shows the backup */
 };
 
 /** The operations of a command. */
 typedef enum {
     LINK_KST_OP_NONE = 0,     /**< never written; LINK_KS_OP at start */
-    LINK_KST_OP_ENTER = 1,    /**< take the channel and enter programming
-                                   mode */
+    LINK_KST_OP_ENTER = 1,    /**< take the port's pin out of PWM, set the
+                                   supply and enter programming mode */
     LINK_KST_OP_READ_ALL = 2,
     LINK_KST_OP_WRITE = 3,    /**< an edit from the image read to the staged
                                    image; needs the key */
@@ -1397,7 +1425,9 @@ typedef enum {
     LINK_KST_OP_ABORT = 7,    /**< ends the running operation; never the
                                    operation LINK_KS_OP names */
     LINK_KST_OP_POWER_CYCLED = 8, /**< the servo was without power, or the
-                                       port is to switch the rail */
+                                       port is to switch the supply */
+    LINK_KST_OP_REBOOT = 9,   /**< 4.13: switch the supply off and on, from
+                                   PROGRAMMING or from PWM */
     LINK_KST_OP_COUNT
 } link_kst_op_t;
 
@@ -1406,12 +1436,12 @@ typedef enum {
 typedef enum {
     LINK_KST_REF_NONE = 0,
     LINK_KST_REF_BUSY = 1,       /**< an operation runs or the port moves */
-    LINK_KST_REF_CHANNEL = 2,    /**< the channel is on no bound PWM slot,
-                                      or is not the one the port holds */
-    LINK_KST_REF_THROTTLE = 3,   /**< the channel's role is a throttle */
-    LINK_KST_REF_NO_REPLY_PATH = 4, /**< the pin's path carries no reply */
+    LINK_KST_REF_PORT = 2,       /**< no such programming port, a command
+                                      without LINK_KS_W_CMD_PORT, or not
+                                      the port that is held.  3 and 4 are
+                                      not used */
     LINK_KST_REF_UNSAFE = 5,     /**< heartbeat not trusted or link silent */
-    LINK_KST_REF_NOT_PROGRAMMING = 6, /**< the port holds no channel */
+    LINK_KST_REF_NOT_PROGRAMMING = 6, /**< the port is in PWM */
     LINK_KST_REF_NO_ENABLE = 7,  /**< a write without the key */
     LINK_KST_REF_STAGED = 8,     /**< the staged registers do not have the
                                       CRC the command names */
@@ -1425,7 +1455,56 @@ typedef enum {
     LINK_KST_REF_PLAN_PAIRING = 14, /**< an edit differs in register 0x1D */
     LINK_KST_REF_PLAN_NO_PATH = 15, /**< no order of writes with valid
                                          images in between */
+    LINK_KST_REF_NO_PIN = 16,    /**< 4.13: the port has no bound pin */
+    LINK_KST_REF_SUPPLY_RANGE = 17, /**< 4.13: the staged supply voltage or
+                                         current is not one the PD mini
+                                         gives a servo */
+    LINK_KST_REF_NO_SUPPLY = 18, /**< 4.13: a REBOOT with no PD mini
+                                      answering, or from PWM with its
+                                      output off */
 } link_kst_refusal_t;
+
+/* -------------------------------------------------------------------- PROG */
+/*
+ * The PROG page (0x33, since 4.13): the programming ports.  A programming
+ * port is an output of its own kind with its own pin.  It is no slot of the
+ * OUTPUTS page and no channel of the CHANNELS page.  It renders a servo
+ * pulse from the PWM (pulse-width modulation) generator, switched by its
+ * bit in LINK_PG_PWM, or carries the programming protocol of the KST page,
+ * never both.  shared/outputs/prog_port.h holds the rules.
+ *
+ * Registers 0 to 3 are the page's own; LINK_PG_STRIDE registers per port
+ * follow from LINK_PG_PORT0.  PIN, SLEW, MIN_US and MAX_US are kept in
+ * flash; PWM, TARGET and CMD are not.
+ */
+enum {
+    LINK_PG_COUNT  = 0,  /**< read only: the ports this build has */
+    LINK_PG_FLAGS  = 1,  /**< read only: bit n, port n's pin is bound to
+                              the PWM generator; bit 8 + n, port n's pin
+                              is refused */
+    LINK_PG_PWM    = 2,  /**< bit n: port n renders its pulse while the
+                              bank is armed */
+    LINK_PG_TARGET = 3,  /**< what the SERVO page's sweep and hold command:
+                              0 the standard servo ports, 1 + n port n */
+    LINK_PG_PORT0  = 4,
+    LINK_PG_REGS   = 24,
+};
+enum {
+    LINK_PG_PIN    = 0,  /**< per port: the coprocessor GPIO, or
+                              LINK_PG_PIN_NONE */
+    LINK_PG_CMD    = 1,  /**< the command, 0 to 1000 */
+    LINK_PG_SLEW   = 2,  /**< as LINK_CC_SLEW */
+    LINK_PG_MIN_US = 3,  /**< as LINK_CC_MIN_US */
+    LINK_PG_MAX_US = 4,  /**< as LINK_CC_MAX_US */
+    LINK_PG_STRIDE = 5,
+};
+/** Ports the page has room for. */
+#define LINK_PG_PORTS_MAX 4u
+#define LINK_PG_PIN_NONE  0xFFFFu
+#define LINK_PG_REG(port, r) \
+    ((uint8_t)(LINK_PG_PORT0 + (unsigned)(port) * LINK_PG_STRIDE + (r)))
+#define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
+#define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
 
 /* ----------------------------------------------------------------- control */
 /*

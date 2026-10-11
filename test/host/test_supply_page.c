@@ -524,6 +524,183 @@ TEST_CASE(a_sag_cut_is_on_the_page)
     CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_SAGGED, 0u);
 }
 
+/* The supply as a programming port sees it: answering only while wired
+ * with no wiring change waiting; on only when read on at no more than
+ * asked with nothing stuck; off only when read off and not maybe on. */
+TEST_CASE(a_programming_port_sees_the_supply_as_the_page_last_read_it)
+{
+    supply_port_view_t v;
+
+    fresh();
+    pdmini_t drv = answered_driver();
+    memset(&v, 0xA5, sizeof(v));
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.online);
+    CHECK(!v.on);
+    CHECK(!v.asked_on);
+    CHECK(v.off);                               /* nothing read, nothing on */
+    supply_page_port_view(NULL, &v);
+    CHECK(!v.online);
+    CHECK(!v.off);
+    supply_page_port_view(&pg, NULL);
+
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    drv.st.online = true;
+    drv.st.vin_mv = 9000u;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(v.online);
+    CHECK(v.off);
+    CHECK(!v.on);
+    CHECK_EQ(v.vin_mv, 9000u);
+    /* Asked on and not read on yet: neither. */
+    CHECK_EQ(command(1u, 5000u, 1000u, true), 0u);
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(v.asked_on);
+    CHECK_EQ(v.set_mv, 5000u);
+    CHECK_EQ(v.set_ma, 1000u);
+    CHECK(!v.on);
+    /* Read on at the old, higher voltage: not on for the port. */
+    drv.st.output = true;
+    drv.st.set_mv = 5001u;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.on);
+    CHECK(!v.off);
+    drv.st.set_mv = 0u;                         /* not read back yet */
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.on);
+    drv.st.set_mv = 5000u;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(v.on);
+    /* Stuck either way: not on. */
+    drv.st.stuck = true;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.on);
+    drv.st.stuck = false;
+    drv.st.set_stuck = true;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.on);
+    drv.st.set_stuck = false;
+    /* Asked off and still read on: neither on nor off. */
+    CHECK(supply_page_port_set(&pg, false, 0u, 0u, true));
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.asked_on);
+    CHECK(!v.on);
+    CHECK(!v.off);
+    CHECK_EQ(v.set_mv, 5000u);                  /* an OFF leaves them */
+    drv.st.output = false;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(v.off);
+    /* Not answering. */
+    drv.st.online = false;
+    supply_page_step(&pg, true, &drv);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.online);
+    drv.st.online = true;
+    supply_page_step(&pg, true, &drv);
+    /* A wiring change waiting: the module is not the port's to command. */
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);
+    supply_page_port_view(&pg, &v);
+    CHECK(!v.online);
+    CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, true));
+}
+
+/* A port's request: an OFF always, an ON at the module's limits and never
+ * above the voltage of an output that is on. */
+TEST_CASE(a_programming_port_switches_the_supply_and_never_raises_it)
+{
+    fresh();
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    /* Not wired. */
+    CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    CHECK(supply_page_port_set(&pg, false, 5000u, 1000u, true));
+    CHECK(!supply_page_port_set(NULL, false, 0u, 0u, true));
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    /* No heartbeat. */
+    CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, false));
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 0u);
+    /* The module's range, at both ends of both. */
+    CHECK(!supply_page_port_set(&pg, true, PDMINI_V_MIN_MV - 1u, 1000u, true));
+    CHECK(!supply_page_port_set(&pg, true, PDMINI_V_MAX_MV + 1u, 1000u, true));
+    CHECK(!supply_page_port_set(&pg, true, 5000u, PDMINI_I_MIN_MA - 1u, true));
+    CHECK(!supply_page_port_set(&pg, true, 5000u, PDMINI_I_MAX_MA + 1u, true));
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK(supply_page_port_set(&pg, true, PDMINI_V_MIN_MV, PDMINI_I_MIN_MA,
+                               true));
+    CHECK(supply_page_port_set(&pg, false, 0u, 0u, true));
+    CHECK(supply_page_port_set(&pg, true, PDMINI_V_MAX_MV, PDMINI_I_MAX_MA,
+                               true));
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), PDMINI_V_MAX_MV);
+    /* It reaches the driver as a link write does. */
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.want_output);
+    CHECK_EQ(drv.want_mv, PDMINI_V_MAX_MV);
+    CHECK_EQ(drv.want_ma, PDMINI_I_MAX_MA);
+    /* On: down and the same are taken, one millivolt up is not. */
+    CHECK(supply_page_port_set(&pg, true, 6000u, 1000u, true));
+    CHECK(supply_page_port_set(&pg, true, 6000u, 1200u, true));
+    CHECK(!supply_page_port_set(&pg, true, 6001u, 1000u, true));
+    CHECK_EQ(reg(LINK_SP_SET_MV), 6000u);
+    CHECK_EQ(reg(LINK_SP_SET_MA), 1200u);
+    /* Off without a heartbeat too, and then on at any voltage in range. */
+    CHECK(supply_page_port_set(&pg, false, 0u, 0u, false));
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 6000u);
+    CHECK(supply_page_port_set(&pg, true, 7400u, 1000u, true));
+    CHECK_EQ(reg(LINK_SP_SET_MV), 7400u);
+}
+
+/* While a port holds the supply the panel can switch it off and lower it,
+ * and nothing else; FLAGS bit 11 says so at once. */
+TEST_CASE(a_held_supply_takes_off_and_down_from_the_panel_only)
+{
+    fresh();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    CHECK_EQ(command(1u, 5000u, 1000u, true), 0u);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, 0u);
+    supply_page_hold(&pg, true);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, LINK_SP_PORT);
+    supply_page_hold(&pg, true);
+    /* On as it is, on and lower, on and higher: all refused. */
+    CHECK_EQ(command(1u, 5000u, 1000u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(command(1u, 4000u, 1000u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(command(1u, 6000u, 1000u, true), LINK_NACK_BAD_VALUE);
+    /* Off and higher is refused, off at the same or lower is taken. */
+    CHECK_EQ(command(0u, 5001u, 1000u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK_EQ(command(0u, 5000u, 1000u, true), 0u);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK_EQ(command(0u, 4000u, 500u, true), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 4000u);
+    const uint16_t off = 0u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 1u, &off, &o, true), 0u);
+    /* The port itself is not held by its own hold. */
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    /* The bit survives a step with and without a driver. */
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, LINK_SP_PORT);
+    supply_page_step(&pg, true, NULL);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, LINK_SP_PORT);
+    /* Let go: the panel commands again. */
+    supply_page_hold(&pg, false);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, 0u);
+    CHECK_EQ(command(1u, 6000u, 1000u, true), 0u);
+    supply_page_hold(NULL, true);
+}
+
 int main(void)
 {
     RUN(wiring_is_refused_on_pins_that_are_not_free);
@@ -543,5 +720,8 @@ int main(void)
     RUN(a_wiring_change_not_read_off_is_refused);
     RUN(a_ready_wiring_is_judged_again_when_written);
     RUN(a_sag_cut_is_on_the_page);
+    RUN(a_programming_port_sees_the_supply_as_the_page_last_read_it);
+    RUN(a_programming_port_switches_the_supply_and_never_raises_it);
+    RUN(a_held_supply_takes_off_and_down_from_the_panel_only);
     return test_summary("supply_page");
 }

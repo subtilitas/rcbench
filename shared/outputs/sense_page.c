@@ -294,6 +294,37 @@ void sense_page_bound(sense_page_t *p, uint8_t slots)
     }
 }
 
+void sense_page_ports(sense_page_t *p, uint8_t ports)
+{
+    if (p != NULL) {
+        p->ports = ports;
+    }
+}
+
+bool sense_page_port_gone(const sense_page_t *p)
+{
+    if (p == NULL) {
+        return false;
+    }
+    const uint16_t arm = p->servo[LINK_SS_CAP_ARM];
+    const uint8_t out = LINK_SS_ARM_OUT(arm);
+
+    return (arm & LINK_SS_ARM) != 0u && (arm & LINK_SS_ARM_PORT) != 0u
+           && (out >= LINK_PG_PORTS_MAX || (p->ports & (1u << out)) == 0u);
+}
+
+/* Whether the output a capture names renders a frame to time from. */
+static bool arm_output(const sense_page_t *p, const outputs_t *o,
+                       uint16_t arm)
+{
+    const uint8_t out = LINK_SS_ARM_OUT(arm);
+
+    if ((arm & LINK_SS_ARM_PORT) != 0u) {
+        return out < LINK_PG_PORTS_MAX && (p->ports & (1u << out)) != 0u;
+    }
+    return pwm_surface(p, o, out);
+}
+
 /* A capture's frame, CAP_ARM to CAP_BAND_MA, judged as an arm. */
 static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
                          const outputs_t *o)
@@ -314,7 +345,7 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
     const uint16_t *c = p->sense;
     if ((c[LINK_SN_ENABLE] & LINK_SN_EN_I3221) == 0u
         || (c[LINK_SN_I3221_CHANNELS] & (1u << (ch - 1u))) == 0u
-        || !pwm_surface(p, o, LINK_SS_ARM_OUT(arm))) {
+        || !arm_output(p, o, arm)) {
         return LINK_NACK_BAD_VALUE;
     }
     if (!outputs_driving(o)) {

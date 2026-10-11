@@ -1,5 +1,5 @@
 /*
- * The panel's half of the SUPPLY link page (0x2A, protocol 4.3 to 4.5): what is
+ * The panel's half of the SUPPLY link page (0x2A, protocol 4.3 to 4.13): what is
  * written to it, in what order, and what a read of it means for the supply
  * the screen shows.
  *
@@ -24,6 +24,15 @@
  * between two polls, or one that switched the output off when the
  * heartbeat stopped -- makes everything owed again, and an ON the page no
  * longer holds is lost.
+ *
+ * A programming port commands the supply too (protocol 4.13, FLAGS bit 11,
+ * LINK_SP_PORT).  A read with the bit set, and the first read after it,
+ * that shows OUTPUT, SET_MV or SET_MA other than written is the port's
+ * doing: the page's values become what is asked, nothing is written back
+ * and no ON is reported lost.  supply_link_adopted() hands them to the
+ * caller, whose own copy of the command has to follow.  What the caller
+ * asks next with supply_link_command() is written as ever; the page
+ * refuses it while the port holds the supply unless it is an OFF.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.
@@ -129,6 +138,9 @@ typedef struct {
      * the output switched off for a sagging input (FLAGS bit 10). */
     uint16_t sag_vin_mv, sag_set_mv;
     bool     reset_owed;     /* a module restart asked, not yet written */
+    bool     port_held;      /* the last read had LINK_SP_PORT set      */
+    bool     adopted;        /* on, mv, ma were taken from the page and
+                                not yet handed out                      */
 } supply_link_t;
 
 void supply_link_init(supply_link_t *s);
@@ -183,6 +195,16 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
  */
 void supply_link_state(const supply_link_t *s, uint32_t now_ms,
                        supply_state_t *st);
+
+/**
+ * The command a programming port left on the page, once: true with
+ * @p on, @p mv and @p ma filled when the page's command was taken as the
+ * one asked since the last call.  The caller's own copy of the command
+ * follows it; a copy left as it was is written again at the caller's next
+ * supply_link_command().
+ */
+bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
+                         uint16_t *ma);
 
 /** The events since the last call, SUPPLY_LINK_EV_*, and cleared. */
 uint16_t supply_link_events(supply_link_t *s);

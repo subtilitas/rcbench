@@ -55,7 +55,21 @@ typedef struct {
     bool     reset_owed;  /**< RESET written, not yet passed on       */
     uint8_t  scan;        /**< the rate being tried under AUTO, 0..6   */
     uint16_t scan_seen;   /**< the driver's who_failed when last looked */
+    bool     held;        /**< a programming port holds the command   */
 } supply_page_t;
+
+/** The supply as a programming port sees it (kst_port.h). */
+typedef struct {
+    bool     online;    /**< wired, a PD mini answers, no wiring change
+                             waits */
+    bool     asked_on;  /**< OUTPUT is 1 */
+    bool     on;        /**< asked on and read on, at a voltage no higher
+                             than asked, with nothing stuck */
+    bool     off;       /**< read off, and not maybe on */
+    uint16_t set_mv;    /**< SET_MV and SET_MA as asked */
+    uint16_t set_ma;
+    uint16_t vin_mv;    /**< the PD mini's input, 0 while not read */
+} supply_port_view_t;
 
 void supply_page_init(supply_page_t *p);
 
@@ -144,6 +158,29 @@ uint64_t supply_page_pins(const supply_page_t *p);
  * nothing is attached to the module to switch it off.
  */
 void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv);
+
+/** The page as of the last supply_page_step(), for a programming port. */
+void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out);
+
+/**
+ * A programming port's request, in place of a link write of OUTPUT to
+ * SET_MA.  Off is always taken and leaves the set points.  On is refused
+ * (false, nothing changed) without a live heartbeat, while the supply is
+ * not wired or a wiring change waits, for set points outside the module's
+ * range, and for a voltage above SET_MV while OUTPUT is 1: the voltage of
+ * an output that is on is not raised here.
+ */
+bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
+                          uint16_t ma, bool beat_alive);
+
+/**
+ * Whether a programming port holds the command registers (FLAGS bit 11,
+ * LINK_SP_PORT).  While it does, supply_page_write() refuses a write of
+ * OUTPUT to SET_MA with LINK_NACK_BAD_VALUE unless it leaves OUTPUT 0 and
+ * SET_MV no higher than it is: the panel can switch the supply off, and
+ * cannot switch it on or raise it under the servo.
+ */
+void supply_page_hold(supply_page_t *p, bool held);
 
 #ifdef __cplusplus
 }

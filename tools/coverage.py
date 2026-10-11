@@ -125,6 +125,7 @@ TRACKED = [
     "protocols/kst/kst_file.c",
     "shared/logfile/kst_store.c",
     "shared/outputs/kst_port.c",
+    "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",
     "shared/can/can_timing.c",
     "shared/can/can_selftest.c",

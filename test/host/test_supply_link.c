@@ -255,6 +255,98 @@ TEST_CASE(an_on_the_far_end_let_go_is_lost)
     CHECK_EQ(supply_link_events(&sl), 0u);
 }
 
+/* A programming port commands the supply at the far end: what the page
+ * then holds is what the panel asks, nothing is written back, no ON is
+ * reported lost, and the caller is handed the command once. */
+TEST_CASE(a_programming_ports_command_is_adopted_and_not_fought)
+{
+    bool on = false;
+    uint16_t mv = 0u;
+    uint16_t ma = 0u;
+
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 7400u, 1500u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
+    /* The port takes the supply and lowers it for an entry. */
+    supply_page_hold(&pg, true);
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    const unsigned before = writes;
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 5000u);
+    CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+    CHECK(on);
+    CHECK_EQ(mv, 5000u);
+    CHECK_EQ(ma, 1000u);
+    CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));     /* once */
+    /* It switches the supply off for a power cycle: no ON is lost. */
+    CHECK(supply_page_port_set(&pg, false, 0u, 0u, true));
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+    CHECK(!on);
+    CHECK_EQ(mv, 5000u);
+    /* And on again, and lets go in the same pass: the read after the hold
+     * ends is still the port's. */
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    supply_page_hold(&pg, false);
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+    CHECK(on);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    /* Not held any more: an ON the far end lets go is lost as ever. */
+    far_step_and_read(false);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_LOST);
+    CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
+    /* Nothing without all four. */
+    CHECK(!supply_link_adopted(NULL, &on, &mv, &ma));
+    CHECK(!supply_link_adopted(&sl, NULL, &mv, &ma));
+    CHECK(!supply_link_adopted(&sl, &on, NULL, &ma));
+    CHECK(!supply_link_adopted(&sl, &on, &mv, NULL));
+}
+
+/* What the panel asks while the port holds the supply is written as ever:
+ * an OFF is taken, an ON is refused and said as any refused ON. */
+TEST_CASE(a_command_under_a_programming_port_is_off_or_refused)
+{
+    bool on = false;
+    uint16_t mv = 0u;
+    uint16_t ma = 0u;
+
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, false, 5000u, 1000u);
+    pump(true);
+    supply_page_hold(&pg, true);
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    pump(true);
+    CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+    CHECK(on);
+    /* The operator switches it off. */
+    supply_link_command(&sl, false, 5000u, 1000u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
+    /* And on again, which the page refuses under the port. */
+    supply_link_command(&sl, true, 5000u, 1000u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_REFUSED);
+    CHECK(!sl.on);
+    /* A lost link forgets a command taken and not handed out. */
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    far_step_and_read(true);
+    supply_link_lost(&sl);
+    CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
+}
+
 /* A coprocessor that started again between two reads holds nothing: its
  * page is written again from the start, and the ON it held is lost. */
 TEST_CASE(a_restarted_far_end_is_written_again)
@@ -680,6 +772,8 @@ int main(void)
     RUN(an_unwired_supply_refuses_an_on);
     RUN(an_on_without_a_heartbeat_is_refused);
     RUN(an_on_the_far_end_let_go_is_lost);
+    RUN(a_programming_ports_command_is_adopted_and_not_fought);
+    RUN(a_command_under_a_programming_port_is_off_or_refused);
     RUN(a_restarted_far_end_is_written_again);
     RUN(unanswered_writes_and_a_lost_link);
     RUN(the_state_is_what_the_page_says);

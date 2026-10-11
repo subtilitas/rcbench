@@ -1,18 +1,20 @@
 /*
- * The panel's half of the KST (0x32) link page, protocol 4.12: the
- * programming port for KST and Chaservo servos.
+ * The panel's half of the KST (0x32) link page, protocol 4.13: the
+ * programming ports for KST and Chaservo servos.
  *
  * The session with the servo runs at the coprocessor
  * (shared/outputs/kst_port.h).  The panel names an operation, and for a
  * write the image the servo is to hold; it reads back where the port is,
  * how the operation ended and the servo's 32 registers.  A coprocessor
- * whose protocol minor is below KST_LINK_MINOR has no such page and
- * nothing is sent to it: not a write and not a read.
+ * whose protocol minor is below KST_LINK_MINOR has no programming port
+ * (minor 12 has the page and takes an output channel where this module
+ * names a port) and nothing is sent to it: not a write and not a read.
  *
  * One operation at a time, kst_link_start():
  *
  *   1. for a write, a restore, a release and a verify the staged registers
- *      4 to 24 are written, 6 frames;
+ *      4 to 24 are written, 6 frames; for an ENTER the supply registers 26
+ *      and 27, 1 frame;
  *   2. the command, registers 0 to 3, one frame, with SEQ one above the
  *      page's.  A command without an answer is sent again as it was; the
  *      page takes it once;
@@ -35,7 +37,7 @@
  * is known.
  *
  * Between operations registers 0 to 3 are read every KST_LINK_POLL_MS
- * while the port holds a channel and every KST_LINK_IDLE_MS while it does
+ * while the port is out of PWM and every KST_LINK_IDLE_MS while it is
  * not.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
@@ -57,11 +59,11 @@
 extern "C" {
 #endif
 
-/** The protocol minor that has the KST page. */
-#define KST_LINK_MINOR LINK_MINOR_KST
+/** The protocol minor whose KST page names programming ports. */
+#define KST_LINK_MINOR LINK_MINOR_PROG
 
 /** Registers 0 to 3 are due this long after the last read while an
- *  operation runs or the port holds a channel. */
+ *  operation runs or the port is out of PWM. */
 #define KST_LINK_POLL_MS 50u
 /** And this long after it while the port is in PWM. */
 #define KST_LINK_IDLE_MS 500u
@@ -91,7 +93,7 @@ typedef enum {
     KST_LINK_START_DOWN,       /**< no coprocessor answers                */
     KST_LINK_START_NO_PAGE,    /**< the coprocessor has no KST page       */
     KST_LINK_START_BUSY,       /**< the phase is not KST_LINK_READY       */
-    KST_LINK_START_ARG,        /**< no such operation or channel          */
+    KST_LINK_START_ARG,        /**< no such operation or port             */
     KST_LINK_START_NO_ENABLE,  /**< a write with write_enabled clear      */
     KST_LINK_START_NO_IMAGE,   /**< a write or a release with no image
                                     read to plan from                     */
@@ -100,8 +102,13 @@ typedef enum {
 /** An operation as the screen asks for it. */
 typedef struct {
     link_kst_op_t op;          /**< ENTER, READ_ALL, WRITE, RESTORE,
-                                    RELEASE, VERIFY or POWER_CYCLED       */
-    uint8_t  channel;          /**< 0 to 15                               */
+                                    RELEASE, VERIFY, POWER_CYCLED or
+                                    REBOOT                                */
+    uint8_t  port;             /**< the programming port, 0 to
+                                    LINK_PG_PORTS_MAX - 1                 */
+    uint16_t supply_mv;        /**< ENTER: what the port asks of the PD
+                                    mini, mV                              */
+    uint16_t supply_ma;        /**< ENTER: and its current limit, mA      */
     bool     write_enabled;    /**< ENABLE WRITE TO SERVO is on           */
     bool     confirm;          /**< RESTORE: the operator confirmed a
                                     restore whose result cannot be checked */
@@ -142,8 +149,8 @@ typedef struct {
 typedef struct {
     kst_link_phase_t phase;
     bool     known;            /**< the fields below were read            */
-    link_kst_state_t port;     /**< where the port's channel is           */
-    uint8_t  channel;
+    link_kst_state_t port;     /**< where the port is                     */
+    uint8_t  port_no;          /**< which port: the one last commanded    */
     uint16_t flags;            /**< LINK_KS_F_*                           */
     link_kst_op_t op;          /**< the last operation the port started   */
     uint16_t frames;           /**< frames it has sent, to 4095           */
@@ -187,6 +194,8 @@ typedef struct {
     uint8_t  op;               /**< link_kst_op_t                         */
     uint8_t  stage_at;         /**< staged windows written, to STAGE_WINDOWS */
     uint16_t staged[LINK_KS_W_STAGED];
+    bool     supply_due;       /**< an ENTER's supply registers are owed  */
+    uint16_t supply[2];        /**< SUPPLY_MV, SUPPLY_MA                  */
     uint16_t cmd_proto[LINK_KS_W_CMD_FRAME];  /**< the command less its SEQ */
 
     /* The command on its way, the operation's or an abort. */
@@ -236,7 +245,7 @@ bool kst_link_has_page(const kst_link_t *k);
 kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r);
 
 /** Read the results and the images again without an operation: for a
- *  panel that started while the port holds a channel.  No outcome. */
+ *  panel that started while the port is out of PWM.  No outcome. */
 kst_link_start_t kst_link_fetch(kst_link_t *k);
 
 /** STOP, or the operator's cancel.  A request whose command has not gone

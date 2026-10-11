@@ -14,6 +14,7 @@ enum {
     X_NONE = 0,
     X_STATUS,        /* read 0 to 3 */
     X_STAGE,         /* write a window of 4 to 24 */
+    X_SUPPLY,        /* write 26 and 27 */
     X_CMD,           /* write 0 to 3 */
     X_RESULTS,       /* read 4 to 15 */
     X_VIEW_BACKUP,   /* write VIEW 1 */
@@ -164,7 +165,7 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
         return s;
     }
     if (r->op == LINK_KST_OP_NONE || r->op >= LINK_KST_OP_COUNT
-        || r->op == LINK_KST_OP_ABORT || r->channel > 15u
+        || r->op == LINK_KST_OP_ABORT || r->port >= LINK_PG_PORTS_MAX
         || (r->confirm && r->op != LINK_KST_OP_RESTORE)) {
         return KST_LINK_START_ARG;
     }
@@ -192,7 +193,11 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
             link_kst_crc(k->image_regs, LINK_KS_IMAGE_REGS);
     }
 
-    cmd = (uint16_t)((uint16_t)r->op | ((uint16_t)r->channel << 8));
+    k->supply_due = r->op == LINK_KST_OP_ENTER;
+    k->supply[0] = r->supply_mv;
+    k->supply[1] = r->supply_ma;
+
+    cmd = LINK_KS_W_CMD_OF(r->op, r->port);
     if (r->confirm) {
         cmd |= LINK_KS_W_CMD_CONFIRM;
     }
@@ -314,9 +319,8 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
         return ask_status(k, now_ms, x);
     }
     if (k->abort_wanted) {
-        k->cmd[LINK_KS_W_CMD] = (uint16_t)(
-            (uint16_t)LINK_KST_OP_ABORT
-            | ((uint16_t)LINK_KS_CHANNEL_OF(k->status[LINK_KS_STATE]) << 8));
+        k->cmd[LINK_KS_W_CMD] = LINK_KS_W_CMD_OF(
+            LINK_KST_OP_ABORT, LINK_KS_PORT_OF(k->status[LINK_KS_STATE]));
         k->cmd[LINK_KS_W_SEQ] = (uint16_t)(k->seq + 1u);
         k->cmd[LINK_KS_W_KEY] = 0u;
         k->cmd[LINK_KS_W_CRC] = 0u;
@@ -333,6 +337,10 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
             return ask(k, x, X_STAGE, true,
                        (uint8_t)(LINK_KS_W_IMAGE + at), (uint8_t)n,
                        &k->staged[at]);
+        }
+        if (k->supply_due) {
+            return ask(k, x, X_SUPPLY, true, (uint8_t)LINK_KS_W_SUPPLY_MV,
+                       2u, k->supply);
         }
         memcpy(k->cmd, k->cmd_proto, sizeof(k->cmd));
         k->cmd[LINK_KS_W_SEQ] = (uint16_t)(k->seq + 1u);
@@ -465,6 +473,9 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
     case X_STAGE:
         k->stage_at++;
         break;
+    case X_SUPPLY:
+        k->supply_due = false;
+        break;
     case X_CMD:
         k->seq = k->cmd[LINK_KS_W_SEQ];
         k->cmd_live = false;
@@ -541,7 +552,7 @@ void kst_link_readout(const kst_link_t *k, kst_link_readout_t *r)
 
         r->known = true;
         r->port = (link_kst_state_t)LINK_KS_STATE_OF(st);
-        r->channel = LINK_KS_CHANNEL_OF(st);
+        r->port_no = LINK_KS_PORT_OF(st);
         r->flags = (uint16_t)(st & 0x0FF8u);
         r->op = (link_kst_op_t)LINK_KS_OP_OF(k->status[LINK_KS_OP]);
         r->frames = LINK_KS_FRAMES_OF(k->status[LINK_KS_OP]);

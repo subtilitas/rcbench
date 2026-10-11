@@ -647,6 +647,68 @@ TEST_CASE(a_capture_is_refused_on_a_slot_the_silicon_did_not_bind)
     sense_page_bound(NULL, 0x01u);           /* nothing, no crash */
 }
 
+/* A capture on a programming port arms only while the port renders a
+ * pulse, and ends with the pulse as one on a channel ends with the bank. */
+TEST_CASE(a_capture_on_a_programming_port_needs_its_pulse)
+{
+    const uint16_t port0 = (uint16_t)(LINK_SS_ARM_OF(1u, 0u)
+                                      | LINK_SS_ARM_PORT);
+    const uint16_t port3 = (uint16_t)(LINK_SS_ARM_OF(1u, 3u)
+                                      | LINK_SS_ARM_PORT);
+
+    ready_to_capture();
+    /* Told nothing: no port renders. */
+    CHECK_EQ(arm(port0, 900u, 100u, 50u), LINK_NACK_BAD_VALUE);
+    sense_page_ports(&pg, 0x02u);
+    CHECK_EQ(arm(port0, 900u, 100u, 50u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
+    /* The fourth port of the model, and none past it. */
+    sense_page_ports(&pg, 0xF8u);
+    CHECK_EQ(arm(port3, 900u, 100u, 50u), 0u);
+    CHECK_EQ(arm((uint16_t)(LINK_SS_ARM_OF(1u, 4u) | LINK_SS_ARM_PORT),
+                 900u, 100u, 50u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(arm((uint16_t)(LINK_SS_ARM_OF(1u, 7u) | LINK_SS_ARM_PORT),
+                 900u, 100u, 50u), LINK_NACK_BAD_VALUE);
+    /* A port needs no slot and no surface on the channel of its number:
+     * channel 0 a throttle, slot 0 not bound. */
+    sense_page_ports(&pg, 0x01u);
+    sense_page_bound(&pg, 0x00u);
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_THROTTLE));
+    CHECK_EQ(arm(port0, 900u, 100u, 50u), 0u);
+    CHECK_EQ(sreg(LINK_SS_CAP_ARM), port0);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u),
+             LINK_NACK_BAD_VALUE);
+    /* The bank disarmed refuses it as any capture. */
+    outputs_arm(&o, false, 0u);
+    CHECK_EQ(arm(port0, 900u, 100u, 50u), LINK_NACK_NOT_ARMED);
+    outputs_arm(&o, true, 0u);
+
+    /* The pulse gone under a capture that has not finished. */
+    CHECK_EQ(arm(port0, 900u, 100u, 50u), 0u);
+    CHECK(!sense_page_port_gone(&pg));
+    sense_page_ports(&pg, 0x02u);
+    CHECK(sense_page_port_gone(&pg));
+    CHECK(sense_page_step(&pg, !sense_page_port_gone(&pg)));
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
+    CHECK_EQ(sreg(LINK_SS_CAP_ARM), 0u);
+    CHECK(!sense_page_port_gone(&pg));
+    /* A finished one keeps its result. */
+    sense_page_ports(&pg, 0x01u);
+    CHECK_EQ(arm(port0, 900u, 100u, 50u), 0u);
+    pg.servo[LINK_SS_CAP_STATE] = (uint16_t)LINK_CAP_ARRIVED;
+    sense_page_ports(&pg, 0x00u);
+    CHECK(!sense_page_step(&pg, !sense_page_port_gone(&pg)));
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARRIVED);
+    /* A capture on a channel is not a port's. */
+    sense_page_bound(&pg, 0x01u);
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_SURFACE));
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK(!sense_page_port_gone(&pg));
+    CHECK(!sense_page_port_gone(NULL));
+    sense_page_ports(NULL, 0x01u);
+}
+
 TEST_CASE(a_disarm_is_never_refused_and_stores_nothing_beside_it)
 {
     ready_to_capture();
@@ -705,7 +767,8 @@ TEST_CASE(the_channel_flags_and_the_arm_word_pack_as_documented)
     CHECK_EQ(LINK_SS_CH_CLIPPED(1u), 0x10u);
     CHECK_EQ(LINK_SS_CH_CLIPPED(3u), 0x40u);
     CHECK_EQ(LINK_SS_ARM_OF(3u, 7u), 0x0783u);
-    CHECK_EQ(LINK_SS_ARM_OF(3u, 7u), LINK_SS_ARM_BITS);
+    CHECK_EQ(LINK_SS_ARM_OF(3u, 7u) | LINK_SS_ARM_PORT, LINK_SS_ARM_BITS);
+    CHECK_EQ(LINK_SS_ARM_PORT, 0x0800u);
     CHECK_EQ(LINK_SS_ARM_OF(1u, 2u), 0x0281u);
     CHECK_EQ(LINK_SS_CH_STRIDE * LINK_SS_CHANNELS, (unsigned)LINK_SS_WINDOW);
 }
@@ -1682,6 +1745,7 @@ int main(void)
     RUN(a_capture_arms_whole_on_an_armed_bank);
     RUN(a_capture_is_refused_what_it_cannot_time);
     RUN(a_capture_is_refused_on_a_slot_the_silicon_did_not_bind);
+    RUN(a_capture_on_a_programming_port_needs_its_pulse);
     RUN(a_disarm_is_never_refused_and_stores_nothing_beside_it);
     RUN(a_bank_that_stops_driving_ends_an_unfinished_capture);
     RUN(the_channel_flags_and_the_arm_word_pack_as_documented);

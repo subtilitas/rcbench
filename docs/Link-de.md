@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.12. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.13. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -97,7 +97,9 @@ Koprozessors beim Link-up und nutzt nichts, was diese Minor nicht hat: die
 Frame Rate von SERVO ab 4.1, seinen Sweep ab 4.2, SUPPLY ab 4.3, RESUME des
 Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder von SENSE ab 4.9,
 BIND_CFG, BIND_OUT und BIND ab 4.10, SERVO_WIN, `RESETS` von SENSE und ein
-vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11, KST ab 4.12. Der Koprozessor liest
+vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11, KST ab 4.12, PROG, die
+Programmierports von KST, Flag-Bit 11 von SUPPLY und das Port-Bit von
+SERVO_SENSE ab 4.13. Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
 
@@ -157,7 +159,8 @@ Die Page hat kein Capability-Bit. Ein Panel, das die Minor liest, weiß, dass
 die Page existiert; FLAGS sagt, ob der Tap läuft.
 
 Der Koprozessor dieses Builds bedient die Page und hält die Register 0 bis 6
-im Flash (Speicher-Record Version 6; ein Record der Version 3 bis 5 liest mit
+im Flash (Speicher-Record Version 7, die Register des Taps ab Version 6; ein
+Record der Version 3 bis 5 liest mit
 ausgeschaltetem Tap auf seinen Standardwerten). Core 0 besitzt die
 PIO-State-Machine (PIO: Programmable Input/Output) und ihren DMA-Kanal (DMA:
 Direct Memory Access), Core 1 liest den Ring im 1-ms-Takt und lässt den
@@ -582,15 +585,105 @@ jedes Takts. `shared/outputs/sense_page.c` hält die Page, unter
 Page, und ob eines der Module sich bei einem Einbruch seiner Versorgung
 zurücksetzt.
 
+### Die Programmierports
+
+PROG (0x33) ist neu in 4.13. Keine Page und kein Register wandert. Ein
+Programmierport ist ein Ausgang eigener Art: er hat einen eigenen Pin, ist
+kein Slot von OUTPUTS und hält keinen Kanal von CHANNELS. Sein Pin tut eines
+von zwei Dingen, nie beides:
+
+- PWM (Pulsweitenmodulation): ein Servopuls aus dem PWM-Generator, der auch
+  die Standard-Servoports treibt.
+- PROGRAMMING: das Leitungsprotokoll von
+  [KST](#der-kst-programmierport).
+
+Die Page hält 4 Ports. Register 0 sagt, wie viele der Build hat; der
+Bring-up-Build hat 1. `shared/outputs/prog_port.c` hält die Regeln.
+
+| Register | Name | Zugriff | Hält |
+| ---: | --- | --- | --- |
+| 0 | `COUNT` | lesen | die Ports dieses Builds, 0 bis 4 |
+| 1 | `FLAGS` | lesen | Bit n: der PWM-Generator hat den Pin von Port n. Bit 8 + n: der gespeicherte Pin von Port n war beim Start vergeben, und der Port hält ihn nicht |
+| 2 | `PWM` | lesen, schreiben | Bit n: Port n gibt seinen Puls aus, solange die Bank scharf ist. Nicht gehalten |
+| 3 | `TARGET` | lesen, schreiben | was Sweep und Hold von SERVO kommandieren: 0 die Standard-Servoports, n + 1 Port n. Nicht gehalten |
+| 4 + 5 n | `PIN` | lesen, schreiben | der Koprozessor-GPIO (General-Purpose Input/Output) von Port n, oder 0xFFFF für keinen. Gehalten |
+| 5 + 5 n | `CMD` | lesen, schreiben | das Kommando, 0 bis 1000; ein höherer Wert wird als 1000 genommen. Nicht gehalten |
+| 6 + 5 n | `SLEW` | lesen, schreiben | wie der Slew von CHAN_CFG. Gehalten |
+| 7 + 5 n | `MIN_US` | lesen, schreiben | der Puls bei Kommando 0, 400 bis 2500 µs, Standard 1000. Gehalten |
+| 8 + 5 n | `MAX_US` | lesen, schreiben | der Puls bei Kommando 1000, 400 bis 2500 µs, Standard 2000. Gehalten |
+
+Der Puls eines Ports ist ein Kanal der Ausgangsbank: Port n ist Bankkanal
+9 + n, über den 8 Kanälen von CHANNELS und dem Kanal 8 des Prüfstandsgases.
+Scharfschalten, die Begrenzung auf 0 bis 1000, der Slew, die Endpunkte und
+der Kommando-Timeout von 500 ms sind die der Bank und wirken auf einen Port
+wie auf einen Standard-Servoport. Ein Port gibt einen Puls aus, solange die
+Bank scharf ist, sein `PWM`-Bit gesetzt ist, der Generator seinen Pin hat
+und KST den Port in PWM hält. Jeder Port läuft mit der Frame-Rate von SERVO
+(Register 0 von SERVO), oder mit 50 Hz, solange dieses 0 liest.
+
+Der Servotester erreicht einen Port auf drei Wegen:
+
+- `CMD` ist das manuelle Kommando. Es wird mindestens alle 500 ms
+  geschrieben, wie ein Kanal von CHANNELS.
+- `TARGET` richtet Sweep, Hold und RESUME von SERVO auf einen Port. Eine
+  Änderung von `TARGET` beendet einen laufenden oder gehaltenen Sweep wie
+  ein SWEEP von 0.
+- Ein Capture von SERVO_SENSE nennt einen Port mit Bit 11 seines
+  Arm-Registers (seit 4.13): die Bits 8 bis 10 sind dann der Port, kein
+  Ausgangskanal. Mit BAD_VALUE abgewiesen für einen Port, der keinen Puls
+  ausgibt. Ein Port, dessen Puls endet, beendet ein Capture, das nicht
+  fertig ist.
+
+Pins. Der Pin eines Ports ist nie der Pin eines Slots. Ein Schreiben von
+`PIN` wird mit BAD_VALUE abgewiesen für einen Pin, der reserviert ist,
+hinter GP47 liegt, einem Slot gehört, von SUPPLY, SENSE oder TONE gehalten
+wird, einem anderen Port gehört oder einen PWM-Slice oder ein
+Compare-Register mit dem Pin eines PWM-Slots teilt; ein Schreiben von
+OUTPUTS oder BIND, das einen Slot auf den Pin eines Ports oder im Silizium
+neben ihn legt, wird ebenso abgewiesen, und auch ein Schreiben von SUPPLY,
+SENSE oder TONE, das ihn nimmt. Kanäle. Der Kanalbereich eines Slots reicht
+nie in die Bank-Kanäle 9 bis 12 der Ports: ein Schreiben von OUTPUTS oder
+BIND mit einem solchen Slot wird mit BAD_VALUE abgewiesen, und ein
+gespeicherter Slot mit einem solchen Bereich startet ungebunden. Zwei Ports
+dürfen einen Slice teilen: beide
+laufen mit der einen Port-Rate. Ein `PIN` wird nicht geändert, solange die
+Bank scharf ist, das `PWM`-Bit des Ports gesetzt ist, er das `TARGET` ist
+oder KST nicht in PWM steht. `PWM` und `TARGET` nennen nur Ports, deren Pin
+der Generator hat. Ein Schreiben, das ein Register eines Ports erreicht, den
+der Build nicht hat, wird mit BAD_VALUE abgewiesen, ein Schreiben von
+Register 0 oder 1 mit READ_ONLY. Ein abgewiesenes Schreiben ändert nichts.
+
+Ein Koprozessor, der keinen Port gespeichert hat, hat Port 0 auf GP13, Pad
+17 des Bring-up-Moduls, und die anderen Ports ohne Pin. Der Slice-Partner
+von GP13, GP12, ist reserviert, und der Pin mit seinem Compare-Register,
+GP29, liegt nicht auf der Stiftleiste. GP13 ist deshalb kein Pin eines
+Slots, bis der `PIN` von Port 0 auf einen anderen Pin oder auf 0xFFFF
+geschrieben ist. Ein gespeicherter Pin, den beim Start ein Slot, SUPPLY,
+SENSE oder TONE hält, bleibt deren: der Port hält keinen Pin, und Bit 8 + n
+von `FLAGS` ist gesetzt, bis ein anderer `PIN` geschrieben ist.
+
+| Panel | Koprozessor | PROG (0x33) |
+| --- | --- | --- |
+| 4.13 | 4.13 | bedient |
+| 4.13 | 4.12 oder älter | der Koprozessor beantwortet eine Anfrage an 0x33 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 13 nichts dorthin |
+| 4.12 oder älter | 4.13 | das Panel liest und schreibt 0x33 nie: kein Port gibt einen Puls aus, und Port 0 hält GP13 |
+
+`test_prog_port` fährt die Page: jede Pin-Abweisung in beiden Richtungen,
+die Endpunkte bei 399, 400, 2500 und 2501 µs, eine Pin-Änderung unter einer
+scharfen Bank, einem gesetzten `PWM`-Bit und einem `TARGET`, 0 und 5 Ports
+an einem Modell mit 4 und einen gespeicherten Pin, der beim Start vergeben
+ist. Kein Puls eines Ports ist an Hardware gemessen.
+
 ### Der KST-Programmierport
 
-KST (0x32) ist neu in 4.12. Keine Page und kein Register wandert. Die Page
-ist der Programmierport für KST- und Chaservo-Servos, die ein Protokoll und
-einen Registersatz teilen. Ein Ausgangskanal zur Zeit verlässt PWM
-(Pulsweitenmodulation) und trägt das Programmierprotokoll aus
-[`protocols/kst`](../protocols/kst/README.md). Ein Kanal ist PWM oder
+KST (0x32) ist neu in 4.12 und nennt seit 4.13 einen Programmierport. Die
+Page fährt das Programmierprotokoll aus
+[`protocols/kst`](../protocols/kst/README.md) für KST- und Chaservo-Servos,
+die ein Protokoll und einen Registersatz teilen, auf einem Port von
+[PROG](#die-programmierports) zur Zeit. Ein Port ist in PWM oder in
 PROGRAMMING, nie beides: ein Servo im Programmiermodus folgt weiterhin
-PWM-Pulsen.
+PWM-Pulsen. Ein Standard-Servoport ist kein Programmierport, und ein
+Kommando, das einen nennt, wird abgewiesen.
 
 Die Session läuft auf dem Koprozessor mit dem Planer und den Grenzen des
 Moduls. Das Panel schreibt eine Operation und die Images, die sie braucht.
@@ -598,43 +691,108 @@ Es liest den Zustand, das Ergebnis und die 32 Register des Servos. Es sendet
 keinen Registerschreibzugriff. `shared/outputs/kst_port.c` hält die Regeln.
 Nichts wird im Flash gehalten: nach einem Neustart des Koprozessors steht
 der Port in PWM ohne Session und mit gelöschtem Bit 4 in Register 0, gleich
-in welchem Modus das Servo ist.
+in welchem Modus das Servo ist, und die Versorgung ist aus angefordert.
 
 Kein Frame ist an ein Servo gesendet worden. Der Port, die Page und das
-Modul des Panels laufen in der Host-Suite gegen ein Servo- und
-Leitungsmodell.
+Modul des Panels laufen in der Host-Suite gegen ein Servo-, Leitungs- und
+Versorgungsmodell.
 
-| Zustand | Wert | Der Pin des Kanals | Endet |
-| --- | ---: | --- | --- |
-| PWM | 0 | der PWM-Slot | wenn ENTER angenommen ist |
-| STOPPING | 1 | der PWM-Slot, ohne Puls: ein laufender Puls endet | nach 50 ms |
-| LOW | 2 | der Leitungstreiber, auf Low getrieben | nach 100 ms |
-| PROGRAMMING | 3 | der Leitungstreiber: Low, ein Frame oder Eingang für ein Antwortfenster | mit POWER_CYCLED; vor dem ersten Frame auch mit ABORT, einem Stopp oder einem fehlgeschlagenen Einstieg |
-| RAIL_OFF | 4 | der Leitungstreiber; die Servoschiene ist aus | nach 6000 ms; nur mit geschalteter Schiene |
-| RAIL_WAIT | 5 | der Leitungstreiber; die Schiene ist an | nach 3000 ms, nach PWM |
+| Zustand | Wert | Der Pin des Ports | Die Versorgung | Endet |
+| --- | ---: | --- | --- | --- |
+| PWM | 0 | der PWM-Generator | die des Panels, auf SUPPLY | wenn ENTER oder REBOOT angenommen ist |
+| STOPPING | 1 | der PWM-Generator, ohne Puls: ein laufender Puls endet | unverändert | nach 50 ms |
+| LOW | 2 | der Leitungstreiber, auf Low getrieben | für das Programmieren gesetzt, siehe unten | nach 100 ms und wenn die Versorgung wie angefordert liest |
+| PROGRAMMING | 3 | der Leitungstreiber: Low, ein Frame oder Eingang für ein Antwortfenster | an, vom Port gehalten | mit POWER_CYCLED oder REBOOT, und wenn die Versorgung ausgeht; vor dem ersten Frame auch mit ABORT, einem Stopp oder einem fehlgeschlagenen Einstieg |
+| RAIL_OFF | 4 | der Leitungstreiber, oder nach einem REBOOT in PWM der PWM-Generator ohne Puls | aus | 2000 ms nachdem die Versorgung aus liest |
+| RAIL_WAIT | 5 | wie RAIL_OFF | an, mit den Sollwerten, die sie hatte | 1000 ms nachdem die Versorgung an liest, nach PWM |
 
 Die Einstiegssequenz der Session hält die Leitung nach LOW weitere 100 ms
-auf Low. Ab LOW ist der Slot ungebunden. Jede Quelle eines PWM-Kommandos
-(das Panel, der Sweep, der automatische Test, der Sync) endet am Slot,
-keine erreicht also den Pin; die SERVO-Page nimmt ein solches Kommando
-weiterhin an. Ein Schreiben auf OUTPUTS, das einen Slot ändert, wird
-abgewiesen, solange der Port nicht in PWM steht, wie unter einer scharfen
-Bank, und der Koprozessor schreibt in dieser Zeit kein Flash.
+auf Low. Ab LOW hat der Generator den Pin nicht. Jede Quelle eines
+PWM-Kommandos (das Panel, der Sweep, der automatische Test) endet am
+Bankkanal des Ports, keine erreicht also den Pin; PROG und SERVO nehmen ein
+solches Kommando weiterhin an. Das `PWM`-Bit des Ports und `TARGET` bleiben
+über eine Session wie geschrieben, und der Puls ist zurück, wenn der Port
+wieder in PWM steht. Der Koprozessor schreibt kein Flash, solange der Port
+nicht in PWM steht.
 
-Nach dem ersten Frame kann das Servo im Programmiermodus sein, bis seine
-Versorgung aus war. Bit 4 von Register 0 sagt das, und der Kanal bleibt
-PROGRAMMING bis POWER_CYCLED. Das Bring-up-Modul hat keinen Schalter für
-eine Servoschiene: dort ist POWER_CYCLED das Wort des Bedieners, dass das
-Servo ohne Spannung war, Bit 10 liest 0, und RAIL_OFF und RAIL_WAIT werden
-nicht betreten. Die Servoversorgung am Bring-up-Prüfstand ist der PD mini,
-den das Panel auf der SUPPLY-Page schaltet; der Koprozessor weiß nicht,
-welche Last er speist, und schaltet ihn nicht für den Port.
+#### Die Versorgung
+
+Das Servo des Ports wird vom PD mini von SUPPLY (0x2A) versorgt. Bit 10 von
+Register 0 liest 1, solange ein PD mini antwortet; der Port schaltet ihn
+dann.
+
+ENTER nimmt die Programmierspannung und die Stromgrenze aus den
+Schreibregistern 26 und 27. Antwortet ein PD mini, wird ENTER mit
+SUPPLY_RANGE abgewiesen, außer die Spannung ist 1000 bis 8400 mV, der Strom
+50 bis 3000 mA und die Spannung mindestens 500 mV unter dem Eingang des PD
+mini. 8400 mV ist die höchste Servoschiene des IO-Boards. In LOW tut der
+Port dann eines von drei Dingen:
+
+- der Ausgang ist aus angefordert: die Sollwerte werden geschrieben und der
+  Ausgang wird eingeschaltet. Die Session beginnt 1000 ms nachdem der PD
+  mini an liest;
+- der Ausgang ist an, auf der Programmierspannung oder darunter: nichts wird
+  geschrieben;
+- der Ausgang ist an und darüber: die Spannung wird auf sie gesenkt. Die
+  Stromgrenze bleibt.
+
+Kein Schritt des Ports hebt die Spannung eines Ausgangs, der an ist, und das
+Verlassen des Programmierens stellt keine höhere Spannung wieder her, die
+ENTER gesenkt hat. Ein PD mini, der nicht innerhalb von 3000 ms wie
+angefordert liest, beendet ENTER mit Ergebnis 32: der Port steht in PWM, und
+ein Ausgang, den dieses ENTER eingeschaltet hat, ist wieder aus.
+
+POWER_CYCLED und REBOOT in PROGRAMMING, bei an angefordertem PD mini,
+schalten die Versorgung aus und ein: aus, RAIL_OFF für 2000 ms ab der
+Lesung, die sie aus zeigt, an mit den Sollwerten, die sie hatte, RAIL_WAIT
+für 1000 ms ab der Lesung, die sie an zeigt, dann PWM mit gelöschtem Bit 4.
+REBOOT wird auch in PWM angenommen, für ein Servo, das neu starten soll:
+derselbe Ablauf, ohne Puls am Port währenddessen. 2000 ms und 1000 ms sind
+die Werte des Eigentümers. Die Zeit, die ein KST-Servo ohne Spannung
+braucht, um den Programmiermodus zu verlassen, die Zeit, die es zum Starten
+braucht, und die Versorgungsspannung, die es im Programmiermodus annimmt,
+sind nicht gemessen. Ebenso wenig die Zeit, die der PD mini zum Schalten
+braucht.
+
+Antwortet kein PD mini, fasst der Port keine Versorgung an. Die Session
+läuft, Bit 10 liest 0, POWER_CYCLED ist das Wort des Bedieners, dass das
+Servo ohne Spannung war, und bringt den Port sofort nach PWM, und REBOOT
+wird mit NO_SUPPLY abgewiesen. REBOOT wird ebenso abgewiesen, solange der PD
+mini aus angefordert ist.
+
+Solange der Port nicht in PWM steht, ist Bit 11 der Flags von SUPPLY gesetzt
+(seit 4.13), und SUPPLY weist ein Schreiben seiner Register 4 bis 6, das den
+Ausgang einschaltet oder die Spannung hebt, mit BAD_VALUE ab. Ein Schreiben,
+das ihn ausschaltet oder die Spannung eines Ausgangs senkt, der aus ist,
+wird angenommen. Der Port schaltet den Ausgang nicht ein, solange eine eben
+geschriebene Verdrahtung der Versorgung noch nicht im Flash ist.
+
+Wo die Versorgung endet, wenn etwas ausfällt:
+
+| Ereignis | Die Versorgung | Der Port |
+| --- | --- | --- |
+| Der PD mini antwortet bei ENTER nicht | unberührt | die Session läuft wie an einem Prüfstand ohne einen |
+| Der PD mini antwortet nicht mehr oder liest in LOW nicht innerhalb von 3000 ms wie angefordert | aus angefordert, wenn dieses ENTER sie eingeschaltet hat, sonst an gelassen, auf der niedrigeren Spannung, wenn dieses ENTER sie gesenkt hat | PWM, Ergebnis 32 |
+| Die bereitgestellte Spannung ist außerhalb des Bereichs | unberührt | ENTER mit SUPPLY_RANGE abgewiesen |
+| Die Versorgung liest aus oder ist aus angefordert in PROGRAMMING (das Panel, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 2000 ms aus gehalten, nicht wieder eingeschaltet | die Operation endet, ein Frame auf der Leitung wird beendet; PWM mit gelöschtem Bit 4, Ergebnis 19 |
+| Die Versorgung liest nicht innerhalb von 3000 ms nach Beginn eines Aus-Ein-Ablaufs aus | aus angefordert | aus PROGRAMMING: wieder PROGRAMMING, Bits 4 und 5 bleiben, Ergebnis 32. Aus PWM: PWM, Ergebnis 32 |
+| Der Heartbeat ist verloren oder der Link still in RAIL_OFF | bleibt aus | PWM mit gelöschtem Bit 4, Ergebnis 19 |
+| Die Versorgung liest in RAIL_WAIT nicht innerhalb von 3000 ms an | aus angefordert | PWM, Ergebnis 32 |
+| Die Versorgung ist in RAIL_WAIT aus angefordert (das Panel, ein verlorener Heartbeat) | aus | PWM, Ergebnis 19 |
+
+Die Versorgung endet aus, wann immer kein Panel da ist, das sie ausschalten
+könnte: SUPPLY schaltet den PD mini aus, wenn der Heartbeat endet, und der
+Port schaltet nichts ein, solange dem Heartbeat nicht vertraut wird. Ein
+Servo ohne Spannung ist in keinem Modus; ein Port, der so nach PWM
+zurückkehrt, hat also Bit 4 gelöscht.
+
+#### Register
 
 Ein Lesen gibt diese Register:
 
 | Register | Name | Liest |
 | ---: | --- | --- |
-| 0 | `STATE` | Bits 0 bis 2 der Zustand. Bit 3 eine Operation läuft. Bit 4 ein Frame wurde gesendet, seit das Servo zuletzt ohne Spannung war. Bit 5 ein Stopp oder ein Abbruch hat die Session unterbrochen: READ_ALL kommt vor allem anderen. Bit 6 ein Image ist gelesen. Bit 7 die Session hält ein Backup. Bit 8 das Image hat das bekannte Layout. Bit 9 nur RESTORE wird angenommen. Bit 10 die Hardware schaltet die Servoschiene. Bit 11 die Register 16 bis 31 zeigen das Backup. Bits 12 bis 15 der Kanal |
+| 0 | `STATE` | Bits 0 bis 2 der Zustand. Bit 3 eine Operation läuft. Bit 4 ein Frame wurde gesendet, seit das Servo zuletzt ohne Spannung war. Bit 5 ein Stopp oder ein Abbruch hat die Session unterbrochen: READ_ALL kommt vor allem anderen. Bit 6 ein Image ist gelesen. Bit 7 die Session hält ein Backup. Bit 8 das Image hat das bekannte Layout. Bit 9 nur RESTORE wird angenommen. Bit 10 ein PD mini antwortet, und der Port schaltet die Versorgung des Servos. Bit 11 die Register 16 bis 31 zeigen das Backup. Bits 12 bis 15 der Programmierport |
 | 1 | `SEQ` | die `SEQ` des zuletzt angenommenen Kommandos; 0 beim Start |
 | 2 | `OP` | Bits 12 bis 15 die zuletzt gestartete Operation, Bits 0 bis 11 die Frames, die sie gesendet hat, gehalten bei 4095 |
 | 3 | `LINK_KS_RESULT` | Low-Byte das Ergebnis dieser Operation, 1 solange sie läuft. High-Byte der Grund, aus dem das zuletzt angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
@@ -643,7 +801,7 @@ Ein Lesen gibt diese Register:
 | 7, 8 | `BAD` | Bit n: Servoregister n hat keine 3 gleichen Lesungen in 5 |
 | 9 | `FP_RULES` | Bit n: Regel n des Layout-Fingerprints ist verletzt |
 | 10, 11 | `FP_REGS` | Bit n: Servoregister n weicht vom Fingerprint ab |
-| 12, 13 | `HALF_MIN_NS`, `HALF_MAX_NS` | die kürzeste und die längste Halbzelle, gemessen an den Antworten des Servos, seit der Port den Kanal genommen hat, ns; 0 vor der ersten Antwort |
+| 12, 13 | `HALF_MIN_NS`, `HALF_MAX_NS` | die kürzeste und die längste Halbzelle, gemessen an den Antworten des Servos, seit der Port den Pin genommen hat, ns; 0 vor der ersten Antwort |
 | 14, 15 | `DELAY_MIN_US`, `DELAY_MAX_US` | die letzte Flanke eines Lese-Frames bis zur ersten Flanke seiner Antwort, µs; 0 vor der ersten |
 | 16 bis 31 | `IMAGE` | Servoregister 2 k im Low-Byte von Register 16 + k, 2 k + 1 im High-Byte. Das zuletzt gelesene Image, oder das Backup, solange `VIEW` 1 ist; 0 solange es keines gibt |
 
@@ -651,7 +809,7 @@ Ein Schreiben sieht andere Register:
 
 | Register | Name | Nimmt |
 | ---: | --- | --- |
-| 0 | `CMD` | Bits 0 bis 3 die Operation, Bit 7 die Bestätigung eines ungeprüften Restore (nur RESTORE), Bits 8 bis 11 der Kanal; jedes andere Bit 0 |
+| 0 | `CMD` | Bits 0 bis 3 die Operation, Bit 6 gesetzt: das Kommando nennt einen Programmierport (seit 4.13), Bit 7 die Bestätigung eines ungeprüften Restore (nur RESTORE), Bits 8 bis 11 der Port; jedes andere Bit 0 |
 | 1 | `SEQ` | die `SEQ` der Page plus 1, modulo 65536 |
 | 2 | `KEY` | 0x57A5 für WRITE, RESTORE und RELEASE, sonst 0 |
 | 3 | `CRC` | die Prüfsumme über die Register 4 bis 24, für WRITE, RESTORE, RELEASE und VERIFY; für die anderen nicht angesehen |
@@ -659,18 +817,20 @@ Ein Schreiben sieht andere Register:
 | 20 bis 23 | `UNLOCK` | Low-Wort zuerst: die Felder, die ein WRITE über die editierbare Klasse hinaus ändern darf, Bit n für Feld n von `kst_field_id_t` |
 | 24 | `START_CRC` | die Prüfsumme über die 16 Register des Images, von dem das Panel geplant hat, wie das Lesen sie gab |
 | 25 | `VIEW` | 0: die Register 16 bis 31 des Lesens zeigen das zuletzt gelesene Image. 1: das Backup. Gilt ab dem Schreiben |
+| 26 | `SUPPLY_MV` | die Versorgungsspannung eines ENTER, mV (seit 4.13). Der Standard des Panels ist 5000 |
+| 27 | `SUPPLY_MA` | die Stromgrenze eines ENTER, das die Versorgung einschaltet, mA (seit 4.13) |
 
 Die Prüfsumme ist die CRC-16 (zyklische Redundanzprüfung) des Links,
 Startwert 0xFFFF, über das Low-Byte und dann das High-Byte jedes Registers
 (`link_kst_crc()`).
 
 Die Register 0 bis 3 sind das Kommando: ein Frame, geschrieben als genau
-diese 4 Register und ganz oder gar nicht angenommen. Die Register 4 bis 25
+diese 4 Register und ganz oder gar nicht angenommen. Die Register 4 bis 27
 werden in beliebigen Fenstern vor dem Kommando geschrieben. Ein Schreiben,
-das Register 26 oder höher erreicht, wird mit READ_ONLY abgewiesen, ein
+das Register 28 oder höher erreicht, wird mit READ_ONLY abgewiesen, ein
 Fenster, das die Register 0 bis 3 berührt und nicht genau sie ist, mit
 BAD_RANGE. Ein Kommando mit einem reservierten Bit, einer Operation
-außerhalb von 1 bis 8, der Bestätigung an einer anderen Operation als
+außerhalb von 1 bis 9, der Bestätigung an einer anderen Operation als
 RESTORE, einem `KEY`, der weder 0 noch 0x57A5 ist, oder einer `SEQ`, die
 nicht die der Page plus 1 ist, wird mit BAD_VALUE abgewiesen und ändert
 nichts. Der zuletzt angenommene Frame, noch einmal gesendet, wird quittiert
@@ -680,14 +840,15 @@ was aus ihm wurde, steht in `LINK_KS_RESULT`.
 
 | Operation | Wert | Tut |
 | --- | ---: | --- |
-| ENTER | 1 | in PWM: nimmt den Kanal und fährt die Einstiegssequenz. In PROGRAMMING: fährt die Einstiegssequenz noch einmal |
+| ENTER | 1 | in PWM: nimmt den Pin des Ports, setzt die Versorgung und fährt die Einstiegssequenz. In PROGRAMMING: fährt die Einstiegssequenz noch einmal |
 | READ_ALL | 2 | liest die 32 Register, jedes bis 3 von höchstens 5 Lesungen übereinstimmen. Das erste Image einer Session ist ihr Backup |
 | WRITE | 3 | plant vom gelesenen Image zum bereitgestellten Image und fährt den Plan: jeder Schreibzugriff wird zurückgelesen, und einer, der nicht greift, wird rückgängig gemacht |
 | RESTORE | 4 | fährt den Plan zurück zum bereitgestellten Backup. Die Session nimmt ihn an, wenn das bereitgestellte Image gleich dem Backup ist, das sie hält |
 | RELEASE | 5 | löst das Pairing |
 | VERIFY | 6 | liest alle Register und vergleicht sie mit dem bereitgestellten Image |
-| ABORT | 7 | beendet die laufende Operation. In STOPPING und LOW kehrt der Kanal nach PWM zurück. In jedem Zustand angenommen; Register 2 nennt es nicht |
-| POWER_CYCLED | 8 | das Servo war ohne Spannung: der Kanal kehrt nach PWM zurück, mit geschalteter Schiene nachdem der Port sie aus- und eingeschaltet hat |
+| ABORT | 7 | beendet die laufende Operation. In STOPPING und LOW kehrt der Port nach PWM zurück. In RAIL_OFF wird die Versorgung nicht wieder eingeschaltet, in RAIL_WAIT wird sie ausgeschaltet, und der Ablauf endet mit Ergebnis 19. In jedem Zustand angenommen; Register 2 nennt es nicht |
+| POWER_CYCLED | 8 | in PROGRAMMING: schaltet die Versorgung aus und ein und bringt den Port nach PWM. Antwortet kein PD mini oder ist er aus angefordert: das Wort des Bedieners, dass das Servo ohne Spannung war, sofort nach PWM |
+| REBOOT | 9 | schaltet die Versorgung aus und ein, in PROGRAMMING und in PWM (seit 4.13) |
 
 Das Ergebnis im Low-Byte von `LINK_KS_RESULT` ist das `kst_ses_t` der Session: 0
 fertig, 1 läuft, 4 kein Servo hat geantwortet, 5 nicht im Programmiermodus,
@@ -699,16 +860,15 @@ hat nicht gegriffen und nichts ist geändert, 14 ein Plan rückgängig
 gemacht, 15 ein Plan zum Teil rückgängig gemacht, 16 ein Register hat sich
 geändert, das der Plan nicht geschrieben hat, 17 das Image weicht nach dem
 Plan ab, 18 der Leitungstreiber ist ausgefallen oder ließ sich nicht
-öffnen, 19 abgebrochen.
+öffnen, 19 abgebrochen. 32 ist das eigene des Ports (seit 4.13): die
+Versorgung hat nicht rechtzeitig geschaltet.
 
 | Abweisung | Wert | Das Kommando hat nichts gestartet, weil |
 | --- | ---: | --- |
 | BUSY | 1 | eine Operation läuft oder der Port zwischen zwei Zuständen ist |
-| CHANNEL | 2 | der Kanal auf keinem gebundenen PWM-Slot liegt oder nicht der ist, den der Port hält |
-| THROTTLE | 3 | die Rolle des Kanals ein Gas ist |
-| NO_REPLY_PATH | 4 | der Pfad des Pins keine Antwort zum Pin zurückträgt |
+| PORT | 2 | der Build keinen solchen Programmierport hat, dem Kommando Bit 6 fehlt oder der Port nicht der in PROGRAMMING ist |
 | UNSAFE | 5 | dem Heartbeat nicht vertraut wird oder der Link still ist |
-| NOT_PROGRAMMING | 6 | der Port keinen Kanal hält |
+| NOT_PROGRAMMING | 6 | der Port in PWM steht |
 | NO_ENABLE | 7 | WRITE, RESTORE oder RELEASE ohne den Key |
 | STAGED | 8 | die Register 4 bis 24 nicht die Prüfsumme haben, die das Kommando nennt |
 | START | 9 | das gelesene Image nicht das ist, von dem das Panel geplant hat |
@@ -718,54 +878,90 @@ Plan ab, 18 der Leitungstreiber ist ausgefallen oder ließ sich nicht
 | PLAN_R00 | 13 | das Ziel in Servoregister 0x00 abweicht |
 | PLAN_PAIRING | 14 | ein WRITE in Servoregister 0x1D abweicht |
 | PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält |
+| NO_PIN | 16 | der Port keinen Pin hält, bei einem ENTER und bei einem REBOOT in PWM (seit 4.13) |
+| SUPPLY_RANGE | 17 | die bereitgestellte Versorgungsspannung oder der Strom außerhalb dessen liegt, was ENTER nimmt (seit 4.13) |
+| NO_SUPPLY | 18 | ein REBOOT, bei dem kein PD mini antwortet oder der PD mini aus angefordert ist (seit 4.13) |
 
-NO_ENABLE wird vor jedem anderen Grund geprüft. Das Panel sendet den Key
-nur, solange sein Schalter ENABLE WRITE TO SERVO an ist; ein Kommando, das
-den Koprozessor ohne ihn erreicht, schreibt also in keinem Zustand des
-Ports. Kein Bildschirm dieses Builds hält diesen Schalter.
+Die Werte 3 und 4 werden nicht gegeben. NO_ENABLE wird vor jedem anderen
+Grund geprüft. Das Panel sendet den Key nur, solange sein Schalter ENABLE
+WRITE TO SERVO an ist; ein Kommando, das den Koprozessor ohne ihn erreicht,
+schreibt also in keinem Zustand des Ports. Kein Bildschirm dieses Builds
+hält diesen Schalter.
 
-NO_REPLY_PATH gibt dieser Build nie: der Pin-Katalog hat kein Attribut für
-die Richtung des Pfads eines Pins, und jeder Pin des Bring-up-Moduls ist ein
-blanker GPIO (General-Purpose Input/Output). Ein Servo hinter einem Puffer,
-der nur ausgibt, beendet ENTER mit Ergebnis 4.
+Ein Programmierport ist per Definition bidirektional: sein Pin ist ein
+blanker GPIO, den der Leitungstreiber zwischen Ausgang und Eingang
+umschaltet. Ein Servo hinter einem Puffer, der nur ausgibt, beendet ENTER
+mit Ergebnis 4.
 
-Ein Stopp ist der Failsafe, der verlorene Heartbeat, der stille Link oder
-die entschärfte Bank. In STOPPING und LOW kehrt der Kanal mit Ergebnis 19
-nach PWM zurück. In PROGRAMMING endet die laufende Operation mit Ergebnis
-19: ein Frame auf der Leitung wird beendet, was höchstens 12 ms dauert, und
-kein weiterer beginnt. Der Pin ist danach auf Low getrieben oder Eingang.
-Ist in der Session ein Frame hinausgegangen, wird Bit 5 gesetzt, und bis
-ein READ_ALL gelungen ist, nimmt der Port nur ENTER, READ_ALL, ABORT und
-POWER_CYCLED. ABORT hat dieselbe Wirkung. Ein Entschärfen wird als Flanke
-gesehen: der Port stoppt einmal und nimmt wieder Kommandos, während die
-Bank entschärft bleibt. Solange dem Heartbeat nicht vertraut wird oder der
-Link still ist, beginnt kein Frame, und jede Operation außer ABORT und
-POWER_CYCLED wird mit UNSAFE abgewiesen.
+#### STOP, Entschärfen, Heartbeat-Verlust und Link-Verlust
+
+Der Port sieht drei Dinge. Ein Stopp ist die Flanke des Failsafe (der
+Heartbeat hat geendet oder der Link ist still geworden) oder die Flanke des
+Entschärfens der Bank. Unsicher ist die Zeit, in der dem Heartbeat nicht
+vertraut wird oder der Link still ist. Das dritte ist die Versorgung: SUPPLY
+schaltet den PD mini aus, wenn der Heartbeat endet, und das Panel schreibt
+den Ausgang von SUPPLY bei jedem STOP aus.
+
+Das STOP des Panels ist am Koprozessor deshalb drei Dinge: ein Entschärfen
+einer scharfen Bank, der Ausgang von SUPPLY auf 0 geschrieben und das
+Kommando ABORT aus `kst_link_abort()`.
+
+| Zustand | Ein Entschärfen allein | Das STOP des Panels | Heartbeat verloren, Link still |
+| --- | --- | --- | --- |
+| PWM | der Puls endet, wie an jedem Ausgang. Die Versorgung bleibt, wie sie ist | der Puls endet, und die Versorgung ist aus | der Puls endet. SUPPLY schaltet den PD mini aus |
+| STOPPING, LOW | der Port kehrt mit Ergebnis 19 nach PWM zurück. Eine Versorgung, die dieses ENTER eingeschaltet hat, wird ausgeschaltet; eine an vorgefundene bleibt an | dasselbe, und die Versorgung ist aus | dasselbe, und SUPPLY schaltet den PD mini aus |
+| PROGRAMMING | die laufende Operation endet mit Ergebnis 19: ein Frame auf der Leitung wird beendet, was höchstens 12 ms dauert, und kein weiterer beginnt. Der Pin ist danach auf Low getrieben oder Eingang. Nach einem ersten Frame wird Bit 5 gesetzt, und der Port bleibt PROGRAMMING; davor kehrt der Port nach PWM zurück. Die Versorgung bleibt an | die Operation endet ebenso. Die Versorgung ist aus: der Port hält sie 2000 ms aus und kehrt mit gelöschten Bits 4 und 5 und Ergebnis 19 nach PWM zurück. Antwortet kein PD mini, bleibt der Port PROGRAMMING mit gesetztem Bit 5 | wie das STOP des Panels |
+| RAIL_OFF | nichts: der Ablauf geht weiter | die Versorgung bleibt aus; nach den 2000 ms steht der Port mit Ergebnis 19 in PWM | wie das STOP des Panels |
+| RAIL_WAIT | nichts: der Ablauf geht weiter | die Versorgung wird ausgeschaltet; der Port steht mit Ergebnis 19 in PWM | wie das STOP des Panels |
+
+Solange Bit 5 gesetzt ist, nimmt der Port nur ENTER, READ_ALL, ABORT,
+POWER_CYCLED und REBOOT, bis ein READ_ALL gelungen ist. ABORT allein hat in
+STOPPING, LOW und PROGRAMMING die Wirkung eines Entschärfens. Ein
+Entschärfen wird als Flanke gesehen: der Port stoppt einmal und nimmt wieder
+Kommandos, während die Bank entschärft bleibt; ein Servo wird also an einem
+entschärften Prüfstand gelesen und geschrieben. Solange dem Heartbeat nicht
+vertraut wird oder der Link still ist, beginnt kein Frame, und jede
+Operation außer ABORT und POWER_CYCLED wird mit UNSAFE abgewiesen.
+
+Ein Link, der in RAIL_OFF verloren geht, lässt die Versorgung aus und den
+Port in PWM: ohne Panel am Link könnte niemand die Versorgung wieder
+ausschalten, und ein Servo, das 2000 ms ohne Spannung war, hat den
+Programmiermodus verlassen, wenn 2000 ms genügen, was nicht gemessen ist.
+Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 
 | Panel | Koprozessor | KST (0x32) |
 | --- | --- | --- |
-| 4.12 | 4.12 | bedient |
-| 4.12 | 4.11 oder älter | der Koprozessor beantwortet eine Anfrage an 0x32 mit BAD_PAGE; das Modul des Panels liest die Minor beim Link-up und sendet unter 12 nichts dorthin |
-| 4.11 oder älter | 4.12 | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
+| 4.13 | 4.13 | bedient |
+| 4.13 | 4.12 | die Page nennt dort einen Ausgangskanal; das Modul des Panels liest die Minor beim Link-up und sendet unter 13 nichts, kein Schreiben und kein Lesen |
+| 4.13 | 4.11 oder älter | keine Page: der Koprozessor beantwortet eine Anfrage an 0x32 mit BAD_PAGE, und das Panel sendet keine |
+| 4.12 | 4.13 | ein Kommando von 4.12 hat Bit 6 gelöscht und wird mit PORT abgewiesen; ein Schreiben auf Register 26 oder 27 kommt nie. Der Port bleibt in PWM |
+| 4.11 oder älter | 4.13 | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
 
-`shared/bench/kst_link.c` ist die Hälfte des Panels. Es stellt die Register
-bereit, sendet das Kommando mit der nächsten `SEQ`, liest die Register 0
-bis 3 alle 50 ms, solange eine Operation läuft, und sonst alle 500 ms (eine
-Anfrage und ein Daten-Frame, 0,31 ms Buszeit), und liest nach einer
-Operation die Register 4 bis 15, das Backup und das Image. Es sendet ein
-Kommando bis zu 3-mal noch einmal, wenn keine Antwort kommt, und liest
-`SEQ` nach einer Abweisung mit BAD_VALUE neu. Es weist WRITE, RESTORE und
-RELEASE ohne den Schalter des Aufrufers ab, bevor etwas gesendet wird. Kein
-Bildschirm dieses Builds ruft es auf; das Panel dieses Builds sendet also
-nichts an die Page.
+`shared/bench/kst_link.c` ist die Hälfte des Panels. Eine Anfrage nennt den
+Port und, für ENTER, Spannung und Strom der Versorgung. Es stellt die
+Register bereit, sendet das Kommando mit der nächsten `SEQ`, liest die
+Register 0 bis 3 alle 50 ms, solange eine Operation läuft oder der Port
+nicht in PWM steht, und sonst alle 500 ms (eine Anfrage und ein Daten-Frame,
+0,31 ms Buszeit), und liest nach einer Operation die Register 4 bis 15, das
+Backup und das Image. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
+keine Antwort kommt, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
+Es weist WRITE, RESTORE und RELEASE ohne den Schalter des Aufrufers ab,
+bevor etwas gesendet wird. `shared/bench/supply_link.c` nimmt ein Kommando,
+das der Port auf SUPPLY hinterlassen hat, als das angeforderte und schreibt
+sein eigenes nicht darüber (`supply_link_adopted()`). Kein Bildschirm dieses
+Builds ruft `kst_link` auf; das Panel dieses Builds sendet also nichts an
+KST oder PROG.
 
-`test_kst_port` fährt den Port und die Page gegen das Servomodell: jeden
-Übergang und jede Abweisung, einen Stopp in jedem Zustand und mitten in
-einem Frame, ein Schreiben ohne den Key, die Zähler an ihren Enden und
-jeden Timer über den Überlauf bei 2^32 ms. `test_kst_link` fährt das Modul
-des Panels durch den Dispatcher gegen den Port: ganze Sessions, verlorene
-Antworten, eine veraltete `SEQ`, einen Neustart des Koprozessors und einen
-4.11-Koprozessor.
+`test_kst_port` fährt den Port und die Page gegen das Servo- und das
+Versorgungsmodell: jeden Übergang und jede Abweisung, einen Stopp in jedem
+Zustand und mitten in einem Frame, ein Schreiben ohne den Key, einen PD
+mini, der fehlt, langsam ist, schweigt oder ablehnt, ein ABORT in RAIL_OFF
+und in RAIL_WAIT, die Versorgung an vorgefunden über, auf und unter der
+Programmierspannung, einen Link, der in RAIL_OFF und in RAIL_WAIT verloren
+geht, die Zähler an ihren Enden und jeden Timer über den Überlauf bei 2^32 ms. `test_kst_link` fährt das
+Modul des Panels durch den Dispatcher gegen den Port: ganze Sessions,
+verlorene Antworten, eine veraltete `SEQ`, einen Neustart des Koprozessors
+und einen 4.12- und einen 4.11-Koprozessor.
 
 ### Identifier
 
@@ -830,15 +1026,16 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x27 | ART_DATA | lesen, schreiben | das Bild selbst: Register 0 schreiben, um den Block zu nennen, dann die Page lesen. Register 0 liest den gerade bedienten Block zurück, Register 1 bis 31 tragen 62 Bytes davon. Ein Block rückt beim Lesen nicht vor, eine verlorene Antwort wird also erneut angefordert statt übersprungen |
 | 0x28 | PADS | lesen | die Pads, die keine Pins sind, je ein Register: die Pad-Nummer in 6 Bit, was es ist in 2 (0 kein Pad und die Liste endet, 1 Masse, 2 eine Versorgung, 3 keines von beiden) und die Spannung in 8 Bit zu Zehntelvolt. Null Volt bei einer Versorgung heißt, sie ist keine feste Spannung — das ist nicht dasselbe wie die 0 V einer Masse. 32 Slots, in Pad-Reihenfolge |
 | 0x29 | SERVO | lesen, schreiben | Register 0: die Frame Rate in Hz jedes PWM-Ausgangs, dessen erster Kanal die Rolle surface hat, 40 bis 560, oder 0 für die eigene Rate jedes Slots aus OUTPUTS; mit BAD_VALUE abgewiesen, und nichts ändert sich, wenn ein PWM-Slice damit zwei Raten hätte, und solange sie nicht 0 ist, ebenso ein Schreiben auf CHAN_CFG oder OUTPUTS, das das täte (seit 4.1). Register 1 bis 4, ein Frame: ein Sweep der Surfaces -- Kurve (0 gestoppt, 1 Rechteck, 2 Sinus, 3 Dreieck), Geschwindigkeit in Tausendstel Zyklen je Sekunde (50 bis 5000), Amplitude in Befehlseinheiten zu jeder Seite der Mitte (0 bis 500), Haltezeit an jedem Ende in ms (0 bis 5000); ein Sweep startet oder ändert sich nur, wenn alle vier zusammen geschrieben werden, sonst mit BAD_VALUE abgewiesen, und bei nicht scharfem Prüfstand mit NOT_ARMED; 0 in Register 1 allein hält ihn an, und 4 allein hält jede Surface dort, wo ihr Ausgang gerade ist, unter denselben Regeln für Disarm und 500 ms. Ein Sweep, der beim Beginn des Haltens läuft, behält seine Phase (seit 4.6): wie weit er in der Kurve war, und damit seinen Punkt, sein Verweilen und die erreichten Enden; einer, der seine Bewegungen gemacht hat, wird in der Mitte gehalten, auf der er endete. Ein Schreiben wird an der Page gemessen, wie der nächste Durchlauf des Koprozessors sie in diesem Moment hinterließe: ein Sweep nach seiner letzten Bewegung, 500 ms ohne Schreiben oder entschärft ist beendet, auch wenn das Schreiben vor dem Durchlauf bedient wird, der ihn beendet. 5 allein (RESUME, seit 4.6) setzt diesen Sweep ab der behaltenen Phase fort; die Surfaces werden sofort wieder entlang der Kurve angesteuert und fahren mit ihrer eigenen Rate von dort hin, wo sie gehalten wurden. RESUME wird mit BAD_VALUE abgewiesen, wenn keine Phase behalten ist -- beim Beginn des Haltens lief kein Sweep, oder das Halten endete durch ein Schreiben von 0, eine darübergeschriebene Kurve, ein Disarm, 500 ms ohne Schreiben oder einen Neustart --, und wenn Register 2 bis 5 nicht mehr lesen, was der angehaltene Sweep fährt; mit NOT_ARMED bei entschärftem Prüfstand. Ein Koprozessor mit 4.5 weist 5 mit BAD_VALUE ab. Register 5: wie viele Enden ein danach gestarteter Sweep erreicht, bevor er anhält, 0 für kein Ende. Register 6, nur lesen: die Enden, die der Sweep erreicht hat. Ein Sweep hält bei einem Schreiben von 0, bei einem Disarm und wenn er 500 ms nicht geschrieben wurde an und lässt jede Surface dort, wo ihr Ausgang gerade ist; Wiederholen hält seine Kurve am Laufen, und ein Sweep, der seine Bewegungen gemacht hat, startet durch Wiederholen nicht neu (seit 4.2). Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
-| 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des Koprozessors (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2 s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000 mV und 3000 mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400 ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann -- an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das nicht mehr antwortet, Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500 mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des Koprozessors gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
+| 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des Koprozessors (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2 s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000 mV und 3000 mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400 ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann -- an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das nicht mehr antwortet, Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500 mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird, seit 4.13 Bit 11 ein Programmierport hält die Register 4 bis 6: ein Schreiben, das den Ausgang einschaltet oder die Spannung hebt, wird mit BAD_VALUE abgewiesen, siehe [Der KST-Programmierport](#der-kst-programmierport)), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des Koprozessors gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
 | 0x2B | SENSE | lesen, schreiben | zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem Bus auf zwei Pins des Koprozessors, ein TI INA228 im Leistungspfad des ESC und ein TI INA3221 an der Servoversorgung (seit 4.7). Register 0 bis 3, ein Frame: Freigabe (Bit 0 INA228, Bit 1 INA3221, Bit 2 der Ausgangsencoder AS5600 seit 4.9), der SDA-GPIO, der SCL-GPIO und der Takt, 400 kHz und kein anderer Wert: bei 100 kHz dauert ein Lesezugriff 480 bis 750 µs, und der 1-ms-Zeitplan des Koprozessors passt nicht. Der Zeitplan liest INA3221 CH1 mit 1000 Hz, CH2 und CH3 mit 50 Hz oder für ein synchronisiertes Paar mit 1000 Hz, Strom und Spannung des INA228 mit je 500 Hz, seine Chip-Temperatur, Mask/Enable des INA3221 und das zurückgelesene Konfigurationsregister jedes Bauteils (seit 4.11) mit je 25 Hz und alles andere mit 50 Hz. Beide Module tragen Pull-ups an SDA und SCL, und die liegen parallel: der DAOKAI-INA3221 hat 10 kΩ nach VS (3,3 V); Wert und Schiene der Pull-ups des MATEK-INA228 sind unbekannt. Der Gesamtwert muss über etwa 1 kΩ bleiben: ein I2C-Ausgang zieht 3 mA bei 0,4 V, und (3,3 V − 0,4 V) / 3 mA sind 967 Ω. Unter 10 kΩ verkürzt er die Anstiegszeit: die Grenze von 300 ns bei 400 kHz erlaubt mit 10 kΩ allein 35 pF Buskapazität, mit weniger mehr. Die GPIO-Nummer von SDA ist modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach, das Paar eines I2C-Blocks (standardmäßig GP16 und GP17). Register 4 bis 7, ein Frame: die Adresse des INA228, 0x40 bis 0x4F (Standard 0x45, die des MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41); sein Shunt in µΩ, 50 bis 20000 (Standard 200); der Strom, auf den sein Bereich eingestellt ist, in 0,1 A, 10 bis 3000 (1,0 bis 300,0 A, das Auslegungsmaximum des Prüfstands; Standard 2048). Das Maximum wählt nur ADCRANGE: 1, solange die Shuntspannung dabei höchstens 40,96 mV beträgt, 0 bis 163,84 mV, und darüber wird das Schreiben abgewiesen. CURRENT_LSB ist der Schritt des Shunt-ADC geteilt durch den Shunt (78,125 nV oder 312,5 nV durch R), damit begrenzen CURRENT und die Shuntspannung gemeinsam, und SHUNT_CAL ist in beiden Bereichen 4096. Ein Shunt, dessen Vollausschlag im gewählten Bereich 2000 A übersteigt, wird ebenfalls abgewiesen; unter 81,92 µΩ gilt also nur ADCRANGE 1. Die Regel ist die des Treibers, `ina228_calibrate()`; Register 7 reserviert. Register 8 bis 11, ein Frame: die Adresse des INA3221, 0x40 bis 0x43 (Standard 0x40); sein Shunt in 0,1 mΩ, 50 bis 10000 (5 mΩ bis 1 Ω, Standard 1000, die 0,1 Ω, die bis 1,638 A messen); die gelesenen Kanäle, Bits 0..2 für CH1 bis CH3, mindestens einer, solange er freigegeben ist (Standard CH1); Register 11 reserviert. Die reservierten Register lesen 0 und nehmen nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, SDA und SCL nicht das Paar eines Blocks, was auch immer ENABLE hält, bei freigegebenem Bauteil ein Pin, der reserviert, an einen Ausgang gebunden oder von SUPPLY gehalten ist, beide Bauteile auf einer Adresse, solange beide freigegeben sind, und jede Änderung bei scharfem Prüfstand; ein Schreiben der geltenden Konfiguration wird angenommen. Ein Frame, der kein Paar ist, wird angenommen: ENABLE 0 mit SDA oder SCL 0, so schreibt ein Panel nicht gesetzte Pins. Die Pins gehören keinem Ausgang, solange eines der Bauteile freigegeben ist, und ein Schreiben auf OUTPUTS, das einen davon bindet, wird abgewiesen. Register 12 bis 25, nur lesen: Flags (Bit 0 INA228 online, Bit 1 seine letzte Identitätslesung war die eines INA228, Bit 2 an seiner Adresse antwortet etwas anderes, Bit 3 ein Strom lag im letzten 50-ms-Fenster oder seit dem Schärfen des Laufs am Ende seines Bereichs, Strom und Leistung in BENCH oder ihre Spitzen sind dann Grenzen und keine Werte; Bits 4 bis 6 dieselben drei für den INA3221; Bit 8 der Bus ist auf seinen Pins offen, Bit 9 SDA wird low gehalten und wird freigetaktet), die Adressen, die beim letzten Scan geantwortet haben (Bit n für 0x40 + n), DEVICE_ID des INA228 und Die-ID des INA3221 wie gelesen, fehlgeschlagene Transaktionen modulo 65536, die Chiptemperatur des INA228 in 0,1 °C (vorzeichenbehaftet) und DIAG_ALRT, seine Ladung in 0,01 mAh (vorzeichenbehaftet, 32 Bit, Register 19 und 20, niederwertiges zuerst) und Energie in 0,01 Wh (32 Bit, Register 21 und 22, niederwertiges zuerst) seit dem Schärfen des Laufs, die Telemetriespannung (10 mV) und der Telemetriestrom (10 mA) des ESC selbst und ihre Gültigkeitsbits (Bit 0 Spannung, Bit 1 Strom). Register 26 bis 30, nur lesen, seit 4.9: Flags, RAW ANGLE, MAGNITUDE, Zähler und Ruhezeit in ms des Ausgangsencoders (siehe unten). Register 31, nur lesen, seit 4.11: `RESETS`, die zurückgesetzt gefundenen Strommonitore, der INA228 im Low-Byte und der INA3221 im High-Byte, je modulo 256 ([Der Fenster-Ring](#der-fenster-ring)); ein Koprozessor mit 4.10 oder älter liest 0. Register 0 bis 11 werden im Flash des Koprozessors gehalten |
-| 0x2C | SERVO_SENSE | lesen, schreiben | die Kanäle des INA3221 und eine Bewegung, gemessen auf dem Takt des Koprozessors (seit 4.7). Register 0 bis 11, nur lesen, vier je Kanal ab CH1: mittlerer Strom (mA, vorzeichenbehaftet), höchster Strom (mA, vorzeichenbehaftet), mittlere Busspannung (mV) und niedrigste Busspannung (mV) über das letzte 50-ms-Fenster, die Spannung auf der Lastseite des Shunts. Register 12, nur lesen: die Fensternummer modulo 65536; ein Lesen beendet kein Fenster. Register 13, nur lesen: Bits 0..2 das Fenster eines Kanals enthält Messungen, Bits 4..6 eine davon lag am Ende des Bereichs (163,8 mV über dem Shunt), womit mittlerer und höchster Strom dieses Kanals Untergrenzen sind, Bit 7 dasselbe für die Messung der Bewegung. Register 14 bis 17, ein Frame: eine Messung -- Bit 7 gesetzt, der INA3221-Kanal in Bits 0..1, nur CH1 (2 und 3 werden abgewiesen; das Feld bleibt für einen Kanal, der später schnell genug gelesen wird), und in Bits 8..10 der Ausgangskanal (0 bis 7), dessen nächstes geändertes Kommando die Zeitmessung startet; der Haltestrom, bei dem die Bewegung endet, in mA, vorzeichenbehaftet, -32768 bis 32767 (seit 4.11; davor 0 bis 32767, ein größerer Wert abgewiesen); die Schwelle für Bewegung und das Band für Ankunft, je 1 bis 32767 mA. Ein Scharfschalten ist der ganze Frame und startet eine laufende Messung neu. 0 in Register 14 entschärft und wird nie abgewiesen; am Anfang des Frames geschrieben, werden die anderen drei nicht gespeichert. Mit BAD_VALUE abgewiesen: jedes andere Schreiben, das nicht der ganze Frame ist, andere Bits in Register 14, ein Wert außerhalb seines Bereichs, ein anderer Kanal als CH1 oder einer, den SENSE nicht liest, und ein Ausgangskanal, der keine Surface an einem PWM-Slot ist, den der Koprozessor gebunden hat (ein Pin, dessen Compare-Register ein anderer Pin hält, ist es nicht); mit NOT_ARMED bei entschärftem Prüfstand. Ein Prüfstand, der aufhört zu treiben, beendet eine nicht fertige Messung. Register 18 bis 24, nur lesen: der Zustand (0 idle, 1 scharf, 2 wartet auf Bewegung, 3 bewegt sich, 4 angekommen, 5 an einem Endanschlag eingeschwungen, 6 zu spät: Bewegung und keine Ankunft innerhalb von 3000 ms plus der Verzögerung des Strommessers, 7 unerkannt: keine Bewegung in dieser Zeit, 8 verloren: der INA3221 antwortet nicht mehr, oder binnen 3000 ms nach dem Scharfschalten kam keine PWM-Flanke), fertige Messungen modulo 65536, die Zeit vom PWM-Frame mit dem neuen Puls bis zur Bewegung und bis zur Ankunft in 0,1 ms, aufgelöst auf das Abtastintervall von CH1, 1 ms, höchster und mittlerer gefilterter Strom der Bewegung (mA, vorzeichenbehaftet) und die Zahl der Messungen darin. Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
+| 0x2C | SERVO_SENSE | lesen, schreiben | die Kanäle des INA3221 und eine Bewegung, gemessen auf dem Takt des Koprozessors (seit 4.7). Register 0 bis 11, nur lesen, vier je Kanal ab CH1: mittlerer Strom (mA, vorzeichenbehaftet), höchster Strom (mA, vorzeichenbehaftet), mittlere Busspannung (mV) und niedrigste Busspannung (mV) über das letzte 50-ms-Fenster, die Spannung auf der Lastseite des Shunts. Register 12, nur lesen: die Fensternummer modulo 65536; ein Lesen beendet kein Fenster. Register 13, nur lesen: Bits 0..2 das Fenster eines Kanals enthält Messungen, Bits 4..6 eine davon lag am Ende des Bereichs (163,8 mV über dem Shunt), womit mittlerer und höchster Strom dieses Kanals Untergrenzen sind, Bit 7 dasselbe für die Messung der Bewegung. Register 14 bis 17, ein Frame: eine Messung -- Bit 7 gesetzt, der INA3221-Kanal in Bits 0..1, nur CH1 (2 und 3 werden abgewiesen; das Feld bleibt für einen Kanal, der später schnell genug gelesen wird), und in Bits 8..10 der Ausgangskanal (0 bis 7), dessen nächstes geändertes Kommando die Zeitmessung startet, oder mit gesetztem Bit 11 (seit 4.13) der Programmierport in diesen Bits ([Die Programmierports](#die-programmierports)); der Haltestrom, bei dem die Bewegung endet, in mA, vorzeichenbehaftet, -32768 bis 32767 (seit 4.11; davor 0 bis 32767, ein größerer Wert abgewiesen); die Schwelle für Bewegung und das Band für Ankunft, je 1 bis 32767 mA. Ein Scharfschalten ist der ganze Frame und startet eine laufende Messung neu. 0 in Register 14 entschärft und wird nie abgewiesen; am Anfang des Frames geschrieben, werden die anderen drei nicht gespeichert. Mit BAD_VALUE abgewiesen: jedes andere Schreiben, das nicht der ganze Frame ist, andere Bits in Register 14, ein Wert außerhalb seines Bereichs, ein anderer Kanal als CH1 oder einer, den SENSE nicht liest, und ein Ausgangskanal, der keine Surface an einem PWM-Slot ist, den der Koprozessor gebunden hat (ein Pin, dessen Compare-Register ein anderer Pin hält, ist es nicht); mit NOT_ARMED bei entschärftem Prüfstand. Ein Prüfstand, der aufhört zu treiben, beendet eine nicht fertige Messung. Register 18 bis 24, nur lesen: der Zustand (0 idle, 1 scharf, 2 wartet auf Bewegung, 3 bewegt sich, 4 angekommen, 5 an einem Endanschlag eingeschwungen, 6 zu spät: Bewegung und keine Ankunft innerhalb von 3000 ms plus der Verzögerung des Strommessers, 7 unerkannt: keine Bewegung in dieser Zeit, 8 verloren: der INA3221 antwortet nicht mehr, oder binnen 3000 ms nach dem Scharfschalten kam keine PWM-Flanke), fertige Messungen modulo 65536, die Zeit vom PWM-Frame mit dem neuen Puls bis zur Bewegung und bis zur Ankunft in 0,1 ms, aufgelöst auf das Abtastintervall von CH1, 1 ms, höchster und mittlerer gefilterter Strom der Bewegung (mA, vorzeichenbehaftet) und die Zahl der Messungen darin. Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
 | 0x2D | TONE | lesen, schreiben | die Beeps eines ESC, gehört an einer Motorphase über einen Vorwiderstand und eine Z-Dioden-Klemme an einem GPIO des Koprozessors, gestempelt von einer PIO-State-Machine mit 26,7 ns (seit 4.8). Register 0 bis 3, ein Frame: Freigabe (Bit 0), der GPIO (Standard 22, Pad 29), der tiefste gehörte Ton in Hz (50 bis 2000, Standard 400) und der höchste (über dem tiefsten, bis 6900, Standard 6500). Register 4 bis 7, ein Frame: die Tonhöhenänderung in Prozent, die ohne Stille einen neuen Beep beginnt (0 trennt nur an Stille, höchstens 50, Standard 8), die Stille, die einen Beep beendet, in ms (1 bis 100 und mindestens die Periode des tiefsten Tons, Standard 3), die Tonperioden, die einen Beep ausmachen (1 bis 64, Standard 3), und Register 7 reserviert. Das reservierte Register liest 0 und nimmt nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, eine Kombination, die der Detektor ablehnt (eine Stille, die kürzer ist als die Periode des tiefsten Tons), und, solange der Tap freigegeben ist, ein GPIO hinter der Bank (63), reserviert, an einen Ausgang gebunden, von SENSE oder SUPPLY gehalten oder ein ADC-Pin (ADC: Analog-Digital-Wandler): GP26 bis GP29 des RP2350A und GP40 bis GP47 des RP2354B, die nicht fehlertolerant sind. Der GPIO gehört keinem Ausgang, solange der Tap freigegeben ist, und ein Schreiben auf OUTPUTS, SENSE oder SUPPLY, das ihn nimmt, wird abgewiesen. Eine Änderung wird bei scharfem wie bei unscharfem Prüfstand angenommen: der Tap ist ein Eingang und treibt nichts. Register 8 bis 12, nur lesen: Flags (Bit 0 die Erfassung läuft, Bit 1 der Tap ist freigegeben und sein Pin konnte nicht genommen werden, Bit 2 der Erfassungsring oder die FIFO der State Machine ist seit Beginn der Erfassung übergelaufen, Bit 3 eine Folge von Bursts läuft, Bit 4 das letzte Fenster enthielt einen Ton), die Fensternummer modulo 65536 (Fenster zu 8 ms), der Ton des letzten Fensters in 0,1 Hz (0 für keinen) und die Tonperioden darin, und die Nummer des neuesten Beeps. Der Koprozessor hält die letzten 64 Beeps und nummeriert sie von 1 bis 65535, dann wieder ab 1; die neueste Nummer ist vor dem ersten Beep 0. Register 13, EVT_SEL, ist das einzige beschreibbare Register nach Register 7 und wird nicht gespeichert: die Nummer des Beeps, den die Register 14 bis 21 zeigen. Ein Lesen verbraucht keinen Beep, eine auf dem Link verlorene Antwort verliert also nichts. Register 14 bis 21, nur lesen: noch einmal EVT_SEL, solange dieser Beep unter den 64 ist, sonst 0, wobei Register 15 bis 21 0 lesen; der erste Anstieg des Beeps in ms seit Beginn der Erfassung (32 Bit, Register 15 und 16, niederwertiges zuerst); seine Länge bis zur letzten Flanke in 0,1 ms; seine mittlere Tonhöhe in 0,1 Hz; seine Bursts; der Träger, mit dem er zerhackt war, in 100-Hz-Schritten (0 nicht zerhackt); Flags (Bit 0 er begann bei einer Tonhöhenänderung ohne Stille davor, Bit 1 er endete bei einer). Register 22 und 23, nur lesen: verlorene Beeps und Lows unter 500 ns, die der Detektor ignoriert hat, je modulo 65536. Der 8-µs-Hold-off der Erfassung entfernt jedes Low unter 8 µs, bevor der Detektor es sieht; Register 23 liest deshalb am Tap 0. Die Erfassung beginnt, wenn der Tap freigegeben wird oder sein Pin wechselt, und leert dann die 64. Register 0 bis 6 werden im Flash des Koprozessors gehalten, und der Tap startet beim Booten. Solange der Tap gesperrt ist, ist der Pin ein Eingang mit eingeschaltetem Pull-down (32 bis 86 kΩ), und der bleibt an, solange der Tap läuft |
 | 0x2E | BIND_CFG | lesen, schreiben | eine vorbereitete CHAN_CFG-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von CHAN_CFG. [Eine Bindung als Ganzes](#eine-bindung-als-ganzes) beschreibt die drei Pages |
 | 0x2F | BIND_OUT | lesen, schreiben | eine vorbereitete OUTPUTS-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von OUTPUTS |
 | 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist |
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
-| 0x32 | KST | lesen, schreiben | der Programmierport für KST- und Chaservo-Servos (seit 4.12). Ein Lesen gibt 32 Register: Zustand, Flags und Kanal, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 26: das Kommando in den Registern 0 bis 3, ein Frame, und das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25. [Der KST-Programmierport](#der-kst-programmierport) nennt die Regeln. Nichts wird gehalten |
+| 0x32 | KST | lesen, schreiben | das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der KST-Programmierport](#der-kst-programmierport) nennt die Regeln. Nichts wird gehalten |
+| 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des Koprozessors gehalten |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,
