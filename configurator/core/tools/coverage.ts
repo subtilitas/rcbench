@@ -13,7 +13,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** The files whose line coverage the README states, relative to core/. */
-export const MEASURED: ReadonlyArray<string> = ['resolve.ts', 'cond.ts'];
+export const MEASURED: ReadonlyArray<string> = ['resolve.ts', 'cond.ts', 'groups.ts'];
 
 export const BEGIN = '<!-- coverage:begin -->';
 export const END = '<!-- coverage:end -->';
