@@ -102,7 +102,7 @@ history is in git.
 
 ### Changed
 
-- **The KST write planner works in slices and a session plans its own
+- **The write planner for KST servos works in slices and a session plans its own
   writes.** `kst_plan_edit_begin()` and `kst_plan_restore_begin()` start a
   job in 176 bytes the caller holds, and `kst_plan_step(job, budget)`
   returns `KST_PLAN_BUSY` after `budget` to `budget + 9` units of work, a
@@ -133,7 +133,7 @@ history is in git.
   reaches 1,304 bytes of stack and a pass that plans 984. The time of a
   pass is not measured on hardware.
   ([Performance](docs/Performance.md#the-coprocessor))
-- **The KST write planner takes 488 bytes of stack, down from 1,272.**
+- **The write planner for KST servos takes 488 bytes of stack, down from 1,272.**
   Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
   the coprocessor image built with ARM GNU 14.2; 176 of them are the job
   state. The search over write

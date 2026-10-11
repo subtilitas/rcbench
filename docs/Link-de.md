@@ -99,7 +99,7 @@ Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder vo
 BIND_CFG, BIND_OUT und BIND ab 4.10, SERVO_WIN, `RESETS` von SENSE und ein
 vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11, KST ab 4.12, PROG, die
 Programmierports von KST, Flag-Bit 11 von SUPPLY und das Port-Bit von
-SERVO_SENSE ab 4.13. Ab 4.14 plant KST einen Schreibauftrag über mehrere
+SERVO_SENSE ab 4.13. Ab 4.14 plant der Programmierport einen Schreibauftrag über mehrere
 Durchläufe und meldet die Ergebnisse 33 bis 35; das Panel schreibt dafür
 nichts anders. Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
