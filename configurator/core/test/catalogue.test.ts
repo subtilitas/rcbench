@@ -22,6 +22,9 @@ const OUT_BIND = 'shared/outputs/out_bind.c';
 const SETTINGS = 'shared/settings/settings.c';
 const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
 
+/** Index of the first function that needs a part. Its id is `servo`. */
+const SERVO = CATALOGUE.functions.findIndex((f) => f.id === 'servo');
+
 function copy(): Catalogue {
   return structuredClone(CATALOGUE);
 }
@@ -131,9 +134,10 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
   assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 58 }, (_, i) => i + 1));
-  assert.equal(CATALOGUE.functions.length, 11);
+  assert.equal(CATALOGUE.functions.length, 21);
+  assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 10);
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 21);
+  assert.equal(CATALOGUE.checks.length, 25);
   assert.equal(CATALOGUE.stages.length, 5);
   assert.equal(CATALOGUE.safety.length, 7);
   assert.equal(CATALOGUE.release, '0.16.0');
@@ -246,7 +250,8 @@ test('a drawing is an SVG file without script, reference or raster', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board', 'osoyoo-labels',
+    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
+    'osoyoo-labels', 'profiles-state',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
@@ -257,7 +262,7 @@ test('every unknown of the data is a check entry of kind unknown', () => {
   );
   assert.deepEqual(
     CATALOGUE.functions.filter((f) => f.hardware === 'not-run').map((f) => f.id),
-    ['servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
+    ['interlock', 'stop', 'sweep', 'ppm', 'language', 'profiles', 'servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
   );
   // No part is without a stated role. The pins with one option value only are
   // the 2 supply pins of the INA228 board and the 2 minus poles of the module
@@ -280,7 +285,7 @@ test('ids: a repeated part id, a bad pattern and a wire number out of order are 
   reports(checkIds(twice), 'part.servo', /twice/);
 
   const pattern = copy();
-  pattern.functions[0]!.id = 'Servo_1';
+  pattern.functions[SERVO]!.id = 'Servo_1';
   reports(checkIds(pattern), 'function.Servo_1', /match/);
 
   const pin = copy();
@@ -398,12 +403,15 @@ test('a wire on a pin of one board variant requires that variant', () => {
 
 test('references: unknown parts and option values are reported', () => {
   const needs = copy();
-  needs.functions[0]!.needs = ['servo', 'gimbal'];
+  needs.functions.find((f) => f.id === 'servo')!.needs = ['servo', 'gimbal'];
   reports(checkRefs(needs), 'function.servo', /unknown part gimbal/);
 
+  const servo = (c: Catalogue): Catalogue['functions'][number] => c.functions.find((f) => f.id === 'servo')!;
   const empty = copy();
-  empty.functions[0]!.needs = [];
-  reports(checkRefs(empty), 'function.servo', /needs no part/);
+  servo(empty).needs = [];
+  assert.deepEqual(checkRefs(empty).filter((f) => f.id === 'function.servo'), []);
+  servo(empty).forces = { escPower: 'pd' };
+  reports(checkRefs(empty), 'function.servo', /needs no part and forces an option/);
 
   const adds = copy();
   adds.rules[0]!.adds = 'gimbal';
@@ -426,7 +434,7 @@ test('references: unknown parts and option values are reported', () => {
   reports(checkRefs(forces), 'function.stick', /escPower=mains/);
 
   const clash = copy();
-  clash.functions[0]!.forces = { escPower: 'battery' };
+  clash.functions[SERVO]!.forces = { escPower: 'battery' };
   reports(checkRefs(clash), 'function.stick', /another function forces/);
 
   const only = copy();
@@ -543,35 +551,35 @@ test('src: a broken repository anchor is reported', () => {
   const tree = fakeTree(CATALOGUE);
 
   const path = copy();
-  path.functions[0]!.src = { kind: 'repo', path: 'docs/Gone.md', line: 3, tag: 'v0.16.0' };
+  path.functions[SERVO]!.src = { kind: 'repo', path: 'docs/Gone.md', line: 3, tag: 'v0.16.0' };
   reports(checkSrc(path, tree).findings, 'function.servo', /does not exist/);
 
   const line = copy();
-  line.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2001, tag: 'v0.16.0' };
+  line.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2001, tag: 'v0.16.0' };
   reports(checkSrc(line, tree).findings, 'function.servo', /past the end/);
-  line.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2000, tag: 'v0.16.0' };
+  line.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2000, tag: 'v0.16.0' };
   const lastLine = [...ANCHOR_TEXTS, { path: 'STATUS.md', line: 2000, has: 'text' }];
   assert.deepEqual(checkSrc(line, tree, lastLine).findings, []);
 
   const zero = copy();
-  zero.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 0, tag: 'v0.16.0' };
+  zero.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 0, tag: 'v0.16.0' };
   reports(checkSrc(zero, tree).findings, 'function.servo', /no line number/);
 
   const blank = copy();
   const emptyLine = fakeTree(CATALOGUE, (files) => {
     files.set('STATUS.md', ['# Status', '', 'text']);
   });
-  blank.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 2, tag: 'v0.16.0' };
+  blank.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2, tag: 'v0.16.0' };
   reports(checkSrc(blank, emptyLine).findings, 'function.servo', /empty line/);
-  blank.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 4, tag: 'v0.16.0' };
+  blank.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 4, tag: 'v0.16.0' };
   reports(checkSrc(blank, emptyLine).findings, 'function.servo', /STATUS\.md:4 is past the end of the file \(3 lines\)/);
 
   const tag = copy();
-  tag.functions[0]!.src = { kind: 'repo', path: 'STATUS.md', line: 3, tag: 'v0.15.0' as 'v0.16.0' };
+  tag.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 3, tag: 'v0.15.0' as 'v0.16.0' };
   reports(checkSrc(tag, tree).findings, 'function.servo', /v0\.15\.0/);
 
   const absolute = copy();
-  absolute.functions[0]!.src = { kind: 'repo', path: '/etc/passwd', line: 1, tag: 'v0.16.0' };
+  absolute.functions[SERVO]!.src = { kind: 'repo', path: '/etc/passwd', line: 1, tag: 'v0.16.0' };
   reports(checkSrc(absolute, tree).findings, 'function.servo', /no repository path/);
 });
 
@@ -583,7 +591,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   );
 
   // A line that is present and holds another row: no text is named for it.
-  moved.functions[0]!.src = at(106);
+  moved.functions[SERVO]!.src = at(106);
   reports(checkSrc(moved, tree).findings, 'function.servo', /Building\.md:106 names no text of 4 characters or more/);
   reports(checkSrc(moved, null).findings, 'function.servo', /Building\.md:106 names no text/);
   reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
@@ -681,7 +689,7 @@ test('src: guide, photo and page rules', () => {
     ['part.servo.SIG', (c: Catalogue) => { c.parts[4]!.pins[0]!.src = { kind: 'page' }; }],
     ['pad.1', (c: Catalogue) => { c.pads[0]!.src = { kind: 'page' }; }],
     ['wire.1', (c: Catalogue) => { c.wires[0]!.src = { kind: 'page' }; }],
-    ['function.servo', (c: Catalogue) => { c.functions[0]!.src = { kind: 'page' }; }],
+    ['function.servo', (c: Catalogue) => { c.functions[SERVO]!.src = { kind: 'page' }; }],
     ['stage.1', (c: Catalogue) => { c.stages[0]!.src = { kind: 'page' }; }],
     ['safety.0', (c: Catalogue) => { c.safety[0]!.src = { kind: 'page' }; }],
     ['notInRelease.kst', (c: Catalogue) => { c.notInRelease[0]!.src = { kind: 'page' }; }],
@@ -876,7 +884,7 @@ test('functions: one that cannot be enabled on its own is reported', () => {
   assert.deepEqual(checkFunctions(CATALOGUE), []);
   // A need that no step adds: the id is unknown to the catalogue.
   const c = copy();
-  c.functions[0]!.needs = ['servo', 'gimbal'];
+  c.functions[SERVO]!.needs = ['servo', 'gimbal'];
   reports(checkFunctions(c), 'function.servo', /not enabled; missing: gimbal/);
 
   // A forced value outside the option is reported by the reference check.

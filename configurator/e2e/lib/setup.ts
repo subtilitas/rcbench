@@ -26,6 +26,8 @@ export const SEL = {
   print: '#b-print',
   reset: '#b-reset',
   pdf: '#b-pdf',
+  baseRows: '#choose ul.base li',
+  doesBase: '#does-base li',
   pdfStatus: '#pdfmsg',
   pdfLink: '#pdflink',
   partsHead: '#h-parts',
@@ -39,7 +41,10 @@ export const SEL = {
   lang: (lang: Lang): string => `.lang button[data-lang="${lang}"]`,
 } as const;
 
-export const FUNCTIONS: string[] = CATALOGUE.functions.map((f) => f.id);
+/** The functions with a tick: those that need a part. */
+export const FUNCTIONS: string[] = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+/** The functions that need no part: a list without controls, in no hash. */
+export const BASE_FUNCTIONS: string[] = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
 export const OWNED: string[] = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 
 /** A selection from the parts of one: what is left out is empty or the default. */

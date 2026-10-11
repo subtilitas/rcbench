@@ -5,7 +5,7 @@ import type { Page, TestInfo } from '@playwright/test';
 import type { Lang, Selection } from '../../contract.ts';
 import { OPTION_SETS } from '../../core/test/property/space.ts';
 import { CATALOGUE, resolve } from '../../src/core.ts';
-import { FUNCTIONS, OWNED, hashOf, openHash, selectionOf } from '../lib/setup.ts';
+import { BASE_FUNCTIONS, FUNCTIONS, OWNED, hashOf, openHash, selectionOf } from '../lib/setup.ts';
 
 export type Case = {
   name: string;
@@ -29,13 +29,13 @@ function largest(): Selection {
 
 /**
  * A link that names every id of the list "not in a release" as a function and
- * as a part, next to the first function of a release and the first function
+ * as a part, next to the first function of a release and the first function with a part
  * that has not run on hardware. No id of the list is a function or a part of
  * the catalogue: the page ignores each and reports it.
  */
 function notInRelease(): Case {
   const listed = CATALOGUE.notInRelease.map((n) => n.id);
-  const notRun = CATALOGUE.functions.find((f) => f.hardware === 'not-run')?.id;
+  const notRun = CATALOGUE.functions.find((f) => f.hardware === 'not-run' && f.needs.length > 0)?.id;
   const functions = [FUNCTIONS[0] as string, ...(notRun ? [notRun] : [])];
   return {
     name: 'not in a release',
@@ -50,6 +50,13 @@ export const SETUPS: Case[] = [
   ...FUNCTIONS.map((id) => ({ name: `function ${id}`, selection: selectionOf({ functions: [id] }), ignored: [] })),
   { name: 'largest', selection: largest(), ignored: [] },
   notInRelease(),
+  // A link that names the functions that need no part: the page shows the setup of the other ids and writes a hash without them.
+  {
+    name: 'functions without a part in the link',
+    selection: selectionOf({ functions: [FUNCTIONS[0] as string] }),
+    hash: `#v=1&f=${[...BASE_FUNCTIONS, FUNCTIONS[0] as string].join(',')}`,
+    ignored: [],
+  },
 ];
 
 /** Loads the page with the link of a case and waits for the drawing. */

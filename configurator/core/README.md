@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 11 functions, 6 rules, 21 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 21 functions of which 10 need no part, 6 rules, 25 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the parts they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
@@ -43,7 +43,7 @@ The order of work:
 4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
 5. Rules, once each, in array order.
 6. Wires and check entries whose condition holds.
-7. Functions: `enabled` is true when no needed part is missing and every forced option holds.
+7. Functions: `enabled` is true when no needed part is missing and every forced option holds. A function with `needs: []` runs on the panel and the coprocessor alone and is enabled in every setup.
 
 `conflicts` is always empty: the data holds no pair of parts that exclude each
 other.
@@ -159,14 +159,14 @@ The 7 pin rules:
 The suite runs 2 full sweeps and 1 seeded sample through the resolver:
 
 - 2048 sets of owned parts times 8 option combinations: 16384 setups.
-- 2048 sets of functions times 8 option combinations: 16384 setups.
+- 2048 sets of the 11 functions that need a part times 8 option combinations: 16384 setups.
 - 2000 mixed selections from a fixed seed.
 
 Each setup is checked for: the same result on a second call, no exception, no
 pin of a part on two nets, no power wire on a signal pad, every wire end a
 declared pin of a part that is present, catalogue order of every output array.
 The sweep refuses a catalogue with more than 16 selectable parts or 16
-functions.
+functions that need a part.
 
 `test/groups.test.ts` runs every removal the data file allows:
 
@@ -232,10 +232,10 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 - Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.16.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, T-plug of the PD mini.
-- Functions with the state "not run on hardware": servo current, angle, ESC power, stick programming, tap, emergency stop.
+- Functions with the state "not run on hardware": ARM, DISARM and heartbeat interlock, STOP command, servo sweep and frame rates, PPM signal, interface language, ESC profile list, servo current, angle, ESC power, stick programming, tap, emergency stop. The check entries `interlock-state`, `language-state`, `profiles-state` and `bind-state` state what the docs of release 0.16.0 say on 4 of the functions that need no part.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
 - The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. With this module the data holds no direct wire between the minus of the source and the minus of the ESC: wire 56 (battery) or wire 57 (PD mini) ends on the pin BAT− of the module and wire 58 runs from the pin ESC− to the ESC. The wires 15 and 23 belong to the MATEK board and to a setup without the sensor. The check entry `ina228-xt90-pads` states the pads and the 2 rails.
 - INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the coprocessor. A connection between the minus output of the PD mini and GND of the coprocessor is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
-- 7 check entries of kind `unknown` state each open point in the text of a setup.
+- 8 check entries of kind `unknown` state each open point in the text of a setup.

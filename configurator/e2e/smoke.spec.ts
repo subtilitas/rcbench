@@ -3,11 +3,12 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
-import { STRINGS } from '../src/i18n.ts';
+import { STRINGS, t } from '../src/i18n.ts';
 import { watchErrors as watch } from './lib/watch.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+/** The functions with a tick: those that need a part. */
+const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const BASE_WIRES = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }).wires.length;
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
@@ -64,6 +65,32 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
+    test('the base setup lists the functions that need no part, in both languages', async ({ page }) => {
+      const seen = watch(page);
+      const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+      for (const lang of ['en', 'de'] as const) {
+        await open(page, `#v=1&l=${lang}`);
+        await expect(page.locator('#g-base legend')).toHaveText(STRINGS.gBase[lang === 'en' ? 0 : 1]);
+        await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
+        await expect(page.locator('#g-base input')).toHaveCount(0);
+        for (const fn of base) {
+          await expect(page.locator(`#f-${fn.id}`)).toHaveCount(0);
+          await expect(page.locator('#result')).toContainText(fn.name[lang]);
+        }
+        const empty = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
+        await expect(page.locator('.sum p')).toHaveText(t(lang, 'sum', { p: empty.parts.length, w: empty.wires.length, f: base.length }));
+        await expect(page.locator('#result h4')).toHaveText([CATALOGUE.baseFunction[lang]]);
+        await fits(page);
+      }
+      // A tick keeps the list and adds the second heading.
+      await open(page, '#v=1&f=servo');
+      await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
+      await expect(page.locator('#result h4')).toHaveCount(2);
+      await expect(page.locator('#does-base li')).toHaveCount(base.length);
+      for (const fn of base) await expect(page.locator('#result')).toContainText(fn.name.en);
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
     test('the smallest and the full selection fit the viewport', async ({ page }) => {
       const seen = watch(page);
       await open(page, '#v=1&f=servo');
@@ -91,7 +118,7 @@ for (const size of SIZES) {
       await page.locator('#f-servo').check();
       await expect(page).toHaveURL(/#v=1&f=servo$/);
       await expect(page.locator('#f-servo')).toBeFocused();
-      await expect(page.locator('#live')).toHaveText(/^\d+ parts, \d+ wires, 1 function\.$/);
+      await expect(page.locator('#live')).toHaveText(/^\d+ parts, \d+ wires, 11 functions\.$/);
       const rows = await page.locator('table.wires tbody tr').count();
       expect(rows).toBeGreaterThan(BASE_WIRES);
 
@@ -226,6 +253,20 @@ for (const size of SIZES) {
       await expect(page.locator('.msg')).toHaveCount(0);
       await open(page, `#v=1&f=${'servo,'.repeat(5000)}`);
       await expect(page.locator('.msg.err')).toHaveCount(1);
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
+    test('a link that names a function without a tick keeps no hidden id', async ({ page }) => {
+      const seen = watch(page);
+      await open(page, '#v=1&f=link,servo,profiles');
+      await expect(page.locator('.msg')).toHaveCount(0);
+      await expect(page.locator('#f-servo')).toBeChecked();
+      await expect(page.locator('#f-link')).toHaveCount(0);
+      await page.locator('#f-esc').check();
+      await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=servo,esc');
+      await page.locator('#f-servo').uncheck();
+      await page.locator('#f-esc').uncheck();
+      await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1');
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 

@@ -5,11 +5,14 @@
 // selections and random input, from a generator with a fixed seed. A failure
 // names the selection or the input, and for a sampled case the seed.
 //
-//  1. parse(format(s)) is s, and format(parse(h)) is h for a hash the page writes.
+//  1. parse(format(s)) is s without the functions that need no part, and
+//     format(parse(h)) is h for a hash the page writes.
 //  2. format does not depend on the order or the repeats of the ids.
 //  3. A hash the page writes fits the limits of the parser.
 //  4. parse never throws, and its result is a well-formed selection.
 //  5. The resolver accepts every parse result without throwing.
+//  6. A function that needs no part is in no hash, and the setup is the same
+//     with and without its id in the selection.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -31,6 +34,9 @@ const sorted = (s: Selection): Selection => ({
   functions: [...s.functions].sort(), owned: [...s.owned].sort(), options: { ...s.options },
 });
 
+/** The selection as a hash carries it: without the functions that need no part. */
+const written = (s: Selection): Selection => ({ ...s, functions: s.functions.filter((id) => !SPACE.base.includes(id)) });
+
 function assertRoundTrip(selection: Selection, where: string, random: () => number): void {
   for (const lang of LANGS) {
     for (const start of LANGS) {
@@ -42,7 +48,7 @@ function assertRoundTrip(selection: Selection, where: string, random: () => numb
       const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
       assert.equal(parsed.badVersion, false, where);
       assert.deepEqual(parsed.unknown, [], where);
-      assert.deepEqual(sorted(parsed.selection), sorted(selection), where);
+      assert.deepEqual(sorted(parsed.selection), sorted(written(selection)), where);
       assert.equal(parsed.lang, lang === start ? null : lang, where);
       assert.equal(formatHash(parsed.selection, lang, start, CATALOGUE), hash, where);
       // The parser reads the hash with and without the number sign.
@@ -119,6 +125,37 @@ test(`1 to 3: ${MIXED} mixed selections from the generator survive format and pa
     cases += 1;
   }
   assert.equal(cases, MIXED);
+});
+
+test('6: a function that needs no part is in no hash and changes no setup', () => {
+  assert.ok(SPACE.base.length > 0);
+  const cut = (selection: Selection): unknown => {
+    const setup = resolve(CATALOGUE, selection);
+    return {
+      parts: setup.parts.map((p) => p.part.id),
+      wires: setup.wires.map((w) => w.n),
+      enabled: setup.functions.filter((f) => f.enabled).map((f) => f.fn.id),
+      options: setup.options.map((o) => [o.key, o.value]),
+      ignored: setup.ignored,
+    };
+  };
+  for (const options of OPTION_SETS) {
+    const empty: Selection = { functions: [], owned: [], options: { ...options } };
+    // Every setup runs each of them, the one without a selection too.
+    const enabled = resolve(CATALOGUE, empty).functions.filter((f) => f.enabled).map((f) => f.fn.id);
+    for (const id of SPACE.base) assert.ok(enabled.includes(id), `${id} is not enabled without a selection`);
+    for (const functions of [[], SPACE.functions.slice(0, 1), SPACE.functions]) {
+      const without: Selection = { functions: [...functions], owned: [], options: { ...options } };
+      const named: Selection = { ...without, functions: [...SPACE.base, ...functions] };
+      assert.equal(formatHash(named, 'en', 'en', CATALOGUE), formatHash(without, 'en', 'en', CATALOGUE));
+      for (const id of SPACE.base) assert.ok(!formatHash(named, 'en', 'en', CATALOGUE).split(/[=,&]/).includes(id), id);
+      assert.deepEqual(cut(named), cut(without));
+      // A link that names them is read without a notice.
+      const parsed = parseHash(`#v=1&f=${named.functions.join(',')}`, DEFAULT_OPTIONS);
+      assert.deepEqual(parsed.unknown, []);
+      assert.deepEqual(resolve(CATALOGUE, parsed.selection).ignored, []);
+    }
+  }
 });
 
 test('1: format leaves out what the catalogue does not hold, and parse gives it back as written', () => {

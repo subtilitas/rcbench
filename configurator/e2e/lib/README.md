@@ -22,7 +22,7 @@ test('the servo setup', async ({ page }) => {
 | File | Exports | Does |
 |---|---|---|
 | `setup.ts` | `SEL` | The selectors of the page. A change of the markup is made here once. |
-| | `FUNCTIONS`, `OWNED` | The function ids and the ids of the parts under "Parts you own", from the catalogue. |
+| | `FUNCTIONS`, `BASE_FUNCTIONS`, `OWNED` | The ids of the functions with a tick, of the functions that need no part, and of the parts under "Parts you own", from the catalogue. |
 | | `selectionOf(part)` | A selection from `functions`, `owned` and `options`. What is left out is empty or the default. |
 | | `hashOf(selection, lang?)` | The hash the page writes for a selection, with its number sign. With `lang`, the hash ends in `&l=<lang>`. |
 | | `openHash(page, hash)`, `openSetup(page, selection, lang?)` | Loads the page from `about:blank` and waits for the drawing. |

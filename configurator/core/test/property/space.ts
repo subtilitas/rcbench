@@ -1,6 +1,8 @@
 // The selection space of the property tests, and the generator of the sample.
 //
-// Functions: every subset under every option combination.
+// Functions that need a part: every subset under every option combination.
+// A function that needs no part is in every setup; a selection names it in
+// the sample alone.
 // Parts you own: every subset under every option combination.
 // Both together: 2^(functions + parts) * options is past the limit, so a
 // sample from a generator with a fixed seed stands in for it.
@@ -51,7 +53,10 @@ export function shuffled<T>(list: ReadonlyArray<T>, random: () => number): T[] {
 }
 
 export type Space = {
+  /** The functions that need a part: the ones a selection turns on. */
   functions: string[];
+  /** The functions that need no part. */
+  base: string[];
   selectable: string[];
   /** Cases of the function space: subsets times option combinations. */
   functionCases: number;
@@ -62,12 +67,14 @@ export type Space = {
 };
 
 export function spaceOf(catalogue: Catalogue): Space {
-  const functions = catalogue.functions.map((f) => f.id);
+  const functions = catalogue.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+  const base = catalogue.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
   const selectable = catalogue.parts.filter((p) => p.selectable).map((p) => p.id);
   const functionCases = 2 ** functions.length * OPTION_SETS.length;
   const partCases = 2 ** selectable.length * OPTION_SETS.length;
   return {
     functions,
+    base,
     selectable,
     functionCases,
     partCases,
@@ -108,7 +115,7 @@ export function* sample(space: Space, count: number, seed: number): Generator<Ca
   };
   for (let index = 0; index < count; index++) {
     const selection: Selection = {
-      functions: shuffled(pick(space.functions), random),
+      functions: shuffled(pick([...space.functions, ...space.base]), random),
       owned: shuffled(pick(space.selectable), random),
       options: { ...(OPTION_SETS[Math.floor(random() * OPTION_SETS.length)] as Options) },
     };

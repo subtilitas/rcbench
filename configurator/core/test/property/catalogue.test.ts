@@ -173,7 +173,8 @@ function referenceProblems(c: Catalogue): string[] {
   for (const fn of c.functions) {
     for (const id of fn.needs) if (!parts.has(id)) out.push(`function ${fn.id} needs the part ${id}`);
     for (const p of optionProblems(fn.forces)) out.push(`function ${fn.id} forces: ${p}`);
-    if (fn.needs.length === 0) out.push(`function ${fn.id} needs no part`);
+    // A function that needs no part is in every setup: it has no option to force.
+    if (fn.needs.length === 0 && Object.keys(fn.forces ?? {}).length > 0) out.push(`function ${fn.id} needs no part and forces an option`);
   }
   for (const rule of c.rules) {
     if (!parts.has(rule.adds)) out.push(`rule ${rule.id} adds the part ${rule.adds}`);
@@ -304,6 +305,8 @@ test('the rules report a catalogue that breaks them', () => {
 
   assert.deepEqual(referenceProblems({ ...CATALOGUE, functions: [{ ...fn, needs: ['nopart'] }] }), ['function ' + fn.id + ' needs the part nopart']);
   assert.deepEqual(referenceProblems({ ...CATALOGUE, rules: [{ ...rule, adds: 'nopart' }] }), [`rule ${rule.id} adds the part nopart`]);
+  assert.deepEqual(referenceProblems({ ...CATALOGUE, functions: [{ ...fn, needs: [], forces: { escPower: 'pd' } }] }), [`function ${fn.id} needs no part and forces an option`]);
+  assert.deepEqual(referenceProblems({ ...CATALOGUE, functions: [{ ...fn, needs: [] }] }), []);
   assert.deepEqual(referenceProblems({ ...CATALOGUE, rules: [{ ...rule, when: { not: { has: 'nopart' } } }] }), [`rule ${rule.id}: the condition names the part nopart`]);
   assert.deepEqual(referenceProblems({ ...CATALOGUE, rules: [{ ...rule, when: { opt: 'escPower', is: 'mains' } }] }), [`rule ${rule.id}: the condition names escPower = mains`]);
   assert.deepEqual(referenceProblems({ ...CATALOGUE, wires: [{ ...wire, a: 'pad.99' }] }), [`wire ${wire.n}: "pad.99" is no pad`]);

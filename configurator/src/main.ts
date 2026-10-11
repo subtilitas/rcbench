@@ -5,7 +5,7 @@ import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts'
 import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
-import { formatHash, parseHash, reportIds } from './hash.ts';
+import { formatHash, parseHash, reportIds, shareHash } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { optionsOf } from './names.ts';
 import { chooser, deselectText } from './view/chooser.ts';
@@ -38,9 +38,12 @@ function tryResolve(sel: Selection): Setup | null {
   }
 }
 
-/** The selection reduced to ids the catalogue knows. */
+/** The ids of the functions that need no part. They have no tick and are in no selection. */
+const BASE_IDS: ReadonlySet<string> = new Set(CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id));
+
+/** The selection reduced to ids the catalogue knows and the page offers a tick for. */
 function known(sel: Selection): Selection {
-  const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id));
+  const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id && f.needs.length > 0));
   const owned = sel.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable));
   return { functions, owned, options: { ...sel.options } };
 }
@@ -55,9 +58,15 @@ function readHash(): void {
   const setup = tryResolve(parsed.selection);
   selection = known(parsed.selection);
   const dropped = [...parsed.selection.functions, ...parsed.selection.owned]
-    .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
+    .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
   const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
   if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
+}
+
+/** The link the PDF prints: the address of the page without the id of a function that has no tick. */
+function shareUrl(): string {
+  const at = location.href.indexOf('#');
+  return at < 0 ? location.href : location.href.slice(0, at) + shareHash(location.href.slice(at), DEFAULT_OPTIONS, CATALOGUE);
 }
 
 function writeHash(): void {
@@ -113,7 +122,7 @@ function render(focusId?: string): void {
   const pan = byId('pan');
   if (pan) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
   updatePanHint();
-  syncPdf(lang, location.href);
+  syncPdf(lang, shareUrl());
   if (focusId) byId(focusId)?.focus({ preventScroll: true });
   // The question opens under its control; it is brought into view with its 2 answers.
   if (focusId === 'rm-no') byId('rmwarn')?.scrollIntoView({ block: 'nearest' });
@@ -231,7 +240,7 @@ document.addEventListener('click', (event) => {
     keepPart();
   } else if (el.id === 'b-pdf') {
     const setup = tryResolve(selection);
-    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, location.href);
+    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, shareUrl());
   } else if (el.id === 'b-reset') {
     selection = base();
     notices = [];

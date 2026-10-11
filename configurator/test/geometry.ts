@@ -161,7 +161,8 @@ export type Sample = { selection: Selection; setup: Setup; key: string };
 export function sweep(core: Core, catalogue: Catalogue = core.CATALOGUE): Sample[] {
   const seen = new Map<string, Sample>();
   const selections: Selection[] = [];
-  const fnSets = subsets(catalogue.functions.map((f) => f.id));
+  // The functions that need no part add no part and no wire.
+  const fnSets = subsets(catalogue.functions.filter((f) => f.needs.length > 0).map((f) => f.id));
   const partSets = subsets(catalogue.parts.filter((p) => p.selectable).map((p) => p.id));
   for (const options of OPTION_SETS) {
     for (const functions of fnSets) selections.push({ functions, owned: [], options });

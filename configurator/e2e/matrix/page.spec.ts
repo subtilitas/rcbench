@@ -5,7 +5,7 @@
 import { expect, test } from '@playwright/test';
 
 import { CATALOGUE } from '../../src/core.ts';
-import { SEL, expectSetup } from '../lib/setup.ts';
+import { BASE_FUNCTIONS, SEL, expectSetup } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
 import { SETUPS, cellOf, openCase } from './setups.ts';
 
@@ -21,6 +21,11 @@ for (const setup of SETUPS) {
     expect(shown.notices.map((n) => n.kind)).toEqual(setup.ignored.length > 0 ? ['note'] : []);
     for (const id of setup.ignored) expect(shown.notices[0]?.text).toContain(id);
     await expect(page.locator('#choose .nir li')).toHaveCount(CATALOGUE.notInRelease.length);
+    // The functions that need no part: a row each, without a control, and each among what the setup does.
+    await expect(page.locator(SEL.baseRows)).toHaveCount(BASE_FUNCTIONS.length);
+    await expect(page.locator(`${SEL.baseRows} :is(input, button, a, select, [tabindex])`)).toHaveCount(0);
+    await expect(page.locator(SEL.doesBase)).toHaveCount(BASE_FUNCTIONS.length);
+    for (const id of BASE_FUNCTIONS) expect(shown.hash.split(/[=,&]/)).toEqual(setup.hash?.split(/[=,&]/).includes(id) ? expect.arrayContaining([id]) : expect.not.arrayContaining([id]));
     await expect(page.locator(SEL.drawing)).toHaveAttribute('aria-label', /\S/);
 
     await expectNoHorizontalScroll(page);
