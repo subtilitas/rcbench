@@ -6,6 +6,7 @@ import type { Lang, SignalClass, Text } from '../contract.ts';
 export const RELEASE = '0.16.0';
 
 const S = {
+  title: ['rcbench bench configurator', 'rcbench Prüfstand-Konfigurator'],
   rel: [`For release ${RELEASE} of rcbench`, `Für Release ${RELEASE} von rcbench`],
   langGroup: ['Language / Sprache', 'Language / Sprache'],
   sections: ['Sections', 'Abschnitte'],
@@ -41,7 +42,9 @@ const S = {
   always: ['Always needed', 'Immer nötig'],
   neededBy: ['Needed by: ', 'Nötig für: '],
   youOwn: ['You own it', 'Vorhanden'],
-  lockHint: ['Untick that function to remove this part.', 'Zum Entfernen die Funktion abwählen.'],
+  lockFn: ['Untick that function to remove this part.', 'Zum Entfernen die Funktion abwählen.'],
+  lockOpt: ['Choose the other variant to remove this part.', 'Zum Entfernen die andere Variante wählen.'],
+  lockRule: ['It stays while the part that needs it is in the setup.', 'Es bleibt, solange das Teil, das es braucht, im Aufbau ist.'],
   does: ['This setup does', 'Dieser Aufbau kann'],
   wiring: ['Wiring', 'Verdrahtung'],
   legend: ['Line patterns', 'Linienmuster'],

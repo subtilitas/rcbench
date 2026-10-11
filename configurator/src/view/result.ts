@@ -83,10 +83,11 @@ function checks(view: View): string {
 function order(view: View): string {
   const { lang, catalogue, setup } = view;
   const last = Math.max(...catalogue.stages.map((s) => s.n));
-  // A drawn part without pins has no wire that could place it in a stage. It belongs to the last stage.
+  // A drawn part that no wire of the setup ends on has no stage from a wire. It belongs to the last stage.
+  const wired = new Set(setup.wires.flatMap((w) => [w.a, w.b ?? '']).map((ref) => ref.split('.')[0]));
   const loose = setup.parts
     .map((r) => r.part)
-    .filter((p) => p.slot.column !== 'none' && p.id !== 'copro' && p.pins.length === 0)
+    .filter((p) => p.slot.column !== 'none' && p.id !== 'copro' && !wired.has(p.id))
     .map((p) => tx(lang, p.short));
   let h = `<h3>${esc(t(lang, 'order'))}</h3>`;
   for (const stage of catalogue.stages) {

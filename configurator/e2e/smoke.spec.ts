@@ -3,6 +3,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
+import { STRINGS } from '../src/i18n.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
@@ -219,9 +220,19 @@ for (const size of SIZES) {
       await open(page, '#v=2&f=servo');
       await expect(page.locator('.msg.err')).toHaveCount(1);
       await expect(page.locator('#f-servo')).not.toBeChecked();
+      await expect(page.locator('.msg.err')).toHaveText(STRINGS.badV[0]);
+      await page.locator('.lang button[data-lang=de]').click();
+      await expect(page.locator('.msg.err')).toHaveText(STRINGS.badV[1]);
       await open(page, '#v=1&f=servo,warp&p=<img src=x onerror=alert(1)>');
       await expect(page.locator('.msg')).toHaveCount(1);
       await expect(page.locator('.msg')).toContainText('warp');
+      const english = await page.locator('.msg').textContent();
+      await page.locator('.lang button[data-lang=de]').click();
+      await expect(page.locator('.msg')).toHaveCount(1);
+      await expect(page.locator('.msg')).toContainText('warp');
+      await expect(page.locator('.msg')).not.toHaveText(english ?? '');
+      await page.locator('.lang button[data-lang=en]').click();
+      await expect(page.locator('.msg')).toHaveText(english ?? '');
       await expect(page.locator('#result img')).toHaveCount(0);
       await expect(page.locator('#f-servo')).toBeChecked();
       await page.locator('#f-esc').check();
@@ -282,8 +293,12 @@ test.describe('German browser', () => {
     await open(page, '');
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
     await expect(page.locator('#h-choose')).toHaveText('Was soll der Prüfstand tun?');
+    await expect(page).toHaveTitle(STRINGS.title[1]);
+    await expect(page.locator('h1')).toHaveText(STRINGS.title[1]);
     await page.locator('.lang button[data-lang=en]').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page).toHaveTitle(STRINGS.title[0]);
+    await expect(page.locator('h1')).toHaveText(STRINGS.title[0]);
     await expect(page).toHaveURL(/#v=1&l=en$/);
   });
 });

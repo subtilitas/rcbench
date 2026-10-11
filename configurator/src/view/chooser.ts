@@ -105,6 +105,13 @@ function variantGroups(view: View): string {
   return h;
 }
 
+const LOCK: Array<['function' | 'option' | 'rule', Key]> = [['function', 'lockFn'], ['option', 'lockOpt'], ['rule', 'lockRule']];
+
+/** How a locked part leaves the setup: one sentence per kind of reason that holds it. */
+export function lockHint(part: ResolvedPart, lang: Lang): string {
+  return LOCK.filter(([kind]) => part.addedBy.some((r) => r.kind === kind)).map(([, key]) => t(lang, key)).join(' ');
+}
+
 function ownedRows(view: View): string {
   const { lang, catalogue, setup } = view;
   let h = '';
@@ -113,7 +120,7 @@ function ownedRows(view: View): string {
     const r = setup.parts.find((x) => x.part.id === part.id);
     const locked = r !== undefined && r.derived && !r.ownedTick;
     const role = part.role ? tx(lang, part.role) : '';
-    const sub = locked && r ? `${reasonText(r, view)} ${t(lang, 'lockHint')}` : role;
+    const sub = locked && r ? `${reasonText(r, view)} ${lockHint(r, lang)}` : role;
     h += `<label class="opt"${locked ? ' data-locked' : ''}><input type="checkbox" id="p-${esc(part.id)}" data-p="${esc(part.id)}"`
       + `${r ? ' checked' : ''}${locked ? ' aria-disabled="true"' : ''}>`
       + `<span><b>${esc(tx(lang, part.name))}</b></span><small>${esc(sub)}</small></label>`;

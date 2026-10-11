@@ -50,6 +50,8 @@ test('every key is used by the page', () => {
 
 test('the static texts of index.html equal the string table', () => {
   const html = read('index.html');
+  assert.ok(html.includes(`<title>${STRINGS.title[0]}</title>`));
+  assert.ok(html.includes(`<h1 id="title">${STRINGS.title[0]}</h1>`));
   assert.ok(html.includes(`lang="en">${STRINGS.noscript[0]}<`));
   assert.ok(html.includes(`lang="de">${STRINGS.noscript[1]}<`));
   assert.ok(html.includes(`aria-label="${STRINGS.langGroup[0]}"`));

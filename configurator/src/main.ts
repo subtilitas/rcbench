@@ -16,7 +16,8 @@ const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT
 
 let selection: Selection = base();
 let lang: Lang = startLang;
-let notices: Notice[] = [];
+/** Notices of the link the page opened with. Each is built in the language of the render. */
+let notices: Array<(l: Lang) => Notice> = [];
 
 /** x in drawing px that the pan box centres on first: midway between the panel's pins and pad 1. */
 const PAN_START = 351;
@@ -42,13 +43,13 @@ function readHash(): void {
   const parsed = parseHash(location.hash, DEFAULT_OPTIONS);
   lang = parsed.lang ?? startLang;
   notices = [];
-  if (parsed.badVersion) notices.push({ kind: 'err', text: t(lang, 'badV') });
+  if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
   const setup = tryResolve(parsed.selection);
   selection = known(parsed.selection);
   const dropped = [...parsed.selection.functions, ...parsed.selection.owned]
     .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
   const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
-  if (unknown.length > 0) notices.push({ kind: 'note', text: t(lang, 'badId', { x: reportIds(unknown) }) });
+  if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
 }
 
 function writeHash(): void {
@@ -63,6 +64,9 @@ function updatePanHint(): void {
 
 function render(focusId?: string): void {
   document.documentElement.lang = lang;
+  document.title = t(lang, 'title');
+  const title = byId('title');
+  if (title) title.textContent = t(lang, 'title');
   const rel = byId('rel');
   if (rel) rel.textContent = t(lang, 'rel');
   for (const b of document.querySelectorAll<HTMLElement>('.lang button')) {
@@ -86,7 +90,7 @@ function render(focusId?: string): void {
   if (setup) {
     const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
     choose.innerHTML = chooser(view, ownOpen);
-    res.innerHTML = result(view, location.href, notices);
+    res.innerHTML = result(view, location.href, notices.map((n) => n(lang)));
     sub = `<small>${t(lang, 'bSub', { p: setup.parts.length, w: setup.wires.length })}</small>`;
   } else {
     choose.innerHTML = `<h2 id="h-choose">${t(lang, 'choose')}</h2>`;
