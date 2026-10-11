@@ -24,7 +24,7 @@
 <rect x="250" y="66.5" width="40" height="11" rx="2" fill="url(#est-gold)" stroke="#6b5a1e" stroke-width=".6" filter="url(#est-s2)"/><circle cx="283" cy="72" r="2.8" fill="#efebe3" stroke="#6b5a1e" stroke-width=".6"/>
 <rect x="250" y="96.5" width="24" height="7" rx="2" fill="url(#est-gold)" stroke="#6b5a1e" stroke-width=".6" filter="url(#est-s2)"/><circle cx="267" cy="100" r="1.6" fill="#efebe3" stroke="#6b5a1e" stroke-width=".6"/>
 <rect x="250" y="122.5" width="40" height="11" rx="2" fill="url(#est-gold)" stroke="#6b5a1e" stroke-width=".6" filter="url(#est-s2)"/><circle cx="283" cy="128" r="2.8" fill="#efebe3" stroke="#6b5a1e" stroke-width=".6"/>
-<text id="est-lbl-NC1" x="332" y="58" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">NC-Fahne 1</text>
+<text id="est-lbl-NC1" x="332" y="58" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">C, äußere Fahne</text>
 <text x="282" y="104" font-size="11" font-weight="600" fill="#8a8f97" text-anchor="start">NO</text>
-<text id="est-lbl-NC2" x="332" y="152" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">NC-Fahne 2</text>
+<text id="est-lbl-NC2" x="332" y="152" font-size="13" font-weight="600" fill="#24262b" text-anchor="end">NC, äußere Fahne</text>
 </svg>

@@ -5,6 +5,7 @@ import { CATALOGUE } from '../../core/catalogue.ts';
 import { checkAll, checkContrast, checkDrift, checkPins, checkRecord, checkSvg, checkWires, filesOf, malformed } from '../check.ts';
 import type { Files, Finding } from '../check.ts';
 import type { Anchors } from '../generate.ts';
+import { colourOf } from '../wires.ts';
 
 const clone = (): Catalogue => structuredClone(CATALOGUE) as Catalogue;
 const good = filesOf(CATALOGUE);
@@ -175,6 +176,18 @@ test('2 wires of 1 colour on neighbouring pins are a finding', () => {
   const f = checkWires(c, anchors());
   has(f, 'neighbour', /wires 1 and 2 end on the neighbouring pins .* and are both ochre/);
   assert.deepEqual(ids(f), ['neighbour']);
+});
+
+test('2 plus wires on neighbouring pins are no finding, a signal in the colour of its neighbour is', () => {
+  // Wires 28 and 30 end on VIN1+ and VIN1- of the INA3221: both supply plus, both red.
+  const c = clone();
+  assert.deepEqual(ids(checkWires(c, anchors())), []);
+  const colours = c.wires.filter((w) => w.n === 28 || w.n === 30).map((w) => colourOf(w));
+  assert.deepEqual(colours, ['red', 'red']);
+  // Wires 26 and 27 end on SDA and SCL of the same board. On 1 class they share a colour.
+  c.wires.find((w) => w.n === 27)!.cls = 'sda';
+  c.wires.find((w) => w.n === 27)!.net = 'sda2';
+  has(checkWires(c, anchors()), 'neighbour', /wires 26 and 27 end on the neighbouring pins .* and are both blue/);
 });
 
 test('a colour below 3:1 on a page background is a finding, per background', () => {

@@ -364,7 +364,8 @@ function ina228Xt90(d: Dwg): void {
   d.add(d.pin('BAT', 12, 108, 'W', 48, 113, { f: INK, sz: 14, a: 'middle' }));
   d.add(d.pin('ESC', 408, 108, 'E', 372, 113, { f: INK, sz: 14, a: 'middle' }));
   // minus rail: the lower contacts, the shunt sits in it; the board marks plus and minus at the battery side
-  d.add(d.text(48, 167, 'BAT−', { f: INK, sz: 14, a: 'middle' }), d.text(372, 167, 'ESC−', { f: INK, sz: 14, a: 'middle' }));
+  d.add(d.pin('BATN', 12, 162, 'W', 48, 167, { f: INK, sz: 14, a: 'middle' }));
+  d.add(d.pin('ESCN', 408, 162, 'E', 372, 167, { f: INK, sz: 14, a: 'middle' }));
   d.add(`<circle cx="140" cy="88" r="5" fill="none" stroke="${SILK}" stroke-width="1"/>`, d.text(140, 91.2, '+', { sz: 9, a: 'middle' }));
   d.add(`<circle cx="140" cy="190" r="5" fill="none" stroke="${SILK}" stroke-width="1"/>`, d.text(140, 193.2, '−', { sz: 9, a: 'middle' }));
   // sensor chip and header with the print of the board: L A V G 5
@@ -373,7 +374,7 @@ function ina228Xt90(d: Dwg): void {
   const print = ['L', 'A', 'V', 'G', '5'];
   // L = SCL, A = SDA, V = supply of the chip, G = ground. Hole 5 is the 5 V output of the
   // regulator that is not fitted: no pin, no wire.
-  const ids = ['SCL', 'SDA', d.has('V3') ? 'V3' : 'V5', 'G', null];
+  const ids = ['SCL', 'SDA', 'V3', 'G', null];
   d.add(`<rect x="170" y="213" width="148" height="22" rx="1" fill="none" stroke="${SILK}" stroke-width="1.2"/>`);
   xs.forEach((x, i) => {
     d.add(d.th(x, 224, 7.5, { dim: i === 4, under: '#8e959d' }));

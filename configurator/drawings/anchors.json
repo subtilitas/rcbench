@@ -1209,8 +1209,8 @@
      "side": "E",
      "labelId": "est-lbl-NC1",
      "label": {
-      "en": "NC tab 1",
-      "de": "NC-Fahne 1"
+      "en": "C, outer tab",
+      "de": "C, äußere Fahne"
      }
     },
     "NC2": {
@@ -1219,8 +1219,8 @@
      "side": "E",
      "labelId": "est-lbl-NC2",
      "label": {
-      "en": "NC tab 2",
-      "de": "NC-Fahne 2"
+      "en": "NC, outer tab",
+      "de": "NC, äußere Fahne"
      }
     }
    }
@@ -1422,6 +1422,26 @@
       "de": "ESC+"
      }
     },
+    "BATN": {
+     "x": 12,
+     "y": 162,
+     "side": "W",
+     "labelId": "ixt-lbl-BATN",
+     "label": {
+      "en": "BAT−",
+      "de": "BAT−"
+     }
+    },
+    "ESCN": {
+     "x": 408,
+     "y": 162,
+     "side": "E",
+     "labelId": "ixt-lbl-ESCN",
+     "label": {
+      "en": "ESC−",
+      "de": "ESC−"
+     }
+    },
     "SCL": {
      "x": 184,
      "y": 224,
@@ -1442,14 +1462,14 @@
       "de": "SDA"
      }
     },
-    "V5": {
+    "V3": {
      "x": 244,
      "y": 224,
      "side": "S",
-     "labelId": "ixt-lbl-V5",
+     "labelId": "ixt-lbl-V3",
      "label": {
-      "en": "5V",
-      "de": "5V"
+      "en": "V",
+      "de": "V"
      }
     },
     "G": {
@@ -1700,8 +1720,8 @@
      "side": "E",
      "labelId": "pnl-lbl-J8S",
      "label": {
-      "en": "J8 GPIO6",
-      "de": "J8 GPIO6"
+      "en": "J8 GPIO6 (print AD)",
+      "de": "J8 GPIO6 (Aufdruck AD)"
      }
     },
     "CANH": {

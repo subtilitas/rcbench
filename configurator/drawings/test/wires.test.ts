@@ -4,7 +4,7 @@ import { CATALOGUE } from '../../core/catalogue.ts';
 import { generate } from '../generate.ts';
 import type { DrawingRecord } from '../generate.ts';
 import {
-  BACKGROUNDS, BY_CLASS, BY_NET, MIN_RATIO, PALETTE, colourOf, endPoints, luminance, neighbours, ratio, wireRatio,
+  BACKGROUNDS, BY_CLASS, BY_NET, MINUS, MINUS_NETS, MIN_RATIO, PALETTE, PLUS, PLUS_NETS, colourOf, endPoints, luminance, neighbours, ratio, wireRatio,
   withoutWirePoint,
 } from '../wires.ts';
 
@@ -94,9 +94,48 @@ test('every wire of the catalogue has a colour; the lead of a component has none
   assert.ok(CATALOGUE.wires.some((w) => w.kind === 'component'));
 });
 
-test('the net decides before the class', () => {
+test('every supply plus wire of the data file is red, every minus wire black, and no signal is either', () => {
+  assert.deepEqual([PLUS, MINUS], ['red', 'black']);
+  // The pins a supply wire ends on, by the sign their label or their id states.
+  const sign = (end: string | null): 'plus' | 'minus' | null => {
+    if (end === null) return null;
+    const pin = end.slice(end.indexOf('.') + 1);
+    if (/^(POS|OP|VS|VCC|V|V3|V5|BAT|ESC|C1A|C1B|USB)$/.test(pin) || end === 'pad.36' || end === 'pad.40') return 'plus';
+    if (/^(NEG|ON|G|GND|SG|J8G|BATN|ESCN)$/.test(pin) || ['pad.3', 'pad.8', 'pad.13', 'pad.18', 'pad.23', 'pad.38'].includes(end)) return 'minus';
+    return null;
+  };
+  const seen = { plus: 0, minus: 0, signal: 0 };
+  for (const w of CATALOGUE.wires) {
+    if (w.kind === 'component') continue;
+    const colour = colourOf(w);
+    const signs = new Set([sign(w.a), sign(w.b)].filter((s) => s !== null));
+    assert.ok(signs.size <= 1, `wire ${w.n} joins plus and minus`);
+    const rail = PLUS_NETS.has(w.net) ? 'plus' : MINUS_NETS.has(w.net) ? 'minus' : null;
+    // The net sets agree with the pins the wire ends on. The GPO strap of the AS5600 is on the net gnd by its net alone.
+    if (signs.size === 1) assert.equal(rail, [...signs][0], `wire ${w.n}: net ${w.net} against its pins ${w.a}, ${w.b}`);
+    if (w.cls === 'power' || w.cls === 'gnd') assert.notEqual(rail, null, `wire ${w.n}: supply wire on the net ${w.net}`);
+    assert.equal(colour === 'red', rail === 'plus', `wire ${w.n} on ${w.net} is ${colour}`);
+    assert.equal(colour === 'black', rail === 'minus', `wire ${w.n} on ${w.net} is ${colour}`);
+    seen[rail ?? 'signal']++;
+  }
+  assert.ok(seen.plus >= 15 && seen.minus >= 13 && seen.signal >= 20, JSON.stringify(seen));
+  // No signal colour of the tables is a supply colour, and no net is plus and minus.
+  for (const name of [...Object.values(BY_NET), ...Object.values(BY_CLASS)]) assert.ok(name !== PLUS && name !== MINUS, name);
+  for (const net of PLUS_NETS) assert.ok(!MINUS_NETS.has(net) && !(net in BY_NET), net);
+  for (const net of MINUS_NETS) assert.ok(!(net in BY_NET), net);
+});
+
+test('the net decides: a supply net over its class, a signal net over its class', () => {
   assert.equal(colourOf({ n: 1, kind: 'wire', net: 'gnd', cls: 'power' }), 'black');
-  assert.equal(colourOf({ n: 1, kind: 'wire', net: 'x', cls: 'power' }), 'red');
+  assert.equal(colourOf({ n: 1, kind: 'wire', net: 'batt_neg', cls: 'power' }), 'black');
+  assert.equal(colourOf({ n: 1, kind: 'wire', net: '3v3', cls: 'logic' }), 'red');
+  assert.equal(colourOf({ n: 1, kind: 'wire', net: 'esc_shunt', cls: 'power' }), 'red');
+  assert.equal(colourOf({ n: 1, kind: 'wire', net: 'hb_in', cls: 'hb' }), 'pink');
+  assert.equal(colourOf({ n: 1, kind: 'wire', net: 'hb', cls: 'hb' }), 'magenta');
+  // A supply wire on a net that is neither plus nor minus has no colour: the class does not guess the sign.
+  assert.throws(() => colourOf({ n: 7, kind: 'wire', net: 'x', cls: 'power' }), /wire 7: no colour for net x, class power/);
+  assert.throws(() => colourOf({ n: 7, kind: 'wire', net: 'x', cls: 'gnd' }), /wire 7/);
+  assert.throws(() => colourOf({ n: 7, kind: 'wire', net: 'x', cls: 'logic' }), /wire 7/);
   assert.equal(colourOf({ n: 1, kind: 'stub', net: 'x', cls: 'nc' }), 'grey');
   assert.equal(colourOf({ n: 1, kind: 'component', net: 'gnd', cls: 'gnd' }), null);
   assert.throws(() => colourOf({ n: 7, kind: 'wire', net: 'x', cls: 'uart' }), /wire 7: no colour for net x, class uart/);

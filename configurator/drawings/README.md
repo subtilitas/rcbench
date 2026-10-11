@@ -6,7 +6,7 @@ Generator and check of the part drawings of the bench configurator.
   boards outside it. The coprocessor and the INA228 have 2 boards each.
 - Each drawing is 1 SVG (Scalable Vector Graphics) file per language: English
   in `public/drawings/<file>.svg`, German in `public/drawings/de/<file>.svg`.
-- `anchors.json` holds the wire point of each of the 173 pins in px of the
+- `anchors.json` holds the wire point of each of the 175 pins in px of the
   viewBox of its drawing.
 - The generator reads the data file and nothing else: no file, no clock, no
   random number. The same data file gives the same bytes.
@@ -96,7 +96,7 @@ A pin with `only` is on the drawing of the board it names and on no other.
 | `wire-end` | An end of a wire has no anchor. An end whose pin maps to `null` is skipped. |
 | `wire-colour` | A wire has no colour of the palette. |
 | `contrast` | A colour of the palette is below 3:1 on 1 of the 5 backgrounds. |
-| `neighbour` | 2 wires that end on neighbouring pins of 1 drawing share a colour. |
+| `neighbour` | 2 wires that end on neighbouring pins of 1 drawing share a colour. 2 plus wires and 2 minus wires are exempt. |
 | `anchor` | An anchor lies outside its viewBox, has no side, or its label text is missing, empty, doubled or different in the SVG file. |
 | `svg` | A file is missing, not well formed, not self-contained, or lacks title, description, viewBox or the id prefix. |
 | `drift` | A committed file differs from the output of the generator, is missing, or is not a file of the generator. |
@@ -114,9 +114,16 @@ from each of them to its nearest pin.
 ## Wire palette
 
 A wire of the pictorial wiring view has 1 of 15 colours. The colours are the
-same in the light and in the dark theme. The net of a wire decides first
-(`BY_NET`), its signal class second (`BY_CLASS`). A wire of the kind
-`component` is the lead of a part and has no colour.
+same in the light and in the dark theme. A wire of the kind `component` is
+the lead of a part and has no colour.
+
+- Supply plus is red: the 8 nets of `PLUS_NETS` (battery plus, PD input and
+  output, servo supply, the output of both shunts, 3.3 V, VBUS).
+- Ground and supply minus are black: the 3 nets of `MINUS_NETS`.
+- A signal has 1 of the other 13 colours: its net decides first (`BY_NET`),
+  its signal class second (`BY_CLASS`). No signal is red or black.
+- A wire of the class `power` or `gnd` on a net outside the 2 sets has no
+  colour. The check reports it as `wire-colour`.
 
 Contrast ratio after WCAG (Web Content Accessibility Guidelines) 2.2 against
 each background. The minimum for graphics is 3:1. The first 4 backgrounds are
@@ -148,11 +155,11 @@ Black and white carry a casing: an outline of 1 px on each side of the core.
 No single colour reaches 3:1 against both the light and the dark backgrounds.
 The table gives the higher of the 2 ratios and names its carrier.
 
-3 colours serve 2 uses each:
+1 colour serves 2 uses: grey is phase B and the stubs of the class `nc`.
 
-- green: CAN L and the tap signal,
-- pink: the class `logic` and the heartbeat return,
-- grey: phase B and the stubs of the class `nc`.
+2 plus wires, or 2 minus wires, on neighbouring pins share their colour, for
+example both sides of a shunt. The `neighbour` rule exempts them. The wire
+number tells them apart.
 
 Colour is not the only carrier: a wire keeps its wire number of the data file.
 
