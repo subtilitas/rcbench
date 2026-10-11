@@ -6,7 +6,7 @@ import { dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import type { Catalogue } from '../../contract.ts';
+import type { Catalogue, Picture } from '../../contract.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import {
   ANCHOR_TEXT_MIN, BANNED_WORDS, RELEASE_TAG, checkAll, checkCounts, checkEnds, checkFunctions, checkIds,
@@ -14,6 +14,8 @@ import {
   collectTexts, gitTree, parseFirmwarePads, parseFirmwarePins, parseSettingDefault, wireTable,
 } from '../tools/check.ts';
 import type { Finding, Tree } from '../tools/check.ts';
+import { PICTURE_DIR, checkPictures, pictureFolder, webpInfo } from '../tools/pictures.ts';
+import type { PictureFolder } from '../tools/pictures.ts';
 import { BEGIN, END, MEASURED, figure, parseLcov, percent, replaceFigure } from '../tools/coverage.ts';
 
 const OUT_BIND = 'shared/outputs/out_bind.c';
@@ -138,11 +140,107 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.equal(CATALOGUE.hashVersion, 1);
 });
 
-test('no part carries a photo', () => {
-  assert.deepEqual(CATALOGUE.parts.filter((p) => p.photo !== undefined), []);
+/** A picture folder built from a map of names to bytes. */
+function folderOf(files: Record<string, Uint8Array>): PictureFolder {
+  return { names: Object.keys(files).sort(), read: (name) => files[name] ?? null };
+}
+
+/** A lossy WebP header of the given size, 30 bytes. */
+function webp(width: number, height: number): Uint8Array {
+  const b = new Uint8Array(30);
+  b.set([...'RIFF'].map((ch) => ch.charCodeAt(0)), 0);
+  b.set([...'WEBPVP8 '].map((ch) => ch.charCodeAt(0)), 8);
+  b.set([0x9d, 0x01, 0x2a, width & 0xff, width >> 8, height & 0xff, height >> 8], 23);
+  return b;
+}
+
+const svg = (body: string, size = 'width="480" height="400"'): Uint8Array =>
+  new TextEncoder().encode(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400" ${size}>${body}</svg>`);
+
+test('the pictures of the parts are the files of the picture folder', () => {
+  const folder = pictureFolder(PICTURE_DIR);
+  assert.deepEqual(errors(checkPictures(CATALOGUE, folder)), []);
+  const pictures = CATALOGUE.parts.flatMap((p) => p.pictures ?? []);
+  assert.equal(pictures.filter((p) => p.kind === 'photo').length, 12);
+  assert.equal(pictures.filter((p) => p.kind === 'drawing').length, 0);
+  assert.equal(folder.names.length, 24);
+  // The check tool runs the same check.
+  assert.deepEqual(errors(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folder).findings), []);
+  reports(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folderOf({})).findings,
+    'part.panel.picture.01-panel-back', /01-panel-back\.webp is missing/);
+});
+
+test('a picture record is held to its files', () => {
+  const one = (picture: Picture): Catalogue => {
+    const c = copy();
+    for (const part of c.parts) delete part.pictures;
+    c.parts[0]!.pictures = [picture];
+    return c;
+  };
+  const alt = { en: 'Panel', de: 'Panel' };
+  const photo: Picture = { kind: 'photo', file: 'p', alt, width: 480, height: 300 };
+  const good = { 'p.webp': webp(1600, 1000), 'p-thumb.webp': webp(480, 300) };
+  const id = 'part.panel.picture.p';
+  assert.deepEqual(errors(checkPictures(one(photo), folderOf(good))), []);
+
+  reports(checkPictures(one(photo), folderOf({ 'p.webp': good['p.webp'] })), id, /p-thumb\.webp is missing/);
+  reports(checkPictures(one(photo), folderOf({ 'p-thumb.webp': good['p-thumb.webp'] })), id, /p\.webp is missing/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p.webp': new TextEncoder().encode('JFIF'.repeat(10)) })), id, /p\.webp is not a WebP file/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p-thumb.webp': webp(640, 300) })), id, /640 px wide/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p-thumb.webp': webp(480, 301) })), id, /480 x 301 px; the record says 480 x 300/);
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p.jpg': webp(1, 1) })), 'picture.p.jpg', /no part names this file/);
+  reports(checkPictures(one({ ...photo, alt: { en: 'Panel', de: ' ' } }), folderOf(good)), id, /no alt text in de/);
+  reports(checkPictures(one({ ...photo, file: 'P.webp' }), folderOf(good)), 'part.panel.picture.P.webp', /file name/);
+  reports(checkPictures(one({ ...photo, kind: 'scan' as 'photo' }), folderOf(good)), id, /kind scan/);
+  reports(checkPictures(one({ ...photo, width: 0 }), folderOf(good)), id, /positive whole numbers/);
+
+  // A file with an Exif or XMP chunk is refused.
+  const extended = new Uint8Array(30);
+  extended.set([...'RIFF'].map((ch) => ch.charCodeAt(0)), 0);
+  extended.set([...'WEBPVP8X'].map((ch) => ch.charCodeAt(0)), 8);
+  extended.set([0x08], 20);
+  extended.set([0xdf, 0x01, 0x00, 0x2b, 0x01, 0x00], 24);
+  assert.deepEqual(webpInfo(extended), { width: 480, height: 300, metadata: true });
+  reports(checkPictures(one(photo), folderOf({ ...good, 'p-thumb.webp': extended })), id, /Exif or XMP/);
+  assert.equal(webpInfo(new Uint8Array(10)), null);
+
+  // More than 2 pictures for one set of options.
+  const three = one(photo);
+  three.parts[0]!.pictures = [photo, photo, { ...photo, only: { connection: 'osoyoo' } }];
+  reports(checkPictures(three, folderOf(good)), 'part.panel', /3 pictures apply/);
+  const split = one(photo);
+  split.parts[0]!.pictures = [photo, { ...photo, only: { connection: 'pads' } }, { ...photo, only: { connection: 'osoyoo' } }];
+  assert.deepEqual(errors(checkPictures(split, folderOf(good))), []);
+  const value = one({ ...photo, only: { connection: 'rail' as 'pads' } });
+  reports(checkRefs(value), 'part.panel.picture.p', /connection=rail/);
+});
+
+test('a drawing is an SVG file without script, reference or raster', () => {
+  const drawing: Picture = { kind: 'drawing', file: 'd', alt: { en: 'Board', de: 'Platine' }, width: 480, height: 400 };
   const c = copy();
-  c.parts[0]!.photo = { file: '01', alt: { en: 'Panel', de: 'Panel' } };
-  reports(checkRefs(c), 'part.panel', /photo/);
+  for (const part of c.parts) delete part.pictures;
+  c.parts[0]!.pictures = [drawing];
+  const id = 'part.panel.picture.d';
+  const run = (bytes: Uint8Array): Finding[] => checkPictures(c, folderOf({ 'd.svg': bytes }));
+
+  assert.deepEqual(errors(run(svg('<defs><g id="a"><rect width="4" height="4" fill="url(#g)"/></g></defs><use href="#a"/>'))), []);
+  reports(run(svg('<script>alert(1)</script>')), id, /holds a script/);
+  reports(run(svg('<rect onload="x()"/>')), id, /event attribute/);
+  reports(run(svg('<image href="#a"/>')), id, /loads or embeds/);
+  reports(run(svg('<foreignObject/>')), id, /loads or embeds/);
+  reports(run(svg('<use href="other.svg#a"/>')), id, /refers to "other\.svg#a"/);
+  reports(run(svg('<use xlink:href="https://example.org/a.svg#a"/>')), id, /refers to "https:\/\/example\.org/);
+  reports(run(svg('<rect fill="url(pattern.svg#p)"/>')), id, /refers to "pattern\.svg#p"/);
+  reports(run(svg('<rect fill="url(data:image/png;base64,AAAA)"/>')), id, /data URL/);
+  reports(run(svg('<text>//example.org/x</text>')), id, /names the address/);
+  reports(run(svg('', 'width="480" height="338"')), id, /480 x 338 px; the record says 480 x 400/);
+  reports(run(new TextEncoder().encode('<html><svg width="480" height="400"></svg></html>')), id, /is no SVG file/);
+  reports(run(new Uint8Array([0xff, 0xfe, 0xfd])), id, /not UTF-8/);
+  reports(checkPictures(c, folderOf({})), id, /d\.svg is missing/);
+  // A WebP file does not stand in for a drawing, and an SVG file not for a photo.
+  reports(checkPictures(c, folderOf({ 'd.webp': webp(480, 400), 'd-thumb.webp': webp(480, 400) })), id, /d\.svg is missing/);
+  c.parts[0]!.pictures = [{ ...drawing, kind: 'photo' }];
+  reports(checkPictures(c, folderOf({ 'd.svg': svg('') })), id, /d\.webp is missing/);
 });
 
 test('every unknown of the data is a check entry of kind unknown', () => {

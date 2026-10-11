@@ -93,6 +93,15 @@ const parts: Part[] = [
       pin('J8G', same('J8 GND'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
       pin('J8S', same('J8 GPIO6'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
     ],
+    pictures: [
+      {
+        kind: 'photo', file: '01-panel-back', width: 480, height: 297,
+        alt: t(
+          'Back of the panel on its metal plate: the board with the print ESP32-S3-Touch-LCD-7, 2 USB-C sockets, the ESP32-S3 module and the white sockets for I2C, CAN and RS-485.',
+          'Rückseite des Panels auf seiner Metallplatte: die Platine mit dem Aufdruck ESP32-S3-Touch-LCD-7, 2 USB-C-Buchsen, das ESP32-S3-Modul und die weißen Buchsen für I2C, CAN und RS-485.',
+        ),
+      },
+    ],
     src: guide('parts'),
   },
   {
@@ -116,6 +125,22 @@ const parts: Part[] = [
         osoyoo: t('Osoyoo screw-terminal breakout board', 'Osoyoo-Schraubklemmen-Breakout-Platine'),
       },
     },
+    pictures: [
+      {
+        kind: 'photo', file: '05-rp2350-can-breakout', width: 480, height: 436, only: { connection: 'osoyoo' },
+        alt: t(
+          'RP2350-CAN board plugged into the Osoyoo breakout board: green screw terminals on both long sides, the pin names GP0 to GP22 printed next to them, 2 jumper wires in the 3-pole terminal of the RP2350-CAN board.',
+          'RP2350-CAN-Platine, gesteckt in die Osoyoo-Breakout-Platine: grüne Schraubklemmen an beiden Längsseiten, daneben aufgedruckt die Pin-Namen GP0 bis GP22, 2 Jumperkabel in der 3-poligen Klemme der RP2350-CAN-Platine.',
+        ),
+      },
+      {
+        kind: 'photo', file: '08-rp2350-can-b', width: 480, height: 233,
+        alt: t(
+          'RP2350-CAN board from above: pin headers on both long sides, a green 3-pole screw terminal with 2 jumper wires at the left end, the buttons BOOT and RESET, a USB-C socket at the right end.',
+          'RP2350-CAN-Platine von oben: Stiftleisten an beiden Längsseiten, eine grüne 3-polige Schraubklemme mit 2 Jumperkabeln am linken Ende, die Taster BOOT und RESET, eine USB-C-Buchse am rechten Ende.',
+        ),
+      },
+    ],
     src: guide('parts'),
   },
   {
@@ -253,6 +278,15 @@ const parts: Part[] = [
       pin('OP', same('OUT +'), guide('wires')),
       pin('ON', same('OUT −'), guide('wires')),
     ],
+    pictures: [
+      {
+        kind: 'photo', file: '02-pd-mini', width: 480, height: 279,
+        alt: t(
+          'PD mini board, top side: USB-C socket, display, 4 buttons, a green 4-pole screw terminal and a 4-pin header. The left third of the photo is out of focus.',
+          'PD-mini-Platine, Oberseite: USB-C-Buchse, Display, 4 Taster, eine grüne 4-polige Schraubklemme und eine 4-polige Stiftleiste. Das linke Drittel des Fotos ist unscharf.',
+        ),
+      },
+    ],
     src: guide('parts'),
   },
   {
@@ -273,8 +307,8 @@ const parts: Part[] = [
     name: t('DAOKAI INA3221 board, 3 channels', 'DAOKAI-INA3221-Platine, 3 Kanäle'),
     short: same('INA3221'),
     role: t(
-      'Servo current, 0 to 26 V, up to 1.64 A per channel. I2C 0x40 with the A0 bridge to GND.',
-      'Servostrom, 0 bis 26 V, bis 1,64 A je Kanal. I2C 0x40 mit A0-Brücke nach GND.',
+      'Servo current, 0 to 26 V, up to 1.64 A per channel. I2C 0x40 with the A0 bridge to GND. Header of 8 holes, from the square hole: VS, GND, SCL, SDA, PV, CRI, WAR, TC.',
+      'Servostrom, 0 bis 26 V, bis 1,64 A je Kanal. I2C 0x40 mit A0-Brücke nach GND. Leiste mit 8 Löchern, ab dem quadratischen Loch: VS, GND, SCL, SDA, PV, CRI, WAR, TC.',
     ),
     locked: false,
     selectable: true,
@@ -283,18 +317,39 @@ const parts: Part[] = [
     slot: {
       column: 'R',
       order: 14,
-      sub: t('header: A0 VS SCL SDA GND', 'Leiste: A0 VS SCL SDA GND'),
+      sub: same('VS GND SCL SDA PV CRI WAR TC'),
     },
+    // The board as the owner's photos of 2026-10-11 show it. Header of 8
+    // holes, from the square hole: VS, GND, SCL, SDA, PV, CRI, WAR, TC. A0 is
+    // no header pin: 4 solder bridges set it to GND, SDA, SCL or VS.
     pins: [
-      pin('A0', same('A0'), guide('wires')),
-      pin('VS', same('VS'), guide('wires')),
-      pin('SCL', same('SCL'), guide('wires')),
-      pin('SDA', same('SDA'), guide('wires')),
-      pin('GND', same('GND'), guide('wires')),
-      pin('C1A', t('CH1, pad 1', 'CH1, Pad 1'), guide('wires')),
-      pin('C1B', t('CH1, pad 2', 'CH1, Pad 2'), guide('wires')),
-      // Silkscreen, schematic and listing picture disagree on these pads.
-      pin('LP', t('3 large pads', '3 große Pads'), guide('wires'), false),
+      pin('VS', same('VS'), OWNER),
+      pin('GND', same('GND'), OWNER),
+      pin('SCL', same('SCL'), OWNER),
+      pin('SDA', same('SDA'), OWNER),
+      pin('A0', t('A0 solder bridges', 'A0-Lötbrücken'), OWNER),
+      // The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1.
+      // No source states which of them takes the supply.
+      pin('C1A', t('CH1, one pad', 'CH1, ein Pad'), OWNER),
+      pin('C1B', t('CH1, other pad', 'CH1, anderes Pad'), OWNER),
+      // Both sides print GND, GND, VPU. What the pads do is not confirmed.
+      pin('LP', t('GND, GND, VPU pads', 'Pads GND, GND, VPU'), OWNER, false),
+    ],
+    pictures: [
+      {
+        kind: 'photo', file: '16-ina3221-front', width: 480, height: 403,
+        alt: t(
+          'INA3221 board, component side: 8-hole header, A0 solder bridges GND, SDA, SCL, VS, 3 shunts R100 above the pad pairs CH1, CH2, CH3, 3 large pads GND, GND, VPU.',
+          'INA3221-Platine, Bauteilseite: Leiste mit 8 Löchern, A0-Lötbrücken GND, SDA, SCL, VS, 3 Shunts R100 über den Pad-Paaren CH1, CH2, CH3, 3 große Pads GND, GND, VPU.',
+        ),
+      },
+      {
+        kind: 'photo', file: '17-ina3221-back', width: 480, height: 404,
+        alt: t(
+          'INA3221 board, back: pads VIN1-, VIN1+, VIN2-, VIN2+, VIN3-, VIN3+; header from the square hole VS, GND, SCL, SDA, PV, CRI, WAR, TC; large pads GND, GND, VPU.',
+          'INA3221-Platine, Rückseite: Pads VIN1-, VIN1+, VIN2-, VIN2+, VIN3-, VIN3+; Leiste ab dem quadratischen Loch VS, GND, SCL, SDA, PV, CRI, WAR, TC; große Pads GND, GND, VPU.',
+        ),
+      },
     ],
     src: guide('parts'),
   },
@@ -321,6 +376,15 @@ const parts: Part[] = [
       pin('SDA', same('SDA'), guide('stage-4')),
       pin('SCL', same('SCL'), guide('stage-4')),
       pin('DIR', same('DIR'), guide('stage-4')),
+    ],
+    pictures: [
+      {
+        kind: 'photo', file: '10-as5600-b', width: 480, height: 407,
+        alt: t(
+          'AS5600 board, white, with the pad names VCC, OUT, GND, GPO, SDA, SCL and DIR. A yellow 7-pin header strip and a round magnet lie next to it.',
+          'AS5600-Platine, weiß, mit den Pad-Namen VCC, OUT, GND, GPO, SDA, SCL und DIR. Daneben liegen eine gelbe 7-polige Stiftleiste und ein runder Magnet.',
+        ),
+      },
     ],
     src: guide('parts'),
   },
@@ -372,6 +436,22 @@ const parts: Part[] = [
         ),
       },
     },
+    pictures: [
+      {
+        kind: 'photo', file: '15-current-sensor-top', width: 480, height: 306, only: { ina228Board: 'xt90' },
+        alt: t(
+          'Current sensor board with the print BIFRC V1.1, from above: 2 yellow power plugs, the shunt between them, a 5-pin header with the print L, A, V, G, 5.',
+          'Stromsensor-Platine mit dem Aufdruck BIFRC V1.1, von oben: 2 gelbe Leistungsstecker, dazwischen der Shunt, eine 5-polige Stiftleiste mit dem Aufdruck L, A, V, G, 5.',
+        ),
+      },
+      {
+        kind: 'photo', file: '14-current-sensor-oblique', width: 480, height: 356, only: { ina228Board: 'xt90' },
+        alt: t(
+          'The same current sensor board in its black frame, seen from an angle.',
+          'Dieselbe Stromsensor-Platine in ihrem schwarzen Rahmen, schräg gesehen.',
+        ),
+      },
+    ],
     src: guide('parts'),
   },
   {
@@ -414,6 +494,22 @@ const parts: Part[] = [
     pins: [
       pin('NC1', t('NC tab 1', 'NC-Fahne 1'), guide('parts'), false),
       pin('NC2', t('NC tab 2', 'NC-Fahne 2'), guide('parts'), false),
+    ],
+    pictures: [
+      {
+        kind: 'photo', file: '11-estop-front', width: 480, height: 446,
+        alt: t(
+          'Red mushroom push button with the print STOP and 2 arrows, seen from the front.',
+          'Roter Pilztaster mit dem Aufdruck STOP und 2 Pfeilen, von vorn gesehen.',
+        ),
+      },
+      {
+        kind: 'photo', file: '12-estop-side', width: 480, height: 341,
+        alt: t(
+          'The same push button from the side: the switch body with 3 solder tabs.',
+          'Derselbe Taster von der Seite: der Schaltkörper mit 3 Lötfahnen.',
+        ),
+      },
     ],
     src: guide('parts'),
   },
@@ -485,6 +581,15 @@ const parts: Part[] = [
       pin('DM', same('D−'), OWNER),
       // No wire.
       pin('V', same('V'), OWNER),
+    ],
+    pictures: [
+      {
+        kind: 'photo', file: '04-usb-c-tap-closeup', width: 480, height: 530,
+        alt: t(
+          'USB-C tap, close-up: the sockets IN and OUT and 4 pads with the print G, D+, D-, V. A black wire on G, a red wire on D+, a white wire on D-, no wire on V.',
+          'USB-C-Abgriff, Nahaufnahme: die Buchsen IN und OUT und 4 Pads mit dem Aufdruck G, D+, D-, V. Ein schwarzes Kabel an G, ein rotes an D+, ein weißes an D-, kein Kabel an V.',
+        ),
+      },
     ],
     src: OWNER,
   },
@@ -813,8 +918,8 @@ const wires: Wire[] = [
     n: 30, kind: 'wire', a: 'servo.POS', b: 'ina3221.C1B', net: 'servo_shunt', cls: 'power',
     signal: SERVO_POWER,
     note: t(
-      'If the current reads negative, swap the two wires on CH1.',
-      'Liest der Strom negativ, die zwei Drähte an CH1 tauschen.',
+      'The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1. No source states which pad takes the supply. If the current reads negative, swap the two wires on CH1.',
+      'Die Rückseite der Platine nennt die 2 Pads von CH1 VIN1+ und VIN1-. Keine Quelle nennt das Pad für die Versorgung. Liest der Strom negativ, die zwei Drähte an CH1 tauschen.',
     ),
     when: { all: [{ has: 'servo' }, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'X', left: 13, right: 17, channel: 1 }, src: guide('wires'),
@@ -831,8 +936,8 @@ const wires: Wire[] = [
     n: 32, kind: 'stub', a: 'ina3221.LP', b: null, to: NOTHING, net: 'ina3221_lp', cls: 'nc',
     signal: NONE,
     note: t(
-      'Not connected. Silkscreen, schematic and listing picture disagree.',
-      'Nicht angeschlossen. Aufdruck, Schaltplan und Angebotsbild widersprechen sich.',
+      'Not connected. Both sides of the board print GND, GND, VPU. What the pads do is not confirmed.',
+      'Nicht angeschlossen. Beide Seiten der Platine nennen GND, GND, VPU. Die Funktion der Pads ist nicht bestätigt.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'S' }, src: guide('wires'),
   },

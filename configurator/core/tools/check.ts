@@ -18,6 +18,8 @@ import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import type { AnchorText } from '../catalogue.ts';
 import { optionsIn, partsIn, requiresOption } from '../cond.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from '../resolve.ts';
+import { PICTURE_DIR, checkPictures, pictureFolder } from './pictures.ts';
+import type { PictureFolder } from './pictures.ts';
 
 export type Finding = { level: 'error' | 'warn'; id: string; msg: string };
 
@@ -229,7 +231,7 @@ export function checkRefs(c: Catalogue): Finding[] {
     const id = `part.${part.id}`;
     if (part.release !== 'released') out.push(err(id, 'only released parts are in `parts`'));
     if (part.locked && part.selectable) out.push(err(id, 'a locked part is not selectable'));
-    if (part.photo) out.push(err(id, 'no photo is approved; the photo field stays empty'));
+    for (const picture of part.pictures ?? []) optionMap(`${id}.picture.${picture.file}`, picture.only);
     for (const pin of part.pins) optionMap(`${id}.${pin.id}`, pin.only);
     if (part.variantName) {
       for (const value of Object.keys(part.variantName.names)) {
@@ -844,6 +846,7 @@ function guarded(name: string, run: () => Finding[]): Finding[] {
 
 export function checkAll(
   c: Catalogue, tree: Tree | null, strict = false, texts: ReadonlyArray<AnchorText> = ANCHOR_TEXTS,
+  pictures: PictureFolder | null = null,
 ): Report {
   const findings: Finding[] = [
     ...guarded('ids', () => checkIds(c)),
@@ -855,6 +858,7 @@ export function checkAll(
     ...guarded('pins', () => checkPins(c)),
     ...guarded('routes', () => checkRoutes(c)),
   ];
+  if (pictures !== null) findings.push(...guarded('pictures', () => checkPictures(c, pictures)));
   let repoAnchors = 0;
   let repoChecked = 0;
   findings.push(...guarded('src', () => {
@@ -941,7 +945,8 @@ function main(argv: string[]): number {
     return 0;
   }
   const tree = gitTree(dirname(fileURLToPath(import.meta.url)));
-  const report = checkAll(CATALOGUE, tree, argv.includes('--strict'));
+  const folder = pictureFolder(PICTURE_DIR);
+  const report = checkAll(CATALOGUE, tree, argv.includes('--strict'), ANCHOR_TEXTS, folder);
   for (const finding of report.findings) {
     process.stdout.write(`${finding.level} ${finding.id}: ${finding.msg}\n`);
   }
@@ -953,6 +958,7 @@ function main(argv: string[]): number {
     + `${c.functions.length} functions, ${c.rules.length} rules, ${c.checks.length} checks, `
     + `${collectTexts(c).length} texts\n`,
   );
+  process.stdout.write(`check: ${folder.names.length} files in the picture folder\n`);
   if (tree === null) {
     process.stdout.write(`check: skipped ${report.repoAnchors} repository anchors; git or the tag ${RELEASE_TAG} is absent\n`);
   } else {
