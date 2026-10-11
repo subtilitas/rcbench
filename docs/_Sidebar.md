@@ -14,7 +14,7 @@ Using the bench
 - [Stick programming](StickProgramming.md)
 - [Receiver buses](Receivers.md)
 - [Safety](Safety.md)
-- [BLHeli_32 parameters](BLHeli32.md)
+- [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md)
 
 Reference
 
@@ -39,7 +39,7 @@ Den Prüfstand benutzen
 - [Stick-Programmierung](StickProgramming-de.md)
 - [Empfängerbusse](Receivers-de.md)
 - [Sicherheit](Safety-de.md)
-- [BLHeli_32-Parameter](BLHeli32-de.md)
+- [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md)
 
 Referenz
 

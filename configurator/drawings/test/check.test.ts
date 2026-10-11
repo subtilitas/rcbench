@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Catalogue } from '../../contract.ts';
 import { CATALOGUE } from '../../core/catalogue.ts';
-import { checkAll, checkContrast, checkDrift, checkPins, checkRecord, checkSvg, checkWires, filesOf, malformed } from '../check.ts';
+import { ATTRIBUTES, ELEMENTS, ID, ROOT_ATTRIBUTES, checkAll, checkContrast, checkDrift, checkPins, checkRecord, checkSvg, checkWires, filesOf, malformed } from '../check.ts';
 import type { Files, Finding } from '../check.ts';
 import type { Anchors } from '../generate.ts';
+import { FONT } from '../lib.ts';
 import { colourOf } from '../wires.ts';
 
 const clone = (): Catalogue => structuredClone(CATALOGUE) as Catalogue;
@@ -355,7 +356,7 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   has(f(svg.replace('<svg ', '<svg xml:base="other.svg" ')), 'svg', /base address attribute/);
   has(f(svg.replace('</svg>', '<g xml:base="../x/"/></svg>')), 'svg', /base address attribute/);
   has(f(svg.replace('</svg>', '<g BASE="a"/></svg>')), 'svg', /base address attribute/);
-  assert.deepEqual(f(svg.replace('</svg>', '<g baseline-shift="1"/></svg>')), []);
+  assert.deepEqual(f(svg.replace('</svg>', '<g baseline-shift="1"/></svg>')).filter((x) => /base address/.test(x.msg)), []);
   const add = (s: string): string => svg.replace('</svg>', `${s}</svg>`);
   has(f(add('<script>1</script>')), 'svg', /script element/);
   has(f(add('<svg:script>1</svg:script>')), 'svg', /script element/);
@@ -386,10 +387,10 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   has(f(add('<g xlink:title="a"/>')), 'svg', /attribute prefix xlink is bound to no namespace/);
   has(f(add('<g foo:bar="1"/>')), 'svg', /attribute prefix foo is bound to no namespace/);
   has(f(svg.replace('<svg ', '<svg xmlns:foo="urn:x" ')), 'svg', /attribute prefix xmlns is bound to no namespace/);
-  assert.deepEqual(f(add('<g xml:space="preserve"/>')), []);
+  assert.deepEqual(f(add('<g xml:space="preserve"/>')).filter((x) => /prefix/.test(x.msg)), []);
   // The font stack, the title and the description are stated on the root element.
-  has(f(svg.replace(/ font-family="[^"]*"/, '')), 'svg', /root element does not state a font stack/);
-  has(f(svg.replace(/ font-family="[^"]*"/, '').replace('</svg>', '<g font-family="system-ui, sans-serif"/></svg>')), 'svg', /root element does not state a font stack/);
+  has(f(svg.replace(/ font-family="[^"]*"/, '')), 'svg', /root element does not state the font stack/);
+  has(f(svg.replace(/ font-family="[^"]*"/, '').replace('</svg>', '<g font-family="system-ui, sans-serif"/></svg>')), 'svg', /root element does not state the font stack/);
   const moved = (name: string): string => {
     const attr = new RegExp(` ${name}="[^"]*"`).exec(svg)![0];
     return svg.replace(attr, '').replace('</svg>', `<g${attr}/></svg>`);
@@ -412,6 +413,189 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   has(f(svg.replace('</svg>', '')), 'svg', /not well formed/);
   const id = svg.match(/\sid="([^"]+)"/)![1]!;
   has(f(add(`<rect id="${id}"/>`)), 'svg', /an id is given twice/);
+});
+
+test('a file holds the elements and attributes of the generator and no other', () => {
+  const rec = anchors().files['tap.svg']!;
+  const svg = good.svgs['tap.svg']!;
+  const f = (s: string): Finding[] => checkSvg('tap.svg', s, rec);
+  const add = (s: string): string => svg.replace('</svg>', `${s}</svg>`);
+  // The lists are the names in the output of the generator: none is missing, none is unused.
+  const all = Object.values(good.svgs).join('\n');
+  const elements = new Set([...all.matchAll(/<([A-Za-z][\w:.-]*)/g)].map((m) => m[1]!));
+  const attributes = new Set([...all.matchAll(/\s([A-Za-z][\w:.-]*)="/g)].map((m) => m[1]!));
+  assert.deepEqual([...ELEMENTS].sort(), [...elements].sort());
+  assert.deepEqual([...ATTRIBUTES].sort(), [...attributes].sort());
+  // An element outside the list, also in another case.
+  for (const el of ['a', 'use', 'symbol', 'tspan', 'textPath', 'clipPath', 'mask', 'pattern', 'marker', 'switch', 'view', 'lineargradient', 'G']) {
+    has(f(add(`<${el}/>`)), 'svg', new RegExp(`element ${el} is not one the generator writes`));
+  }
+  // A link with an address a click reports to: element and attribute are both findings.
+  has(f(add('<a href="#tap-t" ping="//example.invalid/p"><rect/></a>')), 'svg', /element a is not one/);
+  has(f(add('<a href="#tap-t" ping="//example.invalid/p"><rect/></a>')), 'svg', /attribute ping is not one/);
+  // An attribute that carries an address, on an element of the list.
+  for (const at of ['ping', 'href', 'src', 'srcset', 'poster', 'action', 'formaction', 'data', 'cite', 'background', 'manifest', 'from', 'to', 'values', 'attributeName']) {
+    has(f(add(`<g ${at}="//example.invalid/x"/>`)), 'svg', new RegExp(`attribute ${at} is not one the generator writes`));
+  }
+  // An attribute that hides, restyles or makes an element reachable.
+  for (const at of ['aria-hidden', 'hidden', 'display', 'visibility', 'class', 'style', 'tabindex', 'aria-label', 'clip-path', 'mask', 'xml:space', 'baseline-shift', 'FILL', 'Id']) {
+    has(f(add(`<g ${at}="1"/>`)), 'svg', new RegExp(`attribute ${at} is not one the generator writes`));
+  }
+  // Space around the equals sign hides no attribute.
+  has(f(add('<g ping = "x"/>')), 'svg', /attribute ping is not one/);
+  // Each name is reported once.
+  assert.equal(f(add('<g ping="a"/><g ping="b"/>')).filter((x) => /attribute ping/.test(x.msg)).length, 1);
+  // Text that reads like an attribute is no attribute.
+  assert.deepEqual(f(add('<text>ping="x" aria-hidden="true"</text>')), []);
+});
+
+test('the root element carries its 10 attributes with the values of the anchor table, and no other', () => {
+  const rec = anchors().files['tap.svg']!;
+  const svg = good.svgs['tap.svg']!;
+  const f = (s: string): Finding[] => checkSvg('tap.svg', s, rec, 'en');
+  const [, , w, h] = rec.viewBox;
+  assert.deepEqual(f(svg), []);
+  const rootOf = (s: string): string => /<svg[^>]*>/.exec(s)![0];
+  assert.deepEqual([...rootOf(svg).matchAll(/\s([\w:.-]+)="/g)].map((m) => m[1]), [...ROOT_ATTRIBUTES]);
+  // Hidden from assistive technology: title and description name nothing.
+  for (const value of ['true', 'false', '']) {
+    const hidden = f(svg.replace('<svg ', `<svg aria-hidden="${value}" `));
+    has(hidden, 'svg', /the root element carries the attribute aria-hidden/);
+    has(hidden, 'svg', /attribute aria-hidden is not one the generator writes/);
+  }
+  has(f(svg.replace('</svg>', '<g aria-hidden="true"/></svg>')), 'svg', /attribute aria-hidden is not one/);
+  // An attribute of the list that the root does not carry.
+  for (const at of ['opacity="0"', 'transform="scale(0)"', 'id="tap-root"', 'filter="url(#tap-sh)"', 'fill="none"']) {
+    has(f(svg.replace('<svg ', `<svg ${at} `)), 'svg', new RegExp(`the root element carries the attribute ${at.split('=')[0]}`));
+  }
+  has(f(svg.replace(' role="img"', '')), 'svg', /does not state the role img/);
+  has(f(svg.replace(' role="img"', ' role="presentation"')), 'svg', /does not state the role img/);
+  has(f(svg.replace(' role="img"', ' role="none"')), 'svg', /does not state the role img/);
+  // width and height are the px of the viewBox.
+  const size = /width and height of the root element differ from anchors\.json/;
+  has(f(svg.replace(` width="${w}"`, '')), 'svg', size);
+  has(f(svg.replace(` height="${h}"`, '')), 'svg', size);
+  has(f(svg.replace(` width="${w}" height="${h}"`, '')), 'svg', size);
+  has(f(svg.replace(` width="${w}"`, ' width="1"')), 'svg', size);
+  has(f(svg.replace(` height="${h}"`, ` height="${h + 1}"`)), 'svg', size);
+  has(f(svg.replace(` width="${w}"`, ' width="100%"')), 'svg', size);
+  has(f(svg.replace(` width="${w}"`, ` width="${w}px"`)), 'svg', size);
+  has(f(svg.replace(` width="${w}"`, ` width="${w}.0"`)), 'svg', size);
+  has(f(svg.replace(` width="${w}" height="${h}"`, ` width="${h}" height="${w}"`)), 'svg', size);
+  // A size on another element is not the size of the root.
+  has(f(svg.replace(` width="${w}" height="${h}"`, '').replace('</svg>', `<rect width="${w}" height="${h}"/></svg>`)), 'svg', size);
+  // The font stack is the whole stack of the generator.
+  const stack = /does not state the font stack system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif/;
+  const font = (value: string): string => svg.replace(/ font-family="[^"]*"/, ` font-family="${value}"`);
+  assert.deepEqual(f(font(FONT)), []);
+  for (const value of ['system-uiX, sans-serif', 'system-ui', 'system-ui-rounded, sans-serif', 'system-ui serif', 'System-UI, sans-serif', ` ${FONT}`, `${FONT}, serif`, 'serif', '']) {
+    has(f(font(value)), 'svg', stack);
+  }
+  // No other element states a font, also not the same stack.
+  has(f(svg.replace('</svg>', `<text font-family="${FONT}">a</text></svg>`)), 'svg', /an element other than the root states a font stack/);
+  has(f(svg.replace('</svg>', '<g font-family = "system-uiX"/></svg>')), 'svg', /an element other than the root states a font stack/);
+});
+
+test('an id is a prefix and parts of letters and digits: a space, an empty id or another character is a finding', () => {
+  const rec = anchors().files['tap.svg']!;
+  const svg = good.svgs['tap.svg']!;
+  const f = (s: string): Finding[] => checkSvg('tap.svg', s, rec);
+  const add = (s: string): string => svg.replace('</svg>', `${s}</svg>`);
+  const grammar = /is not a prefix and parts of letters and digits/;
+  for (const id of ['tap-a', 'tap-lbl-IN', 'tap-s12', 'tap-lbl-pad-40', 'i28-lbl-V5', 'a-B']) assert.ok(ID.test(id), id);
+  for (const id of ['tap-a b', 'tap- a', ' tap-a', 'tap-a ', 'tap-a\tb', 'tap-a b', 'tap', 'tap-', '-tap', 'tap--a', 'tap-a-', 'Tap-a', '1ap-a', 'tap-a.b', 'tap-a:b', 'tap-a#b', 'tap-a)', 'tap-ä', '']) {
+    assert.ok(!ID.test(id), JSON.stringify(id));
+  }
+  for (const id of ['tap-a b', 'tap- a', 'tap-a ', 'tap-a&#x9;b', 'tap-a&#xA0;b', 'tap-a.b', 'tap-a#b', 'tap-ä', 'tap', '']) {
+    has(f(add(`<rect id="${id}"/>`)), 'svg', grammar);
+  }
+  // A prefix with a space: every id of the file shares it and none is valid.
+  const spaced = svg.replace(/"tap-/g, '"ta p-').replace(/#tap-/g, '#ta p-');
+  has(f(spaced), 'svg', grammar);
+  assert.ok(f(spaced).filter((x) => grammar.test(x.msg)).length >= 2);
+  // An id with space around the equals sign is read as well.
+  has(f(add('<rect id = "tap-a b"/>')), 'svg', grammar);
+  // Every id of every drawing follows the grammar.
+  for (const [path, text] of Object.entries(good.svgs)) {
+    for (const m of text.matchAll(/\sid="([^"]*)"/g)) assert.ok(ID.test(m[1]!), `${path}: ${m[1]}`);
+  }
+});
+
+test('a map is on a drawing with the print of its board and on no other', () => {
+  // On a drawing with the names of the data file a map does not take the pins out of the comparison.
+  const a = anchors();
+  const servo = a.files['servo.svg']!;
+  const pin = Object.keys(servo.pins)[0]!;
+  servo.catalogueMap = Object.fromEntries(Object.keys(servo.pins).map((id) => [id, [id]]));
+  servo.pins[pin]!.label.en = 'other';
+  const f = checkPins(CATALOGUE, a);
+  has(f, 'map', /servo\.svg: a drawing with the names of the data file carries a catalogueMap/);
+  has(f, 'label', new RegExp(`servo\\.svg: pin ${pin} is labelled "other"`));
+  // An empty map and a map of null entries are findings too, and the anchors are still compared.
+  for (const map of [{}, Object.fromEntries(Object.keys(servo.pins).map((id) => [id, null]))]) {
+    const b = anchors();
+    b.files['servo.svg']!.catalogueMap = map;
+    delete b.files['servo.svg']!.pins[pin];
+    const g = checkPins(CATALOGUE, b);
+    has(g, 'map', /servo\.svg: a drawing with the names of the data file carries a catalogueMap/);
+    has(g, 'pin-without-anchor', new RegExp(`servo\\.svg: catalogue pin ${pin} has no anchor`));
+  }
+  // The drawing with the print of its board needs its map.
+  const c = anchors();
+  delete c.files['ina3221.svg']!.catalogueMap;
+  has(checkPins(CATALOGUE, c), 'map', /ina3221\.svg: a drawing with the print of its board carries no catalogueMap/);
+  // Renamed to the names of the data file, its map is refused and its print is compared with the data file.
+  const d = anchors();
+  d.files['ina3221.svg']!.names = 'catalogue';
+  const h = checkPins(CATALOGUE, d);
+  has(h, 'map', /ina3221\.svg: a drawing with the names of the data file carries a catalogueMap/);
+  has(h, 'pin-without-anchor', /ina3221\.svg: catalogue pin/);
+  // Another value of names is a finding.
+  const e = anchors();
+  (e.files['servo.svg'] as { names: string }).names = 'print';
+  has(checkPins(CATALOGUE, e), 'map', /servo\.svg: names is "print"/);
+  // A drawing outside the data file is skipped as before.
+  assert.deepEqual(checkPins(CATALOGUE, anchors()), []);
+});
+
+test('a reference is url(#id), title and description lead the file, and root attributes stay on the root', () => {
+  const rec = anchors().files['tap.svg']!;
+  const svg = good.svgs['tap.svg']!;
+  const f = (s: string): Finding[] => checkSvg('tap.svg', s, rec);
+  const add = (s: string): string => svg.replace('</svg>', `${s}</svg>`);
+  const form = /is not of the form url\(#id\)/;
+  assert.deepEqual(f(add('<rect fill="url(#tap-tin)"/>')), []);
+  for (const value of ['url( #tap-tin)', 'url(#tap-tin )', "url('#tap-tin')", 'url(#tap-tin', 'url(#tap tin)', 'url(#)', 'URL(#tap-tin )']) {
+    has(f(add(`<rect fill="${value}"/>`)), 'svg', form);
+  }
+  // A second title, a title inside a group, a description before the title.
+  const lead = /title and desc are not the first 2 children of the root/;
+  has(f(add('<g><title>other name</title></g>')), 'svg', lead);
+  has(f(add('<desc>another description of it</desc>')), 'svg', lead);
+  const title = /<title[^>]*>[^<]*<\/title>\n?/.exec(svg)![0];
+  const desc = /<desc[^>]*>[^<]*<\/desc>\n?/.exec(svg)![0];
+  has(f(svg.replace(title, '').replace(desc, `${desc}${title}`)), 'svg', lead);
+  has(f(svg.replace(title, '').replace('</svg>', `<g>${title}</g></svg>`)), 'svg', lead);
+  has(f(svg.replace(title, `<g/>${title}`)), 'svg', lead);
+  // An attribute of the root on another element.
+  for (const at of ['xmlns="http://www.w3.org/2000/svg"', 'lang="fr"', 'xml:lang="fr"', 'viewBox="0 0 1 1"', 'role="presentation"', 'aria-labelledby="tap-d"', 'aria-describedby="tap-t"']) {
+    has(f(add(`<g ${at}/>`)), 'svg', new RegExp(`an element other than the root carries the attribute ${at.split('=')[0]}`));
+  }
+  for (const text of Object.values(good.svgs)) assert.deepEqual(checkSvg('x', text, rec).filter((x) => /other than the root|first 2 children|of the form/.test(x.msg)), []);
+});
+
+test('the viewBox of the table is 0, 0 and 2 sizes above 0', () => {
+  const rec = anchors().files['estop.svg']!;
+  const box = (v: unknown): Finding[] => {
+    const r = structuredClone(rec) as unknown as { viewBox: unknown };
+    r.viewBox = v;
+    return checkRecord('estop.svg', r as never, {}).filter((x) => /viewBox .* is not 0, 0/.test(x.msg));
+  };
+  const [, , w, h] = rec.viewBox;
+  assert.deepEqual(box([0, 0, w, h]), []);
+  for (const v of [[1, 0, w, h], [0, -1, w, h], [0, 0, 0, h], [0, 0, w, -1], [0, 0, w], [0, 0, w, h, 1], [0, 0, null, h], [0, 0, `${w}`, h]]) {
+    assert.equal(box(v).length, 1, JSON.stringify(v));
+  }
 });
 
 test('the well-formedness check accepts the subset the generator writes and names the first defect', () => {

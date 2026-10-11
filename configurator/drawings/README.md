@@ -83,6 +83,11 @@ The coprocessor carries 42 pins: `pad.1` to `pad.40` and `can.H`, `can.L`.
 
 A pin with `only` is on the drawing of the board it names and on no other.
 
+The T-plug drawing has 2 USB-C sockets. A pin `IN` or `OUT` of the data file
+gets its wire point at the mouth of that socket: `IN` at (28, 80) on side `W`,
+`OUT` at (232, 80) on side `E`. A socket that the data file does not list as a
+pin carries its print and no anchor.
+
 ## What the check fails on
 
 | Finding | Condition |
@@ -90,7 +95,7 @@ A pin with `only` is on the drawing of the board it names and on no other.
 | `pin-without-anchor` | A pin of the data file has no anchor in a drawing of its part. |
 | `anchor-without-pin` | An anchor names no pin of the data file. A drawing with `part: null` is skipped. |
 | `label` | A label differs from the label of the pin in the data file, in English or German. |
-| `map` | A `catalogueMap` names a pin the data file does not have. |
+| `map` | A `catalogueMap` names a pin the data file does not have; a drawing with `names: "catalogue"` carries a `catalogueMap`; a drawing with `names: "board print"` and a part carries none. |
 | `no-drawing` | A part, or 1 of the 2 boards of a part, has no drawing; or a drawing shows a board that no option selects. |
 | `release` | `anchors.json` is of another release than the data file. |
 | `wire-end` | An end of a wire has no anchor. The end of a stub whose pin maps to `null` is skipped. |
@@ -98,7 +103,7 @@ A pin with `only` is on the drawing of the board it names and on no other.
 | `contrast` | A colour of the palette is below 3:1 on 1 of the 5 backgrounds. |
 | `neighbour` | 2 wires that end on neighbouring pins of 1 drawing share a colour. 2 plus wires and 2 minus wires are exempt. |
 | `anchor` | An anchor lies outside its viewBox, has no side, or its label text is missing, empty, doubled or different in the SVG file. |
-| `svg` | A file is missing, not well formed, not self-contained, has no `svg` root in the SVG namespace, uses a namespace prefix other than `xml`, carries an animation element or a `style` attribute, or lacks title, description, viewBox, font stack, language or the id prefix. |
+| `svg` | A file is missing, not well formed, not self-contained, has no `svg` root in the SVG namespace, uses a namespace prefix other than `xml`, carries an element or an attribute outside the 14 elements and 43 attributes the generator writes, or lacks title, description, viewBox, language or the id prefix. The root element carries 10 attributes and no other: `width` and `height` are the px of the viewBox, `role` is `img`, `font-family` is the whole stack of the generator. No other element states a font, a language, a role or a viewBox. An id is a prefix of lower-case letters and digits and 1 or more parts of letters and digits, joined by hyphens. A reference is written `url(#id)`. Title and description are the first 2 children of the root. |
 | `drift` | A committed file differs from the output of the generator, is missing, or is not a file of the generator. |
 
 The generator stops with an error, and the check with it, when:

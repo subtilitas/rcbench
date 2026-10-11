@@ -287,22 +287,24 @@ is inside the command range, so nothing turns while it goes out:
 - every run asks again, because extended telemetry is a runtime setting an
   ESC forgets when it restarts, and an ESC can be swapped between runs.
 
-The repetition is for AM32. AM32 2.21 takes a command only while it is armed
-and its motor is stopped, and it arms itself after 1 s of zero throttle,
-counted from the first frame it hears (`Src/dshot.c:157`,
-`Src/main.c:1353-1356`). A disarmed bench sends no frames, and AM32 restarts
-after 0.5 s without one when armed and 2 s when not, so every run starts from
-an AM32 that has not armed. An ask made only in a run's first 10 ms arrives
-before AM32 can take it. `test_dshot_edt` holds the schedule against a model
-of those rules: an AM32 starting from silence at zero throttle takes the third
-ask, 1.02 s into the run. Speed does not depend on any of this: AM32 answers a
+The repetition is for ESCs with AM32 firmware. An ESC with AM32 2.21 takes a
+command only while it is armed and its motor is stopped, and it arms itself
+after 1 s of zero throttle, counted from the first frame it hears (`Src/dshot.c:157`,
+`Src/main.c:1353-1356`). A disarmed bench sends no frames, and the AM32
+firmware restarts after 0.5 s without one when armed and 2 s when not, so
+every run starts from an ESC that has not armed. An ask made only in a run's
+first 10 ms arrives before the ESC can take it. `test_dshot_edt` holds the
+schedule against a model of those rules: an ESC with AM32 firmware starting
+from silence at zero throttle takes the third ask, 1.02 s into the run. Speed
+does not depend on any of this: an ESC with AM32 firmware answers a
 bidirectional frame with a period whether or not it was asked.
 
 Each of the ten frames carries the telemetry bit set. On a value of 1 to 47
-that bit is what marks the frame as a command for the BLHeli_S family
-(Bluejay): it discards a command whose telemetry bit is clear and zeroes its
+that bit is what marks the frame as a command for the BLHeli_S firmware
+family (Bluejay): it discards a command whose telemetry bit is clear and zeroes its
 repeat counter with it, so ten frames without the bit never reach the six
-repeats its command handler counts. AM32 has no such gate and acts on either.
+repeats its command handler counts. The AM32 firmware has no such gate and
+acts on either.
 On a bidirectional pin the frame is `0x01B5` with the bit and `0x01A4`
 without it — a different payload and a different checksum nibble.
 `test_dshot_frame` holds that word. The bit's other meaning is a request on
@@ -313,7 +315,8 @@ marks an extended frame is an ordinary exponent and mantissa in a speed frame,
 and only an ESC with extended telemetry enabled guarantees the normalisation
 that separates them. The decoder therefore takes the mode as an argument
 rather than inferring it, and `outputs_hw.c` passes true from the first repeat
-of the first ask on. AM32 answers command 13 once, with a status frame
+of the first ask on. An ESC with AM32 firmware answers command 13 once, with a
+status frame
 (`0xE00`) after the sixth repeat, and that frame read as a speed is a period
 of zero and no answer.
 
@@ -358,8 +361,8 @@ is unconfirmed beyond that one ESC:
   temperature (1 °C per count) frames, and the stress, status and debug
   frames; only the voltage (0.25 V per count) has been read against a value
   the tester knew;
-- whether ESCs other than AM32 accept command 13 under the repeated ask:
-  Bluejay and BLHeli_32 are untested;
+- whether ESCs with firmware other than AM32 accept command 13 under the
+  repeated ask: ESCs with Bluejay and BLHeli_32 firmware are untested;
 - whether the specification's "wait at least 35 ms" note belongs to command
   13 or to command 12 (save settings). The table admits both readings, and
   the bench waits neither way: the frame after an ask's tenth repeat is the
