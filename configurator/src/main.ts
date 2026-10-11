@@ -32,9 +32,12 @@ function tryResolve(sel: Selection): Setup | null {
   }
 }
 
-/** The selection reduced to ids the catalogue knows. */
+/** The ids of the functions that need no part. They have no tick and are in no selection. */
+const BASE_IDS: ReadonlySet<string> = new Set(CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id));
+
+/** The selection reduced to ids the catalogue knows and the page offers a tick for. */
 function known(sel: Selection): Selection {
-  const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id));
+  const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id && f.needs.length > 0));
   const owned = sel.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable));
   return { functions, owned, options: { ...sel.options } };
 }
@@ -47,7 +50,7 @@ function readHash(): void {
   const setup = tryResolve(parsed.selection);
   selection = known(parsed.selection);
   const dropped = [...parsed.selection.functions, ...parsed.selection.owned]
-    .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
+    .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
   const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
   if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
 }

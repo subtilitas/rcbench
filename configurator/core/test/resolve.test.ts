@@ -90,8 +90,8 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
   const setup = resolve(CATALOGUE, select());
   assert.deepEqual(partIds(setup), LOCKED);
   assert.deepEqual(wireNumbers(setup), [1, 2, 3, 4]);
-  assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'same-release', 'base-state', 'bind-state']);
-  assert.deepEqual(setup.unknown.map((u) => u.id), ['base-state']);
+  assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'same-release', 'interlock-state', 'language-state', 'profiles-state', 'bind-state']);
+  assert.deepEqual(setup.unknown.map((u) => u.id), ['profiles-state']);
   assert.deepEqual(setup.conflicts, []);
   assert.deepEqual(setup.ignored, []);
   for (const p of setup.parts) {
@@ -351,7 +351,7 @@ test('an option keeps its value while it is not visible', () => {
   const setup = resolve(CATALOGUE, select([], [], { ina228Board: 'xt90', escPower: 'pd', connection: 'osoyoo' }));
   assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd']);
   assert.deepEqual(setup.checks.map((c) => c.id), [
-    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'base-state', 'bind-state', 'osoyoo-terminals',
+    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'interlock-state', 'language-state', 'profiles-state', 'bind-state', 'osoyoo-terminals',
   ]);
 });
 
@@ -492,7 +492,7 @@ test('the unknown list is the checks of kind unknown, in data order', () => {
   const setup = resolve(CATALOGUE, select(FUNCTIONS, SELECTABLE, { connection: 'osoyoo', ina228Board: 'xt90' }));
   assert.deepEqual(setup.unknown.map((u) => u.id), [
     'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
-    'osoyoo-labels', 'base-state',
+    'osoyoo-labels', 'profiles-state',
   ]);
   for (const u of setup.unknown) {
     const check = setup.checks.find((c) => c.id === u.id);

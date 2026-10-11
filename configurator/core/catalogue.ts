@@ -1177,7 +1177,9 @@ const functions: Fn[] = [
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
-    needs: [], hardware: 'run', src: repo('README.md', 38, 'so arming works there'),
+    // Arming works on the bring-up bench. The decision to arm is tested on
+    // the host only; the check entry `interlock-state` carries both.
+    needs: [], hardware: 'not-run', src: repo('STATUS.md', 113, 'released by CLEAR alone; not run on hardware'),
   },
   {
     id: 'stop', group: 'bench',
@@ -1219,14 +1221,14 @@ const functions: Fn[] = [
   {
     id: 'language', group: 'bench',
     name: t('User interface in English or German', 'Bedienoberfläche auf Englisch oder Deutsch'),
-    // The docs of the release state host tests and no run on hardware. The
-    // check entry `base-state` carries it.
+    // The check entry `language-state` carries the state.
     needs: [], hardware: 'not-run', src: repo('STATUS.md', 98, 'built and tested on the host: English and German'),
   },
   {
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
-    // As `language`: no statement of a run of the list on a panel.
+    // No statement of a run of the list on a panel. The check entry
+    // `profiles-state` carries it.
     needs: [], hardware: 'not-run', src: repo('STATUS.md', 126, '72 families, 451 models, from 153 manuals'),
   },
   {
@@ -1511,10 +1513,26 @@ const checks: Check[] = [
     when: { opt: 'connection', is: 'osoyoo' }, src: photo('05'),
   },
   {
-    id: 'base-state', kind: 'unknown',
+    id: 'interlock-state', kind: 'note',
     text: t(
-      'Interface language and ESC profile list: the docs of release 0.16.0 state host tests and no run on hardware. The page marks both "Not run on hardware".',
-      'Sprache der Bedienoberfläche und ESC-Profilliste: Die Dokumente von Release 0.16.0 nennen Host-Tests und keinen Lauf auf Hardware. Die Seite kennzeichnet beide mit "Nicht auf Hardware gelaufen".',
+      'ARM and the heartbeat interlock: arming works on the bring-up bench with the line between J8 of the panel and GP3 of the coprocessor fitted. The decision to arm, with its latch at a start, on link silence, on a distrusted heartbeat and on a refused ARM, is tested on the host and has not run on hardware. The page marks the function "Not run on hardware".',
+      'ARM und Heartbeat-Verriegelung: ARM funktioniert auf dem Bring-up-Aufbau mit der Leitung zwischen J8 des Panels und GP3 des Koprozessors. Die Entscheidung über ARM, mit ihrer Sperre bei einem Start, bei stiller Verbindung, bei einem nicht vertrauenswürdigen Heartbeat und bei einem abgelehnten ARM, ist auf dem Host getestet und nicht auf Hardware gelaufen. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
+    ),
+    when: null, src: repo('README.md', 38, 'so arming works there'),
+  },
+  {
+    id: 'language-state', kind: 'note',
+    text: t(
+      'Interface language: the tables, the fonts and the fit check of the German interface are tested on the host. The German interface has not been read on a panel. The page marks the function "Not run on hardware".',
+      'Sprache der Bedienoberfläche: Die Tabellen, die Schriften und die Passprüfung der deutschen Oberfläche sind auf dem Host getestet. Die deutsche Oberfläche wurde nicht auf einem Panel gelesen. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
+    ),
+    when: null, src: repo('STATUS.md', 434, 'The German interface has not been read on a panel'),
+  },
+  {
+    id: 'profiles-state', kind: 'unknown',
+    text: t(
+      'ESC profile list: the docs of release 0.16.0 state host tests of the reader and the registry and no run of the list on a panel. The page marks the function "Not run on hardware".',
+      'ESC-Profilliste: Die Dokumente von Release 0.16.0 nennen Host-Tests des Lesers und der Registry und keinen Lauf der Liste auf einem Panel. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
     ),
     when: null, src: repo('STATUS.md', 126, 'The reader and the registry are tested on the host'),
   },

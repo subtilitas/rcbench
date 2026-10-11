@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 21 functions of which 10 need no part, 6 rules, 23 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 21 functions of which 10 need no part, 6 rules, 25 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
@@ -146,7 +146,7 @@ Line coverage of the resolver, measured by `node --test --experimental-test-cove
 - Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.16.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, T-plug of the PD mini.
-- Functions with the state "not run on hardware": servo current, angle, ESC power, stick programming, tap, emergency stop.
+- Functions with the state "not run on hardware": ARM, DISARM and heartbeat interlock, STOP command, servo sweep and frame rates, PPM signal, interface language, ESC profile list, servo current, angle, ESC power, stick programming, tap, emergency stop. The check entries `interlock-state`, `language-state`, `profiles-state` and `bind-state` state what the docs of release 0.16.0 say on 4 of the functions that need no part.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
 - The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. With this module the data holds no direct wire between the minus of the source and the minus of the ESC: wire 56 (battery) or wire 57 (PD mini) ends on the pin BAT− of the module and wire 58 runs from the pin ESC− to the ESC. The wires 15 and 23 belong to the MATEK board and to a setup without the sensor. The check entry `ina228-xt90-pads` states the pads and the 2 rails.

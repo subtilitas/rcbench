@@ -83,12 +83,13 @@ export function parseHash(hash: string, defaults: Options): Parsed {
 
 /**
  * The hash of a selection, without '#'. Ids stand in catalogue order; ids the
- * catalogue does not know are left out. `lang` is written when it is not the
+ * catalogue does not know are left out, and so is a function that needs no
+ * part: it has no tick. `lang` is written when it is not the
  * language the page starts in without a hash.
  */
 export function formatHash(selection: Selection, lang: Lang, startLang: Lang, catalogue: Catalogue): string {
   const keys = [`v=${HASH_VERSION}`];
-  const f = catalogue.functions.map((x) => x.id).filter((id) => selection.functions.includes(id));
+  const f = catalogue.functions.filter((x) => x.needs.length > 0).map((x) => x.id).filter((id) => selection.functions.includes(id));
   const p = catalogue.parts.filter((x) => x.selectable).map((x) => x.id).filter((id) => selection.owned.includes(id));
   const o = TOKENS.filter((x) => selection.options[x[1]] === x[2]).map((x) => x[0]);
   if (f.length > 0) keys.push(`f=${f.join(',')}`);

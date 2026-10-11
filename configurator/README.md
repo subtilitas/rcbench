@@ -57,7 +57,7 @@ node tools/shots.ts shots   # 24 PNG files: 2 widths, 2 themes, 2 languages, 3 s
 | Key | Meaning |
 |---|---|
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
-| `f` | Function ids, comma separated. |
+| `f` | Ids of the ticked functions, comma separated. A function that needs no part has no tick; its id in a link is dropped without a notice. |
 | `p` | Ids of parts the visitor owns. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |

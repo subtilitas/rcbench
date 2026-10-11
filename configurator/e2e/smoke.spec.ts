@@ -269,6 +269,20 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
+    test('a link that names a function without a tick keeps no hidden id', async ({ page }) => {
+      const seen = watch(page);
+      await open(page, '#v=1&f=link,servo,profiles');
+      await expect(page.locator('.msg')).toHaveCount(0);
+      await expect(page.locator('#f-servo')).toBeChecked();
+      await expect(page.locator('#f-link')).toHaveCount(0);
+      await page.locator('#f-esc').check();
+      await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=servo,esc');
+      await page.locator('#f-servo').uncheck();
+      await page.locator('#f-esc').uncheck();
+      await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1');
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
     test('Copy link falls back to a selectable field', async ({ page, context }) => {
       await open(page, '#v=1&f=servo');
       await page.evaluate(() => {

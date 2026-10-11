@@ -137,7 +137,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.equal(CATALOGUE.functions.length, 21);
   assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 10);
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 23);
+  assert.equal(CATALOGUE.checks.length, 25);
   assert.equal(CATALOGUE.stages.length, 5);
   assert.equal(CATALOGUE.safety.length, 7);
   assert.equal(CATALOGUE.release, '0.16.0');
@@ -251,7 +251,7 @@ test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
     'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
-    'osoyoo-labels', 'base-state',
+    'osoyoo-labels', 'profiles-state',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
@@ -262,7 +262,7 @@ test('every unknown of the data is a check entry of kind unknown', () => {
   );
   assert.deepEqual(
     CATALOGUE.functions.filter((f) => f.hardware === 'not-run').map((f) => f.id),
-    ['stop', 'sweep', 'ppm', 'language', 'profiles', 'servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
+    ['interlock', 'stop', 'sweep', 'ppm', 'language', 'profiles', 'servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
   );
   // No part is without a stated role. The pins with one option value only are
   // the 2 supply pins of the INA228 board and the 2 minus poles of the module

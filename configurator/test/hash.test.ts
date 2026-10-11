@@ -39,8 +39,9 @@ test('every selection of the sweep survives format and parse', () => {
 });
 
 test('the full selection survives format and parse', () => {
+  // Every tick of the page: the functions that need a part.
   const full: Selection = {
-    functions: CATALOGUE.functions.map((f) => f.id),
+    functions: CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id),
     owned: CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id),
     options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd' },
   };
@@ -170,4 +171,24 @@ test('a link written without the functions that need no part resolves to the sam
   assert.equal(written, hash);
   assert.ok(base.every((id) => !written.includes(id)));
   assert.equal(HASH_VERSION, 1);
+});
+
+test('a function that needs no part is never written into the hash', () => {
+  const ids = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  // A link that names such ids parses without a notice.
+  const parsed = parseHash(`#v=1&f=link,servo,${ids.join(',')}`, DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.unknown, []);
+  assert.ok(parsed.selection.functions.includes('link'));
+  // It resolves to the parts and wires of the ticks alone.
+  const withIds = resolve(CATALOGUE, parsed.selection);
+  const ticks = resolve(CATALOGUE, { ...base(), functions: ['servo'] });
+  assert.deepEqual(withIds.ignored, []);
+  assert.deepEqual(withIds.parts.map((p) => p.part.id), ticks.parts.map((p) => p.part.id));
+  assert.deepEqual(withIds.wires.map((w) => w.n), ticks.wires.map((w) => w.n));
+  // The hash written back holds the tick alone.
+  assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE), 'v=1&f=servo');
+  assert.equal(formatHash({ ...base(), functions: ids }, 'en', 'en', CATALOGUE), 'v=1');
+  for (const id of ids) {
+    assert.equal(formatHash({ ...base(), functions: [id, 'esc'] }, 'en', 'en', CATALOGUE), 'v=1&f=esc', id);
+  }
 });
