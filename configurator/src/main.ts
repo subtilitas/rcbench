@@ -4,6 +4,7 @@ import './style.css';
 import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, removalIsPlain, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
+import { exportPdf, syncPdf } from './export/button.ts';
 import { formatHash, parseHash, reportIds } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { optionsOf } from './names.ts';
@@ -112,6 +113,7 @@ function render(focusId?: string): void {
   const pan = byId('pan');
   if (pan) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
   updatePanHint();
+  syncPdf(lang, location.href);
   if (focusId) byId(focusId)?.focus({ preventScroll: true });
   // The question opens under its control; it is brought into view with its 2 answers.
   if (focusId === 'rm-no') byId('rmwarn')?.scrollIntoView({ block: 'nearest' });
@@ -228,6 +230,9 @@ document.addEventListener('click', (event) => {
     confirmRemoval();
   } else if (el.id === 'rm-no') {
     keepPart();
+  } else if (el.id === 'b-pdf') {
+    const setup = tryResolve(selection);
+    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, location.href);
   } else if (el.id === 'b-reset') {
     selection = base();
     notices = [];
