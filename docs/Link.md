@@ -384,8 +384,8 @@ SENSE set-up taken, until the first window closes under it.
 **A part that resets itself.** Both current monitors answer every read after
 a reset of their own, on their power-on set-up. The INA228 then computes its
 current at ADCRANGE 0: a set-up at ADCRANGE 1, any whose shunt voltage at
-the maximum current is at most 40.96 mV, the MATEK default among them, reads
-a quarter of the current. The INA3221 converts all three channels at 1.1 ms,
+the maximum current is at most 40.96 mV, the default of the MATEK
+I2C-INA-BM board among them, reads a quarter of the current. The INA3221 converts all three channels at 1.1 ms,
 one CH1 result every 6.6 ms where the bench set-up gives one every 280 µs
 (CH1 alone) to 840 µs (three channels). The INA228 resets when its supply
 falls under about 1.26 V (TI SLYS021A §7.4.2).
@@ -535,7 +535,9 @@ both:
 
 - PWM (pulse-width modulation): a servo pulse from the PWM generator that
   drives the standard servo ports.
-- PROGRAMMING: the wire protocol of [KST](#the-programming-port-for-kst-and-chaservo-servos).
+- PROGRAMMING: the wire protocol for KST and Chaservo servos, which the
+  servo programming page (`KST`, 0x32) runs, see
+  [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos).
 
 The page holds 4 ports. Register 0 says how many the build has; the bring-up
 build has 1. `shared/outputs/prog_port.c` holds the rules.
@@ -557,7 +559,8 @@ A port's pulse is a channel of the output bank: port n is bank channel
 Arming, the clamp to 0 to 1000, the slew, the endpoints and the 500 ms
 command timeout are the bank's and act on a port as on a standard servo
 port. A port renders a pulse while the bank is armed, its `PWM` bit is set,
-the generator has its pin and KST holds the port in PWM. Every port runs at
+the generator has its pin and the servo programming page holds the port in
+PWM. Every port runs at
 SERVO's frame rate (register 0 of SERVO), or at 50 Hz while that reads 0.
 
 The servo tester reaches a port three ways:
@@ -582,7 +585,8 @@ of OUTPUTS or BIND with such a slot is refused with BAD_VALUE, and a stored
 slot with one starts unbound. Two ports may
 share a slice: both run at the one port rate. A `PIN` is not changed while
 the bank is armed, while the port's `PWM` bit is set, while it is the
-`TARGET` or while KST is out of PWM. `PWM` and `TARGET` name only ports
+`TARGET` or while the servo programming page has the port out of PWM. `PWM`
+and `TARGET` name only ports
 whose pin the generator has. A write that reaches a register of a port the
 build does not have is refused with BAD_VALUE, a write of register 0 or 1
 with READ_ONLY. A refused write changes nothing.
@@ -609,7 +613,8 @@ hardware.
 
 ### The programming port for KST and Chaservo servos
 
-KST (0x32) is new in 4.12 and names a programming port since 4.13. The page
+The servo programming page (`KST`, 0x32) is new in 4.12 and names a
+programming port since 4.13. The page
 runs the programming protocol of
 [`protocols/kst`](../protocols/kst/README.md) for KST and Chaservo servos,
 which share one protocol and one register set, on one port of
@@ -953,7 +958,7 @@ that had no power for 2000 ms has left programming mode if 2000 ms is
 enough, which is not measured. The panel switches the supply on again on
 SUPPLY.
 
-| Panel | Coprocessor | KST (0x32) |
+| Panel | Coprocessor | Servo programming page (`KST`, 0x32) |
 | --- | --- | --- |
 | 4.15 | 4.15 | served |
 | 4.15 | 4.14 | served without LEAVE. A 4.14 coprocessor refuses operation 10 with BAD_VALUE and a write to register 28 with READ_ONLY: the panel's module sends neither and answers the request with `KST_LINK_START_NO_OP`. POWER_CYCLED and REBOOT are the ways out |
@@ -979,7 +984,8 @@ a refusal with BAD_VALUE. It refuses WRITE, RESTORE and RELEASE without the
 caller's switch before anything is sent. `shared/bench/supply_link.c` takes
 a command the port left on SUPPLY as the one asked and does not write its
 own over it (`supply_link_adopted()`). No screen calls `kst_link` in this
-build, so this build's panel sends nothing to KST or PROG.
+build, so this build's panel sends nothing to the servo programming page or
+to PROG.
 
 `test_kst_port` runs the port and the page against the servo and supply
 models: every transition and every refusal, a stop in each state and in the
@@ -1070,7 +1076,7 @@ Clearing a latched failsafe is such a side effect.
 | 0x2F | BIND_OUT | read, write | an OUTPUTS page prepared and not in force (since 4.10): the registers and the value rules of OUTPUTS |
 | 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared |
 | 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
-| 0x32 | KST | read, write | the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 28: the command in registers 0 to 3, one frame, the staged image, unlock set and start check in 4 to 25, and the supply voltage and current of an ENTER in 26 and 27. [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos) has the rules. Nothing is kept |
+| 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 28: the command in registers 0 to 3, one frame, the staged image, unlock set and start check in 4 to 25, and the supply voltage and current of an ENTER in 26 and 27. [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 24 registers. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints. [The programming ports](#the-programming-ports) has the rules. Pin, slew and endpoints are kept in the coprocessor's flash |
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
