@@ -70,9 +70,20 @@ history is in git.
   216,000 units of planner work are spent first. A stop, a disarm, an
   ABORT, a lost heartbeat, a silent link or a supply found off ends the
   planning at the next pass with nothing sent.
-  The link protocol is 4.14; PROG and the ports are 4.13. Every
-  combination of a 4.14 and an older panel and coprocessor links and arms,
-  and nothing is sent to 0x32 or 0x33 unless both are 4.13 or later.
+  LEAVE (operation 10) returns a port from PROGRAMMING to PWM without
+  switching the supply: the port holds the line low for the wait in write
+  register 28, 0 to 10,000 ms and 100 ms until a panel writes it, then the
+  PWM generator has the pin. A wait above 10,000 ms is refused and not
+  clamped. A LEAVE is refused while the port runs or plans an operation,
+  while a READ_ALL is owed and while only RESTORE is accepted. In the wait
+  an ABORT or a disarm returns the port to PROGRAMMING, and a supply that
+  reads off ends it as under a session. Not measured on a KST or Chaservo
+  servo: the wait it needs, whether it follows PWM in programming mode,
+  and whether a written value acts before its next power-up.
+  The link protocol is 4.15; PROG and the ports are 4.13, the planning in
+  slices 4.14. Every combination of a 4.15 and an older panel and
+  coprocessor links and arms, nothing is sent to 0x32 or 0x33 unless both
+  are 4.13 or later, and no LEAVE is sent unless both are 4.15.
   Host suite only (`test_kst_port`, `test_prog_port`, `test_kst_link`); no
   frame has been sent to a servo and no pulse of a port is measured.
   ([Link](docs/Link.md#the-programming-port-for-kst-and-chaservo-servos))
@@ -147,7 +158,7 @@ history is in git.
   calls `kst_session_edit()`, `kst_session_restore()` and
   `kst_session_release_pairing()`: a write command starts the planner's
   job, and each pass of core 0's main loop runs 1 slice. A write command
-  reaches 1,304 bytes of stack and a pass that plans 984. The time of a
+  reaches 1,304 bytes of stack and a pass that plans 1,016. The time of a
   pass is not measured on hardware.
   ([Performance](docs/Performance.md#the-coprocessor))
 - **The write planner for KST and Chaservo servos takes 488 bytes of
