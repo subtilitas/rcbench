@@ -139,6 +139,7 @@ static void session_gone(kst_prog_t *p)
     p->write_enabled = false;
     p->written = false;
     p->backed_up = false;
+    p->no_file = false;
     p->soft = false;
     p->soft_load = false;
     p->load_skipped = 0;
@@ -265,20 +266,19 @@ static void write_go(kst_prog_t *p)
 
 /*
  * A write to the servo.  The first of a session to a servo whose image is
- * known waits for that image in a file; false, with nothing held, when no
- * card is there to take it.  A servo in doubt has no image worth a file:
- * the session's restore, the one write it takes, goes without.
+ * known waits for that image in a file.  Without a card it goes with no
+ * file, and the session's backup is the one copy of the servo as found.
+ * A servo in doubt has no image worth a file: the session's restore, the
+ * one write it takes, goes without.
  */
-static bool send_write(kst_prog_t *p, const kst_link_request_t *req,
+static void send_write(kst_prog_t *p, const kst_link_request_t *req,
                        const kst_image_t *target)
 {
-    const bool save = kst_prog_save_first(p);
+    const bool save = kst_prog_save_first(p) && p->f.card;
 
-    if (save && !p->f.card) {
-        return false;
-    }
     p->held = *req;
     p->held_target = *target;
+    p->held_no_file = kst_prog_save_first(p) && !p->f.card;
     p->op = (uint8_t)req->op;
     if (save) {
         p->wait = W_SAVE;
@@ -288,7 +288,6 @@ static bool send_write(kst_prog_t *p, const kst_link_request_t *req,
     } else {
         write_go(p);
     }
-    return true;
 }
 
 /* Whether an operation may start now; the message when not. */
@@ -345,6 +344,7 @@ static void adopt(kst_prog_t *p)
     }
     if (had && !same(&was, &p->servo)) {
         p->backed_up = false;
+        p->no_file = false;
     }
 }
 
@@ -425,11 +425,14 @@ static void done_ok(kst_prog_t *p, unsigned op)
         if (p->f.have_image) {
             const bool on = p->write_enabled;
             const bool kept = p->backed_up;
+            const bool none = p->no_file;
 
-            /* The file holds the servo as the session found it. */
+            /* The file holds the servo as the session found it; so does
+             * the lack of one. */
             adopt(p);
             p->write_enabled = on && p->fp_ok;
             p->backed_up = kept;
+            p->no_file = none;
         } else {
             p->need_read = true;
         }
@@ -609,6 +612,8 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
             /* The first write of the session is one that started: a write
              * the card, a stop or the link kept from starting is none. */
             p->written = p->written || is_write(p->op);
+            /* And one that started with no card has no file. */
+            p->no_file = p->no_file || (is_write(p->op) && p->held_no_file);
         } else {
             not_started(p, KST_PROG_MSG_START + (unsigned)f->answer, 0);
         }
@@ -828,6 +833,20 @@ bool kst_prog_backed_up(const kst_prog_t *p)
 const char *kst_prog_backup_name(const kst_prog_t *p)
 {
     return p->backed_up ? p->backup : "";
+}
+
+bool kst_prog_no_file(const kst_prog_t *p)
+{
+    return p->no_file && !p->backed_up;
+}
+
+/* The image the file before a write takes.  After a write that went with
+ * no card the servo no longer holds what the session found: the session's
+ * backup does, while the coprocessor keeps it. */
+static const kst_image_t *file_image(const kst_prog_t *p)
+{
+    return p->card_auto && p->no_file && p->f.have_backup ? &p->f.backup
+                                                          : &p->servo;
 }
 
 bool kst_prog_save_first(const kst_prog_t *p)
@@ -1187,9 +1206,7 @@ static kst_prog_msg_id_t write_draft(kst_prog_t *p, kst_prog_from_t from)
     p->writes = (uint8_t)kst_prog_changes(p);
     r = request(p, LINK_KST_OP_WRITE);
     r.image = p->draft;
-    if (!send_write(p, &r, &p->draft)) {
-        return say(p, KST_PROG_MSG_CARD_NONE, 0);
-    }
+    send_write(p, &r, &p->draft);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1235,9 +1252,7 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
     p->soft_load = false;
     p->restoring = KST_PROG_FROM_NONE;
     r = request(p, LINK_KST_OP_RELEASE);
-    if (!send_write(p, &r, &p->plan.target)) {
-        return say(p, KST_PROG_MSG_CARD_NONE, 0);
-    }
+    send_write(p, &r, &p->plan.target);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1378,9 +1393,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     r = request(p, LINK_KST_OP_RESTORE);
     r.image = *src;
     r.confirm = plan->unchecked;
-    if (!send_write(p, &r, src)) {
-        return say(p, KST_PROG_MSG_CARD_NONE, 0);
-    }
+    send_write(p, &r, src);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1585,7 +1598,7 @@ bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
     out->preset = p->card_auto;
     out->first = p->card_op == KST_PROG_CARD_LIST ? p->card_first : 0u;
     memcpy(out->name, p->card_name, sizeof(out->name));
-    out->image = p->servo;
+    out->image = *file_image(p);
     return true;
 }
 
@@ -1627,7 +1640,12 @@ static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
 
     if (ok) {
         name_copy(p->card_name, d->name);
+    }
+    /* A save by hand after a write that went with no card holds the
+     * written servo, not the one the session found: it is no backup. */
+    if (ok && (p->card_auto || !p->no_file)) {
         p->backed_up = p->have_servo;
+        p->no_file = false;
         name_copy(p->backup, d->name);
     }
     if (waited) {

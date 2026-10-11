@@ -2285,6 +2285,216 @@ TEST_CASE(a_file_saved_by_hand_is_the_sessions_and_no_other_is_written)
     CHECK_STR_EQ(kst_prog_backup_name(&g_p), "MINE");
 }
 
+TEST_CASE(a_first_write_with_no_card_goes_without_a_file)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+    kst_image_t now;
+
+    up_enabled();
+    g_card = false;
+    frame();
+    CHECK(kst_prog_save_first(&g_p));
+    CHECK(!kst_prog_no_file(&g_p));
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    /* Not said of a write that has not started. */
+    CHECK(!kst_prog_no_file(&g_p));
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo().r[KST_REG_DUTY], 200);
+    CHECK_EQ(g_fc.saves, 0);
+    CHECK(kst_prog_no_file(&g_p));
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "");
+    CHECK(!kst_prog_first_write(&g_p));
+    /* The next write still owes the file. */
+    CHECK(kst_prog_save_first(&g_p));
+
+    /* The second without a card as well. */
+    edit(KST_F_DUTY, 198);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, 0);
+    CHECK(kst_prog_no_file(&g_p));
+
+    /* The session's restore, the one copy, with no card and no file. */
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+    now = servo();
+    CHECK(same(&now, &sv));
+    CHECK_EQ(g_fc.saves, 0);
+    CHECK(kst_prog_no_file(&g_p));
+
+    /* The session ends: so does the line. */
+    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_no_file(&g_p));
+}
+
+TEST_CASE(a_pairing_release_with_no_card_goes_without_a_file)
+{
+    up_enabled();
+    g_card = false;
+    frame();
+    CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_RELEASED);
+    CHECK_EQ(g_fc.saves, 0);
+    CHECK(kst_prog_no_file(&g_p));
+}
+
+TEST_CASE(a_card_put_in_after_a_write_takes_the_servo_as_the_session_found_it)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up_enabled();
+    g_card = false;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+
+    /* A save by hand holds the written servo: it is not the backup. */
+    g_card = true;
+    frame();
+    save("NOW");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_EQ(g_fc.file[0].img.r[KST_REG_DUTY], 200);
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK(kst_prog_no_file(&g_p));
+    CHECK(kst_prog_save_first(&g_p));
+
+    /* The next write saves the image read before the first one. */
+    edit(KST_F_DUTY, 198);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo().r[KST_REG_DUTY], 198);
+    CHECK_EQ(g_fc.saves, 2);
+    CHECK_STR_EQ(g_fc.file[1].name, "KST001");
+    CHECK(same(&g_fc.file[1].img, &sv));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "KST001");
+    CHECK(!kst_prog_no_file(&g_p));
+    CHECK(!kst_prog_save_first(&g_p));
+
+    /* And the one after it takes no file. */
+    edit(KST_F_DUTY, 196);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(g_fc.saves, 2);
+}
+
+TEST_CASE(a_card_put_in_after_a_write_and_full_ends_the_next_write)
+{
+    static const struct {
+        uint8_t result;
+        unsigned msg;
+    } k[] = {
+        { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL },
+        { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE },
+        /* Pulled between the request and the file. */
+        { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE },
+    };
+
+    up_enabled();
+    g_card = false;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    g_card = true;
+    frame();
+    edit(KST_F_DUTY, 198);
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const unsigned starts = g_starts;
+
+        g_fc.fails = k[i].result;
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), k[i].msg);
+        CHECK_EQ(g_starts, starts);
+        CHECK_EQ(servo().r[KST_REG_DUTY], 200);
+        CHECK(kst_prog_no_file(&g_p));
+        CHECK(!kst_prog_backed_up(&g_p));
+    }
+}
+
+TEST_CASE(the_file_after_a_write_is_of_the_backup_while_the_session_holds_it)
+{
+    kst_prog_card_req_t req;
+
+    /* The session holds its backup: the file is of it. */
+    by_hand();
+    g_p.backed_up = false;
+    g_p.no_file = true;
+    g_p.written = true;
+    g_f.card = true;
+    CHECK(kst_field_edit(&g_f.backup, KST_F_DUTY, 190));
+    pass(1);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_take(&g_p, &req));
+    CHECK_EQ(req.op, KST_PROG_CARD_SAVE);
+    CHECK(req.preset);
+    CHECK(same(&req.image, &g_f.backup));
+    CHECK(!same(&req.image, kst_prog_servo(&g_p)));
+
+    /* It does not: the file is of the servo as read. */
+    by_hand();
+    g_p.backed_up = false;
+    g_p.no_file = true;
+    g_p.written = true;
+    g_f.card = true;
+    g_f.have_backup = false;
+    g_f.rd.flags &= (uint16_t)~LINK_KS_F_BACKUP;
+    pass(1);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_take(&g_p, &req));
+    CHECK_EQ(req.op, KST_PROG_CARD_SAVE);
+    CHECK(same(&req.image, kst_prog_servo(&g_p)));
+
+    /* A save by hand is of the servo as read, whatever the session
+     * holds. */
+    by_hand();
+    g_p.backed_up = false;
+    g_p.no_file = true;
+    g_f.card = true;
+    CHECK(kst_field_edit(&g_f.backup, KST_F_DUTY, 190));
+    pass(1);
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_take(&g_p, &req));
+    CHECK(same(&req.image, kst_prog_servo(&g_p)));
+}
+
+TEST_CASE(a_write_with_no_card_that_does_not_start_leaves_no_line)
+{
+    by_hand();
+    g_p.backed_up = false;
+    pass(1);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_BUSY);
+    CHECK_EQ(msg(), BUSY);
+    CHECK(!kst_prog_no_file(&g_p));
+    CHECK(kst_prog_first_write(&g_p));
+    /* The one that starts does. */
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    CHECK(kst_prog_no_file(&g_p));
+    CHECK(!kst_prog_first_write(&g_p));
+}
+
 TEST_CASE(a_write_without_its_file_is_not_sent)
 {
     static const struct {
@@ -2313,17 +2523,11 @@ TEST_CASE(a_write_without_its_file_is_not_sent)
         CHECK(!kst_prog_backed_up(&g_p));
         CHECK(kst_prog_write_enabled(&g_p));
     }
-    /* No card in the slot: said before anything is asked. */
-    g_fc.fails = KST_PROG_CARD_OK;
-    g_card = false;
-    frame();
-    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_CARD_NONE);
-    CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_CARD_NONE);
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(!kst_prog_no_file(&g_p));
     CHECK_EQ(g_fc.saves, 3);
 
     /* A card that never answers: KST_PROG_CARD_MS. */
-    g_card = true;
+    g_fc.fails = KST_PROG_CARD_OK;
     g_fc.silent = true;
     frame();
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
@@ -3135,6 +3339,12 @@ int main(void)
     RUN(a_servo_that_goes_while_its_file_is_read_takes_nothing);
     RUN(the_first_write_saves_the_servo_to_the_card_first);
     RUN(a_file_saved_by_hand_is_the_sessions_and_no_other_is_written);
+    RUN(a_first_write_with_no_card_goes_without_a_file);
+    RUN(a_pairing_release_with_no_card_goes_without_a_file);
+    RUN(a_card_put_in_after_a_write_takes_the_servo_as_the_session_found_it);
+    RUN(a_card_put_in_after_a_write_and_full_ends_the_next_write);
+    RUN(the_file_after_a_write_is_of_the_backup_while_the_session_holds_it);
+    RUN(a_write_with_no_card_that_does_not_start_leaves_no_line);
     RUN(a_write_without_its_file_is_not_sent);
     RUN(a_save_given_up_sends_no_write);
     RUN(a_fetch_that_brings_nothing_is_asked_again_once_a_second);

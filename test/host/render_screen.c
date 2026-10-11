@@ -665,6 +665,11 @@ static void kst_view(const char *view)
         return;
     }
     /* The rest writes. */
+    if (strcmp(v, "-write-nocard") == 0 || strcmp(v, "-nofile") == 0) {
+        /* No card in the slot at the session's first write. */
+        g_rig.card = false;
+        rig_frame();
+    }
     kenable();
     kedits();
     if (strcmp(v, "-changes") == 0) {
@@ -672,7 +677,7 @@ static void kst_view(const char *view)
         return;
     }
     ktap(kst_panel_value_rect(0, 4, 0));            /* WRITE n VALUES */
-    if (strcmp(v, "-write") == 0) {
+    if (strcmp(v, "-write") == 0 || strcmp(v, "-write-nocard") == 0) {
         return;
     }
     khold();

@@ -350,6 +350,8 @@ typedef struct {
     bool write_enabled;
     bool written;             /**< a write was sent in this session */
     bool backed_up;           /**< a file holds this session's servo */
+    bool no_file;             /**< a write went with no card for one */
+    bool held_no_file;        /**< and the held write is such a one  */
     uint8_t channel;
 
     uint8_t wait;             /**< what is awaited                */
@@ -454,8 +456,13 @@ bool kst_prog_first_write(const kst_prog_t *p);
 bool kst_prog_backed_up(const kst_prog_t *p);
 /** That file's name; "" while there is none. */
 const char *kst_prog_backup_name(const kst_prog_t *p);
-/** The next write waits for a file of the servo's image first, and is not
- *  sent when no card takes it. */
+/** A write of this session started with no card in the slot, and no file
+ *  holds the servo as the session found it: the session's backup is the
+ *  one copy.  Ends with the next file a write saves. */
+bool kst_prog_no_file(const kst_prog_t *p);
+/** The next write saves the servo's image to a file first.  A mounted card
+ *  that does not take the file ends the write; with no card mounted the
+ *  write goes without a file. */
 bool kst_prog_save_first(const kst_prog_t *p);
 
 /** The fields in which the draft differs from the servo, register 01's

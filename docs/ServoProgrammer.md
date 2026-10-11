@@ -248,8 +248,10 @@ starting is not that first write: the line stays for the next one.
 ![The write page](img/servo-kst-write.png)
 
 1. The first write of a session saves the servo's values to
-   [a new file on the card](#the-backup-before-the-first-write). Without
-   that file the write is not sent.
+   [a new file on the card](#the-backup-before-the-first-write). A card
+   that is mounted and does not take the file ends the write. With no card
+   mounted the write page says that no file is saved, and the write goes
+   without one.
 2. The panel records the image the servo holds, the image the write is to
    leave and the channel: with a card in `KST.TXT`, without one in memory.
    The page says which. With a card that takes no file within 3 s the write
@@ -281,7 +283,7 @@ done: `Register 03, 1 writes done.`
 | Backup | Held by | Lives until |
 | --- | --- | --- |
 | Of the session | the coprocessor: the first image read after **CONNECT** | **LEAVE**, a restart of the coprocessor |
-| The session's file | the card: the servo's 32 registers as they stand before the session's first write | the file is removed from the card |
+| The session's file | the card: the servo's 32 registers as they stand before the session's first write. None while no card is mounted | the file is removed from the card |
 | Before a write | the panel, in `KST.TXT` or in memory | the write ends verified, or the record is discarded |
 
 `KST.TXT` is the record of a write under way: text of at most 400 bytes in
@@ -358,15 +360,48 @@ servo that fails the fingerprint.
 The first write, restore or pairing release of a session saves the servo's
 image to a new file under the next free preset name, without asking. The
 write page says `The servo's values go to a new file on the card first.`
-The servo receives nothing before the card holds the file. No card, a full
-card and a write error end the write with the lines of the table above, and
-nothing is written to the servo: **a session's first write needs a card
-with free space.** The SERVO tab then names the file: `Backup file of this
-session: KST003.` A save by hand of the same image counts as that file. A
-read that finds other values makes the next write save again.
+The servo receives nothing before the card holds the file. A mounted card
+that is full, that fails the write or that leaves the slot between the
+request and the file ends the write with the lines of the table above, and
+nothing is written to the servo. Freeing space on the card or removing the
+card lets the write go. The SERVO tab then names the file: `Backup file of
+this session: KST003.` A save by hand of the same image counts as that
+file. A read that finds other values makes the next write save again.
 
 A servo in doubt is the exception: its image is not worth a file, and the
 restore of the session's backup runs without one.
+
+#### Without a card
+
+With no card mounted the write, the restore and the pairing release are
+not blocked. The page whose hold sends the write carries three more lines:
+
+```
+No card: no backup file of the servo is saved.
+The backup of this session is held in the bench only.
+It is gone when the session ends or the bench loses power.
+```
+
+The page's one hold of 2 s confirms them; no second hold is asked for. A
+hold released before 2 s sends nothing.
+
+![The write page without a card](img/servo-kst-write-nocard.png)
+
+After such a write the SERVO tab shows `No backup file: no card. Session
+restore only.` in place of the file's name. The only copy of the servo as
+found is the session's backup in the coprocessor: **LEAVE**, a restart of
+the coprocessor and a power loss of the bench end it, and the values the
+servo held before the write are then not recoverable from the bench.
+
+![The SERVO tab after a write without a card](img/servo-kst-nofile.png)
+
+| Case | Result |
+| --- | --- |
+| A card is mounted later in the session | the next write, restore or pairing release saves the backup file first. The file holds the session's backup, the image read before the first write, while the coprocessor holds it; without it the file holds the servo as last read. The line on the SERVO tab changes to the file's name |
+| A save through **FILES** after a write without a card | saves the servo as it stands; it does not count as the backup file |
+| The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
+| The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
+| **FILES**, save and load without a card | refused: `No card. Nothing saved, nothing written to the servo.` |
 
 ### Loading
 
@@ -563,9 +598,13 @@ line. [The link page](Link.md#the-kst-programming-port) lists the codes.
 - No save, list or load of a servo file has run on a card. The panel
   firmware of this branch answers every save with a write error and
   every list and load with a read error until the servo file module is
-  wired to the card. A session's first write waits for its file, so this
-  firmware sends no write to a servo.
-- A session's first write needs a card with free space.
+  wired to the card. With a card mounted a session's first write waits
+  for its file, so this firmware sends a write to a servo only while no
+  card is mounted.
+- A write without a card leaves no backup file. The session's backup is
+  then the only copy of the servo as found and ends with **LEAVE**, a
+  coprocessor restart or a power loss of the bench.
+- A session's first write with a mounted card needs free space on it.
 - A servo file carries the servo type, V6 or V8, and no other identity.
   A file of one V8 servo loads into any V8 servo.
 - A servo file restores the editable fields only:
@@ -633,5 +672,7 @@ write cut by a link loss, a restart, **ABORT** and **STOP**, a card that
 fails, and the timeouts across the 2^32 ms wrap of the clock. The servo
 files run against a card model: every name result, every kind of file,
 both servo types and their mismatch in both directions, every refusal,
-the 5 s limit, and a first write with a card that is missing, full or
-failing.
+the 5 s limit, a first write with a card that is full or failing, and the
+writes without a card: the first write, a restore and a pairing release,
+a hold released early, a card mounted between two writes and a card
+removed under the write page.

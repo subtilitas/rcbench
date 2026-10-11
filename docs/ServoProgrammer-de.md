@@ -260,7 +260,9 @@ ist nicht dieses erste Schreiben: die Zeile bleibt für das nächste.
 
 1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in
    [eine neue Datei auf der Karte](#das-backup-vor-dem-ersten-schreiben).
-   Ohne diese Datei wird das Schreiben nicht gesendet.
+   Eine eingehängte Karte, die die Datei nicht annimmt, beendet das
+   Schreiben. Ohne eingehängte Karte sagt die Schreibseite, dass keine
+   Datei gespeichert wird, und das Schreiben läuft ohne eine.
 2. Das Panel vermerkt das Abbild, das das Servo hält, das Abbild, das das
    Schreiben hinterlassen soll, und den Kanal: mit Karte in `KST.TXT`, ohne
    im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte, die
@@ -293,7 +295,7 @@ Zahl der erfolgten Schreibvorgänge: `Register 03, 1 Schreibvorgänge erfolgt.`
 | Backup | Gehalten von | Lebt bis |
 | --- | --- | --- |
 | Der Sitzung | dem Koprozessor: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Neustart des Koprozessors |
-| Die Datei der Sitzung | der Karte: die 32 Register des Servos, wie sie vor dem ersten Schreiben der Sitzung stehen | die Datei wird von der Karte entfernt |
+| Die Datei der Sitzung | der Karte: die 32 Register des Servos, wie sie vor dem ersten Schreiben der Sitzung stehen. Keine, solange keine Karte eingehängt ist | die Datei wird von der Karte entfernt |
 | Vor einem Schreiben | dem Panel, in `KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
 `KST.TXT` ist der Vermerk eines laufenden Schreibens: Text von höchstens
@@ -378,16 +380,52 @@ Das erste Schreiben, Zurückspielen oder Lösen des Pairings einer Sitzung
 speichert das Abbild des Servos ohne Nachfrage in eine neue Datei unter dem
 nächsten freien Vorgabenamen. Die Schreibseite sagt
 `Die Werte des Servos gehen zuerst in eine neue Datei.` Das Servo empfängt
-nichts, bevor die Karte die Datei hält. Keine Karte, eine volle Karte und
-ein Schreibfehler beenden das Schreiben mit den Zeilen der Tabelle oben,
-und nichts wird auf das Servo geschrieben: **das erste Schreiben einer
-Sitzung braucht eine Karte mit freiem Platz.** Der Reiter SERVO nennt die
+nichts, bevor die Karte die Datei hält. Eine eingehängte Karte, die voll
+ist, beim Schreiben einen Fehler meldet oder zwischen Anfrage und Datei
+entnommen wird, beendet das Schreiben mit den Zeilen der Tabelle oben, und
+nichts wird auf das Servo geschrieben. Platz auf der Karte schaffen oder
+die Karte entnehmen lässt das Schreiben laufen. Der Reiter SERVO nennt die
 Datei danach: `Backup-Datei dieser Sitzung: KST003.` Ein Speichern von Hand
 desselben Abbilds zählt als diese Datei. Ein Lesen, das andere Werte
 findet, lässt das nächste Schreiben erneut speichern.
 
 Ein unklares Servo ist die Ausnahme: sein Abbild ist keine Datei wert, und
 das Zurückspielen des Backups der Sitzung läuft ohne eine.
+
+#### Ohne Karte
+
+Ohne eingehängte Karte sind das Schreiben, das Zurückspielen und das Lösen
+des Pairings nicht gesperrt. Die Seite, deren Halten das Schreiben sendet,
+trägt drei weitere Zeilen:
+
+```
+Keine Karte: es wird keine Backup-Datei gespeichert.
+Das Backup dieser Sitzung liegt nur im Prüfstand.
+Sitzungsende oder Stromausfall am Prüfstand löscht es.
+```
+
+Das eine Halten der Seite von 2 s bestätigt sie; ein zweites Halten wird
+nicht verlangt. Ein vor 2 s losgelassenes Halten sendet nichts.
+
+![Die Schreibseite ohne Karte](img/de/servo-kst-write-nocard.png)
+
+Nach einem solchen Schreiben zeigt der Reiter SERVO
+`Keine Backup-Datei: keine Karte. Nur Backup der Sitzung.` anstelle des
+Dateinamens. Die einzige Kopie des Servos, wie es vorgefunden wurde, ist
+das Backup der Sitzung im Koprozessor: **VERLASSEN**, ein Neustart des
+Koprozessors und ein Stromausfall des Prüfstands beenden es, und die Werte,
+die das Servo vor dem Schreiben hielt, sind dann aus dem Prüfstand nicht
+wiederherstellbar.
+
+![Der Reiter SERVO nach einem Schreiben ohne Karte](img/de/servo-kst-nofile.png)
+
+| Fall | Ergebnis |
+| --- | --- |
+| Eine Karte wird später in der Sitzung eingehängt | das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei. Die Datei hält das Backup der Sitzung, das vor dem ersten Schreiben gelesene Abbild, solange der Koprozessor es hält; ohne es hält die Datei das Servo, wie es zuletzt gelesen wurde. Die Zeile im Reiter SERVO wechselt zum Dateinamen |
+| Ein Speichern über **DATEIEN** nach einem Schreiben ohne Karte | speichert das Servo, wie es steht; es zählt nicht als Backup-Datei |
+| Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2 s sendet das Schreiben |
+| Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
+| **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert, nichts aufs Servo.` |
 
 ### Laden
 
@@ -594,9 +632,15 @@ Codes.
   Karte gelaufen. Die Panel-Firmware dieses Zweigs beantwortet jedes
   Speichern mit einem Schreibfehler und jedes Auflisten und Laden mit
   einem Lesefehler, bis das Servodatei-Modul an die Karte angeschlossen
-  ist. Das erste Schreiben einer Sitzung wartet auf seine Datei, also
-  sendet diese Firmware kein Schreiben an ein Servo.
-- Das erste Schreiben einer Sitzung braucht eine Karte mit freiem Platz.
+  ist. Mit eingehängter Karte wartet das erste Schreiben einer Sitzung
+  auf seine Datei, also sendet diese Firmware nur ohne eingehängte Karte
+  ein Schreiben an ein Servo.
+- Ein Schreiben ohne Karte hinterlässt keine Backup-Datei. Das Backup der
+  Sitzung ist dann die einzige Kopie des Servos, wie es vorgefunden wurde,
+  und endet mit **VERLASSEN**, einem Neustart des Koprozessors oder einem
+  Stromausfall des Prüfstands.
+- Das erste Schreiben einer Sitzung mit eingehängter Karte braucht freien
+  Platz auf ihr.
 - Eine Servodatei trägt den Servotyp, V6 oder V8, und keine weitere
   Identität. Die Datei eines V8-Servos lädt in jedes V8-Servo.
 - Eine Servodatei spielt nur die änderbaren Felder zurück:
@@ -669,5 +713,8 @@ beiden Sprachen, ein Schreiben, das ein Link-Ausfall, ein Neustart,
 Timeouts über den Überlauf der Uhr bei 2^32 ms. Die Servodateien laufen
 gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
 beide Servotypen und ihre Abweichung in beiden Richtungen, jede
-Ablehnung, die Grenze von 5 s und ein erstes Schreiben mit einer Karte,
-die fehlt, voll ist oder versagt.
+Ablehnung, die Grenze von 5 s, ein erstes Schreiben mit einer Karte, die
+voll ist oder versagt, und die Schreiben ohne Karte: das erste Schreiben,
+ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
+Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der
+Schreibseite entnommene Karte.

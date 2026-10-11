@@ -26,8 +26,12 @@ history is in git.
   written back by RESTORE. FILES saves the servo's 32 registers as a servo
   file on the SD card under a preset name (`KST001` on) that the text
   keyboard changes, and never replaces a file. The first write of a session
-  saves such a file without asking and is not sent without it: no card, a
-  full card and a write error each end it with their own line. A file is
+  saves such a file without asking: a mounted card that is full or fails
+  the write ends it with its own line. With no card mounted the write is
+  sent without a file; its page says that no backup file is saved and that
+  the session's backup lives in the bench until the session ends or the
+  bench loses power, and the SERVO tab shows `No backup file: no card.
+  Session restore only.` until a card takes the file at a later write. A file is
   loaded from a list of 5 a page that names each file's servo type, V6 or
   V8 after the 20k_sel field. Its editable values become the pending
   changes and reach the servo through the ordinary write only; a file of
@@ -48,7 +52,7 @@ history is in git.
   written again every 5 s. PROGRAM ends a running automatic test. A coprocessor of protocol
   4.11 shows the programmer as unavailable with the reason. Leaving asks for
   the servo's power to be cycled before the channel returns to PWM. German
-  texts for every new string; 96 screenshots. Host suite only
+  texts for every new string; 100 screenshots. Host suite only
   (`test_kst_prog`, `test_kst_panel`); no frame has been sent to a servo.
   ([KST and Chaservo servo programmer](docs/ServoProgrammer.md))
 - `protocols/kst/`: the protocol core for programming KST and Chaservo

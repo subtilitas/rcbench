@@ -194,6 +194,8 @@ SCREENS = {
     "servo-kst-changes": ("servo-kst-changes.png", "servo", "dark"),
     "servo-kst-write": ("servo-kst-write.png", "servo", "dark"),
     "servo-kst-written": ("servo-kst-written.png", "servo", "dark"),
+    "servo-kst-write-nocard": ("servo-kst-write-nocard.png", "servo", "dark"),
+    "servo-kst-nofile": ("servo-kst-nofile.png", "servo", "dark"),
     "servo-kst-doubt": ("servo-kst-doubt.png", "servo", "dark"),
     "servo-kst-journal": ("servo-kst-journal.png", "servo", "dark"),
     "servo-kst-restore-list": ("servo-kst-restore-list.png", "servo", "dark"),

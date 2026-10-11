@@ -292,7 +292,9 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 
 #define KP_CHANNEL (-1)       /* the keypad edits the channel, not a row */
 #define CHOICE_MAX 8
-#define WARN_LINES 7
+#define WARN_LINES 9
+/* The lines a page gives to the warnings of soft limits. */
+#define WARN_RULES 7
 
 static struct {
     kst_prog_t prog;
@@ -330,6 +332,7 @@ static struct {
         char      apply[64];
         char      lines[WARN_LINES][KST_PANEL_LINE];
         uint8_t   level[WARN_LINES];
+        bool      no_file;      /* the page says: no card, no file */
         kst_prog_restore_t plan;
     } warn;
 
@@ -840,7 +843,7 @@ static void warn_soft(const row_t *r)
               sizeof(now));
     snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, "%s: %s -> %s",
              row_label(r), was, now);
-    warn_rules(kst_prog_soft_rules(&k.prog), WARN_LINES - 1);
+    warn_rules(kst_prog_soft_rules(&k.prog), WARN_RULES - 1);
 }
 
 static void warn_enable(void)
@@ -853,21 +856,37 @@ static void warn_enable(void)
     warn_text(KST_PROG_INFO, TR(KP_ENABLE_5));
 }
 
+/* A write that saves the servo to a file first, and no card to take one:
+ * it goes without, and its page says so. */
+static bool no_card(void)
+{
+    return kst_prog_save_first(&k.prog) && !k.prog.f.card;
+}
+
+/* What a write with no card leaves out, on the page whose hold sends it. */
+static bool warn_no_file(void)
+{
+    if (!no_card()) {
+        return false;
+    }
+    k.warn.no_file = true;
+    warn_text(KST_PROG_WARN, TR(KP_NO_FILE_1));
+    warn_text(KST_PROG_WARN, TR(KP_NO_FILE_2));
+    warn_text(KST_PROG_WARN, TR(KP_NO_FILE_3));
+    return true;
+}
+
 static void warn_card(void)
 {
+    if (warn_no_file()) {
+        return;
+    }
     if (kst_prog_save_first(&k.prog)) {
         warn_text(KST_PROG_INFO, TR(KP_WRITE_BACKUP));
     } else {
         warn_text(KST_PROG_INFO, k.prog.f.card ? TR(KP_WRITE_CARD)
                                                : TR(KP_WRITE_NO_CARD));
     }
-}
-
-/* A write that waits for a file first, and no card to take one: the model
- * says so and no page asks for a hold. */
-static bool no_card(void)
-{
-    return kst_prog_save_first(&k.prog) && !k.prog.f.card;
 }
 
 /* The fields in which @p a differs from the servo, register 01's copy of
@@ -907,7 +926,7 @@ static void warn_file(void)
     if (kind >= 0) {
         warn_text(KST_PROG_INFO, ui_tr((ui_text_id_t)kind));
     }
-    warn_rules(kst_prog_soft_rules(p), WARN_LINES - k.warn.count);
+    warn_rules(kst_prog_soft_rules(p), WARN_RULES - k.warn.count);
 }
 
 static void warn_write(void)
@@ -950,6 +969,8 @@ static void warn_restore(const kst_prog_restore_t *plan)
     warn_horn();
     if (plan->from != KST_PROG_FROM_SESSION) {
         warn_card();
+    } else {
+        (void)warn_no_file();
     }
 }
 
@@ -961,7 +982,7 @@ static void warn_check(const kst_prog_restore_t *plan)
     k.warn.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(from_text(plan->from)));
     warn_text(KST_PROG_INFO, TR(KP_CHECK_1));
-    warn_rules(plan->soft, WARN_LINES - 2);
+    warn_rules(plan->soft, WARN_RULES - 2);
 }
 
 static void warn_release(void)
@@ -971,6 +992,7 @@ static void warn_release(void)
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_2));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_3));
     warn_horn();
+    (void)warn_no_file();
 }
 
 static void warn_leave(void)
@@ -1003,6 +1025,10 @@ static void warn_apply(void)
 {
     const int kind = k.warn.kind;
     const kst_prog_restore_t plan = k.warn.plan;
+    /* The card left the slot under a page that promised a file: the page
+     * comes back with what a write without one leaves out, and nothing is
+     * sent before its own hold. */
+    const bool unsaid = no_card() && !k.warn.no_file;
 
     k.warn.open = false;
     k.warn.down = false;
@@ -1016,16 +1042,28 @@ static void warn_apply(void)
         (void)kst_prog_enable(&k.prog, true);
         break;
     case W_WRITE:
-        (void)kst_prog_write(&k.prog);
+        if (unsaid) {
+            warn_write();
+        } else {
+            (void)kst_prog_write(&k.prog);
+        }
         break;
     case W_RESTORE:
-        (void)kst_prog_restore(&k.prog, &plan);
+        if (unsaid) {
+            warn_restore(&plan);
+        } else {
+            (void)kst_prog_restore(&k.prog, &plan);
+        }
         break;
     case W_CHECK:
         warn_restore(&plan);
         break;
     case W_RELEASE:
-        (void)kst_prog_release(&k.prog);
+        if (unsaid) {
+            warn_release();
+        } else {
+            (void)kst_prog_release(&k.prog);
+        }
         break;
     default:
         (void)kst_prog_power_cycled(&k.prog);
@@ -1289,7 +1327,7 @@ static void act(const row_t *r)
         }
         break;
     default:
-        if (kst_prog_write_check(p) == KST_PROG_MSG_NONE && !no_card()) {
+        if (kst_prog_write_check(p) == KST_PROG_MSG_NONE) {
             warn_write();
         } else {
             (void)kst_prog_write(p);    /* says why not */
@@ -1315,7 +1353,7 @@ static void choice_done(int value)
             kst_prog_forget(p);
         } else if (kst_prog_restore_plan(p, (kst_prog_from_t)value, &plan)
                    == KST_PROG_MSG_NONE) {
-            if (kst_prog_write_enabled(p) && !no_card()) {
+            if (kst_prog_write_enabled(p)) {
                 if (plan.soft != 0u) {
                     warn_check(&plan);
                 } else {
@@ -1343,7 +1381,7 @@ static void choice_done(int value)
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {
         kst_prog_discard(p);
-    } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE && !no_card()) {
+    } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE) {
         warn_release();
     } else {
         (void)kst_prog_release(p);      /* says why not */
@@ -1965,6 +2003,8 @@ static void draw_notes(gfx_canvas_t *c)
             snprintf(buf, sizeof(buf), TR(KP_BACKUP_FILE),
                      kst_prog_backup_name(p));
             line(c, 4, buf, faint);
+        } else if (kst_prog_no_file(p)) {
+            line(c, 4, TR(KP_NO_BACKUP_FILE), ui_theme_color(UI_C_WARN));
         }
         draw_standing(c);
         break;
