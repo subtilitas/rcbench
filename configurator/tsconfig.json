@@ -12,6 +12,7 @@
     "noFallthroughCasesInSwitch": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },

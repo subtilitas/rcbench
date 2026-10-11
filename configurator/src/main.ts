@@ -9,7 +9,8 @@ import { optionsOf } from './names.ts';
 import { chooser } from './view/chooser.ts';
 import type { View } from './view/chooser.ts';
 import { result, resultError, summary } from './view/result.ts';
-import type { Notice } from './view/result.ts';
+import type { Mode, Notice } from './view/result.ts';
+import { install, sync } from './diagram/control.ts';
 
 const startLang: Lang = browserLang(navigator.language);
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -18,6 +19,8 @@ let selection: Selection = base();
 let lang: Lang = startLang;
 /** Notices of the link the page opened with. Each is built in the language of the render. */
 let notices: Array<(l: Lang) => Notice> = [];
+/** The view of the wiring. Not part of the link. */
+let mode: Mode = 'pic';
 
 /** x in drawing px that the pan box centres on first: midway between the panel's pins and pad 1. */
 const PAN_START = 351;
@@ -83,14 +86,15 @@ function render(focusId?: string): void {
   const chooseTop = choose.scrollTop;
   const before = byId('pan');
   // First drawing: the box opens on the wires between the panel and the coprocessor.
-  const panLeft = before ? before.scrollLeft : null;
+  // A hidden box has no scroll position.
+  const panLeft = before && before.clientWidth > 0 ? before.scrollLeft : null;
 
   const setup = tryResolve(selection);
   let sub = '';
   if (setup) {
     const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
     choose.innerHTML = chooser(view, ownOpen);
-    res.innerHTML = result(view, location.href, notices.map((n) => n(lang)));
+    res.innerHTML = result(view, location.href, notices.map((n) => n(lang)), mode);
     sub = `<small>${t(lang, 'bSub', { p: setup.parts.length, w: setup.wires.length })}</small>`;
   } else {
     choose.innerHTML = `<h2 id="h-choose">${t(lang, 'choose')}</h2>`;
@@ -103,6 +107,7 @@ function render(focusId?: string): void {
   const pan = byId('pan');
   if (pan) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
   updatePanHint();
+  sync();
   if (focusId) byId(focusId)?.focus({ preventScroll: true });
 }
 
@@ -159,6 +164,9 @@ document.addEventListener('click', (event) => {
   } else if (el.dataset.jump) {
     event.preventDefault();
     byId(el.dataset.jump)?.scrollIntoView();
+  } else if (el.id === 'v-pic' || el.id === 'v-sch') {
+    mode = el.id === 'v-pic' ? 'pic' : 'sch';
+    render(el.id);
   } else if (el.id === 'b-print') {
     window.print();
   } else if (el.id === 'b-reset') {
@@ -196,5 +204,6 @@ window.addEventListener('hashchange', () => {
 });
 window.addEventListener('resize', updatePanHint);
 
+install();
 readHash();
 render();

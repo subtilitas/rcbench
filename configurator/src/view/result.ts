@@ -8,6 +8,10 @@ import { drawing, sample } from '../draw/svg.ts';
 import { reasonText } from './chooser.ts';
 import type { View } from './chooser.ts';
 import { wiresTable } from './table.ts';
+import { picture as wiringPicture } from '../diagram/picture.ts';
+
+/** View of the wiring: the picture of the parts, or the schematic. */
+export type Mode = 'pic' | 'sch';
 
 export type Notice = { kind: 'err' | 'note'; text: string };
 
@@ -85,14 +89,20 @@ function does(view: View): string {
   return `<h3>${esc(t(lang, 'does'))}</h3><ul class="plain"><li>${esc(tx(lang, catalogue.baseFunction))}</li>${items.join('')}</ul>`;
 }
 
-function wiring(view: View): string {
+function wiring(view: View, mode: Mode): string {
   const { lang, catalogue, setup } = view;
+  const choice = (id: Mode, key: Key): string =>
+    `<button type="button" class="seg" id="v-${id}" aria-pressed="${mode === id}">${esc(t(lang, key))}</button>`;
   const legend = LEGEND.map(([cls, key]) => `<li>${sample(cls)}${esc(t(lang, key))}</li>`).join('');
   return `<h3 id="wiring">${esc(t(lang, 'wiring'))}</h3>`
+    + `<div class="views" role="group" aria-label="${esc(t(lang, 'viewGroup'))}">${choice('pic', 'vPic')}${choice('sch', 'vSch')}</div>`
+    + `<div class="view" id="view-pic"${mode === 'pic' ? '' : ' hidden'}>${wiringPicture(view)}</div>`
+    + `<div class="view" id="view-sch"${mode === 'sch' ? '' : ' hidden'}>`
     + `<ul class="legend" aria-label="${esc(t(lang, 'legend'))}">${legend}</ul>`
     + `<p class="hint pan-hint" id="panhint" hidden>${esc(t(lang, 'panHint'))}</p>`
     + `<div class="pan" id="pan" tabindex="0" role="group" aria-label="${esc(t(lang, 'wiring'))}">${drawing(setup, catalogue, lang)}</div>`
     + `<p class="hint">${esc(t(lang, 'padCap'))}</p>`
+    + '</div>'
     + wiresTable(view);
 }
 
@@ -126,7 +136,7 @@ function order(view: View): string {
   return h;
 }
 
-export function result(view: View, url: string, notices: Notice[]): string {
+export function result(view: View, url: string, notices: Notice[], mode: Mode = 'pic'): string {
   const { lang, catalogue } = view;
   return head(lang, url, notices)
     + `<div class="sum"><p>${esc(summary(view))}</p>${button(lang, 'b-copy', 'copy')}${button(lang, 'b-print', 'print')}${button(lang, 'b-reset', 'reset')}</div>`
@@ -134,7 +144,7 @@ export function result(view: View, url: string, notices: Notice[]): string {
     + safety(lang, catalogue)
     + parts(view)
     + does(view)
-    + wiring(view)
+    + wiring(view, mode)
     + checks(view)
     + order(view)
     + footer(lang);

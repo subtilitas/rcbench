@@ -27,10 +27,20 @@ function watch(page: Page): Watch {
   return seen;
 }
 
-/** Loads the page with a hash. A hash-only navigation does not reload, so the page starts from blank. */
-async function open(page: Page, hash: string): Promise<void> {
+/**
+ * Loads the page with a hash. A hash-only navigation does not reload, so the page starts from blank.
+ * The page opens on the wiring picture; this file tests the schematic, so it switches to it.
+ * `e2e/diagram.spec.ts` tests the picture.
+ */
+async function open(page: Page, hash: string, view: 'sch' | 'pic' = 'sch'): Promise<void> {
   await page.goto('about:blank');
   await page.goto(`./${hash}`);
+  if (view === 'sch') await schematic(page);
+  else await page.locator('svg.picture').waitFor();
+}
+
+async function schematic(page: Page): Promise<void> {
+  await page.locator('#v-sch').click();
   await page.locator('svg.drawing').waitFor();
 }
 
@@ -118,7 +128,7 @@ for (const size of SIZES) {
 
       await page.goto('about:blank');
       await page.goto(url);
-      await page.locator('svg.drawing').waitFor();
+      await schematic(page);
       await expect(page.locator('#f-servo')).toBeChecked();
       await expect(page.locator('#f-esc')).toBeChecked();
       await expect(page.locator('#o-escPower-pd')).toBeChecked();
@@ -292,6 +302,8 @@ test.describe('pictures', () => {
   const pictureRequests = (page: Page): string[] => {
     const seen: string[] = [];
     page.on('request', (r) => {
+      // The part drawings of the wiring picture are no pictures of a part card.
+      if (/\/drawings\//.test(r.url())) return;
       if (r.resourceType() === 'image' || /\/pictures\//.test(r.url())) seen.push(new URL(r.url()).pathname);
     });
     return seen;
@@ -307,7 +319,8 @@ test.describe('pictures', () => {
     await page.setViewportSize(SIZES[0]);
     const seen = pictureRequests(page);
     const foreign = watch(page);
-    await open(page, ALL);
+    // The switch to the schematic scrolls the page, so the page stays on the wiring picture.
+    await open(page, ALL, 'pic');
     await page.waitForLoadState('networkidle');
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
     const images = await page.evaluate(() => [...document.querySelectorAll<HTMLImageElement>('.parts img')].map((img) => ({
