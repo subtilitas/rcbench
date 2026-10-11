@@ -148,7 +148,7 @@ export chunk on the first use.
 | Wire table | The header row repeats on every page. No row is split. |
 | Metadata | Title, document language, creator. Links: the share link. |
 | Output | The same bytes for the same setup, language, share link and date. |
-| Size | 43 kB for the smallest setup (3 pages), 63 kB for the largest (8 pages). |
+| Size | 43 kB for the smallest setup (3 pages), 64 kB for the largest (8 pages). |
 
 Parts of `src/export/`:
 
