@@ -257,14 +257,30 @@ aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 
-Ein Schreibkommando an den KST-Programmierport erreicht 1 408 Bytes: `main`,
+Ein Schreibkommando an den KST-Programmierport erreicht 1 432 Bytes: `main`,
 `can_service`, `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
-`kst_session_write` (56) und der Schreibplaner aus `protocols/kst`, 464
-Bytes ab `kst_plan_edit`: `build` (160), `detour` (72), `search` (56) und
-die Grenzwertprüfung `kst_limits_image` (112). Der Planer ruft sich nicht
+`kst_session_write` (56) und der Schreibplaner aus `protocols/kst`, 488
+Bytes ab `kst_plan_edit`: `kst_plan_edit` (216, davon 176 für den
+Job-Zustand des Planers), die Grenzwertprüfung `kst_limits_edit` (248),
+`load` (16) und `kst_field_get` (8). Ein Slice des Planers, `kst_plan_step`
+mit dem, was es aufruft, belegt 208 Bytes. Der Planer ruft sich nicht
 selbst auf. Der Plan, das bereitgestellte Image und der Plan, mit dem die
 Session vergleicht, liegen im Zustand des Ports und der Session, nicht auf
 dem Stack.
+
+Der Port lässt den Planer innerhalb des Schreibkommandos bis zum Ende
+laufen, 2 Läufe je Kommando: einen in `kst_port_write` und einen in
+`kst_session_write`. Die Hauptschleife von Kern 0 bedient während eines
+Laufs weder den Link noch den Heartbeat. Der teuerste gefundene Auftrag
+braucht bei 150 MHz 397 bis 647 ms je Lauf, in einem Emulator aus den
+ausgeführten Instruktionen berechnet und nicht auf Hardware gemessen. Eine
+Heartbeat-Lücke über 150 ms schaltet alle Ausgänge ab und setzt das
+Arm-Latch; ein Kommando mit einem solchen Auftrag endet also ohne
+geschriebenes Register und mit abgeschalteten Ausgängen.
+`kst_session_edit()` und `kst_session_restore()` planen in Slices von
+höchstens 892 us nach derselben Schätzung, 1 Slice je
+`kst_session_step()`, und enden nach 216 000 Einheiten Planerarbeit; der
+Port ruft sie nicht auf.
 
 Jede Tiefe ist eine Untergrenze:
 

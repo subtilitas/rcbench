@@ -2060,6 +2060,606 @@ TEST_CASE(the_sessions_own_copy_is_not_a_plan_to_run)
     conduct(&g_sim);
 }
 
+/* --- operations that plan inside the session -------------------------------------- */
+
+static kst_image_t image_of(const char *hex)
+{
+    kst_image_t img;
+
+    for (unsigned i = 0; i < KST_REG_COUNT; ++i) {
+        unsigned v = 0;
+
+        (void)sscanf(hex + 2u * i, "%2x", &v);
+        img.r[i] = (uint8_t)v;
+    }
+    return img;
+}
+
+/* In programming mode with the image read, the servo holding @p img. */
+static void up_with(sim_t *sim, kst_session_t *s, const kst_image_t *img)
+{
+    fresh(sim, s);
+    memcpy(sim->reg, img->r, sizeof(sim->reg));
+    enter(sim, s);
+    read_all(sim, s);
+}
+
+/* The start of an edit that needs an extra write (@p path) or has no order
+ * at all; its target sets Pulse Upper to 0xC00. */
+static kst_image_t upper_start(bool path)
+{
+    kst_image_t img = sim_bench_image();
+
+    (void)kst_field_set(&img, KST_F_PULSE_UPPER, 0xBFF);
+    (void)kst_field_set(&img, KST_F_UNCONT_POS, path ? 0xB20 : 0xBFF);
+    return img;
+}
+
+static kst_image_t upper_target(const kst_image_t *start)
+{
+    kst_image_t img = *start;
+
+    (void)kst_field_set(&img, KST_F_PULSE_UPPER, 0xC00);
+    return img;
+}
+
+/* An edit of 86,312 units: 864 slices. */
+static const char k_long_a[] =
+    "00f5f514487704eff4b20fc710091400969600010b000000000000e301100000";
+static const char k_long_b[] =
+    "00f5f51448770465cb840d8e66041400969600010b000000000000e301100000";
+
+/* Step through the planning.  Every call is one slice: it returns
+ * KST_SES_BUSY, sends nothing and takes KST_PLAN_SLICE_UNITS units or up to
+ * one piece more.  The number of calls, the last one included. */
+static unsigned plan_through(sim_t *sim, kst_session_t *s)
+{
+    const unsigned frames = sim->n_frames;
+    unsigned calls = 0;
+
+    while (s->planning != 0u && calls < 4000u) {
+        const uint32_t before = kst_plan_units(&s->job);
+        const kst_ses_t r = kst_session_step(s);
+        const uint32_t took = kst_plan_units(&s->job) - before;
+
+        calls++;
+        sim->now_us += 100u;
+        CHECK_EQ(sim->n_frames, frames);
+        CHECK(!sim->busy);
+        CHECK(took < KST_PLAN_SLICE_UNITS + KST_PLAN_PIECE_UNITS);
+        if (s->planning != 0u) {
+            CHECK_EQ(r, KST_SES_BUSY);
+            CHECK_EQ(s->result, KST_SES_BUSY);
+            CHECK_EQ(s->plan_result, KST_PLAN_BUSY);
+            CHECK(took >= KST_PLAN_SLICE_UNITS);
+        }
+    }
+    return calls;
+}
+
+static bool same_wire(const sim_t *a, const sim_t *b, unsigned from)
+{
+    if (a->n_frames != b->n_frames || a->n_writes != b->n_writes) {
+        return false;
+    }
+    for (unsigned i = from; i < a->n_frames && i < SIM_LOG_MAX; ++i) {
+        if (a->log[i].kind != b->log[i].kind || a->log[i].reg != b->log[i].reg
+            || a->log[i].value != b->log[i].value) {
+            return false;
+        }
+    }
+    return true;
+}
+
+TEST_CASE(an_edit_planned_by_the_session_is_the_planners_plan_on_the_wire)
+{
+    const kst_image_t bench = sim_bench_image();
+    kst_image_t a[5];
+    kst_image_t b[5];
+
+    a[0] = bench;                       /* nothing to write */
+    b[0] = bench;
+    a[1] = bench;                       /* one register */
+    b[1] = bench;
+    CHECK(kst_field_edit(&b[1], KST_F_BOOST, 19));
+    a[2] = bench;                       /* the duty pair */
+    b[2] = bench;
+    CHECK(kst_field_edit(&b[2], KST_F_DUTY, 200));
+    a[3] = upper_start(true);           /* an extra write */
+    b[3] = upper_target(&a[3]);
+    a[4] = bench;                       /* both searched groups and more */
+    b[4] = bench;
+    CHECK(kst_field_edit(&b[4], KST_F_PULSE_UPPER, 0xA40));
+    CHECK(kst_field_edit(&b[4], KST_F_PULSE_LOWER, 0x520));
+    CHECK(kst_field_edit(&b[4], KST_F_UNCONT_POS, 0x800));
+    CHECK(kst_field_edit(&b[4], KST_F_SPD, 0x234));
+    CHECK(kst_field_edit(&b[4], KST_F_DUTY, 200));
+    CHECK(kst_field_edit(&b[4], KST_F_BOOST, 30));
+
+    for (unsigned i = 0; i < 5u; ++i) {
+        kst_plan_t plan;
+        unsigned frames;
+
+        /* the caller's plan through kst_session_write() */
+        up_with(&g_sim_b, &g_ses_b, &a[i]);
+        CHECK_EQ(kst_plan_edit(&a[i], &b[i], 0, &plan, NULL), KST_PLAN_OK);
+        CHECK_EQ(run_plan(&g_sim_b, &g_ses_b, &plan), KST_SES_OK);
+
+        up_with(&g_sim, &g_ses, &a[i]);
+        frames = g_sim.n_frames;
+        CHECK_EQ(kst_session_edit(&g_ses, &b[i], 0), KST_SES_BUSY);
+        CHECK_EQ(g_ses.planning, 1);
+        CHECK_EQ(g_ses.plan_result, KST_PLAN_BUSY);
+        CHECK(plan_through(&g_sim, &g_ses) >= 1u);
+        CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+        CHECK(kst_session_plan(&g_ses) == &g_ses.plan);
+        CHECK(memcmp(kst_session_plan(&g_ses), &plan, sizeof(plan)) == 0);
+        CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+        CHECK(servo_holds(&g_sim, &b[i]));
+        CHECK(same_wire(&g_sim, &g_sim_b, frames));
+        CHECK_EQ(g_ses.step_index, plan.n);
+        CHECK_EQ(g_ses.locked, 0);
+        CHECK(memcmp(&g_ses.image, &b[i], sizeof(b[i])) == 0);
+        CHECK(memcmp(&g_ses.plan, &plan, sizeof(plan)) == 0);
+        conduct(&g_sim);
+    }
+    CHECK(kst_session_plan(NULL) == NULL);
+}
+
+TEST_CASE(a_restore_planned_by_the_session_puts_the_backup_back_and_unlocks)
+{
+    kst_image_t target = sim_bench_image();
+    const kst_image_t bench = target;
+    kst_plan_t plan;
+
+    CHECK(kst_field_edit(&target, KST_F_PULSE_UPPER, 0xA40));
+    CHECK(kst_field_edit(&target, KST_F_SPD, 0x234));
+    CHECK(kst_field_edit(&target, KST_F_BOOST, 19));
+    up(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_BUSY);
+    while (g_sim.n_writes < 1u) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+        g_sim.now_us += 100u;
+    }
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_ses.locked, 1);
+    read_all(&g_sim, &g_ses);
+    /* Locked: no edit and no release, at once. */
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_LOCKED);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_LOCKED);
+    CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_ERR_LOCKED);
+    CHECK_EQ(g_ses.planning, 0);
+    /* The way back. */
+    CHECK_EQ(kst_plan_restore(&g_ses.image, &bench, &plan), KST_PLAN_OK);
+    CHECK(plan.n >= 1u);
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
+    CHECK_EQ(g_ses.planning, 1);
+    (void)plan_through(&g_sim, &g_ses);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    CHECK(memcmp(kst_session_plan(&g_ses), &plan, sizeof(plan)) == 0);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &bench));
+    CHECK_EQ(g_ses.locked, 0);
+    /* With nothing to write it succeeds as well. */
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK_EQ(kst_session_plan(&g_ses)->n, 0);
+    conduct(&g_sim);
+}
+
+TEST_CASE(the_session_releases_the_pairing_without_a_planning_phase)
+{
+    unsigned frames;
+
+    up(&g_sim, &g_ses);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_BUSY);
+    CHECK_EQ(g_ses.planning, 0);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    CHECK_EQ(kst_session_plan(&g_ses)->kind, KST_PLAN_RELEASE_PAIRING);
+    CHECK_EQ(kst_session_plan(&g_ses)->n, 1);
+    /* The first step is on the wire. */
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(g_sim.n_frames > frames);
+    CHECK_EQ(g_sim.reg[0x1D], 0x00);
+    CHECK_EQ(g_sim.n_writes, 1);
+    /* Released already: no write. */
+    CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_BUSY);
+    CHECK_EQ(kst_session_plan(&g_ses)->n, 0);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK_EQ(g_sim.n_writes, 1);
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK_EQ(g_sim.reg[0x1D], 0x10);
+    conduct(&g_sim);
+}
+
+TEST_CASE(an_unchecked_restore_planned_by_the_session_ends_unconfirmed)
+{
+    kst_image_t first = sim_bench_image();
+    unsigned frames;
+
+    CHECK(kst_field_edit(&first, KST_F_PULSE_UPPER, 0xC00));
+    CHECK(kst_field_edit(&first, KST_F_UNCONT_POS, 0xBFF));
+    up_with(&g_sim, &g_ses, &first);
+    /* The servo as another tool left it. */
+    g_sim.reg[0x08] = 0xFF;
+    g_sim.reg[0x09] = (uint8_t)((g_sim.reg[0x09] & 0x0Fu) | 0xB0u);
+    read_all(&g_sim, &g_ses);
+    frames = g_sim.n_frames;
+    /* Whether the plan is unchecked is known when the planning ends. */
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
+    (void)plan_through(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_UNCONFIRMED);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_UNCONFIRMED);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    CHECK_EQ(kst_session_plan(&g_ses)->unchecked, 1);
+    CHECK_EQ(kst_session_plan(&g_ses)->n, 2);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_ses.locked, 0);
+    /* The confirmation does not carry over to another operation. */
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+    kst_session_abort(&g_ses);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_UNCONFIRMED);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &first));
+    CHECK_EQ(g_sim.n_writes, 2);
+    conduct(&g_sim);
+}
+
+TEST_CASE(a_long_plan_is_one_slice_per_step_and_sends_nothing_until_it_is_there)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_plan_t plan;
+    unsigned calls;
+
+    up_with(&g_sim, &g_ses, &a);
+    CHECK_EQ(g_ses.fingerprint_ok, 1);
+    CHECK_EQ(g_ses.plan_cap, KST_PLAN_WORK_CAP);
+    CHECK_EQ(kst_plan_edit(&a, &b, ~(kst_field_set_t)0, &plan, NULL),
+             KST_PLAN_OK);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    calls = plan_through(&g_sim, &g_ses);
+    CHECK_EQ(kst_plan_units(&g_ses.job), 86312u);
+    CHECK(calls >= 86312u / (KST_PLAN_SLICE_UNITS + KST_PLAN_PIECE_UNITS));
+    CHECK(calls <= 86312u / KST_PLAN_SLICE_UNITS + 1u);
+    CHECK(memcmp(kst_session_plan(&g_ses), &plan, sizeof(plan)) == 0);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &b));
+    conduct(&g_sim);
+}
+
+TEST_CASE(an_abort_while_the_session_plans_sends_nothing_and_locks_nothing)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    unsigned frames;
+
+    up_with(&g_sim, &g_ses, &a);
+    frames = g_sim.n_frames;
+    /* at the first step, in the middle and at the last slice but one */
+    for (unsigned stop = 0; stop < 3u; ++stop) {
+        const unsigned slices = stop == 0u ? 0u : stop == 1u ? 400u : 840u;
+
+        CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0),
+                 KST_SES_BUSY);
+        for (unsigned i = 0; i < slices; ++i) {
+            CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+            g_sim.now_us += 100u;
+        }
+        CHECK_EQ(g_ses.planning, 1);
+        kst_session_abort(&g_ses);
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_ABORTED);
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_ABORTED);
+        CHECK_EQ(g_ses.result, KST_SES_ERR_ABORTED);
+        CHECK_EQ(g_ses.planning, 0);
+        CHECK_EQ(g_ses.locked, 0);
+        CHECK_EQ(g_ses.in_mode, 1);
+        CHECK_EQ(g_sim.n_frames, frames);
+        CHECK(servo_holds(&g_sim, &a));
+    }
+    /* The same request again: planned from its start and run. */
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    (void)plan_through(&g_sim, &g_ses);
+    CHECK_EQ(kst_plan_units(&g_ses.job), 86312u);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &b));
+    /* A restore ends the same way. */
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    kst_session_abort(&g_ses);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_ses.locked, 0);
+    conduct(&g_sim);
+}
+
+TEST_CASE(a_power_cycle_while_the_session_plans_ends_it_with_nothing_sent)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    unsigned frames;
+
+    up_with(&g_sim, &g_ses, &a);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    for (unsigned i = 0; i < 10u; ++i) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    }
+    kst_session_power_cycled(&g_ses);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_ses.in_mode, 0);
+    CHECK_EQ(g_ses.planning, 0);
+    CHECK_EQ(g_ses.locked, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0),
+             KST_SES_ERR_NOT_IN_MODE);
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_ERR_NOT_IN_MODE);
+    CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_ERR_NOT_IN_MODE);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_NOT_IN_MODE);
+}
+
+TEST_CASE(a_second_request_while_the_session_plans_is_refused_and_changes_nothing)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_image_t other = a;
+    kst_plan_t plan;
+
+    CHECK(kst_field_edit(&other, KST_F_BOOST, 19));
+    CHECK_EQ(kst_plan_edit(&a, &other, 0, &plan, NULL), KST_PLAN_OK);
+    up_with(&g_sim, &g_ses, &a);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    for (unsigned i = 0; i < 300u; ++i) {
+        if (i == 0u || i == 150u) {
+            CHECK_EQ(kst_session_edit(&g_ses, &other, 0), KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_edit(&g_ses, NULL, 0), KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_write(&g_ses, &plan, false),
+                     KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_read_all(&g_ses), KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_verify(&g_ses, &a), KST_SES_ERR_BUSY);
+            CHECK_EQ(kst_session_enter(&g_ses), KST_SES_ERR_BUSY);
+            CHECK_EQ(g_ses.result, KST_SES_BUSY);
+            CHECK_EQ(g_ses.planning, 1);
+        }
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    }
+    (void)plan_through(&g_sim, &g_ses);
+    /* The units of the first request, not one more or less. */
+    CHECK_EQ(kst_plan_units(&g_ses.job), 86312u);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &b));
+    conduct(&g_sim);
+}
+
+TEST_CASE(what_the_planner_refuses_at_once_starts_no_operation)
+{
+    const kst_image_t bench = sim_bench_image();
+    kst_image_t target = bench;
+    unsigned frames;
+
+    /* no backup */
+    fresh(&g_sim, &g_ses);
+    enter(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_NO_BACKUP);
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_ERR_NO_BACKUP);
+    CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_ERR_NO_BACKUP);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_NO_BACKUP);
+    /* no session */
+    CHECK_EQ(kst_session_edit(NULL, &target, 0), KST_SES_ERR_ARG);
+    CHECK_EQ(kst_session_restore(NULL, true), KST_SES_ERR_ARG);
+    CHECK_EQ(kst_session_release_pairing(NULL), KST_SES_ERR_ARG);
+
+    read_all(&g_sim, &g_ses);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_edit(&g_ses, NULL, 0), KST_SES_ERR_ARG);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_ARG);
+    /* register 0x00 */
+    target.r[0x00] ^= 0x01u;
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_R00);
+    CHECK_EQ(g_ses.planning, 0);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_NO_PLAN);
+    /* register 0x1D */
+    target = bench;
+    target.r[0x1D] = 0x00;
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_PAIRING);
+    /* a hard rule: Pulse Lower above Pulse Upper */
+    target = bench;
+    (void)kst_field_set(&target, KST_F_PULSE_LOWER, 0xFFF);
+    CHECK_EQ(kst_session_edit(&g_ses, &target, ~(kst_field_set_t)0),
+             KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_RULES);
+    CHECK(g_ses.plan_rules != 0u);
+    CHECK_EQ(g_ses.planning, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    /* The next request that plans clears the rules. */
+    target = bench;
+    CHECK(kst_field_edit(&target, KST_F_BOOST, 19));
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_BUSY);
+    CHECK_EQ(g_ses.plan_rules, 0);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+
+    /* A backup that differs in register 0x00 is not restored. */
+    g_sim.reg[0x00] ^= 0x01u;
+    read_all(&g_sim, &g_ses);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_R00);
+    CHECK_EQ(g_ses.planning, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    conduct(&g_sim);
+}
+
+TEST_CASE(a_servo_that_fails_the_fingerprint_is_restored_and_not_edited)
+{
+    kst_image_t target;
+    unsigned frames;
+
+    up(&g_sim, &g_ses);
+    g_sim.reg[0x06] = 0x05;
+    read_all(&g_sim, &g_ses);
+    CHECK_EQ(g_ses.fingerprint_ok, 0);
+    frames = g_sim.n_frames;
+    target = g_ses.image;
+    CHECK(kst_field_edit(&target, KST_F_BOOST, 19));
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_FINGERPRINT);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_FINGERPRINT);
+    CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_ERR_FINGERPRINT);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK_EQ(g_sim.reg[0x06], 0x04);
+    CHECK_EQ(g_ses.fingerprint_ok, 1);
+    conduct(&g_sim);
+}
+
+TEST_CASE(no_path_and_a_spent_cap_end_with_no_plan_and_tell_which)
+{
+    const kst_image_t none = upper_start(false);
+    const kst_image_t some = upper_start(true);
+    const kst_image_t none_b = upper_target(&none);
+    const kst_image_t some_b = upper_target(&some);
+    uint32_t units;
+    unsigned frames;
+
+    /* The planner's verdict: no order. */
+    up_with(&g_sim, &g_ses, &none);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_edit(&g_ses, &none_b, 0), KST_SES_BUSY);
+    CHECK(plan_through(&g_sim, &g_ses) > 1u);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_NO_PATH);
+    CHECK_EQ(kst_session_plan(&g_ses)->n, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_ses.locked, 0);
+
+    /* The cap one unit below the need: no verdict. */
+    up_with(&g_sim, &g_ses, &some);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_edit(&g_ses, &some_b, 0), KST_SES_BUSY);
+    (void)plan_through(&g_sim, &g_ses);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    units = kst_plan_units(&g_ses.job);
+    CHECK(units > KST_PLAN_SLICE_UNITS);
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_sim.n_writes, 0);
+
+    g_ses.plan_cap = units - 1u;
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_edit(&g_ses, &some_b, 0), KST_SES_BUSY);
+    (void)plan_through(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_step(&g_ses), KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_TOO_COMPLEX);
+    CHECK_EQ(kst_session_plan(&g_ses)->n, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_ses.locked, 0);
+    /* A restore under the same cap. */
+    g_sim.reg[0x08] = some_b.r[0x08];
+    g_sim.reg[0x09] = some_b.r[0x09];
+    read_all(&g_sim, &g_ses);
+    g_ses.plan_cap = 20u;
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_NO_PLAN);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_ERR_TOO_COMPLEX);
+    CHECK_EQ(g_sim.n_frames, frames);
+    g_sim.reg[0x08] = some.r[0x08];
+    g_sim.reg[0x09] = some.r[0x09];
+    read_all(&g_sim, &g_ses);
+
+    /* The cap at the need: the plan, and it runs. */
+    g_ses.plan_cap = units;
+    CHECK_EQ(kst_session_edit(&g_ses, &some_b, 0), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    CHECK(servo_holds(&g_sim, &some_b));
+    conduct(&g_sim);
+}
+
+TEST_CASE(a_servo_that_changes_while_the_session_plans_is_not_written)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+
+    up_with(&g_sim, &g_ses, &a);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    for (unsigned i = 0; i < 100u; ++i) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    }
+    g_sim.reg[0x03] = 0x15;
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_CHANGED);
+    CHECK_EQ(g_ses.diff_regs, BIT(0x03));
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_ses.locked, 0);
+    conduct(&g_sim);
+}
+
+TEST_CASE(a_session_moved_while_it_plans_builds_its_own_plan)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_plan_t plan;
+
+    CHECK_EQ(kst_plan_edit(&a, &b, ~(kst_field_set_t)0, &plan, NULL),
+             KST_PLAN_OK);
+    up_with(&g_sim, &g_ses, &a);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    for (unsigned i = 0; i < 300u; ++i) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    }
+    memcpy(&g_ses_b, &g_ses, sizeof(g_ses));
+    memset(&g_ses, 0x5A, sizeof(g_ses));
+    (void)plan_through(&g_sim, &g_ses_b);
+    CHECK(memcmp(kst_session_plan(&g_ses_b), &plan, sizeof(plan)) == 0);
+    CHECK_EQ(sim_run(&g_sim, &g_ses_b), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &b));
+    conduct(&g_sim);
+}
+
+TEST_CASE(two_sessions_plan_side_by_side)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    const kst_image_t c = upper_start(true);
+    const kst_image_t d = upper_target(&c);
+    kst_ses_t ra = KST_SES_BUSY;
+    kst_ses_t rb = KST_SES_BUSY;
+
+    up_with(&g_sim, &g_ses, &a);
+    up_with(&g_sim_b, &g_ses_b, &c);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    CHECK_EQ(kst_session_edit(&g_ses_b, &d, 0), KST_SES_BUSY);
+    for (unsigned i = 0;
+         i < 100000u && (ra == KST_SES_BUSY || rb == KST_SES_BUSY); ++i) {
+        ra = kst_session_step(&g_ses);
+        rb = kst_session_step(&g_ses_b);
+        g_sim.now_us += 100u;
+        g_sim_b.now_us += 130u;
+    }
+    CHECK_EQ(ra, KST_SES_OK);
+    CHECK_EQ(rb, KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &b));
+    CHECK(servo_holds(&g_sim_b, &d));
+    conduct(&g_sim);
+    conduct(&g_sim_b);
+}
+
 int main(void)
 {
     RUN(a_driver_without_all_3_functions_is_refused);
@@ -2119,5 +2719,19 @@ int main(void)
     RUN(an_edit_plan_is_taken_as_the_planner_built_it_and_in_no_other_form);
     RUN(a_restore_and_a_release_are_taken_as_the_planner_built_them);
     RUN(the_sessions_own_copy_is_not_a_plan_to_run);
+    RUN(an_edit_planned_by_the_session_is_the_planners_plan_on_the_wire);
+    RUN(a_restore_planned_by_the_session_puts_the_backup_back_and_unlocks);
+    RUN(the_session_releases_the_pairing_without_a_planning_phase);
+    RUN(an_unchecked_restore_planned_by_the_session_ends_unconfirmed);
+    RUN(a_long_plan_is_one_slice_per_step_and_sends_nothing_until_it_is_there);
+    RUN(an_abort_while_the_session_plans_sends_nothing_and_locks_nothing);
+    RUN(a_power_cycle_while_the_session_plans_ends_it_with_nothing_sent);
+    RUN(a_second_request_while_the_session_plans_is_refused_and_changes_nothing);
+    RUN(what_the_planner_refuses_at_once_starts_no_operation);
+    RUN(a_servo_that_fails_the_fingerprint_is_restored_and_not_edited);
+    RUN(no_path_and_a_spent_cap_end_with_no_plan_and_tell_which);
+    RUN(a_servo_that_changes_while_the_session_plans_is_not_written);
+    RUN(a_session_moved_while_it_plans_builds_its_own_plan);
+    RUN(two_sessions_plan_side_by_side);
     return test_summary("kst_session");
 }

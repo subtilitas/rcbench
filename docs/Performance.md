@@ -238,13 +238,27 @@ pico-sdk's claim of a PIO (programmable input/output) state machine, and
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
 ends in `panic()` as well.
 
-A write command to the KST programming port reaches 1,408 bytes: `main`,
+A write command to the KST programming port reaches 1,432 bytes: `main`,
 `can_service`, `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
-`kst_session_write` (56) and the write planner of `protocols/kst`, 464
-bytes from `kst_plan_edit` down: `build` (160), `detour` (72), `search`
-(56) and the limit check `kst_limits_image` (112). The planner does not
-recurse. The plan, the staged image and the plan the session compares
-against are held in the port's and the session's state, not on the stack.
+`kst_session_write` (56) and the write planner of `protocols/kst`, 488
+bytes from `kst_plan_edit` down: `kst_plan_edit` (216, of which 176 are
+the planner's job state), the limit check `kst_limits_edit` (248), `load`
+(16) and `kst_field_get` (8). One slice of the planner, `kst_plan_step`
+with what it calls, takes 208 bytes. The planner does not recurse. The
+plan, the staged image and the plan the session compares against are held
+in the port's and the session's state, not on the stack.
+
+The port runs the planner to its end inside the write command, 2 runs per
+command: one in `kst_port_write` and one in `kst_session_write`. Core 0's
+main loop serves neither the link nor the heartbeat during a run. The
+costliest request found takes 397 to 647 ms per run at 150 MHz, computed
+in an emulator from the instructions executed and not measured on
+hardware. A heartbeat gap above 150 ms switches every output off and sets
+the arm latch, so a command with such a request ends with nothing written
+and the outputs off. `kst_session_edit()` and `kst_session_restore()` plan
+in slices of at most 892 us by the same estimate, 1 slice per
+`kst_session_step()`, and end after 216,000 units of planner work; the
+port does not call them.
 
 Each depth is a lower bound:
 

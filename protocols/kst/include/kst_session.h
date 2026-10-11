@@ -6,12 +6,19 @@
  * the 3 functions of kst_driver_t and through nothing else.
  *
  * Execution model: step-wise and non-blocking.  An operation is started by
- * kst_session_enter(), kst_session_read_all(), kst_session_write() or
- * kst_session_verify().  The caller then calls kst_session_step() until it
- * returns something other than KST_SES_BUSY.  kst_session_step() never
+ * kst_session_enter(), kst_session_read_all(), kst_session_verify(),
+ * kst_session_edit(), kst_session_restore(), kst_session_release_pairing()
+ * or kst_session_write().  The caller then calls kst_session_step() until
+ * it returns something other than KST_SES_BUSY.  kst_session_step() never
  * waits: it reads the clock, polls the driver and returns.  A call every
  * 1 ms or faster keeps the pacing near its minimum; a slower caller makes
  * the gaps longer and nothing else.  One operation runs at a time.
+ *
+ * kst_session_edit() and kst_session_restore() plan their writes inside the
+ * session, in slices: while planning is 1, one kst_session_step() call does
+ * KST_PLAN_SLICE_UNITS units of planner work, sends nothing and returns
+ * KST_SES_BUSY.  The planner runs once per operation and the session runs
+ * the plan it built there and no other.
  *
  * Pacing, measured with the driver's clock from the end of a reply window:
  * KST_GAP_US before the next frame, KST_GAP_AFTER_FAULT_US when the window
@@ -110,6 +117,8 @@ typedef enum {
     KST_SES_ERR_VERIFY,        /**< the servo differs from the expected image */
     KST_SES_ERR_DRIVER,        /**< start() refused or poll() never finished */
     KST_SES_ERR_ABORTED,       /**< kst_session_abort() */
+    KST_SES_ERR_NO_PLAN,       /**< the planner built no plan; plan_result
+                                    tells why */
 } kst_ses_t;
 
 /** Reply timing of the read frames since kst_session_init().  A drift is
@@ -141,11 +150,22 @@ typedef struct {
     uint8_t fingerprint_ok;
     uint8_t locked;          /**< only a restore plan is accepted */
     uint8_t step_index;      /**< writes of the running plan that are done */
+    uint8_t planning;        /**< 1: the operation plans; nothing is sent */
+    uint8_t plan_result;     /**< kst_plan_result_t of the last
+                                  kst_session_edit(), kst_session_restore()
+                                  or kst_session_release_pairing();
+                                  KST_PLAN_BUSY while it plans */
+    kst_rules_t plan_rules;  /**< with KST_PLAN_ERR_RULES: the hard rules
+                                  the target breaks */
+    uint32_t plan_cap;       /**< units a planning job may take;
+                                  KST_PLAN_WORK_CAP after
+                                  kst_session_init() */
 
     /* --- private ----------------------------------------------------------- */
     kst_driver_t drv;
-    kst_plan_t plan;         /**< the running plan, copied; between
-                                  operations the planner's work space */
+    kst_plan_t plan;         /**< the running plan; between operations the
+                                  planner's work space */
+    kst_plan_job_t job;      /**< the planning job of the operation */
     kst_image_t expect;      /**< verify: expected; write: image so far */
     kst_image_t read;        /**< result of the read passes */
     kst_frame_t frame;
@@ -173,6 +193,7 @@ typedef struct {
     uint8_t first_ok;
     uint8_t dirty;
     uint8_t undone;
+    uint8_t confirm;         /**< the running restore may be unchecked */
 } kst_session_t;
 
 /** Prepare a session.  False when the driver lacks a function. */
@@ -203,8 +224,71 @@ kst_ses_t kst_session_enter(kst_session_t *s);
 kst_ses_t kst_session_read_all(kst_session_t *s);
 
 /**
- * Run a plan.  The plan is copied.  @p plan must not be the session's own
- * copy or overlap it: that is answered with KST_SES_ERR_ARG.
+ * Change the servo from image to @p target, which is copied.  @p unlocked
+ * is the unlock set of kst_plan_edit().
+ *
+ * Refused at once, before any planning: a NULL @p target
+ * (KST_SES_ERR_ARG), no programming mode, no backup
+ * (KST_SES_ERR_NO_BACKUP), a locked session (KST_SES_ERR_LOCKED), an image
+ * that fails the fingerprint (KST_SES_ERR_FINGERPRINT), and a request
+ * kst_plan_edit_begin() refuses: KST_SES_ERR_NO_PLAN with plan_result
+ * KST_PLAN_ERR_R00, KST_PLAN_ERR_PAIRING, or KST_PLAN_ERR_RULES with
+ * plan_rules.
+ *
+ * Then the session plans, one slice per kst_session_step() call: at most
+ * KST_PLAN_WORK_CAP units, 2,161 calls.  The planning ends the operation
+ * with KST_SES_ERR_NO_PLAN, before any frame, when plan_result is
+ * KST_PLAN_ERR_NO_PATH (no order of the writes with valid images in
+ * between) or KST_PLAN_ERR_TOO_COMPLEX (the cap is spent without a verdict;
+ * a change of fewer fields at a time takes fewer units).  An abort while
+ * planning ends it with KST_SES_ERR_ABORTED; nothing was sent and the
+ * session is not locked.
+ *
+ * With plan_result KST_PLAN_OK the plan runs as kst_session_write()
+ * describes from step 1.  kst_session_plan() gives the plan.
+ */
+kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
+                           kst_field_set_t unlocked);
+
+/**
+ * Take the servo from image back to the backup, planned as
+ * kst_session_edit() plans.  A locked session and an image that fails the
+ * fingerprint do not refuse it.  KST_SES_ERR_NO_PLAN at once with
+ * plan_result KST_PLAN_ERR_R00.
+ *
+ * A plan the planner marks unchecked runs with @p confirm_unchecked only.
+ * Without it the operation ends with KST_SES_ERR_UNCONFIRMED when the
+ * planning ends, before any frame; plan_result is KST_PLAN_OK and
+ * kst_session_plan() gives the plan that waits for the confirmation.  The
+ * second call plans again.
+ */
+kst_ses_t kst_session_restore(kst_session_t *s, bool confirm_unchecked);
+
+/**
+ * Write 0x00 to register 0x1D, as kst_plan_release_pairing() plans it.
+ * Refused like an edit.  The plan is 1 write or none and is built in the
+ * call: planning stays 0.
+ */
+kst_ses_t kst_session_release_pairing(kst_session_t *s);
+
+/**
+ * The plan of the last kst_session_edit(), kst_session_restore() or
+ * kst_session_release_pairing(), for a journal or a display.  It is the
+ * planner's plan while planning is 0 and plan_result is KST_PLAN_OK, until
+ * the next operation of these 3 or kst_session_write() starts.  NULL for a
+ * NULL session.
+ */
+const kst_plan_t *kst_session_plan(const kst_session_t *s);
+
+/**
+ * Run a plan the caller built.  The plan is copied.  @p plan must not be
+ * the session's own copy or overlap it: that is answered with
+ * KST_SES_ERR_ARG.
+ *
+ * This call runs the planner a second time and to its end inside the call,
+ * without a cap: its duration grows with the plan.  A caller that must not
+ * block uses kst_session_edit(), kst_session_restore() and
+ * kst_session_release_pairing().
  *
  * Refused before any frame: no programming mode, no backup, a plan that is
  * not the one kst_plan.h builds for its kind, start, target and unlock set
@@ -245,11 +329,13 @@ kst_ses_t kst_session_write(kst_session_t *s, const kst_plan_t *plan,
 kst_ses_t kst_session_verify(kst_session_t *s, const kst_image_t *expected);
 
 /** Advance the running operation.  KST_SES_BUSY while it runs, then its
- *  result; the result again on every later call. */
+ *  result; the result again on every later call.  A call that plans does
+ *  one slice of KST_PLAN_SLICE_UNITS units and returns. */
 kst_ses_t kst_session_step(kst_session_t *s);
 
 /** End the running operation with KST_SES_ERR_ABORTED.  A transaction on
- *  the wire is finished first: a frame is never cut. */
+ *  the wire is finished first: a frame is never cut.  An operation that
+ *  plans ends at the next kst_session_step() call. */
 void kst_session_abort(kst_session_t *s);
 
 /** The servo's supply was off: it has left programming mode.  A running

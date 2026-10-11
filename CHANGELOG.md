@@ -58,9 +58,40 @@ history is in git.
 
 ### Changed
 
-- **The KST write planner takes 464 bytes of stack, down from 1,272.**
+- **The KST write planner works in slices and a session plans its own
+  writes.** `kst_plan_edit_begin()` and `kst_plan_restore_begin()` start a
+  job in 176 bytes the caller holds, and `kst_plan_step(job, budget)`
+  returns `KST_PLAN_BUSY` after `budget` to `budget + 9` units of work, a
+  unit being a fixed piece of the search. `kst_session_edit()`,
+  `kst_session_restore()` and `kst_session_release_pairing()` plan inside
+  the session, 100 units per `kst_session_step()` call, and run the plan
+  that results: 1 planner run per operation, and the session executes no
+  plan but the one it built. On a Cortex-M33 at 150 MHz a slice costs at
+  most 892 us and a begin call 64 us, computed in an emulator from the
+  instructions executed with ARM GNU 14.2 at -O3 and not measured on
+  hardware. A session ends planning after 216,000 units, at most 2,161
+  slices, with `KST_SES_ERR_NO_PLAN` and `KST_PLAN_ERR_TOO_COMPLEX`; the
+  costliest request found takes 120,136 units, and a costlier one is not
+  ruled out. An abort while the session plans ends the operation with
+  nothing sent. The session object is 848 bytes on a 32-bit target, up
+  from 648.
+  `kst_plan_edit()`, `kst_plan_restore()` and `kst_session_write()` remain
+  and run the same job to its end without a cap. Every plan is the same
+  byte for byte as before: the pinned digests of `test_kst_plan` and
+  `test_kst_session` are unchanged, and 6,300,000 random requests give the
+  plan of the planner this one replaces. The search skips work whose
+  result is known: the costliest run found takes 397 to 647 ms by the
+  same estimate, down from 1.2 to 3.0 s.
+  The programming port of the coprocessor (`shared/outputs/kst_port.c`)
+  calls `kst_plan_edit()`, `kst_plan_restore()` and
+  `kst_session_write()`: a write command runs the planner to its end
+  twice inside core 0's main loop, and a run above the heartbeat gap of
+  150 ms switches every output off and sets the arm latch.
+  ([Performance](docs/Performance.md#the-coprocessor))
+- **The KST write planner takes 488 bytes of stack, down from 1,272.**
   Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
-  the coprocessor image built with ARM GNU 14.2. The search over write
+  the coprocessor image built with ARM GNU 14.2; 176 of them are the job
+  state. The search over write
   orders is a loop over one working image with three 7-byte arrays, not a
   recursion of 7 levels with an image copy each, and the search for an
   extra write keeps a 256-bit set of candidates in place of a 512-byte
@@ -72,7 +103,7 @@ history is in git.
   session builds the planner's plan for the comparison into its own copy
   of the running plan, which no operation reads at that time, and holds no
   second 208-byte plan in its frame. A write command to the KST
-  programming port reaches 1,408 bytes of core 0's stack with ARM GNU
+  programming port reaches 1,432 bytes of core 0's stack with ARM GNU
   14.2, down from 2,416, and is no longer core 0's deepest chain: that is
   a request that binds an output, 1,556 bytes of 4,096 on the image CI
   builds, down from 2,392. The session takes and refuses the same plans
