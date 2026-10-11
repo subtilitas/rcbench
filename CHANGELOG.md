@@ -220,6 +220,20 @@ history is in git.
   `extern "C"` or one that does not compile by itself as C11 and as C++17,
   on a module without a `README.md`, and on a CMake file that names another
   module. CI runs it in the host suite job.
+- **Makers and brands are named descriptively, and the trademark notice
+  covers every name in the tree.** The docs, the hardware pages, the
+  configurator and the UI name the rcbench part generically and the brand
+  as whose product it works with ("servo programmer for KST and Chaservo
+  servos", "the 9 profiles for YGE ESCs", "parameter table for Hitec
+  servos"). The section "Legal notice and disclaimer" of `README.md` and
+  `README-de.md` has a second paragraph after the one for KST, CHASERVO and
+  Hitec: it names 5 groups (servo makers, ESC makers, protocol and firmware
+  names, board, module and component makers, distributors) and covers every
+  other maker, product, protocol and firmware name. `NOTICE`, "Trademarks",
+  lists the names in 6 groups with the same statement. The public headers
+  of `protocols/sbus`, `protocols/pdmini` and `protocols/dshot` carry the
+  short form in their top comment, and the READMEs of `protocols/openyge`,
+  `sbus`, `pdmini` and `dshot` have a section "Trademarks".
 
 ## 0.16.0 - 2026-10-10
 

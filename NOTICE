@@ -67,11 +67,50 @@ Trademarks
 ----------
 
 All product and company names in this repository are names or trademarks of
-their respective owners. They are used to identify the products the software
-and the hardware work with, among them KST, Chaservo, YGE and OpenYGE, Hitec,
-BLHeli, AM32, ESCape32, VESC, ArduPilot, Raspberry Pi, Espressif, WeAct and
-Digi-Key. No such name is part of this project's name, and no logo or artwork
-of another party is included.
+their respective owners. They appear only to describe compatibility or to
+identify a part. This project is not connected with any of the owners and is
+neither supported nor sponsored by any of them. No such name is part of this
+project's name, and no logo or artwork of another party is included.
+
+The names, by group:
+
+Servo makers and brands:
+  KST, Chaservo, Hitec, Futaba, Feetech, Dynamixel, Savox.
+
+ESC (electronic speed controller) and motor makers and brands:
+  Align, APD, Aveox, Castle Creations, Dualsky, E-flite, FLY, Graupner,
+  Great Planes, Hacker, HobbyKing, Hobbywing, Jeti, Kinexsis, Kontronik,
+  Multiplex, Mystery, OMP, Readytosky, Robbe, ROXXY, Scorpion, Skystars,
+  Spektrum, Sunrise, Surpass, Turnigy, XDFly, YGE, ZTW, and the product
+  lines and models of these makers that the files under shared/esc/profiles/
+  name.
+
+Radio, telemetry and flight-control makers and brands:
+  DJI, FrSky, Mikado, PowerBox, V-Stabi.
+
+Protocol, firmware, software and interface names:
+  OpenYGE, S.BUS, S.BUS2, JETI EX Bus, SRXL2, HoTT, SUMD, iBUS, CRSF, DShot,
+  OneShot, MultiShot, KISS, BLHeli, BLHeli_S, BLHeli_32, Bluejay, AM32,
+  ESCape32, VESC, ArduPilot, PX4, Betaflight, DroneCAN, FreeRTOS, ESP-IDF,
+  pico-sdk, OpenOCD, sigrok, KingstVIS, Qwiic, Bluetooth, Wi-Fi, USB-C.
+
+Board, module and component makers:
+  Waveshare, WeAct, Osoyoo, DAOKAI, Matek, Raspberry Pi, Espressif, Kingst,
+  Abracon, Allegro, ams OSRAM, Analog Devices, Arm, Bosch, Bourns, Broadcom,
+  Coilcraft, Cypress, EPC, Fujitsu, Infineon, Isabellenhütte, JST, KEMET,
+  Maxim, Melexis, Microchip, Molicel, Monolithic Power Systems, Murata, NDK,
+  Nexperia, Nisshinbo, NXP, onsemi, Panasonic, RAMXEED, Renesas, Richtek,
+  ROHM, Samsung Electro-Mechanics, Silergy, SLS, STMicroelectronics,
+  Taiyo Yuden, TDK, Texas Instruments, Torex, Vishay, Winbond, Worldsemi,
+  Würth Elektronik, Yageo.
+
+Distributors and board assemblers:
+  Digi-Key, LCSC, JLCPCB, Stefansliposhop, HobbyKing, Horizon Hobby.
+
+The statement above holds for every other maker, product, protocol and
+firmware name in this repository as well, among them the part numbers in the
+hardware pages and the names in the research records under
+hardware/research/.
 
 KST, CHASERVO and Hitec and their logos are trademarks or registered
 trademarks of their respective manufacturers. The names are used in this
