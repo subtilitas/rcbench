@@ -55,6 +55,33 @@ bool kst_files_dir(void)
     return mkdir(path, 0775) == 0 || dir_state() > 0;
 }
 
+/* Whether a failed call says that the card takes no file: it is write
+ * protected, or access is refused. */
+static bool denied(int err)
+{
+    return err == EROFS || err == EACCES || err == EPERM;
+}
+
+/* The answer to a create the directory was not there for: a file has its
+ * name, or the card refuses to make it. */
+static kst_store_io_result_t no_dir_result(void)
+{
+    char path[PATH_MAX_LEN];
+    struct stat st;
+
+    dir_path(path, sizeof(path));
+    if (stat(path, &st) == 0) {
+        return S_ISDIR(st.st_mode) ? KST_STORE_IO_ERROR : KST_STORE_IO_DENIED;
+    }
+    if (errno != ENOENT) {
+        return KST_STORE_IO_ERROR;
+    }
+    if (mkdir(path, 0775) == 0) {
+        return KST_STORE_IO_ERROR;
+    }
+    return denied(errno) ? KST_STORE_IO_DENIED : KST_STORE_IO_ERROR;
+}
+
 static bool io_mounted(void *ctx)
 {
     (void)ctx;
@@ -129,13 +156,14 @@ static kst_store_io_result_t io_create(void *ctx, const char *name,
 
     (void)ctx;
     if (!kst_files_dir()) {
-        return KST_STORE_IO_ERROR;
+        return no_dir_result();
     }
     kst_files_path(name, path, sizeof(path));
     fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0664);
     if (fd < 0) {
         return errno == EEXIST   ? KST_STORE_IO_EXISTS
                : errno == ENOSPC ? KST_STORE_IO_FULL
+               : denied(errno)   ? KST_STORE_IO_DENIED
                                  : KST_STORE_IO_ERROR;
     }
     while (done < len && r == KST_STORE_IO_OK) {

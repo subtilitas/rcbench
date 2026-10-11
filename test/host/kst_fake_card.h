@@ -23,7 +23,7 @@
 #include "kst_prog.h"
 #include "kst_store.h"
 
-#define FAKE_CARD_FILES 80u
+#define FAKE_CARD_FILES 210u
 
 typedef struct {
     char name[KST_PROG_NAME_MAX];   /* the base name */
@@ -49,6 +49,9 @@ typedef struct {
     unsigned pull_at;   /* not 0: the card is gone from this card call of
                            the request on, counted from 1 */
     unsigned calls;     /* card calls of the request */
+    unsigned walks;     /* directory walks; a test sets it to 0 */
+    unsigned walk_fails_at; /* not 0: this walk and each later one does
+                               not read to its end, counted from 1 */
     unsigned saves, lists, loads;
     unsigned n;
     fake_file_t file[FAKE_CARD_FILES];
@@ -104,16 +107,18 @@ static inline fake_file_t *fake_card_entry_find(fake_card_t *c,
 }
 
 /* Whether a line of a written text is one an edited text of the kind
- * leaves out. */
+ * leaves out.  An edited text is a person's lines: it keeps the type line
+ * when it states a type and never the register block, so each value is the
+ * one its line converts to. */
 static inline bool fake_card_drops(const char *l, uint8_t kind, bool typed)
 {
-    if (strncmp(l, "checksum", 8) == 0) {
-        return kind != KST_PROG_FILE_VERIFIED;
-    }
-    if (typed) {
+    if (kind == KST_PROG_FILE_VERIFIED) {
         return false;
     }
-    return strncmp(l, "Type:", 5) == 0 || strncmp(l, "registers", 9) == 0
+    if (strncmp(l, "Type:", 5) == 0) {
+        return !typed;
+    }
+    return strncmp(l, "checksum", 8) == 0 || strncmp(l, "registers", 9) == 0
            || (isxdigit((unsigned char)l[0]) && isxdigit((unsigned char)l[1])
                && l[2] == ':');
 }
@@ -166,17 +171,22 @@ static inline bool fake_card_walk(void *ctx, kst_store_visit_fn visit,
     fake_card_t *c = (fake_card_t *)ctx;
     char name[64];
 
+    bool fails;
+
     if (fake_card_gone(c)) {
         return false;
     }
+    c->walks++;
+    fails = c->walk_fails
+            || (c->walk_fails_at != 0u && c->walks >= c->walk_fails_at);
     for (unsigned i = 0; i < c->n; ++i) {
-        if (c->walk_fails && i >= c->n / 2u) {
+        if (fails && i >= c->n / 2u) {
             return false;
         }
         fake_card_entry(&c->file[i], name, sizeof(name));
         visit(name, c->file[i].dir, vctx);
     }
-    return !c->walk_fails;
+    return !fails;
 }
 
 static inline int32_t fake_card_size(void *ctx, const char *name)

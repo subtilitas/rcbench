@@ -550,8 +550,9 @@ Datei ändert den Entwurf auf dem Panel, nie das Servo.
 
 Der erste Eintrag speichert. Darunter stehen die Dateien nach Namen
 sortiert, 5 je Seite, jede mit ihrem Servotyp; eine Datei ohne Typzeile
-zeigt keinen. Die Liste reicht bis zu den ersten 64 Dateien nach Namen;
-eine Karte mit mehr zeigt diese und zählt keine weiteren. Bei mehr als
+zeigt keinen. Die Dateien mit einem vorgeschlagenen Namen, `KST` und
+3 Ziffern, stehen zusammen an der Stelle von `KST000`, die höchste Nummer
+zuerst. Die Liste erreicht jede Servodatei der Karte. Bei mehr als
 5 Dateien zählt der Titel sie, `DATEIEN 1 BIS 5 VON 7`, und
 `Weitere Dateien zeigen` blättert, nach der letzten Seite zurück zur
 ersten. Das Panel fragt die Karte für jede Seite und wartet höchstens 5 s
@@ -1052,7 +1053,9 @@ Codes.
   angewendet.
 - Kein Speichern, Auflisten oder Laden einer Servodatei ist auf einer
   Karte gelaufen.
-- Die Liste der Dateien reicht bis zu den ersten 64 Dateien nach Namen.
+- Eine Seite hinter den ersten 64 Dateien liest das Verzeichnis je
+  64 Dateien davor ein weiteres Mal. Die Zeit dafür ist nicht gemessen;
+  das Panel wartet 5 s auf eine Seite.
 - Ein Schreiben ohne Karte hinterlässt keine Backup-Datei. Das Backup der
   Sitzung ist dann die einzige Kopie des Servos, wie es vorgefunden wurde,
   und endet mit **VERLASSEN**, einem Neustart des Koprozessors oder einem

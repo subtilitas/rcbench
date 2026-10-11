@@ -93,6 +93,9 @@ typedef enum {
     KST_STORE_NOT_FOUND = 9,    /**< no file has that name */
     KST_STORE_TOO_LARGE = 10,   /**< the file is larger than the buffer */
     KST_STORE_READ_ERROR = 11,
+    KST_STORE_DENIED = 12,      /**< the card takes no file: it is write
+                                     protected, or a file has the name of
+                                     the directory */
 } kst_store_t;
 
 /** What the create function reports. */
@@ -101,6 +104,10 @@ typedef enum {
     KST_STORE_IO_EXISTS,   /**< the name is taken; nothing was written */
     KST_STORE_IO_FULL,     /**< no space; the function removed what it created */
     KST_STORE_IO_ERROR,    /**< any other failure; likewise removed */
+    KST_STORE_IO_DENIED,   /**< the card takes no file: it is write
+                                protected, or the directory cannot be made
+                                because a file has its name.  Nothing was
+                                written */
 } kst_store_io_result_t;
 
 /** Receives one directory entry.  @p name does not outlive the call. */
@@ -168,7 +175,12 @@ kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
                            kst_store_name_t *why);
 
 /**
- * List the files with KST_STORE_EXT, sorted by name without case.
+ * List the files with KST_STORE_EXT.
+ *
+ * The order: by name without case.  The files named "KST" and 3 digits
+ * stand in one run at the place of "KST000", by falling number.
+ * kst_store_preset() gives a later file the higher number until KST999 is
+ * taken, so the run starts with the latest of them.
  *
  * @p entries receives the first @p cap of them.  @p count is the number
  * written, @p total the number of files that qualify, @p skipped the number
@@ -181,6 +193,22 @@ kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
 kst_store_t kst_store_list(const kst_store_io_t *io,
                            kst_store_entry_t *entries, size_t cap,
                            size_t *count, size_t *total, size_t *skipped);
+
+/**
+ * kst_store_list() from the file behind @p after on: @p entries receives
+ * the first @p cap files the order has behind the name @p after, a file
+ * name with its extension that need not exist.  NULL lists from the first
+ * file on.  @p total and @p skipped count the whole directory as
+ * kst_store_list() does.
+ *
+ * A caller reaches every file of a directory in a buffer of @p cap entries
+ * by passing the last name of one call to the next; each call walks the
+ * directory once.
+ */
+kst_store_t kst_store_list_after(const kst_store_io_t *io, const char *after,
+                                 kst_store_entry_t *entries, size_t cap,
+                                 size_t *count, size_t *total,
+                                 size_t *skipped);
 
 /**
  * Read the file @p name, a name as kst_store_list() gives it, into @p buf.

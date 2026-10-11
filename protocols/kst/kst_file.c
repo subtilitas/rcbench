@@ -23,6 +23,10 @@
 /* A number in a file saturates here; no field encodes a value this high. */
 #define NUMBER_MAX 9999999u
 
+/* The byte order mark of UTF-8 (8-bit Unicode Transformation Format), which
+ * some editors put in front of a text. */
+#define BOM "\xEF\xBB\xBF"
+
 static const char k_hex[] = "0123456789ABCDEF";
 
 /* --- checksum ------------------------------------------------------------- */
@@ -322,24 +326,40 @@ typedef struct {
     const char *s;
     size_t n;       /* without the line end */
     bool cr;        /* the line ends with CR LF */
+    bool open;      /* the text ends in this line, without a line end */
 } line_t;
 
-/* The next complete line.  False when the text holds no further line end. */
+/* The next line: a complete one, or with @c open the bytes behind the last
+ * line end.  False at the end of the text. */
 static bool next_line(cur_t *c, line_t *l)
 {
     const char *start = c->text + c->pos;
-    const char *lf = memchr(start, '\n', c->len - c->pos);
+    const size_t left = c->len - c->pos;
+    const char *lf;
 
-    c->line++;
-    if (lf == NULL) {
+    if (left == 0u) {
         return false;
     }
+    lf = memchr(start, '\n', left);
+    c->line++;
     l->s = start;
-    l->n = (size_t)(lf - start);
-    c->pos += l->n + 1u;
-    l->cr = l->n > 0u && start[l->n - 1u] == '\r';
+    l->open = lf == NULL;
+    l->n = l->open ? left : (size_t)(lf - start);
+    c->pos += l->open ? left : l->n + 1u;
+    l->cr = !l->open && l->n > 0u && start[l->n - 1u] == '\r';
     if (l->cr) {
         l->n--;
+    }
+    return true;
+}
+
+/* Whether a line holds spaces and tabs only, or nothing. */
+static bool blank_line(const line_t *l)
+{
+    for (size_t i = 0; i < l->n; ++i) {
+        if (!is_blank(l->s[i])) {
+            return false;
+        }
     }
     return true;
 }
@@ -384,7 +404,8 @@ static kst_file_err_t read_head(cur_t *c)
         c->line = 1;
         return KST_FILE_ERR_NOT_KST;
     }
-    if (!next_line(c, &l)) {
+    if (!next_line(c, &l) || l.open) {
+        c->line = 1;
         return KST_FILE_ERR_TRUNCATED;
     }
     if (!number(l.s, l.n, &i, &version) || i != l.n || version == 0u) {
@@ -488,9 +509,13 @@ static bool crc_line(const line_t *l, uint32_t *crc)
 }
 
 /*
- * The caller found a complete line whose first word is "checksum".  Every
- * state below ends at that line or refuses before it, so the loop leaves
- * with the checksum compared.
+ * The caller found a line whose first word is "checksum".  Every state
+ * below ends at that line or refuses before it, so the loop leaves with the
+ * checksum compared.
+ *
+ * Behind the checksum line only blank lines pass.  The checksum line is
+ * the one line taken without its line end: its 17 characters show it
+ * whole.
  */
 static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 {
@@ -506,13 +531,22 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
     c->line = 0;
     while (next_line(c, &l)) {
         if (state == S_DONE) {
-            return KST_FILE_ERR_TRAILING;
+            if (!blank_line(&l)) {
+                return KST_FILE_ERR_TRAILING;
+            }
+            continue;
         }
-        if (state == S_HEAD) {
-            crlf = l.cr;
-        }
-        if (l.cr != crlf) {
-            return KST_FILE_ERR_LINE_END;
+        if (l.open) {
+            if (state != S_CHECK || l.n != CHECKSUM_LEN) {
+                return KST_FILE_ERR_TRUNCATED;
+            }
+        } else {
+            if (state == S_HEAD) {
+                crlf = l.cr;
+            }
+            if (l.cr != crlf) {
+                return KST_FILE_ERR_LINE_END;
+            }
         }
         if (state == S_CHECK) {
             if (!checksum_fits(&l, ~crc)) {
@@ -564,9 +598,6 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
             break;
         }
     }
-    if (c->pos < c->len) {
-        return KST_FILE_ERR_TRAILING;
-    }
     if (stated != kst_type(&f->image)) {
         c->line = 2;
         return KST_FILE_ERR_TYPE;
@@ -584,9 +615,11 @@ typedef struct {
     bool has_block;
     kst_type_t stated;    /* by the type line */
     unsigned type_line;   /* 0: the file has none */
+    /* Per named field without "raw": the number as written, in the unit
+     * of kst_field_display(). */
+    int32_t typed[KST_F_COUNT];
 } edit_t;
 
-/* The value of field @p id as a person writes it. */
 /* Whether a raw value of the field displays as @p display. */
 static bool shows(kst_field_id_t id, int32_t display)
 {
@@ -601,8 +634,15 @@ static bool shows(kst_field_id_t id, int32_t display)
     return false;
 }
 
+/*
+ * The value of field @p id as a person writes it.  @p typed receives the
+ * number of a line without "raw".  @p closed is set when the line shows
+ * its own end: a unit, a "[...]" or a remark behind the number.  A line
+ * that ends in the digits of its number does not: a text cut inside that
+ * number reads the same.
+ */
 static bool field_value(kst_field_id_t id, const char *s, size_t n,
-                        kst_file_t *f)
+                        kst_file_t *f, int32_t *typed, bool *closed)
 {
     const kst_field_t *fd = kst_field(id);
     const bool editable = fd->access == KST_ACCESS_EDITABLE;
@@ -623,6 +663,7 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
         }
         n--;
         trim(&s, &n);
+        *closed = true;
     }
     if (n > 3u && loose_eq(s, 3, "raw") && is_blank(s[3])) {
         i = 3;
@@ -636,6 +677,7 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
         }
         f->as_raw |= KST_FIELD_BIT(id);
         f->value[id] = (int32_t)v;
+        *closed = *closed || i != n;
         return true;
     }
     if (fd->unit == KST_UNIT_FACTOR && n > 0u && lower(s[0]) == 'x') {
@@ -659,9 +701,13 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
         }
     }
     unit_text(fd, unit);
-    if (i != n && !loose_eq(s + i, n - i, unit)) {
-        return false;
+    if (i != n) {
+        if (!loose_eq(s + i, n - i, unit)) {
+            return false;
+        }
+        *closed = true;
     }
+    *typed = (int32_t)(v + tenth);
     if (!editable) {
         /* A field no load takes keeps its displayed value: prot1_time and
          * prot1_pwm have no conversion back.  The value is one the field
@@ -679,14 +725,17 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
     return true;
 }
 
-/* A line that is not empty, not a comment and not in the register block. */
+/* A line that is not empty, not a comment and not in the register block.
+ * @p closed: see field_value(); the other lines show their end by their
+ * form. */
 static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
-                                  unsigned line)
+                                  unsigned line, bool *closed)
 {
     const char *value;
     size_t name_len = 0;
     size_t value_len;
 
+    *closed = true;
     while (name_len < n && s[name_len] != '=' && s[name_len] != ':') {
         name_len++;
     }
@@ -729,7 +778,9 @@ static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
         if ((e->f->named & KST_FIELD_BIT(id)) != 0u) {
             return KST_FILE_ERR_DUPLICATE;
         }
-        if (!field_value(id, value, value_len, e->f)) {
+        *closed = false;
+        if (!field_value(id, value, value_len, e->f, &e->typed[id],
+                         closed)) {
             return KST_FILE_ERR_VALUE;
         }
         e->f->named |= KST_FIELD_BIT(id);
@@ -739,25 +790,58 @@ static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
     return KST_FILE_ERR_NAME;
 }
 
+/* An editable field whose line shows what the register block holds takes
+ * the block's raw value: several raw values of Max. Duty show as one
+ * percentage, and the line alone gives the one its number converts to. */
+static void take_block_values(const edit_t *e, kst_file_t *f)
+{
+    for (unsigned i = 0; i < (unsigned)KST_F_COUNT; ++i) {
+        const kst_field_id_t id = (kst_field_id_t)i;
+        const kst_field_set_t bit = KST_FIELD_BIT(id);
+        const uint16_t raw = kst_field_get(&f->image, id);
+        int32_t shown = 0;
+
+        if (kst_field(id)->access == KST_ACCESS_EDITABLE &&
+            (f->named & bit) != 0u && (f->as_raw & bit) == 0u &&
+            kst_field_display(id, raw, &shown) && shown == e->typed[id]) {
+            f->value[id] = raw;
+            f->as_raw |= bit;
+        }
+    }
+}
+
+/*
+ * A text may end without a line end, as an editor leaves it.  The last
+ * line is then taken when it shows its own end, and the text is refused as
+ * truncated when it does not or when the line is not read: a text cut
+ * inside a line never gives a shortened number.
+ */
 static kst_file_err_t read_edited(cur_t *c, kst_file_t *f)
 {
-    edit_t e = {f, 0, false, KST_TYPE_NONE, 0};
+    edit_t e;
     line_t l;
     kst_file_err_t err;
 
+    memset(&e, 0, sizeof(e));
+    e.f = f;
+    e.stated = KST_TYPE_NONE;
     while (next_line(c, &l)) {
         const char *s = l.s;
         size_t n = 0;
+        bool closed = false;
 
         /* A comment may hold any byte; the rest of a line is ASCII. */
         while (n < l.n && s[n] != '#') {
             const unsigned ch = (unsigned char)s[n];
 
             if ((ch < 0x20u && ch != '\t') || ch > 0x7Eu) {
-                return KST_FILE_ERR_MALFORMED;
+                return l.open ? KST_FILE_ERR_TRUNCATED
+                              : KST_FILE_ERR_MALFORMED;
             }
             n++;
         }
+        /* A comment is a person's and ends where the text does. */
+        closed = n < l.n;
         trim(&s, &n);
         if (n == 0u) {
             continue;
@@ -765,17 +849,30 @@ static kst_file_err_t read_edited(cur_t *c, kst_file_t *f)
         if (e.rows_left > 0u) {
             if (!register_row(s, n, REG_LINES - e.rows_left, false,
                               &f->image)) {
-                return KST_FILE_ERR_MALFORMED;
+                return l.open ? KST_FILE_ERR_TRUNCATED
+                              : KST_FILE_ERR_MALFORMED;
             }
             e.rows_left--;
             continue;
         }
-        err = edited_line(&e, s, n, c->line);
+        {
+            bool by_form = false;
+
+            err = edited_line(&e, s, n, c->line, &by_form);
+            closed = closed || by_form;
+        }
+        if (l.open && (err != KST_FILE_OK || !closed)) {
+            return KST_FILE_ERR_TRUNCATED;
+        }
         if (err != KST_FILE_OK) {
             return err;
         }
     }
-    if (c->pos < c->len || e.rows_left > 0u) {
+    if (e.rows_left > 0u) {
+        /* The line the block's next row belongs in. */
+        if (c->pos == 0u || c->text[c->pos - 1u] == '\n') {
+            c->line++;
+        }
         return KST_FILE_ERR_TRUNCATED;
     }
     if (e.has_block) {
@@ -786,6 +883,7 @@ static kst_file_err_t read_edited(cur_t *c, kst_file_t *f)
             return KST_FILE_ERR_TYPE;
         }
         e.stated = block;
+        take_block_values(&e, f);
     }
     f->type = e.stated;
     f->kind = e.stated == KST_TYPE_NONE ? KST_FILE_EDITED_UNTYPED
@@ -809,12 +907,16 @@ kst_file_err_t kst_file_parse(const char *text, size_t len, kst_file_t *out,
     if (len > KST_FILE_MAX) {
         return KST_FILE_ERR_OVERSIZED;
     }
+    if (len >= STR_LEN(BOM) && memcmp(text, BOM, STR_LEN(BOM)) == 0) {
+        c.text += STR_LEN(BOM);
+        c.len -= STR_LEN(BOM);
+    }
     memset(&f, 0, sizeof(f));
     f.type = KST_TYPE_NONE;
     err = read_head(&c);
     if (err == KST_FILE_OK) {
-        err = has_checksum_line(text, len) ? read_verified(&c, &f)
-                                           : read_edited(&c, &f);
+        err = has_checksum_line(c.text, c.len) ? read_verified(&c, &f)
+                                               : read_edited(&c, &f);
     }
     if (err != KST_FILE_OK) {
         if (line != NULL) {
@@ -919,6 +1021,16 @@ kst_file_verdict_t kst_file_load(const kst_file_t *file,
     }
     memset(out, 0, sizeof(*out));
     out->kind = file->kind;
+    for (unsigned i = 0; i < (unsigned)KST_F_COUNT; ++i) {
+        const kst_field_id_t id = (kst_field_id_t)i;
+
+        if (kst_field(id)->name[0] != '\0') {
+            out->fields++;
+            if (gives(file, id)) {
+                out->named++;
+            }
+        }
+    }
     out->file_type = file->type;
     out->servo_type = kst_type(servo);
     out->hard_field = KST_F_COUNT;

@@ -264,7 +264,7 @@ The module works on buffers the caller holds: no file access, no heap, no
 `stdio`. A written file has 35 lines and fewer than 1024 bytes; the one
 below has 808. `kst_file_parse()` refuses a text above 3432 bytes
 (`KST_FILE_MAX`). It holds one `kst_file_t`, 320 bytes, on its stack; a
-`kst_file_load_t` is 80 bytes.
+`kst_file_load_t` is 88 bytes.
 
 ```text
 KST servo configuration, format 1
@@ -341,7 +341,13 @@ A line whose first word is `checksum` decides how a text is read.
 A file with a checksum line whose value does not fit is refused as damaged
 (`KST_FILE_ERR_CHECKSUM`). A verified file has LF on every line or CR LF
 (carriage return, 0x0D, then LF) on every line; a transfer that converts
-every line end keeps the checksum valid.
+every line end keeps the checksum valid. The checksum line may lack its
+line end, and blank lines may follow it. Any other byte behind it refuses
+the file (`KST_FILE_ERR_TRAILING`).
+
+Both kinds take the 3 bytes EF BB BF, the byte order mark of UTF-8 (8-bit
+Unicode Transformation Format), in front of the header. The mark is not
+part of the checksum.
 
 A person changes a file by removing the checksum line, or writes one from
 nothing:
@@ -367,13 +373,25 @@ Reversion = 1
 - A name the field table does not have, a name given twice and a value the
   field does not encode refuse the file with the line number.
 - The type line and the register block may each stay or go. The block
-  states the type and gives no value. A type line that contradicts the
-  block refuses the file.
-- The last line ends with a line end. A text that stops inside a line is
-  refused as truncated.
+  states the type. A type line that contradicts the block refuses the
+  file.
+- Where the block shows as the line of an editable field reads, the block
+  gives the field's raw value. Several raw values of Max. Duty show as one
+  percentage: raw 244 and raw 245 both show 96 %, and 96 % converts to raw
+  245. A file whose line is unchanged loads the raw value it was written
+  from. A line that reads otherwise wins over the block. The block gives
+  no value for a field without a line.
+- The last line may lack its line end when the line shows its own end: a
+  unit, a `[...]`, a comment, a remark behind a raw value, a type line, the
+  `registers 32` line or a whole register line. A text that ends in the
+  digits of a number, in a name or inside the register block is refused as
+  truncated (`KST_FILE_ERR_TRUNCATED`).
 
 A written file cut between 2 lines before the register block has no
 checksum line and reads as an edited file with fewer field lines.
+`kst_file_load()` states the count: `named` is the number of fields the
+file gives a value for, `fields` the number of named fields, 27. A
+verified file has `named` equal to `fields`.
 
 ### Loading
 
@@ -415,12 +433,12 @@ made by hand.
 | 3 | `KST_FILE_ERR_NOT_KST` | line 1 is not the header |
 | 4 | `KST_FILE_ERR_VERSION` | the version is not a number from 1 up |
 | 5 | `KST_FILE_ERR_NEWER` | a version above 1 |
-| 6 | `KST_FILE_ERR_TRUNCATED` | the text ends inside a line or inside the register block |
+| 6 | `KST_FILE_ERR_TRUNCATED` | the text ends inside the header, inside a number or a name, or inside the register block; a verified file ends inside a line other than a whole checksum line |
 | 7 | `KST_FILE_ERR_LINE_END` | checksum line present: LF and CR LF in one file |
 | 8 | `KST_FILE_ERR_MALFORMED` | a line is not what the format has at that place |
 | 9 | `KST_FILE_ERR_REG_COUNT` | the register count is not 32 |
 | 10 | `KST_FILE_ERR_CHECKSUM` | the checksum line's value does not fit |
-| 11 | `KST_FILE_ERR_TRAILING` | bytes follow the checksum line |
+| 11 | `KST_FILE_ERR_TRAILING` | bytes other than blank lines follow the checksum line |
 | 12 | `KST_FILE_ERR_NAME` | edited file: no field has that name |
 | 13 | `KST_FILE_ERR_DUPLICATE` | edited file: the field, the type or the register block is given twice |
 | 14 | `KST_FILE_ERR_VALUE` | edited file: not a number in the field's unit, a value the field does not encode, or a type other than V6 and V8 |

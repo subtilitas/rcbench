@@ -256,13 +256,49 @@ kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
         return KST_STORE_EXISTS;
     case KST_STORE_IO_FULL:
         return KST_STORE_CARD_FULL;
+    case KST_STORE_IO_DENIED:
+        return KST_STORE_DENIED;
     default:
         return KST_STORE_WRITE_ERROR;
     }
 }
 
+/* Whether a name that is no proposed one stands in front of the proposed
+ * names: at or before "KST000.TXT" in the order without case. */
+static bool before_presets(const char *name)
+{
+    static const char first[] = "kst000" ".txt";
+    size_t i = 0;
+
+    while (name[i] != '\0' && lower(name[i]) == first[i]) {
+        i++;
+    }
+    return (unsigned char)lower(name[i]) <= (unsigned char)first[i];
+}
+
+/* Order of two file names in a list: by name without case, with the
+ * proposed names in one run where "KST000.TXT" would stand, the highest
+ * number first. */
+static int list_cmp(const char *a, const char *b)
+{
+    const int na = preset_number(a);
+    const int nb = preset_number(b);
+
+    if (na != 0 && nb != 0 && na != nb) {
+        return na > nb ? -1 : 1;
+    }
+    if (na != 0 && nb == 0) {
+        return before_presets(b) ? 1 : -1;
+    }
+    if (na == 0 && nb != 0) {
+        return before_presets(a) ? -1 : 1;
+    }
+    return name_cmp(a, b);
+}
+
 typedef struct {
     kst_store_entry_t *entries;
+    const char *after;      /* NULL: from the first file on */
     size_t cap;
     size_t count;
     size_t total;
@@ -284,8 +320,11 @@ static void list_name(const char *name, bool is_dir, void *visit_ctx)
         return;
     }
     list->total++;
+    if (list->after != NULL && list_cmp(name, list->after) <= 0) {
+        return;
+    }
     at = list->count;
-    while (at > 0u && name_cmp(name, list->entries[at - 1u].name) < 0) {
+    while (at > 0u && list_cmp(name, list->entries[at - 1u].name) < 0) {
         at--;
     }
     if (at == list->cap) {
@@ -304,7 +343,16 @@ kst_store_t kst_store_list(const kst_store_io_t *io,
                            kst_store_entry_t *entries, size_t cap,
                            size_t *count, size_t *total, size_t *skipped)
 {
-    list_t list = {entries, cap, 0, 0, 0};
+    return kst_store_list_after(io, NULL, entries, cap, count, total,
+                                skipped);
+}
+
+kst_store_t kst_store_list_after(const kst_store_io_t *io, const char *after,
+                                 kst_store_entry_t *entries, size_t cap,
+                                 size_t *count, size_t *total,
+                                 size_t *skipped)
+{
+    list_t list = {entries, after, cap, 0, 0, 0};
     bool read_through;
 
     if (io == NULL || (entries == NULL && cap > 0u)) {
