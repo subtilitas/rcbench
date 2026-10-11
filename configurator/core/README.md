@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 54 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 54 wires, 21 functions of which 10 need no part, 6 rules, 22 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
@@ -42,7 +42,7 @@ The order of work:
 4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
 5. Rules, once each, in array order.
 6. Wires and check entries whose condition holds.
-7. Functions: `enabled` is true when no needed part is missing and every forced option holds.
+7. Functions: `enabled` is true when no needed part is missing and every forced option holds. A function with `needs: []` runs on the panel and the coprocessor alone and is enabled in every setup.
 
 `conflicts` is always empty: the data holds no pair of parts that exclude each
 other.
@@ -116,14 +116,14 @@ The 7 pin rules:
 The suite runs 2 full sweeps and 1 seeded sample through the resolver:
 
 - 2048 sets of owned parts times 8 option combinations: 16384 setups.
-- 2048 sets of functions times 8 option combinations: 16384 setups.
+- 2048 sets of the 11 functions that need a part times 8 option combinations: 16384 setups.
 - 2000 mixed selections from a fixed seed.
 
 Each setup is checked for: the same result on a second call, no exception, no
 pin of a part on two nets, no power wire on a signal pad, every wire end a
 declared pin of a part that is present, catalogue order of every output array.
 The sweep refuses a catalogue with more than 16 selectable parts or 16
-functions.
+functions that need a part.
 
 Further tests cover the empty selection, the full selection, each part and
 each function alone, unknown ids, a missing German string, a broken source

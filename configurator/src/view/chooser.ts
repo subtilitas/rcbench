@@ -64,11 +64,22 @@ export function reasonText(part: ResolvedPart, view: View): string {
   return out.length > 0 ? `${out.join('. ')}.` : '';
 }
 
+/** The functions that need no part: a list without controls. */
+function baseList(view: View): string {
+  const { lang, catalogue } = view;
+  const items = catalogue.functions.filter((fn) => fn.needs.length === 0).map((fn) =>
+    `<li>${esc(tx(lang, fn.name))}${fn.hardware === 'not-run' ? tag(lang) : ''}</li>`);
+  if (items.length === 0) return '';
+  return `<section class="base" aria-labelledby="g-base"><h3 id="g-base">${esc(tx(lang, catalogue.baseFunction))}</h3>`
+    + `<p class="hint">${esc(t(lang, 'baseHint'))}</p><ul>${items.join('')}</ul></section>`;
+}
+
 function functionRows(view: View, group: Fn['group']): string {
   const { lang, catalogue, setup } = view;
   let h = '';
   for (const f of setup.functions) {
-    if (f.fn.group !== group) continue;
+    // A function that needs no part is in the list above and takes no tick.
+    if (f.fn.group !== group || f.fn.needs.length === 0) continue;
     const short = f.missing.map((id) => {
       const p = catalogue.parts.find((x) => x.id === id);
       return p ? tx(lang, p.short) : id;
@@ -148,7 +159,7 @@ function ownedRows(view: View): string {
 
 export function chooser(view: View, ownOpen: boolean): string {
   const { lang, catalogue, setup } = view;
-  let h = `<h2 id="h-choose">${esc(t(lang, 'choose'))}</h2>`;
+  let h = `<h2 id="h-choose">${esc(t(lang, 'choose'))}</h2>${baseList(view)}`;
   for (const [group, key] of GROUPS) {
     h += `<fieldset><legend>${esc(t(lang, key))}</legend>${functionRows(view, group)}</fieldset>`;
   }

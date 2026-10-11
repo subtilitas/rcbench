@@ -78,11 +78,17 @@ function parts(view: View): string {
   return `${h}</ul>`;
 }
 
+/** The enabled functions: those that need no part first, then those of the parts of the setup. */
 function does(view: View): string {
   const { lang, catalogue, setup } = view;
-  const items = setup.functions.filter((f) => f.enabled).map((f) =>
-    `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}</li>`);
-  return `<h3>${esc(t(lang, 'does'))}</h3><ul class="plain"><li>${esc(tx(lang, catalogue.baseFunction))}</li>${items.join('')}</ul>`;
+  const list = (base: boolean): string => setup.functions
+    .filter((f) => f.enabled && (f.fn.needs.length === 0) === base)
+    .map((f) => `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}</li>`)
+    .join('');
+  const [base, rest] = [list(true), list(false)];
+  return `<h3>${esc(t(lang, 'does'))}</h3>`
+    + (base ? `<h4>${esc(tx(lang, catalogue.baseFunction))}</h4><ul class="plain">${base}</ul>` : '')
+    + (rest ? `<h4>${esc(t(lang, 'withParts'))}</h4><ul class="plain">${rest}</ul>` : '');
 }
 
 function wiring(view: View): string {

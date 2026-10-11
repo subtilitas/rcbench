@@ -74,7 +74,7 @@ Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
 `test/layout.test.ts` draws every distinct setup the resolver gives for every
-subset of the functions and every subset of the selectable parts, in all 8
+subset of the functions that need a part and every subset of the selectable parts, in all 8
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,

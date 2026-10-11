@@ -6,7 +6,8 @@ import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
 import { STRINGS } from '../src/i18n.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+/** The functions with a tick: those that need a part. */
+const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const BASE_WIRES = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }).wires.length;
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
@@ -79,6 +80,30 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
+    test('the base setup lists the functions that need no part, in both languages', async ({ page }) => {
+      const seen = watch(page);
+      const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+      for (const lang of ['en', 'de'] as const) {
+        await open(page, `#v=1&l=${lang}`);
+        await expect(page.locator('#choose .base h3')).toHaveText(CATALOGUE.baseFunction[lang]);
+        await expect(page.locator('#choose .base li')).toHaveCount(base.length);
+        await expect(page.locator('#choose .base input')).toHaveCount(0);
+        for (const fn of base) {
+          await expect(page.locator(`#f-${fn.id}`)).toHaveCount(0);
+          await expect(page.locator('#result')).toContainText(fn.name[lang]);
+        }
+        await expect(page.locator('.sum p')).toHaveText(lang === 'en' ? '4 parts, 4 wires, 10 functions.' : '4 Teile, 4 Drähte, 10 Funktionen.');
+        await expect(page.locator('#result h4')).toHaveText([CATALOGUE.baseFunction[lang]]);
+        await fits(page);
+      }
+      // A tick keeps the list and adds the second heading.
+      await open(page, '#v=1&f=servo');
+      await expect(page.locator('#choose .base li')).toHaveCount(base.length);
+      await expect(page.locator('#result h4')).toHaveCount(2);
+      for (const fn of base) await expect(page.locator('#result')).toContainText(fn.name.en);
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
     test('the smallest and the full selection fit the viewport', async ({ page }) => {
       const seen = watch(page);
       await open(page, '#v=1&f=servo');
@@ -106,7 +131,7 @@ for (const size of SIZES) {
       await page.locator('#f-servo').check();
       await expect(page).toHaveURL(/#v=1&f=servo$/);
       await expect(page.locator('#f-servo')).toBeFocused();
-      await expect(page.locator('#live')).toHaveText(/^\d+ parts, \d+ wires, 1 function\.$/);
+      await expect(page.locator('#live')).toHaveText(/^\d+ parts, \d+ wires, 11 functions\.$/);
       const rows = await page.locator('table.wires tbody tr').count();
       expect(rows).toBeGreaterThan(BASE_WIRES);
 

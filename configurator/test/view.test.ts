@@ -85,3 +85,38 @@ test('the chooser shows the hint on the locked row and none on a free row', () =
   assert.ok(row('usbtap').includes(STRINGS.lockRule[1]));
   for (const key of ['lockFn', 'lockOpt', 'lockRule'] as const) assert.ok(!row('sd').includes(STRINGS[key][1]));
 });
+
+test('the base setup lists the functions that need no part, without a tick', () => {
+  const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+  assert.equal(base.length, 10);
+  for (const lang of ['en', 'de'] as Lang[]) {
+    const v = view({}, lang);
+    const picker = chooser(v, false);
+    const list = picker.slice(picker.indexOf('<section class="base"'), picker.indexOf('</section>'));
+    assert.ok(list.includes(`<h3 id="g-base">${CATALOGUE.baseFunction[lang]}</h3>`), list);
+    assert.ok(list.includes(STRINGS.baseHint[lang === 'en' ? 0 : 1]));
+    assert.ok(!list.includes('<input'));
+    const html = result(v, 'https://example.invalid/', []);
+    assert.ok(html.includes(lang === 'en' ? '4 parts, 4 wires, 10 functions.' : '4 Teile, 4 Drähte, 10 Funktionen.'));
+    assert.ok(html.includes(`<h4>${CATALOGUE.baseFunction[lang]}</h4>`));
+    assert.ok(!html.includes(STRINGS.withParts[lang === 'en' ? 0 : 1]));
+    for (const fn of base) {
+      assert.ok(list.includes(`<li>${fn.name[lang]}`), fn.id);
+      assert.ok(html.includes(`<li>${fn.name[lang]}`), fn.id);
+      assert.ok(!picker.includes(`id="f-${fn.id}"`), fn.id);
+    }
+  }
+});
+
+test('a setup with parts keeps the functions that need no part and lists the others under their own heading', () => {
+  const v = view({ functions: ['servo'], owned: ['sd'] });
+  const html = result(v, 'https://example.invalid/', []);
+  const at = html.indexOf(`<h4>${STRINGS.withParts[0]}</h4>`);
+  assert.ok(at > html.indexOf(`<h4>${CATALOGUE.baseFunction.en}</h4>`));
+  const rest = html.slice(at, html.indexOf('</ul>', at));
+  assert.equal(rest.split('<li>').length - 1, 2);
+  for (const fn of CATALOGUE.functions) {
+    if (fn.needs.length === 0) assert.ok(html.slice(0, at).includes(`<li>${fn.name.en}`), fn.id);
+  }
+  assert.ok(chooser(v, false).includes('id="f-servo"'));
+});

@@ -15,7 +15,9 @@ const MIXED = 2000;
 const SUBSET_LIMIT = 2 ** 16;
 
 const SELECTABLE = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+/** The functions the visitor ticks: those that need a part. */
+const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+const BASE = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
 const LOCKED = CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id);
 
 const OPTION_SETS: Options[] = OPTION_VALUES.connection.flatMap((connection) =>
@@ -190,6 +192,8 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
     assert.deepEqual(f.missing, f.fn.needs.filter((id) => !present.has(id)));
     if (f.chosen) assert.ok(f.enabled, `${f.fn.id} is chosen and not enabled for ${where}`);
   }
+  // The functions that need no part are enabled in every setup.
+  assert.deepEqual(setup.functions.filter((f) => f.enabled && f.fn.needs.length === 0).map((f) => f.fn.id), BASE, where);
   assert.deepEqual(setup.unknown.map((u) => u.id), setup.checks.filter((c) => c.kind === 'unknown').map((c) => c.id));
   assert.deepEqual(setup.ignored, [], where);
   return setup;
@@ -198,6 +202,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
 test('the count of subsets is inside the limit of the sweep', () => {
   assert.equal(SELECTABLE.length, 11);
   assert.equal(FUNCTIONS.length, 11);
+  assert.equal(BASE.length, 10);
   assert.equal(OPTION_SETS.length, 8);
   for (const [name, count] of [['parts you own', SELECTABLE.length], ['functions', FUNCTIONS.length]] as const) {
     assert.ok(

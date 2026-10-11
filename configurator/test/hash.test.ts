@@ -150,3 +150,24 @@ test('a notice names at most MAX_REPORTED ids, each cut to 32 characters', () =>
   assert.equal(reportIds(many), `${many.slice(0, MAX_REPORTED).join(', ')}, …`);
   assert.equal(reportIds(['z'.repeat(40)]), `${'z'.repeat(32)}…`);
 });
+
+test('a link written without the functions that need no part resolves to the same parts and wires', () => {
+  const hash = 'v=1&f=servo,esc&p=sd';
+  const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+  assert.equal(parsed.badVersion, false);
+  assert.deepEqual(parsed.unknown, []);
+  assert.deepEqual(parsed.selection, { functions: ['servo', 'esc'], owned: ['sd'], options: { ...DEFAULT_OPTIONS } });
+  const setup = resolve(CATALOGUE, parsed.selection);
+  assert.deepEqual(setup.ignored, []);
+  assert.deepEqual(setup.parts.map((p) => p.part.id), ['panel', 'copro', 'usb', 'wire', 'servo', 'ssup', 'esc', 'batt', 'sd']);
+  assert.deepEqual(setup.wires.map((w) => w.n), [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  assert.deepEqual(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), ['servo', 'esc']);
+  // The functions that need no part are enabled and are not part of the link.
+  const base = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  assert.equal(base.length, 10);
+  for (const id of base) assert.ok(setup.functions.find((f) => f.fn.id === id)?.enabled, id);
+  const written = formatHash(parsed.selection, 'en', 'en', CATALOGUE);
+  assert.equal(written, hash);
+  assert.ok(base.every((id) => !written.includes(id)));
+  assert.equal(HASH_VERSION, 1);
+});

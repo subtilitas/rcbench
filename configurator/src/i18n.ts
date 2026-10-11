@@ -14,6 +14,11 @@ const S = {
   gServo: ['Servo', 'Servo'],
   gEsc: ['ESC and motor', 'ESC und Motor'],
   gBench: ['Bench', 'Prüfstand'],
+  baseHint: [
+    'These functions are part of every setup. They take no tick.',
+    'Diese Funktionen gehören zu jedem Aufbau. Sie werden nicht angekreuzt.',
+  ],
+  withParts: ['With the parts of this setup', 'Mit den Teilen dieses Aufbaus'],
   adds: ['Adds: ', 'Kommt dazu: '],
   nothing: ['No extra part', 'Kein weiteres Teil'],
   own: ['Parts you own', 'Teile, die vorhanden sind'],

@@ -213,7 +213,7 @@ export function checkRefs(c: Catalogue): Finding[] {
   const forced = new Map<string, string>();
   for (const fn of c.functions) {
     const id = `function.${fn.id}`;
-    if (fn.needs.length === 0) out.push(err(id, 'needs no part'));
+    if (fn.needs.length === 0 && fn.forces !== undefined) out.push(err(id, 'needs no part and forces an option'));
     for (const partId of fn.needs) {
       if (!parts.has(partId)) out.push(err(id, `needs the unknown part ${partId}`));
     }
