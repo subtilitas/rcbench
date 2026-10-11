@@ -720,9 +720,11 @@ Plan ab, 18 der Leitungstreiber ist ausgefallen oder ließ sich nicht
 | PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält |
 
 NO_ENABLE wird vor jedem anderen Grund geprüft. Das Panel sendet den Key
-nur, solange sein Schalter ENABLE WRITE TO SERVO an ist; ein Kommando, das
-den Koprozessor ohne ihn erreicht, schreibt also in keinem Zustand des
-Ports. Kein Bildschirm dieses Builds hält diesen Schalter.
+nur, solange sein Schalter SCHREIBEN AUF SERVO FREIGEBEN an ist; ein
+Kommando, das den Koprozessor ohne ihn erreicht, schreibt also in keinem
+Zustand des Ports. Der Schalter steht im
+[Servo-Programmierer](ServoProgrammer-de.md#der-schreibschalter), ist in der
+Vorgabe aus und geht bei jedem Aufruf des SERVO-Bildschirms wieder aus.
 
 NO_REPLY_PATH gibt dieser Build nie: der Pin-Katalog hat kein Attribut für
 die Richtung des Pfads eines Pins, und jeder Pin des Bring-up-Moduls ist ein
@@ -755,9 +757,14 @@ Anfrage und ein Daten-Frame, 0,31 ms Buszeit), und liest nach einer
 Operation die Register 4 bis 15, das Backup und das Image. Es sendet ein
 Kommando bis zu 3-mal noch einmal, wenn keine Antwort kommt, und liest
 `SEQ` nach einer Abweisung mit BAD_VALUE neu. Es weist WRITE, RESTORE und
-RELEASE ohne den Schalter des Aufrufers ab, bevor etwas gesendet wird. Kein
-Bildschirm dieses Builds ruft es auf; das Panel dieses Builds sendet also
-nichts an die Page.
+RELEASE ohne den Schalter des Aufrufers ab, bevor etwas gesendet wird. Die
+Control-Task des Panels besitzt das Modul und fährt bis zu 4 seiner
+Austausche je Durchlauf. Der
+[Servo-Programmierer](ServoProgrammer-de.md) auf dem SERVO-Bildschirm ist
+sein Aufrufer: sein Modell (`shared/bench/kst_prog.c`) läuft in der UI-Task
+und übergibt der Control-Task ein Kommando zur Zeit durch eine Queue von 4.
+Ein Stopp, den das Panel hält, bricht die laufende Operation ab
+(`kst_link_abort()`).
 
 `test_kst_port` fährt den Port und die Page gegen das Servomodell: jeden
 Übergang und jede Abweisung, einen Stopp in jedem Zustand und mitten in

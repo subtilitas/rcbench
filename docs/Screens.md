@@ -648,6 +648,15 @@ plot does:
 
 ![A result on the INA3221](img/servo-result-ina.png)
 
+### Programmer
+
+PROGRAM, beside SETTINGS, opens the programmer for KST and Chaservo servos
+over the left card. It takes one output channel out of PWM (pulse-width
+modulation) and reads and writes the servo's settings on its signal wire.
+While it holds a channel the overlay stays open and SETTINGS is off; ARM,
+CENTRE, RELEASE and STOP work. Not run on a servo.
+[KST and Chaservo servo programmer](ServoProgrammer.md) describes it.
+
 ### Settings
 
 SETTINGS, at the top of the right card, opens the servo's settings over the

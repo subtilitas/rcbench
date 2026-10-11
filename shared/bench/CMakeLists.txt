@@ -17,6 +17,7 @@ set(SRCS
     servo_source.c
     tone_link.c
     kst_link.c
+    kst_prog.c
     knob.c
 )
 

@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "kst_panel.h"
 #include "log_name.h"
 #include "outputs.h"
 #include "rcbench_version.h"
@@ -260,7 +261,7 @@ static const uint8_t k_line_w[2][PS_COUNT] = {
 enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
        OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
        OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
-       OP_ASK_CANCEL, OP_TEST_START };
+       OP_ASK_CANCEL, OP_TEST_START, OP_PROGRAM };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -370,6 +371,9 @@ static struct {
     uint32_t   drawn_arm[2];
 
     gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
+    gfx_rect_t prog_btn;         /* PROGRAM: the KST and Cha programmer */
+    bool       kst_shown;        /* the programmer had the left card    */
+    uint32_t   drawn_kst[2], drawn_kst_hold[2];
     ui_slider_t speed;
 
     /* The servo rail's live power, from its meter (rail_now()): the line
@@ -2402,6 +2406,9 @@ static void reset(void)
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
                                   12, SETB_W, 24 };
+    s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - SETB_W),
+                                  12, SETB_W, 24 };
+    kst_panel_init(overlay_area());
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
     ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
@@ -3703,8 +3710,29 @@ static void ov_rest(const touch_event_t *evt)
         }
         ++s.test_rev;
         break;
+    case OP_PROGRAM:
+        if (gfx_rect_contains(s.prog_btn, x, y)) {
+            /* PROGRAM opens the programmer over the left card and asks it
+             * to close; it stays while the port holds a channel.  The
+             * settings give way to it. */
+            if (kst_panel_is_open()) {
+                kst_panel_close();
+            } else {
+                s.ov_open = false;
+                s.kp_alone = false;
+                close_panels();
+                kst_panel_open();
+            }
+            servo_invalidate();
+        }
+        break;
     case OP_SETTINGS:
+        /* The settings would cover a programmer that holds a channel. */
+        if (kst_panel_holds_port()) {
+            break;
+        }
         if (gfx_rect_contains(s.set_btn, x, y)) {
+            kst_panel_leave();
             /* SETTINGS opens the overlay and closes it, taking whatever is
              * open in it; a warning not held is a profile not applied.  The
              * servo's lead runs out past the left card, where the overlay
@@ -3749,7 +3777,8 @@ static bool on_the_dial(int px, int py, float *deg)
 /* Latches that something other than the knob holds the horn. */
 static void knob_note_owner(void)
 {
-    if (s.ov_open || servo_test_running(&s.test) || s.sweeping || s.paused) {
+    if (s.ov_open || kst_panel_is_open() || servo_test_running(&s.test)
+        || s.sweeping || s.paused) {
         s.knob_owned = true;
     }
 }
@@ -3833,7 +3862,13 @@ static void event_body(const touch_event_t *evt)
     }
     const int px = evt->point.x, py = evt->point.y;
 
-    /* The overlay's own press first: its moves and its release are its. */
+    /* The programmer's own press first, then the overlay's. */
+    if (kst_panel_has_press(evt->point.id)
+        && evt->type != TOUCH_EVENT_DOWN) {
+        kst_panel_event(evt);
+        return;
+    }
+    /* The overlay's own press: its moves and its release are its. */
     if (s.ov_have && evt->point.id == s.ov_id
         && evt->type != TOUCH_EVENT_DOWN) {
         ov_rest(evt);
@@ -3858,6 +3893,18 @@ static void event_body(const touch_event_t *evt)
             /* One press at a time in the overlay. */
             if (!s.ov_have) {
                 ov_down(evt);
+            }
+            return;
+        }
+        if (kst_panel_is_open() && gfx_rect_contains(overlay_area(), px, py)) {
+            if (!s.ov_have) {
+                kst_panel_event(evt);
+            }
+            return;
+        }
+        if (gfx_rect_contains(s.prog_btn, px, py)) {
+            if (!s.ov_have) {
+                ov_take(evt, OP_PROGRAM, -1);
             }
             return;
         }
@@ -3900,7 +3947,7 @@ static void event_body(const touch_event_t *evt)
                 return;
             }
         }
-        if (s.test_box && !s.ov_open
+        if (s.test_box && !s.ov_open && !kst_panel_is_open()
             && gfx_rect_contains(test_btn_rect(), px, py)) {
             /* STOP TEST ends the run on the press, as a stop does; CLOSE
              * puts the result away. */
@@ -3913,7 +3960,7 @@ static void event_body(const touch_event_t *evt)
             return;
         }
         float deg;
-        if (!s.ov_open && on_the_dial(px, py, &deg)) {
+        if (!s.ov_open && !kst_panel_is_open() && on_the_dial(px, py, &deg)) {
             /* Refused while the value is not live: the press is the dial's
              * and takes no drag, so a bench armed under it moves nothing
              * until the next press. */
@@ -4601,7 +4648,12 @@ static void draw_right(gfx_canvas_t *c, bool power)
     ui_button(c, s.set_btn, TR(SUP_SETTINGS),
               s.ov_open ? ui_theme_color(UI_C_ACCENT)
                         : ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_SETTINGS, true);
+              s.ov_have && s.ov_pressed == OP_SETTINGS,
+              !kst_panel_holds_port());
+    ui_button(c, s.prog_btn, TR(KP_PROGRAM),
+              kst_panel_is_open() ? ui_theme_color(UI_C_ACCENT)
+                                  : ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_PROGRAM, true);
 
     char buf[24];
     snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
@@ -5204,6 +5256,18 @@ static void remember_shown(void)
 
 static void tick_body(float dt_s)
 {
+    /* The programmer: its holds and repeats, and the left card while the
+     * port holds a channel.  PWM and programming are exclusive states of
+     * that channel, so the way back is asked for there and nowhere else. */
+    kst_panel_tick(dt_s);
+    if (kst_panel_holds_port() && !kst_panel_is_open()) {
+        kst_panel_open();
+    }
+    if (kst_panel_is_open() != s.kst_shown) {
+        s.kst_shown = kst_panel_is_open();
+        servo_invalidate();
+        ++s.ctrl_rev;
+    }
     /* The screen's own clock, for the sweep it draws. */
     if (dt_s > 0.0f) {
         s.clock_frac_ms += dt_s * 1000.0f;
@@ -5471,8 +5535,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_test[buf]  = s.test_rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
+        s.drawn_kst[buf]   = kst_panel_revision();
+        s.drawn_kst_hold[buf] = kst_panel_hold_revision();
         if (s.ov_open) {
             draw_overlay(c);
+        } else if (kst_panel_is_open()) {
+            kst_panel_render(c);
         } else {
             draw_left(c);
         }
@@ -5528,6 +5596,18 @@ static void render(gfx_canvas_t *c, int buffer_index)
         clipped(c, save_line_rect(), draw_save_line);
     }
     if (s.ov_open) {
+        return;
+    }
+    if (kst_panel_is_open()) {
+        /* The programmer, when it changed; of a hold only its button. */
+        if (s.drawn_kst[buf] != kst_panel_revision()) {
+            s.drawn_kst[buf] = kst_panel_revision();
+            s.drawn_kst_hold[buf] = kst_panel_hold_revision();
+            clipped(c, overlay_area(), kst_panel_render);
+        } else if (s.drawn_kst_hold[buf] != kst_panel_hold_revision()) {
+            s.drawn_kst_hold[buf] = kst_panel_hold_revision();
+            clipped(c, kst_panel_apply_rect(), kst_panel_render);
+        }
         return;
     }
 
@@ -5596,8 +5676,17 @@ static void leave(void)
     ui_tabs_cancel(&s.tabs);
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
+    /* The programmer's presses and pages go; the port stays as it is, and
+     * the screen shows it again while it holds a channel. */
+    kst_panel_leave();
     ++s.arm_rev;
     ++s.ctrl_rev;
+}
+
+/* ENABLE WRITE TO SERVO goes off whenever the screen is entered. */
+static void enter(void)
+{
+    kst_panel_screen_entry();
 }
 
 /*
@@ -5655,6 +5744,7 @@ static void cancel(void)
     s.dragging = false;
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
+    kst_panel_cancel();
     ui_keypad_cancel_press(&s.kp);
     ui_textkey_cancel_press(&s.tk);
     ui_tabs_cancel(&s.tabs);
@@ -5687,7 +5777,7 @@ static void event(const touch_event_t *evt)
 static const ui_screen_t k_screen = {
     .title  = "SERVO",
     .reset  = reset,
-    .enter  = NULL,
+    .enter  = enter,
     .leave  = leave,
     .tick   = tick,
     .event  = event,

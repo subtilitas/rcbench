@@ -8,6 +8,32 @@ history is in git.
 
 ### Added
 
+- SERVO screen: a programmer for KST and Chaservo servos. PROGRAM opens an
+  overlay of 5 tabs (SERVO, TUNE, PULSE, FAILSAFE, LOCKED) over the left
+  card. It connects one output channel to the programming port, reads all 32
+  registers, and edits dead band, maximum duty, boost, stretch, soft start,
+  the speed limit, the pulse ends, neutral, the angles, reversion and the
+  failsafe with the plus and minus keys, the keypad and choice lists. The
+  limits are the protocol core's: a value past a hard limit cannot be
+  entered, and a value past a soft limit shows the limit's warning and is
+  taken after a hold of 2 s. Frequency, lock, the servo and gyro mode and
+  the protection block are shown and never written. A write needs the
+  switch ENABLE WRITE TO SERVO, which is off by default, takes a hold of
+  2 s, and goes off at every entry of the screen, link loss, coprocessor
+  restart, stop, connect and leave; the first write of a session asks for a
+  free horn. The coprocessor writes the changed registers only and reads
+  each back. A backup is kept from the first read of a session, stored as
+  `KST.TXT` (at most 400 bytes of text) on the SD card, compared against the
+  servo, and written back by RESTORE. A record of a running write is stored
+  before the write starts; after a link loss, a restart, an abort or a
+  power loss during a write the programmer reports that the servo may hold
+  part of it, asks for a read and offers the restore. An image that fails
+  the layout fingerprint is shown and not written. A coprocessor of protocol
+  4.11 shows the programmer as unavailable with the reason. Leaving asks for
+  the servo's power to be cycled before the channel returns to PWM. German
+  texts for every new string; 52 new screenshots. Host suite only
+  (`test_kst_prog`, `test_kst_panel`); no frame has been sent to a servo.
+  ([KST and Chaservo servo programmer](docs/ServoProgrammer.md))
 - `protocols/kst/`: the protocol core for programming KST and Chaservo
   servos over the signal wire. Frame coding, the reply decoder with one
   result code per failed check, the 32-register image with raw and displayed
@@ -49,7 +75,7 @@ history is in git.
   accepts a read of all registers before any write. Throttle channels are
   refused. `shared/bench/kst_link.c` is the panel's half: it stages the
   images, sends the command, polls every 50 ms and fetches the image and
-  the results. No screen uses it, so the panel sends nothing to the page.
+  the results.
   The link protocol is 4.12. A panel and a coprocessor of 4.11 and 4.12
   link and arm in both combinations, and nothing is sent to 0x32 unless
   both have it.

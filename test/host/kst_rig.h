@@ -1,0 +1,283 @@
+/*
+ * A bench for the KST and Cha servo programmer's overlay (kst_panel.h): the
+ * simulated servo of kst_sim.h, the coprocessor's programming port, link
+ * dispatch and the panel's link module, with rig_frame() as the panel's
+ * control task and its card.
+ *
+ * The overlay is driven as the firmware drives it: a feed every frame, the
+ * commands taken, the file written.  One frame is 1 ms.
+ *
+ * For the host tests and the screenshot renderer.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "kst_link.h"
+#include "kst_panel.h"
+#include "kst_port.h"
+#include "kst_prog.h"
+#include "kst_sim.h"
+#include "link_dev.h"
+#include "link_msg.h"
+
+#define RIG_CH    3u          /* the servo's channel, CH4 on the screen */
+#define RIG_SLOT  2u
+#define RIG_PIN   7u
+
+typedef struct {
+    sim_t sim;
+    kst_port_t port;
+    outputs_t out;
+    link_dev_t dev;
+    kst_link_t link;
+    uint32_t ms;
+    bool safe, stop;
+
+    /* The control task. */
+    uint32_t outcomes;
+    kst_link_outcome_t outcome;
+    uint32_t answer_id;
+    kst_link_start_t answer;
+    bool stopped;              /* STOP is latched */
+    bool deaf;                 /* no command is taken */
+    bool cut;                  /* no exchange is made: the link is silent */
+    unsigned starts, aborts, fetches;
+
+    /* The card. */
+    bool card, card_fails, card_silent;
+    char file[KST_PROG_FILE_MAX];
+    size_t file_len;
+    unsigned file_writes;
+} rig_t;
+
+static rig_t g_rig;
+
+static inline bool rig_hw_true1(void *ctx, uint8_t a)
+{
+    (void)ctx;
+    (void)a;
+    return true;
+}
+
+static inline bool rig_hw_take(void *ctx, uint8_t slot, uint8_t pin)
+{
+    (void)ctx;
+    (void)slot;
+    (void)pin;
+    return true;
+}
+
+static inline void rig_hw_give(void *ctx)
+{
+    (void)ctx;
+}
+
+static inline void rig_page_read(void *ctx, uint8_t off, uint8_t n,
+                                 uint16_t *out)
+{
+    (void)ctx;
+    kst_port_read(&g_rig.port, off, n, out);
+}
+
+static inline uint8_t rig_page_write(void *ctx, uint8_t off, uint8_t n,
+                                     const uint16_t *in)
+{
+    (void)ctx;
+    return kst_port_write(&g_rig.port, off, n, in, &g_rig.out, g_rig.ms);
+}
+
+static const link_page_t k_rig_pages[] = {
+    { LINK_PAGE_KST, LINK_KS_COUNT, rig_page_read, rig_page_write },
+};
+
+/* The coprocessor starts: the port forgets, the servo stays as it is. */
+static inline void rig_port_fresh(void)
+{
+    kst_port_hw_t hw;
+
+    memset(&hw, 0, sizeof(hw));
+    hw.bound = rig_hw_true1;
+    hw.reply_path = rig_hw_true1;
+    hw.take = rig_hw_take;
+    hw.give = rig_hw_give;
+    hw.driver = sim_driver(&g_rig.sim);
+    (void)kst_port_init(&g_rig.port, &hw);
+    link_dev_init(&g_rig.dev, k_rig_pages, 1u, NULL, g_rig.ms);
+}
+
+/* A servo on CH4, a throttle on CH1, the link down, no card. */
+static inline void rig_fresh(void)
+{
+    memset(&g_rig, 0, sizeof(g_rig));
+    sim_init(&g_rig.sim);
+    g_rig.out.slot[0].driver = OUT_DRIVER_PWM;
+    g_rig.out.slot[0].first_channel = 0u;
+    g_rig.out.slot[0].channels = 1;
+    g_rig.out.slot[0].pin = 4;
+    g_rig.out.channel[0].role = OUT_ROLE_THROTTLE;
+    g_rig.out.slot[RIG_SLOT].driver = OUT_DRIVER_PWM;
+    g_rig.out.slot[RIG_SLOT].first_channel = RIG_CH;
+    g_rig.out.slot[RIG_SLOT].channels = 1;
+    g_rig.out.slot[RIG_SLOT].pin = RIG_PIN;
+    g_rig.out.channel[RIG_CH].role = OUT_ROLE_SURFACE;
+    g_rig.safe = true;
+    rig_port_fresh();
+    kst_link_init(&g_rig.link);
+}
+
+static inline void rig_exchange(void)
+{
+    kst_link_xfer_t x;
+    link_msg_t req, rep;
+
+    if (!kst_link_next(&g_rig.link, g_rig.ms, &x)) {
+        return;
+    }
+    if (g_rig.cut) {
+        kst_link_done(&g_rig.link, KST_LINK_NO_ANSWER, NULL);
+        return;
+    }
+    memset(&req, 0, sizeof(req));
+    memset(&rep, 0, sizeof(rep));
+    req.op = x.write ? LINK_OP_WRITE : LINK_OP_READ;
+    req.page = x.page;
+    req.offset = x.off;
+    req.count = x.n;
+    if (x.write) {
+        memcpy(req.regs, x.regs, x.n * sizeof(x.regs[0]));
+    }
+    if (!link_dev_dispatch(&g_rig.dev, &req, &rep, g_rig.ms)) {
+        kst_link_done(&g_rig.link, KST_LINK_NO_ANSWER, NULL);
+    } else if (rep.op == LINK_OP_DATA) {
+        kst_link_done(&g_rig.link, KST_LINK_ACK, rep.regs);
+    } else if (rep.op == LINK_OP_ACK) {
+        kst_link_done(&g_rig.link, KST_LINK_ACK, NULL);
+    } else {
+        kst_link_done(&g_rig.link, rep.regs[0], NULL);
+    }
+}
+
+/* What the control task publishes, as it stands. */
+static inline void rig_feed_now(kst_prog_feed_t *f)
+{
+    memset(f, 0, sizeof(*f));
+    f->now_ms = g_rig.ms;
+    kst_link_readout(&g_rig.link, &f->rd);
+    f->have_image = kst_link_image(&g_rig.link, &f->image);
+    f->have_backup = kst_link_backup(&g_rig.link, &f->backup);
+    f->answer_id = g_rig.answer_id;
+    f->answer = g_rig.answer;
+    f->outcomes = g_rig.outcomes;
+    f->outcome = g_rig.outcome;
+    f->stopped = g_rig.stopped;
+    f->card = g_rig.card;
+}
+
+/* 1 ms: the coprocessor, one exchange, the control task and the card. */
+static inline void rig_frame(void)
+{
+    kst_prog_cmd_t cmd;
+    kst_link_outcome_t o;
+    kst_prog_feed_t f;
+    char text[KST_PROG_FILE_MAX];
+    size_t len;
+
+    for (unsigned i = 0; i < 10u; ++i) {
+        kst_port_step(&g_rig.port, g_rig.safe, g_rig.stop, g_rig.ms);
+        g_rig.sim.now_us += 100u;
+    }
+    g_rig.ms++;
+    rig_exchange();
+    if (!g_rig.deaf && kst_panel_take(&cmd)) {
+        if (cmd.kind == KST_PROG_CMD_START) {
+            g_rig.starts++;
+            g_rig.answer = kst_link_start(&g_rig.link, &cmd.req);
+            g_rig.answer_id = cmd.id;
+        } else if (cmd.kind == KST_PROG_CMD_FETCH) {
+            g_rig.fetches++;
+            (void)kst_link_fetch(&g_rig.link);
+        } else {
+            g_rig.aborts++;
+            kst_link_abort(&g_rig.link);
+        }
+    }
+    if (kst_link_outcome(&g_rig.link, &o)) {
+        g_rig.outcome = o;
+        g_rig.outcomes++;
+    }
+    rig_feed_now(&f);
+    kst_panel_feed(&f);
+    len = kst_panel_file_take(text, sizeof(text));
+    if (len != 0u) {
+        g_rig.file_writes++;
+        if (!g_rig.card_fails) {
+            memcpy(g_rig.file, text, len + 1u);
+            g_rig.file_len = len;
+        }
+        if (!g_rig.card_silent) {
+            kst_panel_file_done(!g_rig.card_fails);
+        }
+    }
+}
+
+static inline void rig_frames(unsigned n)
+{
+    for (unsigned i = 0; i < n; ++i) {
+        rig_frame();
+    }
+}
+
+static inline bool rig_at_rest(void)
+{
+    const kst_prog_state_t st = kst_prog_state(kst_panel_model());
+
+    return st == KST_PROG_PWM || st == KST_PROG_PROGRAMMING
+        || st == KST_PROG_DOWN || st == KST_PROG_NO_PAGE;
+}
+
+/* Until nothing runs; 60 s is the bound.  False when something still does. */
+static inline bool rig_settle(void)
+{
+    rig_frame();
+    for (unsigned i = 0; i < 60000u && !rig_at_rest(); ++i) {
+        rig_frame();
+    }
+    return rig_at_rest();
+}
+
+/* A coprocessor answers with protocol minor @p minor. */
+static inline bool rig_link_up(uint16_t minor)
+{
+    kst_link_came_up(&g_rig.link, minor);
+    return rig_settle();
+}
+
+static inline void rig_link_lost(void)
+{
+    kst_link_lost(&g_rig.link);
+    rig_frame();
+}
+
+/* STOP as the control task latches it: the port aborts, the module too. */
+static inline void rig_stop(bool on)
+{
+    g_rig.stop = on;
+    g_rig.stopped = on;
+    if (on) {
+        kst_link_abort(&g_rig.link);
+    }
+}
+
+/* The servo's registers as they are. */
+static inline kst_image_t rig_servo(void)
+{
+    kst_image_t img;
+
+    memcpy(img.r, g_rig.sim.reg, sizeof(img.r));
+    return img;
+}

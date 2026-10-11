@@ -721,6 +721,17 @@ Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
+### Programmierer
+
+PROGRAMM., neben OPTIONEN, öffnet den Programmierer für KST- und
+Chaservo-Servos über der linken Karte. Er nimmt einen Ausgangskanal aus PWM
+(Pulsweitenmodulation) und liest und schreibt die Einstellungen des Servos
+über dessen Signalleitung. Solange er einen Kanal hält, bleibt das Overlay
+offen und OPTIONEN ist aus; ARM, ZENTRIEREN, FREIGEBEN und STOP
+funktionieren. An keinem Servo gelaufen.
+[Servo-Programmierer für KST und Chaservo](ServoProgrammer-de.md) beschreibt
+ihn.
+
 ### Einstellungen
 
 OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über

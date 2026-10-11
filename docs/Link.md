@@ -660,8 +660,9 @@ opened, 19 aborted.
 
 NO_ENABLE is checked before every other reason. The panel sends the key only
 while its switch ENABLE WRITE TO SERVO is on, so a command that reaches the
-coprocessor without it writes nothing in any state of the port. No screen
-holds that switch in this build.
+coprocessor without it writes nothing in any state of the port. The switch
+is on the [servo programmer](ServoProgrammer.md#the-write-switch), off by
+default and off again at every entry of the SERVO screen.
 
 NO_REPLY_PATH is never given by this build: the pin catalogue has no
 attribute for the direction of a pin's path, and every pin of the bring-up
@@ -693,8 +694,12 @@ frame, 0.31 ms of bus time), and after an operation reads registers 4 to
 15, the backup and the image. It sends a command again up to 3 times when
 no answer comes and reads `SEQ` again after a refusal with BAD_VALUE. It
 refuses WRITE, RESTORE and RELEASE without the caller's switch before
-anything is sent. No screen calls it in this build, so this build's panel
-sends nothing to the page.
+anything is sent. The panel's control task owns the module and runs up to
+4 of its exchanges in a pass. The
+[servo programmer](ServoProgrammer.md) on the SERVO screen is its caller:
+its model (`shared/bench/kst_prog.c`) runs in the UI task and hands the
+control task one command at a time through a queue of 4. A stop the panel
+latches aborts the running operation (`kst_link_abort()`).
 
 `test_kst_port` runs the port and the page against the servo model: every
 transition and every refusal, a stop in each state and in the middle of a

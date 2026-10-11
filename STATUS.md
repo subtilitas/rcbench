@@ -126,7 +126,7 @@ is taken in a gap ahead of the save that needs it.
 | ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
 | Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20 V the list opens 23, one needing 22.8 V, and refuses 4 more model rows of families that open, each needing 22.8 V; 4 model rows that state no voltage rating open with a warning from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list shows the makers, then one maker's models by current, voltage and name, each opening its family's profile at the model's own cell count; a search over maker and family or maker and model filters both levels, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. Profiles list the steps a person does at the ESC (`manual`: a jumper, a button) with when each is due; 24 carry them, and the 10 Kontronik profiles that run ask for each with a prompt (DONE, ABORT, 60 s), powered only with the stick at motor-off; each value is powered up from the stick position the manual programs it from (`entry_throttle`: the Kontronik car modes at MID), the stick moved only with the supply off. MANUAL INTERVENTION REQUIRED on a profile's page and a MANUAL tag in the list show the steps. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
-| Servo programmer | Hitec table in the programmer screen; KST and Chaservo (two servo brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port and link page 0x32 and the panel's link module are built and host-tested against a servo and line model; no screen uses them, and nothing is measured on hardware: [the port](docs/Link.md#the-kst-programming-port), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
+| Servo programmer | Hitec table in the programmer screen; KST and Chaservo (two servo brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port and link page 0x32, the panel's link module and the programmer on the SERVO screen (read, backup on the card, edits held to the core's limits, writes behind a switch that is off by default, restore) are built and host-tested against a servo and line model; no frame has been sent to a servo, and nothing is measured on hardware: [the programmer](docs/ServoProgrammer.md), [the port](docs/Link.md#the-kst-programming-port), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
 
 ## The tree
 
@@ -239,7 +239,7 @@ cppcheck 2.17 reports 2 style findings (`ui_theme.h:136`,
 `servo_screen.c:468`). The step over `firmware/` passes all 25. `docs.yml` and `release.yml` with the wait
 for CI have not run.
 
-The host suite is 91 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 93 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -251,7 +251,7 @@ The host suite is 91 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port` and `test_kst_link`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_kst_prog` and `test_kst_panel`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -275,14 +275,18 @@ stops it after 120 s. `tools/mutate.py --files shared/safety/heartbeat.c
 --max-mutants 0` makes 36 mutants and the suite fails on each. A case that is
 defined and not run fails the build (`-Werror=unused-function`).
 `tools/check_docs.py` holds this list to `test/host/CMakeLists.txt`.
-The 7 `test_kst_*` binaries run against the servo and line model in
+The 9 `test_kst_*` binaries run against the servo and line model in
 `test/host/kst_sim.h`; no servo is connected. 4 run the core of
 `protocols/kst/`. `test_kst_pio` runs the pin driver's arithmetic and its
 PIO (programmable input/output) program, word by word, in a model of the
 state machine; the coprocessor build fails when the assembled program
 differs from the words the test runs. `test_kst_port` runs the
 coprocessor's programming port and its page, and `test_kst_link` the
-panel's module through the dispatcher against that port. ctest also
+panel's module through the dispatcher against that port. `test_kst_prog`
+runs the programmer's model and `test_kst_panel` its overlay on the SERVO
+screen through the same dispatcher and port: every limit at its edge, every
+refusal and result with its text in both languages, and a write cut by a
+link loss, a restart, an abort, a stop and a failing card. ctest also
 builds and runs `kst_headers_cxx`, which calls the module through its 6
 headers from C++11, when the host has a C++ compiler.
 ctest runs one case more that is not a binary of the suite:
@@ -293,13 +297,13 @@ Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 164 committed screenshots to the current
-render, 82 in English and the same 82 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 216 committed screenshots to the current
+render, 108 in English and the same 108 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except the 3 English overflows it lists as known; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
-3984 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
+4048 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
 one interrupt and 256 bytes to the core's stack: core 0 reaches 2392 of
 4096 with 528 for an interrupt. `check_docs.py` holds the protocol version,
 the heartbeat and link timings, the heartbeat and CAN pins, the coverage
@@ -332,7 +336,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_screen.c` | 978 | 966 | 98.8% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
 | `shared/ui/ui_textkey.c` | 171 | 170 | 99.4% |
-| `shared/ui/servo_screen.c` | 2930 | 2880 | 98.3% |
+| `shared/ui/servo_screen.c` | 2988 | 2935 | 98.2% |
+| `shared/ui/kst_panel.c` | 969 | 952 | 98.2% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
@@ -378,7 +383,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_session.c` | 479 | 479 | 100.0% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `shared/outputs/kst_port.c` | 378 | 376 | 99.5% |
-| `shared/bench/kst_link.c` | 360 | 357 | 99.2% |
+| `shared/bench/kst_link.c` | 360 | 358 | 99.4% |
+| `shared/bench/kst_prog.c` | 871 | 855 | 98.2% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
@@ -425,7 +431,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **29552** | **28823** | **97.5%** |
+| **total** | **31450** | **30686** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -462,7 +468,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming has met no ESC | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 82 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
+| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 108 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
 
 ## Constraints
 

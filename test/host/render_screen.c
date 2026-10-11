@@ -44,6 +44,7 @@
 #include "esc_sim.h"
 #include "supply.h"
 #include "supply_screen.h"
+#include "kst_rig.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -312,6 +313,218 @@ static void drag(int x, int y0, int y1)
     ui_router_event(&e);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+}
+
+
+/* ------------------------------------------- the KST and Cha servo programmer */
+
+static void ktap(gfx_rect_t r)
+{
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+static void kkey(ui_key_t key)
+{
+    ktap(ui_keypad_key_rect(kst_panel_keypad(), key));
+}
+
+/* A warning page's button, held past UI_HOLD_S. */
+static void khold(void)
+{
+    const gfx_rect_t r = kst_panel_apply_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < 10; ++i) {
+        ui_router_tick(0.25f);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+static void ksettle(void)
+{
+    (void)rig_settle();
+    ui_router_tick(0.02f);
+}
+
+/* A value as the keypad would leave it, a soft limit confirmed. */
+static void kedit(kst_field_id_t id, uint16_t raw)
+{
+    if (kst_prog_edit(kst_panel_model(), id, raw) == KST_PROG_EDIT_SOFT) {
+        kst_prog_soft_confirm(kst_panel_model());
+    }
+}
+
+static void kedits(void)
+{
+    const kst_image_t *sv = kst_prog_servo(kst_panel_model());
+
+    kedit(KST_F_DEAD_BAND, (uint16_t)(kst_field_get(sv, KST_F_DEAD_BAND) + 2u));
+    kedit(KST_F_BOOST, (uint16_t)(kst_field_get(sv, KST_F_BOOST) - 3u));
+    kedit(KST_F_SOFT_START,
+          (uint16_t)(1u - kst_field_get(sv, KST_F_SOFT_START)));
+}
+
+/* ENABLE WRITE TO SERVO, through its page. */
+static void kenable(void)
+{
+    ktap(kst_panel_value_rect(0, 3, 0));
+    khold();
+}
+
+/*
+ * The programmer on SERVO, driven by taps against the simulated servo of
+ * kst_sim.h on CH4.  Geometry from kst_panel.h; PROGRAM is left of SETTINGS
+ * at the top of the right card.
+ */
+static void kst_view(const char *view)
+{
+    const char *v = view + strlen("servo-kst");
+    const bool nopage = strcmp(v, "-nopage") == 0;
+    const bool cut = strcmp(v, "-doubt") == 0 || strcmp(v, "-journal") == 0
+                  || strcmp(v, "-restore-list") == 0
+                  || strcmp(v, "-restore") == 0;
+
+    rig_fresh();
+    g_rig.card = true;
+    if (strcmp(v, "-readonly") == 0) {
+        g_rig.sim.reg[0x06] = 0x05u;
+    }
+    (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
+                             : LINK_PROTOCOL_MINOR);
+    ui_router_goto(SCREEN_SERVO);
+    tap(632, UI_BAND_H + 24);                       /* PROGRAM */
+    ui_router_tick(0.02f);
+    if (v[0] == '\0' || nopage) {
+        return;
+    }
+    ktap(kst_panel_value_rect(0, 0, 0));            /* CHANNEL */
+    kkey(UI_KEY_4);
+    if (strcmp(v, "-channel") == 0) {
+        return;
+    }
+    kkey(UI_KEY_OK);
+    ktap(kst_panel_value_rect(0, 0, 1));            /* CONNECT */
+    if (strcmp(v, "-working") == 0) {
+        rig_frames(40);
+        ui_router_tick(0.02f);
+        return;
+    }
+    ksettle();
+    if (strcmp(v, "-read") == 0 || strcmp(v, "-readonly") == 0) {
+        return;
+    }
+    if (strcmp(v, "-locked") == 0) {
+        ktap(kst_panel_tab_rect(4));
+        return;
+    }
+    if (strcmp(v, "-failsafe") == 0) {
+        ktap(kst_panel_tab_rect(3));
+        return;
+    }
+    if (strcmp(v, "-enable") == 0) {
+        ktap(kst_panel_value_rect(0, 3, 0));
+        return;
+    }
+    if (strcmp(v, "-leave") == 0) {
+        kedits();
+        ktap(kst_panel_value_rect(0, 0, 1));
+        return;
+    }
+    if (strcmp(v, "-more") == 0 || strcmp(v, "-release") == 0) {
+        if (strcmp(v, "-release") == 0) {
+            kenable();
+        }
+        ktap(kst_panel_value_rect(0, 2, 1));
+        if (strcmp(v, "-release") == 0) {
+            ktap(kst_panel_choice_rect(2));
+        }
+        return;
+    }
+    if (strcmp(v, "-keypad") == 0) {
+        ktap(kst_panel_tab_rect(2));
+        ktap(kst_panel_value_rect(2, 1, 1));        /* PULSE UPPER */
+        return;
+    }
+    if (strcmp(v, "-stretch") == 0) {
+        ktap(kst_panel_tab_rect(1));
+        ktap(kst_panel_value_rect(1, 2, 0));
+        return;
+    }
+    if (strcmp(v, "-soft") == 0) {
+        ktap(kst_panel_tab_rect(1));
+        ktap(kst_panel_value_rect(1, 1, 0));        /* MAX. DUTY */
+        kkey(UI_KEY_CLR);
+        kkey(UI_KEY_9);
+        kkey(UI_KEY_7);
+        kkey(UI_KEY_OK);
+        return;
+    }
+    if (strcmp(v, "-hard") == 0) {
+        /* SPEED LIMIT on with SPEED below the least the core takes. */
+        ktap(kst_panel_tab_rect(1));
+        ktap(kst_panel_value_rect(1, 3, 0));
+        return;
+    }
+    if (strcmp(v, "-tune") == 0 || strcmp(v, "-pulse") == 0) {
+        kedits();
+        if (strcmp(v, "-pulse") == 0) {
+            const kst_image_t *sv = kst_prog_servo(kst_panel_model());
+
+            kedit(KST_F_NEUTRAL,
+                  (uint16_t)(kst_field_get(sv, KST_F_NEUTRAL) + 5u));
+        }
+        ktap(kst_panel_tab_rect(strcmp(v, "-pulse") == 0 ? 2 : 1));
+        return;
+    }
+    if (strcmp(v, "-stored") == 0) {
+        ktap(kst_panel_value_rect(0, 1, 1));        /* STORE */
+        ksettle();
+        return;
+    }
+    /* The rest writes. */
+    kenable();
+    kedits();
+    if (strcmp(v, "-changes") == 0) {
+        ui_router_tick(0.02f);
+        return;
+    }
+    ktap(kst_panel_value_rect(0, 4, 0));            /* WRITE n VALUES */
+    if (strcmp(v, "-write") == 0) {
+        return;
+    }
+    khold();
+    if (!cut) {
+        ksettle();                                  /* -written */
+        return;
+    }
+    /* The link goes after the write's first register. */
+    for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
+        rig_frame();
+    }
+    kst_link_lost(&g_rig.link);
+    g_rig.safe = false;
+    rig_frames(200);
+    g_rig.safe = true;
+    (void)rig_link_up(LINK_PROTOCOL_MINOR);
+    ui_router_tick(0.02f);
+    if (strcmp(v, "-doubt") == 0) {
+        return;
+    }
+    ktap(kst_panel_value_rect(0, 1, 0));            /* READ ALL */
+    ksettle();
+    if (strcmp(v, "-journal") == 0) {
+        return;
+    }
+    kenable();
+    ktap(kst_panel_value_rect(0, 2, 0));            /* RESTORE */
+    if (strcmp(v, "-restore") == 0) {
+        ktap(kst_panel_choice_rect(0));
+    }
 }
 
 /*
@@ -1542,7 +1755,9 @@ int main(int argc, char **argv)
          * right card, the tabs over the left card, the TYPE row and the
          * list's HELI CYCLIC.
          */
-        if (strcmp(view, "servo-hv") == 0) {
+        if (strncmp(view, "servo-kst", 9) == 0) {
+            kst_view(view);
+        } else if (strcmp(view, "servo-hv") == 0) {
             /* The voltage on the SET line, typed past 6.0 V: the HV
              * warning.  The keypad's keys from a probe opened where the
              * screen opens its own, over the left card. */
