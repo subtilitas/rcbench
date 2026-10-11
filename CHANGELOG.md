@@ -65,7 +65,7 @@ history is in git.
   recursion of 7 levels with an image copy each, and the search for an
   extra write keeps a 256-bit set of candidates in place of a 512-byte
   cost table. Core 0's deepest chain, a write command to the KST
-  programming port, is 1,584 bytes of 4,096 on the image CI builds, down
+  programming port, is 1,600 bytes of 4,096 on the image CI builds, down
   from 2,392. Every plan is the same byte for byte: `test_kst_plan` pins a
   digest over the result, the violated rules and the whole plan of
   495,068 planner calls. No function signature differs.
