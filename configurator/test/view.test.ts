@@ -206,6 +206,50 @@ test('the question names a variant that changes and a function that comes on', (
   assert.ok(said.endsWith('Remove part Keep'), said);
 });
 
+test('a removal that changes nothing else asks as well, and says so in words', () => {
+  for (const lang of LANGS) {
+    for (const at of ['result', 'own'] as const) {
+      const v: View = { ...view({ owned: ['usbtap', 'sd'] }, lang), pending: { part: 'usbtap', at } };
+      const warning = removalWarning(v);
+      const said = text(warning);
+      assert.ok(said.startsWith(t(lang, 'rmAsk', { p: short('usbtap', lang) })), said);
+      assert.ok(said.includes(STRINGS.rmPlain[col(lang)]), said);
+      assert.ok(!said.includes(STRINGS.rmNone[col(lang)]), said);
+      assert.ok(said.endsWith(`${STRINGS.rmPlain[col(lang)]} ${STRINGS.rmYesPlain[col(lang)]} ${STRINGS.rmNo[col(lang)]}`), said);
+      assert.equal(count(warning, 'id="rm-yes"'), 1);
+      assert.equal(count(warning, 'id="rm-no"'), 1);
+    }
+  }
+  // A removal with another effect does not carry the sentence.
+  const other = text(removalWarning({ ...view({ functions: ['esc'] }), pending: { part: 'batt', at: 'result' } }));
+  assert.ok(!other.includes(STRINGS.rmPlain[0]), other);
+});
+
+test('every part beyond the base setup of every single function and single part gets a question with both answers', () => {
+  const selections: Array<Partial<Selection>> = [
+    ...CATALOGUE.functions.map((f) => ({ functions: [f.id] })),
+    ...CATALOGUE.parts.filter((p) => p.selectable).map((p) => ({ owned: [p.id] })),
+  ];
+  let asked = 0;
+  for (const selection of selections) {
+    const v = view(selection);
+    for (const r of v.setup.parts) {
+      const warning = removalWarning({ ...v, pending: { part: r.part.id, at: 'result' } });
+      const what = `${r.part.id} of ${JSON.stringify(selection)}`;
+      if (r.part.locked) {
+        assert.equal(warning, '', what);
+        continue;
+      }
+      asked += 1;
+      assert.equal(count(warning, 'id="rm-yes"'), 1, what);
+      assert.equal(count(warning, 'id="rm-no"'), 1, what);
+      // The question states an effect on the functions, or that there is none.
+      assert.ok([STRINGS.rmPlain[0], STRINGS.rmNone[0], STRINGS.rmOff[0]].some((s) => warning.includes(s)), what);
+    }
+  }
+  assert.ok(asked >= selections.length, `${asked} questions`);
+});
+
 test('the question under "Parts you own" stands under its row, and no question shows for an absent part', () => {
   const v: View = { ...view({ functions: ['servotest'] }, 'de'), pending: { part: 'servo', at: 'own' } };
   const html = chooser(v, true);
