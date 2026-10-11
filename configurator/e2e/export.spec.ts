@@ -11,7 +11,8 @@ import { STRINGS } from '../src/i18n.ts';
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const LANGS = ['en', 'de'] as const;
 type Lang = (typeof LANGS)[number];
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+// The ticks of the page: a function that needs no part has no tick and is in no link.
+const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
 const NAME = /^rcbench-setup-[0-9a-f]{8}-(en|de)\.pdf$/;

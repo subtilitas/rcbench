@@ -15,6 +15,7 @@ const P = {
   noParts: ['No parts.', 'Keine Teile.'],
   notEnabled: ['Not enabled', 'Nicht aktiviert'],
   allEnabled: ['Every function of the catalogue is enabled.', 'Jede Funktion des Katalogs ist aktiviert.'],
+  noneEnabled: ['No function is enabled.', 'Keine Funktion ist aktiviert.'],
   missing: ['Missing: ', 'Fehlt: '],
   needsVariant: ['Needs the variant: ', 'Braucht die Variante: '],
   thNet: ['Net', 'Netz'],
