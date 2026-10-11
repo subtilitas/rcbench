@@ -87,11 +87,12 @@ const parts: Part[] = [
     hardware: 'run',
     slot: { column: 'L', order: 1, sub: same('ESP32-S3-Touch-LCD-7') },
     pins: [
-      // The docs name no print for the two CAN terminals of the panel.
-      pin('CANH', same('CAN H'), guide('wires'), false),
-      pin('CANL', same('CAN L'), guide('wires'), false),
+      // Prints as photo 01 of the owner shows them: the CAN socket reads H and
+      // L, the 3-pin socket J8 reads "Sensor AD" with the pins AD, GND, 3V3.
+      pin('CANH', same('CAN H'), OWNER),
+      pin('CANL', same('CAN L'), OWNER),
       pin('J8G', same('J8 GND'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
-      pin('J8S', same('J8 GPIO6'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
+      pin('J8S', t('J8 GPIO6 (print AD)', 'J8 GPIO6 (Aufdruck AD)'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
     ],
     pictures: [
       {
@@ -329,9 +330,9 @@ const parts: Part[] = [
       pin('SDA', same('SDA'), OWNER),
       pin('A0', t('A0 solder bridges', 'A0-Lötbrücken'), OWNER),
       // The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1.
-      // No source states which of them takes the supply.
-      pin('C1A', t('CH1, one pad', 'CH1, ein Pad'), OWNER),
-      pin('C1B', t('CH1, other pad', 'CH1, anderes Pad'), OWNER),
+      // VIN1+ is the supply side of the shunt, VIN1- the side of the servo.
+      pin('C1A', same('VIN1+'), OWNER),
+      pin('C1B', same('VIN1-'), OWNER),
       // Both sides print GND, GND, VPU. What the pads do is not confirmed.
       pin('LP', t('GND, GND, VPU pads', 'Pads GND, GND, VPU'), OWNER, false),
     ],
@@ -415,11 +416,13 @@ const parts: Part[] = [
     release: 'released',
     hardware: 'not-run',
     slot: { column: 'R', order: 12 },
-    // Pin names are those of the MATEK board. The module with XT90 plugs is
-    // wired the same; the names printed on it are not confirmed, and the check
-    // entry `ina228-xt90-pads` says so.
+    // Pin names are those of the MATEK board. The header of the module with
+    // XT90 plugs prints L A V G 5: L is SCL, A is SDA, V is the 3.3 V supply
+    // of the chip, G is GND. Hole 5 has no pin. The supply pin differs by
+    // board; the check entry `ina228-xt90-pads` states the print.
     pins: [
-      pin('V5', same('5V'), guide('wires')),
+      { ...pin('V5', same('5V'), guide('wires')), only: { ina228Board: 'matek' } },
+      { ...pin('V3', same('V'), OWNER), only: { ina228Board: 'xt90' } },
       pin('G', same('G'), guide('wires')),
       pin('SDA', same('SDA'), guide('wires')),
       pin('SCL', same('SCL'), guide('wires')),
@@ -490,10 +493,12 @@ const parts: Part[] = [
     release: 'released',
     hardware: 'not-run',
     slot: { column: 'L', order: 3, sub: t('NC contact', 'Öffner (NC)') },
-    // The tab labels of the button are not confirmed.
+    // 3 tabs in a row: C, NO, NC, named from the wiring diagram of the
+    // seller, not from a measurement. The 2 outer tabs C and NC form the NC
+    // contact. The middle tab NO has no pin here and takes no wire.
     pins: [
-      pin('NC1', t('NC tab 1', 'NC-Fahne 1'), guide('parts'), false),
-      pin('NC2', t('NC tab 2', 'NC-Fahne 2'), guide('parts'), false),
+      pin('NC1', t('C, outer tab', 'C, äußere Fahne'), OWNER),
+      pin('NC2', t('NC, outer tab', 'NC, äußere Fahne'), OWNER),
     ],
     pictures: [
       {
@@ -719,8 +724,8 @@ const wires: Wire[] = [
     n: 5, kind: 'wire', a: 'panel.J8S', b: 'estop.NC1', net: 'hb', cls: 'hb',
     signal: HB,
     note: t(
-      'In place of wire 4. Use the NC pair, not NO.',
-      'Anstelle von Draht 4. Das NC-Paar verwenden, nicht NO.',
+      'In place of wire 4. Use the 2 outer tabs C and NC. The middle tab NO stays unconnected.',
+      'Anstelle von Draht 4. Die 2 äußeren Fahnen C und NC verwenden. Die mittlere Fahne NO bleibt unbeschaltet.',
     ),
     when: { has: 'estop' }, stage: 5, route: { kind: 'L', lane: 3 }, src: guide('wires'),
   },
@@ -918,11 +923,11 @@ const wires: Wire[] = [
     n: 30, kind: 'wire', a: 'servo.POS', b: 'ina3221.C1B', net: 'servo_shunt', cls: 'power',
     signal: SERVO_POWER,
     note: t(
-      'The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1. No source states which pad takes the supply. If the current reads negative, swap the two wires on CH1.',
-      'Die Rückseite der Platine nennt die 2 Pads von CH1 VIN1+ und VIN1-. Keine Quelle nennt das Pad für die Versorgung. Liest der Strom negativ, die zwei Drähte an CH1 tauschen.',
+      'The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1. The supply goes to VIN1+, the servo to VIN1-.',
+      'Die Rückseite der Platine nennt die 2 Pads von CH1 VIN1+ und VIN1-. Die Versorgung geht an VIN1+, das Servo an VIN1-.',
     ),
     when: { all: [{ has: 'servo' }, { has: 'ina3221' }] },
-    stage: 3, route: { kind: 'X', left: 13, right: 17, channel: 1 }, src: guide('wires'),
+    stage: 3, route: { kind: 'X', left: 13, right: 17, channel: 1 }, src: OWNER,
   },
   {
     n: 31, kind: 'stub', a: 'ina3221.A0', b: null,
@@ -1002,7 +1007,7 @@ const wires: Wire[] = [
     n: 41, kind: 'wire', a: 'pad.40', b: 'ina228.V5', net: 'vbus', cls: 'logic',
     signal: t('supply, 5 V', 'Versorgung, 5 V'),
     note: t('The MATEK board needs 4 to 9 V.', 'Die MATEK-Platine braucht 4 bis 9 V.'),
-    when: { has: 'ina228' },
+    when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] },
     stage: 5, route: { kind: 'R', lane: 0 }, src: guide('wires'),
   },
   {
@@ -1108,6 +1113,16 @@ const wires: Wire[] = [
       'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.',
     ),
     when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 107, '| PGO | GND |'),
+  },
+  {
+    n: 55, kind: 'wire', a: 'pad.36', b: 'ina228.V3', net: '3v3', cls: 'logic',
+    signal: SUPPLY_33,
+    note: t(
+      'The pin with the print V. Hole 5 of the header has no pin and takes no wire.',
+      'Der Pin mit dem Aufdruck V. Loch 5 der Leiste hat keinen Pin und bekommt keinen Draht.',
+    ),
+    when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
+    stage: 5, route: { kind: 'R', lane: 0 }, src: OWNER,
   },
 ];
 
@@ -1242,12 +1257,12 @@ const checks: Check[] = [
     when: null, src: guide('notes'),
   },
   {
-    id: 'panel-terminals', kind: 'unknown',
+    id: 'panel-terminals', kind: 'note',
     text: t(
-      'Names of the CAN terminals of the panel and the pin order of J8: not stated in the docs. Read the print on the board.',
-      'Namen der CAN-Klemmen des Panels und Pinfolge von J8: in den Dokumenten nicht angegeben. Den Aufdruck der Platine lesen.',
+      'Panel: the CAN socket has the print H and L. The 3-pin socket J8 has the print Sensor AD with the pins AD, GND and 3V3. The heartbeat (GPIO6) is the pin AD. The pin 3V3 takes no wire.',
+      'Panel: Die CAN-Buchse trägt den Aufdruck H und L. Die 3-polige Buchse J8 trägt den Aufdruck Sensor AD mit den Pins AD, GND und 3V3. Der Heartbeat (GPIO6) ist der Pin AD. Der Pin 3V3 bekommt keinen Draht.',
     ),
-    when: null, src: PAGE,
+    when: null, src: OWNER,
   },
   {
     id: 'same-release', kind: 'note',
@@ -1326,20 +1341,20 @@ const checks: Check[] = [
   {
     id: 'ina228-xt90', kind: 'note',
     text: t(
-      'INA228 module with XT90 plugs: wired as the MATEK I2C-INA-BM board, with supply, GND, SDA and SCL on the sensor bus and the same I2C address. This comes from an owner statement of 2026-10-11.',
-      'INA228-Modul mit XT90-Steckern: verdrahtet wie die MATEK-I2C-INA-BM-Platine, mit Versorgung, GND, SDA und SCL am Sensorbus und derselben I2C-Adresse. Das stammt aus einer Angabe des Projektinhabers vom 2026-10-11.',
+      'INA228 module with XT90 plugs: GND, SDA and SCL on the sensor bus as on the MATEK I2C-INA-BM board, and the same I2C address. The supply is 3.3 V from 3V3 (pad 36), not 5 V from VBUS (pad 40). This comes from an owner statement of 2026-10-11.',
+      'INA228-Modul mit XT90-Steckern: GND, SDA und SCL am Sensorbus wie bei der MATEK-I2C-INA-BM-Platine, dieselbe I2C-Adresse. Die Versorgung ist 3,3 V von 3V3 (Pad 36), nicht 5 V von VBUS (Pad 40). Das stammt aus einer Angabe des Projektinhabers vom 2026-10-11.',
     ),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
     src: OWNER,
   },
   {
-    id: 'ina228-xt90-pads', kind: 'unknown',
+    id: 'ina228-xt90-pads', kind: 'note',
     text: t(
-      'INA228 module with XT90 plugs: the pad names printed on the board are not confirmed. The header print reads L A V G 5. The drawing uses the pad names of the MATEK board.',
-      'INA228-Modul mit XT90-Steckern: Die auf der Platine gedruckten Padnamen sind nicht bestätigt. Der Aufdruck der Leiste lautet L A V G 5. Die Zeichnung verwendet die Padnamen der MATEK-Platine.',
+      'INA228 module with XT90 plugs: the header has 5 holes with the print L A V G 5. L is SCL, A is SDA, V is the 3.3 V supply of the INA228, G is GND. Hole 5 is the 5 V output of a regulator that is not fitted: it has no pin and takes no wire. Seen with the header at the bottom, the left plug (shrouded, male pins) is the battery side and the right plug (female) is the ESC side. The upper rail is plus, the lower rail with the shunt is minus, and G connects to the ESC end of the shunt. The drawing shows the sensor in the plus line and the minus of the ESC as a direct wire. On this module both lines run through the 2 plugs.',
+      'INA228-Modul mit XT90-Steckern: Die Leiste hat 5 Löcher mit dem Aufdruck L A V G 5. L ist SCL, A ist SDA, V ist die 3,3-V-Versorgung des INA228, G ist GND. Loch 5 ist der 5-V-Ausgang eines nicht bestückten Reglers: Es hat keinen Pin und bekommt keinen Draht. Mit der Leiste unten gesehen ist der linke Stecker (mit Kragen, Stifte) die Akkuseite und der rechte Stecker (Buchsen) die ESC-Seite. Die obere Schiene ist Plus, die untere Schiene mit dem Shunt ist Minus, und G liegt am ESC-Ende des Shunts. Die Zeichnung zeigt den Sensor in der Plusleitung und das Minus des ESC als direkten Draht. Bei diesem Modul laufen beide Leitungen durch die 2 Stecker.',
     ),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
-    src: photo('15'),
+    src: OWNER,
   },
   {
     id: 'as5600-board', kind: 'unknown',
@@ -1366,12 +1381,12 @@ const checks: Check[] = [
     when: { has: 'sim' }, src: guide('tap'),
   },
   {
-    id: 'estop-tabs', kind: 'unknown',
+    id: 'estop-tabs', kind: 'measure',
     text: t(
-      'Emergency stop: the tab labels are not confirmed, and no run with the button is stated in the docs. The NC pair reads near 0 Ω while the button is released.',
-      'Not-Aus: Die Beschriftung der Lötfahnen ist nicht bestätigt, und die Dokumente nennen keinen Lauf mit dem Taster. Das NC-Paar liest nahe 0 Ω, solange der Taster nicht gedrückt ist.',
+      'Emergency stop: 3 tabs in a row, C, NO, NC. The names come from the wiring diagram of the seller, not from a measurement. The 2 outer tabs C and NC conduct while the button is released and open when it is pressed. The middle tab NO stays unconnected. Before use, C to NC reads near 0 Ω with the button released and open with the button pressed. No run with the button is stated in the docs.',
+      'Not-Aus: 3 Lötfahnen in einer Reihe, C, NO, NC. Die Namen stammen aus dem Anschlussbild des Verkäufers, nicht aus einer Messung. Die 2 äußeren Fahnen C und NC leiten, solange der Taster nicht gedrückt ist, und öffnen, wenn er gedrückt wird. Die mittlere Fahne NO bleibt unbeschaltet. Vor dem Einsatz liest C gegen NC nahe 0 Ω bei nicht gedrücktem Taster und offen bei gedrücktem Taster. Die Dokumente nennen keinen Lauf mit dem Taster.',
     ),
-    when: { has: 'estop' }, src: photo('11'),
+    when: { has: 'estop' }, src: OWNER,
   },
   {
     id: 'usbtap-v', kind: 'note',

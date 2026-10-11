@@ -130,7 +130,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
-  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 54 }, (_, i) => i + 1));
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 55 }, (_, i) => i + 1));
   assert.equal(CATALOGUE.functions.length, 11);
   assert.equal(CATALOGUE.rules.length, 6);
   assert.equal(CATALOGUE.checks.length, 20);
@@ -246,14 +246,11 @@ test('a drawing is an SVG file without script, reference or raster', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'panel-terminals', 'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups',
-    'ina228-xt90-pads', 'as5600-board', 'estop-tabs', 'osoyoo-labels',
+    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'as5600-board', 'osoyoo-labels',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
-  assert.deepEqual(unconfirmed, [
-    'panel.CANH', 'panel.CANL', 'ina3221.LP', 'as5600.GPO', 'estop.NC1', 'estop.NC2',
-  ]);
+  assert.deepEqual(unconfirmed, ['ina3221.LP', 'as5600.GPO']);
   assert.deepEqual(
     CATALOGUE.parts.filter((p) => p.hardware === 'not-run').map((p) => p.id),
     ['ina3221', 'as5600', 'pull', 'ina228', 'estop', 'sim', 'tap', 'usbtap'],
@@ -262,9 +259,13 @@ test('every unknown of the data is a check entry of kind unknown', () => {
     CATALOGUE.functions.filter((f) => f.hardware === 'not-run').map((f) => f.id),
     ['servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
   );
-  // No part is without a stated role, and no pin exists with one option value only.
+  // No part is without a stated role. The pins with one option value only are
+  // the 2 supply pins of the INA228 board.
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.role === null && p.selectable).map((p) => p.id), []);
-  assert.deepEqual(CATALOGUE.parts.flatMap((p) => p.pins.filter((q) => q.only !== undefined)), []);
+  assert.deepEqual(
+    CATALOGUE.parts.flatMap((p) => p.pins.filter((q) => q.only !== undefined).map((q) => [`${p.id}.${q.id}`, q.only])),
+    [['ina228.V5', { ina228Board: 'matek' }], ['ina228.V3', { ina228Board: 'xt90' }]],
+  );
 });
 
 // --- invariant 1 ------------------------------------------------------------
@@ -347,15 +348,20 @@ test('wire shape: stub, wire and component each need their fields', () => {
 });
 
 test('a wire on a pin of one board variant requires that variant', () => {
-  // The data holds no such pin; the supply pin of the INA228 stands in.
+  // The 2 supply pins of the INA228 are such pins: 5V on the MATEK board, V
+  // on the module with XT90 plugs.
+  const pins = CATALOGUE.parts.find((p) => p.id === 'ina228')!.pins;
+  assert.deepEqual(pins.find((p) => p.id === 'V5')?.only, { ina228Board: 'matek' });
+  assert.deepEqual(pins.find((p) => p.id === 'V3')?.only, { ina228Board: 'xt90' });
+  assert.deepEqual(pins.filter((p) => p.only).map((p) => p.id), ['V5', 'V3']);
+  assert.deepEqual(checkEnds(CATALOGUE), []);
+  // Wire 41 without the variant in its condition.
   const copy = (): Catalogue => {
     const c = structuredClone(CATALOGUE);
-    const v5 = c.parts.find((p) => p.id === 'ina228')?.pins.find((p) => p.id === 'V5');
-    assert.ok(v5);
-    v5.only = { ina228Board: 'matek' };
+    assert.equal(c.wires[40]!.n, 41);
+    c.wires[40]!.when = { has: 'ina228' };
     return c;
   };
-  assert.deepEqual(checkEnds(CATALOGUE), []);
   const c = copy();
   reports(checkEnds(c), 'wire.41', /ina228Board=matek/);
 
@@ -375,6 +381,12 @@ test('a wire on a pin of one board variant requires that variant', () => {
   const always = copy();
   always.wires[40]!.when = null;
   reports(checkEnds(always), 'wire.41', /ina228Board=matek/);
+
+  // Wire 55 on the pin of the module with XT90 plugs.
+  const xt90 = structuredClone(CATALOGUE);
+  assert.equal(xt90.wires[54]!.n, 55);
+  xt90.wires[54]!.when = { has: 'ina228' };
+  reports(checkEnds(xt90), 'wire.55', /ina228Board=xt90/);
 });
 
 // --- invariant 3 ------------------------------------------------------------
@@ -637,12 +649,12 @@ test('src: guide, photo and page rules', () => {
   photo.parts[4]!.pins[0]!.src = { kind: 'photo', file: '09' };
   reports(checkSrc(photo, null).findings, 'part.servo.SIG', /photo 09/);
 
-  // Photo 15 has one, until its kind changes.
+  // Photo 05 has one, until its kind changes.
   const kind = copy();
-  kind.parts[4]!.pins[0]!.src = { kind: 'photo', file: '15' };
+  kind.parts[4]!.pins[0]!.src = { kind: 'photo', file: '05' };
   assert.deepEqual(checkSrc(kind, null).findings, []);
-  kind.checks.find((k) => k.id === 'ina228-xt90-pads')!.kind = 'note';
-  reports(checkSrc(kind, null).findings, 'part.servo.SIG', /photo 15/);
+  kind.checks.find((k) => k.id === 'osoyoo-labels')!.kind = 'note';
+  reports(checkSrc(kind, null).findings, 'part.servo.SIG', /photo 05/);
 
   // An owner statement is named by a date of the list.
   const stated = copy();
@@ -914,9 +926,10 @@ test('the wire table prints one row per wire in the column order of the specific
   assert.equal(rows[17], '| 16 | pad.10 | usbtap.DM | uart | L | 9 | 2 | pdmini |');
   assert.equal(rows[18], '| 17 | usbtap.DP | pad.9 | uart | L | 10 | 2 | pdmini |');
   assert.equal(rows[19], '| 18 | pad.18 | usbtap.G | gnd | L | 11 | 2 | pdmini |');
-  assert.equal(rows[42], '| 41 | pad.40 | ina228.V5 | logic | R | 0 | 5 | ina228 |');
+  assert.equal(rows[42], '| 41 | pad.40 | ina228.V5 | logic | R | 0 | 5 | ina228 and ina228Board=matek |');
   assert.equal(rows[54], '| 53 | pad.29 | pad.28 | phase | Z |  | 5 | tap |');
   assert.equal(rows[55], '| 54 | as5600.GPO | (GND, on the board) | gnd | S |  | 4 | as5600 |');
+  assert.equal(rows[56], '| 55 | pad.36 | ina228.V3 | logic | R | 0 | 5 | ina228 and ina228Board=xt90 |');
 
   const nested = copy();
   nested.wires[0]!.when = { all: [{ any: [{ has: 'esc' }, { has: 'servo' }] }, { not: { all: [{ has: 'sd' }] } }] };

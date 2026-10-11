@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 54 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 55 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
@@ -143,12 +143,12 @@ Line coverage of the resolver, measured by `node --test --experimental-test-cove
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `CANH` and `CANL` of the panel, `GPO` of the AS5600 board, `NC1` and `NC2` of the emergency stop switch: no source at `v0.16.0` shows their position. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
-- INA3221 board: the back prints VIN1+ and VIN1- at the 2 pads of channel 1. No source states which pad takes the supply; the data names the pads `C1A` and `C1B` without a polarity.
+- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.16.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, T-plug of the PD mini.
 - Functions with the state "not run on hardware": servo current, angle, ESC power, stick programming, tap, emergency stop.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
-- The INA228 module with XT90 plugs is wired as the MATEK board per the same owner statement. The pad names printed on it are not confirmed.
+- The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. The data holds one set of power wires for both boards: the sensor in the plus line and the minus of the ESC as a direct wire. The check entry `ina228-xt90-pads` states the difference.
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
-- 9 check entries of kind `unknown` state each open point in the text of a setup.
+- 6 check entries of kind `unknown` state each open point in the text of a setup.

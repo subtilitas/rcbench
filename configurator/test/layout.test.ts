@@ -140,17 +140,25 @@ test('the T-plug without the PD mini is drawn without a wire', () => {
   assert.ok(plug.pins.every((p) => !p.used));
 });
 
-test('the INA228 module with XT90 plugs is wired as the MATEK board, its pad names marked', () => {
+test('the INA228 module with XT90 plugs differs from the MATEK board in the supply wire and its pin', () => {
   const draw = (ina228Board: 'matek' | 'xt90') => {
     const setup = resolve(CATALOGUE, { ...base, owned: ['ina228'], options: { ...DEFAULT_OPTIONS, ina228Board } });
     return layout(setup, CATALOGUE, 'en');
   };
   const [matek, xt90] = [draw('matek'), draw('xt90')];
-  assert.deepEqual(xt90.wires.map((w) => [w.n, w.points]), matek.wires.map((w) => [w.n, w.points]));
-  for (const n of [41, 42, 43, 44]) assert.ok(xt90.wires.some((w) => w.n === n), `wire ${n}`);
-  const labels = (l: typeof xt90): string[] => l.modules.find((m) => m.id === 'ina228')!.pins.map((p) => p.label);
-  assert.deepEqual(labels(matek), ['5V', 'G', 'SDA', 'SCL', 'BAT+', 'ESC+']);
-  assert.deepEqual(labels(xt90), ['5V ?', 'G ?', 'SDA ?', 'SCL ?', 'BAT+', 'ESC+']);
+  // Every wire but the supply wire runs the same path on both boards.
+  const others = (l: typeof xt90, supply: number) => l.wires.filter((w) => w.n !== supply).map((w) => [w.n, w.points]);
+  assert.deepEqual(others(xt90, 55), others(matek, 41));
+  for (const n of [42, 43, 44, 55]) assert.ok(xt90.wires.some((w) => w.n === n), `wire ${n}`);
+  assert.ok(!xt90.wires.some((w) => w.n === 41));
+  assert.ok(!matek.wires.some((w) => w.n === 55));
+  // The pin of the other board takes no row and is not drawn.
+  const rows = (l: typeof xt90) => l.modules.find((m) => m.id === 'ina228')!.pins.filter((p) => p.drawn);
+  assert.deepEqual(rows(matek).map((p) => p.label), ['5V', 'G', 'SDA', 'SCL', 'BAT+', 'ESC+']);
+  assert.deepEqual(rows(xt90).map((p) => p.label), ['V', 'G', 'SDA', 'SCL', 'BAT+', 'ESC+']);
+  assert.deepEqual(rows(xt90).map((p) => p.y), rows(matek).map((p) => p.y));
+  const height = (l: typeof xt90) => l.modules.find((m) => m.id === 'ina228')!.h;
+  assert.equal(height(xt90), height(matek));
 });
 
 test('the AS5600 draws the GPO strap and the DIR strap as stubs', () => {

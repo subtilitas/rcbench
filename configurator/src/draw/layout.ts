@@ -210,12 +210,15 @@ export function layout(setup: Setup, catalogue: Catalogue, lang: Lang, geo: Geom
     const subFit = !pinless && subText.length * SUB_CHAR > room ? room : null;
     const h = pinless
       ? geo.head + Math.max(0, sub.length - 1) * SUB_LINE
-      : geo.head + part.pins.length * geo.pinPitch + geo.pinPad;
-    const pins = part.pins.map((pin, i): PinBox => {
+      : geo.head + part.pins.filter((pin) => pinPresent(pin, options)).length * geo.pinPitch + geo.pinPad;
+    // A pin of another board variant takes no row.
+    let row = 0;
+    const pins = part.pins.map((pin): PinBox => {
       const ref = `${part.id}.${pin.id}`;
-      const py = y + geo.head + i * geo.pinPitch + geo.pinPitch / 2;
+      const py = y + geo.head + row * geo.pinPitch + geo.pinPitch / 2;
       const present = pinPresent(pin, options);
       if (present) {
+        row += 1;
         anchors.set(ref, {
           y: py,
           inner: column === 'L' ? x + geo.moduleW : x,
@@ -226,7 +229,7 @@ export function layout(setup: Setup, catalogue: Catalogue, lang: Lang, geo: Geom
       }
       return {
         id: pin.id,
-        label: tx(lang, pin.label) + (pinUnconfirmed(part, pin, options) ? ' ?' : ''),
+        label: tx(lang, pin.label) + (pinUnconfirmed(pin) ? ' ?' : ''),
         x: column === 'L' ? x + geo.moduleW - 8 : x + 8,
         y: py,
         anchor: column === 'L' ? 'end' : 'start',
