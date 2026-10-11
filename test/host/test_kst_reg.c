@@ -523,6 +523,33 @@ TEST_CASE(decoding_and_encoding_every_field_of_an_image_gives_the_image_back)
     }
 }
 
+/* --- servo type --------------------------------------------------------------- */
+
+TEST_CASE(the_type_of_an_image_is_its_20k_sel_bit_and_nothing_else)
+{
+    kst_image_t img = sim_bench_image();
+
+    CHECK_EQ(kst_type(&img), KST_TYPE_V6);
+    CHECK(kst_field_set(&img, KST_F_20K_SEL, 0));
+    CHECK_EQ(kst_type(&img), KST_TYPE_V8);
+    CHECK_EQ(kst_type(NULL), KST_TYPE_NONE);
+
+    /* Every other bit of the image leaves the type as it is. */
+    memset(&img, 0xFF, sizeof(img));
+    CHECK_EQ(kst_type(&img), KST_TYPE_V6);
+    img.r[0x04] = 0xBF;
+    CHECK_EQ(kst_type(&img), KST_TYPE_V8);
+    memset(&img, 0, sizeof(img));
+    CHECK_EQ(kst_type(&img), KST_TYPE_V8);
+    img.r[0x04] = 0x40;
+    CHECK_EQ(kst_type(&img), KST_TYPE_V6);
+
+    CHECK_STR_EQ(kst_type_name(KST_TYPE_V8), "V8");
+    CHECK_STR_EQ(kst_type_name(KST_TYPE_V6), "V6");
+    CHECK_STR_EQ(kst_type_name(KST_TYPE_NONE), "");
+    CHECK_STR_EQ(kst_type_name((kst_type_t)7), "");
+}
+
 /* --- fingerprint -------------------------------------------------------------- */
 
 static kst_fingerprint_t fp_of(unsigned reg, unsigned value, bool *ok)
@@ -1330,6 +1357,7 @@ int main(void)
     RUN(the_error_counts_are_the_1_bits_upward_from_bit_0);
     RUN(fields_without_a_conversion_show_the_raw_value);
     RUN(decoding_and_encoding_every_field_of_an_image_gives_the_image_back);
+    RUN(the_type_of_an_image_is_its_20k_sel_bit_and_nothing_else);
     RUN(the_measured_layout_passes_the_fingerprint);
     RUN(each_fingerprint_rule_fails_alone_and_names_its_register);
     RUN(a_foreign_image_lists_every_rule_and_register_it_breaks);

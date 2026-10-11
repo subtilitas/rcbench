@@ -290,6 +290,28 @@ bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
     return true;
 }
 
+/* --- servo type ----------------------------------------------------------- */
+
+kst_type_t kst_type(const kst_image_t *img)
+{
+    if (img == NULL) {
+        return KST_TYPE_NONE;
+    }
+    return kst_field_get(img, KST_F_20K_SEL) != 0u ? KST_TYPE_V6 : KST_TYPE_V8;
+}
+
+const char *kst_type_name(kst_type_t type)
+{
+    switch (type) {
+    case KST_TYPE_V8:
+        return "V8";
+    case KST_TYPE_V6:
+        return "V6";
+    default:
+        return "";
+    }
+}
+
 /* --- layout fingerprint --------------------------------------------------- */
 
 static void fp_fail(kst_fingerprint_t *fp, kst_fp_rule_t rule, uint32_t regs)
