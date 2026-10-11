@@ -164,7 +164,9 @@ button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-acc
 .dia .thick .case { stroke-width: 9; }
 .dia .k-stub .core { stroke-dasharray: 5 4; }
 .dia .k-component .core { stroke-width: 2; }
-.dia .sym { fill: var(--surface); stroke: currentColor; stroke-width: 2; }
+.dia .cb { fill: #d8643a; stroke: var(--ink); stroke-width: 1; }
+.dia .cbd { fill: #17181c; }
+.dia .ct { font-size: 10px; font-weight: 600; fill: var(--ink); }
 .dia .nb { fill: var(--surface); stroke-width: 1.5; }
 .dia .nt { font-size: 9px; font-weight: 700; text-anchor: middle; fill: var(--ink); }
 .dia .dw { cursor: pointer; outline: none; transition: opacity .15s; }

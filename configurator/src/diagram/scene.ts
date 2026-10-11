@@ -1,10 +1,11 @@
 // The input of the pictorial wiring view: the parts of a setup with their
 // drawings, and each wire with the anchor points of its ends. Pure.
 
-import type { Setup, Text, Wire } from '../../contract.ts';
+import type { Lang, Setup, Text, Wire } from '../../contract.ts';
 import type { Anchors, DrawingRecord } from '../../drawings/generate.ts';
 import type { Side } from '../../drawings/lib.ts';
 import { colourOf, endPoints } from '../../drawings/wires.ts';
+import { t, tx } from '../i18n.ts';
 
 /** Column of the picture: left of the coprocessor, its own column, right of it. */
 export type Lane = 'L' | 'C' | 'R';
@@ -17,8 +18,29 @@ export type ScenePin = { part: string; pin: string; x: number; y: number; side: 
 /**
  * `a` and `b` list the wire points of an end. An end has more than 1 point when the
  * board offers several pads for it. `b` is null for a wire that ends open.
+ * `text`: the lines beside a component, per language. Absent for a wire.
  */
-export type SceneWire = { n: number; kind: Wire['kind']; colour: string | null; thick: boolean; a: ScenePin[]; b: ScenePin[] | null };
+export type SceneWire = {
+  n: number; kind: Wire['kind']; colour: string | null; thick: boolean; a: ScenePin[]; b: ScenePin[] | null;
+  text?: Record<Lang, string[]>;
+};
+
+/**
+ * The lines beside a component of the picture: what it is, and the pad its band
+ * points to. The band of a component is drawn at end `a` of its wire: the data
+ * file lists the banded end (the cathode of a diode) first. `pad`: the label of
+ * that end on the drawing.
+ */
+export function componentText(wire: Pick<Wire, 'route' | 'signal'>, pad: Text): Record<Lang, string[]> {
+  const lines = (lang: Lang): string[] => {
+    const text = wire.route.kind === 'Z'
+      ? t(lang, 'diaZener', { a: tx(lang, pad) })
+      : t(lang, 'diaComp', { s: tx(lang, wire.signal), a: tx(lang, pad) });
+    const cut = text.indexOf(', ');
+    return cut < 0 ? [text] : [text.slice(0, cut + 1), text.slice(cut + 2)];
+  };
+  return { en: lines('en'), de: lines('de') };
+}
 
 /**
  * True for a wire that carries load current: the supply of the ESC or of the
@@ -74,7 +96,12 @@ export function sceneOf(setup: Pick<Setup, 'parts' | 'options' | 'wires'>, ancho
       undrawn.push(wire.n);
       continue;
     }
-    wires.push({ n: wire.n, kind: wire.kind, colour: colourOf(wire), thick: carriesLoad(wire), a, b });
+    const out: SceneWire = { n: wire.n, kind: wire.kind, colour: colourOf(wire), thick: carriesLoad(wire), a, b };
+    if (wire.kind === 'component') {
+      const first = a[0]!;
+      out.text = componentText(wire, files.get(first.part)![1].pins[first.pin]!.label);
+    }
+    wires.push(out);
   }
   return { parts, wires, undrawn };
 }

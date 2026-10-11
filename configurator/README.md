@@ -166,6 +166,8 @@ wire point of `drawings/anchors.json`.
 | Colour | Supply plus red, supply minus black with a light casing, signals in the other colours of `drawings/wires.ts`. No signal is red or black. |
 | Wire number | In a chip at both ends of the wire. |
 | Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |
+| Component | A wire of kind `component` in the data file is drawn as the component: a body of 12 px by 20 px on 2 leads with right-angle bends, 1 wire number, and a text of up to 2 lines. Between 2 pins of 1 part the body stands beside that part and the picture is 192 px wider for a text of 18 characters. The band is at end `a` of the wire. |
+| Not drawn | A wire with 1 end (`b: null`), such as the address bridge 31 on the INA3221 board. Its table row carries the note. |
 
 The legend below the picture names both widths ("power line", "signal") and
 both supply colours, in English and German.

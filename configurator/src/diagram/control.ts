@@ -137,7 +137,8 @@ function onKey(event: KeyboardEvent): void {
       event.preventDefault();
       mark(Number(wire.dataset.wire));
     } else if (event.key === 'Escape') {
-      document.getElementById('dia')?.focus({ preventScroll: true });
+      // An Escape that another handler has taken, such as the answer to a removal, moves no focus here.
+      if (!event.defaultPrevented) document.getElementById('dia')?.focus({ preventScroll: true });
     } else if (event.key in KEYS && !event.key.startsWith('Arrow')) {
       event.preventDefault();
       command(KEYS[event.key]!);

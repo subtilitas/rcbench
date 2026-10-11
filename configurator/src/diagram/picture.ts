@@ -11,8 +11,8 @@ import { endName, targetName } from '../names.ts';
 import type { View } from '../view/chooser.ts';
 import { ANCHORS } from './anchors.ts';
 import { CAP, THICK, THIN } from './layout.ts';
-import { LABEL, diagramOf } from './route.ts';
-import type { Diagram, Pt, Routed } from './route.ts';
+import { BODY, LABEL, diagramOf } from './route.ts';
+import type { Body, Diagram, Pt, Routed } from './route.ts';
 import { sceneOf } from './scene.ts';
 
 /** Folder of the part drawings, relative to the page. German drawings lie in `de/` below it. */
@@ -71,7 +71,23 @@ function middle(wire: Routed): Pt {
   return best;
 }
 
-function wireMarkup(wire: Routed, label: string, first: boolean): string {
+/** Colours of the body of a component and of its band. */
+export const BODY_FILL = '#d8643a';
+export const BAND_FILL = '#17181c';
+
+/** Body and band of a component as 2 rectangles: `[x, y, width, height]` each. */
+export function bodyRects(b: Body): [[number, number, number, number], [number, number, number, number]] {
+  const centre = b.band * (b.len / 2 - 2 - BODY.band / 2);
+  return b.upright
+    ? [[b.x - BODY.w / 2, b.y - b.len / 2, BODY.w, b.len], [b.x - BODY.w / 2, b.y + centre - BODY.band / 2, BODY.w, BODY.band]]
+    : [[b.x - b.len / 2, b.y - BODY.w / 2, b.len, BODY.w], [b.x + centre - BODY.band / 2, b.y - BODY.w / 2, BODY.band, BODY.w]];
+}
+
+/** Baselines of the lines of a component: `count` lines of `size` px, `pitch` px apart, centred on `y`. */
+export const baselines = (y: number, count: number, size: number, pitch: number): number[] =>
+  Array.from({ length: count }, (_, i) => y + (i - (count - 1) / 2) * pitch + size * 0.35);
+
+function wireMarkup(wire: Routed, label: string, first: boolean, lang: Lang): string {
   const colour = wire.colour === null ? undefined : PALETTE[wire.colour];
   const stroke = colour ? colour.core : 'currentColor';
   const mid = middle(wire);
@@ -83,8 +99,15 @@ function wireMarkup(wire: Routed, label: string, first: boolean): string {
     if (colour?.casing) out += `<path class="case" d="${d}" stroke="${colour.casing}"/>`;
     out += `<path class="core" d="${d}" stroke="${stroke}"/>`;
   }
-  if (wire.kind === 'component') {
-    out += `<rect class="sym" x="${f(mid[0] - 5)}" y="${f(mid[1] - 8)}" width="10" height="16" rx="2"/>`;
+  if (wire.body) {
+    const [body, band] = bodyRects(wire.body);
+    out += `<rect class="cb" x="${f(body[0])}" y="${f(body[1])}" width="${f(body[2])}" height="${f(body[3])}" rx="2.5"/>`
+      + `<rect class="cbd" x="${f(band[0])}" y="${f(band[1])}" width="${f(band[2])}" height="${f(band[3])}"/>`;
+    const lines = wire.text?.[lang] ?? [];
+    const at = wire.body.text;
+    baselines(at.y, lines.length, 10, 11).forEach((y, i) => {
+      out += `<text class="ct" x="${f(at.x)}" y="${f(y)}" text-anchor="${at.anchor}">${esc(lines[i]!)}</text>`;
+    });
   }
   for (const l of wire.labels) {
     out += `<rect class="nb" x="${f(l.x - LABEL.w / 2)}" y="${f(l.y - LABEL.h / 2)}" width="${LABEL.w}" height="${LABEL.h}" rx="3" stroke="${stroke}"/>`
@@ -105,7 +128,7 @@ export function pictureSvg(
     parts += `<g class="dp" data-part="${esc(p.id)}"><text class="cap" x="${p.x + 2}" y="${p.y + CAP - 8}"${fit}>${esc(name)}</text>`
       + `<image href="${folder}${esc(p.file)}" x="${p.ix}" y="${p.iy}" width="${p.iw}" height="${p.ih}"/></g>`;
   }
-  const wires = d.wires.map((w, i) => wireMarkup(w, labels.get(w.n) ?? String(w.n), i === 0)).join('');
+  const wires = d.wires.map((w, i) => wireMarkup(w, labels.get(w.n) ?? String(w.n), i === 0, lang)).join('');
   return `<svg class="picture" id="dia-svg" viewBox="0 0 ${d.w} ${d.h}" width="${d.w}" height="${d.h}" role="group" aria-labelledby="dia-t" aria-describedby="dia-d wires-cap" focusable="false">`
     + `<title id="dia-t">${esc(title)}</title><desc id="dia-d">${esc(desc)}</desc>`
     + `<g class="vp"><g class="parts">${parts}</g><g class="wires">${wires}</g></g></svg>`;

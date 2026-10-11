@@ -8,10 +8,10 @@ import { MINUS, MINUS_NETS, PLUS, PLUS_NETS, withoutWirePoint } from '../drawing
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
 import { ANCHORS } from '../src/diagram/anchors.ts';
 import { BAND, CLEAR, THICK, THIN, pitch } from '../src/diagram/layout.ts';
-import { LABEL, diagramOf, simplify } from '../src/diagram/route.ts';
+import { BODY, LABEL, TEXT_CHAR, bayOf, diagramOf, simplify } from '../src/diagram/route.ts';
 import type { Diagram, Pt } from '../src/diagram/route.ts';
-import { RADIUS, legend, pathOf, picture, swatch } from '../src/diagram/picture.ts';
-import { sceneOf } from '../src/diagram/scene.ts';
+import { RADIUS, baselines, bodyRects, legend, pathOf, picture, swatch } from '../src/diagram/picture.ts';
+import { componentText, sceneOf } from '../src/diagram/scene.ts';
 import { PAN_STEP, ZOOM_STEP, centreOn, clamp, fit, pan, shows, transformOf, zoomAt } from '../src/diagram/view.ts';
 import { STRINGS } from '../src/i18n.ts';
 import { optionsOf } from '../src/names.ts';
@@ -209,6 +209,52 @@ function breaks(d: Diagram, setup: Setup): string[] {
       if (Math.abs(a.x - b.x) < LABEL.w && Math.abs(a.y - b.y) < LABEL.h) out.push(`numbers ${a.n} and ${b.n} overlap`);
     }
   }
+
+  // Components: a wire of the kind component, and no other, has a body. The body lies on a run of its wire with a
+  // lead on each side, the band on the side of end a. Body, number and lines lie inside the picture, on no part,
+  // on no other wire and on no other number.
+  for (const w of d.wires) {
+    const wire = byN.get(w.n)!;
+    if ((w.body !== undefined) !== (wire.kind === 'component')) out.push(`wire ${w.n}: ${w.body ? 'a body' : 'no body'} for the kind ${wire.kind}`);
+    if (!w.body) continue;
+    const b = w.body;
+    const path = w.paths[0]!;
+    const k = b.upright ? 1 : 0;
+    const at = path.findIndex((q, i) => i > 0 && q[1 - k] === path[i - 1]![1 - k] && q[1 - k] === (b.upright ? b.x : b.y)
+      && Math.min(q[k], path[i - 1]![k]) <= (b.upright ? b.y : b.x) - b.len / 2 - BODY.lead
+      && Math.max(q[k], path[i - 1]![k]) >= (b.upright ? b.y : b.x) + b.len / 2 + BODY.lead);
+    if (at < 0) out.push(`wire ${w.n}: the body lies on no run of the wire with a lead on each side`);
+    else if (Math.sign(path[at - 1]![k] - path[at]![k]) !== b.band) out.push(`wire ${w.n}: the band is not on the side of end a`);
+    if (b.len < BODY.band + 4 || b.len > BODY.len) out.push(`wire ${w.n}: body of ${b.len} px`);
+    if (w.ends[0]!.part === w.ends[1]!.part && w.labels.length !== 1) out.push(`wire ${w.n}: ${w.labels.length} numbers for a component across 2 pads`);
+    const [body, band] = bodyRects(b);
+    if (band[0] < body[0] || band[1] < body[1] || band[0] + band[2] > body[0] + body[2] || band[1] + band[3] > body[1] + body[3]) out.push(`wire ${w.n}: band outside the body`);
+    const areas: Array<[string, number, number, number, number]> = [['body', body[0], body[1], body[0] + body[2], body[1] + body[3]]];
+    for (const l of w.labels) areas.push(['number', l.x - LABEL.w / 2, l.y - LABEL.h / 2, l.x + LABEL.w / 2, l.y + LABEL.h / 2]);
+    if (!w.text) out.push(`wire ${w.n}: no lines`);
+    for (const lines of Object.values(w.text ?? {})) {
+      if (lines.length < 1 || lines.some((line) => line.trim() === '')) out.push(`wire ${w.n}: empty line`);
+      // The size of the export form, the larger of the 2 forms.
+      const width = Math.max(...lines.map((line) => line.length)) * TEXT_CHAR;
+      const ys = baselines(b.text.y, lines.length, 12, 13);
+      const x1 = b.text.anchor === 'start' ? b.text.x : b.text.anchor === 'end' ? b.text.x - width : b.text.x - width / 2;
+      areas.push(['lines', x1, ys[0]! - 9, x1 + width, ys[ys.length - 1]! + 3]);
+    }
+    for (const [what, x1, y1, x2, y2] of areas) {
+      if (x1 < 0 || y1 < 0 || x2 > d.w || y2 > d.h) out.push(`wire ${w.n}: ${what} outside the picture`);
+      for (const p of d.parts) {
+        if (x1 < p.ix + p.iw && x2 > p.ix && y1 < p.iy + p.ih && y2 > p.iy) out.push(`wire ${w.n}: ${what} on ${p.id}`);
+      }
+      for (const s of segs) {
+        if (s.n === w.n && what !== 'lines') continue;
+        if (s.x1 - s.w / 2 < x2 && s.x2 + s.w / 2 > x1 && s.y1 - s.w / 2 < y2 && s.y2 + s.w / 2 > y1) out.push(`wire ${w.n}: ${what} on wire ${s.n}`);
+      }
+      for (const l of labels) {
+        if (l.n === w.n && what !== 'lines') continue;
+        if (l.x - LABEL.w / 2 < x2 && l.x + LABEL.w / 2 > x1 && l.y - LABEL.h / 2 < y2 && l.y + LABEL.h / 2 > y1) out.push(`wire ${w.n}: ${what} on number ${l.n}`);
+      }
+    }
+  }
   return out;
 }
 
@@ -251,10 +297,167 @@ test('the sweep draws every part with a drawing and every wire with 2 points', (
   }
   const drawn = new Set(Object.values(ANCHORS.files).map((r) => r.part).filter((p) => p !== null));
   for (const id of drawn) assert.ok(parts.has(id!), `${id} is in no diagram`);
-  // Wire 31 ends on the address pad A0 of the INA3221, which the drawing does not carry.
+  // Wire 31 is the address strap A0 of the INA3221: a solder bridge on the board, closed as delivered. The data
+  // file lists it as a stub without a second end and with the note "No wire". The picture shows what the builder
+  // connects, so the strap has no wire point and stays in the table.
   assert.deepEqual([...undrawn], [31]);
+  for (const n of undrawn) {
+    const wire = CATALOGUE.wires.find((w) => w.n === n)!;
+    assert.equal(wire.kind, 'stub', `wire ${n}`);
+    assert.equal(wire.b, null, `wire ${n}`);
+    assert.match(wire.note?.en ?? '', /No wire\.$/, `wire ${n}`);
+  }
   for (const n of undrawn) assert.ok(!wires.has(n));
   assert.ok(wires.size >= 50, `${wires.size} wires`);
+});
+
+test('every component of the data file is in the picture of every setup that holds it, on both boards of the coprocessor', () => {
+  const components = CATALOGUE.wires.filter((w) => w.kind === 'component');
+  assert.deepEqual(components.map((w) => w.n), [53]);
+  const seen = new Map<number, Set<string>>();
+  const check = (selection: Selection): void => {
+    const setup = resolve(CATALOGUE, selection);
+    const d = diagramOf(sceneOf(setup, ANCHORS));
+    assert.deepEqual(breaks(d, setup), [], describe(selection));
+    for (const c of components) {
+      if (!setup.wires.some((w) => w.n === c.n)) continue;
+      const routed = d.wires.find((w) => w.n === c.n);
+      assert.ok(routed, `wire ${c.n} is not in the picture: ${describe(selection)}`);
+      assert.ok(!d.undrawn.includes(c.n));
+      assert.deepEqual(routed.ends.map((e) => `${e.part === 'copro' ? '' : `${e.part}.`}${e.pin}`), [c.a, c.b], describe(selection));
+      // Both leads start on their pads and bend once at a right angle: 4 points, 3 runs.
+      assert.equal(routed.paths.length, 1);
+      assert.equal(routed.paths[0]!.length, 4, describe(selection));
+      assert.equal(routed.labels.length, 1);
+      seen.set(c.n, (seen.get(c.n) ?? new Set()).add(selection.options.connection));
+    }
+  };
+  for (const connection of ['pads', 'osoyoo'] as const) {
+    check({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS, connection } });
+    for (const f of CATALOGUE.functions) check({ functions: [f.id], owned: [], options: { ...DEFAULT_OPTIONS, connection } });
+  }
+  for (const c of components) assert.deepEqual([...seen.get(c.n) ?? []].sort(), ['osoyoo', 'pads'], `wire ${c.n}`);
+  // The sweep: no setup lists a component as not drawn.
+  for (const s of samples) {
+    const d = diagramOf(sceneOf(s.setup, ANCHORS));
+    for (const c of components) {
+      assert.equal(d.wires.some((w) => w.n === c.n), s.setup.wires.some((w) => w.n === c.n), describe(s.selection));
+    }
+  }
+});
+
+test('the zener diode of the phase tap: body between pad 29 and pad 28, band towards GP22, 1 number, its lines in both languages', () => {
+  for (const connection of ['pads', 'osoyoo'] as const) {
+    const v = view({ functions: ['tap'], options: { ...DEFAULT_OPTIONS, connection } });
+    const d = diagramOf(sceneOf(v.setup, ANCHORS));
+    const z = d.wires.find((w) => w.n === 53)!;
+    const copro = d.parts.find((p) => p.id === 'copro')!;
+    const rec = ANCHORS.files[copro.file]!;
+    const gp22 = copro.iy + rec.pins['pad.29']!.y;
+    const gnd = copro.iy + rec.pins['pad.28']!.y;
+    assert.equal(rec.pins['pad.29']!.label.en, 'GP22');
+    assert.equal(rec.pins['pad.28']!.label.en, 'GND');
+    const b = z.body!;
+    // The body stands upright beside the east edge, between the 2 pads, the band on the side of GP22.
+    assert.equal(b.upright, true);
+    assert.ok(b.x > copro.ix + copro.iw && b.x < copro.ix + copro.iw + BAND, `${connection}: x ${b.x}`);
+    assert.ok(gp22 < gnd && b.y > gp22 && b.y < gnd, `${connection}: y ${b.y}`);
+    assert.equal(b.band, -1);
+    const [body, band] = bodyRects(b);
+    assert.ok(band[1] - body[1] < body[1] + body[3] - (band[1] + band[3]), 'the band lies in the upper half');
+    assert.equal(body[2], BODY.w);
+    assert.equal(band[3], BODY.band);
+    // Wire 52 shares pad 29. It leaves above the lead of the diode, so the 2 do not cross.
+    const tap = d.wires.find((w) => w.n === 52)!;
+    const end = tap.paths[0]!.find((p) => p[0] === copro.ix + rec.pins['pad.29']!.x)!;
+    assert.ok(end[1] < z.paths[0]![0]![1], `${connection}: wire 52 at ${end[1]}, diode lead at ${z.paths[0]![0]![1]}`);
+    assert.deepEqual(z.text, {
+      en: ['3.0 V zener diode,', 'band to GP22'],
+      de: ['3,0-V-Z-Diode,', 'Ring an GP22'],
+    });
+    for (const lang of ['en', 'de'] as Lang[]) {
+      const html = picture(view({ functions: ['tap'], options: { ...DEFAULT_OPTIONS, connection } }, lang));
+      const group = /<g class="dw k-component" data-wire="53"[^>]*>(.*?)<\/g>/.exec(html)![1]!;
+      assert.equal(group.match(/<rect class="cb"/g)?.length, 1);
+      assert.equal(group.match(/<rect class="cbd"/g)?.length, 1);
+      assert.deepEqual([...group.matchAll(/<text class="nt"[^>]*>(\d+)</g)].map((m) => m[1]), ['53']);
+      assert.deepEqual([...group.matchAll(/<text class="ct"[^>]*>([^<]+)</g)].map((m) => m[1]), z.text![lang]);
+      assert.ok(!html.includes('class="sym"'));
+      // The table row of wire 53 selects it like every wire.
+      assert.match(result(view({ functions: ['tap'], options: { ...DEFAULT_OPTIONS, connection } }, lang), 'https://example.invalid/', []), /<button[^>]*class="wn"[^>]*data-wire="53"/);
+    }
+  }
+});
+
+test('the lines of a component follow the data file, and the strip beside the edge holds them', () => {
+  for (const w of CATALOGUE.wires.filter((x) => x.kind === 'component')) {
+    const pad = CATALOGUE.pads.find((p) => `pad.${p.n}` === w.a)!;
+    // The band is drawn at end a: the note of the wire names that pad as the banded end.
+    assert.ok(w.note!.en.includes(`band (cathode) to ${pad.name}`), `wire ${w.n}: ${w.note!.en}`);
+    assert.ok(w.note!.de.includes(`Ring (Kathode) an ${pad.name}`), `wire ${w.n}: ${w.note!.de}`);
+    if (w.route.kind === 'Z') {
+      // The text of the picture states the same diode as the note of the wire.
+      assert.ok(w.note!.en.startsWith(STRINGS.diaZener[0].split(',')[0]!), w.note!.en);
+      assert.ok(w.note!.de.startsWith(STRINGS.diaZener[1].split(',')[0]!), w.note!.de);
+    }
+  }
+  const pad = { en: 'GP22', de: 'GP22' };
+  assert.deepEqual(componentText({ route: { kind: 'Z' }, signal: { en: 's', de: 's' } }, pad).en, ['3.0 V zener diode,', 'band to GP22']);
+  // Another component takes the signal name of its wire. A text without a comma is 1 line.
+  assert.deepEqual(componentText({ route: { kind: 'S' }, signal: { en: 'fuse 2 A', de: 'Sicherung 2 A' } }, pad),
+    { en: ['fuse 2 A,', 'band to GP22'], de: ['Sicherung 2 A,', 'Ring an GP22'] });
+  // The strip: 38 px to the axis of the body, 6 + 3 + 16 + 4 px to the lines, the longest line, 6 px, on the 8 px grid.
+  assert.equal(bayOf(undefined), 80);
+  assert.equal(bayOf({ en: ['x'], de: [] }), 80);
+  assert.equal(bayOf({ en: ['x'.repeat(18)], de: ['x'.repeat(14)] }), Math.ceil((38 + 29 + 18 * TEXT_CHAR + 6) / 8) * 8);
+  assert.equal(bayOf({ en: ['x'.repeat(18)], de: ['x'.repeat(14)] }), 192);
+});
+
+test('a component between 2 parts has its body on the longest run, and one across 2 pads of a north edge lies above the part', () => {
+  const part = (id: string, column: 'L' | 'C' | 'R') => ({ id, file: `${id}.svg`, w: 120, h: 120, column, order: 1, name: { en: id, de: id } });
+  const pin = (p: string, name: string, x: number, y: number, side: 'E' | 'W' | 'N' | 'S') => ({ part: p, pin: name, x, y, side });
+  const text = { en: ['fuse,', 'band to A'], de: ['Sicherung,', 'Ring an A'] };
+  const between = diagramOf({
+    parts: [part('left', 'L'), part('copro', 'C')],
+    wires: [{ n: 1, kind: 'component' as const, colour: null, thick: false, a: [pin('left', 'a', 110, 40, 'E')], b: [pin('copro', 'b', 10, 100, 'W')], text }],
+    undrawn: [],
+  });
+  const w = between.wires[0]!;
+  assert.equal(w.labels.length, 2);
+  const runs = w.paths[0]!.slice(1).map((q, i) => Math.abs(q[0] - w.paths[0]![i]![0]) + Math.abs(q[1] - w.paths[0]![i]![1]));
+  const longest = runs.indexOf(Math.max(...runs));
+  const [p, q] = [w.paths[0]![longest]!, w.paths[0]![longest + 1]!];
+  assert.deepEqual([w.body!.x, w.body!.y], [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]);
+  assert.equal(w.body!.upright, p[0] === q[0]);
+  assert.deepEqual(w.text, text);
+  // Across 2 pads of the north edge, 20 px apart: the body lies flat above the part, the band towards the first pad.
+  for (const [xa, xb, band] of [[40, 60, -1], [60, 40, 1]] as const) {
+    const above = diagramOf({
+      parts: [part('copro', 'C')],
+      wires: [{ n: 2, kind: 'component' as const, colour: null, thick: false, a: [pin('copro', 'a', xa, 10, 'N')], b: [pin('copro', 'b', xb, 10, 'N')], text }],
+      undrawn: [],
+    });
+    const c = above.wires[0]!;
+    const box = above.parts[0]!;
+    assert.equal(c.body!.upright, false);
+    assert.equal(c.body!.band, band);
+    assert.ok(c.body!.y < box.iy && c.body!.y > 0);
+    // 20 px between the leads: the body is 20 - 2 * 3 = 14 px long.
+    assert.equal(c.body!.len, 14);
+    assert.equal(c.labels.length, 1);
+    assert.ok(c.labels[0]!.y < c.body!.y && c.body!.text.y < c.labels[0]!.y && c.body!.text.y > 0);
+  }
+  // 2 pads 8 px apart: the body keeps the least length, the band and 2 px on each side.
+  const near = diagramOf({
+    parts: [part('copro', 'C')],
+    wires: [{ n: 3, kind: 'component' as const, colour: null, thick: false, a: [pin('copro', 'a', 110, 40, 'E')], b: [pin('copro', 'b', 110, 48, 'E')] }],
+    undrawn: [],
+  });
+  assert.equal(near.wires[0]!.body!.len, BODY.band + 4);
+  assert.equal(near.wires[0]!.text, undefined);
+  assert.deepEqual(baselines(100, 2, 10, 11), [98, 109]);
+  assert.deepEqual(baselines(100, 1, 12, 13), [104.2]);
+  assert.deepEqual(baselines(100, 0, 12, 13), []);
 });
 
 test('the base setup is the panel beside the coprocessor with 4 wires', () => {

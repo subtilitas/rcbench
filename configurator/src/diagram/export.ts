@@ -7,7 +7,8 @@
 //
 // Placement, routes, stroke widths and wire colours are those of the page.
 // A part is an outline of its drawing with its wire points and pin names; the
-// drawing file itself is not part of this form.
+// drawing file itself is not part of this form. A component is its leads, a
+// body with a band as 2 rectangles, 1 number and its lines.
 
 import type { Catalogue, Lang, Setup } from '../../contract.ts';
 import type { Anchors } from '../../drawings/generate.ts';
@@ -15,6 +16,7 @@ import { PALETTE } from '../../drawings/wires.ts';
 import { esc, tx } from '../i18n.ts';
 import { ANCHORS } from './anchors.ts';
 import { CAP, THICK, THIN } from './layout.ts';
+import { BAND_FILL, BODY_FILL, baselines, bodyRects } from './picture.ts';
 import { LABEL, diagramOf } from './route.ts';
 import type { Diagram, Pt, Routed } from './route.ts';
 import { sceneOf } from './scene.ts';
@@ -58,7 +60,7 @@ function partMarkup(p: Diagram['parts'][number], name: string, lang: Lang, ancho
   return `${out}</g>`;
 }
 
-function wireMarkup(wire: Routed): string {
+function wireMarkup(wire: Routed, lang: Lang): string {
   const colour = wire.colour === null ? undefined : PALETTE[wire.colour];
   const stroke = colour ? colour.core : INK;
   const width = widthOf(wire);
@@ -68,6 +70,16 @@ function wireMarkup(wire: Routed): string {
     const d = lineOf(path);
     if (colour?.casing) out += `<path d="${d}" ${line} stroke="${colour.casing}" stroke-width="${width + 2}"/>`;
     out += `<path d="${d}" ${line} stroke="${stroke}" stroke-width="${width}"${wire.kind === 'stub' ? ' stroke-dasharray="5 4"' : ''}/>`;
+  }
+  if (wire.body) {
+    const [body, band] = bodyRects(wire.body);
+    out += `<rect x="${f(body[0])}" y="${f(body[1])}" width="${f(body[2])}" height="${f(body[3])}" rx="2.5" fill="${BODY_FILL}" stroke="${INK}" stroke-width="1"/>`
+      + `<rect x="${f(band[0])}" y="${f(band[1])}" width="${f(band[2])}" height="${f(band[3])}" fill="${BAND_FILL}"/>`;
+    const lines = wire.text?.[lang] ?? [];
+    const at = wire.body.text;
+    baselines(at.y, lines.length, FONT, FONT + 1).forEach((y, i) => {
+      out += `<text x="${f(at.x)}" y="${f(y)}" font-size="${FONT}" text-anchor="${at.anchor}" fill="${INK}">${esc(lines[i]!)}</text>`;
+    });
   }
   for (const l of wire.labels) {
     out += `<rect x="${f(l.x - LABEL.w / 2)}" y="${f(l.y - LABEL.h / 2)}" width="${LABEL.w}" height="${LABEL.h}" rx="3" fill="${PAPER}" stroke="${stroke}" stroke-width="1.5"/>`
@@ -79,7 +91,7 @@ function wireMarkup(wire: Routed): string {
 /** The export form of a routed diagram. `names`: part id to its name. */
 export function exportSvg(d: Diagram, lang: Lang, names: ReadonlyMap<string, string>, anchors: Anchors = ANCHORS): string {
   const parts = d.parts.map((p) => partMarkup(p, names.get(p.id) ?? p.id, lang, anchors)).join('');
-  const wires = d.wires.map(wireMarkup).join('');
+  const wires = d.wires.map((w) => wireMarkup(w, lang)).join('');
   return `<svg viewBox="0 0 ${d.w} ${d.h}" width="${d.w}" height="${d.h}"><g>${parts}</g><g>${wires}</g></svg>`;
 }
 

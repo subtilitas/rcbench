@@ -20,8 +20,9 @@
 // a pair, the column right of the channel moves down by a few px. A pair that
 // is left after `SHIFTS` is listed in `clashes`.
 
+import type { Lang } from '../../contract.ts';
 import type { Side } from '../../drawings/lib.ts';
-import { BAND, THICK, THIN, columnsOf, emptySizes, offsets, pitch, place, trackY, trunkX } from './layout.ts';
+import { BAND, THICK, THIN, columnsOf, emptySizes, offsets, onGrid, pitch, place, trackY, trunkX } from './layout.ts';
 import type { Box, Columns, Placement, Sizes } from './layout.ts';
 import type { Scene, ScenePin, SceneWire } from './scene.ts';
 
@@ -31,10 +32,23 @@ export type Pt = [number, number];
 export type Label = { x: number; y: number };
 
 /**
+ * The body of a component on its wire. `x, y`: its centre. `upright`: its axis
+ * is vertical. `len`: its length along the axis. `band`: -1 when the band lies
+ * towards the start of the axis (up or left), 1 otherwise; the band lies on the
+ * side of end `a` of the wire. `text`: where its lines stand; `x` is the start,
+ * the end or the middle of each line, `y` the middle of the block.
+ */
+export type Body = {
+  x: number; y: number; upright: boolean; len: number; band: 1 | -1;
+  text: { x: number; y: number; anchor: 'start' | 'end' | 'middle' };
+};
+
+/**
  * A routed wire. `paths`: 1 polyline from pad to pad, or 1 short lead per wire
  * point for a wire that ends open. `labels`: the places of the wire number,
  * 2 for a wire, 1 per lead for an open end. `ends`: the pads the paths start
- * and end on, in the order of the path points.
+ * and end on, in the order of the path points. A component has a `body` and
+ * the lines of its `text`; drawn across 2 pads of 1 edge it has 1 number, beside the body.
  */
 export type Routed = {
   n: number;
@@ -45,6 +59,8 @@ export type Routed = {
   paths: Pt[][];
   labels: Label[];
   ends: ScenePin[];
+  body?: Body;
+  text?: Record<Lang, string[]>;
 };
 
 export type Diagram = {
@@ -65,6 +81,20 @@ export type Diagram = {
 export const LABEL = { w: 16, h: 11 };
 /** Steps in px a column moves down to keep its lines off the lines of the column before it. */
 export const SHIFTS: ReadonlyArray<number> = [0, 4, 8, 12, 16, 20, 24, 28, 32];
+/** Width and greatest length of the body of a component, the width of its band, the least length of each lead beside the body. */
+export const BODY = { w: 12, len: 20, band: 4, lead: 3 };
+/** Estimated width of 1 character of a component line in px, at the 12 px of the export form. The page draws 10 px. */
+export const TEXT_CHAR = 6.6;
+/** From the axis of a body to the centre of its number, and to its lines. */
+const BODY_NUMBER = BODY.w / 2 + 3 + LABEL.w / 2;
+const BODY_TEXT = BODY_NUMBER + LABEL.w / 2 + 4;
+
+/** Width of the strip of a channel that holds a component across 2 pads of the edge beside it: leads, body, number, lines. */
+export function bayOf(text: Record<Lang, string[]> | undefined): number {
+  const chars = Math.max(0, ...Object.values(text ?? {}).flat().map((line) => line.length));
+  return onGrid(BAND - 2 + BODY_TEXT + chars * TEXT_CHAR + 6);
+}
+
 /** Distance between 2 bends that lead from pads of 1 edge to lanes away from them. */
 const JOG = 12;
 
@@ -134,6 +164,12 @@ function plans(scene: Scene, p: Placement): Plan[] {
     if (!bracket) {
       a.chan = a.flat ? position(a) : position(b) <= a.box.col ? a.box.col : a.box.col + 1;
       b.chan = b.flat ? position(b) : position(a) <= b.box.col ? b.box.col : b.box.col + 1;
+    } else {
+      // The 2 ends face each other: on a pad with further wires each takes the place nearest to the other end.
+      const along = (e: End): number => (e.flat ? e.pin.y : e.pin.x);
+      const [low, high] = along(a) <= along(b) ? [a, b] : [b, a];
+      low.hint = 1e9;
+      high.hint = -1e9;
     }
     out.push({ wire, mode: bracket ? 'bracket' : 'wire', ends: [a, b], cross: [], trunks: [] });
   }
@@ -249,7 +285,13 @@ function gapTracks(list: Plan[], sizes: Sizes): void {
 function trunks(list: Plan[], sizes: Sizes): void {
   for (const plan of list) {
     for (const e of plan.ends) {
-      if (e.flat && plan.mode !== 'wire') sizes.chanEnds[position(e)] = true;
+      if (!e.flat || plan.mode === 'wire') continue;
+      sizes.chanEnds[position(e)] = true;
+      if (plan.mode === 'bracket') {
+        const bay = sizes.bays[position(e)]!;
+        const side = e.pin.side === 'E' ? 0 : 1;
+        bay[side] = Math.max(bay[side], bayOf(plan.wire.text));
+      }
     }
     if (plan.mode !== 'wire') continue;
     const [a, b] = plan.ends as [End, End];
@@ -374,6 +416,9 @@ export function simplify(points: Pt[]): Pt[] {
   return out;
 }
 
+/** Length of a body on a run of `span` px: `BODY.len`, or what the run leaves beside 2 leads, at least the width of the band and 2 px on each side. */
+const bodyLen = (span: number): number => Math.max(BODY.band + 4, Math.min(BODY.len, span - 2 * BODY.lead));
+
 function realise(plan: Plan, p: Placement): Routed {
   const { wire } = plan;
   const base = { n: wire.n, kind: wire.kind, colour: wire.colour, thick: wire.thick };
@@ -391,7 +436,18 @@ function realise(plan: Plan, p: Placement): Routed {
   const lb = lead(b, p);
   const points: Pt[] = [...la.points];
   if (plan.mode === 'bracket') {
-    points.push(la.reach, lb.reach);
+    points.push(la.reach, lb.reach, ...[...lb.points].reverse());
+    const dir = sign(a.pin.side);
+    const [from, to] = [la.reach, lb.reach];
+    const mid: Pt = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+    const span = Math.abs(a.flat ? to[1] - from[1] : to[0] - from[0]);
+    const band = (a.flat ? from[1] <= to[1] : from[0] <= to[0]) ? -1 : 1;
+    const label: Label = a.flat ? { x: mid[0] + dir * BODY_NUMBER, y: mid[1] } : { x: mid[0], y: mid[1] + dir * (BODY.w / 2 + 3 + LABEL.h / 2) };
+    const text: Body['text'] = a.flat
+      ? { x: mid[0] + dir * BODY_TEXT, y: mid[1], anchor: dir > 0 ? 'start' : 'end' }
+      : { x: mid[0], y: mid[1] + dir * (BODY.w / 2 + 3 + LABEL.h + 16), anchor: 'middle' };
+    const body: Body = { x: mid[0], y: mid[1], upright: a.flat, len: bodyLen(span), band, text };
+    return { ...base, paths: [simplify(points)], labels: [label], ends: [a.pin, b.pin], body, ...(wire.text ? { text: wire.text } : {}) };
   } else {
     const endY = (e: End): number => (e.flat ? e.box.iy + e.lane : trackY(p, e.box.col, e.gap, e.track));
     if (!a.flat) points.push([a.box.ix + a.lane, endY(a)]);
@@ -405,7 +461,20 @@ function realise(plan: Plan, p: Placement): Routed {
     if (!b.flat) points.push([b.box.ix + b.lane, endY(b)]);
   }
   points.push(...[...lb.points].reverse());
-  return { ...base, paths: [simplify(points)], labels: [la.label, lb.label], ends: [a.pin, b.pin] };
+  const path = simplify(points);
+  if (wire.kind !== 'component') return { ...base, paths: [path], labels: [la.label, lb.label], ends: [a.pin, b.pin] };
+  // A component between 2 parts: its body lies on the longest run of the wire.
+  let at = 1;
+  const run = (i: number): number => Math.abs(path[i]![0] - path[i - 1]![0]) + Math.abs(path[i]![1] - path[i - 1]![1]);
+  for (let i = 2; i < path.length; i++) if (run(i) > run(at)) at = i;
+  const [from, to] = [path[at - 1]!, path[at]!];
+  const upright = from[0] === to[0];
+  const mid: Pt = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  const body: Body = {
+    x: mid[0], y: mid[1], upright, len: bodyLen(run(at)), band: (upright ? from[1] <= to[1] : from[0] <= to[0]) ? -1 : 1,
+    text: upright ? { x: mid[0] + BODY.w / 2 + 4, y: mid[1], anchor: 'start' } : { x: mid[0], y: mid[1] + BODY.w / 2 + 18, anchor: 'middle' },
+  };
+  return { ...base, paths: [path], labels: [la.label, lb.label], ends: [a.pin, b.pin], body, ...(wire.text ? { text: wire.text } : {}) };
 }
 
 /** Rebinds the ends of the plans to the boxes of the final placement. */

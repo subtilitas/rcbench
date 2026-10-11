@@ -133,6 +133,8 @@ const S = {
   dlPlus: ['red: supply plus', 'Rot: Versorgung Plus'],
   dlMinus: ['black: ground and supply minus', 'Schwarz: GND und Versorgung Minus'],
   diaWire: ['Wire {n}: {a} to {b}', 'Draht {n}: {a} nach {b}'],
+  diaZener: ['3.0 V zener diode, band to {a}', '3,0-V-Z-Diode, Ring an {a}'],
+  diaComp: ['{s}, band to {a}', '{s}, Ring an {a}'],
   wireMark: ['Wire {n}: mark in the picture', 'Draht {n}: im Bild markieren'],
   zIn: ['Zoom in', 'Vergrößern'],
   zOut: ['Zoom out', 'Verkleinern'],

@@ -94,7 +94,7 @@ test('a name with markup characters is escaped, and the form of the page is refu
   assert.throws(() => paintSvg('<svg viewBox="0 0 9 9"><image href="drawings/tap.svg" x="0" y="0" width="9" height="9"/></svg>', css(), fonts()), SvgError);
 });
 
-test('the whole export takes the export form: 1 page for the picture, text from 2.2 pt to 6.2 pt', async () => {
+test('the whole export takes the export form: 1 page for the picture, text from 2.1 pt to 6.2 pt', async () => {
   const pt = async (sample: typeof SMALLEST, lang: Lang): Promise<number> => {
     const made = await build(viewOf(sample.selection, sample.setup, lang), { diagram: pictureDiagram });
     assert.equal(made.laid.plan.flat().filter((b) => b.kind === 'drawing').length, 1);
@@ -105,7 +105,7 @@ test('the whole export takes the export form: 1 page for the picture, text from 
     const small = await pt(SMALLEST, lang);
     const large = await pt(LARGEST, lang);
     assert.ok(small > 6 && small < 6.2, `smallest ${small.toFixed(2)} pt`);
-    assert.ok(large > 2.2 && large < 2.3, `largest ${large.toFixed(2)} pt`);
+    assert.ok(large > 2.0 && large < 2.2, `largest ${large.toFixed(2)} pt`);
   }
 });
 

@@ -451,6 +451,87 @@ test('a table row of a wire the picture does not draw dims no wire', async ({ pa
   await expect.poll(dim).toBeGreaterThan(0);
 });
 
+for (const [board, option] of [['soldered pads', 'pd'], ['screw terminal board', 'osoyoo,pd']] as const) {
+  for (const lang of ['en', 'de'] as const) {
+    test(`the zener diode is wire 53 with body, band, number and text: ${board}, ${lang}`, async ({ page }) => {
+      await page.setViewportSize(SIZES[1]!);
+      const seen = watch(page);
+      await open(page, `#v=1&f=tap&o=${option}&l=${lang}`);
+      const wire = page.locator('svg.picture g.dw[data-wire="53"]');
+      await expect(wire).toHaveCount(1);
+      await expect(wire).toHaveClass(/k-component/);
+      await expect(wire.locator('rect.cb')).toHaveCount(1);
+      await expect(wire.locator('rect.cbd')).toHaveCount(1);
+      const text = (await wire.locator('text.ct').allTextContents()).join(' ');
+      expect(text).toMatch(lang === 'en' ? /^3\.0 V zener diode, band to .*GP22/ : /^3,0-V-Z-Diode, Ring an .*GP22/);
+      // The band lies inside the body, and the body lies inside the picture.
+      const box = async (sel: string) => (await wire.locator(sel).boundingBox())!;
+      const [body, band, pic] = [await box('rect.cb'), await box('rect.cbd'), (await page.locator('svg.picture').boundingBox())!];
+      expect(band.x).toBeGreaterThanOrEqual(body.x - 1);
+      expect(band.y).toBeGreaterThanOrEqual(body.y - 1);
+      expect(band.x + band.width).toBeLessThanOrEqual(body.x + body.width + 1);
+      expect(band.y + band.height).toBeLessThanOrEqual(body.y + body.height + 1);
+      expect(body.x).toBeGreaterThanOrEqual(pic.x);
+      expect(body.x + body.width).toBeLessThanOrEqual(pic.x + pic.width);
+      // The drawing of the phase tap carries no second diode: 1 body in the whole picture.
+      await expect(page.locator('svg.picture rect.cb')).toHaveCount(1);
+      // The table row selects the diode like every wire, by keyboard.
+      const button = page.locator('table.wires button.wn[data-wire="53"]');
+      await button.focus();
+      await expect(wire).toHaveClass(/\bon\b/);
+      await page.keyboard.press('Enter');
+      for (const el of [button, wire]) await expect(el).toHaveAttribute('aria-pressed', 'true');
+      await expect(wire).toHaveClass(/marked/);
+      await fits(page);
+      expect(seen.errors).toEqual([]);
+      expect(seen.failed).toEqual([]);
+    });
+  }
+}
+
+test('Escape on a wire answers a waiting removal and leaves the focus on its control', async ({ page }) => {
+  await page.setViewportSize(SIZES[1]!);
+  await open(page, '#v=1&f=servotest');
+  await page.locator('#rm-pdmini').click();
+  await expect(page.locator('#rmwarn')).toHaveCount(1);
+  await page.locator('#dia').focus();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('svg.picture g.dw[tabindex="0"]')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#rmwarn')).toHaveCount(0);
+  await expect(page.locator('#rm-pdmini')).toBeFocused();
+  // Without a waiting removal Escape on a wire returns to the picture box.
+  await page.locator('#dia').focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#dia')).toBeFocused();
+});
+
+test('the schematic box keeps its scroll position while the picture is shown', async ({ page }) => {
+  await page.setViewportSize(SIZES[0]!);
+  await open(page, '#v=1&f=servo');
+  const left = (): Promise<number> => page.evaluate(() => (document.getElementById('pan') as HTMLElement).scrollLeft);
+  await page.locator('#v-sch').click();
+  await page.locator('svg.drawing').waitFor();
+  // The first showing opens on the wires between the panel and the coprocessor.
+  expect(await left()).toBeGreaterThan(100);
+  await page.evaluate(() => { (document.getElementById('pan') as HTMLElement).scrollLeft = 40; });
+  await page.locator('#v-pic').click();
+  await expect(page.locator('svg.drawing')).toBeHidden();
+  // A render with the box hidden changes nothing of it.
+  await page.locator('.lang button[data-lang=de]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  await page.locator('#v-sch').click();
+  await expect(page.locator('svg.drawing')).toBeVisible();
+  expect(await left()).toBe(40);
+  // Scrolled to 0 it stays at 0: the start position applies to the first showing only.
+  await page.evaluate(() => { (document.getElementById('pan') as HTMLElement).scrollLeft = 0; });
+  await page.locator('#v-pic').click();
+  await page.locator('#v-sch').click();
+  await expect(page.locator('svg.drawing')).toBeVisible();
+  expect(await left()).toBe(0);
+});
+
 test.describe('touch', () => {
   test.use({ viewport: SIZES[0], hasTouch: true, isMobile: true });
 

@@ -34,7 +34,11 @@ export type Columns = { cols: ScenePart[][]; centre: number };
  * `gaps[c][j]`: stroke widths of the tracks in gap j of column c, top to bottom.
  * `chans[i]`: stroke widths of the tracks in channel i, left to right.
  */
-export type Sizes = { gaps: number[][][]; chans: number[][]; gapEnds: boolean[][]; chanEnds: boolean[] };
+export type Sizes = {
+  gaps: number[][][]; chans: number[][]; gapEnds: boolean[][]; chanEnds: boolean[];
+  /** `bays[i]`: px of channel i kept free of tracks beside its left and its right column, for a component drawn across 2 pads. */
+  bays: Array<[number, number]>;
+};
 
 /** A placed part. `x, y, w, h`: name strip and drawing. `ix, iy, iw, ih`: the drawing. */
 export type Box = {
@@ -47,7 +51,8 @@ export type Placement = {
   w: number; h: number;
   boxes: Record<string, Box>;
   cols: Array<{ x: number; w: number; gapY: number[]; gapH: number[]; gapOff: number[][] }>;
-  chans: Array<{ x: number; w: number; off: number[] }>;
+  /** `lead`: px from the left edge of the channel to the band before its tracks. */
+  chans: Array<{ x: number; w: number; lead: number; off: number[] }>;
 };
 
 /** Distance between the centre lines of 2 wires that run side by side. */
@@ -113,8 +118,12 @@ export function emptySizes(columns: Columns): Sizes {
     chans: Array.from({ length: columns.cols.length + 1 }, (): number[] => []),
     gapEnds: columns.cols.map((c) => new Array<boolean>(c.length + 1).fill(false)),
     chanEnds: new Array<boolean>(columns.cols.length + 1).fill(false),
+    bays: Array.from({ length: columns.cols.length + 1 }, (): [number, number] => [0, 0]),
   };
 }
+
+/** Rounds up to the grid of the picture. */
+export const onGrid = (v: number): number => Math.ceil(v / U) * U;
 
 /** Width of a channel or height of a gap: 2 bands and the strip of its tracks, or the bands alone below wire ends. */
 function room(tracks: ReadonlyArray<number>, ends: boolean, unused: number): number {
@@ -139,8 +148,9 @@ export function place(columns: Columns, sizes: Sizes, shifts: ReadonlyArray<numb
   const chans: Placement['chans'] = [];
   let x = EDGE;
   for (let i = 0; i <= count; i++) {
-    const w = room(sizes.chans[i]!, sizes.chanEnds[i]!, i === 0 || i === count ? 0 : CHANNEL);
-    chans.push({ x, w, off: offsets(sizes.chans[i]!) });
+    const [bayLeft, bayRight] = sizes.bays[i]!;
+    const w = room(sizes.chans[i]!, sizes.chanEnds[i]!, i === 0 || i === count ? 0 : CHANNEL) + bayLeft + bayRight;
+    chans.push({ x, w, lead: bayLeft, off: offsets(sizes.chans[i]!) });
     x += w;
     if (i === count) break;
     const parts = columns.cols[i]!;
@@ -168,5 +178,5 @@ export function trackY(p: Placement, col: number, gap: number, i: number): numbe
 
 /** x of track `i` of channel `chan`. */
 export function trunkX(p: Placement, chan: number, i: number): number {
-  return p.chans[chan]!.x + BAND + p.chans[chan]!.off[i]!;
+  return p.chans[chan]!.x + p.chans[chan]!.lead + BAND + p.chans[chan]!.off[i]!;
 }

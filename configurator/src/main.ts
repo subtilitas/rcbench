@@ -23,6 +23,8 @@ let lang: Lang = startLang;
 let notices: Array<(l: Lang) => Notice> = [];
 /** The view of the wiring. Not part of the link. */
 let mode: Mode = 'pic';
+/** The scroll position of the schematic box in px. Null until the box has been shown. Not part of the link. */
+let panLeft: number | null = null;
 /** A removal that waits for an answer. Not part of the link. */
 let pending: Pending | null = null;
 /** The effect of the last function taken out of the selection. Not part of the link. */
@@ -103,8 +105,8 @@ function render(focusId?: string): void {
   const chooseTop = choose.scrollTop;
   const before = byId('pan');
   // First drawing: the box opens on the wires between the panel and the coprocessor.
-  // A hidden box has no scroll position.
-  const panLeft = before && before.clientWidth > 0 ? before.scrollLeft : null;
+  // A hidden box has no scroll position: the last one read from the shown box stays.
+  if (before && before.clientWidth > 0) panLeft = before.scrollLeft;
 
   const setup = tryResolve(selection);
   let sub = '';
@@ -124,7 +126,7 @@ function render(focusId?: string): void {
 
   choose.scrollTop = chooseTop;
   const pan = byId('pan');
-  if (pan) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
+  if (pan && pan.clientWidth > 0) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
   updatePanHint();
   sync();
   syncPdf(lang, shareUrl());
