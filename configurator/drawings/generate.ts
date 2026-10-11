@@ -4,7 +4,7 @@
 import type { Catalogue, Lang, Part, Text } from '../contract.ts';
 import { DEFAULT_OPTIONS } from '../core/resolve.ts';
 import { Dwg } from './lib.ts';
-import type { Side } from './lib.ts';
+import type { Anchor as DrawnAnchor, Side } from './lib.ts';
 import { INA3221_MAP, LIST } from './parts.ts';
 import type { Entry } from './parts.ts';
 
@@ -101,6 +101,29 @@ function labelsOf(catalogue: Catalogue, part: Part | null, entry: Entry): Record
   return cataloguePins(catalogue, part, entry.variant ?? null);
 }
 
+/**
+ * Adds the anchors of 1 language pass to the pins of a drawing. Place, side and
+ * label id of a pin are the same in every language: a pass that differs, adds a
+ * pin or leaves one out throws, since the table holds 1 place per pin.
+ */
+export function mergeAnchors(
+  file: string, pins: DrawingRecord['pins'], pass: Readonly<Record<string, DrawnAnchor>>, lang: Lang, first: boolean,
+): void {
+  for (const [id, a] of Object.entries(pass)) {
+    const pin = pins[id];
+    if (!pin) {
+      if (!first) throw new Error(`${file}: pin ${id} is drawn in ${lang} only`);
+      pins[id] = { x: a.x, y: a.y, side: a.side, labelId: a.labelId, label: { en: '', de: '' } };
+    } else if (pin.x !== a.x || pin.y !== a.y || pin.side !== a.side || pin.labelId !== a.labelId) {
+      throw new Error(`${file}: pin ${id} differs in ${lang}: (${a.x}, ${a.y}) ${a.side} ${a.labelId}, not (${pin.x}, ${pin.y}) ${pin.side} ${pin.labelId}`);
+    }
+    pins[id]!.label[lang] = a.label;
+  }
+  for (const id of Object.keys(pins)) {
+    if (!(id in pass)) throw new Error(`${file}: pin ${id} is not drawn in ${lang}`);
+  }
+}
+
 /** Every drawing in both languages, and the anchor table. Throws when a pin of the catalogue is not drawn. */
 export function generate(catalogue: Catalogue): Output {
   const files: Array<[string, DrawingRecord]> = [];
@@ -127,11 +150,7 @@ export function generate(catalogue: Catalogue): Output {
       const missing = Object.keys(labels).filter((id) => !d.seen.has(id));
       if (missing.length > 0) throw new Error(`${entry.file}: pins not drawn: ${missing.join(', ')}`);
       svgs[pathOf(file, lang)] = d.svg();
-      for (const [id, a] of Object.entries(d.anchors)) {
-        const pin = record.pins[id] ?? { x: a.x, y: a.y, side: a.side, labelId: a.labelId, label: { en: '', de: '' } };
-        pin.label[lang] = a.label;
-        record.pins[id] = pin;
-      }
+      mergeAnchors(entry.file, record.pins, d.anchors, lang, lang === LANGS[0]);
     }
     files.push([file, record]);
   }

@@ -23,16 +23,23 @@ const VOID = /\/\s*$/;
 /** An `&` that starts no entity or character reference. */
 const BARE_AMP = /&(?!(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);)/;
 
+/** A character outside the Char production of XML 1.0, or half of a surrogate pair. */
+const ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+/** Elements that run code, load a file or carry a style sheet, by local name. */
+const ACTIVE = new Set(['image', 'foreignobject', 'iframe', 'object', 'embed', 'audio', 'video', 'link', 'style']);
+
 const unescape = (s: string): string =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 
 /**
  * Well-formedness of the subset of XML the generator writes: one root element,
  * every element closed in order, every attribute quoted, no stray `<` or `&`
- * in text or in an attribute value.
+ * in text or in an attribute value, no character XML 1.0 forbids.
  * Returns the first defect or null.
  */
 export function malformed(svg: string): string | null {
+  const illegal = ILLEGAL.exec(svg);
+  if (illegal) return `character U+${illegal[0].charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')} at offset ${illegal.index} is not a character of XML 1.0`;
   const stack: string[] = [];
   let roots = 0;
   let at = 0;
@@ -73,33 +80,40 @@ export function checkSvg(where: string, svg: string, rec: DrawingRecord): Findin
   const fail = (msg: string): void => { out.push({ id: 'svg', msg: `${where}: ${msg}` }); };
   const bad = malformed(svg);
   if (bad !== null) fail(`not well formed: ${bad}`);
-  if (/<script[\s>]/i.test(svg)) fail('contains a script element');
+  // An element counts by its local name: a namespace prefix does not hide it.
+  const locals = new Set([...svg.matchAll(/<(?:[A-Za-z][\w.-]*:)?([A-Za-z][\w.-]*)(?=[\s/>])/g)].map((m) => m[1]!.toLowerCase()));
+  if (locals.has('script')) fail('contains a script element');
   if (/\son[a-z]+\s*=/i.test(svg)) fail('contains an event handler attribute');
-  if (/<(image|foreignObject|iframe|object|embed|audio|video|link|style)[\s>]/i.test(svg)) fail('contains an image, foreign content or style sheet element');
+  if ([...locals].some((name) => ACTIVE.has(name))) fail('contains an image, foreign content or style sheet element');
   if (/data:|javascript:|@import|base64/i.test(svg)) fail('contains a data, script or import reference');
   for (const m of svg.matchAll(/\b(?:xlink:href|href|src)\s*=\s*"([^"]*)"/g)) {
     if (!m[1]!.startsWith('#')) fail(`reference "${m[1]}" leaves the file`);
   }
-  for (const m of svg.matchAll(/url\(\s*['"]?([^)'"]*)/g)) {
+  for (const m of svg.matchAll(/url\(\s*['"]?([^)'"]*)/gi)) {
     if (!m[1]!.startsWith('#')) fail(`url(${m[1]}) leaves the file`);
   }
   for (const m of svg.matchAll(/https?:\/\/[^\s"<]+/g)) {
     if (m[0] !== 'http://www.w3.org/2000/svg') fail(`external address ${m[0]}`);
   }
+  const first = /<[A-Za-z][^>]*>/.exec(svg)?.[0] ?? '';
+  /** Attributes of the root element. */
+  const root = new Map([...first.matchAll(/\s([\w:.-]+)="([^"]*)"/g)].map((m) => [m[1]!, m[2]!]));
   const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]!);
   const set = new Set(ids);
   if (set.size !== ids.length) fail('an id is given twice');
   const pfx = ids[0]?.split('-')[0] ?? '';
   for (const id of set) if (!id.startsWith(`${pfx}-`)) fail(`id ${id} lacks the prefix ${pfx}-`);
-  for (const m of svg.matchAll(/(?:url\(#|href="#)([^)"]+)/g)) if (!set.has(m[1]!)) fail(`reference to missing id ${m[1]}`);
+  for (const m of svg.matchAll(/(?:url\(#|href="#)([^)"]+)/gi)) if (!set.has(m[1]!)) fail(`reference to missing id ${m[1]}`);
   const title = svg.match(/<title id="([^"]+)">([^<]*)<\/title>/);
   if (!title || title[2]!.trim().length < 3) fail('no title element');
-  else if (!svg.includes(`aria-labelledby="${title[1]}"`)) fail('the root element does not name the title');
+  else if (root.get('aria-labelledby') !== title[1]) fail('the root element does not name the title');
   const desc = svg.match(/<desc id="([^"]+)">([^<]*)<\/desc>/);
   if (!desc || desc[2]!.trim().length < 10) fail('no desc element');
-  else if (!svg.includes(`aria-describedby="${desc[1]}"`)) fail('the root element does not name the description');
-  const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  else if (root.get('aria-describedby') !== desc[1]) fail('the root element does not name the description');
+  const vb = /^0 0 ([\d.]+) ([\d.]+)$/.exec(root.get('viewBox') ?? '');
   if (!vb || Number(vb[1]) !== rec.viewBox[2] || Number(vb[2]) !== rec.viewBox[3]) fail('viewBox differs from anchors.json');
+  // The label fit is measured for this stack: the root states it, and no element states another.
+  if (!(root.get('font-family') ?? '').startsWith('system-ui')) fail('the root element does not state a font stack that starts with system-ui');
   if (/font-family="(?!system-ui)/.test(svg)) fail('font stack does not start with system-ui');
   return out;
 }

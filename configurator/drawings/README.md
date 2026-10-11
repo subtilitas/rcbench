@@ -173,7 +173,15 @@ Colour is not the only carrier: a wire keeps its wire number of the data file.
   bridge, the board has no wire point for it. Pin `LP` maps to 3 pads.
 - Label fit is an estimate. A label that fits by the estimate and overlaps a
   shape of the drawing is not found.
-- The carrier board drawing omits the 2-pole VIN terminal of the carrier.
+- The carrier board drawing omits the 2-pole VIN terminal and the 3 x 3 pin
+  header of the carrier.
+- Carrier board: the servo strips S, V and G beside the screw terminals are
+  drawn and carry no anchor: the data file lists no pin for them.
+  `stripPoint(pad, row)` in `parts.ts` gives the place of each strip pin.
+- Carrier board: the jumper and the DC-DC converter are drawn at the USB end,
+  where photo `05-rp2350-can-breakout` shows them, not to scale. Which jumper
+  position gives 3.3 V: not legible in the photo. That the 8-pin chip and the
+  inductor form the converter is read from the photo, not from a schematic.
 - microSD card, USB cable and hook-up wire: drawings without a pin.
 - How the colours look with a colour vision deficiency: not measured.
 - Not confirmed by a print on the part or by a maker document: which 2 tabs

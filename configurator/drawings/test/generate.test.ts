@@ -3,9 +3,10 @@ import { test } from 'node:test';
 import type { Catalogue } from '../../contract.ts';
 import { CATALOGUE } from '../../core/catalogue.ts';
 import { malformed } from '../check.ts';
-import { LANGS, anchorsText, cataloguePins, fileOf, generate, pathOf } from '../generate.ts';
+import { LANGS, anchorsText, cataloguePins, fileOf, generate, mergeAnchors, pathOf } from '../generate.ts';
+import type { DrawingRecord } from '../generate.ts';
 import { LABEL_EM, labelWidth } from '../lib.ts';
-import { INA3221_MAP, LIST } from '../parts.ts';
+import { INA3221_MAP, LIST, STRIP_ROWS, stripPoint } from '../parts.ts';
 
 const clone = (): Catalogue => structuredClone(CATALOGUE) as Catalogue;
 const out = generate(CATALOGUE);
@@ -28,6 +29,65 @@ test('a change of the output does not reach the next run', () => {
   assert.deepEqual(INA3221_MAP['LP'], ['PAD1', 'PAD2', 'PAD3']);
   assert.equal(INA3221_MAP['A0'], null);
   assert.equal(anchorsText(generate(CATALOGUE).anchors), anchorsText(out.anchors));
+});
+
+test('a pin has 1 place in every language: a pass that moves, adds or drops a pin is refused', () => {
+  const a = { x: 10, y: 20, side: 'W' as const, label: 'Plus', labelId: 't-lbl-A' };
+  const pins: DrawingRecord['pins'] = {};
+  mergeAnchors('t', pins, { A: a }, 'en', true);
+  mergeAnchors('t', pins, { A: { ...a, label: 'Plus (de)' } }, 'de', false);
+  assert.deepEqual(pins, { A: { x: 10, y: 20, side: 'W', labelId: 't-lbl-A', label: { en: 'Plus', de: 'Plus (de)' } } });
+  for (const [change, text] of [
+    [{ x: 10.1 }, /pin A differs in de: \(10\.1, 20\)/],
+    [{ y: 21 }, /pin A differs in de/],
+    [{ side: 'E' as const }, /pin A differs in de/],
+    [{ labelId: 't-lbl-B' }, /pin A differs in de/],
+  ] as const) {
+    const fresh: DrawingRecord['pins'] = {};
+    mergeAnchors('t', fresh, { A: a }, 'en', true);
+    assert.throws(() => mergeAnchors('t', fresh, { A: { ...a, ...change } }, 'de', false), text);
+  }
+  const more: DrawingRecord['pins'] = {};
+  mergeAnchors('t', more, { A: a }, 'en', true);
+  assert.throws(() => mergeAnchors('t', more, { A: a, B: a }, 'de', false), /pin B is drawn in de only/);
+  assert.throws(() => mergeAnchors('t', more, {}, 'de', false), /pin A is not drawn in de/);
+  // The drawings of the catalogue: both passes agree, so the German file holds its labels at the places of the table.
+  for (const [file, rec] of Object.entries(out.anchors.files)) {
+    for (const pin of Object.values(rec.pins)) {
+      for (const lang of LANGS) assert.ok(out.svgs[pathOf(file, lang)]!.includes(`id="${pin.labelId}"`), `${file} ${lang} ${pin.labelId}`);
+    }
+  }
+});
+
+test('the breakout board carries a servo strip pin S, V and G beside every pad, inside the board', () => {
+  const rec = out.anchors.files['copro--osoyoo.svg']!;
+  const svg = out.svgs['copro--osoyoo.svg']!;
+  const seen = new Set<string>();
+  for (let pad = 1; pad <= 40; pad++) {
+    const terminal = rec.pins[`pad.${pad}`]!;
+    const xs = STRIP_ROWS.map((row) => {
+      const p = stripPoint(pad, row);
+      // In line with the screw terminal of its pad, on the side of that pad.
+      assert.equal(p.y, terminal.y, `pad ${pad} ${row}`);
+      assert.equal(p.side, terminal.side);
+      assert.ok(svg.includes(`<circle cx="${p.x}" cy="${p.y}" r="2.6"`), `pad ${pad} ${row}: no pin drawn`);
+      assert.ok(!seen.has(`${p.x} ${p.y}`));
+      seen.add(`${p.x} ${p.y}`);
+      return p.x;
+    });
+    // S next to the terminal, G next to the module.
+    const inward = terminal.side === 'W' ? 1 : -1;
+    assert.ok((xs[1]! - xs[0]!) * inward > 0 && (xs[2]! - xs[1]!) * inward > 0, `pad ${pad}`);
+    assert.ok((xs[0]! - terminal.x) * inward > 0);
+  }
+  assert.equal(seen.size, 120);
+  for (const bad of [0, 41, 1.5, Number.NaN]) assert.throws(() => stripPoint(bad, 'S'), /pads 1 to 40/);
+  // The strips carry no anchor: the data file lists no pin for them.
+  assert.deepEqual(Object.keys(rec.pins).filter((id) => !/^(pad\.\d+|can\.[HL])$/.test(id)), []);
+  for (const lang of LANGS) {
+    const file = out.svgs[pathOf('copro--osoyoo.svg', lang)]!;
+    for (const print of ['>3V3 / 5V<', '>DC-DC<', '>S<', '>V<', '>G<']) assert.ok(file.includes(print), `${lang} ${print}`);
+  }
 });
 
 test('the output is 1 file per drawing and language, and the table lists the files in order', () => {
