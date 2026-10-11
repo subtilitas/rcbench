@@ -9,6 +9,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -1032,6 +1033,222 @@ TEST_CASE(a_stop_at_the_coprocessor_shows_as_an_aborted_operation)
     conduct();
 }
 
+/* --- a write the coprocessor plans (4.14) --------------------------------------- */
+
+/* An edit of 86,312 units of planning, as test_kst_session has it: 864
+ * passes of the port, 86 ms here. */
+static const char k_long_a[] =
+    "00f5f514487704eff4b20fc710091400969600010b000000000000e301100000";
+static const char k_long_b[] =
+    "00f5f51448770465cb840d8e66041400969600010b000000000000e301100000";
+
+static kst_image_t image_of(const char *hex)
+{
+    kst_image_t img;
+
+    for (unsigned i = 0; i < KST_REG_COUNT; ++i) {
+        unsigned v = 0;
+
+        (void)sscanf(hex + 2u * i, "%2x", &v);
+        img.r[i] = (uint8_t)v;
+    }
+    return img;
+}
+
+/* Up, entered and read, the servo holding @p img. */
+static void up_holding(const kst_image_t *img)
+{
+    kst_link_outcome_t out;
+
+    fresh();
+    memcpy(g_sim.reg, img->r, sizeof(g_sim.reg));
+    link_up();
+    out = run_op(LINK_KST_OP_ENTER);
+    CHECK_EQ(out.result, KST_SES_OK);
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.result, KST_SES_OK);
+}
+
+static kst_link_request_t long_write(void)
+{
+    kst_link_request_t r = request(LINK_KST_OP_WRITE);
+
+    r.write_enabled = true;
+    r.image = image_of(k_long_b);
+    r.unlock = ~(kst_field_set_t)0;
+    return r;
+}
+
+TEST_CASE(a_write_shows_as_planning_until_its_plan_is_there)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_link_request_t r = long_write();
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    kst_image_t sv;
+    unsigned frames;
+
+    up_holding(&a);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_phase(KST_LINK_PLANNING);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.phase, KST_LINK_PLANNING);
+    CHECK_EQ(ro.op, LINK_KST_OP_WRITE);
+    CHECK((ro.flags & LINK_KS_F_BUSY) != 0u);
+    CHECK_EQ(ro.frames, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK(!kst_link_outcome(&g_k, &out));
+    /* It is an operation that runs: another one does not start. */
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_BUSY);
+    /* The plan is there: the frames go out. */
+    until_phase(KST_LINK_RUNNING);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.phase, KST_LINK_RUNNING);
+    CHECK(g_sim.n_frames > frames);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK(out.steps_done > 0u);
+    CHECK_EQ(g_sim.n_writes, out.steps_done);
+    CHECK(kst_link_phase(&g_k) != KST_LINK_PLANNING);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    conduct();
+}
+
+TEST_CASE(a_request_without_an_order_of_writes_is_a_result)
+{
+    kst_image_t start = sim_bench_image();
+    kst_link_request_t r = request(LINK_KST_OP_WRITE);
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+
+    /* Uncontrolled Pos at Upper itself, as test_kst_plan has it. */
+    CHECK(kst_field_edit(&start, KST_F_PULSE_UPPER, 0xBFF));
+    CHECK(kst_field_edit(&start, KST_F_UNCONT_POS, 0xBFF));
+    up_holding(&start);
+    r.write_enabled = true;
+    r.image = start;
+    CHECK(kst_field_edit(&r.image, KST_F_PULSE_UPPER, 0xC00));
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK_EQ((unsigned)out.result, LINK_KST_RESULT_NO_PATH);
+    CHECK_EQ(out.refusal, LINK_KST_REF_NONE);
+    CHECK_EQ(out.fail_reg, 0xFF);
+    CHECK_EQ(out.steps_done, 0);
+    CHECK_EQ(out.frames, 0);
+    CHECK_EQ(g_sim.n_writes, 0);
+    run_ms(60);
+    kst_link_readout(&g_k, &ro);
+    CHECK((ro.flags & (LINK_KS_F_LOCKED | LINK_KS_F_MUST_READ)) == 0u);
+    CHECK_EQ(ro.port, LINK_KST_PROGRAMMING);
+    conduct();
+}
+
+TEST_CASE(a_plan_over_the_cap_is_a_result)
+{
+    const kst_image_t a = image_of(k_long_a);
+    kst_link_request_t r = long_write();
+    kst_link_outcome_t out;
+    kst_image_t sv;
+
+    up_holding(&a);
+    g_port.session.plan_cap = 30000u;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK_EQ((unsigned)out.result, LINK_KST_RESULT_TOO_COMPLEX);
+    CHECK_EQ(out.fail_reg, 0xFF);
+    CHECK_EQ(out.steps_done, 0);
+    CHECK_EQ(out.frames, 0);
+    CHECK_EQ(g_sim.n_writes, 0);
+    sv = servo();
+    CHECK(same(&sv, &a));
+    conduct();
+}
+
+TEST_CASE(an_abort_ends_an_operation_that_plans)
+{
+    const kst_image_t a = image_of(k_long_a);
+    kst_link_request_t r = long_write();
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    kst_image_t sv;
+    unsigned frames;
+
+    up_holding(&a);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_phase(KST_LINK_PLANNING);
+    g_cmds = 0;
+    kst_link_abort(&g_k);
+    ms();
+    CHECK_EQ(g_cmds, 1);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    CHECK_EQ(out.frames, 0);
+    CHECK_EQ(out.steps_done, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    run_ms(60);
+    kst_link_readout(&g_k, &ro);
+    CHECK(ro.phase != KST_LINK_PLANNING);
+    CHECK((ro.flags & LINK_KS_F_MUST_READ) != 0u);
+    CHECK((ro.flags & LINK_KS_F_LOCKED) == 0u);
+    CHECK_EQ(ro.port, LINK_KST_PROGRAMMING);
+    sv = servo();
+    CHECK(same(&sv, &a));
+
+    /* A stop at the coprocessor, the same way. */
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.result, KST_SES_OK);
+    frames = g_sim.n_frames;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_phase(KST_LINK_PLANNING);
+    g_stop = true;
+    ms();
+    g_stop = false;
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    conduct();
+}
+
+/*
+ * The phase is the page's word: BUSY with LINK_KST_RESULT_PLANNING in the
+ * result.  A 4.13 coprocessor never has it, and a result that ended is
+ * never it.
+ */
+TEST_CASE(planning_is_shown_from_the_page_and_only_while_it_runs)
+{
+    const kst_image_t a = image_of(k_long_a);
+    kst_link_request_t r = long_write();
+    kst_link_outcome_t out;
+
+    CHECK(KST_LINK_PLANNING != KST_LINK_RUNNING);
+    CHECK(KST_LINK_PLANNING > KST_LINK_FETCHING);
+    CHECK_EQ(kst_link_phase(NULL), KST_LINK_DOWN);
+    up_holding(&a);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    /* Staged and commanded, not yet answered: not planning. */
+    CHECK(kst_link_phase(&g_k) != KST_LINK_PLANNING);
+    until_phase(KST_LINK_PLANNING);
+    /* The link goes: the page's last word is no phase. */
+    kst_link_lost(&g_k);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_DOWN);
+    CHECK(kst_link_outcome(&g_k, &out));
+    CHECK_EQ(out.kind, KST_LINK_OUT_NO_ANSWER);
+}
+
 TEST_CASE(a_coprocessor_that_started_again_ends_the_operation)
 {
     kst_link_outcome_t out;
@@ -1230,6 +1447,11 @@ int main(void)
     RUN(an_abort_ends_the_operation_that_runs);
     RUN(an_abort_with_a_stale_seq_is_sent_again);
     RUN(a_stop_at_the_coprocessor_shows_as_an_aborted_operation);
+    RUN(a_write_shows_as_planning_until_its_plan_is_there);
+    RUN(a_request_without_an_order_of_writes_is_a_result);
+    RUN(a_plan_over_the_cap_is_a_result);
+    RUN(an_abort_ends_an_operation_that_plans);
+    RUN(planning_is_shown_from_the_page_and_only_while_it_runs);
     RUN(a_coprocessor_that_started_again_ends_the_operation);
     RUN(the_sequence_counter_wraps_under_the_panel);
     RUN(a_lost_link_ends_the_operation_and_keeps_the_images);

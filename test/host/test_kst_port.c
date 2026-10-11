@@ -11,6 +11,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -1044,24 +1045,527 @@ TEST_CASE(a_target_the_planner_refuses_starts_nothing)
     CHECK_EQ(op(), LINK_KST_OP_READ_ALL);
     CHECK(!flag(LINK_KS_F_BUSY));
     CHECK_EQ(g_sim.n_writes, 0);
+    /* Known without a search: the job of none of them was begun. */
+    CHECK_EQ(g_port.session.planning, 0);
+    CHECK_EQ(result(), KST_SES_OK);
 }
 
-TEST_CASE(a_target_no_order_of_writes_reaches_is_refused)
+/* --- a write that plans --------------------------------------------------------- */
+
+/* An edit of 86,312 units of planning, as test_kst_session has it. */
+static const char k_long_a[] =
+    "00f5f514487704eff4b20fc710091400969600010b000000000000e301100000";
+static const char k_long_b[] =
+    "00f5f51448770465cb840d8e66041400969600010b000000000000e301100000";
+#define LONG_UNITS 86312u
+
+static kst_image_t image_of(const char *hex)
+{
+    kst_image_t img;
+
+    for (unsigned i = 0; i < KST_REG_COUNT; ++i) {
+        unsigned v = 0;
+
+        (void)sscanf(hex + 2u * i, "%2x", &v);
+        img.r[i] = (uint8_t)v;
+    }
+    return img;
+}
+
+static unsigned frames_sent(void)
+{
+    return LINK_KS_FRAMES_OF(reg(LINK_KS_OP));
+}
+
+/* In PROGRAMMING on a port with @p supply, the servo holding @p img and
+ * read. */
+static void up_holding(supply_kind_t supply, const kst_image_t *img)
+{
+    fresh_at(0u, supply);
+    memcpy(g_sim.reg, img->r, sizeof(g_sim.reg));
+    enter();
+    read_all();
+}
+
+/* The long edit taken and @p passes of its planning done: nothing is on
+ * the wire.  The servo's frames so far. */
+static unsigned long_write_plans(supply_kind_t supply, unsigned passes)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    unsigned frames;
+
+    up_holding(supply, &a);
+    frames = g_sim.n_frames;
+    write_image(&b, ~(kst_field_set_t)0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    for (unsigned i = 0; i < passes; ++i) {
+        tick();
+    }
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    CHECK(flag(LINK_KS_F_BUSY));
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    CHECK_EQ(frames_sent(), 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK(!g_sim.busy);
+    return frames;
+}
+
+/* The planning was cut: the operation ended aborted and nothing of it
+ * reached the servo. */
+static void cut_while_planning(unsigned frames)
+{
+    const kst_image_t a = image_of(k_long_a);
+    kst_image_t sv;
+
+    CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+    CHECK_EQ(frames_sent(), 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(!flag(LINK_KS_F_LOCKED));
+    CHECK_EQ(fail_reg(), 0xFF);
+    CHECK_EQ(steps_done(), 0);
+    sv = servo();
+    CHECK(same(&sv, &a));
+}
+
+TEST_CASE(a_write_is_planned_one_slice_a_pass_after_the_commands_frame)
+{
+    const kst_image_t b = image_of(k_long_b);
+    const kst_session_t *s = &g_port.session;
+    kst_image_t sv;
+    unsigned frames, passes = 0;
+
+    frames = long_write_plans(SUPPLY_NONE, 0);
+    CHECK_EQ(s->plan_cap, KST_PLAN_WORK_CAP);
+    /* The frame of the command prepared the job and searched nothing. */
+    CHECK_EQ(kst_plan_units(&s->job), 0u);
+    CHECK_EQ(s->planning, 1);
+    while (result() == LINK_KST_RESULT_PLANNING && passes < 4000u) {
+        const uint32_t before = kst_plan_units(&s->job);
+        uint32_t took;
+
+        tick();
+        passes++;
+        took = kst_plan_units(&s->job) - before;
+        CHECK(took < KST_PLAN_SLICE_UNITS + KST_PLAN_PIECE_UNITS);
+        if (result() == LINK_KST_RESULT_PLANNING) {
+            CHECK(took >= KST_PLAN_SLICE_UNITS);
+            CHECK(flag(LINK_KS_F_BUSY));
+            CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        }
+        /* The pass that ends the planning starts no frame either. */
+        CHECK_EQ(g_sim.n_frames, frames);
+        CHECK_EQ(frames_sent(), 0);
+    }
+    CHECK_EQ(kst_plan_units(&s->job), LONG_UNITS);
+    CHECK(passes >= LONG_UNITS / (KST_PLAN_SLICE_UNITS + KST_PLAN_PIECE_UNITS));
+    CHECK(passes <= LONG_UNITS / KST_PLAN_SLICE_UNITS + 1u);
+    CHECK(passes <= KST_PLAN_WORK_CAP / KST_PLAN_SLICE_UNITS + 1u);
+    /* The plan is there: the operation runs on, now on the wire. */
+    CHECK_EQ(result(), KST_SES_BUSY);
+    CHECK(flag(LINK_KS_F_BUSY));
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK(frames_sent() > 0u);
+    CHECK_EQ(steps_done(), kst_session_plan(s)->n);
+    CHECK_EQ(g_sim.n_writes, kst_session_plan(s)->n);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    conduct();
+}
+
+TEST_CASE(the_ports_plan_is_the_planners)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_plan_t plan;
+
+    CHECK_EQ(kst_plan_edit(&a, &b, ~(kst_field_set_t)0, &plan, NULL),
+             KST_PLAN_OK);
+    (void)long_write_plans(SUPPLY_NONE, 0);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK(memcmp(kst_session_plan(&g_port.session), &plan, sizeof(plan))
+          == 0);
+    CHECK_EQ(g_sim.n_writes, plan.n);
+    conduct();
+}
+
+TEST_CASE(a_target_no_order_of_writes_reaches_ends_with_no_path)
 {
     kst_image_t start = sim_bench_image();
-    kst_image_t target;
+    kst_image_t target, sv;
+    unsigned frames;
 
     /* Uncontrolled Pos at Upper itself, as test_kst_plan has it. */
     CHECK(kst_field_edit(&start, KST_F_PULSE_UPPER, 0xBFF));
     CHECK(kst_field_edit(&start, KST_F_UNCONT_POS, 0xBFF));
-    fresh();
-    memcpy(g_sim.reg, start.r, sizeof(g_sim.reg));
-    enter();
-    read_all();
+    up_holding(SUPPLY_NONE, &start);
+    frames = g_sim.n_frames;
     target = edited(KST_F_PULSE_UPPER, 0xC00);
     write_image(&target, 0);
-    CHECK_EQ(refusal(), LINK_KST_REF_PLAN_NO_PATH);
+    /* Not known in the command's frame: the operation starts and plans. */
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    CHECK(flag(LINK_KS_F_BUSY));
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    settle();
+    CHECK_EQ(result(), LINK_KST_RESULT_NO_PATH);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    CHECK_EQ(frames_sent(), 0);
+    CHECK_EQ(fail_reg(), 0xFF);
+    CHECK_EQ(steps_done(), 0);
+    CHECK_EQ(g_sim.n_frames, frames);
     CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK(!flag(LINK_KS_F_LOCKED));
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    /* The session goes on without a read. */
+    target = edited(KST_F_DEAD_BAND, 50);
+    write_image(&target, 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    sv = servo();
+    CHECK(same(&sv, &target));
+    conduct();
+}
+
+TEST_CASE(a_plan_that_takes_more_than_the_cap_ends_too_complex)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_image_t sv;
+    unsigned frames, passes = 0;
+
+    up_holding(SUPPLY_NONE, &a);
+    frames = g_sim.n_frames;
+    /* One unit under what the request needs. */
+    g_port.session.plan_cap = LONG_UNITS - 1u;
+    write_image(&b, ~(kst_field_set_t)0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    while (flag(LINK_KS_F_BUSY) && passes < 4000u) {
+        CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+        tick();
+        passes++;
+    }
+    CHECK(passes <= LONG_UNITS / KST_PLAN_SLICE_UNITS + 1u);
+    CHECK_EQ(result(), LINK_KST_RESULT_TOO_COMPLEX);
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    CHECK_EQ(frames_sent(), 0);
+    CHECK_EQ(fail_reg(), 0xFF);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(!flag(LINK_KS_F_LOCKED));
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    sv = servo();
+    CHECK(same(&sv, &a));
+    /* A restore under a cap that small ends the same way. */
+    g_port.session.plan_cap = 20u;
+    g_sim.reg[0x08] = b.r[0x08];
+    g_sim.reg[0x09] = b.r[0x09];
+    read_all();
+    frames = g_sim.n_frames;
+    CHECK_EQ(cmd(LINK_KST_OP_RESTORE, CH, KEY, stage(&a, 0, 0)), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(op(), LINK_KST_OP_RESTORE);
+    CHECK_EQ(result(), LINK_KST_RESULT_TOO_COMPLEX);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    g_sim.reg[0x08] = a.r[0x08];
+    g_sim.reg[0x09] = a.r[0x09];
+    read_all();
+    /* The cap at the need: the plan, and it runs. */
+    g_port.session.plan_cap = LONG_UNITS;
+    write_image(&b, ~(kst_field_set_t)0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    conduct();
+}
+
+TEST_CASE(an_abort_while_the_port_plans_ends_it_with_nothing_written)
+{
+    const kst_image_t b = image_of(k_long_b);
+    kst_image_t sv;
+    unsigned frames;
+
+    frames = long_write_plans(SUPPLY_ON, 300);
+    CHECK_EQ(cmd(LINK_KST_OP_ABORT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    tick();
+    cut_while_planning(frames);
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    /* As an abort of an operation on the wire: the port and the supply
+     * stay, and a read comes first. */
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK(flag(LINK_KS_F_IN_MODE));
+    CHECK(flag(LINK_KS_F_MUST_READ));
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK(g_hw.v.asked_on);
+    CHECK_EQ(g_hw.gives, 0);
+    run_ms(300);
+    CHECK_EQ(g_sim.n_frames, frames);
+    write_image(&b, ~(kst_field_set_t)0);
+    CHECK_EQ(refusal(), LINK_KST_REF_MUST_READ);
+    /* The same request again, from its start. */
+    read_all();
+    write_image(&b, ~(kst_field_set_t)0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    CHECK_EQ(kst_plan_units(&g_port.session.job), 0u);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(kst_plan_units(&g_port.session.job), LONG_UNITS);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    conduct();
+}
+
+TEST_CASE(a_disarm_while_the_port_plans_ends_it_and_leaves_the_supply)
+{
+    unsigned frames;
+
+    /* In the first pass of the planning and in a later one. */
+    for (unsigned passes = 0; passes <= 500u; passes += 500u) {
+        frames = long_write_plans(SUPPLY_ON, passes);
+        tick_as(true, true);
+        cut_while_planning(frames);
+        CHECK_EQ(op(), LINK_KST_OP_WRITE);
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK(flag(LINK_KS_F_IN_MODE));
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.sets, 0);
+        CHECK(g_hw.v.asked_on);
+        CHECK_EQ(g_hw.gives, 0);
+        run_ms(300);
+        CHECK_EQ(g_sim.n_frames, frames);
+        read_all();
+        CHECK(!flag(LINK_KS_F_MUST_READ));
+        conduct();
+    }
+}
+
+/* The heartbeat lost or the link silent while the port plans.  With a PD
+ * mini the SUPPLY page switches it off in the same pass. */
+static void unsafe_while_planning(supply_kind_t supply)
+{
+    const unsigned frames = long_write_plans(supply, 300);
+
+    if (supply == SUPPLY_ON) {
+        supply_asked_off();
+    }
+    tick_as(false, false);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    if (supply == SUPPLY_ON) {
+        /* A servo without power is in no mode: off for the off time, and
+         * nothing switches it on again. */
+        CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+        CHECK_EQ(g_hw.offs, 1);
+        run_ms_as(LAG_MS + KST_PORT_RAIL_OFF_MS + 5u, false, false);
+        CHECK_EQ(state(), LINK_KST_PWM);
+        cut_while_planning(frames);
+        CHECK(!flag(LINK_KS_F_IN_MODE));
+        CHECK(!flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.ons, 0);
+        CHECK(!g_hw.v.asked_on);
+        CHECK_EQ(g_hw.gives, 1);
+    } else {
+        /* No supply of the port's: it stays, and the read comes first. */
+        cut_while_planning(frames);
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK(flag(LINK_KS_F_IN_MODE));
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.gives, 0);
+        run_ms_as(300, false, false);
+        CHECK_EQ(g_sim.n_frames, frames);
+        CHECK_EQ(cmd(LINK_KST_OP_READ_ALL, CH, 0, 0), 0);
+        CHECK_EQ(refusal(), LINK_KST_REF_UNSAFE);
+    }
+    conduct();
+}
+
+TEST_CASE(a_lost_heartbeat_while_the_port_plans_ends_it_with_nothing_written)
+{
+    unsafe_while_planning(SUPPLY_ON);
+    unsafe_while_planning(SUPPLY_NONE);
+    unsafe_while_planning(SUPPLY_OFFLINE);
+}
+
+TEST_CASE(a_supply_switched_off_while_the_port_plans_ends_it_in_pwm)
+{
+    /* Asked off by the panel, and read off by the PD mini's protection. */
+    for (unsigned read_off = 0; read_off < 2u; ++read_off) {
+        const unsigned frames = long_write_plans(SUPPLY_ON, 300);
+
+        if (read_off != 0u) {
+            g_hw.v.on = false;
+            g_hw.v.off = true;
+        } else {
+            supply_asked_off();
+        }
+        tick();
+        CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+        CHECK_EQ(g_hw.offs, 1);
+        CHECK_EQ(g_sim.n_frames, frames);
+        run_ms(LAG_MS + KST_PORT_RAIL_OFF_MS + 5u);
+        CHECK_EQ(state(), LINK_KST_PWM);
+        cut_while_planning(frames);
+        CHECK_EQ(op(), LINK_KST_OP_WRITE);
+        CHECK(!flag(LINK_KS_F_IN_MODE));
+        CHECK(!flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.ons, 0);
+        CHECK(!g_hw.v.asked_on);
+        CHECK_EQ(g_hw.gives, 1);
+        conduct();
+    }
+}
+
+TEST_CASE(a_pd_mini_that_stops_answering_leaves_the_planning_alone)
+{
+    const kst_image_t b = image_of(k_long_b);
+    kst_image_t sv;
+
+    (void)long_write_plans(SUPPLY_ON, 300);
+    g_hw.v.online = false;
+    tick();
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK(flag(LINK_KS_F_BUSY));
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    CHECK(!flag(LINK_KS_F_RAIL));
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.sets, 0);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    conduct();
+}
+
+TEST_CASE(a_power_cycle_while_the_port_plans_ends_the_planning_first)
+{
+    const kst_image_t a = image_of(k_long_a);
+    kst_image_t sv;
+    unsigned frames;
+
+    /* The user's word, on a port without a PD mini. */
+    frames = long_write_plans(SUPPLY_NONE, 300);
+    CHECK_EQ(cmd(LINK_KST_OP_POWER_CYCLED, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(op(), LINK_KST_OP_POWER_CYCLED);
+    CHECK_EQ(result(), KST_SES_BUSY);
+    tick();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_port.session.planning, 0);
+    sv = servo();
+    CHECK(same(&sv, &a));
+
+    /* A REBOOT, with one: the cycle runs after the planning has ended. */
+    frames = long_write_plans(SUPPLY_ON, 300);
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(op(), LINK_KST_OP_REBOOT);
+    CHECK_EQ(result(), KST_SES_BUSY);
+    tick();
+    CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+    CHECK_EQ(g_port.session.planning, 0);
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.offs, 1);
+    CHECK_EQ(g_hw.ons, 1);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    conduct();
+}
+
+TEST_CASE(a_command_while_the_port_plans_is_busy_and_changes_nothing)
+{
+    const kst_image_t b = image_of(k_long_b);
+    kst_image_t other, sv;
+    uint32_t units;
+    uint16_t crc;
+    unsigned frames;
+
+    frames = long_write_plans(SUPPLY_NONE, 300);
+    units = kst_plan_units(&g_port.session.job);
+    CHECK_EQ(cmd(LINK_KST_OP_READ_ALL, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    /* Staged registers written under the planning do not reach it: the
+     * target was taken with the command. */
+    other = b;
+    CHECK(kst_field_edit(&other, KST_F_DEAD_BAND, 50));
+    crc = stage(&other, ~(kst_field_set_t)0, shown_crc());
+    CHECK_EQ(cmd(LINK_KST_OP_WRITE, CH, KEY, crc), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(cmd(LINK_KST_OP_RESTORE, CH, KEY, crc), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(cmd(LINK_KST_OP_VERIFY, CH, 0, crc), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    CHECK_EQ(kst_plan_units(&g_port.session.job), units);
+    CHECK_EQ(g_sim.n_frames, frames);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(kst_plan_units(&g_port.session.job), LONG_UNITS);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    conduct();
+}
+
+TEST_CASE(an_unchecked_restore_ends_unconfirmed_when_its_plan_is_there)
+{
+    kst_image_t first = sim_bench_image();
+    kst_image_t sv;
+    uint16_t crc;
+    unsigned frames;
+
+    CHECK(kst_field_edit(&first, KST_F_PULSE_UPPER, 0xC00));
+    CHECK(kst_field_edit(&first, KST_F_UNCONT_POS, 0xBFF));
+    up_holding(SUPPLY_NONE, &first);
+    /* The servo as another tool left it. */
+    g_sim.reg[0x08] = 0xFF;
+    g_sim.reg[0x09] = (uint8_t)((g_sim.reg[0x09] & 0x0Fu) | 0xB0u);
+    read_all();
+    frames = g_sim.n_frames;
+    crc = stage(&first, 0, 0);
+    CHECK_EQ(cmd(LINK_KST_OP_RESTORE, CH, KEY, crc), 0);
+    /* Whether the result can be checked is known when the plan is. */
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(op(), LINK_KST_OP_RESTORE);
+    CHECK(flag(LINK_KS_F_BUSY));
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    settle();
+    CHECK_EQ(result(), KST_SES_ERR_UNCONFIRMED);
+    CHECK_EQ(frames_sent(), 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(!flag(LINK_KS_F_LOCKED));
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    /* With the confirmation it runs. */
+    CHECK_EQ(cmd_raw((uint16_t)(LINK_KS_W_CMD_OF(LINK_KST_OP_RESTORE, CH)
+                                | LINK_KS_W_CMD_CONFIRM), KEY, crc), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_sim.n_writes, 2);
+    sv = servo();
+    CHECK(same(&sv, &first));
+    conduct();
 }
 
 TEST_CASE(a_locked_field_is_written_only_when_the_request_unlocks_it)
@@ -1196,6 +1700,8 @@ TEST_CASE(a_release_of_pairing_runs_the_planners_plan)
     crc = stage(&img, 0, shown_crc());
     CHECK_EQ(cmd(LINK_KST_OP_RELEASE, CH, KEY, crc), 0);
     CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    /* One write at most and no search: it does not plan. */
+    CHECK_EQ(result(), KST_SES_BUSY);
     settle();
     CHECK_EQ(op(), LINK_KST_OP_RELEASE);
     CHECK_EQ(result(), KST_SES_OK);
@@ -1411,6 +1917,13 @@ TEST_CASE(a_stop_mid_write_locks_the_session)
     CHECK_EQ(refusal(), LINK_KST_REF_NONE);
     CHECK_EQ(result(), KST_SES_ERR_LOCKED);
     CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK_EQ(g_sim.n_writes, writes);
+    /* The session's answer comes before the planner's: a target that
+     * breaks a hard rule is refused as locked too. */
+    target = edited(KST_F_DUTY, 251);
+    write_image(&target, 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(result(), KST_SES_ERR_LOCKED);
     CHECK_EQ(g_sim.n_writes, writes);
     conduct();
 }
@@ -2640,7 +3153,18 @@ int main(void)
     RUN(staged_registers_that_changed_under_the_crc_are_refused);
     RUN(a_write_needs_an_image_read_in_this_session);
     RUN(a_target_the_planner_refuses_starts_nothing);
-    RUN(a_target_no_order_of_writes_reaches_is_refused);
+    RUN(a_write_is_planned_one_slice_a_pass_after_the_commands_frame);
+    RUN(the_ports_plan_is_the_planners);
+    RUN(a_target_no_order_of_writes_reaches_ends_with_no_path);
+    RUN(a_plan_that_takes_more_than_the_cap_ends_too_complex);
+    RUN(an_abort_while_the_port_plans_ends_it_with_nothing_written);
+    RUN(a_disarm_while_the_port_plans_ends_it_and_leaves_the_supply);
+    RUN(a_lost_heartbeat_while_the_port_plans_ends_it_with_nothing_written);
+    RUN(a_supply_switched_off_while_the_port_plans_ends_it_in_pwm);
+    RUN(a_pd_mini_that_stops_answering_leaves_the_planning_alone);
+    RUN(a_power_cycle_while_the_port_plans_ends_the_planning_first);
+    RUN(a_command_while_the_port_plans_is_busy_and_changes_nothing);
+    RUN(an_unchecked_restore_ends_unconfirmed_when_its_plan_is_there);
     RUN(a_locked_field_is_written_only_when_the_request_unlocks_it);
     RUN(a_failed_write_names_its_register);
     RUN(a_read_that_fails_names_its_register);

@@ -257,14 +257,30 @@ aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 
-Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 408 Bytes: `main`,
-`can_service`, `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
-`kst_session_write` (56) und der Schreibplaner aus `protocols/kst`, 464
-Bytes ab `kst_plan_edit`: `build` (160), `detour` (72), `search` (56) und
-die Grenzwertprüfung `kst_limits_image` (112). Der Planer ruft sich nicht
-selbst auf. Der Plan, das bereitgestellte Image und der Plan, mit dem die
-Session vergleicht, liegen im Zustand des Ports und der Session, nicht auf
-dem Stack.
+Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 304 Bytes: `main`
+(464), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
+`kst_port_write` (88), `kst_session_edit` (40) und der Start eines
+Planer-Jobs, 312 Bytes ab `kst_plan_edit_begin`: `kst_plan_edit_begin`
+(40), die Grenzwertprüfung `kst_limits_edit` (248), `load` (16) und
+`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 984 Bytes: `main`,
+`kst_port_step` (56), `kst_session_step` (256) und ein Slice des Planers,
+208 Bytes ab `kst_plan_step`. Der Planer ruft sich nicht selbst auf. Der
+Job des Planers, der Plan und das bereitgestellte Image liegen im Zustand
+der Session und des Ports, nicht auf dem Stack.
+
+Der Port plant einen Schreibauftrag in Slices. Das Schreibkommando prüft
+den Auftrag und startet den Job des Planers, 64 us Planerarbeit. Jeder
+Durchlauf der Hauptschleife von Kern 0 fährt dann 1 Slice in
+`kst_session_step()`, 100 bis 109 Einheiten Arbeit: höchstens 892 us, der
+längste gefundene 816 us. Das Planen endet nach 216 000 Einheiten,
+höchstens 2 161 Durchläufen, mit einem Plan, ohne Plan oder mit dem
+Ergebnis "too complex", wenn die Einheiten vorher verbraucht sind. Der
+teuerste gefundene Auftrag braucht 120 136 Einheiten, höchstens 1 202
+Durchläufe und 397 bis 647 ms Planerzeit. Alle Zeiten gelten für 150 MHz,
+sind in einem Emulator aus den ausgeführten Instruktionen mit ARM GNU 14.2
+bei -O3 berechnet und nicht auf Hardware gemessen. Die Zeit eines
+Durchlaufs mit Link, Heartbeat und Ausgängen ist nicht gemessen. Die
+Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150 ms.
 
 Jede Tiefe ist eine Untergrenze:
 

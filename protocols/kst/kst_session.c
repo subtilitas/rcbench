@@ -26,6 +26,7 @@ enum {
     W_UNDO_READ2,
     W_UNDO_FINAL,     /* read all after a roll-back */
     W_FINAL,          /* read all after the last write */
+    W_PLAN,           /* the planner runs; nothing is on the wire */
 };
 
 #define ALL_REGS 0xFFFFFFFFu
@@ -254,6 +255,7 @@ static void finish(kst_session_t *s, kst_ses_t result)
 {
     s->op = OP_NONE;
     s->reading = 0;
+    s->planning = 0;
     s->result = (uint8_t)result;
 }
 
@@ -394,6 +396,31 @@ static bool read_back_matches(const kst_session_t *s, uint8_t value)
     return replied(s) && s->last_reply.value == value;
 }
 
+/* One slice of the planning job.  The plan it ends with is the one the
+ * session runs: nothing outside the planner writes s->plan in between. */
+static void plan_advance(kst_session_t *s)
+{
+    kst_plan_result_t r;
+
+    /* The job builds into the session's own plan, wherever the session
+     * lies now. */
+    s->job.plan = &s->plan;
+    r = kst_plan_step(&s->job, KST_PLAN_SLICE_UNITS);
+    if (r == KST_PLAN_BUSY) {
+        return;
+    }
+    s->planning = 0;
+    s->plan_result = (uint8_t)r;
+    if (r != KST_PLAN_OK) {
+        finish(s, KST_SES_ERR_NO_PLAN);
+    } else if (s->plan.unchecked != 0u && s->confirm == 0u) {
+        finish(s, KST_SES_ERR_UNCONFIRMED);
+    } else {
+        read_begin(s);
+        s->phase = W_PRE;
+    }
+}
+
 static void write_advance(kst_session_t *s)
 {
     const kst_plan_t *plan = &s->plan;
@@ -516,18 +543,25 @@ static void write_advance(kst_session_t *s)
     }
 }
 
-static void advance(kst_session_t *s)
+/* False when the call did a slice of planning: kst_session_step() returns
+ * after it. */
+static bool advance(kst_session_t *s)
 {
     if (s->fault != 0u) {
         finish_in_doubt(s, KST_SES_ERR_DRIVER);
-        return;
+        return true;
     }
     if (s->abort != 0u) {
+        /* While the operation plans, dirty is 0: nothing locks. */
         finish_in_doubt(s, KST_SES_ERR_ABORTED);
-        return;
+        return true;
+    }
+    if (s->phase == W_PLAN) {
+        plan_advance(s);
+        return false;
     }
     if (s->reading != 0u && !read_advance(s)) {
-        return;
+        return true;
     }
     switch (s->op) {
     case OP_ENTER:
@@ -543,6 +577,7 @@ static void advance(kst_session_t *s)
         write_advance(s);
         break;
     }
+    return true;
 }
 
 kst_ses_t kst_session_step(kst_session_t *s)
@@ -554,7 +589,9 @@ kst_ses_t kst_session_step(kst_session_t *s)
         if (s->t_state != T_IDLE && !txn_step(s)) {
             return KST_SES_BUSY;
         }
-        advance(s);
+        if (!advance(s)) {
+            break;
+        }
     }
     return (kst_ses_t)s->result;
 }
@@ -572,6 +609,7 @@ bool kst_session_init(kst_session_t *s, const kst_driver_t *driver)
         return false;
     }
     s->drv = *driver;
+    s->plan_cap = KST_PLAN_WORK_CAP;
     s->t_mark = now(s);
     s->t_gap = KST_GAP_US;
     return true;
@@ -608,6 +646,7 @@ static kst_ses_t started(kst_session_t *s, uint8_t op)
     s->attempt = 0;
     s->step_index = 0;
     s->diff_regs = 0;
+    s->planning = 0;
     s->result = (uint8_t)KST_SES_BUSY;
     return KST_SES_BUSY;
 }
@@ -762,6 +801,99 @@ kst_ses_t kst_session_write(kst_session_t *s, const kst_plan_t *plan,
     s->undo = 0;
     read_begin(s);
     return KST_SES_BUSY;
+}
+
+/* The checks of an operation that plans its own writes; KST_SES_OK lets it
+ * plan.  @p restore: the way back, which a lock and a failed fingerprint do
+ * not refuse. */
+static kst_ses_t plan_gate(kst_session_t *s, bool restore, bool no_target)
+{
+    const kst_ses_t gate = may_start(s, true);
+
+    if (gate == KST_SES_ERR_ARG || gate == KST_SES_ERR_BUSY) {
+        return gate;
+    }
+    if (no_target) {
+        return refuse(s, KST_SES_ERR_ARG);
+    }
+    if (gate != KST_SES_OK) {
+        return refuse(s, gate);
+    }
+    if (s->has_backup == 0u) {
+        return refuse(s, KST_SES_ERR_NO_BACKUP);
+    }
+    if (!restore && s->locked != 0u) {
+        return refuse(s, KST_SES_ERR_LOCKED);
+    }
+    if (!restore && s->fingerprint_ok == 0u) {
+        return refuse(s, KST_SES_ERR_FINGERPRINT);
+    }
+    s->plan_rules = 0;
+    return KST_SES_OK;
+}
+
+/* The job is begun with @p r: the planning starts, or the request is
+ * refused with the planner's reason. */
+static kst_ses_t plan_started(kst_session_t *s, kst_plan_result_t r,
+                              bool confirm_unchecked)
+{
+    s->plan_result = (uint8_t)r;
+    if (r != KST_PLAN_BUSY) {
+        return refuse(s, KST_SES_ERR_NO_PLAN);
+    }
+    (void)started(s, OP_WRITE);
+    s->phase = W_PLAN;
+    s->planning = 1;
+    s->confirm = confirm_unchecked ? 1u : 0u;
+    s->undo = 0;
+    return KST_SES_BUSY;
+}
+
+kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
+                           kst_field_set_t unlocked)
+{
+    const kst_ses_t gate = plan_gate(s, false, target == NULL);
+
+    if (gate != KST_SES_OK) {
+        return gate;
+    }
+    return plan_started(s,
+                        kst_plan_edit_begin(&s->job, &s->image, target,
+                                            unlocked, &s->plan,
+                                            &s->plan_rules, s->plan_cap),
+                        false);
+}
+
+kst_ses_t kst_session_restore(kst_session_t *s, bool confirm_unchecked)
+{
+    const kst_ses_t gate = plan_gate(s, true, false);
+
+    if (gate != KST_SES_OK) {
+        return gate;
+    }
+    return plan_started(s,
+                        kst_plan_restore_begin(&s->job, &s->image, &s->backup,
+                                               &s->plan, s->plan_cap),
+                        confirm_unchecked);
+}
+
+kst_ses_t kst_session_release_pairing(kst_session_t *s)
+{
+    const kst_ses_t gate = plan_gate(s, false, false);
+
+    if (gate != KST_SES_OK) {
+        return gate;
+    }
+    s->plan_result = (uint8_t)kst_plan_release_pairing(&s->image, &s->plan);
+    (void)started(s, OP_WRITE);
+    s->undo = 0;
+    read_begin(s);
+    return KST_SES_BUSY;
+}
+
+const kst_plan_t *kst_session_plan(const kst_session_t *s)
+{
+    return s == NULL ? NULL : &s->plan;
 }
 
 void kst_session_abort(kst_session_t *s)

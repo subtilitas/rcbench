@@ -702,6 +702,90 @@ static void pin_plan(pin_t *p, kst_plan_result_t r, kst_rules_t violated,
     }
 }
 
+/* --- a job in slices ------------------------------------------------------- */
+
+/* Budgets of one step call: the smallest, those around the largest piece of
+ * work, around the coprocessor's slice, and ones no job outlasts. */
+static const uint32_t k_budgets[] = {
+    1, 2, 3, 4, 5, 7, KST_PLAN_PIECE_UNITS - 1u, KST_PLAN_PIECE_UNITS,
+    KST_PLAN_PIECE_UNITS + 1u, 13, 16, 31, 64, KST_PLAN_SLICE_UNITS - 1u,
+    KST_PLAN_SLICE_UNITS, KST_PLAN_SLICE_UNITS + 1u, 127, 1000, 4096, 65535,
+    KST_PLAN_NO_CAP - 1u, KST_PLAN_NO_CAP,
+};
+
+#define BUDGETS (sizeof(k_budgets) / sizeof(k_budgets[0]))
+
+static bool g_sliced;        /* the pin helpers plan with a job in slices */
+static unsigned g_sliced_n;  /* the next budget of k_budgets */
+
+/*
+ * Step a job to its end with @p budget units per call.  Every call that
+ * leaves work does at least its budget and less than the budget and one
+ * piece; the result stays after the end.
+ */
+static kst_plan_result_t in_slices(kst_plan_job_t *job, kst_plan_result_t r,
+                                   uint32_t budget)
+{
+    while (r == KST_PLAN_BUSY) {
+        const uint32_t before = kst_plan_units(job);
+        uint64_t took;
+
+        r = kst_plan_step(job, budget);
+        took = (uint64_t)kst_plan_units(job) - before;
+        if (took >= (uint64_t)budget + KST_PLAN_PIECE_UNITS
+            || (r == KST_PLAN_BUSY && took < budget)) {
+            T_FAIL("a call with budget %u took %u units",
+                   (unsigned)budget, (unsigned)took);
+            return r;
+        }
+    }
+    CHECK_EQ(kst_plan_step(job, budget), r);
+    CHECK_EQ(kst_plan_step(job, 0), r);
+    return r;
+}
+
+static kst_plan_result_t edit_in_slices(const kst_image_t *start,
+                                        const kst_image_t *target,
+                                        kst_field_set_t unlocked,
+                                        kst_plan_t *plan,
+                                        kst_rules_t *violated,
+                                        uint32_t budget, uint32_t cap,
+                                        uint32_t *units)
+{
+    kst_plan_job_t job;
+    kst_plan_result_t r;
+
+    memset(&job, 0x5A, sizeof(job));
+    r = in_slices(&job, kst_plan_edit_begin(&job, start, target, unlocked,
+                                            plan, violated, cap), budget);
+    if (units != NULL) {
+        *units = kst_plan_units(&job);
+    }
+    return r;
+}
+
+static kst_plan_result_t restore_in_slices(const kst_image_t *current,
+                                           const kst_image_t *backup,
+                                           kst_plan_t *plan, uint32_t budget,
+                                           uint32_t cap, uint32_t *units)
+{
+    kst_plan_job_t job;
+    kst_plan_result_t r;
+
+    memset(&job, 0x5A, sizeof(job));
+    r = in_slices(&job, kst_plan_restore_begin(&job, current, backup, plan,
+                                               cap), budget);
+    if (units != NULL) {
+        *units = kst_plan_units(&job);
+    }
+    return r;
+}
+
+static uint32_t next_budget(void)
+{
+    return k_budgets[g_sliced_n++ % BUDGETS];
+}
+
 /* The plan is filled with a pattern first: what the planner leaves in it
  * does not depend on what it held. */
 static void pin_edit(pin_t *p, const kst_image_t *start,
@@ -712,7 +796,9 @@ static void pin_edit(pin_t *p, const kst_image_t *start,
     kst_plan_result_t r;
 
     memset(&plan, 0xA5, sizeof(plan));
-    r = kst_plan_edit(start, target, unlocked, &plan, &violated);
+    r = g_sliced ? edit_in_slices(start, target, unlocked, &plan, &violated,
+                                  next_budget(), KST_PLAN_NO_CAP, NULL)
+                 : kst_plan_edit(start, target, unlocked, &plan, &violated);
     pin_plan(p, r, violated, &plan);
 }
 
@@ -723,7 +809,9 @@ static void pin_restore(pin_t *p, const kst_image_t *current,
     kst_plan_result_t r;
 
     memset(&plan, 0xA5, sizeof(plan));
-    r = kst_plan_restore(current, backup, &plan);
+    r = g_sliced ? restore_in_slices(current, backup, &plan, next_budget(),
+                                     KST_PLAN_NO_CAP, NULL)
+                 : kst_plan_restore(current, backup, &plan);
     pin_plan(p, r, 0, &plan);
 }
 
@@ -1065,6 +1153,567 @@ TEST_CASE(the_plans_between_2000_seeded_random_images_are_pinned)
               0u, 0u, 6000u, 16u);
 }
 
+/* --- slices, budgets and the cap -------------------------------------------- */
+
+/* The same pinned sets, every plan built by a job in slices.  The budget
+ * changes from call to call through k_budgets. */
+TEST_CASE(in_slices_of_a_spread_of_budgets_the_pinned_plans_are_the_same)
+{
+    g_sliced = true;
+    g_sliced_n = 0;
+    the_plan_to_every_value_of_every_field_is_pinned();
+    the_plans_across_every_high_part_step_are_pinned();
+    the_plans_to_every_duty_are_pinned();
+    the_plans_about_register_1d_and_register_00_are_pinned();
+    the_plans_with_an_extra_write_and_with_no_path_are_pinned();
+    the_plans_of_4000_seeded_random_pairs_are_pinned();
+    the_plans_between_2000_seeded_random_images_are_pinned();
+    g_sliced = false;
+    CHECK(g_sliced_n > 400000u);
+}
+
+/* A request of the sample below: an edit, or a restore from a to b. */
+typedef struct {
+    kst_image_t a;
+    kst_image_t b;
+    bool restore;
+    kst_plan_result_t want;
+    unsigned want_unchecked;
+} sample_t;
+
+#define SAMPLES 7u
+
+static sample_t sample(unsigned which)
+{
+    sample_t s;
+
+    memset(&s, 0, sizeof(s));
+    s.a = sim_bench_image();
+    s.want = KST_PLAN_OK;
+    if (which == 0u) {
+        /* nothing to write */
+        s.b = s.a;
+    } else if (which == 1u) {
+        /* one register outside the searched groups */
+        s.b = edited(&s.a, KST_F_BOOST, 30);
+    } else if (which == 2u) {
+        /* both searched groups, the duty pair and one more register */
+        s.b = edited(&s.a, KST_F_PULSE_UPPER, 0xA40);
+        s.b = edited(&s.b, KST_F_PULSE_LOWER, 0x520);
+        s.b = edited(&s.b, KST_F_UNCONT_POS, 0x800);
+        s.b = edited(&s.b, KST_F_SPD, 0x234);
+        s.b = edited(&s.b, KST_F_SPD_SEL, 1);
+        s.b = edited(&s.b, KST_F_DUTY, 200);
+        s.b = edited(&s.b, KST_F_BOOST, 30);
+    } else {
+        /* Upper across a change of its high part */
+        (void)kst_field_set(&s.a, KST_F_PULSE_UPPER, 0xBFF);
+        (void)kst_field_set(&s.a, KST_F_UNCONT_POS,
+                            which == 3u ? 0xB20 : 0xBFF);
+        s.b = s.a;
+        (void)kst_field_set(&s.b, KST_F_PULSE_UPPER, 0xC00);
+        if (which == 4u) {
+            s.want = KST_PLAN_ERR_NO_PATH;
+        } else if (which == 5u) {
+            s.restore = true;
+            s.want_unchecked = 1;
+        } else if (which == 6u) {
+            /* no path in the first group, with a second one to change */
+            (void)kst_field_set(&s.b, KST_F_SPD, 0x234);
+            s.restore = true;
+            s.want_unchecked = 1;
+        }
+    }
+    return s;
+}
+
+static kst_plan_result_t sample_run(const sample_t *s, kst_plan_t *plan,
+                                    uint32_t budget, uint32_t cap,
+                                    uint32_t *units)
+{
+    memset(plan, 0xA5, sizeof(*plan));
+    return s->restore
+               ? restore_in_slices(&s->a, &s->b, plan, budget, cap, units)
+               : edit_in_slices(&s->a, &s->b, 0, plan, NULL, budget, cap,
+                                units);
+}
+
+static kst_plan_result_t sample_once(const sample_t *s, kst_plan_t *plan)
+{
+    memset(plan, 0xA5, sizeof(*plan));
+    return s->restore ? kst_plan_restore(&s->a, &s->b, plan)
+                      : kst_plan_edit(&s->a, &s->b, 0, plan, NULL);
+}
+
+TEST_CASE(every_budget_from_1_unit_up_gives_the_plan_of_the_one_call)
+{
+    for (unsigned i = 0; i < SAMPLES; ++i) {
+        const sample_t s = sample(i);
+        kst_plan_t once;
+        kst_plan_t plan;
+        uint32_t all = 0;
+        uint32_t units = 0;
+        uint32_t top;
+
+        CHECK_EQ(sample_once(&s, &once), s.want);
+        CHECK_EQ(once.unchecked, s.want_unchecked);
+        CHECK_EQ(sample_run(&s, &plan, KST_PLAN_NO_CAP, KST_PLAN_NO_CAP, &all),
+                 s.want);
+        CHECK(memcmp(&plan, &once, sizeof(plan)) == 0);
+        CHECK(all > 0u);
+        /* Every budget up to the whole job and past it, to 700 units; the
+         * larger jobs of the sample then in steps of 97 units. */
+        top = all + KST_PLAN_PIECE_UNITS + 2u;
+        for (uint32_t budget = 1; budget <= top;
+             budget += budget < 700u ? 1u : 97u) {
+            CHECK_EQ(sample_run(&s, &plan, budget, KST_PLAN_NO_CAP, &units),
+                     s.want);
+            if (memcmp(&plan, &once, sizeof(plan)) != 0 || units != all) {
+                T_FAIL("sample %u, budget %u: another plan or %u units, "
+                       "not %u", i, (unsigned)budget, (unsigned)units,
+                       (unsigned)all);
+                break;
+            }
+        }
+    }
+}
+
+TEST_CASE(a_budget_of_0_units_does_no_work)
+{
+    const sample_t s = sample(3);
+    kst_plan_job_t job;
+    kst_plan_t plan;
+    kst_plan_t once;
+
+    CHECK_EQ(kst_plan_edit_begin(&job, &s.a, &s.b, 0, &plan, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_BUSY);
+    CHECK_EQ(kst_plan_units(&job), 0);
+    for (unsigned i = 0; i < 1000u; ++i) {
+        CHECK_EQ(kst_plan_step(&job, 0), KST_PLAN_BUSY);
+    }
+    CHECK_EQ(kst_plan_units(&job), 0);
+    /* In the middle of the job too. */
+    CHECK_EQ(kst_plan_step(&job, 50), KST_PLAN_BUSY);
+    {
+        const uint32_t units = kst_plan_units(&job);
+
+        CHECK(units >= 50u && units < 50u + KST_PLAN_PIECE_UNITS);
+        CHECK_EQ(kst_plan_step(&job, 0), KST_PLAN_BUSY);
+        CHECK_EQ(kst_plan_units(&job), units);
+    }
+    CHECK_EQ(in_slices(&job, KST_PLAN_BUSY, 1), KST_PLAN_OK);
+    CHECK_EQ(sample_once(&s, &once), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &once, sizeof(plan)) == 0);
+}
+
+TEST_CASE(a_budget_of_1_unit_ends_every_call_after_one_piece_of_work)
+{
+    for (unsigned i = 0; i < SAMPLES; ++i) {
+        const sample_t s = sample(i);
+        kst_plan_job_t job;
+        kst_plan_t plan;
+        kst_plan_result_t r;
+        unsigned calls = 0;
+        uint32_t largest = 0;
+
+        r = s.restore ? kst_plan_restore_begin(&job, &s.a, &s.b, &plan,
+                                               KST_PLAN_NO_CAP)
+                      : kst_plan_edit_begin(&job, &s.a, &s.b, 0, &plan, NULL,
+                                            KST_PLAN_NO_CAP);
+        while (r == KST_PLAN_BUSY) {
+            const uint32_t before = kst_plan_units(&job);
+            uint32_t took;
+
+            r = kst_plan_step(&job, 1);
+            took = kst_plan_units(&job) - before;
+            CHECK(took >= 1u && took <= KST_PLAN_PIECE_UNITS);
+            largest = took > largest ? took : largest;
+            calls++;
+        }
+        CHECK_EQ(r, s.want);
+        CHECK(calls > 0u && calls <= kst_plan_units(&job));
+        /* The samples with an extra write hold the largest piece. */
+        CHECK(i < 3u || largest == KST_PLAN_PIECE_UNITS);
+    }
+}
+
+TEST_CASE(a_job_that_needs_its_cap_exactly_ends_with_its_verdict)
+{
+    for (unsigned i = 0; i < SAMPLES; ++i) {
+        const sample_t s = sample(i);
+        kst_plan_t once;
+        kst_plan_t plan;
+        uint32_t all = 0;
+        uint32_t units = 0;
+
+        CHECK_EQ(sample_once(&s, &once), s.want);
+        CHECK_EQ(sample_run(&s, &plan, 1, KST_PLAN_NO_CAP, &all), s.want);
+        for (unsigned b = 0; b < BUDGETS; ++b) {
+            CHECK_EQ(sample_run(&s, &plan, k_budgets[b], all, &units),
+                     s.want);
+            CHECK(memcmp(&plan, &once, sizeof(plan)) == 0);
+            CHECK_EQ(units, all);
+            CHECK_EQ(sample_run(&s, &plan, k_budgets[b], all + 1u, &units),
+                     s.want);
+            CHECK(memcmp(&plan, &once, sizeof(plan)) == 0);
+        }
+    }
+}
+
+TEST_CASE(a_job_one_unit_over_its_cap_ends_too_complex_with_no_write)
+{
+    for (unsigned i = 0; i < SAMPLES; ++i) {
+        const sample_t s = sample(i);
+        kst_plan_t plan;
+        uint32_t all = 0;
+        uint32_t units = 0;
+
+        CHECK_EQ(sample_run(&s, &plan, 1, KST_PLAN_NO_CAP, &all), s.want);
+        for (unsigned b = 0; b < BUDGETS; ++b) {
+            CHECK_EQ(sample_run(&s, &plan, k_budgets[b], all - 1u, &units),
+                     KST_PLAN_ERR_TOO_COMPLEX);
+            CHECK_EQ(plan.n, 0);
+            CHECK_EQ(plan.unchecked, 0);
+            CHECK_EQ(plan.kind, s.restore ? KST_PLAN_RESTORE : KST_PLAN_EDIT);
+            CHECK(memcmp(&plan.start, &s.a, sizeof(s.a)) == 0);
+            CHECK(memcmp(&plan.target, &s.b, sizeof(s.b)) == 0);
+            /* The piece that passes this cap is the job's last. */
+            CHECK_EQ(units, all);
+        }
+    }
+}
+
+/* Every cap below what the job needs, for the samples of up to 2,000
+ * units; a spread of caps for the larger ones.  No cap gives a plan and no
+ * job runs past its cap by a whole piece. */
+TEST_CASE(every_cap_below_the_need_ends_too_complex)
+{
+    for (unsigned i = 0; i < SAMPLES; ++i) {
+        const sample_t s = sample(i);
+        kst_plan_t plan;
+        uint32_t all = 0;
+        uint32_t units = 0;
+
+        CHECK_EQ(sample_run(&s, &plan, 1, KST_PLAN_NO_CAP, &all), s.want);
+        for (uint32_t cap = 0; cap < all; cap += all <= 2000u ? 1u : 61u) {
+            const kst_plan_result_t r =
+                sample_run(&s, &plan, next_budget(), cap, &units);
+
+            if (r != KST_PLAN_ERR_TOO_COMPLEX || plan.n != 0u
+                || plan.unchecked != 0u || units <= cap
+                || units > cap + KST_PLAN_PIECE_UNITS) {
+                T_FAIL("sample %u, cap %u: result %d, %u writes, %u units",
+                       i, (unsigned)cap, (int)r, plan.n, (unsigned)units);
+                break;
+            }
+        }
+    }
+}
+
+TEST_CASE(a_refusal_at_begin_is_the_result_of_every_step)
+{
+    const kst_image_t bench = sim_bench_image();
+    kst_image_t other = bench;
+    kst_plan_job_t job;
+    kst_plan_t plan;
+    kst_rules_t violated = 0;
+
+    other.r[0] ^= 0x01u;
+    CHECK_EQ(kst_plan_edit_begin(&job, &bench, &other, 0, &plan, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_R00);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_R00);
+    CHECK_EQ(kst_plan_step(&job, 0), KST_PLAN_ERR_R00);
+    CHECK_EQ(kst_plan_units(&job), 0);
+    CHECK_EQ(plan.n, 0);
+    CHECK_EQ(kst_plan_restore_begin(&job, &bench, &other, &plan,
+                                    KST_PLAN_NO_CAP), KST_PLAN_ERR_R00);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_R00);
+
+    other = bench;
+    other.r[KST_REG_NODE_ADDR] = 0x11;
+    CHECK_EQ(kst_plan_edit_begin(&job, &bench, &other, 0, &plan, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_PAIRING);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_PAIRING);
+
+    other = bench;
+    (void)kst_field_set(&other, KST_F_PULSE_UPPER, 0xFFF);
+    CHECK_EQ(kst_plan_edit_begin(&job, &bench, &other, 0, &plan, &violated,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_RULES);
+    CHECK(violated != 0u);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_RULES);
+    CHECK_EQ(plan.n, 0);
+    /* A cap of 0 units does not turn a refusal into another one. */
+    CHECK_EQ(kst_plan_edit_begin(&job, &bench, &other, 0, &plan, &violated, 0),
+             KST_PLAN_ERR_RULES);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_RULES);
+}
+
+TEST_CASE(a_job_without_its_arguments_is_refused)
+{
+    const kst_image_t bench = sim_bench_image();
+    kst_plan_job_t job;
+    kst_plan_t plan;
+    kst_rules_t violated = 5;
+
+    CHECK_EQ(kst_plan_step(NULL, 1), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_units(NULL), 0);
+    memset(&job, 0, sizeof(job));
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_units(&job), 0);
+
+    memset(&plan, 0xA5, sizeof(plan));
+    CHECK_EQ(kst_plan_edit_begin(NULL, &bench, &bench, 0, &plan, &violated,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(plan.n, 0);
+    CHECK(violated == 0u);
+    memset(&plan, 0xA5, sizeof(plan));
+    CHECK_EQ(kst_plan_edit_begin(&job, NULL, &bench, 0, &plan, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(plan.n, 0);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_edit_begin(&job, &bench, NULL, 0, &plan, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_edit_begin(&job, &bench, &bench, 0, NULL, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_edit_begin(NULL, &bench, &bench, 0, NULL, NULL,
+                                 KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+
+    memset(&plan, 0xA5, sizeof(plan));
+    CHECK_EQ(kst_plan_restore_begin(NULL, &bench, &bench, &plan,
+                                    KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(plan.n, 0);
+    CHECK_EQ(kst_plan_restore_begin(&job, NULL, &bench, &plan,
+                                    KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_restore_begin(&job, &bench, NULL, &plan,
+                                    KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_restore_begin(&job, &bench, &bench, NULL,
+                                    KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_step(&job, 1), KST_PLAN_ERR_ARG);
+    CHECK_EQ(kst_plan_restore_begin(NULL, &bench, &bench, NULL,
+                                    KST_PLAN_NO_CAP), KST_PLAN_ERR_ARG);
+}
+
+/* A job given up in the middle leaves nothing behind: the same job memory
+ * and the same plan take the next request. */
+/* A caller that plans again from a plan it holds passes images that lie
+ * in the plan the call clears. */
+TEST_CASE(a_start_and_a_target_inside_the_plan_are_read_before_it_is_cleared)
+{
+    const kst_image_t a = sim_bench_image();
+    const kst_image_t b = edited(&a, KST_F_BOOST, 19);
+    kst_plan_t want;
+    kst_plan_t back;
+    kst_plan_t plan;
+    kst_plan_job_t job;
+
+    CHECK_EQ(kst_plan_edit(&a, &b, 0, &want, NULL), KST_PLAN_OK);
+    CHECK_EQ(want.n, 1);
+    CHECK_EQ(kst_plan_edit(&b, &a, 0, &back, NULL), KST_PLAN_OK);
+    CHECK_EQ(back.n, 1);
+
+    /* the target */
+    plan = want;
+    CHECK_EQ(kst_plan_edit(&a, &plan.target, 0, &plan, NULL), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    /* the start */
+    plan = want;
+    CHECK_EQ(kst_plan_edit(&plan.start, &b, 0, &plan, NULL), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    /* both, and crossed: the way back */
+    plan = want;
+    CHECK_EQ(kst_plan_edit(&plan.start, &plan.target, 0, &plan, NULL),
+             KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    CHECK_EQ(kst_plan_edit(&plan.target, &plan.start, 0, &plan, NULL),
+             KST_PLAN_OK);
+    CHECK(memcmp(&plan, &back, sizeof(plan)) == 0);
+    /* a job */
+    plan = want;
+    CHECK_EQ(kst_plan_edit_begin(&job, &plan.start, &plan.target, 0, &plan,
+                                 NULL, KST_PLAN_NO_CAP), KST_PLAN_BUSY);
+    CHECK(memcmp(&plan.start, &a, sizeof(a)) == 0);
+    CHECK(memcmp(&plan.target, &b, sizeof(b)) == 0);
+    CHECK_EQ(kst_plan_step(&job, KST_PLAN_NO_CAP), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+
+    /* a restore */
+    CHECK_EQ(kst_plan_restore(&a, &b, &want), KST_PLAN_OK);
+    plan = want;
+    CHECK_EQ(kst_plan_restore(&plan.start, &plan.target, &plan), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    CHECK_EQ(kst_plan_restore(&b, &a, &back), KST_PLAN_OK);
+    CHECK_EQ(kst_plan_restore(&plan.target, &plan.start, &plan), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &back, sizeof(plan)) == 0);
+
+    /* a release of the pairing */
+    CHECK_EQ(kst_plan_release_pairing(&a, &want), KST_PLAN_OK);
+    plan = want;
+    CHECK_EQ(kst_plan_release_pairing(&plan.start, &plan), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+}
+
+TEST_CASE(a_job_begun_again_in_the_middle_plans_the_new_request)
+{
+    const sample_t first = sample(4);
+    kst_plan_job_t job;
+    kst_plan_t plan;
+    kst_plan_t once;
+    uint32_t all = 0;
+
+    CHECK_EQ(sample_run(&first, &plan, 1, KST_PLAN_NO_CAP, &all),
+             KST_PLAN_ERR_NO_PATH);
+    CHECK(all > 256u);
+    for (unsigned i = 0; i < SAMPLES; ++i) {
+        const sample_t s = sample(i);
+
+        /* Given up after 1 unit, and at 14 more points of the first job. */
+        for (uint32_t given_up_at = 1;
+             given_up_at + KST_PLAN_PIECE_UNITS < all;
+             given_up_at += all / 15u) {
+            kst_plan_result_t r;
+
+            CHECK_EQ(kst_plan_edit_begin(&job, &first.a, &first.b, 0, &plan,
+                                         NULL, KST_PLAN_NO_CAP),
+                     KST_PLAN_BUSY);
+            CHECK_EQ(kst_plan_step(&job, given_up_at), KST_PLAN_BUSY);
+            r = s.restore ? kst_plan_restore_begin(&job, &s.a, &s.b, &plan,
+                                                   KST_PLAN_NO_CAP)
+                          : kst_plan_edit_begin(&job, &s.a, &s.b, 0, &plan,
+                                                NULL, KST_PLAN_NO_CAP);
+            CHECK_EQ(kst_plan_units(&job), 0);
+            CHECK_EQ(in_slices(&job, r, 17), s.want);
+            CHECK_EQ(sample_once(&s, &once), s.want);
+            CHECK(memcmp(&plan, &once, sizeof(plan)) == 0);
+        }
+    }
+}
+
+TEST_CASE(two_jobs_step_side_by_side)
+{
+    const sample_t sa = sample(3);
+    const sample_t sb = sample(6);
+    kst_plan_job_t ja;
+    kst_plan_job_t jb;
+    kst_plan_t pa;
+    kst_plan_t pb;
+    kst_plan_t once;
+    kst_plan_result_t ra;
+    kst_plan_result_t rb;
+
+    ra = kst_plan_edit_begin(&ja, &sa.a, &sa.b, 0, &pa, NULL, KST_PLAN_NO_CAP);
+    rb = kst_plan_restore_begin(&jb, &sb.a, &sb.b, &pb, KST_PLAN_NO_CAP);
+    while (ra == KST_PLAN_BUSY || rb == KST_PLAN_BUSY) {
+        ra = kst_plan_step(&ja, 3);
+        rb = kst_plan_step(&jb, 5);
+    }
+    CHECK_EQ(ra, KST_PLAN_OK);
+    CHECK_EQ(rb, KST_PLAN_OK);
+    CHECK_EQ(sample_once(&sa, &once), KST_PLAN_OK);
+    CHECK(memcmp(&pa, &once, sizeof(pa)) == 0);
+    CHECK_EQ(sample_once(&sb, &once), KST_PLAN_OK);
+    CHECK(memcmp(&pb, &once, sizeof(pb)) == 0);
+}
+
+/* --- the cap of the coprocessor ---------------------------------------------- */
+
+static unsigned nibble(char c)
+{
+    return c <= '9' ? (unsigned)(c - '0') : (unsigned)(c - 'a') + 10u;
+}
+
+/* An image from 64 hex digits, register 00 first. */
+static kst_image_t image_of(const char *hex)
+{
+    kst_image_t img;
+
+    memset(&img, 0, sizeof(img));
+    for (unsigned i = 0; i < KST_REG_COUNT; ++i) {
+        img.r[i] = (uint8_t)(16u * nibble(hex[2u * i])
+                             + nibble(hex[2u * i + 1u]));
+    }
+    return img;
+}
+
+/*
+ * The costliest requests a search for them found, by result: a checked
+ * plan, an edit with no path, a restore left unchecked.  Their unit counts
+ * are pinned: a change of the planner that makes them dearer shows here
+ * before it reaches the cap.  KST_PLAN_WORK_CAP lies above every one.
+ */
+TEST_CASE(the_costliest_plans_found_end_below_the_work_cap)
+{
+    static const struct {
+        bool restore;
+        const char *a;
+        const char *b;
+        kst_plan_result_t want;
+        unsigned unchecked;
+        uint32_t units;
+    } k_worst[] = {
+        { true,
+          "00898914f55efd41ff940e138e1714009696008101000000000000ff00100000",
+          "00a3a314effc030800c80fb27209140096960001010000000000002eb3100000",
+          KST_PLAN_OK, 0, 115499u },
+        { false,
+          "00f5f514487704eff4b20fc710091400969600010b000000000000e301100000",
+          "00f5f51448770465cb840d8e66041400969600010b000000000000e301100000",
+          KST_PLAN_OK, 0, 86312u },
+        { false,
+          "00494914ca4904721e920f39ff13140096960069010000000000000403100000",
+          "00f5f514c837047110c30d80081c140096960038010000000000000103100000",
+          KST_PLAN_ERR_NO_PATH, 0, 98404u },
+        { false,
+          "00f5f514017d0469ffa30d80a82414009696000101000000000000d008100000",
+          "00f5f5140855045200c50feb580a140096960042010000000000008b00100000",
+          KST_PLAN_OK, 0, 115210u },
+        { false,
+          "00f5f514c5ce04aeff8345146c2c140096960084010000000000000c03100000",
+          "00f5f5144d2304ef10c50f155d0b140096960096010000000000007701100000",
+          KST_PLAN_ERR_NO_PATH, 0, 118776u },
+        { true,
+          "00f5f51459da2434ffb4d04414e5140096960001010000000000000a44100000",
+          "002b2b144076261913cb07ce362b140096960031010000000000002402100000",
+          KST_PLAN_OK, 1, 120136u },
+    };
+    uint32_t largest = 0;
+
+    for (unsigned i = 0; i < sizeof(k_worst) / sizeof(k_worst[0]); ++i) {
+        const kst_image_t a = image_of(k_worst[i].a);
+        const kst_image_t b = image_of(k_worst[i].b);
+        kst_plan_t plan;
+        kst_plan_t capped;
+        uint32_t units = 0;
+        kst_plan_result_t r;
+
+        r = k_worst[i].restore
+                ? restore_in_slices(&a, &b, &plan, KST_PLAN_SLICE_UNITS,
+                                    KST_PLAN_NO_CAP, &units)
+                : edit_in_slices(&a, &b, ~(kst_field_set_t)0, &plan, NULL,
+                                 KST_PLAN_SLICE_UNITS, KST_PLAN_NO_CAP,
+                                 &units);
+        CHECK_EQ(r, k_worst[i].want);
+        CHECK_EQ(plan.unchecked, k_worst[i].unchecked);
+        CHECK_EQ(units, k_worst[i].units);
+        CHECK(r != KST_PLAN_OK || plan_is_consistent(&plan));
+        largest = units > largest ? units : largest;
+        /* The same under the cap the coprocessor plans with. */
+        r = k_worst[i].restore
+                ? restore_in_slices(&a, &b, &capped, KST_PLAN_SLICE_UNITS,
+                                    KST_PLAN_WORK_CAP, NULL)
+                : edit_in_slices(&a, &b, ~(kst_field_set_t)0, &capped, NULL,
+                                 KST_PLAN_SLICE_UNITS, KST_PLAN_WORK_CAP,
+                                 NULL);
+        CHECK_EQ(r, k_worst[i].want);
+        CHECK(memcmp(&plan, &capped, sizeof(plan)) == 0);
+    }
+    /* The margin the header states: the cap is at least 1.5 times the
+     * costliest request found. */
+    CHECK_EQ(largest, 120136u);
+    CHECK(2u * KST_PLAN_WORK_CAP >= 3u * largest);
+    CHECK(KST_PLAN_SLICE_UNITS > KST_PLAN_PIECE_UNITS);
+}
+
 int main(void)
 {
     RUN(one_field_in_one_register_is_one_write);
@@ -1094,5 +1743,18 @@ int main(void)
     RUN(the_plans_with_an_extra_write_and_with_no_path_are_pinned);
     RUN(the_plans_of_4000_seeded_random_pairs_are_pinned);
     RUN(the_plans_between_2000_seeded_random_images_are_pinned);
+    RUN(in_slices_of_a_spread_of_budgets_the_pinned_plans_are_the_same);
+    RUN(every_budget_from_1_unit_up_gives_the_plan_of_the_one_call);
+    RUN(a_budget_of_0_units_does_no_work);
+    RUN(a_budget_of_1_unit_ends_every_call_after_one_piece_of_work);
+    RUN(a_job_that_needs_its_cap_exactly_ends_with_its_verdict);
+    RUN(a_job_one_unit_over_its_cap_ends_too_complex_with_no_write);
+    RUN(every_cap_below_the_need_ends_too_complex);
+    RUN(a_refusal_at_begin_is_the_result_of_every_step);
+    RUN(a_job_without_its_arguments_is_refused);
+    RUN(a_start_and_a_target_inside_the_plan_are_read_before_it_is_cleared);
+    RUN(a_job_begun_again_in_the_middle_plans_the_new_request);
+    RUN(two_jobs_step_side_by_side);
+    RUN(the_costliest_plans_found_end_below_the_work_cap);
     return test_summary("kst_plan");
 }
