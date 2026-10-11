@@ -5,7 +5,7 @@ import { CATALOGUE } from '../../core/catalogue.ts';
 import { malformed } from '../check.ts';
 import { LANGS, anchorsText, cataloguePins, fileOf, generate, mergeAnchors, pathOf } from '../generate.ts';
 import type { DrawingRecord } from '../generate.ts';
-import { LABEL_EM, labelWidth } from '../lib.ts';
+import { Dwg, LABEL_EM, labelWidth } from '../lib.ts';
 import { INA3221_MAP, LIST, STRIP_ROWS, stripPoint } from '../parts.ts';
 
 const clone = (): Catalogue => structuredClone(CATALOGUE) as Catalogue;
@@ -232,4 +232,59 @@ test('a label with markup characters is escaped in the file and plain in the tab
   assert.equal(malformed(svg), null);
   assert.ok(svg.includes('A&lt;B &amp; &quot;C&quot;'));
   assert.equal(o.anchors.files['servo.svg']!.pins[servo.pins[0]!.id]!.label.en, 'A<B & "C"');
+});
+
+const sheet = (): Dwg => new Dwg({
+  file: 'x', pfx: 'x', w: 300, h: 200, title: 'x', desc: 'x', lang: 'en',
+  labels: { IN: { en: 'IN', de: 'IN' }, OUT: { en: 'OUT', de: 'OUT' } },
+});
+
+test('a lead end reaches a pin directly or over a chain of leads', () => {
+  const d = sheet();
+  d.axial(40, 60, 120, 60);
+  d.bare(120, 60, 160, 60);
+  d.axial(160, 60, 260, 60);
+  d.eye(40, 60);
+  d.eye(260, 60);
+  // No pin: every end and both eyelets are loose.
+  assert.deepEqual(d.loose(), ['40,60', '120,60', '160,60', '260,60']);
+  d.pin('IN', 40, 60, 'W', 20, 40);
+  // 1 pin at the first end connects the whole chain.
+  assert.deepEqual(d.loose(), []);
+});
+
+test('a lead beside a pin, an eyelet without a lead and a second chain are loose', () => {
+  const d = sheet();
+  d.axial(40, 60, 260, 60);
+  d.pin('IN', 40, 60, 'W', 20, 40);
+  d.pin('OUT', 260, 60, 'E', 280, 40, { a: 'end' });
+  assert.deepEqual(d.loose(), []);
+  // 0.5 px beside the wire point of a pin is not at the pin.
+  d.axial(40.5, 150, 200, 150);
+  assert.deepEqual(d.loose(), ['40.5,150', '200,150']);
+  d.eye(150, 20);
+  assert.deepEqual(d.loose(), ['40.5,150', '200,150', '150,20']);
+});
+
+test('the generator refuses a drawing with a lead that reaches no pin', () => {
+  const tap = LIST.find((e) => e.file === 'tap')!;
+  const draw = tap.draw;
+  try {
+    (tap as { draw: typeof draw }).draw = (d) => { draw(d); d.add(d.axial(96, 110, 204, 110)); };
+    assert.throws(() => generate(CATALOGUE), /tap: lead ends that reach no pin: 96,110 204,110/);
+  } finally {
+    (tap as { draw: typeof draw }).draw = draw;
+  }
+  assert.doesNotThrow(() => generate(CATALOGUE));
+});
+
+test('the phase tap drawing shows the resistor only: 2 lead ends, both pins', () => {
+  for (const lang of LANGS) {
+    const svg = out.svgs[pathOf('tap.svg', lang)]!;
+    // 1 axial body: 1 rotated group. The zener diode is wire 53 of the data file, not a drawn part.
+    assert.equal(svg.match(/<g transform="translate\([^"]*\) rotate\(/g)?.length, 1, lang);
+  }
+  assert.deepEqual(Object.keys(out.anchors.files['tap.svg']!.pins).sort(), ['IN', 'OUT']);
+  const zener = CATALOGUE.wires.filter((w) => w.kind === 'component');
+  assert.deepEqual(zener.map((w) => [w.n, w.a, w.b]), [[53, 'pad.29', 'pad.28']]);
 });

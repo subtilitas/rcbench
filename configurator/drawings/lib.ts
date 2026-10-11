@@ -56,6 +56,9 @@ export class Dwg {
   readonly anchors: Record<string, Anchor> = {};
   readonly grads = new Map<string, string>();
   readonly seen = new Set<string>();
+  /** Bare component leads as segments, and the eyelets at lead ends, in px of the viewBox. */
+  readonly leads: Array<[number, number, number, number]> = [];
+  readonly eyes: Array<[number, number]> = [];
 
   constructor(init: DwgInit) {
     this.file = init.file;
@@ -213,6 +216,7 @@ export class Dwg {
 
   // Wire loop (eyelet) at the end of a bare component lead.
   eye(x: number, y: number, r = 6, dim = false): string {
+    this.eyes.push([x, y]);
     const rr = dim ? r * 0.6 : r;
     return `<circle cx="${x}" cy="${y}" r="${r1(rr)}" fill="${CARD}" stroke="${this.u('tin')}" stroke-width="${dim ? 2 : 3}"/><circle cx="${x}" cy="${y}" r="${r1(rr + (dim ? 1 : 1.5))}" fill="none" stroke="#6d737b" stroke-width=".6"/>`;
   }
@@ -220,6 +224,7 @@ export class Dwg {
   // Axial part (resistor, diode) between two points.
   axial(x1: number, y1: number, x2: number, y2: number, o: { len?: number; wd?: number; colour?: string; bands?: Array<[number, string, number?]>; glass?: boolean } = {}): string {
     const { len = 70, wd = 20, colour = '#4f93c8', bands = [], glass = false } = o;
+    this.leads.push([x1, y1, x2, y2]);
     const ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
     const g = this.grad(`ax-${colour.slice(1)}`, ['#ffffff', colour, colour, '#000000'], 'v');
@@ -230,6 +235,32 @@ export class Dwg {
       : `<rect x="${-len / 2}" y="${-wd / 2}" width="${len}" height="${wd}" rx="${wd / 2.2}" fill="${colour}"/>`;
     return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M${x1} ${y1}L${x2} ${y2}" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>`
       + `<g transform="translate(${r1(cx)},${r1(cy)}) rotate(${r1(ang)})" filter="${this.u('s3')}">${body}${b}<rect x="${-len / 2}" y="${-wd / 2}" width="${len}" height="${wd}" rx="${wd / 2.2}" fill="${g}" opacity=".28"/></g>`;
+  }
+
+  // Bare lead between two points, without a body.
+  bare(x1: number, y1: number, x2: number, y2: number): string {
+    this.leads.push([x1, y1, x2, y2]);
+    const d = x2 !== x1 && y2 === y1 ? `M${x1} ${y1}H${x2}` : `M${x1} ${y1}L${x2} ${y2}`;
+    return `<path d="${d}" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="${d}" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>`;
+  }
+
+  /**
+   * The lead ends and eyelets that reach no pin. A lead end reaches a pin when a
+   * chain of leads that share end points ends at the wire point of a pin.
+   * Returns each loose point as "x,y".
+   */
+  loose(): string[] {
+    const key = (x: number, y: number): string => `${x},${y}`;
+    const reached = new Set(Object.values(this.anchors).map((a) => key(a.x, a.y)));
+    for (let grown = true; grown;) {
+      grown = false;
+      for (const [x1, y1, x2, y2] of this.leads) {
+        const a = key(x1, y1), b = key(x2, y2);
+        if (reached.has(a) !== reached.has(b)) { reached.add(a); reached.add(b); grown = true; }
+      }
+    }
+    const ends = [...this.leads.flatMap(([x1, y1, x2, y2]) => [key(x1, y1), key(x2, y2)]), ...this.eyes.map(([x, y]) => key(x, y))];
+    return [...new Set(ends.filter((k) => !reached.has(k)))];
   }
 
   solder(x: number, y: number, r = 6): string {
