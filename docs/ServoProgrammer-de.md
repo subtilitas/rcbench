@@ -7,7 +7,8 @@ dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte
 Einstellungen zurück. Die zwei Marken teilen ein Protokoll und einen
 Registersatz. Er ist ein Overlay auf dem
 [SERVO-Bildschirm](Screens-de.md#servo) und wird mit **PROGRAMM.** oben auf
-der rechten Karte geöffnet.
+der rechten Karte geöffnet. **PROGRAMM.** beendet einen laufenden
+automatischen Test als `vom Bediener gestoppt`.
 
 **Kein Frame dieses Codes ist an ein Servo gesendet worden.** Der
 Programmierer ist nur in der Host-Suite gegen ein Servo- und Leitungsmodell
@@ -251,7 +252,9 @@ ist.
 
 Ein Tipp öffnet die Schreibseite. **HALTEN ZUM SCHREIBEN** startet das
 Schreiben nach 2 s. Das erste Schreiben nach einem **VERBINDEN** zeigt
-`Ruderhorn frei, kein Gestänge angeschlossen.` als erste Zeile.
+`Ruderhorn frei, kein Gestänge angeschlossen.` als erste Zeile. Ein
+Schreiben, dessen Start die Karte, ein Stopp oder der Link verhindert hat,
+ist nicht dieses erste Schreiben: die Zeile bleibt für das nächste.
 
 ![Die Schreibseite](img/de/servo-kst-write.png)
 
@@ -290,7 +293,8 @@ Zahl der erfolgten Schreibvorgänge: `Register 03, 1 Schreibvorgänge erfolgt.`
 | Gespeichert | dem Panel, in `KST.TXT` auf der Karte; ohne Karte im RAM | zum nächsten **SPEICHERN**; ohne Karte bis zum Ausschalten |
 | Vor einem Schreiben | dem Panel, in `KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
-**SPEICHERN** behält das zuletzt gelesene Abbild. Das Panel hält
+**SPEICHERN** behält das zuletzt gelesene Abbild. Es ist aus, solange ein
+Vorgang läuft: ein laufendes Lesen ersetzt dieses Abbild. Das Panel hält
 1 gespeichertes Backup; ein zweites **SPEICHERN** ersetzt es. Die Zeile
 unter den Tasten vergleicht es mit dem Servo:
 `Gespeichertes Backup: 2 Werte weichen vom Servo ab.`
@@ -313,7 +317,10 @@ Das Panel schreibt den Text nach `KST.NEW`, und die Datei bekommt den Namen
 Karte oder die Versorgung beendet, hinterlässt `KST.TXT` wie zuvor oder
 eine vollständige `KST.NEW`. Beim Einschalten wird eine `KST.NEW` mit
 stimmender Prüfsumme benutzt und umbenannt; eine mit falscher Prüfsumme
-wird entfernt und `KST.TXT` benutzt. Nicht auf einer Karte gelaufen.
+wird entfernt und `KST.TXT` benutzt. Eine Datei, die die Karte nicht
+annimmt, wird alle 5 s erneut geschrieben, bis die Karte sie annimmt, damit
+ein auf dem Panel verworfener Vermerk nicht auf der Karte bleibt. Nicht auf
+einer Karte gelaufen.
 
 ### Zurückspielen
 
@@ -440,7 +447,7 @@ Testers treiben den Kanal wie zuvor.
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` |
 | Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` |
-| 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.` |
+| 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
 | 30 s kein Ergebnis eines Vorgangs | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene

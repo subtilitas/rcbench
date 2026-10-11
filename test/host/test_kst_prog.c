@@ -1109,6 +1109,8 @@ TEST_CASE(a_card_that_takes_no_journal_stops_the_write)
     CHECK(!kst_prog_journal(&g_p));
     CHECK(!kst_prog_in_doubt(&g_p));
     CHECK_EQ(kst_prog_changes(&g_p), 1);
+    /* No write started: the next one is still the session's first. */
+    CHECK(kst_prog_first_write(&g_p));
 
     /* A card that never answers: KST_PROG_STORE_MS. */
     g_card_fails = false;
@@ -1122,6 +1124,7 @@ TEST_CASE(a_card_that_takes_no_journal_stops_the_write)
     CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
     CHECK_EQ(g_starts, 2);
     CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(kst_prog_first_write(&g_p));
     /* Its late answer starts nothing. */
     kst_prog_file_done(&g_p, true);
     frames(5);
@@ -1708,6 +1711,7 @@ TEST_CASE(a_stop_before_the_command_is_taken_sends_nothing)
     frames(20);
     CHECK_EQ(g_starts, 2);
     CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(kst_prog_first_write(&g_p));
 }
 
 TEST_CASE(the_operators_abort_ends_an_operation_that_runs)
@@ -1849,9 +1853,25 @@ TEST_CASE(every_answer_of_start_is_a_message)
     edit(KST_F_DUTY, 200);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK(kst_prog_journal(&g_p));
+    CHECK(kst_prog_first_write(&g_p));
     answer(KST_LINK_START_BUSY);
     CHECK(!kst_prog_journal(&g_p));
     CHECK(!kst_prog_in_doubt(&g_p));
+    /* Nor is it the session's first write; one that started is, whatever
+     * comes of it. */
+    CHECK(kst_prog_first_write(&g_p));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_first_write(&g_p));
+    answer(KST_LINK_START_OK);
+    CHECK(!kst_prog_first_write(&g_p));
+    /* A command nobody answers within KST_PROG_START_MS is none. */
+    by_hand();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    pass(KST_PROG_START_MS);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(kst_prog_first_write(&g_p));
 }
 
 TEST_CASE(every_refusal_of_the_port_is_a_message)
@@ -2128,6 +2148,136 @@ static void read_never_ends(uint32_t t0, bool verify)
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
     CHECK(!kst_prog_in_doubt(&g_p));
     CHECK(kst_prog_editable(&g_p));
+}
+
+/* A read or a verify the link gave up on may have run on the coprocessor:
+ * the image here is not the one there. */
+static void read_gets_no_answer(bool verify)
+{
+    kst_link_outcome_t o;
+
+    by_hand();
+    CHECK(kst_prog_editable(&g_p));
+    CHECK_EQ(verify ? kst_prog_verify(&g_p) : kst_prog_read(&g_p),
+             KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_NO_ANSWER;
+    o.op = verify ? LINK_KST_OP_VERIFY : LINK_KST_OP_READ_ALL;
+    end(&o);
+    CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_editable(&g_p));
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 200), KST_PROG_EDIT_REFUSED);
+    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK(!kst_prog_have_stored(&g_p));
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.result = KST_SES_OK;
+    o.fail_reg = 0xFF;
+    end(&o);
+    CHECK(kst_prog_editable(&g_p));
+}
+
+TEST_CASE(a_read_the_link_gave_up_on_asks_for_a_read)
+{
+    kst_link_outcome_t o;
+
+    read_gets_no_answer(false);
+    read_gets_no_answer(true);
+    /* A frame the page refused ran nothing: the image stands. */
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_NACK;
+    o.op = LINK_KST_OP_READ_ALL;
+    end(&o);
+    CHECK(kst_prog_editable(&g_p));
+}
+
+TEST_CASE(no_backup_is_taken_while_an_operation_runs)
+{
+    kst_link_outcome_t o;
+
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    /* The command waits for the control task. */
+    CHECK_EQ(kst_prog_backup(&g_p),
+             KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    CHECK(!kst_prog_have_stored(&g_p));
+    answer(KST_LINK_START_OK);
+    /* The read runs. */
+    CHECK_EQ(kst_prog_backup(&g_p),
+             KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    CHECK(!kst_prog_have_stored(&g_p));
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.result = KST_SES_OK;
+    o.fail_reg = 0xFF;
+    end(&o);
+    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
+    CHECK(kst_prog_have_stored(&g_p));
+}
+
+TEST_CASE(a_file_the_card_did_not_take_is_written_again)
+{
+    char text[KST_PROG_FILE_MAX];
+
+    /* The record of a write is discarded and the card keeps the old
+     * file: without another write the next start finds the record. */
+    by_hand();
+    g_f.now_ms = 0xFFFFF000u;            /* the wait crosses the wrap */
+    g_f.card = true;
+    pass(0);
+    g_p.journal = true;
+    g_p.journal_open = true;
+    g_p.journal_ch = CH;
+    g_p.journal_img = g_p.servo;
+    g_p.journal_target = g_p.servo;
+    kst_prog_forget(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    kst_prog_file_done(&g_p, false);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+    pass(KST_PROG_FILE_RETRY_MS - 1u);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+    pass(1);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    CHECK(strstr(text, "journal") == NULL);
+    /* It fails again, and is written again. */
+    kst_prog_file_done(&g_p, false);
+    pass(KST_PROG_FILE_RETRY_MS - 1u);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+    pass(1);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    /* The card takes it: that is the end of it. */
+    kst_prog_file_done(&g_p, true);
+    pass(2u * KST_PROG_FILE_RETRY_MS);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+
+    /* A backup the card did not take is said, and written again too. */
+    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    kst_prog_file_done(&g_p, false);
+    CHECK_EQ(msg(), KST_PROG_MSG_STORED_RAM);
+    pass(KST_PROG_FILE_RETRY_MS);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    CHECK(strstr(text, "\n00=") != NULL);
+    kst_prog_file_done(&g_p, true);
+    /* A card that is gone waits for one. */
+    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    kst_prog_file_done(&g_p, false);
+    g_f.card = false;
+    pass(KST_PROG_FILE_RETRY_MS);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+    g_f.card = true;
+    pass(1);
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
 }
 
 TEST_CASE(a_command_nobody_answers_is_given_up)
@@ -2408,6 +2558,9 @@ int main(void)
     RUN(every_refusal_of_the_port_is_a_message);
     RUN(every_result_of_the_session_is_a_message);
     RUN(every_kind_of_outcome_is_a_message);
+    RUN(a_read_the_link_gave_up_on_asks_for_a_read);
+    RUN(no_backup_is_taken_while_an_operation_runs);
+    RUN(a_file_the_card_did_not_take_is_written_again);
     RUN(a_command_nobody_answers_is_given_up);
     RUN(the_waits_hold_across_the_tick_wrap);
     RUN(the_command_counter_skips_0_when_it_wraps);

@@ -13,6 +13,7 @@
 #include "greatest.h"
 #include "touch_feed.h"
 
+#include "kst_panel.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "servo_sweep.h"
@@ -4485,6 +4486,22 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
     lift(FEED_LONE);
 }
 
+/* PROGRAM ends a run: the programmer covers the run's card, and a run
+ * left going would step the rail and the position of a channel that
+ * CONNECT takes out of PWM. */
+TEST_CASE(program_ends_a_run)
+{
+    bench_fresh();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    tap(632, 24);                                 /* PROGRAM */
+    CHECK(!servo_screen_testing());
+    CHECK(kst_panel_is_open());
+    tap(632, 24);
+    CHECK(!kst_panel_is_open());
+    CHECK(!servo_screen_testing());
+}
+
 /* A run through the screen: it passes, its files are handed over and
  * ended, the output goes off and the set points come back to what they
  * were. */
@@ -7645,6 +7662,7 @@ int main(void)
     RUN(a_question_does_not_outlive_its_run);
     RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
     RUN(a_run_stops_on_a_release_the_tracker_makes_for_a_jump);
+    RUN(program_ends_a_run);
     RUN(a_run_through_the_screen_ends_and_restores_the_set_points);
     RUN(a_run_above_6_v_starts_through_the_hv_hold);
     RUN(every_way_out_of_a_run_switches_off_and_lets_go);

@@ -1095,7 +1095,8 @@ static bool row_live(const row_t *r)
     case A_READ:
         return st == KST_PROG_PROGRAMMING;
     case A_STORE:
-        return kst_prog_have_servo(p) && !kst_prog_in_doubt(p);
+        return st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p)
+            && !kst_prog_in_doubt(p);
     case A_RESTORE:
         return p->journal
             || kst_prog_restore_offered(p, KST_PROG_FROM_SESSION)

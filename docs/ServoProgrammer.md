@@ -6,7 +6,8 @@ The programmer reads the 32 registers of a KST or Chaservo servo over its
 signal wire, shows them as settings, and writes changed settings back. The
 two brands share one protocol and one register set. It is an overlay on the
 [SERVO screen](Screens.md#servo), opened with **PROGRAM** at the top of the
-right card.
+right card. **PROGRAM** ends a running automatic test as `stopped by the
+operator`.
 
 **No frame of this code has been sent to a servo.** The programmer has run
 against a servo and line model in the host suite only. The register layout
@@ -241,7 +242,8 @@ servo. It is off without a change or with the switch off.
 
 A tap opens the write page. **HOLD TO WRITE** starts the write after 2 s.
 The first write after a **CONNECT** shows `Horn free, no linkage attached.`
-as its first line.
+as its first line. A write that the card, a stop or the link kept from
+starting is not that first write: the line stays for the next one.
 
 ![The write page](img/servo-kst-write.png)
 
@@ -279,7 +281,8 @@ done: `Register 03, 1 writes done.`
 | Stored | the panel, in `KST.TXT` on the card; in memory without a card | the next **STORE**; without a card, power off |
 | Before a write | the panel, in `KST.TXT` or in memory | the write ends verified, or the record is discarded |
 
-**STORE** keeps the image last read. The panel holds 1 stored backup; a
+**STORE** keeps the image last read. It is off while an operation runs: a
+read on its way replaces that image. The panel holds 1 stored backup; a
 second **STORE** replaces it. The line below the rows compares it with the
 servo: `Stored backup: 2 values differ from this servo.`
 
@@ -298,7 +301,9 @@ The panel writes the text to `KST.NEW`, and the file takes the name
 `KST.TXT` once the card holds it whole. A write that the card or the supply
 ends leaves `KST.TXT` as it was or a whole `KST.NEW`. At power-on a
 `KST.NEW` whose check holds is used and renamed; one whose check fails is
-removed and `KST.TXT` is used. Not run on a card.
+removed and `KST.TXT` is used. A file the card does not take is written
+again every 5 s until the card takes it, so that a record discarded on the
+panel does not stay on the card. Not run on a card.
 
 ### Restore
 
@@ -417,7 +422,7 @@ output again.` and the tester's controls drive the channel as before.
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
 | The coprocessor starts again | its session and backup are gone; `The coprocessor restarted. CONNECT and READ ALL.` |
 | The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. READ ALL.` |
-| 3 exchanges with the coprocessor in a row stay unanswered | `No answer from the coprocessor. READ ALL.` |
+| 3 exchanges with the coprocessor in a row stay unanswered | `No answer from the coprocessor. READ ALL.`; after a read or a verify the values on the panel are not edited, stored or written before a **READ ALL** that ends |
 | No result of an operation for 30 s | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, stored or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 
 Every refusal of the port and every result of the session has its own

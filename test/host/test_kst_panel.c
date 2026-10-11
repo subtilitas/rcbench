@@ -1159,6 +1159,22 @@ TEST_CASE(store_keeps_a_backup_and_says_where)
     CHECK_EQ(kst_panel_editor(), 0);
 }
 
+/* STORE is off while a read runs: the image it would keep is the one
+ * the read replaces. */
+TEST_CASE(store_waits_for_a_read_that_runs)
+{
+    fresh();
+    connected();
+    tap(val(PG_SERVO, 1, 0));                   /* READ ALL */
+    CHECK_EQ(kst_prog_state(M), KST_PROG_WORKING);
+    tap(val(PG_SERVO, 1, 1));                   /* STORE */
+    CHECK(!kst_prog_have_stored(M));
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    tap(val(PG_SERVO, 1, 1));
+    CHECK(kst_prog_have_stored(M));
+}
+
 TEST_CASE(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields)
 {
     char file[KST_PROG_FILE_MAX];
@@ -1895,6 +1911,7 @@ int main(void)
     RUN(a_coprocessor_that_restarts_ends_the_session_and_says_so);
     RUN(an_open_page_goes_when_the_link_goes);
     RUN(store_keeps_a_backup_and_says_where);
+    RUN(store_waits_for_a_read_that_runs);
     RUN(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields);
     RUN(a_backup_without_a_warning_goes_to_the_restore_page_at_once);
     RUN(a_backup_with_more_warnings_than_lines_counts_the_rest);

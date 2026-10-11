@@ -228,7 +228,6 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
         p->journal_ch = p->channel;
         p->journal_target = *target;
     }
-    p->written = true;
     if (p->journal && p->f.card) {
         p->held = *req;
         p->wait = W_FILE;
@@ -459,6 +458,11 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         || o->result != KST_SES_OK) {
         p->chain_read = false;
     }
+    if (o->kind == KST_LINK_OUT_NO_ANSWER
+        && (op == LINK_KST_OP_READ_ALL || op == LINK_KST_OP_VERIFY)) {
+        /* It may have run, with an image this side never takes. */
+        p->need_read = true;
+    }
     if (o->kind == KST_LINK_OUT_RESTARTED) {
         session_gone(p);
     }
@@ -542,6 +546,9 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         if (f->answer == KST_LINK_START_OK) {
             p->wait = W_OUTCOME;
             p->wait_ms = f->now_ms;
+            /* The first write of the session is one that started: a write
+             * the card, a stop or the link kept from starting is none. */
+            p->written = p->written || is_write(p->op);
         } else {
             not_started(p, KST_PROG_MSG_START + (unsigned)f->answer, 0);
         }
@@ -593,6 +600,13 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         p->cmd.id = 0;
         p->cmd_ready = true;
         (void)say(p, KST_PROG_MSG_TIMEOUT, 0);
+    }
+
+    if (p->file_retry
+        && (uint32_t)(f->now_ms - p->file_retry_ms)
+               >= KST_PROG_FILE_RETRY_MS) {
+        p->file_retry = false;
+        file_want(p, FILE_KEEP);
     }
 
     if (up && f->rd.known && p->wait == W_NONE) {
@@ -1117,6 +1131,10 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
 
 kst_prog_msg_id_t kst_prog_backup(kst_prog_t *p)
 {
+    if (p->wait != W_NONE || p->cmd_ready) {
+        /* A read on its way replaces the image a backup would keep. */
+        return say(p, KST_PROG_MSG_START + KST_LINK_START_BUSY, 0);
+    }
     if (!p->have_servo || kst_prog_in_doubt(p)) {
         return say(p, KST_PROG_MSG_NEED_READ, 0);
     }
@@ -1407,6 +1425,10 @@ void kst_prog_file_done(kst_prog_t *p, bool ok)
     }
     p->file_busy = false;
     p->file_for = FILE_NONE;
+    /* The card holds the text of before: a record cleared here would be
+     * found again at the next start.  The text is written again. */
+    p->file_retry = !ok;
+    p->file_retry_ms = p->f.now_ms;
     if (p->wait == W_FILE && what == FILE_JOURNAL) {
         if (ok) {
             send(p, &p->held);

@@ -32,7 +32,8 @@ history is in git.
   interrupted write names its channel, and a servo that is not the record's
   takes no restore and no write. A backup whose values pass a soft limit
   shows its warnings on a page of its own before the restore page. `KST.TXT`
-  is replaced through `KST.NEW`. A coprocessor of protocol
+  is replaced through `KST.NEW`, and a file the card does not take is
+  written again every 5 s. PROGRAM ends a running automatic test. A coprocessor of protocol
   4.11 shows the programmer as unavailable with the reason. Leaving asks for
   the servo's power to be cycled before the channel returns to PWM. German
   texts for every new string; 56 new screenshots. Host suite only

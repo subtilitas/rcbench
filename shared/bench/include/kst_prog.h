@@ -77,6 +77,8 @@ extern "C" {
 #define KST_PROG_STORE_MS 3000u
 /** The time between two fetches of images the port holds. */
 #define KST_PROG_FETCH_MS 1000u
+/** A file the card did not take is written again after this long. */
+#define KST_PROG_FILE_RETRY_MS 5000u
 
 /** Where the programmer is. */
 typedef enum {
@@ -258,6 +260,8 @@ typedef struct {
 
     bool file_wanted;
     bool file_busy;
+    bool file_retry;          /**< the card owes the file          */
+    uint32_t file_retry_ms;
     uint8_t file_next;        /**< what the write wanted is for    */
     uint8_t file_for;         /**< what the write on its way is for */
 

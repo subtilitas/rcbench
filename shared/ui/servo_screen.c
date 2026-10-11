@@ -3718,6 +3718,9 @@ static void ov_rest(const touch_event_t *evt)
             if (kst_panel_is_open()) {
                 kst_panel_close();
             } else {
+                /* A run would go on behind the programmer, stepping the
+                 * rail and the position of a channel CONNECT takes. */
+                test_end_now(SERVO_TEST_AB_OPERATOR);
                 s.ov_open = false;
                 s.kp_alone = false;
                 close_panels();
