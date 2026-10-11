@@ -1,7 +1,6 @@
 // Each setup in each cell of the matrix: a part beyond the base setup leaves
 // by its remove control or by its tick under "Parts you own". The resolver
-// states what a removal does; the page asks first where more than the part
-// changes.
+// states what a removal does; the page asks before every removal.
 
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -29,6 +28,8 @@ async function expectQuestion(page: Page, effect: Removal, lang: Lang): Promise<
   const held = effect.refused === 'held';
   await expect(question.locator('li')).toHaveCount(held ? 0 : effect.functionsOff.length);
   await expect(page.locator(SEL.yes)).toHaveCount(held ? 0 : 1);
+  // A part that takes nothing with it has its own sentence.
+  await expect(question.getByText(t(lang, 'rmPlain'), { exact: true })).toHaveCount(removalIsPlain(effect) ? 1 : 0);
   await expect(page.locator(SEL.no)).toBeFocused();
   await expect(page.locator(SEL.no)).toBeInViewport();
 }
@@ -36,7 +37,8 @@ async function expectQuestion(page: Page, effect: Removal, lang: Lang): Promise<
 for (const setup of SETUPS) {
   const { name, selection } = setup;
   const removable = expectedOf(selection).removable;
-  const asking = removable.find((id) => !removalIsPlain(effectOf(selection, id)));
+  // The part whose question lists the most: one that takes something with it, when the setup has one.
+  const asking = removable.find((id) => !removalIsPlain(effectOf(selection, id))) ?? removable[0];
   const owned = expectedOf(selection).owned[0];
 
   test(`${name}: every part beyond the base setup leaves by its remove control`, async ({ page }, info) => {
@@ -56,22 +58,21 @@ for (const setup of SETUPS) {
       await control.focus();
       await page.keyboard.press('Enter');
 
-      if (removalIsPlain(effect)) await expect(page.locator(SEL.question)).toHaveCount(0);
-      else {
-        await expectQuestion(page, effect, lang);
-        await expect(control).toHaveAttribute('aria-expanded', 'true');
-        if (effect.refused === 'held') {
-          // A rule holds the part: the one answer keeps it.
-          await page.keyboard.press('Enter');
-          await expect(page.locator(SEL.question)).toHaveCount(0);
-          await expect(control).toBeFocused();
-          await expectSetup(page, selection);
-          continue;
-        }
-        await page.locator(SEL.yes).focus();
+      // No part leaves before the confirming answer.
+      await expectQuestion(page, effect, lang);
+      await expect(control).toHaveAttribute('aria-expanded', 'true');
+      await expectSetup(page, selection);
+      if (effect.refused === 'held') {
+        // A rule holds the part: the one answer keeps it.
         await page.keyboard.press('Enter');
         await expect(page.locator(SEL.question)).toHaveCount(0);
+        await expect(control).toBeFocused();
+        await expectSetup(page, selection);
+        continue;
       }
+      await page.locator(SEL.yes).focus();
+      await page.keyboard.press('Enter');
+      await expect(page.locator(SEL.question)).toHaveCount(0);
       const after = await expectSetup(page, effect.selection);
       expect(after.parts, id).not.toContain(id);
       expect(after.hash, id).toBe(hashOf(effect.selection));
@@ -152,27 +153,25 @@ for (const setup of SETUPS) {
       await tick.focus();
       await page.keyboard.press('Space');
 
-      if (!removalIsPlain(effect)) {
-        // The question stands under the row, and the part stays until an answer.
-        await expectQuestion(page, effect, lang);
-        await expect(page.locator(`label:has(${SEL.owned(owned)}) + ${SEL.question}`)).toHaveCount(1);
-        await expect(tick).toBeChecked();
-        await expectNoHorizontalScroll(page);
-        await page.keyboard.press('Enter');
-        await expect(page.locator(SEL.question)).toHaveCount(0);
-        await expect(tick).toBeFocused();
-        await expect(tick).toBeChecked();
-        await expectSetup(page, selection);
-        if (effect.refused === 'held') {
-          expectQuiet(seen);
-          return;
-        }
-        await page.keyboard.press('Space');
-        await expectQuestion(page, effect, lang);
-        await page.locator(SEL.yes).focus();
-        await page.keyboard.press('Enter');
-        await expect(page.locator(SEL.question)).toHaveCount(0);
+      // The question stands under the row, and the part stays until an answer.
+      await expectQuestion(page, effect, lang);
+      await expect(page.locator(`label:has(${SEL.owned(owned)}) + ${SEL.question}`)).toHaveCount(1);
+      await expect(tick).toBeChecked();
+      await expectNoHorizontalScroll(page);
+      await page.keyboard.press('Enter');
+      await expect(page.locator(SEL.question)).toHaveCount(0);
+      await expect(tick).toBeFocused();
+      await expect(tick).toBeChecked();
+      await expectSetup(page, selection);
+      if (effect.refused === 'held') {
+        expectQuiet(seen);
+        return;
       }
+      await page.keyboard.press('Space');
+      await expectQuestion(page, effect, lang);
+      await page.locator(SEL.yes).focus();
+      await page.keyboard.press('Enter');
+      await expect(page.locator(SEL.question)).toHaveCount(0);
       const after = await expectSetup(page, effect.selection);
       expect(after.hash).toBe(hashOf(effect.selection));
       await expect(tick).toBeFocused();
