@@ -35,7 +35,11 @@ function safety(lang: Lang, catalogue: Catalogue): string {
 const button = (lang: Lang, id: string, key: Key): string =>
   `<button class="act" type="button" id="${id}">${esc(t(lang, key))}</button>`;
 
-const footer = (lang: Lang): string => `<footer>${esc(t(lang, 'foot'))}</footer>`;
+/** The trademark notice of the repository: the list of names behind the sentence in the footer. */
+export const NOTICE_URL = 'https://github.com/subtilitas/rcbench/blob/main/NOTICE';
+
+const footer = (lang: Lang): string =>
+  `<footer>${esc(t(lang, 'foot'))} <a id="noticelink" href="${NOTICE_URL}" rel="noopener noreferrer">${esc(t(lang, 'footNotice'))}</a></footer>`;
 
 /** Folder of the picture files, relative to the page. */
 export const PICTURES = 'pictures/';

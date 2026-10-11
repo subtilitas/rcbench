@@ -146,6 +146,7 @@ const S = {
     `Product and company names belong to their respective owners. They are used to describe compatibility. There is no affiliation. Pins and numbers come from the rcbench repository and its build guide at release ${RELEASE}. This page sends no data and loads nothing from other servers.`,
     `Produkt- und Firmennamen gehören ihren jeweiligen Inhabern. Sie dienen der Beschreibung der Kompatibilität. Es besteht keine Verbindung zu den Herstellern. Pins und Zahlen stammen aus dem rcbench-Repository und seiner Bauanleitung zum Release ${RELEASE}. Diese Seite sendet keine Daten und lädt nichts von anderen Servern.`,
   ],
+  footNotice: ['Trademark notice', 'Markenhinweis'],
   printHead: [`rcbench bench configurator, release ${RELEASE}`, `rcbench Prüfstand-Konfigurator, Release ${RELEASE}`],
   copro: ['Coprocessor', 'Koprozessor'],
   coproSub: ['RP2350-CAN', 'RP2350-CAN'],

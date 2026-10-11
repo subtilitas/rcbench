@@ -6,7 +6,7 @@ import { STRINGS, t } from '../src/i18n.ts';
 import { optionsOf } from '../src/names.ts';
 import { chooser, deselectText, groupId, removalWarning, removeControl, statusText } from '../src/view/chooser.ts';
 import type { Pending, View } from '../src/view/chooser.ts';
-import { result } from '../src/view/result.ts';
+import { NOTICE_URL, result, resultError } from '../src/view/result.ts';
 
 function view(part: Partial<Selection>, lang: Lang = 'en'): View {
   const selection: Selection = { functions: [], owned: [], options: { ...DEFAULT_OPTIONS }, ...part };
@@ -390,4 +390,20 @@ test('a setup with parts keeps the functions that need no part and lists the oth
     if (fn.needs.length === 0) assert.ok(html.slice(0, at).includes(`<li>${fn.name.en}`), fn.id);
   }
   assert.ok(chooser(v, false).includes('id="f-servo"'));
+});
+
+test('the footer links to the trademark notice of the repository in both languages', () => {
+  assert.equal(NOTICE_URL, 'https://github.com/subtilitas/rcbench/blob/main/NOTICE');
+  const name = { en: 'Trademark notice', de: 'Markenhinweis' };
+  for (const lang of LANGS) {
+    const link = `<a id="noticelink" href="${NOTICE_URL}" rel="noopener noreferrer">${name[lang]}</a></footer>`;
+    for (const html of [result(view({ functions: ['servo'] }, lang), URL, []), resultError(lang, CATALOGUE, URL)]) {
+      assert.equal(count(html, '<footer>'), 1);
+      assert.equal(count(html, 'href="http'), 1, 'one link leaves the page');
+      assert.ok(html.endsWith(link), html.slice(-200));
+      // The sentence on the names stands before the link, and the link has no tabindex that takes it out of the Tab order.
+      assert.ok(html.includes(`${STRINGS.foot[col(lang)]} <a id="noticelink"`));
+      assert.ok(!/<a id="noticelink"[^>]*tabindex/.test(html));
+    }
+  }
 });

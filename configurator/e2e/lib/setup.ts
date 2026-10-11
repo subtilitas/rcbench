@@ -30,6 +30,7 @@ export const SEL = {
   doesBase: '#does-base li',
   pdfStatus: '#pdfmsg',
   pdfLink: '#pdflink',
+  noticeLink: '#noticelink',
   partsHead: '#h-parts',
   question: '#rmwarn',
   yes: '#rm-yes',

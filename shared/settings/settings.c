@@ -128,7 +128,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "ina228_en", "INA228", "I2C current monitor in the ESC path", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_INA228_ADDR] = {
-        "ina228_adr", "INA228 address", "A0/A1 pins; MATEK as shipped: 0x45", "",
+        "ina228_adr", "INA228 address", "A0/A1; Matek module as shipped: 0x45", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(k_ina228_addr) },
     [SET_INA228_UOHM] = {
         "ina228_uohm", "INA228 shunt", "The shunt the INA228 measures across", "uOhm",
@@ -140,7 +140,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_INA3221_ADDR] = {
-        "ina3221_adr", "INA3221 address", "DAOKAI: bridge A0 to GND for 0x40", "",
+        "ina3221_adr", "INA3221 address", "DAOKAI module: A0 to GND for 0x40", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_addr) },
     [SET_INA3221_MOHM] = {
         "ina3221_mohm", "INA3221 shunt", "Per channel; 100 reads to 1.64 A", "mOhm",

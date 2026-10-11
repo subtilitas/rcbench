@@ -71,12 +71,14 @@ their respective owners. They appear only to describe compatibility, to
 identify a part, to credit the source of a font or to name a design or
 protocol reference. This project is not connected with any of the owners and is
 neither supported nor sponsored by any of them. No such name is part of this
-project's name, and no logo or artwork of another party is included.
+project's name. The project includes no logo or artwork of another party as
+its own artwork; photographs of parts show the parts as their makers mark
+them.
 
 The names, by group:
 
 Servo makers and brands:
-  KST, Chaservo, Hitec, Futaba, Feetech, Dynamixel, Savox.
+  KST, Chaservo, Hitec, Futaba, Feetech, Dynamixel.
 
 ESC (electronic speed controller) and motor makers and brands:
   Align, APD, Aveox, Castle Creations, Dualsky, E-flite, FLY, Graupner,
@@ -94,6 +96,8 @@ Protocol, firmware, software and interface names:
   OneShot, MultiShot, KISS, BLHeli, BLHeli_S, BLHeli_32, Bluejay, AM32,
   ESCape32, VESC, ArduPilot, PX4, Betaflight, DroneCAN, FreeRTOS, ESP-IDF,
   pico-sdk, OpenOCD, sigrok, KingstVIS, Qwiic, Bluetooth, Wi-Fi, USB-C.
+  DShot is the name of a protocol; no owner and no trademark is stated for
+  it, and this project claims no right in the name.
 
 Board, module and component makers:
   Waveshare, WeAct, Osoyoo, DAOKAI, Matek, Raspberry Pi, Espressif, Kingst,

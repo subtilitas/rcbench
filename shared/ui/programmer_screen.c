@@ -289,9 +289,9 @@ static const proto_t k_protos[] = {
     { "VESC",     TX_PG_TRANSPORT_PACKETS, TX_PG_DEVICE_VESC,
       k_vesc,     5, CLASS_ESC },
     /* A maker's servos and no firmware name: the row is named in the
-     * panel's language, by proto_name().  A model name and nothing to
-     * translate: the device line is the name. */
-    { NULL,       TX_PG_TRANSPORT_HITEC,   TX_COUNT,
+     * panel's language, by proto_name().  The device line names the
+     * maker and the series, no model. */
+    { NULL,       TX_PG_TRANSPORT_HITEC,   TX_PG_DEVICE_HITEC,
       k_hitec,    8, CLASS_SERVO },
 };
 #define PROTO_COUNT ((int)(sizeof(k_protos) / sizeof(k_protos[0])))
@@ -498,10 +498,12 @@ static const char *proto_name(const proto_t *p)
     return (p->name != NULL) ? p->name : TR(PG_NAME_HITEC);
 }
 
-/* The device line the protocol answers with: Hitec's is its model name. */
+/* The device line the protocol answers with: a firmware and its
+ * processor, or for the servo protocol the maker and the series.  80 cells
+ * of the label face at most. */
 static const char *device_text(const proto_t *p)
 {
-    return (p->device != TX_COUNT) ? ui_tr(p->device) : "Hitec D956TW";
+    return ui_tr(p->device);
 }
 
 static void adopt_device(void)

@@ -574,12 +574,34 @@ TEST_CASE(a_makers_row_names_the_product)
     }
 }
 
+/* The device line of the servo protocol names the maker and the series,
+ * in every language, and no model: no digit follows the maker's name.  It
+ * starts with the name of the protocol's row. */
+TEST_CASE(the_servo_device_line_names_a_series_and_no_model)
+{
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        const char *s = ui_tr_in((ui_lang_t)l, TX_PG_DEVICE_HITEC);
+        const char *row = ui_tr_in((ui_lang_t)l, TX_PG_NAME_HITEC);
+        CHECK(strncmp(s, row, strlen(row)) == 0);
+        CHECK(strstr(s, ", D-") != NULL);
+        CHECK(gfx_text_cells(s) <= 80);
+        for (const char *p = s; *p != '\0'; ++p) {
+            CHECK(*p < '0' || *p > '9');
+        }
+    }
+    CHECK(strcmp(ui_tr_in(UI_LANG_EN, TX_PG_DEVICE_HITEC),
+                 "Hitec servo, D-series") == 0);
+    CHECK(strcmp(ui_tr_in(UI_LANG_DE, TX_PG_DEVICE_HITEC),
+                 "Hitec-Servo, D-Serie") == 0);
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
     RUN(german_has_every_string);
     RUN(every_translation_converts_what_the_english_does);
     RUN(every_string_fits_its_declared_field);
+    RUN(the_servo_device_line_names_a_series_and_no_model);
     RUN(alerts_and_details_fit_their_buffers);
     RUN(translated_settings_fit_where_they_are_drawn);
     RUN(a_missing_entry_shows_the_english);

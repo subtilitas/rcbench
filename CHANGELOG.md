@@ -236,7 +236,23 @@ history is in git.
   lists the names in 6 groups with the same statement. The public headers
   of `protocols/sbus`, `protocols/pdmini` and `protocols/dshot` carry the
   short form in their top comment, and the READMEs of `protocols/openyge`,
-  `sbus`, `pdmini` and `dshot` have a section "Trademarks".
+  `sbus`, `pdmini` and `dshot` have a section "Trademarks". The header and
+  the README of `protocols/dshot` and `NOTICE` state DShot as the name of a
+  protocol, without an owner or a trademark, and that the project claims no
+  right in the name. `NOTICE` states that the project includes no logo or
+  artwork of another party as its own artwork and that photographs of parts
+  show the parts as their makers mark them. The footer of the configurator
+  page links to `NOTICE` as "Trademark notice", in German "Markenhinweis".
+  The name in `test_settings` is a generic one. The SETUP help lines of
+  "INA228 address" and "INA3221 address" name the module of a maker, "Matek
+  module" and "DAOKAI module", in German "Matek-Modul" and "DAOKAI-Modul",
+  within the 36 cells of the help field. The device line of the servo
+  protocol on the PROGRAMMER screen names the maker and the series, "Hitec
+  servo, D-series", in German "Hitec-Servo, D-Serie", and no model.
+- Configurator: below 1024 px width a control that takes the focus scrolls
+  to above the bottom bar. The page sets `scroll-padding-bottom` to the
+  bar's 56 px plus 16 px. The keyboard tests of the 4 phone cells in
+  `e2e/matrix/keyboard.spec.ts` run (60 tests).
 
 ## 0.16.0 - 2026-10-10
 

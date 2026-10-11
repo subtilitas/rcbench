@@ -13,6 +13,15 @@ between them.
   part card comes near the viewport.
 - English and German. The start language follows the browser.
 - Light and dark theme follow the system setting. Print gives an A4 document.
+- The footer of the page states that product and company names belong to their
+  owners and links to the repository's
+  [NOTICE](https://github.com/subtilitas/rcbench/blob/main/NOTICE) as
+  "Trademark notice", in German "Markenhinweis". It is the 1 link of the page
+  to another origin. The page loads nothing from it. The Tab key reaches it
+  as the last control of the result.
+- Below 1024 px width a bar of 56 px height is fixed to the bottom of the
+  viewport. A control that takes the focus scrolls to at least 16 px above
+  the bar (`scroll-padding-bottom`).
 - The page is served under the base path `/rcbench/`.
 
 ## Layout
@@ -191,7 +200,7 @@ export chunk on the first use.
 | Property | Value |
 |---|---|
 | File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection as the URL hash writes it, without the language. |
-| Page | A4, 15 mm margins. Footer on every page: trademark notice, "Page x of y". |
+| Page | A4, 15 mm margins. Footer on every page: "Page x of y" and the sentence on product and company names of the page footer, without the link to `NOTICE`. |
 | Sections | Title with firmware release, date and share link. Safety notes. Parts. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
@@ -243,10 +252,6 @@ file names no stage, so the checks follow the stages as one list.
   the data file for one of these wires has no effect on the drawing.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
-- Below 1024 px width the Tab key puts the focus on a control that lies
-  entirely under the bottom bar (56 px) when the control is in the lowest
-  56 px of the viewport. At 360 x 740 px with the base setup this is the
-  first radio button under "Variants". The tests are in `e2e/matrix/keyboard.spec.ts`, marked `fixme`.
 - Print output: not checked on paper.
 - PDF export: the first use needs the network for the export chunk of 108 kB. Later uses work offline
   until the page reloads.
