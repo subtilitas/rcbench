@@ -30,7 +30,7 @@ Was sie nicht weiß:
 2. Entweder den Motor am ESC lassen, fest montiert, oder an seiner Stelle
    einen Lastwiderstand an die Motorleitungen des ESCs legen. Die Pieptöne
    werden in beiden Fällen aus dem Strom gezählt. Der Wert des Widerstands
-   ist nicht festgelegt: kein ESC ist in einen solchen gelaufen. Er muss
+   ist nicht festgelegt. Er muss
    den Strom bei der Spannung des Laufs unter dessen Strombegrenzung
    halten. Wie gut Pieptöne durch die Wicklungen eines Motors im Strom zu
    lesen sind, ist nicht gemessen.
@@ -791,8 +791,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
 
 ## Aktuelle Einschränkungen
 
-- Kein Lauf gegen einen ESC. Die Vorgaben und die Reihenfolgeregel sind an
-  echten Pieptönen nicht erprobt.
+- Die Vorgaben und die Reihenfolgeregel sind an echten Pieptönen nicht erprobt.
 - Ein ESC, der eine Auswahl ignoriert, gibt weiter seine Punkte aus, die der
   Lauf dann als Werte zählt: er kann FERTIG melden, ohne dass etwas
   gespeichert ist.
@@ -864,6 +863,5 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   steht für ihn. Die Handbücher schalten ihn nach dem Anstecken des Akkus;
   ob das Einschalten des Netzteils das Menü betritt wie der Schalter, ist
   nicht gemessen.
-- Kein Lauf mit einem Motor am ESC anstelle des Lastwiderstands. Ob ein
-  Motor während des Menüs anläuft und wie seine Wicklungen die Pieptöne im
+- Ob mit einem Motor am ESC anstelle des Lastwiderstands ein Motor während des Menüs anläuft und wie seine Wicklungen die Pieptöne im
   Strom formen, ist nicht gemessen.

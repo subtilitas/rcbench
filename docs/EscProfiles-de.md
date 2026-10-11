@@ -206,7 +206,7 @@ Kartenleser verschieden lesen.
 
 ## Aktuelle Einschränkungen
 
-- Kein Profil ist an einem ESC gelaufen. Menü- und Wertnummern,
+- Menü- und Wertnummern,
   Standardwerte und Einstiegsgesten sind so, wie die Handbücher sie angeben,
   und manche Handbücher widersprechen einander; die `notes` jedes Profils
   nennen die Widersprüche.

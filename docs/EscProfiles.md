@@ -200,7 +200,7 @@ differently.
 
 ## Current limitations
 
-- No profile has run against an ESC. Item and value numbers, defaults and
+- Item and value numbers, defaults and
   entry gestures are as the manuals state them, and some manuals disagree
   with each other; each profile's `notes` names the conflicts.
 - The beep fields (`beep_ms`, `gap_ms`, `group_gap_ms`) are null in every

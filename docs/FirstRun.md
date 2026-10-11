@@ -3,10 +3,7 @@
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
 Both boards powered with the heartbeat wire fitted, and every number below
-read on an instrument. Written for 0.8.1. A servo and a motor have run from
-the panel on the bring-up bench; what nothing here has done is put a scope or
-an analyser on a pin, so every step says what "good" looks like and what to
-write down when it is not.
+read on an instrument. Written for 0.8.1. Every step says what "good" looks like and what to write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
 
@@ -160,7 +157,7 @@ On the panel console, in this order:
 - **It must not disturb the heartbeat.** The transfer is sliced and the flash
   write runs on its own task for exactly that reason. **If the heartbeat
   drops during this minute, stop and write it down** — that is the most
-  important thing this first run can find, and it is code that has never run.
+  important thing this first run can find.
 
 On the **second** link-up the photograph is already kept and none of this
 happens. If you want to skip it entirely, a coprocessor built with the
@@ -185,10 +182,7 @@ Nothing is wired to an output yet. This step tests the interlock, not a pin.
 6. **Cover the touch panel / let touch die** → after **500 ms** of silence
    arming is blocked.
 
-Every one of these is host-tested. **None of the numbers below has been seen
-on an instrument.** A servo and a motor have since been run from the panel on
-a bring-up bench, so a pin does drive; what no scope or analyser has read is
-any pulse width, frame period or reply delay in this tree.
+Every one of these is host-tested. **None of the numbers below has been seen on an instrument:** no scope or analyser has read any pulse width, frame period or reply delay in this tree.
 
 ---
 
@@ -262,7 +256,7 @@ builds. Record real values for each:
 
 The coprocessor's core 1 reads an INA228 in the ESC's power path and an
 INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400 kHz,
-every 1 ms. This has not run on hardware. Every step below says what good
+every 1 ms. Every step below says what good
 looks like; anything else is a finding to write down.
 
 **Have to hand:** the MATEK I2C-INA-BM (INA228, 200 µΩ) at the address it
@@ -412,7 +406,7 @@ A coprocessor image built with `-DSENSE_TRACE=ON` prints INA3221 CH1's
 carries 50 ms windows only, so this build is the one way to see the single
 samples. It is a debug build: a released image is built without the option
 and holds none of its code. `tools/sense_trace.py` reads the captured
-console. None of this has run on hardware. The bench session has two
+console. The bench session has two
 parts: part A needs no encoder, part B repeats the moves with an AS5600
 on the servo's shaft.
 
@@ -696,7 +690,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 | Arm refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150 ms. Scope GP3. |
 | Arm refused, no obvious reason | Touch dead for 500 ms blocks it. Touch the panel. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
-| Heartbeat drops in the first minute | **The artwork transfer or the flash keeper.** Newest code, never run. See §4. |
+| Heartbeat drops in the first minute | **The artwork transfer or the flash keeper.** See §4. |
 | Display freezes briefly | A flash write. Expected once, when the photograph is kept. |
 | Coprocessor does not boot after flashing | Image past 4 MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |

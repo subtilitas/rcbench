@@ -28,8 +28,7 @@ What it does not know:
    driving, but in rare cases a motor may start and run.
 2. Either leave the motor on the ESC, mounted solid, or fit a resistor load
    across the ESC's motor leads in its place. The beeps are counted from
-   the current either way. The resistor's value is not specified: no ESC
-   has been run into one. It has to keep the current under the run's
+   the current either way. The resistor's value is not specified. It has to keep the current under the run's
    current limit at the run's voltage. How well beeps through a motor's
    windings read in the current is not measured.
 3. Connect the ESC's signal lead to a pin bound with the throttle role on
@@ -714,8 +713,8 @@ engine's stores no value other than the one asked for.
 
 ## Current limitations
 
-- No run against an ESC. The defaults and the order rule are untested on
-  real beeps.
+- The defaults and the order rule are untested on real beeps.
+
 - An ESC that ignores a selection keeps sounding its items, which the run
   then counts as values: it can report DONE with nothing stored.
 - A menu longer or shorter than its profile never has its lowest number
@@ -780,6 +779,5 @@ engine's stores no value other than the one asked for.
   Jeti Spin's receiver switch -- is left on and the supply stands in for it.
   The manuals switch it after the battery is connected; whether the supply's
   power-up enters the menu as the switch would is not measured.
-- No run with a motor on the ESC in place of the resistor load. Whether a
-  motor starts during the menu, and how its windings shape the beeps in
+- Whether, with a motor on the ESC in place of the resistor load, a motor starts during the menu, and how its windings shape the beeps in
   the current, is not measured.
