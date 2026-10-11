@@ -5,13 +5,16 @@
 Wie der Prüfstand anhält, welche externe Schaltung der Entwurf voraussetzt,
 und welche Verhaltensweisen Absicht sind.
 
+Das Projekt ist in Entwicklung, und seine Funktionen sind nicht auf Hardware
+verifiziert.
+
 ## Stoppmechanismen
 
 | Mechanismus | Deckt ab | Stand |
 | --- | --- | --- |
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des Koprozessors, 200 ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
-| STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben; nicht auf Hardware gelaufen |
+| STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
 
 Ein gedrücktes STOP stoppt den Heartbeat, entschärft das eigene
 Ausgangsmodell des Panels und schreibt ARM = 0 auf die Control-Page. Bei
@@ -147,8 +150,7 @@ bis zu 1000 ms scharf. Zwei Fälle:
 
 In beiden bleiben die Ausgänge aus, bis eine Person ARM hält. Auf dem Host
 getestet in `test_safety_gate` für Ausfälle von 5, 30, 50, 60, 300, 1000 und
-5000 ms bei je 55 Reset-Phasen und drei Modellen der Leitung; nicht auf
-Hardware gelaufen. Wie lange der Koprozessor vom Reset bis zu seinem ersten
+5000 ms bei je 55 Reset-Phasen und drei Modellen der Leitung. Wie lange der Koprozessor vom Reset bis zu seinem ersten
 beantworteten Frame braucht, ist nicht gemessen.
 
 ### Das erste Schärfen nach einem Stopp

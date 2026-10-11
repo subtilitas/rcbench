@@ -584,7 +584,7 @@
      {
       "figure": "count rate",
       "stated": "quad_edge.pio (19 words), at most 6 cycles an edge against 15 at 5 MHz; 2 state machines give 20 Mcounts/s; model decoded 40,000 counts at 5 MHz and 1 MHz",
-      "read": "11.2.2 'On every system clock cycle, each state machine fetches, decodes and executes one instruction'; clk_sys up to 150 MHz (1.1, clock table). pioasm 2.3.0 re-assembled quad_edge.pio to 19 words identical to P2's hex; path trace: 5 cycles on the rising-low path, 6 on the other three. quad_sim.py re-run: all 7 cases match, longest path 6 cycles; 14 ns spacing decodes, 13 ns fails. With AM26LV32EIDR the A-to-B spacing at 5 MHz is at least 50 - 18 = 32 ns by SLLS849E's delay spread (the reason's '41 ns' rests on tsk(pp)), still above 14 ns. Derived, not run on hardware",
+      "read": "11.2.2 'On every system clock cycle, each state machine fetches, decodes and executes one instruction'; clk_sys up to 150 MHz (1.1, clock table). pioasm 2.3.0 re-assembled quad_edge.pio to 19 words identical to P2's hex; path trace: 5 cycles on the rising-low path, 6 on the other three. quad_sim.py re-run: all 7 cases match, longest path 6 cycles; 14 ns spacing decodes, 13 ns fails. With AM26LV32EIDR the A-to-B spacing at 5 MHz is at least 50 - 18 = 32 ns by SLLS849E's delay spread (the reason's '41 ns' rests on tsk(pp)), still above 14 ns. Derived",
       "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), 11.2.2; /home/claude/rcbench-research/round1/scratch/FU-C2/P4-datasheet-R11/quad_edge.hex and quad_sim.py run 2026-09-29T07:43:15Z",
       "agrees": true,
       "passes": true,
