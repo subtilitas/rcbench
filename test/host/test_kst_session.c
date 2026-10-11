@@ -5,6 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -1562,6 +1563,465 @@ TEST_CASE(two_sessions_run_side_by_side)
     conduct(&g_sim_b);
 }
 
+/* --- which plans kst_session_write() takes --------------------------------------- */
+
+/* The classes of change to a plan the planner built. */
+enum {
+    GATE_OWN = 0,     /* the planner's plan, unchanged */
+    GATE_FAILED,      /* what the planner leaves when it refuses */
+    GATE_START,       /* one bit of one register of the start image */
+    GATE_TARGET,      /* one bit of one register of the target image */
+    GATE_UNLOCKED,    /* one bit of the unlock set */
+    GATE_KIND,
+    GATE_N,           /* the number of writes, the steps as they are */
+    GATE_UNCHECKED,
+    GATE_STEP,        /* one member of one write */
+    GATE_BEYOND,      /* a member of a step past the last write */
+    GATE_EXTENDED,    /* one more write */
+    GATE_REORDERED,   /* two writes in each other's place */
+    GATE_RETARGETED,  /* the writes of one plan, the target of another */
+    GATE_CLASSES
+};
+
+/* A digest over every answer, and per class the calls and the plans taken. */
+typedef struct {
+    uint64_t digest;
+    unsigned calls[GATE_CLASSES];
+    unsigned taken[GATE_CLASSES];
+    unsigned bad_plan;
+    unsigned unchecked;  /* the planner's own plans that are */
+    unsigned extra;      /* and those with an extra write */
+    unsigned wrong;  /* an answer that no input of its class may get */
+} gate_t;
+
+static void gate_begin(gate_t *g)
+{
+    memset(g, 0, sizeof(*g));
+    g->digest = UINT64_C(0xCBF29CE484222325);
+}
+
+/* One call on g_ses, which is in programming mode with a backup.  A plan
+ * that is taken is aborted before its first frame. */
+static kst_ses_t gate_try(gate_t *g, unsigned cls, const kst_plan_t *plan,
+                          bool confirm)
+{
+    const kst_ses_t r = kst_session_write(&g_ses, plan, confirm);
+
+    g->digest = (g->digest ^ (uint8_t)r) * UINT64_C(0x100000001B3);
+    g->calls[cls]++;
+    g->wrong += g_ses.result != (uint8_t)r;
+    if (r == KST_SES_BUSY) {
+        g->taken[cls]++;
+        kst_session_abort(&g_ses);
+        g->wrong += kst_session_step(&g_ses) != KST_SES_ERR_ABORTED;
+    } else if (r == KST_SES_ERR_BAD_PLAN) {
+        g->bad_plan++;
+    }
+    return r;
+}
+
+/* A changed plan that no planner builds: KST_SES_ERR_BAD_PLAN. */
+static void gate_bad(gate_t *g, unsigned cls, const kst_plan_t *plan,
+                     bool confirm)
+{
+    g->wrong += gate_try(g, cls, plan, confirm) != KST_SES_ERR_BAD_PLAN;
+}
+
+/* Every single-member change of @p good, which got @p base. */
+static void gate_members(gate_t *g, const kst_plan_t *good, bool confirm,
+                         kst_ses_t base)
+{
+    static const uint8_t k_n[] = { 0, 1, KST_PLAN_MAX_STEPS,
+                                   KST_PLAN_MAX_STEPS + 1u, 255 };
+    static const uint8_t k_flip[] = { 0x01, 0x20, 0x80, 0xFF };
+    kst_plan_t m;
+
+    for (unsigned reg = 0; reg < KST_REG_COUNT; ++reg) {
+        for (unsigned bit = 0; bit < 8u; bit += 7u) {
+            m = *good;
+            m.start.r[reg] ^= (uint8_t)(1u << bit);
+            gate_bad(g, GATE_START, &m, confirm);
+            m = *good;
+            m.target.r[reg] ^= (uint8_t)(1u << bit);
+            gate_bad(g, GATE_TARGET, &m, confirm);
+        }
+    }
+    /* An unlock no changed field needs leaves the planner's edit plan as it
+     * is: these are pinned by the digest and the tally. */
+    for (unsigned bit = 0; bit < 64u; ++bit) {
+        m = *good;
+        m.unlocked ^= (kst_field_set_t)1 << bit;
+        (void)gate_try(g, GATE_UNLOCKED, &m, confirm);
+    }
+    /* A restore to the backup and an edit to it can be the same writes. */
+    for (unsigned kind = 0; kind < 5u; ++kind) {
+        if (kind != good->kind) {
+            m = *good;
+            m.kind = (uint8_t)(kind == 4u ? 255u : kind);
+            (void)gate_try(g, GATE_KIND, &m, confirm);
+        }
+    }
+    for (unsigned i = 0; i < sizeof(k_n) + 2u; ++i) {
+        const unsigned n = i < sizeof(k_n) ? k_n[i]
+                               : good->n + 2u * (i - sizeof(k_n)) - 1u;
+
+        if ((uint8_t)n != good->n) {
+            m = *good;
+            m.n = (uint8_t)n;
+            gate_bad(g, GATE_N, &m, confirm);
+        }
+    }
+    m = *good;
+    m.unchecked ^= 1u;
+    gate_bad(g, GATE_UNCHECKED, &m, confirm);
+    m = *good;
+    m.unchecked |= 2u;
+    gate_bad(g, GATE_UNCHECKED, &m, confirm);
+    for (unsigned i = 0; i < good->n; ++i) {
+        for (unsigned f = 0; f < sizeof(k_flip); ++f) {
+            m = *good;
+            m.step[i].reg ^= k_flip[f];
+            gate_bad(g, GATE_STEP, &m, confirm);
+            m = *good;
+            m.step[i].value ^= k_flip[f];
+            gate_bad(g, GATE_STEP, &m, confirm);
+            m = *good;
+            m.step[i].prev ^= k_flip[f];
+            gate_bad(g, GATE_STEP, &m, confirm);
+            m = *good;
+            m.step[i].settled ^= k_flip[f];
+            gate_bad(g, GATE_STEP, &m, confirm);
+        }
+    }
+    /* A step past the last write is not part of the plan. */
+    for (unsigned i = good->n; i < KST_PLAN_MAX_STEPS; ++i) {
+        if (i == good->n || i == KST_PLAN_MAX_STEPS - 1u) {
+            m = *good;
+            m.step[i].reg ^= 0xFFu;
+            m.step[i].value ^= 0xFFu;
+            m.step[i].prev ^= 0xFFu;
+            m.step[i].settled ^= 0xFFu;
+            g->wrong += gate_try(g, GATE_BEYOND, &m, confirm) != base;
+        }
+    }
+}
+
+/* @p good with one more write, and with two writes in each other's place. */
+static void gate_shapes(gate_t *g, const kst_plan_t *good, bool confirm)
+{
+    kst_plan_t m;
+
+    if (good->n < KST_PLAN_MAX_STEPS) {
+        /* the last write once more */
+        if (good->n > 0u) {
+            m = *good;
+            m.step[m.n] = m.step[m.n - 1u];
+            m.step[m.n].prev = m.step[m.n].value;
+            m.n++;
+            gate_bad(g, GATE_EXTENDED, &m, confirm);
+        }
+        /* a register that does not change, written with the value it has */
+        for (unsigned reg = 1; reg <= KST_REG_MAX; reg += 5u) {
+            if (good->start.r[reg] == good->target.r[reg]) {
+                m = *good;
+                m.step[m.n].reg = (uint8_t)reg;
+                m.step[m.n].value = m.start.r[reg];
+                m.step[m.n].prev = m.start.r[reg];
+                m.step[m.n].settled = 1;
+                m.n++;
+                gate_bad(g, GATE_EXTENDED, &m, confirm);
+            }
+        }
+    }
+    for (unsigned i = 0; i < good->n; ++i) {
+        for (unsigned j = i + 1u; j < good->n; ++j) {
+            m = *good;
+            m.step[i] = good->step[j];
+            m.step[j] = good->step[i];
+            gate_bad(g, GATE_REORDERED, &m, confirm);
+            /* the registers alone, each write keeping its value and its
+             * marks; an extra write and the write after it are to the same
+             * register */
+            if (good->step[i].reg != good->step[j].reg) {
+                m = *good;
+                m.step[i].reg = good->step[j].reg;
+                m.step[j].reg = good->step[i].reg;
+                gate_bad(g, GATE_REORDERED, &m, confirm);
+            }
+        }
+    }
+}
+
+/* The planner's own plan, then every change of it.  @p r is the planner's
+ * result for @p plan.  The plan before it lends its target. */
+static void gate_plan(gate_t *g, kst_plan_result_t r, const kst_plan_t *plan,
+                      kst_plan_t *before)
+{
+    kst_ses_t base;
+
+    if (r != KST_PLAN_OK) {
+        gate_bad(g, GATE_FAILED, plan, true);
+        return;
+    }
+    if (plan->unchecked != 0u) {
+        g->unchecked++;
+        g->wrong += gate_try(g, GATE_OWN, plan, false)
+                    != KST_SES_ERR_UNCONFIRMED;
+    }
+    for (unsigned i = 1; i < plan->n; ++i) {
+        for (unsigned j = 0; j < i; ++j) {
+            g->extra += plan->step[i].reg == plan->step[j].reg;
+        }
+    }
+    base = gate_try(g, GATE_OWN, plan, true);
+    /* An edit or a release from an image that fails the fingerprint is the
+     * planner's plan and is refused for its start. */
+    g->wrong += base != (kst_fingerprint(&plan->start, NULL)
+                         || plan->kind == KST_PLAN_RESTORE
+                             ? KST_SES_BUSY : KST_SES_ERR_FINGERPRINT);
+    gate_members(g, plan, true, base);
+    gate_shapes(g, plan, true);
+    if (memcmp(&before->target, &plan->target, sizeof(plan->target)) != 0) {
+        kst_plan_t m = *plan;
+
+        m.target = before->target;
+        gate_bad(g, GATE_RETARGETED, &m, true);
+    }
+    *before = *plan;
+}
+
+static void gate_report(const gate_t *g)
+{
+    printf("      digest 0x%016llX bad_plan %u unchecked %u extra %u wrong %u\n"
+           "      calls", (unsigned long long)g->digest, g->bad_plan,
+           g->unchecked, g->extra, g->wrong);
+    for (unsigned i = 0; i < GATE_CLASSES; ++i) {
+        printf(" %u", g->calls[i]);
+    }
+    printf("\n      taken");
+    for (unsigned i = 0; i < GATE_CLASSES; ++i) {
+        printf(" %u", g->taken[i]);
+    }
+    printf("\n");
+}
+
+/* The digest; the calls in all; the plans taken of the planner's own, of
+ * the changed unlock sets, of the changed kinds and of those with a changed
+ * step past the last write; the answers KST_SES_ERR_BAD_PLAN; the planner's
+ * own plans that are unchecked and those with an extra write.  gate_bad()
+ * counts a changed start, target, count, mark, write or order that is not
+ * answered with KST_SES_ERR_BAD_PLAN as wrong. */
+#define CHECK_GATE(g, want_digest, want_calls, want_own, want_unlocked,       \
+                   want_kind, want_beyond, want_bad_plan, want_unchecked,     \
+                   want_extra)                                                \
+    do {                                                                      \
+        const gate_t *_g = (g);                                               \
+        unsigned _calls = 0;                                                  \
+        for (unsigned _i = 0; _i < GATE_CLASSES; ++_i) {                      \
+            _calls += _g->calls[_i];                                          \
+        }                                                                     \
+        if (_g->digest != (want_digest) || _calls != (want_calls)             \
+            || _g->taken[GATE_OWN] != (want_own)                              \
+            || _g->taken[GATE_UNLOCKED] != (want_unlocked)                    \
+            || _g->taken[GATE_KIND] != (want_kind)                            \
+            || _g->taken[GATE_BEYOND] != (want_beyond)                        \
+            || _g->bad_plan != (want_bad_plan)                                \
+            || _g->unchecked != (want_unchecked)                              \
+            || _g->extra != (want_extra) || _g->wrong != 0u) {                \
+            T_FAIL("the session's answers differ from the pinned ones");      \
+            gate_report(_g);                                                  \
+        }                                                                     \
+    } while (0)
+
+static uint32_t rng_next(uint32_t *state)
+{
+    uint32_t x = *state;
+
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *state = x;
+    return x;
+}
+
+static unsigned rng_below(uint32_t *state, unsigned n)
+{
+    return (unsigned)(rng_next(state) % n);
+}
+
+/* 1 to 4 changes to @p from: an end point or Uncontrolled Pos close to the
+ * others, a speed, a duty with its copy, any field or any register. */
+static kst_image_t rng_image(uint32_t *state, const kst_image_t *from)
+{
+    kst_image_t img = *from;
+    const unsigned changes = 1u + rng_below(state, 4);
+
+    for (unsigned i = 0; i < changes; ++i) {
+        const unsigned lower = kst_field_get(&img, KST_F_PULSE_LOWER);
+        const unsigned upper = kst_field_get(&img, KST_F_PULSE_UPPER);
+        const unsigned kind = rng_below(state, 7);
+        kst_field_id_t id = KST_F_PULSE_LOWER;
+        unsigned raw = KST_PULSE_RAW_MIN + rng_below(state, 900);
+
+        if (kind == 1u) {
+            id = KST_F_PULSE_UPPER;
+            raw = KST_PULSE_RAW_MAX - rng_below(state, 900);
+        } else if (kind == 2u) {
+            id = KST_F_UNCONT_POS;
+            raw = rng_below(state, 2) != 0u ? lower + rng_below(state, 3)
+                                            : upper - rng_below(state, 3);
+        } else if (kind == 3u) {
+            id = KST_F_SPD;
+            raw = rng_below(state, KST_SPD_RAW_MAX + 1u);
+        } else if (kind == 4u) {
+            id = KST_F_DUTY;
+            raw = KST_DUTY_RAW_MIN
+                  + rng_below(state, KST_DUTY_RAW_MAX - KST_DUTY_RAW_MIN + 1u);
+            img.r[KST_REG_DUTY_COPY] = (uint8_t)raw;
+        } else if (kind == 5u) {
+            id = (kst_field_id_t)rng_below(state, KST_F_COUNT);
+            raw = rng_below(state, kst_field_raw_max(id) + 1u);
+        } else if (kind == 6u) {
+            img.r[1u + rng_below(state, KST_REG_MAX)] =
+                (uint8_t)rng_below(state, 256);
+            continue;
+        }
+        (void)kst_field_set(&img, id,
+                            (uint16_t)(raw & kst_field_raw_max(id)));
+    }
+    return img;
+}
+
+/* After the refusals: no frame went out, nothing is locked, and the next
+ * plan runs to its end. */
+static void gate_end(unsigned frames)
+{
+    kst_plan_t plan;
+
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_ses.locked, 0);
+    CHECK_EQ(g_ses.has_backup, 1);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &plan.target));
+    conduct(&g_sim);
+}
+
+TEST_CASE(an_edit_plan_is_taken_as_the_planner_built_it_and_in_no_other_form)
+{
+    const kst_image_t bench = sim_bench_image();
+    uint32_t state = 0x4B535432u;
+    kst_plan_t before;
+    kst_plan_t plan;
+    unsigned frames;
+    gate_t g;
+
+    up(&g_sim, &g_ses);
+    frames = g_sim.n_frames;
+    gate_begin(&g);
+    memset(&before, 0, sizeof(before));
+    /* every field at its ends and in the middle, locked and unlocked */
+    for (unsigned f = 0; f < KST_F_COUNT; ++f) {
+        const kst_field_id_t id = (kst_field_id_t)f;
+        const unsigned max = kst_field_raw_max(id);
+        const unsigned raws[] = { 0, 1, max / 2u, max - 1u, max };
+
+        for (unsigned i = 0; i < 10u; ++i) {
+            kst_image_t target = g_ses.image;
+
+            (void)kst_field_set(&target, id, (uint16_t)raws[i / 2u]);
+            gate_plan(&g, kst_plan_edit(&g_ses.image, &target,
+                                        i % 2u != 0u ? ~(kst_field_set_t)0
+                                                     : 0u, &plan, NULL),
+                      &plan, &before);
+        }
+    }
+    /* seeded pairs, from the bench image and from a changed one */
+    for (unsigned i = 0; i < 150u; ++i) {
+        const kst_image_t a = i % 2u != 0u ? rng_image(&state, &bench) : bench;
+        const kst_image_t b = rng_image(&state, &a);
+
+        gate_plan(&g, kst_plan_edit(&a, &b, ~(kst_field_set_t)0, &plan, NULL),
+                  &plan, &before);
+    }
+    /* Pulse Upper across a change of its high part with Uncontrolled Pos
+     * beside it: an extra write where one helps, no plan where none does */
+    for (unsigned lo = 0; lo < 256u; lo += 15u) {
+        kst_image_t a = bench;
+        kst_image_t b;
+
+        CHECK(kst_field_set(&a, KST_F_PULSE_UPPER, 0xBFF));
+        CHECK(kst_field_set(&a, KST_F_UNCONT_POS, (uint16_t)(0xB00u + lo)));
+        b = a;
+        CHECK(kst_field_set(&b, KST_F_PULSE_UPPER, 0xC00));
+        gate_plan(&g, kst_plan_edit(&a, &b, ~(kst_field_set_t)0, &plan, NULL),
+                  &plan, &before);
+        gate_plan(&g, kst_plan_edit(&b, &a, ~(kst_field_set_t)0, &plan, NULL),
+                  &plan, &before);
+    }
+    CHECK_GATE(&g, UINT64_C(0x0B208ECDCDF5B84D), 72487u, 292u,
+               18647u, 51u, 584u, 52513u, 0u, 7u);
+    gate_end(frames);
+}
+
+TEST_CASE(a_restore_and_a_release_are_taken_as_the_planner_built_them)
+{
+    uint32_t state = 0x4B535433u;
+    kst_plan_t before;
+    kst_plan_t plan;
+    unsigned frames;
+    gate_t g;
+
+    up(&g_sim, &g_ses);
+    frames = g_sim.n_frames;
+    gate_begin(&g);
+    memset(&before, 0, sizeof(before));
+    for (unsigned i = 0; i < 120u; ++i) {
+        kst_image_t current = rng_image(&state, &g_ses.backup);
+
+        if (i % 3u == 0u) {
+            current = rng_image(&state, &current);
+        }
+        gate_plan(&g, kst_plan_restore(&current, &g_ses.backup, &plan),
+                  &plan, &before);
+        /* the planner's restore to an image that is not the backup */
+        if (kst_plan_restore(&g_ses.backup, &current, &plan) == KST_PLAN_OK
+            && plan.n != 0u) {
+            gate_bad(&g, GATE_RETARGETED, &plan, true);
+        }
+        if (i % 4u == 0u) {
+            gate_plan(&g, kst_plan_release_pairing(&current, &plan), &plan,
+                      &before);
+        }
+    }
+    gate_plan(&g, kst_plan_release_pairing(&g_ses.image, &plan), &plan,
+              &before);
+    gate_end(frames);
+    /* A backup with Pulse Lower on a change of its high part and
+     * Uncontrolled Pos beside it: the restore from one step below has an
+     * extra write, or no checked order and asks for its confirmation. */
+    for (unsigned lo = 0; lo < 256u; lo += 15u) {
+        kst_image_t a = sim_bench_image();
+        kst_image_t b;
+
+        CHECK(kst_field_set(&a, KST_F_PULSE_LOWER, 0x300));
+        CHECK(kst_field_set(&a, KST_F_UNCONT_POS, (uint16_t)(0x300u + lo)));
+        b = a;
+        CHECK(kst_field_set(&b, KST_F_PULSE_LOWER, 0x2FF));
+        fresh(&g_sim, &g_ses);
+        memcpy(g_sim.reg, a.r, sizeof(a.r));
+        enter(&g_sim, &g_ses);
+        read_all(&g_sim, &g_ses);
+        frames = g_sim.n_frames;
+        gate_plan(&g, kst_plan_restore(&b, &g_ses.backup, &plan), &plan,
+                  &before);
+        CHECK_EQ(g_sim.n_frames, frames);
+    }
+    CHECK_GATE(&g, UINT64_C(0x5F6C2FA2BEE900D9), 48184u, 162u,
+               0u, 90u, 324u, 47573u, 8u, 9u);
+}
+
 int main(void)
 {
     RUN(a_driver_without_all_3_functions_is_refused);
@@ -1618,5 +2078,7 @@ int main(void)
     RUN(the_clock_may_wrap_in_any_wait);
     RUN(a_slow_caller_makes_the_gaps_longer_and_nothing_else);
     RUN(two_sessions_run_side_by_side);
+    RUN(an_edit_plan_is_taken_as_the_planner_built_it_and_in_no_other_form);
+    RUN(a_restore_and_a_release_are_taken_as_the_planner_built_them);
     return test_summary("kst_session");
 }
