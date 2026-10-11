@@ -82,7 +82,8 @@ The steps of a removal:
 1. The part leaves the owned parts. Every chosen function that needs it leaves the selection.
 2. Other selectable parts of a dropped function stay as owned parts.
 3. A part that a rule adds leaves by the other value of the option the rule reads. When a kept function forces that option, or the rule reads no option, the parts that the rule reads leave instead.
-4. The removal is `held` when neither ends the rule.
+4. A way that leads to a part no removal releases gives place to the next way: another option value, then a part.
+5. The removal is `held` when no way ends the rule.
 
 `removalIsPlain(effect)` is true when the part leaves and nothing else
 changes. `deselectEffect(catalogue, selection, functionId)` returns the
@@ -194,7 +195,7 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 | --- | ---: | ---: | ---: |
 | `resolve.ts` | 189 | 189 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
-| `groups.ts` | 366 | 366 | 100.0 % |
+| `groups.ts` | 371 | 371 | 100.0 % |
 <!-- coverage:end -->
 
 ## Unknown in the data
