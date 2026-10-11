@@ -444,9 +444,14 @@ TEST_CASE(a_file_cut_at_any_byte_never_reads_as_a_checked_file)
     static char full[KST_FILE_MAX];
     const kst_image_t img = sim_bench_image();
     const size_t n = written(&img);
+    const size_t block = (size_t)(strstr(g_text, "registers") - g_text);
+    kst_file_t lines_only;
+    unsigned inside = 0;
 
     memcpy(full, g_text, n);
-    for (size_t cut = 0; cut < n; ++cut) {
+    /* The header, the type and the 27 field lines: what each line gives. */
+    CHECK_EQ(parse(full, block, &lines_only, NULL), KST_FILE_OK);
+    for (size_t cut = 0; cut + 1u < n; ++cut) {
         kst_file_t f;
         unsigned line = 0;
         const unsigned lines = lines_in(full, cut);
@@ -455,20 +460,95 @@ TEST_CASE(a_file_cut_at_any_byte_never_reads_as_a_checked_file)
 
         if (at_line_end && (lines <= 29u || lines == 34u)) {
             /* Header, type and whole field lines, or all of it but the
-             * checksum line: a person's file with fewer fields.  Each
-             * value is the one written. */
+             * checksum line: a person's file with fewer fields. */
             const unsigned fields = lines == 34u ? 27u : lines - 2u;
 
             CHECK_EQ(err, KST_FILE_OK);
-            CHECK_EQ(f.kind, lines == 1u ? KST_FILE_EDITED_UNTYPED
-                                         : KST_FILE_EDITED_TYPED);
             CHECK_EQ(bits(f.named), lines < 2u ? 0u : fields);
+        } else if (err == KST_FILE_OK) {
+            /* Inside a line that shows its own end: the unit, the "[not
+             * loaded]" or the whole type line is there.  The line counts. */
+            CHECK(!at_line_end);
+            CHECK(lines >= 1u && (lines <= 28u || lines == 33u));
+            CHECK_EQ(bits(f.named), lines == 33u ? 27u : lines - 1u);
+            inside++;
         } else {
             /* Inside a line, and inside the register block. */
             CHECK_EQ(err, KST_FILE_ERR_TRUNCATED);
             CHECK_EQ(line, lines + 1u);
         }
+        if (err != KST_FILE_OK) {
+            continue;
+        }
+        CHECK_EQ(f.kind, lines == 1u && at_line_end ? KST_FILE_EDITED_UNTYPED
+                                                    : KST_FILE_EDITED_TYPED);
+        /* No cut gives a number the whole line does not give. */
+        for (unsigned i = 0; i < (unsigned)KST_F_COUNT; ++i) {
+            if ((f.named & BIT(i)) != 0u && lines != 33u && lines != 34u) {
+                CHECK_EQ(f.value[i], lines_only.value[i]);
+                CHECK_EQ(f.line[i], lines_only.line[i]);
+            }
+        }
     }
+    /* Every one of the 29 lines behind the header is taken without its
+     * line end at least once: the type, 27 fields, the last register row. */
+    CHECK(inside >= 29u);
+}
+
+TEST_CASE(a_cut_bench_file_states_how_many_of_its_27_values_it_holds)
+{
+    static char full[KST_FILE_MAX];
+    const kst_image_t img = sim_bench_image();
+    const size_t n = written(&img);
+    unsigned seen = 0;
+
+    memcpy(full, g_text, n);
+    for (size_t cut = 1; cut <= n; ++cut) {
+        const unsigned lines = lines_in(full, cut);
+        kst_file_t f;
+        kst_file_load_t r;
+
+        if (full[cut - 1u] != '\n' || parse(full, cut, &f, NULL) != KST_FILE_OK) {
+            continue;
+        }
+        memset(&r, 0xA5, sizeof(r));
+        CHECK_EQ(kst_file_load(&f, &img, &img, &r), KST_FILE_LOAD_OK);
+        CHECK_EQ(r.fields, 27);
+        if (lines == 35u) {
+            CHECK_EQ(r.kind, KST_FILE_VERIFIED);
+            CHECK_EQ(r.named, 27);
+        } else {
+            CHECK(r.kind != KST_FILE_VERIFIED);
+            CHECK_EQ(r.named, lines == 34u ? 27u : lines < 2u ? 0u : lines - 2u);
+        }
+        seen++;
+    }
+    /* Lines 1 to 29, line 34 and the whole file. */
+    CHECK_EQ(seen, 31);
+}
+
+TEST_CASE(a_file_of_a_few_lines_states_the_values_it_names)
+{
+    const kst_image_t servo = sim_bench_image();
+    kst_image_t other = sim_bench_image();
+    kst_file_t f;
+    kst_file_load_t r;
+
+    CHECK_EQ(load("", &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(r.named, 0);
+    CHECK_EQ(r.fields, 27);
+    CHECK_EQ(load("Type: V6\nBoost = 300\nNeutral = 1500\n", &r),
+             KST_FILE_LOAD_OK);
+    CHECK_EQ(r.named, 2);
+    CHECK_EQ(r.fields, 27);
+    /* The counts are there for a file that is not loaded, too. */
+    CHECK(kst_field_set(&other, KST_F_20K_SEL, 0));
+    written(&other);
+    CHECK_EQ(parse(g_text, strlen(g_text), &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r),
+             KST_FILE_LOAD_TYPE_MISMATCH);
+    CHECK_EQ(r.named, 27);
+    CHECK_EQ(r.fields, 27);
 }
 
 TEST_CASE(a_changed_byte_never_reads_as_a_checked_file)
@@ -545,14 +625,124 @@ TEST_CASE(bytes_after_the_checksum_line_are_refused)
     unsigned line = 0;
     const size_t n = written(&img);
 
-    strcpy(g_text + n, "\n");
-    CHECK_EQ(parse(g_text, n + 1u, &f, &line), KST_FILE_ERR_TRAILING);
-    CHECK_EQ(line, 36);
     strcpy(g_text + n, "x");
     CHECK_EQ(parse(g_text, n + 1u, &f, &line), KST_FILE_ERR_TRAILING);
     CHECK_EQ(line, 36);
+    strcpy(g_text + n, "x\n");
+    CHECK_EQ(parse(g_text, n + 2u, &f, &line), KST_FILE_ERR_TRAILING);
+    CHECK_EQ(line, 36);
+    strcpy(g_text + n, "\n\n# end\n");
+    CHECK_EQ(parse(g_text, n + 8u, &f, &line), KST_FILE_ERR_TRAILING);
+    CHECK_EQ(line, 38);
+    strcpy(g_text + n, "\r");
+    CHECK_EQ(parse(g_text, n + 1u, &f, &line), KST_FILE_ERR_TRAILING);
     strcpy(g_text + n, "Max. Duty = 50 %\n");
     CHECK_EQ(parse(g_text, n + 17u, &f, &line), KST_FILE_ERR_TRAILING);
+}
+
+TEST_CASE(blank_lines_after_the_checksum_line_are_taken)
+{
+    static const char *const tail[] = {
+        "\n", "\n\n\n", " \n", "\t \n\n", "\r\n", "\r\n\r\n", "  ", "\n\t",
+    };
+    const kst_image_t img = sim_bench_image();
+
+    for (unsigned crlf = 0; crlf < 2u; ++crlf) {
+        for (size_t i = 0; i < sizeof(tail) / sizeof(tail[0]); ++i) {
+            kst_file_t f;
+            unsigned line = 9;
+            size_t n = written(&img);
+
+            if (crlf != 0u) {
+                n = to_crlf(n);
+            }
+            strcpy(g_text + n, tail[i]);
+            CHECK_EQ(parse(g_text, n + strlen(tail[i]), &f, &line),
+                     KST_FILE_OK);
+            CHECK_EQ(line, 0);
+            CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+            CHECK(same_image(&f.image, &img));
+        }
+    }
+}
+
+TEST_CASE(a_checked_file_is_taken_without_its_last_line_end)
+{
+    const kst_image_t img = sim_bench_image();
+    kst_file_t f;
+    unsigned line = 9;
+    size_t n = written(&img);
+
+    CHECK_EQ(g_text[n - 1u], '\n');
+    CHECK_EQ(parse(g_text, n - 1u, &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    CHECK(same_image(&f.image, &img));
+    /* One digit short it is a cut file, and with a wrong digit a damaged
+     * one: the checksum is held as strictly as with the line end. */
+    CHECK_EQ(parse(g_text, n - 2u, &f, &line), KST_FILE_ERR_TRUNCATED);
+    CHECK_EQ(line, 35);
+    g_text[n - 2u] = (char)(g_text[n - 2u] == '2' ? '3' : '2');
+    CHECK_EQ(parse(g_text, n - 1u, &f, &line), KST_FILE_ERR_CHECKSUM);
+    CHECK_EQ(line, 35);
+    /* CR LF on every line, the last one without either. */
+    n = to_crlf(written(&img));
+    CHECK_EQ(parse(g_text, n - 2u, &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    /* A line before the checksum line never lacks its end. */
+    n = written(&img);
+    *strstr(g_text, "\nchecksum") = ' ';
+    CHECK(parse(g_text, n - 1u, &f, &line) != KST_FILE_OK);
+}
+
+#define BOM "\xEF\xBB\xBF"
+
+TEST_CASE(a_byte_order_mark_in_front_of_the_header_is_skipped)
+{
+    static char text[KST_FILE_MAX + 8];
+    const kst_image_t img = sim_bench_image();
+    kst_file_t f;
+    unsigned line = 9;
+    size_t n = written(&img);
+
+    /* A checked file stays one: the mark is no part of the checksum. */
+    strcpy(text, BOM);
+    memcpy(text + 3, g_text, n);
+    CHECK_EQ(parse(text, n + 3u, &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    CHECK(same_image(&f.image, &img));
+    n = to_crlf(n);
+    memcpy(text + 3, g_text, n);
+    CHECK_EQ(parse(text, n + 3u, &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    /* An edited one, with the line numbers it has without the mark. */
+    strcpy(text, BOM HEAD "Boost = 300\nNeutral = 99999\n");
+    CHECK_EQ(parse(text, strlen(text), &f, &line), KST_FILE_ERR_VALUE);
+    CHECK_EQ(line, 3);
+    strcpy(text, BOM HEAD "Boost = 300\n");
+    CHECK_EQ(parse(text, strlen(text), &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_EDITED_UNTYPED);
+    CHECK(f.named == BIT(KST_F_BOOST));
+    /* A file of the mark only, and an empty one, hold no header. */
+    CHECK_EQ(parse(BOM, 3, &f, &line), KST_FILE_ERR_TRUNCATED);
+    CHECK_EQ(line, 1);
+    CHECK_EQ(parse("", 0, &f, &line), KST_FILE_ERR_TRUNCATED);
+    CHECK_EQ(line, 1);
+    CHECK_EQ(parse(BOM "\n", 4, &f, &line), KST_FILE_ERR_NOT_KST);
+    CHECK_EQ(line, 1);
+    /* Part of a mark, a second one and one at another place are bytes
+     * outside the format. */
+    strcpy(text, "\xEF\xBB" HEAD "Boost = 300\n");
+    CHECK_EQ(parse(text, strlen(text), &f, &line), KST_FILE_ERR_NOT_KST);
+    strcpy(text, BOM BOM HEAD "Boost = 300\n");
+    CHECK_EQ(parse(text, strlen(text), &f, &line), KST_FILE_ERR_NOT_KST);
+    strcpy(text, HEAD BOM "Boost = 300\n");
+    CHECK_EQ(parse(text, strlen(text), &f, &line), KST_FILE_ERR_MALFORMED);
+    CHECK_EQ(line, 2);
+    /* The size limit counts the mark. */
+    memset(text, ' ', sizeof(text));
+    memcpy(text, BOM, 3);
+    CHECK_EQ(parse(text, KST_FILE_MAX + 1u, &f, &line),
+             KST_FILE_ERR_OVERSIZED);
 }
 
 TEST_CASE(a_text_that_is_no_kst_file_is_refused_at_line_1)
@@ -886,23 +1076,204 @@ TEST_CASE(a_line_that_is_no_field_and_a_byte_outside_ascii_are_refused)
     CHECK_EQ(edited("Neutral = 15\r00\n", &f, &line), KST_FILE_ERR_MALFORMED);
 }
 
-TEST_CASE(a_last_line_without_a_line_end_is_refused_as_truncated)
-{
-    kst_file_t f;
-    unsigned line = 0;
-
-    CHECK_EQ(edited("Boost = 300\nNeutral = 15", &f, &line),
-             KST_FILE_ERR_TRUNCATED);
-    CHECK_EQ(line, 3);
-    CHECK_EQ(edited("Boost = 300\n# end", &f, &line), KST_FILE_ERR_TRUNCATED);
-    CHECK_EQ(edited("Boost = 300\nNeutral = 1500\n", &f, &line), KST_FILE_OK);
-}
-
 #define BLOCK_V6 "registers 32\n"                \
                  "00: 00 F5 F5 14 48 77 04 65\n" \
                  "08: 41 A4 0D 80 53 07 14 00\n" \
                  "10: 96 96 00 01 01 00 00 00\n" \
                  "18: 00 00 00 0A 00 10 00 00\n"
+
+TEST_CASE(a_last_line_that_ends_in_a_number_or_a_name_is_refused_as_truncated)
+{
+    static const char *const cut[] = {
+        "Boost = 300\nNeutral = 15",
+        "Boost = 300\nNeutral = 1500",
+        "Boost = 300\nNeutral = 1500 ",
+        "Boost = 300\nNeutral = 1500 u",
+        "Boost = 300\nNeutral = raw 15",
+        "Boost = 300\nNeutral = ",
+        "Boost = 300\nNeutral",
+        "Boost = 300\nNeut",
+        "Boost = 300\nNeutral = 1500 [not loa",
+        "Boost = 300\nType: V",
+        "Boost = 300\nregisters 3",
+        "Boost = 300\nNeutral = 99999 us",
+        "Boost = 300\nNeutral = 1500\x01",
+    };
+    kst_file_t f;
+    unsigned line = 0;
+
+    for (size_t i = 0; i < sizeof(cut) / sizeof(cut[0]); ++i) {
+        line = 0;
+        CHECK_EQ(edited(cut[i], &f, &line), KST_FILE_ERR_TRUNCATED);
+        CHECK_EQ(line, 3);
+    }
+    /* The register block is whole or the file is cut. */
+    CHECK_EQ(edited("registers 32", &f, &line), KST_FILE_ERR_TRUNCATED);
+    CHECK_EQ(line, 2);
+    CHECK_EQ(edited("registers 32\n"
+                    "00: 00 F5 F5 14 48 77 04 65", &f, &line),
+             KST_FILE_ERR_TRUNCATED);
+    CHECK_EQ(line, 3);
+    CHECK_EQ(edited("registers 32\n"
+                    "00: 00 F5 F5 14 48 77 04 6", &f, &line),
+             KST_FILE_ERR_TRUNCATED);
+    CHECK_EQ(line, 3);
+    CHECK_EQ(edited("Boost = 300\nNeutral = 1500\n", &f, &line), KST_FILE_OK);
+}
+
+TEST_CASE(a_last_line_that_shows_its_end_is_taken_without_a_line_end)
+{
+    static const char *const whole[] = {
+        "Boost = 300\nNeutral = 1500 us",
+        "Boost = 300\nNeutral = 1500us",
+        "Boost = 300\nNeutral = 1500 us  ",
+        "Boost = 300\nNeutral = 1500 [x]",
+        "Boost = 300\nNeutral = 1500 us [not loaded]",
+        "Boost = 300\nNeutral = 1500 # mid",
+        "Boost = 300\nNeutral = 1500#",
+        "Boost = 300\nNeutral = raw 1500, as read",
+    };
+    kst_file_t f, ref;
+    unsigned line = 9;
+
+    CHECK_EQ(edited("Boost = 300\nNeutral = 1500\n", &ref, NULL), KST_FILE_OK);
+    for (size_t i = 0; i < sizeof(whole) / sizeof(whole[0]); ++i) {
+        CHECK_EQ(edited(whole[i], &f, &line), KST_FILE_OK);
+        CHECK_EQ(line, 0);
+        CHECK(f.named == ref.named);
+        CHECK_EQ(f.line[KST_F_NEUTRAL], 3);
+    }
+    CHECK_EQ(edited("Boost = 300\nNeutral = 1500 us", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_NEUTRAL], ref.value[KST_F_NEUTRAL]);
+    /* A comment, a type line, blanks and a whole register block. */
+    CHECK_EQ(edited("Boost = 300\n# end", &f, &line), KST_FILE_OK);
+    CHECK(f.named == BIT(KST_F_BOOST));
+    CHECK_EQ(edited("Boost = 300\n  \t", &f, &line), KST_FILE_OK);
+    CHECK_EQ(edited("Boost = 300\nType: V6", &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
+    CHECK_EQ(f.type, KST_TYPE_V6);
+    CHECK_EQ(edited("registers 32\n"
+                    "00: 00 F5 F5 14 48 77 04 65\n"
+                    "08: 41 A4 0D 80 53 07 14 00\n"
+                    "10: 96 96 00 01 01 00 00 00\n"
+                    "18: 00 00 00 0A 00 10 00 00", &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.type, KST_TYPE_V6);
+    /* CR LF on the lines before it. */
+    CHECK_EQ(edited("Boost = 300\r\nNeutral = 1500 us", &f, &line),
+             KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_NEUTRAL], ref.value[KST_F_NEUTRAL]);
+    /* An error in a whole line keeps its name with the line end. */
+    CHECK_EQ(edited("Boost = 300\nNeutral = 99999 us\n", &f, &line),
+             KST_FILE_ERR_VALUE);
+    CHECK_EQ(line, 3);
+}
+
+TEST_CASE(a_person_s_file_with_cr_lf_reads_as_the_one_with_lf)
+{
+    kst_file_t lf, crlf;
+
+    CHECK_EQ(edited("Type: V6\nBoost = 300\n\nNeutral = 1500 us\n", &lf, NULL),
+             KST_FILE_OK);
+    CHECK_EQ(edited("Type: V6\r\nBoost = 300\r\n\r\nNeutral = 1500 us\r\n",
+                    &crlf, NULL), KST_FILE_OK);
+    CHECK_EQ(memcmp(&lf, &crlf, sizeof(lf)), 0);
+    CHECK_EQ(edited("Type: V6\r\nBoost = 300\nNeutral = 1500 us", &crlf, NULL),
+             KST_FILE_OK);
+    CHECK_EQ(memcmp(&lf, &crlf, sizeof(lf)) == 0, false);
+    CHECK(crlf.named == lf.named);
+}
+
+TEST_CASE(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone)
+{
+    static const char *const tail[] = { "", "\n", "\r\n" };
+    unsigned shown_as[256];
+    unsigned distinct = 0;
+
+    for (unsigned raw = 0; raw < 256u; ++raw) {
+        const kst_image_t img = bench_with(KST_F_DUTY, raw);
+        const kst_image_t servo = bench_with(KST_F_DUTY, raw ^ 0x80u);
+        int32_t shown = 0;
+        kst_file_t f;
+        kst_file_load_t r;
+        size_t n;
+
+        CHECK_EQ(kst_field_get(&img, KST_F_DUTY), raw);
+        CHECK(kst_field_display(KST_F_DUTY, (uint16_t)raw, &shown));
+        shown_as[raw] = (unsigned)shown;
+        distinct += raw == 0u || shown_as[raw] != shown_as[raw - 1u] ? 1u : 0u;
+        /* The checksum line deleted, and its line end with it or not. */
+        for (size_t t = 0; t < sizeof(tail) / sizeof(tail[0]); ++t) {
+            n = written(&img) - 18u;
+            if (t == 0u) {
+                n--;
+            } else {
+                strcpy(g_text + n, tail[t]);
+                n += strlen(tail[t]);
+            }
+            CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
+            CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
+            CHECK_EQ(f.value[KST_F_DUTY], (int32_t)raw);
+            CHECK((f.as_raw & BIT(KST_F_DUTY)) != 0u);
+            if (kst_file_load(&f, &servo, &servo, &r) == KST_FILE_LOAD_OK) {
+                CHECK(r.editable == BIT(KST_F_DUTY));
+                CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY), raw);
+                CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY_COPY), raw);
+            } else {
+                CHECK_EQ(r.verdict, KST_FILE_LOAD_HARD_LIMIT);
+            }
+            /* Into the servo it was read from it is no change.  A duty
+             * below the hard limit is refused for the servo's own value. */
+            (void)kst_file_load(&f, &img, &img, &r);
+            CHECK(r.editable == 0u);
+            CHECK(same_image(&r.target, &img));
+        }
+    }
+    /* Fewer numbers than raw values: the line alone does not hold them. */
+    CHECK(distinct < 256u);
+}
+
+TEST_CASE(a_changed_line_wins_over_the_register_block)
+{
+    const kst_image_t img = bench_with(KST_F_DUTY, 244);
+    const kst_image_t servo = sim_bench_image();
+    char *at;
+    kst_file_t f;
+    kst_file_load_t r;
+    size_t n;
+
+    /* 244 and 245 both show as 96 %.  The line unchanged: the block's 244. */
+    n = written(&img) - 18u;
+    CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_DUTY], 244);
+    /* The line changed to 95 %: its number, converted as a typed one. */
+    at = strstr(g_text, "Max. Duty = 96 %");
+    CHECK(at != NULL);
+    at[13] = '5';
+    CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_DUTY], 242);
+    CHECK((f.as_raw & BIT(KST_F_DUTY)) == 0u);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK(r.editable == BIT(KST_F_DUTY));
+    CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY), 242);
+    /* "raw" on the line is the line's. */
+    n = written(&img) - 18u;
+    at = strstr(g_text, "Max. Duty = 96 %");
+    memcpy(at, "Max. Duty=raw 99", 16);
+    CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_DUTY], 99);
+    /* Without the line the block gives nothing. */
+    n = written(&img) - 18u;
+    at = strstr(g_text, "Max. Duty = 96 %");
+    memcpy(at, "#", 1);
+    CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
+    CHECK((f.named & BIT(KST_F_DUTY)) == 0u);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK(r.editable == 0u);
+    /* Without the block the line converts: 96 % is raw 245. */
+    CHECK_EQ(edited("Type: V6\nMax. Duty = 96 %\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_DUTY], 245);
+    CHECK((f.as_raw & BIT(KST_F_DUTY)) == 0u);
+}
 
 TEST_CASE(the_type_of_an_edited_file_comes_from_its_block_or_its_type_line)
 {
@@ -1594,9 +1965,14 @@ int main(void)
     RUN(a_file_with_cr_lf_on_every_line_reads_back_with_the_same_checksum);
     RUN(lf_and_cr_lf_in_one_checked_file_are_refused_at_the_line);
     RUN(a_file_cut_at_any_byte_never_reads_as_a_checked_file);
+    RUN(a_cut_bench_file_states_how_many_of_its_27_values_it_holds);
+    RUN(a_file_of_a_few_lines_states_the_values_it_names);
     RUN(a_changed_byte_never_reads_as_a_checked_file);
     RUN(a_wrong_checksum_is_refused_and_a_removed_one_reads_as_edited);
     RUN(bytes_after_the_checksum_line_are_refused);
+    RUN(blank_lines_after_the_checksum_line_are_taken);
+    RUN(a_checked_file_is_taken_without_its_last_line_end);
+    RUN(a_byte_order_mark_in_front_of_the_header_is_skipped);
     RUN(a_text_that_is_no_kst_file_is_refused_at_line_1);
     RUN(a_version_that_is_no_number_and_a_newer_one_are_told_apart);
     RUN(null_and_a_text_above_the_size_limit_are_refused);
@@ -1610,7 +1986,11 @@ int main(void)
     RUN(an_unknown_name_and_a_name_given_twice_are_refused_with_the_line);
     RUN(a_value_the_field_does_not_take_is_refused_with_the_line);
     RUN(a_line_that_is_no_field_and_a_byte_outside_ascii_are_refused);
-    RUN(a_last_line_without_a_line_end_is_refused_as_truncated);
+    RUN(a_last_line_that_ends_in_a_number_or_a_name_is_refused_as_truncated);
+    RUN(a_last_line_that_shows_its_end_is_taken_without_a_line_end);
+    RUN(a_person_s_file_with_cr_lf_reads_as_the_one_with_lf);
+    RUN(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone);
+    RUN(a_changed_line_wins_over_the_register_block);
     RUN(the_type_of_an_edited_file_comes_from_its_block_or_its_type_line);
     RUN(a_register_block_that_is_cut_doubled_or_miscounted_is_refused);
     RUN(a_file_of_another_type_is_denied_whatever_its_kind);

@@ -73,6 +73,7 @@ static unsigned run(uint8_t op, const char *name, bool preset, unsigned first,
         snprintf(q.name, sizeof(q.name), "%s", name);
     }
     g_c.calls = 0;
+    g_c.walks = 0;
     kst_card_run(&g_c.io, &q, &g_d);
     CHECK_EQ(g_d.id, g_id);
     return g_d.result;
@@ -333,28 +334,134 @@ TEST_CASE(a_list_is_sorted_typed_and_leaves_out_what_is_no_servo_file)
     CHECK_EQ(g_d.count, 0);
 }
 
-TEST_CASE(a_list_gives_5_files_a_time_and_reaches_the_first_64)
+/* A card of @p n saved files, KST001 to KST<n>, put on it in an order that
+ * is not the list's. */
+static void card_of(unsigned n)
 {
     const kst_image_t sv = sim_bench_image();
     char name[KST_PROG_NAME_MAX];
 
     fresh();
-    for (unsigned i = 0; i < KST_CARD_LIST_MAX + 6u; ++i) {
-        snprintf(name, sizeof(name), "F%02u", i);
+    for (unsigned i = 0; i < n; ++i) {
+        snprintf(name, sizeof(name), "KST%03u", (i * 37u) % n + 1u);
+        (void)fake_card_put(&g_c, name, &sv);
+    }
+}
+
+/* Every page of the list of a card of @p n files, the latest first. */
+static void pages_reach_all(unsigned n)
+{
+    char name[KST_PROG_NAME_MAX];
+    unsigned seen = 0;
+
+    for (unsigned first = 0; first <= n; first += KST_PROG_FILES_MAX) {
+        const unsigned left = n - first;
+
+        CHECK_EQ(list(first), KST_PROG_CARD_OK);
+        CHECK_EQ(g_d.total, n);
+        CHECK_EQ(g_d.count, left < KST_PROG_FILES_MAX ? left
+                                                      : KST_PROG_FILES_MAX);
+        for (unsigned i = 0; i < g_d.count; ++i) {
+            snprintf(name, sizeof(name), "KST%03u", n - first - i);
+            CHECK_STR_EQ(g_d.names[i], name);
+            CHECK(g_d.types[i] != 0u);
+            seen++;
+        }
+    }
+    CHECK_EQ(seen, n);
+    snprintf(name, sizeof(name), "KST%03u", n + 1u);
+    CHECK_STR_EQ(g_d.name, name);
+}
+
+TEST_CASE(a_list_of_64_65_and_more_files_reaches_each_one_latest_first)
+{
+    static const unsigned files[] = {
+        1u, 5u, 6u, 63u, 64u, 65u, 69u, 70u, 128u, 129u, 200u,
+    };
+
+    _Static_assert(KST_CARD_LIST_MAX == 64u, "the cases stand at 64 files");
+    _Static_assert(FAKE_CARD_FILES >= 200u, "the fake card holds the cases");
+    for (size_t i = 0; i < sizeof(files) / sizeof(files[0]); ++i) {
+        card_of(files[i]);
+        pages_reach_all(files[i]);
+    }
+    /* 65 files: the page at the top holds the file saved last, and the one
+     * file past 64 is listed and counted. */
+    card_of(65);
+    CHECK_EQ(list(0), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.total, 65);
+    CHECK_STR_EQ(g_d.names[0], "KST065");
+    CHECK_EQ(list(64), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.count, 1);
+    CHECK_STR_EQ(g_d.names[0], "KST001");
+    /* Any first file, not only the start of a page. */
+    card_of(200);
+    for (unsigned first = 0; first < 203u; ++first) {
+        char name[KST_PROG_NAME_MAX];
+
+        CHECK_EQ(list(first), KST_PROG_CARD_OK);
+        CHECK_EQ(g_d.total, 200);
+        if (first >= 200u) {
+            CHECK_EQ(g_d.count, 0);
+            continue;
+        }
+        snprintf(name, sizeof(name), "KST%03u", 200u - first);
+        CHECK_STR_EQ(g_d.names[0], name);
+    }
+    CHECK_EQ(list(0xFFFFu), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.count, 0);
+    CHECK_EQ(g_d.total, 200);
+}
+
+TEST_CASE(a_list_past_64_files_walks_the_directory_once_more_per_64)
+{
+    card_of(200);
+    /* A page inside the first 64 names: the list and the preset name. */
+    CHECK_EQ(list(0), KST_PROG_CARD_OK);
+    CHECK_EQ(g_c.walks, 2);
+    CHECK_EQ(list(59), KST_PROG_CARD_OK);
+    CHECK_EQ(g_c.walks, 2);
+    CHECK_EQ(list(60), KST_PROG_CARD_OK);
+    CHECK_EQ(g_c.walks, 3);
+    CHECK_EQ(list(195), KST_PROG_CARD_OK);
+    CHECK_EQ(g_c.walks, 5);
+    /* A directory that stops reading on a later walk is no list. */
+    g_c.walk_fails_at = 2;
+    CHECK_EQ(list(100), KST_PROG_CARD_READ_ERR);
+    CHECK_EQ(g_d.count, 0);
+    CHECK_EQ(g_d.total, 0);
+    g_c.walk_fails_at = 0;
+    /* The card pulled between two walks. */
+    g_c.pull_at = 3;
+    CHECK(list(100) != KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.count, 0);
+}
+
+TEST_CASE(a_list_of_named_and_saved_files_pages_through_both)
+{
+    const kst_image_t sv = sim_bench_image();
+    char name[KST_PROG_NAME_MAX];
+
+    card_of(70);
+    for (unsigned i = 0; i < 10u; ++i) {
+        snprintf(name, sizeof(name), "%s%u", i < 5u ? "A" : "W", i);
         (void)fake_card_put(&g_c, name, &sv);
     }
     CHECK_EQ(list(0), KST_PROG_CARD_OK);
-    CHECK_EQ(g_d.count, KST_PROG_FILES_MAX);
-    CHECK_EQ(g_d.total, KST_CARD_LIST_MAX);
-    CHECK_STR_EQ(g_d.names[0], "F00");
-    CHECK_STR_EQ(g_d.names[4], "F04");
-    CHECK_EQ(list(KST_CARD_LIST_MAX - 2u), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.total, 80);
+    CHECK_STR_EQ(g_d.names[0], "A0");
+    CHECK_STR_EQ(g_d.names[4], "A4");
+    CHECK_EQ(list(5), KST_PROG_CARD_OK);
+    CHECK_STR_EQ(g_d.names[0], "KST070");
+    CHECK_EQ(list(73), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.count, 5);
+    CHECK_STR_EQ(g_d.names[0], "KST002");
+    CHECK_STR_EQ(g_d.names[1], "KST001");
+    CHECK_STR_EQ(g_d.names[2], "W5");
+    CHECK_STR_EQ(g_d.names[4], "W7");
+    CHECK_EQ(list(78), KST_PROG_CARD_OK);
     CHECK_EQ(g_d.count, 2);
-    CHECK_STR_EQ(g_d.names[0], "F62");
-    CHECK_STR_EQ(g_d.names[1], "F63");
-    CHECK_EQ(list(KST_CARD_LIST_MAX), KST_PROG_CARD_OK);
-    CHECK_EQ(g_d.count, 0);
-    CHECK_EQ(g_d.total, KST_CARD_LIST_MAX);
+    CHECK_STR_EQ(g_d.names[1], "W9");
 }
 
 TEST_CASE(a_file_as_written_loads_its_editable_fields_only)
@@ -493,7 +600,7 @@ TEST_CASE(a_text_that_is_no_whole_servo_file_says_why_and_where)
     snprintf(&text[n], KST_FILE_MAX - n, "Nonsense = 1\n");
     (void)fake_card_put_text(&g_c, "NAME", text);
     CHECK_EQ(load("NAME"), KST_PROG_CARD_BAD);
-    CHECK(g_d.line > 30u);
+    CHECK_EQ(g_d.line, 30);
     /* A value its field does not encode. */
     text = edited(1, &sv, true);
     n = set_line(text, KST_F_DUTY, "many");
@@ -557,7 +664,9 @@ int main(void)
     RUN(a_card_that_takes_no_file_says_which_way);
     RUN(a_card_pulled_at_any_card_call_ends_the_request_without_a_file);
     RUN(a_list_is_sorted_typed_and_leaves_out_what_is_no_servo_file);
-    RUN(a_list_gives_5_files_a_time_and_reaches_the_first_64);
+    RUN(a_list_of_64_65_and_more_files_reaches_each_one_latest_first);
+    RUN(a_list_past_64_files_walks_the_directory_once_more_per_64);
+    RUN(a_list_of_named_and_saved_files_pages_through_both);
     RUN(a_file_as_written_loads_its_editable_fields_only);
     RUN(an_edited_file_loads_by_its_lines_with_or_without_a_type);
     RUN(a_file_of_the_other_type_is_refused_with_both_types);

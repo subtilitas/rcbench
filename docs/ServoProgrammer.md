@@ -490,9 +490,10 @@ changes the draft on the panel, never the servo.
 ![The files on the card](img/servo-kst-files.png)
 
 The first entry saves. Below it stand the files sorted by name, 5 a page,
-each with its servo type; a file without a type line shows none. The list
-reaches the first 64 files by name; a card with more shows these and counts
-no others. With more than 5 files
+each with its servo type; a file without a type line shows none. The files
+with a proposed name, `KST` and 3 digits, stand together at the place of
+`KST000`, the highest number first. The list reaches every servo file of
+the card. With more than 5 files
 the title counts them, `FILES 1 TO 5 OF 7`, and `Show the next files` turns
 the page, back to the first after the last. The panel asks the card for
 each page and waits at most 5 s for it.
@@ -938,7 +939,9 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - Without a PD mini the programming voltage and the current limit are not
   applied.
 - No save, list or load of a servo file has run on a card.
-- The list of files reaches the first 64 files by name.
+- A page behind the first 64 files reads the directory once more per 64
+  files in front of it. The time this takes is not measured; the panel
+  waits 5 s for a page.
 - A write without a card leaves no backup file. The session's backup is
   then the only copy of the servo as found and ends with **LEAVE**, a
   coprocessor restart or a power loss of the bench.

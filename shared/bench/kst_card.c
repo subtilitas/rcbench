@@ -104,16 +104,31 @@ static uint8_t type_of(const kst_store_io_t *io, const char *name)
 static void list(const kst_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {
+    char behind[KST_STORE_NAME_MAX];
+    size_t first = req->first;
     size_t count = 0;
-    const kst_store_t r = kst_store_list(io, s_list, KST_CARD_LIST_MAX,
-                                         &count, NULL, NULL);
+    size_t total = 0;
+    kst_store_t r = kst_store_list(io, s_list, KST_CARD_LIST_MAX, &count,
+                                   &total, NULL);
 
+    /* A full buffer that does not hold the whole page: the directory has
+     * more files.  Go on behind the last file in front of the page, or
+     * behind the buffer's last one. */
+    while (r == KST_STORE_OK && count == KST_CARD_LIST_MAX &&
+           first + KST_PROG_FILES_MAX > count) {
+        const size_t skip = first < count ? first : count;
+
+        memcpy(behind, s_list[skip - 1u].name, sizeof(behind));
+        first -= skip;
+        r = kst_store_list_after(io, behind, s_list, KST_CARD_LIST_MAX,
+                                 &count, NULL, NULL);
+    }
     done->result = store_result(r, false);
     if (r != KST_STORE_OK) {
         return;
     }
-    done->total = (uint16_t)count;
-    for (size_t i = req->first;
+    done->total = total < 0xFFFFu ? (uint16_t)total : 0xFFFFu;
+    for (size_t i = first;
          i < count && done->count < KST_PROG_FILES_MAX; ++i) {
         base_of(s_list[i].name, done->names[done->count]);
         done->types[done->count] = type_of(io, s_list[i].name);

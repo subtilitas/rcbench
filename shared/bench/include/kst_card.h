@@ -24,8 +24,10 @@
 extern "C" {
 #endif
 
-/** Files of the directory a list reaches, sorted by name: the first
- *  KST_CARD_LIST_MAX.  A card with more shows these and counts no others. */
+/** File names a list holds at a time.  A list reaches every file of the
+ *  directory: for a page behind the first KST_CARD_LIST_MAX files the
+ *  directory is walked once more per KST_CARD_LIST_MAX files, or fewer by
+ *  up to KST_PROG_FILES_MAX, in front of the page. */
 #define KST_CARD_LIST_MAX 64u
 
 /**
@@ -43,8 +45,10 @@ unsigned kst_card_type(const kst_image_t *img);
  * replaced.
  *
  * KST_PROG_CARD_LIST gives the base names of up to KST_PROG_FILES_MAX
- * files from req->first on, each with the servo type its text states, and
- * the next preset name.
+ * files from req->first on in the order of kst_store_list(), the latest
+ * proposed name first among the proposed ones, each with the servo type its text states, and the
+ * next preset name.  done->total is the number of servo files in the
+ * directory, 65535 for that many or more.
  *
  * KST_PROG_CARD_LOAD reads the file of req->name and holds it against
  * req->image with kst_file_load(): done->image is the servo's image with
