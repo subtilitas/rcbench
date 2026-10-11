@@ -303,6 +303,50 @@ test('the generator refuses a drawing with a lead that reaches no pin', () => {
   assert.doesNotThrow(() => generate(CATALOGUE));
 });
 
+test('the T-plug drawing carries a wire point at the mouth of each USB-C socket when the data file lists IN and OUT', () => {
+  // Without the 2 pins in the data file the drawing shows the print and 4 pads.
+  const plain = generate(CATALOGUE).anchors.files['usbtap.svg']!;
+  const listed = part('usbtap').pins.map((p) => p.id);
+  assert.deepEqual(Object.keys(plain.pins).sort(), [...listed].sort());
+  // With them: the order of the data file OUT, IN, G, DP, DM, V.
+  const c = clone();
+  const tap = c.parts.find((p) => p.id === 'usbtap')!;
+  const pads = tap.pins.filter((p) => p.id !== 'IN' && p.id !== 'OUT');
+  const model = pads[0]!;
+  tap.pins = [
+    { ...model, id: 'OUT', label: { en: 'USB-C out', de: 'USB-C aus' } },
+    { ...model, id: 'IN', label: { en: 'USB-C in', de: 'USB-C ein' } },
+    ...pads,
+  ];
+  const withPins = generate(c);
+  const rec = withPins.anchors.files['usbtap.svg']!;
+  assert.deepEqual(Object.keys(rec.pins).sort(), ['DM', 'DP', 'G', 'IN', 'OUT', 'V']);
+  const [, , w, h] = rec.viewBox;
+  assert.deepEqual([rec.pins['IN']!.x, rec.pins['IN']!.y, rec.pins['IN']!.side], [28, 80, 'W']);
+  assert.deepEqual([rec.pins['OUT']!.x, rec.pins['OUT']!.y, rec.pins['OUT']!.side], [232, 80, 'E']);
+  for (const id of ['IN', 'OUT']) {
+    const pin = rec.pins[id]!;
+    assert.ok(pin.x > 0 && pin.x < w && pin.y > 0 && pin.y < h, id);
+    assert.deepEqual(pin.label, id === 'IN' ? { en: 'USB-C in', de: 'USB-C ein' } : { en: 'USB-C out', de: 'USB-C aus' });
+  }
+  // The label of the data file stands in the file, in its language, and the pads keep their places.
+  assert.match(withPins.svgs[pathOf('usbtap.svg', 'de')]!, /<text id="tpl-lbl-IN"[^>]*>USB-C ein<\/text>/);
+  assert.match(withPins.svgs[pathOf('usbtap.svg', 'en')]!, /<text id="tpl-lbl-OUT"[^>]*>USB-C out<\/text>/);
+  for (const id of ['G', 'DP', 'DM', 'V']) assert.deepEqual(rec.pins[id], plain.pins[id], id);
+  // 1 of the 2 pins alone is drawn too: the other socket keeps its print.
+  const one = clone();
+  const tapOne = one.parts.find((p) => p.id === 'usbtap')!;
+  tapOne.pins = [{ ...model, id: 'IN', label: { en: 'IN', de: 'IN' } }, ...pads];
+  const single = generate(one);
+  assert.ok('IN' in single.anchors.files['usbtap.svg']!.pins);
+  assert.ok(!('OUT' in single.anchors.files['usbtap.svg']!.pins));
+  assert.match(single.svgs[pathOf('usbtap.svg', 'en')]!, />OUT<\/text>/);
+  // A label that leaves the drawing is refused.
+  const wide = clone();
+  wide.parts.find((p) => p.id === 'usbtap')!.pins = [{ ...model, id: 'IN', label: { en: 'USB-C socket towards the charger, input', de: 'IN' } }, ...pads];
+  assert.throws(() => generate(wide), /does not fit/);
+});
+
 test('the phase tap drawing shows the resistor only: 2 lead ends, both pins', () => {
   for (const lang of LANGS) {
     const svg = out.svgs[pathOf('tap.svg', lang)]!;
