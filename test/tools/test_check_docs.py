@@ -265,6 +265,7 @@ def test_a_tree_without_protocols_is_read(tree, monkeypatch):
     "KST and cha servos", "cha", "CHA", "Cha/KST servos in docs/Link.md",
     "X(UI_KST_TITLE,\"KST/Cha\")", "Cha/KST.",
     "[Cha](docs/Servo.md) servos", "[KST/Cha](../Link.md#x)",
+    "Hitec/Cha", "cha/kst, both", "KST/Cha/Hitec servos",
     "(Cha, see docs/Link.md)", "`Cha` in src/x.c", "\"Cha\"/docs/a.md",
 ])
 def test_the_short_form_of_the_brand_is_found(line):
@@ -277,6 +278,7 @@ def test_the_short_form_of_the_brand_is_found(line):
     "xCha", "CHANNELS", "cha.c", "src/Cha/README.md", "Cha::member",
     "see protocols/cha/include/x.h", "ns::Cha",
     "[the file](src/Cha/README.md)", "`src/cha/x.c`", "(Cha::member)",
+    "docs/Cha", "path/to/Cha", "the folder SERVO/Cha/ on the card",
 ])
 def test_the_full_name_and_other_words_pass(line):
     assert cd.brand_short_forms(line) == []

@@ -1289,17 +1289,29 @@ def check_spdx(problems: list[str]) -> None:
 # word of its own, in any case: not part of a longer word, a file name or an
 # identifier.
 BRAND_SHORT_RE = re.compile(r"(?<!\w)cha(?!\w|\.\w)", re.I)
-# A path with a file name in it and a scoped identifier are not prose:
-# "src/Cha/README.md", "Cha::member".  "Cha/KST servos" is, and so is the
-# label of a link: a bracket, a parenthesis and a quote end the exempt run.
-BRAND_EXEMPT_RE = re.compile(
-    r"""[^\s()\[\]"'`]*(?:/[^\s()\[\]"'`]*\.\w|::)[^\s()\[\]"'`]*""")
+# A path and a scoped identifier are not prose: "src/Cha/README.md",
+# "docs/Cha", "Cha::member".  A slash that joins the short form to a brand
+# name is prose: "Cha/KST servos".  A bracket, a parenthesis and a quote end
+# a token, so the label of a link is read apart from its destination.
+BRAND_TOKEN_RE = re.compile(r"""[^\s()\[\]"'`]+""")
+BRAND_FILE_RE = re.compile(r"/.*\.\w")
+BRAND_NAMES = {"kst", "chaservo", "hitec", "yge", "openyge"}
+
+
+def brand_token_is_prose(token: str) -> bool:
+    """Whether one token of a line is read for the short form."""
+    if "::" in token or BRAND_FILE_RE.search(token):
+        return False
+    parts = [re.sub(r"\W", "", part).lower() for part in token.split("/")]
+    return len(parts) == 1 or any(part in BRAND_NAMES for part in parts)
 
 
 def brand_short_forms(text: str) -> list[int]:
     """The line numbers that hold the short form of the brand Chaservo."""
     return [n for n, line in enumerate(text.splitlines(), 1)
-            if BRAND_SHORT_RE.search(BRAND_EXEMPT_RE.sub(" ", line))]
+            if any(BRAND_SHORT_RE.search(token)
+                   for token in BRAND_TOKEN_RE.findall(line)
+                   if brand_token_is_prose(token))]
 
 
 def brand_pages() -> list[pathlib.Path]:
