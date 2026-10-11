@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" lang="de" xml:lang="de" viewBox="0 0 480 444" width="480" height="444" role="img" aria-labelledby="ina-t" aria-describedby="ina-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="ina-t">DAOKAI-INA3221-Platine, 3 Kanäle</title>
+<desc id="ina-d">Illustration der INA3221-Platine, Vorderseite: 3 Kanal-Padpaare oben, 3 große Pads GND, GND, VPU links, 8-polige Leiste VS, GND, SCL, SDA, PV, CRI, WAR, TC unten.</desc>
+<defs>
+<linearGradient id="ina-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="ina-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="ina-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="ina-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="ina-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="ina-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="ina-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="ina-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="ina-pcb-black" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24262b"/><stop offset="0.5" stop-color="#17181c"/><stop offset="1" stop-color="#101114"/></linearGradient>
+</defs>
+<rect width="480" height="444" rx="10" fill="#efebe3"/>
+<g filter="url(#ina-sh)"><rect x="22" y="40" width="437" height="361" rx="5" fill="url(#ina-pcb-black)"/></g><rect x="22.5" y="40.5" width="436" height="360" rx="5" fill="none" stroke="#fff" stroke-opacity=".10"/>
+<g fill="none" stroke="#2c2f35" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M70.3 98.8L108.1 145V170.2M127 98.8L171.1 145V170.2M116.5 203.8V216.4L133.7 224.8M162.7 203.8V216.4L145.5 224.8M202.6 98.8L202.6 145V170.2M263.5 98.8L265.6 145V170.2M211 203.8V216.4L228.2 224.8M257.2 203.8V216.4L240 224.8M343.3 98.8L299.2 145V170.2M404.2 98.8L362.2 145V170.2M307.6 203.8V216.4L324.8 224.8M353.8 203.8V216.4L336.6 224.8M139.6 229L160.6 250H211L240.4 275.2M234.1 229V245.8H257.2V258.4M330.7 229V258.4L299.2 275.2M295 292H341.2L391.6 256.3H425.2M295 302.5H349.6L383.2 286.5H425.2M282.4 313V325.6H395.8L412.6 315.1H425.2M194.2 267.6H240.4M194.2 285.7H240.4M194.2 302.5H240.4"/></g>
+<rect x="40.9" y="50.5" width="116" height="59" fill="none" stroke="#f2f2f2" stroke-width="1.6"/>
+<circle cx="70.3" cy="79.9" r="19" fill="url(#ina-ring)"/><circle cx="70.3" cy="79.9" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="127" cy="79.9" r="19" fill="url(#ina-ring)"/><circle cx="127" cy="79.9" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-VIN3P" x="70.3" y="31" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VIN3+</text>
+<text id="ina-lbl-VIN3M" x="127" y="31" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VIN3-</text>
+<rect x="63.3" y="121.9" width="64" height="29" fill="#f2f2f2"/>
+<text x="95.3" y="130.4" font-size="17" font-weight="600" fill="#15161a" text-anchor="middle" transform="rotate(180 95.3 130.4)">CH3</text>
+<g transform="translate(139.6,170.2) rotate(0)" filter="url(#ina-s2)"><rect x="-39" y="-18" width="78" height="36" rx="2" fill="url(#ina-tin)"/><rect x="-26.5" y="-18" width="53" height="36" fill="url(#ina-body)"/><rect x="-26.5" y="-18" width="53" height="6.5" fill="#fff" opacity=".07"/><text y="5.8" text-anchor="middle" font-size="15.8" font-weight="500" fill="#d8dadd" letter-spacing=".3">R100</text></g>
+<g transform="translate(116.5,203.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(162.7,203.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(139.6,224.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<rect x="177.4" y="50.5" width="116" height="59" fill="none" stroke="#f2f2f2" stroke-width="1.6"/>
+<circle cx="202.6" cy="79.9" r="19" fill="url(#ina-ring)"/><circle cx="202.6" cy="79.9" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="263.5" cy="79.9" r="19" fill="url(#ina-ring)"/><circle cx="263.5" cy="79.9" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-VIN2P" x="202.6" y="31" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VIN2+</text>
+<text id="ina-lbl-VIN2M" x="263.5" y="31" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VIN2-</text>
+<rect x="199.8" y="121.9" width="64" height="29" fill="#f2f2f2"/>
+<text x="231.8" y="130.4" font-size="17" font-weight="600" fill="#15161a" text-anchor="middle" transform="rotate(180 231.8 130.4)">CH2</text>
+<g transform="translate(234.1,170.2) rotate(0)" filter="url(#ina-s2)"><rect x="-39" y="-18" width="78" height="36" rx="2" fill="url(#ina-tin)"/><rect x="-26.5" y="-18" width="53" height="36" fill="url(#ina-body)"/><rect x="-26.5" y="-18" width="53" height="6.5" fill="#fff" opacity=".07"/><text y="5.8" text-anchor="middle" font-size="15.8" font-weight="500" fill="#d8dadd" letter-spacing=".3">R100</text></g>
+<g transform="translate(211,203.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(257.2,203.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(234.1,224.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<rect x="313.9" y="50.5" width="120" height="59" fill="none" stroke="#f2f2f2" stroke-width="1.6"/>
+<circle cx="343.3" cy="79.9" r="19" fill="url(#ina-ring)"/><circle cx="343.3" cy="79.9" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="404.2" cy="79.9" r="19" fill="url(#ina-ring)"/><circle cx="404.2" cy="79.9" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-VIN1P" x="343.3" y="31" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VIN1+</text>
+<text id="ina-lbl-VIN1M" x="404.2" y="31" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VIN1-</text>
+<rect x="338.4" y="121.9" width="64" height="29" fill="#f2f2f2"/>
+<text x="370.4" y="130.4" font-size="17" font-weight="600" fill="#15161a" text-anchor="middle" transform="rotate(180 370.4 130.4)">CH1</text>
+<g transform="translate(330.7,170.2) rotate(180)" filter="url(#ina-s2)"><rect x="-39" y="-18" width="78" height="36" rx="2" fill="url(#ina-tin)"/><rect x="-26.5" y="-18" width="53" height="36" fill="url(#ina-body)"/><rect x="-26.5" y="-18" width="53" height="6.5" fill="#fff" opacity=".07"/><text y="5.8" text-anchor="middle" font-size="15.8" font-weight="500" fill="#d8dadd" letter-spacing=".3">R100</text></g>
+<g transform="translate(307.6,203.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(353.8,203.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(330.7,224.8) rotate(0) scale(0.9)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<circle cx="57.7" cy="168.1" r="16.8" fill="url(#ina-ring)"/><circle cx="57.7" cy="168.1" r="12" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="423.1" cy="161.8" r="16.8" fill="url(#ina-ring)"/><circle cx="423.1" cy="161.8" r="12" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="427.3" cy="371.8" r="16.8" fill="url(#ina-ring)"/><circle cx="427.3" cy="371.8" r="12" fill="#efebe3" stroke="#6d737b"/>
+<rect x="34.6" y="220.6" width="59" height="172" fill="none" stroke="#f2f2f2" stroke-width="1.6"/>
+<circle cx="61.9" cy="245.8" r="19" fill="url(#ina-ring)"/><circle cx="61.9" cy="245.8" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-PAD1" x="108.1" y="245.8" font-size="12.5" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 108.1 245.8)">GND</text>
+<circle cx="61.9" cy="306.7" r="19" fill="url(#ina-ring)"/><circle cx="61.9" cy="306.7" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-PAD2" x="108.1" y="306.7" font-size="12.5" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 108.1 306.7)">GND</text>
+<circle cx="61.9" cy="363.4" r="19" fill="url(#ina-ring)"/><circle cx="61.9" cy="363.4" r="8.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-PAD3" x="108.1" y="363.4" font-size="12.5" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 108.1 363.4)">VPU</text>
+<g transform="translate(132,267.6) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
+<g transform="translate(176.6,267.6) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<text x="155.6" y="267.6" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 155.6 267.6)">TC</text>
+<g transform="translate(132,285.7) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
+<g transform="translate(176.6,285.7) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<text x="155.6" y="285.7" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 155.6 285.7)">W</text>
+<g transform="translate(132,302.5) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
+<g transform="translate(176.6,302.5) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<text x="155.6" y="302.5" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 155.6 302.5)">C</text>
+<g transform="translate(132,320.1) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
+<g transform="translate(176.6,320.1) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<text x="155.6" y="320.1" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 155.6 320.1)">PV</text>
+<g transform="translate(132,338.2) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
+<g transform="translate(176.6,338.2) rotate(0) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<text x="155.6" y="338.2" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 155.6 338.2)">VS</text>
+<g transform="translate(267.7,283.6) rotate(0)" filter="url(#ina-s2)"><rect x="-26" y="-15.1" width="52" height="2.6" fill="url(#ina-tin)"/><rect x="-26" y="-5.9" width="52" height="2.6" fill="url(#ina-tin)"/><rect x="-26" y="3.3" width="52" height="2.6" fill="url(#ina-tin)"/><rect x="-26" y="12.5" width="52" height="2.6" fill="url(#ina-tin)"/><rect x="-15.1" y="-26" width="2.6" height="52" fill="url(#ina-tin)"/><rect x="-5.9" y="-26" width="2.6" height="52" fill="url(#ina-tin)"/><rect x="3.3" y="-26" width="2.6" height="52" fill="url(#ina-tin)"/><rect x="12.5" y="-26" width="2.6" height="52" fill="url(#ina-tin)"/><rect x="-23" y="-23" width="46" height="46" rx="1.5" fill="url(#ina-body)"/><rect x="-23" y="-23" width="46" height="7.4" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-19" cy="-19" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="7" text-anchor="middle"><text y="-1.6">INA</text><text y="6.5">3221</text></g></g>
+<g transform="translate(203.9,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(222.3,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(241.2,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(260.1,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(297.1,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(316,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(334.9,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(355.1,348.7) rotate(90) scale(0.85)" filter="url(#ina-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#ina-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<circle cx="278.2" cy="341.6" r="3.4" fill="url(#ina-ring)"/><circle cx="278.2" cy="355.8" r="3.4" fill="url(#ina-ring)"/>
+<rect x="143.7" y="373.8" width="17" height="17" rx="1" fill="url(#ina-ring)"/><circle cx="152.2" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-VS" x="152.2" y="419" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">VS</text>
+<circle cx="181.3" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="181.3" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-GND" x="181.3" y="434" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">GND</text>
+<circle cx="210.4" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="210.4" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-SCL" x="210.4" y="419" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">SCL</text>
+<circle cx="239.5" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="239.5" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-SDA" x="239.5" y="434" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">SDA</text>
+<circle cx="268.6" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="268.6" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-PV" x="268.6" y="419" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">PV</text>
+<circle cx="297.7" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="297.7" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-CRI" x="297.7" y="434" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">CRI</text>
+<circle cx="326.8" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="326.8" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-WAR" x="326.8" y="419" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">WAR</text>
+<circle cx="355.9" cy="382.3" r="8.5" fill="url(#ina-ring)"/><circle cx="355.9" cy="382.3" r="3.8" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="ina-lbl-TC" x="355.9" y="434" font-size="12.5" font-weight="600" fill="#24262b" text-anchor="middle">TC</text>
+<path d="M444.5 220.6V322.2" stroke="#f2f2f2" stroke-width="1"/>
+<text x="438.6" y="205" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(180 438.6 205)">A0</text>
+<text x="438.6" y="331" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(180 438.6 331)">A0</text>
+<rect x="430.6" y="226" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<rect x="440.6" y="226" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<text x="410.5" y="225.2" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(180 410.5 225.2)">GND</text>
+<rect x="430.6" y="254.1" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<rect x="440.6" y="254.1" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<text x="410.5" y="253.3" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(180 410.5 253.3)">SDA</text>
+<rect x="430.6" y="284.3" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<rect x="440.6" y="284.3" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<text x="410.5" y="283.5" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(180 410.5 283.5)">SCL</text>
+<rect x="430.6" y="312.9" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<rect x="440.6" y="312.9" width="4.5" height="4.5" rx="0.5" fill="url(#ina-tin)"/>
+<text x="410.5" y="312.1" font-size="8" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(180 410.5 312.1)">VS</text>
+</svg>

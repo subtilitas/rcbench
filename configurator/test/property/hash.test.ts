@@ -172,7 +172,7 @@ test('1: format leaves out what the catalogue does not hold, and parse gives it 
 test('4 and 5: every prefix and every suffix of the longest hash the page writes parses to a well-formed selection', () => {
   const full: Selection = {
     functions: SPACE.functions, owned: SPACE.selectable,
-    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd' },
+    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd', servoPower: 'bench' },
   };
   const hash = `#${formatHash(full, 'de', 'en', CATALOGUE)}`;
   for (let cut = 0; cut <= hash.length; cut++) {

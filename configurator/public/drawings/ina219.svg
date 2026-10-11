@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 300 284" width="300" height="284" role="img" aria-labelledby="i219-t" aria-describedby="i219-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="i219-t">INA219 board, not wired by this release</title>
+<desc id="i219-d">Illustration of the INA219 board, front: 2-pad terminal Vin- and Vin+ at the top, 6-hole header Vcc, Gnd, Scl, Sda, Vin-, Vin+ at the bottom.</desc>
+<defs>
+<linearGradient id="i219-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="i219-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="i219-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="i219-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="i219-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="i219-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="i219-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="i219-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="i219-pcb-teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f8ab8"/><stop offset="0.5" stop-color="#1c6c97"/><stop offset="1" stop-color="#145576"/></linearGradient>
+</defs>
+<rect width="300" height="284" rx="10" fill="#efebe3"/>
+<g filter="url(#i219-sh)"><rect x="15" y="18" width="270" height="246" rx="8" fill="url(#i219-pcb-teal)"/></g><rect x="15.5" y="18.5" width="269" height="245" rx="8" fill="none" stroke="#fff" stroke-opacity=".10"/>
+<circle cx="33.9" cy="47.4" r="16.8" fill="url(#i219-ring)"/><circle cx="33.9" cy="47.4" r="12" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="262" cy="49.5" r="16.8" fill="url(#i219-ring)"/><circle cx="262" cy="49.5" r="12" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="37.3" cy="242.7" r="16.8" fill="url(#i219-ring)"/><circle cx="37.3" cy="242.7" r="12" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="262" cy="239.8" r="16.8" fill="url(#i219-ring)"/><circle cx="262" cy="239.8" r="12" fill="#efebe3" stroke="#6d737b"/>
+<g fill="none" stroke="#3a9bc9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M85.1 230.1V215.4L65.4 202.8H40.2V156.6H120M112.4 230.1V209.1H82.2V194.4M141 230.1V202.8L146 192.3M169.6 230.1L153.6 211.2V192.3M162 192.3L174.6 209.1H262.8V144M180.9 169.2H191.4V144H241.8M136.8 162.9L130.5 139.8M162 162.9L171.2 139.8"/></g>
+<g fill="none" stroke="#3a9bc9" stroke-width="7" stroke-linejoin="round"><path d="M130.5 62.1V97.8H122.1M167.5 62.1V97.8H180.9"/></g>
+<path d="M109.5 34.8V95.7H187.2V34.8Z" fill="none" stroke="#f2f2f2" stroke-width="1.3"/>
+<circle cx="130.5" cy="56.6" r="10" fill="url(#i219-ring)"/><circle cx="130.5" cy="56.6" r="4.5" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<circle cx="167.5" cy="56.6" r="10" fill="url(#i219-ring)"/><circle cx="167.5" cy="56.6" r="4.5" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-T-VinM" x="104.9" y="60.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">Vin-</text>
+<text id="i219-lbl-T-VinP" x="192.2" y="60.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="start">Vin+</text>
+<g transform="translate(151.5,116.7) rotate(180)" filter="url(#i219-s2)"><rect x="-41" y="-17" width="82" height="34" rx="2" fill="url(#i219-tin)"/><rect x="-27.9" y="-17" width="55.8" height="34" fill="url(#i219-body)"/><rect x="-27.9" y="-17" width="55.8" height="6.1" fill="#fff" opacity=".07"/><text y="5.4" text-anchor="middle" font-size="15" font-weight="500" fill="#d8dadd" letter-spacing=".3">R100</text></g>
+<text x="150.2" y="151.6" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle">R5</text>
+<text x="24.2" y="90.2" font-size="9" font-weight="500" fill="#f2f2f2" text-anchor="start">INA219 DC</text>
+<text x="24.2" y="111.2" font-size="9" font-weight="500" fill="#f2f2f2" text-anchor="start">Current</text>
+<text x="24.2" y="131.4" font-size="9" font-weight="500" fill="#f2f2f2" text-anchor="start">Sensor</text>
+<g transform="translate(149.4,177.6) rotate(90)" filter="url(#i219-s2)"><rect x="-16.5" y="-11.5" width="33" height="2.6" fill="url(#i219-tin)"/><rect x="-16.5" y="-4.7" width="33" height="2.6" fill="url(#i219-tin)"/><rect x="-16.5" y="2.1" width="33" height="2.6" fill="url(#i219-tin)"/><rect x="-16.5" y="8.9" width="33" height="2.6" fill="url(#i219-tin)"/><rect x="-13" y="-17" width="26" height="34" rx="1.5" fill="url(#i219-body)"/><rect x="-13" y="-17" width="26" height="5.4" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-9" cy="-13" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<rect x="43.8" y="159.7" width="18" height="30" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<g transform="translate(52.8,174.7) rotate(90) scale(1.1)" filter="url(#i219-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#i219-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<rect x="73.2" y="159.7" width="18" height="30" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<g transform="translate(82.2,174.7) rotate(90) scale(1.1)" filter="url(#i219-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#i219-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<rect x="99.2" y="159.7" width="18" height="30" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<g transform="translate(108.2,174.7) rotate(90) scale(1.1)" filter="url(#i219-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#i219-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<text x="231.3" y="144.8" font-size="7.5" font-weight="500" fill="#f2f2f2" text-anchor="middle">I2C Address</text>
+<rect x="195.3" y="154.7" width="30" height="18" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<g transform="translate(210.3,163.7) rotate(0) scale(1.1)" filter="url(#i219-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#i219-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<rect x="242.3" y="154.7" width="30" height="18" rx="3" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<rect x="247.5" y="158.2" width="8" height="11" rx="1.5" fill="url(#i219-tin)"/>
+<rect x="259.2" y="158.2" width="8" height="11" rx="1.5" fill="url(#i219-tin)"/>
+<text x="276.2" y="163.7" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 276.2 163.7)">A1</text>
+<rect x="195.3" y="182.5" width="30" height="18" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<g transform="translate(210.3,191.5) rotate(0) scale(1.1)" filter="url(#i219-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#i219-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<rect x="242.3" y="182.5" width="30" height="18" rx="3" fill="none" stroke="#f2f2f2" stroke-width="1"/>
+<rect x="247.5" y="186" width="8" height="11" rx="1.5" fill="url(#i219-tin)"/>
+<rect x="259.2" y="186" width="8" height="11" rx="1.5" fill="url(#i219-tin)"/>
+<text x="276.2" y="191.5" font-size="7" font-weight="600" fill="#f2f2f2" text-anchor="middle" transform="rotate(-90 276.2 191.5)">A0</text>
+<circle cx="85.1" cy="239.8" r="8" fill="url(#i219-ring)"/><circle cx="85.1" cy="239.8" r="3.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-Vcc" x="85.1" y="260.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">Vcc</text>
+<circle cx="113.3" cy="239.8" r="8" fill="url(#i219-ring)"/><circle cx="113.3" cy="239.8" r="3.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-Gnd" x="113.3" y="226.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">Gnd</text>
+<circle cx="141.4" cy="239.8" r="8" fill="url(#i219-ring)"/><circle cx="141.4" cy="239.8" r="3.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-Scl" x="141.4" y="260.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">Scl</text>
+<circle cx="169.6" cy="239.8" r="8" fill="url(#i219-ring)"/><circle cx="169.6" cy="239.8" r="3.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-Sda" x="169.6" y="226.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">Sda</text>
+<circle cx="197.7" cy="239.8" r="8" fill="url(#i219-ring)"/><circle cx="197.7" cy="239.8" r="3.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-VinM" x="197.7" y="260.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">Vin-</text>
+<circle cx="225.8" cy="239.8" r="8" fill="url(#i219-ring)"/><circle cx="225.8" cy="239.8" r="3.6" fill="#efebe3" stroke="#6d737b" stroke-width=".8"/>
+<text id="i219-lbl-VinP" x="225.8" y="226.8" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">Vin+</text>
+</svg>

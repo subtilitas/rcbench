@@ -18,6 +18,7 @@ const P = {
   noneEnabled: ['No function is enabled.', 'Keine Funktion ist aktiviert.'],
   missing: ['Missing: ', 'Fehlt: '],
   needsVariant: ['Needs the variant: ', 'Braucht die Variante: '],
+  notConnected: ['Not connected: ', 'Nicht angeschlossen: '],
   thNet: ['Net', 'Netz'],
   thLine: ['Line', 'Linie'],
   noChecks: ['No checks.', 'Keine Prüfungen.'],

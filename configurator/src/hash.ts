@@ -3,8 +3,13 @@
 // Parsing never throws. Function and part ids are passed on as written, the
 // resolver decides which exist. Option tokens are a closed set, so the parser
 // decides those.
+//
+// A test object is no owned part. A link that names one under `p=` reads as
+// the tick of the function that drives it without a further part: `p=servo`
+// as `f=servo`, `p=esc` as `f=esc`. Parts, wires and functions stay the same.
 
 import type { Catalogue, Lang, Options, Selection } from '../contract.ts';
+import { alwaysOn, plainDrive } from './core.ts';
 
 export const HASH_VERSION = 1;
 /** A longer hash is treated as a link from another version. */
@@ -21,6 +26,7 @@ const TOKENS: ReadonlyArray<readonly [string, keyof Options, string]> = [
   ['osoyoo', 'connection', 'osoyoo'],
   ['xt90', 'ina228Board', 'xt90'],
   ['pd', 'escPower', 'pd'],
+  ['servo5v', 'servoPower', 'bench'],
 ];
 
 export type Parsed = {
@@ -82,14 +88,31 @@ export function parseHash(hash: string, defaults: Options): Parsed {
 }
 
 /**
+ * The selection with every test object under the owned parts turned into the
+ * tick of the function that drives it and needs no further part. A test
+ * object without such a function is dropped from the owned parts.
+ */
+export function testObjectTicks(selection: Selection, catalogue: Catalogue): Selection {
+  const objects = catalogue.parts.filter((p) => p.testObject === true).map((p) => p.id);
+  const named = selection.owned.filter((id) => objects.includes(id));
+  if (named.length === 0) return selection;
+  const functions = [...selection.functions];
+  for (const id of named) {
+    const fn = plainDrive(catalogue, id);
+    if (fn !== null && !functions.includes(fn)) functions.push(fn);
+  }
+  return { functions, owned: selection.owned.filter((id) => !objects.includes(id)), options: { ...selection.options } };
+}
+
+/**
  * The hash of a selection, without '#'. Ids stand in catalogue order; ids the
- * catalogue does not know are left out, and so is a function that needs no
- * part: it has no tick. `lang` is written when it is not the
+ * catalogue does not know are left out, and so is a function every setup
+ * runs: it has no tick. `lang` is written when it is not the
  * language the page starts in without a hash.
  */
 export function formatHash(selection: Selection, lang: Lang, startLang: Lang, catalogue: Catalogue): string {
   const keys = [`v=${HASH_VERSION}`];
-  const f = catalogue.functions.filter((x) => x.needs.length > 0).map((x) => x.id).filter((id) => selection.functions.includes(id));
+  const f = catalogue.functions.filter((x) => !alwaysOn(catalogue, x)).map((x) => x.id).filter((id) => selection.functions.includes(id));
   const p = catalogue.parts.filter((x) => x.selectable).map((x) => x.id).filter((id) => selection.owned.includes(id));
   const o = TOKENS.filter((x) => selection.options[x[1]] === x[2]).map((x) => x[0]);
   if (f.length > 0) keys.push(`f=${f.join(',')}`);
@@ -108,15 +131,18 @@ export function reportIds(ids: string[]): string {
 
 /**
  * A hash as it goes into a document, with '#'. The page keeps the link that
- * opened it until a change, so its address can name a function that needs no
- * part. Such a hash is written again from its selection, which leaves these
- * ids out; its language key stays. Every other hash is returned as it is.
+ * opened it until a change, so its address can name a function every setup
+ * runs, or a test object as an owned part. Such a hash is written again from
+ * its selection: the function ids are left out, the test object becomes the
+ * tick of its function; the language key stays. Every other hash is returned
+ * as it is.
  */
 export function shareHash(hash: string, defaults: Options, catalogue: Catalogue): string {
   const parsed = parseHash(hash, defaults);
-  const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && f.needs.length === 0));
+  const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && alwaysOn(catalogue, f)))
+    || parsed.selection.owned.some((id) => catalogue.parts.some((p) => p.id === id && p.testObject === true));
   if (!named) return hash;
   const lang = parsed.lang;
   // The start language is set so that a language key in the hash is written and none is added.
-  return `#${formatHash(parsed.selection, lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue)}`;
+  return `#${formatHash(testObjectTicks(parsed.selection, catalogue), lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue)}`;
 }

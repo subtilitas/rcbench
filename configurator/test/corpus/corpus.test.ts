@@ -10,7 +10,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { CATALOGUE, DEFAULT_OPTIONS } from '../../src/core.ts';
+import type { OptionKey } from '../../contract.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, plainDrive } from '../../src/core.ts';
 import { MAX_HASH, parseHash } from '../../src/hash.ts';
 import {
   CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, outcome, readCorpus, readWires,
@@ -32,18 +33,47 @@ const later = new Set([
   ...now.owned.filter((id) => !corpus.ids.owned.includes(id)),
 ]);
 
-/** An outcome reduced to the ids the corpus starts with. */
-function inCorpusIds(o: Outcome): Outcome {
+/** The test objects: parts a visitor connects and tests. A link names one as an owned part or by a function. */
+const OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id);
+
+/** An outcome reduced to the ids the corpus starts with, and to the option keys `stored` holds. */
+function inCorpusIds(o: Outcome, stored: Outcome): Outcome {
+  const keys = Object.keys(stored.options) as OptionKey[];
   return {
     ...o,
+    options: Object.fromEntries(keys.map((key) => [key, o.options[key]])) as Outcome['options'],
     parts: o.parts.filter((id) => corpus.ids.parts.includes(id)),
     enabled: o.enabled.filter((id) => corpus.ids.functions.includes(id)),
   };
 }
 
+/**
+ * A stored outcome as the page gives it with test objects: a test object
+ * under the owned parts is the tick of the function that drives it alone.
+ * The parts, the enabled functions, the options, the language and the
+ * notices stay as stored. `canonical` is null for such an entry: the page
+ * writes the function in place of the part.
+ */
+function withObjects(stored: Outcome): Omit<Outcome, 'canonical'> & { canonical: string | null } {
+  const named = stored.owned.filter((id) => OBJECTS.includes(id));
+  if (named.length === 0) return stored;
+  const ticks = new Set([...stored.functions, ...named.map((id) => plainDrive(CATALOGUE, id) as string)]);
+  return {
+    ...stored,
+    functions: CATALOGUE.functions.map((f) => f.id).filter((id) => ticks.has(id)),
+    owned: stored.owned.filter((id) => !OBJECTS.includes(id)),
+    canonical: null,
+  };
+}
+
 test('the corpus keeps the ids it starts with', () => {
   for (const id of corpus.ids.functions) assert.ok(now.functions.includes(id), `the function ${id} of a stored link is gone from the catalogue`);
-  for (const id of corpus.ids.owned) assert.ok(now.owned.includes(id), `the part ${id} of a stored link can no longer be ticked`);
+  for (const id of corpus.ids.owned) {
+    // A test object is no part to tick: a link that names it ticks the function that drives it alone.
+    if (OBJECTS.includes(id)) assert.ok(plainDrive(CATALOGUE, id) !== null, `the test object ${id} of a stored link has no function that drives it alone`);
+    else assert.ok(now.owned.includes(id), `the part ${id} of a stored link can no longer be ticked`);
+  }
+  assert.deepEqual(OBJECTS, ['servo', 'esc']);
   for (const id of corpus.ids.parts) assert.ok(now.parts.includes(id), `the part ${id} of a stored setup is gone from the catalogue`);
   assert.equal(CATALOGUE.hashVersion, 1, 'a new hash version needs a decoder for version 1 and a corpus of its own');
 });
@@ -92,8 +122,33 @@ for (const entry of corpus.entries) {
     assert.deepEqual(outcome(rest.canonical).owned, rest.owned, 'the hash the page writes gives other parts');
     assert.deepEqual(outcome(rest.canonical).notices, [], 'the hash the page writes gives a notice');
 
+    // An option key the entry does not store has its default value, or the hash names it.
+    for (const key of Object.keys(rest.options) as OptionKey[]) {
+      if (key in entry.expect.options) continue;
+      assert.equal(rest.options[key], DEFAULT_OPTIONS[key], `${key} is not the default`);
+    }
+    assert.ok(!rest.owned.some((id) => OBJECTS.includes(id)), 'a test object is a ticked part');
+
     if (namesLater(entry, corpus)) return;
-    assert.deepEqual(inCorpusIds(rest), entry.expect);
+    // Both sides are compared in the ids the corpus starts with: a later entry stores every id.
+    const reduced = withObjects(entry.expect);
+    const expected = {
+      ...reduced,
+      parts: reduced.parts.filter((id) => corpus.ids.parts.includes(id)),
+      enabled: reduced.enabled.filter((id) => corpus.ids.functions.includes(id)),
+    };
+    const got = inCorpusIds(rest, entry.expect);
+    if (expected.canonical === null) {
+      // The page writes the function for the part: the hash differs, the setup it gives is the same.
+      const { canonical, ...same } = got;
+      const { canonical: _stored, ...stored } = expected;
+      assert.deepEqual(same, stored);
+      assert.ok(!/[&]p=(?:[a-z0-9]+,)*(?:servo|esc)(?:,|&|$)/.test(canonical), `${canonical} names a test object as a part`);
+      assert.deepEqual(outcome(canonical).parts, rest.parts, 'the hash the page writes gives other parts of the setup');
+      assert.deepEqual(outcome(canonical).wires, actualWires, 'the hash the page writes gives other wires');
+    } else {
+      assert.deepEqual(got, expected);
+    }
     assert.deepEqual(actualWires, wires[entry.name], 'the wires differ: see README.md, "When a wire of the catalogue changes"');
   });
 }

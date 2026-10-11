@@ -5,9 +5,9 @@ name: Configurator
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, and the coverage figure in
 #   configurator/core/README.md.
-# - build: type check and unit tests of the page, the Vite build, the size
-#   budget (250 kB initial, 1 MB total). The built page is an artifact of
-#   every run.
+# - build: type check and unit tests of the page, the check of the part
+#   drawings against the data file, the Vite build, the size budget (250 kB
+#   initial, 1 MB total). The built page is an artifact of every run.
 # - smoke: Playwright against the built page at 360 px and 1280 px width.
 # - matrix: Playwright against the built page in 8 cells (360 x 740 px and
 #   1280 x 800 px, English and German, light and dark, reduced motion) and
@@ -116,6 +116,13 @@ jobs:
       - name: Unit tests and the geometry sweep
         run: npm test
 
+      # Fails when a pin of the data file has no anchor, an anchor has no
+      # pin, a label differs in English or German, a wire end has no anchor,
+      # a wire colour is below 3:1 on a page background, or a committed
+      # drawing differs from the output of the generator.
+      - name: Check the part drawings against the data file
+        run: npm run drawings:check
+
       - name: Build
         run: npm run build
 
@@ -174,6 +181,16 @@ jobs:
 
       - name: Smoke test at 360 px and 1280 px
         run: npm run e2e
+
+      # 3 setups of the wiring picture as the browser draws them. The files
+      # are not committed.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: configurator-diagram-shots
+          path: configurator/test-results/diagram-shots
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Keep the traces and screenshots of failed tests
         if: failure()

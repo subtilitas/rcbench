@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 350 244" width="350" height="244" role="img" aria-labelledby="pdm-t" aria-describedby="pdm-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title id="pdm-t">WeAct Studio PD Power Mini V1 Buck module</title>
+<desc id="pdm-d">Illustration of the PD mini board: USB-C input, 4 buttons, display, 4-pole output terminal.</desc>
+<defs>
+<linearGradient id="pdm-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
+<linearGradient id="pdm-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>
+<linearGradient id="pdm-copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeb184"/><stop offset=".5" stop-color="#c47c45"/><stop offset="1" stop-color="#8f5628"/></linearGradient>
+<radialGradient id="pdm-ring" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#cfd3d8"/><stop offset="1" stop-color="#8e959d"/></radialGradient>
+<linearGradient id="pdm-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3c42"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+<filter id="pdm-sh" x="-15%" y="-15%" width="130%" height="135%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+<filter id="pdm-s2" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000" flood-opacity=".7"/></filter>
+<filter id="pdm-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+<linearGradient id="pdm-pcb-black" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24262b"/><stop offset="0.5" stop-color="#17181c"/><stop offset="1" stop-color="#101114"/></linearGradient>
+<linearGradient id="pdm-ind" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9ced4"/><stop offset="0.5" stop-color="#9aa1a9"/><stop offset="1" stop-color="#7d848c"/></linearGradient>
+<linearGradient id="pdm-lcd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f2630"/><stop offset="1" stop-color="#0e1116"/></linearGradient>
+<linearGradient id="pdm-term" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4fbf7a"/><stop offset="0.5" stop-color="#2f9a57"/><stop offset="1" stop-color="#1f7a41"/></linearGradient>
+</defs>
+<rect width="350" height="244" rx="10" fill="#efebe3"/>
+<g filter="url(#pdm-sh)"><rect x="30" y="24" width="280" height="196" rx="8" fill="url(#pdm-pcb-black)"/></g><rect x="30.5" y="24.5" width="279" height="195" rx="8" fill="none" stroke="#fff" stroke-opacity=".10"/>
+<circle cx="44" cy="38" r="4.9" fill="url(#pdm-ring)"/><circle cx="44" cy="38" r="3.5" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="140" cy="112" r="4.9" fill="url(#pdm-ring)"/><circle cx="140" cy="112" r="3.5" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="232" cy="32" r="4.9" fill="url(#pdm-ring)"/><circle cx="232" cy="32" r="3.5" fill="#efebe3" stroke="#6d737b"/>
+<circle cx="296" cy="206" r="4.9" fill="url(#pdm-ring)"/><circle cx="296" cy="206" r="3.5" fill="#efebe3" stroke="#6d737b"/>
+<g fill="none" stroke="#2c2f35" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M64 60H86M112 60H128M172 60H180M206 66H230V96H270M206 48H250V70H270M150 86V100H190"/></g>
+<g filter="url(#pdm-s3)"><rect x="18" y="40" width="46" height="40" rx="5" fill="url(#pdm-tin)"/></g><rect x="18.5" y="40.5" width="45" height="39" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/><rect x="36.4" y="48.8" width="13.8" height="5.6" rx="2" fill="#7d848c"/><rect x="36.4" y="65.6" width="13.8" height="5.6" rx="2" fill="#7d848c"/><rect x="18" y="43" width="5" height="34" fill="#2a2c31"/>
+<text id="pdm-lbl-USB" x="36" y="100" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="start">USB-C in</text>
+<g transform="translate(98,60) rotate(0)" filter="url(#pdm-s2)"><rect x="-14" y="-6.7" width="28" height="2.6" fill="url(#pdm-tin)"/><rect x="-14" y="-3.1" width="28" height="2.6" fill="url(#pdm-tin)"/><rect x="-14" y="0.5" width="28" height="2.6" fill="url(#pdm-tin)"/><rect x="-14" y="4.1" width="28" height="2.6" fill="url(#pdm-tin)"/><rect x="-11" y="-9" width="22" height="18" rx="1.5" fill="url(#pdm-body)"/><rect x="-11" y="-9" width="22" height="2.9" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-7" cy="-5" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<g filter="url(#pdm-s3)"><rect x="128" y="36" width="44" height="46" rx="5" fill="url(#pdm-ind)"/></g>
+<text x="150" y="64" font-size="12" font-weight="500" fill="#2a2c31" text-anchor="middle">100</text>
+<g filter="url(#pdm-s3)"><circle cx="194" cy="48" r="13" fill="url(#pdm-tin)"/></g><path d="M183.6 40.2A13 13 0 0 1 204.4 40.2Z" fill="#b3261e"/>
+<g filter="url(#pdm-s3)"><circle cx="194" cy="80" r="13" fill="url(#pdm-tin)"/></g><path d="M183.6 72.2A13 13 0 0 1 204.4 72.2Z" fill="#b3261e"/>
+<g transform="translate(150,100) rotate(0) scale(0.8)" filter="url(#pdm-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pdm-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
+<g transform="translate(176,106) rotate(0) scale(0.8)" filter="url(#pdm-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#pdm-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#a9825a"/></g>
+<g transform="translate(206,108) rotate(0)" filter="url(#pdm-s2)"><rect x="-10" y="-3.8" width="20" height="2.6" fill="url(#pdm-tin)"/><rect x="-10" y="-1.3" width="20" height="2.6" fill="url(#pdm-tin)"/><rect x="-10" y="1.2" width="20" height="2.6" fill="url(#pdm-tin)"/><rect x="-7" y="-5" width="14" height="10" rx="1.5" fill="url(#pdm-body)"/><rect x="-7" y="-5" width="14" height="1.6" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-3" cy="-1" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
+<g filter="url(#pdm-s2)"><rect x="43.5" y="113.5" width="17" height="17" rx="2" fill="url(#pdm-tin)"/><circle cx="52" cy="122" r="5.1" fill="#1c1d21"/><circle cx="50.6" cy="120.6" r="2" fill="#fff" opacity=".12"/></g>
+<text x="68" y="126.5" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="start">S</text>
+<g filter="url(#pdm-s2)"><rect x="43.5" y="137.5" width="17" height="17" rx="2" fill="url(#pdm-tin)"/><circle cx="52" cy="146" r="5.1" fill="#1c1d21"/><circle cx="50.6" cy="144.6" r="2" fill="#fff" opacity=".12"/></g>
+<text x="68" y="150.5" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="start">+</text>
+<g filter="url(#pdm-s2)"><rect x="43.5" y="161.5" width="17" height="17" rx="2" fill="url(#pdm-tin)"/><circle cx="52" cy="170" r="5.1" fill="#1c1d21"/><circle cx="50.6" cy="168.6" r="2" fill="#fff" opacity=".12"/></g>
+<text x="68" y="174.5" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="start">−</text>
+<g filter="url(#pdm-s2)"><rect x="43.5" y="185.5" width="17" height="17" rx="2" fill="url(#pdm-tin)"/><circle cx="52" cy="194" r="5.1" fill="#1c1d21"/><circle cx="50.6" cy="192.6" r="2" fill="#fff" opacity=".12"/></g>
+<text x="68" y="198.5" font-size="11" font-weight="600" fill="#f2f2f2" text-anchor="start">ON</text>
+<g filter="url(#pdm-s3)"><rect x="96" y="136" width="140" height="70" rx="2" fill="#0b0c0e"/></g><rect x="100" y="140" width="118" height="62" rx="1" fill="url(#pdm-lcd)"/><rect x="220" y="140" width="12" height="62" fill="#27409a"/>
+<g filter="url(#pdm-s3)"><rect x="272" y="29" width="50" height="108" rx="2" fill="#1f7a41"/></g>
+<rect x="274" y="31" width="46" height="26" fill="url(#pdm-term)" stroke="#145a2c" stroke-width="1"/><rect x="313" y="39" width="7" height="10" fill="#0f3d1e"/><circle cx="297" cy="44" r="7.8" fill="url(#pdm-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M291.5 38.5L302.5 49.5" stroke="#4a5058" stroke-width="2"/>
+<rect x="274" y="57" width="46" height="26" fill="url(#pdm-term)" stroke="#145a2c" stroke-width="1"/><rect x="313" y="65" width="7" height="10" fill="#0f3d1e"/><circle cx="297" cy="70" r="7.8" fill="url(#pdm-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M291.5 64.5L302.5 75.5" stroke="#4a5058" stroke-width="2"/>
+<rect x="274" y="83" width="46" height="26" fill="url(#pdm-term)" stroke="#145a2c" stroke-width="1"/><rect x="313" y="91" width="7" height="10" fill="#0f3d1e"/><circle cx="297" cy="96" r="7.8" fill="url(#pdm-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M291.5 90.5L302.5 101.5" stroke="#4a5058" stroke-width="2"/>
+<rect x="274" y="109" width="46" height="26" fill="url(#pdm-term)" stroke="#145a2c" stroke-width="1"/><rect x="313" y="117" width="7" height="10" fill="#0f3d1e"/><circle cx="297" cy="122" r="7.8" fill="url(#pdm-ring)" stroke="#5d646c" stroke-width=".8"/><path d="M291.5 116.5L302.5 127.5" stroke="#4a5058" stroke-width="2"/>
+<text x="266" y="74.5" font-size="12" font-weight="600" fill="#9aa0a8" text-anchor="end">−</text>
+<text x="266" y="100.5" font-size="12" font-weight="600" fill="#9aa0a8" text-anchor="end">+</text>
+<text id="pdm-lbl-ON" x="266" y="48.5" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">OUT −</text>
+<text id="pdm-lbl-OP" x="266" y="126.5" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="end">OUT +</text>
+<rect x="252" y="150" width="20" height="50" rx="1" fill="#17181c"/>
+<circle cx="257" cy="157" r="2.4" fill="url(#pdm-gold)"/><circle cx="267" cy="157" r="2.4" fill="url(#pdm-gold)"/>
+<circle cx="257" cy="169" r="2.4" fill="url(#pdm-gold)"/><circle cx="267" cy="169" r="2.4" fill="url(#pdm-gold)"/>
+<circle cx="257" cy="181" r="2.4" fill="url(#pdm-gold)"/><circle cx="267" cy="181" r="2.4" fill="url(#pdm-gold)"/>
+<circle cx="257" cy="193" r="2.4" fill="url(#pdm-gold)"/><circle cx="267" cy="193" r="2.4" fill="url(#pdm-gold)"/>
+</svg>

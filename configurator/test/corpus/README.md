@@ -24,7 +24,7 @@ Entries by name:
 
 | Prefix | Count | Input |
 |---|---:|---|
-| `page-` | 49 | Hashes the page writes. |
+| `page-` | 51 | Hashes the page writes. 2 of them are added after the start, for the option token `servo5v`. |
 | `hand-` | 10 | Well-formed hashes in another spelling: other key order, repeated ids, default tokens. |
 | `bad-empty`, `bad-number-sign`, `bad-two-number-signs` | 3 | No hash, the number sign alone, two number signs. |
 | `bad-cut-` | 14 | A link cut short. |
@@ -51,6 +51,15 @@ A hash of 64 kB is stored as a recipe `{ prefix, unit, count, suffix }`.
    `hashes.json`). An entry whose hash names an id that the catalogue adds
    later is held to the rules of a well-formed result only.
 4. A function or a part of `ids` stays in the catalogue.
+5. A test object (`servo`, `esc`) is no part to tick. 8 entries name one
+   under `p=`. The page reads it as the tick of the function that drives the
+   test object alone: `p=servo` as `f=servo`, `p=esc` as `f=esc`. The tests
+   hold such an entry to the stored parts, enabled functions, options,
+   language and notices. The hash the page writes names the function in place
+   of the part and gives the same parts and wires.
+6. An option key added to the catalogue changes no entry. The tests compare
+   the options in the keys the entry stores. A key the entry does not store
+   has its default value.
 
 ## Add an entry
 

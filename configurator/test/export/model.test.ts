@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Catalogue, Lang } from '../../contract.ts';
-import { CATALOGUE, resolve } from '../../src/core.ts';
+import { CATALOGUE, resolve, alwaysOn } from '../../src/core.ts';
 import { missing } from '../../src/export/font.ts';
 import { SECTION_ORDER, boldRuns, documentModel, fileName, isoDate, shortHash, strings } from '../../src/export/model.ts';
 import type { Block, Doc } from '../../src/export/model.ts';
@@ -63,13 +63,56 @@ test('every setup of the sweep gives the sections in order, every part, every wi
         if (got.join('\n') !== full.join('\n')) say('the safety notes differ from the catalogue');
       }
 
-      const parts = lists(doc, 'parts')[0];
-      if (!parts || parts.items.length !== setup.parts.length) say('the parts list does not hold every part');
+      // The parts list holds the bench hardware; a test object stands under its own heading.
+      const bench = setup.parts.filter((r) => r.part.testObject !== true);
+      const objects = setup.parts.filter((r) => r.part.testObject === true);
+      const tested = lists(doc, 'tested')[0]?.items ?? [];
+      if (tested.map((i) => i.runs[0]?.text).join('|') !== objects.map((r) => tx(lang, r.part.name)).join('|')) say('the test objects differ from the setup');
+      objects.forEach((r, i) => {
+        const users = setup.functions.filter((f) => f.enabled && f.fn.drives === r.part.id);
+        if (users.length === 0) say(`test object ${r.part.id} without a function`);
+        const lines = tested[i]?.lines.map((l) => l.text).join('\n') ?? '';
+        for (const f of users) if (!lines.includes(tx(lang, f.fn.name))) say(`test object ${r.part.id} does not name ${f.fn.id}`);
+      });
+      if ((objects.length === 0) !== blocks(doc, 'tested').some((b) => b.kind === 'para' && b.runs[0]?.text === t(lang, 'testedNone'))) say('the sentence for no test object does not follow the setup');
+
+      // The power sources follow the data: every source of the setup, in its order, with every line of the catalogue.
+      const power = lists(doc, 'power').flatMap((l) => l.items);
+      if (power.length !== setup.power.length || setup.power.length === 0) say('the power sources differ from the setup');
       else {
-        setup.parts.forEach((r, i) => {
+        setup.power.forEach((entry, i) => {
+          const item = power[i];
+          const s = entry.source;
+          if (item?.runs[0]?.text !== tx(lang, s.label)) say(`power source ${s.id} is out of place`);
+          if ((item?.tags.join() ?? '') !== (entry.used ? t(lang, s.choice === undefined ? 'gIn' : 'gInOne') : '')) say(`power source ${s.id} carries the wrong mark`);
+          const lines = item?.lines.map((l) => l.text) ?? [];
+          if (!lines.includes(tx(lang, s.text))) say(`power source ${s.id} lacks its text`);
+          for (const line of [...s.pros, ...s.cons, ...s.unknowns]) {
+            if (!lines.some((l) => l.endsWith(`: ${tx(lang, line)}`))) say(`power source ${s.id} lacks a line`);
+          }
+          if (lines.length !== 1 + (s.volts || s.amps ? 1 : 0) + s.pros.length + s.cons.length + s.unknowns.length) say(`power source ${s.id} holds a line the data does not`);
+        });
+      }
+      const feeds = [...new Set(setup.power.map((e) => e.source.feeds))];
+      if (blocks(doc, 'power').filter((b) => b.kind === 'heading' && b.level === 3).length !== feeds.length) say('the headings of the power sources differ from the setup');
+      for (const r of objects) if (!feeds.some((f) => f === r.part.id)) say(`test object ${r.part.id} has no power source`);
+      // A servo on a supply pin of the bench: the warning is in the checks of the document.
+      const fed = setup.wires.some((w) => [59, 60, 61, 62].includes(w.n));
+      const warned = (lists(doc, 'order')[1]?.items ?? []).some((i) => i.runs.some((r) => r.text === tx(lang, CATALOGUE.checks.find((c) => c.id === 'servo-bench-supply')!.text)));
+      if (fed !== warned) say('the warning of the servo on the logic supply does not follow the wires');
+
+      // The state of the project stands once, on the first page; the footer of every page does not repeat it.
+      if (strings(doc).filter((s) => s === t(lang, 'devState')).length !== 1) say('the state of the project is not stated once');
+      if (!first.some((b) => b.kind === 'para' && b.runs[0]?.text === t(lang, 'devState'))) say('the state of the project is not on the first page');
+      if (doc.footer.includes(t(lang, 'devState'))) say('the footer repeats the state of the project');
+
+      const parts = lists(doc, 'parts')[0];
+      if (!parts || parts.items.length !== bench.length) say('the parts list does not hold every part');
+      else {
+        bench.forEach((r, i) => {
           const item = parts.items[i];
           if (!item?.runs[0]?.text.startsWith(tx(lang, r.part.name))) say(`part ${r.part.id} is out of place`);
-          if (r.part.hardware === 'not-run' && !item?.tags.includes(t(lang, 'nrh'))) say(`part ${r.part.id} lacks its mark`);
+          if ((item?.tags.length ?? 0) > 0) say(`part ${r.part.id} carries a mark`);
         });
       }
 
@@ -78,8 +121,8 @@ test('every setup of the sweep gives the sections in order, every part, every wi
       // function stands in one list, once, with its mark.
       const fn = lists(doc, 'functions');
       const groups = [
-        setup.functions.filter((f) => f.enabled && f.fn.needs.length === 0),
-        setup.functions.filter((f) => f.enabled && f.fn.needs.length > 0),
+        setup.functions.filter((f) => f.enabled && alwaysOn(CATALOGUE, f.fn)),
+        setup.functions.filter((f) => f.enabled && !alwaysOn(CATALOGUE, f.fn)),
         setup.functions.filter((f) => !f.enabled),
       ];
       const filled = groups.filter((g) => g.length > 0);
@@ -89,7 +132,7 @@ test('every setup of the sweep gives the sections in order, every part, every wi
           const items = fn[g]?.items ?? [];
           if (items.map((i) => i.runs[0]?.text).join('|') !== group.map((f) => tx(lang, f.fn.name)).join('|')) say(`function list ${g + 1} differs from the setup`);
           group.forEach((f, i) => {
-            if ((f.fn.hardware === 'not-run') !== (items[i]?.tags.includes(t(lang, 'nrh')) ?? false)) say(`function ${f.fn.id} carries the wrong mark`);
+            if ((items[i]?.tags.length ?? 0) > 0) say(`function ${f.fn.id} carries a mark`);
             if (!f.enabled && items[i]?.lines.length === 0) say(`function ${f.fn.id} is not enabled and names nothing that is missing`);
           });
         });
@@ -173,24 +216,29 @@ test('the empty selection gives a full document', () => {
     assert.equal(one(doc, 'safety', 'safety').notes.length, CATALOGUE.safety.length);
     // The functions that need no part are enabled, each with its mark; every
     // other function is listed as not enabled. No other list of functions.
-    const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
-    const rest = CATALOGUE.functions.filter((f) => f.needs.length > 0);
+    const base = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f));
+    const rest = CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f));
     assert.ok(base.length > 0 && rest.length > 0);
     const fn = lists(doc, 'functions');
     assert.equal(fn.length, 2);
     assert.deepEqual(fn[0]?.items.map((i) => i.runs[0]?.text), base.map((f) => tx(lang, f.name)));
     assert.deepEqual(
       fn[0]?.items.map((i) => i.tags),
-      base.map((f) => (f.hardware === 'not-run' ? [t(lang, 'nrh')] : [])),
+      base.map(() => []),
     );
     assert.deepEqual(fn[1]?.items.map((i) => i.runs[0]?.text), rest.map((f) => tx(lang, f.name)));
     const heads = blocks(doc, 'functions').filter((b) => b.kind === 'heading').map((b) => (b.kind === 'heading' ? b.text : ''));
     assert.deepEqual(heads, [t(lang, 'does'), tx(lang, CATALOGUE.baseFunction), PDF_STRINGS.notEnabled[lang === 'de' ? 1 : 0]]);
-    // The checks on the state of these functions are in the document.
+    // The checks of the setup are in the document.
     const checks = lists(doc, 'order')[1]?.items.map((i) => i.runs[1]?.text) ?? [];
     for (const c of setup.checks) assert.ok(checks.includes(tx(lang, c.text)), c.id);
-    assert.ok(setup.checks.some((c) => c.when === null && c.id.endsWith('-state')));
+    assert.ok(setup.checks.length > 0);
     assert.equal(lists(doc, 'parts')[0]?.items.length, setup.parts.length);
+    // No test object: the section says so, and the power sources are those of the logic.
+    assert.equal(lists(doc, 'tested').length, 0);
+    assert.ok(strings(doc).includes(t(lang, 'testedNone')));
+    assert.deepEqual(setup.power.map((e) => e.source.feeds), ['logic']);
+    assert.equal(lists(doc, 'power').flatMap((l) => l.items).length, 1);
   }
 });
 
@@ -211,8 +259,8 @@ test('a setup without a part, a wire or a check says so and invents nothing', ()
 test('the functions section follows the functions of the setup at its limits', () => {
   const key = (lang: Lang, k: keyof typeof PDF_STRINGS): string => PDF_STRINGS[k][lang === 'de' ? 1 : 0];
   const all = LARGEST.setup.functions;
-  const base = all.filter((f) => f.fn.needs.length === 0);
-  const rest = all.filter((f) => f.fn.needs.length > 0);
+  const base = all.filter((f) => alwaysOn(CATALOGUE, f.fn));
+  const rest = all.filter((f) => !alwaysOn(CATALOGUE, f.fn));
   assert.ok(base.length > 0 && rest.length > 0);
   const on = (f: (typeof all)[number]) => ({ ...f, enabled: true, missing: [] });
   for (const lang of LANGS) {
@@ -237,7 +285,7 @@ test('the functions section follows the functions of the setup at its limits', (
   }
 });
 
-test('a part that is in no release carries the mark of the page, and so does a part not run on hardware', () => {
+test('a part that is in no release carries the mark of the page', () => {
   const sample = LARGEST;
   const target = sample.setup.parts[2]?.part.id as string;
   const catalogue: Catalogue = { ...CATALOGUE, parts: CATALOGUE.parts.map((part) => (part.id === target ? { ...part, release: 'main' } : part)) };
