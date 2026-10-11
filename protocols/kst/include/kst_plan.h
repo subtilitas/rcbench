@@ -99,7 +99,7 @@ typedef enum {
  * load and per store and 2 per basic block.  The costliest call found:
  * 122,397 cycles, 816 us, over the 71 costliest requests found.  The
  * costliest single unit found is 1,228 cycles, which puts a call of 109
- * units at 133,852 cycles, 892 us, or less.  A begin call: 9,663
+ * units at 133,852 cycles, 892 us, or less.  A begin call: 9,670
  * cycles, 64 us.
  */
 #define KST_PLAN_SLICE_UNITS 100u
@@ -179,6 +179,10 @@ typedef struct {
  * request before it searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES.
  * The call checks at most 4 images; its cost does not grow with the
  * request.
+ *
+ * @p start and @p target are copied before @p out is cleared: either may
+ * lie in @p out.  The same holds for kst_plan_restore_begin(),
+ * kst_plan_edit(), kst_plan_restore() and kst_plan_release_pairing().
  *
  * @p cap is the most units the job may take, or KST_PLAN_NO_CAP.
  */

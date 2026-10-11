@@ -224,11 +224,13 @@ kst_ses_t kst_session_enter(kst_session_t *s);
 kst_ses_t kst_session_read_all(kst_session_t *s);
 
 /**
- * Change the servo from image to @p target, which is copied.  @p unlocked
- * is the unlock set of kst_plan_edit().
+ * Change the servo from image to @p target, which is copied before the
+ * session's plan is cleared: it may be the target of kst_session_plan().
+ * @p unlocked is the unlock set of kst_plan_edit().
  *
- * Refused at once, before any planning: a NULL @p target
- * (KST_SES_ERR_ARG), no programming mode, no backup
+ * Refused at once, before any planning and in this order: a running
+ * operation (KST_SES_ERR_BUSY), a NULL @p target (KST_SES_ERR_ARG, whatever
+ * the state of the session), no programming mode, no backup
  * (KST_SES_ERR_NO_BACKUP), a locked session (KST_SES_ERR_LOCKED), an image
  * that fails the fingerprint (KST_SES_ERR_FINGERPRINT), and a request
  * kst_plan_edit_begin() refuses: KST_SES_ERR_NO_PLAN with plan_result
