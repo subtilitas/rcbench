@@ -368,6 +368,67 @@ test('removal: a rule with an empty conjunction holds its part', () => {
   assert.equal(removalEffect(c, select(), 'always').refused, 'held');
 });
 
+test('removal: a way that leads to a part no removal releases gives place to the next way', () => {
+  // Under "pads" the rule ends by the variant or by part x. Under "osoyoo" a base part holds the target.
+  const c = catalogue(
+    [...BASE, part('x'), part('target', { selectable: false })],
+    [],
+    [
+      rule('pads', { all: [{ opt: 'connection', is: 'pads' }, { has: 'x' }] }, 'target'),
+      rule('osoyoo', { all: [{ opt: 'connection', is: 'osoyoo' }, { has: 'panel' }] }, 'target'),
+    ],
+  );
+  const effect = removalEffect(c, select([], ['x']), 'target');
+  assert.equal(effect.refused, null);
+  assert.deepEqual(effect.selection, select());
+  assert.deepEqual([effect.partsOut, effect.options], [['x'], []]);
+  // Without a part to take out, both ways end at the base part.
+  const held = catalogue(c.parts, [], [rule('pads', { opt: 'connection', is: 'pads' }, 'target'), c.rules[1] as Rule]);
+  assert.equal(removalEffect(held, select([], ['x']), 'target').refused, 'held');
+});
+
+test('removal: the search goes back over 2 steps, and tries the second rule of a part', () => {
+  // Rule a ends by the variant alone. The variant then brings rule b, which ends by part y.
+  // The part y is needed by nothing else, so the first way holds.
+  const c = catalogue(
+    [...BASE, part('y'), part('z'), part('target', { selectable: false }), part('mid', { selectable: false })],
+    [fn('keep', ['z'], { ina228Board: 'matek' })],
+    [
+      rule('mid', { any: [{ has: 'y' }, { all: [{ has: 'z' }, { opt: 'ina228Board', is: 'matek' }] }] }, 'mid'),
+      rule('a', { opt: 'escPower', is: 'battery' }, 'target'),
+      rule('b', { all: [{ opt: 'escPower', is: 'pd' }, { has: 'mid' }] }, 'target'),
+    ],
+  );
+  // With y alone, mid leaves with y.
+  const one = removalEffect(c, select([], ['y']), 'target');
+  assert.equal(one.refused, null);
+  assert.deepEqual(one.selection, select([], [], { escPower: 'pd' }));
+  assert.deepEqual(one.partsOut, ['y', 'mid']);
+  // With y and z, both members of the disjunction hold: y and the board variant end it together.
+  const two = removalEffect(c, select([], ['y', 'z']), 'target');
+  assert.equal(two.refused, null);
+  assert.deepEqual(two.selection, select([], ['z'], { escPower: 'pd', ina228Board: 'xt90' }));
+  // A function that forces the board variant leaves z as the way.
+  const three = removalEffect(c, select(['keep'], ['y']), 'target');
+  assert.equal(three.refused, null);
+  assert.deepEqual(three.selection, select([], [], { escPower: 'pd' }));
+  assert.deepEqual(three.functionsOff, [{ id: 'keep', chosen: true }]);
+  assert.deepEqual(three.partsOut, ['y', 'z', 'mid']);
+});
+
+test('removal: a rule that names a part already taken out ends by the rule of that part', () => {
+  // The target is there by part mid, and mid is there by the variant.
+  const c = catalogue(
+    [...BASE, part('target', { selectable: false }), part('mid', { selectable: false })],
+    [],
+    [rule('m', { opt: 'connection', is: 'osoyoo' }, 'mid'), rule('t', { has: 'mid' }, 'target')],
+  );
+  const effect = removalEffect(c, select([], [], { connection: 'osoyoo' }), 'target');
+  assert.equal(effect.refused, null);
+  assert.deepEqual(effect.selection, select());
+  assert.deepEqual(effect.partsOut, ['mid']);
+});
+
 // ---------------------------------------------------------------------------
 // deselectEffect
 // ---------------------------------------------------------------------------
