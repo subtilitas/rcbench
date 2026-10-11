@@ -984,14 +984,16 @@ test('coverage: the figure names each measured file and fails without its record
   const block = figure([
     { file: 'resolve.ts', found: 184, hit: 183 },
     { file: 'cond.ts', found: 51, hit: 51 },
+    { file: 'groups.ts', found: 200, hit: 199 },
     { file: 'catalogue.ts', found: 9, hit: 9 },
   ]);
   assert.ok(block.startsWith(BEGIN) && block.endsWith(END));
   assert.match(block, /\| `resolve\.ts` \| 183 \| 184 \| 99\.4 % \|/);
   assert.match(block, /\| `cond\.ts` \| 51 \| 51 \| 100\.0 % \|/);
+  assert.match(block, /\| `groups\.ts` \| 199 \| 200 \| 99\.5 % \|/);
   assert.doesNotMatch(block, /catalogue/);
   assert.throws(() => figure([{ file: 'cond.ts', found: 51, hit: 51 }]), /no record for resolve\.ts/);
-  assert.deepEqual(MEASURED, ['resolve.ts', 'cond.ts']);
+  assert.deepEqual(MEASURED, ['resolve.ts', 'cond.ts', 'groups.ts']);
 });
 
 test('coverage: the block between the markers is replaced, and only there', () => {

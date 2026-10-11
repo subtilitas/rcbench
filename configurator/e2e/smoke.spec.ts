@@ -3,7 +3,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
-import { STRINGS } from '../src/i18n.ts';
+import { STRINGS, t } from '../src/i18n.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 /** The functions with a tick: those that need a part. */
@@ -85,21 +85,23 @@ for (const size of SIZES) {
       const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
       for (const lang of ['en', 'de'] as const) {
         await open(page, `#v=1&l=${lang}`);
-        await expect(page.locator('#choose .base h3')).toHaveText(CATALOGUE.baseFunction[lang]);
-        await expect(page.locator('#choose .base li')).toHaveCount(base.length);
-        await expect(page.locator('#choose .base input')).toHaveCount(0);
+        await expect(page.locator('#g-base legend')).toHaveText(STRINGS.gBase[lang === 'en' ? 0 : 1]);
+        await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
+        await expect(page.locator('#g-base input')).toHaveCount(0);
         for (const fn of base) {
           await expect(page.locator(`#f-${fn.id}`)).toHaveCount(0);
           await expect(page.locator('#result')).toContainText(fn.name[lang]);
         }
-        await expect(page.locator('.sum p')).toHaveText(lang === 'en' ? '4 parts, 4 wires, 10 functions.' : '4 Teile, 4 Drähte, 10 Funktionen.');
+        const empty = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
+        await expect(page.locator('.sum p')).toHaveText(t(lang, 'sum', { p: empty.parts.length, w: empty.wires.length, f: base.length }));
         await expect(page.locator('#result h4')).toHaveText([CATALOGUE.baseFunction[lang]]);
         await fits(page);
       }
       // A tick keeps the list and adds the second heading.
       await open(page, '#v=1&f=servo');
-      await expect(page.locator('#choose .base li')).toHaveCount(base.length);
+      await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
       await expect(page.locator('#result h4')).toHaveCount(2);
+      await expect(page.locator('#does-base li')).toHaveCount(base.length);
       for (const fn of base) await expect(page.locator('#result')).toContainText(fn.name.en);
       expect(seen).toEqual({ foreign: [], errors: [] });
     });

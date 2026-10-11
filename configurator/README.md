@@ -2,6 +2,8 @@
 
 A static page for release 0.16.0 of rcbench. The visitor ticks what the bench
 does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
+The functions stand in groups by the parts they need. A part of the result has
+a remove control.
 Without a tick it shows the base setup: panel, coprocessor and the 4 wires
 between them.
 
@@ -19,7 +21,7 @@ between them.
 |---|---|
 | `contract.ts` | Types shared by the core and the page. |
 | `core/` | Data file, resolver and checks. See `core/README.md`. |
-| `src/core.ts` | The one import seam to the core: catalogue, resolver, default options. |
+| `src/core.ts` | The one import seam to the core: catalogue, resolver, default options, groups, removal. |
 | `src/main.ts` | State, events, rendering. |
 | `src/hash.ts` | URL hash codec. |
 | `src/i18n.ts` | Chrome strings in English and German. |
@@ -31,6 +33,7 @@ between them.
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `test/` | Unit tests, run by `node --test`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
+| `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/shots.ts` | Screenshots of the build. |
@@ -49,7 +52,7 @@ npm test            # unit tests
 npm run build       # writes dist/
 npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB
 npx playwright install chromium
-npm run e2e         # smoke test at 360 px and 1280 px width
+npm run e2e         # smoke and chooser tests at 360 px and 1280 px width
 npm run dev         # http://localhost:5173/rcbench/
 node tools/shots.ts shots   # 24 PNG files: 2 widths, 2 themes, 2 languages, 3 selections
 node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, most wires in German
@@ -62,7 +65,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 | Key | Meaning |
 |---|---|
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
-| `f` | Ids of the ticked functions, comma separated. A function that needs no part has no tick; its id in a link is dropped without a notice. |
+| `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
 | `p` | Ids of parts the visitor owns. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
@@ -70,6 +73,45 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 Limits: 2000 characters per hash, 64 ids per key, 32 characters per id of
 lowercase letters and digits. A longer hash gives the base setup and the
 version notice. An unknown id is dropped and named in a notice.
+
+## Chooser
+
+Each group of functions is a `fieldset`. Its legend names the parts the group
+needs beyond the base setup: "Needs: Servo + PD mini". A group whose parts are
+all in the setup carries the tag "In this setup".
+
+The first group is "Runs on the base setup". It holds the functions that need
+no part. It is a list without controls: a row has no tick, is active in every
+setup and reads "Included with the base setup.". The id of such a function is
+never written into the link and never counts as selected by the visitor. The
+removal of a part and of a tick never lists such a function as going off. The
+group is absent when every function needs a part.
+
+A function is active when the setup holds every part it needs and every option
+it forces. Each row states its state in words:
+
+| State | Text | Tick |
+|---|---|---|
+| Ticked by the visitor | "Selected by you." | yes |
+| Active through the parts of the setup | "Included with these parts." | no |
+| Runs on the base setup | "Included with the base setup." | none |
+| Not active | "Adds: <parts>" or the reason | no |
+
+Removing the tick of a function removes it from the selection. A note under
+the row states whether the function stays active and which of its parts stay
+or leave.
+
+Every part of the result beyond the base setup has a button "Remove". "Parts
+you own" removes a part by its tick. A part that takes nothing with it leaves
+at once. Otherwise a question opens under the control. It lists the functions
+that go off with the state of each, the other parts that leave or come in and
+the option that changes. Its 2 answers are "Remove part and these functions"
+and "Keep". The focus moves to "Keep". "Keep" and the Escape key return the
+focus to the control. The question has the role `alertdialog` and does not
+trap the focus.
+
+Parts of a removed function that stay in the setup become ticks under "Parts
+you own".
 
 ## Drawing
 
@@ -148,7 +190,7 @@ export chunk on the first use.
 | Wire table | The header row repeats on every page. No row is split. |
 | Metadata | Title, document language, creator. Links: the share link. |
 | Output | The same bytes for the same setup, language, share link and date. |
-| Size | 43 kB for the smallest setup (3 pages), 64 kB for the largest (8 pages). |
+| Size | 44 kB for the smallest setup (4 pages), 64 kB for the largest (8 pages). |
 
 Parts of `src/export/`:
 
@@ -163,7 +205,7 @@ Parts of `src/export/`:
 | `font.ts`, `pdf.ts` | TrueType reader and PDF writer. |
 | `font/` | `Inter-Regular-subset.ttf` (22488 bytes), `Inter-Bold-subset.ttf` (22620 bytes), `OFL.txt`. |
 
-The export chunk is 106 kB (50 kB gzip). The first load carries the button,
+The export chunk is 108 kB (51 kB gzip). The first load carries the button,
 its strings and the chunk loader: 3.2 kB (1.1 kB gzip).
 
 The font is Inter 4.001 by The Inter Project Authors under the SIL Open Font
@@ -194,7 +236,7 @@ file names no stage, so the checks follow the stages as one list.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Print output: not checked on paper.
-- PDF export: the first use needs the network for the export chunk of 106 kB. Later uses work offline
+- PDF export: the first use needs the network for the export chunk of 108 kB. Later uses work offline
   until the page reloads.
 - PDF export: the file has no structure tags (not PDF/UA). A screen reader reads the text in page order
   and does not announce headings or table cells.
