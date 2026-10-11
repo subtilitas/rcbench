@@ -549,6 +549,64 @@ TEST_CASE(a_file_whose_name_this_layer_would_not_write_is_counted_not_listed)
     CHECK_STR_EQ(e[0].name, "ok.TXT");
 }
 
+TEST_CASE(the_record_of_a_write_is_no_name_no_list_entry_and_no_servo_file)
+{
+    static const char *const base[] = {"KST", "kst", "Kst", "kSt"};
+    static const char *const taken[] = {"KST1", "KS", "KSTX", "KST.old",
+                                        "AKST", "KST 1", "KST001"};
+    kst_store_entry_t e[4];
+    kst_store_name_t why = KST_STORE_NAME_OK;
+    char name[KST_STORE_NAME_MAX];
+    char buf[8];
+    size_t count = 99;
+    size_t total = 99;
+    size_t skipped = 99;
+    size_t len = 99;
+
+    CHECK_STR_EQ(KST_STORE_RECORD, "KST");
+    for (size_t i = 0; i < sizeof(base) / sizeof(base[0]); ++i) {
+        CHECK_EQ(kst_store_name_check(base[i]), KST_STORE_NAME_RESERVED);
+        CHECK(!kst_store_file_name(base[i], name, sizeof(name)));
+    }
+    for (size_t i = 0; i < sizeof(taken) / sizeof(taken[0]); ++i) {
+        CHECK_EQ(kst_store_name_check(taken[i]), KST_STORE_NAME_OK);
+    }
+
+    /* No save writes it, with the file absent and with it present. */
+    card_reset();
+    CHECK_EQ(kst_store_save(&g_io, "kst", "abc", 3, &why), KST_STORE_BAD_NAME);
+    CHECK_EQ(why, KST_STORE_NAME_RESERVED);
+    CHECK_EQ(g_card.count, 0);
+
+    /* In the directory it is in no number of the list, in any case. */
+    card_add("KST.TXT", false, "record");
+    card_add("Wing.TXT", false, "x");
+    CHECK_EQ(kst_store_list(&g_io, e, 4, &count, &total, &skipped),
+             KST_STORE_OK);
+    CHECK_EQ(count, 1);
+    CHECK_EQ(total, 1);
+    CHECK_EQ(skipped, 0);
+    CHECK_STR_EQ(e[0].name, "Wing.TXT");
+
+    card_reset();
+    card_add("kst.txt", false, "record");
+    CHECK_EQ(kst_store_list(&g_io, e, 4, &count, &total, &skipped),
+             KST_STORE_OK);
+    CHECK_EQ(count, 0);
+    CHECK_EQ(total, 0);
+    CHECK_EQ(skipped, 0);
+
+    /* No load reads it, and the numbering starts at 1 beside it. */
+    CHECK_EQ(kst_store_load(&g_io, "kst.txt", buf, sizeof(buf), &len),
+             KST_STORE_BAD_NAME);
+    CHECK_EQ(kst_store_load(&g_io, "KST.TXT", buf, sizeof(buf), &len),
+             KST_STORE_BAD_NAME);
+    CHECK_EQ(len, 0);
+    CHECK_EQ(kst_store_preset(&g_io, name, sizeof(name)), KST_STORE_OK);
+    CHECK_STR_EQ(name, "KST001");
+    CHECK_EQ(g_card.count, 1);
+}
+
 TEST_CASE(a_list_needs_a_card_and_reports_a_directory_that_does_not_read)
 {
     kst_store_entry_t e[2];
@@ -680,6 +738,7 @@ int main(void)
     RUN(names_equal_without_case_keep_one_order);
     RUN(a_list_shorter_than_the_directory_holds_the_first_names);
     RUN(a_file_whose_name_this_layer_would_not_write_is_counted_not_listed);
+    RUN(the_record_of_a_write_is_no_name_no_list_entry_and_no_servo_file);
     RUN(a_list_needs_a_card_and_reports_a_directory_that_does_not_read);
     RUN(a_load_gives_the_bytes_of_the_file_and_no_terminator);
     RUN(each_failure_of_a_load_has_its_own_result);

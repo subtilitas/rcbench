@@ -73,7 +73,9 @@ history is in git.
   `shared/logfile/kst_store.c` keeps the files in the directory `KST` of
   the card as `<name>.TXT`: it proposes `KST001` to `KST999`, checks a
   name of 32 characters or fewer with 5 distinct refusals, never
-  replaces a file, and lists the files sorted by name. No screen uses
+  replaces a file, and lists the files sorted by name. The name `KST`,
+  in any case, is refused and `KST.TXT` is left out of the list: the file
+  is a caller's record of a write under way. No screen uses
   either, and the panel has no card functions wired to the store. Host
   suite only (`test_kst_file`, `test_kst_store`).
   ([README](protocols/kst/README.md#configuration-file))

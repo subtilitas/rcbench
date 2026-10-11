@@ -54,6 +54,15 @@ extern "C" {
 /** Room for "KST999" and its terminator. */
 #define KST_STORE_PRESET_MAX 7
 
+/**
+ * The base name this layer keeps free, in any case: "KST.TXT" in the
+ * directory is the caller's record of a write under way and no servo file.
+ * The name is refused as KST_STORE_NAME_RESERVED, so no save writes it and
+ * no load reads it; kst_store_list() leaves the file out and does not count
+ * it.  The layer itself never reads, writes or removes the file.
+ */
+#define KST_STORE_RECORD "KST"
+
 /** Whether a base name is taken.  The numbers are stable. */
 typedef enum {
     KST_STORE_NAME_OK = 0,
@@ -64,7 +73,8 @@ typedef enum {
     KST_STORE_NAME_RESERVED = 4, /**< CON, PRN, AUX, NUL, COM1 to COM9 or LPT1
                                       to LPT9, in any case, alone or in front
                                       of a full stop: a device name on a
-                                      desktop computer */
+                                      desktop computer.  Or
+                                      KST_STORE_RECORD, in any case */
     KST_STORE_NAME_EDGE = 5,     /**< a full stop or a space at the start or
                                       at the end */
 } kst_store_name_t;
@@ -163,7 +173,8 @@ kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
  * @p entries receives the first @p cap of them.  @p count is the number
  * written, @p total the number of files that qualify, @p skipped the number
  * of files with the extension whose base name fails kst_store_name_check():
- * those are not listed and not loaded.  Each of the 3 may be NULL.
+ * those are not listed and not loaded.  The file named KST_STORE_RECORD is
+ * in none of the 3 numbers.  Each of the 3 may be NULL.
  * Directories are not listed.  A directory without a file gives
  * KST_STORE_OK and a count of 0.
  */

@@ -69,6 +69,13 @@ static bool reserved(const char *s, size_t n)
     return false;
 }
 
+/* Whether the first @p n characters of @p s are KST_STORE_RECORD. */
+static bool record(const char *s, size_t n)
+{
+    return n == PRESET_LEN && lower(s[0]) == 'k' && lower(s[1]) == 's' &&
+           lower(s[2]) == 't';
+}
+
 static kst_store_name_t check(const char *base, size_t n)
 {
     size_t stem = 0;
@@ -93,7 +100,8 @@ static kst_store_name_t check(const char *base, size_t n)
     while (stem < n && base[stem] != '.') {
         stem++;
     }
-    return reserved(base, stem) ? KST_STORE_NAME_RESERVED : KST_STORE_NAME_OK;
+    return reserved(base, stem) || record(base, n) ? KST_STORE_NAME_RESERVED
+                                                   : KST_STORE_NAME_OK;
 }
 
 kst_store_name_t kst_store_name_check(const char *base)
@@ -267,7 +275,8 @@ static void list_name(const char *name, bool is_dir, void *visit_ctx)
     const size_t base = base_len(name);
     size_t at;
 
-    if (is_dir || base == 0u) {
+    /* The record of a write under way is no servo file and no stray one. */
+    if (is_dir || base == 0u || record(name, base)) {
         return;
     }
     if (check(name, base) != KST_STORE_NAME_OK) {
