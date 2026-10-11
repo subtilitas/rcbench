@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 54 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults, 11 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 54 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
@@ -143,7 +143,8 @@ Line coverage of the resolver, measured by `node --test --experimental-test-cove
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `CANH` and `CANL` of the panel, `LP` of the INA3221 board, `GPO` of the AS5600 board, `NC1` and `NC2` of the emergency stop switch. No source at `v0.16.0` shows their position.
+- Pins marked unconfirmed: `CANH` and `CANL` of the panel, `GPO` of the AS5600 board, `NC1` and `NC2` of the emergency stop switch: no source at `v0.16.0` shows their position. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- INA3221 board: the back prints VIN1+ and VIN1- at the 2 pads of channel 1. No source states which pad takes the supply; the data names the pads `C1A` and `C1B` without a polarity.
 - Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, T-plug of the PD mini.
 - Functions with the state "not run on hardware": servo current, angle, ESC power, stick programming, tap, emergency stop.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.

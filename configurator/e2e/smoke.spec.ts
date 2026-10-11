@@ -315,7 +315,7 @@ test.describe('pictures', () => {
       top: img.getBoundingClientRect().top,
       lazy: img.loading === 'lazy' && img.decoding === 'async',
     })));
-    expect(images).toHaveLength(11);
+    expect(images).toHaveLength(12);
     for (const image of images) {
       expect(image.lazy, image.path).toBe(true);
       // Above the fold: the first screen of 360 x 800 px holds no picture.
@@ -325,13 +325,13 @@ test.describe('pictures', () => {
     expect(far.length).toBeGreaterThan(0);
     expect(seen.filter((path) => far.includes(path))).toEqual([]);
     // The full file loads on a tap on the thumb only.
-    expect(seen.filter((path) => !path.endsWith('-thumb.webp') && !path.endsWith('.svg'))).toEqual([]);
+    expect(seen.filter((path) => !path.endsWith('-thumb.webp'))).toEqual([]);
 
     const last = page.locator('.parts img').last();
     await last.scrollIntoViewIfNeeded();
     await expect.poll(() => last.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     expect(seen).toContain(far[far.length - 1]);
-    expect(seen.filter((path) => !path.endsWith('-thumb.webp') && !path.endsWith('.svg'))).toEqual([]);
+    expect(seen.filter((path) => !path.endsWith('-thumb.webp'))).toEqual([]);
     await fits(page);
     expect(foreign).toEqual({ foreign: [], errors: [] });
   });
@@ -360,8 +360,8 @@ test.describe('pictures', () => {
           }
           return out;
         });
-        // Panel 1, coprocessor 2, PD mini 1, INA3221 1, AS5600 1, INA228 2, emergency stop 2, T-plug 1.
-        expect(cards.map((c) => c.src)).toHaveLength(11);
+        // Panel 1, coprocessor 2, PD mini 1, INA3221 2, AS5600 1, INA228 2, emergency stop 2, T-plug 1.
+        expect(cards.map((c) => c.src)).toHaveLength(12);
         for (const c of cards) {
           expect(c.ok, c.src).toBe(true);
           expect(c.alt.length, c.src).toBeGreaterThan(20);
@@ -369,10 +369,12 @@ test.describe('pictures', () => {
           expect(c.shown, c.src).toBeLessThanOrEqual(Math.min(320, c.card));
           expect(c.href, c.src).toBe(c.src.replace('-thumb.webp', '.webp'));
         }
-        const drawing = page.locator('.parts img[src$="ina3221.svg"]');
-        await expect(drawing).toHaveAttribute('alt', lang === 'en'
-          ? 'Illustration of the INA3221 board: header A0, VS, SCL, SDA, GND; 3 channels with pads 1 and 2; 3 large pads.'
-          : 'Illustration der INA3221-Platine: Leiste A0, VS, SCL, SDA, GND; 3 Kanäle mit den Pads 1 und 2; 3 große Pads.');
+        // The INA3221 card shows the 2 photos of the board, the component side first.
+        expect(cards.map((c) => c.src).filter((src) => src.includes('ina3221'))).toEqual([
+          'pictures/16-ina3221-front-thumb.webp', 'pictures/17-ina3221-back-thumb.webp',
+        ]);
+        await expect(page.locator('.parts img[src$=".svg"]')).toHaveCount(0);
+        await expect(page.locator('.parts img[src$="17-ina3221-back-thumb.webp"]')).toHaveAttribute('alt', /VS, GND, SCL, SDA, PV, CRI, WAR, TC/);
         await expect(page.locator('.parts .ph, .parts figcaption')).toHaveCount(0);
         await expect(page.locator('.parts li:not(.pic) img')).toHaveCount(0);
         await fits(page);

@@ -307,8 +307,8 @@ const parts: Part[] = [
     name: t('DAOKAI INA3221 board, 3 channels', 'DAOKAI-INA3221-Platine, 3 Kanäle'),
     short: same('INA3221'),
     role: t(
-      'Servo current, 0 to 26 V, up to 1.64 A per channel. I2C 0x40 with the A0 bridge to GND.',
-      'Servostrom, 0 bis 26 V, bis 1,64 A je Kanal. I2C 0x40 mit A0-Brücke nach GND.',
+      'Servo current, 0 to 26 V, up to 1.64 A per channel. I2C 0x40 with the A0 bridge to GND. Header of 8 holes, from the square hole: VS, GND, SCL, SDA, PV, CRI, WAR, TC.',
+      'Servostrom, 0 bis 26 V, bis 1,64 A je Kanal. I2C 0x40 mit A0-Brücke nach GND. Leiste mit 8 Löchern, ab dem quadratischen Loch: VS, GND, SCL, SDA, PV, CRI, WAR, TC.',
     ),
     locked: false,
     selectable: true,
@@ -317,25 +317,37 @@ const parts: Part[] = [
     slot: {
       column: 'R',
       order: 14,
-      sub: t('header: A0 VS SCL SDA GND', 'Leiste: A0 VS SCL SDA GND'),
+      sub: same('VS GND SCL SDA PV CRI WAR TC'),
     },
+    // The board as the owner's photos of 2026-10-11 show it. Header of 8
+    // holes, from the square hole: VS, GND, SCL, SDA, PV, CRI, WAR, TC. A0 is
+    // no header pin: 4 solder bridges set it to GND, SDA, SCL or VS.
     pins: [
-      pin('A0', same('A0'), guide('wires')),
-      pin('VS', same('VS'), guide('wires')),
-      pin('SCL', same('SCL'), guide('wires')),
-      pin('SDA', same('SDA'), guide('wires')),
-      pin('GND', same('GND'), guide('wires')),
-      pin('C1A', t('CH1, pad 1', 'CH1, Pad 1'), guide('wires')),
-      pin('C1B', t('CH1, pad 2', 'CH1, Pad 2'), guide('wires')),
-      // Silkscreen, schematic and listing picture disagree on these pads.
-      pin('LP', t('3 large pads', '3 große Pads'), guide('wires'), false),
+      pin('VS', same('VS'), OWNER),
+      pin('GND', same('GND'), OWNER),
+      pin('SCL', same('SCL'), OWNER),
+      pin('SDA', same('SDA'), OWNER),
+      pin('A0', t('A0 solder bridges', 'A0-Lötbrücken'), OWNER),
+      // The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1.
+      // No source states which of them takes the supply.
+      pin('C1A', t('CH1, one pad', 'CH1, ein Pad'), OWNER),
+      pin('C1B', t('CH1, other pad', 'CH1, anderes Pad'), OWNER),
+      // Both sides print GND, GND, VPU. What the pads do is not confirmed.
+      pin('LP', t('GND, GND, VPU pads', 'Pads GND, GND, VPU'), OWNER, false),
     ],
     pictures: [
       {
-        kind: 'drawing', file: 'ina3221', width: 480, height: 400,
+        kind: 'photo', file: '16-ina3221-front', width: 480, height: 403,
         alt: t(
-          'Illustration of the INA3221 board: header A0, VS, SCL, SDA, GND; 3 channels with pads 1 and 2; 3 large pads.',
-          'Illustration der INA3221-Platine: Leiste A0, VS, SCL, SDA, GND; 3 Kanäle mit den Pads 1 und 2; 3 große Pads.',
+          'INA3221 board, component side: 8-hole header, A0 solder bridges GND, SDA, SCL, VS, 3 shunts R100 above the pad pairs CH1, CH2, CH3, 3 large pads GND, GND, VPU.',
+          'INA3221-Platine, Bauteilseite: Leiste mit 8 Löchern, A0-Lötbrücken GND, SDA, SCL, VS, 3 Shunts R100 über den Pad-Paaren CH1, CH2, CH3, 3 große Pads GND, GND, VPU.',
+        ),
+      },
+      {
+        kind: 'photo', file: '17-ina3221-back', width: 480, height: 404,
+        alt: t(
+          'INA3221 board, back: pads VIN1-, VIN1+, VIN2-, VIN2+, VIN3-, VIN3+; header from the square hole VS, GND, SCL, SDA, PV, CRI, WAR, TC; large pads GND, GND, VPU.',
+          'INA3221-Platine, Rückseite: Pads VIN1-, VIN1+, VIN2-, VIN2+, VIN3-, VIN3+; Leiste ab dem quadratischen Loch VS, GND, SCL, SDA, PV, CRI, WAR, TC; große Pads GND, GND, VPU.',
         ),
       },
     ],
@@ -906,8 +918,8 @@ const wires: Wire[] = [
     n: 30, kind: 'wire', a: 'servo.POS', b: 'ina3221.C1B', net: 'servo_shunt', cls: 'power',
     signal: SERVO_POWER,
     note: t(
-      'If the current reads negative, swap the two wires on CH1.',
-      'Liest der Strom negativ, die zwei Drähte an CH1 tauschen.',
+      'The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1. No source states which pad takes the supply. If the current reads negative, swap the two wires on CH1.',
+      'Die Rückseite der Platine nennt die 2 Pads von CH1 VIN1+ und VIN1-. Keine Quelle nennt das Pad für die Versorgung. Liest der Strom negativ, die zwei Drähte an CH1 tauschen.',
     ),
     when: { all: [{ has: 'servo' }, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'X', left: 13, right: 17, channel: 1 }, src: guide('wires'),
@@ -924,8 +936,8 @@ const wires: Wire[] = [
     n: 32, kind: 'stub', a: 'ina3221.LP', b: null, to: NOTHING, net: 'ina3221_lp', cls: 'nc',
     signal: NONE,
     note: t(
-      'Not connected. Silkscreen, schematic and listing picture disagree.',
-      'Nicht angeschlossen. Aufdruck, Schaltplan und Angebotsbild widersprechen sich.',
+      'Not connected. Both sides of the board print GND, GND, VPU. What the pads do is not confirmed.',
+      'Nicht angeschlossen. Beide Seiten der Platine nennen GND, GND, VPU. Die Funktion der Pads ist nicht bestätigt.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'S' }, src: guide('wires'),
   },

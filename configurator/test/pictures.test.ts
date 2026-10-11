@@ -42,7 +42,7 @@ test('each part shows the pictures of its variant, the main one first', () => {
   assert.deepEqual(files('estop'), ['11-estop-front', '12-estop-side']);
   assert.deepEqual(files('ina228'), []);
   assert.deepEqual(files('ina228', { ina228Board: 'xt90' }), ['15-current-sensor-top', '14-current-sensor-oblique']);
-  assert.deepEqual(files('ina3221'), ['ina3221']);
+  assert.deepEqual(files('ina3221'), ['16-ina3221-front', '17-ina3221-back']);
   const withPictures = CATALOGUE.parts.filter((p) => (p.pictures ?? []).length > 0).map((p) => p.id);
   assert.deepEqual(withPictures, ['panel', 'copro', 'pdmini', 'ina3221', 'as5600', 'ina228', 'estop', 'usbtap']);
 });
@@ -74,7 +74,7 @@ test('a card with a picture links the thumb to the full file, a card without one
       });
     }
     // 8 parts carry a picture; the MATEK variant of the INA228 is not among the files.
-    assert.equal(withPicture, 10);
+    assert.equal(withPicture, 11);
   }
   const matek = view({ functions: FUNCTIONS });
   assert.ok(!result(matek, 'https://example.invalid/', []).includes('current-sensor'));
@@ -85,55 +85,55 @@ test('the page holds no caption next to a picture', () => {
   assert.ok(!/<figcaption|Illustration, not a photo/.test(html));
 });
 
-// --- the drawing of the INA3221 board against the data ----------------------
+// --- the photos of the INA3221 board against the data ------------------------
 
-const svg = readFileSync(`${DIR}ina3221.svg`, 'utf8');
-const texts = (markup: string): string[] => [...markup.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]!);
-const group = (id: string): string => {
-  const at = svg.indexOf(`<g id="${id}"`);
-  assert.ok(at >= 0, `the drawing has the group ${id}`);
-  return svg.slice(at, svg.indexOf('</g>', at));
-};
-
-test('the INA3221 drawing names the header pins of the data, in the order of the data', () => {
+test('the INA3221 photos and the data name the same header, bridge and pads', () => {
   const ina = part('ina3221');
-  // The header pins are the pins the data lists before the channel pads.
-  const firstPad = ina.pins.findIndex((p) => /^CH\d/.test(p.label.en));
-  assert.ok(firstPad > 0);
-  const header = ina.pins.slice(0, firstPad).map((p) => p.label.en);
-  assert.deepEqual(texts(group('ina-header')), header);
-  // The sub line of the module in the wiring drawing states the same header.
-  assert.equal(ina.slot.sub?.en, `header: ${header.join(' ')}`);
-  // The alt text names them too, in both languages.
-  const picture = ina.pictures![0]!;
-  assert.equal(picture.kind, 'drawing');
-  for (const lang of ['en', 'de'] as Lang[]) assert.ok(picture.alt[lang].includes(header.join(', ')), picture.alt[lang]);
+  const [front, back] = ina.pictures!;
+  assert.deepEqual([front!.kind, back!.kind], ['photo', 'photo']);
+  // The header as the back of the board prints it, from the square hole.
+  const header = ['VS', 'GND', 'SCL', 'SDA', 'PV', 'CRI', 'WAR', 'TC'];
+  assert.deepEqual(ina.slot.sub, { en: header.join(' '), de: header.join(' ') });
+  // The pins the wires use are the first 4 holes, in the order of the board.
+  assert.deepEqual(ina.pins.slice(0, 4).map((p) => p.label.en), header.slice(0, 4));
+  for (const lang of ['en', 'de'] as Lang[]) {
+    assert.ok(ina.role![lang].includes(header.join(', ')), ina.role![lang]);
+    assert.ok(back!.alt[lang].includes(header.join(', ')), back!.alt[lang]);
+    assert.ok(front!.alt[lang].includes('GND, SDA, SCL, VS'), front!.alt[lang]);
+    for (const alt of [front!.alt[lang], back!.alt[lang]]) assert.ok(alt.includes('GND, GND, VPU'), alt);
+  }
+  // A0 is no header pin. The data names it as the solder bridges it is.
+  assert.ok(!header.includes('A0'));
+  const a0 = ina.pins.find((p) => p.id === 'A0')!;
+  assert.deepEqual(a0.label, { en: 'A0 solder bridges', de: 'A0-Lötbrücken' });
+  const strap = CATALOGUE.wires.find((w) => w.a === 'ina3221.A0')!;
+  assert.equal(strap.kind, 'stub');
+  assert.ok(strap.to?.en.startsWith('GND, solder bridge'));
 });
 
-test('the INA3221 drawing names the channels of the data and no component value', () => {
+test('the data states no polarity for the 2 pads of channel 1 of the INA3221', () => {
   const ina = part('ina3221');
-  const channels = Number(/(\d+) channels/.exec(ina.name.en)?.[1]);
-  assert.equal(channels, 3);
-  const expected = Array.from({ length: channels }, (_, i) => `CH${i + 1}`);
-  const all = texts(svg);
-  assert.deepEqual(all.filter((x) => /^CH\d+$/.test(x)), expected);
-  // Each channel pad the data wires belongs to a channel the drawing shows.
-  for (const pin of ina.pins) {
-    const channel = /^(CH\d+), pad [12]$/.exec(pin.label.en)?.[1];
-    if (channel !== undefined) assert.ok(expected.includes(channel), pin.label.en);
-  }
-  // The address bridge of the data: pad A0, bridged to one of the header nets.
-  const header = texts(group('ina-header'));
-  const bridge = texts(group('ina-bridge'));
-  assert.equal(bridge[0], 'A0');
-  assert.ok(ina.pins.some((p) => p.id === 'A0'));
-  assert.deepEqual(bridge.slice(1).filter((x) => !header.includes(x)), []);
-  // The data states no shunt value and no part value, so the drawing prints none.
-  const known = new Set([...header, ...expected, ...texts(group('ina-large')), 'INA', '3221']);
-  assert.deepEqual(all.filter((x) => !known.has(x)), []);
-  assert.ok(!/\d\s*(Ω|ohm|R\d|mΩ|µF|uF|nF|k\b)/i.test(all.join(' ')), all.join(' '));
-  assert.equal(texts(group('ina-large')).length, 3);
-  assert.equal(`${ina.short.en}`, 'INA3221');
+  const pads = ina.pins.filter((p) => /^C1[AB]$/.test(p.id));
+  assert.equal(pads.length, 2);
+  for (const pad of pads) assert.ok(!/[+\-−]|VIN/.test(pad.label.en + pad.label.de), pad.label.en);
+  const shunt = CATALOGUE.wires.find((w) => w.b === 'ina3221.C1B')!;
+  assert.ok(shunt.note!.en.includes('VIN1+ and VIN1-'));
+  assert.ok(shunt.note!.en.includes('No source states which pad takes the supply.'));
+  assert.ok(shunt.note!.en.includes('swap the two wires on CH1'));
+  // The 3 large pads carry their printed names and stay unconfirmed and unconnected.
+  const large = ina.pins.find((p) => p.id === 'LP')!;
+  assert.equal(large.confirmed, false);
+  assert.equal(large.label.en, 'GND, GND, VPU pads');
+  const open = CATALOGUE.wires.find((w) => w.a === 'ina3221.LP')!;
+  assert.equal(open.b, null);
+  assert.ok(open.note!.en.startsWith('Not connected.'));
+  // Every pin of the board comes from the owner's photos of 2026-10-11.
+  for (const pin of ina.pins) assert.deepEqual(pin.src, { kind: 'owner', date: '2026-10-11' });
+});
+
+test('no part uses a drawing and the folder holds no SVG file', () => {
+  assert.deepEqual(CATALOGUE.parts.flatMap((p) => p.pictures ?? []).filter((p) => p.kind !== 'photo'), []);
+  assert.deepEqual(readdirSync(DIR).filter((name) => !name.endsWith('.webp')), []);
 });
 
 // --- the figure of the picture folder in the README -------------------------

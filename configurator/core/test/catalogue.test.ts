@@ -161,9 +161,9 @@ test('the pictures of the parts are the files of the picture folder', () => {
   const folder = pictureFolder(PICTURE_DIR);
   assert.deepEqual(errors(checkPictures(CATALOGUE, folder)), []);
   const pictures = CATALOGUE.parts.flatMap((p) => p.pictures ?? []);
-  assert.equal(pictures.filter((p) => p.kind === 'photo').length, 10);
-  assert.equal(pictures.filter((p) => p.kind === 'drawing').length, 1);
-  assert.equal(folder.names.length, 21);
+  assert.equal(pictures.filter((p) => p.kind === 'photo').length, 12);
+  assert.equal(pictures.filter((p) => p.kind === 'drawing').length, 0);
+  assert.equal(folder.names.length, 24);
   // The check tool runs the same check.
   assert.deepEqual(errors(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folder).findings), []);
   reports(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folderOf({})).findings,

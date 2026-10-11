@@ -112,10 +112,9 @@ holds each record to the files of `public/pictures/`.
 - A picture with `only` shows for the named option value: the Osoyoo breakout
   board, the INA228 module with XT90 plugs.
 - The photos hold no Exif and no XMP metadata. The check fails on a file that does.
-- `ina3221.svg` is an illustration. Its component layout is not that of the
-  board. `test/pictures.test.ts` compares its header labels with the pins of
-  the data file. Replacing it by a photo is a change of the `pictures` record
-  and of the files.
+- No part uses the kind `drawing`.
+- `test/pictures.test.ts` compares the alt texts of the 2 INA3221 photos with
+  the header, the bridge and the pad names of the data file.
 - The pictures are not part of the size budget. The initial load holds no
   picture: `npm run size` fails when `index.html` references one. Each image
   is `loading="lazy"`; the browser fetches it when its card comes near the
@@ -124,15 +123,14 @@ holds each record to the files of `public/pictures/`.
   picture more than 3000 px below it loads before a scroll, or when a full
   file loads without a tap.
 
-Picture folder: 21 files, 1473.3 kB.
+Picture folder: 24 files, 1916.8 kB.
 
 `test/pictures.test.ts` fails when this line differs from the folder.
 
 ## Limits
 
 - The page draws 1 servo and 1 ESC (electronic speed controller).
-- 8 of 19 parts have a picture. INA3221 board: an illustration, no photo.
-  MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap
+- 8 of 19 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap
   and cables: no picture.
 - Photo `02-pd-mini`: the left third is out of focus.
 - The drawing has no zoom control. Below 1024 px width it scrolls sideways in its box.
