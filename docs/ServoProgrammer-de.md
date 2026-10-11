@@ -851,8 +851,9 @@ Codes.
 - Der Datensatz eines unterbrochenen Schreibens wird beim Start des Panels
   von der Karte gelesen, und von einer später eingesteckten Karte, wenn der
   Programmierer sie einbindet. Ein Datensatz, den das Panel schon hält,
-  bleibt: der Datensatz auf einer solchen Karte wird dann nicht gelesen,
-  und der nächste geschriebene Datensatz ersetzt ihn.
+  bleibt, vor und nach dem Zurücklesen des Servos: der Datensatz auf einer
+  solchen Karte wird dann nicht gelesen, und der nächste geschriebene
+  Datensatz ersetzt ihn.
 - Eine Karte, die im Betrieb entnommen und wieder eingesteckt wird, wird
   nicht erneut eingebunden.
 - Wie lange ein Einbindeversuch ohne Karte den Bildschirm anhält, ist nicht

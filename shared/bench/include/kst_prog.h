@@ -490,6 +490,9 @@ bool kst_prog_write_enabled(const kst_prog_t *p);
 uint8_t kst_prog_port(const kst_prog_t *p);
 /** A write was interrupted and the servo was not compared since. */
 bool kst_prog_journal(const kst_prog_t *p);
+/** A record of an interrupted write is held, read back or not: the one
+ *  RESTORE offers the values of. */
+bool kst_prog_journal_held(const kst_prog_t *p);
 /**
  * The servo read cannot be the one of the interrupted write: it is on
  * another port, or it differs in a field that neither the write nor an

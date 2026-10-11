@@ -3069,6 +3069,69 @@ TEST_CASE(the_record_of_a_card_put_in_late_is_read)
     CHECK_EQ(msg(), KST_PROG_MSG_FILE_BAD);
 }
 
+/* The read after an interrupted write closes the record's prompt and keeps
+ * its values for RESTORE: a card put in then, with another record or with
+ * none, does not replace or clear them. */
+TEST_CASE(a_late_card_does_not_replace_a_record_that_was_read_back)
+{
+    char other[KST_PROG_FILE_MAX];
+    char none[KST_PROG_FILE_MAX];
+    size_t other_len;
+    size_t none_len;
+    kst_image_t before;
+    kst_image_t target;
+    int at;
+
+    /* The file of another interrupted write, and one with no record: what
+     * FORGET leaves on the card. */
+    fresh();
+    g_rig.card = true;
+    cut_write();
+    other_len = g_rig.file_len;
+    memcpy(other, g_rig.file, other_len + 1u);
+    come_back();
+    tap(val(PG_SERVO, 1, 0));
+    settle();
+    tap(val(PG_SERVO, 2, 0));
+    at = choice(TR(KP_FORGET));
+    CHECK(at >= 0);
+    tap(kst_panel_choice_rect(at));
+    rig_frames(50);
+    none_len = g_rig.file_len;
+    memcpy(none, g_rig.file, none_len + 1u);
+    CHECK(none_len > 0u);
+    CHECK(none_len != other_len || memcmp(none, other, none_len) != 0);
+
+    fresh();
+    cut_write();
+    come_back();
+    tap(val(PG_SERVO, 1, 0));           /* READ ALL */
+    settle();
+    CHECK(!kst_prog_journal(M));
+    CHECK(kst_prog_journal_held(M));
+    before = M->journal_img;
+    target = M->journal_target;
+
+    CHECK(!kst_panel_file_late(other, other_len));
+    CHECK(!kst_panel_file_late(none, none_len));
+    CHECK(!kst_panel_file_late("KST 1\n00=zz\n", 12));
+    CHECK(msg() != KST_PROG_MSG_FILE_BAD);
+    CHECK(kst_prog_journal_held(M));
+    CHECK(!kst_prog_journal(M));
+    CHECK(memcmp(&before, &M->journal_img, sizeof(before)) == 0);
+    CHECK(memcmp(&target, &M->journal_target, sizeof(target)) == 0);
+    /* RESTORE still offers the values before the write. */
+    tap(val(PG_SERVO, 2, 0));
+    CHECK(choice(TR(KP_FROM_JOURNAL)) >= 0);
+    tap(kst_panel_choice_cancel_rect());
+
+    /* The same file with no record held is taken: the guard is what
+     * kept it out. */
+    fresh();
+    CHECK(kst_panel_file_late(none, none_len));
+    CHECK(!kst_prog_journal_held(M));
+}
+
 /* Servo A read, servo B put on the port in the session: READ ALL says
  * that A's backup is not B's, in two lines, and RESTORE does not hold
  * it. */
@@ -3800,6 +3863,7 @@ int main(void)
     RUN(a_restore_and_a_release_whose_card_is_pulled_come_back_too);
     RUN(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named);
     RUN(the_record_of_a_card_put_in_late_is_read);
+    RUN(a_late_card_does_not_replace_a_record_that_was_read_back);
     RUN(the_backup_of_the_session_is_not_offered_for_another_servo);
     RUN(a_file_that_is_not_readable_is_said_and_not_used);
     RUN(more_holds_verify_discard_and_release_pairing);

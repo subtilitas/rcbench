@@ -114,8 +114,9 @@ size_t kst_panel_file_take(char *out, size_t n);
 void kst_panel_file_done(bool ok);
 bool kst_panel_file_load(const char *text, size_t len);
 /** The same for the file of a card mounted after the start.  A record the
- *  model holds already stands: the text is not used then, and false is
- *  returned with nothing said. */
+ *  model holds already stands, before and after the read that follows the
+ *  interrupted write: the text is not used then, and false is returned
+ *  with nothing said. */
 bool kst_panel_file_late(const char *text, size_t len);
 
 /* --- for the tests ------------------------------------------------------------ */

@@ -794,8 +794,9 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - No Chaservo servo has been read.
 - The record of an interrupted write is read from the card when the panel
   starts, and from a card put in later when the programmer mounts it. A
-  record the panel already holds stands: the record on such a card is not
-  read then, and the next record written replaces it.
+  record the panel already holds stands, before and after the servo is
+  read back: the record on such a card is not read then, and the next
+  record written replaces it.
 - A card taken out and put back while the panel runs is not mounted again.
 - The time a mount attempt without a card holds the screen is not measured.
 - Not run on hardware: neither firmware image has run this code with a

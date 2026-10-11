@@ -890,6 +890,11 @@ bool kst_prog_journal(const kst_prog_t *p)
     return p->journal && p->journal_open;
 }
 
+bool kst_prog_journal_held(const kst_prog_t *p)
+{
+    return p->journal;
+}
+
 bool kst_prog_journal_other(const kst_prog_t *p)
 {
     return p->journal && p->journal_other;

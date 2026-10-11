@@ -2123,8 +2123,10 @@ bool kst_panel_file_load(const char *text, size_t len)
 
 bool kst_panel_file_late(const char *text, size_t len)
 {
-    /* A record this session made is the one that stands. */
-    return !kst_prog_journal(&k.prog) && kst_panel_file_load(text, len);
+    /* A record the model holds is the one that stands, also after the
+     * read that follows the interrupted write: RESTORE offers its values. */
+    return !kst_prog_journal_held(&k.prog)
+        && kst_panel_file_load(text, len);
 }
 
 kst_prog_t *kst_panel_model(void)
