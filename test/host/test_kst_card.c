@@ -213,6 +213,12 @@ TEST_CASE(a_card_that_takes_no_file_says_which_way)
     CHECK_EQ(save("A", &sv), KST_PROG_CARD_WRITE_ERR);
     CHECK_EQ(preset(&sv), KST_PROG_CARD_WRITE_ERR);
     g_c.write_fails = false;
+    /* Write protected, or a file with the directory's name. */
+    g_c.denied = true;
+    CHECK_EQ(save("A", &sv), KST_PROG_CARD_DENIED);
+    CHECK_EQ(preset(&sv), KST_PROG_CARD_DENIED);
+    CHECK_EQ(g_c.n, 0);
+    g_c.denied = false;
     /* A preset needs the directory: one that does not read gives no name. */
     g_c.walk_fails = true;
     CHECK_EQ(preset(&sv), KST_PROG_CARD_WRITE_ERR);
@@ -489,6 +495,9 @@ TEST_CASE(a_file_as_written_loads_its_editable_fields_only)
     CHECK_EQ(load("SAME"), KST_PROG_CARD_OK);
     CHECK(memcmp(g_d.image.r, sv.r, sizeof(sv.r)) == 0);
     CHECK_EQ(g_d.skipped, 0);
+    /* A checked file gives every named field. */
+    CHECK_EQ(g_d.fields, 27);
+    CHECK_EQ(g_d.named, 27);
 }
 
 TEST_CASE(an_edited_file_loads_by_its_lines_with_or_without_a_type)
@@ -504,6 +513,9 @@ TEST_CASE(an_edited_file_loads_by_its_lines_with_or_without_a_type)
     CHECK_EQ(load("ED"), KST_PROG_CARD_OK);
     CHECK_EQ(g_d.kind, KST_PROG_FILE_EDITED);
     CHECK_EQ(g_d.type, kst_card_type(&sv));
+    /* The lines it has, of the 27 a file can have. */
+    CHECK_EQ(g_d.fields, 27);
+    CHECK(g_d.named >= 1u && g_d.named <= 27u);
     CHECK_EQ(g_d.image.r[KST_REG_DUTY], raw_of(KST_F_DUTY, 50));
     CHECK_EQ(g_d.image.r[KST_REG_DUTY_COPY], raw_of(KST_F_DUTY, 50));
     CHECK_EQ(g_d.skipped, 0);

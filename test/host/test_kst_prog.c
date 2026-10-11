@@ -2537,6 +2537,7 @@ TEST_CASE(a_card_that_takes_no_file_says_which_way)
         { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE },
         { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL },
         { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE },
+        { KST_PROG_CARD_DENIED, KST_PROG_MSG_CARD_DENIED },
         { KST_PROG_CARD_READ_ERR, KST_PROG_MSG_CARD_WRITE },
         { KST_PROG_CARD_RESULTS, KST_PROG_MSG_CARD_WRITE },
     };
@@ -2556,7 +2557,7 @@ TEST_CASE(a_card_that_takes_no_file_says_which_way)
     CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_CARD_NONE);
     CHECK_EQ(kst_prog_load(&g_p, "A"), KST_PROG_MSG_CARD_NONE);
     CHECK(!kst_prog_card_busy(&g_p));
-    CHECK_EQ(g_fc.saves, 5);
+    CHECK_EQ(g_fc.saves, 6);
     /* A card that does not answer: KST_PROG_CARD_MS. */
     g_card = true;
     g_fc.silent = true;
@@ -2682,6 +2683,7 @@ TEST_CASE(an_edited_file_is_named_as_one)
     kst_prog_card_req_t q;
     kst_prog_card_done_t d;
     fake_file_t *f;
+    unsigned of = 0;
 
     up();
     f = file_with("ED", KST_F_DUTY, (uint16_t)(duty - 10u));
@@ -2689,6 +2691,10 @@ TEST_CASE(an_edited_file_is_named_as_one)
     load("ED");
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
     CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_EDITED);
+    /* The fields its lines give, of the 27 a file has. */
+    CHECK(kst_prog_load_named(&g_p, &of) >= 1u);
+    CHECK(kst_prog_load_named(&g_p, NULL) <= 27u);
+    CHECK_EQ(of, 27);
     CHECK(as_typed(KST_F_DUTY, (uint16_t)(duty - 10u)) != duty);
     CHECK_EQ(draft(KST_F_DUTY), as_typed(KST_F_DUTY, (uint16_t)(duty - 10u)));
     /* A line that reads as the servo shows the value changes nothing: 1
@@ -2711,9 +2717,13 @@ TEST_CASE(an_edited_file_is_named_as_one)
     kst_card_run(&g_fc.io, &q, &d);
     CHECK_EQ(d.kind, KST_PROG_FILE_UNTYPED);
     d.kind = KST_PROG_FILE_KINDS;
+    /* A count above what a file has is none. */
+    d.named = (uint8_t)(d.fields + 1u);
     kst_prog_card_done(&g_p, &d);
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
     CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_UNTYPED);
+    CHECK_EQ(kst_prog_load_named(&g_p, &of), 0);
+    CHECK_EQ(of, 0);
 }
 
 TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
@@ -3452,6 +3462,7 @@ TEST_CASE(a_write_without_its_file_is_not_sent)
         { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE },
         { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL },
         { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE },
+        { KST_PROG_CARD_DENIED, KST_PROG_MSG_CARD_DENIED },
     };
 
     up_enabled();
@@ -3472,7 +3483,7 @@ TEST_CASE(a_write_without_its_file_is_not_sent)
         CHECK(kst_prog_write_enabled(&g_p));
     }
     CHECK(!kst_prog_no_file(&g_p));
-    CHECK_EQ(g_fc.saves, 3);
+    CHECK_EQ(g_fc.saves, 4);
 
     /* A card that never answers: KST_PROG_CARD_MS. */
     g_fc.fails = KST_PROG_CARD_OK;

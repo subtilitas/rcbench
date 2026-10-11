@@ -46,6 +46,8 @@ typedef struct {
     bool read_fails;
     bool full;          /* no space for a new file */
     bool write_fails;
+    bool denied;        /* the card takes no file */
+    bool uncounted;     /* a load states no count of fields */
     unsigned pull_at;   /* not 0: the card is gone from this card call of
                            the request on, counted from 1 */
     unsigned calls;     /* card calls of the request */
@@ -229,6 +231,9 @@ static inline kst_store_io_result_t fake_card_create(void *ctx,
     if (fake_card_gone(c) || c->write_fails) {
         return KST_STORE_IO_ERROR;
     }
+    if (c->denied) {
+        return KST_STORE_IO_DENIED;
+    }
     if (fake_card_entry_find(c, name) != NULL) {
         return KST_STORE_IO_EXISTS;
     }
@@ -324,5 +329,9 @@ static inline bool fake_card_run(fake_card_t *c, const kst_prog_card_req_t *q,
     }
     c->calls = 0;
     kst_card_run(&c->io, q, d);
+    if (c->uncounted) {
+        d->named = 0;
+        d->fields = 0;
+    }
     return true;
 }

@@ -226,6 +226,9 @@ enum {
     KST_PROG_MSG_SUPPLY_CAPS,     /**< the programming voltage or current is
                                        above the supply's limits: the port
                                        is not taken                         */
+    KST_PROG_MSG_CARD_DENIED,     /**< the card takes no file: it is write
+                                       protected, or a file has the name of
+                                       the directory                        */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -298,6 +301,9 @@ typedef enum {
     KST_PROG_CARD_VALUE,      /**< a value of the file is not taken        */
     KST_PROG_CARD_LIMIT,      /**< the file breaks a hard rule no single
                                    line of it is at fault for              */
+    KST_PROG_CARD_DENIED,     /**< the card takes no file: it is write
+                                   protected, or a file has the name of
+                                   the directory                           */
     KST_PROG_CARD_RESULTS
 } kst_prog_card_result_t;
 
@@ -333,6 +339,8 @@ typedef struct {
     uint8_t servo_type;  /**< KST_PROG_CARD_TYPE: the servo's              */
     kst_field_set_t skipped;  /**< fields that differ from the file and
                               are never written                            */
+    uint8_t named;       /**< fields the file gives a value for            */
+    uint8_t fields;      /**< named fields a file has; 0: not counted      */
     uint8_t field;       /**< KST_PROG_CARD_VALUE: the kst_field_id_t,
                               0xFF none                                    */
     uint16_t line;       /**< a refusal's line of the text; 0 none         */
@@ -510,6 +518,8 @@ typedef struct {
     kst_field_set_t soft_skipped;   /**< of the file that waits */
     uint8_t file_types[KST_PROG_FILES_MAX];
     uint8_t load_kind;        /**< kst_prog_file_kind_t            */
+    uint8_t load_named;       /**< fields the file gives a value for */
+    uint8_t load_fields;      /**< of this many; 0 not counted     */
     char card_name[KST_PROG_NAME_MAX];  /**< the file saved or loaded */
     char preset[KST_PROG_NAME_MAX];     /**< the next preset name     */
     char backup[KST_PROG_NAME_MAX];     /**< the file of backed_up    */
@@ -787,6 +797,10 @@ const char *kst_prog_preset_name(const kst_prog_t *p);
 const char *kst_prog_card_name(const kst_prog_t *p);
 /** What the file last loaded is. */
 kst_prog_file_kind_t kst_prog_load_kind(const kst_prog_t *p);
+/** The fields the file last loaded gives a value for, and through
+ *  @p fields, when not NULL, the named fields a file has: 0 where the
+ *  card's side did not count them. */
+unsigned kst_prog_load_named(const kst_prog_t *p, unsigned *fields);
 /** The fields in which the file in the draft differs from the servo and
  *  that are never written; 0 once the servo is read again or the draft is
  *  discarded. */

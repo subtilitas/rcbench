@@ -168,6 +168,7 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_SESSION_ENDED]   = { TX_KP_M_SESSION_ENDED,
                                        TX_KP_M_SESSION_ENDED_2 },
     [KST_PROG_MSG_UNKNOWN]         = { TX_KP_M_UNKNOWN_CODE, -1 },
+    [KST_PROG_MSG_CARD_DENIED]     = { TX_KP_FILE_DENIED, -1 },
     [KST_PROG_MSG_SUPPLY_CAPS]     = { TX_KP_M_SUPPLY_CAPS,
                                        TX_KP_M_SUPPLY_CAPS_2 },
 };
@@ -705,6 +706,22 @@ static void stay_line(char *out, unsigned n)
     }
 }
 
+/* What an edited file is, with the fields it gives a value for where the
+ * card's side counted them. */
+static void kind_line(char *out, int text)
+{
+    unsigned fields = 0;
+    const unsigned named = kst_prog_load_named(&k.prog, &fields);
+
+    if (fields == 0u) {
+        snprintf(out, KST_PANEL_LINE, "%s", ui_tr((ui_text_id_t)text));
+    } else if (text == TX_KP_FILE_EDITED) {
+        snprintf(out, KST_PANEL_LINE, TR(KP_FILE_EDITED_N), named, fields);
+    } else {
+        snprintf(out, KST_PANEL_LINE, TR(KP_FILE_UNTYPED_N), named, fields);
+    }
+}
+
 static void file_stay_line(char *out, unsigned n)
 {
     if (n == 1u) {
@@ -861,6 +878,8 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_2), arg);
     } else if (second == TX_KP_M_JOURNAL_OTHER_2) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2), arg);
+    } else if (second == TX_KP_FILE_EDITED || second == TX_KP_FILE_UNTYPED) {
+        kind_line(out[n++], second);
     } else if (second >= 0) {
         snprintf(out[n++], KST_PANEL_LINE, "%s",
                  ui_tr((ui_text_id_t)second));
@@ -1068,7 +1087,7 @@ static void warn_file(void)
                  differing(kst_prog_soft_image(p)));
     }
     if (kind >= 0) {
-        warn_text(KST_PROG_INFO, ui_tr((ui_text_id_t)kind));
+        kind_line(warn_line(KST_PROG_INFO), kind);
     }
     warn_rules(kst_prog_soft_rules(p), WARN_RULES - k.warn.count);
 }

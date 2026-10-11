@@ -591,7 +591,8 @@ geladen; eine Zeile, die sie nennt, zeigt ihre ersten 14 Zeichen und `..`.
 | Eine Datei hat den Namen | die Tastatur bleibt offen unter `NAME VERGEBEN: ÄNDERN`; `Der Name ist vergeben. Keine Datei wird ersetzt.` |
 | Keine Karte | `Keine Karte. Nichts gespeichert, nichts aufs Servo.` |
 | Karte voll, oder `KST001` bis `KST999` sind beim Backup vor einem Schreiben alle vergeben | `Karte voll. Nichts gespeichert, nichts aufs Servo.` |
-| Die Karte nimmt die Datei nicht an oder antwortet nicht binnen 5 s | `Schreibfehler der Karte. Nichts ging aufs Servo.` |
+| Die Karte ist schreibgeschützt, oder `KST` auf der Karte ist eine Datei und kein Ordner | `Karte nimmt keine Datei: Schreibschutz, KST kein Ordner.` |
+| Die Karte bricht das Schreiben der Datei ab oder antwortet nicht binnen 5 s | `Schreibfehler der Karte. Nichts ging aufs Servo.` |
 
 ![Ein vergebener Name](img/de/servo-kst-name-exists.png)
 ![Ein nicht erlaubter Name](img/de/servo-kst-name-bad.png)
@@ -679,8 +680,8 @@ Servo vor dem Schreibschalter, der Schreibseite und deren 2 s Halten.
 | Datei | Gezeigt |
 | --- | --- |
 | Vom Prüfstand gespeichert, Prüfsumme intakt | `KST001 geladen: 3 Werte weichen vom Servo ab.` oder `KST001 geladen: 1 Wert weicht vom Servo ab.` |
-| Bearbeitet, mit Typzeile und ohne Prüfsummenzeile | dasselbe und `Bearbeitete Datei, Werte wie Handeingabe geprüft.` |
-| Bearbeitet, ohne Typzeile | dasselbe und `Bearbeitete Datei ohne Servotyp, wie Handeingabe geprüft.` |
+| Bearbeitet, mit Typzeile und ohne Prüfsummenzeile | dasselbe und `Bearbeitete Datei, 27 von 27 Werten, wie Handeingabe.` |
+| Bearbeitet, ohne Typzeile | dasselbe und `Bearbeitet, ohne Servotyp: 27 von 27 Werten, Handeingabe.` |
 | Enthält die änderbaren Werte des Servos | `KST001 enthält die Werte des Servos: nichts zu schreiben.` |
 | Vom anderen Servotyp | `Datei ist V8, Servo ist V6. Nicht geladen.` |
 | Prüfsummenzeile vorhanden und falsch | `Datei beschädigt: Prüfsumme passt nicht. Nicht geladen.` `Ohne Prüfsummenzeile lädt sie als bearbeitete Datei.` |
@@ -700,6 +701,10 @@ Servo vor dem Schreibschalter, der Schreibseite und deren 2 s Halten.
 ![Eine Zeile, die sich nicht lesen lässt](img/de/servo-kst-file-bad.png)
 ![Eine Datei eines späteren Formats](img/de/servo-kst-file-newer.png)
 ![Ein Wert außerhalb seines harten Limits](img/de/servo-kst-file-hard.png)
+
+Die Zeile einer bearbeiteten Datei zählt die Werte, die ihre Zeilen
+angeben, von den 27 einer Servodatei. Ein Wert, den die Datei nicht
+angibt, bleibt, wie ihn das Servo hat.
 
 Eine Datei, deren Werte ein weiches Limit überschreiten, das die Werte des
 Servos einhalten, öffnet DIESE DATEI PRÜFEN, bevor etwas zum Entwurf wird.
@@ -1053,6 +1058,14 @@ Codes.
   angewendet.
 - Kein Speichern, Auflisten oder Laden einer Servodatei ist auf einer
   Karte gelaufen.
+- Der Fehlercode, den das Dateisystem der Karte bei einer
+  schreibgeschützten Karte liefert, ist nicht bekannt. Ein anderer Code
+  als schreibgeschütztes Dateisystem, Zugriff verweigert und Operation
+  nicht erlaubt zeigt `Schreibfehler der Karte.` statt
+  `Karte nimmt keine Datei`.
+- Die Vorgabenamen enden bei `KST999`. Ist dieser Name vergeben, wird die
+  nächste freie Nummer vorgeschlagen, und die höchste Nummer ist dann nicht
+  die neueste Datei.
 - Eine Seite hinter den ersten 64 Dateien liest das Verzeichnis je
   64 Dateien davor ein weiteres Mal. Die Zeit dafür ist nicht gemessen;
   das Panel wartet 5 s auf eine Seite.

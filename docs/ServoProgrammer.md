@@ -546,7 +546,8 @@ loaded; a line that names it shows its first 14 characters and `..`.
 | A file has the name | the keyboard stays open under `NAME EXISTS: CHANGE IT`; `A file has this name. No file is replaced.` |
 | No card | `No card. Nothing saved, nothing written to the servo.` |
 | Card full, or `KST001` to `KST999` all taken at the backup before a write | `Card full. Nothing saved, nothing written to the servo.` |
-| The card does not take the file, or does not answer within 5 s | `Card write error. Nothing written to the servo.` |
+| The card is write protected, or `KST` on the card is a file and no folder | `Card takes no file: write protected or KST is no folder.` |
+| The card fails the write of the file, or does not answer within 5 s | `Card write error. Nothing written to the servo.` |
 
 ![A name that exists](img/servo-kst-name-exists.png)
 ![A name that is not allowed](img/servo-kst-name-bad.png)
@@ -628,8 +629,8 @@ write page and its 2 s hold.
 | File | Shown |
 | --- | --- |
 | Saved by the bench, checksum intact | `KST001 loaded: 3 values differ from the servo.`, or `KST001 loaded: 1 value differs from the servo.` |
-| Edited, with a type line and no checksum line | the same, and `Edited file, values checked as manual input.` |
-| Edited, without a type line | the same, and `Edited file without servo type, checked as manual input.` |
+| Edited, with a type line and no checksum line | the same, and `Edited file, 27 of 27 values, checked as manual input.` |
+| Edited, without a type line | the same, and `Edited, no servo type: 27 of 27 values, as manual input.` |
 | Holds the servo's editable values | `KST001 holds the servo's values: nothing to write.` |
 | Of the other servo type | `File is V8, servo is V6. Not loaded.` |
 | Checksum line present and wrong | `File damaged: the checksum does not fit. Not loaded.` `Without its checksum line it loads as an edited file.` |
@@ -649,6 +650,9 @@ write page and its 2 s hold.
 ![A line that does not read](img/servo-kst-file-bad.png)
 ![A file of a later format](img/servo-kst-file-newer.png)
 ![A value outside its hard limit](img/servo-kst-file-hard.png)
+
+The line of an edited file counts the values its lines give, of the 27 a
+servo file has. A value the file does not give stays as the servo has it.
 
 A file whose values pass a soft limit that the servo's own values keep
 opens CHECK THIS FILE before anything becomes the draft. The page lists
@@ -967,6 +971,12 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - Without a PD mini the programming voltage and the current limit are not
   applied.
 - No save, list or load of a servo file has run on a card.
+- The error code the card's file system gives for a write-protected card
+  is not known. A code other than read-only file system, access denied
+  and operation not permitted shows `Card write error.` in place of
+  `Card takes no file`.
+- The proposed names end at `KST999`. With that name taken the next free
+  number is proposed, and the highest number is then not the latest file.
 - A page behind the first 64 files reads the directory once more per 64
   files in front of it. The time this takes is not measured; the panel
   waits 5 s for a page.

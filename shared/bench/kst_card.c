@@ -49,6 +49,8 @@ static uint8_t store_result(kst_store_t r, bool save)
         return KST_PROG_CARD_EXISTS;
     case KST_STORE_TOO_LARGE:
         return KST_PROG_CARD_BAD;       /* larger than any servo file */
+    case KST_STORE_DENIED:
+        return KST_PROG_CARD_DENIED;
     default:
         return save ? KST_PROG_CARD_WRITE_ERR : KST_PROG_CARD_READ_ERR;
     }
@@ -184,6 +186,8 @@ static void load(const kst_store_io_t *io, const kst_prog_card_req_t *req,
     case KST_FILE_LOAD_OK:
         done->image = s_load.target;
         done->skipped = s_load.skipped;
+        done->named = s_load.named;
+        done->fields = s_load.fields;
         break;
     case KST_FILE_LOAD_TYPE_MISMATCH:
         done->result = KST_PROG_CARD_TYPE;

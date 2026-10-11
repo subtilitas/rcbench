@@ -2290,6 +2290,14 @@ kst_prog_file_kind_t kst_prog_load_kind(const kst_prog_t *p)
     return (kst_prog_file_kind_t)p->load_kind;
 }
 
+unsigned kst_prog_load_named(const kst_prog_t *p, unsigned *fields)
+{
+    if (fields != NULL) {
+        *fields = p->load_fields;
+    }
+    return p->load_named;
+}
+
 bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
 {
     if (!p->card_ready) {
@@ -2322,6 +2330,8 @@ static unsigned card_message(unsigned result, bool load)
         return KST_PROG_MSG_CARD_FULL;
     case KST_PROG_CARD_WRITE_ERR:
         return KST_PROG_MSG_CARD_WRITE;
+    case KST_PROG_CARD_DENIED:
+        return KST_PROG_MSG_CARD_DENIED;
     case KST_PROG_CARD_NAME:
         return KST_PROG_MSG_NAME_BAD;
     case KST_PROG_CARD_EXISTS:
@@ -2430,6 +2440,9 @@ static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     }
     p->load_kind = d->kind < KST_PROG_FILE_KINDS ? d->kind
                                                  : KST_PROG_FILE_UNTYPED;
+    /* A count that does not hold is not shown. */
+    p->load_fields = d->named <= d->fields ? d->fields : 0u;
+    p->load_named = p->load_fields != 0u ? d->named : 0u;
     p->soft_skipped = d->skipped;
     /* The card's side takes editable fields only: a target that differs
      * anywhere else is not a file's and is not taken. */

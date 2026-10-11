@@ -97,12 +97,17 @@ history is in git.
   later write. That file holds the servo as the session found it, also
   after a link loss or a panel start under a session the coprocessor
   keeps; the servo as last read is not saved as the backup file once it
-  may hold written values. A file is loaded from a sorted list of the folder's first 64
-  files, 5 a page, that names each file's servo type, V6 or V8 after the
-  20k_sel field. Its editable values become the pending changes and reach
+  may hold written values. A card that is write protected, or that has a
+  file named `KST` in place of the folder, shows `Card takes no file: write
+  protected or KST is no folder.` A file is loaded from a list of every
+  servo file of the folder, sorted by name without case with the proposed
+  names at the place of `KST000`, the highest number first, 5 a page, that
+  names each file's servo type, V6 or V8 after the 20k_sel field. The time
+  a page behind the first 64 files takes is not measured. Its editable values become the pending changes and reach
   the servo through the ordinary write only; a file of the other type, a
   damaged file, a file of a later format and a value past a hard limit are
-  refused with the reason, a hand-edited file is named as one, values past
+  refused with the reason, a hand-edited file is named as one with the
+  count of the 27 values its lines give, values past
   a soft limit wait for a hold of 2 s, and locked values that differ are
   counted as not written.
 - Servo programmer, interrupted writes: a record of a running write is

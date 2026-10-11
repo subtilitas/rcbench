@@ -2465,6 +2465,8 @@ TEST_CASE(every_failure_of_the_card_has_its_line)
         { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL, TX_KP_M_CARD_FULL },
         { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE,
           TX_KP_M_CARD_WRITE },
+        { KST_PROG_CARD_DENIED, KST_PROG_MSG_CARD_DENIED,
+          TX_KP_FILE_DENIED },
     };
     const kst_image_t sv = sim_bench_image();
 
@@ -2552,6 +2554,8 @@ TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
 {
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
     char want[KST_PANEL_LINE];
+    unsigned named;
+    unsigned of = 0;
     fake_file_t *f;
 
     for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
@@ -2565,7 +2569,20 @@ TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
         pick("ED");
         CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
         CHECK_EQ(lines(t), 2);
+        /* How many of the 27 fields its lines give. */
+        named = kst_prog_load_named(M, &of);
+        CHECK(named >= 1u && named <= 27u);
+        CHECK_EQ(of, 27);
+        snprintf(want, sizeof(want), TR(KP_FILE_EDITED_N), named, 27u);
+        CHECK_STR_EQ(t[1], want);
+        /* A card's side that counts none: the line without the count. */
+        kst_prog_discard(M);
+        g_rig.fc.uncounted = true;
+        pick("ED");
+        CHECK_EQ(lines(t), 2);
         CHECK_STR_EQ(t[1], TR(KP_FILE_EDITED));
+        g_rig.fc.uncounted = false;
+        kst_prog_discard(M);
 
         /* No type and another 20k value: loaded, the type stays the
          * servo's and is counted as locked, not written. */
@@ -2579,7 +2596,9 @@ TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
         CHECK_EQ(lines(t), 3);
         snprintf(want, sizeof(want), TR(KP_M_LOADED_ONE), "UN");
         CHECK_STR_EQ(t[0], want);
-        CHECK_STR_EQ(t[1], TR(KP_FILE_UNTYPED));
+        snprintf(want, sizeof(want), TR(KP_FILE_UNTYPED_N),
+                 kst_prog_load_named(M, NULL), 27u);
+        CHECK_STR_EQ(t[1], want);
         snprintf(want, sizeof(want), "%s", TR(KP_FILE_STAY_ONE));
         CHECK_STR_EQ(t[2], want);
         CHECK_EQ(kst_prog_load_skipped(M), KST_FIELD_BIT(KST_F_20K_SEL));
@@ -2756,7 +2775,9 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
     CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SOFT);
     snprintf(want, sizeof(want), TR(KP_FILE_DIFF_ONE), "UP");
     CHECK_STR_EQ(kst_panel_warning_line(0), want);
-    CHECK(warns(TR(KP_FILE_EDITED)));
+    snprintf(want, sizeof(want), TR(KP_FILE_EDITED_N),
+             kst_prog_load_named(M, NULL), 27u);
+    CHECK(warns(want));
     CHECK(warns(kst_panel_rule_text(KST_S_DUTY_RAISED)));
     CHECK_EQ(kst_prog_changes(M), 0);
     /* Short of 2 s nothing is taken. */
@@ -2973,6 +2994,8 @@ TEST_CASE(a_first_write_whose_file_fails_is_not_sent)
         { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL, TX_KP_M_CARD_FULL },
         { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE,
           TX_KP_M_CARD_WRITE },
+        { KST_PROG_CARD_DENIED, KST_PROG_MSG_CARD_DENIED,
+          TX_KP_FILE_DENIED },
     };
     const unsigned starts = 2u;
 
