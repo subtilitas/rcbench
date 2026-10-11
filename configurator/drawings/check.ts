@@ -43,6 +43,9 @@ const decoded = (s: string): string => s.replace(/&#(x[0-9a-fA-F]+|\d+);/g, (ref
   return '"<>&'.includes(ch) ? ref : ch;
 });
 
+/** Elements that change an attribute at run time, by local name. */
+const ANIMATION = new Set(['set', 'animate', 'animatemotion', 'animatetransform', 'animatecolor', 'mpath', 'discard']);
+
 const unescape = (s: string): string =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 
@@ -115,6 +118,10 @@ export function checkSvg(where: string, raw: string, rec: DrawingRecord, lang?: 
   if (locals.has('script')) fail('contains a script element');
   if (/\son[a-z]+\s*=/i.test(svg)) fail('contains an event handler attribute');
   if ([...locals].some((name) => ACTIVE.has(name))) fail('contains an image, foreign content or style sheet element');
+  // An animation rewrites an attribute after the check has read it.
+  if ([...locals].some((name) => ANIMATION.has(name))) fail('contains an animation element');
+  // An inline style overrides the font stack and the paints the check reads from attributes.
+  if (/\sstyle\s*=/i.test(svg)) fail('contains a style attribute');
   if (/data:|javascript:|@import|base64/i.test(svg)) fail('contains a data, script or import reference');
   for (const m of svg.matchAll(/\b(?:xlink:href|href|src)\s*=\s*"([^"]*)"/g)) {
     if (!m[1]!.startsWith('#')) fail(`reference "${m[1]}" leaves the file`);
@@ -213,6 +220,11 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
       fail('no-drawing', `${file}: part ${rec.part} names no board ${rec.variant}`);
       continue;
     }
+    if (rec.variant === null && part.variantName && Object.hasOwn(part.variantName.names, DEFAULT_OPTIONS[part.variantName.option])) {
+      // The default option names a board, so no option selects a drawing without board.
+      fail('no-drawing', `${file}: part ${rec.part} has the board ${DEFAULT_OPTIONS[part.variantName.option]} by default, no option selects a drawing without board`);
+      continue;
+    }
     drawn.add(rec.part);
     const expected = cataloguePins(catalogue, part, rec.variant);
     if (rec.catalogueMap) {
@@ -276,8 +288,8 @@ export function checkContrast(
  * Wires of the catalogue against the anchor table.
  *
  * - `wire-colour`: a wire has no colour of the palette.
- * - `wire-end`: an end of a wire has no anchor. An end whose pin the drawing maps
- *   to null has no wire point on the board and is skipped.
+ * - `wire-end`: an end of a wire has no anchor. The end of a stub whose pin the
+ *   drawing maps to null has no wire point on the board and is skipped.
  * - `neighbour`: 2 wires that end on neighbouring pins of one drawing share a colour.
  *   2 supply plus wires and 2 minus wires are exempt: their colour is fixed.
  */
@@ -296,7 +308,7 @@ export function checkWires(catalogue: Catalogue, anchors: Anchors): Finding[] {
     for (const end of [wire.a, wire.b]) {
       if (end === null) continue;
       const points = endPoints(end, anchors);
-      if (points.length === 0 && !withoutWirePoint(end, anchors)) out.push({ id: 'wire-end', msg: `wire ${wire.n}: end ${end} has no anchor` });
+      if (points.length === 0 && !(wire.kind === 'stub' && withoutWirePoint(end, anchors))) out.push({ id: 'wire-end', msg: `wire ${wire.n}: end ${end} has no anchor` });
       for (const p of points) ends.push({ n: wire.n, colour, rail, file: p.file, pin: p.pin, end });
     }
   }

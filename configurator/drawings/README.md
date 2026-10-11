@@ -91,14 +91,14 @@ A pin with `only` is on the drawing of the board it names and on no other.
 | `anchor-without-pin` | An anchor names no pin of the data file. A drawing with `part: null` is skipped. |
 | `label` | A label differs from the label of the pin in the data file, in English or German. |
 | `map` | A `catalogueMap` names a pin the data file does not have. |
-| `no-drawing` | A part, or 1 of the 2 boards of a part, has no drawing. |
+| `no-drawing` | A part, or 1 of the 2 boards of a part, has no drawing; or a drawing shows a board that no option selects. |
 | `release` | `anchors.json` is of another release than the data file. |
-| `wire-end` | An end of a wire has no anchor. An end whose pin maps to `null` is skipped. |
+| `wire-end` | An end of a wire has no anchor. The end of a stub whose pin maps to `null` is skipped. |
 | `wire-colour` | A wire has no colour of the palette. |
 | `contrast` | A colour of the palette is below 3:1 on 1 of the 5 backgrounds. |
 | `neighbour` | 2 wires that end on neighbouring pins of 1 drawing share a colour. 2 plus wires and 2 minus wires are exempt. |
 | `anchor` | An anchor lies outside its viewBox, has no side, or its label text is missing, empty, doubled or different in the SVG file. |
-| `svg` | A file is missing, not well formed, not self-contained, has no `svg` root in the SVG namespace, uses a namespace prefix other than `xml`, or lacks title, description, viewBox, font stack, language or the id prefix. |
+| `svg` | A file is missing, not well formed, not self-contained, has no `svg` root in the SVG namespace, uses a namespace prefix other than `xml`, carries an animation element or a `style` attribute, or lacks title, description, viewBox, font stack, language or the id prefix. |
 | `drift` | A committed file differs from the output of the generator, is missing, or is not a file of the generator. |
 
 The generator stops with an error, and the check with it, when:
