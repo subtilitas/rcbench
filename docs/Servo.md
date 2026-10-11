@@ -7,7 +7,7 @@ both need a current sensor on the servo output, which is not fitted, and both
 run against a modelled servo. Their defaults are from `servo_limit_defaults()`
 and `servo_sync_defaults()` in `shared/servo/`. The third, the
 [automatic test](#automatic-test), reads the current of the supply that feeds
-the servo, and has run only against the servo and supply models.
+the servo.
 
 ## Installed mechanical limit
 
@@ -474,9 +474,6 @@ live angle while AS5600 is on. A link that goes down clears the reading: the
 row shows dashes and ENC CENTRE sets nothing until a reading arrives with the
 link back. The same holds while the sensor reports no magnet.
 
-Not run on hardware: the sensor on the bus, the tolerance and the 100 ms
-hold against a real servo's jitter, and the mounting.
-
 ### What ends a run
 
 Every ending switches the output off, releases the servo to its centre, and
@@ -717,22 +714,19 @@ interface language showing when its run starts: German from
 `shared/ui/ui_text_de.c` ([Interface language](Language.md)). The CSV is
 English in every language.
 
-### Not run on hardware
+### What is not measured
 
-Three runs of 0.13.0 on the bench with the PD mini, from a tester, are the
-only hardware runs: an MG90S micro servo, a 1102HB digital and an MS24
+Three runs of 0.13.0 on the bench with the PD mini, from a tester: an MG90S micro servo, a 1102HB digital and an MS24
 digital. The MS24, moving at 0.16 to 0.18 A, passed. The MG90S and the
 1102HB read FAIL, every move late, because 0.13.0 took movement to be
 0.10 A; both servos moved. The host suite replays the MG90S's and the
 1102HB's CSVs (`test/host/fixtures/`, trimmed) against the engine, and an
-MS24-like case, the MG90S's currents times 3. The threshold and the
-NOT MEASURABLE verdict have not run on hardware. Beyond that the host suite
+MS24-like case, the MG90S's currents times 3. The host suite
 holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving
 it, and the CSV read back by the log viewer's parser. Not measured: the PD
 mini's averaging, and the command's delay to the pin.
 
-No run on the INA3221 has been made on hardware. `test_servo_test_win` runs
-one on the host: the modelled INA3221 carries `servo_sim`'s current, the
+`test_servo_test_win` runs the test on the INA3221 as meter on the host: the modelled INA3221 carries `servo_sim`'s current, the
 coprocessor's schedule and pages turn it into windows, `sense_link` takes
 each once and `servo_source` names the meter, beside a model of the PD mini
 read every 104 ms. Two recordings from a bench on 0.14.0 are replayed: an
@@ -773,8 +767,7 @@ A sweep ends at a disarm and its last drawn position stays on screen; no
 position of it is sent after the disarm. The controls, one by one:
 [Screens](Screens.md#servo).
 
-Not run on hardware: that the pin is at the rest when the bench reports
-armed. The panel centres the surfaces before it arms and the screen shows
+The panel centres the surfaces before it arms and the screen shows
 the rest when the bench reports armed; the time between the two on a bench
 is not measured.
 

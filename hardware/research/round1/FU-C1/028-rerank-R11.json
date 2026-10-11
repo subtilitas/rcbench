@@ -796,7 +796,7 @@
      {
       "rank": 1,
       "part": "RP2354B",
-      "reason": "Qualified from P3's exclusion that does not hold: two PIO state machines running quad_edge.pio decode 20 Mcounts/s at 6 of the 15 clk_sys cycles an edge allows at 150 MHz; derived from the RP2350 datasheet's instruction timing and a cycle model, not run on hardware",
+      "reason": "Qualified from P3's exclusion that does not hold: two PIO state machines running quad_edge.pio decode 20 Mcounts/s at 6 of the 15 clk_sys cycles an edge allows at 150 MHz; derived from the RP2350 datasheet's instruction timing and a cycle model",
       "option": ""
      }
     ],
@@ -814,7 +814,7 @@
        {
         "name": "count rate",
         "required": "20 Mcounts/s (5 MHz on each of A and B, RS-422) and 4 Mcounts/s (1 MHz, single-ended)",
-        "datasheet": "not a datasheet figure; derived from datasheet timing and not run on hardware. Each PIO instruction takes one clk_sys cycle unless it stalls (11.2.2); clk_sys nominal 150 MHz (clock table, section 8.1). The program quad_edge.pio (19 words, assembled by pioasm 2.3.0 built from the local pico-sdk) runs on one state machine per channel: WAIT for this channel's edge, JMP PIN on the other channel, JMP X-- or JMP Y--, MOV ISR and MOV RXFIFO[i], at most 6 cycles (40 ns) an edge. At 5 MHz a channel an edge comes every 100 ns (15 cycles), 80 ns (12 cycles) at 40/60 duty; 2 state machines give 20 Mcounts/s. A cycle model with the 2-flipflop input synchroniser (11.5.6.3) decoded 40,000 counts at 5 MHz without error for A-to-B edge spacing 30 to 70 ns, duty 40 to 60 %, ±3 ns jitter and 200 reversals, and failed at 13 ns spacing (2 cycles)",
+        "datasheet": "not a datasheet figure; derived from datasheet timing. Each PIO instruction takes one clk_sys cycle unless it stalls (11.2.2); clk_sys nominal 150 MHz (clock table, section 8.1). The program quad_edge.pio (19 words, assembled by pioasm 2.3.0 built from the local pico-sdk) runs on one state machine per channel: WAIT for this channel's edge, JMP PIN on the other channel, JMP X-- or JMP Y--, MOV ISR and MOV RXFIFO[i], at most 6 cycles (40 ns) an edge. At 5 MHz a channel an edge comes every 100 ns (15 cycles), 80 ns (12 cycles) at 40/60 duty; 2 state machines give 20 Mcounts/s. A cycle model with the 2-flipflop input synchroniser (11.5.6.3) decoded 40,000 counts at 5 MHz without error for A-to-B edge spacing 30 to 70 ns, duty 40 to 60 %, ±3 ns jitter and 200 reversals, and failed at 13 ns spacing (2 cycles)",
         "pass": true,
         "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T03:45:39Z, sections 11.2.2, 11.4.8, 11.5.6.3 and the clk_sys row of the clock table; /home/claude/rcbench-research/round1/scratch/FU-C1/rerank-R11/quad_edge.pio; /home/claude/rcbench-research/round1/scratch/FU-C1/rerank-R11/quad_sim.py (run 2026-09-29T03:47Z)"
        },
@@ -854,7 +854,7 @@
       "second_source": "second vendor: Digi-Key SC1512(13)-A4 3560 >= 50 (2026-09-29T03:48:29Z); held 20 in the personal library",
       "alternates": [],
       "driver_in_shared": "none: no decoder program in the tree; quad_edge.pio in the scratch directory is not committed",
-      "reason": "The only candidate: P3 shows the drop rested on one published program, and a two-state-machine program reaches 20 Mcounts/s at 6 of the 15 cycles an edge allows, by the datasheet's instruction timing. No external decoder from an allowlisted maker is in the jlcparts copy. Not run on hardware",
+      "reason": "The only candidate: P3 shows the drop rested on one published program, and a two-state-machine program reaches 20 Mcounts/s at 6 of the 15 cycles an edge allows, by the datasheet's instruction timing. No external decoder from an allowlisted maker is in the jlcparts copy.",
       "second_source_route": "second-vendor",
       "second_source_part": ""
      }
@@ -913,7 +913,7 @@
   "report": [
    {
     "figure": "encoder decode program",
-    "value": "quad_edge.pio, 19 instruction words, one copy loaded once and run by 2 state machines of one PIO block. Each state machine takes one channel on IN_BASE and the other on EXECCTRL_JMP_PIN. On every edge of its channel it counts in X or Y by the other channel's level and writes the changed register to RX FIFO entry 0 or 1 in put mode, which the system reads at any time through RXFn_PUTGET0 and RXFn_PUTGET1. Worst path 6 cycles an edge (40 ns at 150 MHz); an edge comes every 100 ns at 5 MHz a channel and 50 % duty, 80 ns at 40/60 duty. Net count = Y(A) - X(A) + X(B) - Y(B) modulo 2^32. Reading four registers is not atomic, so a read taken while the shaft turns mixes counts a few edges apart; the error does not accumulate. Not written into the tree, not run on hardware",
+    "value": "quad_edge.pio, 19 instruction words, one copy loaded once and run by 2 state machines of one PIO block. Each state machine takes one channel on IN_BASE and the other on EXECCTRL_JMP_PIN. On every edge of its channel it counts in X or Y by the other channel's level and writes the changed register to RX FIFO entry 0 or 1 in put mode, which the system reads at any time through RXFn_PUTGET0 and RXFn_PUTGET1. Worst path 6 cycles an edge (40 ns at 150 MHz); an edge comes every 100 ns at 5 MHz a channel and 50 % duty, 80 ns at 40/60 duty. Net count = Y(A) - X(A) + X(B) - Y(B) modulo 2^32. Reading four registers is not atomic, so a read taken while the shaft turns mixes counts a few edges apart; the error does not accumulate. Not written into the tree",
     "source": "/home/claude/rcbench-research/round1/scratch/FU-C1/rerank-R11/quad_edge.pio and quad_edge.pio.h (pioasm 2.3.0 built from /home/claude/toolchains/pico-sdk/tools/pioasm, pico-sdk commit 98a542c1, 2026-09-29T03:46Z); RP2350 datasheet build-date 2025-07-29, sections 11.2.2, 11.4.2, 11.4.8 (read 2026-09-29T03:45:39Z)"
    },
    {

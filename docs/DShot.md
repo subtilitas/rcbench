@@ -336,13 +336,9 @@ The implementation is written from the published description of the protocol.
 Everything below is exercised by the host suite against frames the same code
 builds, which proves the arithmetic and not the wire.
 
-Two things are not on this list, each against one ESC with no instrument on
-the pin, so each is evidence and not a measurement.
+One reading is not on this list. It is against one ESC with no instrument on the pin, so it is evidence and not a measurement.
 
-- **Plain DShot has run a motor from the panel on the bring-up bench**, which
-  puts its bit timing inside that one ESC's tolerance.
-- **Bidirectional DShot600 has answered on a tester's bench** (#172): a
-  Skystars 35A running AM32 2.21, target `JUPITER_35A_F421` (the AM32
+- **Bidirectional DShot600 against one ESC** (#172): a Skystars 35A running AM32 2.21, target `JUPITER_35A_F421` (the AM32
   configurator shows it cut to `JUPITER_35A_F42`), on a 4S pack, bound to
   GP0. Release 0.8.2 decoded its speed (2593 rpm). Release 0.9.1, with the
   repeated ask above, turned its extended telemetry on: at 0 % throttle

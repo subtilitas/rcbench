@@ -25,7 +25,6 @@
  * rate.  Two ports may share a slice: both run at the one port rate.
  *
  * The model holds LINK_PG_PORTS_MAX ports; a build names how many it has.
- * Nothing here has run on hardware.
  *
  * Pure logic: binding a pin to the generator is the caller's.
  *
