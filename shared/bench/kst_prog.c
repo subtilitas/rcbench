@@ -74,6 +74,7 @@ static kst_prog_level_t level_of(unsigned id)
     case KST_PROG_MSG_FORGOTTEN:
         return KST_PROG_INFO;
     case KST_PROG_MSG_JOURNAL:
+    case KST_PROG_MSG_JOURNAL_OTHER:
     case KST_PROG_MSG_JOURNAL_DIFF:
     case KST_PROG_MSG_SES + KST_SES_ERR_LOCKED:
     case KST_PROG_MSG_SES + KST_SES_ERR_TORN:
@@ -114,6 +115,7 @@ static void journal_clear(kst_prog_t *p)
     if (p->journal) {
         p->journal = false;
         p->journal_open = false;
+        p->journal_other = false;
         file_want(p, FILE_KEEP);
     }
 }
@@ -133,6 +135,7 @@ static void session_gone(kst_prog_t *p)
     p->write_enabled = false;
     p->written = false;
     p->soft = false;
+    p->journal_other = false;
 }
 
 /* -------------------------------------------------------------- the fields */
@@ -167,6 +170,13 @@ static kst_rules_t hard_new(const kst_prog_t *p, const kst_image_t *target)
 
     return kst_limits_edit(&p->servo, target, 0, NULL) & KST_RULES_HARD
          & ~was;
+}
+
+/* The soft rules @p target breaks beyond those the servo's image breaks. */
+static kst_rules_t soft_new(const kst_prog_t *p, const kst_image_t *target)
+{
+    return kst_limits_edit(&p->servo, target, 0, NULL) & ~KST_RULES_HARD
+         & ~kst_limits_edit(&p->servo, &p->servo, 0, NULL);
 }
 
 static bool raw_taken(const kst_prog_t *p, kst_field_id_t id, uint16_t raw)
@@ -282,6 +292,30 @@ static void adopt(kst_prog_t *p)
     }
 }
 
+/*
+ * Whether the servo read can be the one the journal records: on its
+ * channel, and equal to it in every field that the interrupted write left
+ * alone and that no edit reaches.  A register a plan writes can hold a
+ * third value (kst_plan.h), so the fields the write changes say nothing.
+ */
+static bool journal_fits(const kst_prog_t *p)
+{
+    if (p->channel != p->journal_ch) {
+        return false;
+    }
+    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
+        const kst_field_id_t fid = (kst_field_id_t)id;
+        const uint16_t was = kst_field_get(&p->journal_img, fid);
+
+        if (id != KST_F_DUTY_COPY && !editable(fid)
+            && was == kst_field_get(&p->journal_target, fid)
+            && was != kst_field_get(&p->servo, fid)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void read_done(kst_prog_t *p)
 {
     if (!p->f.have_image) {
@@ -289,7 +323,14 @@ static void read_done(kst_prog_t *p)
         return;
     }
     adopt(p);
-    if (p->journal && same(&p->servo, &p->journal_img)) {
+    p->journal_other = p->journal && !journal_fits(p);
+    if (p->journal_other) {
+        /* Another servo: the journal stands, and nothing goes to this
+         * one. */
+        p->journal_open = true;
+        p->write_enabled = false;
+        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_ch + 1u);
+    } else if (p->journal && same(&p->servo, &p->journal_img)) {
         journal_clear(p);
         (void)say(p, KST_PROG_MSG_JOURNAL_SAME, 0);
     } else if (p->journal && same(&p->servo, &p->journal_target)) {
@@ -410,7 +451,7 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         if (p->journal && p->journal_open
             && (o->kind == KST_LINK_OUT_NO_ANSWER
                 || o->kind == KST_LINK_OUT_RESTARTED)) {
-            (void)say(p, KST_PROG_MSG_JOURNAL, 0);
+            (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_ch + 1u);
             said = true;
         }
     }
@@ -542,9 +583,10 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
     } else if (p->wait == W_OUTCOME
                && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_RUN_MS) {
-        if (is_write(p->op)) {
-            p->need_read = true;
-        }
+        /* The operation may still end on the coprocessor, a read with an
+         * image this side never takes: nothing is edited or written
+         * before a read that ends. */
+        p->need_read = true;
         p->wait = W_NONE;
         p->chain_read = false;
         p->cmd.kind = KST_PROG_CMD_ABORT;
@@ -680,6 +722,16 @@ uint8_t kst_prog_channel(const kst_prog_t *p)
 bool kst_prog_journal(const kst_prog_t *p)
 {
     return p->journal && p->journal_open;
+}
+
+bool kst_prog_journal_other(const kst_prog_t *p)
+{
+    return p->journal && p->journal_other;
+}
+
+uint8_t kst_prog_journal_channel(const kst_prog_t *p)
+{
+    return p->journal_ch;
 }
 
 bool kst_prog_in_doubt(const kst_prog_t *p)
@@ -936,6 +988,11 @@ static kst_prog_msg_id_t write_ready(const kst_prog_t *p, unsigned *arg)
     if (m != KST_PROG_MSG_NONE) {
         return m;
     }
+    if (kst_prog_journal_other(p)) {
+        /* A read changes nothing about it. */
+        *arg = p->journal_ch + 1u;
+        return KST_PROG_MSG_JOURNAL_OTHER;
+    }
     if (!p->have_servo || kst_prog_in_doubt(p)) {
         return KST_PROG_MSG_NEED_READ;
     }
@@ -1078,7 +1135,7 @@ static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
     case KST_PROG_FROM_SESSION:
         return p->fed && p->f.have_backup ? &p->f.backup : NULL;
     case KST_PROG_FROM_JOURNAL:
-        return p->journal ? &p->journal_img : NULL;
+        return p->journal && !p->journal_other ? &p->journal_img : NULL;
     case KST_PROG_FROM_STORED:
         return p->have_stored ? &p->stored : NULL;
     default:
@@ -1091,7 +1148,8 @@ bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from)
     const kst_image_t *src = source(p, from);
 
     /* The port takes a read and nothing else while it asks for one. */
-    if (src == NULL || kst_prog_state(p) != KST_PROG_PROGRAMMING
+    if (src == NULL || p->journal_other
+        || kst_prog_state(p) != KST_PROG_PROGRAMMING
         || flag(p, LINK_KS_F_MUST_READ)) {
         return false;
     }
@@ -1114,6 +1172,9 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
 
     memset(out, 0, sizeof(*out));
     out->from = (uint8_t)from;
+    if (m == KST_PROG_MSG_NONE && p->journal_other) {
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_ch + 1u);
+    }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = KST_PROG_MSG_NO_RESTORE;
     }
@@ -1141,6 +1202,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
         }
         out->writes = p->plan.n;
         out->unchecked = p->plan.unchecked != 0u;
+        out->soft = soft_new(p, src);
         return KST_PROG_MSG_NONE;
     }
 
@@ -1170,6 +1232,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     if (hard != 0u) {
         return say(p, KST_PROG_MSG_RESTORE_REFUSED, lowest(hard));
     }
+    out->soft = soft_new(p, &target);
     p->soft = false;
     p->draft = target;
     return KST_PROG_MSG_NONE;
@@ -1186,6 +1249,9 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
         return write_draft(p, (kst_prog_from_t)plan->from);
     }
     m = idle_safe(p);
+    if (m == KST_PROG_MSG_NONE && p->journal_other) {
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_ch + 1u);
+    }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = KST_PROG_MSG_NO_RESTORE;
     }
@@ -1245,8 +1311,9 @@ static uint16_t crc16(const char *s, size_t n)
     for (size_t i = 0; i < n; ++i) {
         crc = (uint16_t)(crc ^ ((unsigned)(uint8_t)s[i] << 8));
         for (unsigned b = 0; b < 8u; ++b) {
-            crc = (crc & 0x8000u) != 0u ? (uint16_t)((crc << 1) ^ 0x1021u)
-                                        : (uint16_t)(crc << 1);
+            const unsigned next = (unsigned)crc << 1;
+
+            crc = (uint16_t)((crc & 0x8000u) != 0u ? next ^ 0x1021u : next);
         }
     }
     return crc;
@@ -1468,6 +1535,14 @@ static bool parse(loaded_t *into, const char *text, size_t len)
     return true;
 }
 
+bool kst_prog_file_whole(const char *text, size_t len)
+{
+    loaded_t got;
+
+    memset(&got, 0, sizeof(got));
+    return parse(&got, text, len);
+}
+
 bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
 {
     /* Parsed aside: a text that is not whole changes nothing. */
@@ -1485,8 +1560,9 @@ bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
     p->journal_ch = got.journal_ch;
     p->journal_img = got.journal_img;
     p->journal_target = got.journal_target;
+    p->journal_other = false;
     if (p->journal) {
-        (void)say(p, KST_PROG_MSG_JOURNAL, 0);
+        (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_ch + 1u);
     }
     return true;
 }

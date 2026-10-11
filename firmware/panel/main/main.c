@@ -2545,9 +2545,18 @@ static void log_note(const char *line)
  * s_kst_file_ok whether the card took it whole, and counts
  * s_kst_file_done up.  One file at a time: the render loop fills the
  * buffer only while the two counts are equal.
+ *
+ * The text goes to KST.NEW and takes the name KST.TXT once the card holds
+ * it whole, so that a write the card or the supply ends leaves one of the
+ * two whole: KST.TXT as it was, or KST.NEW complete.  FAT has no rename
+ * over a file, so KST.TXT is removed between the two; kst_file_load()
+ * takes a whole KST.NEW before KST.TXT.
  */
 #define KST_FILE_NAME "KST.TXT"
+#define KST_FILE_NEW  "KST.NEW"
 static char        s_kst_file[KST_PROG_FILE_MAX];
+static char        s_kst_path[64];
+static char        s_kst_path_new[64];
 static size_t      s_kst_file_len;
 static atomic_uint s_kst_file_sent;
 static atomic_uint s_kst_file_done;
@@ -2561,23 +2570,46 @@ static void kst_file_write(void)
     }
     bool ok = false;
     if (storage_mounted()) {
-        char path[64];
-        storage_path(CARD_DIR, KST_FILE_NAME, path, sizeof(path));
-        FILE *f = fopen(path, "w");
+        storage_path(CARD_DIR, KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
+        storage_path(CARD_DIR, KST_FILE_NEW, s_kst_path_new,
+                     sizeof(s_kst_path_new));
+        FILE *f = fopen(s_kst_path_new, "w");
         if (f != NULL) {
             ok = fwrite(s_kst_file, 1, s_kst_file_len, f) == s_kst_file_len;
             ok = (fflush(f) == 0) && ok;
             ok = (fsync(fileno(f)) == 0) && ok;
             ok = (fclose(f) == 0) && ok;
         }
+        if (ok) {
+            (void)unlink(s_kst_path);   /* fails where there is none */
+            ok = rename(s_kst_path_new, s_kst_path) == 0;
+        }
     }
     atomic_store(&s_kst_file_ok, ok);
     atomic_store(&s_kst_file_done, sent);
 }
 
+/* @p path into s_kst_file.  False for no file; @p len is 0 for a file that
+ * does not read. */
+static bool kst_file_read(const char *path, size_t *len)
+{
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        return false;
+    }
+    const size_t n = fread(s_kst_file, 1, sizeof(s_kst_file) - 1u, f);
+    const bool read_failed = (ferror(f) != 0);
+    fclose(f);
+    s_kst_file[n] = '\0';
+    *len = read_failed ? 0u : n;
+    return true;
+}
+
 /*
- * The file as the card holds it, once, before the tasks start.  No file is
- * no backup; a file that does not read or does not parse is said on the
+ * The file as the card holds it, once, before the tasks start.  A whole
+ * KST.NEW is the text of a write that did not reach its name: it is used
+ * and takes the name.  One that is not whole is removed.  No file is no
+ * backup; a KST.TXT that does not read or does not parse is said on the
  * programmer's page and not used.
  */
 static void kst_file_load(void)
@@ -2585,17 +2617,25 @@ static void kst_file_load(void)
     if (!storage_mounted()) {
         return;
     }
-    char path[64];
-    storage_path(CARD_DIR, KST_FILE_NAME, path, sizeof(path));
-    FILE *f = fopen(path, "rb");
-    if (f == NULL) {
+    size_t len = 0;
+    storage_path(CARD_DIR, KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
+    storage_path(CARD_DIR, KST_FILE_NEW, s_kst_path_new,
+                 sizeof(s_kst_path_new));
+    if (kst_file_read(s_kst_path_new, &len)) {
+        if (kst_prog_file_whole(s_kst_file, len)) {
+            (void)kst_panel_file_load(s_kst_file, len);
+            (void)unlink(s_kst_path);
+            if (rename(s_kst_path_new, s_kst_path) != 0) {
+                ESP_LOGW(TAG, "%s keeps its name", KST_FILE_NEW);
+            }
+            return;
+        }
+        (void)unlink(s_kst_path_new);
+    }
+    if (!kst_file_read(s_kst_path, &len)) {
         return;
     }
-    const size_t len = fread(s_kst_file, 1, sizeof(s_kst_file) - 1u, f);
-    const bool read_failed = (ferror(f) != 0);
-    fclose(f);
-    s_kst_file[len] = '\0';
-    if (!kst_panel_file_load(s_kst_file, read_failed ? 0u : len)) {
+    if (!kst_panel_file_load(s_kst_file, len)) {
         ESP_LOGW(TAG, "%s is not readable and is not used", KST_FILE_NAME);
     }
 }

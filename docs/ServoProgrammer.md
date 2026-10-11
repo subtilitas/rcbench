@@ -294,6 +294,12 @@ is not readable. It is not used.` The file carries no servo's identity: the
 stored backup is the backup of the servo it was read from, and the panel
 does not know which servo is connected.
 
+The panel writes the text to `KST.NEW`, and the file takes the name
+`KST.TXT` once the card holds it whole. A write that the card or the supply
+ends leaves `KST.TXT` as it was or a whole `KST.NEW`. At power-on a
+`KST.NEW` whose check holds is used and renamed; one whose check fails is
+removed and `KST.TXT` is used. Not run on a card.
+
 ### Restore
 
 **RESTORE** opens the list of what there is to restore. Every restore needs
@@ -313,6 +319,15 @@ accepts an unchecked restore only of the backup it holds itself, and that
 check is not weakened. The page counts the locked values that differ and
 stay: `2 locked values differ and stay as they are.` A stored backup that
 breaks a hard limit is not written, and the message names the limit.
+
+A backup whose values pass a soft limit that the servo's own values keep
+opens CHECK THIS BACKUP first. The page lists the warnings of those limits,
+the same lines an edit past them shows, at most 5; with more than 5 the
+fifth line counts the rest. **HOLD TO GO ON** for 2 s opens the restore
+page, which needs a press and a 2 s hold of its own. The restore of the
+session's backup is checked the same way while the servo's values are known.
+
+![The warnings of a backup](img/servo-kst-restore-check.png)
 
 ### More
 
@@ -338,8 +353,11 @@ across a power cycle of the bench.
 ![An interrupted write](img/servo-kst-doubt.png)
 
 `A write was interrupted. The servo may be half written.` stays until the
-servo is read. Every control but **CONNECT**, **READ ALL**, **RESTORE** and
-**LEAVE** is off. The read compares the servo with the record:
+servo is read, with the channel of the write below it: `Do not use it.
+Connect it on channel 4 and READ ALL.` A record found at power-on sets
+**CHANNEL** to that channel. Every control but **CONNECT**, **READ ALL**,
+**RESTORE** and **LEAVE** is off. The read compares the servo with the
+record:
 
 | The servo holds | Message | Then |
 | --- | --- | --- |
@@ -351,6 +369,17 @@ servo is read. Every control but **CONNECT**, **READ ALL**, **RESTORE** and
 
 `Discard the record of the interrupted write` in the restore list removes
 the record without a write.
+
+The record belongs to one servo. A servo read on another channel, or one
+that differs from the record in a value that neither the write nor an edit
+changes, is not that servo: `This is not the servo of the interrupted
+write.` `It was on channel 4. RESTORE: discard the record.` Nothing is
+restored, edited or written while that stands, and **RESTORE** holds the
+discard entry only. **LEAVE** and a **CONNECT** of the write's servo bring
+the comparison above. Two servos on the same channel whose locked values
+are equal are not told apart.
+
+![Another servo than the record's](img/servo-kst-other.png)
 
 Max. Duty lies in registers 01 and 02. A write cut between those two
 leaves an image that breaks a hard limit, and the panel's restore, which is
@@ -389,7 +418,7 @@ output again.` and the tester's controls drive the channel as before.
 | The coprocessor starts again | its session and backup are gone; `The coprocessor restarted. CONNECT and READ ALL.` |
 | The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. READ ALL.` |
 | 3 exchanges with the coprocessor in a row stay unanswered | `No answer from the coprocessor. READ ALL.` |
-| No result of an operation for 30 s | the operation is aborted; `No result from the coprocessor. READ ALL.` |
+| No result of an operation for 30 s | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, stored or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 
 Every refusal of the port and every result of the session has its own
 line. [The link page](Link.md#the-kst-programming-port) lists the codes.
@@ -399,6 +428,10 @@ line. [The link page](Link.md#the-kst-programming-port) lists the codes.
 - Untested on a servo. Every statement about a servo's behaviour on this
   page is the model's.
 - 1 stored backup, with no servo identity.
+- The record of an interrupted write names its channel and holds the
+  servo's values. A second servo on that channel with the same locked
+  values is taken for the first.
+- The replacement of `KST.TXT` through `KST.NEW` is not run on a card.
 - A stored backup restores the editable fields only.
 - Without a card the stored backup and the record of a write are lost at
   power off.

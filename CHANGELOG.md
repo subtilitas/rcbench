@@ -28,10 +28,14 @@ history is in git.
   before the write starts; after a link loss, a restart, an abort or a
   power loss during a write the programmer reports that the servo may hold
   part of it, asks for a read and offers the restore. An image that fails
-  the layout fingerprint is shown and not written. A coprocessor of protocol
+  the layout fingerprint is shown and not written. The record of an
+  interrupted write names its channel, and a servo that is not the record's
+  takes no restore and no write. A backup whose values pass a soft limit
+  shows its warnings on a page of its own before the restore page. `KST.TXT`
+  is replaced through `KST.NEW`. A coprocessor of protocol
   4.11 shows the programmer as unavailable with the reason. Leaving asks for
   the servo's power to be cycled before the channel returns to PWM. German
-  texts for every new string; 52 new screenshots. Host suite only
+  texts for every new string; 56 new screenshots. Host suite only
   (`test_kst_prog`, `test_kst_panel`); no frame has been sent to a servo.
   ([KST and Chaservo servo programmer](docs/ServoProgrammer.md))
 - `protocols/kst/`: the protocol core for programming KST and Chaservo

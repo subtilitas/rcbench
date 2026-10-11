@@ -308,6 +308,13 @@ keine Identität eines Servos: das gespeicherte Backup ist das Backup des
 Servos, aus dem es gelesen wurde, und das Panel weiß nicht, welches Servo
 angeschlossen ist.
 
+Das Panel schreibt den Text nach `KST.NEW`, und die Datei bekommt den Namen
+`KST.TXT`, sobald die Karte sie vollständig hält. Ein Schreiben, das die
+Karte oder die Versorgung beendet, hinterlässt `KST.TXT` wie zuvor oder
+eine vollständige `KST.NEW`. Beim Einschalten wird eine `KST.NEW` mit
+stimmender Prüfsumme benutzt und umbenannt; eine mit falscher Prüfsumme
+wird entfernt und `KST.TXT` benutzt. Nicht auf einer Karte gelaufen.
+
 ### Zurückspielen
 
 **ZURÜCKSPIELEN** öffnet die Liste dessen, was sich zurückspielen lässt.
@@ -329,6 +336,16 @@ Die Seite zählt die gesperrten Werte, die abweichen und bleiben:
 `2 gesperrte Werte weichen ab und bleiben.` Ein gespeichertes Backup, das
 ein hartes Limit verletzt, wird nicht geschrieben, und die Meldung nennt
 das Limit.
+
+Ein Backup, dessen Werte ein weiches Limit überschreiten, das die Werte des
+Servos einhalten, öffnet zuerst BACKUP PRÜFEN. Die Seite listet die
+Warnungen dieser Limits, dieselben Zeilen wie bei einer Änderung über sie
+hinaus, höchstens 5; bei mehr als 5 zählt die fünfte Zeile den Rest.
+**HALTEN ZUM FORTFAHREN** für 2 s öffnet die Seite des Zurückspielens, die
+ein eigenes Drücken und 2 s Halten braucht. Das Zurückspielen des Backups
+der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
+
+![Die Warnungen eines Backups](img/de/servo-kst-restore-check.png)
 
 ### Weiteres
 
@@ -356,9 +373,11 @@ Einschalten des Prüfstands.
 ![Ein unterbrochenes Schreiben](img/de/servo-kst-doubt.png)
 
 `Schreiben unterbrochen. Servo ist evtl. halb beschrieben.` bleibt stehen,
-bis das Servo gelesen ist. Jedes Bedienelement außer **VERBINDEN**,
-**ALLES LESEN**, **ZURÜCKSPIELEN** und **VERLASSEN** ist aus. Das Lesen
-vergleicht das Servo mit dem Vermerk:
+bis das Servo gelesen ist, darunter der Kanal des Schreibens: `Nicht
+benutzen. An Kanal 4 verbinden und ALLES LESEN.` Ein beim Einschalten
+gefundener Vermerk stellt **KANAL** auf diesen Kanal. Jedes Bedienelement
+außer **VERBINDEN**, **ALLES LESEN**, **ZURÜCKSPIELEN** und **VERLASSEN**
+ist aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 
 | Das Servo hält | Meldung | Danach |
 | --- | --- | --- |
@@ -370,6 +389,18 @@ vergleicht das Servo mit dem Vermerk:
 
 `Vermerk des unterbrochenen Schreibens verwerfen` in der Liste entfernt den
 Vermerk ohne ein Schreiben.
+
+Der Vermerk gehört zu einem Servo. Ein Servo, das an einem anderen Kanal
+gelesen wird oder vom Vermerk in einem Wert abweicht, den weder das
+Schreiben noch eine Änderung verändert, ist nicht dieses Servo: `Das ist
+nicht das Servo des unterbrochenen Schreibens.` `Es war an Kanal 4.
+ZURÜCKSPIELEN: Vermerk verwerfen.` Solange das steht, wird nichts
+zurückgespielt, geändert oder geschrieben, und **ZURÜCKSPIELEN** enthält
+nur den Eintrag zum Verwerfen. **VERLASSEN** und ein **VERBINDEN** des
+Servos des Schreibens bringen den Vergleich von oben. Zwei Servos am selben
+Kanal mit gleichen gesperrten Werten werden nicht unterschieden.
+
+![Ein anderes Servo als das des Vermerks](img/de/servo-kst-other.png)
 
 Max. Duty liegt in den Registern 01 und 02. Ein Schreiben, das zwischen
 diesen beiden abreißt, hinterlässt ein Abbild, das ein hartes Limit
@@ -410,7 +441,7 @@ Testers treiben den Kanal wie zuvor.
 | Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` |
 | Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` |
 | 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.` |
-| 30 s kein Ergebnis eines Vorgangs | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` |
+| 30 s kein Ergebnis eines Vorgangs | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
 Zeile. [Die Link-Page](Link-de.md#der-kst-programmierport) listet die
@@ -421,6 +452,11 @@ Codes.
 - An keinem Servo getestet. Jede Aussage über das Verhalten eines Servos
   auf dieser Seite ist die des Modells.
 - 1 gespeichertes Backup, ohne Identität des Servos.
+- Der Vermerk eines unterbrochenen Schreibens nennt seinen Kanal und hält
+  die Werte des Servos. Ein zweites Servo an diesem Kanal mit denselben
+  gesperrten Werten wird für das erste gehalten.
+- Das Ersetzen von `KST.TXT` über `KST.NEW` ist nicht auf einer Karte
+  gelaufen.
 - Ein gespeichertes Backup spielt nur die änderbaren Felder zurück.
 - Ohne Karte gehen das gespeicherte Backup und der Vermerk eines Schreibens
   beim Ausschalten verloren.

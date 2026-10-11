@@ -387,7 +387,8 @@ static void kst_view(const char *view)
     const bool nopage = strcmp(v, "-nopage") == 0;
     const bool cut = strcmp(v, "-doubt") == 0 || strcmp(v, "-journal") == 0
                   || strcmp(v, "-restore-list") == 0
-                  || strcmp(v, "-restore") == 0;
+                  || strcmp(v, "-restore") == 0
+                  || strcmp(v, "-other") == 0;
 
     rig_fresh();
     g_rig.card = true;
@@ -486,6 +487,34 @@ static void kst_view(const char *view)
         ksettle();
         return;
     }
+    if (strcmp(v, "-restore-check") == 0) {
+        /* A backup of a servo with Max. Duty and Boost raised, the servo
+         * set back, and the backup chosen in RESTORE. */
+        const kst_image_t first = *kst_prog_servo(kst_panel_model());
+
+        kenable();
+        kedit(KST_F_DUTY, (uint16_t)(kst_field_get(&first, KST_F_DUTY) + 2u));
+        kedit(KST_F_BOOST, (uint16_t)(kst_field_get(&first, KST_F_BOOST) + 4u));
+        ktap(kst_panel_value_rect(0, 4, 0));
+        khold();
+        ksettle();
+        ktap(kst_panel_value_rect(0, 1, 1));        /* STORE */
+        ksettle();
+        kedit(KST_F_DUTY, kst_field_get(&first, KST_F_DUTY));
+        kedit(KST_F_BOOST, kst_field_get(&first, KST_F_BOOST));
+        ktap(kst_panel_value_rect(0, 4, 0));
+        khold();
+        ksettle();
+        ktap(kst_panel_value_rect(0, 2, 0));        /* RESTORE */
+        for (int i = 0; kst_panel_choice_label(i) != NULL; ++i) {
+            if (strcmp(kst_panel_choice_label(i),
+                       ui_tr(TX_KP_FROM_STORED)) == 0) {
+                ktap(kst_panel_choice_rect(i));
+                break;
+            }
+        }
+        return;
+    }
     /* The rest writes. */
     kenable();
     kedits();
@@ -515,9 +544,18 @@ static void kst_view(const char *view)
     if (strcmp(v, "-doubt") == 0) {
         return;
     }
+    if (strcmp(v, "-other") == 0) {
+        /* Another servo on the channel: 20k_sel is not the journal's. */
+        kst_image_t img;
+
+        memcpy(img.r, g_rig.sim.reg, sizeof(img.r));
+        (void)kst_field_set(&img, KST_F_20K_SEL,
+                            1u - kst_field_get(&img, KST_F_20K_SEL));
+        memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
+    }
     ktap(kst_panel_value_rect(0, 1, 0));            /* READ ALL */
     ksettle();
-    if (strcmp(v, "-journal") == 0) {
+    if (strcmp(v, "-journal") == 0 || strcmp(v, "-other") == 0) {
         return;
     }
     kenable();

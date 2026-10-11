@@ -694,6 +694,54 @@ TEST_CASE(a_write_needs_the_switch_and_writes_the_changed_fields)
     CHECK(!kst_prog_write_enabled(&g_p));
 }
 
+/* Up, the switch on, one value written. */
+static void up_written(void)
+{
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(!kst_prog_first_write(&g_p));
+}
+
+TEST_CASE(the_first_write_of_every_session_is_the_first_again)
+{
+    /* The session is left and another entered. */
+    up_written();
+    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(kst_prog_first_write(&g_p));
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(kst_prog_first_write(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    /* And its first write ends that. */
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 210);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_first_write(&g_p));
+
+    /* The link is lost between two operations. */
+    up_written();
+    kst_link_lost(&g_k);
+    frame();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_DOWN);
+    CHECK(kst_prog_first_write(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+
+    /* The coprocessor starts again between two operations. */
+    up_written();
+    port_fresh();
+    frames(600);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(kst_prog_first_write(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+}
+
 TEST_CASE(a_draft_the_planner_refuses_is_not_sent)
 {
     up_enabled();
@@ -1309,12 +1357,22 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     frame();
     g_p.journal = true;
     g_p.journal_open = true;
+    g_p.journal_ch = CH;
     g_p.journal_img = sv;
     g_p.journal_target = sv;
     g_p.journal_target.r[0x03] ^= 0x01u;
     CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
     kst_prog_init(&g_p);
+    /* A text cut short is not whole, and asking changes nothing. */
+    CHECK(kst_prog_file_whole(text, strlen(text)));
+    CHECK(!kst_prog_file_whole(text, strlen(text) - 1u));
+    CHECK(!kst_prog_file_whole(text, 0u));
+    CHECK_EQ(msg(), KST_PROG_MSG_NONE);
+    CHECK(!g_p.journal);
     CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_journal_channel(&g_p), CH);
     frame();
     CHECK(kst_prog_in_doubt(&g_p));
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
@@ -1346,6 +1404,151 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
     CHECK(!kst_prog_journal(&g_p));
     CHECK(!kst_prog_in_doubt(&g_p));
+}
+
+/* The other value of 20k_sel, a field no edit and no restore writes. */
+static void flip_20k(void)
+{
+    kst_image_t img = servo();
+
+    CHECK(kst_field_set(&img, KST_F_20K_SEL,
+                        1u - kst_field_get(&img, KST_F_20K_SEL)));
+    memcpy(g_sim.reg, img.r, sizeof(img.r));
+}
+
+TEST_CASE(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write)
+{
+    kst_prog_restore_t plan;
+    kst_image_t before;
+
+    /* The servo of the interrupted write, read and compared. */
+    cut_and_come_back(false);
+    CHECK(!kst_prog_journal_other(&g_p));
+    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
+
+    /* Another servo on the channel: a locked value is not the same. */
+    flip_20k();
+    before = servo();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_DANGER);
+    CHECK(kst_prog_journal_other(&g_p));
+    CHECK(kst_prog_journal(&g_p));
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_editable(&g_p));
+    CHECK(kst_prog_have_servo(&g_p));
+    for (unsigned from = 0; from < (unsigned)KST_PROG_FROM_COUNT; ++from) {
+        CHECK(!kst_prog_restore_offered(&g_p, (kst_prog_from_t)from));
+        CHECK_EQ(kst_prog_restore_plan(&g_p, (kst_prog_from_t)from, &plan),
+                 KST_PROG_MSG_JOURNAL_OTHER);
+        plan.from = (uint8_t)from;
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_JOURNAL_OTHER);
+    }
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_write_check(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
+    frames(50);
+    {
+        const kst_image_t now = servo();
+
+        CHECK(same(&now, &before));
+    }
+
+    /* The journal's servo again: compared, and the restore is back. */
+    flip_20k();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_DIFF);
+    CHECK(!kst_prog_journal_other(&g_p));
+    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
+
+    /* The other servo, and the record is discarded for it. */
+    flip_20k();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(kst_prog_journal_other(&g_p));
+    kst_prog_forget(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+    CHECK(!kst_prog_journal_other(&g_p));
+    CHECK(!kst_prog_in_doubt(&g_p));
+    CHECK(kst_prog_editable(&g_p));
+}
+
+TEST_CASE(a_journal_of_another_channel_is_not_this_servos)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+    char text[KST_PROG_FILE_MAX];
+
+    /* The journal of a write on the next channel, the servo here equal
+     * to its image in every register. */
+    up();
+    g_card = true;
+    frame();
+    g_p.journal = true;
+    g_p.journal_open = true;
+    g_p.journal_ch = CH + 1u;
+    g_p.journal_img = sv;
+    g_p.journal_target = sv;
+    g_p.journal_target.r[0x03] ^= 0x01u;
+    CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
+    kst_prog_init(&g_p);
+    CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 2u);
+    frame();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 2u);
+    /* The record stands for the servo it names. */
+    CHECK(kst_prog_journal(&g_p));
+    CHECK(kst_prog_journal_other(&g_p));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_JOURNAL, &plan),
+             KST_PROG_MSG_JOURNAL_OTHER);
+
+    /* The session ends: which servo comes next is not known. */
+    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(kst_prog_journal(&g_p));
+    CHECK(!kst_prog_journal_other(&g_p));
+}
+
+TEST_CASE(a_restore_names_the_soft_limits_its_values_pass)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+    kst_prog_restore_t plan;
+
+    /* A backup with Max. Duty raised, and the servo back below it. */
+    up_enabled();
+    edit(KST_F_DUTY, (uint16_t)(duty + 2u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
+    edit(KST_F_DUTY, duty);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(plan.soft, KST_RULE_BIT(KST_S_DUTY_RAISED));
+    /* The session's own backup lowers it: nothing to warn of. */
+    kst_prog_discard(&g_p);
+    edit(KST_F_DUTY, (uint16_t)(duty + 2u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(plan.soft, 0);
+    /* And a stored backup equal to a lower servo raises nothing. */
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
+             KST_PROG_MSG_NO_RESTORE);
 }
 
 TEST_CASE(a_coprocessor_that_starts_again_in_a_write_leaves_the_journal)
@@ -1884,10 +2087,55 @@ static void outcome_never_comes(uint32_t t0)
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
 }
 
+/* A read or a verify with no outcome: what was read is not trusted. */
+static void read_never_ends(uint32_t t0, bool verify)
+{
+    kst_prog_cmd_t cmd;
+    kst_link_outcome_t o;
+
+    by_hand();
+    g_f.now_ms = t0;
+    pass(0);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_editable(&g_p));
+    CHECK_EQ(verify ? kst_prog_verify(&g_p) : kst_prog_read(&g_p),
+             KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    pass(KST_PROG_RUN_MS - 1u);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    pass(1);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_journal(&g_p));
+    CHECK(!kst_prog_editable(&g_p));
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 200), KST_PROG_EDIT_REFUSED);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NEED_READ);
+
+    /* A read that ends is what clears it. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.result = KST_SES_OK;
+    o.fail_reg = 0xFF;
+    end(&o);
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(!kst_prog_in_doubt(&g_p));
+    CHECK(kst_prog_editable(&g_p));
+}
+
 TEST_CASE(a_command_nobody_answers_is_given_up)
 {
     answer_never_comes(1000u);
     outcome_never_comes(1000u);
+    read_never_ends(1000u, false);
+    read_never_ends(1000u, true);
 }
 
 TEST_CASE(the_waits_hold_across_the_tick_wrap)
@@ -2127,6 +2375,7 @@ int main(void)
     RUN(a_range_is_found_from_a_draft_value_the_rules_refuse);
     RUN(a_step_moves_one_count_and_stops_at_the_fields_end);
     RUN(a_write_needs_the_switch_and_writes_the_changed_fields);
+    RUN(the_first_write_of_every_session_is_the_first_again);
     RUN(a_draft_the_planner_refuses_is_not_sent);
     RUN(the_switch_goes_off_where_the_rules_say);
     RUN(leaving_gives_the_output_back_and_ends_the_session);
@@ -2146,6 +2395,9 @@ int main(void)
     RUN(a_later_session_writes_the_journals_image_back);
     RUN(a_second_cut_keeps_the_image_before_the_first_write);
     RUN(a_journal_whose_servo_is_unchanged_or_complete_is_closed);
+    RUN(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write);
+    RUN(a_journal_of_another_channel_is_not_this_servos);
+    RUN(a_restore_names_the_soft_limits_its_values_pass);
     RUN(a_coprocessor_that_starts_again_in_a_write_leaves_the_journal);
     RUN(a_write_the_servo_does_not_take_names_the_register);
     RUN(a_torn_servo_takes_the_sessions_restore_only);

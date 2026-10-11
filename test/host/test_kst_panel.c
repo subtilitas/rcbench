@@ -1194,8 +1194,19 @@ TEST_CASE(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields)
     enable();
     tap(val(PG_SERVO, 2, 0));
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_STORED))));
+    /* The backup raises Boost: its warning first, on a page of its own. */
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_FROM_STORED)));
+    CHECK(warns(TR(KP_CHECK_1)));
+    CHECK(warns(TR(KP_W_BOOST_RAISED)));
+    CHECK(!warns(TR(KP_HORN_FREE)));
+    /* The hold that ends it is not the hold that writes. */
+    hold(3.9f);
+    rig_frames(50);
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK(warns(TR(KP_FROM_STORED)));
+    CHECK(!warns(TR(KP_CHECK_1)));
     CHECK(warns(TR(KP_HORN_FREE)));
     CHECK(warns(TR(KP_WRITE_CARD)));
     hold(2.1f);
@@ -1204,6 +1215,185 @@ TEST_CASE(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields)
     now = rig_servo();
     CHECK(memcmp(now.r, before.r, sizeof(now.r)) == 0);
     CHECK_EQ(g_rig.sim.n_bad_writes, 0);
+}
+
+/* A backup is stored, and the servo changed behind the programmer's back
+ * by @p change before the next session. */
+static void stored_then(void (*change)(kst_image_t *img))
+{
+    char file[KST_PROG_FILE_MAX];
+    size_t len;
+    kst_image_t img;
+
+    fresh();
+    g_rig.card = true;
+    connected();
+    tap(val(PG_SERVO, 1, 1));
+    settle();
+    rig_frames(5);
+    len = g_rig.file_len;
+    memcpy(file, g_rig.file, len + 1u);
+    fresh();
+    g_rig.card = true;
+    CHECK(kst_panel_file_load(file, len));
+    img = rig_servo();
+    change(&img);
+    memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
+    connected();
+    enable();
+    tap(val(PG_SERVO, 2, 0));
+    tap(kst_panel_choice_rect(choice(TR(KP_FROM_STORED))));
+    CHECK_EQ(kst_panel_editor(), 3);
+}
+
+/* A dead band one count narrower than the backup's. */
+static void lower_one(kst_image_t *img)
+{
+    CHECK(kst_field_set(img, KST_F_DEAD_BAND,
+                        (uint16_t)(kst_field_get(img, KST_F_DEAD_BAND) + 1u)));
+}
+
+/* Values the backup's are above, far from, or other than. */
+static void lower_many(kst_image_t *img)
+{
+    const uint16_t duty = (uint16_t)(kst_field_get(img, KST_F_DUTY) - 10u);
+
+    CHECK(kst_field_set(img, KST_F_DUTY, duty));
+    CHECK(kst_field_set(img, KST_F_DUTY_COPY, duty));
+    CHECK(kst_field_set(img, KST_F_BOOST,
+                        (uint16_t)(kst_field_get(img, KST_F_BOOST) - 4u)));
+    CHECK(kst_field_set(img, KST_F_DEAD_BAND,
+                        (uint16_t)(kst_field_get(img, KST_F_DEAD_BAND) + 4u)));
+    CHECK(kst_field_set(img, KST_F_LEFT_ANGLE,
+                        (uint16_t)(kst_field_get(img, KST_F_LEFT_ANGLE) - 5u)));
+    CHECK(kst_field_set(img, KST_F_REVERSION,
+                        1u - kst_field_get(img, KST_F_REVERSION)));
+    CHECK(kst_field_set(img, KST_F_NEUTRAL,
+                        (uint16_t)(kst_field_get(img, KST_F_NEUTRAL) + 300u)));
+    CHECK(kst_field_set(img, KST_F_PULSE_LOWER,
+                        (uint16_t)(kst_field_get(img, KST_F_PULSE_LOWER)
+                                   + 1200u)));
+}
+
+TEST_CASE(a_backup_without_a_warning_goes_to_the_restore_page_at_once)
+{
+    /* A dead band the backup widens passes no soft limit. */
+    stored_then(lower_one);
+    CHECK(!warns(TR(KP_CHECK_1)));
+    CHECK(warns(TR(KP_HORN_FREE)));
+}
+
+TEST_CASE(a_backup_with_more_warnings_than_lines_counts_the_rest)
+{
+    char more[KST_PANEL_LINE];
+    kst_prog_restore_t plan;
+    unsigned texts = 0, lines = 0;
+    int16_t seen[KST_RULE_COUNT];
+
+    stored_then(lower_many);
+    CHECK(warns(TR(KP_CHECK_1)));
+    /* The texts the rules have between them, two rules to a text where
+     * the text is the same. */
+    tap(kst_panel_cancel_rect());
+    CHECK_EQ(kst_prog_restore_plan(M, KST_PROG_FROM_STORED, &plan),
+             KST_PROG_MSG_NONE);
+    for (unsigned rule = 0; rule < (unsigned)KST_RULE_COUNT; ++rule) {
+        bool twice = false;
+
+        if ((plan.soft & KST_RULE_BIT(rule)) == 0u) {
+            continue;
+        }
+        for (unsigned i = 0; i < texts; ++i) {
+            twice = twice || strcmp(kst_panel_rule_text((unsigned)seen[i]),
+                                    kst_panel_rule_text(rule)) == 0;
+        }
+        if (!twice) {
+            seen[texts++] = (int16_t)rule;
+        }
+    }
+    CHECK(texts > 5u);
+    tap(val(PG_SERVO, 2, 0));
+    tap(kst_panel_choice_rect(choice(TR(KP_FROM_STORED))));
+    while (kst_panel_warning_line((int)lines) != NULL) {
+        ++lines;
+    }
+    /* The source, the heading, four warnings and the count of the rest. */
+    CHECK_EQ(lines, 7);
+    snprintf(more, sizeof(more), TR(KP_CHECK_MORE), texts - 4u);
+    CHECK_STR_EQ(kst_panel_warning_line(6), more);
+    for (unsigned i = 0; i < 4u; ++i) {
+        CHECK(warns(kst_panel_rule_text((unsigned)seen[i])));
+    }
+    CHECK(!warns(kst_panel_rule_text((unsigned)seen[4])));
+    /* CANCEL leaves the servo as it is. */
+    tap(kst_panel_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+}
+
+static void other_20k(kst_image_t *img)
+{
+    CHECK(kst_field_set(img, KST_F_20K_SEL,
+                        1u - kst_field_get(img, KST_F_20K_SEL)));
+}
+
+TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
+{
+    char file[KST_PROG_FILE_MAX];
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    char second[KST_PANEL_LINE];
+    size_t len;
+    kst_image_t img;
+
+    fresh();
+    g_rig.card = true;
+    cut_write();
+    len = g_rig.file_len;
+    memcpy(file, g_rig.file, len + 1u);
+
+    /* A panel that starts later: CHANNEL stands on the write's output,
+     * and the message names it. */
+    fresh();
+    g_rig.card = true;
+    CHECK(kst_panel_file_load(file, len));
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+    CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2), (unsigned)RIG_CH + 1u);
+    CHECK_STR_EQ(t[1], second);
+    img = rig_servo();
+    other_20k(&img);
+    memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
+    link_up();
+    tap(val(PG_SERVO, 0, 1));           /* CONNECT, no channel typed */
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK_EQ(kst_prog_channel(M), RIG_CH);
+
+    /* Another servo is on it. */
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_STR_EQ(said(), TR(KP_M_JOURNAL_OTHER));
+    CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2),
+             (unsigned)RIG_CH + 1u);
+    CHECK_STR_EQ(t[1], second);
+    show();
+    /* Nothing is edited, and the switch does not open a write. */
+    tap(kst_panel_tab_rect(PG_TUNE));
+    tap(val(PG_TUNE, 1, 0));
+    CHECK_EQ(kst_panel_editor(), 0);
+    tap(kst_panel_tab_rect(PG_SERVO));
+    /* RESTORE holds the one entry that discards the record. */
+    tap(val(PG_SERVO, 2, 0));
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK_EQ(choices(), 1);
+    CHECK(choice(TR(KP_FORGET)) == 0);
+    tap(kst_panel_choice_rect(0));
+    CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+    CHECK(!M->journal);
+    CHECK(kst_prog_editable(M));
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
 }
 
 TEST_CASE(a_file_that_is_not_readable_is_said_and_not_used)
@@ -1473,7 +1663,7 @@ static void texts_in(ui_lang_t lang)
     CHECK_EQ(kst_panel_message_lines(&m, t), 0);
     /* The fixed messages, the answers of start, the outcome kinds, the
      * port's refusals and the session's results. */
-    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_TIMEOUT));
+    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_JOURNAL_OTHER));
     CHECK(family_ok(KST_PROG_MSG_START, (unsigned)KST_LINK_START_NO_IMAGE + 1u));
     CHECK(family_ok(KST_PROG_MSG_OUT, (unsigned)KST_LINK_OUT_DROPPED + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PLAN_NO_PATH + 1u));
@@ -1706,6 +1896,9 @@ int main(void)
     RUN(an_open_page_goes_when_the_link_goes);
     RUN(store_keeps_a_backup_and_says_where);
     RUN(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields);
+    RUN(a_backup_without_a_warning_goes_to_the_restore_page_at_once);
+    RUN(a_backup_with_more_warnings_than_lines_counts_the_rest);
+    RUN(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named);
     RUN(a_file_that_is_not_readable_is_said_and_not_used);
     RUN(more_holds_verify_discard_and_release_pairing);
     RUN(a_servo_that_fails_the_fingerprint_is_shown_and_never_written);

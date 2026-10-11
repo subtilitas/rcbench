@@ -131,6 +131,8 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_RESTORE_REFUSED] = { TX_KP_M_RESTORE_REFUSED, -1 },
     [KST_PROG_MSG_STOPPED]         = { TX_KP_M_STOPPED, -1 },
     [KST_PROG_MSG_TIMEOUT]         = { TX_KP_M_TIMEOUT, -1 },
+    [KST_PROG_MSG_JOURNAL_OTHER]   = { TX_KP_M_JOURNAL_OTHER,
+                                       TX_KP_M_JOURNAL_OTHER_2 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -263,7 +265,8 @@ enum { C_STRETCH = 0, C_RESTORE, C_MORE };
 enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE };
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
-enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE };
+enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
+       W_CHECK };
 
 #define KP_CHANNEL (-1)       /* the keypad edits the channel, not a row */
 #define CHOICE_MAX 8
@@ -616,7 +619,11 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     } else if (id == KST_PROG_MSG_NO_RESTORE && arg != 0u) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_STAY), arg);
     }
-    if (second >= 0) {
+    if (second == TX_KP_M_JOURNAL_2) {
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_2), arg);
+    } else if (second == TX_KP_M_JOURNAL_OTHER_2) {
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2), arg);
+    } else if (second >= 0) {
         snprintf(out[n++], KST_PANEL_LINE, "%s",
                  ui_tr((ui_text_id_t)second));
     }
@@ -674,13 +681,41 @@ static void warn_horn(void)
     }
 }
 
+/* The warnings of @p rules, one line each, on at most @p room lines.  More
+ * than fit leave the last line to their count. */
+static void warn_rules(kst_rules_t rules, int room)
+{
+    int16_t lines[KST_RULE_COUNT];
+    int n = 0;
+
+    for (unsigned rule = 0; rule < (unsigned)KST_RULE_COUNT; ++rule) {
+        bool twice = false;
+
+        if ((rules & KST_RULE_BIT(rule)) == 0u) {
+            continue;
+        }
+        /* Two rules share a line where the line says the same of both. */
+        for (int i = 0; i < n; ++i) {
+            twice = twice || lines[i] == k_rule[rule];
+        }
+        if (!twice) {
+            lines[n++] = k_rule[rule];
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        if (n > room && i == room - 1) {
+            snprintf(warn_line(KST_PROG_WARN), KST_PANEL_LINE,
+                     TR(KP_CHECK_MORE), (unsigned)(n - i));
+            break;
+        }
+        warn_text(KST_PROG_WARN, ui_tr((ui_text_id_t)lines[i]));
+    }
+}
+
 static void warn_soft(const row_t *r)
 {
     const kst_field_id_t id = (kst_field_id_t)r->what;
-    const kst_rules_t rules = kst_prog_soft_rules(&k.prog);
     char was[24], now[24];
-    int16_t shown[WARN_LINES];
-    int n_shown = 0;
 
     warn_open(W_SOFT, false, TR(KP_SOFT_TITLE), TR(SV_HOLD_TO_APPLY));
     fmt_field(id, kst_field_get(kst_prog_draft(&k.prog), id), was,
@@ -689,21 +724,7 @@ static void warn_soft(const row_t *r)
               sizeof(now));
     snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, "%s: %s -> %s",
              row_label(r), was, now);
-    for (unsigned rule = 0; rule < (unsigned)KST_RULE_COUNT; ++rule) {
-        bool twice = false;
-
-        if ((rules & KST_RULE_BIT(rule)) == 0u) {
-            continue;
-        }
-        /* Two rules share a line where the line says the same of both. */
-        for (int i = 0; i < n_shown; ++i) {
-            twice = twice || shown[i] == k_rule[rule];
-        }
-        if (!twice && n_shown < WARN_LINES - 1) {
-            shown[n_shown++] = k_rule[rule];
-            warn_text(KST_PROG_WARN, kst_panel_rule_text(rule));
-        }
-    }
+    warn_rules(kst_prog_soft_rules(&k.prog), WARN_LINES - 1);
 }
 
 static void warn_enable(void)
@@ -766,6 +787,17 @@ static void warn_restore(const kst_prog_restore_t *plan)
     }
 }
 
+/* A backup whose values pass soft limits the servo's own keep: its
+ * warnings first, and the restore's page after the hold. */
+static void warn_check(const kst_prog_restore_t *plan)
+{
+    warn_open(W_CHECK, false, TR(KP_CHECK_TITLE), TR(KP_HOLD_NEXT));
+    k.warn.plan = *plan;
+    warn_text(KST_PROG_INFO, ui_tr(from_text(plan->from)));
+    warn_text(KST_PROG_INFO, TR(KP_CHECK_1));
+    warn_rules(plan->soft, WARN_LINES - 2);
+}
+
 static void warn_release(void)
 {
     warn_open(W_RELEASE, true, TR(KP_RELEASE_TITLE), TR(KP_HOLD_WRITE));
@@ -822,6 +854,9 @@ static void warn_apply(void)
         break;
     case W_RESTORE:
         (void)kst_prog_restore(&k.prog, &plan);
+        break;
+    case W_CHECK:
+        warn_restore(&plan);
         break;
     case W_RELEASE:
         (void)kst_prog_release(&k.prog);
@@ -1019,7 +1054,11 @@ static void choice_done(int value)
         } else if (kst_prog_restore_plan(p, (kst_prog_from_t)value, &plan)
                    == KST_PROG_MSG_NONE) {
             if (kst_prog_write_enabled(p)) {
-                warn_restore(&plan);
+                if (plan.soft != 0u) {
+                    warn_check(&plan);
+                } else {
+                    warn_restore(&plan);
+                }
             } else {
                 (void)kst_prog_restore(p, &plan);   /* says: the switch */
             }
@@ -1443,6 +1482,12 @@ bool kst_panel_file_load(const char *text, size_t len)
 {
     const bool ok = kst_prog_file_load(&k.prog, text, len);
 
+    /* An interrupted write: CHANNEL stands on its output. */
+    if (ok && k.prog.journal
+        && kst_prog_journal_channel(&k.prog) < CHANNELS) {
+        k.channel = kst_prog_journal_channel(&k.prog);
+    }
+
     model_moved();
     return ok;
 }
@@ -1482,8 +1527,18 @@ static int standing(const char *out[2], bool *warn)
         return 1;
     }
     if (kst_prog_journal(p)) {
-        out[0] = TR(KP_M_JOURNAL);
-        out[1] = TR(KP_M_JOURNAL_2);
+        /* Static: the caller draws the line after this returns. */
+        static char second[KST_PANEL_LINE];
+        const unsigned ch = (unsigned)kst_prog_journal_channel(p) + 1u;
+
+        if (kst_prog_journal_other(p)) {
+            out[0] = TR(KP_M_JOURNAL_OTHER);
+            snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2), ch);
+        } else {
+            out[0] = TR(KP_M_JOURNAL);
+            snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2), ch);
+        }
+        out[1] = second;
         return 2;
     }
     if (flag(LINK_KS_F_LOCKED)) {

@@ -115,7 +115,8 @@ enum {
     KST_PROG_MSG_STORE_FAILED,    /**< the card took no file; nothing was
                                        written to the servo                 */
     KST_PROG_MSG_FILE_BAD,        /**< the file on the card is not readable */
-    KST_PROG_MSG_JOURNAL,         /**< a write was interrupted; read        */
+    KST_PROG_MSG_JOURNAL,         /**< a write was interrupted; read.  arg:
+                                       the journal's channel, from 1        */
     KST_PROG_MSG_JOURNAL_SAME,    /**< the servo holds what it held before  */
     KST_PROG_MSG_JOURNAL_DONE,    /**< the servo holds the write's target   */
     KST_PROG_MSG_JOURNAL_DIFF,    /**< the servo holds something else       */
@@ -130,6 +131,8 @@ enum {
     KST_PROG_MSG_RESTORE_REFUSED, /**< arg: the kst_rule_t that refuses     */
     KST_PROG_MSG_STOPPED,         /**< STOP: the operation was aborted      */
     KST_PROG_MSG_TIMEOUT,         /**< no outcome within KST_PROG_RUN_MS    */
+    KST_PROG_MSG_JOURNAL_OTHER,   /**< the servo read is not the journal's;
+                                       arg: the journal's channel, from 1   */
     KST_PROG_MSG_START = 0x20,
     KST_PROG_MSG_OUT   = 0x30,
     KST_PROG_MSG_REF   = 0x40,
@@ -173,6 +176,9 @@ typedef struct {
     uint8_t writes;     /**< fields, or for the session registers, that
                              change                                        */
     uint8_t stay;       /**< fields that differ and are not written        */
+    kst_rules_t soft;   /**< soft limits the restored image passes and the
+                             servo's own does not; 0 where the servo's
+                             image is not known                            */
     bool    unchecked;  /**< the session's restore has no checked order    */
 } kst_prog_restore_t;
 
@@ -222,6 +228,7 @@ typedef struct {
     kst_image_t stored;       /**< the backup kept on the panel    */
     bool journal;             /**< an image is recorded            */
     bool journal_open;        /**< and the servo was not compared  */
+    bool journal_other;       /**< the servo read is not the journal's */
     bool need_read;           /**< the servo's image is in doubt   */
     uint8_t journal_ch;
     kst_image_t journal_img;     /**< the servo before the write   */
@@ -291,8 +298,18 @@ bool kst_prog_write_enabled(const kst_prog_t *p);
 uint8_t kst_prog_channel(const kst_prog_t *p);
 /** A write was interrupted and the servo was not compared since. */
 bool kst_prog_journal(const kst_prog_t *p);
+/**
+ * The servo read cannot be the one of the interrupted write: it is on
+ * another channel, or it differs in a field that neither the write nor an
+ * edit changes.  Nothing is restored to it and nothing is written to it
+ * until the journal is discarded.  Two servos that agree in every such
+ * field and sit on the same channel are not told apart.
+ */
+bool kst_prog_journal_other(const kst_prog_t *p);
+/** The channel of the interrupted write, from 0. */
+uint8_t kst_prog_journal_channel(const kst_prog_t *p);
 /** The servo may hold part of a write: a journal stands, the port asks for
- *  a read, or the session is locked. */
+ *  a read, an operation timed out, or the session is locked. */
 bool kst_prog_in_doubt(const kst_prog_t *p);
 /** No write was sent since the servo was connected: the next asks for the
  *  free horn. */
@@ -375,6 +392,9 @@ void kst_prog_abort(kst_prog_t *p);
 size_t kst_prog_file_take(kst_prog_t *p, char *out, size_t n);
 /** How the write of the text kst_prog_file_take() gave went. */
 void kst_prog_file_done(kst_prog_t *p, bool ok);
+/** Whether @p text is a whole file: its version, its lines and its check
+ *  value.  Changes nothing and says nothing. */
+bool kst_prog_file_whole(const char *text, size_t len);
 /** The file as found at start.  False, with KST_PROG_MSG_FILE_BAD, for a
  *  text that is not whole. */
 bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len);
