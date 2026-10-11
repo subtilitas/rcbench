@@ -143,8 +143,12 @@ enum {
     KST_PROG_MSG_FILE_BAD,        /**< the journal's file is not readable   */
     KST_PROG_MSG_JOURNAL,         /**< a write was interrupted; read.  arg:
                                        the journal's port, from 1           */
-    KST_PROG_MSG_JOURNAL_SAME,    /**< the servo holds what it held before  */
-    KST_PROG_MSG_JOURNAL_DONE,    /**< the servo holds the write's target   */
+    KST_PROG_MSG_JOURNAL_SAME,    /**< the servo holds what the record says
+                                       it held before the write; the record
+                                       stands and asks whether this is the
+                                       servo.  arg: the record's port, from
+                                       1                                    */
+    KST_PROG_MSG_JOURNAL_DONE,    /**< the same for the write's target      */
     KST_PROG_MSG_JOURNAL_DIFF,    /**< the servo holds something else       */
     KST_PROG_MSG_FORGOTTEN,       /**< the journal was discarded            */
     KST_PROG_MSG_EDIT_HARD,       /**< arg: the kst_rule_t that refuses     */
@@ -563,12 +567,22 @@ bool kst_prog_journal(const kst_prog_t *p);
 bool kst_prog_journal_held(const kst_prog_t *p);
 /**
  * The servo read cannot be the one of the interrupted write: it is on
- * another port, or it differs in a field that neither the write nor an
- * edit changes.  Nothing is restored to it and nothing is written to it
- * until the journal is discarded.  Two servos that agree in every such
- * field and sit on the same port are not told apart.
+ * another port, or a register of it holds neither the record's value nor
+ * the write's target.  The low register of a field in two registers that
+ * the write changes is exempt: a plan may set it to a third value.
+ * Nothing is restored to it and nothing is written to it until the journal
+ * is discarded.
  */
 bool kst_prog_journal_other(const kst_prog_t *p);
+/**
+ * The servo read holds, register for register, the record's image
+ * (KST_PROG_MSG_JOURNAL_SAME) or the write's target
+ * (KST_PROG_MSG_JOURNAL_DONE), and the record stands: a second servo with
+ * the same settings is not told apart from the one of the write.  Nothing
+ * is written to the servo until kst_prog_forget() discards the record.
+ * KST_PROG_MSG_NONE otherwise.
+ */
+kst_prog_msg_id_t kst_prog_journal_asks(const kst_prog_t *p);
 /** The servo read is not the one the session's backup was read from: the
  *  two differ in a field no write of the session set out to change.  The
  *  backup is not offered and not restored until a new session reads its
@@ -595,7 +609,9 @@ const char *kst_prog_backup_name(const kst_prog_t *p);
  *  one copy.  Ends with the next file a write saves. */
 bool kst_prog_no_file(const kst_prog_t *p);
 /** The next write saves the servo as the session found it to a file
- *  first.  A mounted card that does not take the file ends the write. */
+ *  first.  A mounted card that does not take the file ends the write.
+ *  False while a record of an interrupted write is held: the servo may be
+ *  half written, and the record holds it as found. */
 bool kst_prog_save_first(const kst_prog_t *p);
 /** That write goes without the file: no card is mounted, or the servo may
  *  hold other values than the session found and the session's backup, the

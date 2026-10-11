@@ -1781,7 +1781,13 @@ TEST_CASE(a_second_cut_keeps_the_image_before_the_first_write)
     CHECK(same(&g_p.journal_img, &sv));
 }
 
-TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
+/*
+ * A servo that holds the record's image or its target may be the one of
+ * the interrupted write, or a second servo with the same settings.  The
+ * record stands, the question is asked with the record's port, and nothing
+ * is written until the operator discards the record.
+ */
+TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_asks)
 {
     const kst_image_t sv = sim_bench_image();
     kst_image_t target;
@@ -1814,9 +1820,44 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
-    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_INFO);
-    CHECK(!kst_prog_journal(&g_p));
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_JOURNAL_SAME);
+    CHECK(kst_prog_journal_held(&g_p));
+    CHECK(!kst_prog_journal_other(&g_p));
     CHECK(!kst_prog_in_doubt(&g_p));
+    /* The record stays on the card. */
+    frames(2);
+    CHECK(strstr(g_file, "\nport=0\n") != NULL);
+    /* No write, no restore and no file reaches the servo. */
+    {
+        kst_prog_restore_t plan;
+        const unsigned writes = g_sim.n_writes;
+
+        CHECK(!kst_prog_write_enabled(&g_p));
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_JOURNAL_SAME);
+        CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+        CHECK(!kst_prog_write_enabled(&g_p));
+        CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
+        CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+                 KST_PROG_MSG_JOURNAL_SAME);
+        edit(KST_F_BOOST, (uint16_t)(draft(KST_F_BOOST) + 1u));
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_JOURNAL_SAME);
+        settle();
+        CHECK_EQ(g_sim.n_writes, writes);
+        kst_prog_discard(&g_p);
+        /* A read asks again. */
+        CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
+        CHECK(kst_prog_journal_held(&g_p));
+    }
+    /* Discarded by the operator: the servo is written again. */
+    kst_prog_forget(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+    CHECK(!kst_prog_journal_held(&g_p));
+    CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     frames(2);
     CHECK_STR_EQ(g_file, "RCBENCH KST 1\ncheck=72DB\n");
 
@@ -1830,15 +1871,15 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_DONE);
-    CHECK(!kst_prog_journal(&g_p));
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_JOURNAL_DONE);
+    CHECK(kst_prog_journal_held(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_JOURNAL_DONE);
 
     /* Forgotten by the operator. */
     kst_prog_forget(&g_p);
-    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_DONE);
-    CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
-    kst_prog_forget(&g_p);
     CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
-    CHECK(!kst_prog_journal(&g_p));
+    CHECK(!kst_prog_journal_held(&g_p));
     CHECK(!kst_prog_in_doubt(&g_p));
 }
 
@@ -4175,7 +4216,7 @@ static size_t text_of(char *out, bool journal)
 
     kst_prog_init(&p);
     p.journal = journal;
-    p.journal_port = 15;
+    p.journal_port = LINK_PG_PORTS_MAX - 1u;
     p.journal_img = sim_bench_image();
     p.journal_img.r[0x05] = 0xABu;
     p.journal_target = sim_bench_image();
@@ -4202,7 +4243,7 @@ TEST_CASE(the_file_text_is_read_back_as_it_was_written)
         CHECK_EQ(kst_prog_message(&p)->id,
                  journal ? KST_PROG_MSG_JOURNAL : KST_PROG_MSG_NONE);
         if (journal) {
-            CHECK_EQ(p.journal_port, 15);
+            CHECK_EQ(p.journal_port, LINK_PG_PORTS_MAX - 1u);
             CHECK_EQ(p.journal_img.r[0x05], 0xAB);
             CHECK_EQ(p.journal_target.r[0x1F], 0xCD);
         }
@@ -5060,15 +5101,16 @@ static bool text_has_target(const kst_image_t *target)
 }
 
 typedef enum {
-    RS_SAVE_FAILS, RS_SAVE_SILENT, RS_FILE_FAILS, RS_FILE_SILENT,
+    RS_FILE_FAILS, RS_FILE_SILENT,
     RS_NOT_HANDED, RS_STALLED, RS_ABORT, RS_LINK_LOST, RS_COUNT
 } rs_t;
 
 /*
  * A confirmed restore from the journal's record that ends before its
- * command goes: at the servo's file, at the journal's file, at the start.
- * The pending values, the prompt that was open and the record are as they
- * were before RESTORE was confirmed.
+ * command goes: at the journal's file, at the start.  The pending values,
+ * the prompt that was open and the record are as they were before RESTORE
+ * was confirmed.  No file of the servo is written first: the servo may be
+ * half written, and the record holds it as found.
  */
 TEST_CASE(a_restore_that_never_starts_leaves_the_pending_values)
 {
@@ -5094,15 +5136,9 @@ TEST_CASE(a_restore_that_never_starts_leaves_the_pending_values)
         writes = g_sim.n_writes;
         saves = g_fc.saves;
         files = g_file_writes;
-        CHECK(kst_prog_save_first(&g_p));
+        CHECK(!kst_prog_save_first(&g_p));
 
         switch ((rs_t)s) {
-        case RS_SAVE_FAILS:
-            g_fc.fails = KST_PROG_CARD_WRITE_ERR;
-            break;
-        case RS_SAVE_SILENT:
-            g_fc.silent = true;
-            break;
         case RS_FILE_FAILS:
             g_card_fails = true;
             break;
@@ -5134,24 +5170,16 @@ TEST_CASE(a_restore_that_never_starts_leaves_the_pending_values)
         }
         CHECK(kst_prog_state(&g_p) != KST_PROG_WORKING);
         switch ((rs_t)s) {
-        case RS_SAVE_FAILS:
-            CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
-            CHECK_EQ(g_file_writes, files);
-            break;
-        case RS_SAVE_SILENT:
-            CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
-            CHECK_EQ(g_file_writes, files);
-            break;
         case RS_FILE_FAILS:
         case RS_FILE_SILENT:
             CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
-            CHECK_EQ(g_fc.saves, saves + 1u);
+            CHECK_EQ(g_fc.saves, saves);
             CHECK(g_file_writes > files);
             break;
         case RS_NOT_HANDED:
         case RS_STALLED:
             CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
-            CHECK_EQ(g_fc.saves, saves + 1u);
+            CHECK_EQ(g_fc.saves, saves);
             break;
         case RS_ABORT:
             CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED);
@@ -5228,6 +5256,399 @@ TEST_CASE(a_release_or_a_session_restore_that_never_starts_keeps_the_prompt)
         CHECK(g_p.soft);
         CHECK(same(kst_prog_draft(&g_p), &before));
         g_card_fails = false;
+    }
+}
+
+/* ----------------------------------------- the servo a write belongs to */
+
+/*
+ * The session's backup goes to the servo it was read from.  Another servo
+ * plugged in between differs in registers no write of the session
+ * changed: the restore ends before its first write, the write switch is
+ * off, and a read comes before anything else.  Read or not, no later
+ * restore writes to it either.
+ */
+TEST_CASE(a_session_restore_does_not_reach_a_swapped_servo)
+{
+    static const uint8_t other[] = { 0x1E, 0x1F, 0x15, 0x1D, 0x0E };
+    kst_prog_restore_t plan;
+    kst_image_t b, now;
+    unsigned writes;
+
+    up_enabled();
+    edit(KST_F_DEAD_BAND, (uint16_t)(draft(KST_F_DEAD_BAND) - 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    /* The second servo. */
+    for (size_t i = 0; i < sizeof(other); ++i) {
+        g_sim.reg[other[i]] ^= 0x21u;
+    }
+    b = servo();
+    writes = g_sim.n_writes;
+    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_CHANGED);
+    CHECK_EQ(g_sim.n_writes, writes);
+    now = servo();
+    CHECK(same(&now, &b));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NEED_READ);
+    /* The plan made before is not taken either. */
+    (void)kst_prog_enable(&g_p, true);
+    (void)kst_prog_restore(&g_p, &plan);
+    settle();
+    CHECK_EQ(g_sim.n_writes, writes);
+    /* Read: it is another servo, and the backup is not written to it. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_write_enabled(&g_p));
+    for (unsigned again = 0; again < 2u; ++again) {
+        (void)kst_prog_enable(&g_p, true);
+        if (kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan)
+            == KST_PROG_MSG_NONE) {
+            (void)kst_prog_restore(&g_p, &plan);
+        }
+        settle();
+        CHECK_EQ(g_sim.n_writes, writes);
+        now = servo();
+        CHECK(same(&now, &b));
+        (void)kst_prog_read(&g_p);
+        settle();
+    }
+}
+
+/*
+ * A write that ends with the servo in doubt switches the write off, and
+ * the read that follows does not switch it on.  The session's backup and
+ * its file stay the ones of the servo as found: no file of the servo as
+ * the write left it takes their place, and the session's restore brings
+ * the servo back.
+ */
+TEST_CASE(a_write_in_doubt_ends_the_write_switch_and_keeps_the_backup)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+    char name[32];
+    unsigned saves;
+    kst_image_t now;
+
+    up_enabled();
+    edit(KST_F_SOFT_START,
+         1u - kst_field_get(kst_prog_servo(&g_p), KST_F_SOFT_START));
+    edit(KST_F_BOOST, (uint16_t)(draft(KST_F_BOOST) - 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 30000u && g_sim.n_writes == 0u; ++i) {
+        frame();
+    }
+    CHECK(g_sim.n_writes > 0u);
+    kst_prog_abort(&g_p);
+    settle();
+    now = servo();
+    CHECK(!same(&now, &sv));
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK(kst_prog_backed_up(&g_p));
+    snprintf(name, sizeof(name), "%s", kst_prog_backup_name(&g_p));
+    CHECK(name[0] != '\0');
+    saves = g_fc.saves;
+
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), name);
+    CHECK(!kst_prog_save_first(&g_p));
+    /* The session's restore brings the servo back as found, and files
+     * nothing on its way. */
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+    now = servo();
+    CHECK(same(&now, &sv));
+    CHECK_EQ(g_fc.saves, saves);
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), name);
+    for (int i = 0; i < g_fc.n; ++i) {
+        CHECK(same(&g_fc.file[i].img, &sv));
+    }
+}
+
+/*
+ * A locked session takes its restore with no read before it.  The servo
+ * is not known then, and the restore is recorded all the same: cut, the
+ * record names the backup as what the servo is to hold.
+ */
+TEST_CASE(a_session_restore_without_a_read_is_recorded)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+    unsigned writes;
+
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    sim_add_fault(&g_sim, SIM_WRITE, 0x02, 0, 100, SIM_F_WRITE_IGNORE, 0);
+    sim_add_fault(&g_sim, SIM_WRITE, 0x01, 1, 100, SIM_F_WRITE_IGNORE, 0);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    if (msg() != KST_PROG_MSG_SES + KST_SES_ERR_TORN) {
+        /* The planner wrote 02 first: bend the other way round. */
+        up_enabled();
+        edit(KST_F_DUTY, 200);
+        sim_add_fault(&g_sim, SIM_WRITE, 0x01, 0, 100, SIM_F_WRITE_IGNORE,
+                      0);
+        sim_add_fault(&g_sim, SIM_WRITE, 0x02, 1, 100, SIM_F_WRITE_IGNORE,
+                      0);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        settle();
+    }
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_TORN);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    g_sim.n_faults = 0;
+    /* With no record of the write left, the restore makes its own. */
+    kst_prog_forget(&g_p);
+    frames(5);
+    CHECK(!kst_prog_journal_held(&g_p));
+    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+    writes = g_sim.n_writes;
+    for (unsigned i = 0; i < 30000u && g_sim.n_writes == writes; ++i) {
+        frame();
+    }
+    CHECK(g_sim.n_writes > writes);
+    kst_link_lost(&g_k);
+    g_safe = false;
+    frame();
+    CHECK(kst_prog_journal_held(&g_p));
+    CHECK(kst_prog_journal(&g_p));
+    CHECK(same(&g_p.journal_img, &sv));
+    CHECK(same(&g_p.journal_target, &sv));
+    frames(5);
+    CHECK(strstr(g_file, "\nport=0\n") != NULL);
+}
+
+/* The same when the write is complete on the servo and its end is not
+ * read: the record asks, and discarded, the backup is still the servo as
+ * found. */
+TEST_CASE(a_write_whose_end_is_not_read_keeps_the_backup)
+{
+    const kst_image_t sv = sim_bench_image();
+    char name[32];
+    unsigned n, saves;
+    bool found = false;
+
+    for (n = 0; n < 4000u && !found; ++n) {
+        up_enabled();
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        g_nacked = false;
+        g_nack_at = (int)n;
+        settle();
+        g_nack_at = -1;
+        if (!g_nacked) {
+            break;
+        }
+        found = g_outcome.kind == KST_LINK_OUT_NACK && g_outcome.taken
+            && kst_prog_state(&g_p) == KST_PROG_PROGRAMMING
+            && servo().r[KST_REG_DUTY] == 200u;
+    }
+    CHECK(found);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    snprintf(name, sizeof(name), "%s", kst_prog_backup_name(&g_p));
+    CHECK(name[0] != '\0');
+    saves = g_fc.saves;
+    /* The session's restore waits for the read: what the servo holds is
+     * not known. */
+    {
+        kst_prog_restore_t plan;
+
+        CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+                 KST_PROG_MSG_NEED_READ);
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NEED_READ);
+        CHECK_EQ(kst_prog_enable(&g_p, false), KST_PROG_MSG_NONE);
+    }
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_DONE);
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), name);
+    CHECK(!kst_prog_save_first(&g_p));
+    kst_prog_forget(&g_p);
+    CHECK(!kst_prog_save_first(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 210);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, saves);
+    for (int i = 0; i < g_fc.n; ++i) {
+        CHECK(same(&g_fc.file[i].img, &sv));
+    }
+}
+
+/*
+ * The record of a servo of the same type with other settings is not this
+ * servo's: a register that holds neither the record's value nor the
+ * write's target says so, and nothing of the record reaches the servo.
+ */
+TEST_CASE(a_record_of_a_servo_with_other_settings_is_not_restored)
+{
+    const kst_image_t b = sim_bench_image();
+    kst_image_t a = b, target, now;
+    kst_prog_restore_t plan;
+    char text[KST_PROG_FILE_MAX];
+    unsigned writes;
+
+    CHECK(kst_field_edit(&a, KST_F_NEUTRAL,
+                         (uint16_t)(kst_field_get(&b, KST_F_NEUTRAL) + 40u)));
+    CHECK(kst_field_edit(&a, KST_F_REVERSION,
+                         (uint16_t)(1u - kst_field_get(&b, KST_F_REVERSION))));
+    target = a;
+    CHECK(kst_field_edit(&target, KST_F_BOOST, 10));
+    up();
+    g_p.journal = true;
+    g_p.journal_open = true;
+    g_p.journal_port = CH;
+    g_p.journal_img = a;
+    g_p.journal_target = target;
+    CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
+    fresh_at(1000);
+    up();
+    prog_fresh();
+    CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
+    frame();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK(kst_prog_journal_other(&g_p));
+    CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
+    writes = g_sim.n_writes;
+    (void)kst_prog_enable(&g_p, true);
+    CHECK(kst_prog_restore_plan(&g_p, KST_PROG_FROM_JOURNAL, &plan)
+          != KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(g_sim.n_writes, writes);
+    now = servo();
+    CHECK(same(&now, &b));
+    CHECK_EQ(g_fc.n, 0);
+}
+
+/* The servo of the write, cut between two registers of one field or in
+ * the middle of its plan, is still this record's. */
+TEST_CASE(a_servo_cut_in_its_write_fits_its_record)
+{
+    for (unsigned duty = 0; duty < 2u; ++duty) {
+        cut_and_come_back(duty != 0u);
+        CHECK(!kst_prog_journal_other(&g_p));
+        CHECK(kst_prog_journal_held(&g_p));
+        CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
+    }
+}
+
+/* A restore from the record writes no file of the half-written servo. */
+TEST_CASE(a_restore_from_the_record_files_no_half_written_servo)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+    kst_image_t torn, now;
+    int files;
+
+    cut_and_come_back(false);
+    torn = servo();
+    CHECK(!same(&torn, &sv));
+    files = g_fc.n;
+    CHECK(!kst_prog_save_first(&g_p));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_JOURNAL, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+    settle();
+    frames(50);
+    CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+    now = servo();
+    CHECK(same(&now, &sv));
+    CHECK_EQ(g_fc.n, files);
+    for (int i = 0; i < g_fc.n; ++i) {
+        CHECK(!same(&g_fc.file[i].img, &torn));
+    }
+}
+
+/* A record made while no card was in reaches the card that comes. */
+TEST_CASE(a_record_reaches_a_card_put_in_later)
+{
+    char text[KST_PROG_FILE_MAX];
+    unsigned writes;
+
+    up_enabled();
+    g_card = false;
+    frames(3);
+    edit(KST_F_SOFT_START,
+         1u - kst_field_get(kst_prog_servo(&g_p), KST_F_SOFT_START));
+    edit(KST_F_BOOST, 10);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 30000u && g_sim.n_writes == 0u; ++i) {
+        frame();
+    }
+    CHECK(g_sim.n_writes > 0u);
+    kst_link_lost(&g_k);
+    g_safe = false;
+    frame();
+    CHECK(kst_prog_journal_held(&g_p));
+    frames(100);
+    writes = g_file_writes;
+    g_card = true;
+    frames(100);
+    CHECK(g_file_writes > writes);
+    CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
+    CHECK_STR_EQ(g_file, text);
+    CHECK(strstr(g_file, "\nport=") != NULL);
+}
+
+/* A record's port is one of the bench's. */
+TEST_CASE(a_record_with_a_port_the_bench_has_not_is_refused)
+{
+    char text[KST_PROG_FILE_MAX];
+
+    for (unsigned port = 0; port < 16u; ++port) {
+        kst_prog_t w, p;
+        size_t len;
+
+        kst_prog_init(&w);
+        w.journal = true;
+        w.journal_port = (uint8_t)port;
+        w.journal_img = sim_bench_image();
+        w.journal_target = sim_bench_image();
+        len = kst_prog_file_text(&w, text, sizeof(text));
+        CHECK(len != 0u);
+        kst_prog_init(&p);
+        if (port < LINK_PG_PORTS_MAX) {
+            CHECK(kst_prog_file_load(&p, text, len));
+            CHECK_EQ(kst_prog_journal_port(&p), port);
+        } else {
+            CHECK(!kst_prog_file_load(&p, text, len));
+            CHECK_EQ(kst_prog_message(&p)->id, KST_PROG_MSG_FILE_BAD);
+            CHECK(!kst_prog_journal_held(&p));
+        }
     }
 }
 
@@ -5461,11 +5882,14 @@ TEST_CASE(a_record_is_held_against_the_servo_whenever_the_card_comes)
             }
         }
         if (who == 0u) {
-            /* The servo holds the record's image: nothing is left of it. */
+            /* The servo holds the record's image: the record stands and
+             * asks whether this is the servo. */
             CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
-            CHECK(!kst_prog_journal(&g_p));
+            CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_JOURNAL_SAME);
+            CHECK(kst_prog_journal_held(&g_p));
+            CHECK(!kst_prog_journal_other(&g_p));
             CHECK(!kst_prog_in_doubt(&g_p));
-            CHECK(kst_prog_editable(&g_p));
+            CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_JOURNAL_SAME);
             continue;
         }
         CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
@@ -5680,7 +6104,7 @@ int main(void)
     RUN(a_fetch_that_brings_nothing_is_asked_again_once_a_second);
     RUN(a_later_session_writes_the_journals_image_back);
     RUN(a_second_cut_keeps_the_image_before_the_first_write);
-    RUN(a_journal_whose_servo_is_unchanged_or_complete_is_closed);
+    RUN(a_journal_whose_servo_is_unchanged_or_complete_asks);
     RUN(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write);
     RUN(a_journal_of_another_port_is_not_this_servos);
     RUN(a_restore_names_the_soft_limits_its_values_pass);
@@ -5710,6 +6134,15 @@ int main(void)
     RUN(a_nack_after_the_command_leaves_the_image_unusable);
     RUN(a_restore_that_never_starts_leaves_the_pending_values);
     RUN(a_release_or_a_session_restore_that_never_starts_keeps_the_prompt);
+    RUN(a_session_restore_does_not_reach_a_swapped_servo);
+    RUN(a_write_in_doubt_ends_the_write_switch_and_keeps_the_backup);
+    RUN(a_session_restore_without_a_read_is_recorded);
+    RUN(a_write_whose_end_is_not_read_keeps_the_backup);
+    RUN(a_record_of_a_servo_with_other_settings_is_not_restored);
+    RUN(a_servo_cut_in_its_write_fits_its_record);
+    RUN(a_restore_from_the_record_files_no_half_written_servo);
+    RUN(a_record_reaches_a_card_put_in_later);
+    RUN(a_record_with_a_port_the_bench_has_not_is_refused);
     RUN(a_pass_is_taken_once_and_by_its_number_only);
     RUN(a_start_that_timed_out_in_the_queue_is_never_carried_out);
     RUN(without_a_gate_an_unanswered_start_leaves_the_servo_in_doubt);

@@ -119,8 +119,10 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_STORE_FAILED]    = { TX_KP_M_STORE_FAILED, -1 },
     [KST_PROG_MSG_FILE_BAD]        = { TX_KP_M_FILE_BAD, -1 },
     [KST_PROG_MSG_JOURNAL]         = { TX_KP_M_JOURNAL, TX_KP_M_JOURNAL_2 },
-    [KST_PROG_MSG_JOURNAL_SAME]    = { TX_KP_M_JOURNAL_SAME, -1 },
-    [KST_PROG_MSG_JOURNAL_DONE]    = { TX_KP_M_JOURNAL_DONE, -1 },
+    [KST_PROG_MSG_JOURNAL_SAME]    = { TX_KP_M_JOURNAL_ASK,
+                                       TX_KP_M_JOURNAL_SAME },
+    [KST_PROG_MSG_JOURNAL_DONE]    = { TX_KP_M_JOURNAL_ASK,
+                                       TX_KP_M_JOURNAL_DONE },
     [KST_PROG_MSG_JOURNAL_DIFF]    = { TX_KP_M_INCONSISTENT, TX_KP_M_DO_NOT_USE },
     [KST_PROG_MSG_FORGOTTEN]       = { TX_KP_M_FORGOTTEN, -1 },
     [KST_PROG_MSG_EDIT_HARD]       = { TX_KP_M_OUTSIDE, -1 },
@@ -748,6 +750,11 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         second = k_fixed[id][1];
     } else if (id >= KST_PROG_MSG_SES && id - KST_PROG_MSG_SES < SES_COUNT) {
         first = k_ses[id - KST_PROG_MSG_SES];
+        if (arg != 0u && (first == TX_KP_S_WRITE_FAILED
+                          || first == TX_KP_S_ROLLED_BACK)) {
+            /* Writes before the one that failed are on the servo. */
+            first = TX_KP_S_WRITE_PART;
+        }
         if (id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_FINGERPRINT) {
             second = TX_KP_M_READ_ONLY_2;
         } else if (id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_LOCKED) {
@@ -777,6 +784,9 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     /* The lines with a conversion are formatted by name, so that
      * tools/check_formats.py holds each to its argument. */
     switch (first) {
+    case TX_KP_M_JOURNAL_ASK:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_ASK), arg);
+        break;
     case TX_KP_M_WRITTEN:
         if (arg == 1u) {
             snprintf(out[n++], KST_PANEL_LINE, "%s", TR(KP_M_WRITTEN_ONE));
@@ -2200,6 +2210,16 @@ static int standing(const char *out[2], bool *warn)
         *warn = true;
         out[0] = TR(KP_M_STOPPED);
         return 1;
+    }
+    if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE) {
+        static char first[KST_PANEL_LINE];
+        const unsigned ch = (unsigned)kst_prog_journal_port(p) + 1u;
+
+        snprintf(first, sizeof(first), TR(KP_M_JOURNAL_ASK), ch);
+        out[0] = first;
+        out[1] = kst_prog_journal_asks(p) == KST_PROG_MSG_JOURNAL_SAME
+                     ? TR(KP_M_JOURNAL_SAME) : TR(KP_M_JOURNAL_DONE);
+        return 2;
     }
     if (kst_prog_journal(p)) {
         /* Static: the caller draws the line after this returns. */

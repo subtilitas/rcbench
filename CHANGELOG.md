@@ -23,7 +23,12 @@ history is in git.
   of the screen, link loss, coprocessor restart, stop, connect and leave;
   the first write of a session asks for a free horn. The coprocessor writes
   the changed registers only and reads each back. A backup is kept from the
-  first read of a session and written back by RESTORE.
+  first read of a session and written back by RESTORE to the servo it was
+  read from: a servo that differs from the backup in a register no write of
+  the session changed takes no register of it, and the port asks for a
+  read. A write that fails after earlier registers were written says that
+  those stay, and every outcome that leaves the servo in doubt switches the
+  write off.
 - SERVO screen, DUT page: PWM TARGET selects what the tester drives, the
   pins bound as SERVO PWM (OUTPUTS) or the programming port (PROG PORT), and
   PORT PWM switches the port's pulse. Sweep, hold and the automatic test
@@ -96,7 +101,12 @@ history is in git.
   starts; after a link loss, a restart, an abort or a power loss during a
   write the programmer reports that the servo may hold part of it, asks for
   a read and offers the restore. The record names its port, and a servo
-  that is not the record's takes no restore and no write. A backup whose
+  that is not the record's takes no restore and no write: one on another
+  port, or one with a register that holds neither the record's value nor
+  the write's target. A servo whose 32 registers equal the image before
+  the write or the write's target keeps the record, and the panel asks
+  whether it is the servo of the write; nothing is written until the record
+  is discarded. No backup file is saved while a record is held. A backup whose
   values pass a soft limit shows its warnings on a page of its own before
   the restore page. `KST/KST.TXT` is replaced through `KST/KST.NEW`, and a
   record the card does not take is written again every 5 s. An image that

@@ -113,7 +113,8 @@ typedef enum {
     KST_SES_ERR_LOCKED,        /**< an earlier write left the servo in doubt */
     KST_SES_ERR_BAD_PLAN,      /**< the plan is not one kst_plan.h builds */
     KST_SES_ERR_UNCONFIRMED,   /**< an unchecked restore without confirmation */
-    KST_SES_ERR_CHANGED,       /**< the servo differs from the plan's start */
+    KST_SES_ERR_CHANGED,       /**< the servo differs from the plan's start,
+                                    or is not the backup's servo */
     KST_SES_ERR_WRITE_FAILED,  /**< a write did not take; nothing half written */
     KST_SES_ERR_ROLLED_BACK,   /**< a write did not take; the field is back at
                                     its old value */
@@ -145,6 +146,13 @@ typedef struct {
     kst_stats_t stats;
     kst_reply_t last_reply;  /**< of the last transaction */
     uint32_t bad_regs;       /**< bit n: register n has no 3 equal reads */
+    uint32_t wrote_regs;     /**< bit n: the session sent a write of
+                                  register n, a write that was undone too,
+                                  or found the register changed by one of
+                                  its writes.  A restore is refused with
+                                  KST_SES_ERR_CHANGED while a register
+                                  outside this set differs from the
+                                  backup: the servo is not the backup's */
     uint32_t diff_regs;      /**< bit n: register n differs from what the
                                   operation expected */
     uint8_t result;          /**< kst_ses_t of the last operation */
@@ -197,6 +205,7 @@ typedef struct {
     uint8_t attempt;
     uint8_t first_ok;
     uint8_t dirty;
+    uint8_t unseen;          /* a write ended with the servo not read */
     uint8_t undone;
     uint8_t confirm;         /**< the running restore may be unchecked */
 } kst_session_t;
@@ -263,6 +272,13 @@ kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
  * fingerprint do not refuse it.  KST_SES_ERR_NO_PLAN at once with
  * plan_result KST_PLAN_ERR_R00.
  *
+ * The backup goes to the servo it was read from only.  The read before the
+ * first write ends the restore with KST_SES_ERR_CHANGED, nothing written,
+ * when a register outside wrote_regs differs from the backup; diff_regs
+ * names those registers.  After a write that ended without a full read of
+ * the servo (a failed read, an abort, KST_SES_ERR_TORN) the registers that
+ * differ at the next full read count as changed by that write.
+ *
  * A plan the planner marks unchecked runs with @p confirm_unchecked only.
  * Without it the operation ends with KST_SES_ERR_UNCONFIRMED when the
  * planning ends, before any frame; plan_result is KST_PLAN_OK and
@@ -306,7 +322,10 @@ const kst_plan_t *kst_session_plan(const kst_session_t *s);
  * an unchecked restore without @p confirm_unchecked.
  *
  * Then:
- *   1. Read all.  The servo must equal the plan's start image.
+ *   1. Read all.  The servo must equal the plan's start image; for a
+ *      restore see kst_session_restore().  KST_SES_ERR_CHANGED otherwise:
+ *      image stays the one held before, and kst_session_read_all() comes
+ *      before the next plan.
  *   2. Per write: the write frame, then 2 reads of that register.  Both
  *      equal to the value: next write.  Otherwise read all; a difference in
  *      any other register ends the plan with KST_SES_ERR_UNINTENDED; a

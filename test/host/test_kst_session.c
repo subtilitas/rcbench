@@ -903,7 +903,75 @@ TEST_CASE(a_servo_that_differs_from_the_plans_start_is_not_written)
     CHECK(g_ses.diff_regs == BIT(0x10));
     CHECK_EQ(g_sim.n_writes, 0);
     CHECK_EQ(g_ses.locked, 0);
-    CHECK_EQ(g_ses.image.r[0x10], 0x95);
+    /* The image held is not replaced by the one that did not fit: the
+     * next plan does not start from it. */
+    CHECK(g_ses.image.r[0x10] != 0x95);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_ERR_CHANGED);
+    CHECK_EQ(g_sim.n_writes, 0);
+}
+
+/* The backup of one servo does not reach another.  A servo that differs
+ * from the backup in a register the session never wrote is not the
+ * backup's: the restore ends before its first write, the first time and
+ * every time after, read in between or not. */
+TEST_CASE(a_restore_goes_to_the_servo_of_the_backup_only)
+{
+    static const uint8_t foreign[] = { 0x01, 0x06, 0x0E, 0x10, 0x15,
+                                       0x1D, 0x1E, 0x1F };
+    kst_plan_t plan;
+
+    for (size_t i = 0; i < sizeof(foreign); ++i) {
+        const uint8_t reg = foreign[i];
+        uint8_t before[KST_REG_COUNT];
+
+        up(&g_sim, &g_ses);
+        CHECK_EQ(g_ses.wrote_regs, 0u);
+        plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+        CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+        CHECK(g_ses.wrote_regs != 0u);
+        CHECK((g_ses.wrote_regs & BIT(reg)) == 0u);
+        /* Another servo on the line. */
+        g_sim.reg[reg] ^= 0x21u;
+        memcpy(before, g_sim.reg, sizeof(before));
+        g_sim.n_writes = 0;
+        for (unsigned again = 0; again < 3u; ++again) {
+            CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+            CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_CHANGED);
+            CHECK((g_ses.diff_regs & BIT(reg)) != 0u);
+            CHECK_EQ(g_sim.n_writes, 0);
+            CHECK(memcmp(before, g_sim.reg, sizeof(before)) == 0);
+            if (again == 1u) {
+                read_all(&g_sim, &g_ses);
+            }
+        }
+        /* The backup's servo back: the restore runs. */
+        g_sim.reg[reg] ^= 0x21u;
+        read_all(&g_sim, &g_ses);
+        CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+        CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+        CHECK(servo_holds(&g_sim, &g_ses.backup));
+        conduct(&g_sim);
+    }
+}
+
+/* What a write of the session changed beside its own register is the
+ * session's to take back, and so is what a write left unread. */
+TEST_CASE(a_restore_takes_back_what_the_sessions_writes_changed)
+{
+    kst_plan_t plan;
+
+    /* A write that lands in a second register too. */
+    up(&g_sim, &g_ses);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    sim_add_fault(&g_sim, SIM_WRITE, 0x03, 0, 3, SIM_F_WRITE_VALUE, 0x55);
+    sim_add_fault(&g_sim, SIM_WRITE, 0x03, 0, 1, SIM_F_WRITE_ALSO, 0x13);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_ERR_VERIFY);
+    CHECK((g_ses.wrote_regs & BIT(0x13)) != 0u);
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK(servo_holds(&g_sim, &g_ses.backup));
+    CHECK_EQ(g_ses.locked, 0);
+    conduct(&g_sim);
 }
 
 /* --- refusals before any frame --------------------------------------------------- */
@@ -1080,6 +1148,13 @@ TEST_CASE(an_unchecked_restore_needs_its_confirmation)
     CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_ERR_BAD_PLAN);
     CHECK_EQ(g_sim.n_writes, 0);
     plan.unchecked = 1;
+    /* Confirmed, it is taken; registers no write of the session changed
+     * are not the backup's servo, and the restore ends before a write. */
+    CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_BUSY);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_CHANGED);
+    CHECK_EQ(g_sim.n_writes, 0);
+    /* As writes of the session left it, it runs. */
+    g_ses.wrote_regs |= BIT(0x08) | BIT(0x09);
     CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_BUSY);
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
     CHECK(servo_holds(&g_sim, &first));
@@ -2284,7 +2359,8 @@ TEST_CASE(an_unchecked_restore_planned_by_the_session_ends_unconfirmed)
     CHECK(kst_field_edit(&first, KST_F_PULSE_UPPER, 0xC00));
     CHECK(kst_field_edit(&first, KST_F_UNCONT_POS, 0xBFF));
     up_with(&g_sim, &g_ses, &first);
-    /* The servo as another tool left it. */
+    /* The servo as writes of the session left it. */
+    g_ses.wrote_regs |= BIT(0x08) | BIT(0x09);
     g_sim.reg[0x08] = 0xFF;
     g_sim.reg[0x09] = (uint8_t)((g_sim.reg[0x09] & 0x0Fu) | 0xB0u);
     read_all(&g_sim, &g_ses);
@@ -2536,10 +2612,12 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_restored_and_not_edited)
     CHECK_EQ(g_ses.result, KST_SES_ERR_FINGERPRINT);
     CHECK_EQ(kst_session_release_pairing(&g_ses), KST_SES_ERR_FINGERPRINT);
     CHECK_EQ(g_sim.n_frames, frames);
+    /* The restore is taken, and ends before a write: register 06 is one
+     * the session never wrote. */
     CHECK_EQ(kst_session_restore(&g_ses, false), KST_SES_BUSY);
-    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
-    CHECK_EQ(g_sim.reg[0x06], 0x04);
-    CHECK_EQ(g_ses.fingerprint_ok, 1);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_CHANGED);
+    CHECK_EQ(g_sim.reg[0x06], 0x05);
+    CHECK_EQ(g_sim.n_frames > frames, 1);
     conduct(&g_sim);
 }
 
@@ -2744,6 +2822,8 @@ int main(void)
     RUN(a_write_that_lands_in_a_second_register_is_caught_by_the_verify);
     RUN(an_undo_that_lands_in_a_second_register_is_caught);
     RUN(a_servo_that_differs_from_the_plans_start_is_not_written);
+    RUN(a_restore_goes_to_the_servo_of_the_backup_only);
+    RUN(a_restore_takes_back_what_the_sessions_writes_changed);
     RUN(a_plan_that_no_planner_builds_is_refused);
     RUN(a_servo_that_fails_the_fingerprint_is_read_only);
     RUN(releasing_the_pairing_and_restoring_it);

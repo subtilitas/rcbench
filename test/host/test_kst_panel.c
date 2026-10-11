@@ -1793,6 +1793,9 @@ TEST_CASE(a_write_the_servo_does_not_take_names_the_register)
         for (unsigned done = 0u; done <= 2u; ++done) {
             m.arg = (uint16_t)done;
             CHECK_EQ(kst_panel_message_lines(&m, t), 2);
+            /* With writes before it on the servo the line says so. */
+            CHECK_STR_EQ(t[0], done == 0u ? TR(KP_S_WRITE_FAILED)
+                                          : TR(KP_S_WRITE_PART));
             if (done == 1u) {
                 snprintf(want, sizeof(want), TR(KP_AT_REG_ONE), 3u);
             } else {
@@ -3302,6 +3305,79 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     CHECK_EQ(g_rig.sim.n_writes, 0);
 }
 
+/* A servo that holds what the record says the servo held before the write
+ * may be a second one with the same settings: the record stays, the two
+ * lines ask with the port's number, and nothing is written until the record
+ * is discarded from RESTORE. */
+TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        char file[KST_PROG_FILE_MAX];
+        char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+        char first[KST_PANEL_LINE];
+        size_t len;
+
+        ui_text_set_language(UI_LANG_EN);
+        fresh();
+        g_rig.card = true;
+        cut_write();
+        len = g_rig.file_len;
+        memcpy(file, g_rig.file, len + 1u);
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.card = true;
+        CHECK(kst_panel_file_load(file, len));
+        /* The twin: the servo as the record's image has it. */
+        memcpy(g_rig.sim.reg, M->journal_img.r, sizeof(M->journal_img.r));
+        link_up();
+        tap(val(PG_SERVO, 0, 0));           /* CONNECT */
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
+        CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+        snprintf(first, sizeof(first), TR(KP_M_JOURNAL_ASK),
+                 (unsigned)RIG_PORT + 1u);
+        CHECK_STR_EQ(t[0], first);
+        CHECK_STR_EQ(t[1], TR(KP_M_JOURNAL_SAME));
+        CHECK(M->journal);
+        show();
+        /* The switch does not open a write. */
+        tap(val(PG_SERVO, 3, 0));
+        hold(2.1f);
+        CHECK(!kst_prog_write_enabled(M));
+        CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
+        tap(kst_panel_tab_rect(PG_SERVO));
+        /* RESTORE holds the one entry that discards the record. */
+        tap(val(PG_SERVO, 2, 0));
+        CHECK_EQ(kst_panel_editor(), 2);
+        CHECK_EQ(choices(), 1);
+        CHECK(choice(TR(KP_FORGET)) == 0);
+        tap(kst_panel_choice_rect(0));
+        CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+        CHECK(!M->journal);
+        rig_frames(50);
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+        enable();
+
+        /* The same with the write's target on the servo. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.card = true;
+        CHECK(kst_panel_file_load(file, len));
+        memcpy(g_rig.sim.reg, M->journal_target.r,
+               sizeof(M->journal_target.r));
+        link_up();
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_DONE);
+        CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+        CHECK_STR_EQ(t[0], first);
+        CHECK_STR_EQ(t[1], TR(KP_M_JOURNAL_DONE));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* A card put in after the start: its record is read then, and a record
  * the model holds is not replaced by it. */
 TEST_CASE(the_record_of_a_card_put_in_late_is_read)
@@ -4297,6 +4373,7 @@ int main(void)
     RUN(a_restore_with_no_card_shows_its_warnings_and_the_missing_file);
     RUN(a_restore_and_a_release_whose_card_is_pulled_come_back_too);
     RUN(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named);
+    RUN(a_servo_that_fits_the_record_is_asked_about);
     RUN(the_record_of_a_card_put_in_late_is_read);
     RUN(a_late_card_does_not_replace_a_record_that_was_read_back);
     RUN(the_backup_of_the_session_is_not_offered_for_another_servo);

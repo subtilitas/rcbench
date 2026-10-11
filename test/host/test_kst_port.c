@@ -1554,7 +1554,8 @@ TEST_CASE(an_unchecked_restore_ends_unconfirmed_when_its_plan_is_there)
     CHECK(kst_field_edit(&first, KST_F_PULSE_UPPER, 0xC00));
     CHECK(kst_field_edit(&first, KST_F_UNCONT_POS, 0xBFF));
     up_holding(SUPPLY_NONE, &first);
-    /* The servo as another tool left it. */
+    /* The servo as writes of the session left it. */
+    g_port.session.wrote_regs |= (1u << 0x08) | (1u << 0x09);
     g_sim.reg[0x08] = 0xFF;
     g_sim.reg[0x09] = (uint8_t)((g_sim.reg[0x09] & 0x0Fu) | 0xB0u);
     read_all();
@@ -1703,6 +1704,56 @@ TEST_CASE(a_restore_returns_the_servo_to_the_backup)
     CHECK(same(&sv, &backup));
     CHECK_EQ(g_sim.n_writes, 2);
     conduct();
+}
+
+/* A restore that finds another servo than the backup's writes nothing, and
+ * the port takes a full read and nothing else after it. */
+TEST_CASE(a_restore_to_another_servo_writes_nothing_and_asks_for_a_read)
+{
+    kst_image_t backup, target, sv, other;
+    uint16_t crc;
+
+    up();
+    backup = page_image();
+    target = edited(KST_F_DEAD_BAND, 50);
+    write_image(&target, 0);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_sim.n_writes, 1);
+    /* Another servo: registers no write of the session changed. */
+    g_sim.reg[0x1E] ^= 0x21u;
+    g_sim.reg[0x15] ^= 0x21u;
+    other = servo();
+    for (unsigned again = 0; again < 2u; ++again) {
+        crc = stage(&backup, 0, 0);
+        CHECK_EQ(cmd(LINK_KST_OP_RESTORE, CH, KEY, crc), 0);
+        if (again == 0u) {
+            CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+            settle();
+            CHECK_EQ(result(), KST_SES_ERR_CHANGED);
+        } else {
+            CHECK_EQ(refusal(), LINK_KST_REF_MUST_READ);
+        }
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        CHECK(!flag(LINK_KS_F_LOCKED));
+        CHECK_EQ(g_sim.n_writes, 1);
+        sv = servo();
+        CHECK(same(&sv, &other));
+    }
+    write_image(&target, 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_MUST_READ);
+    /* Read, the port takes commands again; the backup still does not go
+     * to this servo. */
+    read_all();
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    crc = stage(&backup, 0, 0);
+    CHECK_EQ(cmd(LINK_KST_OP_RESTORE, CH, KEY, crc), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(result(), KST_SES_ERR_CHANGED);
+    CHECK_EQ(g_sim.n_writes, 1);
+    sv = servo();
+    CHECK(same(&sv, &other));
 }
 
 TEST_CASE(a_release_of_pairing_runs_the_planners_plan)
@@ -3939,6 +3990,7 @@ int main(void)
     RUN(a_read_that_fails_names_its_register);
     RUN(verify_compares_the_servo_with_the_staged_image);
     RUN(a_restore_returns_the_servo_to_the_backup);
+    RUN(a_restore_to_another_servo_writes_nothing_and_asks_for_a_read);
     RUN(a_release_of_pairing_runs_the_planners_plan);
     RUN(a_stop_before_the_first_frame_returns_the_port_to_pwm);
     RUN(a_stop_mid_frame_lets_the_frame_end_and_asks_for_a_full_read);

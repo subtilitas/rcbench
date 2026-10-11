@@ -352,7 +352,10 @@ The switch goes off:
 - at **STOP** and at every stop the bench latches,
 - with every **CONNECT** and every **LEAVE**,
 - when a read finds another image than the one held,
-- when a read fails the fingerprint.
+- when a read fails the fingerprint,
+- when a write, a restore, a read or **VERIFY** ends with the servo in
+  doubt: the read that follows does not switch it on again,
+- when a read finds a servo that fits the record of an interrupted write.
 
 With the switch off the panel sends no write, no restore and no pairing
 release, and the coprocessor refuses one that arrives without the switch's
@@ -387,7 +390,9 @@ starting is not that first write: the line stays for the next one.
    [a new file on the card](#the-backup-before-the-first-write). A card
    that is mounted and does not take the file ends the write. With no card
    mounted the write page says that no file is saved, and the write goes
-   without one.
+   without one. While the record of an interrupted write is held no file is
+   saved: the servo may be half written, and the record holds its values as
+   found.
 2. The panel records the image the servo holds, the image the write is to
    leave and the port: with a card in `KST/KST.TXT`, without one in memory.
    The page says which. With a card that takes no file within 3 s the write
@@ -415,6 +420,7 @@ written; register 1D is written by **RELEASE PAIRING** only.
 | `Too many changes to plan at once. Nothing was written.` `Split the change: write fewer values at a time.` | holds what it held; nothing was sent. The planner stops after 216,000 units of work without a verdict. The session goes on and the pending values stay |
 | `A write did not take. Nothing is half written.` | holds what it held |
 | `A write did not take. The value is back as it was.` | holds what it held |
+| `A write did not take. The writes before it stay. READ ALL.` | holds the registers written before the one that failed, and the old value in the others. The second line names the register and the count of writes done. The write switch goes off, and **READ ALL** comes before the next write |
 | `A write did not take and could not be undone.` | is in doubt: [restore](#an-interrupted-write) |
 | `A register changed that was not written.` | is in doubt |
 | `The servo does not hold the expected values.` | is in doubt |
@@ -636,7 +642,7 @@ the write switch and a 2 s hold.
 
 | Source | Written back | Not restored |
 | --- | --- | --- |
-| `Backup of this session, as first read` | every register that differs, by the coprocessor from the image it holds itself; without the limit checks, and the page says so | nothing |
+| `Backup of this session, as first read` | every register that differs, by the coprocessor from the image it holds itself; without the limit checks, and the page says so. A register that differs and that no write of the session changed ends the restore before its first write | nothing |
 | `Values before the interrupted write` | the editable fields, as a write with every limit check | the locked fields, register 00 and the pairing value |
 
 A restore from the panel's image is an ordinary write: the coprocessor
@@ -667,6 +673,22 @@ A write that the card, a stop or the coprocessor keeps from starting, or
 that the coprocessor ends with no register written, counts as no write: its
 fields still tell the servos apart. So does a write that is undone and
 read back with no write counted done.
+
+The coprocessor makes the comparison again, register by register, on the
+read that precedes the first write of a restore of the session's backup.
+It holds the set of registers that the writes of the session changed. A
+servo that differs from the backup in any other register is not the
+backup's servo: the restore ends with `The servo differs from the read.
+READ ALL.`, no register is written, the write switch goes off and the port
+takes **READ ALL** and nothing else until the servo is read. The restore
+therefore does not repair a register that something other than a write of
+the session changed. After a write that ended without a full read of the
+servo, the registers that differ at the next full read count as changed by
+that write.
+
+While a read is owed after a write in doubt and the session is not locked,
+the restore list does not hold the session's backup: `Read the servo first:
+READ ALL.`
 
 A restore, a pairing release or a write that the card or the panel's
 control task keeps from starting leaves the pending values, the write
@@ -709,8 +731,8 @@ record:
 
 | The servo holds | Message | Then |
 | --- | --- | --- |
-| the image before the write | `The servo holds what it held before the write.` | the record is cleared |
-| the image the write was to leave | `The servo holds the values of the interrupted write.` | the record is cleared |
+| the image before the write | `Is this the servo of the interrupted write on port 1?` `It holds the old values. If yes: RESTORE, discard record.` | the record stays until it is discarded |
+| the image the write was to leave | `Is this the servo of the interrupted write on port 1?` `It holds the new values. If yes: RESTORE, discard record.` | the record stays until it is discarded |
 | anything else | `The servo holds a mix of old and new values.` `Do not use this servo. Restore the backup: RESTORE.` | **RESTORE** offers the session's backup while the session lives, and `Values before the interrupted write` |
 
 ![The servo holds a mix](img/servo-kst-journal.png)
@@ -718,20 +740,33 @@ record:
 `Discard the record of the interrupted write` in the restore list removes
 the record without a write.
 
-The record belongs to one servo. A servo read on another port, or one
-that differs from the record in a value that neither the write nor an edit
-changes, is not that servo: `This is not the servo of the interrupted
-write.` `It was on port 2. RESTORE: discard the record.` Nothing is
-restored, edited or written while that stands, and **RESTORE** holds the
-discard entry only. **LEAVE** and a **CONNECT** of the write's servo bring
-the comparison above. Two servos on the same port whose locked values
-are equal are not told apart.
+A servo that holds, register for register, the image before the write or
+the image the write was to leave is either the servo of the write or a
+second servo with the same settings. The panel cannot tell the two apart
+and asks. The two lines stay on the SERVO tab, the write switch does not go
+on, and no write, restore or pairing release is sent. If it is the servo of
+the write, `Discard the record of the interrupted write` in the restore
+list ends the question. If it is not, **LEAVE** keeps the record for the
+servo of the write.
+
+The record belongs to one servo. A servo read on another port is not that
+servo, and neither is one with a register that holds neither the value of
+the image before the write nor the value the write was to leave: `This is
+not the servo of the interrupted write.` `It was on port 2. RESTORE:
+discard the record.` Nothing is restored, edited or written while that
+stands, and **RESTORE** holds the discard entry only. **LEAVE** and a
+**CONNECT** of the write's servo bring the comparison above. One register
+is exempt: the low register of a field that lies in two registers and that
+the write changes, because the plan of a write may set it to a third value
+on its way.
 
 The comparison is made when the servo is read and when the record is
 loaded: a record from a card mounted with a servo already read is compared
 with that servo at once. A restore of the session's backup with no servo
-read does not belong to the record: the record stays as it is, on the
-panel and on the card.
+read does not belong to a record that is held: the record stays as it is,
+on the panel and on the card. With no record held such a restore makes its
+own, with the backup as the image the servo is to hold. A record made
+while no card is mounted is written to a card that is mounted later.
 
 ![Another servo than the record's](img/servo-kst-other.png)
 
@@ -887,8 +922,9 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - The list shows 5 files a page, sorted by name, and has no search. Files
   are not removed or renamed on the panel.
 - The record of an interrupted write names its port and holds the servo's
-  values. A second servo on that port with the same locked values is taken
-  for the first.
+  values. A second servo on that port whose 32 registers equal the image
+  before the write or the image the write was to leave is not told apart
+  from the first: the panel asks, and the answer is the operator's.
 - The replacement of `KST.TXT` through `KST.NEW` is not run on a card.
 - Without a card the record of a write is lost at power off.
 - The record of an interrupted write found at power-on is shown in the

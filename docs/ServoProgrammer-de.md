@@ -377,7 +377,12 @@ Der Schalter geht aus:
 - bei **STOP** und bei jedem Stopp, den der Prüfstand hält,
 - mit jedem **VERBINDEN** und jedem **VERLASSEN**,
 - wenn ein Lesen ein anderes Abbild findet als das gehaltene,
-- wenn ein Lesen nicht zum Fingerprint passt.
+- wenn ein Lesen nicht zum Fingerprint passt,
+- wenn ein Schreiben, ein Zurückspielen, ein Lesen oder **PRÜFEN** mit
+  einem unklaren Servo endet: das Lesen danach schaltet ihn nicht wieder
+  ein,
+- wenn ein Lesen ein Servo findet, das zum Vermerk eines unterbrochenen
+  Schreibens passt.
 
 Bei ausgeschaltetem Schalter sendet das Panel kein Schreiben, kein
 Zurückspielen und kein Lösen des Pairings, und der Koprozessor lehnt eines
@@ -415,7 +420,10 @@ ist nicht dieses erste Schreiben: die Zeile bleibt für das nächste.
    [eine neue Datei auf der Karte](#das-backup-vor-dem-ersten-schreiben).
    Eine eingehängte Karte, die die Datei nicht annimmt, beendet das
    Schreiben. Ohne eingehängte Karte sagt die Schreibseite, dass keine
-   Datei gespeichert wird, und das Schreiben läuft ohne eine.
+   Datei gespeichert wird, und das Schreiben läuft ohne eine. Solange der
+   Vermerk eines unterbrochenen Schreibens gehalten wird, wird keine Datei
+   gespeichert: das Servo kann halb geschrieben sein, und der Vermerk hält
+   seine Werte, wie sie vorgefunden wurden.
 2. Das Panel vermerkt das Abbild, das das Servo hält, das Abbild, das das
    Schreiben hinterlassen soll, und den Port: mit Karte in `KST/KST.TXT`,
    ohne im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte,
@@ -445,6 +453,7 @@ nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
 | `Zu viele Änderungen für einen Plan. Nichts geschrieben.` `Änderung teilen: weniger Werte auf einmal schreiben.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216 000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
 | `Schreiben nicht übernommen. Nichts ist halb geschrieben.` | hält, was es hielt |
 | `Schreiben nicht übernommen. Der Wert ist wieder wie zuvor.` | hält, was es hielt |
+| `Nicht übernommen. Frühere Werte bleiben. ALLES LESEN.` | hält die Register, die vor dem fehlgeschlagenen geschrieben wurden, und in den übrigen den alten Wert. Die zweite Zeile nennt das Register und die Zahl der erledigten Schreibvorgänge. Der Schreibschalter geht aus, und **ALLES LESEN** kommt vor dem nächsten Schreiben |
 | `Schreiben nicht übernommen und nicht rückgängig zu machen.` | ist unklar: [zurückspielen](#ein-unterbrochenes-schreiben) |
 | `Ein Register änderte sich, das nicht geschrieben wurde.` | ist unklar |
 | `Das Servo hält nicht die erwarteten Werte.` | ist unklar |
@@ -680,7 +689,7 @@ Jedes Zurückspielen braucht den Schreibschalter und 2 s Halten.
 
 | Quelle | Zurückgeschrieben | Nicht zurückgespielt |
 | --- | --- | --- |
-| `Backup dieser Sitzung, wie zuerst gelesen` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es | nichts |
+| `Backup dieser Sitzung, wie zuerst gelesen` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es. Ein abweichendes Register, das kein Schreiben der Sitzung geändert hat, beendet das Zurückspielen vor seinem ersten Schreiben | nichts |
 | `Werte vor dem unterbrochenen Schreiben` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
 
 Ein Zurückspielen aus dem Abbild des Panels ist ein gewöhnliches
@@ -716,6 +725,23 @@ geschrieben ist, zählt nicht als Schreiben: seine Felder unterscheiden
 die Servos weiterhin. Dasselbe gilt für ein Schreiben, das rückgängig
 gemacht und zurückgelesen ist, ohne dass ein Schreiben als erledigt
 gezählt ist.
+
+Der Koprozessor vergleicht noch einmal, Register für Register, bei der
+Lesung vor dem ersten Schreiben eines Zurückspielens des Backups der
+Sitzung. Er hält die Menge der Register, die die Schreibvorgänge der
+Sitzung geändert haben. Ein Servo, das in einem anderen Register vom Backup
+abweicht, ist nicht das Servo des Backups: das Zurückspielen endet mit
+`Das Servo weicht vom Gelesenen ab. ALLES LESEN.`, kein Register wird
+geschrieben, der Schreibschalter geht aus, und der Port nimmt nur
+**ALLES LESEN** an, bis das Servo gelesen ist. Das Zurückspielen repariert
+deshalb kein Register, das etwas anderes als ein Schreiben der Sitzung
+geändert hat. Nach einem Schreiben, das ohne vollständige Lesung des Servos
+endete, zählen die Register, die bei der nächsten vollständigen Lesung
+abweichen, als von diesem Schreiben geändert.
+
+Solange nach einem unklaren Schreiben eine Lesung aussteht und die Sitzung
+nicht gesperrt ist, enthält die Liste zum Zurückspielen das Backup der
+Sitzung nicht: `Zuerst das Servo lesen: ALLES LESEN.`
 
 Ein Zurückspielen, ein Lösen des Pairings oder ein Schreiben, das die Karte
 oder die Control-Task des Panels nicht starten lässt, lässt die offenen
@@ -763,8 +789,8 @@ aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 
 | Das Servo hält | Meldung | Danach |
 | --- | --- | --- |
-| das Abbild vor dem Schreiben | `Das Servo hält, was es vor dem Schreiben hielt.` | der Vermerk ist gelöscht |
-| das Abbild, das das Schreiben hinterlassen sollte | `Das Servo hält die Werte des unterbrochenen Schreibens.` | der Vermerk ist gelöscht |
+| das Abbild vor dem Schreiben | `Ist dies das Servo des unterbrochenen Schreibens, Port 1?` `Es hält alte Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo des unterbrochenen Schreibens, Port 1?` `Es hält neue Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
 | etwas anderes | `Das Servo hält eine Mischung alter und neuer Werte.` `Servo nicht benutzen. Backup zurück: ZURÜCKSPIELEN.` | **ZURÜCKSPIELEN** bietet das Backup der Sitzung an, solange die Sitzung lebt, und `Werte vor dem unterbrochenen Schreiben` |
 
 ![Das Servo hält eine Mischung](img/de/servo-kst-journal.png)
@@ -772,22 +798,37 @@ aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 `Vermerk des unterbrochenen Schreibens verwerfen` in der Liste entfernt den
 Vermerk ohne ein Schreiben.
 
+Ein Servo, das Register für Register das Abbild vor dem Schreiben oder das
+Abbild hält, das das Schreiben hinterlassen sollte, ist entweder das Servo
+des Schreibens oder ein zweites Servo mit denselben Einstellungen. Das
+Panel kann die beiden nicht unterscheiden und fragt. Die zwei Zeilen
+bleiben auf dem Tab SERVO stehen, der Schreibschalter geht nicht an, und
+kein Schreiben, kein Zurückspielen und keine Pairing-Freigabe wird
+gesendet. Ist es das Servo des Schreibens, beendet `Vermerk des
+unterbrochenen Schreibens verwerfen` in der Liste die Frage. Ist es das
+nicht, behält **VERLASSEN** den Vermerk für das Servo des Schreibens.
+
 Der Vermerk gehört zu einem Servo. Ein Servo, das an einem anderen Port
-gelesen wird oder vom Vermerk in einem Wert abweicht, den weder das
-Schreiben noch eine Änderung verändert, ist nicht dieses Servo: `Das ist
-nicht das Servo des unterbrochenen Schreibens.` `Es war an Port 2.
-ZURÜCKSPIELEN: Vermerk verwerfen.` Solange das steht, wird nichts
-zurückgespielt, geändert oder geschrieben, und **ZURÜCKSPIELEN** enthält
-nur den Eintrag zum Verwerfen. **VERLASSEN** und ein **VERBINDEN** des
-Servos des Schreibens bringen den Vergleich von oben. Zwei Servos am selben
-Port mit gleichen gesperrten Werten werden nicht unterschieden.
+gelesen wird, ist nicht dieses Servo, und ebenso wenig eines mit einem
+Register, das weder den Wert des Abbilds vor dem Schreiben noch den Wert
+hält, den das Schreiben hinterlassen sollte: `Das ist nicht das Servo des
+unterbrochenen Schreibens.` `Es war an Port 2. ZURÜCKSPIELEN: Vermerk
+verwerfen.` Solange das steht, wird nichts zurückgespielt, geändert oder
+geschrieben, und **ZURÜCKSPIELEN** enthält nur den Eintrag zum Verwerfen.
+**VERLASSEN** und ein **VERBINDEN** des Servos des Schreibens bringen den
+Vergleich von oben. Ein Register ist ausgenommen: das niedrige Register
+eines Felds, das in zwei Registern liegt und das das Schreiben ändert, weil
+der Plan eines Schreibens es unterwegs auf einen dritten Wert setzen kann.
 
 Der Vergleich findet statt, wenn das Servo gelesen wird und wenn der
 Vermerk geladen wird: ein Vermerk von einer Karte, die mit einem schon
 gelesenen Servo eingebunden wird, wird sofort mit diesem Servo verglichen.
 Ein Zurückspielen des Backups der Sitzung ohne gelesenes Servo gehört nicht
-zum Vermerk: der Vermerk bleibt, wie er ist, auf dem Panel und auf der
-Karte.
+zu einem gehaltenen Vermerk: der Vermerk bleibt, wie er ist, auf dem Panel
+und auf der Karte. Ohne gehaltenen Vermerk legt ein solches Zurückspielen
+seinen eigenen an, mit dem Backup als dem Abbild, das das Servo halten
+soll. Ein Vermerk, der ohne eingehängte Karte entsteht, wird auf eine
+später eingehängte Karte geschrieben.
 
 ![Ein anderes Servo als das des Vermerks](img/de/servo-kst-other.png)
 
@@ -959,8 +1000,10 @@ Codes.
 - Die Liste zeigt 5 Dateien je Seite, nach Namen sortiert, und hat keine
   Suche. Dateien werden auf dem Panel nicht entfernt oder umbenannt.
 - Der Vermerk eines unterbrochenen Schreibens nennt seinen Port und hält
-  die Werte des Servos. Ein zweites Servo an diesem Port mit denselben
-  gesperrten Werten wird für das erste gehalten.
+  die Werte des Servos. Ein zweites Servo an diesem Port, dessen 32 Register
+  dem Abbild vor dem Schreiben oder dem Abbild gleichen, das das Schreiben
+  hinterlassen sollte, wird vom ersten nicht unterschieden: das Panel
+  fragt, und die Antwort gibt der Bediener.
 - Das Ersetzen von `KST.TXT` über `KST.NEW` ist nicht auf einer Karte
   gelaufen.
 - Ohne Karte geht der Vermerk eines Schreibens beim Ausschalten verloren.

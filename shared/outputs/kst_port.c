@@ -204,6 +204,11 @@ static void session_done(kst_port_t *p, kst_ses_t r)
     if (r == KST_SES_OK && p->op == (uint8_t)LINK_KST_OP_READ_ALL) {
         p->must_read = 0;
     }
+    if (r == KST_SES_ERR_CHANGED) {
+        /* The servo is not the one the session knows: nothing but a read
+         * goes to it. */
+        p->must_read = 1;
+    }
     op_end(p, r);
     if (r == KST_SES_ERR_NO_PLAN) {
         /* The planner's verdict, as the page numbers it. */
