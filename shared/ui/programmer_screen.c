@@ -289,8 +289,10 @@ static const proto_t k_protos[] = {
       k_escape32, 6, CLASS_ESC },
     { "VESC",     TX_PG_TRANSPORT_PACKETS, TX_PG_DEVICE_VESC,
       k_vesc,     5, CLASS_ESC },
-    /* A model name and nothing to translate: the device line is the name. */
-    { "Hitec",    TX_PG_TRANSPORT_HITEC,   TX_COUNT,
+    /* A maker's servos and no firmware name: the row is named in the
+     * panel's language, by proto_name().  A model name and nothing to
+     * translate: the device line is the name. */
+    { NULL,       TX_PG_TRANSPORT_HITEC,   TX_COUNT,
       k_hitec,    8, CLASS_SERVO },
 };
 #define PROTO_COUNT ((int)(sizeof(k_protos) / sizeof(k_protos[0])))
@@ -487,6 +489,15 @@ static struct {
 } s;
 
 static const proto_t *proto(void) { return &k_protos[s.proto]; }
+
+/* The name on the protocol's row and in the crumb.  A firmware's name is
+ * the same in every language.  The servo row has none: it says whose
+ * servos the protocol is for, 42 cells of the heading face at most (the
+ * row's 684 px from its text to the chevron). */
+static const char *proto_name(const proto_t *p)
+{
+    return (p->name != NULL) ? p->name : TR(PG_NAME_HITEC);
+}
 
 /* The device line the protocol answers with: Hitec's is its model name. */
 static const char *device_text(const proto_t *p)
@@ -963,7 +974,8 @@ static DRAWER void draw_protocol_list(gfx_canvas_t *c)
         }
         const gfx_rect_t r = proto_row(i);
         ui_card(c, r, ui_theme_color(UI_C_PANEL));
-        gfx_text(c, r.x + 20, r.y + 12, k_protos[i].name, UI_FONT_HEAD,
+        gfx_text(c, r.x + 20, r.y + 12, proto_name(&k_protos[i]),
+                 UI_FONT_HEAD,
                  ui_theme_color(UI_C_TEXT), 1);
         /* The transport, on every row: the protocols are different
          * conversations, not variants of one, so there is no autodetect. */
@@ -4304,7 +4316,7 @@ static DRAWER void draw_page(gfx_canvas_t *c)
 {
     char trail[64];
     snprintf(trail, sizeof(trail), "%s  >  %s",
-             k_classes[s.klass].name, proto()->name);
+             k_classes[s.klass].name, proto_name(proto()));
     draw_crumb(c, trail);
     ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD), DEV_H },
             ui_theme_color(UI_C_PANEL));

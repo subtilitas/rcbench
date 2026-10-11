@@ -47,3 +47,12 @@ target_link_libraries(my_target PRIVATE rcbench_sbus)
 
 The header compiles from C++. The caller supplies the bytes and their
 arrival times.
+
+## Trademarks
+
+Futaba and S.BUS are names or trademarks of their respective owners; they
+are used here only to say which receivers this module works with. The
+project is not affiliated with them. No vendor code is included.
+The full notice is in the repository's
+[README](../../README.md#legal-notice-and-disclaimer) and in the section
+"Trademarks" of [NOTICE](../../NOTICE).

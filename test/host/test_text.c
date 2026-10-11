@@ -559,6 +559,21 @@ TEST_CASE(every_bus_verdict_has_a_heading)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The servo row of the programmer's protocol list says whose servos the
+ * protocol is for: the maker and a noun, never the maker alone.  The crumb
+ * joins it to the class name in 64 bytes, "SERVO  >  " taking 10 of them
+ * and the terminator 1. */
+TEST_CASE(a_makers_row_names_the_product)
+{
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        const char *s = ui_tr_in((ui_lang_t)l, TX_PG_NAME_HITEC);
+        CHECK(strncmp(s, "Hitec", 5) == 0);
+        CHECK(s[5] == ' ' || s[5] == '-');
+        CHECK(strlen(s) > 6u);
+        CHECK(strlen(s) <= 53u);
+    }
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
@@ -576,5 +591,6 @@ int main(void)
     RUN(the_report_labels_line_up);
     RUN(every_stick_refusal_is_translated);
     RUN(every_bus_verdict_has_a_heading);
+    RUN(a_makers_row_names_the_product);
     return test_summary("text");
 }

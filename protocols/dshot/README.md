@@ -75,3 +75,12 @@ INTERFACE library: `out_dshot.c` compiles in the target that links it, and
 
 A host build links `rcbench_dshot` alone; the folder `rp2350/` is added only
 where `pico_generate_pio_header` exists.
+
+## Trademarks
+
+DShot is a name or trademark of its owner; it is used here only to say
+which ESCs this module works with. The project is not affiliated with it. No
+code of another implementation is included.
+The full notice is in the repository's
+[README](../../README.md#legal-notice-and-disclaimer) and in the section
+"Trademarks" of [NOTICE](../../NOTICE).

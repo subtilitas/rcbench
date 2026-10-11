@@ -474,6 +474,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_PG_TRANSPORT_CLI]       = "Text-CLI über die Signalleitung",
     [TX_PG_TRANSPORT_PACKETS]   = "Pakete mit Rahmen, 115200 Baud",
     [TX_PG_TRANSPORT_HITEC]     = "Servoprotokoll der D-Serie",
+    [TX_PG_NAME_HITEC]          = "Hitec-Servo",
     [TX_PG_DEVICE_BLHELI]       = "BLHeli_S 16.7  auf  EFM8BB21",
     [TX_PG_DEVICE_AM32]         = "AM32 2.15  auf  STM32G071",
     [TX_PG_DEVICE_ESCAPE32]     = "ESCape32 v9  auf  AT32F421",
