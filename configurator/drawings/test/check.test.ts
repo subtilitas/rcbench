@@ -113,6 +113,20 @@ test('a part or a board without a drawing is a finding', () => {
   const e = anchors();
   delete e.files['ina228--matek.svg'];
   assert.deepEqual(checkPins(CATALOGUE, e).filter((x) => x.id === 'no-drawing').map((x) => x.msg), ['part ina228: no drawing for matek']);
+  // A drawing of a board the part does not name: no setup selects it.
+  const o = anchors();
+  o.files['tap--foo.svg'] = { ...structuredClone(o.files['tap.svg']!), variant: 'foo' };
+  assert.deepEqual(checkPins(CATALOGUE, o).map((x) => x.msg), ['tap--foo.svg: part tap names no board foo']);
+  o.files['ina228--foo.svg'] = { ...structuredClone(o.files['ina228--xt90.svg']!), variant: 'foo' };
+  has(checkPins(CATALOGUE, o), 'no-drawing', /ina228--foo\.svg: part ina228 names no board foo/);
+  // Such a drawing does not stand in for the drawing of the part.
+  delete o.files['tap.svg'];
+  has(checkPins(CATALOGUE, o), 'no-drawing', /part tap: no drawing$/);
+  for (const name of ['toString', '__proto__']) {
+    const p = anchors();
+    p.files[`tap--${name}.svg`] = { ...structuredClone(p.files['tap.svg']!), variant: name };
+    has(checkPins(CATALOGUE, p), 'no-drawing', /names no board/);
+  }
   const b = anchors();
   b.files['other.svg'] = b.files['tap.svg']!;
   delete b.files['tap.svg'];
@@ -278,7 +292,16 @@ test('an anchor outside the viewBox, without a side or with a shared label id is
   assert.deepEqual(at(w, h), []);
   has(at(w + 0.1, 10), 'anchor', /lies outside the viewBox/);
   has(at(10, -0.1), 'anchor', /lies outside the viewBox/);
-  has(at(Number.NaN, 10), 'anchor', /lies outside the viewBox/);
+  for (const v of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, null, '10', undefined]) {
+    has(at(v as number, 10), 'anchor', /is not a pair of finite numbers/);
+    has(at(10, v as number), 'anchor', /is not a pair of finite numbers/);
+  }
+  // The table as the file holds it: JSON writes a coordinate that is not finite as null.
+  const text = structuredClone(rec);
+  text.pins['NC1']!.x = Number.NaN;
+  const read = JSON.parse(JSON.stringify(text)) as typeof rec;
+  assert.equal(read.pins['NC1']!.x, null);
+  assert.equal(checkRecord('estop.svg', read, {}).length, 1);
   const side = structuredClone(rec);
   (side.pins['NC1'] as { side: string }).side = 'X';
   has(checkRecord('estop.svg', side, {}), 'anchor', /has no side N, E, S or W/);
@@ -323,6 +346,10 @@ test('the well-formedness check accepts the subset the generator writes and name
   assert.match(malformed('<svg a=1></svg>')!, /not a tag/);
   assert.match(malformed('<svg a="1" a="2"></svg>')!, /attribute given twice/);
   assert.match(malformed('<svg>a & b</svg>')!, /bare &/);
+  assert.match(malformed('<svg id="a&b"></svg>')!, /bare & in an attribute of <svg>/);
+  assert.match(malformed('<svg><g a="1" b="x &amp y"/></svg>')!, /bare & in an attribute of <g>/);
+  assert.match(malformed('<svg><g a="&"/></svg>')!, /bare & in an attribute/);
+  assert.equal(malformed('<svg a="x &amp; y &#38; &#x26; &lt;"><g b="&quot;"/></svg>'), null);
   assert.match(malformed('<svg>a > b</svg>')!, /bare >/);
   assert.match(malformed('x<svg></svg>')!, /text outside the root element/);
   assert.match(malformed('<svg></svg>x')!, /text outside the root element/);

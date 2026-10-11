@@ -20,12 +20,16 @@ export type Files = { anchors: string; svgs: Record<string, string> };
 const SIDES = ['N', 'E', 'S', 'W'];
 const VOID = /\/\s*$/;
 
+/** An `&` that starts no entity or character reference. */
+const BARE_AMP = /&(?!(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);)/;
+
 const unescape = (s: string): string =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 
 /**
  * Well-formedness of the subset of XML the generator writes: one root element,
- * every element closed in order, every attribute quoted, no stray `<` or `&`.
+ * every element closed in order, every attribute quoted, no stray `<` or `&`
+ * in text or in an attribute value.
  * Returns the first defect or null.
  */
 export function malformed(svg: string): string | null {
@@ -36,7 +40,7 @@ export function malformed(svg: string): string | null {
   while (at < svg.length) {
     const lt = svg.indexOf('<', at);
     const text = svg.slice(at, lt < 0 ? svg.length : lt);
-    if (/&(?!(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(text)) return `bare & at offset ${at}`;
+    if (BARE_AMP.test(text)) return `bare & at offset ${at}`;
     if (text.includes('>')) return `bare > at offset ${at}`;
     if (stack.length === 0 && text.trim() !== '') return `text outside the root element at offset ${at}`;
     if (lt < 0) break;
@@ -44,6 +48,7 @@ export function malformed(svg: string): string | null {
     const m = tag.exec(svg);
     if (!m) return `not a tag at offset ${lt}`;
     const [, close, name, attrs, selfClose] = m;
+    if (BARE_AMP.test(attrs ?? '')) return `bare & in an attribute of <${name}> at offset ${lt}`;
     if (close) {
       if (attrs || selfClose) return `closing tag ${name} carries attributes at offset ${lt}`;
       const open = stack.pop();
@@ -106,7 +111,9 @@ export function checkRecord(file: string, rec: DrawingRecord, svgs: Partial<Reco
   const [, , w, h] = rec.viewBox;
   const labelIds = new Set<string>();
   for (const [id, a] of Object.entries(rec.pins)) {
-    if (!(a.x >= 0 && a.x <= w && a.y >= 0 && a.y <= h)) fail(`${file}: anchor of ${id} (${a.x}, ${a.y}) lies outside the viewBox ${w} x ${h}`);
+    // A coordinate that is not a finite number reads as null from the JSON file and compares like 0.
+    if (![a.x, a.y].every((v) => typeof v === 'number' && Number.isFinite(v))) fail(`${file}: anchor of ${id} (${a.x}, ${a.y}) is not a pair of finite numbers`);
+    else if (!(a.x >= 0 && a.x <= w && a.y >= 0 && a.y <= h)) fail(`${file}: anchor of ${id} (${a.x}, ${a.y}) lies outside the viewBox ${w} x ${h}`);
     if (!SIDES.includes(a.side)) fail(`${file}: anchor of ${id} has no side N, E, S or W`);
     if (labelIds.has(a.labelId)) fail(`${file}: label id ${a.labelId} serves 2 pins`);
     labelIds.add(a.labelId);
@@ -140,7 +147,8 @@ export function checkRecord(file: string, rec: DrawingRecord, svgs: Partial<Reco
  * - `label`: a label differs from the catalogue in English or German.
  * - `map`: the map of a drawing that carries the print of its board is incomplete.
  * - `no-drawing`: a part, or one of the boards of a part, has no drawing. A part whose
- *   default board has no name of its own needs the drawing without a variant.
+ *   default board has no name of its own needs the drawing without a variant. A drawing
+ *   of a board the part does not name is a finding as well: no setup selects it.
  * - `release`: the table is of another catalogue release.
  */
 export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
@@ -152,6 +160,10 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
     const part = catalogue.parts.find((p) => p.id === rec.part);
     if (!part) { fail('anchor-without-pin', `${file}: part ${rec.part} is not in the catalogue`); continue; }
     if (file !== fileOf(rec.part, rec.variant)) fail('no-drawing', `${file}: file name does not match part ${rec.part} and variant ${rec.variant}`);
+    if (rec.variant !== null && !Object.hasOwn(part.variantName?.names ?? {}, rec.variant)) {
+      fail('no-drawing', `${file}: part ${rec.part} names no board ${rec.variant}`);
+      continue;
+    }
     drawn.add(rec.part);
     const expected = cataloguePins(catalogue, part, rec.variant);
     if (rec.catalogueMap) {
@@ -185,7 +197,7 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
       if (!anchors.files[fileOf(part.id, v)]) fail('no-drawing', `part ${part.id}: no drawing for ${v}`);
     }
     const preset = DEFAULT_OPTIONS[option];
-    if (!(preset in names) && drawn.has(part.id) && !anchors.files[fileOf(part.id, null)]) {
+    if (!Object.hasOwn(names, preset) && drawn.has(part.id) && !anchors.files[fileOf(part.id, null)]) {
       fail('no-drawing', `part ${part.id}: no drawing for the default ${preset}`);
     }
   }
