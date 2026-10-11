@@ -300,15 +300,49 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
-    test('a part that nothing else follows leaves at once, a part held by a variant names the variant', async ({ page }) => {
+    test('a part that nothing else follows asks as well, and leaves by the confirming answer alone', async ({ page }) => {
       const seen = watch(page);
-      await open(page, '#v=1&p=usbtap,sd');
-      await tabTo(page, 'rm-usbtap');
-      await page.keyboard.press('Enter');
-      await expect(page.locator('#rmwarn')).toHaveCount(0);
-      await expect(page).toHaveURL(/#v=1&p=sd$/);
-      await expect(page.locator('#h-parts')).toBeFocused();
-      await expect(page.locator('#live')).toHaveText(new RegExp(`^${short('usbtap')} removed\\. `));
+      for (const lang of LANGS) {
+        const tail = lang === 'en' ? '' : '&l=de';
+        const hash = `#v=1&p=sd,usbtap${tail}`;
+        await open(page, hash);
+        await tabTo(page, 'rm-usbtap');
+        await page.keyboard.press('Enter');
+        const warning = page.getByRole('alertdialog', { name: t(lang, 'rmAsk', { p: short('usbtap', lang) }) });
+        await expect(warning).toBeVisible();
+        await expect(warning).toBeInViewport();
+        await expect(page.locator('#rmwarn-d')).toHaveText(STRINGS.rmPlain[col(lang)]);
+        await expect(page.locator('#rm-yes')).toHaveText(STRINGS.rmYesPlain[col(lang)]);
+        await expect(page.locator('#rm-no')).toHaveText(STRINGS.rmNo[col(lang)]);
+        await expect(page.locator('#rm-no')).toBeFocused();
+        // Nothing left the setup by the request alone.
+        expect(new URL(page.url()).hash).toBe(hash);
+        await expect(page.locator('#rm-usbtap')).toHaveCount(1);
+        await fits(page);
+        // Escape and "Keep" keep the part and return the focus to the control.
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#rmwarn')).toHaveCount(0);
+        await expect(page.locator('#rm-usbtap')).toBeFocused();
+        expect(new URL(page.url()).hash).toBe(hash);
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#rm-no')).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#rmwarn')).toHaveCount(0);
+        await expect(page.locator('#rm-usbtap')).toBeFocused();
+        expect(new URL(page.url()).hash).toBe(hash);
+        // The confirming answer removes the part.
+        await page.keyboard.press('Space');
+        await expect(page.locator('#rm-no')).toBeFocused();
+        await page.keyboard.press('Shift+Tab');
+        await expect(page.locator('#rm-yes')).toBeFocused();
+        expect(new URL(page.url()).hash).toBe(hash);
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#rmwarn')).toHaveCount(0);
+        await expect(page.locator('#rm-usbtap')).toHaveCount(0);
+        expect(new URL(page.url()).hash).toBe(`#v=1&p=sd${tail}`);
+        await expect(page.locator('#h-parts')).toBeFocused();
+        await expect(page.locator('#live')).toContainText(t(lang, 'rmDone', { p: short('usbtap', lang) }));
+      }
 
       // The battery of the ESC leaves by the other variant of the ESC power.
       await open(page, '#v=1&f=esc');
@@ -338,9 +372,20 @@ for (const size of SIZES) {
       await expect(page.locator('#own input[aria-disabled]')).toHaveCount(0);
       await expect(page.locator('label:has(#p-pdmini)')).toContainText(`Needed by: ${fnName('servotest')}`);
 
-      // A part nothing follows leaves at once; the focus stays on its row.
+      // A part nothing follows asks as well; the tick stays until the confirming answer.
       await page.locator('#p-tap').focus();
       await page.keyboard.press('Space');
+      await expect(page.locator('#rmwarn-d')).toHaveText(STRINGS.rmPlain[0]);
+      await expect(page.locator('#rm-no')).toBeFocused();
+      await expect(page.locator('#p-tap')).toBeChecked();
+      await expect(page).toHaveURL(/#v=1&f=servotest&p=usbtap,sd,tap$/);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#p-tap')).toBeFocused();
+      await expect(page.locator('#p-tap')).toBeChecked();
+      await page.keyboard.press('Space');
+      await page.keyboard.press('Shift+Tab');
+      await expect(page.locator('#rm-yes')).toBeFocused();
+      await page.keyboard.press('Enter');
       await expect(page).toHaveURL(/#v=1&f=servotest&p=sd,usbtap$/);
       await expect(page.locator('#rmwarn')).toHaveCount(0);
       await expect(page.locator('#p-tap')).toBeFocused();

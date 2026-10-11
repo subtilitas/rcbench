@@ -5,7 +5,7 @@
 import type {
   Catalogue, FunctionId, Lang, OptionKey, Options, Part, PartId, ResolvedFunction, ResolvedPart, Selection, Setup, Text,
 } from '../../contract.ts';
-import { baseParts, groups, removalEffect } from '../core.ts';
+import { baseParts, groups, removalEffect, removalIsPlain } from '../core.ts';
 import type { Deselect, Group } from '../core.ts';
 import { esc, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
@@ -216,7 +216,8 @@ export function removalWarning(view: View): string {
   let yes = '';
   if (effect.refused === 'held') lines.push(`<p>${esc(t(lang, 'lockRule'))}</p>`);
   else {
-    if (effect.functionsOff.length === 0) lines.push(`<p>${esc(t(lang, 'rmNone'))}</p>`);
+    if (removalIsPlain(effect)) lines.push(`<p>${esc(t(lang, 'rmPlain'))}</p>`);
+    else if (effect.functionsOff.length === 0) lines.push(`<p>${esc(t(lang, 'rmNone'))}</p>`);
     else {
       const items = effect.functionsOff.map((f) =>
         `<li>${esc(functionName(view, f.id))} <small>${esc(t(lang, f.chosen ? 'stOwn' : 'stInc'))}</small></li>`);
