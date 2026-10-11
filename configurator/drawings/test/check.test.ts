@@ -127,6 +127,17 @@ test('a part or a board without a drawing is a finding', () => {
     p.files[`tap--${name}.svg`] = { ...structuredClone(p.files['tap.svg']!), variant: name };
     has(checkPins(CATALOGUE, p), 'no-drawing', /names no board/);
   }
+  // A drawing without board of a part whose default option names a board is selected by no option.
+  const orphan = anchors();
+  orphan.files['ina228.svg'] = { ...structuredClone(orphan.files['ina228--matek.svg']!), variant: null };
+  has(checkPins(CATALOGUE, orphan), 'no-drawing', /ina228\.svg: part ina228 has the board matek by default/);
+  // The coprocessor has pads by default, which is no named board: its drawing without board stays.
+  assert.deepEqual(checkPins(CATALOGUE, anchors()), []);
+  const lone = anchors();
+  lone.files['ina228.svg'] = { ...structuredClone(lone.files['ina228--matek.svg']!), variant: null };
+  delete lone.files['ina228--matek.svg'];
+  delete lone.files['ina228--xt90.svg'];
+  has(checkPins(CATALOGUE, lone), 'no-drawing', /part ina228: no drawing$/);
   const b = anchors();
   b.files['other.svg'] = b.files['tap.svg']!;
   delete b.files['tap.svg'];
@@ -191,6 +202,14 @@ test('the address pin of the INA3221 has no wire point and is not a finding; any
   assert.deepEqual(checkWires(CATALOGUE, a).filter((f) => f.id === 'wire-end'), []);
   delete a.files['ina3221.svg']!.catalogueMap!['A0'];
   has(checkWires(CATALOGUE, a), 'wire-end', /end ina3221\.A0 has no anchor/);
+  // null excuses the end of a stub only: an end of a wire needs its anchor.
+  const b = anchors();
+  b.files['ina3221.svg']!.catalogueMap!['C1A'] = null;
+  const f = checkWires(CATALOGUE, b).filter((x) => x.id === 'wire-end').map((x) => x.msg);
+  assert.deepEqual(f, ['wire 28: end ina3221.C1A has no anchor', 'wire 29: end ina3221.C1A has no anchor']);
+  const c = clone();
+  c.wires.find((w) => w.n === 31)!.kind = 'wire';
+  has(checkWires(c, anchors()), 'wire-end', /wire 31: end ina3221\.A0 has no anchor/);
 });
 
 test('a wire without a colour of the palette is a finding', () => {
@@ -354,6 +373,13 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   has(f(add('<a href="java&#115;cript:1"/>')), 'svg', /data, script or import reference/);
   has(f(add('<rect fill="url(&#x23;nothing)"/>')), 'svg', /reference to missing id nothing/);
   assert.deepEqual(f(add('<text>&#x41;&#38;&#60;&#34;</text>')), []);
+  // No animation and no inline style: both change what the attributes state.
+  has(f(add('<use href="#tap-t"><set attributeName="href" to="other.svg#x"/></use>')), 'svg', /contains an animation element/);
+  for (const el of ['animate', 'animateTransform', 'animateMotion', 'mpath', 'discard', 'SET']) has(f(add(`<${el}/>`)), 'svg', /contains an animation element/);
+  assert.deepEqual(f(add('<g><settings/></g>')).filter((x) => /animation/.test(x.msg)), []);
+  has(f(svg.replace('<svg ', '<svg style="font-family:serif" ')), 'svg', /contains a style attribute/);
+  has(f(add('<text STYLE = "font:10px serif">a</text>')), 'svg', /contains a style attribute/);
+  assert.deepEqual(f(add('<g data-style-x="1"/>')).filter((x) => /style attribute/.test(x.msg)), []);
   // No prefix but xml: the files declare no namespace prefix.
   has(f(add('<foo:rect/>')), 'svg', /element prefix foo is bound to no namespace/);
   has(f(add('<g></g><svg:g></svg:g>')), 'svg', /element prefix svg is bound to no namespace/);
