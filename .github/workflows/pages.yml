@@ -9,6 +9,10 @@ name: Configurator
 #   budget (250 kB initial, 1 MB total). The built page is an artifact of
 #   every run.
 # - smoke: Playwright against the built page at 360 px and 1280 px width.
+# - matrix: Playwright against the built page in 8 cells (360 x 740 px and
+#   1280 x 800 px, English and German, light and dark, reduced motion) and
+#   on every link of the hash corpus, in 2 shards. No test is retried. A
+#   failed test leaves its trace and screenshot as an artifact for 14 days.
 # - deploy: publishes the built page to GitHub Pages. It runs on a push to
 #   main only. A pull request builds and tests and publishes nothing.
 #
@@ -158,10 +162,62 @@ jobs:
       - name: Smoke test at 360 px and 1280 px
         run: npm run e2e
 
+      - name: Keep the traces and screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: configurator-smoke-failures
+          path: configurator/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  matrix:
+    name: Configurator matrix test (${{ matrix.shard }}/2)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: configurator
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: configurator/package-lock.json
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: configurator-dist
+          path: configurator/dist
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Matrix and corpus tests
+        run: npm run e2e:matrix -- --shard=${{ matrix.shard }}/2
+
+      - name: Keep the traces and screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: configurator-matrix-failures-${{ matrix.shard }}
+          path: configurator/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
   deploy:
     name: Publish to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [core, build, smoke]
+    needs: [core, build, smoke, matrix]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

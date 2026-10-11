@@ -29,7 +29,11 @@ between them.
 | `src/view/` | Chooser, result document, table. |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `test/` | Unit tests, run by `node --test`. |
+| `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
+| `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
+| `e2e/matrix/` | Playwright tests in 8 cells of viewport, language and theme, and on every stored link. |
+| `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/shots.ts` | Screenshots of the build. |
 
@@ -46,6 +50,7 @@ npm run build       # writes dist/
 npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB
 npx playwright install chromium
 npm run e2e         # smoke test at 360 px and 1280 px width
+npm run e2e:matrix  # matrix and corpus tests
 npm run dev         # http://localhost:5173/rcbench/
 node tools/shots.ts shots   # 24 PNG files: 2 widths, 2 themes, 2 languages, 3 selections
 ```
@@ -93,7 +98,8 @@ that touch `configurator/` or the workflow file.
 | `core` | Type check, tests, data check and coverage figure of `core/`. |
 | `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, build, size check. Keeps `dist/` as artifact `configurator-dist` for 14 days. |
 | `smoke` | Playwright against the artifact of `build`. |
-| `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the 3 other jobs pass. |
+| `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 2 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
+| `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the other jobs pass. |
 
 The `deploy` job needs the repository setting "Pages source: GitHub Actions".
 
@@ -141,4 +147,8 @@ Picture folder: 24 files, 1916.8 kB.
   the data file for one of these wires has no effect on the drawing.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
+- Below 1024 px width the Tab key puts the focus on a control that lies
+  entirely under the bottom bar (56 px) when the control is in the lowest
+  56 px of the viewport. At 360 x 740 px this is the checkbox of the 7th
+  function. The tests are in `e2e/matrix/keyboard.spec.ts`, marked `fixme`.
 - Print output: not checked on paper.
