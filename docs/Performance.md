@@ -220,14 +220,15 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 2,416 | 528 | 896 |
+| core 0 | `main` | 4,096 | 2,392 | 528 | 920 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
 13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row
 differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
-runner's packaged one.
+runner's packaged one. Core 0's chain moves with it as well: ARM GNU 14.2
+gives 2,416 bytes, and the frames below are that build's.
 
 Core 0's deepest chain is a write command to the KST programming port:
 `main` (392 bytes), `can_service` (344), `link_dev_dispatch`, `kst_write`,
@@ -241,14 +242,14 @@ ends in `panic()` as well.
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 98 such calls
+  handler, which the tool reads out of the link's page table: 91 such calls
   are reachable from `main`;
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
   `strstr()` calls it for a needle of 255 characters or more, and the two
   needles in the firmware are 3 and 5 characters. The tool fails on a
   `strstr()` call under `shared/` or `firmware/iomcu/src` whose needle is
   not a string literal under 255 characters;
-- 18 hand-written arithmetic routines of the pico-sdk carry no size in the
+- 17 hand-written arithmetic routines of the pico-sdk carry no size in the
   ELF, and their frames are not read;
 - one interrupt is counted, not a second one on top of it;
 - recursion is counted once.
