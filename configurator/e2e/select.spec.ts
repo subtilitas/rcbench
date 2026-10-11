@@ -3,6 +3,7 @@
 // their own heading, and the removal of a part by keyboard.
 
 import { expect, test } from '@playwright/test';
+import { pageOrigin } from './lib/watch.ts';
 import type { Page } from '@playwright/test';
 import type { Lang } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, groups, resolve, alwaysOn } from '../src/core.ts';
@@ -42,7 +43,7 @@ function watch(page: Page): Watch {
   const seen: Watch = { foreign: [], errors: [] };
   page.on('request', (r) => {
     const url = new URL(r.url());
-    if (url.protocol !== 'data:' && url.origin !== 'http://localhost:4173') seen.foreign.push(r.url());
+    if (url.protocol !== 'data:' && url.origin !== pageOrigin()) seen.foreign.push(r.url());
   });
   page.on('pageerror', (e) => seen.errors.push(String(e)));
   page.on('console', (m) => {

@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
 import { STRINGS, t } from '../src/i18n.ts';
+import { watchErrors as watch } from './lib/watch.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 /** The functions with a tick: those that need a part of the bench or connect a test object. */
@@ -11,22 +12,6 @@ const FUNCTIONS = CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const BASE_WIRES = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }).wires.length;
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
-
-type Watch = { foreign: string[]; errors: string[] };
-
-/** Records every request to another origin, every page error and every console error. */
-function watch(page: Page): Watch {
-  const seen: Watch = { foreign: [], errors: [] };
-  page.on('request', (r) => {
-    const url = new URL(r.url());
-    if (url.protocol !== 'data:' && url.origin !== 'http://localhost:4173') seen.foreign.push(r.url());
-  });
-  page.on('pageerror', (e) => seen.errors.push(String(e)));
-  page.on('console', (m) => {
-    if (m.type() === 'error') seen.errors.push(m.text());
-  });
-  return seen;
-}
 
 /** Loads the page with a hash. A hash-only navigation does not reload, so the page starts from blank. */
 async function open(page: Page, hash: string): Promise<void> {

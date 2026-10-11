@@ -249,6 +249,35 @@ Further tests cover the empty selection, the full selection, each part and
 each function alone, unknown ids, a missing German string, a broken source
 anchor and a data file that differs from the firmware tables.
 
+`test/property/` holds the properties of the resolver and of the data file.
+`resolver.test.ts` walks the same 2 sweeps and 30 000 mixed selections from
+the seed `0x20261011`, and refuses a space of more than 100 000 cases per
+sweep. Each setup is checked for:
+
+1. A second call and any order of the input give the same setup.
+2. A part that a function, a tick or the lock holds never leaves the setup
+   when a function or a part is added. A part that leaves is held by rules
+   alone, is not selectable, and the setup names what replaces it.
+3. A function that is enabled stays enabled when a function or a part is
+   added, unless a function forces the other value of an option, and then
+   the option names that function.
+4. Every part names at least one reason, and each reason is true.
+5. Every function that is not enabled names the parts that are missing, or
+   an option it forces has another value.
+6. Every wire ends on a pad, a CAN (Controller Area Network) terminal, or a
+   pin of a part in the setup that exists under the options of the setup.
+7. No pin and no pad carries two nets.
+8. No two wires join the same two ends, and no pin has two stubs.
+9. The two entry modes agree: the functions a set of parts enables resolve
+   to parts of that set, plus replacement parts the setup names.
+10. A setup holds released parts only, and no id of the list "not in a
+    release".
+
+`catalogue.test.ts` checks the data file without the firmware tree: unique
+ids, ids that fit the URL hash, references that resolve, parts that are
+reachable, English and German for every text, no word of the list in
+`words.ts`, a source for every record.
+
 ## Coverage
 
 Line coverage of the resolver and the groups, measured by `node --test --experimental-test-coverage`.

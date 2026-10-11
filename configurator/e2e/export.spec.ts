@@ -3,6 +3,7 @@
 
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { pageOrigin } from './lib/watch.ts';
 import type { Download, Page } from '@playwright/test';
 import { getDocument, VerbosityLevel } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { CATALOGUE, alwaysOn } from '../src/core.ts';
@@ -28,7 +29,7 @@ function watch(page: Page): Watch {
     const url = new URL(r.url());
     if (url.protocol === 'data:' || url.protocol === 'blob:') return;
     seen.requests.push(r.url());
-    if (url.origin !== 'http://localhost:4173') seen.foreign.push(r.url());
+    if (url.origin !== pageOrigin()) seen.foreign.push(r.url());
     if (CHUNK.test(url.pathname)) seen.chunk.push(r.url());
   });
   page.on('pageerror', (e) => seen.errors.push(String(e)));
