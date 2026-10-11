@@ -1,6 +1,10 @@
 /*
  * DShot out, and the reply back on the same wire.
  *
+ * Implements the DShot protocol of ESCs.  DShot is a name or trademark of
+ * its owner; it is used here only to say which ESCs this module works with
+ * (NOTICE, "Trademarks").
+ *
  * Plain DShot is one state machine holding the line low between frames.
  * Bidirectional DShot is two: a transmitter that releases the line when the
  * frame ends and raises a flag, and a receiver that starts on that flag and

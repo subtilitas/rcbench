@@ -1,6 +1,10 @@
 /*
  * Futaba S.BUS: sixteen channels in twenty-five bytes.
  *
+ * Implements the S.BUS receiver protocol of Futaba.  Futaba and S.BUS are
+ * names or trademarks of their respective owners; they are used here only to
+ * say which receivers this module works with (NOTICE, "Trademarks").
+ *
  * The wire is an inverted 8E2 UART (universal asynchronous
  * receiver-transmitter) at 100 kbaud, produced by the coprocessor's PIO
  * (programmable input/output); this file decodes the bytes.
