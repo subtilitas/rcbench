@@ -265,7 +265,7 @@ TEST_CASE(a_string_setting_is_kept_cut_and_saved_with_the_numbers)
     CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "SERVO");
     CHECK(!settings_dirty());
 
-    settings_set_text(SET_TEXT_DUT_NAME, "SAVOX SH-0255");
+    settings_set_text(SET_TEXT_DUT_NAME, "BENCH AB-0255");
     CHECK(settings_dirty());
     CHECK(settings_save());
     CHECK(!settings_dirty());

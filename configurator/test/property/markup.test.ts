@@ -26,7 +26,7 @@ import { STRINGS } from '../../src/i18n.ts';
 import { optionsOf } from '../../src/names.ts';
 import { chooser } from '../../src/view/chooser.ts';
 import type { View } from '../../src/view/chooser.ts';
-import { result, summary } from '../../src/view/result.ts';
+import { NOTICE_URL, result, summary } from '../../src/view/result.ts';
 
 const SPACE = spaceOf(CATALOGUE);
 const LANGS: Lang[] = ['en', 'de'];
@@ -176,6 +176,8 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
     for (const key of ['href', 'src']) {
       const value = tag.attrs.get(key);
       if (value === undefined || value.startsWith('#')) continue;
+      // The link to the trademark notice leaves the page when the visitor follows it. The page loads nothing from it.
+      if (key === 'href' && tag.name === 'a' && value === NOTICE_URL && tag.attrs.get('rel') === 'noopener noreferrer') continue;
       // A picture of a part, or a part drawing of the wiring picture in the language of the page.
       if (!/^pictures\/[a-z0-9-]+\.(webp|svg)$/.test(value) && !/^drawings\/(de\/)?[a-z0-9-]+\.svg$/.test(value)) out.push(`<${tag.name} ${key}="${value}"> leaves the page folder`);
     }

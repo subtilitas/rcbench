@@ -6,6 +6,10 @@
   --grey-bg: #ebedf0;
   --w-canh: #b54708; --w-canl: #1d4ed8; --w-gnd: #4b5563; --w-hb: #a21caf; --w-sda: #15803d; --w-scl: #8a5a00;
   --w-out: #6d28d9; --w-uart: #0e7490; --w-logic: #be185d; --w-power: #c0182b; --w-phase: #15191f; --w-nc: #4b5563;
+  /* The least height of a link of the bottom bar, and the height of the bar with its 1 px border.
+     The page sets --bar-clear to the rendered height: the labels wrap at a large text size. */
+  --bar-h: 56px;
+  --bar-clear: calc(var(--bar-h) + 1px);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -21,12 +25,13 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* The bottom bar covers the lowest part of the viewport: a control that takes the focus scrolls to above it. */
+html { scroll-behavior: smooth; scroll-padding-bottom: calc(var(--bar-clear) + 16px); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
   font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  padding-bottom: 72px; overflow-wrap: break-word;
+  padding-bottom: calc(var(--bar-clear) + 16px); overflow-wrap: break-word;
 }
 a { color: var(--accent); }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -203,7 +208,7 @@ td.sig svg { vertical-align: middle; margin-right: 6px; }
 footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1px solid var(--hair); padding-top: 10px; }
 
 .bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--border); z-index: 5; }
-.bar a { flex: 1 1 0; min-width: 0; min-height: 56px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600; color: var(--ink); text-decoration: none; padding: 4px 8px; border-left: 1px solid var(--hair); }
+.bar a { flex: 1 1 0; min-width: 0; min-height: var(--bar-h); display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600; color: var(--ink); text-decoration: none; padding: 4px 8px; border-left: 1px solid var(--hair); }
 .bar a:first-child { border-left: 0; }
 .bar a:focus-visible { outline-offset: -3px; }
 .bar a small { font-weight: 400; color: var(--muted); display: block; }
@@ -222,6 +227,7 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   table.wires td.note:empty { display: none; }
 }
 @media (min-width: 1024px) {
+  html { scroll-padding-bottom: 0; }
   body { padding-bottom: 0; }
   .bar { display: none; }
   .page { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 24px; align-items: start; }

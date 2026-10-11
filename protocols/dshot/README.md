@@ -78,9 +78,9 @@ where `pico_generate_pio_header` exists.
 
 ## Trademarks
 
-DShot is a name or trademark of its owner; it is used here only to say
-which ESCs this module works with. The project is not affiliated with it. No
-code of another implementation is included.
+DShot is the name of a protocol; it is used here only to say which ESCs
+this module works with. The project claims no right in the name. No code of
+another implementation is included.
 The full notice is in the repository's
 [README](../../README.md#legal-notice-and-disclaimer) and in the section
 "Trademarks" of [NOTICE](../../NOTICE).
