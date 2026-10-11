@@ -226,7 +226,7 @@ uint32_t out_store_last_erase_us(void);
 /**
  * How long the last page program held interrupts off, in microseconds.
  *
- * Zero until one has run, and not measured on hardware.  It is the window
+ * Zero until one has run.  It is not measured.  It is the window
  * every save pays, so it is the number that says whether a save can still
  * cost a frame.
  */
