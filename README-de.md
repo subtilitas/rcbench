@@ -140,8 +140,9 @@ Herstellern und wird von ihnen weder unterstützt noch gesponsert.
 
 Jeder andere Name eines Herstellers, eines Produkts, eines Protokolls oder
 einer Firmware in diesem Repository ist ein Name oder eine Marke seines
-Inhabers. Jeder steht nur dort, um Kompatibilität zu beschreiben oder ein
-Teil zu bezeichnen. Das gilt für:
+Inhabers. Jeder steht nur dort, um Kompatibilität zu beschreiben, ein Teil
+zu bezeichnen, die Quelle einer Schrift anzugeben oder eine Design- oder
+Protokoll-Referenz zu nennen. Das gilt für:
 
 - die Servo-Hersteller und -Marken Futaba, Feetech und Dynamixel;
 - die ESC-Hersteller (Electronic Speed Controller) YGE, Kontronik, Hobbywing,

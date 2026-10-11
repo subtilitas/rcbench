@@ -136,7 +136,8 @@ manufacturers and is neither supported nor sponsored by them.
 
 Every other name of a maker, product, protocol or firmware in this
 repository is a name or trademark of its owner. Each appears only to
-describe compatibility or to identify a part. This covers:
+describe compatibility, to identify a part, to credit the source of a font
+or to name a design or protocol reference. This covers:
 
 - the servo makers and brands Futaba, Feetech and Dynamixel;
 - the ESC (electronic speed controller) makers YGE, Kontronik, Hobbywing,
