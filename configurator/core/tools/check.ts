@@ -50,7 +50,7 @@ export const COMPARE_PARTNERS: ReadonlyArray<readonly [number, number]> = [
   [0, 16], [1, 17], [2, 18], [4, 20], [5, 21], [6, 22],
 ];
 
-export const LANE_MAX = { L: 16, R: 20, O: 7, channel: 4 } as const;
+export const LANE_MAX = { L: 18, R: 22, O: 7, channel: 6 } as const;
 
 const PART_ID = /^[a-z0-9]+$/;
 const PIN_ID = /^[A-Z0-9]+$/;
