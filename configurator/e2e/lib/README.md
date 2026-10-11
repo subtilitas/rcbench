@@ -11,7 +11,7 @@ test('the servo setup', async ({ page }) => {
   const seen = watchPage(page);              // before the page loads
   const selection = selectionOf({ functions: ['servo'], options: { escPower: 'pd' } });
   await openSetup(page, selection);
-  await expectSetup(page, selection);        // ticks, part cards, remove controls, table rows, drawn wires
+  await expectSetup(page, selection);        // ticks, part cards, remove controls, variant groups, table rows, drawn wires
   await expectNoHorizontalScroll(page);
   expectQuiet(seen);                         // no foreign request, no console error or warning, no failed request
 });
@@ -40,7 +40,7 @@ test('the servo setup', async ({ page }) => {
 | `axe.ts` | `axeOf(page)` | Runs axe-core at the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`. Gives one line per violated rule and the count of passed rules. |
 | `contrast.ts` | `contrastOf(page)` | Measures each distinct pair of colours the page paints: text and SVG text against the background, wires and box outlines of the drawings, borders of buttons and text fields. |
 | | `contrastProblems(contrast)` | One line per pair under its minimum: 4.5:1 for text, 3:1 for text of at least 24 px or bold text of at least 18.66 px, 3:1 for wires, outlines and borders. A ratio is compared as measured and rounded to 3 decimals in the message alone. A colour the measurement cannot read is a finding. |
-| `lib.spec.ts` | | Holds `contrast.ts` and `keyboard.ts` to documents with a known answer: text at 4.49999:1 and at 2.99995:1, a focus outline at 5 % opacity and one at 2.99:1. Runs as the project `lib` under `npm run e2e:matrix`. |
+| `lib.spec.ts` | | Holds `contrast.ts`, `keyboard.ts` and `expectSetup` to documents with a known answer: text at 4.49999:1 and at 2.99995:1, 2 colours that differ by a fraction of a step, a focus outline at 5 % opacity and one at 2.99:1, a page without a variant group. Runs as the project `lib` under `npm run e2e:matrix`. |
 
 ## Rules of use
 

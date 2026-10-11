@@ -7,7 +7,7 @@
 import { expect, test } from '@playwright/test';
 
 import { hashOf as textOf, namesLater, readCorpus, readWires } from '../../test/corpus/corpus.ts';
-import { SEL, openHash, readSetup } from '../lib/setup.ts';
+import { SEL, expectedOf, openHash, readSetup } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
 
 const corpus = readCorpus();
@@ -30,7 +30,9 @@ for (const entry of corpus.entries) {
     expect(shown.lang).toBe(want.lang);
     expect(shown.functions.filter((id) => corpus.ids.functions.includes(id))).toEqual(want.functions);
     expect(shown.parts.filter((id) => corpus.ids.parts.includes(id))).toEqual(want.parts);
-    expect(shown.options).toEqual(expect.objectContaining(Object.fromEntries(Object.entries(want.options).filter(([key]) => key in shown.options))));
+    // Each variant group the resolver states as visible is on the page, with the stored value.
+    expect(shown.options).toEqual(expectedOf({ functions: want.functions, owned: want.owned, options: want.options }).options);
+    for (const [key, value] of Object.entries(shown.options)) expect(value, key).toBe(want.options[key as keyof typeof want.options]);
     expect(shown.notices.map((n) => n.kind)).toEqual(want.notices);
     if (want.reported !== '') expect(shown.notices.map((n) => n.text).join(' ')).toContain(want.reported);
     expect(shown.wires).toEqual([...(wires[entry.name] ?? [])].sort((a, b) => a - b));

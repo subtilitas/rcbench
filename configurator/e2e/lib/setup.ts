@@ -169,26 +169,28 @@ export async function readSetup(page: Page): Promise<Shown> {
 }
 
 /** What the page shows for a selection, as the resolver states it. */
-export function expectedOf(selection: Selection): Pick<Shown, 'functions' | 'owned' | 'removable' | 'parts' | 'wires' | 'drawn'> {
+export function expectedOf(selection: Selection): Pick<Shown, 'functions' | 'owned' | 'removable' | 'options' | 'parts' | 'wires' | 'drawn'> {
   const setup = resolve(CATALOGUE, selection);
   const wires = setup.wires.map((w) => w.n).sort((a, b) => a - b);
   return {
     functions: inOrder(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), FUNCTIONS),
     owned: CATALOGUE.parts.filter((p) => p.selectable && setup.parts.some((r) => r.part.id === p.id)).map((p) => p.id),
     removable: inOrder(setup.parts.filter((p) => !p.part.locked).map((p) => p.part.id), PARTS),
+    // A variant group the resolver states as visible, with its value. No other group is on the page.
+    options: Object.fromEntries(setup.options.filter((o) => o.visible).map((o) => [o.key, o.value])),
     parts: inOrder(setup.parts.map((p) => p.part.id), PARTS),
     wires,
     drawn: wires.length,
   };
 }
 
-/** Asserts that the page shows the setup of a selection: ticks, part cards, remove controls, table rows and drawn wires. */
+/** Asserts that the page shows the setup of a selection: ticks, part cards, remove controls, variant groups, table rows and drawn wires. */
 export async function expectSetup(page: Page, selection: Selection): Promise<Shown> {
   const want = expectedOf(selection);
   await expect(page.locator(SEL.row)).toHaveCount(want.wires.length);
   const shown = await readSetup(page);
   expect({
-    functions: shown.functions, owned: shown.owned, removable: shown.removable, parts: shown.parts, wires: shown.wires, drawn: shown.drawn,
+    functions: shown.functions, owned: shown.owned, removable: shown.removable, options: shown.options, parts: shown.parts, wires: shown.wires, drawn: shown.drawn,
   }).toEqual(want);
   return shown;
 }

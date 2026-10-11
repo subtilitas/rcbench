@@ -19,7 +19,7 @@ export type Measured = {
 };
 
 export type Contrast = {
-  /** One line per distinct pair of colours and kind. */
+  /** One line per distinct pair of colours and kind, with the lowest ratio of the pair. */
   pairs: Measured[];
   /** Colours the measurement cannot read: a gradient, an image, another colour notation. */
   unknown: string[];
@@ -79,7 +79,10 @@ function measure(): Contrast {
     measured += 1;
     const show = (c: number[]): string => c.slice(0, 3).map((v) => Math.round(v)).join(',');
     const key = `${kind} ${show(fg)} ${show(bg)} ${need}`;
-    if (!pairs.has(key)) pairs.set(key, { kind, what, fg: show(fg), bg: show(bg), ratio: ratio(fg, bg), need });
+    // Colours that read the same as whole numbers share a line: the line of the lowest ratio among them.
+    const found = ratio(fg, bg);
+    const held = pairs.get(key);
+    if (!held || found < held.ratio) pairs.set(key, { kind, what, fg: show(fg), bg: show(bg), ratio: found, need });
   };
 
   // Text of the document outside the drawings.
