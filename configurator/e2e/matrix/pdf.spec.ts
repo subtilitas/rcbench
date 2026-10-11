@@ -11,17 +11,18 @@ import { t } from '../../src/i18n.ts';
 import { axeOf } from '../lib/axe.ts';
 import { contrastOf, contrastProblems } from '../lib/contrast.ts';
 import { keyboardWalk, walkProblems } from '../lib/keyboard.ts';
-import { SEL, expectSetup, openSetup } from '../lib/setup.ts';
+import { SEL, expectSetup } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
-import { SETUPS, cellOf } from './setups.ts';
+import { SETUPS, cellOf, openCase } from './setups.ts';
 
 const other = (lang: Lang): Lang => (lang === 'en' ? 'de' : 'en');
 
-for (const { name, selection } of SETUPS) {
+for (const setup of SETUPS) {
+  const { name, selection } = setup;
   test(`${name}: the PDF export gives a file and leaves the page as it is`, async ({ page }, info) => {
     const { lang } = cellOf(info);
     const seen = watchPage(page);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const before = await expectSetup(page, selection);
 
     const button = page.locator(SEL.pdf);

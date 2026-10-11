@@ -138,7 +138,7 @@ that touch `configurator/` or the workflow file.
 | `core` | Type check, tests, data check and coverage figure of `core/`. |
 | `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, build, size check. Keeps `dist/` as artifact `configurator-dist` and 2 files of the PDF export as artifact `configurator-pdf-samples`, each for 14 days. |
 | `smoke` | Playwright against the artifact of `build`: `e2e/smoke.spec.ts`, `e2e/select.spec.ts`, `e2e/export.spec.ts`. A failed test leaves its trace and screenshot as an artifact for 14 days. |
-| `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 3 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
+| `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 4 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
 | `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the other jobs pass. |
 
 The `deploy` job needs the repository setting "Pages source: GitHub Actions".

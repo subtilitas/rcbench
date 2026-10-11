@@ -34,12 +34,13 @@ test('the servo setup', async ({ page }) => {
 | | `watchErrors(page)` | The short record `{ foreign, errors }` without console warnings and failed requests. |
 | | `expectNoHorizontalScroll(page)` | Asserts that document and body are at most as wide as the viewport and that the page does not move sideways. |
 | | `pageOrigin()` | The origin of `baseURL` of the running test. |
-| `keyboard.ts` | `keyboardWalk(page, { back? })` | Presses Tab from the top of the document until the focus leaves it. Records for each stop: element, role and name from the accessibility tree of the browser, `:focus-visible`, outline width and outline contrast, position against the viewport and the fixed bar. With `back`, walks the other way with Shift+Tab. |
+| `keyboard.ts` | `keyboardWalk(page, { back? })` | Presses Tab from the top of the document until the focus leaves it. Records for each stop: element, role and name from the accessibility tree of the browser, `:focus-visible`, outline width, the contrast of the outline colour blended over the background behind it, position against the viewport and the fixed bar. With `back`, walks the other way with Shift+Tab. |
 | | `walkProblems(walk)` | One line per finding: a control the Tab key misses, an order other than the document, a positive `tabindex`, no name, no role, no `:focus-visible`, an outline under 2 px or under 3:1. |
 | | `hiddenStops(walk)` | The stops that lie outside the viewport or entirely under a fixed bar while they have the focus. |
 | `axe.ts` | `axeOf(page)` | Runs axe-core at the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`. Gives one line per violated rule and the count of passed rules. |
 | `contrast.ts` | `contrastOf(page)` | Measures each distinct pair of colours the page paints: text and SVG text against the background, wires and box outlines of the drawings, borders of buttons and text fields. |
-| | `contrastProblems(contrast)` | One line per pair under its minimum: 4.5:1 for text, 3:1 for text of at least 24 px or bold text of at least 18.66 px, 3:1 for wires, outlines and borders. A colour the measurement cannot read is a finding. |
+| | `contrastProblems(contrast)` | One line per pair under its minimum: 4.5:1 for text, 3:1 for text of at least 24 px or bold text of at least 18.66 px, 3:1 for wires, outlines and borders. A ratio is compared as measured and rounded to 3 decimals in the message alone. A colour the measurement cannot read is a finding. |
+| `lib.spec.ts` | | Holds `contrast.ts` and `keyboard.ts` to documents with a known answer: text at 4.49999:1 and at 2.99995:1, a focus outline at 5 % opacity and one at 2.99:1. Runs as the project `lib` under `npm run e2e:matrix`. |
 
 ## Rules of use
 

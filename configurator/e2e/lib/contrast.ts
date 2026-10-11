@@ -12,6 +12,7 @@ export type Measured = {
   /** Foreground and background as r,g,b. */
   fg: string;
   bg: string;
+  /** The contrast ratio, not rounded. */
   ratio: number;
   /** The ratio the pair has to reach. */
   need: number;
@@ -78,7 +79,7 @@ function measure(): Contrast {
     measured += 1;
     const show = (c: number[]): string => c.slice(0, 3).map((v) => Math.round(v)).join(',');
     const key = `${kind} ${show(fg)} ${show(bg)} ${need}`;
-    if (!pairs.has(key)) pairs.set(key, { kind, what, fg: show(fg), bg: show(bg), ratio: Math.round(ratio(fg, bg) * 100) / 100, need });
+    if (!pairs.has(key)) pairs.set(key, { kind, what, fg: show(fg), bg: show(bg), ratio: ratio(fg, bg), need });
   };
 
   // Text of the document outside the drawings.
@@ -175,7 +176,7 @@ export async function contrastOf(page: Page): Promise<Contrast> {
 /** The pairs below their ratio, one line each. */
 export function contrastProblems(contrast: Contrast): string[] {
   return [
-    ...contrast.pairs.filter((p) => p.ratio < p.need).map((p) => `${p.kind} ${p.what}: ${p.fg} on ${p.bg} is ${p.ratio}:1, the minimum is ${p.need}:1`),
+    ...contrast.pairs.filter((p) => p.ratio < p.need).map((p) => `${p.kind} ${p.what}: ${p.fg} on ${p.bg} is ${p.ratio.toFixed(3)}:1, the minimum is ${p.need}:1`),
     ...contrast.unknown.map((u) => `not measured: ${u}`),
   ];
 }

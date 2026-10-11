@@ -14,7 +14,7 @@ export type Stop = {
   name: string;
   /** Whether the element matches :focus-visible. */
   focusVisible: boolean;
-  /** The outline of the focused element: width in px, and its contrast against the background behind the element. */
+  /** The outline of the focused element: width in px, and the contrast of its colour, blended over the background behind the element, against that background. Not rounded. */
   outlineWidth: number;
   outlineContrast: number;
   /** Whether a part of the element is inside the viewport and outside the fixed bar at the bottom. */
@@ -123,7 +123,8 @@ function probe(): Probe {
     region: region ? region.id || region.tagName.toLowerCase() : '',
     focusVisible: el.matches(':focus-visible'),
     outlineWidth: style.outlineStyle === 'none' ? 0 : Number.parseFloat(style.outlineWidth),
-    outlineContrast: outline && style.outlineStyle !== 'none' ? Math.round(ratio(outline, ground) * 100) / 100 : 0,
+    // A translucent outline shows the colour behind it through.
+    outlineContrast: outline && style.outlineStyle !== 'none' ? ratio(ground.map((v, i) => v * (1 - outline[3]) + (outline[i] as number) * outline[3]), ground) : 0,
     inView: rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < floor && rect.right > 0 && rect.left < innerWidth,
     tabindex: el.getAttribute('tabindex'),
     done: false,
@@ -205,7 +206,7 @@ export function walkProblems(walk: Walk): string[] {
     if (stop.role === '' || stop.role === 'generic' || stop.role === 'none') out.push(`${stop.what} has the role "${stop.role}"`);
     if (!stop.focusVisible) out.push(`${stop.what} does not match :focus-visible`);
     if (stop.outlineWidth < 2) out.push(`${stop.what} has a focus outline of ${stop.outlineWidth} px`);
-    if (stop.outlineContrast < 3) out.push(`${stop.what} has a focus outline with a contrast of ${stop.outlineContrast}:1`);
+    if (stop.outlineContrast < 3) out.push(`${stop.what} has a focus outline with a contrast of ${stop.outlineContrast.toFixed(3)}:1`);
   }
   if (walk.back.length > 0 && JSON.stringify(walk.back) !== JSON.stringify([...order].reverse())) {
     out.push(`Shift+Tab walks ${JSON.stringify(walk.back)}, the reverse of Tab is ${JSON.stringify([...order].reverse())}`);

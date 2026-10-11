@@ -5,17 +5,18 @@ import { expect, test } from '@playwright/test';
 
 import type { Lang } from '../../contract.ts';
 import { CATALOGUE, deselectEffect } from '../../src/core.ts';
-import { SEL, expectSetup, hashOf, openSetup, selectionOf, stateOf } from '../lib/setup.ts';
+import { SEL, expectSetup, hashOf, selectionOf, stateOf } from '../lib/setup.ts';
 import { expectQuiet, watchPage } from '../lib/watch.ts';
-import { SETUPS, cellOf } from './setups.ts';
+import { SETUPS, cellOf, openCase } from './setups.ts';
 
 const other = (lang: Lang): Lang => (lang === 'en' ? 'de' : 'en');
 
-for (const { name, selection } of SETUPS) {
+for (const setup of SETUPS) {
+  const { name, selection } = setup;
   test(`${name}: the language switch keeps the setup`, async ({ page }, info) => {
     const { lang } = cellOf(info);
     const seen = watchPage(page);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const before = await expectSetup(page, selection);
 
     await page.locator(SEL.lang(other(lang))).click();
@@ -25,16 +26,17 @@ for (const { name, selection } of SETUPS) {
     expect(switched.hash).toBe(hashOf(selection, other(lang)));
     expect(switched.summary).not.toBe(before.summary);
 
+    // The page writes its own hash for the setup on the first change.
     await page.locator(SEL.lang(lang)).click();
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
-    expect(await expectSetup(page, selection)).toEqual(before);
+    expect(await expectSetup(page, selection)).toEqual({ ...before, hash: hashOf(selection) });
     expectQuiet(seen);
   });
 
   test(`${name}: a reload keeps the setup`, async ({ page }, info) => {
     const { lang } = cellOf(info);
     const seen = watchPage(page);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const before = await expectSetup(page, selection);
     await page.reload();
     await page.locator(SEL.drawing).waitFor();
@@ -62,7 +64,7 @@ for (const { name, selection } of SETUPS) {
   test(`${name}: back and forward keep the setup`, async ({ page }) => {
     const seen = watchPage(page);
     const second = selectionOf({ functions: ['servo', 'esc'], options: { escPower: 'pd' } });
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const first = await expectSetup(page, selection);
 
     // A link to another setup, followed on the open page.

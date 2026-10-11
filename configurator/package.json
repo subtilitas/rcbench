@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test \"test/**/*.test.ts\"",
     "e2e": "playwright test --project=smoke",
-    "e2e:matrix": "playwright test --project=corpus --project=matrix-*",
+    "e2e:matrix": "playwright test --project=lib --project=corpus --project=matrix-*",
     "corpus": "node test/corpus/tool.ts",
     "size": "node tools/size.ts"
   },

@@ -96,6 +96,17 @@ function view(selection: Selection, lang: Lang): View {
 }
 
 /** What the rules find in the page of one view. Empty for a sound page. */
+/** The radio groups of a document that have another count of checked radios than 1. */
+function radioProblems(doc: Doc): string[] {
+  const groups = new Map<string, number>();
+  for (const tag of doc.tags) {
+    if (tag.name !== 'input' || tag.attrs.get('type') !== 'radio') continue;
+    const name = tag.attrs.get('name') ?? '';
+    groups.set(name, (groups.get(name) ?? 0) + (tag.attrs.has('checked') ? 1 : 0));
+  }
+  return [...groups].filter(([, count]) => count !== 1).map(([name, count]) => `${count} radios of ${name} are checked`);
+}
+
 function problemsOf(v: View, ownOpen: boolean): string[] {
   const html = chooser(v, ownOpen) + result(v, URL_OF_TEST, []);
   const doc = read(html);
@@ -154,14 +165,7 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
       if (/^on/i.test(key) || key === 'style') out.push(`<${tag.name}> has the attribute ${key}`);
     }
   }
-  const groups = new Map<string, number>();
-  for (const tag of doc.tags) {
-    if (tag.name === 'input' && tag.attrs.get('type') === 'radio' && tag.attrs.has('checked')) {
-      const name = tag.attrs.get('name') as string;
-      groups.set(name, (groups.get(name) ?? 0) + 1);
-    }
-  }
-  for (const [name, count] of groups) if (count !== 1) out.push(`${count} radios of ${name} are checked`);
+  out.push(...radioProblems(doc));
   const svg = doc.tags.find((t) => t.name === 'svg' && (t.attrs.get('class') ?? '').split(' ').includes('drawing'));
   if (!svg) out.push('the page has no drawing');
   else if (!svg.attrs.get('aria-label') && !svg.attrs.get('aria-labelledby') && svg.attrs.get('aria-hidden') !== 'true') out.push('the drawing has no name');
@@ -261,6 +265,14 @@ test('5: the address of the page reaches the page escaped', () => {
     assert.ok(!doc.tags.some((t) => t.name === 'script'));
     assert.ok(unescape(doc.text).includes(hostile));
   }
+});
+
+test('the rules report a radio group with no checked radio and one with 2', () => {
+  const radio = (name: string, checked: boolean): string => `<input type="radio" name="${name}"${checked ? ' checked' : ''}>`;
+  assert.deepEqual(radioProblems(read(radio('a', true) + radio('a', false) + radio('b', false) + radio('b', true))), []);
+  assert.deepEqual(radioProblems(read(radio('a', false) + radio('a', false) + radio('b', true))), ['0 radios of a are checked']);
+  assert.deepEqual(radioProblems(read(radio('a', true) + radio('a', true))), ['2 radios of a are checked']);
+  assert.deepEqual(radioProblems(read('<input type="radio">')), ['0 radios of  are checked']);
 });
 
 test('the rules report a page that breaks them', () => {

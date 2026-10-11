@@ -6,12 +6,13 @@ import { expect, test } from '@playwright/test';
 
 import { axeOf } from '../lib/axe.ts';
 import { contrastOf, contrastProblems } from '../lib/contrast.ts';
-import { SEL, openSetup } from '../lib/setup.ts';
-import { SETUPS, cellOf } from './setups.ts';
+import { SEL } from '../lib/setup.ts';
+import { SETUPS, cellOf, openCase } from './setups.ts';
 
-for (const { name, selection } of SETUPS) {
+for (const setup of SETUPS) {
+  const { name } = setup;
   test(`${name}: axe-core reports no violation`, async ({ page }) => {
-    await openSetup(page, selection);
+    await openCase(page, setup);
     await page.locator(SEL.ownSummary).click();
     await expect(page.locator(SEL.own)).toHaveAttribute('open', '');
     const report = await axeOf(page);
@@ -21,7 +22,7 @@ for (const { name, selection } of SETUPS) {
 
   test(`${name}: text, wires and borders reach their contrast`, async ({ page }, info) => {
     const cell = cellOf(info);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     await page.locator(SEL.ownSummary).click();
     await expect(page.locator(SEL.own)).toHaveAttribute('open', '');
     expect(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)).toBe(cell.theme === 'dark');

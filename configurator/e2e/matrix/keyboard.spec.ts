@@ -5,12 +5,13 @@
 import { expect, test } from '@playwright/test';
 
 import { hiddenStops, keyboardWalk, walkProblems } from '../lib/keyboard.ts';
-import { FUNCTIONS, OWNED, SEL, openSetup } from '../lib/setup.ts';
-import { SETUPS, cellOf } from './setups.ts';
+import { FUNCTIONS, OWNED, SEL } from '../lib/setup.ts';
+import { SETUPS, cellOf, openCase } from './setups.ts';
 
-for (const { name, selection } of SETUPS) {
+for (const setup of SETUPS) {
+  const { name } = setup;
   test(`${name}: the Tab key walks every control`, async ({ page }, info) => {
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const walk = await keyboardWalk(page, { back: name === 'largest' });
     expect(walkProblems(walk)).toEqual([]);
 
@@ -27,7 +28,7 @@ for (const { name, selection } of SETUPS) {
   });
 
   test(`${name}: the section of owned parts opens by keyboard and its rows take the focus`, async ({ page }) => {
-    await openSetup(page, selection);
+    await openCase(page, setup);
     await page.locator(SEL.ownSummary).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator(SEL.own)).toHaveAttribute('open', '');
@@ -39,7 +40,7 @@ for (const { name, selection } of SETUPS) {
 
   test(`${name}: no control is hidden under the bottom bar while it has the focus`, async ({ page }, info) => {
     test.fixme(cellOf(info).phone, 'At 360 x 740 px the Tab key puts the focus on a control that lies entirely under the fixed bottom bar: the page sets no scroll-padding-bottom.');
-    await openSetup(page, selection);
+    await openCase(page, setup);
     expect(hiddenStops(await keyboardWalk(page))).toEqual([]);
     await page.locator(SEL.ownSummary).click();
     await expect(page.locator(SEL.own)).toHaveAttribute('open', '');

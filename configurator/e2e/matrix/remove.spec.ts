@@ -13,9 +13,9 @@ import { t } from '../../src/i18n.ts';
 import { axeOf } from '../lib/axe.ts';
 import { contrastOf, contrastProblems } from '../lib/contrast.ts';
 import { keyboardWalk, walkProblems } from '../lib/keyboard.ts';
-import { SEL, expectSetup, expectedOf, hashOf, openSetup } from '../lib/setup.ts';
+import { SEL, expectSetup, expectedOf, hashOf, stateOf } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
-import { SETUPS, cellOf } from './setups.ts';
+import { SETUPS, cellOf, openCase } from './setups.ts';
 
 const other = (lang: Lang): Lang => (lang === 'en' ? 'de' : 'en');
 const effectOf = (selection: Selection, id: string): Removal => removalEffect(CATALOGUE, selection, id);
@@ -33,7 +33,8 @@ async function expectQuestion(page: Page, effect: Removal, lang: Lang): Promise<
   await expect(page.locator(SEL.no)).toBeInViewport();
 }
 
-for (const { name, selection } of SETUPS) {
+for (const setup of SETUPS) {
+  const { name, selection } = setup;
   const removable = expectedOf(selection).removable;
   const asking = removable.find((id) => !removalIsPlain(effectOf(selection, id)));
   const owned = expectedOf(selection).owned[0];
@@ -41,14 +42,14 @@ for (const { name, selection } of SETUPS) {
   test(`${name}: every part beyond the base setup leaves by its remove control`, async ({ page }, info) => {
     const { lang } = cellOf(info);
     const seen = watchPage(page);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     await expectSetup(page, selection);
     // A part of the base setup has no remove control.
     for (const part of CATALOGUE.parts.filter((p) => p.locked)) await expect(page.locator(SEL.remove(part.id))).toHaveCount(0);
 
     for (const id of removable) {
       const effect = effectOf(selection, id);
-      await openSetup(page, selection);
+      await openCase(page, setup);
       const control = page.locator(SEL.remove(id));
       await expect(control).toHaveAccessibleName(t(lang, 'rmName', { p: shortName(id, lang) }));
       await expect(control).toHaveAttribute('aria-expanded', 'false');
@@ -85,7 +86,7 @@ for (const { name, selection } of SETUPS) {
       const { lang } = cellOf(info);
       const effect = effectOf(selection, asking);
       const seen = watchPage(page);
-      await openSetup(page, selection);
+      await openCase(page, setup);
       const before = await expectSetup(page, selection);
       const control = page.locator(SEL.remove(asking));
       await control.click();
@@ -113,7 +114,7 @@ for (const { name, selection } of SETUPS) {
       await expect(page.locator(SEL.question)).toHaveCount(0);
       await expect(control).toBeFocused();
       await expect(control).toHaveAttribute('aria-expanded', 'false');
-      expect(await expectSetup(page, selection)).toEqual(before);
+      expect(stateOf(await expectSetup(page, selection))).toEqual(stateOf(before));
 
       // An open question is not part of the link: a reload shows the setup without it.
       await control.click();
@@ -121,7 +122,7 @@ for (const { name, selection } of SETUPS) {
       await page.reload();
       await page.locator(SEL.drawing).waitFor();
       await expect(page.locator(SEL.question)).toHaveCount(0);
-      expect(await expectSetup(page, selection)).toEqual(before);
+      expect(stateOf(await expectSetup(page, selection))).toEqual(stateOf(before));
 
       // The answers are stops of the Tab key, directly after the control that asked.
       await page.locator(SEL.remove(asking)).click();
@@ -142,7 +143,7 @@ for (const { name, selection } of SETUPS) {
       const { lang } = cellOf(info);
       const effect = effectOf(selection, owned);
       const seen = watchPage(page);
-      await openSetup(page, selection);
+      await openCase(page, setup);
       await expectSetup(page, selection);
       await page.locator(SEL.ownSummary).click();
       await expect(page.locator(SEL.own)).toHaveAttribute('open', '');

@@ -4,17 +4,23 @@
 
 import { expect, test } from '@playwright/test';
 
-import { SEL, expectSetup, openSetup } from '../lib/setup.ts';
+import { CATALOGUE } from '../../src/core.ts';
+import { SEL, expectSetup } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
-import { SETUPS, cellOf } from './setups.ts';
+import { SETUPS, cellOf, openCase } from './setups.ts';
 
-for (const { name, selection } of SETUPS) {
+for (const setup of SETUPS) {
+  const { name, selection } = setup;
   test(`${name}: shows the setup, fits the viewport, stays quiet and on its origin`, async ({ page }, info) => {
     const cell = cellOf(info);
     const seen = watchPage(page);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const shown = await expectSetup(page, selection);
     expect(shown.lang).toBe(cell.lang);
+    // The page reports each id of the link it ignores, and lists what is in no release.
+    expect(shown.notices.map((n) => n.kind)).toEqual(setup.ignored.length > 0 ? ['note'] : []);
+    for (const id of setup.ignored) expect(shown.notices[0]?.text).toContain(id);
+    await expect(page.locator('#choose .nir li')).toHaveCount(CATALOGUE.notInRelease.length);
     await expect(page.locator(SEL.drawing)).toHaveAttribute('aria-label', /\S/);
 
     await expectNoHorizontalScroll(page);
@@ -34,7 +40,7 @@ for (const { name, selection } of SETUPS) {
   });
 
   test(`${name}: reduced motion leaves nothing that moves`, async ({ page }, info) => {
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const motion = await page.evaluate(() => ({
       asked: matchMedia('(prefers-reduced-motion: reduce)').matches,
       scroll: getComputedStyle(document.documentElement).scrollBehavior,
@@ -61,7 +67,7 @@ for (const { name, selection } of SETUPS) {
 
   test(`${name}: print shows the result without the chooser`, async ({ page }) => {
     const seen = watchPage(page);
-    await openSetup(page, selection);
+    await openCase(page, setup);
     const shown = await expectSetup(page, selection);
     await page.emulateMedia({ media: 'print' });
 

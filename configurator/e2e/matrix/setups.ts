@@ -1,13 +1,21 @@
 // The setups every matrix spec runs on, and what a project of the matrix states about itself.
 
-import type { TestInfo } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 
 import type { Lang, Selection } from '../../contract.ts';
 import { OPTION_SETS } from '../../core/test/property/space.ts';
 import { CATALOGUE, resolve } from '../../src/core.ts';
-import { FUNCTIONS, OWNED, selectionOf } from '../lib/setup.ts';
+import { FUNCTIONS, OWNED, hashOf, openHash, selectionOf } from '../lib/setup.ts';
 
-export type Case = { name: string; selection: Selection };
+export type Case = {
+  name: string;
+  /** The selection the page holds once the link is read. */
+  selection: Selection;
+  /** The link the case opens, when it is another one than the page writes for `selection`. */
+  hash?: string;
+  /** The ids of the link that the page reports as ignored. */
+  ignored: string[];
+};
 
 /** Every function and every part ticked, under the options that give the most wires. */
 function largest(): Selection {
@@ -19,20 +27,35 @@ function largest(): Selection {
   return best;
 }
 
-/** One function and one part of the list "not in a release", next to a function of a release. */
-function notInRelease(): Selection {
+/**
+ * A link that names every id of the list "not in a release" as a function and
+ * as a part, next to the first function of a release and the first function
+ * that has not run on hardware. No id of the list is a function or a part of
+ * the catalogue: the page ignores each and reports it.
+ */
+function notInRelease(): Case {
   const listed = CATALOGUE.notInRelease.map((n) => n.id);
-  const fn = listed.find((id) => FUNCTIONS.includes(id));
-  const part = listed.find((id) => OWNED.includes(id));
-  return selectionOf({ functions: [FUNCTIONS[0] as string, ...(fn ? [fn] : [])], owned: part ? [part] : [] });
+  const notRun = CATALOGUE.functions.find((f) => f.hardware === 'not-run')?.id;
+  const functions = [FUNCTIONS[0] as string, ...(notRun ? [notRun] : [])];
+  return {
+    name: 'not in a release',
+    selection: selectionOf({ functions }),
+    hash: `#v=1&f=${[...functions, ...listed].join(',')}&p=${listed.join(',')}`,
+    ignored: listed,
+  };
 }
 
 export const SETUPS: Case[] = [
-  { name: 'empty', selection: selectionOf() },
-  ...FUNCTIONS.map((id) => ({ name: `function ${id}`, selection: selectionOf({ functions: [id] }) })),
-  { name: 'largest', selection: largest() },
-  { name: 'not in a release', selection: notInRelease() },
+  { name: 'empty', selection: selectionOf(), ignored: [] },
+  ...FUNCTIONS.map((id) => ({ name: `function ${id}`, selection: selectionOf({ functions: [id] }), ignored: [] })),
+  { name: 'largest', selection: largest(), ignored: [] },
+  notInRelease(),
 ];
+
+/** Loads the page with the link of a case and waits for the drawing. */
+export async function openCase(page: Page, setup: Case): Promise<void> {
+  await openHash(page, setup.hash ?? hashOf(setup.selection));
+}
 
 export type Cell = { lang: Lang; theme: 'light' | 'dark'; phone: boolean };
 
