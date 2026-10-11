@@ -14,7 +14,7 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 55 wires, 11 functions, 6 rules, 20 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 11 functions, 6 rules, 21 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve` and the default export `core`. |
@@ -89,7 +89,7 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480 px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |
-| Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 16, right 0 to 20, outer 0 to 7, channel 0 to 4). |
+| Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 18, right 0 to 22, outer 0 to 7, channel 0 to 6). |
 | Tree | The pads, the reserved pins, the heartbeat pin or a pin default differ from the firmware sources at the tag. |
 
 Each repository anchor in `catalogue.ts` is `repo(path, line, text)`. The text

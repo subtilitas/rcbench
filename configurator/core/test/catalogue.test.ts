@@ -130,10 +130,10 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
-  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 55 }, (_, i) => i + 1));
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 58 }, (_, i) => i + 1));
   assert.equal(CATALOGUE.functions.length, 11);
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 20);
+  assert.equal(CATALOGUE.checks.length, 21);
   assert.equal(CATALOGUE.stages.length, 5);
   assert.equal(CATALOGUE.safety.length, 7);
   assert.equal(CATALOGUE.release, '0.16.0');
@@ -246,7 +246,7 @@ test('a drawing is an SVG file without script, reference or raster', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'as5600-board', 'osoyoo-labels',
+    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board', 'osoyoo-labels',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
@@ -260,11 +260,15 @@ test('every unknown of the data is a check entry of kind unknown', () => {
     ['servocur', 'angle', 'escpow', 'stick', 'tap', 'estop'],
   );
   // No part is without a stated role. The pins with one option value only are
-  // the 2 supply pins of the INA228 board.
+  // the 2 supply pins of the INA228 board and the 2 minus poles of the module
+  // with XT90 plugs.
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.role === null && p.selectable).map((p) => p.id), []);
   assert.deepEqual(
     CATALOGUE.parts.flatMap((p) => p.pins.filter((q) => q.only !== undefined).map((q) => [`${p.id}.${q.id}`, q.only])),
-    [['ina228.V5', { ina228Board: 'matek' }], ['ina228.V3', { ina228Board: 'xt90' }]],
+    [
+      ['ina228.V5', { ina228Board: 'matek' }], ['ina228.V3', { ina228Board: 'xt90' }],
+      ['ina228.BATN', { ina228Board: 'xt90' }], ['ina228.ESCN', { ina228Board: 'xt90' }],
+    ],
   );
 });
 
@@ -349,11 +353,12 @@ test('wire shape: stub, wire and component each need their fields', () => {
 
 test('a wire on a pin of one board variant requires that variant', () => {
   // The 2 supply pins of the INA228 are such pins: 5V on the MATEK board, V
-  // on the module with XT90 plugs.
+  // on the module with XT90 plugs. The 2 minus poles of the plugs are pins of
+  // the module with XT90 plugs only.
   const pins = CATALOGUE.parts.find((p) => p.id === 'ina228')!.pins;
   assert.deepEqual(pins.find((p) => p.id === 'V5')?.only, { ina228Board: 'matek' });
   assert.deepEqual(pins.find((p) => p.id === 'V3')?.only, { ina228Board: 'xt90' });
-  assert.deepEqual(pins.filter((p) => p.only).map((p) => p.id), ['V5', 'V3']);
+  assert.deepEqual(pins.filter((p) => p.only).map((p) => p.id), ['V5', 'V3', 'BATN', 'ESCN']);
   assert.deepEqual(checkEnds(CATALOGUE), []);
   // Wire 41 without the variant in its condition.
   const copy = (): Catalogue => {
@@ -889,14 +894,14 @@ test('routes: a repeated slot order and a lane out of range are reported', () =>
   reports(checkRoutes(slot), `slot.L.${slot.parts[6]!.slot.order}`, /twice/);
 
   for (const [index, route, pattern] of [
-    [0, { kind: 'L', lane: 17 }, /lane 17 is outside 0 to 16/],
+    [0, { kind: 'L', lane: 19 }, /lane 19 is outside 0 to 18/],
     [0, { kind: 'L', lane: -1 }, /lane -1/],
     [0, { kind: 'L', lane: 1.5 }, /lane 1.5/],
-    [23, { kind: 'R', lane: 21 }, /lane 21 is outside 0 to 20/],
+    [23, { kind: 'R', lane: 23 }, /lane 23 is outside 0 to 22/],
     [8, { kind: 'O', lane: 8 }, /lane 8 is outside 0 to 7/],
-    [27, { kind: 'X', left: 17, right: 16, channel: 0 }, /left lane 17/],
-    [27, { kind: 'X', left: 12, right: 21, channel: 0 }, /right lane 21/],
-    [27, { kind: 'X', left: 12, right: 16, channel: 5 }, /channel 5/],
+    [27, { kind: 'X', left: 19, right: 16, channel: 0 }, /left lane 19/],
+    [27, { kind: 'X', left: 12, right: 23, channel: 0 }, /right lane 23/],
+    [27, { kind: 'X', left: 12, right: 16, channel: 7 }, /channel 7/],
   ] as Array<[number, Catalogue['wires'][number]['route'], RegExp]>) {
     const c = copy();
     c.wires[index]!.route = route;
@@ -905,10 +910,10 @@ test('routes: a repeated slot order and a lane out of range are reported', () =>
 
   // The limits themselves pass.
   const limits = copy();
-  limits.wires[0]!.route = { kind: 'L', lane: 16 };
-  limits.wires[23]!.route = { kind: 'R', lane: 20 };
+  limits.wires[0]!.route = { kind: 'L', lane: 18 };
+  limits.wires[23]!.route = { kind: 'R', lane: 22 };
   limits.wires[8]!.route = { kind: 'O', lane: 7 };
-  limits.wires[27]!.route = { kind: 'X', left: 0, right: 0, channel: 4 };
+  limits.wires[27]!.route = { kind: 'X', left: 0, right: 0, channel: 6 };
   assert.deepEqual(checkRoutes(limits), []);
 });
 
@@ -930,6 +935,9 @@ test('the wire table prints one row per wire in the column order of the specific
   assert.equal(rows[54], '| 53 | pad.29 | pad.28 | phase | Z |  | 5 | tap |');
   assert.equal(rows[55], '| 54 | as5600.GPO | (GND, on the board) | gnd | S |  | 4 | as5600 |');
   assert.equal(rows[56], '| 55 | pad.36 | ina228.V3 | logic | R | 0 | 5 | ina228 and ina228Board=xt90 |');
+  assert.equal(rows[16], '| 15 | batt.NEG | esc.NEG | power | O | 3 | 1 | esc and escPower=battery and not (ina228 and ina228Board=xt90) |');
+  assert.equal(rows[57], '| 56 | batt.NEG | ina228.BATN | power | X | L17, R21, C5 | 5 | esc and (ina228 and ina228Board=xt90) and escPower=battery |');
+  assert.equal(rows[59], '| 58 | esc.NEG | ina228.ESCN | power | X | L18, R22, C6 | 5 | esc and (ina228 and ina228Board=xt90) |');
 
   const nested = copy();
   nested.wires[0]!.when = { all: [{ any: [{ has: 'esc' }, { has: 'servo' }] }, { not: { all: [{ has: 'sd' }] } }] };

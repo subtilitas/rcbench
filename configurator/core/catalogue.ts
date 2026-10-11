@@ -14,7 +14,7 @@
 //   page   a proposal or wording of this page; never a hardware fact
 
 import type {
-  Catalogue, Check, Fn, Pad, Part, Pin, PinDefault, Rule, Src, Stage, Text, Wire,
+  Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, Rule, Src, Stage, Text, Wire,
 } from '../contract.ts';
 
 const TAG = 'v0.16.0';
@@ -428,6 +428,9 @@ const parts: Part[] = [
       pin('SCL', same('SCL'), guide('wires')),
       pin('BAT', same('BAT+'), guide('wires')),
       pin('ESC', same('ESC+'), guide('wires')),
+      // The minus poles of the 2 plugs. The shunt lies between them.
+      { ...pin('BATN', same('BAT−'), OWNER), only: { ina228Board: 'xt90' } },
+      { ...pin('ESCN', same('ESC−'), OWNER), only: { ina228Board: 'xt90' } },
     ],
     variantName: {
       option: 'ina228Board',
@@ -684,6 +687,12 @@ const SENSOR_ESC = t(
   'The sensor sits in the plus line of the ESC.',
   'Der Sensor sitzt in der Plusleitung des ESC.',
 );
+const SENSOR_ESC_NEG = t(
+  'The shunt of this module sits in the minus line of the ESC.',
+  'Der Shunt dieses Moduls sitzt in der Minusleitung des ESC.',
+);
+/** The INA228 module with XT90 plugs is in the setup: its shunt is in the minus line. */
+const XT90_SHUNT: Cond = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] };
 
 const wires: Wire[] = [
   {
@@ -810,7 +819,7 @@ const wires: Wire[] = [
     n: 15, kind: 'wire', a: 'batt.NEG', b: 'esc.NEG', net: 'esc_neg', cls: 'power',
     signal: ESC_POWER,
     note: null,
-    when: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'battery' }] },
+    when: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'battery' }, { not: XT90_SHUNT }] },
     stage: 1, route: { kind: 'O', lane: 3 }, src: guide('wires'),
   },
   {
@@ -873,7 +882,7 @@ const wires: Wire[] = [
     n: 23, kind: 'wire', a: 'pdmini.ON', b: 'esc.NEG', net: 'gnd', cls: 'power',
     signal: ESC_POWER,
     note: null,
-    when: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'pd' }] },
+    when: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'pd' }, { not: XT90_SHUNT }] },
     stage: 2, route: { kind: 'O', lane: 3 }, src: guide('wires'),
   },
   {
@@ -1124,6 +1133,29 @@ const wires: Wire[] = [
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
     stage: 5, route: { kind: 'R', lane: 0 }, src: OWNER,
   },
+  // The module with XT90 plugs carries its shunt in the minus line. The minus
+  // of the ESC runs through the module; the wires 15 and 23 are not drawn.
+  {
+    n: 56, kind: 'wire', a: 'batt.NEG', b: 'ina228.BATN', net: 'batt_neg', cls: 'power',
+    signal: ESC_POWER,
+    note: SENSOR_ESC_NEG,
+    when: { all: [{ has: 'esc' }, XT90_SHUNT, { opt: 'escPower', is: 'battery' }] },
+    stage: 5, route: { kind: 'X', left: 17, right: 21, channel: 5 }, src: OWNER,
+  },
+  {
+    n: 57, kind: 'wire', a: 'pdmini.ON', b: 'ina228.BATN', net: 'gnd', cls: 'power',
+    signal: ESC_POWER,
+    note: SENSOR_ESC_NEG,
+    when: { all: [{ has: 'esc' }, XT90_SHUNT, { opt: 'escPower', is: 'pd' }] },
+    stage: 5, route: { kind: 'X', left: 17, right: 21, channel: 5 }, src: OWNER,
+  },
+  {
+    n: 58, kind: 'wire', a: 'esc.NEG', b: 'ina228.ESCN', net: 'esc_neg', cls: 'power',
+    signal: ESC_POWER,
+    note: null,
+    when: { all: [{ has: 'esc' }, XT90_SHUNT] },
+    stage: 5, route: { kind: 'X', left: 18, right: 22, channel: 6 }, src: OWNER,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1350,10 +1382,19 @@ const checks: Check[] = [
   {
     id: 'ina228-xt90-pads', kind: 'note',
     text: t(
-      'INA228 module with XT90 plugs: the header has 5 holes with the print L A V G 5. L is SCL, A is SDA, V is the 3.3 V supply of the INA228, G is GND. Hole 5 is the 5 V output of a regulator that is not fitted: it has no pin and takes no wire. Seen with the header at the bottom, the left plug (shrouded, male pins) is the battery side and the right plug (female) is the ESC side. The upper rail is plus, the lower rail with the shunt is minus, and G connects to the ESC end of the shunt. The drawing shows the sensor in the plus line and the minus of the ESC as a direct wire. On this module both lines run through the 2 plugs.',
-      'INA228-Modul mit XT90-Steckern: Die Leiste hat 5 Löcher mit dem Aufdruck L A V G 5. L ist SCL, A ist SDA, V ist die 3,3-V-Versorgung des INA228, G ist GND. Loch 5 ist der 5-V-Ausgang eines nicht bestückten Reglers: Es hat keinen Pin und bekommt keinen Draht. Mit der Leiste unten gesehen ist der linke Stecker (mit Kragen, Stifte) die Akkuseite und der rechte Stecker (Buchsen) die ESC-Seite. Die obere Schiene ist Plus, die untere Schiene mit dem Shunt ist Minus, und G liegt am ESC-Ende des Shunts. Die Zeichnung zeigt den Sensor in der Plusleitung und das Minus des ESC als direkten Draht. Bei diesem Modul laufen beide Leitungen durch die 2 Stecker.',
+      'INA228 module with XT90 plugs: the header has 5 holes with the print L A V G 5. L is SCL, A is SDA, V is the 3.3 V supply of the INA228, G is GND. Hole 5 is the 5 V output of a regulator that is not fitted: it has no pin and takes no wire. Seen with the header at the bottom, the left plug (shrouded, male pins) is the battery side and the right plug (female) is the ESC side. The upper rail is plus, the lower rail with the shunt is minus, and G connects to the ESC end of the shunt. Plus and minus of the ESC both run through the 2 plugs: no wire joins the minus of the source and the minus of the ESC past the module.',
+      'INA228-Modul mit XT90-Steckern: Die Leiste hat 5 Löcher mit dem Aufdruck L A V G 5. L ist SCL, A ist SDA, V ist die 3,3-V-Versorgung des INA228, G ist GND. Loch 5 ist der 5-V-Ausgang eines nicht bestückten Reglers: Es hat keinen Pin und bekommt keinen Draht. Mit der Leiste unten gesehen ist der linke Stecker (mit Kragen, Stifte) die Akkuseite und der rechte Stecker (Buchsen) die ESC-Seite. Die obere Schiene ist Plus, die untere Schiene mit dem Shunt ist Minus, und G liegt am ESC-Ende des Shunts. Plus und Minus des ESC laufen beide durch die 2 Stecker: Kein Draht verbindet das Minus der Quelle und das Minus des ESC am Modul vorbei.',
     ),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
+    src: OWNER,
+  },
+  {
+    id: 'ina228-xt90-pd', kind: 'unknown',
+    text: t(
+      'INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the coprocessor. A connection between the minus output of the PD mini and GND of the coprocessor is a second path beside the shunt. The share of the ESC current that the sensor reads in this setup is not measured.',
+      'INA228-Modul mit XT90-Steckern und ESC-Versorgung B: G des Moduls ist das ESC-Ende des Shunts und liegt an GND des Koprozessors. Eine Verbindung zwischen dem Minus-Ausgang des PD mini und GND des Koprozessors ist ein zweiter Pfad neben dem Shunt. Der Anteil des ESC-Stroms, den der Sensor in diesem Aufbau misst, ist nicht gemessen.',
+    ),
+    when: { all: [{ has: 'esc' }, XT90_SHUNT, { opt: 'escPower', is: 'pd' }] },
     src: OWNER,
   },
   {

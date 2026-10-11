@@ -229,7 +229,7 @@ test('wires and the pin table agree', () => {
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.pin === 'example').map((w) => w.n), [11]);
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.pin === 'fixed').map((w) => w.n), [4, 6]);
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.src.kind === 'page').map((w) => w.n), [7]);
-  assert.deepEqual(CATALOGUE.wires.filter((w) => w.src.kind === 'owner').map((w) => w.n), [16, 17, 18, 30, 55]);
+  assert.deepEqual(CATALOGUE.wires.filter((w) => w.src.kind === 'owner').map((w) => w.n), [16, 17, 18, 30, 55, 56, 57, 58]);
 
   const choice = copy();
   choice.wires[6]!.pin = 'default';
