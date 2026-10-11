@@ -1289,12 +1289,15 @@ def check_spdx(problems: list[str]) -> None:
 # word of its own, in any case: not part of a longer word, a file name or an
 # identifier.
 BRAND_SHORT_RE = re.compile(r"(?<!\w)cha(?!\w|\.\w)", re.I)
+# A path with a file name in it and a scoped identifier are not prose:
+# "src/Cha/README.md", "Cha::member".  "Cha/KST servos" is.
+BRAND_EXEMPT_RE = re.compile(r"\S*(?:/\S*\.\w|::)\S*")
 
 
 def brand_short_forms(text: str) -> list[int]:
     """The line numbers that hold the short form of the brand Chaservo."""
     return [n for n, line in enumerate(text.splitlines(), 1)
-            if BRAND_SHORT_RE.search(line)]
+            if BRAND_SHORT_RE.search(BRAND_EXEMPT_RE.sub(" ", line))]
 
 
 def brand_pages() -> list[pathlib.Path]:
@@ -1303,7 +1306,8 @@ def brand_pages() -> list[pathlib.Path]:
     return (linked_pages()
             + [p for p in root if p.exists() and p not in ROOT_PAGES]
             + sorted((REPO / "protocols").glob("*/README.md"))
-            + sorted((REPO / "shared" / "ui").glob("ui_text*.c")))
+            + sorted((REPO / "shared" / "ui").glob("ui_text*.c"))
+            + sorted((REPO / "shared" / "ui" / "include").glob("ui_text*")))
 
 
 def check_brand_names(problems: list[str], files=None) -> None:

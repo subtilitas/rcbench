@@ -262,7 +262,8 @@ def test_a_tree_without_protocols_is_read(tree, monkeypatch):
     "the Cha servo", "KST/Cha servos", "KST and Cha", "Cha-Servos",
     "\"KST / Cha\",", "Cha, the brand", "KST and Cha.",
     "Cha/KST servos", "KST / Cha / Hitec", "KST / CHA servos",
-    "KST and cha servos", "cha", "CHA",
+    "KST and cha servos", "cha", "CHA", "Cha/KST servos in docs/Link.md",
+    "X(UI_KST_TITLE,\"KST/Cha\")", "Cha/KST.",
 ])
 def test_the_short_form_of_the_brand_is_found(line):
     assert cd.brand_short_forms("first\n" + line + "\n") == [2]
@@ -271,7 +272,8 @@ def test_the_short_form_of_the_brand_is_found(line):
 @pytest.mark.parametrize("line", [
     "Chaservo servos", "KST- und Chaservo-Servos", "Change", "Chart",
     "a Chain of writes", "CHASERVO", "chaservo", "src/Cha.c", "Cha_reg",
-    "xCha", "CHANNELS", "cha.c",
+    "xCha", "CHANNELS", "cha.c", "src/Cha/README.md", "Cha::member",
+    "see protocols/cha/include/x.h", "ns::Cha",
 ])
 def test_the_full_name_and_other_words_pass(line):
     assert cd.brand_short_forms(line) == []
@@ -294,5 +296,6 @@ def test_the_tree_holds_the_brand_rule():
     assert problems == []
     names = {p.name for p in cd.brand_pages()}
     assert {"README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md",
-            "NOTICE", "Link.md", "ui_text.c", "ui_text_de.c"} <= names
+            "NOTICE", "Link.md", "ui_text.c", "ui_text_de.c",
+            "ui_text.def"} <= names
     assert len(cd.brand_pages()) == len(set(cd.brand_pages()))
