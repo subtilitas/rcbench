@@ -64,7 +64,8 @@ export function cataloguePins(catalogue: Catalogue, part: Part, variant: string 
         if (end !== null && end.startsWith('can.') && !(end in out)) out[end] = { ...wire.signal };
       }
     }
-    return out;
+    // A pin in the pin list of the coprocessor joins the pads and the CAN poles below: the drawing shows it,
+    // or the generator refuses the data file as for every other part.
   }
   const key = part.variantName?.option;
   const shown = key === undefined ? undefined : variant ?? DEFAULT_OPTIONS[key];

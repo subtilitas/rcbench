@@ -6,6 +6,7 @@ import { ATTRIBUTES, ELEMENTS, ID, ROOT_ATTRIBUTES, checkAll, checkContrast, che
 import type { Files, Finding } from '../check.ts';
 import type { Anchors } from '../generate.ts';
 import { FONT } from '../lib.ts';
+import { INA3221_MAP } from '../parts.ts';
 import { colourOf } from '../wires.ts';
 
 const clone = (): Catalogue => structuredClone(CATALOGUE) as Catalogue;
@@ -519,6 +520,30 @@ test('an id is a prefix and parts of letters and digits: a space, an empty id or
   for (const [path, text] of Object.entries(good.svgs)) {
     for (const m of text.matchAll(/\sid="([^"]*)"/g)) assert.ok(ID.test(m[1]!), `${path}: ${m[1]}`);
   }
+});
+
+test('a pin of a drawing is the target of 1 pin of the data file: a shared or repeated target is a finding', () => {
+  assert.deepEqual(checkPins(CATALOGUE, anchors()).filter((f) => f.id === 'map'), []);
+  // C1B on the pad of C1A: wire 30 would end on the pad of wires 28 and 29.
+  const a = anchors();
+  a.files['ina3221.svg']!.catalogueMap!['C1B'] = ['VIN1+'];
+  const f = checkPins(CATALOGUE, a).filter((x) => x.id === 'map').map((x) => x.msg);
+  assert.deepEqual(f, ['ina3221.svg: catalogue pins C1A and C1B map to the pin VIN1+ of the drawing']);
+  // 1 of 3 targets shared.
+  const b = anchors();
+  b.files['ina3221.svg']!.catalogueMap!['GND'] = ['GND', 'PAD2'];
+  assert.equal(checkPins(CATALOGUE, b).filter((x) => x.id === 'map' && /map to the pin PAD2 of the drawing/.test(x.msg)).length, 1);
+  // A target named twice by 1 pin.
+  const c = anchors();
+  c.files['ina3221.svg']!.catalogueMap!['LP'] = ['PAD1', 'PAD1', 'PAD3'];
+  has(checkPins(CATALOGUE, c), 'map', /ina3221\.svg: catalogue pin LP maps to PAD1 twice/);
+  // A pin without wire point shares nothing.
+  const d = anchors();
+  d.files['ina3221.svg']!.catalogueMap!['VS'] = null;
+  assert.deepEqual(checkPins(CATALOGUE, d).filter((x) => x.id === 'map'), []);
+  // The generator: no target of its map is shared.
+  const targets = Object.values(INA3221_MAP).flatMap((t) => t ?? []);
+  assert.equal(new Set(targets).size, targets.length);
 });
 
 test('a map is on a drawing with the print of its board and on no other', () => {
