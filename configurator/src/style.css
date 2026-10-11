@@ -74,6 +74,11 @@ details.own[open] > summary::before { content: "\2212"; }
 .sum p { flex: 1 1 200px; margin: 0; }
 button.act { font: inherit; font-size: 15px; min-height: 44px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; }
 .linkbox { margin: 0 0 12px; }
+button.act[aria-disabled="true"] { color: var(--muted); border-style: dashed; cursor: progress; }
+.pdfmsg { margin: 0 0 12px; }
+.pdfmsg:empty { display: none; }
+.pdfmsg.err { padding: 8px 10px; border-left: 6px double var(--danger); background: var(--danger-bg); border-radius: 4px; }
+.pdfmsg a { display: inline-block; padding: 12px 0; overflow-wrap: anywhere; }
 .linkbox label { display: block; font-size: 14px; color: var(--muted); }
 .linkbox input { font: inherit; font-size: 14px; width: 100%; min-height: 44px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); }
 .msg { margin: 8px 0; padding: 8px 10px; border-left: 6px solid var(--note); background: var(--note-bg); border-radius: 4px; }
@@ -173,7 +178,7 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   }
   @page { size: A4; margin: 15mm; }
   body { padding: 0; font-size: 11pt; }
-  #choose, .bar, .lang, button.act, .linkbox, .hint.pan-hint { display: none !important; }
+  #choose, .bar, .lang, button.act, .linkbox, .pdfmsg, .hint.pan-hint { display: none !important; }
   .page { display: block; padding: 0; max-width: none; }
   #result { margin-top: 0; }
   .pan { overflow: visible; border: 0; }

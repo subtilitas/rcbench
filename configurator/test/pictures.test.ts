@@ -111,15 +111,19 @@ test('the INA3221 photos and the data name the same header, bridge and pads', ()
   assert.ok(strap.to?.en.startsWith('GND, solder bridge'));
 });
 
-test('the data states no polarity for the 2 pads of channel 1 of the INA3221', () => {
+test('the 2 pads of channel 1 of the INA3221 carry their print: VIN1+ takes the supply, VIN1- the servo', () => {
   const ina = part('ina3221');
-  const pads = ina.pins.filter((p) => /^C1[AB]$/.test(p.id));
-  assert.equal(pads.length, 2);
-  for (const pad of pads) assert.ok(!/[+\-−]|VIN/.test(pad.label.en + pad.label.de), pad.label.en);
+  const label = (id: string) => ina.pins.find((p) => p.id === id)!.label;
+  assert.deepEqual(label('C1A'), { en: 'VIN1+', de: 'VIN1+' });
+  assert.deepEqual(label('C1B'), { en: 'VIN1-', de: 'VIN1-' });
+  // The supply side: the PD mini output or the servo supply. The load side: the plus of the servo.
+  const on = (pin: string) => CATALOGUE.wires.filter((w) => w.b === `ina3221.${pin}`).map((w) => [w.n, w.a]);
+  assert.deepEqual(on('C1A'), [[28, 'pdmini.OP'], [29, 'ssup.POS']]);
+  assert.deepEqual(on('C1B'), [[30, 'servo.POS']]);
   const shunt = CATALOGUE.wires.find((w) => w.b === 'ina3221.C1B')!;
   assert.ok(shunt.note!.en.includes('VIN1+ and VIN1-'));
-  assert.ok(shunt.note!.en.includes('No source states which pad takes the supply.'));
-  assert.ok(shunt.note!.en.includes('swap the two wires on CH1'));
+  assert.ok(shunt.note!.en.includes('The supply goes to VIN1+, the servo to VIN1-.'));
+  assert.ok(shunt.note!.de.includes('Die Versorgung geht an VIN1+, das Servo an VIN1-.'));
   // The 3 large pads carry their printed names and stay unconfirmed and unconnected.
   const large = ina.pins.find((p) => p.id === 'LP')!;
   assert.equal(large.confirmed, false);
