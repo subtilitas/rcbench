@@ -1,6 +1,11 @@
 /*
  * KST servo programming protocol: limits on an edited image.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * A hard rule refuses an image.  A soft rule asks for a confirmation and
  * never refuses.  Each rule has an identifier that stays the same across
  * versions, so a user interface maps it to a text.

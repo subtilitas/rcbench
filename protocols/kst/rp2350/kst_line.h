@@ -4,6 +4,11 @@
  * (direct memory access) channels, one for the words of a frame and one
  * for the stamps of its reply window.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * Resources.  kst_line_open() claims 1 state machine, 24 words of program
  * space in a PIO block that reaches the pin, and 2 DMA channels;
  * kst_line_close() gives all of them back.  A second line on a second pin
