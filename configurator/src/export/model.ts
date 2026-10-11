@@ -177,7 +177,7 @@ function powerSection(view: View): Section {
       if (numbers !== '') lines.push({ text: numbers, muted: true });
       lines.push({ text: tx(lang, source.text), muted: false });
       for (const line of powerLines(lang, source)) lines.push({ text: `${line.kind}: ${line.text}`, muted: false });
-      return { runs: [{ text: tx(lang, source.label), bold: true }], tags: used ? [t(lang, 'gIn')] : [], lines };
+      return { runs: [{ text: tx(lang, source.label), bold: true }], tags: used ? [t(lang, source.choice === undefined ? 'gIn' : 'gInOne')] : [], lines };
     });
     blocks.push(heading(powerTitle(view, group.feeds), 3), { kind: 'list', items, bullet: false });
   }

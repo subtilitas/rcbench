@@ -215,6 +215,11 @@ export function checkRefs(c: Catalogue): Finding[] {
   for (const id of duplicates(c.powerSources.map((s) => s.id))) out.push(err(`power.${id}`, 'the id is used twice'));
   for (const source of c.powerSources) {
     const id = `power.${source.id}`;
+    if (source.choice !== undefined) {
+      const same = c.powerSources.filter((s) => s.choice === source.choice);
+      if (same.length < 2) out.push(err(id, `the choice ${source.choice} holds 1 source`));
+      if (same.some((s) => s.feeds !== source.feeds)) out.push(err(id, `the choice ${source.choice} feeds more than 1 thing`));
+    }
     cond(id, source.when);
     cond(id, source.used);
     if (source.feeds !== 'logic' && parts.get(source.feeds)?.testObject !== true) {

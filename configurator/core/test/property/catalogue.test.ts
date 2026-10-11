@@ -257,9 +257,15 @@ test('2: every reference resolves', () => {
 test('2: every part is reachable, and every rule can hold', () => {
   const needed = new Set(CATALOGUE.functions.flatMap((f) => f.needs));
   const added = new Set(CATALOGUE.rules.map((r) => r.adds));
+  const driven = new Set(CATALOGUE.functions.flatMap((f) => (f.drives === undefined ? [] : [f.drives])));
   for (const part of CATALOGUE.parts) {
-    assert.ok(part.locked || part.selectable || needed.has(part.id) || added.has(part.id),
+    assert.ok(part.locked || part.selectable || needed.has(part.id) || added.has(part.id) || driven.has(part.id),
       `nothing brings the part ${part.id} into a setup`);
+    // A test object comes with a function that drives it, and by no other way.
+    assert.equal(driven.has(part.id), part.testObject === true, `${part.id}: driven by a function, and a test object or not`);
+    if (part.testObject === true) {
+      assert.ok(!part.locked && !part.selectable && !needed.has(part.id) && !added.has(part.id), `the test object ${part.id} is bench hardware as well`);
+    }
   }
   // A wire of a pin or pad end belongs to a part that can be in a setup with it.
   for (const wire of CATALOGUE.wires) {
@@ -288,7 +294,7 @@ test('5: every record names a source, and every source anchor is well-formed', (
   const records = CATALOGUE.parts.length + CATALOGUE.parts.reduce((n, p) => n + p.pins.length, 0)
     + CATALOGUE.pads.length + CATALOGUE.wires.length + CATALOGUE.functions.length + CATALOGUE.rules.length
     + CATALOGUE.checks.length + CATALOGUE.stages.length + CATALOGUE.safety.length
-    + CATALOGUE.notInRelease.length + CATALOGUE.pinDefaults.length;
+    + CATALOGUE.notInRelease.length + CATALOGUE.pinDefaults.length + CATALOGUE.powerSources.length;
   assert.equal(found.length, records, 'a record has no source, or a source sits where no record is');
 });
 

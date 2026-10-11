@@ -44,7 +44,11 @@ A power source is one record of `powerSources`: what it feeds (`logic` or the
 id of a test object), voltage and current where a source states them,
 advantages, drawbacks and unknowns. A setup lists the sources of the logic
 and of each connected test object. `used` is true for a source that the wires
-of the setup use.
+of the setup use. Sources with the same `choice` stand for one part of the
+wiring: `lipo-2s` and `own-supply` are both the servo supply (`ssup`). A setup
+uses one of them and does not state which; the page and the PDF mark both
+"In this setup: one of these". No other 2 sources of one test object are in
+use in one setup.
 
 | Source | Feeds |
 | --- | --- |
@@ -284,7 +288,7 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 | --- | ---: | ---: | ---: |
 | `resolve.ts` | 207 | 207 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
-| `groups.ts` | 409 | 409 | 100.0 % |
+| `groups.ts` | 415 | 415 | 100.0 % |
 <!-- coverage:end -->
 
 ## Unknown in the data

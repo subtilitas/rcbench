@@ -160,6 +160,8 @@ export type Stage = { n: 1 | 2 | 3 | 4 | 5; title: Text; src: Src };
  * - `pros`, `cons`, `unknowns`: one short sentence each.
  * - `when`: the setups that offer the source. `null`: every setup.
  * - `used`: the setups whose wires use the source.
+ * - `choice`: sources with the same value stand for one part of the wiring.
+ *   The setup uses one of them and does not state which.
  */
 export type PowerSource = {
   id: string;
@@ -174,6 +176,7 @@ export type PowerSource = {
   unknowns: Text[];
   when: Cond | null;
   used: Cond;
+  choice?: string;
   src: Src;
 };
 

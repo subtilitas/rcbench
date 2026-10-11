@@ -512,6 +512,16 @@ test('references: a power source feeds the logic or a test object, with an advan
   source(feeds, 'lipo-2s').feeds = 'pdmini' as never;
   reports(checkRefs(feeds), 'power.lipo-2s', /feeds pdmini, which is neither the logic nor a test object/);
 
+  // The 2 external servo supplies are one choice; a choice holds 2 or more sources of one test object.
+  assert.deepEqual(CATALOGUE.powerSources.filter((s) => s.choice !== undefined).map((s) => [s.id, s.choice]),
+    [['lipo-2s', 'servo-supply'], ['own-supply', 'servo-supply']]);
+  const single = copy();
+  delete source(single, 'own-supply').choice;
+  reports(checkRefs(single), 'power.lipo-2s', /the choice servo-supply holds 1 source/);
+  const mixed = copy();
+  source(mixed, 'esc-battery').choice = 'servo-supply';
+  reports(checkRefs(mixed), 'power.lipo-2s', /the choice servo-supply feeds more than 1 thing/);
+
   const pros = copy();
   source(pros, 'copro-5v').pros = [];
   reports(checkRefs(pros), 'power.copro-5v', /no advantage/);

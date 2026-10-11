@@ -1907,7 +1907,7 @@ const powerSources: PowerSource[] = [
       NOT_SET,
     ],
     unknowns: [],
-    when: null, used: SERVO_EXTERNAL, src: OWNER,
+    when: null, used: SERVO_EXTERNAL, choice: 'servo-supply', src: OWNER,
   },
   {
     id: 'own-supply', feeds: 'servo',
@@ -1920,7 +1920,7 @@ const powerSources: PowerSource[] = [
     pros: [t('Voltage and current limit are chosen for the servo.', 'Spannung und Stromgrenze werden für das Servo gewählt.')],
     cons: [t('It is a further device.', 'Sie ist ein weiteres Gerät.'), NOT_SET],
     unknowns: [],
-    when: null, used: SERVO_EXTERNAL, src: OWNER,
+    when: null, used: SERVO_EXTERNAL, choice: 'servo-supply', src: OWNER,
   },
   {
     id: 'esc-battery', feeds: 'esc',

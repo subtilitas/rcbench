@@ -1,8 +1,8 @@
 // The selection space of the property tests, and the generator of the sample.
 //
-// Functions that need a part: every subset under every option combination.
-// A function that needs no part is in every setup; a selection names it in
-// the sample alone.
+// Functions that need a part or drive a test object: every subset under every
+// option combination. A function that does neither is in every setup; a
+// selection names it in the sample alone.
 // Parts you own: every subset under every option combination.
 // Both together: 2^(functions + parts) * options is past the limit, so a
 // sample from a generator with a fixed seed stands in for it.
@@ -21,7 +21,8 @@ export const MIXED = 30_000;
 
 export const OPTION_SETS: ReadonlyArray<Options> = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
-    OPTION_VALUES.escPower.map((escPower) => ({ connection, ina228Board, escPower }))));
+    OPTION_VALUES.escPower.flatMap((escPower) =>
+      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower })))));
 
 /** mulberry32: a 32-bit generator with a fixed sequence per seed. */
 export function generator(seed: number): () => number {
@@ -53,9 +54,9 @@ export function shuffled<T>(list: ReadonlyArray<T>, random: () => number): T[] {
 }
 
 export type Space = {
-  /** The functions that need a part: the ones a selection turns on. */
+  /** The functions that need a part or drive a test object: the ones a selection turns on. */
   functions: string[];
-  /** The functions that need no part. */
+  /** The functions that need no part and drive no test object. */
   base: string[];
   selectable: string[];
   /** Cases of the function space: subsets times option combinations. */
@@ -67,8 +68,9 @@ export type Space = {
 };
 
 export function spaceOf(catalogue: Catalogue): Space {
-  const functions = catalogue.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
-  const base = catalogue.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  const ticked = (f: Catalogue['functions'][number]): boolean => f.needs.length > 0 || f.drives !== undefined;
+  const functions = catalogue.functions.filter(ticked).map((f) => f.id);
+  const base = catalogue.functions.filter((f) => !ticked(f)).map((f) => f.id);
   const selectable = catalogue.parts.filter((p) => p.selectable).map((p) => p.id);
   const functionCases = 2 ** functions.length * OPTION_SETS.length;
   const partCases = 2 ** selectable.length * OPTION_SETS.length;

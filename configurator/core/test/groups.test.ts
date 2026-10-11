@@ -285,6 +285,32 @@ test('test objects: without a function that drives it alone, the test object lea
   assert.ok(removalIsPlain(plain));
 });
 
+test('test objects: a removal adds the tick of the plain drive only when no function that stays drives the test object', () => {
+  const pick = (functions: string[]): Selection => ({ functions, owned: [], options: { ...DEFAULT_OPTIONS } }) as Selection;
+  const after = (functions: string[], gone: string): string[] => removalEffect(CATALOGUE, pick(functions), gone).selection.functions;
+  // The angle check stays and drives the servo: no further tick.
+  assert.deepEqual(after(['servotest', 'angle'], 'pdmini'), ['angle']);
+  // The test alone: the servo stays connected by the tick of the plain drive.
+  assert.deepEqual(after(['servotest'], 'pdmini'), ['servo']);
+  // A tick of the plain drive that stands before stays as it is.
+  assert.deepEqual(after(['servo', 'servotest', 'angle'], 'pdmini'), ['servo', 'angle']);
+  // Both functions go: 1 tick for the servo.
+  assert.deepEqual(after(['servocur', 'angle'], 'as5600').includes('servo'), false);
+  // 2 test objects: the function that stays drives the servo, none drives the ESC.
+  const two = after(['angle', 'escpow'], 'ina228');
+  assert.deepEqual(two, ['angle', 'esc']);
+  for (const functions of [['servotest', 'angle'], ['servotest'], ['angle', 'escpow']]) {
+    const gone = functions.includes('escpow') ? 'ina228' : 'pdmini';
+    const effect = removalEffect(CATALOGUE, pick(functions), gone);
+    assert.deepEqual(effect.objectsOut, [], functions.join());
+    const setup = resolve(CATALOGUE, effect.selection);
+    for (const id of testObjects(CATALOGUE)) {
+      const before = resolve(CATALOGUE, pick(functions)).parts.some((r) => r.part.id === id);
+      assert.equal(setup.parts.some((r) => r.part.id === id), before, `${id} after ${functions.join()}`);
+    }
+  }
+});
+
 test('test objects: deselecting the last function that drives one disconnects it', () => {
   const last = deselectEffect(RIG, select(['current']), 'current');
   assert.deepEqual(last.selection, select());

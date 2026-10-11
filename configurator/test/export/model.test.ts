@@ -84,7 +84,7 @@ test('every setup of the sweep gives the sections in order, every part, every wi
           const item = power[i];
           const s = entry.source;
           if (item?.runs[0]?.text !== tx(lang, s.label)) say(`power source ${s.id} is out of place`);
-          if ((item?.tags.join() ?? '') !== (entry.used ? t(lang, 'gIn') : '')) say(`power source ${s.id} carries the wrong mark`);
+          if ((item?.tags.join() ?? '') !== (entry.used ? t(lang, s.choice === undefined ? 'gIn' : 'gInOne') : '')) say(`power source ${s.id} carries the wrong mark`);
           const lines = item?.lines.map((l) => l.text) ?? [];
           if (!lines.includes(tx(lang, s.text))) say(`power source ${s.id} lacks its text`);
           for (const line of [...s.pros, ...s.cons, ...s.unknowns]) {

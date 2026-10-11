@@ -52,7 +52,7 @@ stays on the part.
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
 | `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
-| `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
+| `e2e/matrix/` | Playwright tests of 17 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
@@ -172,7 +172,7 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 |---|---|
 | Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. |
 | What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
-| Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use. |
+| Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
 The footer holds the state of the project and the trademark notice.
 
