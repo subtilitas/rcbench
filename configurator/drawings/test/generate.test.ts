@@ -266,6 +266,31 @@ test('a lead beside a pin, an eyelet without a lead and a second chain are loose
   assert.deepEqual(d.loose(), ['40.5,150', '200,150', '150,20']);
 });
 
+test('a lead end is compared with a pin at the 1 decimal the anchor is stored with', () => {
+  const dwg = (): Dwg => new Dwg({ file: 'x', pfx: 'x', w: 200, h: 100, title: 't', desc: 'd', lang: 'en', labels: { A: { en: 'A', de: 'A' }, B: { en: 'B', de: 'B' } } });
+  // Pin and lead at the same place with 2 decimals: the anchor is (10, 20), the lead end reaches it.
+  const d = dwg();
+  d.pin('A', 10.04, 20.04, 'W', 40, 40);
+  d.pin('B', 150.04, 20.04, 'E', 120, 40);
+  d.bare(10.04, 20.04, 80.26, 20.04);
+  d.bare(80.26, 20.04, 150.04, 20.04);
+  d.eye(10.04, 20.04);
+  assert.deepEqual(d.anchors['A'] && [d.anchors['A'].x, d.anchors['A'].y], [10, 20]);
+  assert.deepEqual(d.loose(), []);
+  // Just inside the same tenth on both sides of it, and a chain joined at a rounded point.
+  const e = dwg();
+  e.pin('A', 10, 20, 'W', 40, 40);
+  e.bare(10.04, 19.96, 80.24, 20);
+  e.bare(80.16, 20, 120, 20.04);
+  e.pin('B', 120.04, 20, 'E', 120, 40);
+  assert.deepEqual(e.loose(), []);
+  // The next tenth is another place: 0.06 px off rounds to 10.1.
+  const g = dwg();
+  g.pin('A', 10, 20, 'W', 40, 40);
+  g.bare(10.06, 20, 80, 20);
+  assert.deepEqual(g.loose(), ['10.1,20', '80,20']);
+});
+
 test('the generator refuses a drawing with a lead that reaches no pin', () => {
   const tap = LIST.find((e) => e.file === 'tap')!;
   const draw = tap.draw;

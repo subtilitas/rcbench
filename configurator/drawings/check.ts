@@ -5,6 +5,7 @@ import type { Catalogue, Lang } from '../contract.ts';
 import { DEFAULT_OPTIONS } from '../core/resolve.ts';
 import { LANGS, anchorsText, cataloguePins, fileOf, generate, pathOf } from './generate.ts';
 import type { Anchors, DrawingRecord } from './generate.ts';
+import { FONT } from './lib.ts';
 import { BACKGROUNDS, MINUS_NETS, MIN_RATIO, PALETTE, PLUS_NETS, colourOf, endPoints, neighbours, wireRatio, withoutWirePoint } from './wires.ts';
 import type { Colour } from './wires.ts';
 
@@ -45,6 +46,36 @@ const decoded = (s: string): string => s.replace(/&#(x[0-9a-fA-F]+|\d+);/g, (ref
 
 /** Elements that change an attribute at run time, by local name. */
 const ANIMATION = new Set(['set', 'animate', 'animatemotion', 'animatetransform', 'animatecolor', 'mpath', 'discard']);
+
+/** Every element the generator writes, by its name as written. A file with another element is a finding. */
+export const ELEMENTS: ReadonlySet<string> = new Set([
+  'svg', 'title', 'desc', 'defs', 'linearGradient', 'radialGradient', 'stop', 'filter', 'feDropShadow',
+  'g', 'rect', 'circle', 'path', 'text',
+]);
+
+/**
+ * Every attribute the generator writes, by its name as written. A file with another attribute is a finding:
+ * no attribute that carries an address (`href`, `src`, `ping`), runs code, hides an element from assistive
+ * technology or restyles it is on the list.
+ */
+export const ATTRIBUTES: ReadonlySet<string> = new Set([
+  'aria-describedby', 'aria-labelledby', 'cx', 'cy', 'd', 'dx', 'dy', 'fill', 'filter', 'flood-color', 'flood-opacity',
+  'font-family', 'font-size', 'font-weight', 'height', 'id', 'lang', 'letter-spacing', 'offset', 'opacity', 'r', 'role',
+  'rx', 'stdDeviation', 'stop-color', 'stroke', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin',
+  'stroke-opacity', 'stroke-width', 'text-anchor', 'transform', 'viewBox', 'width', 'x', 'x1', 'x2', 'xml:lang',
+  'xmlns', 'y', 'y1', 'y2',
+]);
+
+/** The attributes of the root element. The root carries each of them once and no other. */
+export const ROOT_ATTRIBUTES: ReadonlyArray<string> = [
+  'xmlns', 'lang', 'xml:lang', 'viewBox', 'width', 'height', 'role', 'aria-labelledby', 'aria-describedby', 'font-family',
+];
+
+/** Root attributes that no other element carries. `width`, `height` and `font-family` have rules of their own. */
+const ROOT_ONLY = ['xmlns', 'lang', 'xml:lang', 'viewBox', 'role', 'aria-labelledby', 'aria-describedby'];
+
+/** An id of a drawing: a prefix of lower-case letters and digits, then 1 or more parts of letters and digits after a hyphen. */
+export const ID = /^[a-z][a-z0-9]*(?:-[A-Za-z0-9]+)+$/;
 
 const unescape = (s: string): string =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
@@ -129,20 +160,44 @@ export function checkSvg(where: string, raw: string, rec: DrawingRecord, lang?: 
   for (const m of svg.matchAll(/url\(\s*['"]?([^)'"]*)/gi)) {
     if (!m[1]!.startsWith('#')) fail(`url(${m[1]}) leaves the file`);
   }
+  // The generator writes a paint or filter reference as url(#id): no space, no quote, the bracket closed.
+  for (const m of svg.matchAll(/url\(([^)"]*)(\)?)/gi)) {
+    if (/^\s*'?#/.test(m[1]!) && (m[2] !== ')' || !m[1]!.startsWith('#') || !ID.test(m[1]!.slice(1)))) fail(`url(${m[1]} is not of the form url(#id)`);
+  }
   for (const m of svg.matchAll(/https?:\/\/[^\s"<]+/g)) {
     if (m[0] !== 'http://www.w3.org/2000/svg') fail(`external address ${m[0]}`);
   }
   // A base address moves every "#id" reference to another file.
   if (/\s(?:[\w.-]+:)?base\s*=/i.test(svg)) fail('contains a base address attribute');
+  // The generator writes a fixed set of elements and attributes. Anything else is not its output.
+  const strange = (found: Iterable<string>, known: ReadonlySet<string>): string[] => [...new Set(found)].filter((name) => !known.has(name)).sort();
+  for (const name of strange([...svg.matchAll(/<([A-Za-z][\w:.-]*)/g)].map((m) => m[1]!), ELEMENTS)) fail(`element ${name} is not one the generator writes`);
+  const attributes = [...svg.matchAll(/<[A-Za-z][\w:.-]*((?:\s+[\w:.-]+\s*=\s*"[^"]*")*)/g)]
+    .flatMap((m) => [...m[1]!.matchAll(/\s+([\w:.-]+)\s*=/g)].map((a) => a[1]!));
+  for (const name of strange(attributes, ATTRIBUTES)) fail(`attribute ${name} is not one the generator writes`);
   const first = /<[A-Za-z][^>]*>/.exec(svg)?.[0] ?? '';
   const rootName = /^<([^\s/>]+)/.exec(first)?.[1] ?? '';
   /** Attributes of the root element. */
   const root = new Map([...first.matchAll(/\s([\w:.-]+)="([^"]*)"/g)].map((m) => [m[1]!, m[2]!]));
   if (rootName !== 'svg' || root.get('xmlns') !== SVG_NS) fail(`the root element is not svg in the namespace ${SVG_NS}`);
   if (lang !== undefined && (root.get('lang') !== lang || root.get('xml:lang') !== lang)) fail(`the root element does not state the language ${lang} in lang and xml:lang`);
-  const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]!);
+  // The root carries its 10 attributes and no other: none hides the drawing or renames it.
+  for (const name of root.keys()) if (!ROOT_ATTRIBUTES.includes(name)) fail(`the root element carries the attribute ${name}`);
+  if (root.get('role') !== 'img') fail('the root element does not state the role img');
+  // Namespace, language, viewBox, role and the 2 ARIA references are stated once, on the root.
+  for (const name of ROOT_ONLY) {
+    const count = attributes.filter((a) => a === name).length;
+    if (count > (root.has(name) ? 1 : 0)) fail(`an element other than the root carries the attribute ${name}`);
+  }
+  // Title and description are the first 2 children of the root, 1 of each in the file.
+  const head = /^<[^>]*>\s*<title id="[^"]*">[^<]*<\/title>\s*<desc id="[^"]*">[^<]*<\/desc>/.test(svg.slice(svg.indexOf('<')));
+  const count = (name: string): number => [...svg.matchAll(new RegExp(`<${name}[\\s/>]`, 'g'))].length;
+  if (!head || count('title') !== 1 || count('desc') !== 1) fail('title and desc are not the first 2 children of the root, 1 of each');
+  const ids = [...svg.matchAll(/\sid\s*=\s*"([^"]*)"/g)].map((m) => m[1]!);
   const set = new Set(ids);
   if (set.size !== ids.length) fail('an id is given twice');
+  // An id with a space or another character outside the grammar is no target of "#id" or of an ARIA reference.
+  for (const id of set) if (!ID.test(id)) fail(`id "${id}" is not a prefix and parts of letters and digits, joined by hyphens`);
   const pfx = ids[0]?.split('-')[0] ?? '';
   for (const id of set) if (!id.startsWith(`${pfx}-`)) fail(`id ${id} lacks the prefix ${pfx}-`);
   for (const m of svg.matchAll(/(?:url\(#|href="#)([^)"]+)/gi)) if (!set.has(m[1]!)) fail(`reference to missing id ${m[1]}`);
@@ -154,9 +209,11 @@ export function checkSvg(where: string, raw: string, rec: DrawingRecord, lang?: 
   else if (root.get('aria-describedby') !== desc[1]) fail('the root element does not name the description');
   const vb = /^0 0 ([\d.]+) ([\d.]+)$/.exec(root.get('viewBox') ?? '');
   if (!vb || Number(vb[1]) !== rec.viewBox[2] || Number(vb[2]) !== rec.viewBox[3]) fail('viewBox differs from anchors.json');
-  // The label fit is measured for this stack: the root states it, and no element states another.
-  if (!(root.get('font-family') ?? '').startsWith('system-ui')) fail('the root element does not state a font stack that starts with system-ui');
-  if (/font-family="(?!system-ui)/.test(svg)) fail('font stack does not start with system-ui');
+  // The size a viewer gives the file without a style sheet: the px of the viewBox.
+  if (root.get('width') !== String(rec.viewBox[2]) || root.get('height') !== String(rec.viewBox[3])) fail('width and height of the root element differ from anchors.json');
+  // The label fit is measured for this stack: the root states it whole, and no element states a font.
+  if (unescape(root.get('font-family') ?? '') !== FONT) fail(`the root element does not state the font stack ${FONT}`);
+  if ([...svg.matchAll(/\sfont-family\s*=/g)].length > (root.has('font-family') ? 1 : 0)) fail('an element other than the root states a font stack');
   return out;
 }
 
@@ -165,6 +222,11 @@ export function checkRecord(file: string, rec: DrawingRecord, svgs: Partial<Reco
   const out: Finding[] = [];
   const fail = (msg: string): void => { out.push({ id: 'anchor', msg }); };
   const [, , w, h] = rec.viewBox;
+  // The viewBox starts at 0 0 and has a size: 4 finite numbers.
+  const box: unknown = rec.viewBox;
+  if (!Array.isArray(box) || box.length !== 4 || !box.every((v) => typeof v === 'number' && Number.isFinite(v)) || box[0] !== 0 || box[1] !== 0 || !(box[2] > 0) || !(box[3] > 0)) {
+    fail(`${file}: viewBox ${JSON.stringify(box)} is not 0, 0 and 2 sizes above 0`);
+  }
   const labelIds = new Set<string>();
   for (const [id, a] of Object.entries(rec.pins)) {
     // A coordinate that is not a finite number reads as null from the JSON file and compares like 0.
@@ -227,7 +289,12 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
     }
     drawn.add(rec.part);
     const expected = cataloguePins(catalogue, part, rec.variant);
-    if (rec.catalogueMap) {
+    if (rec.names !== 'catalogue' && rec.names !== 'board print') fail('map', `${file}: names is "${String(rec.names)}", not "catalogue" or "board print"`);
+    // A map belongs to a drawing with the print of its board. On a drawing with the names of the data
+    // file it would take the pins and labels out of the comparison below.
+    if (rec.catalogueMap && rec.names !== 'board print') fail('map', `${file}: a drawing with the names of the data file carries a catalogueMap`);
+    if (!rec.catalogueMap && rec.names === 'board print') fail('map', `${file}: a drawing with the print of its board carries no catalogueMap`);
+    if (rec.catalogueMap && rec.names === 'board print') {
       for (const id of Object.keys(expected)) {
         if (!(id in rec.catalogueMap)) { fail('pin-without-anchor', `${file}: catalogue pin ${id} is not in catalogueMap`); continue; }
         const to = rec.catalogueMap[id];

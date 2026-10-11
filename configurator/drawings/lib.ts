@@ -250,7 +250,8 @@ export class Dwg {
    * Returns each loose point as "x,y".
    */
   loose(): string[] {
-    const key = (x: number, y: number): string => `${x},${y}`;
+    // An anchor is stored with 1 decimal. A lead end is compared at the same precision.
+    const key = (x: number, y: number): string => `${r1(x)},${r1(y)}`;
     const reached = new Set(Object.values(this.anchors).map((a) => key(a.x, a.y)));
     for (let grown = true; grown;) {
       grown = false;
