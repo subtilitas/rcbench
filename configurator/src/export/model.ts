@@ -146,11 +146,17 @@ function partsSection(view: View): Section {
 function functionsSection(view: View): Section {
   const { lang, catalogue, setup, options } = view;
   const tag = (notRun: boolean): string[] => (notRun ? [t(lang, 'nrh')] : []);
-  const enabled: Item[] = [
-    { runs: [{ text: tx(lang, catalogue.baseFunction) }], tags: [], lines: [] },
-    ...setup.functions.filter((f) => f.enabled)
-      .map((f) => ({ runs: [{ text: tx(lang, f.fn.name) }], tags: tag(f.fn.hardware === 'not-run'), lines: [] })),
-  ];
+  // As on the page: the functions that need no part under the heading of the
+  // catalogue, then the functions the parts of the setup enable.
+  const entry = (f: (typeof setup.functions)[number]): Item =>
+    ({ runs: [{ text: tx(lang, f.fn.name) }], tags: tag(f.fn.hardware === 'not-run'), lines: [] });
+  const on = setup.functions.filter((f) => f.enabled);
+  const base: Item[] = on.filter((f) => f.fn.needs.length === 0).map(entry);
+  const withParts: Item[] = on.filter((f) => f.fn.needs.length > 0).map(entry);
+  const enabled: Block[] = [];
+  if (base.length > 0) enabled.push(heading(tx(lang, catalogue.baseFunction), 3), { kind: 'list', items: base, bullet: true });
+  if (withParts.length > 0) enabled.push(heading(t(lang, 'withParts'), 3), { kind: 'list', items: withParts, bullet: true });
+  if (enabled.length === 0) enabled.push(para(p(lang, 'noneEnabled')));
   const off: Item[] = setup.functions.filter((f) => !f.enabled).map((f) => {
     const lines: Sub[] = [];
     if (f.missing.length > 0) {
@@ -169,9 +175,11 @@ function functionsSection(view: View): Section {
     id: 'functions',
     blocks: [
       heading(t(lang, 'does')),
-      { kind: 'list', items: enabled, bullet: true },
-      heading(p(lang, 'notEnabled'), 3),
-      off.length > 0 ? { kind: 'list', items: off, bullet: true } : para(p(lang, 'allEnabled')),
+      ...enabled,
+      // A catalogue without a function has nothing to list on either side.
+      ...(off.length > 0
+        ? [heading(p(lang, 'notEnabled'), 3), { kind: 'list', items: off, bullet: true } as Block]
+        : on.length > 0 ? [heading(p(lang, 'notEnabled'), 3), para(p(lang, 'allEnabled'))] : []),
     ],
   };
 }
