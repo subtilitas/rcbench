@@ -133,7 +133,7 @@ const S = {
   pwCon: ['Drawback', 'Nachteil'],
   pwTo: ['{a} to {b}', '{a} bis {b}'],
   pwUpTo: ['up to {a}', 'bis {a}'],
-  pwOr: [' or ', ' oder '],
+  pwOr: ['or', 'oder'],
   always: ['Always needed', 'Immer nötig'],
   neededBy: ['Needed by: ', 'Nötig für: '],
   youOwn: ['You own it', 'Vorhanden'],

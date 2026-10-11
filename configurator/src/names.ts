@@ -36,7 +36,7 @@ export function powerNumbers(lang: Lang, source: PowerSource): string {
   const span = (min: number, max: number): string => (min === max ? num(min) : t(lang, 'pwTo', { a: num(min), b: num(max) }));
   const out: string[] = [];
   const { volts, amps } = source;
-  if (volts) out.push(`${volts.steps ? volts.steps.map(num).join(t(lang, 'pwOr')) : span(volts.min, volts.max)} V`);
+  if (volts) out.push(`${volts.steps ? volts.steps.map(num).join(` ${t(lang, 'pwOr')} `) : span(volts.min, volts.max)} V`);
   if (amps) out.push(`${amps.min === null ? t(lang, 'pwUpTo', { a: num(amps.max) }) : span(amps.min, amps.max)} A`);
   if (out.length === 0) return '';
   return `${out.join(', ')}.${source.basis ? ` ${tx(lang, source.basis)}` : ''}`;

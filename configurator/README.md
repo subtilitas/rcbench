@@ -44,7 +44,7 @@ stays on the part.
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
 | `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
-| `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
+| `e2e/matrix/` | Playwright tests of 17 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |

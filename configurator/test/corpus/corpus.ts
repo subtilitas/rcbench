@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 
 import type { Lang, Options, Selection } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
-import { formatHash, parseHash, reportIds } from '../../src/hash.ts';
+import { formatHash, parseHash, reportIds, testObjectTicks } from '../../src/hash.ts';
 
 /** A hash too long to write out: `prefix`, then `unit` `count` times, then `suffix`. */
 export type Built = { prefix: string; unit: string; count: number; suffix: string };
@@ -78,13 +78,15 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
   const lang = parsed.lang ?? startLang;
   const notices: Array<'err' | 'note'> = [];
   if (parsed.badVersion) notices.push('err');
-  const setup = resolve(CATALOGUE, parsed.selection);
+  // A test object under the owned parts of a link is the tick of its function.
+  const given = testObjectTicks(parsed.selection, CATALOGUE);
+  const setup = resolve(CATALOGUE, given);
   const selection: Selection = {
-    functions: parsed.selection.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id)),
-    owned: parsed.selection.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable)),
-    options: { ...parsed.selection.options },
+    functions: given.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id)),
+    owned: given.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable)),
+    options: { ...given.options },
   };
-  const dropped = [...parsed.selection.functions, ...parsed.selection.owned]
+  const dropped = [...given.functions, ...given.owned]
     .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
   const unknown = [...parsed.unknown, ...setup.ignored, ...dropped];
   if (unknown.length > 0) notices.push('note');
