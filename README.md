@@ -111,7 +111,9 @@ rcbench is MIT licensed: [LICENSE](LICENSE).
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the
   Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). No font file is
   redistributed.
-- **Protocols** are implemented from published specifications. Permissive
+- **Protocols** are implemented from published specifications; the
+  programming protocol of KST and Chaservo servos, which has none, from wire
+  captures of hardware the project owns. Permissive
   reference code (PX4's receiver decoders under BSD (Berkeley Software
   Distribution); MIT reference code for SRXL2, JETI EX Bus, DShot and DroneCAN)
   was read for confirmation only.
@@ -122,3 +124,26 @@ rcbench is MIT licensed: [LICENSE](LICENSE).
   VESC and Hitec.
 - **Third-party code in the tree: none.** `test/host/greatest.h` is a test
   harness written for this project; it is not the `greatest` library.
+
+## Legal notice and disclaimer
+
+### Trademark notice
+
+KST, CHASERVO and Hitec and their logos are trademarks or registered
+trademarks of their respective manufacturers. The names are used in this
+project in a purely descriptive way, to document compatibility with the
+respective servos. This project is not affiliated with the named
+manufacturers and is neither supported nor sponsored by them.
+
+### Disclaimer
+
+rcbench is open-source software and hardware for self-build. Use, replication
+and the programming of servos are at one's own risk. To the extent permitted
+by law, the author accepts no liability for:
+
+- damage to servos, for example from a wrong voltage, timing errors or
+  corrupted settings data in the servo,
+- damage to computers, microcontrollers or other connected hardware,
+- injury or damage that results from operating the hardware.
+
+The licence terms are in [LICENSE](LICENSE).

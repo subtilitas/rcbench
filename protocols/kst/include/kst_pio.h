@@ -2,6 +2,11 @@
  * @file kst_pio.h
  * @brief The numbers and words a PIO pin driver for the KST wire works with.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * rp2350/kst_line.pio is one PIO (programmable input/output) program that
  * clocks a frame out, releases the pad, stamps every level change of the
  * reply window and drives the pad low again.  It takes its counts from the

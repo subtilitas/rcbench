@@ -5,8 +5,8 @@ enforce them. Read this before a large change.
 
 ## Licensing rule
 
-**Protocols are implemented from published specifications, never from another
-implementation.**
+**Protocols are implemented from published specifications or from captures of
+the wire, never from another implementation.**
 
 Nearly every open implementation of the protocols this bench speaks (ESC
 (electronic speed controller) serial, receiver buses, telemetry) is GPL (GNU
@@ -22,7 +22,10 @@ reading GPL source cannot be relicensed by rewording it.
   SRXL2, JETI EX Bus, DShot and DroneCAN. The code here is written
   independently of them.
 
-A protocol with no published description is not implemented. BLHeli_32's
+A protocol with no published description and no capture of its wire is not
+implemented. The programming protocol of KST and Chaservo servos has no
+published description and is written from captures made on hardware the
+project owns. BLHeli_32's
 parameters and JETI's remote configuration are recorded as not planned for this
 reason.
 
