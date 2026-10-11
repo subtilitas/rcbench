@@ -4,7 +4,7 @@
 import type { Catalogue, Lang } from '../contract.ts';
 import { LANGS, anchorsText, cataloguePins, fileOf, generate, pathOf } from './generate.ts';
 import type { Anchors, DrawingRecord } from './generate.ts';
-import { BACKGROUNDS, MIN_RATIO, PALETTE, colourOf, endPoints, neighbours, wireRatio, withoutWirePoint } from './wires.ts';
+import { BACKGROUNDS, MINUS_NETS, MIN_RATIO, PALETTE, PLUS_NETS, colourOf, endPoints, neighbours, wireRatio, withoutWirePoint } from './wires.ts';
 import type { Colour } from './wires.ts';
 
 export type FindingId =
@@ -207,10 +207,11 @@ export function checkContrast(
  * - `wire-end`: an end of a wire has no anchor. An end whose pin the drawing maps
  *   to null has no wire point on the board and is skipped.
  * - `neighbour`: 2 wires that end on neighbouring pins of one drawing share a colour.
+ *   2 supply plus wires and 2 minus wires are exempt: their colour is fixed.
  */
 export function checkWires(catalogue: Catalogue, anchors: Anchors): Finding[] {
   const out: Finding[] = [];
-  const ends: Array<{ n: number; colour: string | null; file: string; pin: string; end: string }> = [];
+  const ends: Array<{ n: number; colour: string | null; rail: 'plus' | 'minus' | null; file: string; pin: string; end: string }> = [];
   for (const wire of catalogue.wires) {
     let colour: string | null = null;
     try {
@@ -219,11 +220,12 @@ export function checkWires(catalogue: Catalogue, anchors: Anchors): Finding[] {
       out.push({ id: 'wire-colour', msg: (e as Error).message });
     }
     if (colour !== null && !PALETTE[colour]) out.push({ id: 'wire-colour', msg: `wire ${wire.n}: colour ${colour} is not in the palette` });
+    const rail = PLUS_NETS.has(wire.net) ? 'plus' : MINUS_NETS.has(wire.net) ? 'minus' : null;
     for (const end of [wire.a, wire.b]) {
       if (end === null) continue;
       const points = endPoints(end, anchors);
       if (points.length === 0 && !withoutWirePoint(end, anchors)) out.push({ id: 'wire-end', msg: `wire ${wire.n}: end ${end} has no anchor` });
-      for (const p of points) ends.push({ n: wire.n, colour, file: p.file, pin: p.pin, end });
+      for (const p of points) ends.push({ n: wire.n, colour, rail, file: p.file, pin: p.pin, end });
     }
   }
   for (const [file, rec] of Object.entries(anchors.files)) {
@@ -232,6 +234,7 @@ export function checkWires(catalogue: Catalogue, anchors: Anchors): Finding[] {
     for (const a of here) {
       for (const b of here) {
         if (a.n >= b.n || a.pin === b.pin || a.end === b.end || !near[a.pin]!.includes(b.pin)) continue;
+        if (a.rail !== null && a.rail === b.rail) continue;
         if (a.colour === b.colour) out.push({ id: 'neighbour', msg: `${file}: wires ${a.n} and ${b.n} end on the neighbouring pins ${a.pin} and ${b.pin} and are both ${a.colour}` });
       }
     }

@@ -79,7 +79,7 @@ test('every anchor lies inside its viewBox, on a side, with a label in both lang
       assert.ok(a.labelId.startsWith(`${LIST.find((e) => `${e.file}.svg` === file)!.pfx}-lbl-`), `${file} ${id}`);
     }
   }
-  assert.equal(n, 173);
+  assert.equal(n, 175);
 });
 
 test('every part of the catalogue has a drawing, a part with 2 boards has 1 per board', () => {

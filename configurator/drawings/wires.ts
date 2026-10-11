@@ -45,28 +45,46 @@ export const PALETTE: Readonly<Record<string, Colour>> = {
   grey: { core: '#79838f', casing: null },
 };
 
-/** Colour by net. A net listed here overrides the colour of its class. */
-export const BY_NET: Readonly<Record<string, string>> = {
-  gnd: 'black', esc_neg: 'black',
-  hb_in: 'pink',
-  servo_shunt: 'orange', esc_shunt: 'orange',
-  pd_tx: 'cyan', pd_rx: 'olive',
-  phase_a: 'brown', phase_b: 'grey', phase_c: 'white', tap: 'green',
-};
+/** Colour of every supply plus wire. No signal wire has it. */
+export const PLUS = 'red';
+/** Colour of every ground and supply minus wire. No signal wire has it. */
+export const MINUS = 'black';
 
-/** Colour by signal class. The classes `uart` and `phase` have none: each of their nets is in BY_NET. */
-export const BY_CLASS: Readonly<Record<string, string>> = {
-  power: 'red', gnd: 'black', canh: 'ochre', canl: 'green', hb: 'magenta', out: 'violet',
-  sda: 'blue', scl: 'teal', logic: 'pink', nc: 'grey',
+/** Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3 V and VBUS of the coprocessor. */
+export const PLUS_NETS: ReadonlySet<string> = new Set([
+  'batt_pos', 'pd_in', 'pd_out', 'servo_v', 'servo_shunt', 'esc_shunt', '3v3', 'vbus',
+]);
+/** Nets of ground and supply minus. */
+export const MINUS_NETS: ReadonlySet<string> = new Set(['gnd', 'batt_neg', 'esc_neg']);
+
+/** Colour of a signal by net. A net listed here overrides the colour of its class. */
+export const BY_NET: Readonly<Record<string, string>> = {
+  hb_in: 'pink',
+  pd_tx: 'cyan', pd_rx: 'olive',
+  phase_a: 'brown', phase_b: 'grey', phase_c: 'white', tap: 'orange',
 };
 
 /**
- * Name of the palette colour of a wire. null for a wire of kind `component`: it is
- * the lead of a part and has no insulation. Throws when neither the net nor the
- * class of the wire has a colour.
+ * Colour of a signal by class. The classes `uart` and `phase` have none: each of
+ * their nets is in BY_NET. The classes `power` and `gnd` have none: a supply wire
+ * takes its colour from PLUS_NETS and MINUS_NETS alone.
+ */
+export const BY_CLASS: Readonly<Record<string, string>> = {
+  canh: 'ochre', canl: 'green', hb: 'magenta', out: 'violet',
+  sda: 'blue', scl: 'teal', nc: 'grey',
+};
+
+/**
+ * Name of the palette colour of a wire. A wire on a plus net is red, a wire on a
+ * minus net is black, a signal has the colour of its net or of its class. null for
+ * a wire of kind `component`: it is the lead of a part and has no insulation.
+ * Throws when the net is none of these, and for a wire of the class `power` or
+ * `gnd` on a net that is neither plus nor minus.
  */
 export function colourOf(wire: Pick<Wire, 'n' | 'kind' | 'net' | 'cls'>): string | null {
   if (wire.kind === 'component') return null;
+  if (PLUS_NETS.has(wire.net)) return PLUS;
+  if (MINUS_NETS.has(wire.net)) return MINUS;
   const name = BY_NET[wire.net] ?? BY_CLASS[wire.cls];
   if (name === undefined) throw new Error(`wire ${wire.n}: no colour for net ${wire.net}, class ${wire.cls}`);
   return name;

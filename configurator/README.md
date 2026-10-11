@@ -140,7 +140,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The page does not show the drawings. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 46 files, 448.8 kB.
+Drawing folder: 46 files, 448.9 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 
@@ -151,8 +151,8 @@ Drawing folder: 46 files, 448.8 kB.
   and cables: no picture.
 - Photo `02-pd-mini`: the left third is out of focus.
 - The drawing has no zoom control. Below 1024 px width it scrolls sideways in its box.
-- 11 wires use a lane that differs from the `route` in the data file: wires 10,
-  14, 21, 22, 28, 29, 30, 45, 46, 47 and 51. The table is `GEO.laneFix` in
+- 14 wires use a lane that differs from the `route` in the data file: wires 10,
+  14, 21, 22, 28, 29, 30, 45, 46, 47, 51, 56, 57 and 58. The table is `GEO.laneFix` in
   `src/draw/layout.ts`. With the lanes of the data file, wires of different
   nets share a line or a pill covers a wire of another pin. A lane changed in
   the data file for one of these wires has no effect on the drawing.

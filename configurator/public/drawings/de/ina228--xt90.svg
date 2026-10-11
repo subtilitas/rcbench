@@ -48,8 +48,8 @@
 <rect x="280" y="100" width="22" height="16" rx="8" fill="url(#ixt-gold)"/><rect x="280" y="154" width="22" height="16" rx="8" fill="url(#ixt-gold)"/><g filter="url(#ixt-s3)"><rect x="290" y="88" width="118" height="94" rx="5" fill="url(#ixt-xt)"/></g><rect x="352" y="96" width="50" height="78" rx="3" fill="#d8a516" opacity=".6"/>
 <text id="ixt-lbl-BAT" x="48" y="113" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">BAT+</text>
 <text id="ixt-lbl-ESC" x="372" y="113" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">ESC+</text>
-<text x="48" y="167" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">BAT−</text>
-<text x="372" y="167" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">ESC−</text>
+<text id="ixt-lbl-BATN" x="48" y="167" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">BAT−</text>
+<text id="ixt-lbl-ESCN" x="372" y="167" font-size="14" font-weight="600" fill="#24262b" text-anchor="middle">ESC−</text>
 <circle cx="140" cy="88" r="5" fill="none" stroke="#f2f2f2" stroke-width="1"/>
 <text x="140" y="91.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">+</text>
 <circle cx="140" cy="190" r="5" fill="none" stroke="#f2f2f2" stroke-width="1"/>
@@ -71,7 +71,7 @@
 <circle cx="244" cy="224" r="7.5" fill="url(#ixt-ring)"/><circle cx="244" cy="224" r="3.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
 <circle cx="244" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
 <text x="244" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">V</text>
-<text id="ixt-lbl-V5" x="244" y="207" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">5V</text>
+<text id="ixt-lbl-V3" x="244" y="207" font-size="12" font-weight="600" fill="#f2f2f2" text-anchor="middle">V</text>
 <circle cx="274" cy="224" r="7.5" fill="url(#ixt-ring)"/><circle cx="274" cy="224" r="3.4" fill="#8e959d" stroke="#6d737b" stroke-width=".8"/>
 <circle cx="274" cy="244" r="6" fill="none" stroke="#f2f2f2" stroke-width="1"/>
 <text x="274" y="247.2" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">G</text>
