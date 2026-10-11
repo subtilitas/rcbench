@@ -2239,10 +2239,11 @@ static const char *state_second(bool *type)
 
 const char *kst_panel_status_line(int i)
 {
-    static char buf[KST_PANEL_LINE];
     bool type;
 
     if (i == 0) {
+        static char buf[KST_PANEL_LINE];
+
         state_line(buf, sizeof(buf));
         return buf;
     }

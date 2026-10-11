@@ -70,7 +70,6 @@ static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
 {
     char base[KST_PROG_NAME_MAX];
     kst_store_t r = KST_STORE_OK;
-    size_t len;
 
     memcpy(base, req->name, sizeof(base));
     base[sizeof(base) - 1u] = '\0';
@@ -78,7 +77,8 @@ static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
         r = kst_store_preset(io, base, sizeof(base));
     }
     if (r == KST_STORE_OK) {
-        len = kst_file_format(&req->image, s_text, sizeof(s_text));
+        const size_t len = kst_file_format(&req->image, s_text,
+                                           sizeof(s_text));
         r = len != 0u ? kst_store_save(io, base, s_text, len, NULL)
                       : KST_STORE_WRITE_ERROR;
     }
