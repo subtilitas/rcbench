@@ -32,7 +32,11 @@ between them.
 | `src/export/` | PDF export of the resolved setup. See "PDF export". |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `test/` | Unit tests, run by `node --test`. |
+| `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
+| `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
+| `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
+| `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `tools/size.ts` | Size check of the build. |
@@ -52,7 +56,8 @@ npm test            # unit tests
 npm run build       # writes dist/
 npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB
 npx playwright install chromium
-npm run e2e         # smoke and chooser tests at 360 px and 1280 px width
+npm run e2e         # smoke, chooser and export tests at 360 px and 1280 px width
+npm run e2e:matrix  # matrix and corpus tests
 npm run dev         # http://localhost:5173/rcbench/
 node tools/shots.ts shots   # 24 PNG files: 2 widths, 2 themes, 2 languages, 3 selections
 node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, most wires in German
@@ -141,8 +146,9 @@ that touch `configurator/` or the workflow file.
 |---|---|
 | `core` | Type check, tests, data check and coverage figure of `core/`. |
 | `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, build, size check. Keeps `dist/` as artifact `configurator-dist` and 2 files of the PDF export as artifact `configurator-pdf-samples`, each for 14 days. |
-| `smoke` | Playwright against the artifact of `build`. |
-| `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the 3 other jobs pass. |
+| `smoke` | Playwright against the artifact of `build`: `e2e/smoke.spec.ts`, `e2e/select.spec.ts`, `e2e/export.spec.ts`. A failed test leaves its trace and screenshot as an artifact for 14 days. |
+| `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 4 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
+| `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the other jobs pass. |
 
 The `deploy` job needs the repository setting "Pages source: GitHub Actions".
 
@@ -237,6 +243,10 @@ file names no stage, so the checks follow the stages as one list.
   the data file for one of these wires has no effect on the drawing.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
+- Below 1024 px width the Tab key puts the focus on a control that lies
+  entirely under the bottom bar (56 px) when the control is in the lowest
+  56 px of the viewport. At 360 x 740 px with the base setup this is the
+  first radio button under "Variants". The tests are in `e2e/matrix/keyboard.spec.ts`, marked `fixme`.
 - Print output: not checked on paper.
 - PDF export: the first use needs the network for the export chunk of 108 kB. Later uses work offline
   until the page reloads.

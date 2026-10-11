@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "check": "node tools/check.ts",
-    "test": "node --test \"test/*.test.ts\"",
+    "test": "node --test \"test/*.test.ts\" \"test/property/*.test.ts\"",
     "coverage": "node tools/coverage.ts"
   }
 }
