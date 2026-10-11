@@ -1,7 +1,9 @@
 // Writing rules on every text the page holds outside the catalogue: the
 // chrome strings and the static shell.
 //
-//  1. Every chrome string has an English and a German text, trimmed.
+//  1. Every chrome string has an English and a German text. A text is
+//     trimmed, ends with ": " in front of a list, or stands between 2 items
+//     of a list with at most 1 space on each side.
 //  2. No text holds a banned word or an exclamation mark.
 //  3. The shell states both languages where JavaScript is off.
 
@@ -19,6 +21,9 @@ const keys = Object.keys(STRINGS) as Key[];
 /** Keys whose text ends with a space, because a list follows it. */
 const LEADS = (key: Key): boolean => /: $/.test(STRINGS[key][0]) && /: $/.test(STRINGS[key][1]);
 
+/** Keys whose text stands between 2 items of a list. */
+const JOINERS: ReadonlyArray<Key> = ['or'];
+
 test('1 and 2: every chrome string in both languages', () => {
   assert.ok(keys.length > 60);
   for (const key of keys) {
@@ -27,7 +32,8 @@ test('1 and 2: every chrome string in both languages', () => {
     for (const text of pair) {
       assert.equal(typeof text, 'string', key);
       assert.ok(text.trim().length > 0, `${key} is empty`);
-      assert.equal(text, LEADS(key) ? `${text.trim()} ` : text.trim(), `${key} starts or ends with a space`);
+      if (JOINERS.includes(key)) assert.match(text, /^ ?\S(.*\S)? $/, `${key} does not end with 1 space`);
+      else assert.equal(text, LEADS(key) ? `${text.trim()} ` : text.trim(), `${key} starts or ends with a space`);
       assert.ok(!text.includes('!'), `${key} holds an exclamation mark`);
       assert.deepEqual(bannedIn(text), [], key);
       assert.ok(!/\s{2,}/.test(text), `${key} holds two spaces in a row`);

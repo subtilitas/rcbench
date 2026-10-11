@@ -4,6 +4,7 @@
 import { expect, test } from '@playwright/test';
 
 import type { Lang } from '../../contract.ts';
+import { CATALOGUE, deselectEffect } from '../../src/core.ts';
 import { SEL, expectSetup, hashOf, openSetup, selectionOf, stateOf } from '../lib/setup.ts';
 import { expectQuiet, watchPage } from '../lib/watch.ts';
 import { SETUPS, cellOf } from './setups.ts';
@@ -42,15 +43,19 @@ for (const { name, selection } of SETUPS) {
     // A setup the visitor makes on the page survives the reload as well, with the other language.
     await page.locator(SEL.lang(other(lang))).click();
     const first = selection.functions[0] ?? 'servo';
-    const toggled = selection.functions.includes(first)
-      ? { ...selection, functions: selection.functions.filter((id) => id !== first) }
+    const off = selection.functions.includes(first);
+    const toggled = off
+      ? deselectEffect(CATALOGUE, selection, first).selection
       : { ...selection, functions: [...selection.functions, first] };
     await page.locator(SEL.fn(first)).click();
     const made = await expectSetup(page, toggled);
     expect(made.lang).toBe(other(lang));
+    expect(made.hash).toBe(hashOf(toggled, other(lang)));
+    // The page states what left with the function. The statement is not part of the link.
+    expect(made.note !== '').toBe(off && deselectEffect(CATALOGUE, selection, first).changed);
     await page.reload();
     await page.locator(SEL.drawing).waitFor();
-    expect(await expectSetup(page, toggled)).toEqual(made);
+    expect(await expectSetup(page, toggled)).toEqual({ ...made, note: '' });
     expectQuiet(seen);
   });
 

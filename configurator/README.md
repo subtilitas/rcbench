@@ -35,7 +35,7 @@ between them.
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
 | `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |
 | `e2e/smoke.spec.ts` | Playwright smoke test against `vite preview`. |
-| `e2e/matrix/` | Playwright tests in 8 cells of viewport, language and theme, and on every stored link. |
+| `e2e/matrix/` | Playwright tests of 14 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
@@ -137,8 +137,8 @@ that touch `configurator/` or the workflow file.
 |---|---|
 | `core` | Type check, tests, data check and coverage figure of `core/`. |
 | `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, build, size check. Keeps `dist/` as artifact `configurator-dist` and 2 files of the PDF export as artifact `configurator-pdf-samples`, each for 14 days. |
-| `smoke` | Playwright against the artifact of `build`. |
-| `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 2 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
+| `smoke` | Playwright against the artifact of `build`: `e2e/smoke.spec.ts`, `e2e/select.spec.ts`, `e2e/export.spec.ts`. A failed test leaves its trace and screenshot as an artifact for 14 days. |
+| `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 3 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
 | `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the other jobs pass. |
 
 The `deploy` job needs the repository setting "Pages source: GitHub Actions".

@@ -14,7 +14,8 @@ export const SEL = {
   row: 'table.wires tbody tr',
   rowNumber: 'table.wires tbody tr td.n b',
   part: '.parts li',
-  notice: '.msg',
+  notice: '.msg:not(#note)',
+  note: '#note',
   summary: '#result .sum p',
   own: '#own',
   ownSummary: '#own-summary',
@@ -24,8 +25,16 @@ export const SEL = {
   copy: '#b-copy',
   print: '#b-print',
   reset: '#b-reset',
+  pdf: '#b-pdf',
+  pdfStatus: '#pdfmsg',
+  pdfLink: '#pdflink',
+  partsHead: '#h-parts',
+  question: '#rmwarn',
+  yes: '#rm-yes',
+  no: '#rm-no',
   fn: (id: string): string => `#f-${id}`,
   owned: (id: string): string => `#p-${id}`,
+  remove: (id: string): string => `#rm-${id}`,
   option: (key: keyof Options, value: string): string => `#o-${key}-${value}`,
   lang: (lang: Lang): string => `.lang button[data-lang="${lang}"]`,
 } as const;
@@ -74,8 +83,8 @@ export type Shown = {
   functions: string[];
   /** The ticked rows under "Parts you own", in catalogue order: the selectable parts of the setup. */
   owned: string[];
-  /** The rows under "Parts you own" the visitor cannot untick. */
-  locked: string[];
+  /** The parts with a remove control on their card, in catalogue order. */
+  removable: string[];
   /** The checked value of each variant group the page shows. */
   options: Partial<Options>;
   /** The names on the part cards, in the order of `parts`. */
@@ -87,6 +96,8 @@ export type Shown = {
   /** The count of wires in the drawing. */
   drawn: number;
   notices: Array<{ kind: 'err' | 'note'; text: string }>;
+  /** What the page states after a function leaves the selection. Empty without such a statement. */
+  note: string;
   summary: string;
 };
 
@@ -126,15 +137,16 @@ export async function readSetup(page: Page): Promise<Shown> {
       hash: location.hash,
       functions: all<HTMLInputElement>('input[data-f]').filter((i) => i.checked).map((i) => i.dataset.f ?? ''),
       owned: all<HTMLInputElement>('input[data-p]').filter((i) => i.checked).map((i) => i.dataset.p ?? ''),
-      locked: all<HTMLInputElement>('input[data-p][aria-disabled="true"]').map((i) => i.dataset.p ?? ''),
+      removable: all<HTMLElement>('button[data-rm]').map((b) => b.dataset.rm ?? ''),
       options,
-      partNames: all(`${sel.part} b:first-of-type`).map((b) => (b.textContent ?? '').trim()),
+      partNames: all(`${sel.part} > div:first-child > b:first-of-type`).map((b) => (b.textContent ?? '').trim()),
       wires: all(sel.rowNumber).map((b) => Number(b.textContent)),
       drawn: all(sel.wire).length,
       notices: all(sel.notice).map((m) => ({ kind: m.classList.contains('err') ? 'err' as const : 'note' as const, text: (m.textContent ?? '').trim() })),
+      note: (document.querySelector(sel.note)?.textContent ?? '').trim(),
       summary: (document.querySelector(sel.summary)?.textContent ?? '').trim(),
     };
-  }, { part: SEL.part, rowNumber: SEL.rowNumber, wire: SEL.wire, notice: SEL.notice, summary: SEL.summary });
+  }, { part: SEL.part, rowNumber: SEL.rowNumber, wire: SEL.wire, notice: SEL.notice, note: SEL.note, summary: SEL.summary });
   const lang: Lang = raw.lang === 'de' ? 'de' : 'en';
   const names = cardNames(lang, { ...DEFAULT_OPTIONS, ...raw.options } as Options);
   const cards = raw.partNames
@@ -144,7 +156,7 @@ export async function readSetup(page: Page): Promise<Shown> {
     ...raw,
     functions: inOrder(raw.functions, FUNCTIONS),
     owned: inOrder(raw.owned, PARTS),
-    locked: inOrder(raw.locked, PARTS),
+    removable: inOrder(raw.removable, PARTS),
     partNames: cards.map((c) => c.name),
     parts: cards.map((c) => c.id),
     wires: [...raw.wires].sort((a, b) => a - b),
@@ -152,31 +164,32 @@ export async function readSetup(page: Page): Promise<Shown> {
 }
 
 /** What the page shows for a selection, as the resolver states it. */
-export function expectedOf(selection: Selection): Pick<Shown, 'functions' | 'owned' | 'parts' | 'wires' | 'drawn'> {
+export function expectedOf(selection: Selection): Pick<Shown, 'functions' | 'owned' | 'removable' | 'parts' | 'wires' | 'drawn'> {
   const setup = resolve(CATALOGUE, selection);
   const wires = setup.wires.map((w) => w.n).sort((a, b) => a - b);
   return {
     functions: inOrder(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), FUNCTIONS),
     owned: CATALOGUE.parts.filter((p) => p.selectable && setup.parts.some((r) => r.part.id === p.id)).map((p) => p.id),
+    removable: inOrder(setup.parts.filter((p) => !p.part.locked).map((p) => p.part.id), PARTS),
     parts: inOrder(setup.parts.map((p) => p.part.id), PARTS),
     wires,
     drawn: wires.length,
   };
 }
 
-/** Asserts that the page shows the setup of a selection: ticks, part cards, table rows and drawn wires. */
+/** Asserts that the page shows the setup of a selection: ticks, part cards, remove controls, table rows and drawn wires. */
 export async function expectSetup(page: Page, selection: Selection): Promise<Shown> {
   const want = expectedOf(selection);
   await expect(page.locator(SEL.row)).toHaveCount(want.wires.length);
   const shown = await readSetup(page);
   expect({
-    functions: shown.functions, owned: shown.owned, parts: shown.parts, wires: shown.wires, drawn: shown.drawn,
+    functions: shown.functions, owned: shown.owned, removable: shown.removable, parts: shown.parts, wires: shown.wires, drawn: shown.drawn,
   }).toEqual(want);
   return shown;
 }
 
-/** `shown` without the hash and the language: what a change of language or a reload keeps. */
-export function stateOf(shown: Shown): Omit<Shown, 'hash' | 'lang' | 'partNames' | 'notices' | 'summary'> {
-  const { hash: _hash, lang: _lang, partNames: _names, notices: _notices, summary: _summary, ...rest } = shown;
+/** `shown` without the hash, the language and the texts: what a change of language or a reload keeps. */
+export function stateOf(shown: Shown): Omit<Shown, 'hash' | 'lang' | 'partNames' | 'notices' | 'note' | 'summary'> {
+  const { hash: _hash, lang: _lang, partNames: _names, notices: _notices, note: _note, summary: _summary, ...rest } = shown;
   return rest;
 }

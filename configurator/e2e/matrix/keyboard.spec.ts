@@ -15,8 +15,8 @@ for (const { name, selection } of SETUPS) {
     expect(walkProblems(walk)).toEqual([]);
 
     const ids = walk.stops.map((s) => s.what);
-    // The controls every setup has: each function, the section of owned parts, the drawing, "Start over".
-    for (const what of [...FUNCTIONS.map((id) => `input${SEL.fn(id)}`), `summary${SEL.ownSummary}`, `div${SEL.pan}`, `button${SEL.reset}`]) {
+    // The controls every setup has: each function, the section of owned parts, the PDF export, the drawing, "Start over".
+    for (const what of [...FUNCTIONS.map((id) => `input${SEL.fn(id)}`), `summary${SEL.ownSummary}`, `button${SEL.pdf}`, `div${SEL.pan}`, `button${SEL.reset}`]) {
       expect(ids, `${what} is no stop`).toContain(what);
     }
     // Both languages are buttons with a name.

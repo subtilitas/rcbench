@@ -65,7 +65,7 @@ for (const { name, selection } of SETUPS) {
     const shown = await expectSetup(page, selection);
     await page.emulateMedia({ media: 'print' });
 
-    for (const hidden of ['#choose', SEL.bar, '.lang', SEL.copy, SEL.print, SEL.reset]) {
+    for (const hidden of ['#choose', SEL.bar, '.lang', SEL.copy, SEL.print, SEL.pdf, SEL.pdfStatus, SEL.reset]) {
       await expect(page.locator(hidden), hidden).toBeHidden();
     }
     // No control of the chooser is left on paper.
