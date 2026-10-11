@@ -43,8 +43,11 @@ The original requirement list, in German:
 
 ## Licensing rule
 
-Every protocol is implemented from its published specification. Most open
+Every protocol is implemented from its published specification or, where
+none is published, from captures of the wire on hardware the project owns:
+the programming protocol of KST and Chaservo servos is the one case. Most open
 implementations of these protocols are GPL (GNU General Public License) or AGPL
 (GNU Affero General Public License), which is incompatible with this
 repository's MIT (Massachusetts Institute of Technology) licence. A protocol
-without a published specification is not implemented.
+without a published specification and without a capture of its wire is not
+implemented.

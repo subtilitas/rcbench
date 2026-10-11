@@ -43,9 +43,12 @@ Die ursprüngliche Anforderungsliste:
 
 ## Lizenzregel
 
-Jedes Protokoll wird aus seiner veröffentlichten Spezifikation implementiert.
+Jedes Protokoll wird aus seiner veröffentlichten Spezifikation implementiert
+oder, wo keine veröffentlicht ist, aus Mitschnitten der Leitung an eigener
+Hardware des Projekts: das Programmierprotokoll von KST- und Chaservo-Servos
+ist der eine Fall.
 Die meisten offenen Implementierungen dieser Protokolle stehen unter GPL (GNU
 General Public License) oder AGPL (GNU Affero General Public License), was mit
 der MIT-Lizenz (MIT: Massachusetts Institute of Technology) dieses
 Repositories unvereinbar ist. Ein Protokoll ohne veröffentlichte Spezifikation
-wird nicht implementiert.
+und ohne Mitschnitt seiner Leitung wird nicht implementiert.

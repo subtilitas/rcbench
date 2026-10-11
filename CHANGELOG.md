@@ -105,7 +105,9 @@ history is in git.
   pin driver's header and `protocols/openyge/include/openyge.h` carry a
   short form. The protocol of KST and Chaservo servos is implemented from
   wire captures of hardware the project owns, with no vendor code or
-  documentation. The documents name the brands before a generic noun
+  documentation; the licensing rule in `CONTRIBUTING.md`, the manifest,
+  `STATUS.md`, `README.md` and `NOTICE` names captures of the wire beside
+  published specifications. The documents name the brands before a generic noun
   ("KST and Chaservo servos"), and `tools/check_docs.py` fails on a short
   form of Chaservo in a page or a user-interface text table.
 

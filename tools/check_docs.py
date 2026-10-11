@@ -1286,8 +1286,8 @@ def check_spdx(problems: list[str]) -> None:
 
 
 # Chaservo is written in full, as its owner writes it.  The short form as a
-# word of its own: not part of a longer word, and not a path or identifier.
-BRAND_SHORT_RE = re.compile(r"(?<!\w)Cha(?![\w/]|\.\w)")
+# word of its own: not part of a longer word, a file name or an identifier.
+BRAND_SHORT_RE = re.compile(r"(?<!\w)Cha(?!\w|\.\w)")
 
 
 def brand_short_forms(text: str) -> list[int]:

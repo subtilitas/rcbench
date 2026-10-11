@@ -4,8 +4,8 @@
  *
  * Implements the OpenYGE telemetry and parameter protocol of YGE ESCs.  YGE
  * and OpenYGE are names or trademarks of their respective owners; they are
- * used here only to say which ESCs this module works with (README.md, "Legal
- * notice and disclaimer").
+ * used here only to say which ESCs this module works with (NOTICE,
+ * "Trademarks").
  *
  * Written from docs/OpenYGE.md, the specification of record.  Anything that
  * page marks as inferred is inferred here too, and each such place carries a

@@ -111,7 +111,9 @@ rcbench is MIT licensed: [LICENSE](LICENSE).
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the
   Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). No font file is
   redistributed.
-- **Protocols** are implemented from published specifications. Permissive
+- **Protocols** are implemented from published specifications; the
+  programming protocol of KST and Chaservo servos, which has none, from wire
+  captures of hardware the project owns. Permissive
   reference code (PX4's receiver decoders under BSD (Berkeley Software
   Distribution); MIT reference code for SRXL2, JETI EX Bus, DShot and DroneCAN)
   was read for confirmation only.

@@ -261,6 +261,7 @@ def test_a_tree_without_protocols_is_read(tree, monkeypatch):
 @pytest.mark.parametrize("line", [
     "the Cha servo", "KST/Cha servos", "KST and Cha", "Cha-Servos",
     "\"KST / Cha\",", "Cha, the brand", "KST and Cha.",
+    "Cha/KST servos", "KST / Cha / Hitec",
 ])
 def test_the_short_form_of_the_brand_is_found(line):
     assert cd.brand_short_forms("first\n" + line + "\n") == [2]

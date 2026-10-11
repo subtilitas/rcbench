@@ -116,7 +116,9 @@ rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
   Glyphen-Bitmaps, die `tools/gen_font.py` aus DejaVu Sans Mono erzeugt, unter
   dem Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). Es wird keine
   Fontdatei weitergegeben.
-- **Protokolle** werden aus veröffentlichten Spezifikationen implementiert.
+- **Protokolle** werden aus veröffentlichten Spezifikationen implementiert;
+  das Programmierprotokoll von KST- und Chaservo-Servos, für das es keine
+  gibt, aus Mitschnitten der Signalleitung an eigener Hardware des Projekts.
   Permissiver Referenzcode (PX4-Empfängerdecoder unter BSD-Lizenz, Berkeley
   Software Distribution; MIT-Referenzcode für SRXL2, JETI EX Bus, DShot und
   DroneCAN) wurde nur zur Bestätigung gelesen.
