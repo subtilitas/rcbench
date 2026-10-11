@@ -53,6 +53,29 @@ function deepFreeze<T>(value: T): T {
 
 // --- the index --------------------------------------------------------------
 
+test('the exported tables are frozen: a write by a caller throws and changes no later setup', () => {
+  const before = resolve(CATALOGUE, select(['esc']));
+  assert.throws(() => { DEFAULT_OPTIONS.escPower = 'pd'; }, TypeError);
+  assert.throws(() => { (core.DEFAULT_OPTIONS as { connection: string }).connection = 'osoyoo'; }, TypeError);
+  assert.throws(() => { (OPTION_VALUES.escPower as string[]).push('mains'); }, TypeError);
+  assert.throws(() => { (OPTION_KEYS as string[]).reverse(); }, TypeError);
+  assert.throws(() => { (core as { resolve: unknown }).resolve = null; }, TypeError);
+  // The catalogue, and through a setup its records.
+  assert.throws(() => { CATALOGUE.rules.pop(); }, TypeError);
+  assert.throws(() => { CATALOGUE.wires[0]!.a = 'pad.1'; }, TypeError);
+  assert.throws(() => { CATALOGUE.parts[0]!.name.en = ''; }, TypeError);
+  assert.throws(() => { before.wires[0]!.net = 'x'; }, TypeError);
+  assert.throws(() => { before.parts[0]!.part.pins.length = 0; }, TypeError);
+  // The arrays of a setup are its own.
+  before.wires.length = 0;
+  before.options[0]!.value = 'osoyoo';
+  assert.deepEqual(DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery' });
+  const after = resolve(CATALOGUE, select(['esc']));
+  assert.deepEqual(after.wires.map((w) => w.n), [1, 2, 3, 4, 11, 12, 13, 14, 15]);
+  assert.equal(after.options[0]!.value, 'pads');
+  assert.equal(after.options[2]!.value, 'battery');
+});
+
 test('the index exports the catalogue, the resolver and the default options', () => {
   assert.equal(core.CATALOGUE, CATALOGUE);
   assert.equal(core.resolve, resolve);

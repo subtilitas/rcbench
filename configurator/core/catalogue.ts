@@ -1443,7 +1443,18 @@ const pinDefaults: PinDefault[] = [
   { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
 
-export const CATALOGUE: Catalogue = {
+/** Freezes a value and everything it holds. */
+function deepFreeze<T>(value: T): T {
+  if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const item of Object.values(value)) deepFreeze(item);
+  }
+  return value;
+}
+
+// Frozen: a setup holds records of the catalogue by reference, so a write to
+// a setup or to the catalogue throws instead of changing later setups.
+export const CATALOGUE: Catalogue = deepFreeze({
   release: '0.16.0',
   hashVersion: 1,
   parts,
@@ -1460,4 +1471,4 @@ export const CATALOGUE: Catalogue = {
     'Bedienoberfläche, CAN-Verbindung, ARM, STOP und Heartbeat-Verriegelung',
   ),
   pinDefaults,
-};
+});

@@ -6,5 +6,5 @@ import { DEFAULT_OPTIONS, resolve } from './resolve.ts';
 
 export { CATALOGUE, DEFAULT_OPTIONS, resolve };
 
-const core: Core = { CATALOGUE, resolve, DEFAULT_OPTIONS };
+const core: Core = Object.freeze({ CATALOGUE, resolve, DEFAULT_OPTIONS });
 export default core;

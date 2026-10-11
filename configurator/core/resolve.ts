@@ -11,20 +11,25 @@ import type {
 } from '../contract.ts';
 import { holds } from './cond.ts';
 
+// The exported tables are frozen: a write by a caller throws, so the result
+// of `resolve` depends on its two arguments only.
+
 /** The values of each option. The first value is the default. */
-export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K]> } = {
-  connection: ['pads', 'osoyoo'],
-  ina228Board: ['matek', 'xt90'],
-  escPower: ['battery', 'pd'],
-};
+export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K]> } = Object.freeze({
+  connection: Object.freeze(['pads', 'osoyoo'] as const),
+  ina228Board: Object.freeze(['matek', 'xt90'] as const),
+  escPower: Object.freeze(['battery', 'pd'] as const),
+});
 
-export const OPTION_KEYS: ReadonlyArray<OptionKey> = ['connection', 'ina228Board', 'escPower'];
+export const OPTION_KEYS: ReadonlyArray<OptionKey> = Object.freeze(
+  ['connection', 'ina228Board', 'escPower'] as const,
+);
 
-export const DEFAULT_OPTIONS: Options = {
+export const DEFAULT_OPTIONS: Options = Object.freeze({
   connection: 'pads',
   ina228Board: 'matek',
   escPower: 'battery',
-};
+});
 
 /** The part whose presence makes an option visible. `null`: always visible. */
 const OPTION_PART: { readonly [K in OptionKey]: PartId | null } = {

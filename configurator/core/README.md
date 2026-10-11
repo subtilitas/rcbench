@@ -29,6 +29,10 @@ setup for every input. Ids that the catalogue does not hold, parts that are not
 selectable and option values outside the type go to `ignored`. Output arrays
 are in catalogue order.
 
+`CATALOGUE`, `DEFAULT_OPTIONS`, `OPTION_VALUES` and `OPTION_KEYS` are frozen. A
+setup holds parts, pins and wires of the catalogue by reference, so a write to
+one of these records throws a `TypeError`. The arrays of a setup are its own.
+
 The order of work:
 
 1. Locked parts.
@@ -124,7 +128,7 @@ Line coverage of the resolver, measured by `node --test --experimental-test-cove
 <!-- coverage:begin -->
 | File | Lines run | Lines | Line coverage |
 | --- | ---: | ---: | ---: |
-| `resolve.ts` | 184 | 184 | 100.0 % |
+| `resolve.ts` | 189 | 189 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
 <!-- coverage:end -->
 
