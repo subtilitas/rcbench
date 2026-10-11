@@ -41,6 +41,8 @@ function pointOf(p: Parts, clientX: number, clientY: number): [number, number] {
 
 function apply(p: Parts): void {
   view = clamp(view, p.size, maxOf(p));
+  // At fit a finger scrolls the page. Zoomed in, every touch moves the picture.
+  p.box.classList.toggle('zoomed', view.k > 1);
   p.svg.querySelector('g.vp')?.setAttribute('transform', transformOf(view));
 }
 
@@ -51,7 +53,8 @@ function wiresOf(root: ParentNode): SVGGElement[] {
 function paint(): void {
   const svg = document.querySelector<SVGSVGElement>('svg.picture');
   const active = hot ?? marked;
-  svg?.classList.toggle('has-on', active !== null);
+  // A wire the picture does not draw dims no other wire.
+  svg?.classList.toggle('has-on', active !== null && svg.querySelector(`g.dw[data-wire="${active}"]`) !== null);
   for (const el of document.querySelectorAll<HTMLElement | SVGElement>('[data-wire]')) {
     const n = Number(el.dataset.wire);
     const target = el instanceof HTMLButtonElement ? el.closest('tr') ?? el : el;
@@ -120,14 +123,16 @@ function onKey(event: KeyboardEvent): void {
   if (wire) {
     const all = wiresOf(wire.ownerSVGElement ?? document);
     const i = all.indexOf(wire);
+    const walks = event.key.startsWith('Arrow') || event.key === 'Home' || event.key === 'End';
     const to = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? all[i + 1]
       : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? all[i - 1]
         : event.key === 'Home' ? all[0]
           : event.key === 'End' ? all[all.length - 1]
             : undefined;
-    if (to) {
+    if (walks) {
+      // At the first and the last wire the key stays here: the page does not scroll.
       event.preventDefault();
-      focusWire(to, all);
+      if (to) focusWire(to, all);
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       mark(Number(wire.dataset.wire));

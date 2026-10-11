@@ -148,6 +148,7 @@ svg .dot { fill: var(--ink); }
 button.seg, button.tool { font: inherit; font-size: 15px; min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; border-radius: 6px; }
 button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .dia { border: 1px solid var(--hair); border-radius: 8px; background: var(--surface); overflow: hidden; touch-action: pan-y; cursor: grab; max-width: 100%; }
+.dia.zoomed { touch-action: none; }
 .dia svg { display: block; width: 100%; height: auto; max-height: 80vh; color: var(--ink); user-select: none; -webkit-user-select: none; }
 .dia image { pointer-events: none; }
 .dia .cap { font-size: 13px; font-weight: 700; fill: var(--ink); }

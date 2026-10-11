@@ -165,7 +165,8 @@ both supply colours, in English and German.
 
 Controls: the buttons zoom in, zoom out and fit; the same on the keys `+`,
 `-` and `0` with the focus on the picture box; the arrow keys move the
-picture. A drag with the mouse or 1 finger moves it, 2 fingers zoom, Ctrl and
+picture. A drag with the mouse or 1 finger moves the zoomed picture; at fit,
+1 finger on the picture scrolls the page up and down. 2 fingers zoom, Ctrl and
 the wheel zoom. Tab from the box reaches the wires; the arrow keys, Home and
 End walk them; Enter or Space marks a wire and its table row. The wire button
 of a table row marks the wire in the picture. The page does not scroll

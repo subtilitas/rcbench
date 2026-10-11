@@ -257,8 +257,26 @@ for (const size of SIZES) {
       await expect(wire(6)).toBeFocused();
       await page.keyboard.press('Home');
       await expect(wire(numbers[0]!)).toBeFocused();
-      await page.keyboard.press('ArrowUp');
+      // At the first and the last wire an arrow key stays in the picture: the page does not scroll.
+      await page.evaluate(() => {
+        const w = window as unknown as { kept: string[] };
+        w.kept = [];
+        window.addEventListener('keydown', (e) => { if (!e.defaultPrevented) w.kept.push(e.key); });
+      });
+      const settled = async (): Promise<number> => {
+        let last = -1;
+        await expect.poll(async () => {
+          const y = await page.evaluate(() => window.scrollY);
+          const same = y === last;
+          last = y;
+          return same;
+        }).toBe(true);
+        return last;
+      };
+      const top = await settled();
+      for (const key of ['ArrowUp', 'ArrowLeft', 'Home']) await page.keyboard.press(key);
       await expect(wire(numbers[0]!)).toBeFocused();
+      expect(await page.evaluate(() => window.scrollY)).toBe(top);
       await page.keyboard.press('ArrowDown');
       await expect(wire(numbers[1]!)).toBeFocused();
       await expect(row(numbers[1]!)).toHaveClass(/\bon\b/);
@@ -272,8 +290,11 @@ for (const size of SIZES) {
       const last = numbers.filter((n) => n !== 31).at(-1)!;
       await page.keyboard.press('End');
       await expect(wire(last)).toBeFocused();
-      await page.keyboard.press('ArrowRight');
+      const bottom = await settled();
+      for (const key of ['ArrowRight', 'ArrowDown', 'End']) await page.keyboard.press(key);
       await expect(wire(last)).toBeFocused();
+      expect(await page.evaluate(() => (window as unknown as { kept: string[] }).kept)).toEqual([]);
+      expect(await page.evaluate(() => window.scrollY)).toBe(bottom);
       // 1 wire is in the tab order.
       expect(await page.locator('svg.picture g.dw[tabindex="0"]').count()).toBe(1);
       await page.keyboard.press('Escape');
@@ -410,6 +431,26 @@ test('a drag moves the zoomed picture and does not mark the wire under it', asyn
   await expect.poll(async () => (await viewOf(page)).k).toBeGreaterThan(1);
 });
 
+test('a table row of a wire the picture does not draw dims no wire', async ({ page }) => {
+  await page.setViewportSize(SIZES[1]!);
+  await open(page, MID);
+  await expect(page.locator('svg.picture g.dw[data-wire="31"]')).toHaveCount(0);
+  const button = page.locator('table.wires button.wn[data-wire="31"]');
+  const dim = (): Promise<number> => page.locator('svg.picture g.dw').evaluateAll((els) => els.filter((el) => getComputedStyle(el).opacity !== '1').length);
+  await button.focus();
+  await expect(page.locator('svg.picture')).not.toHaveClass(/has-on/);
+  await button.hover();
+  await expect(page.locator('svg.picture')).not.toHaveClass(/has-on/);
+  await button.click();
+  await expect(button).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('svg.picture')).not.toHaveClass(/has-on/);
+  expect(await dim()).toBe(0);
+  // A drawn wire dims the others as before.
+  await page.locator('table.wires button.wn[data-wire="5"]').click();
+  await expect(page.locator('svg.picture')).toHaveClass(/has-on/);
+  await expect.poll(dim).toBeGreaterThan(0);
+});
+
 test.describe('touch', () => {
   test.use({ viewport: SIZES[0], hasTouch: true, isMobile: true });
 
@@ -427,11 +468,28 @@ test.describe('touch', () => {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(async () => (await viewOf(page)).k).toBeGreaterThan(1.5);
     await fits(page);
+    // Zoomed in, the box takes every touch: 1 finger moves the picture up and down.
+    await expect(page.locator('#dia')).toHaveClass(/zoomed/);
+    expect(await page.locator('#dia').evaluate((el) => getComputedStyle(el).touchAction)).toBe('none');
+    const y0 = (await viewOf(page)).y;
+    const scroll = await page.evaluate(() => window.scrollY);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx, y: cy, id: 0 }] });
+    for (const d of [10, 20, 30, 40]) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx, y: cy - d, id: 0 }] });
+    // The finger rests before it lifts: a lift at speed is a fling, and the browser drops the tap that follows a fling.
+    for (let i = 0; i < 3; i++) {
+      await page.waitForTimeout(120);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx, y: cy - 40, id: 0 }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(async () => (await viewOf(page)).y).toBeLessThan(y0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scroll);
     const after = (await page.locator('#dia').boundingBox())!;
     expect(after.width).toBe(box.width);
     // The fit button brings the whole picture back.
     await page.locator('button.tool[data-dia=fit]').tap();
-    expect(await transform(page)).toBe(FIT);
+    await expect.poll(() => transform(page)).toBe(FIT);
+    await expect(page.locator('#dia')).not.toHaveClass(/zoomed/);
+    expect(await page.locator('#dia').evaluate((el) => getComputedStyle(el).touchAction)).toBe('pan-y');
   });
 });
 
