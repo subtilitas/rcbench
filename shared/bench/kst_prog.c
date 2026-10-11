@@ -1461,8 +1461,14 @@ static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
     if (bench_armed(p)) {
         return KST_PROG_MSG_NEED_DISARM;
     }
-    return p->f.target == port + 1u ? KST_PROG_MSG_NONE
-                                    : KST_PROG_MSG_NEED_TARGET;
+    if (p->f.target != port + 1u) {
+        return KST_PROG_MSG_NEED_TARGET;
+    }
+    if ((p->caps_mv != 0u && p->supply_mv > p->caps_mv)
+        || (p->caps_ma != 0u && p->supply_ma > p->caps_ma)) {
+        return KST_PROG_MSG_SUPPLY_CAPS;
+    }
+    return KST_PROG_MSG_NONE;
 }
 
 kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
@@ -1522,6 +1528,12 @@ void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)
 {
     p->supply_mv = mv;
     p->supply_ma = ma;
+}
+
+void kst_prog_supply_caps(kst_prog_t *p, uint16_t max_mv, uint16_t max_ma)
+{
+    p->caps_mv = max_mv;
+    p->caps_ma = max_ma;
 }
 
 uint16_t kst_prog_supply_mv(const kst_prog_t *p)

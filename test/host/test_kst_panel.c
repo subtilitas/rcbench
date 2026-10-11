@@ -485,14 +485,17 @@ TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
         CHECK_STR_EQ(kst_panel_keypad()->title, TR(KP_PROG_VOLTAGE));
         CHECK_NEAR(kst_panel_keypad()->value, 5.0f, 0.001f);
         CHECK_NEAR(kst_panel_keypad()->min,
-                   (float)PDMINI_V_MIN_MV / 1000.0f, 0.001f);
+                   (float)KST_PORT_SUPPLY_MIN_MV / 1000.0f, 0.001f);
         CHECK_NEAR(kst_panel_keypad()->max,
                    (float)KST_PANEL_STD_MV / 1000.0f, 0.001f);
-        /* 6.1 V and 0.9 V cannot be entered. */
+        /* 6.1 V and 4.7 V cannot be entered. */
         type("6.1");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK(kst_panel_keypad()->refused);
-        type("0.9");
+        type("4.7");
+        CHECK_EQ(kst_panel_editor(), 1);
+        CHECK(kst_panel_keypad()->refused);
+        type("1.0");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
         /* The ends can, and neither asks for a hold. */
@@ -500,14 +503,14 @@ TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
         CHECK_EQ(kst_panel_editor(), 0);
         CHECK_EQ(kst_prog_supply_mv(M), 6000u);
         more(0);
-        type("1.0");
+        type("5.5");
         CHECK_EQ(kst_panel_editor(), 0);
-        CHECK_EQ(kst_prog_supply_mv(M), 1000u);
+        CHECK_EQ(kst_prog_supply_mv(M), 5500u);
         /* CANCEL keeps what was set. */
         more(0);
         key(UI_KEY_4);
         key(UI_KEY_CANCEL);
-        CHECK_EQ(kst_prog_supply_mv(M), 1000u);
+        CHECK_EQ(kst_prog_supply_mv(M), 5500u);
         more(0);
         type("4.8");
         snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 4u, 8u,
@@ -619,7 +622,7 @@ TEST_CASE(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v)
         float stored;
         unsigned want_mv;
     } v[] = {
-        { 1.0f, 1000u }, { 5.9f, 5900u }, { 6.0f, 6000u },
+        { 4.8f, 4800u }, { 5.9f, 5900u }, { 6.0f, 6000u },
         { 6.1f, 6000u }, { 7.4f, 6000u }, { 8.4f, 6000u },
     };
 
@@ -916,8 +919,8 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         g_rig.rail = true;
-        /* A 5 V source: 5.0 V out is 500 mV too much. */
-        g_rig.vin_mv = 5000u;
+        /* A 5.4 V source: 5.0 V out is 100 mV too much. */
+        g_rig.vin_mv = 5400u;
         link_up();
         tap(val(PG_SERVO, 0, 0));
         settle();
@@ -925,14 +928,55 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         CHECK_STR_EQ(said(), TR(KP_R_SUPPLY_RANGE));
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         CHECK_EQ(g_rig.sup_sets, 0);
-        /* 4.5 V is what it can give. */
+        /* 4.8 V is what it can give. */
         more(0);
-        type("4.5");
+        type("4.8");
         tap(val(PG_SERVO, 0, 0));
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
-        CHECK_EQ(g_rig.sup_mv, 4500u);
+        CHECK_EQ(g_rig.sup_mv, 4800u);
     }
+}
+
+/* An output that is on under 4.8 V is not programmed at: CONNECT ends with
+ * the line that says so, the port stays in PWM and the output as it is. */
+TEST_CASE(a_supply_that_is_on_under_4_8_v_is_refused_by_name)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        g_rig.sup_on = true;
+        g_rig.sup_mv = KST_PORT_SUPPLY_MIN_MV - 100u;
+        g_rig.sup_ma = 800u;
+        link_up();
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_LOW);
+        CHECK_STR_EQ(said(), TR(KP_R_SUPPLY_LOW));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK(!kst_panel_holds_port());
+        CHECK_EQ(g_rig.sup_sets, 0);
+        CHECK(g_rig.sup_on);
+        CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MIN_MV - 100u);
+
+        /* At 4.8 V and 3 A the session runs at 4.8 V and the staged
+         * 1000 mA: the lower one of each. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        g_rig.sup_on = true;
+        g_rig.sup_mv = KST_PORT_SUPPLY_MIN_MV;
+        g_rig.sup_ma = 3000u;
+        link_up();
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(g_rig.sup_on);
+        CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MIN_MV);
+        CHECK_EQ(g_rig.sup_ma, 1000u);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line)
@@ -3761,8 +3805,11 @@ static void texts_in(ui_lang_t lang)
     CHECK(family_ok(KST_PROG_MSG_OUT, (unsigned)KST_LINK_OUT_DROPPED + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PORT + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF + LINK_KST_REF_UNSAFE,
-                    (unsigned)LINK_KST_REF_LOCKED + 1u
+                    (unsigned)LINK_KST_REF_SUPPLY_LOW + 1u
                         - (unsigned)LINK_KST_REF_UNSAFE));
+    m.id = (uint16_t)(KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_LOW);
+    CHECK_EQ(kst_panel_message_lines(&m, t), 1);
+    CHECK_STR_EQ(t[0], TR(KP_R_SUPPLY_LOW));
     /* A leave the port refuses for a servo in doubt names the way out. */
     m.id = (uint16_t)(KST_PROG_MSG_REF + LINK_KST_REF_LOCKED);
     m.reg = 0xFFu;
@@ -4132,6 +4179,181 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK(!kst_panel_is_open());
 }
 
+/* The SET row of the SERVO screen's right card, as the screen lays it
+ * out. */
+#define SUP_ROW_Y 237
+#define SUP_V_X   579
+#define SUP_I_X   649
+#define SUP_OUT_X 733
+
+/* A key of the SERVO screen's own keypad, where the screen opens it. */
+static void screen_key(ui_key_t key_id)
+{
+    ui_keypad_t probe;
+    gfx_rect_t r;
+
+    memset(&probe, 0, sizeof(probe));
+    ui_keypad_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 0.0f,
+                   0.0f, 1.0f, 2);
+    r = ui_keypad_key_rect(&probe, key_id);
+    screen_tap(cx(r), cy(r));
+}
+
+/* From CONNECT to the end of DISCONNECT the supply's own controls offer an
+ * OFF and nothing else: the SET row of the SERVO screen and the SUPPLY
+ * screen take no set point and no ON. */
+TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
+{
+    supply_cmd_t c;
+    static gfx_color_t a[W * H];
+    static gfx_color_t b[W * H];
+    gfx_canvas_t ca = { a, W, H, W };
+    gfx_canvas_t cb = { b, W, H, W };
+    int moved = 0;
+
+    fresh_screen();
+    g_rig.rail = true;
+    link_up();
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(!supply_screen_port_held());
+    const float v0 = supply_screen_set_v();
+    const float i0 = supply_screen_set_i();
+    scr->tick(0.02f);
+    scr->render(&ca, 0);
+    /* CONNECT: held from the tap, before the port has answered. */
+    tap(val(PG_SERVO, 0, 0));
+    CHECK_EQ(kst_prog_state(M), KST_PROG_ENTERING);
+    CHECK(supply_screen_port_held());
+    settle();
+    CHECK(kst_panel_holds_port());
+    CHECK(supply_screen_port_held());
+    /* The row is drawn as taking no press. */
+    scr->tick(0.02f);
+    scr->render(&cb, 0);
+    for (int y = SUP_ROW_Y - 12; y < SUP_ROW_Y + 12; ++y) {
+        for (int x = SUP_V_X - 20; x < SUP_OUT_X + 30; ++x) {
+            moved += (a[y * W + x] != b[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK(moved > 0);
+    /* No set point: the row opens no keypad, and SUPPLY takes none. */
+    screen_tap(SUP_V_X, SUP_ROW_Y);
+    screen_key(UI_KEY_7);
+    screen_key(UI_KEY_OK);
+    screen_tap(SUP_I_X, SUP_ROW_Y);
+    screen_key(UI_KEY_1);
+    screen_key(UI_KEY_OK);
+    CHECK(kst_panel_is_open());
+    supply_screen_put(8.0f, 3.0f);
+    CHECK_NEAR(supply_screen_set_v(), v0, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), i0, 1e-4f);
+    /* No ON: the hold on OUTPUT ON asks for nothing. */
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(0.025f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_screen_poll_cmd(&c));
+    /* OFF is a tap, as ever. */
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    screen_tap(SUP_OUT_X, SUP_ROW_Y);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+    supply_screen_set_output(false);
+    scr->tick(0.025f);
+    /* Held through a read and through the way back. */
+    tap(val(PG_SERVO, 1, 0));
+    CHECK(supply_screen_port_held());
+    settle();
+    tap(val(PG_SERVO, 0, 0));
+    hold(2.1f);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+    CHECK(supply_screen_port_held());
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(!supply_screen_port_held());
+    /* And free again. */
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(!kst_panel_is_open());
+    screen_tap(SUP_V_X, SUP_ROW_Y);
+    screen_key(UI_KEY_5);
+    screen_key(UI_KEY_OK);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+
+    /* A hold on OUTPUT ON under way when CONNECT is taken ends unasked. */
+    fresh_screen();
+    g_rig.rail = true;
+    link_up();
+    screen_tap(PROG_X, BTN_Y);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(0.025f);
+    }
+    ev(cx(val(PG_SERVO, 0, 0)), cy(val(PG_SERVO, 0, 0)), TOUCH_EVENT_DOWN, 2);
+    ev(cx(val(PG_SERVO, 0, 0)), cy(val(PG_SERVO, 0, 0)), TOUCH_EVENT_UP, 2);
+    if (kst_prog_state(M) != KST_PROG_PWM) {
+        for (int i = 0; i < 120; ++i) {
+            scr->tick(0.025f);
+        }
+        ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+        CHECK(!supply_screen_poll_cmd(&c));
+    }
+
+    /* A refused CONNECT holds nothing. */
+    fresh_screen();
+    link_up();
+    screen_tap(PROG_X, BTN_Y);
+    servo_screen_set_armed(true);
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_DISARM);
+    CHECK(!supply_screen_port_held());
+    servo_screen_set_armed(false);
+}
+
+/* Programming values above the SUPPLY screen's limits: CONNECT is refused
+ * by name, nothing is sent and the supply is not touched.  A session never
+ * runs at values other than the ones the programmer shows. */
+TEST_CASE(connect_is_refused_over_the_supplys_limits)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (int which = 0; which < 2; ++which) {
+            /* 4.9 V or 0.8 A allowed; the programmer asks 5.0 V 1.0 A. */
+            fresh_screen();
+            ui_text_set_language((ui_lang_t)lang);
+            settings_set(SET_SUPPLY_V_MAX, which == 0 ? 4.9f : 21.0f);
+            settings_set(SET_SUPPLY_I_MAX, which == 0 ? 5.0f : 0.8f);
+            supply_screen_settings_loaded();
+            g_rig.rail = true;
+            link_up();
+            screen_tap(PROG_X, BTN_Y);
+            const unsigned starts = g_rig.starts;
+            tap(val(PG_SERVO, 0, 0));
+            settle();
+            CHECK_EQ(msg(), KST_PROG_MSG_SUPPLY_CAPS);
+            CHECK_STR_EQ(said(), TR(KP_M_SUPPLY_CAPS));
+            CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+            CHECK(!kst_panel_holds_port());
+            CHECK(!supply_screen_port_held());
+            CHECK_EQ(g_rig.starts, starts);
+            CHECK_EQ(g_rig.sup_sets, 0);
+            /* The limit raised to the value: taken. */
+            settings_set(SET_SUPPLY_V_MAX, which == 0 ? 5.0f : 21.0f);
+            settings_set(SET_SUPPLY_I_MAX, which == 0 ? 5.0f : 1.0f);
+            supply_screen_settings_loaded();
+            tap(val(PG_SERVO, 0, 0));
+            settle();
+            CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+            CHECK_EQ(g_rig.sup_mv, KST_PROG_SUPPLY_MV);
+            CHECK_EQ(g_rig.sup_ma, 1000u);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    settings_set(SET_SUPPLY_I_MAX, 5.0f);
+}
+
 TEST_CASE(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry)
 {
     for (int wait = 0; wait <= 10000; wait += 2500) {
@@ -4312,6 +4534,7 @@ int main(void)
     RUN(a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock);
     RUN(the_current_limit_is_typed_inside_50_to_3000_ma);
     RUN(a_supply_that_cannot_give_the_voltage_is_refused_by_name);
+    RUN(a_supply_that_is_on_under_4_8_v_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line);
     RUN(a_leave_gives_the_port_back_and_switches_no_supply);
     RUN(a_leave_with_a_pd_mini_keeps_the_supply_on);
@@ -4319,6 +4542,8 @@ int main(void)
     RUN(a_coprocessor_without_leave_gets_a_stated_message);
     RUN(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester);
     RUN(the_wait_before_pwm_is_a_row_with_limits_and_is_kept);
+    RUN(the_supplys_controls_are_held_for_as_long_as_the_port);
+    RUN(connect_is_refused_over_the_supplys_limits);
     RUN(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry);
     RUN(a_count_of_1_is_said_in_the_singular);
     RUN(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held);

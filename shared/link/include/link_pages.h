@@ -1514,6 +1514,10 @@ typedef enum {
     LINK_KST_REF_LOCKED = 20,    /**< 4.15: a LEAVE while LINK_KS_F_LOCKED
                                       is set: a write left the servo in
                                       doubt */
+    LINK_KST_REF_SUPPLY_LOW = 21, /**< 4.15: an ENTER whose supply voltage,
+                                       or the lower one of a PD mini output
+                                       that is on, is under
+                                       KST_PORT_SUPPLY_MIN_MV */
 } link_kst_refusal_t;
 
 /* -------------------------------------------------------------------- PROG */

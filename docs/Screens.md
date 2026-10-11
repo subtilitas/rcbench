@@ -656,7 +656,10 @@ pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
 the servo's settings on its signal wire. It connects only with PWM TARGET
 on the DUT page set to PROG PORT; with OUTPUTS it shows `Programming needs
 the programming port.` and CONNECT is locked. While it holds the port the
-overlay stays open and SETTINGS is off; ARM, CENTRE, RELEASE and STOP work.
+overlay stays open and SETTINGS is off; ARM is drawn disabled and takes no
+press, and CENTRE, RELEASE and STOP work. The set points and OUTPUT ON of
+the SET row and of the SUPPLY screen are dimmed and take no press for as
+long; OUTPUT OFF works.
 It leaves programming without a cycle of the servo's supply. Whether a KST
 servo follows PWM while in programming mode is not measured. Not run on a
 servo.

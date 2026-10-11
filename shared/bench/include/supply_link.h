@@ -32,7 +32,11 @@
  * and no ON is reported lost.  supply_link_adopted() hands them to the
  * caller, whose own copy of the command has to follow.  What the caller
  * asks next with supply_link_command() is written as ever; the page
- * refuses it while the port holds the supply unless it is an OFF.
+ * refuses it while the port holds the supply unless it is an OFF.  A
+ * refusal of set points for an output that is on is judged by the next
+ * read: with the bit set the page's values are adopted as above and the
+ * output stays on, without it the ON is refused as ever.  Nothing is
+ * written between the refusal and that read except an OFF asked for.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.
@@ -139,6 +143,8 @@ typedef struct {
     uint16_t sag_vin_mv, sag_set_mv;
     bool     reset_owed;     /* a module restart asked, not yet written */
     bool     port_held;      /* the last read had LINK_SP_PORT set      */
+    bool     judge;          /* set points refused on an output that is
+                                on: the next read says by whom           */
     bool     adopted;        /* on, mv, ma were taken from the page and
                                 not yet handed out                      */
 } supply_link_t;

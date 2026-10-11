@@ -197,6 +197,11 @@ extern "C" {
  *  IO board (hardware/docs/IOBoard.md).  What a KST servo accepts in
  *  programming mode is not measured. */
 #define KST_PORT_SUPPLY_MAX_MV 8400u
+/** The lowest supply voltage a session runs at: an ENTER whose voltage, or
+ *  the lower voltage of an output that is on, is under it is refused with
+ *  LINK_KST_REF_SUPPLY_LOW.  A chosen value, not measured: the voltage a
+ *  KST or Chaservo servo needs to store a register is not known. */
+#define KST_PORT_SUPPLY_MIN_MV 4800u
 
 /** What the port needs from the hardware. */
 typedef struct {
@@ -259,6 +264,7 @@ typedef struct {
     uint8_t  must_read;
     uint8_t  view;
     uint8_t  safe;
+    uint8_t  armed;       /**< the bank is armed: no ENTER is taken */
     uint8_t  has_pin;    /**< the pin is the wire driver's */
     uint8_t  sup;        /**< where the wait for the supply is */
     uint8_t  on_here;    /**< this ENTER switched the supply on */
@@ -301,6 +307,15 @@ link_kst_state_t kst_port_state(const kst_port_t *p);
 /** Bit n: programming port n renders no PWM pulse.  The held port in every
  *  state but LINK_KST_PWM. */
 uint8_t kst_port_quiet_mask(const kst_port_t *p);
+
+/** An operation of the session runs: a frame may be on the wire.  False
+ *  from the pass in which an operation, or its cut, has ended. */
+bool kst_port_frame_out(const kst_port_t *p);
+
+/** Whether the bank is armed.  An ENTER is refused with LINK_KST_REF_BUSY
+ *  while it is; the caller arms no output while kst_port_quiet_mask() is
+ *  not 0. */
+void kst_port_bench_armed(kst_port_t *p, bool armed);
 
 /** Bit n: programming port n's pin is the wire driver's, not the PWM
  *  generator's.  The held port from LINK_KST_LOW until it is back in

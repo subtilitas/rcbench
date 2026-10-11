@@ -730,8 +730,10 @@ Koprozessors, im Auslieferzustand GP13 an Pad 17, aus PWM
 über dessen Signalleitung. Er verbindet nur, wenn PWM-ZIEL auf der Seite
 PRÜFLING auf PROG-PORT steht; mit AUSGÄNGE zeigt er `Programmieren braucht
 den Programmier-Port.` und VERBINDEN ist gesperrt. Solange er den Port hält,
-bleibt das Overlay offen und OPTIONEN ist aus; ARM, ZENTRIEREN, FREIGEBEN
-und STOP funktionieren. Er verlässt das Programmieren, ohne die Versorgung
+bleibt das Overlay offen und OPTIONEN ist aus; ARM ist gesperrt gezeichnet
+und nimmt keinen Druck, und ZENTRIEREN, FREIGEBEN und STOP funktionieren.
+Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
+so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Er verlässt das Programmieren, ohne die Versorgung
 des Servos aus- und einzuschalten. Ob ein KST-Servo im Programmiermodus PWM
 folgt, ist nicht gemessen. An keinem Servo gelaufen.
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)

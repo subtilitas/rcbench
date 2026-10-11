@@ -4404,11 +4404,45 @@ TEST_CASE(a_connect_sets_the_supply_it_was_given)
     fresh_at(0u);
     g_rail = true;
     link_up();
-    kst_prog_supply_set(&g_p, PDMINI_V_MIN_MV, PDMINI_I_MIN_MA);
+    kst_prog_supply_set(&g_p, KST_PORT_SUPPLY_MIN_MV, PDMINI_I_MIN_MA);
     CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(g_sup_mv, PDMINI_V_MIN_MV);
+    CHECK_EQ(g_sup_mv, KST_PORT_SUPPLY_MIN_MV);
     CHECK_EQ(g_sup_ma, PDMINI_I_MIN_MA);
+
+    /* Above a limit of the supply nothing is asked; at it, and with no
+     * limit, it is. */
+    for (int which = 0; which < 2; ++which) {
+        fresh_at(0u);
+        g_rail = true;
+        link_up();
+        kst_prog_supply_set(&g_p, 6000u, 1000u);
+        kst_prog_supply_caps(&g_p, which == 0 ? 5900u : 0u,
+                             which == 0 ? 0u : 999u);
+        CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_SUPPLY_CAPS);
+        CHECK_EQ(msg(), KST_PROG_MSG_SUPPLY_CAPS);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+        CHECK(!kst_prog_holds_port(&g_p));
+        settle();
+        CHECK_EQ(g_sup_mv, 0u);
+        kst_prog_supply_caps(&g_p, 6000u, 1000u);
+        CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(g_sup_mv, 6000u);
+        CHECK_EQ(g_sup_ma, 1000u);
+    }
+
+    /* Under the port's lowest voltage nothing is set, and the refusal is
+     * the port's by name. */
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    kst_prog_supply_set(&g_p, KST_PORT_SUPPLY_MIN_MV - 100u, 1000u);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_LOW);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK_EQ(g_sup_mv, 0u);
 }
 
 TEST_CASE(a_supply_outside_the_ports_range_is_refused_by_name)

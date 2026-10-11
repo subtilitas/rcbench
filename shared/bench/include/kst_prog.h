@@ -212,6 +212,9 @@ enum {
     KST_PROG_MSG_BACKUP_OTHER,    /**< the servo read is not the one the
                                        session's backup was read from: the
                                        backup is not restored to it         */
+    KST_PROG_MSG_SUPPLY_CAPS,     /**< the programming voltage or current is
+                                       above the supply's limits: the port
+                                       is not taken                         */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -439,6 +442,8 @@ typedef struct {
     uint8_t port;
     uint16_t supply_mv;       /**< what an ENTER asks of the PD mini */
     uint16_t supply_ma;
+    uint16_t caps_mv;         /**< the supply's limits, 0 for none   */
+    uint16_t caps_ma;
     uint16_t pwm_wait_ms;     /**< from the end of a session to PWM */
 
     uint8_t wait;             /**< what is awaited                */
@@ -676,6 +681,12 @@ bool kst_prog_holds_port(const kst_prog_t *p);
  *  The port checks the range.  KST_PROG_SUPPLY_MV and KST_PROG_SUPPLY_MA
  *  after kst_prog_init(). */
 void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma);
+/** The highest voltage and current limit the operator lets the supply
+ *  give (the SUPPLY screen's limits), 0 for none.  kst_prog_connect() is
+ *  KST_PROG_MSG_SUPPLY_CAPS and asks nothing while a value of
+ *  kst_prog_supply_set() is above its limit: a session never runs at
+ *  values other than the ones shown.  None after kst_prog_init(). */
+void kst_prog_supply_caps(kst_prog_t *p, uint16_t max_mv, uint16_t max_ma);
 uint16_t kst_prog_supply_mv(const kst_prog_t *p);
 uint16_t kst_prog_supply_ma(const kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_read(kst_prog_t *p);

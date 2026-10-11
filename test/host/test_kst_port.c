@@ -149,6 +149,9 @@ static void supply_asked_off(void)
 
 static const uint16_t k_supply[2] = { MV, MA };
 
+/* The current limit of the rig's output where it is on at the start. */
+#define ON_MA 500u
+
 static void fresh_at(uint32_t t0, supply_kind_t supply)
 {
     kst_port_hw_t hw;
@@ -167,7 +170,8 @@ static void fresh_at(uint32_t t0, supply_kind_t supply)
     g_hw.v.on = g_hw.v.asked_on;
     g_hw.v.off = supply == SUPPLY_OFF;
     g_hw.v.set_mv = supply == SUPPLY_ON_HIGH ? 7400u : MV;
-    g_hw.v.set_ma = 2000u;
+    /* Under the staged limit: an output that is on keeps it. */
+    g_hw.v.set_ma = ON_MA;
     g_hw.v.vin_mv = 20000u;
 
     memset(&hw, 0, sizeof(hw));
@@ -2166,7 +2170,7 @@ TEST_CASE(enter_leaves_a_supply_that_is_on_at_or_under_the_staged_voltage)
     CHECK_EQ(result(), KST_SES_OK);
     CHECK_EQ(g_hw.sets, 0);
     CHECK_EQ(g_hw.v.set_mv, MV);
-    CHECK_EQ(g_hw.v.set_ma, 2000);
+    CHECK_EQ(g_hw.v.set_ma, ON_MA);
 
     /* One under the staged voltage is not raised to it. */
     fresh_at(0u, SUPPLY_ON);
@@ -2186,7 +2190,7 @@ TEST_CASE(enter_lowers_a_supply_that_is_on_above_the_staged_voltage)
     CHECK_EQ(g_hw.ons, 1);
     CHECK_EQ(g_hw.offs, 0);
     CHECK_EQ(g_hw.v.set_mv, MV);
-    CHECK_EQ(g_hw.v.set_ma, 2000);
+    CHECK_EQ(g_hw.v.set_ma, ON_MA);
     settle();
     CHECK_EQ(result(), KST_SES_OK);
     CHECK_EQ(state(), LINK_KST_PROGRAMMING);
@@ -2199,7 +2203,111 @@ TEST_CASE(enter_lowers_a_supply_that_is_on_above_the_staged_voltage)
     CHECK_EQ(result(), KST_SES_OK);
     CHECK(g_hw.v.asked_on);
     CHECK_EQ(g_hw.v.set_mv, MV);
-    CHECK_EQ(g_hw.v.set_ma, 2000);
+    CHECK_EQ(g_hw.v.set_ma, ON_MA);
+    conduct();
+}
+
+/* An output that is on keeps the lower voltage and the lower current limit
+ * of its own and the staged ones: the port lowers, it does not raise. */
+TEST_CASE(enter_takes_the_lower_voltage_and_the_lower_current_limit)
+{
+    static const struct {
+        uint16_t on_mv, on_ma, mv, ma, want_mv, want_ma;
+        int sets;
+    } k[] = {
+        { 5000u, 3000u, 5000u,  300u, 5000u,  300u, 1 },
+        { 7400u, 3000u, 5000u,  300u, 5000u,  300u, 1 },
+        { 4800u, 3000u, 6000u, 1000u, 4800u, 1000u, 1 },
+        { 4800u,  200u, 6000u, 1000u, 4800u,  200u, 0 },
+        { 7400u,  200u, 6000u, 1000u, 6000u,  200u, 1 },
+        { 5000u, 1000u, 5000u, 1000u, 5000u, 1000u, 0 },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const uint16_t in[2] = { k[i].mv, k[i].ma };
+
+        fresh_at(0u, SUPPLY_ON);
+        g_hw.v.set_mv = k[i].on_mv;
+        g_hw.v.set_ma = k[i].on_ma;
+        CHECK_EQ(kst_port_write(&g_port, LINK_KS_W_SUPPLY_MV, 2, in, g_ms),
+                 0);
+        enter();
+        CHECK_EQ(g_hw.sets, k[i].sets);
+        CHECK_EQ(g_hw.offs, 0);
+        CHECK_EQ(g_hw.raises, 0);
+        CHECK(g_hw.v.asked_on);
+        CHECK_EQ(g_hw.v.set_mv, k[i].want_mv);
+        CHECK_EQ(g_hw.v.set_ma, k[i].want_ma);
+        conduct();
+    }
+}
+
+/* An output that is on under the port's lowest voltage is not programmed
+ * at: the ENTER is refused by name and nothing is taken or set. The same
+ * when the output drops under it between the ENTER and the low time. */
+TEST_CASE(enter_is_refused_for_a_supply_that_is_on_under_the_floor)
+{
+    fresh_at(0u, SUPPLY_ON);
+    g_hw.v.set_mv = KST_PORT_SUPPLY_MIN_MV - 1u;
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_SUPPLY_LOW);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK_EQ(g_hw.takes, 0);
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 0);
+
+    /* At the floor it is taken, and stays there. */
+    fresh_at(0u, SUPPLY_ON);
+    g_hw.v.set_mv = KST_PORT_SUPPLY_MIN_MV;
+    enter();
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK_EQ(g_hw.v.set_mv, KST_PORT_SUPPLY_MIN_MV);
+    conduct();
+}
+
+/* A bench that is armed drives the servo outputs: no port leaves PWM
+ * then, and the refusal is the port's own. */
+TEST_CASE(enter_is_refused_while_the_bench_is_armed)
+{
+    fresh_at(0u, SUPPLY_ON);
+    kst_port_bench_armed(&g_port, true);
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.takes, 0);
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 0);
+    CHECK(!kst_port_frame_out(&g_port));
+    kst_port_bench_armed(&g_port, false);
+    enter();
+    conduct();
+}
+
+/* The port says while a frame is out, and only then: the supply's OFF
+ * waits on it. */
+TEST_CASE(the_port_says_while_a_frame_is_out)
+{
+    unsigned out = 0, idle = 0;
+
+    fresh_at(0u, SUPPLY_ON);
+    CHECK(!kst_port_frame_out(&g_port));
+    enter();
+    settle();
+    CHECK(!kst_port_frame_out(&g_port));
+    CHECK_EQ(cmd(LINK_KST_OP_READ_ALL, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    for (unsigned i = 0; i < 200000u && flag(LINK_KS_F_BUSY); ++i) {
+        tick();
+        if (kst_port_frame_out(&g_port)) {
+            out++;
+        } else {
+            idle++;
+        }
+    }
+    CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK(out > 0u);
+    CHECK(!kst_port_frame_out(&g_port));
+    (void)idle;
     conduct();
 }
 
@@ -2224,9 +2332,15 @@ static unsigned range_case(supply_kind_t supply, uint16_t mv, uint16_t ma,
 
 TEST_CASE(enter_is_refused_for_a_supply_outside_the_range)
 {
-    /* The voltage: the PD mini's floor to the port's ceiling. */
-    CHECK_EQ(range_case(SUPPLY_OFF, PDMINI_V_MIN_MV, MA, 20000u),
+    /* The voltage: the port's floor to the port's ceiling. Under the
+     * floor the servo's supply is too low to program at, under the PD
+     * mini's the value is none the PD mini has. */
+    CHECK_EQ(range_case(SUPPLY_OFF, KST_PORT_SUPPLY_MIN_MV, MA, 20000u),
              LINK_KST_REF_NONE);
+    CHECK_EQ(range_case(SUPPLY_OFF, KST_PORT_SUPPLY_MIN_MV - 1u, MA, 20000u),
+             LINK_KST_REF_SUPPLY_LOW);
+    CHECK_EQ(range_case(SUPPLY_OFF, PDMINI_V_MIN_MV, MA, 20000u),
+             LINK_KST_REF_SUPPLY_LOW);
     CHECK_EQ(range_case(SUPPLY_OFF, PDMINI_V_MIN_MV - 1u, MA, 20000u),
              LINK_KST_REF_SUPPLY_RANGE);
     CHECK_EQ(range_case(SUPPLY_OFF, KST_PORT_SUPPLY_MAX_MV, MA, 20000u),
@@ -2504,7 +2618,7 @@ TEST_CASE(a_power_cycle_with_a_pd_mini_is_run_by_the_port)
     CHECK(g_hw.v.asked_on);
     /* At what it was set to. */
     CHECK_EQ(g_hw.v.set_mv, MV);
-    CHECK_EQ(g_hw.v.set_ma, 2000);
+    CHECK_EQ(g_hw.v.set_ma, ON_MA);
     tick_as(true, true);
     CHECK_EQ(state(), LINK_KST_RAIL_WAIT);
     CHECK_EQ(cmd(LINK_KST_OP_READ_ALL, CH, 0, 0), 0);
@@ -4004,6 +4118,10 @@ int main(void)
     RUN(enter_switches_a_supply_that_is_off_on_at_the_staged_voltage);
     RUN(enter_leaves_a_supply_that_is_on_at_or_under_the_staged_voltage);
     RUN(enter_lowers_a_supply_that_is_on_above_the_staged_voltage);
+    RUN(enter_takes_the_lower_voltage_and_the_lower_current_limit);
+    RUN(enter_is_refused_for_a_supply_that_is_on_under_the_floor);
+    RUN(enter_is_refused_while_the_bench_is_armed);
+    RUN(the_port_says_while_a_frame_is_out);
     RUN(enter_is_refused_for_a_supply_outside_the_range);
     RUN(a_port_without_a_pd_mini_enters_as_it_did_and_asks_for_the_word);
     RUN(a_pd_mini_that_stops_answering_leaves_the_session_to_the_word);

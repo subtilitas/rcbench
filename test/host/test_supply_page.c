@@ -661,9 +661,9 @@ TEST_CASE(a_programming_port_switches_the_supply_and_never_raises_it)
     CHECK_EQ(reg(LINK_SP_SET_MV), 7400u);
 }
 
-/* While a port holds the supply the panel can switch it off and lower it,
- * and nothing else; FLAGS bit 11 says so at once. */
-TEST_CASE(a_held_supply_takes_off_and_down_from_the_panel_only)
+/* While a port holds the supply the panel can switch it off, and nothing
+ * else: no set point moves, up or down; FLAGS bit 11 says so at once. */
+TEST_CASE(a_held_supply_takes_off_from_the_panel_only)
 {
     fresh();
     CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
@@ -672,19 +672,38 @@ TEST_CASE(a_held_supply_takes_off_and_down_from_the_panel_only)
     supply_page_hold(&pg, true);
     CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, LINK_SP_PORT);
     supply_page_hold(&pg, true);
-    /* On as it is, on and lower, on and higher: all refused. */
-    CHECK_EQ(command(1u, 5000u, 1000u, true), LINK_NACK_BAD_VALUE);
+    /* On and lower, on and higher, a current limit lower or higher: all
+     * refused, and the page keeps what it had. */
     CHECK_EQ(command(1u, 4000u, 1000u, true), LINK_NACK_BAD_VALUE);
     CHECK_EQ(command(1u, 6000u, 1000u, true), LINK_NACK_BAD_VALUE);
-    /* Off and higher is refused, off at the same or lower is taken. */
-    CHECK_EQ(command(0u, 5001u, 1000u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(command(1u, 5000u, 999u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(command(1u, 5000u, 1001u, true), LINK_NACK_BAD_VALUE);
+    const uint16_t ma_only = 3000u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_SET_MA, 1u, &ma_only, &o, true),
+             LINK_NACK_BAD_VALUE);
+    const uint16_t mv_only = 4900u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_SET_MV, 1u, &mv_only, &o, true),
+             LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
-    CHECK_EQ(command(0u, 5000u, 1000u, true), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 5000u);
+    CHECK_EQ(reg(LINK_SP_SET_MA), 1000u);
+    /* On as it is changes nothing and is taken. */
+    CHECK_EQ(command(1u, 5000u, 1000u, true), 0u);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    /* An OFF is taken whatever set points come with it, and they stay. */
+    CHECK_EQ(command(0u, 8000u, 3000u, true), 0u);
     CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 5000u);
+    CHECK_EQ(reg(LINK_SP_SET_MA), 1000u);
     CHECK_EQ(command(0u, 4000u, 500u, true), 0u);
-    CHECK_EQ(reg(LINK_SP_SET_MV), 4000u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 5000u);
+    CHECK_EQ(reg(LINK_SP_SET_MA), 1000u);
     const uint16_t off = 0u;
     CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 1u, &off, &o, true), 0u);
+    /* Off, it is not switched on again, as it was or otherwise. */
+    CHECK_EQ(command(1u, 5000u, 1000u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(command(1u, 4000u, 1000u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
     /* The port itself is not held by its own hold. */
     CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
     /* The bit survives a step with and without a driver. */
@@ -699,6 +718,123 @@ TEST_CASE(a_held_supply_takes_off_and_down_from_the_panel_only)
     CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_PORT, 0u);
     CHECK_EQ(command(1u, 6000u, 1000u, true), 0u);
     supply_page_hold(NULL, true);
+}
+
+/* A page that is wired, on at 5.0 V, and stepped once at @p t0. */
+static pdmini_t on_at(uint32_t t0)
+{
+    pdmini_t drv;
+
+    fresh();
+    pdmini_init(&drv, NULL, 0u);
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    CHECK_EQ(command(1u, 5000u, 1000u, true), 0u);
+    supply_page_port_frame(&pg, false, t0);
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.want_output);
+    return drv;
+}
+
+/* An OFF that finds a frame of the programming port on the wire reaches
+ * the driver when the frame has ended; OUTPUT reads 0 from the start. */
+TEST_CASE(an_off_waits_for_the_end_of_a_frame)
+{
+    /* The clock's wrap is in the second pass. */
+    static const uint32_t k_t0[2] = { 1000u, 0xFFFFFFFAu };
+
+    for (unsigned w = 0; w < 2u; ++w) {
+        const uint32_t t0 = k_t0[w];
+        pdmini_t drv = on_at(t0);
+
+        /* No frame out: off at once. */
+        CHECK_EQ(command(0u, 5000u, 1000u, true), 0u);
+        supply_page_port_frame(&pg, false, t0 + 1u);
+        supply_page_step(&pg, true, &drv);
+        CHECK(!drv.want_output);
+
+        /* A frame out: the driver stays on until the frame is over. */
+        drv = on_at(t0);
+        supply_page_port_frame(&pg, true, t0 + 1u);
+        supply_page_step(&pg, true, &drv);
+        CHECK_EQ(command(0u, 5000u, 1000u, true), 0u);
+        CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+        for (uint32_t d = 2u; d < 6u; ++d) {
+            supply_page_port_frame(&pg, true, t0 + d);
+            supply_page_step(&pg, true, &drv);
+            CHECK(drv.want_output);
+            CHECK_EQ(drv.want_mv, 5000u);
+            CHECK_EQ(drv.want_ma, 1000u);
+            CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+        }
+        supply_page_port_frame(&pg, false, t0 + 6u);
+        supply_page_step(&pg, true, &drv);
+        CHECK(!drv.want_output);
+        /* A frame after it does not switch it on again. */
+        supply_page_port_frame(&pg, true, t0 + 7u);
+        supply_page_step(&pg, true, &drv);
+        CHECK(!drv.want_output);
+    }
+}
+
+/* The wait is bounded: a frame that does not end holds the OFF for
+ * SUPPLY_PAGE_OFF_WAIT_MS and no longer. */
+TEST_CASE(an_off_waits_no_longer_than_its_bound)
+{
+    static const uint32_t k_t0[2] = { 1000u, 0xFFFFFFFAu };
+
+    for (unsigned w = 0; w < 2u; ++w) {
+        const uint32_t t0 = k_t0[w];
+        pdmini_t drv = on_at(t0);
+
+        supply_page_port_frame(&pg, true, t0);
+        CHECK_EQ(command(0u, 5000u, 1000u, true), 0u);
+        supply_page_step(&pg, true, &drv);
+        CHECK(drv.want_output);
+        supply_page_port_frame(&pg, true,
+                               t0 + SUPPLY_PAGE_OFF_WAIT_MS - 1u);
+        supply_page_step(&pg, true, &drv);
+        CHECK(drv.want_output);
+        supply_page_port_frame(&pg, true, t0 + SUPPLY_PAGE_OFF_WAIT_MS);
+        supply_page_step(&pg, true, &drv);
+        CHECK(!drv.want_output);
+        supply_page_port_frame(&pg, true,
+                               t0 + SUPPLY_PAGE_OFF_WAIT_MS + 1u);
+        supply_page_step(&pg, true, &drv);
+        CHECK(!drv.want_output);
+    }
+}
+
+/* The heartbeat lost is an OFF like the panel's: it waits for the frame
+ * too, and an ON written while it waits ends the wait. */
+TEST_CASE(a_lost_heartbeat_waits_for_the_end_of_a_frame)
+{
+    pdmini_t drv = on_at(50u);
+
+    supply_page_port_frame(&pg, true, 51u);
+    supply_page_step(&pg, false, &drv);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK(drv.want_output);
+    supply_page_port_frame(&pg, true, 52u);
+    supply_page_step(&pg, false, &drv);
+    CHECK(drv.want_output);
+    supply_page_port_frame(&pg, false, 53u);
+    supply_page_step(&pg, false, &drv);
+    CHECK(!drv.want_output);
+
+    /* Switched on again while an OFF waits: on, and no late off. */
+    drv = on_at(50u);
+    supply_page_port_frame(&pg, true, 51u);
+    CHECK_EQ(command(0u, 5000u, 1000u, true), 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.want_output);
+    CHECK_EQ(command(1u, 5000u, 1000u, true), 0u);
+    supply_page_port_frame(&pg, false, 52u);
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.want_output);
+    supply_page_port_frame(&pg, false, 70u);
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.want_output);
+    supply_page_port_frame(NULL, true, 0u);
 }
 
 int main(void)
@@ -722,6 +858,9 @@ int main(void)
     RUN(a_sag_cut_is_on_the_page);
     RUN(a_programming_port_sees_the_supply_as_the_page_last_read_it);
     RUN(a_programming_port_switches_the_supply_and_never_raises_it);
-    RUN(a_held_supply_takes_off_and_down_from_the_panel_only);
+    RUN(a_held_supply_takes_off_from_the_panel_only);
+    RUN(an_off_waits_for_the_end_of_a_frame);
+    RUN(an_off_waits_no_longer_than_its_bound);
+    RUN(a_lost_heartbeat_waits_for_the_end_of_a_frame);
     return test_summary("supply_page");
 }

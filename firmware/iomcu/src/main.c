@@ -2217,7 +2217,12 @@ int main(void)
          * not refreshed here for the same reason: a channel is alive because
          * the host wrote it.
          */
-        outputs_arm(&s_outputs, gate.arm, now);
+        /* Not while a programming port is out of PWM: programming and an
+         * armed bank are exclusive at this end too, and the port takes no
+         * ENTER while the bank is armed. */
+        const bool arm_now = gate.arm && kst_port_quiet_mask(&s_kst) == 0u;
+        outputs_arm(&s_outputs, arm_now, now);
+        kst_port_bench_armed(&s_kst, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
@@ -2225,8 +2230,8 @@ int main(void)
          * on: none that is out of PWM.
          */
         kst_port_step(&s_kst, safety_gate_supply_ok(&s_beat, &s_dev),
-                      gate.off || (s_kst_armed && !gate.arm), now);
-        s_kst_armed = gate.arm;
+                      gate.off || (s_kst_armed && !arm_now), now);
+        s_kst_armed = arm_now;
         outputs_hw_ports_drive(ports_pulsing());
         sense_page_ports(&s_sense, ports_pulsing());
         /* And the SUPPLY page told that a port commands the module. */
@@ -2263,6 +2268,9 @@ int main(void)
          * whenever the panel's heartbeat is not there to switch it off. */
         /* The page first, so a heartbeat lost this pass reaches the driver
          * as an OFF before it steps and can send an ON already queued. */
+        /* An OFF of this pass waits for the end of a frame the
+         * programming port has on the wire. */
+        supply_page_port_frame(&s_supply, kst_port_frame_out(&s_kst), now);
         supply_page_step(&s_supply, safety_gate_supply_ok(&s_beat, &s_dev),
                          s_pd_open ? &s_pd : NULL);
         /* A wiring change whose state read has just shown the module off:

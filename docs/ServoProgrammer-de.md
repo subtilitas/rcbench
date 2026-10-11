@@ -147,7 +147,10 @@ Overlay wieder offen.
 | --- | --- |
 | `Der Programmier-Port hat keinen Pin. Nichts gesendet.` | ein Slot von OUTPUTS hält den Pin des Ports |
 | `Der Koprozessor hat diesen Programmier-Port nicht.` | der Koprozessor hat weniger Ports als den angefragten |
-| `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt außerhalb 1,0 bis 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung liegt weniger als 0,5 V unter dem Eingang des PD mini; die Versorgung wird nicht geändert |
+| `Programmierspannung oder -strom über den SUPPLY-Grenzen.` und `Unter WEITERES senken oder Grenze anheben. Nichts gesetzt.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMGRENZE über seiner Stromgrenze; nichts wird gesendet |
+| `Erst DISARM: bei ARM wird der Port nicht übernommen.` | ARM gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
+| `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung liegt weniger als 0,5 V unter dem Eingang des PD mini; die Versorgung wird nicht geändert |
+| `Versorgung unter 4,8 V. Programmieren braucht 4,8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert |
 | `Versorgung schaltete nicht in 3000 ms. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
 | `Koprozessor vertraut dem Link noch nicht. Neu versuchen.` | der Koprozessor vertraut dem Heartbeat nicht, oder der Link war still |
 
@@ -162,7 +165,7 @@ stellt.
 
 | Eintrag | Bereich | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
-| PROGRAMMIERSPANNUNG | 1,0 bis 6,0 V in 0,1 V; bis 8,4 V mit HV SERVO ein | 5,0 V | die Versorgungsspannung des Servos im Programmiermodus |
+| PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in 0,1 V; bis 8,4 V mit HV SERVO ein | 5,0 V | die Versorgungsspannung des Servos im Programmiermodus |
 | STROMGRENZE | 50 bis 3000 mA | 1000 mA | die Stromgrenze der Versorgung während des Programmierens |
 | WARTEN VOR PWM | 0 bis 10 000 ms | 100 ms | die Zeit zwischen dem Ende des Programmierens und dem ersten Puls |
 
@@ -171,12 +174,38 @@ außerhalb des Bereichs wird nicht übernommen. Alle drei werden mit den
 SERVO-Einstellungen gehalten.
 
 **VERBINDEN** schaltet einen Ausgang, der aus ist, mit den zwei Werten ein,
-und die Sitzung beginnt 1000 ms, nachdem der PD mini ein liest. Ein
-Ausgang, der über der Programmierspannung ein ist, wird auf sie gesenkt.
-Ein Ausgang, der auf oder unter ihr ein ist, bleibt, wie er ist: der Port
-hebt keine Spannung eines Ausgangs an, der ein ist. Das Verlassen des
-Programmierens stellt eine Spannung, die **VERBINDEN** gesenkt hat, nicht
+und die Sitzung beginnt 1000 ms, nachdem der PD mini ein liest. Bei einem
+Ausgang, der ein ist, läuft die Sitzung mit der niedrigeren der zwei
+Spannungen und der niedrigeren der zwei Stromgrenzen: eine Spannung über
+der Programmierspannung wird auf sie gesenkt, eine Stromgrenze über
+STROMGRENZE auf diese, und keine wird angehoben. Das Verlassen des
+Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht
 wieder her.
+
+Der Port programmiert bei 4,8 V oder mehr. 4,8 V ist ein gewählter Wert,
+kein gemessener: die Versorgungsspannung, die ein Servo zum Speichern eines
+Registers braucht, ist nicht bekannt. An einem Ausgang, der unter 4,8 V ein
+ist, wird nicht programmiert, und er bleibt, wie er ist; der Bediener hebt
+ihn zuerst an. Ein PD mini, dessen Eingang unter 5,3 V liegt, gibt keine
+4,8 V, und an ihm beginnt keine Sitzung.
+
+Solange der Port nicht in PWM ist, gehören die Sollwerte der Versorgung dem
+Port. Der Koprozessor lehnt jede Änderung der Spannung und der Stromgrenze
+und jedes Einschalten ab; ein Ausschalten nimmt er an. Der
+SUPPLY-Bildschirm und die Zeile SOLL der rechten Karte zeigen dasselbe: die
+Sollwerte, die Schieber, die Schritte und **AUSGANG EIN** sind gedimmt und
+nehmen keinen Druck, **AUSGANG AUS** und **SPITZEN ZURÜCKSETZEN** arbeiten,
+und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servo-Programmierer`. Die
+Grenzen in den Einstellungen des SUPPLY-Bildschirms bleiben editierbar;
+eine Grenze, die unter einen Sollwert gesenkt wird, erreicht den Sollwert,
+wenn der Port wieder in PWM ist.
+
+Ein Ausschalten, das eintrifft, während ein Frame auf der Leitung ist, von
+**AUSGANG AUS**, **STOP** oder einem verlorenen Heartbeat, liest sofort aus
+und erreicht den PD mini, wenn der Port den Frame abgebrochen hat,
+spätestens 12 ms später. Der eigene Schutz des PD mini wird nicht
+verzögert. Wie lange der Ausgang des PD mini nach seinem Aus-Befehl zum
+Abfallen braucht, ist nicht gemessen.
 
 ![Die Tastatur für die Spannung](img/de/servo-kst-voltage.png)
 ![Die Tastatur für das Warten](img/de/servo-kst-wait.png)
@@ -954,8 +983,12 @@ Codes.
   gemessen.
 - Nicht auf Hardware gelaufen: kein Firmware-Image hat diesen Code mit
   einem Servo, einer Karte oder einem PD mini ausgeführt.
-- Der SUPPLY-Bildschirm und die Einstellungen des Netzteils sind nicht
-  gehalten, solange der Programmierer den Port hat.
+- Die Grenzen und Abschalt-Einstellungen des SUPPLY-Bildschirms sind nicht
+  gehalten, solange der Programmierer den Port hat; die Sollwerte und
+  **AUSGANG EIN** sind es.
+- Mit dem simulierten Netzteil (kein PD mini verdrahtet) dimmt das Panel
+  dieselben Bedienelemente, und die Versorgung des Servos ist, was es
+  speist.
 - Die Zeilen **PWM-ZIEL** und **PORT-PWM** folgen dem Zustand des Ports
   einen Frame des Bildschirms nach der Control-Task. Die Control-Task hält
   die Seite des Ports und die Kommandos des Testers nach ihrer eigenen
@@ -1014,7 +1047,7 @@ Codes.
 - LEFT ANGLE und RIGHT ANGLE sind die Zahlen des Hersteller-Tools; ihre
   Einheit ist nicht bekannt.
 - Die Versorgungsspannung, die ein Servo im Programmiermodus braucht, ist
-  nicht bekannt.
+  nicht bekannt. Die Untergrenze von 4,8 V ist gewählt, nicht gemessen.
 
 ## Offene Messungen
 

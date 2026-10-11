@@ -237,7 +237,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 628 | 528 | 1 684 |
+| Kern 0 | `main` | 4 096 | 1 636 | 528 | 1 676 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -246,7 +246,7 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 628 Bytes ergibt.
+für Kern 0 1 636 Bytes ergibt.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
 im pico-sdk scheitert: `main` (464 Bytes), `can_service` (344),

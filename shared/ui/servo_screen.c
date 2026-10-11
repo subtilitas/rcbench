@@ -378,6 +378,7 @@ static struct {
     gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
     bool       kst_shown;        /* the programmer had the left card    */
     bool       kst_held;         /* and the port: ARM takes no press    */
+    bool       sup_held;         /* the port holds the supply: SET is dim */
     uint32_t   drawn_kst[2], drawn_kst_hold[2];
     ui_slider_t speed;
 
@@ -3966,6 +3967,11 @@ static void event_body(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.out_btn, px, py)) {
+            /* A programming port holds the supply: off is taken, on is
+             * not. */
+            if (!supply_screen_output_on() && supply_screen_port_held()) {
+                return;
+            }
             /* Off, with a set point past a standard servo's rating: the HV
              * warning, whose hold switches it on.  One press in the
              * overlay at a time. */
@@ -3990,6 +3996,10 @@ static void event_body(const touch_event_t *evt)
         }
         for (int k = 0; k < 2; ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
+                /* No set point moves under a programming port. */
+                if (supply_screen_port_held()) {
+                    return;
+                }
                 /* The run owns the set points while it runs. */
                 test_end_now(SERVO_TEST_AB_OPERATOR);
                 if (!s.ov_have) {
@@ -4632,9 +4642,13 @@ static void draw_sup_row(gfx_canvas_t *c)
     char v[12], a[12];
     snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
     snprintf(a, sizeof(a), "%.2f A", (double)supply_screen_set_i());
+    /* Held by a programming port they take no press, and say so. */
+    const bool held = supply_screen_port_held();
     const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
-        { v, ui_theme_color(UI_C_VOLT), OP_SUP_V },
-        { a, ui_theme_color(UI_C_CURR), OP_SUP_I },
+        { v, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                  : ui_theme_color(UI_C_VOLT), OP_SUP_V },
+        { a, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                  : ui_theme_color(UI_C_CURR), OP_SUP_I },
     };
     for (int i = 0; i < 2; ++i) {
         const gfx_rect_t b = sup_val_rect(i);
@@ -4647,7 +4661,7 @@ static void draw_sup_row(gfx_canvas_t *c)
     }
     ui_button(c, s.out_btn, s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
               out_fill(),
-              s.out_down, true);
+              s.out_down, s.out_on || !held);
     if (s.out_hold.flash_left > 0) {
         ui_hold_flash_step(&s.out_hold);
     }
@@ -5326,6 +5340,15 @@ static void tick_body(float dt_s)
     if (kst_panel_holds_port() != s.kst_held) {
         s.kst_held = kst_panel_holds_port();
         ++s.arm_rev;
+    }
+    if (supply_screen_port_held() != s.sup_held) {
+        s.sup_held = supply_screen_port_held();
+        /* A hold on OUTPUT ON that was under way ends with nothing asked. */
+        if (s.sup_held && s.out_down && !s.out_press_on) {
+            ui_hold_reset(&s.out_hold);
+            s.out_down = false;
+        }
+        ++s.sup_rev;
     }
     if (kst_panel_is_open() != s.kst_shown) {
         s.kst_shown = kst_panel_is_open();

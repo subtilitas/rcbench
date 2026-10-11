@@ -3963,6 +3963,12 @@ static void supply_follow_set(void)
      * points under them already, and this is what the supply obeys. */
     const unsigned vmax = atomic_load(&s_supply_vmax_mv);
     const unsigned imax = atomic_load(&s_supply_imax_ma);
+    /* A programming port holds the supply: the set points are the port's,
+     * and neither the screen's nor a limit that moved is written over
+     * them.  The coprocessor refuses it too (supply_page.h). */
+    if (s_kst_taken) {
+        return;
+    }
     /* A programming port's command the screen has not taken yet: what the
      * screen holds is older than the page. */
     if (atomic_load(&s_supply_adopt_gen)
@@ -4035,7 +4041,8 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
         /* The pump first, so a STOP or a loss still in the driver's queue
          * is counted before the ON is judged against them. */
         control_pump();
-        if (pc->stops == arming_stop_count(&s_arm)
+        if (!s_kst_taken
+            && pc->stops == arming_stop_count(&s_arm)
             && pc->supply_offs == atomic_load(&s_supply_offs)
             && pc->pdmini_edits == atomic_load(&s_pdmini_edits)
             && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
@@ -7894,8 +7901,8 @@ static void flush_screen_commands(uint32_t stops_now)
      * the screen's set points are published; see s_supply_adopt_mv. */
     const unsigned adopt = atomic_load(&s_supply_adopt_gen);
     if (adopt != atomic_load(&s_supply_adopt_done)) {
-        supply_screen_put((float)atomic_load(&s_supply_adopt_mv) / 1000.0f,
-                          (float)atomic_load(&s_supply_adopt_ma) / 1000.0f);
+        supply_screen_adopt((float)atomic_load(&s_supply_adopt_mv) / 1000.0f,
+                            (float)atomic_load(&s_supply_adopt_ma) / 1000.0f);
     }
     /* The limits and the set points first, as levels; see
      * s_supply_set_mv. */

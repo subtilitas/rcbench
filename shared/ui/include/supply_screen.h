@@ -113,6 +113,23 @@ bool supply_screen_typed_asks(void);
 void supply_screen_put(float v, float i);
 
 /** The output as the supply last reported it. */
+/**
+ * Whether a servo programming port is out of PWM.  The coprocessor then
+ * takes an OFF from the panel and no other command (supply_page.h), and
+ * this screen offers the same: OUTPUT OFF and RESET PEAKS work, OUTPUT ON,
+ * the sliders, the steps and the set points' keypads take no press and are
+ * drawn dimmed, supply_screen_put() and supply_screen_ask_on() do nothing,
+ * and the MODE card says who holds the supply.  What was under way when
+ * the port left PWM -- a hold on OUTPUT ON, a drag, a keypad of a set
+ * point, a question -- ends unanswered.
+ */
+void supply_screen_set_port_held(bool held);
+bool supply_screen_port_held(void);
+
+/** The set points a programming port gave the supply, onto the screen:
+ *  supply_screen_put() for the one caller that reports and does not ask. */
+void supply_screen_adopt(float v, float i);
+
 bool supply_screen_output_on(void);
 
 /** The output on, or an ON asked for and still on its way: what a set

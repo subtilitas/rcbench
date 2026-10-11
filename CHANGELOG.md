@@ -38,8 +38,17 @@ history is in git.
   programming. OUTPUTS shows the port's pin as `PROG PORT` and does not
   bind it.
 - Servo programmer, supply: with a PD mini answering, CONNECT sets
-  PROGRAMMING VOLTAGE (1.0 to 8.4 V, default 5.0 V) and CURRENT LIMIT (50 to
-  3000 mA, default 1000 mA) on the PD mini. A voltage above 6.0 V needs
+  PROGRAMMING VOLTAGE (4.8 to 8.4 V, default 5.0 V) and CURRENT LIMIT (50 to
+  3000 mA, default 1000 mA) on the PD mini. An output that is on runs the
+  session at the lower of the two voltages and the lower of the two current
+  limits. Under 4.8 V, a chosen value and not a measured one, CONNECT is
+  refused, and so it is with programming values above the SUPPLY screen's
+  limits. While the port is out of PWM the coprocessor refuses every change
+  of the supply's set points and every ON, and the SET row of the SERVO
+  screen and the SUPPLY screen dim those controls; OUTPUT OFF works, and an
+  OFF during a frame reaches the PD mini after the port has cut the frame,
+  12 ms later at most. The coprocessor arms no bank while a port is out of
+  PWM and refuses the port on an armed bench. A voltage above 6.0 V needs
   HV SERVO on and a hold of 2 s, and is not stored: a stored value above
   6.0 V is loaded as 6.0 V. The SERVO tab shows the measured voltage
   and current. The port's refusals for a port without a pin, a supply

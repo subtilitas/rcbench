@@ -159,10 +159,18 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         }
     }
     if (command) {
-        /* A programming port holds the command: off and down only. */
-        if (p->held && (next[LINK_SP_OUTPUT] != 0u
-                        || next[LINK_SP_SET_MV] > p->regs[LINK_SP_SET_MV])) {
-            return LINK_NACK_BAD_VALUE;
+        /* A programming port holds the command: off only.  An OFF is
+         * taken whatever set points come with it, and leaves the page's;
+         * anything else is refused unless it changes nothing. */
+        if (p->held) {
+            if (next[LINK_SP_OUTPUT] == 0u) {
+                next[LINK_SP_SET_MV] = p->regs[LINK_SP_SET_MV];
+                next[LINK_SP_SET_MA] = p->regs[LINK_SP_SET_MA];
+            } else if (p->regs[LINK_SP_OUTPUT] == 0u
+                       || next[LINK_SP_SET_MV] != p->regs[LINK_SP_SET_MV]
+                       || next[LINK_SP_SET_MA] != p->regs[LINK_SP_SET_MA]) {
+                return LINK_NACK_BAD_VALUE;
+            }
         }
         if (next[LINK_SP_OUTPUT] > 1u
             || next[LINK_SP_SET_MV] > PDMINI_V_MAX_MV
@@ -397,6 +405,25 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     if (!beat_alive) {
         p->regs[LINK_SP_OUTPUT] = 0u;
     }
+    /* An OFF that finds a programming port's frame on the wire waits for
+     * the frame's end, SUPPLY_PAGE_OFF_WAIT_MS at most: whoever asked --
+     * the panel, a stop, the heartbeat lost. */
+    const bool asked = p->regs[LINK_SP_OUTPUT] != 0u;
+    if (asked) {
+        p->was_on   = true;
+        p->off_wait = false;
+    } else if (p->was_on) {
+        p->was_on = false;
+        if (p->frame_out) {
+            p->off_wait = true;
+            p->off_t0   = p->now_ms;
+        }
+    }
+    if (p->off_wait
+        && (!p->frame_out
+            || (uint32_t)(p->now_ms - p->off_t0) >= SUPPLY_PAGE_OFF_WAIT_MS)) {
+        p->off_wait = false;
+    }
     p->answered = drv != NULL && drv->answered;
     wire_step(p, drv);
     if (drv == NULL || !supply_page_enabled(p)) {
@@ -408,7 +435,7 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
         pdmini_reset(drv);
     }
     if (p->commanded) {
-        pdmini_want(drv, p->regs[LINK_SP_OUTPUT] != 0u,
+        pdmini_want(drv, asked || p->off_wait,
                     p->regs[LINK_SP_SET_MV], p->regs[LINK_SP_SET_MA]);
     } else {
         /* Wired with no command yet: off, and the module's set points left
@@ -486,6 +513,15 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
     p->regs[LINK_SP_SET_MA] = ma;
     p->commanded = true;
     return true;
+}
+
+void supply_page_port_frame(supply_page_t *p, bool frame_out,
+                            uint32_t now_ms)
+{
+    if (p != NULL) {
+        p->frame_out = frame_out;
+        p->now_ms    = now_ms;
+    }
 }
 
 void supply_page_hold(supply_page_t *p, bool held)

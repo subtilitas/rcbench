@@ -16,6 +16,7 @@
 #include "kst_reg.h"
 #include "link_pages.h"
 #include "settings.h"
+#include "supply_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -164,6 +165,8 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_NEED_DISARM]     = { TX_KP_M_NEED_DISARM, -1 },
     [KST_PROG_MSG_BACKUP_OTHER]    = { TX_KP_M_BACKUP_OTHER,
                                        TX_KP_M_BACKUP_OTHER_2 },
+    [KST_PROG_MSG_SUPPLY_CAPS]     = { TX_KP_M_SUPPLY_CAPS,
+                                       TX_KP_M_SUPPLY_CAPS_2 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -210,6 +213,7 @@ static const int16_t k_ref[] = {
     [LINK_KST_REF_NO_SUPPLY]       = TX_KP_R_NO_SUPPLY,
     [LINK_KST_REF_LEAVE_MS]        = TX_KP_R_LEAVE_MS,
     [LINK_KST_REF_LOCKED]          = TX_KP_R_LOCKED,
+    [LINK_KST_REF_SUPPLY_LOW]      = TX_KP_R_SUPPLY_LOW,
 };
 #define REF_COUNT ((unsigned)(sizeof(k_ref) / sizeof(k_ref[0])))
 
@@ -1385,9 +1389,13 @@ static uint16_t supply_max_mv(void)
                 : (uint16_t)KST_PANEL_STD_MV;
 }
 
-/* A voltage as the settings hold it: a standard servo's at most. */
+/* A voltage as the settings hold it: a standard servo's at most, and the
+ * port's lowest at least. */
 static uint16_t std_mv(long mv)
 {
+    if (mv < (long)KST_PORT_SUPPLY_MIN_MV) {
+        return (uint16_t)KST_PORT_SUPPLY_MIN_MV;
+    }
     return mv > (long)KST_PANEL_STD_MV ? (uint16_t)KST_PANEL_STD_MV
                                        : (uint16_t)mv;
 }
@@ -1429,7 +1437,7 @@ static void keypad_done(float v)
     if (k.kp_row == KP_VOLTAGE) {
         const long mv = lroundf(v * 10.0f) * 100L;
 
-        if (mv < (long)PDMINI_V_MIN_MV || mv > (long)supply_max_mv()) {
+        if (mv < (long)KST_PORT_SUPPLY_MIN_MV || mv > (long)supply_max_mv()) {
             return;
         }
         if (mv > (long)KST_PANEL_STD_MV) {
@@ -1503,6 +1511,11 @@ static void act(const row_t *r)
     switch (r->what) {
     case A_PORT:
         if (st == KST_PROG_PWM) {
+            /* Against the SUPPLY screen's limits as they are now. */
+            const supply_caps_t caps = supply_screen_caps();
+
+            kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
+                                 (uint16_t)lroundf(caps.i_max * 1000.0f));
             (void)kst_prog_connect(p, port_no());
         } else if (st == KST_PROG_PROGRAMMING) {
             warn_leave();
@@ -1613,7 +1626,7 @@ static void choice_done(int value)
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&k.kp, k.area, TR(KP_PROG_VOLTAGE), "V",
                        (float)kst_prog_supply_mv(p) / 1000.0f,
-                       (float)PDMINI_V_MIN_MV / 1000.0f,
+                       (float)KST_PORT_SUPPLY_MIN_MV / 1000.0f,
                        (float)supply_max_mv() / 1000.0f, 1);
         k.kp_row = KP_VOLTAGE;
     } else if (value == MORE_CURRENT) {
@@ -1885,6 +1898,14 @@ bool kst_panel_has_press(uint8_t id)
     return k.have && k.id == id;
 }
 
+/* The supply's own controls follow the port: while one is out of PWM the
+ * coprocessor takes an OFF and nothing else (supply_page.h), and SUPPLY and
+ * the SERVO screen's SET row offer no more than that. */
+static void supply_sync(void)
+{
+    supply_screen_set_port_held(kst_prog_holds_port(&k.prog));
+}
+
 void kst_panel_event(const touch_event_t *evt)
 {
     if (evt == NULL || !k.open) {
@@ -1896,6 +1917,7 @@ void kst_panel_event(const touch_event_t *evt)
         /* One press at a time in the overlay. */
         down(evt);
     }
+    supply_sync();
     ++k.rev;
 }
 
@@ -2083,6 +2105,7 @@ static void model_moved(void)
         k.state_seen = st;
     }
     card_moved();
+    supply_sync();
     sig = signature();
     if (sig != k.sig) {
         k.sig = sig;

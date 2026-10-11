@@ -334,7 +334,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      */
     [SET_SERVO_PROG_V] = {
         "srv_prog_v", "Programming voltage", "Supply of the servo while it is programmed", "V",
-        SET_CAT_SERVO, SET_TYPE_FLOAT, 1.0f, 8.4f, 0.1f, 5.0f, NULL, 0 },
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 4.8f, 8.4f, 0.1f, 5.0f, NULL, 0 },
     [SET_SERVO_PROG_I] = {
         "srv_prog_i", "Programming current", "The supply's limit while a servo is programmed", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.05f, 3.0f, 0.001f, 1.0f, NULL, 0 },

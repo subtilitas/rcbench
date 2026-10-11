@@ -132,7 +132,10 @@ overlay is open again at the next entry.
 | --- | --- |
 | `The programming port holds no pin. Nothing was sent.` | a slot of OUTPUTS holds the port's pin |
 | `The coprocessor has no such programming port.` | the coprocessor has fewer ports than the one asked for |
-| `The supply cannot give this voltage or current limit.` | the voltage is outside 1.0 to 8.4 V, the current limit outside 50 to 3000 mA, or the voltage less than 0.5 V under the PD mini's input; the supply is not changed |
+| `Programming voltage or current is over the SUPPLY limits.` and `Lower it under MORE, or raise the limit. Nothing was set.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
+| `DISARM first: the port is not taken on an armed bench.` | the bench is armed or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
+| `The supply cannot give this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage less than 0.5 V under the PD mini's input; the supply is not changed |
+| `Supply under 4.8 V. Programming needs 4.8 V or more.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed |
 | `The supply did not switch within 3000 ms. Check it.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
 | `The coprocessor does not trust the link yet. Try again.` | the coprocessor does not trust the heartbeat, or the link was silent |
 
@@ -146,7 +149,7 @@ With the port in the tester's hands, **MORE** opens what **CONNECT** sets.
 
 | Entry | Range | Default | Does |
 | --- | --- | --- | --- |
-| PROGRAMMING VOLTAGE | 1.0 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on | 5.0 V | the supply voltage of the servo in programming mode |
+| PROGRAMMING VOLTAGE | 4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on | 5.0 V | the supply voltage of the servo in programming mode |
 | CURRENT LIMIT | 50 to 3000 mA | 1000 mA | the supply's current limit during programming |
 | WAIT BEFORE PWM | 0 to 10 000 ms | 100 ms | the time the port holds its line low between **LEAVE** and the first pulse |
 
@@ -154,10 +157,33 @@ Each entry opens the number keypad with its range. A value outside the range
 is not taken. All three are kept with the SERVO settings.
 
 **CONNECT** switches an output that is off on at the two values, and the
-session starts 1000 ms after the PD mini reads on. An output that is on
-above the programming voltage is lowered to it. An output that is on at or
-below it stays as it is: the port raises no voltage of an output that is
-on. Leaving programming does not restore a voltage **CONNECT** lowered.
+session starts 1000 ms after the PD mini reads on. For an output that is
+on, the session runs at the lower of the two voltages and the lower of the
+two current limits: a voltage above the programming voltage is lowered to
+it, a current limit above CURRENT LIMIT is lowered to it, and neither is
+raised. Leaving programming does not restore a value **CONNECT** lowered.
+
+The port programs at 4.8 V or more. 4.8 V is a chosen value, not a measured
+one: the supply voltage a servo needs to store a register is not known. An
+output that is on under 4.8 V is not programmed at and stays as it is; the
+operator raises it first. A PD mini whose input is under 5.3 V cannot give
+4.8 V, and no session starts on it.
+
+While the port is out of PWM the supply's set points are the port's. The
+coprocessor refuses every change of the voltage and of the current limit
+and every ON; it takes an OFF. The SUPPLY screen and the SET row of the
+right card show the same: the set points, the sliders, the steps and
+**OUTPUT ON** are dimmed and take no press, **OUTPUT OFF** and
+**RESET PEAKS** work, and the MODE card of the SUPPLY screen reads
+`servo programmer`. The limits of the SUPPLY screen's settings stay
+editable; a limit lowered under a set point reaches the set point when the
+port is back in PWM.
+
+An OFF that arrives while a frame is on the wire, from **OUTPUT OFF**,
+**STOP** or a lost heartbeat, reads off at once and reaches the PD mini
+when the port has cut the frame, 12 ms later at most. The PD mini's own
+protection is not delayed. How long the PD mini's output takes to fall
+after its off command is not measured.
 
 ![The voltage keypad](img/servo-kst-voltage.png)
 ![The wait keypad](img/servo-kst-wait.png)
@@ -882,8 +908,10 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - The time a mount attempt without a card holds the screen is not measured.
 - Not run on hardware: neither firmware image has run this code with a
   servo, a card or a PD mini.
-- The SUPPLY screen and the supply's settings are not held while the
-  programmer has the port.
+- The limits and trip settings of the SUPPLY screen are not held while the
+  programmer has the port; the set points and **OUTPUT ON** are.
+- With the simulated supply selected (no PD mini wired) the panel dims the
+  same controls, and the servo's supply is whatever feeds it.
 - The rows **PWM TARGET** and **PORT PWM** follow the port's state one
   frame of the screen after the control task does. The control task holds
   the page of the port and the tester's commands from its own reading of
@@ -933,7 +961,8 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   A write to it is refused.
 - LEFT ANGLE and RIGHT ANGLE are the vendor tool's numbers; their unit is
   not known.
-- The supply voltage a servo needs in programming mode is not known.
+- The supply voltage a servo needs in programming mode is not known. The
+  floor of 4.8 V is chosen, not measured.
 
 ## Measurements still open
 
