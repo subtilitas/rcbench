@@ -1163,9 +1163,74 @@ const wires: Wire[] = [
 // ---------------------------------------------------------------------------
 // Functions. hardware: 'run' needs a statement of a hardware run in the docs
 // of the release; `src` is that statement, or the statement that none exists.
+//
+// A function with `needs: []` runs on the panel and the coprocessor alone. It
+// is enabled in every setup and the page offers no tick for it.
 // ---------------------------------------------------------------------------
 
 const functions: Fn[] = [
+  {
+    id: 'link', group: 'bench',
+    name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
+    needs: [], hardware: 'run', src: repo('STATUS.md', 110, 'run on hardware at 1 Mbit/s with zero errors at either end'),
+  },
+  {
+    id: 'interlock', group: 'bench',
+    name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
+    // Arming works on the bring-up bench. The decision to arm is tested on
+    // the host only; the check entry `interlock-state` carries both.
+    needs: [], hardware: 'not-run', src: repo('STATUS.md', 113, 'released by CLEAR alone; not run on hardware'),
+  },
+  {
+    id: 'stop', group: 'bench',
+    name: t('STOP command over the link', 'STOP-Befehl über die Verbindung'),
+    needs: [], hardware: 'not-run', src: repo('README.md', 41, 'the link is written and not run on hardware'),
+  },
+  {
+    id: 'bind', group: 'bench',
+    name: t('Bind protocols to pads on the OUTPUTS screen', 'Protokolle auf dem OUTPUTS-Bildschirm an Pads binden'),
+    // The runs are those of earlier builds. The check entry `bind-state`
+    // states what of the release has not run.
+    needs: [], hardware: 'run', src: repo('STATUS.md', 117, 'Run on hardware on earlier builds'),
+  },
+  {
+    id: 'signals', group: 'bench',
+    name: t('Send PWM and DShot signals on bound pads', 'PWM- und DShot-Signale auf gebundenen Pads ausgeben'),
+    needs: [], hardware: 'run', src: repo('STATUS.md', 114, 'PWM has swung a servo and plain DShot has run a motor'),
+  },
+  {
+    id: 'sweep', group: 'bench',
+    name: t(
+      'Servo signal: sweep (square, sine, triangle) and frame rates other than 50 Hz',
+      'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und andere Frame-Raten als 50 Hz',
+    ),
+    needs: [], hardware: 'not-run',
+    src: repo('STATUS.md', 105, 'A frame rate other than 50 Hz and the sweep have not been tried on hardware'),
+  },
+  {
+    id: 'ppm', group: 'bench',
+    name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
+    needs: [], hardware: 'not-run', src: repo('STATUS.md', 114, 'PPM has driven nothing'),
+  },
+  {
+    id: 'settings', group: 'bench',
+    name: t('Settings on the SETUP screen, kept in the flash of the panel', 'Einstellungen auf dem SETUP-Bildschirm, im Flash des Panels gespeichert'),
+    needs: [], hardware: 'run',
+    src: repo('STATUS.md', 99, 'confirmed on hardware: a save writes and the next boot reports what it loaded'),
+  },
+  {
+    id: 'language', group: 'bench',
+    name: t('User interface in English or German', 'Bedienoberfläche auf Englisch oder Deutsch'),
+    // The check entry `language-state` carries the state.
+    needs: [], hardware: 'not-run', src: repo('STATUS.md', 98, 'built and tested on the host: English and German'),
+  },
+  {
+    id: 'profiles', group: 'bench',
+    name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
+    // No statement of a run of the list on a panel. The check entry
+    // `profiles-state` carries it.
+    needs: [], hardware: 'not-run', src: repo('STATUS.md', 126, '72 families, 451 models, from 153 manuals'),
+  },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
@@ -1448,6 +1513,38 @@ const checks: Check[] = [
     when: { opt: 'connection', is: 'osoyoo' }, src: photo('05'),
   },
   {
+    id: 'interlock-state', kind: 'note',
+    text: t(
+      'ARM and the heartbeat interlock: arming works on the bring-up bench with the line between J8 of the panel and GP3 of the coprocessor fitted. The decision to arm, with its latch at a start, on link silence, on a distrusted heartbeat and on a refused ARM, is tested on the host and has not run on hardware. The page marks the function "Not run on hardware".',
+      'ARM und Heartbeat-Verriegelung: ARM funktioniert auf dem Bring-up-Aufbau mit der Leitung zwischen J8 des Panels und GP3 des Koprozessors. Die Entscheidung über ARM, mit ihrer Sperre bei einem Start, bei stiller Verbindung, bei einem nicht vertrauenswürdigen Heartbeat und bei einem abgelehnten ARM, ist auf dem Host getestet und nicht auf Hardware gelaufen. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
+    ),
+    when: null, src: repo('README.md', 38, 'so arming works there'),
+  },
+  {
+    id: 'language-state', kind: 'note',
+    text: t(
+      'Interface language: the tables, the fonts and the fit check of the German interface are tested on the host. The German interface has not been read on a panel. The page marks the function "Not run on hardware".',
+      'Sprache der Bedienoberfläche: Die Tabellen, die Schriften und die Passprüfung der deutschen Oberfläche sind auf dem Host getestet. Die deutsche Oberfläche wurde nicht auf einem Panel gelesen. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
+    ),
+    when: null, src: repo('STATUS.md', 434, 'The German interface has not been read on a panel'),
+  },
+  {
+    id: 'profiles-state', kind: 'unknown',
+    text: t(
+      'ESC profile list: the docs of release 0.16.0 state host tests of the reader and the registry and no run of the list on a panel. The page marks the function "Not run on hardware".',
+      'ESC-Profilliste: Die Dokumente von Release 0.16.0 nennen Host-Tests des Lesers und der Registry und keinen Lauf der Liste auf einem Panel. Die Seite kennzeichnet die Funktion mit "Nicht auf Hardware gelaufen".',
+    ),
+    when: null, src: repo('STATUS.md', 126, 'The reader and the registry are tested on the host'),
+  },
+  {
+    id: 'bind-state', kind: 'note',
+    text: t(
+      'Output binding: the bindings behind the servo and motor runs were made on earlier builds. The write of release 0.16.0, prepared pages put in force by 1 commit, has not run on hardware.',
+      'Bindung der Ausgänge: Die Bindungen hinter den Servo- und Motorläufen entstanden auf früheren Builds. Das Schreiben von Release 0.16.0, vorbereitete Seiten und 1 Commit, ist nicht auf Hardware gelaufen.',
+    ),
+    when: null, src: repo('STATUS.md', 117, 'Not run on hardware: the prepared pages and the commit'),
+  },
+  {
     id: 'osoyoo-terminals', kind: 'note',
     text: t(
       'Use the screw terminals only. What the V pins of the G V S rows carry is not stated. Plug no servo lead and no ESC lead there.',
@@ -1644,9 +1741,10 @@ export const CATALOGUE: Catalogue = deepFreeze({
   stages,
   safety,
   notInRelease,
+  // The heading of the functions that need no part.
   baseFunction: t(
-    'User interface, CAN link, ARM, STOP and the heartbeat interlock',
-    'Bedienoberfläche, CAN-Verbindung, ARM, STOP und Heartbeat-Verriegelung',
+    'No further hardware: panel and coprocessor alone',
+    'Ohne weitere Hardware: Panel und Koprozessor allein',
   ),
   pinDefaults,
 });

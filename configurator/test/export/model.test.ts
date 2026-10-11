@@ -73,14 +73,34 @@ test('every setup of the sweep gives the sections in order, every part, every wi
         });
       }
 
+      // One list per group with a member: the functions that need no part, the
+      // functions the parts enable, the functions that are not enabled. Each
+      // function stands in one list, once, with its mark.
       const fn = lists(doc, 'functions');
-      const on = setup.functions.filter((f) => f.enabled).length;
-      const off = setup.functions.length - on;
-      if (fn[0]?.items.length !== on + 1) say('the enabled functions differ');
-      if (off > 0) {
-        if (fn[1]?.items.length !== off) say('the functions that are not enabled differ');
-        else if (fn[1].items.some((item) => item.lines.length === 0)) say('a function that is not enabled names nothing that is missing');
-      } else if (fn.length !== 1) say('a list of functions that are not enabled without one');
+      const groups = [
+        setup.functions.filter((f) => f.enabled && f.fn.needs.length === 0),
+        setup.functions.filter((f) => f.enabled && f.fn.needs.length > 0),
+        setup.functions.filter((f) => !f.enabled),
+      ];
+      const filled = groups.filter((g) => g.length > 0);
+      if (fn.length !== filled.length) say(`${fn.length} lists of functions for ${filled.length} groups`);
+      else {
+        filled.forEach((group, g) => {
+          const items = fn[g]?.items ?? [];
+          if (items.map((i) => i.runs[0]?.text).join('|') !== group.map((f) => tx(lang, f.fn.name)).join('|')) say(`function list ${g + 1} differs from the setup`);
+          group.forEach((f, i) => {
+            if ((f.fn.hardware === 'not-run') !== (items[i]?.tags.includes(t(lang, 'nrh')) ?? false)) say(`function ${f.fn.id} carries the wrong mark`);
+            if (!f.enabled && items[i]?.lines.length === 0) say(`function ${f.fn.id} is not enabled and names nothing that is missing`);
+          });
+        });
+      }
+      const fnText = blocks(doc, 'functions').flatMap((b) => (b.kind === 'list' ? b.items.map((i) => i.runs[0]?.text) : []));
+      if (fnText.length !== setup.functions.length || new Set(fnText).size !== fnText.length) say('a function is listed twice or not at all');
+      // The heading of the functions that need no part is a heading, not an entry.
+      if (fnText.includes(tx(lang, CATALOGUE.baseFunction))) say('the heading of the base functions is a list entry');
+      const heads = blocks(doc, 'functions').filter((b) => b.kind === 'heading').map((b) => (b.kind === 'heading' ? b.text : ''));
+      if (heads.includes(tx(lang, CATALOGUE.baseFunction)) !== ((groups[0]?.length ?? 0) > 0)) say('the heading of the base functions does not follow the data');
+      if (heads.includes(t(lang, 'withParts')) !== ((groups[1]?.length ?? 0) > 0)) say('the heading of the functions with parts does not follow the data');
 
       const wiring = blocks(doc, 'wiring');
       const kinds = wiring.map((b) => b.kind).join();
@@ -151,8 +171,25 @@ test('the empty selection gives a full document', () => {
     const view = viewOf(EMPTY, setup, lang);
     const doc = documentModel(view, urlOf(view), NOW);
     assert.equal(one(doc, 'safety', 'safety').notes.length, CATALOGUE.safety.length);
-    assert.equal(lists(doc, 'functions')[0]?.items.length, 1);
-    assert.equal(lists(doc, 'functions')[1]?.items.length, CATALOGUE.functions.length);
+    // The functions that need no part are enabled, each with its mark; every
+    // other function is listed as not enabled. No other list of functions.
+    const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+    const rest = CATALOGUE.functions.filter((f) => f.needs.length > 0);
+    assert.ok(base.length > 0 && rest.length > 0);
+    const fn = lists(doc, 'functions');
+    assert.equal(fn.length, 2);
+    assert.deepEqual(fn[0]?.items.map((i) => i.runs[0]?.text), base.map((f) => tx(lang, f.name)));
+    assert.deepEqual(
+      fn[0]?.items.map((i) => i.tags),
+      base.map((f) => (f.hardware === 'not-run' ? [t(lang, 'nrh')] : [])),
+    );
+    assert.deepEqual(fn[1]?.items.map((i) => i.runs[0]?.text), rest.map((f) => tx(lang, f.name)));
+    const heads = blocks(doc, 'functions').filter((b) => b.kind === 'heading').map((b) => (b.kind === 'heading' ? b.text : ''));
+    assert.deepEqual(heads, [t(lang, 'does'), tx(lang, CATALOGUE.baseFunction), PDF_STRINGS.notEnabled[lang === 'de' ? 1 : 0]]);
+    // The checks on the state of these functions are in the document.
+    const checks = lists(doc, 'order')[1]?.items.map((i) => i.runs[1]?.text) ?? [];
+    for (const c of setup.checks) assert.ok(checks.includes(tx(lang, c.text)), c.id);
+    assert.ok(setup.checks.some((c) => c.when === null && c.id.endsWith('-state')));
     assert.equal(lists(doc, 'parts')[0]?.items.length, setup.parts.length);
   }
 });
@@ -168,6 +205,35 @@ test('a setup without a part, a wire or a check says so and invents nothing', ()
     assert.ok(texts.includes(t(lang, 'noWires')));
     assert.equal(blocks(doc, 'wiring').some((b) => b.kind === 'table'), false);
     assert.equal(lists(doc, 'parts').length, 0);
+  }
+});
+
+test('the functions section follows the functions of the setup at its limits', () => {
+  const key = (lang: Lang, k: keyof typeof PDF_STRINGS): string => PDF_STRINGS[k][lang === 'de' ? 1 : 0];
+  const all = LARGEST.setup.functions;
+  const base = all.filter((f) => f.fn.needs.length === 0);
+  const rest = all.filter((f) => f.fn.needs.length > 0);
+  assert.ok(base.length > 0 && rest.length > 0);
+  const on = (f: (typeof all)[number]) => ({ ...f, enabled: true, missing: [] });
+  for (const lang of LANGS) {
+    const heads = (functions: typeof all): string[] => {
+      const view = viewOf(LARGEST.selection, { ...LARGEST.setup, functions }, lang);
+      const doc = documentModel(view, urlOf(view), NOW);
+      assert.equal(lists(doc, 'functions').reduce((n, l) => n + l.items.length, 0), functions.length);
+      return blocks(doc, 'functions').map((b) => (b.kind === 'heading' ? b.text : b.kind === 'para' ? b.runs[0]?.text ?? '' : b.kind));
+    };
+    const does = t(lang, 'does');
+    const baseHead = tx(lang, CATALOGUE.baseFunction);
+    // No function at all: one sentence, no list, no second heading.
+    assert.deepEqual(heads([]), [does, key(lang, 'noneEnabled')]);
+    // Every function enabled: both groups, then the sentence in place of the list.
+    assert.deepEqual(heads(all.map(on)), [does, baseHead, 'list', t(lang, 'withParts'), 'list', key(lang, 'notEnabled'), key(lang, 'allEnabled')]);
+    // Only functions that need a part, all enabled: no heading for the other group.
+    assert.deepEqual(heads(rest.map(on)), [does, t(lang, 'withParts'), 'list', key(lang, 'notEnabled'), key(lang, 'allEnabled')]);
+    // Only functions that need a part, none enabled.
+    assert.deepEqual(heads(rest.map((f) => ({ ...f, enabled: false }))), [does, key(lang, 'noneEnabled'), key(lang, 'notEnabled'), 'list']);
+    // 1 function that needs no part and nothing else.
+    assert.deepEqual(heads(base.slice(0, 1)), [does, baseHead, 'list', key(lang, 'notEnabled'), key(lang, 'allEnabled')]);
   }
 });
 

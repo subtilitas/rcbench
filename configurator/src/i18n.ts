@@ -23,6 +23,11 @@ const S = {
   gOneOf: ['Also needs, by variant: {x}.', 'Braucht außerdem, je nach Variante: {x}.'],
   or: [', or ', ' oder '],
   noPart: ['no further part', 'kein weiteres Teil'],
+  baseHint: [
+    'These functions are part of every setup. They take no tick.',
+    'Diese Funktionen gehören zu jedem Aufbau. Sie werden nicht angekreuzt.',
+  ],
+  withParts: ['With the parts of this setup', 'Mit den Teilen dieses Aufbaus'],
   adds: ['Adds: ', 'Kommt dazu: '],
   stOwn: ['Selected by you.', 'Von dir gewählt.'],
   stInc: ['Included with these parts.', 'Mit diesen Teilen enthalten.'],

@@ -132,14 +132,21 @@ export function functionState(f: ResolvedFunction): 'own' | 'inc' | 'off' {
   return f.chosen ? 'own' : f.enabled ? 'inc' : 'off';
 }
 
-/** The state of a function in words. */
+/** True for a function that needs no part beyond the base setup: it takes no tick. */
+export function runsOnBase(catalogue: Catalogue, f: ResolvedFunction): boolean {
+  const base = baseParts(catalogue);
+  return f.fn.needs.every((id) => base.includes(id));
+}
+
+/**
+ * The state of a function in words. A function the base setup runs is never
+ * "selected by you", whatever the selection names.
+ */
 export function statusText(view: View, f: ResolvedFunction): string {
   const { lang, catalogue, options } = view;
+  if (f.enabled && runsOnBase(catalogue, f)) return t(lang, 'stBase');
   if (f.chosen) return t(lang, 'stOwn');
-  if (f.enabled) {
-    const base = baseParts(catalogue);
-    return t(lang, f.fn.needs.every((id) => base.includes(id)) ? 'stBase' : 'stInc');
-  }
+  if (f.enabled) return t(lang, 'stInc');
   if (f.missing.length > 0) return t(lang, 'adds') + partList(view, f.missing);
   const forced = (Object.entries(f.fn.forces ?? {}) as Array<[OptionKey, string]>)
     .filter(([key, value]) => options[key] !== value)
@@ -161,7 +168,23 @@ export function deselectText(view: View, effect: Deselect): string {
   return out.join(' ');
 }
 
+/**
+ * The functions the base setup runs: a list without controls. Every setup
+ * runs them, so a row has no tick and no state to change; it states its
+ * state in words like the rows of the other groups.
+ */
+function baseRows(view: View, group: Group): string {
+  const { lang, setup } = view;
+  const items = setup.functions.filter((f) => group.functions.includes(f.fn.id)).map((f) => {
+    const status = statusText(view, f);
+    return `<li id="b-${esc(f.fn.id)}"><span><b>${esc(tx(lang, f.fn.name))}</b>${f.fn.hardware === 'not-run' ? tag(lang) : ''}</span>`
+      + `${status ? `<small>${esc(status)}</small>` : ''}</li>`;
+  });
+  return `<p class="hint">${esc(t(lang, 'baseHint'))}</p><ul class="base">${items.join('')}</ul>`;
+}
+
 function functionRows(view: View, group: Group): string {
+  if (group.parts.length === 0) return baseRows(view, group);
   const { lang, setup, note } = view;
   let h = '';
   for (const f of setup.functions) {

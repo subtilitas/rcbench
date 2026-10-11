@@ -12,6 +12,7 @@ import { OPTION_KEYS, OPTION_VALUES } from '../resolve.ts';
 const LOCKED = ['panel', 'copro', 'usb', 'wire'];
 const SELECTABLE = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+const BASE = ['link', 'interlock', 'stop', 'bind', 'signals', 'sweep', 'ppm', 'settings', 'language', 'profiles'];
 
 function select(functions: string[] = [], owned: string[] = [], options: Partial<Options> = {}): Selection {
   return { functions, owned, options: { ...DEFAULT_OPTIONS, ...options } };
@@ -89,8 +90,8 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
   const setup = resolve(CATALOGUE, select());
   assert.deepEqual(partIds(setup), LOCKED);
   assert.deepEqual(wireNumbers(setup), [1, 2, 3, 4]);
-  assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'same-release']);
-  assert.deepEqual(setup.unknown, []);
+  assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'same-release', 'interlock-state', 'language-state', 'profiles-state', 'bind-state']);
+  assert.deepEqual(setup.unknown.map((u) => u.id), ['profiles-state']);
   assert.deepEqual(setup.conflicts, []);
   assert.deepEqual(setup.ignored, []);
   for (const p of setup.parts) {
@@ -99,7 +100,9 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
     assert.equal(p.ownedTick, false);
   }
   assert.deepEqual(setup.functions.map((f) => f.fn.id), FUNCTIONS);
-  assert.ok(setup.functions.every((f) => !f.chosen && !f.enabled && f.missing.length > 0));
+  // The functions that need no part are enabled; every other function misses a part.
+  assert.deepEqual(setup.functions.filter((f) => f.enabled).map((f) => f.fn.id), BASE);
+  assert.ok(setup.functions.every((f) => !f.chosen && (f.enabled ? f.fn.needs.length === 0 : f.missing.length > 0)));
   assert.deepEqual(setup.options, [
     { key: 'connection', value: 'pads', visible: true, forcedBy: null },
     { key: 'ina228Board', value: 'matek', visible: false, forcedBy: null },
@@ -348,7 +351,7 @@ test('an option keeps its value while it is not visible', () => {
   const setup = resolve(CATALOGUE, select([], [], { ina228Board: 'xt90', escPower: 'pd', connection: 'osoyoo' }));
   assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd']);
   assert.deepEqual(setup.checks.map((c) => c.id), [
-    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals',
+    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'interlock-state', 'language-state', 'profiles-state', 'bind-state', 'osoyoo-terminals',
   ]);
 });
 
@@ -488,7 +491,8 @@ test('the INA3221 moves the plus wire of the servo through its shunt', () => {
 test('the unknown list is the checks of kind unknown, in data order', () => {
   const setup = resolve(CATALOGUE, select(FUNCTIONS, SELECTABLE, { connection: 'osoyoo', ina228Board: 'xt90' }));
   assert.deepEqual(setup.unknown.map((u) => u.id), [
-    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board', 'osoyoo-labels',
+    'pdmini-state', 'servotest-state', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
+    'osoyoo-labels', 'profiles-state',
   ]);
   for (const u of setup.unknown) {
     const check = setup.checks.find((c) => c.id === u.id);
@@ -644,4 +648,26 @@ test('conditions: the walkers list every part and option value', () => {
   assert.equal(requiresOption({ any: [{ opt: 'escPower', is: 'pd' }, { all: [{ has: 'esc' }, { opt: 'escPower', is: 'pd' }] }] }, 'escPower', 'pd'), true);
   assert.equal(requiresOption({ any: [] }, 'escPower', 'pd'), false);
   assert.equal(requiresOption({ has: 'esc' }, 'escPower', 'pd'), false);
+});
+
+test('the functions that need no part are enabled in every setup and add no part and no wire', () => {
+  const empty = resolve(CATALOGUE, select([], []));
+  assert.deepEqual(partIds(empty), ['panel', 'copro', 'usb', 'wire']);
+  for (const id of BASE) {
+    assert.deepEqual({ chosen: fn(empty, id).chosen, enabled: fn(empty, id).enabled, missing: fn(empty, id).missing }, { chosen: false, enabled: true, missing: [] }, id);
+  }
+  // Adding a part or a function removes none of them.
+  for (const part of SELECTABLE) {
+    const setup = resolve(CATALOGUE, select([], [part]));
+    for (const id of BASE) assert.equal(fn(setup, id).enabled, true, `${id} with ${part}`);
+  }
+  for (const f of FUNCTIONS) {
+    const setup = resolve(CATALOGUE, select([f], []));
+    for (const id of BASE) assert.equal(fn(setup, id).enabled, true, `${id} with ${f}`);
+  }
+  // An id of such a function in the selection changes no part and no wire.
+  const named = resolve(CATALOGUE, select(BASE, []));
+  assert.deepEqual(partIds(named), partIds(empty));
+  assert.deepEqual(named.wires.map((w) => w.n), empty.wires.map((w) => w.n));
+  assert.deepEqual(named.ignored, []);
 });

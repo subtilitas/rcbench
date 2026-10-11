@@ -65,7 +65,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 | Key | Meaning |
 |---|---|
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
-| `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. |
+| `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
 | `p` | Ids of parts the visitor owns. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
@@ -77,9 +77,15 @@ version notice. An unknown id is dropped and named in a notice.
 ## Chooser
 
 Each group of functions is a `fieldset`. Its legend names the parts the group
-needs beyond the base setup: "Needs: Servo + PD mini". The first group is
-"Runs on the base setup"; it is absent when every function needs a part. A
-group whose parts are all in the setup carries the tag "In this setup".
+needs beyond the base setup: "Needs: Servo + PD mini". A group whose parts are
+all in the setup carries the tag "In this setup".
+
+The first group is "Runs on the base setup". It holds the functions that need
+no part. It is a list without controls: a row has no tick, is active in every
+setup and reads "Included with the base setup.". The id of such a function is
+never written into the link and never counts as selected by the visitor. The
+removal of a part and of a tick never lists such a function as going off. The
+group is absent when every function needs a part.
 
 A function is active when the setup holds every part it needs and every option
 it forces. Each row states its state in words:
@@ -88,6 +94,7 @@ it forces. Each row states its state in words:
 |---|---|---|
 | Ticked by the visitor | "Selected by you." | yes |
 | Active through the parts of the setup | "Included with these parts." | no |
+| Runs on the base setup | "Included with the base setup." | none |
 | Not active | "Adds: <parts>" or the reason | no |
 
 Removing the tick of a function removes it from the selection. A note under
@@ -116,7 +123,7 @@ Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
 `test/layout.test.ts` draws every distinct setup the resolver gives for every
-subset of the functions and every subset of the selectable parts, in all 8
+subset of the functions that need a part and every subset of the selectable parts, in all 8
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,
@@ -183,9 +190,9 @@ export chunk on the first use.
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
 | Wire table | The header row repeats on every page. No row is split. |
-| Metadata | Title, document language, creator. Links: the share link. |
+| Metadata | Title, document language, creator. Links: the share link, written without the ids of the functions that need no part. |
 | Output | The same bytes for the same setup, language, share link and date. |
-| Size | 43 kB for the smallest setup (3 pages), 64 kB for the largest (8 pages). |
+| Size | 44 kB for the smallest setup (4 pages), 64 kB for the largest (8 pages). |
 
 Parts of `src/export/`:
 
@@ -200,7 +207,7 @@ Parts of `src/export/`:
 | `font.ts`, `pdf.ts` | TrueType reader and PDF writer. |
 | `font/` | `Inter-Regular-subset.ttf` (22488 bytes), `Inter-Bold-subset.ttf` (22620 bytes), `OFL.txt`. |
 
-The export chunk is 106 kB (50 kB gzip). The first load carries the button,
+The export chunk is 108 kB (51 kB gzip). The first load carries the button,
 its strings and the chunk loader: 3.2 kB (1.1 kB gzip).
 
 The font is Inter 4.001 by The Inter Project Authors under the SIL Open Font
@@ -231,7 +238,7 @@ file names no stage, so the checks follow the stages as one list.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Print output: not checked on paper.
-- PDF export: the first use needs the network for the export chunk of 106 kB. Later uses work offline
+- PDF export: the first use needs the network for the export chunk of 108 kB. Later uses work offline
   until the page reloads.
 - PDF export: the file has no structure tags (not PDF/UA). A screen reader reads the text in page order
   and does not announce headings or table cells.
