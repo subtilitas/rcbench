@@ -1286,8 +1286,9 @@ def check_spdx(problems: list[str]) -> None:
 
 
 # Chaservo is written in full, as its owner writes it.  The short form as a
-# word of its own: not part of a longer word, a file name or an identifier.
-BRAND_SHORT_RE = re.compile(r"(?<!\w)Cha(?!\w|\.\w)")
+# word of its own, in any case: not part of a longer word, a file name or an
+# identifier.
+BRAND_SHORT_RE = re.compile(r"(?<!\w)cha(?!\w|\.\w)", re.I)
 
 
 def brand_short_forms(text: str) -> list[int]:
@@ -1298,9 +1299,9 @@ def brand_short_forms(text: str) -> list[int]:
 
 def brand_pages() -> list[pathlib.Path]:
     """The prose and the user-interface text tables the name rule covers."""
+    root = sorted(REPO.glob("*.md")) + [REPO / "NOTICE"]
     return (linked_pages()
-            + [p for p in (REPO / "CHANGELOG.md", REPO / "NOTICE")
-               if p.exists()]
+            + [p for p in root if p.exists() and p not in ROOT_PAGES]
             + sorted((REPO / "protocols").glob("*/README.md"))
             + sorted((REPO / "shared" / "ui").glob("ui_text*.c")))
 
