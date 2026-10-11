@@ -102,6 +102,17 @@ test('a part or a board without a drawing is a finding', () => {
   const f = checkPins(CATALOGUE, a);
   has(f, 'no-drawing', /part ina228: no drawing for xt90/);
   has(f, 'no-drawing', /part tap: no drawing/);
+  const d = anchors();
+  delete d.files['copro.svg'];
+  const g = checkPins(CATALOGUE, d);
+  has(g, 'no-drawing', /part copro: no drawing for the default pads/);
+  assert.equal(g.filter((x) => x.id === 'no-drawing').length, 1);
+  delete d.files['copro--osoyoo.svg'];
+  const h = checkPins(CATALOGUE, d).filter((x) => x.id === 'no-drawing').map((x) => x.msg);
+  assert.deepEqual(h, ['part copro: no drawing', 'part copro: no drawing for osoyoo']);
+  const e = anchors();
+  delete e.files['ina228--matek.svg'];
+  assert.deepEqual(checkPins(CATALOGUE, e).filter((x) => x.id === 'no-drawing').map((x) => x.msg), ['part ina228: no drawing for matek']);
   const b = anchors();
   b.files['other.svg'] = b.files['tap.svg']!;
   delete b.files['tap.svg'];

@@ -11,7 +11,7 @@
     "build": "node drawings/cli.ts --check && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"test/*.test.ts\" \"drawings/test/*.test.ts\"",
+    "test": "node --test \"test/**/*.test.ts\" \"drawings/test/*.test.ts\"",
     "drawings": "node drawings/cli.ts",
     "drawings:check": "node drawings/cli.ts --check",
     "e2e": "playwright test",
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@playwright/test": "1.64.0",
     "@types/node": "24.19.2",
+    "pdfjs-dist": "6.4.299",
     "typescript": "7.0.2",
     "vite": "8.3.4"
   }

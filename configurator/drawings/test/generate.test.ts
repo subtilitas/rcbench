@@ -5,7 +5,7 @@ import { CATALOGUE } from '../../core/catalogue.ts';
 import { malformed } from '../check.ts';
 import { LANGS, anchorsText, cataloguePins, fileOf, generate, pathOf } from '../generate.ts';
 import { LABEL_EM, labelWidth } from '../lib.ts';
-import { LIST } from '../parts.ts';
+import { INA3221_MAP, LIST } from '../parts.ts';
 
 const clone = (): Catalogue => structuredClone(CATALOGUE) as Catalogue;
 const out = generate(CATALOGUE);
@@ -16,6 +16,18 @@ test('2 runs of the generator give the same bytes', () => {
   assert.equal(anchorsText(again.anchors), anchorsText(out.anchors));
   assert.deepEqual(Object.keys(again.svgs), Object.keys(out.svgs));
   for (const [path, svg] of Object.entries(out.svgs)) assert.equal(again.svgs[path], svg, path);
+});
+
+test('a change of the output does not reach the next run', () => {
+  const first = generate(CATALOGUE);
+  const map = first.anchors.files['ina3221.svg']!.catalogueMap!;
+  map['LP']!.push('PAD9');
+  map['A0'] = ['A0'];
+  delete map['GND'];
+  assert.notEqual(map, INA3221_MAP);
+  assert.deepEqual(INA3221_MAP['LP'], ['PAD1', 'PAD2', 'PAD3']);
+  assert.equal(INA3221_MAP['A0'], null);
+  assert.equal(anchorsText(generate(CATALOGUE).anchors), anchorsText(out.anchors));
 });
 
 test('the output is 1 file per drawing and language, and the table lists the files in order', () => {

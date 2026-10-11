@@ -114,6 +114,20 @@ for (const size of SIZES) {
           }
           await expect(page.locator('#dia-hint')).toContainText(STRINGS.diaUndrawn[col].replace('{n}', '31'));
 
+          // Load wires are 7 px wide, the others 3 px, and the legend names both widths and both supply colours.
+          const widths = await page.locator('svg.picture g.dw').evaluateAll((els) => els.map((el) => ({
+            thick: el.classList.contains('thick'),
+            px: getComputedStyle(el.querySelector('path.core')!).strokeWidth,
+            part: el.classList.contains('k-component'),
+          })));
+          expect(widths.filter((w) => w.thick).length).toBeGreaterThanOrEqual(6);
+          for (const w of widths) expect(w.px).toBe(w.part ? '2px' : w.thick ? '7px' : '3px');
+          const items = page.locator('#dia-legend li');
+          await expect(items).toHaveCount(4);
+          await expect(items.nth(0)).toHaveText(STRINGS.dlPower[col]);
+          await expect(items.nth(1)).toHaveText(STRINGS.dlSignal[col]);
+          expect(await items.locator('svg path').evaluateAll((els) => els.map((el) => el.getAttribute('stroke-width')))).toContain('7');
+
           // The colours of the page follow the theme.
           const ink = await page.locator('svg.picture text.cap').first().evaluate((el) => getComputedStyle(el).fill);
           const surface = await page.locator('#dia').evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -136,7 +150,13 @@ for (const size of SIZES) {
       }
       await page.keyboard.press('Tab');
       await expect(page.locator('#dia')).toBeFocused();
-      const top = await page.evaluate(() => window.scrollY);
+      // The scroll that brings the focused box into view has ended when 2 readings agree.
+      let top = -1;
+      await expect.poll(async () => {
+        const last = top;
+        top = await page.evaluate(() => window.scrollY);
+        return top === last;
+      }).toBe(true);
 
       await page.keyboard.press('+');
       expect((await viewOf(page)).k).toBe(1.5);
@@ -212,7 +232,7 @@ for (const size of SIZES) {
       const numbers = wiresOf(['estop', 'ina3221', 'as5600']);
       const wire = (n: number) => page.locator(`svg.picture g.dw[data-wire="${n}"]`);
       const button = (n: number) => page.locator(`table.wires button.wn[data-wire="${n}"]`);
-      const row = (n: number) => page.locator('table.wires tr', { has: button(n) });
+      const row = (n: number) => page.locator('table.wires tr', { has: page.locator(`button.wn[data-wire="${n}"]`) });
 
       // From the table: focus shows the wire, Enter marks it.
       await button(5).focus();
@@ -323,6 +343,7 @@ for (const size of SIZES) {
       await expect(page.locator('#view-pic')).toBeVisible();
       await expect(page.locator('#view-sch')).toBeVisible();
       for (const sel of ['.tools', '.views', '#dia-hint']) await expect(page.locator(sel)).toBeHidden();
+      await expect(page.locator('#dia-legend')).toBeVisible();
       const style = await page.locator('svg.picture g.vp').evaluate((el) => getComputedStyle(el).transform);
       expect(style).toBe('none');
       const breaks = await page.locator('#view-pic').evaluate((el) => [getComputedStyle(el).breakBefore, getComputedStyle(el).breakAfter]);
@@ -366,11 +387,18 @@ test('a drag moves the zoomed picture and does not mark the wire under it', asyn
   // A click on a wire marks it and its row; the pointer over a wire shows it.
   await page.locator('button.tool[data-dia=fit]').click();
   const hit = page.locator('svg.picture g.dw[data-wire="5"] path.hit');
+  // The point of the wire in px of the window, after the page has scrolled it to the middle.
   const spot = await hit.evaluate((el: SVGPathElement) => {
     const p = el.getPointAtLength(el.getTotalLength() * 0.3);
-    const m = el.getScreenCTM()!;
-    return { x: p.x * m.a + p.y * m.c + m.e, y: p.x * m.b + p.y * m.d + m.f };
+    const at = (): { x: number; y: number } => {
+      const m = el.getScreenCTM()!;
+      return { x: p.x * m.a + p.y * m.c + m.e, y: p.x * m.b + p.y * m.d + m.f };
+    };
+    window.scrollBy(0, at().y - window.innerHeight / 2);
+    return at();
   });
+  expect(spot.y).toBeGreaterThan(0);
+  expect(spot.y).toBeLessThan(SIZES[1]!.height);
   await page.mouse.move(spot.x, spot.y);
   await expect(page.locator('svg.picture g.dw[data-wire="5"]')).toHaveClass(/\bon\b/);
   await page.mouse.click(spot.x, spot.y);

@@ -2,6 +2,7 @@
 // returns findings; an empty list is a pass. The command line is `cli.ts`.
 
 import type { Catalogue, Lang } from '../contract.ts';
+import { DEFAULT_OPTIONS } from '../core/resolve.ts';
 import { LANGS, anchorsText, cataloguePins, fileOf, generate, pathOf } from './generate.ts';
 import type { Anchors, DrawingRecord } from './generate.ts';
 import { BACKGROUNDS, MINUS_NETS, MIN_RATIO, PALETTE, PLUS_NETS, colourOf, endPoints, neighbours, wireRatio, withoutWirePoint } from './wires.ts';
@@ -138,7 +139,8 @@ export function checkRecord(file: string, rec: DrawingRecord, svgs: Partial<Reco
  *   null is not in the catalogue and is skipped.
  * - `label`: a label differs from the catalogue in English or German.
  * - `map`: the map of a drawing that carries the print of its board is incomplete.
- * - `no-drawing`: a part, or one of the 2 boards of a part, has no drawing.
+ * - `no-drawing`: a part, or one of the boards of a part, has no drawing. A part whose
+ *   default board has no name of its own needs the drawing without a variant.
  * - `release`: the table is of another catalogue release.
  */
 export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
@@ -177,8 +179,14 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
   }
   for (const part of catalogue.parts) {
     if (!drawn.has(part.id)) fail('no-drawing', `part ${part.id}: no drawing`);
-    for (const v of Object.keys(part.variantName?.names ?? {})) {
+    if (!part.variantName) continue;
+    const { option, names } = part.variantName;
+    for (const v of Object.keys(names)) {
       if (!anchors.files[fileOf(part.id, v)]) fail('no-drawing', `part ${part.id}: no drawing for ${v}`);
+    }
+    const preset = DEFAULT_OPTIONS[option];
+    if (!(preset in names) && drawn.has(part.id) && !anchors.files[fileOf(part.id, null)]) {
+      fail('no-drawing', `part ${part.id}: no drawing for the default ${preset}`);
     }
   }
   if (anchors.release !== catalogue.release) fail('release', `anchors.json is of catalogue release ${anchors.release}, the catalogue is ${catalogue.release}`);

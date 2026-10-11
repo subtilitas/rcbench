@@ -74,6 +74,11 @@ details.own[open] > summary::before { content: "\2212"; }
 .sum p { flex: 1 1 200px; margin: 0; }
 button.act { font: inherit; font-size: 15px; min-height: 44px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; }
 .linkbox { margin: 0 0 12px; }
+button.act[aria-disabled="true"] { color: var(--muted); border-style: dashed; cursor: progress; }
+.pdfmsg { margin: 0 0 12px; }
+.pdfmsg:empty { display: none; }
+.pdfmsg.err { padding: 8px 10px; border-left: 6px double var(--danger); background: var(--danger-bg); border-radius: 4px; }
+.pdfmsg a { display: inline-block; padding: 12px 0; overflow-wrap: anywhere; }
 .linkbox label { display: block; font-size: 14px; color: var(--muted); }
 .linkbox input { font: inherit; font-size: 14px; width: 100%; min-height: 44px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); }
 .msg { margin: 8px 0; padding: 8px 10px; border-left: 6px solid var(--note); background: var(--note-bg); border-radius: 4px; }
@@ -145,15 +150,15 @@ button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-acc
 .dia .nb { fill: var(--surface); stroke-width: 1.5; }
 .dia .nt { font-size: 9px; font-weight: 700; text-anchor: middle; fill: var(--ink); }
 .dia .dw { cursor: pointer; outline: none; transition: opacity .15s; }
-.dia .has-on .dw:not(.on) { opacity: .25; }
+.dia .has-on .dw { opacity: .25; }
+.dia .has-on .dw.on { opacity: 1; }
 .dia .dw.on .core { stroke-width: 6; }
 .dia .dw.on .case { stroke-width: 8; }
 .dia .dw.thick.on .core { stroke-width: 10; }
 .dia .dw.thick.on .case { stroke-width: 12; }
-.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 8px 0 0; padding: 0; font-size: 13px; color: var(--ink); }
-.legend li { display: flex; align-items: center; gap: 6px; }
-.legend .lg { flex: none; }
-.legend .lg path { fill: none; stroke-linecap: round; }
+#dia-legend { margin: 8px 0 0; color: var(--ink); }
+#dia-legend .lg { flex: none; }
+#dia-legend .lg path { fill: none; stroke-linecap: round; }
 .dia .dw.on .nb, .dia .dw.marked .nb { stroke: var(--ink); stroke-width: 2.5; }
 .dia .dw:focus-visible .nb { stroke: var(--accent); stroke-width: 3; }
 .dia .dw:focus-visible .hit { stroke: var(--accent); stroke-opacity: .35; }
@@ -210,7 +215,7 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   }
   @page { size: A4; margin: 15mm; }
   body { padding: 0; font-size: 11pt; }
-  #choose, .bar, .lang, button.act, .linkbox, .hint.pan-hint { display: none !important; }
+  #choose, .bar, .lang, button.act, .linkbox, .pdfmsg, .hint.pan-hint { display: none !important; }
   .page { display: block; padding: 0; max-width: none; }
   #result { margin-top: 0; }
   .pan { overflow: visible; border: 0; }
@@ -222,7 +227,7 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   .dia { border: 0; overflow: visible; }
   .dia svg { max-height: 180mm; }
   .dia .vp { transform: none !important; }
-  .dia .has-on .dw:not(.on) { opacity: 1; }
+  .dia .has-on .dw { opacity: 1; }
   .pan svg { width: 100%; height: auto; }
   tr, li, .stage, .safety { break-inside: avoid; }
   .parts li.pic { display: block; }

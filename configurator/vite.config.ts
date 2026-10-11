@@ -9,6 +9,8 @@ export default defineConfig({
     outDir: 'dist',
     target: 'es2022',
     assetsInlineLimit: 0,
+    // index.html holds no modulepreload link, so the entry needs no polyfill for one.
+    modulePreload: false,
   },
   preview: {
     port: 4173,

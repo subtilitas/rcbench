@@ -61,8 +61,19 @@ function paint(): void {
   }
 }
 
+/** The wire the Tab key reaches: the marked wire, else the wire that has the place, else the first. */
+function tabStop(svg: ParentNode): void {
+  const all = wiresOf(svg);
+  const stop = all.find((el) => Number(el.dataset.wire) === marked)
+    ?? all.find((el) => el.getAttribute('tabindex') === '0')
+    ?? all[0];
+  for (const el of all) el.setAttribute('tabindex', el === stop ? '0' : '-1');
+}
+
 function mark(n: number): void {
   marked = marked === n ? null : n;
+  const svg = document.querySelector<SVGSVGElement>('svg.picture');
+  if (svg) tabStop(svg);
   paint();
 }
 
@@ -153,7 +164,6 @@ function onPointerDown(event: PointerEvent): void {
   if (!box || (event.pointerType === 'mouse' && event.button !== 0)) return;
   if (pointers.size === 0) travelled = 0;
   pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-  box.setPointerCapture?.(event.pointerId);
 }
 
 function onPointerMove(event: PointerEvent): void {
@@ -165,6 +175,15 @@ function onPointerMove(event: PointerEvent): void {
   const dx = event.clientX - last.x;
   const dy = event.clientY - last.y;
   travelled += Math.abs(dx) + Math.abs(dy);
+  // The box holds the pointer from the start of a drag. A press without travel
+  // stays a click on the wire under it.
+  if (travelled >= DRAG && !p.box.hasPointerCapture?.(event.pointerId)) {
+    try {
+      p.box.setPointerCapture?.(event.pointerId);
+    } catch {
+      // The pointer has ended. The drag ends with it.
+    }
+  }
   if (pointers.size === 1) {
     if (travelled >= DRAG) view = pan(view, dx / p.scale, dy / p.scale, p.size, max);
   } else {
@@ -237,9 +256,7 @@ export function sync(): void {
   const p = parts();
   if (p) {
     apply(p);
-    const all = wiresOf(p.svg);
-    const start = all.find((el) => Number(el.dataset.wire) === marked) ?? all[0];
-    for (const el of all) el.setAttribute('tabindex', el === start ? '0' : '-1');
+    tabStop(p.svg);
   }
   paint();
 }
