@@ -55,8 +55,17 @@ bevor man sich auf ein Schreiben verlässt.
   **VERBINDEN** wird abgelehnt mit
   `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM gilt,
   angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
-  gehalten wird, von **VERBINDEN** bis er PWM meldet, nimmt **ARM** keinen
-  Druck an.
+  gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
+  den Prüfstand unter ARM: **ARM** auf SERVO und auf MOTOR & ESC ist
+  gesperrt gezeichnet und nimmt keinen Druck an, und ein Lauf des
+  ESC-Stick-Programmierers startet nicht und meldet
+  `Servo-Programmierer hält einen Port: erst VERLASSEN.` Ein ARM, das den
+  Prüfstand auf anderem Weg erreicht, wird mit dem Hinweis
+  `kein ARM: der Servo-Programmierer hält einen Port` abgelehnt. **DISARM**
+  und **STOP** wirken in jedem Zustand. Unter ARM werden das Lesen, das
+  Prüfen, das Schreiben, das Zurückspielen und das Lösen der Kopplung mit
+  derselben Zeile wie **VERBINDEN** abgelehnt; **VERLASSEN** wird
+  angenommen.
 - Antwortet ein PD mini, stellt der Port die Versorgung des Servos bei
   **VERBINDEN** ([die Versorgung](#die-versorgung)). Ohne einen stellt der
   Prüfstand die Versorgung nicht, und der Programmierer nimmt sie, wie sie
@@ -660,6 +669,22 @@ der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
 
 ![Die Warnungen eines Backups](img/de/servo-kst-restore-check.png)
 
+Das Backup der Sitzung gehört zu dem Servo, von dem es gelesen wurde. Eine
+Lesung, die vom Backup in einem Feld abweicht, das kein Schreiben der
+Sitzung ändern sollte, ist ein anderes Servo: `Anderes Servo: das Backup
+der Sitzung gehört nicht dazu.` `VERLASSEN, dann VERBINDEN: Sitzung mit
+eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
+enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
+gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
+Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
+Backup zurück. Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
+nicht geschrieben hat, werden nicht unterschieden. Nach einem
+Verbindungsverlust oder einem Start des Panels unter einer Sitzung sind die
+Schreibvorgänge der Sitzung nicht bekannt, und der Vergleich findet nicht
+statt.
+
+![Ein anderes Servo als das des Backups](img/de/servo-kst-swapped.png)
+
 ## Weiteres
 
 ![WEITERES](img/de/servo-kst-more.png)
@@ -823,10 +848,11 @@ Codes.
 - An keinem Servo getestet. Jede Aussage über das Verhalten eines Servos
   auf dieser Seite ist die des Modells.
 - Kein Chaservo-Servo ist gelesen worden.
-- Der Datensatz eines unterbrochenen Schreibens wird einmal von der Karte
-  gelesen, beim Start des Panels. Eine später eingesteckte Karte wird für
-  Dateien verwendet, und ein Datensatz darauf wird erst nach dem nächsten
-  Start des Panels gelesen.
+- Der Datensatz eines unterbrochenen Schreibens wird beim Start des Panels
+  von der Karte gelesen, und von einer später eingesteckten Karte, wenn der
+  Programmierer sie einbindet. Ein Datensatz, den das Panel schon hält,
+  bleibt: der Datensatz auf einer solchen Karte wird dann nicht gelesen,
+  und der nächste geschriebene Datensatz ersetzt ihn.
 - Eine Karte, die im Betrieb entnommen und wieder eingesteckt wird, wird
   nicht erneut eingebunden.
 - Wie lange ein Einbindeversuch ohne Karte den Bildschirm anhält, ist nicht

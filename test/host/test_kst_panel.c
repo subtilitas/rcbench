@@ -3037,6 +3037,71 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     CHECK_EQ(g_rig.sim.n_writes, 0);
 }
 
+/* A card put in after the start: its record is read then, and a record
+ * the model holds is not replaced by it. */
+TEST_CASE(the_record_of_a_card_put_in_late_is_read)
+{
+    char file[KST_PROG_FILE_MAX];
+    size_t len;
+
+    fresh();
+    g_rig.card = true;
+    cut_write();
+    len = g_rig.file_len;
+    memcpy(file, g_rig.file, len + 1u);
+
+    fresh();
+    CHECK(!kst_prog_journal(M));
+    CHECK(kst_panel_file_late(file, len));
+    CHECK(kst_prog_journal(M));
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+    CHECK_STR_EQ(said(), TR(KP_M_JOURNAL));
+    /* The record stands: the same text again is not taken, and neither
+     * is one that cannot be read, with nothing said. */
+    CHECK(!kst_panel_file_late(file, len));
+    CHECK(!kst_panel_file_late("KST 1\n00=zz\n", 12));
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+    CHECK(kst_prog_journal(M));
+
+    /* No record held, a file that is not readable: said. */
+    fresh();
+    CHECK(!kst_panel_file_late("KST 1\n00=zz\n", 12));
+    CHECK_EQ(msg(), KST_PROG_MSG_FILE_BAD);
+}
+
+/* Servo A read, servo B put on the port in the session: READ ALL says
+ * that A's backup is not B's, in two lines, and RESTORE does not hold
+ * it. */
+TEST_CASE(the_backup_of_the_session_is_not_offered_for_another_servo)
+{
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        enable();
+        g_rig.sim.reg[0x10] ^= 0x01u;
+        tap(val(PG_SERVO, 1, 0));           /* READ ALL */
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
+        CHECK_STR_EQ(said(), TR(KP_M_BACKUP_OTHER));
+        CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+        CHECK_STR_EQ(t[1], TR(KP_M_BACKUP_OTHER_2));
+        CHECK(!kst_prog_write_enabled(M));
+        show();
+        enable();
+        tap(val(PG_SERVO, 2, 0));           /* RESTORE */
+        for (int i = 0; i < choices(); ++i) {
+            CHECK(strcmp(kst_panel_choice_label(i), TR(KP_FROM_SESSION))
+                  != 0);
+        }
+        rig_frames(50);
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(a_file_that_is_not_readable_is_said_and_not_used)
 {
     fresh();
@@ -3734,6 +3799,8 @@ int main(void)
     RUN(a_restore_with_no_card_shows_its_warnings_and_the_missing_file);
     RUN(a_restore_and_a_release_whose_card_is_pulled_come_back_too);
     RUN(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named);
+    RUN(the_record_of_a_card_put_in_late_is_read);
+    RUN(the_backup_of_the_session_is_not_offered_for_another_servo);
     RUN(a_file_that_is_not_readable_is_said_and_not_used);
     RUN(more_holds_verify_discard_and_release_pairing);
     RUN(a_servo_that_fails_the_fingerprint_is_shown_and_never_written);

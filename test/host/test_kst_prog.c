@@ -50,6 +50,7 @@ static kst_link_outcome_t g_outcome;
 static uint32_t g_answer_id;
 static kst_link_start_t g_answer;
 static bool g_stopped;
+static bool g_armed;           /* the feed's armed                  */
 static bool g_deaf;            /* the control task takes no command */
 static unsigned g_starts;      /* kst_link_start() calls            */
 static unsigned g_aborts;
@@ -167,6 +168,7 @@ static void fresh_at(uint32_t t0)
     g_answer_id = 0;
     g_answer = KST_LINK_START_OK;
     g_stopped = false;
+    g_armed = false;
     g_deaf = false;
     g_starts = 0;
     g_aborts = 0;
@@ -223,6 +225,7 @@ static void publish(void)
     f.outcomes = g_outcomes;
     f.outcome = g_outcome;
     f.stopped = g_stopped;
+    f.armed = g_armed;
     f.card = g_card;
     f.target = g_target;
     kst_prog_feed(&g_p, &f);
@@ -833,7 +836,7 @@ TEST_CASE(the_switch_goes_off_where_the_rules_say)
     g_sim.reg[0x03] ^= 0x01u;
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
     CHECK(!kst_prog_write_enabled(&g_p));
     /* A read of the same servo leaves it. */
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
@@ -893,7 +896,8 @@ TEST_CASE(a_verify_says_whether_the_servo_holds_what_was_read)
     CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_READ);
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    /* Two registers no write of the session went to: another servo. */
+    CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
     CHECK(!kst_prog_in_doubt(&g_p));
 }
 
@@ -976,6 +980,169 @@ TEST_CASE(the_sessions_backup_is_restored_by_the_coprocessor)
     CHECK(same(&now, &sv));
     CHECK(same(kst_prog_servo(&g_p), &sv));
     CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+}
+
+TEST_CASE(the_sessions_backup_is_not_restored_to_another_servo)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+    kst_image_t now;
+
+    up_enabled();
+    CHECK(!kst_prog_backup_other(&g_p));
+    /* Servo B on the port: it differs in a field no write went to. */
+    g_sim.reg[0x10] ^= 0x01u;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+    CHECK(kst_prog_backup_other(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    /* With the switch on again the backup of A is still not B's. */
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_BACKUP_OTHER);
+    memset(&plan, 0, sizeof(plan));
+    plan.from = KST_PROG_FROM_SESSION;
+    g_sim.n_writes = 0;
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_BACKUP_OTHER);
+    frames(20);
+    CHECK_EQ(g_sim.n_writes, 0);
+    now = servo();
+    CHECK(!same(&now, &sv));
+    /* An edit of B is B's own, and the backup stays A's after it. */
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(kst_prog_backup_other(&g_p));
+    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    /* A new session reads its own backup: nothing differs, none is
+     * offered, and after a write of it the restore is there. */
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(!kst_prog_backup_other(&g_p));
+    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 180);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+}
+
+TEST_CASE(a_servo_put_back_has_its_backup_again)
+{
+    up_enabled();
+    g_sim.reg[0x10] ^= 0x01u;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(kst_prog_backup_other(&g_p));
+    g_sim.reg[0x10] ^= 0x01u;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(!kst_prog_backup_other(&g_p));
+}
+
+/* A field a write of the session went to can hold a third value after a
+ * write that was cut: that is the session's servo still. */
+TEST_CASE(a_field_the_session_wrote_does_not_make_another_servo)
+{
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    g_sim.reg[KST_REG_DUTY] = 190;
+    g_sim.reg[KST_REG_DUTY_COPY] = 190;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(!kst_prog_backup_other(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+}
+
+/* ------------------------------------------------------- the armed bench */
+
+TEST_CASE(nothing_is_sent_on_a_bench_the_feed_reports_armed)
+{
+    kst_prog_restore_t plan;
+
+    fresh_at(0u);
+    link_up();
+    g_armed = true;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NEED_DISARM);
+    frames(20);
+    CHECK_EQ(g_starts, 0);
+    g_armed = false;
+    frame();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    /* Armed under a session: no operation that sends a frame starts. */
+    g_armed = true;
+    frame();
+    g_starts = 0;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NEED_DISARM);
+    CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_DISARM);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_DISARM);
+    CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NEED_DISARM);
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NEED_DISARM);
+    frames(20);
+    CHECK_EQ(g_starts, 0);
+    CHECK_EQ(g_sim.n_writes, 0);
+    /* The set by the screen is the same refusal. */
+    g_armed = false;
+    kst_prog_bench_armed(&g_p, true);
+    frame();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NEED_DISARM);
+    kst_prog_bench_armed(&g_p, false);
+    /* Leaving sends no frame and is taken. */
+    g_armed = true;
+    frame();
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    g_armed = false;
+}
+
+TEST_CASE(the_bench_takes_no_arm_while_a_port_is_out_of_pwm)
+{
+    kst_link_readout_t rd;
+
+    memset(&rd, 0, sizeof(rd));
+    /* No coprocessor, or one with no page: nothing holds a port. */
+    rd.phase = KST_LINK_DOWN;
+    CHECK(!kst_prog_port_taken(&rd));
+    rd.phase = KST_LINK_NO_PAGE;
+    CHECK(!kst_prog_port_taken(&rd));
+    /* A page not read yet is not known to be in PWM. */
+    rd.phase = KST_LINK_SYNC;
+    CHECK(kst_prog_port_taken(&rd));
+    rd.phase = KST_LINK_READY;
+    CHECK(!kst_prog_port_taken(&rd));
+    rd.known = true;
+    for (unsigned st = LINK_KST_PWM; st <= LINK_KST_LEAVING; ++st) {
+        rd.port = (link_kst_state_t)st;
+        CHECK_EQ(kst_prog_port_taken(&rd), st != LINK_KST_PWM);
+    }
+    /* An operation on its way, an ENTER among them, with the port still
+     * read as PWM. */
+    rd.port = LINK_KST_PWM;
+    for (unsigned ph = KST_LINK_READY + 1u; ph <= KST_LINK_PLANNING; ++ph) {
+        rd.phase = (kst_link_phase_t)ph;
+        CHECK(kst_prog_port_taken(&rd));
+    }
 }
 
 /* -------------------------------------------------------------- the journal */
@@ -2074,7 +2241,7 @@ TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
                         kst_field_get(&ot, KST_F_20K_SEL)));
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
     CHECK_EQ(kst_prog_load_skipped(&g_p), 0);
     (void)fake_card_put(&g_fc, "FIRST", &sv);
     load("FIRST");
@@ -4015,6 +4182,11 @@ int main(void)
     RUN(a_servo_that_fails_the_fingerprint_is_read_only);
     RUN(a_release_of_pairing_writes_00_to_register_1d);
     RUN(the_sessions_backup_is_restored_by_the_coprocessor);
+    RUN(the_sessions_backup_is_not_restored_to_another_servo);
+    RUN(a_servo_put_back_has_its_backup_again);
+    RUN(a_field_the_session_wrote_does_not_make_another_servo);
+    RUN(nothing_is_sent_on_a_bench_the_feed_reports_armed);
+    RUN(the_bench_takes_no_arm_while_a_port_is_out_of_pwm);
     RUN(the_journal_reaches_the_card_before_the_write_is_sent);
     RUN(a_card_that_takes_no_journal_stops_the_write);
     RUN(a_link_lost_in_a_write_leaves_the_servo_in_doubt);

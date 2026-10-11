@@ -17,6 +17,7 @@
 #include "touch_feed.h"
 
 #include "gfx.h"
+#include "kst_panel.h"
 #include "motor_screen.h"
 #include "settings.h"
 #include "splash_screen.h"
@@ -743,6 +744,84 @@ TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
     CHECK_EQ(px(ARM_X - 90, ARM_Y + 8), ok);
 }
 
+/* --------------------------------------- a port the programmer holds */
+
+/* The servo programmer's port as the coprocessor's page gives it. */
+static void kst_port(link_kst_state_t st)
+{
+    kst_prog_feed_t f;
+
+    memset(&f, 0, sizeof(f));
+    f.rd.phase = KST_LINK_READY;
+    f.rd.known = true;
+    f.rd.port = st;
+    kst_panel_feed(&f);
+}
+
+/* The fill of ARM's face, left of its label. */
+static gfx_color_t arm_face(void)
+{
+    picture(fb);
+    return px(ARM_X - 90, ARM_Y + 8);
+}
+
+TEST_CASE(arm_takes_no_press_while_the_servo_programmer_holds_a_port)
+{
+    const gfx_rect_t area = { 0, UI_BAND_H, W, H - UI_BAND_H };
+
+    fresh();
+    kst_panel_init(area);
+    kst_port(LINK_KST_PWM);
+    frames(2);
+    const gfx_color_t free_face = arm_face();
+
+    kst_port(LINK_KST_PROGRAMMING);
+    CHECK(kst_panel_holds_port());
+    frames(2);
+    CHECK(arm_face() != free_face);          /* drawn disabled */
+    CHECK(!arm());
+    CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    /* RESET PEAKS is no arm and works. */
+    feed_tap(FEED_LONE, RESET_X, RESET_Y);
+    CHECK_EQ(took().kind, MOTOR_CMD_RESET_PEAKS);
+
+    /* Back in PWM the button is itself again. */
+    kst_port(LINK_KST_PWM);
+    CHECK(!kst_panel_holds_port());
+    frames(2);
+    CHECK_EQ(arm_face(), free_face);
+    CHECK(arm());
+    /* A port taken under an armed bench: DISARM stays. */
+    kst_port(LINK_KST_PROGRAMMING);
+    frames(2);
+    CHECK(disarm());
+    CHECK(!arm());
+    kst_port(LINK_KST_PWM);
+    frames(2);
+}
+
+TEST_CASE(a_hold_of_arm_ends_when_the_port_is_taken)
+{
+    const gfx_rect_t area = { 0, UI_BAND_H, W, H - UI_BAND_H };
+
+    fresh();
+    kst_panel_init(area);
+    kst_port(LINK_KST_PWM);
+    finger(FEED_LONE, ARM_X, ARM_Y);
+    frames((int)(1.0f / 0.026f));
+    kst_port(LINK_KST_PROGRAMMING);
+    frames((int)(2.0f / 0.026f));
+    CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    /* The finger still down after the port is back posts nothing either:
+     * the hold is over, a new press begins one. */
+    kst_port(LINK_KST_PWM);
+    frames((int)(2.5f / 0.026f));
+    CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    lift(FEED_LONE);
+    CHECK(arm());
+    CHECK(disarm());
+}
+
 /* ------------------------------------------------ what stays as it was */
 
 /* ARM, RESET PEAKS and the tabs are not throttles: a disarmed bench takes
@@ -792,6 +871,8 @@ int main(void)
     RUN(the_throttle_is_dimmed_from_the_disarm_tap_to_its_answer);
     RUN(the_dimming_follows_the_arm_in_both_buffers);
     RUN(a_disarm_during_the_arm_flash_leaves_the_button_green);
+    RUN(arm_takes_no_press_while_the_servo_programmer_holds_a_port);
+    RUN(a_hold_of_arm_ends_when_the_port_is_taken);
     RUN(arm_reset_peaks_and_the_tabs_work_while_disarmed);
     RUN(the_applications_hook_is_not_a_control);
     return test_summary("motor_arm");

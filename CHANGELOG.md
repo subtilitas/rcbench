@@ -55,9 +55,18 @@ history is in git.
   servo follows PWM in programming mode, whether a written value acts
   before the next power-up, and the wait a servo needs are not measured.
 - Servo programmer and ARM: CONNECT is refused on a bench that is armed,
-  asked to arm or has a finger on ARM, and ARM takes no press while the
-  programmer holds the port. A card put in after the panel started is
-  mounted when the programmer opens or one of its actions is tapped.
+  asked to arm or has a finger on ARM, and so are the read, the verify,
+  the write, the restore and the pairing release. While the programmer
+  holds the port no screen arms the bench: ARM on SERVO and on MOTOR & ESC
+  is drawn disabled and takes no press, a run of the ESC stick programmer
+  does not start and names the reason, and the panel refuses any other arm
+  with an alert. A card put in after the panel started is mounted when the
+  programmer opens or one of its actions is tapped, and the record of an
+  interrupted write on it is read then.
+- Servo programmer, backups: the session's backup is not offered and not
+  restored once a read shows another servo than the one it was read from,
+  a servo that differs in a field no write of the session set out to
+  change. LEAVE and CONNECT begin a session with that servo's own backup.
 - Servo programmer, files: FILES saves the servo's 32 registers as a servo
   file in the folder `KST` on the SD card under a preset name (`KST001` on)
   that the text keyboard changes, and never replaces a file. The first

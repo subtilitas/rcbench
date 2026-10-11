@@ -628,6 +628,13 @@ static void kst_view(const char *view)
     if (strcmp(v, "-read") == 0 || strcmp(v, "-readonly") == 0) {
         return;
     }
+    if (strcmp(v, "-swapped") == 0) {
+        /* Another servo put on the port in the session, and read. */
+        g_rig.sim.reg[0x10] ^= 0x01u;
+        ktap(kst_panel_value_rect(0, 1, 0));        /* READ ALL */
+        ksettle();
+        return;
+    }
     if (strcmp(v, "-locked") == 0) {
         ktap(kst_panel_tab_rect(4));
         return;

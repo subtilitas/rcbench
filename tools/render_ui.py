@@ -222,6 +222,7 @@ SCREENS = {
     "servo-kst-restore-check": ("servo-kst-restore-check.png", "servo",
                                 "dark"),
     "servo-kst-other": ("servo-kst-other.png", "servo", "dark"),
+    "servo-kst-swapped": ("servo-kst-swapped.png", "servo", "dark"),
     "servo-paused":   ("servo-paused.png",   "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),

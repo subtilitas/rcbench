@@ -96,9 +96,10 @@ void kst_panel_feed(const kst_prog_feed_t *f);
  *  below KST_PANEL_STD_MV, and one set above it goes back to
  *  KST_PROG_SUPPLY_MV. */
 void kst_panel_set_hv(bool on);
-/** The bench is armed or asked to arm: CONNECT is refused with
- *  KST_PROG_MSG_NEED_DISARM.  The caller takes no arm while
- *  kst_panel_holds_port(). */
+/** The bench is armed or asked to arm: CONNECT and every operation that
+ *  sends frames are refused with KST_PROG_MSG_NEED_DISARM.  No screen
+ *  takes an arm while kst_panel_holds_port(): ARM on the SERVO and MOTOR
+ *  screens takes no press, and the ESC stick programmer starts no run. */
 void kst_panel_bench_armed(bool armed);
 /** True once after the overlay was opened or one of its actions tapped
  *  while the feed reports no card: the caller, which has the card, tries to
@@ -112,6 +113,10 @@ void kst_panel_card_done(const kst_prog_card_done_t *done);
 size_t kst_panel_file_take(char *out, size_t n);
 void kst_panel_file_done(bool ok);
 bool kst_panel_file_load(const char *text, size_t len);
+/** The same for the file of a card mounted after the start.  A record the
+ *  model holds already stands: the text is not used then, and false is
+ *  returned with nothing said. */
+bool kst_panel_file_late(const char *text, size_t len);
 
 /* --- for the tests ------------------------------------------------------------ */
 

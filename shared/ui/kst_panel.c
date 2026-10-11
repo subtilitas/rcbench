@@ -160,6 +160,8 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_LEFT_DOUBT]      = { TX_KP_M_LEFT, TX_KP_M_LEFT_DOUBT },
     [KST_PROG_MSG_LEAVE_CUT]       = { TX_KP_M_LEAVE_CUT, -1 },
     [KST_PROG_MSG_NEED_DISARM]     = { TX_KP_M_NEED_DISARM, -1 },
+    [KST_PROG_MSG_BACKUP_OTHER]    = { TX_KP_M_BACKUP_OTHER,
+                                       TX_KP_M_BACKUP_OTHER_2 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -2117,6 +2119,12 @@ bool kst_panel_file_load(const char *text, size_t len)
 
     model_moved();
     return ok;
+}
+
+bool kst_panel_file_late(const char *text, size_t len)
+{
+    /* A record this session made is the one that stands. */
+    return !kst_prog_journal(&k.prog) && kst_panel_file_load(text, len);
 }
 
 kst_prog_t *kst_panel_model(void)

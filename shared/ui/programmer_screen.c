@@ -55,6 +55,7 @@
 #include "esc_profile.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "kst_panel.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -1857,6 +1858,12 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
      * the ESC on that word. */
     if (!sp_supply_reads_off()) {
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_SUPPLY_NOT_OFF));
+        return false;
+    }
+    /* A run arms the bench, and programming a servo and an armed bench
+     * are exclusive. */
+    if (kst_panel_holds_port()) {
+        snprintf(st->note, sizeof(st->note), "%s", TR(SP_KST_HELD));
         return false;
     }
     const char *why = NULL;

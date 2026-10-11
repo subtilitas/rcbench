@@ -2608,14 +2608,23 @@ static bool kst_record_read(const char *path, size_t *len)
     return true;
 }
 
+/* s_kst_file to the model: at the start, or from a card mounted later,
+ * where a record the model holds already stands. */
+static bool kst_record_use(bool late, size_t len)
+{
+    return late ? kst_panel_file_late(s_kst_file, len)
+                : kst_panel_file_load(s_kst_file, len);
+}
+
 /*
- * The file as the card holds it, once, before the tasks start.  A whole
+ * The file as the card holds it: before the tasks start, and on the render
+ * task for a card mounted later, while no file of the model is out.  A whole
  * KST.NEW is the text of a write that did not reach its name: it is used
  * and takes the name.  One that is not whole is removed.  No file is no
  * record; a KST.TXT that does not read or does not parse is said on the
  * programmer's page and not used.
  */
-static void kst_record_load(void)
+static void kst_record_load(bool late)
 {
     if (!storage_mounted()) {
         return;
@@ -2625,7 +2634,7 @@ static void kst_record_load(void)
     kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));
     if (kst_record_read(s_kst_path_new, &len)) {
         if (kst_prog_file_whole(s_kst_file, len)) {
-            (void)kst_panel_file_load(s_kst_file, len);
+            (void)kst_record_use(late, len);
             (void)unlink(s_kst_path);
             if (rename(s_kst_path_new, s_kst_path) != 0) {
                 ESP_LOGW(TAG, "%s keeps its name", KST_FILE_NEW);
@@ -2637,8 +2646,8 @@ static void kst_record_load(void)
     if (!kst_record_read(s_kst_path, &len)) {
         return;
     }
-    if (!kst_panel_file_load(s_kst_file, len)) {
-        ESP_LOGW(TAG, "%s is not readable and is not used", KST_FILE_NAME);
+    if (!kst_record_use(late, len)) {
+        ESP_LOGW(TAG, "%s is not used", KST_FILE_NAME);
     }
 }
 
@@ -3784,6 +3793,19 @@ static kst_link_start_t   s_kst_answer;
 static uint32_t           s_kst_outcomes;
 static kst_link_outcome_t s_kst_outcome;
 static uint32_t           s_kst_stops;    /* stops an abort was sent for */
+
+/* Whether the servo programmer has a port, or an operation under way: the
+ * bench takes no arm then (kst_prog.h).  Control task only.  Read once a
+ * pass by kst_port_look(), before the arms of the pass are served: no
+ * command of the programmer is taken between the two. */
+static bool s_kst_taken;
+
+static __attribute__((noinline)) void kst_port_look(void)
+{
+    kst_link_readout_t rd;
+    kst_link_readout(&s_kst_link, &rd);
+    s_kst_taken = kst_prog_port_taken(&rd);
+}
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
@@ -4412,6 +4434,13 @@ static void service_arming(bool link_up)
     case ARMING_ACT_ARM: {
         link_msg_t ack = { 0 };
         const uint32_t quiet = s_unanswered;
+        if (s_kst_taken) {
+            /* Asked for before the port was taken: the arm is given up
+             * with nothing written. */
+            arming_refused(&s_arm);
+            control_alert(TR(ALERT_ARM_PROG));
+            break;
+        }
         /*
          * An arm starts from nothing, and this is where that is made true
          * rather than hoped for.  ARM and THROTTLE travel in one
@@ -5733,6 +5762,12 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                            && pc.motor.kind == MOTOR_CMD_ARM)
                           || (pc.kind == PANEL_CMD_SERVO
                               && pc.servo.kind == SERVO_CMD_ARM);
+        if (arms && s_kst_taken) {
+            /* Programming a servo and an armed bench are exclusive,
+             * whichever screen asks. */
+            control_alert(TR(ALERT_ARM_PROG));
+            continue;
+        }
         if (arms) {
             control_pump();
             if (!arm_watch_take_ok(pc.loss_gen, atomic_load(&s_loss_gen),
@@ -6524,7 +6559,11 @@ static __attribute__((noinline)) void kst_commands(void)
     kst_prog_cmd_t cmd;
     while (xQueueReceive(s_kst_q, &cmd, 0) == pdTRUE) {
         if (cmd.kind == KST_PROG_CMD_START) {
-            s_kst_answer    = kst_link_start(&s_kst_link, &cmd.req);
+            /* No port is taken on an armed bench: nothing is sent. */
+            s_kst_answer    = (cmd.req.op == LINK_KST_OP_ENTER
+                               && outputs_armed(&s_out))
+                                  ? KST_LINK_START_BUSY
+                                  : kst_link_start(&s_kst_link, &cmd.req);
             s_kst_answer_id = cmd.id;
         } else if (cmd.kind == KST_PROG_CMD_FETCH) {
             (void)kst_link_fetch(&s_kst_link);
@@ -6629,6 +6668,7 @@ static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->outcomes    = s_kst_outcomes;
     f->outcome     = s_kst_outcome;
     f->stopped     = arming_stopped(&s_arm);
+    f->armed       = outputs_armed(&s_out);
     f->card        = storage_mounted();
     f->target      = prog_link_target(&s_prog_link);
     /* The PD mini's output while it is the supply, answers and is on. */
@@ -7459,6 +7499,7 @@ static void control_task(void *arg)
          * had seen and an arm whose count is stale is dropped, so the stop
          * can be served first without an older arm undoing it.
          */
+        kst_port_look();
         service_arming(link_up);
         supply_service();
 
@@ -7539,8 +7580,11 @@ static void kst_ui_service(void)
     /* A card put in after the boot is mounted here, on the task RESCAN
      * mounts one on: once for an opening of the programmer or a tap on one
      * of its actions while none is mounted. */
-    if (kst_panel_card_look() && !storage_mounted()) {
+    if (!file_out && !storage_mounted() && kst_panel_card_look()) {
         (void)storage_init();
+        /* And its record is read before a command or a file goes out: a
+         * write interrupted before this start stands as at the start. */
+        kst_record_load(true);
     }
 
     kst_prog_cmd_t cmd;
@@ -8013,7 +8057,7 @@ void app_main(void)
     publish_supply_levels();
     /* The servo programmer's record of a write that a restart cut
      * short. */
-    kst_record_load();
+    kst_record_load(false);
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));

@@ -203,7 +203,11 @@ enum {
     KST_PROG_MSG_LEAVE_CUT,       /**< the wait of a LEAVE was cut: an
                                        abort, a disarm or the supply off    */
     KST_PROG_MSG_NEED_DISARM,     /**< the bench is armed or asked to arm:
-                                       the port is not taken               */
+                                       the port is not taken and no frame
+                                       is sent                              */
+    KST_PROG_MSG_BACKUP_OTHER,    /**< the servo read is not the one the
+                                       session's backup was read from: the
+                                       backup is not restored to it         */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -358,6 +362,7 @@ typedef struct {
     uint16_t out_mv;           /**< its output, mV                        */
     uint16_t out_ma;           /**< and the current it gives, mA          */
     bool stopped;              /**< STOP is latched: no heartbeat */
+    bool armed;                /**< the panel's outputs are armed */
     bool card;                 /**< a card takes the file */
     uint8_t target;            /**< what the SERVO screen's tester drives
                                     as the coprocessor reads it: 0 the
@@ -399,6 +404,10 @@ typedef struct {
     uint8_t restoring;        /**< kst_prog_from_t of that write  */
     bool chain_read;          /**< READ_ALL follows the ENTER     */
     bool armed;               /**< kst_prog_bench_armed()         */
+    kst_field_set_t wrote;    /**< fields the session's writes set
+                                   out to change                    */
+    bool wrote_known;         /**< the session began under this
+                                   model: wrote is all of them      */
     bool leave_doubt;         /**< the exit runs without LEAVE: the
                                    port asks for a read or holds a
                                    servo in doubt, no PD mini answers */
@@ -489,6 +498,14 @@ bool kst_prog_journal(const kst_prog_t *p);
  * field and sit on the same port are not told apart.
  */
 bool kst_prog_journal_other(const kst_prog_t *p);
+/** The servo read is not the one the session's backup was read from: the
+ *  two differ in a field no write of the session set out to change.  The
+ *  backup is not offered and not restored until a new session reads its
+ *  own.  Two servos that agree in every such field are not told apart.
+ *  Never true for a session this model did not see begin, after a link
+ *  loss or a start of the panel under a session: its writes are not
+ *  known. */
+bool kst_prog_backup_other(const kst_prog_t *p);
 /** The port of the interrupted write, from 0. */
 uint8_t kst_prog_journal_port(const kst_prog_t *p);
 /** The servo may hold part of a write: a journal stands, the port asks for
@@ -549,9 +566,16 @@ void kst_prog_discard(kst_prog_t *p);
  *  is not that port, KST_PROG_MSG_NEED_DISARM on an armed bench. */
 kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port);
 /** The bench is armed or asked to arm.  Programming and an armed bench are
- *  exclusive: no port is taken while this is set, and the caller takes no
- *  arm while a port is held. */
+ *  exclusive: while this is set or the feed reports armed outputs no port
+ *  is taken and no operation that sends frames starts
+ *  (KST_PROG_MSG_NEED_DISARM), and the caller takes no arm while a port is
+ *  held. */
 void kst_prog_bench_armed(kst_prog_t *p, bool armed);
+/** Whether the bench takes no arm by what the link module reads: an
+ *  operation is on its way or runs, the port is read and is not in PWM, or
+ *  the page answers and is not read yet (KST_LINK_SYNC).  False where no
+ *  page answers: nothing can hold a port there. */
+bool kst_prog_port_taken(const kst_link_readout_t *rd);
 /** What an ENTER asks of the PD mini: @p mv and its current limit @p ma.
  *  The port checks the range.  KST_PROG_SUPPLY_MV and KST_PROG_SUPPLY_MA
  *  after kst_prog_init(). */

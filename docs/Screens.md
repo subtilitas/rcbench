@@ -150,7 +150,7 @@ The throttle changes only on an armed bench. What each control does:
 | The track | refused: no command, the slider and the readout stay; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | arms after its 2 s hold | disarms on a tap |
+| ARM | arms after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | disarms on a tap |
 | RESET PEAKS | resets the peaks | resets the peaks |
 | PLOT, TABLE | switch the pane | switch the pane |
 

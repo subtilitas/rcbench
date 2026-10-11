@@ -144,6 +144,8 @@ static void session_gone(kst_prog_t *p)
     p->soft_load = false;
     p->load_skipped = 0;
     p->journal_other = false;
+    p->wrote = 0;
+    p->wrote_known = false;
 }
 
 /* -------------------------------------------------------------- the fields */
@@ -283,6 +285,9 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
 {
     const bool save = kst_prog_save_first(p) && p->f.card;
 
+    /* What the servo may hold other than its backup from here on. */
+    p->wrote |= p->have_servo ? differ(&p->servo, target)
+                              : ~(kst_field_set_t)0;
     p->held = *req;
     p->held_target = *target;
     p->held_no_file = kst_prog_save_first(p) && !p->f.card;
@@ -318,13 +323,22 @@ static kst_prog_msg_id_t idle(const kst_prog_t *p)
     }
 }
 
-/* The same for an operation that sends frames: not after STOP. */
+static bool bench_armed(const kst_prog_t *p)
+{
+    return p->armed || (p->fed && p->f.armed);
+}
+
+/* The same for an operation that sends frames: not after STOP, and not on
+ * an armed bench. */
 static kst_prog_msg_id_t idle_safe(const kst_prog_t *p)
 {
     const kst_prog_msg_id_t m = idle(p);
 
     if (m == KST_PROG_MSG_NONE && p->f.stopped) {
         return KST_PROG_MSG_STOPPED;
+    }
+    if (m == KST_PROG_MSG_NONE && bench_armed(p)) {
+        return KST_PROG_MSG_NEED_DISARM;
     }
     return m;
 }
@@ -393,6 +407,10 @@ static void read_done(kst_prog_t *p)
         p->journal_open = true;
         p->write_enabled = false;
         (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+    } else if (kst_prog_backup_other(p)) {
+        /* Another servo than the session began with: its backup is that
+         * servo's and is not restored to this one. */
+        (void)say(p, KST_PROG_MSG_BACKUP_OTHER, 0);
     } else if (p->journal && same(&p->servo, &p->journal_img)) {
         journal_clear(p);
         (void)say(p, KST_PROG_MSG_JOURNAL_SAME, 0);
@@ -415,6 +433,9 @@ static void done_ok(kst_prog_t *p, unsigned op)
 {
     switch (op) {
     case LINK_KST_OP_ENTER:
+        /* A session that begins here: every write of it is seen. */
+        p->wrote = 0;
+        p->wrote_known = true;
         if (p->chain_read) {
             const kst_link_request_t r = request(p, LINK_KST_OP_READ_ALL);
 
@@ -1110,7 +1131,7 @@ static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
     if (p->f.stopped) {
         return KST_PROG_MSG_STOPPED;
     }
-    if (p->armed) {
+    if (bench_armed(p)) {
         return KST_PROG_MSG_NEED_DISARM;
     }
     return p->f.target == port + 1u ? KST_PROG_MSG_NONE
@@ -1142,6 +1163,19 @@ kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
 void kst_prog_bench_armed(kst_prog_t *p, bool armed)
 {
     p->armed = armed;
+}
+
+bool kst_prog_port_taken(const kst_link_readout_t *rd)
+{
+    switch (rd->phase) {
+    case KST_LINK_DOWN:
+    case KST_LINK_NO_PAGE:
+        return false;
+    case KST_LINK_READY:
+        return rd->known && rd->port != LINK_KST_PWM;
+    default:
+        return true;
+    }
 }
 
 void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)
@@ -1358,16 +1392,30 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
     return KST_PROG_MSG_NONE;
 }
 
+bool kst_prog_backup_other(const kst_prog_t *p)
+{
+    return p->fed && p->f.have_backup && p->have_servo && p->wrote_known
+        && (differ(&p->f.backup, &p->servo) & ~p->wrote) != 0u;
+}
+
 static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
 {
     switch (from) {
     case KST_PROG_FROM_SESSION:
-        return p->fed && p->f.have_backup ? &p->f.backup : NULL;
+        return p->fed && p->f.have_backup && !kst_prog_backup_other(p)
+             ? &p->f.backup : NULL;
     case KST_PROG_FROM_JOURNAL:
         return p->journal && !p->journal_other ? &p->journal_img : NULL;
     default:
         return NULL;
     }
+}
+
+/* Why source() gives none. */
+static kst_prog_msg_id_t from_none(const kst_prog_t *p, kst_prog_from_t from)
+{
+    return from == KST_PROG_FROM_SESSION && kst_prog_backup_other(p)
+         ? KST_PROG_MSG_BACKUP_OTHER : KST_PROG_MSG_NO_RESTORE;
 }
 
 bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from)
@@ -1431,7 +1479,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
         return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
-        m = KST_PROG_MSG_NO_RESTORE;
+        m = from_none(p, from);
     }
     if (m == KST_PROG_MSG_NONE && flag(p, LINK_KS_F_MUST_READ)) {
         m = KST_PROG_MSG_NEED_READ;
@@ -1540,7 +1588,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
         return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
-        m = KST_PROG_MSG_NO_RESTORE;
+        m = from_none(p, KST_PROG_FROM_SESSION);
     }
     if (m == KST_PROG_MSG_NONE && !p->write_enabled) {
         m = KST_PROG_MSG_NEED_ENABLE;

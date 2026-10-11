@@ -49,7 +49,15 @@ before a write is relied on.
 - Programming and an armed bench are exclusive. **CONNECT** on a bench that
   is armed, asked to arm or has a finger on **ARM** is refused with
   `DISARM first: the port is not taken on an armed bench.` While the port
-  is held, from **CONNECT** until it reports PWM, **ARM** takes no press.
+  is held, from **CONNECT** until it reports PWM, no screen arms the bench:
+  **ARM** on SERVO and on MOTOR & ESC is drawn disabled and takes no press,
+  and a run of the ESC stick programmer does not start and says
+  `Servo programmer holds a port: LEAVE on SERVO first.` An arm that
+  reaches the bench another way is refused with the alert
+  `no arm: the servo programmer holds a port`. **DISARM** and **STOP**
+  work in every state. On an armed bench the read, the verify, the write,
+  the restore and the pairing release are refused with the same line as
+  **CONNECT**; **LEAVE** is taken.
 - With a PD mini answering, the port sets the servo's supply at **CONNECT**
   ([the supply](#the-supply)). Without one the supply is not the bench's to
   set, and the programmer takes it as it is.
@@ -618,6 +626,19 @@ session's backup is checked the same way while the servo's values are known.
 
 ![The warnings of a backup](img/servo-kst-restore-check.png)
 
+The session's backup belongs to the servo it was read from. A read that
+differs from the backup in a field no write of the session set out to
+change is another servo: `Another servo: the session's backup is not for
+it.` `LEAVE, then CONNECT: a session with its own backup.` The write
+switch goes off, the restore list does not hold the session's backup, and
+no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
+backup is this servo's. A read of the first servo brings its backup back.
+Two servos equal in every field the session did not write are not told
+apart. After a link loss or a start of the panel under a session the
+session's writes are not known, and the comparison is not made.
+
+![Another servo than the backup's](img/servo-kst-swapped.png)
+
 ## More
 
 ![MORE](img/servo-kst-more.png)
@@ -771,9 +792,10 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - Untested on a servo. Every statement about a servo's behaviour on this
   page is the model's.
 - No Chaservo servo has been read.
-- The record of an interrupted write is read from the card once, when the
-  panel starts. A card put in later is used for files, and a record on it
-  is not read until the panel starts again.
+- The record of an interrupted write is read from the card when the panel
+  starts, and from a card put in later when the programmer mounts it. A
+  record the panel already holds stands: the record on such a card is not
+  read then, and the next record written replaces it.
 - A card taken out and put back while the panel runs is not mounted again.
 - The time a mount attempt without a card holds the screen is not measured.
 - Not run on hardware: neither firmware image has run this code with a
