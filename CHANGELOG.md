@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- `tools/sense_trace.py --loaded-channel N` (repeatable): names the output
+  channels that have a servo connected. The `$C` and `$D` lines of every
+  other channel are no moves and do not count for the 30 ms within which 2
+  commands are not replayed; an edge line within 30 ms of such a command
+  that no named channel's command takes is left out. The report's second
+  line names the channels and counts the lines left out. With 2 servo
+  outputs bound and 1 servo connected, the tool replays that servo's
+  moves; without the option it replays none, as every command has the
+  other output's command in the same frame. Without the option the report
+  is unchanged (`test/host/fixtures/sense-trace-sim.report.txt`).
+  ([First run](docs/FirstRun.md) §8.9)
 - `protocols/kst/`: the protocol core for programming KST and Chaservo
   servos over the signal wire. Frame coding, the reply decoder with one
   result code per failed check, the 32-register image with raw and displayed

@@ -628,8 +628,43 @@ zählt als 4094 Schritte zu diesem Ende des Bereichs, wie beim Nachspielen,
 und die Zeile der Bewegung sagt, wie viele ihrer Pegel-Samples am Anschlag
 liegen.
 
+**Mehr als ein Ausgang.** `ch=` in einer Zeile `$C` oder `$D` ist der
+Ausgangskanal, nicht der Pin: die Kanäle zählen ab 0 über die gebundenen
+Pins in aufsteigender Pin-Reihenfolge, 1 Kanal je PWM-Pin. Sind GP0, GP1,
+GP2 und GP4 gebunden, ist GP2 Kanal 2 und GP4 Kanal 3. Der Shunt führt den
+Strom jedes Servos an der Versorgung, und der Bildschirm SERVO kommandiert
+jeden Servo-Ausgang im selben Frame. Das Tool spielt kein Kommando nach,
+das ein anderes Kommando im Abstand von höchstens 30 ms hat; mit 2
+gebundenen Servo-Ausgängen spielt es also keine Bewegung nach.
+`--loaded-channel N` nennt einen Kanal, an dessen Pin ein Servo
+angeschlossen ist; die Option wiederholt sich, je 1 Kanal:
+
+```bash
+python3 tools/sense_trace.py mg90s-4v8.log --loaded-channel 2
+```
+
+Die Zeilen `$C` und `$D` jedes anderen Kanals sind dann keine Bewegungen
+und zählen für keine 30 ms. Eine Zeile `$E` hat keinen Kanal: die
+Kommandos der genannten Kanäle nehmen ihre Edge-Zeilen zuerst, und eine
+übrige Edge-Zeile im Abstand von höchstens 30 ms zum Kommando eines
+anderen Kanals wird ausgelassen. Die zweite Zeile der Ausgabe nennt die
+Kanäle und zählt, was ausgelassen ist:
+
+```text
+loaded channel(s) 2: 25 command line(s) of channel(s) 1, 3 left out
+```
+
+Sie endet mit `no command line of channel(s) N` für einen genannten Kanal,
+den keine Zeile `$C` des Mitschnitts hat; der Exit-Code bleibt 0. Zwei
+genannte Kanäle, die im Abstand von höchstens 30 ms kommandiert werden,
+werden nicht nachgespielt. Ohne die Option zählt jeder Kanal. Das Tool
+prüft nicht, ob am Pin eines genannten Kanals ein Servo hängt: ein Servo
+an einem nicht genannten Kanal bewegt sich im nachgespielten Strom.
+
 `--floor` nimmt 0,000001 A bis 1000 A, `--pair-ms` mehr als 0 ms bis
-60000 ms, `--csv-offset` bis 1e9 s beiderseits von 0. Eine CSV-Datei des
+60000 ms, `--csv-offset` bis 1e9 s beiderseits von 0, `--loaded-channel`
+eine ganze Zahl von 0 bis 65535 ohne Vorzeichen und ohne führende Null;
+jeder andere Wert endet mit 2. Eine CSV-Datei des
 Servo-Tests, die nicht gelesen werden kann, eine CSV-Datei, die nicht
 geschrieben werden kann, und ein Nachspielen, das eine andere Zahl von
 Bewegungen beantwortet als es bekam, enden mit 2.
@@ -689,7 +724,8 @@ gewählt, nicht gemessen.
   jedes Boots mit seinem Teil der CSV-Datei auswerten.
 - Kommandos im Abstand von höchstens 30 ms, etwa zwei Ausgänge in einem
   Frame, ändern den Strom gemeinsam. Das Tool listet sie und spielt
-  keines davon nach. Ein Kommando, das später als das auf das Kommando
+  keines davon nach, außer `--loaded-channel` lässt alle bis auf eines
+  aus. Ein Kommando, das später als das auf das Kommando
   eines anderen Ausgangs folgt, bevor dessen Servo angekommen ist, wird
   mit dem Strom des ersten Servos darin nachgespielt; das Tool
   unterscheidet beide nicht.

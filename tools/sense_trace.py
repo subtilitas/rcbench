@@ -28,6 +28,21 @@ Commands within 30 ms of each other change the current together: none of
 them is replayed.  A move that follows another output's move before that
 one arrived carries its current too; the tool does not tell these apart,
 and the earlier move reads `cut`.
+A $C line's `ch=` is the output channel: bound pins take the channels from
+0 up in the order of their pin numbers, so it is the pin's number only by
+chance.  The trace holds one current, CH1's, for every output.  With
+--loaded-channel N, once for each channel whose output has a load in
+CH1's supply, the trace is read as of those outputs alone: the $C and $D
+lines of every other channel are no moves, and no commands for the rule
+of the 30 ms.  An edge line pairs with a command line of a loaded channel
+first; one left over with a command line of another channel within 30 ms
+is that output's and no move.  The report says in its second line which
+channels are loaded, how many lines of which other channels are left out,
+and which loaded channel has no command line in the log.  Two loaded
+channels commanded within 30 ms of each other are still not replayed.
+Without the option every channel is loaded.  The tool cannot check the
+statement: an output named as not loaded that draws current puts it into
+the moves of the others.
 A line of a trace is a whole line of version 2: every field of its type,
 in its order, nothing before, between or after them, each number in the
 range the coprocessor holds it in and written as the coprocessor writes it.
@@ -115,9 +130,11 @@ Usage:
     python3 tools/sense_trace.py console.log
     python3 tools/sense_trace.py console.log --servo-csv SERVO003.CSV
     python3 tools/sense_trace.py console.log --out traces --floor 0.004
+    python3 tools/sense_trace.py console.log --loaded-channel 2
 
 --floor is 0.000001 A to 1000 A, --pair-ms above 0 ms to 60000 ms,
---csv-offset within 1e9 s of 0.
+--csv-offset within 1e9 s of 0, --loaded-channel a channel as a $C line
+writes it: 0 to 65535, no sign, no leading zero.
 
 Exit code: 0; 1 when the log cannot be read or holds no trace, a trace
 has a problem (damage, it does not match its end line, or its end line's
@@ -283,6 +300,7 @@ class Trace:
         self.same_state = 0         # $S lines that change nothing
         self.two_volts = 0          # voltages behind a sample that has one
         self.state: tuple[int, int] | None = None
+        self.edges_out = 0          # edge lines of outputs with no load
 
     def amps(self, code: int) -> float:
         """The current of a shunt code: 40 uV a step across the shunt."""
@@ -640,14 +658,21 @@ def pair_near(a: list[int], b: list[int], limit: int) -> dict[int, int]:
     return out
 
 
-def find_moves(tr: Trace, floor_a: float) -> list[Move]:
+def find_moves(tr: Trace, floor_a: float,
+               loaded: frozenset[int] | None = None) -> list[Move]:
     """The trace's moves with their levels; none for a trace without a
-    shunt or without commands."""
+    shunt or without commands.  With @p loaded, the moves of those
+    channels alone; the edge lines left out with the other channels are
+    counted in Trace.edges_out."""
     # A trace that does not match its end line has lines missing nobody
     # can place: the rules count samples, so nothing of it is replayed.
     if tr.shunt_uohm == 0 or tr.problems:
         return []
     edges = [m for m in tr.marks if m[0] == "E"]
+    # An output with no load changes no current: its lines are no moves
+    # and no commands, wherever they stand.
+    marks = [m for m in tr.marks
+             if loaded is None or m[0] not in "CD" or m[2] in loaded]
     # A slewed command's line carries its first pulse; its $D line the one
     # it ended at, which is the end the servo is then held at.  The $D
     # line's time is the last pulse change, which can lie before the frame
@@ -655,9 +680,9 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     # times: the $D line is of the latest command of its channel that
     # lies no more than a frame's lateness after it, whichever of the two
     # lines comes first.
-    cmds = [list(m) for m in tr.marks if m[0] == "C"]
+    cmds = [list(m) for m in marks if m[0] == "C"]
     ended: set[int] = set()
-    for mark in tr.marks:
+    for mark in marks:
         if mark[0] != "D":
             continue
         mine = [k for k, c in enumerate(cmds)
@@ -676,6 +701,20 @@ def find_moves(tr: Trace, floor_a: float) -> list[Move]:
     # its own time.
     of_edge = pair_near([e[1] for e in edges], [c[1] for c in cmds],
                         EDGE_PAIR_MS * T_PER_MS)
+    if loaded is not None:
+        # An edge line carries no channel.  One that no loaded channel's
+        # command takes, with a command of another channel that near, is
+        # that output's edge: no move.
+        rest = [ke for ke in range(len(edges)) if ke not in of_edge]
+        others = [m[1] for m in tr.marks
+                  if m[0] == "C" and m[2] not in loaded]
+        gone = {rest[k] for k in pair_near([edges[ke][1] for ke in rest],
+                                           others, EDGE_PAIR_MS * T_PER_MS)}
+        tr.edges_out = len(gone)
+        kept = [ke for ke in range(len(edges)) if ke not in gone]
+        now = {ke: k for k, ke in enumerate(kept)}
+        of_edge = {now[ke]: kc for ke, kc in of_edge.items()}
+        edges = [edges[ke] for ke in kept]
     moves = []
     for ke, e in enumerate(edges):
         ch, us = cmds[of_edge[ke]][2:4] if ke in of_edge else (None, None)
@@ -1139,6 +1178,46 @@ def report_summary(moves: list[Move], have_horn: bool, asked: bool,
                    "holding level, which can lead or lag the horn.")
 
 
+def channel(text: str) -> int:
+    """--loaded-channel's value: a channel as a $C line writes it."""
+    if re.fullmatch(N, text) is None or not U16[0] <= int(text) <= U16[1]:
+        raise argparse.ArgumentTypeError(
+            f"{text!r} is no channel: a whole number from {U16[0]} to "
+            f"{U16[1]}, as a $C line's ch= writes it")
+    return int(text)
+
+
+def report_loaded(traces: list[Trace], loaded: frozenset[int]) -> str:
+    """The one line on --loaded-channel: the channels, the lines of other
+    channels that are left out, and the loaded channels with no command
+    line."""
+    def named(channels: set[int] | frozenset[int]) -> str:
+        return ", ".join(str(ch) for ch in sorted(channels))
+
+    lines = {"C": 0, "D": 0}
+    out_of: set[int] = set()
+    have: set[int] = set()
+    for tr in traces:
+        for kind, _, ch, _ in tr.marks:
+            if kind == "C" and ch in loaded:
+                have.add(ch)
+            elif kind in lines and ch not in loaded:
+                lines[kind] += 1
+                out_of.add(ch)
+    edges = sum(tr.edges_out for tr in traces)
+    text = f"loaded channel(s) {named(loaded)}: "
+    if out_of:
+        text += (f"{lines['C']} command line(s)"
+                 + (f", {lines['D']} $D line(s)" if lines["D"] else "")
+                 + (f", {edges} edge line(s)" if edges else "")
+                 + f" of channel(s) {named(out_of)} left out")
+    else:
+        text += "no line of another channel in the log"
+    if loaded - have:
+        text += f"; no command line of channel(s) {named(loaded - have)}"
+    return text
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Check and evaluate a SENSE_TRACE console log.")
@@ -1157,6 +1236,12 @@ def main() -> int:
                          "150 ms)")
     ap.add_argument("--floor", type=float, default=0.020,
                     help="the threshold's floor, A (default 0.020)")
+    ap.add_argument("--loaded-channel", type=channel, action="append",
+                    metavar="N",
+                    help="a channel (a $C line's ch=) whose output has a "
+                         "load in CH1's supply; once for each. The "
+                         "commands of every other channel are left out "
+                         "(default: every channel is loaded)")
     ap.add_argument("--replay", type=pathlib.Path,
                     help="a built test/host sense_trace_replay")
     ap.add_argument("--no-csv", action="store_true",
@@ -1209,12 +1294,14 @@ def main() -> int:
     except OSError as err:
         print(f"sense_trace: {err}", file=sys.stderr)
         return 2
+    loaded = (frozenset(args.loaded_channel)
+              if args.loaded_channel is not None else None)
     all_moves: list[Move] = []
     per_trace: list[tuple[Trace, list[Move], pathlib.Path | None]] = []
     names: dict[str, int] = {}
     for tr in traces:
         check(tr)
-        moves = find_moves(tr, args.floor)
+        moves = find_moves(tr, args.floor, loaded)
         all_moves += moves
         csv = None
         if not args.no_csv and tr.shunt_uohm != 0:
@@ -1276,6 +1363,8 @@ def main() -> int:
                        "pairs as many rows, and not the same rows with the "
                        "same moves; set --csv-offset")
             ambiguous = True
+    if loaded is not None:
+        out.insert(1, report_loaded(traces, loaded))
     for tr, moves, csv in per_trace:
         report_trace(tr, moves, csv, out)
     report_summary(all_moves, have_horn, args.servo_csv is not None, out)

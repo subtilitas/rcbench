@@ -18,7 +18,12 @@ the coprocessor dropped, with no trace, with another format version and
 with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
 count; clipped samples; edge lines with the command line nearest to
 each, a command line with no edge line and an edge line with no command
-line; commands within 30 ms of each other; a trace with trigger lines not
+line; commands within 30 ms of each other; the report of record without
+--loaded-channel, and with it the commands, $D lines and edge lines of
+the other channels left out, a command of another channel 30 ms and 31 ms
+from a move, two loaded channels in one frame, every channel loaded, a
+loaded channel with no command in the log, a log with no command line and
+the option's values; a trace with trigger lines not
 written, a move with records missing inside it and a slewed command with
 its $D line before and after its $C line; what the traces alone give; a
 servo CSV that pairs at two offsets, one set by hand, and one without the
@@ -523,6 +528,279 @@ def commands_within_30_ms_are_not_replayed() -> None:
         arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
         check(arrival[(1, "0.05")] == want,
               f"{apart} ms: {arrival[(1, '0.05')]}")
+
+
+def outputs_log(cmds: list[tuple[int, int, int]], drawing: tuple = (2,),
+                ends: tuple = (), edges: tuple = (),
+                trig: str = "cmd") -> str:
+    """A trace of several outputs on the one shunt: 0.12 A held, and
+    after each (ms, channel, us) command of a channel in @p drawing a
+    burst of 0.8 A for 100 ms.  @p ends are (ms, channel, us) $D lines,
+    @p edges the ms of edge lines."""
+    t0 = 1000
+    out = [f"$T v=2 n=1 trig={trig} t={t0} ms=0 len=4000",
+           "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0"]
+    n = 0
+    marks = 0
+    last = max([at for at, _, _ in cmds] + list(edges) + [0]) + 600
+    for ms in range(-60, last):
+        t = t0 + ms * 10
+        for kind, lines in (("C", cmds), ("D", ends)):
+            for at, ch, us in lines:
+                if at == ms:
+                    out.append(f"${kind} t={t} ch={ch} us={us}")
+                    marks += 1
+        if ms in edges:
+            out.append(f"$E t={t}")
+            marks += 1
+        moving = any(at + 13 <= ms < at + 113 for at, ch, _ in cmds
+                     if ch in drawing)
+        out.append(f"{-600 if n == 0 else 10},{2000 if moving else 300}")
+        n += 1
+    out.append(f"$Z n=1 s={n} v=0 l=0 m={marks} ml=0 e=t")
+    return "\n".join(out) + "\n"
+
+
+LOADED = "--loaded-channel"
+REFUSED = "another command within 30 ms, the current is of both"
+
+
+def body(r: subprocess.CompletedProcess, drop: int = 1) -> list[str]:
+    """A report without its first @p drop lines: the log's, which has
+    the path, and with 2 the line on the loaded channels."""
+    return r.stdout.splitlines()[drop:]
+
+
+def without_loaded_channel_the_report_is_the_one_of_record() -> None:
+    # fixtures/sense-trace-sim.report.txt is the report on the fixtures,
+    # named as they are in their directory, with no --loaded-channel.
+    want = (ARGS.fixtures / "sense-trace-sim.report.txt").read_text("ascii")
+    args = [sys.executable, str(TOOL), "--replay",
+            str(ARGS.replay.resolve()), "sense-trace-sim.log",
+            "--servo-csv", "sense-trace-sim.csv", "--no-csv"]
+    r = subprocess.run(args, cwd=ARGS.fixtures, capture_output=True,
+                       text=True)
+    check(r.returncode == 0 and r.stderr == "", f"exit {r.returncode}")
+    check(r.stdout == want, "the report on the fixtures is not "
+          "fixtures/sense-trace-sim.report.txt")
+    check("loaded channel" not in r.stdout, "no line on the option")
+    # Its one channel named as loaded: the same report with the one line.
+    r = subprocess.run([*args, LOADED, "0"], cwd=ARGS.fixtures,
+                       capture_output=True, text=True)
+    lines = want.splitlines()
+    lines.insert(1, "loaded channel(s) 0: no line of another channel in "
+                    "the log")
+    check(r.returncode == 0 and r.stdout.splitlines() == lines,
+          r.stdout[:400])
+
+
+ONE = [(0, 2, 1900), (1000, 2, 1100), (2000, 2, 1900)]
+
+
+def a_loaded_channel_leaves_out_the_other_channels_commands() -> None:
+    # Three outputs that start in one frame, then two commanded in every
+    # frame, and a servo on one of them.
+    both = sorted(ONE + [(at, 3, us) for at, _, us in ONE] + [(0, 1, 1000)])
+    alone = tool(str(work("one.log", outputs_log(ONE))), "--no-csv")
+    check(alone.returncode == 0 and "3/3" in alone.stdout, "one output")
+    log = str(work("both.log", outputs_log(both)))
+    r = tool(log, "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.count(REFUSED) == 7, "all seven are refused")
+    check("all traces, 7 move(s):\n  7 move(s) not replayed" in r.stdout,
+          "the sum says them")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(all(row[:2] == ["0/7", "0/7"] for row in arrival.values()),
+          f"{arrival}")
+    r = tool(log, "--no-csv", LOADED, "2")
+    check(r.returncode == 0 and r.stderr == "",
+          f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2: 4 command "
+          "line(s) of channel(s) 1, 3 left out", r.stdout.splitlines()[1])
+    # What is left is the report of the log with that output alone.
+    check(body(r, 2) == body(alone), "not the report of the one output")
+    check(REFUSED not in r.stdout, "none is refused")
+    # The other one named: its commands are the moves, at their times
+    # and with their pulses, and the current after each is read as its.
+    r = tool(log, "--no-csv", LOADED, "3")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 3: 4 command "
+          "line(s) of channel(s) 1, 2 left out", r.stdout.splitlines()[1])
+    check(body(r, 2) == [line.replace("channel 2 to", "channel 3 to")
+                         for line in body(alone)], "channel 3's report")
+
+
+def a_command_of_another_channel_30_ms_before_and_after_a_move() -> None:
+    # Channel 3 commanded 30 ms before the first move, 30 ms after the
+    # second, 1 ms before the third and 31 ms after the fourth: within
+    # the 30 ms each time but the last.
+    moves = [*ONE, (3000, 2, 1100)]
+    near = [(-30, 3, 1900), (1030, 3, 1100), (1999, 3, 1900),
+            (3031, 3, 1100)]
+    alone = tool(str(work("near-one.log", outputs_log(moves))), "--no-csv")
+    log = str(work("near.log", outputs_log(sorted(moves + near))))
+    r = tool(log, "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.count(REFUSED) == 6, f"{r.stdout.count(REFUSED)} of 8")
+    for n, at, ch in ((7, "3000.0", 2), (8, "3031.0", 3)):
+        check(f"move {n} at {at} ms, channel {ch} to 1100 us: before"
+              in r.stdout, f"31 ms apart: move {n} is replayed")
+    r = tool(log, "--no-csv", LOADED, "2")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2: 4 command "
+          "line(s) of channel(s) 3 left out", r.stdout.splitlines()[1])
+    # The trace is 31 ms longer by its last command; below the trace's
+    # own line the report is the one of the output alone.
+    check(body(r, 3) == body(alone, 2) and len(body(r, 3)) > 20,
+          "not the report of the one output")
+    arrival = setting_rows(r.stdout, "all traces, 4 move(s):")
+    check(all(row[:2] == ["4/4", "4/4"] for row in arrival.values()),
+          f"{arrival}")
+
+
+def two_loaded_channels_in_one_frame_are_still_not_replayed() -> None:
+    both = sorted(ONE + [(at, 3, us) for at, _, us in ONE[:2]]
+                  + [(0, 1, 1000)])
+    log = str(work("loaded-both.log", outputs_log(both, drawing=(2, 3))))
+    # Every channel of the log named, in any order and one twice: the
+    # report without the option, with the one line.
+    plain = tool(log, "--no-csv")
+    r = tool(log, "--no-csv", LOADED, "3", LOADED, "1", LOADED, "2",
+             LOADED, "3")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 1, 2, 3: no line "
+          "of another channel in the log", r.stdout.splitlines()[1])
+    check(body(r, 2) == body(plain) and r.stdout.count(REFUSED) == 5,
+          "every channel loaded is the report without the option")
+    # Channels 2 and 3 loaded: channel 1 is left out, and the two in one
+    # frame are of both.  The move channel 2 makes alone is replayed.
+    r = tool(log, "--no-csv", LOADED, "2", LOADED, "3")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2, 3: 1 command "
+          "line(s) of channel(s) 1 left out", r.stdout.splitlines()[1])
+    for n, at, ch, us in ((1, "0.0", 2, 1900), (2, "0.0", 3, 1900),
+                          (3, "1000.0", 2, 1100), (4, "1000.0", 3, 1100)):
+        check(f"move {n} at {at} ms, channel {ch} to {us} us: {REFUSED}, "
+              "not replayed" in r.stdout, f"move {n}")
+    check("move 5 at 2000.0 ms, channel 2 to 1900 us: before" in r.stdout,
+          "move 5")
+    check("all traces, 5 move(s):\n  4 move(s) not replayed" in r.stdout,
+          "the sum says them")
+    arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
+    check(arrival[(1, "0.05")][:2] == ["1/5", "1/5"],
+          f"{arrival[(1, '0.05')]}")
+
+
+def a_loaded_channel_with_no_command_in_the_log() -> None:
+    log = str(work("absent.log", outputs_log(ONE)))
+    r = tool(log, "--no-csv", LOADED, "5")
+    check(r.returncode == 0 and r.stderr == "",
+          f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 5: 3 command "
+          "line(s) of channel(s) 2 left out; no command line of "
+          "channel(s) 5", r.stdout.splitlines()[1])
+    # No move: the trace's noise is of all its samples, and nothing is
+    # replayed or summed.
+    check("noise of the whole trace, 2660 samples:" in r.stdout
+          and "move" not in r.stdout and "all traces" not in r.stdout,
+          r.stdout[-600:])
+    # One of three named is in the log: its moves, and the others said.
+    r = tool(log, "--no-csv", LOADED, "2", LOADED, "65535", LOADED, "0")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 0, 2, 65535: no "
+          "line of another channel in the log; no command line of "
+          "channel(s) 0, 65535", r.stdout.splitlines()[1])
+    check("all traces, 3 move(s):" in r.stdout, "channel 2's moves")
+    # A log whose traces have no command line: a key trace.
+    key = outputs_log([], trig="key").splitlines()
+    key[0] = key[0].replace("len=4000", "len=10000")
+    key.insert(2, "$K t=1000")
+    key[-1] = key[-1].replace("m=0", "m=1")
+    log = str(work("key.log", "\n".join(key) + "\n"))
+    plain = tool(log, "--no-csv")
+    r = tool(log, "--no-csv", LOADED, "2")
+    check(plain.returncode == 0 and r.returncode == 0,
+          f"exit {plain.returncode}, {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2: no line of "
+          "another channel in the log; no command line of channel(s) 2",
+          r.stdout.splitlines()[1])
+    check(body(r, 2) == body(plain), "the key trace's report")
+
+
+def a_loaded_channel_is_a_channel_as_a_command_line_writes_it() -> None:
+    log = str(work("value.log", outputs_log(ONE)))
+    for value in ("-1", "65536", "2.0", "02", "+2", "1_0", " 2", "2 ",
+                  "0x2", "x", "", "2,3", "-0", "99999999999999999999"):
+        r = tool(log, "--no-csv", LOADED, value)
+        check(r.returncode == 2 and "is no channel" in r.stderr
+              and r.stdout == "", f"{value!r}: exit {r.returncode}")
+    r = tool(log, "--no-csv", LOADED)
+    check(r.returncode == 2 and "expected one argument" in r.stderr,
+          "no value")
+    # A refused value beside a good one refuses the run.
+    r = tool(log, "--no-csv", LOADED, "2", LOADED, "65536")
+    check(r.returncode == 2 and r.stdout == "", "one of two refused")
+    for value in ("0", "65535"):
+        r = tool(log, "--no-csv", LOADED, value)
+        check(r.returncode == 0
+              and r.stdout.splitlines()[1].startswith(
+                  f"loaded channel(s) {value}: 3 command line(s) of "
+                  "channel(s) 2 left out"), f"{value}: {r.stderr}")
+    # A trace with a problem stays one: nothing of it is replayed.
+    lines = outputs_log(ONE).splitlines()
+    del lines[5]
+    r = tool(str(work("value-short.log", "\n".join(lines) + "\n")),
+             "--no-csv", LOADED, "2")
+    check(r.returncode == 1 and "no move of this trace is replayed"
+          in r.stdout and r.stdout.splitlines()[1].startswith(
+              "loaded channel(s) 2: no line of another"), r.stdout[:300])
+
+
+def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
+    # Channel 2's command is slewed and ends at 1950 us; channel 3's too,
+    # at 1150 us, and its $D line is no end of channel 2's command.
+    cmds = [(0, 2, 1900), (500, 3, 1100), (1000, 2, 1100)]
+    ends = [(40, 2, 1950), (540, 3, 1150)]
+    log = str(work("ends.log", outputs_log(cmds, ends=ends)))
+    r = tool(log, "--no-csv", LOADED, "2")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2: 1 command "
+          "line(s), 1 $D line(s) of channel(s) 3 left out",
+          r.stdout.splitlines()[1])
+    check("2 move(s)" in r.stdout
+          and "move 1 at 0.0 ms, channel 2 to 1950 us" in r.stdout
+          and "move 2 at 1000.0 ms, channel 2 to 1100 us" in r.stdout,
+          r.stdout[-900:])
+    # Edge lines carry no channel.  The first stands 12 ms after a frame
+    # with both channels in it: the loaded one's command has it.  The
+    # second has channel 3's command alone near it and is that output's.
+    # The fourth has no command near it and is a move, as without the
+    # option.
+    cmds = [(0, 2, 1900), (0, 3, 1900), (1000, 3, 1100), (2000, 2, 1100)]
+    log = str(work("stamps.log",
+                   outputs_log(cmds, edges=(12, 1012, 2012, 2400))))
+    r = tool(log, "--no-csv", LOADED, "2")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2: 2 command "
+          "line(s), 1 edge line(s) of channel(s) 3 left out",
+          r.stdout.splitlines()[1])
+    check("3 move(s)" in r.stdout
+          and "move 1 at 12.0 ms, channel 2 to 1900 us" in r.stdout
+          and "move 2 at 2012.0 ms, channel 2 to 1100 us" in r.stdout
+          and "move 3 at 2400.0 ms, edge" in r.stdout, r.stdout[-1500:])
+    # 31 ms from channel 3's command the edge is no command's: a move.
+    log = str(work("stamps-far.log",
+                   outputs_log(cmds, edges=(12, 1031, 2012))))
+    r = tool(log, "--no-csv", LOADED, "2")
+    check(r.stdout.splitlines()[1] == "loaded channel(s) 2: 2 command "
+          "line(s) of channel(s) 3 left out", r.stdout.splitlines()[1])
+    check("move 2 at 1031.0 ms, edge" in r.stdout
+          and "move 3 at 2012.0 ms, channel 2 to 1100 us" in r.stdout,
+          r.stdout[-1500:])
+    # 30 ms from it the edge is channel 3's.
+    log = str(work("stamps-near.log",
+                   outputs_log(cmds, edges=(12, 1030, 2012))))
+    r = tool(log, "--no-csv", LOADED, "2")
+    check("1 edge line(s) of channel(s) 3 left out" in r.stdout
+          and "2 move(s)" in r.stdout and ", edge" not in r.stdout,
+          r.stdout[-1500:])
 
 
 def the_traces_alone_say_which_settings_time_every_move() -> None:
@@ -2012,6 +2290,13 @@ CASES = [
     a_command_with_no_edge_line_is_a_move,
     edges_and_commands_are_paired_as_many_as_can_be,
     commands_within_30_ms_are_not_replayed,
+    without_loaded_channel_the_report_is_the_one_of_record,
+    a_loaded_channel_leaves_out_the_other_channels_commands,
+    a_command_of_another_channel_30_ms_before_and_after_a_move,
+    two_loaded_channels_in_one_frame_are_still_not_replayed,
+    a_loaded_channel_with_no_command_in_the_log,
+    a_loaded_channel_is_a_channel_as_a_command_line_writes_it,
+    lines_that_end_and_stamp_another_channels_command_are_left_out,
     the_traces_alone_say_which_settings_time_every_move,
     a_trace_with_trigger_lines_not_written_is_not_replayed,
     a_move_with_records_missing_inside_it_is_not_replayed,
