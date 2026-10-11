@@ -116,7 +116,8 @@ export function generate(catalogue: Catalogue): Output {
       names: entry.native ? 'board print' : 'catalogue',
       pins: {},
     };
-    if (entry.file === 'ina3221') record.catalogueMap = INA3221_MAP;
+    // A copy: a caller that changes the output does not change the map of the module.
+    if (entry.file === 'ina3221') record.catalogueMap = structuredClone(INA3221_MAP);
     for (const lang of LANGS) {
       const d = new Dwg({
         file: entry.file, pfx: entry.pfx, w: entry.w, h: entry.h,

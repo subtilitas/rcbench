@@ -17,19 +17,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 export const SVG_DIR = join(here, '..', 'public', 'drawings');
 export const ANCHORS_FILE = join(here, 'anchors.json');
 
-/** Every SVG file below a folder, by its path with forward slashes. One level of language folders. */
+/** Every SVG file below a folder at any depth, by its path with forward slashes. */
 export function readSvgs(dir: string): Record<string, string> {
   const out: Record<string, string> = {};
-  if (!existsSync(dir)) return out;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      for (const name of readdirSync(join(dir, entry.name))) {
-        if (name.endsWith('.svg')) out[`${entry.name}/${name}`] = readFileSync(join(dir, entry.name, name), 'utf8');
-      }
-    } else if (entry.name.endsWith('.svg')) {
-      out[entry.name] = readFileSync(join(dir, entry.name), 'utf8');
+  const walk = (folder: string, prefix: string): void => {
+    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(join(folder, entry.name), `${prefix}${entry.name}/`);
+      else if (entry.name.endsWith('.svg')) out[`${prefix}${entry.name}`] = readFileSync(join(folder, entry.name), 'utf8');
     }
-  }
+  };
+  if (existsSync(dir)) walk(dir, '');
   return out;
 }
 
