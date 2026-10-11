@@ -141,6 +141,9 @@ history is in git.
 
 ### Changed
 
+- The documentation no longer marks single features as run or not run on
+  hardware. The READMEs and `docs/Safety.md` state once that the project is
+  under development and its functions are not verified on hardware.
 - The READMEs and the wiki home link the bench configurator at
   https://subtilitas.github.io/rcbench/ in place of the build guide PDFs.
   `release.yml` attaches the 2 image archives and `SHA256SUMS` and no

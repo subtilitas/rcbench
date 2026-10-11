@@ -25,7 +25,7 @@ Network) at 1 Mbit/s.
 | Program an ESC through its throttle-stick menu | [Stick programming](StickProgramming.md) |
 | Connect a receiver and inspect its output | [Receiver buses](Receivers.md) |
 | Stop mechanisms and the external circuit they require | [Safety](Safety.md) |
-| BLHeli_32 ESCs: what is and is not supported | [BLHeli_32 parameters](BLHeli32.md) |
+| ESCs with BLHeli_32 firmware: what is and is not supported | [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md) |
 
 ## Reference
 
@@ -37,5 +37,9 @@ Network) at 1 Mbit/s.
 
 The state of the project, the open items and the settled decisions are recorded
 in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).
+
+Maker, product, protocol and firmware names belong to their owners and are
+used only to describe compatibility:
+[Legal notice and disclaimer](https://github.com/subtilitas/rcbench/blob/main/README.md#legal-notice-and-disclaimer).
 
 Every page has a German version; the switch is at the top of each page.

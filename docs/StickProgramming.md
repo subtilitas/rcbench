@@ -28,8 +28,7 @@ What it does not know:
    driving, but in rare cases a motor may start and run.
 2. Either leave the motor on the ESC, mounted solid, or fit a resistor load
    across the ESC's motor leads in its place. The beeps are counted from
-   the current either way. The resistor's value is not specified: no ESC
-   has been run into one. It has to keep the current under the run's
+   the current either way. The resistor's value is not specified. It has to keep the current under the run's
    current limit at the run's voltage. How well beeps through a motor's
    windings read in the current is not measured.
 3. Connect the ESC's signal lead to a pin bound with the throttle role on
@@ -298,7 +297,7 @@ the supply off and disarms.
 by repeating it as tones (the manuals' control output, "Kontrollausgabe"),
 mode 7 as seven, and the manuals disconnect the battery only after it.
 STORE (2000 ms by default) can end before a long repeat does. Every
-Kontronik profile that runs, and the five below, carry a
+profile for a Kontronik ESC that runs, and the five below, carry a
 `before_power_off` step: after the store's last move the run holds the ESC
 powered, the stick where the store left it, and asks the operator to
 watch the ESC and tap DONE once the confirmation has ended; DONE switches
@@ -332,7 +331,7 @@ repeat.
 
 **The action that starts the menu.** A profile marks the step whose
 action starts the mode series with `"starts_menu": true`; a step without it
-waits for DONE, whatever its place. 16 Kontronik profiles mark their last
+waits for DONE, whatever its place. 16 profiles for Kontronik ESCs mark their last
 `before_menu` step: the ESC answers the
 pulled jumper or the pressed button with a three-tone sequence and sounds
 mode 1, 2, 3 ... after it (for example Kontronik_Jazz.pdf p.6, "Jumper
@@ -391,8 +390,8 @@ REQUIRED in the result's header opens them again.
 After an aborted run of a profile with a step before or at the power-up,
 the result says to check the ESC: a jumper fitted for the run may still be in place.
 
-24 profiles have manual steps: the 22 Kontronik families, `turnigy-aquastar`
-and `greatplanes-electrifly-c-series`. 10 run, each with its step before the
+24 profiles have manual steps: the 22 families of Kontronik ESCs,
+`turnigy-aquastar` and `greatplanes-electrifly-c-series`. 10 run, each with its step before the
 supply goes off as well:
 
 | Profile | Steps | Values powered up at MID |
@@ -602,7 +601,7 @@ rest position, and it has no store move. A one-stage profile announces
 `value`, or `item` with one item; takes one change per power-up; has no
 value number in two items; its select move differs from the rest position,
 and its store move, where it has one, from the select move. The store move
-may be the rest position: in the YGE mode setups the stick goes back to
+may be the rest position: in the mode setups of YGE ESCs the stick goes back to
 minimum, where it rested, to store.
 
 | Row says | Why |
@@ -620,7 +619,7 @@ minimum, where it rested, to store.
 | values repeat across items | one-stage, a value number in two items |
 | select move is the rest | the select move is the rest position: no move to make |
 | value move = select move | two-stage, `value_select` equals `select` |
-| rest move, no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the YGE profiles. A profile whose values state their own `entry_hold_ms` is judged per change: one without a time is refused, the others run |
+| rest move, no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the profiles for YGE ESCs. A profile whose values state their own `entry_hold_ms` is judged per change: one without a time is refused, the others run |
 | store move, two stages | two-stage with a `scheme.store` |
 | store move = select move | one-stage, `scheme.store` equals `select` |
 | menu start, rest elsewhere | a step marked `starts_menu`, and the menu rests away from the power-up position: `scheme.listen` away from the entry, or a value powered up away from it |
@@ -714,8 +713,8 @@ engine's stores no value other than the one asked for.
 
 ## Current limitations
 
-- No run against an ESC. The defaults and the order rule are untested on
-  real beeps.
+- The defaults and the order rule are untested on real beeps.
+
 - An ESC that ignores a selection keeps sounding its items, which the run
   then counts as values: it can report DONE with nothing stored.
 - A menu longer or shorter than its profile never has its lowest number
@@ -780,6 +779,5 @@ engine's stores no value other than the one asked for.
   Jeti Spin's receiver switch -- is left on and the supply stands in for it.
   The manuals switch it after the battery is connected; whether the supply's
   power-up enters the menu as the switch would is not measured.
-- No run with a motor on the ESC in place of the resistor load. Whether a
-  motor starts during the menu, and how its windings shape the beeps in
+- Whether, with a motor on the ESC in place of the resistor load, a motor starts during the menu, and how its windings shape the beeps in
   the current, is not measured.
