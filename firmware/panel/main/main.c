@@ -3800,11 +3800,26 @@ static uint32_t           s_kst_stops;    /* stops an abort was sent for */
  * command of the programmer is taken between the two. */
 static bool s_kst_taken;
 
+/* What app_main and the control task share of a START in the queue: the
+ * model offers its pass, kst_commands() claims it, and a START the model
+ * gave up is dropped there (kst_prog.h). */
+static kst_prog_gate_t s_kst_gate;
+
 static __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
     s_kst_taken = kst_prog_port_taken(&rd);
+}
+
+/* The PROG page is not written and the tester commands no port while the
+ * programmer has one (prog_link.h): by the link module as it stands now,
+ * after the commands of the pass. */
+static __attribute__((noinline)) void prog_hold_look(void)
+{
+    kst_link_readout_t rd;
+    kst_link_readout(&s_kst_link, &rd);
+    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd));
 }
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
@@ -4835,9 +4850,7 @@ static bool write_servo(const servo_cmd_t sv)
      * asks for (prog_link_service()).  A coprocessor without the page has
      * the standard outputs.
      */
-    if (!prog_link_ready(&s_prog_link)
-        || (sv.kind != SERVO_CMD_RELEASE
-            && !prog_link_settled(&s_prog_link))) {
+    if (!prog_link_command(&s_prog_link, sv.kind == SERVO_CMD_RELEASE)) {
         return false;
     }
     const uint8_t port = prog_link_target(&s_prog_link);
@@ -6558,6 +6571,12 @@ static __attribute__((noinline)) void kst_commands(void)
 {
     kst_prog_cmd_t cmd;
     while (xQueueReceive(s_kst_q, &cmd, 0) == pdTRUE) {
+        if (cmd.kind == KST_PROG_CMD_START
+            && !kst_prog_gate_claim(&s_kst_gate, cmd.id)) {
+            /* Given up by the model while it waited here: not carried
+             * out and not answered. */
+            continue;
+        }
         if (cmd.kind == KST_PROG_CMD_START) {
             /* No port is taken on an armed bench: nothing is sent. */
             s_kst_answer    = (cmd.req.op == LINK_KST_OP_ENTER
@@ -6576,6 +6595,7 @@ static __attribute__((noinline)) void kst_commands(void)
         s_kst_stops = stops;
         kst_link_abort(&s_kst_link);
     }
+    prog_hold_look();
 }
 
 /*
@@ -6622,6 +6642,7 @@ static __attribute__((noinline)) void kst_link_service(void)
  */
 static __attribute__((noinline)) void prog_link_service(void)
 {
+    prog_hold_look();
     prog_link_want(&s_prog_link, (uint8_t)atomic_load(&s_prog_want_target),
                    atomic_load(&s_prog_want_pwm));
     if (prog_link_read_due(&s_prog_link, now_ms())) {
@@ -8062,6 +8083,8 @@ void app_main(void)
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_kst_q     = xQueueCreate(KST_Q_LEN, sizeof(kst_prog_cmd_t));
+    kst_prog_gate_init(&s_kst_gate);
+    kst_panel_gate(&s_kst_gate);
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_item_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));

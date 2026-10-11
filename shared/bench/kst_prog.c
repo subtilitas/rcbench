@@ -148,6 +148,7 @@ static void session_gone(kst_prog_t *p)
     p->held_wrote = 0;
     p->wrote_before = 0;
     p->wrote_known = false;
+    p->keep = false;
 }
 
 /* -------------------------------------------------------------- the fields */
@@ -209,6 +210,8 @@ static void send(kst_prog_t *p, const kst_link_request_t *req)
     p->cmd.id = p->next_id;
     p->cmd.req = *req;
     p->cmd_ready = true;
+    p->cmd_out = false;
+    p->cmd_run = false;
     p->wait = W_ANSWER;
     p->wait_id = p->next_id;
     p->wait_ms = p->f.now_ms;
@@ -236,7 +239,7 @@ static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
 static bool waits_unsent(const kst_prog_t *p)
 {
     return p->wait == W_SAVE || p->wait == W_FILE
-        || (p->wait == W_ANSWER && p->cmd_ready);
+        || (p->wait == W_ANSWER && !p->cmd_out);
 }
 
 static void card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
@@ -258,15 +261,23 @@ static void card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
 static void write_go(kst_prog_t *p)
 {
     if (p->have_servo) {
-        if (!p->journal) {
+        /* The servo read is the journal's, or there is none: a write to
+         * another servo than the journal's is not taken (journal_other). */
+        p->held_over = p->journal;
+        if (p->journal) {
+            p->held_before = p->journal_target;
+        } else {
             p->journal_img = p->servo;
         }
         p->journal = true;
         p->journal_open = true;
         p->journal_port = p->port;
         p->journal_target = p->held_target;
+        p->held_journal = true;
     }
-    if (p->journal && p->f.card) {
+    /* With no servo read the record of an earlier write is not this
+     * write's: it stays as it is, in the model and on the card. */
+    if (p->held_journal && p->f.card) {
         p->wait = W_FILE;
         p->wait_ms = p->f.now_ms;
         file_want(p, FILE_JOURNAL);
@@ -293,6 +304,7 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
                                   : ~(kst_field_set_t)0;
     p->held = *req;
     p->held_target = *target;
+    p->held_journal = false;
     p->held_no_file = kst_prog_save_none(p);
     p->op = (uint8_t)req->op;
     if (save) {
@@ -396,6 +408,21 @@ static bool journal_fits(const kst_prog_t *p)
     return true;
 }
 
+/*
+ * The record held against the servo held: whether it is another servo's.
+ * Another servo's record stands, and nothing goes to this servo until the
+ * record is discarded.
+ */
+static bool journal_classify(kst_prog_t *p)
+{
+    p->journal_other = p->journal && p->have_servo && !journal_fits(p);
+    if (p->journal_other) {
+        p->journal_open = true;
+        p->write_enabled = false;
+    }
+    return p->journal_other;
+}
+
 static void read_done(kst_prog_t *p)
 {
     if (!p->f.have_image) {
@@ -403,12 +430,7 @@ static void read_done(kst_prog_t *p)
         return;
     }
     adopt(p);
-    p->journal_other = p->journal && !journal_fits(p);
-    if (p->journal_other) {
-        /* Another servo: the journal stands, and nothing goes to this
-         * one. */
-        p->journal_open = true;
-        p->write_enabled = false;
+    if (journal_classify(p)) {
         (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
     } else if (kst_prog_backup_other(p)) {
         /* Another servo than the session began with: its backup is that
@@ -454,7 +476,9 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_WRITE:
     case LINK_KST_OP_RESTORE:
     case LINK_KST_OP_RELEASE:
-        journal_clear(p);
+        if (p->held_journal) {
+            journal_clear(p);
+        }
         if (p->f.have_image) {
             const bool on = p->write_enabled;
             const bool kept = p->backed_up;
@@ -466,6 +490,18 @@ static void done_ok(kst_prog_t *p, unsigned op)
             p->write_enabled = on && p->fp_ok;
             p->backed_up = kept;
             p->no_file = none;
+            /* A record this write did not make, the restore of a session
+             * with no servo read: it is another servo's and stands, or it
+             * is this servo's and the image read says what is left of
+             * it. */
+            if (p->journal && !journal_classify(p)) {
+                if (same(&p->servo, &p->journal_img)
+                    || same(&p->servo, &p->journal_target)) {
+                    journal_clear(p);
+                } else {
+                    p->journal_open = false;
+                }
+            }
         } else {
             p->need_read = true;
         }
@@ -496,6 +532,72 @@ static void done_ok(kst_prog_t *p, unsigned op)
     }
 }
 
+kst_prog_res_t kst_prog_result_class(unsigned result)
+{
+    /* The planner ended without a plan: no frame went. */
+    if (result == LINK_KST_RESULT_NO_PATH
+        || result == LINK_KST_RESULT_TOO_COMPLEX) {
+        return KST_PROG_RES_CLEAN;
+    }
+    if (result > (unsigned)KST_SES_ERR_NO_PLAN) {
+        return KST_PROG_RES_DOUBT;
+    }
+    /* Every result of the session is named: one added to kst_ses_t does
+     * not compile here until it has a class. */
+    switch ((kst_ses_t)result) {
+    case KST_SES_OK:
+        return KST_PROG_RES_OK;
+    case KST_SES_ERR_BUSY:
+    case KST_SES_ERR_ARG:
+    case KST_SES_ERR_NOT_IN_MODE:
+    case KST_SES_ERR_NO_BACKUP:
+    case KST_SES_ERR_FINGERPRINT:
+    case KST_SES_ERR_LOCKED:
+    case KST_SES_ERR_BAD_PLAN:
+    case KST_SES_ERR_UNCONFIRMED:
+    case KST_SES_ERR_CHANGED:
+    case KST_SES_ERR_NO_PLAN:
+        /* Refused before a frame. */
+        return KST_PROG_RES_CLEAN;
+    case KST_SES_ERR_WRITE_FAILED:
+    case KST_SES_ERR_ROLLED_BACK:
+        /* Read back at the last settled step: with no step counted done
+         * that is the image the write started from. */
+        return KST_PROG_RES_CLEAN;
+    case KST_SES_BUSY:
+    case KST_SES_ERR_NO_SERVO:
+    case KST_SES_ERR_READ:
+    case KST_SES_ERR_TORN:
+    case KST_SES_ERR_UNINTENDED:
+    case KST_SES_ERR_VERIFY:
+    case KST_SES_ERR_DRIVER:
+    case KST_SES_ERR_ABORTED:
+        return KST_PROG_RES_DOUBT;
+    }
+    return KST_PROG_RES_DOUBT;
+}
+
+/* The pending values and the prompt as they are, for a write that ends
+ * with nothing written. */
+static void keep_now(kst_prog_t *p)
+{
+    p->keep = true;
+    p->keep_draft = p->draft;
+    p->keep_soft = p->soft;
+    p->keep_soft_load = p->soft_load;
+}
+
+/* The pending values of before a write that wrote nothing. */
+static void keep_back(kst_prog_t *p)
+{
+    if (p->keep) {
+        p->keep = false;
+        p->draft = p->keep_draft;
+        p->soft = p->keep_soft;
+        p->soft_load = p->keep_soft_load;
+    }
+}
+
 /* A write that ended without the servo verified.  True when no register
  * was written. */
 static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
@@ -514,29 +616,26 @@ static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
         break;
     case KST_LINK_OUT_DONE:
         nothing = o->steps_done == 0u
-               && (o->result == KST_SES_ERR_BUSY
-                   || o->result == KST_SES_ERR_ARG
-                   || o->result == KST_SES_ERR_NOT_IN_MODE
-                   || o->result == KST_SES_ERR_NO_BACKUP
-                   || o->result == KST_SES_ERR_FINGERPRINT
-                   || o->result == KST_SES_ERR_LOCKED
-                   || o->result == KST_SES_ERR_BAD_PLAN
-                   || o->result == KST_SES_ERR_UNCONFIRMED
-                   || o->result == KST_SES_ERR_CHANGED
-                   || o->result == KST_SES_ERR_WRITE_FAILED
-                   /* The planner ended without a plan: no frame went. */
-                   || o->result == LINK_KST_RESULT_NO_PATH
-                   || o->result == LINK_KST_RESULT_TOO_COMPLEX);
+               && kst_prog_result_class((unsigned)o->result)
+                      == KST_PROG_RES_CLEAN;
         break;
     default:
         break;
     }
     if (nothing) {
-        if (p->journal && same(&p->journal_img, &p->servo)) {
+        if (!p->held_journal) {
+            /* The write recorded nothing: a record held is as it was. */
+        } else if (p->journal && same(&p->journal_img, &p->servo)) {
             journal_clear(p);
         } else {
-            /* The journal of an earlier write stands as it was. */
+            /* The journal of an earlier write stands as it was, on the
+             * card too. */
             p->journal_open = false;
+            if (p->held_over
+                && !same(&p->journal_target, &p->held_before)) {
+                p->journal_target = p->held_before;
+                file_want(p, FILE_KEEP);
+            }
         }
         if (o->kind == KST_LINK_OUT_DONE
             && o->result == KST_SES_ERR_CHANGED) {
@@ -559,9 +658,12 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         && !(o->kind == KST_LINK_OUT_DONE && o->result == KST_SES_OK)) {
         if (write_failed(p, o)) {
             /* The coprocessor says no register was written: dropped
-             * before the command went, refused, or ended before its
-             * first step.  The fields are the servo's as they were. */
+             * before the command went, refused, ended before its first
+             * step, or rolled back to the image it started from and read
+             * there.  The fields are the servo's as they were, and so are
+             * the pending values a restore replaced. */
             p->wrote = p->wrote_before;
+            keep_back(p);
         }
         if (p->journal && p->journal_open
             && (o->kind == KST_LINK_OUT_NO_ANSWER
@@ -574,10 +676,16 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         || o->result != KST_SES_OK) {
         p->chain_read = false;
     }
+    p->keep = false;
     if (o->kind == KST_LINK_OUT_NO_ANSWER
-        && (op == LINK_KST_OP_READ_ALL || op == LINK_KST_OP_VERIFY)) {
-        /* It may have run, with an image this side never takes. */
-        p->need_read = true;
+        || (o->kind == KST_LINK_OUT_NACK && o->taken)) {
+        /* The command was acknowledged, or whether it was is not known,
+         * and the end of the operation was not read: it may have run, with
+         * an image this side never takes. */
+        if (op == LINK_KST_OP_READ_ALL || op == LINK_KST_OP_VERIFY
+            || p->have_servo) {
+            p->need_read = true;
+        }
     }
     if (o->kind == KST_LINK_OUT_RESTARTED) {
         session_gone(p);
@@ -634,7 +742,58 @@ static void not_started(kst_prog_t *p, unsigned id, unsigned arg)
     p->wait = W_NONE;
     p->cmd_ready = false;
     p->chain_read = false;
+    keep_back(p);
     (void)say(p, id, arg);
+}
+
+/* The START awaited is taken back at the gate: the link's task takes it
+ * out of its queue and drops it, whenever that is. */
+static bool taken_back(kst_prog_t *p)
+{
+    if (p->gate == NULL || !kst_prog_gate_revoke(p->gate, p->wait_id)) {
+        return false;
+    }
+    if (is_write(p->op)) {
+        /* Before it was carried out: no field was written. */
+        p->wrote = p->wrote_before;
+    }
+    return true;
+}
+
+/*
+ * A START nobody answers.  One never handed out was not sent, and one taken
+ * back at the gate never is.  One whose pass the link's task took is
+ * carried out, and its answer is waited for once more.  With no answer
+ * then, or with no gate, it may have run: the outcome is the one of an
+ * operation that did not answer, and an abort follows it.
+ */
+static void unanswered(kst_prog_t *p, unsigned id)
+{
+    kst_link_outcome_t o;
+
+    if (!p->cmd_out || taken_back(p)) {
+        not_started(p, id, 0);
+        return;
+    }
+    if (p->gate != NULL && !p->cmd_run && id == KST_PROG_MSG_TIMEOUT) {
+        p->cmd_run = true;
+        p->wait_ms = p->f.now_ms;
+        return;
+    }
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_NO_ANSWER;
+    o.op = (link_kst_op_t)p->op;
+    p->written = p->written || is_write(p->op);
+    p->no_file = p->no_file || (is_write(p->op) && p->held_no_file);
+    outcome(p, &o);
+    if (id == KST_PROG_MSG_TIMEOUT) {
+        p->cmd.kind = KST_PROG_CMD_ABORT;
+        p->cmd.id = 0;
+        p->cmd_ready = true;
+        if (p->msg.id != KST_PROG_MSG_JOURNAL) {
+            (void)say(p, KST_PROG_MSG_TIMEOUT, 0);
+        }
+    }
 }
 
 /*
@@ -666,6 +825,41 @@ void kst_prog_init(kst_prog_t *p)
     p->supply_mv = KST_PROG_SUPPLY_MV;
     p->supply_ma = KST_PROG_SUPPLY_MA;
     p->pwm_wait_ms = KST_PROG_WAIT_MS;
+}
+
+void kst_prog_gate_set(kst_prog_t *p, kst_prog_gate_t *g)
+{
+    p->gate = g;
+}
+
+void kst_prog_gate_init(kst_prog_gate_t *g)
+{
+    __atomic_store_n(&g->pass, 0u, __ATOMIC_SEQ_CST);
+}
+
+void kst_prog_gate_offer(kst_prog_gate_t *g, uint32_t id)
+{
+    __atomic_store_n(&g->pass, id, __ATOMIC_SEQ_CST);
+}
+
+/* The pass of @p id, taken by whoever asks first. */
+static bool gate_take(kst_prog_gate_t *g, uint32_t id)
+{
+    uint32_t want = id;
+
+    return id != 0u
+        && __atomic_compare_exchange_n(&g->pass, &want, 0u, false,
+                                       __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+}
+
+bool kst_prog_gate_claim(kst_prog_gate_t *g, uint32_t id)
+{
+    return gate_take(g, id);
+}
+
+bool kst_prog_gate_revoke(kst_prog_gate_t *g, uint32_t id)
+{
+    return gate_take(g, id);
 }
 
 void kst_prog_screen_entry(kst_prog_t *p)
@@ -724,6 +918,8 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
             o.op = (link_kst_op_t)p->op;
             if (p->wait == W_OUTCOME) {
                 outcome(p, &o);
+            } else if (p->wait == W_ANSWER) {
+                unanswered(p, KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER);
             } else {
                 not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER, 0);
             }
@@ -745,7 +941,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
     }
     if (p->wait == W_ANSWER
         && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_START_MS) {
-        not_started(p, KST_PROG_MSG_TIMEOUT, 0);
+        unanswered(p, KST_PROG_MSG_TIMEOUT);
     } else if (p->wait == W_FILE
                && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_STORE_MS) {
         not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
@@ -819,11 +1015,18 @@ bool kst_prog_take(kst_prog_t *p, kst_prog_cmd_t *out)
     p->cmd_fetch = false;
     *out = p->cmd;
     p->cmd_ready = false;
-    /* From here the command may reach the servo. */
-    if (out->kind == KST_PROG_CMD_START && is_write(out->req.op)) {
-        p->wrote_before = p->wrote;
-        p->wrote |= p->held_wrote;
-        p->held_wrote = 0;
+    if (out->kind == KST_PROG_CMD_START) {
+        /* From here the command may reach the servo, once its pass is
+         * claimed. */
+        p->cmd_out = true;
+        if (p->gate != NULL) {
+            kst_prog_gate_offer(p->gate, out->id);
+        }
+        if (is_write(out->req.op)) {
+            p->wrote_before = p->wrote;
+            p->wrote |= p->held_wrote;
+            p->held_wrote = 0;
+        }
     }
     return true;
 }
@@ -1220,6 +1423,19 @@ bool kst_prog_port_taken(const kst_link_readout_t *rd)
     }
 }
 
+bool kst_prog_holds_port(const kst_prog_t *p)
+{
+    switch (kst_prog_state(p)) {
+    case KST_PROG_ENTERING:
+    case KST_PROG_PROGRAMMING:
+    case KST_PROG_WORKING:
+    case KST_PROG_LEAVING:
+        return true;
+    default:
+        return p->fed && kst_prog_port_taken(&p->f.rd);
+    }
+}
+
 void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)
 {
     p->supply_mv = mv;
@@ -1384,6 +1600,7 @@ static kst_prog_msg_id_t write_draft(kst_prog_t *p, kst_prog_from_t from)
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, arg);
     }
+    keep_now(p);
     p->soft = false;
     p->soft_load = false;
     p->restoring = (uint8_t)from;
@@ -1432,6 +1649,7 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, arg);
     }
+    keep_now(p);
     p->soft = false;
     p->soft_load = false;
     p->restoring = KST_PROG_FROM_NONE;
@@ -1617,6 +1835,14 @@ static kst_prog_msg_id_t restore_editable(kst_prog_t *p, kst_prog_from_t from,
         p->draft = keep;
         p->soft = soft;
         p->soft_load = soft_load;
+    } else {
+        /* Held until the write has an outcome: the file of the servo, the
+         * journal's file and the start of the command can each still end
+         * it with nothing sent. */
+        p->keep = true;
+        p->keep_draft = keep;
+        p->keep_soft = soft;
+        p->keep_soft_load = soft_load;
     }
     return m;
 }
@@ -1644,6 +1870,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, 0);
     }
+    keep_now(p);
     p->soft = false;
     p->soft_load = false;
     p->restoring = KST_PROG_FROM_SESSION;
@@ -1711,7 +1938,7 @@ uint16_t kst_prog_wait_ms(const kst_prog_t *p)
 
 void kst_prog_abort(kst_prog_t *p)
 {
-    if (waits_unsent(p)) {
+    if (waits_unsent(p) || (p->wait == W_ANSWER && taken_back(p))) {
         not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED, 0);
     } else if (p->wait != W_NONE) {
         p->cmd.kind = KST_PROG_CMD_ABORT;
@@ -2304,8 +2531,11 @@ bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
     p->journal_port = got.journal_port;
     p->journal_img = got.journal_img;
     p->journal_target = got.journal_target;
-    p->journal_other = false;
-    if (p->journal) {
+    /* With a servo read, a card mounted under a session: the record is
+     * held against that servo here, and not first at the next read. */
+    if (journal_classify(p)) {
+        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+    } else if (p->journal) {
         (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_port + 1u);
     }
     return true;

@@ -692,7 +692,7 @@ static void draw_row(gfx_canvas_t *c, int index)
     int vy = r.y + (ROW_H - gfx_text_height(vf, 1)) / 2;
     gfx_text(c, ux - vw, vy, buf, vf, unheld ? UI_WARN : UI_ACCENT, 1);
 
-    if (settings_derived(id)) {
+    if (settings_derived(id) || settings_held(id)) {
         return;                 /* shown, not set here: no keys */
     }
     bool minus_down = (s.hit_kind == HIT_MINUS && s.hit_index == index);

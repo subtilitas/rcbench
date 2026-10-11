@@ -423,6 +423,7 @@ static struct {
     bool     save_failed;  /* the last attempt did not reach the medium */
     const settings_store_t *store;
     settings_observer_fn observer;
+    settings_hold_fn hold;
 } s;
 
 /*
@@ -452,6 +453,16 @@ const setting_def_t *settings_def(setting_id_t id)
 bool settings_derived(setting_id_t id)
 {
     return id == SET_SENSE_SCL;
+}
+
+void settings_set_hold(settings_hold_fn fn)
+{
+    s.hold = fn;
+}
+
+bool settings_held(setting_id_t id)
+{
+    return id >= 0 && id < SETTING_COUNT && s.hold != NULL && s.hold(id);
 }
 
 const char *settings_category_name(setting_cat_t cat)
@@ -549,7 +560,7 @@ void settings_reset(setting_cat_t cat)
      */
     bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
-        if (k_defs[i].cat == cat) {
+        if (k_defs[i].cat == cat && !settings_held((setting_id_t)i)) {
             float before = s.values[i];
             s.values[i] = k_defs[i].def;
             moved = moved || (s.values[i] != before);
@@ -561,10 +572,15 @@ void settings_reset(setting_cat_t cat)
     }
 }
 
-void settings_reset_all(void)
+/* Every value and string to its default; a held value only at start-up,
+ * @p held. */
+static void defaults(bool held)
 {
     bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
+        if (!held && settings_held((setting_id_t)i)) {
+            continue;
+        }
         float before = s.values[i];
         s.values[i] = k_defs[i].def;
         moved = moved || (s.values[i] != before);
@@ -581,6 +597,11 @@ void settings_reset_all(void)
     }
 }
 
+void settings_reset_all(void)
+{
+    defaults(false);
+}
+
 void settings_set_store(const settings_store_t *store)
 {
     s.store = store;
@@ -593,7 +614,7 @@ void settings_set_observer(settings_observer_fn fn)
 
 void settings_init(void)
 {
-    settings_reset_all();
+    defaults(true);
     if (s.store && s.store->load) {
         if (s.store->load(s.values, SETTING_COUNT)) {
             /* Whatever came back has to satisfy the schema: a stored value
@@ -642,7 +663,7 @@ bool settings_get_bool(setting_id_t id)
 void settings_set(setting_id_t id, float value)
 {
     const setting_def_t *d = settings_def(id);
-    if (!d || settings_derived(id)) {
+    if (!d || settings_derived(id) || settings_held(id)) {
         return;
     }
     float v = coerce(d, value);
@@ -663,7 +684,7 @@ void settings_set(setting_id_t id, float value)
 void settings_adjust(setting_id_t id, int steps)
 {
     const setting_def_t *d = settings_def(id);
-    if (!d || steps == 0 || settings_derived(id)) {
+    if (!d || steps == 0 || settings_derived(id) || settings_held(id)) {
         return;
     }
     if (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) {

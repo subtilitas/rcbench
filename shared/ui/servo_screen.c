@@ -3261,6 +3261,9 @@ static bool target_locked(const ov_row_t *r)
         || (r->id != SET_SERVO_TARGET && r->id != SET_SERVO_PORT_PWM)) {
         return false;
     }
+    if (settings_held(r->id)) {
+        return true;                    /* the programmer has the port */
+    }
     if (r->id == SET_SERVO_PORT_PWM) {
         if (settings_get_int(SET_SERVO_TARGET) == 0) {
             return true;                /* no port to switch */

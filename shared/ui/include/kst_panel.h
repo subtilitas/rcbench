@@ -108,6 +108,9 @@ void kst_panel_bench_armed(bool armed);
  *  mount one. */
 bool kst_panel_card_look(void);
 bool kst_panel_take(kst_prog_cmd_t *out);
+/** The gate the task that owns the link module claims each START at
+ *  (kst_prog_gate_set()).  Kept over kst_panel_init().  NULL for none. */
+void kst_panel_gate(kst_prog_gate_t *g);
 /** The servo files: a request for the task that has the card, and what it
  *  made of it (kst_card_run()). */
 bool kst_panel_card_take(kst_prog_card_req_t *out);

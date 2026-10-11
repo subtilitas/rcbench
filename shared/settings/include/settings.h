@@ -198,6 +198,18 @@ void settings_init(void);
 void settings_set_store(const settings_store_t *store);
 void settings_set_observer(settings_observer_fn fn);
 
+/** Whether a setting is held: something in use depends on the value as it
+ *  is. */
+typedef bool (*settings_hold_fn)(setting_id_t id);
+/** Who says which settings are held, or NULL for none.  Asked at every
+ *  change, so a hold begins and ends with what it names. */
+void settings_set_hold(settings_hold_fn fn);
+/** Whether @p id is held now: settings_set(), settings_adjust(),
+ *  settings_reset() and settings_reset_all() leave it, and SETUP draws its
+ *  row without keys.  The servo tester's target and the port's pulse while
+ *  the servo programmer holds the port (kst_panel.h). */
+bool settings_held(setting_id_t id);
+
 const setting_def_t *settings_def(setting_id_t id);
 
 /** Whether @p id follows another setting: settings_set() and
@@ -211,7 +223,7 @@ int   settings_get_int(setting_id_t id);
 bool  settings_get_bool(setting_id_t id);
 
 /** Clamped to the schema; enums wrap. Fires the observer when it changes.
- *  A derived setting is left as it is. */
+ *  A derived setting and a held one are left as they are. */
 void settings_set(setting_id_t id, float value);
 /** Step by @p steps increments. Booleans and enums cycle.  Sensor SDA
  *  steps from one value settings_sense_sda_valid() takes to the next and

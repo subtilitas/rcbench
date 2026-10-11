@@ -2444,8 +2444,189 @@ TEST_CASE(the_mark_repaints_the_row_when_it_comes_and_when_it_goes)
     settings_screen_set_unheld(0u, 0u);
 }
 
+
+/* ------------------------------------------------------------ held values */
+
+static bool s_hold_on;
+static int  s_hold_asked;
+
+/* What the servo programmer holds while it has the port. */
+static bool port_hold(setting_id_t id)
+{
+    ++s_hold_asked;
+    return s_hold_on
+        && (id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM);
+}
+
+/* A held setting is changed by no call of the model: not set, not stepped,
+ * not reset with its category and not reset with all of them.  Nothing is
+ * observed and nothing is to save.  The hold over, each call takes. */
+TEST_CASE(a_held_setting_is_left_by_every_call_that_changes_one)
+{
+    static const setting_id_t held[] = { SET_SERVO_TARGET,
+                                         SET_SERVO_PORT_PWM };
+
+    for (unsigned was = 0; was < 4u; ++was) {
+        /* Each pair of values the two can stand at when the hold begins. */
+        const float target = (float)(was & 1u);
+        const float pwm    = (float)((was >> 1) & 1u);
+
+        fresh_model();
+        settings_set_hold(port_hold);
+        s_hold_on = false;
+        settings_set(SET_SERVO_TARGET, target);
+        settings_set(SET_SERVO_PORT_PWM, pwm);
+        settings_set(SET_BRIGHTNESS, 50.0f);
+        settings_set_store(&s_mem_store);
+        CHECK(settings_save());
+        settings_set_observer(observer);
+        s_observed = 0;
+        s_hold_on = true;
+        s_hold_asked = 0;
+        for (unsigned i = 0; i < 2u; ++i) {
+            CHECK(settings_held(held[i]));
+            settings_set(held[i], 0.0f);
+            settings_set(held[i], 1.0f);
+            settings_adjust(held[i], 1);
+            settings_adjust(held[i], -1);
+            settings_adjust(held[i], 3);
+        }
+        CHECK(s_hold_asked >= 12);
+        settings_reset(SET_CAT_SERVO);
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), (int)target);
+        CHECK_EQ(settings_get_int(SET_SERVO_PORT_PWM), (int)pwm);
+        CHECK_EQ(s_observed, 0);
+        CHECK(!settings_dirty());
+        /* Every other value goes to its default, these two stay. */
+        settings_reset_all();
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), (int)target);
+        CHECK_EQ(settings_get_int(SET_SERVO_PORT_PWM), (int)pwm);
+        CHECK_EQ(settings_get_int(SET_BRIGHTNESS),
+                 (int)settings_def(SET_BRIGHTNESS)->def);
+        CHECK_EQ(s_observed, 1);
+        CHECK_EQ(s_last_observed, SET_BRIGHTNESS);
+        /* A setting nobody holds is taken as ever. */
+        CHECK(!settings_held(SET_BRIGHTNESS));
+        settings_set(SET_BRIGHTNESS, 40.0f);
+        CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 40);
+        /* The hold over. */
+        s_hold_on = false;
+        CHECK(!settings_held(SET_SERVO_TARGET));
+        settings_adjust(SET_SERVO_TARGET, 1);
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1 - (int)target);
+        settings_set(SET_SERVO_PORT_PWM, 1.0f - pwm);
+        CHECK_EQ(settings_get_int(SET_SERVO_PORT_PWM), 1 - (int)pwm);
+        settings_reset(SET_CAT_SERVO);
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET),
+                 (int)settings_def(SET_SERVO_TARGET)->def);
+        CHECK_EQ(settings_get_int(SET_SERVO_PORT_PWM),
+                 (int)settings_def(SET_SERVO_PORT_PWM)->def);
+    }
+    /* No id is no setting, and nobody asked holds nothing. */
+    s_hold_on = true;
+    s_hold_asked = 0;
+    CHECK(!settings_held(SETTING_COUNT));
+    CHECK(!settings_held((setting_id_t)-1));
+    CHECK_EQ(s_hold_asked, 0);
+    settings_set_hold(NULL);
+    CHECK(!settings_held(SET_SERVO_TARGET));
+    /* A start-up takes the defaults whatever is held. */
+    settings_set_hold(port_hold);
+    settings_set_store(NULL);
+    settings_set_observer(NULL);
+    settings_set_hold(NULL);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set_hold(port_hold);
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+    settings_set_hold(NULL);
+    s_hold_on = false;
+}
+
+/* The first two rows of SETUP's ESC category, held by turns. */
+static setting_id_t s_row_held;
+
+static bool row_hold(setting_id_t id)
+{
+    return s_hold_on && id == s_row_held;
+}
+
+/* A held setting's row on SETUP has no keys: a tap and a hold where the
+ * other rows have theirs change nothing, RESET CATEGORY leaves the value
+ * and resets the rest, and the keys are back when the hold is over.  No
+ * category SETUP lists has a held setting today; the rule is the list's. */
+TEST_CASE(setup_changes_no_held_setting)
+{
+    for (int row = 0; row < 2; ++row) {
+        setting_id_t ids[64];
+
+        gesture_screen(SET_CAT_ESC);
+        settings_in_category(SET_CAT_ESC, ids, 64);
+        s_row_held = ids[row];
+        const setting_id_t other = ids[1 - row];
+        settings_set_hold(row_hold);
+        s_hold_on = false;
+        const int y = row_y(row);
+        /* Not held: the keys step it. */
+        feed_tap(FEED_LONE, XP, y);
+        CHECK(settings_get(s_row_held) != s_before[s_row_held]);
+        feed_tap(FEED_LONE, XP, row_y(1 - row));
+        CHECK(settings_get(other) != s_before[other]);
+        snap();
+        s_hold_on = true;
+        static const int xs[] = { MINUS_X, XM, MINUS_X + BTN_W - 1,
+                                  PLUS_X, XP, PLUS_X + BTN_W - 1 };
+        for (size_t k = 0u; k < sizeof(xs) / sizeof(xs[0]); ++k) {
+            feed_tap(FEED_LONE, xs[k], y);
+            finger(FEED_LONE, xs[k], y);
+            idle(3.0f);
+            lift(FEED_LONE);
+            idle(0.5f);
+        }
+        CHECK_EQ(changed(), 0);
+        /* No key is drawn on the row, and both are on the row beside. */
+        unsigned drawn = 0u;
+        unsigned beside = 0u;
+        s_hold_on = false;
+        settings_screen_invalidate();
+        ui_router_render(&s_c, 0);
+        const gfx_color_t face = gfx_pixel_get(&s_c, PLUS_X + 3, y);
+        s_hold_on = true;
+        settings_screen_invalidate();
+        ui_router_render(&s_c, 0);
+        for (int x = MINUS_X; x < PLUS_X + BTN_W; ++x) {
+            drawn += gfx_pixel_get(&s_c, x, y) == face ? 1u : 0u;
+            beside += gfx_pixel_get(&s_c, x, row_y(1 - row)) == face ? 1u
+                                                                     : 0u;
+        }
+        CHECK_EQ(drawn, 0u);
+        CHECK(beside > (unsigned)BTN_W);
+        /* A drag from where a key would be scrolls the list. */
+        const int from = settings_screen_scroll(NULL);
+        swipe(XM, y + 20, XM, y + 20 - 60, 4);
+        CHECK_EQ(settings_screen_scroll(NULL), from + 52);
+        swipe(XL, y + 20, XL, y + 20 + 60, 4);
+        CHECK_EQ(settings_screen_scroll(NULL), from);
+        CHECK_EQ(changed(), 0);
+        /* RESET CATEGORY: the other row goes to its default. */
+        feed_tap(FEED_LONE, CAT_X + 100, RESET_Y + RESET_H / 2);
+        CHECK_EQ(changed(), 1);
+        CHECK(settings_get(other) == settings_def(other)->def);
+        CHECK(settings_get(s_row_held) != settings_def(s_row_held)->def);
+        /* The hold over, the keys are back. */
+        s_hold_on = false;
+        snap();
+        feed_tap(FEED_LONE, XM, y);
+        CHECK_EQ(changed(), 1);
+        CHECK(settings_get(s_row_held) != s_before[s_row_held]);
+        settings_set_hold(NULL);
+    }
+}
+
 int main(void)
 {
+    RUN(a_held_setting_is_left_by_every_call_that_changes_one);
+    RUN(setup_changes_no_held_setting);
     RUN(sensor_sda_takes_the_pins_the_page_takes_and_no_other);
     RUN(sensor_sda_steps_from_pin_to_pin_and_scl_follows);
     RUN(sensor_scl_is_derived_and_takes_no_value_of_its_own);

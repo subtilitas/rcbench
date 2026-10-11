@@ -19,6 +19,8 @@
  *   - A port the page does not have is not a target: the standard outputs
  *     stay the target.
  *   - The pulse bit of a port is set only while that port is the target.
+ *   - While the servo programmer has a port, nothing is written to the
+ *     page and the tester commands no port.
  *
  * A coprocessor older than protocol 4.13 has no page: nothing is read or
  * written and the target is the standard outputs.
@@ -54,6 +56,7 @@ typedef struct {
     uint16_t regs[LINK_PG_REGS];
     uint8_t  want_target;          /**< 0, or 1 + n for port n             */
     bool     want_pwm;
+    bool     held;                 /**< the programmer has a port          */
 } prog_link_t;
 
 /** One register to write. */
@@ -76,6 +79,17 @@ void prog_link_lost(prog_link_t *p);
  *  port n, and whether that port renders its pulse.  A target above
  *  LINK_PG_PORTS_MAX is taken as 0. */
 void prog_link_want(prog_link_t *p, uint8_t target, bool pwm);
+
+/**
+ * Whether the servo programmer has a port (kst_prog_port_taken()).  While
+ * it has, the page is read and not written: prog_link_want() changes
+ * nothing, prog_link_next() names no write -- not a pulse switched off
+ * either -- prog_link_pending() is false and prog_link_command() takes no
+ * command for a port.  What is wanted afterwards is what prog_link_want()
+ * says after the hold.
+ */
+void prog_link_hold(prog_link_t *p, bool held);
+bool prog_link_held(const prog_link_t *p);
 
 /** Whether the page is to be read now: it is unknown, or
  *  PROG_LINK_POLL_MS have passed. */
@@ -120,6 +134,15 @@ bool prog_link_pending(const prog_link_t *p);
 /** Whether the tester may command: there is no page, or the page is known
  *  and its target is the one wanted.  The pulse bit is not part of it. */
 bool prog_link_settled(const prog_link_t *p);
+
+/**
+ * Whether the tester sends a command now, a release for @p release.  Not
+ * before the page is read (prog_link_ready()); not to a port while the
+ * programmer has one, a release neither -- it stays owed; and a command
+ * that is not a release only once the target is the one wanted
+ * (prog_link_settled()).
+ */
+bool prog_link_command(const prog_link_t *p, bool release);
 
 /** Whether the target port renders its pulse, as the page holds it.  False
  *  with the standard outputs as target. */

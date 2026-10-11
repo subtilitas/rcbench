@@ -1942,10 +1942,30 @@ void kst_panel_tick(float dt_s)
 
 /* --------------------------------------------------------------- the caller */
 
+/* Not part of k: a start of the screens leaves it. */
+static kst_prog_gate_t *s_gate;
+
+void kst_panel_gate(kst_prog_gate_t *g)
+{
+    s_gate = g;
+    kst_prog_gate_set(&k.prog, g);
+}
+
+/* The settings that reach the port: what the tester drives and whether the
+ * port renders its pulse.  Held while nothing but the programmer reaches
+ * the port. */
+static bool holds_setting(setting_id_t id)
+{
+    return (id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM)
+        && kst_prog_holds_port(&k.prog);
+}
+
 void kst_panel_init(gfx_rect_t area)
 {
     memset(&k, 0, sizeof(k));
     kst_prog_init(&k.prog);
+    settings_set_hold(holds_setting);
+    kst_prog_gate_set(&k.prog, s_gate);
     k.area = area;
     ui_tabs_init_text(&k.tabs, k_pages, PG_COUNT, tabs_rect());
     k.kp.pressed = -1;

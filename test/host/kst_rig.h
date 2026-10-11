@@ -57,6 +57,7 @@ typedef struct {
     kst_link_start_t answer;
     bool stopped;              /* STOP is latched */
     bool deaf;                 /* no command is taken */
+    kst_prog_gate_t gate;      /* what the two tasks share */
     bool cut;                  /* no exchange is made: the link is silent */
     unsigned starts, aborts, fetches;
 
@@ -167,6 +168,8 @@ static inline void rig_fresh(void)
     g_rig.card = true;
     rig_port_fresh();
     kst_link_init(&g_rig.link);
+    kst_prog_gate_init(&g_rig.gate);
+    kst_panel_gate(&g_rig.gate);
 }
 
 static inline void rig_exchange(void)
@@ -239,7 +242,10 @@ static inline void rig_frame(void)
     g_rig.ms++;
     rig_exchange();
     if (!g_rig.deaf && kst_panel_take(&cmd)) {
-        if (cmd.kind == KST_PROG_CMD_START) {
+        if (cmd.kind == KST_PROG_CMD_START
+            && !kst_prog_gate_claim(&g_rig.gate, cmd.id)) {
+            /* A START without its pass is not carried out. */
+        } else if (cmd.kind == KST_PROG_CMD_START) {
             g_rig.starts++;
             g_rig.answer = kst_link_start(&g_rig.link, &cmd.req);
             g_rig.answer_id = cmd.id;

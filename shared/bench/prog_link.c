@@ -37,11 +37,34 @@ void prog_link_lost(prog_link_t *p)
 
 void prog_link_want(prog_link_t *p, uint8_t target, bool pwm)
 {
-    if (p == NULL) {
+    if (p == NULL || p->held) {
         return;
     }
     p->want_target = target > LINK_PG_PORTS_MAX ? 0u : target;
     p->want_pwm    = pwm;
+}
+
+void prog_link_hold(prog_link_t *p, bool held)
+{
+    if (p != NULL) {
+        p->held = held;
+    }
+}
+
+bool prog_link_held(const prog_link_t *p)
+{
+    return p != NULL && p->held;
+}
+
+bool prog_link_command(const prog_link_t *p, bool release)
+{
+    if (!prog_link_ready(p)) {
+        return false;
+    }
+    if (prog_link_held(p) && prog_link_target(p) != 0u) {
+        return false;
+    }
+    return release || prog_link_settled(p);
 }
 
 bool prog_link_read_due(const prog_link_t *p, uint32_t now_ms)
@@ -107,7 +130,8 @@ uint8_t prog_link_target(const prog_link_t *p)
 
 bool prog_link_pending(const prog_link_t *p)
 {
-    return known(p) && p->regs[LINK_PG_TARGET] != prog_link_wanted(p);
+    return known(p) && !p->held
+           && p->regs[LINK_PG_TARGET] != prog_link_wanted(p);
 }
 
 bool prog_link_settled(const prog_link_t *p)
@@ -142,7 +166,7 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w)
 {
     uint16_t pwm;
 
-    if (!known(p) || w == NULL) {
+    if (!known(p) || w == NULL || p->held) {
         return false;
     }
     pwm = pwm_wanted(p);

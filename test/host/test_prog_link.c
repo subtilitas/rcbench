@@ -409,8 +409,87 @@ TEST_CASE(no_object_is_no_fault)
     CHECK(prog_link_read_due(&g_p, 1u));
 }
 
+
+/* The page as the coprocessor holds it differs from what is wanted in
+ * every way a write could mend: nothing is written while the programmer
+ * has a port, on a quiet bench or not, and no pulse is switched off. */
+TEST_CASE(nothing_is_written_while_the_programmer_has_a_port)
+{
+    prog_link_write_t w;
+
+    for (unsigned c = 0; c < 16u; ++c) {
+        /* What the page holds and what is wanted, each 0 or 1. */
+        const uint16_t has_target = (uint16_t)(c & 1u);
+        const uint16_t has_pwm    = (uint16_t)((c >> 1) & 1u);
+        const uint8_t  want_t     = (uint8_t)((c >> 2) & 1u);
+        const bool     want_p     = ((c >> 3) & 1u) != 0u;
+
+        fresh();
+        g_page[LINK_PG_TARGET] = has_target;
+        g_page[LINK_PG_PWM]    = has_pwm;
+        read_at(0u);
+        prog_link_want(&g_p, want_t, want_p);
+        const bool due_quiet = prog_link_next(&g_p, true, &w);
+        const bool due_busy  = prog_link_next(&g_p, false, &w);
+        const bool pending   = prog_link_pending(&g_p);
+        CHECK(!prog_link_held(&g_p));
+        prog_link_hold(&g_p, true);
+        CHECK(prog_link_held(&g_p));
+        CHECK(!prog_link_next(&g_p, true, &w));
+        CHECK(!prog_link_next(&g_p, false, &w));
+        CHECK(!prog_link_pending(&g_p));
+        CHECK_EQ(run(true), 0);
+        /* What the screen asks for meanwhile is not taken. */
+        prog_link_want(&g_p, (uint8_t)(1u - want_t), !want_p);
+        CHECK_EQ(g_p.want_target, want_t);
+        CHECK_EQ(g_p.want_pwm, want_p);
+        CHECK(!prog_link_next(&g_p, true, &w));
+        /* A read under the hold changes nothing of it. */
+        read_at(PROG_LINK_POLL_MS);
+        CHECK(!prog_link_next(&g_p, true, &w));
+        CHECK_EQ(g_page[LINK_PG_TARGET], has_target);
+        CHECK_EQ(g_page[LINK_PG_PWM], has_pwm);
+        /* The tester: no command and no release to a port, every command
+         * to the standard outputs it is settled on. */
+        CHECK_EQ(prog_link_command(&g_p, true), has_target == 0u);
+        CHECK_EQ(prog_link_command(&g_p, false),
+                 has_target == 0u && prog_link_settled(&g_p));
+        /* The hold over: what was due is due again. */
+        prog_link_hold(&g_p, false);
+        CHECK_EQ(prog_link_next(&g_p, true, &w), due_quiet);
+        CHECK_EQ(prog_link_next(&g_p, false, &w), due_busy);
+        CHECK_EQ(prog_link_pending(&g_p), pending);
+        CHECK(prog_link_command(&g_p, true));
+        CHECK_EQ(prog_link_command(&g_p, false), prog_link_settled(&g_p));
+        /* And what the screen asks for is taken. */
+        prog_link_want(&g_p, (uint8_t)(1u - want_t), !want_p);
+        CHECK_EQ(g_p.want_target, (uint8_t)(1u - want_t));
+    }
+    /* A page not read takes no command, held or not; no page takes all. */
+    fresh();
+    CHECK(!prog_link_command(&g_p, true));
+    CHECK(!prog_link_command(&g_p, false));
+    prog_link_init(&g_p);
+    prog_link_hold(&g_p, true);
+    CHECK(prog_link_command(&g_p, true));
+    CHECK(prog_link_command(&g_p, false));
+    /* The link lost and back: the hold is the caller's to say again. */
+    fresh();
+    prog_link_hold(&g_p, true);
+    prog_link_lost(&g_p);
+    prog_link_came_up(&g_p, LINK_MINOR_PROG);
+    read_at(0u);
+    prog_link_want(&g_p, 1u, true);
+    CHECK(prog_link_held(&g_p));
+    CHECK(!prog_link_next(&g_p, true, &w));
+    prog_link_hold(NULL, true);
+    CHECK(!prog_link_held(NULL));
+    CHECK(prog_link_command(NULL, false));
+}
+
 int main(void)
 {
+    RUN(nothing_is_written_while_the_programmer_has_a_port);
     RUN(nothing_is_asked_of_a_coprocessor_without_the_page);
     RUN(nothing_is_written_before_the_page_is_read);
     RUN(the_page_is_read_every_500_ms_and_the_clock_may_wrap);

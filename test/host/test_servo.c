@@ -5634,6 +5634,58 @@ TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 }
 
+static bool s_port_held;
+
+static bool port_hold(setting_id_t id)
+{
+    return s_port_held
+        && (id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM);
+}
+
+/* While the programmer has the port, the DUT page changes neither what the
+ * tester drives nor the port's pulse -- the pulse is not switched off
+ * either -- and a list opened before takes no choice. */
+TEST_CASE(the_dut_page_leaves_target_and_pulse_while_the_port_is_held)
+{
+    for (int pwm = 0; pwm < 2; ++pwm) {
+        for (int target = 0; target < 2; ++target) {
+            fresh();
+            settings_set_hold(port_hold);
+            s_port_held = false;
+            settings_set(SET_SERVO_TARGET, (float)target);
+            settings_set(SET_SERVO_PORT_PWM, (float)pwm);
+            settings_set(SET_ENC_EN, 0.0f);
+            open_settings();
+            tap(TAB_X(3), TAB_Y);                  /* DUT */
+            s_port_held = true;
+            /* No list opens over the page: the row under where its first
+             * entry would be takes its tap. */
+            tap(ROW_R_X, ROW_Y(1));                /* TARGET */
+            tap(ROW_L_X, ROW_Y(2));                /* AS5600 */
+            CHECK(settings_get_bool(SET_ENC_EN));
+            tap(ROW_R_X, ROW_Y(2));                /* PORT PWM */
+            tap(ROW_R_X, ROW_Y(2));
+            tap(ROW_R_X, ROW_Y(2));
+            CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
+            CHECK_EQ((int)settings_get_bool(SET_SERVO_PORT_PWM), pwm);
+            /* A list that was open when the port was taken. */
+            s_port_held = false;
+            tap(ROW_R_X, ROW_Y(1));
+            s_port_held = true;
+            tap(CH_X(1 - target), CH_Y(1 - target));
+            CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
+            /* The hold over, both rows take their taps. */
+            s_port_held = false;
+            tap(ROW_R_X, ROW_Y(1));
+            tap(CH_X(1), CH_Y(1));
+            CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
+            tap(ROW_R_X, ROW_Y(2));
+            CHECK_EQ((int)settings_get_bool(SET_SERVO_PORT_PWM), 1 - pwm);
+            settings_set_hold(NULL);
+        }
+    }
+}
+
 TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
 {
     fresh();
@@ -7574,6 +7626,7 @@ int main(void)
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
+    RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);

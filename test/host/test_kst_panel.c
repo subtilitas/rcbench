@@ -3844,6 +3844,171 @@ TEST_CASE(program_opens_the_programmer_over_the_left_card_and_closes_it)
     CHECK_EQ(kst_panel_editor(), 0);
 }
 
+/* Every call that changes a setting, on the tester's target and the port's
+ * pulse.  True when one of them took. */
+static bool port_settings_move(void)
+{
+    const int target = settings_get_int(SET_SERVO_TARGET);
+    const bool pwm = settings_get_bool(SET_SERVO_PORT_PWM);
+    bool moved;
+
+    settings_set(SET_SERVO_TARGET, (float)(1 - target));
+    settings_set(SET_SERVO_PORT_PWM, pwm ? 0.0f : 1.0f);
+    moved = settings_get_int(SET_SERVO_TARGET) != target
+         || settings_get_bool(SET_SERVO_PORT_PWM) != pwm;
+    settings_set(SET_SERVO_TARGET, (float)target);
+    settings_set(SET_SERVO_PORT_PWM, pwm ? 1.0f : 0.0f);
+    settings_adjust(SET_SERVO_TARGET, 1);
+    settings_adjust(SET_SERVO_PORT_PWM, -1);
+    moved = moved || settings_get_int(SET_SERVO_TARGET) != target
+         || settings_get_bool(SET_SERVO_PORT_PWM) != pwm;
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set(SET_SERVO_PORT_PWM, 0.0f);
+    settings_reset(SET_CAT_SERVO);
+    moved = moved || settings_get_int(SET_SERVO_TARGET) != target
+         || settings_get_bool(SET_SERVO_PORT_PWM) != pwm;
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set(SET_SERVO_PORT_PWM, 0.0f);
+    settings_reset_all();
+    moved = moved || settings_get_int(SET_SERVO_TARGET) != target
+         || settings_get_bool(SET_SERVO_PORT_PWM) != pwm;
+    /* As it was, for the next look. */
+    if (moved) {
+        settings_set(SET_SERVO_TARGET, (float)target);
+        settings_set(SET_SERVO_PORT_PWM, pwm ? 1.0f : 0.0f);
+    }
+    return moved;
+}
+
+static unsigned g_held_frames;
+static unsigned g_free_frames;
+
+/* One frame, and what the settings take in it: nothing while the port is
+ * out of PWM, an operation is on its way or the model has a session. */
+static bool held_frame(void)
+{
+    kst_prog_feed_t f;
+    const bool moved = port_settings_move();
+    bool taken;
+
+    rig_feed_now(&f);
+    taken = kst_port_state(&g_rig.port) != LINK_KST_PWM
+         || kst_prog_port_taken(&f.rd) || kst_panel_holds_port();
+    if (taken && moved) {
+        return false;
+    }
+    if (moved != !settings_held(SET_SERVO_TARGET)
+        || moved != !settings_held(SET_SERVO_PORT_PWM)) {
+        return false;
+    }
+    g_held_frames += moved ? 0u : 1u;
+    g_free_frames += moved ? 1u : 0u;
+    rig_frame();
+    return true;
+}
+
+static bool held_frames(unsigned n)
+{
+    for (unsigned i = 0; i < n; ++i) {
+        if (!held_frame()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* The tester's target and the port's pulse are settings.  From CONNECT to
+ * the end of DISCONNECT no call of the settings model changes either, for
+ * each pair of values they stand at: through the entry, the read, a write,
+ * a stop that leaves the port out of PWM and the leave.  Before and after,
+ * every call takes. */
+TEST_CASE(no_setting_that_reaches_the_port_changes_while_it_is_held)
+{
+    for (unsigned was = 0; was < 4u; ++was) {
+        fresh();
+        link_up();
+        settings_set(SET_SERVO_TARGET, (float)(was & 1u));
+        settings_set(SET_SERVO_PORT_PWM, (float)((was >> 1) & 1u));
+        g_held_frames = 0u;
+        g_free_frames = 0u;
+        CHECK(held_frames(20u));
+        CHECK_EQ(g_held_frames, 0u);
+        CHECK_EQ(g_free_frames, 20u);
+        CHECK(!settings_held(SET_SERVO_TARGET));
+        /* Another setting is nobody's to hold. */
+        CHECK(!settings_held(SET_SERVO_PROG_WAIT));
+        CHECK(!settings_held(SET_BRIGHTNESS));
+
+        /* CONNECT: held from the press, before a frame has gone out. */
+        tap(val(PG_SERVO, 0, 0));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_ENTERING);
+        CHECK(settings_held(SET_SERVO_TARGET));
+        CHECK(settings_held(SET_SERVO_PORT_PWM));
+        CHECK(!settings_held(SET_BRIGHTNESS));
+        g_free_frames = 0u;
+        CHECK(held_frames(6000u));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_have_servo(M));
+        CHECK_EQ(g_free_frames, 0u);
+
+        /* A write. */
+        enable();
+        edits();
+        tap(val(PG_SERVO, 2, 0));
+        show();
+        for (unsigned i = 0; i < 40u && kst_panel_editor() != 0; ++i) {
+            hold(2.1f);
+            CHECK(held_frames(200u));
+        }
+        CHECK(held_frames(8000u));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK_EQ(g_free_frames, 0u);
+
+        /* DISCONNECT, stopped on its way: the port stays out of PWM. */
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+        rig_stop(true);
+        CHECK(held_frames(4000u));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK_EQ(g_free_frames, 0u);
+        rig_stop(false);
+        CHECK(held_frames(600u));
+
+        /* And carried out: free once the port is back in PWM. */
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        const unsigned held = g_held_frames;
+        CHECK(held_frames(12000u));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK_EQ(kst_port_state(&g_rig.port), LINK_KST_PWM);
+        CHECK(g_held_frames > held);
+        CHECK(g_free_frames > 0u);
+        CHECK(!settings_held(SET_SERVO_TARGET));
+        CHECK(!settings_held(SET_SERVO_PORT_PWM));
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), (int)(was & 1u));
+        CHECK_EQ((unsigned)settings_get_bool(SET_SERVO_PORT_PWM),
+                 (was >> 1) & 1u);
+    }
+
+    /* A link that goes with the port in programming and comes back: held
+     * from the first answer on, with the model not in a session. */
+    fresh();
+    connected();
+    rig_link_lost();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_DOWN);
+    CHECK(kst_port_state(&g_rig.port) != LINK_KST_PWM);
+    kst_link_came_up(&g_rig.link, LINK_PROTOCOL_MINOR);
+    /* The frame that feeds the model the answer. */
+    rig_frame();
+    g_free_frames = 0u;
+    g_held_frames = 0u;
+    CHECK(held_frames(3000u));
+    CHECK(kst_port_state(&g_rig.port) != LINK_KST_PWM);
+    CHECK_EQ(g_free_frames, 0u);
+    CHECK_EQ(g_held_frames, 3000u);
+}
+
 TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 {
     servo_cmd_t junk;
@@ -4146,6 +4311,7 @@ int main(void)
     RUN(every_message_refusal_result_and_rule_has_a_line_in_german);
     RUN(every_state_is_drawn_in_both_languages);
     RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
+    RUN(no_setting_that_reaches_the_port_changes_while_it_is_held);
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
     RUN(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm);
     RUN(a_port_found_held_ends_a_hold_of_arm);

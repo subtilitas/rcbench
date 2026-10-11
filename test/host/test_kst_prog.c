@@ -51,7 +51,15 @@ static uint32_t g_answer_id;
 static kst_link_start_t g_answer;
 static bool g_stopped;
 static bool g_armed;           /* the feed's armed                  */
-static bool g_deaf;            /* the control task takes no command */
+static bool g_deaf;            /* the screen's task hands no command over */
+static kst_prog_gate_t g_gate; /* what the two tasks share              */
+static kst_prog_cmd_t g_q[16]; /* the queue between them                */
+static unsigned g_qn;
+static bool g_stall;           /* the control task takes none out of it */
+static unsigned g_dropped;     /* STARTs it took out and did not carry out */
+static int g_nack_at;          /* the exchange, counted from 0, that is
+                                  answered with a NACK; -1 none         */
+static bool g_nacked;          /* and it was                            */
 static unsigned g_starts;      /* kst_link_start() calls            */
 static unsigned g_aborts;
 static unsigned g_fetches;
@@ -145,6 +153,15 @@ static void port_fresh(void)
     CHECK(kst_port_init(&g_port, &hw));
 }
 
+/* The model as a start of the panel leaves it, at the gate the control
+ * task claims at. */
+static void prog_fresh(void)
+{
+    kst_prog_init(&g_p);
+    kst_prog_gate_init(&g_gate);
+    kst_prog_gate_set(&g_p, &g_gate);
+}
+
 static void fresh_at(uint32_t t0)
 {
     sim_init(&g_sim);
@@ -160,7 +177,12 @@ static void fresh_at(uint32_t t0)
     g_ms = t0;
     link_dev_init(&g_dev, k_pages, 1u, NULL, g_ms);
     kst_link_init(&g_k);
-    kst_prog_init(&g_p);
+    prog_fresh();
+    g_qn = 0;
+    g_stall = false;
+    g_dropped = 0;
+    g_nack_at = -1;
+    g_nacked = false;
     g_safe = true;
     g_stop = false;
     g_outcomes = 0;
@@ -190,6 +212,12 @@ static void exchange(void)
     link_msg_t req, rep;
 
     if (!kst_link_next(&g_k, g_ms, &x)) {
+        return;
+    }
+    if (g_nack_at >= 0 && g_nack_at-- == 0) {
+        /* The coprocessor refuses this one frame. */
+        g_nacked = true;
+        kst_link_done(&g_k, LINK_NACK_BAD_VALUE, NULL);
         return;
     }
     memset(&req, 0, sizeof(req));
@@ -248,8 +276,20 @@ static void frame(void)
     }
     g_ms++;
     exchange();
-    if (!g_deaf && kst_prog_take(&g_p, &cmd)) {
+    /* The screen's task: every command into the queue. */
+    while (!g_deaf && g_qn < sizeof(g_q) / sizeof(g_q[0])
+           && kst_prog_take(&g_p, &g_q[g_qn])) {
+        g_qn++;
+    }
+    /* The control task: the queue, in order.  A START is carried out with
+     * its pass and dropped without. */
+    for (unsigned i = 0; !g_stall && i < g_qn; ++i) {
+        cmd = g_q[i];
         if (cmd.kind == KST_PROG_CMD_START) {
+            if (!kst_prog_gate_claim(&g_gate, cmd.id)) {
+                g_dropped++;
+                continue;
+            }
             g_starts++;
             g_answer = kst_link_start(&g_k, &cmd.req);
             g_answer_id = cmd.id;
@@ -260,6 +300,9 @@ static void frame(void)
             g_aborts++;
             kst_link_abort(&g_k);
         }
+    }
+    if (!g_stall) {
+        g_qn = 0;
     }
     if (kst_link_outcome(&g_k, &o)) {
         g_outcome = o;
@@ -1182,8 +1225,9 @@ TEST_CASE(a_write_that_was_not_taken_or_was_refused_leaves_no_field_written)
     duty_swapped_is_another_servo();
 }
 
-/* A write whose command was taken counts from then on, whatever comes of
- * it: the answer that never arrives leaves its fields written. */
+/* A write whose command the control task took out of its queue counts from
+ * then on, whatever comes of it: the answer that never arrives leaves its
+ * fields written and the servo in doubt. */
 TEST_CASE(a_write_that_was_taken_has_its_fields_written)
 {
     kst_prog_cmd_t cmd;
@@ -1198,9 +1242,23 @@ TEST_CASE(a_write_that_was_taken_has_its_fields_written)
     CHECK(kst_prog_take(&g_p, &cmd));
     CHECK(g_p.wrote != 0u);
     CHECK_EQ(g_p.held_wrote, 0);
+    /* The control task has its pass and publishes no answer. */
+    CHECK(kst_prog_gate_claim(&g_gate, cmd.id));
     frames(KST_PROG_START_MS + 5u);
-    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    /* It cannot be taken back: the answer is waited for once more. */
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
     CHECK(g_p.wrote != 0u);
+    frames(KST_PROG_START_MS + 5u);
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+    /* An abort follows it. */
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(g_p.wrote != 0u);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(kst_prog_journal(&g_p));
+    CHECK(!kst_prog_editable(&g_p));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_READ);
     g_deaf = false;
     /* The duty holds a third value: the session's servo still. */
     g_sim.reg[KST_REG_DUTY] = 190;
@@ -1240,6 +1298,7 @@ TEST_CASE(a_write_stopped_or_aborted_before_its_command_leaves_no_field_written)
     edit(KST_F_DUTY, 200);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK(kst_prog_gate_claim(&g_gate, cmd.id));
     g_answer = kst_link_start(&g_k, &cmd.req);
     g_answer_id = cmd.id;
     CHECK_EQ(g_answer, KST_LINK_START_OK);
@@ -1260,6 +1319,7 @@ TEST_CASE(a_write_stopped_or_aborted_before_its_command_leaves_no_field_written)
     edit(KST_F_DUTY, 200);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK(kst_prog_gate_claim(&g_gate, cmd.id));
     g_answer = kst_link_start(&g_k, &cmd.req);
     g_answer_id = cmd.id;
     kst_prog_abort(&g_p);
@@ -1370,6 +1430,52 @@ TEST_CASE(the_bench_takes_no_arm_while_a_port_is_out_of_pwm)
     }
 }
 
+/* What the settings and the PROG page are held by: a session of this
+ * model, whatever the readout says, or a readout that has the port taken,
+ * whatever the model is in. */
+TEST_CASE(the_port_is_held_by_the_session_or_by_the_readout)
+{
+    kst_prog_t p;
+    kst_prog_feed_t f;
+
+    kst_prog_init(&p);
+    /* Nothing fed: nothing known to hold a port. */
+    CHECK(!kst_prog_holds_port(&p));
+    memset(&f, 0, sizeof(f));
+    for (unsigned ph = KST_LINK_DOWN; ph <= KST_LINK_PLANNING; ++ph) {
+        for (unsigned st = LINK_KST_PWM; st <= LINK_KST_LEAVING; ++st) {
+            for (unsigned known = 0; known < 2u; ++known) {
+                kst_prog_init(&p);
+                f.rd.phase = (kst_link_phase_t)ph;
+                f.rd.port  = (link_kst_state_t)st;
+                f.rd.known = known != 0u;
+                f.now_ms += 10u;
+                kst_prog_feed(&p, &f);
+                const kst_prog_state_t state = kst_prog_state(&p);
+                const bool session = state == KST_PROG_ENTERING
+                    || state == KST_PROG_PROGRAMMING
+                    || state == KST_PROG_WORKING
+                    || state == KST_PROG_LEAVING;
+                CHECK_EQ(kst_prog_holds_port(&p),
+                         session || kst_prog_port_taken(&f.rd));
+            }
+        }
+    }
+    /* A session through its states, by the rig: held from the command on,
+     * with the readout still at PWM and no operation. */
+    fresh_at(0u);
+    link_up();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_holds_port(&g_p));
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_ENTERING);
+    CHECK(!kst_prog_port_taken(&g_p.f.rd));
+    CHECK(kst_prog_holds_port(&g_p));
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_holds_port(&g_p));
+}
+
 /* -------------------------------------------------------------- the journal */
 
 TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
@@ -1407,7 +1513,7 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
 
     /* A panel that starts on the file of the write: the servo is in
      * doubt until it is read. */
-    kst_prog_init(&g_p);
+    prog_fresh();
     CHECK(kst_prog_file_load(&g_p, at_write, strlen(at_write)));
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
     CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_DANGER);
@@ -1589,7 +1695,7 @@ TEST_CASE(a_panel_that_starts_on_a_locked_session_fetches_its_backup)
 
         CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
         kst_link_init(&g_k);
-        kst_prog_init(&g_p);
+        prog_fresh();
         g_outcomes = 0;
         g_answer_id = 0;
         CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
@@ -1692,7 +1798,7 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     g_p.journal_target = sv;
     g_p.journal_target.r[0x03] ^= 0x01u;
     CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
-    kst_prog_init(&g_p);
+    prog_fresh();
     /* A text cut short is not whole, and asking changes nothing. */
     CHECK(kst_prog_file_whole(text, strlen(text)));
     CHECK(!kst_prog_file_whole(text, strlen(text) - 1u));
@@ -1718,7 +1824,7 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_is_closed)
     target = sv;
     target.r[0x03] ^= 0x01u;
     memcpy(g_sim.reg, target.r, sizeof(target.r));
-    kst_prog_init(&g_p);
+    prog_fresh();
     CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
     frame();
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
@@ -1826,7 +1932,7 @@ TEST_CASE(a_journal_of_another_port_is_not_this_servos)
     g_p.journal_target = sv;
     g_p.journal_target.r[0x03] ^= 0x01u;
     CHECK(kst_prog_file_text(&g_p, text, sizeof(text)) != 0u);
-    kst_prog_init(&g_p);
+    prog_fresh();
     CHECK(kst_prog_file_load(&g_p, text, strlen(text)));
     CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 2u);
     frame();
@@ -2245,8 +2351,10 @@ TEST_CASE(a_dropped_write_whose_answer_timed_out_leaves_no_field_written)
     edit(KST_F_DUTY, 200);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK(kst_prog_take(&g_p, &cmd));
+    /* No gate: a command handed out may have run. */
     pass(KST_PROG_START_MS);
-    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+    CHECK(kst_prog_in_doubt(&g_p));
     CHECK(g_p.wrote != 0u);
     memset(&o, 0, sizeof(o));
     o.kind = KST_LINK_OUT_DROPPED;
@@ -3524,13 +3632,14 @@ TEST_CASE(every_result_of_the_session_is_a_message)
     }
     /* With no register written, the results that write nothing leave no
      * journal. */
-    for (unsigned r = KST_SES_ERR_BUSY; r <= KST_SES_ERR_ABORTED; ++r) {
+    for (unsigned r = KST_SES_ERR_BUSY; r <= KST_SES_ERR_NO_PLAN; ++r) {
         kst_link_outcome_t o;
         const bool nothing = r == KST_SES_ERR_BUSY || r == KST_SES_ERR_ARG
             || r == KST_SES_ERR_NOT_IN_MODE || r == KST_SES_ERR_NO_BACKUP
             || r == KST_SES_ERR_FINGERPRINT || r == KST_SES_ERR_LOCKED
             || r == KST_SES_ERR_BAD_PLAN || r == KST_SES_ERR_UNCONFIRMED
-            || r == KST_SES_ERR_CHANGED || r == KST_SES_ERR_WRITE_FAILED;
+            || r == KST_SES_ERR_CHANGED || r == KST_SES_ERR_WRITE_FAILED
+            || r == KST_SES_ERR_ROLLED_BACK || r == KST_SES_ERR_NO_PLAN;
 
         by_hand();
         CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
@@ -4667,6 +4776,824 @@ TEST_CASE(the_wait_before_pwm_keeps_its_limits)
     CHECK_EQ(kst_prog_wait_ms(&g_p), 250u);
 }
 
+/* ------------------------------------- what an operation leaves behind */
+
+/* What a write that ended with @p r wrote when the coprocessor counted no
+ * step done.  A result added to kst_ses_t does not compile here until it
+ * has a row. */
+typedef enum { LEFT_OK, LEFT_NOTHING, LEFT_DOUBT } left_t;
+
+static left_t left_by(unsigned r)
+{
+    if (r > (unsigned)KST_SES_ERR_NO_PLAN) {
+        return (r == LINK_KST_RESULT_NO_PATH
+                || r == LINK_KST_RESULT_TOO_COMPLEX) ? LEFT_NOTHING
+                                                     : LEFT_DOUBT;
+    }
+    switch ((kst_ses_t)r) {
+    case KST_SES_OK:
+        return LEFT_OK;
+    case KST_SES_ERR_BUSY:
+    case KST_SES_ERR_ARG:
+    case KST_SES_ERR_NOT_IN_MODE:
+    case KST_SES_ERR_NO_BACKUP:
+    case KST_SES_ERR_FINGERPRINT:
+    case KST_SES_ERR_LOCKED:
+    case KST_SES_ERR_BAD_PLAN:
+    case KST_SES_ERR_UNCONFIRMED:
+    case KST_SES_ERR_CHANGED:
+    case KST_SES_ERR_NO_PLAN:
+    case KST_SES_ERR_WRITE_FAILED:
+    case KST_SES_ERR_ROLLED_BACK:
+        return LEFT_NOTHING;
+    case KST_SES_BUSY:
+    case KST_SES_ERR_NO_SERVO:
+    case KST_SES_ERR_READ:
+    case KST_SES_ERR_TORN:
+    case KST_SES_ERR_UNINTENDED:
+    case KST_SES_ERR_VERIFY:
+    case KST_SES_ERR_DRIVER:
+    case KST_SES_ERR_ABORTED:
+        return LEFT_DOUBT;
+    }
+    return LEFT_DOUBT;
+}
+
+/* Every kind of outcome, every result of the session and of the page, with
+ * and without a step counted done, taken or not, for each operation that
+ * writes: the fields written are those of before exactly when no register
+ * was written, and the servo is in doubt in every other case. */
+TEST_CASE(every_outcome_of_a_write_says_what_it_wrote)
+{
+    static const kst_link_outcome_kind_t kinds[] = {
+        KST_LINK_OUT_DONE, KST_LINK_OUT_REFUSED, KST_LINK_OUT_NACK,
+        KST_LINK_OUT_NO_ANSWER, KST_LINK_OUT_RESTARTED, KST_LINK_OUT_DROPPED,
+    };
+    static const link_kst_op_t ops[] = {
+        LINK_KST_OP_WRITE, LINK_KST_OP_RESTORE, LINK_KST_OP_RELEASE,
+    };
+    unsigned classed = 0;
+
+    /* The table above ends where the session's results end. */
+    CHECK_EQ(KST_SES_ERR_NO_PLAN, 20);
+    CHECK_EQ(KST_LINK_OUT_DROPPED, 6);
+    for (unsigned r = 0; r < 64u; ++r) {
+        const left_t l = left_by(r);
+
+        CHECK_EQ(kst_prog_result_class(r),
+                 l == LEFT_OK ? KST_PROG_RES_OK
+                 : l == LEFT_NOTHING ? KST_PROG_RES_CLEAN
+                                     : KST_PROG_RES_DOUBT);
+        classed += (l != LEFT_DOUBT) ? 1u : 0u;
+    }
+    CHECK_EQ(classed, 15);
+    for (unsigned i = 0; i < sizeof(kinds) / sizeof(kinds[0]); ++i) {
+        for (unsigned r = 0; r < 40u; ++r) {
+            for (unsigned c = 0; c < 12u; ++c) {
+                const uint8_t steps = (uint8_t)(c & 1u);
+                const bool taken = (c & 2u) != 0u;
+                const link_kst_op_t op = ops[c / 4u];
+                const bool done = kinds[i] == KST_LINK_OUT_DONE;
+                kst_link_outcome_t o;
+                bool nothing;
+
+                if (!done && r != 0u) {
+                    continue;       /* the result is the DONE outcome's */
+                }
+                switch (kinds[i]) {
+                case KST_LINK_OUT_DONE:
+                    nothing = steps == 0u && left_by(r) == LEFT_NOTHING;
+                    break;
+                case KST_LINK_OUT_REFUSED:
+                case KST_LINK_OUT_DROPPED:
+                    nothing = true;
+                    break;
+                case KST_LINK_OUT_NACK:
+                    nothing = !taken;
+                    break;
+                default:
+                    nothing = false;
+                    break;
+                }
+                by_hand();
+                g_p.wrote_known = true;
+                CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+                edit(KST_F_DUTY, 200);
+                CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+                CHECK_EQ(g_p.wrote, 0);
+                answer(KST_LINK_START_OK);
+                CHECK(g_p.wrote != 0u);
+                CHECK(kst_prog_journal(&g_p));
+                /* The same end for the three operations that write. */
+                g_p.op = (uint8_t)op;
+                memset(&o, 0, sizeof(o));
+                o.kind = kinds[i];
+                o.op = op;
+                o.result = (uint8_t)r;
+                o.steps_done = steps;
+                o.taken = taken;
+                o.fail_reg = 0xFF;
+                end(&o);
+                if (kinds[i] == KST_LINK_OUT_RESTARTED) {
+                    /* The session is gone, and what it wrote with it. */
+                    CHECK(!g_p.wrote_known);
+                    CHECK(kst_prog_journal(&g_p));
+                    continue;
+                }
+                CHECK(g_p.wrote_known);
+                if (done && r == KST_SES_OK) {
+                    CHECK(g_p.wrote != 0u);
+                    CHECK(!kst_prog_journal(&g_p));
+                    continue;
+                }
+                CHECK_EQ(g_p.wrote == 0u, nothing);
+                CHECK_EQ(kst_prog_journal(&g_p), !nothing);
+                CHECK_EQ(kst_prog_in_doubt(&g_p),
+                         !nothing || (done && r == KST_SES_ERR_CHANGED));
+                CHECK_EQ(kst_prog_editable(&g_p),
+                         nothing && !(done && r == KST_SES_ERR_CHANGED));
+                /* The pending value is there to be written again. */
+                CHECK_EQ(draft(KST_F_DUTY), 200);
+            }
+        }
+    }
+}
+
+/* --------------------------- a frame refused after the command was taken */
+
+typedef enum {
+    NK_READ, NK_VERIFY, NK_WRITE, NK_RESTORE, NK_RELEASE, NK_ENTER, NK_LEAVE,
+    NK_COUNT
+} nk_t;
+
+/* The session up to the operation @p k, and the operation asked for. */
+static void nk_begin(nk_t k)
+{
+    kst_prog_restore_t plan;
+
+    if (k == NK_ENTER) {
+        fresh_at(0u);
+        link_up();
+        CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+        return;
+    }
+    up_enabled();
+    switch (k) {
+    case NK_READ:
+        CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+        break;
+    case NK_VERIFY:
+        CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NONE);
+        break;
+    case NK_WRITE:
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        break;
+    case NK_RESTORE:
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+                 KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+        break;
+    case NK_RELEASE:
+        CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NONE);
+        break;
+    default:
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        break;
+    }
+}
+
+/*
+ * Each operation, with each of its exchanges in turn answered by a NACK.
+ * A NACK after the command was acknowledged ends the operation with no
+ * result read: the image held is not the servo's any more, and nothing but
+ * a read is taken until one succeeds.
+ */
+TEST_CASE(a_nack_after_the_command_leaves_the_image_unusable)
+{
+    for (unsigned k = 0; k < (unsigned)NK_COUNT; ++k) {
+        unsigned taken = 0;
+        unsigned n;
+
+        for (n = 0; n < 4000u; ++n) {
+            unsigned before;
+            bool held;
+
+            nk_begin((nk_t)k);
+            before = g_outcomes;
+            held = kst_prog_have_servo(&g_p);
+            g_nacked = false;
+            g_nack_at = (int)n;
+            settle();
+            g_nack_at = -1;
+            if (!g_nacked) {
+                break;          /* the operation has no exchange n */
+            }
+            if (g_outcomes == before
+                || g_outcome.kind != KST_LINK_OUT_NACK || !g_outcome.taken) {
+                /* The command itself, refused: nothing ran.  Or a status
+                 * read: the page is gone, and the session with it. */
+                if (kst_prog_state(&g_p) == KST_PROG_NO_PAGE) {
+                    CHECK(!kst_prog_editable(&g_p));
+                    CHECK(kst_prog_write_check(&g_p) != KST_PROG_MSG_NONE);
+                }
+                continue;
+            }
+            taken++;
+            CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_NACK);
+            if (!held && kst_prog_state(&g_p) != KST_PROG_PROGRAMMING) {
+                continue;       /* an ENTER that did not get there */
+            }
+            if (kst_prog_state(&g_p) != KST_PROG_PROGRAMMING) {
+                /* A LEAVE: the port is out of the mode or on its way. */
+                CHECK(!kst_prog_editable(&g_p));
+                continue;
+            }
+            CHECK(!kst_prog_editable(&g_p));
+            if (held) {
+                CHECK(kst_prog_in_doubt(&g_p));
+                CHECK_EQ(kst_prog_edit(&g_p, KST_F_BOOST, 10),
+                         KST_PROG_EDIT_REFUSED);
+                CHECK_EQ(kst_prog_write_check(&g_p), KST_PROG_MSG_NEED_READ);
+                CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_READ);
+                CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NEED_READ);
+                CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_READ);
+                CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
+            } else {
+                CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
+            }
+            frames(50);
+            CHECK_EQ(g_fc.saves, k == NK_WRITE || k == NK_RESTORE
+                                 || k == NK_RELEASE ? 1 : 0);
+            /* A read that succeeds gives the image back. */
+            CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+            settle();
+            CHECK(kst_prog_have_servo(&g_p));
+            CHECK(!g_p.need_read);
+            {
+                const kst_image_t now = servo();
+
+                CHECK(same(kst_prog_servo(&g_p), &now));
+            }
+            CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+        }
+        CHECK(n > 2u);
+        CHECK(n < 4000u);
+        CHECK(taken > 2u);
+    }
+}
+
+/* ---------------------------------------- a restore that is never sent */
+
+/* The record the card holds names @p target. */
+static bool text_has_target(const kst_image_t *target)
+{
+    kst_prog_t t;
+
+    kst_prog_init(&t);
+    return g_file_len != 0u && kst_prog_file_load(&t, g_file, g_file_len)
+        && t.journal && same(&t.journal_target, target);
+}
+
+typedef enum {
+    RS_SAVE_FAILS, RS_SAVE_SILENT, RS_FILE_FAILS, RS_FILE_SILENT,
+    RS_NOT_HANDED, RS_STALLED, RS_ABORT, RS_LINK_LOST, RS_COUNT
+} rs_t;
+
+/*
+ * A confirmed restore from the journal's record that ends before its
+ * command goes: at the servo's file, at the journal's file, at the start.
+ * The pending values, the prompt that was open and the record are as they
+ * were before RESTORE was confirmed.
+ */
+TEST_CASE(a_restore_that_never_starts_leaves_the_pending_values)
+{
+    for (unsigned s = 0; s < (unsigned)RS_COUNT; ++s) {
+        kst_prog_restore_t plan;
+        kst_image_t before, record;
+        unsigned starts, writes, changes, saves, files;
+
+        cut_and_come_back(false);
+        /* One value pending, and a prompt open for another. */
+        edit(KST_F_BOOST, (uint16_t)(draft(KST_F_BOOST) + 1u));
+        CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY,
+                               (uint16_t)(draft(KST_F_DUTY) + 2u)),
+                 KST_PROG_EDIT_SOFT);
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_JOURNAL, &plan),
+                 KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        CHECK(g_p.soft);
+        before = *kst_prog_draft(&g_p);
+        record = g_p.journal_target;
+        changes = kst_prog_changes(&g_p);
+        starts = g_starts;
+        writes = g_sim.n_writes;
+        saves = g_fc.saves;
+        files = g_file_writes;
+        CHECK(kst_prog_save_first(&g_p));
+
+        switch ((rs_t)s) {
+        case RS_SAVE_FAILS:
+            g_fc.fails = KST_PROG_CARD_WRITE_ERR;
+            break;
+        case RS_SAVE_SILENT:
+            g_fc.silent = true;
+            break;
+        case RS_FILE_FAILS:
+            g_card_fails = true;
+            break;
+        case RS_FILE_SILENT:
+            g_card_silent = true;
+            break;
+        case RS_NOT_HANDED:
+            g_deaf = true;
+            break;
+        default:
+            g_stall = true;
+            break;
+        }
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+        /* The restore's values are the pending ones while it waits. */
+        CHECK(!same(kst_prog_draft(&g_p), &before));
+        CHECK(!g_p.soft);
+        if (s == (unsigned)RS_ABORT) {
+            frames(20);
+            kst_prog_abort(&g_p);
+            frame();
+        } else if (s == (unsigned)RS_LINK_LOST) {
+            frames(20);
+            kst_link_lost(&g_k);
+            g_safe = false;
+            frame();
+        } else {
+            frames(KST_PROG_CARD_MS + KST_PROG_START_MS + 100u);
+        }
+        CHECK(kst_prog_state(&g_p) != KST_PROG_WORKING);
+        switch ((rs_t)s) {
+        case RS_SAVE_FAILS:
+            CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+            CHECK_EQ(g_file_writes, files);
+            break;
+        case RS_SAVE_SILENT:
+            CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+            CHECK_EQ(g_file_writes, files);
+            break;
+        case RS_FILE_FAILS:
+        case RS_FILE_SILENT:
+            CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
+            CHECK_EQ(g_fc.saves, saves + 1u);
+            CHECK(g_file_writes > files);
+            break;
+        case RS_NOT_HANDED:
+        case RS_STALLED:
+            CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+            CHECK_EQ(g_fc.saves, saves + 1u);
+            break;
+        case RS_ABORT:
+            CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED);
+            break;
+        default:
+            CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER);
+            break;
+        }
+        /* Nothing was sent, and the queue holds nothing that is. */
+        g_deaf = false;
+        g_stall = false;
+        frames(100);
+        if (g_card_silent) {
+            /* The card's answer, long after it was given up. */
+            kst_prog_file_done(&g_p, false);
+        }
+        g_card_fails = false;
+        g_card_silent = false;
+        frames(KST_PROG_STORE_MS + 2100u);
+        CHECK_EQ(g_starts, starts);
+        CHECK_EQ(g_sim.n_writes, writes);
+        /* As before the confirm. */
+        CHECK(kst_prog_journal_held(&g_p));
+        CHECK(same(&g_p.journal_target, &record));
+        CHECK(text_has_target(&record));
+        if (s != (unsigned)RS_LINK_LOST) {
+            CHECK(same(kst_prog_draft(&g_p), &before));
+            CHECK_EQ(kst_prog_changes(&g_p), changes);
+            CHECK(g_p.soft);
+            CHECK(!g_p.soft_load);
+            CHECK(!kst_prog_in_doubt(&g_p));
+            CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
+            /* The prompt takes its answer. */
+            kst_prog_soft_confirm(&g_p);
+            CHECK_EQ(kst_prog_changes(&g_p), changes + 1u);
+        }
+    }
+}
+
+/* The same for the two writes that send no pending value: the prompt that
+ * was open is open again. */
+TEST_CASE(a_release_or_a_session_restore_that_never_starts_keeps_the_prompt)
+{
+    for (unsigned s = 0; s < 2u; ++s) {
+        kst_prog_restore_t plan;
+        kst_image_t before;
+        unsigned starts;
+
+        up_enabled();
+        if (s == 1u) {
+            edit(KST_F_BOOST, (uint16_t)(draft(KST_F_BOOST) + 1u));
+            CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+            settle();
+            CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+        }
+        edit(KST_F_BOOST, (uint16_t)(draft(KST_F_BOOST) + 1u));
+        CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY,
+                               (uint16_t)(draft(KST_F_DUTY) + 2u)),
+                 KST_PROG_EDIT_SOFT);
+        before = *kst_prog_draft(&g_p);
+        starts = g_starts;
+        g_card_fails = true;
+        if (s == 0u) {
+            CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NONE);
+        } else {
+            CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION,
+                                           &plan), KST_PROG_MSG_NONE);
+            CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+        }
+        CHECK(!g_p.soft);
+        frames(20);
+        CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
+        CHECK_EQ(g_starts, starts);
+        CHECK(g_p.soft);
+        CHECK(same(kst_prog_draft(&g_p), &before));
+        g_card_fails = false;
+    }
+}
+
+/* ------------------------------------------- the gate of the two tasks */
+
+TEST_CASE(a_pass_is_taken_once_and_by_its_number_only)
+{
+    kst_prog_gate_t g;
+
+    kst_prog_gate_init(&g);
+    CHECK(!kst_prog_gate_claim(&g, 0));
+    CHECK(!kst_prog_gate_claim(&g, 1));
+    CHECK(!kst_prog_gate_revoke(&g, 1));
+    kst_prog_gate_offer(&g, 5);
+    CHECK(!kst_prog_gate_claim(&g, 4));
+    CHECK(!kst_prog_gate_claim(&g, 0));
+    CHECK(!kst_prog_gate_revoke(&g, 6));
+    /* The link's task first: the command is carried out. */
+    CHECK(kst_prog_gate_claim(&g, 5));
+    CHECK(!kst_prog_gate_claim(&g, 5));
+    CHECK(!kst_prog_gate_revoke(&g, 5));
+    /* The model first: it never is. */
+    kst_prog_gate_offer(&g, 6);
+    CHECK(kst_prog_gate_revoke(&g, 6));
+    CHECK(!kst_prog_gate_claim(&g, 6));
+    CHECK(!kst_prog_gate_revoke(&g, 6));
+    /* A later offer ends the earlier one. */
+    kst_prog_gate_offer(&g, 7);
+    kst_prog_gate_offer(&g, 8);
+    CHECK(!kst_prog_gate_claim(&g, 7));
+    CHECK(kst_prog_gate_claim(&g, 8));
+    /* A pass of the number 0 is none. */
+    kst_prog_gate_offer(&g, 0);
+    CHECK(!kst_prog_gate_claim(&g, 0));
+    CHECK(!kst_prog_gate_revoke(&g, 0));
+}
+
+/*
+ * The control task takes nothing out of its queue for longer than the wait
+ * for an answer, then all of it.  The START that timed out is not carried
+ * out: no kst_link_start(), no frame to the servo.  For a write and for a
+ * read, given up by the timeout, by the operator and by the link.
+ */
+TEST_CASE(a_start_that_timed_out_in_the_queue_is_never_carried_out)
+{
+    for (unsigned c = 0; c < 8u; ++c) {
+        const bool write = (c & 1u) != 0u;
+        const unsigned how = c / 2u;    /* timeout, abort, link, next op */
+        const kst_image_t sv = sim_bench_image();
+        unsigned starts, frames_sent, aborts;
+        kst_image_t now;
+
+        up_enabled();
+        if (write) {
+            edit(KST_F_DUTY, 200);
+            CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        } else {
+            CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+        }
+        g_stall = true;
+        starts = g_starts;
+        aborts = g_aborts;
+        frames(10);             /* the card's files, the command queued */
+        CHECK_EQ(g_qn, 1);
+        CHECK_EQ(g_q[0].kind, KST_PROG_CMD_START);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+        frames_sent = g_sim.n_frames;
+        if (how == 1u) {
+            kst_prog_abort(&g_p);
+            frame();
+            CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED);
+        } else if (how == 2u) {
+            kst_link_lost(&g_k);
+            g_safe = false;
+            frame();
+            CHECK_EQ(msg(), KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER);
+            g_safe = true;
+            kst_link_came_up(&g_k, LINK_PROTOCOL_MINOR);
+            frames(50);
+        } else {
+            frames(KST_PROG_START_MS - 20u);
+            CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+            frames(40);
+            CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+            frames(3000);       /* and it stalls on */
+        }
+        CHECK(kst_prog_state(&g_p) != KST_PROG_WORKING);
+        /* Nothing was sent: the servo is as it was read. */
+        CHECK(!kst_prog_journal(&g_p));
+        CHECK_EQ(g_p.wrote, 0);
+        if (how != 2u) {
+            CHECK(!kst_prog_in_doubt(&g_p));
+            CHECK(kst_prog_editable(&g_p));
+        }
+        if (how == 3u) {
+            /* The next operation is asked for while the queue stands. */
+            CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NONE);
+            frames(5);
+            CHECK_EQ(g_qn, 2);
+        }
+        /* The queue moves again. */
+        g_stall = false;
+        frames(200);
+        settle();
+        CHECK_EQ(g_dropped, 1);
+        CHECK_EQ(g_aborts, aborts);
+        now = servo();
+        CHECK(same(&now, &sv));
+        CHECK_EQ(g_sim.n_writes, 0);
+        if (how == 3u) {
+            CHECK_EQ(g_starts, starts + 1u);
+            CHECK_EQ(msg(), KST_PROG_MSG_VERIFIED);
+        } else if (how != 2u) {
+            CHECK_EQ(g_starts, starts);
+            CHECK_EQ(g_sim.n_frames, frames_sent);
+        } else {
+            CHECK_EQ(g_starts, starts);
+        }
+        if (how == 0u && write) {
+            /* The value is pending still, and the write goes when asked
+             * again. */
+            CHECK_EQ(draft(KST_F_DUTY), 200);
+            CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+            CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+            settle();
+            CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+            CHECK_EQ(g_sim.reg[KST_REG_DUTY], 200);
+        }
+    }
+}
+
+/* With no gate between the tasks the same START may have run: the servo is
+ * in doubt and a read is asked for. */
+TEST_CASE(without_a_gate_an_unanswered_start_leaves_the_servo_in_doubt)
+{
+    kst_prog_cmd_t cmd;
+
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    pass(KST_PROG_START_MS);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_editable(&g_p));
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+}
+
+/* --------------------------------- a record from a card mounted late */
+
+static size_t record_text(char *text, uint8_t port, const kst_image_t *img,
+                          const kst_image_t *target)
+{
+    kst_prog_t t;
+
+    kst_prog_init(&t);
+    t.journal = true;
+    t.journal_open = true;
+    t.journal_port = port;
+    t.journal_img = *img;
+    t.journal_target = *target;
+    return kst_prog_file_text(&t, text, KST_PROG_FILE_MAX);
+}
+
+static bool record_is(const char *text)
+{
+    char now[KST_PROG_FILE_MAX];
+
+    return kst_prog_file_text(&g_p, now, sizeof(now)) != 0u
+        && strcmp(now, text) == 0;
+}
+
+/*
+ * The record of an interrupted write reaches the model before the servo is
+ * read (the card was in at the start) or after it (the card is mounted
+ * under the session).  Either way it is held against the servo read: the
+ * servo's own record is settled by a read, and the record of another port
+ * or of another servo stands, takes no restore and lets no write through.
+ */
+TEST_CASE(a_record_is_held_against_the_servo_whenever_the_card_comes)
+{
+    for (unsigned c = 0; c < 6u; ++c) {
+        const unsigned who = c / 2u;    /* this servo, a port, a servo */
+        const bool late = (c & 1u) != 0u;
+        kst_image_t img = sim_bench_image();
+        kst_image_t target;
+        kst_prog_restore_t plan;
+        char text[KST_PROG_FILE_MAX];
+        size_t len;
+
+        up();
+        if (who == 2u) {
+            CHECK(kst_field_set(&img, KST_F_20K_SEL,
+                                1u - kst_field_get(&img, KST_F_20K_SEL)));
+        }
+        target = img;
+        CHECK(kst_field_edit(&target, KST_F_BOOST,
+                             (uint16_t)(kst_field_get(&img, KST_F_BOOST)
+                                        + 1u)));
+        len = record_text(text, (uint8_t)(who == 1u ? CH + 1u : CH), &img,
+                          &target);
+        CHECK(len != 0u);
+        /* The panel starts under the session the coprocessor keeps. */
+        prog_fresh();
+        if (!late) {
+            CHECK(kst_prog_file_load(&g_p, text, len));
+            CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+            frame();
+            CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+            settle();
+        } else {
+            frame();
+            CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+            settle();
+            CHECK_EQ(msg(), KST_PROG_MSG_READ);
+            CHECK(kst_prog_editable(&g_p));
+            CHECK(kst_prog_file_load(&g_p, text, len));
+            if (who == 0u) {
+                /* This servo's: what it holds now is not known to be what
+                 * was read before the record came. */
+                CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+                CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+                CHECK(kst_prog_in_doubt(&g_p));
+                CHECK(!kst_prog_editable(&g_p));
+                CHECK_EQ(kst_prog_edit(&g_p, KST_F_BOOST, 10),
+                         KST_PROG_EDIT_REFUSED);
+                CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
+                CHECK(record_is(text));
+                CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+                settle();
+            }
+        }
+        if (who == 0u) {
+            /* The servo holds the record's image: nothing is left of it. */
+            CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
+            CHECK(!kst_prog_journal(&g_p));
+            CHECK(!kst_prog_in_doubt(&g_p));
+            CHECK(kst_prog_editable(&g_p));
+            continue;
+        }
+        CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
+        CHECK_EQ(kst_prog_message(&g_p)->arg, (who == 1u ? CH + 2u : CH + 1u));
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_DANGER);
+        CHECK(kst_prog_journal(&g_p));
+        CHECK(kst_prog_journal_other(&g_p));
+        CHECK(kst_prog_in_doubt(&g_p));
+        CHECK(!kst_prog_editable(&g_p));
+        CHECK(!kst_prog_write_enabled(&g_p));
+        for (unsigned from = 0; from < (unsigned)KST_PROG_FROM_COUNT; ++from) {
+            CHECK(!kst_prog_restore_offered(&g_p, (kst_prog_from_t)from));
+            CHECK_EQ(kst_prog_restore_plan(&g_p, (kst_prog_from_t)from,
+                                           &plan),
+                     KST_PROG_MSG_JOURNAL_OTHER);
+            plan.from = (uint8_t)from;
+            CHECK_EQ(kst_prog_restore(&g_p, &plan),
+                     KST_PROG_MSG_JOURNAL_OTHER);
+        }
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
+        CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
+        frames(50);
+        CHECK_EQ(g_sim.n_writes, 0);
+        /* The record is the one the card gave, to the byte. */
+        CHECK(record_is(text));
+        /* A read changes nothing of that. */
+        CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
+        CHECK(record_is(text));
+    }
+}
+
+/*
+ * A locked session takes its restore with no servo read.  Such a restore
+ * has no image to tell whose record the model holds: it makes no record of
+ * its own, rewrites none and clears none.  The image read at its end says
+ * whose the record is.
+ */
+TEST_CASE(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make)
+{
+    static const kst_link_outcome_kind_t kinds[] = {
+        KST_LINK_OUT_DONE, KST_LINK_OUT_DROPPED, KST_LINK_OUT_REFUSED,
+        KST_LINK_OUT_NO_ANSWER,
+    };
+
+    for (unsigned c = 0; c < 3u * sizeof(kinds) / sizeof(kinds[0]); ++c) {
+        const unsigned who = c % 3u;    /* this servo, a port, a servo */
+        const kst_link_outcome_kind_t kind = kinds[c / 3u];
+        kst_image_t img = sim_bench_image();
+        kst_image_t target;
+        kst_prog_restore_t plan;
+        kst_link_outcome_t o;
+        char text[KST_PROG_FILE_MAX];
+        char out[KST_PROG_FILE_MAX];
+        size_t len;
+
+        by_hand();
+        g_p.have_servo = false;
+        g_f.have_image = false;
+        g_f.card = true;
+        g_f.rd.flags = LINK_KS_F_IN_MODE | LINK_KS_F_BACKUP | LINK_KS_F_LOCKED;
+        pass(1);
+        while (kst_prog_take(&g_p, &(kst_prog_cmd_t){ 0 })) {
+        }
+        if (who == 2u) {
+            CHECK(kst_field_set(&img, KST_F_20K_SEL,
+                                1u - kst_field_get(&img, KST_F_20K_SEL)));
+        }
+        target = img;
+        CHECK(kst_field_edit(&target, KST_F_BOOST,
+                             (uint16_t)(kst_field_get(&img, KST_F_BOOST)
+                                        + 1u)));
+        len = record_text(text, (uint8_t)(who == 1u ? CH + 1u : CH), &img,
+                          &target);
+        CHECK(kst_prog_file_load(&g_p, text, len));
+        CHECK(kst_prog_journal(&g_p));
+        CHECK(!kst_prog_journal_other(&g_p));
+
+        CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+                 KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+        /* No file of the record goes to the card, and the command does. */
+        CHECK_EQ(kst_prog_file_take(&g_p, out, sizeof(out)), 0);
+        CHECK(record_is(text));
+        answer(KST_LINK_START_OK);
+        CHECK(record_is(text));
+
+        memset(&o, 0, sizeof(o));
+        o.kind = kind;
+        o.op = LINK_KST_OP_RESTORE;
+        o.result = KST_SES_OK;
+        o.steps_done = 3;
+        o.taken = true;
+        o.fail_reg = 0xFF;
+        if (kind == KST_LINK_OUT_DONE) {
+            /* The servo holds the session's backup, and it is read. */
+            g_f.have_image = true;
+            g_f.image = g_f.backup;
+            g_f.rd.flags = LINK_KS_F_IN_MODE | LINK_KS_F_IMAGE
+                         | LINK_KS_F_BACKUP | LINK_KS_F_FP_OK;
+        }
+        end(&o);
+        if (kind != KST_LINK_OUT_DONE) {
+            /* As it was. */
+            CHECK(kst_prog_journal(&g_p));
+            CHECK(record_is(text));
+            continue;
+        }
+        CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+        CHECK(kst_prog_have_servo(&g_p));
+        if (who == 0u) {
+            /* This servo's, and it holds the record's image again. */
+            CHECK(!kst_prog_journal(&g_p));
+            CHECK(!kst_prog_in_doubt(&g_p));
+        } else {
+            CHECK(kst_prog_journal(&g_p));
+            CHECK(kst_prog_journal_other(&g_p));
+            CHECK(record_is(text));
+            CHECK(!kst_prog_write_enabled(&g_p));
+            CHECK_EQ(kst_prog_file_take(&g_p, out, sizeof(out)), 0);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(a_connect_enters_and_reads_the_servo);
@@ -4717,6 +5644,7 @@ int main(void)
     RUN(a_write_aborted_on_the_wire_has_its_fields_written);
     RUN(nothing_is_sent_on_a_bench_the_feed_reports_armed);
     RUN(the_bench_takes_no_arm_while_a_port_is_out_of_pwm);
+    RUN(the_port_is_held_by_the_session_or_by_the_readout);
     RUN(the_journal_reaches_the_card_before_the_write_is_sent);
     RUN(a_card_that_takes_no_journal_stops_the_write);
     RUN(a_link_lost_in_a_write_leaves_the_servo_in_doubt);
@@ -4778,5 +5706,14 @@ int main(void)
     RUN(the_file_text_is_read_back_as_it_was_written);
     RUN(a_file_that_is_not_whole_changes_nothing);
     RUN(the_file_is_written_once_per_change_and_only_to_a_card);
+    RUN(every_outcome_of_a_write_says_what_it_wrote);
+    RUN(a_nack_after_the_command_leaves_the_image_unusable);
+    RUN(a_restore_that_never_starts_leaves_the_pending_values);
+    RUN(a_release_or_a_session_restore_that_never_starts_keeps_the_prompt);
+    RUN(a_pass_is_taken_once_and_by_its_number_only);
+    RUN(a_start_that_timed_out_in_the_queue_is_never_carried_out);
+    RUN(without_a_gate_an_unanswered_start_leaves_the_servo_in_doubt);
+    RUN(a_record_is_held_against_the_servo_whenever_the_card_comes);
+    RUN(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make);
     return test_summary("kst_prog");
 }

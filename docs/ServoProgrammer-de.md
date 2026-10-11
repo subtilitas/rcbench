@@ -93,8 +93,18 @@ Beide Zeilen werden mit den SERVO-Einstellungen gehalten. **PWM-ZIEL**
 wechselt nur bei nicht scharf geschaltetem Prüfstand, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
-andere Ziel bittet. **PORT-PWM** geht jederzeit aus und nach derselben
-Regel ein. Mit **AUSGÄNGE** als Ziel ist **PORT-PWM** gesperrt.
+andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein und geht
+aus, wenn der Port nicht im Programmieren ist. Mit **AUSGÄNGE** als Ziel
+ist **PORT-PWM** gesperrt.
+
+Solange der Programmierer den Port hat, ändert sich keine der beiden
+Zeilen: von **VERBINDEN** bis der Port nach **VERLASSEN** wieder in PWM
+ist, während jedes Vorgangs und solange der Koprozessor den Port außerhalb
+von PWM meldet. Beide Zeilen sind gesperrt gezeichnet, ein Zurücksetzen der
+Einstellungen lässt die zwei Werte stehen, das Panel schreibt nichts in die
+Seite des Ports im Koprozessor, und der Tester sendet dem Port kein
+Kommando und keine Freigabe. Eine dem Port geschuldete Freigabe geht
+hinaus, sobald der Port wieder in PWM ist.
 
 Ein Port ohne Pin kann nicht das Ziel sein: ein Slot von OUTPUTS, der GP13
 hält, lässt dem Port keinen. Der Tester behält dann die Standardausgänge,
@@ -703,7 +713,16 @@ Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
 Backup zurück. Ein Schreiben, das die Karte, ein Stopp oder der Koprozessor
 nicht starten lässt oder das der Koprozessor beendet, ohne dass ein Register
 geschrieben ist, zählt nicht als Schreiben: seine Felder unterscheiden
-die Servos weiterhin. Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
+die Servos weiterhin. Dasselbe gilt für ein Schreiben, das rückgängig
+gemacht und zurückgelesen ist, ohne dass ein Schreiben als erledigt
+gezählt ist.
+
+Ein Zurückspielen, ein Lösen des Pairings oder ein Schreiben, das die Karte
+oder die Control-Task des Panels nicht starten lässt, lässt die offenen
+Werte, den Schreibschalter und den Vermerk eines unterbrochenen Schreibens
+so, wie sie vor dem Halten waren.
+
+Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
 nicht geschrieben hat, werden nicht unterschieden. Nach einem
 Verbindungsverlust oder einem Start des Panels unter einer Sitzung sind die
 Schreibvorgänge der Sitzung nicht bekannt, und der Vergleich findet nicht
@@ -762,6 +781,13 @@ zurückgespielt, geändert oder geschrieben, und **ZURÜCKSPIELEN** enthält
 nur den Eintrag zum Verwerfen. **VERLASSEN** und ein **VERBINDEN** des
 Servos des Schreibens bringen den Vergleich von oben. Zwei Servos am selben
 Port mit gleichen gesperrten Werten werden nicht unterschieden.
+
+Der Vergleich findet statt, wenn das Servo gelesen wird und wenn der
+Vermerk geladen wird: ein Vermerk von einer Karte, die mit einem schon
+gelesenen Servo eingebunden wird, wird sofort mit diesem Servo verglichen.
+Ein Zurückspielen des Backups der Sitzung ohne gelesenes Servo gehört nicht
+zum Vermerk: der Vermerk bleibt, wie er ist, auf dem Panel und auf der
+Karte.
 
 ![Ein anderes Servo als das des Vermerks](img/de/servo-kst-other.png)
 
@@ -861,7 +887,8 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 | **ABBRECHEN** | dasselbe, ohne den gehaltenen Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` |
-| Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` |
+| Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
+| Der Koprozessor lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
 | 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
 | 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 
@@ -886,6 +913,17 @@ Codes.
   gemessen.
 - Nicht auf Hardware gelaufen: kein Firmware-Image hat diesen Code mit
   einem Servo, einer Karte oder einem PD mini ausgeführt.
+- Der SUPPLY-Bildschirm und die Einstellungen des Netzteils sind nicht
+  gehalten, solange der Programmierer den Port hat.
+- Die Zeilen **PWM-ZIEL** und **PORT-PWM** folgen dem Zustand des Ports
+  einen Frame des Bildschirms nach der Control-Task. Die Control-Task hält
+  die Seite des Ports und die Kommandos des Testers nach ihrer eigenen
+  Lesung des Ports.
+- Der Code des Panels in `firmware/panel/main/main.c` ist nicht in der
+  Host-Suite: die Warteschlange der Kommandos zwischen Bildschirm und
+  Control-Task, die Stelle, an der die Control-Task ein zurückgezogenes
+  Kommando verwirft, die Übergabe des Portzustands an die Seite und den
+  Tester, und die Dateiaufrufe der Karte.
 - Ob ein KST-Servo PWM folgt, während es im Programmiermodus ist, ist nicht
   gemessen. Der Programmierer verlässt das Programmieren ohne Aus- und
   Einschalten der Versorgung und treibt den Port danach mit PWM.
@@ -980,8 +1018,11 @@ Keine davon ist erfolgt.
 
 `test_prog_link` fährt die Panelseite des Ziels und des Pulsschalters des
 Ports: einen Port ohne Pin, ein Ziel, das auf einen Prüfstand in Ruhe
-wartet, einen Koprozessor, der neu startet. `test_kst_card` fährt die
-Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog`
+wartet, einen Koprozessor, der neu startet, und einen Programmierer, der
+den Port hat, für jedes der 16 Paare aus Seite und gewünschten Werten.
+`test_settings` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
+eine ändert, und `test_servo` die zwei Zeilen des Reiters PRÜFLING.
+`test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog`
 fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
 Koprozessors, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
@@ -1000,4 +1041,11 @@ Ablehnung, die Grenze von 5 s, ein erstes Schreiben mit einer Karte, die
 voll ist oder versagt, und die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
 Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der
-Schreibseite entnommene Karte.
+Schreibseite entnommene Karte. Ein Kommando, das die Control-Task nach
+Ablauf seiner 2 s annimmt, erreicht keine Leitung, für jede Art von
+Vorgang; eine Ablehnung bei jedem späteren Austausch jeder Art von Vorgang
+verlangt **ALLES LESEN**; jeder Ergebniscode der Sitzung hat eine Klasse,
+und ein Code ohne Klasse lässt den Test fehlschlagen; ein Zurückspielen,
+das die Karte bei jedem Dateischritt nicht starten lässt, lässt die offenen
+Werte stehen; ein Vermerk von einer Karte, die vor und nach dem Lesen
+eingebunden wird, desselben und eines anderen Servos.

@@ -107,6 +107,18 @@ history is in git.
   `test_kst_panel`, `test_kst_card`, `test_prog_link`); no frame has been
   sent to a servo.
   ([Servo programmer for KST and Chaservo servos](docs/ServoProgrammer.md))
+- Servo programmer, the port is the programmer's alone: from **CONNECT**
+  to the port back in PWM, **PWM TARGET** and **PORT PWM** change by no
+  call of the settings (`settings_held()`), the panel writes nothing to
+  the port's page and the tester sends the port no command
+  (`prog_link_hold()`). A command the control task does not take within
+  2 s is withdrawn and dropped when it leaves the queue
+  (`kst_prog_gate_t`). A refusal of an exchange after the coprocessor took
+  the operation asks for **READ ALL** before an edit, a save or a write. A
+  restore, a release or a write that does not start leaves the pending
+  values and the record of an interrupted write as they were. A record
+  loaded from a card with a servo already read is compared with that servo
+  at once.
 - `tools/sense_trace.py --loaded-channel N` (repeatable): names the output
   channels that have a servo connected. The `$C` and `$D` lines of every
   other channel are no moves and do not count for the 30 ms within which 2

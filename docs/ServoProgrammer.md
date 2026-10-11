@@ -81,8 +81,17 @@ programming port. **SETTINGS**, tab DUT, holds the two rows:
 Both rows are kept with the SERVO settings. **PWM TARGET** changes only
 with the bench disarmed, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
-coprocessor for the other target. **PORT PWM** goes off at any time and on
-under the same rule. With **OUTPUTS** as target **PORT PWM** is locked.
+coprocessor for the other target. **PORT PWM** goes on under the same
+rule and goes off with the port not in programming. With **OUTPUTS** as
+target **PORT PWM** is locked.
+
+While the programmer has the port neither row changes: from **CONNECT** to
+the port back in PWM after **LEAVE**, during every operation, and for as
+long as the coprocessor reports the port out of PWM. Both rows are drawn
+locked, a reset of the settings leaves the two values, the panel writes
+nothing to the coprocessor's page of the port, and the tester sends the
+port no command and no release. A release owed to the port goes out once
+the port is back in PWM.
 
 A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GP13 leaves the port none. The tester then keeps the standard outputs,
@@ -656,7 +665,13 @@ no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
 backup is this servo's. A read of the first servo brings its backup back.
 A write that the card, a stop or the coprocessor keeps from starting, or
 that the coprocessor ends with no register written, counts as no write: its
-fields still tell the servos apart.
+fields still tell the servos apart. So does a write that is undone and
+read back with no write counted done.
+
+A restore, a pairing release or a write that the card or the panel's
+control task keeps from starting leaves the pending values, the write
+switch and the record of an interrupted write as they were before the
+hold.
 Two servos equal in every field the session did not write are not told
 apart. After a link loss or a start of the panel under a session the
 session's writes are not known, and the comparison is not made.
@@ -711,6 +726,12 @@ restored, edited or written while that stands, and **RESTORE** holds the
 discard entry only. **LEAVE** and a **CONNECT** of the write's servo bring
 the comparison above. Two servos on the same port whose locked values
 are equal are not told apart.
+
+The comparison is made when the servo is read and when the record is
+loaded: a record from a card mounted with a servo already read is compared
+with that servo at once. A restore of the session's backup with no servo
+read does not belong to the record: the record stays as it is, on the
+panel and on the card.
 
 ![Another servo than the record's](img/servo-kst-other.png)
 
@@ -804,7 +825,8 @@ port is in PWM again.
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
 | The coprocessor starts again | its session and backup are gone; `The coprocessor restarted. CONNECT and READ ALL.` |
-| The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. READ ALL.` |
+| The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
+| The coprocessor refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the coprocessor in a row stay unanswered | `No answer from the coprocessor. READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | No result of an operation for 30 s, counted from the last time the port reported the operation running or planning | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 
@@ -825,6 +847,17 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - The time a mount attempt without a card holds the screen is not measured.
 - Not run on hardware: neither firmware image has run this code with a
   servo, a card or a PD mini.
+- The SUPPLY screen and the supply's settings are not held while the
+  programmer has the port.
+- The rows **PWM TARGET** and **PORT PWM** follow the port's state one
+  frame of the screen after the control task does. The control task holds
+  the page of the port and the tester's commands from its own reading of
+  the port.
+- The panel's glue in `firmware/panel/main/main.c` is not in the host
+  suite: the command queue between the screen and the control task, the
+  point where the control task drops a withdrawn command, the hand-over
+  of the port's state to the page and the tester, and the card's file
+  calls.
 - Whether a KST servo follows PWM while it is in programming mode is not
   measured. The programmer leaves programming without a supply cycle and
   drives the port with PWM afterwards.
@@ -908,7 +941,10 @@ None of these is done.
 
 `test_prog_link` runs the panel's side of the target and of the port's
 pulse switch: a port without a pin, a target that waits for a bench at
-rest, a coprocessor that starts again. `test_kst_card` runs the card's side
+rest, a coprocessor that starts again, and a programmer that has the port
+for each of the 16 pairs of page and wanted values. `test_settings` runs
+a held setting against every call that changes one, and `test_servo` the
+two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` runs the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply
 model and the servo model through the link's dispatcher: the supply's
@@ -924,4 +960,10 @@ both servo types and their mismatch in both directions, every refusal,
 the 5 s limit, a first write with a card that is full or failing, and the
 writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
-removed under the write page.
+removed under the write page. A command the control task takes after
+its 2 s have passed reaches no wire, for every kind of operation; a
+refusal at each later exchange of each kind of operation asks for
+**READ ALL**; every result code of the session has a class, and a code
+without one fails the test; a restore that the card keeps from starting
+at each file step leaves the pending values; a record from a card mounted
+before and after the read, of the same and of another servo.

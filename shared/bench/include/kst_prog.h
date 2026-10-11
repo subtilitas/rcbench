@@ -345,6 +345,45 @@ typedef struct {
     kst_link_request_t req;
 } kst_prog_cmd_t;
 
+/**
+ * The pass a START needs to be carried out.  The model's task and the task
+ * that owns the link module share one of these.  kst_prog_take() offers the
+ * pass of each START it hands out; the link's task claims it when the
+ * command comes out of its queue and carries the command out only with the
+ * pass; the model revokes the pass of a START nobody answered.  Each pass
+ * is taken once, by the one or by the other: a START whose pass the model
+ * revoked is never carried out, however late it leaves the queue.
+ *
+ * The three calls are safe from two tasks without a lock: each is one
+ * atomic exchange of a 32-bit word.
+ */
+typedef struct {
+    uint32_t pass;             /**< the id of the START offered; 0 none */
+} kst_prog_gate_t;
+
+void kst_prog_gate_init(kst_prog_gate_t *g);
+/** The pass of START @p id is there to be taken. */
+void kst_prog_gate_offer(kst_prog_gate_t *g, uint32_t id);
+/** The link's task, with a START out of its queue: true when the command
+ *  is to be carried out.  False: it is dropped, with no answer. */
+bool kst_prog_gate_claim(kst_prog_gate_t *g, uint32_t id);
+/** The model: true when START @p id is not carried out and never is. */
+bool kst_prog_gate_revoke(kst_prog_gate_t *g, uint32_t id);
+
+/** What a result of the session says of a write that ended with it. */
+typedef enum {
+    KST_PROG_RES_OK = 0,   /**< the write ended as asked                    */
+    KST_PROG_RES_CLEAN,    /**< with no step counted done the servo holds
+                                the image the write started from: no frame
+                                went, or every write was undone and read
+                                back                                        */
+    KST_PROG_RES_DOUBT,    /**< the servo may hold part of the write        */
+} kst_prog_res_t;
+
+/** The class of @p result, a kst_ses_t or a LINK_KST_RESULT_ value.  A
+ *  value that is neither is KST_PROG_RES_DOUBT. */
+kst_prog_res_t kst_prog_result_class(unsigned result);
+
 /** What the task that owns the link module publishes, every frame. */
 typedef struct {
     uint32_t now_ms;
@@ -427,6 +466,20 @@ typedef struct {
     kst_prog_cmd_t cmd;
     kst_link_request_t held;  /**< the request the file goes before */
     kst_image_t held_target;  /**< and what it is to leave */
+    bool held_journal;        /**< the held write recorded the journal */
+    bool held_over;           /**< over the record of an earlier write,
+                                   whose target is in held_before      */
+    kst_image_t held_before;
+    kst_prog_gate_t *gate;    /**< kst_prog_gate_set()             */
+    bool cmd_out;             /**< the START awaited was handed out */
+    bool cmd_run;             /**< and its pass was taken: it is carried
+                                   out or was                       */
+    bool keep;                /**< keep_draft holds the pending values
+                                   of before a restore that is not
+                                   started yet                      */
+    bool keep_soft;
+    bool keep_soft_load;
+    kst_image_t keep_draft;
 
     uint8_t card_op;          /**< kst_prog_card_op_t on its way   */
     bool card_ready;          /**< and not taken yet               */
@@ -464,6 +517,14 @@ typedef struct {
 } kst_prog_t;
 
 void kst_prog_init(kst_prog_t *p);
+
+/**
+ * The gate the link's task claims each START at.  With one set, a START
+ * nobody answers within KST_PROG_START_MS is revoked and was never carried
+ * out.  With none set, such a START counts as one that may have run: the
+ * servo is read before anything else.  kst_prog_init() sets none.
+ */
+void kst_prog_gate_set(kst_prog_t *p, kst_prog_gate_t *g);
 
 /** The published state of this frame.  Outcomes and answers are taken
  *  here. */
@@ -589,6 +650,12 @@ void kst_prog_bench_armed(kst_prog_t *p, bool armed);
  *  the page answers and is not read yet (KST_LINK_SYNC).  False where no
  *  page answers: nothing can hold a port there. */
 bool kst_prog_port_taken(const kst_link_readout_t *rd);
+/** Whether nothing but the programmer reaches the port: an operation of
+ *  this model is on its way or a session is open (ENTERING, PROGRAMMING,
+ *  WORKING, LEAVING), or kst_prog_port_taken() says so of the readout last
+ *  fed.  The tester's target and the port's pulse stay as they are for as
+ *  long (settings_held(), prog_link_hold()). */
+bool kst_prog_holds_port(const kst_prog_t *p);
 /** What an ENTER asks of the PD mini: @p mv and its current limit @p ma.
  *  The port checks the range.  KST_PROG_SUPPLY_MV and KST_PROG_SUPPLY_MA
  *  after kst_prog_init(). */
