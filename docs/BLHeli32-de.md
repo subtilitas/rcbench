@@ -1,10 +1,11 @@
-# BLHeli_32-Parameter
+# Parameter von ESCs mit BLHeli_32-Firmware
 
 <sub>[English](BLHeli32.md) · **Deutsch**</sub>
 
-BLHeli_32 steht nicht in der ESC-Liste (ESC: Electronic Speed Controller,
-Motorregler) des Programmierers. Diese Seite legt fest, was der Prüfstand mit
-einem BLHeli_32-ESC macht und was nicht.
+Die ESC-Liste (ESC: Electronic Speed Controller, Motorregler) des
+Programmierers hat keinen Eintrag für BLHeli_32-Firmware. Diese Seite legt
+fest, was der Prüfstand mit einem ESC mit BLHeli_32-Firmware macht und was
+nicht.
 
 ## Unterstützt
 
@@ -28,4 +29,5 @@ abgelehnt. Der Punkt ist abgeschlossen.
 
 ## Alternative
 
-Ein auf AM32 geflashter ESC wird vom Programmierer vollständig unterstützt.
+Ein auf AM32-Firmware geflashter ESC wird vom Programmierer vollständig
+unterstützt.

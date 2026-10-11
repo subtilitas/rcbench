@@ -37,3 +37,7 @@ it can be split out later with a `git mv`. While it lives here:
 
 MIT (Massachusetts Institute of Technology), as the rest of the tree:
 [LICENSE](../LICENSE).
+
+Maker, product, protocol and firmware names belong to their owners and are
+used only to describe compatibility:
+[Legal notice and disclaimer](../README.md#legal-notice-and-disclaimer).

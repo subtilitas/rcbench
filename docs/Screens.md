@@ -978,9 +978,10 @@ Every protocol row names its transport. There is no autodetection:
 
 ![The protocols of a class](img/programmer-protocols.png)
 
-BLHeli_32 is not in the ESC list. The bench identifies and drives these ESCs
-and sends the DShot special commands, but cannot read their parameters:
-[BLHeli_32 parameters](BLHeli32.md).
+The ESC list has no entry for ESCs with BLHeli_32 firmware. The bench
+identifies and drives these ESCs and sends the DShot special commands, but
+cannot read their parameters:
+[Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
 
 Nothing is editable until a device has answered:
 
@@ -991,8 +992,8 @@ row's help under the list:
 
 ![Connected](img/programmer-params.png)
 
-Each firmware shows its settings in its own units. BLHeli_S shows timing as
-named steps; the others show degrees of advance:
+The settings of each firmware appear in its own units. The table for BLHeli_S
+firmware shows timing as named steps; the others show degrees of advance:
 
 ![Degrees rather than named steps](img/programmer-am32.png)
 

@@ -123,10 +123,10 @@ is taken in a gap ahead of the save that needs it.
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
-| ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
+| ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine profiles for YGE ESCs name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
 | Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20 V the list opens 23, one needing 22.8 V, and refuses 4 more model rows of families that open, each needing 22.8 V; 4 model rows that state no voltage rating open with a warning from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list shows the makers, then one maker's models by current, voltage and name, each opening its family's profile at the model's own cell count; a search over maker and family or maker and model filters both levels, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. Profiles list the steps a person does at the ESC (`manual`: a jumper, a button) with when each is due; 24 carry them, and the 10 Kontronik profiles that run ask for each with a prompt (DONE, ABORT, 60 s), powered only with the stick at motor-off; each value is powered up from the stick position the manual programs it from (`entry_throttle`: the Kontronik car modes at MID), the stick moved only with the supply off. MANUAL INTERVENTION REQUIRED on a profile's page and a MANUAL tag in the list show the steps. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
-| Servo programmer | Hitec table in the programmer screen; KST and Chaservo servos (two brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port (its own pin, GP13 by default, with servo PWM from the servo tester or the programming protocol, and the PD mini as the servo's supply), link pages 0x32 and 0x33 and the panel's link module are built and host-tested against a servo, line and supply model; no screen uses them, and nothing is measured on hardware: [the ports](docs/Link.md#the-programming-ports), [the protocol on a port](docs/Link.md#the-programming-port-for-kst-and-chaservo-servos), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
+| Servo programmer | Parameter table for Hitec D-series servos in the programmer screen; KST and Chaservo servos (two brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port (its own pin, GP13 by default, with servo PWM from the servo tester or the programming protocol, and the PD mini as the servo's supply), link pages 0x32 and 0x33 and the panel's link module are built and host-tested against a servo, line and supply model; no screen uses them, and nothing is measured on hardware: [the ports](docs/Link.md#the-programming-ports), [the protocol on a port](docs/Link.md#the-programming-port-for-kst-and-chaservo-servos), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
 
 ## The tree
 
@@ -514,7 +514,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 
 - **Configuration over JETI EX Bus.** The specification restricts remote
   configuration to JETI products and does not document it.
-- **BLHeli_32 parameters.** The information is not published; the rights holder
+- **Parameters of ESCs with BLHeli_32 firmware.** The information is not published; the rights holder
   declined in August 2026. [Details](docs/BLHeli32.md).
 - **Futaba S.BUS2 telemetry slots.** Answering in the 325 µs slot without
   colliding with the receiver's own sensors is out of scope.
@@ -553,7 +553,7 @@ AGPL (GNU Affero General Public License) against this repository's MIT
 (Massachusetts Institute of Technology) licence; the permissive exceptions
 (PX4's receiver decoders under BSD (Berkeley Software Distribution), MIT
 reference code for SRXL2, JETI EX Bus, DShot and DroneCAN) are read for
-confirmation only. OpenYGE's source material was supplied as GPL code and is
+confirmation only. The source material of the OpenYGE protocol was supplied as GPL code and is
 kept outside the repository; the specification in
 [docs/OpenYGE.md](docs/OpenYGE.md) is what any implementation is written from.
 
@@ -567,7 +567,7 @@ kept outside the repository; the specification in
 | 4. Recording: the logger, and the viewer reads what the bench wrote | done |
 | 5. Outputs: the control page from the panel, then PWM, then the sum-signal protocols | drivers built and host-tested; a servo and a motor have run from the panel, with no timing seen on an instrument. SETTINGS/OUTPUTS configures a slot |
 | 6. Receiver buses, one decoder at a time | S.BUS decoded; the PIO receiver and the other buses open |
-| 7. Programming: BLHeli_S and AM32, Hitec on the servo side | screen built; no protocol on a wire |
+| 7. Programming: ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire |
 
 Next: an instrument on a pin. Every bit timing in this tree was written from a
 specification and exercised only against frames the same code builds, and a

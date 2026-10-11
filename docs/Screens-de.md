@@ -1081,9 +1081,10 @@ es nicht:
 
 ![Die Protokolle einer Klasse](img/de/programmer-protocols.png)
 
-BLHeli_32 steht nicht in der ESC-Liste. Der Prüfstand erkennt diese ESCs,
-steuert sie an und sendet die DShot Special Commands, kann ihre Parameter aber
-nicht lesen: [BLHeli_32-Parameter](BLHeli32-de.md).
+Die ESC-Liste hat keinen Eintrag für ESCs mit BLHeli_32-Firmware. Der
+Prüfstand erkennt diese ESCs, steuert sie an und sendet die DShot Special
+Commands, kann ihre Parameter aber nicht lesen:
+[Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).
 
 Bevor ein Gerät geantwortet hat, ist nichts editierbar:
 
@@ -1094,8 +1095,9 @@ der Hilfe zur ausgewählten Zeile unter der Liste:
 
 ![Verbunden](img/de/programmer-params.png)
 
-Jede Firmware zeigt ihre Einstellungen in ihren eigenen Einheiten. BLHeli_S
-zeigt das Timing als benannte Stufen, die anderen in Grad Vorzündung:
+Die Einstellungen jeder Firmware erscheinen in ihren eigenen Einheiten. Die
+Tabelle für BLHeli_S-Firmware zeigt das Timing als benannte Stufen, die
+anderen in Grad Vorzündung:
 
 ![Grad statt benannter Stufen](img/de/programmer-am32.png)
 

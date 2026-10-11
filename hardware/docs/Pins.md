@@ -35,9 +35,9 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
   coprocessor. It shares the display link controller's SPI bus, with its own
   chip select and interrupt (owner, 2026-09-30).
 - The inter-chip link is a UART, 2 pins a side (owner, 2026-09-30). With the
-  link and VESC on the main coprocessor's two hardware UARTs, the UART socket
-  runs as a PIO UART on 1 pin.
-- VESC's TX and RX pass 2 of the 3 spare channels of the two SN74CBTLV3126PWR,
+  link and the lines for VESC controllers on the main coprocessor's two hardware
+  UARTs, the UART socket runs as a PIO UART on 1 pin.
+- The TX and RX lines for VESC controllers pass 2 of the 3 spare channels of the two SN74CBTLV3126PWR,
   whose enable is the heartbeat enable node, so they stop with the other
   outputs (owner, 2026-09-30; Control.md, R4).
 
