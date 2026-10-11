@@ -2448,6 +2448,23 @@ TEST_CASE(what_the_planner_refuses_at_once_starts_no_operation)
     kst_image_t target = bench;
     unsigned frames;
 
+    /* no target: the same answer in every state of the session */
+    fresh(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_NOT_IN_MODE);
+    CHECK_EQ(kst_session_edit(&g_ses, NULL, 0), KST_SES_ERR_ARG);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_ARG);
+    enter(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_edit(&g_ses, NULL, 0), KST_SES_ERR_ARG);
+    read_all(&g_sim, &g_ses);
+    g_ses.locked = 1;
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_LOCKED);
+    CHECK_EQ(kst_session_edit(&g_ses, NULL, 0), KST_SES_ERR_ARG);
+    g_ses.locked = 0;
+    g_ses.fingerprint_ok = 0;
+    CHECK_EQ(kst_session_edit(&g_ses, &target, 0), KST_SES_ERR_FINGERPRINT);
+    CHECK_EQ(kst_session_edit(&g_ses, NULL, 0), KST_SES_ERR_ARG);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_ARG);
+    CHECK_EQ(g_ses.planning, 0);
     /* no backup */
     fresh(&g_sim, &g_ses);
     enter(&g_sim, &g_ses);
@@ -2591,6 +2608,36 @@ TEST_CASE(no_path_and_a_spent_cap_end_with_no_plan_and_tell_which)
     conduct(&g_sim);
 }
 
+/* A caller that asks again for the target of the session's plan passes
+ * an image that lies in the plan the request clears. */
+TEST_CASE(the_target_of_the_sessions_own_plan_is_planned_again)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+    kst_plan_t plan;
+
+    CHECK_EQ(kst_plan_edit(&a, &b, ~(kst_field_set_t)0, &plan, NULL),
+             KST_PLAN_OK);
+    up_with(&g_sim, &g_ses, &a);
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    for (unsigned i = 0; i < 100u; ++i) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+    }
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(memcmp(&kst_session_plan(&g_ses)->target, &b, sizeof(b)) == 0);
+
+    CHECK_EQ(kst_session_edit(&g_ses, &kst_session_plan(&g_ses)->target,
+                              ~(kst_field_set_t)0), KST_SES_BUSY);
+    CHECK(memcmp(&kst_session_plan(&g_ses)->target, &b, sizeof(b)) == 0);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
+    CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);
+    CHECK(memcmp(kst_session_plan(&g_ses), &plan, sizeof(plan)) == 0);
+    CHECK(servo_holds(&g_sim, &b));
+    conduct(&g_sim);
+}
+
 TEST_CASE(a_servo_that_changes_while_the_session_plans_is_not_written)
 {
     const kst_image_t a = image_of(k_long_a);
@@ -2730,6 +2777,7 @@ int main(void)
     RUN(what_the_planner_refuses_at_once_starts_no_operation);
     RUN(a_servo_that_fails_the_fingerprint_is_restored_and_not_edited);
     RUN(no_path_and_a_spent_cap_end_with_no_plan_and_tell_which);
+    RUN(the_target_of_the_sessions_own_plan_is_planned_again);
     RUN(a_servo_that_changes_while_the_session_plans_is_not_written);
     RUN(a_session_moved_while_it_plans_builds_its_own_plan);
     RUN(two_sessions_plan_side_by_side);

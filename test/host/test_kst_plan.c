@@ -1496,6 +1496,63 @@ TEST_CASE(a_job_without_its_arguments_is_refused)
 
 /* A job given up in the middle leaves nothing behind: the same job memory
  * and the same plan take the next request. */
+/* A caller that plans again from a plan it holds passes images that lie
+ * in the plan the call clears. */
+TEST_CASE(a_start_and_a_target_inside_the_plan_are_read_before_it_is_cleared)
+{
+    const kst_image_t a = sim_bench_image();
+    const kst_image_t b = edited(&a, KST_F_BOOST, 19);
+    kst_plan_t want;
+    kst_plan_t back;
+    kst_plan_t plan;
+    kst_plan_job_t job;
+
+    CHECK_EQ(kst_plan_edit(&a, &b, 0, &want, NULL), KST_PLAN_OK);
+    CHECK_EQ(want.n, 1);
+    CHECK_EQ(kst_plan_edit(&b, &a, 0, &back, NULL), KST_PLAN_OK);
+    CHECK_EQ(back.n, 1);
+
+    /* the target */
+    plan = want;
+    CHECK_EQ(kst_plan_edit(&a, &plan.target, 0, &plan, NULL), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    /* the start */
+    plan = want;
+    CHECK_EQ(kst_plan_edit(&plan.start, &b, 0, &plan, NULL), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    /* both, and crossed: the way back */
+    plan = want;
+    CHECK_EQ(kst_plan_edit(&plan.start, &plan.target, 0, &plan, NULL),
+             KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    CHECK_EQ(kst_plan_edit(&plan.target, &plan.start, 0, &plan, NULL),
+             KST_PLAN_OK);
+    CHECK(memcmp(&plan, &back, sizeof(plan)) == 0);
+    /* a job */
+    plan = want;
+    CHECK_EQ(kst_plan_edit_begin(&job, &plan.start, &plan.target, 0, &plan,
+                                 NULL, KST_PLAN_NO_CAP), KST_PLAN_BUSY);
+    CHECK(memcmp(&plan.start, &a, sizeof(a)) == 0);
+    CHECK(memcmp(&plan.target, &b, sizeof(b)) == 0);
+    CHECK_EQ(kst_plan_step(&job, KST_PLAN_NO_CAP), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+
+    /* a restore */
+    CHECK_EQ(kst_plan_restore(&a, &b, &want), KST_PLAN_OK);
+    plan = want;
+    CHECK_EQ(kst_plan_restore(&plan.start, &plan.target, &plan), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+    CHECK_EQ(kst_plan_restore(&b, &a, &back), KST_PLAN_OK);
+    CHECK_EQ(kst_plan_restore(&plan.target, &plan.start, &plan), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &back, sizeof(plan)) == 0);
+
+    /* a release of the pairing */
+    CHECK_EQ(kst_plan_release_pairing(&a, &want), KST_PLAN_OK);
+    plan = want;
+    CHECK_EQ(kst_plan_release_pairing(&plan.start, &plan), KST_PLAN_OK);
+    CHECK(memcmp(&plan, &want, sizeof(plan)) == 0);
+}
+
 TEST_CASE(a_job_begun_again_in_the_middle_plans_the_new_request)
 {
     const sample_t first = sample(4);
@@ -1695,6 +1752,7 @@ int main(void)
     RUN(every_cap_below_the_need_ends_too_complex);
     RUN(a_refusal_at_begin_is_the_result_of_every_step);
     RUN(a_job_without_its_arguments_is_refused);
+    RUN(a_start_and_a_target_inside_the_plan_are_read_before_it_is_cleared);
     RUN(a_job_begun_again_in_the_middle_plans_the_new_request);
     RUN(two_jobs_step_side_by_side);
     RUN(the_costliest_plans_found_end_below_the_work_cap);

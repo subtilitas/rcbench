@@ -806,12 +806,15 @@ kst_ses_t kst_session_write(kst_session_t *s, const kst_plan_t *plan,
 /* The checks of an operation that plans its own writes; KST_SES_OK lets it
  * plan.  @p restore: the way back, which a lock and a failed fingerprint do
  * not refuse. */
-static kst_ses_t plan_gate(kst_session_t *s, bool restore)
+static kst_ses_t plan_gate(kst_session_t *s, bool restore, bool no_target)
 {
     const kst_ses_t gate = may_start(s, true);
 
     if (gate == KST_SES_ERR_ARG || gate == KST_SES_ERR_BUSY) {
         return gate;
+    }
+    if (no_target) {
+        return refuse(s, KST_SES_ERR_ARG);
     }
     if (gate != KST_SES_OK) {
         return refuse(s, gate);
@@ -849,13 +852,10 @@ static kst_ses_t plan_started(kst_session_t *s, kst_plan_result_t r,
 kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
                            kst_field_set_t unlocked)
 {
-    const kst_ses_t gate = plan_gate(s, false);
+    const kst_ses_t gate = plan_gate(s, false, target == NULL);
 
     if (gate != KST_SES_OK) {
         return gate;
-    }
-    if (target == NULL) {
-        return refuse(s, KST_SES_ERR_ARG);
     }
     return plan_started(s,
                         kst_plan_edit_begin(&s->job, &s->image, target,
@@ -866,7 +866,7 @@ kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
 
 kst_ses_t kst_session_restore(kst_session_t *s, bool confirm_unchecked)
 {
-    const kst_ses_t gate = plan_gate(s, true);
+    const kst_ses_t gate = plan_gate(s, true, false);
 
     if (gate != KST_SES_OK) {
         return gate;
@@ -879,7 +879,7 @@ kst_ses_t kst_session_restore(kst_session_t *s, bool confirm_unchecked)
 
 kst_ses_t kst_session_release_pairing(kst_session_t *s)
 {
-    const kst_ses_t gate = plan_gate(s, false);
+    const kst_ses_t gate = plan_gate(s, false, false);
 
     if (gate != KST_SES_OK) {
         return gate;

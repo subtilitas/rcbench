@@ -569,12 +569,18 @@ uint32_t kst_plan_units(const kst_plan_job_t *job)
     return job != NULL ? job->spent : 0u;
 }
 
+/* @p start and @p target may lie in @p out, as a plan's own start or
+ * target do: both are read before the plan is cleared.  The caller reads
+ * them from the plan afterwards. */
 static void begin(kst_plan_t *out, const kst_image_t *start,
                   const kst_image_t *target, kst_plan_kind_t kind)
 {
+    const kst_image_t from = *start;
+    const kst_image_t to = *target;
+
     memset(out, 0, sizeof(*out));
-    out->start = *start;
-    out->target = *target;
+    out->start = from;
+    out->target = to;
     out->kind = (uint8_t)kind;
 }
 
@@ -626,13 +632,14 @@ kst_plan_result_t kst_plan_edit_begin(kst_plan_job_t *job,
     }
     begin(out, start, target, KST_PLAN_EDIT);
     out->unlocked = unlocked;
-    if (start->r[0] != target->r[0]) {
+    if (out->start.r[0] != out->target.r[0]) {
         return ended(job, KST_PLAN_ERR_R00);
     }
-    if (start->r[KST_REG_NODE_ADDR] != target->r[KST_REG_NODE_ADDR]) {
+    if (out->start.r[KST_REG_NODE_ADDR] != out->target.r[KST_REG_NODE_ADDR]) {
         return ended(job, KST_PLAN_ERR_PAIRING);
     }
-    broken = kst_limits_edit(start, target, unlocked, NULL) & KST_RULES_HARD;
+    broken = kst_limits_edit(&out->start, &out->target, unlocked, NULL)
+             & KST_RULES_HARD;
     if (violated != NULL) {
         *violated = broken;
     }
@@ -657,7 +664,7 @@ kst_plan_result_t kst_plan_restore_begin(kst_plan_job_t *job,
     }
     begin(out, current, backup, KST_PLAN_RESTORE);
     out->unlocked = ~(kst_field_set_t)0;
-    if (current->r[0] != backup->r[0]) {
+    if (out->start.r[0] != out->target.r[0]) {
         return ended(job, KST_PLAN_ERR_R00);
     }
     return job_begin(job, out, true, cap);
