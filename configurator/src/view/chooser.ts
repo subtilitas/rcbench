@@ -1,11 +1,12 @@
-// The chooser: functions grouped by the parts they need, variants, owned
+// The chooser: functions grouped by the bench parts they need, variants, owned
 // parts, the warning before a part leaves, and the static list of what is in
 // no release. Returns markup; main.ts owns the document.
 
 import type {
-  Catalogue, FunctionId, Lang, OptionKey, Options, Part, PartId, ResolvedFunction, ResolvedPart, Selection, Setup, Text,
+  Catalogue, FunctionId, Lang, OptionKey, Options, Part, PartId, PowerSource, ResolvedFunction, ResolvedPart, Selection,
+  Setup, Text,
 } from '../../contract.ts';
-import { baseParts, groups, removalEffect, removalIsPlain } from '../core.ts';
+import { alwaysOn, groups, removalEffect, removalIsPlain } from '../core.ts';
 import type { Deselect, Group } from '../core.ts';
 import { esc, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
@@ -33,14 +34,10 @@ export const VARIANTS: readonly Variant[] = [
   { key: 'connection', label: 'vConn', values: [['pads', 'vPads'], ['osoyoo', 'vOso']] },
   { key: 'ina228Board', label: 'vIna', values: [['matek', 'vMatek'], ['xt90', 'vXt']] },
   { key: 'escPower', label: 'vEscp', values: [['battery', 'vBatt'], ['pd', 'vPd']] },
+  { key: 'servoPower', label: 'vServo', values: [['external', 'vSExt'], ['bench', 'vSBench']] },
 ];
 
-const tag = (lang: Lang, key: Key = 'nrh'): string => ` <span class="tag">${esc(t(lang, key))}</span>`;
-
-/** The Osoyoo breakout board is in no build guide and has not run on hardware. */
-export function variantNotRun(key: OptionKey, value: string): boolean {
-  return key === 'connection' && value === 'osoyoo';
-}
+const tag = (lang: Lang, key: Key): string => ` <span class="tag">${esc(t(lang, key))}</span>`;
 
 /** A variant value in few words: "A: the ESC's own battery" gives "ESC power A". */
 export function variantShort(lang: Lang, key: OptionKey, value: string): string {
@@ -86,6 +83,30 @@ export function reasonText(part: ResolvedPart, view: View): string {
   return out.length > 0 ? `${out.join('. ')}.` : '';
 }
 
+/** "Used by: Drive a servo, Automatic servo test." The enabled functions that drive the test object. */
+export function usedByText(view: View, r: ResolvedPart): string {
+  const { lang, setup } = view;
+  const names = setup.functions.filter((f) => f.enabled && f.fn.drives === r.part.id).map((f) => tx(lang, f.fn.name));
+  return names.length > 0 ? `${t(lang, 'usedBy')}${names.join(', ')}.` : '';
+}
+
+/** The heading of the power sources of the logic or of a test object. */
+export function powerTitle(view: View, feeds: PowerSource['feeds']): string {
+  const { lang, catalogue } = view;
+  if (feeds === 'logic') return t(lang, 'pwLogic');
+  const part = catalogue.parts.find((p) => p.id === feeds);
+  return t(lang, 'pwFor', { x: part ? tx(lang, part.short) : feeds });
+}
+
+/** The lines of a power source after its text: advantages, drawbacks, unknowns, each with its kind. */
+export function powerLines(lang: Lang, source: PowerSource): Array<{ kind: string; text: string }> {
+  return [
+    ...source.pros.map((x) => ({ kind: t(lang, 'pwPro'), text: tx(lang, x) })),
+    ...source.cons.map((x) => ({ kind: t(lang, 'pwCon'), text: tx(lang, x) })),
+    ...source.unknowns.map((x) => ({ kind: t(lang, 'kU'), text: tx(lang, x) })),
+  ];
+}
+
 const GROUPS = new WeakMap<Catalogue, Group[]>();
 
 /** The groups of a catalogue, derived once per catalogue. */
@@ -98,7 +119,7 @@ function groupsOf(catalogue: Catalogue): Group[] {
   return list;
 }
 
-/** The id of a group's fieldset: "g-base", "g-servo", "g-servo-pdmini". */
+/** The id of a group's fieldset: "g-base", "g-pdmini", "g-sim-tap". */
 export function groupId(group: Group): string {
   return group.parts.length === 0 ? 'g-base' : `g-${group.parts.join('-')}`;
 }
@@ -106,6 +127,7 @@ export function groupId(group: Group): string {
 /**
  * The heading of a group and the lines under it: the parts the functions
  * need, a part that is one of several boards, and the parts the rules add.
+ * The group without a part has no such line: its rows state what a tick adds.
  */
 function groupHead(view: View, group: Group): string {
   const { lang, catalogue, setup } = view;
@@ -118,8 +140,9 @@ function groupHead(view: View, group: Group): string {
     const boards = v.values.map((value) => (names?.[value] ? tx(lang, names[value]) : value));
     lines.push(t(lang, 'gVariant', { p: shortName(view, v.part), x: boards.join(t(lang, 'or')) }));
   }
-  if (group.also.length > 0) lines.push(t(lang, 'gAlso', { x: partList(view, group.also) }));
-  if (group.oneOf.length > 0) {
+  const named = group.parts.length > 0;
+  if (named && group.also.length > 0) lines.push(t(lang, 'gAlso', { x: partList(view, group.also) }));
+  if (named && group.oneOf.length > 0) {
     const alternatives = group.oneOf.map((ids) => (ids.length > 0 ? plus(ids) : t(lang, 'noPart')));
     lines.push(t(lang, 'gOneOf', { x: alternatives.join(t(lang, 'or')) }));
   }
@@ -132,34 +155,41 @@ export function functionState(f: ResolvedFunction): 'own' | 'inc' | 'off' {
   return f.chosen ? 'own' : f.enabled ? 'inc' : 'off';
 }
 
-/** True for a function that needs no part beyond the base setup: it takes no tick. */
+/** True for a function every setup runs: no part beyond the base setup, no test object. It takes no tick. */
 export function runsOnBase(catalogue: Catalogue, f: ResolvedFunction): boolean {
-  const base = baseParts(catalogue);
-  return f.fn.needs.every((id) => base.includes(id));
+  return alwaysOn(catalogue, f.fn);
 }
 
 /**
  * The state of a function in words. A function the base setup runs is never
- * "selected by you", whatever the selection names.
+ * "selected by you", whatever the selection names. A function that is off
+ * states the parts a tick adds, else the variant it needs, else the test
+ * object a tick connects.
  */
 export function statusText(view: View, f: ResolvedFunction): string {
-  const { lang, catalogue, options } = view;
+  const { lang, catalogue, options, setup } = view;
   if (f.enabled && runsOnBase(catalogue, f)) return t(lang, 'stBase');
   if (f.chosen) return t(lang, 'stOwn');
-  if (f.enabled) return t(lang, 'stInc');
+  const object = f.fn.drives;
+  if (f.enabled) return object !== undefined && f.fn.needs.length === 0 ? t(lang, 'stConn', { x: shortName(view, object) }) : t(lang, 'stInc');
   if (f.missing.length > 0) return t(lang, 'adds') + partList(view, f.missing);
   const forced = (Object.entries(f.fn.forces ?? {}) as Array<[OptionKey, string]>)
     .filter(([key, value]) => options[key] !== value)
     .map(([key, value]) => variantShort(lang, key, value));
-  return forced.length > 0 ? t(lang, 'stVar', { v: forced.join(', ') }) : '';
+  if (forced.length > 0) return t(lang, 'stVar', { v: forced.join(', ') });
+  const absent = object !== undefined && !setup.parts.some((r) => r.part.id === object);
+  return absent ? t(lang, 'stObj', { x: shortName(view, object) }) : '';
 }
 
 /** What taking a function out of the selection did, in sentences. */
 export function deselectText(view: View, effect: Deselect): string {
   const { lang } = view;
   const out = [t(lang, effect.stillOn ? 'dsOn' : 'dsOff', { f: functionName(view, effect.fn) })];
-  if (effect.stillOn && effect.partsStay.length === 0) out.push(t(lang, 'dsBase'));
+  const object = view.catalogue.functions.find((f) => f.id === effect.fn)?.drives;
+  if (effect.stillOn && object !== undefined) out.push(t(lang, 'dsConn', { x: shortName(view, object) }));
+  else if (effect.stillOn && effect.partsStay.length === 0) out.push(t(lang, 'dsBase'));
   if (effect.partsStay.length > 0) out.push(t(lang, 'dsStay', { x: partList(view, effect.partsStay) }));
+  if (effect.objectsOut.length > 0) out.push(t(lang, 'outObjects', { x: partList(view, effect.objectsOut) }));
   if (effect.partsOut.length > 0) out.push(t(lang, 'outParts', { x: partList(view, effect.partsOut) }));
   if (effect.partsIn.length > 0) out.push(t(lang, 'inParts', { x: partList(view, effect.partsIn) }));
   if (effect.functionsOff.length > 0) {
@@ -169,29 +199,35 @@ export function deselectText(view: View, effect: Deselect): string {
 }
 
 /**
- * The functions the base setup runs: a list without controls. Every setup
- * runs them, so a row has no tick and no state to change; it states its
- * state in words like the rows of the other groups.
+ * The functions every setup runs: a list without controls. A row has no tick
+ * and no state to change; it states its state in words like the other rows.
  */
-function baseRows(view: View, group: Group): string {
-  const { lang, setup } = view;
-  const items = setup.functions.filter((f) => group.functions.includes(f.fn.id)).map((f) => {
+function baseRows(view: View, fixed: ResolvedFunction[]): string {
+  const { lang } = view;
+  const items = fixed.map((f) => {
     const status = statusText(view, f);
-    return `<li id="b-${esc(f.fn.id)}"><span><b>${esc(tx(lang, f.fn.name))}</b>${f.fn.hardware === 'not-run' ? tag(lang) : ''}</span>`
+    return `<li id="b-${esc(f.fn.id)}"><span><b>${esc(tx(lang, f.fn.name))}</b></span>`
       + `${status ? `<small>${esc(status)}</small>` : ''}</li>`;
   });
   return `<p class="hint">${esc(t(lang, 'baseHint'))}</p><ul class="base">${items.join('')}</ul>`;
 }
 
+/**
+ * The rows of a group: the functions every setup runs as a list, then one
+ * tick row per other function. In the group without a part a tick connects
+ * a test object.
+ */
 function functionRows(view: View, group: Group): string {
-  if (group.parts.length === 0) return baseRows(view, group);
-  const { lang, setup, note } = view;
-  let h = '';
-  for (const f of setup.functions) {
-    if (!group.functions.includes(f.fn.id)) continue;
+  const { lang, catalogue, setup, note } = view;
+  const rows = setup.functions.filter((f) => group.functions.includes(f.fn.id));
+  const fixed = rows.filter((f) => runsOnBase(catalogue, f));
+  let h = fixed.length > 0 ? baseRows(view, fixed) : '';
+  if (fixed.length > 0 && fixed.length < rows.length) h += `<p class="hint" id="basetick">${esc(t(lang, 'baseTick'))}</p>`;
+  for (const f of rows) {
+    if (fixed.includes(f)) continue;
     const status = statusText(view, f);
     h += `<label class="opt" data-state="${functionState(f)}"><input type="checkbox" id="f-${esc(f.fn.id)}" data-f="${esc(f.fn.id)}"${f.chosen ? ' checked' : ''}>`
-      + `<span><b>${esc(tx(lang, f.fn.name))}</b>${f.fn.hardware === 'not-run' ? tag(lang) : ''}</span>`
+      + `<span><b>${esc(tx(lang, f.fn.name))}</b></span>`
       + `${status ? `<small>${esc(status)}</small>` : ''}</label>`;
     if (note && note.changed && note.fn === f.fn.id && !f.chosen) {
       h += `<p class="msg" id="note" role="status">${esc(deselectText(view, note))}</p>`;
@@ -216,7 +252,7 @@ function variantGroups(view: View): string {
       if (forcedName !== null) sub = checked ? `${t(lang, 'neededBy')}${forcedName}.` : t(lang, 'optLocked', { f: forcedName });
       h += `<label class="opt"${locked ? ' data-locked' : ''}><input type="radio" name="${v.key}" id="o-${v.key}-${value}" data-o="${v.key}" value="${value}"`
         + `${checked ? ' checked' : ''}${locked ? ' aria-disabled="true"' : ''}>`
-        + `<span>${esc(t(lang, label))}${variantNotRun(v.key, value) ? tag(lang) : ''}</span>`
+        + `<span>${esc(t(lang, label))}</span>`
         + `${sub ? `<small>${esc(sub)}</small>` : ''}</label>`;
     }
     h += '</div>';
@@ -250,6 +286,7 @@ export function removalWarning(view: View): string {
       lines.push(`<p>${esc(t(lang, key, { x }))}</p>`);
     };
     if (effect.partsOut.length > 0) line('outParts', partList(view, effect.partsOut));
+    if (effect.objectsOut.length > 0) line('outObjects', partList(view, effect.objectsOut));
     if (effect.options.length > 0) line('rmVar', effect.options.map((o) => variantShort(lang, o.key, o.to)).join(', '));
     if (effect.partsIn.length > 0) line('inParts', partList(view, effect.partsIn));
     if (effect.functionsOn.length > 0) line('onFns', effect.functionsOn.map((id) => functionName(view, id)).join(', '));
@@ -264,10 +301,11 @@ export function removalWarning(view: View): string {
 
 /**
  * The remove control of a part in the parts list, with the question under it
- * while that removal is pending. Empty for a part of the base setup.
+ * while that removal is pending. Empty for a part of the base setup and for
+ * a test object.
  */
 export function removeControl(view: View, part: Part): string {
-  if (part.locked) return '';
+  if (part.locked || part.testObject === true) return '';
   const { lang, pending } = view;
   const open = pending?.at === 'result' && pending.part === part.id;
   return `<button class="act rm" type="button" id="rm-${esc(part.id)}" data-rm="${esc(part.id)}" aria-expanded="${open}"`

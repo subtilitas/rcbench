@@ -4,13 +4,17 @@
 import type { Lang, Setup, Text, Wire } from '../../contract.ts';
 import type { Anchors, DrawingRecord } from '../../drawings/generate.ts';
 import type { Side } from '../../drawings/lib.ts';
-import { colourOf, endPoints } from '../../drawings/wires.ts';
+import { CABLE_NETS, colourOf, endPoints } from '../../drawings/wires.ts';
 import { t, tx } from '../i18n.ts';
 
 /** Column of the picture: left of the coprocessor, its own column, right of it. */
 export type Lane = 'L' | 'C' | 'R';
 
-export type ScenePart = { id: string; file: string; w: number; h: number; column: Lane; order: number; name: Text };
+export type ScenePart = {
+  id: string; file: string; w: number; h: number; column: Lane; order: number; name: Text;
+  /** The 2 parts this part sits between, from the data file: the first away from the coprocessor, the second towards it. */
+  between?: [string, string];
+};
 
 /** A wire point in px of the drawing of its part. */
 export type ScenePin = { part: string; pin: string; x: number; y: number; side: Side };
@@ -22,6 +26,8 @@ export type ScenePin = { part: string; pin: string; x: number; y: number; side: 
  */
 export type SceneWire = {
   n: number; kind: Wire['kind']; colour: string | null; thick: boolean; a: ScenePin[]; b: ScenePin[] | null;
+  /** True for a wire that stands for a USB-C cable between 2 sockets. */
+  cable?: boolean;
   text?: Record<Lang, string[]>;
 };
 
@@ -71,7 +77,10 @@ export function sceneOf(setup: Pick<Setup, 'parts' | 'options' | 'wires'>, ancho
     files.set(part.id, drawing);
     const [file, rec] = drawing;
     const column: Lane = part.slot.column === 'L' ? 'L' : part.slot.column === 'R' ? 'R' : 'C';
-    parts.push({ id: part.id, file, w: rec.viewBox[2], h: rec.viewBox[3], column, order: part.slot.order, name: part.short });
+    parts.push({
+      id: part.id, file, w: rec.viewBox[2], h: rec.viewBox[3], column, order: part.slot.order, name: part.short,
+      ...(part.between ? { between: [part.between[0], part.between[1]] as [string, string] } : {}),
+    });
   }
   parts.sort((p, q) => p.order - q.order || (p.id < q.id ? -1 : 1));
 
@@ -97,6 +106,7 @@ export function sceneOf(setup: Pick<Setup, 'parts' | 'options' | 'wires'>, ancho
       continue;
     }
     const out: SceneWire = { n: wire.n, kind: wire.kind, colour: colourOf(wire), thick: carriesLoad(wire), a, b };
+    if (wire.kind === 'wire' && CABLE_NETS.has(wire.net)) out.cable = true;
     if (wire.kind === 'component') {
       const first = a[0]!;
       out.text = componentText(wire, files.get(first.part)![1].pins[first.pin]!.label);

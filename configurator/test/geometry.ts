@@ -142,7 +142,9 @@ export function findings(l: Layout, setup: Setup): string[] {
 const OPTION_SETS: Options[] = [];
 for (const connection of ['pads', 'osoyoo'] as const) {
   for (const ina228Board of ['matek', 'xt90'] as const) {
-    for (const escPower of ['battery', 'pd'] as const) OPTION_SETS.push({ connection, ina228Board, escPower });
+    for (const escPower of ['battery', 'pd'] as const) {
+      for (const servoPower of ['external', 'bench'] as const) OPTION_SETS.push({ connection, ina228Board, escPower, servoPower });
+    }
   }
 }
 
@@ -161,8 +163,8 @@ export type Sample = { selection: Selection; setup: Setup; key: string };
 export function sweep(core: Core, catalogue: Catalogue = core.CATALOGUE): Sample[] {
   const seen = new Map<string, Sample>();
   const selections: Selection[] = [];
-  // The functions that need no part add no part and no wire.
-  const fnSets = subsets(catalogue.functions.filter((f) => f.needs.length > 0).map((f) => f.id));
+  // The functions that need no part and drive no test object add no part and no wire.
+  const fnSets = subsets(catalogue.functions.filter((f) => f.needs.length > 0 || f.drives !== undefined).map((f) => f.id));
   const partSets = subsets(catalogue.parts.filter((p) => p.selectable).map((p) => p.id));
   for (const options of OPTION_SETS) {
     for (const functions of fnSets) selections.push({ functions, owned: [], options });
@@ -182,5 +184,5 @@ export function sweep(core: Core, catalogue: Catalogue = core.CATALOGUE): Sample
 
 export function describe(selection: Selection): string {
   const o = selection.options;
-  return `f=${selection.functions.join(',')} p=${selection.owned.join(',')} o=${o.connection},${o.ina228Board},${o.escPower}`;
+  return `f=${selection.functions.join(',')} p=${selection.owned.join(',')} o=${o.connection},${o.ina228Board},${o.escPower},${o.servoPower}`;
 }

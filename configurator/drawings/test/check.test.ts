@@ -208,7 +208,7 @@ test('the address pin of the INA3221 has no wire point and is not a finding; any
   const b = anchors();
   b.files['ina3221.svg']!.catalogueMap!['C1A'] = null;
   const f = checkWires(CATALOGUE, b).filter((x) => x.id === 'wire-end').map((x) => x.msg);
-  assert.deepEqual(f, ['wire 28: end ina3221.C1A has no anchor', 'wire 29: end ina3221.C1A has no anchor']);
+  assert.deepEqual(f, ['wire 28: end ina3221.C1A has no anchor', 'wire 29: end ina3221.C1A has no anchor', 'wire 60: end ina3221.C1A has no anchor']);
   const c = clone();
   c.wires.find((w) => w.n === 31)!.kind = 'wire';
   has(checkWires(c, anchors()), 'wire-end', /wire 31: end ina3221\.A0 has no anchor/);

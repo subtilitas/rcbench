@@ -80,6 +80,11 @@ const tall = (list: ScenePart[]): number => list.reduce((n, p) => n + up(CAP + p
  * Columns from left to right. The coprocessor column is `centre`. A side has 2
  * columns when it holds parts without a wire to the coprocessor column: those
  * stand in the outer column. A part without a wire joins the shorter column.
+ *
+ * A part with `between` whose 2 neighbours stand on its side makes a side of 3
+ * columns: the first neighbour alone in the outermost, the part in the middle
+ * with the other outer parts, the second neighbour in the inner column. The 3
+ * parts then follow each other across the picture in the order of the path.
  */
 export function columnsOf(scene: Scene): Columns {
   const centre = scene.parts.filter((p) => p.column === 'C').sort(byOrder);
@@ -91,7 +96,7 @@ export function columnsOf(scene: Scene): Columns {
     for (const id of ids) wired.add(id);
     if (ids.some((id) => central.has(id))) for (const id of ids) near.add(id);
   }
-  const side = (column: 'L' | 'R'): [ScenePart[], ScenePart[]] => {
+  const side = (column: 'L' | 'R'): ScenePart[][] => {
     const all = scene.parts.filter((p) => p.column === column).sort(byOrder);
     let inner = all.filter((p) => near.has(p.id));
     let outer = all.filter((p) => wired.has(p.id) && !near.has(p.id));
@@ -102,12 +107,20 @@ export function columnsOf(scene: Scene): Columns {
     for (const p of all.filter((q) => !wired.has(q.id))) {
       (outer.length > 0 && tall(outer) <= tall(inner) ? outer : inner).push(p);
     }
-    return [inner.sort(byOrder), outer.sort(byOrder)];
+    const mid = all.find((p) => p.between !== undefined && p.between.every((id) => id !== p.id && all.some((q) => q.id === id))
+      && p.between[0] !== p.between[1]);
+    if (!mid) return [inner.sort(byOrder), outer.sort(byOrder)];
+    const [first, second] = mid.between!;
+    const rest = [...inner, ...outer].filter((p) => p.id !== mid.id && p.id !== first && p.id !== second);
+    const is = (id: string) => (p: ScenePart): boolean => p.id === id;
+    return [
+      [...rest.filter((p) => inner.includes(p)), all.find(is(second))!].sort(byOrder),
+      [...rest.filter((p) => outer.includes(p)), mid].sort(byOrder),
+      [all.find(is(first))!],
+    ];
   };
-  const [leftInner, leftOuter] = side('L');
-  const [rightInner, rightOuter] = side('R');
-  const left = [leftOuter, leftInner].filter((c) => c.length > 0);
-  const right = [rightInner, rightOuter].filter((c) => c.length > 0);
+  const left = side('L').reverse().filter((c) => c.length > 0);
+  const right = side('R').filter((c) => c.length > 0);
   return { cols: [...left, ...(centre.length > 0 ? [centre] : []), ...right], centre: left.length };
 }
 

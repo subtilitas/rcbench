@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import type { Lang, Options, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
-import { optionsOf } from '../src/names.ts';
+import { benchParts, optionsOf } from '../src/names.ts';
 import type { View } from '../src/view/chooser.ts';
 import { PICTURES, picturesOf, result } from '../src/view/result.ts';
 
@@ -51,7 +51,8 @@ test('a card with a picture links the thumb to the full file, a card without one
   for (const lang of ['en', 'de'] as Lang[]) {
     const v = view({ functions: FUNCTIONS, options: { ...DEFAULT_OPTIONS, ina228Board: 'xt90' } }, lang);
     let withPicture = 0;
-    for (const r of v.setup.parts) {
+    // The cards are those of the bench hardware; a test object stands in its own list.
+    for (const r of benchParts(v.setup)) {
       const shown = picturesOf(r.part, v.options);
       const card = [...cards(v)].find(([name]) => name.startsWith(r.part.name[lang].replaceAll('&', '&amp;')))?.[1];
       assert.ok(card !== undefined, r.part.id);
@@ -116,9 +117,9 @@ test('the 2 pads of channel 1 of the INA3221 carry their print: VIN1+ takes the 
   const label = (id: string) => ina.pins.find((p) => p.id === id)!.label;
   assert.deepEqual(label('C1A'), { en: 'VIN1+', de: 'VIN1+' });
   assert.deepEqual(label('C1B'), { en: 'VIN1-', de: 'VIN1-' });
-  // The supply side: the PD mini output or the servo supply. The load side: the plus of the servo.
+  // The supply side: the PD mini output, the servo supply or the 5 V pad of the coprocessor. The load side: the plus of the servo.
   const on = (pin: string) => CATALOGUE.wires.filter((w) => w.b === `ina3221.${pin}`).map((w) => [w.n, w.a]);
-  assert.deepEqual(on('C1A'), [[28, 'pdmini.OP'], [29, 'ssup.POS']]);
+  assert.deepEqual(on('C1A'), [[28, 'pdmini.OP'], [29, 'ssup.POS'], [60, 'pad.40']]);
   assert.deepEqual(on('C1B'), [[30, 'servo.POS']]);
   const shunt = CATALOGUE.wires.find((w) => w.b === 'ina3221.C1B')!;
   assert.ok(shunt.note!.en.includes('VIN1+ and VIN1-'));

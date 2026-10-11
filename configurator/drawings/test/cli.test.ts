@@ -47,7 +47,7 @@ test('the README of the drawings carries the palette table and the counts of the
 test('the check mode passes on the committed files and writes nothing', () => {
   const r = spawnSync(process.execPath, [cli, '--check'], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^drawings: 23 drawings in 2 languages, 175 anchors, \d+ wires, 0 findings\n$/);
+  assert.match(r.stdout, /^drawings: 23 drawings in 2 languages, 177 anchors, \d+ wires, 0 findings\n$/);
   assert.doesNotMatch(r.stdout, /written/);
 });
 

@@ -2,12 +2,12 @@
 
 import './style.css';
 import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, resolve } from './core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, alwaysOn, deselectEffect, removalEffect, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
-import { formatHash, parseHash, reportIds, shareHash } from './hash.ts';
+import { formatHash, parseHash, reportIds, shareHash, testObjectTicks } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
-import { optionsOf } from './names.ts';
+import { benchParts, optionsOf } from './names.ts';
 import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
 import { result, resultError, summary } from './view/result.ts';
@@ -43,12 +43,12 @@ function tryResolve(sel: Selection): Setup | null {
   }
 }
 
-/** The ids of the functions that need no part. They have no tick and are in no selection. */
-const BASE_IDS: ReadonlySet<string> = new Set(CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id));
+/** The ids of the functions every setup runs. They have no tick and are in no selection. */
+const BASE_IDS: ReadonlySet<string> = new Set(CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id));
 
 /** The selection reduced to ids the catalogue knows and the page offers a tick for. */
 function known(sel: Selection): Selection {
-  const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id && f.needs.length > 0));
+  const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id && !alwaysOn(CATALOGUE, f)));
   const owned = sel.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable));
   return { functions, owned, options: { ...sel.options } };
 }
@@ -60,9 +60,11 @@ function readHash(): void {
   pending = null;
   note = null;
   if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
-  const setup = tryResolve(parsed.selection);
-  selection = known(parsed.selection);
-  const dropped = [...parsed.selection.functions, ...parsed.selection.owned]
+  // A test object under the owned parts of a link is the tick of its function.
+  const given = testObjectTicks(parsed.selection, CATALOGUE);
+  const setup = tryResolve(given);
+  selection = known(given);
+  const dropped = [...given.functions, ...given.owned]
     .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
   const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
   if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
@@ -116,7 +118,7 @@ function render(focusId?: string): void {
     const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, pending, note };
     choose.innerHTML = chooser(view, ownOpen);
     res.innerHTML = result(view, location.href, notices.map((n) => n(lang)), mode);
-    sub = `<small>${t(lang, 'bSub', { p: setup.parts.length, w: setup.wires.length })}</small>`;
+    sub = `<small>${t(lang, 'bSub', { p: benchParts(setup).length, w: setup.wires.length })}</small>`;
   } else {
     choose.innerHTML = `<h2 id="h-choose">${t(lang, 'choose')}</h2>`;
     res.innerHTML = resultError(lang, CATALOGUE, location.href);

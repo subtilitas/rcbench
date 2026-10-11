@@ -171,7 +171,7 @@ test('every anchor lies inside its viewBox, on a side, with a label in both lang
       assert.ok(a.labelId.startsWith(`${LIST.find((e) => `${e.file}.svg` === file)!.pfx}-lbl-`), `${file} ${id}`);
     }
   }
-  assert.equal(n, 175);
+  assert.equal(n, 177);
 });
 
 test('every part of the catalogue has a drawing, a part with 2 boards has 1 per board', () => {
@@ -344,6 +344,32 @@ test('the generator refuses a drawing with a lead that reaches no pin', () => {
     (tap as { draw: typeof draw }).draw = draw;
   }
   assert.doesNotThrow(() => generate(CATALOGUE));
+});
+
+test('the 2 socket labels of the T-plug stand side by side above the board and do not meet, in both languages', () => {
+  const rec = out.anchors.files['usbtap.svg']!;
+  assert.deepEqual([rec.pins['IN']!.x, rec.pins['IN']!.y, rec.pins['IN']!.side], [28, 80, 'W']);
+  assert.deepEqual([rec.pins['OUT']!.x, rec.pins['OUT']!.y, rec.pins['OUT']!.side], [232, 80, 'E']);
+  for (const lang of LANGS) {
+    const svg = out.svgs[pathOf('usbtap.svg', lang)]!;
+    const at = (id: string): { x: number; y: number; anchor: string; size: number; text: string } => {
+      const tag = new RegExp(`<text id="tpl-lbl-${id}"([^>]*)>([^<]*)</text>`).exec(svg)!;
+      const num = (name: string): number => Number(new RegExp(` ${name}="([^"]+)"`).exec(tag[1]!)![1]);
+      return { x: num('x'), y: num('y'), anchor: / text-anchor="([^"]+)"/.exec(tag[1]!)?.[1] ?? 'start', size: num('font-size'), text: tag[2]! };
+    };
+    const a = at('IN');
+    const b = at('OUT');
+    assert.equal(a.text, rec.pins['IN']!.label[lang]);
+    assert.equal(b.text, rec.pins['OUT']!.label[lang]);
+    assert.deepEqual([a.anchor, b.anchor], ['start', 'end']);
+    assert.equal(a.y, b.y);
+    // Above the board, which starts at y 30.
+    assert.ok(a.y < 30);
+    const endOfIn = a.x + labelWidth(a.text, a.size);
+    const startOfOut = b.x - labelWidth(b.text, b.size);
+    assert.ok(a.x >= 0 && b.x <= rec.viewBox[2], lang);
+    assert.ok(startOfOut - endOfIn >= 4, `${lang}: ${(startOfOut - endOfIn).toFixed(1)} px between the 2 labels`);
+  }
 });
 
 test('the T-plug drawing carries a wire point at the mouth of each USB-C socket when the data file lists IN and OUT', () => {

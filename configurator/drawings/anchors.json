@@ -2019,6 +2019,26 @@
    ],
    "names": "catalogue",
    "pins": {
+    "IN": {
+     "x": 28,
+     "y": 80,
+     "side": "W",
+     "labelId": "tpl-lbl-IN",
+     "label": {
+      "en": "IN, USB-C socket",
+      "de": "IN, USB-C-Buchse"
+     }
+    },
+    "OUT": {
+     "x": 232,
+     "y": 80,
+     "side": "E",
+     "labelId": "tpl-lbl-OUT",
+     "label": {
+      "en": "OUT, USB-C socket",
+      "de": "OUT, USB-C-Buchse"
+     }
+    },
     "G": {
      "x": 91,
      "y": 298,
