@@ -15,6 +15,7 @@ enum {
     X_STATUS,        /* read 0 to 3 */
     X_STAGE,         /* write a window of 4 to 24 */
     X_SUPPLY,        /* write 26 and 27 */
+    X_LEAVE_MS,      /* write 28 */
     X_CMD,           /* write 0 to 3 */
     X_RESULTS,       /* read 4 to 15 */
     X_VIEW_BACKUP,   /* write VIEW 1 */
@@ -113,6 +114,7 @@ void kst_link_lost(kst_link_t *k)
     finish(k, KST_LINK_OUT_NO_ANSWER, 0u);
     k->up = false;
     k->page = false;
+    k->minor = 0;
     k->known = false;
     k->pending = X_NONE;
     k->tries = 0;
@@ -131,6 +133,7 @@ void kst_link_came_up(kst_link_t *k, uint16_t minor)
     kst_link_lost(k);
     k->up = true;
     k->page = minor >= KST_LINK_MINOR;
+    k->minor = minor;
     k->phase = (uint8_t)(k->page ? KST_LINK_SYNC : KST_LINK_NO_PAGE);
 }
 
@@ -167,8 +170,13 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
     }
     if (r->op == LINK_KST_OP_NONE || r->op >= LINK_KST_OP_COUNT
         || r->op == LINK_KST_OP_ABORT || r->port >= LINK_PG_PORTS_MAX
-        || (r->confirm && r->op != LINK_KST_OP_RESTORE)) {
+        || (r->confirm && r->op != LINK_KST_OP_RESTORE)
+        || (r->op == LINK_KST_OP_LEAVE
+            && r->leave_ms > LINK_KST_LEAVE_MS_MAX)) {
         return KST_LINK_START_ARG;
+    }
+    if (r->op == LINK_KST_OP_LEAVE && k->minor < LINK_MINOR_KST_LEAVE) {
+        return KST_LINK_START_NO_OP;
     }
     if (op_writes(r->op) && !r->write_enabled) {
         return KST_LINK_START_NO_ENABLE;
@@ -197,6 +205,8 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
     k->supply_due = r->op == LINK_KST_OP_ENTER;
     k->supply[0] = r->supply_mv;
     k->supply[1] = r->supply_ma;
+    k->leave_due = r->op == LINK_KST_OP_LEAVE;
+    k->leave_ms = r->leave_ms;
 
     cmd = LINK_KS_W_CMD_OF(r->op, r->port);
     if (r->confirm) {
@@ -344,6 +354,10 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
             return ask(k, x, X_SUPPLY, true, (uint8_t)LINK_KS_W_SUPPLY_MV,
                        2u, k->supply);
         }
+        if (k->leave_due) {
+            return ask(k, x, X_LEAVE_MS, true, (uint8_t)LINK_KS_W_LEAVE_MS,
+                       1u, &k->leave_ms);
+        }
         memcpy(k->cmd, k->cmd_proto, sizeof(k->cmd));
         k->cmd[LINK_KS_W_SEQ] = (uint16_t)(k->seq + 1u);
         k->cmd_live = true;
@@ -477,6 +491,9 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
         break;
     case X_SUPPLY:
         k->supply_due = false;
+        break;
+    case X_LEAVE_MS:
+        k->leave_due = false;
         break;
     case X_CMD:
         k->seq = k->cmd[LINK_KS_W_SEQ];

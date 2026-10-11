@@ -1,5 +1,5 @@
 /*
- * The panel's half of the KST (0x32) link page, protocol 4.13 and 4.14:
+ * The panel's half of the KST (0x32) link page, protocol 4.13 to 4.15:
  * the programming ports for KST and Chaservo servos.
  *
  * The session with the servo runs at the coprocessor
@@ -14,7 +14,7 @@
  *
  *   1. for a write, a restore, a release and a verify the staged registers
  *      4 to 24 are written, 6 frames; for an ENTER the supply registers 26
- *      and 27, 1 frame;
+ *      and 27, 1 frame; for a LEAVE the wait, register 28, 1 frame;
  *   2. the command, registers 0 to 3, one frame, with SEQ one above the
  *      page's.  A command without an answer is sent again as it was; the
  *      page takes it once;
@@ -34,6 +34,13 @@
  * or LINK_KST_RESULT_TOO_COMPLEX when the planner's work was spent before
  * it knew.  4.13: KST_LINK_OUT_REFUSED with LINK_KST_REF_PLAN_NO_PATH.
  * Nothing was sent to the servo in each case.
+ *
+ * A LEAVE takes the port from PROGRAMMING to PWM without a supply cycle
+ * (LINK_MINOR_KST_LEAVE, 4.15).  The request carries the wait with the line
+ * low, leave_ms.  While the coprocessor waits the port reads
+ * LINK_KST_LEAVING and the phase is KST_LINK_RUNNING; the page has no
+ * register for the time left.  To a coprocessor below 4.15 nothing of a
+ * LEAVE is sent: kst_link_start() answers KST_LINK_START_NO_OP.
  *
  * A write to the servo is sent only with write_enabled set in the request:
  * the state of the switch ENABLE WRITE TO SERVO.  Without it the request
@@ -108,18 +115,23 @@ typedef enum {
     KST_LINK_START_NO_ENABLE,  /**< a write with write_enabled clear      */
     KST_LINK_START_NO_IMAGE,   /**< a write or a release with no image
                                     read to plan from                     */
+    KST_LINK_START_NO_OP,      /**< the coprocessor's minor does not have
+                                    the operation: a LEAVE below 4.15     */
 } kst_link_start_t;
 
 /** An operation as the screen asks for it. */
 typedef struct {
     link_kst_op_t op;          /**< ENTER, READ_ALL, WRITE, RESTORE,
-                                    RELEASE, VERIFY, POWER_CYCLED or
-                                    REBOOT                                */
+                                    RELEASE, VERIFY, POWER_CYCLED, REBOOT
+                                    or LEAVE                              */
     uint8_t  port;             /**< the programming port, 0 to
                                     LINK_PG_PORTS_MAX - 1                 */
     uint16_t supply_mv;        /**< ENTER: what the port asks of the PD
                                     mini, mV                              */
     uint16_t supply_ma;        /**< ENTER: and its current limit, mA      */
+    uint16_t leave_ms;         /**< LEAVE: the wait with the line low before
+                                    the port is in PWM, 0 to
+                                    LINK_KST_LEAVE_MS_MAX ms              */
     bool     write_enabled;    /**< ENABLE WRITE TO SERVO is on           */
     bool     confirm;          /**< RESTORE: the operator confirmed a
                                     restore whose result cannot be checked */
@@ -194,6 +206,7 @@ typedef struct {
 typedef struct {
     bool     up;
     bool     page;
+    uint16_t minor;            /**< the coprocessor's protocol minor      */
     bool     known;            /**< status was read since the link came up */
     uint8_t  phase;            /**< kst_link_phase_t, never
                                     KST_LINK_PLANNING: that is
@@ -217,6 +230,8 @@ typedef struct {
     uint16_t staged[LINK_KS_W_STAGED];
     bool     supply_due;       /**< an ENTER's supply registers are owed  */
     uint16_t supply[2];        /**< SUPPLY_MV, SUPPLY_MA                  */
+    bool     leave_due;        /**< a LEAVE's wait register is owed       */
+    uint16_t leave_ms;         /**< LEAVE_MS                              */
     uint16_t cmd_proto[LINK_KS_W_CMD_FRAME];  /**< the command less its SEQ */
 
     /* The command on its way, the operation's or an abort. */
@@ -257,6 +272,9 @@ bool kst_link_has_page(const kst_link_t *k);
 /**
  * Start an operation.  Taken in KST_LINK_READY only; any other answer
  * than KST_LINK_START_OK means nothing is sent.
+ *
+ * A LEAVE with leave_ms above LINK_KST_LEAVE_MS_MAX is
+ * KST_LINK_START_ARG: the value is refused, not clamped.
  *
  * A WRITE and a RELEASE are planned at the coprocessor from the image it
  * read.  The request names the image the panel last fetched by its CRC

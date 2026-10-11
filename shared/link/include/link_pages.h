@@ -73,14 +73,15 @@ typedef enum {
  * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
  * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12, and PROG, the port
  * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  From
- * 4.14 KST plans a write after the command's frame and reports
+ * 4.14 the KST page plans a write after the command's frame and reports
  * LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
- * differently for it.  A
+ * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to a
+ * coprocessor from 4.15 only.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 14u
+#define LINK_PROTOCOL_MINOR 15u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -98,6 +99,11 @@ typedef enum {
  *  and LINK_KST_RESULT_TOO_COMPLEX as results.  Minor 13 plans inside the
  *  command's frame and refuses with LINK_KST_REF_PLAN_NO_PATH. */
 #define LINK_MINOR_KST_PLAN 14u
+/** The first minor whose KST page takes LINK_KST_OP_LEAVE and the register
+ *  LINK_KS_W_LEAVE_MS: PROGRAMMING back to PWM with the supply untouched.
+ *  Minor 14 refuses the operation with LINK_NACK_BAD_VALUE and the register
+ *  with LINK_NACK_READ_ONLY. */
+#define LINK_MINOR_KST_LEAVE 15u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1348,7 +1354,14 @@ enum {
     LINK_KS_W_SUPPLY_MV = 26, /**< 4.13: the supply voltage of an ENTER,
                                    in mV.  Not covered by the CRC */
     LINK_KS_W_SUPPLY_MA = 27, /**< 4.13: and its current limit, in mA */
-    LINK_KS_W_COUNT = 28,
+    LINK_KS_W_LEAVE_MS = 28,  /**< 4.15: how long a LEAVE keeps the line low
+                                   before the port is in PWM, in ms, 0 to
+                                   LINK_KST_LEAVE_MS_MAX;
+                                   LINK_KST_LEAVE_MS_DEFAULT until written.
+                                   Taken as written: a LEAVE with a value
+                                   above the range is refused.  Not covered
+                                   by the CRC */
+    LINK_KS_W_COUNT = 29,
 };
 
 /** Registers of the command, from LINK_KS_W_CMD: one frame. */
@@ -1388,6 +1401,12 @@ enum {
  *  plan is there.  Never the result of an operation that has ended. */
 #define LINK_KST_RESULT_PLANNING 35u
 
+/** 4.15: the longest wait LINK_KS_W_LEAVE_MS takes for a LEAVE, in ms. */
+#define LINK_KST_LEAVE_MS_MAX 10000u
+/** 4.15: the wait of a LEAVE while LINK_KS_W_LEAVE_MS was never written,
+ *  in ms.  The wait a KST servo needs is not measured. */
+#define LINK_KST_LEAVE_MS_DEFAULT 100u
+
 /** The CRC of @p n page registers, low byte first, seeded 0xFFFF. */
 static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
 {
@@ -1410,6 +1429,9 @@ typedef enum {
     LINK_KST_PROGRAMMING = 3, /**< the pin carries frames and no PWM */
     LINK_KST_RAIL_OFF = 4, /**< the servo's supply is switched off */
     LINK_KST_RAIL_WAIT = 5, /**< the supply is on again; the servo starts */
+    LINK_KST_LEAVING = 6,  /**< 4.15: a LEAVE waits: the pin is the driver's
+                                and low, no frame goes out, the supply is
+                                untouched; PWM follows */
 } link_kst_state_t;
 
 enum {
@@ -1448,6 +1470,9 @@ typedef enum {
                                        port is to switch the supply */
     LINK_KST_OP_REBOOT = 9,   /**< 4.13: switch the supply off and on, from
                                    PROGRAMMING or from PWM */
+    LINK_KST_OP_LEAVE = 10,   /**< 4.15: from PROGRAMMING back to PWM after
+                                   LINK_KS_W_LEAVE_MS with the line low; the
+                                   supply is not switched and not read */
     LINK_KST_OP_COUNT
 } link_kst_op_t;
 
@@ -1484,6 +1509,11 @@ typedef enum {
     LINK_KST_REF_NO_SUPPLY = 18, /**< 4.13: a REBOOT with no PD mini
                                       answering, or from PWM with its
                                       output off */
+    LINK_KST_REF_LEAVE_MS = 19,  /**< 4.15: a LEAVE with LINK_KS_W_LEAVE_MS
+                                      above LINK_KST_LEAVE_MS_MAX */
+    LINK_KST_REF_LOCKED = 20,    /**< 4.15: a LEAVE while LINK_KS_F_LOCKED
+                                      is set: a write left the servo in
+                                      doubt */
 } link_kst_refusal_t;
 
 /* -------------------------------------------------------------------- PROG */

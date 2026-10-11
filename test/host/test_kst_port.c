@@ -811,12 +811,29 @@ TEST_CASE(the_staged_registers_are_taken_in_any_windows)
     CHECK_EQ(g_port.supply_mv, 6000);
     CHECK_EQ(g_port.supply_ma, 1200);
 
-    /* Beyond the write map. */
-    CHECK_EQ(kst_port_write(&g_port, 27, 2, in, g_ms), LINK_NACK_READ_ONLY);
-    CHECK_EQ(kst_port_write(&g_port, 28, 4, in, g_ms), LINK_NACK_READ_ONLY);
+    /* The wait of a LEAVE: 100 ms until it is written, and any value is
+     * taken here. */
+    CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
+    in[0] = 1100;
+    in[1] = 250;
+    CHECK_EQ(kst_port_write(&g_port, 27, 2, in, g_ms), 0);
+    CHECK_EQ(g_port.supply_ma, 1100);
+    CHECK_EQ(g_port.leave_ms, 250);
+    v = 0xFFFFu;
+    CHECK_EQ(kst_port_write(&g_port, LINK_KS_W_LEAVE_MS, 1, &v, g_ms), 0);
+    CHECK_EQ(g_port.leave_ms, 0xFFFF);
+    in[2] = 7;
+    CHECK_EQ(kst_port_write(&g_port, 26, 3, in, g_ms), 0);
+    CHECK_EQ(g_port.leave_ms, 7);
+
+    /* Beyond the write map: a window that reaches there changes
+     * nothing. */
+    CHECK_EQ(kst_port_write(&g_port, 28, 2, in, g_ms), LINK_NACK_READ_ONLY);
+    CHECK_EQ(kst_port_write(&g_port, 29, 3, in, g_ms), LINK_NACK_READ_ONLY);
     CHECK_EQ(kst_port_write(&g_port, 30, 4, in, g_ms), LINK_NACK_BAD_RANGE);
     CHECK_EQ(g_port.staged[20], 0x3300);
-    CHECK_EQ(g_port.supply_ma, 1200);
+    CHECK_EQ(g_port.supply_ma, 250);
+    CHECK_EQ(g_port.leave_ms, 7);
 }
 
 TEST_CASE(a_command_while_the_port_moves_or_works_is_busy)
@@ -2902,6 +2919,758 @@ TEST_CASE(the_frame_count_holds_at_4095)
     CHECK_EQ(op(), LINK_KST_OP_READ_ALL);
 }
 
+/* --- from PROGRAMMING to PWM without a supply cycle --------------------------- */
+
+static void leave_ms(unsigned ms)
+{
+    const uint16_t v = (uint16_t)ms;
+
+    CHECK_EQ(kst_port_write(&g_port, LINK_KS_W_LEAVE_MS, 1, &v, g_ms), 0);
+}
+
+/* A LEAVE that is taken: the port waits. */
+static void leave(void)
+{
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+    CHECK_EQ(result(), KST_SES_BUSY);
+    CHECK(flag(LINK_KS_F_BUSY));
+}
+
+/* A LEAVE that is refused with @p why: the port and the page stay. */
+static void leave_refused(link_kst_refusal_t why, link_kst_state_t in,
+                          unsigned named)
+{
+    const unsigned frames = g_sim.n_frames;
+    const unsigned sets = g_hw.sets;
+    const unsigned gives = g_hw.gives;
+
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), why);
+    CHECK_EQ(state(), in);
+    CHECK_EQ(op(), named);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_hw.sets, sets);
+    CHECK_EQ(g_hw.gives, gives);
+}
+
+/* The whole of a leave on a port with @p supply. */
+static void leaves_with(supply_kind_t supply)
+{
+    unsigned frames;
+    unsigned sets;
+    bool asked_on;
+
+    enter_with(supply);
+    read_all();
+    frames = g_sim.n_frames;
+    sets = g_hw.sets;
+    asked_on = g_hw.v.asked_on;
+    /* A PD mini that was off was switched on by the entry. */
+    CHECK_EQ(asked_on, supply == SUPPLY_OFF || supply == SUPPLY_ON);
+    CHECK_EQ(g_hw.ons, supply == SUPPLY_OFF ? 1 : 0);
+
+    leave();
+    CHECK_EQ(LINK_KS_PORT_OF(reg(LINK_KS_STATE)), CH);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_LEAVING);
+    /* The pin is the port's still and low, and no pulse is rendered. */
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 1u << CH);
+    CHECK_EQ(kst_port_pin_mask(&g_port), 1u << CH);
+    CHECK(flag(LINK_KS_F_IN_MODE));
+    /* The default, 100 ms: nothing wrote the register. */
+    run_ms(LINK_KST_LEAVE_MS_DEFAULT - 1u);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    CHECK_EQ(g_hw.gives, 0);
+    run_ms(2);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK(!flag(LINK_KS_F_IN_MODE));
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    CHECK(!flag(LINK_KS_F_LOCKED));
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 0);
+    CHECK_EQ(kst_port_pin_mask(&g_port), 0);
+    CHECK_EQ(g_hw.gives, 1);
+    /* No frame, and the supply neither switched nor set: on stays on, at
+     * the set points it had. */
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_hw.sets, sets);
+    CHECK_EQ(g_hw.offs, 0);
+    CHECK_EQ(g_hw.v.asked_on, asked_on);
+    CHECK_EQ(g_hw.v.set_mv, MV);
+    run_ms(500);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.sets, sets);
+    CHECK_EQ(g_hw.gives, 1);
+    CHECK_EQ(g_sim.n_frames, frames);
+    conduct();
+}
+
+TEST_CASE(a_leave_returns_the_port_to_pwm_and_leaves_the_supply)
+{
+    leaves_with(SUPPLY_NONE);
+    leaves_with(SUPPLY_OFFLINE);
+    leaves_with(SUPPLY_OFF);
+    leaves_with(SUPPLY_ON);
+}
+
+TEST_CASE(a_port_that_was_left_is_entered_again)
+{
+    kst_image_t img;
+
+    enter_with(SUPPLY_ON);
+    read_all();
+    leave();
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    /* The supply is on and was not switched: the entry finds it so. */
+    enter();
+    CHECK(flag(LINK_KS_F_IN_MODE));
+    CHECK(!flag(LINK_KS_F_IMAGE));
+    read_all();
+    img = page_image();
+    CHECK(flag(LINK_KS_F_IMAGE));
+    {
+        const kst_image_t sv = servo();
+
+        CHECK(same(&img, &sv));
+    }
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK_EQ(g_hw.takes, 2);
+    CHECK_EQ(g_hw.gives, 1);
+    leave();
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.gives, 2);
+    CHECK_EQ(g_hw.sets, 0);
+    conduct();
+}
+
+TEST_CASE(a_leave_is_taken_from_an_idle_programming_port_only)
+{
+    /* PWM. */
+    fresh_at(0u, SUPPLY_ON);
+    leave_refused(LINK_KST_REF_NOT_PROGRAMMING, LINK_KST_PWM,
+                  LINK_KST_OP_NONE);
+    CHECK_EQ(g_hw.takes, 0);
+
+    /* The way in. */
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, CH, 0, 0), 0);
+    leave_refused(LINK_KST_REF_BUSY, LINK_KST_STOPPING, LINK_KST_OP_ENTER);
+    until_state(LINK_KST_LOW);
+    leave_refused(LINK_KST_REF_BUSY, LINK_KST_LOW, LINK_KST_OP_ENTER);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+
+    /* Another port, and one the build does not have. */
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, OTHER, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_PORT);
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, 2u, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_PORT);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+
+    /* A frame on the wire. */
+    CHECK_EQ(cmd(LINK_KST_OP_READ_ALL, CH, 0, 0), 0);
+    leave_refused(LINK_KST_REF_BUSY, LINK_KST_PROGRAMMING,
+                  LINK_KST_OP_READ_ALL);
+    until_frame();
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK_EQ(op(), LINK_KST_OP_READ_ALL);
+    CHECK_EQ(result(), KST_SES_BUSY);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_sim.n_reads, 96);
+
+    /* A supply cycle. */
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    until_state(LINK_KST_RAIL_OFF);
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+    until_state(LINK_KST_RAIL_WAIT);
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_RAIL_WAIT);
+    CHECK_EQ(op(), LINK_KST_OP_REBOOT);
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.offs, 1);
+    CHECK_EQ(g_hw.ons, 1);
+    conduct();
+}
+
+TEST_CASE(a_leave_while_the_port_waits_to_leave_is_busy)
+{
+    up();
+    leave();
+    run_ms(60);
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    /* The wait was not started again. */
+    run_ms(38);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    run_ms(3);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.gives, 1);
+}
+
+TEST_CASE(nothing_but_an_abort_is_taken_while_the_port_waits_to_leave)
+{
+    const link_kst_op_t ops[8] = {
+        LINK_KST_OP_ENTER, LINK_KST_OP_READ_ALL, LINK_KST_OP_WRITE,
+        LINK_KST_OP_RESTORE, LINK_KST_OP_RELEASE, LINK_KST_OP_VERIFY,
+        LINK_KST_OP_POWER_CYCLED, LINK_KST_OP_REBOOT,
+    };
+    kst_image_t target;
+    uint16_t crc;
+    unsigned frames;
+
+    enter_with(SUPPLY_ON);
+    read_all();
+    target = edited(KST_F_DEAD_BAND, 50);
+    crc = stage(&target, 0, shown_crc());
+    frames = g_sim.n_frames;
+    leave_ms(400);
+    leave();
+    for (unsigned i = 0; i < 8u; ++i) {
+        run_ms(10);
+        CHECK_EQ(cmd(ops[i], CH, KEY, crc), 0);
+        CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+        CHECK_EQ(state(), LINK_KST_LEAVING);
+        CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+        CHECK_EQ(result(), KST_SES_BUSY);
+        CHECK_EQ(cmd(ops[i], OTHER, KEY, crc), 0);
+        CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    }
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_hw.sets, 0);
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_hw.sets, 0);
+    conduct();
+}
+
+TEST_CASE(a_leave_while_the_port_plans_is_busy_and_the_planning_goes_on)
+{
+    const kst_image_t b = image_of(k_long_b);
+    kst_image_t sv;
+    unsigned frames;
+
+    frames = long_write_plans(SUPPLY_ON, 300);
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK_EQ(op(), LINK_KST_OP_WRITE);
+    CHECK_EQ(result(), LINK_KST_RESULT_PLANNING);
+    CHECK(flag(LINK_KS_F_BUSY));
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_hw.gives, 0);
+    settle();
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(kst_plan_units(&g_port.session.job), LONG_UNITS);
+    sv = servo();
+    CHECK(same(&sv, &b));
+    /* The planning ended by an abort: the read comes first, then the
+     * leave. */
+    frames = long_write_plans(SUPPLY_ON, 300);
+    CHECK_EQ(cmd(LINK_KST_OP_ABORT, CH, 0, 0), 0);
+    tick();
+    cut_while_planning(frames);
+    leave_refused(LINK_KST_REF_MUST_READ, LINK_KST_PROGRAMMING,
+                  LINK_KST_OP_WRITE);
+    read_all();
+    leave();
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK(g_hw.v.asked_on);
+    conduct();
+}
+
+TEST_CASE(a_session_that_must_read_is_not_left_until_it_has)
+{
+    for (unsigned with_pd = 0; with_pd < 2u; ++with_pd) {
+        enter_with(with_pd != 0u ? SUPPLY_ON : SUPPLY_NONE);
+        read_all();
+        /* A stop between operations. */
+        tick_as(true, true);
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        leave_refused(LINK_KST_REF_MUST_READ, LINK_KST_PROGRAMMING,
+                      LINK_KST_OP_READ_ALL);
+        CHECK(!flag(LINK_KS_F_BUSY));
+        CHECK(flag(LINK_KS_F_IN_MODE));
+        run_ms(300);
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.gives, 0);
+        CHECK_EQ(g_hw.sets, 0);
+        /* The read, then the leave. */
+        read_all();
+        CHECK(!flag(LINK_KS_F_MUST_READ));
+        leave();
+        settle();
+        CHECK_EQ(state(), LINK_KST_PWM);
+        CHECK_EQ(result(), KST_SES_OK);
+        CHECK_EQ(g_hw.sets, 0);
+        conduct();
+    }
+}
+
+TEST_CASE(a_locked_session_is_not_left_without_a_supply_cycle)
+{
+    kst_image_t target;
+
+    up();
+    target = page_image();
+    CHECK(kst_field_edit(&target, KST_F_BOOST, 19));
+    CHECK(kst_field_edit(&target, KST_F_DEAD_BAND, 50));
+    write_image(&target, 0);
+    for (unsigned i = 0; i < 200000u && g_sim.n_writes == 0u; ++i) {
+        tick();
+    }
+    tick_as(true, true);
+    settle();
+    CHECK(flag(LINK_KS_F_LOCKED));
+    /* The read first, as for every session that was cut. */
+    leave_refused(LINK_KST_REF_MUST_READ, LINK_KST_PROGRAMMING,
+                  LINK_KST_OP_WRITE);
+    read_all();
+    CHECK(flag(LINK_KS_F_LOCKED));
+    leave_refused(LINK_KST_REF_LOCKED, LINK_KST_PROGRAMMING,
+                  LINK_KST_OP_READ_ALL);
+    CHECK(!flag(LINK_KS_F_BUSY));
+    run_ms(300);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    /* The supply cycle is the way out that stays. */
+    CHECK_EQ(cmd(LINK_KST_OP_POWER_CYCLED, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    conduct();
+}
+
+TEST_CASE(a_leave_is_refused_while_the_port_is_not_safe)
+{
+    up();
+    tick_as(false, false);
+    leave_refused(LINK_KST_REF_UNSAFE, LINK_KST_PROGRAMMING,
+                  LINK_KST_OP_READ_ALL);
+    /* Safe again: the stop asked for the read. */
+    tick();
+    leave_refused(LINK_KST_REF_MUST_READ, LINK_KST_PROGRAMMING,
+                  LINK_KST_OP_READ_ALL);
+    read_all();
+    leave();
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+}
+
+/* The wait of a leave, @p g_wait ms, from the pass that takes the command
+ * to the pass that gives the pin back. */
+static unsigned g_wait;
+static bool g_wait_written;
+
+static uint32_t at_the_leave(uint32_t t0)
+{
+    fresh_at(t0, SUPPLY_NONE);
+    enter();
+    read_all();
+    if (g_wait_written) {
+        leave_ms(g_wait);
+    }
+    leave();
+    return g_ms;
+}
+
+static void leave_time_case(uint32_t t0)
+{
+    const uint32_t at = at_the_leave(t0);
+
+    if (g_wait > 1u) {
+        kst_port_step(&g_port, true, false, at);
+        CHECK_EQ(state(), LINK_KST_LEAVING);
+        kst_port_step(&g_port, true, false, at + 1u);
+        CHECK_EQ(state(), LINK_KST_LEAVING);
+    }
+    if (g_wait > 0u) {
+        kst_port_step(&g_port, true, false, at + g_wait - 1u);
+        CHECK_EQ(state(), LINK_KST_LEAVING);
+        CHECK(flag(LINK_KS_F_BUSY));
+        CHECK_EQ(g_hw.gives, 0);
+    }
+    kst_port_step(&g_port, true, false, at + g_wait);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK_EQ(g_hw.gives, 1);
+}
+
+/* The ms an entry and a read take: where the command of a leave falls. */
+static uint32_t ms_to_the_leave(void)
+{
+    g_wait_written = false;
+    return at_the_leave(0u);
+}
+
+/* The case at tick 0 and with the wrap @p before_end ms before the wait
+ * ends. */
+static void leave_time(unsigned wait, bool written, unsigned before_end)
+{
+    const uint32_t setup = ms_to_the_leave();
+
+    g_wait = wait;
+    g_wait_written = written;
+    at_tick_0_and_before_the_wrap(leave_time_case,
+                                  setup + wait - before_end);
+}
+
+TEST_CASE(the_wait_of_a_leave_is_the_registers_from_0_to_10_000_ms)
+{
+    leave_time(0, true, 0);
+    leave_time(1, true, 0);
+    leave_time(100, true, 0);
+    leave_time(10000, true, 0);
+    /* Never written: 100 ms. */
+    leave_time(LINK_KST_LEAVE_MS_DEFAULT, false, 0);
+}
+
+TEST_CASE(the_wait_of_a_leave_holds_across_the_tick_wrap)
+{
+    /* The wrap at the end of the wait, one ms before it, in its middle and
+     * one ms after its start. */
+    leave_time(1, true, 0);
+    leave_time(1, true, 1);
+    leave_time(100, true, 0);
+    leave_time(100, true, 1);
+    leave_time(100, true, 50);
+    leave_time(100, true, 99);
+    leave_time(10000, true, 0);
+    leave_time(10000, true, 1);
+    leave_time(10000, true, 5000);
+    leave_time(10000, true, 9999);
+    leave_time(LINK_KST_LEAVE_MS_DEFAULT, false, 40);
+}
+
+TEST_CASE(a_wait_above_10_000_ms_is_refused_and_not_clamped)
+{
+    const unsigned over[3] = { 10001u, 30000u, 0xFFFFu };
+
+    for (unsigned i = 0; i < 3u; ++i) {
+        up();
+        /* The register takes the value: the command is what is refused. */
+        leave_ms(over[i]);
+        leave_refused(LINK_KST_REF_LEAVE_MS, LINK_KST_PROGRAMMING,
+                      LINK_KST_OP_READ_ALL);
+        CHECK(!flag(LINK_KS_F_BUSY));
+        CHECK(flag(LINK_KS_F_IN_MODE));
+        CHECK_EQ(result(), KST_SES_OK);
+        run_ms(10100);
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK_EQ(g_hw.gives, 0);
+        /* Every other operation is taken with the value there. */
+        read_all();
+        leave_refused(LINK_KST_REF_LEAVE_MS, LINK_KST_PROGRAMMING,
+                      LINK_KST_OP_READ_ALL);
+        leave_ms(LINK_KST_LEAVE_MS_MAX);
+        leave();
+        run_ms(LINK_KST_LEAVE_MS_MAX - 1u);
+        CHECK_EQ(state(), LINK_KST_LEAVING);
+        run_ms(2);
+        CHECK_EQ(state(), LINK_KST_PWM);
+        CHECK_EQ(result(), KST_SES_OK);
+    }
+}
+
+TEST_CASE(the_wait_is_the_one_the_command_found)
+{
+    up();
+    leave_ms(100);
+    leave();
+    run_ms(50);
+    /* Written while the port waits: for the next leave. */
+    leave_ms(3000);
+    run_ms(48);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    run_ms(3);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+
+    /* The register keeps its value over the sessions of a boot. */
+    enter();
+    read_all();
+    leave();
+    run_ms(2998);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    run_ms(3);
+    CHECK_EQ(state(), LINK_KST_PWM);
+
+    /* A value out of range written while the port waits does not end the
+     * wait that runs. */
+    enter();
+    read_all();
+    leave_ms(20);
+    leave();
+    leave_ms(10001);
+    run_ms(22);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.gives, 3);
+}
+
+/* An abort @p after ms into a wait of 200 ms. */
+static void leave_aborted(supply_kind_t supply, unsigned after)
+{
+    unsigned frames;
+
+    enter_with(supply);
+    read_all();
+    frames = g_sim.n_frames;
+    leave_ms(200);
+    leave();
+    run_ms(after);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    CHECK_EQ(cmd(LINK_KST_OP_ABORT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    /* In PROGRAMMING again, the session as the leave found it. */
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+    CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+    CHECK(!flag(LINK_KS_F_BUSY));
+    CHECK(flag(LINK_KS_F_IN_MODE));
+    CHECK(flag(LINK_KS_F_IMAGE));
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    CHECK_EQ(kst_port_pin_mask(&g_port), 1u << CH);
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 1u << CH);
+    run_ms(500);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK_EQ(g_hw.gives, 0);
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    /* An operation is taken without a new entry, and a leave waits its
+     * whole time again. */
+    CHECK_EQ(cmd(LINK_KST_OP_VERIFY, CH, 0,
+                 stage(&(kst_image_t){ { 0 } }, 0, 0)), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    leave();
+    run_ms(198);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    run_ms(3);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.gives, 1);
+    CHECK_EQ(g_hw.sets, 0);
+    conduct();
+}
+
+TEST_CASE(an_abort_in_the_wait_of_a_leave_returns_to_programming)
+{
+    leave_aborted(SUPPLY_NONE, 0);
+    leave_aborted(SUPPLY_NONE, 100);
+    leave_aborted(SUPPLY_ON, 199);
+    leave_aborted(SUPPLY_OFFLINE, 100);
+}
+
+TEST_CASE(a_disarm_in_the_wait_of_a_leave_keeps_the_port_and_the_supply)
+{
+    for (unsigned with_pd = 0; with_pd < 2u; ++with_pd) {
+        enter_with(with_pd != 0u ? SUPPLY_ON : SUPPLY_NONE);
+        read_all();
+        leave_ms(200);
+        leave();
+        run_ms(100);
+        tick_as(true, true);
+        /* As a stop between operations: the port holds the servo, the
+         * supply stays, and a read comes first. */
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+        CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+        CHECK(!flag(LINK_KS_F_BUSY));
+        CHECK(flag(LINK_KS_F_IN_MODE));
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.sets, 0);
+        CHECK_EQ(g_hw.v.asked_on, with_pd != 0u);
+        CHECK_EQ(g_hw.gives, 0);
+        run_ms(500);
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK_EQ(g_hw.gives, 0);
+        leave_refused(LINK_KST_REF_MUST_READ, LINK_KST_PROGRAMMING,
+                      LINK_KST_OP_LEAVE);
+        read_all();
+        leave();
+        settle();
+        CHECK_EQ(state(), LINK_KST_PWM);
+        CHECK_EQ(result(), KST_SES_OK);
+        CHECK_EQ(g_hw.sets, 0);
+        conduct();
+    }
+}
+
+/* The stop in the pass in which the wait ends: the stop is first. */
+static void leave_stop_case(uint32_t t0)
+{
+    uint32_t at;
+
+    g_wait = 100;
+    g_wait_written = true;
+    at = at_the_leave(t0);
+    kst_port_step(&g_port, true, false, at + 99u);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    kst_port_step(&g_port, true, true, at + 100u);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+    CHECK(flag(LINK_KS_F_MUST_READ));
+    CHECK_EQ(g_hw.gives, 0);
+    /* And the wait that ended is not picked up by a later pass. */
+    kst_port_step(&g_port, true, false, at + 101u);
+    kst_port_step(&g_port, true, false, at + 20000u);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK_EQ(g_hw.gives, 0);
+}
+
+TEST_CASE(a_disarm_in_the_last_pass_of_the_wait_keeps_the_port)
+{
+    const uint32_t setup = ms_to_the_leave();
+
+    at_tick_0_and_before_the_wrap(leave_stop_case, setup + 100u);
+    at_tick_0_and_before_the_wrap(leave_stop_case, setup + 50u);
+}
+
+/* The heartbeat lost or the link silent in the wait.  With a PD mini the
+ * SUPPLY page switches it off in the same pass. */
+static void unsafe_while_leaving(supply_kind_t supply)
+{
+    unsigned frames;
+
+    enter_with(supply);
+    read_all();
+    frames = g_sim.n_frames;
+    leave_ms(200);
+    leave();
+    run_ms(100);
+    if (supply == SUPPLY_ON) {
+        supply_asked_off();
+    }
+    tick_as(false, false);
+    CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+    if (supply == SUPPLY_ON) {
+        /* A servo without power is in no mode: off for the off time, well
+         * past the end of the wait, and nothing switches it on again. */
+        CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+        CHECK_EQ(g_hw.offs, 1);
+        CHECK_EQ(g_hw.gives, 0);
+        run_ms_as(LAG_MS + KST_PORT_RAIL_OFF_MS - 5u, false, false);
+        CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+        CHECK_EQ(g_hw.gives, 0);
+        run_ms_as(10, false, false);
+        CHECK_EQ(state(), LINK_KST_PWM);
+        CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+        CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+        CHECK(!flag(LINK_KS_F_BUSY));
+        CHECK(!flag(LINK_KS_F_IN_MODE));
+        CHECK(!flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.ons, 0);
+        CHECK(!g_hw.v.asked_on);
+        CHECK_EQ(g_hw.gives, 1);
+    } else {
+        /* No supply of the port's: it stays, and the read comes first. */
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK(!flag(LINK_KS_F_BUSY));
+        CHECK(flag(LINK_KS_F_IN_MODE));
+        CHECK(flag(LINK_KS_F_MUST_READ));
+        run_ms_as(500, false, false);
+        CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+        CHECK_EQ(g_hw.gives, 0);
+        leave_refused(LINK_KST_REF_UNSAFE, LINK_KST_PROGRAMMING,
+                      LINK_KST_OP_LEAVE);
+    }
+    CHECK_EQ(g_sim.n_frames, frames);
+    conduct();
+}
+
+TEST_CASE(a_lost_heartbeat_in_the_wait_of_a_leave_ends_as_under_a_session)
+{
+    unsafe_while_leaving(SUPPLY_ON);
+    unsafe_while_leaving(SUPPLY_NONE);
+    unsafe_while_leaving(SUPPLY_OFFLINE);
+}
+
+TEST_CASE(a_supply_switched_off_in_the_wait_of_a_leave_ends_it_in_pwm)
+{
+    /* Asked off by the panel, and read off by the PD mini's protection;
+     * on a supply that was on, and on one the entry switched on. */
+    for (unsigned i = 0; i < 4u; ++i) {
+        const bool read_off = (i & 1u) != 0u;
+        const bool on_here = (i & 2u) != 0u;
+
+        enter_with(on_here ? SUPPLY_OFF : SUPPLY_ON);
+        read_all();
+        leave_ms(200);
+        leave();
+        run_ms(100);
+        if (read_off) {
+            g_hw.v.on = false;
+            g_hw.v.off = true;
+        } else {
+            supply_asked_off();
+        }
+        tick();
+        CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+        CHECK_EQ(g_hw.offs, 1);
+        CHECK(flag(LINK_KS_F_BUSY));
+        CHECK_EQ(g_hw.gives, 0);
+        /* The wait of the leave ends inside the off time, and the pin
+         * stays the port's. */
+        run_ms(LAG_MS + KST_PORT_RAIL_OFF_MS - 5u);
+        CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+        CHECK_EQ(g_hw.gives, 0);
+        run_ms(10);
+        CHECK_EQ(state(), LINK_KST_PWM);
+        CHECK_EQ(op(), LINK_KST_OP_LEAVE);
+        CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+        CHECK(!flag(LINK_KS_F_BUSY));
+        CHECK(!flag(LINK_KS_F_IN_MODE));
+        CHECK(!flag(LINK_KS_F_MUST_READ));
+        CHECK_EQ(g_hw.ons, on_here ? 1 : 0);
+        CHECK(!g_hw.v.asked_on);
+        CHECK_EQ(g_hw.gives, 1);
+        conduct();
+    }
+}
+
+TEST_CASE(a_pd_mini_that_stops_answering_leaves_the_wait_alone)
+{
+    enter_with(SUPPLY_ON);
+    read_all();
+    leave_ms(200);
+    leave();
+    run_ms(100);
+    g_hw.v.online = false;
+    run_ms(98);
+    CHECK_EQ(state(), LINK_KST_LEAVING);
+    run_ms(3);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK(g_hw.v.asked_on);
+    CHECK_EQ(g_hw.gives, 1);
+    conduct();
+}
+
 /* --- each timer across the wrap of the millisecond clock ---------------------- */
 
 static void stop_time_case(uint32_t t0)
@@ -3203,6 +3972,25 @@ int main(void)
     RUN(a_driver_that_refuses_the_first_frame_returns_the_port_to_pwm);
     RUN(a_servo_that_does_not_answer_still_needs_the_power_cycle);
     RUN(the_frame_count_holds_at_4095);
+    RUN(a_leave_returns_the_port_to_pwm_and_leaves_the_supply);
+    RUN(a_port_that_was_left_is_entered_again);
+    RUN(a_leave_is_taken_from_an_idle_programming_port_only);
+    RUN(a_leave_while_the_port_waits_to_leave_is_busy);
+    RUN(nothing_but_an_abort_is_taken_while_the_port_waits_to_leave);
+    RUN(a_leave_while_the_port_plans_is_busy_and_the_planning_goes_on);
+    RUN(a_session_that_must_read_is_not_left_until_it_has);
+    RUN(a_locked_session_is_not_left_without_a_supply_cycle);
+    RUN(a_leave_is_refused_while_the_port_is_not_safe);
+    RUN(the_wait_of_a_leave_is_the_registers_from_0_to_10_000_ms);
+    RUN(the_wait_of_a_leave_holds_across_the_tick_wrap);
+    RUN(a_wait_above_10_000_ms_is_refused_and_not_clamped);
+    RUN(the_wait_is_the_one_the_command_found);
+    RUN(an_abort_in_the_wait_of_a_leave_returns_to_programming);
+    RUN(a_disarm_in_the_wait_of_a_leave_keeps_the_port_and_the_supply);
+    RUN(a_disarm_in_the_last_pass_of_the_wait_keeps_the_port);
+    RUN(a_lost_heartbeat_in_the_wait_of_a_leave_ends_as_under_a_session);
+    RUN(a_supply_switched_off_in_the_wait_of_a_leave_ends_it_in_pwm);
+    RUN(a_pd_mini_that_stops_answering_leaves_the_wait_alone);
     RUN(the_stop_time_holds_across_the_tick_wrap);
     RUN(the_low_time_holds_across_the_tick_wrap);
     RUN(the_settle_time_of_an_entry_holds_across_the_tick_wrap);

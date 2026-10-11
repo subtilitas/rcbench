@@ -156,6 +156,9 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_NEED_TARGET]     = { TX_KP_NEED_TARGET, TX_KP_NEED_TARGET_2 },
     [KST_PROG_MSG_LEAVE_SUPPLY]    = { TX_KP_M_LEAVE_SUPPLY,
                                        TX_KP_M_LEAVE_SUPPLY_2 },
+    [KST_PROG_MSG_LEFT_NO_WAIT]    = { TX_KP_M_LEFT, TX_KP_M_LEFT_NO_WAIT },
+    [KST_PROG_MSG_LEFT_DOUBT]      = { TX_KP_M_LEFT, TX_KP_M_LEFT_DOUBT },
+    [KST_PROG_MSG_LEAVE_CUT]       = { TX_KP_M_LEAVE_CUT, -1 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -167,6 +170,7 @@ static const int16_t k_start[] = {
     [KST_LINK_START_ARG]       = TX_KP_ST_ARG,
     [KST_LINK_START_NO_ENABLE] = TX_KP_M_NEED_ENABLE,
     [KST_LINK_START_NO_IMAGE]  = TX_KP_M_NEED_READ,
+    [KST_LINK_START_NO_OP]     = TX_KP_ST_NO_OP,
 };
 #define START_COUNT ((unsigned)(sizeof(k_start) / sizeof(k_start[0])))
 
@@ -199,6 +203,8 @@ static const int16_t k_ref[] = {
     [LINK_KST_REF_NO_PIN]          = TX_KP_R_NO_PIN,
     [LINK_KST_REF_SUPPLY_RANGE]    = TX_KP_R_SUPPLY_RANGE,
     [LINK_KST_REF_NO_SUPPLY]       = TX_KP_R_NO_SUPPLY,
+    [LINK_KST_REF_LEAVE_MS]        = TX_KP_R_LEAVE_MS,
+    [LINK_KST_REF_LOCKED]          = TX_KP_R_LOCKED,
 };
 #define REF_COUNT ((unsigned)(sizeof(k_ref) / sizeof(k_ref[0])))
 
@@ -748,6 +754,10 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         }
     } else if (id >= KST_PROG_MSG_REF && id - KST_PROG_MSG_REF < REF_COUNT) {
         first = k_ref[id - KST_PROG_MSG_REF];
+        if (id == KST_PROG_MSG_REF + (unsigned)LINK_KST_REF_LOCKED) {
+            /* Only a port with a PD mini is asked to leave in doubt. */
+            second = TX_KP_M_LEAVE_SUPPLY_2;
+        }
     } else if (id >= KST_PROG_MSG_OUT && id - KST_PROG_MSG_OUT < OUT_COUNT) {
         first = k_out[id - KST_PROG_MSG_OUT];
     } else if (id >= KST_PROG_MSG_START
@@ -1102,14 +1112,9 @@ static void warn_release(void)
 
 static void options_keep(void);
 
-/* The way back to PWM.  With a PD mini answering there is none in this
- * link version and the model says so: no page is asked for it. */
+/* The way back to PWM, the same with and without a PD mini. */
 static void warn_leave(void)
 {
-    if (flag(LINK_KS_F_RAIL)) {
-        (void)kst_prog_leave(&k.prog);
-        return;
-    }
     warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE));
     if (kst_prog_in_doubt(&k.prog)) {
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_1));
@@ -1453,6 +1458,13 @@ static void step(const row_t *r, bool up)
     edited(r, kst_prog_step(&k.prog, id, up == rising ? 1 : -1));
 }
 
+/* A LEAVE whose wait runs: an abort keeps the session. */
+static bool leave_waits(const kst_prog_t *p)
+{
+    return kst_prog_state(p) == KST_PROG_LEAVING
+        && kst_prog_op(p) == LINK_KST_OP_LEAVE;
+}
+
 static void act(const row_t *r)
 {
     kst_prog_t *p = &k.prog;
@@ -1464,7 +1476,8 @@ static void act(const row_t *r)
             (void)kst_prog_connect(p, port_no());
         } else if (st == KST_PROG_PROGRAMMING) {
             warn_leave();
-        } else if (st == KST_PROG_ENTERING || st == KST_PROG_WORKING) {
+        } else if (st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+                   || leave_waits(p)) {
             kst_prog_abort(p);
         }
         break;
@@ -1614,7 +1627,8 @@ static bool row_live(const row_t *r)
     case A_PORT:
         return (st == KST_PROG_PWM && on_port())
             || st == KST_PROG_PROGRAMMING
-            || st == KST_PROG_ENTERING || st == KST_PROG_WORKING;
+            || st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+            || leave_waits(p);
     case A_READ:
     case A_FILES:
         return st == KST_PROG_PROGRAMMING;
@@ -2339,6 +2353,7 @@ static void act_value(const row_t *r, char *out, size_t n)
     case A_PORT:
         snprintf(out, n, "%s",
                  st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+                     || leave_waits(p)
                      ? TR(KP_ABORT)
                  : st == KST_PROG_PROGRAMMING || st == KST_PROG_LEAVING
                      ? TR(KP_LEAVE) : TR(KP_CONNECT));

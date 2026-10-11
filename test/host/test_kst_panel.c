@@ -720,7 +720,7 @@ TEST_CASE(a_leave_gives_the_port_back_and_switches_no_supply)
         CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
         CHECK(kst_panel_holds_port());
         CHECK_STR_EQ(status(0), TR(KP_STATE_LEAVING));
-        tap(val(PG_SERVO, 0, 0));
+        /* No other row starts anything under it. */
         tap(val(PG_SERVO, 1, 0));
         CHECK_EQ(kst_panel_editor(), 0);
         settle();
@@ -734,7 +734,7 @@ TEST_CASE(a_leave_gives_the_port_back_and_switches_no_supply)
     }
 }
 
-TEST_CASE(a_leave_with_a_pd_mini_says_that_it_cannot_and_keeps_the_session)
+TEST_CASE(a_leave_with_a_pd_mini_keeps_the_supply_on)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         int base, sets;
@@ -746,23 +746,101 @@ TEST_CASE(a_leave_with_a_pd_mini_says_that_it_cannot_and_keeps_the_session)
         CHECK(g_rig.sup_on);
         base = g_rig.starts;
         sets = (int)g_rig.sup_sets;
-        /* No page: nothing would follow a hold. */
+        /* The same page as without a PD mini. */
         tap(val(PG_SERVO, 0, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK(warns(TR(KP_LEAVE_1)));
+        hold(2.1f);
         CHECK_EQ(kst_panel_editor(), 0);
         settle();
+        CHECK_EQ(g_rig.starts, base + 1);
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+        CHECK_STR_EQ(said(), TR(KP_M_LEFT));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK(!kst_panel_holds_port());
+        /* No supply command, and the output is on. */
+        CHECK_EQ((int)g_rig.sup_sets, sets);
+        CHECK(g_rig.sup_on);
+    }
+}
+
+TEST_CASE(the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        connected();
+        CHECK(kst_prog_wait_set(M, 5000u));
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        rig_frames(1000);
+        show();
+        /* The wait runs: the port is the programmer's, the line says that
+         * no pulse runs and the button aborts. */
+        CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+        CHECK_EQ(M->f.rd.port, LINK_KST_LEAVING);
+        CHECK(kst_panel_holds_port());
+        CHECK_STR_EQ(status(0), TR(KP_STATE_LEAVING));
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_ABORT));
+        /* CLOSE does not give the screen back to the tester. */
+        tap(kst_panel_close_rect());
+        CHECK(kst_panel_is_open());
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
+        CHECK_STR_EQ(said(), TR(KP_M_LEAVE_CUT));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_have_servo(M));
+        CHECK(!kst_prog_in_doubt(M));
+        CHECK(kst_panel_holds_port());
+        CHECK(g_rig.sup_on);
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_LEAVE));
+        /* The whole wait, then PWM. */
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        rig_frames(4900);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+        CHECK(kst_panel_holds_port());
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK(!kst_panel_holds_port());
+        CHECK(g_rig.sup_on);
+    }
+}
+
+TEST_CASE(a_coprocessor_without_leave_gets_a_stated_message)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+        int base, sets;
+
+        /* Link 4.14 with a PD mini: nothing is sent that would cycle the
+         * supply, and the lines name the update and STOP. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        CHECK(rig_link_up((uint16_t)(LINK_MINOR_KST_LEAVE - 1u)));
+        show();
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(g_rig.sup_on);
+        base = g_rig.starts;
+        sets = (int)g_rig.sup_sets;
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        settle();
         CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
-        CHECK_STR_EQ(said(), TR(KP_M_LEAVE_SUPPLY));
-        CHECK_EQ(g_rig.starts, base);
+        CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+        CHECK_STR_EQ(t[0], TR(KP_M_LEAVE_SUPPLY));
+        CHECK_STR_EQ(t[1], TR(KP_M_LEAVE_SUPPLY_2));
+        CHECK_EQ(g_rig.starts, base + 1);
         CHECK_EQ((int)g_rig.sup_sets, sets);
         CHECK(g_rig.sup_on);
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_have_servo(M));
         CHECK(kst_panel_holds_port());
-        /* CLOSE asks for the same and the overlay stays. */
-        tap(kst_panel_close_rect());
-        settle();
-        CHECK(kst_panel_is_open());
-        CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
-        CHECK_EQ(g_rig.starts, base);
         /* STOP ends the session, as the line says: the panel's STOP also
          * writes the supply off, and the port finds it off. */
         rig_stop(true);
@@ -772,6 +850,25 @@ TEST_CASE(a_leave_with_a_pd_mini_says_that_it_cannot_and_keeps_the_session)
         CHECK(!g_rig.sup_on);
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         CHECK(!kst_prog_have_servo(M));
+        CHECK(!kst_panel_holds_port());
+
+        /* The same link with no PD mini: the port is back in PWM, and the
+         * lines say that no wait was applied. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK(rig_link_up((uint16_t)(LINK_MINOR_KST_LEAVE - 1u)));
+        show();
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT_NO_WAIT);
+        CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+        CHECK_STR_EQ(t[0], TR(KP_M_LEFT));
+        CHECK_STR_EQ(t[1], TR(KP_M_LEFT_NO_WAIT));
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         CHECK(!kst_panel_holds_port());
     }
 }
@@ -785,8 +882,21 @@ TEST_CASE(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester)
     hold(2.1f);
     CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
     rig_stop(true);
-    CHECK(kst_panel_holds_port() || kst_prog_state(M) == KST_PROG_PWM);
+    CHECK(kst_panel_holds_port());
     settle();
+    /* No PD mini answers: the port stays out of PWM and says so. */
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK(kst_panel_holds_port());
+    CHECK(msg() == KST_PROG_MSG_LEAVE_CUT
+          || msg() == KST_PROG_MSG_REF + (unsigned)LINK_KST_REF_MUST_READ);
+    CHECK(kst_prog_in_doubt(M));
+    /* The leave of a port that asks for a read applies no wait. */
+    tap(val(PG_SERVO, 0, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_DOUBT);
+    CHECK_STR_EQ(said(), TR(KP_M_LEFT));
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK(!kst_prog_have_servo(M));
     /* Stopped, the row says why it does nothing. */
@@ -3173,13 +3283,25 @@ static void texts_in(ui_lang_t lang)
     CHECK_EQ(kst_panel_message_lines(&m, t), 0);
     /* The fixed messages, the answers of start, the outcome kinds, the
      * port's refusals and the session's results. */
-    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_LEAVE_SUPPLY));
-    CHECK(family_ok(KST_PROG_MSG_START, (unsigned)KST_LINK_START_NO_IMAGE + 1u));
+    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_LEAVE_CUT));
+    CHECK(family_ok(KST_PROG_MSG_START, (unsigned)KST_LINK_START_NO_OP + 1u));
     CHECK(family_ok(KST_PROG_MSG_OUT, (unsigned)KST_LINK_OUT_DROPPED + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PORT + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF + LINK_KST_REF_UNSAFE,
-                    (unsigned)LINK_KST_REF_NO_SUPPLY + 1u
+                    (unsigned)LINK_KST_REF_LOCKED + 1u
                         - (unsigned)LINK_KST_REF_UNSAFE));
+    /* A leave the port refuses for a servo in doubt names the way out. */
+    m.id = (uint16_t)(KST_PROG_MSG_REF + LINK_KST_REF_LOCKED);
+    m.reg = 0xFFu;
+    CHECK_EQ(kst_panel_message_lines(&m, t), 2);
+    CHECK_STR_EQ(t[0], TR(KP_R_LOCKED));
+    CHECK_STR_EQ(t[1], TR(KP_M_LEAVE_SUPPLY_2));
+    m.id = (uint16_t)(KST_PROG_MSG_REF + LINK_KST_REF_LEAVE_MS);
+    CHECK_EQ(kst_panel_message_lines(&m, t), 1);
+    CHECK_STR_EQ(t[0], TR(KP_R_LEAVE_MS));
+    m.id = (uint16_t)(KST_PROG_MSG_START + KST_LINK_START_NO_OP);
+    CHECK_EQ(kst_panel_message_lines(&m, t), 1);
+    CHECK_STR_EQ(t[0], TR(KP_ST_NO_OP));
     /* 3 and 4 are refusals no port gives: they are a line all the same. */
     for (unsigned gap = 3u; gap < (unsigned)LINK_KST_REF_UNSAFE; ++gap) {
         m.id = (uint16_t)(KST_PROG_MSG_REF + gap);
@@ -3404,7 +3526,9 @@ int main(void)
     RUN(a_supply_that_cannot_give_the_voltage_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line);
     RUN(a_leave_gives_the_port_back_and_switches_no_supply);
-    RUN(a_leave_with_a_pd_mini_says_that_it_cannot_and_keeps_the_session);
+    RUN(a_leave_with_a_pd_mini_keeps_the_supply_on);
+    RUN(the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it);
+    RUN(a_coprocessor_without_leave_gets_a_stated_message);
     RUN(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester);
     RUN(the_wait_before_pwm_is_a_row_with_limits_and_is_kept);
     RUN(a_count_of_1_is_said_in_the_singular);

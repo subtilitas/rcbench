@@ -35,6 +35,9 @@ bevor man sich auf ein Schreiben verlässt.
   das Overlay `Nicht verfügbar: Koprozessor ohne Programmier-Port.` und
   `Koprozessor auf Version 4.13 oder neuer aktualisieren.`, und jedes
   Bedienelement außer **SCHLIESSEN** ist aus.
+- **VERLASSEN** mit seinem Warten braucht Protokoll 4.15 auf dem
+  Koprozessor. Ein älterer wird
+  [benannt und ohne es behandelt](#ein-koprozessor-vor-link-version-415).
 
   ![Ein Koprozessor ohne den Port](img/de/servo-kst-nopage.png)
 
@@ -100,12 +103,12 @@ Bedienelement außer **SCHLIESSEN** ist aus.
 | Programmieren, die Versorgung gelesen | `Port 1 im Programmiermodus, kein PWM: 5,00 V, 37 mA.` | nur Frames |
 | Arbeiten | `Arbeite: 12 Frames.` | die Frames des laufenden Vorgangs |
 | Arbeiten, der Koprozessor plant | `Plane die Schreibfolge. Noch kein Frame gesendet.` | nichts: ein Koprozessor der Link-Version 4.14 plant ein Schreiben oder ein Zurückspielen vor seinem ersten Frame |
-| Verlassen | `Verlasse den Programmiermodus. PWM ist noch nicht an.` | nichts, bis der Port PWM meldet |
+| Verlassen | `Verlasse den Programmiermodus. PWM ist noch nicht an.` | die Leitung auf Low für **WARTEN VOR PWM**; kein Puls, bis der Port PWM meldet |
 
 **VERBINDEN** nimmt den Port aus PWM, stellt die Versorgung, wo ein PD mini
 antwortet, fährt die Einstiegssequenz und liest alle 32 Register. Die Taste
-heißt **ABBRECHEN**, solange ein Vorgang läuft, und **VERLASSEN** im
-Programmiermodus.
+heißt **ABBRECHEN**, solange ein Vorgang läuft oder ein Verlassen wartet,
+und **VERLASSEN** im Programmiermodus.
 
 ![Ein laufender Vorgang](img/de/servo-kst-working.png)
 
@@ -171,8 +174,8 @@ folgen dem, was der Port gestellt hat.
 ![Die Versorgung im Programmiermodus](img/de/servo-kst-supplied.png)
 
 Ohne PD mini werden die Spannung und die Stromgrenze gespeichert und nicht
-angewendet. **WARTEN VOR PWM** wird gespeichert und von einem Koprozessor
-der Link-Version 4.13 oder 4.14 nicht angewendet ([Verlassen](#verlassen)).
+angewendet. **WARTEN VOR PWM** wendet ein Koprozessor ab Link-Version 4.15
+beim [Verlassen](#verlassen) an, mit und ohne PD mini.
 
 ## Reiter SERVO
 
@@ -716,51 +719,81 @@ liest der Programmierer das Servo und schreibt nichts darauf.
 **VERLASSEN**, oder **SCHLIESSEN** im Programmiermodus, verlangt, die
 Sitzung zu beenden und den Port an Servo-PWM zurückzugeben. Der
 Programmierer tut das ohne Aus- und Einschalten der Versorgung: das Servo
-bleibt versorgt, und das Signal des Testers folgt auf demselben Port. Was
-der Port tut, hängt davon ab, ob ein PD mini antwortet. Ob ein KST-Servo, das einen Frame
-erhalten hat, PWM folgt, bevor seine Versorgung aus war, ist nicht
-gemessen.
-
-### Ohne PD mini
+bleibt versorgt, der Ausgang eines PD mini bleibt mit seiner Spannung und
+Stromgrenze an, und das Signal des Testers folgt auf demselben Port. Ob ein
+KST-Servo, das einen Frame erhalten hat, PWM folgt, bevor seine Versorgung
+aus war, ist nicht gemessen.
 
 PROGRAMMIEREN VERLASSEN öffnet mit
 `Der Port geht zurück auf Servo-PWM. Versorgung bleibt.` und
 `Das Servo bekommt das Signal des Testers, es kann fahren.` Die Seite
 warnt, bevor geänderte Werte verloren gehen und bevor eine Sitzung endet,
 die ein unklares Servo noch zurückspielen könnte. **HALTEN ZUM VERLASSEN**
-für 2 s schickt den Port zurück zu PWM.
+für 2 s sendet den Vorgang LEAVE des Ports aus der Link-Version 4.15. Kein
+Frame geht an das Servo und kein Versorgungsbefehl an den PD mini. Der Port
+hält seine Leitung für [**WARTEN VOR PWM**](#die-versorgung) auf Low und
+gibt den Pin dann an den PWM-Generator.
 
 ![Verlassen](img/de/servo-kst-leave.png)
 
-Die Zustandszeile zeigt
-`Verlasse den Programmiermodus. PWM ist noch nicht an.`, und die
-Bedienelemente des Testers bleiben aus, bis der Port PWM meldet. Danach
-steht `Der Tester hat den Port wieder.`, und der Tester treibt den Port
-sofort, mit **PWM-ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. **STOP**
-während des Verlassens beendet es als
-[einen Stopp](#stopps-und-ausfälle).
-
-### Mit PD mini
-
-Ein Koprozessor der Link-Version 4.13 oder 4.14 hat keinen Vorgang, der den Port vom
-Programmieren zu PWM nimmt und die Versorgung an lässt: seine 2 Vorgänge
-für diesen Schritt schalten die Versorgung aus und wieder ein. Das Panel sendet keinen von
-beiden. **VERLASSEN** und **SCHLIESSEN** öffnen keine Seite und antworten
-`Mit PD mini kann diese Version den Port nicht verlassen.` und
-`STOP beendet die Sitzung und schaltet die Versorgung aus.`
+Die Seite ist dieselbe, wenn ein PD mini antwortet.
 
 ![VERLASSEN mit einem PD mini](img/de/servo-kst-leave-supply.png)
 
-**STOP**, oder der ausgeschaltete Ausgang der Versorgung, beendet die
-Sitzung: die Versorgung bleibt 2000 ms aus, und der Port ist wieder in PWM.
+Die Zustandszeile zeigt
+`Verlasse den Programmiermodus. PWM ist noch nicht an.`, und die
+Bedienelemente des Testers bleiben aus, bis der Port PWM meldet. Die Taste
+heißt **ABBRECHEN**, solange das Warten läuft. Danach steht
+`Der Tester hat den Port wieder.`, und der Tester treibt den Port sofort,
+mit **PWM-ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
+**VERBINDEN** beginnt eine neue Sitzung mit eigenem Lesen.
 
 ### Das Warten vor PWM
 
-[**WARTEN VOR PWM**](#die-versorgung) ist die Zeit, in der der Port seinen
-Pin ohne Puls hält, zwischen dem Ende des Programmierens und dem ersten
-Puls, 0 bis 10 000 ms. Ein Koprozessor der Link-Version 4.13 oder 4.14 nimmt keinen
-solchen Wert an: das Panel speichert ihn und wendet ihn nirgends an. Das
-Warten, das ein KST-Servo braucht, ist nicht gemessen.
+**WARTEN VOR PWM** ist 0 bis 10 000 ms, ab Werk 100 ms. Der Ziffernblock
+nimmt keinen Wert über 10 000 ms an, und mit einem solchen wird kein
+Verlassen gesendet. Ein Warten von 0 ms endet beim nächsten Durchlauf des
+Koprozessors. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
+Das Warten, das ein KST-Servo braucht, ist nicht gemessen.
+
+| Während des Wartens | Wirkung |
+| --- | --- |
+| **ABBRECHEN** | der Port bleibt im Programmiermodus, die Sitzung wie zuvor; `Verlassen wurde vor Ende der Wartezeit unterbrochen.`; **VERLASSEN** wird sofort wieder angenommen |
+| **STOP** oder ein Disarm des Prüfstands, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES LESEN** |
+| Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 2000 ms aus, dann ist der Port in PWM |
+| Der Link fällt aus | wie [ein Ausfall des Links](#stopps-und-ausfälle) |
+
+### Ein Port, der nicht verlassen wird
+
+Der Port lehnt ein Verlassen ab, solange er ein Lesen verlangt oder ein
+Servo hält, das ein Schreiben unklar hinterlassen hat.
+
+| Der Port | Ein PD mini antwortet | Zeile | Ausweg |
+| --- | --- | --- | --- |
+| verlangt nach einem Stopp oder Abbruch ein Lesen | ja | `Der Port verlangt zuerst ein Lesen: ALLES LESEN.` | **ALLES LESEN**, dann **VERLASSEN**; oder **STOP**, das die Versorgung ausschaltet |
+| hält ein unklares Servo | ja | `Servo unklar: Port hält die Sitzung. Erst ZURÜCKSPIELEN.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` | **ZURÜCKSPIELEN**, dann **VERLASSEN**; oder **STOP** |
+| eines von beiden | nein | `Der Tester hat den Port wieder.` und `Die Sitzung war unklar: kein Warten vor PWM.` | keiner nötig: der Port ist in PWM |
+
+Ohne PD mini schaltet **STOP** keine Versorgung und lässt den Port im
+Programmiermodus, und ein Servo, das nicht mehr antwortet, nimmt kein Lesen
+an. Das Panel sendet dann den Vorgang POWER_CYCLED des Ports statt LEAVE.
+Ohne PD mini ändert er nur den Zustand des Ports: kein Frame, kein Warten,
+und die Versorgung des Servos ist die, die es speist. Der Datensatz eines
+unterbrochenen Schreibens bleibt für die nächste Sitzung.
+
+### Ein Koprozessor vor Link-Version 4.15
+
+Die Link-Versionen 4.13 und 4.14 haben kein LEAVE. Das Panel sendet ihnen
+keines.
+
+| Ein PD mini antwortet | Das Panel | Zeilen |
+| --- | --- | --- |
+| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Tester hat den Port wieder.` und `Koprozessor älter als 4.15: kein Warten vor PWM.` |
+| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini braucht den Koprozessor ab 4.15.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
+
+Mit einem PD mini an einem solchen Koprozessor beendet **STOP** oder der
+ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
+2000 ms aus, und der Port ist wieder in PWM.
 
 ## Stopps und Ausfälle
 
@@ -791,11 +824,17 @@ Codes.
 - Ob ein geschriebener Wert vor dem nächsten Einschalten des Servos wirkt,
   ist nicht gemessen. Der Programmierer behandelt einen Wert, der sich
   zurücklesen lässt, als wirksam.
-- Antwortet ein PD mini, wird der Port nicht aus dem Programmierer
-  verlassen: **STOP** oder der ausgeschaltete Ausgang der Versorgung
-  beendet die Sitzung, mit ausgeschalteter Versorgung.
-- **WARTEN VOR PWM** wird gespeichert und von den Link-Versionen 4.13 und 4.14 nicht
-  angewendet. Das Warten, das ein KST-Servo braucht, ist nicht gemessen.
+- Antwortet ein PD mini an einem Koprozessor vor Link-Version 4.15, wird
+  der Port nicht aus dem Programmierer verlassen: **STOP** oder der
+  ausgeschaltete Ausgang der Versorgung beendet die Sitzung, mit
+  ausgeschalteter Versorgung.
+- Antwortet ein PD mini, wird ein Port mit einem unklaren Servo durch
+  **ZURÜCKSPIELEN** und **VERLASSEN** verlassen, oder durch **STOP** mit
+  ausgeschalteter Versorgung.
+- **WARTEN VOR PWM** wird von einem Koprozessor vor Link-Version 4.15 nicht
+  angewendet, und nicht beim Verlassen eines unklaren Ports ohne PD mini.
+  Das Warten, das ein KST-Servo braucht, ist nicht gemessen. Die Restzeit
+  eines laufenden Wartens wird nicht angezeigt.
 - Ohne PD mini werden die Programmierspannung und die Stromgrenze nicht
   angewendet.
 - Kein Speichern, Auflisten oder Laden einer Servodatei ist auf einer
@@ -878,8 +917,10 @@ Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog`
 fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
 Koprozessors, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
-Schritt außerhalb, das Warten bei 0 ms, 10 000 ms und 10 001 ms, **STOP**
-während eines Verlassens, jedes Limit an seiner Kante, das Halten von 2 s
+Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als
+Warten des Verlassens, ein Abbruch, ein Disarm und eine Versorgung, die im
+Warten ausgeht, ein Verlassen an den Link-Versionen 4.13 und 4.14 mit und
+ohne PD mini, **STOP** während eines Verlassens, jedes Limit an seiner Kante, das Halten von 2 s
 auf beiden
 Seiten der Schwelle, jede Ablehnung und jedes Ergebnis mit seiner Zeile in
 beiden Sprachen, ein Schreiben, das ein Link-Ausfall, ein Neustart,

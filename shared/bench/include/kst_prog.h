@@ -190,8 +190,18 @@ enum {
     KST_PROG_MSG_LOADED_UNTYPED,  /**< and for one that names no servo type */
     KST_PROG_MSG_NEED_TARGET,     /**< the SERVO screen's target is not the
                                        programming port                     */
-    KST_PROG_MSG_LEAVE_SUPPLY,    /**< a PD mini answers: the port has no way
-                                       back to PWM that leaves the supply on */
+    KST_PROG_MSG_LEAVE_SUPPLY,    /**< a PD mini answers and the coprocessor
+                                       is below link 4.15: the port has no
+                                       way back to PWM that leaves the
+                                       supply on                            */
+    KST_PROG_MSG_LEFT_NO_WAIT,    /**< the port is back in PWM by a
+                                       coprocessor below link 4.15: no wait
+                                       was applied                          */
+    KST_PROG_MSG_LEFT_DOUBT,      /**< the port is back in PWM from a
+                                       session in doubt, no PD mini
+                                       answering: no wait was applied       */
+    KST_PROG_MSG_LEAVE_CUT,       /**< the wait of a LEAVE was cut: an
+                                       abort, a disarm or the supply off    */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -386,6 +396,9 @@ typedef struct {
     uint8_t writes;           /**< fields the write on its way changes */
     uint8_t restoring;        /**< kst_prog_from_t of that write  */
     bool chain_read;          /**< READ_ALL follows the ENTER     */
+    bool leave_doubt;         /**< the exit runs without LEAVE: the
+                                   port asks for a read or holds a
+                                   servo in doubt, no PD mini answers */
     uint32_t wait_ms;
     uint32_t fetch_ms;
     bool fetched;

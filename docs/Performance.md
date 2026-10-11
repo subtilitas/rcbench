@@ -243,8 +243,8 @@ A write command to the programming port for KST and Chaservo servos reaches 1,30
 `kst_port_write` (88), `kst_session_edit` (40) and the start of a planner
 job, 312 bytes from `kst_plan_edit_begin` down: `kst_plan_edit_begin`
 (40), the limit check `kst_limits_edit` (248), `load` (16) and
-`kst_field_get` (8). A pass that plans reaches 984 bytes: `main`,
-`kst_port_step` (56), `kst_session_step` (256) and one slice of the
+`kst_field_get` (8). A pass that plans reaches 1,016 bytes: `main`,
+`kst_port_step` (48), `step_programming` (40), `kst_session_step` (256) and one slice of the
 planner, 208 bytes from `kst_plan_step` down. The planner does not
 recurse. The planner's job, the plan and the staged image are held in the
 session's and the port's state, not on the stack.

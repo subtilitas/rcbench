@@ -3,8 +3,9 @@
  * @brief The KST programming protocol on a programming port, and its link
  *        page (0x32).
  *
- * A KST or Chaservo servo in programming mode still follows PWM
- * (pulse-width modulation) pulses.  The port takes the pin of one
+ * Whether a KST or Chaservo servo in programming mode follows PWM
+ * (pulse-width modulation) pulses is not measured; the port is built for
+ * one that does.  The port takes the pin of one
  * programming port (prog_port.h) from the PWM generator, hands it to the
  * wire driver and runs the session of protocols/kst on it.  A port is in
  * PWM or in PROGRAMMING, never both.  A standard servo port is no
@@ -40,7 +41,8 @@
  *     on on the way in is switched off.
  *   - After the first frame the servo may be in programming mode until its
  *     supply was off.  The flag LINK_KS_F_IN_MODE says so and the port
- *     stays PROGRAMMING until POWER_CYCLED or REBOOT.  With a PD mini that
+ *     stays PROGRAMMING until POWER_CYCLED, REBOOT or LEAVE.  With a PD
+ *     mini that
  *     answers and is asked on, both switch it off, wait until it reads off,
  *     keep it off for KST_PORT_RAIL_OFF_MS (RAIL_OFF), switch it on at the
  *     set points it had, wait until it reads on and KST_PORT_RAIL_WAIT_MS
@@ -49,6 +51,28 @@
  *     REBOOT is refused.
  *   - REBOOT is also taken in PWM, while the PD mini is asked on: the same
  *     cycle, with no pulse on the port during it.
+ *   - LEAVE returns the port to PWM without a supply cycle, with a PD
+ *     mini or without one.  The port goes to LEAVING: the wire driver
+ *     keeps the pin low and no frame goes out for the staged
+ *     LINK_KS_W_LEAVE_MS (0 to LINK_KST_LEAVE_MS_MAX, 10 000 ms;
+ *     LINK_KST_LEAVE_MS_DEFAULT, 100 ms, until written), counted from the
+ *     command.  Then the pin is the generator's, the port is in PWM and
+ *     LINK_KS_F_IN_MODE is clear.  The supply is not switched and its set
+ *     points are not changed: one this port switched on stays on.  LEAVE
+ *     is taken from PROGRAMMING with no operation running.  It is refused
+ *     with LINK_KST_REF_BUSY while one runs or plans, with
+ *     LINK_KST_REF_MUST_READ while LINK_KS_F_MUST_READ is set, with
+ *     LINK_KST_REF_LOCKED while the session is locked and with
+ *     LINK_KST_REF_LEAVE_MS for a wait above the range: a servo whose
+ *     registers are in doubt leaves through a READ_ALL, a RESTORE or a
+ *     supply cycle.  The port does not know whether the servo left
+ *     programming mode.  The wait a KST servo needs, and whether a written
+ *     value acts before the next power-up, are not measured.
+ *   - In LEAVING an ABORT returns the port to PROGRAMMING with
+ *     KST_SES_ERR_ABORTED and the session as it was.  A stop does the
+ *     same and sets LINK_KS_F_MUST_READ, and a supply found off or asked
+ *     off ends as it does in PROGRAMMING: RAIL_OFF, then PWM.  Every
+ *     other command is refused with LINK_KST_REF_BUSY.
  *   - Leaving programming restores no earlier, higher voltage.
  *
  * A read that does not come within KST_PORT_SUPPLY_MS ends the cycle with
@@ -84,7 +108,8 @@
  * which takes at most 12 ms, and no other starts.  The pin is low or an
  * input afterwards.  LINK_KS_F_MUST_READ is set, and until a read of all
  * registers has succeeded the port takes ENTER, READ_ALL, ABORT,
- * POWER_CYCLED and REBOOT only.  The operation ABORT does the same.  While
+ * POWER_CYCLED and REBOOT only.  The operation ABORT does the same to an
+ * operation of the session.  While
  * the heartbeat is not trusted or the link is silent no frame starts and
  * every operation but ABORT and POWER_CYCLED is refused.  A disarm alone
  * leaves the supply as it is.
@@ -216,6 +241,8 @@ typedef struct {
     uint16_t want_ma;
     uint16_t back_mv;    /**< what RAIL_WAIT switches on at */
     uint16_t back_ma;
+    uint16_t leave_ms;   /**< staged: how long the next LEAVE waits */
+    uint16_t wait_ms;    /**< how long the running LEAVE waits */
     uint8_t  state;      /**< link_kst_state_t */
     uint8_t  port;
     uint8_t  pin;
@@ -250,7 +277,7 @@ bool kst_port_init(kst_port_t *p, const kst_port_hw_t *hw);
  * A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
  *
  * A window that starts in registers 0 to 3 is a command and has to be
- * exactly those 4.  Registers 4 to 27 are taken in any windows; 28 and up
+ * exactly those 4.  Registers 4 to 28 are taken in any windows; 29 and up
  * are LINK_NACK_READ_ONLY.
  */
 uint8_t kst_port_write(kst_port_t *p, uint8_t off, uint8_t n,

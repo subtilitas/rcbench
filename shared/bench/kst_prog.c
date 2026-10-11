@@ -222,6 +222,9 @@ static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
         r.supply_mv = p->supply_mv;
         r.supply_ma = p->supply_ma;
     }
+    if (op == LINK_KST_OP_LEAVE) {
+        r.leave_ms = p->pwm_wait_ms;
+    }
     r.write_enabled = p->write_enabled;
     return r;
 }
@@ -452,9 +455,15 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_VERIFY:
         (void)say(p, KST_PROG_MSG_VERIFIED, 0);
         break;
-    case LINK_KST_OP_POWER_CYCLED:
+    case LINK_KST_OP_LEAVE:
         session_gone(p);
         (void)say(p, KST_PROG_MSG_LEFT, 0);
+        break;
+    case LINK_KST_OP_POWER_CYCLED:
+        /* The exit where LEAVE is not taken: no wait was applied. */
+        session_gone(p);
+        (void)say(p, p->leave_doubt ? KST_PROG_MSG_LEFT_DOUBT
+                                    : KST_PROG_MSG_LEFT_NO_WAIT, 0);
         break;
     default:
         break;
@@ -547,6 +556,12 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
     case KST_LINK_OUT_DONE:
         if (o->result == KST_SES_OK) {
             done_ok(p, op);
+        } else if (op == LINK_KST_OP_LEAVE
+                   && o->result == KST_SES_ERR_ABORTED) {
+            /* The wait was cut.  The port says where it is: PROGRAMMING
+             * with the session as it was after an abort, with a read owed
+             * after a disarm, or on its way to PWM with the supply off. */
+            (void)say(p, KST_PROG_MSG_LEAVE_CUT, 0);
         } else if (op == LINK_KST_OP_VERIFY
                    && o->result == KST_SES_ERR_VERIFY) {
             p->need_read = true;
@@ -586,6 +601,26 @@ static void not_started(kst_prog_t *p, unsigned id, unsigned arg)
     p->cmd_ready = false;
     p->chain_read = false;
     (void)say(p, id, arg);
+}
+
+/*
+ * A coprocessor below link 4.15 has no LEAVE.  Its one command from
+ * PROGRAMMING to PWM is POWER_CYCLED, and with a PD mini answering the port
+ * cycles the supply on it: it is sent only where no PD mini answers, where
+ * it changes nothing but the port's state, and its end says that no wait
+ * was applied.  With a PD mini the session stays and the message says what
+ * ends it.
+ */
+static void leave_old(kst_prog_t *p)
+{
+    if (!p->f.rd.known || (p->f.rd.flags & LINK_KS_F_RAIL) != 0u) {
+        not_started(p, KST_PROG_MSG_LEAVE_SUPPLY, 0);
+    } else {
+        const kst_link_request_t r = request(p, LINK_KST_OP_POWER_CYCLED);
+
+        p->leave_doubt = false;
+        send(p, &r);
+    }
 }
 
 /* ------------------------------------------------------------------- public */
@@ -628,6 +663,9 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
             p->written = p->written || is_write(p->op);
             /* And one that started with no card has no file. */
             p->no_file = p->no_file || (is_write(p->op) && p->held_no_file);
+        } else if (f->answer == KST_LINK_START_NO_OP
+                   && p->op == LINK_KST_OP_LEAVE) {
+            leave_old(p);
         } else {
             not_started(p, KST_PROG_MSG_START + (unsigned)f->answer, 0);
         }
@@ -761,8 +799,9 @@ kst_prog_state_t kst_prog_state(const kst_prog_t *p)
         if (p->op == LINK_KST_OP_ENTER) {
             return KST_PROG_ENTERING;
         }
-        return p->op == LINK_KST_OP_POWER_CYCLED ? KST_PROG_LEAVING
-                                                 : KST_PROG_WORKING;
+        return p->op == LINK_KST_OP_LEAVE
+                   || p->op == LINK_KST_OP_POWER_CYCLED
+                   ? KST_PROG_LEAVING : KST_PROG_WORKING;
     }
     switch (p->f.rd.port) {
     case LINK_KST_PWM:
@@ -1523,24 +1562,31 @@ void kst_prog_forget(kst_prog_t *p)
  * The end of a session.  The servo is taken to need no power cycle: the
  * port goes back to PWM with the supply as it is.
  *
- * Link 4.13 has one command from PROGRAMMING to PWM, POWER_CYCLED, and with
- * a PD mini answering the port cycles the supply on it.  That command is
- * sent only where no PD mini answers, where it changes nothing but the
- * port's state.  A command that leaves the supply alone and waits pwm_wait_ms
- * before the first pulse replaces it here.
+ * LEAVE (link 4.15) sends no frame and switches nothing: the port holds the
+ * line low for pwm_wait_ms and then gives the pin back to the PWM generator.
+ * This is the one place a session is ended from; leave_old() is what a
+ * coprocessor without LEAVE gets.
+ *
+ * The port refuses a LEAVE while it asks for a read or holds a servo in
+ * doubt.  With a PD mini answering the refusal is the message and STOP,
+ * which switches the supply off, is the way out.  With none, STOP leaves the
+ * port where it is, and a servo that no longer answers would hold the port
+ * for good: there POWER_CYCLED is sent, which changes nothing but the
+ * port's state, and its end says that no wait was applied.
  */
 kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p)
 {
     kst_link_request_t r;
     const kst_prog_msg_id_t m = idle(p);
+    const uint16_t fl = p->f.rd.flags;
 
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, 0);
     }
-    if ((p->f.rd.flags & LINK_KS_F_RAIL) != 0u) {
-        return say(p, KST_PROG_MSG_LEAVE_SUPPLY, 0);
-    }
-    r = request(p, LINK_KST_OP_POWER_CYCLED);
+    p->leave_doubt = (fl & (LINK_KS_F_MUST_READ | LINK_KS_F_LOCKED)) != 0u
+                  && (fl & LINK_KS_F_RAIL) == 0u;
+    r = request(p, p->leave_doubt ? LINK_KST_OP_POWER_CYCLED
+                                  : LINK_KST_OP_LEAVE);
     send(p, &r);
     return KST_PROG_MSG_NONE;
 }

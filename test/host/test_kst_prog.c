@@ -1607,10 +1607,12 @@ TEST_CASE(a_stop_aborts_the_operation_and_asks_for_a_read)
     CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_STOPPED);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_STOPPED);
 
-    /* Leaving stays possible. */
+    /* Leaving stays possible: no PD mini answers, and the port that asks
+     * for a read is left without the wait. */
     CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_DOUBT);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_STOPPED);
 
@@ -2737,7 +2739,7 @@ TEST_CASE(a_fetch_that_brings_nothing_is_asked_again_once_a_second)
 
 TEST_CASE(every_answer_of_start_is_a_message)
 {
-    for (unsigned a = KST_LINK_START_DOWN; a <= KST_LINK_START_NO_IMAGE;
+    for (unsigned a = KST_LINK_START_DOWN; a <= KST_LINK_START_NO_OP;
          ++a) {
         by_hand();
         CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
@@ -2776,7 +2778,7 @@ TEST_CASE(every_answer_of_start_is_a_message)
 
 TEST_CASE(every_refusal_of_the_port_is_a_message)
 {
-    for (unsigned r = LINK_KST_REF_BUSY; r <= LINK_KST_REF_PLAN_NO_PATH;
+    for (unsigned r = LINK_KST_REF_BUSY; r <= LINK_KST_REF_LOCKED;
          ++r) {
         kst_link_outcome_t o;
 
@@ -3643,7 +3645,7 @@ TEST_CASE(a_leave_goes_back_to_pwm_and_switches_no_supply)
     CHECK_EQ(kst_prog_changes(&g_p), 0);
 }
 
-TEST_CASE(a_leave_with_a_pd_mini_sends_nothing_and_keeps_the_session)
+TEST_CASE(a_leave_with_a_pd_mini_keeps_the_supply_on)
 {
     int starts;
 
@@ -3655,26 +3657,305 @@ TEST_CASE(a_leave_with_a_pd_mini_sends_nothing_and_keeps_the_session)
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
     CHECK(g_sup_on);
     starts = g_starts;
-    /* The port's only command to PWM cycles the supply: it is not sent. */
-    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_LEAVE_SUPPLY);
-    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
-    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
     settle();
-    CHECK_EQ(g_starts, starts);
+    /* 1 command, and it is no supply cycle. */
+    CHECK_EQ(g_starts, starts + 1);
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
     CHECK(g_sup_on);
+}
+
+/* Frames from the leave to the port in PWM. */
+static unsigned leave_takes(void)
+{
+    unsigned n = 0;
+
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    while (n < 20000u && kst_prog_state(&g_p) != KST_PROG_PWM) {
+        /* Nothing else starts while the port waits. */
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+        frame();
+        n++;
+    }
+    return n;
+}
+
+TEST_CASE(the_wait_before_pwm_is_the_leaves_wait)
+{
+    static const uint16_t waits[] = { 0u, 100u, 10000u };
+
+    for (unsigned i = 0; i < sizeof(waits) / sizeof(waits[0]); ++i) {
+        kst_prog_cmd_t cmd;
+        unsigned n;
+
+        /* The request carries the value. */
+        by_hand();
+        CHECK(kst_prog_wait_set(&g_p, waits[i]));
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_take(&g_p, &cmd));
+        CHECK_EQ(cmd.kind, KST_PROG_CMD_START);
+        CHECK_EQ(cmd.req.op, LINK_KST_OP_LEAVE);
+        CHECK_EQ(cmd.req.port, CH);
+        CHECK_EQ(cmd.req.leave_ms, waits[i]);
+
+        /* And the port waits that long: 1 frame is 1 ms, and the link's
+         * exchanges come on top. */
+        up();
+        CHECK(kst_prog_wait_set(&g_p, waits[i]));
+        n = leave_takes();
+        CHECK(n >= waits[i]);
+        CHECK(n <= waits[i] + 400u);
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+        CHECK(!kst_prog_have_servo(&g_p));
+    }
+}
+
+TEST_CASE(a_wait_above_the_range_is_not_sent)
+{
+    kst_link_request_t r;
+    kst_prog_cmd_t cmd;
+
+    /* The model takes no such value. */
+    up();
+    CHECK(kst_prog_wait_set(&g_p, 100u));
+    CHECK(!kst_prog_wait_set(&g_p, 10001u));
+    CHECK_EQ(kst_prog_wait_ms(&g_p), 100u);
+    /* The link module sends nothing for one. */
+    memset(&r, 0, sizeof(r));
+    r.op = LINK_KST_OP_LEAVE;
+    r.port = CH;
+    r.leave_ms = 10001u;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
+    r.leave_ms = 10000u;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    settle();
+    /* And its answer is a message that keeps the session. */
+    by_hand();
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_ARG);
+    CHECK_EQ(msg(), KST_PROG_MSG_START + KST_LINK_START_ARG);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_have_servo(&g_p));
-    /* The session goes on. */
-    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+}
+
+TEST_CASE(an_abort_in_the_wait_keeps_the_session)
+{
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    CHECK(kst_prog_wait_set(&g_p, 5000u));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    frames(500);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+    CHECK_EQ(kst_prog_op(&g_p), LINK_KST_OP_LEAVE);
+    CHECK_EQ(g_p.f.rd.port, LINK_KST_LEAVING);
+    /* Nothing starts under the wait. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    kst_prog_abort(&g_p);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
-    /* The PD mini stops answering: the leave is the port's command. */
-    g_rail = false;
-    frame();
+    CHECK_EQ(g_aborts, 1);
+    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+    /* The session is as the leave found it: no read is owed. */
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_have_servo(&g_p));
+    CHECK(!kst_prog_in_doubt(&g_p));
+    CHECK(kst_prog_write_enabled(&g_p));
+    CHECK_EQ(kst_prog_changes(&g_p), 1);
+    CHECK_EQ(g_p.f.rd.flags & LINK_KS_F_MUST_READ, 0);
+    /* A new leave is taken at once. */
+    CHECK(kst_prog_wait_set(&g_p, 0u));
     CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+}
+
+TEST_CASE(a_disarm_in_the_wait_keeps_the_port_and_asks_for_a_read)
+{
+    up_enabled();
+    CHECK(kst_prog_wait_set(&g_p, 5000u));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    frames(500);
+    CHECK_EQ(g_p.f.rd.port, LINK_KST_LEAVING);
+    g_stop = true;
+    frame();
+    g_stop = false;
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
+    /* The port is not in PWM: the tester does not have it. */
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_have_servo(&g_p));
+    CHECK((g_p.f.rd.flags & LINK_KS_F_MUST_READ) != 0u);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(!kst_prog_editable(&g_p));
+    /* The read the port asks for, then the leave with its wait. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(kst_prog_wait_set(&g_p, 100u));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+}
+
+TEST_CASE(a_supply_that_goes_off_in_the_wait_ends_in_pwm_with_it_off)
+{
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(g_sup_on);
+    CHECK(kst_prog_wait_set(&g_p, 5000u));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    frames(500);
+    CHECK_EQ(g_p.f.rd.port, LINK_KST_LEAVING);
+    /* The panel's STOP switches the PD mini off. */
+    g_sup_on = false;
+    frames(200);
+    /* Not in PWM while the supply's off time runs. */
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+    CHECK_EQ(g_p.f.rd.port, LINK_KST_RAIL_OFF);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK(!g_sup_on);
+}
+
+TEST_CASE(a_coprocessor_without_leave_is_named_and_cycles_no_supply)
+{
+    for (uint16_t minor = 13u; minor < LINK_MINOR_KST_LEAVE; ++minor) {
+        int starts;
+
+        /* No PD mini answers: the port's older command changes its state
+         * only, and the end says that no wait was applied. */
+        fresh_at(0u);
+        kst_link_came_up(&g_k, minor);
+        settle();
+        CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_READ);
+        starts = g_starts;
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(g_starts, starts + 2);
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT_NO_WAIT);
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+        CHECK(!kst_prog_have_servo(&g_p));
+
+        /* A PD mini answers: that command would cycle the supply.  It is
+         * not sent, and the session stays. */
+        fresh_at(0u);
+        g_rail = true;
+        kst_link_came_up(&g_k, minor);
+        settle();
+        CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+        settle();
+        CHECK(g_sup_on);
+        starts = g_starts;
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(g_starts, starts + 1);
+        CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_have_servo(&g_p));
+        CHECK(g_sup_on);
+        CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    }
+    /* A page not read when the answer comes is taken as one with a PD
+     * mini: nothing is sent. */
+    {
+        kst_prog_cmd_t cmd;
+
+        by_hand();
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        g_f.rd.known = false;
+        answer(KST_LINK_START_NO_OP);
+        CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
+        CHECK(!kst_prog_take(&g_p, &cmd));
+    }
+}
+
+TEST_CASE(a_leave_the_port_refuses_keeps_the_session)
+{
+    static const uint8_t refs[] = {
+        LINK_KST_REF_BUSY, LINK_KST_REF_PORT, LINK_KST_REF_UNSAFE,
+        LINK_KST_REF_NOT_PROGRAMMING, LINK_KST_REF_MUST_READ,
+        LINK_KST_REF_LEAVE_MS, LINK_KST_REF_LOCKED,
+    };
+
+    for (unsigned i = 0; i < sizeof(refs); ++i) {
+        kst_link_outcome_t o;
+
+        by_hand();
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        answer(KST_LINK_START_OK);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+        memset(&o, 0, sizeof(o));
+        o.kind = KST_LINK_OUT_REFUSED;
+        o.op = LINK_KST_OP_LEAVE;
+        o.refusal = (link_kst_refusal_t)refs[i];
+        end(&o);
+        CHECK_EQ(msg(), KST_PROG_MSG_REF + (unsigned)refs[i]);
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_have_servo(&g_p));
+        CHECK_EQ(kst_prog_changes(&g_p), 1);
+    }
+}
+
+TEST_CASE(a_port_in_doubt_is_left_by_leave_only_where_a_pd_mini_answers)
+{
+    static const uint16_t doubts[] = {
+        LINK_KS_F_MUST_READ, LINK_KS_F_LOCKED,
+    };
+
+    for (unsigned i = 0; i < 2u; ++i) {
+        kst_prog_cmd_t cmd;
+        kst_link_outcome_t o;
+
+        /* A PD mini answers: the command is LEAVE, which the port refuses
+         * and which switches nothing. */
+        by_hand();
+        g_f.rd.flags |= (uint16_t)(doubts[i] | LINK_KS_F_RAIL);
+        pass(1);
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_take(&g_p, &cmd));
+        CHECK_EQ(cmd.req.op, LINK_KST_OP_LEAVE);
+
+        /* None answers: STOP would leave the port where it is.  The
+         * command that changes the port's state only is sent. */
+        by_hand();
+        g_f.rd.flags |= doubts[i];
+        pass(1);
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_take(&g_p, &cmd));
+        CHECK_EQ(cmd.req.op, LINK_KST_OP_POWER_CYCLED);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+        g_f.answer_id = cmd.id;
+        g_f.answer = KST_LINK_START_OK;
+        pass(1);
+        memset(&o, 0, sizeof(o));
+        o.kind = KST_LINK_OUT_DONE;
+        o.op = LINK_KST_OP_POWER_CYCLED;
+        o.taken = true;
+        end(&o);
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT_DOUBT);
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        CHECK(!kst_prog_have_servo(&g_p));
+    }
 }
 
 TEST_CASE(the_wait_before_pwm_keeps_its_limits)
@@ -3709,7 +3990,15 @@ int main(void)
     RUN(a_supply_outside_the_ports_range_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_result_32);
     RUN(a_leave_goes_back_to_pwm_and_switches_no_supply);
-    RUN(a_leave_with_a_pd_mini_sends_nothing_and_keeps_the_session);
+    RUN(a_leave_with_a_pd_mini_keeps_the_supply_on);
+    RUN(the_wait_before_pwm_is_the_leaves_wait);
+    RUN(a_wait_above_the_range_is_not_sent);
+    RUN(an_abort_in_the_wait_keeps_the_session);
+    RUN(a_disarm_in_the_wait_keeps_the_port_and_asks_for_a_read);
+    RUN(a_supply_that_goes_off_in_the_wait_ends_in_pwm_with_it_off);
+    RUN(a_coprocessor_without_leave_is_named_and_cycles_no_supply);
+    RUN(a_leave_the_port_refuses_keeps_the_session);
+    RUN(a_port_in_doubt_is_left_by_leave_only_where_a_pd_mini_answers);
     RUN(the_wait_before_pwm_keeps_its_limits);
     RUN(an_edit_inside_the_limits_changes_the_draft_only);
     RUN(a_value_beyond_a_hard_limit_is_not_taken);

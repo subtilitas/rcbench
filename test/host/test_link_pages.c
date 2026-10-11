@@ -835,8 +835,8 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_KS_W_VIEW, 25);
     CHECK_EQ(LINK_KS_W_SUPPLY_MV, 26);
     CHECK_EQ(LINK_KS_W_SUPPLY_MA, 27);
-    CHECK_EQ(LINK_KS_W_COUNT, 28);
-    CHECK_EQ(LINK_KS_W_COUNT % LINK_KS_W_CMD_FRAME, 0u);
+    CHECK_EQ(LINK_KS_W_LEAVE_MS, 28);
+    CHECK_EQ(LINK_KS_W_COUNT, 29);
     /* The state, its flags and the port share register 0 and do not
      * overlap. */
     const uint16_t flags = LINK_KS_F_BUSY | LINK_KS_F_IN_MODE
@@ -848,6 +848,10 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_KS_STATE_OF(0xA7FDu), 5u);
     CHECK_EQ(LINK_KS_PORT_OF(0xA7FDu), 10u);
     CHECK(LINK_KST_RAIL_WAIT < 8);
+    CHECK_EQ(LINK_KST_LEAVING, 6);
+    CHECK_EQ(LINK_KS_STATE_OF(0xA7FEu), (unsigned)LINK_KST_LEAVING);
+    CHECK_EQ(LINK_KS_OP_OF(0xA000u), (unsigned)LINK_KST_OP_LEAVE);
+    CHECK_EQ(LINK_KS_W_CMD_OF(LINK_KST_OP_LEAVE, 2u), 0x024Au);
     CHECK_EQ(LINK_KS_OP_OF(0x8FFFu), (unsigned)LINK_KST_OP_POWER_CYCLED);
     CHECK_EQ(LINK_KS_OP_OF(0x9000u), (unsigned)LINK_KST_OP_REBOOT);
     CHECK_EQ(LINK_KS_FRAMES_OF(0x8FFFu), 4095u);
@@ -870,7 +874,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_KST_RESULT_SUPPLY, 32);
     /* 4.14 adds results and moves no register: a write's planning runs
      * after the command's frame.  The refusal 4.13 gave keeps its number. */
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 14u);
+    CHECK(LINK_PROTOCOL_MINOR >= 14u);
     CHECK_EQ(LINK_MINOR_KST_PLAN, 14u);
     CHECK_EQ(LINK_KST_RESULT_NO_PATH, 33);
     CHECK_EQ(LINK_KST_RESULT_TOO_COMPLEX, 34);
@@ -879,6 +883,18 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_KST_REF_PLAN_R00, 13);
     CHECK_EQ(LINK_KST_REF_PLAN_PAIRING, 14);
     CHECK_EQ(LINK_KST_REF_PLAN_NO_PATH, 15);
+    /* 4.15 adds an operation, a state, a write register and two refusals
+     * after the ones there were: the way from PROGRAMMING to PWM without a
+     * supply cycle. */
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 15u);
+    CHECK_EQ(LINK_MINOR_KST_LEAVE, 15u);
+    CHECK_EQ(LINK_KST_OP_LEAVE, 10);
+    CHECK_EQ(LINK_KST_OP_COUNT, 11);
+    CHECK_EQ(LINK_KST_REF_LEAVE_MS, 19);
+    CHECK_EQ(LINK_KST_REF_LOCKED, 20);
+    CHECK_EQ(LINK_KST_LEAVE_MS_MAX, 10000u);
+    CHECK_EQ(LINK_KST_LEAVE_MS_DEFAULT, 100u);
+    CHECK(LINK_KST_LEAVE_MS_DEFAULT <= LINK_KST_LEAVE_MS_MAX);
     /* The key a write carries is neither of the values a cleared or a
      * stuck register reads. */
     CHECK(LINK_KST_WRITE_KEY != 0u);

@@ -32,6 +32,8 @@ before a write is relied on.
   says `Not available: the coprocessor has no programming port.` and
   `Update the coprocessor to version 4.13 or later.`, and every control but
   **CLOSE** is off.
+- **LEAVE** with its wait needs protocol 4.15 on the coprocessor. An older
+  one is [named and handled without it](#a-coprocessor-older-than-link-version-415).
 
   ![A coprocessor without the port](img/servo-kst-nopage.png)
 
@@ -91,11 +93,12 @@ PORT.`, and every control but **CLOSE** is off.
 | Programming, the supply read | `Port 1 in programming mode, no PWM: 5.00 V, 37 mA.` | frames only |
 | Working | `Working: 12 frames.` | frames of the running operation |
 | Working, the coprocessor plans | `Planning the order of the writes. No frame sent yet.` | nothing: a coprocessor of link version 4.14 plans a write or a restore before its first frame |
-| Leaving | `Leaving programming mode. PWM is not on yet.` | nothing until the port reports PWM |
+| Leaving | `Leaving programming mode. PWM is not on yet.` | the line low for **WAIT BEFORE PWM**; no pulse until the port reports PWM |
 
 **CONNECT** takes the port out of PWM, sets the supply where a PD mini
 answers, runs the entry sequence and reads all 32 registers. The button
-reads **ABORT** while an operation runs and **LEAVE** in programming mode.
+reads **ABORT** while an operation runs or a leave waits, and **LEAVE** in
+programming mode.
 
 ![An operation running](img/servo-kst-working.png)
 
@@ -124,7 +127,7 @@ With the port in the tester's hands, **MORE** opens what **CONNECT** sets.
 | --- | --- | --- | --- |
 | PROGRAMMING VOLTAGE | 1.0 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on | 5.0 V | the supply voltage of the servo in programming mode |
 | CURRENT LIMIT | 50 to 3000 mA | 1000 mA | the supply's current limit during programming |
-| WAIT BEFORE PWM | 0 to 10 000 ms | 100 ms | the time between the end of programming and the first pulse |
+| WAIT BEFORE PWM | 0 to 10 000 ms | 100 ms | the time the port holds its line low between **LEAVE** and the first pulse |
 
 Each entry opens the number keypad with its range. A value outside the range
 is not taken. All three are kept with the SERVO settings.
@@ -155,8 +158,8 @@ the port set.
 ![The supply in programming mode](img/servo-kst-supplied.png)
 
 Without a PD mini the voltage and the current limit are stored and not
-applied. **WAIT BEFORE PWM** is stored and not applied by a coprocessor of
-link version 4.13 or 4.14 ([leaving](#leaving)).
+applied. **WAIT BEFORE PWM** is applied at [leaving](#leaving) with and
+without a PD mini by a coprocessor of link version 4.15 or later.
 
 ## SERVO tab
 
@@ -671,47 +674,77 @@ programmer reads the servo and writes nothing to it.
 
 **LEAVE**, or **CLOSE** in programming mode, asks to end the session and
 to return the port to servo PWM. The programmer does this without a supply
-cycle: the servo stays powered, and the tester's signal follows on the same
-port. What the port does depends on whether a PD mini answers.
+cycle: the servo stays powered, a PD mini's output stays on at its voltage
+and current limit, and the tester's signal follows on the same port.
 Whether a KST servo that received a frame follows PWM before its supply was
 off is not measured.
-
-### Without a PD mini
 
 LEAVE PROGRAMMING opens with `The port goes back to servo PWM. The supply
 stays as is.` and `The servo gets the tester's signal and may move.` The
 page warns before changed values are lost and before a session ends that
 could still restore a servo in doubt. **HOLD TO LEAVE** for 2 s sends the
-port back to PWM.
+port's LEAVE operation of link version 4.15. No frame goes to the servo and
+no supply command to the PD mini. The port holds its line low for
+[**WAIT BEFORE PWM**](#the-supply) and then gives the pin to the PWM
+generator.
 
 ![Leaving](img/servo-kst-leave.png)
 
-The state line reads `Leaving programming mode. PWM is not on yet.` and the
-tester's controls stay off until the port reports PWM. Then `The tester has
-the port again.` and the tester drives the port at once, with **PWM
-TARGET** on **PROG PORT** and **PORT PWM** on. **STOP** during the leave
-ends it as [a stop](#stops-and-losses).
-
-### With a PD mini
-
-A coprocessor of link version 4.13 or 4.14 has no operation that takes the port
-from programming to PWM and leaves the supply on: its 2 operations for
-that step both cycle the supply. The panel sends neither. **LEAVE** and **CLOSE** open no page and
-answer `With a PD mini the port cannot be left in this version.` and `STOP
-ends the session and switches the supply off.`
+The page is the same with a PD mini answering.
 
 ![LEAVE with a PD mini](img/servo-kst-leave-supply.png)
 
-**STOP**, or the supply's output switched off, ends the session: the supply
-stays off for 2000 ms and the port is in PWM again.
+The state line reads `Leaving programming mode. PWM is not on yet.` and the
+tester's controls stay off until the port reports PWM. The button reads
+**ABORT** while the wait runs. Then `The tester has the port again.` and
+the tester drives the port at once, with **PWM TARGET** on **PROG PORT**
+and **PORT PWM** on. The next **CONNECT** starts a new session with its own
+read.
 
 ### The wait before PWM
 
-[**WAIT BEFORE PWM**](#the-supply) is the time the port keeps its pin
-without a pulse between the end of programming and the first pulse, 0 to
-10 000 ms. A coprocessor of link version 4.13 or 4.14 takes no such value: the
-panel stores it and applies it nowhere. The wait a KST servo needs is not
-measured.
+**WAIT BEFORE PWM** is 0 to 10 000 ms, 100 ms by default. The keypad takes
+no value above 10 000 ms, and no leave is sent with one. A wait of 0 ms
+ends at the coprocessor's next pass. The time left of a running wait is not
+shown. The wait a KST servo needs is not measured.
+
+| During the wait | Effect |
+| --- | --- |
+| **ABORT** | the port stays in programming mode with the session as it was; `Leaving was interrupted before the wait ended.`; **LEAVE** is taken again at once |
+| **STOP** or a disarm of the bench, no PD mini answering | the same line; the port stays in programming mode and asks for **READ ALL** |
+| The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 2000 ms, then the port is in PWM |
+| The link goes | as [a loss of the link](#stops-and-losses) |
+
+### A port that is not left
+
+The port refuses a leave while it asks for a read or holds a servo that a
+write left in doubt.
+
+| The port | A PD mini answers | Line | Way out |
+| --- | --- | --- | --- |
+| asks for a read after a stop or an abort | yes | `The port asks for a read first: READ ALL.` | **READ ALL**, then **LEAVE**; or **STOP**, which switches the supply off |
+| holds a servo in doubt | yes | `Servo in doubt: the port keeps the session. RESTORE first.` and `STOP ends the session and switches the supply off.` | **RESTORE**, then **LEAVE**; or **STOP** |
+| either | no | `The tester has the port again.` and `The session was in doubt: no wait before PWM applied.` | none needed: the port is in PWM |
+
+Without a PD mini **STOP** switches no supply and leaves the port in
+programming mode, and a servo that no longer answers takes no read. The
+panel then sends the port's POWER_CYCLED operation in place of LEAVE.
+Without a PD mini it changes the port's state only: no frame, no wait, and
+the servo's supply is whatever feeds it. The record of an interrupted write
+stays for the next session.
+
+### A coprocessor older than link version 4.15
+
+Link versions 4.13 and 4.14 have no LEAVE. The panel sends none to them.
+
+| A PD mini answers | The panel | Lines |
+| --- | --- | --- |
+| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The tester has the port again.` and `Coprocessor older than 4.15: no wait before PWM applied.` |
+| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Update the coprocessor to 4.15 to leave with a PD mini.` and `STOP ends the session and switches the supply off.` |
+
+With a PD mini on such a coprocessor, **STOP** or the supply's output
+switched off ends the session: the supply stays off for 2000 ms and the
+port is in PWM again.
 
 ## Stops and losses
 
@@ -740,11 +773,15 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   drives the port with PWM afterwards.
 - Whether a written value acts before the servo's next power-up is not
   measured. The programmer treats a value that reads back as in effect.
-- With a PD mini answering, the port is not left from the programmer:
-  **STOP** or the supply's output switched off ends the session, with the
-  supply off.
-- **WAIT BEFORE PWM** is stored and not applied by link versions 4.13 and 4.14. The
-  wait a KST servo needs is not measured.
+- With a PD mini answering and a coprocessor older than link version 4.15,
+  the port is not left from the programmer: **STOP** or the supply's output
+  switched off ends the session, with the supply off.
+- With a PD mini answering, a port that holds a servo in doubt is left by
+  **RESTORE** and **LEAVE**, or by **STOP** with the supply off.
+- **WAIT BEFORE PWM** is not applied by a coprocessor older than link
+  version 4.15, and not on the leave of a port in doubt without a PD mini.
+  The wait a KST servo needs is not measured. The time left of a running
+  wait is not shown.
 - Without a PD mini the programming voltage and the current limit are not
   applied.
 - No save, list or load of a servo file has run on a card.
@@ -819,7 +856,9 @@ of the files on a card held in memory. `test_kst_prog` runs the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply
 model and the servo model through the link's dispatcher: the supply's
 ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and
-10 001 ms, **STOP** during a leave, every limit at its edge, the 2 s holds on both sides of the
+10 001 ms as the leave's wait, an abort, a disarm and a supply that goes
+off in the wait, a leave on link versions 4.13 and 4.14 with and without a
+PD mini, **STOP** during a leave, every limit at its edge, the 2 s holds on both sides of the
 threshold, every refusal and result with its line in both languages, a
 write cut by a link loss, a restart, **ABORT** and **STOP**, a card that
 fails, and the timeouts across the 2^32 ms wrap of the clock. The servo
