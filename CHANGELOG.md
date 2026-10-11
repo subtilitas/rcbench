@@ -141,6 +141,10 @@ history is in git.
 
 ### Changed
 
+- The READMEs and the wiki home link the bench configurator at
+  https://subtilitas.github.io/rcbench/ in place of the build guide PDFs.
+  `release.yml` attaches the 2 image archives and `SHA256SUMS` and no
+  longer carries the PDFs over from the latest release.
 - **The write planner for KST and Chaservo servos works in slices and a
   session plans its own writes.** `kst_plan_edit_begin()` and `kst_plan_restore_begin()` start a
   job in 176 bytes the caller holds, and `kst_plan_step(job, budget)`
