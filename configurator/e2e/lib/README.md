@@ -51,6 +51,8 @@ test('the servo setup', async ({ page }) => {
 - `keyboardWalk` leaves the attribute `data-walk` on the controls of the page
   and moves the focus and the scroll position. Call it last, or load the page
   again.
+- `keyboardWalk` reads the position of a stop directly after the key. A page
+  that scrolls smoothly is walked with `reducedMotion: 'reduce'`.
 - `contrastOf` scrolls the page and measures what is shown: open a `details`
   element first when its content counts.
 - `contrastOf` reads plain background colours. A background image or a

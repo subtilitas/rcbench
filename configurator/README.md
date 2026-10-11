@@ -245,8 +245,8 @@ file names no stage, so the checks follow the stages as one list.
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Below 1024 px width the Tab key puts the focus on a control that lies
   entirely under the bottom bar (56 px) when the control is in the lowest
-  56 px of the viewport. At 360 x 740 px this is the checkbox of the 7th
-  function. The tests are in `e2e/matrix/keyboard.spec.ts`, marked `fixme`.
+  56 px of the viewport. At 360 x 740 px with the base setup this is the
+  first radio button under "Variants". The tests are in `e2e/matrix/keyboard.spec.ts`, marked `fixme`.
 - Print output: not checked on paper.
 - PDF export: the first use needs the network for the export chunk of 108 kB. Later uses work offline
   until the page reloads.
