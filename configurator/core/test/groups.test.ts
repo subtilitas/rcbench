@@ -349,7 +349,7 @@ test('removal: a part held by a rule that no removal ends is refused as held', (
   }
 });
 
-test('removal: a rule on a variant alone ends by the variant, and is held when a function forces it', () => {
+test('removal: a rule on a variant alone ends by the variant, or by a part of the function that forces it', () => {
   const c = catalogue(
     [...BASE, part('lamp'), part('shield', { selectable: false })],
     [fn('glow', ['lamp'], { connection: 'osoyoo' })],
@@ -360,7 +360,66 @@ test('removal: a rule on a variant alone ends by the variant, and is held when a
   assert.deepEqual(free.selection, select());
   // The connection variant is always visible, so the change is reported.
   assert.deepEqual(free.options, [{ key: 'connection', from: 'osoyoo', to: 'pads' }]);
-  assert.equal(removalEffect(c, select(['glow']), 'shield').refused, 'held');
+  // The function that forces the variant goes off with its part, and the variant falls back.
+  const forced = removalEffect(c, select(['glow']), 'shield');
+  assert.equal(forced.refused, null);
+  assert.deepEqual(forced.selection, select());
+  assert.deepEqual(forced.functionsOff, [{ id: 'glow', chosen: true }]);
+  assert.deepEqual(forced.partsOut, ['lamp']);
+  assert.deepEqual(forced.options, [{ key: 'connection', from: 'osoyoo', to: 'pads' }]);
+  // A function on the base setup alone has no part to leave with: the variant stays.
+  const base = catalogue(c.parts, [fn('always', ['panel'], { connection: 'osoyoo' })], c.rules);
+  assert.equal(removalEffect(base, select(['always']), 'shield').refused, 'held');
+  // The selection holds the forced value as well: the part of the function and the variant both change.
+  const both = removalEffect(c, select(['glow'], [], { connection: 'osoyoo' }), 'shield');
+  assert.equal(both.refused, null);
+  assert.deepEqual(both.selection, select());
+});
+
+test('removal: a negated variant ends by the value it excludes, a negated part holds', () => {
+  const c = catalogue(
+    [...BASE, part('x'), part('target', { selectable: false }), part('lonely', { selectable: false })],
+    [],
+    [
+      rule('t', { not: { opt: 'connection', is: 'osoyoo' } }, 'target'),
+      rule('l', { not: { has: 'x' } }, 'lonely'),
+    ],
+  );
+  const effect = removalEffect(c, select(), 'target');
+  assert.equal(effect.refused, null);
+  assert.deepEqual(effect.selection, select([], [], { connection: 'osoyoo' }));
+  assert.deepEqual(effect.options, [{ key: 'connection', from: 'pads', to: 'osoyoo' }]);
+  // A removal adds no part, so the part that needs x to be absent stays.
+  assert.equal(removalEffect(c, select(), 'lonely').refused, 'held');
+});
+
+test('removal: a part a later rule adds does not count for a rule that ran before it', () => {
+  // The resolver runs each rule once, in order: "target" is there by x alone.
+  const c = catalogue(
+    [...BASE, part('x'), part('target', { selectable: false }), part('mid', { selectable: false })],
+    [],
+    [rule('t', { any: [{ has: 'x' }, { has: 'mid' }] }, 'target'), rule('m', { all: [] }, 'mid')],
+  );
+  const effect = removalEffect(c, select([], ['x']), 'target');
+  assert.equal(effect.refused, null);
+  assert.deepEqual(effect.selection, select());
+  assert.deepEqual(effect.partsOut, ['x']);
+});
+
+test('removal: a part and the variant its function forces release a disjunction in one step', () => {
+  const c = catalogue(
+    [...BASE, part('x'), part('target', { selectable: false })],
+    [fn('f', ['x'], { escPower: 'pd' })],
+    [rule('t', { any: [{ has: 'x' }, { opt: 'escPower', is: 'pd' }] }, 'target')],
+  );
+  const effect = removalEffect(c, select(['f']), 'target');
+  assert.equal(effect.refused, null);
+  assert.deepEqual(effect.selection, select());
+  assert.deepEqual(effect.functionsOff, [{ id: 'f', chosen: true }]);
+  // With the value in the selection as well, the variant changes in a second step.
+  const two = removalEffect(c, select(['f'], [], { escPower: 'pd' }), 'target');
+  assert.equal(two.refused, null);
+  assert.deepEqual(two.selection, select());
 });
 
 test('removal: a rule with an empty conjunction holds its part', () => {

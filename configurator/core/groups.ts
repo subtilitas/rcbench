@@ -8,7 +8,6 @@
 import type {
   Catalogue, Cond, FunctionId, OptionKey, Options, PartId, Selection, Setup,
 } from '../contract.ts';
-import { holds } from './cond.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from './resolve.ts';
 
 /** A needed part that exists as one of several boards. */
@@ -193,44 +192,12 @@ function optionChanges(before: Setup, after: Setup): OptionChange[] {
   return out;
 }
 
-type Move = { parts: PartId[]; flips: Array<{ key: OptionKey; to: string }> };
-
-type BreakContext = {
-  has: (id: PartId) => boolean;
-  options: Options;
-  /** Parts of the base setup: they do not leave. */
-  locked: Set<PartId>;
-  /** Variants a function forces or an earlier step changed: they keep their value. */
-  fixed: Set<OptionKey>;
-};
-
-/**
- * The ways a condition that holds stops holding, each as parts to take out
- * and variants to change. An empty list when no removal does it. A
- * conjunction ends with one member; a way that changes a variant alone comes
- * before a way that takes a part. A disjunction ends when every member that
- * holds ends. A negation ends only when a part comes in, which a removal does
- * not do.
- */
-function breakCond(cond: Cond, ctx: BreakContext): Move[] {
-  if ('has' in cond) return ctx.locked.has(cond.has) ? [] : [{ parts: [cond.has], flips: [] }];
-  if ('opt' in cond) {
-    if (ctx.fixed.has(cond.opt)) return [];
-    return (OPTION_VALUES[cond.opt] as ReadonlyArray<string>).filter((value) => value !== cond.is)
-      .map((to) => ({ parts: [], flips: [{ key: cond.opt, to }] }));
-  }
-  if ('not' in cond) return [];
-  if ('all' in cond) {
-    const moves = cond.all.flatMap((c) => breakCond(c, ctx));
-    return [...moves.filter((m) => m.parts.length === 0), ...moves.filter((m) => m.parts.length > 0)];
-  }
-  let out: Move[] = [{ parts: [], flips: [] }];
-  for (const member of cond.any) {
-    if (!holds(member, ctx)) continue;
-    const ways = breakCond(member, ctx);
-    out = out.flatMap((o) => ways.map((w) => ({ parts: [...o.parts, ...w.parts], flips: [...o.flips, ...w.flips] })));
-  }
-  return out;
+/** The parts and the variants a condition reads, at any depth. */
+function atoms(cond: Cond, parts: Set<PartId>, keys: Set<OptionKey>): void {
+  if ('has' in cond) parts.add(cond.has);
+  else if ('opt' in cond) keys.add(cond.opt);
+  else if ('not' in cond) atoms(cond.not, parts, keys);
+  else for (const member of 'all' in cond ? cond.all : cond.any) atoms(member, parts, keys);
 }
 
 /**
@@ -239,8 +206,10 @@ function breakCond(cond: Cond, ctx: BreakContext): Move[] {
  * The part leaves the owned parts. Every chosen function that needs it leaves
  * the selection; the other parts of such a function stay as owned parts where
  * the catalogue lets a visitor own them. Where a rule still adds the part,
- * the rule ends: by the other value of a variant it reads, else by removing
- * the part that needs it. No part comes in except by a rule.
+ * the smallest change of what the rule reads releases it: another value of a
+ * variant, else the removal of a part. A variant that a function forces
+ * changes with a part of that function. No part comes in except by a rule,
+ * so a rule on the absence of a part holds its part.
  *
  * Adding the part and the selectable parts of `partsOut` back as owned parts,
  * with the variants of the setup before, gives the functions of that setup
@@ -275,42 +244,56 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
     };
   };
 
-  // A part of `gone` that is still present is there by a rule. The search ends
-  // one such rule per step, by a variant or by a part, and takes the next way
-  // where a way leads to a part that no removal releases. A step adds a part
-  // to `gone` or fixes a variant, so the depth is bounded; a state is tried once.
-  const tried = new Set<string>();
-  const search = (gone: Set<PartId>, options: Record<OptionKey, string>, flipped: Set<OptionKey>): Selection | null => {
-    const key = `${[...gone].sort().join(',')}|${OPTION_KEYS.map((k) => options[k]).join(',')}|${[...flipped].sort().join(',')}`;
-    if (tried.has(key)) return null;
-    tried.add(key);
-    const next = without(gone, options);
-    const after = resolve(catalogue, next);
-    const stuck = after.parts.filter((r) => gone.has(r.part.id));
-    if (stuck.length === 0) return next;
-    const ctx: BreakContext = {
-      has: (id) => after.parts.some((r) => r.part.id === id),
-      options: Object.fromEntries(after.options.map((o) => [o.key, o.value])) as Options,
-      locked,
-      fixed: new Set([...flipped, ...after.options.filter((o) => o.forcedBy !== null).map((o) => o.key)]),
-    };
+  // A part of `gone` that is still present is there by a rule. The search
+  // changes what the rules of such parts read: a variant gets another value,
+  // or a part leaves. The resolver decides whether a change releases the
+  // part. The search is breadth first, variants before parts, so the result
+  // is a smallest set of changes. A state is tried once; the states are the
+  // sets of parts times the values of the variants, so the search ends.
+  type State = { gone: Set<PartId>; options: Record<OptionKey, string> };
+  const stateKey = (state: State): string => `${[...state.gone].sort().join(',')}|${OPTION_KEYS.map((k) => state.options[k]).join(',')}`;
+  const first: State = { gone: new Set([partId]), options: { ...start.options } };
+  const queue: State[] = [first];
+  const seen = new Set<string>([stateKey(first)]);
+  const enqueue = (state: State): void => {
+    const key = stateKey(state);
+    if (seen.has(key)) return;
+    seen.add(key);
+    queue.push(state);
+  };
+  let next: Selection | null = null;
+  for (let state = queue.shift(); state !== undefined && next === null; state = queue.shift()) {
+    const { gone, options } = state;
+    const candidate = without(gone, options);
+    const setup = resolve(catalogue, candidate);
+    const stuck = setup.parts.filter((r) => gone.has(r.part.id));
+    if (stuck.length === 0) {
+      next = candidate;
+      break;
+    }
+    const parts = new Set<PartId>();
+    const keys = new Set<OptionKey>();
     for (const held of stuck) {
       for (const reason of held.addedBy) {
         const rule = reason.kind === 'rule' ? catalogue.rules.find((r) => r.id === reason.id) : undefined;
-        for (const move of rule ? breakCond(rule.when, ctx) : []) {
-          // A way that names only parts that are gone already ends nothing.
-          if (move.flips.length === 0 && move.parts.every((id) => gone.has(id))) continue;
-          const moved = { ...options };
-          for (const flip of move.flips) moved[flip.key] = flip.to;
-          const found = search(new Set([...gone, ...move.parts]), moved, new Set([...flipped, ...move.flips.map((f) => f.key)]));
-          if (found) return found;
-        }
+        if (rule) atoms(rule.when, parts, keys);
       }
     }
-    return null;
-  };
-
-  const next = search(new Set([partId]), { ...start.options }, new Set());
+    for (const key of keys) {
+      const option = setup.options.find((o) => o.key === key) as Setup['options'][number];
+      if (option.forcedBy !== null) {
+        // A variant a function forces changes when that function goes off with one of its parts.
+        for (const id of needs.get(option.forcedBy) as PartId[]) parts.add(id);
+        continue;
+      }
+      for (const value of OPTION_VALUES[key] as ReadonlyArray<string>) {
+        if (value !== option.value) enqueue({ gone, options: { ...options, [key]: value } });
+      }
+    }
+    for (const id of parts) {
+      if (!locked.has(id) && !gone.has(id) && setup.parts.some((r) => r.part.id === id)) enqueue({ gone: new Set([...gone, id]), options });
+    }
+  }
   if (next === null) return refuse('held');
   const after = resolve(catalogue, next);
 
