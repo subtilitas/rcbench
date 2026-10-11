@@ -25,6 +25,10 @@ hardware: no frame of this code has been sent to a servo.
   sessions on two drivers run side by side.
 - A session object is 648 bytes on a 32-bit target and 672 bytes on x86-64.
   A plan is 208 bytes, a capture 200 bytes, a frame 18 bytes.
+- The planner does not recurse. `kst_plan_edit()` and what it calls take
+  464 bytes of stack in the RP2350 coprocessor image of this repository,
+  built with ARM GNU 14.2, and `kst_session_write()` adds 256 bytes
+  above it. Not measured with another compiler or option set.
 - Non-blocking: `kst_session_step()` reads the clock, polls the driver and
   returns. It never waits.
 

@@ -237,7 +237,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 2 392 | 528 | 920 |
+| Kern 0 | `main` | 4 096 | 1 584 | 528 | 1 728 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -245,16 +245,18 @@ CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
 Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
-Auch die Kette von Kern 0 ändert sich damit: ARM GNU 14.2 ergibt 2 416
+Auch die Kette von Kern 0 ändert sich damit: ARM GNU 14.2 ergibt 1 608
 Bytes, und die Frames unten stammen aus diesem Build.
 
 Die tiefste Kette von Kern 0 ist ein Schreibkommando an den
 KST-Programmierport: `main` (392 Bytes), `can_service` (344),
 `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
-`kst_session_write` (256) und der Schreibplaner aus `protocols/kst`, 1 272
-Bytes ab `kst_plan_edit`, davon 640 für den Frame seines Suchschritts
-`detour`. Der Plan und das bereitgestellte Image liegen im Zustand des
-Ports, nicht auf dem Stack. Der tiefste Handler ist der Worker des USB-Stacks,
+`kst_session_write` (256) und der Schreibplaner aus `protocols/kst`, 464
+Bytes ab `kst_plan_edit`: `build` (160), `detour` (72), `search` (56) und
+die Grenzwertprüfung `kst_limits_image` (112). Der Planer ruft sich nicht
+selbst auf. Der Plan und das bereitgestellte Image liegen im Zustand des
+Ports, nicht auf dem Stack; `kst_session_write` hält in seinem Frame einen
+zweiten Plan von 208 Bytes zum Vergleich. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 

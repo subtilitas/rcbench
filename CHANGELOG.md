@@ -58,6 +58,19 @@ history is in git.
 
 ### Changed
 
+- **The KST write planner takes 464 bytes of stack, down from 1,272.**
+  Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
+  the coprocessor image built with ARM GNU 14.2. The search over write
+  orders is a loop over one working image with three 7-byte arrays, not a
+  recursion of 7 levels with an image copy each, and the search for an
+  extra write keeps a 256-bit set of candidates in place of a 512-byte
+  cost table. Core 0's deepest chain, a write command to the KST
+  programming port, is 1,584 bytes of 4,096 on the image CI builds, down
+  from 2,392. Every plan is the same byte for byte: `test_kst_plan` pins a
+  digest over the result, the violated rules and the whole plan of
+  495,068 planner calls. No function signature differs.
+  ([Performance](docs/Performance.md#the-coprocessor))
+
 - **Every interface to external hardware is a module under `protocols/`.**
   `protocols/dshot`, `ppm`, `sbus`, `openyge`, `pdmini` and `phase_tap`
   each hold a core in C11 that includes C standard headers only, the

@@ -220,7 +220,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 2,392 | 528 | 920 |
+| core 0 | `main` | 4,096 | 1,584 | 528 | 1,728 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -228,14 +228,16 @@ Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
 differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
 runner's packaged one. Core 0's chain moves with it as well: ARM GNU 14.2
-gives 2,416 bytes, and the frames below are that build's.
+gives 1,608 bytes, and the frames below are that build's.
 
 Core 0's deepest chain is a write command to the KST programming port:
 `main` (392 bytes), `can_service` (344), `link_dev_dispatch`, `kst_write`,
 `kst_port_write` (104), `kst_session_write` (256) and the write planner of
-`protocols/kst`, 1,272 bytes from `kst_plan_edit` down, of which the frame
-of its search step `detour` is 640. The plan and the staged image are held
-in the port's state, not on the stack. The deepest handler is
+`protocols/kst`, 464 bytes from `kst_plan_edit` down: `build` (160),
+`detour` (72), `search` (56) and the limit check `kst_limits_image` (112).
+The planner does not recurse. The plan and the staged image are held in
+the port's state, not on the stack; `kst_session_write` holds a second
+208-byte plan in its frame to compare against. The deepest handler is
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
 ends in `panic()` as well.
 

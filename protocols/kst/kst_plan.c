@@ -12,7 +12,7 @@ static const uint8_t k_position[] = { 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D }
 static const uint8_t k_speed[] = { 0x04, 0x1B, 0x1C };
 
 #define GROUP_MAX 7u
-#define NO_COST   0xFFFFu
+#define SUBSETS   (1u << GROUP_MAX)
 
 typedef struct {
     kst_plan_t *plan;
@@ -20,15 +20,36 @@ typedef struct {
     kst_rules_t allowed;   /* hard rules the end points break themselves */
 } build_t;
 
+/*
+ * The working memory of one group's search, 76 bytes.  The search tries a
+ * write in build_t.img and takes it back, so no image is copied and no
+ * function calls itself.
+ */
 typedef struct {
     const uint8_t *regs;
-    unsigned n;
-    bool speed;
-    const kst_image_t *target;
-    kst_rules_t allowed;
-    uint8_t dead[(1u << GROUP_MAX) / 8u];  /* subsets with no valid order */
-    uint8_t order[GROUP_MAX];
+    uint8_t n;
+    uint8_t speed;
+    uint8_t order[GROUP_MAX];   /* the index written at each depth */
+    uint8_t tried[GROUP_MAX];   /* bit i: regs[i] is done with at this depth */
+    uint8_t held[GROUP_MAX];    /* the value the write at each depth replaced */
+    uint8_t dead[SUBSETS / 8u]; /* bit t: the subset t has no valid order */
+    uint8_t open[256u / 8u];    /* bit x: the extra write of x is untried */
 } search_t;
+
+static bool bit_of(const uint8_t *set, unsigned i)
+{
+    return (set[i / 8u] & (1u << (i % 8u))) != 0u;
+}
+
+static void bit_set(uint8_t *set, unsigned i)
+{
+    set[i / 8u] |= (uint8_t)(1u << (i % 8u));
+}
+
+static void bit_clear(uint8_t *set, unsigned i)
+{
+    set[i / 8u] &= (uint8_t)~(1u << (i % 8u));
+}
 
 static void emit(build_t *b, uint8_t reg, uint8_t value)
 {
@@ -41,74 +62,108 @@ static void emit(build_t *b, uint8_t reg, uint8_t value)
     b->img.r[reg] = value;
 }
 
-static bool valid(const search_t *s, const kst_image_t *img)
+static bool valid(const build_t *b)
 {
-    return (kst_limits_image(img) & ~s->allowed) == 0u;
+    return (kst_limits_image(&b->img) & ~b->allowed) == 0u;
 }
 
 /* Lower is better: less travel between the end points, or less speed.
  * With spd_sel off the servo runs at its own speed, taken as the highest. */
-static int32_t authority(const search_t *s, const kst_image_t *img)
+static int32_t authority(const build_t *b, const search_t *s)
 {
-    if (s->speed) {
-        return kst_field_get(img, KST_F_SPD_SEL) != 0u
-                   ? (int32_t)kst_field_get(img, KST_F_SPD) : 4096;
+    if (s->speed != 0u) {
+        return kst_field_get(&b->img, KST_F_SPD_SEL) != 0u
+                   ? (int32_t)kst_field_get(&b->img, KST_F_SPD) : 4096;
     }
-    return (int32_t)kst_field_get(img, KST_F_PULSE_UPPER)
-           - (int32_t)kst_field_get(img, KST_F_PULSE_LOWER);
+    return (int32_t)kst_field_get(&b->img, KST_F_PULSE_UPPER)
+           - (int32_t)kst_field_get(&b->img, KST_F_PULSE_LOWER);
+}
+
+/*
+ * The register of @p todo, not tried at @p depth, whose write leaves a
+ * valid image of the least authority; of two alike the first.  s->n when
+ * there is none.  A register whose write leaves an invalid image is marked
+ * tried.
+ */
+static unsigned pick(build_t *b, search_t *s, unsigned todo, unsigned depth)
+{
+    unsigned best = s->n;
+    int32_t best_score = 0;
+
+    for (unsigned i = 0; i < s->n; ++i) {
+        const uint8_t reg = s->regs[i];
+        const uint8_t before = b->img.r[reg];
+
+        if (((todo & ~(unsigned)s->tried[depth]) & (1u << i)) == 0u) {
+            continue;
+        }
+        b->img.r[reg] = b->plan->target.r[reg];
+        if (!valid(b)) {
+            s->tried[depth] |= (uint8_t)(1u << i);
+        } else {
+            const int32_t score = authority(b, s);
+
+            if (best == s->n || score < best_score) {
+                best = i;
+                best_score = score;
+            }
+        }
+        b->img.r[reg] = before;
+    }
+    return best;
+}
+
+/* Take back the write at @p depth.  Returns its bit of the todo set. */
+static unsigned take_back(build_t *b, const search_t *s, unsigned depth)
+{
+    b->img.r[s->regs[s->order[depth]]] = s->held[depth];
+    return 1u << s->order[depth];
 }
 
 /*
  * Depth-first search for an order of the registers in @p todo, bit i for
- * regs[i], in which every image passes valid().  At most 7 levels deep.
+ * regs[i], in which every image passes valid().  At most 7 levels deep;
+ * the levels are the entries of order, tried and held.  b->img is the
+ * image the order starts from, and is that image again on return.
  */
-static bool search(search_t *s, const kst_image_t *img, unsigned todo,
-                   unsigned depth)
+static bool search(build_t *b, search_t *s, unsigned todo)
 {
-    unsigned tried = 0;
+    unsigned depth = 0;
+    bool entered = true;
 
-    if (todo == 0u) {
-        return true;
-    }
-    if ((s->dead[todo / 8u] & (1u << (todo % 8u))) != 0u) {
-        return false;
-    }
-    for (;;) {
-        unsigned best = s->n;
-        int32_t best_score = 0;
-        kst_image_t next;
+    while (todo != 0u) {
+        unsigned best;
 
-        for (unsigned i = 0; i < s->n; ++i) {
-            int32_t sc;
+        if (entered) {
+            /* A subset known to have no order has nothing left to try. */
+            s->tried[depth] = bit_of(s->dead, todo) ? (uint8_t)todo : 0u;
+        }
+        best = pick(b, s, todo, depth);
+        if (best != s->n) {
+            const uint8_t reg = s->regs[best];
 
-            if (((todo & ~tried) & (1u << i)) == 0u) {
-                continue;
-            }
-            next = *img;
-            next.r[s->regs[i]] = s->target->r[s->regs[i]];
-            if (!valid(s, &next)) {
-                tried |= 1u << i;
-                continue;
-            }
-            sc = authority(s, &next);
-            if (best == s->n || sc < best_score) {
-                best = i;
-                best_score = sc;
-            }
+            s->tried[depth] |= (uint8_t)(1u << best);
+            s->order[depth] = (uint8_t)best;
+            s->held[depth] = b->img.r[reg];
+            b->img.r[reg] = b->plan->target.r[reg];
+            todo &= ~(1u << best);
+            depth++;
+            entered = true;
+            continue;
         }
-        if (best == s->n) {
-            break;
+        bit_set(s->dead, todo);
+        if (depth == 0u) {
+            return false;
         }
-        tried |= 1u << best;
-        next = *img;
-        next.r[s->regs[best]] = s->target->r[s->regs[best]];
-        s->order[depth] = (uint8_t)best;
-        if (search(s, &next, todo & ~(1u << best), depth + 1u)) {
-            return true;
-        }
+        depth--;
+        todo |= take_back(b, s, depth);
+        entered = false;
     }
-    s->dead[todo / 8u] |= (uint8_t)(1u << (todo % 8u));
-    return false;
+    while (depth > 0u) {
+        depth--;
+        (void)take_back(b, s, depth);
+    }
+    return true;
 }
 
 static void emit_order(build_t *b, const search_t *s, unsigned todo)
@@ -121,7 +176,7 @@ static void emit_order(build_t *b, const search_t *s, unsigned todo)
     for (unsigned k = 0; k < count; ++k) {
         const uint8_t reg = s->regs[s->order[k]];
 
-        emit(b, reg, s->target->r[reg]);
+        emit(b, reg, b->plan->target.r[reg]);
     }
 }
 
@@ -130,53 +185,68 @@ static uint16_t excursion(uint16_t a, uint16_t b)
     return (uint16_t)(a > b ? a - b : b - a);
 }
 
+/* The part of a field's value that its low register holds when the
+ * register holds @p x. */
+static uint16_t low_part(const kst_field_t *f, unsigned x)
+{
+    return (uint16_t)((x >> f->lo_shift) & ((1u << f->lo_bits) - 1u));
+}
+
 /*
  * One extra write of the field's low byte to a third value, then a search
  * from there.  Candidates are tried by ascending excursion of the field
  * from its old value before, and from its new value after, the high part
- * changes.
+ * changes; of two alike the lower value first.  The excursion is computed
+ * again for every pick, from the field's layout: the open set is 32 bytes,
+ * a table of the 256 excursions is 512.
  */
 static bool detour(build_t *b, search_t *s, unsigned todo, kst_field_id_t id)
 {
     const kst_field_t *f = kst_field(id);
+    const kst_image_t *target = &b->plan->target;
     const uint16_t old_v = kst_field_get(&b->img, id);
-    const uint16_t new_v = kst_field_get(s->target, id);
-    uint16_t cost[256];
+    const uint16_t new_v = kst_field_get(target, id);
+    const uint16_t old_high = old_v & (uint16_t)~low_part(f, 0xFF);
+    const uint16_t new_high = new_v & (uint16_t)~low_part(f, 0xFF);
+    const uint8_t lo_before = b->img.r[f->lo_reg];
 
+    memset(s->open, 0, sizeof(s->open));
     for (unsigned x = 0; x < 256u; ++x) {
-        kst_image_t a = b->img;
-        kst_image_t c;
-        uint16_t before;
-        uint16_t after;
-
-        cost[x] = NO_COST;
-        a.r[f->lo_reg] = (uint8_t)x;
-        if (x == b->img.r[f->lo_reg] || x == s->target->r[f->lo_reg]
-            || !valid(s, &a)) {
-            continue;
+        b->img.r[f->lo_reg] = (uint8_t)x;
+        if (x != lo_before && x != target->r[f->lo_reg] && valid(b)) {
+            bit_set(s->open, x);
         }
-        c = a;
-        c.r[f->hi_reg] = s->target->r[f->hi_reg];
-        before = excursion(kst_field_get(&a, id), old_v);
-        after = excursion(kst_field_get(&c, id), new_v);
-        cost[x] = before > after ? before : after;
     }
     for (;;) {
         unsigned best = 256;
-        kst_image_t from = b->img;
+        uint16_t best_cost = 0;
 
         for (unsigned x = 0; x < 256u; ++x) {
-            if (cost[x] != NO_COST && (best == 256u || cost[x] < cost[best])) {
+            uint16_t before;
+            uint16_t after;
+
+            if (!bit_of(s->open, x)) {
+                continue;
+            }
+            before = excursion(old_high | low_part(f, x), old_v);
+            after = excursion(new_high | low_part(f, x), new_v);
+            if (after < before) {
+                after = before;
+            }
+            if (best == 256u || after < best_cost) {
                 best = x;
+                best_cost = after;
             }
         }
         if (best == 256u) {
+            b->img.r[f->lo_reg] = lo_before;
             return false;
         }
-        cost[best] = NO_COST;
-        from.r[f->lo_reg] = (uint8_t)best;
+        bit_clear(s->open, best);
+        b->img.r[f->lo_reg] = (uint8_t)best;
         memset(s->dead, 0, sizeof(s->dead));
-        if (search(s, &from, todo, 0)) {
+        if (search(b, s, todo)) {
+            b->img.r[f->lo_reg] = lo_before;
             emit(b, f->lo_reg, (uint8_t)best);
             emit_order(b, s, todo);
             return true;
@@ -196,21 +266,20 @@ static unsigned index_of(const search_t *s, uint8_t reg)
 
 static bool plan_group(build_t *b, const uint8_t *regs, unsigned n, bool speed)
 {
+    const kst_image_t *target = &b->plan->target;
     search_t s;
     unsigned todo = 0;
 
     memset(&s, 0, sizeof(s));
     s.regs = regs;
-    s.n = n;
-    s.speed = speed;
-    s.target = &b->plan->target;
-    s.allowed = b->allowed;
+    s.n = (uint8_t)n;
+    s.speed = speed ? 1u : 0u;
     for (unsigned i = 0; i < n; ++i) {
-        if (b->img.r[regs[i]] != s.target->r[regs[i]]) {
+        if (b->img.r[regs[i]] != target->r[regs[i]]) {
             todo |= 1u << i;
         }
     }
-    if (search(&s, &b->img, todo, 0)) {
+    if (search(b, &s, todo)) {
         emit_order(b, &s, todo);
         return true;
     }
