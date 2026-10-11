@@ -5,14 +5,14 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import type { Download, Page } from '@playwright/test';
 import { getDocument, VerbosityLevel } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { CATALOGUE } from '../src/core.ts';
+import { CATALOGUE, alwaysOn } from '../src/core.ts';
 import { STRINGS } from '../src/i18n.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const LANGS = ['en', 'de'] as const;
 type Lang = (typeof LANGS)[number];
 // The ticks of the page: a function that needs no part has no tick and is in no link.
-const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+const FUNCTIONS = CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id);
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
 const NAME = /^rcbench-setup-[0-9a-f]{8}-(en|de)\.pdf$/;
@@ -122,6 +122,12 @@ for (const size of SIZES) {
         expect(pdf.text).toContain(lang === 'de' ? `Seite 1 von ${pdf.pages}` : `Page 1 of ${pdf.pages}`);
         // The share link of the page is in the document.
         expect(pdf.text.replace(/\s+/g, '')).toContain(new URL(page.url()).hash.replace(/\s+/g, ''));
+        // The state of the project stands once; the test objects and the power sources have their own headings.
+        const dense = pdf.text.replace(/\s+/g, '');
+        expect(dense.split(say(lang, 'devState').replace(/\s+/g, '')).length - 1).toBe(1);
+        expect(dense).toContain(say(lang, 'tested').replace(/\s+/g, ''));
+        expect(dense).toContain(say(lang, 'power').replace(/\s+/g, ''));
+        expect(dense).not.toMatch(/notrunonhardware|nichtaufHardwaregelaufen/i);
 
         // The status line names the file and keeps it reachable; the focus stays on the button.
         const link = page.locator('#pdflink');
@@ -171,7 +177,7 @@ test.describe('PDF export, failure paths and limits', () => {
 
   test('the link in the PDF holds no id of a function without a tick', async ({ page }) => {
     const seen = watch(page);
-    const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+    const base = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f));
     expect(base.length).toBeGreaterThan(0);
     // A link that names every function: the page keeps its address until a change.
     const opened = `#v=1&f=${CATALOGUE.functions.map((f) => f.id).join(',')}`;

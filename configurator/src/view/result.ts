@@ -1,12 +1,18 @@
-// The result document: notices, summary, safety, parts, functions, wiring,
-// checks, build order, footer. Returns markup; main.ts owns the document.
+// The result document: notices, summary, safety, parts, test objects, power
+// sources, functions, wiring, checks, build order, footer. Returns markup;
+// main.ts owns the document.
 
-import type { Catalogue, Check, Lang, OptionKey, Options, Part, Picture } from '../../contract.ts';
+import type {
+  Catalogue, Check, Lang, OptionKey, Options, Part, Picture, ResolvedPart,
+} from '../../contract.ts';
+import { benchParts, powerGroups, powerNumbers, testObjectsOf } from '../names.ts';
 import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { drawing, sample } from '../draw/svg.ts';
 import { PDF_STATUS } from '../export/button.ts';
-import { reasonText, removeControl, runsOnBase, statusText } from './chooser.ts';
+import {
+  powerLines, powerTitle, reasonText, removeControl, runsOnBase, statusText, usedByText,
+} from './chooser.ts';
 import type { View } from './chooser.ts';
 import { wiresTable } from './table.ts';
 
@@ -14,10 +20,10 @@ export type Notice = { kind: 'err' | 'note'; text: string };
 
 const KIND: Record<Check['kind'], Key> = { measure: 'kM', unknown: 'kU', note: 'kN' };
 
-/** "7 parts, 9 wires, 2 functions." */
+/** "7 parts, 9 wires, 2 functions." The parts are bench hardware: a test object is not counted. */
 export function summary(view: View): string {
   const f = view.setup.functions.filter((x) => x.enabled).length;
-  return t(view.lang, f === 1 ? 'sum1' : 'sum', { p: view.setup.parts.length, w: view.setup.wires.length, f });
+  return t(view.lang, f === 1 ? 'sum1' : 'sum', { p: benchParts(view.setup).length, w: view.setup.wires.length, f });
 }
 
 function head(lang: Lang, url: string, notices: Notice[]): string {
@@ -35,7 +41,7 @@ function safety(lang: Lang, catalogue: Catalogue): string {
 const button = (lang: Lang, id: string, key: Key): string =>
   `<button class="act" type="button" id="${id}">${esc(t(lang, key))}</button>`;
 
-const footer = (lang: Lang): string => `<footer>${esc(t(lang, 'foot'))}</footer>`;
+const footer = (lang: Lang): string => `<footer><p id="dev-state">${esc(t(lang, 'devState'))}</p><p>${esc(t(lang, 'foot'))}</p></footer>`;
 
 /** Folder of the picture files, relative to the page. */
 export const PICTURES = 'pictures/';
@@ -60,23 +66,56 @@ function picture(p: Picture, lang: Lang): string {
     + ` loading="lazy" decoding="async" alt="${esc(tx(lang, p.alt))}"></a>`;
 }
 
+/** One card: name, role, the line `why`, the remove control where the part has one, pictures. */
+function card(view: View, r: ResolvedPart, why: string): string {
+  const { lang, options } = view;
+  const p = r.part;
+  let name = tx(lang, p.name);
+  const variant = p.variantName ? p.variantName.names[options[p.variantName.option]] : undefined;
+  if (variant) name += `, ${tx(lang, variant)}`;
+  const shown = picturesOf(p, options);
+  return `<li${shown.length > 0 ? ' class="pic"' : ''}><div><b>${esc(name)}</b>`
+    + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
+    + `<span class="why">${esc(why)}</span>${removeControl(view, p)}</div>`
+    + (shown.length > 0 ? `<div class="pics">${shown.map((x) => picture(x, lang)).join('')}</div>` : '')
+    + '</li>';
+}
+
+/** The bench hardware of the setup. A test object is no part of this list. */
 function parts(view: View): string {
-  const { lang, setup, options } = view;
-  let h = `<h3 id="h-parts" tabindex="-1">${esc(t(lang, 'parts'))}</h3><ul class="parts">`;
-  for (const r of setup.parts) {
-    const p = r.part;
-    let name = tx(lang, p.name);
-    const variant = p.variantName ? p.variantName.names[options[p.variantName.option]] : undefined;
-    if (variant) name += `, ${tx(lang, variant)}`;
-    const notRun = p.hardware === 'not-run' || (p.id === 'copro' && options.connection === 'osoyoo');
-    const shown = picturesOf(p, options);
-    h += `<li${shown.length > 0 ? ' class="pic"' : ''}><div><b>${esc(name)}</b>${notRun ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
-      + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
-      + `<span class="why">${esc(reasonText(r, view))}</span>${removeControl(view, p)}</div>`
-      + (shown.length > 0 ? `<div class="pics">${shown.map((x) => picture(x, lang)).join('')}</div>` : '')
-      + '</li>';
+  const { lang, setup } = view;
+  return `<h3 id="h-parts" tabindex="-1">${esc(t(lang, 'parts'))}</h3><ul class="parts">`
+    + benchParts(setup).map((r) => card(view, r, reasonText(r, view))).join('')
+    + '</ul>';
+}
+
+/** The test objects of the setup under their own heading, each with the functions that use it. */
+function tested(view: View): string {
+  const { lang, setup } = view;
+  const objects = testObjectsOf(setup);
+  return `<h3 id="h-tested">${esc(t(lang, 'tested'))}</h3><p class="hint">${esc(t(lang, 'testedHint'))}</p>`
+    + (objects.length === 0
+      ? `<p id="tested-none">${esc(t(lang, 'testedNone'))}</p>`
+      : `<ul class="parts" id="tested">${objects.map((r) => card(view, r, usedByText(view, r))).join('')}</ul>`);
+}
+
+/** The power sources of the logic and of each connected test object. */
+function power(view: View): string {
+  const { lang, setup } = view;
+  let h = `<h3 id="h-power">${esc(t(lang, 'power'))}</h3><p class="hint">${esc(t(lang, 'powerHint'))}</p>`;
+  for (const group of powerGroups(setup)) {
+    h += `<h4>${esc(powerTitle(view, group.feeds))}</h4><ul class="parts power" id="power-${group.feeds}">`;
+    for (const { source, used } of group.sources) {
+      const numbers = powerNumbers(lang, source);
+      h += `<li id="pw-${esc(source.id)}"><div><b>${esc(tx(lang, source.label))}</b>${used ? ` <span class="tag">${esc(t(lang, 'gIn'))}</span>` : ''}`
+        + `${numbers ? `<small>${esc(numbers)}</small>` : ''}`
+        + `<span class="why">${esc(tx(lang, source.text))}</span>`
+        + `<ul class="plain">${powerLines(lang, source).map((x) => `<li><span class="kind">${esc(x.kind)}:</span> ${esc(x.text)}</li>`).join('')}</ul>`
+        + '</div></li>';
+    }
+    h += '</ul>';
   }
-  return `${h}</ul>`;
+  return h;
 }
 
 /** The enabled functions: those that need no part first, then those of the parts of the setup. */
@@ -85,7 +124,7 @@ function does(view: View): string {
   // A function with parts states how it is in the setup; the heading states it for the others.
   const list = (base: boolean): string => setup.functions
     .filter((f) => f.enabled && runsOnBase(catalogue, f) === base)
-    .map((f) => `<li>${esc(tx(lang, f.fn.name))}${f.fn.hardware === 'not-run' ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
+    .map((f) => `<li>${esc(tx(lang, f.fn.name))}`
       + `${base ? '' : ` <small>${esc(statusText(view, f))}</small>`}</li>`)
     .join('');
   const [base, rest] = [list(true), list(false)];
@@ -143,6 +182,8 @@ export function result(view: View, url: string, notices: Notice[]): string {
     + PDF_STATUS
     + safety(lang, catalogue)
     + parts(view)
+    + tested(view)
+    + power(view)
     + does(view)
     + wiring(view)
     + checks(view)

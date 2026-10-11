@@ -1,19 +1,24 @@
-// The chooser of the built page under `vite preview`: groups by needed parts,
-// the words for the state of a function, and the removal of a part by keyboard.
+// The chooser of the built page under `vite preview`: groups by needed bench
+// hardware, the words for the state of a function, the test objects under
+// their own heading, and the removal of a part by keyboard.
 
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { Lang } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, groups, resolve } from '../src/core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, groups, resolve, alwaysOn } from '../src/core.ts';
 import { STRINGS, t } from '../src/i18n.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const LANGS: Lang[] = ['en', 'de'];
 const GROUPS = groups(CATALOGUE);
 /** The functions the base setup runs. They take no tick and are in no link. */
-const ON_BASE = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+const ON_BASE = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
 /** The functions with a tick. */
-const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+const FUNCTIONS = CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id);
+/** The devices a visitor connects and tests. They are no hardware of the bench. */
+const OBJECTS = CATALOGUE.parts.filter((p) => p.testObject).map((p) => p.id);
+/** The functions with a tick that need no hardware beyond the base setup: each connects a test object. */
+const PLAIN = CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives !== undefined).map((f) => f.id);
 const enabledCount = (functions: string[], owned: string[] = []): number =>
   resolve(CATALOGUE, { functions, owned, options: { ...DEFAULT_OPTIONS } }).functions.filter((f) => f.enabled).length;
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -111,10 +116,14 @@ for (const size of SIZES) {
   test.describe(`${size.width} px`, () => {
     test.use({ viewport: size, locale: 'en-GB' });
 
-    test('the functions stand in groups by the parts they need, in English and German', async ({ page }) => {
+    test('the functions stand in groups by the bench hardware they need, in English and German', async ({ page }) => {
       const seen = watch(page);
       expect(GROUPS.flatMap((g) => g.functions).sort()).toEqual([...ON_BASE, ...FUNCTIONS].sort());
-      expect(GROUPS[0]?.functions).toEqual(ON_BASE);
+      expect([...(GROUPS[0]?.functions ?? [])].sort()).toEqual([...ON_BASE, ...PLAIN].sort());
+      expect(PLAIN).toEqual(['servo', 'esc']);
+      expect(OBJECTS).toEqual(['servo', 'esc']);
+      // No group is keyed by a test object.
+      expect(GROUPS.flatMap((g) => g.parts).filter((id) => OBJECTS.includes(id))).toEqual([]);
       for (const lang of LANGS) {
         await open(page, lang === 'en' ? '' : '#v=1&l=de');
         await expect(page.locator('html')).toHaveAttribute('lang', lang);
@@ -127,20 +136,33 @@ for (const size of SIZES) {
             : STRINGS.gNeeds[col(lang)] + group.parts.map((id) => short(id, lang)).join(' + ');
           await expect(box.locator('legend')).toHaveText(heading);
           await expect(box.locator('legend')).toBeVisible();
-          // The group of the base setup is a list without a control; every other group holds one tick per function.
+          // No heading names a servo or an ESC as needed.
+          const legend = await box.locator('legend').innerText();
+          for (const id of OBJECTS) expect(legend.split(/[^\p{L}\p{N}]+/u), `${legend}: ${id}`).not.toContain(short(id, lang));
+          // The group of the base setup holds a list without a control and the 2 ticks that connect a
+          // test object; every other group holds one tick per function.
           const ticks = await box.locator('input[data-f]').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f));
           const rows = await box.locator('ul.base > li').evaluateAll((list) => list.map((el) => el.id.replace(/^b-/, '')));
-          expect([ticks, rows]).toEqual(group.parts.length === 0 ? [[], group.functions] : [group.functions, []]);
+          expect([ticks, rows]).toEqual(group.parts.length === 0
+            ? [group.functions.filter((id) => !ON_BASE.includes(id)), group.functions.filter((id) => ON_BASE.includes(id))]
+            : [group.functions, []]);
           // The group is a named group for assistive technology.
           await expect(page.getByRole('group', { name: heading, exact: true })).toHaveCount(1);
         }
         // A part that is one of 2 boards, and parts that depend on a variant, are stated in words.
-        const escpow = page.locator('#g-esc-ina228');
+        const escpow = page.locator('#g-ina228');
         await expect(escpow).toContainText(lang === 'en' ? /: one of .*MATEK.*, or .*XT90/ : /: wahlweise .*MATEK.* oder .*XT90/);
-        await expect(page.locator('#g-esc')).toContainText(
+        await expect(escpow).toContainText(
           t(lang, 'gOneOf', { x: `${short('batt', lang)}${STRINGS.or[col(lang)]}${['pdmini', 'charger', 'usbtap'].map((id) => short(id, lang)).join(' + ')}` }),
         );
-        await expect(page.locator('#g-servo')).toContainText(t(lang, 'gAlso', { x: short('ssup', lang) }));
+        await expect(page.locator('#g-pdmini')).toContainText(t(lang, 'gAlso', { x: ['charger', 'usbtap'].map((id) => short(id, lang)).join(', ') }));
+        // The 2 ticks of the base group stand under their own sentence.
+        await expect(page.locator('#basetick')).toHaveText(STRINGS.baseTick[col(lang)]);
+        await expect(page.locator('#basetick ~ label input[data-f]')).toHaveCount(PLAIN.length);
+        for (const id of PLAIN) {
+          const object = CATALOGUE.functions.find((f) => f.id === id)!.drives as string;
+          await expect(page.locator(`label:has(#f-${id}) small`)).toHaveText(t(lang, 'stObj', { x: short(object, lang) }));
+        }
         // What is in no release keeps its own greyed list.
         await expect(page.locator('.nir h3')).toHaveText(STRINGS.nir[col(lang)]);
         await expect(page.locator('.nir li')).toHaveCount(CATALOGUE.notInRelease.length);
@@ -153,7 +175,7 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
-    test('the group of the base setup is a list without a control, and the keyboard passes it', async ({ page }) => {
+    test('the list of the base setup holds no control, and the keyboard passes it', async ({ page }) => {
       const seen = watch(page);
       expect(ON_BASE.length).toBeGreaterThan(0);
       // The ids of every function, with and without a tick, in the link: the widest case.
@@ -166,22 +188,23 @@ for (const size of SIZES) {
           expect(await page.locator('fieldset.grp').first().getAttribute('id')).toBe('g-base');
           await expect(box.locator('legend')).toHaveText(STRINGS.gBase[col(lang)]);
           await expect(box.locator('legend .tag')).toHaveCount(0);
-          await expect(box.locator('> .hint')).toHaveText(STRINGS.baseHint[col(lang)]);
-          // No control and nothing that takes the focus, in any setup.
-          await expect(box.locator('input, button, select, textarea, a, summary, [tabindex], [contenteditable]')).toHaveCount(0);
+          await expect(box.locator('> .hint')).toHaveText([STRINGS.baseHint[col(lang)], STRINGS.baseTick[col(lang)]]);
+          // The list holds no control and nothing that takes the focus, in any setup. The group holds the 2 ticks alone.
+          await expect(box.locator('ul.base').locator('input, button, select, textarea, a, summary, [tabindex], [contenteditable]')).toHaveCount(0);
+          expect(await box.locator('input, button, select, textarea, a, summary, [tabindex], [contenteditable]').evaluateAll((list) => list.map((el) => el.id)))
+            .toEqual(PLAIN.map((id) => `f-${id}`));
           await expect(box.locator('ul.base > li')).toHaveCount(ON_BASE.length);
           for (const f of CATALOGUE.functions.filter((x) => ON_BASE.includes(x.id))) {
             const row = page.locator(`#b-${f.id}`);
             await expect(row.locator('b')).toHaveText(f.name[lang]);
-            await expect(row.locator('.tag')).toHaveCount(f.hardware === 'not-run' ? 1 : 0);
-            if (f.hardware === 'not-run') await expect(row.locator('.tag')).toHaveText(STRINGS.nrh[col(lang)]);
+            await expect(row.locator('.tag')).toHaveCount(0);
             // Always on, and never "selected by you".
             await expect(row.locator('small')).toHaveText(STRINGS.stBase[col(lang)]);
             await expect(row).toBeVisible();
             await expect(page.locator(`#f-${f.id}`)).toHaveCount(0);
             await expect(page.locator('#does-base li', { hasText: f.name[lang] })).toHaveCount(1);
           }
-          await expect(box).not.toContainText(STRINGS.stOwn[col(lang)]);
+          await expect(box.locator('ul.base')).not.toContainText(STRINGS.stOwn[col(lang)]);
           // A link is not rewritten when it opens, and none of the ticks is one of these functions.
           expect(new URL(page.url()).hash).toBe(hash);
           expect(await page.locator('input[data-f]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f).sort()))
@@ -193,7 +216,7 @@ for (const size of SIZES) {
           expect(cut).toEqual([]);
         }
 
-        // Tab walks the chooser in document order: it skips no control and stops on nothing in the base group.
+        // Tab walks the chooser in document order: it skips no control and stops on nothing in the list of the base setup.
         await open(page, `#v=1&f=servotest&l=${lang}`);
         const wanted = await page.evaluate(() => {
           const out: string[] = [];
@@ -208,14 +231,14 @@ for (const size of SIZES) {
           return out;
         });
         expect(wanted.length).toBeGreaterThan(FUNCTIONS.length);
-        expect(wanted.slice(0, 1)).toEqual([`f-${GROUPS[1]?.functions[0]}`]);
+        expect(wanted.slice(0, PLAIN.length + 1)).toEqual([...PLAIN, GROUPS[1]?.functions[0]].map((id) => `f-${id}`));
         await tabTo(page, wanted[0] as string);
         const walked: string[] = [];
         for (let i = 0; i < wanted.length + 5; i++) {
           const at = await page.evaluate(() => {
             const el = document.activeElement as HTMLElement | null;
             if (!el || !el.closest('#choose')) return null;
-            return { key: el instanceof HTMLInputElement && el.type === 'radio' ? `radio:${el.name}` : el.id, inBase: el.closest('#g-base') !== null };
+            return { key: el instanceof HTMLInputElement && el.type === 'radio' ? `radio:${el.name}` : el.id, inBase: el.closest('ul.base') !== null };
           });
           if (at === null) break;
           expect(at.inBase, at.key).toBe(false);
@@ -223,7 +246,7 @@ for (const size of SIZES) {
           await page.keyboard.press('Tab');
         }
         expect(walked).toEqual(wanted);
-        // Backwards from the first tick the focus leaves the chooser: nothing in the base group takes it.
+        // Backwards from the first tick the focus leaves the chooser: nothing in the list takes it.
         await tabTo(page, wanted[0] as string);
         await page.keyboard.press('Shift+Tab');
         expect(await page.evaluate(() => document.activeElement?.closest('#g-base') === null && document.activeElement?.closest('#choose') === null)).toBe(true);
@@ -249,7 +272,7 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
-    test('a function is "selected by you" or "included with these parts", and the link stores the own selection alone', async ({ page }) => {
+    test('a function is "selected by you", "included with these parts" or active by its test object, and the link stores the own selection alone', async ({ page }) => {
       const seen = watch(page);
       for (const lang of LANGS) {
         const tail = lang === 'en' ? '' : '&l=de';
@@ -257,16 +280,20 @@ for (const size of SIZES) {
         const label = (id: string) => page.locator(`label:has(#f-${id})`);
         await expect(page.locator('#f-servotest')).toBeChecked();
         await expect(label('servotest')).toContainText(STRINGS.stOwn[col(lang)]);
-        // The servo and the PD mini are in the setup: 2 more functions are active without a tick.
-        for (const id of ['servo', 'supply']) {
+        // The servo is connected and the PD mini is in the setup: 2 more functions are active without a tick.
+        const words: Array<[string, string]> = [['servo', t(lang, 'stConn', { x: short('servo', lang) })], ['supply', STRINGS.stInc[col(lang)]]];
+        for (const [id, state] of words) {
           await expect(page.locator(`#f-${id}`)).not.toBeChecked();
-          await expect(label(id)).toContainText(STRINGS.stInc[col(lang)]);
+          await expect(label(id).locator('small')).toHaveText(state);
           await expect(label(id)).toHaveAttribute('data-state', 'inc');
-          await expect(page.getByRole('checkbox', { name: new RegExp(STRINGS.stInc[col(lang)].replace('.', '\\.')) }).and(page.locator(`#f-${id}`))).toHaveCount(1);
+          await expect(page.getByRole('checkbox', { name: new RegExp(escapeRe(state)) }).and(page.locator(`#f-${id}`))).toHaveCount(1);
         }
+        // The ESC is not connected: its tick connects it and adds no part of the bench by name.
+        await expect(label('esc').locator('small')).toHaveText(t(lang, 'stObj', { x: short('esc', lang) }));
+        await expect(label('esc')).toHaveAttribute('data-state', 'off');
         await expect(label('angle')).toContainText(STRINGS.adds[col(lang)] + short('as5600', lang));
-        for (const id of ['g-servo', 'g-pdmini', 'g-servo-pdmini']) await expect(page.locator(`#${id} legend .tag`)).toHaveText(STRINGS.gIn[col(lang)]);
-        await expect(page.locator('#g-esc legend .tag')).toHaveCount(0);
+        await expect(page.locator('#g-pdmini legend .tag')).toHaveText(STRINGS.gIn[col(lang)]);
+        for (const id of ['g-base', 'g-ina228', 'g-ina3221']) await expect(page.locator(`#${id} legend .tag`)).toHaveCount(0);
         // The link stores the tick of the visitor and nothing of what comes with the parts.
         expect(new URL(page.url()).hash).toBe(`#v=1&f=servotest${tail}`);
         // "This setup does" names all 3 with the same words.
@@ -284,13 +311,13 @@ for (const size of SIZES) {
       await expect(page).toHaveURL(/#v=1&f=servo,servotest$/);
       await expect(page.locator('label:has(#f-servo)')).toContainText('Selected by you.');
       await expect(page.locator('#note')).toHaveCount(0);
-      // Without the tick it stays active, and the page states why its part stays.
+      // Without the tick it stays active, and the page states that its test object stays connected.
       await page.keyboard.press('Space');
       await expect(page).toHaveURL(/#v=1&f=servotest$/);
       await expect(page.locator('#f-servo')).toBeFocused();
       await expect(page.locator('#f-servo')).not.toBeChecked();
-      await expect(page.locator('label:has(#f-servo)')).toContainText('Included with these parts.');
-      const stays = `${t('en', 'dsOn', { f: fnName('servo') })} ${t('en', 'dsStay', { x: short('servo') })}`;
+      await expect(page.locator('label:has(#f-servo)')).toContainText('Active: Servo is connected.');
+      const stays = `${t('en', 'dsOn', { f: fnName('servo') })} ${t('en', 'dsConn', { x: short('servo') })}`;
       await expect(page.locator('#note')).toHaveText(stays);
       await expect(page.locator('#note')).toHaveAttribute('role', 'status');
       await expect(page.locator('#live')).toContainText(stays);
@@ -303,7 +330,8 @@ for (const size of SIZES) {
       await page.keyboard.press('Space');
       await expect(page).toHaveURL(/#v=1$/);
       await expect(page.locator('#note')).toContainText(t('en', 'dsOff', { f: fnName('servotest') }));
-      await expect(page.locator('#note')).toContainText(t('en', 'outParts', { x: ['servo', 'pdmini', 'charger', 'usbtap'].map((id) => short(id)).join(', ') }));
+      await expect(page.locator('#note')).toContainText(t('en', 'outObjects', { x: short('servo') }));
+      await expect(page.locator('#note')).toContainText(t('en', 'outParts', { x: ['pdmini', 'charger', 'usbtap'].map((id) => short(id)).join(', ') }));
       await expect(page.locator('#note')).toContainText(t('en', 'offFns', { x: [fnName('servo'), fnName('supply')].join(', ') }));
       await expect(page.locator('input:checked[type=checkbox]')).toHaveCount(0);
       // The next change clears the note.
@@ -315,10 +343,12 @@ for (const size of SIZES) {
     test('a part leaves by keyboard alone after a question that names the functions that go off', async ({ page }) => {
       const seen = watch(page);
       await open(page, '#v=1&f=servotest');
-      // Every part beyond the base setup has a remove control; a base part has none.
+      // Every part of the bench beyond the base setup has a remove control; a base part and a test object have none.
       const setup = resolve(CATALOGUE, { functions: ['servotest'], owned: [], options: { ...DEFAULT_OPTIONS } });
-      for (const r of setup.parts) await expect(page.locator(`#rm-${r.part.id}`)).toHaveCount(r.part.locked ? 0 : 1);
-      await expect(page.locator('button.rm')).toHaveCount(setup.parts.filter((r) => !r.part.locked).length);
+      expect(setup.parts.filter((r) => r.part.testObject).map((r) => r.part.id)).toEqual(['servo']);
+      for (const r of setup.parts) await expect(page.locator(`#rm-${r.part.id}`)).toHaveCount(r.part.locked || r.part.testObject ? 0 : 1);
+      await expect(page.locator('button.rm')).toHaveCount(setup.parts.filter((r) => !r.part.locked && !r.part.testObject).length);
+      await expect(page.locator('#tested button, #tested input')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Remove PD mini', exact: true })).toHaveCount(1);
 
       await tabTo(page, 'rm-pdmini');
@@ -338,7 +368,8 @@ for (const size of SIZES) {
       await expect(warning.locator('li').nth(1)).toHaveText(`${fnName('supply')} Included with these parts.`);
       await expect(warning).toContainText(`Parts that leave with it: ${short('charger')}, ${short('usbtap')}.`);
       await expect(warning).toContainText(`Parts that come in: ${short('ssup')}.`);
-      await expect(warning).toContainText(`Parts that stay, ticked under "Parts you own": ${short('servo')}.`);
+      // The servo is no part that stays or leaves: the question names it nowhere as a part.
+      await expect(warning).not.toContainText('Parts you own');
       // The question stands under its control and inside the viewport.
       await expect(warning).toBeInViewport();
       expect(await page.evaluate(() => {
@@ -390,13 +421,16 @@ for (const size of SIZES) {
       await page.keyboard.press('Enter');
       await expect(page.locator('#rmwarn')).toHaveCount(0);
       await expect(page.locator('#rm-pdmini')).toHaveCount(0);
-      await expect(page).toHaveURL(/#v=1&p=servo$/);
+      // The servo stays connected: the tick of "Drive a servo" holds it.
+      await expect(page).toHaveURL(/#v=1&f=servo$/);
       await expect(page.locator('#h-parts')).toBeFocused();
-      await expect(page.locator('#live')).toHaveText(new RegExp(`^PD mini removed\\. ${sumEnd([], ['servo']).source}`));
-      expect(enabledCount([], ['servo'])).toBe(ON_BASE.length + 1);
+      await expect(page.locator('#live')).toHaveText(new RegExp(`^PD mini removed\\. ${sumEnd(['servo']).source}`));
+      expect(enabledCount(['servo'])).toBe(ON_BASE.length + 1);
       await expect(page.locator('#f-servotest')).not.toBeChecked();
       await expect(page.locator('label:has(#f-servotest)')).toContainText(`Adds: ${short('pdmini')}`);
-      await expect(page.locator('label:has(#f-servo)')).toContainText('Included with these parts.');
+      await expect(page.locator('#f-servo')).toBeChecked();
+      await expect(page.locator('label:has(#f-servo)')).toContainText('Selected by you.');
+      await expect(page.locator('#tested > li')).toHaveCount(1);
       await expect(page.locator('#rm-ssup')).toHaveCount(1);
       // The link of the result opens the same setup.
       const html = await page.locator('#result').innerHTML();
@@ -407,10 +441,10 @@ for (const size of SIZES) {
       await openOwned(page);
       await page.locator('#p-pdmini').focus();
       await page.keyboard.press('Space');
-      await expect(page).toHaveURL(/#v=1&p=servo,pdmini$/);
-      for (const id of ['servo', 'servotest', 'supply']) await expect(page.locator(`label:has(#f-${id})`)).toContainText('Included with these parts.');
-      await expect(page.locator('#live')).toHaveText(sumEnd([], ['servo', 'pdmini']));
-      expect(enabledCount([], ['servo', 'pdmini'])).toBe(ON_BASE.length + 3);
+      await expect(page).toHaveURL(/#v=1&f=servo&p=pdmini$/);
+      for (const id of ['servotest', 'supply']) await expect(page.locator(`label:has(#f-${id})`)).toContainText('Included with these parts.');
+      await expect(page.locator('#live')).toHaveText(sumEnd(['servo'], ['pdmini']));
+      expect(enabledCount(['servo'], ['pdmini'])).toBe(ON_BASE.length + 3);
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
@@ -481,8 +515,10 @@ for (const size of SIZES) {
       await open(page, '#v=1&f=servotest&p=usbtap,sd,tap');
       await openOwned(page);
       // Every selectable part of the setup is ticked, also one a function brings; none is locked.
-      for (const id of ['servo', 'pdmini', 'usbtap', 'sd', 'tap']) await expect(page.locator(`#p-${id}`)).toBeChecked();
-      await expect(page.locator('#p-esc')).not.toBeChecked();
+      for (const id of ['pdmini', 'usbtap', 'sd', 'tap']) await expect(page.locator(`#p-${id}`)).toBeChecked();
+      // A servo or an ESC is no part to own: the list holds no row for it.
+      for (const id of OBJECTS) await expect(page.locator(`#p-${id}`)).toHaveCount(0);
+      expect(await page.locator('#own input[data-p]').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.p))).toEqual(OWNED);
       await expect(page.locator('#own input[aria-disabled]')).toHaveCount(0);
       await expect(page.locator('label:has(#p-pdmini)')).toContainText(`Needed by: ${fnName('servotest')}`);
 
@@ -590,10 +626,76 @@ for (const size of SIZES) {
       await expect(page.locator('#does-base li')).toHaveCount(ON_BASE.length);
     });
 
+    test('a servo and an ESC stand under their own heading, never as a part the bench needs', async ({ page }) => {
+      const seen = watch(page);
+      for (const lang of LANGS) {
+        const tail = lang === 'en' ? '' : '&l=de';
+        const cases: Array<[string, string[], string[]]> = [
+          ['#v=1', [], []], ['#v=1&f=servo', ['servo'], ['servo']], ['#v=1&f=esc', ['esc'], ['esc']], ['#v=1&f=angle', ['angle'], ['servo']],
+          ['#v=1&f=servo,esc', ['servo', 'esc'], ['servo', 'esc']], [FULL, FUNCTIONS, ['servo', 'esc']],
+        ];
+        for (const [hash, functions, objects] of cases) {
+          await open(page, `${hash}${tail}`);
+          const what = `${hash}${tail}`;
+          await expect(page.locator('#h-tested')).toHaveText(STRINGS.tested[col(lang)]);
+          await expect(page.locator('#h-tested')).toBeVisible();
+          await expect(page.locator('#h-power')).toHaveText(STRINGS.power[col(lang)]);
+          await expect(page.locator('#tested > li')).toHaveCount(objects.length);
+          if (objects.length === 0) await expect(page.locator('#result')).toContainText(STRINGS.testedNone[col(lang)]);
+          for (const id of objects) {
+            const part = CATALOGUE.parts.find((x) => x.id === id)!;
+            const row = page.locator('#tested > li', { hasText: part.name[lang] });
+            await expect(row, what).toHaveCount(1);
+            await expect(row).toContainText(STRINGS.usedBy[col(lang)].trim());
+            // The parts list of the bench holds no row for it, and nothing removes it as a part.
+            await expect(page.locator('#result ul.parts:not([id]) > li', { hasText: part.name[lang] }), what).toHaveCount(0);
+            await expect(page.locator(`#rm-${id}, #p-${id}`), what).toHaveCount(0);
+            await expect(page.locator(`#power-${id} > li`).first(), what).toBeVisible();
+          }
+          await expect(page.locator('#tested button, #tested input')).toHaveCount(0);
+          // The power sources: the logic in every setup, and each connected test object.
+          expect(await page.locator('#result ul.power').evaluateAll((list) => list.map((el) => el.id)), what).toEqual(['power-logic', ...objects.map((id) => `power-${id}`)]);
+          // No heading of a group names a servo or an ESC, in any setup.
+          for (const legend of await page.locator('fieldset.grp > legend').allInnerTexts()) {
+            for (const id of OBJECTS) expect(legend.split(/[^\p{L}\p{N}]+/u), `${what}: ${legend}`).not.toContain(short(id, lang));
+          }
+          // The summary counts the parts of the bench.
+          const setup = resolve(CATALOGUE, { functions, owned: hash === FULL ? OWNED : [], options: { ...DEFAULT_OPTIONS, ...(hash === FULL ? { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd' } : {}) } });
+          const bench = setup.parts.filter((r) => !r.part.testObject).length;
+          await expect(page.locator('#result ul.parts:not([id]) > li'), what).toHaveCount(bench);
+          await expect(page.locator('.sum p'), what).toContainText(new RegExp(`^${bench} `));
+          // The state of the project stands once, in the footer; no row carries a state of its own.
+          await expect(page.locator('#dev-state')).toHaveCount(1);
+          await expect(page.locator('footer #dev-state')).toHaveText(STRINGS.devState[col(lang)]);
+          await expect(page.locator('#dev-state')).toBeVisible();
+          expect((await page.locator('body').innerText()).split(STRINGS.devState[col(lang)]).length - 1, what).toBe(1);
+          await expect(page.locator('body')).not.toContainText(/not run on hardware|nicht auf Hardware gelaufen/i);
+          await fits(page);
+        }
+      }
+
+      // The servo from the bench itself: the note stands in the result, and without that variant it does not.
+      const note = CATALOGUE.checks.find((c) => c.id === 'servo-bench-supply')!;
+      await open(page, '#v=1&f=servo');
+      await expect(page.locator('#result')).not.toContainText(note.text.en);
+      await open(page, '#v=1&f=servo&o=servo5v');
+      await expect(page.locator('#result')).toContainText(note.text.en);
+      await expect(page.locator('#pw-copro-5v .tag')).toHaveText(STRINGS.gIn[0]);
+      await fits(page);
+      await open(page, '#v=1&f=servo&o=servo5v&l=de');
+      await expect(page.locator('#result')).toContainText(note.text.de);
+      await fits(page);
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
     test('a link in the format of release 0.16.0 opens the same setup and is not rewritten', async ({ page }) => {
       const seen = watch(page);
       const links: Array<[string, string[], string[], Partial<typeof DEFAULT_OPTIONS>]> = [
         ['#v=1&f=servo', ['servo'], [], {}],
+        // A servo or an ESC among the owned parts of a link is the tick of its function.
+        ['#v=1&p=servo', ['servo'], [], {}],
+        ['#v=1&f=angle&p=servo,sd', ['servo', 'angle'], ['sd'], {}],
+        ['#v=1&p=esc,pdmini&o=pd&l=de', ['esc'], ['pdmini'], { escPower: 'pd' }],
         ['#v=1&f=servo,esc&o=pd', ['servo', 'esc'], [], { escPower: 'pd' }],
         ['#v=1&f=servotest,logs&p=estop&o=osoyoo', ['servotest', 'logs'], ['estop'], { connection: 'osoyoo' }],
         ['#v=1&p=pdmini,sd', [], ['pdmini', 'sd'], {}],
@@ -607,7 +709,8 @@ for (const size of SIZES) {
         await expect(page.locator('.msg')).toHaveCount(0);
         // The ticks are the functions of the link, no more.
         expect(await page.locator('input[data-f]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f).sort()), hash).toEqual([...functions].sort());
-        await expect(page.locator('.parts > li')).toHaveCount(setup.parts.length);
+        await expect(page.locator('#result ul.parts:not([id]) > li')).toHaveCount(setup.parts.filter((r) => !r.part.testObject).length);
+        await expect(page.locator('#tested > li')).toHaveCount(setup.parts.filter((r) => r.part.testObject).length);
         await expect(page.locator('table.wires tbody tr')).toHaveCount(setup.wires.length);
         // Every enabled function is listed once: under the base setup or under the parts.
         await expect(page.locator('#does-base li')).toHaveCount(ON_BASE.length);

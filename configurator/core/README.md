@@ -14,15 +14,51 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts, 40 pads, 58 wires, 21 functions of which 10 need no part, 6 rules, 25 check entries, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
-| `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries. |
+| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 63 wires, 21 functions of which 10 run on every setup, 6 rules, 27 check entries, 8 power sources, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
-| `groups.ts` | `groups(catalogue)` groups the functions by the parts they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
+| `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
 | `tools/pictures.ts` | The check of the picture records against the files of `../public/pictures/`. |
 | `tools/coverage.ts` | Measures line coverage and keeps the figure below current. |
 | `test/` | The test suite for `node:test`. |
+
+## Bench hardware and test objects
+
+A part with `testObject: true` is a device that the visitor connects and
+tests: the servo and the ESC. It is not hardware of the bench. Every other
+part is bench hardware.
+
+| Field | Meaning |
+| --- | --- |
+| `Part.testObject` | The part is a test object. It is neither locked nor selectable, and no rule adds it. |
+| `Fn.needs` | The bench hardware the function needs. It holds no test object. |
+| `Fn.drives` | The test object the function acts on. The resolver adds it with the function, so its pins and wires are in the setup. |
+
+8 functions drive a test object. 2 of them need no bench hardware beyond the
+base setup: `servo` (drive a servo) and `esc` (drive an ESC). The tick of such
+a function connects the test object.
+
+A power source is one record of `powerSources`: what it feeds (`logic` or the
+id of a test object), voltage and current where a source states them,
+advantages, drawbacks and unknowns. A setup lists the sources of the logic
+and of each connected test object. `used` is true for a source that the wires
+of the setup use.
+
+| Source | Feeds |
+| --- | --- |
+| `usb` | logic |
+| `copro-5v`, `strip-v`, `pd-servo`, `lipo-2s`, `own-supply` | servo |
+| `esc-battery`, `pd-esc` | ESC |
+
+The option `servoPower` is `external` (default) or `bench`. With `bench` the
+plus of the servo is on pad 40 (VBUS, 5 V) of the coprocessor, or on the V
+pin of the strip of the Osoyoo breakout board. The check entry
+`servo-bench-supply` is in every such setup: the servo draws from the supply
+of the logic. The current limit of pad 40 and the supply of the strip are not
+stated; the check entries `servo-5v-pin` and `strip-supply` say so. The ESC
+takes signal and GND from the bench in every setup, never a supply.
 
 ## Resolver
 
@@ -38,12 +74,12 @@ one of these records throws a `TypeError`. The arrays of a setup are its own.
 The order of work:
 
 1. Locked parts.
-2. Parts needed by the chosen functions.
-3. Owned parts.
+2. Parts needed by the chosen functions, and the test object each of them drives.
+3. Owned parts. A test object is not selectable and goes to `ignored`.
 4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
 5. Rules, once each, in array order.
-6. Wires and check entries whose condition holds.
-7. Functions: `enabled` is true when no needed part is missing and every forced option holds. A function with `needs: []` runs on the panel and the coprocessor alone and is enabled in every setup.
+6. Wires, check entries and power sources whose condition holds.
+7. Functions: `enabled` is true when no needed part is missing, every forced option holds and the test object the function drives is connected. A function with `needs: []` and without `drives` runs on the panel and the coprocessor alone and is enabled in every setup.
 
 `conflicts` is always empty: the data holds no pair of parts that exclude each
 other.
@@ -53,10 +89,16 @@ other.
 `groups.ts` is pure and reads the catalogue through `resolve` alone. It holds
 no list of functions or parts.
 
-`groups(catalogue)` returns one group per set of parts that a function needs
-beyond the base setup. The base setup is the locked parts. Each function is in
-exactly one group. Order: the group without a part first, then by the count of
-parts, then by the catalogue position of the parts. A group also names:
+`groups(catalogue)` returns one group per set of bench hardware that a
+function needs beyond the base setup. The base setup is the locked parts. A
+test object is never part of a group key. Each function is in exactly one
+group. Order: the group without a part first, then by the count of parts,
+then by the catalogue position of the parts. The group without a part holds
+the functions every setup runs and the functions that drive a test object and
+need nothing else. `alwaysOn(catalogue, fn)` tells the 2 kinds apart,
+`plainDrive(catalogue, partId)` returns the function whose tick connects a
+test object, and `testObjects(catalogue)` lists the test objects. A group
+also names:
 
 | Field | Content |
 | --- | --- |
@@ -69,26 +111,27 @@ the part and the difference of the 2 setups. It does not change its input.
 
 | Field | Content |
 | --- | --- |
-| `refused` | `null`, or why no removal exists: `unknown` id, `base` part, `absent` from the setup, `held` by a rule that no removal ends. |
+| `refused` | `null`, or why no removal exists: `unknown` id, `base` part, `testObject` (a servo or an ESC leaves with the last function that drives it, not as a part), `absent` from the setup, `held` by a rule that no removal ends. |
 | `selection` | The selection after the removal. A refused removal returns the selection as given. |
 | `functionsOff` | Functions that go off, each with `chosen`: true for a function of the selection, false for one the parts brought. |
 | `functionsOn` | Functions that come on with a part the rules add or with an option that changes. |
 | `partsOut`, `partsIn` | Other parts that leave, and parts the rules add. |
 | `partsKept` | Parts of a dropped function that stay; the selection holds them as owned parts. |
+| `objectsOut` | Test objects that leave: no function that drives them stays. |
 | `options` | Options that both setups show and that differ. |
 
 The steps of a removal:
 
 1. The part leaves the owned parts. Every chosen function that needs it leaves the selection.
-2. Other selectable parts of a dropped function stay as owned parts.
+2. Other selectable parts of a dropped function stay as owned parts. The test object of a dropped function stays connected: the function that drives it without a further part enters the selection.
 3. A part that a rule still adds leaves by a change of what its rules read: another value of an option, or the removal of a part. An option that a function forces changes with a part of that function.
 4. The search is breadth first with option values before parts. The result is a smallest set of changes. The resolver decides whether a change releases the part.
 5. The removal is `held` when no set of changes releases the part. A rule on the absence of a part holds its part: a removal adds no part.
 
 `removalIsPlain(effect)` is true when the part leaves and nothing else
 changes. `deselectEffect(catalogue, selection, functionId)` returns the
-selection without the function, whether the function stays on, and which of
-its parts stay or leave.
+selection without the function, whether the function stays on, which of
+its parts stay or leave, and in `objectsOut` the test objects that leave.
 
 ## Commands
 
@@ -127,7 +170,7 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | --- | --- |
 | Ids | An id is used twice, or the wire numbers are not unique and ascending. |
 | Wire ends | A wire end is not a pad or a declared pin of a part, or a power wire ends on a signal pad. |
-| References | A function, rule, condition or stage names an id that does not exist. |
+| References | A function, rule, condition, power source or stage names an id that does not exist. A function needs a test object, or drives a part that is none. A rule adds a test object. A test object is locked or selectable, has no function that drives it on the base setup, or has no power source. A power source feeds neither the logic nor a test object, has no advantage or no drawback, or holds a range that is not ordered. No power source feeds the logic. |
 | Text | A string is empty in one language, starts or ends with white space, or holds an exclamation mark, a listed marketing word, a character outside the allowed set or a tag other than `<b>` in a safety note. |
 | Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
@@ -158,25 +201,42 @@ The 7 pin rules:
 
 The suite runs 2 full sweeps and 1 seeded sample through the resolver:
 
-- 2048 sets of owned parts times 8 option combinations: 16384 setups.
-- 2048 sets of the 11 functions that need a part times 8 option combinations: 16384 setups.
+- 512 sets of the 9 selectable parts times 16 option combinations: 8192 setups.
+- 2048 sets of the 11 functions with a tick times 16 option combinations: 32768 setups.
 - 2000 mixed selections from a fixed seed.
 
 Each setup is checked for: the same result on a second call, no exception, no
-pin of a part on two nets, no power wire on a signal pad, every wire end a
-declared pin of a part that is present, catalogue order of every output array.
+pin of a part on two nets, no power wire on a pad, every wire end a declared
+pin of a part that is present, catalogue order of every output array, the
+check entry `servo-bench-supply` exactly when a wire of the servo supply
+ends on a pin of the bench. One power wire ends on a pad by intent: the plus
+of the servo on pad 40 (VBUS) under `servoPower: bench`.
 The sweep refuses a catalogue with more than 16 selectable parts or 16
 functions that need a part.
+
+Two wires of different nets never hold the same lane of a gutter. Two wires of
+one net may: wires 19 and 63, the 2 halves of the power path of the PD mini,
+both run in outer lane 4.
+
+The data is checked for its power paths:
+
+- A part that a rule adds for another part has a wire to that part, or a wire
+  on a net other than ground that a wire of that part is on.
+- A part with `between` has a wire to each of the 2 parts it names. A part whose
+  role text says "sits between" carries `between`. The T-plug names the PD
+  charger and the PD mini: wire 19 runs from the charger to its socket IN,
+  wire 63 from its socket OUT to the USB-C socket of the PD mini. The current
+  rating the cable of wire 63 needs is not stated.
 
 `test/groups.test.ts` runs every removal the data file allows:
 
 - 2048 sets of functions times 2 values of `escPower`, each part of each setup removed.
-- 2048 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
-- 1500 mixed selections from a fixed seed under all 8 option combinations.
+- 512 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
+- 1500 mixed selections from a fixed seed under all 16 option combinations.
 - 2048 sets of functions, each function deselected.
 
-Each removal is checked for: no refusal for a part beyond the base setup, the
-part gone, the reported lists equal to the difference of the 2 setups, a cause
+Each removal is checked for: no refusal for a part of the bench beyond the
+base setup, the refusal `testObject` for a servo or an ESC, the part gone, the reported lists equal to the difference of the 2 setups, a cause
 for every function that goes off or comes on, and the function set restored
 when the part and the parts that left with it are added back. The suite takes
 about 27 s on one core of the build host.
@@ -193,20 +253,21 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 <!-- coverage:begin -->
 | File | Lines run | Lines | Line coverage |
 | --- | ---: | ---: | ---: |
-| `resolve.ts` | 189 | 189 | 100.0 % |
+| `resolve.ts` | 207 | 207 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
-| `groups.ts` | 354 | 354 | 100.0 % |
+| `groups.ts` | 409 | 409 | 100.0 % |
 <!-- coverage:end -->
 
 ## Unknown in the data
 
 - Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.16.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
-- Parts with the state "not run on hardware": INA3221 board, AS5600 board, pull-up resistors, INA228 board, emergency stop switch, stick simulator lead, tap lead, T-plug of the PD mini.
-- Functions with the state "not run on hardware": ARM, DISARM and heartbeat interlock, STOP command, servo sweep and frame rates, PPM signal, interface language, ESC profile list, servo current, angle, ESC power, stick programming, tap, emergency stop. The check entries `interlock-state`, `language-state`, `profiles-state` and `bind-state` state what the docs of release 0.16.0 say on 4 of the functions that need no part.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
 - The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. With this module the data holds no direct wire between the minus of the source and the minus of the ESC: wire 56 (battery) or wire 57 (PD mini) ends on the pin BAT− of the module and wire 58 runs from the pin ESC− to the ESC. The wires 15 and 23 belong to the MATEK board and to a setup without the sensor. The check entry `ina228-xt90-pads` states the pads and the 2 rails.
 - INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the coprocessor. A connection between the minus output of the PD mini and GND of the coprocessor is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
+- Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
+- Osoyoo breakout board: the source that feeds the converter of the strip, its input range, its output current and the scope of the 3.3 V or 5 V jumper are not stated.
+- ESC STICK programming: `docs/StickProgramming.md` at `v0.16.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
 - 8 check entries of kind `unknown` state each open point in the text of a setup.

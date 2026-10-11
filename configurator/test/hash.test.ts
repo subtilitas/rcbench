@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { Lang, Selection } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
-import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareHash } from '../src/hash.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
+import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareHash, testObjectTicks } from '../src/hash.ts';
 import { describe, sweep } from './geometry.ts';
 
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -41,14 +42,14 @@ test('every selection of the sweep survives format and parse', () => {
 test('the full selection survives format and parse', () => {
   // Every tick of the page: the functions that need a part.
   const full: Selection = {
-    functions: CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id),
+    functions: CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id),
     owned: CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id),
-    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd' },
+    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd', servoPower: 'bench' },
   };
   const hash = formatHash(full, 'de', 'en', CATALOGUE);
   assert.ok(hash.length <= MAX_HASH);
   assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS).selection, full);
-  assert.ok(hash.endsWith('&o=osoyoo,xt90,pd&l=de'));
+  assert.ok(hash.endsWith('&o=osoyoo,xt90,pd,servo5v&l=de'));
 });
 
 test('ids stand in catalogue order whatever the tick order', () => {
@@ -164,7 +165,7 @@ test('a link written without the functions that need no part resolves to the sam
   assert.deepEqual(setup.wires.map((w) => w.n), [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   assert.deepEqual(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), ['servo', 'esc']);
   // The functions that need no part are enabled and are not part of the link.
-  const base = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  const base = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
   assert.equal(base.length, 10);
   for (const id of base) assert.ok(setup.functions.find((f) => f.fn.id === id)?.enabled, id);
   const written = formatHash(parsed.selection, 'en', 'en', CATALOGUE);
@@ -174,7 +175,7 @@ test('a link written without the functions that need no part resolves to the sam
 });
 
 test('a function that needs no part is never written into the hash', () => {
-  const ids = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  const ids = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
   // A link that names such ids parses without a notice.
   const parsed = parseHash(`#v=1&f=link,servo,${ids.join(',')}`, DEFAULT_OPTIONS);
   assert.deepEqual(parsed.unknown, []);
@@ -194,7 +195,7 @@ test('a function that needs no part is never written into the hash', () => {
 });
 
 test('the hash of a document holds no id of a function that needs no part, in every spelling of the link', () => {
-  const ids = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  const ids = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
   const share = (hash: string): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE);
   // A hash without such an id is returned as it is, also in a spelling the page does not write.
   for (const hash of ['', '#', '#v=1', '#v=1&f=servo,esc&p=sd', '#v=1&l=en', '#l=de&v=1&f=esc', '#v=1&f=servo%2Cesc', '#v=2&f=link', '#v=1&f=nothere', `#v=1&f=${'x'.repeat(2100)}`]) {
@@ -211,10 +212,83 @@ test('the hash of a document holds no id of a function that needs no part, in ev
     assert.equal(share(`#v=1&f=${id},esc&p=sd&o=osoyoo,pd&l=en`), '#v=1&f=esc&p=sd&o=osoyoo,pd&l=en', id);
     assert.equal(share(`#v=1&f=${id},esc&p=sd&o=osoyoo,pd`), '#v=1&f=esc&p=sd&o=osoyoo,pd', id);
   }
-  assert.equal(share(`#v=1&f=${CATALOGUE.functions.map((f) => f.id).join(',')}`), `#v=1&f=${CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id).join(',')}`);
+  assert.equal(share(`#v=1&f=${CATALOGUE.functions.map((f) => f.id).join(',')}`), `#v=1&f=${CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id).join(',')}`);
   // The result names the same parts and wires as the link.
   const before = resolve(CATALOGUE, parseHash(`#v=1&f=${ids.join('%2C')},servo&o=osoyoo`, DEFAULT_OPTIONS).selection);
   const after = resolve(CATALOGUE, parseHash(share(`#v=1&f=${ids.join('%2C')},servo&o=osoyoo`), DEFAULT_OPTIONS).selection);
   assert.deepEqual(after.parts.map((p) => p.part.id), before.parts.map((p) => p.part.id));
   assert.deepEqual(after.wires.map((w) => w.n), before.wires.map((w) => w.n));
+});
+
+test('a test object under the owned parts of a link becomes the tick of the function that drives it', () => {
+  const ticks = (hash: string): Selection => testObjectTicks(parseHash(hash, DEFAULT_OPTIONS).selection, CATALOGUE);
+  // p=servo is f=servo, p=esc is f=esc; every other id and every option stays.
+  assert.deepEqual(ticks('#v=1&p=servo'), { ...base(), functions: ['servo'] });
+  assert.deepEqual(ticks('#v=1&p=esc'), { ...base(), functions: ['esc'] });
+  assert.deepEqual(ticks('#v=1&p=esc,servo'), { ...base(), functions: ['esc', 'servo'] });
+  assert.deepEqual(ticks('#v=1&f=angle&p=servo,sd,esc&o=pd'), { functions: ['angle', 'servo', 'esc'], owned: ['sd'], options: { ...DEFAULT_OPTIONS, escPower: 'pd' } });
+  // The function is ticked already: no second tick.
+  assert.deepEqual(ticks('#v=1&f=servo&p=servo'), { ...base(), functions: ['servo'] });
+  // No test object under the owned parts: the selection is returned as it is.
+  const plain = parseHash('#v=1&f=servotest&p=sd', DEFAULT_OPTIONS).selection;
+  assert.equal(testObjectTicks(plain, CATALOGUE), plain);
+  // The input is not changed.
+  const given = parseHash('#v=1&p=servo', DEFAULT_OPTIONS).selection;
+  testObjectTicks(given, CATALOGUE);
+  assert.deepEqual(given, { ...base(), owned: ['servo'] });
+  // A test object that no function drives without a further part is dropped from the owned parts.
+  const bare = { ...CATALOGUE, functions: CATALOGUE.functions.filter((f) => f.id !== 'servo') };
+  assert.deepEqual(testObjectTicks(given, bare), base());
+  // No row of "Parts you own" is a test object, and the page writes none into a link.
+  for (const part of CATALOGUE.parts.filter((x) => x.testObject === true)) assert.equal(part.selectable, false, part.id);
+  assert.equal(formatHash({ ...base(), owned: ['servo', 'esc', 'sd'] }, 'en', 'en', CATALOGUE), 'v=1&p=sd');
+});
+
+test('the link of a document names a test object as the tick of its function', () => {
+  const share = (hash: string): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE);
+  assert.equal(share('#v=1&p=servo'), '#v=1&f=servo');
+  assert.equal(share('#v=1&p=esc&o=pd&l=de'), '#v=1&f=esc&o=pd&l=de');
+  assert.equal(share('#v=1&f=angle&p=servo,sd'), '#v=1&f=servo,angle&p=sd');
+  assert.equal(share('#v=1&f=servo&p=servo%2Cesc'), '#v=1&f=servo,esc');
+});
+
+test('the servo supply from the bench is one option token, and a link without it keeps the external supply', () => {
+  assert.equal(DEFAULT_OPTIONS.servoPower, 'external');
+  assert.equal(parseHash('#v=1&f=servo&o=pd', DEFAULT_OPTIONS).selection.options.servoPower, 'external');
+  assert.equal(parseHash('#v=1&f=servo&o=servo5v', DEFAULT_OPTIONS).selection.options.servoPower, 'bench');
+  assert.equal(formatHash({ ...base(), functions: ['servo'], options: { ...DEFAULT_OPTIONS, servoPower: 'bench' } }, 'en', 'en', CATALOGUE), 'v=1&f=servo&o=servo5v');
+  assert.equal(formatHash({ ...base(), functions: ['servo'] }, 'en', 'en', CATALOGUE), 'v=1&f=servo');
+});
+
+test('every link of the fixture resolves to the parts, wires, functions and variants it names', () => {
+  // The fixture holds links without the key of the servo supply: every function and every owned part alone,
+  // every pair of them, a servo or an ESC as an owned part under each of the 8 sets of variants, and the full sets.
+  type Entry = { setup: string; links: string[] };
+  const entries = JSON.parse(readFileSync(new URL('./fixtures/links-v1.json', import.meta.url), 'utf8')) as Entry[];
+  let links = 0;
+  let objects = 0;
+  for (const entry of entries) {
+    for (const link of entry.links) {
+      links += 1;
+      const parsed = parseHash(`#${link}`, DEFAULT_OPTIONS);
+      assert.deepEqual([parsed.badVersion, parsed.unknown], [false, []], link);
+      if (parsed.selection.owned.some((id) => id === 'servo' || id === 'esc')) objects += 1;
+      const setup = resolve(CATALOGUE, testObjectTicks(parsed.selection, CATALOGUE));
+      const got = [
+        setup.parts.map((r) => r.part.id).join(','),
+        setup.wires.map((w) => w.n).filter((n) => n !== 63).join(','),
+        setup.functions.filter((f) => f.enabled).map((f) => f.fn.id).join(','),
+        setup.options.filter((x) => x.key !== 'servoPower').map((x) => `${x.key}=${x.value}${x.visible ? '' : '?'}`).join(','),
+      ].join('|');
+      assert.equal(got, entry.setup, link);
+      // The fixture lists the power path of the PD mini as wire 19 alone. Wire 63 is its second half
+      // and stands in a setup exactly when wire 19 does.
+      const has = (n: number): boolean => setup.wires.some((w) => w.n === n);
+      assert.equal(has(63), has(19), link);
+      // The servo supply of such a link is the external one: no wire runs from a supply pin of the bench to the servo.
+      assert.ok(!setup.wires.some((w) => [59, 60, 61, 62].includes(w.n)), link);
+    }
+  }
+  assert.equal(links, 1192);
+  assert.ok(objects > 300, `${objects} links with a test object as an owned part`);
 });

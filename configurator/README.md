@@ -2,10 +2,19 @@
 
 A static page for release 0.16.0 of rcbench. The visitor ticks what the bench
 does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
-The functions stand in groups by the parts they need. A part of the result has
-a remove control.
+The functions stand in groups by the bench hardware they need. A part of the
+result beyond the base setup has a remove control.
 Without a tick it shows the base setup: panel, coprocessor and the 4 wires
 between them.
+
+A servo and an ESC (electronic speed controller) are test objects: devices the
+visitor connects and tests. They are not hardware of the bench. The page lists
+them under "What you connect and test", never as a part the bench needs.
+
+The page states once, in its footer, that rcbench is under development and
+that its functions are not verified on hardware. No function, part or power
+source repeats that. "Not in a release" on a part is a different fact and
+stays on the part.
 
 - No server, no account, no storage. The selection lives in the URL hash.
 - No run-time dependency. The page loads 3 files from its own origin and sends
@@ -66,43 +75,68 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 |---|---|
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
 | `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
-| `p` | Ids of parts the visitor owns. |
-| `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`. |
+| `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. |
+| `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
 
 Limits: 2000 characters per hash, 64 ids per key, 32 characters per id of
 lowercase letters and digits. A longer hash gives the base setup and the
 version notice. An unknown id is dropped and named in a notice.
 
+A link without `servo5v` keeps the external servo supply. `test/fixtures/links-v1.json`
+holds 1192 links without that token and the parts, wires, active functions
+and variants each resolves to; `test/hash.test.ts` fails when one differs.
+The fixture lists the power path of the PD mini as wire 19 alone. The test
+reads wire 63, the second half of that path, apart: it stands in a setup
+exactly when wire 19 does.
+
 ## Chooser
 
-Each group of functions is a `fieldset`. Its legend names the parts the group
-needs beyond the base setup: "Needs: Servo + PD mini". A group whose parts are
-all in the setup carries the tag "In this setup".
+Each group of functions is a `fieldset`. Its legend names the bench hardware
+the group needs beyond the base setup: "Needs: PD mini". No legend names a
+servo or an ESC. A group whose parts are all in the setup carries the tag
+"In this setup". The 8 groups: base setup, PD mini, INA3221, AS5600, INA228,
+microSD card, emergency stop switch, motor simulator + phase tap.
 
-The first group is "Runs on the base setup". It holds the functions that need
-no part. It is a list without controls: a row has no tick, is active in every
-setup and reads "Included with the base setup.". The id of such a function is
-never written into the link and never counts as selected by the visitor. The
-removal of a part and of a tick never lists such a function as going off. The
-group is absent when every function needs a part.
+The first group is "Runs on the base setup". It has 2 parts:
+
+- A list of the 10 functions every setup runs. A row has no tick and reads
+  "Included with the base setup.". The id of such a function is never written
+  into the link and never counts as selected by the visitor. The removal of a
+  part and of a tick never lists such a function as going off.
+- 2 rows with a tick, under the sentence "These functions need no further
+  part of the bench. A tick connects the test object.": "Drive a servo" and
+  "Drive an ESC".
 
 A function is active when the setup holds every part it needs and every option
-it forces. Each row states its state in words:
+it forces, and the test object it drives is connected. Each row states its
+state in words:
 
 | State | Text | Tick |
 |---|---|---|
 | Ticked by the visitor | "Selected by you." | yes |
 | Active through the parts of the setup | "Included with these parts." | no |
+| Active through a connected test object | "Active: Servo is connected." | no |
 | Runs on the base setup | "Included with the base setup." | none |
+| Not active, needs the test object only | "Connects: Servo." | no |
 | Not active | "Adds: <parts>" or the reason | no |
 
-Removing the tick of a function removes it from the selection. A note under
-the row states whether the function stays active and which of its parts stay
-or leave.
+4 variants follow the setup: connection to the coprocessor, INA228 board, ESC
+power and servo power. Servo power is A, the visitor's own supply (default),
+or B, from the bench for a small servo: the 5 V pin of the coprocessor (pad
+40), or the V pin of the strip of the Osoyoo breakout board. With B the result
+and the PDF carry a note: the servo draws from the supply of the logic, which
+is prone to problems. "Small" carries no number: no source states a current
+limit. An ESC takes signal and GND only, in every variant.
 
-Every part of the result beyond the base setup has a button "Remove". "Parts
-you own" removes a part by its tick. Every removal opens a question under the
+Removing the tick of a function removes it from the selection. A note under
+the row states whether the function stays active, which of its parts stay
+or leave, and whether its test object stays connected.
+
+Every part of the result beyond the base setup has a button "Remove". A test
+object has none: it leaves with the tick of the last function that drives it.
+"Parts you own" removes a part by its tick. It holds no row for a servo or an
+ESC. Every removal opens a question under the
 control; no part leaves without the confirming answer. The question lists the
 functions that go off with the state of each, the other parts that leave or
 come in and the option that changes. For a part that takes nothing with it, it
@@ -113,7 +147,18 @@ focus to the control. The question has the role `alertdialog` and does not
 trap the focus.
 
 Parts of a removed function that stay in the setup become ticks under "Parts
-you own".
+you own". Its test object stays connected by the tick of "Drive a servo" or
+"Drive an ESC".
+
+## Result
+
+| Heading | Content |
+|---|---|
+| Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. |
+| What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
+| Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use. |
+
+The footer holds the state of the project and the trademark notice.
 
 ## Drawing
 
@@ -123,7 +168,7 @@ Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
 `test/layout.test.ts` draws every distinct setup the resolver gives for every
-subset of the functions that need a part and every subset of the selectable parts, in all 8
+subset of the 11 functions with a tick and every subset of the 9 selectable parts, in all 16
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,
@@ -186,13 +231,13 @@ export chunk on the first use.
 |---|---|
 | File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection as the URL hash writes it, without the language. |
 | Page | A4, 15 mm margins. Footer on every page: trademark notice, "Page x of y". |
-| Sections | Title with firmware release, date and share link. Safety notes. Parts. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
+| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
 | Wire table | The header row repeats on every page. No row is split. |
-| Metadata | Title, document language, creator. Links: the share link, written without the ids of the functions that need no part. |
+| Metadata | Title, document language, creator. Links: the share link, written without the ids of the functions every setup runs and with a test object as the tick of its function. |
 | Output | The same bytes for the same setup, language, share link and date. |
-| Size | 44 kB for the smallest setup (4 pages), 64 kB for the largest (8 pages). |
+| Size | 45 kB for the smallest setup (4 pages), 68 kB for the largest (9 pages). |
 
 Parts of `src/export/`:
 
@@ -225,13 +270,16 @@ file names no stage, so the checks follow the stages as one list.
 
 ## Limits
 
-- The page draws 1 servo and 1 ESC (electronic speed controller).
+- The page draws 1 servo and 1 ESC.
+- Servo power from the bench: the current limit of pad 40 is not stated. What feeds the converter of the
+  Osoyoo breakout board, its output current and the scope of its jumper are not stated.
+- What powers an ESC during programming other than ESC STICK is not stated.
 - 8 of 19 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap
   and cables: no picture.
 - Photo `02-pd-mini`: the left third is out of focus.
 - The drawing has no zoom control. Below 1024 px width it scrolls sideways in its box.
-- 14 wires use a lane that differs from the `route` in the data file: wires 10,
-  14, 21, 22, 28, 29, 30, 45, 46, 47, 51, 56, 57 and 58. The table is `GEO.laneFix` in
+- 16 wires use a lane that differs from the `route` in the data file: wires 10,
+  14, 21, 22, 28, 29, 30, 45, 46, 47, 51, 56, 57, 58, 59 and 60. The table is `GEO.laneFix` in
   `src/draw/layout.ts`. With the lanes of the data file, wires of different
   nets share a line or a pill covers a wire of another pin. A lane changed in
   the data file for one of these wires has no effect on the drawing.

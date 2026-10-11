@@ -122,11 +122,18 @@ test('the T-plug is a module with the UART wires of the PD mini', () => {
   const plug = l.modules.find((m) => m.id === 'usbtap');
   assert.ok(plug, 'the PD mini brings the T-plug');
   assert.equal(plug.dashed, false);
-  assert.deepEqual(plug.pins.map((p) => [p.id, p.used]), [['G', true], ['DP', true], ['DM', true], ['V', false]]);
+  assert.deepEqual(plug.pins.map((p) => [p.id, p.used]), [['OUT', true], ['IN', true], ['G', true], ['DP', true], ['DM', true], ['V', false]]);
+  // The power path runs through the T-plug: charger to IN, OUT to the PD mini. No wire joins the charger to the PD mini.
+  const order = l.modules.filter((m) => ['pdmini', 'usbtap', 'charger'].includes(m.id)).sort((a, b) => a.y - b.y).map((m) => m.id);
+  assert.deepEqual(order, ['pdmini', 'usbtap', 'charger']);
   const ends = (n: number): string[] => l.wires.filter((w) => w.n === n).map((w) => `${w.a} ${w.b}`);
   assert.deepEqual(ends(16), ['pad.10 usbtap.DM']);
   assert.deepEqual(ends(17), ['usbtap.DP pad.9']);
   assert.deepEqual(ends(18), ['pad.18 usbtap.G']);
+  assert.deepEqual(ends(19), ['charger.USB usbtap.IN']);
+  assert.deepEqual(ends(63), ['usbtap.OUT pdmini.USB']);
+  assert.ok(!l.wires.some((w) => /^charger\./.test(w.a) && /^pdmini\./.test(w.b ?? '')));
+  assert.deepEqual(findings(l, setup), []);
   assert.ok(!l.modules.find((m) => m.id === 'pdmini')?.pins.some((p) => /^D/.test(p.id)));
   for (const p of CATALOGUE.parts) assert.ok(p.role !== null, `${p.id} states its role`);
 });
