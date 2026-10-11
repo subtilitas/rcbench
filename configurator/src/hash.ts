@@ -105,3 +105,18 @@ export function reportIds(ids: string[]): string {
   const shown = unique.slice(0, MAX_REPORTED).map((id) => (id.length > 32 ? `${id.slice(0, 32)}…` : id));
   return shown.join(', ') + (unique.length > MAX_REPORTED ? ', …' : '');
 }
+
+/**
+ * A hash as it goes into a document, with '#'. The page keeps the link that
+ * opened it until a change, so its address can name a function that needs no
+ * part. Such a hash is written again from its selection, which leaves these
+ * ids out; its language key stays. Every other hash is returned as it is.
+ */
+export function shareHash(hash: string, defaults: Options, catalogue: Catalogue): string {
+  const parsed = parseHash(hash, defaults);
+  const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && f.needs.length === 0));
+  if (!named) return hash;
+  const lang = parsed.lang;
+  // The start language is set so that a language key in the hash is written and none is added.
+  return `#${formatHash(parsed.selection, lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue)}`;
+}

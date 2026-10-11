@@ -5,7 +5,7 @@ import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts'
 import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, removalIsPlain, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
-import { formatHash, parseHash, reportIds } from './hash.ts';
+import { formatHash, parseHash, reportIds, shareHash } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { optionsOf } from './names.ts';
 import { chooser, deselectText } from './view/chooser.ts';
@@ -63,20 +63,10 @@ function readHash(): void {
   if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
 }
 
-/**
- * The link the PDF prints: the address of the page without the ids of the
- * functions that need no part. The page keeps the link that opened it until
- * a change, so such an id can stand in the address.
- */
+/** The link the PDF prints: the address of the page without the id of a function that has no tick. */
 function shareUrl(): string {
   const at = location.href.indexOf('#');
-  if (at < 0) return location.href;
-  const keys = location.href.slice(at + 1).split('&').flatMap((key) => {
-    if (!key.startsWith('f=')) return [key];
-    const ids = key.slice(2).split(',').filter((id) => !BASE_IDS.has(id));
-    return ids.length > 0 ? [`f=${ids.join(',')}`] : [];
-  });
-  return `${location.href.slice(0, at)}#${keys.join('&')}`;
+  return at < 0 ? location.href : location.href.slice(0, at) + shareHash(location.href.slice(at), DEFAULT_OPTIONS, CATALOGUE);
 }
 
 function writeHash(): void {
