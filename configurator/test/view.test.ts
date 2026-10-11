@@ -91,10 +91,17 @@ test('the chooser holds one group per set of parts, each function in one group, 
       const legend = text(body.slice(0, body.indexOf('</legend>')));
       if (group.parts.length === 0) assert.equal(legend, STRINGS.gBase[col(lang)]);
       else assert.equal(legend, STRINGS.gNeeds[col(lang)] + group.parts.map((id) => short(id, lang)).join(' + '));
-      assert.deepEqual([...body.matchAll(/ data-f="([^"]+)"/g)].map((m) => m[1]), group.functions);
+      // The group of the base setup is a list without a control; every other group holds one tick per function.
+      const ticks = [...body.matchAll(/ data-f="([^"]+)"/g)].map((m) => m[1]);
+      const rows = [...body.matchAll(/<li id="b-([^"]+)"/g)].map((m) => m[1]);
+      assert.deepEqual([ticks, rows], group.parts.length === 0 ? [[], group.functions] : [group.functions, []], group.key);
+      if (group.parts.length === 0) assert.ok(!body.includes('<input') && !body.includes('<button'), 'the base group holds a control');
       for (const id of [...group.also, ...group.oneOf.flat()]) assert.ok(text(body).includes(short(id, lang)), `${group.key}: ${id}`);
     }
-    for (const f of CATALOGUE.functions) assert.equal(count(html, `id="f-${f.id}"`), 1, f.id);
+    for (const f of CATALOGUE.functions) {
+      assert.equal(count(html, `id="f-${f.id}"`) + count(html, `id="b-${f.id}"`), 1, f.id);
+      assert.equal(count(html, `id="f-${f.id}"`), f.needs.length > 0 ? 1 : 0, f.id);
+    }
     assert.ok(html.includes(STRINGS.chooseHint[col(lang)]));
   }
 });
@@ -306,4 +313,81 @@ test('data text of the remove control reaches the page escaped', () => {
   const control = removeControl(v, part);
   assert.ok(control.includes('id="rm-x&quot;y"'), control);
   assert.ok(control.includes('aria-label="Remove &lt;i&gt;&amp;&quot;"'), control);
+});
+
+test('the base setup lists the functions that need no part, without a tick', () => {
+  const base = CATALOGUE.functions.filter((f) => f.needs.length === 0);
+  assert.ok(base.length > 0);
+  assert.deepEqual(groups(CATALOGUE)[0]?.functions, base.map((f) => f.id));
+  for (const lang of ['en', 'de'] as Lang[]) {
+    const v = view({}, lang);
+    const picker = chooser(v, false);
+    assert.equal(picker.indexOf('<fieldset'), picker.indexOf('<fieldset class="grp" id="g-base">'), 'the base group is not the first group');
+    const list = fieldset(picker, 'g-base');
+    assert.ok(list.includes(`<legend>${STRINGS.gBase[col(lang)]}</legend>`), list);
+    assert.ok(list.includes(STRINGS.baseHint[col(lang)]));
+    assert.ok(!list.includes('<input') && !list.includes('<button') && !list.includes('tabindex'));
+    const html = result(v, 'https://example.invalid/', []);
+    assert.ok(html.includes(t(lang, 'sum', { p: v.setup.parts.length, w: v.setup.wires.length, f: base.length })));
+    assert.ok(html.includes(`<h4>${CATALOGUE.baseFunction[lang]}</h4>`));
+    assert.ok(!html.includes(STRINGS.withParts[col(lang)]));
+    for (const fn of base) {
+      // Each row: the name, the mark of a function not run on hardware, and its state in words.
+      const at = list.indexOf(`<li id="b-${fn.id}">`);
+      assert.ok(at >= 0, fn.id);
+      const item = list.slice(at, list.indexOf('</li>', at));
+      assert.ok(item.includes(`<b>${fn.name[lang]}</b>`), fn.id);
+      assert.equal(item.includes(STRINGS.nrh[col(lang)]), fn.hardware === 'not-run', fn.id);
+      assert.ok(item.includes(`<small>${STRINGS.stBase[col(lang)]}</small>`), fn.id);
+      assert.equal(status(v, fn.id), STRINGS.stBase[col(lang)]);
+      assert.ok(html.includes(`<li>${fn.name[lang]}`), fn.id);
+      assert.ok(!picker.includes(`id="f-${fn.id}"`), fn.id);
+    }
+  }
+});
+
+test('a selection that names a function of the base setup shows it as included, never as selected by the visitor', () => {
+  const base = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+  for (const lang of LANGS) {
+    const v = view({ functions: [...base, 'servotest'] }, lang);
+    const picker = chooser(v, false);
+    const list = fieldset(picker, 'g-base');
+    assert.ok(!list.includes(STRINGS.stOwn[col(lang)]) && !list.includes(' checked'), list);
+    for (const id of base) assert.equal(status(v, id), STRINGS.stBase[col(lang)], id);
+    assert.equal(status(v, 'servotest'), STRINGS.stOwn[col(lang)]);
+    assert.equal(count(picker, ' checked'), count(chooser(view({ functions: ['servotest'] }, lang), false), ' checked'));
+    // The result lists them under the heading of the base setup, without a state of their own.
+    const html = result(v, URL, []);
+    const [first, second] = [html.indexOf(`<h4>${CATALOGUE.baseFunction[lang]}</h4>`), html.indexOf(`<h4>${STRINGS.withParts[col(lang)]}</h4>`)];
+    assert.ok(first > 0 && second > first);
+    assert.ok(!html.slice(first, second).includes('<small>'));
+    for (const id of base) assert.ok(html.slice(first, second).includes(`<li>${fnName(id, lang)}`), id);
+    // The question before a part leaves names no function of the base setup.
+    for (const r of v.setup.parts) {
+      if (r.part.locked) continue;
+      const question = removalWarning({ ...v, pending: { part: r.part.id, at: 'result' } });
+      for (const id of base) assert.ok(!text(question).includes(fnName(id, lang)), `${r.part.id}: ${id}`);
+    }
+    // Without its tick such a function stays on, and the note says the base setup runs it.
+    const said = deselectText(v, deselectEffect(CATALOGUE, v.selection, base[0] as string));
+    assert.equal(said, `${t(lang, 'dsOn', { f: fnName(base[0] as string, lang) })} ${STRINGS.dsBase[col(lang)]}`);
+  }
+});
+
+test('a setup with parts keeps the functions that need no part and lists the others under their own heading', () => {
+  const v = view({ functions: ['servo'], owned: ['sd'] });
+  const html = result(v, 'https://example.invalid/', []);
+  const at = html.indexOf(`<h4>${STRINGS.withParts[0]}</h4>`);
+  assert.ok(at > html.indexOf(`<h4>${CATALOGUE.baseFunction.en}</h4>`));
+  const rest = html.slice(at, html.indexOf('</ul>', at));
+  assert.ok(rest.includes('<ul class="plain" id="does-parts">'));
+  const withParts = v.setup.functions.filter((f) => f.enabled && f.fn.needs.length > 0);
+  assert.ok(withParts.length > 0);
+  assert.equal(rest.split('<li>').length - 1, withParts.length);
+  // Each of them states how it is in the setup.
+  assert.equal(rest.split('<small>').length - 1, withParts.length);
+  for (const fn of CATALOGUE.functions) {
+    if (fn.needs.length === 0) assert.ok(html.slice(0, at).includes(`<li>${fn.name.en}`), fn.id);
+  }
+  assert.ok(chooser(v, false).includes('id="f-servo"'));
 });

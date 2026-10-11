@@ -10,7 +10,18 @@ import { STRINGS, t } from '../src/i18n.ts';
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const LANGS: Lang[] = ['en', 'de'];
 const GROUPS = groups(CATALOGUE);
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
+/** The functions the base setup runs. They take no tick and are in no link. */
+const ON_BASE = CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id);
+/** The functions with a tick. */
+const FUNCTIONS = CATALOGUE.functions.filter((f) => f.needs.length > 0).map((f) => f.id);
+const enabledCount = (functions: string[], owned: string[] = []): number =>
+  resolve(CATALOGUE, { functions, owned, options: { ...DEFAULT_OPTIONS } }).functions.filter((f) => f.enabled).length;
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** The end of the summary line for a selection: "13 functions." */
+const sumEnd = (functions: string[], owned: string[] = []): RegExp => {
+  const f = enabledCount(functions, owned);
+  return new RegExp(`\\d+ parts, \\d+ wires, ${escapeRe(t('en', f === 1 ? 'sum1' : 'sum', { p: 0, w: 0, f }).split(', ').pop() as string)}$`);
+};
 const OWNED = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const FULL = `#v=1&f=${FUNCTIONS.join(',')}&p=${OWNED.join(',')}&o=osoyoo,xt90,pd`;
 
@@ -102,7 +113,8 @@ for (const size of SIZES) {
 
     test('the functions stand in groups by the parts they need, in English and German', async ({ page }) => {
       const seen = watch(page);
-      expect(GROUPS.flatMap((g) => g.functions).sort()).toEqual([...FUNCTIONS].sort());
+      expect(GROUPS.flatMap((g) => g.functions).sort()).toEqual([...ON_BASE, ...FUNCTIONS].sort());
+      expect(GROUPS[0]?.functions).toEqual(ON_BASE);
       for (const lang of LANGS) {
         await open(page, lang === 'en' ? '' : '#v=1&l=de');
         await expect(page.locator('html')).toHaveAttribute('lang', lang);
@@ -115,7 +127,10 @@ for (const size of SIZES) {
             : STRINGS.gNeeds[col(lang)] + group.parts.map((id) => short(id, lang)).join(' + ');
           await expect(box.locator('legend')).toHaveText(heading);
           await expect(box.locator('legend')).toBeVisible();
-          expect(await box.locator('input[data-f]').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f))).toEqual(group.functions);
+          // The group of the base setup is a list without a control; every other group holds one tick per function.
+          const ticks = await box.locator('input[data-f]').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f));
+          const rows = await box.locator('ul.base > li').evaluateAll((list) => list.map((el) => el.id.replace(/^b-/, '')));
+          expect([ticks, rows]).toEqual(group.parts.length === 0 ? [[], group.functions] : [group.functions, []]);
           // The group is a named group for assistive technology.
           await expect(page.getByRole('group', { name: heading, exact: true })).toHaveCount(1);
         }
@@ -135,6 +150,102 @@ for (const size of SIZES) {
       // The full selection in German carries the longest texts.
       await open(page, `${FULL}&l=de`);
       await fits(page);
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
+    test('the group of the base setup is a list without a control, and the keyboard passes it', async ({ page }) => {
+      const seen = watch(page);
+      expect(ON_BASE.length).toBeGreaterThan(0);
+      // The ids of every function, with and without a tick, in the link: the widest case.
+      const all = CATALOGUE.functions.map((f) => f.id);
+      for (const lang of LANGS) {
+        for (const hash of [`#v=1&l=${lang}`, `#v=1&f=${all.join(',')}&l=${lang}`, `${FULL}&l=${lang}`]) {
+          await open(page, hash);
+          await expect(page.locator('html')).toHaveAttribute('lang', lang);
+          const box = page.locator('#g-base');
+          expect(await page.locator('fieldset.grp').first().getAttribute('id')).toBe('g-base');
+          await expect(box.locator('legend')).toHaveText(STRINGS.gBase[col(lang)]);
+          await expect(box.locator('legend .tag')).toHaveCount(0);
+          await expect(box.locator('> .hint')).toHaveText(STRINGS.baseHint[col(lang)]);
+          // No control and nothing that takes the focus, in any setup.
+          await expect(box.locator('input, button, select, textarea, a, summary, [tabindex], [contenteditable]')).toHaveCount(0);
+          await expect(box.locator('ul.base > li')).toHaveCount(ON_BASE.length);
+          for (const f of CATALOGUE.functions.filter((x) => ON_BASE.includes(x.id))) {
+            const row = page.locator(`#b-${f.id}`);
+            await expect(row.locator('b')).toHaveText(f.name[lang]);
+            await expect(row.locator('.tag')).toHaveCount(f.hardware === 'not-run' ? 1 : 0);
+            if (f.hardware === 'not-run') await expect(row.locator('.tag')).toHaveText(STRINGS.nrh[col(lang)]);
+            // Always on, and never "selected by you".
+            await expect(row.locator('small')).toHaveText(STRINGS.stBase[col(lang)]);
+            await expect(row).toBeVisible();
+            await expect(page.locator(`#f-${f.id}`)).toHaveCount(0);
+            await expect(page.locator('#does-base li', { hasText: f.name[lang] })).toHaveCount(1);
+          }
+          await expect(box).not.toContainText(STRINGS.stOwn[col(lang)]);
+          // A link is not rewritten when it opens, and none of the ticks is one of these functions.
+          expect(new URL(page.url()).hash).toBe(hash);
+          expect(await page.locator('input[data-f]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f).sort()))
+            .toEqual(hash.startsWith('#v=1&l=') ? [] : [...FUNCTIONS].sort());
+          await expect(page.locator('.msg')).toHaveCount(0);
+          await fits(page);
+          // A row is as wide as its group and its text is not cut.
+          const cut = await box.locator('ul.base > li').evaluateAll((list) => list.filter((el) => el.scrollWidth > el.clientWidth + 1).map((el) => el.id));
+          expect(cut).toEqual([]);
+        }
+
+        // Tab walks the chooser in document order: it skips no control and stops on nothing in the base group.
+        await open(page, `#v=1&f=servotest&l=${lang}`);
+        const wanted = await page.evaluate(() => {
+          const out: string[] = [];
+          for (const el of document.querySelectorAll<HTMLElement>('#choose input, #choose button, #choose summary, #choose a[href], #choose [tabindex]')) {
+            if (el.getClientRects().length === 0) continue;
+            // The content of a closed details element takes no focus; its summary does.
+            const closed = el.closest('details:not([open])');
+            if (closed && !(el.tagName === 'SUMMARY' && el.parentElement === closed)) continue;
+            const key = el instanceof HTMLInputElement && el.type === 'radio' ? `radio:${el.name}` : el.id;
+            if (!out.includes(key)) out.push(key);
+          }
+          return out;
+        });
+        expect(wanted.length).toBeGreaterThan(FUNCTIONS.length);
+        expect(wanted.slice(0, 1)).toEqual([`f-${GROUPS[1]?.functions[0]}`]);
+        await tabTo(page, wanted[0] as string);
+        const walked: string[] = [];
+        for (let i = 0; i < wanted.length + 5; i++) {
+          const at = await page.evaluate(() => {
+            const el = document.activeElement as HTMLElement | null;
+            if (!el || !el.closest('#choose')) return null;
+            return { key: el instanceof HTMLInputElement && el.type === 'radio' ? `radio:${el.name}` : el.id, inBase: el.closest('#g-base') !== null };
+          });
+          if (at === null) break;
+          expect(at.inBase, at.key).toBe(false);
+          walked.push(at.key);
+          await page.keyboard.press('Tab');
+        }
+        expect(walked).toEqual(wanted);
+        // Backwards from the first tick the focus leaves the chooser: nothing in the base group takes it.
+        await tabTo(page, wanted[0] as string);
+        await page.keyboard.press('Shift+Tab');
+        expect(await page.evaluate(() => document.activeElement?.closest('#g-base') === null && document.activeElement?.closest('#choose') === null)).toBe(true);
+        // A click on a row changes nothing.
+        const before = [new URL(page.url()).hash, await page.locator('#result').innerHTML()];
+        await page.locator(`#b-${ON_BASE[0]}`).click();
+        expect([new URL(page.url()).hash, await page.locator('#result').innerHTML()]).toEqual(before);
+      }
+
+      // A part that leaves takes no function of the base setup with it.
+      await open(page, `#v=1&f=${all.join(',')}`);
+      await page.locator('#rm-pdmini').click();
+      await expect(page.locator('#rmwarn')).toBeVisible();
+      for (const f of CATALOGUE.functions.filter((x) => ON_BASE.includes(x.id))) await expect(page.locator('#rmwarn')).not.toContainText(f.name.en);
+      await page.locator('#rm-yes').click();
+      await expect(page.locator('#rm-pdmini')).toHaveCount(0);
+      // The link the page writes holds none of their ids.
+      const stored = new URLSearchParams(new URL(page.url()).hash.slice(1)).get('f')?.split(',') ?? [];
+      expect(stored.length).toBeGreaterThan(0);
+      expect(stored.filter((id) => !FUNCTIONS.includes(id))).toEqual([]);
+      await expect(page.locator('#g-base ul.base > li')).toHaveCount(ON_BASE.length);
+      await expect(page.locator('#does-base li')).toHaveCount(ON_BASE.length);
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
@@ -159,7 +270,7 @@ for (const size of SIZES) {
         // The link stores the tick of the visitor and nothing of what comes with the parts.
         expect(new URL(page.url()).hash).toBe(`#v=1&f=servotest${tail}`);
         // "This setup does" names all 3 with the same words.
-        const does = page.locator('#result ul.plain').first();
+        const does = page.locator('#does-parts');
         await expect(does.locator('li', { hasText: fnName('servotest', lang) })).toContainText(STRINGS.stOwn[col(lang)]);
         await expect(does.locator('li', { hasText: fnName('supply', lang) })).toContainText(STRINGS.stInc[col(lang)]);
         await expect(does.locator('small')).toHaveCount(3);
@@ -183,7 +294,8 @@ for (const size of SIZES) {
       await expect(page.locator('#note')).toHaveText(stays);
       await expect(page.locator('#note')).toHaveAttribute('role', 'status');
       await expect(page.locator('#live')).toContainText(stays);
-      await expect(page.locator('#live')).toHaveText(/\d+ parts, \d+ wires, 3 functions\.$/);
+      await expect(page.locator('#live')).toHaveText(sumEnd(['servotest']));
+      expect(enabledCount(['servotest'])).toBe(ON_BASE.length + 3);
       await fits(page);
 
       // The last function that needs the PD mini leaves the selection: the page names what leaves.
@@ -280,7 +392,8 @@ for (const size of SIZES) {
       await expect(page.locator('#rm-pdmini')).toHaveCount(0);
       await expect(page).toHaveURL(/#v=1&p=servo$/);
       await expect(page.locator('#h-parts')).toBeFocused();
-      await expect(page.locator('#live')).toHaveText(/^PD mini removed\. \d+ parts, \d+ wires, 1 function\.$/);
+      await expect(page.locator('#live')).toHaveText(new RegExp(`^PD mini removed\\. ${sumEnd([], ['servo']).source}`));
+      expect(enabledCount([], ['servo'])).toBe(ON_BASE.length + 1);
       await expect(page.locator('#f-servotest')).not.toBeChecked();
       await expect(page.locator('label:has(#f-servotest)')).toContainText(`Adds: ${short('pdmini')}`);
       await expect(page.locator('label:has(#f-servo)')).toContainText('Included with these parts.');
@@ -296,7 +409,8 @@ for (const size of SIZES) {
       await page.keyboard.press('Space');
       await expect(page).toHaveURL(/#v=1&p=servo,pdmini$/);
       for (const id of ['servo', 'servotest', 'supply']) await expect(page.locator(`label:has(#f-${id})`)).toContainText('Included with these parts.');
-      await expect(page.locator('#live')).toHaveText(/3 functions\.$/);
+      await expect(page.locator('#live')).toHaveText(sumEnd([], ['servo', 'pdmini']));
+      expect(enabledCount([], ['servo', 'pdmini'])).toBe(ON_BASE.length + 3);
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
@@ -471,8 +585,9 @@ for (const size of SIZES) {
       await expect(page.locator('#choose')).toBeHidden();
       await expect(page.locator('#h-parts')).toBeVisible();
       // The printed list of functions keeps the words for the state.
-      await expect(page.locator('#result ul.plain').first().locator('small').first()).toBeVisible();
-      await expect(page.locator('#result ul.plain').first().locator('small').first()).toHaveText(STRINGS.stOwn[1]);
+      await expect(page.locator('#does-parts small').first()).toBeVisible();
+      await expect(page.locator('#does-parts small').first()).toHaveText(STRINGS.stOwn[1]);
+      await expect(page.locator('#does-base li')).toHaveCount(ON_BASE.length);
     });
 
     test('a link in the format of release 0.16.0 opens the same setup and is not rewritten', async ({ page }) => {
@@ -494,9 +609,16 @@ for (const size of SIZES) {
         expect(await page.locator('input[data-f]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f).sort()), hash).toEqual([...functions].sort());
         await expect(page.locator('.parts > li')).toHaveCount(setup.parts.length);
         await expect(page.locator('table.wires tbody tr')).toHaveCount(setup.wires.length);
-        await expect(page.locator('#result ul.plain').first().locator('li')).toHaveCount(1 + setup.functions.filter((f) => f.enabled).length);
+        // Every enabled function is listed once: under the base setup or under the parts.
+        await expect(page.locator('#does-base li')).toHaveCount(ON_BASE.length);
+        await expect(page.locator('#does-base li, #does-parts li')).toHaveCount(setup.functions.filter((f) => f.enabled).length);
         for (const f of setup.functions) {
-          await expect(page.locator(`label:has(#f-${f.fn.id})`), `${hash}: ${f.fn.id}`).toHaveAttribute('data-state', f.chosen ? 'own' : f.enabled ? 'inc' : 'off');
+          if (ON_BASE.includes(f.fn.id)) {
+            await expect(page.locator(`#f-${f.fn.id}`), `${hash}: ${f.fn.id}`).toHaveCount(0);
+            await expect(page.locator(`#b-${f.fn.id} small`), `${hash}: ${f.fn.id}`).toHaveText(STRINGS.stBase[hash.endsWith('l=de') ? 1 : 0]);
+          } else {
+            await expect(page.locator(`label:has(#f-${f.fn.id})`), `${hash}: ${f.fn.id}`).toHaveAttribute('data-state', f.chosen ? 'own' : f.enabled ? 'inc' : 'off');
+          }
         }
         await fits(page);
       }

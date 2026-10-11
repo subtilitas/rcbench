@@ -542,9 +542,12 @@ test('deselect: a function without a part stays on', () => {
 // The data file
 // ---------------------------------------------------------------------------
 
-const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
 const SELECTABLE = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const LOCKED = new Set(baseParts(CATALOGUE));
+/** The functions the base setup runs: no part beyond it. */
+const ON_BASE = CATALOGUE.functions.filter((f) => f.needs.every((p) => LOCKED.has(p))).map((f) => f.id);
+/** The functions that need a part beyond the base setup. The sweeps go over every set of them. */
+const FUNCTIONS = CATALOGUE.functions.filter((f) => !ON_BASE.includes(f.id)).map((f) => f.id);
 
 function subset(ids: string[], mask: number): string[] {
   return ids.filter((_, i) => (mask & (1 << i)) !== 0);
@@ -585,6 +588,12 @@ function assertRemovals(selection: Selection): number {
     assert.deepEqual(effect.partsOut, was.filter((p) => p !== id && !is.includes(p)), what);
     assert.deepEqual(effect.partsIn, is.filter((p) => !was.includes(p)), what);
     assert.deepEqual(off(effect), on(before).filter((f) => !on(after).includes(f)), what);
+    // A function the base setup runs is on before and after, whatever leaves.
+    for (const f of ON_BASE) {
+      assert.ok(on(before).includes(f) && on(after).includes(f), `${what}: ${f} is not on`);
+      assert.ok(!off(effect).includes(f) && !effect.functionsOn.includes(f), `${what}: ${f} is listed`);
+      assert.equal(effect.selection.functions.includes(f), selection.functions.includes(f), `${what}: ${f} changes in the selection`);
+    }
     assert.deepEqual(effect.functionsOn, on(after).filter((f) => !on(before).includes(f)), what);
     // A function comes on only with a part the rules add or with a variant that changes.
     if (effect.functionsOn.length > 0) {
@@ -635,6 +644,55 @@ test('sweep over the data file: every part beyond the base is removable from eve
   assert.ok(count > 2 ** FUNCTIONS.length, `${count} removals`);
 });
 
+test('sweep over the data file: the functions the base setup runs change no removal', () => {
+  assert.ok(ON_BASE.length > 0, 'the data file holds no function without a part');
+  assert.deepEqual(groups(CATALOGUE)[0]?.functions, ON_BASE);
+  // The same in the terms of the page: these are the functions that name no part at all.
+  assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0).map((f) => f.id), ON_BASE);
+  const strip = (effect: Removal): unknown => ({ ...effect, selection: { ...effect.selection, functions: effect.selection.functions.filter((f) => !ON_BASE.includes(f)) } });
+  let count = 0;
+  for (let mask = 0; mask < 2 ** FUNCTIONS.length; mask++) {
+    const ticked = subset(FUNCTIONS, mask);
+    // In turn all of them, and a set of them that changes with the mask, in the selection.
+    for (const extra of [mask % 2 === 0 ? ON_BASE : subset(ON_BASE, (mask >> 1) % 2 ** ON_BASE.length)]) {
+      const selection = select([...extra, ...ticked]);
+      count += assertRemovals(selection);
+      const [bare, full] = [resolve(CATALOGUE, select(ticked)), resolve(CATALOGUE, selection)];
+      assert.deepEqual(partIds(full), partIds(bare), selection.functions.join());
+      assert.deepEqual(full.wires, bare.wires, selection.functions.join());
+      assert.deepEqual(on(full), on(bare), selection.functions.join());
+      // The removal of each part is the removal without them, but for their place in the selection.
+      if (extra !== ON_BASE) continue;
+      for (const id of partIds(bare)) {
+        assert.deepEqual(strip(removalEffect(CATALOGUE, selection, id)), strip(removalEffect(CATALOGUE, select(ticked), id)), `${id} of ${selection.functions.join()}`);
+      }
+    }
+  }
+  assert.ok(count > 2 ** FUNCTIONS.length, `${count} removals`);
+});
+
+test('sweep over the data file: every set of the functions the base setup runs is the base setup', () => {
+  assert.ok(ON_BASE.length <= 16, 'the sweep over 2^n sets of functions is a decision above 16 functions');
+  const base = resolve(CATALOGUE, select());
+  assert.deepEqual(partIds(base), [...LOCKED]);
+  for (let mask = 0; mask < 2 ** ON_BASE.length; mask++) {
+    const selection = select(subset(ON_BASE, mask));
+    const setup = resolve(CATALOGUE, selection);
+    assert.deepEqual([partIds(setup), setup.wires, on(setup), setup.checks], [partIds(base), base.wires, ON_BASE, base.checks], selection.functions.join());
+    // Nothing to remove: every part is a part of the base setup.
+    for (const id of partIds(setup)) assert.equal(removalEffect(CATALOGUE, selection, id).refused, 'base');
+    for (const id of ON_BASE) {
+      const effect = deselectEffect(CATALOGUE, selection, id);
+      assert.equal(effect.changed, selection.functions.includes(id));
+      assert.deepEqual(
+        [effect.stillOn, effect.functionsOff, effect.partsOut, effect.partsIn, effect.partsStay],
+        [effect.changed, [], [], [], []],
+        `deselecting ${id} from ${selection.functions.join()}`,
+      );
+    }
+  }
+});
+
 test('sweep over the data file: every part is removable from every set of owned parts', () => {
   assert.ok(SELECTABLE.length <= 16, 'the sweep over 2^n sets of parts is a decision above 16 parts');
   let count = 0;
@@ -650,16 +708,18 @@ test('sample of the data file: 1500 mixed selections under all variants', () => 
   let count = 0;
   for (let i = 0; i < 1500; i++) {
     const options = OPTION_SETS[Math.floor(random() * OPTION_SETS.length)] as Options;
-    count += assertRemovals({ functions: pick(FUNCTIONS), owned: pick(SELECTABLE), options });
+    count += assertRemovals({ functions: pick([...ON_BASE, ...FUNCTIONS]), owned: pick(SELECTABLE), options });
   }
   assert.ok(count > 1500, `${count} removals`);
 });
 
 test('sweep over the data file: deselecting a function is the selection without it', () => {
-  for (let mask = 0; mask < 2 ** FUNCTIONS.length; mask++) {
-    const selection = select(subset(FUNCTIONS, mask));
+  // Every set of the functions that need a part, without and with the functions the base setup runs.
+  for (let mask = 0; mask < 2 ** (FUNCTIONS.length + 1); mask++) {
+    const selection = select(CATALOGUE.functions.map((f) => f.id).filter((id) =>
+      (ON_BASE.includes(id) ? mask >= 2 ** FUNCTIONS.length : subset(FUNCTIONS, mask).includes(id))));
     const before = resolve(CATALOGUE, selection);
-    for (const id of FUNCTIONS) {
+    for (const id of [...FUNCTIONS, ...ON_BASE]) {
       const effect = deselectEffect(CATALOGUE, selection, id);
       const what = `deselecting ${id} from ${selection.functions.join(',')}`;
       assert.equal(effect.changed, selection.functions.includes(id), what);
@@ -668,6 +728,9 @@ test('sweep over the data file: deselecting a function is the selection without 
         continue;
       }
       const after = resolve(CATALOGUE, effect.selection);
+      // A function the base setup runs never goes off, and without its tick it stays on and moves no part.
+      assert.ok(effect.functionsOff.every((f) => !ON_BASE.includes(f)), what);
+      if (ON_BASE.includes(id)) assert.deepEqual([effect.stillOn, effect.functionsOff, effect.partsOut, effect.partsIn, effect.partsStay], [true, [], [], [], []], what);
       assert.deepEqual(effect.selection.functions, selection.functions.filter((f) => f !== id), what);
       assert.equal(effect.stillOn, on(after).includes(id), what);
       assert.deepEqual(effect.functionsOff, on(before).filter((f) => f !== id && !on(after).includes(f)), what);

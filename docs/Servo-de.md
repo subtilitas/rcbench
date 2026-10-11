@@ -7,8 +7,7 @@ Zustand; beide brauchen einen Stromsensor am Servoausgang, der nicht bestückt
 ist, und beide laufen gegen ein modelliertes Servo. Ihre Vorgabewerte stammen
 aus `servo_limit_defaults()` und `servo_sync_defaults()` in `shared/servo/`.
 Das dritte, der [automatische Test](#automatischer-test), liest den Strom des
-Netzteils, das das Servo versorgt, und ist nur gegen die Servo- und
-Netzteilmodelle gelaufen.
+Netzteils, das das Servo versorgt.
 
 ## Eingebaute mechanische Endlage
 
@@ -512,9 +511,6 @@ der Messwert gelöscht: die Zeile zeigt Striche, und ENC-MITTE setzt nichts,
 bis mit dem Link wieder ein Messwert eintrifft. Dasselbe gilt, solange der
 Sensor keinen Magneten meldet.
 
-Nicht auf Hardware gelaufen: der Sensor am Bus, die Toleranz und die 100 ms
-Haltezeit gegen das Zittern eines echten Servos, und die Montage.
-
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
@@ -673,23 +669,20 @@ gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBR
 erreichte mit `nicht gelaufen`. `Kann zerstören` nennt das rote Schild, wenn
 ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
 
-### Nicht auf Hardware gelaufen
+### Was nicht gemessen ist
 
-Drei Läufe von 0.13.0 am Prüfstand mit dem PD mini, von einem Tester,
-sind die einzigen auf Hardware: ein MG90S-Mikroservo, ein Digitalservo 1102HB
+Drei Läufe von 0.13.0 am Prüfstand mit dem PD mini, von einem Tester: ein MG90S-Mikroservo, ein Digitalservo 1102HB
 und ein Digitalservo MS24. Das MS24, in Bewegung 0,16 bis 0,18 A, bestand. MG90S
 und 1102HB lauteten NICHT BESTANDEN, jede Bewegung verspätet, weil 0.13.0
 0,10 A als Bewegung nahm; beide Servos bewegten sich. Die Host-Suite gibt
 die CSVs von MG90S und 1102HB (`test/host/fixtures/`, gekürzt) gegen die
 Engine wieder, dazu einen MS24-ähnlichen Fall, die Ströme des MG90S mal 3.
-Die Schwelle und das Urteil NICHT MESSBAR sind nicht auf Hardware gelaufen.
-Darüber hinaus prüft die Host-Suite die Engine gegen `servo_sim` und
+Die Host-Suite prüft die Engine gegen `servo_sim` und
 `supply_sim`, die Seite SERVO, die sie führt, und die CSV, vom Parser der
 Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
 
-Kein Lauf am INA3221 ist auf Hardware gelaufen. `test_servo_test_win` fährt
-einen auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
+`test_servo_test_win` fährt den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
 Zeitplan und Seiten des Koprozessors machen daraus Fenster, `sense_link`
 nimmt jedes einmal und `servo_source` nennt das Messgerät, neben einem
 Modell des PD mini, das alle 104 ms gelesen wird. Zwei Aufzeichnungen von
@@ -734,8 +727,7 @@ bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Disarm
 gesendet. Die Bedienelemente im Einzelnen:
 [Bildschirme](Screens-de.md#servo).
 
-Nicht auf Hardware gelaufen: dass der Pin auf der Ruhelage steht, wenn der
-Prüfstand scharf meldet. Das Panel zentriert die Ruderflächen, bevor es
+Das Panel zentriert die Ruderflächen, bevor es
 scharf schaltet, und der Bildschirm zeigt die Ruhelage, wenn der Prüfstand
 scharf meldet; die Zeit zwischen beidem ist auf einem Prüfstand nicht
 gemessen.

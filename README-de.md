@@ -10,11 +10,11 @@ auf zwei Prozessoren: ein ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen,
 SD-Karte) und ein RP2350-Koprozessor (Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 
-**Stand: im Aufbau.** Das Panel bootet, jeder Bildschirm existiert, und der
-CAN-Link läuft auf Hardware. Die Ausgangstreiber sind gebaut, und eine
-scharfgeschaltete Bank treibt jeden gebundenen Pin auf der Ruhelage seiner
-Rolle, ob etwas ihn kommandiert oder nicht; ein Motor und ein Servo sind je
-vom Panel aus auf einem Aufbau-Prüfstand gelaufen. Nicht gemessen ist das
+**Stand: im Aufbau.** Das Projekt ist in Entwicklung, und seine Funktionen
+sind nicht auf Hardware verifiziert. Das Panel bootet, und jeder Bildschirm
+existiert. Die Ausgangstreiber sind gebaut, und eine scharfgeschaltete Bank
+treibt jeden gebundenen Pin auf der Ruhelage seiner Rolle, ob etwas ihn
+kommandiert oder nicht. Nicht gemessen ist das
 Timing an einem Messgerät -- keine Bitbreite, keine Rahmenperiode und keine
 Antwortverzögerung in diesem Baum ist auf einem Oszilloskop oder einem
 Logikanalysator gesehen worden. Die übrigen Messungen warten auf Bauteile, die
@@ -36,11 +36,9 @@ Finger abhebt. Entschärfen und STOP sind ein einzelner Druck.
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des Koprozessors und ein STOP-Kommando
 über den Link. Die Leitung zwischen J8 des Panels und GP3 des
-Koprozessors ist auf dem Aufbau-Prüfstand bestückt, dort funktioniert das
-Scharfschalten. Das retriggerbare Monoflop des Heartbeats ist auf keiner
+Koprozessors ist auf dem Aufbau-Prüfstand bestückt. Das retriggerbare Monoflop des Heartbeats ist auf keiner
 Platine vorhanden, die Ausgänge hängen also allein an der Firmware an beiden
-Enden, ohne Hardware-Rückfallebene dahinter. Das STOP-Kommando über den Link
-ist geschrieben und nicht auf Hardware gelaufen.
+Enden, ohne Hardware-Rückfallebene dahinter.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) spezifiziert
 alle drei.
 
@@ -51,15 +49,15 @@ warranty of any kind" der MIT-Lizenz gilt.
 
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
-| Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC, gegen einen AM32-ESC gelaufen; simulierte Werte, solange kein Coprozessor antwortet |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom Koprozessor gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, auf einem Aufbau-Prüfstand gelaufen, Timing ungemessen; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
-| Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der Koprozessor steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell; mit 0.10.0 und 0.10.1 gegen ein Modul gelaufen, nichts nach 0.10.1 |
+| Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC; simulierte Werte, solange kein Coprozessor antwortet |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom Koprozessor gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
+| Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der Koprozessor steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Analyser | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
-| Programmierer | Parametertabellen für BLHeli_S, AM32, ESCape32, VESC und Hitec; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen; keines an einem ESC gelaufen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels; nie gegen einen ESC |
+| Programmierer | Parametertabellen für BLHeli_S, AM32, ESCape32, VESC und Hitec; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
 | Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden im scharfen Zustand oder bei eingeschaltetem Netzteil-Ausgang aufgezeichnet | gebaut |
-| Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut; Speicherung auf Hardware bestätigt |
+| Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut |
 
 ## Bauen
 

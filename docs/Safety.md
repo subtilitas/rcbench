@@ -5,13 +5,16 @@
 How the bench stops, the external circuit the design requires, and the
 behaviours that are deliberate.
 
+The project is under development and its functions are not verified on
+hardware.
+
 ## Stop mechanisms
 
 | Mechanism | Covers | State |
 | --- | --- | --- |
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | Coprocessor silence watchdog, 200 ms | the link is dead in either direction | built and tested |
-| STOP command over the link | a deliberate stop, acknowledged and reported | written; not run on hardware |
+| STOP command over the link | a deliberate stop, acknowledged and reported | written |
 
 A pressed STOP stops the heartbeat, disarms the panel's own output model
 and writes ARM = 0 to the control page. While the link is up the panel
@@ -136,7 +139,7 @@ cases:
 
 In both the outputs stay off until an operator holds ARM. Host-tested in
 `test_safety_gate` for outages of 5, 30, 50, 60, 300, 1000 and 5000 ms at 55
-reset phases each and three models of the wire; not run on hardware. How long
+reset phases each and three models of the wire. How long
 the coprocessor takes from reset to its first answered frame is not measured.
 
 ### The first arm after a stop

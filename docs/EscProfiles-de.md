@@ -112,8 +112,8 @@ JSON. Das Panel lädt sie nicht.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
-| `scheme.listen` | wo der Knüppel ruht, während das Menü läuft: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: wo der Einstieg ihn ließ. Gesetzt in den 9 YGE-Profilen, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
-| `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: die Auswahl speichert. Gesetzt in den 8 YGE-Mode-Setups, wo der Knüppel zurück auf Minimum den Modus speichert |
+| `scheme.listen` | wo der Knüppel ruht, während das Menü läuft: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: wo der Einstieg ihn ließ. Gesetzt in den 9 Profilen für YGE-ESCs, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
+| `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: die Auswahl speichert. Gesetzt in den 8 Mode-Setups der YGE-ESCs, wo der Knüppel zurück auf Minimum den Modus speichert |
 | `scheme.select.within_ms` | 0 bis 60000: die Zeit nach dem Ton, in der die Bewegung zählt, oder null, wenn nicht angegeben |
 | `scheme.value_select` | nur bei zweistufigen Menüs: `select` wählt den Punkt, dann speichert `value_select.throttle` (`min`, `mid`, `max`, `none`) den angesagten Wert; `within_ms` wie bei `select`. Fehlt es oder ist es null, speichert die `select`-Bewegung den Wert |
 | `scheme.changes_per_entry` | `one`, `many` |
@@ -176,8 +176,8 @@ sein Deutsch. Der Bildschirm zeigt `when` in der Sprache der Oberfläche.
 Was ein Lauf mit jedem Schritt tut, steht unter
 [Stick-Programmierung](StickProgramming-de.md#handgriffe).
 
-24 Profile haben Schritte: die 22 Kontronik-Familien, `turnigy-aquastar`
-(sein Schalter bei Vollgas) und `greatplanes-electrifly-c-series` (sein
+24 Profile haben Schritte: die 22 Familien der Kontronik-ESCs,
+`turnigy-aquastar` (sein Schalter bei Vollgas) und `greatplanes-electrifly-c-series` (sein
 Ein/Aus-Taster). `graupner-brushless-control-t`, dessen Menü an LEDs
 abgelesen wird, und `hacker-master-senstrol`, das den
 Identifikationschip seines Motors, einen zweiten Kanal und eine JetiBox
@@ -206,7 +206,7 @@ Kartenleser verschieden lesen.
 
 ## Aktuelle Einschränkungen
 
-- Kein Profil ist an einem ESC gelaufen. Menü- und Wertnummern,
+- Menü- und Wertnummern,
   Standardwerte und Einstiegsgesten sind so, wie die Handbücher sie angeben,
   und manche Handbücher widersprechen einander; die `notes` jedes Profils
   nennen die Widersprüche.
@@ -217,7 +217,7 @@ Kartenleser verschieden lesen.
   Mindesteingang darüber liegt, etwa YGE Opto und Navy ab 6S, brauchen eine
   externe Versorgung.
 - Wo ein Menü die Punkte durch Tonhöhe statt durch Anzahl unterscheidet
-  (Hitec, Mystery, Readytosky), trennt der Versorgungsstrom die Punkte
+  (die Profile für ESCs von Hitec, Mystery und Readytosky), trennt der Versorgungsstrom die Punkte
   möglicherweise nicht. Das ist nicht gemessen.
 - Eine Karte, die bei laufendem Panel geändert wird, wird beim nächsten
   Start gelesen.

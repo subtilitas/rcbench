@@ -27,7 +27,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | Einen ESC über sein Gasknüppel-Menü programmieren | [Stick-Programmierung](StickProgramming-de.md) |
 | Einen Empfänger anschließen und seine Ausgabe prüfen | [Empfängerbusse](Receivers-de.md) |
 | Stoppmechanismen und die externe Schaltung, die sie brauchen | [Sicherheit](Safety-de.md) |
-| BLHeli_32-ESCs: was unterstützt wird und was nicht | [BLHeli_32-Parameter](BLHeli32-de.md) |
+| ESCs mit BLHeli_32-Firmware: was unterstützt wird und was nicht | [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md) |
 
 ## Referenz
 
@@ -41,6 +41,10 @@ Der Stand des Projekts, die offenen Punkte und die getroffenen Entscheidungen
 stehen in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md)
 (englisch).
+
+Hersteller-, Produkt-, Protokoll- und Firmware-Namen gehören ihren Inhabern
+und dienen nur dazu, Kompatibilität zu beschreiben:
+[Rechtliche Hinweise und Haftungsausschluss](https://github.com/subtilitas/rcbench/blob/main/README-de.md#rechtliche-hinweise-und-haftungsausschluss).
 
 Jede Seite gibt es auch auf Englisch; der Umschalter steht oben auf jeder
 Seite.

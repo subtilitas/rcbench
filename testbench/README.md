@@ -43,9 +43,10 @@ Six things the tree does that only an instrument can confirm:
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
 
 And the programmer's four ESC protocols and one servo protocol, which the
-panel can drive but which no test exercises against a device: BLHeli_S and
-AM32 (one-wire bootloader, 19,200 baud), ESCape32 (text command line over the
-signal line), VESC (framed packets, 115,200 baud) and Hitec D-series.
+panel can drive but which no test exercises against a device: the one-wire
+bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud), the
+text command line of ESCape32 firmware over the signal line, the framed
+packets of VESC firmware (115,200 baud) and the Hitec D-series servo protocol.
 
 ---
 
@@ -334,7 +335,7 @@ per run:
   come before any capture of the bench itself is worth reading.
 - **Responder.** It pretends to be the device at the other end — an ESC that
   answers a BLHeli_S bootloader handshake, or one that emits OpenYGE
-  telemetry, or a servo that answers Hitec D-series. That makes the panel's
+  telemetry, or a servo that answers the Hitec D-series protocol. That makes the panel's
   programmer and telemetry paths testable without owning every device. It also
   answers as a touch controller at its own address; see below.
 - **Hands.** It closes the relays across both boards' reset and boot buttons,

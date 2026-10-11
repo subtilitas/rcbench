@@ -30,7 +30,7 @@ Was sie nicht weiß:
 2. Entweder den Motor am ESC lassen, fest montiert, oder an seiner Stelle
    einen Lastwiderstand an die Motorleitungen des ESCs legen. Die Pieptöne
    werden in beiden Fällen aus dem Strom gezählt. Der Wert des Widerstands
-   ist nicht festgelegt: kein ESC ist in einen solchen gelaufen. Er muss
+   ist nicht festgelegt. Er muss
    den Strom bei der Spannung des Laufs unter dessen Strombegrenzung
    halten. Wie gut Pieptöne durch die Wicklungen eines Motors im Strom zu
    lesen sind, ist nicht gemessen.
@@ -331,7 +331,7 @@ und entschärft.
 gespeicherten Modus, indem er ihn als Töne wiederholt (die Kontrollausgabe
 der Handbücher), Modus 7 als sieben, und die Handbücher stecken den Akku
 erst danach ab. SPEICHERN (vorgegeben 2000 ms) kann vor einer langen
-Wiederholung enden. Jedes Kontronik-Profil, das läuft, und die fünf
+Wiederholung enden. Jedes Profil für einen Kontronik-ESC, das läuft, und die fünf
 unten tragen einen Schritt `before_power_off`: nach der letzten Bewegung
 des Speicherns hält der Lauf den ESC versorgt, den Knüppel, wo das
 Speichern ihn ließ, und bittet den Bediener, den ESC zu beobachten und
@@ -370,8 +370,8 @@ während der Wiederholung.
 
 **Die Handlung, die das Menü startet.** Ein Profil kennzeichnet den
 Schritt, dessen Handlung die Modusfolge startet, mit `"starts_menu": true`;
-ein Schritt ohne das wartet auf ERLEDIGT, wo er auch steht. 16
-Kontronik-Profile kennzeichnen ihren letzten Schritt `before_menu`: der ESC
+ein Schritt ohne das wartet auf ERLEDIGT, wo er auch steht. 16 Profile für
+Kontronik-ESCs kennzeichnen ihren letzten Schritt `before_menu`: der ESC
 beantwortet den
 abgezogenen Jumper oder den gedrückten Taster mit einem Dreiklang und gibt
 danach Modus 1, 2, 3 ... aus (zum Beispiel Kontronik_Jazz.pdf S. 6,
@@ -436,8 +436,8 @@ Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
 oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf
 gesteckter Jumper kann noch stecken.
 
-24 Profile haben Handgriffe: die 22 Kontronik-Familien, `turnigy-aquastar`
-und `greatplanes-electrifly-c-series`. 10 laufen, jedes auch mit seinem
+24 Profile haben Handgriffe: die 22 Familien der Kontronik-ESCs,
+`turnigy-aquastar` und `greatplanes-electrifly-c-series`. 10 laufen, jedes auch mit seinem
 Schritt, bevor das Netzteil ausschaltet:
 
 | Profil | Schritte | Werte, bei MID eingeschaltet |
@@ -674,7 +674,7 @@ hat keine Speicherbewegung. Ein einstufiges Profil sagt `value` an, oder
 Wertnummer in zwei Punkten; seine Auswahlbewegung unterscheidet sich von der
 Ruhestellung, und seine Speicherbewegung, wo es eine hat, von der
 Auswahlbewegung. Die Speicherbewegung darf die Ruhestellung sein: in den
-YGE-Mode-Setups geht der Knüppel zum Speichern zurück auf Minimum, wo er
+Mode-Setups der YGE-ESCs geht der Knüppel zum Speichern zurück auf Minimum, wo er
 ruhte.
 
 | Die Zeile sagt | Warum |
@@ -692,7 +692,7 @@ ruhte.
 | Werte wiederholen sich | einstufig, eine Wertnummer in zwei Punkten |
 | Auswahl = Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
 | Wertbewegung = Auswahl | zweistufig, `value_select` gleich `select` |
-| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die YGE-Profile. Ein Profil, dessen Werte ein eigenes `entry_hold_ms` nennen, wird je Änderung beurteilt: eine ohne Zeit wird abgelehnt, die anderen laufen |
+| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die Profile für YGE-ESCs. Ein Profil, dessen Werte ein eigenes `entry_hold_ms` nennen, wird je Änderung beurteilt: eine ohne Zeit wird abgelehnt, die anderen laufen |
 | Speichern, zweistufig | zweistufig mit `scheme.store` |
 | Speichern = Auswahl | einstufig, `scheme.store` gleich `select` |
 | Menüstart, Ruhe anderswo | ein Schritt mit `starts_menu`, und das Menü ruht abseits der Einschaltstellung: `scheme.listen` abseits des Einstiegs, oder ein Wert, der abseits davon eingeschaltet wird |
@@ -794,8 +794,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
 
 ## Aktuelle Einschränkungen
 
-- Kein Lauf gegen einen ESC. Die Vorgaben und die Reihenfolgeregel sind an
-  echten Pieptönen nicht erprobt.
+- Die Vorgaben und die Reihenfolgeregel sind an echten Pieptönen nicht erprobt.
 - Ein ESC, der eine Auswahl ignoriert, gibt weiter seine Punkte aus, die der
   Lauf dann als Werte zählt: er kann FERTIG melden, ohne dass etwas
   gespeichert ist.
@@ -867,6 +866,5 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   steht für ihn. Die Handbücher schalten ihn nach dem Anstecken des Akkus;
   ob das Einschalten des Netzteils das Menü betritt wie der Schalter, ist
   nicht gemessen.
-- Kein Lauf mit einem Motor am ESC anstelle des Lastwiderstands. Ob ein
-  Motor während des Menüs anläuft und wie seine Wicklungen die Pieptöne im
+- Ob mit einem Motor am ESC anstelle des Lastwiderstands ein Motor während des Menüs anläuft und wie seine Wicklungen die Pieptöne im
   Strom formen, ist nicht gemessen.
