@@ -257,6 +257,8 @@ jobs:
             --inline-suppr --suppressions-list=.cppcheck-suppress \
             --check-level=exhaustive \
             $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
+            $(git ls-files 'protocols/**/include/*' \
+                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
                 | grep -v -e 'gfx_font' -e '/rp2350/')
 

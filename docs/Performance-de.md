@@ -237,7 +237,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 516 | 528 | 1 796 |
+| Kern 0 | `main` | 4 096 | 2 416 | 528 | 896 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -246,12 +246,13 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 
-Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (352 Bytes), `can_service` (344),
-`link_dev_dispatch`, `slots_write`, `slots_take`, `outputs_hw_apply_only`,
-`out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
-Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
-aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
+Die tiefste Kette von Kern 0 ist ein Schreibkommando an den
+KST-Programmierport: `main` (392 Bytes), `can_service` (344),
+`link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
+`kst_session_write` (256) und der Schreibplaner aus `protocols/kst`, 1 272
+Bytes ab `kst_plan_edit`, davon 640 für den Frame seines Suchschritts
+`detour`. Der Plan und das bereitgestellte Image liegen im Zustand des
+Ports, nicht auf dem Stack. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 
@@ -259,14 +260,14 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 70 solche Aufrufe sind von `main` aus erreichbar;
+  Links liest: 98 solche Aufrufe sind von `main` aus erreichbar;
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug
   schlägt bei einem `strstr()`-Aufruf unter `shared/` oder
   `firmware/iomcu/src` fehl, dessen Suchmuster kein Stringliteral unter 255
   Zeichen ist;
-- 17 handgeschriebene Rechenroutinen des pico-sdk tragen in der ELF-Datei
+- 18 handgeschriebene Rechenroutinen des pico-sdk tragen in der ELF-Datei
   keine Größe, und ihre Frames werden nicht gelesen;
 - gezählt wird ein Interrupt, kein zweiter auf dem ersten;
 - Rekursion wird einmal gezählt.

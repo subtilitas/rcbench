@@ -1,0 +1,67 @@
+;
+; One KST transaction on one pin: a frame out, the pad released, every level
+; change of the reply window stamped, the pad driven low again.
+;
+; The pad is the state machine's OUT, SET and JMP pin.  Autopull at 32 bits,
+; shifting left; no autopush.  The clock divider is 1.  The counts come from
+; the transmit FIFO in the order kst_pio.h gives (protocols/kst/include):
+; hold, count, levels, low, window, quiet.  Between transactions the machine
+; stalls on the first `out` with the pad driven low.
+;
+; Transmit.  One half-cell is `out pins`, `mov`, hold + 1 passes of `hold`
+; and `jmp x--`: hold + 4 cycles.  The levels end with one low half-cell;
+; its `out pins` is the frame's last edge.  The pad stays driven for
+; half-cell + low + 2 cycles from that edge, then becomes an input.
+;
+; Capture.  X counts ticks of 4 cycles down; every path between two samples
+; of the pin takes 4 cycles.  A level change pushes X.  A rising edge
+; reloads X from Y, which holds `quiet`.  The first sample is 3 cycles after
+; the release.  When X runs out the program returns to `idle`, and
+; the pad drives the output latch, which is low since the last half-cell.
+;
+; The pad never drives high outside the transmit loop: `out pins` is the
+; only instruction that sets the latch.
+;
+; test/host/test_kst_pio.c assembles this file, runs the words in a model of
+; the state machine and holds them to fixtures/kst_line_words.txt, which a
+; firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program kst_line
+
+.wrap_target
+idle:
+    set pindirs, 1          ; and the end of a capture: drive low
+    out isr, 32             ; hold
+    out x, 32               ; count
+bit:
+    out pins, 1
+    mov y, isr
+hold:
+    jmp y--, hold
+    jmp x--, bit
+    out y, 32               ; low
+low:
+    jmp y--, low
+    set pindirs, 0          ; release
+    out x, 32               ; window
+    out y, 32               ; quiet
+watch:
+    jmp pin, rose
+    jmp x--, watch [2]
+    jmp idle                ; no rising edge in the window
+high_a:
+    jmp x--, high [2]
+    jmp idle                ; high for the whole quiet time
+rose:
+    mov isr, x
+    push noblock
+    mov x, y
+high:
+    jmp pin, high_a
+    mov isr, x              ; fell
+    push noblock
+    jmp x--, watch
+.wrap

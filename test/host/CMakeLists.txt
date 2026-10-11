@@ -104,7 +104,7 @@ set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session)
+foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -139,6 +139,10 @@ target_compile_definitions(test_esc_profiles PRIVATE
 target_compile_definitions(test_tone_pio PRIVATE
     "TONE_CAP_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/phase_tap/rp2350/tone_cap.pio\""
     "TONE_CAP_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/tone_cap_words.txt\"")
+# The KST line's PIO program, the same way.
+target_compile_definitions(test_kst_pio PRIVATE
+    "KST_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/kst/rp2350/kst_line.pio\""
+    "KST_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kst_line_words.txt\"")
 
 # The headers of protocols/kst as C++: a driver may be written in it.  The
 # program includes all 5, calls one function of each module and links against

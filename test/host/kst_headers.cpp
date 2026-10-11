@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "kst_limits.h"
+#include "kst_pio.h"
 #include "kst_plan.h"
 #include "kst_reg.h"
 #include "kst_session.h"
@@ -19,12 +20,14 @@ int kst_headers_link(void)
     kst_image_t img = kst_image_t();
     kst_plan_t plan;
     kst_session_t ses;
+    kst_pio_clock_t clock;
 
     kst_frame_sync(&frame);
     (void)kst_fingerprint(&img, nullptr);
     (void)kst_limits_image(&img);
     (void)kst_plan_release_pairing(&img, &plan);
     (void)kst_session_init(&ses, nullptr);
+    (void)kst_pio_clock(150000000u, &clock);
     return static_cast<int>(frame.n_half);
 }
 

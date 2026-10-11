@@ -47,6 +47,9 @@ typedef struct {
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
 
+/* The PWM slots that render no pulse (outputs_hw_hold()). */
+static uint8_t s_hold;
+
 /* The capture's edge: the output channel watched, -1 for none, and the
  * frame stamped for it, until taken. */
 static int      s_watch_ch = -1;
@@ -390,6 +393,11 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     out_dshot_send(s->pin, value, false);
 }
 
+void outputs_hw_hold(uint8_t slots)
+{
+    s_hold = slots;
+}
+
 void outputs_hw_watch(int ch)
 {
     s_watch_ch   = ch;
@@ -456,7 +464,8 @@ void outputs_hw_service(const outputs_t *o)
         switch (s->driver) {
         case OUT_DRIVER_PWM:
             service_pwm(&s_state[i], s,
-                        drive ? outputs_pulse_us(o, s->first_channel) : 0u);
+                        drive && (s_hold & (1u << i)) == 0u
+                            ? outputs_pulse_us(o, s->first_channel) : 0u);
             break;
         case OUT_DRIVER_PPM:
             service_ppm(o, s, drive);

@@ -16,13 +16,14 @@ set(SRCS
     sense_link.c
     servo_source.c
     tone_link.c
+    kst_link.c
     knob.c
 )
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link kst)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
-    target_link_libraries(rcbench_bench PUBLIC rcbench_link m)
+    target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst m)
 endif()

@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 
+#include "link_crc.h"
 #include "link_msg.h"
 
 #ifdef __cplusplus
@@ -53,6 +54,7 @@ typedef enum {
     LINK_PAGE_BIND_OUT  = 0x2F, /**< an OUTPUTS page prepared, not in force  */
     LINK_PAGE_BIND      = 0x30, /**< takes the two prepared pages as one     */
     LINK_PAGE_SERVO_WIN = 0x31, /**< the servo rail's last CH1 windows, read-only */
+    LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
 } link_page_id_t;
 
 /*
@@ -68,18 +70,20 @@ typedef enum {
  * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
  * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
  * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
- * and a signed CAP_HOLD_MA from 4.11.  A
+ * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 11u
+#define LINK_PROTOCOL_MINOR 12u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
 /** The first minor that serves SERVO_WIN, counts resets in SENSE register
  *  31 and takes a negative CAP_HOLD_MA. */
 #define LINK_MINOR_SERVO_WIN 11u
+/** The first minor that serves KST. */
+#define LINK_MINOR_KST 12u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1240,6 +1244,188 @@ typedef enum {
     LINK_PAD_POWER  = 2, /**< a rail, at LINK_PAD_DV tenths of a volt      */
     LINK_PAD_OTHER  = 3, /**< neither: a RUN or an enable                  */
 } link_pad_kind_t;
+
+/* --------------------------------------------------------------------- KST */
+/*
+ * The KST page (0x32, since 4.12): the programming port for KST and
+ * Chaservo servos.  One output channel at a time leaves PWM (pulse-width
+ * modulation) and carries the servo's programming protocol
+ * (protocols/kst).  The session runs at the coprocessor: the panel writes
+ * an operation and the images it needs, and reads the state, the result
+ * and the servo's 32 registers.  shared/outputs/kst_port.h holds the
+ * rules.
+ *
+ * A read and a write of the page see different registers.  A read gives
+ * the 32 registers LINK_KS_*.  A write takes LINK_KS_W_*: the command in
+ * registers 0 to 3, which is one frame and taken whole or not at all, and
+ * the staged registers 4 to 24, written in any windows before the command
+ * that names their CRC (cyclic redundancy check).  Nothing is kept in
+ * flash.
+ */
+enum {
+    LINK_KS_STATE = 0,   /**< bits 0-2 link_kst_state_t, bits 3-11 the
+                              LINK_KS_F_* flags, bits 12-15 the channel */
+    LINK_KS_SEQ   = 1,   /**< the SEQ of the last command taken; 0 at start */
+    LINK_KS_OP    = 2,   /**< bits 12-15 the last operation started
+                              (link_kst_op_t), bits 0-11 the frames it has
+                              sent, held at 4095 */
+    LINK_KS_RESULT = 3,  /**< low byte the result of that operation
+                              (kst_ses_t; 1 while it runs), high byte why
+                              the last command taken started nothing
+                              (link_kst_refusal_t; 0: it started) */
+    LINK_KS_FAIL  = 4,   /**< low byte the register the result names, 0xFF
+                              none; high byte the writes of the plan done */
+    LINK_KS_DIFF_LO = 5, /**< bit n: register n differs from what the
+                              operation expected; registers 0 to 15 */
+    LINK_KS_DIFF_HI = 6, /**< registers 16 to 31 */
+    LINK_KS_BAD_LO  = 7, /**< bit n: register n has no 3 equal reads */
+    LINK_KS_BAD_HI  = 8,
+    LINK_KS_FP_RULES = 9,    /**< bit n: fingerprint rule n is broken */
+    LINK_KS_FP_REGS_LO = 10, /**< bit n: register n deviates from the
+                                  fingerprint */
+    LINK_KS_FP_REGS_HI = 11,
+    LINK_KS_HALF_MIN_NS = 12, /**< the servo's half-cell as measured on its
+                                   replies since the port took the channel,
+                                   ns; 0 before the first reply */
+    LINK_KS_HALF_MAX_NS = 13,
+    LINK_KS_DELAY_MIN_US = 14, /**< last edge of a read frame to the reply's
+                                    first edge, us; 0 before the first */
+    LINK_KS_DELAY_MAX_US = 15,
+    LINK_KS_IMAGE = 16,  /**< 16 registers: servo register 2 k in the low
+                              byte of register 16 + k, 2 k + 1 in the high
+                              byte.  The image last read, or the backup
+                              (LINK_KS_W_VIEW); 0 while there is none */
+    LINK_KS_COUNT = 32,
+};
+
+/** What a write of the page takes. */
+enum {
+    LINK_KS_W_CMD = 0,   /**< bits 0-3 link_kst_op_t, bit 7 the confirmation
+                              of an unchecked restore, bits 8-11 the
+                              channel; every other bit 0 */
+    LINK_KS_W_SEQ = 1,   /**< LINK_KS_SEQ + 1 modulo 65536 */
+    LINK_KS_W_KEY = 2,   /**< LINK_KST_WRITE_KEY for an operation that
+                              writes to the servo, else 0 */
+    LINK_KS_W_CRC = 3,   /**< link_kst_crc() of registers 4 to 24 for a
+                              write, a restore, a release and a verify,
+                              else not looked at */
+    LINK_KS_W_IMAGE = 4, /**< 16 registers, packed as LINK_KS_IMAGE: the
+                              target of a write, the backup of a restore,
+                              the image a verify expects */
+    LINK_KS_W_UNLOCK = 20,    /**< 4 registers, low word first: the fields
+                                   an edit may change beyond the editable
+                                   class, bit n for kst_field_id_t n */
+    LINK_KS_W_START_CRC = 24, /**< link_kst_crc() of the 16 registers of
+                                   the image the panel planned from, as
+                                   LINK_KS_IMAGE gave them */
+    LINK_KS_W_VIEW = 25,      /**< what LINK_KS_IMAGE shows: 0 the image
+                                   last read, 1 the backup.  Not staged:
+                                   in force when written */
+    LINK_KS_W_COUNT = 26,
+};
+
+/** Registers of the command, from LINK_KS_W_CMD: one frame. */
+#define LINK_KS_W_CMD_FRAME 4u
+/** The staged registers a command's CRC covers, from LINK_KS_W_IMAGE. */
+#define LINK_KS_W_STAGED 21u
+/** Registers a servo image takes on the page. */
+#define LINK_KS_IMAGE_REGS 16u
+
+/** LINK_KS_W_KEY of an operation that writes to the servo.  The panel
+ *  sends it only while its switch ENABLE WRITE TO SERVO is on. */
+#define LINK_KST_WRITE_KEY 0x57A5u
+
+#define LINK_KS_STATE_OF(r)   ((uint8_t)((r) & 0x7u))
+#define LINK_KS_CHANNEL_OF(r) ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_KS_OP_OF(r)      ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_KS_FRAMES_OF(r)  ((uint16_t)((r) & 0xFFFu))
+#define LINK_KS_W_CMD_CONFIRM 0x0080u
+
+/** The CRC of @p n page registers, low byte first, seeded 0xFFFF. */
+static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
+{
+    uint16_t crc = 0xFFFFu;
+
+    for (unsigned i = 0; i < n; ++i) {
+        const uint8_t b[2] = { (uint8_t)(regs[i] & 0xFFu),
+                               (uint8_t)(regs[i] >> 8) };
+        crc = link_crc(crc, b, sizeof(b));
+    }
+    return crc;
+}
+
+/** Where the port's channel is. */
+typedef enum {
+    LINK_KST_PWM = 0,      /**< the channel renders PWM; no port */
+    LINK_KST_STOPPING = 1, /**< PWM renders no pulse; the running one ends */
+    LINK_KST_LOW = 2,      /**< the pin is the driver's and held low */
+    LINK_KST_PROGRAMMING = 3, /**< the pin carries frames and no PWM */
+    LINK_KST_RAIL_OFF = 4, /**< the servo rail is switched off */
+    LINK_KST_RAIL_WAIT = 5, /**< the rail is on again; the servo starts */
+} link_kst_state_t;
+
+enum {
+    LINK_KS_F_BUSY      = 0x0008u, /**< an operation runs */
+    LINK_KS_F_IN_MODE   = 0x0010u, /**< a frame was sent since the servo
+                                        was last without power: it may be
+                                        in programming mode */
+    LINK_KS_F_MUST_READ = 0x0020u, /**< a stop or an abort cut the
+                                        session: read all before anything
+                                        else */
+    LINK_KS_F_IMAGE     = 0x0040u, /**< an image was read */
+    LINK_KS_F_BACKUP    = 0x0080u, /**< the session holds a backup */
+    LINK_KS_F_FP_OK     = 0x0100u, /**< the image has the known layout */
+    LINK_KS_F_LOCKED    = 0x0200u, /**< only a restore is accepted */
+    LINK_KS_F_RAIL      = 0x0400u, /**< the hardware switches the servo
+                                        rail: a confirmed power cycle is
+                                        one the port makes */
+    LINK_KS_F_VIEW_BACKUP = 0x0800u, /**< LINK_KS_IMAGE shows the backup */
+};
+
+/** The operations of a command. */
+typedef enum {
+    LINK_KST_OP_NONE = 0,     /**< never written; LINK_KS_OP at start */
+    LINK_KST_OP_ENTER = 1,    /**< take the channel and enter programming
+                                   mode */
+    LINK_KST_OP_READ_ALL = 2,
+    LINK_KST_OP_WRITE = 3,    /**< an edit from the image read to the staged
+                                   image; needs the key */
+    LINK_KST_OP_RESTORE = 4,  /**< back to the staged backup; needs the key */
+    LINK_KST_OP_RELEASE = 5,  /**< release pairing; needs the key */
+    LINK_KST_OP_VERIFY = 6,   /**< read all and compare with the staged
+                                   image */
+    LINK_KST_OP_ABORT = 7,    /**< ends the running operation; never the
+                                   operation LINK_KS_OP names */
+    LINK_KST_OP_POWER_CYCLED = 8, /**< the servo was without power, or the
+                                       port is to switch the rail */
+    LINK_KST_OP_COUNT
+} link_kst_op_t;
+
+/** Why a command that was taken did nothing: the high byte of
+ *  LINK_KS_RESULT. */
+typedef enum {
+    LINK_KST_REF_NONE = 0,
+    LINK_KST_REF_BUSY = 1,       /**< an operation runs or the port moves */
+    LINK_KST_REF_CHANNEL = 2,    /**< the channel is on no bound PWM slot,
+                                      or is not the one the port holds */
+    LINK_KST_REF_THROTTLE = 3,   /**< the channel's role is a throttle */
+    LINK_KST_REF_NO_REPLY_PATH = 4, /**< the pin's path carries no reply */
+    LINK_KST_REF_UNSAFE = 5,     /**< heartbeat not trusted or link silent */
+    LINK_KST_REF_NOT_PROGRAMMING = 6, /**< the port holds no channel */
+    LINK_KST_REF_NO_ENABLE = 7,  /**< a write without the key */
+    LINK_KST_REF_STAGED = 8,     /**< the staged registers do not have the
+                                      CRC the command names */
+    LINK_KST_REF_START = 9,      /**< the image read is not the one the
+                                      panel planned from */
+    LINK_KST_REF_MUST_READ = 10, /**< after a stop or an abort: read all
+                                      first */
+    LINK_KST_REF_NO_IMAGE = 11,  /**< no image read to plan from */
+    LINK_KST_REF_PLAN_RULES = 12,   /**< the target breaks a hard rule */
+    LINK_KST_REF_PLAN_R00 = 13,     /**< the target differs in register 0 */
+    LINK_KST_REF_PLAN_PAIRING = 14, /**< an edit differs in register 0x1D */
+    LINK_KST_REF_PLAN_NO_PATH = 15, /**< no order of writes with valid
+                                         images in between */
+} link_kst_refusal_t;
 
 /* ----------------------------------------------------------------- control */
 /*
