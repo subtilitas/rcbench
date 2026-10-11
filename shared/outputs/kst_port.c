@@ -839,6 +839,14 @@ static void step_rail_wait(kst_port_t *p, uint32_t now_ms)
         op_end(p, KST_SES_ERR_ABORTED);
         return;
     }
+    if (p->safe == 0u) {
+        /* No panel is there to switch it off: the cycle does not end with
+         * the supply on, in the pass of the deadline either. */
+        supply_off(p);
+        go_pwm(p);
+        op_end(p, KST_SES_ERR_ABORTED);
+        return;
+    }
     if (p->sup != SUP_TIMED) {
         if (v.online && v.on) {
             p->sup = SUP_TIMED;

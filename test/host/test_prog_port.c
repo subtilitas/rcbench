@@ -573,6 +573,67 @@ TEST_CASE(a_slot_is_refused_on_a_ports_pin_and_beside_it)
     prog_port_restore(&pg, kept, &o, BIT(13));
     CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
     CHECK_EQ(prog_port_slots_check(NULL, slots), 0u);
+}
+
+/* A slot's channels stop below the ports' bank channels, at both ends. */
+TEST_CASE(a_slot_is_refused_on_a_ports_bank_channel)
+{
+    uint16_t slots[LINK_OS_COUNT];
+    memset(slots, 0, sizeof(slots));
+    uint16_t *last = &slots[(LINK_OUT_SLOTS - 1u) * LINK_OS_STRIDE];
+    const uint8_t lo = (uint8_t)PROG_PORT_CHANNEL0;
+    const uint8_t hi = (uint8_t)(PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX);
+
+    /* No port holds a pin: the channels are the ports' all the same. */
+    fresh(1u);
+    last[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_DSHOT;
+    last[LINK_OS_PIN] = 2u;
+    /* Up to the channel under the first port's. */
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0u, lo);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
+    CHECK_EQ(prog_port_slots_free(slots), 0u);
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(lo - 1u, 1u);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
+    /* One further reaches it. */
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0u, lo + 1u);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(lo - 1u, 2u);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    /* Each port's channel alone, of a port the build has or not. */
+    for (uint8_t c = lo; c < hi; ++c) {
+        last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(c, 1u);
+        CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    }
+    /* A range that spans them all. */
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0u, OUT_MAX_CHANNELS);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    /* The first channel past the last port's is free, and so is a range of
+     * no channel on a port's. */
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(hi, 1u);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(lo, 0u);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
+    /* An unused slot names no channel. */
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(lo, 1u);
+    last[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_NONE;
+    CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
+    CHECK_EQ(prog_port_slots_free(slots), 0u);
+
+    /* A stored page: the slots on a port's channel start unbound, the
+     * others stay. */
+    slots[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_PWM;
+    slots[LINK_OS_PIN] = 3u;
+    slots[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0u, 4u);
+    last[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_DSHOT;
+    last[LINK_OS_RANGE] = LINK_OS_RANGE_OF(hi - 1u, 1u);
+    CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(prog_port_slots_free(slots), 1u);
+    CHECK_EQ(last[LINK_OS_DRIVER], (uint16_t)OUT_DRIVER_NONE);
+    CHECK_EQ(last[LINK_OS_PIN], 2u);
+    CHECK_EQ(slots[LINK_OS_DRIVER], (uint16_t)OUT_DRIVER_PWM);
+    CHECK_EQ(slots[LINK_OS_RANGE], LINK_OS_RANGE_OF(0u, 4u));
+    CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
+    CHECK_EQ(prog_port_slots_free(NULL), 0u);
     CHECK_EQ(prog_port_slots_check(&pg, NULL), LINK_NACK_BAD_VALUE);
 }
 
@@ -622,6 +683,7 @@ int main(void)
     RUN(a_refused_write_stores_none_of_its_registers);
     RUN(read_only_registers_the_page_end_and_absent_ports_are_refused);
     RUN(a_slot_is_refused_on_a_ports_pin_and_beside_it);
+    RUN(a_slot_is_refused_on_a_ports_bank_channel);
     RUN(a_write_is_taken_back_whole);
     return test_summary("prog_port");
 }

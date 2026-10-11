@@ -140,10 +140,17 @@ uint8_t prog_port_channel(uint8_t port);
 
 /**
  * Whether the OUTPUTS page @p slots may be taken beside the ports: 0, or
- * LINK_NACK_BAD_VALUE for a slot on a port's pin or a PWM slot on a port
- * pin's slice.
+ * LINK_NACK_BAD_VALUE for a slot on a port's pin, a PWM slot on a port
+ * pin's slice, or a bound slot whose channel range reaches a port's bank
+ * channel (PROG_PORT_CHANNEL0 to PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX - 1).
  */
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots);
+
+/**
+ * Unbinds every slot of @p slots whose channel range reaches a port's bank
+ * channel, for a stored page read at start.  Returns how many.
+ */
+unsigned prog_port_slots_free(uint16_t *slots);
 
 #ifdef __cplusplus
 }

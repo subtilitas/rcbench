@@ -2521,6 +2521,57 @@ static void rail_time_case(uint32_t t0)
     CHECK_EQ(result(), KST_SES_OK);
 }
 
+/* The link lost in the pass the settle time ends in: no panel is there to
+ * switch the supply off, so the cycle does not end with it on. */
+static void settle_unsafe_case(uint32_t t0, int early)
+{
+    uint32_t off, on;
+    unsigned offs;
+
+    fresh_at(0u, SUPPLY_ON);
+    enter();
+    g_hw.follow = false;
+    CHECK_EQ(cmd(LINK_KST_OP_POWER_CYCLED, CH, 0, 0), 0);
+    off = t0 == 0u ? g_ms : t0;
+    kst_port_step(&g_port, true, false, off);
+    supply_reads();
+    off += 1u;
+    kst_port_step(&g_port, true, false, off);
+    kst_port_step(&g_port, true, false, off + KST_PORT_RAIL_OFF_MS);
+    CHECK_EQ(state(), LINK_KST_RAIL_WAIT);
+    supply_reads();
+    on = off + KST_PORT_RAIL_OFF_MS + 1u;
+    kst_port_step(&g_port, true, false, on);
+    kst_port_step(&g_port, true, false, on + KST_PORT_RAIL_WAIT_MS - 2u);
+    CHECK_EQ(state(), LINK_KST_RAIL_WAIT);
+    CHECK(g_hw.v.asked_on);
+    offs = g_hw.offs;
+    /* The supply still reads asked on: only the gate says the link is
+     * gone. */
+    kst_port_step(&g_port, false, false,
+                  on + KST_PORT_RAIL_WAIT_MS - (early != 0 ? 1u : 0u));
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_hw.offs, offs + 1u);
+    CHECK(!g_hw.v.asked_on);
+}
+
+static int g_settle_early;
+
+static void settle_unsafe_at(uint32_t t0)
+{
+    settle_unsafe_case(t0, g_settle_early);
+}
+
+TEST_CASE(a_link_lost_at_the_settle_deadline_ends_with_the_supply_off)
+{
+    g_settle_early = 0;
+    at_tick_0_and_before_the_wrap(settle_unsafe_at, 1000u);
+    at_tick_0_and_before_the_wrap(settle_unsafe_at, 2500u);
+    g_settle_early = 1;
+    at_tick_0_and_before_the_wrap(settle_unsafe_at, 2500u);
+}
+
 TEST_CASE(the_rail_off_time_holds_across_the_tick_wrap)
 {
     g_rail_k = 1000u;
@@ -2634,6 +2685,7 @@ int main(void)
     RUN(the_supply_time_holds_across_the_tick_wrap);
     RUN(the_rail_off_time_holds_across_the_tick_wrap);
     RUN(the_rail_wait_time_holds_across_the_tick_wrap);
+    RUN(a_link_lost_at_the_settle_deadline_ends_with_the_supply_off);
     RUN(the_supply_times_of_a_cycle_hold_across_the_tick_wrap);
     return test_summary("kst_port");
 }

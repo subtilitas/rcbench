@@ -641,7 +641,11 @@ wird, einem anderen Port gehört oder einen PWM-Slice oder ein
 Compare-Register mit dem Pin eines PWM-Slots teilt; ein Schreiben von
 OUTPUTS oder BIND, das einen Slot auf den Pin eines Ports oder im Silizium
 neben ihn legt, wird ebenso abgewiesen, und auch ein Schreiben von SUPPLY,
-SENSE oder TONE, das ihn nimmt. Zwei Ports dürfen einen Slice teilen: beide
+SENSE oder TONE, das ihn nimmt. Kanäle. Der Kanalbereich eines Slots reicht
+nie in die Bank-Kanäle 9 bis 12 der Ports: ein Schreiben von OUTPUTS oder
+BIND mit einem solchen Slot wird mit BAD_VALUE abgewiesen, und ein
+gespeicherter Slot mit einem solchen Bereich startet ungebunden. Zwei Ports
+dürfen einen Slice teilen: beide
 laufen mit der einen Port-Rate. Ein `PIN` wird nicht geändert, solange die
 Bank scharf ist, das `PWM`-Bit des Ports gesetzt ist, er das `TARGET` ist
 oder KST nicht in PWM steht. `PWM` und `TARGET` nennen nur Ports, deren Pin

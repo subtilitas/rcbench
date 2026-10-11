@@ -581,7 +581,10 @@ BAD_VALUE for a pin that is reserved, past GP47, a slot's, held by SUPPLY,
 SENSE or TONE, another port's, or one that shares a PWM slice or a compare
 register with a PWM slot's pin; a write of OUTPUTS or BIND that
 puts a slot on a port's pin or beside it in the silicon is refused the same
-way, and so is a SUPPLY, SENSE or TONE write that takes it. Two ports may
+way, and so is a SUPPLY, SENSE or TONE write that takes it. Channels. A
+slot's channel range never reaches the ports' bank channels 9 to 12: a write
+of OUTPUTS or BIND with such a slot is refused with BAD_VALUE, and a stored
+slot with one starts unbound. Two ports may
 share a slice: both run at the one port rate. A `PIN` is not changed while
 the bank is armed, while the port's `PWM` bit is set, while it is the
 `TARGET` or while KST is out of PWM. `PWM` and `TARGET` name only ports

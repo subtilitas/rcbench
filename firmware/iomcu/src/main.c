@@ -450,6 +450,10 @@ static uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
     /* A command that takes the port out of PWM holds the SUPPLY page from
      * this frame on: a SUPPLY write queued behind it is judged held. */
     supply_page_hold(&s_supply, kst_port_state(&s_kst) != LINK_KST_PWM);
+    /* And its pulses end in this frame: a capture armed on the port behind
+     * the command is judged against the port as it is. */
+    outputs_hw_ports_drive(ports_pulsing());
+    sense_page_ports(&s_sense, ports_pulsing());
     return nack;
 }
 
@@ -1940,6 +1944,9 @@ int main(void)
     if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
         memcpy(s_state.chan_cfg, saved.chan_cfg, sizeof(s_state.chan_cfg));
+        /* A stored slot on a programming port's bank channel starts
+         * unbound: an OUTPUTS write of it is refused. */
+        (void)prog_port_slots_free(s_state.slots);
     }
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());

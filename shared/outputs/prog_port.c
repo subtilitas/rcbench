@@ -384,6 +384,35 @@ uint8_t prog_port_channel(uint8_t port)
     return (uint8_t)(PROG_PORT_CHANNEL0 + port);
 }
 
+/* Whether a bound slot's channels reach a port's bank channel. */
+static bool slot_on_port_channel(const uint16_t *r)
+{
+    const unsigned first = LINK_OS_FIRST(r[LINK_OS_RANGE]);
+    const unsigned end   = first + LINK_OS_CHANNELS(r[LINK_OS_RANGE]);
+
+    return r[LINK_OS_DRIVER] != 0u && end > first
+           && end > PROG_PORT_CHANNEL0
+           && first < PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX;
+}
+
+unsigned prog_port_slots_free(uint16_t *slots)
+{
+    unsigned n = 0;
+
+    if (slots == NULL) {
+        return 0u;
+    }
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
+
+        if (slot_on_port_channel(r)) {
+            r[LINK_OS_DRIVER] = 0u;
+            ++n;
+        }
+    }
+    return n;
+}
+
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
 {
     if (slots == NULL) {
@@ -395,6 +424,10 @@ uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
     for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
 
+        /* The ports' bank channels belong to the ports alone. */
+        if (slot_on_port_channel(r)) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if (r[LINK_OS_DRIVER] == 0u || r[LINK_OS_PIN] > OUT_MAX_PIN) {
             continue;
         }
