@@ -249,7 +249,7 @@ export class Dwg {
       `<filter id="${p}-s3" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>`,
       ...this.grads.values(),
     ];
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.w} ${this.h}" width="${this.w}" height="${this.h}" role="img" aria-labelledby="${p}-t" aria-describedby="${p}-d" font-family="${FONT}">\n`
+    return `<svg xmlns="http://www.w3.org/2000/svg" lang="${this.lang}" xml:lang="${this.lang}" viewBox="0 0 ${this.w} ${this.h}" width="${this.w}" height="${this.h}" role="img" aria-labelledby="${p}-t" aria-describedby="${p}-d" font-family="${FONT}">\n`
       + `<title id="${p}-t">${esc(this.title)}</title>\n<desc id="${p}-d">${esc(this.desc)}</desc>\n<defs>\n${defs.join('\n')}\n</defs>\n`
       + `<rect width="${this.w}" height="${this.h}" rx="10" fill="${CARD}"/>\n${this.out.join('\n')}\n</svg>\n`;
   }

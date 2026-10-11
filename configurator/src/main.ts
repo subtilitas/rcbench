@@ -2,7 +2,7 @@
 
 import './style.css';
 import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, removalIsPlain, resolve } from './core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, deselectEffect, removalEffect, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
 import { formatHash, parseHash, reportIds } from './hash.ts';
@@ -161,14 +161,13 @@ function applyRemoval(effect: Removal, focusId: string): void {
 }
 
 /**
- * Removes a part: at once when nothing else changes, else after the question
- * under the control that asked. `at` names the list of that control.
+ * Asks before a part leaves, in every case: the question opens under the
+ * control that asked. `at` names the list of that control.
  */
 function requestRemoval(part: string, at: Pending['at']): void {
   const effect = removalEffect(CATALOGUE, selection, part);
   const back = at === 'own' ? `p-${part}` : 'h-parts';
-  if (removalIsPlain(effect)) applyRemoval(effect, back);
-  else if (effect.refused === null || effect.refused === 'held') {
+  if (effect.refused === null || effect.refused === 'held') {
     pending = { part, at };
     note = null;
     render('rm-no');

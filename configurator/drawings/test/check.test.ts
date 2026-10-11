@@ -316,6 +316,20 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   const svg = good.svgs['tap.svg']!;
   const f = (s: string): Finding[] => checkSvg('tap.svg', s, rec);
   assert.deepEqual(f(svg), []);
+  // The root is svg in the SVG namespace and states its language twice.
+  assert.deepEqual(checkSvg('tap.svg', svg, rec, 'en'), []);
+  assert.deepEqual(checkSvg('de/tap.svg', good.svgs['de/tap.svg']!, rec, 'de'), []);
+  has(checkSvg('de/tap.svg', svg, rec, 'de'), 'svg', /does not state the language de/);
+  has(checkSvg('tap.svg', svg.replace(' xml:lang="en"', ''), rec, 'en'), 'svg', /does not state the language en/);
+  has(checkSvg('tap.svg', svg.replace(' lang="en"', ''), rec, 'en'), 'svg', /does not state the language en/);
+  has(f(svg.replace(' xmlns="http://www.w3.org/2000/svg"', '')), 'svg', /root element is not svg in the namespace/);
+  has(f(svg.replace('xmlns="http://www.w3.org/2000/svg"', 'xmlns="http://www.w3.org/1999/xhtml"')), 'svg', /root element is not svg in the namespace/);
+  has(f(svg.replace(' xmlns="http://www.w3.org/2000/svg"', ' xmlns:s="http://www.w3.org/2000/svg"')), 'svg', /root element is not svg in the namespace/);
+  has(f(svg.replace(/^<svg/, '<div').replace(/<\/svg>\s*$/, '</div>')), 'svg', /root element is not svg in the namespace/);
+  has(f(svg.replace('<svg ', '<svg xml:base="other.svg" ')), 'svg', /base address attribute/);
+  has(f(svg.replace('</svg>', '<g xml:base="../x/"/></svg>')), 'svg', /base address attribute/);
+  has(f(svg.replace('</svg>', '<g BASE="a"/></svg>')), 'svg', /base address attribute/);
+  assert.deepEqual(f(svg.replace('</svg>', '<g baseline-shift="1"/></svg>')), []);
   const add = (s: string): string => svg.replace('</svg>', `${s}</svg>`);
   has(f(add('<script>1</script>')), 'svg', /script element/);
   has(f(add('<svg:script>1</svg:script>')), 'svg', /script element/);
@@ -376,6 +390,11 @@ test('the well-formedness check accepts the subset the generator writes and name
   assert.match(malformed('<svg>\uD83D</svg>')!, /U\+D83D/);
   assert.match(malformed('<svg>\uDE00x</svg>')!, /U\+DE00/);
   assert.equal(malformed('<svg a="\t">\n\r\u0020\u00A0\uD83D\uDE00\uFFFD</svg>'), null);
+  for (const ref of ['&#0;', '&#x0;', '&#8;', '&#xB;', '&#xD800;', '&#xDFFF;', '&#xFFFE;', '&#65535;', '&#x110000;', '&#99999999999;']) {
+    assert.match(malformed(`<svg>${ref}</svg>`)!, /names no character of XML 1\.0/, ref);
+    assert.match(malformed(`<svg a="${ref}"/>`)!, /character reference .* at offset 8/, ref);
+  }
+  assert.equal(malformed('<svg a="&#9;&#xA;&#13;">&#x20;&#xD7FF;&#xE000;&#xFFFD;&#x10000;&#x10FFFF;</svg>'), null);
   assert.match(malformed('x<svg></svg>')!, /text outside the root element/);
   assert.match(malformed('<svg></svg>x')!, /text outside the root element/);
   assert.match(malformed('<svg>< g></svg>')!, /not a tag/);

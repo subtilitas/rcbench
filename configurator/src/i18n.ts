@@ -47,6 +47,7 @@ const S = {
   rmAsk: ['Remove {p}?', '{p} entfernen?'],
   rmOff: ['Functions that go off:', 'Funktionen, die entfallen:'],
   rmNone: ['No function goes off.', 'Keine Funktion entfällt.'],
+  rmPlain: ['No function goes off and no other part leaves.', 'Keine Funktion entfällt und kein anderes Teil entfällt.'],
   rmVar: ['Variant that changes: {x}.', 'Variante, die wechselt: {x}.'],
   rmKept: [
     'Parts that stay, ticked under "Parts you own": {x}.',
@@ -59,8 +60,8 @@ const S = {
   own: ['Parts you own', 'Teile, die vorhanden sind'],
   ownN: ['{n} ticked', '{n} angekreuzt'],
   ownHint: [
-    'A tick adds a part. Removing a tick removes the part. The page asks first when a function or another part changes with it.',
-    'Ein Haken fügt ein Teil hinzu. Ohne Haken entfällt das Teil. Die Seite fragt vorher, wenn sich damit eine Funktion oder ein anderes Teil ändert.',
+    'A tick adds a part. Removing a tick removes the part. The page asks first.',
+    'Ein Haken fügt ein Teil hinzu. Ohne Haken entfällt das Teil. Die Seite fragt vorher.',
   ],
   variants: ['Variants', 'Varianten'],
   vConn: ['Connections on the coprocessor', 'Anschlüsse am Koprozessor'],
