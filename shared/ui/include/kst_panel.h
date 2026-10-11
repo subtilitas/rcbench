@@ -94,7 +94,9 @@ uint32_t kst_panel_hold_revision(void);
 void kst_panel_feed(const kst_prog_feed_t *f);
 /** HV SERVO of the SERVO screen: off, the programming voltage stays at or
  *  below KST_PANEL_STD_MV, and one set above it goes back to
- *  KST_PROG_SUPPLY_MV. */
+ *  KST_PROG_SUPPLY_MV.  On, it allows a voltage above KST_PANEL_STD_MV
+ *  through the warning page and its hold; no such voltage is stored or
+ *  loaded. */
 void kst_panel_set_hv(bool on);
 /** The bench is armed or asked to arm: CONNECT and every operation that
  *  sends frames are refused with KST_PROG_MSG_NEED_DISARM.  No screen

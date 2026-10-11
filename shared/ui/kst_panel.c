@@ -1375,11 +1375,20 @@ static uint16_t supply_max_mv(void)
                 : (uint16_t)KST_PANEL_STD_MV;
 }
 
-/* The programmer's options as the settings keep them. */
+/* A voltage as the settings hold it: a standard servo's at most. */
+static uint16_t std_mv(long mv)
+{
+    return mv > (long)KST_PANEL_STD_MV ? (uint16_t)KST_PANEL_STD_MV
+                                       : (uint16_t)mv;
+}
+
+/* The programmer's options as the settings keep them.  A voltage above a
+ * standard servo's is the session's alone: the settings keep
+ * KST_PANEL_STD_MV for it. */
 static void options_keep(void)
 {
-    settings_set(SET_SERVO_PROG_V,
-                 (float)kst_prog_supply_mv(&k.prog) / 1000.0f);
+    settings_set(SET_SERVO_PROG_V, (float)std_mv(kst_prog_supply_mv(&k.prog))
+                                       / 1000.0f);
     settings_set(SET_SERVO_PROG_I,
                  (float)kst_prog_supply_ma(&k.prog) / 1000.0f);
     settings_set(SET_SERVO_PROG_WAIT, (float)kst_prog_wait_ms(&k.prog));
@@ -1387,17 +1396,21 @@ static void options_keep(void)
 }
 
 /* The options from the settings.  A stored voltage above a standard
- * servo's is not used until HV SERVO is on. */
+ * servo's is never used, with HV SERVO on or off: it is loaded as
+ * KST_PANEL_STD_MV and stored as that.  A voltage above it comes from the
+ * warning page and its hold alone (W_HV). */
 static void options_load(void)
 {
-    long mv = lroundf(settings_get(SET_SERVO_PROG_V) * 10.0f) * 100L;
+    const long stored = lroundf(settings_get(SET_SERVO_PROG_V) * 10.0f) * 100L;
+    const uint16_t mv = std_mv(stored);
     const long ma = lroundf(settings_get(SET_SERVO_PROG_I) * 1000.0f);
     const int wait = settings_get_int(SET_SERVO_PROG_WAIT);
 
-    if (mv > (long)supply_max_mv()) {
-        mv = (long)KST_PROG_SUPPLY_MV;
+    if (stored != (long)mv) {
+        settings_set(SET_SERVO_PROG_V, (float)mv / 1000.0f);
+        settings_request_save();
     }
-    kst_prog_supply_set(&k.prog, (uint16_t)mv, (uint16_t)ma);
+    kst_prog_supply_set(&k.prog, mv, (uint16_t)ma);
     (void)kst_prog_wait_set(&k.prog, (uint32_t)wait);
 }
 
@@ -2010,6 +2023,10 @@ static uint32_t signature(void)
         p->f.target, p->f.supply_read, p->f.out_mv, p->f.out_ma,
         kst_prog_supply_mv(p), kst_prog_supply_ma(p), k.hv,
         kst_prog_wait_ms(p),
+        /* RESTORE is offered from the backup once it is fetched. */
+        p->f.have_backup,
+        kst_prog_restore_offered(p, KST_PROG_FROM_SESSION),
+        kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL),
     };
     uint32_t h = 2166136261u;
 

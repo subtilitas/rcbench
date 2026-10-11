@@ -409,8 +409,10 @@ typedef struct {
                                    whose command was taken          */
     kst_field_set_t held_wrote;  /**< those of the write that is
                                       held, not taken yet           */
-    kst_field_set_t wrote_before; /**< wrote before the command on
-                                       its way was taken            */
+    kst_field_set_t wrote_before; /**< wrote before the last write
+                                       was taken: what stands when
+                                       that write ends with no
+                                       register written              */
     bool wrote_known;         /**< the session began under this
                                    model: wrote is all of them      */
     bool leave_doubt;         /**< the exit runs without LEAVE: the

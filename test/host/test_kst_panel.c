@@ -611,6 +611,159 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     CHECK_EQ(kst_prog_supply_mv(M), 5500u);
 }
 
+/* No stored voltage above 6.0 V reaches the programmer, with HV SERVO off
+ * or on, at an opening, a screen entry or a start under a held port. */
+TEST_CASE(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v)
+{
+    static const struct {
+        float stored;
+        unsigned want_mv;
+    } v[] = {
+        { 1.0f, 1000u }, { 5.9f, 5900u }, { 6.0f, 6000u },
+        { 6.1f, 6000u }, { 7.4f, 6000u }, { 8.4f, 6000u },
+    };
+
+    for (int hv = 0; hv < 2; ++hv) {
+        for (unsigned i = 0; i < sizeof(v) / sizeof(v[0]); ++i) {
+            for (int entry = 0; entry < 2; ++entry) {
+                fresh();
+                g_rig.rail = true;
+                settings_set(SET_SERVO_PROG_V, v[i].stored);
+                (void)settings_save_asked();
+                kst_panel_init(AREA);
+                kst_panel_set_hv(hv != 0);
+                if (entry != 0) {
+                    kst_panel_screen_entry();
+                } else {
+                    kst_panel_open();
+                }
+                CHECK_EQ(kst_prog_supply_mv(M), v[i].want_mv);
+                /* The settings hold what is used. */
+                CHECK_NEAR(settings_get(SET_SERVO_PROG_V),
+                           (float)v[i].want_mv / 1000.0f, 0.001f);
+                CHECK_EQ(settings_save_asked(), v[i].stored > 6.0f);
+                /* CONNECT asks the supply for it. */
+                kst_panel_open();
+                link_up();
+                tap(val(PG_SERVO, 0, 0));
+                settle();
+                CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+                CHECK_EQ(g_rig.sup_mv, v[i].want_mv);
+            }
+        }
+    }
+}
+
+/* A voltage above 6.0 V is the hold's and the session's: the settings do
+ * not keep it, and the next opening, entry or start has 6.0 V. */
+TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
+{
+    fresh();
+    g_rig.rail = true;
+    kst_panel_set_hv(true);
+    link_up();
+    more(0);
+    type("8.4");
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
+    CHECK_NEAR(settings_get(SET_SERVO_PROG_V), 6.0f, 0.001f);
+    /* The current limit set after it stores no more either. */
+    more(1);
+    type("800");
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
+    CHECK_NEAR(settings_get(SET_SERVO_PROG_V), 6.0f, 0.001f);
+    /* An opening with no port held reads the settings: 6.0 V. */
+    kst_panel_close();
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
+    kst_panel_open();
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PANEL_STD_MV);
+    more(0);
+    type("7.4");
+    hold(2.1f);
+    CHECK_EQ(kst_prog_supply_mv(M), 7400u);
+    kst_panel_screen_entry();
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PANEL_STD_MV);
+
+    /* A held port keeps the session's voltage over an opening; a panel
+     * that starts under it has none above 6.0 V. */
+    more(0);
+    type("7.4");
+    hold(2.1f);
+    CHECK_EQ(kst_prog_supply_mv(M), 7400u);
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK_EQ(g_rig.sup_mv, 7400u);
+    kst_panel_close();
+    kst_panel_open();
+    kst_panel_screen_entry();
+    CHECK_EQ(kst_prog_supply_mv(M), 7400u);
+    kst_panel_init(AREA);
+    kst_panel_set_hv(true);
+    g_rig.outcomes = 0;
+    g_rig.answer_id = 0;
+    rig_frames(20);
+    kst_panel_open();
+    CHECK(kst_panel_holds_port());
+    CHECK_EQ(kst_prog_supply_mv(M), KST_PANEL_STD_MV);
+}
+
+/* A panel that starts under a locked session with no record: RESTORE waits
+ * for the backup the model fetches, and its arrival alone redraws the row. */
+TEST_CASE(the_fetched_backup_redraws_restore)
+{
+    static gfx_color_t before[W * H];
+    const gfx_rect_t r = val(PG_SERVO, 2, 0);
+    uint32_t rev = 0;
+    bool waited = false;
+    bool differs = false;
+
+    fresh();
+    cut_write();
+    come_back();
+    tap(val(PG_SERVO, 1, 0));           /* READ ALL: the session locks */
+    settle();
+    CHECK((M->f.rd.flags & LINK_KS_F_LOCKED) != 0u);
+    kst_link_init(&g_rig.link);
+    kst_panel_init(AREA);
+    kst_panel_open();
+    g_rig.outcomes = 0;
+    g_rig.answer_id = 0;
+    g_rig.safe = true;
+    kst_link_came_up(&g_rig.link, LINK_PROTOCOL_MINOR);
+    for (unsigned i = 0; i < 60000u; ++i) {
+        rig_frame();
+        if (kst_prog_state(M) != KST_PROG_PROGRAMMING) {
+            continue;
+        }
+        if (!M->f.have_backup) {
+            waited = true;
+            CHECK(!M->journal);
+            CHECK(!kst_prog_restore_offered(M, KST_PROG_FROM_SESSION));
+            show();
+            memcpy(before, fb, sizeof(before));
+            rev = kst_panel_revision();
+        } else {
+            break;
+        }
+    }
+    CHECK(waited);
+    CHECK(M->f.have_backup);
+    CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_SESSION));
+    /* No input since: the revision moved, and the row is drawn anew. */
+    CHECK(kst_panel_revision() != rev);
+    show();
+    for (int y = r.y; y < r.y + r.h && !differs; ++y) {
+        differs = memcmp(&before[(size_t)y * W + (size_t)r.x],
+                         &fb[(size_t)y * W + (size_t)r.x],
+                         (size_t)r.w * sizeof(gfx_color_t)) != 0;
+    }
+    CHECK(differs);
+    tap(r);
+    CHECK_EQ(kst_panel_editor(), 2);
+}
+
 TEST_CASE(the_current_limit_is_typed_inside_50_to_3000_ma)
 {
     char want[KST_PANEL_LINE];
@@ -968,11 +1121,11 @@ TEST_CASE(the_wait_before_pwm_is_a_row_with_limits_and_is_kept)
         CHECK_EQ(kst_prog_wait_ms(M), 2500u);
         CHECK_EQ(kst_prog_supply_mv(M), 5500u);
         CHECK_EQ(kst_prog_supply_ma(M), 800u);
-        /* A stored voltage above a standard servo's waits for HV SERVO. */
+        /* A stored voltage above a standard servo's is not loaded. */
         settings_set(SET_SERVO_PROG_V, 7.4f);
         kst_panel_init(AREA);
         kst_panel_screen_entry();
-        CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
+        CHECK_EQ(kst_prog_supply_mv(M), KST_PANEL_STD_MV);
         settings_init();
     }
 }
@@ -3799,6 +3952,9 @@ int main(void)
     RUN(a_port_without_a_servo_says_so_and_gives_the_port_back);
     RUN(the_programming_voltage_is_typed_inside_1_to_6_v);
     RUN(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold);
+    RUN(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v);
+    RUN(a_confirmed_voltage_above_6_v_is_not_kept);
+    RUN(the_fetched_backup_redraws_restore);
     RUN(the_current_limit_is_typed_inside_50_to_3000_ma);
     RUN(a_supply_that_cannot_give_the_voltage_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line);

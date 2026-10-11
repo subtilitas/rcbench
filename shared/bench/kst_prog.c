@@ -496,8 +496,9 @@ static void done_ok(kst_prog_t *p, unsigned op)
     }
 }
 
-/* A write that ended without the servo verified. */
-static void write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
+/* A write that ended without the servo verified.  True when no register
+ * was written. */
+static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
 {
     bool nothing = false;   /* no register was written */
 
@@ -544,6 +545,7 @@ static void write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
     } else {
         p->need_read = true;
     }
+    return nothing;
 }
 
 static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
@@ -555,7 +557,12 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
     p->cmd_ready = false;
     if (is_write(op)
         && !(o->kind == KST_LINK_OUT_DONE && o->result == KST_SES_OK)) {
-        write_failed(p, o);
+        if (write_failed(p, o)) {
+            /* The coprocessor says no register was written: dropped
+             * before the command went, refused, or ended before its
+             * first step.  The fields are the servo's as they were. */
+            p->wrote = p->wrote_before;
+        }
         if (p->journal && p->journal_open
             && (o->kind == KST_LINK_OUT_NO_ANSWER
                 || o->kind == KST_LINK_OUT_RESTARTED)) {
@@ -621,7 +628,7 @@ static void not_started(kst_prog_t *p, unsigned id, unsigned arg)
     o.kind = KST_LINK_OUT_DROPPED;
     o.op = (link_kst_op_t)p->op;
     if (is_write(p->op)) {
-        write_failed(p, &o);
+        (void)write_failed(p, &o);
     }
     p->held_wrote = 0;
     p->wait = W_NONE;
@@ -694,8 +701,10 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                    && p->op == LINK_KST_OP_LEAVE) {
             leave_old(p);
         } else {
-            /* The coprocessor refused it: no field was written. */
-            p->wrote = p->wrote_before;
+            if (is_write(p->op)) {
+                /* The coprocessor refused it: no field was written. */
+                p->wrote = p->wrote_before;
+            }
             not_started(p, KST_PROG_MSG_START + (unsigned)f->answer, 0);
         }
     }
@@ -811,7 +820,7 @@ bool kst_prog_take(kst_prog_t *p, kst_prog_cmd_t *out)
     *out = p->cmd;
     p->cmd_ready = false;
     /* From here the command may reach the servo. */
-    if (out->kind == KST_PROG_CMD_START) {
+    if (out->kind == KST_PROG_CMD_START && is_write(out->req.op)) {
         p->wrote_before = p->wrote;
         p->wrote |= p->held_wrote;
         p->held_wrote = 0;

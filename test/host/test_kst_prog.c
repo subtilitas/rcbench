@@ -1225,6 +1225,75 @@ TEST_CASE(a_write_that_was_taken_has_its_fields_written)
     CHECK(!kst_prog_backup_other(&g_p));
 }
 
+/* The chain: STOP and ABORT between the start of a write and its command
+ * frame drop the request, and the field it was to change still tells
+ * another servo from the session's. */
+TEST_CASE(a_write_stopped_or_aborted_before_its_command_leaves_no_field_written)
+{
+    kst_prog_cmd_t cmd;
+
+    /* STOP: the control task aborts the module. */
+    up_enabled();
+    g_card = false;
+    frame();
+    g_deaf = true;
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    g_answer = kst_link_start(&g_k, &cmd.req);
+    g_answer_id = cmd.id;
+    CHECK_EQ(g_answer, KST_LINK_START_OK);
+    CHECK(g_p.wrote != 0u);
+    kst_link_abort(&g_k);
+    g_deaf = false;
+    settle();
+    CHECK_EQ(g_outcome.kind, KST_LINK_OUT_DROPPED);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    duty_swapped_is_another_servo();
+
+    /* ABORT: the model's command, taken before a frame of the write. */
+    up_enabled();
+    g_card = false;
+    frame();
+    g_deaf = true;
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    g_answer = kst_link_start(&g_k, &cmd.req);
+    g_answer_id = cmd.id;
+    kst_prog_abort(&g_p);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+    CHECK(g_p.wrote != 0u);
+    kst_link_abort(&g_k);
+    g_deaf = false;
+    settle();
+    CHECK_EQ(g_outcome.kind, KST_LINK_OUT_DROPPED);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    duty_swapped_is_another_servo();
+}
+
+/* A write aborted after a register went keeps its fields. */
+TEST_CASE(a_write_aborted_on_the_wire_has_its_fields_written)
+{
+    up_enabled();
+    g_card = false;
+    frame();
+    edit(KST_F_DUTY, 200);
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(kst_prog_servo(&g_p),
+                                               KST_F_BOOST) - 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 30000u && g_sim.n_writes == 0u; ++i) {
+        frame();
+    }
+    CHECK(g_sim.n_writes > 0u);
+    kst_prog_abort(&g_p);
+    settle();
+    CHECK(g_p.wrote != 0u);
+}
+
 /* ------------------------------------------------------- the armed bench */
 
 TEST_CASE(nothing_is_sent_on_a_bench_the_feed_reports_armed)
@@ -2053,6 +2122,137 @@ static void end(const kst_link_outcome_t *o)
     g_f.outcomes++;
     g_f.outcome = *o;
     pass(1);
+}
+
+/* A write whose command was taken and that the coprocessor ends with no
+ * register written leaves no field written; one that reached the servo, or
+ * may have, keeps them. */
+TEST_CASE(a_taken_write_that_wrote_nothing_leaves_no_field_written)
+{
+    static const struct {
+        kst_link_outcome_kind_t kind;
+        uint8_t result;
+        uint8_t steps;
+        bool taken;
+        bool nothing;
+    } k[] = {
+        { KST_LINK_OUT_DROPPED, 0, 0, false, true },
+        { KST_LINK_OUT_REFUSED, 0, 0, false, true },
+        { KST_LINK_OUT_NACK, 0, 0, false, true },
+        { KST_LINK_OUT_NACK, 0, 0, true, false },
+        { KST_LINK_OUT_NO_ANSWER, 0, 0, false, false },
+        { KST_LINK_OUT_RESTARTED, 0, 0, false, false },
+        { KST_LINK_OUT_DONE, KST_SES_ERR_BUSY, 0, true, true },
+        { KST_LINK_OUT_DONE, KST_SES_ERR_FINGERPRINT, 0, true, true },
+        { KST_LINK_OUT_DONE, KST_SES_ERR_WRITE_FAILED, 0, true, true },
+        { KST_LINK_OUT_DONE, KST_SES_ERR_WRITE_FAILED, 1, true, false },
+        { KST_LINK_OUT_DONE, KST_SES_ERR_ABORTED, 0, true, false },
+        { KST_LINK_OUT_DONE, KST_SES_ERR_ABORTED, 1, true, false },
+        { KST_LINK_OUT_DONE, KST_SES_OK, 1, true, false },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        kst_link_outcome_t o;
+
+        by_hand();
+        g_p.wrote_known = true;
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        CHECK_EQ(g_p.wrote, 0);
+        answer(KST_LINK_START_OK);
+        CHECK(g_p.wrote != 0u);
+        memset(&o, 0, sizeof(o));
+        o.kind = k[i].kind;
+        o.op = LINK_KST_OP_WRITE;
+        o.result = k[i].result;
+        o.steps_done = k[i].steps;
+        o.taken = k[i].taken;
+        o.fail_reg = 0xFF;
+        end(&o);
+        if (k[i].kind == KST_LINK_OUT_RESTARTED) {
+            /* The session is gone, and what it wrote with it. */
+            CHECK(!g_p.wrote_known);
+        } else {
+            CHECK(g_p.wrote_known);
+            CHECK_EQ(g_p.wrote == 0u, k[i].nothing);
+        }
+    }
+}
+
+/* The fields of an earlier write stand when a later one writes nothing,
+ * and an operation that is no write moves nothing. */
+TEST_CASE(a_write_that_wrote_nothing_takes_no_field_of_an_earlier_write)
+{
+    kst_link_outcome_t o;
+    kst_field_set_t first;
+
+    by_hand();
+    g_p.wrote_known = true;
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_WRITE;
+    o.result = KST_SES_OK;
+    o.steps_done = 1;
+    o.taken = true;
+    end(&o);
+    first = g_p.wrote;
+    CHECK(first != 0u);
+
+    /* A read that is refused at its start. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_BUSY);
+    CHECK_EQ(g_p.wrote, first);
+    /* A read that is dropped. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DROPPED;
+    o.op = LINK_KST_OP_READ_ALL;
+    end(&o);
+    CHECK_EQ(g_p.wrote, first);
+
+    /* A second write, of another field, dropped before its command. */
+    g_p.servo = g_p.draft;
+    g_f.image = g_p.draft;
+    pass(1);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(&g_p.servo, KST_F_BOOST) - 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    CHECK(g_p.wrote != first);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DROPPED;
+    o.op = LINK_KST_OP_WRITE;
+    end(&o);
+    CHECK_EQ(g_p.wrote, first);
+}
+
+/* The answer to a taken write never comes and the wait for it ends: the
+ * fields count as written until the outcome says the request was dropped. */
+TEST_CASE(a_dropped_write_whose_answer_timed_out_leaves_no_field_written)
+{
+    kst_link_outcome_t o;
+    kst_prog_cmd_t cmd;
+
+    by_hand();
+    g_p.wrote_known = true;
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    pass(KST_PROG_START_MS);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(g_p.wrote != 0u);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DROPPED;
+    o.op = LINK_KST_OP_WRITE;
+    end(&o);
+    CHECK_EQ(g_p.wrote, 0);
 }
 
 /* ---------------------------------------------------------- the servo files */
@@ -4345,6 +4545,11 @@ int main(void)
     RUN(a_write_the_journal_stopped_leaves_no_field_written);
     RUN(a_write_that_was_not_taken_or_was_refused_leaves_no_field_written);
     RUN(a_write_that_was_taken_has_its_fields_written);
+    RUN(a_taken_write_that_wrote_nothing_leaves_no_field_written);
+    RUN(a_write_that_wrote_nothing_takes_no_field_of_an_earlier_write);
+    RUN(a_dropped_write_whose_answer_timed_out_leaves_no_field_written);
+    RUN(a_write_stopped_or_aborted_before_its_command_leaves_no_field_written);
+    RUN(a_write_aborted_on_the_wire_has_its_fields_written);
     RUN(nothing_is_sent_on_a_bench_the_feed_reports_armed);
     RUN(the_bench_takes_no_arm_while_a_port_is_out_of_pwm);
     RUN(the_journal_reaches_the_card_before_the_write_is_sent);

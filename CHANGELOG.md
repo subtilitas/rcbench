@@ -35,7 +35,8 @@ history is in git.
 - Servo programmer, supply: with a PD mini answering, CONNECT sets
   PROGRAMMING VOLTAGE (1.0 to 8.4 V, default 5.0 V) and CURRENT LIMIT (50 to
   3000 mA, default 1000 mA) on the PD mini. A voltage above 6.0 V needs
-  HV SERVO on and a hold of 2 s. The SERVO tab shows the measured voltage
+  HV SERVO on and a hold of 2 s, and is not stored: a stored value above
+  6.0 V is loaded as 6.0 V. The SERVO tab shows the measured voltage
   and current. The port's refusals for a port without a pin, a supply
   outside the range, a bench it does not trust and a supply that does not
   reach its voltage within 3000 ms each have their own line. A supply
@@ -66,7 +67,8 @@ history is in git.
 - Servo programmer, backups: the session's backup is not offered and not
   restored once a read shows another servo than the one it was read from,
   a servo that differs in a field no write of the session set out to
-  change. A write that did not start counts as none. LEAVE and CONNECT begin a session with that servo's own backup.
+  change. A write that did not start, or that the coprocessor ends with
+  no register written, counts as none. LEAVE and CONNECT begin a session with that servo's own backup.
 - Servo programmer, files: FILES saves the servo's 32 registers as a servo
   file in the folder `KST` on the SD card under a preset name (`KST001` on)
   that the text keyboard changes, and never replaces a file. The first

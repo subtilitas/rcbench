@@ -159,6 +159,15 @@ warning page of the SERVO screen's high-voltage setting, and **HOLD TO
 APPLY** takes it after 2 s. Switching **HV SERVO** off sets a programming
 voltage above 6.0 V back to 5.0 V.
 
+A voltage above 6.0 V is not stored. The SERVO settings keep 6.0 V for it,
+and a stored value above 6.0 V, from the settings page or a settings file,
+is loaded as 6.0 V and stored as that, with **HV SERVO** on or off. The
+programmer reads the settings when it opens and at every entry of the SERVO
+screen while no port is held, and when the panel starts under a held port:
+each of these begins at 6.0 V or below, and a voltage above it takes the
+warning page and its hold of 2 s again. A session that holds its port keeps
+the voltage it began with.
+
 ![A programming voltage above 6.0 V](img/servo-kst-hv.png)
 
 With a PD mini answering, the state line names the values before
@@ -633,8 +642,9 @@ it.` `LEAVE, then CONNECT: a session with its own backup.` The write
 switch goes off, the restore list does not hold the session's backup, and
 no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
 backup is this servo's. A read of the first servo brings its backup back.
-A write that the card, a stop or the coprocessor keeps from starting counts
-as no write: its fields still tell the servos apart.
+A write that the card, a stop or the coprocessor keeps from starting, or
+that the coprocessor ends with no register written, counts as no write: its
+fields still tell the servos apart.
 Two servos equal in every field the session did not write are not told
 apart. After a link loss or a start of the panel under a session the
 session's writes are not known, and the comparison is not made.

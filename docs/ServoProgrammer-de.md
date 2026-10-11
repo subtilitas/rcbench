@@ -178,6 +178,16 @@ SERVO-Bildschirms, und **HALTEN ZUM ÜBERNEHMEN** übernimmt ihn nach 2 s.
 Das Ausschalten von **HV SERVO** setzt eine Programmierspannung über 6,0 V
 auf 5,0 V zurück.
 
+Eine Spannung über 6,0 V wird nicht gespeichert. Die SERVO-Einstellungen
+halten für sie 6,0 V, und ein gespeicherter Wert über 6,0 V, von der
+Einstellungsseite oder aus einer Einstellungsdatei, wird als 6,0 V geladen
+und so gespeichert, mit **HV SERVO** ein oder aus. Der Programmierer liest
+die Einstellungen beim Öffnen und bei jedem Betreten des SERVO-Bildschirms,
+solange kein Port gehalten wird, und wenn das Panel unter einem gehaltenen
+Port startet: jedes davon beginnt bei 6,0 V oder darunter, und eine Spannung
+darüber braucht erneut die Warnseite und ihr Halten von 2 s. Eine Sitzung,
+die ihren Port hält, behält die Spannung, mit der sie begonnen hat.
+
 ![Eine Programmierspannung über 6,0 V](img/de/servo-kst-hv.png)
 
 Antwortet ein PD mini, nennt die Zustandszeile vor **VERBINDEN** die Werte
@@ -678,7 +688,8 @@ enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
 gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
 Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
 Backup zurück. Ein Schreiben, das die Karte, ein Stopp oder der Koprozessor
-nicht starten lässt, zählt nicht als Schreiben: seine Felder unterscheiden
+nicht starten lässt oder das der Koprozessor beendet, ohne dass ein Register
+geschrieben ist, zählt nicht als Schreiben: seine Felder unterscheiden
 die Servos weiterhin. Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
 nicht geschrieben hat, werden nicht unterschieden. Nach einem
 Verbindungsverlust oder einem Start des Panels unter einer Sitzung sind die
