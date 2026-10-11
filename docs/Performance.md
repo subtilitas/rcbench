@@ -238,7 +238,7 @@ pico-sdk's claim of a PIO (programmable input/output) state machine, and
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
 ends in `panic()` as well.
 
-A write command to the KST programming port reaches 1,408 bytes: `main`,
+A write command to the programming port for KST and Chaservo servos reaches 1,408 bytes: `main`,
 `can_service`, `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
 `kst_session_write` (56) and the write planner of `protocols/kst`, 464
 bytes from `kst_plan_edit` down: `build` (160), `detour` (72), `search`

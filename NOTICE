@@ -55,6 +55,29 @@ design and were read as documentation rather than copied:
 Every protocol implementation here is written from a published specification
 rather than from another implementation, because nearly every open
 implementation of these protocols is GPL or AGPL against this repository's MIT.
+The programming protocol of KST and Chaservo servos has no published
+specification: it is written from wire captures (see Trademarks below).
 
 test/host/greatest.h is a 108-line test harness written for this project. It is
 not the `greatest` library of the same name.
+
+
+Trademarks
+----------
+
+All product and company names in this repository are names or trademarks of
+their respective owners. They are used to identify the products the software
+and the hardware work with, among them KST, Chaservo, YGE and OpenYGE, Hitec,
+BLHeli, AM32, ESCape32, VESC, ArduPilot, Raspberry Pi, Espressif, WeAct and
+Digi-Key. No such name is part of this project's name, and no logo or artwork
+of another party is included.
+
+KST, CHASERVO and Hitec and their logos are trademarks or registered
+trademarks of their respective manufacturers. The names are used in this
+project in a purely descriptive way, to document compatibility with the
+respective servos. This project is not affiliated with the named
+manufacturers and is neither supported nor sponsored by them.
+
+The programming protocol of KST and Chaservo servos is implemented from wire
+captures of hardware the project owns. No vendor code and no vendor
+documentation is included.

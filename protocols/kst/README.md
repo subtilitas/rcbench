@@ -450,6 +450,16 @@ port path the servo is connected through:
 5. Write reliability: 1000 writes with read-back, and the count that do not
    take.
 
+## Trademarks
+
+KST and Chaservo are names or trademarks of their respective owners; they
+are used here only to say which servos this module works with. The project
+is not affiliated with them. The protocol is implemented from wire captures
+of hardware the project owns, the 1 programming card and 1 servo named
+above; no vendor code and no vendor documentation is included. The full
+notice is in the repository's
+[README](../../README.md#legal-notice-and-disclaimer).
+
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c`,

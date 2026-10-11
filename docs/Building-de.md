@@ -35,7 +35,7 @@ rcbench/
     openyge/              OpenYGE-Framing, CRC, Status und Parameter-Cache; kein Pin-Treiber
     pdmini/               PD-mini-Treiber · PIO-UART
     phase_tap/            ESC-Ton-Detektor · Leser des Flankenrings · PIO-Capture
-    kst/                  KST-Servo-Programmierung: Frames, Register, Grenzen, Schreibpläne, Session · rp2350: kst_line.pio · kst_line
+    kst/                  Programmierung von KST- und Chaservo-Servos: Frames, Register, Grenzen, Schreibpläne, Session · rp2350: kst_line.pio · kst_line
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)

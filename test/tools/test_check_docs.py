@@ -256,3 +256,39 @@ def test_a_tree_without_protocols_is_read(tree, monkeypatch):
     monkeypatch.setattr(cd, "DOCS", tree / "docs")
     assert modules_tree(tree, ["gfx"], [], []) == [
         "Building.md: the tree omits shared/gfx/"]
+
+
+@pytest.mark.parametrize("line", [
+    "the Cha servo", "KST/Cha servos", "KST and Cha", "Cha-Servos",
+    "\"KST / Cha\",", "Cha, the brand", "KST and Cha.",
+])
+def test_the_short_form_of_the_brand_is_found(line):
+    assert cd.brand_short_forms("first\n" + line + "\n") == [2]
+
+
+@pytest.mark.parametrize("line", [
+    "Chaservo servos", "KST- und Chaservo-Servos", "Change", "Chart",
+    "a Chain of writes", "cha", "CHA", "src/Cha.c", "Cha_reg", "xCha",
+])
+def test_the_full_name_and_other_words_pass(line):
+    assert cd.brand_short_forms(line) == []
+
+
+def test_a_page_with_the_short_form_fails_with_its_line(tmp_path):
+    page = tmp_path / "Page.md"
+    page.write_text("# Servos\n\nKST and Cha servos.\n", encoding="utf-8")
+    table = tmp_path / "ui_text.c"
+    table.write_text('"Chaservo",\n', encoding="utf-8")
+    problems = []
+    cd.check_brand_names(problems, [page, table])
+    assert problems == [
+        "Page.md:3: the brand is written Chaservo, not in a short form"]
+
+
+def test_the_tree_holds_the_brand_rule():
+    problems = []
+    cd.check_brand_names(problems)
+    assert problems == []
+    names = {p.name for p in cd.brand_pages()}
+    assert {"README.md", "CHANGELOG.md", "NOTICE", "Link.md",
+            "ui_text.c", "ui_text_de.c"} <= names

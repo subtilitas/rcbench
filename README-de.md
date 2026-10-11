@@ -127,3 +127,27 @@ rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
   BLHeli, AM32, ESCape32, VESC und Hitec.
 - **Fremdcode im Baum: keiner.** `test/host/greatest.h` ist ein für dieses
   Projekt geschriebenes Test-Harness; es ist nicht die Bibliothek `greatest`.
+
+## Rechtliche Hinweise und Haftungsausschluss
+
+### Markenhinweis
+
+KST, CHASERVO und Hitec sowie deren Logos sind Marken oder eingetragene Marken
+der jeweiligen Hersteller. Die Namen werden in diesem Projekt ausschließlich
+beschreibend verwendet, um die Kompatibilität mit den jeweiligen Servos zu
+dokumentieren. Dieses Projekt steht in keiner Verbindung zu den genannten
+Herstellern und wird von ihnen weder unterstützt noch gesponsert.
+
+### Haftungsausschluss
+
+rcbench ist Open-Source-Software und -Hardware zum Selbstbau. Nutzung, Nachbau
+und das Programmieren von Servos erfolgen auf eigene Gefahr. Soweit gesetzlich
+zulässig, übernimmt der Autor keine Haftung für:
+
+- Schäden an Servos, zum Beispiel durch falsche Spannung, Timing-Fehler oder
+  beschädigte Einstellungsdaten im Servo,
+- Schäden an Computern, Mikrocontrollern oder anderer angeschlossener
+  Hardware,
+- Verletzungen oder Schäden, die durch den Betrieb der Hardware entstehen.
+
+Die Lizenzbedingungen stehen in [LICENSE](LICENSE).
