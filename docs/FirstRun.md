@@ -198,7 +198,9 @@ Use a **servo**, not the ESC. A servo is the forgiving case and the one the
 scope reads most easily.
 
 **Pins free for an output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13 to GP22
-and GP26 to GP28.
+and GP26 to GP28. GP13 is the programming port's pin on a coprocessor that
+has stored none and is refused for an output until the port's pin is moved
+([Link](Link.md#the-programming-ports)).
 **Reserved and refused:** GP3 (heartbeat), GP8–GP12 (CAN), GP23, GP24, GP25 and
 GP29 (used by the module, not on the header) and GP30 and up (not on the part).
 **Refused as a second PWM pin:** a pin whose PWM compare register is already

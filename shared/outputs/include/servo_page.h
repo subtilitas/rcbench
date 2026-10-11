@@ -54,6 +54,8 @@ typedef struct {
     uint32_t heard_ms;   /**< when the sweep was last written          */
     bool     finished;   /**< made its movements; the curve not changed */
     bool     holding;    /**< LINK_SV_HOLD in force                     */
+    uint8_t  target_first; /**< the channels commanded, when target_n   */
+    uint8_t  target_n;     /**< is not 0; else the standard servo ports */
 } servo_page_t;
 
 void servo_page_init(servo_page_t *p);
@@ -84,6 +86,19 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
 
 /** The frame rate register, for outputs_slot_rates(). */
 uint16_t servo_page_hz(const servo_page_t *p);
+
+/**
+ * Name the channels the sweep and the hold command: @p count channels of
+ * the bank from @p first, or with @p count 0 the standard servo ports
+ * (channels 0 to LINK_OUT_CHANNELS - 1), which is what a page starts with.
+ * A programming port is such a range of 1 channel.
+ *
+ * A change ends a running or held sweep as a SWEEP of 0 does: the surfaces
+ * it moved stay where their outputs are.  False, with nothing changed, for
+ * a range that runs off the bank.
+ */
+bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
+                       uint8_t count);
 
 /* ------------------------------------------------------- the host's side */
 

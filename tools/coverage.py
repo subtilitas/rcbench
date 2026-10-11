@@ -123,6 +123,7 @@ TRACKED = [
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_pio.c",
     "shared/outputs/kst_port.c",
+    "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",
     "shared/can/can_timing.c",
     "shared/can/can_selftest.c",

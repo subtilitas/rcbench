@@ -11,6 +11,7 @@
 #include "pico/stdlib.h"
 
 #include "dshot.h"
+#include "link_pages.h"
 #include "out_dshot.h"
 #include "out_ppm.h"
 #include "out_pwm.h"
@@ -47,8 +48,20 @@ typedef struct {
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
 
-/* The PWM slots that render no pulse (outputs_hw_hold()). */
-static uint8_t s_hold;
+/*
+ * The programming ports: pins of their own on the same generator, each
+ * rendered from one channel of the bank.  `as` is the port as a slot of one
+ * PWM channel, so the rendering and the capture's edge are the slots' code.
+ */
+typedef struct {
+    bool         bound;
+    out_slot_t   as;
+    slot_state_t st;
+} port_state_t;
+
+static port_state_t s_port[LINK_PG_PORTS_MAX];
+/* The ports that render their pulse (outputs_hw_ports_drive()). */
+static uint8_t s_port_drive;
 
 /* The capture's edge: the output channel watched, -1 for none, and the
  * frame stamped for it, until taken. */
@@ -115,6 +128,8 @@ void outputs_hw_init(void)
 {
     memset(s_shadow, 0, sizeof(s_shadow));
     memset(s_state, 0, sizeof(s_state));
+    memset(s_port, 0, sizeof(s_port));
+    s_port_drive = 0u;
     forget_telem();
 }
 
@@ -393,9 +408,56 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     out_dshot_send(s->pin, value, false);
 }
 
-void outputs_hw_hold(uint8_t slots)
+void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
 {
-    s_hold = slots;
+    if (pin == NULL) {
+        return;
+    }
+    /* Every port that moved is released before any is bound, as the slots
+     * are: two ports may exchange pins. */
+    bool moved[LINK_PG_PORTS_MAX];
+    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        const port_state_t *p = &s_port[i];
+        const bool wanted = pin[i] <= OUT_MAX_PIN;
+        moved[i] = wanted != p->bound
+                   || (wanted && (p->as.pin != pin[i]
+                                  || p->as.rate_hz != rate_hz));
+        if (moved[i] && p->bound) {
+            out_pwm_release(p->as.pin);
+        }
+    }
+    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        port_state_t *p = &s_port[i];
+        if (!moved[i]) {
+            continue;
+        }
+        memset(p, 0, sizeof(*p));
+        if (pin[i] > OUT_MAX_PIN) {
+            continue;
+        }
+        p->as.driver        = OUT_DRIVER_PWM;
+        p->as.first_channel = (uint8_t)(channel0 + i);
+        p->as.channels      = 1u;
+        p->as.pin           = pin[i];
+        p->as.rate_hz       = rate_hz;
+        p->bound            = out_pwm_bind(pin[i], rate_hz);
+    }
+}
+
+uint8_t outputs_hw_ports_bound(void)
+{
+    uint8_t bound = 0u;
+    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        if (s_port[i].bound) {
+            bound |= (uint8_t)(1u << i);
+        }
+    }
+    return bound;
+}
+
+void outputs_hw_ports_drive(uint8_t ports)
+{
+    s_port_drive = ports;
 }
 
 void outputs_hw_watch(int ch)
@@ -464,8 +526,7 @@ void outputs_hw_service(const outputs_t *o)
         switch (s->driver) {
         case OUT_DRIVER_PWM:
             service_pwm(&s_state[i], s,
-                        drive && (s_hold & (1u << i)) == 0u
-                            ? outputs_pulse_us(o, s->first_channel) : 0u);
+                        drive ? outputs_pulse_us(o, s->first_channel) : 0u);
             break;
         case OUT_DRIVER_PPM:
             service_ppm(o, s, drive);
@@ -478,6 +539,15 @@ void outputs_hw_service(const outputs_t *o)
         case OUT_DRIVER_COUNT:
         default:
             break;
+        }
+    }
+
+    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        port_state_t *p = &s_port[i];
+        if (p->bound) {
+            service_pwm(&p->st, &p->as,
+                        drive && (s_port_drive & (1u << i)) != 0u
+                            ? outputs_pulse_us(o, p->as.first_channel) : 0u);
         }
     }
 

@@ -44,6 +44,8 @@ void supply_link_lost(supply_link_t *s)
     s->asked     = false;
     s->found     = SUPPLY_LINK_BAUD_AUTO;
     s->reset_owed = false;
+    s->port_held  = false;
+    s->adopted    = false;
     /* The caller sees the supply stop answering and switches its own ON
      * off with the operator told; this end only stops asking for it. */
     s->on = false;
@@ -313,7 +315,24 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
             || regs[LINK_SP_BAUD] != s->page.baud)) {
         s->wired = false;
     }
-    if (s->commanded && regs[LINK_SP_OUTPUT] != (s->page_on ? 1u : 0u)) {
+    const bool port = (f & LINK_SP_PORT) != 0u || s->port_held;
+    s->port_held = (f & LINK_SP_PORT) != 0u;
+    if (port && s->commanded
+        && (regs[LINK_SP_OUTPUT] != (s->page_on ? 1u : 0u)
+            || regs[LINK_SP_SET_MV] != s->page_mv
+            || regs[LINK_SP_SET_MA] != s->page_ma)) {
+        /* A programming port's command: what the page holds is what is
+         * asked.  Set points not known yet (0xFFFF after an OFF) are the
+         * page's too. */
+        s->page_on = regs[LINK_SP_OUTPUT] != 0u;
+        s->page_mv = regs[LINK_SP_SET_MV];
+        s->page_ma = regs[LINK_SP_SET_MA];
+        s->on = s->page_on;
+        s->mv = s->page_mv;
+        s->ma = s->page_ma;
+        s->adopted = true;
+    } else if (s->commanded
+               && regs[LINK_SP_OUTPUT] != (s->page_on ? 1u : 0u)) {
         if (s->page_on && s->on && regs[LINK_SP_OUTPUT] == 0u) {
             /* Switched off at the far end: the heartbeat stopped, or the
              * coprocessor started again.  Not switched back on. */
@@ -388,6 +407,20 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
      * this count brought it -- not a later read of the same count. */
     st->samples  = s->samples_seen;
     st->taken_ms = s->sample_ms;
+}
+
+bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
+                         uint16_t *ma)
+{
+    if (s == NULL || on == NULL || mv == NULL || ma == NULL
+        || !s->adopted) {
+        return false;
+    }
+    s->adopted = false;
+    *on = s->on;
+    *mv = s->mv;
+    *ma = s->ma;
+    return true;
 }
 
 uint16_t supply_link_events(supply_link_t *s)

@@ -12,6 +12,7 @@
 #include "hardware/sync.h"
 #include "hardware/timer.h"
 
+#include "link_pages.h"
 #include "out_pwm_map.h"
 #include "outputs.h"
 
@@ -24,9 +25,10 @@
 
 /*
  * What is bound, so the sharing rules can be checked and a release can put
- * the pin back.  One entry per slot the bank can hold; nothing here has
- * more outputs than that.
+ * the pin back.  One entry per slot the bank can hold and one per
+ * programming port; nothing here has more outputs than that.
  */
+#define BINDINGS (OUT_MAX_SLOTS + LINK_PG_PORTS_MAX)
 typedef struct {
     bool     used;
     uint8_t  pin;
@@ -34,11 +36,11 @@ typedef struct {
     uint16_t wrap;      /**< the last count of the frame                  */
 } binding_t;
 
-static binding_t s_bound[OUT_MAX_SLOTS];
+static binding_t s_bound[BINDINGS];
 
 static binding_t *find(uint8_t pin)
 {
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+    for (unsigned i = 0; i < BINDINGS; ++i) {
         if (s_bound[i].used && s_bound[i].pin == pin) {
             return &s_bound[i];
         }
@@ -91,7 +93,7 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
 
     binding_t *free_slot = NULL;
     bool running = false;
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+    for (unsigned i = 0; i < BINDINGS; ++i) {
         if (!s_bound[i].used) {
             if (free_slot == NULL) {
                 free_slot = &s_bound[i];
@@ -161,7 +163,7 @@ void out_pwm_release(uint8_t pin)
     /* The slice keeps running while its other channel is still bound. */
     const uint slice = pwm_gpio_to_slice_num(pin);
     bool shared = false;
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+    for (unsigned i = 0; i < BINDINGS; ++i) {
         if (s_bound[i].used && &s_bound[i] != b
             && pwm_gpio_to_slice_num(s_bound[i].pin) == slice) {
             shared = true;

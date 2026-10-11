@@ -29,6 +29,7 @@
 #include "heartbeat.h"
 #include "kst_line.h"
 #include "kst_port.h"
+#include "prog_port.h"
 #include "link_dev.h"
 #include "link_pages.h"
 #include "dshot.h"
@@ -112,10 +113,19 @@ static uint64_t      s_edge_us;
  * take their pins. */
 static uint64_t      s_base_reserved;
 /*
- * The KST page: the programming port for KST and Chaservo servos
- * (shared/outputs/kst_port.h) and the wire driver it hands its channel's
- * pin to (protocols/kst/rp2350).  Not kept: a restart finds the port in
- * PWM (pulse-width modulation) with no session.
+ * The PROG page: the programming ports, outputs of their own kind with
+ * their own pins (shared/outputs/prog_port.h).  Pin, slew and endpoints are
+ * kept; the pulse's switch and the tester's target are not.
+ */
+static prog_port_t   s_prog;
+/* The programming ports this build has; the model holds
+ * LINK_PG_PORTS_MAX. */
+#define IOMCU_PROG_PORTS 1u
+/*
+ * The KST page: the wire protocol for KST and Chaservo servos on a
+ * programming port (shared/outputs/kst_port.h) and the wire driver the
+ * port's pin is handed to (protocols/kst/rp2350).  Not kept: a restart
+ * finds the port in PWM (pulse-width modulation) with no session.
  */
 static kst_port_t    s_kst;
 static kst_line_t    s_kst_line;
@@ -255,6 +265,8 @@ static void save_outputs(const iomcu_state_t *s)
     memcpy(cfg.sense, &s_sense.sense[LINK_SN_ENABLE], sizeof(cfg.sense));
     /* And the phase tap's. */
     memcpy(cfg.tone, s_tone.cfg, sizeof(cfg.tone));
+    /* And where the programming ports are. */
+    prog_port_kept(&s_prog, cfg.prog);
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -296,22 +308,61 @@ static uint8_t bound_slots(void)
     return bound;
 }
 
+/* The ports that render their pulse while the bank drives: bound, switched
+ * on, and not out of PWM for the wire protocol or a supply cycle. */
+static uint8_t ports_pulsing(void)
+{
+    return (uint8_t)(prog_port_pwm(&s_prog) & outputs_hw_ports_bound()
+                     & ~kst_port_quiet_mask(&s_kst));
+}
+
+/*
+ * The programming ports' pins made to agree with the PROG page, at the
+ * SERVO page's frame rate or PROG_PORT_RATE_HZ.  Never the pin the wire
+ * driver holds: it is the driver's until the KST port gives it back, and
+ * the page keeps the port's pulse switch and target meanwhile.  Then the
+ * tester's sweep is pointed where the page's TARGET says.
+ */
+static void ports_apply(void)
+{
+    uint8_t pin[LINK_PG_PORTS_MAX];
+    const uint8_t wire = kst_port_pin_mask(&s_kst);
+    for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
+                                            : prog_port_pin(&s_prog, i);
+    }
+    uint16_t hz = servo_page_hz(&s_servo);
+    if (hz == 0u) {
+        hz = PROG_PORT_RATE_HZ;
+    }
+    outputs_hw_ports(pin, hz, (uint8_t)PROG_PORT_CHANNEL0);
+    prog_port_bound(&s_prog, (uint8_t)(outputs_hw_ports_bound() | wire));
+    const uint8_t target = prog_port_target(&s_prog);
+    if (target != 0u) {
+        (void)servo_page_target(&s_servo, &s_outputs,
+                                prog_port_channel((uint8_t)(target - 1u)),
+                                1u);
+    } else {
+        (void)servo_page_target(&s_servo, &s_outputs, 0u, 0u);
+    }
+    sense_page_ports(&s_sense, ports_pulsing());
+}
+
 /*
  * The silicon made to agree with the bank, every slot at the rate it runs
  * at: its own, or the SERVO page's for a PWM surface.  Only the slots in
- * @p may_bind are bound; hw_apply() binds every one.
+ * @p may_bind are bound; hw_apply() binds every one.  The programming
+ * ports follow, on what the slots leave.
  */
 static void hw_apply_only(uint8_t may_bind)
 {
     uint16_t rate[OUT_MAX_SLOTS];
     outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
-    /* Never the slot whose pin the KST port holds: whatever page asks, the
-     * pin is the wire driver's until the port gives it back. */
-    outputs_hw_apply_only(&s_outputs, rate,
-                          (uint8_t)(may_bind & ~kst_port_pin_mask(&s_kst)));
+    outputs_hw_apply_only(&s_outputs, rate, may_bind);
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
     sense_page_bound(&s_sense, bound_slots());
+    ports_apply();
 }
 
 static void hw_apply(void)
@@ -330,43 +381,58 @@ static bool bank_armed(const iomcu_state_t *s)
 /*
  * The port's hardware.  kst_port.c decides; these do what it says.
  *
- * No servo rail is switched from here: the module has bare GPIOs
- * (general-purpose inputs/outputs) and no rail switch, so `rail` stays NULL
- * and the power cycle is the operator's to confirm.
+ * The servo on a programming port is supplied by the PD mini: the SUPPLY
+ * page's module is the one switched.
  */
-static bool kst_hw_bound(void *ctx, uint8_t slot)
+
+/* The pin of a port the generator has bound; a port without a pin, or one
+ * the silicon refused, has none to hand over. */
+static uint8_t kst_hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    return outputs_hw_bound(slot);
+    if (port >= LINK_PG_PORTS_MAX
+        || (outputs_hw_ports_bound() & (1u << port)) == 0u) {
+        return PROG_PORT_NO_PIN;
+    }
+    return prog_port_pin(&s_prog, port);
 }
 
-/* The pin catalogue has no direction attribute: every pin a PWM slot is
- * bound to is a bare GPIO of the module and can be read. */
-static bool kst_hw_reply_path(void *ctx, uint8_t pin)
+/* The port's pin from the generator to the wire driver.  The port says it
+ * holds the pin, so ports_apply() releases it and leaves it unbound; the
+ * open drives the pad low. */
+static bool kst_hw_take(void *ctx, uint8_t port, uint8_t pin)
 {
     (void)ctx;
-    (void)pin;
-    return true;
-}
-
-/* The slot's pin from PWM to the wire driver.  The port is past
- * LINK_KST_STOPPING, so hw_apply() releases the slot and leaves it
- * unbound; the open drives the pad low. */
-static bool kst_hw_take(void *ctx, uint8_t slot, uint8_t pin)
-{
-    (void)ctx;
-    (void)slot;
-    hw_apply();
+    (void)port;
+    ports_apply();
     return kst_line_open(&s_kst_line, pin) == KST_LINE_OK;
 }
 
-/* And back: the port is in LINK_KST_PWM, so hw_apply() binds the slot as
- * the bank has it now. */
+/* And back: the port holds no pin, so ports_apply() binds it as the PROG
+ * page has it. */
 static void kst_hw_give(void *ctx)
 {
     (void)ctx;
     kst_line_close(&s_kst_line);
-    hw_apply();
+    ports_apply();
+}
+
+static void kst_hw_supply(void *ctx, supply_port_view_t *out)
+{
+    (void)ctx;
+    supply_page_port_view(&s_supply, out);
+}
+
+/* No ON while the supply's wiring is not in flash, as the SUPPLY page
+ * refuses one: a restart in the run could not switch the module off. */
+static bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
+{
+    (void)ctx;
+    if (on && s_supply_unsaved) {
+        return false;
+    }
+    return supply_page_port_set(&s_supply, on, mv, ma,
+                                safety_gate_supply_ok(&s_beat, &s_dev));
 }
 
 static void kst_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -379,7 +445,7 @@ static uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
 {
     (void)ctx;
-    return kst_port_write(&s_kst, off, n, in, &s_outputs, s_now_ms);
+    return kst_port_write(&s_kst, off, n, in, s_now_ms);
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -455,7 +521,63 @@ static void reserve_held(void)
     outputs_reserve_pins(&s_outputs, s_base_reserved
                                      | supply_page_pins(&s_supply)
                                      | sense_page_held(&s_sense)
-                                     | tone_page_pins(&s_tone));
+                                     | tone_page_pins(&s_tone)
+                                     | prog_port_pins(&s_prog));
+}
+
+/* ------------------------------------------------- the programming ports */
+
+static void sense_sync(void);
+
+static void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    prog_port_read(&s_prog, off, n, out);
+}
+
+/*
+ * The PROG page.  A pin is judged against the slots, the board's own pins
+ * and the ones the supply, the sensor bus and the phase tap hold, then
+ * reserved against all of them and bound.  A pin the generator cannot bind
+ * is refused with the pins as they were.  No pin moves while the bank is
+ * armed or asked to arm, or while the KST port is out of PWM.
+ */
+static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
+    sense_sync();
+    const prog_port_t was = s_prog;
+    uint16_t kept_was[PROG_PORT_KEPT_COUNT];
+    uint16_t kept_now[PROG_PORT_KEPT_COUNT];
+    prog_port_kept(&s_prog, kept_was);
+    const uint8_t nack = prog_port_write(
+        &s_prog, off, n, in, &s_outputs,
+        supply_page_pins(&s_supply) | sense_page_held(&s_sense)
+            | tone_page_pins(&s_tone),
+        bank_armed(s) || kst_port_state(&s_kst) != LINK_KST_PWM, s_now_ms);
+    if (nack != 0u) {
+        return nack;
+    }
+    reserve_held();
+    ports_apply();
+    /* Every port that holds a pin has it on the generator, or the write is
+     * undone: the pins, the reservation and the silicon as before. */
+    for (uint8_t i = 0; i < prog_port_count(&s_prog); ++i) {
+        if (prog_port_pin(&s_prog, i) != PROG_PORT_NO_PIN
+            && (outputs_hw_ports_bound() & (1u << i)) == 0u
+            && prog_port_pin(&was, i) != prog_port_pin(&s_prog, i)) {
+            prog_port_revert(&s_prog, &was, &s_outputs);
+            reserve_held();
+            ports_apply();
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
+    prog_port_kept(&s_prog, kept_now);
+    if (memcmp(kept_was, kept_now, sizeof(kept_was)) != 0) {
+        save_outputs(&s_state);
+    }
+    return 0u;
 }
 
 /* ------------------------------------------------------------- core 1 */
@@ -733,8 +855,14 @@ static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
         return nack;
     }
     const uint16_t arm = s_sense.servo[LINK_SS_CAP_ARM];
-    outputs_hw_watch(((arm & LINK_SS_ARM) != 0u) ? (int)LINK_SS_ARM_OUT(arm)
-                                                 : -1);
+    int watch = -1;
+    if ((arm & LINK_SS_ARM) != 0u) {
+        /* A programming port's pulse is its channel of the bank. */
+        watch = ((arm & LINK_SS_ARM_PORT) != 0u)
+                    ? (int)prog_port_channel((uint8_t)LINK_SS_ARM_OUT(arm))
+                    : (int)LINK_SS_ARM_OUT(arm);
+    }
+    outputs_hw_watch(watch);
     s_edge_set = false;
     sense_order();
     return 0u;
@@ -940,11 +1068,14 @@ static uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
      * old pins back once core 1 has let them go. */
     sense_sync();
     /* No slot changes under an armed bank, and the binding in force,
-     * written again, is taken without binding anything anew.  Nor while
-     * the KST port holds a channel: its slot is unbound on purpose, and a
-     * new binding could hand its pin to another driver. */
-    if (bank_armed(s) || kst_port_state(&s_kst) != LINK_KST_PWM) {
+     * written again, is taken without binding anything anew. */
+    if (bank_armed(s)) {
         return outputs_slots_armed_check(s->slots, next, true);
+    }
+    /* Nor a slot on a programming port's pin, or a PWM slot beside one in
+     * the silicon: a port is no standard servo port and lends no pin. */
+    if (prog_port_slots_check(&s_prog, next) != 0u) {
+        return LINK_NACK_BAD_VALUE;
     }
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
      * and a restart would drive it on the module's pin. */
@@ -1324,6 +1455,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_BIND,      LINK_BD_COUNT,  bind_read,      bind_write },
     { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT,  servo_win_read, NULL },
     { LINK_PAGE_KST,       LINK_KS_COUNT,  kst_read,       kst_write },
+    { LINK_PAGE_PROG,      LINK_PG_REGS,   prog_read,      prog_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1849,16 +1981,18 @@ int main(void)
      */
     outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
-    /* The KST port, in PWM, before the first binding asks it for the slot
-     * it holds. */
+    /* The programming ports, none with a pin yet, and the KST port in PWM,
+     * before the first binding asks either for the pins it holds. */
+    prog_port_init(&s_prog, IOMCU_PROG_PORTS);
     kst_line_init(&s_kst_line);
     const kst_port_hw_t kst_hw = {
         .ctx        = NULL,
-        .bound      = kst_hw_bound,
-        .reply_path = kst_hw_reply_path,
+        .ports      = IOMCU_PROG_PORTS,
+        .pin        = kst_hw_pin,
         .take       = kst_hw_take,
         .give       = kst_hw_give,
-        .rail       = NULL,
+        .supply     = kst_hw_supply,
+        .supply_set = kst_hw_supply_set,
         .driver     = kst_line_driver(&s_kst_line),
     };
     (void)kst_port_init(&s_kst, &kst_hw);
@@ -1906,6 +2040,24 @@ int main(void)
         tone_page_refuse(&s_tone);
         reserve_held();
     }
+    /*
+     * The programming ports, last: a pin a slot, the supply, the sensor bus
+     * or the phase tap holds is theirs, and the port is without one, with
+     * the PROG page's refused flag set until another pin is written.  A
+     * board that has stored no port (a record older than version 7, or
+     * none) has port 0 on PROG_PORT_DEFAULT_PIN.
+     */
+    uint16_t prog_kept[PROG_PORT_KEPT_COUNT];
+    if (have_saved) {
+        memcpy(prog_kept, saved.prog, sizeof(prog_kept));
+    } else {
+        prog_port_defaults(prog_kept, PROG_PORT_DEFAULT_PIN);
+    }
+    prog_port_restore(&s_prog, prog_kept, &s_outputs,
+                      supply_page_pins(&s_supply) | sense_page_held(&s_sense)
+                          | tone_page_pins(&s_tone));
+    reserve_held();
+    ports_apply();
 #if IOMCU_SENSE_BRINGUP
     /*
      * A bring-up build (cmake -DIOMCU_SENSE_BRINGUP=ON): with no part
@@ -2057,12 +2209,17 @@ int main(void)
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
-         * Then its channel's slot renders no pulse, from this pass on.
+         * Then the programming ports that render a pulse, from this pass
+         * on: none that is out of PWM.
          */
         kst_port_step(&s_kst, safety_gate_supply_ok(&s_beat, &s_dev),
                       gate.off || (s_kst_armed && !gate.arm), now);
         s_kst_armed = gate.arm;
-        outputs_hw_hold(kst_port_hold_mask(&s_kst));
+        outputs_hw_ports_drive(ports_pulsing());
+        sense_page_ports(&s_sense, ports_pulsing());
+        /* And the SUPPLY page told that a port commands the module. */
+        supply_page_hold(&s_supply,
+                         kst_port_state(&s_kst) != LINK_KST_PWM);
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -2077,13 +2234,16 @@ int main(void)
         s_pass_driving = driving_now;
         /* The sweep's command for this pass, before the step slews to it. */
         (void)servo_page_step(&s_servo, &s_outputs, now);
-        /* A capture ends with the run it was timing; one core 1 has
-         * finished meanwhile keeps its result, so the page takes core 1's
-         * view first. */
-        if (!driving_now && sense_capture_open()) {
+        /* A capture ends with the run it was timing, and one on a
+         * programming port with the port's pulse; one core 1 has finished
+         * meanwhile keeps its result, so the page takes core 1's view
+         * first. */
+        const bool timing_now = driving_now
+                                && !sense_page_port_gone(&s_sense);
+        if (!timing_now && sense_capture_open()) {
             sense_sync();
         }
-        if (sense_page_step(&s_sense, driving_now)) {
+        if (sense_page_step(&s_sense, timing_now)) {
             outputs_hw_watch(-1);
             sense_order();
         }

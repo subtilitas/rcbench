@@ -56,18 +56,29 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
 void outputs_hw_service(const outputs_t *o);
 
 /**
- * The slots that render no PWM (pulse-width modulation) pulse, one bit
- * each, whatever the bank asks: a held slot is written a pulse of 0, as a
- * disarmed bank writes it, so the pulse in progress completes and the pin
- * rests low.  The KST programming port holds its channel's slot this way
- * (shared/outputs/kst_port.h).  Other drivers are not held.
+ * The programming ports' pins on the PWM generator: @p pin[n] for port n,
+ * LINK_PG_PORTS_MAX entries, a value above OUT_MAX_PIN for a port without
+ * one, every port at @p rate_hz frames a second.  A port whose pin or rate
+ * moved is released and bound again; one that did not is left running.  A
+ * port is no slot: it is rendered from bank channel @p channel0 + n.
  */
-void outputs_hw_hold(uint8_t slots);
+void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0);
+
+/** The ports the generator has bound, bit n for port n. */
+uint8_t outputs_hw_ports_bound(void);
+
+/**
+ * Which bound ports render their channel's pulse while the bank drives,
+ * bit n for port n.  A port left out is written a pulse of 0, as a disarmed
+ * bank writes it: the pulse in progress completes and the pin rests low.
+ * None until told.
+ */
+void outputs_hw_ports_drive(uint8_t ports);
 
 /**
  * Watch output channel @p ch for a move capture's edge; a negative @p ch
  * stops watching.  The first later pass that renders a pulse other than
- * the one before it on @p ch's PWM slot writes it stamped
+ * the one before it on @p ch's PWM slot or programming port writes it stamped
  * (out_pwm_write_stamped()) and ends the watch: the start of the frame
  * that first carries the new pulse, on time_us_64().  A pulse of 0, the
  * bank stopping, is not an edge.  A slot that is not PWM never stamps.

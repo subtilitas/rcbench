@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.12. [Reference](docs/Link.md).
+4.13. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -126,7 +126,7 @@ is taken in a gap ahead of the save that needs it.
 | ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
 | Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20 V the list opens 23, one needing 22.8 V, and refuses 4 more model rows of families that open, each needing 22.8 V; 4 model rows that state no voltage rating open with a warning from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list shows the makers, then one maker's models by current, voltage and name, each opening its family's profile at the model's own cell count; a search over maker and family or maker and model filters both levels, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. Profiles list the steps a person does at the ESC (`manual`: a jumper, a button) with when each is due; 24 carry them, and the 10 Kontronik profiles that run ask for each with a prompt (DONE, ABORT, 60 s), powered only with the stick at motor-off; each value is powered up from the stick position the manual programs it from (`entry_throttle`: the Kontronik car modes at MID), the stick moved only with the supply off. MANUAL INTERVENTION REQUIRED on a profile's page and a MANUAL tag in the list show the steps. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
-| Servo programmer | Hitec table in the programmer screen; KST and Chaservo (two servo brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port and link page 0x32 and the panel's link module are built and host-tested against a servo and line model; no screen uses them, and nothing is measured on hardware: [the port](docs/Link.md#the-kst-programming-port), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
+| Servo programmer | Hitec table in the programmer screen; KST and Chaservo (two servo brands with one programming protocol): the protocol core, the RP2350 pin driver, the coprocessor's programming port (its own pin, GP13 by default, with servo PWM from the servo tester or the programming protocol, and the PD mini as the servo's supply), link pages 0x32 and 0x33 and the panel's link module are built and host-tested against a servo, line and supply model; no screen uses them, and nothing is measured on hardware: [the ports](docs/Link.md#the-programming-ports), [the protocol on a port](docs/Link.md#the-kst-programming-port), [what a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not) |
 
 ## The tree
 
@@ -239,7 +239,7 @@ cppcheck 2.17 reports 2 style findings (`ui_theme.h:136`,
 `servo_screen.c:468`). The step over `firmware/` passes all 25. `docs.yml` and `release.yml` with the wait
 for CI have not run.
 
-The host suite is 91 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 92 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -251,7 +251,7 @@ The host suite is 91 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port` and `test_kst_link`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link` and `test_prog_port`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -281,7 +281,8 @@ The 7 `test_kst_*` binaries run against the servo and line model in
 PIO (programmable input/output) program, word by word, in a model of the
 state machine; the coprocessor build fails when the assembled program
 differs from the words the test runs. `test_kst_port` runs the
-coprocessor's programming port and its page, and `test_kst_link` the
+coprocessor's programming port and its page with a model of the supply,
+`test_prog_port` the ports' pins and pulse page, and `test_kst_link` the
 panel's module through the dispatcher against that port. ctest also
 builds and runs `kst_headers_cxx`, which calls the module through its 6
 headers from C++11, when the host has a C++ compiler.
@@ -377,8 +378,9 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_plan.c` | 239 | 239 | 100.0% |
 | `protocols/kst/kst_session.c` | 479 | 479 | 100.0% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
-| `shared/outputs/kst_port.c` | 378 | 376 | 99.5% |
-| `shared/bench/kst_link.c` | 360 | 357 | 99.2% |
+| `shared/outputs/kst_port.c` | 551 | 549 | 99.6% |
+| `shared/outputs/prog_port.c` | 239 | 239 | 100.0% |
+| `shared/bench/kst_link.c` | 368 | 365 | 99.2% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
@@ -397,18 +399,18 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/outputs_pages.c` | 225 | 216 | 96.0% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
-| `shared/outputs/servo_page.c` | 183 | 181 | 98.9% |
-| `shared/outputs/supply_page.c` | 245 | 242 | 98.8% |
+| `shared/outputs/servo_page.c` | 210 | 208 | 99.0% |
+| `shared/outputs/supply_page.c` | 290 | 287 | 99.0% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
-| `shared/outputs/out_store_rec.c` | 18 | 18 | 100.0% |
+| `shared/outputs/out_store_rec.c` | 20 | 20 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
-| `shared/outputs/sense_page.c` | 478 | 478 | 100.0% |
+| `shared/outputs/sense_page.c` | 494 | 494 | 100.0% |
 | `shared/outputs/tone_page.c` | 241 | 241 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 553 | 545 | 98.5% |
-| `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
+| `shared/bench/supply_link.c` | 280 | 270 | 96.4% |
 | `shared/bench/sense_link.c` | 776 | 748 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 392 | 387 | 98.7% |
@@ -425,7 +427,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **29552** | **28823** | **97.5%** |
+| **total** | **30087** | **29358** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

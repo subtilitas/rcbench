@@ -245,11 +245,11 @@ CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
 Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
-Auch die Kette von Kern 0 ändert sich damit: ARM GNU 14.2 ergibt 2 416
+Auch die Kette von Kern 0 ändert sich damit: ARM GNU 14.2 ergibt 2 488
 Bytes, und die Frames unten stammen aus diesem Build.
 
 Die tiefste Kette von Kern 0 ist ein Schreibkommando an den
-KST-Programmierport: `main` (392 Bytes), `can_service` (344),
+KST-Programmierport: `main` (464 Bytes), `can_service` (344),
 `link_dev_dispatch`, `kst_write`, `kst_port_write` (104),
 `kst_session_write` (256) und der Schreibplaner aus `protocols/kst`, 1 272
 Bytes ab `kst_plan_edit`, davon 640 für den Frame seines Suchschritts

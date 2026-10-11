@@ -72,10 +72,10 @@ static bool pin_free(const supply_page_t *p, const outputs_t *o, uint16_t pin)
     return true;
 }
 
-/* FLAGS bits 8 and 9, kept whether or not a driver runs. */
+/* FLAGS bits 8, 9 and 11, kept whether or not a driver runs. */
 static uint16_t wire_flags(const supply_page_t *p)
 {
-    uint16_t f = 0u;
+    uint16_t f = p->held ? LINK_SP_PORT : 0u;
     if (p->wire != (uint8_t)SUPPLY_WIRE_IDLE) {
         f |= LINK_SP_WIRE_WAIT;
     }
@@ -85,13 +85,14 @@ static uint16_t wire_flags(const supply_page_t *p)
     return f;
 }
 
-/* Bits 8 and 9 onto the page as they change, not at the next step: a read
+/* Bits 8, 9 and 11 onto the page as they change, not at the next step: a read
  * between the two must not show a refusal already cleared, or no wait. */
 static void wire_publish(supply_page_t *p)
 {
     p->regs[LINK_SP_FLAGS] = (uint16_t)((p->regs[LINK_SP_FLAGS]
                                          & ~(LINK_SP_WIRE_WAIT
-                                             | LINK_SP_WIRE_REFUSED))
+                                             | LINK_SP_WIRE_REFUSED
+                                             | LINK_SP_PORT))
                                         | wire_flags(p));
 }
 
@@ -158,6 +159,11 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         }
     }
     if (command) {
+        /* A programming port holds the command: off and down only. */
+        if (p->held && (next[LINK_SP_OUTPUT] != 0u
+                        || next[LINK_SP_SET_MV] > p->regs[LINK_SP_SET_MV])) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if (next[LINK_SP_OUTPUT] > 1u
             || next[LINK_SP_SET_MV] > PDMINI_V_MAX_MV
             || next[LINK_SP_SET_MA] > PDMINI_I_MAX_MA) {
@@ -429,4 +435,63 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     p->regs[LINK_SP_VIN_MV]    = st->vin_mv;
     p->regs[LINK_SP_SAMPLES]   = (uint16_t)st->samples;
     p->regs[LINK_SP_ERRORS]    = (uint16_t)st->errors;
+}
+
+void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (p == NULL) {
+        return;
+    }
+    const uint16_t f = p->regs[LINK_SP_FLAGS];
+    const bool reads_on = (f & LINK_SP_ON) != 0u;
+
+    out->online   = supply_page_enabled(p) && (f & LINK_SP_ONLINE) != 0u
+                    && p->wire == (uint8_t)SUPPLY_WIRE_IDLE;
+    out->asked_on = p->regs[LINK_SP_OUTPUT] != 0u;
+    out->set_mv   = p->regs[LINK_SP_SET_MV];
+    out->set_ma   = p->regs[LINK_SP_SET_MA];
+    out->vin_mv   = p->regs[LINK_SP_VIN_MV];
+    out->on  = out->asked_on && reads_on
+               && (f & (LINK_SP_STUCK | LINK_SP_SET_STUCK)) == 0u
+               && p->regs[LINK_SP_SET_MV_RB] != 0u
+               && p->regs[LINK_SP_SET_MV_RB] <= p->regs[LINK_SP_SET_MV];
+    out->off = !reads_on && (f & LINK_SP_LIVE) == 0u;
+}
+
+bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
+                          uint16_t ma, bool beat_alive)
+{
+    if (p == NULL) {
+        return false;
+    }
+    if (!on) {
+        p->regs[LINK_SP_OUTPUT] = 0u;
+        return true;
+    }
+    if (!beat_alive || !supply_page_enabled(p)
+        || p->wire != (uint8_t)SUPPLY_WIRE_IDLE
+        || mv < PDMINI_V_MIN_MV || mv > PDMINI_V_MAX_MV
+        || ma < PDMINI_I_MIN_MA || ma > PDMINI_I_MAX_MA) {
+        return false;
+    }
+    if (p->regs[LINK_SP_OUTPUT] != 0u && mv > p->regs[LINK_SP_SET_MV]) {
+        return false;
+    }
+    p->regs[LINK_SP_OUTPUT] = 1u;
+    p->regs[LINK_SP_SET_MV] = mv;
+    p->regs[LINK_SP_SET_MA] = ma;
+    p->commanded = true;
+    return true;
+}
+
+void supply_page_hold(supply_page_t *p, bool held)
+{
+    if (p != NULL && p->held != held) {
+        p->held = held;
+        wire_publish(p);
+    }
 }

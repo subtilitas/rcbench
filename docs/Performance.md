@@ -228,10 +228,10 @@ Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
 differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
 runner's packaged one. Core 0's chain moves with it as well: ARM GNU 14.2
-gives 2,416 bytes, and the frames below are that build's.
+gives 2,488 bytes, and the frames below are that build's.
 
 Core 0's deepest chain is a write command to the KST programming port:
-`main` (392 bytes), `can_service` (344), `link_dev_dispatch`, `kst_write`,
+`main` (464 bytes), `can_service` (344), `link_dev_dispatch`, `kst_write`,
 `kst_port_write` (104), `kst_session_write` (256) and the write planner of
 `protocols/kst`, 1,272 bytes from `kst_plan_edit` down, of which the frame
 of its search step `detour` is 640. The plan and the staged image are held
