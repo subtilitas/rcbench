@@ -41,6 +41,7 @@ static const char *const k_ina3221_addr[] = { "0x40", "0x41", "0x42", "0x43" };
 static const char *const k_ina3221_ch[] = { "CH1", "CH1+2+3" };
 static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
+static const char *const k_servo_target[] = { "OUTPUTS", "PROG PORT" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
 static const char *const k_pdmini_baud[] = {
     "9600", "19200", "38400", "57600", "115200", "230400", "460800", "AUTO",
@@ -327,6 +328,29 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_SERVO_STALL_A] = {
         "srv_stall_a", "Stall threshold", "Above this the servo counts as stalled", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.05f, 2.0f, NULL, 0 },
+    /*
+     * The servo programmer's, set on its own page.  The ranges are the
+     * programming port's (kst_port.h) and the model's (kst_prog.h).
+     */
+    [SET_SERVO_PROG_V] = {
+        "srv_prog_v", "Programming voltage", "Supply of the servo while it is programmed", "V",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 1.0f, 8.4f, 0.1f, 5.0f, NULL, 0 },
+    [SET_SERVO_PROG_I] = {
+        "srv_prog_i", "Programming current", "The supply's limit while a servo is programmed", "A",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.05f, 3.0f, 0.001f, 1.0f, NULL, 0 },
+    [SET_SERVO_PROG_WAIT] = {
+        "srv_prog_wait", "Wait before PWM", "From the end of programming to the first pulse", "ms",
+        SET_CAT_SERVO, SET_TYPE_INT, 0, 10000, 1, 100, NULL, 0 },
+    /*
+     * What the SERVO screen's tester drives: the standard servo outputs or
+     * the programming port, and whether that port renders its pulse.
+     */
+    [SET_SERVO_TARGET] = {
+        "srv_target", "PWM target", "What the tester drives", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_servo_target) },
+    [SET_SERVO_PORT_PWM] = {
+        "srv_port_pwm", "Port PWM", "The programming port's pulse while it is the target", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
      * Stick programming's.  The supply it powers the ESC (electronic speed
      * controller) from, and how it hears the beeps.  No ESC has been

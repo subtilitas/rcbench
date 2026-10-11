@@ -1,6 +1,6 @@
 /*
- * The KST and Cha servo programmer on the SERVO screen: an overlay over the
- * screen's left card, opened with PROGRAM.
+ * The programmer for KST and Chaservo servos on the SERVO screen: an
+ * overlay over the screen's left card, opened with PROGRAM.
  *
  * The overlay draws kst_prog.h's model and turns touches into its calls.  It
  * holds no rule of its own: ranges, limits and warnings come from the model,
@@ -9,12 +9,12 @@
  * held, the keyboard for a name, and a warning page whose button is held
  * UI_HOLD_S.
  *
- * Five tabs.  SERVO: channel, port, read, the servo files on the card,
+ * Five tabs.  SERVO: the port, read, the servo files on the card,
  * restore, the write switch and the write.  TUNE, PULSE and FAILSAFE: the editable fields.
  * LOCKED: the fields that are shown and never written by an edit.
  *
- * The overlay stays open while the port holds a channel: PWM and
- * programming are exclusive states of that channel, and CLOSE asks for the
+ * The overlay stays open while the port holds its pin: PWM and
+ * programming are exclusive states of that pin, and CLOSE asks for the
  * way back first.
  *
  * The panel's control task owns the link.  It hands this a feed every frame
@@ -38,10 +38,14 @@
 extern "C" {
 #endif
 
-/** Lines a message takes at most, and the bytes of one. */
 /** The highest supply voltage a standard servo is rated for, mV: a
  *  programming voltage above it needs HV SERVO and a 2 s hold. */
 #define KST_PANEL_STD_MV 6000u
+/** Characters of a file name typed on the keyboard at most.  A file with a
+ *  longer name, up to 32 characters, is listed and loaded; a line that
+ *  names it shows its first 14 characters and "..". */
+#define KST_PANEL_NAME_TYPED 16
+/** Lines a message takes at most, and the bytes of one. */
 #define KST_PANEL_MSG_LINES 3
 #define KST_PANEL_LINE      96
 
@@ -55,12 +59,12 @@ void kst_panel_open(void);
 bool kst_panel_is_open(void);
 
 /**
- * CLOSE: closes while the port holds no channel, asks for the way back to
+ * CLOSE: closes while the tester has the port, asks for the way back to
  * PWM while it is in programming mode, and does nothing while it moves.
  */
 void kst_panel_close(void);
 
-/** The port holds a channel, or moves: the overlay is shown. */
+/** The port is in programming, or moves: the overlay is shown. */
 bool kst_panel_holds_port(void);
 
 /** The screen is left: presses, holds and editors go; the port stays. */

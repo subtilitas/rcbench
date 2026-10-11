@@ -61,11 +61,15 @@ SOURCES = [
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
     "shared/ui/servo_screen.c",
-    # The KST and Cha servo programmer on SERVO, and under it what the views
-    # drive it with: the link module, the coprocessor's port and the core.
+    # The programmer for KST and Chaservo servos on SERVO, and under it
+    # what the views drive it with: the link module, the coprocessor's
+    # port and the core.
     "shared/ui/kst_panel.c",
     "shared/bench/kst_prog.c",
     "shared/bench/kst_card.c",
+    "shared/bench/prog_link.c",
+    "shared/logfile/kst_store.c",
+    "protocols/kst/kst_file.c",
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
@@ -150,11 +154,26 @@ SCREENS = {
     # result box, the line and the plot.
     "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
-    # The KST and Cha servo programmer over the left card: each tab, each
-    # list and each page that asks for a hold, against the simulated servo.
+    # The programmer for KST and Chaservo servos over the left card: each
+    # tab, each list and each page that asks for a hold, against the
+    # simulated servo.
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
-    "servo-kst-channel": ("servo-kst-channel.png", "servo", "dark"),
+    # The tester drives the standard outputs: PROGRAM is locked.
+    "servo-kst-target": ("servo-kst-target.png", "servo", "dark"),
+    # A PD mini answers: the voltage and limit CONNECT sets, the list
+    # that holds them, their keypads and the hold above 6.0 V.
+    "servo-kst-supply": ("servo-kst-supply.png", "servo", "dark"),
+    "servo-kst-options": ("servo-kst-options.png", "servo", "dark"),
+    "servo-kst-voltage": ("servo-kst-voltage.png", "servo", "dark"),
+    "servo-kst-hv": ("servo-kst-hv.png", "servo", "dark"),
+    "servo-kst-wait": ("servo-kst-wait.png", "servo", "dark"),
+    # The same supply with the servo read, and LEAVE tapped.
+    "servo-kst-supplied": ("servo-kst-supplied.png", "servo", "dark"),
+    "servo-kst-leave-supply": ("servo-kst-leave-supply.png", "servo",
+                               "dark"),
+    # A port whose pin a slot holds.
+    "servo-kst-nopin": ("servo-kst-nopin.png", "servo", "dark"),
     "servo-kst-working": ("servo-kst-working.png", "servo", "dark"),
     "servo-kst-read": ("servo-kst-read.png", "servo", "dark"),
     "servo-kst-readonly": ("servo-kst-readonly.png", "servo", "dark"),
@@ -280,6 +299,8 @@ SCREENS = {
     # The same after a read of pages no binding describes, with the key
     # that unbinds every pin.
     "outputs-odd": ("outputs-odd.png", "outputs", "dark"),
+    # GP13 is the programming port's.
+    "outputs-prog": ("outputs-prog.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),

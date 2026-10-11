@@ -64,11 +64,14 @@ SOURCES = [
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
     "shared/ui/servo_screen.c",
-    # The KST and Cha servo programmer SERVO opens, and the core its model
-    # takes fields and limits from.
+    # The programmer for KST and Chaservo servos SERVO opens, and the
+    # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",
     "shared/bench/kst_prog.c",
     "shared/bench/kst_card.c",
+    "shared/bench/prog_link.c",
+    "shared/logfile/kst_store.c",
+    "protocols/kst/kst_file.c",
     "protocols/kst/kst_reg.c",
     "protocols/kst/kst_limits.c",
     "protocols/kst/kst_plan.c",

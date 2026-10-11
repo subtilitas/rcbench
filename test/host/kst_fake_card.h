@@ -1,43 +1,83 @@
 /*
- * A card for the KST servo programmer's tests: the files in memory, and the
- * answers of the card's side to a save, a list and a load.  A file is an
- * image and what the card's side says of it; no text is read here.
+ * A card for the servo programmer's tests: the directory in memory behind
+ * the 5 functions of kst_store_io_t, and kst_card_run() on it.
+ *
+ * A file is kept as what a test states of it: an image, a kind and a type.
+ * Its text is made by kst_file_format() when the store reads it, and a text
+ * the store writes is read back by kst_file_parse(), so every answer passes
+ * the code the panel runs.  A file may also be a text given as it is.
+ *
+ * A test of the model alone sets an answer instead: fake_card_t.fails for
+ * every request, fake_file_t.result for a load of one file.
  *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "kst_card.h"
+#include "kst_file.h"
 #include "kst_prog.h"
+#include "kst_store.h"
 
-#define FAKE_CARD_FILES 12u
+#define FAKE_CARD_FILES 80u
 
 typedef struct {
-    char name[KST_PROG_NAME_MAX];
+    char name[KST_PROG_NAME_MAX];   /* the base name */
     kst_image_t img;
-    uint8_t kind;       /* kst_prog_file_kind_t */
-    uint8_t type;       /* 0: the file names none */
-    uint8_t result;     /* what a load of it says before any compare */
-    uint8_t field;
-    uint16_t line;
+    uint8_t kind;       /* kst_prog_file_kind_t the text is written as */
+    uint8_t type;       /* 0: the text names none */
+    uint8_t result;     /* not 0: the answer to a load of it */
+    uint8_t field;      /* with result */
+    uint16_t line;      /* with result */
+    const char *text;   /* not NULL: the file's text as it is */
+    const char *as;     /* not NULL: the directory's name for it */
+    bool dir;           /* a directory */
 } fake_file_t;
 
 typedef struct {
     uint8_t fails;      /* kst_prog_card_result_t every request gets */
     bool silent;        /* no answer */
+    bool no_card;       /* nothing is mounted */
+    bool walk_fails;    /* the directory does not read to its end */
+    bool read_fails;
+    bool full;          /* no space for a new file */
+    bool write_fails;
+    unsigned pull_at;   /* not 0: the card is gone from this card call of
+                           the request on, counted from 1 */
+    unsigned calls;     /* card calls of the request */
     unsigned saves, lists, loads;
     unsigned n;
     fake_file_t file[FAKE_CARD_FILES];
+    kst_store_io_t io;
 } fake_card_t;
 
-static inline void fake_card_init(fake_card_t *c)
+static inline bool fake_card_same(const char *a, const char *b)
 {
-    memset(c, 0, sizeof(*c));
+    while (*a != '\0' && *b != '\0') {
+        if (toupper((unsigned char)*a) != toupper((unsigned char)*b)) {
+            return false;
+        }
+        a++;
+        b++;
+    }
+    return *a == *b;
 }
 
+/* The name the directory has for @p f. */
+static inline void fake_card_entry(const fake_file_t *f, char *out, size_t n)
+{
+    if (f->as != NULL) {
+        snprintf(out, n, "%s", f->as);
+    } else {
+        snprintf(out, n, "%s%s", f->name, KST_STORE_EXT);
+    }
+}
+
+/* The file by its base name. */
 static inline fake_file_t *fake_card_find(fake_card_t *c, const char *name)
 {
     for (unsigned i = 0; i < c->n; ++i) {
@@ -48,34 +88,169 @@ static inline fake_file_t *fake_card_find(fake_card_t *c, const char *name)
     return NULL;
 }
 
-/* The next free preset name; "" when none is left. */
-static inline void fake_card_preset(fake_card_t *c, char *out, size_t n)
+/* The file by the name the directory has for it. */
+static inline fake_file_t *fake_card_entry_find(fake_card_t *c,
+                                                const char *entry)
 {
-    for (unsigned i = 1; i <= 999u; ++i) {
-        snprintf(out, n, "KST%03u", i);
-        if (fake_card_find(c, out) == NULL) {
-            return;
+    char name[64];
+
+    for (unsigned i = 0; i < c->n; ++i) {
+        fake_card_entry(&c->file[i], name, sizeof(name));
+        if (!c->file[i].dir && fake_card_same(name, entry)) {
+            return &c->file[i];
         }
     }
-    out[0] = '\0';
+    return NULL;
 }
 
-static inline bool fake_card_name_ok(const char *s)
+/* Whether a line of a written text is one an edited text of the kind
+ * leaves out. */
+static inline bool fake_card_drops(const char *l, uint8_t kind, bool typed)
 {
-    const size_t len = strlen(s);
-
-    if (len == 0u || len > kst_card_name_max()) {
+    if (strncmp(l, "checksum", 8) == 0) {
+        return kind != KST_PROG_FILE_VERIFIED;
+    }
+    if (typed) {
         return false;
     }
-    for (size_t i = 0; i < len; ++i) {
-        const char ch = s[i];
+    return strncmp(l, "Type:", 5) == 0 || strncmp(l, "registers", 9) == 0
+           || (isxdigit((unsigned char)l[0]) && isxdigit((unsigned char)l[1])
+               && l[2] == ':');
+}
 
-        if (!((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9')
-              || ch == '-' || ch == '_')) {
+/* The text of @p f; returns its length. */
+static inline size_t fake_card_text(const fake_file_t *f, char *out,
+                                    size_t cap)
+{
+    char full[KST_FILE_MAX];
+    const bool typed = f->type != 0u && f->kind < KST_PROG_FILE_UNTYPED;
+    const uint8_t kind = typed ? f->kind : (uint8_t)KST_PROG_FILE_UNTYPED;
+    size_t len, n = 0, at = 0;
+
+    if (f->text != NULL) {
+        len = strlen(f->text);
+        memcpy(out, f->text, len < cap ? len : cap);
+        return len;
+    }
+    len = kst_file_format(&f->img, full, sizeof(full));
+    while (at < len) {
+        size_t end = at;
+
+        while (end < len && full[end] != '\n') {
+            end++;
+        }
+        end++;
+        if (!fake_card_drops(&full[at], kind, typed) && n + (end - at) <= cap) {
+            memcpy(&out[n], &full[at], end - at);
+            n += end - at;
+        }
+        at = end;
+    }
+    return n;
+}
+
+static inline bool fake_card_gone(fake_card_t *c)
+{
+    c->calls++;
+    return c->no_card || (c->pull_at != 0u && c->calls >= c->pull_at);
+}
+
+static inline bool fake_card_mounted(void *ctx)
+{
+    return !fake_card_gone((fake_card_t *)ctx);
+}
+
+static inline bool fake_card_walk(void *ctx, kst_store_visit_fn visit,
+                                  void *vctx)
+{
+    fake_card_t *c = (fake_card_t *)ctx;
+    char name[64];
+
+    if (fake_card_gone(c)) {
+        return false;
+    }
+    for (unsigned i = 0; i < c->n; ++i) {
+        if (c->walk_fails && i >= c->n / 2u) {
             return false;
         }
+        fake_card_entry(&c->file[i], name, sizeof(name));
+        visit(name, c->file[i].dir, vctx);
     }
-    return true;
+    return !c->walk_fails;
+}
+
+static inline int32_t fake_card_size(void *ctx, const char *name)
+{
+    fake_card_t *c = (fake_card_t *)ctx;
+    const fake_file_t *f = fake_card_entry_find(c, name);
+    char text[KST_FILE_MAX];
+
+    if (fake_card_gone(c) || f == NULL) {
+        return -1;
+    }
+    return (int32_t)fake_card_text(f, text, f->text != NULL ? 0u
+                                                             : sizeof(text));
+}
+
+static inline int32_t fake_card_read(void *ctx, const char *name, char *buf,
+                                     size_t cap)
+{
+    fake_card_t *c = (fake_card_t *)ctx;
+    const fake_file_t *f = fake_card_entry_find(c, name);
+    size_t len;
+
+    if (fake_card_gone(c) || f == NULL || c->read_fails) {
+        return -1;
+    }
+    len = fake_card_text(f, buf, cap);
+    return (int32_t)(len < cap ? len : cap);
+}
+
+static inline kst_store_io_result_t fake_card_create(void *ctx,
+                                                     const char *name,
+                                                     const char *data,
+                                                     size_t len)
+{
+    fake_card_t *c = (fake_card_t *)ctx;
+    kst_file_t file;
+    fake_file_t *f;
+    size_t base = strlen(name);
+
+    if (fake_card_gone(c) || c->write_fails) {
+        return KST_STORE_IO_ERROR;
+    }
+    if (fake_card_entry_find(c, name) != NULL) {
+        return KST_STORE_IO_EXISTS;
+    }
+    if (c->full || c->n >= FAKE_CARD_FILES) {
+        return KST_STORE_IO_FULL;
+    }
+    /* What is written reads back as a whole servo file, or the card's side
+     * wrote none. */
+    if (kst_file_parse(data, len, &file, NULL) != KST_FILE_OK
+        || file.kind != KST_FILE_VERIFIED
+        || base <= strlen(KST_STORE_EXT)
+        || base - strlen(KST_STORE_EXT) >= KST_PROG_NAME_MAX) {
+        return KST_STORE_IO_ERROR;
+    }
+    f = &c->file[c->n++];
+    memset(f, 0, sizeof(*f));
+    memcpy(f->name, name, base - strlen(KST_STORE_EXT));
+    f->img = file.image;
+    f->kind = KST_PROG_FILE_VERIFIED;
+    f->type = (uint8_t)kst_card_type(&file.image);
+    return KST_STORE_IO_OK;
+}
+
+static inline void fake_card_init(fake_card_t *c)
+{
+    memset(c, 0, sizeof(*c));
+    c->io.ctx = c;
+    c->io.mounted = fake_card_mounted;
+    c->io.walk = fake_card_walk;
+    c->io.size = fake_card_size;
+    c->io.read = fake_card_read;
+    c->io.create = fake_card_create;
 }
 
 /* A file as a save writes it. */
@@ -92,11 +267,24 @@ static inline fake_file_t *fake_card_put(fake_card_t *c, const char *name,
     return f;
 }
 
+/* A file with the text @p text, which outlives the card. */
+static inline fake_file_t *fake_card_put_text(fake_card_t *c,
+                                              const char *name,
+                                              const char *text)
+{
+    fake_file_t *f = &c->file[c->n++];
+
+    memset(f, 0, sizeof(*f));
+    snprintf(f->name, sizeof(f->name), "%s", name);
+    f->text = text;
+    return f;
+}
+
 /* False: no answer. */
 static inline bool fake_card_run(fake_card_t *c, const kst_prog_card_req_t *q,
                                  kst_prog_card_done_t *d)
 {
-    fake_file_t *f;
+    const fake_file_t *f;
 
     memset(d, 0, sizeof(*d));
     d->id = q->id;
@@ -115,59 +303,16 @@ static inline bool fake_card_run(fake_card_t *c, const kst_prog_card_req_t *q,
         d->result = c->fails;
         return true;
     }
-    switch (q->op) {
-    case KST_PROG_CARD_SAVE:
-        if (q->preset) {
-            fake_card_preset(c, d->name, sizeof(d->name));
-            if (d->name[0] == '\0' || c->n >= FAKE_CARD_FILES) {
-                d->result = KST_PROG_CARD_FULL;
-                return true;
-            }
-        } else if (!fake_card_name_ok(q->name)) {
-            d->result = KST_PROG_CARD_NAME;
-            return true;
-        } else if (fake_card_find(c, q->name) != NULL) {
-            d->result = KST_PROG_CARD_EXISTS;
-            return true;
-        } else if (c->n >= FAKE_CARD_FILES) {
-            d->result = KST_PROG_CARD_FULL;
-            return true;
-        } else {
-            snprintf(d->name, sizeof(d->name), "%s", q->name);
-        }
-        (void)fake_card_put(c, d->name, &q->image);
-        return true;
-    case KST_PROG_CARD_LIST:
-        d->total = (uint16_t)c->n;
-        for (unsigned i = q->first;
-             i < c->n && d->count < KST_PROG_FILES_MAX; ++i) {
-            snprintf(d->names[d->count], sizeof(d->names[0]), "%s",
-                     c->file[i].name);
-            d->types[d->count] = c->file[i].type;
-            d->count++;
-        }
-        fake_card_preset(c, d->name, sizeof(d->name));
-        return true;
-    default:
-        f = fake_card_find(c, q->name);
-        if (f == NULL) {
-            d->result = KST_PROG_CARD_READ_ERR;
-            return true;
-        }
+    f = q->op == KST_PROG_CARD_LOAD ? fake_card_find(c, q->name) : NULL;
+    if (f != NULL && f->result != KST_PROG_CARD_OK) {
+        d->result = f->result;
         d->kind = f->kind;
         d->type = f->type;
-        if (f->result != KST_PROG_CARD_OK) {
-            d->result = f->result;
-            d->field = f->field;
-            d->line = f->line;
-            return true;
-        }
-        if (f->type != 0u && f->type != kst_card_type(&q->image)) {
-            d->result = KST_PROG_CARD_TYPE;
-            d->servo_type = (uint8_t)kst_card_type(&q->image);
-            return true;
-        }
-        d->skipped = kst_card_merge(&q->image, &f->img, &d->image);
+        d->field = f->field;
+        d->line = f->line;
         return true;
     }
+    c->calls = 0;
+    kst_card_run(&c->io, q, d);
+    return true;
 }

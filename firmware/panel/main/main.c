@@ -54,7 +54,10 @@
 #include "heartbeat.h"
 #include "bind_link.h"
 #include "kst_link.h"
+#include "prog_link.h"
 #include "kst_panel.h"
+#include "kst_card.h"
+#include "kst_files.h"
 #include "kst_prog.h"
 #include "link_bringup.h"
 #include "link_host.h"
@@ -2539,8 +2542,9 @@ static void log_note(const char *line)
 }
 
 /*
- * The programmer's file, KST.TXT in the card's root: the record of a write
- * under way with the servo's values before it (kst_prog.h).  The render loop fills
+ * The programmer's record, KST.TXT in the card's directory KST beside the
+ * servo files (kst_store.h keeps the name free): a write under way with the
+ * servo's values before it (kst_prog.h).  The render loop fills
  * s_kst_file and counts s_kst_file_sent up; this task writes it, says in
  * s_kst_file_ok whether the card took it whole, and counts
  * s_kst_file_done up.  One file at a time: the render loop fills the
@@ -2549,7 +2553,7 @@ static void log_note(const char *line)
  * The text goes to KST.NEW and takes the name KST.TXT once the card holds
  * it whole, so that a write the card or the supply ends leaves one of the
  * two whole: KST.TXT as it was, or KST.NEW complete.  FAT has no rename
- * over a file, so KST.TXT is removed between the two; kst_file_load()
+ * over a file, so KST.TXT is removed between the two; kst_record_load()
  * takes a whole KST.NEW before KST.TXT.
  */
 #define KST_FILE_NAME "KST.TXT"
@@ -2562,17 +2566,16 @@ static atomic_uint s_kst_file_sent;
 static atomic_uint s_kst_file_done;
 static atomic_bool s_kst_file_ok;
 
-static void kst_file_write(void)
+static void kst_record_write(void)
 {
     const unsigned sent = atomic_load(&s_kst_file_sent);
     if (sent == atomic_load(&s_kst_file_done)) {
         return;
     }
     bool ok = false;
-    if (storage_mounted()) {
-        storage_path(CARD_DIR, KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
-        storage_path(CARD_DIR, KST_FILE_NEW, s_kst_path_new,
-                     sizeof(s_kst_path_new));
+    if (storage_mounted() && kst_files_dir()) {
+        kst_files_path(KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
+        kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));
         FILE *f = fopen(s_kst_path_new, "w");
         if (f != NULL) {
             ok = fwrite(s_kst_file, 1, s_kst_file_len, f) == s_kst_file_len;
@@ -2591,7 +2594,7 @@ static void kst_file_write(void)
 
 /* @p path into s_kst_file.  False for no file; @p len is 0 for a file that
  * does not read. */
-static bool kst_file_read(const char *path, size_t *len)
+static bool kst_record_read(const char *path, size_t *len)
 {
     FILE *f = fopen(path, "rb");
     if (f == NULL) {
@@ -2612,16 +2615,15 @@ static bool kst_file_read(const char *path, size_t *len)
  * record; a KST.TXT that does not read or does not parse is said on the
  * programmer's page and not used.
  */
-static void kst_file_load(void)
+static void kst_record_load(void)
 {
     if (!storage_mounted()) {
         return;
     }
     size_t len = 0;
-    storage_path(CARD_DIR, KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
-    storage_path(CARD_DIR, KST_FILE_NEW, s_kst_path_new,
-                 sizeof(s_kst_path_new));
-    if (kst_file_read(s_kst_path_new, &len)) {
+    kst_files_path(KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
+    kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));
+    if (kst_record_read(s_kst_path_new, &len)) {
         if (kst_prog_file_whole(s_kst_file, len)) {
             (void)kst_panel_file_load(s_kst_file, len);
             (void)unlink(s_kst_path);
@@ -2632,12 +2634,35 @@ static void kst_file_load(void)
         }
         (void)unlink(s_kst_path_new);
     }
-    if (!kst_file_read(s_kst_path, &len)) {
+    if (!kst_record_read(s_kst_path, &len)) {
         return;
     }
     if (!kst_panel_file_load(s_kst_file, len)) {
         ESP_LOGW(TAG, "%s is not readable and is not used", KST_FILE_NAME);
     }
+}
+
+/*
+ * A servo file request (kst_prog.h): list, load or save in the directory
+ * KST.  The render loop fills s_kst_card_req and counts s_kst_card_sent
+ * up; this task runs it on the card, leaves the answer in s_kst_card_done
+ * and counts s_kst_card_answered up.  One request at a time: the render
+ * loop takes the next from the model only while the two counts are equal,
+ * and reads the answer only after they are equal again.
+ */
+static kst_prog_card_req_t  s_kst_card_req;
+static kst_prog_card_done_t s_kst_card_done;
+static atomic_uint          s_kst_card_sent;
+static atomic_uint          s_kst_card_answered;
+
+static void kst_card_serve(void)
+{
+    const unsigned sent = atomic_load(&s_kst_card_sent);
+    if (sent == atomic_load(&s_kst_card_answered)) {
+        return;
+    }
+    kst_card_run(kst_files_io(), &s_kst_card_req, &s_kst_card_done);
+    atomic_store(&s_kst_card_answered, sent);
 }
 
 /*
@@ -2729,8 +2754,10 @@ static void log_task(void *arg)
         while (xQueueReceive(s_test_q, &tl, 0) == pdTRUE) {
             test_write(&tl);
         }
-        /* And the servo programmer's file, when one waits. */
-        kst_file_write();
+        /* And the servo programmer's record and its file request, when one
+         * waits. */
+        kst_record_write();
+        kst_card_serve();
     }
 }
 
@@ -3717,7 +3744,7 @@ static servo_source_t s_servo_source;
  * only. */
 static tone_link_t    s_tone_link;
 /*
- * The KST and Cha servo programmer's page, KST (4.12); see
+ * The page of the programmer for KST and Chaservo servos, KST (4.12); see
  * kst_link_service().  Control task only.
  *
  * The programmer's model (kst_prog.h) runs in the render loop.  It hands
@@ -3732,6 +3759,26 @@ static tone_link_t    s_tone_link;
  * that frame.
  */
 static kst_link_t         s_kst_link;
+/*
+ * The programming ports' page, PROG (4.13); see prog_link_service().
+ * Control task only.  What the SERVO screen wants of it crosses as two
+ * levels the render loop stores every frame, and the pin of port 0 goes
+ * back as one for the OUTPUTS screen's picker.
+ */
+static prog_link_t        s_prog_link;
+static atomic_uint        s_prog_want_target;
+static atomic_bool        s_prog_want_pwm;
+static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
+/*
+ * The supply command a programming port left on the SUPPLY page, for the
+ * SUPPLY screen's set points: the values, and a count the control task
+ * raises with each.  The render loop puts them on the screen and stores the
+ * count it served; until then the screen's older set points are not sent.
+ */
+static atomic_uint        s_supply_adopt_mv;
+static atomic_uint        s_supply_adopt_ma;
+static atomic_uint        s_supply_adopt_gen;
+static atomic_uint        s_supply_adopt_done;
 static uint32_t           s_kst_answer_id;
 static kst_link_start_t   s_kst_answer;
 static uint32_t           s_kst_outcomes;
@@ -3879,6 +3926,12 @@ static void supply_follow_set(void)
      * points under them already, and this is what the supply obeys. */
     const unsigned vmax = atomic_load(&s_supply_vmax_mv);
     const unsigned imax = atomic_load(&s_supply_imax_ma);
+    /* A programming port's command the screen has not taken yet: what the
+     * screen holds is older than the page. */
+    if (atomic_load(&s_supply_adopt_gen)
+        != atomic_load(&s_supply_adopt_done)) {
+        return;
+    }
     if (mv > vmax) {
         mv = vmax;
     }
@@ -4159,6 +4212,7 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     servo_source_init(&s_servo_source);
     tone_link_init(&s_tone_link);
     kst_link_init(&s_kst_link);
+    prog_link_init(&s_prog_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
     s_pump_live = true;
@@ -4561,6 +4615,55 @@ static bool s_servo_known;
  */
 static uint8_t s_servo_written;
 
+/*
+ * For the screen's SWEEP and its horn: there is something to move.  A
+ * programming port as target is one output; with the standard outputs it is
+ * a binding read with a surface in it.
+ */
+static void servo_surfaces_publish(void)
+{
+    atomic_store(&s_servo_surfaces,
+                 prog_link_target(&s_prog_link) != 0u
+                 || (s_servo_known && s_servo_channels != 0u));
+}
+
+/*
+ * One run's range and speed, to the standard outputs' CHAN_CFG or, with
+ * programming port @p port (1 + n) as target, to that port's registers.  A
+ * port is written as channel 0 of @p cfg.
+ */
+static bool servo_cfg_write(uint8_t port, uint8_t first, uint8_t count,
+                            const uint16_t *cfg, link_msg_t *reply)
+{
+    if (port != 0u) {
+        uint16_t regs[PROG_LINK_CFG_REGS];
+        prog_link_cfg(cfg, regs);
+        return write_regs(&s_host, LINK_PAGE_PROG,
+                          LINK_PG_REG(port - 1u, LINK_PG_SLEW),
+                          PROG_LINK_CFG_REGS, regs, reply)
+               && reply->op == LINK_OP_ACK;
+    }
+    return write_regs(&s_host, LINK_PAGE_CHAN_CFG,
+                      (uint8_t)(first * LINK_CC_STRIDE),
+                      (uint8_t)(count * LINK_CC_STRIDE),
+                      &cfg[(size_t)first * LINK_CC_STRIDE], reply)
+           && reply->op == LINK_OP_ACK;
+}
+
+/* And its command, 0 to LINK_CH_SPAN: CHANNELS, or the port's CMD. */
+static bool servo_cmd_write(uint8_t port, uint8_t first, uint8_t count,
+                            const uint16_t *cmd, link_msg_t *reply)
+{
+    if (port != 0u) {
+        return write_regs(&s_host, LINK_PAGE_PROG,
+                          LINK_PG_REG(port - 1u, LINK_PG_CMD), 1u, cmd, reply)
+               && reply->op == LINK_OP_ACK;
+    }
+    return write_regs(&s_host, LINK_PAGE_CHANNELS, first, count, &cmd[first],
+                      reply)
+           && reply->op == LINK_OP_ACK;
+}
+
 /* The channels of one run, as bits. */
 static uint8_t servo_run_bits(uint8_t first, uint8_t count)
 {
@@ -4694,6 +4797,21 @@ static void servo_resume_taken(uint16_t start_seq)
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
+    /*
+     * What a command moves is the target the PROG page holds (4.13): the
+     * standard outputs or a programming port.  Nothing is sent before the
+     * page is read, because whose pulse it would be is not known.  A release
+     * goes to the target in force, which is where the position was written;
+     * every other command waits until that target is the one the screen
+     * asks for (prog_link_service()).  A coprocessor without the page has
+     * the standard outputs.
+     */
+    if (!prog_link_ready(&s_prog_link)
+        || (sv.kind != SERVO_CMD_RELEASE
+            && !prog_link_settled(&s_prog_link))) {
+        return false;
+    }
+    const uint8_t port = prog_link_target(&s_prog_link);
     if (s_servo_sweep_unknown
         || ((s_servo_sweeping || s_servo_holding)
             && sv.kind != SERVO_CMD_SWEEP && sv.kind != SERVO_CMD_HOLD)) {
@@ -4808,7 +4926,7 @@ static bool write_servo(const servo_cmd_t sv)
         s_servo_holding  = true;
         /* From the send: the far end heard it no earlier than that. */
         s_servo_hold_ms  = sent;
-        s_servo_written |= s_servo_channels;
+        s_servo_written |= port != 0u ? (uint8_t)0x01u : s_servo_channels;
         return true;
     }
     /*
@@ -4835,10 +4953,11 @@ static bool write_servo(const servo_cmd_t sv)
      * ARMING_ACT_ARM refuses the arm and says so.  It is paid as soon as a
      * read succeeds, which the poll loop retries every second.
      */
-    if (!s_servo_known) {
+    if (port == 0u && !s_servo_known) {
         return false;
     }
-    const uint8_t mask = s_servo_channels;
+    /* A port is one output, kept as bit 0 of what was written. */
+    const uint8_t mask = port != 0u ? (uint8_t)0x01u : s_servo_channels;
     /*
      * Nothing is bound as a surface, or nothing is holding a position, so
      * there is nothing to say.  True rather than false: a false here would
@@ -4883,16 +5002,10 @@ static bool write_servo(const servo_cmd_t sv)
         for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
              at = (uint8_t)(first + count)) {
             if (ranged
-                && (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
-                                (uint8_t)(first * LINK_CC_STRIDE),
-                                (uint8_t)(count * LINK_CC_STRIDE),
-                                &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
-                    || reply.op != LINK_OP_ACK)) {
+                && !servo_cfg_write(port, first, count, cfg, &reply)) {
                 return false;
             }
-            if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
-                            &centre[first], &reply)
-                || reply.op != LINK_OP_ACK) {
+            if (!servo_cmd_write(port, first, count, centre, &reply)) {
                 return false;
             }
             /* Settled, so no longer holding anything.  Run by run, because a
@@ -4947,11 +5060,7 @@ static bool write_servo(const servo_cmd_t sv)
              */
             for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
                  at = (uint8_t)(first + count)) {
-                if (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
-                                (uint8_t)(first * LINK_CC_STRIDE),
-                                (uint8_t)(count * LINK_CC_STRIDE),
-                                &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
-                    || reply.op != LINK_OP_ACK) {
+                if (!servo_cfg_write(port, first, count, cfg, &reply)) {
                     return false;
                 }
                 if (servo_countermanded()) {
@@ -5129,19 +5238,13 @@ static bool write_servo(const servo_cmd_t sv)
          */
         for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
              at = (uint8_t)(first + count)) {
-            if (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
-                            (uint8_t)(first * LINK_CC_STRIDE),
-                            (uint8_t)(count * LINK_CC_STRIDE),
-                            &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
-                || reply.op != LINK_OP_ACK) {
+            if (!servo_cfg_write(port, first, count, cfg, &reply)) {
                 return false;
             }
             if (servo_countermanded()) {
                 return false;
             }
-            if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
-                            &cmd[first], &reply)
-                || reply.op != LINK_OP_ACK) {
+            if (!servo_cmd_write(port, first, count, cmd, &reply)) {
                 return false;
             }
             /* Landed, so this run is holding a position and a release owes
@@ -5966,6 +6069,24 @@ static void supply_link_service(void)
             reply.regs[LINK_SP_BAUD_FOUND] = SUPPLY_LINK_BAUD_AUTO;
         }
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
+        {
+            /*
+             * A programming port commanded the supply (4.13): this end's
+             * copy follows the page, so the next command written is the
+             * port's and not the one from before it, and the SUPPLY screen
+             * shows the set points in force.
+             */
+            bool     on;
+            uint16_t mv, ma;
+            if (supply_link_adopted(&s_supply_link, &on, &mv, &ma)) {
+                s_supply_set_mv_applied = mv;
+                s_supply_set_ma_applied = ma;
+                atomic_store(&s_supply_adopt_mv, mv);
+                atomic_store(&s_supply_adopt_ma, ma);
+                atomic_fetch_add(&s_supply_adopt_gen, 1u);
+                supply_switch(on);
+            }
+        }
         if (read) {
             atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
             /* 0 for a rate still being looked for: no rate in the header.
@@ -6450,6 +6571,46 @@ static __attribute__((noinline)) void kst_link_service(void)
     }
 }
 
+/*
+ * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
+ * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
+ * From poll_bench(); a coprocessor older than 4.13 is sent nothing.
+ *
+ * A pulse bit goes off whatever the bench does.  The target changes, and a
+ * pulse comes on, only on a bench at rest: disarmed, no sweep, no hold, no
+ * position held and no release owed.  A position still out is let go first,
+ * so the release reaches the target that renders it.
+ */
+static __attribute__((noinline)) void prog_link_service(void)
+{
+    prog_link_want(&s_prog_link, (uint8_t)atomic_load(&s_prog_want_target),
+                   atomic_load(&s_prog_want_pwm));
+    if (prog_link_read_due(&s_prog_link, now_ms())) {
+        link_msg_t reply = { 0 };
+        const bool read = read_regs(&s_host, LINK_PAGE_PROG, 0u,
+                                    (uint8_t)LINK_PG_REGS, &reply)
+                          && reply.op == LINK_OP_DATA;
+        prog_link_read(&s_prog_link, read ? reply.regs : NULL, now_ms());
+    }
+    const bool rest = !outputs_armed(&s_out) && !s_servo_sweeping
+                      && !s_servo_holding && !s_servo_sweep_unknown;
+    if (rest && prog_link_pending(&s_prog_link)) {
+        servo_let_go();
+    }
+    const bool quiet = rest && !s_servo_release_owed && s_servo_written == 0u
+                       && s_servo_held.kind == SERVO_CMD_NONE;
+    prog_link_write_t w;
+    if (prog_link_next(&s_prog_link, quiet, &w)) {
+        link_msg_t reply = { 0 };
+        const bool ack = write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u,
+                                    &w.value, &reply)
+                         && reply.op == LINK_OP_ACK;
+        prog_link_written(&s_prog_link, &w, ack);
+    }
+    atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
+    servo_surfaces_publish();
+}
+
 /* What the programmer's model is fed, as it stands.  Under the snapshot's
  * lock. */
 static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
@@ -6469,6 +6630,17 @@ static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->outcome     = s_kst_outcome;
     f->stopped     = arming_stopped(&s_arm);
     f->card        = storage_mounted();
+    f->target      = prog_link_target(&s_prog_link);
+    /* The PD mini's output while it is the supply, answers and is on. */
+    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
+    f->out_mv      = 0u;
+    f->out_ma      = 0u;
+    if (f->supply_read) {
+        const float mv = s_supply.v * 1000.0f + 0.5f;
+        const float ma = s_supply.i * 1000.0f + 0.5f;
+        f->out_mv = mv <= 0.0f ? 0u : mv >= 65535.0f ? 65535u : (uint16_t)mv;
+        f->out_ma = ma <= 0.0f ? 0u : ma >= 65535.0f ? 65535u : (uint16_t)ma;
+    }
 }
 
 /*
@@ -6540,6 +6712,9 @@ static bool poll_bench(bench_state_t *bench)
         /* And the servo programmer's: the coprocessor decides what it
          * starts, armed or not. */
         kst_link_service();
+        /* And the programming ports': the SERVO screen's target and the
+         * port's pulse switch. */
+        prog_link_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe, has lost the heartbeat or
@@ -6717,7 +6892,7 @@ static void read_outputs_binding(void)
         s_servo_channels = outputs_role_channels(r.slots, r.cfg,
                                                  OUT_ROLE_SURFACE);
         s_servo_known    = true;
-        atomic_store(&s_servo_surfaces, s_servo_channels != 0u);
+        servo_surfaces_publish();
         post_reading(&r);
         return;
     }
@@ -6729,7 +6904,7 @@ static void read_outputs_binding(void)
      */
     s_servo_channels = 0u;
     s_servo_known    = false;
-    atomic_store(&s_servo_surfaces, false);
+    servo_surfaces_publish();
     post_reading(&r);
     switch (r.state) {
     case BIND_READ_NO_BOARD:
@@ -6840,6 +7015,8 @@ static void link_came_up(const link_msg_t *reply)
     tone_link_alerts();
     /* And the servo programmer's page (4.12). */
     kst_link_came_up(&s_kst_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And the programming ports' (4.13): not known until it is read. */
+    prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
 
     /*
      * A board this build ships no catalogue for describes its own pins, so a
@@ -7035,6 +7212,10 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* An operation under way ends unanswered; the programmer
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
+            /* And no port is the target or names a pin. */
+            prog_link_lost(&s_prog_link);
+            atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
+            servo_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
@@ -7362,19 +7543,18 @@ static void kst_ui_service(void)
         }
     }
 
-    /* The servo files (kst_prog.h).  This image has no card side that
-     * reads or writes them: a save is answered as a card write error, a
-     * list and a load as a card that does not read.  A session's first
-     * write waits for its file, so no write to a servo starts. */
-    static kst_prog_card_req_t  creq;
-    static kst_prog_card_done_t cdone;
-    if (kst_panel_card_take(&creq)) {
-        memset(&cdone, 0, sizeof(cdone));
-        cdone.id     = creq.id;
-        cdone.result = creq.op == KST_PROG_CARD_SAVE
-                           ? KST_PROG_CARD_WRITE_ERR
-                           : KST_PROG_CARD_READ_ERR;
-        kst_panel_card_done(&cdone);
+    /* The servo files: the log task has the card.  No card call is made
+     * here. */
+    static bool card_out;
+    if (card_out
+        && atomic_load(&s_kst_card_answered)
+               == atomic_load(&s_kst_card_sent)) {
+        card_out = false;
+        kst_panel_card_done(&s_kst_card_done);
+    }
+    if (!card_out && kst_panel_card_take(&s_kst_card_req)) {
+        atomic_fetch_add(&s_kst_card_sent, 1u);
+        card_out = true;
     }
 
     if (file_out) {
@@ -7638,9 +7818,17 @@ static void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
+    /* A programming port's command on the supply, onto the screen before
+     * the screen's set points are published; see s_supply_adopt_mv. */
+    const unsigned adopt = atomic_load(&s_supply_adopt_gen);
+    if (adopt != atomic_load(&s_supply_adopt_done)) {
+        supply_screen_put((float)atomic_load(&s_supply_adopt_mv) / 1000.0f,
+                          (float)atomic_load(&s_supply_adopt_ma) / 1000.0f);
+    }
     /* The limits and the set points first, as levels; see
      * s_supply_set_mv. */
     publish_supply_levels();
+    atomic_store(&s_supply_adopt_done, adopt);
     supply_cmd_t sc;
     if (supply_screen_poll_cmd(&sc)) {
         if (sc.on) {
@@ -7818,7 +8006,7 @@ void app_main(void)
     publish_supply_levels();
     /* The servo programmer's record of a write that a restart cut
      * short. */
-    kst_file_load();
+    kst_record_load();
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
@@ -8010,6 +8198,13 @@ void app_main(void)
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
+            /* What the tester drives and whether the port renders its
+             * pulse, to the control task; the port's pin, to the picker. */
+            atomic_store(&s_prog_want_target,
+                         (unsigned)settings_get_int(SET_SERVO_TARGET));
+            atomic_store(&s_prog_want_pwm,
+                         settings_get_bool(SET_SERVO_PORT_PWM));
+            outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),

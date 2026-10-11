@@ -160,6 +160,7 @@ static inline void rig_port_fresh(void)
 static inline void rig_fresh(void)
 {
     memset(&g_rig, 0, sizeof(g_rig));
+    fake_card_init(&g_rig.fc);
     sim_init(&g_rig.sim);
     g_rig.target = 1u + RIG_PORT;
     g_rig.safe = true;

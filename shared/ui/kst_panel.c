@@ -1,5 +1,6 @@
 /*
- * The KST and Cha servo programmer's overlay.  See kst_panel.h.
+ * The overlay of the programmer for KST and Chaservo servos.  See
+ * kst_panel.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,6 +15,7 @@
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
+#include "settings.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -43,7 +45,7 @@ enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
 
 enum {
-    A_REBOOT = 0, A_PORT, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
+    A_PORT = 0, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
     A_WRITE
 };
 
@@ -54,8 +56,7 @@ typedef struct {
 } row_t;
 
 static const row_t k_rows[] = {
-    { PG_SERVO, 0, 0, 0, K_ACT, A_REBOOT, TX_KP_REBOOT, NULL },
-    { PG_SERVO, 0, 1, 0, K_ACT, A_PORT, -1, "PORT" },
+    { PG_SERVO, 0, 0, 1, K_ACT, A_PORT, -1, "PORT" },
     { PG_SERVO, 1, 0, 0, K_ACT, A_READ, -1, "SERVO" },
     { PG_SERVO, 1, 1, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
     { PG_SERVO, 2, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
@@ -153,7 +154,8 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_LOADED_EDITED]   = { TX_KP_M_LOADED, TX_KP_FILE_EDITED },
     [KST_PROG_MSG_LOADED_UNTYPED]  = { TX_KP_M_LOADED, TX_KP_FILE_UNTYPED },
     [KST_PROG_MSG_NEED_TARGET]     = { TX_KP_NEED_TARGET, TX_KP_NEED_TARGET_2 },
-    [KST_PROG_MSG_REBOOTED]        = { TX_KP_M_REBOOTED, -1 },
+    [KST_PROG_MSG_LEAVE_SUPPLY]    = { TX_KP_M_LEAVE_SUPPLY,
+                                       TX_KP_M_LEAVE_SUPPLY_2 },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -288,15 +290,16 @@ enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES };
 #define FILES_SAVE (-1)       /* the list's first entry: a new file */
 #define FILES_NEXT (-2)       /* its last: the files behind these   */
 enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE, MORE_VOLTAGE,
-       MORE_CURRENT };
+       MORE_CURRENT, MORE_WAIT };
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
 enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
-       W_CHECK, W_REBOOT, W_HV };
+       W_CHECK, W_HV };
 
 /* The keypad edits what an ENTER asks of the supply, not a row. */
 #define KP_VOLTAGE (-1)
 #define KP_CURRENT (-2)
+#define KP_WAIT    (-3)
 #define CHOICE_MAX 8
 #define WARN_LINES 9
 /* The lines a page gives to the warnings of soft limits. */
@@ -308,8 +311,6 @@ static struct {
     bool       open;
     ui_tabs_t  tabs;
     bool       hv;             /* HV SERVO: above KST_PANEL_STD_MV may be set */
-    uint8_t    rail;           /* the port's state the countdown is of */
-    uint32_t   rail_ms;        /* when it was first read */
 
     ui_keypad_t kp;
     int        kp_row;
@@ -606,6 +607,19 @@ ui_keypad_t *kst_panel_keypad(void)
     return &k.kp;
 }
 
+/* A file name as a line shows it: whole up to KST_PANEL_NAME_TYPED
+ * characters, else its start and "..". */
+static const char *shown(const char *name)
+{
+    static char s[KST_PANEL_NAME_TYPED + 1];
+
+    if (strlen(name) <= (size_t)KST_PANEL_NAME_TYPED) {
+        return name;
+    }
+    snprintf(s, sizeof(s), "%.*s..", KST_PANEL_NAME_TYPED - 2, name);
+    return s;
+}
+
 ui_textkey_t *kst_panel_textkey(void)
 {
     return &k.tk;
@@ -767,7 +781,7 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         break;
     case TX_KP_M_SAVED:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_SAVED),
-                 kst_prog_card_name(&k.prog));
+                 shown(kst_prog_card_name(&k.prog)));
         break;
     case TX_KP_M_LOAD_TYPE:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_TYPE), arg & 0xFFu,
@@ -775,15 +789,15 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         break;
     case TX_KP_M_LOAD_SAME:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_SAME),
-                 kst_prog_card_name(&k.prog));
+                 shown(kst_prog_card_name(&k.prog)));
         break;
     case TX_KP_M_LOADED:
         if ((arg & 0xFFu) == 1u) {
             snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOADED_ONE),
-                     kst_prog_card_name(&k.prog));
+                     shown(kst_prog_card_name(&k.prog)));
         } else {
             snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOADED),
-                     kst_prog_card_name(&k.prog), arg & 0xFFu);
+                     shown(kst_prog_card_name(&k.prog)), arg & 0xFFu);
         }
         break;
     default:
@@ -815,8 +829,13 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         }
     }
     if (id >= KST_PROG_MSG_SES && m->reg != 0xFFu && n < KST_PANEL_MSG_LINES) {
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_AT_REG), (unsigned)m->reg,
-                 arg);
+        if (arg == 1u) {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_AT_REG_ONE),
+                     (unsigned)m->reg);
+        } else {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_AT_REG),
+                     (unsigned)m->reg, arg);
+        }
     }
     return n;
 }
@@ -998,10 +1017,11 @@ static void warn_file(void)
     warn_open(W_SOFT, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD));
     if (differing(kst_prog_soft_image(p)) == 1u) {
         snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE,
-                 TR(KP_FILE_DIFF_ONE), kst_prog_card_name(p));
+                 TR(KP_FILE_DIFF_ONE), shown(kst_prog_card_name(p)));
     } else {
         snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_FILE_DIFF),
-                 kst_prog_card_name(p), differing(kst_prog_soft_image(p)));
+                 shown(kst_prog_card_name(p)),
+                 differing(kst_prog_soft_image(p)));
     }
     if (kind >= 0) {
         warn_text(KST_PROG_INFO, ui_tr((ui_text_id_t)kind));
@@ -1075,12 +1095,17 @@ static void warn_release(void)
     (void)warn_no_file();
 }
 
+static void options_keep(void);
+
+/* The way back to PWM.  With a PD mini answering there is none in this
+ * link version and the model says so: no page is asked for it. */
 static void warn_leave(void)
 {
-    const bool rail = flag(LINK_KS_F_RAIL);
-
-    warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),
-              rail ? TR(KP_HOLD_CYCLE) : TR(KP_HOLD_UNPLUGGED));
+    if (flag(LINK_KS_F_RAIL)) {
+        (void)kst_prog_leave(&k.prog);
+        return;
+    }
+    warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE));
     if (kst_prog_in_doubt(&k.prog)) {
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_1));
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_2));
@@ -1089,26 +1114,7 @@ static void warn_leave(void)
         warn_text(KST_PROG_WARN, TR(KP_LEAVE_CHANGES));
     }
     warn_text(KST_PROG_INFO, TR(KP_LEAVE_1));
-    if (rail) {
-        snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_LEAVE_RAIL_1),
-                 (unsigned)(KST_PORT_RAIL_OFF_MS / 1000u),
-                 (unsigned)(KST_PORT_RAIL_WAIT_MS / 1000u));
-        warn_text(KST_PROG_INFO, TR(KP_LEAVE_RAIL_2));
-    } else {
-        warn_text(KST_PROG_WARN, TR(KP_LEAVE_UNPLUG_1));
-        warn_text(KST_PROG_INFO, TR(KP_LEAVE_UNPLUG_2));
-    }
-}
-
-/* The tester has the port and a PD mini answers: the supply goes off and
- * on under every servo it feeds. */
-static void warn_reboot(void)
-{
-    warn_open(W_REBOOT, false, TR(KP_REBOOT), TR(KP_HOLD_CYCLE));
-    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_LEAVE_RAIL_1),
-             (unsigned)(KST_PORT_RAIL_OFF_MS / 1000u),
-             (unsigned)(KST_PORT_RAIL_WAIT_MS / 1000u));
-    warn_text(KST_PROG_WARN, TR(KP_LEAVE_RAIL_2));
+    warn_text(KST_PROG_WARN, TR(KP_LEAVE_2));
 }
 
 /* A programming voltage above what a standard servo is rated for. */
@@ -1171,16 +1177,14 @@ static void warn_apply(void)
             (void)kst_prog_release(&k.prog);
         }
         break;
-    case W_REBOOT:
-        (void)kst_prog_reboot(&k.prog, port_no());
-        break;
     case W_HV:
         if (k.hv) {
             kst_prog_supply_set(&k.prog, mv, kst_prog_supply_ma(&k.prog));
+            options_keep();
         }
         break;
     default:
-        (void)kst_prog_power_cycled(&k.prog);
+        (void)kst_prog_leave(&k.prog);
         break;
     }
 }
@@ -1208,7 +1212,7 @@ static void name_open(unsigned why)
                     why == KST_PROG_MSG_NAME_EXISTS ? TR(KP_NAME_EXISTS)
                     : why == KST_PROG_MSG_NAME_BAD  ? TR(KP_NAME_BAD)
                                                     : TR(KP_NAME_TITLE),
-                    k.name, (int)kst_card_name_max());
+                    k.name, KST_PANEL_NAME_TYPED);
 }
 
 /* The name is typed: the save, and the keyboard again for a name the card's
@@ -1246,7 +1250,7 @@ static void files_open(void)
         const unsigned type = kst_prog_file_type(p, i);
 
         if (type != 0u) {
-            snprintf(label, sizeof(label), "%-16sV%u",
+            snprintf(label, sizeof(label), "%-16s V%u",
                      kst_prog_file_name(p, i), type);
         } else {
             snprintf(label, sizeof(label), "%s", kst_prog_file_name(p, i));
@@ -1356,6 +1360,32 @@ static uint16_t supply_max_mv(void)
                 : (uint16_t)KST_PANEL_STD_MV;
 }
 
+/* The programmer's options as the settings keep them. */
+static void options_keep(void)
+{
+    settings_set(SET_SERVO_PROG_V,
+                 (float)kst_prog_supply_mv(&k.prog) / 1000.0f);
+    settings_set(SET_SERVO_PROG_I,
+                 (float)kst_prog_supply_ma(&k.prog) / 1000.0f);
+    settings_set(SET_SERVO_PROG_WAIT, (float)kst_prog_wait_ms(&k.prog));
+    settings_request_save();
+}
+
+/* The options from the settings.  A stored voltage above a standard
+ * servo's is not used until HV SERVO is on. */
+static void options_load(void)
+{
+    long mv = lroundf(settings_get(SET_SERVO_PROG_V) * 10.0f) * 100L;
+    const long ma = lroundf(settings_get(SET_SERVO_PROG_I) * 1000.0f);
+    const int wait = settings_get_int(SET_SERVO_PROG_WAIT);
+
+    if (mv > (long)supply_max_mv()) {
+        mv = (long)KST_PROG_SUPPLY_MV;
+    }
+    kst_prog_supply_set(&k.prog, (uint16_t)mv, (uint16_t)ma);
+    (void)kst_prog_wait_set(&k.prog, (uint32_t)wait);
+}
+
 static void keypad_done(float v)
 {
     if (k.kp_row == KP_VOLTAGE) {
@@ -1369,6 +1399,7 @@ static void keypad_done(float v)
         } else {
             kst_prog_supply_set(&k.prog, (uint16_t)mv,
                                 kst_prog_supply_ma(&k.prog));
+            options_keep();
         }
         return;
     }
@@ -1378,6 +1409,15 @@ static void keypad_done(float v)
         if (ma >= (long)PDMINI_I_MIN_MA && ma <= (long)PDMINI_I_MAX_MA) {
             kst_prog_supply_set(&k.prog, kst_prog_supply_mv(&k.prog),
                                 (uint16_t)ma);
+            options_keep();
+        }
+        return;
+    }
+    if (k.kp_row == KP_WAIT) {
+        const long ms = lroundf(v);
+
+        if (ms >= 0L && kst_prog_wait_set(&k.prog, (uint32_t)ms)) {
+            options_keep();
         }
         return;
     }
@@ -1414,16 +1454,6 @@ static void act(const row_t *r)
     const kst_prog_state_t st = kst_prog_state(p);
 
     switch (r->what) {
-    case A_REBOOT:
-        if (!flag(LINK_KS_F_RAIL)) {
-            /* No supply to switch: the port says so. */
-            (void)kst_prog_reboot(p, port_no());
-        } else if (st == KST_PROG_PROGRAMMING) {
-            warn_leave();
-        } else {
-            warn_reboot();
-        }
-        break;
     case A_PORT:
         if (st == KST_PROG_PWM) {
             (void)kst_prog_connect(p, port_no());
@@ -1463,6 +1493,9 @@ static void act(const row_t *r)
             snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
                      (unsigned)kst_prog_supply_ma(p));
             choice_add(label, MORE_CURRENT);
+            snprintf(label, sizeof(label), TR(KP_PWM_WAIT),
+                     (unsigned)kst_prog_wait_ms(p));
+            choice_add(label, MORE_WAIT);
         } else {
             choice_add(TR(KP_VERIFY), MORE_VERIFY);
             choice_add(TR(KP_DISCARD), MORE_DISCARD);
@@ -1540,6 +1573,11 @@ static void choice_done(int value)
                        (float)kst_prog_supply_ma(p), (float)PDMINI_I_MIN_MA,
                        (float)PDMINI_I_MAX_MA, 0);
         k.kp_row = KP_CURRENT;
+    } else if (value == MORE_WAIT) {
+        ui_keypad_open(&k.kp, k.area, TR(KP_PWM_WAIT_TITLE), "ms",
+                       (float)kst_prog_wait_ms(p), 0.0f,
+                       (float)KST_PROG_WAIT_MAX_MS, 0);
+        k.kp_row = KP_WAIT;
     } else if (value == MORE_VERIFY) {
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {
@@ -1568,9 +1606,6 @@ static bool row_live(const row_t *r)
         return kst_prog_editable(p) && st == KST_PROG_PROGRAMMING;
     }
     switch (r->what) {
-    case A_REBOOT:
-        return st == KST_PROG_PROGRAMMING
-            || (st == KST_PROG_PWM && on_port());
     case A_PORT:
         return (st == KST_PROG_PWM && on_port())
             || st == KST_PROG_PROGRAMMING
@@ -1875,6 +1910,7 @@ void kst_panel_init(gfx_rect_t area)
     ui_tabs_init_text(&k.tabs, k_pages, PG_COUNT, tabs_rect());
     k.kp.pressed = -1;
     k.tk.pressed = -1;
+    options_load();
 }
 
 void kst_panel_screen_entry(void)
@@ -1887,6 +1923,10 @@ void kst_panel_open(void)
 {
     if (!k.open) {
         k.open = true;
+        if (!kst_panel_holds_port()) {
+            /* The settings may have gone back to their defaults. */
+            options_load();
+        }
         ++k.rev;
     }
 }
@@ -1915,33 +1955,6 @@ uint32_t kst_panel_hold_revision(void)
 }
 
 /* Everything of the model a render shows, as one number. */
-/* What is left of the supply's off time or of the servo's start, counted
- * from the frame that first read the state; 0 outside both. */
-static uint32_t rail_left_ms(void)
-{
-    const kst_prog_t *p = &k.prog;
-    const uint32_t all = k.rail == LINK_KST_RAIL_OFF  ? KST_PORT_RAIL_OFF_MS
-                       : k.rail == LINK_KST_RAIL_WAIT ? KST_PORT_RAIL_WAIT_MS
-                       : 0u;
-    const uint32_t gone = (uint32_t)(p->f.now_ms - k.rail_ms);
-
-    return gone < all ? all - gone : 0u;
-}
-
-static void rail_follow(void)
-{
-    const kst_prog_t *p = &k.prog;
-    const uint8_t now = p->fed && p->f.rd.known
-                        && (p->f.rd.port == LINK_KST_RAIL_OFF
-                            || p->f.rd.port == LINK_KST_RAIL_WAIT)
-                            ? (uint8_t)p->f.rd.port : 0u;
-
-    if (now != k.rail) {
-        k.rail = now;
-        k.rail_ms = p->f.now_ms;
-    }
-}
-
 static uint32_t signature(void)
 {
     const kst_prog_t *p = &k.prog;
@@ -1958,7 +1971,7 @@ static uint32_t signature(void)
         (uint32_t)(kst_prog_load_skipped(p) >> 32),
         p->f.target, p->f.supply_read, p->f.out_mv, p->f.out_ma,
         kst_prog_supply_mv(p), kst_prog_supply_ma(p), k.hv,
-        rail_left_ms() / 100u,
+        kst_prog_wait_ms(p),
     };
     uint32_t h = 2166136261u;
 
@@ -1994,7 +2007,6 @@ static void model_moved(void)
 void kst_panel_feed(const kst_prog_feed_t *f)
 {
     kst_prog_feed(&k.prog, f);
-    rail_follow();
     model_moved();
 }
 
@@ -2156,7 +2168,6 @@ static void state_line(char *out, size_t n)
 {
     const kst_prog_t *p = &k.prog;
     const unsigned ch = (unsigned)kst_prog_port(p) + 1u;
-    const uint32_t left = rail_left_ms();
 
     switch (kst_prog_state(p)) {
     case KST_PROG_DOWN:
@@ -2195,18 +2206,14 @@ static void state_line(char *out, size_t n)
         }
         break;
     case KST_PROG_WORKING:
-        snprintf(out, n, TR(KP_STATE_WORKING), (unsigned)p->f.rd.frames);
+        if (p->f.rd.frames == 1u) {
+            snprintf(out, n, "%s", TR(KP_STATE_WORKING_ONE));
+        } else {
+            snprintf(out, n, TR(KP_STATE_WORKING), (unsigned)p->f.rd.frames);
+        }
         break;
     default:
-        if (k.rail == LINK_KST_RAIL_OFF) {
-            snprintf(out, n, TR(KP_STATE_RAIL_OFF), (unsigned)(left / 1000u),
-                     (unsigned)(left % 1000u / 100u));
-        } else if (k.rail == LINK_KST_RAIL_WAIT) {
-            snprintf(out, n, TR(KP_STATE_RAIL_WAIT), (unsigned)(left / 1000u),
-                     (unsigned)(left % 1000u / 100u));
-        } else {
-            snprintf(out, n, "%s", TR(KP_STATE_LEAVING));
-        }
+        snprintf(out, n, "%s", TR(KP_STATE_LEAVING));
         break;
     }
 }
@@ -2272,7 +2279,7 @@ static void draw_notes(gfx_canvas_t *c)
         }
         if (kst_prog_backed_up(p)) {
             snprintf(buf, sizeof(buf), TR(KP_BACKUP_FILE),
-                     kst_prog_backup_name(p));
+                     shown(kst_prog_backup_name(p)));
             line(c, 4, buf, faint);
         } else if (kst_prog_no_file(p)) {
             line(c, 4, TR(KP_NO_BACKUP_FILE), ui_theme_color(UI_C_WARN));
@@ -2320,9 +2327,6 @@ static void act_value(const row_t *r, char *out, size_t n)
     const kst_prog_state_t st = kst_prog_state(p);
 
     switch (r->what) {
-    case A_REBOOT:
-        snprintf(out, n, "%s", TR(KP_REBOOT_GO));
-        break;
     case A_PORT:
         snprintf(out, n, "%s",
                  st == KST_PROG_ENTERING || st == KST_PROG_WORKING

@@ -1,5 +1,5 @@
 /*
- * The KST servo programmer's state: see kst_prog.h.
+ * The state of the programmer for KST and Chaservo servos: see kst_prog.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -68,7 +68,6 @@ static kst_prog_level_t level_of(unsigned id)
     case KST_PROG_MSG_RESTORED:
     case KST_PROG_MSG_RELEASED:
     case KST_PROG_MSG_LEFT:
-    case KST_PROG_MSG_REBOOTED:
     case KST_PROG_MSG_SAVED:
     case KST_PROG_MSG_LOADED:
     case KST_PROG_MSG_LOADED_EDITED:
@@ -355,7 +354,7 @@ static void adopt(kst_prog_t *p)
 
 /*
  * Whether the servo read can be the one the journal records: on its
- * channel, and equal to it in every field that the interrupted write left
+ * port, and equal to it in every field that the interrupted write left
  * alone and that no edit reaches.  A register a plan writes can hold a
  * third value (kst_plan.h), so the fields the write changes say nothing.
  */
@@ -456,10 +455,6 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_POWER_CYCLED:
         session_gone(p);
         (void)say(p, KST_PROG_MSG_LEFT, 0);
-        break;
-    case LINK_KST_OP_REBOOT:
-        session_gone(p);
-        (void)say(p, KST_PROG_MSG_REBOOTED, 0);
         break;
     default:
         break;
@@ -594,6 +589,7 @@ void kst_prog_init(kst_prog_t *p)
     p->msg.reg = 0xFFu;
     p->supply_mv = KST_PROG_SUPPLY_MV;
     p->supply_ma = KST_PROG_SUPPLY_MA;
+    p->pwm_wait_ms = KST_PROG_WAIT_MS;
 }
 
 void kst_prog_screen_entry(kst_prog_t *p)
@@ -752,9 +748,8 @@ kst_prog_state_t kst_prog_state(const kst_prog_t *p)
         if (p->op == LINK_KST_OP_ENTER) {
             return KST_PROG_ENTERING;
         }
-        return p->op == LINK_KST_OP_POWER_CYCLED
-                    || p->op == LINK_KST_OP_REBOOT ? KST_PROG_LEAVING
-                                                   : KST_PROG_WORKING;
+        return p->op == LINK_KST_OP_POWER_CYCLED ? KST_PROG_LEAVING
+                                                 : KST_PROG_WORKING;
     }
     switch (p->f.rd.port) {
     case LINK_KST_PWM:
@@ -1051,7 +1046,7 @@ void kst_prog_discard(kst_prog_t *p)
 
 /* --------------------------------------------------------------- operations */
 
-/* What keeps the tester's port from an ENTER or a REBOOT. */
+/* What keeps the tester's port from an ENTER. */
 static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
 {
     if (p->f.stopped) {
@@ -1079,25 +1074,6 @@ kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
     p->port = port;
     p->chain_read = true;
     r = request(p, LINK_KST_OP_ENTER);
-    send(p, &r);
-    return KST_PROG_MSG_NONE;
-}
-
-kst_prog_msg_id_t kst_prog_reboot(kst_prog_t *p, uint8_t port)
-{
-    kst_link_request_t r;
-    kst_prog_msg_id_t m = idle(p);
-
-    if (m == KST_PROG_MSG_NEED_PORT) {
-        m = from_pwm(p, port);
-        if (m == KST_PROG_MSG_NONE) {
-            p->port = port;
-        }
-    }
-    if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
-    }
-    r = request(p, LINK_KST_OP_REBOOT);
     send(p, &r);
     return KST_PROG_MSG_NONE;
 }
@@ -1462,7 +1438,17 @@ void kst_prog_forget(kst_prog_t *p)
     }
 }
 
-kst_prog_msg_id_t kst_prog_power_cycled(kst_prog_t *p)
+/*
+ * The end of a session.  The servo is taken to need no power cycle: the
+ * port goes back to PWM with the supply as it is.
+ *
+ * Link 4.13 has one command from PROGRAMMING to PWM, POWER_CYCLED, and with
+ * a PD mini answering the port cycles the supply on it.  That command is
+ * sent only where no PD mini answers, where it changes nothing but the
+ * port's state.  A command that leaves the supply alone and waits pwm_wait_ms
+ * before the first pulse replaces it here.
+ */
+kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p)
 {
     kst_link_request_t r;
     const kst_prog_msg_id_t m = idle(p);
@@ -1470,9 +1456,26 @@ kst_prog_msg_id_t kst_prog_power_cycled(kst_prog_t *p)
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, 0);
     }
+    if ((p->f.rd.flags & LINK_KS_F_RAIL) != 0u) {
+        return say(p, KST_PROG_MSG_LEAVE_SUPPLY, 0);
+    }
     r = request(p, LINK_KST_OP_POWER_CYCLED);
     send(p, &r);
     return KST_PROG_MSG_NONE;
+}
+
+bool kst_prog_wait_set(kst_prog_t *p, uint32_t ms)
+{
+    if (ms > KST_PROG_WAIT_MAX_MS) {
+        return false;
+    }
+    p->pwm_wait_ms = (uint16_t)ms;
+    return true;
+}
+
+uint16_t kst_prog_wait_ms(const kst_prog_t *p)
+{
+    return p->pwm_wait_ms;
 }
 
 void kst_prog_abort(kst_prog_t *p)
@@ -1752,6 +1755,10 @@ static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     }
     if (d->result == KST_PROG_CARD_VALUE) {
         (void)say_reg(p, KST_PROG_MSG_LOAD_VALUE, d->line, d->field);
+        return;
+    }
+    if (d->result == KST_PROG_CARD_LIMIT) {
+        (void)say(p, KST_PROG_MSG_LOAD_REFUSED, d->rule);
         return;
     }
     if (d->result == KST_PROG_CARD_TYPE) {

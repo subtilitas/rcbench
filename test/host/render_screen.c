@@ -316,7 +316,7 @@ static void drag(int x, int y0, int y1)
 }
 
 
-/* ------------------------------------------- the KST and Cha servo programmer */
+/* ------------------------------ the programmer for KST and Chaservo servos */
 
 static void ktap(gfx_rect_t r)
 {
@@ -482,7 +482,7 @@ static bool kst_file_view(const char *v)
         if (strcmp(v, "-name-exists") == 0 || strcmp(v, "-name-bad") == 0
             || strcmp(v, "-name-saved") == 0) {
             const char *name = strcmp(v, "-name-exists") == 0 ? "WING-L"
-                               : strcmp(v, "-name-bad") == 0 ? "A.B"
+                               : strcmp(v, "-name-bad") == 0 ? "CON"
                                                              : "WING-R";
             static const char chars[] =
                 "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
@@ -554,20 +554,71 @@ static void kst_view(const char *view)
                   || strcmp(v, "-restore") == 0
                   || strcmp(v, "-other") == 0;
 
+    const bool supply = strcmp(v, "-supply") == 0
+                     || strcmp(v, "-options") == 0
+                     || strcmp(v, "-voltage") == 0 || strcmp(v, "-hv") == 0
+                     || strcmp(v, "-wait") == 0
+                     || strcmp(v, "-supplied") == 0
+                     || strcmp(v, "-leave-supply") == 0;
+
     rig_fresh();
     g_rig.card = true;
+    g_rig.rail = supply;
+    g_rig.load_ma = 37u;
+    g_rig.no_pin = strcmp(v, "-nopin") == 0;
+    if (strcmp(v, "-target") == 0) {
+        g_rig.target = 0u;
+    }
     if (strcmp(v, "-readonly") == 0) {
         g_rig.sim.reg[0x06] = 0x05u;
     }
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
     ui_router_goto(SCREEN_SERVO);
+    if (strcmp(v, "-hv") == 0) {
+        /* HV SERVO on the TEST tab of SETTINGS, which the programmer's
+         * voltage follows. */
+        tap(734, UI_BAND_H + 24);
+        tap(136, UI_BAND_H + 27);
+        tap(330, UI_BAND_H + 155);
+        tap(439, UI_BAND_H + 27);
+    }
     tap(632, UI_BAND_H + 24);                       /* PROGRAM */
     ui_router_tick(0.02f);
-    if (v[0] == '\0' || nopage) {
+    if (v[0] == '\0' || nopage || strcmp(v, "-target") == 0
+        || strcmp(v, "-supply") == 0) {
+        return;
+    }
+    if (strcmp(v, "-options") == 0 || strcmp(v, "-voltage") == 0
+        || strcmp(v, "-hv") == 0 || strcmp(v, "-wait") == 0) {
+        /* MORE with the port in the tester's hands: what CONNECT sets. */
+        ktap(kst_panel_value_rect(0, 2, 1));
+        if (strcmp(v, "-options") == 0) {
+            return;
+        }
+        ktap(kst_panel_choice_rect(strcmp(v, "-wait") == 0 ? 2 : 0));
+        if (strcmp(v, "-hv") == 0) {
+            kkey(UI_KEY_CLR);
+            kkey(UI_KEY_7);
+            kkey(UI_KEY_DOT);
+            kkey(UI_KEY_4);
+            kkey(UI_KEY_OK);
+        }
         return;
     }
     ktap(kst_panel_value_rect(0, 0, 1));            /* CONNECT */
+    if (strcmp(v, "-nopin") == 0) {
+        ksettle();
+        return;
+    }
+    if (strcmp(v, "-supplied") == 0 || strcmp(v, "-leave-supply") == 0) {
+        ksettle();
+        if (strcmp(v, "-leave-supply") == 0) {
+            ktap(kst_panel_value_rect(0, 0, 1));    /* LEAVE */
+            ksettle();
+        }
+        return;
+    }
     if (strcmp(v, "-working") == 0) {
         rig_frames(40);
         ui_router_tick(0.02f);
@@ -1776,6 +1827,10 @@ int main(int argc, char **argv)
              */
             outbind_set_proto(&b, proto_named("DSHOT300"));
             (void)outbind_toggle(&b, outbind_index_of(brd, 5));
+        }
+        if (strcmp(view, "outputs-prog") == 0) {
+            /* The coprocessor's programming port on GP13: not to be had. */
+            outputs_screen_set_prog_pin(13u);
         }
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);

@@ -114,6 +114,8 @@
 /* The top of a standard servo's rating.  A set point raised past it is
  * applied only after the HV warning is held for two seconds. */
 #define STD_SERVO_V_MAX 6.0f
+_Static_assert(KST_PANEL_STD_MV == 6000,
+               "the programmer's standard-servo ceiling is STD_SERVO_V_MAX");
 
 /*
  * The overlay: the settings and the keypad, keyboard, list and warning they
@@ -235,6 +237,8 @@ static const ov_row_t k_rows[] = {
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
     { PG_DUT, R_SETTING, SET_ENC_EN,       TX_SV_ROW_ENC,  0, 2, false },
     { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 3, false },
+    { PG_DUT, R_SETTING, SET_SERVO_TARGET,   TX_SV_ROW_TARGET,    1, 1, false },
+    { PG_DUT, R_SETTING, SET_SERVO_PORT_PWM, TX_SV_ROW_PORT_PWM,  1, 2, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -371,7 +375,7 @@ static struct {
     uint32_t   drawn_arm[2];
 
     gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
-    gfx_rect_t prog_btn;         /* PROGRAM: the KST and Cha programmer */
+    gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
     bool       kst_shown;        /* the programmer had the left card    */
     uint32_t   drawn_kst[2], drawn_kst_hold[2];
     ui_slider_t speed;
@@ -3232,10 +3236,36 @@ static void open_keypad(int target, const char *title, const char *unit,
     s.kp_target = target;
 }
 
+/*
+ * What the tester drives changes only on a bench at rest: disarmed, no test
+ * and no sweep, and the port not in the programmer's hands.  The port's
+ * pulse is switched off at any time and on under the same rule.
+ */
+static bool target_locked(const ov_row_t *r)
+{
+    if (r->kind != R_SETTING
+        || (r->id != SET_SERVO_TARGET && r->id != SET_SERVO_PORT_PWM)) {
+        return false;
+    }
+    if (r->id == SET_SERVO_PORT_PWM) {
+        if (settings_get_int(SET_SERVO_TARGET) == 0) {
+            return true;                /* no port to switch */
+        }
+        if (settings_get_bool(SET_SERVO_PORT_PWM)) {
+            return false;               /* off is always taken */
+        }
+    }
+    return s.gate.armed || s.sweeping || servo_test_running(&s.test)
+           || kst_panel_holds_port();
+}
+
 /* A settings row tapped: the editor its kind takes. */
 static void edit_row(int i)
 {
     const ov_row_t *r = &k_rows[i];
+    if (target_locked(r)) {
+        return;
+    }
     switch (r->kind) {
     case R_TYPE:
         open_choice(CH_TYPE, SETTING_COUNT, TR(SV_SERVO_TYPE));
@@ -3713,13 +3743,13 @@ static void ov_rest(const touch_event_t *evt)
     case OP_PROGRAM:
         if (gfx_rect_contains(s.prog_btn, x, y)) {
             /* PROGRAM opens the programmer over the left card and asks it
-             * to close; it stays while the port holds a channel.  The
+             * to close; it stays while the port is in programming.  The
              * settings give way to it. */
             if (kst_panel_is_open()) {
                 kst_panel_close();
             } else {
                 /* A run would go on behind the programmer, stepping the
-                 * rail and the position of a channel CONNECT takes. */
+                 * rail and the position of the port CONNECT takes. */
                 test_end_now(SERVO_TEST_AB_OPERATOR);
                 s.ov_open = false;
                 s.kp_alone = false;
@@ -3730,7 +3760,7 @@ static void ov_rest(const touch_event_t *evt)
         }
         break;
     case OP_SETTINGS:
-        /* The settings would cover a programmer that holds a channel. */
+        /* The settings would cover a programmer that holds the port. */
         if (kst_panel_holds_port()) {
             break;
         }
@@ -4759,6 +4789,9 @@ static bool row_unused(const ov_row_t *r)
     if (r->kind != R_SETTING) {
         return false;
     }
+    if (target_locked(r)) {
+        return true;
+    }
     const int by = settings_get_int(SET_SERVO_LEN_BY);
     return (r->id == SET_SERVO_LEN_S && by != 0)
            || (r->id == SET_SERVO_LEN_MOVES && by == 0)
@@ -5260,8 +5293,9 @@ static void remember_shown(void)
 static void tick_body(float dt_s)
 {
     /* The programmer: its holds and repeats, and the left card while the
-     * port holds a channel.  PWM and programming are exclusive states of
-     * that channel, so the way back is asked for there and nowhere else. */
+     * port is in programming.  PWM and programming are exclusive states of
+     * that port, so the way back is asked for there and nowhere else. */
+    kst_panel_set_hv(s.test_hv);
     kst_panel_tick(dt_s);
     if (kst_panel_holds_port() && !kst_panel_is_open()) {
         kst_panel_open();
@@ -5680,7 +5714,7 @@ static void leave(void)
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
     /* The programmer's presses and pages go; the port stays as it is, and
-     * the screen shows it again while it holds a channel. */
+     * the screen shows it again while it holds the port. */
     kst_panel_leave();
     ++s.arm_rev;
     ++s.ctrl_rev;

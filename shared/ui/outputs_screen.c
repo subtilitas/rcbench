@@ -97,6 +97,28 @@ static void touched(void)
     ++s.gen;
 }
 
+/* The GPIO the coprocessor's programming port is bound to, or none. */
+static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
+
+void outputs_screen_set_prog_pin(uint8_t gpio)
+{
+    if (gpio != g_prog_gpio) {
+        g_prog_gpio = gpio;
+        touched();
+    }
+}
+
+/* Whether the programming port has pin @p index: it is the port's and no
+ * protocol holds it.  A pin a stored slot holds is that slot's -- the
+ * coprocessor gives the port no pin then -- and can be unticked. */
+static bool prog_taken(uint8_t index)
+{
+    return g_prog_gpio != OUTPUTS_NO_PIN
+           && index < outbind_pin_count(s.bind.board)
+           && outbind_pins(s.bind.board)[index].gpio == g_prog_gpio
+           && outbind_group_of(&s.bind, index) == 0u;
+}
+
 void outputs_screen_invalidate(void)
 {
     memset(s.chrome_valid, 0, sizeof(s.chrome_valid));
@@ -411,7 +433,7 @@ static void event(const touch_event_t *evt)
         /* A refused tick is not silent: the cell flashes nothing, but the
          * count under the protocol does not move and the reason is printed
          * in the cell or under the protocol. */
-        if (outputs_screen_editable()
+        if (outputs_screen_editable() && !prog_taken((uint8_t)index)
             && outbind_toggle(&s.bind, (uint8_t)index)) {
             changed();
         }
@@ -536,6 +558,12 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
         }
         return OUTPUTS_CELL_RESERVED;
     }
+    if (prog_taken(index)) {
+        if (label != NULL) {
+            snprintf(label, cap, "%s", TR(OUT_PROG_PORT));
+        }
+        return OUTPUTS_CELL_RESERVED;
+    }
     if (held != 0u && held != proto) {
         if (label != NULL) {
             snprintf(label, cap, "%s", outbind_protos()[held].name);
@@ -628,7 +656,9 @@ static void draw_cell(gfx_canvas_t *c, int i)
      * another protocol.  It is shown, and not offered.
      */
     const bool live = outputs_screen_editable();
-    const bool can = live && outbind_can_add(&s.bind, (uint8_t)i);
+    const bool reserved = pin->reserved || prog_taken((uint8_t)i);
+    const bool can = live && !reserved
+                     && outbind_can_add(&s.bind, (uint8_t)i);
     const bool lit = live && on;
 
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
@@ -640,7 +670,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
      * the pin is spoken for.  It sits beside the name, above the line that
      * says what holds the pin. */
     const int bx = r.x + 7, by = r.y + 7;
-    gfx_color_t edge = pin->reserved ? UI_DANGER
+    gfx_color_t edge = reserved ? UI_DANGER
                                      : ((lit || can) ? UI_ACCENT : UI_EDGE_HI);
     gfx_draw_chamfer_rect_ex(c, bx, by, BOX, BOX, 4, 0, 4, 0, edge);
     if (lit) {
@@ -651,7 +681,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
          * not read as this protocol's. */
         gfx_fill_chamfer_rect_ex(c, bx + 4, by + 4, BOX - 8, BOX - 8,
                                  3, 0, 3, 0, UI_EDGE_HI);
-    } else if (pin->reserved) {
+    } else if (reserved) {
         for (int k = 4; k < BOX - 4; ++k) {
             gfx_fill_rect(c, bx + k, by + k, 2, 2, UI_DANGER);
         }
@@ -659,7 +689,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
 
     char name[8];
     snprintf(name, sizeof(name), "GP%u", (unsigned)pin->gpio);
-    gfx_color_t ink = pin->reserved ? UI_TEXT_FAINT
+    gfx_color_t ink = reserved ? UI_TEXT_FAINT
                                     : ((lit || can) ? UI_TEXT : UI_TEXT_DIM);
     gfx_text(c, bx + BOX + 8, r.y + 3, name, UI_FONT_HEAD, ink, 1);
 

@@ -180,8 +180,8 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,048 | 3,120 |
-| `control` | `control_task` | 6,144 | 3,904 | 1,216 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,064 | 3,104 |
+| `control` | `control_task` | 6,144 | 3,968 | 1,152 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |

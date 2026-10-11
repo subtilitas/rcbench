@@ -371,6 +371,72 @@ TEST_CASE(a_reserved_pin_never_reaches_the_apply_seam)
     CHECK_EQ(s_applied, was);
 }
 
+TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
+{
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    guard_canvas_t g;
+    gfx_canvas_t c;
+    char l[24];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        choose_named("SERVO PWM");
+        const int was = s_applied;
+
+        /* No port read: GP13 is a pin like the others. */
+        CHECK_EQ(outputs_screen_cell(idx(13), l, sizeof(l)),
+                 OUTPUTS_CELL_FREE);
+        outputs_screen_set_prog_pin(13u);
+        CHECK_EQ(outputs_screen_cell(idx(13), l, sizeof(l)),
+                 OUTPUTS_CELL_RESERVED);
+        CHECK_STR_EQ(l, TR(OUT_PROG_PORT));
+        tap_pin(13);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
+        CHECK_EQ(s_applied, was);
+        /* The pin beside it is not the port's. */
+        CHECK_EQ(outputs_screen_cell(idx(14), NULL, 0), OUTPUTS_CELL_FREE);
+        guard_canvas_init(&g, &c, px, 800, 432);
+        scr()->render(&c, 0);
+        CHECK_EQ(guard_canvas_touched(&g), 0u);
+        /* The screen left and entered again: the pin is still the port's. */
+        scr()->reset();
+        outputs_screen_set_apply(on_apply);
+        {
+            outbind_t b;
+            outbind_init(&b);
+            outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
+            outputs_screen_set_binding(&b);
+        }
+        CHECK_EQ(outputs_screen_cell(idx(13), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+
+        /* A port without a pin, or on a pin this board does not list. */
+        outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
+        CHECK_EQ(outputs_screen_cell(idx(13), NULL, 0), OUTPUTS_CELL_FREE);
+        outputs_screen_set_prog_pin(200u);
+        CHECK_EQ(outputs_screen_cell(idx(13), NULL, 0), OUTPUTS_CELL_FREE);
+        outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
+        choose_named("SERVO PWM");
+        tap_pin(13);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
+
+        /* A slot that holds the pin keeps it -- the coprocessor gives the
+         * port no pin then -- and it can be unticked. */
+        outputs_screen_set_prog_pin(13u);
+        CHECK_EQ(outputs_screen_cell(idx(13), l, sizeof(l)),
+                 OUTPUTS_CELL_TICKED);
+        tap_pin(13);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
+        CHECK_EQ(outputs_screen_cell(idx(13), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+        tap_pin(13);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
+        outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(a_pin_too_many_does_not_apply)
 {
     fresh();
@@ -1107,6 +1173,7 @@ int main(void)
     RUN(ticking_a_pin_applies_once_and_unticking_applies_again);
     RUN(a_reserved_pin_never_reaches_the_apply_seam);
     RUN(a_pin_too_many_does_not_apply);
+    RUN(the_programming_ports_pin_is_taken_and_takes_no_tick);
     RUN(nothing_can_be_ticked_while_the_protocol_is_off);
     RUN(every_state_renders_without_reading_off_the_canvas);
     RUN(a_board_that_can_take_nothing_says_why);

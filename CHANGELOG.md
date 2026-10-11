@@ -10,51 +10,80 @@ history is in git.
 
 - SERVO screen: a programmer for KST and Chaservo servos. PROGRAM opens an
   overlay of 5 tabs (SERVO, TUNE, PULSE, FAILSAFE, LOCKED) over the left
-  card. It connects one output channel to the programming port, reads all 32
-  registers, and edits dead band, maximum duty, boost, stretch, soft start,
-  the speed limit, the pulse ends, neutral, the angles, reversion and the
-  failsafe with the plus and minus keys, the keypad and choice lists. The
-  limits are the protocol core's: a value past a hard limit cannot be
-  entered, and a value past a soft limit shows the limit's warning and is
-  taken after a hold of 2 s. Frequency, lock, the servo and gyro mode and
-  the protection block are shown and never written. A write needs the
-  switch ENABLE WRITE TO SERVO, which is off by default, takes a hold of
-  2 s, and goes off at every entry of the screen, link loss, coprocessor
-  restart, stop, connect and leave; the first write of a session asks for a
-  free horn. The coprocessor writes the changed registers only and reads
-  each back. A backup is kept from the first read of a session and
-  written back by RESTORE. FILES saves the servo's 32 registers as a servo
-  file on the SD card under a preset name (`KST001` on) that the text
-  keyboard changes, and never replaces a file. The first write of a session
-  saves such a file without asking: a mounted card that is full or fails
-  the write ends it with its own line. With no card mounted the write is
-  sent without a file; its page says that no backup file is saved and that
-  the session's backup lives in the bench until the session ends or the
-  bench loses power, and the SERVO tab shows `No backup file: no card.
-  Session restore only.` until a card takes the file at a later write. A file is
-  loaded from a list of 5 a page that names each file's servo type, V6 or
-  V8 after the 20k_sel field. Its editable values become the pending
-  changes and reach the servo through the ordinary write only; a file of
-  the other type, a damaged file, a file of a later format and a value past
-  a hard limit are refused with the reason, a hand-edited file is named as
-  one, values past a soft limit wait for a hold of 2 s, and locked values
-  that differ are counted as not written. The panel firmware answers every
-  card request for a servo file with an error until the servo file module
-  is wired to the card. A record of a running write is stored in `KST.TXT`
-  (at most 400 bytes of text) before the write starts; after a link loss, a restart, an abort or a
-  power loss during a write the programmer reports that the servo may hold
-  part of it, asks for a read and offers the restore. An image that fails
-  the layout fingerprint is shown and not written. The record of an
-  interrupted write names its channel, and a servo that is not the record's
-  takes no restore and no write. A backup whose values pass a soft limit
-  shows its warnings on a page of its own before the restore page. `KST.TXT`
-  is replaced through `KST.NEW`, and a file the card does not take is
-  written again every 5 s. PROGRAM ends a running automatic test. A coprocessor of protocol
-  4.11 shows the programmer as unavailable with the reason. Leaving asks for
-  the servo's power to be cycled before the channel returns to PWM. German
-  texts for every new string; 100 screenshots. Host suite only
-  (`test_kst_prog`, `test_kst_panel`); no frame has been sent to a servo.
-  ([KST and Chaservo servo programmer](docs/ServoProgrammer.md))
+  card. It takes the coprocessor's programming port (GP13 on pad 17 by
+  default, link protocol 4.13), reads all 32 registers, and edits dead
+  band, maximum duty, boost, stretch, soft start, the speed limit, the
+  pulse ends, neutral, the angles, reversion and the failsafe with the plus
+  and minus keys, the keypad and choice lists. The limits are the protocol
+  core's: a value past a hard limit cannot be entered, and a value past a
+  soft limit shows the limit's warning and is taken after a hold of 2 s.
+  Frequency, lock, the servo and gyro mode and the protection block are
+  shown and never written. A write needs the switch ENABLE WRITE TO SERVO,
+  which is off by default, takes a hold of 2 s, and goes off at every entry
+  of the screen, link loss, coprocessor restart, stop, connect and leave;
+  the first write of a session asks for a free horn. The coprocessor writes
+  the changed registers only and reads each back. A backup is kept from the
+  first read of a session and written back by RESTORE.
+- SERVO screen, DUT page: PWM TARGET selects what the tester drives, the
+  pins bound as SERVO PWM (OUTPUTS) or the programming port (PROG PORT), and
+  PORT PWM switches the port's pulse. Sweep, hold and the automatic test
+  run on the port. The programmer connects only with PROG PORT; with
+  OUTPUTS it names the setting and CONNECT is locked. Both rows change only
+  on a disarmed bench with no sweep and no test running and the port not in
+  programming. OUTPUTS shows the port's pin as `PROG PORT` and does not
+  bind it.
+- Servo programmer, supply: with a PD mini answering, CONNECT sets
+  PROGRAMMING VOLTAGE (1.0 to 8.4 V, default 5.0 V) and CURRENT LIMIT (50 to
+  3000 mA, default 1000 mA) on the PD mini. A voltage above 6.0 V needs
+  HV SERVO on and a hold of 2 s. The SERVO tab shows the measured voltage
+  and current. The port's refusals for a port without a pin, a supply
+  outside the range, a bench it does not trust and a supply that does not
+  reach its voltage within 3000 ms each have their own line. A supply
+  command the port sets is shown on SUPPLY. The panel's STOP ends a
+  session through the port's abort, with the supply off.
+- Servo programmer, leaving: the programmer assumes that a servo needs no
+  power cycle. With no PD mini answering, LEAVE returns the port to PWM.
+  With a PD mini answering, the coprocessor of protocol 4.13 returns the
+  port to PWM only through a cycle of the supply; the programmer does not
+  ask for one, and the port stays in programming until the supply is
+  switched off or STOP is pressed. WAIT BEFORE PWM (0 to 10000 ms, default
+  100 ms) is stored for a leave without a supply cycle; protocol 4.13 has
+  no such operation and the value is applied nowhere. Whether a KST servo
+  follows PWM in programming mode, whether a written value acts before the
+  next power-up, and the wait a servo needs are not measured.
+- Servo programmer, files: FILES saves the servo's 32 registers as a servo
+  file in the folder `KST` on the SD card under a preset name (`KST001` on)
+  that the text keyboard changes, and never replaces a file. The first
+  write of a session saves such a file without asking: a mounted card that
+  is full or fails the write ends it with its own line. With no card
+  mounted the write is sent without a file; its page says that no backup
+  file is saved and that the session's backup lives in the bench until the
+  session ends or the bench loses power, and the SERVO tab shows `No backup
+  file: no card. Session restore only.` until a card takes the file at a
+  later write. A file is loaded from a sorted list of the folder's first 64
+  files, 5 a page, that names each file's servo type, V6 or V8 after the
+  20k_sel field. Its editable values become the pending changes and reach
+  the servo through the ordinary write only; a file of the other type, a
+  damaged file, a file of a later format and a value past a hard limit are
+  refused with the reason, a hand-edited file is named as one, values past
+  a soft limit wait for a hold of 2 s, and locked values that differ are
+  counted as not written.
+- Servo programmer, interrupted writes: a record of a running write is
+  stored in `KST/KST.TXT` (at most 400 bytes of text) before the write
+  starts; after a link loss, a restart, an abort or a power loss during a
+  write the programmer reports that the servo may hold part of it, asks for
+  a read and offers the restore. The record names its port, and a servo
+  that is not the record's takes no restore and no write. A backup whose
+  values pass a soft limit shows its warnings on a page of its own before
+  the restore page. `KST/KST.TXT` is replaced through `KST/KST.NEW`, and a
+  record the card does not take is written again every 5 s. An image that
+  fails the layout fingerprint is shown and not written. PROGRAM ends a
+  running automatic test. A coprocessor without the programming port's
+  page shows the programmer as unavailable with the reason. German texts
+  for every new string; 118 screenshots. Host suite only (`test_kst_prog`,
+  `test_kst_panel`, `test_kst_card`, `test_prog_link`); no frame has been
+  sent to a servo.
+  ([Servo programmer for KST and Chaservo servos](docs/ServoProgrammer.md))
 - `protocols/kst/`: the protocol core for programming KST and Chaservo
   servos over the signal wire. Frame coding, the reply decoder with one
   result code per failed check, the 32-register image with raw and displayed

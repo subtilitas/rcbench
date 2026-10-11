@@ -4487,7 +4487,7 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
 }
 
 /* PROGRAM ends a run: the programmer covers the run's card, and a run
- * left going would step the rail and the position of a channel that
+ * left going would step the rail and the position of the port that
  * CONNECT takes out of PWM. */
 TEST_CASE(program_ends_a_run)
 {
@@ -5590,6 +5590,48 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
     free(a);
     free(b);
+}
+
+TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
+{
+    fresh();
+    open_settings();
+    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    /* With the outputs as target PORT PWM has no port to switch. */
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+
+    tap(ROW_R_X, ROW_Y(1));                    /* TARGET */
+    tap(CH_X(1), CH_Y(1));                     /* PROG PORT */
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
+    CHECK(settings_save_asked());
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+
+    /* Armed: the target stays, and no list opens over the page -- the row
+     * under where its first entry would be still takes its tap. */
+    servo_screen_set_armed(true);
+    tap(ROW_R_X, ROW_Y(1));
+    CHECK(!settings_get_bool(SET_ENC_EN));
+    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 */
+    CHECK(settings_get_bool(SET_ENC_EN));
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
+    /* The pulse goes off under an armed bench and does not come back. */
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    /* Disarmed it does, and the target goes back. */
+    servo_screen_set_armed(false);
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    tap(ROW_R_X, ROW_Y(1));
+    tap(CH_X(0), CH_Y(0));
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 }
 
 TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
@@ -7531,6 +7573,7 @@ int main(void)
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
+    RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);

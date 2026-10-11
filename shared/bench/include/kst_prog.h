@@ -1,7 +1,7 @@
 /*
- * The KST servo programmer as the SERVO screen runs it: what is read from a
- * KST or Chaservo servo, what the operator has changed, and what may be
- * written.
+ * The programmer for KST and Chaservo servos as the SERVO screen runs it:
+ * what is read from a servo, what the operator has changed, and what may
+ * be written.
  *
  * The session with the servo runs at the coprocessor and the panel's link
  * module (kst_link.h) carries its operations.  This file sits between that
@@ -21,7 +21,7 @@
  *     of the port and every result of the session becomes one message
  *     (kst_prog_msg_id_t) the screen has a text for.
  *
- * The journal: before a write the image the servo holds and the channel are
+ * The journal: before a write the image the servo holds and the port are
  * recorded, in memory and in the file text (kst_prog_file_text()).  A write that
  * ends with the servo verified clears it.  A journal that stands after a
  * link loss, a restart or an abort says the servo may hold part of a
@@ -50,7 +50,7 @@
  *   journal=<64 hexadecimal digits>     the image before a write, when
  *                                       one is recorded
  *   target=<64 hexadecimal digits>      what that write was to leave
- *   channel=<1 hexadecimal digit>
+ *   port=<1 hexadecimal digit>
  *   check=<4 hexadecimal digits>        CRC-16/CCITT of the bytes before
  *
  * Pure C.  The caller hands in kst_prog_feed_t every frame and carries out
@@ -76,6 +76,10 @@ extern "C" {
 /** The supply an ENTER asks for until it is set otherwise. */
 #define KST_PROG_SUPPLY_MV 5000u
 #define KST_PROG_SUPPLY_MA 1000u
+/** The wait between the end of a session and the first PWM pulse: its
+ *  default and the highest value taken. */
+#define KST_PROG_WAIT_MS     100u
+#define KST_PROG_WAIT_MAX_MS 10000u
 /** The file text's size, with its terminator. */
 #define KST_PROG_FILE_MAX 400u
 /** A command without an answer from the control task for this long is
@@ -95,16 +99,16 @@ extern "C" {
 /** The files a list holds. */
 #define KST_PROG_FILES_MAX 5u
 /** A file's name with its terminator. */
-#define KST_PROG_NAME_MAX 16u
+#define KST_PROG_NAME_MAX 33u
 
 /** Where the programmer is. */
 typedef enum {
     KST_PROG_DOWN = 0,     /**< no coprocessor answers                    */
-    KST_PROG_NO_PAGE,      /**< the coprocessor has no KST port           */
+    KST_PROG_NO_PAGE,      /**< the coprocessor has no such page         */
     KST_PROG_SYNC,         /**< the page has not been read yet            */
     KST_PROG_PWM,          /**< the tester has the output                 */
     KST_PROG_ENTERING,     /**< the output leaves PWM                     */
-    KST_PROG_PROGRAMMING,  /**< the port holds the channel, nothing runs  */
+    KST_PROG_PROGRAMMING,  /**< the port holds the pin, nothing runs      */
     KST_PROG_WORKING,      /**< an operation runs                         */
     KST_PROG_LEAVING,      /**< the servo rail is switched               */
 } kst_prog_state_t;
@@ -136,7 +140,7 @@ enum {
                                        written to the servo                 */
     KST_PROG_MSG_FILE_BAD,        /**< the journal's file is not readable   */
     KST_PROG_MSG_JOURNAL,         /**< a write was interrupted; read.  arg:
-                                       the journal's channel, from 1        */
+                                       the journal's port, from 1           */
     KST_PROG_MSG_JOURNAL_SAME,    /**< the servo holds what it held before  */
     KST_PROG_MSG_JOURNAL_DONE,    /**< the servo holds the write's target   */
     KST_PROG_MSG_JOURNAL_DIFF,    /**< the servo holds something else       */
@@ -152,7 +156,7 @@ enum {
     KST_PROG_MSG_STOPPED,         /**< STOP: the operation was aborted      */
     KST_PROG_MSG_TIMEOUT,         /**< no outcome within KST_PROG_RUN_MS    */
     KST_PROG_MSG_JOURNAL_OTHER,   /**< the servo read is not the journal's;
-                                       arg: the journal's channel, from 1   */
+                                       arg: the journal's port, from 1      */
     KST_PROG_MSG_CARD_FULL,      /**< no space on the card, or no preset
                                          name is left                         */
     KST_PROG_MSG_CARD_WRITE,      /**< the file was not written whole       */
@@ -184,8 +188,8 @@ enum {
     KST_PROG_MSG_LOADED_UNTYPED,  /**< and for one that names no servo type */
     KST_PROG_MSG_NEED_TARGET,     /**< the SERVO screen's target is not the
                                        programming port                     */
-    KST_PROG_MSG_REBOOTED,        /**< the port switched the supply off and
-                                       on; the tester has the port          */
+    KST_PROG_MSG_LEAVE_SUPPLY,    /**< a PD mini answers: the port has no way
+                                       back to PWM that leaves the supply on */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -256,6 +260,8 @@ typedef enum {
     KST_PROG_CARD_NEWER,      /**< a format this code does not read        */
     KST_PROG_CARD_TYPE,       /**< the file is from another servo type     */
     KST_PROG_CARD_VALUE,      /**< a value of the file is not taken        */
+    KST_PROG_CARD_LIMIT,      /**< the file breaks a hard rule no single
+                                   line of it is at fault for              */
     KST_PROG_CARD_RESULTS
 } kst_prog_card_result_t;
 
@@ -294,6 +300,7 @@ typedef struct {
     uint8_t field;       /**< KST_PROG_CARD_VALUE: the kst_field_id_t,
                               0xFF none                                    */
     uint16_t line;       /**< a refusal's line of the text; 0 none         */
+    uint8_t rule;        /**< KST_PROG_CARD_LIMIT: the kst_rule_t           */
     kst_image_t image;   /**< the servo's image with the editable fields
                               of the file                                  */
     /* KST_PROG_CARD_LIST */
@@ -370,6 +377,7 @@ typedef struct {
     uint8_t port;
     uint16_t supply_mv;       /**< what an ENTER asks of the PD mini */
     uint16_t supply_ma;
+    uint16_t pwm_wait_ms;     /**< from the end of a session to PWM */
 
     uint8_t wait;             /**< what is awaited                */
     uint8_t op;               /**< link_kst_op_t on its way       */
@@ -454,13 +462,13 @@ uint8_t kst_prog_port(const kst_prog_t *p);
 bool kst_prog_journal(const kst_prog_t *p);
 /**
  * The servo read cannot be the one of the interrupted write: it is on
- * another channel, or it differs in a field that neither the write nor an
+ * another port, or it differs in a field that neither the write nor an
  * edit changes.  Nothing is restored to it and nothing is written to it
  * until the journal is discarded.  Two servos that agree in every such
- * field and sit on the same channel are not told apart.
+ * field and sit on the same port are not told apart.
  */
 bool kst_prog_journal_other(const kst_prog_t *p);
-/** The channel of the interrupted write, from 0. */
+/** The port of the interrupted write, from 0. */
 uint8_t kst_prog_journal_port(const kst_prog_t *p);
 /** The servo may hold part of a write: a journal stands, the port asks for
  *  a read, an operation timed out, or the session is locked. */
@@ -519,10 +527,6 @@ void kst_prog_discard(kst_prog_t *p);
  *  kst_prog_supply_set().  KST_PROG_MSG_NEED_TARGET while the feed's target
  *  is not that port. */
 kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port);
-/** The port switches the servo's supply off and on.  From programming mode
- *  it ends the session; with the tester on the port it needs the target as
- *  kst_prog_connect() does.  The port refuses it where no PD mini answers. */
-kst_prog_msg_id_t kst_prog_reboot(kst_prog_t *p, uint8_t port);
 /** What an ENTER asks of the PD mini: @p mv and its current limit @p ma.
  *  The port checks the range.  KST_PROG_SUPPLY_MV and KST_PROG_SUPPLY_MA
  *  after kst_prog_init(). */
@@ -556,8 +560,15 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
                                    const kst_prog_restore_t *plan);
 /** Discard the journal. */
 void kst_prog_forget(kst_prog_t *p);
-/** The servo was without power: the output goes back to the tester. */
-kst_prog_msg_id_t kst_prog_power_cycled(kst_prog_t *p);
+/** End the session: the port goes back to PWM and the supply stays as it
+ *  is.  The one place a session is ended by the operator.  While a PD mini
+ *  answers the port has no command for it and the answer is
+ *  KST_PROG_MSG_LEAVE_SUPPLY. */
+kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p);
+/** The wait between the end of a session and the first PWM pulse, up to
+ *  KST_PROG_WAIT_MAX_MS.  False, and nothing set, above it. */
+bool kst_prog_wait_set(kst_prog_t *p, uint32_t ms);
+uint16_t kst_prog_wait_ms(const kst_prog_t *p);
 /** The operator's cancel. */
 void kst_prog_abort(kst_prog_t *p);
 

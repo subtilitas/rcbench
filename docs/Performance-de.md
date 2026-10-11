@@ -195,8 +195,8 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 048 | 3 120 |
-| `control` | `control_task` | 6 144 | 3 904 | 1 216 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 064 | 3 104 |
+| `control` | `control_task` | 6 144 | 3 968 | 1 152 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `artkeep` | `art_keep_task` | 4 096 | 944 | 2 128 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |

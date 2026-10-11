@@ -651,11 +651,17 @@ plot does:
 ### Programmer
 
 PROGRAM, beside SETTINGS, opens the programmer for KST and Chaservo servos
-over the left card. It takes one output channel out of PWM (pulse-width
-modulation) and reads and writes the servo's settings on its signal wire.
-While it holds a channel the overlay stays open and SETTINGS is off; ARM,
-CENTRE, RELEASE and STOP work. Not run on a servo.
-[KST and Chaservo servo programmer](ServoProgrammer.md) describes it.
+over the left card. It takes the coprocessor's programming port, GP13 on
+pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
+the servo's settings on its signal wire. It connects only with PWM TARGET
+on the DUT page set to PROG PORT; with OUTPUTS it shows `Programming needs
+the programming port.` and CONNECT is locked. While it holds the port the
+overlay stays open and SETTINGS is off; ARM, CENTRE, RELEASE and STOP work.
+It leaves programming without a cycle of the servo's supply. Whether a KST
+servo follows PWM while in programming mode is not measured. Not run on a
+servo.
+[Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
+describes it.
 
 ### Settings
 
@@ -687,6 +693,8 @@ name opens a keyboard.
 | DUT | REPORT | a text report beside each test's log |
 | DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
 | DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+| DUT | PWM TARGET | what the tester drives: OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. PROG PORT is what the programmer needs. Locked while armed, during a sweep or a test, and while the programmer holds the port ([the target](ServoProgrammer.md#the-target)) |
+| DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with PWM TARGET on OUTPUTS; OFF is taken at any time, ON under the rule of PWM TARGET |
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
@@ -1710,6 +1718,15 @@ says so under its name. Hiding them would leave an operator hunting for GP10
 and finding a gap. [DShot and the output drivers](DShot.md#which-pin) has the
 whole map.
 
+The pin of the coprocessor's programming port, GP13 by default, is shown as
+`PROG PORT` and cannot be ticked either:
+
+![GP13 held by the programming port](img/outputs-prog.png)
+
+A stored binding that holds that pin keeps it: the port then has no pin, and
+the programmer's CONNECT ends with the line for a port without a pin
+([the port](ServoProgrammer.md#the-port)).
+
 The pad number under each pin is the one printed on the board, so an operator
 counting pads and an operator reading GPIO (general-purpose input/output)
 numbers arrive at the same pin.
@@ -1779,7 +1796,8 @@ comes back, until another entry is picked or the screen is left. The next
 entry opens on the lowest-numbered protocol that holds a pin.
 
 GP0 bound as DSHOT600 BIDIR, GP1 as MOTOR PWM, GP2 and GP13 as SERVO PWM,
-with OFF picked:
+with OFF picked. A slot holds GP13 on this bench, so the programming port
+has no pin:
 
 ![OFF shows the protocol of every bound pin](img/outputs-off.png)
 

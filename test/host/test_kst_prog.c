@@ -1,5 +1,5 @@
 /*
- * The KST servo programmer's state (shared/bench/kst_prog.c), end to end:
+ * The servo programmer's state (shared/bench/kst_prog.c), end to end:
  * the programmer, the panel's link module, link dispatch, the programming
  * port, the session and the simulated servo of kst_sim.h.  The control
  * task of the panel is the function frame() here.
@@ -412,7 +412,7 @@ TEST_CASE(a_connect_enters_and_reads_the_servo)
     CHECK_EQ(g_starts, 2);
     CHECK_EQ(g_sim.n_writes, 0);
 
-    /* A second connect: the port holds a channel. */
+    /* A second connect: the port is taken. */
     CHECK_EQ(kst_prog_connect(&g_p, CH),
              KST_PROG_MSG_START + KST_LINK_START_BUSY);
 }
@@ -436,7 +436,7 @@ TEST_CASE(a_coprocessor_without_the_page_is_named)
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_DOWN);
     CHECK_EQ(kst_prog_connect(&g_p, CH),
              KST_PROG_MSG_START + KST_LINK_START_DOWN);
-    CHECK_EQ(kst_prog_power_cycled(&g_p),
+    CHECK_EQ(kst_prog_leave(&g_p),
              KST_PROG_MSG_START + KST_LINK_START_DOWN);
 }
 
@@ -479,7 +479,7 @@ TEST_CASE(no_servo_on_the_port_is_a_message)
         CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NEED_READ);
         CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_READ);
         CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_READ);
-        CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
         settle();
     }
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
@@ -760,7 +760,7 @@ TEST_CASE(the_first_write_of_every_session_is_the_first_again)
 {
     /* The session is left and another entered. */
     up_written();
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     CHECK(kst_prog_first_write(&g_p));
@@ -855,7 +855,7 @@ TEST_CASE(leaving_gives_the_output_back_and_ends_the_session)
 {
     up_enabled();
     edit(KST_F_DUTY, 200);
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
     settle();
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
@@ -863,7 +863,7 @@ TEST_CASE(leaving_gives_the_output_back_and_ends_the_session)
     CHECK(!kst_prog_have_servo(&g_p));
     CHECK(!kst_prog_write_enabled(&g_p));
     CHECK_EQ(kst_prog_changes(&g_p), 0);
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NEED_PORT);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NEED_PORT);
     CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_PORT);
 
     /* And in again. */
@@ -1158,7 +1158,7 @@ static void cut_and_come_back(bool duty)
     g_safe = true;
     kst_link_came_up(&g_k, LINK_PROTOCOL_MINOR);
     settle();
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     CHECK(kst_prog_journal(&g_p));
@@ -1358,7 +1358,7 @@ TEST_CASE(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write)
     CHECK(!kst_prog_journal_other(&g_p));
     CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
 
-    /* Another servo on the channel: a locked value is not the same. */
+    /* Another servo on the port: a locked value is not the same. */
     flip_20k();
     before = servo();
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
@@ -1410,13 +1410,13 @@ TEST_CASE(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write)
     CHECK(kst_prog_editable(&g_p));
 }
 
-TEST_CASE(a_journal_of_another_channel_is_not_this_servos)
+TEST_CASE(a_journal_of_another_port_is_not_this_servos)
 {
     const kst_image_t sv = sim_bench_image();
     kst_prog_restore_t plan;
     char text[KST_PROG_FILE_MAX];
 
-    /* The journal of a write on the next channel, the servo here equal
+    /* The journal of a write on the next port, the servo here equal
      * to its image in every register. */
     up();
     g_card = true;
@@ -1443,7 +1443,7 @@ TEST_CASE(a_journal_of_another_channel_is_not_this_servos)
              KST_PROG_MSG_JOURNAL_OTHER);
 
     /* The session ends: which servo comes next is not known. */
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK(kst_prog_journal(&g_p));
     CHECK(!kst_prog_journal_other(&g_p));
@@ -1602,7 +1602,7 @@ TEST_CASE(a_stop_aborts_the_operation_and_asks_for_a_read)
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_STOPPED);
 
     /* Leaving stays possible. */
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
@@ -1728,6 +1728,18 @@ static void end(const kst_link_outcome_t *o)
 
 #define BUSY (KST_PROG_MSG_START + KST_LINK_START_BUSY)
 
+/* The raw value a line of an edited file gives for @p raw: the displayed
+ * value, read back as a keypad entry is. */
+static uint16_t as_typed(kst_field_id_t id, uint16_t raw)
+{
+    int32_t shown = 0;
+    uint16_t back = 0;
+
+    CHECK(kst_field_display(id, raw, &shown));
+    CHECK(kst_field_raw_from_display(id, shown, &back));
+    return back;
+}
+
 /* A file whose image is the bench servo's with @p id at @p raw. */
 static fake_file_t *file_with(const char *name, kst_field_id_t id,
                               uint16_t raw)
@@ -1803,20 +1815,29 @@ TEST_CASE(a_name_the_card_does_not_take_saves_nothing)
     up();
     CHECK_EQ(kst_prog_save(&g_p, ""), KST_PROG_MSG_NAME_BAD);
     CHECK_EQ(kst_prog_save(&g_p, NULL), KST_PROG_MSG_NAME_BAD);
-    CHECK_EQ(kst_prog_save(&g_p, "ABCDEFGHIJKLMNOP"), KST_PROG_MSG_NAME_BAD);
+    CHECK_EQ(kst_prog_save(&g_p, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456"), KST_PROG_MSG_NAME_BAD);
     CHECK(!kst_prog_card_busy(&g_p));
-    /* The card's side knows the characters. */
-    save("a b");
+    /* The card's side knows the names: a character no file system takes,
+     * a device name, the journal's own name, a full stop at an end. */
+    save("a:b");
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_BAD);
+    save("CON");
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_BAD);
+    save("kst");
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_BAD);
+    save(".A");
     CHECK_EQ(msg(), KST_PROG_MSG_NAME_BAD);
     CHECK_EQ(g_fc.n, 0);
     CHECK(!kst_prog_backed_up(&g_p));
     save("A");
     CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
-    /* No file is replaced. */
+    /* No file is replaced, in either case of the name. */
     g_sim.reg[0x03] ^= 0x01u;
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
     save("A");
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_EXISTS);
+    save("a");
     CHECK_EQ(msg(), KST_PROG_MSG_NAME_EXISTS);
     CHECK_EQ(g_fc.n, 1);
     CHECK_EQ(g_fc.file[0].img.r[0x03], sim_bench_image().r[0x03]);
@@ -1890,14 +1911,15 @@ TEST_CASE(the_list_names_the_files_their_types_and_the_next_preset)
     list();
     CHECK_EQ(kst_prog_files_seq(&g_p), 2);
     CHECK_EQ(kst_prog_file_count(&g_p, NULL), 3);
-    CHECK_STR_EQ(kst_prog_file_name(&g_p, 0), "KST001");
-    CHECK_STR_EQ(kst_prog_file_name(&g_p, 1), "WING");
-    CHECK_STR_EQ(kst_prog_file_name(&g_p, 2), "HAND");
+    /* Sorted by name, whatever the order on the card. */
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 0), "HAND");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 1), "KST001");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 2), "WING");
     CHECK_STR_EQ(kst_prog_file_name(&g_p, 3), "");
-    CHECK_EQ(kst_prog_file_type(&g_p, 0), kst_card_type(&sv));
-    CHECK_EQ(kst_prog_file_type(&g_p, 1), kst_card_type(&ot));
-    CHECK_EQ(kst_prog_file_type(&g_p, 0) + kst_prog_file_type(&g_p, 1), 14);
-    CHECK_EQ(kst_prog_file_type(&g_p, 2), 0);
+    CHECK_EQ(kst_prog_file_type(&g_p, 1), kst_card_type(&sv));
+    CHECK_EQ(kst_prog_file_type(&g_p, 2), kst_card_type(&ot));
+    CHECK_EQ(kst_prog_file_type(&g_p, 1) + kst_prog_file_type(&g_p, 2), 14);
+    CHECK_EQ(kst_prog_file_type(&g_p, 0), 0);
     CHECK_EQ(kst_prog_file_type(&g_p, 3), 0);
     CHECK_STR_EQ(kst_prog_preset_name(&g_p), "KST002");
 
@@ -1918,8 +1940,8 @@ TEST_CASE(the_list_names_the_files_their_types_and_the_next_preset)
     CHECK_EQ(kst_prog_files_first(&g_p), KST_PROG_FILES_MAX);
     CHECK_EQ(kst_prog_file_count(&g_p, &total), 9u - KST_PROG_FILES_MAX);
     CHECK_EQ(total, 9);
-    CHECK_STR_EQ(kst_prog_file_name(&g_p, 0), "F2");
-    CHECK_STR_EQ(kst_prog_file_name(&g_p, 3), "F5");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 0), "F5");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 3), "WING");
     CHECK_STR_EQ(kst_prog_file_name(&g_p, 4), "");
     CHECK_STR_EQ(kst_prog_preset_name(&g_p), "KST002");
     said = kst_prog_message(&g_p)->seq;
@@ -1972,26 +1994,41 @@ TEST_CASE(an_edited_file_is_named_as_one)
 {
     const kst_image_t sv = sim_bench_image();
     const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+    kst_prog_card_req_t q;
+    kst_prog_card_done_t d;
     fake_file_t *f;
 
     up();
-    f = file_with("ED", KST_F_DUTY, (uint16_t)(duty - 1u));
+    f = file_with("ED", KST_F_DUTY, (uint16_t)(duty - 10u));
     f->kind = KST_PROG_FILE_EDITED;
     load("ED");
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
     CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_EDITED);
-    CHECK_EQ(draft(KST_F_DUTY), duty - 1u);
-    f = file_with("UN", KST_F_DUTY, (uint16_t)(duty - 2u));
+    CHECK(as_typed(KST_F_DUTY, (uint16_t)(duty - 10u)) != duty);
+    CHECK_EQ(draft(KST_F_DUTY), as_typed(KST_F_DUTY, (uint16_t)(duty - 10u)));
+    /* A line that reads as the servo shows the value changes nothing: 1
+     * step of 255 is below the 1 % the line is written in. */
+    f = file_with("FINE", KST_F_DUTY, (uint16_t)(duty - 1u));
+    f->kind = KST_PROG_FILE_EDITED;
+    load("FINE");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SAME);
+    f = file_with("UN", KST_F_DUTY, (uint16_t)(duty - 20u));
     f->kind = KST_PROG_FILE_UNTYPED;
     f->type = 0;
     load("UN");
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
     CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_UNTYPED);
-    CHECK_EQ(draft(KST_F_DUTY), duty - 2u);
+    CHECK_EQ(draft(KST_F_DUTY), as_typed(KST_F_DUTY, (uint16_t)(duty - 20u)));
     /* A kind this code does not know is the least trusted one. */
-    f->kind = KST_PROG_FILE_KINDS;
-    load("UN");
+    kst_prog_discard(&g_p);
+    CHECK_EQ(kst_prog_load(&g_p, "UN"), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_take(&g_p, &q));
+    kst_card_run(&g_fc.io, &q, &d);
+    CHECK_EQ(d.kind, KST_PROG_FILE_UNTYPED);
+    d.kind = KST_PROG_FILE_KINDS;
+    kst_prog_card_done(&g_p, &d);
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
+    CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_UNTYPED);
 }
 
 TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
@@ -2002,7 +2039,7 @@ TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
     const unsigned t_servo = kst_card_type(&sv), t_other = kst_card_type(&ot);
     fake_file_t *f;
 
-    CHECK(kst_field_edit(&ot, KST_F_DUTY, (uint16_t)(duty - 1u)));
+    CHECK(kst_field_edit(&ot, KST_F_DUTY, (uint16_t)(duty - 10u)));
     up();
     f = fake_card_put(&g_fc, "OTHER", &ot);
     load("OTHER");
@@ -2081,7 +2118,8 @@ TEST_CASE(a_file_that_does_not_read_says_where)
     CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
     CHECK_EQ(kst_prog_load(&g_p, ""), KST_PROG_MSG_CARD_READ);
     CHECK_EQ(kst_prog_load(&g_p, NULL), KST_PROG_MSG_CARD_READ);
-    CHECK_EQ(kst_prog_load(&g_p, "ABCDEFGHIJKLMNOP"), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_load(&g_p, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456"),
+             KST_PROG_MSG_CARD_READ);
     CHECK_EQ(kst_prog_changes(&g_p), 0);
 }
 
@@ -2286,7 +2324,7 @@ TEST_CASE(the_first_write_saves_the_servo_to_the_card_first)
     CHECK_EQ(g_fc.saves, 1);
 
     /* Another session: another file, of the servo as it is then. */
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK(!kst_prog_backed_up(&g_p));
     CHECK_STR_EQ(kst_prog_backup_name(&g_p), "");
@@ -2364,7 +2402,7 @@ TEST_CASE(a_first_write_with_no_card_goes_without_a_file)
     CHECK(kst_prog_no_file(&g_p));
 
     /* The session ends: so does the line. */
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK(!kst_prog_no_file(&g_p));
 }
@@ -3157,7 +3195,7 @@ TEST_CASE(the_state_follows_the_port)
     g_f.rd.port = LINK_KST_RAIL_WAIT;
     pass(1);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
-    CHECK_EQ(kst_prog_power_cycled(&g_p),
+    CHECK_EQ(kst_prog_leave(&g_p),
              KST_PROG_MSG_START + KST_LINK_START_BUSY);
     g_f.rd.phase = KST_LINK_SYNC;
     pass(1);
@@ -3343,7 +3381,6 @@ TEST_CASE(a_connect_needs_the_port_as_the_testers_target)
     CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NEED_TARGET);
     CHECK_EQ(msg(), KST_PROG_MSG_NEED_TARGET);
     CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NEED_TARGET);
     CHECK_EQ(g_starts, 0);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     /* Another port than the one asked for. */
@@ -3355,7 +3392,6 @@ TEST_CASE(a_connect_needs_the_port_as_the_testers_target)
     g_stopped = true;
     frame();
     CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_STOPPED);
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_STOPPED);
     g_stopped = false;
     g_target = CH + 1u;
     frame();
@@ -3456,133 +3492,83 @@ TEST_CASE(a_supply_that_does_not_switch_on_ends_the_connect_with_result_32)
     CHECK_EQ(g_starts, 1);
 }
 
-TEST_CASE(a_reboot_from_programming_mode_ends_the_session)
+TEST_CASE(a_leave_goes_back_to_pwm_and_switches_no_supply)
 {
+    /* No PD mini answers: the port's command changes its state only. */
     fresh_at(0u);
-    g_rail = true;
     link_up();
     CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     edit(KST_F_DUTY, 200);
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
     /* Nothing else starts under it. */
-    CHECK_EQ(kst_prog_reboot(&g_p, CH),
-             KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_START + KST_LINK_START_BUSY);
     CHECK_EQ(kst_prog_connect(&g_p, CH),
              KST_PROG_MSG_START + KST_LINK_START_BUSY);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REBOOTED);
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
     CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_INFO);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     CHECK(!kst_prog_have_servo(&g_p));
     CHECK(!kst_prog_write_enabled(&g_p));
     CHECK_EQ(kst_prog_changes(&g_p), 0);
-    CHECK(g_sup_on);
 }
 
-TEST_CASE(a_reboot_with_the_tester_on_the_port_switches_the_supply)
+TEST_CASE(a_leave_with_a_pd_mini_sends_nothing_and_keeps_the_session)
 {
-    uint32_t t0;
+    int starts;
 
-    fresh_at(0u);
-    g_rail = true;
-    g_sup_on = true;
-    g_sup_mv = 5000;
-    g_sup_ma = 1000;
-    link_up();
-    t0 = g_ms;
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REBOOTED);
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
-    CHECK(g_sup_on);
-    /* Off for 2000 ms and 1000 ms for the servo to start. */
-    CHECK(g_ms - t0 >= KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS);
-    CHECK(g_ms - t0 < KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS + 500u);
-}
-
-TEST_CASE(a_reboot_with_nothing_to_switch_is_refused_by_name)
-{
-    /* No PD mini, the tester on the port. */
-    fresh_at(0u);
-    link_up();
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
-
-    /* A PD mini whose output is off. */
-    fresh_at(0u);
-    g_rail = true;
-    link_up();
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
-
-    /* No pin is said before the supply. */
-    fresh_at(0u);
-    g_rail = true;
-    g_sup_on = true;
-    g_no_pin = true;
-    link_up();
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
-
-    /* No PD mini in programming mode: the session stays. */
-    fresh_at(0u);
-    link_up();
-    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_SUPPLY);
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
-    CHECK(kst_prog_have_servo(&g_p));
-}
-
-TEST_CASE(a_supply_that_does_not_switch_off_keeps_the_session)
-{
     fresh_at(0u);
     g_rail = true;
     link_up();
     CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
-    g_rail_stuck = true;
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
+    CHECK(g_sup_on);
+    starts = g_starts;
+    /* The port's only command to PWM cycles the supply: it is not sent. */
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_LEAVE_SUPPLY);
+    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY);
+    CHECK_EQ(g_starts, starts);
+    CHECK(g_sup_on);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_have_servo(&g_p));
-    /* The leave still ends the session. */
-    g_rail_stuck = false;
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    /* The session goes on. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    /* The PD mini stops answering: the leave is the port's command. */
+    g_rail = false;
+    frame();
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
 }
 
-TEST_CASE(an_abort_in_the_supply_cycle_ends_it_with_the_reason)
+TEST_CASE(the_wait_before_pwm_keeps_its_limits)
 {
     fresh_at(0u);
-    g_rail = true;
-    g_sup_on = true;
-    g_sup_mv = 5000;
-    g_sup_ma = 1000;
+    CHECK_EQ(kst_prog_wait_ms(&g_p), KST_PROG_WAIT_MS);
+    CHECK_EQ(KST_PROG_WAIT_MS, 100u);
+    CHECK(kst_prog_wait_set(&g_p, 0u));
+    CHECK_EQ(kst_prog_wait_ms(&g_p), 0u);
+    CHECK(kst_prog_wait_set(&g_p, KST_PROG_WAIT_MAX_MS));
+    CHECK_EQ(kst_prog_wait_ms(&g_p), 10000u);
+    /* 1 ms above the range changes nothing, and nothing wraps. */
+    CHECK(!kst_prog_wait_set(&g_p, KST_PROG_WAIT_MAX_MS + 1u));
+    CHECK_EQ(kst_prog_wait_ms(&g_p), 10000u);
+    CHECK(!kst_prog_wait_set(&g_p, 65536u + 5u));
+    CHECK(!kst_prog_wait_set(&g_p, UINT32_MAX));
+    CHECK_EQ(kst_prog_wait_ms(&g_p), 10000u);
+    CHECK(kst_prog_wait_set(&g_p, 250u));
+    /* A link that comes and goes keeps it. */
     link_up();
-    CHECK_EQ(kst_prog_reboot(&g_p, CH), KST_PROG_MSG_NONE);
-    for (unsigned i = 0; i < 500u; ++i) {
-        frame();
-    }
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
-    kst_prog_abort(&g_p);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_ABORTED);
-    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK_EQ(kst_prog_wait_ms(&g_p), 250u);
 }
 
 int main(void)
@@ -3595,11 +3581,9 @@ int main(void)
     RUN(a_connect_sets_the_supply_it_was_given);
     RUN(a_supply_outside_the_ports_range_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_result_32);
-    RUN(a_reboot_from_programming_mode_ends_the_session);
-    RUN(a_reboot_with_the_tester_on_the_port_switches_the_supply);
-    RUN(a_reboot_with_nothing_to_switch_is_refused_by_name);
-    RUN(a_supply_that_does_not_switch_off_keeps_the_session);
-    RUN(an_abort_in_the_supply_cycle_ends_it_with_the_reason);
+    RUN(a_leave_goes_back_to_pwm_and_switches_no_supply);
+    RUN(a_leave_with_a_pd_mini_sends_nothing_and_keeps_the_session);
+    RUN(the_wait_before_pwm_keeps_its_limits);
     RUN(an_edit_inside_the_limits_changes_the_draft_only);
     RUN(a_value_beyond_a_hard_limit_is_not_taken);
     RUN(a_value_beyond_a_soft_limit_waits_for_the_confirmation);
@@ -3648,7 +3632,7 @@ int main(void)
     RUN(a_second_cut_keeps_the_image_before_the_first_write);
     RUN(a_journal_whose_servo_is_unchanged_or_complete_is_closed);
     RUN(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write);
-    RUN(a_journal_of_another_channel_is_not_this_servos);
+    RUN(a_journal_of_another_port_is_not_this_servos);
     RUN(a_restore_names_the_soft_limits_its_values_pass);
     RUN(a_coprocessor_that_starts_again_in_a_write_leaves_the_journal);
     RUN(a_write_the_servo_does_not_take_names_the_register);

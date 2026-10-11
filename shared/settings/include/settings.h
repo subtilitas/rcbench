@@ -123,6 +123,11 @@ typedef enum {
     SET_SERVO_TRAVEL_MAX_MS,
     SET_SERVO_STALL_A,
     SET_SERVO_REPORT,
+    SET_SERVO_PROG_V,
+    SET_SERVO_PROG_I,
+    SET_SERVO_PROG_WAIT,
+    SET_SERVO_TARGET,
+    SET_SERVO_PORT_PWM,
     /* --- stick programming ---------------------------------------------- */
     SET_STICK_V,
     SET_STICK_I,

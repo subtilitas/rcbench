@@ -22,7 +22,7 @@ Network) at 1 Mbit/s.
 | Operate the screens | [Screens](Screens.md) |
 | Balance a propeller or a ducted fan | [Balancing](Balance.md) |
 | Measure a servo's installed limit, or synchronise two servos | [Servo procedures](Servo.md) |
-| Read, back up and change the settings of a KST or Chaservo servo | [KST and Chaservo servo programmer](ServoProgrammer.md) |
+| Read, back up and change the settings of a KST or Chaservo servo | [Servo programmer for KST and Chaservo servos](ServoProgrammer.md) |
 | Program an ESC through its throttle-stick menu | [Stick programming](StickProgramming.md) |
 | Connect a receiver and inspect its output | [Receiver buses](Receivers.md) |
 | Stop mechanisms and the external circuit they require | [Safety](Safety.md) |
