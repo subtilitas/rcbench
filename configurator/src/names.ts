@@ -32,12 +32,14 @@ export function pinPresent(pin: Pin, options: Options): boolean {
 }
 
 /**
- * The contract's `confirmed` flag cannot vary with an option. The SDA and SCL
- * pads of the INA228 module with XT90 plugs are not confirmed.
+ * The contract's `confirmed` flag cannot vary with an option. The names of the
+ * 5V, G, SDA and SCL pads of the INA228 module with XT90 plugs are not confirmed.
  */
+const XT90_PADS = ['V5', 'G', 'SDA', 'SCL'];
+
 export function pinUnconfirmed(part: Part, pin: Pin, options: Options): boolean {
   if (!pin.confirmed) return true;
-  return part.id === 'ina228' && options.ina228Board === 'xt90' && (pin.id === 'SDA' || pin.id === 'SCL');
+  return part.id === 'ina228' && options.ina228Board === 'xt90' && XT90_PADS.includes(pin.id);
 }
 
 export function endName(ref: EndRef, ctx: NameCtx): string {

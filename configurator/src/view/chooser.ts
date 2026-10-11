@@ -112,7 +112,7 @@ function ownedRows(view: View): string {
     if (!part.selectable) continue;
     const r = setup.parts.find((x) => x.part.id === part.id);
     const locked = r !== undefined && r.derived && !r.ownedTick;
-    const role = part.role ? tx(lang, part.role) : t(lang, 'roleUnknown');
+    const role = part.role ? tx(lang, part.role) : '';
     const sub = locked && r ? `${reasonText(r, view)} ${t(lang, 'lockHint')}` : role;
     h += `<label class="opt"${locked ? ' data-locked' : ''}><input type="checkbox" id="p-${esc(part.id)}" data-p="${esc(part.id)}"`
       + `${r ? ' checked' : ''}${locked ? ' aria-disabled="true"' : ''}>`

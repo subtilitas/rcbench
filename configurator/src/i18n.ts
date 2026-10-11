@@ -42,7 +42,6 @@ const S = {
   neededBy: ['Needed by: ', 'Nötig für: '],
   youOwn: ['You own it', 'Vorhanden'],
   lockHint: ['Untick that function to remove this part.', 'Zum Entfernen die Funktion abwählen.'],
-  roleUnknown: ['Role not stated. The page draws no wire for it.', 'Aufgabe nicht angegeben. Die Seite zeichnet dafür keinen Draht.'],
   does: ['This setup does', 'Dieser Aufbau kann'],
   wiring: ['Wiring', 'Verdrahtung'],
   legend: ['Line patterns', 'Linienmuster'],

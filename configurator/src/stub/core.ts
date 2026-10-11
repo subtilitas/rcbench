@@ -10,11 +10,12 @@ import type {
 } from '../../contract.ts';
 
 const SRC = { kind: 'page' } as const;
+const OWNER = { kind: 'owner', date: '2026-10-11' } as const;
 const T = (en: string, de: string = en): Text => ({ en, de });
 
 export const DEFAULT_OPTIONS: Options = { connection: 'pads', ina228Board: 'matek', escPower: 'battery' };
 
-type PinSpec = [id: string, en: string, de?: string, only?: Partial<Options>];
+type PinSpec = [id: string, en: string, de?: string, only?: Partial<Options>, unconfirmed?: boolean];
 
 function part(
   id: string, name: Text, short: Text, role: Text | null,
@@ -28,8 +29,8 @@ function part(
     release: 'released',
     hardware: flags.notRun ? 'not-run' : 'run',
     slot,
-    pins: pins.map(([pid, en, de, only]): Pin => {
-      const pin: Pin = { id: pid, label: T(en, de ?? en), confirmed: true, src: SRC };
+    pins: pins.map(([pid, en, de, only, unconfirmed]): Pin => {
+      const pin: Pin = { id: pid, label: T(en, de ?? en), confirmed: unconfirmed !== true, src: SRC };
       if (only) pin.only = only;
       return pin;
     }),
@@ -69,10 +70,10 @@ const PARTS: Part[] = [
       ['POS', '+'], ['NEG', '−'], ['A', 'phase A', 'Phase A'], ['B', 'phase B', 'Phase B'], ['C', 'phase C', 'Phase C']]),
   part('batt', T('ESC battery (yours)', 'ESC-Akku (eigener)'), T('ESC battery', 'ESC-Akku'), T('Source A of the ESC.', 'Quelle A des ESC.'),
     {}, { column: 'L', order: 9 }, [['POS', '+'], ['NEG', '−']]),
-  part('pdmini', T('WeAct Studio PD Power Mini V1 Buck module with its T-plug', 'WeAct-Studio-PD-Power-Mini-V1-Buck-Modul mit T-Stecker'), T('PD mini'),
+  part('pdmini', T('WeAct Studio PD Power Mini V1 Buck module', 'WeAct-Studio-PD-Power-Mini-V1-Buck-Modul'), T('PD mini'),
     T('Supply set from the bench: 1 to 20 V, 0.05 to 3 A (vendor values, not measured).', 'Vom Prüfstand gestellte Versorgung: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen).'),
     { selectable: true }, { column: 'L', order: 6, sub: T('UART through the T-plug', 'UART über den T-Stecker') },
-    [['DM', 'D− (DM)'], ['DP', 'D+ (DP)'], ['G', 'GND'], ['USB', 'USB-C in', 'USB-C Eingang'], ['OP', 'OUT +'], ['ON', 'OUT −']]),
+    [['USB', 'USB-C in', 'USB-C Eingang'], ['OP', 'OUT +'], ['ON', 'OUT −']]),
   part('charger', T('USB-C PD charger', 'USB-C-PD-Ladegerät'), T('PD charger', 'PD-Ladegerät'),
     T('Feeds the PD mini. PD: USB Power Delivery.', 'Speist den PD mini. PD: USB Power Delivery.'),
     {}, { column: 'L', order: 7 }, [['USB', 'USB-C']]),
@@ -83,14 +84,14 @@ const PARTS: Part[] = [
   part('as5600', T('AS5600 board with diametric magnet', 'AS5600-Platine mit diametralem Magnet'), T('AS5600'),
     T('Angle of the servo horn, 12 bit. I2C 0x36, fixed.', 'Winkel des Servohorns, 12 Bit. I2C 0x36, fest.'),
     { selectable: true, notRun: true }, { column: 'R', order: 15 },
-    [['VCC', 'VCC'], ['OUT', 'OUT'], ['GND', 'GND'], ['GPO', 'GPO'], ['SDA', 'SDA'], ['SCL', 'SCL'], ['DIR', 'DIR']]),
+    [['VCC', 'VCC'], ['OUT', 'OUT'], ['GND', 'GND'], ['GPO', 'GPO', 'GPO', undefined, true], ['SDA', 'SDA'], ['SCL', 'SCL'], ['DIR', 'DIR']]),
   part('pull', T('2 resistors, 2.2 kΩ', '2 Widerstände, 2,2 kΩ'), T('2 × 2.2 kΩ', '2 × 2,2 kΩ'), T('Pull-ups of the sensor bus.', 'Pull-ups des Sensorbusses.'),
     {}, { column: 'R', order: 16, sub: T('one per bus line', 'je Busleitung einer') },
     [['SDA', 'R1, to SDA', 'R1, nach SDA'], ['SCL', 'R2, to SCL', 'R2, nach SCL'], ['V', 'R1 and R2, to 3V3', 'R1 und R2, nach 3V3']]),
   part('ina228', T('INA228 battery current sensor', 'INA228-Akkustromsensor'), T('INA228'),
     T('ESC supply voltage and current.', 'Versorgungsspannung und Strom des ESC.'),
     { selectable: true, notRun: true }, { column: 'R', order: 12 },
-    [['V5', '5V', '5V', { ina228Board: 'matek' }], ['G', 'G', 'G', { ina228Board: 'matek' }], ['SDA', 'SDA'], ['SCL', 'SCL'], ['BAT', 'BAT+'], ['ESC', 'ESC+']],
+    [['V5', '5V'], ['G', 'G'], ['SDA', 'SDA'], ['SCL', 'SCL'], ['BAT', 'BAT+'], ['ESC', 'ESC+']],
     { option: 'ina228Board', names: {
       matek: T('MATEK I2C-INA-BM board', 'MATEK-I2C-INA-BM-Platine'),
       xt90: T('INA228 module with XT90 plugs (print: BIFRC V1.1)', 'INA228-Modul mit XT90-Steckern (Aufdruck: BIFRC V1.1)'),
@@ -110,8 +111,9 @@ const PARTS: Part[] = [
     T("Reads pitch and length of the ESC's beeps on phase A.", 'Liest Tonhöhe und Länge der ESC-Töne an Phase A.'),
     { selectable: true, notRun: true }, { column: 'R', order: 13, sub: T('4.7 kΩ, 0.25 W', '4,7 kΩ, 0,25 W') },
     [['IN', 'resistor, end 1', 'Widerstand, Ende 1'], ['OUT', 'resistor, end 2', 'Widerstand, Ende 2']]),
-  part('usbtap', T('USB-C tap with 3-wire lead', 'USB-C-Abgriff mit 3-adriger Leitung'), T('USB-C tap', 'USB-C-Abgriff'), null,
-    { selectable: true }, { column: 'L', order: 11, dashed: true, sub: T('role not stated', 'Aufgabe nicht angegeben') },
+  part('usbtap', T('USB-C tap with 3-wire lead, the T-plug of the PD mini', 'USB-C-Abgriff mit 3-adriger Leitung, der T-Stecker des PD mini'), T('T-plug', 'T-Stecker'),
+    T('Sits between the USB-C PD charger and the PD mini. Brings GND, D+ and D− to the coprocessor.', 'Sitzt zwischen USB-C-PD-Ladegerät und PD mini. Führt GND, D+ und D− zum Koprozessor.'),
+    { selectable: true, notRun: true }, { column: 'L', order: 11, sub: T('UART of the PD mini', 'UART des PD mini') },
     [['G', 'G'], ['DP', 'D+'], ['DM', 'D−'], ['V', 'V']]),
 ];
 
@@ -145,6 +147,7 @@ function wire(
 }
 
 const V33 = (en: string, de: string = en): Text => T(`${en}, 3.3 V`, `${de}, 3,3 V`);
+const STATED = T('Pin from an owner statement of 2026-10-11.', 'Pin aus einer Angabe des Projektinhabers vom 2026-10-11.');
 const SERVO_PD = all(has('servo'), has('pdmini'));
 const SERVO_OWN = all(has('servo'), not(has('pdmini')));
 const ESC_BATT = all(has('esc'), opt('escPower', 'battery'));
@@ -166,9 +169,9 @@ const WIRES: Wire[] = [
   wire(13, 'esc.BEC', T('nothing', 'nichts'), 'nc', { kind: 'S' }, 1, has('esc'), T('none', 'keines'), T('Connected nowhere.', 'Wird nirgends angeschlossen.')),
   wire(14, 'batt.POS', 'esc.POS', 'power', lane('O', 2), 1, all(ESC_BATT, not(has('ina228'))), T('ESC power', 'ESC-Versorgung'), null),
   wire(15, 'batt.NEG', 'esc.NEG', 'power', lane('O', 3), 1, ESC_BATT, T('ESC power', 'ESC-Versorgung'), null),
-  wire(16, 'pad.19', 'pdmini.DM', 'uart', lane('L', 9), 2, has('pdmini'), V33('UART TX'), T('Named from the coprocessor. Pin proposed by this page. Optional 1 kΩ in series.', 'Vom Koprozessor aus benannt. Pin ist ein Vorschlag dieser Seite. Optional 1 kΩ in Reihe.'), { pin: 'proposal' }),
-  wire(17, 'pdmini.DP', 'pad.20', 'uart', lane('L', 10), 2, has('pdmini'), V33('UART RX'), T('Pin proposed by this page. Optional 1 kΩ in series.', 'Pin ist ein Vorschlag dieser Seite. Optional 1 kΩ in Reihe.'), { pin: 'proposal' }),
-  wire(18, 'pad.18', 'pdmini.G', 'gnd', lane('L', 11), 2, has('pdmini'), T('GND'), T('Through the T-plug.', 'Über den T-Stecker.')),
+  wire(16, 'pad.10', 'usbtap.DM', 'uart', lane('L', 9), 2, has('pdmini'), V33('UART TX'), T(`Named from the coprocessor: its TX goes to D− of the T-plug. ${STATED.en} Optional 1 kΩ in series.`, `Vom Koprozessor aus benannt: sein TX geht an D− des T-Steckers. ${STATED.de} Optional 1 kΩ in Reihe.`), { pin: 'proposal', src: OWNER }),
+  wire(17, 'usbtap.DP', 'pad.9', 'uart', lane('L', 10), 2, has('pdmini'), V33('UART RX'), T(`${STATED.en} Optional 1 kΩ in series.`, `${STATED.de} Optional 1 kΩ in Reihe.`), { pin: 'proposal', src: OWNER }),
+  wire(18, 'pad.18', 'usbtap.G', 'gnd', lane('L', 11), 2, has('pdmini'), T('GND'), null, { src: OWNER }),
   wire(19, 'charger.USB', 'pdmini.USB', 'power', lane('O', 4), 2, has('pdmini'), T('PD in', 'PD-Eingang'), T('Through the T-plug. Output is at most input less 0.5 V.', 'Über den T-Stecker. Ausgang höchstens Eingang minus 0,5 V.')),
   wire(20, 'pdmini.OP', 'servo.POS', 'power', lane('O', 0), 2, all(SERVO_PD, not(has('ina3221'))), T('servo power, 1 to 20 V', 'Servoversorgung, 1 bis 20 V'), null),
   wire(21, 'pdmini.ON', 'servo.NEG', 'power', lane('O', 1), 2, SERVO_PD, T('servo power', 'Servoversorgung'), null),
@@ -191,8 +194,8 @@ const WIRES: Wire[] = [
   wire(38, 'pad.21', 'pull.SDA', 'sda', lane('R', 13), 4, has('pull'), T('I2C SDA'), T('2.2 kΩ from SDA to 3V3.', '2,2 kΩ von SDA nach 3V3.'), { pin: 'default' }),
   wire(39, 'pad.22', 'pull.SCL', 'scl', lane('R', 14), 4, has('pull'), T('I2C SCL'), T('2.2 kΩ from SCL to 3V3.', '2,2 kΩ von SCL nach 3V3.'), { pin: 'default' }),
   wire(40, 'pad.36', 'pull.V', 'logic', lane('R', 15), 4, has('pull'), V33('supply', 'Versorgung'), null),
-  wire(41, 'pad.40', 'ina228.V5', 'logic', lane('R', 0), 5, all(has('ina228'), opt('ina228Board', 'matek')), T('supply, 5 V', 'Versorgung, 5 V'), T('The MATEK board needs 4 to 9 V.', 'Die MATEK-Platine braucht 4 bis 9 V.')),
-  wire(42, 'pad.38', 'ina228.G', 'gnd', lane('R', 1), 5, all(has('ina228'), opt('ina228Board', 'matek')), T('GND'), null),
+  wire(41, 'pad.40', 'ina228.V5', 'logic', lane('R', 0), 5, has('ina228'), T('supply, 5 V', 'Versorgung, 5 V'), T('The MATEK board needs 4 to 9 V.', 'Die MATEK-Platine braucht 4 bis 9 V.')),
+  wire(42, 'pad.38', 'ina228.G', 'gnd', lane('R', 1), 5, has('ina228'), T('GND'), null),
   wire(43, 'pad.21', 'ina228.SDA', 'sda', lane('R', 2), 5, has('ina228'), V33('I2C SDA'), null, { pin: 'default' }),
   wire(44, 'pad.22', 'ina228.SCL', 'scl', lane('R', 3), 5, has('ina228'), V33('I2C SCL'), null, { pin: 'default' }),
   wire(45, 'batt.POS', 'ina228.BAT', 'power', across(14, 18, 2), 5, all(ESC_BATT, has('ina228')), T('ESC power', 'ESC-Versorgung'), T("The sensor sits in the ESC's plus line.", 'Der Sensor sitzt in der Plusleitung des ESC.')),
@@ -204,6 +207,7 @@ const WIRES: Wire[] = [
   wire(51, 'sim.A', 'tap.IN', 'phase', across(16, 20, 4), 5, all(has('sim'), has('tap')), T('phase A, up to 25.2 V', 'Phase A, bis 25,2 V'), T('The resistor sits at the corner.', 'Der Widerstand sitzt an der Ecke.')),
   wire(52, 'pad.29', 'tap.OUT', 'phase', lane('R', 4), 5, has('tap'), T('tap signal, 3.22 V or less', 'Abgriffsignal, höchstens 3,22 V'), T('Under 30 cm. No output on GP22 while the tap is on.', 'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.'), { pin: 'default' }),
   wire(53, 'pad.29', 'pad.28', 'phase', { kind: 'Z' }, 5, has('tap'), T('zener clamp', 'Z-Dioden-Klemme'), T('3.0 V zener diode across the two adjacent pads, band (cathode) to GP22.', '3,0-V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GP22.'), { kind: 'component', netB: 'gnd' }),
+  wire(54, 'as5600.GPO', T('GND, on the board', 'GND, auf der Platine'), 'gnd', { kind: 'S' }, 4, has('as5600'), T('GPO strap', 'GPO-Brücke'), T('docs/Building.md names the pin PGO. No wire to the coprocessor.', 'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.'), { net: 'gnd' }),
 ];
 
 function fn(id: string, group: Fn['group'], name: Text, needs: string[], notRun = false, forces?: Partial<Options>): Fn {
@@ -228,6 +232,7 @@ const FUNCTIONS: Fn[] = [
 
 const RULES: Rule[] = [
   { id: 'pd-for-esc', when: ESC_PD, adds: 'pdmini', because: T('ESC power B', 'ESC-Versorgung B'), src: SRC },
+  { id: 'pd-tplug', when: has('pdmini'), adds: 'usbtap', because: T('UART of the PD mini', 'UART des PD mini'), src: OWNER },
   { id: 'charger', when: has('pdmini'), adds: 'charger', because: T('PD mini'), src: SRC },
   { id: 'servo-supply', when: SERVO_OWN, adds: 'ssup', because: T('Servo'), src: SRC },
   { id: 'battery', when: ESC_BATT, adds: 'batt', because: T('ESC'), src: SRC },
@@ -243,13 +248,15 @@ const CHECKS: Check[] = [
   check('panel-print', 'unknown', null, "Names of the panel's CAN terminals and the pin order of J8: not stated in the docs. Read the print on the board.", 'Namen der CAN-Klemmen des Panels und Pinfolge von J8: in den Dokumenten nicht angegeben. Den Aufdruck der Platine lesen.'),
   check('same-release', 'note', null, 'Both boards run the same release. With different releases the bench does not arm.', 'Beide Platinen laufen mit demselben Release. Bei verschiedenen Releases schaltet der Prüfstand nicht scharf.'),
   check('servo-pin', 'note', has('servo'), "GP2 for the servo is a proposal of this page. The build guide's example is GP0. GP0 and GP16 share a compare register, and GP16 carries the sensor bus. Whether the firmware refuses that pair: not stated.", 'GP2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GP0. GP0 und GP16 teilen sich ein Vergleichsregister, und GP16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.'),
-  check('pd-pins', 'note', has('pdmini'), 'GP14 and GP15 for the PD mini are proposals of this page. The firmware has no default. Set both under SETUP → INTERFACES.', 'GP14 und GP15 für den PD mini sind Vorschläge dieser Seite. Die Firmware hat keine Voreinstellung. Beide unter SETUP → INTERFACES einstellen.'),
+  check('pd-pins', 'note', has('pdmini'), 'GP7 (PD mini TX) and GP6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.', 'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.'),
   check('pd-shared', 'unknown', all(has('servo'), ESC_PD), 'Servo and ESC on the one PD mini output at the same time: not stated in the build guide.', 'Servo und ESC gleichzeitig an dem einen Ausgang des PD mini: in der Bauanleitung nicht angegeben.'),
   check('ina3221-a0', 'note', has('ina3221'), 'INA3221 as delivered: all A0 bridges open, the address changes between 0x40 and 0x41. Set the A0 bridge to GND.', 'INA3221 im Lieferzustand: alle A0-Brücken offen, die Adresse wechselt zwischen 0x40 und 0x41. Die A0-Brücke nach GND setzen.'),
   check('matek-rail', 'measure', all(has('ina228'), opt('ina228Board', 'matek')), 'MATEK board: the pull-up rail is not known. With the board powered and the coprocessor not connected, SDA and SCL read 3.3 V or less to GND.', 'MATEK-Platine: Die Pull-up-Schiene ist nicht bekannt. Platine versorgt, Koprozessor noch nicht verbunden: SDA und SCL liegen bei höchstens 3,3 V gegen GND.'),
-  check('xt90', 'unknown', all(has('ina228'), opt('ina228Board', 'xt90')), 'INA228 module with XT90 plugs: address, supply voltage and the pads for SDA and SCL are not stated. The header print reads L A V G 5. The drawing shows no supply wire for it.', 'INA228-Modul mit XT90-Steckern: Adresse, Versorgungsspannung und die Pads für SDA und SCL sind nicht angegeben. Der Aufdruck der Leiste lautet L A V G 5. Die Zeichnung zeigt dafür keinen Versorgungsdraht.'),
-  check('as5600', 'unknown', has('as5600'), 'AS5600 board: pull-ups on the board are not known. GPO: the build guide lists no wire; Building.md ties PGO to GND. The page draws no wire.', 'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. GPO: Die Bauanleitung nennt keinen Draht; Building.md legt PGO an GND. Die Seite zeichnet keinen Draht.'),
+  check('ina228-xt90', 'note', all(has('ina228'), opt('ina228Board', 'xt90')), 'INA228 module with XT90 plugs: wired as the MATEK I2C-INA-BM board, with supply, GND, SDA and SCL on the sensor bus and the same I2C address. This comes from an owner statement of 2026-10-11.', 'INA228-Modul mit XT90-Steckern: verdrahtet wie die MATEK-I2C-INA-BM-Platine, mit Versorgung, GND, SDA und SCL am Sensorbus und derselben I2C-Adresse. Das stammt aus einer Angabe des Projektinhabers vom 2026-10-11.'),
+  check('ina228-xt90-pads', 'unknown', all(has('ina228'), opt('ina228Board', 'xt90')), 'INA228 module with XT90 plugs: the pad names printed on the board are not confirmed. The header print reads L A V G 5. The drawing uses the pad names of the MATEK board.', 'INA228-Modul mit XT90-Steckern: Die auf der Platine gedruckten Padnamen sind nicht bestätigt. Der Aufdruck der Leiste lautet L A V G 5. Die Zeichnung verwendet die Padnamen der MATEK-Platine.'),
+  check('as5600-board', 'unknown', has('as5600'), 'AS5600 board: pull-ups on the board are not known. The print of the pin GPO, named PGO in Building.md, is not confirmed. It is tied to GND.', 'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO, in Building.md PGO genannt, ist nicht bestätigt. Er liegt an GND.'),
   check('tap-ground', 'measure', has('tap'), 'Phase tap: everything unpowered, ESC power negative to coprocessor GND reads near 0 Ω. With an opto-isolated ESC input the tap reads nothing.', 'Phasenabgriff: alles stromlos, Minus der ESC-Versorgung gegen GND des Koprozessors liest nahe 0 Ω. Bei einem ESC-Eingang mit Optokoppler liest der Abgriff nichts.'),
+  check('usbtap-v', 'note', has('usbtap'), 'T-plug: the V pad carries no wire. Without the PD mini the T-plug has no wire.', 'T-Stecker: Das Pad V bekommt keinen Draht. Ohne den PD mini hat der T-Stecker keinen Draht.'),
   check('sim-ground', 'note', has('sim'), "No ground wire from the simulator to the coprocessor. It runs parallel to the ESC's own ground and can carry motor current.", 'Kein Massedraht vom Simulator zum Koprozessor. Er liegt parallel zur Masse des ESC und kann Motorstrom führen.'),
   check('estop-tabs', 'unknown', has('estop'), 'Emergency stop: the tab labels are not confirmed. The NC pair reads near 0 Ω while the button is released.', 'Not-Halt: Die Beschriftung der Lötfahnen ist nicht bestätigt. Das NC-Paar liest nahe 0 Ω, solange der Taster nicht gedrückt ist.'),
   check('osoyoo-labels', 'unknown', opt('connection', 'osoyoo'), 'Osoyoo breakout board: the terminal labels are read from one photo and partly legible. The board is not in the build guide and has not run on hardware.', 'Osoyoo-Breakout-Platine: Die Klemmenbeschriftung stammt von einem Foto und ist teilweise lesbar. Die Platine steht nicht in der Bauanleitung und ist nicht auf Hardware gelaufen.'),

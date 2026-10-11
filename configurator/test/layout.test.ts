@@ -45,7 +45,7 @@ test('the lane table of the specification collides in the places GEO changes', (
   const found = [...kinds(SPEC_GEO, 'en').keys()];
   const has = (text: string): boolean => found.some((f) => f.startsWith(text));
   assert.ok(has('wires 12 and 47 share a line'), found.join('\n'));
-  assert.ok(has('wires 17 and 46 share a line'));
+  assert.ok(has('wires 30 and 47 share a line'));
   assert.ok(has('wires 33 and 34 share a line'));
   assert.ok(has('cross mark of wire 31 lies on wire 47'));
   assert.ok(has('pill 22 covers wire 21'));
@@ -114,4 +114,55 @@ test('an unknown end is reported as skipped, not drawn', () => {
   const l = layout(broken, CATALOGUE, 'en');
   assert.deepEqual(l.skipped, [first.n]);
   assert.ok(!l.wires.some((w) => w.n === first.n));
+});
+
+test('the T-plug is a module with the UART wires of the PD mini', () => {
+  const setup = resolve(CATALOGUE, { ...base, owned: ['pdmini'] });
+  const l = layout(setup, CATALOGUE, 'en');
+  const plug = l.modules.find((m) => m.id === 'usbtap');
+  assert.ok(plug, 'the PD mini brings the T-plug');
+  assert.equal(plug.dashed, false);
+  assert.deepEqual(plug.pins.map((p) => [p.id, p.used]), [['G', true], ['DP', true], ['DM', true], ['V', false]]);
+  const ends = (n: number): string[] => l.wires.filter((w) => w.n === n).map((w) => `${w.a} ${w.b}`);
+  assert.deepEqual(ends(16), ['pad.10 usbtap.DM']);
+  assert.deepEqual(ends(17), ['usbtap.DP pad.9']);
+  assert.deepEqual(ends(18), ['pad.18 usbtap.G']);
+  assert.ok(!l.modules.find((m) => m.id === 'pdmini')?.pins.some((p) => /^D/.test(p.id)));
+  for (const p of CATALOGUE.parts) assert.ok(p.role !== null, `${p.id} states its role`);
+});
+
+test('the T-plug without the PD mini is drawn without a wire', () => {
+  const setup = resolve(CATALOGUE, { ...base, owned: ['usbtap'] });
+  const l = layout(setup, CATALOGUE, 'de');
+  assert.deepEqual(findings(l, setup), []);
+  const plug = l.modules.find((m) => m.id === 'usbtap');
+  assert.ok(plug);
+  assert.ok(plug.pins.every((p) => !p.used));
+});
+
+test('the INA228 module with XT90 plugs is wired as the MATEK board, its pad names marked', () => {
+  const draw = (ina228Board: 'matek' | 'xt90') => {
+    const setup = resolve(CATALOGUE, { ...base, owned: ['ina228'], options: { ...DEFAULT_OPTIONS, ina228Board } });
+    return layout(setup, CATALOGUE, 'en');
+  };
+  const [matek, xt90] = [draw('matek'), draw('xt90')];
+  assert.deepEqual(xt90.wires.map((w) => [w.n, w.points]), matek.wires.map((w) => [w.n, w.points]));
+  for (const n of [41, 42, 43, 44]) assert.ok(xt90.wires.some((w) => w.n === n), `wire ${n}`);
+  const labels = (l: typeof xt90): string[] => l.modules.find((m) => m.id === 'ina228')!.pins.map((p) => p.label);
+  assert.deepEqual(labels(matek), ['5V', 'G', 'SDA', 'SCL', 'BAT+', 'ESC+']);
+  assert.deepEqual(labels(xt90), ['5V ?', 'G ?', 'SDA ?', 'SCL ?', 'BAT+', 'ESC+']);
+});
+
+test('the AS5600 draws the GPO strap and the DIR strap as stubs', () => {
+  const setup = resolve(CATALOGUE, { ...base, owned: ['as5600'] });
+  const l = layout(setup, CATALOGUE, 'en');
+  for (const [n, pin] of [[37, 'as5600.DIR'], [54, 'as5600.GPO']] as const) {
+    const w = l.wires.find((x) => x.n === n);
+    assert.ok(w, `wire ${n}`);
+    assert.equal(w.a, pin);
+    assert.equal(w.b, null);
+    assert.ok(w.cross);
+    assert.equal(l.pills.filter((p) => p.n === n).length, 1);
+  }
+  assert.ok(l.wires.find((w) => w.n === 54)!.title.includes('GND'));
 });

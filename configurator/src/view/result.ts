@@ -49,7 +49,7 @@ function parts(view: View): string {
       ? `<img class="ph" src="photos/${esc(p.photo.file)}" width="48" height="48" alt="${esc(tx(lang, p.photo.alt))}">`
       : '<span class="ph" aria-hidden="true"></span>';
     h += `<li>${photo}<div><b>${esc(name)}</b>${notRun ? ` <span class="tag">${esc(t(lang, 'nrh'))}</span>` : ''}`
-      + `<small>${esc(p.role ? tx(lang, p.role) : t(lang, 'roleUnknown'))}</small>`
+      + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
       + `<span class="why">${esc(reasonText(r, view))}</span></div></li>`;
   }
   return `${h}</ul>`;
