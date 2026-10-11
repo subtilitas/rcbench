@@ -2,6 +2,10 @@
  * The WeAct PD Power Mini V1 Buck on its UART: the codec and a driver that
  * talks to it one transaction at a time.
  *
+ * Implements the UART protocol of the WeAct PD Power Mini V1 Buck module.
+ * WeAct is a name or trademark of its owner; it is used here only to say
+ * which module this driver works with (NOTICE, "Trademarks").
+ *
  * The module's protocol, from the vendor's sheet uart_protocol_v1.1: a
  * request is a command byte, its arguments and a CRC8
  * (polynomial 0x31, initial 0xFF); a read is answered with the command byte,

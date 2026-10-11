@@ -64,3 +64,13 @@ target_link_libraries(my_target PRIVATE rcbench_openyge)
 ```
 
 The header compiles from C++.
+
+## Trademarks
+
+YGE and OpenYGE are names or trademarks of their respective owners; they
+are used here only to say which ESCs this module works with. The project is
+not affiliated with them. The module is written from the specification in
+`docs/OpenYGE.md`; no vendor code is included.
+The full notice is in the repository's
+[README](../../README.md#legal-notice-and-disclaimer) and in the section
+"Trademarks" of [NOTICE](../../NOTICE).

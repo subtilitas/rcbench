@@ -100,3 +100,13 @@ C++; in C++ the `pdmini_io_t` members are set in declaration order.
 
 A host build links `rcbench_pdmini` alone; the folder `rp2350/` is added only
 where `pico_generate_pio_header` exists.
+
+## Trademarks
+
+WeAct is a name or trademark of its owner; it is used here only to say
+which module this driver works with. The project is not affiliated with it.
+The protocol is implemented from the vendor's sheet `uart_protocol_v1.1`; no
+vendor code is included.
+The full notice is in the repository's
+[README](../../README.md#legal-notice-and-disclaimer) and in the section
+"Trademarks" of [NOTICE](../../NOTICE).
