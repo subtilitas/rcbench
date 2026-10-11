@@ -317,7 +317,7 @@ function sim(d: Dwg): void {
   const bands: Array<[number, string]> = [[0.2, '#e2c21f'], [0.34, '#7d3fb0'], [0.48, '#6b4423'], [0.8, '#c9a54a']];
   const o = { len: 78, wd: 20, colour: '#4f93c8', bands };
   d.add(d.axial(A[0], A[1], B[0], B[1], o), d.axial(B[0], B[1], C[0], C[1], o), d.axial(C[0], C[1], A[0], A[1], o));
-  const stub = (p: number[], q: number[]): string => `<path d="M${p[0]} ${p[1]}L${q[0]} ${q[1]}" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M${p[0]} ${p[1]}L${q[0]} ${q[1]}" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>`;
+  const stub = (p: number[], q: number[]): string => d.bare(p[0]!, p[1]!, q[0]!, q[1]!);
   const eA = [150, 28], eB = [30, 214], eC = [270, 214];
   d.add(stub(A, eA), stub(B, eB), stub(C, eC));
   d.add(d.solder(A[0], A[1], 7), d.solder(B[0], B[1], 7), d.solder(C[0], C[1], 7));
@@ -424,9 +424,8 @@ function tap(d: Dwg): void {
   d.add(d.eye(42, 66, 7), d.eye(258, 66, 7));
   d.add(d.pin('IN', 42, 66, 'W', 22, 40, { f: INK, sz: 12.5 }));
   d.add(d.pin('OUT', 258, 66, 'E', 278, 104, { f: INK, sz: 12.5, a: 'end' }));
-  // zener diode: its ends go across 2 coprocessor pads, it has no pin of its own
-  d.add(d.axial(96, 156, 204, 156, { len: 44, wd: 16, colour: '#d8643a', bands: [[0.8, '#17181c', 6]], glass: true }));
-  d.add(d.eye(96, 156, 6, true), d.eye(204, 156, 6, true));
+  // The zener diode of the phase tap is a wire of the data file (kind 'component')
+  // between 2 coprocessor pads. It is not part of this drawing.
 }
 
 // ---------------------------------------------------------------- AS5600
@@ -457,7 +456,7 @@ function pull(d: Dwg): void {
   const o = { len: 70, wd: 20, colour: '#d9c39a', bands };
   const J = [236, 96];
   d.add(d.axial(42, 58, J[0], J[1], o), d.axial(42, 134, J[0], J[1], o));
-  d.add(`<path d="M${J[0]} ${J[1]}H276" stroke="#7d848c" stroke-width="4.2" stroke-linecap="round"/><path d="M${J[0]} ${J[1]}H276" stroke="#d7dbe0" stroke-width="2.4" stroke-linecap="round"/>`);
+  d.add(d.bare(J[0]!, J[1]!, 276, 96));
   d.add(d.solder(J[0], J[1], 7));
   d.add(d.eye(42, 58, 7), d.eye(42, 134, 7), d.eye(276, 96, 7));
   d.add(d.pin('SDA', 42, 58, 'W', 22, 34, { f: INK, sz: 12.5 }));
@@ -687,8 +686,8 @@ export const LIST: Entry[] = [
     desc: T('Illustration of the MATEK INA228 board: pads ESC+ and BAT+ beside the shunt, connector with 5V, SCL, SDA and G.', 'Illustration der MATEK-INA228-Platine: Pads ESC+ und BAT+ neben dem Shunt, Stecker mit 5V, SCL, SDA und G.') },
   { file: 'ina228--xt90', part: 'ina228', variant: 'xt90', pfx: 'ixt', w: 420, h: 280, draw: ina228Xt90,
     desc: T('Illustration of the INA228 module with 2 XT90 plugs and a 5-pin header printed L A V G 5.', 'Illustration des INA228-Moduls mit 2 XT90-Steckern und 5-poliger Leiste mit dem Aufdruck L A V G 5.') },
-  { file: 'tap', part: 'tap', pfx: 'tap', w: 300, h: 200, draw: tap,
-    desc: T('Illustration of the phase tap: a resistor with 2 ends, and a zener diode.', 'Illustration des Phasenabgriffs: ein Widerstand mit 2 Enden und eine Z-Diode.') },
+  { file: 'tap', part: 'tap', pfx: 'tap', w: 300, h: 132, draw: tap,
+    desc: T('Illustration of the series resistor of the phase tap, with 2 ends.', 'Illustration des Vorwiderstands des Phasenabgriffs, mit 2 Enden.') },
   { file: 'as5600', part: 'as5600', pfx: 'as5', w: 326, h: 284, draw: as5600,
     desc: T('Illustration of the AS5600 board: header GND, OUT, VCC and header GPO, SDA, SCL, DIR, with the magnet beside it.', 'Illustration der AS5600-Platine: Leiste GND, OUT, VCC und Leiste GPO, SDA, SCL, DIR, daneben der Magnet.') },
   { file: 'pull', part: 'pull', pfx: 'pul', w: 310, h: 192, draw: pull,

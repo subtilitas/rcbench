@@ -124,7 +124,7 @@ export function mergeAnchors(
   }
 }
 
-/** Every drawing in both languages, and the anchor table. Throws when a pin of the catalogue is not drawn. */
+/** Every drawing in both languages, and the anchor table. Throws when a pin of the catalogue is not drawn or a component lead ends without a pin. */
 export function generate(catalogue: Catalogue): Output {
   const files: Array<[string, DrawingRecord]> = [];
   const svgs: Record<string, string> = {};
@@ -149,6 +149,8 @@ export function generate(catalogue: Catalogue): Output {
       entry.draw(d);
       const missing = Object.keys(labels).filter((id) => !d.seen.has(id));
       if (missing.length > 0) throw new Error(`${entry.file}: pins not drawn: ${missing.join(', ')}`);
+      const loose = d.loose();
+      if (loose.length > 0) throw new Error(`${entry.file}: lead ends that reach no pin: ${loose.join(' ')}`);
       svgs[pathOf(file, lang)] = d.svg();
       mergeAnchors(entry.file, record.pins, d.anchors, lang, lang === LANGS[0]);
     }

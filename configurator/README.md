@@ -189,7 +189,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The page does not show the drawings. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 46 files, 453.7 kB.
+Drawing folder: 46 files, 451.5 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 

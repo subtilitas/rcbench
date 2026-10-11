@@ -104,6 +104,8 @@ A pin with `only` is on the drawing of the board it names and on no other.
 The generator stops with an error, and the check with it, when:
 
 - a pin of the data file is not drawn,
+- a bare component lead or its eyelet ends at a point that no chain of leads
+  connects to the wire point of a pin,
 - a draw function draws a pin the data file does not have,
 - a label is wider than its drawing. The width is an estimate: 0.62 em per
   character. The font of the viewer is not measured.
