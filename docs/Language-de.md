@@ -85,7 +85,7 @@ passen.
 - Die Namen, die das Werkzeug des Herstellers den Einstellungen eines KST-
   oder Chaservo-Servos gibt, als Zeilen des Servo-Programmierers: DEAD BAND,
   MAX. DUTY, BOOST, STRETCH, SOFT START, NEUTRAL, PULSE LOWER, PULSE UPPER,
-  LEFT ANGLE, RIGHT ANGLE, REVERSION und die Zeilen seines Tabs GESPERRT;
+  LEFT ANGLE, RIGHT ANGLE, REVERSION und die Zeilen seines Tabs SPERRE;
   dazu PORT, BACKUP und Pairing.
 
 ## Glossar
@@ -209,7 +209,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 142 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 143 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 

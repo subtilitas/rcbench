@@ -106,6 +106,20 @@ static kst_prog_msg_id_t say(kst_prog_t *p, unsigned id, unsigned arg)
     return say_reg(p, id, arg, 0xFFu);
 }
 
+/* The last message no longer describes what is shown: an edit was taken,
+ * the switch went on, the pending values went.  A message of the danger
+ * level stays until the next one. */
+static void hush(kst_prog_t *p)
+{
+    if (p->msg.id != KST_PROG_MSG_NONE && p->msg.level != KST_PROG_DANGER) {
+        p->msg.id = KST_PROG_MSG_NONE;
+        p->msg.level = KST_PROG_INFO;
+        p->msg.arg = 0;
+        p->msg.reg = 0xFFu;
+        p->msg.seq++;
+    }
+}
+
 static void file_want(kst_prog_t *p, uint8_t what)
 {
     p->file_wanted = true;
@@ -149,6 +163,8 @@ static void session_gone(kst_prog_t *p)
     p->wrote_before = 0;
     p->wrote_known = false;
     p->keep = false;
+    p->conf_set = 0;
+    p->plan_n = 0;
 }
 
 /* -------------------------------------------------------------- the fields */
@@ -185,11 +201,129 @@ static kst_rules_t hard_new(const kst_prog_t *p, const kst_image_t *target)
          & ~was;
 }
 
-/* The soft rules @p target breaks beyond those the servo's image breaks. */
+/* The soft rules @p target breaks as a step from the servo as last read:
+ * what a restore is checked with, which moves the servo back and is
+ * warned of by where it moves from. */
 static kst_rules_t soft_new(const kst_prog_t *p, const kst_image_t *target)
 {
-    return kst_limits_edit(&p->servo, target, 0, NULL) & ~KST_RULES_HARD
-         & ~kst_limits_edit(&p->servo, &p->servo, 0, NULL);
+    return kst_limits_edit(&p->servo, target, 0, NULL) & ~KST_RULES_HARD;
+}
+
+/* The image the soft rules compare with: the servo as the session found
+ * it, so that the writes of a session do not add up unseen.  The servo as
+ * last read where the session's backup is not held or is another
+ * servo's. */
+static const kst_image_t *soft_base(const kst_prog_t *p)
+{
+    return p->fed && p->f.have_backup && !kst_prog_backup_other(p)
+         ? &p->f.backup : &p->servo;
+}
+
+static kst_rules_t soft_of(const kst_prog_t *p, const kst_image_t *img)
+{
+    return kst_limits_edit(soft_base(p), img, 0, NULL) & ~KST_RULES_HARD;
+}
+
+/* The soft rules of @p img that field @p id is at fault for: the ones
+ * that go when the field takes the base's value. */
+static kst_rules_t soft_by(const kst_prog_t *p, const kst_image_t *img,
+                           kst_field_id_t id)
+{
+    const uint16_t was = kst_field_get(soft_base(p), id);
+    kst_image_t t = *img;
+
+    if (was == kst_field_get(img, id) || !kst_field_edit(&t, id, was)) {
+        return 0;
+    }
+    return soft_of(p, img) & ~soft_of(p, &t);
+}
+
+/* Whether @p raw is further from the base's value @p base than @p conf,
+ * the value confirmed, or on its other side. */
+static bool further(uint16_t raw, uint16_t conf, uint16_t base)
+{
+    const unsigned a = raw > base ? (unsigned)(raw - base)
+                                  : (unsigned)(base - raw);
+    const unsigned b = conf > base ? (unsigned)(conf - base)
+                                   : (unsigned)(base - conf);
+
+    if (raw != base && conf != base && (raw > base) != (conf > base)) {
+        return true;
+    }
+    return a > b;
+}
+
+/* The value of @p id the operator has confirmed a soft rule for; what the
+ * servo holds where none was. */
+static uint16_t confirmed(const kst_prog_t *p, kst_field_id_t id)
+{
+    return (p->conf_set & KST_FIELD_BIT(id)) != 0u ? p->conf_raw[id]
+                                                  : kst_field_get(&p->servo,
+                                                                  id);
+}
+
+/*
+ * The soft rules the step from @p from to @p target asks a confirmation
+ * for: the ones @p target breaks and @p from does not, and the ones a
+ * field is at fault for that the step moves further from the base's value
+ * than the value confirmed.
+ */
+static kst_rules_t soft_asks(const kst_prog_t *p, const kst_image_t *from,
+                             const kst_image_t *target)
+{
+    const kst_image_t *base = soft_base(p);
+    kst_rules_t ask = soft_of(p, target) & ~soft_of(p, from);
+
+    for (unsigned n = 0; n < KST_F_COUNT; ++n) {
+        const kst_field_id_t id = (kst_field_id_t)n;
+        const uint16_t raw = kst_field_get(target, id);
+
+        if (editable(id) && raw != kst_field_get(from, id)
+            && further(raw, confirmed(p, id), kst_field_get(base, id))) {
+            ask |= soft_by(p, target, id);
+        }
+    }
+    return ask;
+}
+
+/* The values of @p img that differ from @p from are confirmed. */
+static void confirm(kst_prog_t *p, const kst_image_t *from,
+                    const kst_image_t *img)
+{
+    for (unsigned n = 0; n < KST_F_COUNT; ++n) {
+        const kst_field_id_t id = (kst_field_id_t)n;
+
+        if (editable(id)
+            && kst_field_get(img, id) != kst_field_get(from, id)) {
+            p->conf_raw[n] = kst_field_get(img, id);
+            p->conf_set |= KST_FIELD_BIT(n);
+        }
+    }
+}
+
+const kst_image_t *kst_prog_soft_base(const kst_prog_t *p)
+{
+    return soft_base(p);
+}
+
+kst_field_set_t kst_prog_soft_fields(const kst_prog_t *p,
+                                     const kst_image_t *img)
+{
+    kst_field_set_t set = 0;
+
+    if (!p->have_servo) {
+        return 0;
+    }
+    for (unsigned n = 0; n < KST_F_COUNT; ++n) {
+        const kst_field_id_t id = (kst_field_id_t)n;
+
+        if (editable(id)
+            && kst_field_get(img, id) != kst_field_get(&p->servo, id)
+            && soft_by(p, img, id) != 0u) {
+            set |= KST_FIELD_BIT(n);
+        }
+    }
+    return set;
 }
 
 static bool raw_taken(const kst_prog_t *p, kst_field_id_t id, uint16_t raw)
@@ -399,6 +533,8 @@ static void adopt(kst_prog_t *p)
     p->soft = false;
     p->soft_load = false;
     p->load_skipped = 0;
+    /* What the servo holds is what was confirmed. */
+    p->conf_set = 0;
     p->fp_ok = kst_fingerprint(&p->servo, NULL)
             && (p->f.rd.flags & LINK_KS_F_FP_OK) != 0u;
     if ((had && !same(&was, &p->servo)) || !p->fp_ok) {
@@ -1188,6 +1324,16 @@ kst_prog_state_t kst_prog_state(const kst_prog_t *p)
     }
 }
 
+bool kst_prog_writing(const kst_prog_t *p)
+{
+    return (p->wait != W_NONE || p->cmd_ready) && is_write(p->op);
+}
+
+unsigned kst_prog_write_steps(const kst_prog_t *p)
+{
+    return kst_prog_writing(p) ? p->plan_n : 0u;
+}
+
 bool kst_prog_planning(const kst_prog_t *p)
 {
     return kst_prog_state(p) == KST_PROG_WORKING
@@ -1405,8 +1551,7 @@ kst_prog_edit_t kst_prog_edit(kst_prog_t *p, kst_field_id_t id, uint16_t raw)
         (void)say(p, KST_PROG_MSG_EDIT_HARD, lowest(hard));
         return KST_PROG_EDIT_REFUSED;
     }
-    soft = kst_limits_edit(&p->servo, &trial, 0, NULL) & ~KST_RULES_HARD
-         & ~kst_limits_edit(&p->servo, &p->draft, 0, NULL);
+    soft = soft_asks(p, &p->draft, &trial);
     if (soft != 0u) {
         p->soft = true;
         p->soft_img = trial;
@@ -1414,6 +1559,7 @@ kst_prog_edit_t kst_prog_edit(kst_prog_t *p, kst_field_id_t id, uint16_t raw)
         return KST_PROG_EDIT_SOFT;
     }
     p->draft = trial;
+    hush(p);
     return KST_PROG_EDIT_OK;
 }
 
@@ -1467,9 +1613,12 @@ void kst_prog_soft_confirm(kst_prog_t *p)
         p->soft = false;
         if (p->soft_load) {
             p->soft_load = false;
+            confirm(p, &p->servo, &p->soft_img);
             load_take(p, &p->soft_img);
         } else {
+            confirm(p, &p->draft, &p->soft_img);
             p->draft = p->soft_img;
+            hush(p);
         }
     }
 }
@@ -1490,9 +1639,11 @@ void kst_prog_discard(kst_prog_t *p)
     p->soft = false;
     p->soft_load = false;
     p->load_skipped = 0;
+    p->conf_set = 0;
     if (p->have_servo) {
         p->draft = p->servo;
     }
+    hush(p);
 }
 
 /* --------------------------------------------------------------- operations */
@@ -1631,34 +1782,43 @@ bool kst_prog_restore_only(const kst_prog_t *p)
         && flag(p, LINK_KS_F_LOCKED) && p->f.have_backup;
 }
 
+kst_prog_msg_id_t kst_prog_enable_check(const kst_prog_t *p)
+{
+    const kst_prog_msg_id_t m = idle_safe(p);
+
+    if (m != KST_PROG_MSG_NONE) {
+        return m;
+    }
+    if (kst_prog_restore_only(p)) {
+        /* The session's restore is the one write a locked session takes,
+         * whatever the servo holds now. */
+        return KST_PROG_MSG_NONE;
+    }
+    if (!p->have_servo) {
+        return KST_PROG_MSG_NEED_READ;
+    }
+    if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE) {
+        /* Nothing is written while the record asks. */
+        return kst_prog_journal_asks(p);
+    }
+    return p->fp_ok ? KST_PROG_MSG_NONE : KST_PROG_MSG_READ_ONLY;
+}
+
 kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
 {
     kst_prog_msg_id_t m;
-    unsigned arg = 0;
 
     if (!on) {
         p->write_enabled = false;
         return KST_PROG_MSG_NONE;
     }
-    m = idle_safe(p);
-    if (m == KST_PROG_MSG_NONE) {
-        if (kst_prog_restore_only(p)) {
-            /* The session's restore is the one write a locked session
-             * takes, whatever the servo holds now. */
-        } else if (!p->have_servo) {
-            m = KST_PROG_MSG_NEED_READ;
-        } else if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE) {
-            /* Nothing is written while the record asks. */
-            m = kst_prog_journal_asks(p);
-            arg = p->journal_port + 1u;
-        } else if (!p->fp_ok) {
-            m = KST_PROG_MSG_READ_ONLY;
-        }
-    }
+    m = kst_prog_enable_check(p);
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return say(p, m, m == kst_prog_journal_asks(p)
+                             ? p->journal_port + 1u : 0u);
     }
     p->write_enabled = true;
+    hush(p);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1776,6 +1936,7 @@ static kst_prog_msg_id_t write_draft(kst_prog_t *p, kst_prog_from_t from)
     p->soft_load = false;
     p->restoring = (uint8_t)from;
     p->writes = (uint8_t)kst_prog_changes(p);
+    p->plan_n = p->plan.n;    /* write_check() planned it */
     r = request(p, LINK_KST_OP_WRITE);
     r.image = p->draft;
     send_write(p, &r, &p->draft);
@@ -1824,6 +1985,7 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
     p->soft = false;
     p->soft_load = false;
     p->restoring = KST_PROG_FROM_NONE;
+    p->plan_n = 0;
     r = request(p, LINK_KST_OP_RELEASE);
     send_write(p, &r, &p->plan.target);
     return KST_PROG_MSG_NONE;
@@ -2057,6 +2219,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     p->soft = false;
     p->soft_load = false;
     p->restoring = KST_PROG_FROM_SESSION;
+    p->plan_n = plan->unchecked ? 0u : plan->writes;
     r = request(p, LINK_KST_OP_RESTORE);
     r.image = *src;
     r.confirm = plan->unchecked;
@@ -2066,7 +2229,10 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
 
 void kst_prog_forget(kst_prog_t *p)
 {
-    if (p->journal && p->wait == W_NONE) {
+    if (p->wait != W_NONE || p->cmd_ready) {
+        /* The record of the write that runs is not one to discard. */
+        (void)say(p, KST_PROG_MSG_START + KST_LINK_START_BUSY, 0);
+    } else if (p->journal) {
         journal_clear(p);
         (void)say(p, KST_PROG_MSG_FORGOTTEN, 0);
     }
@@ -2465,7 +2631,7 @@ static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
         (void)say(p, KST_PROG_MSG_LOAD_REFUSED, lowest(hard));
         return;
     }
-    soft = soft_new(p, &d->image);
+    soft = soft_asks(p, &p->servo, &d->image);
     if (soft != 0u) {
         p->soft = true;
         p->soft_load = true;

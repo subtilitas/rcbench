@@ -12,7 +12,10 @@
  *     write.
  *   - An edit goes through the field table and the limits of protocols/kst:
  *     a value that breaks a hard rule is not taken, a value that breaks a
- *     soft rule waits for a confirmation.  No limit is stated here.
+ *     soft rule waits for a confirmation.  No limit is stated here.  The
+ *     soft rules compare with the servo as the session found it
+ *     (kst_prog_soft_base()), and a rule confirmed for a value is asked
+ *     again for a value further from that image.
  *   - A write is sent with the switch ENABLE WRITE TO SERVO on only.  The
  *     switch goes off at every entry of the screen, when the link goes, when
  *     the coprocessor starts again, at STOP, and with every servo
@@ -271,9 +274,9 @@ typedef struct {
     uint8_t writes;     /**< fields, or for the session registers, that
                              change                                        */
     uint8_t stay;       /**< fields that differ and are not written        */
-    kst_rules_t soft;   /**< soft limits the restored image passes and the
-                             servo's own does not; 0 where the servo's
-                             image is not known                            */
+    kst_rules_t soft;   /**< soft limits the restored image passes as a
+                             step from the servo as last read; 0 where
+                             the servo's image is not known               */
     bool    unchecked;  /**< the session's restore has no checked order    */
 } kst_prog_restore_t;
 
@@ -538,6 +541,11 @@ typedef struct {
     bool soft;
     kst_image_t soft_img;
     kst_rules_t soft_rules;
+    kst_field_set_t conf_set;       /**< fields with a confirmed value   */
+    uint16_t conf_raw[KST_F_COUNT]; /**< the value a soft rule was
+                                         confirmed for                   */
+    uint8_t plan_n;           /**< registers the write on its way writes;
+                                   0 not known                          */
 
     bool file_wanted;
     bool file_busy;
@@ -577,6 +585,13 @@ void kst_prog_screen_entry(kst_prog_t *p);
 kst_prog_state_t kst_prog_state(const kst_prog_t *p);
 /** The operation on its way or running; LINK_KST_OP_NONE for none. */
 link_kst_op_t kst_prog_op(const kst_prog_t *p);
+/** A write, a restore or a release is on its way or runs under this
+ *  model: the record of it is no interrupted write yet. */
+bool kst_prog_writing(const kst_prog_t *p);
+/** The registers that write writes, as this model planned it; 0 when no
+ *  write runs or the coprocessor alone plans it (a restore with no checked
+ *  order, a release).  The register under way is not on the link page. */
+unsigned kst_prog_write_steps(const kst_prog_t *p);
 /** The coprocessor plans the order of a write's or a restore's writes: no
  *  frame goes to the servo yet. */
 bool kst_prog_planning(const kst_prog_t *p);
@@ -672,14 +687,28 @@ bool kst_prog_range(const kst_prog_t *p, kst_field_id_t id, uint16_t *lo,
 kst_prog_edit_t kst_prog_edit(kst_prog_t *p, kst_field_id_t id, uint16_t raw);
 /** One raw count up (@p dir above 0) or down. */
 kst_prog_edit_t kst_prog_step(kst_prog_t *p, kst_field_id_t id, int dir);
-/** The soft rules the edit that waits breaks beyond those of the draft; 0
- *  while none waits. */
+/** The soft rules the edit that waits asks a confirmation for; 0 while
+ *  none waits.  They are the rules it breaks and the draft does not, and
+ *  the rules of a field it moves further from kst_prog_soft_base() than
+ *  the value last confirmed for that field, or to its other side.  A value
+ *  the servo holds counts as confirmed. */
 kst_rules_t kst_prog_soft_rules(const kst_prog_t *p);
+/** The image the soft rules compare with: the backup of the coprocessor's
+ *  session, the servo as the session first read it.  The servo as last
+ *  read while that backup is not held or is another servo's
+ *  (kst_prog_backup_other()). */
+const kst_image_t *kst_prog_soft_base(const kst_prog_t *p);
+/** The fields of @p img that differ from the servo and are at fault for a
+ *  soft rule: the rule goes when the field takes the value of
+ *  kst_prog_soft_base(). */
+kst_field_set_t kst_prog_soft_fields(const kst_prog_t *p,
+                                     const kst_image_t *img);
 /** The image the edit that waits would leave. */
 const kst_image_t *kst_prog_soft_image(const kst_prog_t *p);
 void kst_prog_soft_confirm(kst_prog_t *p);
 void kst_prog_soft_cancel(kst_prog_t *p);
-/** The draft becomes the servo's image again. */
+/** The draft becomes the servo's image again, and no value counts as
+ *  confirmed. */
 void kst_prog_discard(kst_prog_t *p);
 
 /* --- operations: KST_PROG_MSG_NONE when taken, else the message set ------- */
@@ -722,6 +751,9 @@ kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p);
 /** The switch.  On is taken with a servo read that passes the
  *  fingerprint, and by a locked session that holds its backup. */
 kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on);
+/** What kst_prog_enable() would refuse the switch for, and nothing said;
+ *  KST_PROG_MSG_NONE where it goes on. */
+kst_prog_msg_id_t kst_prog_enable_check(const kst_prog_t *p);
 /** The session is locked and its backup is held: the switch is taken with
  *  no servo read, and the restore of that backup is the one write that
  *  goes.  Every other write waits for a read and for the lock to end. */
@@ -746,7 +778,8 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
 /** Run the restore prepared. */
 kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
                                    const kst_prog_restore_t *plan);
-/** Discard the journal. */
+/** Discard the journal.  KST_PROG_MSG_START + KST_LINK_START_BUSY, and
+ *  nothing discarded, while an operation is on its way. */
 void kst_prog_forget(kst_prog_t *p);
 /** End the session: the port goes back to PWM and the supply stays as it
  *  is.  The one place a session is ended by the operator.  While a PD mini

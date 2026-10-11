@@ -657,12 +657,14 @@ the servo's settings on its signal wire. It connects only with PWM TARGET
 on the DUT page set to PROG PORT; with OUTPUTS it shows `Programming needs
 the programming port.` and CONNECT is locked. While it holds the port the
 overlay stays open and SETTINGS is off; ARM is drawn disabled and takes no
-press, and CENTRE, RELEASE and STOP work. The set points and OUTPUT ON of
+press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
+tester sends no pulse to the port. In PWM with a PD mini answering, the
+programmer's PORT row names the voltage and the current limit CONNECT sets,
+`PORT  5.0 V  1000 mA`. The set points and OUTPUT ON of
 the SET row and of the SUPPLY screen are dimmed and take no press for as
 long; OUTPUT OFF works.
 It leaves programming without a cycle of the servo's supply. Whether a KST
-servo follows PWM while in programming mode is not measured. Not run on a
-servo.
+servo follows PWM while in programming mode is not measured.
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.
 

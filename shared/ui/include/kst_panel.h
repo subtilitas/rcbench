@@ -160,6 +160,14 @@ int kst_panel_page(void);
 /** Line @p i of the open warning page, entry @p i of the open list; NULL
  *  past the last and while none is open. */
 const char *kst_panel_warning_line(int i);
+/** The level line @p i of the open warning page is drawn in: a
+ *  kst_prog_level_t; KST_PROG_INFO past the last. */
+int kst_panel_warning_level(int i);
+/** Line @p i, 0 or 1, of what stands on the SERVO tab until it is dealt
+ *  with; NULL where there is none. */
+const char *kst_panel_standing_line(int i);
+/** The control of the row at @p page, @p row, @p col takes a tap now. */
+bool kst_panel_row_live(int page, int row, int col);
 /** The SERVO tab's line @p i under its rows: 0 the port's state, 1 what
  *  explains it; NULL where the tab draws none. */
 const char *kst_panel_status_line(int i);

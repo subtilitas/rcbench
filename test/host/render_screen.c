@@ -396,13 +396,24 @@ static void kfiles(void)
     ksettle();
 }
 
-/* The bench servo's image with Max. Duty moved by @p d. */
+/* The bench servo's image with Max. Duty moved by @p d steps of the value
+ * the tab shows, so that a file edited by hand, which holds the values as
+ * shown, differs from the servo as well. */
 static kst_image_t kfile_image(int d)
 {
     kst_image_t img = sim_bench_image();
+    uint16_t raw = kst_field_get(&img, KST_F_DUTY);
+    int32_t was = 0, now = 0;
 
-    (void)kst_field_edit(&img, KST_F_DUTY,
-                         (uint16_t)((int)kst_field_get(&img, KST_F_DUTY) + d));
+    (void)kst_field_display(KST_F_DUTY, raw, &was);
+    for (int left = d < 0 ? -d : d; left > 0; --left) {
+        do {
+            raw = (uint16_t)(raw + (d < 0 ? -1 : 1));
+            (void)kst_field_display(KST_F_DUTY, raw, &now);
+        } while (now == was);
+        was = now;
+    }
+    (void)kst_field_edit(&img, KST_F_DUTY, raw);
     return img;
 }
 
@@ -733,6 +744,14 @@ static void kst_view(const char *view)
         return;
     }
     khold();
+    if (strcmp(v, "-writing") == 0) {
+        /* Under way: the first register is written, the rest is not. */
+        for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
+            rig_frame();
+        }
+        ui_router_tick(0.02f);
+        return;
+    }
     if (!cut) {
         ksettle();                                  /* -written */
         return;

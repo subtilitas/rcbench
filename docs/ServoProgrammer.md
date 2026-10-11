@@ -15,10 +15,8 @@ The names say which servos the programmer works with.
 [Legal notice and disclaimer](../README.md#legal-notice-and-disclaimer) holds
 the project's notice.
 
-**No frame of this code has been sent to a servo.** The programmer has run
-against a servo and line model in the host suite only. The register layout
-and the timing come from 1 Tool Card #2, KST's programming card, and 1 KST
-servo of unidentified model. No Chaservo servo has been read. The effect of
+The register layout and the timing come from 1 Tool Card #2, KST's
+programming card, and 1 KST servo of unidentified model. No Chaservo servo has been read. The effect of
 a register on the servo's motion is not measured: the names, units and
 limits are those the vendor tool displays and accepts.
 [What is open](#measurements-still-open) lists what a bench has to measure
@@ -45,7 +43,8 @@ before a write is relied on.
   programmer is locked.
 - One servo at a time.
 - The port is in PWM (pulse-width modulation) or in programming, never both.
-  While the port is in programming, the tester sends no pulse to it.
+  While the port is in programming, the tester sends no pulse to it, and
+  its **COMMANDED** row reads `---`.
 - Programming and an armed bench are exclusive. **CONNECT** on a bench that
   is armed, asked to arm or has a finger on **ARM** is refused with
   `DISARM first: the port is not taken on an armed bench.` While the port
@@ -114,6 +113,8 @@ PORT.`, and every control but **CLOSE** is off.
 | Programming | `Port 1 is in programming mode: no PWM on it.` | frames only |
 | Programming, the supply read | `Port 1 in programming mode, no PWM: 5.00 V, 37 mA.` | frames only |
 | Working | `Working: 12 frames.` | frames of the running operation |
+| Working, a write of values | `Writing 3 registers. Frames sent: 94.`, or `Writing 1 register. Frames sent: 31.` | frames of the write; the count is the registers the write sets |
+| Working, a restore of the session's backup or a pairing release | `Writing. Frames sent: 12.` | frames of the write; the coprocessor plans it alone, and the panel has no count |
 | Working, the coprocessor plans | `Planning the order of the writes. No frame sent yet.` | nothing: a coprocessor of link version 4.14 plans a write or a restore before its first frame |
 | Leaving | `Leaving programming mode. PWM is not on yet.` | the line low for **WAIT BEFORE PWM**; no pulse until the port reports PWM |
 
@@ -123,6 +124,14 @@ reads **ABORT** while an operation runs or a leave waits, and **LEAVE** in
 programming mode.
 
 ![An operation running](img/servo-kst-working.png)
+
+While a write, a restore or a pairing release runs, the SERVO tab shows
+`Writing: do not unplug.` in the warning colour, and **RESTORE** takes no
+tap. The record of that write is on the card or in memory and is not shown
+as [an interrupted write](#an-interrupted-write) before the write ends
+without a result.
+
+![A write running](img/servo-kst-writing.png)
 
 While the port is in programming the overlay stays open, **SETTINGS** is
 off and the tester's controls send nothing to the port. **STOP** on the
@@ -248,6 +257,12 @@ without a PD mini by a coprocessor of link version 4.15 or later.
 | ENABLE WRITE TO SERVO | **OFF**, **ON** | [the write switch](#the-write-switch) |
 | CHANGES | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values](#writing) |
 
+In PWM with a PD mini answering the PORT row reads `PORT  5.0 V  1000 mA`:
+the voltage and the current limit that **CONNECT** sets. A row whose button
+is drawn off takes no tap: **FILES** outside programming mode and while the
+servo is in doubt, **RESTORE** while an operation runs, the write switch
+where [it is refused](#the-write-switch).
+
 Below the rows stand the port's state, the servo type, the name of the
 session's backup file and the last message. A message in the warning colour is a refusal or a result
 that needs a second look; one in the danger colour says the servo's content
@@ -257,8 +272,8 @@ is in doubt.
 
 The coprocessor compares the image with the layout of the known servo, its
 fingerprint. An image that fails is shown and never written: the edit rows
-are off, a tap on the write switch leaves it off and repeats the message,
-and **RELEASE PAIRING** is refused. **READ ALL**, a save to a file and
+and the write switch are off and take no tap, the tab keeps `Read only:
+this servo is not a known type.`, and **RELEASE PAIRING** is refused. **READ ALL**, a save to a file and
 **VERIFY** work. A file is not loaded.
 
 ![A servo that fails the fingerprint](img/servo-kst-readonly.png)
@@ -307,7 +322,9 @@ further 1.8 s.
 | REVERSION | Reversion, ON or OFF | none |
 
 The NEUTRAL conversion between register and µs is a fit to 3 values and
-uncertain by about 1 µs.
+uncertain by about 1 µs. The tab says of the two angles `LEFT ANGLE, RIGHT
+ANGLE: the servo's number, unit unknown.` The screens write `us` for µs:
+their font has no micro sign.
 
 ### FAILSAFE
 
@@ -332,9 +349,17 @@ A tap that would break a hard limit changes nothing and says which limit.
 ### A value that needs a second look
 
 A value inside the hard limits that breaks a soft limit opens CHECK THIS
-CHANGE with the old and the new value and one line per limit. **HOLD TO
-APPLY** takes it after 2 s of holding; **CANCEL**, or a finger that slides
-off, leaves the draft as it was.
+CHANGE with the field's line and one line per limit. The field's line
+counts from the servo's value, not from an edit before this one: `MAX.
+DUTY: 96 -> 97 %` is the value the servo holds, the new value and the unit.
+**HOLD TO APPLY** takes it after 2 s of holding; **CANCEL**, or a finger
+that slides off, leaves the draft as it was.
+
+A limit confirmed for a value is confirmed for that value. A later edit of
+the field opens the page again when it moves the value further from the
+servo's than the value confirmed, or to its other side: 97 % confirmed, 98 %
+asks again and shows `MAX. DUTY: 96 -> 98 %`, and 97 % after that does not.
+A write, a read and **DISCARD EDITS** end every confirmation.
 
 ![A soft limit](img/servo-kst-soft.png)
 
@@ -361,7 +386,12 @@ off, leaves the draft as it was.
 | DEAD BAND below 1.0 µs with STRETCH above x1 | `Narrow dead band with raised gain: risk of oscillation.` |
 | MAX. DUTY above 90 % with an angle above the servo's | `High duty with more travel: a stall can destroy the servo.` |
 
-"The servo's" is the value last read from the servo.
+"The servo's" in this table is the value of the session's backup, the
+servo as the session first read it. A write of the session does not move
+it: a value raised in two writes is compared with the value the servo came
+with. Where the panel does not hold that backup, or the backup is another
+servo's, it is the value last read. The warnings of
+[a restore](#restore) compare with the servo as last read.
 
 ### LOCKED
 
@@ -384,7 +414,9 @@ known.
 
 **ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
 that names the risks; **HOLD TO ENABLE** switches it on after 2 s. A tap on
-**ON** switches it off at once.
+**ON** switches it off at once. A tap on **WRITE n VALUES** with the switch
+off opens the same page: its hold switches the switch on and writes
+nothing, and the next tap on **WRITE n VALUES** opens the write page.
 
 ![Enabling the write](img/servo-kst-enable.png)
 
@@ -405,7 +437,10 @@ release, and the coprocessor refuses one that arrives without the switch's
 key. Reading, **VERIFY**, saving to a file and loading a file work with
 the switch off.
 
-The switch takes its tap with a servo read. A session the coprocessor has
+The switch takes its tap with a servo read. Where it does not, **OFF** is
+drawn off: without a servo read, with a servo that fails the fingerprint,
+while an operation runs and while the panel asks whether the servo is the
+one of an interrupted write. A session the coprocessor has
 locked after an interrupted write takes it with no servo read as well, once
 the panel holds the session's backup: this is the state of a panel that
 starts under such a session. The switch then opens one write, the restore
@@ -418,14 +453,26 @@ stays, and no value is edited.
 
 **WRITE n VALUES** counts the fields in which the draft differs from the
 servo; with one such field it reads **WRITE 1 VALUE**. It is off without a
-change or with the switch off.
+change. With the switch off its tap opens
+[the switch's page](#the-write-switch).
 
 ![Three changed values, the switch on](img/servo-kst-changes.png)
 
 A tap opens the write page. **HOLD TO WRITE** starts the write after 2 s.
-The first write after a **CONNECT** shows `Horn free, no linkage attached.`
-as its first line. A write that the card, a stop or the link kept from
-starting is not that first write: the line stays for the next one.
+The page has 12 lines.
+
+The changed values come first, in the order of the tabs, one line each:
+`DEAD BAND: 2.0 -> 1.6 us` is the servo's value, the new value and the
+unit. A value at fault for [a soft limit](#a-value-that-needs-a-second-look)
+is in the warning colour. With more values than lines the last of these
+lines counts the rest: `and 4 more`. A first write with a card shows 7
+values, or 6 and the count; one without a card 6, or 5 and the count.
+
+`Horn free, no linkage attached.` and `Test the servo on the bench before
+it goes into a model.` follow on the first write after a **CONNECT** and on
+every write that changes REVERSION, NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT
+ANGLE or RIGHT ANGLE. A write that the card, a stop or the link kept from
+starting is not that first write: the lines stay for the next one.
 
 ![The write page](img/servo-kst-write.png)
 
@@ -493,7 +540,7 @@ ends leaves `KST.TXT` as it was or a whole `KST.NEW`. At power-on a
 `KST.NEW` whose check holds is used and renamed; one whose check fails is
 removed and `KST.TXT` is used. A file the card does not take is written
 again every 5 s until the card takes it, so that a record discarded on the
-panel does not stay on the card. Not run on a card.
+panel does not stay on the card.
 
 ## Servo files
 
@@ -655,9 +702,11 @@ The line of an edited file counts the values its lines give, of the 27 a
 servo file has. A value the file does not give stays as the servo has it.
 
 A file whose values pass a soft limit that the servo's own values keep
-opens CHECK THIS FILE before anything becomes the draft. The page lists
-the same warning lines an edit past those limits shows, at most 5; with
-more the last line counts the rest. **HOLD TO LOAD** for 2 s takes the
+opens CHECK THIS FILE before anything becomes the draft. The page has 12
+lines: the file's line, the line of an edited file, the values that differ
+as [the write page](#writing) lists them, 4 or 3 and `and 2 more`, and the
+same warning lines an edit past those limits shows; with more warnings than
+lines the last line counts the rest. **HOLD TO LOAD** for 2 s takes the
 values into the draft. **CANCEL** leaves the draft as it was.
 
 ![The warnings of a file](img/servo-kst-file-soft.png)
@@ -779,7 +828,8 @@ across a power cycle of the bench.
 `A write was interrupted. The servo may be half written.` stays until the
 servo is read, with the port of the write below it: `Do not use it.
 Connect it on port 1 and READ ALL.` Every control but **CONNECT**, **READ
-ALL**, **RESTORE** and **LEAVE** is off. The read compares the servo with the
+ALL**, **RESTORE**, **LEAVE** and, where the session's restore needs it,
+the write switch is off. The read compares the servo with the
 record:
 
 | The servo holds | Message | Then |
@@ -926,9 +976,12 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 
 ## Limitations
 
-- Untested on a servo. Every statement about a servo's behaviour on this
-  page is the model's.
 - No Chaservo servo has been read.
+- A running write shows the count of registers it sets and the frames
+  sent. The register under way is not on the link page and is not shown. A
+  restore of the session's backup and a pairing release show the frames
+  only.
+- The screens write `us` for µs: the font has no micro sign.
 - The record of an interrupted write is read from the card when the panel
   starts, and from a card put in later when the programmer mounts it. A
   record the panel already holds stands, before and after the servo is
@@ -936,8 +989,6 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   record written replaces it.
 - A card taken out and put back while the panel runs is not mounted again.
 - The time a mount attempt without a card holds the screen is not measured.
-- Not run on hardware: neither firmware image has run this code with a
-  servo, a card or a PD mini.
 - The limits and trip settings of the SUPPLY screen are not held while the
   programmer has the port; the set points and **OUTPUT ON** are.
 - With the coprocessor unpowered and the servo fed from another supply, a
@@ -970,7 +1021,6 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   wait is not shown.
 - Without a PD mini the programming voltage and the current limit are not
   applied.
-- No save, list or load of a servo file has run on a card.
 - The error code the card's file system gives for a write-protected card
   is not known. A code other than read-only file system, access denied
   and operation not permitted shows `Card write error.` in place of
@@ -994,8 +1044,17 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   values. A second servo on that port whose 32 registers equal the image
   before the write or the image the write was to leave is not told apart
   from the first: the panel asks, and the answer is the operator's.
-- The replacement of `KST.TXT` through `KST.NEW` is not run on a card.
 - Without a card the record of a write is lost at power off.
+- A mounted card that does not take the record stops every write: a card
+  taken out after the mount, a write-protected card, or a card on which
+  `KST/KST.TXT` or `KST/KST.NEW` is a folder. Each attempt ends with `The
+  card took no file. Nothing was written to the servo.` The panel does not
+  unmount such a card. A panel started without a card holds the record in
+  memory and writes.
+- The record of a write that ended is cleared on the card after the write,
+  by a file write of its own that is repeated every 5 s until the card
+  takes it. A power loss before it leaves the record of a finished write:
+  at the next read the panel asks whether the servo is the record's.
 - The record of an interrupted write found at power-on is shown in the
   programmer only; no other screen announces it.
 - A servo whose image breaks a hard limit as read can be read and saved.
@@ -1067,7 +1126,13 @@ ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and
 10 001 ms as the leave's wait, an abort, a disarm and a supply that goes
 off in the wait, a leave on link versions 4.13 and 4.14 with and without a
 PD mini, **STOP** during a leave, every limit at its edge, the 2 s holds on both sides of the
-threshold, every refusal and result with its line in both languages, a
+threshold, every refusal and result with its line in both languages, the
+lines of the write page for 1 value, for more values than lines and for a
+value past a soft limit, a soft limit asked again for a value further from
+the servo's, the horn lines on a later write that moves the horn, the
+state line and the tab's line of a running write, a message that goes when
+its condition ends, the rows that take no tap, the PORT row's label, no
+comma in a number of the German table, a
 write cut by a link loss, a restart, **ABORT** and **STOP**, a card that
 fails, and the timeouts across the 2^32 ms wrap of the clock. The servo
 files run against a card model: every name result, every kind of file,

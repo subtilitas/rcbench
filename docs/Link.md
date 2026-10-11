@@ -89,7 +89,7 @@ uses nothing that minor does not have: SERVO's frame rate from 4.1, its
 sweep from 4.2, SUPPLY from 4.3, the sweep's RESUME from 4.6, SENSE and
 SERVO_SENSE from 4.7, TONE from 4.8, SENSE's output encoder from 4.9, BIND_CFG,
 BIND_OUT and BIND from 4.10, SERVO_WIN, SENSE's `RESETS` and a signed
-`CAP_HOLD_MA` from 4.11, KST from 4.12, PROG, the KST page's programming ports,
+`CAP_HOLD_MA` from 4.11, KST from 4.12, PROG, the programming ports of the servo programming page (`KST`, 0x32),
 SUPPLY's flag bit 11 and SERVO_SENSE's port bit from 4.13. From 4.14 the programming port
 plans a write over several passes and reports results 33 to 35; the panel
 writes nothing differently for it. The operation LEAVE and write register 28
@@ -660,8 +660,8 @@ measured, so the planning time on a bench is not known. A 4.13 coprocessor
 runs the whole search inside the command's frame and answers a request
 without an order of writes with the refusal PLAN_NO_PATH.
 
-No frame has been sent to a servo. The port, the page and the panel's module
-run in the host suite against a servo, line and supply model.
+The port, the page and the panel's module run in the host suite against a
+servo, line and supply model.
 
 | State | Value | The port's pin | The supply | Ends |
 | --- | ---: | --- | --- | --- |

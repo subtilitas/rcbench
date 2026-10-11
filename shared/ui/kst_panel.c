@@ -323,9 +323,15 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 #define KP_CURRENT (-2)
 #define KP_WAIT    (-3)
 #define CHOICE_MAX 8
-#define WARN_LINES 9
+#define WARN_LINES 12
 /* The lines a page gives to the warnings of soft limits. */
 #define WARN_RULES 7
+/* The lines the page of a file gives to its values. */
+#define FILE_VALUES 4
+/* The pitch of a page's lines, and of a page with more than fit at it. */
+#define WARN_PITCH 24
+#define WARN_PITCH_TIGHT 22
+#define WARN_ROOMY 11
 
 static struct {
     kst_prog_t prog;
@@ -434,6 +440,16 @@ static const char *row_label(const row_t *r)
         snprintf(typed, sizeof(typed), TR(KP_SERVO_V), servo_type());
         return typed;
     }
+    if (r->kind == K_ACT && r->what == A_PORT && on_port()
+        && flag(LINK_KS_F_RAIL)) {
+        /* What CONNECT asks of the supply, and what it holds after. */
+        static char port[40];
+        const unsigned mv = kst_prog_supply_mv(&k.prog);
+
+        snprintf(port, sizeof(port), TR(KP_PORT_SUPPLY), mv / 1000u,
+                 mv % 1000u / 100u, (unsigned)kst_prog_supply_ma(&k.prog));
+        return port;
+    }
     return r->label >= 0 ? ui_tr((ui_text_id_t)r->label) : r->name;
 }
 
@@ -481,7 +497,10 @@ static int decimals_of(kst_field_id_t id)
     }
 }
 
-static void fmt_field(kst_field_id_t id, uint16_t raw, char *out, size_t n)
+/* A field's value as its row shows it; without @p unit where a line gives
+ * the unit once behind two values. */
+static void fmt_value(kst_field_id_t id, uint16_t raw, char *out, size_t n,
+                      bool unit)
 {
     int32_t v = 0;
 
@@ -503,16 +522,21 @@ static void fmt_field(kst_field_id_t id, uint16_t raw, char *out, size_t n)
     case KST_UNIT_TENTH_US:
     case KST_UNIT_TENTH_PERCENT:
     case KST_UNIT_TENTH_S:
-        snprintf(out, n, "%d.%d %s", (int)(v / 10), (int)(v % 10),
-                 unit_of(id));
+        snprintf(out, n, "%d.%d%s%s", (int)(v / 10), (int)(v % 10),
+                 unit ? " " : "", unit ? unit_of(id) : "");
         break;
     case KST_UNIT_PERCENT:
-        snprintf(out, n, "%d %%", (int)v);
+        snprintf(out, n, "%d%s", (int)v, unit ? " %" : "");
         break;
     default:
         snprintf(out, n, "%d", (int)v);
         break;
     }
+}
+
+static void fmt_field(kst_field_id_t id, uint16_t raw, char *out, size_t n)
+{
+    fmt_value(id, raw, out, n, true);
 }
 
 static bool changed(kst_field_id_t id)
@@ -652,6 +676,12 @@ ui_textkey_t *kst_panel_textkey(void)
 const char *kst_panel_warning_line(int i)
 {
     return k.warn.open && i >= 0 && i < k.warn.count ? k.warn.lines[i] : NULL;
+}
+
+int kst_panel_warning_level(int i)
+{
+    return k.warn.open && i >= 0 && i < k.warn.count ? (int)k.warn.level[i]
+                                                     : (int)KST_PROG_INFO;
 }
 
 const char *kst_panel_label(int page, int row, int col)
@@ -944,12 +974,82 @@ static void warn_text(kst_prog_level_t level, const char *s)
     snprintf(warn_line(level), KST_PANEL_LINE, "%s", s);
 }
 
-/* The two lines every first write of a session shows. */
-static void warn_horn(void)
+/* A write of @p to moves the horn or turns it round: it changes the
+ * direction, the centre, an end point or an angle. */
+static bool moves_horn(const kst_image_t *to)
 {
-    if (kst_prog_first_write(&k.prog)) {
+    static const uint8_t k_moves[] = {
+        KST_F_REVERSION, KST_F_NEUTRAL, KST_F_PULSE_LOWER, KST_F_PULSE_UPPER,
+        KST_F_LEFT_ANGLE, KST_F_RIGHT_ANGLE,
+    };
+
+    for (unsigned i = 0; i < sizeof(k_moves); ++i) {
+        const kst_field_id_t id = (kst_field_id_t)k_moves[i];
+
+        if (kst_field_get(to, id)
+            != kst_field_get(kst_prog_servo(&k.prog), id)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* The two lines of the first write of a session, and of every write that
+ * @p moves the horn. */
+static bool horn_due(bool moves)
+{
+    return moves || kst_prog_first_write(&k.prog);
+}
+
+static void warn_horn(bool moves)
+{
+    if (horn_due(moves)) {
         warn_text(KST_PROG_DANGER, TR(KP_HORN_FREE));
         warn_text(KST_PROG_WARN, TR(KP_BENCH_FIRST));
+    }
+}
+
+/* One value a write changes: the servo's, the new one, the unit once.  In
+ * the warning colour where the field is at fault for a soft limit. */
+static void value_line(kst_field_id_t id, const kst_image_t *to,
+                       kst_field_set_t soft)
+{
+    const char *name = field_name(id);
+    char was[24], now[24];
+
+    fmt_value(id, kst_field_get(kst_prog_servo(&k.prog), id), was,
+              sizeof(was), false);
+    fmt_field(id, kst_field_get(to, id), now, sizeof(now));
+    snprintf(warn_line(in_set(soft, id) ? KST_PROG_WARN : KST_PROG_INFO),
+             KST_PANEL_LINE, "%s: %s -> %s",
+             name != NULL ? name : kst_field(id)->name, was, now);
+}
+
+/* The values in which @p to differs from the servo, in the order of the
+ * tabs, on at most @p room lines.  More than fit leave the last line to
+ * their count. */
+static void warn_values(const kst_image_t *to, int room)
+{
+    const kst_field_set_t soft = kst_prog_soft_fields(&k.prog, to);
+    uint8_t ids[ROW_COUNT];
+    int n = 0;
+
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        const kst_field_id_t id = (kst_field_id_t)k_rows[i].what;
+
+        if (k_rows[i].kind != K_ACT
+            && kst_field_get(to, id)
+                   != kst_field_get(kst_prog_servo(&k.prog), id)) {
+            ids[n++] = (uint8_t)id;
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        if (n > room && i == room - 1) {
+            snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE,
+                     TR(KP_VALUES_MORE), (unsigned)(n - i));
+            break;
+        }
+        value_line((kst_field_id_t)ids[i], to, soft);
     }
 }
 
@@ -991,15 +1091,10 @@ static void warn_rules(kst_rules_t rules, int room)
 static void warn_soft(const row_t *r)
 {
     const kst_field_id_t id = (kst_field_id_t)r->what;
-    char was[24], now[24];
 
     warn_open(W_SOFT, false, TR(KP_SOFT_TITLE), TR(SV_HOLD_TO_APPLY));
-    fmt_field(id, kst_field_get(kst_prog_draft(&k.prog), id), was,
-              sizeof(was));
-    fmt_field(id, kst_field_get(kst_prog_soft_image(&k.prog), id), now,
-              sizeof(now));
-    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, "%s: %s -> %s",
-             row_label(r), was, now);
+    /* From the servo's value, not from an edit before this one. */
+    value_line(id, kst_prog_soft_image(&k.prog), 0u);
     warn_rules(kst_prog_soft_rules(&k.prog), WARN_RULES - 1);
 }
 
@@ -1089,17 +1184,28 @@ static void warn_file(void)
     if (kind >= 0) {
         kind_line(warn_line(KST_PROG_INFO), kind);
     }
-    warn_rules(kst_prog_soft_rules(p), WARN_RULES - k.warn.count);
+    warn_values(kst_prog_soft_image(p), FILE_VALUES);
+    warn_rules(kst_prog_soft_rules(p), WARN_LINES - k.warn.count);
 }
 
 static void warn_write(void)
 {
     char title[64];
 
+    const kst_image_t *to = kst_prog_draft(&k.prog);
+    const bool moves = moves_horn(to);
+    /* The lines under the values: the horn's two, the two of every write
+     * and the card's one; a write with no card has three for the card and
+     * leaves the first of the two out. */
+    const int fixed = (horn_due(moves) ? 2 : 0) + (no_card() ? 4 : 3);
+
     write_n(title, sizeof(title), kst_prog_changes(&k.prog));
     warn_open(W_WRITE, true, title, TR(KP_HOLD_WRITE));
-    warn_horn();
-    warn_text(KST_PROG_INFO, TR(KP_WRITE_1));
+    warn_values(to, WARN_LINES - fixed);
+    warn_horn(moves);
+    if (!no_card()) {
+        warn_text(KST_PROG_INFO, TR(KP_WRITE_1));
+    }
     warn_text(KST_PROG_INFO, TR(KP_WRITE_2));
     warn_card();
 }
@@ -1129,7 +1235,7 @@ static void warn_restore(const kst_prog_restore_t *plan)
     if (plan->unchecked) {
         warn_text(KST_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
     }
-    warn_horn();
+    warn_horn(true);
     if (plan->from != KST_PROG_FROM_SESSION) {
         warn_card();
     } else {
@@ -1154,7 +1260,7 @@ static void warn_release(void)
     warn_text(KST_PROG_WARN, TR(KP_RELEASE_1));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_2));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_3));
-    warn_horn();
+    warn_horn(false);
     (void)warn_no_file();
 }
 
@@ -1595,15 +1701,21 @@ static void act(const row_t *r)
     case A_ENABLE:
         if (kst_prog_write_enabled(p)) {
             (void)kst_prog_enable(p, false);
-        } else if (kst_prog_enable(p, true) == KST_PROG_MSG_NONE) {
-            /* It can be: off again until the hold says so. */
-            (void)kst_prog_enable(p, false);
+        } else if (kst_prog_enable_check(p) == KST_PROG_MSG_NONE) {
+            /* It can be: off until the hold says so. */
             warn_enable();
+        } else {
+            (void)kst_prog_enable(p, true);     /* says why not */
         }
         break;
     default:
         if (kst_prog_write_check(p) == KST_PROG_MSG_NONE) {
             warn_write();
+        } else if (kst_prog_write_check(p) == KST_PROG_MSG_NEED_ENABLE
+                   && kst_prog_enable_check(p) == KST_PROG_MSG_NONE) {
+            /* The switch is all the write waits for: its page, and off
+             * until the hold. */
+            warn_enable();
         } else {
             (void)kst_prog_write(p);    /* says why not */
         }
@@ -1702,22 +1814,33 @@ static bool row_live(const row_t *r)
             || st == KST_PROG_ENTERING || st == KST_PROG_WORKING
             || leave_waits(p);
     case A_READ:
-    case A_FILES:
         return st == KST_PROG_PROGRAMMING;
+    case A_FILES:
+        /* A file is saved from and loaded over a servo that is read. */
+        return st == KST_PROG_PROGRAMMING && !kst_prog_in_doubt(p);
     case A_RESTORE:
-        return p->journal
-            || kst_prog_restore_offered(p, KST_PROG_FROM_SESSION)
-            || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL);
+        /* Not under an operation: its record is no interrupted write. */
+        return (st == KST_PROG_PWM || st == KST_PROG_PROGRAMMING)
+            && (p->journal
+                || kst_prog_restore_offered(p, KST_PROG_FROM_SESSION)
+                || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL));
     case A_MORE:
         return (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p))
             || (st == KST_PROG_PWM && on_port());
     case A_ENABLE:
+        /* Off at any time; on where the model takes it. */
         return kst_prog_write_enabled(p)
-            || (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p))
-            || kst_prog_restore_only(p);
+            || kst_prog_enable_check(p) == KST_PROG_MSG_NONE;
     default:
         return st == KST_PROG_PROGRAMMING && kst_prog_changes(p) != 0u;
     }
+}
+
+bool kst_panel_row_live(int page, int row, int col)
+{
+    const row_t *r = row_at(page, row, col);
+
+    return r != NULL && row_live(r);
 }
 
 /* -------------------------------------------------------------------- touch */
@@ -2263,6 +2386,12 @@ static int standing(const char *out[2], bool *warn)
         out[0] = TR(KP_M_STOPPED);
         return 1;
     }
+    if (kst_prog_writing(p)) {
+        /* Its record is on the card and is no interrupted write. */
+        *warn = true;
+        out[0] = TR(KP_WRITING);
+        return 1;
+    }
     if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE) {
         static char first[KST_PANEL_LINE];
         const unsigned ch = (unsigned)kst_prog_journal_port(p) + 1u;
@@ -2309,6 +2438,14 @@ static int standing(const char *out[2], bool *warn)
         return 1;
     }
     return 0;
+}
+
+const char *kst_panel_standing_line(int i)
+{
+    const char *st[2];
+    bool warn;
+
+    return i >= 0 && i < standing(st, &warn) ? st[i] : NULL;
 }
 
 /* The last message, on the overlay's last lines.  One that only repeats
@@ -2377,6 +2514,14 @@ static void state_line(char *out, size_t n)
     case KST_PROG_WORKING:
         if (kst_prog_planning(p)) {
             snprintf(out, n, "%s", TR(KP_STATE_PLANNING));
+        } else if (kst_prog_write_steps(p) == 1u) {
+            snprintf(out, n, TR(KP_STATE_WRITING_ONE),
+                     (unsigned)p->f.rd.frames);
+        } else if (kst_prog_write_steps(p) != 0u) {
+            snprintf(out, n, TR(KP_STATE_WRITING_N), kst_prog_write_steps(p),
+                     (unsigned)p->f.rd.frames);
+        } else if (kst_prog_writing(p)) {
+            snprintf(out, n, TR(KP_STATE_WRITING), (unsigned)p->f.rd.frames);
         } else if (p->f.rd.frames == 1u) {
             snprintf(out, n, "%s", TR(KP_STATE_WORKING_ONE));
         } else {
@@ -2485,6 +2630,11 @@ static void draw_notes(gfx_canvas_t *c)
             }
             line(c, 3, buf, ui_theme_color(UI_C_WARN));
         }
+        break;
+    case PG_PULSE:
+        line(c, -1, TR(KP_ANGLE_NOTE), faint);
+        line(c, 0, TR(KP_EDIT_NOTE_1), faint);
+        line(c, 1, TR(KP_EDIT_NOTE_2), faint);
         break;
     default:
         line(c, 0, TR(KP_EDIT_NOTE_1), faint);
@@ -2650,7 +2800,10 @@ static void draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
     gfx_text(c, a.x + 12, a.y + 20, k.warn.title, &gfx_font_8x16, edge, 2);
     for (int i = 0; i < k.warn.count; ++i) {
-        gfx_text(c, a.x + 12, a.y + 72 + i * 24, k.warn.lines[i],
+        const int pitch = k.warn.count > WARN_ROOMY ? WARN_PITCH_TIGHT
+                                                    : WARN_PITCH;
+
+        gfx_text(c, a.x + 12, a.y + 72 + i * pitch, k.warn.lines[i],
                  &gfx_font_8x16, level_color(k.warn.level[i]), 1);
     }
     ui_button(c, kst_panel_apply_rect(), k.warn.apply,

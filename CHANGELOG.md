@@ -110,6 +110,22 @@ history is in git.
   count of the 27 values its lines give, values past
   a soft limit wait for a hold of 2 s, and locked values that differ are
   counted as not written.
+- Servo programmer, the pages before a write: the write page lists each
+  changed value as `DEAD BAND: 2.0 -> 1.6 us`, the servo's value, the new
+  value and the unit, a value past a soft limit in the warning colour, and
+  counts the rest (`and 4 more`) past the page's 12 lines; the page of a
+  file load lists the differing values the same way. CHECK THIS CHANGE
+  counts from the value of the session's backup, and a confirmed soft limit
+  is asked again for a value further from it. The horn lines stand on the
+  first write of a session and on every write that changes REVERSION,
+  NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE or RIGHT ANGLE. A tap on
+  **WRITE n VALUES** with the write switch off opens the switch's page. A
+  running write shows `Writing 3 registers. Frames sent: 94.` and `Writing:
+  do not unplug.` and no interrupted write. A row that takes no tap is
+  drawn off. The PORT row names the programming voltage and current limit
+  in PWM, and the servo tester's COMMANDED reads `---` while the programmer
+  holds the port. The German texts write numbers with a decimal point and
+  keep SPEED LIMIT, SPEED and AFTER.
 - Servo programmer, interrupted writes: a record of a running write is
   stored in `KST/KST.TXT` (at most 400 bytes of text) before the write
   starts; after a link loss, a restart, an abort or a power loss during a
@@ -128,8 +144,7 @@ history is in git.
   running automatic test. A coprocessor without the programming port's
   page shows the programmer as unavailable with the reason. German texts
   for every new string; 118 screenshots. Host suite only (`test_kst_prog`,
-  `test_kst_panel`, `test_kst_card`, `test_prog_link`); no frame has been
-  sent to a servo.
+  `test_kst_panel`, `test_kst_card`, `test_prog_link`).
   ([Servo programmer for KST and Chaservo servos](docs/ServoProgrammer.md))
 - Servo programmer, the port is the programmer's alone: from **CONNECT**
   to the port back in PWM, **PWM TARGET** and **PORT PWM** change by no

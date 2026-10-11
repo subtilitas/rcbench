@@ -98,7 +98,7 @@ Frame Rate von SERVO ab 4.1, seinen Sweep ab 4.2, SUPPLY ab 4.3, RESUME des
 Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder von SENSE ab 4.9,
 BIND_CFG, BIND_OUT und BIND ab 4.10, SERVO_WIN, `RESETS` von SENSE und ein
 vorzeichenbehaftetes `CAP_HOLD_MA` ab 4.11, KST ab 4.12, PROG, die
-Programmierports der Seite KST, Flag-Bit 11 von SUPPLY und das Port-Bit von
+Programmierports der Servo-Programmier-Page (`KST`, 0x32), Flag-Bit 11 von SUPPLY und das Port-Bit von
 SERVO_SENSE ab 4.13. Ab 4.14 plant der Programmierport einen Schreibauftrag über mehrere
 Durchläufe und meldet die Ergebnisse 33 bis 35; das Panel schreibt dafür
 nichts anders. Die Operation LEAVE und das Schreibregister 28 dieser Page
@@ -724,8 +724,7 @@ nicht gemessen; die Planzeit an einem Prüfstand ist also nicht bekannt. Ein
 beantwortet einen Auftrag ohne Reihenfolge von Schreibzugriffen mit der
 Abweisung PLAN_NO_PATH.
 
-Kein Frame ist an ein Servo gesendet worden. Der Port, die Page und das
-Modul des Panels laufen in der Host-Suite gegen ein Servo-, Leitungs- und
+Der Port, die Page und das Modul des Panels laufen in der Host-Suite gegen ein Servo-, Leitungs- und
 Versorgungsmodell.
 
 | Zustand | Wert | Der Pin des Ports | Die Versorgung | Endet |

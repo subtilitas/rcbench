@@ -2262,6 +2262,19 @@ float servo_screen_power_sample(int series, int back)
 
 uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
 
+const char *servo_screen_commanded_text(void)
+{
+    static char text[16];
+
+    if (kst_panel_holds_port()) {
+        /* The programmer holds the port: no pulse is on it. */
+        return "---";
+    }
+    snprintf(text, sizeof(text), "%u us",
+             (unsigned)deg_to_us(s.commanded_deg));
+    return text;
+}
+
 uint16_t servo_screen_drawn(void) { return deg_to_us(s.shown_deg); }
 
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
@@ -4728,8 +4741,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
               s.ov_have && s.ov_pressed == OP_PROGRAM, true);
 
     char buf[24];
-    snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
-    row(c, 44, TR(SV_COMMANDED), buf);
+    row(c, 44, TR(SV_COMMANDED), servo_screen_commanded_text());
     /* The horn's angle from the encoder where one reads.  With the encoder
      * off in SETUP, from the feedback; with it on and not reading, the
      * dashes: the pulse position is not the horn's angle then. */

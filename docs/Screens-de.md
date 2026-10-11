@@ -731,11 +731,14 @@ Koprozessors, im Auslieferzustand GP13 an Pad 17, aus PWM
 PRÜFLING auf PROG-PORT steht; mit AUSGÄNGE zeigt er `Programmieren braucht
 den Programmier-Port.` und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt das Overlay offen und OPTIONEN ist aus; ARM ist gesperrt gezeichnet
-und nimmt keinen Druck, und ZENTRIEREN, FREIGEBEN und STOP funktionieren.
+und nimmt keinen Druck, ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
+PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
+mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
+Spannung und die Stromgrenze, die VERBINDEN stellt, `PORT  5.0 V  1000 mA`.
 Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
 so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Er verlässt das Programmieren, ohne die Versorgung
 des Servos aus- und einzuschalten. Ob ein KST-Servo im Programmiermodus PWM
-folgt, ist nicht gemessen. An keinem Servo gelaufen.
+folgt, ist nicht gemessen.
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt ihn.
 
@@ -951,7 +954,7 @@ des PD mini schalten den Ausgang ab.
 ist, liest der Koprozessor den Eingang des Moduls alle 500 ms. Liegt der
 Eingang bei 2 Lesungen hintereinander unter dem Sollwert plus 0,5 V, schaltet
 er den Ausgang sofort ab, und das Band nennt Eingang und Sollwert, zum
-Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0,5 V -- Ausgang aus`.
+Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
 Der Ausgang bleibt aus bis zu einem neuen Halten. Eine einzelne niedrige
 Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
 setzt sie zurück. Solange der Ausgang an ist, wird sein Sollwert einem

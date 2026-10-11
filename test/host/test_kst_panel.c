@@ -1454,7 +1454,7 @@ TEST_CASE(a_value_past_a_soft_limit_waits_for_a_2_s_hold)
     key(UI_KEY_OK);
     /* The page names the change and the reason; nothing is taken yet. */
     CHECK_EQ(kst_panel_editor(), 3);
-    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 % -> 97 %");
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
     CHECK(warns(TR(KP_W_DUTY_RAISED)));
     CHECK_EQ(kst_prog_changes(M), 0);
     /* 1.9 s is not a hold. */
@@ -1736,12 +1736,27 @@ TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
     edits();
-    /* The switch is off: said, no page. */
+    /* The switch is off: the tap opens the switch's page, not the
+     * write's, and the switch stays off short of its hold. */
     tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_ENABLE_1)));
+    CHECK(!warns(TR(KP_WRITE_2)));
+    CHECK(!kst_prog_write_enabled(M));
+    hold(1.9f);
+    CHECK(!kst_prog_write_enabled(M));
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    tap(kst_panel_cancel_rect());
     CHECK_EQ(kst_panel_editor(), 0);
-    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
-    CHECK_STR_EQ(said(), TR(KP_M_NEED_ENABLE));
-    enable();
+    CHECK(!kst_prog_write_enabled(M));
+    /* Held, it is the switch that goes on: nothing is written. */
+    tap(val(PG_SERVO, 4, 0));
+    hold(2.1f);
+    CHECK(kst_prog_write_enabled(M));
+    CHECK_EQ(kst_panel_editor(), 0);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
     CHECK_EQ(kst_prog_changes(M), 3);
     tap(val(PG_SERVO, 4, 0));
     CHECK_EQ(kst_panel_editor(), 3);
@@ -1994,9 +2009,14 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     tap(val(PG_TUNE, 1, 0));
     CHECK_EQ(kst_panel_editor(), 0);
     tap(kst_panel_tab_rect(PG_SERVO));
+    /* FILES takes no tap, and the tab says what stands.  The switch does:
+     * the restore that mends the servo needs it. */
+    CHECK(!kst_panel_row_live(PG_SERVO, 1, 1));
+    CHECK(kst_panel_row_live(PG_SERVO, 3, 0));
+    CHECK(kst_panel_row_live(PG_SERVO, 1, 0));
     tap(val(PG_SERVO, 1, 1));
     CHECK_EQ(kst_panel_editor(), 0);
-    CHECK_EQ(msg(), KST_PROG_MSG_NEED_READ);
+    CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_M_JOURNAL));
     rig_frames(5);
     CHECK_EQ(g_rig.fc.lists, 0);
     /* LEAVE says what leaving costs. */
@@ -2536,8 +2556,11 @@ TEST_CASE(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them)
     /* The values are written as edits are: the switch, the page, the
      * hold. */
     tap(val(PG_SERVO, 4, 0));
-    CHECK_EQ(kst_panel_editor(), 0);
-    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_ENABLE_1)));
+    tap(kst_panel_cancel_rect());
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
     enable();
     tap(val(PG_SERVO, 4, 0));
     CHECK_EQ(kst_panel_editor(), 3);
@@ -2801,7 +2824,9 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
     tap(val(PG_SERVO, 4, 0));
-    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    CHECK(warns(TR(KP_ENABLE_1)));
+    tap(kst_panel_cancel_rect());
+    CHECK(!kst_prog_write_enabled(M));
 
     /* The page goes with the link, and the file with it. */
     kst_prog_discard(M);
@@ -2839,14 +2864,19 @@ static void lower_many(kst_image_t *img)
 TEST_CASE(a_file_with_more_warnings_than_lines_counts_the_rest)
 {
     char more[KST_PANEL_LINE];
-    const kst_image_t sv = sim_bench_image();
+    kst_image_t sv = sim_bench_image();
     kst_image_t img = sv;
     kst_rules_t soft;
-    unsigned texts = 0, n = 0;
+    unsigned texts = 0, n = 0, values;
     int16_t seen[KST_RULE_COUNT];
 
     fresh();
     lower_many(&img);
+    /* Two switches more, each with a warning of its own. */
+    CHECK(kst_field_set(&img, KST_F_SOFT_START, 1u));
+    CHECK(kst_field_set(&sv, KST_F_SOFT_START, 0u));
+    CHECK(kst_field_set(&img, KST_F_ALLOW_UNCONT, 0u));
+    CHECK(kst_field_set(&sv, KST_F_ALLOW_UNCONT, 1u));
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
     connected();
     (void)fake_card_put(&g_rig.fc, "MANY", &sv);
@@ -2869,18 +2899,36 @@ TEST_CASE(a_file_with_more_warnings_than_lines_counts_the_rest)
             seen[texts++] = (int16_t)rule;
         }
     }
-    CHECK(texts > 6u);
+    CHECK(texts > 7u);
     while (kst_panel_warning_line((int)n) != NULL) {
         ++n;
     }
-    /* The file, five warnings and the count of the rest. */
-    CHECK_EQ(n, 7);
-    snprintf(more, sizeof(more), TR(KP_CHECK_MORE), texts - 5u);
-    CHECK_STR_EQ(kst_panel_warning_line(6), more);
-    for (unsigned i = 0; i < 5u; ++i) {
+    /* The file; three values and the count of the rest; six warnings and
+     * the count of the rest: the 12 lines the page has. */
+    CHECK_EQ(n, 12);
+    values = 0;
+    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
+        values += id != KST_F_DUTY_COPY
+               && kst_field_get(&sv, (kst_field_id_t)id)
+                      != kst_field_get(&img, (kst_field_id_t)id);
+    }
+    CHECK(values > 4u);
+    snprintf(more, sizeof(more), TR(KP_VALUES_MORE), values - 3u);
+    CHECK_STR_EQ(kst_panel_warning_line(4), more);
+    /* The values come in the order of the tabs, the servo's value first;
+     * one at fault for a warning is in the warning colour. */
+    CHECK(strncmp(kst_panel_warning_line(1), "DEAD BAND: ", 11) == 0);
+    CHECK_EQ(kst_panel_warning_level(1), KST_PROG_INFO);
+    CHECK(strncmp(kst_panel_warning_line(2), "MAX. DUTY: ", 11) == 0);
+    CHECK_EQ(kst_panel_warning_level(2), KST_PROG_WARN);
+    snprintf(more, sizeof(more), TR(KP_CHECK_MORE), texts - 6u);
+    CHECK_STR_EQ(kst_panel_warning_line(11), more);
+    for (unsigned i = 0; i < 6u; ++i) {
         CHECK(warns(kst_panel_rule_text((unsigned)seen[i])));
     }
-    CHECK(!warns(kst_panel_rule_text((unsigned)seen[5])));
+    CHECK(!warns(kst_panel_rule_text((unsigned)seen[6])));
+    /* Every line is inside the page, above its buttons. */
+    show();
     /* CANCEL leaves the servo and the draft as they are. */
     tap(kst_panel_cancel_rect());
     CHECK_EQ(kst_panel_editor(), 0);
@@ -3642,7 +3690,9 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_shown_and_never_written)
     CHECK(!kst_prog_editable(M));
     CHECK_EQ(msg(), KST_PROG_MSG_READ_ONLY);
     CHECK_STR_EQ(said(), TR(KP_M_READ_ONLY));
-    /* The switch stays off. */
+    /* The switch stays off: it takes no tap, and the tab says why. */
+    CHECK(!kst_panel_row_live(PG_SERVO, 3, 0));
+    CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_M_READ_ONLY));
     tap(val(PG_SERVO, 3, 0));
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK(!kst_prog_write_enabled(M));
@@ -3974,6 +4024,449 @@ static void screen_tap(int x, int y)
     ev(x, y, TOUCH_EVENT_UP, 1);
     scr->tick(0.02f);
     scr->render(&cv, 0);
+}
+
+/* ------------------------------------------- what a write is about to change */
+
+static int warn_lines(void)
+{
+    int n = 0;
+
+    while (kst_panel_warning_line(n) != NULL) {
+        ++n;
+    }
+    return n;
+}
+
+/* The line of the open warning page that begins with @p head, -1 for
+ * none. */
+static int warn_at(const char *head)
+{
+    for (int i = 0; kst_panel_warning_line(i) != NULL; ++i) {
+        if (strncmp(kst_panel_warning_line(i), head, strlen(head)) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* MAX. DUTY typed as @p digits on its keypad. */
+static void type_duty(const char *digits)
+{
+    tap(kst_panel_tab_rect(PG_TUNE));
+    tap(val(PG_TUNE, 1, 0));
+    CHECK_EQ(kst_panel_editor(), 1);
+    type(digits);
+}
+
+TEST_CASE(the_write_page_lists_each_value_from_the_servos_to_the_new)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        enable();
+        /* A value past a soft limit, confirmed, and one inside its limits. */
+        type_duty("97");
+        CHECK_EQ(kst_panel_editor(), 3);
+        hold(2.1f);
+        CHECK_EQ(kst_panel_editor(), 0);
+        edit(KST_F_SOFT_START, (uint16_t)(1u - servo(KST_F_SOFT_START)));
+        tap(kst_panel_tab_rect(PG_SERVO));
+        tap(val(PG_SERVO, 4, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        /* The values first, in the order of the tabs: the servo's, the
+         * new one, the unit once, a point in both languages. */
+        CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
+        CHECK_EQ(kst_panel_warning_level(0), KST_PROG_WARN);
+        CHECK_EQ(warn_at("SOFT START: "), 1);
+        CHECK(strstr(kst_panel_warning_line(1), " -> ") != NULL);
+        CHECK_EQ(kst_panel_warning_level(1),
+                 servo(KST_F_SOFT_START) != 0u ? KST_PROG_WARN
+                                               : KST_PROG_INFO);
+        /* Under them what every write says. */
+        CHECK(warn_at(TR(KP_HORN_FREE)) > 1);
+        CHECK(warns(TR(KP_WRITE_1)));
+        CHECK(warns(TR(KP_WRITE_2)));
+        tap(kst_panel_cancel_rect());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* More values than the page has lines for: the first of them, and the
+ * count of the rest.  No line of the page is lost to them. */
+TEST_CASE(a_write_of_more_values_than_lines_counts_the_rest)
+{
+    char more[KST_PANEL_LINE];
+
+    fresh();
+    g_rig.card = true;
+    connected();
+    enable();
+    edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
+    edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
+    edit(KST_F_SOFT_START, (uint16_t)(1u - servo(KST_F_SOFT_START)));
+    edit(KST_F_NEUTRAL, (uint16_t)(servo(KST_F_NEUTRAL) + 5u));
+    edit(KST_F_PULSE_LOWER, (uint16_t)(servo(KST_F_PULSE_LOWER) + 10u));
+    edit(KST_F_PULSE_UPPER, (uint16_t)(servo(KST_F_PULSE_UPPER) - 10u));
+    edit(KST_F_LEFT_ANGLE, (uint16_t)(servo(KST_F_LEFT_ANGLE) - 1u));
+    edit(KST_F_RIGHT_ANGLE, (uint16_t)(servo(KST_F_RIGHT_ANGLE) - 1u));
+    edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
+    CHECK_EQ(kst_prog_changes(M), 10);
+    tap(kst_panel_tab_rect(PG_SERVO));
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    /* With a card: 6 values, the count of the other 4, and the 5 lines of
+     * a first write. */
+    CHECK_EQ(warn_lines(), 12);
+    CHECK_EQ(warn_at("DEAD BAND: "), 0);
+    CHECK_EQ(warn_at("PULSE LOWER: "), 5);
+    snprintf(more, sizeof(more), TR(KP_VALUES_MORE), 4u);
+    CHECK_STR_EQ(kst_panel_warning_line(6), more);
+    CHECK_STR_EQ(kst_panel_warning_line(7), TR(KP_HORN_FREE));
+    CHECK_STR_EQ(kst_panel_warning_line(8), TR(KP_BENCH_FIRST));
+    CHECK_STR_EQ(kst_panel_warning_line(9), TR(KP_WRITE_1));
+    CHECK_STR_EQ(kst_panel_warning_line(10), TR(KP_WRITE_2));
+    CHECK_STR_EQ(kst_panel_warning_line(11), TR(KP_WRITE_BACKUP));
+    tap(kst_panel_cancel_rect());
+
+    /* With no card: 5 values, the count of the other 5, and the 6 lines
+     * that say what a write with no file leaves out. */
+    g_rig.card = false;
+    settle();
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_EQ(warn_lines(), 12);
+    snprintf(more, sizeof(more), TR(KP_VALUES_MORE), 5u);
+    CHECK_STR_EQ(kst_panel_warning_line(5), more);
+    CHECK_STR_EQ(kst_panel_warning_line(6), TR(KP_HORN_FREE));
+    CHECK(!warns(TR(KP_WRITE_1)));
+    CHECK_STR_EQ(kst_panel_warning_line(8), TR(KP_WRITE_2));
+    CHECK_STR_EQ(kst_panel_warning_line(9), TR(KP_NO_FILE_1));
+    CHECK_STR_EQ(kst_panel_warning_line(11), TR(KP_NO_FILE_3));
+    tap(kst_panel_cancel_rect());
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+}
+
+/* A soft limit confirmed for a value is confirmed for that value: one
+ * further from the servo's is asked about again, and the page counts from
+ * the servo's value. */
+TEST_CASE(a_value_further_out_than_the_confirmed_one_opens_the_page_again)
+{
+    uint16_t kept;
+
+    fresh();
+    connected();
+    type_duty("97");
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
+    hold(2.1f);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_changes(M), 1);
+    kept = draft(KST_F_DUTY);
+    type_duty("98");
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 98 %");
+    CHECK(warns(TR(KP_W_DUTY_RAISED)));
+    /* CANCEL keeps the value confirmed before. */
+    tap(kst_panel_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(draft(KST_F_DUTY), kept);
+    type_duty("97");
+    CHECK_EQ(kst_panel_editor(), 0);
+    type_duty("98");
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    CHECK_EQ(kst_panel_editor(), 0);
+    /* Back towards the servo's value needs no page. */
+    type_duty("97");
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_changes(M), 1);
+}
+
+/* The second write of a session asks for a free horn again where it turns
+ * the horn round or moves it: the direction, the centre, an end point or an
+ * angle. */
+TEST_CASE(a_later_write_that_moves_the_horn_asks_for_a_free_horn_again)
+{
+    static const struct {
+        kst_field_id_t id;
+        int by;
+    } k_moves[] = {
+        { KST_F_REVERSION, 0 },   { KST_F_NEUTRAL, 5 },
+        { KST_F_PULSE_LOWER, 10 }, { KST_F_PULSE_UPPER, -10 },
+        { KST_F_LEFT_ANGLE, -1 }, { KST_F_RIGHT_ANGLE, -1 },
+    };
+
+    fresh();
+    connected();
+    enable();
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+    tap(val(PG_SERVO, 4, 0));
+    CHECK(warns(TR(KP_HORN_FREE)));
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(!kst_prog_first_write(M));
+    if (!kst_prog_write_enabled(M)) {
+        enable();
+    }
+    for (unsigned i = 0; i < sizeof(k_moves) / sizeof(k_moves[0]); ++i) {
+        const kst_field_id_t id = k_moves[i].id;
+
+        edit(id, k_moves[i].by == 0
+                     ? (uint16_t)(1u - servo(id))
+                     : (uint16_t)((int)servo(id) + k_moves[i].by));
+        tap(val(PG_SERVO, 4, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK(warns(TR(KP_HORN_FREE)));
+        CHECK(warns(TR(KP_BENCH_FIRST)));
+        tap(kst_panel_cancel_rect());
+        kst_prog_discard(M);
+        CHECK_EQ(kst_prog_changes(M), 0);
+    }
+    /* A value that moves nothing does not. */
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(!warns(TR(KP_HORN_FREE)));
+    tap(kst_panel_cancel_rect());
+}
+
+/* A write that runs has its record on the card and is no interrupted
+ * write: the tab says that it writes and how many registers, RESTORE and
+ * its entry that discards the record take no tap, and nothing of it stays
+ * when the write is done. */
+TEST_CASE(a_write_that_runs_says_writing_and_not_interrupted)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        char want[KST_PANEL_LINE];
+        unsigned seen = 0, counted = 0;
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.card = true;
+        connected();
+        enable();
+        edits();
+        tap(val(PG_SERVO, 4, 0));
+        hold(2.1f);
+        CHECK_EQ(kst_panel_editor(), 0);
+        for (unsigned i = 0; i < 30000u; ++i) {
+            unsigned regs = 0, frames = 0;
+
+            rig_frame();
+            tick(0.001f);
+            if (i % 16u == 0u) {
+                show();
+            }
+            if (kst_prog_state(M) == KST_PROG_PROGRAMMING
+                && !kst_prog_writing(M)) {
+                break;
+            }
+            if (!kst_prog_writing(M)) {
+                continue;
+            }
+            ++seen;
+            /* The record of this write is held, and is not what stands. */
+            CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_WRITING));
+            CHECK(kst_panel_standing_line(1) == NULL);
+            CHECK(!kst_panel_row_live(PG_SERVO, 2, 0));
+            if (kst_prog_state(M) != KST_PROG_WORKING
+                || kst_prog_planning(M)) {
+                continue;
+            }
+            CHECK(kst_prog_journal(M));
+            CHECK_EQ(sscanf(status(0), TR(KP_STATE_WRITING_N), &regs,
+                            &frames), 2);
+            CHECK_EQ(regs, kst_prog_write_steps(M));
+            CHECK(regs >= 2u);
+            snprintf(want, sizeof(want), TR(KP_STATE_WRITING_N), regs,
+                     (unsigned)M->f.rd.frames);
+            CHECK_STR_EQ(status(0), want);
+            ++counted;
+        }
+        CHECK(seen > 0u);
+        CHECK(counted > 0u);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+        CHECK(kst_panel_standing_line(0) == NULL);
+        CHECK_EQ(kst_prog_write_steps(M), 0);
+        CHECK_EQ(g_rig.sim.n_bad_writes, 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* A write of one register, and one whose order the coprocessor plans. */
+TEST_CASE(the_writing_line_has_a_singular_and_a_form_without_a_count)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        char want[KST_PANEL_LINE];
+        bool one = false, any = false;
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        enable();
+        edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+        tap(val(PG_SERVO, 4, 0));
+        hold(2.1f);
+        for (unsigned i = 0; i < 30000u && !one; ++i) {
+            rig_frame();
+            tick(0.001f);
+            if (kst_prog_state(M) == KST_PROG_WORKING
+                && !kst_prog_planning(M) && kst_prog_writing(M)) {
+                CHECK_EQ(kst_prog_write_steps(M), 1);
+                snprintf(want, sizeof(want), TR(KP_STATE_WRITING_ONE),
+                         (unsigned)M->f.rd.frames);
+                CHECK_STR_EQ(status(0), want);
+                one = true;
+            }
+        }
+        CHECK(one);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+        /* RELEASE PAIRING: the coprocessor's own plan, no count here. */
+        if (!kst_prog_write_enabled(M)) {
+            enable();
+        }
+        tap(val(PG_SERVO, 2, 1));
+        tap(kst_panel_choice_rect(choice(TR(KP_RELEASE_TITLE))));
+        CHECK_EQ(kst_panel_editor(), 3);
+        hold(2.1f);
+        for (unsigned i = 0; i < 30000u && !any; ++i) {
+            rig_frame();
+            tick(0.001f);
+            if (kst_prog_state(M) == KST_PROG_WORKING
+                && !kst_prog_planning(M) && kst_prog_writing(M)) {
+                CHECK_EQ(kst_prog_write_steps(M), 0);
+                snprintf(want, sizeof(want), TR(KP_STATE_WRITING),
+                         (unsigned)M->f.rd.frames);
+                CHECK_STR_EQ(status(0), want);
+                any = true;
+            }
+        }
+        CHECK(any);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_RELEASED);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* What the last message says goes when it no longer holds: with the switch
+ * that it said was off, with an edit after a write, with DISCARD EDITS. */
+TEST_CASE(a_message_goes_when_what_it_says_no_longer_holds)
+{
+    fresh();
+    connected();
+    /* RELEASE PAIRING with the switch off says so; the switch on ends it. */
+    tap(val(PG_SERVO, 2, 1));
+    tap(kst_panel_choice_rect(choice(TR(KP_RELEASE_TITLE))));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_STR_EQ(said(), TR(KP_M_NEED_ENABLE));
+    enable();
+    CHECK_STR_EQ(said(), "");
+    /* "written and verified" does not stand beside a new edit. */
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+    tap(val(PG_SERVO, 4, 0));
+    hold(2.1f);
+    settle();
+    CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
+    tap(kst_panel_tab_rect(PG_TUNE));
+    tap(val(PG_TUNE, 2, 1));
+    if (kst_panel_editor() == 3) {
+        hold(2.1f);
+    }
+    CHECK_EQ(kst_prog_changes(M), 1);
+    CHECK_STR_EQ(said(), "");
+    /* DISCARD EDITS leaves no line of the edits behind. */
+    tap(kst_panel_tab_rect(PG_SERVO));
+    tap(val(PG_SERVO, 2, 1));
+    tap(kst_panel_choice_rect(choice(TR(KP_DISCARD))));
+    CHECK_EQ(kst_prog_changes(M), 0);
+    CHECK_STR_EQ(said(), "");
+}
+
+/* The PORT row carries what CONNECT asks of the supply, where the bench
+ * sets the supply; German field names are the maker's, with a point. */
+TEST_CASE(the_port_row_names_the_programming_voltage_and_current)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        char want[KST_PANEL_LINE];
+        kst_prog_feed_t f;
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        link_up();
+        CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), "PORT");
+        f = M->f;
+        f.rd.flags |= LINK_KS_F_RAIL;
+        kst_panel_feed(&f);
+        show();
+        snprintf(want, sizeof(want), "PORT  %u.%u V  %u mA",
+                 kst_prog_supply_mv(M) / 1000u,
+                 kst_prog_supply_mv(M) % 1000u / 100u,
+                 (unsigned)kst_prog_supply_ma(M));
+        CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), want);
+        /* Inside the row, left of its button. */
+        CHECK(kst_panel_value_rect(PG_SERVO, 0, 0).x - AREA.x - 10
+              > (int)strlen(want) * 8);
+        CHECK_STR_EQ(kst_panel_label(PG_TUNE, 3, 0), "SPEED LIMIT");
+        CHECK_STR_EQ(kst_panel_label(PG_TUNE, 3, 1), "SPEED");
+        CHECK_STR_EQ(kst_panel_label(PG_FAILSAFE, 1, 1), "AFTER");
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* One decimal convention in the German texts: the point the values on the
+ * screens have. */
+TEST_CASE(no_german_text_writes_a_number_with_a_comma)
+{
+    ui_text_set_language(UI_LANG_DE);
+    for (unsigned id = 0; id < (unsigned)TX_COUNT; ++id) {
+        const char *t = ui_tr((ui_text_id_t)id);
+
+        for (size_t i = 1; t[i] != '\0' && t[i + 1] != '\0'; ++i) {
+            /* A digit or a number's place on each side of the comma. */
+            const bool before = (t[i - 1] >= '0' && t[i - 1] <= '9')
+                             || (i >= 2 && t[i - 2] == '%'
+                                 && (t[i - 1] == 'u' || t[i - 1] == 'd'));
+            const bool after = (t[i + 1] >= '0' && t[i + 1] <= '9')
+                            || t[i + 1] == '%';
+
+            if (t[i] == ',' && before && after) {
+                T_FAIL("text %u: %s", id, t);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* While the programmer holds the port no pulse is on it, and the tester's
+ * COMMANDED row shows none. */
+TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
+{
+    fresh_screen();
+    link_up();
+    CHECK(strstr(servo_screen_commanded_text(), " us") != NULL);
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(kst_panel_is_open());
+    tap(val(PG_SERVO, 0, 0));
+    CHECK(kst_panel_holds_port());
+    CHECK_STR_EQ(servo_screen_commanded_text(), "---");
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    scr->render(&cv, 0);
+    CHECK_STR_EQ(servo_screen_commanded_text(), "---");
+    tap(val(PG_SERVO, 0, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(!kst_panel_holds_port());
+    CHECK(strstr(servo_screen_commanded_text(), " us") != NULL);
 }
 
 TEST_CASE(program_opens_the_programmer_over_the_left_card_and_closes_it)
@@ -4651,6 +5144,16 @@ int main(void)
     RUN(every_message_refusal_result_and_rule_has_a_line_in_english);
     RUN(every_message_refusal_result_and_rule_has_a_line_in_german);
     RUN(every_state_is_drawn_in_both_languages);
+    RUN(the_write_page_lists_each_value_from_the_servos_to_the_new);
+    RUN(a_write_of_more_values_than_lines_counts_the_rest);
+    RUN(a_value_further_out_than_the_confirmed_one_opens_the_page_again);
+    RUN(a_later_write_that_moves_the_horn_asks_for_a_free_horn_again);
+    RUN(a_write_that_runs_says_writing_and_not_interrupted);
+    RUN(the_writing_line_has_a_singular_and_a_form_without_a_count);
+    RUN(a_message_goes_when_what_it_says_no_longer_holds);
+    RUN(the_port_row_names_the_programming_voltage_and_current);
+    RUN(no_german_text_writes_a_number_with_a_comma);
+    RUN(commanded_shows_no_pulse_while_the_programmer_holds_the_port);
     RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
     RUN(no_setting_that_reaches_the_port_changes_while_it_is_held);
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);

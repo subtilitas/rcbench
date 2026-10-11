@@ -621,9 +621,12 @@ TEST_CASE(a_value_beyond_a_soft_limit_waits_for_the_confirmation)
     CHECK_EQ(kst_prog_soft_rules(&g_p), 0);
     CHECK((kst_prog_rules(&g_p) & KST_RULE_BIT(KST_S_DUTY_RAISED)) != 0u);
 
-    /* A rule confirmed once is not asked again while it stays broken. */
+    /* A rule confirmed for a value is asked again for one further from
+     * the servo's. */
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 2u)),
-             KST_PROG_EDIT_OK);
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_confirm(&g_p);
+    CHECK_EQ(draft(KST_F_DUTY), duty + 2u);
     /* Back at the servo's value it is asked again on the next raise. */
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, duty), KST_PROG_EDIT_OK);
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 1u)),
@@ -6437,6 +6440,353 @@ TEST_CASE(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make)
     }
 }
 
+/* ----------------------------------- soft rules against the session's image */
+
+TEST_CASE(a_confirmed_soft_limit_is_asked_again_further_out)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+    const uint16_t ang = kst_field_get(&sv, KST_F_LEFT_ANGLE);
+
+    up();
+    CHECK(duty + 5u <= KST_DUTY_RAW_MAX);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 3u)),
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_confirm(&g_p);
+    /* Up to the value confirmed nothing is asked. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 1u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 3u)),
+             KST_PROG_EDIT_OK);
+    /* One count beyond it the rule is asked again, and a cancel leaves
+     * the value confirmed where it was. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 4u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK_EQ(kst_prog_soft_rules(&g_p), KST_RULE_BIT(KST_S_DUTY_RAISED));
+    kst_prog_soft_cancel(&g_p);
+    CHECK_EQ(draft(KST_F_DUTY), duty + 3u);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 5u)),
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_confirm(&g_p);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 4u)),
+             KST_PROG_EDIT_OK);
+    /* Another field's value moves freely below its rule and is asked at
+     * every count above the servo's. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_LEFT_ANGLE, (uint16_t)(ang - 1u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_LEFT_ANGLE, (uint16_t)(ang + 1u)),
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_confirm(&g_p);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_LEFT_ANGLE, 255),
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_cancel(&g_p);
+    /* DISCARD: no value counts as confirmed. */
+    kst_prog_discard(&g_p);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 1u)),
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_cancel(&g_p);
+}
+
+TEST_CASE(a_value_on_the_other_side_of_the_servos_is_asked_again)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t n0 = kst_field_get(&sv, KST_F_NEUTRAL);
+
+    /* 1 count of Neutral is 0.2 us: 110 counts are 22 us. */
+    up();
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 110u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK((kst_prog_soft_rules(&g_p) & KST_RULE_BIT(KST_S_NEUTRAL_MOVED))
+          != 0u);
+    kst_prog_soft_confirm(&g_p);
+    /* Nearer on the other side: the rule stands broken and is asked. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 - 105u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK((kst_prog_soft_rules(&g_p) & KST_RULE_BIT(KST_S_NEUTRAL_MOVED))
+          != 0u);
+    kst_prog_soft_confirm(&g_p);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 - 104u)),
+             KST_PROG_EDIT_OK);
+}
+
+TEST_CASE(the_soft_limits_compare_with_the_servo_as_the_session_found_it)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t n0 = kst_field_get(&sv, KST_F_NEUTRAL);
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+
+    /* Neutral moved by 16 us, under the 20 us of the rule, and written. */
+    up_enabled();
+    CHECK(same(kst_prog_soft_base(&g_p), &sv));
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 80u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(kst_field_get(kst_prog_servo(&g_p), KST_F_NEUTRAL), n0 + 80u);
+    /* The base is the servo as found, not as last read. */
+    CHECK(same(kst_prog_soft_base(&g_p), &sv));
+    /* 16 us more are 32 us from where the session began: asked. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 160u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK_EQ(kst_prog_soft_rules(&g_p), KST_RULE_BIT(KST_S_NEUTRAL_MOVED));
+    kst_prog_soft_cancel(&g_p);
+    /* Back towards the servo as found: nothing to ask. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 40u)),
+             KST_PROG_EDIT_OK);
+    kst_prog_discard(&g_p);
+
+    /* A raise written under its confirmation: what the servo holds counts
+     * as confirmed, one count more is asked. */
+    edit(KST_F_DUTY, (uint16_t)(duty + 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_BOOST,
+                           (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 2u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK_EQ(kst_prog_soft_rules(&g_p), KST_RULE_BIT(KST_S_DUTY_RAISED));
+    kst_prog_soft_cancel(&g_p);
+    /* The servo as found is no raise. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, duty), KST_PROG_EDIT_OK);
+}
+
+TEST_CASE(another_servo_is_compared_with_its_own_image)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up_enabled();
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    g_sim.reg[KST_REG_DUTY] = 190;
+    g_sim.reg[KST_REG_DUTY_COPY] = 190;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(kst_prog_backup_other(&g_p));
+    CHECK(same(kst_prog_soft_base(&g_p), kst_prog_servo(&g_p)));
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 191), KST_PROG_EDIT_SOFT);
+    kst_prog_soft_cancel(&g_p);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 189), KST_PROG_EDIT_OK);
+}
+
+TEST_CASE(a_file_confirmed_is_the_value_confirmed)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+
+    up();
+    (void)file_with("UP", KST_F_DUTY, (uint16_t)(duty + 2u));
+    load("UP");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SOFT);
+    kst_prog_soft_confirm(&g_p);
+    CHECK_EQ(draft(KST_F_DUTY), duty + 2u);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 1u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 2u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 3u)),
+             KST_PROG_EDIT_SOFT);
+    kst_prog_soft_cancel(&g_p);
+    /* The file again, over a draft that holds its value: it is a step
+     * from the servo and is asked as one. */
+    load("UP");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SOFT);
+    kst_prog_soft_cancel(&g_p);
+}
+
+TEST_CASE(the_fields_at_fault_for_a_soft_limit_are_named)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+    kst_prog_t none;
+
+    kst_prog_init(&none);
+    CHECK_EQ(kst_prog_soft_fields(&none, &sv), 0);
+    up();
+    CHECK_EQ(kst_prog_soft_fields(&g_p, kst_prog_draft(&g_p)), 0);
+    edit(KST_F_DUTY, (uint16_t)(duty + 1u));
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u));
+    /* Boost lowered breaks nothing; Max. Duty raised does. */
+    CHECK_EQ(kst_prog_soft_fields(&g_p, kst_prog_draft(&g_p)),
+             KST_FIELD_BIT(KST_F_DUTY));
+    /* Of the edit that waits, as of the draft. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_LEFT_ANGLE,
+                           (uint16_t)(kst_field_get(&sv, KST_F_LEFT_ANGLE)
+                                      + 1u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK_EQ(kst_prog_soft_fields(&g_p, kst_prog_soft_image(&g_p)),
+             KST_FIELD_BIT(KST_F_DUTY) | KST_FIELD_BIT(KST_F_LEFT_ANGLE));
+    kst_prog_soft_cancel(&g_p);
+}
+
+/* ------------------------------------------------- messages that went stale */
+
+TEST_CASE(a_message_goes_when_what_it_says_no_longer_holds)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t boost = kst_field_get(&sv, KST_F_BOOST);
+    uint32_t seq;
+
+    up();
+    edit(KST_F_BOOST, (uint16_t)(boost - 1u));
+    /* The switch is off: said, and gone once it is on. */
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    seq = kst_prog_message(&g_p)->seq;
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(msg(), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_message(&g_p)->seq != seq);
+    /* Nothing to clear: the count stays. */
+    seq = kst_prog_message(&g_p)->seq;
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_message(&g_p)->seq, seq);
+
+    /* "n values written" beside a new edit. */
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_BOOST, (uint16_t)(boost - 2u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(msg(), KST_PROG_MSG_NONE);
+
+    /* An edit that is refused says why, and DISCARD clears it. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_R06, 1), KST_PROG_EDIT_REFUSED);
+    CHECK_EQ(msg(), KST_PROG_MSG_EDIT_LOCKED);
+    kst_prog_discard(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_NONE);
+
+    /* An edit taken through its confirmation clears as well. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_R06, 1), KST_PROG_EDIT_REFUSED);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY,
+                           (uint16_t)(kst_field_get(&sv, KST_F_DUTY) + 1u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK_EQ(msg(), KST_PROG_MSG_EDIT_LOCKED);
+    kst_prog_soft_confirm(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_NONE);
+}
+
+TEST_CASE(a_message_of_the_danger_level_stays_over_an_edit)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    by_hand();
+    g_p.msg.id = (uint8_t)(KST_PROG_MSG_SES + KST_SES_ERR_VERIFY);
+    g_p.msg.level = KST_PROG_DANGER;
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_BOOST,
+                           (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_VERIFY);
+    kst_prog_discard(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_VERIFY);
+}
+
+/* ------------------------------------------------------- a write that runs */
+
+TEST_CASE(a_write_that_runs_is_no_interrupted_write)
+{
+    const kst_image_t sv = sim_bench_image();
+    unsigned seen = 0;
+
+    up_enabled();
+    CHECK(!kst_prog_writing(&g_p));
+    CHECK_EQ(kst_prog_write_steps(&g_p), 0);
+    /* Nothing runs and no record is held: FORGET says nothing. */
+    kst_prog_forget(&g_p);
+    CHECK_EQ(msg(), KST_PROG_MSG_NONE);
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u));
+    edit(KST_F_NEUTRAL, (uint16_t)(kst_field_get(&sv, KST_F_NEUTRAL) + 5u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 60000u && !at_rest(); ++i) {
+        frame();
+        if (kst_prog_state(&g_p) != KST_PROG_WORKING) {
+            continue;
+        }
+        seen++;
+        CHECK(kst_prog_writing(&g_p));
+        /* Boost is 1 register, Neutral here 1 of its 2. */
+        CHECK_EQ(kst_prog_write_steps(&g_p), 2);
+        if (seen == 5u) {
+            /* The record of this write is held and is not one to
+             * discard. */
+            CHECK(kst_prog_journal(&g_p));
+            kst_prog_forget(&g_p);
+            CHECK_EQ(msg(), KST_PROG_MSG_START + KST_LINK_START_BUSY);
+            CHECK(kst_prog_journal(&g_p));
+        }
+    }
+    CHECK(seen > 5u);
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(!kst_prog_writing(&g_p));
+    CHECK_EQ(kst_prog_write_steps(&g_p), 0);
+    CHECK(!kst_prog_journal(&g_p));
+
+    /* A read is no write. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_writing(&g_p));
+    settle();
+}
+
+TEST_CASE(a_restore_counts_its_registers_where_its_order_is_checked)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_restore_t plan;
+
+    up_enabled();
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_write_steps(&g_p), 1);
+    settle();
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+             KST_PROG_MSG_NONE);
+    CHECK(!plan.unchecked);
+    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_writing(&g_p));
+    CHECK_EQ(kst_prog_write_steps(&g_p), plan.writes);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+    /* A release is planned by the coprocessor alone. */
+    if (kst_prog_release(&g_p) == KST_PROG_MSG_NONE) {
+        CHECK(kst_prog_writing(&g_p));
+        CHECK_EQ(kst_prog_write_steps(&g_p), 0);
+        settle();
+    }
+}
+
+/* -------------------------------- a servo that breaks a hard rule as found */
+
+TEST_CASE(a_servo_that_breaks_a_hard_limit_is_written_once_the_value_is_mended)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t boost = kst_field_get(&sv, KST_F_BOOST);
+
+    fresh_at(0u);
+    g_sim.reg[0x10] = 0;               /* Left Angle 0 */
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(kst_prog_editable(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    /* Another field is edited: the write names the rule the servo breaks,
+     * and nothing is sent. */
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_BOOST, (uint16_t)(boost - 1u)),
+             KST_PROG_EDIT_OK);
+    CHECK_EQ(kst_prog_write_check(&g_p), KST_PROG_MSG_EDIT_HARD);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_EDIT_HARD);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, KST_H_LEFT_ZERO);
+    CHECK_EQ(g_sim.n_writes, 0);
+    /* The value mended, the write goes with both. */
+    edit(KST_F_LEFT_ANGLE, 100);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_sim.reg[0x10], 100);
+    CHECK_EQ(g_sim.reg[0x03], boost - 1u);
+}
+
 int main(void)
 {
     RUN(a_connect_enters_and_reads_the_servo);
@@ -6575,5 +6925,16 @@ int main(void)
     RUN(without_a_gate_an_unanswered_start_leaves_the_servo_in_doubt);
     RUN(a_record_is_held_against_the_servo_whenever_the_card_comes);
     RUN(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make);
+    RUN(a_confirmed_soft_limit_is_asked_again_further_out);
+    RUN(a_value_on_the_other_side_of_the_servos_is_asked_again);
+    RUN(the_soft_limits_compare_with_the_servo_as_the_session_found_it);
+    RUN(another_servo_is_compared_with_its_own_image);
+    RUN(a_file_confirmed_is_the_value_confirmed);
+    RUN(the_fields_at_fault_for_a_soft_limit_are_named);
+    RUN(a_message_goes_when_what_it_says_no_longer_holds);
+    RUN(a_message_of_the_danger_level_stays_over_an_edit);
+    RUN(a_write_that_runs_is_no_interrupted_write);
+    RUN(a_restore_counts_its_registers_where_its_order_is_checked);
+    RUN(a_servo_that_breaks_a_hard_limit_is_written_once_the_value_is_mended);
     return test_summary("kst_prog");
 }
