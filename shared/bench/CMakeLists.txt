@@ -18,6 +18,7 @@ set(SRCS
     tone_link.c
     kst_link.c
     kst_prog.c
+    kst_card.c
     knob.c
 )
 

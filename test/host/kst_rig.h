@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "kst_fake_card.h"
 #include "kst_link.h"
 #include "kst_panel.h"
 #include "kst_port.h"
@@ -53,6 +54,8 @@ typedef struct {
     char file[KST_PROG_FILE_MAX];
     size_t file_len;
     unsigned file_writes;
+    fake_card_t fc;            /* the servo files */
+    unsigned starts_at_save;   /* starts when the last save was asked */
 } rig_t;
 
 static rig_t g_rig;
@@ -110,7 +113,7 @@ static inline void rig_port_fresh(void)
     link_dev_init(&g_rig.dev, k_rig_pages, 1u, NULL, g_rig.ms);
 }
 
-/* A servo on CH4, a throttle on CH1, the link down, no card. */
+/* A servo on CH4, a throttle on CH1, the link down, an empty card. */
 static inline void rig_fresh(void)
 {
     memset(&g_rig, 0, sizeof(g_rig));
@@ -126,6 +129,7 @@ static inline void rig_fresh(void)
     g_rig.out.slot[RIG_SLOT].pin = RIG_PIN;
     g_rig.out.channel[RIG_CH].role = OUT_ROLE_SURFACE;
     g_rig.safe = true;
+    g_rig.card = true;
     rig_port_fresh();
     kst_link_init(&g_rig.link);
 }
@@ -184,6 +188,8 @@ static inline void rig_frame(void)
     kst_prog_cmd_t cmd;
     kst_link_outcome_t o;
     kst_prog_feed_t f;
+    kst_prog_card_req_t creq;
+    kst_prog_card_done_t cdone;
     char text[KST_PROG_FILE_MAX];
     size_t len;
 
@@ -221,6 +227,14 @@ static inline void rig_frame(void)
         }
         if (!g_rig.card_silent) {
             kst_panel_file_done(!g_rig.card_fails);
+        }
+    }
+    if (kst_panel_card_take(&creq)) {
+        if (creq.op == KST_PROG_CARD_SAVE) {
+            g_rig.starts_at_save = g_rig.starts;
+        }
+        if (fake_card_run(&g_rig.fc, &creq, &cdone)) {
+            kst_panel_card_done(&cdone);
         }
     }
 }

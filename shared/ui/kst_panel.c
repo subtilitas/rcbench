@@ -9,12 +9,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "kst_card.h"
 #include "kst_limits.h"
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -42,7 +44,7 @@ enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
 
 enum {
-    A_CHANNEL = 0, A_PORT, A_READ, A_STORE, A_RESTORE, A_MORE, A_ENABLE,
+    A_CHANNEL = 0, A_PORT, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
     A_WRITE
 };
 
@@ -56,7 +58,7 @@ static const row_t k_rows[] = {
     { PG_SERVO, 0, 0, 0, K_ACT, A_CHANNEL, TX_KP_CHANNEL, NULL },
     { PG_SERVO, 0, 1, 0, K_ACT, A_PORT, -1, "PORT" },
     { PG_SERVO, 1, 0, 0, K_ACT, A_READ, -1, "SERVO" },
-    { PG_SERVO, 1, 1, 0, K_ACT, A_STORE, -1, "BACKUP" },
+    { PG_SERVO, 1, 1, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
     { PG_SERVO, 2, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
     { PG_SERVO, 2, 1, 0, K_ACT, A_MORE, TX_KP_MORE, NULL },
     { PG_SERVO, 3, 0, 1, K_ACT, A_ENABLE, TX_KP_ENABLE, NULL },
@@ -81,7 +83,7 @@ static const row_t k_rows[] = {
     { PG_FAILSAFE, 1, 0, 0, K_FIELD, KST_F_UNCONT_POS, -1, "POSITION" },
     { PG_FAILSAFE, 1, 1, 0, K_FIELD, KST_F_UNCONT_TIME, TX_KP_FS_AFTER, NULL },
 
-    { PG_LOCKED, 0, 0, 0, K_LOCKED, KST_F_20K_SEL, -1, "20K SEL" },
+    { PG_LOCKED, 0, 0, 0, K_LOCKED, KST_F_20K_SEL, TX_KP_TYPE, NULL },
     { PG_LOCKED, 0, 1, 0, K_LOCKED, KST_F_LOCK, -1, "LOCK" },
     { PG_LOCKED, 1, 0, 0, K_LOCKED, KST_F_GYRO, -1, "MODE" },
     { PG_LOCKED, 1, 1, 0, K_LOCKED, KST_F_PROT1_EN, -1, "PROT1 EN" },
@@ -112,8 +114,8 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_RESTORED]        = { TX_KP_M_RESTORED, -1 },
     [KST_PROG_MSG_RELEASED]        = { TX_KP_M_RELEASED, -1 },
     [KST_PROG_MSG_LEFT]            = { TX_KP_M_LEFT, -1 },
-    [KST_PROG_MSG_STORED]          = { TX_KP_M_STORED, -1 },
-    [KST_PROG_MSG_STORED_RAM]      = { TX_KP_M_STORED_RAM, -1 },
+    [KST_PROG_MSG_SAVED]           = { TX_KP_M_SAVED, -1 },
+    [KST_PROG_MSG_CARD_NONE]       = { TX_KP_M_CARD_NONE, -1 },
     [KST_PROG_MSG_STORE_FAILED]    = { TX_KP_M_STORE_FAILED, -1 },
     [KST_PROG_MSG_FILE_BAD]        = { TX_KP_M_FILE_BAD, -1 },
     [KST_PROG_MSG_JOURNAL]         = { TX_KP_M_JOURNAL, TX_KP_M_JOURNAL_2 },
@@ -133,6 +135,24 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_TIMEOUT]         = { TX_KP_M_TIMEOUT, -1 },
     [KST_PROG_MSG_JOURNAL_OTHER]   = { TX_KP_M_JOURNAL_OTHER,
                                        TX_KP_M_JOURNAL_OTHER_2 },
+    [KST_PROG_MSG_CARD_FULL]       = { TX_KP_M_CARD_FULL, -1 },
+    [KST_PROG_MSG_CARD_WRITE]      = { TX_KP_M_CARD_WRITE, -1 },
+    [KST_PROG_MSG_CARD_READ]       = { TX_KP_M_CARD_READ, -1 },
+    [KST_PROG_MSG_NO_FILES]        = { TX_KP_M_NO_FILES, -1 },
+    [KST_PROG_MSG_NAME_BAD]        = { TX_KP_M_NAME_BAD, -1 },
+    [KST_PROG_MSG_NAME_EXISTS]     = { TX_KP_M_NAME_EXISTS, -1 },
+    [KST_PROG_MSG_LOAD_BAD]        = { TX_KP_M_LOAD_BAD, -1 },
+    [KST_PROG_MSG_LOAD_CHECKSUM]   = { TX_KP_M_LOAD_CHECKSUM,
+                                       TX_KP_M_LOAD_CHECKSUM_2 },
+    [KST_PROG_MSG_LOAD_NEWER]      = { TX_KP_M_LOAD_NEWER, -1 },
+    [KST_PROG_MSG_LOAD_TYPE]       = { TX_KP_M_LOAD_TYPE, -1 },
+    [KST_PROG_MSG_LOAD_VALUE]      = { TX_KP_M_LOAD_VALUE, -1 },
+    [KST_PROG_MSG_LOAD_REFUSED]    = { TX_KP_M_LOAD_REFUSED, -1 },
+    [KST_PROG_MSG_LOAD_SAME]       = { TX_KP_M_LOAD_SAME, -1 },
+    [KST_PROG_MSG_LOAD_SOFT]       = { TX_KP_M_LOAD_SOFT, -1 },
+    [KST_PROG_MSG_LOADED]          = { TX_KP_M_LOADED, -1 },
+    [KST_PROG_MSG_LOADED_EDITED]   = { TX_KP_M_LOADED, TX_KP_FILE_EDITED },
+    [KST_PROG_MSG_LOADED_UNTYPED]  = { TX_KP_M_LOADED, TX_KP_FILE_UNTYPED },
 };
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -258,10 +278,12 @@ static const int16_t k_rule[KST_RULE_COUNT] = {
 
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
-    P_CHOICE_CANCEL, P_APPLY, P_CANCEL
+    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY
 };
 
-enum { C_STRETCH = 0, C_RESTORE, C_MORE };
+enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES };
+#define FILES_SAVE (-1)       /* the list's first entry: a new file */
+#define FILES_NEXT (-2)       /* its last: the files behind these   */
 enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE };
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
@@ -281,6 +303,12 @@ static struct {
 
     ui_keypad_t kp;
     int        kp_row;
+
+    ui_textkey_t tk;               /* a new file's name */
+    char       name[KST_PROG_NAME_MAX];
+    bool       name_wait;          /* the save of that name is on its way */
+    bool       files_wait;         /* the list was asked for */
+    uint32_t   files_seq;
 
     struct {
         bool open;
@@ -339,9 +367,38 @@ static bool programming(void)
     return kst_prog_state(&k.prog) == KST_PROG_PROGRAMMING;
 }
 
+static unsigned servo_type(void)
+{
+    return kst_prog_have_servo(&k.prog)
+               ? kst_card_type(kst_prog_servo(&k.prog)) : 0u;
+}
+
 static const char *row_label(const row_t *r)
 {
+    if (r->kind == K_ACT && r->what == A_READ && servo_type() != 0u) {
+        /* Static: the caller draws the label after this returns. */
+        static char typed[24];
+
+        snprintf(typed, sizeof(typed), TR(KP_SERVO_V), servo_type());
+        return typed;
+    }
     return r->label >= 0 ? ui_tr((ui_text_id_t)r->label) : r->name;
+}
+
+/* The name a field has on its row; NULL for one without a row. */
+static const char *field_name(unsigned id)
+{
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (k_rows[i].kind != K_ACT && k_rows[i].what == id) {
+            return row_label(&k_rows[i]);
+        }
+    }
+    return NULL;
+}
+
+static bool in_set(kst_field_set_t set, unsigned id)
+{
+    return (set & KST_FIELD_BIT(id)) != 0u;
 }
 
 static const char *unit_of(kst_field_id_t id)
@@ -522,9 +579,24 @@ ui_keypad_t *kst_panel_keypad(void)
     return &k.kp;
 }
 
+ui_textkey_t *kst_panel_textkey(void)
+{
+    return &k.tk;
+}
+
 const char *kst_panel_warning_line(int i)
 {
     return k.warn.open && i >= 0 && i < k.warn.count ? k.warn.lines[i] : NULL;
+}
+
+const char *kst_panel_label(int page, int row, int col)
+{
+    return row_label(row_at(page, row, col));
+}
+
+const char *kst_panel_choice_title(void)
+{
+    return k.ch.open ? k.ch.title : NULL;
 }
 
 const char *kst_panel_choice_label(int i)
@@ -539,7 +611,8 @@ int kst_panel_page(void)
 
 int kst_panel_editor(void)
 {
-    return k.kp.open ? 1 : k.ch.open ? 2 : k.warn.open ? 3 : 0;
+    return k.kp.open ? 1 : k.tk.open ? 4 : k.ch.open ? 2
+         : k.warn.open ? 3 : 0;
 }
 
 /* ----------------------------------------------------------------- messages */
@@ -571,6 +644,20 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     }
     if (id == KST_PROG_MSG_EDIT_HARD) {
         snprintf(out[n++], KST_PANEL_LINE, "%s", kst_panel_rule_text(arg));
+        return n;
+    }
+    if (id == KST_PROG_MSG_LOAD_BAD && arg != 0u) {
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_LINE), arg);
+        return n;
+    }
+    if (id == KST_PROG_MSG_LOAD_VALUE) {
+        const char *name = field_name(m->reg);
+
+        if (name != NULL) {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_VALUE), arg, name);
+        } else {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_VALUE_ANY), arg);
+        }
         return n;
     }
     if (id < FIXED_COUNT) {
@@ -609,15 +696,34 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     case TX_KP_O_NACK:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_O_NACK), arg);
         break;
+    case TX_KP_M_SAVED:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_SAVED),
+                 kst_prog_card_name(&k.prog));
+        break;
+    case TX_KP_M_LOAD_TYPE:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_TYPE), arg & 0xFFu,
+                 arg >> 8);
+        break;
+    case TX_KP_M_LOAD_SAME:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOAD_SAME),
+                 kst_prog_card_name(&k.prog));
+        break;
+    case TX_KP_M_LOADED:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_LOADED),
+                 kst_prog_card_name(&k.prog), arg & 0xFFu);
+        break;
     default:
         snprintf(out[n++], KST_PANEL_LINE, "%s",
                  ui_tr((ui_text_id_t)first));
         break;
     }
-    if (id == KST_PROG_MSG_RESTORE_REFUSED) {
+    if (id == KST_PROG_MSG_RESTORE_REFUSED
+        || id == KST_PROG_MSG_LOAD_REFUSED) {
         snprintf(out[n++], KST_PANEL_LINE, "%s", kst_panel_rule_text(arg));
     } else if (id == KST_PROG_MSG_NO_RESTORE && arg != 0u) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_STAY), arg);
+    } else if (id == KST_PROG_MSG_LOAD_SAME && arg != 0u) {
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_FILE_STAY), arg);
     }
     if (second == TX_KP_M_JOURNAL_2) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_2), arg);
@@ -626,6 +732,13 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     } else if (second >= 0) {
         snprintf(out[n++], KST_PANEL_LINE, "%s",
                  ui_tr((ui_text_id_t)second));
+    }
+    if (first == TX_KP_M_LOADED && n < KST_PANEL_MSG_LINES) {
+        if ((arg >> 8) != 0u) {
+            snprintf(out[n++], KST_PANEL_LINE, TR(KP_FILE_STAY), arg >> 8);
+        } else if (second < 0) {
+            snprintf(out[n++], KST_PANEL_LINE, "%s", TR(KP_EDIT_NOTE_2));
+        }
     }
     if (id >= KST_PROG_MSG_SES && m->reg != 0xFFu && n < KST_PANEL_MSG_LINES) {
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_AT_REG), (unsigned)m->reg,
@@ -642,6 +755,9 @@ static void close_editors(void)
         kst_prog_soft_cancel(&k.prog);
     }
     ui_keypad_close(&k.kp);
+    ui_textkey_close(&k.tk);
+    k.name_wait = false;
+    k.files_wait = false;
     k.ch.open = false;
     k.warn.open = false;
     k.warn.down = false;
@@ -739,8 +855,59 @@ static void warn_enable(void)
 
 static void warn_card(void)
 {
-    warn_text(KST_PROG_INFO, k.prog.f.card ? TR(KP_WRITE_CARD)
-                                           : TR(KP_WRITE_NO_CARD));
+    if (kst_prog_save_first(&k.prog)) {
+        warn_text(KST_PROG_INFO, TR(KP_WRITE_BACKUP));
+    } else {
+        warn_text(KST_PROG_INFO, k.prog.f.card ? TR(KP_WRITE_CARD)
+                                               : TR(KP_WRITE_NO_CARD));
+    }
+}
+
+/* A write that waits for a file first, and no card to take one: the model
+ * says so and no page asks for a hold. */
+static bool no_card(void)
+{
+    return kst_prog_save_first(&k.prog) && !k.prog.f.card;
+}
+
+/* The fields in which @p a differs from the servo, register 01's copy of
+ * Max. Duty left out. */
+static unsigned differing(const kst_image_t *a)
+{
+    unsigned n = 0;
+
+    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
+        if (id != KST_F_DUTY_COPY
+            && kst_field_get(a, (kst_field_id_t)id)
+                   != kst_field_get(kst_prog_servo(&k.prog),
+                                    (kst_field_id_t)id)) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+static int kind_text(kst_prog_file_kind_t kind)
+{
+    return kind == KST_PROG_FILE_EDITED    ? TX_KP_FILE_EDITED
+         : kind == KST_PROG_FILE_UNTYPED   ? TX_KP_FILE_UNTYPED
+                                           : -1;
+}
+
+/* A file whose values pass soft limits: its warnings, and the draft takes
+ * it after the hold. */
+static void warn_file(void)
+{
+    const kst_prog_t *p = &k.prog;
+    const int kind = kind_text(kst_prog_load_kind(p));
+
+    warn_open(W_SOFT, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD));
+    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_FILE_DIFF),
+             kst_prog_card_name(p), differing(kst_prog_soft_image(p)));
+    if (kind >= 0) {
+        warn_text(KST_PROG_INFO, ui_tr((ui_text_id_t)kind));
+    }
+    warn_rules(kst_prog_soft_rules(p), WARN_LINES - k.warn.count);
 }
 
 static void warn_write(void)
@@ -759,8 +926,7 @@ static void warn_write(void)
 static ui_text_id_t from_text(unsigned from)
 {
     return from == KST_PROG_FROM_SESSION ? TX_KP_FROM_SESSION
-         : from == KST_PROG_FROM_JOURNAL ? TX_KP_FROM_JOURNAL
-                                         : TX_KP_FROM_STORED;
+                                         : TX_KP_FROM_JOURNAL;
 }
 
 static void warn_restore(const kst_prog_restore_t *plan)
@@ -884,6 +1050,102 @@ static void choice_add(const char *label, int value)
     }
 }
 
+static void name_open(unsigned why)
+{
+    ui_textkey_open(&k.tk, k.area,
+                    why == KST_PROG_MSG_NAME_EXISTS ? TR(KP_NAME_EXISTS)
+                    : why == KST_PROG_MSG_NAME_BAD  ? TR(KP_NAME_BAD)
+                                                    : TR(KP_NAME_TITLE),
+                    k.name, (int)kst_card_name_max());
+}
+
+/* The name is typed: the save, and the keyboard again for a name the card's
+ * side does not take. */
+static void name_done(const char *name)
+{
+    snprintf(k.name, sizeof(k.name), "%.*s", (int)sizeof(k.name) - 1, name);
+    if (kst_prog_save(&k.prog, k.name) == KST_PROG_MSG_NONE) {
+        k.name_wait = true;
+    } else if (kst_prog_message(&k.prog)->id == KST_PROG_MSG_NAME_BAD) {
+        name_open(KST_PROG_MSG_NAME_BAD);
+    }
+}
+
+/* The list of files as the card gave it, under the entry that saves. */
+static void files_open(void)
+{
+    const kst_prog_t *p = &k.prog;
+    unsigned total = 0;
+    const unsigned n = kst_prog_file_count(p, &total);
+    char title[64];
+
+    const unsigned first = kst_prog_files_first(p);
+
+    if (total > n && n != 0u) {
+        snprintf(title, sizeof(title), TR(KP_FILES_TITLE_N), first + 1u,
+                 first + n, total);
+    } else {
+        snprintf(title, sizeof(title), "%s", TR(KP_FILES_TITLE));
+    }
+    choice_open(C_FILES, title);
+    choice_add(TR(KP_FILE_SAVE), FILES_SAVE);
+    for (unsigned i = 0; i < n; ++i) {
+        char label[KST_PANEL_LINE];
+        const unsigned type = kst_prog_file_type(p, i);
+
+        if (type != 0u) {
+            snprintf(label, sizeof(label), "%-16sV%u",
+                     kst_prog_file_name(p, i), type);
+        } else {
+            snprintf(label, sizeof(label), "%s", kst_prog_file_name(p, i));
+        }
+        choice_add(label, (int)i);
+    }
+    if (total > n) {
+        choice_add(TR(KP_FILES_NEXT), FILES_NEXT);
+    }
+}
+
+/* Ask for the list from file @p first on. */
+static void files_ask(unsigned first)
+{
+    k.files_seq = kst_prog_files_seq(&k.prog);
+    k.files_wait = kst_prog_files(&k.prog, first) == KST_PROG_MSG_NONE;
+}
+
+/* What the card's side brought: the list, the name again, a file's
+ * warnings. */
+static void card_moved(void)
+{
+    const kst_prog_t *p = &k.prog;
+    const unsigned id = kst_prog_message(p)->id;
+
+    if (kst_prog_card_busy(p)) {
+        return;
+    }
+    if (k.files_wait) {
+        k.files_wait = false;
+        if (kst_prog_files_seq(p) != k.files_seq && programming()
+            && kst_panel_editor() == 0) {
+            files_open();
+        }
+    }
+    if (k.name_wait) {
+        k.name_wait = false;
+        if ((id == KST_PROG_MSG_NAME_BAD || id == KST_PROG_MSG_NAME_EXISTS)
+            && programming() && kst_panel_editor() == 0) {
+            name_open(id);
+        }
+    }
+    if (kst_prog_soft_is_load(p) && kst_prog_soft_rules(p) != 0u
+        && !k.warn.open) {
+        ui_keypad_close(&k.kp);
+        ui_textkey_close(&k.tk);
+        k.ch.open = false;
+        warn_file();
+    }
+}
+
 /* What an edit came to: a warning page for a soft limit. */
 static void edited(const row_t *r, kst_prog_edit_t e)
 {
@@ -996,8 +1258,8 @@ static void act(const row_t *r)
     case A_READ:
         (void)kst_prog_read(p);
         break;
-    case A_STORE:
-        (void)kst_prog_backup(p);
+    case A_FILES:
+        files_ask(0);
         break;
     case A_RESTORE:
         choice_open(C_RESTORE, TR(KP_RESTORE_TITLE));
@@ -1027,7 +1289,7 @@ static void act(const row_t *r)
         }
         break;
     default:
-        if (kst_prog_write_check(p) == KST_PROG_MSG_NONE) {
+        if (kst_prog_write_check(p) == KST_PROG_MSG_NONE && !no_card()) {
             warn_write();
         } else {
             (void)kst_prog_write(p);    /* says why not */
@@ -1053,21 +1315,35 @@ static void choice_done(int value)
             kst_prog_forget(p);
         } else if (kst_prog_restore_plan(p, (kst_prog_from_t)value, &plan)
                    == KST_PROG_MSG_NONE) {
-            if (kst_prog_write_enabled(p)) {
+            if (kst_prog_write_enabled(p) && !no_card()) {
                 if (plan.soft != 0u) {
                     warn_check(&plan);
                 } else {
                     warn_restore(&plan);
                 }
             } else {
-                (void)kst_prog_restore(p, &plan);   /* says: the switch */
+                (void)kst_prog_restore(p, &plan);   /* says why not */
             }
+        }
+    } else if (kind == C_FILES) {
+        if (value == FILES_SAVE) {
+            snprintf(k.name, sizeof(k.name), "%s", kst_prog_preset_name(p));
+            name_open(KST_PROG_MSG_NONE);
+        } else if (value == FILES_NEXT) {
+            unsigned total = 0;
+            const unsigned next = kst_prog_files_first(p)
+                                + kst_prog_file_count(p, &total);
+
+            /* Behind the last file the list starts again. */
+            files_ask(next < total ? next : 0u);
+        } else {
+            (void)kst_prog_load(p, kst_prog_file_name(p, (unsigned)value));
         }
     } else if (value == MORE_VERIFY) {
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {
         kst_prog_discard(p);
-    } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE) {
+    } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE && !no_card()) {
         warn_release();
     } else {
         (void)kst_prog_release(p);      /* says why not */
@@ -1083,6 +1359,10 @@ static bool row_live(const row_t *r)
     if (r->kind == K_LOCKED) {
         return false;
     }
+    if (kst_prog_card_busy(p) && st == KST_PROG_PROGRAMMING) {
+        /* A list or a load is on its way: it finds the servo as it is. */
+        return false;
+    }
     if (r->kind != K_ACT) {
         return kst_prog_editable(p) && st == KST_PROG_PROGRAMMING;
     }
@@ -1093,15 +1373,12 @@ static bool row_live(const row_t *r)
         return st == KST_PROG_PWM || st == KST_PROG_PROGRAMMING
             || st == KST_PROG_ENTERING || st == KST_PROG_WORKING;
     case A_READ:
+    case A_FILES:
         return st == KST_PROG_PROGRAMMING;
-    case A_STORE:
-        return st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p)
-            && !kst_prog_in_doubt(p);
     case A_RESTORE:
         return p->journal
             || kst_prog_restore_offered(p, KST_PROG_FROM_SESSION)
-            || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL)
-            || kst_prog_restore_offered(p, KST_PROG_FROM_STORED);
+            || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL);
     case A_MORE:
         return st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p);
     case A_ENABLE:
@@ -1146,6 +1423,11 @@ static void down(const touch_event_t *evt)
     if (k.kp.open) {
         take(evt, P_KEYPAD, -1);
         (void)ui_keypad_event(&k.kp, evt, NULL);
+        return;
+    }
+    if (k.tk.open) {
+        take(evt, P_TEXTKEY, -1);
+        (void)ui_textkey_event(&k.tk, evt, NULL, 0);
         return;
     }
     if (k.ch.open) {
@@ -1221,6 +1503,19 @@ static void rest(const touch_event_t *evt)
         }
         if (r == UI_KEYPAD_OK) {
             keypad_done(v);
+        }
+        return;
+    }
+    case P_TEXTKEY: {
+        char name[UI_TEXTKEY_MAX + 1];
+        const ui_textkey_result_t r = ui_textkey_event(&k.tk, evt, name,
+                                                       sizeof(name));
+
+        if (up) {
+            let_go();
+        }
+        if (r == UI_TEXTKEY_OK) {
+            name_done(name);
         }
         return;
     }
@@ -1318,6 +1613,7 @@ void kst_panel_event(const touch_event_t *evt)
 void kst_panel_cancel(void)
 {
     ui_keypad_cancel_press(&k.kp);
+    ui_textkey_cancel_press(&k.tk);
     ui_tabs_cancel(&k.tabs);
     ui_hold_reset(&k.warn.hold);
     k.warn.down = false;
@@ -1374,6 +1670,7 @@ void kst_panel_init(gfx_rect_t area)
     k.area = area;
     ui_tabs_init_text(&k.tabs, k_pages, PG_COUNT, tabs_rect());
     k.kp.pressed = -1;
+    k.tk.pressed = -1;
 }
 
 void kst_panel_screen_entry(void)
@@ -1405,7 +1702,7 @@ bool kst_panel_holds_port(void)
 
 uint32_t kst_panel_revision(void)
 {
-    return k.rev + k.kp.revision;
+    return k.rev + k.kp.revision + k.tk.revision;
 }
 
 uint32_t kst_panel_hold_revision(void)
@@ -1423,10 +1720,11 @@ static uint32_t signature(void)
         p->f.rd.channel, kst_prog_have_servo(p), kst_prog_editable(p),
         (uint32_t)kst_prog_changed(p),
         (uint32_t)(kst_prog_changed(p) >> 32),
-        kst_prog_have_stored(p), p->journal, kst_prog_in_doubt(p),
+        kst_prog_backed_up(p), p->journal, kst_prog_in_doubt(p),
         kst_prog_write_enabled(p), p->f.stopped, p->f.card,
-        (uint32_t)kst_prog_differs_from_stored(p),
-        (uint32_t)(kst_prog_differs_from_stored(p) >> 32),
+        kst_prog_card_busy(p), kst_prog_files_seq(p),
+        (uint32_t)kst_prog_load_skipped(p),
+        (uint32_t)(kst_prog_load_skipped(p) >> 32),
     };
     uint32_t h = 2166136261u;
 
@@ -1439,7 +1737,7 @@ static uint32_t signature(void)
 static void model_moved(void)
 {
     const kst_prog_state_t st = kst_prog_state(&k.prog);
-    const uint32_t sig = signature();
+    uint32_t sig;
 
     if (st != k.state_seen) {
         /* An editor asks for something of the state it was opened in. */
@@ -1451,6 +1749,8 @@ static void model_moved(void)
         }
         k.state_seen = st;
     }
+    card_moved();
+    sig = signature();
     if (sig != k.sig) {
         k.sig = sig;
         ++k.rev;
@@ -1466,6 +1766,18 @@ void kst_panel_feed(const kst_prog_feed_t *f)
 bool kst_panel_take(kst_prog_cmd_t *out)
 {
     return kst_prog_take(&k.prog, out);
+}
+
+bool kst_panel_card_take(kst_prog_card_req_t *out)
+{
+    return kst_prog_card_take(&k.prog, out);
+}
+
+void kst_panel_card_done(const kst_prog_card_done_t *done)
+{
+    kst_prog_card_done(&k.prog, done);
+    model_moved();
+    ++k.rev;
 }
 
 size_t kst_panel_file_take(char *out, size_t n)
@@ -1644,16 +1956,16 @@ static void draw_notes(gfx_canvas_t *c)
         state_line(buf, sizeof(buf));
         line(c, 0, buf, ui_theme_color(UI_C_TEXT));
         if (kst_prog_state(p) == KST_PROG_NO_PAGE) {
-            snprintf(buf, sizeof(buf), "%s", TR(KP_NO_PAGE_2));
-        } else if (!kst_prog_have_stored(p)) {
-            snprintf(buf, sizeof(buf), "%s", TR(KP_NO_STORED));
-        } else if (kst_prog_have_servo(p)) {
-            snprintf(buf, sizeof(buf), TR(KP_STORED_DIFF),
-                     ones(kst_prog_differs_from_stored(p)));
-        } else {
-            snprintf(buf, sizeof(buf), "%s", TR(KP_STORED));
+            line(c, 1, TR(KP_NO_PAGE_2), faint);
+        } else if (servo_type() != 0u) {
+            line(c, 1, servo_type() == 6u ? TR(KP_TYPE_V6) : TR(KP_TYPE_V8),
+                 ui_theme_color(UI_C_ACCENT));
         }
-        line(c, 1, buf, faint);
+        if (kst_prog_backed_up(p)) {
+            snprintf(buf, sizeof(buf), TR(KP_BACKUP_FILE),
+                     kst_prog_backup_name(p));
+            line(c, 4, buf, faint);
+        }
         draw_standing(c);
         break;
     case PG_FAILSAFE:
@@ -1673,6 +1985,11 @@ static void draw_notes(gfx_canvas_t *c)
                 snprintf(buf, sizeof(buf), TR(KP_PAIRING_CARD), pair);
                 line(c, 2, buf, faint);
             }
+        }
+        if (kst_prog_load_skipped(p) != 0u) {
+            snprintf(buf, sizeof(buf), TR(KP_LOCKED_SKIPPED),
+                     ones(kst_prog_load_skipped(p)));
+            line(c, 3, buf, ui_theme_color(UI_C_WARN));
         }
         break;
     default:
@@ -1703,8 +2020,9 @@ static void act_value(const row_t *r, char *out, size_t n)
     case A_READ:
         snprintf(out, n, "%s", TR(KP_READ_ALL));
         break;
-    case A_STORE:
-        snprintf(out, n, "%s", TR(KP_STORE));
+    case A_FILES:
+        snprintf(out, n, "%s", kst_prog_card_busy(p) ? TR(KP_WAIT)
+                                                     : TR(KP_CHOOSE));
         break;
     case A_RESTORE:
     case A_MORE:
@@ -1753,12 +2071,22 @@ static void draw_row(gfx_canvas_t *c, int i)
         const bool diff = changed(id);
         char num[32];
 
-        fmt_field(id, kst_field_get(kst_prog_draft(p), id), num, sizeof(num));
+        const bool skipped = in_set(kst_prog_load_skipped(p), id);
+
+        if (id == KST_F_20K_SEL) {
+            snprintf(num, sizeof(num), "V%u", servo_type());
+        } else {
+            fmt_field(id, kst_field_get(kst_prog_draft(p), id), num,
+                      sizeof(num));
+        }
         /* A value that differs from the servo's: marked twice, by the fill
-         * and by the star. */
-        snprintf(v, sizeof(v), "%s%s", diff ? "* " : "", num);
+         * and by the star.  One the loaded file has otherwise and that is
+         * never written: by the fill and the mark of the note below. */
+        snprintf(v, sizeof(v), "%s%s", diff ? "* " : skipped ? "! " : "", num);
         if (diff) {
             fill = ui_theme_color(UI_C_ACCENT);
+        } else if (skipped) {
+            fill = ui_theme_color(UI_C_WARN);
         }
         ui_button(c, vr, v, fill, pressed, live);
         if (r->kind != K_STEP) {
@@ -1838,6 +2166,10 @@ void kst_panel_render(gfx_canvas_t *c)
 
     if (k.kp.open) {
         ui_keypad_render(&k.kp, c);
+        return;
+    }
+    if (k.tk.open) {
+        ui_textkey_render(&k.tk, c);
         return;
     }
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));

@@ -8,8 +8,8 @@
  * module and the screen:
  *
  *   - It holds the servo's image as last read, a draft the operator edits,
- *     the backup the coprocessor's session holds, one backup kept on the
- *     panel, and the journal of a write.
+ *     the backup the coprocessor's session holds, and the journal of a
+ *     write.
  *   - An edit goes through the field table and the limits of protocols/kst:
  *     a value that breaks a hard rule is not taken, a value that breaks a
  *     soft rule waits for a confirmation.  No limit is stated here.
@@ -27,18 +27,26 @@
  * link loss, a restart or an abort says the servo may hold part of a
  * write; the next read compares the servo with the recorded image.
  *
- * A backup kept on the panel is not the backup of the coprocessor's
- * session, and the session restores only its own.  Such a backup is
- * written back as an edit: the editable fields are taken from it, the
- * limits apply, and a field of another access class that differs stays as
- * the servo holds it (kst_prog_restore_plan()).
+ * Servo files: the card keeps images of servos in named files.  This file
+ * asks for a save, a list and a load (kst_prog_card_take()) and takes what
+ * the card's side made of it (kst_prog_card_done()), as images and names:
+ * the text of a file, its name's rules and the servo type's rule are the
+ * card side's (kst_card.h).
+ *   - A save writes the servo's image as last read, under the name the
+ *     operator gave.  The first write of a session to a servo waits for a
+ *     save nobody asked for, under a preset name, and is not sent when the
+ *     card takes no file.
+ *   - A load takes a file of the servo's type only (kst_card.h says what
+ *     the types are).  Its editable fields become the draft, as edits: a
+ *     hard rule refuses the file, soft rules wait for a confirmation, and
+ *     nothing is written before the operator writes the draft.  A field of
+ *     another access class that differs stays as the servo holds it and is
+ *     named (kst_prog_load_skipped()).  A file edited by hand is taken
+ *     the same way and named as one.
  *
- * The file text, at most KST_PROG_FILE_MAX bytes:
+ * The journal's file text, at most KST_PROG_FILE_MAX bytes:
  *
  *   RCBENCH KST 1
- *   00=00            the backup, one line per register, when one is kept
- *   ...
- *   1F=00
  *   journal=<64 hexadecimal digits>     the image before a write, when
  *                                       one is recorded
  *   target=<64 hexadecimal digits>      what that write was to leave
@@ -79,6 +87,12 @@ extern "C" {
 #define KST_PROG_FETCH_MS 1000u
 /** A file the card did not take is written again after this long. */
 #define KST_PROG_FILE_RETRY_MS 5000u
+/** A save, a list or a load without an end for this long has failed. */
+#define KST_PROG_CARD_MS 5000u
+/** The files a list holds. */
+#define KST_PROG_FILES_MAX 5u
+/** A file's name with its terminator. */
+#define KST_PROG_NAME_MAX 16u
 
 /** Where the programmer is. */
 typedef enum {
@@ -112,11 +126,12 @@ enum {
     KST_PROG_MSG_RESTORED,
     KST_PROG_MSG_RELEASED,
     KST_PROG_MSG_LEFT,            /**< the tester has the output again      */
-    KST_PROG_MSG_STORED,          /**< the backup is on the card            */
-    KST_PROG_MSG_STORED_RAM,      /**< no card: kept until power off        */
-    KST_PROG_MSG_STORE_FAILED,    /**< the card took no file; nothing was
+    KST_PROG_MSG_SAVED,           /**< the servo's image is in the file
+                                         kst_prog_card_name()                 */
+    KST_PROG_MSG_CARD_NONE,       /**< no card: no file, nothing written    */
+    KST_PROG_MSG_STORE_FAILED,    /**< the card took no journal; nothing was
                                        written to the servo                 */
-    KST_PROG_MSG_FILE_BAD,        /**< the file on the card is not readable */
+    KST_PROG_MSG_FILE_BAD,        /**< the journal's file is not readable   */
     KST_PROG_MSG_JOURNAL,         /**< a write was interrupted; read.  arg:
                                        the journal's channel, from 1        */
     KST_PROG_MSG_JOURNAL_SAME,    /**< the servo holds what it held before  */
@@ -135,11 +150,40 @@ enum {
     KST_PROG_MSG_TIMEOUT,         /**< no outcome within KST_PROG_RUN_MS    */
     KST_PROG_MSG_JOURNAL_OTHER,   /**< the servo read is not the journal's;
                                        arg: the journal's channel, from 1   */
-    KST_PROG_MSG_START = 0x20,
-    KST_PROG_MSG_OUT   = 0x30,
-    KST_PROG_MSG_REF   = 0x40,
-    KST_PROG_MSG_SES   = 0x60,
-    KST_PROG_MSG_END   = 0x80
+    KST_PROG_MSG_CARD_FULL,      /**< no space on the card, or no preset
+                                         name is left                         */
+    KST_PROG_MSG_CARD_WRITE,      /**< the file was not written whole       */
+    KST_PROG_MSG_CARD_READ,       /**< the card was not read                */
+    KST_PROG_MSG_NO_FILES,        /**< the card holds no servo file         */
+    KST_PROG_MSG_NAME_BAD,        /**< the card's side does not take the
+                                         name                                 */
+    KST_PROG_MSG_NAME_EXISTS,     /**< a file has the name; none is replaced */
+    KST_PROG_MSG_LOAD_BAD,        /**< the file is not whole; arg: its line,
+                                         0 none                               */
+    KST_PROG_MSG_LOAD_CHECKSUM,   /**< the check value does not fit the text */
+    KST_PROG_MSG_LOAD_NEWER,      /**< the file's format is a later one     */
+    KST_PROG_MSG_LOAD_TYPE,       /**< the file is of another servo type;
+                                         arg: the file's type, and above bit 7
+                                         the servo's                          */
+    KST_PROG_MSG_LOAD_VALUE,      /**< a value of the file is not taken;
+                                         reg: its kst_field_id_t, 0xFF none;
+                                         arg: its line, 0 none                */
+    KST_PROG_MSG_LOAD_REFUSED,    /**< the file breaks a hard rule; arg: the
+                                         kst_rule_t                           */
+    KST_PROG_MSG_LOAD_SAME,       /**< the file changes nothing; arg: locked
+                                         fields that differ and stay          */
+    KST_PROG_MSG_LOAD_SOFT,       /**< the file waits for
+                                         kst_prog_soft_confirm()              */
+    KST_PROG_MSG_LOADED,          /**< the draft holds the file; arg: fields
+                                         it changes, and above bit 7 the
+                                         locked fields that differ and stay   */
+    KST_PROG_MSG_LOADED_EDITED,   /**< the same for a file edited by hand   */
+    KST_PROG_MSG_LOADED_UNTYPED,  /**< and for one that names no servo type */
+    KST_PROG_MSG_START = 0x40,
+    KST_PROG_MSG_OUT   = 0x50,
+    KST_PROG_MSG_REF   = 0x60,
+    KST_PROG_MSG_SES   = 0x80,
+    KST_PROG_MSG_END   = 0xA0
 };
 
 typedef enum {
@@ -168,7 +212,6 @@ typedef enum {
     KST_PROG_FROM_NONE = 0,
     KST_PROG_FROM_SESSION,  /**< the backup of the coprocessor's session */
     KST_PROG_FROM_JOURNAL,  /**< the image recorded before a write       */
-    KST_PROG_FROM_STORED,   /**< the backup kept on the panel            */
     KST_PROG_FROM_COUNT
 } kst_prog_from_t;
 
@@ -183,6 +226,76 @@ typedef struct {
                              image is not known                            */
     bool    unchecked;  /**< the session's restore has no checked order    */
 } kst_prog_restore_t;
+
+/** What the card's side is asked for. */
+typedef enum {
+    KST_PROG_CARD_IDLE = 0,
+    KST_PROG_CARD_SAVE,   /**< the image into a new file                   */
+    KST_PROG_CARD_LIST,   /**< the names of the files and the next preset  */
+    KST_PROG_CARD_LOAD,   /**< the file with the name, against the servo   */
+} kst_prog_card_op_t;
+
+/** How it went. */
+typedef enum {
+    KST_PROG_CARD_OK = 0,
+    KST_PROG_CARD_NO_CARD,
+    KST_PROG_CARD_FULL,       /**< no space, or no preset name is left     */
+    KST_PROG_CARD_WRITE_ERR,
+    KST_PROG_CARD_READ_ERR,   /**< the directory or the file does not read */
+    KST_PROG_CARD_NAME,       /**< the name is not one a file may have     */
+    KST_PROG_CARD_EXISTS,     /**< a file has the name; nothing written    */
+    KST_PROG_CARD_BAD,        /**< the text is not a whole servo file      */
+    KST_PROG_CARD_CHECKSUM,   /**< its check value does not fit            */
+    KST_PROG_CARD_NEWER,      /**< a format this code does not read        */
+    KST_PROG_CARD_TYPE,       /**< the file is from another servo type     */
+    KST_PROG_CARD_VALUE,      /**< a value of the file is not taken        */
+    KST_PROG_CARD_RESULTS
+} kst_prog_card_result_t;
+
+/** What a file that loads is. */
+typedef enum {
+    KST_PROG_FILE_VERIFIED = 0,  /**< as written, its check value fits  */
+    KST_PROG_FILE_EDITED,        /**< no check value; names its type    */
+    KST_PROG_FILE_UNTYPED,       /**< no check value and no servo type  */
+    KST_PROG_FILE_KINDS
+} kst_prog_file_kind_t;
+
+typedef struct {
+    uint8_t op;          /**< kst_prog_card_op_t                           */
+    bool preset;         /**< KST_PROG_CARD_SAVE: the card's side names it */
+    uint32_t id;         /**< goes back in the answer                      */
+    char name[KST_PROG_NAME_MAX];  /**< the file to save or to load        */
+    uint16_t first;      /**< KST_PROG_CARD_LIST: the first file wanted,
+                              counted from 0                               */
+    kst_image_t image;   /**< the servo's image: what a save writes, what
+                              a load is compared with                      */
+} kst_prog_card_req_t;
+
+typedef struct {
+    uint32_t id;
+    uint8_t result;      /**< kst_prog_card_result_t                       */
+    char name[KST_PROG_NAME_MAX];  /**< KST_PROG_CARD_SAVE: the file
+                              written; KST_PROG_CARD_LIST: the next preset
+                              name, "" when none is left                   */
+    /* KST_PROG_CARD_LOAD */
+    uint8_t kind;        /**< kst_prog_file_kind_t                         */
+    uint8_t type;        /**< the file's servo type, a number the card's
+                              side gives and the screen names; 0 none      */
+    uint8_t servo_type;  /**< KST_PROG_CARD_TYPE: the servo's              */
+    kst_field_set_t skipped;  /**< fields that differ from the file and
+                              are never written                            */
+    uint8_t field;       /**< KST_PROG_CARD_VALUE: the kst_field_id_t,
+                              0xFF none                                    */
+    uint16_t line;       /**< a refusal's line of the text; 0 none         */
+    kst_image_t image;   /**< the servo's image with the editable fields
+                              of the file                                  */
+    /* KST_PROG_CARD_LIST */
+    uint8_t count;       /**< entries of names[]                           */
+    uint16_t total;      /**< the servo files on the card                  */
+    uint8_t types[KST_PROG_FILES_MAX];  /**< each file's servo type; 0 for
+                              a file that names none or does not read      */
+    char names[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];
+} kst_prog_card_done_t;
 
 typedef enum {
     KST_PROG_CMD_START = 0,   /**< kst_link_start(req)  */
@@ -226,8 +339,6 @@ typedef struct {
     bool fp_ok;
     kst_image_t servo;        /**< the servo as last read          */
     kst_image_t draft;        /**< what the operator made of it    */
-    bool have_stored;
-    kst_image_t stored;       /**< the backup kept on the panel    */
     bool journal;             /**< an image is recorded            */
     bool journal_open;        /**< and the servo was not compared  */
     bool journal_other;       /**< the servo read is not the journal's */
@@ -238,6 +349,7 @@ typedef struct {
 
     bool write_enabled;
     bool written;             /**< a write was sent in this session */
+    bool backed_up;           /**< a file holds this session's servo */
     uint8_t channel;
 
     uint8_t wait;             /**< what is awaited                */
@@ -253,6 +365,27 @@ typedef struct {
     bool cmd_ready;
     kst_prog_cmd_t cmd;
     kst_link_request_t held;  /**< the request the file goes before */
+    kst_image_t held_target;  /**< and what it is to leave */
+
+    uint8_t card_op;          /**< kst_prog_card_op_t on its way   */
+    bool card_ready;          /**< and not taken yet               */
+    bool card_auto;           /**< the save a write waits for      */
+    bool soft_load;           /**< the edit that waits is a file   */
+    kst_field_set_t load_skipped;
+    kst_field_set_t soft_skipped;   /**< of the file that waits */
+    uint8_t file_types[KST_PROG_FILES_MAX];
+    uint8_t load_kind;        /**< kst_prog_file_kind_t            */
+    char card_name[KST_PROG_NAME_MAX];  /**< the file saved or loaded */
+    char preset[KST_PROG_NAME_MAX];     /**< the next preset name     */
+    char backup[KST_PROG_NAME_MAX];     /**< the file of backed_up    */
+    uint32_t card_id;
+    uint32_t card_ms;
+    uint8_t files_n;
+    uint16_t files_total;
+    uint16_t files_first;     /**< of the last list                */
+    uint16_t card_first;      /**< of the list asked for           */
+    uint32_t files_seq;       /**< counts the lists that arrived   */
+    char files[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];
 
     bool soft;
     kst_image_t soft_img;
@@ -296,8 +429,6 @@ bool kst_prog_have_servo(const kst_prog_t *p);
 bool kst_prog_editable(const kst_prog_t *p);
 const kst_image_t *kst_prog_servo(const kst_prog_t *p);
 const kst_image_t *kst_prog_draft(const kst_prog_t *p);
-bool kst_prog_have_stored(const kst_prog_t *p);
-const kst_image_t *kst_prog_stored(const kst_prog_t *p);
 bool kst_prog_write_enabled(const kst_prog_t *p);
 uint8_t kst_prog_channel(const kst_prog_t *p);
 /** A write was interrupted and the servo was not compared since. */
@@ -318,14 +449,19 @@ bool kst_prog_in_doubt(const kst_prog_t *p);
 /** No write was sent since the servo was connected: the next asks for the
  *  free horn. */
 bool kst_prog_first_write(const kst_prog_t *p);
+/** A file holds the servo as this session found it: the next write waits
+ *  for no save. */
+bool kst_prog_backed_up(const kst_prog_t *p);
+/** That file's name; "" while there is none. */
+const char *kst_prog_backup_name(const kst_prog_t *p);
+/** The next write waits for a file of the servo's image first, and is not
+ *  sent when no card takes it. */
+bool kst_prog_save_first(const kst_prog_t *p);
 
 /** The fields in which the draft differs from the servo, register 01's
  *  copy of Max. Duty left out. */
 kst_field_set_t kst_prog_changed(const kst_prog_t *p);
 unsigned kst_prog_changes(const kst_prog_t *p);
-/** The fields in which the servo differs from the backup kept on the
- *  panel; 0 with none kept. */
-kst_field_set_t kst_prog_differs_from_stored(const kst_prog_t *p);
 /** The rules the draft breaks as an edit of the servo's image. */
 kst_rules_t kst_prog_rules(const kst_prog_t *p);
 
@@ -363,19 +499,18 @@ kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on);
 /** Whether kst_prog_write() would be sent, without sending it. */
 kst_prog_msg_id_t kst_prog_write_check(kst_prog_t *p);
-/** Write the draft.  The journal goes to the file first when a card takes
- *  it. */
+/** Write the draft.  The first write of a session saves the servo's image
+ *  to a file before it and is not sent without one; the journal goes to its
+ *  file before every write. */
 kst_prog_msg_id_t kst_prog_write(kst_prog_t *p);
 /** The same for kst_prog_release(). */
 kst_prog_msg_id_t kst_prog_release_check(kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_release(kst_prog_t *p);
-/** Keep the servo's image on the panel. */
-kst_prog_msg_id_t kst_prog_backup(kst_prog_t *p);
 /** Whether @p from holds an image that differs from the servo. */
 bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from);
 /**
- * Prepare a restore.  For KST_PROG_FROM_JOURNAL and KST_PROG_FROM_STORED the
- * draft becomes the servo's image with the editable fields of the source.
+ * Prepare a restore.  For KST_PROG_FROM_JOURNAL the draft becomes the
+ * servo's image with the editable fields of the source.
  */
 kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
                                         kst_prog_restore_t *out);
@@ -389,7 +524,57 @@ kst_prog_msg_id_t kst_prog_power_cycled(kst_prog_t *p);
 /** The operator's cancel. */
 void kst_prog_abort(kst_prog_t *p);
 
-/* --- the file ---------------------------------------------------------------- */
+/* --- servo files ------------------------------------------------------------- */
+
+/** Save the servo's image to a new file with @p name.  The card's side
+ *  says whether the name is one a file may have; a file is never
+ *  replaced. */
+kst_prog_msg_id_t kst_prog_save(kst_prog_t *p, const char *name);
+/** Ask for the list of files from file @p first on, counted from 0: up to
+ *  KST_PROG_FILES_MAX of them.  kst_prog_files_seq() moves when it is
+ *  there.  Refused with KST_PROG_MSG_NEED_READ while the servo is in
+ *  doubt. */
+kst_prog_msg_id_t kst_prog_files(kst_prog_t *p, unsigned first);
+/** The number of the last list's first file among the card's. */
+unsigned kst_prog_files_first(const kst_prog_t *p);
+/**
+ * Load the file with @p name into the draft.  Taken with a servo read that
+ * passes the fingerprint and is not in doubt.  A file of another servo
+ * type, a file with a value that is not taken, a file that breaks a hard
+ * rule and a file that is not whole change nothing.  A file that breaks
+ * soft rules waits for kst_prog_soft_confirm().
+ */
+kst_prog_msg_id_t kst_prog_load(kst_prog_t *p, const char *name);
+/** A save, a list or a load is on its way. */
+bool kst_prog_card_busy(const kst_prog_t *p);
+uint32_t kst_prog_files_seq(const kst_prog_t *p);
+/** The names of the last list, @p i from 0; "" beyond them. */
+const char *kst_prog_file_name(const kst_prog_t *p, unsigned i);
+/** That file's servo type as the card's side gave it; 0 none. */
+unsigned kst_prog_file_type(const kst_prog_t *p, unsigned i);
+/** The entries of the last list and, when @p total is not NULL, the servo
+ *  files on the card. */
+unsigned kst_prog_file_count(const kst_prog_t *p, unsigned *total);
+/** The next preset name as the last list gave it; "" when none is left. */
+const char *kst_prog_preset_name(const kst_prog_t *p);
+/** The file last saved or asked for. */
+const char *kst_prog_card_name(const kst_prog_t *p);
+/** What the file last loaded is. */
+kst_prog_file_kind_t kst_prog_load_kind(const kst_prog_t *p);
+/** The fields in which the file in the draft differs from the servo and
+ *  that are never written; 0 once the servo is read again or the draft is
+ *  discarded. */
+kst_field_set_t kst_prog_load_skipped(const kst_prog_t *p);
+/** The edit that waits for kst_prog_soft_confirm() is a file. */
+bool kst_prog_soft_is_load(const kst_prog_t *p);
+
+/** A request for the card's side; false while there is none. */
+bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out);
+/** What the card's side made of it.  An answer to a request that is no
+ *  longer awaited changes nothing. */
+void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done);
+
+/* --- the journal's file ------------------------------------------------------ */
 
 /** The file text is to be written: fill @p out and return its length;
  *  0 while nothing is to be written or @p n is too small. */

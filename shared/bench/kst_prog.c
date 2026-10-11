@@ -10,6 +10,7 @@
 /* What is awaited. */
 enum {
     W_NONE = 0,
+    W_SAVE,      /* the servo's file, before the first write      */
     W_FILE,      /* the journal's file, before the request goes   */
     W_ANSWER,    /* the control task's answer to the command      */
     W_OUTCOME,   /* the operation's outcome                       */
@@ -19,7 +20,6 @@ enum {
 enum {
     FILE_NONE = 0,
     FILE_KEEP,     /* the state changed; nobody waits            */
-    FILE_BACKUP,   /* the operator's STORE                       */
     FILE_JOURNAL,  /* a write to the servo waits                 */
 };
 
@@ -68,7 +68,11 @@ static kst_prog_level_t level_of(unsigned id)
     case KST_PROG_MSG_RESTORED:
     case KST_PROG_MSG_RELEASED:
     case KST_PROG_MSG_LEFT:
-    case KST_PROG_MSG_STORED:
+    case KST_PROG_MSG_SAVED:
+    case KST_PROG_MSG_LOADED:
+    case KST_PROG_MSG_LOADED_EDITED:
+    case KST_PROG_MSG_LOADED_UNTYPED:
+    case KST_PROG_MSG_LOAD_SAME:
     case KST_PROG_MSG_JOURNAL_SAME:
     case KST_PROG_MSG_JOURNAL_DONE:
     case KST_PROG_MSG_FORGOTTEN:
@@ -134,7 +138,10 @@ static void session_gone(kst_prog_t *p)
     p->need_read = false;
     p->write_enabled = false;
     p->written = false;
+    p->backed_up = false;
     p->soft = false;
+    p->soft_load = false;
+    p->load_skipped = 0;
     p->journal_other = false;
 }
 
@@ -214,10 +221,29 @@ static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
     return r;
 }
 
-/* A write to the servo: the journal first, and its file when a card takes
- * one. */
-static void send_write(kst_prog_t *p, const kst_link_request_t *req,
-                       const kst_image_t *target)
+static bool waits_unsent(const kst_prog_t *p)
+{
+    return p->wait == W_SAVE || p->wait == W_FILE
+        || (p->wait == W_ANSWER && p->cmd_ready);
+}
+
+static void card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
+{
+    if (++p->card_id == 0u) {
+        p->card_id = 1u;
+    }
+    p->card_op = (uint8_t)op;
+    p->card_ready = true;
+    p->card_ms = p->f.now_ms;
+    memset(p->card_name, 0, sizeof(p->card_name));
+    if (name != NULL) {
+        strncpy(p->card_name, name, sizeof(p->card_name) - 1u);
+    }
+}
+
+/* The write that is held: the journal, its file when a card takes one, and
+ * then the request. */
+static void write_go(kst_prog_t *p)
 {
     if (p->have_servo) {
         if (!p->journal) {
@@ -226,23 +252,49 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
         p->journal = true;
         p->journal_open = true;
         p->journal_ch = p->channel;
-        p->journal_target = *target;
+        p->journal_target = p->held_target;
     }
     if (p->journal && p->f.card) {
-        p->held = *req;
         p->wait = W_FILE;
         p->wait_ms = p->f.now_ms;
-        p->op = (uint8_t)req->op;
         file_want(p, FILE_JOURNAL);
     } else {
-        send(p, req);
+        send(p, &p->held);
     }
+}
+
+/*
+ * A write to the servo.  The first of a session to a servo whose image is
+ * known waits for that image in a file; false, with nothing held, when no
+ * card is there to take it.  A servo in doubt has no image worth a file:
+ * the session's restore, the one write it takes, goes without.
+ */
+static bool send_write(kst_prog_t *p, const kst_link_request_t *req,
+                       const kst_image_t *target)
+{
+    const bool save = kst_prog_save_first(p);
+
+    if (save && !p->f.card) {
+        return false;
+    }
+    p->held = *req;
+    p->held_target = *target;
+    p->op = (uint8_t)req->op;
+    if (save) {
+        p->wait = W_SAVE;
+        p->wait_ms = p->f.now_ms;
+        p->card_auto = true;
+        card_ask(p, KST_PROG_CARD_SAVE, NULL);
+    } else {
+        write_go(p);
+    }
+    return true;
 }
 
 /* Whether an operation may start now; the message when not. */
 static kst_prog_msg_id_t idle(const kst_prog_t *p)
 {
-    if (p->wait != W_NONE || p->cmd_ready) {
+    if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
         return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
     }
     switch (kst_prog_state(p)) {
@@ -283,11 +335,16 @@ static void adopt(kst_prog_t *p)
     p->have_servo = true;
     p->need_read = false;
     p->soft = false;
+    p->soft_load = false;
+    p->load_skipped = 0;
     p->fp_ok = kst_fingerprint(&p->servo, NULL)
             && (p->f.rd.flags & LINK_KS_F_FP_OK) != 0u;
     if ((had && !same(&was, &p->servo)) || !p->fp_ok) {
         /* Another servo, or one that is not written to. */
         p->write_enabled = false;
+    }
+    if (had && !same(&was, &p->servo)) {
+        p->backed_up = false;
     }
 }
 
@@ -367,9 +424,12 @@ static void done_ok(kst_prog_t *p, unsigned op)
         journal_clear(p);
         if (p->f.have_image) {
             const bool on = p->write_enabled;
+            const bool kept = p->backed_up;
 
+            /* The file holds the servo as the session found it. */
             adopt(p);
             p->write_enabled = on && p->fp_ok;
+            p->backed_up = kept;
         } else {
             p->need_read = true;
         }
@@ -577,7 +637,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
     }
     if (f->stopped && !was_stopped) {
         p->write_enabled = false;
-        if (p->wait == W_FILE || (p->wait == W_ANSWER && p->cmd_ready)) {
+        if (waits_unsent(p)) {
             not_started(p, KST_PROG_MSG_STOPPED, 0);
         }
     }
@@ -600,6 +660,17 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         p->cmd.id = 0;
         p->cmd_ready = true;
         (void)say(p, KST_PROG_MSG_TIMEOUT, 0);
+    }
+
+    if (p->card_op != KST_PROG_CARD_IDLE
+        && (uint32_t)(f->now_ms - p->card_ms) >= KST_PROG_CARD_MS) {
+        kst_prog_card_done_t late;
+
+        memset(&late, 0, sizeof(late));
+        late.id = p->card_id;
+        late.result = p->card_op == KST_PROG_CARD_SAVE
+                          ? KST_PROG_CARD_WRITE_ERR : KST_PROG_CARD_READ_ERR;
+        kst_prog_card_done(p, &late);
     }
 
     if (p->file_retry
@@ -713,16 +784,6 @@ const kst_image_t *kst_prog_draft(const kst_prog_t *p)
     return &p->draft;
 }
 
-bool kst_prog_have_stored(const kst_prog_t *p)
-{
-    return p->have_stored;
-}
-
-const kst_image_t *kst_prog_stored(const kst_prog_t *p)
-{
-    return &p->stored;
-}
-
 bool kst_prog_write_enabled(const kst_prog_t *p)
 {
     return p->write_enabled;
@@ -759,6 +820,21 @@ bool kst_prog_first_write(const kst_prog_t *p)
     return !p->written;
 }
 
+bool kst_prog_backed_up(const kst_prog_t *p)
+{
+    return p->backed_up;
+}
+
+const char *kst_prog_backup_name(const kst_prog_t *p)
+{
+    return p->backed_up ? p->backup : "";
+}
+
+bool kst_prog_save_first(const kst_prog_t *p)
+{
+    return p->have_servo && !p->backed_up && !kst_prog_in_doubt(p);
+}
+
 kst_field_set_t kst_prog_changed(const kst_prog_t *p)
 {
     return p->have_servo ? differ(&p->servo, &p->draft) : 0u;
@@ -767,12 +843,6 @@ kst_field_set_t kst_prog_changed(const kst_prog_t *p)
 unsigned kst_prog_changes(const kst_prog_t *p)
 {
     return ones(kst_prog_changed(p));
-}
-
-kst_field_set_t kst_prog_differs_from_stored(const kst_prog_t *p)
-{
-    return p->have_servo && p->have_stored ? differ(&p->servo, &p->stored)
-                                           : 0u;
 }
 
 kst_rules_t kst_prog_rules(const kst_prog_t *p)
@@ -838,6 +908,7 @@ kst_prog_edit_t kst_prog_edit(kst_prog_t *p, kst_field_id_t id, uint16_t raw)
     kst_rules_t hard, soft;
 
     p->soft = false;
+    p->soft_load = false;
     if (!kst_prog_editable(p)) {
         (void)say(p, p->have_servo && !p->fp_ok ? KST_PROG_MSG_READ_ONLY
                                                  : KST_PROG_MSG_NEED_READ,
@@ -891,22 +962,57 @@ const kst_image_t *kst_prog_soft_image(const kst_prog_t *p)
     return &p->soft_img;
 }
 
+static unsigned loaded_message(const kst_prog_t *p)
+{
+    switch (p->load_kind) {
+    case KST_PROG_FILE_EDITED:
+        return KST_PROG_MSG_LOADED_EDITED;
+    case KST_PROG_FILE_UNTYPED:
+        return KST_PROG_MSG_LOADED_UNTYPED;
+    default:
+        return KST_PROG_MSG_LOADED;
+    }
+}
+
+/* The draft takes the file's target. */
+static void load_take(kst_prog_t *p, const kst_image_t *target)
+{
+    const unsigned n = ones(differ(&p->servo, target));
+
+    p->draft = *target;
+    p->load_skipped = p->soft_skipped;
+    (void)say(p, loaded_message(p), n | (ones(p->load_skipped) << 8));
+}
+
 void kst_prog_soft_confirm(kst_prog_t *p)
 {
     if (p->soft) {
-        p->draft = p->soft_img;
         p->soft = false;
+        if (p->soft_load) {
+            p->soft_load = false;
+            load_take(p, &p->soft_img);
+        } else {
+            p->draft = p->soft_img;
+        }
     }
 }
 
 void kst_prog_soft_cancel(kst_prog_t *p)
 {
     p->soft = false;
+    p->soft_load = false;
+}
+
+bool kst_prog_soft_is_load(const kst_prog_t *p)
+{
+    return p->soft && p->soft_load;
 }
 
 void kst_prog_discard(kst_prog_t *p)
 {
     p->soft = false;
+    p->soft_load = false;
+    p->load_skipped = 0;
     if (p->have_servo) {
         p->draft = p->servo;
     }
@@ -1076,11 +1182,14 @@ static kst_prog_msg_id_t write_draft(kst_prog_t *p, kst_prog_from_t from)
         return say(p, m, arg);
     }
     p->soft = false;
+    p->soft_load = false;
     p->restoring = (uint8_t)from;
     p->writes = (uint8_t)kst_prog_changes(p);
     r = request(p, LINK_KST_OP_WRITE);
     r.image = p->draft;
-    send_write(p, &r, &p->draft);
+    if (!send_write(p, &r, &p->draft)) {
+        return say(p, KST_PROG_MSG_CARD_NONE, 0);
+    }
     return KST_PROG_MSG_NONE;
 }
 
@@ -1123,28 +1232,13 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
         return say(p, m, arg);
     }
     p->soft = false;
+    p->soft_load = false;
     p->restoring = KST_PROG_FROM_NONE;
     r = request(p, LINK_KST_OP_RELEASE);
-    send_write(p, &r, &p->plan.target);
+    if (!send_write(p, &r, &p->plan.target)) {
+        return say(p, KST_PROG_MSG_CARD_NONE, 0);
+    }
     return KST_PROG_MSG_NONE;
-}
-
-kst_prog_msg_id_t kst_prog_backup(kst_prog_t *p)
-{
-    if (p->wait != W_NONE || p->cmd_ready) {
-        /* A read on its way replaces the image a backup would keep. */
-        return say(p, KST_PROG_MSG_START + KST_LINK_START_BUSY, 0);
-    }
-    if (!p->have_servo || kst_prog_in_doubt(p)) {
-        return say(p, KST_PROG_MSG_NEED_READ, 0);
-    }
-    p->stored = p->servo;
-    p->have_stored = true;
-    if (p->f.card) {
-        file_want(p, FILE_BACKUP);
-        return KST_PROG_MSG_NONE;
-    }
-    return say(p, KST_PROG_MSG_STORED_RAM, 0);
 }
 
 static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
@@ -1154,8 +1248,6 @@ static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
         return p->fed && p->f.have_backup ? &p->f.backup : NULL;
     case KST_PROG_FROM_JOURNAL:
         return p->journal && !p->journal_other ? &p->journal_img : NULL;
-    case KST_PROG_FROM_STORED:
-        return p->have_stored ? &p->stored : NULL;
     default:
         return NULL;
     }
@@ -1252,6 +1344,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     }
     out->soft = soft_new(p, &target);
     p->soft = false;
+    p->soft_load = false;
     p->draft = target;
     return KST_PROG_MSG_NONE;
 }
@@ -1280,11 +1373,14 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
         return say(p, m, 0);
     }
     p->soft = false;
+    p->soft_load = false;
     p->restoring = KST_PROG_FROM_SESSION;
     r = request(p, LINK_KST_OP_RESTORE);
     r.image = *src;
     r.confirm = plan->unchecked;
-    send_write(p, &r, src);
+    if (!send_write(p, &r, src)) {
+        return say(p, KST_PROG_MSG_CARD_NONE, 0);
+    }
     return KST_PROG_MSG_NONE;
 }
 
@@ -1311,7 +1407,7 @@ kst_prog_msg_id_t kst_prog_power_cycled(kst_prog_t *p)
 
 void kst_prog_abort(kst_prog_t *p)
 {
-    if (p->wait == W_FILE || (p->wait == W_ANSWER && p->cmd_ready)) {
+    if (waits_unsent(p)) {
         not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED, 0);
     } else if (p->wait != W_NONE) {
         p->cmd.kind = KST_PROG_CMD_ABORT;
@@ -1320,7 +1416,343 @@ void kst_prog_abort(kst_prog_t *p)
     }
 }
 
-/* ----------------------------------------------------------------- the file */
+/* -------------------------------------------------------------- servo files */
+
+static kst_prog_msg_id_t card_free(const kst_prog_t *p)
+{
+    if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
+        return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    }
+    if (!p->fed || !p->f.card) {
+        return KST_PROG_MSG_CARD_NONE;
+    }
+    return KST_PROG_MSG_NONE;
+}
+
+/* What a load needs of the servo, when it is asked for and when the file
+ * is there. */
+static kst_prog_msg_id_t load_ready(const kst_prog_t *p, unsigned *arg)
+{
+    *arg = 0;
+    if (kst_prog_state(p) != KST_PROG_PROGRAMMING) {
+        return p->wait != W_NONE || p->cmd_ready
+                   ? (kst_prog_msg_id_t)(KST_PROG_MSG_START
+                                         + KST_LINK_START_BUSY)
+                   : KST_PROG_MSG_NEED_PORT;
+    }
+    if (kst_prog_journal_other(p)) {
+        *arg = p->journal_ch + 1u;
+        return KST_PROG_MSG_JOURNAL_OTHER;
+    }
+    if (!p->have_servo || kst_prog_in_doubt(p)) {
+        return KST_PROG_MSG_NEED_READ;
+    }
+    if (!p->fp_ok) {
+        return KST_PROG_MSG_READ_ONLY;
+    }
+    return KST_PROG_MSG_NONE;
+}
+
+kst_prog_msg_id_t kst_prog_save(kst_prog_t *p, const char *name)
+{
+    kst_prog_msg_id_t m = card_free(p);
+
+    /* What the servo lacks is said before what the card lacks. */
+    if ((m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_CARD_NONE)
+        && (!p->have_servo || kst_prog_in_doubt(p))) {
+        m = KST_PROG_MSG_NEED_READ;
+    }
+    if (m == KST_PROG_MSG_NONE
+        && (name == NULL || name[0] == '\0'
+            || strlen(name) >= KST_PROG_NAME_MAX)) {
+        m = KST_PROG_MSG_NAME_BAD;
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        return say(p, m, 0);
+    }
+    p->card_auto = false;
+    card_ask(p, KST_PROG_CARD_SAVE, name);
+    return KST_PROG_MSG_NONE;
+}
+
+kst_prog_msg_id_t kst_prog_files(kst_prog_t *p, unsigned first)
+{
+    kst_prog_msg_id_t m = card_free(p);
+
+    /* A servo in doubt takes no file and gives none: the read comes
+     * first, and is said before what the card lacks. */
+    if ((m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_CARD_NONE)
+        && kst_prog_in_doubt(p)) {
+        m = KST_PROG_MSG_NEED_READ;
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        return say(p, m, 0);
+    }
+    p->card_auto = false;
+    p->card_first = (uint16_t)(first <= 0xFFFFu ? first : 0xFFFFu);
+    card_ask(p, KST_PROG_CARD_LIST, NULL);
+    return KST_PROG_MSG_NONE;
+}
+
+unsigned kst_prog_files_first(const kst_prog_t *p)
+{
+    return p->files_first;
+}
+
+kst_prog_msg_id_t kst_prog_load(kst_prog_t *p, const char *name)
+{
+    unsigned arg = 0;
+    kst_prog_msg_id_t m = card_free(p);
+
+    if (m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_CARD_NONE) {
+        /* What the servo lacks is said before what the card lacks. */
+        const kst_prog_msg_id_t servo = load_ready(p, &arg);
+
+        m = servo != KST_PROG_MSG_NONE ? servo : m;
+    }
+    if (m == KST_PROG_MSG_NONE
+        && (name == NULL || name[0] == '\0'
+            || strlen(name) >= KST_PROG_NAME_MAX)) {
+        m = KST_PROG_MSG_CARD_READ;
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        return say(p, m, arg);
+    }
+    p->card_auto = false;
+    p->soft = false;
+    p->soft_load = false;
+    card_ask(p, KST_PROG_CARD_LOAD, name);
+    return KST_PROG_MSG_NONE;
+}
+
+bool kst_prog_card_busy(const kst_prog_t *p)
+{
+    return p->card_op != KST_PROG_CARD_IDLE;
+}
+
+uint32_t kst_prog_files_seq(const kst_prog_t *p)
+{
+    return p->files_seq;
+}
+
+const char *kst_prog_file_name(const kst_prog_t *p, unsigned i)
+{
+    return i < p->files_n ? p->files[i] : "";
+}
+
+unsigned kst_prog_file_count(const kst_prog_t *p, unsigned *total)
+{
+    if (total != NULL) {
+        *total = p->files_total;
+    }
+    return p->files_n;
+}
+
+unsigned kst_prog_file_type(const kst_prog_t *p, unsigned i)
+{
+    return i < p->files_n ? p->file_types[i] : 0u;
+}
+
+kst_field_set_t kst_prog_load_skipped(const kst_prog_t *p)
+{
+    return p->load_skipped;
+}
+
+const char *kst_prog_preset_name(const kst_prog_t *p)
+{
+    return p->preset;
+}
+
+const char *kst_prog_card_name(const kst_prog_t *p)
+{
+    return p->card_name;
+}
+
+kst_prog_file_kind_t kst_prog_load_kind(const kst_prog_t *p)
+{
+    return (kst_prog_file_kind_t)p->load_kind;
+}
+
+bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
+{
+    if (!p->card_ready) {
+        return false;
+    }
+    p->card_ready = false;
+    memset(out, 0, sizeof(*out));
+    out->op = p->card_op;
+    out->id = p->card_id;
+    out->preset = p->card_auto;
+    out->first = p->card_op == KST_PROG_CARD_LIST ? p->card_first : 0u;
+    memcpy(out->name, p->card_name, sizeof(out->name));
+    out->image = p->servo;
+    return true;
+}
+
+static void name_copy(char *to, const char *from)
+{
+    memcpy(to, from, KST_PROG_NAME_MAX);
+    to[KST_PROG_NAME_MAX - 1u] = '\0';
+}
+
+static unsigned card_message(unsigned result, bool load)
+{
+    switch (result) {
+    case KST_PROG_CARD_NO_CARD:
+        return KST_PROG_MSG_CARD_NONE;
+    case KST_PROG_CARD_FULL:
+        return KST_PROG_MSG_CARD_FULL;
+    case KST_PROG_CARD_WRITE_ERR:
+        return KST_PROG_MSG_CARD_WRITE;
+    case KST_PROG_CARD_NAME:
+        return KST_PROG_MSG_NAME_BAD;
+    case KST_PROG_CARD_EXISTS:
+        return KST_PROG_MSG_NAME_EXISTS;
+    case KST_PROG_CARD_BAD:
+        return KST_PROG_MSG_LOAD_BAD;
+    case KST_PROG_CARD_CHECKSUM:
+        return KST_PROG_MSG_LOAD_CHECKSUM;
+    case KST_PROG_CARD_NEWER:
+        return KST_PROG_MSG_LOAD_NEWER;
+    default:
+        /* A result that is none of a save's or a list's. */
+        return load ? KST_PROG_MSG_CARD_READ : KST_PROG_MSG_CARD_WRITE;
+    }
+}
+
+static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
+{
+    const bool waited = p->card_auto && p->wait == W_SAVE;
+    const bool ok = d->result == KST_PROG_CARD_OK;
+
+    if (ok) {
+        name_copy(p->card_name, d->name);
+        p->backed_up = p->have_servo;
+        name_copy(p->backup, d->name);
+    }
+    if (waited) {
+        if (ok) {
+            write_go(p);
+        } else {
+            not_started(p, card_message(d->result, false), 0);
+        }
+    } else if (!p->card_auto) {
+        (void)say(p, ok ? KST_PROG_MSG_SAVED : card_message(d->result, false),
+                  0);
+    }
+    /* A save whose write was given up meanwhile says nothing more. */
+    p->card_auto = false;
+}
+
+static void list_done(kst_prog_t *p, const kst_prog_card_done_t *d)
+{
+    if (d->result != KST_PROG_CARD_OK) {
+        (void)say(p, card_message(d->result, true), 0);
+        return;
+    }
+    p->files_n = d->count <= KST_PROG_FILES_MAX ? d->count
+                                                : (uint8_t)KST_PROG_FILES_MAX;
+    p->files_total = d->total;
+    p->files_first = p->card_first;
+    for (unsigned i = 0; i < p->files_n; ++i) {
+        name_copy(p->files[i], d->names[i]);
+        p->file_types[i] = d->types[i];
+    }
+    name_copy(p->preset, d->name);
+    p->files_seq++;
+    if (d->total == 0u) {
+        (void)say(p, KST_PROG_MSG_NO_FILES, 0);
+    }
+}
+
+static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
+{
+    unsigned arg = 0;
+    kst_rules_t hard, soft;
+    kst_prog_msg_id_t m;
+
+    if (d->result == KST_PROG_CARD_BAD) {
+        (void)say(p, KST_PROG_MSG_LOAD_BAD, d->line);
+        return;
+    }
+    if (d->result == KST_PROG_CARD_VALUE) {
+        (void)say_reg(p, KST_PROG_MSG_LOAD_VALUE, d->line, d->field);
+        return;
+    }
+    if (d->result == KST_PROG_CARD_TYPE) {
+        (void)say(p, KST_PROG_MSG_LOAD_TYPE,
+                  d->type | ((unsigned)d->servo_type << 8));
+        return;
+    }
+    if (d->result != KST_PROG_CARD_OK) {
+        (void)say(p, card_message(d->result, true), 0);
+        return;
+    }
+    /* The servo the file was compared with may be gone meanwhile. */
+    m = load_ready(p, &arg);
+    if (m != KST_PROG_MSG_NONE) {
+        (void)say(p, m, arg);
+        return;
+    }
+    p->load_kind = d->kind < KST_PROG_FILE_KINDS ? d->kind
+                                                 : KST_PROG_FILE_UNTYPED;
+    p->soft_skipped = d->skipped;
+    /* The card's side takes editable fields only: a target that differs
+     * anywhere else is not a file's and is not taken. */
+    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
+        const kst_field_id_t fid = (kst_field_id_t)id;
+
+        if (id != KST_F_DUTY_COPY && !editable(fid)
+            && kst_field_get(&d->image, fid)
+                   != kst_field_get(&p->servo, fid)) {
+            (void)say(p, KST_PROG_MSG_LOAD_BAD, 0);
+            return;
+        }
+    }
+    if (differ(&p->servo, &d->image) == 0u) {
+        (void)say(p, KST_PROG_MSG_LOAD_SAME, ones(d->skipped));
+        return;
+    }
+    hard = hard_new(p, &d->image);
+    if (hard != 0u) {
+        (void)say(p, KST_PROG_MSG_LOAD_REFUSED, lowest(hard));
+        return;
+    }
+    soft = soft_new(p, &d->image);
+    if (soft != 0u) {
+        p->soft = true;
+        p->soft_load = true;
+        p->soft_img = d->image;
+        p->soft_rules = soft;
+        (void)say(p, KST_PROG_MSG_LOAD_SOFT, 0);
+        return;
+    }
+    load_take(p, &d->image);
+}
+
+void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done)
+{
+    const unsigned op = p->card_op;
+
+    if (op == KST_PROG_CARD_IDLE || done->id != p->card_id) {
+        return;
+    }
+    p->card_op = KST_PROG_CARD_IDLE;
+    p->card_ready = false;
+    switch (op) {
+    case KST_PROG_CARD_SAVE:
+        save_done(p, done);
+        break;
+    case KST_PROG_CARD_LIST:
+        list_done(p, done);
+        break;
+    default:
+        load_done(p, done);
+        break;
+    }
+}
+
+/* ----------------------------------------------------- the journal's file */
 
 static uint16_t crc16(const char *s, size_t n)
 {
@@ -1373,14 +1805,6 @@ size_t kst_prog_file_text(const kst_prog_t *p, char *out, size_t n)
         return 0;
     }
     at = put(at, k_head);
-    if (p->have_stored) {
-        for (unsigned i = 0; i < sizeof(p->stored.r); ++i) {
-            at = put_hex(at, i, 2);
-            *at++ = '=';
-            at = put_hex(at, p->stored.r[i], 2);
-            *at++ = '\n';
-        }
-    }
     if (p->journal) {
         at = put_image(at, "journal=", &p->journal_img);
         at = put_image(at, "target=", &p->journal_target);
@@ -1435,8 +1859,6 @@ void kst_prog_file_done(kst_prog_t *p, bool ok)
         } else {
             not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
         }
-    } else if (what == FILE_BACKUP) {
-        (void)say(p, ok ? KST_PROG_MSG_STORED : KST_PROG_MSG_STORED_RAM, 0);
     }
 }
 
@@ -1488,10 +1910,8 @@ static bool take_image(const char *s, size_t left, const char *key,
 }
 
 typedef struct {
-    bool have_stored;
     bool journal;
     uint8_t journal_ch;
-    kst_image_t stored;
     kst_image_t journal_img;
     kst_image_t journal_target;
 } loaded_t;
@@ -1516,23 +1936,7 @@ static bool parse(loaded_t *into, const char *text, size_t len)
     }
     len -= 11u;
 
-    into->have_stored = false;
     into->journal = false;
-    if (len - at >= 6u && text[at + 2u] == '=') {
-        for (unsigned i = 0; i < sizeof(into->stored.r); ++i) {
-            if (len - at < 6u || take_hex(text + at, 2) != (long)i
-                || text[at + 2u] != '=' || text[at + 5u] != '\n') {
-                return false;
-            }
-            v = take_hex(text + at + 3u, 2);
-            if (v < 0) {
-                return false;
-            }
-            into->stored.r[i] = (uint8_t)v;
-            at += 6u;
-        }
-        into->have_stored = true;
-    }
     if (at != len) {
         if (!take_image(text + at, len - at, "journal=", &into->journal_img)) {
             return false;
@@ -1575,8 +1979,6 @@ bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
         (void)say(p, KST_PROG_MSG_FILE_BAD, 0);
         return false;
     }
-    p->have_stored = got.have_stored;
-    p->stored = got.stored;
     p->journal = got.journal;
     p->journal_open = got.journal;
     p->journal_ch = got.journal_ch;

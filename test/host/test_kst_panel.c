@@ -858,7 +858,7 @@ TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
     /* The first write of a session asks for a free horn. */
     CHECK(warns(TR(KP_HORN_FREE)));
     CHECK(warns(TR(KP_BENCH_FIRST)));
-    CHECK(warns(TR(KP_WRITE_NO_CARD)));
+    CHECK(warns(TR(KP_WRITE_BACKUP)));
     hold(1.9f);
     rig_frames(50);
     CHECK_EQ(g_rig.starts, 2);
@@ -894,7 +894,7 @@ TEST_CASE(with_a_card_the_values_before_the_write_go_to_it_first)
     enable();
     edits();
     tap(val(PG_SERVO, 4, 0));
-    CHECK(warns(TR(KP_WRITE_CARD)));
+    CHECK(warns(TR(KP_WRITE_BACKUP)));
     hold(2.1f);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
@@ -1019,6 +1019,9 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     tap(kst_panel_tab_rect(PG_SERVO));
     tap(val(PG_SERVO, 1, 1));
     CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_READ);
+    rig_frames(5);
+    CHECK_EQ(g_rig.fc.lists, 0);
     /* LEAVE says what leaving costs. */
     tap(val(PG_SERVO, 0, 1));
     CHECK_EQ(kst_panel_editor(), 3);
@@ -1125,151 +1128,640 @@ TEST_CASE(an_open_page_goes_when_the_link_goes)
     }
 }
 
-/* ------------------------------------------------------- backup and restore */
+/* ---------------------------------------------------------- the servo files */
 
-TEST_CASE(store_keeps_a_backup_and_says_where)
+/* The index of a character key of the text keyboard. */
+static int tk_key(char ch)
+{
+    static const char chars[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
+    const char *p = strchr(chars, ch);
+
+    return p != NULL ? (int)(p - chars) : -1;
+}
+
+static void tkey(int key)
+{
+    tap(ui_textkey_key_rect(kst_panel_textkey(), key));
+}
+
+/* Clear the name, type @p s and OK. */
+static void type_name(const char *s)
+{
+    tkey(UI_TK_CLR);
+    for (; *s != '\0'; ++s) {
+        tkey(tk_key(*s));
+    }
+    tkey(UI_TK_OK);
+}
+
+/* FILES on the SERVO tab, and what the card answers. */
+static void files(void)
+{
+    tap(kst_panel_tab_rect(PG_SERVO));
+    tap(val(PG_SERVO, 1, 1));
+    settle();
+}
+
+/* The list's entry of the file @p name, -1 for none. */
+static int file_choice(const char *name)
+{
+    const size_t len = strlen(name);
+
+    for (int i = 0; kst_panel_choice_label(i) != NULL; ++i) {
+        const char *l = kst_panel_choice_label(i);
+
+        if (strncmp(l, name, len) == 0 && (l[len] == ' ' || l[len] == '\0')) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* FILES, the file @p name, and what the card answers. */
+static void pick(const char *name)
+{
+    files();
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK(file_choice(name) > 0);
+    tap(kst_panel_choice_rect(file_choice(name)));
+    settle();
+}
+
+/* FILES, the entry that saves: the keyboard is open on the preset name. */
+static void save_entry(void)
+{
+    files();
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK_EQ(choice(TR(KP_FILE_SAVE)), 0);
+    tap(kst_panel_choice_rect(0));
+    CHECK_EQ(kst_panel_editor(), 4);
+}
+
+/* A file whose image is the bench servo's with @p id at @p raw. */
+static fake_file_t *file_with(const char *name, kst_field_id_t id,
+                              uint16_t raw)
+{
+    kst_image_t img = sim_bench_image();
+
+    CHECK(kst_field_edit(&img, id, raw));
+    return fake_card_put(&g_rig.fc, name, &img);
+}
+
+/* The bench servo's image as the other servo type. */
+static kst_image_t other_type(void)
+{
+    kst_image_t img = sim_bench_image();
+
+    CHECK(kst_field_set(&img, KST_F_20K_SEL,
+                        1u - kst_field_get(&img, KST_F_20K_SEL)));
+    return img;
+}
+
+/* The lines of the message shown. */
+static int lines(char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE])
+{
+    return kst_panel_message_lines(kst_prog_message(M), t);
+}
+
+TEST_CASE(files_lists_the_card_under_the_entry_that_saves)
+{
+    const kst_image_t sv = sim_bench_image();
+    const kst_image_t ot = other_type();
+    char want[KST_PANEL_LINE];
+
+    fresh();
+    connected();
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 1), TR(KP_FILES));
+    /* An empty card: the entry that saves, and the message. */
+    files();
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK_EQ(choices(), 1);
+    CHECK_EQ(choice(TR(KP_FILE_SAVE)), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_NO_FILES);
+    CHECK_STR_EQ(said(), TR(KP_M_NO_FILES));
+    CHECK_STR_EQ(kst_panel_choice_title(), TR(KP_FILES_TITLE));
+    tap(kst_panel_choice_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
+
+    /* The names as stored, each with its servo type. */
+    (void)fake_card_put(&g_rig.fc, "KST001", &sv);
+    (void)fake_card_put(&g_rig.fc, "WING", &ot);
+    fake_card_put(&g_rig.fc, "HAND", &sv)->type = 0;
+    files();
+    CHECK_EQ(choices(), 4);
+    snprintf(want, sizeof(want), "%-16sV%u", "KST001", kst_card_type(&sv));
+    CHECK_STR_EQ(kst_panel_choice_label(1), want);
+    snprintf(want, sizeof(want), "%-16sV%u", "WING", kst_card_type(&ot));
+    CHECK_STR_EQ(kst_panel_choice_label(2), want);
+    CHECK_EQ(kst_card_type(&sv) + kst_card_type(&ot), 14);
+    /* A file that names no type shows none. */
+    CHECK_STR_EQ(kst_panel_choice_label(3), "HAND");
+    tap(kst_panel_choice_cancel_rect());
+    rig_frames(20);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+}
+
+TEST_CASE(more_files_than_the_list_holds_are_shown_in_turn)
+{
+    const kst_image_t sv = sim_bench_image();
+    char title[64];
+
+    fresh();
+    connected();
+    for (unsigned i = 0; i < 7u; ++i) {
+        char name[KST_PROG_NAME_MAX];
+
+        snprintf(name, sizeof(name), "F%u", i);
+        (void)fake_card_put(&g_rig.fc, name, &sv);
+    }
+    files();
+    /* The entry that saves, five files, the entry for the next. */
+    CHECK_EQ(choices(), 7);
+    CHECK_EQ(file_choice("F0"), 1);
+    CHECK_EQ(file_choice("F4"), 5);
+    CHECK_EQ(choice(TR(KP_FILES_NEXT)), 6);
+    /* The last entry ends above CANCEL. */
+    CHECK(kst_panel_choice_rect(6).y + kst_panel_choice_rect(6).h
+          <= kst_panel_choice_cancel_rect().y);
+    tap(kst_panel_choice_rect(6));
+    settle();
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK_EQ(choices(), 4);
+    CHECK_EQ(file_choice("F5"), 1);
+    CHECK_EQ(file_choice("F6"), 2);
+    snprintf(title, sizeof(title), TR(KP_FILES_TITLE_N), 6u, 7u, 7u);
+    CHECK_STR_EQ(kst_panel_choice_title(), title);
+    /* Behind the last file the list starts again. */
+    tap(kst_panel_choice_rect(3));
+    settle();
+    CHECK_EQ(choices(), 7);
+    CHECK_EQ(file_choice("F0"), 1);
+    snprintf(title, sizeof(title), TR(KP_FILES_TITLE_N), 1u, 5u, 7u);
+    CHECK_STR_EQ(kst_panel_choice_title(), title);
+    /* A file of the second page loads. */
+    g_rig.fc.file[6].img.r[KST_REG_DUTY]--;
+    g_rig.fc.file[6].img.r[KST_REG_DUTY_COPY]--;
+    tap(kst_panel_choice_rect(6));
+    settle();
+    tap(kst_panel_choice_rect(file_choice("F6")));
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED);
+    CHECK_EQ(kst_prog_changes(M), 1);
+}
+
+TEST_CASE(the_list_waits_for_the_card_and_opens_once)
 {
     fresh();
     connected();
-    /* Without a card it is kept in memory. */
+    g_rig.fc.silent = true;
     tap(val(PG_SERVO, 1, 1));
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED_RAM);
-    CHECK_STR_EQ(said(), TR(KP_M_STORED_RAM));
-    CHECK(kst_prog_have_stored(M));
-    CHECK_EQ(g_rig.file_writes, 0);
-    /* With one it goes to KST.TXT. */
-    g_rig.card = true;
-    rig_frame();
-    tap(val(PG_SERVO, 1, 1));
-    settle();
     rig_frames(5);
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED);
-    CHECK_STR_EQ(said(), TR(KP_M_STORED));
-    CHECK(g_rig.file_len > 0u);
-    /* A card that fails leaves the backup in memory, and that is said. */
-    g_rig.card_fails = true;
+    tick(0.02f);
+    show();
+    CHECK(kst_prog_card_busy(M));
+    CHECK_EQ(kst_panel_editor(), 0);
+    /* A second tap asks for no second list. */
     tap(val(PG_SERVO, 1, 1));
-    settle();
     rig_frames(5);
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED_RAM);
-    CHECK(kst_prog_have_stored(M));
-    /* The servo's own values are no restore. */
-    tap(val(PG_SERVO, 2, 0));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(g_rig.fc.lists, 1);
+    /* A card that does not answer is given up. */
+    rig_frames(KST_PROG_CARD_MS + 10u);
+    tick(0.02f);
+    show();
+    CHECK(!kst_prog_card_busy(M));
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+    CHECK_STR_EQ(said(), TR(KP_M_CARD_READ));
+    CHECK_EQ(kst_panel_editor(), 0);
+    /* A list asked for as the link goes opens nothing. */
+    g_rig.fc.silent = false;
+    tap(val(PG_SERVO, 1, 1));
+    kst_link_lost(&g_rig.link);
+    settle();
     CHECK_EQ(kst_panel_editor(), 0);
 }
 
-/* STORE is off while a read runs: the image it would keep is the one
- * the read replaces. */
-TEST_CASE(store_waits_for_a_read_that_runs)
+TEST_CASE(a_save_asks_for_the_name_with_the_next_free_one_preset)
 {
+    char want[KST_PANEL_LINE];
+
     fresh();
     connected();
-    tap(val(PG_SERVO, 1, 0));                   /* READ ALL */
-    CHECK_EQ(kst_prog_state(M), KST_PROG_WORKING);
-    tap(val(PG_SERVO, 1, 1));                   /* STORE */
-    CHECK(!kst_prog_have_stored(M));
+    save_entry();
+    CHECK_STR_EQ(kst_panel_textkey()->title, TR(KP_NAME_TITLE));
+    CHECK_STR_EQ(kst_panel_textkey()->text, "KST001");
+    tkey(UI_TK_OK);
+    CHECK_EQ(kst_panel_editor(), 0);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
-    tap(val(PG_SERVO, 1, 1));
-    CHECK(kst_prog_have_stored(M));
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    snprintf(want, sizeof(want), TR(KP_M_SAVED), "KST001");
+    CHECK_STR_EQ(said(), want);
+    CHECK_EQ(g_rig.fc.n, 1);
+    CHECK_STR_EQ(g_rig.fc.file[0].name, "KST001");
+    CHECK_STR_EQ(kst_prog_backup_name(M), "KST001");
+
+    /* The next preset, and a name typed over it. */
+    save_entry();
+    CHECK_STR_EQ(kst_panel_textkey()->text, "KST002");
+    type_name("WING-L_1");
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    snprintf(want, sizeof(want), TR(KP_M_SAVED), "WING-L_1");
+    CHECK_STR_EQ(said(), want);
+    CHECK_STR_EQ(g_rig.fc.file[1].name, "WING-L_1");
+
+    /* The keyboard takes as many characters as a name has. */
+    save_entry();
+    tkey(UI_TK_CLR);
+    for (unsigned i = 0; i < kst_card_name_max() + 3u; ++i) {
+        tkey(tk_key('A'));
+    }
+    CHECK_EQ(strlen(kst_panel_textkey()->text), kst_card_name_max());
+    /* CANCEL saves nothing. */
+    tkey(UI_TK_CANCEL);
+    CHECK_EQ(kst_panel_editor(), 0);
+    rig_frames(5);
+    CHECK_EQ(g_rig.fc.n, 2);
+    CHECK_EQ(g_rig.fc.saves, 2);
+    /* Nothing of this reached the servo. */
+    CHECK_EQ(g_rig.sim.n_writes, 0);
 }
 
-TEST_CASE(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields)
+TEST_CASE(a_name_the_card_refuses_comes_back_to_the_keyboard)
 {
-    char file[KST_PROG_FILE_MAX];
-    size_t len;
-    const kst_image_t before = sim_bench_image();
-    kst_image_t now;
-    int at;
+    const kst_image_t sv = sim_bench_image();
 
     fresh();
-    g_rig.card = true;
     connected();
-    tap(val(PG_SERVO, 1, 1));
+    (void)fake_card_put(&g_rig.fc, "WING", &sv);
+    /* A name a file has: no file is replaced, the name is changed. */
+    save_entry();
+    type_name("WING");
     settle();
-    rig_frames(5);
-    len = g_rig.file_len;
-    memcpy(file, g_rig.file, len + 1u);
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_EXISTS);
+    CHECK_STR_EQ(said(), TR(KP_M_NAME_EXISTS));
+    CHECK_EQ(kst_panel_editor(), 4);
+    CHECK_STR_EQ(kst_panel_textkey()->title, TR(KP_NAME_EXISTS));
+    CHECK_STR_EQ(kst_panel_textkey()->text, "WING");
+    CHECK_EQ(g_rig.fc.n, 1);
+    tkey(tk_key('2'));
+    tkey(UI_TK_OK);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_STR_EQ(g_rig.fc.file[1].name, "WING2");
 
-    /* A panel that starts later, the servo changed in between. */
+    /* A name with a character no file takes. */
+    save_entry();
+    type_name("A.B");
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_BAD);
+    CHECK_STR_EQ(said(), TR(KP_M_NAME_BAD));
+    CHECK_EQ(kst_panel_editor(), 4);
+    CHECK_STR_EQ(kst_panel_textkey()->title, TR(KP_NAME_BAD));
+    CHECK_STR_EQ(kst_panel_textkey()->text, "A.B");
+    tkey(UI_TK_CANCEL);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(g_rig.fc.n, 2);
+}
+
+TEST_CASE(every_failure_of_the_card_has_its_line)
+{
+    static const struct {
+        uint8_t result;
+        unsigned msg;
+        ui_text_id_t text;
+    } k[] = {
+        { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE, TX_KP_M_CARD_NONE },
+        { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL, TX_KP_M_CARD_FULL },
+        { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE,
+          TX_KP_M_CARD_WRITE },
+    };
+    const kst_image_t sv = sim_bench_image();
+
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        /* A save. */
+        for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+            g_rig.fc.fails = KST_PROG_CARD_OK;
+            save_entry();
+            g_rig.fc.fails = k[i].result;
+            tkey(UI_TK_OK);
+            settle();
+            CHECK_EQ(msg(), k[i].msg);
+            CHECK_STR_EQ(said(), ui_tr(k[i].text));
+            CHECK_EQ(kst_panel_editor(), 0);
+            CHECK(!kst_prog_backed_up(M));
+        }
+        /* The list. */
+        g_rig.fc.fails = KST_PROG_CARD_READ_ERR;
+        files();
+        CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+        CHECK_STR_EQ(said(), TR(KP_M_CARD_READ));
+        CHECK_EQ(kst_panel_editor(), 0);
+        /* A file that went between the list and the tap. */
+        g_rig.fc.fails = KST_PROG_CARD_OK;
+        (void)fake_card_put(&g_rig.fc, "GONE", &sv);
+        files();
+        CHECK_EQ(kst_panel_editor(), 2);
+        g_rig.fc.n = 0;
+        tap(kst_panel_choice_rect(1));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+        /* No card in the slot. */
+        g_rig.card = false;
+        rig_frame();
+        tap(val(PG_SERVO, 1, 1));
+        CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+        CHECK_STR_EQ(said(), TR(KP_M_CARD_NONE));
+        CHECK_EQ(kst_panel_editor(), 0);
+        CHECK(!kst_prog_card_busy(M));
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them)
+{
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    char want[KST_PANEL_LINE];
+
     fresh();
-    g_rig.card = true;
-    CHECK(kst_panel_file_load(file, len));
-    CHECK(kst_prog_have_stored(M));
-    g_rig.sim.reg[0x03] = (uint8_t)(g_rig.sim.reg[0x03] - 4u);
     connected();
-    now = rig_servo();
-    CHECK(memcmp(now.r, before.r, sizeof(now.r)) != 0);
-    tap(val(PG_SERVO, 2, 0));
-    CHECK_EQ(kst_panel_editor(), 2);
-    at = choice(TR(KP_FROM_STORED));
-    CHECK(at >= 0);
-    CHECK(choice(TR(KP_FROM_SESSION)) < 0);
-    tap(kst_panel_choice_cancel_rect());
-    enable();
-    tap(val(PG_SERVO, 2, 0));
-    tap(kst_panel_choice_rect(choice(TR(KP_FROM_STORED))));
-    /* The backup raises Boost: its warning first, on a page of its own. */
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_FROM_STORED)));
-    CHECK(warns(TR(KP_CHECK_1)));
-    CHECK(warns(TR(KP_W_BOOST_RAISED)));
-    CHECK(!warns(TR(KP_HORN_FREE)));
-    /* The hold that ends it is not the hold that writes. */
-    hold(3.9f);
+    (void)file_with("LOW", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 1u));
+    pick("LOW");
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED);
+    CHECK_EQ(lines(t), 2);
+    snprintf(want, sizeof(want), TR(KP_M_LOADED), "LOW", 1u);
+    CHECK_STR_EQ(t[0], want);
+    CHECK_STR_EQ(t[1], TR(KP_EDIT_NOTE_2));
+    CHECK_EQ(draft(KST_F_DUTY), servo(KST_F_DUTY) - 1u);
+    CHECK_EQ(kst_prog_changed(M), KST_FIELD_BIT(KST_F_DUTY));
     rig_frames(50);
-    CHECK_EQ(kst_panel_editor(), 3);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    CHECK(warns(TR(KP_FROM_STORED)));
-    CHECK(!warns(TR(KP_CHECK_1)));
+    /* The values are written as edits are: the switch, the page, the
+     * hold. */
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    enable();
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_HORN_FREE)));
-    CHECK(warns(TR(KP_WRITE_CARD)));
     hold(2.1f);
     settle();
-    CHECK(msg() == KST_PROG_MSG_RESTORED || msg() == KST_PROG_MSG_WRITTEN);
-    now = rig_servo();
-    CHECK(memcmp(now.r, before.r, sizeof(now.r)) == 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo(KST_F_DUTY), draft(KST_F_DUTY));
+    CHECK_EQ(servo(KST_F_DUTY), sim_bench_image().r[KST_REG_DUTY] - 1u);
     CHECK_EQ(g_rig.sim.n_bad_writes, 0);
 }
 
-/* A backup is stored, and the servo changed behind the programmer's back
- * by @p change before the next session. */
-static void stored_then(void (*change)(kst_image_t *img))
+TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
 {
-    char file[KST_PROG_FILE_MAX];
-    size_t len;
-    kst_image_t img;
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    char want[KST_PANEL_LINE];
+    fake_file_t *f;
+
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        kst_image_t ot = other_type();
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        f = file_with("ED", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 1u));
+        f->kind = KST_PROG_FILE_EDITED;
+        pick("ED");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
+        CHECK_EQ(lines(t), 2);
+        CHECK_STR_EQ(t[1], TR(KP_FILE_EDITED));
+
+        /* No type and another 20k value: loaded, the type stays the
+         * servo's and is counted as locked, not written. */
+        CHECK(kst_field_edit(&ot, KST_F_DUTY,
+                             (uint16_t)(servo(KST_F_DUTY) - 2u)));
+        f = fake_card_put(&g_rig.fc, "UN", &ot);
+        f->kind = KST_PROG_FILE_UNTYPED;
+        f->type = 0;
+        pick("UN");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
+        CHECK_EQ(lines(t), 3);
+        snprintf(want, sizeof(want), TR(KP_M_LOADED), "UN", 1u);
+        CHECK_STR_EQ(t[0], want);
+        CHECK_STR_EQ(t[1], TR(KP_FILE_UNTYPED));
+        snprintf(want, sizeof(want), TR(KP_FILE_STAY), 1u);
+        CHECK_STR_EQ(t[2], want);
+        CHECK_EQ(kst_prog_load_skipped(M), KST_FIELD_BIT(KST_F_20K_SEL));
+        CHECK_EQ(draft(KST_F_20K_SEL), servo(KST_F_20K_SEL));
+        CHECK_EQ(kst_prog_changed(M), KST_FIELD_BIT(KST_F_DUTY));
+        /* The LOCKED tab draws with it. */
+        tap(kst_panel_tab_rect(PG_LOCKED));
+        show();
+        tap(kst_panel_tab_rect(PG_SERVO));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The servo is of the other type when @p servo_other, the file of the type
+ * that is not the servo's. */
+static void type_mismatch(bool servo_other, ui_lang_t lang)
+{
+    char want[KST_PANEL_LINE];
+    const kst_image_t sv = sim_bench_image();
+    const kst_image_t ot = other_type();
+    const unsigned t_file = kst_card_type(servo_other ? &sv : &ot);
+    const unsigned t_servo = kst_card_type(servo_other ? &ot : &sv);
 
     fresh();
-    g_rig.card = true;
+    ui_text_set_language(lang);
+    if (servo_other) {
+        memcpy(g_rig.sim.reg, ot.r, sizeof(ot.r));
+    }
     connected();
-    tap(val(PG_SERVO, 1, 1));
-    settle();
-    rig_frames(5);
-    len = g_rig.file_len;
-    memcpy(file, g_rig.file, len + 1u);
+    (void)fake_card_put(&g_rig.fc, "X", servo_other ? &sv : &ot);
+    pick("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_TYPE);
+    snprintf(want, sizeof(want), TR(KP_M_LOAD_TYPE), t_file, t_servo);
+    CHECK_STR_EQ(said(), want);
+    CHECK_EQ(t_file + t_servo, 14);
+    if (lang == UI_LANG_EN) {
+        CHECK_STR_EQ(said(), t_file == 6u
+                                 ? "File is V6, servo is V8. Not loaded."
+                                 : "File is V8, servo is V6. Not loaded.");
+    } else {
+        CHECK(strstr(said(), t_file == 6u ? "V6" : "V8") != NULL);
+        CHECK(strstr(said(), t_servo == 6u ? "V6" : "V8") != NULL);
+        CHECK(strcmp(TR(KP_M_LOAD_TYPE),
+                     ui_tr_in(UI_LANG_EN, TX_KP_M_LOAD_TYPE)) != 0);
+    }
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_changes(M), 0);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_file_of_the_other_servo_type_is_denied_naming_both)
+{
+    type_mismatch(false, UI_LANG_EN);
+    type_mismatch(true, UI_LANG_EN);
+    type_mismatch(false, UI_LANG_DE);
+    type_mismatch(true, UI_LANG_DE);
+}
+
+TEST_CASE(the_servo_type_is_shown_once_the_servo_is_read)
+{
+    const kst_image_t sv = sim_bench_image();
+    const kst_image_t ot = other_type();
+    char want[24];
+
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        for (int other = 0; other < 2; ++other) {
+            const unsigned type = kst_card_type(other != 0 ? &ot : &sv);
+
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            if (other != 0) {
+                memcpy(g_rig.sim.reg, ot.r, sizeof(ot.r));
+            }
+            link_up();
+            /* Nothing read: no type. */
+            CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), "SERVO");
+            type_channel((int)RIG_CH + 1);
+            tap(val(PG_SERVO, 0, 1));
+            settle();
+            snprintf(want, sizeof(want), TR(KP_SERVO_V), type);
+            CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), want);
+            CHECK(strstr(want, type == 6u ? "V6" : "V8") != NULL);
+            /* The 20k field is the type, and takes no tap. */
+            tap(kst_panel_tab_rect(PG_LOCKED));
+            CHECK_STR_EQ(kst_panel_label(PG_LOCKED, 0, 0), TR(KP_TYPE));
+            tap(val(PG_LOCKED, 0, 0));
+            CHECK_EQ(kst_panel_editor(), 0);
+            show();
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_file_that_does_not_read_says_why)
+{
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    char want[KST_PANEL_LINE];
+    fake_file_t *f;
+
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        f = file_with("X", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 1u));
+        f->result = KST_PROG_CARD_BAD;
+        pick("X");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOAD_BAD);
+        CHECK_EQ(lines(t), 1);
+        CHECK_STR_EQ(t[0], TR(KP_M_LOAD_BAD));
+        f->line = 7;
+        pick("X");
+        snprintf(want, sizeof(want), TR(KP_M_LOAD_LINE), 7u);
+        CHECK_STR_EQ(said(), want);
+        /* A wrong checksum: damaged, and how it loads all the same. */
+        f->result = KST_PROG_CARD_CHECKSUM;
+        pick("X");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOAD_CHECKSUM);
+        CHECK_EQ(lines(t), 2);
+        CHECK_STR_EQ(t[0], TR(KP_M_LOAD_CHECKSUM));
+        CHECK_STR_EQ(t[1], TR(KP_M_LOAD_CHECKSUM_2));
+        f->result = KST_PROG_CARD_NEWER;
+        pick("X");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOAD_NEWER);
+        CHECK_STR_EQ(said(), TR(KP_M_LOAD_NEWER));
+        /* A value past a hard limit: its line and its field. */
+        f->result = KST_PROG_CARD_VALUE;
+        f->field = KST_F_BOOST;
+        f->line = 5;
+        pick("X");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOAD_VALUE);
+        snprintf(want, sizeof(want), TR(KP_M_LOAD_VALUE), 5u,
+                 kst_panel_label(PG_TUNE, 1, 1));
+        CHECK_EQ(lines(t), 1);
+        CHECK_STR_EQ(t[0], want);
+        CHECK(strstr(t[0], "BOOST") != NULL);
+        f->field = 0xFFu;
+        pick("X");
+        snprintf(want, sizeof(want), TR(KP_M_LOAD_VALUE_ANY), 5u);
+        CHECK_STR_EQ(said(), want);
+        CHECK_EQ(kst_prog_changes(M), 0);
+        CHECK_EQ(kst_panel_editor(), 0);
+
+        /* A value the hard limits of the programmer refuse: the rule's
+         * line. */
+        (void)file_with("HARD", KST_F_DUTY, 0xFFu);
+        pick("HARD");
+        CHECK_EQ(msg(), KST_PROG_MSG_LOAD_REFUSED);
+        CHECK_EQ(lines(t), 2);
+        CHECK_STR_EQ(t[0], TR(KP_M_LOAD_REFUSED));
+        CHECK_STR_EQ(t[1], kst_panel_rule_text(KST_H_DUTY_HIGH));
+        CHECK_EQ(kst_prog_changes(M), 0);
+        rig_frames(50);
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
+{
+    char want[KST_PANEL_LINE];
+    fake_file_t *f;
+
     fresh();
-    g_rig.card = true;
-    CHECK(kst_panel_file_load(file, len));
-    img = rig_servo();
-    change(&img);
-    memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
     connected();
-    enable();
-    tap(val(PG_SERVO, 2, 0));
-    tap(kst_panel_choice_rect(choice(TR(KP_FROM_STORED))));
+    f = file_with("UP", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) + 1u));
+    f->kind = KST_PROG_FILE_EDITED;
+    pick("UP");
+    /* The page of a soft limit, with the file's name and kind. */
     CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SOFT);
+    snprintf(want, sizeof(want), TR(KP_FILE_DIFF), "UP", 1u);
+    CHECK_STR_EQ(kst_panel_warning_line(0), want);
+    CHECK(warns(TR(KP_FILE_EDITED)));
+    CHECK(warns(kst_panel_rule_text(KST_S_DUTY_RAISED)));
+    CHECK_EQ(kst_prog_changes(M), 0);
+    /* Short of 2 s nothing is taken. */
+    hold(1.9f);
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_EQ(kst_prog_changes(M), 0);
+    /* CANCEL leaves the draft as it was. */
+    tap(kst_panel_cancel_rect());
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK(!kst_prog_soft_is_load(M));
+    CHECK_EQ(kst_prog_changes(M), 0);
+
+    pick("UP");
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
+    CHECK_EQ(draft(KST_F_DUTY), servo(KST_F_DUTY) + 1u);
+    /* Pending, not written: the write still needs its switch. */
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+
+    /* The page goes with the link, and the file with it. */
+    kst_prog_discard(M);
+    pick("UP");
+    CHECK_EQ(kst_panel_editor(), 3);
+    rig_link_lost();
+    tick(0.02f);
+    show();
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK(!kst_prog_soft_is_load(M));
 }
 
-/* A dead band one count narrower than the backup's. */
-static void lower_one(kst_image_t *img)
-{
-    CHECK(kst_field_set(img, KST_F_DEAD_BAND,
-                        (uint16_t)(kst_field_get(img, KST_F_DEAD_BAND) + 1u)));
-}
-
-/* Values the backup's are above, far from, or other than. */
+/* Values the bench servo's are above, far from, or other than. */
 static void lower_many(kst_image_t *img)
 {
     const uint16_t duty = (uint16_t)(kst_field_get(img, KST_F_DUTY) - 10u);
@@ -1291,32 +1783,29 @@ static void lower_many(kst_image_t *img)
                                    + 1200u)));
 }
 
-TEST_CASE(a_backup_without_a_warning_goes_to_the_restore_page_at_once)
-{
-    /* A dead band the backup widens passes no soft limit. */
-    stored_then(lower_one);
-    CHECK(!warns(TR(KP_CHECK_1)));
-    CHECK(warns(TR(KP_HORN_FREE)));
-}
-
-TEST_CASE(a_backup_with_more_warnings_than_lines_counts_the_rest)
+TEST_CASE(a_file_with_more_warnings_than_lines_counts_the_rest)
 {
     char more[KST_PANEL_LINE];
-    kst_prog_restore_t plan;
-    unsigned texts = 0, lines = 0;
+    const kst_image_t sv = sim_bench_image();
+    kst_image_t img = sv;
+    kst_rules_t soft;
+    unsigned texts = 0, n = 0;
     int16_t seen[KST_RULE_COUNT];
 
-    stored_then(lower_many);
-    CHECK(warns(TR(KP_CHECK_1)));
+    fresh();
+    lower_many(&img);
+    memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
+    connected();
+    (void)fake_card_put(&g_rig.fc, "MANY", &sv);
+    pick("MANY");
+    CHECK_EQ(kst_panel_editor(), 3);
+    soft = kst_prog_soft_rules(M);
     /* The texts the rules have between them, two rules to a text where
      * the text is the same. */
-    tap(kst_panel_cancel_rect());
-    CHECK_EQ(kst_prog_restore_plan(M, KST_PROG_FROM_STORED, &plan),
-             KST_PROG_MSG_NONE);
     for (unsigned rule = 0; rule < (unsigned)KST_RULE_COUNT; ++rule) {
         bool twice = false;
 
-        if ((plan.soft & KST_RULE_BIT(rule)) == 0u) {
+        if ((soft & KST_RULE_BIT(rule)) == 0u) {
             continue;
         }
         for (unsigned i = 0; i < texts; ++i) {
@@ -1327,25 +1816,184 @@ TEST_CASE(a_backup_with_more_warnings_than_lines_counts_the_rest)
             seen[texts++] = (int16_t)rule;
         }
     }
-    CHECK(texts > 5u);
-    tap(val(PG_SERVO, 2, 0));
-    tap(kst_panel_choice_rect(choice(TR(KP_FROM_STORED))));
-    while (kst_panel_warning_line((int)lines) != NULL) {
-        ++lines;
+    CHECK(texts > 6u);
+    while (kst_panel_warning_line((int)n) != NULL) {
+        ++n;
     }
-    /* The source, the heading, four warnings and the count of the rest. */
-    CHECK_EQ(lines, 7);
-    snprintf(more, sizeof(more), TR(KP_CHECK_MORE), texts - 4u);
+    /* The file, five warnings and the count of the rest. */
+    CHECK_EQ(n, 7);
+    snprintf(more, sizeof(more), TR(KP_CHECK_MORE), texts - 5u);
     CHECK_STR_EQ(kst_panel_warning_line(6), more);
-    for (unsigned i = 0; i < 4u; ++i) {
+    for (unsigned i = 0; i < 5u; ++i) {
         CHECK(warns(kst_panel_rule_text((unsigned)seen[i])));
     }
-    CHECK(!warns(kst_panel_rule_text((unsigned)seen[4])));
-    /* CANCEL leaves the servo as it is. */
+    CHECK(!warns(kst_panel_rule_text((unsigned)seen[5])));
+    /* CANCEL leaves the servo and the draft as they are. */
     tap(kst_panel_cancel_rect());
     CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(kst_prog_changes(M), 0);
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
+}
+
+TEST_CASE(a_file_that_holds_the_servos_values_changes_nothing)
+{
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    char want[KST_PANEL_LINE];
+    const kst_image_t sv = sim_bench_image();
+    kst_image_t pair = sv;
+
+    fresh();
+    connected();
+    (void)fake_card_put(&g_rig.fc, "SAME", &sv);
+    pick("SAME");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SAME);
+    CHECK_EQ(lines(t), 1);
+    snprintf(want, sizeof(want), TR(KP_M_LOAD_SAME), "SAME");
+    CHECK_STR_EQ(t[0], want);
+    /* Only a locked value differs: the pairing value. */
+    pair.r[KST_REG_NODE_ADDR] ^= 0x22u;
+    (void)fake_card_put(&g_rig.fc, "PAIR", &pair);
+    pick("PAIR");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SAME);
+    CHECK_EQ(lines(t), 2);
+    snprintf(want, sizeof(want), TR(KP_FILE_STAY), 1u);
+    CHECK_STR_EQ(t[1], want);
+    CHECK_EQ(kst_prog_changes(M), 0);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+}
+
+TEST_CASE(a_load_waits_for_a_servo_that_is_read)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    /* No servo connected: FILES takes no tap. */
+    fresh();
+    link_up();
+    (void)fake_card_put(&g_rig.fc, "F", &sv);
+    tap(val(PG_SERVO, 1, 1));
+    rig_frames(5);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(g_rig.fc.lists, 0);
+
+    /* A servo that fails the fingerprint: listed, never loaded onto. */
+    fresh();
+    g_rig.sim.reg[0x06] = 0x05u;
+    link_up();
+    type_channel((int)RIG_CH + 1);
+    tap(val(PG_SERVO, 0, 1));
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ_ONLY);
+    (void)fake_card_put(&g_rig.fc, "F", &sv);
+    pick("F");
+    CHECK_EQ(msg(), KST_PROG_MSG_READ_ONLY);
+    CHECK_EQ(g_rig.fc.loads, 0);
+    CHECK_EQ(kst_prog_changes(M), 0);
+}
+
+/* ------------------------------------------- the file before the first write */
+
+TEST_CASE(the_first_write_saves_the_servo_to_a_file_without_asking)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    fresh();
+    connected();
+    enable();
+    edits();
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_WRITE_BACKUP)));
+    hold(2.1f);
+    /* No name is asked for. */
+    CHECK_EQ(kst_panel_editor(), 0);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_rig.fc.saves, 1);
+    CHECK_EQ(g_rig.starts_at_save, 2);
+    CHECK_STR_EQ(g_rig.fc.file[0].name, "KST001");
+    CHECK(memcmp(g_rig.fc.file[0].img.r, sv.r, sizeof(sv.r)) == 0);
+    CHECK_STR_EQ(kst_prog_backup_name(M), "KST001");
+    show();
+    /* The second write of the session takes no file. */
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+    if (!kst_prog_write_enabled(M)) {
+        enable();
+    }
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(!warns(TR(KP_WRITE_BACKUP)));
+    CHECK(warns(TR(KP_WRITE_CARD)));
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_rig.fc.saves, 1);
+}
+
+TEST_CASE(a_first_write_whose_file_fails_is_not_sent)
+{
+    static const struct {
+        uint8_t result;
+        unsigned msg;
+        ui_text_id_t text;
+    } k[] = {
+        { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE, TX_KP_M_CARD_NONE },
+        { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL, TX_KP_M_CARD_FULL },
+        { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE,
+          TX_KP_M_CARD_WRITE },
+    };
+    const unsigned starts = 2u;
+
+    fresh();
+    connected();
+    enable();
+    edits();
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        g_rig.fc.fails = k[i].result;
+        if (!kst_prog_write_enabled(M)) {
+            enable();
+        }
+        tap(val(PG_SERVO, 4, 0));
+        CHECK_EQ(kst_panel_editor(), 3);
+        hold(2.1f);
+        settle();
+        CHECK_EQ(msg(), k[i].msg);
+        CHECK_STR_EQ(said(), ui_tr(k[i].text));
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+        CHECK_EQ(g_rig.starts, starts);
+        CHECK_EQ(kst_prog_changes(M), 3);
+        CHECK(!kst_prog_journal(M));
+    }
+    /* No card in the slot: said at the tap, and no page asks for a
+     * hold. */
+    g_rig.fc.fails = KST_PROG_CARD_OK;
+    g_rig.card = false;
+    rig_frame();
+    if (!kst_prog_write_enabled(M)) {
+        enable();
+    }
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+    CHECK_STR_EQ(said(), TR(KP_M_CARD_NONE));
+    /* RELEASE PAIRING is a write too. */
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_rect(choice(TR(KP_RELEASE_TITLE))));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    /* The card is back: the same write goes. */
+    g_rig.card = true;
+    rig_frame();
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_rig.fc.n, 1);
 }
 
 static void other_20k(kst_image_t *img)
@@ -1416,7 +2064,6 @@ TEST_CASE(a_file_that_is_not_readable_is_said_and_not_used)
 {
     fresh();
     CHECK(!kst_panel_file_load("KST 1\n00=zz\n", 12));
-    CHECK(!kst_prog_have_stored(M));
     CHECK_EQ(msg(), KST_PROG_MSG_FILE_BAD);
     CHECK_STR_EQ(said(), TR(KP_M_FILE_BAD));
 }
@@ -1497,9 +2144,11 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_shown_and_never_written)
     CHECK_EQ(kst_prog_changes(M), 0);
     /* Reading and the backup stay. */
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 1, 1));
+    save_entry();
+    tkey(UI_TK_OK);
     settle();
-    CHECK(kst_prog_have_stored(M));
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_EQ(g_rig.fc.n, 1);
     tap(val(PG_SERVO, 1, 0));
     settle();
     CHECK_EQ(g_rig.sim.n_writes, 0);
@@ -1679,7 +2328,7 @@ static void texts_in(ui_lang_t lang)
     CHECK_EQ(kst_panel_message_lines(&m, t), 0);
     /* The fixed messages, the answers of start, the outcome kinds, the
      * port's refusals and the session's results. */
-    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_JOURNAL_OTHER));
+    CHECK(family_ok(1u, (unsigned)KST_PROG_MSG_LOADED_UNTYPED));
     CHECK(family_ok(KST_PROG_MSG_START, (unsigned)KST_LINK_START_NO_IMAGE + 1u));
     CHECK(family_ok(KST_PROG_MSG_OUT, (unsigned)KST_LINK_OUT_DROPPED + 1u));
     CHECK(family_ok(KST_PROG_MSG_REF, (unsigned)LINK_KST_REF_PLAN_NO_PATH + 1u));
@@ -1699,10 +2348,10 @@ static void texts_in(ui_lang_t lang)
     CHECK_STR_EQ(kst_panel_rule_text((unsigned)KST_RULE_COUNT),
                  TR(KP_M_OUTSIDE));
     /* An id nobody gave a text is still a line. */
-    m.id = 0x1Fu;
+    m.id = 0x3Fu;
     m.arg = 0;
     CHECK_EQ(kst_panel_message_lines(&m, t), 1);
-    CHECK(strstr(t[0], "31") != NULL);
+    CHECK(strstr(t[0], "63") != NULL);
     m.id = KST_PROG_MSG_END + 5u;
     CHECK_EQ(kst_panel_message_lines(&m, t), 1);
     /* A servo nobody should use is said with the result. */
@@ -1910,11 +2559,23 @@ int main(void)
     RUN(the_record_of_an_interrupted_write_is_discarded_only_by_its_entry);
     RUN(a_coprocessor_that_restarts_ends_the_session_and_says_so);
     RUN(an_open_page_goes_when_the_link_goes);
-    RUN(store_keeps_a_backup_and_says_where);
-    RUN(store_waits_for_a_read_that_runs);
-    RUN(a_stored_backup_is_written_back_as_an_edit_of_the_editable_fields);
-    RUN(a_backup_without_a_warning_goes_to_the_restore_page_at_once);
-    RUN(a_backup_with_more_warnings_than_lines_counts_the_rest);
+    RUN(files_lists_the_card_under_the_entry_that_saves);
+    RUN(more_files_than_the_list_holds_are_shown_in_turn);
+    RUN(the_list_waits_for_the_card_and_opens_once);
+    RUN(a_save_asks_for_the_name_with_the_next_free_one_preset);
+    RUN(a_name_the_card_refuses_comes_back_to_the_keyboard);
+    RUN(every_failure_of_the_card_has_its_line);
+    RUN(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them);
+    RUN(an_edited_file_is_named_as_one_and_its_locked_values_are_counted);
+    RUN(a_file_of_the_other_servo_type_is_denied_naming_both);
+    RUN(the_servo_type_is_shown_once_the_servo_is_read);
+    RUN(a_file_that_does_not_read_says_why);
+    RUN(a_file_past_a_soft_limit_waits_for_a_2_s_hold);
+    RUN(a_file_with_more_warnings_than_lines_counts_the_rest);
+    RUN(a_file_that_holds_the_servos_values_changes_nothing);
+    RUN(a_load_waits_for_a_servo_that_is_read);
+    RUN(the_first_write_saves_the_servo_to_a_file_without_asking);
+    RUN(a_first_write_whose_file_fails_is_not_sent);
     RUN(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named);
     RUN(a_file_that_is_not_readable_is_said_and_not_used);
     RUN(more_holds_verify_discard_and_release_pairing);

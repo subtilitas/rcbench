@@ -76,15 +76,15 @@ nächsten Aufruf ist das Overlay wieder offen.
 | --- | --- | --- |
 | KANAL | die Zahl | der Ausgangskanal, 1 bis 16 |
 | PORT | **VERBINDEN**, **ABBRECHEN**, **VERLASSEN** | nimmt den Kanal, beendet den laufenden Vorgang, [gibt den Kanal zurück](#verlassen) |
-| SERVO | **ALLES LESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
-| BACKUP | **SPEICHERN** | [behält das zuletzt gelesene Abbild auf dem Panel](#backups) |
+| SERVO, dann SERVO V6 oder SERVO V8 | **ALLES LESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen; die Zeile nennt danach [den Servotyp](#der-servotyp) |
+| DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
 | ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
 | WEITERES | **WÄHLEN** | [PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN](#weiteres) |
 | SCHREIBEN AUF SERVO FREIGEBEN | **AUS**, **EIN** | [der Schreibschalter](#der-schreibschalter) |
 | ÄNDERUNGEN | **n WERTE SCHREIBEN** | [schreibt die geänderten Werte](#schreiben) |
 
-Unter den Zeilen stehen der Zustand des Ports, der Zustand des
-gespeicherten Backups und die letzte Meldung. Eine Meldung in der
+Unter den Zeilen stehen der Zustand des Ports, der Servotyp, der Name der
+Backup-Datei der Sitzung und die letzte Meldung. Eine Meldung in der
 Warnfarbe ist eine Ablehnung oder ein Ergebnis, das einen zweiten Blick
 braucht; eine in der Gefahrenfarbe sagt, dass der Inhalt des Servos unklar
 ist.
@@ -95,8 +95,8 @@ Der Koprozessor vergleicht das Abbild mit dem Layout des bekannten Servos,
 seinem Fingerprint. Ein Abbild, das nicht passt, wird gezeigt und nie
 geschrieben: die Zeilen zum Ändern sind aus, ein Tipp auf den
 Schreibschalter lässt ihn aus und wiederholt die Meldung, und **PAIRING
-LÖSEN** wird abgelehnt. **ALLES LESEN**, **SPEICHERN** und **PRÜFEN**
-arbeiten.
+LÖSEN** wird abgelehnt. **ALLES LESEN**, das Speichern in eine Datei und
+**PRÜFEN** arbeiten. Eine Datei wird nicht geladen.
 
 ![Ein Servo, das nicht zum Fingerprint passt](img/de/servo-kst-readonly.png)
 
@@ -208,7 +208,7 @@ ein Finger, der von der Taste rutscht, lässt den Entwurf, wie er war.
 
 | Zeile | Feld |
 | --- | --- |
-| 20K SEL | 20k_sel |
+| TYP | 20k_sel, gezeigt als [der Servotyp](#der-servotyp), V6 oder V8 |
 | LOCK | Lock |
 | MODE | Servo oder Gyro Servo |
 | PROT1 EN, PROT1 CANCLE, PROT1 TIME, PROT1 PWM, POT ERR, POT SAMPLES, PWM ERR | der Schutzblock, den das Hersteller-Tool verbirgt; `PROT1 CANCLE` ist die Schreibweise des Herstellers |
@@ -238,8 +238,8 @@ Der Schalter geht aus:
 
 Bei ausgeschaltetem Schalter sendet das Panel kein Schreiben, kein
 Zurückspielen und kein Lösen des Pairings, und der Koprozessor lehnt eines
-ab, das ohne den Schlüssel des Schalters ankommt. Lesen, **SPEICHERN**,
-**PRÜFEN** und der Vergleich mit dem gespeicherten Backup arbeiten bei
+ab, das ohne den Schlüssel des Schalters ankommt. Lesen, **PRÜFEN**, das
+Speichern in eine Datei und das Laden einer Datei arbeiten bei
 ausgeschaltetem Schalter.
 
 ## Schreiben
@@ -258,16 +258,19 @@ ist nicht dieses erste Schreiben: die Zeile bleibt für das nächste.
 
 ![Die Schreibseite](img/de/servo-kst-write.png)
 
-1. Das Panel vermerkt das Abbild, das das Servo hält, das Abbild, das das
+1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in
+   [eine neue Datei auf der Karte](#das-backup-vor-dem-ersten-schreiben).
+   Ohne diese Datei wird das Schreiben nicht gesendet.
+2. Das Panel vermerkt das Abbild, das das Servo hält, das Abbild, das das
    Schreiben hinterlassen soll, und den Kanal: mit Karte in `KST.TXT`, ohne
    im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte, die
    binnen 3 s keine Datei annimmt, wird das Schreiben nicht gesendet:
    `Die Karte nahm keine Datei. Nichts ging aufs Servo.`
-2. Das Panel sendet das Zielabbild. Der Koprozessor prüft es gegen dieselben
+3. Das Panel sendet das Zielabbild. Der Koprozessor prüft es gegen dieselben
    Limits, plant die Registerschreibvorgänge und führt sie aus.
-3. Jedes geschriebene Register wird zurückgelesen. Ein Schreibvorgang, der
+4. Jedes geschriebene Register wird zurückgelesen. Ein Schreibvorgang, der
    nicht übernommen wird, wird rückgängig gemacht.
-4. `3 Werte geschrieben und geprüft.` beendet es und löscht den Vermerk.
+5. `3 Werte geschrieben und geprüft.` beendet es und löscht den Vermerk.
 
 Nur Register, deren Wert sich ändert, werden geschrieben. Register 00 wird
 nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
@@ -290,27 +293,15 @@ Zahl der erfolgten Schreibvorgänge: `Register 03, 1 Schreibvorgänge erfolgt.`
 | Backup | Gehalten von | Lebt bis |
 | --- | --- | --- |
 | Der Sitzung | dem Koprozessor: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Neustart des Koprozessors |
-| Gespeichert | dem Panel, in `KST.TXT` auf der Karte; ohne Karte im RAM | zum nächsten **SPEICHERN**; ohne Karte bis zum Ausschalten |
+| Die Datei der Sitzung | der Karte: die 32 Register des Servos, wie sie vor dem ersten Schreiben der Sitzung stehen | die Datei wird von der Karte entfernt |
 | Vor einem Schreiben | dem Panel, in `KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
-**SPEICHERN** behält das zuletzt gelesene Abbild. Es ist aus, solange ein
-Vorgang läuft: ein laufendes Lesen ersetzt dieses Abbild. Das Panel hält
-1 gespeichertes Backup; ein zweites **SPEICHERN** ersetzt es. Die Zeile
-unter den Tasten vergleicht es mit dem Servo:
-`Gespeichertes Backup: 2 Werte weichen vom Servo ab.`
-
-![Ein gespeichertes Backup](img/de/servo-kst-stored.png)
-
-`KST.TXT` ist Text von höchstens 400 Bytes im Wurzelverzeichnis der Karte:
-die Zeile `RCBENCH KST 1`, je Register des gespeicherten Backups eine Zeile
-`rr=vv` in hexadezimal, die Zeilen `journal=`, `target=` und `channel=`
-eines laufenden Schreibens und `check=` mit der CRC-16 (zyklische
-Redundanzprüfung) der Bytes davor. Eine Datei, deren Prüfsumme nicht
-stimmt, wird nicht benutzt:
-`KST.TXT auf der Karte ist nicht lesbar, bleibt ungenutzt.` Die Datei trägt
-keine Identität eines Servos: das gespeicherte Backup ist das Backup des
-Servos, aus dem es gelesen wurde, und das Panel weiß nicht, welches Servo
-angeschlossen ist.
+`KST.TXT` ist der Vermerk eines laufenden Schreibens: Text von höchstens
+400 Bytes im Wurzelverzeichnis der Karte mit der Zeile `RCBENCH KST 1`, den
+Zeilen `journal=`, `target=` und `channel=` und `check=` mit der CRC-16
+(zyklische Redundanzprüfung) der Bytes davor. Eine Datei, deren Prüfsumme
+nicht stimmt, wird nicht benutzt:
+`KST.TXT auf der Karte ist nicht lesbar, bleibt ungenutzt.`
 
 Das Panel schreibt den Text nach `KST.NEW`, und die Datei bekommt den Namen
 `KST.TXT`, sobald die Karte sie vollständig hält. Ein Schreiben, das die
@@ -322,7 +313,149 @@ annimmt, wird alle 5 s erneut geschrieben, bis die Karte sie annimmt, damit
 ein auf dem Panel verworfener Vermerk nicht auf der Karte bleibt. Nicht auf
 einer Karte gelaufen.
 
-### Zurückspielen
+## Servodateien
+
+Eine Servodatei ist eine Textdatei auf der SD-Karte des Panels mit den
+32 Registern eines Servos. **DATEIEN** öffnet die Liste. Die Zeile ist im
+Programmiermodus aktiv, wenn ein Servo gelesen und nicht unklar ist; sonst
+antwortet der Tipp mit `Zuerst das Servo lesen: ALLES LESEN.` Speichern und
+Laden arbeiten bei ausgeschaltetem Schreibschalter: eine Datei ändert den
+Entwurf auf dem Panel, nie das Servo.
+
+![Die Dateien auf der Karte](img/de/servo-kst-files.png)
+
+Der erste Eintrag speichert. Darunter stehen die Dateien, 5 je Seite, jede
+mit ihrem Servotyp; eine Datei ohne Typzeile zeigt keinen. Bei mehr als
+5 Dateien zählt der Titel sie, `DATEIEN 1 BIS 5 VON 7`, und
+`Weitere Dateien zeigen` blättert, nach der letzten Seite zurück zur
+ersten. Das Panel fragt die Karte für jede Seite und wartet höchstens 5 s
+darauf.
+
+![Die zweite Seite von 7 Dateien](img/de/servo-kst-files-next.png)
+![Eine Karte ohne Servodateien](img/de/servo-kst-files-none.png)
+
+### Der Servotyp
+
+Ein Servo und eine Datei sind V6 oder V8. Das Feld 20k_sel entscheidet:
+1 ist V6, Ansteuerung mit 20 kHz; 0 ist V8, Ansteuerung mit 333 Hz. Kein
+anderes Register geht in den Typ ein. Sobald ein Servo gelesen ist, heißt
+die Zeile **SERVO** `SERVO V6` oder `SERVO V8`, und die Zeile unter den
+Tasten sagt `Servotyp V6: Ansteuerung mit 20 kHz.` Der Typ wird nie
+geändert und nie geschrieben.
+
+![Ein V8-Servo und eine V6-Datei](img/de/servo-kst-file-v6.png)
+
+### Speichern
+
+`Werte dieses Servos als neue Datei speichern` öffnet die Texttastatur mit
+dem nächsten freien Vorgabenamen, `KST001` bis `KST999`. Der Name ist frei
+änderbar. **OK** speichert; die Kartenseite prüft den Namen und ersetzt nie
+eine Datei.
+
+![Der Name einer neuen Datei](img/de/servo-kst-name.png)
+
+| Ergebnis | Gezeigt |
+| --- | --- |
+| Gespeichert | `Servowerte auf der Karte gespeichert: WING-R.` |
+| Ein Zeichen, eine Länge oder ein Name, den die Kartenseite nicht erlaubt | die Tastatur bleibt offen unter `NAME NICHT ERLAUBT`; `Name nicht erlaubt. Erlaubt: A-Z, 0-9, - und _.` |
+| Eine Datei hat den Namen | die Tastatur bleibt offen unter `NAME VERGEBEN: ÄNDERN`; `Der Name ist vergeben. Keine Datei wird ersetzt.` |
+| Keine Karte | `Keine Karte. Nichts gespeichert, nichts aufs Servo.` |
+| Karte voll | `Karte voll. Nichts gespeichert, nichts aufs Servo.` |
+| Die Karte nimmt die Datei nicht an oder antwortet nicht binnen 5 s | `Schreibfehler der Karte. Nichts ging aufs Servo.` |
+
+![Ein vergebener Name](img/de/servo-kst-name-exists.png)
+![Ein nicht erlaubter Name](img/de/servo-kst-name-bad.png)
+![Eine gespeicherte Datei](img/de/servo-kst-name-saved.png)
+![Keine Karte](img/de/servo-kst-card-none.png)
+![Eine volle Karte](img/de/servo-kst-card-full.png)
+
+Ein Speichern schreibt das Abbild wie gelesen, die gesperrten Felder
+eingeschlossen, auch das eines Servos, das nicht zum Fingerprint passt.
+
+### Das Backup vor dem ersten Schreiben
+
+Das erste Schreiben, Zurückspielen oder Lösen des Pairings einer Sitzung
+speichert das Abbild des Servos ohne Nachfrage in eine neue Datei unter dem
+nächsten freien Vorgabenamen. Die Schreibseite sagt
+`Die Werte des Servos gehen zuerst in eine neue Datei.` Das Servo empfängt
+nichts, bevor die Karte die Datei hält. Keine Karte, eine volle Karte und
+ein Schreibfehler beenden das Schreiben mit den Zeilen der Tabelle oben,
+und nichts wird auf das Servo geschrieben: **das erste Schreiben einer
+Sitzung braucht eine Karte mit freiem Platz.** Der Reiter SERVO nennt die
+Datei danach: `Backup-Datei dieser Sitzung: KST003.` Ein Speichern von Hand
+desselben Abbilds zählt als diese Datei. Ein Lesen, das andere Werte
+findet, lässt das nächste Schreiben erneut speichern.
+
+Ein unklares Servo ist die Ausnahme: sein Abbild ist keine Datei wert, und
+das Zurückspielen des Backups der Sitzung läuft ohne eine.
+
+### Laden
+
+Ein Tipp auf eine Datei lädt sie. Ihre änderbaren Felder werden der
+Entwurf, genau wie auf den Reitern eingegebene Änderungen: geänderte Werte
+sind markiert, **n WERTE SCHREIBEN** zählt sie, und nichts erreicht das
+Servo vor dem Schreibschalter, der Schreibseite und deren 2 s Halten.
+
+![Eine geladene Datei](img/de/servo-kst-file-loaded.png)
+
+| Datei | Gezeigt |
+| --- | --- |
+| Vom Prüfstand gespeichert, Prüfsumme intakt | `KST001 geladen: 3 Werte weichen vom Servo ab.` |
+| Bearbeitet, mit Typzeile und ohne Prüfsummenzeile | dasselbe und `Bearbeitete Datei, Werte wie Handeingabe geprüft.` |
+| Bearbeitet, ohne Typzeile | dasselbe und `Bearbeitete Datei ohne Servotyp, wie Handeingabe geprüft.` |
+| Enthält die änderbaren Werte des Servos | `KST001 enthält die Werte des Servos: nichts zu schreiben.` |
+| Vom anderen Servotyp | `Datei ist V8, Servo ist V6. Nicht geladen.` |
+| Prüfsummenzeile vorhanden und falsch | `Datei beschädigt: Prüfsumme passt nicht. Nicht geladen.` `Ohne Prüfsummenzeile lädt sie als bearbeitete Datei.` |
+| Keine Servodatei | `Keine Servodatei. Nicht geladen.` |
+| Eine Zeile, die sich nicht lesen lässt | `Zeile 12 der Datei ist nicht lesbar. Nicht geladen.` |
+| Von einer späteren Formatversion geschrieben | `Die Datei braucht eine neuere Version. Nicht geladen.` |
+| Ein Wert außerhalb seines harten Limits | `Zeile 9: MAX. DUTY außer Grenze. Nicht geladen.` |
+| Werte, die zusammen ein hartes Limit verletzen | `Die Datei verletzt eine Grenze, nicht geladen:` und die Zeile des Limits |
+| Die Karte lässt sich nicht lesen oder antwortet nicht binnen 5 s | `Die Karte lässt sich nicht lesen.` |
+| Keine Servodatei auf der Karte | `Keine Servodateien auf der Karte.` |
+
+![Eine Datei des anderen Typs](img/de/servo-kst-file-type.png)
+![Eine beschädigte Datei](img/de/servo-kst-file-damaged.png)
+![Eine bearbeitete Datei](img/de/servo-kst-file-edited.png)
+![Eine bearbeitete Datei ohne Typzeile](img/de/servo-kst-file-untyped.png)
+![Eine Datei mit den Werten des Servos](img/de/servo-kst-file-same.png)
+![Eine Zeile, die sich nicht lesen lässt](img/de/servo-kst-file-bad.png)
+![Eine Datei eines späteren Formats](img/de/servo-kst-file-newer.png)
+![Ein Wert außerhalb seines harten Limits](img/de/servo-kst-file-hard.png)
+
+Eine Datei, deren Werte ein weiches Limit überschreiten, das die Werte des
+Servos einhalten, öffnet DIESE DATEI PRÜFEN, bevor etwas zum Entwurf wird.
+Die Seite listet dieselben Warnzeilen wie eine Änderung über diese Limits
+hinaus, höchstens 5; bei mehr zählt die letzte Zeile den Rest. **HALTEN ZUM
+LADEN** für 2 s übernimmt die Werte in den Entwurf. **ABBRECHEN** lässt den
+Entwurf, wie er war.
+
+![Die Warnungen einer Datei](img/de/servo-kst-file-soft.png)
+
+### Was eine Datei nicht zurückspielt
+
+Ein Laden schreibt nur die änderbaren Felder. Diese bleiben, wie das Servo
+sie hält, was immer die Datei sagt:
+
+- der Servotyp, 20k_sel,
+- Lock,
+- der Modus, Servo oder Gyro Servo,
+- der Schutzblock des Reiters GESPERRT,
+- der Pairing-Wert, Register 1D,
+- Register 00 und jedes Bit, das zu keinem benannten Feld gehört.
+
+Eine Datei, die dort abweicht, wird geladen, und die Abweichung wird
+gezählt: `2 gesperrte Werte weichen ab: nicht geschrieben.` Der Reiter
+GESPERRT markiert jeden solchen Wert mit `!`. Eine Datei ohne Typzeile, die
+das 20k_sel des anderen Typs enthält, wird genauso geladen, denn nur die
+Typzeile lehnt ein Laden ab.
+
+![Gesperrte Werte, die abweichen](img/de/servo-kst-file-locked.png)
+
+Das Zurückspielen des Backups der Sitzung ist der einzige Weg, ein
+gesperrtes Register zu schreiben, und es endet mit der Sitzung.
+
+## Zurückspielen
 
 **ZURÜCKSPIELEN** öffnet die Liste dessen, was sich zurückspielen lässt.
 Jedes Zurückspielen braucht den Schreibschalter und 2 s Halten.
@@ -334,15 +467,14 @@ Jedes Zurückspielen braucht den Schreibschalter und 2 s Halten.
 | --- | --- | --- |
 | `Backup dieser Sitzung, wie zuerst gelesen` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es | nichts |
 | `Werte vor dem unterbrochenen Schreiben` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
-| `Gespeichertes Backup` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
 
-Ein Zurückspielen aus den Abbildern des Panels ist ein gewöhnliches
+Ein Zurückspielen aus dem Abbild des Panels ist ein gewöhnliches
 Schreiben: der Koprozessor nimmt ein ungeprüftes Zurückspielen nur für das
 Backup an, das er selbst hält, und diese Prüfung wird nicht abgeschwächt.
 Die Seite zählt die gesperrten Werte, die abweichen und bleiben:
-`2 gesperrte Werte weichen ab und bleiben.` Ein gespeichertes Backup, das
-ein hartes Limit verletzt, wird nicht geschrieben, und die Meldung nennt
-das Limit.
+`2 gesperrte Werte weichen ab und bleiben.` Eine Servodatei steht nicht in
+dieser Liste: [ein Laden](#laden) macht sie zum Entwurf, und das
+gewöhnliche Schreiben sendet ihn.
 
 Ein Backup, dessen Werte ein weiches Limit überschreiten, das die Werte des
 Servos einhalten, öffnet zuerst BACKUP PRÜFEN. Die Seite listet die
@@ -354,7 +486,7 @@ der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
 
 ![Die Warnungen eines Backups](img/de/servo-kst-restore-check.png)
 
-### Weiteres
+## Weiteres
 
 ![WEITERES](img/de/servo-kst-more.png)
 
@@ -458,15 +590,26 @@ Codes.
 
 - An keinem Servo getestet. Jede Aussage über das Verhalten eines Servos
   auf dieser Seite ist die des Modells.
-- 1 gespeichertes Backup, ohne Identität des Servos.
+- Kein Speichern, Auflisten oder Laden einer Servodatei ist auf einer
+  Karte gelaufen. Die Panel-Firmware dieses Zweigs beantwortet jedes
+  Speichern mit einem Schreibfehler und jedes Auflisten und Laden mit
+  einem Lesefehler, bis das Servodatei-Modul an die Karte angeschlossen
+  ist. Das erste Schreiben einer Sitzung wartet auf seine Datei, also
+  sendet diese Firmware kein Schreiben an ein Servo.
+- Das erste Schreiben einer Sitzung braucht eine Karte mit freiem Platz.
+- Eine Servodatei trägt den Servotyp, V6 oder V8, und keine weitere
+  Identität. Die Datei eines V8-Servos lädt in jedes V8-Servo.
+- Eine Servodatei spielt nur die änderbaren Felder zurück:
+  [was sie nicht zurückspielt](#was-eine-datei-nicht-zurückspielt).
+- Die Liste zeigt 5 Dateien je Seite und hat weder Suche noch eigene
+  Sortierung; die Reihenfolge ist die der Kartenseite. Dateien werden auf
+  dem Panel nicht entfernt oder umbenannt.
 - Der Vermerk eines unterbrochenen Schreibens nennt seinen Kanal und hält
   die Werte des Servos. Ein zweites Servo an diesem Kanal mit denselben
   gesperrten Werten wird für das erste gehalten.
 - Das Ersetzen von `KST.TXT` über `KST.NEW` ist nicht auf einer Karte
   gelaufen.
-- Ein gespeichertes Backup spielt nur die änderbaren Felder zurück.
-- Ohne Karte gehen das gespeicherte Backup und der Vermerk eines Schreibens
-  beim Ausschalten verloren.
+- Ohne Karte geht der Vermerk eines Schreibens beim Ausschalten verloren.
 - Der beim Einschalten gefundene Vermerk eines unterbrochenen Schreibens
   wird nur im Programmierer gezeigt; kein anderer Bildschirm meldet ihn.
 - Ein Servo, dessen gelesenes Abbild ein hartes Limit verletzt, lässt sich
@@ -509,6 +652,11 @@ Keine davon ist erfolgt.
 12. Ein hier geschriebenes Servo wird vom Hersteller-Tool mit dessen Karte
     gelesen.
 13. Der Typ des Servos, von dem das Layout stammt.
+14. Ob 20k_sel die Servogenerationen so trennt, wie die Typregel annimmt:
+    1 Servo ist aufgezeichnet, und kein V8-Servo ist gelesen worden.
+15. Ein Speichern, ein Auflisten und ein Laden auf einer Karte: die Dauer
+    jedes Vorgangs gegen die Grenze von 5 s und eine Karte, die während
+    eines Speicherns entfernt wird.
 
 ## Tests
 
@@ -518,4 +666,8 @@ des Links: jedes Limit an seiner Kante, das Halten von 2 s auf beiden
 Seiten der Schwelle, jede Ablehnung und jedes Ergebnis mit seiner Zeile in
 beiden Sprachen, ein Schreiben, das ein Link-Ausfall, ein Neustart,
 **ABBRECHEN** und **STOP** abschneiden, eine Karte, die versagt, und die
-Timeouts über den Überlauf der Uhr bei 2^32 ms.
+Timeouts über den Überlauf der Uhr bei 2^32 ms. Die Servodateien laufen
+gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
+beide Servotypen und ihre Abweichung in beiden Richtungen, jede
+Ablehnung, die Grenze von 5 s und ein erstes Schreiben mit einer Karte,
+die fehlt, voll ist oder versagt.

@@ -14,6 +14,7 @@
 
 #include "greatest.h"
 
+#include "kst_fake_card.h"
 #include "kst_link.h"
 #include "kst_port.h"
 #include "kst_prog.h"
@@ -53,6 +54,8 @@ static char g_file[KST_PROG_FILE_MAX];
 static size_t g_file_len;
 static unsigned g_file_writes;
 static unsigned g_starts_at_file;   /* g_starts when the file was written */
+static fake_card_t g_fc;            /* the servo files */
+static unsigned g_starts_at_save;   /* g_starts when a save was asked */
 
 /* ------------------------------------------------------------- coprocessor */
 
@@ -143,9 +146,11 @@ static void fresh_at(uint32_t t0)
     g_starts = 0;
     g_aborts = 0;
     g_fetches = 0;
-    g_card = false;
+    g_card = true;
     g_card_fails = false;
     g_card_silent = false;
+    fake_card_init(&g_fc);
+    g_starts_at_save = 0;
     g_file_len = 0;
     g_file_writes = 0;
     g_starts_at_file = 0;
@@ -203,6 +208,8 @@ static void frame(void)
 {
     kst_prog_cmd_t cmd;
     kst_link_outcome_t o;
+    kst_prog_card_req_t creq;
+    kst_prog_card_done_t cdone;
     char text[KST_PROG_FILE_MAX];
     size_t len;
 
@@ -240,6 +247,14 @@ static void frame(void)
         }
         if (!g_card_silent) {
             kst_prog_file_done(&g_p, !g_card_fails);
+        }
+    }
+    if (kst_prog_card_take(&g_p, &creq)) {
+        if (creq.op == KST_PROG_CARD_SAVE) {
+            g_starts_at_save = g_starts;
+        }
+        if (fake_card_run(&g_fc, &creq, &cdone)) {
+            kst_prog_card_done(&g_p, &cdone);
         }
     }
 }
@@ -435,7 +450,7 @@ TEST_CASE(no_servo_on_the_channel_is_a_message)
         settle();
     }
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NEED_PORT);
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 200), KST_PROG_EDIT_REFUSED);
     CHECK_EQ(msg(), KST_PROG_MSG_NEED_READ);
@@ -671,6 +686,9 @@ TEST_CASE(a_write_needs_the_switch_and_writes_the_changed_fields)
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
     CHECK_EQ(kst_prog_op(&g_p), LINK_KST_OP_WRITE);
+    /* The servo's file first: nothing is in doubt before it is there. */
+    CHECK(!kst_prog_in_doubt(&g_p));
+    frame();
     CHECK(kst_prog_in_doubt(&g_p));
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
@@ -867,8 +885,10 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_read_only)
     CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_VERIFIED);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    CHECK(kst_prog_have_stored(&g_p));
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+    frames(3);
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK(kst_prog_backed_up(&g_p));
     CHECK_EQ(g_sim.n_writes, 0);
 }
 
@@ -925,134 +945,6 @@ TEST_CASE(the_sessions_backup_is_restored_by_the_coprocessor)
     CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
 }
 
-TEST_CASE(a_backup_is_kept_on_the_panel_and_written_to_the_card)
-{
-    const kst_image_t sv = sim_bench_image();
-
-    up();
-    CHECK(!kst_prog_have_stored(&g_p));
-    CHECK_EQ(kst_prog_differs_from_stored(&g_p), 0);
-    /* No card: kept in memory, and said. */
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
-    CHECK(kst_prog_have_stored(&g_p));
-    CHECK(same(kst_prog_stored(&g_p), &sv));
-    frames(5);
-    CHECK_EQ(g_file_writes, 0);
-
-    /* A card. */
-    g_card = true;
-    frame();
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
-    frames(2);
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED);
-    CHECK_EQ(g_file_writes, 1);
-    CHECK(strstr(g_file, "RCBENCH KST 1\n00=00\n01=F5\n02=F5\n03=14\n")
-          == g_file);
-    CHECK(strstr(g_file, "\n1D=10\n1E=00\n1F=00\ncheck=") != NULL);
-    CHECK(strstr(g_file, "journal") == NULL);
-    CHECK_EQ(g_file_len, strlen(g_file));
-    CHECK(g_file_len < KST_PROG_FILE_MAX);
-
-    /* A card that takes no file. */
-    g_card_fails = true;
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
-    frames(2);
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED_RAM);
-    CHECK_EQ(g_file_writes, 2);
-
-    /* The fields in which the servo left the backup. */
-    g_card_fails = false;
-    g_sim.reg[0x03] ^= 0x01u;
-    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(kst_prog_differs_from_stored(&g_p), KST_FIELD_BIT(KST_F_BOOST));
-}
-
-TEST_CASE(a_backup_kept_on_the_panel_is_written_back_as_an_edit)
-{
-    const kst_image_t sv = sim_bench_image();
-    kst_prog_restore_t plan;
-    kst_image_t now;
-
-    up();
-    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_STORED));
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
-             KST_PROG_MSG_NO_RESTORE);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_STORED));
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
-             KST_PROG_MSG_NO_RESTORE);
-
-    /* Another session: the servo was changed elsewhere, in two editable
-     * fields, the pairing value and a locked bit. */
-    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
-    settle();
-    g_sim.reg[KST_REG_DUTY] = 200;
-    g_sim.reg[KST_REG_DUTY_COPY] = 200;
-    g_sim.reg[0x03] ^= 0x01u;
-    g_sim.reg[KST_REG_NODE_ADDR] = 0x22u;
-    CHECK(kst_field_set((kst_image_t *)(void *)g_sim.reg, KST_F_20K_SEL,
-                        1u - kst_field_get(&sv, KST_F_20K_SEL)));
-    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
-    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_STORED));
-    /* The session's own backup is the servo as it is now. */
-    CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
-
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
-             KST_PROG_MSG_NONE);
-    CHECK_EQ(plan.writes, 2);
-    CHECK_EQ(plan.stay, 2);
-    CHECK(!plan.unchecked);
-    CHECK_EQ(kst_prog_changed(&g_p),
-             KST_FIELD_BIT(KST_F_DUTY) | KST_FIELD_BIT(KST_F_BOOST));
-    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NEED_ENABLE);
-    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
-    CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
-    CHECK_EQ(kst_prog_op(&g_p), LINK_KST_OP_WRITE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
-    now = servo();
-    CHECK_EQ(now.r[KST_REG_DUTY], sv.r[KST_REG_DUTY]);
-    CHECK_EQ(now.r[0x03], sv.r[0x03]);
-    /* What an edit may not write stays as the servo held it. */
-    CHECK_EQ(now.r[KST_REG_NODE_ADDR], 0x22);
-    CHECK(kst_field_get(&now, KST_F_20K_SEL)
-          != kst_field_get(&sv, KST_F_20K_SEL));
-    CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_STORED));
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
-             KST_PROG_MSG_NO_RESTORE);
-    CHECK_EQ(kst_prog_message(&g_p)->arg, 2);
-
-    /* A write after it is a write again. */
-    edit(KST_F_DUTY, 210);
-    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
-}
-
-TEST_CASE(a_backup_that_breaks_a_hard_rule_is_not_written_back)
-{
-    kst_prog_restore_t plan;
-
-    up_enabled();
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    g_p.stored.r[KST_REG_DUTY] = 0xFFu;
-    g_p.stored.r[KST_REG_DUTY_COPY] = 0xFFu;
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
-             KST_PROG_MSG_RESTORE_REFUSED);
-    CHECK_EQ(kst_prog_message(&g_p)->arg, KST_H_DUTY_HIGH);
-    CHECK_EQ(kst_prog_changes(&g_p), 0);
-    frames(20);
-    CHECK_EQ(g_sim.n_writes, 0);
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_COUNT, &plan),
-             KST_PROG_MSG_NO_RESTORE);
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_JOURNAL, &plan),
-             KST_PROG_MSG_NO_RESTORE);
-}
-
 /* -------------------------------------------------------------- the journal */
 
 TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
@@ -1065,6 +957,10 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
     edit(KST_F_DUTY, 200);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    /* The servo's file, then the journal, then the command. */
+    frame();
+    CHECK_EQ(g_fc.saves, 1);
+    CHECK_EQ(g_file_writes, 0);
     frame();
     CHECK_EQ(g_file_writes, 1);
     CHECK_EQ(g_starts_at_file, 2);
@@ -1185,7 +1081,7 @@ TEST_CASE(a_link_lost_in_a_write_leaves_the_servo_in_doubt)
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_in_doubt(&g_p));
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_READ);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
     CHECK(!kst_prog_restore_offered(&g_p, KST_PROG_FROM_JOURNAL));
 
     /* The read compares the servo with the image before the write. */
@@ -1341,7 +1237,7 @@ TEST_CASE(a_second_cut_keeps_the_image_before_the_first_write)
              KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
-    frame();
+    frames(3);          /* the servo's file, the journal, the command */
     kst_link_lost(&g_k);
     frame();
     CHECK(kst_prog_journal(&g_p));
@@ -1526,31 +1422,26 @@ TEST_CASE(a_restore_names_the_soft_limits_its_values_pass)
     const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
     kst_prog_restore_t plan;
 
-    /* A backup with Max. Duty raised, and the servo back below it. */
+    /* Max. Duty lowered by a write: the session's backup raises it. */
     up_enabled();
-    edit(KST_F_DUTY, (uint16_t)(duty + 2u));
+    edit(KST_F_DUTY, (uint16_t)(duty - 2u));
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    edit(KST_F_DUTY, duty);
-    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
-    settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
-
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
              KST_PROG_MSG_NONE);
     CHECK_EQ(plan.soft, KST_RULE_BIT(KST_S_DUTY_RAISED));
-    /* The session's own backup lowers it: nothing to warn of. */
-    kst_prog_discard(&g_p);
+
+    /* Raised by a write: the session's backup lowers it, nothing to warn
+     * of. */
+    up_enabled();
     edit(KST_F_DUTY, (uint16_t)(duty + 2u));
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
              KST_PROG_MSG_NONE);
     CHECK_EQ(plan.soft, 0);
-    /* And a stored backup equal to a lower servo raises nothing. */
-    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_STORED, &plan),
+    CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_COUNT, &plan),
              KST_PROG_MSG_NO_RESTORE);
 }
 
@@ -1772,6 +1663,7 @@ static void by_hand(void)
     g_p.draft = g_f.image;
     g_p.have_servo = true;
     g_p.fp_ok = true;
+    g_p.backed_up = true;      /* the session's file is on the card */
 }
 
 static void pass(uint32_t dt_ms)
@@ -1797,6 +1689,706 @@ static void end(const kst_link_outcome_t *o)
     g_f.outcomes++;
     g_f.outcome = *o;
     pass(1);
+}
+
+/* ---------------------------------------------------------- the servo files */
+
+#define BUSY (KST_PROG_MSG_START + KST_LINK_START_BUSY)
+
+/* A file whose image is the bench servo's with @p id at @p raw. */
+static fake_file_t *file_with(const char *name, kst_field_id_t id,
+                              uint16_t raw)
+{
+    kst_image_t img = sim_bench_image();
+
+    CHECK(kst_field_edit(&img, id, raw));
+    return fake_card_put(&g_fc, name, &img);
+}
+
+static void load(const char *name)
+{
+    CHECK_EQ(kst_prog_load(&g_p, name), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_busy(&g_p));
+    frames(3);
+    CHECK(!kst_prog_card_busy(&g_p));
+}
+
+static void save(const char *name)
+{
+    CHECK_EQ(kst_prog_save(&g_p, name), KST_PROG_MSG_NONE);
+    frames(3);
+    CHECK(!kst_prog_card_busy(&g_p));
+}
+
+static void list(void)
+{
+    CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_NONE);
+    frames(3);
+    CHECK(!kst_prog_card_busy(&g_p));
+}
+
+/* The bench servo's image as the other servo type. */
+static kst_image_t other_type(void)
+{
+    kst_image_t img = sim_bench_image();
+
+    CHECK(kst_field_set(&img, KST_F_20K_SEL,
+                        1u - kst_field_get(&img, KST_F_20K_SEL)));
+    return img;
+}
+
+TEST_CASE(a_save_writes_the_servos_image_under_the_name_given)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up();
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "");
+    CHECK_EQ(kst_prog_save(&g_p, "WING-L"), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_busy(&g_p));
+    /* One request at a time. */
+    CHECK_EQ(kst_prog_save(&g_p, "B"), BUSY);
+    CHECK_EQ(kst_prog_files(&g_p, 0), BUSY);
+    CHECK_EQ(kst_prog_load(&g_p, "B"), BUSY);
+    frames(3);
+    CHECK(!kst_prog_card_busy(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_STR_EQ(kst_prog_card_name(&g_p), "WING-L");
+    CHECK_EQ(g_fc.n, 1);
+    CHECK_STR_EQ(g_fc.file[0].name, "WING-L");
+    CHECK(same(&g_fc.file[0].img, &sv));
+    /* A file of this servo is the session's backup. */
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "WING-L");
+    CHECK(!kst_prog_save_first(&g_p));
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_starts, 2);
+}
+
+TEST_CASE(a_name_the_card_does_not_take_saves_nothing)
+{
+    up();
+    CHECK_EQ(kst_prog_save(&g_p, ""), KST_PROG_MSG_NAME_BAD);
+    CHECK_EQ(kst_prog_save(&g_p, NULL), KST_PROG_MSG_NAME_BAD);
+    CHECK_EQ(kst_prog_save(&g_p, "ABCDEFGHIJKLMNOP"), KST_PROG_MSG_NAME_BAD);
+    CHECK(!kst_prog_card_busy(&g_p));
+    /* The card's side knows the characters. */
+    save("a b");
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_BAD);
+    CHECK_EQ(g_fc.n, 0);
+    CHECK(!kst_prog_backed_up(&g_p));
+    save("A");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    /* No file is replaced. */
+    g_sim.reg[0x03] ^= 0x01u;
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    save("A");
+    CHECK_EQ(msg(), KST_PROG_MSG_NAME_EXISTS);
+    CHECK_EQ(g_fc.n, 1);
+    CHECK_EQ(g_fc.file[0].img.r[0x03], sim_bench_image().r[0x03]);
+}
+
+TEST_CASE(a_card_that_takes_no_file_says_which_way)
+{
+    static const struct {
+        uint8_t result;
+        unsigned msg;
+    } k[] = {
+        { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE },
+        { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL },
+        { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE },
+        { KST_PROG_CARD_READ_ERR, KST_PROG_MSG_CARD_WRITE },
+        { KST_PROG_CARD_RESULTS, KST_PROG_MSG_CARD_WRITE },
+    };
+
+    up();
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        g_fc.fails = k[i].result;
+        save("A");
+        CHECK_EQ(msg(), k[i].msg);
+        CHECK(!kst_prog_backed_up(&g_p));
+    }
+    /* No card in the slot: said at once, nothing is asked. */
+    g_fc.fails = KST_PROG_CARD_OK;
+    g_card = false;
+    frame();
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_CARD_NONE);
+    CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_CARD_NONE);
+    CHECK_EQ(kst_prog_load(&g_p, "A"), KST_PROG_MSG_CARD_NONE);
+    CHECK(!kst_prog_card_busy(&g_p));
+    CHECK_EQ(g_fc.saves, 5);
+    /* A card that does not answer: KST_PROG_CARD_MS. */
+    g_card = true;
+    g_fc.silent = true;
+    frame();
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS - 2u);
+    CHECK(kst_prog_card_busy(&g_p));
+    frames(3);
+    CHECK(!kst_prog_card_busy(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS + 1u);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_files_seq(&g_p), 0);
+    CHECK_EQ(g_fc.n, 0);
+}
+
+TEST_CASE(the_list_names_the_files_their_types_and_the_next_preset)
+{
+    const kst_image_t sv = sim_bench_image();
+    const kst_image_t ot = other_type();
+    unsigned total = 9;
+    uint32_t said;
+
+    up();
+    /* An empty card. */
+    list();
+    CHECK_EQ(msg(), KST_PROG_MSG_NO_FILES);
+    CHECK_EQ(kst_prog_files_seq(&g_p), 1);
+    CHECK_EQ(kst_prog_file_count(&g_p, &total), 0);
+    CHECK_EQ(total, 0);
+    CHECK_STR_EQ(kst_prog_preset_name(&g_p), "KST001");
+
+    (void)fake_card_put(&g_fc, "KST001", &sv);
+    (void)fake_card_put(&g_fc, "WING", &ot);
+    fake_card_put(&g_fc, "HAND", &sv)->type = 0;
+    list();
+    CHECK_EQ(kst_prog_files_seq(&g_p), 2);
+    CHECK_EQ(kst_prog_file_count(&g_p, NULL), 3);
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 0), "KST001");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 1), "WING");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 2), "HAND");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 3), "");
+    CHECK_EQ(kst_prog_file_type(&g_p, 0), kst_card_type(&sv));
+    CHECK_EQ(kst_prog_file_type(&g_p, 1), kst_card_type(&ot));
+    CHECK_EQ(kst_prog_file_type(&g_p, 0) + kst_prog_file_type(&g_p, 1), 14);
+    CHECK_EQ(kst_prog_file_type(&g_p, 2), 0);
+    CHECK_EQ(kst_prog_file_type(&g_p, 3), 0);
+    CHECK_STR_EQ(kst_prog_preset_name(&g_p), "KST002");
+
+    /* More files than the list holds. */
+    for (unsigned i = 0; i < 6u; ++i) {
+        char name[KST_PROG_NAME_MAX];
+
+        snprintf(name, sizeof(name), "F%u", i);
+        (void)fake_card_put(&g_fc, name, &sv);
+    }
+    list();
+    CHECK_EQ(kst_prog_file_count(&g_p, &total), KST_PROG_FILES_MAX);
+    CHECK_EQ(total, 9);
+    CHECK_EQ(kst_prog_files_first(&g_p), 0);
+    /* The files behind them, and a page past the last. */
+    CHECK_EQ(kst_prog_files(&g_p, KST_PROG_FILES_MAX), KST_PROG_MSG_NONE);
+    frames(3);
+    CHECK_EQ(kst_prog_files_first(&g_p), KST_PROG_FILES_MAX);
+    CHECK_EQ(kst_prog_file_count(&g_p, &total), 9u - KST_PROG_FILES_MAX);
+    CHECK_EQ(total, 9);
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 0), "F2");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 3), "F5");
+    CHECK_STR_EQ(kst_prog_file_name(&g_p, 4), "");
+    CHECK_STR_EQ(kst_prog_preset_name(&g_p), "KST002");
+    said = kst_prog_message(&g_p)->seq;
+    CHECK_EQ(kst_prog_files(&g_p, 0x12345u), KST_PROG_MSG_NONE);
+    frames(3);
+    CHECK_EQ(kst_prog_files_first(&g_p), 0xFFFFu);
+    CHECK_EQ(kst_prog_file_count(&g_p, &total), 0);
+    CHECK_EQ(total, 9);
+    /* Files are there: an empty page is no message. */
+    CHECK_EQ(kst_prog_message(&g_p)->seq, said);
+    list();
+    CHECK_EQ(kst_prog_files_seq(&g_p), 6);
+    /* A directory that does not read: the list stays as it was. */
+    g_fc.fails = KST_PROG_CARD_READ_ERR;
+    list();
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_files_seq(&g_p), 6);
+    CHECK_EQ(kst_prog_file_count(&g_p, NULL), KST_PROG_FILES_MAX);
+}
+
+TEST_CASE(a_file_becomes_the_draft_and_is_written_as_edits)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+
+    up();
+    (void)file_with("LOW", KST_F_DUTY, (uint16_t)(duty - 1u));
+    load("LOW");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 1);
+    CHECK_STR_EQ(kst_prog_card_name(&g_p), "LOW");
+    CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_VERIFIED);
+    CHECK_EQ(kst_prog_load_skipped(&g_p), 0);
+    CHECK_EQ(draft(KST_F_DUTY), duty - 1u);
+    CHECK_EQ(kst_prog_changed(&g_p), KST_FIELD_BIT(KST_F_DUTY));
+    frames(20);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_starts, 2);
+    /* The write is the ordinary one: the switch, then the changed field. */
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo().r[KST_REG_DUTY], duty - 1u);
+    CHECK_EQ(servo().r[KST_REG_DUTY_COPY], duty - 1u);
+}
+
+TEST_CASE(an_edited_file_is_named_as_one)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+    fake_file_t *f;
+
+    up();
+    f = file_with("ED", KST_F_DUTY, (uint16_t)(duty - 1u));
+    f->kind = KST_PROG_FILE_EDITED;
+    load("ED");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
+    CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_EDITED);
+    CHECK_EQ(draft(KST_F_DUTY), duty - 1u);
+    f = file_with("UN", KST_F_DUTY, (uint16_t)(duty - 2u));
+    f->kind = KST_PROG_FILE_UNTYPED;
+    f->type = 0;
+    load("UN");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
+    CHECK_EQ(kst_prog_load_kind(&g_p), KST_PROG_FILE_UNTYPED);
+    CHECK_EQ(draft(KST_F_DUTY), duty - 2u);
+    /* A kind this code does not know is the least trusted one. */
+    f->kind = KST_PROG_FILE_KINDS;
+    load("UN");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
+}
+
+TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+    kst_image_t ot = other_type();
+    const unsigned t_servo = kst_card_type(&sv), t_other = kst_card_type(&ot);
+    fake_file_t *f;
+
+    CHECK(kst_field_edit(&ot, KST_F_DUTY, (uint16_t)(duty - 1u)));
+    up();
+    f = fake_card_put(&g_fc, "OTHER", &ot);
+    load("OTHER");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_TYPE);
+    CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, t_other | (t_servo << 8));
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+
+    /* The same values in a file that names no type: the type is a locked
+     * field, listed and not written. */
+    f->type = 0;
+    f->kind = KST_PROG_FILE_UNTYPED;
+    load("OTHER");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED_UNTYPED);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 1u | (1u << 8));
+    CHECK_EQ(kst_prog_load_skipped(&g_p), KST_FIELD_BIT(KST_F_20K_SEL));
+    CHECK_EQ(kst_prog_changed(&g_p), KST_FIELD_BIT(KST_F_DUTY));
+    CHECK_EQ(kst_field_get(kst_prog_draft(&g_p), KST_F_20K_SEL),
+             kst_field_get(&sv, KST_F_20K_SEL));
+
+    /* The other way round: the servo is of the other type. */
+    kst_prog_discard(&g_p);
+    CHECK(kst_field_set((kst_image_t *)(void *)g_sim.reg, KST_F_20K_SEL,
+                        kst_field_get(&ot, KST_F_20K_SEL)));
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK_EQ(kst_prog_load_skipped(&g_p), 0);
+    (void)fake_card_put(&g_fc, "FIRST", &sv);
+    load("FIRST");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_TYPE);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, t_servo | (t_other << 8));
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    frames(20);
+    CHECK_EQ(g_sim.n_writes, 0);
+}
+
+TEST_CASE(a_file_that_does_not_read_says_where)
+{
+    const kst_image_t sv = sim_bench_image();
+    fake_file_t *f;
+
+    up();
+    f = file_with("X", KST_F_DUTY,
+                  (uint16_t)(kst_field_get(&sv, KST_F_DUTY) - 1u));
+    f->result = KST_PROG_CARD_BAD;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_BAD);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 0);
+    f->line = 7;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_BAD);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 7);
+    f->result = KST_PROG_CARD_CHECKSUM;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_CHECKSUM);
+    f->result = KST_PROG_CARD_NEWER;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_NEWER);
+    /* A value past a hard limit: its field and its line. */
+    f->result = KST_PROG_CARD_VALUE;
+    f->field = KST_F_BOOST;
+    f->line = 5;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_VALUE);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 5);
+    CHECK_EQ(kst_prog_message(&g_p)->reg, KST_F_BOOST);
+    f->result = KST_PROG_CARD_READ_ERR;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+    f->result = KST_PROG_CARD_NO_CARD;
+    load("X");
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+    /* A file that is gone, and a name that is none. */
+    load("GONE");
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_load(&g_p, ""), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_load(&g_p, NULL), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_load(&g_p, "ABCDEFGHIJKLMNOP"), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+}
+
+TEST_CASE(a_file_beyond_a_hard_limit_is_refused_whole)
+{
+    kst_prog_card_req_t q;
+    kst_prog_card_done_t d;
+
+    up();
+    (void)file_with("HARD", KST_F_DUTY, 0xFFu);
+    load("HARD");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_REFUSED);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, KST_H_DUTY_HIGH);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+
+    /* An answer that changes a locked field is not a file's. */
+    CHECK_EQ(kst_prog_load(&g_p, "HARD"), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_take(&g_p, &q));
+    CHECK(!kst_prog_card_take(&g_p, &q));
+    CHECK_EQ(q.op, KST_PROG_CARD_LOAD);
+    CHECK_STR_EQ(q.name, "HARD");
+    memset(&d, 0, sizeof(d));
+    d.image = q.image;
+    d.image.r[KST_REG_NODE_ADDR] ^= 0x01u;
+    d.id = q.id + 1u;                 /* not this request's */
+    kst_prog_card_done(&g_p, &d);
+    CHECK(kst_prog_card_busy(&g_p));
+    d.id = q.id;
+    kst_prog_card_done(&g_p, &d);
+    CHECK(!kst_prog_card_busy(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_BAD);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    kst_prog_card_done(&g_p, &d);     /* nothing on its way: ignored */
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_BAD);
+}
+
+TEST_CASE(a_file_beyond_a_soft_limit_waits_for_the_confirmation)
+{
+    const kst_image_t sv = sim_bench_image();
+    const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
+
+    up();
+    CHECK(!kst_prog_soft_is_load(&g_p));
+    (void)file_with("UP", KST_F_DUTY, (uint16_t)(duty + 1u));
+    load("UP");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SOFT);
+    CHECK(kst_prog_soft_is_load(&g_p));
+    CHECK_EQ(kst_prog_soft_rules(&g_p), KST_RULE_BIT(KST_S_DUTY_RAISED));
+    CHECK_EQ(kst_field_get(kst_prog_soft_image(&g_p), KST_F_DUTY), duty + 1u);
+    CHECK_EQ(draft(KST_F_DUTY), duty);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    kst_prog_soft_cancel(&g_p);
+    CHECK(!kst_prog_soft_is_load(&g_p));
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+
+    load("UP");
+    CHECK(kst_prog_soft_is_load(&g_p));
+    kst_prog_soft_confirm(&g_p);
+    CHECK(!kst_prog_soft_is_load(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_LOADED);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 1);
+    CHECK_EQ(draft(KST_F_DUTY), duty + 1u);
+    /* An edit that waits is not a file. */
+    kst_prog_discard(&g_p);
+    CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, (uint16_t)(duty + 1u)),
+             KST_PROG_EDIT_SOFT);
+    CHECK(!kst_prog_soft_is_load(&g_p));
+    kst_prog_soft_cancel(&g_p);
+    frames(20);
+    CHECK_EQ(g_sim.n_writes, 0);
+}
+
+TEST_CASE(a_file_equal_to_the_servo_changes_nothing)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_image_t pair = sv;
+
+    up();
+    (void)fake_card_put(&g_fc, "SAME", &sv);
+    load("SAME");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SAME);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 0);
+    /* Only the pairing value and a protection value differ: both are
+     * locked, counted and not written. */
+    pair.r[KST_REG_NODE_ADDR] ^= 0x22u;
+    pair.r[0x14] ^= 0x01u;
+    (void)fake_card_put(&g_fc, "PAIR", &pair);
+    load("PAIR");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_SAME);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 2);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NO_CHANGES);
+    frames(20);
+    CHECK_EQ(g_sim.n_writes, 0);
+}
+
+TEST_CASE(a_load_needs_a_servo_that_is_read_and_may_be_written)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    /* No servo read yet. */
+    fresh_at(0u);
+    link_up();
+    (void)fake_card_put(&g_fc, "F", &sv);
+    CHECK_EQ(kst_prog_load(&g_p, "F"), KST_PROG_MSG_NEED_PORT);
+    CHECK_EQ(kst_prog_save(&g_p, "G"), KST_PROG_MSG_NEED_READ);
+    /* The list needs the card only. */
+    list();
+    CHECK_EQ(kst_prog_file_count(&g_p, NULL), 1);
+    /* The card is out as well: the servo's lack is said first. */
+    g_card = false;
+    frame();
+    CHECK_EQ(kst_prog_load(&g_p, "F"), KST_PROG_MSG_NEED_PORT);
+    CHECK(!kst_prog_card_busy(&g_p));
+
+    /* A servo that fails the fingerprint. */
+    fresh_at(0u);
+    g_sim.reg[0x06] = 0x05u;
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    (void)fake_card_put(&g_fc, "F", &sv);
+    CHECK_EQ(kst_prog_load(&g_p, "F"), KST_PROG_MSG_READ_ONLY);
+    /* Its values are saved all the same. */
+    save("RO");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+
+    /* A servo in doubt. */
+    by_hand();
+    g_f.card = true;
+    kst_prog_feed(&g_p, &g_f);
+    g_p.need_read = true;
+    CHECK_EQ(kst_prog_load(&g_p, "F"), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_save(&g_p, "F"), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_NEED_READ);
+    CHECK(!kst_prog_card_busy(&g_p));
+    /* Not the servo of the record. */
+    by_hand();
+    g_p.journal = true;
+    g_p.journal_open = true;
+    g_p.journal_other = true;
+    g_p.journal_ch = 6;
+    CHECK_EQ(kst_prog_load(&g_p, "F"), KST_PROG_MSG_JOURNAL_OTHER);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 7);
+    /* While an operation waits. */
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_load(&g_p, "F"), BUSY);
+    CHECK_EQ(kst_prog_files(&g_p, 0), BUSY);
+}
+
+TEST_CASE(a_servo_that_goes_while_its_file_is_read_takes_nothing)
+{
+    const kst_image_t sv = sim_bench_image();
+    kst_prog_card_req_t q;
+    kst_prog_card_done_t d;
+
+    up();
+    (void)file_with("LOW", KST_F_DUTY,
+                    (uint16_t)(kst_field_get(&sv, KST_F_DUTY) - 1u));
+    CHECK_EQ(kst_prog_load(&g_p, "LOW"), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_take(&g_p, &q));
+    CHECK(fake_card_run(&g_fc, &q, &d));
+    /* The link goes before the answer. */
+    kst_link_lost(&g_k);
+    frame();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_DOWN);
+    kst_prog_card_done(&g_p, &d);
+    CHECK(msg() != KST_PROG_MSG_LOADED);
+    CHECK_EQ(kst_prog_changes(&g_p), 0);
+    CHECK(!kst_prog_card_busy(&g_p));
+}
+
+/* ------------------------------------------- the file before the first write */
+
+TEST_CASE(the_first_write_saves_the_servo_to_the_card_first)
+{
+    const kst_image_t sv = sim_bench_image();
+
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    CHECK(kst_prog_save_first(&g_p));
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    /* The file, then the write's command. */
+    CHECK_EQ(g_fc.saves, 1);
+    CHECK_EQ(g_starts_at_save, 2);
+    CHECK_EQ(g_starts, 3);
+    CHECK_STR_EQ(g_fc.file[0].name, "KST001");
+    CHECK(same(&g_fc.file[0].img, &sv));
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "KST001");
+    CHECK(!kst_prog_save_first(&g_p));
+    /* Once a session. */
+    edit(KST_F_DUTY, 210);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, 1);
+
+    /* Another session: another file, of the servo as it is then. */
+    CHECK_EQ(kst_prog_power_cycled(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "");
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK(kst_prog_save_first(&g_p));
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 205);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, 2);
+    CHECK_STR_EQ(g_fc.file[1].name, "KST002");
+    CHECK_EQ(g_fc.file[1].img.r[KST_REG_DUTY], 210);
+    CHECK_EQ(g_fc.file[0].img.r[KST_REG_DUTY], sv.r[KST_REG_DUTY]);
+}
+
+TEST_CASE(a_file_saved_by_hand_is_the_sessions_and_no_other_is_written)
+{
+    up_enabled();
+    save("MINE");
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, 1);
+    CHECK_EQ(g_fc.n, 1);
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "MINE");
+}
+
+TEST_CASE(a_write_without_its_file_is_not_sent)
+{
+    static const struct {
+        uint8_t result;
+        unsigned msg;
+    } k[] = {
+        { KST_PROG_CARD_NO_CARD, KST_PROG_MSG_CARD_NONE },
+        { KST_PROG_CARD_FULL, KST_PROG_MSG_CARD_FULL },
+        { KST_PROG_CARD_WRITE_ERR, KST_PROG_MSG_CARD_WRITE },
+    };
+
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        g_fc.fails = k[i].result;
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        settle();
+        CHECK_EQ(msg(), k[i].msg);
+        CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        CHECK_EQ(g_starts, 2);
+        CHECK_EQ(g_sim.n_writes, 0);
+        CHECK(!kst_prog_journal(&g_p));
+        CHECK(!kst_prog_in_doubt(&g_p));
+        CHECK_EQ(kst_prog_changes(&g_p), 1);
+        CHECK(kst_prog_first_write(&g_p));
+        CHECK(!kst_prog_backed_up(&g_p));
+        CHECK(kst_prog_write_enabled(&g_p));
+    }
+    /* No card in the slot: said before anything is asked. */
+    g_fc.fails = KST_PROG_CARD_OK;
+    g_card = false;
+    frame();
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_CARD_NONE);
+    CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_CARD_NONE);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK_EQ(g_fc.saves, 3);
+
+    /* A card that never answers: KST_PROG_CARD_MS. */
+    g_card = true;
+    g_fc.silent = true;
+    frame();
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS - 2u);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    frames(3);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    CHECK_EQ(g_starts, 2);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(kst_prog_first_write(&g_p));
+
+    /* The card is back: the same write goes. */
+    g_fc.silent = false;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo().r[KST_REG_DUTY], 200);
+}
+
+TEST_CASE(a_save_given_up_sends_no_write)
+{
+    /* The operator's abort. */
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(5);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    kst_prog_abort(&g_p);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    frames(KST_PROG_CARD_MS + 10u);
+    CHECK_EQ(g_starts, 2);
+    CHECK_EQ(g_aborts, 0);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(kst_prog_first_write(&g_p));
+    CHECK(!kst_prog_in_doubt(&g_p));
+
+    /* STOP. */
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(5);
+    g_stopped = true;
+    frame();
+    CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(!kst_prog_write_enabled(&g_p));
+    frames(KST_PROG_CARD_MS + 10u);
+    CHECK_EQ(g_starts, 2);
+    CHECK_EQ(g_sim.n_writes, 0);
+
+    /* The link goes. */
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(5);
+    kst_link_lost(&g_k);
+    frame();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_DOWN);
+    frames(KST_PROG_CARD_MS + 10u);
+    CHECK_EQ(g_starts, 2);
+    CHECK_EQ(g_sim.n_writes, 0);
 }
 
 TEST_CASE(a_fetch_that_brings_nothing_is_asked_again_once_a_second)
@@ -2132,7 +2724,7 @@ static void read_never_ends(uint32_t t0, bool verify)
     CHECK(!kst_prog_editable(&g_p));
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 200), KST_PROG_EDIT_REFUSED);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NEED_READ);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
     CHECK_EQ(kst_prog_verify(&g_p), KST_PROG_MSG_NEED_READ);
     CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_NEED_READ);
 
@@ -2169,8 +2761,8 @@ static void read_gets_no_answer(bool verify)
     CHECK(kst_prog_in_doubt(&g_p));
     CHECK(!kst_prog_editable(&g_p));
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_DUTY, 200), KST_PROG_EDIT_REFUSED);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NEED_READ);
-    CHECK(!kst_prog_have_stored(&g_p));
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NEED_READ);
+    CHECK(!kst_prog_card_busy(&g_p));
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     answer(KST_LINK_START_OK);
     o.kind = KST_LINK_OUT_DONE;
@@ -2203,24 +2795,26 @@ TEST_CASE(no_backup_is_taken_while_an_operation_runs)
     kst_link_outcome_t o;
 
     by_hand();
+    g_f.card = true;
+    kst_prog_feed(&g_p, &g_f);
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     /* The command waits for the control task. */
-    CHECK_EQ(kst_prog_backup(&g_p),
+    CHECK_EQ(kst_prog_save(&g_p, "A"),
              KST_PROG_MSG_START + KST_LINK_START_BUSY);
-    CHECK(!kst_prog_have_stored(&g_p));
+    CHECK(!kst_prog_card_busy(&g_p));
     answer(KST_LINK_START_OK);
     /* The read runs. */
-    CHECK_EQ(kst_prog_backup(&g_p),
+    CHECK_EQ(kst_prog_save(&g_p, "A"),
              KST_PROG_MSG_START + KST_LINK_START_BUSY);
-    CHECK(!kst_prog_have_stored(&g_p));
+    CHECK(!kst_prog_card_busy(&g_p));
     memset(&o, 0, sizeof(o));
     o.kind = KST_LINK_OUT_DONE;
     o.op = LINK_KST_OP_READ_ALL;
     o.result = KST_SES_OK;
     o.fail_reg = 0xFF;
     end(&o);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    CHECK(kst_prog_have_stored(&g_p));
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+    CHECK(kst_prog_card_busy(&g_p));
 }
 
 TEST_CASE(a_file_the_card_did_not_take_is_written_again)
@@ -2259,17 +2853,10 @@ TEST_CASE(a_file_the_card_did_not_take_is_written_again)
     pass(2u * KST_PROG_FILE_RETRY_MS);
     CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
 
-    /* A backup the card did not take is said, and written again too. */
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
-    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
-    kst_prog_file_done(&g_p, false);
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED_RAM);
-    pass(KST_PROG_FILE_RETRY_MS);
-    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
-    CHECK(strstr(text, "\n00=") != NULL);
-    kst_prog_file_done(&g_p, true);
     /* A card that is gone waits for one. */
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
+    g_p.journal = true;
+    g_p.journal_open = true;
+    kst_prog_forget(&g_p);
     CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
     kst_prog_file_done(&g_p, false);
     g_f.card = false;
@@ -2381,13 +2968,11 @@ TEST_CASE(the_state_follows_the_port)
 
 /* ----------------------------------------------------------------- the file */
 
-static size_t text_of(char *out, bool stored, bool journal)
+static size_t text_of(char *out, bool journal)
 {
     kst_prog_t p;
 
     kst_prog_init(&p);
-    p.have_stored = stored;
-    p.stored = sim_bench_image();
     p.journal = journal;
     p.journal_ch = 15;
     p.journal_img = sim_bench_image();
@@ -2402,16 +2987,15 @@ TEST_CASE(the_file_text_is_read_back_as_it_was_written)
     char text[KST_PROG_FILE_MAX], again[KST_PROG_FILE_MAX];
     kst_prog_t p;
 
-    for (unsigned v = 0; v < 4u; ++v) {
-        const bool stored = (v & 1u) != 0u, journal = (v & 2u) != 0u;
-        const size_t len = text_of(text, stored, journal);
+    for (unsigned v = 0; v < 2u; ++v) {
+        const bool journal = v != 0u;
+        const size_t len = text_of(text, journal);
 
         CHECK(len != 0u);
         CHECK(len < KST_PROG_FILE_MAX);
         CHECK_EQ(len, strlen(text));
         kst_prog_init(&p);
         CHECK(kst_prog_file_load(&p, text, len));
-        CHECK_EQ(kst_prog_have_stored(&p), stored);
         CHECK_EQ(kst_prog_journal(&p), journal);
         CHECK_EQ(kst_prog_in_doubt(&p), journal);
         CHECK_EQ(kst_prog_message(&p)->id,
@@ -2427,13 +3011,13 @@ TEST_CASE(the_file_text_is_read_back_as_it_was_written)
     /* A buffer too small takes nothing. */
     CHECK_EQ(kst_prog_file_text(&p, again, KST_PROG_FILE_MAX - 1u), 0);
     /* The longest text fits. */
-    CHECK(text_of(text, true, true) + 1u <= KST_PROG_FILE_MAX);
+    CHECK(text_of(text, true) + 1u <= KST_PROG_FILE_MAX);
 }
 
 TEST_CASE(a_file_that_is_not_whole_changes_nothing)
 {
     char good[KST_PROG_FILE_MAX], text[KST_PROG_FILE_MAX + 8u];
-    const size_t len = text_of(good, true, true);
+    const size_t len = text_of(good, true);
     kst_prog_t p;
     unsigned taken = 0;
 
@@ -2446,7 +3030,6 @@ TEST_CASE(a_file_that_is_not_whole_changes_nothing)
             taken++;
         } else {
             CHECK_EQ(kst_prog_message(&p)->id, KST_PROG_MSG_FILE_BAD);
-            CHECK(!kst_prog_have_stored(&p));
             CHECK(!kst_prog_journal(&p));
         }
     }
@@ -2485,7 +3068,6 @@ TEST_CASE(a_file_that_is_not_whole_changes_nothing)
     kst_prog_init(&p);
     CHECK(kst_prog_file_load(&p, good, len));
     CHECK(!kst_prog_file_load(&p, good, len - 1u));
-    CHECK(kst_prog_have_stored(&p));
     CHECK(kst_prog_journal(&p));
 }
 
@@ -2494,20 +3076,20 @@ TEST_CASE(the_file_is_written_once_per_change_and_only_to_a_card)
     char text[KST_PROG_FILE_MAX];
 
     by_hand();
-    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_STORED_RAM);
-    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
     g_f.card = true;
-    pass(1);
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
+    kst_prog_feed(&g_p, &g_f);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+    g_p.journal = true;
+    g_p.journal_open = true;
+    g_p.journal_ch = CH;
+    g_p.journal_img = g_p.servo;
+    g_p.journal_target = g_p.servo;
+    kst_prog_forget(&g_p);
+    /* A buffer too small takes nothing. */
     CHECK_EQ(kst_prog_file_take(&g_p, text, 10), 0);
     CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
     /* One write at a time. */
-    CHECK_EQ(kst_prog_backup(&g_p), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
-    kst_prog_file_done(&g_p, true);
-    CHECK_EQ(msg(), KST_PROG_MSG_STORED);
-    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
     kst_prog_file_done(&g_p, true);
     CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
 }
@@ -2533,14 +3115,28 @@ int main(void)
     RUN(a_servo_that_fails_the_fingerprint_is_read_only);
     RUN(a_release_of_pairing_writes_00_to_register_1d);
     RUN(the_sessions_backup_is_restored_by_the_coprocessor);
-    RUN(a_backup_is_kept_on_the_panel_and_written_to_the_card);
-    RUN(a_backup_kept_on_the_panel_is_written_back_as_an_edit);
-    RUN(a_backup_that_breaks_a_hard_rule_is_not_written_back);
     RUN(the_journal_reaches_the_card_before_the_write_is_sent);
     RUN(a_card_that_takes_no_journal_stops_the_write);
     RUN(a_link_lost_in_a_write_leaves_the_servo_in_doubt);
     RUN(a_later_session_cannot_write_to_a_servo_cut_between_01_and_02);
     RUN(a_panel_that_starts_on_a_locked_session_fetches_its_backup);
+    RUN(a_save_writes_the_servos_image_under_the_name_given);
+    RUN(a_name_the_card_does_not_take_saves_nothing);
+    RUN(a_card_that_takes_no_file_says_which_way);
+    RUN(the_list_names_the_files_their_types_and_the_next_preset);
+    RUN(a_file_becomes_the_draft_and_is_written_as_edits);
+    RUN(an_edited_file_is_named_as_one);
+    RUN(a_file_of_the_other_servo_type_is_not_loaded);
+    RUN(a_file_that_does_not_read_says_where);
+    RUN(a_file_beyond_a_hard_limit_is_refused_whole);
+    RUN(a_file_beyond_a_soft_limit_waits_for_the_confirmation);
+    RUN(a_file_equal_to_the_servo_changes_nothing);
+    RUN(a_load_needs_a_servo_that_is_read_and_may_be_written);
+    RUN(a_servo_that_goes_while_its_file_is_read_takes_nothing);
+    RUN(the_first_write_saves_the_servo_to_the_card_first);
+    RUN(a_file_saved_by_hand_is_the_sessions_and_no_other_is_written);
+    RUN(a_write_without_its_file_is_not_sent);
+    RUN(a_save_given_up_sends_no_write);
     RUN(a_fetch_that_brings_nothing_is_asked_again_once_a_second);
     RUN(a_later_session_writes_the_journals_image_back);
     RUN(a_second_cut_keeps_the_image_before_the_first_write);

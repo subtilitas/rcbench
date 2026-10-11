@@ -376,6 +376,170 @@ static void kenable(void)
     khold();
 }
 
+/* The entry of the open list whose label starts with @p name. */
+static void kpick(const char *name)
+{
+    const size_t len = strlen(name);
+
+    for (int i = 0; kst_panel_choice_label(i) != NULL; ++i) {
+        if (strncmp(kst_panel_choice_label(i), name, len) == 0) {
+            ktap(kst_panel_choice_rect(i));
+            return;
+        }
+    }
+}
+
+/* FILES, and the list the card gives. */
+static void kfiles(void)
+{
+    ktap(kst_panel_value_rect(0, 1, 1));
+    ksettle();
+}
+
+/* The bench servo's image with Max. Duty moved by @p d. */
+static kst_image_t kfile_image(int d)
+{
+    kst_image_t img = sim_bench_image();
+
+    (void)kst_field_edit(&img, KST_F_DUTY,
+                         (uint16_t)((int)kst_field_get(&img, KST_F_DUTY) + d));
+    return img;
+}
+
+/* The same as the other servo type. */
+static kst_image_t kfile_other(int d)
+{
+    kst_image_t img = kfile_image(d);
+
+    (void)kst_field_set(&img, KST_F_20K_SEL,
+                        1u - kst_field_get(&img, KST_F_20K_SEL));
+    return img;
+}
+
+/*
+ * The servo files: the list, the name of a new one, and what a file comes
+ * to.  True when @p v is one of these views.
+ */
+static bool kst_file_view(const char *v)
+{
+    const kst_image_t low = kfile_image(-2);
+    const kst_image_t high = kfile_image(1);
+    const kst_image_t other = kfile_other(-2);
+    fake_card_t *fc = &g_rig.fc;
+    fake_file_t *f;
+
+    if (strncmp(v, "-file", 5) != 0 && strncmp(v, "-name", 5) != 0
+        && strncmp(v, "-card", 5) != 0) {
+        return false;
+    }
+    if (strcmp(v, "-card-none") == 0) {
+        g_rig.card = false;
+        rig_frame();
+        ktap(kst_panel_value_rect(0, 1, 1));
+        return true;
+    }
+    if (strcmp(v, "-files-none") == 0) {
+        kfiles();
+        return true;
+    }
+    if (strcmp(v, "-card-full") == 0) {
+        kfiles();
+        ktap(kst_panel_choice_rect(0));
+        fc->fails = KST_PROG_CARD_FULL;
+        ktap(ui_textkey_key_rect(kst_panel_textkey(), UI_TK_OK));
+        ksettle();
+        return true;
+    }
+    (void)fake_card_put(fc, "KST001", &low);
+    (void)fake_card_put(fc, "KST002", &high);
+    (void)fake_card_put(fc, "WING-L", &other);
+    f = fake_card_put(fc, "HAND", &low);
+    f->kind = KST_PROG_FILE_UNTYPED;
+    f->type = 0;
+    if (strcmp(v, "-files-next") == 0) {
+        (void)fake_card_put(fc, "KST003", &low);
+        (void)fake_card_put(fc, "KST004", &low);
+        (void)fake_card_put(fc, "KST005", &low);
+    }
+    if (strcmp(v, "-file-v6") == 0) {
+        /* The servo is of the other type and is read again. */
+        const kst_image_t sv = kfile_other(0);
+
+        memcpy(g_rig.sim.reg, sv.r, sizeof(sv.r));
+        ktap(kst_panel_value_rect(0, 1, 0));
+        ksettle();
+        kfiles();
+        kpick("KST001");
+        ksettle();
+        return true;
+    }
+    kfiles();
+    if (strcmp(v, "-files") == 0 || strcmp(v, "-files-next") == 0) {
+        return true;
+    }
+    if (strncmp(v, "-name", 5) == 0) {
+        ktap(kst_panel_choice_rect(0));
+        if (strcmp(v, "-name-exists") == 0 || strcmp(v, "-name-bad") == 0
+            || strcmp(v, "-name-saved") == 0) {
+            const char *name = strcmp(v, "-name-exists") == 0 ? "WING-L"
+                               : strcmp(v, "-name-bad") == 0 ? "A.B"
+                                                             : "WING-R";
+            static const char chars[] =
+                "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
+
+            ktap(ui_textkey_key_rect(kst_panel_textkey(), UI_TK_CLR));
+            for (; *name != '\0'; ++name) {
+                ktap(ui_textkey_key_rect(kst_panel_textkey(),
+                                         (int)(strchr(chars, *name) - chars)));
+            }
+            ktap(ui_textkey_key_rect(kst_panel_textkey(), UI_TK_OK));
+            ksettle();
+        }
+        return true;
+    }
+    if (strcmp(v, "-file-loaded") == 0) {
+        kpick("KST001");
+    } else if (strcmp(v, "-file-edited") == 0) {
+        fake_card_find(fc, "KST001")->kind = KST_PROG_FILE_EDITED;
+        kpick("KST001");
+    } else if (strcmp(v, "-file-untyped") == 0
+               || strcmp(v, "-file-locked") == 0) {
+        /* No type line and the 20k value of the other type. */
+        fake_card_find(fc, "HAND")->img = other;
+        kpick("HAND");
+    } else if (strcmp(v, "-file-type") == 0) {
+        kpick("WING-L");
+    } else if (strcmp(v, "-file-same") == 0) {
+        fake_card_find(fc, "KST001")->img = sim_bench_image();
+        kpick("KST001");
+    } else if (strcmp(v, "-file-damaged") == 0) {
+        fake_card_find(fc, "KST001")->result = KST_PROG_CARD_CHECKSUM;
+        kpick("KST001");
+    } else if (strcmp(v, "-file-bad") == 0) {
+        f = fake_card_find(fc, "KST001");
+        f->result = KST_PROG_CARD_BAD;
+        f->line = 12;
+        kpick("KST001");
+    } else if (strcmp(v, "-file-newer") == 0) {
+        fake_card_find(fc, "KST001")->result = KST_PROG_CARD_NEWER;
+        kpick("KST001");
+    } else if (strcmp(v, "-file-hard") == 0) {
+        f = fake_card_find(fc, "HAND");
+        f->result = KST_PROG_CARD_VALUE;
+        f->field = KST_F_DUTY;
+        f->line = 9;
+        kpick("HAND");
+    } else if (strcmp(v, "-file-soft") == 0) {
+        fake_card_find(fc, "KST002")->kind = KST_PROG_FILE_EDITED;
+        kpick("KST002");
+    }
+    ksettle();
+    if (strcmp(v, "-file-locked") == 0) {
+        ktap(kst_panel_tab_rect(4));
+    }
+    return true;
+}
+
 /*
  * The programmer on SERVO, driven by taps against the simulated servo of
  * kst_sim.h on CH4.  Geometry from kst_panel.h; PROGRAM is left of SETTINGS
@@ -482,37 +646,22 @@ static void kst_view(const char *view)
         ktap(kst_panel_tab_rect(strcmp(v, "-pulse") == 0 ? 2 : 1));
         return;
     }
-    if (strcmp(v, "-stored") == 0) {
-        ktap(kst_panel_value_rect(0, 1, 1));        /* STORE */
-        ksettle();
+    if (kst_file_view(v)) {
         return;
     }
     if (strcmp(v, "-restore-check") == 0) {
-        /* A backup of a servo with Max. Duty and Boost raised, the servo
-         * set back, and the backup chosen in RESTORE. */
+        /* Max. Duty and Boost written lower, and this session's backup,
+         * which holds them higher, chosen in RESTORE. */
         const kst_image_t first = *kst_prog_servo(kst_panel_model());
 
         kenable();
-        kedit(KST_F_DUTY, (uint16_t)(kst_field_get(&first, KST_F_DUTY) + 2u));
-        kedit(KST_F_BOOST, (uint16_t)(kst_field_get(&first, KST_F_BOOST) + 4u));
-        ktap(kst_panel_value_rect(0, 4, 0));
-        khold();
-        ksettle();
-        ktap(kst_panel_value_rect(0, 1, 1));        /* STORE */
-        ksettle();
-        kedit(KST_F_DUTY, kst_field_get(&first, KST_F_DUTY));
-        kedit(KST_F_BOOST, kst_field_get(&first, KST_F_BOOST));
+        kedit(KST_F_DUTY, (uint16_t)(kst_field_get(&first, KST_F_DUTY) - 2u));
+        kedit(KST_F_BOOST, (uint16_t)(kst_field_get(&first, KST_F_BOOST) - 4u));
         ktap(kst_panel_value_rect(0, 4, 0));
         khold();
         ksettle();
         ktap(kst_panel_value_rect(0, 2, 0));        /* RESTORE */
-        for (int i = 0; kst_panel_choice_label(i) != NULL; ++i) {
-            if (strcmp(kst_panel_choice_label(i),
-                       ui_tr(TX_KP_FROM_STORED)) == 0) {
-                ktap(kst_panel_choice_rect(i));
-                break;
-            }
-        }
+        kpick(ui_tr(TX_KP_FROM_SESSION));
         return;
     }
     /* The rest writes. */

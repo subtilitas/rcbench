@@ -22,10 +22,22 @@ history is in git.
   2 s, and goes off at every entry of the screen, link loss, coprocessor
   restart, stop, connect and leave; the first write of a session asks for a
   free horn. The coprocessor writes the changed registers only and reads
-  each back. A backup is kept from the first read of a session, stored as
-  `KST.TXT` (at most 400 bytes of text) on the SD card, compared against the
-  servo, and written back by RESTORE. A record of a running write is stored
-  before the write starts; after a link loss, a restart, an abort or a
+  each back. A backup is kept from the first read of a session and
+  written back by RESTORE. FILES saves the servo's 32 registers as a servo
+  file on the SD card under a preset name (`KST001` on) that the text
+  keyboard changes, and never replaces a file. The first write of a session
+  saves such a file without asking and is not sent without it: no card, a
+  full card and a write error each end it with their own line. A file is
+  loaded from a list of 5 a page that names each file's servo type, V6 or
+  V8 after the 20k_sel field. Its editable values become the pending
+  changes and reach the servo through the ordinary write only; a file of
+  the other type, a damaged file, a file of a later format and a value past
+  a hard limit are refused with the reason, a hand-edited file is named as
+  one, values past a soft limit wait for a hold of 2 s, and locked values
+  that differ are counted as not written. The panel firmware answers every
+  card request for a servo file with an error until the servo file module
+  is wired to the card. A record of a running write is stored in `KST.TXT`
+  (at most 400 bytes of text) before the write starts; after a link loss, a restart, an abort or a
   power loss during a write the programmer reports that the servo may hold
   part of it, asks for a read and offers the restore. An image that fails
   the layout fingerprint is shown and not written. The record of an
@@ -36,7 +48,7 @@ history is in git.
   written again every 5 s. PROGRAM ends a running automatic test. A coprocessor of protocol
   4.11 shows the programmer as unavailable with the reason. Leaving asks for
   the servo's power to be cycled before the channel returns to PWM. German
-  texts for every new string; 56 new screenshots. Host suite only
+  texts for every new string; 96 screenshots. Host suite only
   (`test_kst_prog`, `test_kst_panel`); no frame has been sent to a servo.
   ([KST and Chaservo servo programmer](docs/ServoProgrammer.md))
 - `protocols/kst/`: the protocol core for programming KST and Chaservo

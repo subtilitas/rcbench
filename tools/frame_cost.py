@@ -68,6 +68,7 @@ SOURCES = [
     # takes fields and limits from.
     "shared/ui/kst_panel.c",
     "shared/bench/kst_prog.c",
+    "shared/bench/kst_card.c",
     "protocols/kst/kst_reg.c",
     "protocols/kst/kst_limits.c",
     "protocols/kst/kst_plan.c",

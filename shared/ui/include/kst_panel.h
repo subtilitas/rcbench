@@ -6,10 +6,11 @@
  * holds no rule of its own: ranges, limits and warnings come from the model,
  * which asks protocols/kst.  Its controls are the screen's: tabs, rows, the
  * number keypad, the choice list, plus and minus keys that repeat while
- * held, and a warning page whose button is held UI_HOLD_S.
+ * held, the keyboard for a name, and a warning page whose button is held
+ * UI_HOLD_S.
  *
- * Five tabs.  SERVO: channel, port, read, backup, restore, the write
- * switch and the write.  TUNE, PULSE and FAILSAFE: the editable fields.
+ * Five tabs.  SERVO: channel, port, read, the servo files on the card,
+ * restore, the write switch and the write.  TUNE, PULSE and FAILSAFE: the editable fields.
  * LOCKED: the fields that are shown and never written by an edit.
  *
  * The overlay stays open while the port holds a channel: PWM and
@@ -17,7 +18,7 @@
  * way back first.
  *
  * The panel's control task owns the link.  It hands this a feed every frame
- * and takes the commands; the file goes to the card through the caller.
+ * and takes the commands; the files go to the card through the caller.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,6 +32,7 @@
 #include "kst_prog.h"
 #include "touch_types.h"
 #include "ui_keypad.h"
+#include "ui_textkey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,6 +86,10 @@ uint32_t kst_panel_hold_revision(void);
 
 void kst_panel_feed(const kst_prog_feed_t *f);
 bool kst_panel_take(kst_prog_cmd_t *out);
+/** The servo files: a request for the task that has the card, and what it
+ *  made of it (kst_card_run()). */
+bool kst_panel_card_take(kst_prog_card_req_t *out);
+void kst_panel_card_done(const kst_prog_card_done_t *done);
 size_t kst_panel_file_take(char *out, size_t n);
 void kst_panel_file_done(bool ok);
 bool kst_panel_file_load(const char *text, size_t len);
@@ -112,8 +118,10 @@ gfx_rect_t kst_panel_choice_cancel_rect(void);
 gfx_rect_t kst_panel_apply_rect(void);
 gfx_rect_t kst_panel_cancel_rect(void);
 ui_keypad_t *kst_panel_keypad(void);
+ui_textkey_t *kst_panel_textkey(void);
 
-/** What is open over the page: 0 none, 1 keypad, 2 choice list, 3 warning. */
+/** What is open over the page: 0 none, 1 keypad, 2 choice list, 3 warning,
+ *  4 the keyboard for a file's name. */
 int kst_panel_editor(void);
 
 /** The tab shown: 0 SERVO, 1 TUNE, 2 PULSE, 3 FAILSAFE, 4 LOCKED. */
@@ -122,7 +130,11 @@ int kst_panel_page(void);
 /** Line @p i of the open warning page, entry @p i of the open list; NULL
  *  past the last and while none is open. */
 const char *kst_panel_warning_line(int i);
+/** The label of the row at @p page, @p row, @p col as it is drawn now. */
+const char *kst_panel_label(int page, int row, int col);
 const char *kst_panel_choice_label(int i);
+/** The open list's title; NULL while none is open. */
+const char *kst_panel_choice_title(void);
 
 #ifdef __cplusplus
 }

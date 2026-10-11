@@ -2539,8 +2539,8 @@ static void log_note(const char *line)
 }
 
 /*
- * The programmer's file, KST.TXT in the card's root: the stored backup and
- * the record of a write under way (kst_prog.h).  The render loop fills
+ * The programmer's file, KST.TXT in the card's root: the record of a write
+ * under way with the servo's values before it (kst_prog.h).  The render loop fills
  * s_kst_file and counts s_kst_file_sent up; this task writes it, says in
  * s_kst_file_ok whether the card took it whole, and counts
  * s_kst_file_done up.  One file at a time: the render loop fills the
@@ -2609,7 +2609,7 @@ static bool kst_file_read(const char *path, size_t *len)
  * The file as the card holds it, once, before the tasks start.  A whole
  * KST.NEW is the text of a write that did not reach its name: it is used
  * and takes the name.  One that is not whole is removed.  No file is no
- * backup; a KST.TXT that does not read or does not parse is said on the
+ * record; a KST.TXT that does not read or does not parse is said on the
  * programmer's page and not used.
  */
 static void kst_file_load(void)
@@ -7362,6 +7362,21 @@ static void kst_ui_service(void)
         }
     }
 
+    /* The servo files (kst_prog.h).  This image has no card side that
+     * reads or writes them: a save is answered as a card write error, a
+     * list and a load as a card that does not read.  A session's first
+     * write waits for its file, so no write to a servo starts. */
+    static kst_prog_card_req_t  creq;
+    static kst_prog_card_done_t cdone;
+    if (kst_panel_card_take(&creq)) {
+        memset(&cdone, 0, sizeof(cdone));
+        cdone.id     = creq.id;
+        cdone.result = creq.op == KST_PROG_CARD_SAVE
+                           ? KST_PROG_CARD_WRITE_ERR
+                           : KST_PROG_CARD_READ_ERR;
+        kst_panel_card_done(&cdone);
+    }
+
     if (file_out) {
         if (atomic_load(&s_kst_file_done) != atomic_load(&s_kst_file_sent)) {
             return;
@@ -7801,8 +7816,8 @@ void app_main(void)
      * levels before that task exists. */
     supply_screen_settings_loaded();
     publish_supply_levels();
-    /* The servo programmer's stored backup, and the record of a write
-     * that a restart cut short. */
+    /* The servo programmer's record of a write that a restart cut
+     * short. */
     kst_file_load();
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
