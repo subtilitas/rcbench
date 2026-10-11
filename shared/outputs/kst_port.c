@@ -329,6 +329,11 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
     if (state == LINK_KST_PROGRAMMING && port != p->port) {
         return LINK_KST_REF_PORT;
     }
+    /* From PWM the port has to be one with a servo on a pin: the supply is
+     * not cycled for a port that has none. */
+    if (state == LINK_KST_PWM && p->hw.pin(p->hw.ctx, port) > OUT_MAX_PIN) {
+        return LINK_KST_REF_NO_PIN;
+    }
     if (!supply_view(p, &v) || !v.asked_on) {
         return LINK_KST_REF_NO_SUPPLY;
     }

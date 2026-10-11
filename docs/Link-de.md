@@ -874,7 +874,7 @@ Versorgung hat nicht rechtzeitig geschaltet.
 | PLAN_R00 | 13 | das Ziel in Servoregister 0x00 abweicht |
 | PLAN_PAIRING | 14 | ein WRITE in Servoregister 0x1D abweicht |
 | PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält |
-| NO_PIN | 16 | der Port keinen Pin hält (seit 4.13) |
+| NO_PIN | 16 | der Port keinen Pin hält, bei einem ENTER und bei einem REBOOT in PWM (seit 4.13) |
 | SUPPLY_RANGE | 17 | die bereitgestellte Versorgungsspannung oder der Strom außerhalb dessen liegt, was ENTER nimmt (seit 4.13) |
 | NO_SUPPLY | 18 | ein REBOOT, bei dem kein PD mini antwortet oder der PD mini aus angefordert ist (seit 4.13) |
 

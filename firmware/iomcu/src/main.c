@@ -445,7 +445,12 @@ static uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
 {
     (void)ctx;
-    return kst_port_write(&s_kst, off, n, in, s_now_ms);
+    const uint8_t nack = kst_port_write(&s_kst, off, n, in, s_now_ms);
+
+    /* A command that takes the port out of PWM holds the SUPPLY page from
+     * this frame on: a SUPPLY write queued behind it is judged held. */
+    supply_page_hold(&s_supply, kst_port_state(&s_kst) != LINK_KST_PWM);
+    return nack;
 }
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)

@@ -1984,6 +1984,18 @@ TEST_CASE(a_reboot_from_pwm_cycles_the_supply_and_leaves_the_pin)
     CHECK_EQ(kst_port_quiet_mask(&g_port), 1u << OTHER);
     settle();
     CHECK_EQ(result(), KST_SES_OK);
+
+    /* A port without a bound pin: the supply is left alone. */
+    fresh_at(0u, SUPPLY_ON);
+    g_hw.pin[CH] = 0xFFu;
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NO_PIN);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.offs, 0);
+    g_hw.pin[CH] = OUT_MAX_PIN + 1u;
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NO_PIN);
+    CHECK_EQ(g_hw.offs, 0);
 }
 
 TEST_CASE(a_reboot_from_programming_waits_for_the_frame)

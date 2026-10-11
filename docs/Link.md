@@ -797,7 +797,7 @@ switch in time.
 | PLAN_R00 | 13 | the target differs in servo register 0x00 |
 | PLAN_PAIRING | 14 | a WRITE differs in servo register 0x1D |
 | PLAN_NO_PATH | 15 | no order of writes keeps every image in between valid |
-| NO_PIN | 16 | the port holds no pin (since 4.13) |
+| NO_PIN | 16 | the port holds no pin, for an ENTER and for a REBOOT in PWM (since 4.13) |
 | SUPPLY_RANGE | 17 | the staged supply voltage or current is outside what ENTER takes (since 4.13) |
 | NO_SUPPLY | 18 | a REBOOT with no PD mini answering or the PD mini asked off (since 4.13) |
 
