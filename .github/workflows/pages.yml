@@ -1,0 +1,71 @@
+name: Configurator
+
+# Checks the bench configurator under configurator/: type check, test suite,
+# static checks on the data file against the tree at the release tag, and
+# the coverage figure in configurator/core/README.md.
+#
+# The job builds nothing and publishes nothing.
+
+on:
+  pull_request:
+    paths:
+      - 'configurator/**'
+      - '.github/workflows/pages.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'configurator/**'
+      - '.github/workflows/pages.yml'
+
+concurrency:
+  group: configurator-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Configurator core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: configurator/core
+    steps:
+      # The data file anchors every fact to a file and line at a release tag.
+      # The check reads those files from git, so the clone holds the full
+      # history and the tags.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # configurator/core has no dependency and no lock file.  The compiler
+      # and the Node.js type declarations go into the runner's temporary
+      # folder at pinned versions.
+      - name: Install the type checker
+        run: >
+          npm install --no-save --no-package-lock --no-audit --no-fund
+          --prefix "$RUNNER_TEMP/tsc"
+          typescript@7.0.2 @types/node@24.19.2
+
+      - name: Type check
+        run: >
+          "$RUNNER_TEMP/tsc/node_modules/.bin/tsc" --noEmit -p tsconfig.json
+          --typeRoots "$RUNNER_TEMP/tsc/node_modules/@types" --types node
+
+      - name: Test suite
+        run: npm test
+
+      # --strict fails when git or the release tag is absent, so the anchors
+      # are always read.
+      - name: Check the data file
+        run: npm run check -- --strict
+
+      - name: Check the coverage figure
+        run: npm run coverage -- --check
