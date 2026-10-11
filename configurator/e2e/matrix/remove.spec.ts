@@ -121,7 +121,7 @@ for (const setup of SETUPS) {
       await control.click();
       await expect(page.locator(SEL.question)).toBeVisible();
       await page.reload();
-      await page.locator(SEL.drawing).waitFor();
+      await page.locator(SEL.picture).waitFor();
       await expect(page.locator(SEL.question)).toHaveCount(0);
       expect(stateOf(await expectSetup(page, selection))).toEqual(stateOf(before));
 

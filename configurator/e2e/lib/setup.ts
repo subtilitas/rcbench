@@ -9,8 +9,15 @@ import { formatHash } from '../../src/hash.ts';
 
 /** The selectors of the page the tests share. A change of the markup is made here once. */
 export const SEL = {
+  /** The wiring picture: the view the page opens on. */
+  picture: 'svg.picture',
+  /** The schematic: the view behind `SEL.view('sch')`. */
   drawing: 'svg.drawing',
   wire: 'svg.drawing path.w:not(.x)',
+  /** A wire of the wiring picture: 1 group per wire. */
+  pictureWire: 'svg.picture g.dw',
+  /** The box of the wiring picture. */
+  dia: '#dia',
   row: 'table.wires tbody tr',
   rowNumber: 'table.wires tbody tr td.n b',
   part: '.parts li',
@@ -34,6 +41,7 @@ export const SEL = {
   question: '#rmwarn',
   yes: '#rm-yes',
   no: '#rm-no',
+  view: (id: 'pic' | 'sch'): string => `#v-${id}`,
   fn: (id: string): string => `#f-${id}`,
   owned: (id: string): string => `#p-${id}`,
   remove: (id: string): string => `#rm-${id}`,
@@ -66,13 +74,21 @@ export function hashOf(selection: Selection, lang?: Lang): string {
 }
 
 /**
- * Loads the page with a hash and waits for the drawing. A navigation that
- * changes the hash alone does not load the page, so the page starts from blank.
+ * Loads the page with a hash and waits for the wiring picture, the view the page opens on.
+ * A navigation that changes the hash alone does not load the page, so the page starts from blank.
  */
 export async function openHash(page: Page, hash: string): Promise<void> {
   await page.goto('about:blank');
   await page.goto(`./${hash}`);
+  await page.locator(SEL.picture).waitFor();
+}
+
+/** Switches from the wiring picture to the schematic and waits for it. */
+export async function showSchematic(page: Page): Promise<void> {
+  await page.locator(SEL.view('sch')).click();
+  await expect(page.locator(SEL.view('sch'))).toHaveAttribute('aria-pressed', 'true');
   await page.locator(SEL.drawing).waitFor();
+  await expect(page.locator(SEL.picture)).toBeHidden();
 }
 
 /** Loads the page with a selection. */

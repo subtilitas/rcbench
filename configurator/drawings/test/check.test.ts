@@ -522,6 +522,41 @@ test('an id is a prefix and parts of letters and digits: a space, an empty id or
   }
 });
 
+test('the label of a pin has the form the generator writes: an attribute that hides or restyles it is a finding', () => {
+  const rec = anchors().files['servo.svg']!;
+  const en = good.svgs['servo.svg']!;
+  const id = rec.pins['SIG']!.labelId;
+  const tag = new RegExp(`<text id="${id}"[^>]*>`).exec(en)![0];
+  const form = (svg: string): string[] => checkRecord('servo.svg', rec, { en: svg }).map((f) => f.msg);
+  assert.deepEqual(form(en), []);
+  const put = (extra: string): string => en.replace(tag, tag.replace(/>$/, ` ${extra}>`));
+  const set = (name: string, value: string): string => en.replace(tag, tag.replace(new RegExp(` ${name}="[^"]*"`), ` ${name}="${value}"`));
+  // The text stays, the label is not visible.
+  for (const extra of ['opacity="0"', 'opacity="1"', 'fill-opacity="0"', 'filter="url(#srv-sh)"', 'stroke="#ffffff"', 'visibility="hidden"', 'display="none"', 'style="display:none"']) {
+    const name = extra.slice(0, extra.indexOf('='));
+    assert.deepEqual(form(put(extra)), [`servo.svg: label of pin SIG carries the attribute ${name}`], extra);
+  }
+  assert.deepEqual(form(set('fill', 'none')), ['servo.svg: label of pin SIG has the fill "none", not a colour of 6 hex digits']);
+  assert.deepEqual(form(set('fill', 'transparent')), ['servo.svg: label of pin SIG has the fill "transparent", not a colour of 6 hex digits']);
+  assert.deepEqual(form(set('fill', '#ffffff00')), ['servo.svg: label of pin SIG has the fill "#ffffff00", not a colour of 6 hex digits']);
+  assert.deepEqual(form(set('font-size', '0')), ['servo.svg: label of pin SIG has the font size "0"']);
+  assert.deepEqual(form(set('font-size', '-3')), ['servo.svg: label of pin SIG has the font size "-3"']);
+  assert.deepEqual(form(set('text-anchor', 'inherit')), ['servo.svg: label of pin SIG has the text anchor "inherit"']);
+  assert.deepEqual(form(put('transform="scale(0)"')), ['servo.svg: label of pin SIG has the transform "scale(0)", not a rotation']);
+  assert.deepEqual(form(put('transform="rotate(-90 12.5 40)"')), []);
+  assert.deepEqual(form(put('letter-spacing="1"')), []);
+  // Every label of every committed file has the form, in both languages.
+  let n = 0;
+  for (const [file, r] of Object.entries(anchors().files)) {
+    for (const lang of ['en', 'de'] as const) {
+      const svg = good.svgs[lang === 'en' ? file : `de/${file}`]!;
+      assert.deepEqual(checkRecord(file, r, { [lang]: svg }), [], `${file} ${lang}`);
+      n += Object.keys(r.pins).length;
+    }
+  }
+  assert.equal(n, 2 * 177);
+});
+
 test('a pin of a drawing is the target of 1 pin of the data file: a shared or repeated target is a finding', () => {
   assert.deepEqual(checkPins(CATALOGUE, anchors()).filter((f) => f.id === 'map'), []);
   // C1B on the pad of C1A: wire 30 would end on the pad of wires 28 and 29.

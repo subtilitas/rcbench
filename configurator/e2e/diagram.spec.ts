@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
 import { STRINGS } from '../src/i18n.ts';
+import { pageOrigin } from './lib/watch.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
@@ -24,9 +25,10 @@ type Watch = { foreign: string[]; errors: string[]; failed: string[]; drawings: 
 
 function watch(page: Page): Watch {
   const seen: Watch = { foreign: [], errors: [], failed: [], drawings: [] };
+  const origin = pageOrigin();
   page.on('request', (r) => {
     const url = new URL(r.url());
-    if (url.protocol !== 'data:' && url.origin !== 'http://localhost:4173') seen.foreign.push(r.url());
+    if (url.protocol !== 'data:' && url.origin !== origin) seen.foreign.push(r.url());
   });
   page.on('response', (r) => {
     const path = new URL(r.url()).pathname;
@@ -114,18 +116,26 @@ for (const size of SIZES) {
           }
           await expect(page.locator('#dia-hint')).toContainText(STRINGS.diaUndrawn[col].replace('{n}', '31'));
 
-          // Load wires are 7 px wide, the others 3 px, and the legend names both widths and both supply colours.
+          // Load wires are 7 px wide, the others 3 px. A USB-C cable is a sheath of 7 px around a core of 3 px.
+          // The legend names both widths, the cable and both supply colours.
           const widths = await page.locator('svg.picture g.dw').evaluateAll((els) => els.map((el) => ({
             thick: el.classList.contains('thick'),
             px: getComputedStyle(el.querySelector('path.core')!).strokeWidth,
             part: el.classList.contains('k-component'),
+            cable: el.classList.contains('cable'),
+            sheath: el.querySelector('path.sheath') ? getComputedStyle(el.querySelector('path.sheath')!).strokeWidth : '',
+            n: el.getAttribute('data-wire'),
           })));
           expect(widths.filter((w) => w.thick).length).toBeGreaterThanOrEqual(6);
-          for (const w of widths) expect(w.px).toBe(w.part ? '2px' : w.thick ? '7px' : '3px');
+          for (const w of widths) expect(w.px, `wire ${w.n}`).toBe(w.part ? '2px' : w.thick && !w.cable ? '7px' : '3px');
+          // Wires 19 and 63 are the cables charger to T-plug and T-plug to PD mini.
+          expect(widths.filter((w) => w.cable).map((w) => [w.n, w.sheath])).toEqual([['19', '7px'], ['63', '7px']]);
+          expect(widths.filter((w) => !w.cable).map((w) => w.sheath).join('')).toBe('');
           const items = page.locator('#dia-legend li');
-          await expect(items).toHaveCount(4);
+          await expect(items).toHaveCount(5);
           await expect(items.nth(0)).toHaveText(STRINGS.dlPower[col]);
-          await expect(items.nth(1)).toHaveText(STRINGS.dlSignal[col]);
+          await expect(items.nth(1)).toHaveText(STRINGS.dlCable[col]);
+          await expect(items.nth(2)).toHaveText(STRINGS.dlSignal[col]);
           expect(await items.locator('svg path').evaluateAll((els) => els.map((el) => el.getAttribute('stroke-width')))).toContain('7');
 
           // The colours of the page follow the theme.

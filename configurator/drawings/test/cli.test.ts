@@ -70,11 +70,22 @@ test('writing and reading round-trips, and a file the generator does not write i
     writeFileSync(join(t.svg, 'de', 'archive', 'old.svg'), '<svg/>');
     writeFileSync(join(t.svg, 'de', 'archive', 'deep', 'old.svg'), '<svg/>');
     writeFileSync(join(t.svg, 'keep.txt'), 'x');
-    assert.deepEqual(Object.keys(readSvgs(t.svg)).sort(), ['de/archive/deep/old.svg', 'de/archive/old.svg', 'de/old.svg', 'old.svg']);
+    // The extension in upper and mixed case is an SVG file too: the page build copies it like the others.
+    writeFileSync(join(t.svg, 'upper.SVG'), '<svg/>');
+    writeFileSync(join(t.svg, 'de', 'mixed.Svg'), '<svg/>');
+    assert.deepEqual(Object.keys(readSvgs(t.svg)).sort(), ['de/archive/deep/old.svg', 'de/archive/old.svg', 'de/mixed.Svg', 'de/old.svg', 'old.svg', 'upper.SVG']);
     const extra = checkDrift(good, readFiles(t.svg, t.anchors)).map((x) => x.msg);
     assert.ok(extra.some((m) => m.startsWith('de/archive/old.svg')), extra.join('; '));
     assert.ok(extra.some((m) => m.startsWith('de/archive/deep/old.svg')));
+    assert.ok(extra.some((m) => m.startsWith('upper.SVG is not a drawing of the generator')), extra.join('; '));
+    assert.ok(extra.some((m) => m.startsWith('de/mixed.Svg is not a drawing of the generator')));
+    // A name that only ends in the letters is no SVG file.
+    writeFileSync(join(t.svg, 'notsvg'), 'x');
+    assert.ok(!('notsvg' in readSvgs(t.svg)));
     assert.equal(writeFiles(good, t.svg, t.anchors), 47);
+    assert.ok(!existsSync(join(t.svg, 'upper.SVG')));
+    assert.ok(!existsSync(join(t.svg, 'de', 'mixed.Svg')));
+    assert.ok(existsSync(join(t.svg, 'notsvg')));
     assert.deepEqual(readFiles(t.svg, t.anchors), good);
     assert.ok(!existsSync(join(t.svg, 'old.svg')));
     assert.ok(!existsSync(join(t.svg, 'de', 'old.svg')));

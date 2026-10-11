@@ -104,7 +104,7 @@ pin carries its print and no anchor.
 | `neighbour` | 2 wires that end on neighbouring pins of 1 drawing share a colour. 2 plus wires and 2 minus wires are exempt. |
 | `anchor` | An anchor lies outside its viewBox, has no side, or its label text is missing, empty, doubled or different in the SVG file. |
 | `svg` | A file is missing, not well formed, not self-contained, has no `svg` root in the SVG namespace, uses a namespace prefix other than `xml`, carries an element or an attribute outside the 14 elements and 43 attributes the generator writes, or lacks title, description, viewBox, language or the id prefix. The root element carries 10 attributes and no other: `width` and `height` are the px of the viewBox, `role` is `img`, `font-family` is the whole stack of the generator. No other element states a font, a language, a role or a viewBox. An id is a prefix of lower-case letters and digits and 1 or more parts of letters and digits, joined by hyphens. A reference is written `url(#id)`. Title and description are the first 2 children of the root. |
-| `drift` | A committed file differs from the output of the generator, is missing, or is not a file of the generator. |
+| `drift` | A committed file differs from the output of the generator, is missing, or is not a file of the generator. A file counts with the extension `.svg` in any case. |
 
 The generator stops with an error, and the check with it, when:
 

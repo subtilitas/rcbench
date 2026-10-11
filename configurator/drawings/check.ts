@@ -217,7 +217,30 @@ export function checkSvg(where: string, raw: string, rec: DrawingRecord, lang?: 
   return out;
 }
 
-/** Anchors of one drawing against its 2 files: inside the viewBox, a side, exactly 1 label text per language. */
+/**
+ * The attributes of the label of a pin, as `Dwg.text` writes them. A label carries no other: `opacity`,
+ * `filter` and `stroke` are attributes of the drawing that would hide or restyle the text.
+ */
+export const LABEL_ATTRIBUTES: ReadonlyArray<string> = ['id', 'x', 'y', 'font-size', 'font-weight', 'fill', 'text-anchor', 'letter-spacing', 'transform'];
+
+/** Findings on the attributes of 1 label element: only those of the list, a size above 0, a colour as fill, a rotation as transform. */
+function labelForm(tag: string): string[] {
+  const out: string[] = [];
+  const seen = new Map<string, string>();
+  for (const m of tag.matchAll(/\s([^\s=]+)\s*=\s*"([^"]*)"/g)) {
+    if (!LABEL_ATTRIBUTES.includes(m[1]!)) out.push(`carries the attribute ${m[1]}`);
+    seen.set(m[1]!, m[2]!);
+  }
+  const size = Number(seen.get('font-size'));
+  if (!(size > 0)) out.push(`has the font size "${seen.get('font-size') ?? ''}"`);
+  if (!/^#[0-9a-f]{6}$/i.test(seen.get('fill') ?? '')) out.push(`has the fill "${seen.get('fill') ?? ''}", not a colour of 6 hex digits`);
+  if (!['start', 'middle', 'end'].includes(seen.get('text-anchor') ?? '')) out.push(`has the text anchor "${seen.get('text-anchor') ?? ''}"`);
+  const turn = seen.get('transform');
+  if (turn !== undefined && !/^rotate\(-?[\d.]+ -?[\d.]+ -?[\d.]+\)$/.test(turn)) out.push(`has the transform "${turn}", not a rotation`);
+  return out;
+}
+
+/** Anchors of one drawing against its 2 files: inside the viewBox, a side, exactly 1 label text per language in the form the generator writes. */
 export function checkRecord(file: string, rec: DrawingRecord, svgs: Partial<Record<Lang, string>>): Finding[] {
   const out: Finding[] = [];
   const fail = (msg: string): void => { out.push({ id: 'anchor', msg }); };
@@ -241,6 +264,7 @@ export function checkRecord(file: string, rec: DrawingRecord, svgs: Partial<Reco
       const where = pathOf(file, lang);
       const found = [...svg.matchAll(/<text id="([^"]+)"[^>]*>([^<]*)<\/text>/g)].filter((m) => m[1] === a.labelId);
       if (found.length !== 1) { fail(`${where}: pin ${id} has ${found.length} label texts, 1 expected`); continue; }
+      for (const msg of labelForm(found[0]![0]!.slice(0, found[0]![0]!.indexOf('>')))) fail(`${where}: label of pin ${id} ${msg}`);
       const text = unescape(found[0]![2]!);
       if (text.trim() === '') fail(`${where}: label of pin ${id} is empty`);
       if (text !== a.label[lang]) fail(`${where}: label of pin ${id} is "${text}", anchors.json has "${a.label[lang]}"`);

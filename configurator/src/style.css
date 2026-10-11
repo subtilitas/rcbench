@@ -171,7 +171,9 @@ button.seg[aria-pressed="true"] { background: var(--accent); color: var(--on-acc
 .dia .ct { font-size: 10px; font-weight: 600; fill: var(--ink); }
 .dia .nb { fill: var(--surface); stroke-width: 1.5; }
 .dia .nt { font-size: 9px; font-weight: 700; text-anchor: middle; fill: var(--ink); }
-.dia .dw { cursor: pointer; outline: none; transition: opacity .15s; }
+/* A wire with the keyboard focus carries the focus outline of the page around its box. */
+.dia .dw { cursor: pointer; transition: opacity .15s; }
+.dia .dw:focus:not(:focus-visible) { outline: none; }
 .dia .has-on .dw { opacity: .25; }
 .dia .has-on .dw.on { opacity: 1; }
 .dia .dw.on .core { stroke-width: 6; }
