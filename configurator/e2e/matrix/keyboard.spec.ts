@@ -26,9 +26,11 @@ for (const setup of SETUPS) {
     expect(ids.filter((what) => what === 'g').length).toBe(await page.locator(SEL.pictureWire).count() > 0 ? 1 : 0);
     // Both languages are buttons with a name.
     expect(walk.stops.filter((s) => s.region === 'header' && s.role === 'button').length).toBe(2);
-    // The chooser comes before the result, the bar of the phone layout after both.
+    // The chooser comes before the result, the footer with the link to the trademark notice ends the result,
+    // the bar of the phone layout comes last.
     const regions = [...new Set(walk.stops.map((s) => s.region))];
-    expect(regions).toEqual(cellOf(info).phone ? ['header', 'choose', 'result', 'bar'] : ['header', 'choose', 'result']);
+    expect(regions).toEqual(cellOf(info).phone ? ['header', 'choose', 'result', 'footer', 'bar'] : ['header', 'choose', 'result', 'footer']);
+    expect(ids, 'the link to the trademark notice is no stop').toContain(`a${SEL.noticeLink}`);
   });
 
   test(`${name}: the section of owned parts opens by keyboard and its rows take the focus`, async ({ page }) => {
@@ -42,8 +44,7 @@ for (const setup of SETUPS) {
     for (const id of OWNED) expect(ids, `the row of ${id} is no stop`).toContain(`input${SEL.owned(id)}`);
   });
 
-  test(`${name}: no control is hidden under the bottom bar while it has the focus`, async ({ page }, info) => {
-    test.fixme(cellOf(info).phone, 'At 360 x 740 px the Tab key puts the focus on a control that lies entirely under the fixed bottom bar: the page sets no scroll-padding-bottom.');
+  test(`${name}: no control is hidden under the bottom bar while it has the focus`, async ({ page }) => {
     await openCase(page, setup);
     expect(hiddenStops(await keyboardWalk(page))).toEqual([]);
     await page.locator(SEL.ownSummary).click();
@@ -51,3 +52,30 @@ for (const setup of SETUPS) {
     expect(hiddenStops(await keyboardWalk(page))).toEqual([]);
   });
 }
+
+// A large text size wraps the labels of the bar and the bar grows. The free space follows its rendered height.
+test('largest: no control is hidden under a bottom bar of 3 times its height', async ({ page }, info) => {
+  const setup = SETUPS.find((s) => s.name === 'largest');
+  if (!setup) throw new Error('no setup "largest"');
+  await openCase(page, setup);
+  await page.addStyleTag({ content: '.bar a { min-height: 168px; }' });
+  const { phone } = cellOf(info);
+  if (phone) {
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingBottom)).toBe('185px');
+    expect(await page.evaluate(() => getComputedStyle(document.body).paddingBottom)).toBe('185px');
+  } else {
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingBottom)).toBe('0px');
+  }
+  const walk = await keyboardWalk(page);
+  expect(hiddenStops(walk)).toEqual([]);
+  if (phone) {
+    // The link to the trademark notice ends the document: it lies above the bar while it has the focus.
+    await page.locator(SEL.noticeLink).focus();
+    const gap = await page.evaluate((sel) => {
+      const link = document.querySelector(sel.link)?.getBoundingClientRect();
+      const bar = document.querySelector(sel.bar)?.getBoundingClientRect();
+      return link && bar ? bar.top - link.bottom : -1;
+    }, { link: SEL.noticeLink, bar: SEL.bar });
+    expect(gap).toBeGreaterThanOrEqual(0);
+  }
+});

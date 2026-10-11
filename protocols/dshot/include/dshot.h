@@ -2,9 +2,9 @@
  * DShot: sixteen bits per frame to an ESC (electronic speed controller), and
  * the GCR (group-coded recording) burst that comes back.
  *
- * Implements the DShot protocol of ESCs.  DShot is a name or trademark of
- * its owner; it is used here only to say which ESCs this module works with
- * (NOTICE, "Trademarks").
+ * Implements the DShot protocol of ESCs.  DShot is the name of a protocol; it
+ * is used here only to say which ESCs this module works with.  The project
+ * claims no right in the name (NOTICE, "Trademarks").
  *
  * A frame is eleven bits of value, one bit asking for telemetry and four bits
  * of checksum, sent most significant bit first.  There is no start bit, no
