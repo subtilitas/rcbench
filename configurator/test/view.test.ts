@@ -23,7 +23,7 @@ function order(v: View): string {
 }
 
 const short = (id: string, lang: Lang): string => CATALOGUE.parts.find((p) => p.id === id)!.short[lang];
-const hint = (v: View, id: string): string => lockHint(v.setup.parts.find((p) => p.part.id === id)!, v.lang);
+const hint = (v: View, id: string): string => lockHint(v.setup.parts.find((p) => p.part.id === id)!, v.lang, CATALOGUE);
 
 test('a drawn part with pins and no wire is named in the build order', () => {
   for (const lang of ['en', 'de'] as Lang[]) {

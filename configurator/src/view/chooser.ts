@@ -1,7 +1,7 @@
 // The chooser: function ticks, variants, owned parts, and the static list of
 // what is in no release. Returns markup; main.ts owns the document.
 
-import type { Catalogue, Fn, Lang, OptionKey, Options, ResolvedPart, Selection, Setup } from '../../contract.ts';
+import type { Catalogue, Cond, Fn, Lang, OptionKey, Options, ResolvedPart, Selection, Setup } from '../../contract.ts';
 import { esc, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 
@@ -105,11 +105,29 @@ function variantGroups(view: View): string {
   return h;
 }
 
+/** True when a condition reads a variant. */
+function readsOption(c: Cond | null): boolean {
+  if (c === null) return false;
+  if ('opt' in c) return true;
+  if ('not' in c) return readsOption(c.not);
+  if ('all' in c) return c.all.some(readsOption);
+  if ('any' in c) return c.any.some(readsOption);
+  return false;
+}
+
 const LOCK: Array<['function' | 'option' | 'rule', Key]> = [['function', 'lockFn'], ['option', 'lockOpt'], ['rule', 'lockRule']];
 
-/** How a locked part leaves the setup: one sentence per kind of reason that holds it. */
-export function lockHint(part: ResolvedPart, lang: Lang): string {
-  return LOCK.filter(([kind]) => part.addedBy.some((r) => r.kind === kind)).map(([, key]) => t(lang, key)).join(' ');
+/**
+ * How a locked part leaves the setup: one sentence per kind of reason that
+ * holds it. A rule whose condition reads a variant counts as that variant.
+ */
+export function lockHint(part: ResolvedPart, lang: Lang, catalogue: Catalogue): string {
+  const kinds = new Set(part.addedBy.map((r) => {
+    if (r.kind !== 'rule') return r.kind;
+    const rule = catalogue.rules.find((x) => x.id === r.id);
+    return rule && readsOption(rule.when) ? 'option' : 'rule';
+  }));
+  return LOCK.filter(([kind]) => kinds.has(kind)).map(([, key]) => t(lang, key)).join(' ');
 }
 
 function ownedRows(view: View): string {
@@ -120,7 +138,7 @@ function ownedRows(view: View): string {
     const r = setup.parts.find((x) => x.part.id === part.id);
     const locked = r !== undefined && r.derived && !r.ownedTick;
     const role = part.role ? tx(lang, part.role) : '';
-    const sub = locked && r ? `${reasonText(r, view)} ${lockHint(r, lang)}` : role;
+    const sub = locked && r ? `${reasonText(r, view)} ${lockHint(r, lang, catalogue)}` : role;
     h += `<label class="opt"${locked ? ' data-locked' : ''}><input type="checkbox" id="p-${esc(part.id)}" data-p="${esc(part.id)}"`
       + `${r ? ' checked' : ''}${locked ? ' aria-disabled="true"' : ''}>`
       + `<span><b>${esc(tx(lang, part.name))}</b></span><small>${esc(sub)}</small></label>`;

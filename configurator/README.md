@@ -17,8 +17,8 @@ between them.
 | Path | Content |
 |---|---|
 | `contract.ts` | Types shared by the core and the page. |
+| `core/` | Data file, resolver and checks. See `core/README.md`. |
 | `src/core.ts` | The one import seam to the core: catalogue, resolver, default options. |
-| `src/stub/core.ts` | Stand-in for the core with the same exports. Not part of a deployed page. |
 | `src/main.ts` | State, events, rendering. |
 | `src/hash.ts` | URL hash codec. |
 | `src/i18n.ts` | Chrome strings in English and German. |
@@ -81,10 +81,30 @@ option combinations and both languages. It fails when:
 - a module text is wider than its module,
 - a wire number names different ends in two selections.
 
+## Workflow
+
+`.github/workflows/pages.yml` runs on a pull request and on a push to `main`
+that touch `configurator/` or the workflow file.
+
+| Job | Does |
+|---|---|
+| `core` | Type check, tests, data check and coverage figure of `core/`. |
+| `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, build, size check. Keeps `dist/` as artifact `configurator-dist` for 14 days. |
+| `smoke` | Playwright against the artifact of `build`. |
+| `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the 3 other jobs pass. |
+
+The `deploy` job needs the repository setting "Pages source: GitHub Actions".
+
 ## Limits
 
 - The page draws 1 servo and 1 ESC (electronic speed controller).
 - Part cards show a hatched placeholder. The repository holds no part photos.
 - The drawing has no zoom control. Below 1024 px width it scrolls sideways in its box.
+- 11 wires use a lane that differs from the `route` in the data file: wires 10,
+  14, 21, 22, 28, 29, 30, 45, 46, 47 and 51. The table is `GEO.laneFix` in
+  `src/draw/layout.ts`. With the lanes of the data file, wires of different
+  nets share a line or a pill covers a wire of another pin. A lane changed in
+  the data file for one of these wires has no effect on the drawing.
+- The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Print output: not checked on paper.
