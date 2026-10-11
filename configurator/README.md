@@ -212,7 +212,7 @@ wire point of `drawings/anchors.json`.
 | Parallel wires | Side by side in lanes, 5 px clear between the edges of 2 wires. |
 | Crossing | At a right angle. 2 wires of different numbers share no segment. |
 | Width | 7 px for a wire that carries load current, 3 px for every other wire, 2 px for a lead of a component. |
-| Load current | A wire of class `power` in the data file: 18 of 58 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
+| Load current | A wire of class `power` in the data file: 23 of 63 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
 | Colour | Supply plus red, supply minus black with a light casing, signals in the other colours of `drawings/wires.ts`. No signal is red or black. |
 | Wire number | In a chip at both ends of the wire. |
 | Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |
