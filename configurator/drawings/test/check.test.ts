@@ -138,6 +138,13 @@ test('the map of the INA3221 covers the catalogue pins in both directions', () =
   const ina = c.parts.find((p) => p.id === 'ina3221')!;
   ina.pins.push({ ...ina.pins[0]!, id: 'NEW' });
   has(checkPins(c, anchors()), 'pin-without-anchor', /ina3221\.svg: catalogue pin NEW is not in catalogueMap/);
+  // An empty list is no mapping; null is the marker of a pin without wire point.
+  const e = anchors();
+  const pinId = Object.keys(e.files['ina3221.svg']!.catalogueMap!)[0]!;
+  e.files['ina3221.svg']!.catalogueMap![pinId] = [];
+  has(checkPins(CATALOGUE, e), 'pin-without-anchor', new RegExp(`ina3221\\.svg: catalogue pin ${pinId.replace(/[+]/g, '\\+')} maps to no pin of the drawing`));
+  e.files['ina3221.svg']!.catalogueMap![pinId] = null;
+  assert.deepEqual(checkPins(CATALOGUE, e).filter((x) => /maps to no pin/.test(x.msg)), []);
   const d = clone();
   const ina2 = d.parts.find((p) => p.id === 'ina3221')!;
   ina2.pins = ina2.pins.filter((p) => p.id !== 'LP');
@@ -340,6 +347,20 @@ test('an SVG that is not self-contained or lacks title, description or viewBox i
   has(f(add('<rect fill="URL(evil.png)"/>')), 'svg', /leaves the file/);
   has(f(add('<rect fill="Url( \'a.svg#b\')"/>')), 'svg', /leaves the file/);
   has(f(add('<rect fill="URL(#nothing)"/>')), 'svg', /reference to missing id nothing/);
+  // A numeric character reference hides no address.
+  has(f(add('<rect fill="u&#x72;l(other.svg#paint)"/>')), 'svg', /url\(other\.svg#paint\) leaves the file/);
+  has(f(add('<rect fill="&#117;&#114;&#108;(a.svg#b)"/>')), 'svg', /leaves the file/);
+  has(f(add('<use href="&#x6F;ther.svg#a"/>')), 'svg', /reference "other\.svg#a" leaves the file/);
+  has(f(add('<a href="java&#115;cript:1"/>')), 'svg', /data, script or import reference/);
+  has(f(add('<rect fill="url(&#x23;nothing)"/>')), 'svg', /reference to missing id nothing/);
+  assert.deepEqual(f(add('<text>&#x41;&#38;&#60;&#34;</text>')), []);
+  // No prefix but xml: the files declare no namespace prefix.
+  has(f(add('<foo:rect/>')), 'svg', /element prefix foo is bound to no namespace/);
+  has(f(add('<g></g><svg:g></svg:g>')), 'svg', /element prefix svg is bound to no namespace/);
+  has(f(add('<g xlink:title="a"/>')), 'svg', /attribute prefix xlink is bound to no namespace/);
+  has(f(add('<g foo:bar="1"/>')), 'svg', /attribute prefix foo is bound to no namespace/);
+  has(f(svg.replace('<svg ', '<svg xmlns:foo="urn:x" ')), 'svg', /attribute prefix xmlns is bound to no namespace/);
+  assert.deepEqual(f(add('<g xml:space="preserve"/>')), []);
   // The font stack, the title and the description are stated on the root element.
   has(f(svg.replace(/ font-family="[^"]*"/, '')), 'svg', /root element does not state a font stack/);
   has(f(svg.replace(/ font-family="[^"]*"/, '').replace('</svg>', '<g font-family="system-ui, sans-serif"/></svg>')), 'svg', /root element does not state a font stack/);

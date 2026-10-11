@@ -32,6 +32,17 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Elements that run code, load a file or carry a style sheet, by local name. */
 const ACTIVE = new Set(['image', 'foreignobject', 'iframe', 'object', 'embed', 'audio', 'video', 'link', 'style']);
 
+/**
+ * The text with its numeric character references written out, so a reference
+ * hides no address. A reference to a markup character stays as it is.
+ */
+const decoded = (s: string): string => s.replace(/&#(x[0-9a-fA-F]+|\d+);/g, (ref, body: string) => {
+  const cp = body.startsWith('x') ? Number.parseInt(body.slice(1), 16) : Number.parseInt(body, 10);
+  if (!xmlChar(cp)) return ref;
+  const ch = String.fromCodePoint(cp);
+  return '"<>&'.includes(ch) ? ref : ch;
+});
+
 const unescape = (s: string): string =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 
@@ -87,11 +98,18 @@ export function malformed(svg: string): string | null {
  * One SVG file: self-contained, well formed, an `svg` root in the SVG namespace,
  * ids prefixed, title, description, viewBox, font, and the language when given.
  */
-export function checkSvg(where: string, svg: string, rec: DrawingRecord, lang?: Lang): Finding[] {
+export function checkSvg(where: string, raw: string, rec: DrawingRecord, lang?: Lang): Finding[] {
   const out: Finding[] = [];
   const fail = (msg: string): void => { out.push({ id: 'svg', msg: `${where}: ${msg}` }); };
-  const bad = malformed(svg);
+  const bad = malformed(raw);
   if (bad !== null) fail(`not well formed: ${bad}`);
+  // Every scan below reads the text a renderer sees: numeric references written out.
+  const svg = decoded(raw);
+  // The files bind no namespace prefix. `xml` is bound by XML itself.
+  for (const m of svg.matchAll(/<\/?([A-Za-z][\w.-]*):[\w.-]+/g)) fail(`element prefix ${m[1]} is bound to no namespace`);
+  for (const m of svg.matchAll(/\s([A-Za-z][\w.-]*):[\w.-]+="/g)) {
+    if (m[1] !== 'xml') fail(`attribute prefix ${m[1]} is bound to no namespace`);
+  }
   // An element counts by its local name: a namespace prefix does not hide it.
   const locals = new Set([...svg.matchAll(/<(?:[A-Za-z][\w.-]*:)?([A-Za-z][\w.-]*)(?=[\s/>])/g)].map((m) => m[1]!.toLowerCase()));
   if (locals.has('script')) fail('contains a script element');
@@ -200,7 +218,10 @@ export function checkPins(catalogue: Catalogue, anchors: Anchors): Finding[] {
     if (rec.catalogueMap) {
       for (const id of Object.keys(expected)) {
         if (!(id in rec.catalogueMap)) { fail('pin-without-anchor', `${file}: catalogue pin ${id} is not in catalogueMap`); continue; }
-        for (const n of rec.catalogueMap[id] ?? []) {
+        const to = rec.catalogueMap[id];
+        // null marks a pin without wire point. A list names at least 1 pin of the drawing.
+        if (to !== null && to !== undefined && to.length === 0) fail('pin-without-anchor', `${file}: catalogue pin ${id} maps to no pin of the drawing`);
+        for (const n of to ?? []) {
           if (!rec.pins[n]) fail('pin-without-anchor', `${file}: catalogue pin ${id} maps to ${n}, which has no anchor`);
         }
       }
