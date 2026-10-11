@@ -1,0 +1,10 @@
+{
+  "name": "rcbench-configurator-core",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node tools/check.ts",
+    "test": "node --test \"test/*.test.ts\"",
+    "coverage": "node tools/coverage.ts"
+  }
+}
