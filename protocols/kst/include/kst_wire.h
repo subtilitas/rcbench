@@ -1,6 +1,11 @@
 /*
  * KST servo programming protocol: frames and the reply decoder.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * The protocol runs half duplex on the servo's signal wire.  The line idles
  * low.  Bits are Manchester coded, most significant bit first: a 1 is a low
  * half-cell followed by a high half-cell, a 0 is high followed by low.  Every

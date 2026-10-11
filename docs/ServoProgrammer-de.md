@@ -14,6 +14,8 @@ KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench
 ist unabhängig: es ist mit ihnen nicht verbunden und wird von ihnen weder
 unterstützt noch gesponsert. Die Namen sagen, mit welchen Servos der
 Programmierer arbeitet.
+[Rechtliche Hinweise und Haftungsausschluss](../README-de.md#rechtliche-hinweise-und-haftungsausschluss)
+enthält den Hinweis des Projekts.
 
 **Kein Frame dieses Codes ist an ein Servo gesendet worden.** Der
 Programmierer ist nur in der Host-Suite gegen ein Servo- und Leitungsmodell
@@ -768,7 +770,7 @@ Warten, das ein KST-Servo braucht, ist nicht gemessen.
 | 30 s kein Ergebnis eines Vorgangs | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
-Zeile. [Die Link-Page](Link-de.md#der-kst-programmierport) listet die
+Zeile. [Die Link-Page](Link-de.md#der-programmierport-für-servos-von-kst-und-chaservo) listet die
 Codes.
 
 ## Einschränkungen

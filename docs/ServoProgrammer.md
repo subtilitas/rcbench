@@ -12,6 +12,8 @@ the top of the right card. **PROGRAM** ends a running automatic test as
 KST and Chaservo are names or trademarks of their respective owners. rcbench
 is independent: it is not affiliated with, endorsed by or sponsored by them.
 The names say which servos the programmer works with.
+[Legal notice and disclaimer](../README.md#legal-notice-and-disclaimer) holds
+the project's notice.
 
 **No frame of this code has been sent to a servo.** The programmer has run
 against a servo and line model in the host suite only. The register layout
@@ -719,7 +721,7 @@ measured.
 | No result of an operation for 30 s | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 
 Every refusal of the port and every result of the session has its own
-line. [The link page](Link.md#the-kst-programming-port) lists the codes.
+line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) lists the codes.
 
 ## Limitations
 

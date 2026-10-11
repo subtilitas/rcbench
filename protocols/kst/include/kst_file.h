@@ -1,6 +1,11 @@
 /*
  * KST servo programming protocol: a servo configuration as a text file.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * kst_file_format() writes the 32 registers of a servo as text a person
  * reads.  kst_file_parse() reads such a text back, and reads a text a
  * person wrote or changed.  kst_file_load() holds what was read against the

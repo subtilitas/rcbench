@@ -1,6 +1,11 @@
 /*
  * KST servo programming protocol: the session with one servo.
  *
+ * Implements the programming protocol of KST and Chaservo servos.  KST and
+ * Chaservo are names or trademarks of their respective owners; they are used
+ * here only to say which servos this module works with (README.md, "Legal
+ * notice and disclaimer").
+ *
  * A session enters programming mode, reads the 32 registers, runs a write
  * plan with read-back and verifies the result.  It reaches the wire through
  * the 3 functions of kst_driver_t and through nothing else.
