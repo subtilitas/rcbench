@@ -5,6 +5,7 @@ import type { Catalogue, Check, Lang, OptionKey, Options, Part, Picture } from '
 import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
 import { drawing, sample } from '../draw/svg.ts';
+import { PDF_STATUS } from '../export/button.ts';
 import { reasonText } from './chooser.ts';
 import type { View } from './chooser.ts';
 import { wiresTable } from './table.ts';
@@ -129,8 +130,9 @@ function order(view: View): string {
 export function result(view: View, url: string, notices: Notice[]): string {
   const { lang, catalogue } = view;
   return head(lang, url, notices)
-    + `<div class="sum"><p>${esc(summary(view))}</p>${button(lang, 'b-copy', 'copy')}${button(lang, 'b-print', 'print')}${button(lang, 'b-reset', 'reset')}</div>`
+    + `<div class="sum"><p>${esc(summary(view))}</p>${button(lang, 'b-copy', 'copy')}${button(lang, 'b-print', 'print')}${button(lang, 'b-pdf', 'pdf')}${button(lang, 'b-reset', 'reset')}</div>`
     + `<p class="linkbox" id="linkbox" hidden><label for="linkfield">${esc(t(lang, 'linkField'))}</label> <input id="linkfield" type="text" readonly></p>`
+    + PDF_STATUS
     + safety(lang, catalogue)
     + parts(view)
     + does(view)
