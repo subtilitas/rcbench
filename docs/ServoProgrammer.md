@@ -82,8 +82,9 @@ Both rows are kept with the SERVO settings. **PWM TARGET** changes only
 with the bench disarmed, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
 coprocessor for the other target. **PORT PWM** goes on under the same
-rule and goes off with the port not in programming. With **OUTPUTS** as
-target **PORT PWM** is locked.
+rule. It goes off with the port not in programming, no sweep and no test
+running, on an armed bench as on a disarmed one: **STOP** and **DISARM**
+end a sweep or a test. With **OUTPUTS** as target **PORT PWM** is locked.
 
 While the programmer has the port neither row changes: from **CONNECT** to
 the port back in PWM after **LEAVE**, during every operation, and for as
@@ -141,6 +142,22 @@ overlay is open again at the next entry.
 
 ![A port without a pin](img/servo-kst-nopin.png)
 
+### The signal level
+
+The servo's signal pin is a microcontroller GPIO (general-purpose
+input/output). The high level of its reply is at most 5 V and typically
+3.3 V. The level is not measured. GP13 is rated 5.5 V while the
+coprocessor's IOVDD (input/output supply) is at 3.3 V
+(`hardware/docs/IOBoard.md`, pin ratings), so the port has no level shifter
+and no clamp.
+
+With the coprocessor unpowered GP13 is rated 3.63 V. A servo that drives
+the wire at 5 V while the coprocessor is off exceeds that rating. What the
+servo's pin does at idle with the bench off is not measured.
+
+Power the coprocessor before the servo's supply, or do not feed the servo
+from an external supply while the bench is off.
+
 ## The supply
 
 With the port in the tester's hands, **MORE** opens what **CONNECT** sets.
@@ -163,8 +180,8 @@ two current limits: a voltage above the programming voltage is lowered to
 it, a current limit above CURRENT LIMIT is lowered to it, and neither is
 raised. Leaving programming does not restore a value **CONNECT** lowered.
 
-The port programs at 4.8 V or more. 4.8 V is a chosen value, not a measured
-one: the supply voltage a servo needs to store a register is not known. An
+The port programs at 4.8 V or more. The supply voltage a servo needs to
+store a register is not measured. An
 output that is on under 4.8 V is not programmed at and stays as it is; the
 operator raises it first. A PD mini whose input is under 5.3 V cannot give
 4.8 V, and no session starts on it.
@@ -536,6 +553,11 @@ loaded; a line that names it shows its first 14 characters and `..`.
 ![No card](img/servo-kst-card-none.png)
 ![A full card](img/servo-kst-card-full.png)
 
+A save the card ends after the 5 s is the file it made. With no other file
+operation running the line changes to `Servo values saved to the card:` and
+the name. It is the session's backup file if the servo still holds the
+saved values and no write followed.
+
 A save writes the image as read, the locked fields included, also of a
 servo that fails the fingerprint.
 
@@ -744,7 +766,7 @@ session's writes are not known, and the comparison is not made.
 
 A write counts as interrupted when the link goes, the coprocessor or the
 panel starts again, **ABORT** or a stop ends it, or no result arrives
-within 30 s. The record made before the write then stands, on the card
+[in time](#stops-and-losses). The record made before the write then stands, on the card
 across a power cycle of the bench.
 
 ![An interrupted write](img/servo-kst-doubt.png)
@@ -885,11 +907,14 @@ port is in PWM again.
 | **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12 ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 2000 ms after it reads off |
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
-| The coprocessor starts again | its session and backup are gone; `The coprocessor restarted. CONNECT and READ ALL.` |
+| The coprocessor starts again | its session and backup are gone; `The coprocessor restarted. CONNECT and READ ALL.` and `Switch the servo's supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
+| The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `Session ended by the port: supply off or a restart.` and `Switch the servo's supply off and on, then CONNECT.` An operation that ended in the same reading keeps its own line |
 | The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
 | The coprocessor refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the coprocessor in a row stay unanswered | `No answer from the coprocessor. READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
-| No result of an operation for 30 s, counted from the last time the port reported the operation running or planning | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
+| No result of an operation for 30 s, counted from the last time the port reported the operation running or planning, or for 120 s from its start however long the port reports it running | the operation is aborted; `No result from the coprocessor. READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
+| The result of an operation the programmer no longer waits for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
+| The coprocessor reports a result, a refusal or an outcome this panel has no line for | `The coprocessor reports code 255, unknown to this panel.`, with the code's number; a result is handled as a failed operation |
 
 Every refusal of the port and every result of the session has its own
 line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) lists the codes.
@@ -910,6 +935,9 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   servo, a card or a PD mini.
 - The limits and trip settings of the SUPPLY screen are not held while the
   programmer has the port; the set points and **OUTPUT ON** are.
+- With the coprocessor unpowered and the servo fed from another supply, a
+  servo that drives the signal wire above 3.63 V exceeds the rating of
+  GP13 ([the signal level](#the-signal-level)).
 - With the simulated supply selected (no PD mini wired) the panel dims the
   same controls, and the servo's supply is whatever feeds it.
 - The rows **PWM TARGET** and **PORT PWM** follow the port's state one
@@ -961,8 +989,17 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   A write to it is refused.
 - LEFT ANGLE and RIGHT ANGLE are the vendor tool's numbers; their unit is
   not known.
-- The supply voltage a servo needs in programming mode is not known. The
-  floor of 4.8 V is chosen, not measured.
+- The supply voltage a servo needs in programming mode is not measured.
+  The floor is 4.8 V.
+- A session has no idle timeout. From **CONNECT** to **LEAVE** the port is
+  held, the servo is in programming mode and a PD mini's output is on, on
+  every screen and for as long as the bench is powered. **STOP**, a link
+  loss and the supply's output switched off end it.
+- A card put in while the panel runs is read by the task that draws the
+  screen. The screen does not change and takes no touch for the time of
+  that read. The time is not measured.
+- The 120 s an operation is given from its start are chosen. The time the
+  longest write takes on a servo is not measured.
 
 ## Measurements still open
 

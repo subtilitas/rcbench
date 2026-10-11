@@ -89,6 +89,19 @@ Every failed check of the decoder has its own result code (`kst_rx_t`), so a
 log tells a silent servo from a late reply, a wrong bit rate, a broken cell
 and a lost edge.
 
+The servo's signal pin is a microcontroller GPIO (general-purpose
+input/output). The high level of its reply is at most 5 V and typically
+3.3 V. The level is not measured.
+
+| Master | Rating of its pin | On the wire |
+| --- | --- | --- |
+| RP2350 GPIO0 to 39, IOVDD (input/output supply) at 3.3 V | 5.5 V | no level shifter, no clamp |
+| The same pin, IOVDD at 0 V | 3.63 V | a servo that drives the wire at 5 V exceeds the rating |
+
+What the servo's pin does at idle while the master is unpowered is not
+measured. Power the master before the servo's supply, or do not feed the
+servo from another supply while the master is off.
+
 ## Driver interface
 
 ```c

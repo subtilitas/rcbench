@@ -199,8 +199,8 @@ extern "C" {
 #define KST_PORT_SUPPLY_MAX_MV 8400u
 /** The lowest supply voltage a session runs at: an ENTER whose voltage, or
  *  the lower voltage of an output that is on, is under it is refused with
- *  LINK_KST_REF_SUPPLY_LOW.  A chosen value, not measured: the voltage a
- *  KST or Chaservo servo needs to store a register is not known. */
+ *  LINK_KST_REF_SUPPLY_LOW.  The voltage a KST or Chaservo servo needs to
+ *  store a register is not measured. */
 #define KST_PORT_SUPPLY_MIN_MV 4800u
 
 /** What the port needs from the hardware. */

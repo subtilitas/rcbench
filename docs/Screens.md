@@ -697,7 +697,7 @@ name opens a keyboard.
 | DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
 | DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
 | DUT | PWM TARGET | what the tester drives: OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. PROG PORT is what the programmer needs. Locked while armed, during a sweep or a test, and while the programmer holds the port ([the target](ServoProgrammer.md#the-target)) |
-| DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with PWM TARGET on OUTPUTS; OFF is taken at any time, ON under the rule of PWM TARGET |
+| DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with PWM TARGET on OUTPUTS; ON under the rule of PWM TARGET, OFF armed or not but not during a sweep or a test, and neither while the programmer holds the port |
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 

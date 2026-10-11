@@ -41,7 +41,7 @@ history is in git.
   PROGRAMMING VOLTAGE (4.8 to 8.4 V, default 5.0 V) and CURRENT LIMIT (50 to
   3000 mA, default 1000 mA) on the PD mini. An output that is on runs the
   session at the lower of the two voltages and the lower of the two current
-  limits. Under 4.8 V, a chosen value and not a measured one, CONNECT is
+  limits. Under 4.8 V CONNECT is
   refused, and so it is with programming values above the SUPPLY screen's
   limits. While the port is out of PWM the coprocessor refuses every change
   of the supply's set points and every ON, and the SET row of the SERVO
@@ -138,6 +138,22 @@ history is in git.
   values and the record of an interrupted write as they were. A record
   loaded from a card with a servo already read is compared with that servo
   at once.
+- Servo programmer, stops and losses: a port found back in PWM without a
+  command of the programmer ends the session on the panel with `Session
+  ended by the port: supply off or a restart.` and the request to switch
+  the servo's supply off and on; the line of a coprocessor restart asks for
+  the same. An outcome counts for the request whose number it carries, so a
+  late one ends no other operation, and the answer of the card to an older
+  record releases no write. **ABORT** reaches an operation the port still
+  reports running after the programmer gave it up. An operation is given up
+  120 s after its start however long the port reports it running. A code
+  the panel has no line for is shown with its number. A save the card ends
+  after its 5 s is taken as the file it made. A status read the coprocessor
+  refuses with a code other than BAD_PAGE is sent again, and a coprocessor
+  that loses the page keeps the port as it was last read. The session marks
+  a register as written when its write frame is on the wire, not before.
+  **PORT PWM** does not go off during a sweep or a test. A record on a
+  card put in later that the programmer does not use stays on the card.
 - `tools/sense_trace.py --loaded-channel N` (repeatable): names the output
   channels that have a servo connected. The `$C` and `$D` lines of every
   other channel are no moves and do not count for the 30 ms within which 2

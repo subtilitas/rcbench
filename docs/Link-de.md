@@ -761,7 +761,7 @@ mini. 8400 mV ist die höchste Servoschiene des IO-Boards. Die Spannung der
 Session ist die bereitgestellte oder die niedrigere von ihr und der
 Spannung eines Ausgangs, der an ist; unter 4800 mV wird ENTER mit
 SUPPLY_LOW abgewiesen (seit 4.15), und die Versorgung bleibt unberührt.
-4800 mV ist ein gewählter Wert (`KST_PORT_SUPPLY_MIN_MV`): die
+4800 mV ist `KST_PORT_SUPPLY_MIN_MV`; die
 Versorgungsspannung, die ein Servo zum Speichern eines Registers braucht,
 ist nicht gemessen. In LOW tut der Port dann eines von zwei Dingen:
 
@@ -1099,12 +1099,18 @@ Backup und das Image. Seine Phase ist PLANNING, solange die zuletzt
 gelesene Page Bit 3 gesetzt und Ergebnis 35 hat, und RUNNING vor dem ersten
 Lesen und ab dem Plan. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
 keine Antwort kommt, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
+Ein mit BAD_PAGE abgewiesenes Lesen der Register 0 bis 3 heißt: ein
+Koprozessor ohne die Page; mit jedem anderen Code abgewiesen zählt es als
+unbeantwortet und wird erneut gesendet. Bei einem Koprozessor ohne die Page
+behält das Modul für den Aufrufer, ob der Port beim letzten beantworteten
+Lesen außerhalb von PWM war. Jede Anfrage hat eine Nummer, und ihr Ergebnis
+trägt diese Nummer.
 Es weist WRITE, RESTORE und RELEASE ohne den Schalter des Aufrufers ab,
 bevor etwas gesendet wird. `shared/bench/supply_link.c` nimmt ein Kommando,
 das der Port auf SUPPLY hinterlassen hat, als das angeforderte und schreibt
-sein eigenes nicht darüber (`supply_link_adopted()`). Kein Bildschirm dieses
-Builds ruft `kst_link` auf; das Panel dieses Builds sendet also nichts an
-die Servo-Programmier-Page oder an PROG.
+sein eigenes nicht darüber (`supply_link_adopted()`). Der Programmierer des
+SERVO-Bildschirms ist der Aufrufer
+([Servo-Programmierer](ServoProgrammer-de.md)).
 
 `test_kst_port` fährt den Port und die Page gegen das Servo- und das
 Versorgungsmodell: jeden Übergang und jede Abweisung, einen Stopp in jedem

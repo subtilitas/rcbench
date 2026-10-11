@@ -770,7 +770,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
 | PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
 | PRÜFLING | PWM-ZIEL | was der Tester treibt: AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. PROG-PORT braucht der Programmierer. Gesperrt, solange scharf geschaltet ist, während eines Sweeps oder Tests und solange der Programmierer den Port hält ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
-| PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; AUS wird jederzeit angenommen, EIN nach der Regel von PWM-ZIEL |
+| PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; EIN nach der Regel von PWM-ZIEL, AUS bei scharfem wie nicht scharfem Prüfstand, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 

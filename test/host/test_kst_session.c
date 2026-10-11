@@ -1287,6 +1287,34 @@ TEST_CASE(an_abort_in_the_entry_wait_sends_nothing)
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
 }
 
+/* An abort in the gap before the first write frame: nothing was written,
+ * and no register counts as written, so that a restore still tells another
+ * servo by that register. */
+TEST_CASE(an_abort_before_the_first_write_frame_marks_no_register)
+{
+    kst_plan_t plan;
+
+    up(&g_sim, &g_ses);
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
+    for (unsigned i = 0; i < 200000u
+                         && g_ses.t_expect != (uint8_t)KST_EXPECT_WRITE; ++i) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+        g_sim.now_us += 100u;
+    }
+    CHECK_EQ(g_ses.t_expect, KST_EXPECT_WRITE);
+    CHECK_EQ(g_sim.n_writes, 0);
+    kst_session_abort(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_sim.reg[0x03], 20);
+    CHECK_EQ(g_ses.wrote_regs, 0u);
+    CHECK_EQ(g_ses.locked, 0);
+    /* The write that goes marks its register. */
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+    CHECK_EQ(g_ses.wrote_regs, BIT(0x03));
+}
+
 TEST_CASE(an_abort_never_cuts_a_frame)
 {
     unsigned frames;
@@ -1448,9 +1476,12 @@ TEST_CASE(a_driver_that_refuses_a_frame_ends_the_operation)
     CHECK_EQ(g_sim.n_writes, 0);
     CHECK_EQ(g_sim.reg[0x03], 20);
     CHECK_EQ(g_sim.n_overlap, 0);
-    /* No write frame left the driver: the servo is not in doubt. */
+    /* No write frame left the driver: the servo is not in doubt, and no
+     * register counts as written by this session. */
     CHECK_EQ(g_ses.locked, 0);
+    CHECK_EQ(g_ses.wrote_regs, 0u);
     CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+    CHECK_EQ(g_ses.wrote_regs, BIT(0x03));
 
     /* The second write frame refused: one write is on the servo. */
     plan = edit_plan(&g_ses, KST_F_DUTY, 200);
@@ -2833,6 +2864,7 @@ int main(void)
     RUN(a_failed_read_before_the_first_write_locks_nothing);
     RUN(a_failed_read_after_a_write_locks_the_session);
     RUN(an_abort_in_the_entry_wait_sends_nothing);
+    RUN(an_abort_before_the_first_write_frame_marks_no_register);
     RUN(an_abort_never_cuts_a_frame);
     RUN(an_abort_after_the_first_write_locks_and_before_it_does_not);
     RUN(a_restore_with_nothing_to_write_unlocks);

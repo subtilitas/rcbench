@@ -209,6 +209,7 @@ static void send(kst_prog_t *p, const kst_link_request_t *req)
     p->cmd.kind = KST_PROG_CMD_START;
     p->cmd.id = p->next_id;
     p->cmd.req = *req;
+    p->cmd.req.id = p->next_id;
     p->cmd_ready = true;
     p->cmd_out = false;
     p->cmd_run = false;
@@ -295,6 +296,8 @@ static void write_go(kst_prog_t *p)
     if (p->held_journal && p->f.card) {
         p->wait = W_FILE;
         p->wait_ms = p->f.now_ms;
+        /* A text the card has not answered yet is of before this write. */
+        p->file_stale = p->file_busy;
         file_want(p, FILE_JOURNAL);
     } else {
         send(p, &p->held);
@@ -784,20 +787,51 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
                     doubt(p);
                 }
             }
-            (void)say_reg(p, KST_PROG_MSG_SES + (unsigned)o->result,
-                          o->steps_done, o->fail_reg);
+            if ((unsigned)o->result < KST_PROG_MSG_END - KST_PROG_MSG_SES) {
+                (void)say_reg(p, KST_PROG_MSG_SES + (unsigned)o->result,
+                              o->steps_done, o->fail_reg);
+            } else {
+                (void)say(p, KST_PROG_MSG_UNKNOWN, o->result);
+            }
         }
         break;
     case KST_LINK_OUT_REFUSED:
-        (void)say(p, KST_PROG_MSG_REF + (unsigned)o->refusal, 0);
+        if ((unsigned)o->refusal < KST_PROG_MSG_SES - KST_PROG_MSG_REF) {
+            (void)say(p, KST_PROG_MSG_REF + (unsigned)o->refusal, 0);
+        } else {
+            (void)say(p, KST_PROG_MSG_UNKNOWN, (unsigned)o->refusal);
+        }
         break;
     case KST_LINK_OUT_NACK:
         (void)say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, o->nack);
         break;
     default:
-        (void)say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, 0);
+        if ((unsigned)o->kind < KST_PROG_MSG_REF - KST_PROG_MSG_OUT) {
+            (void)say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, 0);
+        } else {
+            (void)say(p, KST_PROG_MSG_UNKNOWN, (unsigned)o->kind);
+        }
         break;
     }
+}
+
+/*
+ * Whether an outcome is taken.  The one of the operation awaited is, by
+ * its number.  A coprocessor that started again ends whatever is awaited.
+ * The late end of a write given up is taken while nothing else is on its
+ * way; with another operation asked for, it is left out: the servo is in
+ * doubt already, and the operation asked for is not that outcome's.
+ */
+static bool outcome_due(const kst_prog_t *p, const kst_link_outcome_t *o)
+{
+    if (o->kind == KST_LINK_OUT_RESTARTED) {
+        return true;
+    }
+    if (p->wait == W_OUTCOME) {
+        return o->id == p->wait_id;
+    }
+    return p->wait == W_NONE && is_write(o->op)
+        && !(p->cmd_ready && p->cmd.kind == KST_PROG_CMD_START);
 }
 
 /* The command was not taken, or nothing answers: nothing was sent. */
@@ -947,6 +981,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
     const bool was_stopped = p->fed && p->f.stopped;
     const bool was_up = p->fed && p->f.rd.phase != KST_LINK_DOWN
                      && p->f.rd.phase != KST_LINK_NO_PAGE;
+    const uint32_t said = p->msg.seq;
     bool up;
 
     p->f = *f;
@@ -965,6 +1000,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         if (f->answer == KST_LINK_START_OK) {
             p->wait = W_OUTCOME;
             p->wait_ms = f->now_ms;
+            p->run_ms = f->now_ms;
             /* The first write of the session is one that started: a write
              * the card, a stop or the link kept from starting is none. */
             p->written = p->written || is_write(p->op);
@@ -983,8 +1019,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
     }
     if (f->outcomes != p->outcomes_seen) {
         p->outcomes_seen = f->outcomes;
-        if (p->wait == W_OUTCOME || is_write(f->outcome.op)
-            || f->outcome.kind == KST_LINK_OUT_RESTARTED) {
+        if (outcome_due(p, &f->outcome)) {
             outcome(p, &f->outcome);
         }
     }
@@ -1025,7 +1060,9 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_STORE_MS) {
         not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
     } else if (p->wait == W_OUTCOME
-               && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_RUN_MS) {
+               && ((uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_RUN_MS
+                   || (uint32_t)(f->now_ms - p->run_ms)
+                          >= KST_PROG_RUN_MAX_MS)) {
         /* The operation may still end on the coprocessor, a read with an
          * image this side never takes: nothing is edited or written
          * before a read that ends. */
@@ -1046,6 +1083,9 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         late.id = p->card_id;
         late.result = p->card_op == KST_PROG_CARD_SAVE
                           ? KST_PROG_CARD_WRITE_ERR : KST_PROG_CARD_READ_ERR;
+        /* The card may end the save yet: its file is taken then. */
+        p->late_id = p->card_op == KST_PROG_CARD_SAVE && !p->card_ready
+                         ? p->card_id : 0u;
         kst_prog_card_done(p, &late);
     }
 
@@ -1060,7 +1100,12 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         if (f->rd.port == LINK_KST_PWM) {
             if (p->have_servo || p->write_enabled || p->written
                 || p->need_read) {
+                /* No command of this model put the port there. */
                 session_gone(p);
+                if (p->msg.seq == said) {
+                    /* Unless this feed said how an operation ended. */
+                    (void)say(p, KST_PROG_MSG_SESSION_ENDED, 0);
+                }
             }
         } else {
             p->port = f->rd.port_no;
@@ -1502,8 +1547,11 @@ bool kst_prog_port_taken(const kst_link_readout_t *rd)
 {
     switch (rd->phase) {
     case KST_LINK_DOWN:
-    case KST_LINK_NO_PAGE:
         return false;
+    case KST_LINK_NO_PAGE:
+        /* A page that answered on this link and refuses now: the port is
+         * where its last status had it. */
+        return rd->was_held;
     case KST_LINK_READY:
         return rd->known && rd->port != LINK_KST_PWM;
     default:
@@ -2075,7 +2123,10 @@ void kst_prog_abort(kst_prog_t *p)
 {
     if (waits_unsent(p) || (p->wait == W_ANSWER && taken_back(p))) {
         not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED, 0);
-    } else if (p->wait != W_NONE) {
+    } else if (p->wait != W_NONE
+               || (!p->cmd_ready && flag(p, LINK_KS_F_BUSY))) {
+        /* Also for an operation this model awaits no longer, or never
+         * started, that the port reports as running. */
         p->cmd.kind = KST_PROG_CMD_ABORT;
         p->cmd.id = 0;
         p->cmd_ready = true;
@@ -2252,6 +2303,7 @@ bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
     out->first = p->card_op == KST_PROG_CARD_LIST ? p->card_first : 0u;
     memcpy(out->name, p->card_name, sizeof(out->name));
     out->image = *file_image(p);
+    p->late_img = out->image;
     return true;
 }
 
@@ -2412,10 +2464,41 @@ static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     load_take(p, &d->image);
 }
 
+/*
+ * The card ends a save this model gave up at KST_PROG_CARD_MS.  The file
+ * is on the card: it is named, and it is the session's backup where a save
+ * by hand would be, so that the write that follows makes no second one.
+ */
+static void save_late(kst_prog_t *p, const kst_prog_card_done_t *d)
+{
+    p->late_id = 0;
+    if (d->result != KST_PROG_CARD_OK) {
+        return;
+    }
+    if (p->have_servo && same(&p->late_img, &p->servo) && !p->written
+        && !p->backed_up && !p->journal && !kst_prog_in_doubt(p)
+        && (p->wrote_known
+            || (p->f.have_backup && same(&p->f.backup, &p->servo)))) {
+        p->backed_up = true;
+        p->no_file = false;
+        name_copy(p->backup, d->name);
+    }
+    if (p->card_op == KST_PROG_CARD_IDLE) {
+        /* No other file is asked for: the name is this file's. */
+        name_copy(p->card_name, d->name);
+        (void)say(p, KST_PROG_MSG_SAVED, 0);
+    }
+}
+
 void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done)
 {
     const unsigned op = p->card_op;
 
+    if (p->late_id != 0u && done->id == p->late_id
+        && (op == KST_PROG_CARD_IDLE || done->id != p->card_id)) {
+        save_late(p, done);
+        return;
+    }
     if (op == KST_PROG_CARD_IDLE || done->id != p->card_id) {
         return;
     }
@@ -2516,6 +2599,7 @@ size_t kst_prog_file_take(kst_prog_t *p, char *out, size_t n)
     if (len != 0u) {
         p->file_wanted = false;
         p->file_busy = true;
+        p->file_stale = false;
         p->file_for = p->file_next;
         p->file_next = FILE_NONE;
     }
@@ -2525,12 +2609,19 @@ size_t kst_prog_file_take(kst_prog_t *p, char *out, size_t n)
 void kst_prog_file_done(kst_prog_t *p, bool ok)
 {
     const uint8_t what = p->file_for;
+    const bool stale = p->file_stale;
 
     if (!p->file_busy) {
         return;
     }
     p->file_busy = false;
+    p->file_stale = false;
     p->file_for = FILE_NONE;
+    if (stale) {
+        /* The answer to a text of before the write that waits: that
+         * write's text is wanted still and goes next. */
+        return;
+    }
     /* The card holds the text of before: a record cleared here would be
      * found again at the next start.  The text is written again. */
     p->file_retry = !ok;

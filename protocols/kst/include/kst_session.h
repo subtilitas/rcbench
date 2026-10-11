@@ -195,6 +195,7 @@ typedef struct {
     uint8_t t_state;
     uint8_t t_expect;
     uint8_t t_frame;
+    uint8_t t_reg;           /**< the register of the frame */
     uint8_t fault;
     uint8_t abort;
     uint8_t reading;

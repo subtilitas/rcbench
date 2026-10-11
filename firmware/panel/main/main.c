@@ -2634,7 +2634,14 @@ static void kst_record_load(bool late)
     kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));
     if (kst_record_read(s_kst_path_new, &len)) {
         if (kst_prog_file_whole(s_kst_file, len)) {
-            (void)kst_record_use(late, len);
+            /* From a card mounted later it takes the name only as the
+             * record the model uses.  One the model refuses, for a record
+             * it holds, stays as it is: the model's record is written
+             * over it. */
+            if (!kst_record_use(late, len) && late) {
+                ESP_LOGW(TAG, "%s is not used", KST_FILE_NEW);
+                return;
+            }
             (void)unlink(s_kst_path);
             if (rename(s_kst_path_new, s_kst_path) != 0) {
                 ESP_LOGW(TAG, "%s keeps its name", KST_FILE_NEW);
@@ -7615,8 +7622,10 @@ static void kst_ui_service(void)
         kst_record_load(true);
     }
 
+    /* A command stays with the model while the queue has no room: one
+     * taken here and not queued is gone, an ABORT among them. */
     kst_prog_cmd_t cmd;
-    while (kst_panel_take(&cmd)) {
+    while (uxQueueSpacesAvailable(s_kst_q) > 0u && kst_panel_take(&cmd)) {
         if (xQueueSend(s_kst_q, &cmd, 0) != pdTRUE) {
             ESP_LOGW(TAG, "servo programmer: a command was lost");
         }

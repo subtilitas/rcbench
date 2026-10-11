@@ -93,8 +93,10 @@ Beide Zeilen werden mit den SERVO-Einstellungen gehalten. **PWM-ZIEL**
 wechselt nur bei nicht scharf geschaltetem Prüfstand, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
-andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein und geht
-aus, wenn der Port nicht im Programmieren ist. Mit **AUSGÄNGE** als Ziel
+andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
+aus, wenn der Port nicht im Programmieren ist und weder Sweep noch Test
+läuft, bei scharfem wie bei nicht scharfem Prüfstand: **STOP** und
+**DISARM** beenden einen Sweep oder einen Test. Mit **AUSGÄNGE** als Ziel
 ist **PORT-PWM** gesperrt.
 
 Solange der Programmierer den Port hat, ändert sich keine der beiden
@@ -156,6 +158,24 @@ Overlay wieder offen.
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
 
+### Der Signalpegel
+
+Der Signalpin des Servos ist ein GPIO (General-Purpose Input/Output) eines
+Mikrocontrollers. Der High-Pegel seiner Antwort ist höchstens 5 V und
+typisch 3,3 V. Der Pegel ist nicht gemessen. GP13 ist für 5,5 V
+spezifiziert, solange IOVDD (die Ein-/Ausgangsversorgung) des Koprozessors
+auf 3,3 V liegt (`hardware/docs/IOBoard.md`, Pin ratings); der Port hat
+deshalb keinen Pegelwandler und keine Klemmung.
+
+Ohne Versorgung des Koprozessors ist GP13 für 3,63 V spezifiziert. Ein
+Servo, das die Leitung mit 5 V treibt, während der Koprozessor aus ist,
+überschreitet diesen Wert. Was der Pin des Servos im Leerlauf bei
+ausgeschaltetem Prüfstand tut, ist nicht gemessen.
+
+Den Koprozessor vor der Versorgung des Servos einschalten, oder das Servo
+nicht aus einer externen Versorgung speisen, während der Prüfstand aus
+ist.
+
 ## Die Versorgung
 
 Solange der Tester den Port hat, öffnet **WEITERES**, was **VERBINDEN**
@@ -182,9 +202,8 @@ STROMGRENZE auf diese, und keine wird angehoben. Das Verlassen des
 Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht
 wieder her.
 
-Der Port programmiert bei 4,8 V oder mehr. 4,8 V ist ein gewählter Wert,
-kein gemessener: die Versorgungsspannung, die ein Servo zum Speichern eines
-Registers braucht, ist nicht bekannt. An einem Ausgang, der unter 4,8 V ein
+Der Port programmiert bei 4,8 V oder mehr. Die Versorgungsspannung, die
+ein Servo zum Speichern eines Registers braucht, ist nicht gemessen. An einem Ausgang, der unter 4,8 V ein
 ist, wird nicht programmiert, und er bleibt, wie er ist; der Bediener hebt
 ihn zuerst an. Ein PD mini, dessen Eingang unter 5,3 V liegt, gibt keine
 4,8 V, und an ihm beginnt keine Sitzung.
@@ -579,6 +598,12 @@ geladen; eine Zeile, die sie nennt, zeigt ihre ersten 14 Zeichen und `..`.
 ![Keine Karte](img/de/servo-kst-card-none.png)
 ![Eine volle Karte](img/de/servo-kst-card-full.png)
 
+Ein Speichern, das die Karte nach den 5 s beendet, ist die Datei, die es
+angelegt hat. Läuft kein anderer Dateivorgang, wechselt die Zeile zu
+`Servowerte auf der Karte gespeichert:` und dem Namen. Sie ist die
+Backup-Datei der Sitzung, wenn das Servo die gespeicherten Werte noch hält
+und kein Schreiben folgte.
+
 Ein Speichern schreibt das Abbild wie gelesen, die gesperrten Felder
 eingeschlossen, auch das eines Servos, das nicht zum Fingerprint passt.
 
@@ -804,7 +829,8 @@ statt.
 
 Ein Schreiben gilt als unterbrochen, wenn der Link wegfällt, der
 Koprozessor oder das Panel neu startet, **ABBRECHEN** oder ein Stopp es
-beendet oder binnen 30 s kein Ergebnis kommt. Der Vermerk von vor dem
+beendet oder kein Ergebnis [rechtzeitig](#stopps-und-ausfälle) kommt. Der
+Vermerk von vor dem
 Schreiben bleibt dann stehen, auf der Karte auch über ein Aus- und
 Einschalten des Prüfstands.
 
@@ -956,11 +982,14 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 | **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12 ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES LESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 2000 ms, nachdem er aus liest, wieder in PWM |
 | **ABBRECHEN** | dasselbe, ohne den gehaltenen Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
-| Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` |
+| Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` und `Zuerst die Servo-Versorgung aus- und einschalten.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
+| Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Sitzung vom Port beendet: Versorgung aus oder Neustart.` und `Servo-Versorgung aus- und einschalten, dann VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
 | Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
 | Der Koprozessor lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
 | 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
-| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant, oder 120 s ab seinem Start, wie lange der Port ihn auch als laufend meldet | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| Das Ergebnis eines Vorgangs kommt, auf den der Programmierer nicht mehr wartet | es beendet keinen anderen Vorgang: ein Ergebnis zählt für die Anfrage, deren Nummer es trägt. **ABBRECHEN** erreicht einen Vorgang, den der Port noch als laufend meldet |
+| Der Koprozessor meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `Koprozessor meldet Code 255, diesem Panel unbekannt.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
 Zeile. [Die Link-Page](Link-de.md#der-programmierport-für-servos-von-kst-und-chaservo) listet die
@@ -979,6 +1008,10 @@ Codes.
   Datensatz ersetzt ihn.
 - Eine Karte, die im Betrieb entnommen und wieder eingesteckt wird, wird
   nicht erneut eingebunden.
+- Ist der Koprozessor ohne Versorgung und das Servo aus einer anderen
+  Versorgung gespeist, überschreitet ein Servo, das die Signalleitung über
+  3,63 V treibt, den für GP13 spezifizierten Wert
+  ([der Signalpegel](#der-signalpegel)).
 - Wie lange ein Einbindeversuch ohne Karte den Bildschirm anhält, ist nicht
   gemessen.
 - Nicht auf Hardware gelaufen: kein Firmware-Image hat diesen Code mit
@@ -1047,7 +1080,17 @@ Codes.
 - LEFT ANGLE und RIGHT ANGLE sind die Zahlen des Hersteller-Tools; ihre
   Einheit ist nicht bekannt.
 - Die Versorgungsspannung, die ein Servo im Programmiermodus braucht, ist
-  nicht bekannt. Die Untergrenze von 4,8 V ist gewählt, nicht gemessen.
+  nicht gemessen. Die Untergrenze ist 4,8 V.
+- Eine Sitzung hat kein Zeitlimit im Leerlauf. Von **VERBINDEN** bis
+  **VERLASSEN** ist der Port gehalten, das Servo im Programmiermodus und
+  der Ausgang eines PD mini ein, auf jedem Bildschirm und solange der
+  Prüfstand versorgt ist. **STOP**, ein Link-Ausfall und das Ausschalten
+  des Versorgungsausgangs beenden sie.
+- Eine Karte, die im Betrieb eingesteckt wird, liest die Task, die den
+  Bildschirm zeichnet. Der Bildschirm ändert sich für die Dauer dieses
+  Lesens nicht und nimmt keine Berührung an. Die Dauer ist nicht gemessen.
+- Die 120 s, die ein Vorgang ab seinem Start hat, sind gewählt. Wie lange
+  das längste Schreiben an einem Servo dauert, ist nicht gemessen.
 
 ## Offene Messungen
 

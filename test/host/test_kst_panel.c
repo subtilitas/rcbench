@@ -3853,6 +3853,22 @@ static void texts_in(ui_lang_t lang)
     }
     CHECK_STR_EQ(kst_panel_rule_text((unsigned)KST_RULE_COUNT),
                  TR(KP_M_OUTSIDE));
+    /* A session the port ended says what to do next. */
+    m.id = KST_PROG_MSG_SESSION_ENDED;
+    CHECK_EQ(kst_panel_message_lines(&m, t), 2);
+    CHECK_STR_EQ(t[0], TR(KP_M_SESSION_ENDED));
+    CHECK_STR_EQ(t[1], TR(KP_M_SESSION_ENDED_2));
+    /* A coprocessor that started again: the servo is in its mode still. */
+    m.id = KST_PROG_MSG_OUT + KST_LINK_OUT_RESTARTED;
+    CHECK_EQ(kst_panel_message_lines(&m, t), 2);
+    CHECK_STR_EQ(t[0], TR(KP_O_RESTARTED));
+    CHECK_STR_EQ(t[1], TR(KP_O_RESTARTED_2));
+    /* A code of the wire this panel has no text for, with its number. */
+    m.id = KST_PROG_MSG_UNKNOWN;
+    m.arg = 255;
+    CHECK_EQ(kst_panel_message_lines(&m, t), 1);
+    CHECK(strstr(t[0], "255") != NULL);
+    CHECK(strchr(t[0], '%') == NULL);
     /* An id nobody gave a text is still a line. */
     m.id = 0x3Fu;
     m.arg = 0;

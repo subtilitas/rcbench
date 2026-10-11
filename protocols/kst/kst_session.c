@@ -64,6 +64,7 @@ static void txn_begin(kst_session_t *s, kst_expect_t expect, uint8_t reg,
         kst_frame_sync(&s->frame);
     }
     s->t_expect = (uint8_t)expect;
+    s->t_reg = reg;
     s->t_frame = 1;
     s->t_state = T_GAP;
 }
@@ -130,8 +131,11 @@ static bool txn_step(kst_session_t *s)
             return true;
         }
         if (expect == KST_EXPECT_WRITE) {
-            /* From here the servo may hold part of a plan. */
+            /* From here the servo may hold part of a plan, and the
+             * register is one this session wrote: not before, so that a
+             * frame the driver refused or an abort cut off marks none. */
             s->dirty = 1;
+            s->wrote_regs |= (uint32_t)1 << (s->t_reg % KST_REG_COUNT);
         }
         s->t_start = t;
         s->t_limit = (kst_frame_duration_ns(&s->frame) + window) / 1000u
@@ -358,7 +362,6 @@ static void write_start(kst_session_t *s)
 {
     const kst_write_t *w = &s->plan.step[s->step_index];
 
-    s->wrote_regs |= (uint32_t)1 << (w->reg % KST_REG_COUNT);
     txn_begin(s, KST_EXPECT_WRITE, w->reg, w->value);
     s->phase = W_WROTE;
 }

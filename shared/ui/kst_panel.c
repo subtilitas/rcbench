@@ -165,6 +165,9 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_NEED_DISARM]     = { TX_KP_M_NEED_DISARM, -1 },
     [KST_PROG_MSG_BACKUP_OTHER]    = { TX_KP_M_BACKUP_OTHER,
                                        TX_KP_M_BACKUP_OTHER_2 },
+    [KST_PROG_MSG_SESSION_ENDED]   = { TX_KP_M_SESSION_ENDED,
+                                       TX_KP_M_SESSION_ENDED_2 },
+    [KST_PROG_MSG_UNKNOWN]         = { TX_KP_M_UNKNOWN_CODE, -1 },
     [KST_PROG_MSG_SUPPLY_CAPS]     = { TX_KP_M_SUPPLY_CAPS,
                                        TX_KP_M_SUPPLY_CAPS_2 },
 };
@@ -776,6 +779,10 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         }
     } else if (id >= KST_PROG_MSG_OUT && id - KST_PROG_MSG_OUT < OUT_COUNT) {
         first = k_out[id - KST_PROG_MSG_OUT];
+        if (first == TX_KP_O_RESTARTED) {
+            /* With no PD mini the servo is in programming mode still. */
+            second = TX_KP_O_RESTARTED_2;
+        }
     } else if (id >= KST_PROG_MSG_START
                && id - KST_PROG_MSG_START < START_COUNT) {
         first = k_start[id - KST_PROG_MSG_START];
@@ -808,6 +815,9 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         break;
     case TX_KP_O_NACK:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_O_NACK), arg);
+        break;
+    case TX_KP_M_UNKNOWN_CODE:
+        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_UNKNOWN_CODE), arg);
         break;
     case TX_KP_S_SUPPLY:
         snprintf(out[n++], KST_PANEL_LINE, TR(KP_S_SUPPLY),

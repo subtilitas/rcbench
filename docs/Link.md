@@ -693,7 +693,7 @@ voltage at least 500 mV under the PD mini's input. 8400 mV is the highest
 servo rail of the IO board. The session's voltage is the staged one, or
 the lower of it and the voltage of an output that is on; under 4800 mV
 ENTER is refused with SUPPLY_LOW (since 4.15) and the supply is not
-touched. 4800 mV is a chosen value (`KST_PORT_SUPPLY_MIN_MV`): the supply
+touched. 4800 mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
 voltage a servo needs to store a register is not measured. In LOW the port
 then does one of two things:
 
@@ -1004,12 +1004,15 @@ operation reads registers 4 to 15, the backup and the image. Its phase is
 PLANNING while the page last read has bit 3 set and result 35, and RUNNING
 before the first read and from the plan on. It sends a
 command again up to 3 times when no answer comes and reads `SEQ` again after
-a refusal with BAD_VALUE. It refuses WRITE, RESTORE and RELEASE without the
+a refusal with BAD_VALUE. A read of registers 0 to 3 refused with BAD_PAGE
+means a coprocessor without the page; refused with any other code it counts
+as unanswered and is sent again. A coprocessor without the page keeps, for
+the caller, whether the port was out of PWM at the last read that answered.
+Each request has a number, and its outcome carries that number. It refuses WRITE, RESTORE and RELEASE without the
 caller's switch before anything is sent. `shared/bench/supply_link.c` takes
 a command the port left on SUPPLY as the one asked and does not write its
-own over it (`supply_link_adopted()`). No screen calls `kst_link` in this
-build, so this build's panel sends nothing to the servo programming page or
-to PROG.
+own over it (`supply_link_adopted()`). The SERVO screen's programmer is
+the caller ([Servo programmer](ServoProgrammer.md)).
 
 `test_kst_port` runs the port and the page against the servo and supply
 models: every transition and every refusal, a stop in each state and in the

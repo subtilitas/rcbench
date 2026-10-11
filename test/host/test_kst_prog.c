@@ -2040,14 +2040,15 @@ TEST_CASE(a_coprocessor_that_starts_again_in_a_write_leaves_the_journal)
     CHECK(!kst_prog_have_servo(&g_p));
     CHECK(!kst_prog_write_enabled(&g_p));
 
-    /* Between operations a restart ends the session without a word. */
+    /* Between operations a restart ends the session, and the model says
+     * that the port did it. */
     up_enabled();
     port_fresh();
     frames(600);
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
     CHECK(!kst_prog_have_servo(&g_p));
     CHECK(!kst_prog_write_enabled(&g_p));
-    CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK_EQ(msg(), KST_PROG_MSG_SESSION_ENDED);
 }
 
 TEST_CASE(a_write_the_servo_does_not_take_names_the_register)
@@ -2268,6 +2269,10 @@ static void end(const kst_link_outcome_t *o)
 {
     g_f.outcomes++;
     g_f.outcome = *o;
+    if (o->id == 0u) {
+        /* The outcome of the command answer() answered. */
+        g_f.outcome.id = g_f.answer_id;
+    }
     pass(1);
 }
 
@@ -4107,6 +4112,375 @@ TEST_CASE(a_port_that_reports_busy_is_not_timed_out)
     CHECK(kst_prog_take(&g_p, &cmd));
     CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
     CHECK(kst_prog_in_doubt(&g_p));
+}
+
+/* ------------------------------------------- the seams between the tasks */
+
+/* The end of a write given up arrives while the read asked for since waits:
+ * it carries the write's number and is not the read's. */
+TEST_CASE(a_late_outcome_of_another_operation_ends_none)
+{
+    kst_prog_cmd_t cmd;
+    kst_link_outcome_t o;
+    uint32_t old;
+
+    by_hand();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    old = g_f.answer_id;
+    pass(KST_PROG_RUN_MS);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+
+    /* The read the message asks for, not handed over yet. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_WRITE;
+    o.id = old;
+    o.result = KST_SES_ERR_ABORTED;
+    o.steps_done = 1;
+    end(&o);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+
+    /* And handed over and answered: the old end is still not its end. */
+    answer(KST_LINK_START_OK);
+    CHECK(g_f.answer_id != old);
+    end(&o);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+
+    /* The read's own end is. */
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.result = KST_SES_OK;
+    end(&o);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+
+    /* With nothing asked for, the late end of a write is taken. */
+    by_hand();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    pass(KST_PROG_RUN_MS);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_WRITE;
+    o.result = KST_SES_ERR_ABORTED;
+    o.steps_done = 1;
+    end(&o);
+    CHECK(msg() != KST_PROG_MSG_TIMEOUT);
+}
+
+/* The card's answer to the text of a write given up is not the answer to
+ * the text of the write that waits: that write starts on its own text. */
+TEST_CASE(the_answer_to_an_older_file_releases_no_write)
+{
+    char text[KST_PROG_FILE_MAX];
+    kst_prog_cmd_t cmd;
+    unsigned writes;
+
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    writes = g_sim.n_writes;
+
+    /* The card takes the text of a second write and does not answer. */
+    g_card_silent = true;
+    edit(KST_F_DUTY, 210);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(KST_PROG_STORE_MS + 2u);
+    CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
+    CHECK_EQ(g_sim.n_writes, writes);
+
+    /* A third write; the card answers the second one's text now. */
+    g_deaf = true;
+    edit(KST_F_DUTY, 220);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_file_take(&g_p, text, sizeof(text)), 0);
+    kst_prog_file_done(&g_p, true);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+
+    /* The third write's text goes, and its answer starts the write. */
+    CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+    kst_prog_file_done(&g_p, true);
+    g_card_silent = false;
+    g_deaf = false;
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo().r[KST_REG_DUTY], 220);
+}
+
+/* An operation the port reports as running and this model awaits no longer
+ * is aborted by ABORT all the same. */
+TEST_CASE(abort_reaches_an_operation_the_model_awaits_no_longer)
+{
+    kst_prog_cmd_t cmd;
+
+    by_hand();
+    kst_prog_abort(&g_p);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+
+    g_f.rd.phase = KST_LINK_RUNNING;
+    g_f.rd.flags |= LINK_KS_F_BUSY;
+    pass(1);
+    kst_prog_abort(&g_p);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+
+    /* A command that waits to be handed over is not replaced by it. */
+    g_f.rd.phase = KST_LINK_READY;
+    g_f.rd.flags &= (uint16_t)~LINK_KS_F_BUSY;
+    pass(1);
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    kst_prog_abort(&g_p);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+}
+
+/* A port in PWM that no command of the model put there: the session is
+ * gone, and the model says so. */
+TEST_CASE(a_session_the_port_ends_is_said)
+{
+    by_hand();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    g_f.rd.port = LINK_KST_PWM;
+    g_f.rd.flags = 0;
+    g_f.have_image = false;
+    g_f.have_backup = false;
+    pass(1);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_SESSION_ENDED);
+
+    /* The supply switched off under a session, end to end. */
+    fresh_at(0u);
+    g_rail = true;
+    link_up();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    g_sup_on = false;
+    frames(3000);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK(!kst_prog_write_enabled(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_SESSION_ENDED);
+
+    /* A leave the operator asked for says its own line. */
+    up();
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(msg() != KST_PROG_MSG_SESSION_ENDED);
+}
+
+/* A result, a refusal or an outcome kind the tables do not hold is said
+ * with its number, and is no other message's. */
+TEST_CASE(a_code_the_panel_does_not_know_is_said_with_its_number)
+{
+    kst_link_outcome_t o;
+
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.result = (uint8_t)(KST_PROG_MSG_END - KST_PROG_MSG_SES);
+    end(&o);
+    CHECK_EQ(msg(), KST_PROG_MSG_UNKNOWN);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, KST_PROG_MSG_END - KST_PROG_MSG_SES);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_DONE;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.result = 0xFFu;
+    end(&o);
+    CHECK_EQ(msg(), KST_PROG_MSG_UNKNOWN);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, 0xFF);
+
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = KST_LINK_OUT_REFUSED;
+    o.op = LINK_KST_OP_READ_ALL;
+    o.refusal = (link_kst_refusal_t)(KST_PROG_MSG_SES - KST_PROG_MSG_REF);
+    end(&o);
+    CHECK_EQ(msg(), KST_PROG_MSG_UNKNOWN);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, KST_PROG_MSG_SES - KST_PROG_MSG_REF);
+
+    by_hand();
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = (kst_link_outcome_kind_t)(KST_PROG_MSG_REF - KST_PROG_MSG_OUT);
+    o.op = LINK_KST_OP_READ_ALL;
+    end(&o);
+    CHECK_EQ(msg(), KST_PROG_MSG_UNKNOWN);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, KST_PROG_MSG_REF - KST_PROG_MSG_OUT);
+}
+
+/* A port that reports busy without end is given up KST_PROG_RUN_MAX_MS
+ * after the operation started, across the tick wrap too. */
+static void busy_without_end(uint32_t t0)
+{
+    kst_prog_cmd_t cmd;
+
+    by_hand();
+    g_f.now_ms = t0;
+    pass(0);
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    answer(KST_LINK_START_OK);
+    g_f.rd.phase = KST_LINK_RUNNING;
+    g_f.rd.flags |= LINK_KS_F_BUSY;
+    for (uint32_t t = 1000u; t < KST_PROG_RUN_MAX_MS; t += 1000u) {
+        pass(1000u);
+    }
+    pass(999u);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    CHECK(!kst_prog_take(&g_p, &cmd));
+    pass(1);
+    CHECK_EQ(msg(), KST_PROG_MSG_TIMEOUT);
+    CHECK(kst_prog_take(&g_p, &cmd));
+    CHECK_EQ(cmd.kind, KST_PROG_CMD_ABORT);
+    CHECK(kst_prog_in_doubt(&g_p));
+    CHECK(kst_prog_journal(&g_p));
+}
+
+TEST_CASE(a_port_busy_without_end_is_given_up)
+{
+    busy_without_end(1000u);
+    busy_without_end(0xFFFFFFFFu - KST_PROG_RUN_MAX_MS / 2u);
+}
+
+/* The card ends a save after KST_PROG_CARD_MS: the file is on the card, so
+ * it is named, it is the session's backup, and the write that follows asks
+ * for no second one. */
+TEST_CASE(a_save_that_ends_late_is_the_file_it_made)
+{
+    kst_prog_card_done_t d;
+    unsigned saves;
+
+    /* The save of the first write. */
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS + 3u);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK(g_p.late_id != 0u);
+    saves = g_fc.saves;
+    memset(&d, 0, sizeof(d));
+    d.id = g_p.late_id;
+    d.result = KST_PROG_CARD_OK;
+    snprintf(d.name, sizeof(d.name), "PRESET07");
+    kst_prog_card_done(&g_p, &d);
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK_STR_EQ(kst_prog_card_name(&g_p), "PRESET07");
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "PRESET07");
+    /* The same answer a second time changes nothing. */
+    d.name[0] = 'X';
+    kst_prog_card_done(&g_p, &d);
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "PRESET07");
+    g_fc.silent = false;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_fc.saves, saves);
+
+    /* A late answer that failed leaves the session without its file. */
+    up_enabled();
+    edit(KST_F_DUTY, 200);
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS + 3u);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    memset(&d, 0, sizeof(d));
+    d.id = g_p.late_id;
+    d.result = KST_PROG_CARD_WRITE_ERR;
+    kst_prog_card_done(&g_p, &d);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    CHECK(!kst_prog_backed_up(&g_p));
+    CHECK_EQ(g_p.late_id, 0);
+
+    /* A late answer under another card request names no file of its own,
+     * and the request under way keeps its answer. */
+    up_enabled();
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS + 3u);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    memset(&d, 0, sizeof(d));
+    d.id = g_p.late_id;
+    d.result = KST_PROG_CARD_OK;
+    snprintf(d.name, sizeof(d.name), "A");
+    CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_NONE);
+    frames(2);
+    CHECK(kst_prog_card_busy(&g_p));
+    kst_prog_card_done(&g_p, &d);
+    CHECK(kst_prog_card_busy(&g_p));
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_WRITE);
+    CHECK(kst_prog_backed_up(&g_p));
+    CHECK_STR_EQ(kst_prog_backup_name(&g_p), "A");
+
+    /* A servo read anew since is not the image the file holds. */
+    up_enabled();
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_save(&g_p, "A"), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS + 3u);
+    memset(&d, 0, sizeof(d));
+    d.id = g_p.late_id;
+    d.result = KST_PROG_CARD_OK;
+    snprintf(d.name, sizeof(d.name), "A");
+    g_p.servo.r[KST_REG_DUTY] ^= 1u;
+    kst_prog_card_done(&g_p, &d);
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    CHECK(!kst_prog_backed_up(&g_p));
+
+    /* A load given up leaves nothing to end late. */
+    up_enabled();
+    g_fc.silent = true;
+    CHECK_EQ(kst_prog_files(&g_p, 0), KST_PROG_MSG_NONE);
+    frames(KST_PROG_CARD_MS + 3u);
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_READ);
+    CHECK_EQ(g_p.late_id, 0);
+}
+
+/* The port counts as taken while the page refuses and its last status had
+ * the port out of PWM. */
+TEST_CASE(a_page_that_refuses_keeps_the_port_as_it_was_last_read)
+{
+    kst_link_readout_t rd;
+
+    memset(&rd, 0, sizeof(rd));
+    rd.phase = KST_LINK_NO_PAGE;
+    CHECK(!kst_prog_port_taken(&rd));
+    rd.was_held = true;
+    CHECK(kst_prog_port_taken(&rd));
+    rd.phase = KST_LINK_DOWN;
+    CHECK(!kst_prog_port_taken(&rd));
 }
 
 TEST_CASE(a_command_nobody_answers_is_given_up)
@@ -6158,6 +6532,14 @@ int main(void)
     RUN(a_plan_that_ends_without_a_plan_wrote_nothing);
     RUN(a_port_that_reports_busy_is_not_timed_out);
     RUN(a_command_nobody_answers_is_given_up);
+    RUN(a_late_outcome_of_another_operation_ends_none);
+    RUN(the_answer_to_an_older_file_releases_no_write);
+    RUN(abort_reaches_an_operation_the_model_awaits_no_longer);
+    RUN(a_session_the_port_ends_is_said);
+    RUN(a_code_the_panel_does_not_know_is_said_with_its_number);
+    RUN(a_port_busy_without_end_is_given_up);
+    RUN(a_save_that_ends_late_is_the_file_it_made);
+    RUN(a_page_that_refuses_keeps_the_port_as_it_was_last_read);
     RUN(the_waits_hold_across_the_tick_wrap);
     RUN(the_command_counter_skips_0_when_it_wraps);
     RUN(the_state_follows_the_port);

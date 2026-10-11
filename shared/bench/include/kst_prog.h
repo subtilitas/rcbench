@@ -88,6 +88,10 @@ extern "C" {
 /** An operation without an outcome for this long is aborted.  The time
  *  counts from the last feed in which the port reported it busy. */
 #define KST_PROG_RUN_MS 30000u
+/** And one the port reports busy for this long from its start is aborted
+ *  too.  A chosen value: the longest wait of the port is the 10000 ms of a
+ *  LEAVE, and the duration of the longest write is not measured. */
+#define KST_PROG_RUN_MAX_MS 120000u
 /** The file not written for this long: the write to the servo is not
  *  sent. */
 #define KST_PROG_STORE_MS 3000u
@@ -212,6 +216,13 @@ enum {
     KST_PROG_MSG_BACKUP_OTHER,    /**< the servo read is not the one the
                                        session's backup was read from: the
                                        backup is not restored to it         */
+    KST_PROG_MSG_SESSION_ENDED,   /**< the port is in PWM and no command of
+                                       this model put it there: the supply
+                                       went off or the coprocessor started
+                                       again.  The session's values are
+                                       gone                                 */
+    KST_PROG_MSG_UNKNOWN,         /**< a result, a refusal or an outcome the
+                                       tables do not hold; arg: the byte    */
     KST_PROG_MSG_SUPPLY_CAPS,     /**< the programming voltage or current is
                                        above the supply's limits: the port
                                        is not taken                         */
@@ -467,6 +478,7 @@ typedef struct {
                                    port asks for a read or holds a
                                    servo in doubt, no PD mini answers */
     uint32_t wait_ms;
+    uint32_t run_ms;          /**< when the wait for the outcome began */
     uint32_t fetch_ms;
     bool fetched;
     bool cmd_fetch;
@@ -503,6 +515,9 @@ typedef struct {
     char backup[KST_PROG_NAME_MAX];     /**< the file of backed_up    */
     uint32_t card_id;
     uint32_t card_ms;
+    uint32_t late_id;         /**< the save given up at KST_PROG_CARD_MS;
+                                   0 for none                       */
+    kst_image_t late_img;     /**< and the image it was asked with */
     uint8_t files_n;
     uint16_t files_total;
     uint16_t files_first;     /**< of the last list                */
@@ -516,6 +531,9 @@ typedef struct {
 
     bool file_wanted;
     bool file_busy;
+    bool file_stale;          /**< the text on its way is of before the
+                                   write that waits: its answer is not
+                                   that write's                     */
     bool file_retry;          /**< the card owes the file          */
     uint32_t file_retry_ms;
     uint8_t file_next;        /**< what the write wanted is for    */
@@ -779,7 +797,9 @@ bool kst_prog_soft_is_load(const kst_prog_t *p);
 /** A request for the card's side; false while there is none. */
 bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out);
 /** What the card's side made of it.  An answer to a request that is no
- *  longer awaited changes nothing. */
+ *  longer awaited changes nothing, but for one: the OK of a save given up
+ *  at KST_PROG_CARD_MS names its file and, for the servo as it was saved,
+ *  is the session's backup. */
 void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done);
 
 /* --- the journal's file ------------------------------------------------------ */

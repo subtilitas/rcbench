@@ -5634,6 +5634,46 @@ TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 }
 
+/* A test or a sweep under way keeps the port's pulse: switched off, the run
+ * would go on stepping and recording a servo that gets no pulse. */
+TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
+{
+    /* A sweep. */
+    fresh();
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    CHECK(servo_screen_sweeping());
+    open_settings();
+    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    tap(ROW_R_X, ROW_Y(2));                    /* PORT PWM */
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(servo_screen_sweeping());
+
+    /* A test. */
+    bench_fresh();
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    open_settings();
+    tap(TAB_X(3), TAB_Y);
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(servo_screen_testing());
+    /* The run over, armed still: the pulse goes off. */
+    tap(TAB_X(1), TAB_Y);
+    tap(START_X, START_Y);                     /* STOP */
+    CHECK(!servo_screen_testing());
+    tap(TAB_X(3), TAB_Y);
+    tap(ROW_R_X, ROW_Y(2));
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+}
+
 static bool s_port_held;
 
 static bool port_hold(setting_id_t id)
@@ -7626,6 +7666,7 @@ int main(void)
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
+    RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);

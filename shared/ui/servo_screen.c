@@ -3254,7 +3254,9 @@ static bool arm_locked(void)
 /*
  * What the tester drives changes only on a bench at rest: disarmed, no test
  * and no sweep, and the port not in the programmer's hands.  The port's
- * pulse is switched off at any time and on under the same rule.
+ * pulse is switched on under the same rule, and off at any time but in a
+ * test or a sweep: one that went on would step and record a servo that
+ * gets no pulse.  STOP and DISARM end those.
  */
 static bool target_locked(const ov_row_t *r)
 {
@@ -3270,7 +3272,8 @@ static bool target_locked(const ov_row_t *r)
             return true;                /* no port to switch */
         }
         if (settings_get_bool(SET_SERVO_PORT_PWM)) {
-            return false;               /* off is always taken */
+            /* Off is taken, armed or not, outside a run. */
+            return s.sweeping || servo_test_running(&s.test);
         }
     }
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
