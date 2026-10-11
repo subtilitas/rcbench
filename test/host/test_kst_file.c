@@ -1135,6 +1135,59 @@ TEST_CASE(a_locked_field_in_an_edited_file_is_reported_and_never_taken)
     CHECK((r.rules & KST_RULES_HARD) == 0u);
 }
 
+TEST_CASE(a_locked_value_no_raw_value_shows_is_refused_with_the_line)
+{
+    kst_file_t f;
+    unsigned line = 0;
+
+    CHECK_EQ(edited("Boost = 500\n20k_sel = 2\n", &f, &line),
+             KST_FILE_ERR_VALUE);
+    CHECK_EQ(line, 3u);
+    CHECK_EQ(edited("node_addr = 256\n", &f, &line), KST_FILE_ERR_VALUE);
+    CHECK_EQ(line, 2u);
+    CHECK_EQ(edited("prot1_pwm = 999 %\n", &f, NULL), KST_FILE_ERR_VALUE);
+    CHECK_EQ(edited("prot1_pwm = 98 %\n", &f, NULL), KST_FILE_ERR_VALUE);
+    CHECK_EQ(edited("prot_pot_err = 13 of 12\n", &f, NULL), KST_FILE_ERR_VALUE);
+    CHECK_EQ(edited("prot_pwm_err = 9 of 8\n", &f, NULL), KST_FILE_ERR_VALUE);
+    CHECK_EQ(edited("Lock = 2\n", &f, NULL), KST_FILE_ERR_VALUE);
+
+    /* The largest value each of them shows is taken. */
+    CHECK_EQ(edited("20k_sel = 1\nnode_addr = 255\nprot1_pwm = 97 %\n"
+                    "prot_pot_err = 12 of 12\nprot_pwm_err = 8 of 8\n"
+                    "Lock = 1\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.value[KST_F_NODE_ADDR], 255);
+    CHECK_EQ(f.value[KST_F_PROT1_PWM], 97);
+    CHECK_EQ(f.value[KST_F_PROT_POT_ERR], 12);
+}
+
+TEST_CASE(a_locked_value_is_compared_as_displayed_and_not_as_raw)
+{
+    /* Raw 7 of prot_pot_err shows as 3 of 12: a file that says 7 of 12
+     * differs from that servo, one that says 3 of 12 does not. */
+    kst_image_t servo = sim_bench_image();
+    kst_file_t f;
+    kst_file_load_t r;
+
+    CHECK(kst_field_set(&servo, KST_F_PROT_POT_ERR, 7));
+    CHECK_EQ(edited("prot_pot_err = 7 of 12\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK(r.skipped == BIT(KST_F_PROT_POT_ERR));
+    CHECK(r.editable == 0u);
+    CHECK(same_image(&r.target, &servo));
+
+    CHECK_EQ(edited("prot_pot_err = 3 of 12\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK(r.skipped == 0u);
+
+    CHECK_EQ(edited("prot_pot_err = raw 7\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK(r.skipped == 0u);
+
+    CHECK_EQ(edited("prot_pot_err = raw 3\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK(r.skipped == BIT(KST_F_PROT_POT_ERR));
+}
+
 TEST_CASE(a_locked_field_whose_servo_value_has_no_display_counts_as_differing)
 {
     /* No field of that kind is locked in this table; the editable Stretch
@@ -1565,6 +1618,8 @@ int main(void)
     RUN(a_checked_file_loads_its_editable_fields_and_reports_the_others);
     RUN(a_file_equal_to_the_servo_changes_and_asks_nothing);
     RUN(a_locked_field_in_an_edited_file_is_reported_and_never_taken);
+    RUN(a_locked_value_no_raw_value_shows_is_refused_with_the_line);
+    RUN(a_locked_value_is_compared_as_displayed_and_not_as_raw);
     RUN(a_locked_field_whose_servo_value_has_no_display_counts_as_differing);
     RUN(a_number_the_servo_already_shows_changes_nothing);
     RUN(a_value_outside_16_bits_in_a_file_built_by_hand_is_not_applied);

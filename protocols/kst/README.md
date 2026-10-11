@@ -444,7 +444,7 @@ port path the servo is connected through:
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c`,
-`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 216 cases. The table in
+`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 218 cases. The table in
 `STATUS.md` has the line coverage per file. The pin driver's C file is not
 in the host build.
 

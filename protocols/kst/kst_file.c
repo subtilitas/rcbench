@@ -587,6 +587,20 @@ typedef struct {
 } edit_t;
 
 /* The value of field @p id as a person writes it. */
+/* Whether a raw value of the field displays as @p display. */
+static bool shows(kst_field_id_t id, int32_t display)
+{
+    const uint32_t max = kst_field_raw_max(id);
+    int32_t shown = 0;
+
+    for (uint32_t raw = 0; raw <= max; ++raw) {
+        if (kst_field_display(id, (uint16_t)raw, &shown) && shown == display) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool field_value(kst_field_id_t id, const char *s, size_t n,
                         kst_file_t *f)
 {
@@ -649,6 +663,12 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
         return false;
     }
     if (!editable) {
+        /* A field no load takes keeps its displayed value: prot1_time and
+         * prot1_pwm have no conversion back.  The value is one the field
+         * shows for some raw value, or the line is refused. */
+        if (!shows(id, (int32_t)(v + tenth))) {
+            return false;
+        }
         f->value[id] = (int32_t)(v + tenth);
         return true;
     }
@@ -827,15 +847,17 @@ static bool holds(const kst_file_t *file, kst_field_id_t id,
     if (file->kind == KST_FILE_VERIFIED) {
         return kst_field_get(&file->image, id) == have;
     }
-    if (file->value[id] == (int32_t)have) {
-        return true;
+    /* The value is raw for a field written "raw <n>" and for an editable
+     * field, and displayed for a locked one: 7 of 12 is not raw 7. */
+    if ((file->as_raw & KST_FIELD_BIT(id)) != 0u) {
+        return file->value[id] == (int32_t)have;
     }
-    if ((file->as_raw & KST_FIELD_BIT(id)) != 0u ||
-        !kst_field_display(id, have, &shown)) {
-        return false;
-    }
+    (void)kst_field_display(id, have, &shown);
     if (!editable) {
         return file->value[id] == shown;
+    }
+    if (file->value[id] == (int32_t)have) {
+        return true;
     }
     /* A number a person typed that the servo's value already shows changes
      * nothing: several raw values of Max. Duty show as one percentage. */
