@@ -3,6 +3,7 @@
 import './style.css';
 import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from './core.ts';
+import { exportPdf, syncPdf } from './export/button.ts';
 import { formatHash, parseHash, reportIds } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { optionsOf } from './names.ts';
@@ -106,6 +107,7 @@ function render(focusId?: string): void {
   const pan = byId('pan');
   if (pan) pan.scrollLeft = panLeft ?? Math.max(0, PAN_START - pan.clientWidth / 2);
   updatePanHint();
+  syncPdf(lang, location.href);
   if (focusId) byId(focusId)?.focus({ preventScroll: true });
 }
 
@@ -164,6 +166,9 @@ document.addEventListener('click', (event) => {
     byId(el.dataset.jump)?.scrollIntoView();
   } else if (el.id === 'b-print') {
     window.print();
+  } else if (el.id === 'b-pdf') {
+    const setup = tryResolve(selection);
+    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, location.href);
   } else if (el.id === 'b-reset') {
     selection = base();
     notices = [];
