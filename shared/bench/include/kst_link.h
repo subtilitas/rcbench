@@ -147,10 +147,12 @@ typedef struct {
     link_kst_op_t      op;
     link_kst_refusal_t refusal;   /**< KST_LINK_OUT_REFUSED               */
     uint8_t  nack;                /**< KST_LINK_OUT_NACK: link_nack_t     */
-    kst_ses_t result;             /**< KST_LINK_OUT_DONE: the low byte of
-                                       LINK_KS_RESULT, a kst_ses_t or
-                                       LINK_KST_RESULT_SUPPLY, _NO_PATH or
-                                       _TOO_COMPLEX                       */
+    uint8_t  result;              /**< KST_LINK_OUT_DONE: the low byte of
+                                       LINK_KS_RESULT, a kst_ses_t value
+                                       (0 to 20) or LINK_KST_RESULT_SUPPLY,
+                                       _NO_PATH or _TOO_COMPLEX (32 to 34);
+                                       a byte, since the enum does not
+                                       hold the last three                */
     uint8_t  fail_reg;            /**< the register result names; 0xFF none */
     uint8_t  steps_done;          /**< writes of the plan done            */
     uint16_t frames;              /**< frames the operation sent, to 4095 */
