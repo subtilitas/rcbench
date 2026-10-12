@@ -638,6 +638,17 @@ static void read_enc(sense_sched_t *s)
     if (!field && as5600_read_status(&e->dev, &status) != SENSE_OK) {
         return;
     }
+    if (!field && !as5600_status_possible(status)) {
+        /* ML and MH together: a device answering 0xFF, not an AS5600, and
+         * the RAW ANGLE that comes with it is no position.  A failed
+         * sample like any other, so the part goes offline after
+         * SENSE_FAILS of them. */
+        sense_part_sample_failed(&e->dev.part, fails);
+        if (as5600_state(&e->dev) != SENSE_PART_ONLINE) {
+            e->have_angle = false;
+        }
+        return;
+    }
     if (as5600_read_raw(&e->dev, &raw) != SENSE_OK) {
         sense_part_sample_failed(&e->dev.part, fails);
         if (as5600_state(&e->dev) != SENSE_PART_ONLINE) {
@@ -750,6 +761,13 @@ void sense_sched_tick(sense_sched_t *s)
         read_rotation(s);
     } else if (s->cfg.as5600_en) {
         read_enc(s);
+    }
+    /* The die temperature and DIAG are of the part online: once it is
+     * offline, the last ones are no reading of now.  Checked every tick,
+     * as a failed CURRENT or VBUS read takes the part offline as well. */
+    if (ina228_state(&s->i228) != SENSE_PART_ONLINE) {
+        s->have_temp = false;
+        s->have_diag = false;
     }
     /* The capture on CH1's own time, whatever came after it; then the
      * sample into the history, so the level before a command is taken

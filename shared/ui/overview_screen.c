@@ -31,7 +31,6 @@ typedef struct {
     const char    *name;    /**< the screen's title: English always     */
     ui_text_id_t   line;
     ui_icon_fn     icon;
-    bool           live;    /**< the screen exists                        */
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
     /** Modelled on the panel whatever the coprocessor reports: no link
      *  capability names the hardware.  SUPPLY's holds only until SETUP
@@ -40,28 +39,27 @@ typedef struct {
 } tile_t;
 
 /*
- * Tiles in order of expected use.  A tile whose screen does not exist leads
- * to a stub that names what blocks it.  "iR" (internal resistance) rather
+ * Tiles in order of expected use.  "iR" (internal resistance) rather
  * than "IR", which reads as infrared.
  */
 static const tile_t k_tiles[] = {
-    { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,   true,
+    { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,
       LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE, false },
-    { SCREEN_SERVO,      "SERVO",       TX_OV_SERVO,         ui_icon_servo,   true,
+    { SCREEN_SERVO,      "SERVO",       TX_OV_SERVO,         ui_icon_servo,
       LINK_CAP_SERVO_PWM, false },
-    { SCREEN_SUPPLY,     "SUPPLY",      TX_OV_SUPPLY,        ui_icon_supply,  true,
+    { SCREEN_SUPPLY,     "SUPPLY",      TX_OV_SUPPLY,        ui_icon_supply,
       0, true },   /* modelled unless SETUP enables the PD mini */
-    { SCREEN_ANALYSER,   "ANALYSER",    TX_OV_ANALYSER,      ui_icon_chart,   true,
+    { SCREEN_ANALYSER,   "ANALYSER",    TX_OV_ANALYSER,      ui_icon_chart,
       LINK_CAP_RECEIVER, false },
-    { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,  true,
+    { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,
       0, false },   /* the card is on the panel; nothing needed from the coprocessor */
-    { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders, true,
+    { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders,
       0, false },
-    { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery, true,
+    { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery,
       LINK_CAP_CELLS, false },
-    { SCREEN_BALANCE,    "BALANCE",     TX_OV_BALANCE,       ui_icon_balance, true,
+    { SCREEN_BALANCE,    "BALANCE",     TX_OV_BALANCE,       ui_icon_balance,
       LINK_CAP_VIBRATION, false },
-    { SCREEN_PROGRAMMER, "PROGRAMMER",  TX_OV_PROGRAMMER,    ui_icon_chip,    true,
+    { SCREEN_PROGRAMMER, "PROGRAMMER",  TX_OV_PROGRAMMER,    ui_icon_chip,
       LINK_CAP_PROGRAM, false },
 };
 
@@ -167,11 +165,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 8,
                             ui_theme_color(UI_C_EDGE));
 
-        /* The icon dims for a screen that does not exist.  A screen whose
-         * hardware is missing is fully usable, so it stays lit. */
-        t->icon(c, r.x + r.w / 2, r.y + 64, 30,
-                t->live ? ui_theme_color(UI_C_ACCENT)
-                        : ui_theme_color(UI_C_TEXT_FAINT));
+        /* A screen whose hardware is missing is fully usable, so its icon
+         * stays lit. */
+        t->icon(c, r.x + r.w / 2, r.y + 64, 30, ui_theme_color(UI_C_ACCENT));
 
         /* Clipped to the tile: centring a string wider than its tile puts the
          * overhang on the neighbour. */
@@ -183,9 +179,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
 
         /*
-         * Three states.  SOON: the screen does not exist.  MODELLED: the
-         * screen exists and its hardware is not fitted, so its values are
-         * modelled.  No badge: the hardware is fitted.
+         * Two states.  MODELLED: the hardware is not fitted, so the values
+         * are modelled.  No badge: the hardware is fitted.
          */
         const uint16_t have = ui_router_status()->capabilities;
         const bool modelled = t->model_only
@@ -193,10 +188,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const bool fitted = !modelled
                             && ((t->needs == 0)
                                 || ((have & t->needs) == t->needs));
-        if (!t->live || !fitted) {
+        if (!fitted) {
             /* 88 px, or as wide as a longer word: the label starts 24 px
              * in and runs to the end, as MODELLED does in 88. */
-            const char *word = t->live ? TR(OV_MODELLED) : TR(OV_SOON);
+            const char *word = TR(OV_MODELLED);
             int bw = 24 + gfx_text_width(&gfx_font_8x16, word, 1);
             bw = (bw < 88) ? 88 : bw;
             const gfx_rect_t badge = { (int16_t)(r.x + (r.w - bw) / 2),

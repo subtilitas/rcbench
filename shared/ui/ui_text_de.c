@@ -45,7 +45,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_OV_BALANCE]             = "Vibration, Phase",
     [TX_OV_PROGRAMMER]          = "ESC und Servo",
     [TX_OV_MODELLED]            = "SIMULIERT",
-    [TX_OV_SOON]                = "BALD",
 
     /* ---------------------------------------------------------- splash */
     [TX_SPLASH_BOARD]           = "PLATINE",
@@ -57,24 +56,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SPLASH_IOMCU]           = "KOPROZESSOR",
     [TX_SPLASH_TAGLINE]         = "Prüfstand für Motor, ESC und Servo",
     [TX_SPLASH_CREDIT]          = "erstellt mit Claude Code",
-
-    /* ------------------------------------------------------------ stub */
-    [TX_STUB_WHAT]              = "WAS DIESE SEITE KÖNNEN WIRD",
-    [TX_STUB_WAITING]           = "WARTET AUF",
-    [TX_STUB_CLEAR]             = "NICHTS BLOCKIERT DIESE SEITE",
-    [TX_STUB_BUILT]             = "die benötigten Teile sind gebaut und getestet",
-    [TX_STUB_MOTOR_1]           = "Throttle: Puls, OneShot, MultiShot, DShot in jeder Rate",
-    [TX_STUB_MOTOR_2]           = "Volt, Ampere, Watt, Ladung und Energie, mit Spitzen und Einbruch",
-    [TX_STUB_MOTOR_3]           = "Drehzahl von optischem oder magnetischem Geber, Phasenklemme oder ESC",
-    [TX_STUB_MOTOR_4]           = "KISS-Telemetrie dekodiert, und Grenzen, die ohne Rückfrage abschalten",
-    [TX_STUB_MOTOR_WHY]         = "die Prüfstand-Page ist noch nicht definiert; der Link, der sie trägt, schon",
-    [TX_STUB_LOGS_1]            = "Jeden Kanal mit bis zu 1 kHz auf die Karte schreiben",
-    [TX_STUB_LOGS_2]            = "Mit Cursorn und Vergleich zurücklesen",
-    [TX_STUB_LOGS_3]            = "Einen Lauf als CSV oder Bericht exportieren",
-    [TX_STUB_SETUP_1]           = "Akku, Motor, Ausgang, Anschlüsse und Design, in NVS gespeichert",
-    [TX_STUB_SETUP_2]           = "Obergrenzen je Buchse: Nieder- und Hochvolt, jeweils in Hardware gesetzt",
-    [TX_STUB_SETUP_3]           = "Nur-Signal-Modus je Buchse, Versorgungspin getrennt",
-    [TX_STUB_SETUP_4]           = "Profile auf der Karte speichern, vergleichen und wiederherstellen",
 
     /* ------------------------------------------------------- bus fault */
     [TX_BF_BUS_OFF_TEXT]        = "Panel ist vom Bus getrennt",

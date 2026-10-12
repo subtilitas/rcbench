@@ -1291,14 +1291,30 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     check(boots_of((3, 5000), (3, 9000)) == [0, 1], "the same number")
     check(boots_of((3, 5000), (2, 9000)) == [0, 1], "a number back")
     check(boots_of((1, 5000), (32769, 9000)) == [0, 1], "32768 on")
-    # A millisecond tick that lies before the last one's is a restart,
-    # whatever the number: by 1 ms, and by 2^31 ms, which is as far on.
-    check(boots_of((1, 5000), (2, 4999)) == [0, 1], "1 ms back")
+    # A millisecond tick that lies before the last one's by more than
+    # INVERSION_MS is a restart, whatever the number: by 101 ms, and by
+    # 2^31 ms, which is as far on.  Up to INVERSION_MS back with the
+    # number on is the same boot: a command trigger's time is computed,
+    # a frame ahead of the next trace's mark.
+    check(boots_of((1, 5000), (2, 4899)) == [0, 1], "101 ms back")
+    check(boots_of((1, 5000), (2, 4900)) == [0, 0], "100 ms back")
+    check(boots_of((1, 5000), (2, 4990)) == [0, 0], "10 ms back")
+    check(boots_of((1, 5000), (1, 4990)) == [0, 1], "10 ms back, same number")
+    check(boots_of((1, 5000), (2, 4990), (3, 4985)) == [0, 0, 0],
+          "two inversions")
     check(boots_of((1, 5000), (2, 5000)) == [0, 0], "the same tick")
     check(boots_of((1, 5000), (2, 4999 + (1 << 31))) == [0, 0],
           "2^31 ms less 1 on")
     check(boots_of((1, 5000), (2, 5000 + (1 << 31))) == [0, 1],
           "2^31 ms back")
+    # The second trace starts 10 ms before the first and is one boot, on
+    # the first's clock.
+    early = synthetic(899900, [(0, 1900), (1000, 1100), (2500, 1900)])
+    traces, _, _ = sense_trace.parse_log(numbered(a, 1, 20120)
+                                         + numbered(early, 2, 20110))
+    check([tr.boot for tr in traces] == [0, 0], "an inversion is no boot")
+    check(traces[1].t0_abs - traces[0].t0_abs == -100,
+          f"{traces[1].t0_abs - traces[0].t0_abs} apart")
     # The tick across its wrap is one boot.
     check(boots_of((1, (1 << 32) - 3000), (2, 2000)) == [0, 0],
           "the tick's wrap")

@@ -1574,9 +1574,9 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     if (total < 0) {
         /*
          * Mounted, and yet its root will not open: the card it was mounted
-         * from has been taken out or swapped.  Nothing clears that flag on
-         * its own -- only storage_deinit() does -- so the mount stays stale
-         * and a replacement card is not found until the panel restarts.
+         * from has been taken out or swapped.  Nothing clears that flag, so
+         * the mount stays stale and a replacement card is not found until
+         * the panel restarts.
          *
          * Not unmounted from here.  This runs on the task that renders, and
          * the runlog task writes the run log on the same volume: unmounting
@@ -2302,8 +2302,8 @@ static void log_open(uint32_t run)
          *
          * It rescues the card that stays in the slot.  It cannot rescue the
          * one taken out to be edited on a computer: storage_mounted() is
-         * cleared only by storage_deinit(), so a swapped card leaves a stale
-         * mount and the walk reads the volume that is gone.  That is the open
+         * never cleared, so a swapped card leaves a stale mount and the
+         * walk reads the volume that is gone.  That is the open
          * item in STATUS.md, and until it is closed a deletion made off the
          * bench needs the panel restarted.
          */
@@ -2532,7 +2532,7 @@ static void log_note(const char *line)
     if (!storage_mounted()) {
         return;
     }
-    FILE *f = fopen("/sdcard/RCBENCH.LOG", "a");
+    FILE *f = fopen(STORAGE_MOUNT_POINT "/RCBENCH.LOG", "a");
     if (f == NULL) {
         return;
     }
@@ -3061,13 +3061,6 @@ static void art_stop(const char *why)
     s_artbusy = false;
 }
 
-/*
- * Ask for the picture, unless it is already kept or there is none.
- *
- * Runs on the link-up edge and does one transaction: everything after this
- * happens a slice at a time.  A coprocessor built before the page answers
- * NACK, which is not a fault -- the board is then drawn from its shape.
- */
 /*
  * How the fetch reaches the far end.  The sequence itself is in
  * shared/artwork, where the suite runs it against a device in memory and can

@@ -51,7 +51,6 @@ SOURCES = [
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
     "shared/ui/ui_plot.c",
-    "shared/ui/ui_hero.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_watermark.c",
@@ -60,7 +59,6 @@ SOURCES = [
     "shared/ui/ui_text_de.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
-    "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
@@ -113,6 +111,7 @@ SOURCES = [
     "shared/outputs/out_bind.c",
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
+    "shared/link/link_crc.c",
 ]
 INCLUDES = [
     "shared/gfx/include",
