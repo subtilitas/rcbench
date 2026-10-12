@@ -41,17 +41,26 @@ absolute path and a bare anchor are left as they are.
   whether a target climbs above the repository.
 - Any other link inside docs/ (an image, a file) is unchanged.
 - Text in a code span, in a fenced code block (``` or ~~~) and after a
-  backslash-escaped `[` is not a link and stays as written.  An indented
-  code block is not recognised; links in it are rewritten.
+  backslash-escaped `[` or `![` is not a link and stays as written.  A
+  fence opens at 0 to 3 spaces of indent, also after block quote markers
+  (`> ```); an indented code block is not recognised, so links in it are
+  rewritten.  An image may stand in link text; a `]` after a backslash
+  does not close the text.  A line ending may follow `(`.
+- `--verify` checks every link and image the parser finds: a link is an
+  absolute URL, an anchor or a page name with no `.md` and no `../`, and
+  never `/raw/main/`; an image in docs/ is relative, one above docs/ is a
+  `/raw/main/` URL.
 
 `--check` also fails when a relative link still leaves docs/ after the
 rewrite, which is the case for a target that climbs above the repository.
 
     tools/wiki_links.py <dir>          rewrite in place
     tools/wiki_links.py --check <dir>  report what would change, change nothing
-    tools/wiki_links.py --verify <dir> fail on a rewritten page that still
-                                       holds a relative .md link or a link
-                                       that leaves docs/, code left out
+    tools/wiki_links.py --verify <dir> fail on a rewritten page whose links
+                                       or images a wiki cannot open; the
+                                       page is read with markdown-it-py, a
+                                       CommonMark parser, not by this
+                                       script's scanner
 
 SPDX-License-Identifier: MIT
 """
@@ -60,6 +69,7 @@ import posixpath
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 REPO = "https://github.com/subtilitas/rcbench"
 # The repository this script belongs to, which holds docs/.  The wiki copy
@@ -79,10 +89,16 @@ NOT_URL = r"(?![A-Za-z][A-Za-z0-9+.-]*:)(?!/)(?!#)"
 # `'t'` or `(t)`.  The label in front is found by `find_links`, because a
 # label may nest brackets to any depth.
 TAIL = re.compile(
-    r"\((?P<lead>[ \t]*)(?P<lt><)?" + NOT_URL +
+    r"\((?P<lead>[ \t]*(?:\n[ \t]*)?)(?P<lt><)?" + NOT_URL +
     r"(?P<target>(?(lt)[^<>#\n]+|(?:\\.|[^()\s#\\]|\((?:\\.|[^()\s\\])*\))+))"
     r"(?P<anchor>#(?(lt)[^<>\n]*|(?:\\.|[^()\s\\])*))?(?(lt)>)"
-    r"(?P<title>\s+" + TITLE + r")?(?P<trail>[ \t]*)\)")
+    r"(?P<title>\s+" + TITLE + r")?(?P<trail>[ \t]*(?:\n[ \t]*)?)\)")
+
+# Any inline destination, URL or not: `(dest "title")`.  An image followed by
+# one is an inline image, whatever the destination, and no reference.
+INLINE_ANY = re.compile(
+    r"\([ \t]*(?:\n[ \t]*)?(?:<[^<>\n]*>|(?:\\.|[^()\s\\]|"
+    r"\((?:\\.|[^()\s\\])*\))*)(?:\s+" + TITLE + r")?\s*\)")
 
 # `[label]: target "title"`, at most 3 spaces in.  The target is bare or in
 # angle brackets.  It follows on the same line or, after one line ending, on
@@ -96,7 +112,9 @@ DEFINITION = re.compile(
     re.M)
 
 HOLE = "\ue000"  # stands in for a masked character; matches no pattern above
-FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})(.*)")
+# A fence opens at 0-3 spaces of indent, after any number of block quote
+# markers `>`.  Four spaces make an indented code block.
+FENCE = re.compile(r"(?:[ ]{0,3}>[ ]?)*[ ]{0,3}(`{3,}|~{3,})(.*)")
 SPAN = re.compile(
     r"(?<![`\\])(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)")
 ESCAPED_OPENER = re.compile(r"(?<!\\)(?:\\\\)*\\(\[)")
@@ -143,6 +161,9 @@ def _close(masked: str, i: int) -> int | None:
     n = len(masked)
     while i < n:
         c = masked[i]
+        if c == "\\" and i + 1 < n and masked[i + 1] != "\n":
+            i += 2
+            continue
         if c == "[":
             depth += 1
         elif c == "]":
@@ -185,17 +206,17 @@ def find_links(text: str, masked: str) -> tuple[list[Link], set[str]]:
         if j is None:
             i += 1
             continue
-        k = i - 1
+        k = i - 2
         while k >= 0 and masked[k] == "\\":
             k -= 1
-        bang = i > 0 and masked[i - 1] == "!" and (i - 1 - k) % 2 == 0
+        bang = i > 0 and masked[i - 1] == "!" and (i - 2 - k) % 2 == 0
         label = text[i + 1:j]
         m = TAIL.match(masked, j + 1)
         if m:
             links.append(Link(i - 1 if bang else i, bang, label, m))
-            i = m.end()
+            i += 1  # an image may stand in the label
             continue
-        if bang:
+        if bang and not INLINE_ANY.match(masked, j + 1):
             ref = label
             if masked[j + 1:j + 2] == "[":
                 e = masked.find("]", j + 2)
@@ -298,28 +319,88 @@ def stranded(text: str, reldir: str = "") -> list[str]:
     return [t for t in targets(text) if leaves_docs(t, reldir)]
 
 
-def survivors(text: str, reldir: str = "") -> list[str]:
-    """Relative targets of already rewritten text that a wiki cannot
-    open: a markdown page with its extension, or a target outside docs/."""
-    return [t for t in targets(text)
-            if t.endswith(".md") or leaves_docs(t, reldir)]
+SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*:")
+
+
+def judge(href: str, image: bool, reldir: str = "") -> str | None:
+    """Why `href` is wrong on a wiki page, or None.  A link is an absolute
+    URL, an anchor or a page name with no `.md` that stays in docs/.  An
+    image inside docs/ stays relative; one above docs/ is a `/raw/main/`
+    URL, and no other repository URL serves an image."""
+    if SCHEME.match(href):
+        if href.startswith(REPO + "/"):
+            kind = href[len(REPO) + 1:].split("/", 1)[0]
+            if image and kind != "raw":
+                return f"an image served from /{kind}/"
+            if not image and kind == "raw":
+                return "a link to /raw/main/"
+        return None
+    if href.startswith(("#", "/")):
+        return None
+    path = unquote(re.split(r"[#?]", href, maxsplit=1)[0])
+    if leaves_docs(path, reldir):
+        return "a relative target above docs/"
+    if not image and path.endswith(".md"):
+        return "a page name with .md"
+    return None
+
+
+def verify_text(text: str, reldir: str = "") -> list[tuple[int, str, str]]:
+    """Every link and image of a page that a wiki cannot open, as (line,
+    href, reason).  The page is read by a CommonMark parser, not by this
+    file's scanner, so a construct the rewriter does not see still counts."""
+    from markdown_it import MarkdownIt
+
+    lines = text.splitlines()
+    found: list[tuple[int, str, str]] = []
+
+    def walk(tokens, first: int, last: int) -> None:
+        for tok in tokens:
+            if tok.map:
+                first, last = tok.map
+            if tok.children:
+                walk(tok.children, first, last)
+            if tok.type == "link_open":
+                href, image = tok.attrGet("href"), False
+            elif tok.type == "image":
+                href, image = tok.attrGet("src"), True
+            else:
+                continue
+            why = judge(str(href), image, reldir)
+            if why:
+                # The line holding the href: in the block, else a definition
+                # elsewhere on the page, else the block's first line.
+                needle = str(href).split("#")[0]
+                at = next((n for n in [*range(first, last),
+                                       *range(len(lines))]
+                           if n < len(lines) and needle in lines[n]), first)
+                found.append((at + 1, str(href), why))
+
+    walk(MarkdownIt("commonmark").parse(text), 0, 0)
+    return found
 
 
 def verify_tree(root: Path) -> int:
     """Report every link of a rewritten tree that a wiki cannot open."""
+    try:
+        import markdown_it  # noqa: F401
+    except ImportError:
+        print("--verify needs markdown-it-py: pip install markdown-it-py",
+              file=sys.stderr)
+        return 2
     bad = 0
     for page in sorted(root.rglob("*.md")):
         reldir = page.parent.relative_to(root).as_posix()
         reldir = "" if reldir == "." else reldir
         text = page.read_text(encoding="utf-8")
-        for target in survivors(text, reldir):
-            print(f"{page.relative_to(root)}: {target} survived the rewrite",
+        for line, href, why in verify_text(text, reldir):
+            print(f"{page.relative_to(root)}:{line}: {href} is {why}",
                   file=sys.stderr)
             bad += 1
     if bad:
-        print(f"{bad} link(s) survived the rewrite", file=sys.stderr)
+        print(f"{bad} link(s) a wiki cannot open", file=sys.stderr)
         return 1
-    print("no link survived the rewrite")
+    print("every link opens on the wiki")
     return 0
 
 

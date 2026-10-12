@@ -67,9 +67,14 @@ history is in git.
   as written. A definition that an image uses (`![alt][label]`) gets the
   `raw` form. A label may nest brackets to any depth, a URL scheme may hold
   `+`, `-` and `.` (`git+https:`), and a definition may put its target and
-  title on the next line. The CI step runs `tools/wiki_links.py --verify`,
-  which fails on a surviving relative `.md` link or a link that leaves
-  `docs/`, code left out.
+  title on the next line. An image may stand in link text, `\![` is not an
+  image, `\]` stays in link text, a fence opens at 0 to 3 spaces of indent
+  or after `>` markers, and a line ending may follow `(`. The CI step runs
+  `tools/wiki_links.py --verify`, which reads every converted page with
+  markdown-it-py 3.0.0 (a CommonMark parser) and fails on a link that is
+  not an absolute URL, an anchor or a page name without `.md` and `../`, on
+  a link to `/raw/main/`, and on an image that is not relative inside
+  `docs/` or `/raw/main/` above it. It prints page and line.
 
 - The run clock counts a run that starts on tick 0 from that tick. A flag
   (`in_run` in `arming_t`) marks a run, so every 32-bit tick, 0 and

@@ -244,7 +244,7 @@ def test_code_spans_fences_and_escaped_openers_are_left_alone():
     out = wl.rewrite(text)
     assert out == text.replace("after [real](../NOTICE)",
                                f"after [real]({R}/blob/main/NOTICE)")
-    assert wl.survivors(out) == []
+    assert wl.verify_text(out) == []
     assert wl.stranded(out) == []
 
 
@@ -268,7 +268,7 @@ def test_verify_ignores_code_and_fails_on_a_real_survivor(tmp_path, capsys):
                     encoding="utf-8")
     assert wl.main(["wiki_links.py", "--verify", str(tmp_path)]) == 1
     err = capsys.readouterr().err
-    assert "B.md survived" in err and "../NOTICE survived" in err
+    assert "Home.md:1: B.md is" in err and "Home.md:4: ../NOTICE is" in err
     assert page.read_text(encoding="utf-8").startswith("[a](B.md)")
 
 
@@ -315,4 +315,80 @@ def test_a_definition_target_and_title_on_later_lines():
         f"[c]:\n<{R}/blob/main/a b.md>\n"
         "[s]:\n  Screens\n")
     assert wl.stranded("[legal]:\n  ../README.md\n") == ["../README.md"]
-    assert wl.survivors("[s]:\n  Screens.md\n") == ["Screens.md"]
+    assert wl.verify_text("[s]:\n  Screens.md\n\n[s]\n")[0][1] == "Screens.md"
+
+
+def test_an_image_in_a_link_is_rewritten_too():
+    out = wl.rewrite("[![logo](../hardware/logo.png)](Screens.md)")
+    assert out == f"[![logo]({R}/raw/main/hardware/logo.png)](Screens)"
+    out = wl.rewrite("[![logo][a]](Screens.md)\n\n[a]: ../hardware/l.png\n")
+    assert f"[a]: {R}/raw/main/hardware/l.png" in out
+
+
+def test_an_escaped_image_marker_makes_a_link_not_an_image():
+    assert wl.rewrite(r"\![doc](../README.md)") == (
+        rf"\![doc]({R}/blob/main/README.md)")
+    out = wl.rewrite("\\![asset]\n\n[asset]: ../README.md\n")
+    assert f"[asset]: {R}/blob/main/README.md" in out
+    out = wl.rewrite("\\\\![asset]\n\n[asset]: ../hardware/a.png\n")
+    assert f"[asset]: {R}/raw/main/hardware/a.png" in out
+
+
+def test_a_fence_in_a_block_quote_hides_its_links():
+    text = "> ```\n> [x](../NOTICE)\n> ```\n[y](../NOTICE)\n"
+    assert wl.rewrite(text) == (
+        f"> ```\n> [x](../NOTICE)\n> ```\n[y]({R}/blob/main/NOTICE)\n")
+    nested = ">> ~~~\n>> [x](../NOTICE)\n>> ~~~\n"
+    assert wl.rewrite(nested) == nested
+
+
+def test_an_external_image_does_not_claim_a_definition():
+    text = ("![manual](https://example.com/logo.png)\n"
+            "[manual]\n\n[manual]: ../README.md\n")
+    assert f"[manual]: {R}/blob/main/README.md" in wl.rewrite(text)
+
+
+def test_an_escaped_bracket_stays_in_the_link_text():
+    assert wl.rewrite(r"[a \] b](Screens.md)") == r"[a \] b](Screens)"
+    assert wl.rewrite(r"[a \\](Screens.md)") == r"[a \\](Screens)"
+
+
+def test_a_fence_indented_four_spaces_is_code_not_a_fence():
+    text = "    ```\n[x](../NOTICE)\n"
+    assert wl.rewrite(text) == f"    ```\n[x]({R}/blob/main/NOTICE)\n"
+    three = "   ```\n[x](../NOTICE)\n"
+    assert wl.rewrite(three) == three
+
+
+def test_a_line_ending_may_follow_the_opening_parenthesis():
+    assert wl.rewrite("[notice](\n../NOTICE)") == (
+        f"[notice](\n{R}/blob/main/NOTICE)")
+    assert wl.rewrite("[a](\n  Screens.md\n)") == "[a](\n  Screens\n)"
+
+
+def test_verify_reads_the_page_with_a_parser(tmp_path, capsys):
+    def verdict(text):
+        (tmp_path / "Home.md").write_text(text, encoding="utf-8")
+        return wl.main(["wiki_links.py", "--verify", str(tmp_path)])
+
+    assert verdict("[a](Screens) [b](#x) [c](https://e.com/a.md)\n"
+                   f"![i](pic.png) ![r]({R}/raw/main/hardware/a.png)\n") == 0
+    # What the rewriter misses, each one wrong on the wiki.
+    for bad in ("[a](B.md)\n", "[a](../NOTICE)\n", f"[a]({R}/raw/main/x)\n",
+                "![i](../hardware/a.png)\n", f"![i]({R}/blob/main/a.png)\n",
+                "[b][c]\n\n[c]: ../NOTICE\n", "text\n\n[a](B.md#top)\n"):
+        assert verdict(bad) == 1, bad
+    err = capsys.readouterr().err
+    assert "Home.md:1: B.md is a page name with .md" in err
+    assert "Home.md:3: B.md#top" in err
+    assert "above docs/" in err and "/raw/main/" in err
+    # Code is not a link.
+    assert verdict("`[x](B.md)`\n\n    [y](B.md)\n") == 0
+
+
+def test_verify_judges_references_and_subdirectories():
+    assert wl.verify_text("[a][b]\n\n[b]: C.md\n")[0][1] == "C.md"
+    assert wl.verify_text("[a](Sub/P.md)\n", "")[0][1] == "Sub/P.md"
+    assert wl.verify_text("[a](../P)\n", "sub") == []
+    assert wl.verify_text("[a](../../P.md)\n", "sub")[0][2] == (
+        "a relative target above docs/")
