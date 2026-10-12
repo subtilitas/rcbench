@@ -125,7 +125,8 @@ history is in git.
   drawn off. The PORT row names the programming voltage and current limit
   in PWM, and the servo tester's COMMANDED reads `---` while the programmer
   holds the port. The German texts write numbers with a decimal point and
-  keep SPEED LIMIT, SPEED and AFTER.
+  keep SPEED LIMIT, SPEED and AFTER. The panel sends no ENTER while it
+  reads a PD mini output that is on and set under 4.8 V.
 - Servo programmer, interrupted writes: a record of a running write is
   stored in `KST/KST.TXT` (at most 400 bytes of text) before the write
   starts; after a link loss, a restart, an abort or a power loss during a

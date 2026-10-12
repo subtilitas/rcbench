@@ -693,7 +693,9 @@ voltage at least 500 mV under the PD mini's input. 8400 mV is the highest
 servo rail of the IO board. The session's voltage is the staged one, or
 the lower of it and the voltage of an output that is on; under 4800 mV
 ENTER is refused with SUPPLY_LOW (since 4.15) and the supply is not
-touched. 4800 mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
+touched. The panel holds the same floor on its side: it sends no ENTER
+while it reads a PD mini output that is on and set under 4800 mV, whatever
+the coprocessor does with that ENTER. 4800 mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
 voltage a servo needs to store a register is not measured. In LOW the port
 then does one of two things:
 

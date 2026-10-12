@@ -429,6 +429,7 @@ typedef struct {
                                     PD mini                               */
     uint16_t out_mv;           /**< its output, mV                        */
     uint16_t out_ma;           /**< and the current it gives, mA          */
+    uint16_t set_mv;           /**< and the voltage it is set to, mV      */
     bool stopped;              /**< STOP is latched: no heartbeat */
     bool armed;                /**< the panel's outputs are armed */
     bool card;                 /**< a card takes the file */
@@ -466,6 +467,8 @@ typedef struct {
     uint16_t supply_ma;
     uint16_t caps_mv;         /**< the supply's limits, 0 for none   */
     uint16_t caps_ma;
+    uint16_t floor_mv;        /**< the lowest voltage of a session; 0
+                                   for none                          */
     uint16_t pwm_wait_ms;     /**< from the end of a session to PWM */
 
     uint8_t wait;             /**< what is awaited                */
@@ -744,6 +747,15 @@ void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma);
  *  kst_prog_supply_set() is above its limit: a session never runs at
  *  values other than the ones shown.  None after kst_prog_init(). */
 void kst_prog_supply_caps(kst_prog_t *p, uint16_t max_mv, uint16_t max_ma);
+/** The lowest voltage a session runs at, mV; 0 for none.  An ENTER lowers
+ *  a PD mini output that is on to the session's voltage or leaves it, and
+ *  never raises it: kst_prog_connect() is KST_PROG_MSG_REF +
+ *  LINK_KST_REF_SUPPLY_LOW and asks nothing while the feed reads an output
+ *  that is on (supply_read) and set (set_mv) under @p min_mv.  The port of
+ *  link version 4.15 refuses the same ENTER by that name; a coprocessor
+ *  built before the refusal takes it, so the panel holds the floor for
+ *  every peer.  None after kst_prog_init(). */
+void kst_prog_supply_floor(kst_prog_t *p, uint16_t min_mv);
 uint16_t kst_prog_supply_mv(const kst_prog_t *p);
 uint16_t kst_prog_supply_ma(const kst_prog_t *p);
 kst_prog_msg_id_t kst_prog_read(kst_prog_t *p);

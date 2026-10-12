@@ -760,6 +760,9 @@ mini. 8400 mV ist die höchste Servoschiene des IO-Boards. Die Spannung der
 Session ist die bereitgestellte oder die niedrigere von ihr und der
 Spannung eines Ausgangs, der an ist; unter 4800 mV wird ENTER mit
 SUPPLY_LOW abgewiesen (seit 4.15), und die Versorgung bleibt unberührt.
+Das Panel hält dieselbe Untergrenze auf seiner Seite: es sendet kein ENTER,
+solange es einen Ausgang des PD mini liest, der an ist und unter 4800 mV
+gesetzt ist, was auch immer der Koprozessor mit diesem ENTER tut.
 4800 mV ist `KST_PORT_SUPPLY_MIN_MV`; die
 Versorgungsspannung, die ein Servo zum Speichern eines Registers braucht,
 ist nicht gemessen. In LOW tut der Port dann eines von zwei Dingen:

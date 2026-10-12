@@ -1664,6 +1664,13 @@ static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
         || (p->caps_ma != 0u && p->supply_ma > p->caps_ma)) {
         return KST_PROG_MSG_SUPPLY_CAPS;
     }
+    if (p->floor_mv != 0u && p->f.supply_read
+        && p->f.set_mv < p->floor_mv) {
+        /* An output that is on is never raised: the session would run
+         * at what it is set to. */
+        return (kst_prog_msg_id_t)(KST_PROG_MSG_REF
+                                   + LINK_KST_REF_SUPPLY_LOW);
+    }
     return KST_PROG_MSG_NONE;
 }
 
@@ -1733,6 +1740,11 @@ void kst_prog_supply_caps(kst_prog_t *p, uint16_t max_mv, uint16_t max_ma)
 {
     p->caps_mv = max_mv;
     p->caps_ma = max_ma;
+}
+
+void kst_prog_supply_floor(kst_prog_t *p, uint16_t min_mv)
+{
+    p->floor_mv = min_mv;
 }
 
 uint16_t kst_prog_supply_mv(const kst_prog_t *p)

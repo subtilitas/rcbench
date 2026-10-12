@@ -6710,7 +6710,12 @@ static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
     f->out_mv      = 0u;
     f->out_ma      = 0u;
+    f->set_mv      = 0u;
     if (f->supply_read) {
+        const float set = s_supply.set_v * 1000.0f + 0.5f;
+
+        f->set_mv = set <= 0.0f ? 0u
+                  : set >= 65535.0f ? 65535u : (uint16_t)set;
         const float mv = s_supply.v * 1000.0f + 0.5f;
         const float ma = s_supply.i * 1000.0f + 0.5f;
         f->out_mv = mv <= 0.0f ? 0u : mv >= 65535.0f ? 65535u : (uint16_t)mv;

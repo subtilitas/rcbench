@@ -1651,6 +1651,7 @@ static void act(const row_t *r)
 
             kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
                                  (uint16_t)lroundf(caps.i_max * 1000.0f));
+            kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
             (void)kst_prog_connect(p, port_no());
         } else if (st == KST_PROG_PROGRAMMING) {
             warn_leave();

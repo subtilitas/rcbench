@@ -41,6 +41,8 @@ static bool g_rail_deaf;       /* it takes no request */
 static bool g_rail_stuck;      /* it takes a request and does not follow */
 static bool g_no_pin;          /* the generator has no pin for the port */
 static bool g_sup_on;
+static bool g_set_read;      /* the panel reads an output that is on */
+static uint16_t g_set_mv;    /* and what it is set to                */
 static uint16_t g_sup_mv, g_sup_ma;
 static uint8_t g_target;       /* LINK_PG_TARGET as the control task reads */
 
@@ -256,6 +258,8 @@ static void publish(void)
     f.armed = g_armed;
     f.card = g_card;
     f.target = g_target;
+    f.supply_read = g_set_read;
+    f.set_mv = g_set_mv;
     kst_prog_feed(&g_p, &f);
 }
 
@@ -4833,6 +4837,50 @@ TEST_CASE(a_connect_sets_the_supply_it_was_given)
     CHECK_EQ(g_sup_mv, 0u);
 }
 
+/* The floor is the panel's too: a coprocessor built before the port's
+ * refusal takes the ENTER and leaves an output that is on where it is. */
+TEST_CASE(an_output_on_under_the_floor_is_refused_before_the_port_is_asked)
+{
+    static const struct {
+        bool     read;
+        uint16_t set_mv;
+        uint16_t floor_mv;
+        bool     refused;
+    } c[] = {
+        { true,  KST_PORT_SUPPLY_MIN_MV - 1u, KST_PORT_SUPPLY_MIN_MV, true  },
+        { true,  KST_PORT_SUPPLY_MIN_MV,      KST_PORT_SUPPLY_MIN_MV, false },
+        { true,  0u,                          KST_PORT_SUPPLY_MIN_MV, true  },
+        { false, 0u,                          KST_PORT_SUPPLY_MIN_MV, false },
+        { true,  KST_PORT_SUPPLY_MIN_MV - 1u, 0u,                     false },
+    };
+
+    for (size_t i = 0; i < sizeof(c) / sizeof(c[0]); ++i) {
+        fresh_at(0u);
+        link_up();
+        kst_prog_supply_floor(&g_p, c[i].floor_mv);
+        g_set_read = c[i].read;
+        g_set_mv = c[i].set_mv;
+        settle();
+        if (c[i].refused) {
+            const unsigned sent = g_sim.n_frames;
+
+            CHECK_EQ(kst_prog_connect(&g_p, CH),
+                     KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_LOW);
+            CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_LOW);
+            CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+            CHECK(!kst_prog_holds_port(&g_p));
+            settle();
+            CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+            CHECK_EQ(g_sim.n_frames, sent);
+            CHECK_EQ(g_sup_mv, 0u);
+        } else {
+            CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+        }
+    }
+    g_set_read = false;
+    g_set_mv = 0;
+}
+
 TEST_CASE(a_supply_outside_the_ports_range_is_refused_by_name)
 {
     static const uint16_t bad[][2] = {
@@ -6795,6 +6843,7 @@ int main(void)
     RUN(no_servo_on_the_port_is_a_message);
     RUN(a_connect_needs_the_port_as_the_testers_target);
     RUN(a_connect_sets_the_supply_it_was_given);
+    RUN(an_output_on_under_the_floor_is_refused_before_the_port_is_asked);
     RUN(a_supply_outside_the_ports_range_is_refused_by_name);
     RUN(a_supply_that_does_not_switch_on_ends_the_connect_with_result_32);
     RUN(a_leave_goes_back_to_pwm_and_switches_no_supply);

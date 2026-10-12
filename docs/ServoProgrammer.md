@@ -145,7 +145,7 @@ overlay is open again at the next entry.
 | `Programming voltage or current is over the SUPPLY limits.` and `Lower it under MORE, or raise the limit. Nothing was set.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
 | `DISARM first: the port is not taken on an armed bench.` | the bench is armed or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
 | `The supply cannot give this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage less than 0.5 V under the PD mini's input; the supply is not changed |
-| `Supply under 4.8 V. Programming needs 4.8 V or more.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed |
+| `Supply under 4.8 V. Programming needs 4.8 V or more.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the coprocessor |
 | `The supply did not switch within 3000 ms. Check it.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
 | `The coprocessor does not trust the link yet. Try again.` | the coprocessor does not trust the heartbeat, or the link was silent |
 

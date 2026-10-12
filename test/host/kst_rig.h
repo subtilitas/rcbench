@@ -222,6 +222,7 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->supply_read = g_rig.rail && g_rig.sup_on;
     f->out_mv = f->supply_read ? g_rig.sup_mv : 0u;
     f->out_ma = f->supply_read ? g_rig.load_ma : 0u;
+    f->set_mv = f->supply_read ? g_rig.sup_mv : 0u;
 }
 
 /* 1 ms: the coprocessor, one exchange, the control task and the card. */
