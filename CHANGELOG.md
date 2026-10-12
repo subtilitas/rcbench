@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- The MOTOR & ESC throttle panel names the pins the throttle drives
+  (`TARGET: GP0 GP1`), from the output pages the coprocessor's throttle role
+  reads. No pin bound as a motor and a binding not read show in the warning
+  colour. The SUPPLY header names the PD mini's UART pins
+  (`PD MINI TX GP12 RX GP13`; `PD MINI NO PINS` when either is not set).
+- `ui_pinlist()` formats a GPIO mask as a pin list within a cell budget:
+  the pins that fit, then the count of the rest (`GP2 GP4 GP5 +2`).
+  `outputs_role_pins()` returns the GPIOs of the slots whose channels carry a
+  role.
 - The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
   (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
   `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The

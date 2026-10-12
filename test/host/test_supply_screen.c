@@ -19,6 +19,7 @@
 #include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -1774,9 +1775,100 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
     lift(FEED_LONE);
 }
 
+/*
+ * The header names the PD mini's UART pins, so a second supply on other pins
+ * would read differently.  No pin set, or only one, says so; the model has
+ * none.  A change redraws the header and nothing else.
+ */
+TEST_CASE(the_header_names_the_pd_minis_uart_pins)
+{
+    char line[80];
+    fresh();
+    supply_screen_set_model(false);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    supply_screen_push(&st);
+    supply_screen_set_baud(460800u);
+
+    ui_text_set_language(UI_LANG_EN);
+    supply_screen_set_pins(12, 13);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI TX GP12 RX GP13   ONLINE 460800");
+    CHECK(strlen(line) <= 43u);
+    supply_screen_set_pins(0, 1);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI TX GP0 RX GP1   ONLINE 460800");
+    supply_screen_set_pins(47, 46);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI TX GP47 RX GP46   ONLINE 460800");
+
+    /* Not set, or one of the two not set. */
+    supply_screen_set_pins(-1, -1);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI NO PINS   ONLINE 460800");
+    supply_screen_set_pins(12, -1);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI NO PINS   ONLINE 460800");
+
+    /* Not answering, and the German text, the longest header there is. */
+    supply_screen_set_pins(12, 13);
+    st.online = false;
+    supply_screen_push(&st);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI TX GP12 RX GP13   NOT ANSWERING");
+    ui_text_set_language(UI_LANG_DE);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI TX GP12 RX GP13   ANTWORTET NICHT");
+    CHECK(strlen(line) <= 43u);
+    supply_screen_set_pins(-1, -1);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI OHNE PINS   ANTWORTET NICHT");
+
+    /* The model names no pin, whatever the settings hold. */
+    ui_text_set_language(UI_LANG_EN);
+    supply_screen_set_pins(12, 13);
+    supply_screen_set_model(true);
+    st.online = true;
+    supply_screen_push(&st);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "SUPPLY MODEL   ONLINE");
+}
+
+TEST_CASE(the_pins_in_the_header_are_drawn_and_a_change_redraws_it)
+{
+    fresh();
+    supply_screen_set_model(false);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    supply_screen_push(&st);
+    supply_screen_set_pins(12, 13);
+    scr->render(&cv, 0);
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    /* The same pins again change nothing. */
+    supply_screen_set_pins(12, 13);
+    scr->render(&cv, 0);
+    CHECK_EQ(header_differs(), 0);
+
+    /* Other pins redraw the header. */
+    supply_screen_set_pins(4, 5);
+    scr->render(&cv, 0);
+    CHECK(header_differs() > 0);
+
+    /* So does taking them away. */
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_set_pins(-1, -1);
+    scr->render(&cv, 0);
+    CHECK(header_differs() > 0);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
+    RUN(the_header_names_the_pd_minis_uart_pins);
+    RUN(the_pins_in_the_header_are_drawn_and_a_change_redraws_it);
     RUN(the_output_comes_on_with_a_hold_and_only_once);
     RUN(a_short_press_on_output_on_does_nothing);
     RUN(a_finger_that_leaves_the_switch_switches_nothing);

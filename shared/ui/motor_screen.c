@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "ui_hero.h"
+#include "ui_pinlist.h"
 #include "ui_plot.h"
 #include "link_pages.h"
 #include "settings.h"
@@ -189,6 +190,10 @@ static struct {
     uint32_t      arm_rev;
     uint32_t      drawn_arm[2];
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
+    /* The GPIOs bound as throttle (bit n is GPIO n) and whether a binding
+     * was read: what the throttle panel names as its target. */
+    uint64_t      thr_pins;
+    bool          thr_pins_known;
     /* Whether each channel's peak is a measurement: a valid live reading
      * has arrived since the run started.  Kept apart from the live flags,
      * which a source that stops answering mid-run clears while the run's
@@ -523,6 +528,42 @@ void motor_screen_set_esc_kv(int kv)
         s.esc_kv = kv;
         ++s.ctrl_rev;
     }
+}
+
+void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known)
+{
+    if (!known) {
+        gpio_mask = 0u;
+    }
+    if (gpio_mask != s.thr_pins || known != s.thr_pins_known) {
+        s.thr_pins       = gpio_mask;
+        s.thr_pins_known = known;
+        ++s.ctrl_rev;                   /* the panel says it */
+        ++s.thr_rev;
+    }
+}
+
+bool motor_throttle_target(char *out, size_t size, uint64_t pins, bool known,
+                           unsigned cells)
+{
+    if (out == NULL || size == 0u) {
+        return false;
+    }
+    if (!known) {
+        snprintf(out, size, "%s", TR(MO_TARGET_UNREAD));
+        return true;
+    }
+    if (pins == 0u) {
+        snprintf(out, size, "%s", TR(MO_TARGET_NONE));
+        return true;
+    }
+    /* The list gets what the prefix leaves of the field. */
+    const int prefix = snprintf(NULL, 0, TR(MO_TARGET), "");
+    char list[UI_PINLIST_PINS * 5u];
+    ui_pinlist(list, sizeof(list), pins,
+               cells > (unsigned)prefix ? cells - (unsigned)prefix : 0u);
+    snprintf(out, size, TR(MO_TARGET), list);
+    return false;
 }
 
 float motor_screen_throttle(void) { return s.slider.value; }
@@ -1294,6 +1335,21 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const gfx_seg_style_t seg = ui_seg_hero();
     const int pw = gfx_seg_width(pct, &seg);
     const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
+
+    /* The pins this throttle drives, left of the numerals.  The field ends
+     * where the widest reading, 100.0, begins. */
+    {
+        const int x0   = LEFT_X + INNER;
+        const int xmax = LEFT_X + LEFT_W - INNER - 20
+                         - gfx_seg_width("100.0", &seg) - 8;
+        char line[96];
+        const bool warn = motor_throttle_target(
+            line, sizeof(line), s.thr_pins, s.thr_pins_known,
+            (unsigned)((xmax - x0) / 8));
+        gfx_text(c, x0, ROW_Y + 9, line, &gfx_font_8x16,
+                 warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
+                 1);
+    }
     /* The unlit segments are a ghost of the lit ones against whatever they
      * sit on.  That is the panel now, not the screen's background; against
      * the wrong base they read as a dark block behind the digits. */

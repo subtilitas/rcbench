@@ -106,6 +106,24 @@ Two columns. The plot and the throttle take the left, the four readouts and
 the controls take a rail on the right, so reading the numbers and working the
 throttle do not compete for the same part of the screen. With the rotary knob
 on, turning it moves the throttle ([the knob](#application-the-rotary-knob)).
+
+### The throttle panel names its pins
+
+The throttle panel names the pins the throttle drives, left of the percentage:
+`TARGET: GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot
+protocol, read from the same SETUP > OUTPUTS pages the coprocessor's throttle
+role reads. The list is in pin order and holds as many pins as fit the field
+of 49 characters; the rest are counted. With GP0 to GP15 bound it reads
+`TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7`.
+Two states show in the warning colour:
+
+| Line | Condition |
+|---|---|
+| `TARGET: NO PIN BOUND AS MOTOR` | the binding is read and no pin is bound as a motor |
+| `TARGET: BINDING NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board |
+
+The throttle still moves in either state. ARM arms the whole bank, not only
+the pins named here.
 ### The plot covers one run
 
 ![Motor and ESC, telemetry held](img/motor-held.png)
@@ -786,8 +804,10 @@ Power Delivery) trigger controlled over a UART (universal asynchronous
 receiver-transmitter). The coprocessor drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
-the PD mini enabled on SETUP under INTERFACES, the header says PD MINI. With
-it disabled, the panel runs a model of a supply in its place: the header
+the PD mini enabled on SETUP under INTERFACES, the header names the module
+and the coprocessor's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
+from the PD mini TX and PD mini RX settings. With either pin not set the
+header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
 says SUPPLY MODEL and the menu tile is marked MODELLED.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and

@@ -196,6 +196,7 @@ static struct {
     gfx_rect_t      apply_btn, discard_btn;
     bool            model;
     uint32_t        baud;          /* PD mini UART rate; 0: not shown */
+    int             tx1, rx1;      /* PD mini UART pins, GPIO + 1; 0 none */
     /* The output as this screen believes it: what the supply reported, and
      * an OFF this screen has asked for and not yet seen answered. */
     bool            on;
@@ -553,6 +554,17 @@ void supply_screen_set_baud(uint32_t baud)
 {
     if (s.baud != baud) {
         s.baud = baud;
+        ++s.ctrl_rev;                   /* the header says it */
+    }
+}
+
+void supply_screen_set_pins(int tx, int rx)
+{
+    const int t1 = (tx < 0) ? 0 : tx + 1;
+    const int r1 = (rx < 0) ? 0 : rx + 1;
+    if (s.tx1 != t1 || s.rx1 != r1) {
+        s.tx1 = t1;
+        s.rx1 = r1;
         ++s.ctrl_rev;                   /* the header says it */
     }
 }
@@ -1347,6 +1359,24 @@ static const char *mode_line(void)
     return (s.sup.mode == SUPPLY_MODE_CV) ? TR(SUP_LINE_CV) : "";
 }
 
+void supply_screen_header_text(char *out, size_t size)
+{
+    char rate[16] = "";
+    if (!s.model && s.sup.online && s.baud != 0u) {
+        snprintf(rate, sizeof(rate), " %lu", (unsigned long)s.baud);
+    }
+    char who[40];
+    if (s.model) {
+        snprintf(who, sizeof(who), "%s", TR(SUP_MODEL));
+    } else if (s.tx1 > 0 && s.rx1 > 0) {
+        snprintf(who, sizeof(who), TR(SUP_PD_PINS), s.tx1 - 1, s.rx1 - 1);
+    } else {
+        snprintf(who, sizeof(who), "%s", TR(SUP_PD_NO_PINS));
+    }
+    snprintf(out, size, "%s   %s%s", who,
+             s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
+}
+
 /* The strip above both columns: where the numbers come from, the range the
  * set points may take, and SETTINGS. */
 static void draw_header(gfx_canvas_t *c)
@@ -1355,13 +1385,7 @@ static void draw_header(gfx_canvas_t *c)
     const int x1 = SETB_X - 8;
     gfx_fill_rect(c, x0, 0, W - x0, UP_Y - 1, ui_theme_color(UI_C_BG));
     char line[80];
-    char rate[16] = "";
-    if (!s.model && s.sup.online && s.baud != 0u) {
-        snprintf(rate, sizeof(rate), " %lu", (unsigned long)s.baud);
-    }
-    snprintf(line, sizeof(line), "%s   %s%s",
-             s.model ? TR(SUP_MODEL) : "PD MINI",
-             s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
+    supply_screen_header_text(line, sizeof(line));
     gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
              s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
                           : ui_theme_color(UI_C_WARN), 1);
