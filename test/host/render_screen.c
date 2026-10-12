@@ -179,7 +179,7 @@ static void make_log_csv(void)
         if (t >= 1.0f && t < 5.0f)  { th = 24.0f; }
         else if (t < 9.0f)          { th = 58.0f; }
         else if (t < 11.0f)         { th = 92.0f; }
-        else if (t >= 11.0f)        { th = 40.0f; }
+        else                        { th = 40.0f; }
         telemetry_sim_step(&sim, th, 0.05f, &b);
         n += (size_t)snprintf(g_csv + n, sizeof(g_csv) - n,
                               "%.2f;%.2f;%.2f;%.0f;%.0f\n",
@@ -1240,10 +1240,10 @@ int main(int argc, char **argv)
      * at the panel's poll rate, 20 Hz.
      */
     if (id == SCREEN_MOTOR) {
-        telemetry_sim_t sim;
+        telemetry_sim_t tsim;
         bench_state_t bench;
         memset(&bench, 0, sizeof(bench));
-        telemetry_sim_init(&sim, NULL);
+        telemetry_sim_init(&tsim, NULL);
         /* The run's totals as the panel counts them, from what it shows. */
         bench_totals_t totals;
         bench_totals_reset(&totals);
@@ -1260,7 +1260,7 @@ int main(int argc, char **argv)
             else if (t < 24.0f)          { th = 88.0f; }
             else if (t < 30.0f)          { th = 30.0f; }
             else                         { th = 64.0f; }
-            telemetry_sim_step(&sim, th, 0.05f, &bench);
+            telemetry_sim_step(&tsim, th, 0.05f, &bench);
             if (strcmp(view, "motor-table") == 0) {
                 /* A coprocessor reading an INA228: BENCH's numbers are the
                  * INA228's, and the ESC's own telemetry reads 0.18 V and
@@ -1883,16 +1883,16 @@ int main(int argc, char **argv)
         if (strcmp(view, "outputs-protocol") == 0
             || strcmp(view, "outputs-off") == 0) {
             /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0 };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0 };
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
             ui_router_event(&d);
             ui_router_event(&u);
         }
         if (strcmp(view, "outputs-off") == 0) {
             /* And OFF picked in it, the first row: every bound pin says
              * which protocol holds it. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0 };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0 };
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
             ui_router_event(&d);
             ui_router_event(&u);
         }

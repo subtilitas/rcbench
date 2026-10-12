@@ -41,6 +41,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -148,6 +149,7 @@ TEST_CASE(both_panes_draw_and_differ)
     scr->render(&cv, 0);
     const int rig = lit();
     gfx_color_t *first = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(first);
     memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     tap(200, 22);
@@ -366,6 +368,7 @@ TEST_CASE(both_rotor_types_draw_on_the_measure_pane)
     scr->render(&cv, 0);
     CHECK(lit() > 5000);
     gfx_color_t *prop = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(prop);
     memcpy(prop, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     tap(ROTOR1_X, ROTOR_Y);             /* to EDF */

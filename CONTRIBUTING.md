@@ -78,13 +78,20 @@ python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
 python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json --sdk "$PICO_SDK_PATH"
 
-cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
+mkdir -p /tmp/cppcheck-build
+cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 \
+         --cppcheck-build-dir=/tmp/cppcheck-build \
+         --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
-         $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
-         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/)
+         -Itest/host -Ifirmware/iomcu/include \
+         $(git ls-files 'shared/**/include/*' 'protocols/**/include/*' \
+             | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
+         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/) \
+         $(git ls-files 'test/host/*.c')
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-clang-tidy -p test/host/build \
-         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/)
+git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
+    | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c -e test/host/bench_frame.c \
+    | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 ruff check tools/ test/tools/ test/host/
 ```
 
@@ -128,10 +135,16 @@ A change fails if:
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`
   disagrees with what CMake builds;
-- clang-tidy, cppcheck or ruff report anything. Every finding is an error. The
-  disabled checks are listed with their reasons in `.clang-tidy` and
+- a test fails to build under `-Wall -Wextra -Werror -Wshadow -Wconversion
+  -Wno-sign-conversion`, the flags of the libraries;
+- clang-tidy or cppcheck reports a finding in `shared/`, `protocols/` or
+  `test/host/`, or ruff reports anything. clang-tidy treats every warning as an
+  error (`WarningsAsErrors`) and cppcheck exits with 1 on any finding
+  (`--error-exitcode=1`). The disabled checks are listed with their reasons in
+  `.clang-tidy`, `test/host/.clang-tidy` (the tests only) and
   `.cppcheck-suppress`; suppress a false positive inline with the reason, not
-  by widening the list.
+  by widening the list. `test/host/render_screen.c` and `bench_frame.c` are
+  not in the clang-tidy run; cppcheck reads them.
 
 The suite also runs under AddressSanitizer and UBSan
 (UndefinedBehaviorSanitizer). Run a parser change that way before pushing; the

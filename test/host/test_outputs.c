@@ -890,7 +890,7 @@ TEST_CASE(the_range_register_packs_first_and_count)
 TEST_CASE(a_channel_command_is_clamped_in_place)
 {
     fresh_pages();
-    uint16_t in[1] = { 5000u };
+    const uint16_t in[1] = { 5000u };
     CHECK_EQ(outputs_channels_write(chans, 0, 1, in), 0);
     CHECK_EQ(chans[0], LINK_CH_SPAN);
 }
@@ -899,7 +899,7 @@ TEST_CASE(a_channel_command_is_clamped_in_place)
 TEST_CASE(writing_off_a_page_end_is_refused)
 {
     fresh_pages();
-    uint16_t z[4] = { 0, 0, 0, 0 };
+    const uint16_t z[4] = { 0, 0, 0, 0 };
     CHECK_EQ(outputs_chan_cfg_write(chan_cfg, LINK_CC_COUNT, 1, z),
              LINK_NACK_BAD_RANGE);
     CHECK_EQ(outputs_slots_write(slots, LINK_OS_COUNT, 1, z),
@@ -977,12 +977,12 @@ TEST_CASE(a_channel_write_keeps_only_the_channels_it_named_alive)
     outputs_init(&b, 0u);
     outputs_arm(&b, true, 0u);
 
-    uint16_t two[2] = { LINK_CH_SPAN / 4u, LINK_CH_SPAN / 2u };
+    const uint16_t two[2] = { LINK_CH_SPAN / 4u, LINK_CH_SPAN / 2u };
     CHECK_EQ(outputs_channels_write(chans, 0, 2, two), 0);
     outputs_channels_apply_n(&b, chans, 0u, 2u, 0u);
 
     /* 600 ms later only channel 0 is written again, one register. */
-    uint16_t one[1] = { LINK_CH_SPAN / 4u };
+    const uint16_t one[1] = { LINK_CH_SPAN / 4u };
     CHECK_EQ(outputs_channels_write(chans, 0, 1, one), 0);
     outputs_channels_apply_n(&b, chans, 0u, 1u, 600u);
 

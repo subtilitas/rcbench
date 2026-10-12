@@ -96,6 +96,12 @@ int main(int argc, char **argv)
     FILE *csv = (argc > 2) ? fopen(argv[2], "wb") : NULL;
     if (log == NULL || (argc > 2 && csv == NULL)) {
         fprintf(stderr, "sense_trace_gen: cannot write the output\n");
+        if (log != NULL) {
+            (void)fclose(log);
+        }
+        if (csv != NULL) {
+            (void)fclose(csv);
+        }
         return 2;
     }
     if (csv != NULL) {

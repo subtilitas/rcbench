@@ -1181,7 +1181,14 @@ Browse the card, open a file, check what the import detected, then plot:
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
-before the file is plotted. Runs recorded by the bench are written as
+before the file is plotted. A row ends at its line feed (LF, 0x0A). Text
+after the last line feed is a row cut off by a power loss or a full card:
+it can hold every field and a number cut short, `95` of `9554`, so it is
+left out of the rows, the figures and the plot. ROWS then shows in the
+warning colour and the import view says `LAST ROW CUT OFF - LEFT OUT`. A
+file from another program that ends without a line feed loses its last row
+the same way. Spaces, tabs and carriage returns (CR) after the last line
+feed are no row. Runs recorded by the bench are written as
 `BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
 arming, or one switch-on of the SUPPLY output while the bench is not armed.
 An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
@@ -1248,7 +1255,8 @@ comes first. Power lost mid-run costs the rows the commit has not finished
 with and the rows still in the queue between the control task and the card's
 own task: under 1.0 s of run while the card keeps up, and 84 rows, 4.20 s at
 the panel's 20 Hz sample rate, if the card has stalled and the queue is full.
-The rest of the file is readable either way. The card is written by a task of its own: an SD (Secure
+The rest of the file is readable either way; a row the cut stopped part way
+through has no line feed and is left out on reading (see [Logs](#logs)). The card is written by a task of its own: an SD (Secure
 Digital) card is allowed 250 ms to finish a write, and the task that beats the
 safety line has a ceiling of 150 ms.
 

@@ -640,7 +640,7 @@ TEST_CASE(the_still_time_saturates_at_65535)
 
 /* ------------------------------------------------------------- service */
 
-static sense_svc_t  v;
+static sense_svc_t  svc;
 static sense_cmd_t  cmd;
 static sense_snap_t snap;
 static unsigned     g_opens, g_closes;
@@ -677,7 +677,7 @@ static void svc_rig(void)
         .sched = { { fake_read, fake_write, &fb }, now_us, NULL, &fb },
         .open = open_bus, .close = close_bus, .ask = ask,
     };
-    sense_svc_init(&v, &io);
+    sense_svc_init(&svc, &io);
     memset(&cmd, 0, sizeof(cmd));
     cmd.cfg_gen = 1u;
     cmd.sda = 16u;
@@ -689,7 +689,7 @@ static void svc_rig(void)
 static void svc_steps(unsigned n)
 {
     for (unsigned k = 0; k < n; ++k) {
-        sense_svc_step(&v, &cmd, &snap);
+        sense_svc_step(&svc, &cmd, &snap);
         g_us += 1000u;
     }
 }

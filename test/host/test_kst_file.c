@@ -49,6 +49,7 @@ static kst_file_err_t parse(const char *text, size_t len, kst_file_t *out,
                             unsigned *line)
 {
     char *exact = malloc(len + (len == 0u ? 1u : 0u));
+    REQUIRE_ALLOC(exact);
     kst_file_err_t err;
 
     memcpy(exact, text, len);
@@ -103,7 +104,7 @@ static const char *bench_body(const char *from, const char *to)
 {
     static char body[KST_FILE_MAX];
     const kst_image_t img = sim_bench_image();
-    char *at;
+    const char *at;
     char *end;
 
     written(&img);
@@ -246,12 +247,14 @@ TEST_CASE(the_formatter_writes_nothing_past_its_buffer_and_refuses_a_short_one)
     CHECK_EQ(kst_file_format(&img, NULL, KST_FILE_MAX), 0);
     for (size_t size = 0; size < full; ++size) {
         char *exact = malloc(size + 1u);
+        REQUIRE_ALLOC(exact);
 
         CHECK_EQ(kst_file_format(&img, exact, size), 0);
         free(exact);
     }
     {
-        char *exact = malloc(full);
+        char *exact = malloc(full > 0u ? full : 1u);
+        REQUIRE_ALLOC(exact);
 
         CHECK_EQ(kst_file_format(&img, exact, full), full);
         free(exact);
@@ -1195,7 +1198,6 @@ TEST_CASE(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone)
         int32_t shown = 0;
         kst_file_t f;
         kst_file_load_t r;
-        size_t n;
 
         CHECK_EQ(kst_field_get(&img, KST_F_DUTY), raw);
         CHECK(kst_field_display(KST_F_DUTY, (uint16_t)raw, &shown));
@@ -1203,7 +1205,7 @@ TEST_CASE(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone)
         distinct += raw == 0u || shown_as[raw] != shown_as[raw - 1u] ? 1u : 0u;
         /* The checksum line deleted, and its line end with it or not. */
         for (size_t t = 0; t < sizeof(tail) / sizeof(tail[0]); ++t) {
-            n = written(&img) - 18u;
+            size_t n = written(&img) - 18u;
             if (t == 0u) {
                 n--;
             } else {

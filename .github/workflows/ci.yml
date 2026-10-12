@@ -216,7 +216,7 @@ jobs:
   analysis:
     name: Lint and static analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 
@@ -237,30 +237,41 @@ jobs:
           cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-      # The analyser and the bug-shaped checks over the pure-C core and
-      # the protocol cores.  A module's rp2350/ folder is not in the host
-      # build; cppcheck reads it with the firmware below.  Configuration and
-      # the reason for each disabled check are in .clang-tidy.
+      # The analyser and the bug-shaped checks over the pure-C core, the
+      # protocol cores and the host tests.  A module's rp2350/ folder is not
+      # in the host build; cppcheck reads it with the firmware below.
+      # render_screen.c and bench_frame.c are built by tools/render_ui.py and
+      # tools/frame_cost.py, not by CMake, so they have no compile command
+      # here; render_ui.py builds the first with -Werror, cppcheck reads both.
+      # Configuration and the reason for each disabled check are in
+      # .clang-tidy and test/host/.clang-tidy.
       - name: clang-tidy
         run: |
-          clang-tidy -p test/host/build --quiet \
-            $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
-                | grep -v -e 'gfx_font' -e '/rp2350/')
+          git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
+              | grep -v -e 'gfx_font' -e '/rp2350/' \
+                        -e 'test/host/render_screen.c' \
+                        -e 'test/host/bench_frame.c' \
+              | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
       # cppcheck sees different things: it is weaker on flow and better at
       # arithmetic and at the shapes that look wrong on their own.
+      # A build directory keeps the whole-program checks under -j, which
+      # cppcheck drops without one; test_settings.c includes iomcu_pins.h.
       - name: cppcheck
         run: |
-          cppcheck --error-exitcode=1 --std=c11 --quiet \
+          mkdir -p "$RUNNER_TEMP/cppcheck"
+          cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 --quiet \
+            --cppcheck-build-dir="$RUNNER_TEMP/cppcheck" \
             --enable=warning,style,performance,portability \
             --inline-suppr --suppressions-list=.cppcheck-suppress \
-            --check-level=exhaustive \
+            --check-level=exhaustive -Itest/host -Ifirmware/iomcu/include \
             $(git ls-files 'shared/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             $(git ls-files 'protocols/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
-                | grep -v -e 'gfx_font' -e '/rp2350/')
+                | grep -v -e 'gfx_font' -e '/rp2350/') \
+            $(git ls-files 'test/host/*.c')
 
       # The firmware and the pin drivers under protocols/*/rp2350 are
       # hardware access and wiring, and cppcheck reads them
