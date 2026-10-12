@@ -16,7 +16,8 @@ The names say which servos the programmer works with.
 the project's notice.
 
 The register layout and the timing come from 1 Tool Card #2, KST's
-programming card, and 1 KST servo of unidentified model. No Chaservo servo has been read. The effect of
+programming card, and 1 Chaservo servo of unidentified model. No KST servo
+has been read. The effect of
 a register on the servo's motion is not measured: the names, units and
 limits are those the vendor tool displays and accepts.
 [What is open](#measurements-still-open) lists what a bench has to measure
@@ -976,7 +977,7 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 
 ## Limitations
 
-- No Chaservo servo has been read.
+- No KST servo has been read.
 - A running write shows the count of registers it sets and the frames
   sent. The register under way is not on the link page and is not shown. A
   restore of the session's backup and a pairing release show the frames
