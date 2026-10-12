@@ -12,6 +12,7 @@
 #include "bench_state.h"
 #include "log_writer.h"
 #include "supply.h"
+#include "supply_link.h"
 
 /* ---------------------------------------------------------------- snap */
 
@@ -323,10 +324,10 @@ TEST_CASE(a_supply_row_writes_its_own_header_and_columns)
     CHECK(log_writer_supply_row(&w, 0.05f, &st));
 
     CHECK(strncmp(g_buf, "time (s);set (V);voltage (V);limit (A);current (A);"
-                         "power (W);mode;charge (mAh);energy (Wh)\n",
+                         "power (W);mode;charge (mAh);energy (Wh);source\n",
                   strlen("time (s);set (V);voltage (V);limit (A);current (A);"
-                         "power (W);mode;charge (mAh);energy (Wh)\n")) == 0);
-    CHECK_STR_EQ(second_line(), "0.050;6.00;5.95;2.00;1.234;7.34;CV;12;0.07\n");
+                         "power (W);mode;charge (mAh);energy (Wh);source\n")) == 0);
+    CHECK_STR_EQ(second_line(), "0.050;6.00;5.95;2.00;1.234;7.34;CV;12;0.07;measured\n");
 }
 
 TEST_CASE(a_supply_row_leaves_what_did_not_arrive_empty)
@@ -338,13 +339,13 @@ TEST_CASE(a_supply_row_leaves_what_did_not_arrive_empty)
     st.ok = SUPPLY_OK_VOLTAGE;       /* no current */
     st.v = 6.0f; st.mode = SUPPLY_MODE_CC; st.online = true;
     CHECK(log_writer_supply_row(&w, 1.0f, &st));
-    CHECK_STR_EQ(second_line(), "1.000;6.00;6.00;2.00;;;CC;;\n");
+    CHECK_STR_EQ(second_line(), "1.000;6.00;6.00;2.00;;;CC;;;measured\n");
 
     /* And a supply that does not answer has no mode either. */
     log_writer_t w2 = fresh_writer();
     st.online = false; st.ok = 0u;
     CHECK(log_writer_supply_row(&w2, 2.0f, &st));
-    CHECK_STR_EQ(second_line(), "2.000;6.00;;2.00;;;;;\n");
+    CHECK_STR_EQ(second_line(), "2.000;6.00;;2.00;;;;;;measured\n");
     CHECK(!log_writer_supply_row(NULL, 1.0f, &st));
     CHECK(!log_writer_supply_row(&w2, 1.0f, NULL));
 }
@@ -369,6 +370,40 @@ TEST_CASE(a_row_that_does_not_fit_fails_the_log_and_writes_nothing_past_it)
     CHECK(strchr(second_line(), '\n') == NULL);   /* no row went out */
 }
 
+TEST_CASE(a_supply_row_names_its_source)
+{
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.set_v = 6.0f; st.set_i = 2.0f; st.online = true;
+    st.mode = SUPPLY_MODE_CV;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.v = 6.0f; st.i = 1.0f; st.p = 6.0f;
+
+    log_writer_t w = fresh_writer();
+    CHECK(log_writer_supply_row(&w, 1.0f, &st));
+    CHECK_STR_EQ(second_line(), "1.000;6.00;6.00;2.00;1.000;6.00;CV;;;measured\n");
+
+    st.modelled = true;
+    log_writer_t w2 = fresh_writer();
+    CHECK(log_writer_supply_row(&w2, 1.0f, &st));
+    CHECK_STR_EQ(second_line(), "1.000;6.00;6.00;2.00;1.000;6.00;CV;;;model\n");
+}
+
+TEST_CASE(the_model_marks_its_readings_and_the_pd_mini_clears_the_mark)
+{
+    supply_sim_t m;
+    supply_sim_init(&m);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    supply_sim_step(&m, 0.05f, &st);
+    CHECK(st.modelled);
+
+    supply_link_t l;
+    memset(&l, 0, sizeof(l));
+    supply_link_state(&l, 1000u, &st);
+    CHECK(!st.modelled);
+}
+
 int main(void)
 {
     RUN(a_set_point_is_clamped_and_stepped);
@@ -380,6 +415,8 @@ int main(void)
     RUN(a_trip_fires_once_a_reading_has_been_over_for_its_time);
     RUN(a_supply_row_writes_its_own_header_and_columns);
     RUN(a_supply_row_leaves_what_did_not_arrive_empty);
+    RUN(a_supply_row_names_its_source);
+    RUN(the_model_marks_its_readings_and_the_pd_mini_clears_the_mark);
     RUN(a_row_that_does_not_fit_fails_the_log_and_writes_nothing_past_it);
     return test_summary("supply");
 }
