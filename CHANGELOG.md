@@ -43,19 +43,28 @@ history is in git.
   Interface heading and "no pin driver" count outside fenced code blocks and
   HTML comments only. The Trademarks heading is any heading that contains
   "trademark", in any case, emphasis and link markup ignored. Brand names
-  match anywhere in the file (paths, code blocks and comments included), in
-  any case, with a version suffix (`DShot300`, `S.BUS2`) and inside an
-  identifier or file name (`kst_session_t`, `hitec_x.c`), not inside a
-  longer word (`KSTART`). An include path
+  match anywhere in the file (paths, addresses, code blocks and comments
+  included), in any case, with a version suffix (`DShot300`, `S.BUS2`) and
+  inside an identifier, file name or number (`kst_session_t`, `hitec_x.c`,
+  `www.futaba.com`, `2kst`), not next to a letter (`KSTART`, `KstSession`).
+  An include path
   with a `..` component or an absolute path in a module fails; so does an
   include the tool cannot resolve (a macro operand or a call of
-  `__has_include`; `#ifdef __has_include` passes), a line of only `#` or
-  `%:`, and a `??=` trigraph directive. `#include_next`, `#import`, the `%:`
-  digraph, line continuations (LF and CRLF), `//` inside a string or a raw
-  string literal, a number with digit separators (`1'000`), a leading byte
-  order mark, form feed and vertical tab are read; a `;` comment in a `.pio`
-  file ends at the line end. The CMake include directories and link targets
-  of a module are not checked.
+  `__has_include` outside a literal; `#ifdef __has_include` passes), a line
+  of only `#` or `%:`, and a `??=` trigraph directive. `#include_next`,
+  `#import`, the `%:` digraph, line continuations (LF and CRLF), `//`
+  inside a string or a raw string literal, a number with digit separators
+  (`1'000`) or an exponent sign (`1e-x`), a leading byte order mark, form
+  feed and vertical tab are read. Each file is read under the literal rules
+  of ISO C11 and C17, gnu11 and gnu17 (raw strings), C23 (digit
+  separators), and gnu23 and C++14 or later (both); an include found under
+  any of them counts. A line continuation inside a raw string literal is
+  kept. The C of a `.pio` file is the text pioasm 2.3.0 writes into the
+  generated header: the `% c-sdk {` blocks after the first `.program`,
+  found as pioasm lexes the file (a `;` inside a `/* */` comment ends
+  nothing, an empty block name is c-sdk, a block ends only at `%}` in
+  column 0). The CMake include directories and link targets of a module are
+  not checked.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.

@@ -5,6 +5,7 @@ SPDX-License-Identifier: MIT
 
 import os
 import shutil
+import subprocess
 
 import pytest
 
@@ -645,6 +646,10 @@ def test_has_include_is_refused_as_an_operator_only():
     assert cp.includes("#if defined(__has_include) && __has_include\n(<x>)\n"
                        ) == [("?", "__has_include")]
     assert cp.includes("#ifdef __has_include\n#endif\n") == []
+    # A digit separator opens no character literal before the call.
+    assert cp.includes("#if 0x1'0 && __has_include(<hardware/gpio.h>) "
+                       "&& '1' == 49\n") == [("?", "__has_include")]
+    assert cp.includes("#if 1__has_include(x)\n") == []
     assert cp.includes('puts("__has_include(x)");\n') == []
     assert cp.includes("/* __has_include(x) */\n") == []
 
@@ -699,7 +704,10 @@ def test_a_raw_string_hides_no_include(tmp_path):
 def test_a_raw_string_is_one_literal(prefix):
     text = prefix + 'R"d(/* "#include "x.h" )d" ;\n#include "a.h"\n/* */\n'
     assert cp.includes(text) == [('"', "a.h")]
-    assert cp.includes(prefix + 'R"(a" __has_include(x) ")";\n') == []
+    assert cp.includes(prefix + 'R"(__has_include(x))";\n') == []
+    # ISO C reads `R` and two strings, with the call between them.
+    assert cp.includes(prefix + 'R"(a" __has_include(x) ")";\n') == [
+        ("?", "__has_include")]
 
 
 def test_an_identifier_ending_in_r_before_a_string_is_no_raw_string():
@@ -721,7 +729,8 @@ def test_a_digit_separator_hides_no_include_in_a_header(tmp_path):
 
 
 @pytest.mark.parametrize("number", ["1'000", "0x1'F", "0b1'0", "1.5e+3'1",
-                                    "1e+3'1", ".5'5", "0x1p+4"])
+                                    "1e+3'1", ".5'5", "0x1p+4", "1e-x'y",
+                                    "0x1p-a'b", "1E+z'0"])
 def test_a_number_with_separators_is_one_token(number):
     text = "int k = %s + sizeof \"'/*\";\n#include \"a.h\"\n// */\n" % number
     assert cp.includes(text) == [('"', "a.h")]
@@ -771,8 +780,11 @@ def test_a_semicolon_in_a_c_file_is_no_comment():
 
 @pytest.mark.parametrize("text", [
     "see protocols/hitec_x/hitec_x.c\n", "type kst_session_t\n",
-    "link rcbench_kst\n", "dshot_tx and jeti_ex\n", "kst_core.h\n"])
+    "link rcbench_kst\n", "dshot_tx and jeti_ex\n", "kst_core.h\n",
+    "https://www.futaba.com\n", "a.kst\n", "x.hitec_y\n", "2kst\n",
+    "foo.chaservo.md\n", "3KST\n"])
 def test_a_brand_in_an_identifier_or_file_name_is_a_brand(tmp_path, text):
+    """Also after a dot or a digit: in an address, a path and a number."""
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text(readme.read_text() + text)
@@ -781,8 +793,10 @@ def test_a_brand_in_an_identifier_or_file_name_is_a_brand(tmp_path, text):
 
 
 @pytest.mark.parametrize("text", ["the KSTART byte\n", "DShotty\n",
-                                  "AKST and 3KST and x.KST\n"])
-def test_a_brand_inside_a_longer_word_or_number_is_no_brand(tmp_path, text):
+                                  "AKST and FutabaX\n", "KstSession\n"])
+def test_a_brand_next_to_a_letter_is_no_brand(tmp_path, text):
+    """A brand joined to a word without a separator is part of that word,
+    also in a CamelCase identifier."""
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text(readme.read_text() + text)
@@ -883,3 +897,237 @@ def test_markup_inside_a_word_of_a_heading_is_stripped(tmp_path, heading):
 def test_a_crlf_line_continuation_joins_the_include():
     assert cp.includes('#include \\\r\n  "../x.h"\r\n') == [
         ('"', "../x.h")]
+
+
+# The C of a .pio file is what pioasm 2.3.0 writes into the generated
+# header: the `% c-sdk {` blocks after the first `.program`, lexed as
+# tools/pioasm/lexer.ll of the pico-sdk does.
+
+X_H = '#include "../../../shared/x.h"\n'
+
+
+@pytest.mark.parametrize("text", [
+    # A `;` inside a `/* */` comment of PIO code ends nothing.
+    ".program t\n/* shift out; LSB first */\n    out pins, 1\n% c-sdk {\n"
+    '#include "hardware/clocks.h"\n' + X_H + "%}\n/* end */\n",
+    ".program t\n/* ; */\n    nop\n% c-sdk {\n" + X_H + "%}\n// */\n",
+    # A block ends only at `%}` in column 0 with blanks after it.
+    ".program t\n    nop\n% c-sdk {\n/* x\n %}\n; */\n" + X_H
+    + "// */\n%}\n",
+    ".program t\n    nop\n% c-sdk {\n/* x\n%} y\n; */\n" + X_H
+    + "// */\n%}\n",
+    # An empty block name is c-sdk.
+    ".program t\n    nop\n% {\n/* ; */\n" + X_H + "// */\n%}\n",
+    # A block of another language is not written.
+    ".program t\n    nop\n% python {\n/*\n%}\n% c-sdk {\n" + X_H
+    + "// */\n%}\n",
+    # The rest of a .lang_opt line is one string or word for pioasm.
+    ".program t\n.lang_opt python a'b = \"' /* \"\n    nop\n% c-sdk {\n"
+    + X_H + "// */\n%}\n",
+    ".program t\n.LANG_OPT python a = \"/*\"\n    nop\n% c-sdk {\n"
+    + X_H + "// */\n%}\n",
+    # A block start inside a `/* */` comment opens no block.
+    ".program t\n    nop\n/*\n% c-sdk {\n*/\n; /*\n% c-sdk {\n" + X_H
+    + "%}\n; */\n// */\n",
+    # A block before the first program is not written.
+    "% c-sdk {\n/*\n%}\n.program t\n    nop\n% c-sdk {\n" + X_H
+    + "// */\n%}\n"])
+def test_a_pio_file_is_read_as_pioasm_lexes_it(tmp_path, text):
+    m = module(tmp_path)
+    found = pio_with(m, text)
+    assert len(found) == 1 and "x.h" in found[0], text
+
+
+def test_a_pio_c_block_reads_c_to_its_end(tmp_path):
+    """Inside a block every line is C: a `;` on the second line of a
+    three-line block starts no PIO comment, so its `/*` hides the include
+    below it.  After `%}` a `;` comment is PIO again."""
+    m = module(tmp_path)
+    assert pio_with(
+        m, ".program t\n    nop\n% c-sdk {\nint a = 1;\nint b; /* open\n"
+        + X_H + "*/\n%}\n") == []
+    found = pio_with(
+        m, ".program t\n    nop\n% c-sdk {\nint a = 1;\nint b; // ;\n"
+        + X_H + "%}\n")
+    assert len(found) == 1 and "x.h" in found[0]
+    found = pio_with(
+        m, ".program t\n    nop\n% c-sdk {\nint a = 1;\nint b;\n%}\n"
+        "; /* c\n% c-sdk {\n" + X_H + "%}\n; */\n")
+    assert len(found) == 1 and "x.h" in found[0]
+
+
+def test_pio_c_code_is_the_header_pioasm_writes():
+    """Checked against pioasm 2.3.0 `-o c-sdk`: the text after the last `{`
+    of a block start is the first line, blank lines go, a block name is
+    trimmed and compared in its case, and each block ends with a newline."""
+    text = ('% c-sdk {\n#include "glob.h"\n%}\n.PROGRAM t\n    nop\n'
+            '% c-sdk { int z = 1;\n#include "a.h"\n\n   \n%}  \n'
+            '% {\n#include "b.h"\n%}\n%c-sdk{\n#include "c.h"\n%}\n'
+            '.LANG_OPT python x = "a /* b"\n'
+            '% C-SDK {\n#include "upper.h"\n%}\n')
+    assert cp.pio_c_code(text) == (
+        ' int z = 1;\n#include "a.h"\n\n#include "b.h"\n\n'
+        '#include "c.h"\n\n')
+
+
+def test_a_c_file_is_read_with_the_rules_of_iso_c(tmp_path):
+    """ISO C reads `0x1'2'` as a number and a character literal, and
+    `R"( "( )"` as `R` and two strings: the include is outside a comment
+    there, under the C++ rules it is not."""
+    m = module(tmp_path)
+    c = m / "wire.c"
+    c.write_text(c.read_text() + "#define RCB_IGNORE(...)\n"
+                 "RCB_IGNORE(0x1'2' \" ' /*\")\n"
+                 '#include "../../outside.h"\n// */\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+    c.write_text(c.read_text().rsplit("#define", 1)[0]
+                 + "#define RCB_IGNORE(...)\n"
+                 'RCB_IGNORE(R"( "( )" /* ")\n'
+                 '#include "../../outside.h"\n// */ )\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+def test_an_exponent_sign_continues_the_number():
+    """`1e-x'y` is one C++ number; the `'` after it opens the literal."""
+    text = ("#ifdef __cplusplus\n#define RCB_IGNORE(...)\n"
+            "RCB_IGNORE(1e-x'y' /* ')\n#include \"../outside.h\"\n"
+            "// */\n#endif\n")
+    assert cp.includes(text) == [('"', "../outside.h")]
+
+
+def test_a_line_continuation_inside_a_raw_string_is_not_joined():
+    """C++ keeps the backslash and the newline in the raw string, so
+    `)\\` + newline + `x"` does not end it and the `/*` is inside it."""
+    text = ('const char *s = R"x( )\\\nx" /* )x";\n'
+            '#include "../outside.h"\n// */\n')
+    assert cp.includes(text) == [('"', "../outside.h")]
+    assert cp.includes('R"(a)\\\n" /* )";\n#include "a.h"\n// */\n') == [
+        ('"', "a.h")]
+    # A continuation before and after the raw string is joined.
+    assert cp.includes('#define A \\\n R"(/*)" \\\n x\n#include "a.h"\n'
+                       ) == [('"', "a.h")]
+
+
+# Differential: the check against the compilers and pioasm.  Each case puts
+# `#include "../outside.h"` somewhere; the check finds it exactly when one
+# of the compilers includes the file, under any of the C standards and, for
+# a header, C++17.  The C of a .pio file is read from the header pioasm
+# writes.  A missing tool skips the case.
+
+GCC = shutil.which("gcc") or shutil.which("cc")
+GXX = shutil.which("g++") or shutil.which("c++")
+PIOASM = os.environ.get("PIOASM") or shutil.which("pioasm")
+C_STDS = ("-std=c11", "-std=gnu11", "-std=c2x", "-std=gnu2x")
+MARK = "rcb_outside_marker"
+OUT = '#include "../outside.h"\n'
+
+DIFF_C = [
+    ("c", "#define RCB_IGNORE(...)\nRCB_IGNORE(0x1'2' \" ' /*\")\n" + OUT
+     + "// */\n"),
+    ("c", "#define RCB_IGNORE(...)\nRCB_IGNORE(R\"( \"( )\" /* \")\n" + OUT
+     + "// */ )\n"),
+    ("h", "#define RCB_IGNORE(...)\nRCB_IGNORE(R\"( \"( )\" /* \")\n" + OUT
+     + "// */ )\n"),
+    ("h", "#ifdef __cplusplus\n#define RCB_IGNORE(...)\n"
+     "RCB_IGNORE(1e-x'y' /* ')\n" + OUT + "// */\n#endif\n"),
+    ("h", 'const char *s = R"x( )\\\nx" /* )x";\n' + OUT + "// */\n"),
+    ("c", 'static const char *const rcb_raw = R"x(" /* )x";\n' + OUT
+     + "/* */\n"),
+    ("h", "#ifdef __cplusplus\nstatic const int rcb_k = 1'0 + "
+     "sizeof \"'/*\";\n" + OUT + "// */\n#endif\n"),
+    ("c", "x = u8'a'; y = '/*';\n" + OUT + "/* */\n"),
+    ("h", 'FOOR"x(" /* )x";\n' + OUT + "/* */\n"),
+    ("c", "# include\\\n\"../outside.h\"\n"),
+    ("c", "/\\\n* x *\\\n/\n" + OUT),
+    ("c", "// x \\\n" + OUT),
+    ("c", 'const char *u = "http://x";\n' + OUT),
+    ("c", "/*\n" + OUT + "*/\n"),
+    ("c", "int a; /* x */ int b;\n" + OUT),
+    *[("h", "int k = %s + sizeof \"'/*\";\n" % n + OUT + "// */\n")
+      for n in ("1'000", "0x1'F", "0b1'0", "1.5e+3'1", "1e+3'1", ".5'5",
+                "0x1p+4", "1e-x'y", "0x1p-a'b")],
+    *[("h", p + 'R"d(/* "#include "x.h" )d" ;\n' + OUT + "/* */\n")
+      for p in ("", "u8", "u", "U", "L")],
+]
+DIFF_PIO = [
+    ".program t\n/* shift out; LSB first */\n    out pins, 1\n% c-sdk {\n"
+    '#include "hardware/clocks.h"\n' + OUT + "%}\n/* end */\n",
+    ".program t\n/* ; */\n    nop\n% c-sdk {\n" + OUT + "%}\n// */\n",
+    ".program t\n    nop\n% c-sdk {\n/* x\n %}\n; */\n" + OUT
+    + "// */\n%}\n",
+    ".program t\n    nop\n% c-sdk {\n/* x\n%} y\n; */\n" + OUT
+    + "// */\n%}\n",
+    ".program t\n    nop\n% {\n/* ; */\n" + OUT + "// */\n%}\n",
+    ".program t\n    nop\n% python {\n/*\n%}\n% c-sdk {\n" + OUT
+    + "// */\n%}\n",
+    ".program t\n.lang_opt python a'b = \"' /* \"\n    nop\n% c-sdk {\n"
+    + OUT + "// */\n%}\n",
+    ".program t\n    nop\n/*\n% c-sdk {\n*/\n; /*\n% c-sdk {\n" + OUT
+    + "%}\n; */\n// */\n",
+    "% c-sdk {\n/*\n%}\n.program t\n    nop\n% c-sdk {\n" + OUT
+    + "// */\n%}\n",
+    ".program t\n    nop\n% c-sdk {\nint a = 1;\nint b; /* open\n"
+    + OUT + "*/\n%}\n",
+    ".program t\n    nop\n% c-sdk {\nint a = 1;\nint b;\n%}\n; /* c\n"
+    "% c-sdk {\n" + OUT + "%}\n; */\n",
+    ".program t\n; see /* below\n    nop\n% c-sdk {\n" + OUT
+    + "%}\n; */\n",
+    ".program t\n    nop\n% c-sdk {\n/*\n%}\n% c-sdk {\n" + OUT
+    + "*/\n%}\n",
+    ".program t\n    nop\n% c-sdk {\n/*\n%}\n.program u\n    nop\n"
+    "% c-sdk {\n" + OUT + "*/\n%}\n",
+]
+
+
+def compiler_runs(header):
+    runs = [(GCC, "c", std) for std in C_STDS]
+    if header:
+        runs.append((GXX, "c++", "-std=c++17"))
+    return runs
+
+
+def compilers_include(path, header, tmp_path):
+    """True when one compiler run includes ../outside.h from @p path."""
+    stubs = tmp_path / "stubs" / "hardware"
+    stubs.mkdir(parents=True, exist_ok=True)
+    for name in ("pio.h", "clocks.h"):
+        (stubs / name).write_text("\n")
+    (tmp_path / "outside.h").write_text("int %s;\n" % MARK)
+    for compiler, lang, std in compiler_runs(header):
+        run = subprocess.run(
+            [compiler, "-x", lang, std, "-E", "-I", str(tmp_path / "stubs"),
+             str(path)], capture_output=True, text=True)
+        if MARK in run.stdout:
+            return True
+    return False
+
+
+needs_gcc = pytest.mark.skipif(not (GCC and GXX),
+                               reason="no gcc and g++ on PATH")
+
+
+@needs_gcc
+@pytest.mark.parametrize("kind, text", DIFF_C)
+def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
+    src = tmp_path / "d" / ("case." + kind)
+    src.parent.mkdir()
+    src.write_text(text)
+    found = ('"', "../outside.h") in cp.includes(text)
+    assert found == compilers_include(src, kind == "h", tmp_path), text
+
+
+@needs_gcc
+@pytest.mark.skipif(PIOASM is None, reason="no pioasm (set PIOASM)")
+@pytest.mark.parametrize("text", DIFF_PIO)
+def test_the_check_agrees_with_pioasm(tmp_path, text):
+    src = tmp_path / "d" / "case.pio"
+    src.parent.mkdir()
+    src.write_text(text)
+    out = tmp_path / "d" / "case.pio.h"
+    run = subprocess.run([PIOASM, "-o", "c-sdk", str(src), str(out)],
+                         capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    found = ('"', "../outside.h") in cp.includes(text, pio=True)
+    assert found == compilers_include(out, True, tmp_path), text

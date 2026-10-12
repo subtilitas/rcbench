@@ -20,27 +20,40 @@ This tool reads each module and fails when one of these does not hold:
 - an include of a module file names no path with a `..` component and no
   absolute path, also when the file it reaches has the name of a header of
   the module.  The scan reads `#include`, `#include_next`, `#import` and
-  their `%:` digraph forms, joins backslash-newline continuations first and
-  keeps string literals out of comment removal.  A file is read with an
+  their `%:` digraph forms, joins backslash-newline continuations first,
+  except inside a raw string literal, and keeps string, character and raw
+  string literals and numbers out of comment removal.  A file is read with an
   optional UTF-8 byte order mark, and form feed and vertical tab count as
   white space in a directive.  An operand that is neither `<...>` nor
   `"..."` (a macro include) and a call of `__has_include` or
-  `__has_include_next` outside a string literal fail, because the tool does
+  `__has_include_next` outside a literal fail, because the tool does
   not expand macros; `#ifdef __has_include` passes.  A line of only `#` or
   `%:` and a line that opens with the trigraph `??=` fail, because a
-  comment across a line break or a trigraph can hide an include.  Raw string
-  literals (`R"x(...)x"`) are kept whole, and a number with C++14 digit
-  separators (`1'000`) is one token, so neither opens a comment or a
-  character literal.  In a .pio file a `;` comment ends at the line end, as
-  in pioasm, outside the `% name {` ... `%}` blocks of C;
+  comment across a line break or a trigraph can hide an include.  A file
+  is read under the literal rules of every language it can be compiled
+  as, and an include found under any of them counts: ISO C11 and C17 (no
+  raw strings, no digit separators), gnu11 and gnu17 (raw strings), C23
+  (digit separators), gnu23 and C++14 or later (both).  A raw string
+  literal (`R"x(...)x"`) is one token, with the line continuations inside
+  it kept, and a number is one preprocessing number, through digit
+  separators (`1'000`) and exponent signs (`1e-x`).  The C of a .pio file
+  is the text pioasm 2.3.0 writes into the header it generates: the lines
+  of each `% c-sdk {` block after the first `.program`, in order.  The
+  blocks are found as pioasm's lexer finds them: a `;` or `//` comment
+  runs to the line end, a `;` inside a `/* */` comment ends nothing, the
+  rest of a `.lang_opt` line is one string, a block name is trimmed and
+  an empty one is c-sdk, and a block ends only at a line of `%}` in column
+  0 with nothing but blanks after it;
 - the module's README.md has a heading with "Interface" in it; a heading
   with "Trademark" in it, in any case, when the text names a brand listed
   in BRANDS below; and, for a module without an rp2350/ folder, the
   sentence "no pin driver".  The Interface heading and "no pin driver" are
   read outside fenced code blocks and HTML comments.  A brand is matched
-  anywhere in the file, in any case, in paths, code blocks and comments
-  too, and also as part of an identifier or file name (`kst_session_t`,
-  `hitec_x.c`), not as part of a longer word (`KSTART`);
+  anywhere in the file, in any case, in paths, addresses, code blocks and
+  comments too, and also as part of an identifier, file name or number
+  (`kst_session_t`, `hitec_x.c`, `www.futaba.com`, `2kst`).  A brand next
+  to a letter is part of a longer word and does not match: `KSTART`, and
+  also a CamelCase identifier such as `KstSession`;
 - the module's CMake files name no ESP-IDF (Espressif Internet-of-Things
   Development Framework) requirement and no `rcbench_` library of another
   module;
@@ -78,6 +91,7 @@ SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
+import bisect
 import pathlib
 import re
 import shutil
@@ -114,28 +128,59 @@ INCLUDE_RE = re.compile(DIRECTIVE + WS + r"*(.*)$", re.M)
 # opens with the trigraph `??=` for `#`.
 BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
 TRIGRAPH_RE = re.compile(r"^" + WS + r"*\?\?=")
-# A C++11 raw string literal, `R"x(...)x"`, which gnu11 also accepts.
-RAW_RE = (r'(?<!\w)(?:u8|[uUL])?R"(?P<delim>[^()\\ \t\f\v\n]{0,16})\('
-          r'.*?\)(?P=delim)"')
-# A preprocessing number, which holds C++14 digit separators: `1'000`.
-NUMBER_RE = r"(?<!\w)\.?\d(?:'?[\w.])*"
-STRING_RE = re.compile(
-    RAW_RE + r"""|\"(?:\\.|[^"\\\n])*\"|'(?:\\.|[^'\\\n])*'""", re.S)
+# The opening of a raw string literal, `R"x(...)x"`: C++11 and the GNU
+# dialects of C.  Inside it, from its first `"` on, line continuations are
+# not joined, so its body is matched on the text as written.
+RAW_OPEN_RE = r'(?<!\w)(?:u8|[uUL])?R(?=")'
+RAW_BODY_RE = re.compile(
+    r'"(?P<delim>[^()\\ \t\f\v\n]{0,16})\(.*?\)(?P=delim)"', re.S)
+STRING_LITERAL = r'"(?:\\.|[^"\\\n])*"'
+CHAR_LITERAL = r"'(?:\\.|[^'\\\n])*'"
+
+
+def number_re(separators: bool) -> str:
+    """A preprocessing number: a digit, after an optional `.`, then digits,
+    letters, `_`, `.` and an exponent sign after e, E, p or P; with digit
+    separators (C23, C++14) also a `'` before a digit or letter."""
+    sep = "'?" if separators else ""
+    return r"(?<!\w)\.?\d(?:[eEpP][+-]|" + sep + r"[\w.])*"
+
+
+# The literal rules of the languages a module file is compiled as, as (raw
+# strings, digit separators): ISO C11 and C17 have neither, gnu11 and
+# gnu17 have raw strings, C23 has digit separators, gnu23 and C++14 on have
+# both.  A file is read under each and the includes found are joined, so an
+# include that one of them leaves outside a comment is found.
+LITERAL_VIEWS = ((False, False), (True, False), (False, True), (True, True))
+
+
+def source_token_re(raw: bool, separators: bool) -> re.Pattern:
+    """One token that the comment remover keeps or drops: the operand of an
+    include directive, and string, character and raw string literals and
+    numbers, are kept whole, so a `//` or `/*` inside them starts no comment
+    and a digit separator opens no character literal."""
+    return re.compile(
+        "(?P<directive>" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
+        + ("|(?P<raw>" + RAW_OPEN_RE + ")" if raw else "")
+        + "|(?P<literal>" + number_re(separators) + "|" + STRING_LITERAL
+        + "|" + CHAR_LITERAL + ")"
+        r"|(?P<comment>/\*.*?\*/|//[^\n]*)", re.M | re.S)
+
+
+SOURCE_TOKEN_RES = tuple(source_token_re(raw, sep)
+                         for raw, sep in LITERAL_VIEWS)
 OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
 HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\s*\(")
-# The start and the end of a block of C in a .pio program.
-PIO_BLOCK_RE = re.compile(r"^" + WS + r"*%" + WS + r"*[\w-]+" + WS + r"*\{")
-PIO_BLOCK_END_RE = re.compile(r"^" + WS + r"*%\}")
 CONTINUATION_RE = re.compile(r"\\\r?\n")
-# One token that the comment remover keeps or drops: the operand of an
-# include directive, raw, string and character literals and numbers are kept
-# whole, so a `//` inside them starts no comment and a digit separator opens
-# no character literal.
-SOURCE_TOKEN_RE = re.compile(
-    "(" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
-    "|(" + RAW_RE + "|" + NUMBER_RE
-    + r"""|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')"""
-    r"|(?P<comment>/\*.*?\*/|//[^\n]*)", re.M | re.S)
+# pioasm 2.3.0 (pico-sdk tools/pioasm/lexer.ll) outside a code block: a `;`
+# or `//` comment to the line end, a `/* */` comment, the rest of a
+# `.lang_opt` line, and the start of a code block, `%`, a name of anything
+# but `%` and newline, up to the last `{` of the line.  The name is trimmed
+# of spaces and tabs; an empty one is c-sdk.  A block ends at a line of `%}`
+# in column 0 followed by spaces, tabs and carriage returns only.
+PIO_BLOCK_RE = re.compile(r"%([^%\n]+)\{")
+PIO_BLOCK_END_RE = re.compile(r"%\}[ \t\r]*")
+PIO_DIRECTIVE_RE = re.compile(r"\.(lang_opt|program)(?![A-Za-z0-9_])", re.I)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
 
@@ -144,9 +189,12 @@ SOURCE_SUFFIXES = (".c", ".h", ".pio")
 BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
           "FrSky", "FlySky")
-# A brand is found in any case, with a version suffix (DShot300, S.BUS2) and
-# inside an identifier or file name (kst_session_t, hitec_x.c).
-BRAND_RE = re.compile(r"(?<![A-Za-z0-9.])(?:%s)(?![A-Za-z])"
+# A brand is found in any case, with a version suffix (DShot300, S.BUS2),
+# inside an identifier, file name, path or address (kst_session_t,
+# hitec_x.c, www.futaba.com, 2kst), and not next to a letter: KSTART is no
+# brand, and neither is a brand joined to a word without a separator, as
+# in the CamelCase identifier KstSession.
+BRAND_RE = re.compile(r"(?<![A-Za-z])(?:%s)(?![A-Za-z])"
                       % "|".join(re.escape(b) for b in BRANDS), re.I)
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.S)
 EMPHASIS_RE = re.compile(r"[*_`]")
@@ -213,43 +261,125 @@ WARNINGS = ("-Wall", "-Wextra", "-Werror")
 LANGUAGES = (("C11", "c", "-std=c11"), ("C++17", "c++", "-std=c++17"))
 
 
-def strip_comments(text: str) -> str:
-    """@p text with its comments blanked, line continuations joined, and
-    string literals and include operands left whole."""
-    def blank(m: re.Match) -> str:
-        if m.group("comment") is None:
-            return m.group(0)
-        return re.sub(r"[^\n]", " ", m.group(0))
-    return SOURCE_TOKEN_RE.sub(blank, CONTINUATION_RE.sub("", text))
+def join_lines(text: str) -> tuple[str, list[int], list[int], list[int]]:
+    """@p text with its line continuations joined; for each continuation
+    removed, its index in @p text, its index in the joined text, and the
+    number of characters removed up to and including it."""
+    starts, at, removed, total, out, last = [], [], [], 0, [], 0
+    for m in CONTINUATION_RE.finditer(text):
+        out.append(text[last:m.start()])
+        starts.append(m.start())
+        at.append(m.start() - total)
+        total += m.end() - m.start()
+        removed.append(total)
+        last = m.end()
+    out.append(text[last:])
+    return "".join(out), starts, at, removed
 
 
-def blank_pio_comments(text: str) -> str:
-    """@p text of a .pio file with each `;` comment blanked to the end of its
-    line, outside the `% name {` ... `%}` blocks that hold C.  pioasm ends a
-    `;` comment at the line end, so a `/*` in it opens no C comment."""
-    out, inside = [], False
-    for line in text.split("\n"):
-        if inside:
-            inside = PIO_BLOCK_END_RE.match(line) is None
-        elif PIO_BLOCK_RE.match(line):
-            inside = True
-        elif ";" in line:
-            line = line[:line.index(";")] + " " * len(line[line.index(";"):])
-        out.append(line)
-    return "\n".join(out)
+def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
+    """@p text with line continuations joined and comments blanked, read
+    with the literal rules of @p token_re: once with literals left whole, so
+    an include operand stays, and once with each literal and include operand
+    replaced by `""`, newlines kept, for the search of `__has_include`.  A
+    raw string literal is matched on @p text as written, from its `"` on,
+    because a line continuation inside it is not joined."""
+    joined, starts, at, removed = join_lines(text)
+
+    def to_text(j: int) -> int:
+        k = bisect.bisect_right(at, j)
+        return j + (removed[k - 1] if k else 0)
+
+    def to_joined(t: int) -> int:
+        k = bisect.bisect_left(starts, t)
+        return t - (removed[k - 1] if k else 0)
+
+    kept, bare, pos = [], [], 0
+    while True:
+        m = token_re.search(joined, pos)
+        if m is None:
+            break
+        kept.append(joined[pos:m.start()])
+        bare.append(joined[pos:m.start()])
+        end, token = m.end(), m.group(0)
+        if m.lastgroup == "raw":
+            body = RAW_BODY_RE.match(text, to_text(m.end()))
+            if body is None:
+                # No end: no raw string here, `R` is an identifier.
+                kept.append(token)
+                bare.append(token)
+                pos = end
+                continue
+            end = to_joined(body.end())
+            token = joined[m.start():end]
+        if m.lastgroup == "comment":
+            blank = re.sub(r"[^\n]", " ", token)
+            kept.append(blank)
+            bare.append(blank)
+        elif m.lastgroup == "directive":
+            kept.append(token)
+            bare.append(re.sub(r"[^\n]", " ", token))
+        else:
+            kept.append(token)
+            bare.append('""' + re.sub(r"[^\n]", "", token))
+        pos = end
+    kept.append(joined[pos:])
+    bare.append(joined[pos:])
+    return "".join(kept), "".join(bare)
 
 
-def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
-    """(form, name) for every include directive of @p text outside a C
-    comment, in order: form is `<` or `"`, or `?` when the operand is
-    neither (a macro) and name is the operand as written.  A line of only
-    `#` or `%:` is form `#`, a line that opens with `??=` is form `??=`, and
-    a call of `__has_include` outside a string literal is form `?`, listed
-    after the includes.  @p pio is true for the text of a .pio file."""
-    blanked = strip_comments(blank_pio_comments(text) if pio else text)
+def pio_c_code(text: str) -> str:
+    """The C that pioasm writes from the .pio @p text into the header it
+    generates with `-o c-sdk`: the lines of each `% c-sdk {` block after the
+    first `.program`, in order, without its blank lines, each block ended
+    by a newline.  The code blocks are found as pioasm 2.3.0 lexes the file
+    (PIO_BLOCK_RE): a `;` inside a `/* */` comment ends nothing, a `/*` in a
+    `;` comment opens nothing, and a block of another language and a block
+    before the first program are not written."""
+    blocks, program, i, n = [], False, 0, len(text)
+    while i < n:
+        if text.startswith((";", "//"), i):
+            i = text.find("\n", i)
+        elif text.startswith("/*", i):
+            i = text.find("*/", i + 2)
+            i = -1 if i < 0 else i + 2
+        elif text[i] == "%" and PIO_BLOCK_RE.match(text, i):
+            start = PIO_BLOCK_RE.match(text, i)
+            name = start.group(1).strip(" \t") or "c-sdk"
+            lines, i = [], start.end()
+            while i <= n:
+                eol = text.find("\n", i)
+                eol = n if eol < 0 else eol
+                line = text[i:eol]
+                if PIO_BLOCK_END_RE.fullmatch(line):
+                    break
+                if line.strip(" \t\r"):
+                    lines.append(line + "\n")
+                i = eol + 1
+            else:
+                eol = n
+            i = eol
+            if program and name == "c-sdk":
+                blocks.append("".join(lines) + "\n")
+        elif text[i] == "." and PIO_DIRECTIVE_RE.match(text, i):
+            word = PIO_DIRECTIVE_RE.match(text, i)
+            if word.group(1).lower() == "lang_opt":
+                i = text.find("\n", i)
+            else:
+                program = True
+                i = word.end()
+        else:
+            i += 1
+        if i < 0:
+            break
+    return "".join(blocks)
+
+
+def view_includes(text: str, token_re: re.Pattern) -> list[tuple[str, str]]:
+    """includes() of @p text under the literal rules of @p token_re."""
+    kept, bare = blank_source(text, token_re)
     found = []
-    for m in re.finditer(r"^.*$", blanked, re.M):
-        line = m.group(0)
+    for line in kept.split("\n"):
         if BARE_DIRECTIVE_RE.match(line):
             found.append(("#", line.strip()))
             continue
@@ -265,8 +395,30 @@ def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
                              else ('"', op.group(2)))
             else:
                 found.append(("?", operand))
-    for use in HAS_INCLUDE_RE.finditer(STRING_RE.sub('""', blanked)):
+    for use in HAS_INCLUDE_RE.finditer(bare):
         found.append(("?", use.group(0)[:-1].strip()))
+    return found
+
+
+def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
+    """(form, name) for every include directive of @p text outside a C
+    comment: form is `<` or `"`, or `?` when the operand is neither (a
+    macro) and name is the operand as written.  A line of only `#` or `%:`
+    is form `#`, a line that opens with `??=` is form `??=`, and a call of
+    `__has_include` outside a literal is form `?`.  The text is read under
+    each set of literal rules in LITERAL_VIEWS, and an entry found under
+    any of them is listed, in the order of the first view that finds it.
+    @p pio is true for the text of a .pio file, whose C is read as pioasm
+    writes it into the generated header (pio_c_code())."""
+    if pio:
+        text = pio_c_code(text)
+    found: list[tuple[str, str]] = []
+    for token_re in SOURCE_TOKEN_RES:
+        seen: dict[tuple[str, str], int] = {}
+        for entry in view_includes(text, token_re):
+            seen[entry] = seen.get(entry, 0) + 1
+            if seen[entry] > found.count(entry):
+                found.append(entry)
     return found
 
 
