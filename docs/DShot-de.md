@@ -202,7 +202,12 @@ wie ein nicht funktionierender Treiber aussieht.
 Der Prüfstand bildet den Weg so ab, dass ein Befehl von null Motor Stop ist und
 alles darüber in 48 bis 2047 landet. Ein Treiber, der den Weg direkt auf 0 bis
 2047 abbildete, sendete auf dem Weg vom Leerlauf nach oben Beeps und
-Drehrichtungswechsel.
+Drehrichtungswechsel. Ein Befehl über der Spanne von 1000 wird auf null, Motor
+Stop, abgebildet, nicht auf volles Gas.
+
+`out_dshot_bind()` auf einem Pin, der schon mit anderer Rate oder anderem Modus
+gebunden ist, gibt false zurück und lässt den alten Output weiterlaufen. Ein
+Aufrufer gibt den Pin zuerst frei.
 
 Frames gehen mit 1 kHz hinaus. Diese Rate steht nicht auf der Leitung: das
 Ratenfeld der OUTPUTS-Page ist bei DShot eine Bitrate und keine Frame Rate, der
