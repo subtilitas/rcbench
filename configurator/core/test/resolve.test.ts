@@ -436,6 +436,14 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   for (const id of [WARNING, 'strip-jumper', 'strip-dc', 'strip-measure', 'strip-plug', 'strip-supply']) assert.ok(ids(strip).includes(id), id);
   assert.ok(!ids(strip).includes('servo-5v-pin'));
   assert.deepEqual(used(strip), ['strip-v']);
+  // Without the Osoyoo breakout board none of the strip checks appears.
+  const STRIP_CHECKS = ['strip-jumper', 'strip-dc', 'strip-measure', 'strip-feed', 'strip-converter', 'strip-input', 'strip-print', 'strip-regulator', 'strip-supply'];
+  const bare = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'pads' }));
+  assert.deepEqual(ids(bare).filter((id) => id.startsWith('strip-')), []);
+  for (const id of STRIP_CHECKS) assert.ok(!ids(bare).includes(id), id);
+  assert.ok(ids(bare).includes('servo-5v-pin'));
+  const extStrip = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo' }));
+  for (const id of STRIP_CHECKS) assert.ok(!ids(extStrip).includes(id), id);
   // No wire of the strip variant ends on pad 40.
   assert.ok(!strip.wires.some((w) => w.a === 'pad.40' || w.b === 'pad.40'));
 

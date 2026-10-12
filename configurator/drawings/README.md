@@ -187,7 +187,7 @@ Colour is not the only carrier: a wire keeps its wire number of the data file.
   `stripPoint(pad, row)` in `parts.ts` gives the place of each strip pin.
 - Carrier board: the jumper and the DC-DC converter are drawn at the USB end,
   where photo `05-rp2350-can-breakout` shows them, not to scale. The print of
-  the jumper reads 3V3 and 5V from the left beside the header and V Selector below it, per the
+  the jumper reads 3V3 and 5V from the left beside the header ("3V3 / 5V"), per the
   product photo of the vendor, with the cap drawn on the 5V pair, the position the servo needs, and labelled "cap on 5V" (German "Kappe auf 5V"). The board is delivered with the cap on 3V3. The schematic REV 1.0 names the 8-pin chip U9
   (converter) and the inductor.
 - microSD card, USB cable and hook-up wire: drawings without a pin.

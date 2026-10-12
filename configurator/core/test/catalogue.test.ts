@@ -764,6 +764,8 @@ test('src: a doc source needs a title, an https address with a path and a refere
   reports(at({ ...ok, title: '' }), 'function.servo', /src "doc" has no title/);
   reports(at({ ...ok, url: 'http://example.com/a.pdf' }), 'function.servo', /no https address/);
   reports(at({ ...ok, url: 'https://example.com' }), 'function.servo', /no https address/);
+  reports(at({ ...ok, url: 'https://example.com/a b.pdf' }), 'function.servo', /no https address/);
+  reports(at({ ...ok, url: 'https:///a.pdf' }), 'function.servo', /no https address/);
   reports(at({ ...ok, ref: '' }), 'function.servo', /names no page, net or table/);
 });
 
@@ -1286,4 +1288,117 @@ test('the Osoyoo strip: one DC input, no unresolved 3V3 claim, the plug claim ex
   assert.doesNotMatch(check('strip-jumper').text.en, /4\.8|7 to 1[26] V/);
   assert.doesNotMatch(check('strip-input').text.en, /7 to 40 V/);
   assert.match(check('strip-converter').text.en, /7 to 40 V/);
+});
+
+test('the Osoyoo strip: the kind and the source of every check', () => {
+  const check = (id: string) => CATALOGUE.checks.find((c) => c.id === id)!;
+  const SCHEMATIC = /^Schematic of the OSOYOO IO Breakout Board/;
+  const PAGE = /product page, published 2024-12-02$/;
+  const PHOTOS = /product photos$/;
+  const table: Array<[string, string, RegExp | 'owner']> = [
+    ['osoyoo-terminals', 'note', SCHEMATIC],
+    ['strip-esc', 'note', 'owner'],
+    ['strip-jumper', 'note', SCHEMATIC],
+    ['strip-dc', 'note', PAGE],
+    ['strip-measure', 'measure', SCHEMATIC],
+    ['strip-feed', 'note', SCHEMATIC],
+    ['strip-converter', 'note', /XL1509/],
+    ['strip-input', 'note', PAGE],
+    ['strip-print', 'note', PHOTOS],
+    ['strip-regulator', 'note', PAGE],
+    ['strip-parts', 'note', SCHEMATIC],
+    ['strip-load', 'note', /SN74HC04/],
+    ['strip-level', 'note', PAGE],
+    ['strip-plug', 'note', 'owner'],
+    ['strip-prog', 'note', 'owner'],
+    ['strip-supply', 'unknown', PAGE],
+  ];
+  for (const [id, kind, src] of table) {
+    assert.equal(check(id).kind, kind, `${id} kind`);
+    if (src === 'owner') assert.equal(check(id).src.kind, 'owner', `${id} src`);
+    else {
+      const s = check(id).src;
+      assert.equal(s.kind, 'doc', `${id} src kind`);
+      if (s.kind === 'doc') assert.match(s.title, src, `${id} src title`);
+    }
+  }
+  // The urls: the schematic, the product page (page and photos), the 2 datasheets.
+  const url = (id: string): string => { const s = check(id).src; return s.kind === 'doc' ? s.url : ''; };
+  assert.match(url('strip-jumper'), /Schematic_OSOYOO-IO-Expansion-Board-for-Pico-series_2024-12-03\.pdf$/);
+  assert.equal(url('strip-dc'), 'https://osoyoo.com/2024/12/02/osoyoo-breakout-board-for-pico-series/');
+  assert.match(url('strip-converter'), /XL1509\.pdf$/);
+  assert.match(url('strip-load'), /sn74hc04\.pdf$/);
+});
+
+test('the Osoyoo strip: the operative text of every check, in English and German', () => {
+  const check = (id: string) => CATALOGUE.checks.find((c) => c.id === id)!;
+  const rows: Array<[string, RegExp, RegExp]> = [
+    ['strip-jumper', /Check it before a servo is plugged in/, /Vor dem Einstecken eines Servos prüfen/],
+    ['strip-jumper', /Position 5V gives 5 V, but only while a DC supply is connected/, /Stellung 5V gibt 5 V, aber nur, solange eine DC-Versorgung angeschlossen/],
+    ['strip-jumper', /without it the V pins carry 0 V/, /ohne sie führen die V-Pins 0 V/],
+    ['strip-jumper', /Set the jumper to 5V for the servo/, /Den Jumper für das Servo auf 5V setzen/],
+    ['strip-dc', /recommends 7 to 12 V/, /empfiehlt 7 bis 12 V/],
+    ['strip-measure', /V pin of the strip at GP2 to the G pin/, /V-Pin der Leiste an GP2 gegen den G-Pin/],
+    ['strip-measure', /5V without a DC supply or with the switch on OFF, 0 V/, /5V ohne DC-Versorgung oder mit Schalter auf OFF 0 V/],
+    ['strip-feed', /Pin 1 is the net 3\.3V.*pin 2 is the net VCC, pin 3 is the net VOUT_5V/, /Pin 1 ist das Netz 3\.3V.*Pin 2 ist das Netz VCC, Pin 3 ist das Netz VOUT_5V/],
+    ['strip-feed', /VCC is the V pin of all 40 strips/, /VCC ist der V-Pin aller 40 Leisten/],
+    ['strip-feed', /input from VSYS of the Pico board/, /Eingang aus VSYS der Pico-Platine/],
+    ['strip-feed', /jumper on 5V and no DC supply the V pins carry 0 V/, /Jumper auf 5V und ohne DC-Versorgung führen die V-Pins 0 V/],
+    ['strip-feed', /joins VOUT_5V to the V pins when the jumper is on 3V3, and none joins VBUS/, /verbindet VOUT_5V mit den V-Pins, wenn der Jumper auf 3V3 steht, und keines verbindet VBUS/],
+    ['strip-converter', /7 to 40 V.*4\.8 to 5\.2 V at 0\.2 to 2 A.*150 kHz \(127 to 173 kHz\).*limit 4 A.*82 % typical at 12 V in and 2 A/, /7 bis 40 V.*4,8 bis 5,2 V bei 0,2 bis 2 A.*150 kHz \(127 bis 173 kHz\).*grenze 4 A.*82 % bei 12 V Eingang und 2 A/],
+    ['strip-input', /7 to 12 V and limits the input to 7 to 18 V/, /7 bis 12 V und begrenzt den Eingang auf 7 bis 18 V/],
+    ['strip-input', /5 V and 2 A, or 3\.3 V and 500 mA/, /5 V und 2 A oder 3,3 V und 500 mA/],
+    ['strip-print', /reads 7 to 16 V.*100 uF 16 V/, /Aufdruck 7 bis 16 V.*100 uF 16 V/],
+    ['strip-regulator', /ME6210A33M3G.*3\.3 V and 500 mA.*VSYS.*more than 0\.5 A/, /ME6210A33M3G.*3,3 V und 500 mA.*VSYS.*mehr als 0,5 A/],
+    ['strip-regulator', /S pin of the 3\.3 V row/, /S-Pin der 3,3-V-Reihe/],
+    ['strip-parts', /the 5 SN74HC04 hex inverters/, /Die 5 Sechsfach-Inverter SN74HC04/],
+    ['strip-parts', /N-channel MOSFET.*only while no USB voltage is present/, /N-Kanal-MOSFET.*nur auf VSYS, solange keine USB-Spannung anliegt/],
+    ['strip-load', /1 inverter input.*leakage up to 1 uA and 3 to 10 pF/, /1 Inverter-Eingang.*Leckstrom bis 1 uA und 3 bis 10 pF/],
+    ['strip-level', /In position 5V the V pin carries 5 V/, /In Stellung 5V führt der V-Pin 5 V/],
+    ['strip-supply', /2 A at 5 V and 500 mA at 3\.3 V are vendor values.*XL1509-5\.0/, /2 A bei 5 V und 500 mA bei 3,3 V sind Herstellerangaben.*XL1509-5\.0/],
+    ['strip-supply', /stall current of the servo is not stated/, /Blockierstrom des Servos ist nicht angegeben/],
+    ['strip-esc', /S and G pins of the strip at GP5 only/, /Pins S und G der Leiste an GP5/],
+    ['strip-plug', /strip at GP2.*wire 7.*wire 61.*wire 8/, /Leiste an GP2.*Draht 7.*Draht 61.*Draht 8/],
+    ['strip-prog', /to GP13 by wire 64/, /über Draht 64 an GP13/],
+    ['osoyoo-terminals', /All V pins of both sides are 1 net/, /Alle V-Pins beider Seiten sind 1 Netz/],
+    ['servo-bench-supply', /At the 5 V pin of the coprocessor board/, /Am 5-V-Pin der Koprozessor-Platine/],
+  ];
+  for (const [id, en, de] of rows) {
+    assert.match(check(id).text.en, en, `${id} en`);
+    assert.match(check(id).text.de, de, `${id} de`);
+  }
+});
+
+test('the Osoyoo strip: the fields and the texts of the power source and of wires 61 and 62', () => {
+  const strip = CATALOGUE.powerSources.find((s) => s.id === 'strip-v')!;
+  assert.deepEqual(strip.volts, { min: 3.3, max: 5, steps: [3.3, 5] });
+  assert.deepEqual(strip.basis, { en: 'Vendor values, not measured.', de: 'Herstellerangaben, nicht gemessen.' });
+  assert.equal(strip.feeds, 'servo');
+  const join = (list: Array<{ en: string; de: string }>, lang: 'en' | 'de'): string => list.map((x) => x[lang]).join(' | ');
+  const rows: Array<[string, 'pros' | 'cons' | 'unknowns', RegExp, RegExp]> = [
+    ['strip-v', 'pros', /In position 5V the servo draws from the DC input through a converter rated 2 A/, /In Stellung 5V zieht das Servo aus dem DC-Eingang über einen Wandler mit 2 A/],
+    ['strip-v', 'pros', /With USB connected this is not the supply of the logic; without USB voltage/, /Mit angeschlossenem USB ist das nicht die Versorgung der Logik; ohne USB-Spannung/],
+    ['strip-v', 'pros', /Without the servo programmer and without the INA3221/, /Ohne den Servo-Programmierer und ohne den Stromsensor INA3221/],
+    ['strip-v', 'cons', /As delivered the jumper cap sits on the 3V3 side.*so position 5V is a change/, /Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3.*Stellung 5V ist also eine Änderung/],
+    ['strip-v', 'cons', /7 to 12 V.*print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V.*USB does not feed it\. Without it the V pins carry 0 V/, /7 bis 12 V.*Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V.*USB speist sie nicht\. Ohne sie führen die V-Pins 0 V/],
+    ['strip-v', 'cons', /2 A at 5 V and 500 mA at 3\.3 V \(vendor values\)/, /2 A bei 5 V und 500 mA bei 3,3 V \(Herstellerwerte\)/],
+    ['strip-v', 'cons', /In position 3V3 the servo draws from VSYS of the coprocessor board/, /In Stellung 3V3 zieht das Servo aus VSYS der Koprozessor-Platine/],
+    ['strip-v', 'cons', /In position 3V3 the servo gets 3\.3 V where the regulator is powered/, /In Stellung 3V3 bekommt das Servo 3,3 V, wo der Regler versorgt ist/],
+    ['strip-v', 'unknowns', /2 A and 500 mA are vendor values/, /2 A und 500 mA sind Herstellerwerte/],
+    ['strip-v', 'unknowns', /Whether position 3V3 works with USB alone/, /Ob Stellung 3V3 mit USB allein arbeitet/],
+    ['strip-v', 'unknowns', /Stall current of the servo: not stated/, /Blockierstrom des Servos: nicht angegeben/],
+    ['usb', 'cons', /Osoyoo breakout board with the jumper on 3V3/, /Osoyoo-Breakout-Platine mit dem Jumper auf 3V3/],
+  ];
+  for (const [id, field, en, de] of rows) {
+    const src = CATALOGUE.powerSources.find((s) => s.id === id)!;
+    assert.match(join(src[field], 'en'), en, `${id} ${field} en`);
+    assert.match(join(src[field], 'de'), de, `${id} ${field} de`);
+  }
+  for (const n of [61, 62]) {
+    const w = CATALOGUE.wires.find((x) => x.n === n)!;
+    assert.match(w.signal.en, /servo power, 3\.3 V or 5 V by the jumper/, `wire ${n} en`);
+    assert.match(w.signal.de, /Servoversorgung, 3,3 V oder 5 V je nach Jumper/, `wire ${n} de`);
+    assert.match(w.note!.en, /jumper V Selector on 5V the servo draws from the DC input of the board through the XL1509 converter, with the jumper on 3V3 from VSYS/, `wire ${n} note en`);
+    assert.match(w.note!.de, /Jumper V Selector auf 5V zieht das Servo aus dem DC-Eingang der Platine über den XL1509-Wandler, mit dem Jumper auf 3V3 aus VSYS/, `wire ${n} note de`);
+  }
 });

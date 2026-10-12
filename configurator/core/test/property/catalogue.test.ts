@@ -15,6 +15,7 @@ import { test } from 'node:test';
 
 import type { Catalogue, Cond, Options, Src } from '../../../contract.ts';
 import { CATALOGUE } from '../../catalogue.ts';
+import { DOC_URL } from '../../tools/check.ts';
 import { OPTION_KEYS, OPTION_VALUES } from '../../resolve.ts';
 import { BANNED, bannedIn } from './words.ts';
 
@@ -126,7 +127,7 @@ function sourceProblems(src: unknown, release: string): string[] {
     case 'doc':
       return [
         ...(keys !== 'kind,ref,title,url' ? [`has the keys ${keys}`] : []),
-        ...(typeof s.url !== 'string' || !/^https:\/\/\S+$/.test(s.url) ? [`url "${String(s.url)}" is no https address`] : []),
+        ...(typeof s.url !== 'string' || !DOC_URL.test(s.url) ? [`url "${String(s.url)}" is no https address`] : []),
         ...(typeof s.title !== 'string' || s.title.length === 0 ? ['title is empty'] : []),
         ...(typeof s.ref !== 'string' || s.ref.length === 0 ? ['ref is empty'] : []),
       ];
