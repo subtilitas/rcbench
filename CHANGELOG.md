@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- `tools/security_parsers.py --check`, run in CI, fails when the parser table
+  in `SECURITY.md` and the parse functions in the public headers differ. The
+  table lists 10 modules; it listed 4.
+- `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
+  each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
   (`servoprog`, link `#v=1&f=servoprog`). It needs the panel and the
   coprocessor alone. Its tick puts the servo signal on wire 64, from pad 17
@@ -37,6 +42,14 @@ history is in git.
   source: schematic, product page or XL1509 datasheet. A source of the kind `doc` names a
   document, its address and the place in it; the data check rejects one
   without them.
+- `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
+  `Pins.md` states that it is the draft of the planned IO board.
+- The research workflow scripts are no longer in the repository. They are kept
+  on the owner's machine, outside it; `ci.yml` no longer runs
+  `session.py check`.
+- The KST README names Tool Card #2 and Chaservo in its list of what is
+  measured. The 19,178 us flash window is stated as 1 sample with the flash
+  part not yet identified.
 - The release of the bench configurator is stated once, in the `version`
   field of `configurator/package.json`. The data file, the page header, the
   trademark notice, the print head, the source-link tag and the data check
@@ -75,6 +88,29 @@ history is in git.
 
 ### Fixed
 
+- The BALANCE pane carries the MODELLED pill and the words "Not measured."
+  (SIMULIERT, "Nicht gemessen." in German) under its readings: the angle of
+  265° and the 0.42 g and 0.35 g readings are fixed values.
+- A frame of a held plus or minus key on SETUP counts for at most 0.25 s
+  (`ui_hold_credit()`). A 1 s stall steps at most 3 times at 8 Hz and 8
+  times at 30 Hz; the repeat rate of a normal hold is unchanged.
+- A pulse that ends on tick 0 of the millisecond clock starts the quiet
+  window of the ESC menu detector at the fall. A supply reading or INA3221
+  window stamped on tick 0 keeps that stamp on the servo screen. A flag
+  marks each stamp (`esc_det_t.fell`, `stamped` in `supply_state_t` and
+  `sense_link_win_t`) where the value 0 stood for "none".
+
+- A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
+  BAD_VALUE and nothing is stored; before, any value to 65535 reached the
+  output bank. The PROG page's port slew has the same limit. A CHAN_CFG or
+  PROG slew above 3000 kept in the coprocessor's flash by an older build
+  starts as 3000, on the page, in BIND_CFG and in the output bank; the
+  role, endpoints and pins kept with it start as kept.
+- The coprocessor's CAN receive takes the next buffer after one holding a
+  frame it refuses (11-bit identifier, remote frame, length above 8), so a
+  valid frame in receive buffer 1 is served in the same pass.
+- A KST panel row coordinate that names no row gives no row (empty
+  rectangle, no label or button text, not live) instead of the first row.
 - **A PD mini set point at the input cap lies 200 mV above the sag cut
   line.** The voltage set point is capped 700 mV under the module's input
   (`PDMINI_CAP_MV`), 200 mV above the line a live output is cut at, the set

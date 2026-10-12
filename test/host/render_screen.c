@@ -318,8 +318,14 @@ static void drag(int x, int y0, int y1)
 
 /* ------------------------------ the programmer for KST and Chaservo servos */
 
+/* A tap on the programmer.  A rectangle with no size is a coordinate that
+ * names no control, and a render from it would show the wrong state. */
 static void ktap(gfx_rect_t r)
 {
+    if (r.w <= 0 || r.h <= 0) {
+        fprintf(stderr, "render_screen: a KST tap names no control\n");
+        exit(1);
+    }
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
@@ -617,7 +623,7 @@ static void kst_view(const char *view)
         }
         return;
     }
-    ktap(kst_panel_value_rect(0, 0, 1));            /* CONNECT */
+    ktap(kst_panel_value_rect(0, 0, 0));            /* CONNECT */
     if (strcmp(v, "-nopin") == 0) {
         ksettle();
         return;
@@ -625,7 +631,7 @@ static void kst_view(const char *view)
     if (strcmp(v, "-supplied") == 0 || strcmp(v, "-leave-supply") == 0) {
         ksettle();
         if (strcmp(v, "-leave-supply") == 0) {
-            ktap(kst_panel_value_rect(0, 0, 1));    /* LEAVE */
+            ktap(kst_panel_value_rect(0, 0, 0));    /* LEAVE */
             ksettle();
         }
         return;
@@ -660,7 +666,7 @@ static void kst_view(const char *view)
     }
     if (strcmp(v, "-leave") == 0) {
         kedits();
-        ktap(kst_panel_value_rect(0, 0, 1));
+        ktap(kst_panel_value_rect(0, 0, 0));
         return;
     }
     if (strcmp(v, "-more") == 0 || strcmp(v, "-release") == 0) {
@@ -872,6 +878,7 @@ static void servo_run_view(bool to_the_end, bool ina)
             w.mean_mv  = (uint16_t)mv;
             w.min_mv   = (uint16_t)mv;
             w.taken_ms = now;
+            w.stamped = true;
             servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
         }
         if (i % 5 == 0) {
@@ -888,6 +895,7 @@ static void servo_run_view(bool to_the_end, bool ina)
             st.mode   = out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
             st.samples  = ++samples;
             st.taken_ms = now;
+            st.stamped = true;
             supply_screen_set_output(out);
             supply_screen_push(&st);
             servo_screen_supply(&st);
@@ -1017,6 +1025,7 @@ static void stick_step(stick_rig_t *r)
         memset(&st, 0, sizeof(st));
         st.samples = (uint16_t)++r->seq;
         st.taken_ms = r->now;
+        st.stamped = true;
         st.i = r->on ? (float)ma / 1000.0f : 0.0f;
         st.v = r->on ? 7.6f : 0.0f;
         st.output = r->on;
@@ -1067,6 +1076,7 @@ static void stick_supply_off(void)
         memset(&st, 0, sizeof(st));
         st.samples = (uint16_t)(t / 100u + 1u);
         st.taken_ms = t;
+        st.stamped = true;
         st.mode = SUPPLY_MODE_OFF;
         st.online = true;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
@@ -1874,16 +1884,16 @@ int main(int argc, char **argv)
         if (strcmp(view, "outputs-protocol") == 0
             || strcmp(view, "outputs-off") == 0) {
             /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 } };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 } };
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0 };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0 };
             ui_router_event(&d);
             ui_router_event(&u);
         }
         if (strcmp(view, "outputs-off") == 0) {
             /* And OFF picked in it, the first row: every bound pin says
              * which protocol holds it. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 } };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 } };
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0 };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0 };
             ui_router_event(&d);
             ui_router_event(&u);
         }
@@ -2014,7 +2024,7 @@ int main(int argc, char **argv)
          * read at the commanded 38 degrees: 38 * 4096 / 360 = 432
          * counts on. */
         if (strcmp(view, "servo-encoder") == 0) {
-            const servo_test_enc_t e = { true, 3432u, 0u, 1000u, false };
+            const servo_test_enc_t e = { .valid = true, .raw = 3432u, .still_ms = 0u, .taken_ms = 1000u };
             servo_screen_encoder(&e);
         }
         /*

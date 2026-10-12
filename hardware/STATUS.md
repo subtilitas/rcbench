@@ -19,7 +19,7 @@ pack sold at Stefansliposhop (2026-09-30). The RP2354B is held in the owner's JL
 parts library, 20 of them, and 12 TPS55285, beside the other parts listed
 under [Held parts](docs/Research.md#held-parts) (export of 2026-09-25).
 [The IO board specification](docs/IOBoard.md) is a draft with the chosen part
-on each line. The workflow scripts are in `tools/research/` (prerequisite 6),
+on each line. The workflow scripts are in `~/rcbench-research/tools-research/` on the owner's machine, outside the repository (prerequisite 6),
 and the returns of every task are under `hardware/research/round1/` on the
 branch `research/round1-results`. Round 2 is planned in
 [Research](docs/Research.md#round-2); its returns go under
@@ -114,7 +114,7 @@ evidence, as not known or not verified.
    2026-10-01). It also selects the protection on the signal, sensor,
    balance-lead, link and heartbeat connectors. The power input's protection
    (R5) and the ESC pack path's (R3) are round 1's categories, which stage 1
-   researches. Stage 2 has no scripts in `tools/research/`. Round 3 sets the
+   researches. Stage 2 has no scripts in `~/rcbench-research/tools-research/`. Round 3 sets the
    mechanical, thermal and layout constraints, the converter's heatsink among
    them ([Research](docs/Research.md#scope)).
 4. Schematic.

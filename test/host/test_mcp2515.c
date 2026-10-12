@@ -121,6 +121,86 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK_EQ(mcp2515_unpack_id(r, NULL), false);
 }
 
+/* A fake controller: receive buffers handed over in order, as the driver's
+ * fetch consumes them. */
+typedef struct {
+    uint8_t buf[MCP2515_RX_BUFFERS][13];
+    unsigned count, next;
+} fake_rx_t;
+
+static bool fake_fetch(void *ctx, uint8_t out[13])
+{
+    fake_rx_t *rx = (fake_rx_t *)ctx;
+    if (rx->next >= rx->count) {
+        return false;
+    }
+    memcpy(out, rx->buf[rx->next++], 13);
+    return true;
+}
+
+static void put_frame(uint8_t b[13], uint32_t id, uint8_t dlc_reg, uint8_t d0,
+                      bool extended)
+{
+    memset(b, 0, 13);
+    (void)mcp2515_pack_id(id, b);
+    if (!extended) {
+        b[1] = (uint8_t)(b[1] & ~MCP2515_SIDL_EXIDE);
+    }
+    b[4] = dlc_reg;
+    b[5] = d0;
+}
+
+TEST_CASE(a_refused_frame_in_rxb0_does_not_hide_a_valid_one_in_rxb1)
+{
+    link_can_frame_t f;
+    fake_rx_t rx;
+    memset(&rx, 0, sizeof(rx));
+    rx.count = 2;
+    put_frame(rx.buf[0], 0x123u, 0x42u, 0xEEu, true);    /* RTR, length 2 */
+    put_frame(rx.buf[1], 0x1ABCDu, 0x01u, 0x5Au, true);  /* valid */
+    CHECK(mcp2515_recv_next(fake_fetch, &rx, &f));
+    CHECK_EQ(f.id, 0x1ABCDu);
+    CHECK_EQ(f.dlc, 1u);
+    CHECK_EQ(f.data[0], 0x5Au);
+    CHECK_EQ(rx.next, 2u);
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f));
+}
+
+TEST_CASE(every_kind_of_refused_frame_is_consumed_and_the_next_is_tried)
+{
+    link_can_frame_t f;
+    for (int kind = 0; kind < 3; ++kind) {
+        fake_rx_t rx;
+        memset(&rx, 0, sizeof(rx));
+        rx.count = 2;
+        if (kind == 0) {
+            put_frame(rx.buf[0], 0x55u, 0x01u, 0, false);   /* 11-bit id */
+        } else if (kind == 1) {
+            put_frame(rx.buf[0], 0x55u, 0x40u, 0, true);    /* RTR */
+        } else {
+            put_frame(rx.buf[0], 0x55u, 0x09u, 0, true);    /* DLC 9 */
+        }
+        put_frame(rx.buf[1], 0x77u, 0x02u, 0x11u, true);
+        CHECK(mcp2515_recv_next(fake_fetch, &rx, &f));
+        CHECK_EQ(f.id, 0x77u);
+        CHECK_EQ(f.dlc, 2u);
+    }
+}
+
+TEST_CASE(only_refused_frames_give_no_frame_and_all_are_consumed)
+{
+    link_can_frame_t f;
+    fake_rx_t rx;
+    memset(&rx, 0, sizeof(rx));
+    rx.count = 2;
+    put_frame(rx.buf[0], 0x55u, 0x40u, 0, true);
+    put_frame(rx.buf[1], 0x56u, 0x40u, 0, true);
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f));
+    CHECK_EQ(rx.next, 2u);
+    CHECK(!mcp2515_recv_next(NULL, &rx, &f));
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, NULL));
+}
+
 int main(void)
 {
     RUN(every_bit_of_the_identifier_lands_where_the_datasheet_says);
@@ -129,5 +209,8 @@ int main(void)
     RUN(the_links_own_identifiers_survive_the_registers);
     RUN(the_round_trip_holds_across_the_whole_identifier_space);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
+    RUN(a_refused_frame_in_rxb0_does_not_hide_a_valid_one_in_rxb1);
+    RUN(every_kind_of_refused_frame_is_consumed_and_the_next_is_tried);
+    RUN(only_refused_frames_give_no_frame_and_all_are_consumed);
     return test_summary("mcp2515");
 }

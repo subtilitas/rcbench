@@ -1955,8 +1955,11 @@ The save waits for the bench to stop driving, and then for a gap in the
 traffic. Writing flash stops the coprocessor with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178 us, against a CAN
-frame of about 130 us and two frames of buffer in the controller. The erase
-and the page program have not been timed apart from each other. A request lost
+frame of about 130 us and two frames of buffer in the controller. The figure is one
+measurement: 1 sample, taken on the bring-up module, with the flash part not
+yet identified. The erase and the page program have not been timed apart from
+each other. The window is to be argued again against the flash part's
+datasheet maximum once the part is known. A request lost
 in that window costs the panel 1000 ms of waiting, which is past the
 coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
@@ -1989,6 +1992,11 @@ confirmed](#a-binding-that-is-not-confirmed).
 ## Balancing
 
 Described on its own page: [Balancing](Balance.md).
+
+The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
+vibration, 0.35 g mass to add) until a sensor is fitted. The MODELLED pill and
+the words "Not measured." stand under the readings, 20 px high and 88 px wide.
+The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 
 ## Screens that are not ready
 
