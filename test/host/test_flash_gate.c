@@ -87,7 +87,10 @@ static art_entry_t   g_entry;
 
 static void bench_fresh(void)
 {
-    if (g_flash == NULL) { g_flash = malloc(PART); }
+    if (g_flash == NULL) {
+        g_flash = malloc(PART);
+        REQUIRE_ALLOC(g_flash);
+    }
     memset(g_flash, 0xFF, PART);
     g_ops = 0;
     g_now = 100u;
@@ -96,7 +99,10 @@ static void bench_fresh(void)
     arming_init(&g_arm, 0u, SETTLE_MS);
     arming_touch_seen(&g_arm, g_now);
 
-    if (g_pic == NULL) { g_pic = malloc(PICTURE); }
+    if (g_pic == NULL) {
+        g_pic = malloc(PICTURE);
+        REQUIRE_ALLOC(g_pic);
+    }
     for (uint32_t i = 0; i < PICTURE; ++i) {
         g_pic[i] = (uint8_t)(i * 7u + 3u);
     }
