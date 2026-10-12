@@ -56,6 +56,12 @@ history is in git.
 
 ### Fixed
 
+- The run clock counts a run that starts on tick 0 from that tick. A flag
+  (`in_run` in `arming_t`) marks a run, so every 32-bit tick, 0 and
+  0xFFFFFFFF included, is a valid start. A start time of 0 stood for "no
+  run", and a run that began on tick 0 restarted at its next pass and lost
+  that pass from its length. The tick passes 0 every 2^32 ms (49.7 days).
+
 - The ESC and SERVO classes of PROGRAMMER show that they are a model. No
   transport carries their protocols, and CONNECT, READ and WRITE send
   nothing on a wire. The class tiles, the protocol rows and the device line
