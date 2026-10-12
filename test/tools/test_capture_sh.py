@@ -1,7 +1,10 @@
 """testbench/host/capture.sh: the warning for a channel that never changed.
 
 sigrok-cli is replaced by a stub that prints a prepared bits listing for the
-read-back call."""
+read-back call.
+
+SPDX-License-Identifier: MIT
+"""
 
 import os
 import re
