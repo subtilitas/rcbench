@@ -7,6 +7,13 @@
  * connector and nothing else, so the screen asks in order: the device class,
  * the protocol, and only then what answered.
  *
+ * The ESC and SERVO classes are a model.  No transport carries their
+ * protocols: CONNECT, READ and WRITE change the screen's own copy of a
+ * device and nothing goes on a wire.  Every page of the two classes carries
+ * the MODELLED mark the overview's tiles use, the device page says that no
+ * device is reached, and the device line never takes the OK colour, which
+ * on every other screen means hardware answered.
+ *
  * The parameters draw themselves.  A definition says what kind of setting
  * it is (a switch, a choice, a bounded number) and the renderer owns one
  * widget per kind.  Nothing here knows what BLHeli_S is.  Adding a firmware
@@ -507,6 +514,26 @@ static const char *device_text(const proto_t *p)
     return ui_tr(p->device);
 }
 
+/* The ESC and SERVO classes: a model with no transport (see the top). */
+static bool modelled(void) { return s.klass != CLASS_STICK; }
+
+/* The MODELLED mark: the overview's pill, 88 px or as wide as a longer
+ * word, 20 px high. */
+#define MARK_H 20
+
+static int mark_w(void)
+{
+    const int w = 24 + gfx_text_width(UI_FONT_LABEL, TR(PG_MODELLED), 1);
+    return (w < 88) ? 88 : w;
+}
+
+static void draw_mark(gfx_canvas_t *c, int x, int y, gfx_color_t dot)
+{
+    ui_pill(c, (gfx_rect_t){ (int16_t)x, (int16_t)y, (int16_t)mark_w(),
+                             MARK_H },
+            TR(PG_MODELLED), dot, ui_theme_color(UI_C_PANEL_SUNK));
+}
+
 static void adopt_device(void)
 {
     const proto_t *p = proto();
@@ -596,6 +623,25 @@ static void reset(void)
 
 int  programmer_screen_protocol(void)  { return s.proto; }
 bool programmer_screen_connected(void) { return s.connected; }
+
+const char *programmer_screen_mark(void)
+{
+    return (s.stage != STAGE_CLASS && modelled()) ? TR(PG_MODELLED) : NULL;
+}
+
+const char *programmer_screen_note(void)
+{
+    return (s.stage == STAGE_DEVICE && modelled()) ? TR(PG_MODEL_NOTE)
+                                                   : NULL;
+}
+
+const char *programmer_screen_device_line(void)
+{
+    if (s.stage != STAGE_DEVICE || !modelled()) {
+        return NULL;
+    }
+    return s.connected ? device_text(proto()) : TR(PG_NOTHING_ANSWERED);
+}
 
 int programmer_screen_value(int param)
 {
@@ -941,6 +987,9 @@ static DRAWER void draw_classes(gfx_canvas_t *c)
     for (int i = 0; i < CLASS_COUNT; ++i) {
         const gfx_rect_t r = s.tile[i];
         ui_card(c, r, ui_theme_color(UI_C_PANEL_HI));
+        if (i != CLASS_STICK) {
+            draw_mark(c, r.x + (r.w - mark_w()) / 2, r.y + 18, 0);
+        }
         gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + 62), r.w, 28 },
                     k_classes[i].name, UI_FONT_HEAD,
                     ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_CENTER);
@@ -987,22 +1036,33 @@ static DRAWER void draw_protocol_list(gfx_canvas_t *c)
                                      (int16_t)(r.y + 20), 40, 20 },
                     ">", UI_FONT_HEAD, ui_theme_color(UI_C_ACCENT), 1,
                     GFX_ALIGN_CENTER);
+        draw_mark(c, r.x + r.w - 60 - 12 - mark_w(),
+                  r.y + (r.h - MARK_H) / 2, 0);
     }
 }
 
+/*
+ * The device line: the MODELLED mark where a connection's dot would be,
+ * its dot amber while a modelled session is open and faint while none is,
+ * never the OK colour; then the model's device and the transport it would
+ * use.  Under the parameters, left of READ, the sentence that no device is
+ * reached, on every state of the page.
+ */
 static DRAWER void draw_device(gfx_canvas_t *c)
 {
     const int x = PAD + 12;
-    const gfx_color_t tone = s.connected ? ui_theme_color(UI_C_OK)
-                                         : ui_theme_color(UI_C_TEXT_FAINT);
-    gfx_fill_circle_aa(c, x + 7, DEV_Y + 20, 6, tone);
-    gfx_text(c, x + 22, DEV_Y + 4, s.connected ? device_text(proto())
-                                               : TR(PG_NOTHING_ANSWERED),
+    const int tx = x + mark_w() + 10;
+    draw_mark(c, x, DEV_Y + (DEV_H - MARK_H) / 2,
+              s.connected ? ui_theme_color(UI_C_WARN)
+                          : ui_theme_color(UI_C_TEXT_FAINT));
+    gfx_text(c, tx, DEV_Y + 4, programmer_screen_device_line(),
              UI_FONT_LABEL,
              s.connected ? ui_theme_color(UI_C_TEXT)
                          : ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text(c, x + 22, DEV_Y + 24, ui_tr(proto()->transport), UI_FONT_LABEL,
+    gfx_text(c, tx, DEV_Y + 24, ui_tr(proto()->transport), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text(c, x, BTN_Y + 9, TR(PG_MODEL_NOTE), UI_FONT_LABEL,
+             ui_theme_color(UI_C_WARN), 1);
     ui_button(c, s.connect_btn, s.connected ? TR(PG_DISCONNECT)
                                             : TR(PG_CONNECT),
               s.connected ? ui_theme_color(UI_C_PANEL_HI)

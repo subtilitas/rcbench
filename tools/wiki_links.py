@@ -52,6 +52,8 @@ rewrite, which is the case for a target that climbs above the repository.
     tools/wiki_links.py --verify <dir> fail on a rewritten page that still
                                        holds a relative .md link or a link
                                        that leaves docs/, code left out
+
+SPDX-License-Identifier: MIT
 """
 
 import posixpath

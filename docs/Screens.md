@@ -994,6 +994,18 @@ its throttle-stick menu; it has a page of its own,
 
 ![Device class](img/programmer.png)
 
+The ESC and SERVO classes are a model on the panel. No transport carries
+their protocols: CONNECT, READ and WRITE change the panel's own copy of a
+device and send nothing on a wire. The device named after CONNECT is the
+model's, not an answer from hardware, and a WRITE reaches no device. Every
+page of the two classes carries the MODELLED mark: on the class tile, on
+each protocol row and on the device line, where it takes the place of a
+connection's dot. The mark's dot is amber while a session is open and grey
+while none is; it never turns green. Under the parameters the page says
+that no device is reached. ESC STICK carries no mark: a stick run goes out
+through the arming policy and the output bank, as the MOTOR screen's
+commands do.
+
 Every protocol row names its transport. There is no autodetection:
 
 ![The protocols of a class](img/programmer-protocols.png)
@@ -1003,22 +1015,23 @@ identifies and drives these ESCs and sends the DShot special commands, but
 cannot read their parameters:
 [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
 
-Nothing is editable until a device has answered:
+Nothing is editable until CONNECT opens a modelled session:
 
 ![Nothing has answered](img/programmer-idle.png)
 
-After a device answers, the parameters are shown in groups with the selected
+With a session open, the parameters are shown in groups with the selected
 row's help under the list:
 
-![Connected](img/programmer-params.png)
+![A session open](img/programmer-params.png)
 
 The settings of each firmware appear in its own units. The table for BLHeli_S
 firmware shows timing as named steps; the others show degrees of advance:
 
 ![Degrees rather than named steps](img/programmer-am32.png)
 
-A changed value is not written until WRITE is pressed. Staged changes carry a
-mark and their own colour, and the WRITE button shows how many are staged:
+A changed value is not written to the model until WRITE is pressed. Staged
+changes carry a mark and their own colour, and the WRITE button shows how many
+are staged:
 
 ![Two staged edits](img/programmer-dirty.png)
 
@@ -1036,7 +1049,7 @@ control. Three controls act on the press:
   finger.
 - The keys of the search keyboard, which follow their own press and lift.
 
-Going back one level drops the connection. Back climbs one level at a time; the
+Going back one level closes the session. Back climbs one level at a time; the
 band's home tag leaves the screen.
 
 ### ESC STICK

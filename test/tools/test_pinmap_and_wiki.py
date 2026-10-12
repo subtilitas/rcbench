@@ -1,5 +1,8 @@
 """pinmap_check.py and wiki_links.py: the checks one map and one page
-exercise."""
+exercise.
+
+SPDX-License-Identifier: MIT
+"""
 
 import pinmap_check as pm
 import wiki_links as wl
