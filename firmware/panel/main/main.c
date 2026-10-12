@@ -6577,9 +6577,10 @@ static void tone_link_service(void)
  * so.
  *
  * And STOP.  Every stop this end latches, pressed or the bench's own, ends
- * an operation: kst_link_abort() drops a command not sent yet and sends
- * ABORT for one the coprocessor runs.  After the commands, so a start
- * queued before the stop is dropped by it.
+ * an operation: kst_link_abort() drops a command not sent yet, sends no
+ * command again that went without an answer, and sends ABORT for one the
+ * coprocessor runs.  After the commands, so a start queued before the stop
+ * is dropped by it.
  */
 static __attribute__((noinline)) void kst_commands(void)
 {

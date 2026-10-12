@@ -93,6 +93,7 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
     }
     k->active = false;
     k->verdict = false;
+    k->cmd_doubt = false;
     if (k->phase != (uint8_t)KST_LINK_DOWN
         && k->phase != (uint8_t)KST_LINK_NO_PAGE) {
         k->phase = (uint8_t)(k->known ? KST_LINK_READY : KST_LINK_SYNC);
@@ -245,15 +246,29 @@ kst_link_start_t kst_link_fetch(kst_link_t *k)
     return s;
 }
 
+/* The request's command went and no answer came: it is not sent again.
+ * Whether the page took it, the next status read says (on_status()). */
+static void cmd_in_doubt(kst_link_t *k)
+{
+    k->cmd_live = false;
+    k->cmd_doubt = true;
+}
+
 void kst_link_abort(kst_link_t *k)
 {
     if (k == NULL || !k->up || !k->page) {
         return;
     }
-    /* The command has not gone: nothing of the request reaches the servo. */
-    if (k->active && k->phase == (uint8_t)KST_LINK_SENDING && !k->cmd_live
-        && !k->verdict) {
-        finish(k, KST_LINK_OUT_DROPPED, 0u);
+    if (k->active && k->phase == (uint8_t)KST_LINK_SENDING && !k->verdict
+        && !k->cmd_doubt) {
+        if (!k->cmd_live || k->cmd_abort) {
+            /* The command has not gone: nothing of the request reaches
+             * the servo.  A live command here is an ABORT before it. */
+            finish(k, KST_LINK_OUT_DROPPED, 0u);
+        } else if (k->pending == X_NONE) {
+            cmd_in_doubt(k);
+        }
+        /* On its way: kst_link_done() decides with its answer. */
     }
     k->abort_wanted = true;
 }
@@ -326,11 +341,12 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
     if (!k->known) {
         return due(k, now_ms, KST_LINK_POLL_MS) && ask_status(k, now_ms, x);
     }
-    /* A command without an answer goes again as it was. */
+    /* A command without an answer goes again as it was, unless an abort
+     * came for it (cmd_doubt). */
     if (k->cmd_live) {
         return ask_cmd(k, x);
     }
-    if (k->verdict || k->poll_now) {
+    if (k->verdict || k->poll_now || k->cmd_doubt) {
         return ask_status(k, now_ms, x);
     }
     if (k->abort_wanted) {
@@ -380,8 +396,21 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
 
 static void on_status(kst_link_t *k, const uint16_t *regs)
 {
-    const bool restarted = k->known && regs[LINK_KS_SEQ] != k->seq;
+    bool restarted = k->known && regs[LINK_KS_SEQ] != k->seq;
+    bool dropped = false;
 
+    if (k->cmd_doubt) {
+        /* The SEQ says whether the page took the command that was not
+         * sent again: its SEQ, taken; the one before it, not. */
+        k->cmd_doubt = false;
+        if (regs[LINK_KS_SEQ] == k->cmd[LINK_KS_W_SEQ]) {
+            restarted = false;
+            k->verdict = true;
+            k->taken = true;
+        } else {
+            dropped = !restarted;
+        }
+    }
     memcpy(k->status, regs, sizeof(k->status));
     k->seq = regs[LINK_KS_SEQ];
     k->known = true;
@@ -395,6 +424,10 @@ static void on_status(kst_link_t *k, const uint16_t *regs)
          * about the page holds. */
         finish(k, KST_LINK_OUT_RESTARTED, 0u);
         k->phase = (uint8_t)KST_LINK_READY;
+        return;
+    }
+    if (dropped) {
+        finish(k, KST_LINK_OUT_DROPPED, 0u);
         return;
     }
     if (k->active && k->verdict) {
@@ -485,6 +518,10 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
             k->cmd_abort = false;
             finish(k, KST_LINK_OUT_NO_ANSWER, 0u);
             k->phase = (uint8_t)KST_LINK_SYNC;
+        } else if (kind == X_CMD && !k->cmd_abort && k->abort_wanted
+                   && k->active) {
+            /* An abort came while the command was on its way. */
+            cmd_in_doubt(k);
         }
         return;
     }

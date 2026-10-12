@@ -870,7 +870,10 @@ outside 1 to 10, the confirmation on another operation than RESTORE, a `KEY`
 that is neither 0 nor 0x57A5 or a `SEQ` other than the page's plus 1 is
 refused with BAD_VALUE and changes nothing. The frame last taken, sent
 again, is acknowledged and does nothing, so a command whose answer was lost
-is sent again as it was. A command that is taken is acknowledged; what
+is sent again as it was. After an abort at the panel it is not sent
+again: the panel reads registers 0 to 3, and a `SEQ` other than the
+command's means the command was not taken. It then counts as dropped. A
+command that is taken is acknowledged; what
 became of it is in `RESULT`.
 
 | Operation | Value | Does |
@@ -1005,7 +1008,8 @@ while an operation runs or the port is out of PWM and every 500 ms otherwise
 operation reads registers 4 to 15, the backup and the image. Its phase is
 PLANNING while the page last read has bit 3 set and result 35, and RUNNING
 before the first read and from the plan on. It sends a
-command again up to 3 times when no answer comes and reads `SEQ` again after
+command again up to 3 times when no answer comes, and not once after
+`kst_link_abort()`, and reads `SEQ` again after
 a refusal with BAD_VALUE. A read of registers 0 to 3 refused with BAD_PAGE
 means a coprocessor without the page; refused with any other code it counts
 as unanswered and is sent again. A coprocessor without the page keeps, for

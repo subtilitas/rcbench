@@ -172,6 +172,14 @@ one that was undone (`KST_SES_ERR_ROLLED_BACK`) and one whose undo failed
 (`KST_SES_ERR_TORN`). After `KST_SES_ERR_TORN`, `KST_SES_ERR_UNINTENDED` or
 `KST_SES_ERR_VERIFY` the session accepts a restore plan and no other.
 
+`kst_session_power_cycled()` says that the servo's supply was off. The
+servo on the line may then be another one. The session drops the backup,
+the record of its writes (`wrote_regs`) and the lock, after the end of an
+operation that runs. An edit, a write and a restore end with
+`KST_SES_ERR_NO_BACKUP` until `kst_session_read_all()` takes the servo as it
+then is for the new backup. The backup of the servo before the power cycle
+is the caller's to keep.
+
 The caller's part: stop PWM (pulse-width modulation) on the pin before
 entry, keep it stopped until the servo's supply was off, check the supply
 voltage, store the backup image and a journal of the running plan

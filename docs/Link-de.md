@@ -953,7 +953,10 @@ RESTORE, einem `KEY`, der weder 0 noch 0x57A5 ist, oder einer `SEQ`, die
 nicht die der Page plus 1 ist, wird mit BAD_VALUE abgewiesen und ändert
 nichts. Der zuletzt angenommene Frame, noch einmal gesendet, wird quittiert
 und tut nichts; ein Kommando, dessen Antwort verloren ging, wird also
-unverändert noch einmal gesendet. Ein angenommenes Kommando wird quittiert;
+unverändert noch einmal gesendet. Nach einem Abbruch am Panel wird es nicht
+noch einmal gesendet: das Panel liest die Register 0 bis 3, und eine `SEQ`,
+die nicht die des Kommandos ist, heißt, dass es nicht angenommen wurde. Es
+gilt dann als verworfen. Ein angenommenes Kommando wird quittiert;
 was aus ihm wurde, steht in `LINK_KS_RESULT`.
 
 | Operation | Wert | Tut |
@@ -1100,7 +1103,7 @@ nicht in PWM steht, und sonst alle 500 ms (eine Anfrage und ein Daten-Frame,
 Backup und das Image. Seine Phase ist PLANNING, solange die zuletzt
 gelesene Page Bit 3 gesetzt und Ergebnis 35 hat, und RUNNING vor dem ersten
 Lesen und ab dem Plan. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
-keine Antwort kommt, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
+keine Antwort kommt, nach `kst_link_abort()` kein Mal, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
 Ein mit BAD_PAGE abgewiesenes Lesen der Register 0 bis 3 heißt: ein
 Koprozessor ohne die Page; mit jedem anderen Code abgewiesen zählt es als
 unbeantwortet und wird erneut gesendet. Bei einem Koprozessor ohne die Page
