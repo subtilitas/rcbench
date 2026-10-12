@@ -1,5 +1,8 @@
 """stack_check.py: the Thumb decoder, a function's frame, and the table in
-the docs."""
+the docs.
+
+SPDX-License-Identifier: MIT
+"""
 
 import struct
 

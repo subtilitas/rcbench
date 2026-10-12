@@ -325,12 +325,14 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
     /* The clock times the run, not the panel: it starts when the bench arms
      * and holds the last run's length once it stops. */
     if (a->armed) {
-        if (a->run_start_ms == 0u) {
+        /* A flag and not a zero start: tick 0 is a start like any other. */
+        if (!a->in_run) {
+            a->in_run       = true;
             a->run_start_ms = now_ms;
         }
         a->run_seconds = (uint32_t)(now_ms - a->run_start_ms) / 1000u;
     } else {
-        a->run_start_ms = 0u;
+        a->in_run = false;
     }
 
     return act;

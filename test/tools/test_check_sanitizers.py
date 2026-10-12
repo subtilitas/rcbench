@@ -1,4 +1,7 @@
-"""check_sanitizers.py: the flags are held whole, not by a substring."""
+"""check_sanitizers.py: the flags are held whole, not by a substring.
+
+SPDX-License-Identifier: MIT
+"""
 
 import check_sanitizers as cs
 
