@@ -206,7 +206,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 99 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 100 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -215,7 +215,7 @@ The host suite is 99 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
+`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card` and `test_prog_link`. The harness is
@@ -268,8 +268,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 286 committed screenshots to the current
-render, 143 in English and the same 143 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 288 committed screenshots to the current
+render, 144 in English and the same 144 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except the 3 English overflows it lists as known; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
@@ -306,7 +306,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
 | `shared/ui/ui_textkey.c` | 171 | 170 | 99.4% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
-| `shared/ui/servo_screen.c` | 3038 | 2986 | 98.3% |
+| `shared/ui/servo_screen.c` | 3096 | 3044 | 98.3% |
 | `shared/ui/kst_panel.c` | 1520 | 1498 | 98.5% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
@@ -326,6 +326,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 165 | 159 | 96.4% |
 | `shared/safety/safety_gate.c` | 52 | 52 | 100.0% |
+| `shared/safety/flash_gate.c` | 2 | 2 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
 | `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
@@ -350,16 +351,16 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_reg.c` | 180 | 180 | 100.0% |
 | `protocols/kst/kst_limits.c` | 127 | 127 | 100.0% |
 | `protocols/kst/kst_plan.c` | 396 | 396 | 100.0% |
-| `protocols/kst/kst_session.c` | 572 | 571 | 99.8% |
+| `protocols/kst/kst_session.c` | 584 | 583 | 99.8% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
 | `shared/outputs/prog_port.c` | 280 | 280 | 100.0% |
-| `shared/bench/kst_link.c` | 399 | 397 | 99.5% |
+| `shared/bench/kst_link.c` | 433 | 431 | 99.5% |
 | `shared/bench/kst_prog.c` | 1637 | 1608 | 98.2% |
 | `shared/bench/kst_card.c` | 134 | 130 | 97.0% |
-| `shared/bench/prog_link.c` | 130 | 130 | 100.0% |
+| `shared/bench/prog_link.c` | 145 | 145 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 42 | 41 | 97.6% |
@@ -371,11 +372,11 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/link/link_artxfer.c` | 61 | 60 | 98.4% |
 | `shared/link/link_control.c` | 23 | 23 | 100.0% |
 | `shared/link/link_port.c` | 38 | 38 | 100.0% |
-| `shared/artwork/art_store.c` | 104 | 96 | 92.3% |
+| `shared/artwork/art_store.c` | 175 | 169 | 96.6% |
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
 | `shared/outputs/outputs.c` | 192 | 189 | 98.4% |
-| `shared/outputs/outputs_pages.c` | 291 | 268 | 92.1% |
+| `shared/outputs/outputs_pages.c` | 291 | 282 | 96.9% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 217 | 215 | 99.1% |
@@ -387,14 +388,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/sense_page.c` | 494 | 494 | 100.0% |
 | `shared/outputs/tone_page.c` | 241 | 241 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
-| `shared/bench/supply.c` | 169 | 167 | 98.8% |
+| `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 565 | 557 | 98.6% |
-| `shared/bench/supply_link.c` | 291 | 281 | 96.6% |
+| `shared/bench/supply_link.c` | 292 | 282 | 96.6% |
 | `shared/bench/sense_link.c` | 777 | 749 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 395 | 390 | 98.7% |
 | `shared/bench/knob.c` | 37 | 37 | 100.0% |
-| `shared/bench/log_writer.c` | 147 | 135 | 91.8% |
+| `shared/bench/log_writer.c` | 152 | 140 | 92.1% |
 | `shared/bench/log_cadence.c` | 42 | 42 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 198 | 198 | 100.0% |
@@ -406,7 +407,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **35252** | **34480** | **97.8%** |
+| **total** | **35451** | **34695** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -443,7 +444,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. Nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming's beep timing | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 143 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 144 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
 
 ## Constraints
 

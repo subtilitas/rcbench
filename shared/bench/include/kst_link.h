@@ -17,7 +17,8 @@
  *      and 27, 1 frame; for a LEAVE the wait, register 28, 1 frame;
  *   2. the command, registers 0 to 3, one frame, with SEQ one above the
  *      page's.  A command without an answer is sent again as it was; the
- *      page takes it once;
+ *      page takes it once.  After kst_link_abort() it is not sent again:
+ *      the next read of registers 0 to 3 says whether the page took it;
  *   3. registers 0 to 3 are read: the command started the operation or the
  *      page says why not;
  *   4. registers 0 to 3 are read every KST_LINK_POLL_MS until the operation
@@ -48,8 +49,9 @@
  * without the key on its own.
  *
  * kst_link_abort() is for STOP and for the operator's cancel: a request
- * not yet sent is dropped, and the command ABORT follows whenever the page
- * is known.
+ * whose command the page has not taken is dropped, and the command ABORT
+ * follows whenever the page is known.  A command sent without an answer is
+ * never sent again after it; the page's SEQ tells whether it was taken.
  *
  * Between operations registers 0 to 3 are read every KST_LINK_POLL_MS
  * while the port is out of PWM and every KST_LINK_IDLE_MS while it is
@@ -151,9 +153,11 @@ typedef enum {
     KST_LINK_OUT_NACK,       /**< the page refused a frame; nack says why */
     KST_LINK_OUT_NO_ANSWER,  /**< KST_LINK_RETRIES exchanges unanswered,
                                   or the link went                        */
-    KST_LINK_OUT_RESTARTED,  /**< the page's SEQ is not the panel's: the
+    KST_LINK_OUT_RESTARTED,  /**< the page's SEQ is not the panel's, or
+                                  its operation went back to NONE: the
                                   coprocessor started again               */
-    KST_LINK_OUT_DROPPED,    /**< kst_link_abort() before the command went */
+    KST_LINK_OUT_DROPPED,    /**< kst_link_abort() before the page took
+                                  the command; nothing of it ran */
 } kst_link_outcome_kind_t;
 
 typedef struct {
@@ -247,6 +251,10 @@ typedef struct {
     /* The command on its way, the operation's or an abort. */
     bool     cmd_live;
     bool     cmd_abort;
+    bool     cmd_doubt;        /**< the operation's command went without an
+                                    answer and an abort came: it is not
+                                    sent again, and the next status read
+                                    says whether the page took it        */
     uint16_t cmd[LINK_KS_W_CMD_FRAME];
     bool     abort_wanted;
 
@@ -298,9 +306,28 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r);
 kst_link_start_t kst_link_fetch(kst_link_t *k);
 
 /** STOP, or the operator's cancel.  A request whose command has not gone
- *  is dropped (KST_LINK_OUT_DROPPED).  The command ABORT is sent as soon as
- *  the page is known; an operation that runs ends with
- *  KST_SES_ERR_ABORTED. */
+ *  is dropped (KST_LINK_OUT_DROPPED).  A command that went without an
+ *  answer is not sent again: a read of registers 0 to 3 follows.  A page
+ *  at the SEQ before the command did not take it, which drops the request
+ *  too; any other SEQ is a coprocessor that started again
+ *  (KST_LINK_OUT_RESTARTED).  A page took it when
+ *  it shows the command's SEQ and either the command's operation in
+ *  LINK_KS_OP or a refusal.  The command's SEQ with operation NONE and no
+ *  refusal is a coprocessor that started again, at SEQ 0 after 0xFFFF:
+ *  KST_LINK_OUT_RESTARTED, never KST_LINK_OUT_DONE.  So is operation NONE
+ *  at any SEQ after a status read that named an operation: the page keeps
+ *  the last operation started until the coprocessor starts again.  A page
+ *  that has taken no command reads SEQ 0 and NONE before and after a
+ *  start, and its first command counts as dropped.  A page that took it
+ *  runs the operation, and the ABORT ends it with KST_SES_ERR_ABORTED.
+ *  The read unanswered KST_LINK_RETRIES times ends the request with
+ *  KST_LINK_OUT_NO_ANSWER.  The command ABORT is sent as soon as the page
+ *  is known; an operation that runs ends with KST_SES_ERR_ABORTED.  An
+ *  ABORT the page refuses is followed by a read of registers 0 to 3 with
+ *  the same checks: a page off the panel's SEQ, or with its operation back
+ *  at NONE, ends the operation as KST_LINK_OUT_RESTARTED, never
+ *  KST_LINK_OUT_DONE.  An ABORT refused with LINK_NACK_BAD_VALUE goes
+ *  again after that read, with the page's SEQ. */
 void kst_link_abort(kst_link_t *k);
 
 /** The next exchange owed at @p now_ms, into @p x; false for none.  The

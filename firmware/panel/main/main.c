@@ -83,6 +83,7 @@
 #include "picker_screen.h"
 #include "programmer_screen.h"
 #include "rcbench_version.h"
+#include "flash_gate.h"
 #include "safety_gate.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -484,24 +485,30 @@ static uint16_t           s_artboard;
 static bool               s_artbusy;
 
 /*
- * Writing it down happens on a task of its own, not here.
+ * Writing it down: one sector a control pass, and only on a safe bench.
  *
- * Erasing a slot and filling it is a quarter of a megabyte of flash: hundreds
- * of milliseconds during which nothing else runs on this task.  The control
- * task is the one that beats the safety line, and its ceiling is 150 ms -- so
- * a commit taken here would drop the heartbeat and the coprocessor would fail
- * safe, which is the interlock working and a bench that stops for a
- * photograph.
+ * A 206 kB picture is about 52 sector erases and as many writes.  Auto-suspend
+ * is off, so each one stalls both cores, this task with them, for its length
+ * -- tens of milliseconds an erase.  No other task can take that stall off
+ * this one.  So the keep runs here, a step a pass (art_keep_service()), and
+ * a step is taken only when flash_gate_open() says so: disarmed, no arm
+ * waiting, the supply off and no ON queued.  The gate is read on the same
+ * task, in the same pass, that applies an arm and an ON, so neither can come
+ * in between the check and the sector.
  *
- * The display stalls for the length of a flash operation whichever task takes
- * it, because the panel's bounce-buffer refill reads PSRAM through the cache
- * a flash operation closes.  Settings saves already cost that.  What must not
- * happen is the heartbeat missing its window, and a separate task is the
- * whole of the fix.
+ * An arm or an ON pauses the keep between two sectors; it holds its buffer
+ * and carries on from the same step on the next safe pass.  Nothing is
+ * findable for the board until the header, written last.
+ *
+ * The display stalls for each operation too: the panel's bounce-buffer refill
+ * reads PSRAM through the cache a flash operation closes.  Settings saves
+ * already cost that.
  */
 static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
 static art_entry_t  s_keepentry;
-static volatile bool s_keeping;
+static art_keep_t   s_keep;         /* control task only */
+static atomic_bool  s_keeping;      /* set and cleared by the control task */
+static bool         s_keep_waited;  /* the wait is logged once a keep */
 
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
@@ -554,6 +561,7 @@ static struct {
     uint32_t      supply_gen;  /**< which ON, for the render side's ack */
     bool          link_up;
     bool          armed;
+    bool          arm_wanted;  /**< armed, or an arm waiting: arming_link_needed() */
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
     float         mcu_temp_c;
     bool          stopped;
@@ -2988,20 +2996,54 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
 
 /* --------------------------------------------------- the board photograph */
 
-static void art_keep_task(void *arg)
+static bool supply_live_or_coming(void);
+
+static void art_keep_end(void)
 {
-    (void)arg;
-    if (art_store_put(s_artflash, s_keepentry.board, &s_keepentry, s_keepbuf)) {
-        ESP_LOGI(TAG, "hardware %u's photograph kept",
-                 (unsigned)s_keepentry.board);
-    } else {
-        ESP_LOGW(TAG, "hardware %u's photograph could not be kept; it will be "
-                      "fetched again", (unsigned)s_keepentry.board);
-    }
     heap_caps_free(s_keepbuf);
     s_keepbuf = NULL;
-    s_keeping = false;
-    vTaskDelete(NULL);
+    atomic_store(&s_keeping, false);
+}
+
+/*
+ * One step of the keep, from the control task after the pass has applied
+ * its arm, disarm and supply commands.  At most one sector, and none unless
+ * the bench is disarmed with no arm waiting and the supply off and not
+ * coming on.
+ */
+static void art_keep_service(void)
+{
+    if (!atomic_load(&s_keeping)) {
+        return;
+    }
+    const bool open = flash_gate_open(
+        arming_link_needed(&s_arm, outputs_armed(&s_out)),
+        supply_live_or_coming());
+    switch (art_keep_step(&s_keep, open)) {
+    case ART_KEEP_WAITING:
+        if (!s_keep_waited) {
+            s_keep_waited = true;
+            ESP_LOGI(TAG, "keeping hardware %u's photograph waits for a "
+                          "disarmed bench with the supply off",
+                     (unsigned)s_keepentry.board);
+        }
+        break;
+    case ART_KEEP_DONE:
+        ESP_LOGI(TAG, "hardware %u's photograph kept",
+                 (unsigned)s_keepentry.board);
+        art_keep_end();
+        break;
+    case ART_KEEP_FAILED:
+        ESP_LOGW(TAG, "hardware %u's photograph could not be kept; it will be "
+                      "fetched again", (unsigned)s_keepentry.board);
+        art_keep_end();
+        break;
+    case ART_KEEP_IDLE:
+        art_keep_end();             /* not reached: s_keeping means busy */
+        break;
+    default:
+        break;
+    }
 }
 
 /*
@@ -3105,7 +3147,7 @@ static void art_begin(uint16_t board)
     art_stop(NULL);
     s_artboard = board;
 
-    if (s_keeping) {
+    if (atomic_load(&s_keeping)) {
         return;         /* the last one is still being written down */
     }
 
@@ -3169,20 +3211,23 @@ static void art_finish(void)
     s_keepentry.crc    = art_fetch_crc(&s_artfetch);
     s_keepentry.bytes  = art_fetch_bytes(&s_artfetch);
     /*
-     * Hand the buffer over and stop owning it.  Below the renderer and on
-     * the other core: it is a long flash operation and nothing waits on it.
+     * Hand the buffer over and stop owning it.  Nothing is written here:
+     * art_keep_service() takes it a sector a pass, on a safe bench.  The
+     * fetch checked the payload's checksum; the keep's read-back checks the
+     * flash against it before the header goes in.
      */
     s_keepbuf = s_artbuf;
     s_artbuf  = NULL;
-    s_keeping = true;
-    if (xTaskCreatePinnedToCore(art_keep_task, "artkeep", 4096, NULL,
-                                2, NULL, 0) != pdPASS) {
-        ESP_LOGW(TAG, "no task to keep hardware %u's photograph",
-                 (unsigned)s_artboard);
+    if (!art_keep_begin(&s_keep, s_artflash, s_keepentry.board, &s_keepentry,
+                        s_keepbuf)) {
+        ESP_LOGW(TAG, "hardware %u's photograph does not fit a slot; it will "
+                      "be fetched again", (unsigned)s_artboard);
         heap_caps_free(s_keepbuf);
         s_keepbuf = NULL;
-        s_keeping = false;
+        return;
     }
+    s_keep_waited = false;
+    atomic_store(&s_keeping, true);
 }
 
 /*
@@ -3778,6 +3823,17 @@ static prog_link_t        s_prog_link;
 static atomic_uint        s_prog_want_target;
 static atomic_bool        s_prog_want_pwm;
 static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
+/* Where the tester's commands go, for the SERVO screen's target line:
+ * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
+ * pulse in bit 16.  One word, so the screen never reads one drive's target
+ * with another's pin or pulse.  No link until a coprocessor answers. */
+#define DRIVE_PWM_BIT (1u << 16)
+static atomic_uint        s_drive =
+    ((unsigned)PROG_LINK_TARGET_NO_LINK << 8) | PROG_LINK_NO_PIN;
+_Static_assert(PROG_LINK_NO_PIN == SERVO_SCREEN_NO_PIN
+               && PROG_LINK_TARGET_UNKNOWN == SERVO_SCREEN_TARGET_UNKNOWN
+               && PROG_LINK_TARGET_NO_LINK == SERVO_SCREEN_TARGET_NO_LINK,
+               "the drive crosses to the SERVO screen unchanged");
 /*
  * The supply command a programming port left on the SUPPLY page, for the
  * SUPPLY screen's set points: the values, and a count the control task
@@ -4630,6 +4686,10 @@ static bool write_output_binding(const outbind_t *bind)
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
+/* The GPIOs of those channels' slots, for the SERVO screen's target line;
+ * whether a binding was read. */
+static atomic_ullong s_servo_pins;
+static atomic_bool   s_servo_pins_known;
 /* For the screen's SWEEP: a binding read, with a surface in it. */
 static atomic_bool s_servo_surfaces;
 /* For the screen's runs: the SENSE page holds the encoder enabled. */
@@ -6571,9 +6631,10 @@ static void tone_link_service(void)
  * so.
  *
  * And STOP.  Every stop this end latches, pressed or the bench's own, ends
- * an operation: kst_link_abort() drops a command not sent yet and sends
- * ABORT for one the coprocessor runs.  After the commands, so a start
- * queued before the stop is dropped by it.
+ * an operation: kst_link_abort() drops a command not sent yet, sends no
+ * command again that went without an answer, and sends ABORT for one the
+ * coprocessor runs.  After the commands, so a start queued before the stop
+ * is dropped by it.
  */
 static __attribute__((noinline)) void kst_commands(void)
 {
@@ -6638,6 +6699,15 @@ static __attribute__((noinline)) void kst_link_service(void)
     }
 }
 
+/* Where the tester's commands go, into s_drive for the SERVO screen: from
+ * each pass of prog_link_service() and from the link-lost edge. */
+static void prog_drive_publish(void)
+{
+    const prog_link_drive_t drive = prog_link_drive(&s_prog_link);
+    atomic_store(&s_drive, ((unsigned)drive.target << 8) | drive.pin
+                           | (drive.pwm ? DRIVE_PWM_BIT : 0u));
+}
+
 /*
  * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
  * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
@@ -6687,6 +6757,7 @@ static __attribute__((noinline)) void prog_link_service(void)
         prog_link_written(&s_prog_link, &w, ack);
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
+    prog_drive_publish();
     servo_surfaces_publish();
 }
 
@@ -6989,6 +7060,9 @@ static void read_outputs_binding(void)
         s_servo_channels = outputs_role_channels(r.slots, r.cfg,
                                                  OUT_ROLE_SURFACE);
         s_servo_known    = true;
+        atomic_store(&s_servo_pins,
+                     outputs_role_pins(r.slots, r.cfg, OUT_ROLE_SURFACE));
+        atomic_store(&s_servo_pins_known, true);
         servo_surfaces_publish();
         post_reading(&r);
         return;
@@ -7001,6 +7075,8 @@ static void read_outputs_binding(void)
      */
     s_servo_channels = 0u;
     s_servo_known    = false;
+    atomic_store(&s_servo_pins, 0u);
+    atomic_store(&s_servo_pins_known, false);
     servo_surfaces_publish();
     post_reading(&r);
     switch (r.state) {
@@ -7114,6 +7190,7 @@ static void link_came_up(const link_msg_t *reply)
     kst_link_came_up(&s_kst_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    prog_drive_publish();
 
     /*
      * A board this build ships no catalogue for describes its own pins, so a
@@ -7309,9 +7386,11 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* An operation under way ends unanswered; the programmer
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
-            /* And no port is the target or names a pin. */
+            /* And no port is the target or names a pin, and the SERVO
+             * screen's target line says no link. */
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
+            prog_drive_publish();
             servo_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
@@ -7483,6 +7562,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
+    s_snap.arm_wanted  = arming_link_needed(&s_arm, s_snap.armed);
     s_snap.arm_gen     = s_arm_gen;
     s_snap.stopped     = arming_stopped(&s_arm);
     s_snap.stops       = arming_stop_count(&s_arm);
@@ -7607,6 +7687,10 @@ static void control_task(void *arg)
         /* And only now the look at the touch stream for an arm the render
          * side has not seen yet; see arm_watch_service(). */
         arm_watch_service(link_up);
+
+        /* --- last, after every arm and ON this pass applied: a sector of
+         * the photograph's keep, on a safe bench only -------------------- */
+        art_keep_service();
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
     }
@@ -8196,6 +8280,7 @@ void app_main(void)
          * screen showing nothing driven while the panel held one.
          */
         bool     armed_now;
+        bool     arm_wanted_now;
         bool     supply_now;
         uint32_t supply_gen_now;
         uint32_t stops_now;
@@ -8213,6 +8298,7 @@ void app_main(void)
             s_snap.servo_source_dropped;
         const uint32_t servo_dropped_at_now = s_snap.servo_source_dropped_at;
         armed_now      = s_snap.armed;
+        arm_wanted_now = s_snap.arm_wanted;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
         stops_now      = s_snap.stops;
@@ -8319,6 +8405,12 @@ void app_main(void)
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));
+            servo_screen_set_pins(atomic_load(&s_servo_pins),
+                                  atomic_load(&s_servo_pins_known));
+            const unsigned drive = atomic_load(&s_drive);
+            servo_screen_set_drive((uint8_t)(drive >> 8),
+                                   (uint8_t)(drive & 0xFFu),
+                                   (drive & DRIVE_PWM_BIT) != 0u);
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
@@ -8644,21 +8736,23 @@ void app_main(void)
          *
          * Writing settings commits an NVS page, and a flash operation on this
          * part disables the cache: neither core runs code that is not in
-         * IRAM for its duration.  Taken here it costs a frame, which is what
-         * it has always cost.  What it must not do is happen while the bench
-         * is armed -- the control task beats the safety line and its ceiling
-         * is HEARTBEAT_MAX_GAP_MS (150 ms) -- or while the board's
-         * photograph is being fetched or written, which is a quarter of a
-         * megabyte already spoken for.  Nor while the supply's output is on:
-         * OUTPUT OFF, STOP and the trips are the control task's, and a flash
-         * write would stall them for its length.
+         * IRAM for its duration.  Taken here it costs a frame.  When it may
+         * happen is flash_gate_open()'s rule, the one the photograph's keep
+         * asks too: not while the bench is armed or an arm waits -- the
+         * control task beats the safety line and its ceiling is
+         * HEARTBEAT_MAX_GAP_MS (150 ms) -- and not while the supply's output
+         * is on or an ON is queued: OUTPUT OFF, STOP and the trips are the
+         * control task's, and a flash write would stall them for its length.
+         * Nor while the board's photograph is being fetched or kept, which is
+         * a quarter of a megabyte already spoken for.
          *
          * Waiting costs nothing.  The request stands until a quiet frame
          * comes, and disarmed -- which is where the settings screen is used
          * -- the next frame is one.
          */
-        (void)settings_save_tick(!armed && !supply_live_or_coming()
-                                 && !s_artbusy && !s_keeping);
+        (void)settings_save_tick(flash_gate_open(arm_wanted_now,
+                                                 supply_live_or_coming())
+                                 && !s_artbusy && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();
