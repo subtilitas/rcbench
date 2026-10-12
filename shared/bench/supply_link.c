@@ -423,6 +423,7 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
      * this count brought it -- not a later read of the same count. */
     st->samples  = s->samples_seen;
     st->taken_ms = s->sample_ms;
+    st->stamped  = true;
 }
 
 bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,

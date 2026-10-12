@@ -47,6 +47,18 @@ history is in git.
 
 ### Fixed
 
+- The BALANCE pane carries the MODELLED pill and the words "Not measured."
+  (SIMULIERT, "Nicht gemessen." in German) under its readings: the angle of
+  265° and the 0.42 g and 0.35 g readings are fixed values.
+- A frame of a held plus or minus key on SETUP counts for at most 0.25 s
+  (`ui_hold_credit()`). A 1 s stall steps at most 3 times at 8 Hz and 8
+  times at 30 Hz; the repeat rate of a normal hold is unchanged.
+- A pulse that ends on tick 0 of the millisecond clock starts the quiet
+  window of the ESC menu detector at the fall. A supply reading or INA3221
+  window stamped on tick 0 keeps that stamp on the servo screen. A flag
+  marks each stamp (`esc_det_t.fell`, `stamped` in `supply_state_t` and
+  `sense_link_win_t`) where the value 0 stood for "none".
+
 - The run clock counts a run that starts on tick 0 from that tick. A flag
   (`in_run` in `arming_t`) marks a run, so every 32-bit tick, 0 and
   0xFFFFFFFF included, is a valid start. A start time of 0 stood for "no

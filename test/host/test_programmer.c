@@ -507,6 +507,7 @@ static void supply_reads_off(void)
         memset(&st, 0, sizeof(st));
         st.samples = (uint16_t)(t / 100u + 1u);
         st.taken_ms = t;
+        st.stamped = true;
         st.mode = SUPPLY_MODE_OFF;
         st.online = true;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
@@ -682,6 +683,7 @@ static void rig_step(rig_t *r)
         memset(&st, 0, sizeof(st));
         st.samples = (uint16_t)++r->seq;
         st.taken_ms = r->now;
+        st.stamped = true;
         st.i = r->module_on ? (float)(ma + r->extra_ma) / 1000.0f : 0.0f;
         st.output = r->on;                              /* asked */
         st.mode = (r->module_on && !r->report_off) ? SUPPLY_MODE_CV
@@ -2917,6 +2919,7 @@ TEST_CASE(every_step_after_programming_is_shown)
     memset(&st, 0, sizeof(st));
     st.samples = (uint16_t)++r.seq;
     st.taken_ms = r.now;
+    st.stamped = true;
     st.output = true;
     st.mode = SUPPLY_MODE_OFF;               /* the module went off */
     st.online = true;
@@ -3005,6 +3008,7 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     memset(&on, 0, sizeof(on));
     on.samples = 9u;
     on.taken_ms = 350u;
+    on.stamped = true;
     on.mode = SUPPLY_MODE_CV;
     on.online = true;
     on.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
@@ -3066,6 +3070,7 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     memset(&gone, 0, sizeof(gone));
     gone.samples = 9u;
     gone.taken_ms = 300u;
+    gone.stamped = true;
     gone.online = false;
     gone.mode = SUPPLY_MODE_OFF;
     programmer_screen_supply(&gone);

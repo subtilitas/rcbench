@@ -4176,6 +4176,7 @@ static void supply_step(float step_s)
         /* Every step of the model is a reading, taken now. */
         supply_sim_step(&s_supply_sim, step_s, &s_supply);
         s_supply.taken_ms = now_ms();   /* a reading every step */
+        s_supply.stamped  = true;
         escsim_load();
     }
     /*
