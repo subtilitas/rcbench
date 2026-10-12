@@ -102,7 +102,8 @@ esp_err_t board_exio_write(uint8_t mask)
  * Not locked, because every caller is on app_main.  During bring-up that is
  * board_backlight() from display_init(), board_touch_reset_sequence() from
  * the touch bring-up, board_sd_cs() from storage_init(), and
- * board_select_can() from can_twai_start().
+ * board_select_can() from can_twai_start().  storage_deinit() has no caller
+ * yet; it is the unmount for the SD card remount.
  *
  * One of them also runs long after bring-up: the log viewer's card_list()
  * calls storage_init() from the render loop when a card is put in after boot,

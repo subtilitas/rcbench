@@ -45,6 +45,9 @@ typedef struct {
  */
 esp_err_t storage_init(void);
 
+/** Unmount and free the bus.  Safe to call when nothing was mounted. */
+void storage_deinit(void);
+
 bool storage_mounted(void);
 
 /** Card size and free space in bytes; 0 when nothing is mounted. */

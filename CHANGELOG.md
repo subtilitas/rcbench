@@ -49,8 +49,8 @@ history is in git.
   `balance_screen_angle` and `ui_tabs_label`.
 - `ui_hero_render`, which no screen draws; `ui_hero_def_t` stays for the
   motor screen's rail cards.
-- `board_lcd_reset()` and `storage_deinit()` in the panel firmware, which have
-  no caller, and the `conflicts` field of the configurator's resolved setup,
+- `board_lcd_reset()` in the panel firmware, which has no caller. The panel
+  keeps `storage_deinit()`, the unmount for the SD card remount. Also the `conflicts` field of the configurator's resolved setup,
   which is always empty.
 
 ### Fixed

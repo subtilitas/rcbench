@@ -23,6 +23,7 @@ static const char *TAG = "storage";
 
 static struct {
     sdmmc_card_t *card;
+    bool bus_up;
     bool mounted;
     char name[24];
     char status[48];
@@ -48,6 +49,7 @@ esp_err_t storage_init(void)
         snprintf(s.status, sizeof(s.status), "SPI %s", esp_err_to_name(err));
         return err;
     }
+    s.bus_up = true;
 
     /* Chip select is on the expander, and this is a read-modify-write: the
      * vendor demo's raw 0x0A to address 0x38 would also clear EXIO2 and take
@@ -93,6 +95,20 @@ esp_err_t storage_init(void)
     ESP_LOGI(TAG, "%s mounted, %llu MB", s.name,
              (unsigned long long)(storage_total_bytes() / (1024ULL * 1024ULL)));
     return ESP_OK;
+}
+
+void storage_deinit(void)
+{
+    if (s.mounted) {
+        esp_vfs_fat_sdcard_unmount(STORAGE_MOUNT_POINT, s.card);
+        s.card = NULL;
+        s.mounted = false;
+        board_sd_cs(false);
+    }
+    if (s.bus_up) {
+        spi_bus_free(BOARD_SD_SPI_HOST);
+        s.bus_up = false;
+    }
 }
 
 bool storage_mounted(void)
