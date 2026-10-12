@@ -24,10 +24,12 @@ const TEST_OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p
 const MISSING_OWNED = ['servo', 'ssup', 'esc', 'batt'];
 const LOCKED = CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id);
 
+// The pin of the servo signal is in no selection the page makes: the function
+// that programs a servo forces it. The option sets keep the standard outputs.
 const OPTION_SETS: Options[] = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower })))));
+      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
 
 const PADS = new Map(CATALOGUE.pads.map((p) => [p.n, p]));
 const PINS = new Set(CATALOGUE.parts.flatMap((part) => part.pins.map((pin) => `${part.id}.${pin.id}`)));
@@ -178,7 +180,9 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
   // A servo the bench feeds returns through wire 8 to the coprocessor GND alone.
   const benchFed = setup.wires.some((w) => [59, 60, 61, 62].includes(w.n));
   if (present.has('servo')) {
-    assert.ok(numbers.has(7) && numbers.has(8), `wires 7 and 8 for ${where}`);
+    // The signal on the standard outputs, wire 7, or on the programming port, wire 64.
+    assert.ok(numbers.has(7) === (options.servoPort === 'outputs' && !selection.functions.includes('servoprog')), `wire 7 for ${where}`);
+    assert.ok(numbers.has(7) !== numbers.has(64) && numbers.has(8), `wires 7 or 64, and 8 for ${where}`);
     assert.equal(power('servo.POS'), 1, `power wires on servo.POS for ${where}`);
     assert.equal(power('servo.NEG'), benchFed ? 0 : 1, `power wires on servo.NEG for ${where}`);
   } else {
@@ -239,7 +243,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
 
 test('the count of subsets is inside the limit of the sweep', () => {
   assert.equal(SELECTABLE.length, 9);
-  assert.equal(FUNCTIONS.length, 11);
+  assert.equal(FUNCTIONS.length, 12);
   assert.equal(BASE.length, 10);
   assert.deepEqual(TEST_OBJECTS, ['servo', 'esc']);
   assert.equal(OPTION_SETS.length, 16);
@@ -280,7 +284,7 @@ test('sweep: every subset of the functions, under every option combination', () 
       count += 1;
     }
   }
-  assert.equal(count, 32768);
+  assert.equal(count, 65536);
   // Every part of the catalogue is in at least one setup that functions alone reach.
   assert.deepEqual(CATALOGUE.parts.map((p) => p.id).filter((id) => !parts.has(id)), []);
   // Every wire of the catalogue is in at least one setup that functions alone reach.

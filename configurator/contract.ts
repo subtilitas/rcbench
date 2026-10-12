@@ -23,6 +23,12 @@ export type Options = {
   escPower: 'battery' | 'pd';
   /** Plus of the servo: a supply of the visitor, or the bench itself. */
   servoPower: 'external' | 'bench';
+  /**
+   * The pin of the servo signal: a pad bound under OUTPUTS, or the
+   * programming port of the coprocessor. No visitor choice and no hash
+   * token: the function that programs a servo forces it.
+   */
+  servoPort: 'outputs' | 'prog';
 };
 export type OptionKey = keyof Options;
 
@@ -181,7 +187,7 @@ export type PowerSource = {
 };
 
 export type PinDefault = {
-  signal: 'heartbeat' | 'sda' | 'scl' | 'tap' | 'esc' | 'servo' | 'pd_tx' | 'pd_rx';
+  signal: 'heartbeat' | 'sda' | 'scl' | 'tap' | 'esc' | 'servo' | 'prog' | 'pd_tx' | 'pd_rx';
   gpio: number;
   pad: number;
   choice: PinChoice;
@@ -244,6 +250,6 @@ export type Core = {
   CATALOGUE: Catalogue;
   /** Pure and total. Never throws. Output arrays are in catalogue order. */
   resolve: (catalogue: Catalogue, selection: Selection) => Setup;
-  /** Default options: pads, matek, battery, external. */
+  /** Default options: pads, matek, battery, external, outputs. */
   DEFAULT_OPTIONS: Options;
 };

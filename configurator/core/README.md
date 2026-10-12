@@ -14,12 +14,13 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
-| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 63 wires, 21 functions of which 10 run on every setup, 6 rules, 27 check entries, 8 power sources, 5 stages, 7 safety notes, 8 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 32 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
+| `tools/check-annotate.sh` | Runs `tools/check.ts --strict` in a GitHub Actions job and shows each warning as an annotation and in the summary of the run. |
 | `tools/pictures.ts` | The check of the picture records against the files of `../public/pictures/`. |
 | `tools/coverage.ts` | Measures line coverage and keeps the figure below current. |
 | `test/` | The test suite for `node:test`. |
@@ -36,9 +37,10 @@ part is bench hardware.
 | `Fn.needs` | The bench hardware the function needs. It holds no test object. |
 | `Fn.drives` | The test object the function acts on. The resolver adds it with the function, so its pins and wires are in the setup. |
 
-8 functions drive a test object. 2 of them need no bench hardware beyond the
-base setup: `servo` (drive a servo) and `esc` (drive an ESC). The tick of such
-a function connects the test object.
+9 functions drive a test object. 3 of them need no bench hardware beyond the
+base setup: `servo` (drive a servo), `servoprog` (program a KST or Chaservo
+servo) and `esc` (drive an ESC). The tick of such a function connects the
+test object.
 
 A power source is one record of `powerSources`: what it feeds (`logic` or the
 id of a test object), voltage and current where a source states them,
@@ -63,6 +65,19 @@ pin of the strip of the Osoyoo breakout board. The check entry
 of the logic. The current limit of pad 40 and the supply of the strip are not
 stated; the check entries `servo-5v-pin` and `strip-supply` say so. The ESC
 takes signal and GND from the bench in every setup, never a supply.
+
+The option `servoPort` is `outputs` (default) or `prog`. It is never shown
+and the hash holds no token for it: the function `servoprog` forces `prog`.
+With `outputs` the servo signal is wire 7, from pad 4 (GP2), a slot of
+SETUP → OUTPUTS. With `prog` it is wire 64, from pad 17 (GP13), the
+programming port of the coprocessor (`PROG_PORT_DEFAULT_PIN` in
+`shared/outputs/include/prog_port.h`), and SETTINGS → DUT → PWM TARGET is
+PROG PORT, so the other servo functions drive the same pin. The servo
+programmer needs the panel and the coprocessor alone. With the PD mini, the
+PD mini feeds the servo and CONNECT sets its voltage, 4.8 to 6.0 V or up to
+8.4 V with HV SERVO on, and its current limit, 50 to 3000 mA. Without it the servo takes the supply that
+`servoPower` names; the check entry `prog-supply-own` states that the
+programming voltage and the current limit are then stored and not applied.
 
 ## Resolver
 
@@ -98,7 +113,7 @@ then by the catalogue position of the parts. The group without a part holds
 the functions every setup runs and the functions that drive a test object and
 need nothing else. `alwaysOn(catalogue, fn)` tells the 2 kinds apart,
 `plainDrive(catalogue, partId)` returns the function whose tick connects a
-test object, and `testObjects(catalogue)` lists the test objects. A group
+test object and forces no option, and `testObjects(catalogue)` lists the test objects. A group
 also names:
 
 | Field | Content |
@@ -186,8 +201,11 @@ run of white space read as one space. The texts are the export `ANCHOR_TEXTS`;
 they are not part of `CATALOGUE`. Build guide sections, photos and owner
 statements are checked by id, number and date only.
 
-A release tag newer than `v0.17.0` is a warning. The Configurator workflow
-shows it as an annotation and in the summary of the run.
+A release tag newer than `v0.17.0` is a warning. `tools/check-annotate.sh`
+runs the check and shows each warning as an annotation and in the summary of
+the run. The Configurator workflow runs it and fails on an error. The Release
+workflow runs it with `--warn-only` on every tag push: an error is a warning
+there as well, and no release waits for the check.
 
 The data moves to a release in the first pull request after the tag of that
 release: the anchors are read at the tag, so the tag exists first. That pull
@@ -212,7 +230,7 @@ The 7 pin rules:
 The suite runs 2 full sweeps and 1 seeded sample through the resolver:
 
 - 512 sets of the 9 selectable parts times 16 option combinations: 8192 setups.
-- 2048 sets of the 11 functions with a tick times 16 option combinations: 32768 setups.
+- 4096 sets of the 12 functions with a tick times 16 option combinations: 65536 setups. The option combinations hold `servoPort: outputs`; the function `servoprog` sets `prog`.
 - 2000 mixed selections from a fixed seed.
 
 Each setup is checked for: the same result on a second call, no exception, no
@@ -240,10 +258,10 @@ The data is checked for its power paths:
 
 `test/groups.test.ts` runs every removal the data file allows:
 
-- 2048 sets of functions times 2 values of `escPower`, each part of each setup removed.
+- 4096 sets of functions times 2 values of `escPower`, each part of each setup removed.
 - 512 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
 - 1500 mixed selections from a fixed seed under all 16 option combinations.
-- 2048 sets of functions, each function deselected.
+- 4096 sets of functions, each function deselected.
 
 Each removal is checked for: no refusal for a part of the bench beyond the
 base setup, the refusal `testObject` for a servo or an ESC, the part gone, the reported lists equal to the difference of the 2 setups, a cause
@@ -256,7 +274,7 @@ each function alone, unknown ids, a missing German string, a broken source
 anchor and a data file that differs from the firmware tables.
 
 `test/property/` holds the properties of the resolver and of the data file.
-`resolver.test.ts` walks the same 2 sweeps and 30 000 mixed selections from
+`resolver.test.ts` walks the same 2 sweeps and 25 000 mixed selections from
 the seed `0x20261011`, and refuses a space of more than 100 000 cases per
 sweep. Each setup is checked for:
 
@@ -292,9 +310,9 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 <!-- coverage:begin -->
 | File | Lines run | Lines | Line coverage |
 | --- | ---: | ---: | ---: |
-| `resolve.ts` | 207 | 207 | 100.0 % |
+| `resolve.ts` | 213 | 213 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
-| `groups.ts` | 415 | 415 | 100.0 % |
+| `groups.ts` | 416 | 416 | 100.0 % |
 <!-- coverage:end -->
 
 ## Unknown in the data
