@@ -206,7 +206,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 99 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -215,7 +215,7 @@ The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
+`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card` and `test_prog_link`. The harness is
@@ -305,7 +305,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_screen.c` | 1034 | 1017 | 98.4% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
 | `shared/ui/ui_textkey.c` | 171 | 170 | 99.4% |
-| `shared/ui/servo_screen.c` | 3046 | 2994 | 98.3% |
+| `shared/ui/servo_screen.c` | 3038 | 2986 | 98.3% |
 | `shared/ui/kst_panel.c` | 1520 | 1498 | 98.5% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
@@ -325,6 +325,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 165 | 159 | 96.4% |
 | `shared/safety/safety_gate.c` | 52 | 52 | 100.0% |
+| `shared/safety/flash_gate.c` | 2 | 2 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
 | `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
@@ -354,11 +355,11 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
-| `shared/outputs/prog_port.c` | 313 | 313 | 100.0% |
+| `shared/outputs/prog_port.c` | 280 | 280 | 100.0% |
 | `shared/bench/kst_link.c` | 433 | 431 | 99.5% |
 | `shared/bench/kst_prog.c` | 1637 | 1608 | 98.2% |
 | `shared/bench/kst_card.c` | 134 | 130 | 97.0% |
-| `shared/bench/prog_link.c` | 156 | 156 | 100.0% |
+| `shared/bench/prog_link.c` | 130 | 130 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 42 | 41 | 97.6% |
@@ -370,14 +371,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/link/link_artxfer.c` | 61 | 60 | 98.4% |
 | `shared/link/link_control.c` | 23 | 23 | 100.0% |
 | `shared/link/link_port.c` | 38 | 38 | 100.0% |
-| `shared/artwork/art_store.c` | 104 | 96 | 92.3% |
+| `shared/artwork/art_store.c` | 175 | 169 | 96.6% |
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
 | `shared/outputs/outputs.c` | 192 | 189 | 98.4% |
 | `shared/outputs/outputs_pages.c` | 277 | 268 | 96.8% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
-| `shared/outputs/servo_page.c` | 235 | 233 | 99.2% |
+| `shared/outputs/servo_page.c` | 217 | 215 | 99.1% |
 | `shared/outputs/supply_page.c` | 313 | 310 | 99.0% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 20 | 20 | 100.0% |
@@ -386,14 +387,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/sense_page.c` | 494 | 494 | 100.0% |
 | `shared/outputs/tone_page.c` | 241 | 241 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
-| `shared/bench/supply.c` | 169 | 167 | 98.8% |
+| `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 565 | 557 | 98.6% |
-| `shared/bench/supply_link.c` | 291 | 281 | 96.6% |
+| `shared/bench/supply_link.c` | 292 | 282 | 96.6% |
 | `shared/bench/sense_link.c` | 777 | 749 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 395 | 390 | 98.7% |
 | `shared/bench/knob.c` | 37 | 37 | 100.0% |
-| `shared/bench/log_writer.c` | 147 | 135 | 91.8% |
+| `shared/bench/log_writer.c` | 152 | 140 | 92.1% |
 | `shared/bench/log_cadence.c` | 42 | 42 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 198 | 198 | 100.0% |
@@ -405,7 +406,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **35274** | **34517** | **97.9%** |
+| **total** | **35269** | **34514** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
