@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The bench configurator describes release 0.17.0. Every repository source
+  of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
+  line of that tag, and the source of the entry on serial ESC programming
+  carries the line and the wording of `STATUS.md` at that tag. The list
+  "Not in a release" holds 4 entries: the entry on the programming port for
+  KST and Chaservo servos is removed, since 0.17.0 contains the servo
+  programmer. The configurator offers no function, part or wire for the servo programmer.
+- The Configurator workflow shows each warning of the data check, such as a
+  release tag newer than the data, as an annotation and in the run summary.
+
 ### Fixed
 
 - `docs/ServoProgrammer.md` and its German page name the servo the

@@ -56,7 +56,7 @@ The SVG files and `anchors.json` are committed. They are not written during
 
 ```json
 {
- "release": "0.16.0",
+ "release": "0.17.0",
  "files": {
   "estop.svg": {
    "part": "estop", "variant": null, "viewBox": [0, 0, 340, 200], "names": "catalogue",

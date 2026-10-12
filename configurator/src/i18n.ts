@@ -3,7 +3,7 @@
 
 import type { Lang, SignalClass, Text } from '../contract.ts';
 
-export const RELEASE = '0.16.0';
+export const RELEASE = '0.17.0';
 
 const S = {
   title: ['rcbench bench configurator', 'rcbench Prüfstand-Konfigurator'],
