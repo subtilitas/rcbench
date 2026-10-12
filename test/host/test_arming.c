@@ -1294,6 +1294,190 @@ TEST_CASE(the_handshake_ends_with_whatever_ends_an_arm)
     CHECK(!arming_handshake_open(NULL, 0, false));
 }
 
+/* ------------------------------------------------- every tick, the wrap too */
+
+/*
+ * The starts and holds the cases below run from: tick 0, the tick before
+ * the wrap, and k ms before the wrap so that the settle (k 49), the bound
+ * (k 149), the line wait's middle (k 299) or the touch timeout (k 499)
+ * straddles it.  1000 is the reference far from both.
+ */
+static const uint32_t s_bases[] = {
+    1000u, 0u, 1u, 0xFFFFFFFFu, 0xFFFFFFFFu - 49u, 0xFFFFFFFFu - 149u,
+    0xFFFFFFFFu - 299u, 0xFFFFFFFFu - 499u, 0xFFFFFFFFu - 2499u,
+};
+#define N_BASES (sizeof(s_bases) / sizeof(s_bases[0]))
+
+/* The base or case a failure belongs to, in the message. */
+#define AT_BASE(cond, base)                                                   \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            T_FAIL("expected %s (at 0x%08x)", #cond, (unsigned)(base));       \
+        }                                                                     \
+    } while (0)
+
+/* Armed at exactly @p start, no far end asked: the hold SETTLE_MS before. */
+static void run_from(uint32_t start)
+{
+    const uint32_t hold = start - SETTLE_MS;
+    arming_init(&a, hold - 10u, SETTLE_MS);
+    arming_touch_seen(&a, hold);
+    arming_request_arm(&a, hold);
+    arming_touch_seen(&a, start);
+    AT_BASE(arming_step(&a, start) == ARMING_ACT_ARM, start);
+    AT_BASE(a.armed, start);
+    AT_BASE(arming_run_seconds(&a) == 0u, start);
+}
+
+/* A pass at @p at with touch answering; the run's seconds after it. */
+static uint32_t run_at(uint32_t at)
+{
+    arming_touch_seen(&a, at);
+    (void)arming_step(&a, at);
+    return arming_run_seconds(&a);
+}
+
+/*
+ * Any tick is a start the run clock counts from, 0 included.  A clock that
+ * took a zero start for "not started" restarted itself at the next pass of a
+ * run that began on tick 0, the tick every 2^32 ms (49.7 days) wraps to.
+ */
+TEST_CASE(every_tick_is_a_start_the_run_clock_counts_from)
+{
+    const uint32_t starts[] = {
+        0u, 1u, 0xFFFFFFFFu, 0xFFFFFFFFu - 1u, 0xFFFFFFFFu - 499u,
+        0xFFFFFFFFu - 999u, 0xFFFFFFFFu - 2499u, 1000u,
+    };
+    for (unsigned i = 0; i < sizeof(starts) / sizeof(starts[0]); ++i) {
+        const uint32_t s0 = starts[i];
+        run_from(s0);
+        AT_BASE(run_at(s0 + 1u) == 0u, s0);
+        AT_BASE(run_at(s0 + 500u) == 0u, s0);   /* tick 0 for one start */
+        AT_BASE(run_at(s0 + 999u) == 0u, s0);
+        AT_BASE(run_at(s0 + 1000u) == 1u, s0);  /* the second, to the ms */
+        AT_BASE(run_at(s0 + 1999u) == 1u, s0);
+        AT_BASE(run_at(s0 + 2000u) == 2u, s0);
+        AT_BASE(run_at(s0 + 2500u) == 2u, s0);  /* tick 0 for another */
+        AT_BASE(run_at(s0 + 5000u) == 5u, s0);
+        AT_BASE(run_at(s0 + 3600000u) == 3600u, s0);
+        AT_BASE(a.armed, s0);
+    }
+}
+
+/*
+ * Each timeout fires at its documented millisecond and not one before, on
+ * both sides of the wrap and straddling it: the settle (SETTLE_MS, 100 ms
+ * from the hold), the bound (ARMING_LINE_WAIT_MS past the settle), the
+ * handshake's deadline (the bound) and dead touch (ARMING_TOUCH_DEAD_MS,
+ * 500 ms from the last answer).
+ */
+TEST_CASE(every_timeout_fires_at_its_millisecond_across_the_wrap)
+{
+    for (unsigned i = 0; i < N_BASES; ++i) {
+        const uint32_t b = s_bases[i];
+
+        /* The settle, nobody asked. */
+        arming_init(&a, b - 10u, SETTLE_MS);
+        arming_touch_seen(&a, b);
+        arming_request_arm(&a, b);
+        arming_touch_seen(&a, b + SETTLE_MS - 1u);
+        AT_BASE(arming_step(&a, b + SETTLE_MS - 1u) == ARMING_ACT_NONE, b);
+        AT_BASE(a.arming && !a.armed, b);
+        arming_touch_seen(&a, b + SETTLE_MS);
+        AT_BASE(arming_step(&a, b + SETTLE_MS) == ARMING_ACT_ARM, b);
+
+        /* The bound, the far end saying no. */
+        const uint32_t bound = b + SETTLE_MS + WAIT_MS;
+        init_asking(b - 10u);
+        arming_touch_seen(&a, b);
+        arming_request_arm(&a, b);
+        arming_touch_seen(&a, bound - 1u);
+        arming_line_report(&a, false);
+        AT_BASE(arming_step(&a, bound - 1u) == ARMING_ACT_NONE, b);
+        AT_BASE(a.arming, b);
+        arming_touch_seen(&a, bound);
+        arming_line_report(&a, false);
+        AT_BASE(arming_step(&a, bound) == ARMING_ACT_GIVE_UP, b);
+        AT_BASE(!a.arming && !a.armed && !a.stopped, b);
+
+        /* The handshake's deadline, both before and after CLEAR. */
+        for (int cleared = 0; cleared <= 1; ++cleared) {
+            handed_out(b, b + SETTLE_MS);
+            AT_BASE(arming_handshake_open(&a, bound, cleared != 0), b);
+            AT_BASE(!arming_handshake_open(&a, bound + 1u, cleared != 0), b);
+            AT_BASE(!a.armed, b);
+            AT_BASE(a.stopped == (cleared != 0), b);
+        }
+
+        /* Dead touch, from the last answer, while armed. */
+        run_from(b);
+        AT_BASE(arming_step(&a, b + ARMING_TOUCH_DEAD_MS - 1u)
+                    == ARMING_ACT_NONE, b);
+        AT_BASE(a.armed, b);
+        AT_BASE(!arming_touch_dead(&a, b + ARMING_TOUCH_DEAD_MS - 1u), b);
+        AT_BASE(arming_step(&a, b + ARMING_TOUCH_DEAD_MS)
+                    == ARMING_ACT_DISARM, b);
+        AT_BASE(!a.armed, b);
+    }
+}
+
+/* Every way a run ends, for a run that crossed the wrap: the clock holds
+ * the run's length, and the next run counts from zero. */
+TEST_CASE(a_run_across_the_wrap_ends_and_holds_whatever_ends_it)
+{
+    const uint32_t s0 = 0xFFFFFFFFu - 1499u;  /* the wrap 1.5 s in */
+    for (int how = 0; how < 5; ++how) {
+        run_from(s0);
+        uint32_t t = s0 + 3000u;              /* 1500 past the wrap */
+        AT_BASE(run_at(t) == 3u, how);
+        bool stops = true;
+        switch (how) {
+        case 0:   /* STOP pressed */
+            arming_stop_pressed(&a);
+            AT_BASE(arming_step(&a, t) == ARMING_ACT_DISARM, how);
+            break;
+        case 1:   /* the far end */
+            arming_stop_from_far_end(&a);
+            AT_BASE(arming_step(&a, t) == ARMING_ACT_NONE, how);
+            break;
+        case 2:   /* the link goes quiet */
+            AT_BASE(arming_link_lost(&a, true), how);
+            AT_BASE(arming_step(&a, t) == ARMING_ACT_NONE, how);
+            break;
+        case 3:   /* touch stops answering, 500 ms after its last answer */
+            AT_BASE(arming_step(&a, t + ARMING_TOUCH_DEAD_MS - 1u)
+                        == ARMING_ACT_NONE, how);
+            AT_BASE(a.armed, how);
+            t += ARMING_TOUCH_DEAD_MS;
+            AT_BASE(arming_step(&a, t) == ARMING_ACT_DISARM, how);
+            AT_BASE(arming_run_seconds(&a) == 3u, how);
+            stops = false;
+            break;
+        default:  /* the operator disarms */
+            arming_request_disarm(&a);
+            AT_BASE(arming_step(&a, t) == ARMING_ACT_NONE, how);
+            stops = false;
+            break;
+        }
+        AT_BASE(!a.armed && !a.arming, how);
+        AT_BASE(a.stopped == stops, how);
+        /* The line runs unless a stop is latched or touch is dead. */
+        AT_BASE(arming_heartbeat(&a, t) == (!stops && how != 3), how);
+        AT_BASE(arming_run_seconds(&a) == 3u, how);
+
+        /* Held, not running on. */
+        t += 4000u;
+        AT_BASE(run_at(t) == 3u, how);
+
+        /* The next run counts from zero, from its own arm. */
+        t = arm_by(t);
+        AT_BASE(a.armed, how);
+        AT_BASE(arming_run_seconds(&a) == 0u, how);
+        AT_BASE(run_at(t + 999u) == 0u, how);
+        AT_BASE(run_at(t + 1000u) == 1u, how);
+    }
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -1330,5 +1514,8 @@ int main(void)
     RUN(an_unanswered_exchange_is_judged_alike_whatever_it_carried);
     RUN(the_arms_deadline_holds_through_the_handshake);
     RUN(the_handshake_ends_with_whatever_ends_an_arm);
+    RUN(every_tick_is_a_start_the_run_clock_counts_from);
+    RUN(every_timeout_fires_at_its_millisecond_across_the_wrap);
+    RUN(a_run_across_the_wrap_ends_and_holds_whatever_ends_it);
     return test_summary("arming");
 }
