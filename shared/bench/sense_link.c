@@ -629,6 +629,7 @@ static void win_entry(const uint16_t *regs, unsigned k, uint16_t newest,
     /* The newest closed before this read; entry k closed k windows before
      * the newest did. */
     w->taken_ms = now_ms - (uint32_t)k * SENSE_LINK_WINDOW_MS;
+    w->stamped  = true;
 }
 
 /*

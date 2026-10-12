@@ -75,7 +75,6 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 | Marke | Bedeutung |
 | --- | --- |
-| BALD | den Bildschirm gibt es nicht; die Kachel nennt, was er tun wird und worauf er wartet |
 | SIMULIERT | den Bildschirm gibt es und er funktioniert, aber seine Hardware ist nicht bestückt; jeder Wert ist simuliert, und der Bildschirm sagt das |
 | keine | die Hardware ist bestückt, die Messwerte sind gemessen |
 
@@ -2168,7 +2167,12 @@ ist](#eine-bindung-die-nicht-bestätigt-ist).
 
 Auf einer eigenen Seite beschrieben: [Auswuchten](Balance-de.md).
 
-## Bildschirme, die nicht fertig sind
+Der Reiter WUCHTEN zeigt einen festen Winkel (265°) und zwei feste Werte
+(0,42 g Vibration, 0,35 g zuzufügende Masse), solange kein Sensor verbaut ist.
+Die Pille SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
+20 px hoch und 88 px breit. Die Reiter TESTGESTELL und FLUGMODELL zeigen
+Platzierungshilfen und tragen keine Marke.
 
-Eine Kachel mit der Marke BALD nennt, was der Bildschirm tun wird und auf
-welches Bauteil oder welche Entscheidung er wartet.
+## Unbekannte Bildschirm-IDs
+
+Eine Bildschirm-ID, die keinen Bildschirm benennt, zeigt die Übersicht.

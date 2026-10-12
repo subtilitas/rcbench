@@ -231,6 +231,24 @@ Die Nutzdaten sind eine Periode, keine Drehzahl:
 
 Nutzdaten von 0x0FFF heißen, dass der Motor sich nicht dreht.
 
+### Die Invertierung sitzt am Pad, und sie kommt zuletzt
+
+Die Leitung wird vom Output-Override des Pads invertiert und nicht vom
+PIO-Programm. Derselbe Pin liest also den wahren Pegel der Leitung, sobald der
+Transmitter sie losgelassen hat, und der Pull-up hält dazwischen den Idle-Pegel.
+
+Der Override wird **nach** der Initialisierung der State Machine gesetzt, nie
+davor. Diese Initialisierung beginnt mit `pio_gpio_init()`, das
+`gpio_set_function()` ist, und das weist das ganze Steuerregister des Pads zu,
+statt es zu maskieren. Der Override liegt in diesem Register und geht verloren.
+Der Pull-up nicht, denn Pulls liegen im Pad-Block; ein Pin, der seine
+Invertierung verloren hat, ruht also weiterhin high und sieht wie ein
+Protokollfehler aus und nicht wie ein Pin-Fehler.
+
+Der Bind liest das Register zurück und lehnt ab, statt eine Leitung zu treiben,
+deren Polarität er nicht setzen konnte. Die Reihenfolge ist hier die ganze
+Polarität, und nichts sonst im Treiber würde ihren Verlust bemerken.
+
 ### Die Antwort wird abgetastet, nicht gemessen
 
 Der Coprozessor tastet die Leitung mit dem Fünffachen der Bitrate der Antwort ab

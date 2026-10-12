@@ -21,7 +21,6 @@
 #include "settings_screen.h"
 #include "overview_screen.h"
 #include "splash_screen.h"
-#include "stub_screen.h"
 #include "ui_band.h"
 #include "ui_theme.h"
 #include "ui_watermark.h"
@@ -95,7 +94,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_PICKER:   return picker_screen();
     case SCREEN_SUPPLY:   return supply_screen();
     case SCREEN_BUSFAULT: return busfault_screen();
-    default:              return stub_screen(id);
+    default:              return overview_screen();
     }
 }
 
@@ -154,7 +153,6 @@ void ui_router_invalidate(void)
 {
     splash_invalidate();
     overview_invalidate();
-    stub_invalidate();
     motor_invalidate();
     log_viewer_invalidate();
     settings_screen_invalidate();

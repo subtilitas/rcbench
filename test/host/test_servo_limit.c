@@ -8,6 +8,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -417,6 +418,147 @@ TEST_CASE(progress_runs_from_nothing_to_all_of_it)
     CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
 }
 
+/* A stop 20 us from centre binds at the first position judged, 30 us out:
+ * the last free position is 20 us out and backing off by 25 us would put
+ * the endpoint on the other side of centre. */
+TEST_CASE(a_bind_at_the_first_judged_position_stays_on_the_searched_side)
+{
+    servo_sim_cfg_t sc;
+    servo_sim_defaults(&sc);
+    sc.stop_hi_us = 1520;
+    sc.stop_lo_us = 1100;
+    servo_sim_t sim;
+    servo_sim_init(&sim, &sc);
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 1500, true);
+    servo_limit_t lf;
+    servo_limit_init(&lf, &lc);
+    search(&lf, &sim, 60000);
+    CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
+    CHECK_EQ(lf.limit_us, 1500);
+
+    /* The same towards the other end. */
+    sc.stop_hi_us = 1900;
+    sc.stop_lo_us = 1480;
+    servo_sim_init(&sim, &sc);
+    servo_limit_defaults(&lc, 1500, false);
+    servo_limit_init(&lf, &lc);
+    search(&lf, &sim, 60000);
+    CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
+    CHECK_EQ(lf.limit_us, 1500);
+}
+
+/* A step of 0 never reaches anything: refused at the start. */
+TEST_CASE(a_step_of_zero_is_refused)
+{
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 1500, true);
+    lc.step_us = 0;
+    servo_limit_t lf;
+    servo_limit_init(&lf, &lc);
+    CHECK_EQ(lf.state, SERVO_LIMIT_FAULT);
+    CHECK_EQ(lf.fault, SERVO_LIMIT_FAULT_BAD_CONFIG);
+    CHECK_EQ(servo_limit_step(&lf, 0.1f, 0u), 1500);
+    CHECK_EQ(servo_limit_step(&lf, 0.1f, 10000000u), 1500);
+    CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
+}
+
+/* No command leaves 500 to 2500 us, whatever the centre and the travel. */
+TEST_CASE(no_command_leaves_the_pulse_range)
+{
+    for (int up = 0; up < 2; ++up) {
+        servo_limit_cfg_t lc;
+        servo_limit_defaults(&lc, up ? 2400 : 600, up != 0);
+        lc.max_travel_us = 600;
+        servo_limit_t lf;
+        servo_limit_init(&lf, &lc);
+        uint32_t t = 0;
+        uint16_t lo = 65535, hi = 0;
+        while (lf.state == SERVO_LIMIT_RUNNING && t < 600000u) {
+            const uint16_t c = servo_limit_step(&lf, 0.1f, t);
+            lo = (c < lo) ? c : lo;
+            hi = (c > hi) ? c : hi;
+            t += SAMPLE_MS;
+        }
+        CHECK(lf.state != SERVO_LIMIT_RUNNING);
+        CHECK(lo >= 500u && hi <= 2500u);
+    }
+    /* A centre outside the range is held inside it. */
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 3000, true);
+    servo_limit_t lf;
+    servo_limit_init(&lf, &lc);
+    CHECK_EQ(servo_limit_step(&lf, 0.1f, 0u), 2500);
+}
+
+/* A reading that is not a number is not under the ceiling. */
+TEST_CASE(a_current_that_is_not_a_number_stops_the_search)
+{
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 1500, true);
+    servo_limit_t lf;
+    servo_limit_init(&lf, &lc);
+    (void)servo_limit_step(&lf, 0.1f, 0u);
+    (void)servo_limit_step(&lf, NAN, 5u);
+    CHECK_EQ(lf.state, SERVO_LIMIT_FAULT);
+    CHECK_EQ(lf.fault, SERVO_LIMIT_FAULT_OVERCURRENT);
+}
+
+/* Done is all of it, also with no travel to cover. */
+TEST_CASE(progress_of_a_finished_search_is_one_without_travel)
+{
+    servo_limit_cfg_t lc;
+    servo_limit_defaults(&lc, 1500, true);
+    lc.max_travel_us = 0;
+    servo_limit_t lf;
+    servo_limit_init(&lf, &lc);
+    CHECK_NEAR(servo_limit_progress(&lf), 0.0f, 0.001f);
+    uint32_t t = 0;
+    while (lf.state == SERVO_LIMIT_RUNNING && t < 10000u) {
+        (void)servo_limit_step(&lf, 0.1f, t);
+        t += SAMPLE_MS;
+    }
+    CHECK(lf.state != SERVO_LIMIT_RUNNING);
+    CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
+}
+
+/* A travel that is no whole number of steps, or one cut short by the end
+ * of the pulse range: the last step is shorter and the end itself is
+ * measured free before the search reports NO_LIMIT. */
+TEST_CASE(the_end_of_the_travel_is_measured_before_no_limit)
+{
+    static const struct {
+        uint16_t centre;
+        uint16_t travel;
+        bool     up;
+        uint16_t end;
+    } k[] = {
+        { 2403u, 600u, true,  2500u },      /* clamped to the pulse range */
+        { 597u,  600u, false, 500u  },
+        { 1500u, 605u, true,  2105u },      /* 60.5 steps of 10 us */
+        { 1500u, 605u, false, 895u  },
+    };
+    for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+        servo_limit_cfg_t lc;
+        servo_limit_defaults(&lc, k[i].centre, k[i].up);
+        lc.max_travel_us = k[i].travel;
+        servo_limit_t lf;
+        servo_limit_init(&lf, &lc);
+        uint32_t t = 0;
+        uint16_t lo = 65535, hi = 0;
+        while (lf.state == SERVO_LIMIT_RUNNING && t < 600000u) {
+            const uint16_t c = servo_limit_step(&lf, 0.1f, t);
+            lo = (c < lo) ? c : lo;
+            hi = (c > hi) ? c : hi;
+            t += SAMPLE_MS;
+        }
+        CHECK_EQ(lf.state, SERVO_LIMIT_FAULT);
+        CHECK_EQ(lf.fault, SERVO_LIMIT_FAULT_NO_LIMIT);
+        CHECK_EQ(k[i].up ? hi : lo, k[i].end);
+        CHECK_EQ(lf.limit_us, k[i].end);     /* judged free there */
+    }
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     servo_limit_defaults(NULL, 1500, true);
@@ -507,6 +649,12 @@ int main(void)
     RUN(a_slow_servo_is_measured_after_it_arrives_not_while_it_travels);
     RUN(the_search_takes_a_workable_amount_of_time);
     RUN(progress_runs_from_nothing_to_all_of_it);
+    RUN(a_bind_at_the_first_judged_position_stays_on_the_searched_side);
+    RUN(a_step_of_zero_is_refused);
+    RUN(no_command_leaves_the_pulse_range);
+    RUN(a_current_that_is_not_a_number_stops_the_search);
+    RUN(progress_of_a_finished_search_is_one_without_travel);
+    RUN(the_end_of_the_travel_is_measured_before_no_limit);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     RUN(a_search_takes_the_same_time_across_the_tick_wrap);
     RUN(a_held_servo_ends_the_search_at_stall_ms_across_the_tick_wrap);
