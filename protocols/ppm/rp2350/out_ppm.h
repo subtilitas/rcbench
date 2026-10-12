@@ -42,6 +42,11 @@ extern "C" {
  * (see ppm_min_frame_us), a pin no PIO block can reach alongside its other
  * programs, and a shortage of state machines or DMA channels.  Nothing is
  * emitted until the first out_ppm_write().
+ *
+ * A pin that is already bound with the same channel count and frame period
+ * stays as it is and the call returns true.  With a different count or
+ * period it returns false and the old binding keeps running; release the pin
+ * first to change it.
  */
 bool out_ppm_bind(uint8_t pin, uint8_t channels, uint16_t rate_hz);
 

@@ -17,6 +17,12 @@ parts are needed.
 
 ## States
 
+No firmware image feeds the analyser: the S.BUS decoder is linked into the
+panel image and the host tests, no byte source exists on either board, and
+nothing calls `analyser_screen_push()` or `analyser_screen_silent()`. The
+screen therefore shows SILENT. The states below are what the screen draws
+when it is fed, as the host tests exercise it.
+
 The analyser shows sixteen channels with history, the two digital channels, the
 frame rate and the counters (frames, resyncs, bad footers). The state block
 shows one of:

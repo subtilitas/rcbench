@@ -41,7 +41,12 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span)
     if (command == 0u) {
         return (uint16_t)DSHOT_CMD_MOTOR_STOP;
     }
-    if (span <= 1u || command >= span) {
+    if (command > span) {
+        /* Past the top of the span is a fault in the caller, and the policy
+         * for a fault is the one dshot_frame() applies: stop, not full. */
+        return (uint16_t)DSHOT_CMD_MOTOR_STOP;
+    }
+    if (span <= 1u || command == span) {
         return (uint16_t)DSHOT_THROTTLE_MAX;
     }
     /*

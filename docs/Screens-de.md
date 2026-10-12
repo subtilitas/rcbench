@@ -1082,6 +1082,9 @@ Wert. CH17 und CH18 sind die beiden Digitalkanäle. Ein Glitch ist eine Spitze
 in einer Spur; ein Dropout ist eine Kerbe durch alle sechzehn im selben
 Moment.
 
+Keine Firmware speist diesen Bildschirm bisher (siehe
+[Empfängerbusse](Receivers-de.md)); er zeigt SILENT.
+
 Der Zustandsblock zeigt einen von SILENT, FAILSAFE, FRAME LOST und LIVE, mit
 einer Zeile Erklärung:
 
