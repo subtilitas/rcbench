@@ -389,7 +389,7 @@ TEST_CASE(a_keep_does_at_most_one_sector_a_step)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(206000u, 7u, &e);
+    const uint8_t *src = make(206000u, 7u, &e);
     art_keep_t k;
     CHECK(art_keep_begin(&k, &f, 7u, &e, src));
     CHECK(art_keep_busy(&k));
@@ -442,7 +442,7 @@ TEST_CASE(a_keep_that_may_not_write_touches_no_flash_at_any_step)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(30000u, 2u, &e);
+    const uint8_t *src = make(30000u, 2u, &e);
     art_keep_t k;
     CHECK(art_keep_begin(&k, &f, 2u, &e, src));
     const unsigned total = keep_steps(30000u);
@@ -588,6 +588,8 @@ TEST_CASE(a_keep_fails_on_the_first_flash_call_that_does)
     }
     f.read = fake_fail_read;
     CHECK_EQ(art_keep_step(&k, true), ART_KEEP_FAILED);
+    /* cppcheck-suppress redundantAssignment
+     * the keep reads through its own pointer to f */
     f.read = fake_read;
     CHECK(!art_store_find(&f, 1u, &got));
 }
