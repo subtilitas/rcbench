@@ -299,7 +299,7 @@ def test_spdx_covers_the_tool_scripts(tree):
     for rel, text in (("shared/a.c", "/* SPDX-License-Identifier: MIT */\n"),
                       ("tools/ok.py", "# SPDX-License-Identifier: MIT\n"),
                       ("tools/bad.py", "x = 1\n"),
-                      ("tools/research/bad.js", "const x = 1;\n"),
+                      ("tools/bad.js", "const x = 1;\n"),
                       ("tools/data.json", "{}\n"),
                       ("test/tools/bad.py", "x = 1\n"),
                       ("test/tools/__pycache__/c.py", "x = 1\n")):
@@ -310,8 +310,8 @@ def test_spdx_covers_the_tool_scripts(tree):
     cd.check_spdx(problems)
     assert sorted(problems) == [
         "test/tools/bad.py has no SPDX-License-Identifier",
-        "tools/bad.py has no SPDX-License-Identifier",
-        "tools/research/bad.js has no SPDX-License-Identifier"]
+        "tools/bad.js has no SPDX-License-Identifier",
+        "tools/bad.py has no SPDX-License-Identifier"]
 
 
 def sdk_tree(tree, **change):

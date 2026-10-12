@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- `tools/security_parsers.py --check`, run in CI, fails when the parser table
+  in `SECURITY.md` and the parse functions in the public headers differ. The
+  table lists 10 modules; it listed 4.
+- `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
+  each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
   (`servoprog`, link `#v=1&f=servoprog`). It needs the panel and the
   coprocessor alone. Its tick puts the servo signal on wire 64, from pad 17
@@ -21,6 +26,14 @@ history is in git.
 
 ### Changed
 
+- `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
+  `Pins.md` states that it is the draft of the planned IO board.
+- The research workflow scripts are no longer in the repository. They are kept
+  on the owner's machine, outside it; `ci.yml` no longer runs
+  `session.py check`.
+- The KST README names Tool Card #2 and Chaservo in its list of what is
+  measured. The 19,178 us flash window is stated as 1 sample with the flash
+  part not yet identified.
 - The release of the bench configurator is stated once, in the `version`
   field of `configurator/package.json`. The data file, the page header, the
   trademark notice, the print head, the source-link tag and the data check
