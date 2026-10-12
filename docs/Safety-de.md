@@ -206,7 +206,10 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   hintereinander unter dem Sollwert plus 0,5 V liegt, schaltet der
   Koprozessor ab und meldet es dem Panel danach. Eine vorsichtige Regel,
   ohne Messung gewählt: sie kann einen Lauf abbrechen, der durchgehalten
-  hätte.
+  hätte. Sollwerte sind auf 0,7 V unter dem Eingang begrenzt, 0,2 V über
+  dieser Linie: ein Eingang, der unter Last um weniger als 0,2 V sinkt,
+  schaltet nichts ab. Ein ON, verlangt während der Eingang unter 1,5 V
+  liest, wird nicht geschrieben.
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
