@@ -148,6 +148,12 @@ jobs:
             echo "::error::links to .md files survived the rewrite"
             exit 1
           fi
+          # The wiki holds nothing outside docs/, so a link that climbs out
+          # of it must have become a repository URL.
+          if grep -rn '\](\.\./' /tmp/wikicheck; then
+            echo "::error::links that leave docs/ survived the rewrite"
+            exit 1
+          fi
 
       # Frame rate on this panel is bandwidth-bound, so the regression guard
       # is cache-line traffic per frame, not wall-clock on a runner that

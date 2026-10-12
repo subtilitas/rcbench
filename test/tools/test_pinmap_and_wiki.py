@@ -82,3 +82,53 @@ def test_the_rewrite_changes_only_the_copy_it_is_given(tmp_path):
     assert page.read_text(encoding="utf-8") == "[a](Screens.md)\n"
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 0
     assert page.read_text(encoding="utf-8") == "[a](Screens)\n"
+
+
+R = "https://github.com/subtilitas/rcbench"
+
+
+def test_a_file_above_docs_becomes_a_repository_url():
+    assert wl.rewrite("[n](../NOTICE) [r](../README.md#x)") == (
+        f"[n]({R}/blob/main/NOTICE) [r]({R}/blob/main/README.md#x)")
+
+
+def test_a_directory_above_docs_becomes_a_tree_url():
+    assert wl.rewrite("[d](../protocols/kst/)") == (
+        f"[d]({R}/tree/main/protocols/kst/)")
+
+
+def test_a_title_and_a_link_text_over_two_lines_survive():
+    text = '[a\nb](../README.md "the readme")'
+    assert wl.rewrite(text) == f'[a\nb]({R}/blob/main/README.md "the readme")'
+
+
+def test_an_image_above_docs_becomes_a_raw_url():
+    assert wl.rewrite("![i](../img/a.png)") == f"![i]({R}/raw/main/img/a.png)"
+
+
+def test_an_image_inside_docs_is_unchanged():
+    assert wl.rewrite("![i](img/a.png)") == "![i](img/a.png)"
+
+
+def test_a_subdirectory_page_resolves_against_its_own_directory():
+    assert wl.rewrite("[a](../Home.md) [b](../../README.md)", "sub") == (
+        f"[a](../Home) [b]({R}/blob/main/README.md)")
+
+
+def test_nested_climbing_that_lands_in_the_repository():
+    assert wl.rewrite("[a](../../src/x.c)", "sub") == (
+        f"[a]({R}/blob/main/src/x.c)")
+
+
+def test_a_target_above_the_repository_fails_the_check(tmp_path, capsys):
+    (tmp_path / "Home.md").write_text("[a](../../x.md)\n", encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
+    assert "leaves docs/" in capsys.readouterr().err
+
+
+def test_a_converted_tree_leaves_nothing_behind(tmp_path):
+    (tmp_path / "Home.md").write_text(
+        "[a](../README.md#x)\n[b](Screens.md)\n[c](../NOTICE)\n",
+        encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 0
+    assert "](../" not in (tmp_path / "Home.md").read_text(encoding="utf-8")

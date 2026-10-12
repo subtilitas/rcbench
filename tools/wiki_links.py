@@ -65,7 +65,8 @@ def rewrite(text: str, reldir: str = "") -> str:
                 kind = "raw"
             elif target.endswith("/"):
                 kind = "tree"
-            target = f"{REPO}/{kind}/main/{repo}"
+            tail = "/" if kind == "tree" else ""
+            target = f"{REPO}/{kind}/main/{repo}{tail}"
         elif target.endswith(".md"):
             target = target[:-3]
         return f"{bang}[{label}]({target}{anchor}{title})"
