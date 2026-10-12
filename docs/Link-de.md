@@ -264,7 +264,7 @@ der Änderung einen Schritt:
 
 | Page | Register | Regeln |
 | --- | --- | --- |
-| BIND_CFG | 32, wie CHAN_CFG | eine CHAN_CFG-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von CHAN_CFG geprüft (Rolle 0 oder 1, Endpunkte 400 bis 2500 µs) und bei einem Verstoß mit BAD_VALUE abgelehnt, ohne etwas zu speichern. Kein Ausgang ändert sich |
+| BIND_CFG | 32, wie CHAN_CFG | eine CHAN_CFG-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von CHAN_CFG geprüft (Rolle 0 oder 1, Slew 0 bis 3000, Endpunkte 400 bis 2500 µs) und bei einem Verstoß mit BAD_VALUE abgelehnt, ohne etwas zu speichern. Kein Ausgang ändert sich |
 | BIND_OUT | 32, wie OUTPUTS | eine OUTPUTS-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von OUTPUTS geprüft (ein Treiber 0 bis 4, eine Pin-Nummer bis 63) und bei einem Verstoß mit BAD_VALUE abgelehnt. Kein Ausgang ändert sich |
 | BIND | 1: `COMMIT` | ein Schreiben trägt die CRC (Cyclic Redundancy Check) der 64 vorbereiteten Register. Liest die CRC dessen, was vorbereitet ist |
 
@@ -603,7 +603,7 @@ Bring-up-Build hat 1. `shared/outputs/prog_port.c` hält die Regeln.
 | 3 | `TARGET` | lesen, schreiben | was Sweep und Hold von SERVO kommandieren: 0 die Standard-Servoports, n + 1 Port n. Nicht gehalten |
 | 4 + 5 n | `PIN` | lesen, schreiben | der Koprozessor-GPIO (General-Purpose Input/Output) von Port n, oder 0xFFFF für keinen. Gehalten |
 | 5 + 5 n | `CMD` | lesen, schreiben | das Kommando, 0 bis 1000; ein höherer Wert wird als 1000 genommen. Nicht gehalten |
-| 6 + 5 n | `SLEW` | lesen, schreiben | wie der Slew von CHAN_CFG. Gehalten |
+| 6 + 5 n | `SLEW` | lesen, schreiben | wie der Slew von CHAN_CFG: 0 bis 3000, ein höherer Wert wird mit BAD_VALUE abgelehnt, nichts wird gespeichert. Gehalten; ein gehaltener Slew über 3000 startet als 3000 |
 | 7 + 5 n | `MIN_US` | lesen, schreiben | der Puls bei Kommando 0, 400 bis 2500 µs, Standard 1000. Gehalten |
 | 8 + 5 n | `MAX_US` | lesen, schreiben | der Puls bei Kommando 1000, 400 bis 2500 µs, Standard 2000. Gehalten |
 
@@ -666,7 +666,8 @@ von `FLAGS` ist gesetzt, bis ein anderer `PIN` geschrieben ist.
 | 4.12 oder älter | 4.13 | das Panel liest und schreibt 0x33 nie: kein Port gibt einen Puls aus, und Port 0 hält GP13 |
 
 `test_prog_port` fährt die Page: jede Pin-Abweisung in beiden Richtungen,
-die Endpunkte bei 399, 400, 2500 und 2501 µs, eine Pin-Änderung unter einer
+die Endpunkte bei 399, 400, 2500 und 2501 µs, den Slew bei 3000 und 3001 und
+einen gehaltenen Slew von 3001 und 65535, eine Pin-Änderung unter einer
 scharfen Bank, einem gesetzten `PWM`-Bit und einem `TARGET`, 0 und 5 Ports
 an einem Modell mit 4 und einen gespeicherten Pin, der beim Start vergeben
 ist. Kein Puls eines Ports ist an Hardware gemessen.
@@ -1203,7 +1204,7 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x20 | BENCH | lesen | Spannung (10 mV), Strom (10 mA), Leistung (W), Drehzahl (min⁻¹), Temperatur des ESC (Electronic Speed Controller, Motorregler) und des Motors (0,1 °C, vorzeichenbehaftet), Ladung (mAh), Energie (0,1 Wh), Minimalspannung, Maximalstrom, Maximalleistung, Maximaldrehzahl, Flags |
 | 0x21 | reserviert | | nicht vergeben; nicht wiederzuverwenden |
 | 0x22 | OUTPUTS | lesen, schreiben | je Slot: Treiber (0 keiner, 1 PWM (Pulsweitenmodulation), 2 PPM (Pulspositionsmodulation), 3 DShot, 4 bidirektionales DShot), Pin, erster Kanal und Kanalzahl in einem Register, Rate in Hz (kbit/s für beide DShot-Treiber); acht Slots zu vier Registern |
-| 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Spanne je Sekunde, 0 = sofort), minimaler und maximaler Puls in µs; acht Kanäle zu vier Registern |
+| 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Tausendstel der Spanne je Sekunde, 0 bis 3000, 0 = sofort; ein höherer Wert wird mit BAD_VALUE abgelehnt und nichts wird gespeichert; ein Slew über 3000, den ein älterer Build im Flash des Koprozessors hinterlassen hat, startet als 3000), minimaler und maximaler Puls in µs; acht Kanäle zu vier Registern |
 | 0x24 | CATALOGUE | lesen | die eigenen Pins der Platine, je ein Register: GPIO-Nummer (General-Purpose Input/Output) in 6 Bit, die daneben aufgedruckte Pad-Nummer in 6, was ihn hält in 4 (0 frei, 1 Heartbeat, 2 CAN, 3 Flash, 4 Debug, 5 Sensor, 15 sonstiges); 32 Slots, und eine Pad-Nummer von 0 heißt, in diesem Slot ist kein Pin |
 | 0x25 | SHAPE | lesen | wo diese Pads liegen: Umriss-Breite und -Höhe in 0,01 mm, die Ecke, an der Pad 1 sitzt, und die Pads in einer Reihe gepackt als (Ecke << 8) \| je Reihe, das Raster in 0,01 mm und der Abstand von der Kante zur Mitte einer Pad-Reihe. Zwei Reihen auf einem Raster, nummeriert von Pad 1 weg entlang seiner Kante und zurück entlang der gegenüberliegenden. Alles null, wenn der Koprozessor keine Form für seine Platine hat — dann wird sie gelistet und nicht gezeichnet |
 | 0x26 | ARTWORK | lesen | was ein Bild der Platine ist: Blöcke Nutzdaten (0, wenn der Koprozessor keines trägt), Breite und Höhe in Pixeln, Format (0 keines, 1 RGB565 mit dem niederwertigen Byte zuerst), Nutzdatenlänge in zwei Registern und eine CRC (zyklische Redundanzprüfung) über die gesamten Nutzdaten mit Startwert null |

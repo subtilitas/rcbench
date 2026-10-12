@@ -138,7 +138,9 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
-/** Where things are, for a test's taps.  Rows by page, row and column. */
+/** Where things are, for a test's taps.  Rows by page, row and column.  A
+ *  coordinate no row has gives an empty rectangle (value, step), false (live)
+ *  or NULL (button, label). */
 gfx_rect_t kst_panel_tab_rect(int page);
 gfx_rect_t kst_panel_close_rect(void);
 gfx_rect_t kst_panel_value_rect(int page, int row, int col);

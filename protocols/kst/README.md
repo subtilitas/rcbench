@@ -465,7 +465,8 @@ refused for a save and a load, and the file is left out of the list.
 
 ## What is measured and what is not
 
-Measured, on 1 programming card and 1 servo of unidentified model:
+Measured, on 1 Tool Card #2, KST's programming card, and 1 Chaservo servo of
+unidentified model:
 
 - The frame layout, the bit timing of both directions and the reply delays.
 - The entry sequence.
