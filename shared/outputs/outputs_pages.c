@@ -455,10 +455,8 @@ uint64_t outputs_role_pins(const uint16_t *slots, const uint16_t *chan_cfg,
             continue;
         }
         /* The slot's own channels, through the same function. */
-        uint16_t one[LINK_OS_STRIDE] = { 0 };
-        memcpy(one, r, sizeof(one));
         uint16_t only[LINK_OS_COUNT] = { 0 };
-        memcpy(only, one, sizeof(one));
+        memcpy(only, r, (size_t)LINK_OS_STRIDE * sizeof(only[0]));
         if (outputs_role_channels(only, chan_cfg, role) != 0u) {
             pins |= (uint64_t)1u << r[LINK_OS_PIN];
         }

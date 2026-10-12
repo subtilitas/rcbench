@@ -6688,9 +6688,11 @@ static __attribute__((noinline)) void prog_link_service(void)
         prog_link_written(&s_prog_link, &w, ack);
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
+    /* Target n + 1 is port n. */
+    const uint8_t drive = prog_link_target(&s_prog_link);
     atomic_store(&s_drive_pin,
-                 prog_link_target(&s_prog_link) != 0u
-                     ? prog_link_pin(&s_prog_link, 0u) : PROG_LINK_NO_PIN);
+                 drive != 0u ? prog_link_pin(&s_prog_link, (uint8_t)(drive - 1u))
+                             : PROG_LINK_NO_PIN);
     servo_surfaces_publish();
 }
 
