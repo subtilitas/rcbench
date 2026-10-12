@@ -33,12 +33,18 @@ typedef struct {
 
 static fake_dev_t g;
 
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const fake_dev_t *f = (const fake_dev_t *)ctx;
     memcpy(out, f->identity + off, (size_t)n * sizeof(uint16_t));
 }
 
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const fake_dev_t *f = (const fake_dev_t *)ctx;
@@ -114,17 +120,17 @@ TEST_CASE(a_read_returns_the_registers)
 TEST_CASE(every_window_of_every_page_round_trips)
 {
     fresh();
-    for (uint8_t i = 0; i < LINK_ID_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_ID_COUNT; ++i) {
         g.identity[i] = (uint16_t)(0xC000u + i);
     }
-    for (uint8_t off = 0; off < LINK_ID_COUNT; ++off) {
-        for (uint8_t n = 1; n <= LINK_ID_COUNT - off; ++n) {
+    for (unsigned off = 0; off < LINK_ID_COUNT; ++off) {
+        for (unsigned n = 1; n <= LINK_ID_COUNT - off; ++n) {
             link_msg_t r;
-            CHECK(ask_read(LINK_PAGE_IDENTITY, off, n, &r));
+            CHECK(ask_read(LINK_PAGE_IDENTITY, (uint8_t)off, (uint8_t)n, &r));
             CHECK_EQ(r.op, LINK_OP_DATA);
             CHECK_EQ(r.offset, off);
             CHECK_EQ(r.count, n);
-            for (uint8_t k = 0; k < n; ++k) {
+            for (unsigned k = 0; k < n; ++k) {
                 CHECK_EQ(r.regs[k], (uint16_t)(0xC000u + off + k));
             }
         }
@@ -233,6 +239,90 @@ TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
     CHECK_EQ(regs[LINK_CC_SLEW], 0u);
     CHECK_EQ(regs[LINK_CC_MIN_US], LINK_CC_DEFAULT_MIN);
     CHECK_EQ(regs[LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
+}
+
+/* The slew has an upper bound of LINK_CC_SLEW_MAX; both edges and a value on
+ * each side of the upper one. */
+TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
+{
+    const uint16_t ok[] = { 0u, 1u, LINK_CC_SLEW_MAX - 1u, LINK_CC_SLEW_MAX };
+    const uint16_t bad[] = { LINK_CC_SLEW_MAX + 1u, 10000u, 65535u };
+    for (unsigned i = 0; i < sizeof(ok) / sizeof(ok[0]); ++i) {
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t v = ok[i];
+        CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v), 0u);
+        CHECK_EQ(regs[LINK_CC_SLEW], v);
+    }
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t v = bad[i];
+        CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(regs[LINK_CC_SLEW], 0u);
+    }
+    /* The last channel's slew is judged as well. */
+    uint16_t regs[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(regs);
+    const uint16_t v = LINK_CC_SLEW_MAX + 1u;
+    CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_COUNT - LINK_CC_STRIDE
+                                    + LINK_CC_SLEW, 1, &v),
+             LINK_NACK_BAD_VALUE);
+}
+
+/* A CHAN_CFG kept by a build before the slew limit: a slew above it starts
+ * as the maximum, everything else as kept. */
+TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
+{
+    const uint16_t old[] = { LINK_CC_SLEW_MAX + 1u, 65535u };
+    for (unsigned i = 0; i < sizeof(old) / sizeof(old[0]); ++i) {
+        uint16_t saved[LINK_CC_COUNT];
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(saved);
+        for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+            uint16_t *r = &saved[c * LINK_CC_STRIDE];
+            r[LINK_CC_ROLE]   = (uint16_t)((c == 0u) ? LINK_CC_ROLE_THROTTLE
+                                                     : LINK_CC_ROLE_SURFACE);
+            r[LINK_CC_SLEW]   = (c % 2u == 0u) ? old[i]
+                                               : (uint16_t)(100u * c);
+            r[LINK_CC_MIN_US] = (uint16_t)(900u + c);
+            r[LINK_CC_MAX_US] = (uint16_t)(2100u - c);
+        }
+        saved[LINK_CC_COUNT - LINK_CC_STRIDE + LINK_CC_SLEW] = old[i];
+        memset(regs, 0xA5, sizeof(regs));
+        outputs_chan_cfg_restore(regs, saved);
+        for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+            const uint16_t *r = &regs[c * LINK_CC_STRIDE];
+            const uint16_t *k = &saved[c * LINK_CC_STRIDE];
+            CHECK_EQ(r[LINK_CC_ROLE], k[LINK_CC_ROLE]);
+            CHECK_EQ(r[LINK_CC_MIN_US], k[LINK_CC_MIN_US]);
+            CHECK_EQ(r[LINK_CC_MAX_US], k[LINK_CC_MAX_US]);
+            if (k[LINK_CC_SLEW] > LINK_CC_SLEW_MAX) {
+                CHECK_EQ(r[LINK_CC_SLEW], LINK_CC_SLEW_MAX);
+            } else {
+                CHECK_EQ(r[LINK_CC_SLEW], k[LINK_CC_SLEW]);
+            }
+        }
+        CHECK_EQ(regs[LINK_CC_COUNT - LINK_CC_STRIDE + LINK_CC_SLEW],
+                 LINK_CC_SLEW_MAX);
+        /* What starts is a page a write takes whole. */
+        uint16_t page[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(page);
+        CHECK_EQ(outputs_chan_cfg_write(page, 0u, LINK_CC_COUNT, regs), 0u);
+    }
+    /* The maximum itself is kept as it is. */
+    uint16_t saved[LINK_CC_COUNT];
+    uint16_t regs[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(saved);
+    saved[LINK_CC_SLEW] = LINK_CC_SLEW_MAX;
+    outputs_chan_cfg_restore(regs, saved);
+    CHECK_EQ(memcmp(regs, saved, sizeof(regs)), 0);
+    /* Nothing without both. */
+    const uint16_t before = regs[LINK_CC_SLEW];
+    outputs_chan_cfg_restore(regs, NULL);
+    outputs_chan_cfg_restore(NULL, saved);
+    CHECK_EQ(regs[LINK_CC_SLEW], before);
 }
 
 TEST_CASE(a_refused_slots_write_stores_none_of_its_registers)
@@ -822,7 +912,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_SW_COUNT, 28);
     CHECK_EQ(LINK_KS_COUNT, 32);
     CHECK(LINK_KS_COUNT <= LINK_MAX_REGS);
-    CHECK(LINK_KS_W_COUNT <= LINK_KS_COUNT);
+    CHECK((int)LINK_KS_W_COUNT <= (int)LINK_KS_COUNT);
     /* The status a poll reads is one frame, the results three, the image
      * four: 16 registers hold the 32 servo registers. */
     CHECK_EQ(LINK_KS_FAIL, 4);
@@ -886,7 +976,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     /* 4.15 adds an operation, a state, a write register and two refusals
      * after the ones there were: the way from PROGRAMMING to PWM without a
      * supply cycle. */
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 15u);
+    CHECK(LINK_PROTOCOL_MINOR >= 15u);
     CHECK_EQ(LINK_MINOR_KST_LEAVE, 15u);
     CHECK_EQ(LINK_KST_OP_LEAVE, 10);
     CHECK_EQ(LINK_KST_OP_COUNT, 11);
@@ -1224,6 +1314,18 @@ TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
     CHECK_EQ(outputs_slots_armed_check(regs, NULL, true), 0u);
 }
 
+/*
+ * 4.16 moves no register and adds no refusal code: a PWM endpoint longer
+ * than its frame is refused with the BAD_VALUE every limit uses.
+ */
+TEST_CASE(a_pulse_longer_than_its_frame_needs_no_new_register)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 16u);
+    CHECK_EQ(LINK_MINOR_PULSE_FRAME, 16u);
+    CHECK(LINK_MINOR_PULSE_FRAME > LINK_MINOR_KST_LEAVE);
+    CHECK_EQ(LINK_CC_CEILING_US, 2500u);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -1234,6 +1336,8 @@ int main(void)
     RUN(writing_a_read_only_page_is_refused);
     RUN(a_value_the_page_rejects_is_refused_with_a_reason);
     RUN(a_refused_chan_cfg_write_stores_none_of_its_registers);
+    RUN(a_slew_above_the_maximum_is_refused_and_stores_nothing);
+    RUN(a_kept_slew_above_the_maximum_starts_as_the_maximum);
     RUN(a_refused_slots_write_stores_none_of_its_registers);
     RUN(the_arming_frame_applies_arm_throttle_and_poles_together);
     RUN(an_arming_frame_with_a_bad_pole_count_arms_nothing);
@@ -1263,5 +1367,6 @@ int main(void)
     RUN(the_fault_bits_are_one_bit_each);
     RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
     RUN(outputs_under_an_armed_bank_takes_no_change);
+    RUN(a_pulse_longer_than_its_frame_needs_no_new_register);
     return test_summary("link_pages");
 }

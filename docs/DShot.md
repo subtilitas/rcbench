@@ -82,8 +82,28 @@ count of microseconds and the frame period is 1,000,000 divided by the rate.
 | | |
 | --- | --- |
 | Frame rate | 40 to 560 Hz |
-| Pulse | 400 to 2500 µs, refused outside |
+| Pulse | 400 to 2500 µs and at most the period minus 1 µs, refused outside |
 | Resolution | 1 µs |
+
+A pulse is never as long as its frame. The longest one a frame carries is the
+period minus 1 µs, rounded down: the counter's last count, which leaves the
+pin low for 1 µs.
+
+| Rate | Period | Longest pulse |
+| ---: | ---: | ---: |
+| 560 Hz | 1785 µs | 1784 µs |
+| 500 Hz | 2000 µs | 1999 µs |
+| 400 Hz | 2500 µs | 2499 µs |
+| 399 Hz and below | 2506 µs and more | 2500 µs, the ceiling |
+
+A CHAN_CFG, OUTPUTS, BIND, SERVO or PROG write that would leave a PWM output
+with a longer endpoint is refused with BAD_VALUE, and nothing changes. The
+rate judged is the one the output runs at: SERVO's for a surface while that is
+not 0, the slot's own otherwise. A standard 1000 to 2000 µs servo therefore
+takes 499 Hz and is refused at 500 Hz and 560 Hz. A stored slot whose endpoint
+does not fit its own rate starts unbound. The rule is `out_pwm_pulse_max()`
+and `outputs_pulse_check()`; [the link](Link.md#a-pulse-no-longer-than-its-frame)
+has the pages' side.
 
 A slice is two channels sharing one counter, so two pins on the same slice run
 at the same frame rate. A second binding that asks for a different rate on a
@@ -169,7 +189,12 @@ driver that is not working.
 
 The bench maps travel so that a command of zero is motor stop and everything
 above it lands in 48 to 2047. A driver that mapped travel straight onto 0 to
-2047 would send beeps and direction changes on its way up from idle.
+2047 would send beeps and direction changes on its way up from idle. A command
+above the span of 1000 maps to zero, motor stop, not to full throttle.
+
+`out_dshot_bind()` on a pin that is already bound with a different rate or mode
+returns false and leaves the old output running. A caller releases the pin
+first.
 
 Frames go out at 1 kHz. That rate is not on the wire: the OUTPUTS page's rate
 field is a bit rate for DShot rather than a frame rate, so the bench chooses it.

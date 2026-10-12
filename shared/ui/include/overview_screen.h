@@ -1,8 +1,8 @@
 /*
  * The feature menu: eight tiles, one per object on the bench (motor and ESC
  * (electronic speed controller), servo, receiver, logs, setup, battery,
- * balance, programmer).  A tile carries a SOON badge when its screen does not
- * exist and a MODELLED badge when its hardware is not fitted.
+ * balance, programmer).  A tile carries a MODELLED badge when its hardware is
+ * not fitted.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -50,7 +50,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
 | Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC; simulierte Werte, solange kein Coprozessor antwortet |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom Koprozessor gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom Koprozessor gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche und der Abgleich sind auf dem Host gegen ein Servomodell getestet und laufen auf keiner Platine; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
 | Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der Koprozessor steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Analyser | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
 | Programmierer | Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels |
@@ -82,14 +82,16 @@ erzeugt, auf Englisch und Deutsch. Die Dateien bearbeiten, nicht das Wiki.
 
 | Seite | Inhalt |
 | --- | --- |
-| [Worum es geht](https://github.com/subtilitas/rcbench/wiki/Manifest-de) | Anforderungen und ihr Stand |
+| [Worum es geht](https://github.com/subtilitas/rcbench/wiki/Manifest-de) | Anforderungen und ihre Umsetzung |
 | [Bench configurator](https://subtilitas.github.io/rcbench/) | Webseite, Deutsch und Englisch: Funktionen oder Teile auswählen, ergibt die Teileliste, die Verdrahtungszeichnung und die Pin-zu-Pin-Tabelle dieses Aufbaus |
 | [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) | Toolchains, Befehle, CI |
 | [Den Link in Betrieb nehmen](https://github.com/subtilitas/rcbench/wiki/Bringup-de) | die beiden Platinen verkabeln und den Bus prüfen |
 | [Bildschirme](https://github.com/subtilitas/rcbench/wiki/Screens-de) | den Prüfstand bedienen |
+| [Erster Lauf auf der Hardware](https://github.com/subtilitas/rcbench/wiki/FirstRun-de) | die Prüfungen beim ersten Einschalten beider Platinen |
+| [Sprache der Oberfläche](https://github.com/subtilitas/rcbench/wiki/Language-de) | Englisch oder Deutsch auf dem Panel |
 | [Auswuchten](https://github.com/subtilitas/rcbench/wiki/Balance-de) · [Servoverfahren](https://github.com/subtilitas/rcbench/wiki/Servo-de) · [Empfängerbusse](https://github.com/subtilitas/rcbench/wiki/Receivers-de) | die Messungen |
 | [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) | Stoppmechanismen und die nötige externe Schaltung |
-| [Der Link](https://github.com/subtilitas/rcbench/wiki/Link-de) · [OpenYGE](https://github.com/subtilitas/rcbench/wiki/OpenYGE-de) · [Performance](https://github.com/subtilitas/rcbench/wiki/Performance-de) | Firmware-Referenz |
+| [Der Link](https://github.com/subtilitas/rcbench/wiki/Link-de) · [OpenYGE](https://github.com/subtilitas/rcbench/wiki/OpenYGE-de) · [Performance](https://github.com/subtilitas/rcbench/wiki/Performance-de) · [DShot und die Output-Treiber](https://github.com/subtilitas/rcbench/wiki/DShot-de) · [ESCs mit BLHeli_32-Firmware](https://github.com/subtilitas/rcbench/wiki/BLHeli32-de) | Firmware-Referenz |
 
 ## Mitarbeit
 
@@ -100,7 +102,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 34 170 von 34 961 Zeilen in 121 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl; ausgenommen von der Grenze je Datei: `stub_screen.c`. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,8 %**, 34 386 von 35 143 Zeilen in 119 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

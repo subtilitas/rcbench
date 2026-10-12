@@ -890,7 +890,7 @@ TEST_CASE(the_range_register_packs_first_and_count)
 TEST_CASE(a_channel_command_is_clamped_in_place)
 {
     fresh_pages();
-    uint16_t in[1] = { 5000u };
+    const uint16_t in[1] = { 5000u };
     CHECK_EQ(outputs_channels_write(chans, 0, 1, in), 0);
     CHECK_EQ(chans[0], LINK_CH_SPAN);
 }
@@ -899,7 +899,7 @@ TEST_CASE(a_channel_command_is_clamped_in_place)
 TEST_CASE(writing_off_a_page_end_is_refused)
 {
     fresh_pages();
-    uint16_t z[4] = { 0, 0, 0, 0 };
+    const uint16_t z[4] = { 0, 0, 0, 0 };
     CHECK_EQ(outputs_chan_cfg_write(chan_cfg, LINK_CC_COUNT, 1, z),
              LINK_NACK_BAD_RANGE);
     CHECK_EQ(outputs_slots_write(slots, LINK_OS_COUNT, 1, z),
@@ -977,12 +977,12 @@ TEST_CASE(a_channel_write_keeps_only_the_channels_it_named_alive)
     outputs_init(&b, 0u);
     outputs_arm(&b, true, 0u);
 
-    uint16_t two[2] = { LINK_CH_SPAN / 4u, LINK_CH_SPAN / 2u };
+    const uint16_t two[2] = { LINK_CH_SPAN / 4u, LINK_CH_SPAN / 2u };
     CHECK_EQ(outputs_channels_write(chans, 0, 2, two), 0);
     outputs_channels_apply_n(&b, chans, 0u, 2u, 0u);
 
     /* 600 ms later only channel 0 is written again, one register. */
-    uint16_t one[1] = { LINK_CH_SPAN / 4u };
+    const uint16_t one[1] = { LINK_CH_SPAN / 4u };
     CHECK_EQ(outputs_channels_write(chans, 0, 1, one), 0);
     outputs_channels_apply_n(&b, chans, 0u, 1u, 600u);
 
@@ -1348,6 +1348,265 @@ TEST_CASE(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused)
     CHECK_EQ(outputs_slots_rate_check(&o, NULL, 560u), LINK_NACK_BAD_VALUE);
 }
 
+/* ------------------------------------- a pulse no longer than its frame */
+
+/*
+ * The longest pulse a frame carries is the frame's last count: one
+ * microsecond under the period, rounded down.  0 for a rate of 0 and for a
+ * period the sixteen-bit counter cannot hold.
+ */
+TEST_CASE(the_longest_pulse_is_one_count_under_the_period)
+{
+    static const struct {
+        uint16_t hz;
+        uint16_t longest;
+    } k[] = {
+        { 560u, 1784u },  { 500u, 1999u },  { 400u, 2499u },
+        { 333u, 3002u },  { 50u, 19999u },  { 40u, 24999u },
+        { 16u, 62499u },  { 15u, 0u },      { 0u, 0u },
+        { 65535u, 14u },
+    };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        CHECK_EQ(out_pwm_pulse_max(k[i].hz), k[i].longest);
+    }
+    /* The pages' ceiling fits every frame up to 400 Hz less one count, and
+     * the PWM driver's whole range down to its floor. */
+    CHECK(LINK_CC_CEILING_US <= out_pwm_pulse_max(333u));
+    CHECK(LINK_CC_CEILING_US > out_pwm_pulse_max(400u));
+    CHECK(LINK_CC_FLOOR_US <= out_pwm_pulse_max(560u));
+}
+
+/* A PWM slot on GP0 rendering channel 0 at @p hz, as the OUTPUTS page
+ * writes it. */
+static void slot_at(uint16_t *os, unsigned sl, uint16_t pin, unsigned ch,
+                    uint16_t driver, uint16_t hz)
+{
+    uint16_t *r = &os[sl * LINK_OS_STRIDE];
+    r[LINK_OS_DRIVER]  = driver;
+    r[LINK_OS_PIN]     = pin;
+    r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(ch, 1);
+    r[LINK_OS_RATE_HZ] = hz;
+}
+
+static void range_of(uint16_t *cc, unsigned ch, uint16_t min_us,
+                     uint16_t max_us)
+{
+    cc[ch * LINK_CC_STRIDE + LINK_CC_MIN_US] = min_us;
+    cc[ch * LINK_CC_STRIDE + LINK_CC_MAX_US] = max_us;
+}
+
+/*
+ * A CHAN_CFG page is refused when it would leave an endpoint at or over
+ * the period of the PWM output that renders it: at 560 Hz (period 1785 us)
+ * 1784 us is taken and 1785 and 1786 us refused; at 500 Hz (2000 us) 1999
+ * is taken and 2000 and 2001 refused; at 400 Hz (2500 us) 2499 is taken
+ * and 2500 refused, 2501 being over the ceiling already.  At 333 and 50 Hz
+ * the ceiling is the limit.  Either end counts, and the bank is not
+ * touched by the judging.
+ */
+TEST_CASE(a_chan_cfg_endpoint_longer_than_its_frame_is_refused)
+{
+    static const struct {
+        uint16_t hz;
+        uint16_t period;
+    } k[] = { { 560u, 1785u }, { 500u, 2000u }, { 400u, 2500u } };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh_pages();
+        slot_at(slots, 0u, 0u, 0u, LINK_DRIVER_PWM, k[i].hz);
+        range_of(chan_cfg, 0u, 1000u, 1500u);
+        outputs_chan_cfg_apply(&o, chan_cfg);
+        outputs_slots_apply(&o, slots);
+        CHECK_EQ(o.slot[0].driver, OUT_DRIVER_PWM);
+
+        uint16_t cc[LINK_CC_COUNT];
+        memcpy(cc, chan_cfg, sizeof(cc));
+        range_of(cc, 0u, 1000u, (uint16_t)(k[i].period - 1u));
+        CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u), 0u);
+        range_of(cc, 0u, 1000u, k[i].period);
+        CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(o.channel[0].max_us, 1500u);   /* the bank untouched */
+        if (k[i].period + 1u <= LINK_CC_CEILING_US) {
+            range_of(cc, 0u, 1000u, (uint16_t)(k[i].period + 1u));
+            CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u),
+                     LINK_NACK_BAD_VALUE);
+        } else {
+            /* Over the ceiling the write itself refuses it. */
+            const uint16_t v = (uint16_t)(k[i].period + 1u);
+            CHECK_EQ(outputs_chan_cfg_write(cc, LINK_CC_MAX_US, 1u, &v),
+                     LINK_NACK_BAD_VALUE);
+        }
+        /* A reversed pair is judged by its longer end. */
+        range_of(cc, 0u, k[i].period, 1000u);
+        CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u),
+                 LINK_NACK_BAD_VALUE);
+        range_of(cc, 0u, (uint16_t)(k[i].period - 1u), 1000u);
+        CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u), 0u);
+        /* A channel no PWM slot renders is not judged. */
+        range_of(cc, 0u, 1000u, 1500u);
+        range_of(cc, 1u, 1000u, 2500u);
+        CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u), 0u);
+    }
+    const uint16_t slow[] = { 333u, 50u };
+    for (unsigned i = 0; i < sizeof(slow) / sizeof(slow[0]); ++i) {
+        fresh_pages();
+        slot_at(slots, 0u, 0u, 0u, LINK_DRIVER_PWM, slow[i]);
+        outputs_slots_apply(&o, slots);
+        range_of(chan_cfg, 0u, 400u, 2500u);
+        CHECK_EQ(outputs_chan_cfg_pulse_check(&o, chan_cfg, NULL, 0u), 0u);
+    }
+    CHECK_EQ(outputs_chan_cfg_pulse_check(NULL, chan_cfg, NULL, 0u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, NULL, NULL, 0u),
+             LINK_NACK_BAD_VALUE);
+}
+
+/*
+ * An OUTPUTS page is refused when it would run a PWM slot faster than its
+ * channel's endpoints allow: 1000 to 2000 us is refused at 560 and 500 Hz
+ * and taken at 499 and 400 Hz.  PPM and DShot slots are not judged.  The
+ * bank is not touched by the judging.
+ */
+TEST_CASE(an_outputs_rate_too_fast_for_the_endpoints_is_refused)
+{
+    fresh_pages();
+    outputs_chan_cfg_apply(&o, chan_cfg);   /* 1000 to 2000 us */
+    uint16_t os[LINK_OS_COUNT];
+    memcpy(os, slots, sizeof(os));
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 560u);
+    CHECK_EQ(outputs_slots_pulse_check(&o, os, 0u), LINK_NACK_BAD_VALUE);
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 500u);
+    CHECK_EQ(outputs_slots_pulse_check(&o, os, 0u), LINK_NACK_BAD_VALUE);
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 499u);
+    CHECK_EQ(outputs_slots_pulse_check(&o, os, 0u), 0u);
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 400u);
+    CHECK_EQ(outputs_slots_pulse_check(&o, os, 0u), 0u);
+    CHECK_EQ(o.slot[0].driver, OUT_DRIVER_NONE);   /* the bank untouched */
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_DSHOT, 600u);
+    CHECK_EQ(outputs_slots_pulse_check(&o, os, 0u), 0u);
+    CHECK_EQ(outputs_slots_pulse_check(NULL, os, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_slots_pulse_check(&o, NULL, 0u), LINK_NACK_BAD_VALUE);
+}
+
+/*
+ * The SERVO page's rate is the one a surface runs at, so it is judged too:
+ * a 50 Hz surface of 1000 to 2000 us refuses 560 Hz and takes 499 Hz; at
+ * 1000 to 1784 us it takes 560 Hz.  A throttle keeps its own rate.  Going
+ * back to 0 is judged as well: a 400 Hz surface that took 2500 us under a
+ * 50 Hz SERVO rate refuses 0.  Ports named as channels are judged at the
+ * rate given.
+ */
+TEST_CASE(the_rate_a_surface_runs_at_is_judged_against_its_endpoints)
+{
+    fresh_pages();
+    chan_cfg[1 * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    slot_at(slots, 0u, 0u, 0u, LINK_DRIVER_PWM, 50u);   /* surface, slice 0 */
+    slot_at(slots, 1u, 4u, 1u, LINK_DRIVER_PWM, 50u);   /* throttle, slice 2 */
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(outputs_pulse_check(&o, 0u, 0u, 0u), 0u);
+    CHECK_EQ(outputs_pulse_check(&o, 560u, 0u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_pulse_check(&o, 500u, 0u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_pulse_check(&o, 499u, 0u, 0u), 0u);
+
+    range_of(chan_cfg, 0u, 1000u, 1784u);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, chan_cfg, NULL, 560u), 0u);
+    range_of(chan_cfg, 0u, 1000u, 1785u);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, chan_cfg, NULL, 560u),
+             LINK_NACK_BAD_VALUE);
+    range_of(chan_cfg, 0u, 1000u, 1784u);
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    CHECK_EQ(outputs_pulse_check(&o, 560u, 0u, 0u), 0u);   /* throttle: 50 Hz */
+
+    /* A bank channel named as a port, at the rate given. */
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
+    CHECK_EQ(outputs_pulse_check(&o, 560u, (uint16_t)(1u << 9), 560u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_pulse_check(&o, 0u, (uint16_t)(1u << 9), 50u), 0u);
+    CHECK(outputs_set_endpoints(&o, 9u, 410u, 1110u));
+    CHECK_EQ(outputs_pulse_check(&o, 560u, (uint16_t)(1u << 9), 560u), 0u);
+
+    /* Back to 0 is a rate too. */
+    fresh_pages();
+    slot_at(slots, 0u, 0u, 0u, LINK_DRIVER_PWM, 400u);
+    outputs_slots_apply(&o, slots);
+    range_of(chan_cfg, 0u, 1000u, 2500u);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, chan_cfg, NULL, 50u), 0u);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, chan_cfg, NULL, 0u),
+             LINK_NACK_BAD_VALUE);
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    CHECK_EQ(outputs_pulse_check(&o, 0u, 0u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_pulse_check(&o, 50u, 0u, 0u), 0u);
+    CHECK_EQ(outputs_pulse_check(NULL, 0u, 0u, 0u), LINK_NACK_BAD_VALUE);
+}
+
+/*
+ * A BIND commit puts a CHAN_CFG and an OUTPUTS page in force together, so
+ * its CHAN_CFG page is judged with its own slots: 2000 us bound at 50 Hz
+ * in place of a 560 Hz tail servo is taken, though the slot in force would
+ * refuse it, and 2000 us with a 560 Hz slot is refused.
+ */
+TEST_CASE(a_bind_commit_judges_its_pages_together)
+{
+    fresh_pages();
+    range_of(chan_cfg, 0u, 410u, 1110u);
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    slot_at(slots, 0u, 0u, 0u, LINK_DRIVER_PWM, 560u);
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(outputs_pulse_check(&o, 0u, 0u, 0u), 0u);
+
+    uint16_t cc[LINK_CC_COUNT];
+    uint16_t os[LINK_OS_COUNT];
+    memcpy(cc, chan_cfg, sizeof(cc));
+    memcpy(os, slots, sizeof(os));
+    range_of(cc, 0u, 1000u, 2000u);
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 50u);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, os, 0u), 0u);
+    slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 560u);
+    CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, os, 0u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(o.slot[0].rate_hz, 560u);   /* the bank untouched */
+    CHECK_EQ(o.channel[0].max_us, 1110u);
+}
+
+/*
+ * A stored OUTPUTS page restored under stored endpoints: a PWM slot whose
+ * channel's endpoint does not fit the frame of its own rate starts with
+ * driver 0, and the others are kept -- a slot that fits, one at 50 Hz with
+ * the ceiling, and a DShot slot, whose rate is a bit rate.
+ */
+TEST_CASE(a_stored_slot_with_a_pulse_longer_than_its_frame_starts_unbound)
+{
+    fresh_pages();
+    range_of(chan_cfg, 0u, 1000u, 2000u);
+    range_of(chan_cfg, 1u, 1000u, 1784u);
+    range_of(chan_cfg, 2u, 400u, 2500u);
+    range_of(chan_cfg, 3u, 1000u, 2000u);
+    range_of(chan_cfg, 4u, 1785u, 1000u);
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    slot_at(slots, 0u, 0u, 0u, LINK_DRIVER_PWM, 560u);   /* 2000 at 560 */
+    slot_at(slots, 1u, 4u, 1u, LINK_DRIVER_PWM, 560u);   /* 1784 at 560 */
+    slot_at(slots, 2u, 6u, 2u, LINK_DRIVER_PWM, 50u);    /* 2500 at 50 */
+    slot_at(slots, 3u, 8u, 3u, LINK_DRIVER_DSHOT, 600u);
+    slot_at(slots, 4u, 10u, 4u, LINK_DRIVER_PWM, 560u);  /* reversed 1785 */
+    CHECK_EQ(outputs_slots_free_long(&o, slots), 2u);
+    CHECK_EQ(slots[0 * LINK_OS_STRIDE + LINK_OS_DRIVER], 0u);
+    CHECK_EQ(slots[0 * LINK_OS_STRIDE + LINK_OS_PIN], 0u);
+    CHECK_EQ(slots[1 * LINK_OS_STRIDE + LINK_OS_DRIVER], LINK_DRIVER_PWM);
+    CHECK_EQ(slots[2 * LINK_OS_STRIDE + LINK_OS_DRIVER], LINK_DRIVER_PWM);
+    CHECK_EQ(slots[3 * LINK_OS_STRIDE + LINK_OS_DRIVER], LINK_DRIVER_DSHOT);
+    CHECK_EQ(slots[4 * LINK_OS_STRIDE + LINK_OS_DRIVER], 0u);
+    CHECK_EQ(slots[4 * LINK_OS_STRIDE + LINK_OS_RATE_HZ], 560u);
+    /* What is left passes the check an OUTPUTS write meets. */
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(outputs_pulse_check(&o, 0u, 0u, 0u), 0u);
+    CHECK_EQ(outputs_slots_free_long(&o, slots), 0u);
+    CHECK_EQ(outputs_slots_free_long(NULL, slots), 0u);
+    CHECK_EQ(outputs_slots_free_long(&o, NULL), 0u);
+}
+
 /*
  * The silicon's verdict on an OUTPUTS write: a slot the write changed, or
  * one it unbound, that the bank holds with a driver and the silicon did not
@@ -1535,6 +1794,12 @@ int main(void)
     RUN(a_servo_rate_outside_the_pwm_range_is_refused);
     RUN(a_servo_rate_that_would_split_a_slice_is_refused);
     RUN(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused);
+    RUN(the_longest_pulse_is_one_count_under_the_period);
+    RUN(a_chan_cfg_endpoint_longer_than_its_frame_is_refused);
+    RUN(an_outputs_rate_too_fast_for_the_endpoints_is_refused);
+    RUN(the_rate_a_surface_runs_at_is_judged_against_its_endpoints);
+    RUN(a_bind_commit_judges_its_pages_together);
+    RUN(a_stored_slot_with_a_pulse_longer_than_its_frame_starts_unbound);
     RUN(each_driver_number_on_the_wire_is_that_driver_in_the_bank);
     RUN(a_keepalive_holds_off_the_timeout_and_changes_no_command);
     return test_summary("outputs");

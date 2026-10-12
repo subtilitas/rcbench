@@ -1574,9 +1574,9 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     if (total < 0) {
         /*
          * Mounted, and yet its root will not open: the card it was mounted
-         * from has been taken out or swapped.  Nothing clears that flag on
-         * its own -- only storage_deinit() does -- so the mount stays stale
-         * and a replacement card is not found until the panel restarts.
+         * from has been taken out or swapped.  Nothing clears that flag, so
+         * the mount stays stale and a replacement card is not found until
+         * the panel restarts.
          *
          * Not unmounted from here.  This runs on the task that renders, and
          * the runlog task writes the run log on the same volume: unmounting
@@ -2302,8 +2302,8 @@ static void log_open(uint32_t run)
          *
          * It rescues the card that stays in the slot.  It cannot rescue the
          * one taken out to be edited on a computer: storage_mounted() is
-         * cleared only by storage_deinit(), so a swapped card leaves a stale
-         * mount and the walk reads the volume that is gone.  That is the open
+         * never cleared, so a swapped card leaves a stale mount and the
+         * walk reads the volume that is gone.  That is the open
          * item in STATUS.md, and until it is closed a deletion made off the
          * bench needs the panel restarted.
          */
@@ -2532,7 +2532,7 @@ static void log_note(const char *line)
     if (!storage_mounted()) {
         return;
     }
-    FILE *f = fopen("/sdcard/RCBENCH.LOG", "a");
+    FILE *f = fopen(STORAGE_MOUNT_POINT "/RCBENCH.LOG", "a");
     if (f == NULL) {
         return;
     }
@@ -3061,13 +3061,6 @@ static void art_stop(const char *why)
     s_artbusy = false;
 }
 
-/*
- * Ask for the picture, unless it is already kept or there is none.
- *
- * Runs on the link-up edge and does one transaction: everything after this
- * happens a slice at a time.  A coprocessor built before the page answers
- * NACK, which is not a fault -- the board is then drawn from its shape.
- */
 /*
  * How the fetch reaches the far end.  The sequence itself is in
  * shared/artwork, where the suite runs it against a device in memory and can
@@ -4176,6 +4169,7 @@ static void supply_step(float step_s)
         /* Every step of the model is a reading, taken now. */
         supply_sim_step(&s_supply_sim, step_s, &s_supply);
         s_supply.taken_ms = now_ms();   /* a reading every step */
+        s_supply.stamped  = true;
         escsim_load();
     }
     /*
@@ -6676,9 +6670,20 @@ static __attribute__((noinline)) void prog_link_service(void)
     prog_link_write_t w;
     if (prog_link_next(&s_prog_link, quiet, &w)) {
         link_msg_t reply = { 0 };
-        const bool ack = write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u,
-                                    &w.value, &reply)
-                         && reply.op == LINK_OP_ACK;
+        /* A pulse comes on under the range the screen names, stated to the
+         * port first: from 4.16 a range longer than the frame refuses it,
+         * and the port may still hold another profile's. */
+        const uint8_t on = prog_link_pulse_on(&s_prog_link, &w);
+        bool ack = true;
+        if (on != 0u && servo_named(&s_servo_range)) {
+            uint16_t cfg[LINK_CC_COUNT];
+            servo_cfg(&s_servo_range, cfg);
+            ack = servo_cfg_write(on, 0u, 1u, cfg, &reply);
+        }
+        ack = ack
+              && write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u, &w.value,
+                            &reply)
+              && reply.op == LINK_OP_ACK;
         prog_link_written(&s_prog_link, &w, ack);
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));

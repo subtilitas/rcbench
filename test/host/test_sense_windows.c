@@ -76,7 +76,7 @@ static unsigned take_all(void)
 {
     sense_link_win_t w;
     unsigned n = 0u;
-    while (sense_link_take_win(&ch.sl, &w)) {
+    while (sense_link_take_win(&chain.sl, &w)) {
         tally(&w);
         ++n;
     }
@@ -117,28 +117,28 @@ TEST_CASE(no_window_is_lost_with_polls_up_to_200_ms_apart)
     for (size_t i = 0u; i < sizeof(k_period) / sizeof(k_period[0]); ++i) {
         const unsigned p = k_period[i];
         running(p, 1000u);
-        const unsigned head0 = ch.win_head;
-        const unsigned all0  = ch.win_all;
-        const uint64_t began = ch.us;
+        const unsigned head0 = chain.win_head;
+        const unsigned all0  = chain.win_all;
+        const uint64_t began = chain.us;
         cycles(400u, p);
         CHECK_EQ(tl.back, 0u);
         CHECK_EQ(tl.missing, 0u);
         CHECK_EQ(tl.wrong, 0u);
         CHECK_EQ(tl.empty, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+        CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
         /* As many as closed in that time, to the one at either end. */
-        const unsigned closed = (unsigned)((ch.us - began) / 50000u);
+        const unsigned closed = (unsigned)((chain.us - began) / 50000u);
         CHECK(tl.n + 1u >= closed && tl.n <= closed + 1u);
         CHECK_EQ((uint16_t)(tl.last - tl.first) + 1u, tl.n);
         if (p <= 100u) {
             /* Two windows at most a poll: registers 0 to 15 carry them. */
-            CHECK_EQ(ch.win_all, all0);
-            CHECK_EQ(ch.win_head - head0, 400u);
+            CHECK_EQ(chain.win_all, all0);
+            CHECK_EQ(chain.win_head - head0, 400u);
             CHECK(tl.most <= 2u);
         } else {
             /* A third can have closed: the whole page, in one read. */
-            CHECK_EQ(ch.win_head, head0);
-            CHECK_EQ(ch.win_all - all0, 400u);
+            CHECK_EQ(chain.win_head, head0);
+            CHECK_EQ(chain.win_all - all0, 400u);
         }
         if (p == 53u || p == 55u || p == 100u) {
             CHECK_EQ(tl.most, 2u);     /* the poll that catches one up */
@@ -157,8 +157,8 @@ TEST_CASE(a_poll_faster_than_the_windows_hands_each_over_once)
     for (size_t i = 0u; i < sizeof(k_period) / sizeof(k_period[0]); ++i) {
         const unsigned p = k_period[i];
         running(p, 1000u);
-        const unsigned reads0 = ch.to_win;
-        const uint64_t began  = ch.us;
+        const unsigned reads0 = chain.to_win;
+        const uint64_t began  = chain.us;
         unsigned none = 0u;
         for (unsigned k = 0u; k < 400u; ++k) {
             chain_cycle(p);
@@ -171,12 +171,12 @@ TEST_CASE(a_poll_faster_than_the_windows_hands_each_over_once)
         CHECK_EQ(tl.back, 0u);
         CHECK_EQ(tl.missing, 0u);
         CHECK_EQ(tl.wrong, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
-        const unsigned closed = (unsigned)((ch.us - began) / 50000u);
+        CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
+        const unsigned closed = (unsigned)((chain.us - began) / 50000u);
         CHECK(tl.n + 1u >= closed && tl.n <= closed + 1u);
         /* The page is asked every 40 ms at most: every second 20 ms poll. */
-        CHECK_EQ(ch.to_win - reads0, (p == 20u) ? 200u : 400u);
-        CHECK_EQ(ch.win_all, 0u);
+        CHECK_EQ(chain.to_win - reads0, (p == 20u) ? 200u : 400u);
+        CHECK_EQ(chain.win_all, 0u);
     }
 }
 
@@ -188,19 +188,19 @@ TEST_CASE(windows_beyond_the_ring_are_counted_exactly)
     cycles(400u, 201u);
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.wrong, 0u);
-    CHECK(sense_link_win_lost(&ch.sl) > 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), tl.missing);
+    CHECK(sense_link_win_lost(&chain.sl) > 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), tl.missing);
     /* 1 ms a poll over the depth: one window in 50 polls. */
     CHECK_EQ(tl.missing, 8u);
 
     running(250u, 1000u);
-    const uint32_t lost0 = sense_link_win_lost(&ch.sl);
+    const uint32_t lost0 = sense_link_win_lost(&chain.sl);
     cycles(100u, 250u);
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.wrong, 0u);
     /* Five windows close in 250 ms and four are in the ring. */
     CHECK_EQ(tl.n, 400u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl) - lost0, 100u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl) - lost0, 100u);
     CHECK_EQ(tl.missing, 99u);         /* between the 100 polls' windows */
     CHECK_EQ(sense_link_win_lost(NULL), 0u);
 }
@@ -220,7 +220,7 @@ TEST_CASE(every_window_reaches_the_log_at_a_53_ms_poll)
     uint16_t last = 0u;
     for (unsigned i = 0u; i < 400u; ++i) {
         chain_cycle(53u);
-        while (sense_link_take_window(&ch.sl, &b)) {
+        while (sense_link_take_window(&chain.sl, &b)) {
             CHECK(b.servo_new);
             CHECK_EQ(b.servo_ok, 0x01u);
             CHECK_EQ(b.servo_mean_ma[0], chain_mean_ma(b.servo_window));
@@ -242,22 +242,22 @@ TEST_CASE(every_window_reaches_the_log_at_a_53_ms_poll)
 TEST_CASE(a_reply_lost_on_the_link_loses_no_window)
 {
     running(53u, 1000u);
-    const unsigned all0 = ch.win_all;
+    const unsigned all0 = chain.win_all;
     for (unsigned i = 0u; i < 400u; ++i) {
         if (i % 30u == 5u) {
-            ch.lose_win = 1u;          /* one reply                 */
+            chain.lose_win = 1u;          /* one reply                 */
         }
         if (i % 30u == 15u) {
-            ch.lose_win = 2u;          /* two polls in a row, 159 ms */
+            chain.lose_win = 2u;          /* two polls in a row, 159 ms */
         }
         cycles(1u, 53u);
     }
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.missing, 0u);
     CHECK_EQ(tl.wrong, 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
     /* The poll after a lost reply reads the whole page at once. */
-    CHECK(ch.win_all > all0);
+    CHECK(chain.win_all > all0);
     CHECK(tl.most >= 3u);
 
     /* Three in a row is 212 ms without a read: past the ring, and what is
@@ -265,14 +265,14 @@ TEST_CASE(a_reply_lost_on_the_link_loses_no_window)
     running(53u, 1000u);
     for (unsigned i = 0u; i < 400u; ++i) {
         if (i % 20u == 7u) {
-            ch.lose_win = 3u;
+            chain.lose_win = 3u;
         }
         cycles(1u, 53u);
     }
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.wrong, 0u);
     CHECK(tl.missing > 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), tl.missing);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), tl.missing);
 }
 
 /* A read of registers 0 to 15 that owes more than its two windows -- the
@@ -289,13 +289,13 @@ TEST_CASE(a_window_that_closes_between_two_reads_keeps_its_number)
         chain_far_boot();                      /* its numbers start at 0 */
         chain_far(wait);
         tally_clear();
-        const unsigned head0 = ch.win_head;
-        const unsigned all0  = ch.win_all;
-        ch.exch_ms = 7u;
+        const unsigned head0 = chain.win_head;
+        const unsigned all0  = chain.win_all;
+        chain.exch_ms = 7u;
         (void)chain_poll();
-        ch.exch_ms = 1u;
-        CHECK_EQ(ch.win_head - head0, 1u);
-        CHECK_EQ(ch.win_all - all0, 1u);       /* in the same poll */
+        chain.exch_ms = 1u;
+        CHECK_EQ(chain.win_head - head0, 1u);
+        CHECK_EQ(chain.win_all - all0, 1u);       /* in the same poll */
         const unsigned n = take_all();
         CHECK(n == 1u || n == 2u);
         if (n == 2u) {
@@ -327,14 +327,14 @@ TEST_CASE(the_window_number_runs_on_across_65535)
         tally_clear();
         cycles(8u, p);
         tally_clear();
-        const uint32_t lost0 = sense_link_win_lost(&ch.sl);
+        const uint32_t lost0 = sense_link_win_lost(&chain.sl);
         cycles(60u, p);
         CHECK(tl.wrapped);
         CHECK(tl.first > 65000u);
         CHECK(tl.last < 1000u);
         CHECK_EQ(tl.back, 0u);
         CHECK_EQ(tl.wrong, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl) - lost0, tl.missing
+        CHECK_EQ(sense_link_win_lost(&chain.sl) - lost0, tl.missing
                  + ((p == 250u) ? 1u : 0u));
         if (p <= 200u) {
             CHECK_EQ(tl.missing, 0u);
@@ -350,19 +350,19 @@ TEST_CASE(the_reads_run_on_across_the_tick_wrap)
         running(53u, (uint32_t)(0u - before - 824u));
         /* running() took 824 ms: the wrap lies `before` ms ahead. */
         CHECK(chain_now() > 0xFFFFF000u);
-        const unsigned reads0 = ch.to_win;
+        const unsigned reads0 = chain.to_win;
         for (unsigned i = 0u; i < 30u; ++i) {
             if (i == 3u) {
-                ch.lose_win = 2u;
+                chain.lose_win = 2u;
             }
             cycles(1u, 53u);
         }
         CHECK(chain_now() < 0x00001000u);
-        CHECK_EQ(ch.to_win - reads0, 30u);         /* one read a poll */
+        CHECK_EQ(chain.to_win - reads0, 30u);         /* one read a poll */
         CHECK_EQ(tl.back, 0u);
         CHECK_EQ(tl.missing, 0u);
         CHECK_EQ(tl.wrong, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+        CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
     }
 }
 
@@ -377,22 +377,22 @@ TEST_CASE(a_setup_written_starts_the_windows_at_number_0)
     cycles(40u, 53u);
     CHECK(tl.last > 40u);
     sense_setup_t w = chain_setup(0x03u);          /* CH2 as well */
-    sense_link_want(&ch.sl, &w, chain_now());
-    const unsigned writes0 = ch.writes;
+    sense_link_want(&chain.sl, &w, chain_now());
+    const unsigned writes0 = chain.writes;
     unsigned waited = 0u;
-    while (ch.writes == writes0 && waited < 40u) {
+    while (chain.writes == writes0 && waited < 40u) {
         cycles(1u, 53u);
         ++waited;
     }
-    CHECK(ch.writes > writes0);                    /* after the 500 ms rest */
-    const uint32_t lost0 = sense_link_win_lost(&ch.sl);
+    CHECK(chain.writes > writes0);                    /* after the 500 ms rest */
+    const uint32_t lost0 = sense_link_win_lost(&chain.sl);
     tally_clear();
     cycles(60u, 53u);
     CHECK_EQ(tl.first, 0u);
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.missing, 0u);
     CHECK_EQ(tl.wrong, 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), lost0);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), lost0);
     CHECK(tl.n >= 60u);
 }
 
@@ -406,7 +406,7 @@ TEST_CASE(a_coprocessor_restart_starts_the_windows_again)
     for (size_t i = 0u; i < sizeof(k_after) / sizeof(k_after[0]); ++i) {
         running(53u, 1000u);
         cycles(40u, 53u);
-        const uint32_t lost0 = sense_link_win_lost(&ch.sl);
+        const uint32_t lost0 = sense_link_win_lost(&chain.sl);
         chain_far_boot();
         chain_far(k_after[i]);
         tally_clear();
@@ -415,7 +415,7 @@ TEST_CASE(a_coprocessor_restart_starts_the_windows_again)
         CHECK_EQ(tl.back, 0u);
         CHECK_EQ(tl.missing, 0u);
         CHECK_EQ(tl.wrong, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl), lost0);
+        CHECK_EQ(sense_link_win_lost(&chain.sl), lost0);
     }
 }
 
@@ -438,11 +438,11 @@ TEST_CASE(a_number_the_coprocessor_skipped_is_no_window)
         CHECK(tl.missing + 1u >= k_late[i] / 50u);
         CHECK(tl.missing <= k_late[i] / 50u);
         if (k_late[i] <= 170u) {
-            CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+            CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
         } else {
             /* Four skipped, two of them out of the ring by the read. */
             CHECK_EQ(tl.missing, 4u);
-            CHECK_EQ(sense_link_win_lost(&ch.sl), 2u);
+            CHECK_EQ(sense_link_win_lost(&chain.sl), 2u);
         }
     }
 }
@@ -459,13 +459,13 @@ TEST_CASE(a_link_lost_and_back_hands_no_window_over_twice)
         running(53u, 1000u);
         cycles(20u, 53u);
         chain_poll();                              /* read, not yet taken */
-        sense_link_lost(&ch.sl);
+        sense_link_lost(&chain.sl);
         CHECK_EQ(take_all(), 0u);                  /* gone with the link  */
-        CHECK_EQ(sense_link_windows(&ch.sl), 0u);
+        CHECK_EQ(sense_link_windows(&chain.sl), 0u);
         chain_far(k_down[i]);
         const uint16_t before = tl.last;
         chain_link_up();
-        const uint16_t at_up = ch.pg.win[LINK_SW_WINDOW];
+        const uint16_t at_up = chain.pg.win[LINK_SW_WINDOW];
         cycles(1u, 53u);
         CHECK_EQ(tl.last, before);                 /* the first read: none */
         tally_clear();
@@ -478,7 +478,7 @@ TEST_CASE(a_link_lost_and_back_hands_no_window_over_twice)
         CHECK_EQ(tl.back, 0u);
         CHECK_EQ(tl.missing, 0u);
         CHECK_EQ(tl.wrong, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+        CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
     }
 }
 
@@ -488,11 +488,11 @@ TEST_CASE(a_link_back_to_a_restarted_coprocessor_invents_nothing)
 {
     running(53u, 1000u);
     cycles(20u, 53u);
-    sense_link_lost(&ch.sl);
+    sense_link_lost(&chain.sl);
     chain_far_boot();
     chain_far(1200u);
     chain_link_up();
-    const uint16_t at_up = ch.pg.win[LINK_SW_WINDOW];
+    const uint16_t at_up = chain.pg.win[LINK_SW_WINDOW];
     tally_clear();
     cycles(40u, 53u);
     CHECK((uint16_t)(tl.first - at_up) >= 1u);
@@ -513,13 +513,13 @@ TEST_CASE(windows_not_taken_wait_and_those_past_the_ring_are_counted)
     for (unsigned i = 0u; i < 6u; ++i) {
         chain_cycle(50u);
     }
-    CHECK_EQ(sense_link_windows(&ch.sl), LINK_SW_RING);
+    CHECK_EQ(sense_link_windows(&chain.sl), LINK_SW_RING);
     CHECK_EQ(take_all(), LINK_SW_RING);
     cycles(20u, 50u);
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.missing, 0u);
     CHECK_EQ(tl.wrong, 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
 
     running(50u, 1000u);
     for (unsigned i = 0u; i < 14u; ++i) {
@@ -531,21 +531,21 @@ TEST_CASE(windows_not_taken_wait_and_those_past_the_ring_are_counted)
     CHECK_EQ(tl.wrong, 0u);
     /* 14 closed and a 15th by the next read; 4 waited, 4 are in the ring. */
     CHECK_EQ(tl.missing, 7u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 7u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 7u);
 
     sense_link_win_t w;
-    CHECK(!sense_link_take_win(&ch.sl, NULL));
+    CHECK(!sense_link_take_win(&chain.sl, NULL));
     CHECK(!sense_link_take_win(NULL, &w));
     CHECK_EQ(sense_link_windows(NULL), 0u);
     CHECK(!sense_link_win_on(NULL));
     bench_state_t b;
     CHECK(!sense_link_take_window(NULL, &b));
-    CHECK(!sense_link_take_window(&ch.sl, NULL));
+    CHECK(!sense_link_take_window(&chain.sl, NULL));
     sense_link_meter_t m;
     memset(&m, 0xA5, sizeof(m));
     sense_link_meter(NULL, &m);                /* no link: no fact holds */
     CHECK(!m.page && !m.wanted && !m.held && !m.status && !m.win);
-    sense_link_meter(&ch.sl, NULL);            /* nothing, no crash */
+    sense_link_meter(&chain.sl, NULL);            /* nothing, no crash */
 }
 
 /* -------------------------------------------------------- the readings */
@@ -558,21 +558,21 @@ TEST_CASE(a_part_that_resets_itself_hands_over_empty_windows)
 {
     running(53u, 1000u);
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK(m.resets_read);
     CHECK_EQ(m.resets, 0u);
     cycles(10u, 53u);
     CHECK_EQ(tl.empty, 0u);
-    fake_reset3221(ch.i3221);
+    fake_reset3221(chain.i3221);
     cycles(40u, 53u);
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK_EQ(m.resets, 1u);
     CHECK((m.flags & LINK_SN_I3221_ONLINE) != 0u);     /* set up again */
     CHECK(tl.empty >= 19u && tl.empty <= 21u);         /* 1000 ms      */
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.missing, 0u);
     CHECK_EQ(tl.wrong, 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
 }
 
 /* The windows of one read are stamped 50 ms apart: the newest with the
@@ -590,7 +590,7 @@ TEST_CASE(the_windows_of_one_read_are_stamped_50_ms_apart)
         const uint32_t read = chain_now();
         sense_link_win_t w[LINK_SW_RING];
         unsigned n = 0u;
-        while (n < LINK_SW_RING && sense_link_take_win(&ch.sl, &w[n])) {
+        while (n < LINK_SW_RING && sense_link_take_win(&chain.sl, &w[n])) {
             ++n;
         }
         CHECK(n >= 3u);
@@ -614,15 +614,15 @@ TEST_CASE(the_windows_of_one_read_are_stamped_50_ms_apart)
 TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
 {
     running(50u, 1000u);
-    ch.flat = true;
+    chain.flat = true;
     sense_link_win_t w;
     memset(&w, 0, sizeof(w));
 
-    ch.i3221->amps[0] = 2.0;                   /* past the 1.638 A range */
+    chain.i3221->amps[0] = 2.0;                   /* past the 1.638 A range */
     chain_far(120u);
     cycles(2u, 50u);
     chain_cycle(50u);
-    CHECK(sense_link_take_win(&ch.sl, &w));
+    CHECK(sense_link_take_win(&chain.sl, &w));
     CHECK(w.current && w.voltage);
     CHECK(w.clip_hi);
     CHECK(!w.clip_lo);
@@ -635,22 +635,22 @@ TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
     /* Stamped with the panel's tick at its read, the poll's third. */
     CHECK_EQ(w.taken_ms, chain_now() - 50u + 3u);
 
-    ch.i3221->amps[0] = -0.05;
+    chain.i3221->amps[0] = -0.05;
     chain_far(120u);
     cycles(2u, 50u);
     chain_cycle(50u);
-    CHECK(sense_link_take_win(&ch.sl, &w));
+    CHECK(sense_link_take_win(&chain.sl, &w));
     CHECK(!w.clip_hi && !w.clip_lo);
     CHECK_EQ(w.clipped, 0u);
     CHECK_EQ(w.mean_ma, -50);
     CHECK_EQ(w.max_ma, -50);
     CHECK_EQ(w.min_ma, -50);
 
-    ch.i3221->amps[0] = -2.0;
+    chain.i3221->amps[0] = -2.0;
     chain_far(120u);
     cycles(2u, 50u);
     chain_cycle(50u);
-    CHECK(sense_link_take_win(&ch.sl, &w));
+    CHECK(sense_link_take_win(&chain.sl, &w));
     CHECK(w.clip_lo);
     CHECK(!w.clip_hi);
     CHECK_EQ(w.clipped, 50u);
@@ -659,7 +659,7 @@ TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
     /* And into the log's fields signed. */
     bench_state_t b;
     memset(&b, 0, sizeof(b));
-    sense_link_win_bench(&ch.sl, &w, &b);
+    sense_link_win_bench(&chain.sl, &w, &b);
     CHECK(b.servo_new);
     CHECK_EQ(b.servo_window, w.number);
     CHECK_EQ(b.servo_ok, 0x01u);
@@ -669,8 +669,8 @@ TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
     CHECK_EQ(b.servo_max_ma[0], w.max_ma);
     CHECK_EQ(b.servo_min_mv[0], 6000u);
     sense_link_win_bench(NULL, &w, &b);        /* nothing, no crash */
-    sense_link_win_bench(&ch.sl, NULL, &b);
-    sense_link_win_bench(&ch.sl, &w, NULL);
+    sense_link_win_bench(&chain.sl, NULL, &b);
+    sense_link_win_bench(&chain.sl, &w, NULL);
 }
 
 /* ------------------------------------------------- the older coprocessor */
@@ -687,27 +687,27 @@ TEST_CASE(nothing_is_sent_to_servo_win_on_a_4_10_coprocessor)
     unsigned rows = 0u;
     for (unsigned i = 0u; i < 200u; ++i) {
         chain_cycle(50u);
-        CHECK(!sense_link_win_on(&ch.sl));
+        CHECK(!sense_link_win_on(&chain.sl));
         CHECK_EQ(take_all(), 0u);
-        CHECK(sense_link_windows(&ch.sl) <= 1u);
-        if (sense_link_take_window(&ch.sl, &b)) {
+        CHECK(sense_link_windows(&chain.sl) <= 1u);
+        if (sense_link_take_window(&chain.sl, &b)) {
             CHECK_EQ(b.servo_mean_ma[0], chain_mean_ma(b.servo_window));
             ++rows;
         }
-        CHECK(!sense_link_take_window(&ch.sl, &b));
+        CHECK(!sense_link_take_window(&chain.sl, &b));
     }
-    CHECK_EQ(ch.to_win, 0u);
-    CHECK_EQ(ch.status_n, SENSE_LINK_STATUS_COUNT_V48);
+    CHECK_EQ(chain.to_win, 0u);
+    CHECK_EQ(chain.status_n, SENSE_LINK_STATUS_COUNT_V48);
     CHECK(rows >= 198u);
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK(m.page);
     CHECK(m.wanted);
     CHECK(m.held);
     CHECK(m.status);
     CHECK(!m.resets_read);
     CHECK(!m.win);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
 }
 
 /* One that names 4.11 and refuses the page is asked once per link, and the
@@ -715,7 +715,7 @@ TEST_CASE(nothing_is_sent_to_servo_win_on_a_4_10_coprocessor)
 TEST_CASE(a_coprocessor_that_refuses_servo_win_is_asked_once)
 {
     chain_start(LINK_PROTOCOL_MINOR, 1000u, 0x01u);
-    ch.no_win_page = true;
+    chain.no_win_page = true;
     chain_far(400u);
     chain_link_up();
     bench_state_t b;
@@ -723,19 +723,19 @@ TEST_CASE(a_coprocessor_that_refuses_servo_win_is_asked_once)
     unsigned rows = 0u;
     for (unsigned i = 0u; i < 100u; ++i) {
         chain_cycle(50u);
-        if (sense_link_take_window(&ch.sl, &b)) {
+        if (sense_link_take_window(&chain.sl, &b)) {
             ++rows;
         }
     }
-    CHECK_EQ(ch.to_win, 1u);
+    CHECK_EQ(chain.to_win, 1u);
     CHECK(rows >= 98u);
-    CHECK(ch.sl.page);
-    CHECK_EQ(sense_link_events(&ch.sl), 0u);
+    CHECK(chain.sl.page);
+    CHECK_EQ(sense_link_events(&chain.sl), 0u);
     /* The next link-up asks again. */
-    sense_link_lost(&ch.sl);
+    sense_link_lost(&chain.sl);
     chain_link_up();
     cycles(10u, 50u);
-    CHECK_EQ(ch.to_win, 2u);
+    CHECK_EQ(chain.to_win, 2u);
 }
 
 /* ------------------------------------------------------- CH2 and CH3 */
@@ -753,7 +753,7 @@ TEST_CASE(ch2_and_ch3_ride_on_the_row_of_their_window)
     unsigned with = 0u;
     for (unsigned i = 0u; i < 200u; ++i) {
         chain_cycle(50u);
-        while (sense_link_take_window(&ch.sl, &b)) {
+        while (sense_link_take_window(&chain.sl, &b)) {
             ++rows;
             CHECK((b.servo_ok & 0x01u) != 0u);
             CHECK_EQ(b.servo_mean_ma[0], chain_mean_ma(b.servo_window));
@@ -782,17 +782,17 @@ TEST_CASE(ch2_and_ch3_ride_on_the_row_of_their_window)
     rows = 0u;
     for (unsigned i = 0u; i < 50u; ++i) {
         chain_cycle(50u);
-        CHECK(!sense_link_win_on(&ch.sl));
-        if (sense_link_take_window(&ch.sl, &b)) {
+        CHECK(!sense_link_win_on(&chain.sl));
+        if (sense_link_take_window(&chain.sl, &b)) {
             CHECK_EQ(b.servo_ok, 0x06u);
             CHECK_EQ(b.servo_mean_ma[1], 200);
             ++rows;
         }
     }
-    CHECK_EQ(ch.to_win, 0u);
+    CHECK_EQ(chain.to_win, 0u);
     CHECK(rows >= 48u);
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK(!m.wanted);
     CHECK(!m.held);
     CHECK(!m.win);
@@ -816,20 +816,20 @@ TEST_CASE(a_poll_reads_16_frames_and_19_with_the_whole_page)
         cycles(1u, 53u);
         /* SENSE 12 to 31, 6 frames; SERVO_SENSE 0 to 13, 5; SERVO_WIN 0
          * to 15, 5. */
-        CHECK_EQ(ch.poll_frames, 16u);
-        CHECK_EQ(ch.status_n, SENSE_LINK_STATUS_COUNT);
-        if (ch.poll_frames > most) {
-            most = ch.poll_frames;
+        CHECK_EQ(chain.poll_frames, 16u);
+        CHECK_EQ(chain.status_n, SENSE_LINK_STATUS_COUNT);
+        if (chain.poll_frames > most) {
+            most = chain.poll_frames;
         }
     }
     CHECK_EQ(most, 16u);
     /* After a lost reply SERVO_WIN 0 to 27 is 8 frames. */
-    ch.lose_win = 1u;
+    chain.lose_win = 1u;
     cycles(1u, 53u);
     cycles(1u, 53u);
-    CHECK_EQ(ch.poll_frames, 19u);
+    CHECK_EQ(chain.poll_frames, 19u);
     cycles(1u, 53u);
-    CHECK_EQ(ch.poll_frames, 16u);
+    CHECK_EQ(chain.poll_frames, 16u);
 }
 
 int main(void)

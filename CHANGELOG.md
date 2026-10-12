@@ -8,6 +8,22 @@ history is in git.
 
 ### Added
 
+- The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
+  (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
+  `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The
+  coprocessor firmware reads its ESC voltage, current and temperature through
+  them.
+
+- `CONTRIBUTING.md`, section "The active output": every screen, tab,
+  overlay, prompt and automatic run that drives an output names the pin,
+  port or supply it drives, from the state the drive path reads, with a
+  warning when nothing is bound. A screen added or changed meets it with a
+  host test; `STATUS.md` lists the screens that do not meet it.
+- `tools/security_parsers.py --check`, run in CI, fails when the parser table
+  in `SECURITY.md` and the parse functions in the public headers differ. The
+  table lists 10 modules; it listed 4.
+- `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
+  each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
   (`servoprog`, link `#v=1&f=servoprog`). It needs the panel and the
   coprocessor alone. Its tick puts the servo signal on wire 64, from pad 17
@@ -21,6 +37,88 @@ history is in git.
 
 ### Changed
 
+- `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
+  172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
+  1000 us, now 999 us.
+- `docs/Receivers.md`, `docs/Screens.md` and the S.BUS module README state that
+  no firmware feeds the analyser screen: the S.BUS core is in the panel image
+  and the host tests, no byte source exists, and the screen shows SILENT. The
+  German pages follow.
+- The OpenYGE and the output driver headers state what the code does: a frame
+  of version 3 or above is read with the 6-byte header, `crc_errors` and
+  `rejected` count a failing candidate once, at the front of the buffer, and
+  `out_dshot_bind()` / `out_ppm_bind()` return false and keep the old binding
+  for a bound pin with other settings. The DShot module README,
+  `docs/DShot.md` and `docs/DShot-de.md` state this.
+- `dshot_throttle()` maps a command above its span to 0 (motor stop), as
+  `dshot_frame()` maps a value above 2047 to 0. It mapped it to 2047. A
+  command equal to the span still maps to 2047. The firmware passes
+  `outputs_actual()` against a span of 1000, so no stored value of 0 to 1000
+  changes.
+- The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
+  than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
+  OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and
+  `MAX_US`. The longest endpoint is the period minus 1 µs: 1784 µs at
+  560 Hz, 1999 µs at 500 Hz, 2499 µs at 400 Hz; below 400 Hz the 2500 µs
+  ceiling governs. A standard 1000 to 2000 µs servo is refused at
+  500 Hz and 560 Hz. A stored PWM slot that breaks the rule starts unbound.
+  Link protocol 4.16. The panel writes a programming port the range the
+  SERVO screen names before it switches the port's pulse on.
+- Text corrections, no behaviour change: SECURITY.md lists all 10 input
+  parsers; the Manifest drops its state column and points to STATUS.md;
+  STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
+  directory layout; sizes, counts and figures in the KST, DShot, configurator,
+  NOTICE and First run texts match the code; the Servo, OpenYGE and
+  monostable comments no longer say that unwired code runs; DShot, Servo,
+  Bringup and Manifest German pages match the English ones.
+- The host tests are built with the flags of the libraries, `-Wall -Wextra
+  -Werror -Wshadow -Wconversion -Wno-sign-conversion`, and
+  `tools/render_ui.py` builds `render_screen.c` with the same flags. clang-tidy
+  and cppcheck run over `test/host/` in CI; the checks that are off for the
+  tests are listed with their reasons in `test/host/.clang-tidy`, and
+  cppcheck's `constParameterCallback` on the page callbacks of the link tests
+  is suppressed inline, with the reason. The `analysis` job
+  timeout is 30 min. Test code fixed under the stricter rules: canvases built
+  with a zero clip rectangle in `test_kst_panel`, ids cast to a 16-bit type for
+  an 8-bit field, an out-of-range float to integer conversion in the settings
+  record helper, and allocations used without a check (`REQUIRE_ALLOC` and
+  `REQUIRE_REALLOC` in `greatest.h` end the case with the line).
+- The cppcheck command in CONTRIBUTING.md names the include directories the
+  way CI does, and the list of failing changes names the flags and the scope
+  of both analysers.
+- The supply state reports no valid voltage or current (`ok` 0) when the
+  supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
+  with the last values kept. The INA228 temperature and diagnostic flags go
+  with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
+  sample. A mark kind passed as a trace trigger is ignored, and the trace
+  drops a sample while a shunt or configuration record is owed and counts
+  it after that record.
+- The servo limit search and the synchroniser keep every command inside 500
+  to 2500 µs. The search refuses a step of 0 µs (fault `BAD_CONFIG`), keeps
+  an endpoint backed off past the centre at the centre, and ends at the end
+  of the pulse range. A last step shorter than `step_us` reaches the end of
+  the travel, so the end is measured before `NO_LIMIT`. Both stop on a current that is not a number. The
+  synchroniser reports `NO_MINIMUM` for a minimum at the edge of a scan
+  window and runs at least one round.
+- `tools/sense_trace.py` starts a new boot only when the tick runs back by
+  more than 100 ms; a smaller inversion stays in the boot and keeps the
+  signed difference. The `$D` line is documented as written about 50 ms after
+  its `t=`, and `servo_move.h`, `bench_frame.c` and `servo_sync.h` describe
+  what the code does.
+- The journal file's check in `kst_prog.c` calls `link_crc()`; a known-answer
+  test holds the value CRC-16/CCITT-FALSE gives for a journal file.
+- The programmer's pass gate uses C11 `<stdatomic.h>` in place of the
+  `__atomic_*` builtins.
+- The configurator takes the limit of 2 pictures per part from the core and
+  builds the build order of the page and of the PDF from one function.
+- `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
+  `Pins.md` states that it is the draft of the planned IO board.
+- The research workflow scripts are no longer in the repository. They are kept
+  on the owner's machine, outside it; `ci.yml` no longer runs
+  `session.py check`.
+- The KST README names Tool Card #2 and Chaservo in its list of what is
+  measured. The 19,178 us flash window is stated as 1 sample with the flash
+  part not yet identified.
 - The release of the bench configurator is stated once, in the `version`
   field of `configurator/package.json`. The data file, the page header, the
   trademark notice, the print head, the source-link tag and the data check
@@ -42,7 +140,6 @@ history is in git.
   of the synchroniser (±40, ±13, ±4 µs) and correct the half-turn example.
   The testbench documents carry no development history and the corrected
   splash hold (1.6 s), heartbeat rate and run state.
-
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming
@@ -56,6 +153,20 @@ history is in git.
   warnings the same way. The check holds no release back.
 - CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
   exact versions.
+
+### Removed
+
+- The placeholder screen for a screen id without a screen, its 16 English and
+  16 German strings, the SOON tile mark and the per-file coverage exemption
+  that existed for it. A screen id that names no screen draws the overview.
+- Six exported functions used in one file are `static`: `esc_det_drop_group`,
+  `esc_det_floor_only`, `ina228_ct_us`, `servo_test_start_str`,
+  `balance_screen_angle` and `ui_tabs_label`.
+- `ui_hero_render`, which no screen draws; `ui_hero_def_t` stays for the
+  motor screen's rail cards.
+- `board_lcd_reset()` in the panel firmware, which has no caller. The panel
+  keeps `storage_deinit()`, the unmount for the SD card remount. Also the `conflicts` field of the configurator's resolved setup,
+  which is always empty.
 
 ### Fixed
 
@@ -95,13 +206,60 @@ history is in git.
   definition line right after paragraph text, a label over two lines and a
   link-shaped text in a raw HTML block or indented code block fail this
   way; the tool's description gives the form that converts.
+  A query string on a link target stays out of the check for a
+  directory, so `../protocols/kst?tab=x` is a `/tree/main/` URL.
   `tools/wiki_links.py --verify`, run by the CI step, reads every converted
   page with the same parser and fails on a link that is not an absolute
-  URL, an anchor or a page name without `.md` and `../`, on a link to
-  `/raw/main/`, and on an image that is not relative inside `docs/` or
+  URL, an anchor or a page name without `.md` and `../` (a title that
+  ends in `.md` passes when a mirrored page has it), on a link to
+  `/raw/main/` unless an image shares its definition, and on an image that is not relative inside `docs/` or
   `/raw/main/` above it. It prints page and line. The docs workflow
   installs markdown-it-py 3.0.0 before the rewrite.
 
+- A log file whose last row has no line feed reads without that row. A
+  write cut off by a power loss or a full card leaves the bytes the card
+  took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
+  reader (`log_reader_row`) ends a row at its line feed and nothing else,
+  leaves an unterminated last row out, and reports it in
+  `log_analysis_t.cut_row`. Past the row cap (60000 rows) the cut row is
+  decided from the file's last bytes: the source reports its size and
+  seeks (`log_source_t.size` and `.seek`, on the card's stdio file up to
+  2 GiB and on memory), and at most 4096 bytes before the end are read. A
+  source without them, or a file whose last 4096 bytes are all blanks, is
+  read on to its end. Past the cap, a quoted field left open with a line
+  feed as the file's last byte is not reported as a cut row. The import
+  view shows ROWS in the warning colour and `LAST ROW CUT OFF - LEFT OUT`,
+  on its own line below any other import warning. `tools/sense_trace.py
+  --servo-csv` applies the same rule and says so in its report. The
+  delimiter is sniffed from the first 2048 bytes up to their last line
+  feed, so a cut row cannot change how the rows before it split. Only
+  space, tab and CR after the last line feed are blank; a vertical tab or
+  form feed there is a cut row, in the panel's reader and in
+  `tools/sense_trace.py`.
+- The BALANCE pane carries the MODELLED pill and the words "Not measured."
+  (SIMULIERT, "Nicht gemessen." in German) under its readings: the angle of
+  265° and the 0.42 g and 0.35 g readings are fixed values.
+- A frame of a held plus or minus key on SETUP counts for at most 0.25 s
+  (`ui_hold_credit()`). A 1 s stall steps at most 3 times at 8 Hz and 8
+  times at 30 Hz; the repeat rate of a normal hold is unchanged.
+- A pulse that ends on tick 0 of the millisecond clock starts the quiet
+  window of the ESC menu detector at the fall. A supply reading or INA3221
+  window stamped on tick 0 keeps that stamp on the servo screen. A flag
+  marks each stamp (`esc_det_t.fell`, `stamped` in `supply_state_t` and
+  `sense_link_win_t`) where the value 0 stood for "none".
+
+- A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
+  BAD_VALUE and nothing is stored; before, any value to 65535 reached the
+  output bank. The PROG page's port slew has the same limit. Link protocol
+  4.16. A CHAN_CFG or
+  PROG slew above 3000 kept in the coprocessor's flash by an older build
+  starts as 3000, on the page, in BIND_CFG and in the output bank; the
+  role, endpoints and pins kept with it start as kept.
+- The coprocessor's CAN receive takes the next buffer after one holding a
+  frame it refuses (11-bit identifier, remote frame, length above 8), so a
+  valid frame in receive buffer 1 is served in the same pass.
+- A KST panel row coordinate that names no row gives no row (empty
+  rectangle, no label or button text, not live) instead of the first row.
 - **A PD mini set point at the input cap lies 200 mV above the sag cut
   line.** The voltage set point is capped 700 mV under the module's input
   (`PDMINI_CAP_MV`), 200 mV above the line a live output is cut at, the set

@@ -384,6 +384,24 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK_EQ(d.frames, 1);
 }
 
+TEST_CASE(the_microsecond_mapping_rounds_the_same_way_on_both_sides)
+{
+    /* 1000 us per 1639 counts: 0.6101 us per count, rounded to nearest. */
+    CHECK_EQ(sbus_to_us(0u), 895);       /* -104.94 -> -105 */
+    CHECK_EQ(sbus_to_us(171u), 999);     /* -0.61   -> -1   */
+    CHECK_EQ(sbus_to_us(172u), 1000);
+    CHECK_EQ(sbus_to_us(173u), 1001);    /* +0.61   -> +1   */
+    CHECK_EQ(sbus_to_us(992u), 1500);
+    CHECK_EQ(sbus_to_us(1811u), 2000);
+    CHECK_EQ(sbus_to_us(1812u), 2001);
+    CHECK_EQ(sbus_to_us(2047u), 2144);
+    /* Mirror pairs about 172 give mirror offsets. */
+    for (unsigned d = 0; d <= 172u; ++d) {
+        CHECK_EQ((int)sbus_to_us((uint16_t)(172u + d)) - 1000,
+                 1000 - (int)sbus_to_us((uint16_t)(172u - d)));
+    }
+}
+
 int main(void)
 {
     RUN(a_frame_decodes_to_the_channels_that_were_packed);
@@ -396,6 +414,7 @@ int main(void)
     RUN(noise_before_a_frame_does_not_eat_it);
     RUN(the_gap_threshold_sits_between_a_byte_and_a_frame);
     RUN(the_microsecond_mapping_hits_its_two_fixed_points);
+    RUN(the_microsecond_mapping_rounds_the_same_way_on_both_sides);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("sbus");
 }

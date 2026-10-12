@@ -357,14 +357,17 @@ def convert(target: str, reldir: str, root: Path, image: bool) -> str | None:
     repo = posixpath.normpath(posixpath.join("docs", reldir, target))
     if outside(repo):
         return None
+    # A query string is not part of the path the repository holds.
+    repo, query = re.match(r"([^?]*)(.*)", repo, re.S).groups()
     kind = "blob"
     if image:
         kind = "raw"
-    elif target.endswith("/") or (root / repo.replace("\\", "")).is_dir():
+    elif (target.split("?", 1)[0].endswith("/")
+          or (root / repo.replace("\\", "")).is_dir()):
         kind = "tree"
     path = "" if repo == "." else repo
     tail = "/" if kind == "tree" and path else ""
-    return f"{REPO}/{kind}/main/{path}{tail}"
+    return f"{REPO}/{kind}/main/{path}{tail}{query}"
 
 
 def rewrite(text: str, reldir: str = "", root: Path = ROOT) -> str:
@@ -425,9 +428,12 @@ def stranded(text: str, reldir: str = "") -> list[str]:
 SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*:")
 
 
-def judge(href: str, image: bool, reldir: str = "") -> str | None:
+def judge(href: str, image: bool, reldir: str = "",
+          pages: set[str] | None = None) -> str | None:
     """Why `href` is wrong on a wiki page, or None.  A link is an absolute
-    URL, an anchor or a page name with no `.md` that stays in docs/.  An
+    URL, an anchor or a page name with no `.md` that stays in docs/.  A
+    name that ends in `.md` is a page title when `pages`, the mirrored page
+    names without their last `.md`, holds it.  An
     image inside docs/ stays relative; one above docs/ is a `/raw/main/`
     URL, and no other repository URL serves an image."""
     if SCHEME.match(href):
@@ -443,19 +449,33 @@ def judge(href: str, image: bool, reldir: str = "") -> str | None:
     path = unquote(re.split(r"[#?]", href, maxsplit=1)[0])
     if leaves_docs(path, reldir):
         return "a relative target above docs/"
-    if not image and path.endswith(".md"):
+    page = posixpath.normpath(posixpath.join(reldir, path))
+    if not image and path.endswith(".md") and page not in (pages or ()):
         return "a page name with .md"
     return None
 
 
-def verify_text(text: str, reldir: str = "") -> list[tuple[int, str, str]]:
+def verify_text(text: str, reldir: str = "",
+                pages: set[str] | None = None) -> list[tuple[int, str, str]]:
     """Every link and image of a page that a wiki cannot open, as (line,
     href, reason).  The page is read by a CommonMark parser, not by this
-    file's scanner, so a construct the rewriter does not see still counts."""
+    file's scanner, so a construct the rewriter does not see still counts.
+    A link that shares a definition with an image may have the image's
+    `/raw/main/` form, as in `gate`.  `pages` is as in `judge`."""
     from markdown_it import MarkdownIt
 
     lines = text.splitlines()
     found: list[tuple[int, str, str]] = []
+    tokens = MarkdownIt("commonmark").parse(text)
+
+    def srcs(toks):
+        for t in toks:
+            if t.type == "image":
+                yield t.attrGet("src")
+            yield from srcs(t.children or [])
+
+    images = set(srcs(tokens))
+    raw = REPO + "/raw/"
 
     def walk(tokens, first: int, last: int) -> None:
         for tok in tokens:
@@ -469,7 +489,9 @@ def verify_text(text: str, reldir: str = "") -> list[tuple[int, str, str]]:
                 href, image = tok.attrGet("src"), True
             else:
                 continue
-            why = judge(str(href), image, reldir)
+            if not image and href in images and str(href).startswith(raw):
+                continue
+            why = judge(str(href), image, reldir, pages)
             if why:
                 # The line holding the href: in the block, else a definition
                 # elsewhere on the page, else the block's first line.
@@ -479,7 +501,7 @@ def verify_text(text: str, reldir: str = "") -> list[tuple[int, str, str]]:
                            if n < len(lines) and needle in lines[n]), first)
                 found.append((at + 1, str(href), why))
 
-    walk(MarkdownIt("commonmark").parse(text), 0, 0)
+    walk(tokens, 0, 0)
     return found
 
 
@@ -609,11 +631,13 @@ def verify_tree(root: Path) -> int:
     if not _need_parser():
         return 2
     bad = 0
+    pages = {p.relative_to(root).as_posix()[:-3]
+             for p in root.rglob("*.md")}
     for page in sorted(root.rglob("*.md")):
         reldir = page.parent.relative_to(root).as_posix()
         reldir = "" if reldir == "." else reldir
         text = page.read_text(encoding="utf-8")
-        for line, href, why in verify_text(text, reldir):
+        for line, href, why in verify_text(text, reldir, pages):
             print(f"{page.relative_to(root)}:{line}: {href} is {why}",
                   file=sys.stderr)
             bad += 1

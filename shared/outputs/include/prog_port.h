@@ -66,9 +66,11 @@ typedef struct {
     uint8_t  bound;     /**< bit n: the generator has port n's pin */
     uint8_t  blocked;   /**< bit n: the kept pin was taken at start; the
                              port does not hold it */
+    uint16_t hz;        /**< the ports' frame rate (prog_port_rate()) */
 } prog_port_t;
 
-/** @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin. */
+/** @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin, at
+ *  PROG_PORT_RATE_HZ. */
 void prog_port_init(prog_port_t *p, uint8_t count);
 
 /** The kept registers of a board that has stored none: port 0 on
@@ -78,7 +80,8 @@ void prog_port_defaults(uint16_t *kept, uint16_t pin0);
 
 /**
  * Take the kept registers at start, after the slots and the other pin
- * holders are restored.  A value no write would take becomes its default.
+ * holders are restored.  A value no write would take becomes its default,
+ * except a slew above LINK_CC_SLEW_MAX, which becomes LINK_CC_SLEW_MAX.
  * A pin that is taken (a slot's, one in @p taken, reserved in @p o, or
  * beside a PWM slot in the silicon) stays on the page and is not held:
  * LINK_PG_FLAGS says refused until another pin is written.  Sets the role,
@@ -100,6 +103,12 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept);
  *
  * PWM and TARGET name only ports whose pin the generator has
  * (prog_port_bound()), and not a port whose PIN the same frame changes.
+ *
+ * No port whose PWM bit the write leaves set may have an endpoint longer
+ * than its frame carries: MIN_US and MAX_US at most out_pwm_pulse_max() of
+ * the rate prog_port_rate() last named, 1784 us at 560 Hz (BAD_VALUE,
+ * protocol 4.16).  This covers a range written to a pulsing port and a
+ * pulse switched on under a range that does not fit.
  */
 uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
                         const uint16_t *in, outputs_t *o, uint64_t taken,
@@ -130,6 +139,14 @@ uint64_t prog_port_pins(const prog_port_t *p);
 
 /** Bit n: port n's pulse is switched on. */
 uint8_t prog_port_pwm(const prog_port_t *p);
+
+/** The bank channels of the ports whose pulse is switched on, bit c for
+ *  channel c: what servo_page_ports() is told. */
+uint16_t prog_port_pwm_channels(const prog_port_t *p);
+
+/** The frame rate the ports run at: the SERVO page's, or PROG_PORT_RATE_HZ
+ *  while it names none.  A write is judged against it. */
+void prog_port_rate(prog_port_t *p, uint16_t hz);
 
 /** 0 for the standard servo ports, 1 + n for port n. */
 uint8_t prog_port_target(const prog_port_t *p);

@@ -21,6 +21,7 @@
 #include "log_csv.h"
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,6 +75,22 @@ static bool mem_rewind(void *ctx)
     return true;
 }
 
+static bool mem_size(void *ctx, size_t *bytes)
+{
+    *bytes = ((log_mem_ctx_t *)ctx)->len;
+    return true;
+}
+
+static bool mem_seek(void *ctx, size_t offset)
+{
+    log_mem_ctx_t *m = (log_mem_ctx_t *)ctx;
+    if (offset > m->len) {
+        return false;
+    }
+    m->pos = offset;
+    return true;
+}
+
 void log_source_memory(log_source_t *src, log_mem_ctx_t *ctx, const char *text,
                        size_t len)
 {
@@ -84,6 +101,8 @@ void log_source_memory(log_source_t *src, log_mem_ctx_t *ctx, const char *text,
     src->error = NULL;      /* memory does not fail */
     src->rewind = mem_rewind;
     src->ctx = ctx;
+    src->size = mem_size;
+    src->seek = mem_seek;
 }
 
 static size_t file_read(void *ctx, char *buf, size_t max)
@@ -102,12 +121,40 @@ static bool file_rewind(void *ctx)
     return fseek((FILE *)ctx, 0, SEEK_SET) == 0;
 }
 
+/* fseek and ftell take a long: 2 GiB less 1 byte on the panel.  A file
+ * longer than that answers false, and the analysis reads it on instead. */
+static bool file_size(void *ctx, size_t *bytes)
+{
+    FILE *f = (FILE *)ctx;
+    clearerr(f);
+    if (fseek(f, 0, SEEK_END) != 0) {
+        return false;
+    }
+    long end = ftell(f);
+    if (end < 0) {
+        return false;
+    }
+    *bytes = (size_t)end;
+    return true;
+}
+
+static bool file_seek(void *ctx, size_t offset)
+{
+    if (offset > (size_t)LONG_MAX) {
+        return false;
+    }
+    clearerr((FILE *)ctx);
+    return fseek((FILE *)ctx, (long)offset, SEEK_SET) == 0;
+}
+
 void log_source_stdio(log_source_t *src, void *file)
 {
     src->read = file_read;
     src->error = file_error;
     src->rewind = file_rewind;
     src->ctx = file;
+    src->size = file_size;
+    src->seek = file_seek;
 }
 
 /* ---------------------------------------------------------------- rows --- */
@@ -169,6 +216,13 @@ static int reader_peek(log_reader_t *r)
     return (unsigned char)r->buf[r->pos];
 }
 
+/* The bytes after the last line feed that are no row: space, tab, CR.  The
+ * documented set; isspace() would add LF, VT and FF. */
+static bool is_blank(int c)
+{
+    return c == ' ' || c == '\t' || c == '\r';
+}
+
 static char s_empty[1] = "";
 
 int log_reader_row(log_reader_t *r, char delimiter, char *store,
@@ -180,7 +234,7 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
     int nf = 0;
     int tf = 0;
     bool in_quotes = false;
-    bool saw_anything = false;
+    bool saw_content = false; /* a byte that is not a blank */
     bool full = false;
     bool done = false;
 
@@ -197,7 +251,9 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
         if (c < 0) {
             break;
         }
-        saw_anything = true;
+        if (!is_blank(c)) {
+            saw_content = true;
+        }
 
         if (in_quotes) {
             if (c == '"') {
@@ -243,20 +299,19 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
     }
 
     if (!done) {
-        /* End of input.  A trailing partial row still counts, but a file that
-         * ended cleanly on a newline must not produce a phantom empty one. */
-        if (!saw_anything || (sp == field_start && tf == 0)) {
-            return -1;
+        /*
+         * End of input inside a row.  A row is complete at its line feed and
+         * nothing else proves it: a write cut off after "95" of "9554" leaves
+         * a row with every field present and a wrong number in the last one,
+         * and its field count matches the header.  So a row without its line
+         * feed is not a row.  It is dropped and the reader says so, unless
+         * it holds nothing but blanks: a file that ends on its newline, or on
+         * a stray carriage return or space after it, has no row left to lose.
+         */
+        if (saw_content) {
+            r->cut = true;
         }
-        if (!full && sp + 1u <= store_size) {
-            store[sp] = '\0';
-            if (nf < max_fields) {
-                fields[nf++] = store + field_start;
-            }
-        } else if (nf < max_fields) {
-            fields[nf++] = s_empty;
-        }
-        tf++;
+        return -1;
     }
 
     if (total_fields != NULL) {
@@ -553,6 +608,17 @@ static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
         }
         const char *s = sniff_buf;
         size_t slen = got;
+        /* What follows the last line feed in the sample is a row cut off at
+         * the end of the file, which the reader leaves out, or a line the
+         * 2048-byte sample ends inside.  Neither is a whole line, so neither
+         * votes.  A sample with no line feed is sniffed whole. */
+        size_t keep = got;
+        while (keep > 0u && sniff_buf[keep - 1u] != '\n') {
+            --keep;
+        }
+        if (keep > 0u) {
+            slen = keep;
+        }
         if (slen >= 3u && (unsigned char)s[0] == 0xEFu &&
             (unsigned char)s[1] == 0xBBu && (unsigned char)s[2] == 0xBFu) {
             s += 3;
@@ -562,6 +628,57 @@ static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
     }
     *out = delimiter;
     return LOG_OK;
+}
+
+/*
+ * Does the source end inside a row?  Answered from its last bytes, for a
+ * file past the row cap whose rows up to the end are not read: 1 when the
+ * last byte that is not a blank is not a line feed, 0 when it is or when
+ * the file holds only blanks, -1 when the source cannot seek, a read fails
+ * or the last 4096 bytes of a longer file are all blanks.  -1 sends the
+ * caller to reading on to the end.
+ *
+ * The reader's answer differs in one case: a quoted field left open with a
+ * line feed in it as the last bytes, which the reader counts as a cut row
+ * and this does not.
+ */
+#define TAIL_CHUNK 256u
+#define TAIL_LIMIT 4096u
+
+static int tail_cut(log_source_t *src)
+{
+    size_t end = 0;
+    if (src->size == NULL || src->seek == NULL ||
+        !src->size(src->ctx, &end)) {
+        return -1;
+    }
+    char buf[TAIL_CHUNK];
+    size_t scanned = 0;
+    while (end > 0u) {
+        if (scanned >= TAIL_LIMIT) {
+            return -1;
+        }
+        size_t n = (end < TAIL_CHUNK) ? end : TAIL_CHUNK;
+        if (!src->seek(src->ctx, end - n)) {
+            return -1;
+        }
+        size_t got = 0;
+        while (got < n) {
+            size_t k = src->read(src->ctx, buf + got, n - got);
+            if (k == 0u) {
+                return -1;   /* short: an error, or a file that shrank */
+            }
+            got += k;
+        }
+        for (size_t i = n; i > 0u; --i) {
+            if (!is_blank((unsigned char)buf[i - 1u])) {
+                return buf[i - 1u] != '\n';
+            }
+        }
+        end -= n;
+        scanned += n;
+    }
+    return 0;
 }
 
 /*
@@ -578,6 +695,9 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
 {
     log_reader_t reader;
 
+    /* Read before the rows, while the source is not in use: a seek in the
+     * middle of the pass would move the reader. */
+    int tail = tail_cut(src);
 
     if (!src->rewind(src->ctx)) {
         return LOG_ERR_READ;
@@ -585,6 +705,7 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     log_reader_init(&reader, src);
 
     if (!next_row(&reader, delimiter, &s_row)) {
+        out->cut_row = reader.cut;   /* a header cut off is no header */
         return LOG_ERR_NO_HEADER;
     }
     if (s_row.total > LOG_MAX_COLUMNS) {
@@ -628,9 +749,37 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     if (reader.failed) {
         return LOG_ERR_READ;
     }
-    if (out->row_count >= max_rows && next_row(&reader, delimiter, &s_row)) {
-        out->truncated = true;
+    bool cut = false;
+    if (out->row_count >= max_rows) {
+        /* Past the cap the reader goes on to the first row with content,
+         * which makes the file truncated.  The cut row is then taken from
+         * the file's last bytes (tail_cut), and the rows after that first
+         * one are not read: a 360 MB file reads no more of its rows than a
+         * 360 kB one.  A source without that answer is read on to its end:
+         * the rows past the cap are parsed into the static row buffer and
+         * dropped, no statistics, no allocation, one sequential read of the
+         * rest of the file. */
+        bool at_end = true;
+        while (next_row(&reader, delimiter, &s_row)) {
+            if (row_has_content(&s_row)) {
+                out->truncated = true;
+                if (tail >= 0) {
+                    cut = (tail == 1);
+                    at_end = false;
+                    break;
+                }
+            }
+        }
+        if (reader.failed) {
+            return LOG_ERR_READ;
+        }
+        if (at_end) {
+            cut = reader.cut;
+        }
+    } else {
+        cut = reader.cut;
     }
+    out->cut_row = cut;
     if (out->row_count == 0) {
         return LOG_ERR_NO_ROWS;
     }

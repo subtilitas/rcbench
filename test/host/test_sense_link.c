@@ -930,7 +930,7 @@ TEST_CASE(an_event_that_never_reached_the_band_goes_back)
     pg.sense[LINK_SN_PRESENT] = (uint16_t)((1u << 0) | (1u << 4));
     polls((int)(SENSE_LINK_GRACE_MS / 50u) + 2);
     CHECK_EQ(sl.events, SENSE_LINK_EV_I228_SILENT);
-    uint16_t ev = sense_link_event(&sl, now);
+    uint32_t ev = sense_link_event(&sl, now);
     CHECK_EQ(ev, SENSE_LINK_EV_I228_SILENT);
     polls(20);
     CHECK_EQ(sl.events, 0u);                  /* told: not raised again */

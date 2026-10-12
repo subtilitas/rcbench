@@ -5,6 +5,7 @@
 #include "mcp2515.h"
 
 #include <stddef.h>
+#include <string.h>
 
 /*
  * The extended identifier's layout across the four registers:
@@ -46,4 +47,49 @@ bool mcp2515_unpack_id(const uint8_t in[4], uint32_t *id)
           | ((uint32_t)in[2] << 8)
           | (uint32_t)in[3];
     return true;
+}
+
+bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f)
+{
+    if (buf == NULL || f == NULL) {
+        return false;
+    }
+    memset(f, 0, sizeof(*f));
+    if (!mcp2515_unpack_id(buf, &f->id)) {
+        return false;   /* an 11-bit identifier; nothing here sends those */
+    }
+    /*
+     * Bit 6 of the DLC (data length code) register is RTR (remote
+     * transmission request): a remote frame, which carries a length but no
+     * data.  Its data registers hold whatever the last data frame left
+     * there, so accepting one would deliver stale bytes under a fresh
+     * identifier.  Nothing on this bus sends remote frames, so one is
+     * foreign traffic or a fault.
+     */
+    if ((buf[4] & 0x40u) != 0u) {
+        return false;
+    }
+    f->dlc = (uint8_t)(buf[4] & 0x0Fu);
+    if (f->dlc > 8) {
+        return false;
+    }
+    memcpy(f->data, buf + 5, f->dlc);
+    return true;
+}
+
+bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f)
+{
+    if (fetch == NULL || f == NULL) {
+        return false;
+    }
+    for (unsigned i = 0; i < MCP2515_RX_BUFFERS; ++i) {
+        uint8_t buf[13];
+        if (!fetch(ctx, buf)) {
+            return false;
+        }
+        if (mcp2515_decode_rx(buf, f)) {
+            return true;
+        }
+    }
+    return false;
 }

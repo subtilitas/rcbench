@@ -24,7 +24,6 @@
 #include "servo_screen.h"
 #include "settings.h"
 #include "splash_screen.h"
-#include "stub_screen.h"
 #include "supply_screen.h"
 #include "ui_band.h"
 #include "ui_screen.h"
@@ -43,6 +42,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -307,6 +307,7 @@ TEST_CASE(a_cancelled_tile_press_navigates_nowhere)
     to_overview();
     ui_router_render(&cv, 0);
     gfx_color_t *idle = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(idle);
     memcpy(idle, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch(110, UI_BAND_H + 90, TOUCH_EVENT_DOWN, 3);
@@ -339,6 +340,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
     ui_router_goto(SCREEN_ANALYSER);
     ui_router_render(&cv, 0);
     gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(before);
     memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch(200, UI_BAND_H + 20, TOUCH_EVENT_DOWN, 2);   /* the second tab */
@@ -373,10 +375,8 @@ TEST_CASE(a_tile_navigates_and_a_slip_does_not)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
-/* Every stub says what it will do, and either names a blocker or says plainly
- * that nothing is blocking it.  A screen that renders nothing is a screen
- * nobody notices is empty. */
-TEST_CASE(every_stub_renders_something_and_says_something)
+/* A screen that renders nothing is a screen nobody notices is empty. */
+TEST_CASE(every_screen_renders_something_and_has_a_title)
 {
     fresh();
     to_overview();
@@ -747,6 +747,7 @@ TEST_CASE(the_simulation_mark_covers_the_whole_screen)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     ui_router_render(&cv, 0);
     gfx_color_t *plain = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(plain);
     memcpy(plain, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     st.simulated = true;
@@ -816,6 +817,7 @@ TEST_CASE(the_simulation_mark_lets_the_screen_through)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     ui_router_render(&cv, 0);
     gfx_color_t *plain = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(plain);
     memcpy(plain, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     st.simulated = true;
@@ -997,6 +999,7 @@ TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     ui_router_render(&cv, 0);
     gfx_color_t *first = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(first);
     memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -1014,35 +1017,19 @@ TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
     free(first);
 }
 
-/*
- * The stub copy is drawn with gfx_text, which clips at the canvas edge rather
- * than wrapping.  A line that is too long is cut mid-word, so every line is
- * held to the width.
- */
-TEST_CASE(no_line_of_stub_copy_runs_off_the_screen)
+/* An id that names no screen draws the overview and can not be navigated to. */
+TEST_CASE(an_unknown_screen_id_falls_back_to_the_overview)
 {
     fresh();
-    for (int id = SCREEN_MOTOR; id < SCREEN_COUNT; ++id) {
-        const char *const *lines = stub_copy_lines((ui_screen_id_t)id);
-        if (lines == NULL) {
-            continue;
-        }
-        for (int i = 0; i < 4 && lines[i] != NULL; ++i) {
-            const int w = gfx_text_width(&gfx_font_8x16, lines[i], 1);
-            if (w > STUB_COPY_MAX_W) {
-                T_FAIL("screen %d line %d is %d px, over %d",
-                       id, i, w, STUB_COPY_MAX_W);
-            }
-        }
-        const char *blocker = stub_copy_blocker((ui_screen_id_t)id);
-        if (blocker != NULL) {
-            const int w = gfx_text_width(&gfx_font_8x16, blocker, 1);
-            if (w > STUB_COPY_MAX_W) {
-                T_FAIL("screen %d blocker is %d px, over %d",
-                       id, w, STUB_COPY_MAX_W);
-            }
-        }
-    }
+    to_overview();
+    CHECK_STR_EQ(ui_router_title(SCREEN_COUNT), ui_router_title(SCREEN_OVERVIEW));
+    CHECK_STR_EQ(ui_router_title((ui_screen_id_t)-1),
+                 ui_router_title(SCREEN_OVERVIEW));
+    CHECK(ui_router_title(SCREEN_COUNT)[0] != '\0');
+
+    ui_router_goto(SCREEN_COUNT);
+    ui_router_goto((ui_screen_id_t)-1);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 
@@ -1664,7 +1651,8 @@ static void a_throttle_drag_then(ender_t e)
         feed_tap(1, stop.x + stop.w / 2, stop.y + stop.h / 2);
         CHECK(ui_router_take_stop());
         motor_screen_cancel_arm();
-        /* fall through: the bench disarms on a stop */
+        /* the bench disarms on a stop: the next case's checks apply */
+        /* fall through */
     case END_DISARM:
         motor_screen_set_throttle(0.0f);
         drain_motor();
@@ -2185,8 +2173,8 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_release);
     RUN(the_setup_screen_opens_both_views_of_the_outputs);
     RUN(a_tile_navigates_and_a_slip_does_not);
-    RUN(every_stub_renders_something_and_says_something);
-    RUN(no_line_of_stub_copy_runs_off_the_screen);
+    RUN(every_screen_renders_something_and_has_a_title);
+    RUN(an_unknown_screen_id_falls_back_to_the_overview);
     RUN(an_alert_survives_navigation);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
     RUN(the_frame_an_alert_arrives_in_does_not_count);

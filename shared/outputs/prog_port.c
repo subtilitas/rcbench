@@ -90,6 +90,7 @@ void prog_port_init(prog_port_t *p, uint8_t count)
     memset(p, 0, sizeof(*p));
     p->count = (count > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX
                                            : count;
+    p->hz    = PROG_PORT_RATE_HZ;
     for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
         p->regs[REG(port, LINK_PG_PIN)]    = LINK_PG_PIN_NONE;
         p->regs[REG(port, LINK_PG_CMD)]    = (uint16_t)(OUT_SPAN / 2u);
@@ -134,7 +135,9 @@ void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
         }
         p->regs[REG(port, LINK_PG_PIN)]  = pin;
         p->regs[REG(port, LINK_PG_CMD)]  = (uint16_t)(OUT_SPAN / 2u);
-        p->regs[REG(port, LINK_PG_SLEW)] = k[1];
+        /* A kept slew above the maximum starts as the maximum. */
+        p->regs[REG(port, LINK_PG_SLEW)] =
+            (k[1] > LINK_CC_SLEW_MAX) ? (uint16_t)LINK_CC_SLEW_MAX : k[1];
         if (us_ok(k[2]) && us_ok(k[3])) {
             p->regs[REG(port, LINK_PG_MIN_US)] = k[2];
             p->regs[REG(port, LINK_PG_MAX_US)] = k[3];
@@ -222,6 +225,10 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
             && next[REG(port, LINK_PG_CMD)] > OUT_SPAN) {
             next[REG(port, LINK_PG_CMD)] = (uint16_t)OUT_SPAN;
         }
+        if (carries(off, n, REG(port, LINK_PG_SLEW))
+            && next[REG(port, LINK_PG_SLEW)] > LINK_CC_SLEW_MAX) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if ((carries(off, n, REG(port, LINK_PG_MIN_US))
              && !us_ok(next[REG(port, LINK_PG_MIN_US)]))
             || (carries(off, n, REG(port, LINK_PG_MAX_US))
@@ -260,6 +267,16 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
     const uint8_t usable = (uint8_t)(p->bound & ~moved);
     if ((next[LINK_PG_PWM] & (uint16_t)~usable) != 0u) {
         return LINK_NACK_BAD_VALUE;
+    }
+    /* No pulse longer than the frame that carries it: the pin would sit
+     * high for the whole frame. */
+    const uint16_t longest = out_pwm_pulse_max(p->hz);
+    for (unsigned port = 0; port < p->count; ++port) {
+        if ((next[LINK_PG_PWM] & (1u << port)) != 0u
+            && (next[REG(port, LINK_PG_MIN_US)] > longest
+                || next[REG(port, LINK_PG_MAX_US)] > longest)) {
+            return LINK_NACK_BAD_VALUE;
+        }
     }
     if (next[LINK_PG_TARGET] != 0u
         && (next[LINK_PG_TARGET] > LINK_PG_PORTS_MAX
@@ -372,6 +389,28 @@ uint64_t prog_port_pins(const prog_port_t *p)
 uint8_t prog_port_pwm(const prog_port_t *p)
 {
     return (p != NULL) ? (uint8_t)p->regs[LINK_PG_PWM] : 0u;
+}
+
+uint16_t prog_port_pwm_channels(const prog_port_t *p)
+{
+    uint16_t ch = 0u;
+
+    if (p == NULL) {
+        return 0u;
+    }
+    for (unsigned port = 0; port < p->count; ++port) {
+        if ((p->regs[LINK_PG_PWM] & (1u << port)) != 0u) {
+            ch |= (uint16_t)(1u << prog_port_channel((uint8_t)port));
+        }
+    }
+    return ch;
+}
+
+void prog_port_rate(prog_port_t *p, uint16_t hz)
+{
+    if (p != NULL) {
+        p->hz = hz;
+    }
 }
 
 uint8_t prog_port_target(const prog_port_t *p)

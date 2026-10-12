@@ -537,3 +537,32 @@ def test_r7_a_blank_line_before_a_title_ends_the_link():
     assert out == '[x](Screens\n"title")\n' and diffs == []
     text = '[x](Screens.md "a\n\nb")\n'
     assert gated(text) == (text, [])
+
+
+def test_verify_permits_a_link_that_shares_a_definition_with_an_image():
+    text = "![a][x] [b][x]\n\n[x]: ../hardware/a.png\n"
+    out = wl.rewrite(text)
+    assert f"[x]: {R}/raw/main/hardware/a.png" in out
+    assert wl.verify_text(out) == []
+    assert wl.verify_text("[b][x]\n\n[x]: " + R + "/raw/main/a.png\n")
+
+
+def test_a_query_string_stays_out_of_the_directory_probe(tmp_path):
+    (tmp_path / "protocols" / "kst").mkdir(parents=True)
+    (tmp_path / "docs").mkdir()
+    out = wl.rewrite("[d][k] [i](../protocols/kst?tab=readme)\n\n"
+                     "[k]: ../protocols/kst?tab=readme-ov-file\n",
+                     root=tmp_path)
+    assert f"[k]: {R}/tree/main/protocols/kst/?tab=readme-ov-file" in out
+    assert f"[i]({R}/tree/main/protocols/kst/?tab=readme)" in out
+
+
+def test_verify_accepts_a_page_whose_title_ends_in_md(tmp_path, capsys):
+    (tmp_path / "Guide.md.md").write_text("x\n", encoding="utf-8")
+    (tmp_path / "Home.md").write_text("[g](Guide.md.md)\n", encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 0
+    assert (tmp_path / "Home.md").read_text(encoding="utf-8") == (
+        "[g](Guide.md)\n")
+    assert wl.main(["wiki_links.py", "--verify", str(tmp_path)]) == 0
+    (tmp_path / "Home.md").write_text("[g](Other.md)\n", encoding="utf-8")
+    assert wl.main(["wiki_links.py", "--verify", str(tmp_path)]) == 1

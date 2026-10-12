@@ -63,9 +63,9 @@ python3 tools/gen_board_art.py --check
 python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
+python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
-python3 tools/research/session.py check  # the research scripts against their plan
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
@@ -76,15 +76,22 @@ python3 tools/stack_check.py firmware/panel/build --check-doc
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
-python3 tools/pinmap_check.py hardware/docs/pinmap.json --sdk "$PICO_SDK_PATH"
+python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json --sdk "$PICO_SDK_PATH"
 
-cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
+mkdir -p /tmp/cppcheck-build
+cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 \
+         --cppcheck-build-dir=/tmp/cppcheck-build \
+         --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
-         $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
-         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/)
+         -Itest/host -Ifirmware/iomcu/include \
+         $(git ls-files 'shared/**/include/*' 'protocols/**/include/*' \
+             | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
+         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/) \
+         $(git ls-files 'test/host/*.c')
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-clang-tidy -p test/host/build \
-         $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/)
+git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
+    | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c -e test/host/bench_frame.c \
+    | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 ruff check tools/ test/tools/ test/host/
 ```
 
@@ -96,8 +103,7 @@ pin driver: it needs the ESP-IDF and pico-sdk headers.
 
 A change fails if:
 
-- coverage drops below 94% overall, or any single file below 85%
-  (`stub_screen.c` is exempt by name);
+- coverage drops below 94% overall, or any single file below 85%;
 - a C file under `shared/`, or under `protocols/` outside a module's
   `rp2350/` folder, is in neither `TRACKED` nor `DATA_ONLY` in
   `tools/coverage.py`, is not compiled into the host suite, or is linked by
@@ -129,10 +135,16 @@ A change fails if:
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`
   disagrees with what CMake builds;
-- clang-tidy, cppcheck or ruff report anything. Every finding is an error. The
-  disabled checks are listed with their reasons in `.clang-tidy` and
+- a test fails to build under `-Wall -Wextra -Werror -Wshadow -Wconversion
+  -Wno-sign-conversion`, the flags of the libraries;
+- clang-tidy or cppcheck reports a finding in `shared/`, `protocols/` or
+  `test/host/`, or ruff reports anything. clang-tidy treats every warning as an
+  error (`WarningsAsErrors`) and cppcheck exits with 1 on any finding
+  (`--error-exitcode=1`). The disabled checks are listed with their reasons in
+  `.clang-tidy`, `test/host/.clang-tidy` (the tests only) and
   `.cppcheck-suppress`; suppress a false positive inline with the reason, not
-  by widening the list.
+  by widening the list. `test/host/render_screen.c` and `bench_frame.c` are
+  not in the clang-tidy run; cppcheck reads them.
 
 The suite also runs under AddressSanitizer and UBSan
 (UndefinedBehaviorSanitizer). Run a parser change that way before pushing; the
@@ -176,6 +188,15 @@ pull request and puts the survivors in the job summary; a survivor does not
 fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
 
+`mutation.yml` runs every mutant of every line of `shared/safety` and
+`shared/outputs` (3032 mutants) each Sunday at 03:17 UTC and on demand. It has
+no mutant limit and runs in 6 shards of files (file i of the sorted list goes
+to shard i mod 6). A shard starts no mutant after 18000 s, stops one build or
+suite run after 600 s and ends within 21000 s; the mutants left are reported as
+not run. The share of mutants that run within the budget on a hosted runner is
+not measured. A survivor does not fail the job. The result is the job summaries
+and the artifacts `mutation-full-0` to `mutation-full-5`.
+
 ## Where code goes
 
 - `shared/` is pure C with no vendor SDK (software development kit): no ESP-IDF
@@ -207,6 +228,21 @@ pull request why the two lines behave the same.
   the stores and the screens.
 - `firmware/` is hardware access and wiring. A rule in a firmware file belongs
   in `shared/` or in a protocol core, with a test.
+
+## The active output
+
+A screen, tab, overlay, prompt or automatic run that drives an output names
+that output while it is shown: the pin, the port with its pin, or the supply
+with its voltage. A screen that talks to a module over a serial link names
+the link's pins as well. Examples of the form, not texts of any screen: `GP4`,
+`PROG PORT GP13`, `PD MINI 7.40 V`. Nothing bound, a binding not yet read and
+a target out of reach show as a warning. The label reads the state the drive
+path reads, not the setting that asks for it (`prog_link_target()`, not
+`SET_SERVO_TARGET`). A screen added or changed meets the rule and comes
+with a host test that holds the label and the drive path's state
+equal. A user who cannot tell from the screen what it drives meets a defect
+of the screen. The screens that do not meet it are listed in
+[STATUS.md](STATUS.md#open-items).
 
 ## Style
 

@@ -68,7 +68,6 @@ bottom of the screen, ARM included, while it shows.
 
 | Mark | Meaning |
 | --- | --- |
-| SOON | the screen does not exist; the tile lists what it will do and what it waits on |
 | MODELLED | the screen exists and works, but its hardware is not fitted; every value is simulated and the screen says so |
 | none | the hardware is fitted and the readings are measured |
 
@@ -747,7 +746,7 @@ OUTPUT page says what became of it:
 | --- | --- |
 | In force | every PWM surface runs at the rate shown |
 | The rate goes with the next position | not written yet |
-| REFUSED | a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| REFUSED | a pulse of a surface or a pulsing port is longer than the frame at that rate, or a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
 
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
@@ -983,6 +982,9 @@ Sixteen channels, each with 1.5 s of history and a bar for its current value.
 CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
 dropout is a notch across all sixteen at the same instant.
 
+No firmware feeds this screen yet (see [Receiver buses](Receivers.md)); it
+shows SILENT.
+
 The state block shows one of SILENT, FAILSAFE, FRAME LOST and LIVE, with one
 line of explanation:
 
@@ -1182,7 +1184,14 @@ Browse the card, open a file, check what the import detected, then plot:
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
-before the file is plotted. Runs recorded by the bench are written as
+before the file is plotted. A row ends at its line feed (LF, 0x0A). Text
+after the last line feed is a row cut off by a power loss or a full card:
+it can hold every field and a number cut short, `95` of `9554`, so it is
+left out of the rows, the figures and the plot. ROWS then shows in the
+warning colour and the import view says `LAST ROW CUT OFF - LEFT OUT`. A
+file from another program that ends without a line feed loses its last row
+the same way. Spaces, tabs and carriage returns (CR) after the last line
+feed are no row. Runs recorded by the bench are written as
 `BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
 arming, or one switch-on of the SUPPLY output while the bench is not armed.
 An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
@@ -1249,7 +1258,8 @@ comes first. Power lost mid-run costs the rows the commit has not finished
 with and the rows still in the queue between the control task and the card's
 own task: under 1.0 s of run while the card keeps up, and 84 rows, 4.20 s at
 the panel's 20 Hz sample rate, if the card has stalled and the queue is full.
-The rest of the file is readable either way. The card is written by a task of its own: an SD (Secure
+The rest of the file is readable either way; a row the cut stopped part way
+through has no line feed and is left out on reading (see [Logs](#logs)). The card is written by a task of its own: an SD (Secure
 Digital) card is allowed 250 ms to finish a write, and the task that beats the
 safety line has a ceiling of 150 ms.
 
@@ -1955,8 +1965,11 @@ The save waits for the bench to stop driving, and then for a gap in the
 traffic. Writing flash stops the coprocessor with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178 us, against a CAN
-frame of about 130 us and two frames of buffer in the controller. The erase
-and the page program have not been timed apart from each other. A request lost
+frame of about 130 us and two frames of buffer in the controller. The figure is one
+measurement: 1 sample, taken on the bring-up module, with the flash part not
+yet identified. The erase and the page program have not been timed apart from
+each other. The window is to be argued again against the flash part's
+datasheet maximum once the part is known. A request lost
 in that window costs the panel 1000 ms of waiting, which is past the
 coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
@@ -1990,7 +2003,11 @@ confirmed](#a-binding-that-is-not-confirmed).
 
 Described on its own page: [Balancing](Balance.md).
 
-## Screens that are not ready
+The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
+vibration, 0.35 g mass to add) until a sensor is fitted. The MODELLED pill and
+the words "Not measured." stand under the readings, 20 px high and 88 px wide.
+The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 
-A tile marked SOON names what the screen will do and the part or decision it
-waits on.
+## Unknown screen ids
+
+A screen id that names no screen draws the overview.

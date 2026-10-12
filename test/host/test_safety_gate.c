@@ -204,7 +204,6 @@ TEST_CASE(link_silence_latches_at_200_ms_across_the_wrap)
         const uint32_t t0 = base == 0u ? 1000u : 0xFFFFFFA0u;
         gate_init(t0);
         /* The line beats throughout; requests stop at t0 + 300. */
-        safety_gate_t g = { false, false };
         bool armed_at_199 = false, off_at_200 = false;
         for (uint32_t i = 1u; i <= 600u; ++i) {
             if (i <= 300u) {
@@ -215,8 +214,9 @@ TEST_CASE(link_silence_latches_at_200_ms_across_the_wrap)
                 (void)gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC);
                 (void)gate_write(LINK_CT_ARM, 1u);
             }
-            g = safety_gate_step(&g_beat, (i % 20u) == 0u, &g_dev, g_control,
-                                 t0 + i);
+            const safety_gate_t g = safety_gate_step(&g_beat, (i % 20u) == 0u,
+                                                     &g_dev, g_control,
+                                                     t0 + i);
             if (i == 300u + LINK_DEV_SILENCE_MS - 1u) {
                 armed_at_199 = g.arm && !g.off;
             }

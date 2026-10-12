@@ -66,7 +66,7 @@ cannot distinguish a heartbeat from noise. Constants from
 
 | | Value | |
 | --- | ---: | --- |
-| Panel edge interval | 20 ms | `HEARTBEAT_PERIOD_MS`, one edge per control-task period, not per frame |
+| Panel edge interval | 20 ms | `HEARTBEAT_PERIOD_MS`, one edge every 20 ms, 4 control-task periods of 5 ms, not one per frame |
 | Accepted interval | 4–150 ms | shorter is noise; longer means the loop that owns STOP has stopped |
 | Good intervals before the line is trusted | 4 | 80 ms at the panel's rate |
 

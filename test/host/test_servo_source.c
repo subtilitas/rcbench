@@ -535,12 +535,12 @@ static servo_source_id_t chain_step(unsigned period_ms, bool link_up)
 {
     const unsigned spent = link_up ? chain_poll() : 0u;
     sense_link_win_t w;
-    while (sense_link_take_win(&ch.sl, &w)) {
+    while (sense_link_take_win(&chain.sl, &w)) {
     }
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     const servo_source_id_t id =
-        servo_source_step(&src, chain_now(), link_up, ch.minor,
+        servo_source_step(&src, chain_now(), link_up, chain.minor,
                           link_up ? &m : NULL);
     const uint32_t ev = servo_source_event(&src, chain_now());
     said |= ev;
@@ -590,10 +590,10 @@ TEST_CASE(a_working_ina3221_becomes_the_meter_and_stays)
         CHECK(n >= 18u && n <= 22u);
         for (unsigned i = 0u; i < 400u; ++i) {
             if (i % 30u == 5u) {
-                ch.lose_win = 1u;
+                chain.lose_win = 1u;
             }
             if (i % 30u == 20u) {
-                ch.lose_status = 1u;
+                chain.lose_status = 1u;
             }
             CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_INA3221);
         }
@@ -608,10 +608,10 @@ TEST_CASE(clipped_and_negative_readings_leave_the_meter_alone)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    ch.flat = true;
+    chain.flat = true;
     static const double k_amps[] = { 2.0, -0.05, -2.0, 0.0 };
     for (size_t i = 0u; i < sizeof(k_amps) / sizeof(k_amps[0]); ++i) {
-        ch.i3221->amps[0] = k_amps[i];
+        chain.i3221->amps[0] = k_amps[i];
         for (unsigned k = 0u; k < 60u; ++k) {
             CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_INA3221);
         }
@@ -625,13 +625,13 @@ TEST_CASE(a_part_that_stops_answering_drops_to_the_pd_mini)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    ch.i3221->present = false;
+    chain.i3221->present = false;
     CHECK(until(SERVO_SOURCE_PDMINI, 10u) <= 2u);
     for (unsigned i = 0u; i < 40u; ++i) {
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     }
     CHECK(servo_source_why(&src) == SERVO_SOURCE_WHY_SILENT);
-    ch.i3221->present = true;
+    chain.i3221->present = true;
     /* Found by the next scan, up to 1000 ms; then 1000 ms of readings. */
     const unsigned n = until(SERVO_SOURCE_INA3221, 80u);
     CHECK(n >= 19u && n <= 42u);
@@ -643,12 +643,12 @@ TEST_CASE(a_stuck_bus_drops_to_the_pd_mini)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    ch.fb.low = true;
+    chain.fb.low = true;
     CHECK(until(SERVO_SOURCE_PDMINI, 20u) < 20u);
     for (unsigned i = 0u; i < 20u; ++i) {
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     }
-    ch.fb.low = false;
+    chain.fb.low = false;
     CHECK(until(SERVO_SOURCE_INA3221, 80u) < 80u);
 }
 
@@ -661,7 +661,7 @@ TEST_CASE(a_reset_repaired_between_two_reads_shows_in_the_count)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    fake_reset3221(ch.i3221);
+    fake_reset3221(chain.i3221);
     CHECK(until(SERVO_SOURCE_PDMINI, 5u) <= 1u);
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_SILENT);
     const unsigned back = until(SERVO_SOURCE_INA3221, 80u);
@@ -671,11 +671,11 @@ TEST_CASE(a_reset_repaired_between_two_reads_shows_in_the_count)
 
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    fake_reset3221(ch.i3221);
+    fake_reset3221(chain.i3221);
     chain_far(1300u);                           /* no poll meanwhile */
     CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK((m.flags & LINK_SN_I3221_ONLINE) != 0u);
     CHECK((m.flags & LINK_SN_I3221_ID_OK) != 0u);
     CHECK(m.win && m.win_valid);
@@ -694,13 +694,13 @@ TEST_CASE(a_setup_the_page_does_not_hold_drops_to_the_pd_mini)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    fake_reset3221(ch.i3221);                   /* the count reads 1 */
+    fake_reset3221(chain.i3221);                   /* the count reads 1 */
     CHECK(until(SERVO_SOURCE_PDMINI, 5u) < 5u);
     CHECK(until(SERVO_SOURCE_INA3221, 80u) < 80u);
     CHECK_EQ(said_reset, 1u);
 
     sense_setup_t w = chain_setup(0x03u);
-    sense_link_want(&ch.sl, &w, chain_now());
+    sense_link_want(&chain.sl, &w, chain_now());
     CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NOT_HELD);
     const unsigned n = until(SERVO_SOURCE_INA3221, 80u);
@@ -709,24 +709,24 @@ TEST_CASE(a_setup_the_page_does_not_hold_drops_to_the_pd_mini)
 
     /* A bank that drives: the edit waits, and so does the meter. */
     w = chain_setup(0x01u);
-    sense_link_want(&ch.sl, &w, chain_now());
-    ch.idle = false;
+    sense_link_want(&chain.sl, &w, chain_now());
+    chain.idle = false;
     for (unsigned i = 0u; i < 60u; ++i) {
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     }
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NOT_HELD);
-    ch.idle = true;
+    chain.idle = true;
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
 
     /* Switched off on SETUP: condition 1. */
     w = chain_setup(0x01u);
     w.i3221 = false;
-    sense_link_want(&ch.sl, &w, chain_now());
+    sense_link_want(&chain.sl, &w, chain_now());
     CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_OFF);
     /* CH1 not among its channels: the same. */
     w = chain_setup(0x06u);
-    sense_link_want(&ch.sl, &w, chain_now());
+    sense_link_want(&chain.sl, &w, chain_now());
     for (unsigned i = 0u; i < 60u; ++i) {
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
         CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_OFF);
@@ -747,7 +747,7 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_INA3221);
     }
     /* SERVO_WIN's replies lost for 5 polls, 265 ms: the number stands. */
-    ch.lose_win = 5u;
+    chain.lose_win = 5u;
     unsigned dropped = 0u;
     for (unsigned i = 0u; i < 5u; ++i) {
         if (chain_step(53u, true) == SERVO_SOURCE_PDMINI) {
@@ -758,7 +758,7 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
     CHECK_EQ(dropped, 2u);              /* at 212 and 265 ms, not at 159 */
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
     /* SENSE's replies lost: the read stands. */
-    ch.lose_status = 5u;
+    chain.lose_status = 5u;
     dropped = 0u;
     for (unsigned i = 0u; i < 5u; ++i) {
         if (chain_step(53u, true) == SERVO_SOURCE_PDMINI) {
@@ -776,7 +776,7 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    ch.exch_ms = 0u;                    /* core 1 no longer ticks */
+    chain.exch_ms = 0u;                    /* core 1 no longer ticks */
     unsigned held_for = 0u;
     while (held_for < 40u) {
         chain_far_late(50u);
@@ -792,11 +792,11 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
         CHECK_EQ(chain_step(0u, true), SERVO_SOURCE_PDMINI);
     }
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK(!m.win);
     /* The tick 2^32 ms on, less what brings the last move to 100 ms ago. */
-    ch.tick0 += (uint32_t)(0u - (chain_now() - m.win_ms)) + 100u;
-    sense_link_meter(&ch.sl, &m);
+    chain.tick0 += (uint32_t)(0u - (chain_now() - m.win_ms)) + 100u;
+    sense_link_meter(&chain.sl, &m);
     CHECK_EQ((uint32_t)(chain_now() - m.win_ms), 100u);
     for (unsigned i = 0u; i < 40u; ++i) {
         chain_far_late(50u);
@@ -805,7 +805,7 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
     }
     /* The schedule runs again: the number moves, and 1000 ms later the
      * INA3221 is the meter. */
-    ch.exch_ms = 1u;
+    chain.exch_ms = 1u;
     const unsigned n = until(SERVO_SOURCE_INA3221, 60u);
     CHECK(n >= 18u && n <= 22u);
 }
@@ -819,19 +819,19 @@ TEST_CASE(a_4_10_coprocessor_is_never_the_ina3221s_and_is_said_once)
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
         CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_OLD);
     }
-    CHECK_EQ(ch.to_win, 0u);
+    CHECK_EQ(chain.to_win, 0u);
     CHECK_EQ(said, SERVO_SOURCE_EV_OLD);
     CHECK_EQ(said_old, 1u);
-    CHECK_EQ(sense_link_events(&ch.sl), 0u);    /* and nothing from SENSE */
+    CHECK_EQ(sense_link_events(&chain.sl), 0u);    /* and nothing from SENSE */
 
-    sense_link_lost(&ch.sl);
+    sense_link_lost(&chain.sl);
     CHECK_EQ(chain_step(1000u, false), SERVO_SOURCE_MODEL);
     chain_link_up();
     for (unsigned i = 0u; i < 200u; ++i) {
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     }
     CHECK_EQ(said_old, 2u);
-    CHECK_EQ(ch.to_win, 0u);
+    CHECK_EQ(chain.to_win, 0u);
 }
 
 /* The link lost: the model.  Back: the PD mini, and the INA3221 after
@@ -842,7 +842,7 @@ TEST_CASE(a_link_lost_is_the_model_and_its_return_settles_again)
     for (size_t a = 0u; a < sizeof(k_tick0) / sizeof(k_tick0[0]); ++a) {
         chain_fresh(LINK_PROTOCOL_MINOR, k_tick0[a]);
         CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-        sense_link_lost(&ch.sl);
+        sense_link_lost(&chain.sl);
         for (unsigned i = 0u; i < 3u; ++i) {
             CHECK_EQ(chain_step(1000u, false), SERVO_SOURCE_MODEL);
             CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NO_LINK);
@@ -862,9 +862,9 @@ static void a_standing_number_is_no_window_at_500_ms(uint32_t t0)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, t0);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
-    ch.exch_ms = 0u;                    /* core 1 no longer ticks */
+    chain.exch_ms = 0u;                    /* core 1 no longer ticks */
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
+    sense_link_meter(&chain.sl, &m);
     CHECK(m.win);
     /* The windows closed before the stop are read in the first polls; the
      * number last moves in one of them. */
@@ -873,7 +873,7 @@ static void a_standing_number_is_no_window_at_500_ms(uint32_t t0)
     for (unsigned i = 0u; i < 30u; ++i) {
         chain_far_late(50u);
         (void)chain_step(0u, true);     /* read at chain_now() */
-        sense_link_meter(&ch.sl, &m);
+        sense_link_meter(&chain.sl, &m);
         if (i < 3u) {
             moved = m.win_ms;
         }

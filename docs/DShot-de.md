@@ -92,8 +92,29 @@ durch die Rate.
 | | |
 | --- | --- |
 | Frame Rate | 40 bis 560 Hz |
-| Puls | 400 bis 2500 µs, außerhalb verweigert |
+| Puls | 400 bis 2500 µs und höchstens die Periode minus 1 µs, außerhalb verweigert |
 | Auflösung | 1 µs |
+
+Ein Puls ist nie so lang wie sein Frame. Der längste, den ein Frame trägt, ist
+die Periode minus 1 µs, abgerundet: der letzte Zählerstand, der den Pin 1 µs
+auf Low lässt.
+
+| Rate | Periode | Längster Puls |
+| ---: | ---: | ---: |
+| 560 Hz | 1785 µs | 1784 µs |
+| 500 Hz | 2000 µs | 1999 µs |
+| 400 Hz | 2500 µs | 2499 µs |
+| 399 Hz und darunter | 2506 µs und mehr | 2500 µs, die Obergrenze |
+
+Ein Schreiben auf CHAN_CFG, OUTPUTS, BIND, SERVO oder PROG, das einem
+PWM-Ausgang einen längeren Endpunkt hinterließe, wird mit BAD_VALUE
+verweigert, und nichts ändert sich. Beurteilt wird die Rate, mit der der
+Ausgang läuft: die von SERVO für eine Surface, solange sie nicht 0 ist, sonst
+die eigene des Slots. Ein Standardservo mit 1000 bis 2000 µs nimmt also
+499 Hz und wird bei 500 Hz und 560 Hz verweigert. Ein gespeicherter Slot,
+dessen Endpunkt nicht zu seiner eigenen Rate passt, startet ungebunden. Die
+Regel ist `out_pwm_pulse_max()` und `outputs_pulse_check()`; [der
+Link](Link-de.md#ein-puls-nicht-länger-als-sein-frame) hat die Seite der Pages.
 
 Ein Slice sind zwei Kanäle an einem Zähler, zwei Pins auf demselben Slice laufen
 also mit derselben Frame Rate. Eine zweite Bindung, die auf einem belegten Slice
@@ -181,7 +202,12 @@ wie ein nicht funktionierender Treiber aussieht.
 Der Prüfstand bildet den Weg so ab, dass ein Befehl von null Motor Stop ist und
 alles darüber in 48 bis 2047 landet. Ein Treiber, der den Weg direkt auf 0 bis
 2047 abbildete, sendete auf dem Weg vom Leerlauf nach oben Beeps und
-Drehrichtungswechsel.
+Drehrichtungswechsel. Ein Befehl über der Spanne von 1000 wird auf null, Motor
+Stop, abgebildet, nicht auf volles Gas.
+
+`out_dshot_bind()` auf einem Pin, der schon mit anderer Rate oder anderem Modus
+gebunden ist, gibt false zurück und lässt den alten Output weiterlaufen. Ein
+Aufrufer gibt den Pin zuerst frei.
 
 Frames gehen mit 1 kHz hinaus. Diese Rate steht nicht auf der Leitung: das
 Ratenfeld der OUTPUTS-Page ist bei DShot eine Bitrate und keine Frame Rate, der
@@ -225,6 +251,24 @@ Die Nutzdaten sind eine Periode, keine Drehzahl:
     elektrische rpm = 60.000.000 / period_us
 
 Nutzdaten von 0x0FFF heißen, dass der Motor sich nicht dreht.
+
+### Die Invertierung sitzt am Pad, und sie kommt zuletzt
+
+Die Leitung wird vom Output-Override des Pads invertiert und nicht vom
+PIO-Programm. Derselbe Pin liest also den wahren Pegel der Leitung, sobald der
+Transmitter sie losgelassen hat, und der Pull-up hält dazwischen den Idle-Pegel.
+
+Der Override wird **nach** der Initialisierung der State Machine gesetzt, nie
+davor. Diese Initialisierung beginnt mit `pio_gpio_init()`, das
+`gpio_set_function()` ist, und das weist das ganze Steuerregister des Pads zu,
+statt es zu maskieren. Der Override liegt in diesem Register und geht verloren.
+Der Pull-up nicht, denn Pulls liegen im Pad-Block; ein Pin, der seine
+Invertierung verloren hat, ruht also weiterhin high und sieht wie ein
+Protokollfehler aus und nicht wie ein Pin-Fehler.
+
+Der Bind liest das Register zurück und lehnt ab, statt eine Leitung zu treiben,
+deren Polarität er nicht setzen konnte. Die Reihenfolge ist hier die ganze
+Polarität, und nichts sonst im Treiber würde ihren Verlust bemerken.
 
 ### Die Antwort wird abgetastet, nicht gemessen
 

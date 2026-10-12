@@ -22,8 +22,8 @@
  *   - a step small enough that one step cannot cross from free to bound
  *
  * The search is a state machine fed measurements, not a loop that sleeps,
- * so it runs on the host against a modelled servo and on the coprocessor
- * against a real one without change.
+ * so it runs on the host against a modelled servo.  The coprocessor image
+ * does not call it yet; a real servo needs no change here.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,7 +49,14 @@ typedef enum {
      *  surface is free over that range or the sensor does not resolve the
      *  bind; reported as such rather than as a limit. */
     SERVO_LIMIT_FAULT_NO_LIMIT,
+    /** step_us is 0: no step can reach a stop.  Set by servo_limit_init(),
+     *  which then commands nothing but the centre. */
+    SERVO_LIMIT_FAULT_BAD_CONFIG,
 } servo_limit_fault_t;
+
+/** The pulse widths the search commands stay within, microseconds. */
+#define SERVO_LIMIT_MIN_US 500u
+#define SERVO_LIMIT_MAX_US 2500u
 
 typedef struct {
     uint16_t centre_us;      /**< where the search starts */

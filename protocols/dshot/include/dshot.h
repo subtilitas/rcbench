@@ -111,6 +111,10 @@ uint16_t dshot_frame(uint16_t value, bool telemetry, bool inverted);
  * the command range is never entered by a throttle that is merely low.  The
  * discontinuity at the bottom is the protocol's, not this function's: an ESC
  * has no idea of "barely turning".
+ *
+ * A @p command above @p span returns DSHOT_CMD_MOTOR_STOP, the same reading
+ * of a fault that dshot_frame() applies to a value it cannot encode.  A
+ * @p command equal to @p span is the top of the range and returns 2047.
  */
 uint16_t dshot_throttle(uint16_t command, uint16_t span);
 
@@ -124,6 +128,22 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 #define DSHOT_TELEM_RATE_DEN 4u
 
 /**
+ * Units of the extended telemetry payload, per count of its eight bits
+ * (0 to 255).  Voltage is 0.25 V per count, current 1 A per count,
+ * temperature 1 degree Celsius per count.
+ */
+#define DSHOT_EDT_MV_PER_COUNT      250u
+#define DSHOT_EDT_A_PER_COUNT       1u
+#define DSHOT_EDT_DEGC_PER_COUNT    1u
+
+/** Millivolts for a DSHOT_TELEM_VOLTAGE payload (at most 255 * 250 = 63,750). */
+uint32_t dshot_edt_millivolts(uint16_t count);
+/** Amperes for a DSHOT_TELEM_CURRENT payload. */
+uint32_t dshot_edt_amps(uint16_t count);
+/** Degrees Celsius for a DSHOT_TELEM_TEMPERATURE payload. */
+uint32_t dshot_edt_celsius(uint16_t count);
+
+/**
  * What one response carried.
  *
  * An ESC that has been sent DSHOT_CMD_EDT_ENABLE interleaves the other kinds
@@ -133,8 +153,8 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 typedef enum {
     DSHOT_TELEM_ERPM = 0,     /**< an electrical period, in microseconds  */
     DSHOT_TELEM_TEMPERATURE,  /**< degrees Celsius                        */
-    DSHOT_TELEM_VOLTAGE,      /**< 0.25 V per count                       */
-    DSHOT_TELEM_CURRENT,      /**< 1 A per count                          */
+    DSHOT_TELEM_VOLTAGE,      /**< DSHOT_EDT_MV_PER_COUNT millivolts      */
+    DSHOT_TELEM_CURRENT,      /**< DSHOT_EDT_A_PER_COUNT amperes          */
     DSHOT_TELEM_DEBUG1,
     DSHOT_TELEM_DEBUG2,
     DSHOT_TELEM_STRESS,
@@ -200,7 +220,7 @@ uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs);
 
 /* ---------------------------------------- asking for extended telemetry */
 
-/** Between the starts of two asks that got no answer. */
+/** From the last repeat of an ask that got no answer to the start of the next. */
 #define DSHOT_EDT_RETRY_MS  500u
 
 /** Asks per run before an ESC that never answers is left alone. */

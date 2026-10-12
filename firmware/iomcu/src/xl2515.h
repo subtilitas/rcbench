@@ -31,7 +31,9 @@ bool xl2515_init(uint32_t bitrate);
  *  still busy with the previous one. */
 bool xl2515_send(const link_can_frame_t *f);
 
-/** Take one frame from whichever receive buffer has one. False if none. */
+/** Take one frame from whichever receive buffer has one.  A buffer holding a
+ *  frame this link does not carry is consumed and the other buffer is tried.
+ *  False if none holds a valid frame. */
 bool xl2515_recv(link_can_frame_t *f);
 
 /** The controller's own error counters, for the bring-up report. Either

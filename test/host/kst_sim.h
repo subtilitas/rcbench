@@ -287,37 +287,37 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
                              uint32_t window_ns)
 {
     sim_t *sim = (sim_t *)ctx;
-    uint8_t bits[64];
-    const unsigned n = sim_read_frame(frame, bits, 64);
+    uint8_t frame_bits[64] = {0};
+    const unsigned n = sim_read_frame(frame, frame_bits, 64);
     sim_kind_t kind = SIM_ANY;
-    unsigned reg = 0;
+    unsigned reg_no = 0;
     unsigned value = 0;
     sim_action_t action;
     uint32_t arg = 0;
     sim_shape_t shape = sim_shape(SIM_READ_DELAY_NS);
     bool reply = false;
     unsigned flags = 3;
-    unsigned answer = 0;
+    unsigned reply_value = 0;
 
     if (sim->busy) {
         sim->n_overlap++;
     }
-    if (n == KST_FRAME_BITS && bits[0] == 1u) {
-        const unsigned prefix = sim_bits(bits, 1, 10);
+    if (n == KST_FRAME_BITS && frame_bits[0] == 1u) {
+        const unsigned prefix = sim_bits(frame_bits, 1, 10);
 
-        reg = sim_bits(bits, 11, 8);
-        value = sim_bits(bits, 19, 8);
+        reg_no = sim_bits(frame_bits, 11, 8);
+        value = sim_bits(frame_bits, 19, 8);
         if (prefix == 0x200u && value == 0u) {
             kind = SIM_READ;
         } else if (prefix == 0x080u) {
             kind = SIM_WRITE;
         }
-    } else if (n == KST_SYNC_PULSES && sim_bits(bits, 0, 32) == 0xFFFFFFFFu
-               && sim_bits(bits, 32, 32) == 0xFFFFFFFFu) {
+    } else if (n == KST_SYNC_PULSES && sim_bits(frame_bits, 0, 32) == 0xFFFFFFFFu
+               && sim_bits(frame_bits, 32, 32) == 0xFFFFFFFFu) {
         kind = SIM_SYNC;
     }
 
-    action = sim_take_fault(sim, kind, reg, &arg);
+    action = sim_take_fault(sim, kind, reg_no, &arg);
     if (action == SIM_F_START_FAIL) {
         return false;
     }
@@ -337,7 +337,7 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
         sim_frame_t *l = &sim->log[sim->n_frames];
 
         l->kind = (uint8_t)kind;
-        l->reg = (uint8_t)reg;
+        l->reg = (uint8_t)reg_no;
         l->value = (uint8_t)value;
         l->t_us = sim->now_us;
     }
@@ -345,7 +345,7 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
     if (kind == SIM_ANY) {
         sim->n_bad_frames++;
     }
-    if (kind == SIM_WRITE && (reg == 0u || reg > KST_REG_MAX)) {
+    if (kind == SIM_WRITE && (reg_no == 0u || reg_no > KST_REG_MAX)) {
         sim->n_bad_writes++;
     }
 
@@ -361,20 +361,20 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
         } else if (kind == SIM_READ && sim->in_mode) {
             sim->n_reads++;
             reply = true;
-            answer = action == SIM_F_READ_VALUE ? arg
-                                                : sim->reg[reg & KST_REG_MAX];
+            reply_value = action == SIM_F_READ_VALUE
+                              ? arg : sim->reg[reg_no & KST_REG_MAX];
         } else if (kind == SIM_WRITE && sim->in_mode) {
             sim->n_writes++;
             reply = true;
             shape.delay_ns = SIM_WRITE_DELAY_NS;
             /* The reply to a write is not an echo: 0x1E answers 0x26. */
-            answer = (reg & KST_REG_MAX) == 0x1Eu ? 0x26u : value;
+            reply_value = (reg_no & KST_REG_MAX) == 0x1Eu ? 0x26u : value;
             if (action == SIM_F_WRITE_TO) {
                 sim_store(sim, arg, value);
             } else if (action == SIM_F_WRITE_VALUE) {
-                sim_store(sim, reg, arg);
+                sim_store(sim, reg_no, arg);
             } else if (action != SIM_F_WRITE_IGNORE) {
-                sim_store(sim, reg, value);
+                sim_store(sim, reg_no, value);
                 if (action == SIM_F_WRITE_ALSO) {
                     sim_store(sim, arg, value);
                 }
@@ -393,7 +393,7 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
     }
 
     if (reply) {
-        sim_reply(&sim->cap, window_ns, flags, answer, &shape);
+        sim_reply(&sim->cap, window_ns, flags, reply_value, &shape);
     } else {
         sim_cap_clear(&sim->cap, window_ns);
     }

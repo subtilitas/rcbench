@@ -23,7 +23,8 @@ hardware: no frame of this code has been sent to a servo.
   no other file outside this folder.
 - No heap, no floating point, no global or static mutable state. Two
   sessions on two drivers run side by side.
-- A session object is 848 bytes on a 32-bit target and 864 bytes on x86-64.
+- A session object is 856 bytes with arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33
+  -mthumb -Os`) and 872 bytes with gcc on x86-64.
   A plan is 208 bytes, a planner job 176 bytes, a capture 200 bytes, a
   frame 18 bytes.
 - The planner does not recurse. Stack in the RP2350 coprocessor image of
@@ -264,7 +265,8 @@ The module works on buffers the caller holds: no file access, no heap, no
 `stdio`. A written file has 35 lines and fewer than 1024 bytes; the one
 below has 808. `kst_file_parse()` refuses a text above 3432 bytes
 (`KST_FILE_MAX`). It holds one `kst_file_t`, 320 bytes, on its stack; a
-`kst_file_load_t` is 88 bytes.
+`kst_file_load_t` is 72 bytes with arm-none-eabi-gcc 14.2 and 88 bytes with
+gcc on x86-64.
 
 ```text
 KST servo configuration, format 1
@@ -457,7 +459,8 @@ refused for a save and a load, and the file is left out of the list.
 
 ## What is measured and what is not
 
-Measured, on 1 programming card and 1 servo of unidentified model:
+Measured, on 1 Tool Card #2, KST's programming card, and 1 Chaservo servo of
+unidentified model:
 
 - The frame layout, the bit timing of both directions and the reply delays.
 - The entry sequence.
@@ -523,7 +526,7 @@ notice is in the repository's
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c`,
-`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 254 cases. The table in
+`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 268 cases. The table in
 `STATUS.md` has the line coverage per file. The pin driver's C file is not
 in the host build.
 

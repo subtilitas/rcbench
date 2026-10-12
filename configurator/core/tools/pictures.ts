@@ -9,7 +9,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { Catalogue, OptionKey, Options } from '../../contract.ts';
-import { OPTION_KEYS, OPTION_VALUES } from '../resolve.ts';
+import { OPTION_KEYS, OPTION_VALUES, PICTURES_MAX } from '../resolve.ts';
 
 type Finding = { level: 'error' | 'warn'; id: string; msg: string };
 
@@ -21,8 +21,6 @@ export type PictureFolder = {
 
 /** Width of the thumb of a photo, in px. */
 export const THUMB_WIDTH = 480;
-/** Pictures of one part that one set of options shows, at most. */
-export const PICTURES_MAX = 2;
 
 /** The picture folder of the page, next to the core. */
 export const PICTURE_DIR = fileURLToPath(new URL('../../public/pictures', import.meta.url));

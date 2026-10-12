@@ -839,7 +839,7 @@ static void render_import(gfx_canvas_t *c)
                  s.an.row_count, s.an.truncated ? " " : "",
                  s.an.truncated ? TR(LOG_CAPPED) : "");
         rows[n].key = TR(LOG_KEY_ROWS);
-        rows[n].color = s.an.truncated ? UI_WARN : UI_TEXT;
+        rows[n].color = (s.an.truncated || s.an.cut_row) ? UI_WARN : UI_TEXT;
         n++;
 
         snprintf(rows[n].value, sizeof(rows[n].value), "%d", s.an.n_columns);
@@ -885,6 +885,7 @@ static void render_import(gfx_canvas_t *c)
         gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
         y += 20;
 
+        bool warned = true;
         if (s.an.convention_conflict) {
             gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_MIXED),
                      UI_FONT_LABEL, UI_DANGER, 1);
@@ -899,6 +900,14 @@ static void render_import(gfx_canvas_t *c)
                      UI_FONT_LABEL, UI_DANGER, 1);
         } else if (!s.an.convention_confident) {
             gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_UNSETTLED),
+                     UI_FONT_LABEL, UI_WARN, 1);
+        } else {
+            warned = false;
+        }
+        if (s.an.cut_row) {
+            /* Independent of the line above: the row left out has no other
+             * place on screen.  It takes the next line when one is shown. */
+            gfx_text(c, IM_LEFT.x + 16, warned ? y + 18 : y, TR(LOG_LAST_CUT),
                      UI_FONT_LABEL, UI_WARN, 1);
         }
 
