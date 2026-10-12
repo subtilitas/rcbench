@@ -1,0 +1,46 @@
+name: Mutation
+
+# Every mutant of shared/safety and shared/outputs, once a week.  The per-pull-
+# request run in ci.yml covers the changed lines and stops at 60 mutants; this
+# run covers all lines of the two directories with no mutant limit, in 6
+# shards of files (file i of the sorted list goes to shard i mod 6).  It
+# reports and does not fail on a survivor: the job fails only when the tool
+# cannot run.  Start by hand with "Run workflow".
+
+on:
+  schedule:
+    - cron: '17 3 * * 0'   # Sunday 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full:
+    name: Full mutation run, shard ${{ matrix.shard }} of 6
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    # budget 18000 s + 5 timeouts of 600 s = 21000 s, plus checkout.
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Mutate every line of this shard's files
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          files=$(find shared/safety shared/outputs -name '*.c' -o -name '*.h' \
+            | sort | awk -v s="$SHARD" '(NR - 1) % 6 == s')
+          python3 tools/mutate.py --files $files --max-mutants 0 \
+            --budget 18000 --timeout 600 --json mutation-full-$SHARD.json \
+            --summary "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation-full-${{ matrix.shard }}
+          path: mutation-full-${{ matrix.shard }}.json
+          if-no-files-found: warn
