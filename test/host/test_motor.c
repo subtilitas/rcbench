@@ -1866,6 +1866,52 @@ TEST_CASE(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it)
     CHECK_EQ(target_pixels(ui_theme_color(UI_C_TEXT)), three);
 }
 
+/* A sum over the target line's box: two different texts differ in it. */
+static unsigned long target_hash(void)
+{
+    unsigned long h = 1469598103UL;
+    for (int y = ROW_Y + 9; y < ROW_Y + 25; ++y) {
+        for (int x = 12; x < 420; ++x) {
+            h = (h * 31UL + (unsigned long)fb[y * W + x]) & 0xffffffffUL;
+        }
+    }
+    return h;
+}
+
+TEST_CASE(a_binding_that_reads_with_no_motor_pin_leaves_not_read)
+{
+    fresh();
+    draw_once();
+    const unsigned long unread = target_hash();
+    /* Same mask, 0, but the binding is now read: the text changes. */
+    motor_screen_set_throttle_pins(0u, true);
+    draw_once();
+    CHECK(target_hash() != unread);
+    CHECK(target_pixels(ui_theme_color(UI_C_WARN)) > 0);
+    /* It is the text a screen set to (0, true) from the start draws. */
+    const unsigned long read = target_hash();
+    fresh();
+    motor_screen_set_throttle_pins(0u, true);
+    draw_once();
+    CHECK_EQ(target_hash(), read);
+}
+
+TEST_CASE(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not)
+{
+    fresh();
+    draw_once();
+    const gfx_color_t mark = (gfx_color_t)~fb[ARM_Y * W + ARM_X];
+    fb[ARM_Y * W + ARM_X] = mark;
+    /* Same pins again: nothing moved, nothing is painted. */
+    motor_screen_set_throttle_pins(0u, false);
+    draw_once();
+    CHECK_EQ(fb[ARM_Y * W + ARM_X], mark);
+    /* A new pin set bumps the control revision: the buttons repaint. */
+    motor_screen_set_throttle_pins(1u << 3, true);
+    draw_once();
+    CHECK(fb[ARM_Y * W + ARM_X] != mark);
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -1939,5 +1985,7 @@ int main(void)
     RUN(no_throttle_pin_and_an_unread_binding_are_warnings);
     RUN(the_target_line_is_drawn_in_the_colour_of_its_state);
     RUN(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it);
+    RUN(a_binding_that_reads_with_no_motor_pin_leaves_not_read);
+    RUN(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not);
     return test_summary("motor");
 }

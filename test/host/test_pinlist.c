@@ -116,6 +116,43 @@ TEST_CASE(the_buffer_bounds_the_text_too)
     CHECK_STR_EQ(b, "GP1 +2");
 }
 
+TEST_CASE(a_pin_and_a_count_of_ten_are_two_digits_at_the_cell_boundary)
+{
+    /* "GP10" is 4 cells: it fits 4, and a cut at 3 must not show "GP1". */
+    CHECK_STR_EQ(fmt(BIT(10), 4u), "GP10");
+    CHECK_STR_EQ(fmt(BIT(10), 3u), "+1");
+    CHECK_STR_EQ(fmt(BIT(2) | BIT(10), 8u), "GP2 GP10");
+    CHECK_STR_EQ(fmt(BIT(2) | BIT(10), 7u), "GP2 +1");
+    /* Ten pins left out: " +10" is 4 cells after "GP0". 7 cells fit it. */
+    const uint64_t m = ((uint64_t)1u << 11) - 1u;   /* GP0..GP10 */
+    CHECK_STR_EQ(fmt(m, 7u), "GP0 +10");
+    CHECK_STR_EQ(fmt(m, 6u), "+11");
+    /* 11 pins in all; 2 cells cut "+11" to "+1". */
+    CHECK_STR_EQ(fmt(m, 2u), "+1");
+}
+
+TEST_CASE(a_buffer_smaller_than_the_cells_ends_with_nul_inside_it)
+{
+    char b[6];
+    memset(b, 'x', sizeof(b));
+    const size_t n = ui_pinlist(b, sizeof(b), BIT(1) | BIT(2) | BIT(3), 40u);
+    CHECK(n <= 5u);
+    CHECK_EQ(n, strlen(b));
+    CHECK_STR_EQ(b, "+3");
+    char c[5];
+    memset(c, 'x', sizeof(c));
+    (void)ui_pinlist(c, sizeof(c), BIT(11) | BIT(12), 40u);
+    CHECK(memchr(c, '\0', sizeof(c)) != NULL);
+    CHECK_STR_EQ(c, "+2");
+    /* A buffer of 4 holds 3 characters: "GP11" does not fit. */
+    char d[4];
+    memset(d, 'x', sizeof(d));
+    const size_t nd = ui_pinlist(d, sizeof(d), BIT(11), 40u);
+    CHECK(nd <= 3u);
+    CHECK_EQ(nd, strlen(d));
+    CHECK_STR_EQ(d, "+1");
+}
+
 int main(void)
 {
     RUN(no_pins_write_nothing);
@@ -130,5 +167,7 @@ int main(void)
     RUN(all_48_pins_show_a_count);
     RUN(all_64_pins_show_a_count);
     RUN(the_buffer_bounds_the_text_too);
+    RUN(a_pin_and_a_count_of_ten_are_two_digits_at_the_cell_boundary);
+    RUN(a_buffer_smaller_than_the_cells_ends_with_nul_inside_it);
     return test_summary("pinlist");
 }
