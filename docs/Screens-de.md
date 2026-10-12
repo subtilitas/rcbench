@@ -315,10 +315,16 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
-`voltage`, `current` und `power` sind, was der Bildschirm zeigt.
+`voltage`, `current` und `power` sind, was der Bildschirm zeigt. `source`
+ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
+`model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
+SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne
+die Spalte endet bei `ch3 voltage` oder `energy`; der Log-Viewer und die
+Werkzeuge lesen beide Formen, denn `source` ist eine Textspalte und
+wird nie gezeichnet.
 `ina voltage` und `ina current` sind die des INA228 und leer, solange er
 nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,
 von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
@@ -984,8 +990,9 @@ OPTIONEN, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
 des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
-in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
-das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
+in dem der Prüfstand unscharf ist und kein Scharfschalten wartet, der Ausgang
+des Netzteils aus ist und kein ON eingereiht ist und das Foto der Platine
+weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
 Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
 (der Schreibvorgang wurde abgelehnt) oder SETUP NICHT GESPEICHERT: eine
@@ -1041,11 +1048,12 @@ Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
 50 ms:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
 ```
 
 Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
-OFF und leer, solange das Netzteil nicht antwortet. Der Prüfstand hat beim
+OFF und leer, solange das Netzteil nicht antwortet. `source` ist `measured`
+für die Werte des PD mini und `model` für das Modell des Panels. Der Prüfstand hat beim
 Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
 Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Ladung und
 Energie dieser Datei zählen von den Summen seit dem Einschalten des Ausgangs
@@ -1770,7 +1778,9 @@ Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
 eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
 ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
 keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
-Prüfstand disarmed ist und kein Platinenfoto geholt oder abgelegt wird. Auf
+Prüfstand disarmed ist und kein Scharfschalten wartet, der Ausgang des
+Netzteils aus ist und kein ON eingereiht ist und kein Platinenfoto geholt oder
+abgelegt wird. Auf
 dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
 steht auf `GESPEICHERT`, so schnell wie das Auge dem Druck folgt. Armed steht die
 Anforderung als `BEI STILLSTAND`, bis der Prüfstand disarmed wird.
@@ -2108,8 +2118,12 @@ Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
 
 Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
 behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
-gesehen wird, und danach nichts. Eine Platine ohne Foto, oder eine, deren
-Übertragung nicht fertig wurde, wird gezeichnet statt leer gelassen.
+gesehen wird, und danach nichts. Das Schreiben in den Flash wartet auf einen
+entschärften Prüfstand mit ausgeschaltetem Netzteil und hält zwischen zwei
+Sektoren von 4 kB an, wenn der Prüfstand scharf wird oder das Netzteil
+einschaltet ([Sicherheit](Safety-de.md#verhaltensweisen-die-absicht-sind)).
+Eine Platine ohne Foto, oder eine, deren Übertragung oder Schreiben nicht
+fertig wurde, wird gezeichnet statt leer gelassen.
 
 Ein Servokabel hat drei Adern, und die Tasten beschreiben eine davon. Die
 anderen beiden sind auf der Platine selbst markiert: eine Masse trägt ein

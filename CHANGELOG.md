@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- The bench log and the supply log end in a column `source`: `measured` for a
+  row a meter or the PD mini produced, `model` for a row the panel's model
+  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
+  the column is read as before; the column is text and is never plotted. The
+  servo test's CSV is unchanged: its `meter` column names `MODEL`.
+
 - The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
   (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
   `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The
@@ -195,6 +201,69 @@ history is in git.
 
 ### Fixed
 
+- The wiki mirror points each link that leaves `docs/` at the repository on
+  GitHub: `blob/main/<path>` for a file, `tree/main/<path>/` for a directory
+  and `raw/main/<path>` for an image, with the anchor, the title, angle
+  brackets around the target and spaces inside the parentheses kept.
+  A target is a directory when it ends in `/` or names a directory of the
+  repository, so `[x](..)` and `[x](../protocols/kst)` open the tree view.
+  The legal-notice link on the servo programmer pages and the KST link on
+  the Link pages open the repository instead of a missing wiki page.
+  `tools/wiki_links.py` exits 1 on a link that still leaves `docs/`, and the
+  CI step "The wiki link rewrite still works" converts a copy of `docs/` and
+  runs `wiki_links.py --verify` on it.
+  Reference definitions (`[label]: ../README.md "title"`) are rewritten and
+  checked the same way; a link title in `"..."`, `'...'` or `(...)` stays;
+  a bare target may hold backslash escapes and one level of parentheses
+  (`API_(v2).md`); a name that starts with two dots (`..notes.md`) is a page
+  inside `docs/`, and only `..` or `../` leaves it.
+  Links in code spans, in fenced code blocks, in URI and email autolinks
+  and after an escaped `[` stay as written; backslash escapes count in
+  pairs, so `\\` before a backtick leaves it to open a code span. A
+  definition that an image uses (`![alt][label]`) gets the `raw` form, and
+  labels match after collapsing spaces, tabs and line endings only. A label
+  may nest brackets to any depth, a URL scheme may hold `+`, `-` and `.`
+  (`git+https:`), and a definition may put its target and title on the
+  next line. An image may stand in link text, `\![` is not an image, `\]`
+  stays in link text, a fence opens at 0 to 3 spaces of indent or after
+  `>` markers and ends with its block quote, a line ending may follow `(`,
+  and a blank line before a title ends the link.
+  Every page is parsed with markdown-it-py 3.0.0 (a CommonMark parser)
+  before and after the rewrite, in the rewrite and in `--check`. The two
+  token streams match token by token in kind, tag, text and attributes,
+  and each link href and image src is what the rewrite rule gives the
+  original. A difference exits 1 with page, line and both values, and the
+  page is not written. A definition in a block quote or list item, a
+  definition line right after paragraph text, a label over two lines and a
+  link-shaped text in a raw HTML block or indented code block fail this
+  way; the tool's description gives the form that converts.
+  A query string on a link target stays out of the check for a
+  directory, so `../protocols/kst?tab=x` is a `/tree/main/` URL. Only the
+  path of a target is normalised; its query string is kept as written, so
+  `?a=b/../c` and `?u=http://x/y` are not altered.
+  `tools/wiki_links.py --verify`, run by the CI step, reads every converted
+  page with the same parser and fails on a link that is not an absolute
+  URL, an anchor or a page name without `.md` and `../` (a title that
+  ends in `.md` passes when a mirrored page has it), on a link to
+  `/raw/main/` unless an image shares its definition, and on an image that is not relative inside `docs/` or
+  `/raw/main/` above it. It prints page and line. The docs workflow
+  installs markdown-it-py 3.0.0 before the rewrite.
+
+- The panel writes the board photograph to its flash only on a bench that
+  is disarmed, with no arm waiting, and with the supply output off and no ON
+  queued. The write (about 52 erases and 52 writes of 4 kB for a 206 kB
+  picture) runs on the control task, one sector per 5 ms pass, and pauses
+  between two sectors when the bench is armed or the supply comes on. It
+  resumes from the same sector on the first safe pass. Arming and the supply
+  are not refused while it waits. Before, the write started after every
+  fetch on a task of its own, armed or not, and each erase stalled both
+  cores: STOP, OUTPUT OFF, the supply trips and the heartbeat waited for it,
+  and a stall over 150 ms disarmed the bench. The settings save and the
+  photograph keep ask one rule, `flash_gate_open()` in
+  `shared/safety/flash_gate.c`, under the new host suite `test_flash_gate`.
+  The settings save now also waits while an arm is waiting. The `artkeep`
+  task and its 4,096-byte stack are gone. `tools/stack_check.py` follows the
+  photograph store's flash callbacks by name (`FLASH_CALLS`).
 - A log file whose last row has no line feed reads without that row. A
   write cut off by a power loss or a full card leaves the bytes the card
   took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
