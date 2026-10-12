@@ -41,7 +41,9 @@ extern "C" {
 /* ------------------------------------------------------------- the wire */
 
 #define OPENYGE_SYNC            0xA5u
-#define OPENYGE_VERSION         3u      /**< the version this speaks */
+#define OPENYGE_VERSION         3u      /**< the version this speaks; a frame
+                                             *   of version 3 or above is read
+                                             *   with the 6-byte header */
 
 #define OPENYGE_HDR_V3          6u
 #define OPENYGE_HDR_LEGACY      4u      /**< pre-v3: no seq, no device */
@@ -110,7 +112,9 @@ typedef struct {
     uint8_t  buf[OPENYGE_MAX_FRAME];
     uint8_t  len;
     /* Counters for the analyser screen: a quiet line, a noisy one and a
-     * wrong baud rate are distinguished here. */
+     * wrong baud rate are distinguished here.  crc_errors and rejected count
+     * a failing sync candidate once, when it reaches the front of the
+     * buffer; bytes dropped ahead of a candidate count under resyncs. */
     uint32_t frames;
     uint32_t crc_errors;
     uint32_t resyncs;

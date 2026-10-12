@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
+  (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
+  `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The
+  coprocessor firmware reads its ESC voltage, current and temperature through
+  them.
+
 - `CONTRIBUTING.md`, section "The active output": every screen, tab,
   overlay, prompt and automatic run that drives an output names the pin,
   port or supply it drives, from the state the drive path reads, with a
@@ -31,6 +37,24 @@ history is in git.
 
 ### Changed
 
+- `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
+  172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
+  1000 us, now 999 us.
+- `docs/Receivers.md`, `docs/Screens.md` and the S.BUS module README state that
+  no firmware feeds the analyser screen: the S.BUS core is in the panel image
+  and the host tests, no byte source exists, and the screen shows SILENT. The
+  German pages follow.
+- The OpenYGE and the output driver headers state what the code does: a frame
+  of version 3 or above is read with the 6-byte header, `crc_errors` and
+  `rejected` count a failing candidate once, at the front of the buffer, and
+  `out_dshot_bind()` / `out_ppm_bind()` return false and keep the old binding
+  for a bound pin with other settings. The DShot module README,
+  `docs/DShot.md` and `docs/DShot-de.md` state this.
+- `dshot_throttle()` maps a command above its span to 0 (motor stop), as
+  `dshot_frame()` maps a value above 2047 to 0. It mapped it to 2047. A
+  command equal to the span still maps to 2047. The firmware passes
+  `outputs_actual()` against a span of 1000, so no stored value of 0 to 1000
+  changes.
 - The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
   than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
   OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and
@@ -254,6 +278,34 @@ history is in git.
   `tone_link_readout()` clears the status's 7 values and sets
   `tone_readout_t.read` only while a read younger than 500 ms gives the
   state; the head's warning colour follows the state.
+- An abort of the servo programmer sends no command again that went to the
+  coprocessor without an answer. The panel reads registers 0 to 3 of the
+  KST page instead: the `SEQ` before the command ends the request as
+  dropped, with nothing written, and any other `SEQ` as restarted; a page
+  that took the command runs it, and the ABORT that follows ends it with
+  result ABORTED. A read that stays unanswered 3 times ends the request with
+  no answer. The command's `SEQ` counts as taken only with the command's
+  operation in `OP` or a refusal in `RESULT`: at the command after `SEQ`
+  0xFFFF, whose `SEQ` is 0, a coprocessor that started again ends the
+  request as restarted, not as done with result OK. A page whose `OP` reads
+  0 after a read that named an operation started again at any `SEQ`: a
+  WRITE taken at `SEQ` 1 after `SEQ` 0 by a coprocessor that then starts
+  again ends as restarted, not as dropped after an abort and not as refused
+  after the frame was sent again. An ABORT that the page refuses keeps these
+  checks on the read after it: a coprocessor that started again under a
+  running operation, or after the read that found the command taken, and
+  refused the ABORT with BAD_VALUE for its `SEQ`, ends the operation as
+  restarted, not as done with result OK, so the servo programmer keeps the
+  record held before the write. Before, a WRITE whose answer was lost was
+  sent again ahead of the ABORT and could run.
+- `kst_session_power_cycled()` drops the session's backup, the record of
+  its writes (`wrote_regs`) and the lock, after the end of an operation that
+  runs. An edit, a write and a restore end with `KST_SES_ERR_NO_BACKUP`
+  until a read of all registers takes the servo then on the line as the new
+  backup, so a servo of the same type swapped in during the power cycle gets
+  no value of the first. The coprocessor's port begins a new session at
+  each ENTER from PWM, so on the bench the backup was already gone after a
+  power cycle; `docs/ServoProgrammer.md` and its German page state it.
 - The docs workflow no longer cancels a publish in progress when a later push
   starts one (`cancel-in-progress: false`).
 - With the environment variable `CI` set, a missing C++ compiler fails the
