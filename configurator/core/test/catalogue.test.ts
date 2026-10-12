@@ -148,7 +148,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
     ],
   );
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 36);
+  assert.equal(CATALOGUE.checks.length, 37);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [
@@ -1209,4 +1209,19 @@ test('coverage: the block between the markers is replaced, and only there', () =
   assert.equal(replaceFigure('# Title\n', 'x'), null);
   assert.equal(replaceFigure(`${END}\n${BEGIN}\n`, 'x'), null);
   assert.equal(replaceFigure(`${BEGIN}\n`, 'x'), null);
+});
+
+test('the Osoyoo strip: no current is shown for both voltages, the DC input names its upper bound, each fact has its source', () => {
+  const strip = CATALOGUE.powerSources.find((s) => s.id === 'strip-v')!;
+  assert.equal(strip.amps, null);
+  const cons = strip.cons.map((c) => c.en).join(' ');
+  assert.match(cons, /7 to 12 V/);
+  assert.match(cons, /16 V/);
+  assert.match(cons, /not in the parts list/);
+  assert.doesNotMatch(strip.pros.map((c) => c.en).join(' '), /no further part/);
+  const check = (id: string) => CATALOGUE.checks.find((c) => c.id === id)!;
+  assert.equal(check('strip-converter').src.kind, 'doc');
+  assert.match(check('strip-converter').text.en, /^((?!rates the board|printed 16 V).)*$/);
+  assert.match(check('strip-input').text.en, /7 to 16 V/);
+  assert.notDeepEqual(check('strip-input').src, check('strip-converter').src);
 });
