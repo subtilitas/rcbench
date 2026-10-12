@@ -769,7 +769,7 @@ static atomic_uint s_pdmini_edits;
  */
 static atomic_bool s_supply_real;
 /* The PD mini's input in mV as its page last read, 0 while not known: the
- * screen keeps the voltage under it (PDMINI_HEADROOM_MV). */
+ * screen keeps the voltage under it (PDMINI_CAP_MV). */
 static atomic_uint s_supply_vin_mv;
 /* The PD mini's UART rate in baud as the coprocessor last reported it, for
  * the SUPPLY screen's header; 0 while not known. */
@@ -8341,16 +8341,16 @@ void app_main(void)
         static bool supply_real_shown;
         static unsigned supply_vcap_shown;
         const bool supply_real = atomic_load(&s_supply_real);
-        /* The PD mini can give no more than its input less the headroom:
+        /* The PD mini is given no more than its input less PDMINI_CAP_MV:
          * the screen's voltage cap follows the input as the page reads it,
          * moved only on a change of 100 mV or more. */
         unsigned vcap = 0u;
         if (supply_real) {
             const unsigned vin = atomic_load(&s_supply_vin_mv);
             vcap = 20000u;
-            if (vin > PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV
-                && vin - PDMINI_HEADROOM_MV < vcap) {
-                vcap = vin - PDMINI_HEADROOM_MV;
+            if (vin > PDMINI_V_MIN_MV + PDMINI_CAP_MV
+                && vin - PDMINI_CAP_MV < vcap) {
+                vcap = vin - PDMINI_CAP_MV;
             }
         }
         const unsigned vcap_moved = (vcap > supply_vcap_shown)

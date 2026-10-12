@@ -152,7 +152,7 @@ static bool supply_range_ok(const supply_port_view_t *v, uint16_t mv,
         return false;
     }
     return v->vin_mv == 0u
-           || (uint32_t)mv + PDMINI_HEADROOM_MV <= v->vin_mv;
+           || (uint32_t)mv + PDMINI_CAP_MV <= v->vin_mv;
 }
 
 /* The voltage a session asked for at @p mv runs at: an output that is on is

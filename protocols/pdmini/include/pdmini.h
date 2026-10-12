@@ -35,10 +35,14 @@
  * Three state reads in a row that fail take the module for gone, however
  * the other readings are answered: its output state is what matters.
  *
+ * A set point is kept PDMINI_CAP_MV under the input the module reports.
  * A live output whose input reads under its set point and
  * PDMINI_HEADROOM_MV on PDMINI_SAG_READS input reads in a row is switched
  * off and held off (st.sagged) until an OFF is asked: a buck fed less than
- * it is set to put out may show ERR and need a power cycle.  A rule chosen
+ * it is set to put out may show ERR and need a power cycle.  The 200 mV
+ * between the two lets the input drop under load without a cut.  An ON
+ * asked while the input reads under 1500 mV, with no room for the lowest
+ * set point, is not written and is held off the same way.  A rule chosen
  * without a bench measurement -- whether a live module goes to ERR on a
  * sagging input is not measured -- so it may cut a run that would have
  * survived.  An input read that fails neither counts nor clears the run of
@@ -103,12 +107,30 @@ extern "C" {
 #define PDMINI_V_MAX_MV  20000u
 #define PDMINI_I_MIN_MA     50u
 #define PDMINI_I_MAX_MA   3000u
-/** A voltage set point is kept this far under the input the module reports:
- *  a buck cannot put out more than it is fed, and a module asked to shows
- *  ERR and needs a power cycle (seen on the bench, 2026-10-06, 5.88 V asked
- *  from a 4.88 V input).  The margin it needs is not measured; 4.00 V from
- *  4.85 V worked. */
+/** The margin between the input the module reports and a live output's set
+ *  point that the buck is taken to need: a buck cannot put out more than it
+ *  is fed, and a module asked to shows ERR and needs a power cycle (seen on
+ *  the bench, 2026-10-06, 5.88 V asked from a 4.88 V input).  A live output
+ *  whose input reads under its set point and this is switched off
+ *  (PDMINI_SAG_READS).  The margin the module needs is not measured; 4.00 V
+ *  from 4.85 V worked. */
 #define PDMINI_HEADROOM_MV  500u
+/** A voltage set point is kept this far under the input the module reports,
+ *  rounded down to 10 mV, and no lower than PDMINI_V_MIN_MV.  200 mV above
+ *  PDMINI_HEADROOM_MV, so a set point at the cap is not on the line its
+ *  output is cut at: the input is read with the output off, and under load
+ *  it drops by the current through the source and the cable.  200 mV is
+ *  3000 mA, PDMINI_I_MAX_MA, through 1 m of 20 AWG copper out and back,
+ *  2 x 33 mOhm.  The drop on a real source and cable is not measured. */
+#define PDMINI_CAP_MV       700u
+
+#ifdef __cplusplus
+static_assert(PDMINI_CAP_MV > PDMINI_HEADROOM_MV,
+              "a set point at the cap lies above the sag cut line");
+#else
+_Static_assert(PDMINI_CAP_MV > PDMINI_HEADROOM_MV,
+               "a set point at the cap lies above the sag cut line");
+#endif
 
 /** What WHO_AM_I's reply holds from this module: "WeAct Studio PD Power
  *  Mini V1 BUCK" in the bench station's notes of its 2026-09-11 run.  A
@@ -214,7 +236,9 @@ typedef struct {
     bool     answered;       /* identified once since pdmini_init()      */
     bool     restored;       /* wiring from before a restart: maybe on   */
     uint8_t  who_misses;     /* WHO_AM_I answered by not a byte, so far  */
-    uint16_t who_failed;     /* WHO_AM_I without a valid answer, all told */
+    uint16_t who_failed;     /* WHO_AM_I without a valid answer: a count
+                                to compare for a change, wrapping from
+                                65535 to 0                              */
     bool     state_known;    /* READ_OUTPUT_STATE answered since online */
     int      slot;           /* the active slot, -1 until read           */
     bool     data_known;     /* set_mv/set_ma read back from it          */

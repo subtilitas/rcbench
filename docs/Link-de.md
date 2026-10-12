@@ -755,7 +755,7 @@ dann.
 ENTER nimmt die Programmierspannung und die Stromgrenze aus den
 Schreibregistern 26 und 27. Antwortet ein PD mini, wird ENTER mit
 SUPPLY_RANGE abgewiesen, außer die Spannung ist höchstens 8400 mV, der Strom
-50 bis 3000 mA und die Spannung mindestens 500 mV unter dem Eingang des PD
+50 bis 3000 mA und die Spannung mindestens 700 mV unter dem Eingang des PD
 mini. 8400 mV ist die höchste Servoschiene des IO-Boards. Die Spannung der
 Session ist die bereitgestellte oder die niedrigere von ihr und der
 Spannung eines Ausgangs, der an ist; unter 4800 mV wird ENTER mit
