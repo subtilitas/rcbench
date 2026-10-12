@@ -1097,6 +1097,19 @@ sein Gasknüppel-Menü; sie hat eine eigene Seite,
 
 ![Geräteklasse](img/de/programmer.png)
 
+Die Klassen ESC und SERVO sind ein Modell im Panel. Kein Transport trägt
+ihre Protokolle: VERBINDEN, LESEN und SCHREIBEN ändern die eigene Kopie des
+Panels von einem Gerät und senden nichts auf eine Leitung. Das nach
+VERBINDEN genannte Gerät stammt aus dem Modell, nicht aus einer Antwort der
+Hardware, und SCHREIBEN erreicht kein Gerät. Jede Seite der beiden Klassen
+trägt die Marke SIMULIERT: auf der Kachel der Klasse, auf jeder
+Protokollzeile und in der Gerätezeile, dort anstelle des Verbindungspunkts.
+Der Punkt der Marke ist bernsteinfarben, solange eine Sitzung offen ist,
+und grau, solange keine offen ist; grün wird er nie. Unter den Parametern
+sagt die Seite, dass kein Gerät erreicht wird. ESC STICK trägt keine Marke:
+ein Stick-Lauf läuft wie die Befehle des Bildschirms MOTOR über die
+Arming-Policy und die Ausgangsbank.
+
 Jede Protokollzeile nennt ihren Transport. Eine automatische Erkennung gibt
 es nicht:
 
@@ -1107,14 +1120,14 @@ Prüfstand erkennt diese ESCs, steuert sie an und sendet die DShot Special
 Commands, kann ihre Parameter aber nicht lesen:
 [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).
 
-Bevor ein Gerät geantwortet hat, ist nichts editierbar:
+Bevor VERBINDEN eine simulierte Sitzung öffnet, ist nichts editierbar:
 
 ![Nichts hat geantwortet](img/de/programmer-idle.png)
 
-Nachdem ein Gerät geantwortet hat, erscheinen die Parameter in Gruppen, mit
-der Hilfe zur ausgewählten Zeile unter der Liste:
+Bei offener Sitzung erscheinen die Parameter in Gruppen, mit der Hilfe zur
+ausgewählten Zeile unter der Liste:
 
-![Verbunden](img/de/programmer-params.png)
+![Sitzung offen](img/de/programmer-params.png)
 
 Die Einstellungen jeder Firmware erscheinen in ihren eigenen Einheiten. Die
 Tabelle für BLHeli_S-Firmware zeigt das Timing als benannte Stufen, die
@@ -1122,9 +1135,9 @@ anderen in Grad Vorzündung:
 
 ![Grad statt benannter Stufen](img/de/programmer-am32.png)
 
-Ein geänderter Wert wird erst geschrieben, wenn SCHREIBEN gedrückt wird.
-Vorgemerkte Änderungen tragen eine Markierung und eine eigene Farbe, und der
-SCHREIBEN-Knopf zeigt, wie viele vorgemerkt sind:
+Ein geänderter Wert wird erst ins Modell geschrieben, wenn SCHREIBEN
+gedrückt wird. Vorgemerkte Änderungen tragen eine Markierung und eine eigene
+Farbe, und der SCHREIBEN-Knopf zeigt, wie viele vorgemerkt sind:
 
 ![Zwei vorgemerkte Änderungen](img/de/programmer-dirty.png)
 
@@ -1145,7 +1158,7 @@ schon beim Aufsetzen:
 - Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
   folgen.
 
-Eine Ebene zurück trennt die Verbindung. Zurück geht eine Ebene auf einmal;
+Eine Ebene zurück schließt die Sitzung. Zurück geht eine Ebene auf einmal;
 das Home-Tag im Band verlässt den Bildschirm.
 
 ### ESC STICK

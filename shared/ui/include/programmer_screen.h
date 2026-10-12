@@ -28,8 +28,21 @@ const ui_screen_t *programmer_screen(void);
 
 /** Which protocol is selected, for the application and for tests. */
 int  programmer_screen_protocol(void);
-/** True after a device has answered on the selected protocol. */
+/**
+ * True while a session on the selected protocol is open.  The ESC and
+ * SERVO classes are a model with no transport: the session is the screen's
+ * own copy of a device, and nothing has answered.
+ */
 bool programmer_screen_connected(void);
+/** The MODELLED mark the page shows, or NULL on a page without one: the
+ *  class picker and the ESC STICK class. */
+const char *programmer_screen_mark(void);
+/** The sentence on the device page that no device is reached, or NULL
+ *  where the page is not a modelled class's device page. */
+const char *programmer_screen_note(void);
+/** The device line's first row beside the mark, or NULL off a modelled
+ *  class's device page. */
+const char *programmer_screen_device_line(void);
 /** The staged value of a parameter, or -1 if there is no such row. */
 int  programmer_screen_value(int param);
 /** How many staged values differ from what was read off the device. */

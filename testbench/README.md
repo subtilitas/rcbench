@@ -42,11 +42,13 @@ Six things the tree does that only an instrument can confirm:
 | SBUS | inverted serial, 100 kbit/s, 25 bytes | the framing, and what the panel makes of a receiver in failsafe |
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
 
-And the programmer's four ESC protocols and one servo protocol, which the
-panel can drive but which no test exercises against a device: the one-wire
-bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud), the
-text command line of ESCape32 firmware over the signal line, the framed
-packets of VESC firmware (115,200 baud) and the Hitec D-series servo protocol.
+The programmer's four ESC protocols and one servo protocol are not on this
+list. The panel models them and has no transport for them, so nothing of
+them reaches a wire: the one-wire bootloader protocols of BLHeli_S firmware
+and AM32 firmware (19,200 baud), the text command line of ESCape32 firmware
+over the signal line, the framed packets of VESC firmware (115,200 baud) and
+the Hitec D-series servo protocol. The PROGRAMMER screen marks these classes
+MODELLED.
 
 ---
 

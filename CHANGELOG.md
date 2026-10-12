@@ -20,6 +20,14 @@ history is in git.
 
 ### Fixed
 
+- The ESC and SERVO classes of PROGRAMMER show that they are a model. No
+  transport carries their protocols, and CONNECT, READ and WRITE send
+  nothing on a wire. The class tiles, the protocol rows and the device line
+  carry the MODELLED mark (SIMULIERT in German). The device line's dot sits
+  in the mark, amber while a session is open and grey otherwise, and is
+  never green. The device page says "Modelled on the panel: no device is
+  reached." `docs/Screens.md`, `STATUS.md` and `testbench/README.md`
+  describe the two classes as a model.
 - `docs/ServoProgrammer.md` and its German page name the servo the
   register layout and the timing come from: 1 Chaservo servo.
 - The bench configurator keeps the selection and the chosen language in the
