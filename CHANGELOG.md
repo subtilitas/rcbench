@@ -21,6 +21,18 @@ history is in git.
 
 ### Changed
 
+- The release of the bench configurator is stated once, in the `version`
+  field of `configurator/package.json`. The data file, the page header, the
+  trademark notice, the print head, the source-link tag and the data check
+  read it from there. `npm run check` in `configurator/core` compares that
+  version with `RCBENCH_VERSION_*` in `shared/link/include/rcbench_version.h`.
+  A header one release ahead, whose tag does not exist yet, is a warning,
+  since the release pull request moves the header before the tag exists and
+  `package.json` follows after the tag. A header ahead whose tag exists,
+  `package.json` ahead of the header, a differing `version` field in
+  `package-lock.json` and a README that names another release (in prose or
+  as `"release": "X.Y.Z"`) are errors. The Configurator workflow also runs
+  on a change of that header.
 - `testbench/host/capture.sh` warns when a capture holds no samples or the
   read-back fails, and still prints the path. `selftest.sh` no longer reports
   `sigrok-cli --scan` error output as the analyser found, and skips a
