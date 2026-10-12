@@ -23,6 +23,11 @@ Everything that parses input somebody else produced:
 | `protocols/sbus`, and the receiver decoders that follow it | frames from a receiver |
 | `protocols/openyge` | ESC (electronic speed controller) telemetry and parameter frames |
 | `shared/link` | CAN (Controller Area Network) frames between the two boards |
+| `shared/esc` | ESC profile JSON (JavaScript Object Notation) from an SD card; files over 65536 bytes, nesting deeper than 16 levels, objects of more than 64 members and duplicate keys are refused |
+| `protocols/kst` | servo configuration text files (line length, field values, the CRC-32 checksum line, type and limits against the connected servo) and servo replies (edge timestamps checked against timing windows; the wire has no parity, checksum or length field) |
+| `protocols/dshot` | the ESC telemetry reply: 21 line bits, GCR (group-coded recording) decode, 4-bit checksum, extended telemetry frame types |
+| `protocols/pdmini` | replies of the PD (Power Delivery) Mini module on its UART (universal asynchronous receiver-transmitter): command byte, length (fixed per command, or a length byte for text) and CRC8 (cyclic redundancy check) |
+| `protocols/phase_tap` | words from the DMA (direct memory access) ring of the motor-phase capture: 31-bit counts extended to 64 bits, overrun detection |
 
 All of these are fed malformed input by the test suite, which runs under
 AddressSanitizer and UBSan (UndefinedBehaviorSanitizer) in CI (continuous

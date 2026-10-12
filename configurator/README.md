@@ -398,7 +398,7 @@ Parts of `src/export/`:
 | `font.ts`, `pdf.ts` | TrueType reader and PDF writer. |
 | `font/` | `Inter-Regular-subset.ttf` (22488 bytes), `Inter-Bold-subset.ttf` (22620 bytes), `OFL.txt`. |
 
-The export chunk is 108 kB (51 kB gzip). The first load carries the button,
+The export chunk is 112.44 kB (51.83 kB gzip). The first load carries the button,
 its strings and the chunk loader: 3.2 kB (1.1 kB gzip).
 
 The font is Inter 4.001 by The Inter Project Authors under the SIL Open Font
@@ -438,7 +438,7 @@ file names no stage, so the checks follow the stages as one list.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Print output: not checked on paper.
-- PDF export: the first use needs the network for the export chunk of 108 kB. Later uses work offline
+- PDF export: the first use needs the network for the export chunk of 112.44 kB. Later uses work offline
   until the page reloads.
 - PDF export: the file has no structure tags (not PDF/UA). A screen reader reads the text in page order
   and does not announce headings or table cells.

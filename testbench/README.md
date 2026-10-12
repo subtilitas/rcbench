@@ -31,7 +31,7 @@ state.
 
 ## What it is for
 
-Six things the tree does that only an instrument can confirm:
+Seven things the tree does that only an instrument can confirm:
 
 | | What is claimed | What has to be seen |
 |---|---|---|
@@ -41,8 +41,10 @@ Six things the tree does that only an instrument can confirm:
 | Servo PWM (pulse-width modulation) | 50 Hz, 500 to 2500 µs, 1 µs resolution | the frame period, the pulse at both ends of travel, and the jitter |
 | SBUS | inverted serial, 100 kbit/s, 25 bytes | the framing, and what the panel makes of a receiver in failsafe |
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
+| KST wire | Manchester coding, half-cell 25.4 µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600 µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
 
-And the programmer's four ESC protocols and one servo protocol, which the
+And the programmer's four ESC protocols and one servo protocol (the KST
+wire above is a second one), which the
 panel can drive but which no test exercises against a device: the one-wire
 bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud), the
 text command line of ESCape32 firmware over the signal line, the framed
@@ -335,7 +337,7 @@ per run:
   come before any capture of the bench itself is worth reading.
 - **Responder.** It pretends to be the device at the other end — an ESC that
   answers a BLHeli_S bootloader handshake, or one that emits OpenYGE
-  telemetry, or a servo that answers the Hitec D-series protocol. That makes the panel's
+  telemetry, or a servo that answers the Hitec D-series protocol or the KST wire. That makes the panel's
   programmer and telemetry paths testable without owning every device. It also
   answers as a touch controller at its own address; see below.
 - **Hands.** It closes the relays across both boards' reset and boot buttons,

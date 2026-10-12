@@ -40,7 +40,10 @@ Servo auf unter 12 s. Auf Hardware nicht gemessen.
 | Stall-Timeout | über 1,0 A für 400 ms | Abbruch |
 | Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
-Alle drei laufen auf dem Koprozessor.
+Die Endlagensuche und der Abgleich sind Zustandsautomaten, die Messwerte
+bekommen. Die Host-Suite lässt sie gegen ein Servomodell laufen. Keines der
+beiden Firmware-Images ruft sie auf, die Schutzfunktionen oben wirken also an
+keiner Hardware.
 
 ### Ergebnisse
 
@@ -68,8 +71,9 @@ durch, in der Mitte und bei ±300 µs Ausschlag:
 - ein Unterschied in der Mitte ist ein Offsetfehler (Trimmung);
 - ein Unterschied an einem Ende ist ein Wegfehler für dieses Ende.
 
-Jeder Suchlauf deckt ±40 µs um den aktuell besten Punkt in 7 Schritten ab und
-engt dreimal ein. Jeder Punkt wartet 120 ms plus die Fahrzeit bei angenommenen
+Der erste Suchlauf deckt ±40 µs um den Startpunkt der Stufe in 7 Schritten ab.
+Zwei weitere Läufe decken ein engeres Fenster um den besten Punkt des
+vorigen ab, eine Stufe fährt also 3 Läufe. Jeder Punkt wartet 120 ms plus die Fahrzeit bei angenommenen
 0,8 µs/ms und mittelt den Strom dann über 100 ms. Ein Minimum gilt, wenn der
 Strom über den Suchlauf um mindestens 0,08 A schwankt. Die Stromobergrenze
 für das Paar liegt bei 4,0 A.
@@ -668,6 +672,22 @@ gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBR
 <Grund>`, eine abgeschnittene Stufe ist mit `(verkürzt)` markiert, eine nie
 erreichte mit `nicht gelaufen`. `Kann zerstören` nennt das rote Schild, wenn
 ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
+
+Ein Lauf am INA3221 hat diese Zeilen anstelle derer des PD mini, hier vom
+modellierten Prüfstand der Host-Suite:
+
+```
+Log:             die .CSV mit der Nummer dieser Datei, eine Zeile je Fenster des INA3221
+Strom:           INA3221 CH1, Shunt 100.0 mOhm, Bereich 1.638 A
+Spannung:        INA3221 CH1, Lastseite des Shunts
+Shunt:           bis 0.164 V fallen am Bereichsende an ihm ab; der Sollwert wird dafür nicht angehoben
+Messwerte:       20.0 /s Fenster vom INA3221 geschlossen, 20.0 /s erreichten den Test
+Übersprungen:    0 Fenster des INA3221 erreichten den Test nie
+Auflösung:       ein Fenster alle 50 ms: eine Stellzeit ist um bis zu zwei Fenster und den Poll, der sie liest, zu lang
+...
+Position: nichts misst das Ruderhorn; jedes Ergebnis ist der Strom des INA3221 auf CH1.
+Strom zwischen zwei 1-ms-Messwerten von CH1: ein Fenster enthält deren Mittel, Höchst- und Tiefstwert.
+```
 
 ### Was nicht gemessen ist
 

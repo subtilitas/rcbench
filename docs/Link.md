@@ -1220,7 +1220,8 @@ bit:
 
 Eight quanta is the minimum a bit may have. That is why the XL2515 needs a 16
 MHz crystal for 1 Mbit/s and why its sample point is fixed at 75%; the TWAI
-timing is chosen to match. `test_can_timing` pins both.
+timing is chosen to match. `test_can_timing` pins the XL2515 row. For the TWAI it checks
+the 75% sample point and a jump width of at least 2, not the values of the row.
 
 ### Budget
 

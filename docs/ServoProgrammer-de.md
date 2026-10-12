@@ -195,7 +195,7 @@ stellt.
 | --- | --- | --- | --- |
 | PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in 0,1 V; bis 8,4 V mit HV SERVO ein | 5,0 V | die Versorgungsspannung des Servos im Programmiermodus |
 | STROMGRENZE | 50 bis 3000 mA | 1000 mA | die Stromgrenze der Versorgung während des Programmierens |
-| WARTEN VOR PWM | 0 bis 10 000 ms | 100 ms | die Zeit zwischen dem Ende des Programmierens und dem ersten Puls |
+| WARTEN VOR PWM | 0 bis 10 000 ms | 100 ms | die Zeit, die der Port seine Leitung zwischen **VERLASSEN** und dem ersten Puls auf Low hält |
 
 Jeder Eintrag öffnet die Zahlentastatur mit seinem Bereich. Ein Wert
 außerhalb des Bereichs wird nicht übernommen. Alle drei werden mit den

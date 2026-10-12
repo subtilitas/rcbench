@@ -8,6 +8,13 @@ history is in git.
 
 ### Changed
 
+- Text corrections, no behaviour change: SECURITY.md lists all 9 input
+  parsers; the Manifest drops its state column and points to STATUS.md;
+  STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
+  directory layout; sizes, counts and figures in the KST, DShot, configurator,
+  NOTICE and First run texts match the code; the Servo, OpenYGE and
+  monostable comments no longer say that unwired code runs; DShot, Servo,
+  Bringup and Manifest German pages match the English ones.
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming

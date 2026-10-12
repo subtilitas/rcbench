@@ -16,9 +16,9 @@
 static const char *TAG = "knob";
 
 /*
- * Short, because the bus is shared with the touch controller the control
- * task reads every 5 ms: a sensor that holds the bus costs that task at most
- * this long per transaction, far under the 150 ms the safety line is watched
+ * Short, because the bus is shared with the touch controller, which the touch
+ * task reads every 10 ms by default (and on the touch interrupt): a sensor
+ * that holds the bus costs that task at most this long per transaction, far under the 150 ms the safety line is watched
  * against.  The three transactions of one poll take about 0.3 ms at 400 kHz.
  */
 #define KNOB_I2C_TIMEOUT_MS 5

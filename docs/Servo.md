@@ -38,7 +38,9 @@ Duration: the host test holds a full search against the modelled servo to under
 | Stall timeout | above 1.0 A for 400 ms | abort |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
-All three run on the coprocessor.
+The limit search and the synchroniser are state machines fed measurements. The
+host suite runs them against a modelled servo. Neither firmware image calls
+them, so the protections above act on no hardware.
 
 ### Results
 
@@ -64,8 +66,9 @@ The search holds servo A and sweeps a correction on servo B, at centre and at
 - a difference at centre is an offset error (trim);
 - a difference at an end is a travel error for that end.
 
-Each scan covers ±40 µs around the current best point in 7 steps and narrows
-three times. Each point waits 120 ms plus the travel time at an assumed 0.8
+The first scan covers ±40 µs around the stage's starting point in 7 steps. Two
+further scans cover a narrower window around the best point of the one before,
+so a stage runs 3 scans. Each point waits 120 ms plus the travel time at an assumed 0.8
 µs/ms, then averages the current over 100 ms. A minimum is accepted when the
 current varies by at least 0.08 A across the scan. The current ceiling is 4.0 A
 for the pair.

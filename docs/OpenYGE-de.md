@@ -390,12 +390,14 @@ hinter Rauschen mit einem plausiblen Sync ankommt.
 
 ## 9. Stand in rcbench
 
-Das Protokoll läuft auf dem Koprozessor: eine Anfrage-Antwort-Schleife mit
-20 Hz, einer Umschaltzeit im Mikrosekundenbereich und einem Timeout, das
-feuert, ob Bytes kommen oder nicht. Das Panel sieht das Ergebnis als
-`bench_state` über das Page-Protokoll; kein OpenYGE-Frame überquert den
-Panel-Link. Ein Gaskommando reist als Schreiben auf die Control-Page hinter
-dem Heartbeat und dem Failsafe des Koprozessors ([Sicherheit](Safety-de.md)).
+Keines der beiden Boards führt das Protokoll bisher aus: beide
+Firmware-Images binden das Modul ein, und nichts ruft es auf. Der Entwurf legt es
+auf den Koprozessor: eine Anfrage-Antwort-Schleife mit 20 Hz, einer
+Umschaltzeit im Mikrosekundenbereich und einem Timeout, das feuert, ob Bytes
+kommen oder nicht. Das Panel sähe das Ergebnis als `bench_state` über das
+Page-Protokoll; kein OpenYGE-Frame überquerte den Panel-Link. Ein Gaskommando
+reiste als Schreiben auf die Control-Page hinter dem Heartbeat und dem Failsafe
+des Koprozessors ([Sicherheit](Safety-de.md)).
 
 Ein YGE-ESC meldet Spannung, Strom, Verbrauch, eRPM und vier Temperaturen
 selbst, sodass jedes modellierte Feld von `bench_state` eine Quelle hat, bevor

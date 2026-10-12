@@ -25,8 +25,9 @@
  * separate measurement with the accelerometer on the surface.
  *
  * Fed measurements and returning commands, as servo_limit is: the host suite
- * runs it against a modelled pair and the coprocessor runs it against a real
- * one unchanged.
+ * runs it against a modelled pair.  The coprocessor image does not call it
+ * yet; it takes measurements and returns commands, so a real pair needs no
+ * change here.
  *
  * SPDX-License-Identifier: MIT
  */
