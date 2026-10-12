@@ -886,7 +886,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     /* 4.15 adds an operation, a state, a write register and two refusals
      * after the ones there were: the way from PROGRAMMING to PWM without a
      * supply cycle. */
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 15u);
+    CHECK(LINK_PROTOCOL_MINOR >= 15u);
     CHECK_EQ(LINK_MINOR_KST_LEAVE, 15u);
     CHECK_EQ(LINK_KST_OP_LEAVE, 10);
     CHECK_EQ(LINK_KST_OP_COUNT, 11);
@@ -1224,6 +1224,18 @@ TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
     CHECK_EQ(outputs_slots_armed_check(regs, NULL, true), 0u);
 }
 
+/*
+ * 4.16 moves no register and adds no refusal code: a PWM endpoint longer
+ * than its frame is refused with the BAD_VALUE every limit uses.
+ */
+TEST_CASE(a_pulse_longer_than_its_frame_needs_no_new_register)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 16u);
+    CHECK_EQ(LINK_MINOR_PULSE_FRAME, 16u);
+    CHECK(LINK_MINOR_PULSE_FRAME > LINK_MINOR_KST_LEAVE);
+    CHECK_EQ(LINK_CC_CEILING_US, 2500u);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -1263,5 +1275,6 @@ int main(void)
     RUN(the_fault_bits_are_one_bit_each);
     RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
     RUN(outputs_under_an_armed_bank_takes_no_change);
+    RUN(a_pulse_longer_than_its_frame_needs_no_new_register);
     return test_summary("link_pages");
 }

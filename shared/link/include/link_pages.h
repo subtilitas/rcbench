@@ -76,12 +76,16 @@ typedef enum {
  * 4.14 the servo programming page (KST, 0x32) plans a write after the
  * command's frame and reports LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
  * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to a
- * coprocessor from 4.15 only.  A
+ * coprocessor from 4.15 only.  From 4.16 CHAN_CFG, OUTPUTS, BIND, SERVO and
+ * PROG refuse a write that would leave a PWM output with an endpoint longer
+ * than its frame (out_pwm_pulse_max()); the panel states a port's range
+ * before it switches the port's pulse on, which an older coprocessor takes
+ * as well.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 15u
+#define LINK_PROTOCOL_MINOR 16u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -104,6 +108,13 @@ typedef enum {
  *  Minor 14 refuses the operation with LINK_NACK_BAD_VALUE and the register
  *  with LINK_NACK_READ_ONLY. */
 #define LINK_MINOR_KST_LEAVE 15u
+/** The first minor that refuses a pulse longer than its frame with
+ *  LINK_NACK_BAD_VALUE: an endpoint above out_pwm_pulse_max() of the rate
+ *  the PWM output runs at, on CHAN_CFG, OUTPUTS, BIND, SERVO and PROG, and
+ *  a stored slot with one starts unbound.  Minor 15 takes the write and
+ *  clamps the pulse to the frame's last count, while the page reads back
+ *  the endpoint written. */
+#define LINK_MINOR_PULSE_FRAME 16u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -155,6 +166,12 @@ enum {
  *
  * The limits are enforced at the coprocessor, the end holding the wire, so a
  * restarted, reflashed or wrong host cannot drive a servo into its stops.
+ *
+ * A PWM output's endpoints also fit its frame (since 4.16): neither longer
+ * than out_pwm_pulse_max() of the rate the output runs at, one microsecond
+ * under the period -- 1784 us at 560 Hz, 2499 us at 400 Hz.  At 333 Hz and
+ * below the ceiling is the shorter of the two.  A write that would leave a
+ * longer one is refused with BAD_VALUE (outputs_pulse_check()).
  */
 #define LINK_CC_DEFAULT_MIN 1000u
 #define LINK_CC_DEFAULT_MAX 2000u

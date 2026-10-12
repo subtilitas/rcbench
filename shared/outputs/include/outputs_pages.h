@@ -69,6 +69,47 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
                                  uint16_t servo_hz);
 
 /**
+ * Whether every pulse the bank @p o can render fits the frame that carries
+ * it: 0, or LINK_NACK_BAD_VALUE (protocol 4.16).
+ *
+ * A pulse fits when it is no longer than out_pwm_pulse_max() of its frame
+ * rate: one microsecond less than the period, 1784 us at 560 Hz and 2499 us
+ * at 400 Hz.  A longer one leaves the pin high for the whole frame.  What
+ * is judged is a channel's longer endpoint, the pulse at full travel.
+ *
+ * Each PWM slot is judged at the rate it runs at (outputs_slot_rates() with
+ * @p servo_hz), and each channel in @p channels -- bit n is bank channel n,
+ * the programming ports whose pulse is on -- at @p channels_hz.  PPM and
+ * DShot slots are not judged: their frame is built by their driver.
+ */
+uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
+                            uint16_t channels, uint16_t channels_hz);
+
+/**
+ * outputs_pulse_check() of the bank a write would leave, judged on a copy:
+ * @p chan_cfg applied, and @p slots too when it is not NULL -- a BIND
+ * commit puts both pages in force at once, so its CHAN_CFG page is judged
+ * with its own OUTPUTS page.  0, or LINK_NACK_BAD_VALUE.
+ */
+uint8_t outputs_chan_cfg_pulse_check(const outputs_t *o,
+                                     const uint16_t *chan_cfg,
+                                     const uint16_t *slots,
+                                     uint16_t servo_hz);
+uint8_t outputs_slots_pulse_check(const outputs_t *o, const uint16_t *slots,
+                                  uint16_t servo_hz);
+
+/**
+ * A stored OUTPUTS page made safe to restore under the channels of @p o:
+ * every PWM slot whose channel's longer endpoint does not fit the frame of
+ * the slot's own rate gets driver 0 in @p slots, and the count is returned.
+ * The SERVO page starts at 0, so a restart runs each slot at its own rate,
+ * and a slot stored by a build that took the combination -- or taken under
+ * a SERVO rate that no longer holds -- starts unbound rather than pinned
+ * high.  The page reads back driver 0 for it.
+ */
+unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
+
+/**
  * The slots, one bit each, whose four OUTPUTS registers differ between
  * @p prev and @p next.
  */

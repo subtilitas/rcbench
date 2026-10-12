@@ -17,11 +17,12 @@
 #include "outputs.h"
 
 /*
- * One microsecond per count.  The frame period then fits the sixteen-bit
- * counter down to 16 Hz, past the 40 Hz floor the driver table sets, and a
- * microsecond is the resolution every pulse in this firmware is expressed in.
+ * One microsecond per count (OUT_PWM_TICK_HZ).  The frame period then fits
+ * the sixteen-bit counter down to 16 Hz, past the 40 Hz floor the driver
+ * table sets, and a microsecond is the resolution every pulse in this
+ * firmware is expressed in.
  */
-#define TICK_HZ  1000000u
+#define TICK_HZ  OUT_PWM_TICK_HZ
 
 /*
  * What is bound, so the sharing rules can be checked and a release can put
@@ -48,10 +49,11 @@ static binding_t *find(uint8_t pin)
     return NULL;
 }
 
+/* The frame's last count, which is the longest pulse the output pages let
+ * through at this rate: the same function answers both. */
 static uint16_t wrap_for(uint16_t rate_hz)
 {
-    const uint32_t period = TICK_HZ / rate_hz;
-    return (period == 0u || period > 65536u) ? 0u : (uint16_t)(period - 1u);
+    return out_pwm_pulse_max(rate_hz);
 }
 
 bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
@@ -193,10 +195,12 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us)
      * which is not a long pulse but no pulse at all.  Clamped to the wrap,
      * so there is always a tick of low and the output stays a pulse train.
      *
-     * The combination is refused nowhere, because the endpoint is on the
-     * CHAN_CFG page and the rate is on the OUTPUTS or the SERVO page, and
-     * either may be written after the other.  This is where both are known.
-     * At 560 Hz the wrap is 1784 us.
+     * The pages refuse the combination (out_pwm_pulse_max(), protocol
+     * 4.16): CHAN_CFG, OUTPUTS, BIND, SERVO and PROG each refuse a write
+     * that would leave an endpoint longer than the wrap of the frame that
+     * renders it, and a stored slot that would starts unbound.  No page
+     * write reaches this clamp; it stays for a caller outside them.  At
+     * 560 Hz the wrap is 1784 us.
      */
     pwm_set_gpio_level(pin, (pulse_us > b->wrap) ? b->wrap : pulse_us);
 }

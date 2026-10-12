@@ -254,6 +254,84 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
     return outputs_servo_rate_check(&s_trial, servo_hz);
 }
 
+/* Whether channel @p ch's longer endpoint fits a frame of @p hz.  The bank
+ * keeps the pair straightened, so max_us is the longer one. */
+static bool pulse_fits(const outputs_t *o, unsigned ch, uint16_t hz)
+{
+    return ch < OUT_MAX_CHANNELS
+           && o->channel[ch].max_us <= out_pwm_pulse_max(hz);
+}
+
+uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
+                            uint16_t channels, uint16_t channels_hz)
+{
+    if (o == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(o, servo_hz, rate);
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        const out_slot_t *sl = &o->slot[i];
+        if (sl->driver == OUT_DRIVER_PWM
+            && !pulse_fits(o, sl->first_channel, rate[i])) {
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
+    for (unsigned ch = 0; ch < OUT_MAX_CHANNELS; ++ch) {
+        if ((channels & (1u << ch)) != 0u
+            && !pulse_fits(o, ch, channels_hz)) {
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
+    return 0u;
+}
+
+uint8_t outputs_chan_cfg_pulse_check(const outputs_t *o,
+                                     const uint16_t *chan_cfg,
+                                     const uint16_t *slots,
+                                     uint16_t servo_hz)
+{
+    if (o == NULL || chan_cfg == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    s_trial = *o;
+    outputs_chan_cfg_apply(&s_trial, chan_cfg);
+    if (slots != NULL) {
+        outputs_slots_apply(&s_trial, slots);
+    }
+    return outputs_pulse_check(&s_trial, servo_hz, 0u, 0u);
+}
+
+uint8_t outputs_slots_pulse_check(const outputs_t *o, const uint16_t *slots,
+                                  uint16_t servo_hz)
+{
+    if (o == NULL || slots == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    s_trial = *o;
+    outputs_slots_apply(&s_trial, slots);
+    return outputs_pulse_check(&s_trial, servo_hz, 0u, 0u);
+}
+
+unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots)
+{
+    if (o == NULL || slots == NULL) {
+        return 0u;
+    }
+    s_trial = *o;
+    outputs_slots_apply(&s_trial, slots);
+    unsigned n = 0u;
+    for (unsigned i = 0; i < LINK_OUT_SLOTS; ++i) {
+        const out_slot_t *sl = &s_trial.slot[i];
+        if (sl->driver == OUT_DRIVER_PWM
+            && !pulse_fits(&s_trial, sl->first_channel, sl->rate_hz)) {
+            slots[(size_t)i * LINK_OS_STRIDE + LINK_OS_DRIVER] = 0u;
+            ++n;
+        }
+    }
+    return n;
+}
+
 uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next)
 {
     uint8_t mask = 0u;

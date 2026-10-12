@@ -92,8 +92,29 @@ durch die Rate.
 | | |
 | --- | --- |
 | Frame Rate | 40 bis 560 Hz |
-| Puls | 400 bis 2500 µs, außerhalb verweigert |
+| Puls | 400 bis 2500 µs und höchstens die Periode minus 1 µs, außerhalb verweigert |
 | Auflösung | 1 µs |
+
+Ein Puls ist nie so lang wie sein Frame. Der längste, den ein Frame trägt, ist
+die Periode minus 1 µs, abgerundet: der letzte Zählerstand, der den Pin 1 µs
+auf Low lässt.
+
+| Rate | Periode | Längster Puls |
+| ---: | ---: | ---: |
+| 560 Hz | 1785 µs | 1784 µs |
+| 500 Hz | 2000 µs | 1999 µs |
+| 400 Hz | 2500 µs | 2499 µs |
+| 333 Hz und darunter | 3003 µs und mehr | 2500 µs, die Obergrenze |
+
+Ein Schreiben auf CHAN_CFG, OUTPUTS, BIND, SERVO oder PROG, das einem
+PWM-Ausgang einen längeren Endpunkt hinterließe, wird mit BAD_VALUE
+verweigert, und nichts ändert sich. Beurteilt wird die Rate, mit der der
+Ausgang läuft: die von SERVO für eine Surface, solange sie nicht 0 ist, sonst
+die eigene des Slots. Ein Standardservo mit 1000 bis 2000 µs nimmt also
+499 Hz und wird bei 500 Hz und 560 Hz verweigert. Ein gespeicherter Slot,
+dessen Endpunkt nicht zu seiner eigenen Rate passt, startet ungebunden. Die
+Regel ist `out_pwm_pulse_max()` und `outputs_pulse_check()`; [der
+Link](Link-de.md#ein-puls-nicht-länger-als-sein-frame) hat die Seite der Pages.
 
 Ein Slice sind zwei Kanäle an einem Zähler, zwei Pins auf demselben Slice laufen
 also mit derselben Frame Rate. Eine zweite Bindung, die auf einem belegten Slice
