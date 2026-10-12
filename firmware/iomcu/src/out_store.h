@@ -19,8 +19,10 @@
  * at 1 Mbit/s is about 130 us and the XL2515 holds two of them, so a request
  * arriving in that window is lost with nothing wrong on the wire.  That
  * measurement is the two operations inside one window; neither half of it was
- * timed on its own.  A lost request costs the panel LINK_HOST_TIMEOUT_MS
- * (1000 ms) of waiting, and 1000 ms of silence latches this end's
+ * timed on its own.  It is 1 sample on the bring-up module, with the flash
+ * part not yet identified; the window is to be argued again against the
+ * part's datasheet maximum once the part is known.  A lost request costs
+ * the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's
  * LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough for that,
  * which is what makes the length of these windows a safety number rather than
  * a performance one.
