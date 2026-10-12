@@ -954,9 +954,14 @@ nicht die der Page plus 1 ist, wird mit BAD_VALUE abgewiesen und ändert
 nichts. Der zuletzt angenommene Frame, noch einmal gesendet, wird quittiert
 und tut nichts; ein Kommando, dessen Antwort verloren ging, wird also
 unverändert noch einmal gesendet. Nach einem Abbruch am Panel wird es nicht
-noch einmal gesendet: das Panel liest die Register 0 bis 3, und eine `SEQ`,
-die nicht die des Kommandos ist, heißt, dass es nicht angenommen wurde. Es
-gilt dann als verworfen. Ein angenommenes Kommando wird quittiert;
+noch einmal gesendet: das Panel liest die Register 0 bis 3. Eine `SEQ`, die
+nicht die des Kommandos ist, heißt, dass es nicht angenommen wurde; es gilt
+dann als verworfen. Die `SEQ` des Kommandos heißt nur zusammen mit seiner
+Operation in `OP` oder einer Abweisung im oberen Byte von
+`LINK_KS_RESULT`, dass es angenommen wurde. Ein neu gestarteter Koprozessor
+liest `SEQ` 0, Operation 0 und keine Abweisung: beim Kommando nach `SEQ`
+0xFFFF, dessen `SEQ` 0 ist, meldet das Panel einen Neustart und kein
+Ergebnis. Ein angenommenes Kommando wird quittiert;
 was aus ihm wurde, steht in `LINK_KS_RESULT`.
 
 | Operation | Wert | Tut |

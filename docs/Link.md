@@ -871,8 +871,12 @@ that is neither 0 nor 0x57A5 or a `SEQ` other than the page's plus 1 is
 refused with BAD_VALUE and changes nothing. The frame last taken, sent
 again, is acknowledged and does nothing, so a command whose answer was lost
 is sent again as it was. After an abort at the panel it is not sent
-again: the panel reads registers 0 to 3, and a `SEQ` other than the
-command's means the command was not taken. It then counts as dropped. A
+again: the panel reads registers 0 to 3. A `SEQ` other than the command's
+means the command was not taken, and it counts as dropped. The command's
+`SEQ` means it was taken only together with its operation in `OP` or a
+refusal in `RESULT`'s high byte. A coprocessor that starts again reads
+`SEQ` 0, operation 0 and no refusal: at the command after `SEQ` 0xFFFF,
+whose `SEQ` is 0, the panel reports a restart and no result. A
 command that is taken is acknowledged; what
 became of it is in `RESULT`.
 

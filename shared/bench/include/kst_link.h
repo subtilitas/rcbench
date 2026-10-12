@@ -308,7 +308,11 @@ kst_link_start_t kst_link_fetch(kst_link_t *k);
  *  is dropped (KST_LINK_OUT_DROPPED).  A command that went without an
  *  answer is not sent again: a read of registers 0 to 3 follows, and a
  *  page whose SEQ is not the command's did not take it, which drops the
- *  request too, unless the coprocessor started again.  A page that took it
+ *  request too, unless the coprocessor started again.  A page took it when
+ *  it shows the command's SEQ and either the command's operation in
+ *  LINK_KS_OP or a refusal.  The command's SEQ with operation NONE and no
+ *  refusal is a coprocessor that started again, at SEQ 0 after 0xFFFF:
+ *  KST_LINK_OUT_RESTARTED, never KST_LINK_OUT_DONE.  A page that took it
  *  runs the operation, and the ABORT ends it with KST_SES_ERR_ABORTED.
  *  The read unanswered KST_LINK_RETRIES times ends the request with
  *  KST_LINK_OUT_NO_ANSWER.  The command ABORT is sent as soon as the page

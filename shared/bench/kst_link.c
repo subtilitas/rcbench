@@ -396,16 +396,31 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
            && ask_status(k, now_ms, x);
 }
 
+/* Whether the page @p regs took the command that was not sent again.  A
+ * command taken leaves its SEQ, and either its operation in LINK_KS_OP or a
+ * refusal in LINK_KS_RESULT's high byte.  A page that started again has SEQ
+ * 0, operation NONE and no refusal: at SEQ 0, the command after 0xFFFF, the
+ * SEQ alone does not tell the two apart.  The command's operation is never
+ * NONE. */
+static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
+{
+    return regs[LINK_KS_SEQ] == k->cmd[LINK_KS_W_SEQ]
+           && ((regs[LINK_KS_RESULT] >> 8) != 0u
+               || LINK_KS_OP_OF(regs[LINK_KS_OP]) == k->op);
+}
+
 static void on_status(kst_link_t *k, const uint16_t *regs)
 {
     bool restarted = k->known && regs[LINK_KS_SEQ] != k->seq;
     bool dropped = false;
 
     if (k->cmd_doubt) {
-        /* The SEQ says whether the page took the command that was not
-         * sent again: its SEQ, taken; the one before it, not. */
+        /* The page says whether it took the command that was not sent
+         * again: its SEQ and its trace, taken; the SEQ before it, not.  Any
+         * other page started again, the command's SEQ without its trace
+         * too. */
         k->cmd_doubt = false;
-        if (regs[LINK_KS_SEQ] == k->cmd[LINK_KS_W_SEQ]) {
+        if (page_took_cmd(k, regs)) {
             restarted = false;
             k->verdict = true;
             k->taken = true;

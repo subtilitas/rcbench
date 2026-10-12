@@ -103,8 +103,12 @@ history is in git.
   KST page instead: a `SEQ` other than the command's ends the request as
   dropped, with nothing written; a page that took the command runs it, and
   the ABORT that follows ends it with result ABORTED. A read that stays
-  unanswered 3 times ends the request with no answer. Before, a WRITE whose
-  answer was lost was sent again ahead of the ABORT and could run.
+  unanswered 3 times ends the request with no answer. The command's `SEQ`
+  counts as taken only with the command's operation in `OP` or a refusal in
+  `RESULT`: at the command after `SEQ` 0xFFFF, whose `SEQ` is 0, a
+  coprocessor that started again ends the request as restarted, not as done
+  with result OK. Before, a WRITE whose answer was lost was sent again ahead
+  of the ABORT and could run.
 - `kst_session_power_cycled()` drops the session's backup, the record of
   its writes (`wrote_regs`) and the lock, after the end of an operation that
   runs. An edit, a write and a restore end with `KST_SES_ERR_NO_BACKUP`
