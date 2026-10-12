@@ -425,6 +425,7 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
      * are the last ones, and no total or trip takes them as new. */
     st->samples  = s->samples_seen;
     st->taken_ms = s->sample_ms;
+    st->stamped  = true;
     st->ok = ((uint32_t)(now_ms - s->sample_ms) < SUPPLY_LINK_STALE_MS)
                  ? (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT) : 0u;
 }

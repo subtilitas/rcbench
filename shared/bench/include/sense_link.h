@@ -269,6 +269,7 @@ typedef struct {
      *  for each window that closed after it and came in the same read.
      *  The windows of one read are 50 ms apart, oldest first. */
     uint32_t taken_ms;
+    bool     stamped;     /**< taken_ms is set; 0 is a tick like any other */
 } sense_link_win_t;
 
 /** What the servo rail's meter is chosen from (servo_source.h), as of the

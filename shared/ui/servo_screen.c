@@ -2046,7 +2046,7 @@ static servo_test_reading_t test_reading_of(const supply_state_t *st)
     r.samples  = st->samples;
     /* Stamped where the panel had it; a sample without a stamp at its
      * arrival. */
-    r.taken_ms = (st->taken_ms != 0u) ? st->taken_ms : test_now();
+    r.taken_ms = st->stamped ? st->taken_ms : test_now();
     return r;
 }
 
@@ -2242,7 +2242,7 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
             .min_ma   = w->min_ma,
             .mean_mv  = w->mean_mv,
             .min_mv   = w->min_mv,
-            .taken_ms = (w->taken_ms != 0u) ? w->taken_ms : test_now(),
+            .taken_ms = w->stamped ? w->taken_ms : test_now(),
         };
         servo_test_window(&s.test, &tw,
                           s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
