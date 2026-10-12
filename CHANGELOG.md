@@ -45,6 +45,12 @@ history is in git.
   signed difference. The `$D` line is documented as written about 50 ms after
   its `t=`, and `servo_move.h`, `bench_frame.c` and `servo_sync.h` describe
   what the code does.
+- The journal file's check in `kst_prog.c` calls `link_crc()`; a known-answer
+  test holds the value CRC-16/CCITT-FALSE gives for a journal file.
+- The programmer's pass gate uses C11 `<stdatomic.h>` in place of the
+  `__atomic_*` builtins.
+- The configurator takes the limit of 2 pictures per part from the core and
+  builds the build order of the page and of the PDF from one function.
 - `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
   `Pins.md` states that it is the draft of the planned IO board.
 - The research workflow scripts are no longer in the repository. They are kept
@@ -74,7 +80,6 @@ history is in git.
   of the synchroniser (±40, ±13, ±4 µs) and correct the half-turn example.
   The testbench documents carry no development history and the corrected
   splash hold (1.6 s), heartbeat rate and run state.
-
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming
@@ -88,6 +93,20 @@ history is in git.
   warnings the same way. The check holds no release back.
 - CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
   exact versions.
+
+### Removed
+
+- The placeholder screen for a screen id without a screen, its 16 English and
+  16 German strings, the SOON tile mark and the per-file coverage exemption
+  that existed for it. A screen id that names no screen draws the overview.
+- Six exported functions used in one file are `static`: `esc_det_drop_group`,
+  `esc_det_floor_only`, `ina228_ct_us`, `servo_test_start_str`,
+  `balance_screen_angle` and `ui_tabs_label`.
+- `ui_hero_render`, which no screen draws; `ui_hero_def_t` stays for the
+  motor screen's rail cards.
+- `board_lcd_reset()` in the panel firmware, which has no caller. The panel
+  keeps `storage_deinit()`, the unmount for the SD card remount. Also the `conflicts` field of the configurator's resolved setup,
+  which is always empty.
 
 ### Fixed
 
