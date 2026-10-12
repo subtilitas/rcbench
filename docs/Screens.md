@@ -884,19 +884,19 @@ separately.
 **OUTPUT ON is a two-second hold**, the gesture and the fade ARM uses. OUTPUT
 OFF is a tap. STOP switches the output off on every screen. So does every
 other stop the bench counts -- touch that stops answering, an ON whose touch
-events went missing before the screen showed it, and the coprocessor refusing
-to stay armed -- and a supply that stops answering, and a trip. The output
-stays off until it is switched on again. Leaving the screen switches off an
-output SUPPLY switched on: one reported on, or an ON on its way. SERVO and
-ESC STICK do the same for the output each switched on, so an output is on
-only while the screen that switched it on is shown. The exception: an
-output SERVO switched on stays on after SERVO is left while the servo
-programmer holds its port, until the port lets go (see SERVO). A servo is powered from SERVO and an ESC from ESC STICK.
-MOTOR & ESC switches no supply; an ESC run there is powered from its own
-source. An output another screen switched on
-stays as it is when SUPPLY is left. The keypad, the HV question and the
-other overlays of SUPPLY are no leave. The link-lost screen, which has no
-STOP, does not open while the output is on.
+events went missing before a whole frame saw the output on, and the
+coprocessor refusing to stay armed -- and a supply that stops answering, and a
+trip. The output stays off until it is switched on again. Leaving the screen
+switches off an output SUPPLY switched on: one reported on, or an ON on its
+way. SERVO and ESC STICK do the same for the output each switched on, so an
+output is on only while the screen that switched it on is shown. The
+exception: an output SERVO switched on stays on after SERVO is left while the
+servo programmer holds its port, until the port lets go (see SERVO). A servo
+is powered from SERVO and an ESC from ESC STICK. MOTOR & ESC switches no
+supply; an ESC run there is powered from its own source. An output another
+screen switched on stays as it is when SUPPLY is left. The keypad, the HV
+question and the other overlays of SUPPLY are no leave. The link-lost screen,
+which has no STOP, does not open while the output is on.
 
 **With the PD mini**, an OFF goes to the SUPPLY page before anything else
 the panel owes it, and the coprocessor switches the output off itself when

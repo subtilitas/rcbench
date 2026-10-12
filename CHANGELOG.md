@@ -55,11 +55,14 @@ history is in git.
   on after SERVO is left while the servo programmer holds its port, until
   the port lets go, then goes off unless SERVO is shown again first; an ON
   SERVO asked for that is on its way when the port takes the supply counts
-  as switched on. A touch loss during a hold on OUTPUT ON drops the ON:
-  the screen drops one not yet sent, and the control task drops one
-  already sent or switches the output off (`touch lost while switching on
-  -- output off`). Until then that ON stays the screen's. MOTOR & ESC switches no supply; an ESC run there is powered from
-  its own source.
+  as switched on. A touch loss during a hold on OUTPUT ON drops the ON. The
+  screen drops one not yet sent. The control task drops one already sent, or
+  switches the output off (`touch lost while switching on -- output off`)
+  until a frame with an unbroken touch stream has seen it on. That frame can
+  come up to 50 ms (one supply sample) before SUPPLY shows the output on. An
+  ON a loss meets after that frame stays on, stays the screen's and goes off
+  with the leave. MOTOR & ESC switches no supply; an ESC run there is
+  powered from its own source.
 - The servo programmer's record of an interrupted write (`KST/KST.TXT`) is
   version 2: `RCBENCH KST 2` with a `pin=` line, the GPIO the port drove.
   The record's lines name that pin (`Connect it on GP13 and READ ALL.`). A

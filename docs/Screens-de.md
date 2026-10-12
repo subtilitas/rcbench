@@ -968,26 +968,24 @@ ab.
 
 **AUSGANG EIN ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
 wie ARM. AUSGANG AUS ist ein Tippen. STOP schaltet den Ausgang auf jedem
-Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
-Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
-gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
-bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine Abschaltung.
-Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des
-Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet hat: einen,
-der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC STICK tun
-dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein Ausgang
-nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet hat.
-Die Ausnahme: ein Ausgang, den SERVO eingeschaltet hat, bleibt nach dem
-Verlassen von SERVO an, solange der Servo-Programmierer seinen Port hält,
-bis der Port loslässt (siehe SERVO). Ein
-Servo wird von SERVO versorgt, ein ESC von ESC STICK. MOTOR & ESC schaltet
-keine Versorgung; ein ESC, der dort läuft, wird aus seiner eigenen Quelle
-versorgt.
-Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim
-Verlassen von SUPPLY, wie er ist. Das Tastenfeld, die HV-Frage und die
-übrigen Overlays von SUPPLY sind kein Verlassen. Der Bildschirm für den
-verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang
-an ist.
+Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein Touch,
+der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren gingen, bevor
+ein ganzer Frame den Ausgang eingeschaltet sah, und ein Koprozessor, der nicht
+scharf bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine
+Abschaltung. Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das
+Verlassen des Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet
+hat: einen, der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC
+STICK tun dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein
+Ausgang nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet
+hat. Die Ausnahme: ein Ausgang, den SERVO eingeschaltet hat, bleibt nach dem
+Verlassen von SERVO an, solange der Servo-Programmierer seinen Port hält, bis
+der Port loslässt (siehe SERVO). Ein Servo wird von SERVO versorgt, ein ESC von
+ESC STICK. MOTOR & ESC schaltet keine Versorgung; ein ESC, der dort läuft, wird
+aus seiner eigenen Quelle versorgt. Ein Ausgang, den ein anderer Bildschirm
+eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Das Tastenfeld,
+die HV-Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
+Bildschirm für den verlorenen Link, der kein STOP hat, öffnet sich nicht,
+solange der Ausgang an ist.
 
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,

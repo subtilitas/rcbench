@@ -1191,9 +1191,10 @@ static void released(int was, int row, int x, int y)
  * is a press, so a release that never came is an OFF the operator made, and
  * it is sent.  An ON this screen has posted and the application has not
  * collected is dropped: the hold that posted it may have completed on a
- * contact that had gone.  An ON already collected is on the wire and stays
- * asked, with its owner, so a leave switches it off.  A key held on the
- * keypad is let go of; what was typed stays.
+ * contact that had gone.  An ON already collected stays asked, with its
+ * owner, until the application reports what became of it; a leave switches
+ * off an ON reported on.  A key held on the keypad is let go of; what was
+ * typed stays.
  */
 static void drop_press(void)
 {
