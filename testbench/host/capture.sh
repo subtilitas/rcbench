@@ -56,16 +56,20 @@ sigrok-cli "${args[@]}"
 # Per channel, and by the payload only: the bits formatter writes rows as
 # "D0:1111 1111", so the channel's own name carries digits that are not
 # samples -- counting those makes an all-high D0 look like two levels.
+# Each channel keeps two flags, "a 0 was seen" and "a 1 was seen", so the pass
+# is linear in the samples: a 4 M-sample channel takes seconds, not minutes.
 flat=$(sigrok-cli --input-file "$out" --output-format bits:width=1 2>/dev/null |
        awk -F: 'NF > 1 {
            name = $1; gsub(/[ \t]/, "", name);
            bits = $2; gsub(/[^01]/, "", bits);
            if (bits == "") next;
-           seen[name] = seen[name] bits;
+           seen[name] = 1;
+           if (index(bits, "0")) zero[name] = 1;
+           if (index(bits, "1")) one[name] = 1;
        }
        END {
            for (n in seen)
-               if (index(seen[n], "0") == 0 || index(seen[n], "1") == 0)
+               if (!(n in zero) || !(n in one))
                    printf "%s ", n;
        }')
 if [ -n "$flat" ]; then

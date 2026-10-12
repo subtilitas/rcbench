@@ -170,3 +170,63 @@ def test_spaces_inside_the_parentheses_are_rewritten_and_kept():
 def test_a_spaced_target_above_the_repository_fails(tmp_path):
     (tmp_path / "Home.md").write_text("[a]( ../../x.md)\n", encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
+
+
+def test_a_reference_definition_is_rewritten_like_a_link():
+    text = ("[notice][legal] [s][s]\n\n"
+            "[legal]: ../README.md#x\n"
+            '[s]: Screens.md "t"\n'
+            "[p]: <../a b.md> 'x'\n"
+            "   [q]: ../NOTICE (note)\n")
+    assert wl.rewrite(text) == (
+        "[notice][legal] [s][s]\n\n"
+        f"[legal]: {R}/blob/main/README.md#x\n"
+        '[s]: Screens "t"\n'
+        f"[p]: <{R}/blob/main/a b.md> 'x'\n"
+        f"   [q]: {R}/blob/main/NOTICE (note)\n")
+
+
+def test_a_definition_of_a_url_or_an_anchor_is_unchanged():
+    text = "[a]: https://x.org/a.md\n[b]: #top\n[c]: /abs.md\n"
+    assert wl.rewrite(text) == text
+
+
+def test_a_definition_above_the_repository_is_stranded(tmp_path, capsys):
+    assert wl.stranded("[a]: ../README.md\n[b]: Screens\n") == ["../README.md"]
+    (tmp_path / "Home.md").write_text("[a]: ../../x.md\n", encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
+    assert "leaves docs/" in capsys.readouterr().err
+
+
+def test_a_title_in_single_quotes_or_parentheses_stays():
+    assert wl.rewrite("[s](Screens.md 'x') [t](Screens.md (y))") == (
+        "[s](Screens 'x') [t](Screens (y))")
+    assert wl.rewrite("[n](../README.md 'x')") == (
+        f"[n]({R}/blob/main/README.md 'x')")
+
+
+def test_a_name_starting_with_two_dots_is_a_page_inside_docs():
+    assert wl.rewrite("[a](..notes.md)") == "[a](..notes)"
+    assert wl.stranded("[a](..notes)") == []
+
+
+def test_a_dotted_name_above_docs_is_inside_the_repository(tmp_path):
+    assert wl.rewrite("[a](../..config)") == f"[a]({R}/blob/main/..config)"
+    assert wl.stranded(wl.rewrite("[a](../..config)")) == []
+    (tmp_path / "Home.md").write_text("[a](../..config)\n", encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 0
+
+
+def test_a_name_starting_with_two_dots_is_not_above_the_repository():
+    # From docs/sub, ../../..x resolves to the repository's ..x.
+    assert wl.rewrite("[a](../../..x)", "sub") == f"[a]({R}/blob/main/..x)"
+    assert wl.rewrite("[a](../../../x)", "sub") == "[a](../../../x)"
+
+
+def test_parentheses_in_a_bare_target_are_kept():
+    assert wl.rewrite("[api](../API_(v2).md)") == (
+        f"[api]({R}/blob/main/API_(v2).md)")
+    assert wl.rewrite("[api](API_(v2).md#x 'T')") == "[api](API_(v2)#x 'T')"
+    assert wl.rewrite(r"[api](../API_\(v2\).md)") == (
+        rf"[api]({R}/blob/main/API_\(v2\).md)")
+    assert wl.rewrite("[a](Screens.md) and (b)") == "[a](Screens) and (b)"
