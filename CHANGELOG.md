@@ -300,12 +300,6 @@ history is in git.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - Every test of `test/host` stops after 120 s unless it sets its own limit,
   and every CI job has a `timeout-minutes` limit.
 - `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
@@ -345,12 +339,6 @@ of a register on servo motion is not measured, and no pulse of a port is
 measured.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - SERVO screen: a programmer for KST and Chaservo servos. PROGRAM opens an
   overlay of 5 tabs (SERVO, TUNE, PULSE, FAILSAFE, LOCKED) over the left
@@ -789,12 +777,6 @@ stack is not measured on a board, and whether either current monitor resets
 on a supply dip is not measured.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **A coprocessor debug build prints the servo current's 1 ms samples.**
   Built with `-DSENSE_TRACE=ON`, the coprocessor writes INA3221 CH1's 1 ms
@@ -1251,12 +1233,6 @@ selects a value. With it off, one finger moves the cursor and two fingers pan,
 as before.
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **A rotary knob on the panel.** An AS5600 magnetic angle sensor on the
   panel's I2C terminal (GPIO8 and GPIO9, 0x36) turns the throttle on MOTOR &
   ESC and the horn on SERVO by how far it turns, with the touch slider's
@@ -1275,12 +1251,6 @@ as before.
   default.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **Output encoder on the SENSE page (protocol 4.9).** An ams OSRAM AS5600
   magnetic angle sensor on a servo's output shaft, at 0x36 on the sensor bus
@@ -1382,12 +1352,6 @@ viewer zooms and pans with two fingers. None of the sensor or tap work has
 run on hardware.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **TONE link page and the phase tap's capture (protocol 4.8).** TONE
   (0x2D) sets up and reads the tap that hears an ESC's beeps on one motor
@@ -1630,12 +1594,6 @@ image alone.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **`tools/stack_check.py`.** Reads every panel task's deepest call chain out
   of the ELF (Executable and Linkable Format) file and fails when one
   exceeds its stack less 1024 bytes; CI runs it after both panel builds.
@@ -1665,12 +1623,6 @@ coprocessor (4.5) still links and sweeps with this panel, but a paused
 sweep starts over from the curve's beginning, and the alert band says so.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **RESUME on the SERVO link page (protocol 4.6).** A hold (SWEEP 4) keeps
   the phase of a sweep that was running; SWEEP 5 written alone carries it
@@ -1852,12 +1804,6 @@ it has run on hardware. The link protocol is 4.5. A 0.11.0 coprocessor
 the held wiring change, which run on the coprocessor: flash both images.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **The automatic servo test.** START TEST on the SERVO screen's TEST page,
   a 2 s hold on an armed bench, steps the supply through 4.8 and 6.0 V, and
@@ -2055,12 +2001,6 @@ alert clears after 30 s or on a tap. The link protocol stays 4.4, so a
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **SERVO sets and switches the supply.** A SET line under the supply plot
   holds SUPPLY's voltage and current limit set points, each opening the
   keypad on a tap, and OUTPUT ON (two-second hold) and OFF (tap). They are
@@ -2111,12 +2051,6 @@ have not been run against a module.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **RESET PD MINI.** SUPPLY's SETTINGS offers it while the PD mini is the
   supply: the output goes off and the module is sent SYSTEM_RESET, for a
   module in ERR, without unplugging it. SUPPLY register 17 (protocol 4.4)
@@ -2155,12 +2089,6 @@ frame rate, the sweep and the PD mini are not offered. The PD mini has not
 been run against a module.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **SUPPLY drives the PD mini** when SETUP INTERFACES enables it, through
   the coprocessor's SUPPLY page; the panel's model otherwise.
@@ -2480,12 +2408,6 @@ count, and a panel and a coprocessor on different majors do not arm, so both
 images go on together.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **LOGS deletes a file from the card (#171).** DELETE in the browse footer
   is active once a file is selected and opens a second panel that names the
@@ -2941,12 +2863,6 @@ something from the operator or shows them something new:
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **`testbench/`, the measurement bench.** A Raspberry Pi 5, a Kingst LA2016
   logic analyser and an RP2350 board, wired so this project's protocol claims
   can be measured rather than asserted. `testbench/README.md` says what it is
@@ -2990,12 +2906,6 @@ keep driving after the operator had asked it to stop.
   operator asked whether the bench was broken.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **ARM on the servo screen.** Arming existed only on MOTOR & ESC and leaving
   that screen disarms, so the servo screen could not drive a servo at all: the
@@ -3303,12 +3213,6 @@ whose channel rests at half throttle.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **MOTOR PWM, beside SERVO PWM.** The same pulse at the same 50 Hz, bound to
   a channel whose role is throttle rather than surface. An ESC (electronic
   speed controller) on a pulse pin was previously bindable only as SERVO PWM,
@@ -3442,12 +3346,6 @@ on a console that is not always reachable.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - **The CAN self-test runs at every start-up**, 1200 ms inside the splash and
   before the identity poll. A verdict other than every probe coming back
   intact puts the panel on a screen of its own instead of the menu: the
@@ -3560,12 +3458,6 @@ happened when none had been asked for. Both were found on hardware.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - The coprocessor measures the window its own flash write spends with
   interrupts off and prints it: `rcbench-iomcu: outputs saved, flash window
   <n> us`, and `out_store_last_window_us()` reads it back. The window is
@@ -3582,12 +3474,6 @@ it says which pins it has, where they are, which pads are grounds and rails,
 and what it looks like.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - **A board describes itself over the link.** Four read-only pages, and each
   one degrades on its own rather than taking the others with it. `CATALOGUE`
@@ -3679,12 +3565,6 @@ and what it looks like.
 The coprocessor drives a pin, and remembers which one.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - Four output drivers on the coprocessor: servo PWM on the hardware PWM
   slices, PPM from a PIO program fed by a pair of DMA channels that retrigger
@@ -3793,12 +3673,6 @@ multi-agent review of the result found twenty more.
 
 ### Added
 
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
-
 - A control task pinned to the core that does not draw owns touch, STOP,
   arming, the outputs, the link and the heartbeat, at a fixed 5 ms. Drawing
   keeps `app_main`. A frame that costs 50 ms no longer rate-limits steering.
@@ -3892,12 +3766,6 @@ signal, and the control-page and settings-store changes have not run on
 hardware.
 
 ### Added
-
-- The bench log and the supply log end in a column `source`: `measured` for a
-  row a meter or the PD mini produced, `model` for a row the panel's model
-  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
-  the column is read as before; the column is text and is never plotted. The
-  servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
 - The panel writes ARM, THROTTLE and CLEAR to the coprocessor's control page:
   ARM and THROTTLE at every 50 ms poll, CLEAR on an explicit arm. STOP,
