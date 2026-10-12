@@ -213,7 +213,7 @@ die niedriger ist, in Schritten von 0,20 V (`SERVO_TEST_BROWNOUT_STEP_V`)
 abwärts bis 3,00 V (`SERVO_TEST_BROWNOUT_FLOOR_V`) oder bis zum kleinsten
 Sollwert des Netzteils, wenn der höher liegt. Die geltende Grenze ist die
 niedrigste aus SPANNUNG MAX, dem Höchstwert des Netzteils und beim PD mini
-seiner Eingangsspannung abzüglich 0,5 V Reserve. Eine Untergrenze neben dem
+seiner Eingangsspannung abzüglich 0,7 V. Eine Untergrenze neben dem
 0,20-V-Raster ist die letzte Stufe: am Modell, dessen kleinster Sollwert
 3,3 V ist, geht der Lauf 5,0, 4,8 ... 3,4, 3,3 V. Jede Spannung durchläuft SETZEN, EINSCHWINGEN
 und RUHE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
@@ -550,7 +550,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `seit 1.5 s kein Messwert` | `SERVO_TEST_STALE_MS` |
 | `Netzteilausgang ging nicht an` | 3000 ms nach dem ON nicht an |
 | `Sollwert 3 s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
-| `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder der Eingang des PD mini abzüglich seiner Reserve |
+| `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder der Eingang des PD mini abzüglich 0,7 V |
 | `1 s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
 | `1 s im Konstantstrom` | das Netzteil meldete `SERVO_TEST_CC_ABORT_MS` lang Konstantstrom |
 | `0.5 s kein INA3221-Fenster` | ein Lauf am INA3221: `SERVO_TEST_WIN_STALE_MS` ohne ein Fenster mit Strom und Spannung. Ein Durchlauf 499 ms nach dem letzten Fenster lässt den Lauf laufen, einer bei 500 ms beendet ihn |

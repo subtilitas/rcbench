@@ -7,17 +7,18 @@
 // from the repository at the release tag.
 //
 // Each record names its source in `src`:
-//   repo   a file and line at tag v0.17.0
+//   repo   a file and line at the release tag
 //   guide  a section of the build guide of the release
 //   photo  a print read from a photo of the part; such a fact also has a
 //          check entry of kind "unknown"
 //   page   a proposal or wording of this page; never a hardware fact
 
+import { TAG, VERSION } from '../release.ts';
 import type {
   Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, PowerSource, Rule, Src, Stage, Text, Wire,
 } from '../contract.ts';
 
-const TAG = 'v0.17.0';
+
 
 function t(en: string, de: string): Text {
   return { en, de };
@@ -619,7 +620,7 @@ const parts: Part[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Pads of the coprocessor. [pad, name, gpio, line in out_bind.c at v0.17.0]
+// Pads of the coprocessor. [pad, name, gpio, line in out_bind.c at the release tag]
 // ---------------------------------------------------------------------------
 
 const CAN_RESERVED: Text = t(
@@ -1763,8 +1764,8 @@ const checks: Check[] = [
   {
     id: 'esc-programming-power', kind: 'unknown',
     text: t(
-      'ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release 0.17.0 powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.',
-      'ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release 0.17.0 versorgt den ESC aus dem PD mini und zählt die Töne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.',
+      `ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release ${VERSION} powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.`,
+      `ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release ${VERSION} versorgt den ESC aus dem PD mini und zählt die Töne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.`,
     ),
     when: { all: [{ has: 'esc' }, { has: 'pdmini' }, { opt: 'escPower', is: 'pd' }] },
     src: repo('docs/StickProgramming.md', 6, 'PD mini'),
@@ -1869,8 +1870,8 @@ const notInRelease: Catalogue['notInRelease'] = [
   {
     id: 'mt6701',
     text: t(
-      'MT6701 magnetic encoder board: not read by 0.17.0.',
-      'MT6701-Magnetencoder-Platine: wird von 0.17.0 nicht gelesen.',
+      `MT6701 magnetic encoder board: not read by ${VERSION}.`,
+      `MT6701-Magnetencoder-Platine: wird von ${VERSION} nicht gelesen.`,
     ),
     release: 'planned',
     src: guide('parts'),
@@ -2136,7 +2137,7 @@ function deepFreeze<T>(value: T): T {
 // Frozen: a setup holds records of the catalogue by reference, so a write to
 // a setup or to the catalogue throws instead of changing later setups.
 export const CATALOGUE: Catalogue = deepFreeze({
-  release: '0.17.0',
+  release: VERSION,
   hashVersion: 1,
   parts,
   pads,

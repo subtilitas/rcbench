@@ -35,8 +35,16 @@ test('both languages of a key carry the same placeholders', () => {
 test('t fills placeholders and picks the language', () => {
   assert.equal(t('en', 'sum', { p: 7, w: 9, f: 2 }), '7 parts, 9 wires, 2 functions.');
   assert.equal(t('de', 'sum', { p: 7, w: 9, f: 2 }), '7 Teile, 9 Drähte, 2 Funktionen.');
-  assert.ok(t('en', 'rel').includes(RELEASE));
-  assert.ok(t('de', 'rel').includes(RELEASE));
+});
+
+test('header, notice and print head name the release of package.json', () => {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+  assert.equal(RELEASE, pkg.version);
+  for (const lang of ['en', 'de'] as const) {
+    for (const key of ['rel', 'foot', 'printHead'] as const) {
+      assert.ok(t(lang, key).includes(pkg.version), `${key} (${lang}) names ${pkg.version}`);
+    }
+  }
 });
 
 test('every key is used by the page', () => {
