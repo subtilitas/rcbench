@@ -508,9 +508,18 @@ meldet einen solchen Trace als Problem und spielt keine seiner Bewegungen
 nach.
 
 Eine Sample-Zeile ist die Zeit seit dem Sample davor in 0,1 ms und der
-Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile hat
-8 Bytes bei einem dreistelligen Code; mit den Spannungszeilen sind es etwa
-8,6 Bytes je Sample, 8,6 kB je Sekunde.
+Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile 1 ms
+nach dem Sample davor hat 8 Bytes bei einem dreistelligen Code und höchstens
+10 Bytes bei einem vierstelligen. Die erste Sample-Zeile eines Traces zählt
+ab dem Trigger-Zeitpunkt, ein Sample von vor dem Trigger trägt also eine
+negative Zeit, und ein Sample nach verworfenen Records eine längere: Diese
+Zeilen sind länger, bis zum vollen vorzeichenbehafteten 32-Bit-Bereich der
+Zeit. Mit den Spannungszeilen (eine Zeile von 7 Bytes, eine je 20 Samples
+in der Ausgabe von `sense_trace_gen`) sind es 8,35 Bytes je Sample,
+8,35 kB je Sekunde, beim simulierten Servo mit 0,12 A, dessen Codes 3 Stellen
+haben. Über etwa 0,4 A am 0,1-Ω-Shunt haben die Codes 4 Stellen, und die Rate
+liegt bei 9,35 kB je Sekunde. Jede Zeile endet auf CR LF. Die Rate auf der
+Hardware ist nicht gemessen.
 
 **Bereitlegen:** den PD mini (WeAct PD Power Mini V1) bei einer Grenze von
 2,00 A, das INA3221-Modul mit dem 0,1-Ω-Shunt von CH1 in der Versorgung
@@ -727,7 +736,7 @@ gewählt, nicht gemessen.
   eines anderen Ausgangs folgt, bevor dessen Servo angekommen ist, wird
   mit dem Strom des ersten Servos darin nachgespielt; das Tool
   unterscheidet beide nicht.
-- Ob ein Terminal 8,6 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
+- Ob ein Terminal 8,35 bis 9,35 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
   dessen Zeilenzahlen nicht zu seiner Endzeile passen, wird gemeldet und
   endet mit 1.
 - Das Zeilenformat hat keinen Prüfwert. Eine Zeile, die in ihrer letzten

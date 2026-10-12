@@ -36,11 +36,9 @@ jobs:
         run: |
           # The runner image carries package lists this build never installs
           # from, and apt-get update fails the whole step when any one of them
-          # serves a stale index: "Hash Sum mismatch" on
-          # dl.google.com/linux/chrome-stable stopped every apt job in this
-          # workflow on 2026-09-09, while the two container jobs passed
-          # because they install nothing through apt.  A toolchain install has
-          # no business depending on a browser's mirror being healthy.
+          # serves a stale index (for example "Hash Sum mismatch" on
+          # dl.google.com/linux/chrome-stable).  A toolchain install does not
+          # depend on a browser's mirror, so those lists are removed first.
           #
           # Matched by glob rather than by name: the image writes these as
           # .list or as deb822 .sources depending on its version, and a name

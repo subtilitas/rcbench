@@ -25,7 +25,8 @@
  * separate measurement with the accelerometer on the surface.
  *
  * Fed measurements and returning commands, as servo_limit is: the host suite
- * runs it against a modelled pair.  No firmware calls it.
+ * runs it against a modelled pair, and a real pair needs no change here.
+ * No firmware calls it.
  *
  * SPDX-License-Identifier: MIT
  */
