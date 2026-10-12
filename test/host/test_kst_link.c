@@ -42,6 +42,11 @@ static unsigned g_cmds;          /* of them command frames                 */
 static uint16_t g_last_cmd[4];
 static unsigned g_lose_cmd_reply;   /* answers to a command to lose        */
 static unsigned g_lose_any;         /* requests to lose                    */
+static unsigned g_lose_cmd;         /* command requests to lose before the
+                                       page sees them                      */
+static bool     g_abort_in_flight;  /* kst_link_abort() while the next
+                                       command is on its way, once         */
+static unsigned g_op_cmds[16];      /* command frames by their operation   */
 static uint8_t  g_nack_stage;       /* the answer to a staged window, or 0 */
 
 /* ------------------------------------------------------------- coprocessor */
@@ -145,6 +150,9 @@ static void fresh_at(uint32_t t0, uint8_t pages)
     g_cmds = 0;
     g_lose_cmd_reply = 0;
     g_lose_any = 0;
+    g_lose_cmd = 0;
+    g_abort_in_flight = false;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
     g_nack_stage = 0;
     memset(g_last_cmd, 0, sizeof(g_last_cmd));
 }
@@ -173,7 +181,17 @@ static bool exchange(void)
     }
     if (cmd) {
         g_cmds++;
+        g_op_cmds[x.regs[LINK_KS_W_CMD] & 0xFu]++;
         memcpy(g_last_cmd, x.regs, sizeof(g_last_cmd));
+        if (g_abort_in_flight) {
+            g_abort_in_flight = false;
+            kst_link_abort(&g_k);
+        }
+        if (g_lose_cmd > 0u) {
+            g_lose_cmd--;
+            kst_link_done(&g_k, KST_LINK_NO_ANSWER, NULL);
+            return true;
+        }
     }
     CHECK_EQ(x.page, LINK_PAGE_KST);
     CHECK(x.n >= 1u);
@@ -452,6 +470,74 @@ TEST_CASE(a_session_from_entry_to_the_power_cycle)
     CHECK_EQ(ro.port, LINK_KST_PWM);
     CHECK((ro.flags & LINK_KS_F_IN_MODE) == 0u);
     CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    conduct();
+}
+
+/* Read A, write, power cycle, servo B of the same type in A's place: B
+ * equals A's backup in every field the session did not write.  The port is
+ * in PWM after the cycle, and its ENTER begins a session of its own.
+ * RESTORE of the backup the panel held is refused before a read, and the
+ * panel holds no backup any more; after a read of B a restore is taken and
+ * writes nothing of A. */
+TEST_CASE(a_power_cycle_leaves_no_backup_of_a_for_a_swapped_servo_b)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    kst_image_t a_first, a_backup, img, b, sv;
+
+    up();
+    a_first = servo();
+    CHECK(kst_link_backup(&g_k, &a_backup));
+    CHECK(same(&a_backup, &a_first));
+    r = request(LINK_KST_OP_WRITE);
+    r.write_enabled = true;
+    r.image = a_first;
+    CHECK(kst_field_edit(&r.image, KST_F_BOOST, 19));
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+
+    out = run_op(LINK_KST_OP_POWER_CYCLED);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    g_sim.in_mode = false;
+    b = a_first;
+    CHECK(kst_field_edit(&b, KST_F_BOOST, 25));
+    memcpy(g_sim.reg, b.r, sizeof(g_sim.reg));
+    out = run_op(LINK_KST_OP_ENTER);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    run_ms(5);
+    kst_link_readout(&g_k, &ro);
+    CHECK(!ro.have_backup);
+    CHECK(!kst_link_backup(&g_k, &img));
+
+    g_sim.n_writes = 0;
+    r = request(LINK_KST_OP_RESTORE);
+    r.write_enabled = true;
+    r.image = a_backup;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.refusal, LINK_KST_REF_NO_IMAGE);
+    CHECK_EQ(g_sim.n_writes, 0);
+    sv = servo();
+    CHECK(same(&sv, &b));
+
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK(kst_link_backup(&g_k, &img));
+    CHECK(same(&img, &b));
+    r = request(LINK_KST_OP_RESTORE);
+    r.write_enabled = true;
+    r.image = img;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(g_sim.n_writes, 0);
+    sv = servo();
+    CHECK(same(&sv, &b));
     conduct();
 }
 
@@ -1064,6 +1150,624 @@ TEST_CASE(a_stop_at_the_coprocessor_shows_as_an_aborted_operation)
     conduct();
 }
 
+/* Run until @p n command frames have gone; 30 s is the bound. */
+static void until_cmds(unsigned n)
+{
+    for (unsigned i = 0; i < 30000u && g_cmds < n; ++i) {
+        ms();
+    }
+    CHECK_EQ(g_cmds, n);
+}
+
+/* The port's passes for @p n ms and no exchange: the panel waits for an
+ * answer that does not come. */
+static void port_only_ms(unsigned n)
+{
+    for (unsigned i = 0; i < n; ++i) {
+        for (unsigned j = 0; j < 10u; ++j) {
+            kst_port_step(&g_port, g_safe, g_stop, g_ms);
+            g_sim.now_us += 100u;
+        }
+        g_ms++;
+    }
+}
+
+/* A write of one edit to the image the panel holds. */
+static kst_link_request_t small_write(void)
+{
+    kst_link_request_t r = request(LINK_KST_OP_WRITE);
+
+    r.write_enabled = true;
+    CHECK(kst_link_image(&g_k, &r.image));
+    CHECK(kst_field_edit(&r.image, KST_F_DEAD_BAND, 50));
+    return r;
+}
+
+TEST_CASE(an_abort_after_a_lost_command_frame_sends_it_no_more)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+    unsigned seq, frames;
+
+    up();
+    r = small_write();
+    seq = g_port.seq;
+    frames = g_sim.n_frames;
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_SENDING);
+    kst_link_abort(&g_k);
+    /* Whether the page took the command is not known yet: the page is
+     * read before the outcome is handed out. */
+    CHECK(!kst_link_outcome(&g_k, &out));
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK(!out.taken);
+    run_ms(2000);
+    /* The write went once and was lost; the one command after it is the
+     * abort. */
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_cmds, 2);
+    CHECK_EQ(g_port.seq, (uint16_t)(seq + 1u));
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.reg[0x05], 0x77);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    CHECK(!kst_link_outcome(&g_k, &out));
+    conduct();
+}
+
+TEST_CASE(an_abort_after_the_silence_latch_drops_the_command_unrefused)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The frame is lost, the panel waits 1000 ms for its answer, and the
+     * coprocessor latches its failsafe in that silence. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    g_safe = false;
+    port_only_ms(1000);
+    kst_link_abort(&g_k);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK(!out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+
+    /* The page took the frame and the answer is lost: the latch ended the
+     * operation, and that is the outcome. */
+    g_safe = true;
+    run_ms(5);
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_cmds = 0;
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
+                 .op = LINK_KST_OP_READ_ALL, .port = CH }),
+             KST_LINK_START_OK);
+    until_cmds(1);
+    g_safe = false;
+    port_only_ms(1000);
+    kst_link_abort(&g_k);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    CHECK(out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_READ_ALL], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    conduct();
+}
+
+TEST_CASE(an_abort_whose_status_read_goes_unanswered_ends_as_no_answer)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    kst_link_abort(&g_k);
+    /* The status read that decides unanswered KST_LINK_RETRIES times. */
+    g_lose_any = 3;
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_NO_ANSWER);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+
+    /* Nothing of the doubt stays: the next request is dropped at once. */
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    kst_link_abort(&g_k);
+    CHECK(kst_link_outcome(&g_k, &out));
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+    conduct();
+}
+
+TEST_CASE(the_deciding_status_read_has_its_own_tries)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The command goes twice unanswered, then the abort: two unanswered
+     * reads after it are not the end, the third answers. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 2;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(2);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_SENDING);
+    kst_link_abort(&g_k);
+    g_lose_any = 2;
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK(!out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+
+    /* The abort comes while the command is on its way for the third
+     * time and that try goes unanswered too: the page is read before the
+     * outcome. */
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 3;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(2);
+    g_abort_in_flight = true;
+    out = outcome();
+    CHECK(!g_abort_in_flight);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK(!out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 3);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    conduct();
+}
+
+/* Where a request is when kst_link_abort() comes. */
+typedef enum {
+    AT_IDLE = 0,           /* no request                                   */
+    AT_QUEUED,             /* started, nothing of it sent                  */
+    AT_STAGING,            /* its staged registers partly written          */
+    AT_BEHIND_ABORT,       /* its command waits behind an unanswered ABORT */
+    AT_FRAME_LOST,         /* its command went; the page never saw it      */
+    AT_ANSWER_LOST,        /* its command was taken; the answer was lost   */
+    AT_IN_FLIGHT_LOST,     /* the abort comes while the command is on its
+                              way, and no answer comes                     */
+    AT_IN_FLIGHT_ANSWERED, /* the abort comes while the command is on its
+                              way, and the answer comes                    */
+    AT_ANSWERED,           /* its command was acknowledged                 */
+    AT_RUNNING,            /* the operation runs                           */
+    AT_COUNT
+} abort_at_t;
+
+TEST_CASE(an_abort_at_every_state_of_a_request_sends_its_command_once_at_most)
+{
+    for (unsigned at = 0; at < (unsigned)AT_COUNT; ++at) {
+        const link_kst_op_t op = at == AT_STAGING ? LINK_KST_OP_VERIFY
+                                                  : LINK_KST_OP_READ_ALL;
+        kst_link_request_t r = request(op);
+        kst_link_outcome_t out;
+        bool got;
+        unsigned sent;
+
+        up();
+        CHECK(kst_link_image(&g_k, &r.image));
+        g_cmds = 0;
+        memset(g_op_cmds, 0, sizeof(g_op_cmds));
+        switch ((abort_at_t)at) {
+        case AT_IDLE:
+            break;
+        case AT_QUEUED:
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            break;
+        case AT_STAGING:
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            run_ms(3);
+            CHECK_EQ(g_cmds, 0);
+            break;
+        case AT_BEHIND_ABORT:
+            kst_link_abort(&g_k);
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            g_lose_cmd_reply = 1;
+            until_cmds(1);
+            CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+            break;
+        case AT_FRAME_LOST:
+            g_lose_cmd = 1;
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            until_cmds(1);
+            break;
+        case AT_ANSWER_LOST:
+            g_lose_cmd_reply = 1;
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            until_cmds(1);
+            break;
+        case AT_IN_FLIGHT_LOST:
+            g_lose_cmd_reply = 1;
+            g_abort_in_flight = true;
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            until_cmds(1);
+            CHECK(!g_abort_in_flight);
+            break;
+        case AT_IN_FLIGHT_ANSWERED:
+            g_abort_in_flight = true;
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            until_cmds(1);
+            CHECK(!g_abort_in_flight);
+            break;
+        case AT_ANSWERED:
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            until_cmds(1);
+            break;
+        case AT_RUNNING:
+        case AT_COUNT:
+        default:
+            CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+            until_phase(KST_LINK_RUNNING);
+            run_ms(5);
+            break;
+        }
+        if (at != AT_IN_FLIGHT_LOST && at != AT_IN_FLIGHT_ANSWERED) {
+            kst_link_abort(&g_k);
+        }
+        got = kst_link_outcome(&g_k, &out);
+        for (unsigned i = 0; i < 2000u && !got; ++i) {
+            ms();
+            got = kst_link_outcome(&g_k, &out);
+        }
+        sent = g_op_cmds[op];
+        switch ((abort_at_t)at) {
+        case AT_IDLE:
+            CHECK(!got);
+            CHECK_EQ(sent, 0);
+            break;
+        case AT_QUEUED:
+        case AT_STAGING:
+        case AT_BEHIND_ABORT:
+            CHECK(got);
+            CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+            CHECK(!out.taken);
+            CHECK_EQ(sent, 0);
+            break;
+        case AT_FRAME_LOST:
+            CHECK(got);
+            CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+            CHECK(!out.taken);
+            CHECK_EQ(sent, 1);
+            break;
+        case AT_ANSWER_LOST:
+        case AT_IN_FLIGHT_LOST:
+        case AT_IN_FLIGHT_ANSWERED:
+        case AT_ANSWERED:
+        case AT_RUNNING:
+        case AT_COUNT:
+        default:
+            CHECK(got);
+            CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+            CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+            CHECK(out.taken);
+            CHECK_EQ(sent, 1);
+            break;
+        }
+        if (got) {
+            CHECK_EQ(out.op, op);
+        }
+        run_ms(2000);
+        /* Nothing more of the request, the last command an ABORT, one
+         * outcome. */
+        CHECK_EQ(g_op_cmds[op], sent);
+        CHECK(g_op_cmds[LINK_KST_OP_ABORT] >= 1u);
+        CHECK_EQ(g_cmds, sent + g_op_cmds[LINK_KST_OP_ABORT]);
+        CHECK_EQ(g_last_cmd[LINK_KS_W_CMD] & 0xFu, LINK_KST_OP_ABORT);
+        CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+        CHECK(!kst_link_outcome(&g_k, &out));
+        conduct();
+    }
+}
+
+/* --- the deciding read at the wrap of SEQ ------------------------------------- */
+
+/* Up, entered and read, the page's SEQ @p last after the read. */
+static void up_at_seq(uint16_t last)
+{
+    kst_link_outcome_t out;
+
+    fresh();
+    g_port.seq = (uint16_t)(last - 2u);
+    link_up();
+    out = run_op(LINK_KST_OP_ENTER);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.result, KST_SES_OK);
+    CHECK_EQ(g_port.seq, last);
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+}
+
+/* After SEQ @p last: a WRITE whose command frame is lost, an abort, and
+ * the coprocessor starting again before the page is read.  The fresh page
+ * has SEQ 0, operation NONE and no refusal. */
+static void lost_write_and_restart(uint16_t last)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+
+    up_at_seq(last);
+    r = small_write();
+    g_lose_cmd = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], (uint16_t)(last + 1u));
+    kst_link_abort(&g_k);
+    port_fresh();
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_RESTARTED);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK(!out.taken);
+    run_ms(2000);
+    /* No outcome after it, the write never sent again, nothing written. */
+    CHECK(!kst_link_outcome(&g_k, &out));
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PWM);
+    conduct();
+}
+
+TEST_CASE(a_restart_after_a_lost_command_at_seq_0_is_no_done_write)
+{
+    /* The command after 0xFFFF has SEQ 0, as the fresh page has. */
+    lost_write_and_restart(0xFFFFu);
+}
+
+TEST_CASE(a_restart_after_a_lost_command_below_the_wrap_ends_as_restarted)
+{
+    lost_write_and_restart(0x1233u);
+    lost_write_and_restart(0xFFFEu);
+}
+
+TEST_CASE(a_command_at_seq_0_taken_with_its_answer_lost_runs_and_is_aborted)
+{
+    kst_link_request_t r = request(LINK_KST_OP_READ_ALL);
+    kst_link_outcome_t out;
+
+    up_at_seq(0xFFFFu);
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], 0);
+    kst_link_abort(&g_k);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    CHECK(out.taken);
+    run_ms(2000);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_READ_ALL], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_port.seq, 1);
+    CHECK(!kst_link_outcome(&g_k, &out));
+    conduct();
+}
+
+TEST_CASE(a_command_at_seq_0_refused_with_its_answer_lost_ends_refused)
+{
+    kst_link_request_t r = request(LINK_KST_OP_READ_ALL);
+    kst_link_outcome_t out;
+
+    /* The refusal is the page's trace of the command: its operation is
+     * not in LINK_KS_OP. */
+    up_at_seq(0xFFFFu);
+    g_safe = false;
+    run_ms(5);
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], 0);
+    kst_link_abort(&g_k);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
+    CHECK_EQ(out.op, LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.refusal, LINK_KST_REF_UNSAFE);
+    CHECK(out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_READ_ALL], 1);
+    CHECK(!kst_link_outcome(&g_k, &out));
+    g_safe = true;
+    conduct();
+}
+
+/* After SEQ 0: a WRITE with SEQ 1 that the page takes, whose answer is
+ * lost, and the port's passes until the servo has a write of it.  The
+ * panel has not read the page since. */
+static void write_taken_at_seq_1(void)
+{
+    kst_link_request_t r;
+
+    up_at_seq(0x0000u);
+    r = small_write();
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], 1);
+    CHECK_EQ(g_port.seq, 1);
+}
+
+/* The servo has a write of the command the old coprocessor took. */
+static void until_servo_written(void)
+{
+    for (unsigned i = 0; i < 30000u && g_sim.n_writes == 0u; ++i) {
+        port_only_ms(1);
+    }
+    CHECK(g_sim.n_writes > 0u);
+}
+
+/* The coprocessor that took the WRITE starts again: no outcome may say
+ * that nothing of it ran. */
+static void restarted_after_the_write(const kst_link_outcome_t *out)
+{
+    kst_link_outcome_t none;
+    kst_link_readout_t ro;
+
+    CHECK_EQ(out->kind, KST_LINK_OUT_RESTARTED);
+    CHECK_EQ(out->op, LINK_KST_OP_WRITE);
+    run_ms(2000);
+    CHECK(!kst_link_outcome(&g_k, &none));
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PWM);
+    conduct();
+}
+
+TEST_CASE(an_abort_after_a_write_taken_at_seq_1_and_a_restart_is_no_drop)
+{
+    kst_link_outcome_t out;
+
+    /* The fresh page reads SEQ 0 as the panel last did.  Its operation
+     * NONE after READ_ALL is the restart. */
+    write_taken_at_seq_1();
+    kst_link_abort(&g_k);
+    until_servo_written();
+    port_fresh();
+    out = outcome();
+    restarted_after_the_write(&out);
+    CHECK(!out.taken);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+}
+
+TEST_CASE(a_write_taken_at_seq_1_sent_again_to_a_restart_is_no_refusal)
+{
+    kst_link_outcome_t out;
+
+    /* The fresh page takes the frame sent again as a new command at SEQ 1
+     * and refuses it in PWM. */
+    write_taken_at_seq_1();
+    until_servo_written();
+    port_fresh();
+    out = outcome();
+    restarted_after_the_write(&out);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
+    CHECK_EQ(g_port.seq, 1);
+}
+
+TEST_CASE(an_abort_after_a_restart_refused_the_write_sent_again_is_no_refusal)
+{
+    kst_link_outcome_t out;
+
+    /* The answer to the frame sent again is lost too, and the abort comes
+     * then: the fresh page's SEQ 1 and refusal are not the command's
+     * trace. */
+    write_taken_at_seq_1();
+    until_servo_written();
+    port_fresh();
+    g_lose_cmd_reply = 1;
+    until_cmds(2);
+    CHECK_EQ(g_port.seq, 1);
+    kst_link_abort(&g_k);
+    out = outcome();
+    restarted_after_the_write(&out);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
+}
+
+/* The fresh page refused the abort for its SEQ and took the one sent again
+ * with its own: no outcome after the RESTARTED one, the write sent once. */
+static void abort_refused_by_a_restart(const kst_link_outcome_t *out)
+{
+    restarted_after_the_write(out);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 2);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], 1);
+    CHECK_EQ(g_port.seq, 1);
+}
+
+TEST_CASE(an_abort_refused_by_a_restart_under_a_running_write_is_no_done)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The coprocessor starts again between two status reads while the
+     * write runs; the abort reaches the fresh page before the next read
+     * and is refused with BAD_VALUE for its SEQ. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    while (g_k.phase != (uint8_t)KST_LINK_RUNNING) {
+        CHECK(g_cmds <= 1u);
+        ms();
+    }
+    port_fresh();
+    kst_link_abort(&g_k);
+    out = outcome();
+    abort_refused_by_a_restart(&out);
+    CHECK(out.taken);
+}
+
+TEST_CASE(an_abort_after_the_deciding_read_refused_by_a_restart_is_no_done)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The write's answer is lost and the abort puts it in doubt.  The read
+     * that decides says taken, and the coprocessor starts again before the
+     * abort goes. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    kst_link_abort(&g_k);
+    CHECK(g_k.cmd_doubt);
+    ms();
+    CHECK(!g_k.cmd_doubt);
+    CHECK_EQ(g_k.phase, (uint8_t)KST_LINK_RUNNING);
+    CHECK(g_k.abort_wanted);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 0);
+    port_fresh();
+    out = outcome();
+    abort_refused_by_a_restart(&out);
+    CHECK(out.taken);
+}
+
 /* --- from PROGRAMMING to PWM without a supply cycle (4.15) ---------------------- */
 
 static kst_link_request_t leave_after(unsigned wait_ms)
@@ -1528,6 +2232,38 @@ TEST_CASE(an_abort_ends_an_operation_that_plans)
     conduct();
 }
 
+TEST_CASE(an_abort_after_a_lost_answer_ends_the_write_the_page_plans)
+{
+    const kst_image_t a = image_of(k_long_a);
+    kst_link_request_t r = long_write();
+    kst_link_outcome_t out;
+    unsigned seq, frames;
+
+    up_holding(&a);
+    frames = g_sim.n_frames;
+    seq = g_port.seq;
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    kst_link_abort(&g_k);
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.op, LINK_KST_OP_WRITE);
+    CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
+    CHECK(out.taken);
+    CHECK_EQ(out.steps_done, 0);
+    run_ms(2000);
+    /* The write went once; its SEQ and the abort's are the page's. */
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_port.seq, (uint16_t)(seq + 2u));
+    CHECK_EQ(g_sim.n_frames, frames);
+    CHECK_EQ(g_sim.n_writes, 0);
+    conduct();
+}
+
 /*
  * The phase is the page's word: BUSY with LINK_KST_RESULT_PLANNING in the
  * result.  A 4.13 coprocessor never has it, and a result that ended is
@@ -1857,6 +2593,7 @@ TEST_CASE(the_poll_of_a_held_port_holds_across_the_tick_wrap)
 int main(void)
 {
     RUN(a_session_from_entry_to_the_power_cycle);
+    RUN(a_power_cycle_leaves_no_backup_of_a_for_a_swapped_servo_b);
     RUN(a_release_of_pairing_is_planned_at_the_coprocessor);
     RUN(a_write_without_the_switch_sends_nothing);
     RUN(nothing_is_sent_to_a_coprocessor_before_protocol_4_13);
@@ -1876,6 +2613,20 @@ int main(void)
     RUN(an_abort_ends_the_operation_that_runs);
     RUN(an_abort_with_a_stale_seq_is_sent_again);
     RUN(a_stop_at_the_coprocessor_shows_as_an_aborted_operation);
+    RUN(an_abort_after_a_lost_command_frame_sends_it_no_more);
+    RUN(an_abort_after_the_silence_latch_drops_the_command_unrefused);
+    RUN(an_abort_whose_status_read_goes_unanswered_ends_as_no_answer);
+    RUN(the_deciding_status_read_has_its_own_tries);
+    RUN(an_abort_at_every_state_of_a_request_sends_its_command_once_at_most);
+    RUN(a_restart_after_a_lost_command_at_seq_0_is_no_done_write);
+    RUN(a_restart_after_a_lost_command_below_the_wrap_ends_as_restarted);
+    RUN(a_command_at_seq_0_taken_with_its_answer_lost_runs_and_is_aborted);
+    RUN(a_command_at_seq_0_refused_with_its_answer_lost_ends_refused);
+    RUN(an_abort_after_a_write_taken_at_seq_1_and_a_restart_is_no_drop);
+    RUN(a_write_taken_at_seq_1_sent_again_to_a_restart_is_no_refusal);
+    RUN(an_abort_after_a_restart_refused_the_write_sent_again_is_no_refusal);
+    RUN(an_abort_refused_by_a_restart_under_a_running_write_is_no_done);
+    RUN(an_abort_after_the_deciding_read_refused_by_a_restart_is_no_done);
     RUN(a_leave_sends_its_wait_and_then_the_command);
     RUN(a_leave_with_a_wait_above_10_000_ms_sends_nothing);
     RUN(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15);
@@ -1885,6 +2636,7 @@ int main(void)
     RUN(a_request_without_an_order_of_writes_is_a_result);
     RUN(a_plan_over_the_cap_is_a_result);
     RUN(an_abort_ends_an_operation_that_plans);
+    RUN(an_abort_after_a_lost_answer_ends_the_write_the_page_plans);
     RUN(planning_is_shown_from_the_page_and_only_while_it_runs);
     RUN(a_coprocessor_that_started_again_ends_the_operation);
     RUN(the_sequence_counter_wraps_under_the_panel);
