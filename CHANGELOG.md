@@ -20,6 +20,13 @@ history is in git.
 
 ### Fixed
 
+- `testbench/host/capture.sh` checks for a channel that never changed in
+  time linear in the samples. The check keeps two flags per channel in place
+  of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
+  joined string took 8 s, and 6 channels of 4 M samples take 2.2 s, where it
+  took 187 s. The output is unchanged. `test/tools/test_capture_sh.py` covers
+  flat, toggling, first-sample and last-sample changes, an empty capture and
+  several channels.
 - `docs/ServoProgrammer.md` and its German page name the servo the
   register layout and the timing come from: 1 Chaservo servo.
 - The bench configurator keeps the selection and the chosen language in the
