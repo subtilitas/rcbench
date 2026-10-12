@@ -1613,6 +1613,98 @@ TEST_CASE(a_command_at_seq_0_refused_with_its_answer_lost_ends_refused)
     conduct();
 }
 
+/* After SEQ 0: a WRITE with SEQ 1 that the page takes, whose answer is
+ * lost, and the port's passes until the servo has a write of it.  The
+ * panel has not read the page since. */
+static void write_taken_at_seq_1(void)
+{
+    kst_link_request_t r;
+
+    up_at_seq(0x0000u);
+    r = small_write();
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], 1);
+    CHECK_EQ(g_port.seq, 1);
+}
+
+/* The servo has a write of the command the old coprocessor took. */
+static void until_servo_written(void)
+{
+    for (unsigned i = 0; i < 30000u && g_sim.n_writes == 0u; ++i) {
+        port_only_ms(1);
+    }
+    CHECK(g_sim.n_writes > 0u);
+}
+
+/* The coprocessor that took the WRITE starts again: no outcome may say
+ * that nothing of it ran. */
+static void restarted_after_the_write(const kst_link_outcome_t *out)
+{
+    kst_link_outcome_t none;
+    kst_link_readout_t ro;
+
+    CHECK_EQ(out->kind, KST_LINK_OUT_RESTARTED);
+    CHECK_EQ(out->op, LINK_KST_OP_WRITE);
+    run_ms(2000);
+    CHECK(!kst_link_outcome(&g_k, &none));
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PWM);
+    conduct();
+}
+
+TEST_CASE(an_abort_after_a_write_taken_at_seq_1_and_a_restart_is_no_drop)
+{
+    kst_link_outcome_t out;
+
+    /* The fresh page reads SEQ 0 as the panel last did.  Its operation
+     * NONE after READ_ALL is the restart. */
+    write_taken_at_seq_1();
+    kst_link_abort(&g_k);
+    until_servo_written();
+    port_fresh();
+    out = outcome();
+    restarted_after_the_write(&out);
+    CHECK(!out.taken);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+}
+
+TEST_CASE(a_write_taken_at_seq_1_sent_again_to_a_restart_is_no_refusal)
+{
+    kst_link_outcome_t out;
+
+    /* The fresh page takes the frame sent again as a new command at SEQ 1
+     * and refuses it in PWM. */
+    write_taken_at_seq_1();
+    until_servo_written();
+    port_fresh();
+    out = outcome();
+    restarted_after_the_write(&out);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
+    CHECK_EQ(g_port.seq, 1);
+}
+
+TEST_CASE(an_abort_after_a_restart_refused_the_write_sent_again_is_no_refusal)
+{
+    kst_link_outcome_t out;
+
+    /* The answer to the frame sent again is lost too, and the abort comes
+     * then: the fresh page's SEQ 1 and refusal are not the command's
+     * trace. */
+    write_taken_at_seq_1();
+    until_servo_written();
+    port_fresh();
+    g_lose_cmd_reply = 1;
+    until_cmds(2);
+    CHECK_EQ(g_port.seq, 1);
+    kst_link_abort(&g_k);
+    out = outcome();
+    restarted_after_the_write(&out);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
+}
+
 /* --- from PROGRAMMING to PWM without a supply cycle (4.15) ---------------------- */
 
 static kst_link_request_t leave_after(unsigned wait_ms)
@@ -2467,6 +2559,9 @@ int main(void)
     RUN(a_restart_after_a_lost_command_below_the_wrap_ends_as_restarted);
     RUN(a_command_at_seq_0_taken_with_its_answer_lost_runs_and_is_aborted);
     RUN(a_command_at_seq_0_refused_with_its_answer_lost_ends_refused);
+    RUN(an_abort_after_a_write_taken_at_seq_1_and_a_restart_is_no_drop);
+    RUN(a_write_taken_at_seq_1_sent_again_to_a_restart_is_no_refusal);
+    RUN(an_abort_after_a_restart_refused_the_write_sent_again_is_no_refusal);
     RUN(a_leave_sends_its_wait_and_then_the_command);
     RUN(a_leave_with_a_wait_above_10_000_ms_sends_nothing);
     RUN(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15);

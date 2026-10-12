@@ -409,18 +409,34 @@ static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
                || LINK_KS_OP_OF(regs[LINK_KS_OP]) == k->op);
 }
 
+/* Whether the page @p regs is one that started again since the status last
+ * read, whatever its SEQ.  The coprocessor names the operation it last
+ * started in LINK_KS_OP and keeps it until the next one; a refused command
+ * leaves it.  Only a start of the coprocessor sets it back to NONE.  A
+ * page that has started no operation yet reads NONE before and after a
+ * start, and only its SEQ tells. */
+static bool op_went_back(const kst_link_t *k, const uint16_t *regs)
+{
+    return k->known
+           && LINK_KS_OP_OF(k->status[LINK_KS_OP])
+                  != (uint8_t)LINK_KST_OP_NONE
+           && LINK_KS_OP_OF(regs[LINK_KS_OP]) == (uint8_t)LINK_KST_OP_NONE;
+}
+
 static void on_status(kst_link_t *k, const uint16_t *regs)
 {
-    bool restarted = k->known && regs[LINK_KS_SEQ] != k->seq;
+    const bool went_back = op_went_back(k, regs);
+    bool restarted = k->known
+                     && (regs[LINK_KS_SEQ] != k->seq || went_back);
     bool dropped = false;
 
     if (k->cmd_doubt) {
         /* The page says whether it took the command that was not sent
          * again: its SEQ and its trace, taken; the SEQ before it, not.  Any
-         * other page started again, the command's SEQ without its trace
-         * too. */
+         * other page started again: another SEQ, the command's SEQ without
+         * its trace, or an operation back at NONE. */
         k->cmd_doubt = false;
-        if (page_took_cmd(k, regs)) {
+        if (!went_back && page_took_cmd(k, regs)) {
             restarted = false;
             k->verdict = true;
             k->taken = true;

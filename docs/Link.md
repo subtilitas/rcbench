@@ -832,7 +832,7 @@ A read gives these registers:
 | ---: | --- | --- |
 | 0 | `STATE` | bits 0 to 2 the state. Bit 3 an operation runs. Bit 4 a frame was sent since the servo was last without power or the port was last left with LEAVE. Bit 5 a stop or an abort cut the session: READ_ALL comes before anything else. Bit 6 an image was read. Bit 7 the session holds a backup. Bit 8 the image has the known layout. Bit 9 only RESTORE is accepted. Bit 10 a PD mini answers and the port switches the servo's supply. Bit 11 registers 16 to 31 show the backup. Bits 12 to 15 the programming port |
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
-| 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the frames it has sent, held at 4095 |
+| 2 | `OP` | bits 12 to 15 the last operation started, 0 at start and until an operation starts; a refused command leaves them. Bits 0 to 11 the frames it has sent, held at 4095 |
 | 3 | `RESULT` | low byte the result of that operation, 1 while it runs, 35 while a WRITE or a RESTORE plans (since 4.14). High byte why the last command taken started nothing, 0 when it started |
 | 4 | `FAIL` | low byte the servo register the result names, 0xFF for none. High byte the writes of the plan that are done |
 | 5, 6 | `DIFF` | bit n: servo register n differs from what the operation expected. Register 5 holds servo registers 0 to 15 |
@@ -872,14 +872,22 @@ that is neither 0 nor 0x57A5 or a `SEQ` other than the page's plus 1 is
 refused with BAD_VALUE and changes nothing. The frame last taken, sent
 again, is acknowledged and does nothing, so a command whose answer was lost
 is sent again as it was. After an abort at the panel it is not sent
-again: the panel reads registers 0 to 3. A `SEQ` other than the command's
-means the command was not taken, and it counts as dropped. The command's
+again: the panel reads registers 0 to 3. The `SEQ` before the command
+means it was not taken, and the request counts as dropped. The command's
 `SEQ` means it was taken only together with its operation in `OP` or a
-refusal in `RESULT`'s high byte. A coprocessor that starts again reads
-`SEQ` 0, operation 0 and no refusal: at the command after `SEQ` 0xFFFF,
-whose `SEQ` is 0, the panel reports a restart and no result. A
-command that is taken is acknowledged; what
-became of it is in `RESULT`.
+refusal in `RESULT`'s high byte. Any other `SEQ` is a coprocessor that
+started again. A coprocessor that starts again reads `SEQ` 0, operation 0
+and no refusal. Operation 0 after a read that named an operation is a
+restart at any `SEQ`, the command's and the one before it included: a
+fresh page's `SEQ` 0 is the command's after `SEQ` 0xFFFF and the one
+before it after `SEQ` 0, and a fresh page takes a command with `SEQ` 1
+sent again as its own next command. The panel then reports a restart and
+no result. A coprocessor that has taken no command since it started reads
+`SEQ` 0 and operation 0 before and after a start: when it starts again
+between its first command and that read, the request counts as dropped.
+Of such first commands only ENTER and REBOOT start an operation; every
+write needs PROGRAMMING, which an ENTER starts. A command that is taken is
+acknowledged; what became of it is in `RESULT`.
 
 | Operation | Value | Does |
 | --- | ---: | --- |
