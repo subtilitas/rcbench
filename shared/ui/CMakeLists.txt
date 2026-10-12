@@ -10,7 +10,6 @@ set(SRCS
     ui_band.c
     ui_watermark.c
     ui_plot.c
-    ui_hero.c
     ui_slider.c
     ui_tabs.c
     ui_keypad.c
@@ -20,7 +19,6 @@ set(SRCS
     ui_text_de.c
     splash_screen.c
     overview_screen.c
-    stub_screen.c
     motor_screen.c
     supply_screen.c
     servo_screen.c

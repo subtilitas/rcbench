@@ -6,10 +6,10 @@ import { CATALOGUE } from './catalogue.ts';
 import {
   alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect, removalIsPlain, testObjects,
 } from './groups.ts';
-import { DEFAULT_OPTIONS, resolve } from './resolve.ts';
+import { DEFAULT_OPTIONS, PICTURES_MAX, resolve } from './resolve.ts';
 
 export {
-  CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect,
+  CATALOGUE, DEFAULT_OPTIONS, PICTURES_MAX, resolve, alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect,
   removalIsPlain, testObjects,
 };
 export type { Deselect, Group, GroupVariant, OptionChange, Refusal, Removal } from './groups.ts';

@@ -7,6 +7,8 @@
 
 #include <string.h>
 
+#include "link_crc.h"
+
 /* What is awaited. */
 enum {
     W_NONE = 0,
@@ -1077,12 +1079,12 @@ void kst_prog_gate_set(kst_prog_t *p, kst_prog_gate_t *g)
 
 void kst_prog_gate_init(kst_prog_gate_t *g)
 {
-    __atomic_store_n(&g->pass, 0u, __ATOMIC_SEQ_CST);
+    atomic_store(&g->pass, 0u);
 }
 
 void kst_prog_gate_offer(kst_prog_gate_t *g, uint32_t id)
 {
-    __atomic_store_n(&g->pass, id, __ATOMIC_SEQ_CST);
+    atomic_store(&g->pass, id);
 }
 
 /* The pass of @p id, taken by whoever asks first. */
@@ -1091,8 +1093,7 @@ static bool gate_take(kst_prog_gate_t *g, uint32_t id)
     uint32_t want = id;
 
     return id != 0u
-        && __atomic_compare_exchange_n(&g->pass, &want, 0u, false,
-                                       __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+        && atomic_compare_exchange_strong(&g->pass, &want, 0u);
 }
 
 bool kst_prog_gate_claim(kst_prog_gate_t *g, uint32_t id)
@@ -2712,17 +2713,7 @@ void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done)
 
 static uint16_t crc16(const char *s, size_t n)
 {
-    uint16_t crc = 0xFFFFu;
-
-    for (size_t i = 0; i < n; ++i) {
-        crc = (uint16_t)(crc ^ ((unsigned)(uint8_t)s[i] << 8));
-        for (unsigned b = 0; b < 8u; ++b) {
-            const unsigned next = (unsigned)crc << 1;
-
-            crc = (uint16_t)((crc & 0x8000u) != 0u ? next ^ 0x1021u : next);
-        }
-    }
-    return crc;
+    return link_crc(LINK_CRC_INIT, s, n);
 }
 
 static char *put(char *at, const char *s)
