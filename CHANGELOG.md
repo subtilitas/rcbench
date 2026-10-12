@@ -6,6 +6,32 @@ history is in git.
 
 ## Unreleased
 
+## 0.17.0 - 2026-10-12
+
+The link protocol is 4.15. A 0.16 board still links and arms with a 0.17
+one, since only the protocol's major number has to match. The servo
+programmer for KST and Chaservo servos needs both boards at 0.17: nothing is
+sent to the pages 0x32 and 0x33 unless both are 4.13 or later, no LEAVE is
+sent unless both are 4.15, and a 0.17 panel with an older coprocessor shows
+the programmer as unavailable with the reason. Flash both boards. PROGRAM on
+the SERVO screen opens the programmer on the coprocessor's programming port
+(GP13 on pad 17 by default): it reads all 32 registers, edits them within
+the protocol core's limits, writes the changed registers only and reads each
+back, keeps a backup from the first read of a session, and saves and loads a
+configuration as a text file of 35 lines on the SD card. A write needs the
+switch ENABLE WRITE TO SERVO, which is off by default and takes a hold of
+2 s. With a PD mini answering, CONNECT sets the supply (4.8 to 8.4 V, 50 to
+3000 mA), and the coprocessor arms no bank while the port is out of PWM. The
+protocol core is the module `protocols/kst/`. Every interface to external
+hardware is a module under `protocols/`, and `tools/check_protocols.py
+--check` holds the modules to that rule. The READMEs carry a trademark
+notice and a disclaimer, and makers and brands are named descriptively. The
+READMEs and the wiki home link the bench configurator; a release carries the
+2 firmware archives and `SHA256SUMS`. The timing and the register layout
+come from 1 programming card and 1 servo of unidentified model. The effect
+of a register on servo motion is not measured, and no pulse of a port is
+measured.
+
 ### Added
 
 - SERVO screen: a programmer for KST and Chaservo servos. PROGRAM opens an
@@ -144,8 +170,8 @@ history is in git.
   fails the layout fingerprint is shown and not written. PROGRAM ends a
   running automatic test. A coprocessor without the programming port's
   page shows the programmer as unavailable with the reason. German texts
-  for every new string; 118 screenshots. Host suite only (`test_kst_prog`,
-  `test_kst_panel`, `test_kst_card`, `test_prog_link`).
+  for every new string; 118 screenshots. Host tests: `test_kst_prog`,
+  `test_kst_panel`, `test_kst_card`, `test_prog_link`.
   ([Servo programmer for KST and Chaservo servos](docs/ServoProgrammer.md))
 - Servo programmer, the port is the programmer's alone: from **CONNECT**
   to the port back in PWM, **PWM TARGET** and **PORT PWM** change by no
@@ -196,7 +222,7 @@ history is in git.
   3 functions. The host suite runs it against a servo and
   line model (`test_kst_wire`, `test_kst_reg`, `test_kst_plan`,
   `test_kst_session`) and links its 6 headers from C++11
-  (`kst_headers_cxx`); no frame of it has been sent to a servo. The timing
+  (`kst_headers_cxx`). The timing
   and the register layout come from 1 programming card and 1 servo of
   unidentified model, and the effect of a register on servo motion is not
   measured. ([README](protocols/kst/README.md))
@@ -209,7 +235,7 @@ history is in git.
   open refuses a system clock that misses the half-cell by more than 0.2 %.
   `test_kst_pio` runs the program's words in a model of the state machine,
   and the coprocessor build fails when the assembled program differs from
-  those words. Not run on a chip.
+  those words.
   ([README](protocols/kst/README.md#rp2350-pin-driver))
 - **A programming port for KST and Chaservo servos on the coprocessor.**
   A programming port is an output of its own kind with its own pin, no
@@ -239,8 +265,7 @@ history is in git.
   accepts a read of all registers before any write.
   `shared/bench/kst_link.c` is the panel's half: it stages the images and
   the supply, sends the command, polls every 50 ms and fetches the image
-  and the results. No screen uses it, so the panel sends nothing to either
-  page.
+  and the results. The servo programmer of the SERVO screen is its caller.
   The port plans a WRITE and a RESTORE after the command's frame, one
   slice of the planner in each pass of the coprocessor's main loop: bit 3
   of register 0 is set and the result reads 35 while it plans, and a
@@ -262,8 +287,8 @@ history is in git.
   slices 4.14. Every combination of a 4.15 and an older panel and
   coprocessor links and arms, nothing is sent to 0x32 or 0x33 unless both
   are 4.13 or later, and no LEAVE is sent unless both are 4.15.
-  Host suite only (`test_kst_port`, `test_prog_port`, `test_kst_link`); no
-  frame has been sent to a servo and no pulse of a port is measured.
+  Host tests: `test_kst_port`, `test_prog_port`, `test_kst_link`. No pulse
+  of a port is measured.
   ([Link](docs/Link.md#the-programming-port-for-kst-and-chaservo-servos))
 - **A servo configuration as a text file.** `protocols/kst/kst_file.c`
   writes the 32 registers of a KST or Chaservo servo as 35 lines of ASCII
@@ -285,9 +310,8 @@ history is in git.
   name of 32 characters or fewer with 5 distinct refusals, never
   replaces a file, and lists the files sorted by name. The name `KST`,
   in any case, is refused and `KST.TXT` is left out of the list: the file
-  is a caller's record of a write under way. No screen uses
-  either, and the panel has no card functions wired to the store. Host
-  suite only (`test_kst_file`, `test_kst_store`).
+  is a caller's record of a write under way. FILES of the servo
+  programmer uses both. Host tests: `test_kst_file`, `test_kst_store`.
   ([README](protocols/kst/README.md#configuration-file))
 - **A trademark notice and a disclaimer.** `README.md` and `README-de.md`
   carry the section "Legal notice and disclaimer": KST, CHASERVO and Hitec
