@@ -6715,9 +6715,20 @@ static __attribute__((noinline)) void prog_link_service(void)
     prog_link_write_t w;
     if (prog_link_next(&s_prog_link, quiet, &w)) {
         link_msg_t reply = { 0 };
-        const bool ack = write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u,
-                                    &w.value, &reply)
-                         && reply.op == LINK_OP_ACK;
+        /* A pulse comes on under the range the screen names, stated to the
+         * port first: from 4.16 a range longer than the frame refuses it,
+         * and the port may still hold another profile's. */
+        const uint8_t on = prog_link_pulse_on(&s_prog_link, &w);
+        bool ack = true;
+        if (on != 0u && servo_named(&s_servo_range)) {
+            uint16_t cfg[LINK_CC_COUNT];
+            servo_cfg(&s_servo_range, cfg);
+            ack = servo_cfg_write(on, 0u, 1u, cfg, &reply);
+        }
+        ack = ack
+              && write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u, &w.value,
+                            &reply)
+              && reply.op == LINK_OP_ACK;
         prog_link_written(&s_prog_link, &w, ack);
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
