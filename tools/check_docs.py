@@ -1331,7 +1331,12 @@ def check_sdk_tags(problems: list[str]) -> None:
                         f"the first of the ci.yml matrix is {idfs[0]}")
     for page, joiner in (("Building.md", "and"), ("Building-de.md", "und")):
         text = read(REPO / "docs" / page)
-        for m in re.finditer(r"(v\d+\.\d+) %s (v\d+\.\d+)" % joiner, text):
+        stated = list(re.finditer(
+            r"(v\d+\.\d+) %s (v\d+\.\d+)" % joiner, text))
+        if not stated:
+            problems.append(f"SDK tags: no 'vX.Y {joiner} vX.Z' ESP-IDF "
+                            f"statement in {page}")
+        for m in stated:
             if [m.group(1), m.group(2)] != idfs:
                 problems.append(
                     f"SDK tags: {page} says ESP-IDF {m.group(1)} "

@@ -22,10 +22,12 @@ This tool reads each module and fails when one of these does not hold:
   module;
 - a limit a module shares with the project is held equal by a
   `_Static_assert` in the caller (CONTRIBUTING.md, "Where code goes"): a
-  `_Static_assert` outside protocols/ that names a macro or enumerator of a
-  module's public headers is listed in ASSERTED below, and each listed file
-  still has one for its module.  The list is checked in both directions, so
-  a new assertion is recorded and a removed one fails.
+  `_Static_assert` (or `static_assert`) outside protocols/ that names a macro
+  or enumerator of a module's public headers is listed in ASSERTED below by
+  file and by condition, and each listed condition is still asserted in its
+  file.  Conditions compare with whitespace collapsed and the message
+  dropped.  The list is checked in both directions, so a new assertion is
+  recorded and a removed one fails, also when its file keeps another.
 
     python3 tools/check_protocols.py            # the modules, then the check
     python3 tools/check_protocols.py --check    # the check alone
@@ -75,12 +77,44 @@ LIBRARY_RE = re.compile(r"\brcbench_\w+")
 # protocols/ with an assertion that names a macro or enumerator of the
 # module's public headers.  Paths are relative to the repository root.
 ASSERTED = {
-    "dshot": ("firmware/iomcu/src/outputs_hw.c",),
-    "kst": ("shared/bench/kst_link.c", "shared/outputs/kst_port.c"),
-    "ppm": ("firmware/iomcu/src/outputs_hw.c",),
+    "dshot": {
+        "firmware/iomcu/src/outputs_hw.c": (
+            "OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS",
+        ),
+    },
+    "kst": {
+        "shared/bench/kst_link.c": (
+            "KST_REG_COUNT == 2u * LINK_KS_IMAGE_REGS",
+        ),
+        "shared/outputs/kst_port.c": (
+            "KST_SES_OK == 0 && KST_SES_BUSY == 1",
+            "KST_SES_ERR_NO_SERVO == 4 && KST_SES_ERR_NOT_IN_MODE == 5 "
+            "&& KST_SES_ERR_READ == 6 && KST_SES_ERR_NO_BACKUP == 7 "
+            "&& KST_SES_ERR_FINGERPRINT == 8 && KST_SES_ERR_LOCKED == 9 "
+            "&& KST_SES_ERR_BAD_PLAN == 10 "
+            "&& KST_SES_ERR_UNCONFIRMED == 11 "
+            "&& KST_SES_ERR_CHANGED == 12 "
+            "&& KST_SES_ERR_WRITE_FAILED == 13 "
+            "&& KST_SES_ERR_ROLLED_BACK == 14 && KST_SES_ERR_TORN == 15 "
+            "&& KST_SES_ERR_UNINTENDED == 16 && KST_SES_ERR_VERIFY == 17 "
+            "&& KST_SES_ERR_DRIVER == 18 && KST_SES_ERR_ABORTED == 19",
+            "KST_F_COUNT <= 64",
+            "KST_REG_COUNT == 2u * LINK_KS_IMAGE_REGS",
+            "LINK_KST_RESULT_SUPPLY > KST_SES_ERR_NO_PLAN",
+        ),
+    },
+    "ppm": {
+        "firmware/iomcu/src/outputs_hw.c": (
+            "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",
+            "PPM_CHANNEL_MIN_US == OUT_FLOOR_US "
+            "&& PPM_CHANNEL_MAX_US == OUT_CEILING_US",
+        ),
+    },
 }
 CALLER_DIRS = ("shared", "firmware")
-STATIC_ASSERT_RE = re.compile(r"\b_Static_assert\s*\((.*?)\)\s*;", re.S)
+STATIC_ASSERT_RE = re.compile(
+    r"\b(?:_Static_assert|static_assert)\s*\((.*?)\)\s*;", re.S)
+MESSAGE_RE = re.compile(r',\s*"[^"]*"(?:\s*"[^"]*")*\s*$')
 MACRO_RE = re.compile(r"^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)", re.M)
 ENUM_BODY_RE = re.compile(r"\benum\b[^{;]*\{(.*?)\}", re.S)
 ENUMERATOR_RE = re.compile(r"(?:^|,)\s*([A-Za-z_]\w*)\s*(?:=[^,]*)?", re.S)
@@ -262,12 +296,20 @@ def caller_files(repo: pathlib.Path) -> list[pathlib.Path]:
     return sorted(found)
 
 
+def condition(body: str) -> str:
+    """The condition of a static assertion's argument text: the message
+    dropped, whitespace collapsed."""
+    return " ".join(MESSAGE_RE.sub("", body).split())
+
+
 def assertion_problems(root: pathlib.Path,
-                       asserted: dict[str, tuple[str, ...]]) -> list[str]:
-    """Where the callers' `_Static_assert` files differ from @p asserted."""
+                       asserted: dict[str, dict[str, tuple[str, ...]]]
+                       ) -> list[str]:
+    """Where the callers' static assertions on a module's constants differ
+    from @p asserted, per module, file and condition."""
     repo = root.parent
     names = {m.name: public_names(m) for m in modules(root)}
-    seen: dict[str, set[str]] = {n: set() for n in names}
+    seen: dict[str, dict[str, set[str]]] = {n: {} for n in names}
     for path in caller_files(repo):
         text = C_COMMENT_RE.sub(" ", path.read_text(errors="replace"))
         rel = path.relative_to(repo).as_posix()
@@ -275,19 +317,21 @@ def assertion_problems(root: pathlib.Path,
             words = set(re.findall(r"[A-Za-z_]\w*", body))
             for module, own in names.items():
                 if words & own:
-                    seen[module].add(rel)
+                    seen[module].setdefault(rel, set()).add(condition(body))
     problems = []
     for module in sorted(names):
-        want = set(asserted.get(module, ()))
-        for rel in sorted(seen[module] - want):
-            problems.append(
-                "%s: %s holds a _Static_assert on the module's constants "
-                "that ASSERTED in tools/check_protocols.py does not list"
-                % (module, rel))
-        for rel in sorted(want - seen[module]):
-            problems.append(
-                "%s: %s is listed in ASSERTED and has no _Static_assert on "
-                "the module's constants" % (module, rel))
+        want = {f: set(c) for f, c in asserted.get(module, {}).items()}
+        for rel in sorted(set(seen[module]) | set(want)):
+            have = seen[module].get(rel, set())
+            for cond in sorted(have - want.get(rel, set())):
+                problems.append(
+                    "%s: %s holds a static assertion on the module's "
+                    "constants that ASSERTED in tools/check_protocols.py "
+                    "does not list: %s" % (module, rel, cond))
+            for cond in sorted(want.get(rel, set()) - have):
+                problems.append(
+                    "%s: %s is listed in ASSERTED and has no static "
+                    "assertion of: %s" % (module, rel, cond))
     return problems
 
 

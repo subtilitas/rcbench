@@ -351,7 +351,8 @@ def test_a_listed_assertion_in_the_caller_passes(tmp_path):
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, "#define USE_MAX 8\n"
                  '_Static_assert(WIRE_MAX == USE_MAX,\n "same limit");\n')
-    assert asserted_problems(tmp_path, {"wire": (rel,)}) == []
+    assert asserted_problems(
+        tmp_path, {"wire": {rel: ("WIRE_MAX == USE_MAX",)}}) == []
 
 
 def test_an_assertion_the_list_does_not_name_is_flagged(tmp_path):
@@ -366,15 +367,56 @@ def test_a_listed_file_without_the_assertion_is_flagged(tmp_path):
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, "int use(void) { return WIRE_MAX; }\n")
-    out = asserted_problems(tmp_path, {"wire": (rel,)})
-    assert len(out) == 1 and "has no _Static_assert" in out[0]
+    out = asserted_problems(
+        tmp_path, {"wire": {rel: ("WIRE_MAX == 8",)}})
+    assert len(out) == 1 and "has no static assertion" in out[0]
+
+
+def two_assertions(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header(
+        "#define WIRE_MAX 8\n#define WIRE_MIN 1\n"))
+    return caller(tmp_path, '_Static_assert(WIRE_MAX == 8, "max");\n'
+                  'static_assert(WIRE_MIN\n == 1, "min");\n')
+
+
+LISTED_TWO = ("WIRE_MAX == 8", "WIRE_MIN == 1")
+
+
+def test_an_unchanged_tree_with_two_assertions_in_a_file_passes(tmp_path):
+    rel = two_assertions(tmp_path)
+    assert asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO}}) == []
+
+
+def test_removing_one_listed_assertion_of_a_file_fails(tmp_path):
+    rel = two_assertions(tmp_path)
+    (tmp_path / rel).write_text('_Static_assert(WIRE_MAX == 8, "max");\n')
+    out = asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO}})
+    assert len(out) == 1 and "WIRE_MIN == 1" in out[0]
+    assert "has no static assertion" in out[0]
+
+
+def test_a_new_assertion_in_a_listed_file_fails(tmp_path):
+    rel = two_assertions(tmp_path)
+    out = asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO[:1]}})
+    assert len(out) == 1 and "does not list" in out[0]
+
+
+def test_a_changed_condition_fails_and_a_changed_message_does_not(tmp_path):
+    rel = two_assertions(tmp_path)
+    (tmp_path / rel).write_text(
+        '_Static_assert(WIRE_MAX == 8, "other text");\n'
+        'static_assert(WIRE_MIN == 2, "min");\n')
+    out = asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO}})
+    assert len(out) == 2 and all("WIRE_MIN" in o for o in out)
 
 
 def test_an_assertion_in_a_comment_does_not_count(tmp_path):
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, '/* _Static_assert(WIRE_MAX == 8, "x"); */\n')
-    assert len(asserted_problems(tmp_path, {"wire": (rel,)})) == 1
+    assert len(asserted_problems(
+        tmp_path, {"wire": {rel: ("WIRE_MAX == 8",)}})) == 1
 
 
 def test_an_assertion_on_the_projects_own_names_is_not_the_modules(tmp_path):

@@ -373,6 +373,16 @@ def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
     assert len(out) == 1 and said in out[0]
 
 
+@pytest.mark.parametrize("rel, old, new", [
+    ("docs/Building.md", "CI builds v5.4 and v5.5", "CI builds v5.4"),
+    ("docs/Building-de.md", "CI baut v5.4 und v5.5", "CI baut v5.4"),
+])
+def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
+    out = sdk_tree(tree, **{rel: [(old, new)]})
+    page = rel.split("/")[-1]
+    assert len(out) == 1 and f"ESP-IDF statement in {page}" in out[0]
+
+
 def test_the_tree_holds_the_sdk_tags():
     problems = []
     cd.check_sdk_tags(problems)

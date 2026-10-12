@@ -6,6 +6,19 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The bench configurator offers "Program a KST or Chaservo servo"
+  (`servoprog`, link `#v=1&f=servoprog`). It needs the panel and the
+  coprocessor alone. Its tick puts the servo signal on wire 64, from pad 17
+  (GP13), the programming port, in place of wire 7 on pad 4 (GP2). The
+  result states that SETTINGS → DUT → PWM TARGET is PROG PORT, what the PD
+  mini sets when it is part of the setup (4.8 to 6.0 V or up to 8.4 V with
+  HV SERVO on, 50 to 3000 mA), that without it the programming voltage and
+  current limit are stored and not applied, and that the level of the
+  servo's reply on GP13 is not measured. Existing links keep their meaning:
+  `kst` stays an unknown id.
+
 ### Changed
 
 - The bench configurator describes release 0.17.0. Every repository source
@@ -14,14 +27,22 @@ history is in git.
   carries the line and the wording of `STATUS.md` at that tag. The list
   "Not in a release" holds 4 entries: the entry on the programming port for
   KST and Chaservo servos is removed, since 0.17.0 contains the servo
-  programmer. The configurator offers no function, part or wire for the servo programmer.
+  programmer.
 - The Configurator workflow shows each warning of the data check, such as a
   release tag newer than the data, as an annotation and in the run summary.
+  The Release workflow runs the same check on every tag push and shows its
+  warnings the same way. The check holds no release back.
 - CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
   exact versions.
 
 ### Fixed
 
+- The phase tap's readout on a stick run's page shows PITCH and LOST as
+  `--` and no OVERRUN once the last TONE status read is 500 ms old
+  (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
+  `tone_link_readout()` clears the status's 7 values and sets
+  `tone_readout_t.read` only while a read younger than 500 ms gives the
+  state; the head's warning colour follows the state.
 - The docs workflow no longer cancels a publish in progress when a later push
   starts one (`cancel-in-progress: false`).
 - With the environment variable `CI` set, a missing C++ compiler fails the
@@ -30,6 +51,14 @@ history is in git.
   `c++` fails the cases of `test/tools` that need it. Each of these skipped
   and exited 0. The owner self-test of `session.py` reads a plan and
   a commit of its own throwaway repository, not the working repository's.
+- The docs job and the job of the Release workflow that waits for CI with
+  `tools/ci_gate.py` time out after 100 min; the gate waits up to 5400 s
+  (90 min). A shorter limit ends the job while it waits.
+- `tools/check_docs.py` fails when `docs/Building.md` or
+  `docs/Building-de.md` has no "vX.Y and vX.Z" ESP-IDF statement.
+- `tools/check_protocols.py` lists each `_Static_assert` on a module's
+  constants by file and condition; removing one of two assertions in a file
+  fails the check. `static_assert` counts as well.
 - The cppcheck step over `shared/` resolves the headers under
   `shared/*/include`; its pathspec matched no file. `ui_seg_hero()` names its
   local `st`, which no longer shadows the file-scope `s` of the screens that
