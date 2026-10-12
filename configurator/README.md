@@ -180,9 +180,9 @@ The first group is "Runs on the base setup". It has 2 parts:
   "Included with the base setup.". The id of such a function is never written
   into the link and never counts as selected by the visitor. The removal of a
   part and of a tick never lists such a function as going off.
-- 2 rows with a tick, under the sentence "These functions need no further
-  part of the bench. A tick connects the test object.": "Drive a servo" and
-  "Drive an ESC".
+- 3 rows with a tick, under the sentence "These functions need no further
+  part of the bench. A tick connects the test object.": "Drive a servo",
+  "Program a KST or Chaservo servo" and "Drive an ESC".
 
 A function is active when the setup holds every part it needs and every option
 it forces, and the test object it drives is connected. Each row states its
@@ -204,6 +204,18 @@ or B, from the bench for a small servo: the 5 V pin of the coprocessor (pad
 and the PDF carry a note: the servo draws from the supply of the logic, which
 is prone to problems. "Small" carries no number: no source states a current
 limit. An ESC takes signal and GND only, in every variant.
+
+"Program a KST or Chaservo servo" (`servoprog`) needs the panel and the
+coprocessor alone. Its tick moves the servo signal from wire 7 (pad 4, GP2,
+a slot of SETUP → OUTPUTS) to wire 64 (pad 17, GP13), the programming port
+of a coprocessor that has stored no other pin for it. The result carries 3
+notes and 1 unknown: SETTINGS → DUT → PWM TARGET is PROG PORT; with the PD
+mini, CONNECT sets the servo supply, 4.8 to 6.0 V or up to 8.4 V with HV
+SERVO on, and 50 to 3000 mA; without the PD mini the servo takes the supply
+of the servo power variant, and the programming voltage and current limit
+are stored and not applied; the level of the servo's reply on GP13 is not
+measured. The pin is no visible variant and the hash holds no token for it:
+the function sets it.
 
 Removing the tick of a function removes it from the selection. A note under
 the row states whether the function stays active, which of its parts stay
@@ -244,7 +256,7 @@ Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
 `test/layout.test.ts` draws every distinct setup the resolver gives for every
-subset of the 11 functions with a tick and every subset of the 9 selectable parts, in all 16
+subset of the 12 functions with a tick and every subset of the 9 selectable parts, in all 16
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,
@@ -272,7 +284,7 @@ wire point of `drawings/anchors.json`.
 | Parallel wires | Side by side in lanes, 5 px clear between the edges of 2 wires. |
 | Crossing | At a right angle. 2 wires of different numbers share no segment. |
 | Width | 7 px for a wire that carries load current, 3 px for every other wire, 2 px for a lead of a component. |
-| Load current | A wire of class `power` in the data file: 23 of 63 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
+| Load current | A wire of class `power` in the data file: 23 of 64 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
 | Colour | Supply plus red, supply minus black with a light casing, signals in the other colours of `drawings/wires.ts`. No signal is red or black. |
 | Wire number | In a chip at both ends of the wire. |
 | Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |

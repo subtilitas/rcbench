@@ -5,9 +5,10 @@
 import { expect, test } from '@playwright/test';
 import { pageOrigin } from './lib/watch.ts';
 import type { Page } from '@playwright/test';
-import type { Lang } from '../contract.ts';
+import type { Lang, OptionKey } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, groups, resolve, alwaysOn } from '../src/core.ts';
 import { STRINGS, t } from '../src/i18n.ts';
+import { variantShort } from '../src/view/chooser.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 const LANGS: Lang[] = ['en', 'de'];
@@ -122,7 +123,7 @@ for (const size of SIZES) {
       const seen = watch(page);
       expect(GROUPS.flatMap((g) => g.functions).sort()).toEqual([...ON_BASE, ...FUNCTIONS].sort());
       expect([...(GROUPS[0]?.functions ?? [])].sort()).toEqual([...ON_BASE, ...PLAIN].sort());
-      expect(PLAIN).toEqual(['servo', 'esc']);
+      expect(PLAIN).toEqual(['servo', 'servoprog', 'esc']);
       expect(OBJECTS).toEqual(['servo', 'esc']);
       // No group is keyed by a test object.
       expect(GROUPS.flatMap((g) => g.parts).filter((id) => OBJECTS.includes(id))).toEqual([]);
@@ -141,7 +142,7 @@ for (const size of SIZES) {
           // No heading names a servo or an ESC as needed.
           const legend = await box.locator('legend').innerText();
           for (const id of OBJECTS) expect(legend.split(/[^\p{L}\p{N}]+/u), `${legend}: ${id}`).not.toContain(short(id, lang));
-          // The group of the base setup holds a list without a control and the 2 ticks that connect a
+          // The group of the base setup holds a list without a control and the 3 ticks that connect a
           // test object; every other group holds one tick per function.
           const ticks = await box.locator('input[data-f]').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.f));
           const rows = await box.locator('ul.base > li').evaluateAll((list) => list.map((el) => el.id.replace(/^b-/, '')));
@@ -158,13 +159,18 @@ for (const size of SIZES) {
           t(lang, 'gOneOf', { x: `${short('batt', lang)}${STRINGS.or[col(lang)]}${['pdmini', 'charger', 'usbtap'].map((id) => short(id, lang)).join(' + ')}` }),
         );
         await expect(page.locator('#g-pdmini')).toContainText(t(lang, 'gAlso', { x: ['charger', 'usbtap'].map((id) => short(id, lang)).join(', ') }));
-        // The 2 ticks of the base group stand under their own sentence.
+        // The 3 ticks of the base group stand under their own sentence.
         await expect(page.locator('#basetick')).toHaveText(STRINGS.baseTick[col(lang)]);
         await expect(page.locator('#basetick ~ label input[data-f]')).toHaveCount(PLAIN.length);
+        // A function that forces an option names the option a tick sets; the others name the test object.
         for (const id of PLAIN) {
-          const object = CATALOGUE.functions.find((f) => f.id === id)!.drives as string;
-          await expect(page.locator(`label:has(#f-${id}) small`)).toHaveText(t(lang, 'stObj', { x: short(object, lang) }));
+          const fn = CATALOGUE.functions.find((f) => f.id === id)!;
+          const forced = Object.entries(fn.forces ?? {}) as Array<[OptionKey, string]>;
+          await expect(page.locator(`label:has(#f-${id}) small`)).toHaveText(forced.length > 0
+            ? t(lang, 'stVar', { v: forced.map(([key, value]) => variantShort(lang, key, value)).join(', ') })
+            : t(lang, 'stObj', { x: short(fn.drives as string, lang) }));
         }
+        expect(PLAIN.filter((id) => CATALOGUE.functions.find((f) => f.id === id)!.forces !== undefined)).toEqual(['servoprog']);
         // What is in no release keeps its own greyed list.
         await expect(page.locator('.nir h3')).toHaveText(STRINGS.nir[col(lang)]);
         await expect(page.locator('.nir li')).toHaveCount(CATALOGUE.notInRelease.length);
@@ -191,7 +197,7 @@ for (const size of SIZES) {
           await expect(box.locator('legend')).toHaveText(STRINGS.gBase[col(lang)]);
           await expect(box.locator('legend .tag')).toHaveCount(0);
           await expect(box.locator('> .hint')).toHaveText([STRINGS.baseHint[col(lang)], STRINGS.baseTick[col(lang)]]);
-          // The list holds no control and nothing that takes the focus, in any setup. The group holds the 2 ticks alone.
+          // The list holds no control and nothing that takes the focus, in any setup. The group holds the 3 ticks alone.
           await expect(box.locator('ul.base').locator('input, button, select, textarea, a, summary, [tabindex], [contenteditable]')).toHaveCount(0);
           expect(await box.locator('input, button, select, textarea, a, summary, [tabindex], [contenteditable]').evaluateAll((list) => list.map((el) => el.id)))
             .toEqual(PLAIN.map((id) => `f-${id}`));

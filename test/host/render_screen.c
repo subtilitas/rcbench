@@ -996,6 +996,7 @@ static void stick_step(stick_rig_t *r)
         tone_readout_t t;
         memset(&t, 0, sizeof(t));
         t.state = TONE_STATE_RUNNING;
+        t.read = true;
         t.tone = true;
         t.win_freq_dhz = 15234u;
         t.win_periods = 12u;

@@ -623,8 +623,10 @@ uint16_t tone_link_flags(const tone_link_t *t)
 }
 
 /* What the tap is doing, as the screen words it; @p fresh says the last
- * status read is recent enough to speak for the page. */
-static tone_state_t state_of(const tone_link_t *t, bool fresh)
+ * status read is recent enough to speak for the page.  @p read, false on
+ * the call, is set when the state is the one that read gives, so its
+ * values are current. */
+static tone_state_t state_of(const tone_link_t *t, bool fresh, bool *read)
 {
     if (!t->want_set || t->want[LINK_TN_ENABLE] == 0u) {
         /* Off is asked and the page does not hold it yet: not off. */
@@ -646,6 +648,7 @@ static tone_state_t state_of(const tone_link_t *t, bool fresh)
     if (!fresh) {
         return TONE_STATE_WAITING;
     }
+    *read = true;
     const uint16_t f = t->status[ST(LINK_TN_FLAGS)];
     if ((f & LINK_TN_PIN_REFUSED) != 0u) {
         return TONE_STATE_REFUSED;
@@ -669,8 +672,14 @@ void tone_link_readout(const tone_link_t *t, uint32_t now_ms,
     const bool fresh = t->have_status
                        && (uint32_t)(now_ms - t->status_ms)
                               < TONE_LINK_STALE_MS;
-    if (t->have_status) {
+    bool read = false;
+    r->state = state_of(t, fresh, &read);
+    /* A status older than TONE_LINK_STALE_MS, or one the state does not
+     * come from, leaves its values at 0: nothing on the screen stands for
+     * the page that no read speaks for. */
+    if (read) {
         const uint16_t f = t->status[ST(LINK_TN_FLAGS)];
+        r->read         = true;
         r->overrun      = (f & LINK_TN_OVERRUN) != 0u;
         r->tone         = (f & LINK_TN_TONE) != 0u;
         r->beep         = (f & LINK_TN_BEEP) != 0u;
@@ -679,7 +688,6 @@ void tone_link_readout(const tone_link_t *t, uint32_t now_ms,
         r->lost         = t->status[ST(LINK_TN_LOST)];
         r->glitches     = t->status[ST(LINK_TN_GLITCHES)];
     }
-    r->state = state_of(t, fresh);
 }
 
 unsigned tone_link_pin(const tone_link_t *t)
