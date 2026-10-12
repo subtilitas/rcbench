@@ -1649,6 +1649,48 @@ TEST_CASE(one_corrupted_read_back_is_no_reset)
     CHECK_EQ(s.i3221_resets, 0u);
 }
 
+/* A read-back of all ones is a bus that no part drives: offline on that
+ * read, without a second, counted, and the windows emptied.  FFFEh, one
+ * bit short, is read a second time as any other mismatch. */
+TEST_CASE(an_all_ones_read_back_takes_the_part_offline_at_once)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(100u);
+    unsigned before = i3221->reads[INA3221_CONFIG];
+    i3221->glitch_reg   = INA3221_CONFIG;
+    i3221->glitch_value = 0xFFFEu;
+    i3221->glitch_n     = 1u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(i3221->reads[INA3221_CONFIG], before + 2u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    before = i3221->reads[INA3221_CONFIG];
+    i3221->glitch_value = 0xFFFFu;
+    i3221->glitch_n     = 1u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(i3221->glitch_n, 0u);
+    CHECK_EQ(i3221->reads[INA3221_CONFIG], before + 1u);
+    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i3221_resets, 1u);
+    CHECK_EQ(s.acc[SENSE_SRC_CH1].n_i, 0u);
+
+    rig(1u, true);
+    i228->amps[0] = 10.0;
+    ticks(3u);
+    sense_sched_arm(&s);
+    ticks(100u);
+    before = i228->reads[INA228_ADC_CONFIG];
+    i228->glitch_reg   = INA228_ADC_CONFIG;
+    i228->glitch_value = 0xFFFFu;
+    i228->glitch_n     = 1u;
+    ticks(ROTATION_TICKS);
+    CHECK_EQ(i228->reads[INA228_ADC_CONFIG], before + 1u);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    CHECK_EQ(s.i228_resets, 1u);
+    CHECK(!s.run.totals_ok);
+    CHECK(!s.have_vbus);
+}
+
 /* An INA228 that resets itself runs at ADCRANGE 0: with the MATEK set-up
  * at ADCRANGE 1 its CURRENT reads a quarter.  The read-back of ADC_CONFIG
  * finds it within one rotation: offline, its window emptied, the totals no
@@ -1913,6 +1955,7 @@ int main(void)
     RUN(the_ina228_temperature_and_diag_go_with_the_part);
     RUN(the_reset_counts_run_on_across_255);
     RUN(one_corrupted_read_back_is_no_reset);
+    RUN(an_all_ones_read_back_takes_the_part_offline_at_once);
     RUN(a_reset_ina228_is_found_and_set_up_again);
     RUN(a_reset_ina3221_repeats_its_samples_until_it_is_found);
     RUN(every_tick_of_the_rotation_fits_a_millisecond);

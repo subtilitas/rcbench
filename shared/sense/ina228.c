@@ -387,6 +387,9 @@ sense_err_t ina228_verify(ina228_t *d, bool *lost)
         if (e != SENSE_OK || back == d->adc_config) {
             return e;
         }
+        if (back == 0xFFFFu) {
+            break;      /* no part drives the bus: no second read */
+        }
     }
     sense_part_lost(&d->part);
     *lost = true;

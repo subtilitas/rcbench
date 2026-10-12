@@ -334,6 +334,31 @@ TEST_CASE(an_end_code_is_1638_milliamps_on_the_daokai_shunt)
              - ina3221_current_ua(DAOKAI_UOHM, 4094).value, 400);
 }
 
+/* A read-back of FFFFh, the bus that no part drives, takes the part
+ * offline on that read; FFFEh is read a second time. */
+TEST_CASE(an_all_ones_read_back_is_lost_without_a_second_read)
+{
+    daokai(INA3221_CONFIG_BENCH_CH1);
+    bool lost = true;
+    CHECK(ina3221_step(&d, 0));
+    part->glitch_reg   = INA3221_CONFIG;
+    part->glitch_value = 0xFFFEu;
+    part->glitch_n     = 1u;
+    unsigned sent = fb.transactions;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, sent + 2u);
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_ONLINE);
+    part->glitch_value = 0xFFFFu;
+    part->glitch_n     = 2u;
+    sent = fb.transactions;
+    CHECK_EQ(ina3221_verify(&d, &lost), SENSE_OK);
+    CHECK(lost);
+    CHECK_EQ(fb.transactions, sent + 1u);
+    CHECK_EQ(part->glitch_n, 1u);
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_OFFLINE);
+}
+
 /* The Configuration read back: as written, the part stays; the reset
  * value twice in a row takes it offline until the next probe sets it up. */
 TEST_CASE(a_configuration_lost_to_a_reset_takes_the_part_offline)
@@ -487,6 +512,7 @@ int main(void)
     RUN(three_failed_reads_in_a_row_take_the_part_offline);
     RUN(an_end_code_is_1638_milliamps_on_the_daokai_shunt);
     RUN(a_configuration_lost_to_a_reset_takes_the_part_offline);
+    RUN(an_all_ones_read_back_is_lost_without_a_second_read);
     RUN(both_parts_share_one_bus_and_one_stuck_line);
     RUN(a_shunt_of_100_uohm_is_taken_and_99_is_not);
     return test_summary("ina3221");

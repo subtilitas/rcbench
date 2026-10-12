@@ -886,7 +886,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     /* 4.15 adds an operation, a state, a write register and two refusals
      * after the ones there were: the way from PROGRAMMING to PWM without a
      * supply cycle. */
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 15u);
+    CHECK(LINK_PROTOCOL_MINOR >= 15u);
     CHECK_EQ(LINK_MINOR_KST_LEAVE, 15u);
     CHECK_EQ(LINK_KST_OP_LEAVE, 10);
     CHECK_EQ(LINK_KST_OP_COUNT, 11);
@@ -1224,6 +1224,19 @@ TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
     CHECK_EQ(outputs_slots_armed_check(regs, NULL, true), 0u);
 }
 
+/*
+ * 4.17 adds one refusal code after the ones there were: BUSY, which the TONE
+ * page says for a pin something else holds.  No register moves.
+ */
+TEST_CASE(a_busy_pin_is_a_refusal_code_of_its_own)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 17u);
+    CHECK_EQ(LINK_MINOR_TONE_BUSY, 17u);
+    CHECK(LINK_MINOR_TONE_BUSY > LINK_MINOR_KST_LEAVE);
+    CHECK_EQ(LINK_NACK_NOT_ARMED, 5);
+    CHECK_EQ(LINK_NACK_BUSY, 6);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -1263,5 +1276,6 @@ int main(void)
     RUN(the_fault_bits_are_one_bit_each);
     RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
     RUN(outputs_under_an_armed_bank_takes_no_change);
+    RUN(a_busy_pin_is_a_refusal_code_of_its_own);
     return test_summary("link_pages");
 }

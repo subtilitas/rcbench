@@ -73,13 +73,16 @@ void tone_page_defaults(uint16_t *cfg);
  * are the set-up and EVT_SEL alone is the beep shown; anything else is
  * read only.  Refused: off the page (BAD_RANGE); a read-only register
  * (READ_ONLY); a value out of its range, register 7 other than 0, a set-up
- * tone_init() refuses, and with the tap enabled a pin past the bank,
- * reserved, bound to an output, in @p taken or an ADC pin (BAD_VALUE).  A
+ * tone_init() refuses, and with the tap enabled a pin past the bank, an
+ * ADC pin or one the board reserves (BAD_VALUE); with the tap enabled a pin
+ * in @p taken or bound to an output (BUSY, since 4.17: freed, the same
+ * write is taken).  A
  * write of the set-up in force is taken, unless the tap is refused: then it
  * is tried again.
  *
- * @p taken is the pins another page holds: SUPPLY's, and SENSE's including
- * the ones core 1 has not let go of yet.
+ * @p taken is the pins another page holds: SUPPLY's, PROG's, and SENSE's
+ * including the ones core 1 has not let go of yet.  Every reserved pin
+ * outside it is judged a board pin.
  */
 uint8_t tone_page_write(tone_page_t *p, uint8_t off, uint8_t n,
                         const uint16_t *in, const outputs_t *o,

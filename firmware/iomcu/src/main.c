@@ -879,11 +879,14 @@ static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
 
 /* ------------------------------------------------------------ the phase tap */
 
-/* The pins the tap may not take: the supply's, and the sensor bus's with the
- * ones core 1 has not let go of yet. */
+/* The pins the tap may not take for now: the supply's, the programming
+ * ports', and the sensor bus's with the ones core 1 has not let go of yet.
+ * A write naming one is refused with BUSY; the board's own reserved pins
+ * are refused with BAD_VALUE. */
 static uint64_t tone_taken(void)
 {
-    return supply_page_pins(&s_supply) | sense_page_held(&s_sense);
+    return supply_page_pins(&s_supply) | sense_page_held(&s_sense)
+           | prog_port_pins(&s_prog);
 }
 
 /* Core 1's order from the page, running when the capture does. */
@@ -964,7 +967,9 @@ static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * pages' pins, then the capture started or moved, the pin reserved, the
  * set-up saved and core 1 told.  A change of ENABLE or of the pin, and a
  * write that tries a refused tap again, rewire the capture; the wiring
- * failing there puts the old set-up back and refuses the write.  A change
+ * failing there puts the old set-up back and refuses the write with BUSY:
+ * core 1 in a pass, or no PIO state machine or DMA channel left by the
+ * outputs and the supply, each of which a later write can find free.  A change
  * of a range only reaches core 1.  Taken
  * armed or not: the tap is an input.
  */
@@ -1008,7 +1013,7 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
         tone_page_revert(&s_tone, was, was_refused);
         reserve_held();
         tone_order();
-        return LINK_NACK_BAD_VALUE;
+        return LINK_NACK_BUSY;
     }
     if (!wired) {
         /* No state machine or channel for that pin, or none left for a
@@ -1024,12 +1029,12 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
                 tone_page_revert(&s_tone, trial, false);
                 reserve_held();
                 tone_order();
-                return LINK_NACK_BAD_VALUE;
+                return LINK_NACK_BUSY;
             }
             tone_page_refuse(&s_tone);
             reserve_held();
         }
-        return LINK_NACK_BAD_VALUE;
+        return LINK_NACK_BUSY;
     }
     if (!rewire) {
         reserve_held();

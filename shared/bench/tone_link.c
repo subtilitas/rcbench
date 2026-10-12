@@ -9,6 +9,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "link_msg.h"
+
 /* The two frames of the set-up, each four registers from its first; the
  * second carries three set-up registers and register 7, which is 0. */
 #define FRAME_N   4u
@@ -75,11 +77,14 @@ void tone_link_lost(tone_link_t *t)
     t->known       = false;
     t->refused0    = false;
     t->refused1    = false;
+    t->retry0      = false;
+    t->busy_nack   = false;
     t->told        = 0u;
     t->pending     = TONE_LINK_OP_NONE;
     t->have_status = false;
     t->asked_status = false;
     t->was_flags   = 0u;
+    t->win_seen    = false;
     t->synced      = false;
     t->ring_empty  = false;
     t->quiet       = 0u;
@@ -98,6 +103,7 @@ void tone_link_came_up(tone_link_t *t, uint16_t minor, uint32_t now_ms)
     tone_link_lost(t);
     t->up   = true;
     t->page = minor >= TONE_LINK_MINOR;
+    t->busy_nack = minor >= LINK_MINOR_TONE_BUSY;
     if (!t->page && t->want_set && t->want[LINK_TN_ENABLE] != 0u) {
         t->events |= TONE_LINK_EV_NO_PAGE;
     }
@@ -272,7 +278,7 @@ bool tone_link_next(tone_link_t *t, uint32_t now_ms, tone_link_op_t *op)
         t->pending = op->kind;
         return true;
     }
-    if (t->refused0
+    if (t->refused0 && t->retry0
         && (uint32_t)(now_ms - t->refused0_ms) >= TONE_LINK_RETRY_MS) {
         t->refused0 = false;
     }
@@ -330,6 +336,25 @@ bool tone_link_next(tone_link_t *t, uint32_t now_ms, tone_link_op_t *op)
     return false;
 }
 
+/* Whether a first frame refused with @p result may pass later, unchanged:
+ * the page said its pin is busy.  A 4.17 page says BUSY for that and
+ * BAD_VALUE for a set-up no freed pin makes good.  An older page says
+ * BAD_VALUE for both, so its refusal may pass later unless the panel sees
+ * the frame's own values fail: a high tone not above the low one, or the
+ * gap held too short for the low tone. */
+static bool may_pass_later(const tone_link_t *t, int result)
+{
+    if (result == (int)LINK_NACK_BUSY) {
+        return true;
+    }
+    if (t->busy_nack || result != (int)LINK_NACK_BAD_VALUE) {
+        return false;
+    }
+    return pair_valid(t->out[LINK_TN_F_MIN_HZ - FRAME0_AT],
+                      t->out[LINK_TN_F_MAX_HZ - FRAME0_AT],
+                      t->held[LINK_TN_GAP_MS]);
+}
+
 static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
                     uint32_t now_ms)
 {
@@ -372,6 +397,7 @@ static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
     if (w == TONE_LINK_OP_FRAME0) {
         t->refused0    = true;
         t->refused0_ms = now_ms;
+        t->retry0      = may_pass_later(t, result);
         if ((t->told & 1u) == 0u) {
             t->events |= TONE_LINK_EV_PIN_REFUSED;
             t->told |= 1u;
@@ -399,6 +425,21 @@ static void judge_status(tone_link_t *t)
         t->events |= TONE_LINK_EV_OVERRUN;
     }
     t->was_flags = f;
+}
+
+/* When WINDOW last moved, after a status read.  A page that does not run
+ * reads WINDOW 0 and is not judged by it: each such read counts as a move,
+ * so a capture that starts has TONE_LINK_WINDOW_STALE_MS from the last read
+ * that found it not running to show its first window. */
+static void note_window(tone_link_t *t, uint32_t now_ms)
+{
+    const uint16_t win = t->status[ST(LINK_TN_WINDOW)];
+    const bool runs = (t->status[ST(LINK_TN_FLAGS)] & LINK_TN_RUNNING) != 0u;
+    if (!t->win_seen || !runs || win != t->win_last) {
+        t->win_moved_ms = now_ms;
+    }
+    t->win_last = win;
+    t->win_seen = true;
 }
 
 /* Where the panel stands against BEEP_HEAD after a status read. */
@@ -515,6 +556,7 @@ void tone_link_done(tone_link_t *t, int result, const uint16_t *regs,
         memcpy(t->status, regs, sizeof(t->status));
         t->have_status = true;
         t->status_ms   = now_ms;
+        note_window(t, now_ms);
         judge_status(t);
         follow_head(t);
         break;
@@ -669,9 +711,16 @@ void tone_link_readout(const tone_link_t *t, uint32_t now_ms,
     }
     r->missed = t->missed;
     r->n = (uint8_t)tone_link_beeps(t, r->beeps, TONE_LINK_SHOWN);
+    /* A page that says it runs speaks for the tap while its WINDOW moves;
+     * one whose count stands, under reads that still come, is a capture
+     * that stopped without saying so. */
+    const bool runs = (t->status[ST(LINK_TN_FLAGS)] & LINK_TN_RUNNING) != 0u;
     const bool fresh = t->have_status
                        && (uint32_t)(now_ms - t->status_ms)
-                              < TONE_LINK_STALE_MS;
+                              < TONE_LINK_STALE_MS
+                       && (!runs
+                           || (uint32_t)(now_ms - t->win_moved_ms)
+                                  < TONE_LINK_WINDOW_STALE_MS);
     bool read = false;
     r->state = state_of(t, fresh, &read);
     /* A status older than TONE_LINK_STALE_MS, or one the state does not
