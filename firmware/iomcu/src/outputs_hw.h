@@ -58,11 +58,12 @@ void outputs_hw_service(const outputs_t *o);
 /**
  * The programming ports' pins on the PWM generator: @p pin[n] for port n,
  * LINK_PG_PORTS_MAX entries, a value above OUT_MAX_PIN for a port without
- * one, every port at @p rate_hz frames a second.  A port whose pin or rate
+ * one, port n at @p rate_hz[n] frames a second.  A port whose pin or rate
  * moved is released and bound again; one that did not is left running.  A
  * port is no slot: it is rendered from bank channel @p channel0 + n.
  */
-void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0);
+void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
+                      uint8_t channel0);
 
 /** The ports the generator has bound, bit n for port n. */
 uint8_t outputs_hw_ports_bound(void);

@@ -408,9 +408,10 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     out_dshot_send(s->pin, value, false);
 }
 
-void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
+void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
+                      uint8_t channel0)
 {
-    if (pin == NULL) {
+    if (pin == NULL || rate_hz == NULL) {
         return;
     }
     /* Every port that moved is released before any is bound, as the slots
@@ -421,7 +422,7 @@ void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
         const bool wanted = pin[i] <= OUT_MAX_PIN;
         moved[i] = wanted != p->bound
                    || (wanted && (p->as.pin != pin[i]
-                                  || p->as.rate_hz != rate_hz));
+                                  || p->as.rate_hz != rate_hz[i]));
         if (moved[i] && p->bound) {
             out_pwm_release(p->as.pin);
         }
@@ -439,8 +440,8 @@ void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
         p->as.first_channel = (uint8_t)(channel0 + i);
         p->as.channels      = 1u;
         p->as.pin           = pin[i];
-        p->as.rate_hz       = rate_hz;
-        p->bound            = out_pwm_bind(pin[i], rate_hz);
+        p->as.rate_hz       = rate_hz[i];
+        p->bound            = out_pwm_bind(pin[i], rate_hz[i]);
     }
 }
 

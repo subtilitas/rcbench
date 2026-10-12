@@ -22,7 +22,14 @@
  * refuses a slot's pin, and prog_port_slots_check() refuses a slot on a
  * port's pin.  A port's pin shares no PWM slice and no compare register
  * with a PWM slot's pin either, so neither can change the other's frame
- * rate.  Two ports may share a slice: both run at the one port rate.
+ * rate.  Two ports may share a slice; both then run at PROG_PORT_RATE_HZ.
+ *
+ * Rates.  Every port runs at PROG_PORT_RATE_HZ, 50 Hz, except the TARGET
+ * port while the SERVO page names a rate: that port alone runs at it
+ * (protocol 4.19).  A slice counts against one wrap register, so a port
+ * whose pin shares its slice with another port's pin takes no rate but
+ * 50 Hz (servo_page_write()), and no pin moves onto the slice of a TARGET
+ * port that runs at another rate.
  *
  * The model holds LINK_PG_PORTS_MAX ports; a build names how many it has.
  *
@@ -66,10 +73,11 @@ typedef struct {
     uint8_t  bound;     /**< bit n: the generator has port n's pin */
     uint8_t  blocked;   /**< bit n: the kept pin was taken at start; the
                              port does not hold it */
-    uint16_t hz;        /**< the ports' frame rate (prog_port_rate()) */
+    uint16_t hz;        /**< the SERVO page's rate, 0 for none
+                             (prog_port_rate())                    */
 } prog_port_t;
 
-/** @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin, at
+/** @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin, all at
  *  PROG_PORT_RATE_HZ. */
 void prog_port_init(prog_port_t *p, uint8_t count);
 
@@ -106,9 +114,17 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept);
  *
  * No port whose PWM bit the write leaves set may have an endpoint longer
  * than its frame carries: MIN_US and MAX_US at most out_pwm_pulse_max() of
- * the rate prog_port_rate() last named, 1784 us at 560 Hz (BAD_VALUE,
- * protocol 4.16).  This covers a range written to a pulsing port and a
- * pulse switched on under a range that does not fit.
+ * the rate the write leaves the port at (prog_port_port_hz()), 1784 us at
+ * 560 Hz (BAD_VALUE, protocol 4.16).  This covers a range written to a
+ * pulsing port and a pulse switched on under a range that does not fit.
+ *
+ * A TARGET change returns the SERVO rate to 0 (servo_page_target()), so
+ * every port is judged at PROG_PORT_RATE_HZ after one.  Refused as well
+ * (BAD_VALUE, protocol 4.19): a TARGET change away from the standard servo
+ * ports while they run at a SERVO rate, when a PWM slot back at its own
+ * rate would carry a pulse longer than its frame (outputs_pulse_check());
+ * and a PIN that puts a port on the PWM slice of the TARGET port while
+ * that port runs at a rate other than PROG_PORT_RATE_HZ.
  */
 uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
                         const uint16_t *in, outputs_t *o, uint64_t taken,
@@ -144,9 +160,18 @@ uint8_t prog_port_pwm(const prog_port_t *p);
  *  channel c: what servo_page_ports() is told. */
 uint16_t prog_port_pwm_channels(const prog_port_t *p);
 
-/** The frame rate the ports run at: the SERVO page's, or PROG_PORT_RATE_HZ
- *  while it names none.  A write is judged against it. */
+/** The bank channels of the ports whose pin shares a PWM slice with
+ *  another port's pin, bit c for channel c: what servo_page_ports() is
+ *  told as held at PROG_PORT_RATE_HZ. */
+uint16_t prog_port_sliced_channels(const prog_port_t *p);
+
+/** The SERVO page's frame rate, 0 while it names none.  It reaches the
+ *  TARGET port only; a write is judged against it. */
 void prog_port_rate(prog_port_t *p, uint16_t hz);
+
+/** The frame rate port @p port runs at: the SERVO page's rate for the
+ *  TARGET port while it names one, PROG_PORT_RATE_HZ otherwise. */
+uint16_t prog_port_port_hz(const prog_port_t *p, uint8_t port);
 
 /** 0 for the standard servo ports, 1 + n for port n. */
 uint8_t prog_port_target(const prog_port_t *p);

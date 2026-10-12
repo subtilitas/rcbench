@@ -45,7 +45,7 @@ typedef enum {
     LINK_PAGE_ARTWORK   = 0x26, /**< what a picture of the board is        */
     LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
     LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
-    LINK_PAGE_SERVO     = 0x29, /**< the surfaces' frame rate, not kept     */
+    LINK_PAGE_SERVO     = 0x29, /**< the target's frame rate, not kept      */
     LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART; wiring kept */
     LINK_PAGE_SENSE     = 0x2B, /**< the current monitors' bus; set-up kept */
     LINK_PAGE_SERVO_SENSE = 0x2C, /**< the servo rail's channels, a move timed */
@@ -80,12 +80,16 @@ typedef enum {
  * above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG refuse a write that would leave a PWM output with an endpoint longer
  * than its frame (out_pwm_pulse_max()); the panel states a port's range
  * before it switches the port's pulse on, which an older coprocessor takes
- * as well.  A
+ * as well.  From 4.19 the SERVO rate reaches the tester's target only (the
+ * standard servo ports' surfaces, or the one programming port PROG's
+ * TARGET names) and a TARGET change returns it to 0; the panel then counts
+ * the rate as 0 after a TARGET change it saw, and as not known after a
+ * TARGET write that went unacknowledged.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 16u
+#define LINK_PROTOCOL_MINOR 19u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -115,6 +119,13 @@ typedef enum {
  *  clamps the pulse to the frame's last count, while the page reads back
  *  the endpoint written. */
 #define LINK_MINOR_PULSE_FRAME 16u
+/** The first minor whose SERVO rate is the tester's target's alone: the
+ *  surfaces of the standard servo ports with them as PROG's TARGET, else
+ *  the TARGET port's pin, the slots at their own rates and the other ports
+ *  at 50 Hz.  A TARGET change returns the rate to 0.  Minor 16 runs every
+ *  PWM surface and every programming port at the one SERVO rate, whatever
+ *  the TARGET. */
+#define LINK_MINOR_SERVO_TARGET_RATE 19u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -200,16 +211,24 @@ enum {
 };
 #define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)
 
-/* --- the SERVO screen's page: the surfaces' frame rate (protocol 4.1) and
- *     the sweep that drives them through a curve (4.2).
+/* --- the SERVO screen's page: the target's frame rate (protocol 4.1) and
+ *     the sweep that drives it through a curve (4.2).
  *
- *     FRAME_HZ is the frame rate, in Hz, of every PWM output whose first
- *     channel is a surface, or 0 for each slot's own rate from the OUTPUTS
- *     page.  One register for all of them, so a write is whole: a servo
- *     screen that moved some surfaces to 560 Hz and not their slice-mates
- *     would leave a slice asked for two rates.  A rate that would do that
- *     against the binding in force -- a surface and a throttle on one slice
- *     -- is refused with BAD_VALUE and nothing changes.
+ *     FRAME_HZ is the frame rate, in Hz, of the tester's target (PROG's
+ *     LINK_PG_TARGET), or 0 for its own rate.  With the standard servo
+ *     ports as target it is every PWM output whose first channel is a
+ *     surface, 0 meaning each slot's own rate from the OUTPUTS page.  One
+ *     register for all of them, so a write is whole: a servo screen that
+ *     moved some surfaces to 560 Hz and not their slice-mates would leave a
+ *     slice asked for two rates.  A rate that would do that against the
+ *     binding in force -- a surface and a throttle on one slice -- is
+ *     refused with BAD_VALUE and nothing changes.  With a programming port
+ *     as target (since 4.19) it is that port's pin alone, 0 meaning 50 Hz;
+ *     the slots run at their own rates.  A port pin that shares its PWM
+ *     slice with another port's pin takes only 0 or 50 (BAD_VALUE).  Every
+ *     port that is not the target runs at 50 Hz, and a TARGET change sets
+ *     FRAME_HZ to 0.  A 4.16 coprocessor runs every surface and every port
+ *     at FRAME_HZ, whatever the target.
  *
  *     SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so
  *     a start fits one frame.  SWEEP is the curve, 0 stopped, 1 square,
@@ -1562,8 +1581,9 @@ enum {
                               is refused */
     LINK_PG_PWM    = 2,  /**< bit n: port n renders its pulse while the
                               bank is armed */
-    LINK_PG_TARGET = 3,  /**< what the SERVO page's sweep and hold command:
-                              0 the standard servo ports, 1 + n port n */
+    LINK_PG_TARGET = 3,  /**< what the SERVO page's rate, sweep and hold
+                              command: 0 the standard servo ports, 1 + n
+                              port n; a change sets the SERVO rate to 0 */
     LINK_PG_PORT0  = 4,
     LINK_PG_REGS   = 24,
 };

@@ -1,8 +1,13 @@
 /*
- * The SERVO link page at the coprocessor: the surfaces' frame rate and the
- * sweep that drives them through a curve.
+ * The SERVO link page at the coprocessor: the frame rate of the tester's
+ * target and the sweep that drives it through a curve.
  *
- * Register 0 is the frame rate (outputs_servo_rate_check()).  Registers 1 to
+ * Register 0 is the target's frame rate (protocol 4.19).  With the standard
+ * servo ports as target it is every PWM slot whose first channel is a
+ * surface (outputs_servo_rate_check()); with a programming port it is that
+ * port's pin alone, and the slots run at their own rates.  The other
+ * programming ports run at PROG_PORT_RATE_HZ, 50 Hz.  A change of target
+ * returns the register to 0.  Registers 1 to
  * 4 are a sweep -- curve, speed, amplitude, dwell -- and fit one CAN frame,
  * so a start is whole.  Register 5 is how many ends a sweep started after it
  * reaches before it stops; register 6 reads how many the sweep has reached.
@@ -56,7 +61,8 @@ typedef struct {
     bool     holding;    /**< LINK_SV_HOLD in force                     */
     uint8_t  target_first; /**< the channels commanded, when target_n   */
     uint8_t  target_n;     /**< is not 0; else the standard servo ports */
-    uint16_t ports;        /**< bank channels pulsing at the rate, not slots */
+    uint16_t ports;        /**< bank channels pulsing, not slots          */
+    uint16_t sliced;       /**< bank channels held at PROG_PORT_RATE_HZ   */
 } servo_page_t;
 
 void servo_page_init(servo_page_t *p);
@@ -65,10 +71,14 @@ void servo_page_init(servo_page_t *p);
  * A write to the page, validated whole against the bank @p o before any of
  * it is stored.  A stop holds each surface where its output has got to.
  * Refused: off the page (BAD_RANGE); register 6 (READ_ONLY); a frame rate
- * outputs_servo_rate_check() refuses, or one under which a bound PWM output
- * or a channel servo_page_ports() names would carry a pulse longer than its
- * frame (outputs_pulse_check(), protocol 4.16), a sweep sweep_cfg_valid()
- * refuses, or
+ * the target cannot take (BAD_VALUE): for the standard servo ports one
+ * outputs_servo_rate_check() refuses or one under which a bound PWM output
+ * would carry a pulse longer than its frame (outputs_pulse_check(),
+ * protocol 4.16); for a programming port one outside the PWM driver's 40 to
+ * 560 Hz, one other than PROG_PORT_RATE_HZ for a port servo_page_ports()
+ * names as sharing its slice, or one whose frame is shorter than the
+ * endpoint of a port it names as pulsing (protocol 4.19).  Refused too: a
+ * sweep sweep_cfg_valid() refuses, or
  * a sweep started or changed by a write that does not carry all four of its
  * registers, or a resume with no phase kept or with a curve that has
  * changed since the hold (BAD_VALUE); a sweep, a hold or a resume while the
@@ -89,16 +99,21 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
 
 /**
- * The bank channels outside the slots that render at this page's rate while
- * it is not 0, bit n for channel n: the programming ports whose pulse is on.
- * A frame rate is judged against their endpoints too.  At 0 they run at
- * PROG_PORT_RATE_HZ, 50 Hz, whose 19999 us frame holds every endpoint the
- * pages take, and are not judged.  0 after servo_page_init().
+ * The programming ports as a rate for a port target is judged, bit n for
+ * bank channel n: @p channels the ports whose pulse is on, whose endpoints
+ * the rate must fit, and @p sliced the ports whose pin shares a PWM slice
+ * with another port's pin, which run at PROG_PORT_RATE_HZ only.  Both 0
+ * after servo_page_init().
  */
-void servo_page_ports(servo_page_t *p, uint16_t channels);
+void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced);
 
-/** The frame rate register, for outputs_slot_rates(). */
+/** The frame rate register: the target's rate, 0 for its own. */
 uint16_t servo_page_hz(const servo_page_t *p);
+
+/** The rate the slots take, for outputs_slot_rates() and the OUTPUTS and
+ *  CHAN_CFG checks: the register with the standard servo ports as target,
+ *  0 with a programming port. */
+uint16_t servo_page_slots_hz(const servo_page_t *p);
 
 /**
  * Name the channels the sweep and the hold command: @p count channels of
@@ -107,7 +122,9 @@ uint16_t servo_page_hz(const servo_page_t *p);
  * A programming port is such a range of 1 channel.
  *
  * A change ends a running or held sweep as a SWEEP of 0 does: the surfaces
- * it moved stay where their outputs are.  False, with nothing changed, for
+ * it moved stay where their outputs are.  It also returns the frame rate
+ * register to 0, so a change of target never raises a rate under pulses
+ * meant for a slower one (protocol 4.19).  False, with nothing changed, for
  * a range that runs off the bank.
  */
 bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,

@@ -337,9 +337,10 @@ float servo_screen_power_sample(int series, int back);
 /** What became of a frame rate the panel wrote to the SERVO page. */
 typedef enum {
     SERVO_RATE_UNSENT = 0,  /**< not written yet: it goes with a position   */
-    SERVO_RATE_IN_FORCE,    /**< every PWM surface runs at it               */
-    SERVO_RATE_REFUSED,     /**< a surface shares a PWM slice with an output
-                                 at another rate; the pins kept theirs      */
+    SERVO_RATE_IN_FORCE,    /**< the PWM TARGET runs at it                  */
+    SERVO_RATE_REFUSED,     /**< a pulse longer than the frame, or a pin
+                                 sharing a PWM slice with an output at
+                                 another rate; the pins kept theirs         */
     SERVO_RATE_UNSUPPORTED, /**< the coprocessor has no SERVO page: protocol
                                  4.0 runs each slot at its binding's rate   */
 } servo_rate_state_t;

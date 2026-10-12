@@ -1320,10 +1320,24 @@ TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
  */
 TEST_CASE(a_pulse_longer_than_its_frame_needs_no_new_register)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 16u);
+    CHECK(LINK_PROTOCOL_MINOR >= 16u);
     CHECK_EQ(LINK_MINOR_PULSE_FRAME, 16u);
     CHECK(LINK_MINOR_PULSE_FRAME > LINK_MINOR_KST_LEAVE);
     CHECK_EQ(LINK_CC_CEILING_US, 2500u);
+}
+
+/*
+ * 4.19 moves no register either: the SERVO rate follows PROG's TARGET, and
+ * the registers that carry both are where 4.16 had them.
+ */
+TEST_CASE(the_servo_rate_follows_the_target_without_a_new_register)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 19u);
+    CHECK_EQ(LINK_MINOR_SERVO_TARGET_RATE, 19u);
+    CHECK(LINK_MINOR_SERVO_TARGET_RATE > LINK_MINOR_PULSE_FRAME);
+    CHECK_EQ(LINK_SV_FRAME_HZ, 0);
+    CHECK_EQ(LINK_PG_TARGET, 3);
+    CHECK_EQ(LINK_PAGE_SERVO, 0x29);
 }
 
 int main(void)
@@ -1368,5 +1382,6 @@ int main(void)
     RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
     RUN(outputs_under_an_armed_bank_takes_no_change);
     RUN(a_pulse_longer_than_its_frame_needs_no_new_register);
+    RUN(the_servo_rate_follows_the_target_without_a_new_register);
     return test_summary("link_pages");
 }

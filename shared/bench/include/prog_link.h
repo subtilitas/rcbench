@@ -25,6 +25,10 @@
  * A coprocessor older than protocol 4.13 has no page: nothing is read or
  * written and the target is the standard outputs.
  *
+ * From protocol 4.19 the SERVO page's frame rate is the target's, and a
+ * TARGET change returns it to 0.  prog_link_rate() says what the reads and
+ * writes since it was last asked mean for the rate the panel last wrote.
+ *
  * Pure logic, no I/O.  Nothing here has run on hardware.
  *
  * SPDX-License-Identifier: MIT
@@ -48,8 +52,23 @@ extern "C" {
 /** The registers prog_link_cfg() fills: SLEW, MIN_US, MAX_US of a port. */
 #define PROG_LINK_CFG_REGS 3u
 
+/** What became of the SERVO rate the panel last wrote (prog_link_rate()). */
+typedef enum {
+    PROG_LINK_RATE_KEPT = 0,   /**< no TARGET change seen                 */
+    PROG_LINK_RATE_RESET,      /**< the TARGET changed: the rate is 0     */
+    PROG_LINK_RATE_UNKNOWN,    /**< a TARGET write went unacknowledged    */
+} prog_link_rate_t;
+
+/** prog_link_t's seen while no TARGET is known. */
+#define PROG_LINK_SEEN_NONE 0xFFu
+
 typedef struct {
     bool     page;                 /**< the coprocessor has the page       */
+    bool     target_rate;          /**< from 4.19: a TARGET change sets the
+                                        SERVO rate to 0                    */
+    uint8_t  seen;                 /**< the TARGET last known, or
+                                        PROG_LINK_SEEN_NONE                */
+    uint8_t  rate;                 /**< a prog_link_rate_t not yet asked   */
     bool     known;                /**< regs holds a read of it            */
     bool     read_once;            /**< read_ms is a time                  */
     uint32_t read_ms;
@@ -152,6 +171,17 @@ bool prog_link_settled(const prog_link_t *p);
  * (prog_link_settled()).
  */
 bool prog_link_command(const prog_link_t *p, bool release);
+
+/**
+ * What the reads and writes since the last call did to the SERVO rate, and
+ * forgets it.  From 4.19: PROG_LINK_RATE_RESET once a read or an
+ * acknowledged write shows a TARGET other than the one known before, and
+ * PROG_LINK_RATE_UNKNOWN once a TARGET write went unacknowledged, which
+ * may or may not have changed it; the stronger of the two when both
+ * happened.  Always PROG_LINK_RATE_KEPT below 4.19, where the rate does
+ * not follow the target, and for the first TARGET known after a link-up.
+ */
+prog_link_rate_t prog_link_rate(prog_link_t *p);
 
 /** Whether the target port renders its pulse, as the page holds it.  False
  *  with the standard outputs as target. */

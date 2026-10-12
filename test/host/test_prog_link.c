@@ -527,6 +527,76 @@ TEST_CASE(nothing_is_written_while_the_programmer_has_a_port)
     CHECK(prog_link_command(NULL, false));
 }
 
+/*
+ * Protocol 4.19: a TARGET change returns the SERVO rate to 0.  An
+ * acknowledged TARGET write that changes it, and a read that finds it
+ * changed, say RESET once; an unanswered TARGET write says UNKNOWN; the
+ * stronger of the two is kept until asked.  The first TARGET known after a
+ * link-up, a write of the TARGET in force and a coprocessor below 4.19 say
+ * KEPT.
+ */
+TEST_CASE(a_target_change_returns_the_servo_rate_to_0_from_4_19)
+{
+    prog_link_write_t w;
+
+    page_fresh();
+    prog_link_init(&g_p);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    prog_link_came_up(&g_p, LINK_MINOR_SERVO_TARGET_RATE);
+    read_at(0u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    /* The port becomes the target: one RESET, then KEPT. */
+    prog_link_want(&g_p, 1u, false);
+    CHECK_EQ(run(true), 1);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_RESET);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    read_at(500u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    /* The coprocessor gives the target back itself (the port lost its
+     * pin): the read says RESET. */
+    g_page[LINK_PG_TARGET] = 0u;
+    g_page[LINK_PG_FLAGS]  = 0u;
+    read_at(1000u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_RESET);
+    /* A TARGET write nobody answered: UNKNOWN, and a read after it that
+     * finds the TARGET changed keeps UNKNOWN until asked. */
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_BOUND(0);
+    read_at(1500u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    CHECK(prog_link_next(&g_p, true, &w));
+    CHECK_EQ(w.off, LINK_PG_TARGET);
+    prog_link_written(&g_p, &w, false);
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(2000u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_UNKNOWN);
+    read_at(2500u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    /* A refused write of the same kind is no answer either. */
+    prog_link_want(&g_p, 0u, false);
+    CHECK(prog_link_next(&g_p, true, &w));
+    prog_link_written(&g_p, &w, false);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_UNKNOWN);
+    /* A link-up forgets what was seen and owed. */
+    g_page[LINK_PG_TARGET] = 1u;
+    prog_link_came_up(&g_p, LINK_MINOR_SERVO_TARGET_RATE);
+    read_at(3000u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    g_page[LINK_PG_TARGET] = 0u;
+    prog_link_lost(&g_p);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    /* Below 4.19 the rate does not follow the target. */
+    page_fresh();
+    prog_link_came_up(&g_p, LINK_MINOR_SERVO_TARGET_RATE - 1u);
+    read_at(4000u);
+    prog_link_want(&g_p, 1u, false);
+    CHECK_EQ(run(true), 1);
+    CHECK(prog_link_next(&g_p, true, &w) == false);
+    g_page[LINK_PG_TARGET] = 0u;
+    read_at(4500u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    CHECK_EQ(prog_link_rate(NULL), PROG_LINK_RATE_KEPT);
+}
+
 int main(void)
 {
     RUN(nothing_is_written_while_the_programmer_has_a_port);
@@ -543,6 +613,7 @@ int main(void)
     RUN(a_write_that_is_not_acknowledged_makes_the_page_unknown);
     RUN(a_port_names_its_pin_unless_it_has_none_or_was_refused);
     RUN(a_channel_configuration_maps_onto_a_port);
+    RUN(a_target_change_returns_the_servo_rate_to_0_from_4_19);
     RUN(no_object_is_no_fault);
     return test_summary("prog_link");
 }
