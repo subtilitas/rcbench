@@ -1146,6 +1146,81 @@ TEST_CASE(a_d_line_names_the_command_it_ends)
     CHECK(strstr(g_log, want) != NULL);
 }
 
+/* Two watched slots: a command on channel 2 while channel 1 still slews
+ * leaves channel 1's $D naming channel 1's own command. */
+TEST_CASE(a_command_on_another_channel_leaves_a_slews_command_time)
+{
+    rig();
+    run(300u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 1u, 1500u, g_us));
+    CHECK(!sense_trace_pulse(&tr, 2u, 2u, 1500u, g_us));
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 1u, 1u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 1u, 1600u);
+    const uint32_t c1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 1u, 1610u, g_us));
+    const uint32_t d1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(sense_trace_pulse(&tr, 2u, 2u, 1700u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 2u, 1700u);
+    const uint32_t c2 = (uint32_t)(g_us / 100u);
+    CHECK(c2 != c1);
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!sense_trace_pulse(&tr, 1u, 1u, 1610u, g_us));
+        CHECK(!sense_trace_pulse(&tr, 2u, 2u, 1700u, g_us));
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 2u);
+    CHECK_EQ(seen.n_d, 1u);                 /* channel 2 stepped */
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=1 us=1610 cmd=%lu\r\n",
+             (unsigned long)d1, (unsigned long)c1);
+    CHECK(strstr(g_log, want) != NULL);
+}
+
+/* An edge and a console trigger, both on channel 0 by their call, during
+ * channel 0's slew are no commands: its $D names the command. */
+TEST_CASE(an_edge_or_a_key_during_a_slew_is_no_command_of_channel_0)
+{
+    rig();
+    run(300u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 0u, 1500u, g_us));
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 0u, 0u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1600u);
+    const uint32_t c1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 0u, 1610u, g_us));
+    const uint32_t d1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(1u);
+    sense_trace_key(&tr, 't', g_us);
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!sense_trace_pulse(&tr, 0u, 0u, 1610u, g_us));
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_e, 1u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.n_d, 1u);
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=0 us=1610 cmd=%lu\r\n",
+             (unsigned long)d1, (unsigned long)c1);
+    CHECK(strstr(g_log, want) != NULL);
+}
+
 /* A trace of 4 s from an edge at @p edge_us, the clock 300 ms before it. */
 static void trace_at(uint64_t edge_us)
 {
@@ -1729,6 +1804,7 @@ TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
     CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
     CHECK_EQ(tr.out.wait[1].t, t_last);
     CHECK_EQ(tr.out.wait[1].us, 1230u);
+    CHECK_EQ(tr.out.wait[1].cmd_t, t_cmd);
     run_to_trace(2u);
     CHECK_EQ(tr.out.wait_n, 0u);
     CHECK_EQ(tr.out.end_t, t_last + 40000u);
@@ -1744,10 +1820,53 @@ TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
     CHECK_EQ(seen.dest_t, t_last);
     CHECK_EQ(seen.dest_ch, 5u);
     CHECK_EQ(seen.dest_us, 1230u);
+    CHECK_EQ(seen.dest_cmd, t_cmd);
     CHECK_EQ(seen.z_m, 2u);
     CHECK_EQ(seen.z_e, 't');
     CHECK_EQ(seen.z_s, seen.n_s);
     CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+/* A command that waits behind a trace that itself waits, and lies past
+ * that trace's end: it waits again, its slew's end with it, and the $D
+ * line in the trace after names it. */
+TEST_CASE(a_command_that_waits_twice_keeps_its_time_on_its_end)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    const uint32_t t_edge = now_t();
+    stall(SENSE_TRACE_EDGE_MS + 100u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    stall(1u);
+    const uint32_t t_last = now_t();
+    CHECK(!drive(1210u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1210u));
+    }
+    CHECK_EQ(tr.out.wait_n, 3u);
+    CHECK_EQ(tr.out.wait[2].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[2].cmd_t, t_cmd);
+    /* The edge's trace is next; the command lies past its end. */
+    run_to_trace(2u);
+    CHECK_EQ(tr.out.t0, t_edge);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[0].kind, SENSE_TRACE_TRIG_CMD);
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[1].cmd_t, t_cmd);
+    run_to_trace(3u);
+    run_out();
+    parse_from(3u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK(strcmp(seen.trig, "cmd") == 0);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, 1210u);
+    CHECK_EQ(seen.dest_cmd, t_cmd);
 }
 
 TEST_CASE(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open)
@@ -3591,6 +3710,8 @@ int main(void)
     RUN(a_trace_the_console_never_takes_is_dropped_before_its_times_wrap);
     RUN(a_slewed_command_is_one_line_and_holds_the_trace_open);
     RUN(a_d_line_names_the_command_it_ends);
+    RUN(a_command_on_another_channel_leaves_a_slews_command_time);
+    RUN(an_edge_or_a_key_during_a_slew_is_no_command_of_channel_0);
     RUN(a_trace_runs_across_the_millisecond_ticks_wrap);
     RUN(a_trace_runs_across_the_tenth_millisecond_counts_wrap);
     RUN(the_pump_gives_whole_lines_into_the_room_it_has);
@@ -3615,6 +3736,7 @@ int main(void)
     RUN(a_slewed_commands_end_goes_with_its_command_into_the_next_trace);
     RUN(a_trigger_past_the_next_traces_end_overwrites_none_that_waited);
     RUN(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace);
+    RUN(a_command_that_waits_twice_keeps_its_time_on_its_end);
     RUN(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open);
     RUN(a_slew_that_stops_as_its_trace_starts_ends_in_that_trace);
     RUN(a_command_with_no_line_has_no_end_line_either);

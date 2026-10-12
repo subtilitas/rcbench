@@ -43,6 +43,7 @@ typedef struct {
     fake_beep_t ring[LINK_TN_RING];
     int      bad_pin;           /**< a busy pin an enabled tap is refused on */
     int      board_pin;         /**< a board pin, refused with BAD_VALUE */
+    int      nack;              /**< not 0: every frame is refused with it */
     bool     window_stands;     /**< WINDOW stops moving while running   */
     unsigned frames_taken;      /**< writes of regs 0 to 7 that landed   */
     unsigned captures;          /**< times the capture began again       */
@@ -100,6 +101,9 @@ static int fake_write(uint8_t off, uint8_t n, const uint16_t *regs)
     }
     if ((off != 0u && off != 4u) || n != 4u) {
         return LINK_NACK_BAD_RANGE;
+    }
+    if (fk.nack != 0) {
+        return fk.nack;
     }
     uint16_t next[LINK_TN_CONFIG_COUNT];
     memcpy(next, fk.cfg, sizeof(next));
@@ -655,6 +659,28 @@ TEST_CASE(an_older_pages_bad_value_is_offered_again_at_the_retry_pace)
     polls((int)(TONE_LINK_RETRY_MS / 50u));
     CHECK_EQ(writes, 5u);
     CHECK_EQ(fk.cfg[LINK_TN_ENABLE], LINK_TN_EN_TAP);
+}
+
+/* A page older than 4.17 offers again only a BAD_VALUE: a first frame it
+ * refuses with any other code (READ_ONLY 3, NOT_ARMED 5) is written once
+ * and said once, and not again in 3 retry periods (15 s). */
+TEST_CASE(an_older_pages_other_refusal_is_not_offered_again)
+{
+    static const int codes[] = { LINK_NACK_READ_ONLY, LINK_NACK_NOT_ARMED };
+    for (unsigned k = 0u; k < sizeof(codes) / sizeof(codes[0]); ++k) {
+        fresh(16u);
+        polls(2);
+        fk.nack = codes[k];
+        tone_setup_t w = setup_default();
+        w.enable = true;
+        want(&w);
+        polls(20);
+        CHECK_EQ(writes, 1u);
+        CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_REFUSED);
+        polls((int)(3u * TONE_LINK_RETRY_MS / 50u));
+        CHECK_EQ(writes, 1u);
+        CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
+    }
 }
 
 /* The frames the page does not hold, for SETUP's marks: from the edit to
@@ -1922,6 +1948,7 @@ int main(void)
     RUN(a_refused_frame_is_said_once_and_not_written_again);
     RUN(a_bad_value_from_a_4_17_page_is_not_offered_again);
     RUN(an_older_pages_bad_value_is_offered_again_at_the_retry_pace);
+    RUN(an_older_pages_other_refusal_is_not_offered_again);
     RUN(a_frame_is_unheld_until_the_page_takes_it);
     RUN(a_refused_second_frame_is_its_own_event);
     RUN(a_pin_held_by_something_else_goes_through_once_it_is_free);

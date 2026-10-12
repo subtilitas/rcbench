@@ -1081,6 +1081,13 @@ def a_d_line_ends_the_command_it_names() -> None:
     check("move 1 at 0.0 ms, channel 2 to 1501 us" in r.stdout
           and "move 2 at 1000.0 ms, channel 2 to 1101 us" in r.stdout,
           "an unknown command")
+    # The same 500 ms after the first command and before the second: the
+    # earlier command of the channel is not taken for the one it names.
+    r = tool(str(work("let3y.log", let_go_log(3, "6000"))), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1501 us" in r.stdout
+          and "move 2 at 1000.0 ms, channel 2 to 1101 us" in r.stdout,
+          "a command time between two commands")
     # A $D line of the other version's form is damage.
     for name, text in (("v3-old-d", let_go_log(3, None)),
                        ("v2-new-d", let_go_log(2, "1000"))):

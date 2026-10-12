@@ -886,13 +886,23 @@ static void readings_stop_at_the_blind_time(uint32_t t0)
     far_step_and_read(true);
     CHECK(!supply_link_blind(&sl, t0));
     CHECK(!supply_link_blind(&sl, t0 + 1u));
-    /* The page read every 100 ms, the count standing. */
+    /* The page read every 100 ms, the count standing.  The last reading
+     * is a reading 1 ms before SUPPLY_LINK_STALE_MS and none at it, with
+     * the page read 100 ms before both. */
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
     while ((uint32_t)(now - t0) < SUPPLY_LINK_BLIND_MS - 100u) {
         now += 100u;
         far_step_and_read(true);
+        if ((uint32_t)(now - t0) == SUPPLY_LINK_STALE_MS - 100u) {
+            supply_link_state(&sl, t0 + SUPPLY_LINK_STALE_MS - 1u, &st);
+            CHECK(st.online);
+            CHECK_EQ(st.ok, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+            supply_link_state(&sl, t0 + SUPPLY_LINK_STALE_MS, &st);
+            CHECK(st.online);
+            CHECK_EQ(st.ok, 0u);
+        }
     }
-    supply_state_t st;
-    memset(&st, 0, sizeof(st));
     supply_link_state(&sl, t0 + SUPPLY_LINK_BLIND_MS - 1u, &st);
     CHECK(st.online);                           /* the page answers */
     CHECK_EQ(st.ok, 0u);                        /* no reading to trip on */
