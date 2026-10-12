@@ -36,10 +36,14 @@ from pathlib import Path
 REPO = "https://github.com/subtilitas/rcbench"
 
 # `[text](target "title")`, with an optional `!` for an image.  The text may
-# span lines and hold one level of brackets.
+# span lines and hold one level of brackets.  The target may stand in angle
+# brackets, `[text](<a b.md>)`, and may then hold spaces.
 LINK = re.compile(
-    r"(!?)\[((?:[^\[\]]|\[[^\[\]]*\])*)\]"
-    r"\((?!\w+:)(?!/)(?!#)([^()\s#]+)(#[^()\s]*)?(\s+\"[^\"]*\")?\)")
+    r"(?P<bang>!?)\[(?P<label>(?:[^\[\]]|\[[^\[\]]*\])*)\]"
+    r"\((?P<lt><)?(?!\w+:)(?!/)(?!#)"
+    r"(?P<target>(?(lt)[^<>#\n]+|[^()\s#]+))"
+    r"(?P<anchor>#(?(lt)[^<>\n]*|[^()\s]*))?(?(lt)>)"
+    r"(?P<title>\s+\"[^\"]*\")?\)")
 
 
 def leaves_docs(target: str, reldir: str) -> bool:
@@ -53,7 +57,8 @@ def rewrite(text: str, reldir: str = "") -> str:
     relative to docs/, in POSIX form, empty for a page at the top."""
 
     def one(m: re.Match) -> str:
-        bang, label, target, anchor, title = m.groups()
+        bang, label, lt, target, anchor, title = m.group(
+            "bang", "label", "lt", "target", "anchor", "title")
         anchor, title = anchor or "", title or ""
         joined = posixpath.normpath(posixpath.join(reldir, target))
         if joined.startswith(".."):
@@ -69,15 +74,16 @@ def rewrite(text: str, reldir: str = "") -> str:
             target = f"{REPO}/{kind}/main/{repo}{tail}"
         elif target.endswith(".md"):
             target = target[:-3]
-        return f"{bang}[{label}]({target}{anchor}{title})"
+        dest = f"<{target}{anchor}>" if lt else f"{target}{anchor}"
+        return f"{bang}[{label}]({dest}{title})"
 
     return LINK.sub(one, text)
 
 
 def stranded(text: str, reldir: str = "") -> list[str]:
     """Relative targets that still leave docs/ in already rewritten text."""
-    return [m.group(3) for m in LINK.finditer(text)
-            if leaves_docs(m.group(3), reldir)]
+    return [m.group("target") for m in LINK.finditer(text)
+            if leaves_docs(m.group("target"), reldir)]
 
 
 def main(argv: list[str]) -> int:

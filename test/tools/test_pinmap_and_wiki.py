@@ -132,3 +132,15 @@ def test_a_converted_tree_leaves_nothing_behind(tmp_path):
         encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 0
     assert "](../" not in (tmp_path / "Home.md").read_text(encoding="utf-8")
+
+
+def test_a_target_in_angle_brackets_is_rewritten_and_keeps_them():
+    assert wl.rewrite("[n](<../Legal Notice.md#a b>)") == (
+        f"[n](<{R}/blob/main/Legal Notice.md#a b>)")
+    assert wl.rewrite("[s](<Servo Page.md>)") == "[s](<Servo Page>)"
+
+
+def test_a_target_in_angle_brackets_above_the_repository_fails(tmp_path):
+    (tmp_path / "Home.md").write_text("[a](<../../x y.md>)\n",
+                                      encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
