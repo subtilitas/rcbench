@@ -1508,6 +1508,9 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
     CHECK(strstr(g_file,
                  "target=00C8C81448770465") != NULL);
     CHECK(strstr(g_file, "\nport=0\ncheck=") != NULL);
+    /* The check is CRC-16/CCITT-FALSE of the lines before it; the value is
+     * from an independent bitwise computation. */
+    CHECK(strstr(g_file, "\nport=0\ncheck=C56D\n") != NULL);
     CHECK(strstr(g_file, "\n00=") == NULL);
     memcpy(at_write, g_file, sizeof(at_write));
     settle();
@@ -5848,7 +5851,7 @@ TEST_CASE(a_write_in_doubt_ends_the_write_switch_and_keeps_the_backup)
     CHECK(same(&now, &sv));
     CHECK_EQ(g_fc.saves, saves);
     CHECK_STR_EQ(kst_prog_backup_name(&g_p), name);
-    for (int i = 0; i < g_fc.n; ++i) {
+    for (unsigned i = 0; i < g_fc.n; ++i) {
         CHECK(same(&g_fc.file[i].img, &sv));
     }
 }
@@ -5968,7 +5971,7 @@ TEST_CASE(a_write_whose_end_is_not_read_keeps_the_backup)
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(g_fc.saves, saves);
-    for (int i = 0; i < g_fc.n; ++i) {
+    for (unsigned i = 0; i < g_fc.n; ++i) {
         CHECK(same(&g_fc.file[i].img, &sv));
     }
 }
@@ -6058,7 +6061,7 @@ TEST_CASE(a_restore_from_the_record_files_no_half_written_servo)
     now = servo();
     CHECK(same(&now, &sv));
     CHECK_EQ(g_fc.n, files);
-    for (int i = 0; i < g_fc.n; ++i) {
+    for (unsigned i = 0; i < g_fc.n; ++i) {
         CHECK(!same(&g_fc.file[i].img, &torn));
     }
 }

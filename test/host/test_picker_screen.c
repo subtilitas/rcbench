@@ -88,9 +88,9 @@ static bool button_point_on(uint16_t board, uint8_t gpio, int *bxp, int *byp)
     const int mid = SCREEN_H / 2;
     const int step = (py < mid) ? -1 : 1;
     for (int y = py + step * 20; y > 0 && y < SCREEN_H; y += step * 2) {
-        touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)px, (int16_t)y, 40 } };
+        touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)px, (int16_t)y, 40 }, 0u };
         scr()->event(&d);
-        touch_event_t u = { TOUCH_EVENT_UP, { 0, (int16_t)px, (int16_t)y, 40 } };
+        touch_event_t u = { TOUCH_EVENT_UP, { 0, (int16_t)px, (int16_t)y, 40 }, 0u };
         const int before = s_applied;
         scr()->event(&u);
         if (s_applied != before) {
@@ -123,8 +123,8 @@ TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
     CHECK_EQ(outbind_chosen(&s_last), 1);
 
     /* And pressing it again gives the pin back. */
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
-    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
     scr()->event(&d);
     scr()->event(&u);
     CHECK_EQ(s_applied, 2);
@@ -144,8 +144,8 @@ TEST_CASE(a_cancelled_press_toggles_nothing)
     CHECK(button_point(idx(4u), &bx, &by));
     const int was = s_applied;
 
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
-    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
     scr()->event(&d);
     scr()->cancel();
     scr()->event(&u);
@@ -211,8 +211,8 @@ TEST_CASE(a_pin_another_protocol_holds_is_not_this_ones_to_take)
     render();
 
     const int before = s_applied;
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
-    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
     scr()->event(&d);
     scr()->event(&u);
     CHECK_EQ(s_applied, before);             /* refused, and not applied */
@@ -228,9 +228,9 @@ TEST_CASE(a_release_somewhere_else_acts_not_at_all)
     const int before = s_applied;
 
     /* Down on the button, up in the middle of the board. */
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
     scr()->event(&d);
-    touch_event_t u = { TOUCH_EVENT_UP, { 0, SCREEN_W / 2, SCREEN_H / 2, 40 } };
+    touch_event_t u = { TOUCH_EVENT_UP, { 0, SCREEN_W / 2, SCREEN_H / 2, 40 }, 0u };
     scr()->event(&u);
     CHECK_EQ(s_applied, before);
 }
@@ -409,8 +409,8 @@ TEST_CASE(a_ground_is_marked_and_is_not_a_button)
                                  / bd->shape->width_cmm);
         const int py = by + (int)(((uint32_t)yc * (uint32_t)bh)
                                   / bd->shape->height_cmm);
-        touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)px, (int16_t)py, 40 } };
-        touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)px, (int16_t)py, 40 } };
+        touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)px, (int16_t)py, 40 }, 0u };
+        touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)px, (int16_t)py, 40 }, 0u };
         scr()->event(&d);
         scr()->event(&u);
         ++pressed;
@@ -554,8 +554,8 @@ TEST_CASE(an_unconfirmed_binding_takes_no_tap)
     CHECK(picker_screen_editable());
     const outbind_t before = *picker_screen_binding();
 
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
-    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 }, 0u };
     scr()->event(&d);
     picker_screen_follow(1u, false);
     scr()->event(&u);

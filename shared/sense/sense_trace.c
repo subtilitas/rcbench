@@ -30,6 +30,18 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
 
 /* ------------------------------------------------------------- core 1 */
 
+/* A record that is not kept, counted as dropped.  The count core 0 reads
+ * moves with the one the next record carries, and stops with it. */
+static void drop(sense_trace_t *tr)
+{
+    sense_trace_src_t *p = &tr->src;
+    if (p->lost < SENSE_TRACE_LOST_MAX) {
+        ++p->lost;
+        ++p->dropped;
+        atomic_store_explicit(&tr->drops, p->dropped, memory_order_release);
+    }
+}
+
 /* One record into the ring; false, and counted as dropped, when it is
  * full. */
 static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
@@ -41,14 +53,7 @@ static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
     const uint32_t tail =
         (uint32_t)atomic_load_explicit(&tr->tail, memory_order_acquire);
     if (head - tail > tr->mask) {
-        /* The count core 0 reads moves with the one the next record
-         * carries, and stops with it. */
-        if (p->lost < SENSE_TRACE_LOST_MAX) {
-            ++p->lost;
-            ++p->dropped;
-            atomic_store_explicit(&tr->drops, p->dropped,
-                                  memory_order_release);
-        }
+        drop(tr);
         return false;
     }
     sense_trace_rec_t *r = &tr->buf[head & tr->mask];
@@ -102,6 +107,16 @@ static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
         && push(tr, SENSE_TRACE_CFG, p->cfg_newer ? p->kept_t : p->cfg_t,
                 (int32_t)p->cfg)) {
         p->cfg_owed = false;
+    }
+    /* The samples dropped while a record was owed were taken under the
+     * new set-up: counted from here, behind its records, the count the
+     * next record carries.  The last owed record went in in this call
+     * and took lost with it, so lost is 0 here. */
+    if (!p->shunt_owed && !p->cfg_owed && p->lost_after != 0u) {
+        p->lost       = p->lost_after;
+        p->dropped   += p->lost_after;
+        p->lost_after = 0u;
+        atomic_store_explicit(&tr->drops, p->dropped, memory_order_release);
     }
 }
 
@@ -162,7 +177,18 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
                 kind = (c->ua > 0) ? SENSE_TRACE_CLIP_HI
                                    : SENSE_TRACE_CLIP_LO;
             }
-            kept    = push(tr, kind, c->t, c->ua);
+            if (p->shunt_owed || p->cfg_owed) {
+                /* The set-up record this sample is coded against is not
+                 * in the ring yet: core 0 can free a place between the
+                 * two pushes, and the sample would stand before it.  Its
+                 * loss is counted after that record (publish()), not
+                 * with the count the record carries. */
+                if (p->lost_after < SENSE_TRACE_LOST_MAX) {
+                    ++p->lost_after;
+                }
+            } else {
+                kept = push(tr, kind, c->t, c->ua);
+            }
         }
     }
 
@@ -414,8 +440,8 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
                          uint64_t at_us, uint16_t ch, uint16_t us)
 {
     sense_trace_out_t *o = &tr->out;
-    if (tr->buf == NULL) {
-        return;
+    if (tr->buf == NULL || (unsigned)kind > (unsigned)SENSE_TRACE_TRIG_KEY) {
+        return;                 /* a mark kind is no trigger */
     }
     if (trigger(tr, kind, at_us, ch, us) == TRIG_LOST
         && kind == SENSE_TRACE_TRIG_CMD) {

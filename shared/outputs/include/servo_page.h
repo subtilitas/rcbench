@@ -56,6 +56,7 @@ typedef struct {
     bool     holding;    /**< LINK_SV_HOLD in force                     */
     uint8_t  target_first; /**< the channels commanded, when target_n   */
     uint8_t  target_n;     /**< is not 0; else the standard servo ports */
+    uint16_t ports;        /**< bank channels pulsing at the rate, not slots */
 } servo_page_t;
 
 void servo_page_init(servo_page_t *p);
@@ -64,7 +65,10 @@ void servo_page_init(servo_page_t *p);
  * A write to the page, validated whole against the bank @p o before any of
  * it is stored.  A stop holds each surface where its output has got to.
  * Refused: off the page (BAD_RANGE); register 6 (READ_ONLY); a frame rate
- * outputs_servo_rate_check() refuses, a sweep sweep_cfg_valid() refuses, or
+ * outputs_servo_rate_check() refuses, or one under which a bound PWM output
+ * or a channel servo_page_ports() names would carry a pulse longer than its
+ * frame (outputs_pulse_check(), protocol 4.16), a sweep sweep_cfg_valid()
+ * refuses, or
  * a sweep started or changed by a write that does not carry all four of its
  * registers, or a resume with no phase kept or with a curve that has
  * changed since the hold (BAD_VALUE); a sweep, a hold or a resume while the
@@ -83,6 +87,15 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
  * command every surface along a sweep that runs.  True while it runs.
  */
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
+
+/**
+ * The bank channels outside the slots that render at this page's rate while
+ * it is not 0, bit n for channel n: the programming ports whose pulse is on.
+ * A frame rate is judged against their endpoints too.  At 0 they run at
+ * PROG_PORT_RATE_HZ, 50 Hz, whose 19999 us frame holds every endpoint the
+ * pages take, and are not judged.  0 after servo_page_init().
+ */
+void servo_page_ports(servo_page_t *p, uint16_t channels);
 
 /** The frame rate register, for outputs_slot_rates(). */
 uint16_t servo_page_hz(const servo_page_t *p);

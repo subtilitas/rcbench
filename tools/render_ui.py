@@ -34,6 +34,11 @@ import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
+# The flags of the libraries in test/host/CMakeLists.txt, with -Werror: a
+# warning in the renderer or in the code it links fails the build.
+STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
+          "-Wno-sign-conversion"]
+
 SOURCES = [
     "test/host/render_screen.c",
     "shared/gfx/gfx.c",
@@ -46,7 +51,6 @@ SOURCES = [
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
     "shared/ui/ui_plot.c",
-    "shared/ui/ui_hero.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_watermark.c",
@@ -55,7 +59,6 @@ SOURCES = [
     "shared/ui/ui_text_de.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
-    "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
@@ -340,7 +343,7 @@ INCLUDES = [
 
 def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     exe = tmp / ("render_trace" if trace else "render_screen")
-    cmd = ["cc", "-O2", "-g", "-Wall", "-Wextra", "-o", str(exe)]
+    cmd = ["cc", "-O2", "-g", *STRICT, "-o", str(exe)]
     if trace:
         cmd += ["-DGFX_TEXT_TRACE"]
     cmd += [str(REPO / s) for s in SOURCES]

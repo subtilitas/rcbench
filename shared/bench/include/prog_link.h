@@ -110,6 +110,15 @@ void prog_link_stale(prog_link_t *p);
  */
 bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w);
 
+/**
+ * The port @p w switches its pulse on for, as 1 + n, or 0 for a write that
+ * switches none on.  A coprocessor from protocol 4.16 refuses that write
+ * while the port's range is longer than the frame it runs at (1784 us at
+ * 560 Hz), so the panel states the range the screen names to the port
+ * first: a range kept from an earlier profile would keep it refused.
+ */
+uint8_t prog_link_pulse_on(const prog_link_t *p, const prog_link_write_t *w);
+
 /** What became of @p w: acknowledged, or not (refused or unanswered), which
  *  makes the page unknown. */
 void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack);

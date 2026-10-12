@@ -606,7 +606,7 @@ TEST_CASE(each_fingerprint_rule_fails_alone_and_names_its_register)
     CHECK(!ok);
     CHECK_EQ(fp.rules, 1u << KST_FP_R06);
     CHECK_EQ(fp.regs, 1u << 0x06);
-    fp = fp_of(0x06, 0x00, &ok);
+    (void)fp_of(0x06, 0x00, &ok);
     CHECK(!ok);
 
     fp = fp_of(0x1E, 0x26, &ok);
@@ -630,7 +630,7 @@ TEST_CASE(each_fingerprint_rule_fails_alone_and_names_its_register)
     CHECK(!ok);
     CHECK_EQ(fp.rules, 1u << KST_FP_R0A_B5_B7);
     /* Reversion, bit 6, is a setting. */
-    fp = fp_of(0x0A, 0x0D | 0x40, &ok);
+    (void)fp_of(0x0A, 0x0D | 0x40, &ok);
     CHECK(ok);
 
     for (unsigned bit = 0; bit < 8u; ++bit) {
@@ -650,16 +650,16 @@ TEST_CASE(each_fingerprint_rule_fails_alone_and_names_its_register)
         CHECK_EQ(fp.rules, 1u << KST_FP_R1F_B71);
         CHECK_EQ(fp.regs, 1u << 0x1F);
     }
-    fp = fp_of(0x1F, 0x01, &ok);
+    (void)fp_of(0x1F, 0x01, &ok);
     CHECK(ok);
 
-    fp = fp_of(0x04, 0x48 | 0x05, &ok);
+    (void)fp_of(0x04, 0x48 | 0x05, &ok);
     CHECK(ok);
     fp = fp_of(0x04, 0x48 | 0x06, &ok);
     CHECK(!ok);
     CHECK_EQ(fp.rules, 1u << KST_FP_STRETCH_INDEX);
     CHECK_EQ(fp.regs, 1u << 0x04);
-    fp = fp_of(0x04, 0x48 | 0x07, &ok);
+    (void)fp_of(0x04, 0x48 | 0x07, &ok);
     CHECK(!ok);
 }
 

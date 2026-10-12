@@ -105,6 +105,13 @@ static unsigned mov_dst(const char *t)
 /* Split @p line into tokens at spaces and commas; a "[n]" is the delay. */
 static size_t tokens(char *line, char *tok[8], unsigned *delay)
 {
+    /* The places past the last token read as an empty word, so an
+     * instruction missing an operand compares unequal rather than reading
+     * an unset pointer. */
+    static char none[] = "";
+    for (size_t i = 0; i < 8u; ++i) {
+        tok[i] = none;
+    }
     size_t n = 0;
     *delay = 0;
     for (char *p = strtok(line, " \t,\r\n"); p != NULL && n < 8;
@@ -133,7 +140,7 @@ static bool assemble(const char *path)
         if (c != NULL) {
             *c = '\0';
         }
-        char *s = buf;
+        const char *s = buf;
         while (*s == ' ' || *s == '\t') {
             ++s;
         }
@@ -215,7 +222,7 @@ static bool assemble(const char *path)
                     target = labels[j].addr;
                 }
             }
-            w = (uint16_t)(0x0000u | (d << 8) | (cond << 5) | target);
+            w = (uint16_t)((d << 8) | (cond << 5) | target);
         } else if (!strcmp(m, "in")) {
             const unsigned cnt = (unsigned)atoi(tok[k + 2u]);
             w = (uint16_t)(0x4000u | (d << 8) | (src_code(tok[k + 1u]) << 5)

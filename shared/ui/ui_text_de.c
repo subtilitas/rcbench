@@ -45,7 +45,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_OV_BALANCE]             = "Vibration, Phase",
     [TX_OV_PROGRAMMER]          = "ESC und Servo",
     [TX_OV_MODELLED]            = "SIMULIERT",
-    [TX_OV_SOON]                = "BALD",
 
     /* ---------------------------------------------------------- splash */
     [TX_SPLASH_BOARD]           = "PLATINE",
@@ -57,24 +56,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SPLASH_IOMCU]           = "KOPROZESSOR",
     [TX_SPLASH_TAGLINE]         = "Prüfstand für Motor, ESC und Servo",
     [TX_SPLASH_CREDIT]          = "erstellt mit Claude Code",
-
-    /* ------------------------------------------------------------ stub */
-    [TX_STUB_WHAT]              = "WAS DIESE SEITE KÖNNEN WIRD",
-    [TX_STUB_WAITING]           = "WARTET AUF",
-    [TX_STUB_CLEAR]             = "NICHTS BLOCKIERT DIESE SEITE",
-    [TX_STUB_BUILT]             = "die benötigten Teile sind gebaut und getestet",
-    [TX_STUB_MOTOR_1]           = "Throttle: Puls, OneShot, MultiShot, DShot in jeder Rate",
-    [TX_STUB_MOTOR_2]           = "Volt, Ampere, Watt, Ladung und Energie, mit Spitzen und Einbruch",
-    [TX_STUB_MOTOR_3]           = "Drehzahl von optischem oder magnetischem Geber, Phasenklemme oder ESC",
-    [TX_STUB_MOTOR_4]           = "KISS-Telemetrie dekodiert, und Grenzen, die ohne Rückfrage abschalten",
-    [TX_STUB_MOTOR_WHY]         = "die Prüfstand-Page ist noch nicht definiert; der Link, der sie trägt, schon",
-    [TX_STUB_LOGS_1]            = "Jeden Kanal mit bis zu 1 kHz auf die Karte schreiben",
-    [TX_STUB_LOGS_2]            = "Mit Cursorn und Vergleich zurücklesen",
-    [TX_STUB_LOGS_3]            = "Einen Lauf als CSV oder Bericht exportieren",
-    [TX_STUB_SETUP_1]           = "Akku, Motor, Ausgang, Anschlüsse und Design, in NVS gespeichert",
-    [TX_STUB_SETUP_2]           = "Obergrenzen je Buchse: Nieder- und Hochvolt, jeweils in Hardware gesetzt",
-    [TX_STUB_SETUP_3]           = "Nur-Signal-Modus je Buchse, Versorgungspin getrennt",
-    [TX_STUB_SETUP_4]           = "Profile auf der Karte speichern, vergleichen und wiederherstellen",
 
     /* ------------------------------------------------------- bus fault */
     [TX_BF_BUS_OFF_TEXT]        = "Panel ist vom Bus getrennt",
@@ -421,6 +402,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_MIXED]              = "BEIDES BELEGT - DATEI GEMISCHT",
     [TX_LOG_TOO_LONG]           = "%d ZEILE(N) ZU LANG, REST FEHLT",
     [TX_LOG_ROWS_DIFFER]        = "ZEILEN UNGLEICH: TRENNER FALSCH?",
+    [TX_LOG_LAST_CUT]           = "LETZTE ZEILE ABGEBROCHEN, FEHLT",
     [TX_LOG_UNSETTLED]          = "NICHT EINDEUTIG - UNTEN PRÜFEN",
     [TX_LOG_HINT_NUM]           = "WERTE FALSCH?  ZAHLEN ÄNDERN",
     [TX_LOG_HINT_SEP]           = "SPALTEN FALSCH?  TRENNER ÄNDERN",
@@ -816,8 +798,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_RELEASE]             = "FREIGEBEN",
     [TX_SV_IN_FORCE_1]          = "Aktiv: jedes PWM-Ruder läuft mit %u Hz.",
     [TX_SV_IN_FORCE_2]          = "Ein PPM-Ausgang behält seinen eigenen Frame.",
-    [TX_SV_REFUSED_1]           = "ABGELEHNT: ein Ruder teilt einen PWM-Slice mit",
-    [TX_SV_REFUSED_2]           = "einem Ausgang anderer Rate. Die Pins behalten ihre.",
+    [TX_SV_REFUSED_1]           = "ABGELEHNT: ein Puls ist länger als der Frame, oder ein",
+    [TX_SV_REFUSED_2]           = "Ruder teilt den PWM-Slice mit anderer Rate. Pins bleiben.",
     [TX_SV_UNSUPPORTED_1]       = "Dieser Koprozessor nimmt keine Frame Rate: jeder",
     [TX_SV_UNSUPPORTED_2]       = "PWM-Ausgang läuft mit der seiner Bindung, 50 Hz.",
     [TX_SV_UNSENT_1]            = "Die Rate geht mit der nächsten Position",

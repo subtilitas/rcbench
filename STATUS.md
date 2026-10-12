@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.15. [Reference](docs/Link.md).
+4.16. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -98,7 +98,7 @@ is taken in a gap ahead of the save that needs it.
 | Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/` |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
-| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads. An armed bench's log has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the arm; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
+| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads. An armed bench's log has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the arm; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. The throttle changes only on an armed bench: not armed, the slider, its `-1` and `+1` steps and the rotary knob are refused and the value is 0 %, which every disarm returns it to; both bench screens read the value's state (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`; host suite only) |
@@ -106,6 +106,8 @@ is taken in a gap ahead of the save that needs it.
 | Supply screen | built and tested on the host; the control task drives the PD mini through the SUPPLY page (`shared/bench/supply_link.c`) when SETUP INTERFACES enables it, and runs `supply_sim_t` otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50 ms cadence while an exchange waits. A supply run is logged with its own columns |
 | PD mini driver | the codec and driver (`protocols/pdmini/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page. The module's baud rate is 38.4 kbaud, which the automatic baud search finds. A set point above the module's input voltage sends the module into a fault that only a power cycle clears, so the panel and the driver cap the set point 0.7 V under the input. The module is read every 102 to 106 ms, a change of current shows in the readings 0.31 s after the command (median), and a current often repeats over several readings. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. A wiring change while a module has answered waits for a state read sent after it and is taken only if that read shows the output off (protocol 4.5). A live output whose input reads under the set point plus 0.5 V on 2 input reads in a row is switched off and the panel names the input and the set point; the 0.2 V between the cap and that line covers 3000 mA through 1 m of 20 AWG cable out and back, and the rule is chosen, not measured. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
 | Analyser, programmer, balance, battery screens | built, rendered from models. The programmer's ESC and SERVO classes are a model with no transport: CONNECT, READ and WRITE change the panel's own copy of a device and send nothing on a wire, and every page of the two classes carries the MODELLED mark and says that no device is reached (`test_programmer`). ESC STICK runs go out through the arming policy and the output bank |
+| ESC programmer protocols | the screen is table-driven for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware; no protocol is transmitted. ESCs with BLHeli_32 firmware are not supported: [details](docs/BLHeli32.md) |
+| Balancing measurement | the screen and the placement guides are built; the accelerometer and the index sensor are not fitted, so nothing is measured |
 | Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built |
 | Bring-up diagnosis, both ends' counters compared | built |
@@ -117,7 +119,7 @@ is taken in a gap ahead of the save that needs it.
 | Outputs screen | built and tested on the host: a protocol list and a pin grid behind the Setup screen's OUTPUTS key. Ticking or unticking a pin writes the binding and reads it back; a pick in the list writes nothing, and OFF shows every bound pin's protocol and edits nothing. A write goes one frame per exchange, each acknowledged (`shared/link/link_port.c`); on a coprocessor speaking 4.10 both pages are prepared on BIND_CFG and BIND_OUT and put in force by one BIND commit carrying their CRC-16, both or neither (`shared/outputs/bind_link.c`, `out_stage.c`), and a coprocessor older than that is written entry by entry. A read gives a binding, pages not read, pages no binding describes, or a board with no pin map; in the second and third the screen and PICK A PIN keep the last binding read, dimmed, and send no write, except UNBIND ALL PINS held 2 s over pages no binding describes. `test_bind_link` runs the sequences against the coprocessor's page rules and a model of the XL2515's 2-frame buffer: a 20 ms deaf window at every 125 us, a frame lost at each of 18 positions, the timeouts across the 2^32 ms wrap. Whether one frame per exchange ends the `NO LINK` a tester's bench shows on 0.14.0 with an INA3221 enabled is not known; why a frame is lost there is not known. Reserved pins are shown and refused. |
 | Output binding in the coprocessor's flash | built: the last two sectors of the first 4 MB as 32 record slots, restored at boot, saved once the bank is idle and the bus quiet. A save is one page program; a sector erase falls to one per sixteen saves and is taken ahead of the save that needs it, or at boot. The placement rules are host-tested in `test_outstore`; Eight saves of the single-sector store this one replaces printed an erase-and-program window of 19,174 to 19,186 us. Every erase and program runs through `flash_safe_execute()`, which parks core 1 in RAM for the window; a window core 1 does not stop for within 10 ms writes nothing, prints `window refused` and is tried again 1000 ms on. A boot whose core 1 does not register for the lock-out within 100 ms switches the store off: no window opens and `flash_safe_execute()` is not called, set-ups run from RAM until a restart, STATUS fault bit 6 is set and the console says so every 3 s. The offset is deliberately the 4 MB module's rather than the 16 MB board file's. The record is version 5: the bindings, the supply's wiring and the current monitors' set-up. Version 3 and 4 records load, with what they lack off; that decode is `shared/outputs/out_store_rec.c`, host-tested in `test_outstore`. A record of any other version reads as unwritten, so the first boot on such a store starts from the defaults -- no driver and no pin in any slot -- and the binding is gone until an operator sets it again on the OUTPUTS screen |
 | Current monitors (INA228, INA3221) | drivers built and host-tested against a modelled bus in `test_ina228` and `test_ina3221` (`shared/sense/`). Link pages built and host-tested in `test_sense_page`: SENSE and SERVO_SENSE (protocol 4.7), the bus's pins, clock, addresses, shunts and channels validated (the INA228's shunt and maximum by the driver's `ina228_calibrate()`), kept in the coprocessor's flash, and the pins held from the outputs. The sampling schedule (`shared/sense/sense_sched.c`) built and host-tested in `test_sense_sched` against the modelled bus: per 1 ms tick on a 400 kHz bus INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or 1000 Hz while a pair runs, the INA228's current and voltage at 500 Hz each, its die temperature and the INA3221's Mask/Enable at 25 Hz and the rest at 50 Hz; 50 ms windows with a clipped reading kept out of them; a ring of CH1's last 4 windows, read on the page SERVO_WIN (0x31, protocol 4.11), in which a clipped sample counts at the end of the range and is counted; each part's set-up register read back every 40 ms, a part found on its power-on set-up taken offline, counted in SENSE register 31, its open window emptied and set up again after 1000 ms; the run's INA228 peaks and its ENERGY and CHARGE cleared at the arm, no longer the run's after one failed INA228 read; a move capture on CH1, in 1 ms steps, timed from a PWM edge the caller gives, judged by the servo test's own rules (`shared/servo/servo_move.c`, `test_servo_move`) with a 4-sample filter, the level before the command the mean of CH1 over the 50 ms before the edge. The coprocessor reads both parts on core 1 (`firmware/iomcu/src/sense_core1.c`, `sense_i2c.c`): a 1 ms tick, the I2C block at 400 kHz on the SENSE page's pins with the pads' pulls off, a 1 ms limit on each transaction, a bus clear of 9 clocks and a STOP when the bus sticks, and an address scan for PRESENT, repeated every 1 s while a part is missing. Core 1's step is `shared/sense/sense_svc.c`, host-tested in `test_sense_svc`. Core 0 hands it orders and takes back a snapshot, each a copy under one spin lock; it publishes the snapshot into SENSE and SERVO_SENSE, fills BENCH from the INA228 at the existing scales with bits 5 and 6, and stamps the capture's edge from the PWM slice's counter, good to 1 µs. The flash store's windows run through `flash_safe_execute()`, which parks core 1. Both images compile, and [First run](docs/FirstRun.md) §8 lists what a bench session measures. The panel sets both parts up from SETUP INTERFACES (`shared/bench/sense_link.c`, host-tested in `test_sense_link` against the coprocessor's page code and against a 4.6 coprocessor, which it sends nothing): SENSE read at every link-up, a set-up written 500 ms after its last edit while the bank is disarmed and only where it differs, both parts off on the page while a part's own frame changes with both enabled, a refused frame not written again until the next edit, and the identity page read again after a write is taken. It reads SENSE every 50 ms while a part is enabled and SERVO_SENSE every 50 ms window while the INA3221 is, and says on the band, once each, a part not answering 2.5 s after its set-up was taken, another identity at its address, a stuck bus, a clipped reading and STATUS fault bit 6. MOTOR & ESC's TABLE pane shows the ESC's own telemetry beside the INA228's readings with the difference, the totals are the INA228's while BENCH bit 6 is set, and a run's CSV file carries `ina voltage`, `ina current` and `esc current`, and each INA3221 window once. On a 4.11 coprocessor with CH1 enabled the panel reads SERVO_WIN every poll and takes each CH1 window number once and in order, none lost with reads up to 200 ms apart and the lost ones counted beyond (`test_sense_windows`, the modelled part through the coprocessor's schedule and pages); a 4.10 coprocessor is sent nothing on that page. `shared/bench/servo_source.c` names the servo rail's meter once per poll -- the INA3221 after 1000 ms of a held set-up, a part online, a window with current in the last 200 ms and a reset count that stands, the PD mini otherwise, the model with no link -- host-tested in `test_servo_source`; the answer and the windows reach the render task, where the SERVO screen shows the meter's reading in its CURRENT row, line and plot. The panel arms no capture; an automatic servo test reads the meter named at its start, the INA3221's windows or the PD mini (Servo screen, above) |
-| Trace of CH1's 1 ms samples (`SENSE_TRACE`) | built and host-tested. A coprocessor build option, off by default: a released image holds none of its code, and CI fails when the default image carries a trace symbol. With it on, core 1 copies each CH1 sample and each CH1 bus voltage out of the schedule's memory into a ring of 4096 records (49,152 bytes), with no bus transaction added to the tick, and core 0 prints them as text on the USB console: 4 s after a changed pulse on a PWM slot or a capture edge, 10 s after `t` on the console, about 8.6 bytes a sample. Core 0 writes whole lines into the room the console's 64-byte transmit buffer has and nothing without a terminal; a full ring drops records and the trace counts them, in its end line every one from before its end, with or without a record kept after it; a change of the part's set-up or state is a record in the ring, in its place among the samples, with the start time of the tick it was seen in; a trace whose lines a connected console has not taken 29.8 h after its end is dropped; a trace ended early by the console or a changed set-up writes what the ring held from before its end. Core 1 publishes the start time of each tick after that tick's records; a trigger line and the end line wait for a tick that started at or after their time, 100 ms at most, and an end line written without it carries its reason as a capital letter, which the tool reports as a problem. The rules and the line format are `shared/sense/sense_trace.c`, host-tested in `test_sense_trace`; the firmware side is `firmware/iomcu/src/sense_trace_hw.c`. `tools/sense_trace.py` reads every line of a captured console against the format (every field of the line's type, nothing else, each number in its range) and each trace against its end line, reports a trace with any other line in it as damaged and replays none of its moves, writes a CSV file per trace and replays every move through `shared/servo/servo_move.c` (`test/host/sense_trace_replay.c`) with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; from the traces alone it names the settings that see and time every move and how far apart the settings' arrivals lie, and with a servo test's CSV file recorded with the AS5600 the arrival less the encoder's travel time; a move is not replayed when a window its levels come from (the samples before the first command, the 50 ms and the 200 ms before a move, the move's own samples) has no sample, missing records or a change of the part's state, or when another command lies within 30 ms of it; `--loaded-channel N` (repeatable) names the output channels with a servo connected, and the `$C` and `$D` lines of every other channel are then no moves and count for no 30 ms, which the report's second line counts; the format has no check value, so a line cut inside its last number is read as cut; ctest runs it on the console log `test/host/sense_trace_gen.c` writes for the servo model (`sense_trace_tool`). Not measured: the time core 0's pass gains from writing the lines. [First run](docs/FirstRun.md) §8.9 has the bench procedure: part A without an encoder, part B with the AS5600 |
+| Trace of CH1's 1 ms samples (`SENSE_TRACE`) | built and host-tested. A coprocessor build option, off by default: a released image holds none of its code, and CI fails when the default image carries a trace symbol. With it on, core 1 copies each CH1 sample and each CH1 bus voltage out of the schedule's memory into a ring of 4096 records (49,152 bytes), with no bus transaction added to the tick, and core 0 prints them as text on the USB console: 4 s after a changed pulse on a PWM slot or a capture edge, 10 s after `t` on the console, 8.35 bytes a sample at 3-digit codes (9.35 above about 0.4 A on the 0.1 Ω shunt) in the output of `sense_trace_gen`, not measured on hardware. Core 0 writes whole lines into the room the console's 64-byte transmit buffer has and nothing without a terminal; a full ring drops records and the trace counts them, in its end line every one from before its end, with or without a record kept after it; a change of the part's set-up or state is a record in the ring, in its place among the samples, with the start time of the tick it was seen in; a trace whose lines a connected console has not taken 29.8 h after its end is dropped; a trace ended early by the console or a changed set-up writes what the ring held from before its end. Core 1 publishes the start time of each tick after that tick's records; a trigger line and the end line wait for a tick that started at or after their time, 100 ms at most, and an end line written without it carries its reason as a capital letter, which the tool reports as a problem. The rules and the line format are `shared/sense/sense_trace.c`, host-tested in `test_sense_trace`; the firmware side is `firmware/iomcu/src/sense_trace_hw.c`. `tools/sense_trace.py` reads every line of a captured console against the format (every field of the line's type, nothing else, each number in its range) and each trace against its end line, reports a trace with any other line in it as damaged and replays none of its moves, writes a CSV file per trace and replays every move through `shared/servo/servo_move.c` (`test/host/sense_trace_replay.c`) with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; from the traces alone it names the settings that see and time every move and how far apart the settings' arrivals lie, and with a servo test's CSV file recorded with the AS5600 the arrival less the encoder's travel time; a move is not replayed when a window its levels come from (the samples before the first command, the 50 ms and the 200 ms before a move, the move's own samples) has no sample, missing records or a change of the part's state, or when another command lies within 30 ms of it; `--loaded-channel N` (repeatable) names the output channels with a servo connected, and the `$C` and `$D` lines of every other channel are then no moves and count for no 30 ms, which the report's second line counts; the format has no check value, so a line cut inside its last number is read as cut; ctest runs it on the console log `test/host/sense_trace_gen.c` writes for the servo model (`sense_trace_tool`). Not measured: the time core 0's pass gains from writing the lines. [First run](docs/FirstRun.md) §8.9 has the bench procedure: part A without an encoder, part B with the AS5600 |
 | Output encoder (AS5600) | built and host-tested. An AS5600 magnetic angle sensor on the servo's output shaft, at 0x36 on the sensor bus (protocol 4.9). The driver (`shared/sense/as5600.c`, `test_as5600`) decodes STATUS, RAW ANGLE, AGC and MAGNITUDE and takes differences on the circle; the schedule reads STATUS and RAW ANGLE at 500 Hz on the ticks without a rotation item, each register in a transaction of its own (STATUS 1 byte, RAW ANGLE 2, AGC 1, MAGNITUDE 2), and one slot in 25 reads RAW ANGLE, AGC and MAGNITUDE instead of STATUS (20 Hz, 337.5 us), and keeps how long the angle has stayed within 12 counts (1.05 degrees) of an anchor, to the 2 ms sample interval. SENSE gains ENABLE bit 2 and registers 26 to 31 (flags, angle, magnitude, sample count, still time); the panel gates both on minor 9, says so on the band for an older coprocessor and for a missing, weak or strong magnet, and reads registers 12 to 31 every 40 ms (`test_sense_page`, `test_sense_link`, `test_link_pages`). SETUP INTERFACES has AS5600 (default OFF) and its centre count; the SERVO screen shows the angle in the MEASURED row and sets the centre from the live count on the DUT page (`test_servo`). With it on, the automatic servo test (`test_servo_test`) adds per step the end angles, the angle error against the commanded angle and a travel time from the start of the angle's 100 ms stillness within 1.05 degrees, beside the current's, with two CSV columns and a report section; the deadband is not derived, because the moves go end to end. An angle read with STATUS MD clear (no magnet) is no position: the coprocessor holds no still time for it and `sense_link_enc()` hands it to no consumer, so MEASURED shows `---`, ENC CENTRE stores nothing and a run judges no angle and reports how often it happened; with ML or MH beside MD the angle is used and counted in the report. STATUS bits 7, 6, 2, 1 and 0 are masked off, and the probe refuses only ML and MH both set. Angles are compared and averaged on the circle; an end more than 180 degrees from the centre count is reported 360 degrees off, and turns are not counted. Not measured: what the blank STATUS bits read on a part, the sensor on the bus, the tolerance against a real servo's jitter, the delay of the command to the pin |
 | Phase tap (ESC tones) | the detector (`protocols/phase_tap/tone.c`, `test_tone`) turns edge times into beeps and their pitch. The capture is built and host-tested: the PIO program (`protocols/phase_tap/rp2350/tone_cap.pio`, 22 of a block's 32 instructions) assembled from its source and run in a cycle-counting model against `tone_holdoff_edge()` in `test_tone_pio` (every decrement of the counter 4 cycles after the one before; a low of 1200 cycles, 8 µs, always kept and one of 1196 never); the word decode, the 31-to-64-bit extension and the lap detection in `test_edge_ring`; the pass core 1 runs in `test_tone_svc`; the TONE page (protocol 4.8) with its pin checks, the 64-beep ring and the set-up kept in flash (store record version 6) in `test_tone_page`, `test_link_pages` and `test_outstore`. Core 1 reads the ring on its 1 ms tick (`tone_core1.c`) and core 0 owns the state machine and the DMA channel (`tone_cap.c`). Not measured: the PIO program's timing against the system timer, the 2-cycle input delay the model assumes, the DMA ring at 96,000 edges/s and the load on core 1. The panel's side is not part of this row |
 | Other receiver buses | not started |
@@ -130,76 +132,36 @@ is taken in a gap ahead of the save that needs it.
 
 ## The tree
 
+Directories only. `git ls-files <directory>` lists the files of one.
+
 ```
 rcbench/
   README.md  README-de.md  STATUS.md  CHANGELOG.md  CONTRIBUTING.md
   SECURITY.md  LICENSE  NOTICE  .gitattributes  .gitignore
-  .github/workflows/      ci · docs · release
   .clang-tidy  .cppcheck-suppress  ruff.toml  codecov.yml
+  .github/workflows/      ci · docs · pages · release
   docs/                   the wiki source, English and German
-  tools/                  render_ui · coverage · check_docs · frame_cost
-                          gen_font · gen_board_art · gen_esc_profiles
-                          wiki_links · check_sanitizers · check_formats
-                          stack_check · pinmap_check · mutate · ci_gate
-                          jlc_stock · sense_trace
-                          research/ (component research scripts)
+  tools/                  generators, checks and analysis scripts;
+                          research/ holds the component research scripts
   test/tools/             pytest cases for the tools
+  test/host/              one suite over shared/ and protocols/;
+                          fixtures/ holds the CSV corpus
   hardware/               board design record: README, STATUS, docs/
   testbench/              the measurement bench: README, WIRING, host scripts,
-                          decoders. Nothing on it has been run
+                          decoders
+  configurator/           the bench configurator web page (own README)
 
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
-    artwork/              the board picture, stored and fetched over the link
-    gfx/                  rasteriser and three fonts
-    touch/                coordinate and event mapping
-    ui/                   theme · widgets · icons · router · screens
-    settings/             typed schema and values
-    logfile/              number and CSV parsing · run log names
-    link/                 page protocol · CAN framing · watchdogs · diagnosis
-    bench/                bench_state · telemetry simulator · log writer
-                          · PD mini, SENSE and TONE link services
-    outputs/              channels · driver table · arming, slew and staleness
-                          · where a saved binding goes in flash
-    safety/               heartbeat generator and monitor · arming policy
-                          · the coprocessor's arm gate
-    servo/                limit and synchronisation searches · servo model
-                          · move rules
-    can/                  bit timing · MCP2515 registers · echo self-test
-    esc/                  ESC programming profiles · JSON reader · registry
-                          · stick programmer · simulated ESC
-    sense/                INA228 and INA3221 drivers · I2C bus health
-                          · sampling schedule and move capture
+    artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
+    safety/ servo/ can/ esc/ sense/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
-    dshot/                frames · GCR · eRPM and extended telemetry
-                          · rp2350: dshot.pio · out_dshot
-    ppm/                  frame layout · rp2350: ppm.pio · out_ppm
-    sbus/                 S.BUS decoder; no pin driver
-    openyge/              OpenYGE framing, CRC, status and parameter cache;
-                          no pin driver
-    pdmini/               PD mini driver · rp2350: pd_uart.pio · pd_uart
-    phase_tap/            ESC tones from a motor phase tap · the tap's edge
-                          words, ring reader and service
-                          · rp2350: tone_cap.pio · tone_cap
-    kst/                  programming of KST and Chaservo servos: frames,
-                          registers, limits, write plans, session,
-                          configuration file
-                          · rp2350: kst_line.pio · kst_line
+    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/
 
-  firmware/panel/         ESP-IDF
-    main/                 main.c · selftest.c
-    components/           board · display · gt911 · storage · can_twai
-                          settings_nvs · art_flash
-    sdkconfig.defaults  partitions.csv
-
-  firmware/iomcu/         pico-sdk
-    src/                  main.c · xl2515.c · out_store · art_rp2350_can
-                          out_pwm · outputs_hw
-    include/iomcu_pins.h
-
-  test/host/              one suite over shared/ and protocols/
-    fixtures/             the CSV corpus the parser is held to
+  firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
+                          partitions.csv
+  firmware/iomcu/         pico-sdk: src/, include/
 ```
 
 ### Who compiles what
@@ -227,16 +189,21 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/` and the cores under `protocols/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel, each with the task stack check; the pico-sdk build of the coprocessor with `pinmap_check.py` and the stack check of its two cores, and a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel, each with the task stack check; the pico-sdk build of the coprocessor with `pinmap_check.py` and the stack check of its two cores, and a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400 s) and publishes `docs/` to the GitHub wiki when it passed |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000 s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release; beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
+| `pages.yml` | pull request and push to `main` touching `configurator/` | type check, tests, data check, size budget and Playwright browser tests of the configurator; on a push to `main` it publishes the built page to GitHub Pages |
 
 Not in CI: clang-tidy over `firmware/`, which needs the ESP-IDF and pico-sdk
 headers to compile each file, and cppcheck's style class over `firmware/`,
 which reports 12 findings there with cppcheck 2.17. The cppcheck step over
-`shared/` resolves the headers under `shared/*/include` and reports no
-finding. The step over `firmware/` passes all 25. `docs.yml` and
+`shared/`, `protocols/` and `test/host/` resolves the headers under
+`shared/*/include`, `protocols/*/include` and `test/host`, and reports no
+finding. clang-tidy reports none over the same files except
+`test/host/render_screen.c` and `test/host/bench_frame.c`, which CMake does not
+build and so have no compile command; `tools/render_ui.py` builds the first
+with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
 The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,
@@ -298,8 +265,7 @@ ctest runs one case more that is not a binary of the suite:
 `sense_trace_tool`, `tools/sense_trace.py` on a synthetic console log
 (`test/host/test_sense_trace_tool.py`).
 
-Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
-is exempt by name. `tools/coverage.py --check` fails on drift of the table
+Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
 `render_ui.py --check` holds 286 committed screenshots to the current
@@ -329,14 +295,12 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_band.c` | 37 | 35 | 94.6% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
-| `shared/ui/ui_hero.c` | 29 | 28 | 96.5% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
 | `shared/ui/ui_tabs.c` | 79 | 70 | 88.6% |
 | `shared/ui/ui_text.c` | 91 | 90 | 98.9% |
-| `shared/ui/ui_router.c` | 247 | 243 | 98.4% |
+| `shared/ui/ui_router.c` | 246 | 243 | 98.8% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
-| `shared/ui/overview_screen.c` | 85 | 81 | 95.3% |
-| `shared/ui/stub_screen.c` | 52 | 14 | 26.9% |
+| `shared/ui/overview_screen.c` | 83 | 80 | 96.4% |
 | `shared/ui/motor_screen.c` | 595 | 582 | 97.8% |
 | `shared/ui/supply_screen.c` | 1034 | 1017 | 98.4% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
@@ -347,7 +311,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
 | `shared/ui/programmer_screen.c` | 2397 | 2296 | 95.8% |
-| `shared/ui/log_viewer_screen.c` | 1022 | 961 | 94.0% |
+| `shared/ui/log_viewer_screen.c` | 1027 | 966 | 94.1% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 370 | 368 | 99.5% |
 | `shared/ui/outputs_screen.c` | 376 | 370 | 98.4% |
@@ -355,15 +319,15 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
 | `shared/settings/settings.c` | 234 | 228 | 97.4% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
-| `shared/logfile/log_csv.c` | 612 | 581 | 94.9% |
+| `shared/logfile/log_csv.c` | 682 | 647 | 94.9% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 62 | 62 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 165 | 159 | 96.4% |
 | `shared/safety/safety_gate.c` | 52 | 52 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
-| `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
-| `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
+| `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
+| `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
 | `shared/servo/servo_test.c` | 783 | 769 | 98.2% |
@@ -390,11 +354,11 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
-| `shared/outputs/prog_port.c` | 261 | 261 | 100.0% |
+| `shared/outputs/prog_port.c` | 280 | 280 | 100.0% |
 | `shared/bench/kst_link.c` | 399 | 397 | 99.5% |
-| `shared/bench/kst_prog.c` | 1643 | 1614 | 98.2% |
+| `shared/bench/kst_prog.c` | 1637 | 1608 | 98.2% |
 | `shared/bench/kst_card.c` | 134 | 130 | 97.0% |
-| `shared/bench/prog_link.c` | 122 | 122 | 100.0% |
+| `shared/bench/prog_link.c` | 130 | 130 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
 | `shared/can/mcp2515.c` | 42 | 41 | 97.6% |
@@ -410,10 +374,10 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
 | `shared/outputs/outputs.c` | 192 | 189 | 98.4% |
-| `shared/outputs/outputs_pages.c` | 234 | 225 | 96.2% |
+| `shared/outputs/outputs_pages.c` | 277 | 268 | 96.8% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
-| `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
-| `shared/outputs/servo_page.c` | 210 | 208 | 99.0% |
+| `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
+| `shared/outputs/servo_page.c` | 217 | 215 | 99.1% |
 | `shared/outputs/supply_page.c` | 313 | 310 | 99.0% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 20 | 20 | 100.0% |
@@ -435,13 +399,13 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/sense/ina228.c` | 198 | 198 | 100.0% |
 | `shared/sense/ina3221.c` | 130 | 130 | 100.0% |
 | `shared/sense/as5600.c` | 75 | 75 | 100.0% |
-| `shared/sense/sense_sched.c` | 451 | 451 | 100.0% |
+| `shared/sense/sense_sched.c` | 459 | 459 | 100.0% |
 | `shared/sense/sense_svc.c` | 160 | 160 | 100.0% |
-| `shared/sense/sense_trace.c` | 621 | 621 | 100.0% |
+| `shared/sense/sense_trace.c` | 633 | 633 | 100.0% |
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **35014** | **34223** | **97.7%** |
+| **total** | **35134** | **34377** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -453,7 +417,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control page under measurement | the paths a session has to provoke rather than pass through are the failsafe clear, a STOP mid-throttle, the link unplugged while armed, a coprocessor reset while armed, a panel armed with the coprocessor unpowered and then powered, the first arm after a STOP, and an arm refused for each of its four reasons (a servo release still owed, the servo frame rate not known, the heartbeat not reported trusted within 300 ms, a NACK from the coprocessor). The arm latch and the panel's stop on a lost link are host-tested in `test_safety_gate` | a session with both boards that provokes them one at a time, and writes down what the band said. For the reset: a motor channel on GP0, a scope on GP0 and GP3, armed at 70 %, the RUN pin held low for 100 ms; pulses must not return on GP0 until ARM is held again |
 | Output driver timing | no timing has been seen on an instrument. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC other than the one AM32 2.21 ESC on a tester's bench (#172) answers | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
 | The flash save costs CAN frames | measured on the bring-up module: eight erase-and-program windows printed 19,174 to 19,186 us, and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at 1 Mbit/s is about 130 us and the controller holds two, so 19 ms is about 150 frame times, or seventy times over the 260 us the two buffers hold, with nobody emptying them; the bus reports no error, because the frames arrived and nobody collected them. A lost request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's 200 ms failsafe, so one lost frame is enough for `FAULT 01`. What the store does about it is above; what it does not do is get under the 260 us the two buffers hold. The 19 ms is an erase and a page program inside one window, which is what the store this replaces printed: neither half of it is measured on its own. The program is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to two orders of magnitude below 19 ms on serial NOR flash, or roughly 200 to 2,000 us against a 260 us budget | a board: the page program and erase windows from the console lines, the overrun count across sixteen saves, the heartbeat after a window, and a power cut mid-save |
-| The capability word is read once, at boot | `s_capabilities` is taken from the identity page during bring-up and never again, so a coprocessor that arrives after boot, or is swapped for one with different parts fitted, leaves the menu marked from the wrong word. The board identity beside it comes from the identity page that opens each link, so it follows a swap; this word does not, because it is written at boot and read by the render task, and moving the write into the control task adds a cross-task race | the same snapshot treatment the bench numbers already get |
+| Screens that do not name the output they drive | the rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). These screens do not meet it: the SERVO screen shows no pin for its PWM target on the right card or under its overlays; the MOTOR screen drives the throttle pins from its slider and names none of them; ARM on SERVO and MOTOR arms the whole bank and names none of it; the servo programmer overlay names a port number instead of its pin; the SUPPLY header names no UART pins; RUN on ESC STICK starts with no throttle pin bound; a PD mini output switched on from SUPPLY, SERVO or the servo programmer stays on after that screen is left, and no other screen names it. A user can then drive a pin other than the one they expect | a TARGET row on the SERVO right card; the bound throttle pins named on the MOTOR screen; ARM limited to the screen's role; a pin list that names up to three pins and the count of the rest ("GP2 GP4 GP5 +2") wherever more pins than fit are driven; the programmer naming its pin; the PD mini's TX and RX pins in the SUPPLY header; RUN on ESC STICK refused with the reason; a supply switched off when the screen that switched it on is left |
 | A card swapped while running is not re-mounted | `storage_mounted()` is cleared only by `storage_deinit()`, so a card removed after boot leaves a stale mount and RESCAN keeps reading the old volume. The viewer does not unmount to recover: it lists from the render task while the `runlog` task writes the run log to the same volume, and unmounting under an open handle frees the SPI bus beneath a write from another task | one task owning the card's lifetime, so a remount can be sequenced against the writer |
 | The browse list shows 48 of a card's entries | a card takes 999 runs and the list holds `LOG_VIEWER_MAX_FILES`, so it keeps the newest runs -- by the number in `BENCHnnn.CSV`, the only age on a card whose every FAT timestamp is 1980-01-01 -- and its tab says how many entries the card holds. A run is the only entry with a known age, so on a card holding 48 or more runs nothing else is listed: an imported `SWEEP.CSV` is outranked by every run and cannot be reached | a second page, or a filter on the browse list |
 | Betaflight logs are listed nowhere | the log viewer opens `.csv` only. Nothing in the tree decodes a Betaflight blackbox log, so `.bfl` is neither offered on the card nor named on the screen | a BFL decoder, and the suffix back in `CARD_SUFFIXES` and in the viewer's empty-card line |

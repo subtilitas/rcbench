@@ -384,7 +384,7 @@ TEST_CASE(a_segmentation_the_part_cannot_express_is_refused)
     can_timing_t t;
     uint8_t cnf[3];
     memset(&t, 0, sizeof(t));
-    t.div = 2; t.tseg1 = 13; t.tseg2 = 2; t.sjw = 2; t.tq = 16;
+    t.div = 2; t.tseg2 = 2; t.sjw = 2; t.tq = 16;
 
     t.tseg1 = 17;                     /* no legal split into two 1..8 halves */
     CHECK_EQ(mcp2515_encode_timing(&t, cnf), false);

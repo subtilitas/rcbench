@@ -5,6 +5,7 @@
 import type {
   Catalogue, Check, Lang, OptionKey, Options, Part, Picture, ResolvedPart,
 } from '../../contract.ts';
+import { PICTURES_MAX } from '../core.ts';
 import { benchParts, powerGroups, powerNumbers, testObjectsOf } from '../names.ts';
 import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
@@ -14,6 +15,7 @@ import {
   powerLines, powerTitle, reasonText, removeControl, runsOnBase, statusText, usedByText,
 } from './chooser.ts';
 import type { View } from './chooser.ts';
+import { orderStages } from './order.ts';
 import { wiresTable } from './table.ts';
 import { picture as wiringPicture } from '../diagram/picture.ts';
 
@@ -54,7 +56,6 @@ const footer = (lang: Lang): string =>
 
 /** Folder of the picture files, relative to the page. */
 export const PICTURES = 'pictures/';
-const PICTURES_MAX = 2;
 
 /** The pictures a part card shows for the options of the setup, the main one first. */
 export function picturesOf(part: Part, options: Options): Picture[] {
@@ -167,22 +168,12 @@ function checks(view: View): string {
 }
 
 function order(view: View): string {
-  const { lang, catalogue, setup } = view;
-  const last = Math.max(...catalogue.stages.map((s) => s.n));
-  // A drawn part that no wire of the setup ends on has no stage from a wire. It belongs to the last stage.
-  const wired = new Set(setup.wires.flatMap((w) => [w.a, w.b ?? '']).map((ref) => ref.split('.')[0]));
-  const loose = setup.parts
-    .map((r) => r.part)
-    .filter((p) => p.slot.column !== 'none' && p.id !== 'copro' && !wired.has(p.id))
-    .map((p) => tx(lang, p.short));
+  const { lang } = view;
   let h = `<h3>${esc(t(lang, 'order'))}</h3>`;
-  for (const stage of catalogue.stages) {
-    const numbers = setup.wires.filter((w) => w.stage === stage.n).map((w) => w.n).sort((a, b) => a - b);
-    const names = stage.n === last ? loose : [];
-    if (numbers.length === 0 && names.length === 0 && stage.n > 1) continue;
+  for (const stage of orderStages(view)) {
     const lines: string[] = [];
-    if (numbers.length > 0) lines.push(esc(t(lang, 'wiresN') + numbers.join(', ')));
-    if (names.length > 0) lines.push(esc(t(lang, 'stageParts') + names.join(', ')));
+    if (stage.numbers.length > 0) lines.push(esc(t(lang, 'wiresN') + stage.numbers.join(', ')));
+    if (stage.names.length > 0) lines.push(esc(t(lang, 'stageParts') + stage.names.join(', ')));
     if (lines.length === 0) lines.push(esc(t(lang, 'noWires')));
     h += `<div class="stage"><b>${esc(tx(lang, stage.title))}</b><br>${lines.join('<br>')}</div>`;
   }

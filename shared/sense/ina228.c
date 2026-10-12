@@ -29,7 +29,8 @@ uint16_t ina228_adc_config(uint8_t mode, uint8_t vbusct, uint8_t vshct,
                     | (avg & 7u));
 }
 
-uint32_t ina228_ct_us(uint8_t code)
+/** Conversion time of a VBUSCT, VSHCT or VTCT code, µs (Table 7-6). */
+static uint32_t ina228_ct_us(uint8_t code)
 {
     static const uint16_t k_us[8] = { 50, 84, 150, 280, 540, 1052, 2074, 4120 };
     return k_us[code & 7u];

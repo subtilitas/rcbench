@@ -107,8 +107,10 @@ horn, and the report says so.
 With --servo-csv, a servo test's CSV file recorded with the output encoder
 on: each `travel angle (ms)` is paired with a move by time, and the
 arrival less that travel time is printed per move, with the median per
-setting.  The two files have different clocks.  The offset between them is
-found from the moves themselves: the one that pairs the most rows with a
+setting.  A row of the CSV file ends at its line feed: a last row without
+one is cut off, and the tool leaves it out and says so.  The two files
+have different clocks.  The offset between them is found from the moves
+themselves: the one that pairs the most rows with a
 command, each within --pair-ms.  Equally spaced moves pair equally well
 one move along; the tool says so when two offsets pair as many rows and
 not the same rows with the same moves, and --csv-offset sets it by hand.
@@ -174,6 +176,10 @@ T_PER_MS = 10               # the trace counts 0.1 ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
 EDGE_PAIR_MS = 30           # an edge line's command line lies this close
+INVERSION_MS = 100          # a trace's start line can lie this far before
+                            # the last one's: a command trigger's time is
+                            # computed, up to a frame ahead of a mark
+                            # stamped when it happened
 PAIR_ROUND_S = 1e-9         # a row at --pair-ms from its command is within
                             # it, whatever the sums that got there rounded
 TOGETHER_MS = 30            # commands this close are one change of current
@@ -353,11 +359,15 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             # Within a boot the millisecond tick and the trace number
             # both run on, modulo 2^32 and 65536, the number by more than
             # one past a trace no console took.  A tick that lies before
-            # the last one's, or a number that is not past the last
-            # one's, is a restart, and its clock a new one.
+            # the last one's by more than INVERSION_MS, or a number that
+            # is not past the last one's, is a restart, and its clock a
+            # new one.  A tick up to INVERSION_MS before the last one's,
+            # with the number on, is a trace whose trigger lay later
+            # than the next trace's: the same boot.
             ms_on = (ms - last_ms) & 0xFFFFFFFF
             n_on = (number - last_n) & 0xFFFF
-            if last_t0 is not None and (ms_on >= 1 << 31
+            ms_back = (1 << 32) - ms_on if ms_on >= 1 << 31 else 0
+            if last_t0 is not None and (ms_back > INVERSION_MS
                                         or not 0 < n_on < 1 << 15):
                 boot += 1
                 last_t0 = None
@@ -369,8 +379,14 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
                 # 4.97 days; the millisecond tick says how often it did
                 # between the two.
                 on = (t0 - last_t0[0]) & 0xFFFFFFFF
-                wraps = max(0, round((ms_on * T_PER_MS - on) / (1 << 32)))
-                t0_abs = last_t0[1] + on + (wraps << 32)
+                if ms_back:
+                    # Before the last trace's start, by a few ms: the
+                    # count's difference is a small negative number.
+                    t0_abs = last_t0[1] + on - (on >> 31 << 32)
+                else:
+                    wraps = max(0, round((ms_on * T_PER_MS - on)
+                                         / (1 << 32)))
+                    t0_abs = last_t0[1] + on + (wraps << 32)
             last_t0 = (t0, t0_abs)
             cur = Trace(number, trig, t0, t0_abs, ms, length)
             cur.boot = boot
@@ -676,10 +692,11 @@ def find_moves(tr: Trace, floor_a: float,
     # A slewed command's line carries its first pulse; its $D line the one
     # it ended at, which is the end the servo is then held at.  The $D
     # line's time is the last pulse change, which can lie before the frame
-    # time its $C line carries, and the lines stand in the order of their
-    # times: the $D line is of the latest command of its channel that
-    # lies no more than a frame's lateness after it, whichever of the two
-    # lines comes first.
+    # time its $C line carries.  The $D line is written 50 ms after that
+    # time, past the samples up to there, so its place among the lines
+    # says nothing and its t= is read: it is of the latest command of its
+    # channel that lies no more than a frame's lateness after it,
+    # whichever of the two lines comes first.
     cmds = [list(m) for m in marks if m[0] == "C"]
     ended: set[int] = set()
     for mark in marks:
@@ -886,13 +903,24 @@ def number(text: str) -> float | None:
     return value if math.isfinite(value) else None
 
 
-def read_travel(path: pathlib.Path) -> list[tuple[float, float]]:
-    """(row time in s, travel time in ms) for each `travel angle (ms)`."""
+def read_travel(path: pathlib.Path) -> tuple[list[tuple[float, float]], bool]:
+    """(row time in s, travel time in ms) for each `travel angle (ms)`, and
+    whether the file's last row was cut off and left out.
+
+    A row ends at its line feed, as the panel's reader has it
+    (log_reader_row): text after the last line feed is a row cut off by a
+    power loss or a full card.  Its fields can all be there and a number
+    in them cut short, so it is no row.
+    """
     out = []
     t_col = a_col = None
-    for line in path.read_text(encoding="utf-8",
-                               errors="replace").splitlines():
-        cells = line.split(";")
+    # Bytes: read_text() would turn a lone CR into a line end.
+    lines = path.read_bytes().decode("utf-8", errors="replace").split("\n")
+    # Space, tab and CR after the last line feed are no row; the panel's
+    # reader has the same set (str.strip() would add VT, FF and more).
+    cut = lines.pop().strip(" \t\r") != ""
+    for line in lines:
+        cells = line.rstrip("\r").split(";")
         if t_col is None:
             if "travel angle (ms)" in cells and "time (s)" in cells:
                 t_col = cells.index("time (s)")
@@ -907,7 +935,7 @@ def read_travel(path: pathlib.Path) -> list[tuple[float, float]]:
         sys.exit(f"sense_trace: {path} has no `time (s)` and `travel angle "
                  "(ms)` columns: a servo test's CSV file recorded with "
                  "AS5600 on")
-    return out
+    return out, cut
 
 
 def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
@@ -1269,9 +1297,10 @@ def main() -> int:
         print(f"sense_trace: {err}", file=sys.stderr)
         return 1
     rows: list[tuple[float, float]] = []
+    rows_cut = False
     if args.servo_csv is not None:
         try:
-            rows = read_travel(args.servo_csv)
+            rows, rows_cut = read_travel(args.servo_csv)
         except OSError as err:
             print(f"sense_trace: {err}", file=sys.stderr)
             return 2
@@ -1352,6 +1381,9 @@ def main() -> int:
                        "in the log: each boot is paired on its own clock")
         out.append(f"{args.servo_csv}: {n_rows} travel time(s), "
                    f"{paired} paired with a move")
+        if rows_cut:
+            out.append("  its last row has no line feed: cut off, and left "
+                       "out")
         if mixed:
             out.append("  PROBLEM: the rows that pair with one boot's moves "
                        "do not lie after those of the boot before it; no "
