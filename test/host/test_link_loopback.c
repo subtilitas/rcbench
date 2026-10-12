@@ -208,7 +208,7 @@ TEST_CASE(the_pieces_may_arrive_in_any_order)
 TEST_CASE(a_window_inside_a_page_answers_with_that_window)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 8, 5, 0, &req));
     CHECK(exchange(&req, 100, &got));
     CHECK_EQ(got.offset, 8);
@@ -221,7 +221,7 @@ TEST_CASE(a_window_inside_a_page_answers_with_that_window)
 TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     const uint16_t v[2] = { 1, 4321 };
     CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, 0, &req));
     CHECK(exchange(&req, 100, &got));
@@ -295,7 +295,7 @@ static bool exchange_answering_every_frame(const link_msg_t *req,
 TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     uint16_t v[WIDE_COUNT];
     const uint8_t wide = (uint8_t)WIDE_COUNT;
     CHECK(wide > LINK_CAN_REGS_PER_FRAME);
@@ -348,7 +348,7 @@ TEST_CASE(a_refusal_of_a_later_fragment_answers_the_write)
     fresh();
     g.refuse_from = 16;          /* the far end's page ends here */
 
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     uint16_t v[WIDE_COUNT];
     const uint8_t wide = (uint8_t)WIDE_COUNT;
     for (uint8_t i = 0; i < wide; ++i) {
@@ -402,7 +402,7 @@ TEST_CASE(a_refusal_of_a_later_fragment_answers_the_write)
 TEST_CASE(a_refusal_at_an_unrelated_offset_is_a_stray)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     const uint16_t v[2] = { 0, 1234 };
 
     /* A write of two registers at offset 0.  Offset 8 is outside it. */
@@ -448,7 +448,7 @@ TEST_CASE(a_refusal_at_an_unrelated_offset_is_a_stray)
 TEST_CASE(an_acknowledgement_outside_the_window_is_refused)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     const uint16_t v[2] = { 0, 4321 };
     CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, 0, &req));
 
@@ -465,7 +465,7 @@ TEST_CASE(an_acknowledgement_outside_the_window_is_refused)
 TEST_CASE(a_refusal_answers_and_says_why)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     const uint16_t bad = LINK_THROTTLE_MAX + 1u;
     CHECK(link_host_write(&host, LINK_PAGE_CONTROL, LINK_CT_THROTTLE, 1, &bad, 0, &req));
     CHECK(exchange(&req, 100, &got));
@@ -492,7 +492,7 @@ TEST_CASE(a_lost_piece_leaves_the_request_unanswered)
 {
     fresh();
     bus.drop_every = 3;      /* every third frame carried disappears */
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK_EQ(exchange(&req, 100, &got), false);
     CHECK(bus.dropped > 0);
@@ -513,7 +513,7 @@ TEST_CASE(a_lost_piece_leaves_the_request_unanswered)
 TEST_CASE(a_reply_to_an_abandoned_question_is_refused)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
 
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
     link_can_frame_t stale[LINK_CAN_MAX_FRAMES];
@@ -542,7 +542,7 @@ TEST_CASE(a_reply_to_an_abandoned_question_is_refused)
 TEST_CASE(the_devices_watchdog_still_runs_on_can)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
     CHECK(exchange(&req, 1000, &got));
     CHECK(!dev.failsafe);
@@ -562,7 +562,7 @@ TEST_CASE(the_devices_watchdog_still_runs_on_can)
 TEST_CASE(another_pages_answer_is_not_this_pages_answer)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
 
     link_msg_t other = { 0 };
