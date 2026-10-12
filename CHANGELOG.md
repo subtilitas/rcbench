@@ -35,6 +35,14 @@ history is in git.
 
 ### Fixed
 
+- The ESC and SERVO classes of PROGRAMMER show that they are a model. No
+  transport carries their protocols, and CONNECT, READ and WRITE send
+  nothing on a wire. The class tiles, the protocol rows and the device line
+  carry the MODELLED mark (SIMULIERT in German). The device line's dot sits
+  in the mark, amber while a session is open and grey otherwise, and is
+  never green. The device page says "Modelled on the panel: no device is
+  reached." `docs/Screens.md`, `STATUS.md` and `testbench/README.md`
+  describe the two classes as a model.
 - The phase tap's readout on a stick run's page shows PITCH and LOST as
   `--` and no OVERRUN once the last TONE status read is 500 ms old
   (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
