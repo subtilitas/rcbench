@@ -1,5 +1,8 @@
 """ci_gate.py: a publishing workflow goes on only after a CI run passed on
-its commit."""
+its commit.
+
+SPDX-License-Identifier: MIT
+"""
 
 import pytest
 

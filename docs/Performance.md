@@ -53,7 +53,7 @@ logs-chrome       16,020     2002 KiB     52.6      13.0
 settings-chrome       23,595     2949 KiB     77.4       9.8
 battery-chrome       36,937     4617 KiB    121.2       7.8
 balance-chrome       40,650     5081 KiB    133.4       6.5
-programmer-chrome       28,426     3553 KiB     93.3       9.8
+programmer-chrome       28,723     3590 KiB     94.3       9.8
 picker             872      109 KiB      2.9      39.0
 picker-chrome       15,842     1980 KiB     52.0      13.0
 clear           12,006     1501 KiB     39.4      19.5

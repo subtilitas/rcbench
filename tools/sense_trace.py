@@ -55,7 +55,7 @@ sample, a $S line that repeats the state before it, and a line of a trace
 outside a trace.
 A trace with a problem -- damage, lines that do not match its end line, no
 end line, trigger lines that were not written -- is not replayed; its CSV
-file is still written.
+file is still written, except for a trace whose shunt value is 0.
 
 The format has no check value.  A line cut inside its last number is a
 whole line with another number, and the tool reads it as one: a sample's
