@@ -124,7 +124,6 @@ TEST_CASE(the_throttle_map_reaches_both_ends_and_rises_all_the_way)
 {
     CHECK_EQ(dshot_throttle(1u, 1000u), DSHOT_THROTTLE_MIN);
     CHECK_EQ(dshot_throttle(1000u, 1000u), DSHOT_THROTTLE_MAX);
-    CHECK_EQ(dshot_throttle(2000u, 1000u), DSHOT_THROTTLE_MAX);
 
     uint16_t last = 0u;
     for (uint16_t c = 1u; c <= 1000u; ++c) {
@@ -139,12 +138,24 @@ TEST_CASE(the_throttle_map_reaches_both_ends_and_rises_all_the_way)
     CHECK_EQ(dshot_throttle(500u, 1000u), 1046u);
 }
 
+TEST_CASE(a_command_past_the_span_is_stop_like_an_unencodable_value)
+{
+    /* dshot_frame() answers a value it cannot encode with stop; the map
+     * answers a command past its span the same way, not with full throttle. */
+    CHECK(dshot_throttle(999u, 1000u) > DSHOT_THROTTLE_MIN);
+    CHECK(dshot_throttle(999u, 1000u) < DSHOT_THROTTLE_MAX);
+    CHECK_EQ(dshot_throttle(1000u, 1000u), DSHOT_THROTTLE_MAX);
+    CHECK_EQ(dshot_throttle(1001u, 1000u), 0u);
+    CHECK_EQ(dshot_throttle(UINT16_MAX, 1000u), 0u);
+    CHECK_EQ(dshot_throttle(2u, 1u), 0u);
+}
+
 TEST_CASE(a_degenerate_span_does_not_divide_by_zero)
 {
     /* Nothing configures a span of 0 or 1, and a driver that did would get a
      * division rather than a refusal, so both are answered explicitly. */
     CHECK_EQ(dshot_throttle(0u, 0u), 0u);
-    CHECK_EQ(dshot_throttle(500u, 0u), DSHOT_THROTTLE_MAX);
+    CHECK_EQ(dshot_throttle(500u, 0u), 0u);
     CHECK_EQ(dshot_throttle(1u, 1u), DSHOT_THROTTLE_MAX);
 }
 
@@ -157,6 +168,7 @@ int main(void)
     RUN(the_edt_enable_command_sets_the_telemetry_bit);
     RUN(the_throttle_map_never_lands_in_the_command_range);
     RUN(the_throttle_map_reaches_both_ends_and_rises_all_the_way);
+    RUN(a_command_past_the_span_is_stop_like_an_unencodable_value);
     RUN(a_degenerate_span_does_not_divide_by_zero);
     return test_summary("dshot_frame");
 }
