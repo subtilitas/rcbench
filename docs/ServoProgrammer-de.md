@@ -18,8 +18,7 @@ Programmierer arbeitet.
 enthält den Hinweis des Projekts.
 
 Registerlayout und Timing stammen von 1 Tool Card #2, der
-Programmierkarte von KST, und 1 KST-Servo unbekannten Typs. Kein
-Chaservo-Servo ist gelesen worden. Die Wirkung eines Registers auf die
+Programmierkarte von KST, und 1 Chaservo-Servo unbekannten Typs. Die Wirkung eines Registers auf die
 Bewegung des Servos ist nicht gemessen: Namen, Einheiten und Limits sind
 die, die das Hersteller-Tool anzeigt und annimmt.
 [Was offen ist](#offene-messungen) nennt, was ein Prüfstand messen muss,
@@ -540,7 +539,7 @@ erste Schreiben: die Zeilen bleiben für das nächste.
 
 Ein geschriebener und zurückgelesener Wert gilt als wirksam. Der
 Programmierer verlangt nach einem Schreiben kein Aus- und Einschalten, und
-sein Prüfen ist das Rücklesen derselben Sitzung. Ob ein KST-Servo vor
+sein Prüfen ist das Rücklesen derselben Sitzung. Ob ein Servo vor
 seinem nächsten Einschalten nach einem geschriebenen Wert handelt, ist
 nicht gemessen.
 
@@ -963,7 +962,7 @@ Sitzung zu beenden und den Port an Servo-PWM zurückzugeben. Der
 Programmierer tut das ohne Aus- und Einschalten der Versorgung: das Servo
 bleibt versorgt, der Ausgang eines PD mini bleibt mit seiner Spannung und
 Stromgrenze an, und das Signal des Testers folgt auf demselben Port. Ob ein
-KST-Servo, das einen Frame erhalten hat, PWM folgt, bevor seine Versorgung
+Servo, das einen Frame erhalten hat, PWM folgt, bevor seine Versorgung
 aus war, ist nicht gemessen.
 
 PROGRAMMIEREN VERLASSEN öffnet mit
@@ -996,7 +995,7 @@ mit **PWM-ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
 nimmt keinen Wert über 10 000 ms an, und mit einem solchen wird kein
 Verlassen gesendet. Ein Warten von 0 ms endet beim nächsten Durchlauf des
 Koprozessors. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
-Das Warten, das ein KST-Servo braucht, ist nicht gemessen.
+Das Warten, das ein Servo braucht, ist nicht gemessen.
 
 | Während des Wartens | Wirkung |
 | --- | --- |
@@ -1059,7 +1058,6 @@ Codes.
 
 ## Einschränkungen
 
-- Kein Chaservo-Servo ist gelesen worden.
 - Ein laufendes Schreiben zeigt die Zahl der Register, die es setzt, und
   die gesendeten Frames. Das Register, das gerade geschrieben wird, steht
   nicht auf der Link-Page und wird nicht gezeigt. Ein Zurückspielen des
@@ -1097,7 +1095,7 @@ Codes.
   Control-Task, die Stelle, an der die Control-Task ein zurückgezogenes
   Kommando verwirft, die Übergabe des Portzustands an die Seite und den
   Tester, und die Dateiaufrufe der Karte.
-- Ob ein KST-Servo PWM folgt, während es im Programmiermodus ist, ist nicht
+- Ob ein Servo PWM folgt, während es im Programmiermodus ist, ist nicht
   gemessen. Der Programmierer verlässt das Programmieren ohne Aus- und
   Einschalten der Versorgung und treibt den Port danach mit PWM.
 - Ob ein geschriebener Wert vor dem nächsten Einschalten des Servos wirkt,
@@ -1112,7 +1110,7 @@ Codes.
   ausgeschalteter Versorgung.
 - **WARTEN VOR PWM** wird von einem Koprozessor vor Link-Version 4.15 nicht
   angewendet, und nicht beim Verlassen eines unklaren Ports ohne PD mini.
-  Das Warten, das ein KST-Servo braucht, ist nicht gemessen. Die Restzeit
+  Das Warten, das ein Servo braucht, ist nicht gemessen. Die Restzeit
   eines laufenden Wartens wird nicht angezeigt.
 - Ohne PD mini werden die Programmierspannung und die Stromgrenze nicht
   angewendet.
