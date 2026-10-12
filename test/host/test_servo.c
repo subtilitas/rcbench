@@ -1394,8 +1394,8 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
 /*
  * What an acknowledged rate reaches depends on the coprocessor.  From 4.19
  * the PWM TARGET alone runs at it; a 4.1 to 4.18 coprocessor runs every PWM
- * surface at it, whatever the target, and the note says that instead.  Both
- * are news, not a warning.
+ * surface at it, whatever the target, and the note says that instead in
+ * its first line.  Both are news, not a warning.
  */
 TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
 {
@@ -1424,6 +1424,22 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
         }
     }
     CHECK_EQ(warn, 0);
+    /* Only the first line differs: the second is the same "in force" line.
+     * The note's lines are 18 px apart, its font 16 px high. */
+    int first = -1, last = -1;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[y * W + x] != target[y * W + x]) {
+                if (first < 0) {
+                    first = y;
+                }
+                last = y;
+                break;
+            }
+        }
+    }
+    CHECK(first >= 0);
+    CHECK(last - first < 18);
     free(target);
 }
 

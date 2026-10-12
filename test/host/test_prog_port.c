@@ -1001,6 +1001,52 @@ TEST_CASE(a_target_change_leaves_no_slot_with_a_pulse_too_long)
     CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
 }
 
+/*
+ * The slots are judged at their own rates only by the write that takes the
+ * TARGET from the standard servo ports.  A surface at its own 500 Hz with
+ * 1000 to 2400 us runs at the SERVO page's 333 Hz, a 3003 us frame: a
+ * command to port 0 keeps the TARGET and is taken; the TARGET change that
+ * would leave 2400 us in a 2000 us frame is refused.
+ */
+TEST_CASE(a_write_that_keeps_the_target_judges_no_slot)
+{
+    fresh(1u);
+    bind(0u, 13u);
+    CHECK(outputs_set_role(&o, 0u, OUT_ROLE_SURFACE));
+    const out_slot_t fast = { .driver = OUT_DRIVER_PWM, .first_channel = 0,
+                              .channels = 1, .pin = 4, .rate_hz = 500 };
+    CHECK(outputs_configure(&o, 0, &fast));
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 2400u));
+    prog_port_rate(&pg, 333u);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 600u), 0u);
+    CHECK_EQ(put(LINK_PG_TARGET, 1u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(prog_port_target(&pg), 0u);
+}
+
+/*
+ * A blocked port drives no pin: its kept pin, taken at start, is no pin on
+ * the TARGET's slice.  Port 1 keeps GP28, taken, and port 0 holds GP13, the
+ * same slice 6.  Port 0 becomes the TARGET, no channel is named as sliced,
+ * and at 300 Hz a command to port 0 is taken.
+ */
+TEST_CASE(a_blocked_port_on_the_targets_slice_holds_nothing_there)
+{
+    uint16_t kept[PROG_PORT_KEPT_COUNT];
+
+    fresh(2u);
+    prog_port_defaults(kept, 13u);
+    kept[PROG_PORT_KEPT] = 28u;
+    prog_port_restore(&pg, kept, &o, BIT(28));
+    prog_port_bound(&pg, 0x01u);
+    CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
+    CHECK_EQ(prog_port_pin(&pg, 1u), PROG_PORT_NO_PIN);
+    CHECK_EQ(reg(PIN1), 28u);
+    CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
+    CHECK_EQ(prog_port_sliced_channels(&pg), 0u);
+    prog_port_rate(&pg, 300u);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 600u), 0u);
+}
+
 int main(void)
 {
     RUN(a_page_starts_with_no_pin_on_any_port);
@@ -1027,5 +1073,7 @@ int main(void)
     RUN(a_new_target_is_judged_at_50_hz_not_the_old_rate);
     RUN(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate);
     RUN(a_target_change_leaves_no_slot_with_a_pulse_too_long);
+    RUN(a_write_that_keeps_the_target_judges_no_slot);
+    RUN(a_blocked_port_on_the_targets_slice_holds_nothing_there);
     return test_summary("prog_port");
 }
