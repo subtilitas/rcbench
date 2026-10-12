@@ -31,7 +31,7 @@
  * The characters are ASCII (American Standard Code for Information
  * Interchange) 0x20 to 0x7E, a line holds at most KST_FILE_LINE_MAX of
  * them, and every line, the last one included, ends with LF (line feed,
- * 0x0A).
+ * 0x0A).  kst_file_format() writes exactly this.
  *
  * The checksum is CRC-32 (cyclic redundancy check, polynomial 0x04C11DB7
  * reflected, start 0xFFFFFFFF, final inversion: the one of IEEE 802.3) over
@@ -47,8 +47,10 @@
  * has LF on every line or CR LF (carriage return, 0x0D, then LF) on every
  * line; because the checksum counts a line end as one LF, a transfer that
  * converts every line end keeps the file valid.  Both kinds in one file, a
- * CR at any other place, a lower-case hexadecimal digit and any byte after
- * the checksum line refuse it.
+ * CR at any other place and a lower-case hexadecimal digit refuse it.
+ * Behind the checksum line, lines of spaces and tabs or of nothing pass and
+ * any other byte refuses the file.  The checksum line is taken without its
+ * line end when it holds its 17 characters.
  *
  * Without a checksum line the file is EDITED: a person's input.
  *
@@ -67,19 +69,32 @@
  *   - A field without a line keeps the servo's value.
  *   - The type line ("Type: V6", also "type = v6") and the register block
  *     ("registers 32" and its 4 lines) may each stay or go.  The block
- *     states the servo type and gives no value.  A file with a block or a
- *     type line is KST_FILE_EDITED_TYPED; a type line that contradicts the
- *     block refuses the file.  A file with neither states no type
+ *     states the servo type.  A file with a block or a type line is
+ *     KST_FILE_EDITED_TYPED; a type line that contradicts the block refuses
+ *     the file.  A file with neither states no type
  *     (KST_FILE_EDITED_UNTYPED).
  *   - The value of an editable field becomes a raw value through
  *     kst_field_raw_from_display(), with its rounding, as an entry on a
  *     keypad does.  A value that reads as the servo already shows it
  *     changes nothing.
+ *   - Where the register block shows as the line of an editable field
+ *     reads, the block gives the raw value: several raw values of
+ *     Max. Duty show as one percentage, and a file whose line is unchanged loads
+ *     the raw value it was written from.  A line that reads otherwise
+ *     wins over the block.  The block gives no value for a field without
+ *     a line.
  *
- * The last line of every file ends with a line end.  A text that stops
- * inside a line is refused as truncated, so a cut file never gives a
- * shortened number.  A file cut between two lines reads as an edited file
- * with fewer lines.
+ * Both kinds take the 3 bytes EF BB BF (the byte order mark of UTF-8,
+ * 8-bit Unicode Transformation Format) in front of the header; they are
+ * not part of the checksum.
+ *
+ * The last line of an edited file may lack its line end when the line
+ * shows its own end: a unit, a "[...]", a comment, a type line, a
+ * register line.  A text that ends in the digits of a number, in a name
+ * or inside the register block is refused as truncated, so a cut file
+ * never gives a shortened number.  A file cut between two lines reads as
+ * an edited file with fewer lines; kst_file_load() states how many of the
+ * 27 fields it gives (@c named of @c fields).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -125,8 +140,9 @@ typedef enum {
     KST_FILE_ERR_NOT_KST = 3,    /**< line 1 is not the header */
     KST_FILE_ERR_VERSION = 4,    /**< the version is not a number from 1 up */
     KST_FILE_ERR_NEWER = 5,      /**< a version above KST_FILE_FORMAT */
-    KST_FILE_ERR_TRUNCATED = 6,  /**< the text ends inside a line, or
-                                      inside the register block */
+    KST_FILE_ERR_TRUNCATED = 6,  /**< the text ends inside a line that
+                                      does not show its own end, or inside
+                                      the register block */
     KST_FILE_ERR_LINE_END = 7,   /**< checksum line present: LF and CR LF
                                       in one file */
     KST_FILE_ERR_MALFORMED = 8,  /**< a line is not what the format has at
@@ -137,7 +153,8 @@ typedef enum {
                                       hexadecimal digits: the file is
                                       damaged or was changed.  Without the
                                       line the file reads as an edited one */
-    KST_FILE_ERR_TRAILING = 11,  /**< bytes follow the checksum line */
+    KST_FILE_ERR_TRAILING = 11,  /**< a line that is not blank follows
+                                      the checksum line */
     KST_FILE_ERR_NAME = 12,      /**< edited: no field has that name */
     KST_FILE_ERR_DUPLICATE = 13, /**< edited: the field has a line already */
     KST_FILE_ERR_VALUE = 14,     /**< edited: not a number in the field's
@@ -169,7 +186,8 @@ typedef struct {
     /** Edited kinds: the fields a line gives a value for.  0 for
      *  KST_FILE_VERIFIED. */
     kst_field_set_t named;
-    /** Named fields whose line reads "raw <n>". */
+    /** Named fields whose @c value is raw: the line reads "raw <n>", or
+     *  the line of an editable field reads as the register block shows. */
     kst_field_set_t as_raw;
     /** Per named field: the raw value for an editable field and for a
      *  field in @c as_raw, else the displayed value in the unit of
@@ -223,6 +241,10 @@ typedef struct {
     kst_file_kind_t kind;       /**< the file's kind, for the display */
     kst_type_t file_type;       /**< the type the file states */
     kst_type_t servo_type;      /**< the type of the servo's image */
+    uint8_t named;              /**< fields the file gives a value for:
+                                     @c fields for a verified file, the
+                                     lines read for an edited one */
+    uint8_t fields;             /**< named fields of the field table: 27 */
     kst_field_set_t editable;   /**< the editable fields in which the file
                                      differs from the servo: what the load
                                      changes */
@@ -266,7 +288,8 @@ typedef struct {
  *    file; where the file holds another value than the servo it is in
  *    @c skipped, and the load goes on: the protection block, Servo / Gyro
  *    Servo, Lock and the pairing value never deny a load.  An edited
- *    file's register block gives no value and is not compared.
+ *    file's register block gives the raw value of an editable field whose
+ *    line reads as the block shows, and no other value.
  * 3. Limits.  The target goes through kst_limits_edit(@p backup, target,
  *    no unlock set), the check an edit made by hand goes through.  A
  *    broken hard rule refuses the whole file.  Soft rules are returned.

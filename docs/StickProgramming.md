@@ -43,7 +43,9 @@ What it does not know:
    (`ESC_STICK_STALE_MS`) in which the supply itself reports its output
    off with the current at or under 20 mA for 200 ms. No reading, an older
    one, or a supply that does not answer refuses RUN with `no fresh
-   reading says the supply is off`.
+   reading says the supply is off`. A run arms the bench: while the
+   [servo programmer](ServoProgrammer.md) holds a port, RUN is refused with
+   `Servo programmer holds a port: LEAVE on SERVO first.`
 
 ## On the screen
 

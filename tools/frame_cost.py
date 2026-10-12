@@ -64,6 +64,17 @@ SOURCES = [
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
     "shared/ui/servo_screen.c",
+    # The programmer for KST and Chaservo servos SERVO opens, and the
+    # core its model takes fields and limits from.
+    "shared/ui/kst_panel.c",
+    "shared/bench/kst_prog.c",
+    "shared/bench/kst_card.c",
+    "shared/bench/prog_link.c",
+    "shared/logfile/kst_store.c",
+    "protocols/kst/kst_file.c",
+    "protocols/kst/kst_reg.c",
+    "protocols/kst/kst_limits.c",
+    "protocols/kst/kst_plan.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
@@ -115,6 +126,7 @@ INCLUDES = [
     "shared/esc/include",
     "protocols/sbus/include",
     "protocols/pdmini/include",
+    "protocols/kst/include",
 ]
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",

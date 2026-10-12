@@ -17,13 +17,24 @@ set(SRCS
     servo_source.c
     tone_link.c
     kst_link.c
+    kst_prog.c
+    prog_link.c
     knob.c
 )
 
+# kst_card.c stands between the programmer and the card layer in
+# shared/logfile.  It is built where that layer is: on the panel and on the
+# host, which adds shared/logfile before this directory.  The coprocessor has
+# no card and builds this directory without it.
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link kst)
+    idf_component_register(SRCS ${SRCS} kst_card.c INCLUDE_DIRS include
+                           REQUIRES link kst logfile)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
     target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst m)
+    if(TARGET rcbench_logfile)
+        target_sources(rcbench_bench PRIVATE kst_card.c)
+        target_link_libraries(rcbench_bench PUBLIC rcbench_logfile)
+    endif()
 endif()

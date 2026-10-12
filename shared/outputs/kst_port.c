@@ -155,6 +155,13 @@ static bool supply_range_ok(const supply_port_view_t *v, uint16_t mv,
            || (uint32_t)mv + PDMINI_HEADROOM_MV <= v->vin_mv;
 }
 
+/* The voltage a session asked for at @p mv runs at: an output that is on is
+ * lowered to it or left, never raised. */
+static uint16_t supply_runs_at(const supply_port_view_t *v, uint16_t mv)
+{
+    return (v->asked_on && v->set_mv < mv) ? v->set_mv : mv;
+}
+
 /* --- operations --------------------------------------------------------------- */
 
 static void op_begin(kst_port_t *p, link_kst_op_t op)
@@ -203,6 +210,11 @@ static void session_done(kst_port_t *p, kst_ses_t r)
     }
     if (r == KST_SES_OK && p->op == (uint8_t)LINK_KST_OP_READ_ALL) {
         p->must_read = 0;
+    }
+    if (r == KST_SES_ERR_CHANGED) {
+        /* The servo is not the one the session knows: nothing but a read
+         * goes to it. */
+        p->must_read = 1;
     }
     op_end(p, r);
     if (r == KST_SES_ERR_NO_PLAN) {
@@ -300,9 +312,16 @@ static link_kst_refusal_t enter_from_pwm(kst_port_t *p, uint8_t port,
     if (pin > OUT_MAX_PIN) {
         return LINK_KST_REF_NO_PIN;
     }
-    if (supply_view(p, &v) && !supply_range_ok(&v, p->supply_mv,
-                                               p->supply_ma)) {
-        return LINK_KST_REF_SUPPLY_RANGE;
+    if (p->armed != 0u) {
+        return LINK_KST_REF_BUSY;       /* the bank is armed */
+    }
+    if (supply_view(p, &v)) {
+        if (!supply_range_ok(&v, p->supply_mv, p->supply_ma)) {
+            return LINK_KST_REF_SUPPLY_RANGE;
+        }
+        if (supply_runs_at(&v, p->supply_mv) < KST_PORT_SUPPLY_MIN_MV) {
+            return LINK_KST_REF_SUPPLY_LOW;
+        }
     }
     p->port = port;
     p->pin = pin;
@@ -724,13 +743,19 @@ static void low_begin(kst_port_t *p)
     if (!supply_view(p, &v)) {
         return;                 /* no PD mini: the servo's supply is not ours */
     }
-    if (!supply_range_ok(&v, p->want_mv, p->want_ma)) {
+    if (!supply_range_ok(&v, p->want_mv, p->want_ma)
+        || supply_runs_at(&v, p->want_mv) < KST_PORT_SUPPLY_MIN_MV) {
         back_out(p, (uint8_t)LINK_KST_RESULT_SUPPLY);
         return;
     }
     if (v.asked_on) {
-        if (v.set_mv > p->want_mv
-            && !p->hw.supply_set(p->hw.ctx, true, p->want_mv, v.set_ma)) {
+        /* The lower voltage and the lower current limit of the two. */
+        const uint16_t mv = supply_runs_at(&v, p->want_mv);
+        const bool less_ma = p->want_ma < v.set_ma;
+        const uint16_t ma = less_ma ? p->want_ma : v.set_ma;
+
+        if ((mv != v.set_mv || less_ma)
+            && !p->hw.supply_set(p->hw.ctx, true, mv, ma)) {
             back_out(p, (uint8_t)LINK_KST_RESULT_SUPPLY);
             return;
         }
@@ -1005,6 +1030,18 @@ uint8_t kst_port_quiet_mask(const kst_port_t *p)
 {
     return (uint8_t)(p != NULL && p->state != (uint8_t)LINK_KST_PWM
                          ? 1u << p->port : 0u);
+}
+
+bool kst_port_frame_out(const kst_port_t *p)
+{
+    return p != NULL && p->running != 0u;
+}
+
+void kst_port_bench_armed(kst_port_t *p, bool armed)
+{
+    if (p != NULL) {
+        p->armed = armed ? 1u : 0u;
+    }
 }
 
 uint8_t kst_port_pin_mask(const kst_port_t *p)

@@ -180,8 +180,8 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 3,984 | 3,184 |
-| `control` | `control_task` | 6,144 | 3,904 | 1,216 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,064 | 3,104 |
+| `control` | `control_task` | 6,144 | 4,432 | 688 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
@@ -195,7 +195,7 @@ the deepest frame. The other
 bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table: 176 such calls are
+  which the tool reads out of every screen's table: 185 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -220,7 +220,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,628 | 528 | 1,684 |
+| core 0 | `main` | 4,096 | 1,636 | 528 | 1,676 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -228,7 +228,7 @@ Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
 differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
 runner's packaged one. The frames named below are those of a build with
-ARM GNU 14.2, which gives 1,628 bytes for core 0.
+ARM GNU 14.2, which gives 1,636 bytes for core 0.
 
 Core 0's deepest chain is a request that binds an output and fails in the
 pico-sdk: `main` (464 bytes), `can_service` (344), `link_dev_dispatch`,

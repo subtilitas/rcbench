@@ -445,6 +445,22 @@ TEST_CASE(each_failure_of_a_save_has_its_own_result)
     CHECK_EQ(g_card.count, 0);
 }
 
+TEST_CASE(a_card_that_takes_no_file_is_told_from_a_write_that_fails)
+{
+    char base[KST_STORE_PRESET_MAX];
+
+    /* Write protected, or a file named as the directory. */
+    card_reset();
+    g_card.create_result = KST_STORE_IO_DENIED;
+    CHECK_EQ(kst_store_save(&g_io, "Wing", "x", 1, NULL), KST_STORE_DENIED);
+    CHECK_EQ(KST_STORE_DENIED, 12);
+    CHECK_EQ(g_card.creates, 1);
+    CHECK_EQ(g_card.count, 0);
+    /* The card still reads: a name is proposed and the list is empty. */
+    CHECK_EQ(kst_store_preset(&g_io, base, sizeof(base)), KST_STORE_OK);
+    CHECK_STR_EQ(base, "KST001");
+}
+
 /* --- the list ----------------------------------------------------------------- */
 
 TEST_CASE(the_list_holds_every_file_with_the_extension_sorted_without_case)
@@ -473,8 +489,8 @@ TEST_CASE(the_list_holds_every_file_with_the_extension_sorted_without_case)
     CHECK_EQ(skipped, 0);
     CHECK_STR_EQ(e[0].name, "abc.Txt");
     CHECK_STR_EQ(e[1].name, "ABC2.TXT");
-    CHECK_STR_EQ(e[2].name, "KST001.TXT");
-    CHECK_STR_EQ(e[3].name, "KST002.TXT");
+    CHECK_STR_EQ(e[2].name, "KST002.TXT");
+    CHECK_STR_EQ(e[3].name, "KST001.TXT");
     CHECK_STR_EQ(e[4].name, "Tail.txt");
     CHECK_STR_EQ(e[5].name, "wing.TXT");
     CHECK_EQ((unsigned char)e[6].name[0], 0x55);
@@ -513,9 +529,9 @@ TEST_CASE(a_list_shorter_than_the_directory_holds_the_first_names)
     CHECK_EQ(kst_store_list(&g_io, e, 3, &count, &total, NULL), KST_STORE_OK);
     CHECK_EQ(count, 3);
     CHECK_EQ(total, 9);
-    CHECK_STR_EQ(e[0].name, "KST001.TXT");
-    CHECK_STR_EQ(e[1].name, "KST002.TXT");
-    CHECK_STR_EQ(e[2].name, "KST003.TXT");
+    CHECK_STR_EQ(e[0].name, "KST009.TXT");
+    CHECK_STR_EQ(e[1].name, "KST008.TXT");
+    CHECK_STR_EQ(e[2].name, "KST007.TXT");
     CHECK_EQ((unsigned char)e[3].name[0], 0x55);
 
     /* No room at all: the counts alone. */
@@ -525,7 +541,107 @@ TEST_CASE(a_list_shorter_than_the_directory_holds_the_first_names)
     CHECK_EQ(count, 0);
     CHECK_EQ(total, 9);
     CHECK_EQ(kst_store_list(&g_io, e, 0, NULL, NULL, NULL), KST_STORE_OK);
+    CHECK_STR_EQ(e[0].name, "KST009.TXT");
+}
+
+TEST_CASE(the_proposed_names_stand_in_one_run_with_the_latest_first)
+{
+    /* The order a list has, whatever the order on the card. */
+    static const char *const want[] = {
+        "ABC.TXT", "HAND.TXT", "KS.TXT", "KST000.TXT",
+        "KST999.TXT", "kst120.txt", "KST100.TXT", "KST099.TXT", "KST002.TXT",
+        "KST0001.TXT", "KST003X.TXT", "KST05.TXT", "KST1000.TXT",
+        "KST12A.TXT", "KSTA.TXT", "KSU.TXT", "WING.TXT",
+    };
+    enum { N = sizeof(want) / sizeof(want[0]) };
+    kst_store_entry_t e[N + 1];
+    size_t count = 0;
+    size_t total = 0;
+
+    for (unsigned turn = 0; turn < 3u; ++turn) {
+        card_reset();
+        for (unsigned i = 0; i < (unsigned)N; ++i) {
+            /* Forwards, backwards, and in steps of 5. */
+            const unsigned at = turn == 0u ? i
+                              : turn == 1u ? (unsigned)N - 1u - i
+                                           : i * 5u % (unsigned)N;
+
+            card_add(want[at], false, "x");
+        }
+        CHECK_EQ(kst_store_list(&g_io, e, N + 1, &count, &total, NULL),
+                 KST_STORE_OK);
+        CHECK_EQ(count, N);
+        CHECK_EQ(total, N);
+        for (unsigned i = 0; i < (unsigned)N; ++i) {
+            CHECK_STR_EQ(e[i].name, want[i]);
+        }
+    }
+}
+
+TEST_CASE(a_list_goes_on_behind_a_name_and_reaches_every_file)
+{
+    kst_store_entry_t e[4];
+    kst_store_entry_t all[40];
+    char behind[KST_STORE_NAME_MAX];
+    size_t count = 0;
+    size_t total = 0;
+    size_t skipped = 0;
+    size_t whole = 0;
+    size_t seen = 0;
+
+    card_reset();
+    for (int n = 1; n <= 30; ++n) {
+        add_number(n * 7 % 31, ".TXT");      /* each of 1 to 30 once */
+    }
+    card_add("WING.TXT", false, "x");
+    card_add("ABC.TXT", false, "x");
+    card_add("NUL.TXT", false, "x");         /* not listed, counted apart */
+    CHECK_EQ(kst_store_list(&g_io, all, 40, &whole, NULL, NULL), KST_STORE_OK);
+    CHECK_EQ(whole, 32);
+    CHECK_STR_EQ(all[0].name, "ABC.TXT");
+    CHECK_STR_EQ(all[1].name, "KST030.TXT");
+    CHECK_STR_EQ(all[30].name, "KST001.TXT");
+    CHECK_STR_EQ(all[31].name, "WING.TXT");
+
+    /* 4 names a call, each call behind the last name of the one before. */
+    CHECK_EQ(kst_store_list_after(&g_io, NULL, e, 4, &count, &total, &skipped),
+             KST_STORE_OK);
+    while (count > 0u) {
+        CHECK_EQ(total, 32);
+        CHECK_EQ(skipped, 1);
+        for (size_t i = 0; i < count && seen < whole; ++i) {
+            CHECK_STR_EQ(e[i].name, all[seen].name);
+            seen++;
+        }
+        strcpy(behind, e[count - 1u].name);
+        CHECK_EQ(kst_store_list_after(&g_io, behind, e, 4, &count, &total,
+                                      &skipped), KST_STORE_OK);
+    }
+    CHECK_EQ(seen, 32);
+
+    /* The name need not be a file's, and its case does not count. */
+    CHECK_EQ(kst_store_list_after(&g_io, "kst002.txt", e, 4, &count, NULL,
+                                  NULL), KST_STORE_OK);
+    CHECK_EQ(count, 2);
     CHECK_STR_EQ(e[0].name, "KST001.TXT");
+    CHECK_STR_EQ(e[1].name, "WING.TXT");
+    CHECK_EQ(kst_store_list_after(&g_io, "KST500.TXT", e, 4, &count, NULL,
+                                  NULL), KST_STORE_OK);
+    CHECK_STR_EQ(e[0].name, "KST030.TXT");
+    CHECK_EQ(kst_store_list_after(&g_io, "X.TXT", e, 4, &count, &total, NULL),
+             KST_STORE_OK);
+    CHECK_EQ(count, 0);
+    CHECK_EQ(total, 32);
+    /* The failures of a list. */
+    CHECK_EQ(kst_store_list_after(NULL, "X.TXT", e, 4, &count, NULL, NULL),
+             KST_STORE_ARG);
+    g_card.walk_fails = true;
+    CHECK_EQ(kst_store_list_after(&g_io, "ABC.TXT", e, 4, &count, NULL, NULL),
+             KST_STORE_LIST_ERROR);
+    g_card.walk_fails = false;
+    g_card.mounted = false;
+    CHECK_EQ(kst_store_list_after(&g_io, "ABC.TXT", e, 4, &count, NULL, NULL),
+             KST_STORE_NO_CARD);
 }
 
 TEST_CASE(a_file_whose_name_this_layer_would_not_write_is_counted_not_listed)
@@ -709,8 +825,10 @@ TEST_CASE(a_saved_file_is_listed_and_loads_back)
     CHECK_EQ(kst_store_save(&g_io, base, "second", 6, NULL), KST_STORE_OK);
     CHECK_EQ(kst_store_list(&g_io, e, 2, &count, NULL, NULL), KST_STORE_OK);
     CHECK_EQ(count, 2);
-    CHECK_STR_EQ(e[1].name, "KST002.TXT");
-    CHECK_EQ(kst_store_load(&g_io, e[1].name, buf, sizeof(buf), &len),
+    /* The later file stands first. */
+    CHECK_STR_EQ(e[0].name, "KST002.TXT");
+    CHECK_STR_EQ(e[1].name, "KST001.TXT");
+    CHECK_EQ(kst_store_load(&g_io, e[0].name, buf, sizeof(buf), &len),
              KST_STORE_OK);
     CHECK_EQ(len, 6);
     CHECK(memcmp(buf, "second", 6) == 0);
@@ -734,9 +852,12 @@ int main(void)
     RUN(a_save_never_replaces_a_file_whatever_the_case_of_its_name);
     RUN(a_refused_name_gives_its_reason_and_touches_no_card);
     RUN(each_failure_of_a_save_has_its_own_result);
+    RUN(a_card_that_takes_no_file_is_told_from_a_write_that_fails);
     RUN(the_list_holds_every_file_with_the_extension_sorted_without_case);
     RUN(names_equal_without_case_keep_one_order);
     RUN(a_list_shorter_than_the_directory_holds_the_first_names);
+    RUN(the_proposed_names_stand_in_one_run_with_the_latest_first);
+    RUN(a_list_goes_on_behind_a_name_and_reaches_every_file);
     RUN(a_file_whose_name_this_layer_would_not_write_is_counted_not_listed);
     RUN(the_record_of_a_write_is_no_name_no_list_entry_and_no_servo_file);
     RUN(a_list_needs_a_card_and_reports_a_directory_that_does_not_read);

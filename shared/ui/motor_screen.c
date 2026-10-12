@@ -18,6 +18,7 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_value_gate.h"
+#include "kst_panel.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -194,6 +195,7 @@ static struct {
      * peaks it measured stand. */
     bool          pk_ok[S_COUNT];
     ui_hold_t     arm;           /**< the ARM gesture: ui_widgets owns it  */
+    bool          kst_held;      /**< the servo programmer holds a port    */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     gfx_rect_t    down_rect;    /**< one percentage point down */
@@ -403,6 +405,13 @@ int motor_screen_plot_samples(void) { return s.plot.filled; }
 bool motor_screen_peak_shown(int channel)
 {
     return channel >= 0 && channel < S_COUNT && s.pk_ok[channel];
+}
+
+/* ARM takes no press while the servo programmer holds a port; DISARM
+ * does. */
+static bool arm_locked(void)
+{
+    return kst_panel_holds_port() && !s.gate.armed;
 }
 
 void motor_screen_cancel_arm(void)
@@ -638,6 +647,9 @@ static void event(const touch_event_t *evt)
             if (s.pressed == 1) {
                 return;   /* the hold belongs to the contact that began it */
             }
+            if (arm_locked()) {
+                return;   /* programming and an armed bench are exclusive */
+            }
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
             ui_hold_begin(&s.arm);
             ++s.arm_rev;
@@ -708,6 +720,18 @@ static void event(const touch_event_t *evt)
  */
 static void tick(float dt_s)
 {
+    if (kst_panel_holds_port() != s.kst_held) {
+        s.kst_held = kst_panel_holds_port();
+        ++s.arm_rev;
+        ++s.ctrl_rev;
+    }
+    if (s.pressed == 1 && arm_locked()) {
+        /* The port was taken under a hold of ARM: the hold ends. */
+        s.pressed = 0;
+        ui_hold_reset(&s.arm);
+        ++s.arm_rev;
+        ++s.ctrl_rev;
+    }
     if (s.pressed == 1 && !s.gate.armed) {
         ++s.arm_rev;
         if (ui_hold_tick(&s.arm, dt_s)) {
@@ -1233,7 +1257,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     /* ARM animating on its own repaints its own button and nothing else. */
     if (arm_moved && !ctrl_moved && !thr_moved) {
         ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-                  s.pressed == 1, true);
+                  s.pressed == 1, !arm_locked());
         arm_flash_advance();
         return;
     }
@@ -1293,7 +1317,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         return;
     }
     ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-              s.pressed == 1, true);
+              s.pressed == 1, !arm_locked());
     arm_flash_advance();
     if (!ctrl_moved) {
         return;

@@ -37,6 +37,11 @@ extern "C" {
 #define SUPPLY_BAUD_AUTO  7u
 uint32_t supply_page_baud(uint16_t setting);
 
+/** The longest an OFF waits for a programming port's frame to end, in ms.
+ *  A frame of the port and its answer are shorter; how long a servo needs
+ *  after a frame to store a register is not measured. */
+#define SUPPLY_PAGE_OFF_WAIT_MS 12u
+
 /** Where a wiring change that waits for a state read is. */
 typedef enum {
     SUPPLY_WIRE_IDLE = 0,  /**< none waits                              */
@@ -56,6 +61,11 @@ typedef struct {
     uint8_t  scan;        /**< the rate being tried under AUTO, 0..6   */
     uint16_t scan_seen;   /**< the driver's who_failed when last looked */
     bool     held;        /**< a programming port holds the command   */
+    bool     frame_out;   /**< the port has a frame on the wire        */
+    bool     was_on;      /**< OUTPUT was 1 at the last step           */
+    bool     off_wait;    /**< an OFF waits for the frame's end        */
+    uint32_t now_ms;      /**< the clock of supply_page_port_frame()   */
+    uint32_t off_t0;      /**< when the waiting OFF was asked          */
 } supply_page_t;
 
 /** The supply as a programming port sees it (kst_port.h). */
@@ -175,12 +185,23 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
 
 /**
  * Whether a programming port holds the command registers (FLAGS bit 11,
- * LINK_SP_PORT).  While it does, supply_page_write() refuses a write of
- * OUTPUT to SET_MA with LINK_NACK_BAD_VALUE unless it leaves OUTPUT 0 and
- * SET_MV no higher than it is: the panel can switch the supply off, and
- * cannot switch it on or raise it under the servo.
+ * LINK_SP_PORT).  While it does, supply_page_write() takes an OFF, which
+ * leaves SET_MV and SET_MA as they are whatever the write names, and
+ * refuses every other write of OUTPUT to SET_MA that changes one of the
+ * three with LINK_NACK_BAD_VALUE: the panel can switch the supply off, and
+ * cannot switch it on or move a set point under the servo.
  */
 void supply_page_hold(supply_page_t *p, bool held);
+
+/**
+ * Whether a programming port has a frame on the wire, and the clock, once
+ * a pass before supply_page_step().  An OFF taken while one is -- written
+ * by the panel or forced by a lost heartbeat -- reaches the driver when
+ * the frame has ended, SUPPLY_PAGE_OFF_WAIT_MS after it was asked at the
+ * latest.  OUTPUT reads 0 from the moment it is asked.
+ */
+void supply_page_port_frame(supply_page_t *p, bool frame_out,
+                            uint32_t now_ms);
 
 #ifdef __cplusplus
 }

@@ -902,6 +902,7 @@ TEST_CASE(a_command_with_a_stale_seq_is_refused_and_the_page_read_again)
     out = run_op(LINK_KST_OP_READ_ALL);
     CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
     CHECK_EQ(out.nack, LINK_NACK_BAD_VALUE);
+    CHECK(!out.taken);
     CHECK_EQ(g_sim.n_reads, 96);
     until_phase(KST_LINK_READY);
     out = run_op(LINK_KST_OP_READ_ALL);
@@ -922,12 +923,42 @@ TEST_CASE(a_staged_window_the_page_refuses_ends_the_operation)
     out = run(&r);
     CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
     CHECK_EQ(out.nack, LINK_NACK_BAD_RANGE);
+    CHECK(!out.taken);
     CHECK_EQ(g_cmds, 0);
     CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
     g_nack_stage = 0;
     out = run(&r);
     CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
     CHECK_EQ(out.result, KST_SES_OK);
+    CHECK(out.taken);
+}
+
+TEST_CASE(a_frame_refused_after_the_command_says_the_command_was_taken)
+{
+    kst_link_outcome_t out;
+    unsigned reads;
+
+    up();
+    run_ms(2);
+    g_cmds = 0;
+    reads = (unsigned)g_sim.n_reads;
+    /* A read stages nothing: the first write past the command is the
+     * one that picks what the image registers show. */
+    g_nack_stage = LINK_NACK_BAD_RANGE;
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
+    CHECK_EQ(out.nack, LINK_NACK_BAD_RANGE);
+    CHECK_EQ(g_cmds, 1);
+    CHECK(out.taken);
+    /* The operation ran at the servo. */
+    CHECK_EQ((unsigned)g_sim.n_reads, reads + 96u);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
+    g_nack_stage = 0;
+    /* The next operation starts with the mark clear. */
+    g_port.seq = (uint16_t)(g_port.seq + 5u);
+    out = run_op(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(out.kind, KST_LINK_OUT_NACK);
+    CHECK(!out.taken);
 }
 
 TEST_CASE(an_abort_before_the_command_drops_the_request)
@@ -1635,6 +1666,128 @@ TEST_CASE(a_panel_that_starts_on_a_held_port_fetches_what_the_page_has)
     CHECK(ro.have_image);
 }
 
+/* A status read refused with another code than BAD_PAGE says nothing about
+ * the page: it is asked again, and the page is not written off. */
+TEST_CASE(a_status_refused_for_another_reason_is_asked_again)
+{
+    static const uint8_t k[] = {
+        LINK_NACK_BAD_RANGE, LINK_NACK_READ_ONLY, LINK_NACK_BAD_VALUE,
+        LINK_NACK_NOT_ARMED, 0xFFu,
+    };
+    kst_link_outcome_t out;
+    kst_link_readout_t ro;
+    kst_link_xfer_t x;
+    uint32_t t;
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        up();
+        t = g_ms;
+        for (unsigned n = 0; n < 2u * KST_LINK_RETRIES + 1u; ++n) {
+            t += KST_LINK_POLL_MS;
+            CHECK(kst_link_next(&g_k, t, &x));
+            CHECK(!x.write);
+            kst_link_done(&g_k, k[i], NULL);
+            CHECK(kst_link_phase(&g_k) != KST_LINK_NO_PAGE);
+            CHECK(kst_link_has_page(&g_k));
+        }
+        /* Given up after KST_LINK_RETRIES: the status is not known, the
+         * port stays as it was last read, and no operation ended. */
+        CHECK_EQ(kst_link_phase(&g_k), KST_LINK_SYNC);
+        kst_link_readout(&g_k, &ro);
+        CHECK(!ro.known);
+        CHECK(ro.was_held);
+        CHECK(!kst_link_outcome(&g_k, &out));
+        /* The page answers again. */
+        until_phase(KST_LINK_READY);
+        kst_link_readout(&g_k, &ro);
+        CHECK_EQ(ro.port, LINK_KST_PROGRAMMING);
+    }
+
+    /* An operation under way ends as one nobody answered. */
+    up();
+    CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
+                 .op = LINK_KST_OP_READ_ALL, .port = CH, .id = 77u }),
+             KST_LINK_START_OK);
+    until_phase(KST_LINK_RUNNING);
+    t = g_ms;
+    for (unsigned n = 0; n < KST_LINK_RETRIES; ++n) {
+        t += KST_LINK_POLL_MS;
+        CHECK(kst_link_next(&g_k, t, &x));
+        CHECK(!x.write);
+        kst_link_done(&g_k, LINK_NACK_BAD_VALUE, NULL);
+    }
+    CHECK(kst_link_outcome(&g_k, &out));
+    CHECK_EQ(out.kind, KST_LINK_OUT_NO_ANSWER);
+    CHECK_EQ(out.id, 77);
+}
+
+/* BAD_PAGE on a link whose page answered before: the page is gone, and the
+ * readout keeps where the port was last read until the link is lost. */
+TEST_CASE(a_page_that_goes_away_keeps_where_the_port_was)
+{
+    kst_link_readout_t ro;
+    kst_link_xfer_t x;
+
+    up();
+    kst_link_readout(&g_k, &ro);
+    CHECK(ro.was_held);
+    CHECK(kst_link_next(&g_k, g_ms + KST_LINK_POLL_MS, &x));
+    kst_link_done(&g_k, LINK_NACK_BAD_PAGE, NULL);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_NO_PAGE);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.phase, KST_LINK_NO_PAGE);
+    CHECK(ro.was_held);
+    kst_link_lost(&g_k);
+    kst_link_readout(&g_k, &ro);
+    CHECK(!ro.was_held);
+
+    /* A port last read in PWM is not held. */
+    fresh();
+    link_up();
+    kst_link_readout(&g_k, &ro);
+    CHECK(!ro.was_held);
+    CHECK(kst_link_next(&g_k, g_ms + KST_LINK_IDLE_MS, &x));
+    kst_link_done(&g_k, LINK_NACK_BAD_PAGE, NULL);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.phase, KST_LINK_NO_PAGE);
+    CHECK(!ro.was_held);
+
+    /* And one that left the session reads as not held again. */
+    up();
+    CHECK_EQ(run_op(LINK_KST_OP_LEAVE).kind, KST_LINK_OUT_DONE);
+    until_phase(KST_LINK_READY);
+    run_ms(2u * KST_LINK_POLL_MS);
+    kst_link_readout(&g_k, &ro);
+    CHECK_EQ(ro.port, LINK_KST_PWM);
+    CHECK(!ro.was_held);
+}
+
+/* Every outcome carries the number its request came with. */
+TEST_CASE(an_outcome_carries_the_number_of_its_request)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    fresh();
+    link_up();
+    r = request(LINK_KST_OP_ENTER);
+    r.id = 0xFFFFFFFFu;
+    out = run(&r);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
+    CHECK_EQ(out.id, 0xFFFFFFFFu);
+    r = request(LINK_KST_OP_READ_ALL);
+    r.id = 5u;
+    out = run(&r);
+    CHECK_EQ(out.id, 5);
+    /* An operation the link loses. */
+    r.id = 6u;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    kst_link_lost(&g_k);
+    CHECK(kst_link_outcome(&g_k, &out));
+    CHECK_EQ(out.kind, KST_LINK_OUT_NO_ANSWER);
+    CHECK_EQ(out.id, 6);
+}
+
 /* --- the poll times across the wrap of the millisecond clock ------------------ */
 
 static void status_regs(link_kst_state_t st, uint16_t *regs)
@@ -1718,6 +1871,7 @@ int main(void)
     RUN(an_unanswered_page_is_asked_again_without_an_outcome);
     RUN(a_command_with_a_stale_seq_is_refused_and_the_page_read_again);
     RUN(a_staged_window_the_page_refuses_ends_the_operation);
+    RUN(a_frame_refused_after_the_command_says_the_command_was_taken);
     RUN(an_abort_before_the_command_drops_the_request);
     RUN(an_abort_ends_the_operation_that_runs);
     RUN(an_abort_with_a_stale_seq_is_sent_again);
@@ -1736,6 +1890,9 @@ int main(void)
     RUN(the_sequence_counter_wraps_under_the_panel);
     RUN(a_lost_link_ends_the_operation_and_keeps_the_images);
     RUN(a_panel_that_starts_on_a_held_port_fetches_what_the_page_has);
+    RUN(a_status_refused_for_another_reason_is_asked_again);
+    RUN(a_page_that_goes_away_keeps_where_the_port_was);
+    RUN(an_outcome_carries_the_number_of_its_request);
     RUN(the_first_read_is_repeated_on_time_across_the_tick_wrap);
     RUN(the_idle_poll_holds_across_the_tick_wrap);
     RUN(the_poll_of_a_held_port_holds_across_the_tick_wrap);

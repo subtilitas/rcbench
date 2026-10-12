@@ -162,7 +162,7 @@ Bedienelement tut:
 | Der Track | abgelehnt: kein Kommando, Schieberegler und Anzeige bleiben; gedimmt gezeichnet | bewegt das Gas um den Weg des Fingers |
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | schalten um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
-| ARM | schaltet nach seinem Halten von 2 s scharf | entschärft bei einem Tap |
+| ARM | schaltet nach seinem Halten von 2 s scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | entschärft bei einem Tap |
 | SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
@@ -721,6 +721,27 @@ Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
+### Programmierer
+
+PROGRAMM., neben OPTIONEN, öffnet den Programmierer für KST- und
+Chaservo-Servos über der linken Karte. Er nimmt den Programmierport des
+Koprozessors, im Auslieferzustand GP13 an Pad 17, aus PWM
+(Pulsweitenmodulation) und liest und schreibt die Einstellungen des Servos
+über dessen Signalleitung. Er verbindet nur, wenn PWM-ZIEL auf der Seite
+PRÜFLING auf PROG-PORT steht; mit AUSGÄNGE zeigt er `Programmieren braucht
+den Programmier-Port.` und VERBINDEN ist gesperrt. Solange er den Port hält,
+bleibt das Overlay offen und OPTIONEN ist aus; ARM ist gesperrt gezeichnet
+und nimmt keinen Druck, ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
+PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
+mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
+Spannung und die Stromgrenze, die VERBINDEN stellt, `PORT  5.0 V  1000 mA`.
+Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
+so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Er verlässt das Programmieren, ohne die Versorgung
+des Servos aus- und einzuschalten. Ob ein KST-Servo im Programmiermodus PWM
+folgt, ist nicht gemessen.
+[Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
+beschreibt ihn.
+
 ### Einstellungen
 
 OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
@@ -751,6 +772,8 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
 | PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+| PRÜFLING | PWM-ZIEL | was der Tester treibt: AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. PROG-PORT braucht der Programmierer. Gesperrt, solange scharf geschaltet ist, während eines Sweeps oder Tests und solange der Programmierer den Port hält ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
+| PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; EIN nach der Regel von PWM-ZIEL, AUS bei scharfem wie nicht scharfem Prüfstand, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
@@ -931,7 +954,7 @@ des PD mini schalten den Ausgang ab.
 ist, liest der Koprozessor den Eingang des Moduls alle 500 ms. Liegt der
 Eingang bei 2 Lesungen hintereinander unter dem Sollwert plus 0,5 V, schaltet
 er den Ausgang sofort ab, und das Band nennt Eingang und Sollwert, zum
-Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0,5 V -- Ausgang aus`.
+Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
 Der Ausgang bleibt aus bis zu einem neuen Halten. Eine einzelne niedrige
 Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
 setzt sie zurück. Solange der Ausgang an ist, wird sein Sollwert einem
@@ -1858,6 +1881,15 @@ Network); jeder sagt das unter seinem Namen. Sie zu verstecken hieße, dass
 jemand GP10 sucht und eine Lücke findet. [DShot und die
 Output-Treiber](DShot-de.md#welcher-pin) hat die ganze Übersicht.
 
+Der Pin des Programmierports des Koprozessors, im Auslieferzustand GP13,
+wird als `PROG-PORT` gezeigt und lässt sich ebenfalls nicht anhaken:
+
+![GP13 gehört dem Programmierport](img/de/outputs-prog.png)
+
+Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
+dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
+einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
+
 Die Pad-Nummer unter jedem Pin ist die auf der Platine aufgedruckte, damit wer
 Pads zählt und wer GPIO-Nummern (General-Purpose Input/Output) liest beim
 gleichen Pin ankommen.
@@ -1932,7 +1964,8 @@ Bildschirm verlassen wird. Das nächste Betreten öffnet auf dem Protokoll mit
 der niedrigsten Nummer, das einen Pin hält.
 
 GP0 als DSHOT600 BIDIR gebunden, GP1 als MOTOR PWM, GP2 und GP13 als SERVO
-PWM, mit OFF gewählt:
+PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GP13, der
+Programmierport hat also keinen Pin:
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
 

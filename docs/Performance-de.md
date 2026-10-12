@@ -195,8 +195,8 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 3 984 | 3 184 |
-| `control` | `control_task` | 6 144 | 3 904 | 1 216 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 064 | 3 104 |
+| `control` | `control_task` | 6 144 | 4 432 | 688 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `artkeep` | `art_keep_task` | 4 096 | 944 | 2 128 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
@@ -210,7 +210,7 @@ decken ab, was das Werkzeug nicht sieht, und jede Tiefe oben ist deshalb eine
 Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
-  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 176
+  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 185
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -237,7 +237,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 628 | 528 | 1 684 |
+| Kern 0 | `main` | 4 096 | 1 636 | 528 | 1 676 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -246,7 +246,7 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 628 Bytes ergibt.
+für Kern 0 1 636 Bytes ergibt.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
 im pico-sdk scheitert: `main` (464 Bytes), `can_service` (344),

@@ -79,6 +79,10 @@ manual beside the bench.
   Bad tail, tx err, rx err, bus err, Frame.
 - Units, the stick positions MIN, MID and MAX, and the key legends DEL, CLR
   and OK.
+- The vendor tool's names of a KST or Chaservo servo's settings, as the
+  rows of the servo programmer: DEAD BAND, MAX. DUTY, BOOST, STRETCH, SOFT
+  START, NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE, RIGHT ANGLE,
+  REVERSION and the rows of its LOCKED tab; and PORT, BACKUP and Pairing.
 
 ## Glossary
 
@@ -142,6 +146,13 @@ One German word per English concept, on every screen and in the report.
 | start (a run) | starten, START on a button |
 | surface (an output's role) | Ruder |
 | connect, disconnect, read, write | verbinden, trennen, lesen, schreiben |
+| restore (a backup to a servo) | zurückspielen |
+| enable (the write to a servo) | freigeben |
+| record (of an interrupted write) | Vermerk |
+| store (a backup), stored | speichern, gespeichert |
+| verify (a servo against what was read) | prüfen |
+| locked (a value shown and not written) | gesperrt |
+| speed, speed limit (of a programmed servo) | Tempo, Tempolimit |
 
 The register is an instrument's: a noun where a label will do, the
 imperative where an instruction is needed, no "Sie". An uppercase label
@@ -190,7 +201,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 82 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 143 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

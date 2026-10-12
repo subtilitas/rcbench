@@ -73,8 +73,8 @@ typedef enum {
  * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
  * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12, and PROG, the port
  * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  From
- * 4.14 the KST page plans a write after the command's frame and reports
- * LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
+ * 4.14 the servo programming page (KST, 0x32) plans a write after the
+ * command's frame and reports LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
  * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to a
  * coprocessor from 4.15 only.  A
  * coprocessor never asks the panel's minor; a
@@ -1274,8 +1274,8 @@ typedef enum {
 
 /* --------------------------------------------------------------------- KST */
 /*
- * The KST page (0x32, since 4.12): the programming port for KST and
- * Chaservo servos.  One programming port (the PROG page) at a time leaves
+ * The servo programming page (KST, 0x32, since 4.12): the programming
+ * port for KST and Chaservo servos.  One programming port (the PROG page) at a time leaves
  * PWM (pulse-width modulation) and carries the servo's programming protocol
  * (protocols/kst).  The session runs at the coprocessor: the panel writes
  * an operation and the images it needs, and reads the state, the result
@@ -1514,6 +1514,10 @@ typedef enum {
     LINK_KST_REF_LOCKED = 20,    /**< 4.15: a LEAVE while LINK_KS_F_LOCKED
                                       is set: a write left the servo in
                                       doubt */
+    LINK_KST_REF_SUPPLY_LOW = 21, /**< 4.15: an ENTER whose supply voltage,
+                                       or the lower one of a PD mini output
+                                       that is on, is under
+                                       KST_PORT_SUPPLY_MIN_MV */
 } link_kst_refusal_t;
 
 /* -------------------------------------------------------------------- PROG */

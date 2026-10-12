@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "kst_panel.h"
 #include "log_name.h"
 #include "outputs.h"
 #include "rcbench_version.h"
@@ -113,6 +114,8 @@
 /* The top of a standard servo's rating.  A set point raised past it is
  * applied only after the HV warning is held for two seconds. */
 #define STD_SERVO_V_MAX 6.0f
+_Static_assert(KST_PANEL_STD_MV == 6000,
+               "the programmer's standard-servo ceiling is STD_SERVO_V_MAX");
 
 /*
  * The overlay: the settings and the keypad, keyboard, list and warning they
@@ -234,6 +237,8 @@ static const ov_row_t k_rows[] = {
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
     { PG_DUT, R_SETTING, SET_ENC_EN,       TX_SV_ROW_ENC,  0, 2, false },
     { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 3, false },
+    { PG_DUT, R_SETTING, SET_SERVO_TARGET,   TX_SV_ROW_TARGET,    1, 1, false },
+    { PG_DUT, R_SETTING, SET_SERVO_PORT_PWM, TX_SV_ROW_PORT_PWM,  1, 2, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -260,7 +265,7 @@ static const uint8_t k_line_w[2][PS_COUNT] = {
 enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
        OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
        OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
-       OP_ASK_CANCEL, OP_TEST_START };
+       OP_ASK_CANCEL, OP_TEST_START, OP_PROGRAM };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -370,6 +375,11 @@ static struct {
     uint32_t   drawn_arm[2];
 
     gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
+    gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
+    bool       kst_shown;        /* the programmer had the left card    */
+    bool       kst_held;         /* and the port: ARM takes no press    */
+    bool       sup_held;         /* the port holds the supply: SET is dim */
+    uint32_t   drawn_kst[2], drawn_kst_hold[2];
     ui_slider_t speed;
 
     /* The servo rail's live power, from its meter (rail_now()): the line
@@ -2252,6 +2262,19 @@ float servo_screen_power_sample(int series, int back)
 
 uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
 
+const char *servo_screen_commanded_text(void)
+{
+    static char text[16];
+
+    if (kst_panel_holds_port()) {
+        /* The programmer holds the port: no pulse is on it. */
+        return "---";
+    }
+    snprintf(text, sizeof(text), "%u us",
+             (unsigned)deg_to_us(s.commanded_deg));
+    return text;
+}
+
 uint16_t servo_screen_drawn(void) { return deg_to_us(s.shown_deg); }
 
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
@@ -2402,6 +2425,9 @@ static void reset(void)
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
                                   12, SETB_W, 24 };
+    s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - SETB_W),
+                                  12, SETB_W, 24 };
+    kst_panel_init(overlay_area());
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
     ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
@@ -3225,10 +3251,55 @@ static void open_keypad(int target, const char *title, const char *unit,
     s.kp_target = target;
 }
 
+/* Armed, asked to arm, or a finger on ARM: the programmer takes no port. */
+static bool bench_arming(void)
+{
+    return s.gate.armed || s.gate.arm_asked || s.arm_down;
+}
+
+/* ARM takes no press while the programmer holds the port: programming and
+ * an armed bench are exclusive.  DISARM is always taken. */
+static bool arm_locked(void)
+{
+    return kst_panel_holds_port() && !s.gate.armed;
+}
+
+/*
+ * What the tester drives changes only on a bench at rest: disarmed, no test
+ * and no sweep, and the port not in the programmer's hands.  The port's
+ * pulse is switched on under the same rule, and off at any time but in a
+ * test or a sweep: one that went on would step and record a servo that
+ * gets no pulse.  STOP and DISARM end those.
+ */
+static bool target_locked(const ov_row_t *r)
+{
+    if (r->kind != R_SETTING
+        || (r->id != SET_SERVO_TARGET && r->id != SET_SERVO_PORT_PWM)) {
+        return false;
+    }
+    if (settings_held(r->id)) {
+        return true;                    /* the programmer has the port */
+    }
+    if (r->id == SET_SERVO_PORT_PWM) {
+        if (settings_get_int(SET_SERVO_TARGET) == 0) {
+            return true;                /* no port to switch */
+        }
+        if (settings_get_bool(SET_SERVO_PORT_PWM)) {
+            /* Off is taken, armed or not, outside a run. */
+            return s.sweeping || servo_test_running(&s.test);
+        }
+    }
+    return s.gate.armed || s.sweeping || servo_test_running(&s.test)
+           || kst_panel_holds_port();
+}
+
 /* A settings row tapped: the editor its kind takes. */
 static void edit_row(int i)
 {
     const ov_row_t *r = &k_rows[i];
+    if (target_locked(r)) {
+        return;
+    }
     switch (r->kind) {
     case R_TYPE:
         open_choice(CH_TYPE, SETTING_COUNT, TR(SV_SERVO_TYPE));
@@ -3703,8 +3774,32 @@ static void ov_rest(const touch_event_t *evt)
         }
         ++s.test_rev;
         break;
+    case OP_PROGRAM:
+        if (gfx_rect_contains(s.prog_btn, x, y)) {
+            /* PROGRAM opens the programmer over the left card and asks it
+             * to close; it stays while the port is in programming.  The
+             * settings give way to it. */
+            if (kst_panel_is_open()) {
+                kst_panel_close();
+            } else {
+                /* A run would go on behind the programmer, stepping the
+                 * rail and the position of the port CONNECT takes. */
+                test_end_now(SERVO_TEST_AB_OPERATOR);
+                s.ov_open = false;
+                s.kp_alone = false;
+                close_panels();
+                kst_panel_open();
+            }
+            servo_invalidate();
+        }
+        break;
     case OP_SETTINGS:
+        /* The settings would cover a programmer that holds the port. */
+        if (kst_panel_holds_port()) {
+            break;
+        }
         if (gfx_rect_contains(s.set_btn, x, y)) {
+            kst_panel_leave();
             /* SETTINGS opens the overlay and closes it, taking whatever is
              * open in it; a warning not held is a profile not applied.  The
              * servo's lead runs out past the left card, where the overlay
@@ -3749,7 +3844,8 @@ static bool on_the_dial(int px, int py, float *deg)
 /* Latches that something other than the knob holds the horn. */
 static void knob_note_owner(void)
 {
-    if (s.ov_open || servo_test_running(&s.test) || s.sweeping || s.paused) {
+    if (s.ov_open || kst_panel_is_open() || servo_test_running(&s.test)
+        || s.sweeping || s.paused) {
         s.knob_owned = true;
     }
 }
@@ -3831,9 +3927,16 @@ static void event_body(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
+    kst_panel_bench_armed(bench_arming());
     const int px = evt->point.x, py = evt->point.y;
 
-    /* The overlay's own press first: its moves and its release are its. */
+    /* The programmer's own press first, then the overlay's. */
+    if (kst_panel_has_press(evt->point.id)
+        && evt->type != TOUCH_EVENT_DOWN) {
+        kst_panel_event(evt);
+        return;
+    }
+    /* The overlay's own press: its moves and its release are its. */
     if (s.ov_have && evt->point.id == s.ov_id
         && evt->type != TOUCH_EVENT_DOWN) {
         ov_rest(evt);
@@ -3861,6 +3964,18 @@ static void event_body(const touch_event_t *evt)
             }
             return;
         }
+        if (kst_panel_is_open() && gfx_rect_contains(overlay_area(), px, py)) {
+            if (!s.ov_have) {
+                kst_panel_event(evt);
+            }
+            return;
+        }
+        if (gfx_rect_contains(s.prog_btn, px, py)) {
+            if (!s.ov_have) {
+                ov_take(evt, OP_PROGRAM, -1);
+            }
+            return;
+        }
         if (gfx_rect_contains(s.set_btn, px, py)) {
             if (!s.ov_have) {
                 ov_take(evt, OP_SETTINGS, -1);
@@ -3868,6 +3983,11 @@ static void event_body(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.out_btn, px, py)) {
+            /* A programming port holds the supply: off is taken, on is
+             * not. */
+            if (!supply_screen_output_on() && supply_screen_port_held()) {
+                return;
+            }
             /* Off, with a set point past a standard servo's rating: the HV
              * warning, whose hold switches it on.  One press in the
              * overlay at a time. */
@@ -3892,6 +4012,10 @@ static void event_body(const touch_event_t *evt)
         }
         for (int k = 0; k < 2; ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
+                /* No set point moves under a programming port. */
+                if (supply_screen_port_held()) {
+                    return;
+                }
                 /* The run owns the set points while it runs. */
                 test_end_now(SERVO_TEST_AB_OPERATOR);
                 if (!s.ov_have) {
@@ -3900,7 +4024,7 @@ static void event_body(const touch_event_t *evt)
                 return;
             }
         }
-        if (s.test_box && !s.ov_open
+        if (s.test_box && !s.ov_open && !kst_panel_is_open()
             && gfx_rect_contains(test_btn_rect(), px, py)) {
             /* STOP TEST ends the run on the press, as a stop does; CLOSE
              * puts the result away. */
@@ -3913,7 +4037,7 @@ static void event_body(const touch_event_t *evt)
             return;
         }
         float deg;
-        if (!s.ov_open && on_the_dial(px, py, &deg)) {
+        if (!s.ov_open && !kst_panel_is_open() && on_the_dial(px, py, &deg)) {
             /* Refused while the value is not live: the press is the dial's
              * and takes no drag, so a bench armed under it moves nothing
              * until the next press. */
@@ -3948,6 +4072,10 @@ static void event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (arm_locked()) {
+                /* Programming and an armed bench are exclusive. */
+                return;
+            }
             if (s.arm_down) {
                 /* The gesture belongs to the contact that began it.  A second
                  * finger, or a palm, taking it over would leave the first
@@ -4408,7 +4536,7 @@ static gfx_color_t arm_fill(void)
 static void draw_arm(gfx_canvas_t *c)
 {
     ui_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-              s.arm_down, true);
+              s.arm_down, !arm_locked());
 }
 
 static gfx_rect_t power_rect(void)
@@ -4530,9 +4658,13 @@ static void draw_sup_row(gfx_canvas_t *c)
     char v[12], a[12];
     snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
     snprintf(a, sizeof(a), "%.2f A", (double)supply_screen_set_i());
+    /* Held by a programming port they take no press, and say so. */
+    const bool held = supply_screen_port_held();
     const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
-        { v, ui_theme_color(UI_C_VOLT), OP_SUP_V },
-        { a, ui_theme_color(UI_C_CURR), OP_SUP_I },
+        { v, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                  : ui_theme_color(UI_C_VOLT), OP_SUP_V },
+        { a, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                  : ui_theme_color(UI_C_CURR), OP_SUP_I },
     };
     for (int i = 0; i < 2; ++i) {
         const gfx_rect_t b = sup_val_rect(i);
@@ -4545,7 +4677,7 @@ static void draw_sup_row(gfx_canvas_t *c)
     }
     ui_button(c, s.out_btn, s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
               out_fill(),
-              s.out_down, true);
+              s.out_down, s.out_on || !held);
     if (s.out_hold.flash_left > 0) {
         ui_hold_flash_step(&s.out_hold);
     }
@@ -4601,11 +4733,15 @@ static void draw_right(gfx_canvas_t *c, bool power)
     ui_button(c, s.set_btn, TR(SUP_SETTINGS),
               s.ov_open ? ui_theme_color(UI_C_ACCENT)
                         : ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_SETTINGS, true);
+              s.ov_have && s.ov_pressed == OP_SETTINGS,
+              !kst_panel_holds_port());
+    ui_button(c, s.prog_btn, TR(KP_PROGRAM),
+              kst_panel_is_open() ? ui_theme_color(UI_C_ACCENT)
+                                  : ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_PROGRAM, true);
 
     char buf[24];
-    snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
-    row(c, 44, TR(SV_COMMANDED), buf);
+    row(c, 44, TR(SV_COMMANDED), servo_screen_commanded_text());
     /* The horn's angle from the encoder where one reads.  With the encoder
      * off in SETUP, from the feedback; with it on and not reading, the
      * dashes: the pulse position is not the horn's angle then. */
@@ -4703,6 +4839,9 @@ static bool row_unused(const ov_row_t *r)
     }
     if (r->kind != R_SETTING) {
         return false;
+    }
+    if (target_locked(r)) {
+        return true;
     }
     const int by = settings_get_int(SET_SERVO_LEN_BY);
     return (r->id == SET_SERVO_LEN_S && by != 0)
@@ -5204,6 +5343,33 @@ static void remember_shown(void)
 
 static void tick_body(float dt_s)
 {
+    /* The programmer: its holds and repeats, and the left card while the
+     * port is in programming.  PWM and programming are exclusive states of
+     * that port, so the way back is asked for there and nowhere else. */
+    kst_panel_set_hv(s.test_hv);
+    kst_panel_bench_armed(bench_arming());
+    kst_panel_tick(dt_s);
+    if (kst_panel_holds_port() && !kst_panel_is_open()) {
+        kst_panel_open();
+    }
+    if (kst_panel_holds_port() != s.kst_held) {
+        s.kst_held = kst_panel_holds_port();
+        ++s.arm_rev;
+    }
+    if (supply_screen_port_held() != s.sup_held) {
+        s.sup_held = supply_screen_port_held();
+        /* A hold on OUTPUT ON that was under way ends with nothing asked. */
+        if (s.sup_held && s.out_down && !s.out_press_on) {
+            ui_hold_reset(&s.out_hold);
+            s.out_down = false;
+        }
+        ++s.sup_rev;
+    }
+    if (kst_panel_is_open() != s.kst_shown) {
+        s.kst_shown = kst_panel_is_open();
+        servo_invalidate();
+        ++s.ctrl_rev;
+    }
     /* The screen's own clock, for the sweep it draws. */
     if (dt_s > 0.0f) {
         s.clock_frac_ms += dt_s * 1000.0f;
@@ -5254,6 +5420,11 @@ static void tick_body(float dt_s)
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
         ++s.ctrl_rev;
+    }
+    if (s.arm_down && arm_locked() && ui_hold_leave(&s.arm)) {
+        /* The port was found held under a hold of ARM: no arm is sent. */
+        s.arm_down = false;
+        ++s.arm_rev;
     }
     if (s.arm_down && !s.gate.armed) {
         ++s.arm_rev;
@@ -5471,8 +5642,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_test[buf]  = s.test_rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
+        s.drawn_kst[buf]   = kst_panel_revision();
+        s.drawn_kst_hold[buf] = kst_panel_hold_revision();
         if (s.ov_open) {
             draw_overlay(c);
+        } else if (kst_panel_is_open()) {
+            kst_panel_render(c);
         } else {
             draw_left(c);
         }
@@ -5528,6 +5703,18 @@ static void render(gfx_canvas_t *c, int buffer_index)
         clipped(c, save_line_rect(), draw_save_line);
     }
     if (s.ov_open) {
+        return;
+    }
+    if (kst_panel_is_open()) {
+        /* The programmer, when it changed; of a hold only its button. */
+        if (s.drawn_kst[buf] != kst_panel_revision()) {
+            s.drawn_kst[buf] = kst_panel_revision();
+            s.drawn_kst_hold[buf] = kst_panel_hold_revision();
+            clipped(c, overlay_area(), kst_panel_render);
+        } else if (s.drawn_kst_hold[buf] != kst_panel_hold_revision()) {
+            s.drawn_kst_hold[buf] = kst_panel_hold_revision();
+            clipped(c, kst_panel_apply_rect(), kst_panel_render);
+        }
         return;
     }
 
@@ -5596,8 +5783,17 @@ static void leave(void)
     ui_tabs_cancel(&s.tabs);
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
+    /* The programmer's presses and pages go; the port stays as it is, and
+     * the screen shows it again while it holds the port. */
+    kst_panel_leave();
     ++s.arm_rev;
     ++s.ctrl_rev;
+}
+
+/* ENABLE WRITE TO SERVO goes off whenever the screen is entered. */
+static void enter(void)
+{
+    kst_panel_screen_entry();
 }
 
 /*
@@ -5655,6 +5851,7 @@ static void cancel(void)
     s.dragging = false;
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
+    kst_panel_cancel();
     ui_keypad_cancel_press(&s.kp);
     ui_textkey_cancel_press(&s.tk);
     ui_tabs_cancel(&s.tabs);
@@ -5687,7 +5884,7 @@ static void event(const touch_event_t *evt)
 static const ui_screen_t k_screen = {
     .title  = "SERVO",
     .reset  = reset,
-    .enter  = NULL,
+    .enter  = enter,
     .leave  = leave,
     .tick   = tick,
     .event  = event,

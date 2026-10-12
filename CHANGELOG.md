@@ -8,6 +8,173 @@ history is in git.
 
 ### Added
 
+- SERVO screen: a programmer for KST and Chaservo servos. PROGRAM opens an
+  overlay of 5 tabs (SERVO, TUNE, PULSE, FAILSAFE, LOCKED) over the left
+  card. It takes the coprocessor's programming port (GP13 on pad 17 by
+  default, link protocol 4.13), reads all 32 registers, and edits dead
+  band, maximum duty, boost, stretch, soft start, the speed limit, the
+  pulse ends, neutral, the angles, reversion and the failsafe with the plus
+  and minus keys, the keypad and choice lists. The limits are the protocol
+  core's: a value past a hard limit cannot be entered, and a value past a
+  soft limit shows the limit's warning and is taken after a hold of 2 s.
+  Frequency, lock, the servo and gyro mode and the protection block are
+  shown and never written. A write needs the switch ENABLE WRITE TO SERVO,
+  which is off by default, takes a hold of 2 s, and goes off at every entry
+  of the screen, link loss, coprocessor restart, stop, connect and leave;
+  the first write of a session asks for a free horn. The coprocessor writes
+  the changed registers only and reads each back. A backup is kept from the
+  first read of a session and written back by RESTORE to the servo it was
+  read from: a servo that differs from the backup in a register no write of
+  the session changed takes no register of it, and the port asks for a
+  read. A write that fails after earlier registers were written says that
+  those stay, and every outcome that leaves the servo in doubt switches the
+  write off.
+- SERVO screen, DUT page: PWM TARGET selects what the tester drives, the
+  pins bound as SERVO PWM (OUTPUTS) or the programming port (PROG PORT), and
+  PORT PWM switches the port's pulse. Sweep, hold and the automatic test
+  run on the port. The programmer connects only with PROG PORT; with
+  OUTPUTS it names the setting and CONNECT is locked. Both rows change only
+  on a disarmed bench with no sweep and no test running and the port not in
+  programming. OUTPUTS shows the port's pin as `PROG PORT` and does not
+  bind it.
+- Servo programmer, supply: with a PD mini answering, CONNECT sets
+  PROGRAMMING VOLTAGE (4.8 to 8.4 V, default 5.0 V) and CURRENT LIMIT (50 to
+  3000 mA, default 1000 mA) on the PD mini. An output that is on runs the
+  session at the lower of the two voltages and the lower of the two current
+  limits. Under 4.8 V CONNECT is
+  refused, and so it is with programming values above the SUPPLY screen's
+  limits. While the port is out of PWM the coprocessor refuses every change
+  of the supply's set points and every ON, and the SET row of the SERVO
+  screen and the SUPPLY screen dim those controls; OUTPUT OFF works, and an
+  OFF during a frame reaches the PD mini after the port has cut the frame,
+  12 ms later at most. The coprocessor arms no bank while a port is out of
+  PWM and refuses the port on an armed bench. A voltage above 6.0 V needs
+  HV SERVO on and a hold of 2 s, and is not stored: a stored value above
+  6.0 V is loaded as 6.0 V. The SERVO tab shows the measured voltage
+  and current. The port's refusals for a port without a pin, a supply
+  outside the range, a bench it does not trust and a supply that does not
+  reach its voltage within 3000 ms each have their own line. A supply
+  command the port sets is shown on SUPPLY. The panel's STOP ends a
+  session through the port's abort, with the supply off.
+- Servo programmer, leaving: LEAVE returns the port to PWM without a supply
+  cycle, with and without a PD mini, through the port's LEAVE operation of
+  link protocol 4.15. The port holds its line low for WAIT BEFORE PWM (0 to
+  10000 ms, default 100 ms, kept with the SERVO settings) before the first
+  pulse; the tester's controls stay off until the port reports PWM, and
+  ABORT during the wait keeps the session. A port that asks for a read or
+  holds a servo in doubt is not left with a PD mini's supply on: the line
+  names READ ALL or RESTORE, and STOP ends the session with the supply off.
+  A coprocessor of protocol 4.13 or 4.14 gets no LEAVE: without a PD mini
+  the port returns to PWM without the wait and the line says so, with a PD
+  mini the line asks for the update and the session stays. Whether a KST
+  servo follows PWM in programming mode, whether a written value acts
+  before the next power-up, and the wait a servo needs are not measured.
+- Servo programmer and ARM: CONNECT is refused on a bench that is armed,
+  asked to arm or has a finger on ARM, and so are the read, the verify,
+  the write, the restore and the pairing release. While the programmer
+  holds the port no screen arms the bench: ARM on SERVO and on MOTOR & ESC
+  is drawn disabled and takes no press, a run of the ESC stick programmer
+  does not start and names the reason, and the panel refuses any other arm
+  with an alert. A card put in after the panel started is mounted when the
+  programmer opens or one of its actions is tapped, and the record of an
+  interrupted write on it is read then.
+- Servo programmer, backups: the session's backup is not offered and not
+  restored once a read shows another servo than the one it was read from,
+  a servo that differs in a field no write of the session set out to
+  change. A write that did not start, or that the coprocessor ends with
+  no register written, counts as none. LEAVE and CONNECT begin a session with that servo's own backup.
+  A locked session whose backup the panel holds takes ENABLE WRITE TO
+  SERVO with no servo read, for the restore of that backup alone.
+- Servo programmer, files: FILES saves the servo's 32 registers as a servo
+  file in the folder `KST` on the SD card under a preset name (`KST001` on)
+  that the text keyboard changes, and never replaces a file. The first
+  write of a session saves such a file without asking: a mounted card that
+  is full or fails the write ends it with its own line. With no card
+  mounted the write is sent without a file; its page says that no backup
+  file is saved and that the session's backup lives in the bench until the
+  session ends or the bench loses power, and the SERVO tab shows `No backup
+  file: no card. Session restore only.` until a card takes the file at a
+  later write. That file holds the servo as the session found it, also
+  after a link loss or a panel start under a session the coprocessor
+  keeps; the servo as last read is not saved as the backup file once it
+  may hold written values. A card that is write protected, or that has a
+  file named `KST` in place of the folder, shows `Card takes no file: write
+  protected or KST is no folder.` A file is loaded from a list of every
+  servo file of the folder, sorted by name without case with the proposed
+  names at the place of `KST000`, the highest number first, 5 a page, that
+  names each file's servo type, V6 or V8 after the 20k_sel field. The time
+  a page behind the first 64 files takes is not measured. Its editable values become the pending changes and reach
+  the servo through the ordinary write only; a file of the other type, a
+  damaged file, a file of a later format and a value past a hard limit are
+  refused with the reason, a hand-edited file is named as one with the
+  count of the 27 values its lines give, values past
+  a soft limit wait for a hold of 2 s, and locked values that differ are
+  counted as not written.
+- Servo programmer, the pages before a write: the write page lists each
+  changed value as `DEAD BAND: 2.0 -> 1.6 us`, the servo's value, the new
+  value and the unit, a value past a soft limit in the warning colour, and
+  counts the rest (`and 4 more`) past the page's 12 lines; the page of a
+  file load lists the differing values the same way. CHECK THIS CHANGE
+  counts from the value of the session's backup, and a confirmed soft limit
+  is asked again for a value further from it. The horn lines stand on the
+  first write of a session and on every write that changes REVERSION,
+  NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE or RIGHT ANGLE. A tap on
+  **WRITE n VALUES** with the write switch off opens the switch's page. A
+  running write shows `Writing 3 registers. Frames sent: 94.` and `Writing:
+  do not unplug.` and no interrupted write. A row that takes no tap is
+  drawn off. The PORT row names the programming voltage and current limit
+  in PWM, and the servo tester's COMMANDED reads `---` while the programmer
+  holds the port. The German texts write numbers with a decimal point and
+  keep SPEED LIMIT, SPEED and AFTER. The panel sends no ENTER while it
+  reads a PD mini output that is on and set under 4.8 V.
+- Servo programmer, interrupted writes: a record of a running write is
+  stored in `KST/KST.TXT` (at most 400 bytes of text) before the write
+  starts; after a link loss, a restart, an abort or a power loss during a
+  write the programmer reports that the servo may hold part of it, asks for
+  a read and offers the restore. The record names its port, and a servo
+  that is not the record's takes no restore and no write: one on another
+  port, or one with a register that holds neither the record's value nor
+  the write's target. A servo whose 32 registers equal the image before
+  the write or the write's target keeps the record, and the panel asks
+  whether it is the servo of the write; nothing is written until the record
+  is discarded. No backup file is saved while a record is held. A backup whose
+  values pass a soft limit shows its warnings on a page of its own before
+  the restore page. `KST/KST.TXT` is replaced through `KST/KST.NEW`, and a
+  record the card does not take is written again every 5 s. An image that
+  fails the layout fingerprint is shown and not written. PROGRAM ends a
+  running automatic test. A coprocessor without the programming port's
+  page shows the programmer as unavailable with the reason. German texts
+  for every new string; 118 screenshots. Host suite only (`test_kst_prog`,
+  `test_kst_panel`, `test_kst_card`, `test_prog_link`).
+  ([Servo programmer for KST and Chaservo servos](docs/ServoProgrammer.md))
+- Servo programmer, the port is the programmer's alone: from **CONNECT**
+  to the port back in PWM, **PWM TARGET** and **PORT PWM** change by no
+  call of the settings (`settings_held()`), the panel writes nothing to
+  the port's page and the tester sends the port no command
+  (`prog_link_hold()`). A command the control task does not take within
+  2 s is withdrawn and dropped when it leaves the queue
+  (`kst_prog_gate_t`). A refusal of an exchange after the coprocessor took
+  the operation asks for **READ ALL** before an edit, a save or a write. A
+  restore, a release or a write that does not start leaves the pending
+  values and the record of an interrupted write as they were. A record
+  loaded from a card with a servo already read is compared with that servo
+  at once.
+- Servo programmer, stops and losses: a port found back in PWM without a
+  command of the programmer ends the session on the panel with `Session
+  ended by the port: supply off or a restart.` and the request to switch
+  the servo's supply off and on; the line of a coprocessor restart asks for
+  the same. An outcome counts for the request whose number it carries, so a
+  late one ends no other operation, and the answer of the card to an older
+  record releases no write. **ABORT** reaches an operation the port still
+  reports running after the programmer gave it up. An operation is given up
+  120 s after its start however long the port reports it running. A code
+  the panel has no line for is shown with its number. A save the card ends
+  after its 5 s is taken as the file it made. A status read the coprocessor
+  refuses with a code other than BAD_PAGE is sent again, and a coprocessor
+  that loses the page keeps the port as it was last read. The session marks
+  a register as written when its write frame is on the wire, not before.
+  **PORT PWM** does not go off during a sweep or a test. A record on a
+  card put in later that the programmer does not use stays on the card.
 - `tools/sense_trace.py --loaded-channel N` (repeatable): names the output
   channels that have a servo connected. The `$C` and `$D` lines of every
   other channel are no moves and do not count for the 30 ms within which 2

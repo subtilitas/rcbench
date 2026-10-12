@@ -64,6 +64,7 @@ static void txn_begin(kst_session_t *s, kst_expect_t expect, uint8_t reg,
         kst_frame_sync(&s->frame);
     }
     s->t_expect = (uint8_t)expect;
+    s->t_reg = reg;
     s->t_frame = 1;
     s->t_state = T_GAP;
 }
@@ -130,8 +131,11 @@ static bool txn_step(kst_session_t *s)
             return true;
         }
         if (expect == KST_EXPECT_WRITE) {
-            /* From here the servo may hold part of a plan. */
+            /* From here the servo may hold part of a plan, and the
+             * register is one this session wrote: not before, so that a
+             * frame the driver refused or an abort cut off marks none. */
             s->dirty = 1;
+            s->wrote_regs |= (uint32_t)1 << (s->t_reg % KST_REG_COUNT);
         }
         s->t_start = t;
         s->t_limit = (kst_frame_duration_ns(&s->frame) + window) / 1000u
@@ -264,8 +268,25 @@ static void finish_in_doubt(kst_session_t *s, kst_ses_t result)
 {
     if (s->dirty != 0u) {
         s->locked = 1;
+        if (result == KST_SES_ERR_VERIFY || result == KST_SES_ERR_UNINTENDED) {
+            /* Read in full: what the writes changed beside their own
+             * registers is known. */
+            s->wrote_regs |= s->diff_regs;
+        } else {
+            s->unseen = 1;
+        }
     }
     finish(s, result);
+}
+
+/* The first full read after a write that ended with the servo not read:
+ * what differs from the image held is what the write may have changed. */
+static void saw_servo(kst_session_t *s)
+{
+    if (s->unseen != 0u) {
+        s->wrote_regs |= diff_mask(&s->read, &s->image);
+        s->unseen = 0;
+    }
 }
 
 static void took_image(kst_session_t *s)
@@ -309,6 +330,7 @@ static void read_all_advance(kst_session_t *s)
         finish(s, (kst_ses_t)s->read_result);
         return;
     }
+    saw_servo(s);
     took_image(s);
     if (s->has_backup == 0u) {
         s->backup = s->image;
@@ -323,6 +345,7 @@ static void verify_advance(kst_session_t *s)
         finish(s, (kst_ses_t)s->read_result);
         return;
     }
+    saw_servo(s);
     took_image(s);
     s->diff_regs = diff_mask(&s->image, &s->expect);
     if (s->diff_regs != 0u) {
@@ -435,12 +458,20 @@ static void write_advance(kst_session_t *s)
             finish(s, (kst_ses_t)s->read_result);
             break;
         }
-        took_image(s);
-        s->diff_regs = diff_mask(&s->image, &plan->start);
+        /* Compared before it is taken: an image that is not the plan's
+         * start is no start for the next plan either.  A restore goes to
+         * the servo the backup was read from only: a register the session
+         * never wrote holds the backup's value there. */
+        saw_servo(s);
+        s->diff_regs = diff_mask(&s->read, &plan->start);
+        if (plan->kind == KST_PLAN_RESTORE) {
+            s->diff_regs |= diff_mask(&s->read, &s->backup) & ~s->wrote_regs;
+        }
         if (s->diff_regs != 0u) {
             finish(s, KST_SES_ERR_CHANGED);
             break;
         }
+        took_image(s);
         s->expect = plan->start;
         if (plan->n == 0u) {
             /* The servo holds the backup: a restore with nothing to write
@@ -885,6 +916,9 @@ kst_ses_t kst_session_release_pairing(kst_session_t *s)
         return gate;
     }
     s->plan_result = (uint8_t)kst_plan_release_pairing(&s->image, &s->plan);
+    if (s->plan_result != (uint8_t)KST_PLAN_OK) {
+        return refuse(s, KST_SES_ERR_NO_PLAN);
+    }
     (void)started(s, OP_WRITE);
     s->undo = 0;
     read_begin(s);

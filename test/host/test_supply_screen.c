@@ -970,6 +970,220 @@ TEST_CASE(a_trip_shows_on_the_mode_card)
     CHECK(differ > 0);
 }
 
+/* -------------------------------------------- held by a programming port */
+
+/* Pixels that differ between the two frames inside a rectangle. */
+static int differ_in(int x0, int y0, int x1, int y1)
+{
+    int n = 0;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = x0; x < x1; ++x) {
+            n += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/* While a servo programming port is out of PWM the screen offers what the
+ * coprocessor takes: off, and nothing else. */
+TEST_CASE(a_supply_held_by_a_port_takes_off_and_no_other_press)
+{
+    supply_cmd_t c;
+
+    fresh();
+    CHECK(!supply_screen_port_held());
+    supply_screen_set_port_held(true);
+    CHECK(supply_screen_port_held());
+    /* No ON: not by the hold, not asked by another screen. */
+    hold_on();
+    CHECK(!supply_screen_poll_cmd(&c));
+    supply_screen_ask_on();
+    CHECK(!supply_screen_poll_cmd(&c));
+    CHECK(!supply_screen_output_live());
+    CHECK(!supply_screen_output_held());
+    /* No set point: steps, tracks, cards, values, another screen's put. */
+    tap(V_UP_X, V_ROW_Y);
+    tap(V_DOWN_X, I_ROW_Y);
+    tap(TRACK_X + TRACK_W / 2, V_ROW_Y);
+    tap(TRACK_X + TRACK_W - 1, I_ROW_Y);
+    ev(TRACK_X + 10, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    tap(CARD_X, CARD_V_Y);
+    keys("7.4");
+    tap(CARD_X, CARD_I_Y);
+    keys("1.5");
+    tap(TEXT_X, TEXT_V_Y);
+    keys("9");
+    tap(TEXT_X, TEXT_I_Y);
+    keys("1");
+    supply_screen_put(8.0f, 3.0f);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    /* What the port set is shown. */
+    supply_screen_adopt(5.0f, 1.0f);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    /* RESET PEAKS works. */
+    tap(RESET_X, RESET_Y);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.reset && !c.on && !c.off);
+    /* OUTPUT OFF works, and no question is asked on the way. */
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    tap(OUT_X, OUT_Y);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+    supply_screen_set_output(false);
+    /* Let go, everything takes a press again. */
+    supply_screen_set_port_held(false);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 5.1f, 1e-4f);
+    supply_screen_put(8.0f, 3.0f);
+    CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
+    hold_on();
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.on);
+}
+
+/* What was under way when the port left PWM ends with nothing asked. */
+TEST_CASE(a_port_that_takes_the_supply_ends_what_was_under_way)
+{
+    supply_cmd_t c;
+
+    /* A hold on OUTPUT ON. */
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    CHECK(supply_screen_output_held());
+    supply_screen_set_port_held(true);
+    CHECK(!supply_screen_output_held());
+    tick_for(HOLD_TICKS);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_screen_poll_cmd(&c));
+
+    /* An ON posted and not collected. */
+    fresh();
+    hold_on();
+    CHECK(supply_screen_output_live());
+    supply_screen_set_port_held(true);
+    CHECK(!supply_screen_output_live());
+    CHECK(!supply_screen_poll_cmd(&c));
+
+    /* A set point being typed: the keypad goes, and its keys with it. */
+    fresh();
+    tap(CARD_X, CARD_V_Y);
+    key(UI_KEY_7);
+    supply_screen_set_port_held(true);
+    key(UI_KEY_OK);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    supply_screen_set_port_held(false);
+    key(UI_KEY_OK);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+
+    /* A drag. */
+    fresh();
+    ev(TRACK_X + 10, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 100, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    const float before = supply_screen_set_v();
+    supply_screen_set_port_held(true);
+    ev(TRACK_X + 300, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    ev(TRACK_X + 300, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(supply_screen_set_v(), before, 1e-4f);
+
+    /* A question about a live output: APPLY applies nothing after it. */
+    fresh();
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);
+    supply_screen_set_port_held(true);
+    tap(APPLY_X, ASK_Y);
+    supply_screen_set_port_held(false);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+
+    /* A settings keypad is not the supply's command and stays. */
+    fresh();
+    tap(SETB_X, SETB_Y);
+    tap(ROW_L_X, VMAX_Y);
+    supply_screen_set_port_held(true);
+    keys("12");
+    CHECK_NEAR(supply_screen_caps().v_max, 12.0f, 1e-4f);
+}
+
+/* Caps that come down while a port holds the supply leave the set points
+ * the port's; they come under the caps when it lets go. */
+TEST_CASE(caps_reach_the_set_points_when_the_port_lets_go)
+{
+    const supply_caps_t narrow = { 3.3f, 5.0f, 0.02f, 0.5f, 1.5f, 0.05f };
+
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_set_caps(&narrow);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    supply_screen_set_port_held(false);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+    /* The same flag twice changes nothing. */
+    supply_screen_set_port_held(false);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+}
+
+/* The held controls are drawn as taking no press, OUTPUT OFF is not, and
+ * the MODE card names the holder. */
+TEST_CASE(a_held_supply_is_drawn_dimmed_and_says_who_holds_it)
+{
+    supply_state_t st;
+
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.mode = SUPPLY_MODE_OFF;
+    for (int on = 0; on < 2; ++on) {
+        fresh();
+        st.output = on != 0;
+        st.mode = on != 0 ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+        supply_screen_set_output(on != 0);
+        supply_screen_push(&st);
+        /* Past the flash of an output that came on. */
+        for (int f = 0; f < 40; ++f) {
+            scr->render(&cv, 0);
+        }
+        supply_invalidate();
+        scr->render(&cv, 0);
+        supply_screen_set_port_held(true);
+        scr->render(&cv2, 0);
+        /* The MODE card, the steps and the tracks. */
+        CHECK(differ_in(558, 207, 794, 264) > 0);
+        CHECK(differ_in(V_DOWN_X - 10, V_ROW_Y - 10, V_DOWN_X + 10,
+                        V_ROW_Y + 10) > 0);
+        CHECK(differ_in(V_UP_X - 10, I_ROW_Y - 10, V_UP_X + 10,
+                        I_ROW_Y + 10) > 0);
+        CHECK(differ_in(TRACK_X, V_ROW_Y - 12, TRACK_X + TRACK_W,
+                        V_ROW_Y + 12) > 0);
+        /* OUTPUT: dimmed where it would switch on, as it was where it
+         * switches off. */
+        if (on != 0) {
+            CHECK_EQ(differ_in(OUT_X - 40, OUT_Y - 10, OUT_X + 40,
+                               OUT_Y + 10), 0);
+        } else {
+            CHECK(differ_in(OUT_X - 40, OUT_Y - 10, OUT_X + 40,
+                            OUT_Y + 10) > 0);
+        }
+        /* RESET PEAKS is as it was. */
+        CHECK_EQ(differ_in(RESET_X - 40, RESET_Y - 10, RESET_X + 40,
+                           RESET_Y + 10), 0);
+        /* And back. */
+        supply_screen_set_port_held(false);
+        scr->render(&cv2, 0);
+        CHECK_EQ(differ_in(0, 0, W, H), 0);
+    }
+}
+
 /* ------------------------------------------------------------------ plot */
 
 static supply_state_t reading(float v, float i)
@@ -1596,6 +1810,10 @@ int main(void)
     RUN(leaving_drops_the_question_and_the_overlays);
     RUN(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one);
     RUN(a_trip_shows_on_the_mode_card);
+    RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);
+    RUN(a_port_that_takes_the_supply_ends_what_was_under_way);
+    RUN(caps_reach_the_set_points_when_the_port_lets_go);
+    RUN(a_held_supply_is_drawn_dimmed_and_says_who_holds_it);
     RUN(a_run_is_traced_from_the_switch_on_and_held_after_it);
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(each_framebuffer_is_updated_independently);

@@ -45,6 +45,7 @@ void supply_link_lost(supply_link_t *s)
     s->found     = SUPPLY_LINK_BAUD_AUTO;
     s->reset_owed = false;
     s->port_held  = false;
+    s->judge      = false;
     s->adopted    = false;
     /* The caller sees the supply stop answering and switches its own ON
      * off with the operator told; this end only stops asking for it. */
@@ -121,6 +122,9 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
         regs[0] = 0u;
         s->pending = SUPPLY_LINK_W_OFF;
         return s->pending;
+    }
+    if (s->judge) {
+        return SUPPLY_LINK_W_NONE;       /* the read first */
     }
 
     /*
@@ -235,6 +239,11 @@ void supply_link_written(supply_link_t *s, int result)
                            && result == SUPPLY_LINK_ACK;
             s->page_mv   = s->out[LINK_SP_SET_MV];
             s->page_ma   = s->out[LINK_SP_SET_MA];
+        } else if (s->commanded && s->page_on) {
+            /* Set points refused on an output that is on: a programming
+             * port may hold the supply, and then the output stays as it
+             * is.  The next read says. */
+            s->judge = true;
         } else {
             /* An ON refused: no heartbeat at the far end, or no supply. */
             s->on = false;
@@ -316,9 +325,16 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
         s->wired = false;
     }
     const bool port = (f & LINK_SP_PORT) != 0u || s->port_held;
+    const bool judge = s->judge;
     s->port_held = (f & LINK_SP_PORT) != 0u;
+    s->judge = false;
+    if (judge && !port) {
+        /* Refused, and by no port: the ON is over, as ever. */
+        s->on = false;
+        s->events |= SUPPLY_LINK_EV_ON_REFUSED;
+    }
     if (port && s->commanded
-        && (regs[LINK_SP_OUTPUT] != (s->page_on ? 1u : 0u)
+        && (judge || regs[LINK_SP_OUTPUT] != (s->page_on ? 1u : 0u)
             || regs[LINK_SP_SET_MV] != s->page_mv
             || regs[LINK_SP_SET_MA] != s->page_ma)) {
         /* A programming port's command: what the page holds is what is

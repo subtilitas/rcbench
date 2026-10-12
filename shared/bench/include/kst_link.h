@@ -138,6 +138,8 @@ typedef struct {
     kst_image_t image;         /**< WRITE: the target.  RESTORE: the
                                     backup.  VERIFY: what is expected     */
     kst_field_set_t unlock;    /**< WRITE: fields beyond the editable class */
+    uint32_t id;               /**< the caller's number of the request: the
+                                    outcome of the operation carries it   */
 } kst_link_request_t;
 
 /** How an operation went. */
@@ -157,8 +159,12 @@ typedef enum {
 typedef struct {
     kst_link_outcome_kind_t kind;
     link_kst_op_t      op;
+    uint32_t id;                  /**< kst_link_request_t.id of the
+                                       operation that ended               */
     link_kst_refusal_t refusal;   /**< KST_LINK_OUT_REFUSED               */
     uint8_t  nack;                /**< KST_LINK_OUT_NACK: link_nack_t     */
+    bool     taken;               /**< the page acknowledged the command:
+                                       the operation may have run         */
     uint8_t  result;              /**< KST_LINK_OUT_DONE: the low byte of
                                        LINK_KS_RESULT, a kst_ses_t value
                                        (0 to 20) or LINK_KST_RESULT_SUPPLY,
@@ -177,6 +183,9 @@ typedef struct {
 typedef struct {
     kst_link_phase_t phase;
     bool     known;            /**< the fields below were read            */
+    bool     was_held;         /**< the status last read on this link had
+                                    the port out of PWM: what stands while
+                                    the status is not known               */
     link_kst_state_t port;     /**< where the port is                     */
     uint8_t  port_no;          /**< which port: the one last commanded    */
     uint16_t flags;            /**< LINK_KS_F_*                           */
@@ -211,6 +220,8 @@ typedef struct {
                                     KST_LINK_RUNNING here                 */
     uint8_t  pending;          /**< the exchange in flight                */
     uint8_t  tries;            /**< exchanges unanswered in a row         */
+    bool     was_held;         /**< the status last read had the port out
+                                    of PWM                                */
 
     uint16_t status[LINK_KS_W_CMD_FRAME];
     bool     polled;           /**< status_ms is meaningful               */
@@ -222,7 +233,9 @@ typedef struct {
     bool     active;           /**< an operation is on its way            */
     bool     verdict;          /**< its command was taken; the status that
                                     says what became of it is owed        */
+    bool     taken;            /**< its command was acknowledged          */
     uint8_t  op;               /**< link_kst_op_t                         */
+    uint32_t id;               /**< kst_link_request_t.id                 */
     uint8_t  stage_at;         /**< staged windows written, to STAGE_WINDOWS */
     uint16_t staged[LINK_KS_W_STAGED];
     bool     supply_due;       /**< an ENTER's supply registers are owed  */

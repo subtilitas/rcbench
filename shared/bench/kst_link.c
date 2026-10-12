@@ -70,7 +70,9 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
         memset(o, 0, sizeof(*o));
         o->kind = kind;
         o->op = (link_kst_op_t)k->op;
+        o->id = k->id;
         o->nack = nack;
+        o->taken = k->taken;
         o->fail_reg = 0xFFu;
         if (kind == KST_LINK_OUT_REFUSED) {
             o->refusal =
@@ -122,6 +124,7 @@ void kst_link_lost(kst_link_t *k)
     k->cmd_live = false;
     k->cmd_abort = false;
     k->abort_wanted = false;
+    k->was_held = false;
 }
 
 void kst_link_came_up(kst_link_t *k, uint16_t minor)
@@ -218,9 +221,11 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
         op_staged(r->op) ? link_kst_crc(k->staged, LINK_KS_W_STAGED) : 0u;
 
     k->op = (uint8_t)r->op;
+    k->id = r->id;
     k->stage_at = op_staged(r->op) ? 0u : (uint8_t)STAGE_WINDOWS;
     k->active = true;
     k->verdict = false;
+    k->taken = false;
     k->phase = (uint8_t)KST_LINK_SENDING;
     return KST_LINK_START_OK;
 }
@@ -380,6 +385,8 @@ static void on_status(kst_link_t *k, const uint16_t *regs)
     memcpy(k->status, regs, sizeof(k->status));
     k->seq = regs[LINK_KS_SEQ];
     k->known = true;
+    k->was_held = LINK_KS_STATE_OF(regs[LINK_KS_STATE])
+                  != (uint8_t)LINK_KST_PWM;
     if (k->phase == (uint8_t)KST_LINK_SYNC) {
         k->phase = (uint8_t)KST_LINK_READY;
     }
@@ -419,7 +426,9 @@ static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
 {
     switch (kind) {
     case X_STATUS:
-        /* A coprocessor that reports the minor and has no page. */
+        /* BAD_PAGE: a coprocessor that reports the minor and has no page.
+         * kst_link_done() takes every other refusal of a status read as
+         * an exchange without an answer. */
         k->page = false;
         k->known = false;
         finish(k, KST_LINK_OUT_NACK, nack);
@@ -462,7 +471,11 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
     reads = kind == X_STATUS || kind == X_RESULTS || kind == X_IMAGE
             || kind == X_BACKUP;
     if (result == KST_LINK_NO_ANSWER
-        || (result == KST_LINK_ACK && reads && regs == NULL)) {
+        || (result == KST_LINK_ACK && reads && regs == NULL)
+        || (kind == X_STATUS && result != KST_LINK_ACK
+            && result != (int)LINK_NACK_BAD_PAGE)) {
+        /* A status read refused for another reason than "no such page"
+         * says nothing about the page: it is asked again. */
         if (++k->tries >= KST_LINK_RETRIES) {
             /* Given up: what the page holds is read again before
              * anything else is sent. */
@@ -502,6 +515,7 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
             k->poll_now = true;
         } else {
             k->verdict = true;
+            k->taken = true;
         }
         break;
     case X_RESULTS:
@@ -574,6 +588,7 @@ void kst_link_readout(const kst_link_t *k, kst_link_readout_t *r)
         return;
     }
     r->phase = phase_shown(k);
+    r->was_held = k->was_held;
     r->have_image = k->have_image;
     r->have_backup = k->have_backup;
     if (k->known) {

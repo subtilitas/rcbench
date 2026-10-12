@@ -99,6 +99,17 @@ typedef enum {
  */
 outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
 
+/** No pin, for outputs_screen_set_prog_pin(). */
+#define OUTPUTS_NO_PIN 0xFFu
+
+/**
+ * The GPIO the coprocessor's programming port is bound to, as its page reads
+ * it, or OUTPUTS_NO_PIN (the start value).  While no protocol holds that pin
+ * its cell reads OUTPUTS_CELL_RESERVED with the port's name and takes no
+ * tick.  It stays across a reset of the screen.
+ */
+void outputs_screen_set_prog_pin(uint8_t gpio);
+
 /**
  * The line under the protocol that says why no pin can be ticked, as the
  * screen draws it in the language in force; an empty string when there is

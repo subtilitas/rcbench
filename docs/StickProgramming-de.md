@@ -47,7 +47,10 @@ Was sie nicht weiß:
    in dem das Netzteil selbst seinen Ausgang aus meldet, mit dem Strom
    200 ms lang bei höchstens 20 mA. Kein Messwert, ein älterer oder ein
    Netzteil, das nicht antwortet, lehnt START ab mit `kein frischer
-   Messwert meldet das Netzteil aus`.
+   Messwert meldet das Netzteil aus`. Ein Lauf setzt den Prüfstand unter
+   ARM: solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port
+   hält, wird START abgelehnt mit
+   `Servo-Programmierer hält einen Port: erst VERLASSEN.`
 
 ## Auf dem Bildschirm
 

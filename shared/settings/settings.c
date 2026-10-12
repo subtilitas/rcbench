@@ -41,6 +41,7 @@ static const char *const k_ina3221_addr[] = { "0x40", "0x41", "0x42", "0x43" };
 static const char *const k_ina3221_ch[] = { "CH1", "CH1+2+3" };
 static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
+static const char *const k_servo_target[] = { "OUTPUTS", "PROG PORT" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
 static const char *const k_pdmini_baud[] = {
     "9600", "19200", "38400", "57600", "115200", "230400", "460800", "AUTO",
@@ -328,6 +329,29 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "srv_stall_a", "Stall threshold", "Above this the servo counts as stalled", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.05f, 2.0f, NULL, 0 },
     /*
+     * The servo programmer's, set on its own page.  The ranges are the
+     * programming port's (kst_port.h) and the model's (kst_prog.h).
+     */
+    [SET_SERVO_PROG_V] = {
+        "srv_prog_v", "Programming voltage", "Supply of the servo while it is programmed", "V",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 4.8f, 8.4f, 0.1f, 5.0f, NULL, 0 },
+    [SET_SERVO_PROG_I] = {
+        "srv_prog_i", "Programming current", "The supply's limit while a servo is programmed", "A",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.05f, 3.0f, 0.001f, 1.0f, NULL, 0 },
+    [SET_SERVO_PROG_WAIT] = {
+        "srv_prog_wait", "Wait before PWM", "From the end of programming to the first pulse", "ms",
+        SET_CAT_SERVO, SET_TYPE_INT, 0, 10000, 1, 100, NULL, 0 },
+    /*
+     * What the SERVO screen's tester drives: the standard servo outputs or
+     * the programming port, and whether that port renders its pulse.
+     */
+    [SET_SERVO_TARGET] = {
+        "srv_target", "PWM target", "What the tester drives", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_servo_target) },
+    [SET_SERVO_PORT_PWM] = {
+        "srv_port_pwm", "Port PWM", "The programming port's pulse while it is the target", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    /*
      * Stick programming's.  The supply it powers the ESC (electronic speed
      * controller) from, and how it hears the beeps.  No ESC has been
      * recorded, so every time below is a default standing in for a
@@ -399,6 +423,7 @@ static struct {
     bool     save_failed;  /* the last attempt did not reach the medium */
     const settings_store_t *store;
     settings_observer_fn observer;
+    settings_hold_fn hold;
 } s;
 
 /*
@@ -428,6 +453,16 @@ const setting_def_t *settings_def(setting_id_t id)
 bool settings_derived(setting_id_t id)
 {
     return id == SET_SENSE_SCL;
+}
+
+void settings_set_hold(settings_hold_fn fn)
+{
+    s.hold = fn;
+}
+
+bool settings_held(setting_id_t id)
+{
+    return id >= 0 && id < SETTING_COUNT && s.hold != NULL && s.hold(id);
 }
 
 const char *settings_category_name(setting_cat_t cat)
@@ -525,7 +560,7 @@ void settings_reset(setting_cat_t cat)
      */
     bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
-        if (k_defs[i].cat == cat) {
+        if (k_defs[i].cat == cat && !settings_held((setting_id_t)i)) {
             float before = s.values[i];
             s.values[i] = k_defs[i].def;
             moved = moved || (s.values[i] != before);
@@ -537,10 +572,15 @@ void settings_reset(setting_cat_t cat)
     }
 }
 
-void settings_reset_all(void)
+/* Every value and string to its default; a held value only at start-up,
+ * @p held. */
+static void defaults(bool held)
 {
     bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
+        if (!held && settings_held((setting_id_t)i)) {
+            continue;
+        }
         float before = s.values[i];
         s.values[i] = k_defs[i].def;
         moved = moved || (s.values[i] != before);
@@ -557,6 +597,11 @@ void settings_reset_all(void)
     }
 }
 
+void settings_reset_all(void)
+{
+    defaults(false);
+}
+
 void settings_set_store(const settings_store_t *store)
 {
     s.store = store;
@@ -569,7 +614,7 @@ void settings_set_observer(settings_observer_fn fn)
 
 void settings_init(void)
 {
-    settings_reset_all();
+    defaults(true);
     if (s.store && s.store->load) {
         if (s.store->load(s.values, SETTING_COUNT)) {
             /* Whatever came back has to satisfy the schema: a stored value
@@ -618,7 +663,7 @@ bool settings_get_bool(setting_id_t id)
 void settings_set(setting_id_t id, float value)
 {
     const setting_def_t *d = settings_def(id);
-    if (!d || settings_derived(id)) {
+    if (!d || settings_derived(id) || settings_held(id)) {
         return;
     }
     float v = coerce(d, value);
@@ -639,7 +684,7 @@ void settings_set(setting_id_t id, float value)
 void settings_adjust(setting_id_t id, int steps)
 {
     const setting_def_t *d = settings_def(id);
-    if (!d || steps == 0 || settings_derived(id)) {
+    if (!d || steps == 0 || settings_derived(id) || settings_held(id)) {
         return;
     }
     if (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) {

@@ -18,6 +18,7 @@
 
 #include "esc_sim.h"
 #include "gfx.h"
+#include "kst_panel.h"
 #include "programmer_screen.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -617,6 +618,51 @@ TEST_CASE(a_profile_the_engine_cannot_run_goes_no_further)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
+}
+
+
+/* The servo programmer's port as the coprocessor's page gives it. */
+static void kst_port(link_kst_state_t st)
+{
+    kst_prog_feed_t f;
+
+    memset(&f, 0, sizeof(f));
+    f.rd.phase = KST_LINK_READY;
+    f.rd.known = true;
+    f.rd.port = st;
+    kst_panel_feed(&f);
+}
+
+/* A run arms the bench: none starts over a port in programming. */
+TEST_CASE(no_run_starts_while_the_servo_programmer_holds_a_port)
+{
+    const gfx_rect_t area = { 0, 0, W, H };
+    motor_cmd_t mc;
+
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        kst_panel_init(area);
+        kst_port(LINK_KST_PROGRAMMING);
+        descend_to_hobbywing();
+        pick_cutoff();
+        tap(WRITE_X, BTN_CY);
+        hold_for(2.25f);
+        CHECK_EQ(programmer_screen_stick_runs(), 0u);
+        CHECK(!esc_stick_running(programmer_screen_stick()));
+        CHECK(!programmer_screen_poll_cmd(&mc));
+        CHECK_STR_EQ(programmer_screen_stick_note(), TR(SP_KST_HELD));
+        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+        scr->render(&cv, 0);
+        CHECK(lit() > 20000);
+        /* The port back in PWM: the same RUN starts. */
+        kst_port(LINK_KST_PWM);
+        tap(WRITE_X, BTN_CY);
+        hold_for(2.25f);
+        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        scr->leave();
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(a_run_needs_a_change_and_the_warning_held_two_seconds)
@@ -3630,6 +3676,7 @@ int main(void)
     RUN(every_kind_steps);
     RUN(every_protocol_draws_its_parameters);
     RUN(a_profile_the_engine_cannot_run_goes_no_further);
+    RUN(no_run_starts_while_the_servo_programmer_holds_a_port);
     RUN(a_run_needs_a_change_and_the_warning_held_two_seconds);
     RUN(a_hold_that_is_interrupted_starts_nothing);
     RUN(a_whole_run_on_the_modelled_bench_stores_and_lets_go);

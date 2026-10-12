@@ -206,6 +206,9 @@ void servo_screen_cancel_arm(void);
 
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
+/** The value of the COMMANDED row as it is drawn: the pulse in us, and
+ *  "---" while the servo programmer holds the port and no pulse is on it. */
+const char *servo_screen_commanded_text(void);
 
 /** The pulse width the solid arm is drawn at: measured, or without
  *  feedback the drawing's estimate of the output.  For tests. */

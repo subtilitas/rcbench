@@ -347,6 +347,93 @@ TEST_CASE(a_command_under_a_programming_port_is_off_or_refused)
     CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
 }
 
+/* Set points the page refuses under a programming port leave the output
+ * on: the page's values are adopted, nothing is said, no OFF is written.
+ * The same when the port took the supply after this end's last read. */
+TEST_CASE(set_points_refused_under_a_port_leave_the_output_on)
+{
+    bool on = false;
+    uint16_t mv = 0u;
+    uint16_t ma = 0u;
+
+    for (int seen = 0; seen < 2; ++seen) {
+        fresh();
+        supply_link_wire(&sl, &k_wired);
+        supply_link_command(&sl, true, 5000u, 1000u);
+        pump(true);
+        CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+        supply_page_hold(&pg, true);
+        if (seen != 0) {
+            far_step_and_read(true);        /* the bit is read first */
+        }
+        /* A raise, a lowering, a current limit: each refused, each time
+         * the output stays and this end holds the page's values again. */
+        static const uint16_t k_ask[3][2] = {
+            { 8000u, 1000u }, { 4000u, 1000u }, { 5000u, 3000u },
+        };
+        for (unsigned k = 0; k < 3u; ++k) {
+            supply_link_command(&sl, true, k_ask[k][0], k_ask[k][1]);
+            pump(true);
+            CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+            CHECK_EQ(reg(LINK_SP_SET_MV), 5000u);
+            CHECK_EQ(reg(LINK_SP_SET_MA), 1000u);
+            CHECK_EQ(supply_link_events(&sl), 0u);
+            CHECK(sl.on);
+            CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+            CHECK(on);
+            CHECK_EQ(mv, 5000u);
+            CHECK_EQ(ma, 1000u);
+            CHECK(supply_link_settled(&sl));
+        }
+        /* Between the refusal and its read nothing is written but an OFF. */
+        supply_link_command(&sl, true, 8000u, 1000u);
+        uint8_t off = 0u;
+        uint8_t n = 0u;
+        uint16_t regs[LINK_SP_FLAGS];
+        CHECK_EQ(supply_link_next(&sl, &off, &n, regs),
+                 SUPPLY_LINK_W_COMMAND);
+        supply_link_written(&sl, (int)LINK_NACK_BAD_VALUE);
+        CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_NONE);
+        supply_link_command(&sl, false, 8000u, 1000u);
+        CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_OFF);
+        supply_link_written(&sl, SUPPLY_LINK_NO_ANSWER);
+        supply_link_command(&sl, true, 8000u, 1000u);
+        pump(true);
+        CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+        CHECK_EQ(supply_link_events(&sl), 0u);
+        CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+        CHECK_EQ(mv, 5000u);
+    }
+
+    /* No port: set points refused on an output that is on end the ON as
+     * any refused ON does, said once, after the read. */
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 5000u, 1000u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    supply_link_command(&sl, true, 6000u, 1000u);
+    pump(false);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_REFUSED);
+    CHECK(!sl.on);
+    CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
+    /* A lost link forgets a refusal not judged. */
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 5000u, 1000u);
+    pump(true);
+    supply_link_command(&sl, true, 6000u, 1000u);
+    uint8_t off = 0u;
+    uint8_t n = 0u;
+    uint16_t regs[LINK_SP_FLAGS];
+    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_COMMAND);
+    supply_link_written(&sl, (int)LINK_NACK_BAD_VALUE);
+    CHECK(sl.judge);
+    supply_link_lost(&sl);
+    CHECK(!sl.judge);
+}
+
 /* A coprocessor that started again between two reads holds nothing: its
  * page is written again from the start, and the ON it held is lost. */
 TEST_CASE(a_restarted_far_end_is_written_again)
@@ -774,6 +861,7 @@ int main(void)
     RUN(an_on_the_far_end_let_go_is_lost);
     RUN(a_programming_ports_command_is_adopted_and_not_fought);
     RUN(a_command_under_a_programming_port_is_off_or_refused);
+    RUN(set_points_refused_under_a_port_leave_the_output_on);
     RUN(a_restarted_far_end_is_written_again);
     RUN(unanswered_writes_and_a_lost_link);
     RUN(the_state_is_what_the_page_says);

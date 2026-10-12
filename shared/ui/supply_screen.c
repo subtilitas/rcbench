@@ -179,6 +179,10 @@ static struct {
     /* An ON this screen has asked for and not yet seen applied: the output
      * is treated as live from the moment it is asked; see confirm_needed(). */
     bool            on_asked;
+    /* A servo programming port is out of PWM: the coprocessor takes an OFF
+     * and nothing else, so this screen offers nothing else; see
+     * supply_screen_set_port_held(). */
+    bool            port_held;
     bool            confirm_open;
     uint32_t        off_count;      /* reported ON-to-OFF edges */
     /* Stops seen (supply_screen_cancel_on()), and the count the question
@@ -319,8 +323,12 @@ static gfx_rect_t row_value_rect(int i)
  * kept and snapped into them. */
 static void apply_caps(void)
 {
-    s.cv = supply_snap(s.cv, s.eff.v_min, s.eff.v_max, s.eff.v_step);
-    s.ci = supply_snap(s.ci, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    /* Held by a programming port, the set points are the port's: they are
+     * brought under the caps when it lets go. */
+    if (!s.port_held) {
+        s.cv = supply_snap(s.cv, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+        s.ci = supply_snap(s.ci, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    }
     s.pend_v = supply_snap(s.pend_v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
     s.pend_i = supply_snap(s.pend_i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
     const float v = s.cv;
@@ -340,6 +348,8 @@ static void apply_caps(void)
                                            s.eff.v_step));
     ui_slider_set(&s.i_slider, supply_snap(i, s.eff.i_min, s.eff.i_max,
                                            s.eff.i_step));
+    s.v_slider.dim = s.port_held;
+    s.i_slider.dim = s.port_held;
 }
 
 static supply_limits_t limits_from_settings(void)
@@ -427,8 +437,9 @@ static void reset(void)
 static void post_on(void)
 {
     /* An OFF already asked for stands: two touches in one frame must not
-     * let an ON land on top of it. */
-    if (!s.pending.off) {
+     * let an ON land on top of it.  And none while a programming port
+     * holds the supply. */
+    if (!s.pending.off && !s.port_held) {
         s.pending.on = true;
         s.on_asked   = true;
     }
@@ -600,6 +611,13 @@ static void propose(int from)
                                 s.eff.v_step);
     const float i = supply_snap(s.i_slider.value, s.eff.i_min, s.eff.i_max,
                                 s.eff.i_step);
+    if (s.port_held) {
+        /* Nothing moves under a programming port: the sliders go back. */
+        ui_slider_set(&s.v_slider, s.cv);
+        ui_slider_set(&s.i_slider, s.ci);
+        ++s.set_rev;
+        return;
+    }
     if (v == s.cv && i == s.ci) {
         return;
     }
@@ -635,7 +653,7 @@ static bool confirm_stands(void)
 /* The question answered: APPLY gives the supply the change, CANCEL drops it. */
 static void confirm_close(bool apply)
 {
-    if (apply) {
+    if (apply && !s.port_held) {
         s.cv = s.pend_v;
         s.ci = s.pend_i;
         ui_slider_set(&s.v_slider, s.cv);
@@ -655,8 +673,64 @@ supply_caps_t supply_screen_caps(void) { return s.eff; }
 
 bool supply_screen_typed_asks(void) { return confirm_needed(FROM_KEYPAD); }
 
+void supply_screen_set_port_held(bool held)
+{
+    if (s.port_held == held) {
+        return;
+    }
+    s.port_held = held;
+    if (held) {
+        /* What was under way and would change the supply ends here: a
+         * hold on OUTPUT ON, an ON not collected, a drag, a set point
+         * being typed, a question about one. */
+        if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER
+            || (s.pressed == P_OUTPUT && !s.press_on)
+            || s.pressed == P_APPLY || s.pressed == P_CARD_V
+            || s.pressed == P_CARD_I || s.pressed == P_TEXT_V
+            || s.pressed == P_TEXT_I) {
+            let_go();
+        }
+        ui_slider_release(&s.v_slider);
+        ui_slider_release(&s.i_slider);
+        ui_hold_reset(&s.hold);
+        s.pending.on = false;
+        s.on_asked   = false;
+        if (s.kp.open && (s.kp_target == KP_SET_V
+                          || s.kp_target == KP_SET_I)) {
+            if (s.pressed == P_KEYPAD) {
+                let_go();
+            }
+            ui_keypad_close(&s.kp);
+            s.kp_target = KP_NONE;
+        }
+        s.confirm_open = false;
+        ui_slider_set(&s.v_slider, s.cv);
+        ui_slider_set(&s.i_slider, s.ci);
+    }
+    /* Let go, the set points come under the caps again. */
+    apply_caps();
+    ++s.set_rev;
+    ++s.out_rev;
+    ++s.ctrl_rev;
+    supply_invalidate();
+}
+
+bool supply_screen_port_held(void) { return s.port_held; }
+
+void supply_screen_adopt(float v, float i)
+{
+    s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    ui_slider_set(&s.v_slider, s.cv);
+    ui_slider_set(&s.i_slider, s.ci);
+    ++s.set_rev;
+}
+
 void supply_screen_put(float v, float i)
 {
+    if (s.port_held) {
+        return;
+    }
     s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
     /* The sliders show the set points.  This screen's own question is
@@ -842,6 +916,10 @@ static void down(const touch_event_t *evt)
 
     /* The output and the peaks work whatever covers the left column. */
     if (gfx_rect_contains(s.out_rect, x, y)) {
+        /* Off is always taken; on is not while a port holds the supply. */
+        if (!s.on && s.port_held) {
+            return;
+        }
         take(evt, P_OUTPUT);
         s.press_on = s.on;
         if (!s.on) {
@@ -868,11 +946,15 @@ static void down(const touch_event_t *evt)
         return;
     }
     if (gfx_rect_contains(card_rect(0), x, y)) {
-        take(evt, P_CARD_V);
+        if (!s.port_held) {
+            take(evt, P_CARD_V);
+        }
         return;
     }
     if (gfx_rect_contains(card_rect(1), x, y)) {
-        take(evt, P_CARD_I);
+        if (!s.port_held) {
+            take(evt, P_CARD_I);
+        }
         return;
     }
 
@@ -907,6 +989,9 @@ static void down(const touch_event_t *evt)
         take(evt, P_TABS);
         (void)ui_tabs_event(&s.tabs, evt);
         return;
+    }
+    if (s.port_held) {
+        return;                         /* no set point moves */
     }
     if (gfx_rect_contains(s.v_slider.track, x, y)
         || gfx_rect_contains(s.i_slider.track, x, y)) {
@@ -1182,7 +1267,7 @@ static void tick(float dt_s)
         ++s.set_rev;
         supply_invalidate();
     }
-    if (s.pressed == P_OUTPUT && !s.press_on && !s.on) {
+    if (s.pressed == P_OUTPUT && !s.press_on && !s.on && !s.port_held) {
         ++s.out_rev;
         if (ui_hold_tick(&s.hold, dt_s)) {
             post_on();
@@ -1222,7 +1307,7 @@ static void draw_out_button(gfx_canvas_t *c)
 {
     ui_button(c, s.out_rect, s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
               out_fill(),
-              s.pressed == P_OUTPUT, true);
+              s.pressed == P_OUTPUT, s.on || !s.port_held);
     out_flash_advance();
 }
 
@@ -1246,6 +1331,9 @@ static const char *mode_line(void)
 {
     if (!s.sup.online) {
         return "";
+    }
+    if (s.port_held) {
+        return TR(SUP_LINE_PORT);
     }
     if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_CURRENT) {
         return TR(SUP_LINE_TRIP_I);
@@ -1486,14 +1574,15 @@ static void draw_setters(gfx_canvas_t *c)
 
 static void draw_steps(gfx_canvas_t *c)
 {
+    const bool free = !s.port_held;
     ui_button(c, s.v_down, "-0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_V_DOWN, true);
+              s.pressed == P_V_DOWN, free);
     ui_button(c, s.v_up, "+0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_V_UP, true);
+              s.pressed == P_V_UP, free);
     ui_button(c, s.i_down, "-0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_I_DOWN, true);
+              s.pressed == P_I_DOWN, free);
     ui_button(c, s.i_up, "+0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_I_UP, true);
+              s.pressed == P_I_UP, free);
 }
 
 /*

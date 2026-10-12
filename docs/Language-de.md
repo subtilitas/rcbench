@@ -82,6 +82,11 @@ passen.
   Bad tail, tx err, rx err, bus err, Frame.
 - Einheiten, die Stickpositionen MIN, MID und MAX und die Tastenbeschriftungen
   DEL, CLR und OK.
+- Die Namen, die das Werkzeug des Herstellers den Einstellungen eines KST-
+  oder Chaservo-Servos gibt, als Zeilen des Servo-Programmierers: DEAD BAND,
+  MAX. DUTY, BOOST, STRETCH, SOFT START, NEUTRAL, PULSE LOWER, PULSE UPPER,
+  LEFT ANGLE, RIGHT ANGLE, REVERSION und die Zeilen seines Tabs SPERRE;
+  dazu PORT, BACKUP und Pairing.
 
 ## Glossar
 
@@ -145,6 +150,13 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | start (einen Lauf) | starten, START auf einem Knopf |
 | surface (die Rolle eines Ausgangs) | Ruder |
 | connect, disconnect, read, write | verbinden, trennen, lesen, schreiben |
+| restore (ein Backup auf ein Servo) | zurückspielen |
+| enable (das Schreiben auf ein Servo) | freigeben |
+| record (eines unterbrochenen Schreibens) | Vermerk |
+| store (ein Backup), stored | speichern, gespeichert |
+| verify (ein Servo gegen das Gelesene) | prüfen |
+| locked (ein Wert, der gezeigt und nicht geschrieben wird) | gesperrt |
+| speed, speed limit (eines programmierten Servos) | Tempo, Tempolimit |
 
 Der Ton ist der eines Messgeräts: ein Substantiv, wo eine Beschriftung
 reicht, der Imperativ, wo eine Anweisung nötig ist, kein "Sie". Eine
@@ -197,7 +209,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 82 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 143 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
