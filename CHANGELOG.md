@@ -30,8 +30,9 @@ history is in git.
   -Werror -Wshadow -Wconversion -Wno-sign-conversion`, and
   `tools/render_ui.py` builds `render_screen.c` with the same flags. clang-tidy
   and cppcheck run over `test/host/` in CI; the checks that are off for the
-  tests are listed with their reasons in `test/host/.clang-tidy`, and the page
-  callbacks of the link tests in `.cppcheck-suppress`. The `analysis` job
+  tests are listed with their reasons in `test/host/.clang-tidy`, and
+  cppcheck's `constParameterCallback` on the page callbacks of the link tests
+  is suppressed inline, with the reason. The `analysis` job
   timeout is 30 min. Test code fixed under the stricter rules: canvases built
   with a zero clip rectangle in `test_kst_panel`, ids cast to a 16-bit type for
   an 8-bit field, an out-of-range float to integer conversion in the settings
