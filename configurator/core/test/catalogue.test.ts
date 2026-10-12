@@ -134,21 +134,21 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id), ['servo', 'esc']);
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
-  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 63 }, (_, i) => i + 1));
-  assert.equal(CATALOGUE.functions.length, 21);
-  // 12 functions need no part beyond the base setup: 10 run on every setup, 2 drive a test object.
-  assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 12);
-  assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives !== undefined).map((f) => f.id), ['servo', 'esc']);
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 64 }, (_, i) => i + 1));
+  assert.equal(CATALOGUE.functions.length, 22);
+  // 13 functions need no part beyond the base setup: 10 run on every setup, 3 drive a test object.
+  assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 13);
+  assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives !== undefined).map((f) => f.id), ['servo', 'servoprog', 'esc']);
   assert.deepEqual(
     CATALOGUE.functions.filter((f) => f.drives !== undefined).map((f) => [f.id, f.drives, f.needs]),
     [
       ['servo', 'servo', []], ['servotest', 'servo', ['pdmini']], ['servocur', 'servo', ['ina3221']],
-      ['angle', 'servo', ['as5600']], ['esc', 'esc', []], ['escpow', 'esc', ['ina228']],
+      ['angle', 'servo', ['as5600']], ['servoprog', 'servo', []], ['esc', 'esc', []], ['escpow', 'esc', ['ina228']],
       ['stick', 'esc', ['pdmini']], ['tap', 'esc', ['sim', 'tap']],
     ],
   );
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 27);
+  assert.equal(CATALOGUE.checks.length, 31);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [
@@ -269,7 +269,7 @@ test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
     'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
-    'osoyoo-labels', 'servo-5v-pin', 'strip-supply', 'esc-programming-power',
+    'osoyoo-labels', 'prog-level', 'servo-5v-pin', 'strip-supply', 'esc-programming-power',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
@@ -423,8 +423,12 @@ test('references: unknown parts and option values are reported', () => {
   const empty = copy();
   servo(empty).needs = [];
   assert.deepEqual(checkRefs(empty).filter((f) => f.id === 'function.servo'), []);
+  // A function that drives a test object is in no setup of its own accord: it may force an option.
   servo(empty).forces = { escPower: 'pd' };
-  reports(checkRefs(empty), 'function.servo', /needs no part and forces an option/);
+  assert.deepEqual(checkRefs(empty).filter((f) => f.id === 'function.servo'), []);
+  const link = empty.functions.find((f) => f.id === 'link')!;
+  link.forces = { escPower: 'pd' };
+  reports(checkRefs(empty), 'function.link', /needs no part, drives no test object and forces an option/);
 
   const adds = copy();
   adds.rules[0]!.adds = 'gimbal';
@@ -495,6 +499,7 @@ test('references: a test object is driven, never needed, added, locked or ticked
   // A test object needs a function that drives it on the base setup: the tick that connects it.
   const noTick = copy();
   fn(noTick, 'servo').needs = ['sd'];
+  fn(noTick, 'servoprog').needs = ['sd'];
   reports(checkRefs(noTick), 'part.servo', /without a function that drives it on the base setup/);
   const undriven = copy();
   delete fn(undriven, 'esc').drives;

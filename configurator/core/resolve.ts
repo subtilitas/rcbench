@@ -20,10 +20,11 @@ export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K
   ina228Board: Object.freeze(['matek', 'xt90'] as const),
   escPower: Object.freeze(['battery', 'pd'] as const),
   servoPower: Object.freeze(['external', 'bench'] as const),
+  servoPort: Object.freeze(['outputs', 'prog'] as const),
 });
 
 export const OPTION_KEYS: ReadonlyArray<OptionKey> = Object.freeze(
-  ['connection', 'ina228Board', 'escPower', 'servoPower'] as const,
+  ['connection', 'ina228Board', 'escPower', 'servoPower', 'servoPort'] as const,
 );
 
 export const DEFAULT_OPTIONS: Options = Object.freeze({
@@ -31,17 +32,21 @@ export const DEFAULT_OPTIONS: Options = Object.freeze({
   ina228Board: 'matek',
   escPower: 'battery',
   servoPower: 'external',
+  servoPort: 'outputs',
 });
 
 /**
- * The setups that show an option. `null`: every setup. The servo supply is a
- * choice while a servo is connected and no PD mini feeds it.
+ * The setups that show an option. `null`: every setup. `false`: no setup; a
+ * function forces the value. The servo supply is a choice while a servo is
+ * connected and no PD mini feeds it. The pin of the servo signal follows the
+ * function that programs a servo.
  */
-const OPTION_WHEN: { readonly [K in OptionKey]: Cond | null } = {
+const OPTION_WHEN: { readonly [K in OptionKey]: Cond | null | false } = {
   connection: null,
   ina228Board: { has: 'ina228' },
   escPower: { has: 'esc' },
   servoPower: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }] },
+  servoPort: false,
 };
 
 /** A printable form of a selection entry that is not a known id. */
@@ -130,6 +135,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     ina228Board: null,
     escPower: null,
     servoPower: null,
+    servoPort: null,
   };
   for (const fn of catalogue.functions) {
     if (!chosen.has(fn.id) || !fn.forces) continue;
@@ -182,7 +188,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     return {
       key,
       value: options[key],
-      visible: gate === null || holds(gate, ctx),
+      visible: gate === null || (gate !== false && holds(gate, ctx)),
       forcedBy: forcedBy[key],
     };
   });

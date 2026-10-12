@@ -67,6 +67,8 @@ const OUT_BIND = 'shared/outputs/out_bind.c';
 const SETTINGS = 'shared/settings/settings.c';
 const BOARD_PINS = 'firmware/panel/components/board/include/board_pins.h';
 const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
+const PROG_PORT = 'shared/outputs/include/prog_port.h';
+const PROGRAMMER = 'docs/ServoProgrammer.md';
 
 // ---------------------------------------------------------------------------
 // Parts. Catalogue order is display order.
@@ -686,6 +688,10 @@ const SENSOR_ESC_NEG = t(
 const XT90_SHUNT: Cond = { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] };
 /** A servo without the PD mini: its plus comes from the visitor's supply or from the bench. */
 const SERVO_NO_PD: Cond[] = [{ has: 'servo' }, { not: { has: 'pdmini' } }];
+/** The servo signal on a pad bound under OUTPUTS. */
+const SERVO_OUTPUTS: Cond = { all: [{ has: 'servo' }, { opt: 'servoPort', is: 'outputs' }] };
+/** The servo signal on the programming port: the function that programs a servo. */
+const SERVO_PROG: Cond = { all: [{ has: 'servo' }, { opt: 'servoPort', is: 'prog' }] };
 const SERVO_EXTERNAL: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'external' }] };
 /** The bench itself feeds the servo: the 5 V pin, or the V pin of a strip of the Osoyoo breakout board. */
 const SERVO_BENCH: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'bench' }] };
@@ -761,7 +767,7 @@ const wires: Wire[] = [
       `${PROPOSED.en} Bind it under SETUP → OUTPUTS as SERVO PWM.`,
       `${PROPOSED.de} Unter SETUP → OUTPUTS als SERVO PWM binden.`,
     ),
-    when: { has: 'servo' }, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'proposal',
+    when: SERVO_OUTPUTS, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'proposal',
     src: PAGE,
   },
   {
@@ -1205,6 +1211,17 @@ const wires: Wire[] = [
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
   },
+  // The servo on the programming port of the coprocessor, in place of wire 7.
+  {
+    n: 64, kind: 'wire', a: 'pad.17', b: 'servo.SIG', net: 'servo_sig', cls: 'out',
+    signal: t(`servo signal: PWM and programming, ${V33_EN}`, `Servosignal: PWM und Programmierung, ${V33_DE}`),
+    note: t(
+      'In place of wire 7. The programming port, port 1: the pin of a coprocessor that has stored none. Set SETTINGS → DUT → PWM TARGET to PROG PORT.',
+      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines Koprozessors, der keinen gespeichert hat. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen.',
+    ),
+    when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
+    src: repo(PROG_PORT, 54, '#define PROG_PORT_DEFAULT_PIN 13u'),
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1297,6 +1314,16 @@ const functions: Fn[] = [
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Servohorns'),
     needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 121, 'Output encoder (AS5600)'),
+  },
+  {
+    id: 'servoprog', group: 'servo',
+    name: t('Program a KST or Chaservo servo', 'KST- oder Chaservo-Servo programmieren'),
+    // The panel and the coprocessor suffice. The servo is on the programming
+    // port. Its supply is the PD mini, where one is there, and CONNECT sets
+    // it; else the supply the variant "Servo power" names. The SERVO screen's
+    // PWM TARGET is PROG PORT, so the other servo functions drive the same pin.
+    needs: [], drives: 'servo', forces: { servoPort: 'prog' },
+    src: repo(PROGRAMMER, 38, "The servo is on the coprocessor's programming port, port 1: GP13, pad 17"),
   },
   {
     id: 'esc', group: 'esc',
@@ -1424,7 +1451,7 @@ const checks: Check[] = [
       'GP2 for the servo is a proposal of this page. The example of the build guide is GP0. GP0 and GP16 share a compare register, and GP16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
       'GP2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GP0. GP0 und GP16 teilen sich ein Vergleichsregister, und GP16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
     ),
-    when: { has: 'servo' }, src: repo('docs/DShot.md', 110, 'Six of those pairs are both free on the header the coprocessor offers: GP0 and'),
+    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 110, 'Six of those pairs are both free on the header the coprocessor offers: GP0 and'),
   },
   {
     id: 'pd-pins', kind: 'note',
@@ -1568,6 +1595,40 @@ const checks: Check[] = [
     when: SERVO_EXTERNAL, src: OWNER,
   },
   {
+    id: 'prog-target', kind: 'note',
+    text: t(
+      'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. Set SETTINGS → DUT → PWM TARGET to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin. A slot of OUTPUTS on GP13 leaves the port without a pin.',
+      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
+    ),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 41, "The SERVO screen's **PWM TARGET** is **PROG PORT**"),
+  },
+  {
+    id: 'prog-supply-pd', kind: 'note',
+    text: t(
+      'Servo programmer with the PD mini: CONNECT sets the servo supply, 4.8 to 6.0 V in steps of 0.1 V, up to 8.4 V with HV SERVO on, and a current limit of 50 to 3000 mA. The defaults are 5.0 V and 1000 mA. STOP switches the supply off.',
+      'Servo-Programmierer mit dem PD mini: CONNECT stellt die Servoversorgung, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV SERVO ein, und eine Stromgrenze von 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. STOP schaltet die Versorgung ab.',
+    ),
+    when: { all: [SERVO_PROG, { has: 'pdmini' }] },
+    src: repo(PROGRAMMER, 178, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
+  },
+  {
+    id: 'prog-supply-own', kind: 'note',
+    text: t(
+      'Servo programmer without the PD mini: the programming voltage and the current limit are stored and not applied. The servo runs from the supply of the variant "Servo power". STOP switches no supply.',
+      'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
+    ),
+    when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
+    src: repo(PROGRAMMER, 242, 'Without a PD mini the voltage and the current limit are stored and not'),
+  },
+  {
+    id: 'prog-level', kind: 'unknown',
+    text: t(
+      "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the coprocessor powered and 3.63 V without. Power the coprocessor before the servo's supply.",
+      'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem Koprozessor und 3,63 V ohne Versorgung. Den Koprozessor vor der Versorgung des Servos einschalten.',
+    ),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 158, 'The level is not measured. GP13 is rated 5.5 V while the'),
+  },
+  {
     id: 'servo-bench-supply', kind: 'note',
     text: t(
       'The bench itself feeds the servo. The servo then draws its current from the supply that also powers the logic. This is prone to problems. For anything but a small servo use a 2S LiPo battery or another external supply that matches the servo.',
@@ -1597,7 +1658,7 @@ const checks: Check[] = [
       'Osoyoo breakout board: the servo lead plugs onto the strip at GP2. S carries the signal of wire 7, V the plus of wire 61 and G the GND of wire 8. The plug replaces these 3 wires.',
       'Osoyoo-Breakout-Platine: Das Servokabel steckt auf der Leiste an GP2. S führt das Signal von Draht 7, V das Plus von Draht 61 und G das GND von Draht 8. Der Stecker ersetzt diese 3 Drähte.',
     ),
-    when: { all: [SERVO_STRIP, { not: { has: 'ina3221' } }] }, src: OWNER,
+    when: { all: [SERVO_STRIP, SERVO_OUTPUTS, { not: { has: 'ina3221' } }] }, src: OWNER,
   },
   {
     id: 'strip-supply', kind: 'unknown',
@@ -1766,6 +1827,7 @@ const pinDefaults: PinDefault[] = [
   { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 191, '"tone_pin", "Tap pin"') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
+  { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 54, '#define PROG_PORT_DEFAULT_PIN 13u') },
   { signal: 'pd_tx', gpio: 7, pad: 10, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
   { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
