@@ -318,8 +318,14 @@ static void drag(int x, int y0, int y1)
 
 /* ------------------------------ the programmer for KST and Chaservo servos */
 
+/* A tap on the programmer.  A rectangle with no size is a coordinate that
+ * names no control, and a render from it would show the wrong state. */
 static void ktap(gfx_rect_t r)
 {
+    if (r.w <= 0 || r.h <= 0) {
+        fprintf(stderr, "render_screen: a KST tap names no control\n");
+        exit(1);
+    }
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
@@ -617,7 +623,7 @@ static void kst_view(const char *view)
         }
         return;
     }
-    ktap(kst_panel_value_rect(0, 0, 1));            /* CONNECT */
+    ktap(kst_panel_value_rect(0, 0, 0));            /* CONNECT */
     if (strcmp(v, "-nopin") == 0) {
         ksettle();
         return;
@@ -625,7 +631,7 @@ static void kst_view(const char *view)
     if (strcmp(v, "-supplied") == 0 || strcmp(v, "-leave-supply") == 0) {
         ksettle();
         if (strcmp(v, "-leave-supply") == 0) {
-            ktap(kst_panel_value_rect(0, 0, 1));    /* LEAVE */
+            ktap(kst_panel_value_rect(0, 0, 0));    /* LEAVE */
             ksettle();
         }
         return;
@@ -660,7 +666,7 @@ static void kst_view(const char *view)
     }
     if (strcmp(v, "-leave") == 0) {
         kedits();
-        ktap(kst_panel_value_rect(0, 0, 1));
+        ktap(kst_panel_value_rect(0, 0, 0));
         return;
     }
     if (strcmp(v, "-more") == 0 || strcmp(v, "-release") == 0) {
