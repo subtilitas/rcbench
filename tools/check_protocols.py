@@ -92,7 +92,8 @@ BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "FrSky", "FlySky")
 BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![\w])"
                       % "|".join(re.escape(b) for b in BRANDS))
-HEADING_RE = re.compile(r"^#{1,6}[ \t]+(.*?)[ \t]*$", re.M)
+HEADING_RE = re.compile(r"^[ ]{0,3}#{1,6}[ \t]+(.*?)[ \t]*$", re.M)
+FENCE_RE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})")
 NO_DRIVER_RE = re.compile(r"\bno\s+pin\s+driver\b", re.I)
 
 CMAKE_COMMENT_RE = re.compile(r"#[^\n]*")
@@ -246,6 +247,25 @@ def layout_problems(module: pathlib.Path) -> list[str]:
     return problems
 
 
+def prose(text: str) -> str:
+    """@p text without its fenced code blocks: a `# comment` in a CMake or
+    shell example is no heading.  A fence closes on a fence of the same
+    character, at least as long, or at the end of the text."""
+    out, fence = [], ""
+    for line in text.splitlines(keepends=True):
+        m = FENCE_RE.match(line)
+        if fence:
+            if (m and m.group(1)[0] == fence[0]
+                    and len(m.group(1)) >= len(fence)
+                    and not line[m.end():].strip()):
+                fence = ""
+        elif m:
+            fence = m.group(1)
+        else:
+            out.append(line)
+    return "".join(out)
+
+
 def readme_problems(module: pathlib.Path) -> list[str]:
     """What the README of @p module lacks: an Interface heading, a
     Trademarks heading where a brand is named, and for a module without a
@@ -255,7 +275,7 @@ def readme_problems(module: pathlib.Path) -> list[str]:
         return []
     text = path.read_text(encoding="utf-8")
     rel = path.relative_to(module.parent).as_posix()
-    headings = [h.lower() for h in HEADING_RE.findall(text)]
+    headings = [h.lower() for h in HEADING_RE.findall(prose(text))]
     problems = []
     if not any("interface" in h for h in headings):
         problems.append(f'{rel} has no heading with "Interface"')

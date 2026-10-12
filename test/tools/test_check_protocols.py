@@ -463,6 +463,19 @@ def test_a_readme_without_an_interface_heading_is_flagged(tmp_path):
         'wire/README.md has no heading with "Interface"']
 
 
+def test_a_comment_in_a_fenced_block_is_no_heading(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").write_text(
+        "# wire\n\n```cmake\n# Interface library\n```\n\n"
+        "~~~~sh\n# Interface\n~~~\n## Use\n~~~~\n")
+    assert cp.readme_problems(m) == [
+        'wire/README.md has no heading with "Interface"']
+    (m / "README.md").write_text(
+        "# wire\n\n```cmake\n# Interface library\n```\n\n"
+        "   ## Interface\n")
+    assert cp.readme_problems(m) == []
+
+
 def test_a_driver_interface_heading_counts(tmp_path):
     m = module(tmp_path)
     (m / "README.md").write_text("# wire\n\n## Driver interface\n")
