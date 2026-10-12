@@ -522,6 +522,43 @@ TEST_CASE(progress_of_a_finished_search_is_one_without_travel)
     CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
 }
 
+/* A travel that is no whole number of steps, or one cut short by the end
+ * of the pulse range: the last step is shorter and the end itself is
+ * measured free before the search reports NO_LIMIT. */
+TEST_CASE(the_end_of_the_travel_is_measured_before_no_limit)
+{
+    static const struct {
+        uint16_t centre;
+        uint16_t travel;
+        bool     up;
+        uint16_t end;
+    } k[] = {
+        { 2403u, 600u, true,  2500u },      /* clamped to the pulse range */
+        { 597u,  600u, false, 500u  },
+        { 1500u, 605u, true,  2105u },      /* 60.5 steps of 10 us */
+        { 1500u, 605u, false, 895u  },
+    };
+    for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+        servo_limit_cfg_t lc;
+        servo_limit_defaults(&lc, k[i].centre, k[i].up);
+        lc.max_travel_us = k[i].travel;
+        servo_limit_t lf;
+        servo_limit_init(&lf, &lc);
+        uint32_t t = 0;
+        uint16_t lo = 65535, hi = 0;
+        while (lf.state == SERVO_LIMIT_RUNNING && t < 600000u) {
+            const uint16_t c = servo_limit_step(&lf, 0.1f, t);
+            lo = (c < lo) ? c : lo;
+            hi = (c > hi) ? c : hi;
+            t += SAMPLE_MS;
+        }
+        CHECK_EQ(lf.state, SERVO_LIMIT_FAULT);
+        CHECK_EQ(lf.fault, SERVO_LIMIT_FAULT_NO_LIMIT);
+        CHECK_EQ(k[i].up ? hi : lo, k[i].end);
+        CHECK_EQ(lf.limit_us, k[i].end);     /* judged free there */
+    }
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     servo_limit_defaults(NULL, 1500, true);
@@ -617,6 +654,7 @@ int main(void)
     RUN(no_command_leaves_the_pulse_range);
     RUN(a_current_that_is_not_a_number_stops_the_search);
     RUN(progress_of_a_finished_search_is_one_without_travel);
+    RUN(the_end_of_the_travel_is_measured_before_no_limit);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     RUN(a_search_takes_the_same_time_across_the_tick_wrap);
     RUN(a_held_servo_ends_the_search_at_stall_ms_across_the_tick_wrap);

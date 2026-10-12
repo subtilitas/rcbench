@@ -105,9 +105,10 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
 }
 
 /*
- * Move one step further out.  Past the permitted travel the surface is free
- * over the whole range asked about, and that is reported as NO_LIMIT rather
- * than as a mechanical limit.
+ * Move one step further out.  A step that would pass the end of the
+ * permitted travel stops at that end, so the end itself is measured.  With
+ * the end measured free, the surface is free over the whole range asked
+ * about, and that is reported as NO_LIMIT rather than as a mechanical limit.
  *
  * Returns false if the search ended here.
  */
@@ -127,13 +128,17 @@ static bool advance(servo_limit_t *lf)
     if (reach > (int32_t)SERVO_LIMIT_MAX_US) {
         reach = (int32_t)SERVO_LIMIT_MAX_US;
     }
-    const bool past = (lf->cfg.step_us > 0) ? (next > reach) : (next < reach);
-    if (past) {
+    const int32_t cmd = (int32_t)lf->cmd_us;
+    const bool at_end = (lf->cfg.step_us > 0) ? (cmd >= reach) : (cmd <= reach);
+    if (at_end) {
         lf->limit_us = lf->last_free_us;
         finish(lf, SERVO_LIMIT_FAULT, SERVO_LIMIT_FAULT_NO_LIMIT);
         return false;
     }
-    lf->cmd_us = clamp_travel(&lf->cfg, next);
+    /* The last step is shorter when the travel is no whole number of
+     * steps. */
+    const bool past = (lf->cfg.step_us > 0) ? (next > reach) : (next < reach);
+    lf->cmd_us = clamp_travel(&lf->cfg, past ? reach : next);
     return true;
 }
 

@@ -21,7 +21,9 @@ liegt. Die beiden Enden des Ruderwegs unterscheiden sich; beide messen.
 ### Verfahren
 
 Die Suche schreitet von der Mitte nach außen, in Schritten von 10 µs Pulsweite
-(etwa 0,9° bei einem Servo mit 11 µs je Grad Weg), bis 600 µs von der Mitte.
+(etwa 0,9° bei einem Servo mit 11 µs je Grad Weg), bis 600 µs von der Mitte
+und nie über 500 oder 2500 µs hinaus. Ein letzter Schritt unter 10 µs erreicht
+dieses Ende, so wird das Ende selbst gemessen.
 Nach jedem Schritt wartet sie 120 ms, bis das Servo steht, und mittelt den
 Strom über 80 ms. Solange die Fläche frei läuft, ist der Strom flach und
 niedrig. Das Gestänge gilt als angelaufen, wenn der Strom das 1,8-Fache des
@@ -47,8 +49,9 @@ sie nicht auf; die obigen Schutzmaßnahmen sind am Prüfstand nicht aktiv.
 ### Ergebnisse
 
 - Ein Endpunkt wird bereits um 25 µs zurückgenommen gemeldet.
-- „Keine Endlage gefunden“ heißt: die Suche hat 600 µs von der Mitte erreicht,
-  ohne dass das Gestänge angelaufen ist.
+- „Keine Endlage gefunden“ heißt: die Suche hat das Ende ihres Wegs gemessen,
+  600 µs von der Mitte oder das Ende von 500 bis 2500 µs, ohne dass das
+  Gestänge angelaufen ist.
 - Eine Endlage nahe der Mitte kann eine Schwergängigkeit im Gestänge sein,
   etwa ein klemmender Umlenkhebel oder eine streifende Schubstange, statt des
   Endes des Ruderwegs.

@@ -33,7 +33,10 @@
  *
  * Dropped records.  The first record kept after a drop carries the count
  * of the records dropped before it, and a $L line stands before its
- * line.  A drop with no record kept after it is in drops alone: core 1
+ * line.  A sample dropped while a set-up record waits for room is counted
+ * after that record: core 1 adds it to the count once the record is in,
+ * so a trace that ends at the set-up change does not count it.  A drop
+ * with no record kept after it is in drops alone: core 1
  * adds to drops at the drop and stores fed at the end of the tick, core 0
  * reads fed, then drops, then the ring's head.  A ring found empty after
  * the two holds every record kept before them, so drops less the counts
@@ -262,6 +265,9 @@ typedef struct {
     uint32_t lost;        /**< records dropped since the last one kept     */
     uint32_t dropped;     /**< every count of lost, modulo 2^32: what
                                sense_trace_t.drops holds                   */
+    uint32_t lost_after;  /**< samples dropped while a set-up record is
+                               owed: added to lost and dropped once the
+                               record is written, so they count after it  */
     uint32_t cfg, shunt;  /**< the set-up as last seen                     */
     bool     cfg_owed;    /**< its record is still to be written           */
     bool     shunt_owed;

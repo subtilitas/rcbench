@@ -24,13 +24,15 @@ history is in git.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. The INA228 temperature and diagnostic flags go
-  with the part when it is offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
+  with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
   sample. A mark kind passed as a trace trigger is ignored, and the trace
-  drops a sample while a shunt or configuration record is owed.
+  drops a sample while a shunt or configuration record is owed and counts
+  it after that record.
 - The servo limit search and the synchroniser keep every command inside 500
   to 2500 µs. The search refuses a step of 0 µs (fault `BAD_CONFIG`), keeps
   an endpoint backed off past the centre at the centre, and ends at the end
-  of the pulse range. Both stop on a current that is not a number. The
+  of the pulse range. A last step shorter than `step_us` reaches the end of
+  the travel, so the end is measured before `NO_LIMIT`. Both stop on a current that is not a number. The
   synchroniser reports `NO_MINIMUM` for a minimum at the edge of a scan
   window and runs at least one round.
 - `tools/sense_trace.py` starts a new boot only when the tick runs back by
