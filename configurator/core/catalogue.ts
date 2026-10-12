@@ -1597,16 +1597,16 @@ const checks: Check[] = [
   {
     id: 'prog-target', kind: 'note',
     text: t(
-      'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. Set SETTINGS → DUT → PWM TARGET to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin. A slot of OUTPUTS on GP13 leaves the port without a pin.',
-      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
+      'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. Set SETTINGS → DUT → PWM TARGET to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when SETTINGS → DUT → PORT PWM is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GP13 leaves the port without a pin.',
+      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin, wenn SETTINGS → DUT → PORT PWM auf ON steht; mit PORT PWM OFF sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
     ),
     when: SERVO_PROG, src: repo(PROGRAMMER, 41, "The SERVO screen's **PWM TARGET** is **PROG PORT**"),
   },
   {
     id: 'prog-supply-pd', kind: 'note',
     text: t(
-      'Servo programmer with the PD mini: CONNECT sets the servo supply, 4.8 to 6.0 V in steps of 0.1 V, up to 8.4 V with HV SERVO on, and a current limit of 50 to 3000 mA. The defaults are 5.0 V and 1000 mA. STOP switches the supply off.',
-      'Servo-Programmierer mit dem PD mini: CONNECT stellt die Servoversorgung, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV SERVO ein, und eine Stromgrenze von 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. STOP schaltet die Versorgung ab.',
+      'Servo programmer with the PD mini: CONNECT switches an output that is off on at the programming voltage, 4.8 to 6.0 V in steps of 0.1 V, up to 8.4 V with HV SERVO on, and at the current limit, 50 to 3000 mA. The defaults are 5.0 V and 1000 mA. An output that is already on runs at the lower of its voltage and the programming voltage and at the lower of the two current limits; CONNECT raises neither. An output that is on under 4.8 V is not programmed until it is raised. STOP switches the supply off.',
+      'Servo-Programmierer mit dem PD mini: CONNECT schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV SERVO, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; CONNECT erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
     src: repo(PROGRAMMER, 178, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
@@ -1659,6 +1659,14 @@ const checks: Check[] = [
       'Osoyoo-Breakout-Platine: Das Servokabel steckt auf der Leiste an GP2. S führt das Signal von Draht 7, V das Plus von Draht 61 und G das GND von Draht 8. Der Stecker ersetzt diese 3 Drähte.',
     ),
     when: { all: [SERVO_STRIP, SERVO_OUTPUTS, { not: { has: 'ina3221' } }] }, src: OWNER,
+  },
+  {
+    id: 'strip-prog', kind: 'note',
+    text: t(
+      'Osoyoo breakout board with the servo programmer: the servo lead does not plug onto the strip at GP2 as a whole. S of the lead goes to GP13 by wire 64, the plus and GND go where the drawing shows them. The S pin of the strip at GP2 stays free.',
+      'Osoyoo-Breakout-Platine mit dem Servo-Programmierer: Das Servokabel steckt nicht als Ganzes auf der Leiste an GP2. S des Kabels geht über Draht 64 an GP13, Plus und GND gehen dorthin, wo die Zeichnung sie zeigt. Der S-Pin der Leiste an GP2 bleibt frei.',
+    ),
+    when: { all: [SERVO_STRIP, SERVO_PROG] }, src: OWNER,
   },
   {
     id: 'strip-supply', kind: 'unknown',
