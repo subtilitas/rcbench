@@ -718,6 +718,32 @@ name opens a keyboard.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
+The active PWM TARGET is shown at the foot of the left card, beside the dial,
+while neither the settings nor the programmer covers that card. With OUTPUTS
+the line names the GPIOs bound as SERVO PWM in the binding the tester drives:
+`TARGET: GP4`, `TARGET: GP2 GP4`; from 5 pins on, the first 3 and a count,
+`TARGET: GP2 GP4 GP5 +2`. It is the warning colour with no such pin
+(`TARGET: NO SERVO PWM PIN`) and before a binding has been read
+(`TARGET: PINS NOT READ`). With PROG PORT the line reads
+`TARGET: PROG PORT GP13` in the warning colour; the pin is the GPIO the
+coprocessor reports for the programming port. The tester's commands then do
+not reach the SERVO PWM outputs; while the bank is armed they hold their
+rest pulse, the centre between their endpoints. A port target without a
+usable pin (none, refused at start, or a port the coprocessor does not have)
+reads `TARGET: PROG PORT`, also in the warning colour: the commands go to the port
+all the same. With PORT PWM off the port renders no pulse, and the line adds
+`PWM OFF`: `TARGET: PROG PORT GP13 PWM OFF`. Two states name no target, both
+in the warning colour, and the tester sends no command in either:
+`TARGET: NO LINK` while no coprocessor answers, and `TARGET: NOT KNOWN`
+while the coprocessor's programming-port page has not been read since the
+link came up, a write to it was not acknowledged, or a read of it went unanswered. While the servo programmer holds the port, the line does not change: it keeps naming the target the coprocessor holds, a port or the outputs; the programmer drives the port and the tester sends nothing. The page is read every
+500 ms. A coprocessor without that page (protocol older than 4.13) has the
+standard outputs as target. The line follows the target the coprocessor
+holds, not the setting: a PWM TARGET change waits for a quiet bench and
+reaches the line once the coprocessor has taken it.
+
+![The target line with PROG PORT](img/servo-target.png)
+
 | Type | Centre | Travel | Frame rates |
 | --- | --- | --- | --- |
 | STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |

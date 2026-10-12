@@ -794,6 +794,33 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
+Das aktive PWM-ZIEL steht am Fuß der linken Karte neben der Anzeige, solange
+weder die Einstellungen noch der Programmierer diese Karte bedecken. Mit
+AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen Bindung
+als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; ab 5 Pins die
+ersten 3 und eine Zahl, `ZIEL: GP2 GP4 GP5 +2`. Sie ist in der Warnfarbe ohne
+einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
+wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
+`ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
+Koprozessor für den Programmierport meldet. Die Befehle des Testers
+erreichen dann die SERVO-PWM-Ausgänge nicht; bei scharf geschalteter Bank
+halten diese ihren Ruhepuls, die Mitte zwischen ihren Endpunkten. Ein Port
+als Ziel ohne nutzbaren Pin (keiner, beim Start abgelehnt, oder ein Port,
+den der Koprozessor nicht hat) lautet `ZIEL: PROG-PORT`, ebenfalls in der Warnfarbe: die Befehle gehen
+trotzdem an den Port. Mit PORT-PWM aus gibt der Port keinen Puls aus, und
+die Zeile hängt `PWM AUS` an: `ZIEL: PROG-PORT GP13 PWM AUS`. Zwei Zustände
+nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der Tester
+einen Befehl: `ZIEL: KEIN LINK`, solange kein Koprozessor antwortet, und
+`ZIEL: UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit
+dem Linkaufbau nicht gelesen wurde, ein Schreiben auf sie nicht
+bestätigt wurde oder ein Lesen nicht beantwortet wurde. Solange der Servo-Programmer den Port hält, ändert sich die Zeile nicht: sie nennt weiter das Ziel, das der Koprozessor hält, einen Port oder die Ausgänge; der Programmer treibt den Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein Koprozessor ohne
+diese Seite (Protokoll älter als 4.13) hat die Standardausgänge als Ziel.
+Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung:
+eine Änderung von PWM-ZIEL wartet auf einen ruhigen Prüfstand und erscheint
+in der Zeile, sobald der Koprozessor sie übernommen hat.
+
+![Die Zielzeile mit PROG-PORT](img/de/servo-target.png)
+
 | Typ | Mitte | Weg | Bildwiederholraten |
 | --- | --- | --- | --- |
 | STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |

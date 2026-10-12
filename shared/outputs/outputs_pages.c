@@ -8,6 +8,7 @@
 #include "outputs_pages.h"
 
 #include <stddef.h>
+#include <string.h>
 
 #include "link_control.h"
 #include "link_msg.h"
@@ -517,6 +518,29 @@ void outputs_channels_apply(outputs_t *o, const uint16_t *regs,
                             uint32_t now_ms)
 {
     outputs_channels_apply_n(o, regs, 0u, (uint8_t)LINK_CH_COUNT, now_ms);
+}
+
+uint64_t outputs_role_pins(const uint16_t *slots, const uint16_t *chan_cfg,
+                           out_role_t role)
+{
+    uint64_t pins = 0u;
+    if (slots == NULL || chan_cfg == NULL) {
+        return 0u;
+    }
+    for (uint8_t sl = 0; sl < LINK_OUT_SLOTS; ++sl) {
+        const uint16_t *r = &slots[(size_t)sl * LINK_OS_STRIDE];
+        if (r[LINK_OS_DRIVER] == (uint16_t)LINK_DRIVER_NONE
+            || r[LINK_OS_PIN] >= 64u) {
+            continue;
+        }
+        /* The slot's own channels, through the same function. */
+        uint16_t only[LINK_OS_COUNT] = { 0 };
+        memcpy(only, r, (size_t)LINK_OS_STRIDE * sizeof(only[0]));
+        if (outputs_role_channels(only, chan_cfg, role) != 0u) {
+            pins |= (uint64_t)1u << r[LINK_OS_PIN];
+        }
+    }
+    return pins;
 }
 
 uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,

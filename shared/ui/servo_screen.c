@@ -632,6 +632,11 @@ static struct {
     uint32_t  test_sig;      /**< what the box last showed              */
 
     uint32_t ctrl_rev;
+    uint8_t  drive_target; /* 0 the outputs, 1 + n programming port n */
+    uint8_t  drive_pin;    /* that port's GPIO, or SERVO_SCREEN_NO_PIN */
+    bool     drive_pwm;    /* that port renders its pulse              */
+    uint64_t pins;         /* GPIOs bound as SERVO PWM, bit n = GPIO n */
+    bool     pins_known;   /* a binding was read                       */
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
 } s;
@@ -2388,6 +2393,7 @@ static uint32_t test_signature(void);
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+    s.drive_pin   = SERVO_SCREEN_NO_PIN;
     servo_test_init(&s.test);
     test_tell();                /* a run the reset took with it is over */
     s.test_sig = test_signature();
@@ -3101,6 +3107,31 @@ void servo_screen_set_link(bool up)
 void servo_screen_set_enc_held(bool held)
 {
     s.enc_held = held;
+}
+
+void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm)
+{
+    if (target == 0u || target == SERVO_SCREEN_TARGET_UNKNOWN
+        || target == SERVO_SCREEN_TARGET_NO_LINK) {
+        gpio = SERVO_SCREEN_NO_PIN;
+        pwm  = false;
+    }
+    if (target != s.drive_target || gpio != s.drive_pin
+        || pwm != s.drive_pwm) {
+        s.drive_target = target;
+        s.drive_pin    = gpio;
+        s.drive_pwm    = pwm;
+        ++s.ctrl_rev;
+    }
+}
+
+void servo_screen_set_pins(uint64_t gpio_mask, bool known)
+{
+    if (gpio_mask != s.pins || known != s.pins_known) {
+        s.pins = gpio_mask;
+        s.pins_known = known;
+        ++s.ctrl_rev;
+    }
 }
 
 void servo_screen_set_surfaces(bool any)
@@ -4462,12 +4493,101 @@ static void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
+                       bool pwm, uint64_t pins, bool known)
+{
+    if (out == NULL || size == 0u) {
+        return false;
+    }
+    /* No link, or the coprocessor's page not known: the tester sends
+     * nothing, and where it would go is not known. */
+    if (target == SERVO_SCREEN_TARGET_NO_LINK) {
+        snprintf(out, size, "%s", TR(SV_TARGET_NO_LINK));
+        return true;
+    }
+    if (target == SERVO_SCREEN_TARGET_UNKNOWN) {
+        snprintf(out, size, "%s", TR(SV_TARGET_UNKNOWN));
+        return true;
+    }
+    /* The target the drive uses, not the setting: a change waits for a
+     * quiet bench.  A port target is the port whether or not its pin is
+     * known: the commands go there and do not reach the SERVO PWM outputs.
+     * With its pulse off the port renders none, and the line says so. */
+    if (target != 0u) {
+        if (gpio == SERVO_SCREEN_NO_PIN) {
+            snprintf(out, size, "%s",
+                     pwm ? TR(SV_TARGET_PORT) : TR(SV_TARGET_PORT_OFF));
+        } else {
+            snprintf(out, size,
+                     pwm ? TR(SV_TARGET_PORT_PIN) : TR(SV_TARGET_PORT_PIN_OFF),
+                     (unsigned)gpio);
+        }
+        return true;
+    }
+    if (!known) {
+        snprintf(out, size, "%s", TR(SV_TARGET_UNREAD));
+        return true;
+    }
+    unsigned n = 0u;
+    for (unsigned g = 0u; g < 64u; ++g) {
+        n += (unsigned)((pins >> g) & 1u);
+    }
+    if (n == 0u) {
+        snprintf(out, size, "%s", TR(SV_TARGET_NONE));
+        return true;
+    }
+    /* Up to 4 pins, else the first 3 and a count: "GP40 GP41 GP42" is 14
+     * characters, 4 two-digit pins 19. */
+    char list[24] = "";
+    const unsigned shown = n > 4u ? 3u : n;
+    unsigned seen = 0u;
+    for (unsigned g = 0u; g < 64u && seen < shown; ++g) {
+        if (((pins >> g) & 1u) != 0u) {
+            const size_t len = strlen(list);
+            snprintf(list + len, sizeof(list) - len, "%sGP%u",
+                     seen ? " " : "", g);
+            ++seen;
+        }
+    }
+    if (n > shown) {
+        snprintf(out, size, TR(SV_TARGET_OUT_MORE), list, n - shown);
+    } else {
+        snprintf(out, size, TR(SV_TARGET_OUT), list);
+    }
+    return false;
+}
+
+/*
+ * What the tester drives, along the bottom of the left card.  The programming
+ * port is the rare case and is filled in the warning colour: the tester's
+ * commands then do not reach the SERVO PWM outputs, which an armed bank
+ * holds at their rest.  No link and a target not known take it too: the
+ * tester sends nothing then.
+ */
+static void draw_target(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = { PAD + 200, H - PAD - 36, LCARD_W - 200 - 10, 26 };
+    char line[40];
+    const bool warn = servo_target_line(line, sizeof(line), s.drive_target,
+                                        s.drive_pin, s.drive_pwm, s.pins,
+                                        s.pins_known);
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 4,
+                        warn ? ui_theme_color(UI_C_WARN)
+                             : ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text_in(c, r, line, UI_FONT_LABEL,
+                warn ? ui_theme_color(UI_C_BG) : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+}
+
 static void draw_left(gfx_canvas_t *c)
 {
     /* Everything that moves lives in this rectangle, so this is what gets
      * cleared -- the case and the dial below it are chrome. */
     gfx_fill_rect(c, PAD + 1, PAD + 1, LCARD_W - 2, H - 2 * PAD - 2,
                   ui_theme_color(UI_C_PANEL));
+    /* Before the dial: the dial's rows leave the frame cache, and the box
+     * painted after them would be repainted on every dial redraw. */
+    draw_target(c);
     draw_dial(c);
     /* The case first: the horn bolts to the top of it and must be drawn over
      * it, not under. */
