@@ -85,9 +85,6 @@ The order of work:
 6. Wires, check entries and power sources whose condition holds.
 7. Functions: `enabled` is true when no needed part is missing, every forced option holds and the test object the function drives is connected. A function with `needs: []` and without `drives` runs on the panel and the coprocessor alone and is enabled in every setup.
 
-`conflicts` is always empty: the data holds no pair of parts that exclude each
-other.
-
 ## Groups and removal
 
 `groups.ts` is pure and reads the catalogue through `resolve` alone. It holds

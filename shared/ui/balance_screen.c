@@ -111,7 +111,7 @@ int  balance_screen_rotor(void)  { return s.rotor; }
  * 265 degrees lies between two blades at every count from 2 to 6, so the
  * between-blades wording is exercised.
  */
-float balance_screen_angle(void) { return 265.0f; }
+static float balance_screen_angle(void) { return 265.0f; }
 
 static void event(const touch_event_t *evt)
 {

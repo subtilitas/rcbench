@@ -68,7 +68,6 @@ bottom of the screen, ARM included, while it shows.
 
 | Mark | Meaning |
 | --- | --- |
-| SOON | the screen does not exist; the tile lists what it will do and what it waits on |
 | MODELLED | the screen exists and works, but its hardware is not fitted; every value is simulated and the screen says so |
 | none | the hardware is fitted and the readings are measured |
 
@@ -1964,7 +1963,6 @@ confirmed](#a-binding-that-is-not-confirmed).
 
 Described on its own page: [Balancing](Balance.md).
 
-## Screens that are not ready
+## Unknown screen ids
 
-A tile marked SOON names what the screen will do and the part or decision it
-waits on.
+A screen id that names no screen draws the overview.

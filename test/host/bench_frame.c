@@ -43,7 +43,6 @@
 #include "splash_screen.h"
 #include "supply.h"
 #include "supply_screen.h"
-#include "stub_screen.h"
 #include "telemetry_sim.h"
 #include "ui_screen.h"
 #include "motor_screen.h"

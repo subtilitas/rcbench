@@ -102,8 +102,7 @@ esp_err_t board_exio_write(uint8_t mask)
  * Not locked, because every caller is on app_main.  During bring-up that is
  * board_backlight() from display_init(), board_touch_reset_sequence() from
  * the touch bring-up, board_sd_cs() from storage_init(), and
- * board_select_can() from can_twai_start().  board_lcd_reset() and
- * storage_deinit() have no callers at all.
+ * board_select_can() from can_twai_start().
  *
  * One of them also runs long after bring-up: the log viewer's card_list()
  * calls storage_init() from the render loop when a card is put in after boot,
@@ -159,11 +158,6 @@ esp_err_t board_exio_read(uint8_t *out)
 esp_err_t board_backlight(bool on)
 {
     return board_exio_set(BOARD_EXIO_DISP, on);
-}
-
-esp_err_t board_lcd_reset(bool released)
-{
-    return board_exio_set(BOARD_EXIO_LCD_RST, released);
 }
 
 esp_err_t board_sd_cs(bool asserted)

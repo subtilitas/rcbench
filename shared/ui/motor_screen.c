@@ -1022,10 +1022,9 @@ static void draw_table(gfx_canvas_t *c)
 }
 
 /*
- * One card of the right rail.  ui_hero_render lays its numerals out for an
- * 88 px card and the rail gives 57, so this is the same information in the
- * rail's proportions: the name and the extreme stacked on the left, the live
- * value in a numeral face that fits, right-aligned with its unit.
+ * One card of the right rail, 57 px high: the name and the extreme stacked
+ * on the left, the live value in a numeral face that fits, right-aligned
+ * with its unit.
  */
 static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
                            const ui_hero_def_t *def, float value, float peak)

@@ -597,7 +597,8 @@ void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
     d->long_equals_short = long_equals_short;
 }
 
-void esc_det_drop_group(esc_det_t *d)
+/** Forget any group under way, as if the line had been silent. */
+static void esc_det_drop_group(esc_det_t *d)
 {
     d->high = false;
     d->group_open = false;
@@ -609,7 +610,8 @@ void esc_det_drop_group(esc_det_t *d)
     d->stuck_told = false;
 }
 
-void esc_det_floor_only(esc_det_t *d)
+/** Floor only: no pulses, no groups. */
+static void esc_det_floor_only(esc_det_t *d)
 {
     d->counting = false;
     esc_det_drop_group(d);

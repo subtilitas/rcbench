@@ -37,7 +37,6 @@
 #include "overview_screen.h"
 #include "telemetry_sim.h"
 #include "splash_screen.h"
-#include "stub_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "programmer_screen.h"
