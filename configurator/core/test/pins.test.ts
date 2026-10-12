@@ -44,6 +44,7 @@ test('the pin table of the catalogue is legal', () => {
       ['tap', 22, 29, 'default'],
       ['esc', 5, 7, 'example'],
       ['servo', 2, 4, 'proposal'],
+      ['prog', 13, 17, 'default'],
       ['pd_tx', 7, 10, 'proposal'],
       ['pd_rx', 6, 9, 'proposal'],
     ],

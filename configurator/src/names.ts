@@ -7,7 +7,7 @@ import { t, tx } from './i18n.ts';
 
 export type NameCtx = { lang: Lang; catalogue: Catalogue; options: Options };
 
-const FALLBACK: Options = { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external' };
+const FALLBACK: Options = { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', servoPort: 'outputs' };
 
 /** The bench hardware of a setup: its parts without the test objects. */
 export function benchParts(setup: Setup): ResolvedPart[] {

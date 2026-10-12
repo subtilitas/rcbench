@@ -334,6 +334,51 @@ TEST_CASE(a_last_row_without_its_line_feed_is_not_a_row)
     CHECK(!cut);
 }
 
+/* The row cut off at the end of the file is left out of the sniff sample as
+ * it is left out of the rows: with it, the third line gives ';' two columns
+ * and the file reads as semicolon-delimited. */
+TEST_CASE(a_cut_last_row_does_not_vote_on_the_delimiter)
+{
+    static const char text[] =
+        "time,note;x,value\n0,a;b,10\n1,c;d,20\n2,e;f";
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, sizeof(text) - 1u);
+    log_analysis_t a;
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+    CHECK_EQ(a.delimiter, ',');
+    CHECK_EQ(a.n_columns, 3);
+    CHECK_EQ(a.row_count, 2);
+    CHECK(a.cut_row);
+}
+
+/* A sample with no line feed at all is sniffed whole, as before: the single
+ * unterminated line is the sample.  The reader then finds no complete row,
+ * and the analysis is refused as a file without a header. */
+TEST_CASE(a_sample_without_a_line_feed_is_sniffed_whole)
+{
+    static const char text[] = "a;b;c";
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, sizeof(text) - 1u);
+    CHECK_EQ(log_csv_sniff(text, sizeof(text) - 1u), ';');
+    log_analysis_t a;
+    CHECK(log_csv_analyse(&src, NULL, &a) != LOG_OK);
+}
+
+/* Blank is space, tab and CR.  VT and FF after the last line feed are
+ * content: a row cut off. */
+TEST_CASE(only_space_tab_and_cr_are_blank_after_the_last_line_feed)
+{
+    bool cut = false;
+    CHECK_EQ(rows_in("a,b\n1,2\n \t\r", &cut), 2);
+    CHECK(!cut);
+    CHECK_EQ(rows_in("a,b\n1,2\n\v", &cut), 2);
+    CHECK(cut);
+    CHECK_EQ(rows_in("a,b\n1,2\n\f", &cut), 2);
+    CHECK(cut);
+}
+
 TEST_CASE(a_quoted_field_may_straddle_a_read_boundary)
 {
     /* The reader refills in 256-byte chunks.  A field that crosses a chunk
@@ -1397,6 +1442,9 @@ int main(void)
     RUN(a_version_or_an_address_casts_no_vote);
     RUN(a_timestamp_is_not_a_number_with_a_unit);
     RUN(an_exponent_that_overflows_is_rejected);
+    RUN(a_cut_last_row_does_not_vote_on_the_delimiter);
+    RUN(a_sample_without_a_line_feed_is_sniffed_whole);
+    RUN(only_space_tab_and_cr_are_blank_after_the_last_line_feed);
     RUN(a_read_error_is_not_a_clean_end_of_file);
     RUN(a_column_pass_that_fails_is_refused_like_the_others);
     RUN(a_row_too_long_for_the_store_is_counted_not_swallowed);

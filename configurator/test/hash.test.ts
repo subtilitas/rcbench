@@ -44,7 +44,7 @@ test('the full selection survives format and parse', () => {
   const full: Selection = {
     functions: CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id),
     owned: CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id),
-    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd', servoPower: 'bench' },
+    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd', servoPower: 'bench', servoPort: 'outputs' },
   };
   const hash = formatHash(full, 'de', 'en', CATALOGUE);
   assert.ok(hash.length <= MAX_HASH);
@@ -260,8 +260,23 @@ test('the servo supply from the bench is one option token, and a link without it
   assert.equal(formatHash({ ...base(), functions: ['servo'] }, 'en', 'en', CATALOGUE), 'v=1&f=servo');
 });
 
+test('the servo programmer is one function id; its link holds no option token for the signal pin', () => {
+  const parsed = parseHash('#v=1&f=servoprog', DEFAULT_OPTIONS);
+  assert.deepEqual([parsed.badVersion, parsed.unknown], [false, []]);
+  assert.deepEqual(parsed.selection, { ...base(), functions: ['servoprog'] });
+  assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE), 'v=1&f=servoprog');
+  // The resolver sets the pin from the function, so the setup, not the link, holds it.
+  const setup = resolve(CATALOGUE, parsed.selection);
+  assert.deepEqual(setup.options.find((o) => o.key === 'servoPort'), { key: 'servoPort', value: 'prog', visible: false, forcedBy: 'servoprog' });
+  assert.equal(formatHash({ ...base(), functions: ['servo'], options: { ...DEFAULT_OPTIONS, servoPort: 'prog' } }, 'en', 'en', CATALOGUE), 'v=1&f=servo');
+  // With the supply from the bench and the PD mini as an owned part.
+  assert.equal(formatHash({ functions: ['servoprog'], owned: ['pdmini'], options: { ...DEFAULT_OPTIONS, servoPower: 'bench' } }, 'de', 'en', CATALOGUE), 'v=1&f=servoprog&p=pdmini&o=servo5v&l=de');
+  // "kst" is no id of this release: the links of the corpus that name it keep their meaning.
+  assert.deepEqual(resolve(CATALOGUE, parseHash('#v=1&f=servo,kst&p=mt6701', DEFAULT_OPTIONS).selection).ignored, ['kst', 'mt6701']);
+});
+
 test('every link of the fixture resolves to the parts, wires, functions and variants it names', () => {
-  // The fixture holds links without the key of the servo supply: every function and every owned part alone,
+  // The fixture holds links without the keys of the servo supply and the servo signal pin: every function and every owned part alone,
   // every pair of them, a servo or an ESC as an owned part under each of the 8 sets of variants, and the full sets.
   type Entry = { setup: string; links: string[] };
   const entries = JSON.parse(readFileSync(new URL('./fixtures/links-v1.json', import.meta.url), 'utf8')) as Entry[];
@@ -278,7 +293,7 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
         setup.parts.map((r) => r.part.id).join(','),
         setup.wires.map((w) => w.n).filter((n) => n !== 63).join(','),
         setup.functions.filter((f) => f.enabled).map((f) => f.fn.id).join(','),
-        setup.options.filter((x) => x.key !== 'servoPower').map((x) => `${x.key}=${x.value}${x.visible ? '' : '?'}`).join(','),
+        setup.options.filter((x) => x.key !== 'servoPower' && x.key !== 'servoPort').map((x) => `${x.key}=${x.value}${x.visible ? '' : '?'}`).join(','),
       ].join('|');
       assert.equal(got, entry.setup, link);
       // The fixture lists the power path of the PD mini as wire 19 alone. Wire 63 is its second half

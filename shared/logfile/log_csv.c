@@ -169,6 +169,13 @@ static int reader_peek(log_reader_t *r)
     return (unsigned char)r->buf[r->pos];
 }
 
+/* The bytes after the last line feed that are no row: space, tab, CR.  The
+ * documented set; isspace() would add LF, VT and FF. */
+static bool is_blank(int c)
+{
+    return c == ' ' || c == '\t' || c == '\r';
+}
+
 static char s_empty[1] = "";
 
 int log_reader_row(log_reader_t *r, char delimiter, char *store,
@@ -197,7 +204,7 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
         if (c < 0) {
             break;
         }
-        if (!isspace(c)) {
+        if (!is_blank(c)) {
             saw_content = true;
         }
 
@@ -554,6 +561,19 @@ static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
         }
         const char *s = sniff_buf;
         size_t slen = got;
+        /* The buffer holds the end of the file when it is not full.  What
+         * follows the last line feed is then a row cut off, which the reader
+         * leaves out, so it is left out of the sample too.  A sample with no
+         * line feed is sniffed whole. */
+        if (got < sizeof(sniff_buf)) {
+            size_t keep = got;
+            while (keep > 0u && sniff_buf[keep - 1u] != '\n') {
+                --keep;
+            }
+            if (keep > 0u) {
+                slen = keep;
+            }
+        }
         if (slen >= 3u && (unsigned char)s[0] == 0xEFu &&
             (unsigned char)s[1] == 0xBBu && (unsigned char)s[2] == 0xBFu) {
             s += 3;

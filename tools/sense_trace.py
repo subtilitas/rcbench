@@ -901,7 +901,9 @@ def read_travel(path: pathlib.Path) -> tuple[list[tuple[float, float]], bool]:
     t_col = a_col = None
     # Bytes: read_text() would turn a lone CR into a line end.
     lines = path.read_bytes().decode("utf-8", errors="replace").split("\n")
-    cut = lines.pop().strip() != ""
+    # Space, tab and CR after the last line feed are no row; the panel's
+    # reader has the same set (str.strip() would add VT, FF and more).
+    cut = lines.pop().strip(" \t\r") != ""
     for line in lines:
         cells = line.rstrip("\r").split(";")
         if t_col is None:

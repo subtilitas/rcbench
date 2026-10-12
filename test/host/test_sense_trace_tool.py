@@ -1027,6 +1027,17 @@ def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
           f"{arrival[(1, '0.05')]}")
 
 
+def a_tail_of_vertical_tab_or_form_feed_is_a_cut_row() -> None:
+    whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
+    path = work("tail.csv")
+    for tail, want in ((b" \t\r", False), (b"\x0b", True), (b"\x0c", True),
+                       (b"\r\x0b", True)):
+        path.write_bytes(whole + tail)
+        rows, cut = sense_trace.read_travel(path)
+        check(cut == want and len(rows) == 4,
+              f"tail {tail!r}: cut {cut}, {len(rows)} rows")
+
+
 def a_csv_row_without_its_line_feed_is_left_out() -> None:
     whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
     check(whole.endswith(b"\n"), "the fixture ends on its line feed")
@@ -2345,6 +2356,7 @@ CASES = [
     a_slewed_command_ends_at_its_d_line,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     a_csv_row_without_its_line_feed_is_left_out,
+    a_tail_of_vertical_tab_or_form_feed_is_a_cut_row,
     the_servo_csv_pairs_by_time,
     the_offset_that_pairs_the_most_is_found_between_the_obvious,
     an_offset_that_puts_rows_at_the_tolerance_itself_is_tried,
