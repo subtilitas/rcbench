@@ -187,7 +187,10 @@ coprocessor connected the panel arms its own bank after the 100 ms.
 - A live PD mini output whose input reads under the set point plus 0.5 V on
   2 input reads in a row is switched off by the coprocessor, which tells the
   panel afterwards. A conservative rule chosen without a measurement: it may
-  cut a run that would have survived.
+  cut a run that would have survived. Set points are capped 0.7 V under the
+  input, 0.2 V above that line, so an input dropping less than 0.2 V under
+  load cuts nothing. An ON asked while the input reads under 1.5 V is not
+  written.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
 - A stick run on PROGRAMMER arms through the same policy, after its warning

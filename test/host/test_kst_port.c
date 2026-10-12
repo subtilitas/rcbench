@@ -2361,14 +2361,25 @@ TEST_CASE(enter_is_refused_for_a_supply_outside_the_range)
     /* Nothing staged. */
     CHECK_EQ(range_case(SUPPLY_OFF, 0u, 0u, 20000u),
              LINK_KST_REF_SUPPLY_RANGE);
-    /* The headroom under the PD mini's input, where that is known. */
-    CHECK_EQ(range_case(SUPPLY_OFF, MV, MA, MV + PDMINI_HEADROOM_MV),
+    /* The cap under the PD mini's input, where that is known. */
+    CHECK_EQ(range_case(SUPPLY_OFF, MV, MA, MV + PDMINI_CAP_MV),
              LINK_KST_REF_NONE);
-    CHECK_EQ(range_case(SUPPLY_OFF, MV, MA, MV + PDMINI_HEADROOM_MV - 1u),
+    CHECK_EQ(range_case(SUPPLY_OFF, MV, MA, MV + PDMINI_CAP_MV - 1u),
              LINK_KST_REF_SUPPLY_RANGE);
     CHECK_EQ(range_case(SUPPLY_OFF, MV, MA, 0u), LINK_KST_REF_NONE);
     /* One that is on is held to the same range. */
     CHECK_EQ(range_case(SUPPLY_ON, KST_PORT_SUPPLY_MAX_MV + 1u, MA, 20000u),
+             LINK_KST_REF_SUPPLY_RANGE);
+    /* One that is on below the staged voltage stays there, and the cap
+     * holds for the voltage it stays at (MV), not for the staged one. */
+    CHECK_EQ(range_case(SUPPLY_ON, MV + 200u, MA, MV + PDMINI_CAP_MV),
+             LINK_KST_REF_NONE);
+    CHECK_EQ(range_case(SUPPLY_ON, MV + 200u, MA, MV + PDMINI_CAP_MV - 1u),
+             LINK_KST_REF_SUPPLY_RANGE);
+    CHECK_EQ(range_case(SUPPLY_ON, MV - 200u, MA, MV - 200u + PDMINI_CAP_MV),
+             LINK_KST_REF_NONE);
+    CHECK_EQ(range_case(SUPPLY_ON, MV - 200u, MA,
+                        MV - 200u + PDMINI_CAP_MV - 1u),
              LINK_KST_REF_SUPPLY_RANGE);
     /* No PD mini: the servo's supply is not the port's, and nothing is
      * checked. */
