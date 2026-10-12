@@ -397,10 +397,6 @@ TEST_CASE(a_port_names_its_pin_unless_it_has_none_or_was_refused)
     CHECK_EQ(prog_link_pin(&g_p, 0u), PROG_LINK_NO_PIN);
 }
 
-/* What the tester drives: the target the commands use, that port's pin and
- * its pulse.  A port target without a usable pin stays a port target, with
- * no pin.  Before the page is known, and with no link, where the commands
- * would go is not known and the tester sends none: neither is the outputs. */
 /* While the servo programmer holds the port, the line keeps naming the port:
  * the programmer drives it at that moment, the tester sends nothing. */
 TEST_CASE(the_drive_keeps_naming_the_port_while_the_programmer_holds_it)
@@ -420,6 +416,10 @@ TEST_CASE(the_drive_keeps_naming_the_port_while_the_programmer_holds_it)
     CHECK_EQ(d.pin, 13u);
 }
 
+/* What the tester drives: the target the commands use, that port's pin and
+ * its pulse.  A port target without a usable pin stays a port target, with
+ * no pin.  Before the page is known, and with no link, where the commands
+ * would go is not known and the tester sends none: neither is the outputs. */
 TEST_CASE(the_drive_names_the_target_and_the_port_pin)
 {
     prog_link_drive_t d;
