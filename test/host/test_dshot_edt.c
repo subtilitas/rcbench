@@ -379,6 +379,17 @@ TEST_CASE(an_extended_kind_before_any_ask_is_not_an_answer)
     CHECK(dshot_edt_frame(&e, true, 0u));
 }
 
+TEST_CASE(the_extended_units_are_the_documented_ones)
+{
+    CHECK_EQ(dshot_edt_millivolts(0u), 0u);
+    CHECK_EQ(dshot_edt_millivolts(1u), 250u);
+    CHECK_EQ(dshot_edt_millivolts(48u), 12000u);     /* 12.00 V */
+    CHECK_EQ(dshot_edt_millivolts(4095u), 1023750u);
+    CHECK_EQ(dshot_edt_amps(37u), 37u);
+    CHECK_EQ(dshot_edt_amps(4095u), 4095u);
+    CHECK_EQ(dshot_edt_celsius(25u), 25u);
+}
+
 int main(void)
 {
     RUN(one_ask_at_the_start_of_a_run_never_reaches_am32);
@@ -393,5 +404,6 @@ int main(void)
     RUN(the_retry_clock_survives_the_millisecond_wrap);
     RUN(a_null_state_is_refused_everywhere);
     RUN(an_extended_kind_before_any_ask_is_not_an_answer);
+    RUN(the_extended_units_are_the_documented_ones);
     return test_summary("dshot_edt");
 }

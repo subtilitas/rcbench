@@ -274,3 +274,18 @@ bool dshot_rx_bits(const uint32_t *samples, size_t words, uint8_t oversample,
     *line = out;
     return true;
 }
+
+uint32_t dshot_edt_millivolts(uint16_t count)
+{
+    return (uint32_t)count * DSHOT_EDT_MV_PER_COUNT;
+}
+
+uint32_t dshot_edt_amps(uint16_t count)
+{
+    return (uint32_t)count * DSHOT_EDT_A_PER_COUNT;
+}
+
+uint32_t dshot_edt_celsius(uint16_t count)
+{
+    return (uint32_t)count * DSHOT_EDT_DEGC_PER_COUNT;
+}

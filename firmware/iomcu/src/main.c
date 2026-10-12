@@ -1778,8 +1778,7 @@ static void sample(void)
 
     /*
      * What the ESC says about itself, when it does extended telemetry.  The
-     * units belong to the frame type: a quarter of a volt and a whole amp per
-     * count, and degrees Celsius as a byte.
+     * units belong to the frame type and are the module's (dshot_edt_*()).
      *
      * There is no other source for any of these on this board.  An ESC that
      * was not asked, or that does not know the command, leaves them empty and
@@ -1788,11 +1787,11 @@ static void sample(void)
      */
     uint16_t edt = 0u;
     if (outputs_hw_edt(DSHOT_TELEM_VOLTAGE, &edt, &age) && age <= EDT_STALE_MS) {
-        s_bench.voltage = (float)edt * 0.25f;
+        s_bench.voltage = (float)dshot_edt_millivolts(edt) / 1000.0f;
         s_bench.flags |= (uint16_t)LINK_BN_VOLTAGE_OK;
     }
     if (outputs_hw_edt(DSHOT_TELEM_CURRENT, &edt, &age) && age <= EDT_STALE_MS) {
-        s_bench.current = (float)edt;
+        s_bench.current = (float)dshot_edt_amps(edt);
         s_bench.flags |= (uint16_t)LINK_BN_CURRENT_OK;
     }
     if (outputs_hw_edt(DSHOT_TELEM_TEMPERATURE, &edt, &age)
@@ -1800,7 +1799,7 @@ static void sample(void)
         /* The ESC's own, and only that.  LINK_BN_TEMP_MOT_OK stays clear:
          * an ESC knows nothing about the motor it drives, and temp_motor has
          * no source on this board at all. */
-        s_bench.temp_esc = (float)edt;
+        s_bench.temp_esc = (float)dshot_edt_celsius(edt);
         s_bench.flags |= (uint16_t)LINK_BN_TEMP_OK;
     }
     /* Power is the product and not a reading, so it is only as good as both

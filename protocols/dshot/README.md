@@ -42,6 +42,7 @@ bool     dshot_telem_decode(uint32_t line, bool edt, dshot_telem_t *out);
 uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs);
 void     dshot_edt_bind(dshot_edt_t *e, uint32_t now_ms);
 bool     dshot_edt_frame(dshot_edt_t *e, bool stopped, uint32_t now_ms);
+uint32_t dshot_edt_millivolts(uint16_t count);   /* also _amps, _celsius */
 ```
 
 `dshot_edt_*()` schedules the command that asks for extended telemetry:

@@ -124,6 +124,22 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 #define DSHOT_TELEM_RATE_DEN 4u
 
 /**
+ * Units of the extended telemetry payload, per count of the twelve bits.
+ * Voltage is 0.25 V per count, current 1 A per count, temperature 1 degree
+ * Celsius per count.
+ */
+#define DSHOT_EDT_MV_PER_COUNT      250u
+#define DSHOT_EDT_A_PER_COUNT       1u
+#define DSHOT_EDT_DEGC_PER_COUNT    1u
+
+/** Millivolts for a DSHOT_TELEM_VOLTAGE payload (at most 4095 * 250). */
+uint32_t dshot_edt_millivolts(uint16_t count);
+/** Amperes for a DSHOT_TELEM_CURRENT payload. */
+uint32_t dshot_edt_amps(uint16_t count);
+/** Degrees Celsius for a DSHOT_TELEM_TEMPERATURE payload. */
+uint32_t dshot_edt_celsius(uint16_t count);
+
+/**
  * What one response carried.
  *
  * An ESC that has been sent DSHOT_CMD_EDT_ENABLE interleaves the other kinds
@@ -133,8 +149,8 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 typedef enum {
     DSHOT_TELEM_ERPM = 0,     /**< an electrical period, in microseconds  */
     DSHOT_TELEM_TEMPERATURE,  /**< degrees Celsius                        */
-    DSHOT_TELEM_VOLTAGE,      /**< 0.25 V per count                       */
-    DSHOT_TELEM_CURRENT,      /**< 1 A per count                          */
+    DSHOT_TELEM_VOLTAGE,      /**< DSHOT_EDT_MV_PER_COUNT millivolts      */
+    DSHOT_TELEM_CURRENT,      /**< DSHOT_EDT_A_PER_COUNT amperes          */
     DSHOT_TELEM_DEBUG1,
     DSHOT_TELEM_DEBUG2,
     DSHOT_TELEM_STRESS,

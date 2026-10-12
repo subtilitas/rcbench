@@ -173,6 +173,10 @@ bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
         return false;
     }
 
+    /* Defensive: every pending candidate is shorter than OPENYGE_MAX_FRAME
+     * and a complete one is consumed, so len is below the buffer size here
+     * (test_openyge_frame.c pins the bound).  The check keeps the write
+     * below in bounds if that ever changes. */
     if (d->len >= OPENYGE_MAX_FRAME) {
         drop(d, 1);
         ++d->resyncs;

@@ -976,6 +976,9 @@ Sixteen channels, each with 1.5 s of history and a bar for its current value.
 CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
 dropout is a notch across all sixteen at the same instant.
 
+No firmware feeds this screen yet (see [Receiver buses](Receivers.md)); it
+shows SILENT.
+
 The state block shows one of SILENT, FAILSAFE, FRAME LOST and LIVE, with one
 line of explanation:
 
