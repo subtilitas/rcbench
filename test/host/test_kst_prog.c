@@ -1508,6 +1508,9 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
     CHECK(strstr(g_file,
                  "target=00C8C81448770465") != NULL);
     CHECK(strstr(g_file, "\nport=0\ncheck=") != NULL);
+    /* The check is CRC-16/CCITT-FALSE of the lines before it; the value is
+     * from an independent bitwise computation. */
+    CHECK(strstr(g_file, "\nport=0\ncheck=C56D\n") != NULL);
     CHECK(strstr(g_file, "\n00=") == NULL);
     memcpy(at_write, g_file, sizeof(at_write));
     settle();

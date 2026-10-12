@@ -57,7 +57,8 @@ void ui_tabs_init_text(ui_tabs_t *t, const ui_text_id_t *ids, int count,
     }
 }
 
-const char *ui_tabs_label(const ui_tabs_t *t, int i)
+/** Tab @p i's label as it is drawn now. */
+static const char *ui_tabs_label(const ui_tabs_t *t, int i)
 {
     if (t == NULL || i < 0 || i >= t->count) {
         return "";

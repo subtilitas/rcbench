@@ -280,12 +280,8 @@ typedef struct {
 
 void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
                   uint8_t long_equals_short);
-/** Floor only: no pulses, no groups. */
-void esc_det_floor_only(esc_det_t *d);
 /** Pulses and groups from the next reading on; the floor is kept. */
 void esc_det_count(esc_det_t *d);
-/** Forget any group under way, as if the line had been silent. */
-void esc_det_drop_group(esc_det_t *d);
 /** One reading, at @p t_ms, of @p ma; @p late marks it as having come too
  *  long after the one before. */
 esc_det_event_t esc_det_reading(esc_det_t *d, uint32_t t_ms, int32_t ma,

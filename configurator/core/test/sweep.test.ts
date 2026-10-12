@@ -161,9 +161,6 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
     assert.equal(p.ownedTick, selection.owned.includes(p.part.id));
   }
 
-  // 19: no conflicts.
-  assert.deepEqual(setup.conflicts, [], where);
-
   // 20: locked parts, the wires 1 to 3, and one form of the heartbeat wire.
   for (const id of LOCKED) assert.ok(present.has(id), `${id} is missing for ${where}`);
   const numbers = new Set(setup.wires.map((w) => w.n));

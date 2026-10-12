@@ -1026,7 +1026,6 @@ const char *servo_str_in(const char *const *table, servo_str_t id);
 servo_str_t servo_test_phase_str(servo_test_phase_t ph);
 servo_str_t servo_test_abort_str(servo_test_abort_t why);
 servo_str_t servo_test_verdict_str(servo_test_verdict_t v);
-servo_str_t servo_test_start_str(servo_test_start_t why);
 
 const char *servo_test_phase_name(servo_test_phase_t ph);
 const char *servo_test_abort_name(servo_test_abort_t why);
