@@ -27,6 +27,7 @@ static void canvas(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -882,7 +883,8 @@ TEST_CASE(no_widget_draws_outside_the_box_it_was_given)
 
     /* A margin of untouched canvas all the way round. */
     const int M = 40;
-    const gfx_rect_t box = { M, M, W - 2 * M, H - 2 * M };
+    const gfx_rect_t box = { (int16_t)M, (int16_t)M, (int16_t)(W - 2 * M),
+                             (int16_t)(H - 2 * M) };
 
     ui_panel(&cv, (gfx_rect_t){ box.x, box.y, 300, 90 }, "PANEL", 0x1234);
     ui_panel_header(&cv, (gfx_rect_t){ box.x + 320, box.y, 300, 30 },

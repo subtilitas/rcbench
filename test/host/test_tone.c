@@ -81,7 +81,7 @@ static void drive_add(drive_t *d, double a, double b)
     }
     if (d->n == d->cap) {
         d->cap = d->cap != 0u ? d->cap * 2u : 1024u;
-        d->s = realloc(d->s, d->cap * sizeof *d->s);
+        REQUIRE_REALLOC(d->s, d->cap * sizeof *d->s);
     }
     d->s[d->n].a = a;
     d->s[d->n].b = b;
@@ -171,7 +171,7 @@ static void edge_add(edges_t *s, double t, bool level)
 {
     if (s->n == s->cap) {
         s->cap = s->cap != 0u ? s->cap * 2u : 1024u;
-        s->e = realloc(s->e, s->cap * sizeof *s->e);
+        REQUIRE_REALLOC(s->e, s->cap * sizeof *s->e);
     }
     s->e[s->n].t = (uint64_t)llround(t * TICK_HZ);
     s->e[s->n].level = level;
@@ -1113,7 +1113,7 @@ static void edge_tick(edges_t *s, uint64_t t, bool level)
 {
     if (s->n == s->cap) {
         s->cap = s->cap != 0u ? s->cap * 2u : 1024u;
-        s->e = realloc(s->e, s->cap * sizeof *s->e);
+        REQUIRE_REALLOC(s->e, s->cap * sizeof *s->e);
     }
     s->e[s->n].t = t;
     s->e[s->n].level = level;

@@ -25,6 +25,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -134,6 +135,7 @@ TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
     push(false, false);
     scr->render(&cv, 0);
     gfx_color_t *chan = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(chan);
     memcpy(chan, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
@@ -166,6 +168,7 @@ TEST_CASE(a_cancelled_tab_press_already_drawn_is_redrawn_released)
     push(false, false);
     scr->render(&cv, 0);
     gfx_color_t *idle = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(idle);
     memcpy(idle, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
@@ -191,6 +194,7 @@ TEST_CASE(both_panes_render_and_differ)
     push(false, false);
     scr->render(&cv, 0);
     gfx_color_t *chan = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(chan);
     memcpy(chan, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     const touch_event_t down = { .type = TOUCH_EVENT_DOWN,
@@ -225,6 +229,7 @@ TEST_CASE(a_moved_channel_changes_the_trace)
     }
     scr->render(&cv, 0);
     gfx_color_t *flat = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(flat);
     memcpy(flat, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     for (int i = 0; i < 40; ++i) {

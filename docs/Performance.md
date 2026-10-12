@@ -195,7 +195,7 @@ the deepest frame. The other
 bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table: 185 such calls are
+  which the tool reads out of every screen's table: 188 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

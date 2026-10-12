@@ -56,6 +56,21 @@ history is in git.
   NOTICE and First run texts match the code; the Servo, OpenYGE and
   monostable comments no longer say that unwired code runs; DShot, Servo,
   Bringup and Manifest German pages match the English ones.
+- The host tests are built with the flags of the libraries, `-Wall -Wextra
+  -Werror -Wshadow -Wconversion -Wno-sign-conversion`, and
+  `tools/render_ui.py` builds `render_screen.c` with the same flags. clang-tidy
+  and cppcheck run over `test/host/` in CI; the checks that are off for the
+  tests are listed with their reasons in `test/host/.clang-tidy`, and
+  cppcheck's `constParameterCallback` on the page callbacks of the link tests
+  is suppressed inline, with the reason. The `analysis` job
+  timeout is 30 min. Test code fixed under the stricter rules: canvases built
+  with a zero clip rectangle in `test_kst_panel`, ids cast to a 16-bit type for
+  an 8-bit field, an out-of-range float to integer conversion in the settings
+  record helper, and allocations used without a check (`REQUIRE_ALLOC` and
+  `REQUIRE_REALLOC` in `greatest.h` end the case with the line).
+- The cppcheck command in CONTRIBUTING.md names the include directories the
+  way CI does, and the list of failing changes names the flags and the scope
+  of both analysers.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. The INA228 temperature and diagnostic flags go
@@ -140,6 +155,26 @@ history is in git.
 
 ### Fixed
 
+- A log file whose last row has no line feed reads without that row. A
+  write cut off by a power loss or a full card leaves the bytes the card
+  took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
+  reader (`log_reader_row`) ends a row at its line feed and nothing else,
+  leaves an unterminated last row out, and reports it in
+  `log_analysis_t.cut_row`. Past the row cap (60000 rows) the cut row is
+  decided from the file's last bytes: the source reports its size and
+  seeks (`log_source_t.size` and `.seek`, on the card's stdio file up to
+  2 GiB and on memory), and at most 4096 bytes before the end are read. A
+  source without them, or a file whose last 4096 bytes are all blanks, is
+  read on to its end. Past the cap, a quoted field left open with a line
+  feed as the file's last byte is not reported as a cut row. The import
+  view shows ROWS in the warning colour and `LAST ROW CUT OFF - LEFT OUT`,
+  on its own line below any other import warning. `tools/sense_trace.py
+  --servo-csv` applies the same rule and says so in its report. The
+  delimiter is sniffed from the first 2048 bytes up to their last line
+  feed, so a cut row cannot change how the rows before it split. Only
+  space, tab and CR after the last line feed are blank; a vertical tab or
+  form feed there is a cut row, in the panel's reader and in
+  `tools/sense_trace.py`.
 - The BALANCE pane carries the MODELLED pill and the words "Not measured."
   (SIMULIERT, "Nicht gemessen." in German) under its readings: the angle of
   265° and the 0.42 g and 0.35 g readings are fixed values.

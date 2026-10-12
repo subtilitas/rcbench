@@ -52,6 +52,7 @@ static void fresh(void)
     meter_id = SERVO_SOURCE_MODEL;
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -316,7 +317,7 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 #define ARM_H 32
 static void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }
 static void arm_release(void) { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_UP, 1); }
-static void held(float s_total)
+static void hold_for(float s_total)
 {
     /* The frame rate the panel runs at, so the hold is fed the way it is fed
      * on the bench rather than in one jump. */
@@ -335,13 +336,13 @@ TEST_CASE(a_hold_on_arm_asks_to_arm_exactly_once)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 
     /* It does not repeat under the same finger. */
     servo_cmd_t junk;
     while (servo_screen_take(&junk)) { }
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -357,21 +358,21 @@ TEST_CASE(a_cancelled_gesture_does_not_arm)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S / 4.0f);
+    hold_for(UI_HOLD_S / 4.0f);
 
     scr->cancel();
-    held(UI_HOLD_S * 2.0f);
+    hold_for(UI_HOLD_S * 2.0f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     /* The contact that was down is gone as far as this screen is concerned,
      * so its release asks for nothing either. */
     arm_release();
-    held(UI_HOLD_S);
+    hold_for(UI_HOLD_S);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     /* And a fresh press still arms. */
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 }
 
@@ -379,7 +380,7 @@ TEST_CASE(a_short_press_on_arm_asks_for_nothing)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S / 2.0f);
+    hold_for(UI_HOLD_S / 2.0f);
     arm_release();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
@@ -388,14 +389,14 @@ TEST_CASE(a_finger_that_leaves_arm_arms_nothing)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S / 2.0f);
+    hold_for(UI_HOLD_S / 2.0f);
     ev(ARM_X + 40, ARM_Y - 120, TOUCH_EVENT_MOVE, 1);   /* slid off it */
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     /* Sliding back on does not resume it: the press is over. */
     ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_MOVE, 1);
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -403,7 +404,7 @@ TEST_CASE(arming_and_disarming_come_from_the_same_button)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
     /* The bench answers, and the release that armed is not also a press. */
     servo_screen_set_armed(true);
@@ -426,13 +427,13 @@ TEST_CASE(a_press_that_disarmed_the_bench_does_not_then_arm_it)
     servo_screen_set_armed(true);
     arm_press();
     servo_screen_set_armed(false);
-    held(UI_HOLD_S + 0.5f);
+    hold_for(UI_HOLD_S + 0.5f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     /* And the button is not stranded: the next hold still arms. */
     arm_release();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 }
 
@@ -469,12 +470,12 @@ TEST_CASE(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands)
     CHECK(green_of(idle) > red_of(idle));       /* the OK green */
 
     arm_press();
-    held(UI_HOLD_S / 2.0f);
+    hold_for(UI_HOLD_S / 2.0f);
     scr->render(&cv, 0);
     const gfx_color_t half = arm_px();
     CHECK(red_of(half) > red_of(idle));         /* on its way to red */
 
-    held(UI_HOLD_S);
+    hold_for(UI_HOLD_S);
     scr->render(&cv, 0);
     const gfx_color_t full = arm_px();
     if (!(red_of(full) > red_of(half) && red_of(full) > green_of(full))) {
@@ -515,7 +516,7 @@ TEST_CASE(the_hold_repaints_the_button_and_leaves_the_card_alone)
     fb[probe] = 0x1234;
 
     arm_press();
-    held(UI_HOLD_S / 2.0f);
+    hold_for(UI_HOLD_S / 2.0f);
     scr->render(&cv, 0);
     CHECK_EQ(fb[probe], 0x1234);                /* untouched */
     CHECK(arm_px() != 0x1234);                  /* and the button did repaint */
@@ -592,15 +593,15 @@ TEST_CASE(a_stop_abandons_a_hold_that_is_under_way)
      */
     fresh();
     arm_press();
-    held(UI_HOLD_S / 2.0f);
+    hold_for(UI_HOLD_S / 2.0f);
     servo_screen_cancel_arm();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
     /* And the button is not stranded: lifting and pressing again arms. */
     arm_release();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 }
 
@@ -613,7 +614,7 @@ TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
      */
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     servo_screen_cancel_arm();
     servo_cmd_t got;
     CHECK(!servo_screen_take(&got));
@@ -625,7 +626,7 @@ TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
      */
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     arm_release();
     servo_screen_cancel_arm();
     CHECK(!servo_screen_take(&got));
@@ -640,11 +641,11 @@ TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
      */
     fresh();
     arm_press();                                   /* contact 1 */
-    held(UI_HOLD_S / 2.0f);
+    hold_for(UI_HOLD_S / 2.0f);
     ev(ARM_X + 80, ARM_Y + 16, TOUCH_EVENT_DOWN, 2);   /* contact 2 lands */
     /* The first contact leaves the button, which ends the gesture. */
     ev(ARM_X + 40, ARM_Y - 120, TOUCH_EVENT_MOVE, 1);
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -753,7 +754,7 @@ TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.1f);
+    hold_for(UI_HOLD_S + 0.1f);
     arm_release();
     choose_type(1);                            /* NARROW 760 */
     servo_cmd_t c = last_cmd();
@@ -765,7 +766,7 @@ TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
 
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.1f);
+    hold_for(UI_HOLD_S + 0.1f);
     arm_release();
     c = last_cmd();                            /* collected: STANDARD PWM */
     CHECK_EQ(c.kind, SERVO_CMD_ARM);
@@ -1147,7 +1148,7 @@ TEST_CASE(the_overlay_leaves_the_right_card_working)
     fresh();
     open_settings();
     arm_press();
-    held(2.2f);
+    hold_for(2.2f);
     arm_release();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
     servo_screen_set_armed(true);
@@ -1177,11 +1178,12 @@ TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
      * plot repaints itself on its own samples; through any mix of the two,
      * each buffer ends as one drawn whole. */
     fresh();
-    gfx_color_t *fb1 = calloc((size_t)W * H, sizeof(gfx_color_t));
-    gfx_color_t *ref = calloc((size_t)W * H, sizeof(gfx_color_t));
-    gfx_canvas_t cv1, cref;
-    gfx_canvas_init(&cv1, fb1, W, H, W);
-    gfx_canvas_init(&cref, ref, W, H, W);
+    gfx_color_t *fb_one = calloc((size_t)W * H, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fb_one);
+    gfx_color_t *ref_px = calloc((size_t)W * H, sizeof(gfx_color_t));
+    gfx_canvas_t cv_one, cv_ref;
+    gfx_canvas_init(&cv_one, fb_one, W, H, W);
+    gfx_canvas_init(&cv_ref, ref_px, W, H, W);
     supply_state_t st;
     memset(&st, 0, sizeof(st));
     st.online = true;
@@ -1198,16 +1200,16 @@ TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
             dial_at((float)(step * 5 - 60), ARC_R - 20, &x, &y);
             tap(x, y);
         }
-        scr->render((step % 2) ? &cv1 : &cv, step % 2);
+        scr->render((step % 2) ? &cv_one : &cv, step % 2);
     }
     scr->render(&cv, 0);
-    scr->render(&cv1, 1);
-    CHECK_EQ(memcmp(fb, fb1, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    scr->render(&cv_one, 1);
+    CHECK_EQ(memcmp(fb, fb_one, (size_t)W * H * sizeof(gfx_color_t)), 0);
     servo_invalidate();
-    scr->render(&cref, 0);
-    CHECK_EQ(memcmp(fb, ref, (size_t)W * H * sizeof(gfx_color_t)), 0);
-    free(fb1);
-    free(ref);
+    scr->render(&cv_ref, 0);
+    CHECK_EQ(memcmp(fb, ref_px, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    free(fb_one);
+    free(ref_px);
 }
 
 /* The supply is the servo rail's meter here: a sample whose current differs
@@ -1218,6 +1220,7 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
     fresh();
     scr->render(&cv, 0);
     gfx_color_t *was = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(was);
     supply_state_t st;
     memset(&st, 0, sizeof(st));
     st.online = true;
@@ -1303,6 +1306,7 @@ TEST_CASE(each_face_of_the_overlay_draws_as_a_full_redraw_would)
     CHECK(both_whole());
     CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_ACCENT));
     gfx_color_t *page = malloc(FB_BYTES);
+    REQUIRE_ALLOC(page);
     memcpy(page, fb, FB_BYTES);
 
     for (int tab = 1; tab < 4; ++tab) {
@@ -1362,9 +1366,8 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
     open_settings();
     CHECK(both_whole());
     gfx_color_t *unsent = malloc(FB_BYTES);
+    REQUIRE_ALLOC(unsent);
     memcpy(unsent, fb, FB_BYTES);
-    int warn = 0;
-
     servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
     CHECK(both_whole());
     CHECK(memcmp(fb, unsent, FB_BYTES) != 0);
@@ -1377,7 +1380,7 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
     for (int k = 0; k < 2; ++k) {
         servo_screen_rate(bad[k], 50u);
         CHECK(both_whole());
-        warn = 0;
+        int warn = 0;
         for (int y = 260; y < 400; ++y) {
             for (int x = 6; x < 494; ++x) {
                 warn += fb[y * W + x] == ui_theme_color(UI_C_WARN);
@@ -1402,6 +1405,7 @@ TEST_CASE(a_refused_save_repaints_only_the_save_line)
     CHECK(settings_save_asked());
     CHECK(both_whole());
     gfx_color_t *was = malloc(FB_BYTES);
+    REQUIRE_ALLOC(was);
     memcpy(was, fb, FB_BYTES);
     CHECK(!settings_save());                   /* no store: refused */
     scr->render(&cv, 0);
@@ -1445,6 +1449,7 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
     scr->tick(1.0f / 39.0f);
     CHECK(both_whole());
     gfx_color_t *early = malloc(FB_BYTES);
+    REQUIRE_ALLOC(early);
     memcpy(early, fb, FB_BYTES);
     for (int i = 0; i < 4 * 39; ++i) {         /* 60 deg at 36 deg/s, and on */
         scr->tick(1.0f / 39.0f);
@@ -1656,7 +1661,7 @@ TEST_CASE(a_completed_arm_is_not_overwritten_by_the_servo_knob)
 {
     fresh();
     arm_press();
-    held(UI_HOLD_S + 0.2f);
+    hold_for(UI_HOLD_S + 0.2f);
     servo_screen_knob(0.25f);
     CHECK_EQ(servo_screen_commanded(), 1500);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
@@ -2425,26 +2430,26 @@ TEST_CASE(a_changed_curve_is_drawn_from_its_acknowledged_start)
  */
 TEST_CASE(a_change_during_a_pause_drain_holds_the_drawn_angle)
 {
-    for (int fb = 0; fb < 2; ++fb) {
+    for (int fb_pass = 0; fb_pass < 2; ++fb_pass) {
         fresh();
         servo_screen_set_armed(true);
         servo_screen_set_sweep(true);
         tap(ARM_X + 1, SPEED_Y);               /* SPEED's slowest */
-        if (fb) {
+        if (fb_pass) {
             servo_screen_feedback(1500u, 0.2f, true);
         }
         sweep_go();
         frames(0.3f);
-        if (fb) {
+        if (fb_pass) {
             servo_screen_feedback(1600u, 0.2f, true);
         }
         (void)pause_go();
         frames(0.15f);                         /* drawn on, not acked */
-        if (fb) {
+        if (fb_pass) {
             servo_screen_feedback(1620u, 0.2f, true);
         }
         const uint16_t at = servo_screen_drawn();
-        if (fb) {
+        if (fb_pass) {
             CHECK_EQ(at, 1620u);
         }
         open_settings();
@@ -3559,6 +3564,7 @@ TEST_CASE(feedback_is_shown_rather_than_travelled_to)
     /* Rendering twice with no change must paint nothing, so the second pass
      * proves the first one settled rather than still easing somewhere. */
     gfx_color_t *first = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(first);
     memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
     scr->tick(0.05f);
     scr->render(&cv, 0);
@@ -3725,6 +3731,7 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
     fresh();
     scr->render(&cv, 0);
     gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(before);
     memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
     supply_screen_put(9.0f, 1.0f);
     scr->tick(0.025f);
@@ -3956,6 +3963,7 @@ TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
     scr->tick(0.025f);
     scr->render(&cv, 0);
     gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(before);
     memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -4220,25 +4228,25 @@ static struct {
     /* The supply holds its current limit, as supply.c models it. */
     bool     limits;
     char     csv_last[256];     /* the CSV's last line */
-} b;
+} bench;
 
 static void window(const sense_link_win_t *w);
 
 static void bench_fresh(void)
 {
     fresh();
-    memset(&b, 0, sizeof(b));
+    memset(&bench, 0, sizeof(bench));
     servo_sim_cfg_t sc;
     servo_sim_defaults(&sc);
     sc.stop_lo_us = 1000u;
     sc.stop_hi_us = 2000u;
-    servo_sim_init(&b.sv, &sc);
-    b.sv.position_us = 1500.0f;
-    b.online = true;
-    b.now  = 5000u;
-    b.next = b.now;
-    b.cmd  = 1500u;
-    servo_screen_clock(b.now);
+    servo_sim_init(&bench.sv, &sc);
+    bench.sv.position_us = 1500.0f;
+    bench.online = true;
+    bench.now  = 5000u;
+    bench.next = bench.now;
+    bench.cmd  = 1500u;
+    servo_screen_clock(bench.now);
     servo_screen_set_armed(true);
     /* One reading before the run, as the panel always has one. */
     supply_state_t st;
@@ -4246,8 +4254,8 @@ static void bench_fresh(void)
     st.online = true;
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     st.set_v = supply_screen_set_v();
-    st.samples = ++b.samples;
-    st.taken_ms = b.now;
+    st.samples = ++bench.samples;
+    st.taken_ms = bench.now;
     st.stamped = true;
     servo_screen_supply(&st);
     scr->tick(0.02f);
@@ -4262,24 +4270,24 @@ static void bench_drain(void)
             return;
         }
         if (o == SERVO_TEST_OUT_OPEN) {
-            ++b.opens;
+            ++bench.opens;
         } else if (o == SERVO_TEST_OUT_CSV) {
-            if (b.csv == 0u) {
-                snprintf(b.csv_head, sizeof(b.csv_head), "%s", text);
+            if (bench.csv == 0u) {
+                snprintf(bench.csv_head, sizeof(bench.csv_head), "%s", text);
             }
-            snprintf(b.csv_last, sizeof(b.csv_last), "%s", text);
-            ++b.csv;
+            snprintf(bench.csv_last, sizeof(bench.csv_last), "%s", text);
+            ++bench.csv;
         } else if (o == SERVO_TEST_OUT_TXT) {
-            ++b.txt;
+            ++bench.txt;
             const size_t n = strlen(text);
-            if (b.report_len + n + 2u < sizeof(b.report)) {
-                memcpy(b.report + b.report_len, text, n);
-                b.report_len += n;
-                b.report[b.report_len++] = '\n';
-                b.report[b.report_len] = '\0';
+            if (bench.report_len + n + 2u < sizeof(bench.report)) {
+                memcpy(bench.report + bench.report_len, text, n);
+                bench.report_len += n;
+                bench.report[bench.report_len++] = '\n';
+                bench.report[bench.report_len] = '\0';
             }
         } else {
-            ++b.ends;
+            ++bench.ends;
         }
         servo_screen_test_pop();
     }
@@ -4288,68 +4296,68 @@ static void bench_drain(void)
 static void bench_frames(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; k += 20u) {
-        b.now += 20u;
-        servo_screen_clock(b.now);
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
         supply_cmd_t c;
         while (supply_screen_poll_cmd(&c)) {
             if (c.off) {
-                b.out = false;
+                bench.out = false;
             } else if (c.on) {
-                b.out = true;
+                bench.out = true;
             }
         }
-        supply_screen_set_output(b.out);
+        supply_screen_set_output(bench.out);
         servo_cmd_t sc;
         while (servo_screen_take(&sc)) {
             if (sc.kind == SERVO_CMD_POSITION) {
-                b.cmd = sc.value_us;
-                b.stepped = b.stepped || sc.slew_per_s == 0u;
+                bench.cmd = sc.value_us;
+                bench.stepped = bench.stepped || sc.slew_per_s == 0u;
             } else if (sc.kind == SERVO_CMD_RELEASE
                        || sc.kind == SERVO_CMD_DISARM) {
-                b.cmd = 1500u;
-                b.released = true;
+                bench.cmd = 1500u;
+                bench.released = true;
             }
         }
-        if (servo_screen_testing() && supply_screen_set_v() > b.set_v_max) {
-            b.set_v_max = supply_screen_set_v();
+        if (servo_screen_testing() && supply_screen_set_v() > bench.set_v_max) {
+            bench.set_v_max = supply_screen_set_v();
         }
-        float amps = b.out ? servo_sim_step(&b.sv, b.cmd, b.now) : 0.0f;
-        const bool cc = b.limits && amps > supply_screen_set_i();
+        float amps = bench.out ? servo_sim_step(&bench.sv, bench.cmd, bench.now) : 0.0f;
+        const bool cc = bench.limits && amps > supply_screen_set_i();
         if (cc) {
             amps = supply_screen_set_i();
         }
-        if (b.ina && (int32_t)(b.now - b.win_next) >= 0) {
-            b.win_next += 50u;
+        if (bench.ina && (int32_t)(bench.now - bench.win_next) >= 0) {
+            bench.win_next += 50u;
             const int ma = (int)lroundf(amps * 1000.0f);
-            const unsigned mv = b.out
+            const unsigned mv = bench.out
                 ? (unsigned)lroundf(supply_screen_set_v() * 1000.0f) : 0u;
             const sense_link_win_t w = {
-                .number = ++b.win_number, .current = true, .voltage = true,
+                .number = ++bench.win_number, .current = true, .voltage = true,
                 .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma,
                 .min_ma = (int16_t)ma, .mean_mv = (uint16_t)mv,
-                .min_mv = (uint16_t)mv, .taken_ms = b.now, .stamped = true,
+                .min_mv = (uint16_t)mv, .taken_ms = bench.now, .stamped = true,
             };
             window(&w);
-            ++b.wins;
+            ++bench.wins;
         }
-        if ((int32_t)(b.now - b.next) >= 0) {
-            b.next += 100u;
+        if ((int32_t)(bench.now - bench.next) >= 0) {
+            bench.next += 100u;
             supply_state_t st;
             memset(&st, 0, sizeof(st));
-            st.online = b.online;
+            st.online = bench.online;
             st.ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-            st.output = b.out;
+            st.output = bench.out;
             st.set_v  = supply_screen_set_v();
             st.set_i  = supply_screen_set_i();
-            st.v      = b.out ? st.set_v : 0.0f;
+            st.v      = bench.out ? st.set_v : 0.0f;
             st.i      = amps;
             st.p      = st.v * st.i;
-            st.mode   = !b.out ? SUPPLY_MODE_OFF
+            st.mode   = !bench.out ? SUPPLY_MODE_OFF
                         : cc   ? SUPPLY_MODE_CC : SUPPLY_MODE_CV;
-            st.samples  = ++b.samples;
-            st.taken_ms = b.now;
+            st.samples  = ++bench.samples;
+            st.taken_ms = bench.now;
             st.stamped = true;
-            if (b.behind) {
+            if (bench.behind) {
                 /* Taken under a meter replaced since. */
                 servo_screen_supply_at(&st, SERVO_SOURCE_INA3221,
                                        meter_changes - 1u);
@@ -4357,21 +4365,21 @@ static void bench_frames(uint32_t ms)
                 servo_screen_supply(&st);
             }
         }
-        if (b.enc) {
+        if (bench.enc) {
             const int counts = (int)lroundf(
-                (b.sv.position_us - 1500.0f) * 0.09f * 4096.0f / 360.0f);
+                (bench.sv.position_us - 1500.0f) * 0.09f * 4096.0f / 360.0f);
             const uint16_t raw = (uint16_t)((counts + 3000) & 4095);
-            int d = ((int)raw - (int)b.enc_anchor + 2048) & 4095;
+            int d = ((int)raw - (int)bench.enc_anchor + 2048) & 4095;
             d -= 2048;
-            if (!b.enc_anchored || d > 12 || d < -12) {
-                b.enc_anchor = raw;
-                b.enc_anchor_ms = b.now;
-                b.enc_anchored = true;
+            if (!bench.enc_anchored || d > 12 || d < -12) {
+                bench.enc_anchor = raw;
+                bench.enc_anchor_ms = bench.now;
+                bench.enc_anchored = true;
             }
-            if ((int32_t)(b.now - b.enc_next) >= 0) {
-                b.enc_next += 40u;
+            if ((int32_t)(bench.now - bench.enc_next) >= 0) {
+                bench.enc_next += 40u;
                 const servo_test_enc_t e = { true, raw,
-                    (uint16_t)(b.now - b.enc_anchor_ms), b.now, false };
+                    (uint16_t)(bench.now - bench.enc_anchor_ms), bench.now, false, false, false, false };
                 servo_screen_encoder(&e);
             }
         }
@@ -4419,8 +4427,8 @@ static void hold_start(float secs)
     tap(TAB_X(1), TAB_Y);
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
-        b.now += 20u;
-        servo_screen_clock(b.now);
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
         scr->tick(0.02f);
     }
     ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
@@ -4439,7 +4447,7 @@ static void short_runs(void)
 TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
 {
     fresh();
-    memset(&b, 0, sizeof(b));
+    memset(&bench, 0, sizeof(bench));
     hold_start(2.3f);
     CHECK(!servo_screen_testing());               /* not armed */
     scr->render(&cv, 0);
@@ -4520,15 +4528,15 @@ TEST_CASE(a_run_through_the_screen_ends_and_restores_the_set_points)
     }
     CHECK(!servo_screen_testing());
     bench_frames(1000u);
-    CHECK(b.stepped);
-    CHECK(b.released);
-    CHECK(!b.out);
-    CHECK_EQ(b.opens, 1u);
-    CHECK_EQ(b.ends, 1u);
-    CHECK(b.csv > 50u);
-    CHECK(strstr(b.report, "Result:         PASS") != NULL);
-    CHECK(strstr(b.report, "Supply:         PD mini") != NULL);
-    CHECK(b.set_v_max <= 6.0f + 1e-4f);
+    CHECK(bench.stepped);
+    CHECK(bench.released);
+    CHECK(!bench.out);
+    CHECK_EQ(bench.opens, 1u);
+    CHECK_EQ(bench.ends, 1u);
+    CHECK(bench.csv > 50u);
+    CHECK(strstr(bench.report, "Result:         PASS") != NULL);
+    CHECK(strstr(bench.report, "Supply:         PD mini") != NULL);
+    CHECK(bench.set_v_max <= 6.0f + 1e-4f);
     CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
     CHECK(fabsf(supply_screen_set_i() - 1.5f) < 1e-4f);
     /* The result on the left card, and the files once the card says. */
@@ -4568,9 +4576,9 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
     for (int i = 0; i < 200 && servo_screen_testing(); ++i) {
         bench_frames(500u);
     }
-    CHECK(b.set_v_max > 8.3f);
-    CHECK(strstr(b.report, "HV servo:       ON") != NULL);
-    CHECK(strstr(b.report, " 8.40 V") != NULL);
+    CHECK(bench.set_v_max > 8.3f);
+    CHECK(strstr(bench.report, "HV servo:       ON") != NULL);
+    CHECK(strstr(bench.report, " 8.40 V") != NULL);
 }
 
 /* Every way out of a run ends it: the output asked off, the servo let go,
@@ -4583,8 +4591,8 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
         hold_start(2.3f);
         CHECK(servo_screen_testing());
         bench_frames(3000u);
-        CHECK(b.out);
-        b.released = false;
+        CHECK(bench.out);
+        bench.released = false;
         switch (way) {
         case 0: servo_screen_cancel_arm(); break;              /* STOP */
         case 1: servo_screen_set_armed(false); break;
@@ -4608,18 +4616,18 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
             tap(TAB_X(0), TAB_Y);
             tap(ROW_R_X, ROW_Y(4));                 /* REVERSE */
             break;
-        case 9: b.online = false; break;            /* the supply is gone */
+        case 9: bench.online = false; break;            /* the supply is gone */
         default:                                    /* OUTPUT OFF */
             tap(SUP_OUT_X, SUP_ROW_Y);
             break;
         }
         bench_frames(2000u);
         CHECK(!servo_screen_testing());
-        CHECK(!b.out);
+        CHECK(!bench.out);
         /* Let go, or -- a finger on the dial -- where the finger put it. */
-        CHECK(b.released || (way == 5 && b.cmd != 1100u && b.cmd != 1900u));
-        CHECK_EQ(b.ends, 1u);
-        CHECK(strstr(b.report, "Result:         ABORTED") != NULL);
+        CHECK(bench.released || (way == 5 && bench.cmd != 1100u && bench.cmd != 1900u));
+        CHECK_EQ(bench.ends, 1u);
+        CHECK(strstr(bench.report, "Result:         ABORTED") != NULL);
     }
 }
 
@@ -4635,12 +4643,12 @@ static void a_run_ends_disarmed(int way)
     short_runs();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    for (int i = 0; i < 2000 && b.cmd == 1500u; ++i) {
+    for (int i = 0; i < 2000 && bench.cmd == 1500u; ++i) {
         bench_frames(20u);
     }
-    CHECK(b.cmd != 1500u);
+    CHECK(bench.cmd != 1500u);
     const uint16_t driven = servo_screen_commanded();
-    CHECK_EQ(driven, b.cmd);
+    CHECK_EQ(driven, bench.cmd);
 
     if (way == 1) {
         servo_screen_cancel_arm();
@@ -4652,8 +4660,8 @@ static void a_run_ends_disarmed(int way)
     servo_screen_set_armed(false);
     int positions = 0, releases = 0, disarms = 0;
     for (int i = 0; i < 100; ++i) {
-        b.now += 20u;
-        servo_screen_clock(b.now);
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
         scr->tick(0.02f);
         servo_screen_service();
         servo_cmd_t c;
@@ -4691,10 +4699,10 @@ TEST_CASE(a_disarm_tap_ends_a_run_at_the_tap)
     short_runs();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    for (int i = 0; i < 2000 && b.cmd == 1500u; ++i) {
+    for (int i = 0; i < 2000 && bench.cmd == 1500u; ++i) {
         bench_frames(20u);
     }
-    CHECK(b.cmd != 1500u);
+    CHECK(bench.cmd != 1500u);
     const uint16_t driven = servo_screen_commanded();
 
     tap(ARM_X + 40, ARM_Y + 16);
@@ -4702,8 +4710,8 @@ TEST_CASE(a_disarm_tap_ends_a_run_at_the_tap)
     CHECK_EQ(servo_screen_commanded(), driven);
     int positions = 0, disarms = 0;
     for (int i = 0; i < 100; ++i) {
-        b.now += 20u;
-        servo_screen_clock(b.now);
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
         servo_screen_set_armed(true);           /* not yet answered */
         scr->tick(0.02f);
         servo_screen_service();
@@ -4723,7 +4731,7 @@ TEST_CASE(a_disarm_tap_ends_a_run_at_the_tap)
     CHECK(!servo_screen_testing());
     close_settings();
     bench_drain();
-    CHECK(strstr(b.report, "ABORTED") != NULL);
+    CHECK(strstr(bench.report, "ABORTED") != NULL);
 
     servo_screen_set_armed(false);
     CHECK_EQ(servo_screen_commanded(), driven);
@@ -4754,7 +4762,7 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
         case 1:                                  /* ARMING */
             servo_screen_set_armed(false);
             arm_press();
-            held(2.3f);
+            hold_for(2.3f);
             arm_release();
             CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
             break;
@@ -4781,10 +4789,10 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
         short_runs();
         hold_start(2.3f);
         CHECK(servo_screen_testing());
-        for (int i = 0; i < 2000 && b.cmd == 1500u; ++i) {
+        for (int i = 0; i < 2000 && bench.cmd == 1500u; ++i) {
             bench_frames(20u);
         }
-        CHECK(b.cmd != 1500u);
+        CHECK(bench.cmd != 1500u);
         const uint16_t driven = servo_screen_commanded();
         switch (edge) {
         case 0:  tap(ARM_X + 40, ARM_Y + 16); break;
@@ -4796,8 +4804,8 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
         CHECK_EQ(servo_screen_commanded(), driven);
         int drives = 0;
         for (int i = 0; i < 100; ++i) {
-            b.now += 20u;
-            servo_screen_clock(b.now);
+            bench.now += 20u;
+            servo_screen_clock(bench.now);
             if (edge != 2) {
                 servo_screen_set_armed(true);   /* not yet answered */
             }
@@ -4843,10 +4851,10 @@ static void a_run_ends_armed(int profile, bool by_operator)
     uint16_t rest = 1500u;
     if (profile == 1) {
         choose_type(1);                 /* NARROW 760 */
-        b.sv.cfg.stop_lo_us = 660u;
-        b.sv.cfg.stop_hi_us = 860u;
-        b.sv.position_us = 760.0f;
-        b.cmd = 760u;
+        bench.sv.cfg.stop_lo_us = 660u;
+        bench.sv.cfg.stop_hi_us = 860u;
+        bench.sv.position_us = 760.0f;
+        bench.cmd = 760u;
         rest  = 760u;
     } else if (profile == 2) {
         open_settings();
@@ -4860,12 +4868,12 @@ static void a_run_ends_armed(int profile, bool by_operator)
     CHECK(servo_screen_testing());
     if (by_operator) {
         const uint16_t first = (uint16_t)(rest + ((profile == 2) ? 20u : 0u));
-        b.cmd = first;
-        for (int i = 0; i < 2000 && b.cmd == first; ++i) {
+        bench.cmd = first;
+        for (int i = 0; i < 2000 && bench.cmd == first; ++i) {
             bench_frames(20u);
         }
-        CHECK(b.cmd != first);
-        CHECK_EQ(servo_screen_commanded(), b.cmd);
+        CHECK(bench.cmd != first);
+        CHECK_EQ(servo_screen_commanded(), bench.cmd);
         tap(BOXBTN_X, BOXBTN_Y);        /* STOP TEST */
         CHECK(!servo_screen_testing());
         CHECK_EQ(servo_screen_commanded(), rest);
@@ -4875,7 +4883,7 @@ static void a_run_ends_armed(int profile, bool by_operator)
             bench_frames(500u);
         }
         CHECK(!servo_screen_testing());
-        CHECK(b.released);
+        CHECK(bench.released);
         CHECK_EQ(servo_screen_commanded(), rest);
     }
     bench_frames(200u);
@@ -4999,37 +5007,37 @@ TEST_CASE(a_refused_start_says_why)
 static void bench_frames_on(uint32_t ms, bool accept_on, float *on_v_max)
 {
     for (uint32_t k = 0; k < ms; k += 20u) {
-        b.now += 20u;
-        servo_screen_clock(b.now);
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
         supply_cmd_t c;
         while (supply_screen_poll_cmd(&c)) {
             if (c.off) {
-                b.out = false;
+                bench.out = false;
             } else if (c.on) {
                 if (supply_screen_set_v() > *on_v_max) {
                     *on_v_max = supply_screen_set_v();
                 }
                 if (accept_on) {
-                    b.out = true;
+                    bench.out = true;
                 }
             }
         }
-        supply_screen_set_output(b.out);
+        supply_screen_set_output(bench.out);
         servo_cmd_t sc;
         while (servo_screen_take(&sc)) { }
-        if ((int32_t)(b.now - b.next) >= 0) {
-            b.next += 100u;
+        if ((int32_t)(bench.now - bench.next) >= 0) {
+            bench.next += 100u;
             supply_state_t st;
             memset(&st, 0, sizeof(st));
             st.online = true;
             st.ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-            st.output = b.out;
+            st.output = bench.out;
             st.set_v  = supply_screen_set_v();
             st.set_i  = supply_screen_set_i();
-            st.v      = b.out ? st.set_v : 0.0f;
-            st.mode   = b.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
-            st.samples  = ++b.samples;
-            st.taken_ms = b.now;
+            st.v      = bench.out ? st.set_v : 0.0f;
+            st.mode   = bench.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+            st.samples  = ++bench.samples;
+            st.taken_ms = bench.now;
             st.stamped = true;
             servo_screen_supply(&st);
         }
@@ -5061,7 +5069,7 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
     CHECK(!servo_screen_testing());
     CHECK(on_v <= 6.0f + 1e-4f);
-    CHECK(!(b.out && supply_screen_set_v() > 6.0f + 1e-4f));
+    CHECK(!(bench.out && supply_screen_set_v() > 6.0f + 1e-4f));
     bench_frames_on(2000u, true, &on_v);
     CHECK(on_v <= 6.0f + 1e-4f);
     /* The output came on at 4.8 V under the hold: the set points stay as
@@ -5106,7 +5114,7 @@ TEST_CASE(the_set_points_go_back_whichever_screen_is_up)
         supply_screen_put(5.5f, 1.5f);
         hold_start(2.3f);
         bench_frames(3000u);
-        CHECK(b.out);
+        CHECK(bench.out);
         scr->leave();
         CHECK(!servo_screen_testing());
         if (changed) {
@@ -5114,30 +5122,30 @@ TEST_CASE(the_set_points_go_back_whichever_screen_is_up)
         }
         float on_v = 0.0f;
         for (uint32_t k = 0; k < 2000u; k += 20u) {    /* SERVO not ticked */
-            b.now += 20u;
-            servo_screen_clock(b.now);
+            bench.now += 20u;
+            servo_screen_clock(bench.now);
             supply_cmd_t c;
             while (supply_screen_poll_cmd(&c)) {
-                b.out = c.off ? false : (c.on ? true : b.out);
+                bench.out = c.off ? false : (c.on ? true : bench.out);
             }
-            supply_screen_set_output(b.out);
-            if ((int32_t)(b.now - b.next) >= 0) {
-                b.next += 100u;
+            supply_screen_set_output(bench.out);
+            if ((int32_t)(bench.now - bench.next) >= 0) {
+                bench.next += 100u;
                 supply_state_t st;
                 memset(&st, 0, sizeof(st));
                 st.online = true;
                 st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-                st.output = b.out;
+                st.output = bench.out;
                 st.set_v = supply_screen_set_v();
-                st.samples = ++b.samples;
-                st.taken_ms = b.now;
+                st.samples = ++bench.samples;
+                st.taken_ms = bench.now;
                 st.stamped = true;
                 servo_screen_supply(&st);
             }
             servo_screen_service();
             bench_drain();
         }
-        CHECK(!b.out);
+        CHECK(!bench.out);
         if (changed) {
             CHECK(fabsf(supply_screen_set_v() - 5.2f) < 1e-4f);
             CHECK(fabsf(supply_screen_set_i() - 1.0f) < 1e-4f);
@@ -5173,8 +5181,8 @@ TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
     st.online = true;
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     st.set_v = supply_screen_set_v();
-    st.samples = ++b.samples;
-    st.taken_ms = b.now;
+    st.samples = ++bench.samples;
+    st.taken_ms = bench.now;
     st.stamped = true;
     servo_screen_supply(&st);
     servo_screen_service();
@@ -5183,25 +5191,25 @@ TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
     /* The next frame and a sample of its own, but the module still reads
      * its output on: the panel asked it off and the PD mini has not yet
      * answered.  Not yet either. */
-    b.now += 20u;
-    servo_screen_clock(b.now);
+    bench.now += 20u;
+    servo_screen_clock(bench.now);
     servo_screen_service();
-    st.samples = ++b.samples;
-    st.taken_ms = b.now;
+    st.samples = ++bench.samples;
+    st.taken_ms = bench.now;
     st.stamped = true;
     st.mode = SUPPLY_MODE_CV;
     servo_screen_supply(&st);
     servo_screen_service();
     CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
     /* Nor from a supply that has stopped answering. */
-    st.samples = ++b.samples;
+    st.samples = ++bench.samples;
     st.mode = SUPPLY_MODE_OFF;
     st.online = false;
     servo_screen_supply(&st);
     servo_screen_service();
     CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
     /* The module's own off: back. */
-    st.samples = ++b.samples;
+    st.samples = ++bench.samples;
     st.online = true;
     servo_screen_supply(&st);
     servo_screen_service();
@@ -5238,7 +5246,7 @@ TEST_CASE(a_supply_reading_stamped_on_tick_zero_keeps_its_stamp)
         st.ok       = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
         st.set_v    = supply_screen_set_v();
         st.mode     = SUPPLY_MODE_OFF;
-        st.samples  = ++b.samples;
+        st.samples  = ++bench.samples;
         st.taken_ms = 0u;
         st.stamped  = true;
         servo_screen_supply(&st);
@@ -5275,7 +5283,7 @@ TEST_CASE(start_test_starts_a_second_run)
     for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
         bench_frames(500u);
     }
-    CHECK_EQ(b.ends, 2u);
+    CHECK_EQ(bench.ends, 2u);
 }
 
 /* The page redraws START TEST and its line when the last report has been
@@ -5293,33 +5301,33 @@ TEST_CASE(the_start_line_follows_the_report_being_taken)
     /* Frames that keep the report back from the card. */
     for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
         for (uint32_t k = 0; k < 500u; k += 20u) {
-            b.now += 20u;
-            servo_screen_clock(b.now);
+            bench.now += 20u;
+            servo_screen_clock(bench.now);
             supply_cmd_t c;
             while (supply_screen_poll_cmd(&c)) {
-                b.out = c.off ? false : (c.on ? true : b.out);
+                bench.out = c.off ? false : (c.on ? true : bench.out);
             }
-            supply_screen_set_output(b.out);
+            supply_screen_set_output(bench.out);
             servo_cmd_t sc;
             while (servo_screen_take(&sc)) {
                 if (sc.kind == SERVO_CMD_POSITION) {
-                    b.cmd = sc.value_us;
+                    bench.cmd = sc.value_us;
                 }
             }
-            const float amps = b.out ? servo_sim_step(&b.sv, b.cmd, b.now)
+            const float amps = bench.out ? servo_sim_step(&bench.sv, bench.cmd, bench.now)
                                      : 0.0f;
-            if ((int32_t)(b.now - b.next) >= 0) {
-                b.next += 100u;
+            if ((int32_t)(bench.now - bench.next) >= 0) {
+                bench.next += 100u;
                 supply_state_t st;
                 memset(&st, 0, sizeof(st));
                 st.online = true;
                 st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-                st.output = b.out;
+                st.output = bench.out;
                 st.set_v = supply_screen_set_v();
-                st.v = b.out ? st.set_v : 0.0f;
+                st.v = bench.out ? st.set_v : 0.0f;
                 st.i = amps;
-                st.samples = ++b.samples;
-                st.taken_ms = b.now;
+                st.samples = ++bench.samples;
+                st.taken_ms = bench.now;
                 st.stamped = true;
                 servo_screen_supply(&st);
             }
@@ -5343,12 +5351,13 @@ TEST_CASE(the_start_line_follows_the_report_being_taken)
 TEST_CASE(arm_first_goes_once_the_bench_is_armed)
 {
     fresh();
-    memset(&b, 0, sizeof(b));
+    memset(&bench, 0, sizeof(bench));
     open_settings();
     tap(TAB_X(1), TAB_Y);
     tap(START_X, START_Y);                       /* ARM FIRST */
     two_buffers();
     gfx_color_t *was = malloc(FB_BYTES);
+    REQUIRE_ALLOC(was);
     memcpy(was, fb, FB_BYTES);
     servo_screen_set_armed(true);
     settle_drawn();                              /* ARM's flash is over */
@@ -5389,6 +5398,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     scr->render(&cv, 0);
     CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
     gfx_color_t *named = malloc(FB_BYTES);
+    REQUIRE_ALLOC(named);
     memcpy(named, fb, FB_BYTES);
     settings_set(SET_SUPPLY_V_MAX, 8.0f);
     supply_screen_limits_changed();
@@ -5418,6 +5428,7 @@ TEST_CASE(the_result_names_the_report_only_when_it_was_written)
     two_buffers();
     CHECK(both_whole());
     gfx_color_t *without = malloc(FB_BYTES);
+    REQUIRE_ALLOC(without);
     memcpy(without, fb, FB_BYTES);
     servo_screen_test_files(12, true);
     CHECK(both_whole());
@@ -5443,6 +5454,7 @@ static bool overlay_same(const gfx_color_t *want)
 TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
 {
     gfx_color_t *want = malloc(FB_BYTES);
+    REQUIRE_ALLOC(want);
     for (int k = 0; k < 2; ++k) {
         /* The page with nothing refused. */
         bench_fresh();
@@ -5466,7 +5478,7 @@ TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
         if (k == 0) {
             settings_set(SET_SERVO_STEP_48, 0.0f);
         } else {
-            st.samples = ++b.samples;            /* not answering */
+            st.samples = ++bench.samples;            /* not answering */
             servo_screen_supply(&st);
         }
         hold_start(2.3f);
@@ -5475,7 +5487,7 @@ TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
             settings_set(SET_SERVO_STEP_48, 1.0f);
         } else {
             st.online = true;
-            st.samples = ++b.samples;
+            st.samples = ++bench.samples;
             servo_screen_supply(&st);
         }
         for (int i = 0; i < 10; ++i) {
@@ -5504,9 +5516,9 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
      * 676, 318) before a sample shows the output off. */
     supply_cmd_t c;
     while (supply_screen_poll_cmd(&c)) {
-        b.out = c.off ? false : (c.on ? true : b.out);
+        bench.out = c.off ? false : (c.on ? true : bench.out);
     }
-    supply_screen_set_output(b.out);
+    supply_screen_set_output(bench.out);
     const ui_screen_t *sup = supply_screen();
     const touch_event_t down = { .type = TOUCH_EVENT_DOWN,
                                  .point = { .id = 1, .x = 676, .y = 318,
@@ -5515,22 +5527,22 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
     CHECK(supply_screen_output_held());
     float on_v = 0.0f;
     for (uint32_t k = 0; k < 600u; k += 20u) {   /* samples, all off */
-        b.now += 20u;
-        servo_screen_clock(b.now);
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
         while (supply_screen_poll_cmd(&c)) {
-            b.out = c.off ? false : (c.on ? true : b.out);
+            bench.out = c.off ? false : (c.on ? true : bench.out);
         }
-        supply_screen_set_output(b.out);
-        if ((int32_t)(b.now - b.next) >= 0) {
-            b.next += 100u;
+        supply_screen_set_output(bench.out);
+        if ((int32_t)(bench.now - bench.next) >= 0) {
+            bench.next += 100u;
             supply_state_t st;
             memset(&st, 0, sizeof(st));
             st.online = true;
             st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-            st.output = b.out;
+            st.output = bench.out;
             st.set_v = supply_screen_set_v();
-            st.samples = ++b.samples;
-            st.taken_ms = b.now;
+            st.samples = ++bench.samples;
+            st.taken_ms = bench.now;
             st.stamped = true;
             servo_screen_supply(&st);
         }
@@ -5557,8 +5569,9 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     fresh();
     scr->render(&cv, 0);
     gfx_color_t *none = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(none);
     memcpy(none, fb, (size_t)W * H * sizeof(gfx_color_t));
-    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false };
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false };
 
     /* AS5600 off in SETUP: the reading is ignored. */
     CHECK(!settings_get_bool(SET_ENC_EN));
@@ -5574,10 +5587,11 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     scr->render(&cv, 0);
     CHECK(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
     gfx_color_t *shown = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(shown);
     memcpy(shown, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     /* Another count, another angle; the same count, the same picture. */
-    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u, false };
+    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u, false, false, false, false };
     servo_screen_encoder(&e2);
     scr->render(&cv, 0);
     CHECK(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
@@ -5586,7 +5600,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     CHECK_EQ(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
     /* A reading that is not valid is the dashes again. */
-    const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false };
+    const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false, false, false, false };
     servo_screen_encoder(&gone);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
@@ -5610,7 +5624,9 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
 {
     fresh();
     gfx_color_t *a = malloc(20 * 292 * sizeof(gfx_color_t));
-    gfx_color_t *b = malloc(20 * 292 * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(a);
+    gfx_color_t *row_b = malloc(20 * 292 * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(row_b);
 
     /* Encoder off: the feedback's angle is on show and follows it. */
     servo_screen_feedback(1700u, 0.2f, true);
@@ -5618,8 +5634,8 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     measured_row(a);
     servo_screen_feedback(1300u, 0.2f, true);
     scr->render(&cv, 0);
-    measured_row(b);
-    CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+    measured_row(row_b);
+    CHECK(memcmp(a, row_b, 20 * 292 * sizeof(gfx_color_t)) != 0);
 
     /* Encoder on, no reading: dashes, whatever the feedback says. */
     settings_set(SET_ENC_EN, 1.0f);
@@ -5629,17 +5645,17 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     measured_row(a);
     servo_screen_feedback(1300u, 0.2f, true);
     scr->render(&cv, 0);
-    measured_row(b);
-    CHECK_EQ(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)), 0);
+    measured_row(row_b);
+    CHECK_EQ(memcmp(a, row_b, 20 * 292 * sizeof(gfx_color_t)), 0);
 
     /* A reading puts the encoder's angle there. */
-    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false };
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false };
     servo_screen_encoder(&e);
     scr->render(&cv, 0);
-    measured_row(b);
-    CHECK(memcmp(a, b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+    measured_row(row_b);
+    CHECK(memcmp(a, row_b, 20 * 292 * sizeof(gfx_color_t)) != 0);
     free(a);
-    free(b);
+    free(row_b);
 }
 
 TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
@@ -5997,7 +6013,7 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
 
     /* A live count is the centre. */
-    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false };
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
     servo_screen_encoder(&e);
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
@@ -6011,7 +6027,7 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
 
     /* A reading that has gone sets nothing; with the encoder off in SETUP
      * the row is faint and sets nothing either. */
-    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false };
+    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false, false, false, false };
     servo_screen_encoder(&e2);
     settings_set(SET_ENC_EN, 0.0f);
     tap(ROW_L_X, ROW_Y(3));
@@ -6026,7 +6042,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     tap(ROW_L_X, ROW_Y(2));                    /* AS5600 on */
     CHECK(settings_get_bool(SET_ENC_EN));
     settings_set(SET_ENC_CENTRE, 1000.0f);
-    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false };
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
     servo_screen_encoder(&e);
 
     /* The link drops: ENC CENTRE takes nothing from the last count. */
@@ -6045,7 +6061,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     servo_screen_set_link(true);
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
-    const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false };
+    const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false, false, false, false };
     servo_screen_encoder(&f);
     tap(ROW_L_X, ROW_Y(3));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);
@@ -6058,7 +6074,7 @@ TEST_CASE(a_run_with_the_encoder_on_writes_the_angle_columns)
     settings_set(SET_ENC_EN, 1.0f);
     settings_set(SET_ENC_CENTRE, 3000.0f);
     servo_screen_set_enc_held(true);
-    b.enc = true;
+    bench.enc = true;
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
@@ -6066,11 +6082,11 @@ TEST_CASE(a_run_with_the_encoder_on_writes_the_angle_columns)
     }
     CHECK(!servo_screen_testing());
     bench_frames(1000u);
-    CHECK(strstr(b.csv_head, ";travel (ms);angle (deg);travel angle (ms)") != NULL);
-    CHECK(strstr(b.report, "ENCODER (angles in degrees from the centre count") != NULL);
-    CHECK(strstr(b.report, "centre count 3000,") != NULL);
-    CHECK(strstr(b.report, "Commanded: ") != NULL);
-    CHECK(b.ends >= 1u);
+    CHECK(strstr(bench.csv_head, ";travel (ms);angle (deg);travel angle (ms)") != NULL);
+    CHECK(strstr(bench.report, "ENCODER (angles in degrees from the centre count") != NULL);
+    CHECK(strstr(bench.report, "centre count 3000,") != NULL);
+    CHECK(strstr(bench.report, "Commanded: ") != NULL);
+    CHECK(bench.ends >= 1u);
 }
 
 /* "No magnet" reaches the screen once, when it begins.  A run started
@@ -6092,8 +6108,8 @@ TEST_CASE(a_run_started_without_a_magnet_says_so_in_its_report)
     }
     CHECK(!servo_screen_testing());
     bench_frames(1000u);
-    CHECK(strstr(b.report, "No angle reading reached the run.") != NULL);
-    CHECK(strstr(b.report, "No magnet: the AS5600 reported none 1 time(s).")
+    CHECK(strstr(bench.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(bench.report, "No magnet: the AS5600 reported none 1 time(s).")
           != NULL);
 
     /* A sensor that stopped answering before the run is not "no magnet". */
@@ -6109,22 +6125,22 @@ TEST_CASE(a_run_started_without_a_magnet_says_so_in_its_report)
         bench_frames(500u);
     }
     bench_frames(1000u);
-    CHECK(strstr(b.report, "No angle reading reached the run.") != NULL);
-    CHECK(strstr(b.report, "No magnet:") == NULL);
+    CHECK(strstr(bench.report, "No angle reading reached the run.") != NULL);
+    CHECK(strstr(bench.report, "No magnet:") == NULL);
 }
 
 TEST_CASE(a_run_with_the_encoder_off_writes_the_old_columns)
 {
     bench_fresh();
     short_runs();
-    b.enc = true;                               /* readings, AS5600 off */
+    bench.enc = true;                               /* readings, AS5600 off */
     hold_start(2.3f);
     for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
         bench_frames(500u);
     }
     bench_frames(1000u);
-    CHECK(strstr(b.csv_head, "angle") == NULL);
-    CHECK(strstr(b.report, "ENCODER") == NULL);
+    CHECK(strstr(bench.csv_head, "angle") == NULL);
+    CHECK(strstr(bench.report, "ENCODER") == NULL);
 }
 
 /* The SENSE set-up is written only while the bank is disarmed: an AS5600
@@ -6137,15 +6153,15 @@ TEST_CASE(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_column
     settings_set(SET_ENC_EN, 1.0f);
     settings_set(SET_ENC_CENTRE, 3000.0f);
     servo_screen_set_enc_held(false);
-    b.enc = true;
+    bench.enc = true;
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
         bench_frames(500u);
     }
     bench_frames(1000u);
-    CHECK(strstr(b.csv_head, "angle") == NULL);
-    CHECK(strstr(b.report, "ENCODER") == NULL);
+    CHECK(strstr(bench.csv_head, "angle") == NULL);
+    CHECK(strstr(bench.report, "ENCODER") == NULL);
 }
 
 /* ------------------------------------------- a drag that lost its release */
@@ -6558,8 +6574,9 @@ static void rail_supply(float v, float i)
 static sense_link_win_t rail_win(int ma, unsigned mv)
 {
     static uint16_t number;
+    number = (uint16_t)(number + 1u);
     const sense_link_win_t w = {
-        .number = ++number, .current = true, .voltage = true,
+        .number = number, .current = true, .voltage = true,
         .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma, .min_ma = (int16_t)ma,
         .mean_mv = (uint16_t)mv, .min_mv = (uint16_t)mv,
     };
@@ -7372,7 +7389,7 @@ static void a_short_run(bool changing, bool behind)
     if (behind) {
         meter(SERVO_SOURCE_INA3221);
         meter(SERVO_SOURCE_PDMINI);
-        b.behind = true;
+        bench.behind = true;
     }
     hold_start(2.3f);
     for (int i = 0; i < 600 && servo_screen_testing(); ++i) {
@@ -7396,29 +7413,29 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
 {
     a_short_run(false, false);
     CHECK(!servo_screen_testing());
-    CHECK(strstr(b.report, "Result:         PASS") != NULL);
-    static char report[sizeof(b.report)];
-    memcpy(report, b.report, sizeof(report));
-    const unsigned csv = b.csv, txt = b.txt;
+    CHECK(strstr(bench.report, "Result:         PASS") != NULL);
+    static char report[sizeof(bench.report)];
+    memcpy(report, bench.report, sizeof(report));
+    const unsigned csv = bench.csv, txt = bench.txt;
     CHECK(csv > 50u);
 
     a_short_run(true, false);
     CHECK(!servo_screen_testing());
-    CHECK_EQ(b.opens, 1u);
-    CHECK_EQ(b.ends, 1u);
-    CHECK_EQ(b.csv, csv);
-    CHECK_EQ(b.txt, txt);
-    CHECK_STR_EQ(b.report, report);
-    CHECK(strstr(b.report, "Supply:         PD mini") != NULL);
-    CHECK(!b.out);
+    CHECK_EQ(bench.opens, 1u);
+    CHECK_EQ(bench.ends, 1u);
+    CHECK_EQ(bench.csv, csv);
+    CHECK_EQ(bench.txt, txt);
+    CHECK_STR_EQ(bench.report, report);
+    CHECK(strstr(bench.report, "Supply:         PD mini") != NULL);
+    CHECK(!bench.out);
 
     /* Samples taken under a meter replaced since are no points of the
      * plot, and the run reads every one of them. */
     a_short_run(false, true);
     CHECK(!servo_screen_testing());
-    CHECK_EQ(b.csv, csv);
-    CHECK_EQ(b.txt, txt);
-    CHECK_STR_EQ(b.report, report);
+    CHECK_EQ(bench.csv, csv);
+    CHECK_EQ(bench.txt, txt);
+    CHECK_STR_EQ(bench.report, report);
     CHECK_EQ(servo_screen_power_points(), 0);
 
     /* Mid-run, on each meter: the right card as a full redraw draws it,
@@ -7463,8 +7480,8 @@ static void bench_on_ina(void)
     short_runs();
     meter(SERVO_SOURCE_PDMINI);
     meter(SERVO_SOURCE_INA3221);
-    b.ina = true;
-    b.win_next = b.now;
+    bench.ina = true;
+    bench.win_next = bench.now;
     bench_frames(200u);
 }
 
@@ -7500,43 +7517,43 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     settings_set(SET_INA3221_MOHM, 50.0f);
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    const unsigned wins0 = b.wins;
+    const unsigned wins0 = bench.wins;
     /* A window without a stamp of its own is stamped where the screen has
      * it, and is the run's reading as any other. */
     bench_frames(1000u);
-    const unsigned rows0 = b.csv;
+    const unsigned rows0 = bench.csv;
     sense_link_win_t unstamped = rail_win(120, 4800u);
-    unstamped.number = (uint16_t)(b.win_number + 1u);
-    ++b.win_number;
+    unstamped.number = (uint16_t)(bench.win_number + 1u);
+    ++bench.win_number;
     window(&unstamped);
-    ++b.wins;
+    ++bench.wins;
     bench_frames(20u);
-    CHECK(b.csv >= rows0 + 1u);
+    CHECK(bench.csv >= rows0 + 1u);
     CHECK(servo_screen_testing());
     run_out_bench();
-    CHECK(b.released);
-    CHECK(!b.out);
-    CHECK_EQ(b.opens, 1u);
-    CHECK_EQ(b.ends, 1u);
-    CHECK(strstr(b.report, "Result:         PASS") != NULL);
-    CHECK(strstr(b.report, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(b.report, "Current:        INA3221 CH1, shunt 50.0 mOhm, "
+    CHECK(bench.released);
+    CHECK(!bench.out);
+    CHECK_EQ(bench.opens, 1u);
+    CHECK_EQ(bench.ends, 1u);
+    CHECK(strstr(bench.report, "Result:         PASS") != NULL);
+    CHECK(strstr(bench.report, "Supply:         PD mini\n") != NULL);
+    CHECK(strstr(bench.report, "Current:        INA3221 CH1, shunt 50.0 mOhm, "
                            "range 3.276 A\n") != NULL);
-    CHECK(strstr(b.report, "Voltage:        INA3221 CH1, load side of the "
+    CHECK(strstr(bench.report, "Voltage:        INA3221 CH1, load side of the "
                            "shunt\n") != NULL);
-    CHECK(strstr(b.report, "INA3221:        not used") == NULL);
-    CHECK(strstr(b.csv_head, ";travel (ms);meter;window;current max (A);")
+    CHECK(strstr(bench.report, "INA3221:        not used") == NULL);
+    CHECK(strstr(bench.csv_head, ";travel (ms);meter;window;current max (A);")
           != NULL);
-    CHECK(strstr(b.csv_last, ";INA3221;") != NULL);
+    CHECK(strstr(bench.csv_last, ";INA3221;") != NULL);
     /* Every window that arrived while it ran is a row, and no supply
      * reading is: 20 rows a second, not 10 or 30. */
-    CHECK(b.csv - 1u <= b.wins - wins0);
-    CHECK(b.csv - 1u + 40u >= b.wins - wins0);
+    CHECK(bench.csv - 1u <= bench.wins - wins0);
+    CHECK(bench.csv - 1u + 40u >= bench.wins - wins0);
     /* The default STALL AT, 2.00 A, is at the supply's 2.00 A limit and
      * under this shunt's range. */
-    CHECK(strstr(b.report, "STALL AT 2.00 A cannot be reached: current "
+    CHECK(strstr(bench.report, "STALL AT 2.00 A cannot be reached: current "
                            "limit 2.00 A\n") != NULL);
-    CHECK(strstr(b.report, "INA3221 range") == NULL);
+    CHECK(strstr(bench.report, "INA3221 range") == NULL);
 }
 
 /* A window stamped on tick 0 is stamped: its row sits where tick 0 is on the
@@ -7547,38 +7564,38 @@ TEST_CASE(an_ina3221_window_stamped_on_tick_zero_keeps_its_stamp)
     static const uint32_t k_base[] = { 5000u, 0xFFFFFFFFu - 2500u };
     for (size_t k = 0; k < sizeof(k_base) / sizeof(k_base[0]); ++k) {
         bench_fresh();
-        b.now = k_base[k];
-        b.next = b.now;
-        servo_screen_clock(b.now);
+        bench.now = k_base[k];
+        bench.next = bench.now;
+        servo_screen_clock(bench.now);
         settings_set(SET_INA3221_EN, 1.0f);
         short_runs();
         meter(SERVO_SOURCE_PDMINI);
         meter(SERVO_SOURCE_INA3221);
-        b.ina = true;
-        b.win_next = b.now;
+        bench.ina = true;
+        bench.win_next = bench.now;
         bench_frames(200u);
         hold_start(2.3f);
         CHECK(servo_screen_testing());
         /* Run the clock past tick 0 when it started before it. */
-        while ((int32_t)b.now < 1000) {
+        while ((int32_t)bench.now < 1000) {
             bench_frames(100u);
         }
         bench_frames(1000u);
-        b.csv_last[0] = '\0';
+        bench.csv_last[0] = '\0';
         sense_link_win_t w = rail_win(120, 4800u);
-        w.number    = (uint16_t)(b.win_number + 1u);
-        ++b.win_number;
+        w.number    = (uint16_t)(bench.win_number + 1u);
+        ++bench.win_number;
         w.taken_ms  = 0u;
         w.stamped   = true;
         window(&w);
         bench_drain();
         CHECK(servo_screen_testing());
         if (k == 0u) {
-            CHECK(strncmp(b.csv_last, "0.000;", 6) == 0);
+            CHECK(strncmp(bench.csv_last, "0.000;", 6) == 0);
         } else {
             /* Tick 0 is under 0.5 s after the run began and over 1 s
              * before the clock reads what it does now. */
-            CHECK(strncmp(b.csv_last, "0.", 2) == 0);
+            CHECK(strncmp(bench.csv_last, "0.", 2) == 0);
         }
         run_out_bench();
     }
@@ -7611,14 +7628,14 @@ TEST_CASE(the_meter_changing_ends_a_run_on_the_ina3221)
             CHECK(servo_screen_testing());
             bench_frames(3000u);
             CHECK(servo_screen_testing());
-            CHECK(b.out);
+            CHECK(bench.out);
             /* A drop from before the run is not this run's. */
             servo_screen_source_dropped(SERVO_SOURCE_WHY_RESET,
                                         meter_changes - 1u);
             meter(SERVO_SOURCE_INA3221);
             CHECK(servo_screen_testing());
-            b.ina = false;
-            const unsigned rows = b.csv;
+            bench.ina = false;
+            const unsigned rows = bench.csv;
             const servo_source_id_t to =
                 (k_case[k].why == SERVO_SOURCE_WHY_NO_LINK)
                     ? SERVO_SOURCE_MODEL : SERVO_SOURCE_PDMINI;
@@ -7640,23 +7657,23 @@ TEST_CASE(the_meter_changing_ends_a_run_on_the_ina3221)
                 st.output = true;
                 st.mode = SUPPLY_MODE_CV;
                 st.set_v = supply_screen_set_v();
-                st.samples = ++b.samples;
-                st.taken_ms = b.now;
+                st.samples = ++bench.samples;
+                st.taken_ms = bench.now;
                 st.stamped = true;
                 servo_screen_supply_at(&st, meter_id, meter_changes);
             }
             CHECK(!servo_screen_testing());
             bench_frames(2000u);
-            CHECK(!b.out);
-            CHECK(b.released);
+            CHECK(!bench.out);
+            CHECK(bench.released);
             char want[96];
             snprintf(want, sizeof(want), "Result:         ABORTED - %s\n",
                      k_case[k].text);
-            CHECK(strstr(b.report, want) != NULL);
+            CHECK(strstr(bench.report, want) != NULL);
             /* No row after the end, and none of the PD mini's. */
-            CHECK(b.csv <= rows + 1u);
-            CHECK(strstr(b.csv_last, ";INA3221;") != NULL);
-            CHECK_EQ(b.ends, 1u);
+            CHECK(bench.csv <= rows + 1u);
+            CHECK(strstr(bench.csv_last, ";INA3221;") != NULL);
+            CHECK_EQ(bench.ends, 1u);
         }
     }
 }
@@ -7676,8 +7693,8 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
     CHECK(servo_screen_testing());
     bench_frames(2000u);
     meter(SERVO_SOURCE_INA3221);
-    b.ina = true;
-    b.win_next = b.now;
+    bench.ina = true;
+    bench.win_next = bench.now;
     bench_frames(1000u);
     CHECK(servo_screen_testing());
     /* And it stopping again, with a reason. */
@@ -7685,20 +7702,20 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
     meter(SERVO_SOURCE_PDMINI);
     CHECK(servo_screen_testing());
     run_out_bench();
-    CHECK(strstr(b.report, "Result:         PASS") != NULL);
-    CHECK(strstr(b.report, "Current:        PD mini\n") != NULL);
-    CHECK(strstr(b.report, "INA3221:        not used: it has worked for "
+    CHECK(strstr(bench.report, "Result:         PASS") != NULL);
+    CHECK(strstr(bench.report, "Current:        PD mini\n") != NULL);
+    CHECK(strstr(bench.report, "INA3221:        not used: it has worked for "
                            "less than 1 s\n") != NULL);
-    CHECK(strstr(b.csv_last, ";PDMINI;;;;;") != NULL);
+    CHECK(strstr(bench.csv_last, ";PDMINI;;;;;") != NULL);
     /* About ten rows a second for the run, not the windows' twenty. */
-    CHECK(b.csv < b.samples);
+    CHECK(bench.csv < bench.samples);
 
     /* The INA3221 off in SETUP: the line is not written. */
     bench_fresh();
     short_runs();
     hold_start(2.3f);
     run_out_bench();
-    CHECK(strstr(b.report, "INA3221:") == NULL);
+    CHECK(strstr(bench.report, "INA3221:") == NULL);
 
     /* Each condition the panel names for the INA3221 not being the meter,
      * as the report of a run on the PD mini states it; the ones that are
@@ -7731,14 +7748,14 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
         hold_start(2.3f);
         CHECK(servo_screen_testing());
         run_out_bench();
-        CHECK(strstr(b.report, "Current:        PD mini\n") != NULL);
+        CHECK(strstr(bench.report, "Current:        PD mini\n") != NULL);
         if (k_why[k].text == NULL) {
-            CHECK(strstr(b.report, "INA3221:") == NULL);
+            CHECK(strstr(bench.report, "INA3221:") == NULL);
         } else {
             char want[128];
             snprintf(want, sizeof(want), "INA3221:        not used: %s\n",
                      k_why[k].text);
-            CHECK(strstr(b.report, want) != NULL);
+            CHECK(strstr(bench.report, want) != NULL);
         }
     }
 }
@@ -7753,12 +7770,12 @@ TEST_CASE(a_run_on_the_modelled_supply_reads_the_model)
     CHECK(servo_screen_testing());
     run_out_bench();
     supply_screen_set_model(false);
-    CHECK(strstr(b.report, "Supply:         the panel's model: every "
+    CHECK(strstr(bench.report, "Supply:         the panel's model: every "
                            "reading is simulated\n") != NULL);
-    CHECK(strstr(b.report, "Current:        the panel's model\n") != NULL);
-    CHECK(strstr(b.report, "INA3221:        not used: the supply is the "
+    CHECK(strstr(bench.report, "Current:        the panel's model\n") != NULL);
+    CHECK(strstr(bench.report, "INA3221:        not used: the supply is the "
                            "panel's model\n") != NULL);
-    CHECK(strstr(b.csv_last, ";MODEL;;;;;") != NULL);
+    CHECK(strstr(bench.csv_last, ";MODEL;;;;;") != NULL);
 }
 
 /* The windows stopping while the meter is still named the INA3221: the
@@ -7769,15 +7786,15 @@ TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     bench_frames(3000u);
-    b.ina = false;
+    bench.ina = false;
     bench_frames(480u);
     CHECK(servo_screen_testing());
     bench_frames(60u);
     CHECK(!servo_screen_testing());
     bench_frames(1000u);
-    CHECK(!b.out);
-    CHECK(b.released);
-    CHECK(strstr(b.report, "Result:         ABORTED - no INA3221 window "
+    CHECK(!bench.out);
+    CHECK(bench.released);
+    CHECK(strstr(bench.report, "Result:         ABORTED - no INA3221 window "
                            "for 0.5 s\n") != NULL);
 }
 
@@ -7794,8 +7811,8 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
             bench_fresh();
             short_runs();
         }
-        b.sv.cfg.stop_hi_us = 1850u;
-        b.limits = true;
+        bench.sv.cfg.stop_hi_us = 1850u;
+        bench.limits = true;
         CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 2.0f, 1e-6f);
         CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-6f);
         hold_start(2.3f);
@@ -7807,11 +7824,11 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
         CHECK(!servo_screen_testing());
         CHECK(ran < 12000u);
         bench_frames(1000u);
-        CHECK(!b.out);
-        CHECK(b.released);
-        CHECK(strstr(b.report, "Result:         ABORTED - constant current "
+        CHECK(!bench.out);
+        CHECK(bench.released);
+        CHECK(strstr(bench.report, "Result:         ABORTED - constant current "
                                "for 1 s\n") != NULL);
-        CHECK(strstr(b.report, "STALL AT 2.00 A cannot be reached: current "
+        CHECK(strstr(bench.report, "STALL AT 2.00 A cannot be reached: current "
                                "limit 2.00 A\n") != NULL);
     }
 }
@@ -7890,7 +7907,7 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
         bench_frames(3000u);
         CHECK(told.running);
         CHECK_EQ(told.ends, 0u);
-        b.ina = false;
+        bench.ina = false;
         supply_state_t st;
         memset(&st, 0, sizeof(st));
         st.online = true;
@@ -7898,8 +7915,8 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
         st.output = true;
         st.mode = SUPPLY_MODE_CV;
         st.set_v = supply_screen_set_v();
-        st.samples = ++b.samples;
-        st.taken_ms = b.now;
+        st.samples = ++bench.samples;
+        st.taken_ms = bench.now;
         st.stamped = true;
         switch (how) {
         case 0: {                       /* a window under another meter */
@@ -7921,9 +7938,9 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
             servo_screen_supply(&st);
             break;
         case 3:                         /* no window for 500 ms: a tick */
-            b.now += 600u;
-            servo_screen_clock(b.now);
-            st.taken_ms = b.now;
+            bench.now += 600u;
+            servo_screen_clock(bench.now);
+            st.taken_ms = bench.now;
             st.stamped = true;
             servo_screen_supply(&st);
             CHECK(told.running);

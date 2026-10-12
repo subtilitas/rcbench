@@ -210,7 +210,7 @@ decken ab, was das Werkzeug nicht sieht, und jede Tiefe oben ist deshalb eine
 Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
-  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 185
+  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 188
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

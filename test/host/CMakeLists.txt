@@ -113,9 +113,12 @@ foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}")
-    # A case that is defined and not in main()'s RUN list is a static
-    # function nothing calls: an error, in this job and the sanitizer one.
-    target_compile_options(test_${suite} PRIVATE -Werror=unused-function)
+    # The libraries' flags, and with them -Werror in the ordinary job.  A
+    # case that is defined and not in main()'s RUN list is a static function
+    # nothing calls: an error in this job and, through the extra flag, in the
+    # sanitizer one, which drops -Werror.
+    target_compile_options(test_${suite} PRIVATE ${STRICT}
+                           -Werror=unused-function)
     add_test(NAME ${suite} COMMAND test_${suite})
     # The CSV (comma-separated values) fixtures are the corpus the log parser
     # is held to; the suite finds them relative to its own source directory,
@@ -181,6 +184,8 @@ add_executable(sense_trace_replay sense_trace_replay.c)
 target_link_libraries(sense_trace_replay PRIVATE ${UNDER_TEST})
 add_executable(sense_trace_gen sense_trace_gen.c)
 target_link_libraries(sense_trace_gen PRIVATE ${UNDER_TEST})
+target_compile_options(sense_trace_replay PRIVATE ${STRICT})
+target_compile_options(sense_trace_gen PRIVATE ${STRICT})
 target_include_directories(sense_trace_gen PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}")
 # Registered where the tool is: a copy of the tree without tools/, as
