@@ -21,6 +21,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "link_can.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -100,6 +102,32 @@ bool mcp2515_pack_id(uint32_t id, uint8_t out[4]);
  * invent twenty-nine bits out of eleven.
  */
 bool mcp2515_unpack_id(const uint8_t in[4], uint32_t *id);
+
+/** Receive buffers of the controller: RXB0 and RXB1. */
+#define MCP2515_RX_BUFFERS 2u
+
+/**
+ * Take one receive buffer, consume it and copy its 13 registers (SIDH to D7)
+ * to @p buf.  False when no buffer holds a frame.
+ */
+typedef bool (*mcp2515_fetch_fn)(void *ctx, uint8_t buf[13]);
+
+/**
+ * Turn the 13 registers of one receive buffer into a frame.
+ *
+ * False for a frame this link does not carry: an 11-bit identifier, a remote
+ * frame (bit 6 of the DLC register, RTR) whose data registers hold stale
+ * bytes, or a length above 8.
+ */
+bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f);
+
+/**
+ * The next frame this link carries.  A buffer @p fetch hands over and
+ * mcp2515_decode_rx() refuses is consumed and the next buffer is tried, up to
+ * MCP2515_RX_BUFFERS, so a valid frame in RXB1 does not wait behind a refused
+ * one in RXB0.  False when no buffer holds a valid frame.
+ */
+bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f);
 
 #ifdef __cplusplus
 }

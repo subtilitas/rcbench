@@ -20,13 +20,22 @@ Everything that parses input somebody else produced:
 | Module | Input |
 | --- | --- |
 | `shared/logfile` | CSV (comma-separated values) from an SD card |
+| `shared/esc` | ESC (electronic speed controller) profile JSON (JavaScript Object Notation) from an SD card |
+| `protocols/kst` | KST servo programmer files from an SD card, and servo replies on the programming wire |
 | `protocols/sbus`, and the receiver decoders that follow it | frames from a receiver |
-| `protocols/openyge` | ESC (electronic speed controller) telemetry and parameter frames |
+| `protocols/openyge` | ESC telemetry and parameter frames |
+| `protocols/dshot` | DShot telemetry bursts from an ESC |
+| `protocols/pdmini` | UART (universal asynchronous receiver-transmitter) bytes from the PD (Power Delivery) mini module |
+| `protocols/phase_tap` | edges of an ESC motor phase |
 | `shared/link` | CAN (Controller Area Network) frames between the two boards |
+| `shared/can` | CAN controller frames and the CAN self-test status frame |
 
-All of these are fed malformed input by the test suite, which runs under
-AddressSanitizer and UBSan (UndefinedBehaviorSanitizer) in CI (continuous
-integration). A crash, a read past the end of a buffer or an infinite loop
+`tools/security_parsers.py --check` derives this list from the public headers
+under `shared/` and `protocols/` and fails when the table and the headers
+disagree. CI (continuous integration) runs it.
+
+The test suite runs under AddressSanitizer and UBSan
+(UndefinedBehaviorSanitizer) in CI. A crash, a read past the end of a buffer or an infinite loop
 reachable from any of these inputs is a bug worth reporting.
 
 ## Reporting

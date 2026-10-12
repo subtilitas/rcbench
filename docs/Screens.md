@@ -1963,8 +1963,11 @@ The save waits for the bench to stop driving, and then for a gap in the
 traffic. Writing flash stops the coprocessor with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178 us, against a CAN
-frame of about 130 us and two frames of buffer in the controller. The erase
-and the page program have not been timed apart from each other. A request lost
+frame of about 130 us and two frames of buffer in the controller. The figure is one
+measurement: 1 sample, taken on the bring-up module, with the flash part not
+yet identified. The erase and the page program have not been timed apart from
+each other. The window is to be argued again against the flash part's
+datasheet maximum once the part is known. A request lost
 in that window costs the panel 1000 ms of waiting, which is past the
 coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
