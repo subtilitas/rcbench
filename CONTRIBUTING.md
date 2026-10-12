@@ -212,14 +212,19 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   own constant, and the caller holds the two equal with a `_Static_assert`.
   A module without a pin driver says "no pin driver" in its `README.md`.
   `tools/check_protocols.py` checks, per module: the parts above; that no
-  include names a path leaving the module (`..` or an absolute path); that
+  include names a path with a `..` component or an absolute path, and that
+  `#include_next`, `#import` and `%:include` are read like `#include`; a
+  macro include and `__has_include` fail, because the tool does not expand
+  macros; that
   the `README.md` has a heading with "Interface", a heading "Trademarks"
   where it names a brand from the tool's `BRANDS` list, and the words "no
   pin driver" where the module has no `rp2350/` folder, all outside fenced
   code blocks; and that every `_Static_assert` in the C files under
   `shared/` and `firmware/` on a module constant is listed in the tool's
   `ASSERTED` table and every listed one exists. Assertions under `test/`
-  are not checked. The SPDX line of the module's `.c` and `.h` files is checked by
+  are not checked. The CMake include directories and link targets of a
+  module are not checked: only `REQUIRES` and `rcbench_` library names are
+  read. The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
   the module: link pages, the binding of an output to a pin, arming, STOP,

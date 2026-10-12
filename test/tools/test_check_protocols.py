@@ -132,7 +132,7 @@ def test_a_path_include_that_leaves_the_module_is_flagged(tmp_path):
                      + c.read_text().split("\n", 1)[1])
         found = cp.include_problems(m)
         assert len(found) == 1, target
-        assert "leaves wire/" in found[0]
+        assert "a path with a .. component or an absolute path" in found[0]
 
 
 def test_stdatomic_and_threads_are_standard_headers(tmp_path):
@@ -539,3 +539,58 @@ def test_a_missing_readme_is_the_layout_rules_finding(tmp_path):
     (m / "README.md").unlink()
     assert cp.readme_problems(m) == []
     assert cp.layout_problems(m) == ["protocols/wire/ has no README.md"]
+
+
+@pytest.mark.parametrize("text", [
+    "DShot300 and S.BUS2.\n", "works with FUTABA.\n", "the futaba radio\n"])
+def test_a_brand_with_a_suffix_or_in_other_case_is_a_brand(tmp_path, text):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    readme.write_text(readme.read_text() + text)
+    assert len(cp.readme_problems(m)) == 1
+    assert "has no heading" in cp.readme_problems(m)[0]
+
+
+def test_an_html_comment_is_no_heading_and_no_sentence(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "README.md").write_text(
+        "# wire\n\n<!--\n## Interface\nno pin driver\n-->\n")
+    assert len(cp.readme_problems(m)) == 2
+    (m / "README.md").write_text(
+        "# wire\n\n<!-- x -->## Interface\n\nno pin driver\n")
+    assert cp.readme_problems(m) == []
+
+
+def test_an_emphasised_heading_counts(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").write_text(
+        "# wire\n\n## **Interface**\n\nFutaba.\n\n## `_Trademarks_`\n")
+    assert cp.readme_problems(m) == []
+
+
+@pytest.mark.parametrize("line", [
+    '#include_next <foo.h>', '#import "../x.h"', '%:include "../x.h"',
+    '# include\\\n"../../shared/x.h"', '#include "a//b.h"',
+    '#include "//x"', '#include <a//b.h>', '#if __has_include("x.h")',
+    '#if __has_include_next(<x.h>)', '#include H', '#include FILE_NAME(x)',
+    '#include "..\\x.h"'])
+def test_an_include_bypass_is_flagged(tmp_path, line):
+    m = module(tmp_path)
+    c = m / "wire.c"
+    c.write_text(line + "\n" + c.read_text().split("\n", 1)[1])
+    assert len(cp.include_problems(m)) >= 1, line
+
+
+def test_includes_reads_continuations_digraphs_and_literal_slashes():
+    text = ('#include_next <a.h>\n#import "b.h"\n%:include "c.h"\n'
+            '#include \\\n  "d.h"\n#include "e//f.h" // tail\n'
+            '#define H "g.h"\n#include H\n'
+            'char *s = "/* #include \\"no.h\\" */";\n')
+    assert cp.includes(text) == [
+        ("<", "a.h"), ('"', "b.h"), ('"', "c.h"), ('"', "d.h"),
+        ('"', "e//f.h"), ("?", "H")]
+
+
+def test_a_string_with_slashes_does_not_hide_the_next_include():
+    text = 'const char *u = "http://x";\n#include "a.h"\n'
+    assert cp.includes(text) == [('"', "a.h")]

@@ -17,9 +17,13 @@ This tool reads each module and fails when one of these does not hold:
   interface is read without the SDK (software development kit);
 - every header under include/ and rp2350/ carries `extern "C"` and
   compiles by itself as C11 and as C++17, with `-Wall -Wextra -Werror`;
-- an include of a module file names no path that leaves the module: a
-  `..` component or an absolute path fails, also when the file it reaches
-  has the name of a header of the module;
+- an include of a module file names no path with a `..` component and no
+  absolute path, also when the file it reaches has the name of a header of
+  the module.  The scan reads `#include`, `#include_next`, `#import` and
+  their `%:` digraph forms, joins backslash-newline continuations first and
+  keeps string literals out of comment removal.  An operand that is neither
+  `<...>` nor `"..."` (a macro include) and any use of `__has_include` or
+  `__has_include_next` fail, because the tool does not expand macros;
 - the module's README.md has a heading with "Interface" in it; a heading
   "Trademarks" when the text names a brand listed in BRANDS below; and,
   for a module without an rp2350/ folder, the sentence "no pin driver";
@@ -39,6 +43,12 @@ This tool reads each module and fails when one of these does not hold:
   the table fails on a removed assertion and on a new one that is not
   recorded, and the search would flag every comparison that is not a pinned
   limit.
+
+Current limitation: the CMake include directories and link targets of a
+module are not checked.  A module that adds a project directory with
+`target_include_directories` or links a project library other than an
+`rcbench_` one passes, and a header found there can shadow a module header
+of the same name.  Only `REQUIRES` and `rcbench_` names are read.
 
 The SPDX (Software Package Data Exchange) line of the .c and .h files under
 protocols/ is held by tools/check_docs.py.
@@ -78,8 +88,19 @@ C_STANDARD = frozenset("""
 # What a pin driver may include from the pico-sdk.
 SDK_RE = re.compile(r"^(pico\.h|pico/.+\.h|hardware/.+\.h)$")
 
-INCLUDE_RE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*([<"])([^>"]+)[>"]',
-                        re.M)
+# A directive that includes a file: `#` or its digraph `%:`.
+DIRECTIVE = r"^[ \t]*(?:#|%:)[ \t]*(?:include_next|include|import)\b"
+INCLUDE_RE = re.compile(DIRECTIVE + r"[ \t]*(.*)$", re.M)
+OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
+HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
+CONTINUATION_RE = re.compile(r"\\\r?\n")
+# One token that the comment remover keeps or drops: the operand of an
+# include directive and string and character literals are kept whole, so a
+# `//` inside them starts no comment.
+SOURCE_TOKEN_RE = re.compile(
+    "(" + DIRECTIVE + r'[ \t]*(?:<[^>\n]*>|"[^"\n]*"))'
+    r"""|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')"""
+    r"|(/\*.*?\*/|//[^\n]*)", re.M | re.S)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
 
@@ -88,8 +109,11 @@ SOURCE_SUFFIXES = (".c", ".h", ".pio")
 BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
           "FrSky", "FlySky")
-BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![\w])"
-                      % "|".join(re.escape(b) for b in BRANDS))
+# A brand is found in any case and with a version suffix: DShot300, S.BUS2.
+BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![A-Za-z_])"
+                      % "|".join(re.escape(b) for b in BRANDS), re.I)
+HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.S)
+EMPHASIS_RE = re.compile(r"[*_`]")
 # An ATX heading's text: an optional closing sequence of `#` is no part of it.
 HEADING_RE = re.compile(
     r"^[ ]{0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$", re.M)
@@ -150,12 +174,37 @@ WARNINGS = ("-Wall", "-Wextra", "-Werror")
 LANGUAGES = (("C11", "c", "-std=c11"), ("C++17", "c++", "-std=c++17"))
 
 
+def strip_comments(text: str) -> str:
+    """@p text with its comments blanked, line continuations joined, and
+    string literals and include operands left whole."""
+    def blank(m: re.Match) -> str:
+        if m.group(3) is None:
+            return m.group(0)
+        return re.sub(r"[^\n]", " ", m.group(0))
+    return SOURCE_TOKEN_RE.sub(blank, CONTINUATION_RE.sub("", text))
+
+
 def includes(text: str) -> list[tuple[str, str]]:
-    """(form, name) for every #include of @p text outside a C comment, in
-    order: form is `<` or `"`."""
-    blanked = C_COMMENT_RE.sub(
-        lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
-    return INCLUDE_RE.findall(blanked)
+    """(form, name) for every include directive of @p text outside a C
+    comment, in order: form is `<` or `"`, or `?` when the operand is
+    neither (a macro) and name is the operand as written.  A use of
+    `__has_include` is listed as form `?`."""
+    blanked = strip_comments(text)
+    found = []
+    for m in re.finditer(r"^.*$", blanked, re.M):
+        line = m.group(0)
+        hit = INCLUDE_RE.match(line)
+        if hit:
+            operand = hit.group(1).strip()
+            op = OPERAND_RE.match(operand)
+            if op:
+                found.append(("<", op.group(1)) if op.group(1) is not None
+                             else ('"', op.group(2)))
+            else:
+                found.append(("?", operand))
+        for use in HAS_INCLUDE_RE.finditer(line):
+            found.append(("?", use.group(0)))
+    return found
 
 
 def modules(root: pathlib.Path = PROTOCOLS) -> list[pathlib.Path]:
@@ -194,12 +243,18 @@ def include_problems(module: pathlib.Path) -> list[str]:
         rel = path.relative_to(module.parent).as_posix()
         in_driver = is_driver(path, module)
         for form, name in includes(path.read_text(encoding="utf-8")):
+            if form == "?":
+                problems.append(
+                    f"{rel} includes {name}: an include the check cannot "
+                    "resolve (a macro or __has_include)")
+                continue
             if name in C_STANDARD:
                 continue
-            if ".." in name.split("/") or name.startswith("/"):
+            parts = re.split(r"[/\\]", name)
+            if ".." in parts or name.startswith(("/", "\\")):
                 problems.append(
-                    f"{rel} includes {name}: a path that leaves "
-                    f"{module.name}/")
+                    f"{rel} includes {name}: a path with a .. component "
+                    "or an absolute path")
                 continue
             if form == '"' and name in core:
                 continue
@@ -248,9 +303,10 @@ def layout_problems(module: pathlib.Path) -> list[str]:
 
 
 def prose(text: str) -> str:
-    """@p text without its fenced code blocks: a `# comment` in a CMake or
-    shell example is no heading.  A fence closes on a fence of the same
-    character, at least as long, or at the end of the text."""
+    """@p text without its fenced code blocks and HTML comments: a
+    `# comment` in a CMake or shell example is no heading.  A fence closes
+    on a fence of the same character, at least as long, or at the end of
+    the text."""
     out, fence = [], ""
     for line in text.splitlines(keepends=True):
         m = FENCE_RE.match(line)
@@ -263,7 +319,8 @@ def prose(text: str) -> str:
             fence = m.group(1)
         else:
             out.append(line)
-    return "".join(out)
+    return HTML_COMMENT_RE.sub(
+        lambda m: re.sub(r"[^\n]", "", m.group(0)), "".join(out))
 
 
 def readme_problems(module: pathlib.Path) -> list[str]:
@@ -276,7 +333,8 @@ def readme_problems(module: pathlib.Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     rel = path.relative_to(module.parent).as_posix()
     shown = prose(text)
-    headings = [h.lower() for h in HEADING_RE.findall(shown)]
+    headings = [EMPHASIS_RE.sub("", h).strip().lower()
+                for h in HEADING_RE.findall(shown)]
     problems = []
     if not any("interface" in h for h in headings):
         problems.append(f'{rel} has no heading with "Interface"')
