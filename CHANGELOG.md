@@ -57,12 +57,15 @@ history is in git.
   with a `..` component or an absolute path in a module fails; so does an
   include the tool cannot resolve (a macro operand or a call of
   `__has_include` outside a literal; `#ifdef __has_include` passes), a line
-  of only `#` or `%:`, a `??=` trigraph directive, and the trigraph `??/`
-  anywhere in the file. `#include_next`, `#import`, the `%:` digraph, line
-  continuations (LF and CRLF, also with blanks between the backslash and
-  the newline), a lone CR as a line end, `//` inside a string or a raw
-  string literal, a quote without its closing quote, which runs to the
-  line end, a number with digit separators (`1'000`) or an exponent sign
+  of only `#` or `%:`, any trigraph (`??` followed by one of
+  `= / ' ( ) ! < > -`) anywhere in the C of the file, a token after an
+  include operand, and a NUL byte anywhere in the file.
+  `#include_next`, `#import`, the `%:` digraph, line continuations (LF
+  and CRLF, also with blanks between the backslash and the newline), a
+  lone CR as a line end, `//` inside a string or a raw string literal, a
+  quote without its closing quote, which runs to the line end (a
+  backslash before that line end escapes nothing), a number with digit
+  separators (`1'000`; a `'` before a `.` ends it) or an exponent sign
   (`1e-x`), a leading byte order mark, form feed and vertical tab are
   read. Each file is read under the literal rules
   of ISO C11 and C17, gnu11 and gnu17 (raw strings), C23 (digit

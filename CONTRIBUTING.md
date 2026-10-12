@@ -228,19 +228,23 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   `#include_next`, `#import` and `%:include` are read like `#include`; a
   macro include and `__has_include` fail, because the tool does not expand
   macros; a call of `__has_include` outside a literal fails, and
-  `#ifdef __has_include` passes; a line of only `#` or `%:`, a `??=`
-  trigraph directive and the trigraph `??/` anywhere in the file fail,
-  because they can hide an include (ISO C11 and C17 read `??/` as a
-  backslash); a leading UTF-8 byte order mark, form feed and vertical tab
-  are read, CRLF and a lone CR end a line, a backslash followed by blanks
-  and a newline joins the lines, and a quote without its closing quote
-  runs to the line end, as GCC reads them; each file is
+  `#ifdef __has_include` passes; a line of only `#` or `%:`, any trigraph
+  (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C (in a
+  `.pio` file, the C pioasm writes) and a NUL byte anywhere in the file
+  fail, because they can hide an include (ISO C11 and C17 read `??/` as a
+  backslash and `??'` as `^`, and GCC reads a NUL as a blank); a leading
+  UTF-8 byte order mark, form feed and vertical tab are read, CRLF and a
+  lone CR end a line, a backslash followed by blanks and a newline joins
+  the lines, and a quote without its closing quote runs to the line end,
+  a backslash before that line end escaping nothing, as GCC reads them;
+  each file is
   read under the literal rules of ISO C11 and C17 (no raw strings, no digit
   separators), gnu11 and gnu17 (raw strings), C23 (digit separators), and
   gnu23 and C++14 or later (both), and an include found under any of them
   counts; a raw string literal is one token, with the line continuations
-  inside it kept, and a number runs through digit separators (`1'000`) and
-  exponent signs (`1e-x`); the C of a `.pio` file is what pioasm 2.3.0
+  inside it kept, and a number runs through digit separators (`1'000`,
+  but not a `'` before a `.`) and exponent signs (`1e-x`); the C of a
+  `.pio` file is what pioasm 2.3.0
   writes into the generated header, the `% c-sdk {` blocks after the first
   `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
   the line end, a `;` inside a `/* */` comment ends nothing, a block name

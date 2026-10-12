@@ -18,40 +18,41 @@ This tool reads each module and fails when one of these does not hold:
 - every header under include/ and rp2350/ carries `extern "C"` and
   compiles by itself as C11 and as C++17, with `-Wall -Wextra -Werror`;
 - an include of a module file names no path with a `..` component and no
-  absolute path, also when the file it reaches has the name of a header of
-  the module.  The scan reads `#include`, `#include_next`, `#import` and
-  their `%:` digraph forms, joins line continuations first (a backslash,
-  then optional spaces, tabs, form feeds or vertical tabs, then a
-  newline), except inside a raw string literal, and keeps string,
-  character and raw string literals and numbers out of comment removal.
-  A string or character literal without its closing quote runs to the
-  line end, as GCC lexes it.  A file is read as UTF-8 bytes with an
-  optional byte order mark; CRLF, LF and a lone CR end a line, and form
-  feed and vertical tab count as white space in a directive.  An operand
-  that is neither `<...>` nor `"..."` (a macro include) and a call of
-  `__has_include` or `__has_include_next` outside a literal fail, because
-  the tool does not expand macros; `#ifdef __has_include` passes.  A line
-  of only `#` or `%:`, a line that opens with the trigraph `??=`, and a
-  line with the trigraph `??/` anywhere, also in a comment or a literal,
-  fail, because a comment across a line break or a trigraph can hide an
-  include: ISO C11 and C17 read `??/` as a backslash, which joins lines
-  and escapes quotes.  A file is read under the literal rules of every
-  language it can be compiled as, and an include found under any of them
-  counts: ISO C11 and C17 (no raw strings, no digit separators), gnu11 and
-  gnu17 (raw strings), C23 (digit separators), gnu23 and C++14 or later
-  (both).  A raw string
-  literal (`R"x(...)x"`) is one token, with the line continuations inside
-  it kept, and a number is one preprocessing number, through digit
-  separators (`1'000`) and exponent signs (`1e-x`).  The C of a .pio file
-  is the text pioasm 2.3.0 writes into the header it generates: the lines
-  of each `% c-sdk {` block after the first `.program`, in order.  The
-  blocks are found as pioasm's lexer finds them, on the file as written:
-  a `;` or `//` comment runs to the line end, a `;` inside a `/* */`
-  comment ends nothing, the rest of a `.lang_opt` line is one string, a
-  block name is trimmed of spaces and tabs and an empty one is c-sdk, a
-  lone CR is a character of its line, and a block ends only at a line of
-  `%}` in column 0 with nothing but spaces, tabs and CRs after it.  CRLF
-  and a lone CR end a line of the C written;
+  absolute path, also when the file it reaches has the name of a header of the
+  module.  The scan reads `#include`, `#include_next`, `#import` and their `%:`
+  digraph forms, joins line continuations first (a backslash, then optional
+  spaces, tabs, form feeds or vertical tabs, then a newline), except inside a
+  raw string literal, and keeps string, character and raw string literals and
+  numbers out of comment removal.  A string or character literal without its
+  closing quote runs to the line end, as GCC lexes it; a backslash before that
+  line end escapes nothing.  A file is read as UTF-8 bytes with an optional
+  byte order mark; CRLF, LF and a lone CR end a line, and form feed and
+  vertical tab count as white space in a directive.  An operand that is neither
+  `<...>` nor `"..."` (a macro include) and a call of `__has_include` or
+  `__has_include_next` outside a literal fail, because the tool does not expand
+  macros; `#ifdef __has_include` passes.  A token after the operand fails the
+  include as well.  A line of only `#` or `%:` fails, because a comment across
+  a line break can hide the include that follows.  A trigraph (`??` followed by
+  one of `= / ' ( ) ! < > -`) anywhere in the C, also in a comment or a literal
+  (in a .pio file, in the C written, as below), fails: ISO C11 and C17 replace
+  it before the file is read, so `??/` is a backslash that joins lines and
+  escapes quotes, `??'` is a `^` that removes a quote, and `??=` is a `#`.  A
+  file with a NUL byte fails, so no NUL takes part in a line continuation or a
+  directive.  A file is read under the literal rules of every language it can
+  be compiled as, and an include found under any of them counts: ISO C11 and
+  C17 (no raw strings, no digit separators), gnu11 and gnu17 (raw strings), C23
+  (digit separators), gnu23 and C++14 or later (both). A raw string literal
+  (`R"x(...)x"`) is one token, with the line continuations inside it kept, and
+  a number is one preprocessing number, through digit separators (`1'000`, but
+  not a `'` before a `.`) and exponent signs (`1e-x`). The C of a .pio file is
+  the text pioasm 2.3.0 writes into the header it generates: the lines of each
+  `% c-sdk {` block after the first `.program`, in order.  The blocks are found
+  as pioasm's lexer finds them, on the file as written: a `;` or `//` comment
+  runs to the line end, a `;` inside a `/* */` comment ends nothing, the rest
+  of a `.lang_opt` line is one string, a block name is trimmed of spaces and
+  tabs and an empty one is c-sdk, a lone CR is a character of its line, and a
+  block ends only at a line of `%}` in column 0 with nothing but spaces, tabs
+  and CRs after it.  CRLF and a lone CR end a line of the C written;
 - the module's README.md has a heading with "Interface" in it; a heading
   with "Trademark" in it, in any case, when the text names a brand listed
   in BRANDS below; and, for a module without an rp2350/ folder, the
@@ -132,14 +133,13 @@ DIRECTIVE = (r"^" + WS + r"*(?:#|%:)" + WS
              + r"*(?:include_next|include|import)\b")
 INCLUDE_RE = re.compile(DIRECTIVE + WS + r"*(.*)$", re.M)
 # A line with nothing but `#` or `%:` (a null directive, or a directive
-# whose name a comment across a line break has cut off), and a line that
-# opens with the trigraph `??=` for `#`.
+# whose name a comment across a line break has cut off).
 BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
-TRIGRAPH_RE = re.compile(r"^" + WS + r"*\?\?=")
-# The trigraph `??/`, which ISO C11 and C17 read as a backslash anywhere in
-# the file, also in a comment: before a newline it joins two lines, in a
-# literal it escapes the quote.
-BACKSLASH_TRIGRAPH = "??/"
+# A trigraph, which ISO C11 and C17 replace anywhere in the file, also in a
+# comment, before lines are joined: `??/` is a backslash, which joins two
+# lines before a newline and escapes a quote in a literal, `??'` is a `^`,
+# which removes a quote, and `??=` is a `#`.
+TRIGRAPH_RE = re.compile(r"\?\?[=/'()!<>-]")
 # The opening of a raw string literal, `R"x(...)x"`: C++11 and the GNU
 # dialects of C.  Inside it, from its first `"` on, line continuations are
 # not joined, so its body is matched on the text as written.
@@ -148,16 +148,20 @@ RAW_BODY_RE = re.compile(
     r'"(?P<delim>[^()\\ \t\f\v\n]{0,16})\(.*?\)(?P=delim)"', re.S)
 # A string or character literal.  One without its closing quote runs to the
 # line end, as GCC lexes it, so a `/*` after it on the line opens nothing.
-STRING_LITERAL = r'"(?:\\.|[^"\\\n])*"?'
-CHAR_LITERAL = r"'(?:\\.|[^'\\\n])*'?"
+# A backslash escapes any character but a newline: a backslash before the
+# line end ends the literal there.
+STRING_LITERAL = r'"(?:\\[^\n]|[^"\\\n])*"?'
+CHAR_LITERAL = r"'(?:\\[^\n]|[^'\\\n])*'?"
 
 
 def number_re(separators: bool) -> str:
     """A preprocessing number: a digit, after an optional `.`, then digits,
     letters, `_`, `.` and an exponent sign after e, E, p or P; with digit
-    separators (C23, C++14) also a `'` before a digit or letter."""
+    separators (C23, C++14) also a `'` before a digit, letter or `_`.  A
+    `'` before a `.` ends the number, as GCC lexes it: `1'.x'` is `1` and
+    the character literal `'.x'`."""
     sep = "'?" if separators else ""
-    return r"(?<!\w)\.?\d(?:[eEpP][+-]|" + sep + r"[\w.])*"
+    return r"(?<!\w)\.?\d(?:[eEpP][+-]|" + sep + r"\w|\.)*"
 
 
 # The literal rules of the languages a module file is compiled as, as (raw
@@ -401,9 +405,6 @@ def view_includes(text: str, token_re: re.Pattern) -> list[tuple[str, str]]:
         if BARE_DIRECTIVE_RE.match(line):
             found.append(("#", line.strip()))
             continue
-        if TRIGRAPH_RE.match(line):
-            found.append(("??=", line.strip()))
-            continue
         hit = INCLUDE_RE.match(line)
         if hit:
             operand = hit.group(1).strip()
@@ -422,27 +423,31 @@ def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
     """(form, name) for every include directive of @p text outside a C
     comment: form is `<` or `"`, or `?` when the operand is neither (a
     macro) and name is the operand as written.  A line of only `#` or `%:`
-    is form `#`, a line that opens with `??=` is form `??=`, a line with
-    the trigraph `??/` anywhere is form `??/`, and a call of `__has_include`
-    outside a literal is form `?`.  The text is read under each set of
-    literal rules in LITERAL_VIEWS, and an entry found under any of them is
-    listed, in the order of the first view that finds it, as often as the
-    view that finds it most often.  @p pio is true for the text of a .pio
-    file, whose C is read as pioasm writes it into the generated header
-    (pio_c_code()).  CRLF and a lone CR end a line of C, after pio_c_code(),
-    because pioasm keeps a CR as a character of the line."""
+    is form `#`, each trigraph of the C is form `??` with the trigraph as
+    name, a NUL byte anywhere in @p text is form `NUL` with the number of
+    the line of the first one (CRLF, LF and a lone CR end a line), and a
+    call of `__has_include` outside a literal is form `?`.  The text is
+    read under each set of literal rules in LITERAL_VIEWS, and an entry
+    found under any of them is listed, in the order of the first view that
+    finds it, as often as the view that finds it most often.  @p pio is
+    true for the text of a .pio file, whose C is read as pioasm writes it
+    into the generated header (pio_c_code()).  CRLF and a lone CR end a
+    line of C, after pio_c_code(), because pioasm keeps a CR as a
+    character of the line."""
+    found: list[tuple[str, str]] = []
+    if "\0" in text:
+        before = NEWLINE_RE.sub("\n", text[:text.index("\0")])
+        found.append(("NUL", str(before.count("\n") + 1)))
     if pio:
         text = pio_c_code(text)
     text = NEWLINE_RE.sub("\n", text)
-    found: list[tuple[str, str]] = []
     for token_re in SOURCE_TOKEN_RES:
         seen: dict[tuple[str, str], int] = {}
         for entry in view_includes(text, token_re):
             seen[entry] = seen.get(entry, 0) + 1
             if seen[entry] > found.count(entry):
                 found.append(entry)
-    found.extend(("??/", line.strip()) for line in text.split("\n")
-                 if BACKSLASH_TRIGRAPH in line)
+    found.extend(("??", tri) for tri in TRIGRAPH_RE.findall(text))
     return found
 
 
@@ -494,15 +499,15 @@ def include_problems(module: pathlib.Path) -> list[str]:
                     f"{rel} has a line of only {name}: a comment across "
                     "a line break can hide the include that follows")
                 continue
-            if form == "??=":
+            if form == "??":
                 problems.append(
-                    f"{rel} has a ??= trigraph directive, which the check "
-                    "does not read")
+                    f"{rel} has the trigraph {name}, which ISO C11 and C17 "
+                    "replace and the check does not read")
                 continue
-            if form == "??/":
+            if form == "NUL":
                 problems.append(
-                    f"{rel} has the trigraph ??/, a backslash in ISO C11 "
-                    "and C17, which the check does not read")
+                    f"{rel} has a NUL byte on line {name}, which GCC reads "
+                    "as white space and the check does not read")
                 continue
             if form == "?":
                 problems.append(

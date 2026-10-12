@@ -571,7 +571,7 @@ def test_an_emphasised_heading_counts(tmp_path):
     '# include\\\n"../../shared/x.h"', '#include "a//b.h"',
     '#include "//x"', '#include <a//b.h>', '#if __has_include("x.h")',
     '#if __has_include_next(<x.h>)', '#include H', '#include FILE_NAME(x)',
-    '#include "..\\x.h"'])
+    '#include "..\\x.h"', '#include "\\x.h"', '#include "a.h" x'])
 def test_an_include_bypass_is_flagged(tmp_path, line):
     m = module(tmp_path)
     c = m / "wire.c"
@@ -635,7 +635,7 @@ def test_a_trigraph_directive_is_flagged(tmp_path, line):
     write_core(m, line + "\n")
     problems = cp.include_problems(m)
     assert len(problems) == 1
-    assert "??= trigraph" in problems[0]
+    assert "trigraph ??=" in problems[0]
 
 
 def test_has_include_is_refused_as_an_operator_only():
@@ -1087,6 +1087,61 @@ def test_a_backslash_trigraph_is_flagged(tmp_path, text):
     assert any("trigraph ??/" in p for p in problems), problems
 
 
+@pytest.mark.parametrize("tri", ["??=", "??/", "??'", "??(", "??)", "??!",
+                                 "??<", "??>", "??-"])
+def test_every_trigraph_is_flagged_anywhere(tmp_path, tri):
+    m = module(tmp_path)
+    write_core(m, "/* " + tri + ' */\nconst char *s = "' + tri + '";\n')
+    problems = cp.include_problems(m)
+    assert len(problems) == 2, problems
+    assert all("trigraph " + tri in p for p in problems), problems
+
+
+def test_a_quote_trigraph_fails_the_file_it_reads_differently():
+    """ISO C11 reads `??'"'/*"` as `^` and the string `"'/*"`, so the
+    include below is live there and hidden under the other standards."""
+    assert cp.includes("#if 0\n??'\"'/*\"\n#endif\n" + OUT
+                       + "#if 0\n*/\n#endif\n") == [("??", "??'")]
+
+
+def test_each_trigraph_is_listed_and_a_lone_question_mark_pair_is_not():
+    assert cp.includes("/* ??/ */\n/* ??/ */\n") == [("??", "??/"),
+                                                     ("??", "??/")]
+    assert cp.includes("/* ??' ??= */\n") == [("??", "??'"), ("??", "??=")]
+    assert cp.includes("x = a ?? b; y = '?'; /* ?? ?a ??? */\n") == []
+    # A trigraph is read before lines are joined, as GCC reads it.
+    assert cp.includes("?\\\n?=define A\n") == []
+
+
+def test_a_trigraph_in_the_c_of_a_pio_file_is_flagged(tmp_path):
+    m = module(tmp_path)
+    assert pio_with(m, ".program t\n; ??'\n    nop\n") == []
+    found = pio_with(m, ".program t\n    nop\n% c-sdk {\n// ??'\n%}\n")
+    assert len(found) == 1 and "trigraph ??'" in found[0], found
+
+
+@pytest.mark.parametrize("data, line", [
+    (b'/* x *\\\x00\n/\n#include "../../outside.h"\n/* */\n', 1),
+    (b'#include <stdint.h>\n\x00\\\n#include "../../outside.h"\n', 2),
+    (b"int a;\r\n/* \x00 */\r\n", 2), (b"int a;\r\r/* \x00 */\r", 3)])
+def test_a_nul_byte_fails_the_file(tmp_path, data, line):
+    """GCC reads a NUL as a blank: a backslash, NUL, newline joins the
+    lines, and the include after it is live.  The file fails."""
+    m = module(tmp_path)
+    (m / "wire.c").write_bytes(data)
+    problems = cp.include_problems(m)
+    assert ("wire/wire.c has a NUL byte on line %d, which GCC reads as "
+            "white space and the check does not read" % line) in problems
+
+
+def test_a_nul_byte_in_a_pio_file_fails_it(tmp_path):
+    m = module(tmp_path)
+    (m / cp.DRIVER / "wire.pio").write_bytes(b".program t\n; \x00\n    nop\n")
+    assert cp.include_problems(m) == [
+        "wire/rp2350/wire.pio has a NUL byte on line 2, which GCC reads as "
+        "white space and the check does not read"]
+
+
 # Each set of literal rules is the only one that finds the include in one
 # text: a raw string, a digit separator, or neither, opens a comment that
 # hides it under the other three.
@@ -1173,7 +1228,67 @@ DIFF_C = [
     ("c", '#if 0\n"open /* string\n#endif\n' + OUT + "/* */\n"),
     *[("h", text.replace('#include "b.h"\n', OUT))
       for text in VIEW_ONLY.values()],
+    # A `'` before a `.` ends a number: C23 and C++ read `1`, then the
+    # character literal `'.X'`, and no comment opens.
+    *[(k, "#if 0\n1'2 1'.X' '/*'\n#endif\n" + OUT + "#if 0\n*/\n#endif\n")
+      for k in ("c", "h")],
+    ("h", "#ifdef __cplusplus\n#define F(...)\nF(1.'a' /*')\n" + OUT
+     + "// */\n#endif\n"),
+    ("h", "#ifdef __cplusplus\n#define F(...)\nF(x1'a' /*')\n" + OUT
+     + "// */ )\n#endif\n"),
+    # A backslash before the line end escapes nothing: `"abc\` ends there.
+    *[("c", "#if 0\n" + q + "abc\\\\\n\nx" + q + " /*\n#endif\n" + OUT
+       + "#if 0\n*/\n#endif\n") for q in "\"'"],
+    ("c", 'x "a\\\\\n\n" /*\n' + OUT + "*/\n"),
+    ("c", 'const char *s = "\\\\" /*\n' + OUT + "*/\n"),
+    ("c", "int c = '\\\\' /*\n" + OUT + "*/\n"),
+    ("c", '#if 0\nx "a\n#endif\n/* "\n' + OUT + "*/\n"),
+    ("c", "#if 0\nx 'a\n#endif\n/* '\n" + OUT + "*/\n"),
+    # Raw strings: every prefix, a 16-character delimiter, the first end.
+    *[("h", p + 'R"x(" /* )x";\n' + OUT + "/* */\n")
+      for p in ("", "u8", "u", "U", "L")],
+    ("h", 'R"0123456789abcdef(" /* )0123456789abcdef";\n' + OUT
+     + "/* */\n"),
+    ("h", 'R"(a)" /* )";\n' + OUT + "// */\n"),
+    # Offsets between the text as written and the joined text.
+    ("h", '#define A \\\n x \\\nR"(" /* )"\n' + OUT + "/* */\n"),
+    ("h", '#define A \\\nR"(" /* )"\n' + OUT + "/* */\n"),
+    ("h", 'R\\\n"(" /* )";\n' + OUT + "/* */\n"),
+    ("h", '#define A \\\n R"(a)"/*\n' + OUT + "*/\n"),
+    # A directive starts a line; an include operand is one token.
+    ("c", "int x; #include <a/*b.h>\n" + OUT + "/* */\n"),
+    # An include operand is one token in a skipped group too, a `\` in it
+    # escapes nothing, and it ends at the line end.
+    ("c", '#if 0\n#include "w\\" x "/*"\n#endif\n' + OUT + "// */\n"),
+    ("c", '#if 0\n#include <a\n#endif\nconst char *s = "> /*";\n' + OUT
+     + "// */\n"),
+    ("c", '#if 0\n#include "a\n#endif\nconst char *s = "/*";\n' + OUT
+     + "// */\n"),
 ]
+# The C pioasm writes for these .pio texts, read by gcc: True where the
+# include is live.  Run without pioasm too, as fixed expectations.
+PIO_EXPECTED = {
+    # A `//` comment outside a block runs to the line end.
+    ".program t\n    nop\n// /*\n% c-sdk {\n" + OUT + "%}\n// */\n": True,
+    # A block start inside a `/* */` comment opens no block.
+    "/* .program x */\n% c-sdk {\n" + OUT + "%}\n.program t\n    nop\n":
+        False,
+    # `/*/` opens a comment and does not close it.
+    ".program t\n    nop\n/*/\n% c-sdk {\n" + OUT + "%}\n*/\n": False,
+    # A comment ends after its `*/`, and the next `/*` opens another.
+    ".program t\n    nop\n/* a *//* b\n% c-sdk {\n" + OUT + "%}\n*/\n":
+        False,
+    # A line of a VT is written, so the `//` comment ends before the
+    # include; a line of a CR is blank and dropped, so it does not.
+    ".program t\n    nop\n% c-sdk {\n// x \\\n\v\n" + OUT + "%}\n": True,
+    ".program t\n    nop\n% c-sdk {\n// x \\\n\r\n" + OUT + "%}\n": False,
+    # The name runs to the last `{`: `c-sdk {` is no c-sdk block.
+    ".program t\n    nop\n% c-sdk { {\n" + OUT + "%}\n": False,
+    # `%}` and a tab ends a block; `%}` and a form feed does not.
+    ".program t\n    nop\n% c-sdk {\n%}\t\n; /*\n% c-sdk {\n" + OUT
+    + "%}\n; */\n% c-sdk {\n*/\n%}\n": True,
+    ".program t\n    nop\n% c-sdk {\n/*\n%}\f\n*/\n" + OUT + "%}\n": True,
+}
 DIFF_PIO = [
     ".program t\n/* shift out; LSB first */\n    out pins, 1\n% c-sdk {\n"
     '#include "hardware/clocks.h"\n' + OUT + "%}\n/* end */\n",
@@ -1208,6 +1323,7 @@ DIFF_PIO = [
     # A block name with VT, FF or CR is no c-sdk block.
     *[".program t\n    nop\n% c-sdk" + b + "{\n/*\n%}\n% c-sdk {\n" + OUT
       + "%}\n" for b in ("\v", "\f", "\r")],
+    *PIO_EXPECTED,
 ]
 
 
@@ -1261,3 +1377,127 @@ def test_the_check_agrees_with_pioasm(tmp_path, text):
     assert run.returncode == 0, run.stderr
     found = ('"', "../outside.h") in cp.source_includes(src)
     assert found == compilers_include(out, True, tmp_path), text
+
+
+@pytest.mark.parametrize("text", list(PIO_EXPECTED))
+def test_a_pio_file_gives_the_c_pioasm_writes(text):
+    """The expectations of PIO_EXPECTED, checked against pioasm 2.3.0 and
+    gcc by test_the_check_agrees_with_pioasm."""
+    found = ('"', "../outside.h") in cp.includes(text, pio=True)
+    assert found == PIO_EXPECTED[text], text
+
+
+@pytest.mark.parametrize("text, found", [
+    ('u8R"x(" /* )x";\n' + OUT + "/* */\n", True),
+    ('LR"x(" /* )x";\n' + OUT + "/* */\n", True),
+    ('uR"x(" /* )x";\n' + OUT + "/* */\n", True),
+    ('R"0123456789abcdef(" /* )0123456789abcdef";\n' + OUT + "/* */\n",
+     True),
+    ('R"(a)" /* )";\n' + OUT + "// */\n", False),
+    ('#define A \\\n x \\\nR"(" /* )"\n' + OUT + "/* */\n", True),
+    ('#define A \\\nR"(" /* )"\n' + OUT + "/* */\n", True),
+    ('R\\\n"(" /* )";\n' + OUT + "/* */\n", True),
+    ('#define A \\\n R"(a)"/*\n' + OUT + "*/\n", False),
+    ('const char *s = "\\\\" /*\n' + OUT + "*/\n", False),
+    ("int c = '\\\\' /*\n" + OUT + "*/\n", False),
+    ('#if 0\nx "a\n#endif\n/* "\n' + OUT + "*/\n", False),
+    ('x "a\\\\\n\n" /*\n' + OUT + "*/\n", True),
+    ("x 'a\\\\\n\n' /*\n" + OUT + "*/\n", True),
+    ("#if 0\n1'2 1'.X' '/*'\n#endif\n" + OUT + "#if 0\n*/\n#endif\n", True),
+    ("#ifdef __cplusplus\n#define F(...)\nF(x1'a' /*')\n" + OUT
+     + "// */ )\n#endif\n", False),
+    ("#ifdef __cplusplus\n#define F(...)\nF(1.'a' /*')\n" + OUT
+     + "// */\n#endif\n", True),
+    ("int x; #include <a/*b.h>\n" + OUT + "/* */\n", False),
+    ('#if 0\n#include "w\\" x "/*"\n#endif\n' + OUT + "// */\n", True),
+    ('#if 0\n#include <a\n#endif\nconst char *s = "> /*";\n' + OUT
+     + "// */\n", True),
+    ('#if 0\n#include "a\n#endif\nconst char *s = "/*";\n' + OUT
+     + "// */\n", True)])
+def test_literals_numbers_and_raw_strings_end_where_gcc_ends_them(text,
+                                                                  found):
+    """The expectations of the DIFF_C cases on raw string prefixes and
+    delimiters, escapes, unterminated literals and numbers, checked
+    against gcc by test_the_check_agrees_with_the_compilers."""
+    assert (('"', "../outside.h") in cp.includes(text)) == found, text
+
+
+def test_an_angle_operand_with_slashes_is_one_token(tmp_path):
+    assert cp.includes("#include <hardware//pio.h>\n") == [
+        ("<", "hardware//pio.h")]
+    assert cp.includes("int x;\n#include <hardware//pio.h>\n") == [
+        ("<", "hardware//pio.h")]
+    m = module(tmp_path)
+    c = m / cp.DRIVER / "wire_pin.c"
+    c.write_text(c.read_text() + "#include <hardware//pio.h>\n")
+    assert cp.include_problems(m) == []
+
+
+@pytest.mark.parametrize("name", [
+    "/x.h", "\\x.h", "../x.h", "..\\x.h", "a/../x.h", "a\\..\\x.h"])
+def test_a_parent_or_absolute_path_is_named_as_one(tmp_path, name):
+    m = module(tmp_path)
+    c = m / "wire.c"
+    c.write_text(c.read_text() + f'#include "{name}"\n')
+    assert cp.include_problems(m) == [
+        f"wire/wire.c includes {name}: a path with a .. "
+        "component or an absolute path"], name
+
+
+def test_an_include_is_read_exactly():
+    """A token after the operand makes the operand unresolved, a line of
+    only `#` is named by its `#`, and a `__has_include(` inside an include
+    operand is part of the file name."""
+    assert cp.includes('#include "a.h" x\n') == [("?", '"a.h" x')]
+    assert cp.includes('#include "a.h" /* x */\n') == [('"', "a.h")]
+    assert cp.includes("  #  \n%: \t\n") == [("#", "#"), ("#", "%:")]
+    assert cp.includes("#include <__has_include(x.h)>\n") == [
+        ("<", "__has_include(x.h)")]
+
+
+@pytest.mark.parametrize("text", [
+    "#if 0\n#importer \"../outside.h\"\n#endif\n",
+    "#define foo__has_include(x) 1\n#if foo__has_include(x)\n#endif\n"])
+def test_a_longer_word_is_no_directive_and_no_call(text):
+    assert cp.includes(text) == []
+
+
+@pytest.mark.parametrize("readme", [
+    "# wire\n\n<!--\n## Interface\n",
+    "## Inter<!--\n-->face\n",
+    "    ## Interface\n",
+    "####### Interface\n",
+    "##Interface\n",
+    "```\nx\n    ```\n## Interface\n",
+    "  ```\n## Interface\n  ```\n",
+    "  ~~~\n## Interface\n  ~~~\n"])
+def test_a_line_commonmark_reads_as_no_heading_is_none(tmp_path, readme):
+    """An unclosed comment runs to the end, a comment keeps its line
+    breaks, a heading has 0 to 3 spaces of indent, 1 to 6 `#` and a blank
+    after them, and a fence has 0 to 3 spaces of indent."""
+    m = module(tmp_path)
+    (m / "README.md").write_text(readme)
+    assert cp.readme_problems(m) == [
+        'wire/README.md has no heading with "Interface"'], readme
+
+
+@pytest.mark.parametrize("readme", [
+    "# Interface\nSxBUS frame\n",
+    "~~\n## Interface\n~~\n",
+    "    ~~~\n## Interface\n    ~~~\n",
+    "    ```\n## Interface\n    ```\n"])
+def test_a_line_commonmark_reads_as_no_fence_hides_nothing(tmp_path,
+                                                          readme):
+    """`~~` and a fence indented 4 spaces open no block, and the `.` of
+    S.BUS matches only a dot."""
+    m = module(tmp_path)
+    (m / "README.md").write_text(readme)
+    assert cp.readme_problems(m) == [], readme
+
+
+@pytest.mark.parametrize("sentence", ["casino pin driver",
+                                      "no pin drivers"])
+def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
+    m = module(tmp_path, driver=False)
+    (m / "README.md").write_text("# Interface\n%s\n" % sentence)
+    assert len(cp.readme_problems(m)) == 1, sentence
