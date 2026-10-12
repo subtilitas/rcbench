@@ -23,7 +23,7 @@ on:
 
 concurrency:
   group: docs
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -34,6 +34,7 @@ jobs:
   publish:
     name: Publish docs to the wiki
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:

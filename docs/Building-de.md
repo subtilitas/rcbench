@@ -213,6 +213,16 @@ clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
 die Header von ESP-IDF und pico-sdk, die der Analyse-Job nicht hat. Die
 Klasse style von cppcheck läuft ebenfalls nicht über `firmware/`.
 
+CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5 und pytest 9.1.1 in
+genau diesen Versionen. Jeder Job hat ein `timeout-minutes`-Limit, und ctest
+bricht einen Test nach 120 s ab. Ist die Umgebungsvariable `CI` gesetzt,
+lässt ein fehlender C++-Compiler den CMake-Configure-Schritt der Host-Suite
+fehlschlagen, ein fehlendes `node` lässt `tools/research/session.py check`
+fehlschlagen, und ein fehlendes `git`, `cmake` oder `cc` lässt die
+End-to-End-Fälle von `tools/mutate.py` fehlschlagen. `tools/check_docs.py`
+hält die Tags von pico-sdk und ESP-IDF dieser Seite an die in `ci.yml` und
+`release.yml`.
+
 Jede Prüfung läuft lokal;
 [CONTRIBUTING.md](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md)
 listet die Befehle.

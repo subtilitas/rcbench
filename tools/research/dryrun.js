@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
 // Runs tools/research/round1.js for every task with mock agents that return
 // objects shaped by tools/research/schemas.json, and checks the rules the
 // script enforces: the counts and the cap, both verifiers on every part, an

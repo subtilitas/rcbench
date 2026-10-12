@@ -28,6 +28,8 @@ shared bus carries "bus". The checks:
 
 It prints one line per failure and the pin count per chip, and exits 1
 on any failure.
+
+SPDX-License-Identifier: MIT
 """
 import argparse
 import json

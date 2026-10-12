@@ -17,9 +17,24 @@ history is in git.
   programmer. The configurator offers no function, part or wire for the servo programmer.
 - The Configurator workflow shows each warning of the data check, such as a
   release tag newer than the data, as an annotation and in the run summary.
+- CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
+  exact versions.
 
 ### Fixed
 
+- The docs workflow no longer cancels a publish in progress when a later push
+  starts one (`cancel-in-progress: false`).
+- With the environment variable `CI` set, a missing C++ compiler fails the
+  CMake configure step of `test/host`, a missing `node` fails
+  `tools/research/session.py check`, and a missing `git`, `cmake`, `cc` or
+  `c++` fails the cases of `test/tools` that need it. Each of these skipped
+  and exited 0. The owner self-test of `session.py` reads a plan and
+  a commit of its own throwaway repository, not the working repository's.
+- The cppcheck step over `shared/` resolves the headers under
+  `shared/*/include`; its pathspec matched no file. `ui_seg_hero()` names its
+  local `st`, which no longer shadows the file-scope `s` of the screens that
+  include `ui_theme.h`, and the unused member `warn.id` is removed from the
+  servo screen.
 - `testbench/host/capture.sh` checks for a channel that never changed in
   time linear in the samples. The check keeps two flags per channel in place
   of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
@@ -37,6 +52,20 @@ history is in git.
   stored setup holds ids alone, so it is the same in English and German. A
   blocked or full store and an entry of another shape give the base setup
   without an error.
+
+### Added
+
+- Every test of `test/host` stops after 120 s unless it sets its own limit,
+  and every CI job has a `timeout-minutes` limit.
+- `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
+  "Where code goes": the files outside `protocols/` with an assertion on a
+  module's macros or enumerators are listed in the tool, and a new or a
+  removed assertion fails the check.
+- `tools/check_docs.py` checks every "N binaries" count of `STATUS.md` and the
+  "N `test_kst_*` binaries" count, holds the pico-sdk and ESP-IDF tags of
+  `docs/Building.md`, `docs/Performance.md` and their German pages to
+  `ci.yml` and `release.yml`, and requires the SPDX line in the scripts
+  under `tools/` and `test/tools/`. The 18 scripts without one carry it.
 
 ## 0.17.0 - 2026-10-12
 

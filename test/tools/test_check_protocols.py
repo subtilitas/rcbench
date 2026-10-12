@@ -3,6 +3,7 @@
 SPDX-License-Identifier: MIT
 """
 
+import os
 import shutil
 
 import pytest
@@ -12,10 +13,17 @@ import check_protocols as cp
 GUARD_OPEN = '#ifdef __cplusplus\nextern "C" {\n#endif\n'
 GUARD_CLOSE = "#ifdef __cplusplus\n}\n#endif\n"
 
+HAVE_COMPILERS = bool((shutil.which("cc") or shutil.which("gcc"))
+                      and (shutil.which("c++") or shutil.which("g++")))
 needs_compilers = pytest.mark.skipif(
-    not ((shutil.which("cc") or shutil.which("gcc"))
-         and (shutil.which("c++") or shutil.which("g++"))),
-    reason="no C and C++ compiler on PATH")
+    not HAVE_COMPILERS, reason="no C and C++ compiler on PATH")
+
+
+def test_compilers_exist_when_CI_is_set():
+    """The cases marked needs_compilers skip without them; in CI that is a
+    failure, not a pass."""
+    if os.environ.get("CI") and not HAVE_COMPILERS:
+        pytest.fail("CI is set and no C and C++ compiler is on PATH")
 
 
 def header(body, extra_includes=""):
@@ -314,3 +322,67 @@ def test_main_fails_when_there_is_no_module(tmp_path, monkeypatch):
     monkeypatch.setattr(cp, "PROTOCOLS", tmp_path / "protocols")
     with pytest.raises(SystemExit):
         cp.main(["--check"])
+
+
+# The _Static_assert rule: a limit the module shares with the project is held
+# equal by an assertion in the caller.
+
+def caller(tmp_path, text, rel="shared/use/use.c"):
+    f = tmp_path / rel
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(text)
+    return rel
+
+
+def asserted_problems(tmp_path, listed):
+    return cp.assertion_problems(tmp_path / "protocols", listed)
+
+
+def test_public_names_are_macros_and_enumerators(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header(
+        "#define WIRE_MAX 8\n"
+        "enum { WIRE_A = 0, WIRE_B,\n WIRE_C = 5 };\n"))
+    assert cp.public_names(m) == {"WIRE_MAX", "WIRE_A", "WIRE_B", "WIRE_C"}
+
+
+def test_a_listed_assertion_in_the_caller_passes(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
+    rel = caller(tmp_path, "#define USE_MAX 8\n"
+                 '_Static_assert(WIRE_MAX == USE_MAX,\n "same limit");\n')
+    assert asserted_problems(tmp_path, {"wire": (rel,)}) == []
+
+
+def test_an_assertion_the_list_does_not_name_is_flagged(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
+    rel = caller(tmp_path, '_Static_assert(WIRE_MAX == 8, "limit");\n')
+    out = asserted_problems(tmp_path, {})
+    assert len(out) == 1 and rel in out[0] and "does not list" in out[0]
+
+
+def test_a_listed_file_without_the_assertion_is_flagged(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
+    rel = caller(tmp_path, "int use(void) { return WIRE_MAX; }\n")
+    out = asserted_problems(tmp_path, {"wire": (rel,)})
+    assert len(out) == 1 and "has no _Static_assert" in out[0]
+
+
+def test_an_assertion_in_a_comment_does_not_count(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
+    rel = caller(tmp_path, '/* _Static_assert(WIRE_MAX == 8, "x"); */\n')
+    assert len(asserted_problems(tmp_path, {"wire": (rel,)})) == 1
+
+
+def test_an_assertion_on_the_projects_own_names_is_not_the_modules(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
+    caller(tmp_path, '_Static_assert(USE_A < USE_B, "order");\n')
+    assert asserted_problems(tmp_path, {}) == []
+
+
+def test_the_tree_lists_every_assertion_on_a_module_constant():
+    assert cp.assertion_problems(cp.PROTOCOLS, cp.ASSERTED) == []

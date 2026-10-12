@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 export const meta = {
   name: 'rcbench-round1',
   description: 'One task of a round of the IO board component research (hardware/docs/Research.md)',
