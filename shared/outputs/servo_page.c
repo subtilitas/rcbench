@@ -139,7 +139,15 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     const bool sweep = off <= (uint8_t)LINK_SV_SWEEP_DWELL_MS
                        && (unsigned)off + (unsigned)n > (unsigned)LINK_SV_SWEEP;
     if (rate) {
-        const uint8_t nack = outputs_servo_rate_check(o, next[LINK_SV_FRAME_HZ]);
+        const uint16_t hz = next[LINK_SV_FRAME_HZ];
+        uint8_t nack = outputs_servo_rate_check(o, hz);
+        if (nack == 0u) {
+            /* No output left with a pulse its frame cannot carry: the
+             * surfaces' endpoints, every other PWM slot's at its own rate
+             * (0 sends the surfaces back to theirs), and the ports'. */
+            nack = outputs_pulse_check(o, hz, (hz != 0u) ? p->ports : 0u,
+                                       hz);
+        }
         if (nack != 0u) {
             return nack;
         }
@@ -355,6 +363,13 @@ bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
     p->target_first = first;
     p->target_n     = count;
     return true;
+}
+
+void servo_page_ports(servo_page_t *p, uint16_t channels)
+{
+    if (p != NULL) {
+        p->ports = channels;
+    }
 }
 
 uint16_t servo_page_hz(const servo_page_t *p)

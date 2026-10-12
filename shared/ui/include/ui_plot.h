@@ -8,7 +8,7 @@
  * series prints its full scale and zero inside the plot in its own colour.
  *
  * State lives in the caller's struct rather than in file statics, so a screen
- * that wants a plot owns one.  The motor bench is the only one that does.
+ * that wants a plot owns one.  The motor, supply and servo screens do.
  *
  * SPDX-License-Identifier: MIT
  */
