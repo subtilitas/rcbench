@@ -26,6 +26,15 @@ history is in git.
 
 ### Changed
 
+- The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
+  than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
+  OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and
+  `MAX_US`. The longest endpoint is the period minus 1 µs: 1784 µs at
+  560 Hz, 1999 µs at 500 Hz, 2499 µs at 400 Hz; below 400 Hz the 2500 µs
+  ceiling governs. A standard 1000 to 2000 µs servo is refused at
+  500 Hz and 560 Hz. A stored PWM slot that breaks the rule starts unbound.
+  Link protocol 4.16. The panel writes a programming port the range the
+  SERVO screen names before it switches the port's pulse on.
 - Text corrections, no behaviour change: SECURITY.md lists all 10 input
   parsers; the Manifest drops its state column and points to STATUS.md;
   STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
@@ -131,7 +140,8 @@ history is in git.
 
 - A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
   BAD_VALUE and nothing is stored; before, any value to 65535 reached the
-  output bank. The PROG page's port slew has the same limit. A CHAN_CFG or
+  output bank. The PROG page's port slew has the same limit. Link protocol
+  4.16. A CHAN_CFG or
   PROG slew above 3000 kept in the coprocessor's flash by an older build
   starts as 3000, on the page, in BIND_CFG and in the output bank; the
   role, endpoints and pins kept with it start as kept.

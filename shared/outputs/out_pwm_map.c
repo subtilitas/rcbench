@@ -36,3 +36,13 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b)
     return out_pwm_same_slice(a, b)
            && out_pwm_channel_of(a) == out_pwm_channel_of(b);
 }
+
+uint16_t out_pwm_pulse_max(uint16_t rate_hz)
+{
+    if (rate_hz == 0u) {
+        return 0u;
+    }
+    /* At least 15 counts: the rate is sixteen bits wide. */
+    const uint32_t period = OUT_PWM_TICK_HZ / rate_hz;
+    return (period > 65536u) ? 0u : (uint16_t)(period - 1u);
+}
