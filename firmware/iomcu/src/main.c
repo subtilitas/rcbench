@@ -1490,12 +1490,11 @@ static const link_page_t k_pages[] = {
 /*
  * The panel's safety line, watched in firmware as well as in hardware.
  *
- * The retriggerable monostable on the daughterboard is the backstop: it
- * holds the output enable up only while edges keep arriving, with no
- * software involved.  It cannot tell a heartbeat from noise: a ringing line,
- * a short to a clock or a floating input next to a switching supply all
- * retrigger it.  heartbeat_mon_t knows the expected period and rejects what
- * cannot be the panel's 5 ms control task edging every 20 ms.
+ * No board carries the retriggerable monostable that would gate the output
+ * enable in hardware (docs/Safety.md), so this monitor is the whole check.
+ * A ringing line, a short to a clock or a floating input next to a switching
+ * supply look like edges.  heartbeat_mon_t knows the expected period and
+ * rejects what cannot be the panel's control task edging every 20 ms.
  *
  * The pin is sampled in the main loop rather than by an interrupt.  A pass
  * that turns over faster than HEARTBEAT_MIN_GAP_MS (4 ms) cannot miss an

@@ -1408,8 +1408,9 @@ bei 75 % des Bits ab:
 
 Acht Quanta sind das Minimum für ein Bit. Deshalb braucht der XL2515 für
 1 Mbit/s einen 16-MHz-Quarz, und deshalb liegt sein Sample Point fest bei
-75 %; das TWAI-Timing ist passend dazu gewählt. `test_can_timing` hält beides
-fest.
+75 %; das TWAI-Timing ist passend dazu gewählt. `test_can_timing` hält die Zeile des
+XL2515 fest. Für das TWAI prüft es den Sample Point von 75 % und eine
+Sprungbreite von mindestens 2, nicht die Werte der Zeile.
 
 ### Budget
 

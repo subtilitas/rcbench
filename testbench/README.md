@@ -33,7 +33,7 @@ state.
 
 ## What it is for
 
-Six things the tree does that only an instrument can confirm:
+Seven things the tree does that only an instrument can confirm:
 
 | | What is claimed | What has to be seen |
 |---|---|---|
@@ -43,6 +43,7 @@ Six things the tree does that only an instrument can confirm:
 | Servo PWM (pulse-width modulation) | 50 Hz, 500 to 2500 µs, 1 µs resolution | the frame period, the pulse at both ends of travel, and the jitter |
 | SBUS | inverted serial, 100 kbit/s, 25 bytes | the framing, and what the panel makes of a receiver in failsafe |
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
+| KST wire | Manchester coding, half-cell 25.4 µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600 µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
 
 The programmer's four ESC protocols and one servo protocol are not on this
 list. The panel models them and has no transport for them, so nothing of
@@ -339,7 +340,7 @@ per run:
   come before any capture of the bench itself is worth reading.
 - **Responder.** It pretends to be the device at the other end — an ESC that
   answers a BLHeli_S bootloader handshake, or one that emits OpenYGE
-  telemetry, or a servo that answers the Hitec D-series protocol. That makes the panel's
+  telemetry, or a servo that answers the Hitec D-series protocol or the KST wire. That makes the panel's
   programmer and telemetry paths testable without owning every device. It also
   answers as a touch controller at its own address; see below.
 - **Hands.** It closes the relays across both boards' reset and boot buttons,
@@ -398,7 +399,7 @@ Proposed channel map, to be checked against the wiring as built:
 | 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the emulator at 0x14 |
 | 10 | touch SDA | panel's I²C bus | with SCL, which address answered and what it said |
 | 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
-| 12 | programmer line | one-wire, 19,200 baud | BLHeli_S, AM32, ESCape32 |
+| 12 | KST port | coprocessor GP13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
 | 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
 | 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |
