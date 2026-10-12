@@ -77,15 +77,21 @@ history is in git.
   took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
   reader (`log_reader_row`) ends a row at its line feed and nothing else,
   leaves an unterminated last row out, and reports it in
-  `log_analysis_t.cut_row`. A file past the row cap is read on to its end
-  for this, with no statistics and no allocation. The import view shows
-  ROWS in the warning colour and `LAST ROW CUT OFF - LEFT OUT`, on its own
-  line below any other import warning. `tools/sense_trace.py
+  `log_analysis_t.cut_row`. Past the row cap (60000 rows) the cut row is
+  decided from the file's last bytes: the source reports its size and
+  seeks (`log_source_t.size` and `.seek`, on the card's stdio file up to
+  2 GiB and on memory), and at most 4096 bytes before the end are read. A
+  source without them, or a file whose last 4096 bytes are all blanks, is
+  read on to its end. Past the cap, a quoted field left open with a line
+  feed as the file's last byte is not reported as a cut row. The import
+  view shows ROWS in the warning colour and `LAST ROW CUT OFF - LEFT OUT`,
+  on its own line below any other import warning. `tools/sense_trace.py
   --servo-csv` applies the same rule and says so in its report. The
-  delimiter is sniffed from the file without that row, so a cut row cannot
-  change how the rows before it split. Only space, tab and CR after the last
-  line feed are blank; a vertical tab or form feed there is a cut row, in
-  the panel's reader and in `tools/sense_trace.py`.
+  delimiter is sniffed from the first 2048 bytes up to their last line
+  feed, so a cut row cannot change how the rows before it split. Only
+  space, tab and CR after the last line feed are blank; a vertical tab or
+  form feed there is a cut row, in the panel's reader and in
+  `tools/sense_trace.py`.
 - A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
   BAD_VALUE and nothing is stored; before, any value to 65535 reached the
   output bank. The PROG page's port slew has the same limit. A CHAN_CFG or

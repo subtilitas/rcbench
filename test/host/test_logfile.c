@@ -350,6 +350,24 @@ TEST_CASE(a_cut_last_row_does_not_vote_on_the_delimiter)
     CHECK_EQ(a.n_columns, 3);
     CHECK_EQ(a.row_count, 2);
     CHECK(a.cut_row);
+
+    /* The same file with the cut row padded to 2047, 2048 and 2049 bytes in
+     * all: whether the 2048-byte sample holds the whole file, exactly fills
+     * or ends inside the cut row, that row does not vote. */
+    static char big[2100];
+    for (size_t total = 2047u; total <= 2049u; ++total) {
+        size_t n = sizeof(text) - 1u;
+        memcpy(big, text, n);
+        while (n < total) {
+            big[n++] = 'f';
+        }
+        log_source_memory(&src, &ctx, big, total);
+        CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+        CHECK_EQ(a.delimiter, ',');
+        CHECK_EQ(a.n_columns, 3);
+        CHECK_EQ(a.row_count, 2);
+        CHECK(a.cut_row);
+    }
 }
 
 /* A sample with no line feed at all is sniffed whole, as before: the single
@@ -653,9 +671,9 @@ TEST_CASE(the_row_cap_is_reported_rather_than_silent)
     log_data_free(&d);
 }
 
-/* The cut row is known only at the end of the file.  A file past the row
- * cap is read on to it: the flag holds at exactly the cap and with complete
- * rows past it, and stays false when the file ends on a line feed. */
+/* The cut row is at the end of the file.  Past the row cap the flag holds
+ * at exactly the cap and with complete rows past it, and stays false when
+ * the file ends on a line feed. */
 static log_analysis_t capped(int complete_rows, const char *tail, int cap)
 {
     static char text[4096];
@@ -699,6 +717,180 @@ TEST_CASE(a_cut_row_is_found_past_the_row_cap)
     CHECK_EQ(a.row_count, 10);
     CHECK(a.truncated);
     CHECK(!a.cut_row);
+}
+
+/*
+ * A source over memory that counts the bytes read from it, with or without
+ * the size and seek operations.  Without them it is a source that can only
+ * be read from the top, like a stream.
+ */
+typedef struct {
+    log_source_t inner;
+    log_mem_ctx_t mem;
+    size_t bytes;
+} counted_ctx_t;
+
+static size_t counted_read(void *v, char *buf, size_t max)
+{
+    counted_ctx_t *c = (counted_ctx_t *)v;
+    size_t n = c->inner.read(c->inner.ctx, buf, max);
+    c->bytes += n;
+    return n;
+}
+
+static bool counted_rewind(void *v)
+{
+    counted_ctx_t *c = (counted_ctx_t *)v;
+    return c->inner.rewind(c->inner.ctx);
+}
+
+static bool counted_size(void *v, size_t *bytes)
+{
+    counted_ctx_t *c = (counted_ctx_t *)v;
+    return c->inner.size(c->inner.ctx, bytes);
+}
+
+static bool counted_seek(void *v, size_t offset)
+{
+    counted_ctx_t *c = (counted_ctx_t *)v;
+    return c->inner.seek(c->inner.ctx, offset);
+}
+
+static void counted_source(log_source_t *src, counted_ctx_t *c,
+                           const char *text, size_t len, bool seekable)
+{
+    log_source_memory(&c->inner, &c->mem, text, len);
+    c->bytes = 0;
+    memset(src, 0, sizeof(*src));
+    src->read = counted_read;
+    src->rewind = counted_rewind;
+    src->ctx = c;
+    if (seekable) {
+        src->size = counted_size;
+        src->seek = counted_seek;
+    }
+}
+
+/* 20000 rows of about 12 bytes, then @p tail. */
+static size_t long_log(char *text, size_t cap, const char *tail)
+{
+    size_t n = (size_t)snprintf(text, cap, "t,v\n");
+    for (int i = 0; i < 20000; ++i) {
+        n += (size_t)snprintf(text + n, cap - n, "%d,%d\n", i, i * 3);
+    }
+    n += (size_t)snprintf(text + n, cap - n, "%s", tail);
+    return n;
+}
+
+/*
+ * Past the row cap, a source that can seek is not read to its end for the
+ * cut row: the analysis stops at the first row past the cap and reads the
+ * last bytes of the file.  20000 rows and a cap of 100 read under 16 KiB of
+ * a file over 200 KiB, and the flags match the source that can only be read
+ * on to its end.
+ */
+TEST_CASE(a_capped_file_is_not_read_to_its_end_for_the_cut_row)
+{
+    static char text[300000];
+    static const char *const tails[] = { "", "99,2", "\n \t\r", "\v",
+                                         "7,\"1\n2" };
+    static const bool cut[] = { false, true, false, true, true };
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    opts.max_rows = 100;
+
+    for (size_t i = 0; i < sizeof(tails) / sizeof(tails[0]); ++i) {
+        size_t n = long_log(text, sizeof(text), tails[i]);
+        CHECK(n > 200000u);
+        for (int seekable = 1; seekable >= 0; --seekable) {
+            log_source_t src;
+            counted_ctx_t c;
+            counted_source(&src, &c, text, n, seekable != 0);
+            log_analysis_t a;
+            CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
+            CHECK_EQ(a.row_count, 100);
+            CHECK(a.truncated);
+            CHECK_EQ(a.cut_row, cut[i]);
+            if (seekable) {
+                CHECK(c.bytes < 16384u);
+            } else {
+                CHECK(c.bytes >= n);   /* the fallback reads on to the end */
+            }
+        }
+    }
+
+    /* The one case the two answers differ: a quoted field left open with a
+     * line feed as the last byte.  The reader counts it as a cut row; the
+     * tail sees a line feed. */
+    size_t n = long_log(text, sizeof(text), "7,\"1\n");
+    for (int seekable = 1; seekable >= 0; --seekable) {
+        log_source_t src;
+        counted_ctx_t c;
+        counted_source(&src, &c, text, n, seekable != 0);
+        log_analysis_t a;
+        CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
+        CHECK(a.truncated);
+        CHECK_EQ(a.cut_row, seekable == 0);
+    }
+}
+
+/* More than 4096 bytes of blanks after the last line feed: the tail is not
+ * scanned further back, the file is read on to its end instead, and the
+ * answer is the same. */
+TEST_CASE(a_long_blank_tail_falls_back_to_reading_on)
+{
+    static char text[300000];
+    static char blanks[5001];
+    memset(blanks, ' ', sizeof(blanks) - 1u);
+    blanks[sizeof(blanks) - 1u] = '\0';
+    size_t n = long_log(text, sizeof(text), blanks);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    opts.max_rows = 100;
+    log_source_t src;
+    counted_ctx_t c;
+    counted_source(&src, &c, text, n, true);
+    log_analysis_t a;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
+    CHECK(a.truncated);
+    CHECK(!a.cut_row);
+    CHECK(c.bytes >= n);
+
+    /* Under the limit the tail decides it. */
+    blanks[4000] = '\0';
+    n = long_log(text, sizeof(text), blanks);
+    counted_source(&src, &c, text, n, true);
+    CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
+    CHECK(!a.cut_row);
+    CHECK(c.bytes < 16384u);
+}
+
+/* The card's source is a stdio stream; it seeks too. */
+TEST_CASE(a_stdio_source_finds_the_cut_row_from_the_tail)
+{
+    static char text[300000];
+    size_t n = long_log(text, sizeof(text), "99,2");
+    FILE *f = tmpfile();
+    CHECK(f != NULL);
+    if (f == NULL) {
+        return;
+    }
+    CHECK_EQ(fwrite(text, 1, n, f), n);
+    log_source_t src;
+    log_source_stdio(&src, f);
+    size_t bytes = 0;
+    CHECK(src.size(src.ctx, &bytes));
+    CHECK_EQ(bytes, n);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    opts.max_rows = 100;
+    log_analysis_t a;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
+    CHECK_EQ(a.row_count, 100);
+    CHECK(a.truncated);
+    CHECK(a.cut_row);
+    CHECK(!src.seek(src.ctx, (size_t)-1));   /* past what fseek takes */
+    fclose(f);
 }
 
 TEST_CASE(a_file_with_no_numbers_is_an_error_not_an_empty_plot)
@@ -1467,6 +1659,9 @@ int main(void)
     RUN(ragged_rows_are_reported_not_absorbed);
     RUN(the_row_cap_is_reported_rather_than_silent);
     RUN(a_cut_row_is_found_past_the_row_cap);
+    RUN(a_capped_file_is_not_read_to_its_end_for_the_cut_row);
+    RUN(a_long_blank_tail_falls_back_to_reading_on);
+    RUN(a_stdio_source_finds_the_cut_row_from_the_tail);
     RUN(a_file_with_no_numbers_is_an_error_not_an_empty_plot);
     RUN(without_a_time_column_the_x_axis_is_the_row_index);
     RUN(an_unreadable_cell_holds_the_trace_instead_of_breaking_it);

@@ -59,6 +59,17 @@ typedef struct {
      */
     bool (*error)(void *ctx);
     void *ctx;
+    /**
+     * Optional, both or neither: the length of the input in bytes, and a
+     * move to an offset from its start, after which read() continues there.
+     * With them the analysis reads the last bytes of a file past the row cap
+     * for the cut row, instead of every row up to them.  NULL means the
+     * source can only be read from the top; it is then read on to its end.
+     * Last in the struct, so a source written as { read, rewind, error, ctx }
+     * has neither.
+     */
+    bool (*size)(void *ctx, size_t *bytes);
+    bool (*seek)(void *ctx, size_t offset);
 } log_source_t;
 
 typedef struct {
