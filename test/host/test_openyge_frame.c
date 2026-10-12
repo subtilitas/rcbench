@@ -328,6 +328,65 @@ TEST_CASE(a_truncated_frame_is_never_accepted)
  * noise containing 0xA5 and a plausible length, immediately in front of a
  * real frame that is already whole in the buffer.
  */
+/* Version 3 and later share the 6-byte header (docs/OpenYGE.md 2.1), so a
+ * version above the one this speaks decodes as 3 and is reported with its own
+ * version byte. */
+TEST_CASE(a_version_above_3_decodes_with_the_v3_header)
+{
+    uint8_t pay[OPENYGE_TELEMETRY_BYTES], buf[64];
+    sample_payload(pay);
+    const uint8_t versions[] = { 4, 5, 255 };
+    for (unsigned i = 0; i < sizeof(versions); ++i) {
+        const size_t n = make_tele(buf, versions[i], OPENYGE_FT_TELE_AUTO, 9, 2, pay);
+        CHECK_EQ(n, 34);
+        openyge_decoder_t d; openyge_frame_t f;
+        openyge_decoder_reset(&d);
+        CHECK(feed(&d, buf, n, &f));
+        CHECK_EQ(f.hdr.version, versions[i]);
+        CHECK_EQ(f.hdr.legacy, false);
+        CHECK_EQ(f.hdr.seq, 9);
+        CHECK_EQ(f.hdr.device, 2);
+    }
+}
+
+/* Bytes that are not a sync byte, ahead of a real frame, are counted under
+ * resyncs and not under crc_errors or rejected: those two count a failing
+ * candidate once, when it reaches the front of the buffer. */
+TEST_CASE(noise_ahead_of_a_frame_counts_as_resync_only)
+{
+    uint8_t pay[OPENYGE_TELEMETRY_BYTES], real[64], line[128];
+    sample_payload(pay);
+    const size_t n = make_tele(real, 3, OPENYGE_FT_TELE_RESP, 7, 1, pay);
+    const uint8_t noise[] = { 0x11, 0x22, 0x33 };
+    memcpy(line, noise, sizeof(noise));
+    memcpy(line + sizeof(noise), real, n);
+    openyge_decoder_t d; openyge_frame_t f;
+    openyge_decoder_reset(&d);
+    CHECK(feed(&d, line, sizeof(noise) + n, &f));
+    CHECK_EQ(d.crc_errors, 0);
+    CHECK_EQ(d.rejected, 0);
+    CHECK(d.resyncs > 0);
+}
+
+/* The buffer never holds a full OPENYGE_MAX_FRAME after a byte is handled, so
+ * the overflow guard at the top of openyge_decode_byte() cannot fire. */
+TEST_CASE(the_buffer_stays_below_the_longest_frame_on_any_input)
+{
+    openyge_decoder_t d; openyge_frame_t f;
+    openyge_decoder_reset(&d);
+    uint32_t x = 12345u;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        x = x * 1664525u + 1013904223u;
+        /* Half the bytes are a sync byte or a long declared length. */
+        uint8_t b = (uint8_t)(x >> 24);
+        if ((x & 0x300u) == 0u) { b = OPENYGE_SYNC; }
+        else if ((x & 0x300u) == 0x100u) { b = OPENYGE_MAX_FRAME; }
+        (void)openyge_decode_byte(&d, b, &f);
+        CHECK(d.len < OPENYGE_MAX_FRAME);
+        CHECK_EQ(d.resyncs == 0xFFFFFFFFu, false);
+    }
+}
+
 TEST_CASE(a_real_frame_behind_a_false_sync_is_still_found)
 {
     uint8_t pay[OPENYGE_TELEMETRY_BYTES], real[64], line[128];
@@ -544,6 +603,9 @@ int main(void)
     RUN(temperatures_below_zero_decode_as_negative);
     RUN(negative_duty_and_throttle_survive_the_decode);
     RUN(a_legacy_frame_has_a_shorter_header_and_still_parses);
+    RUN(a_version_above_3_decodes_with_the_v3_header);
+    RUN(noise_ahead_of_a_frame_counts_as_resync_only);
+    RUN(the_buffer_stays_below_the_longest_frame_on_any_input);
     RUN(a_bit_flip_anywhere_is_caught_by_the_crc);
     RUN(a_truncated_frame_is_never_accepted);
     RUN(a_real_frame_behind_a_false_sync_is_still_found);
