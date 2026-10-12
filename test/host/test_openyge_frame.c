@@ -541,7 +541,8 @@ TEST_CASE(a_frame_that_does_not_fit_writes_nothing_at_all)
 
 TEST_CASE(encode_refuses_a_payload_that_does_not_match_the_type)
 {
-    uint8_t buf[64], pay[OPENYGE_TELEMETRY_BYTES] = { 0 };
+    uint8_t buf[64];
+    const uint8_t pay[OPENYGE_TELEMETRY_BYTES] = { 0 };
     /* A request with a telemetry-sized payload, and the reverse. */
     CHECK_EQ(openyge_encode(buf, sizeof(buf), OPENYGE_FT_TELE_REQ, 1, 1,
                             pay, OPENYGE_TELEMETRY_BYTES), 0);

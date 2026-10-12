@@ -186,7 +186,6 @@ static link_host_t host;
 TEST_CASE(the_host_escalates_after_one_second)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
     CHECK(!link_host_tick(&host, LINK_HOST_TIMEOUT_MS - 1));
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
     CHECK(host.escalated);
@@ -203,7 +202,7 @@ TEST_CASE(the_host_is_the_more_patient_of_the_two)
 TEST_CASE(a_reply_resets_the_host_and_its_escalation)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
     CHECK(host.escalated);
@@ -231,8 +230,7 @@ TEST_CASE(a_reply_resets_the_host_and_its_escalation)
 TEST_CASE(every_timeout_releases_its_request_not_only_the_first)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
-    (void)got;
+    link_msg_t req;
 
     for (uint32_t n = 1; n <= 5; ++n) {
         const uint32_t sent = (n - 1u) * LINK_HOST_TIMEOUT_MS;
@@ -360,7 +358,7 @@ TEST_CASE(a_request_that_was_never_sent_can_be_abandoned)
 TEST_CASE(only_one_request_is_outstanding_at_a_time)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
+    link_msg_t req;
     CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
     CHECK_EQ(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req), false);
 }
@@ -373,7 +371,7 @@ TEST_CASE(only_one_request_is_outstanding_at_a_time)
 TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req);
     link_host_tick(&host, LINK_HOST_TIMEOUT_MS);          /* gave up */
     link_host_read(&host, LINK_PAGE_BENCH, 4, 2, 0, &req);
@@ -427,7 +425,7 @@ TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     /* An ACK (acknowledge) does not answer a READ, and a DATA of the wrong
      * width does not answer the window that was asked for. */
     link_host_read(&host, LINK_PAGE_CONTROL, 0, 2, 0, &req);
@@ -453,7 +451,7 @@ TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
 TEST_CASE(a_nack_answers_the_request_it_refuses)
 {
     link_host_init(&host, 0);
-    link_msg_t req, got;
+    link_msg_t req = { 0 }, got = { 0 };
     const uint16_t v = 1;
     link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &v, 0, &req);
 
@@ -469,7 +467,6 @@ TEST_CASE(the_host_watchdog_survives_the_millisecond_wrap)
 {
     const uint32_t near_wrap = (uint32_t)0u - (LINK_HOST_TIMEOUT_MS / 2u);
     link_host_init(&host, near_wrap);
-    link_msg_t req, got;
 
     CHECK(near_wrap + LINK_HOST_TIMEOUT_MS < near_wrap);
 
@@ -494,7 +491,7 @@ TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
 {
     fresh_dev(0);
     link_host_init(&host, 0);
-    link_msg_t req, got;
+    link_msg_t req;
         link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req);
 
     uint32_t dev_fired = 0, host_fired = 0;

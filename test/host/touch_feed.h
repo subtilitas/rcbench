@@ -75,23 +75,23 @@ static inline void feed_lose_next(int n) { feed_lose = n; }
 /* One controller report: the contacts on the glass at this moment. */
 static inline void feed_report(void)
 {
-    touch_event_t ev[TOUCH_MAX_POINTS * 2];
-    const int n = touch_tracker_update(&feed_trk, feed_cur, feed_ncur, ev,
-                                       (int)(sizeof(ev) / sizeof(ev[0])));
+    touch_event_t evs[TOUCH_MAX_POINTS * 2];
+    const int n = touch_tracker_update(&feed_trk, feed_cur, feed_ncur, evs,
+                                       (int)(sizeof(evs) / sizeof(evs[0])));
     for (int i = 0; i < n; ++i) {
-        if (ev[i].type == TOUCH_EVENT_DOWN) { ++feed_downs; }
-        if (ev[i].type == TOUCH_EVENT_MOVE) { ++feed_moves; }
-        if (ev[i].type == TOUCH_EVENT_UP)   { ++feed_ups; }
+        if (evs[i].type == TOUCH_EVENT_DOWN) { ++feed_downs; }
+        if (evs[i].type == TOUCH_EVENT_MOVE) { ++feed_moves; }
+        if (evs[i].type == TOUCH_EVENT_UP)   { ++feed_ups; }
         if (feed_lose > 0) {
             --feed_lose;
             continue;
         }
         if (feed_fn != NULL) {
-            feed_fn(&ev[i]);
+            feed_fn(&evs[i]);
         } else if (feed_scr == NULL) {
-            ui_router_event(&ev[i]);
+            ui_router_event(&evs[i]);
         } else if (feed_scr->event != NULL) {
-            touch_event_t local = ev[i];
+            touch_event_t local = evs[i];
             local.point.y = (int16_t)(local.point.y - UI_BAND_H);
             feed_scr->event(&local);
         }

@@ -270,13 +270,13 @@ TEST_CASE(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are)
         outputs_step(&o, t);
     }
     CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
-    const uint16_t held = outputs_actual(&o, 0);
-    CHECK(held < 900u);                        /* still on its way */
-    CHECK_EQ(o.channel[0].command, held);
+    const uint16_t rest = outputs_actual(&o, 0);
+    CHECK(rest < 900u);                        /* still on its way */
+    CHECK_EQ(o.channel[0].command, rest);
     for (; t <= T0 + OUT_DEFAULT_TIMEOUT_MS + 200u; ++t) {
         outputs_step(&o, t);
     }
-    CHECK_EQ(outputs_actual(&o, 0), held);
+    CHECK_EQ(outputs_actual(&o, 0), rest);
 }
 
 /* A sweep stopped by the panel holds each surface where its output has got
@@ -292,13 +292,13 @@ TEST_CASE(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are)
         outputs_step(&o, t);
     }
     CHECK_EQ(sweep(0u, 1000u, 400u, 0u, t), 0u);
-    const uint16_t held = outputs_actual(&o, 0);
-    CHECK(held > 500u && held < 900u);
-    CHECK_EQ(o.channel[0].command, held);
+    const uint16_t rest = outputs_actual(&o, 0);
+    CHECK(rest > 500u && rest < 900u);
+    CHECK_EQ(o.channel[0].command, rest);
     for (; t <= T0 + 400u; ++t) {
         outputs_step(&o, t);
     }
-    CHECK_EQ(outputs_actual(&o, 0), held);
+    CHECK_EQ(outputs_actual(&o, 0), rest);
 }
 
 /* A sweep starts and changes only from its four registers in one write;
@@ -368,8 +368,8 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
         outputs_step(&o, t);
     }
     CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &hold, &o, t), 0u);
-    const uint16_t held = outputs_actual(&o, 0);
-    CHECK(held > 500u && held < 900u);
+    const uint16_t rest = outputs_actual(&o, 0);
+    CHECK(rest > 500u && rest < 900u);
     CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
     for (; t <= T0 + 2000u; ++t) {
         if (t % 100u == 0u) {
@@ -379,7 +379,7 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
         outputs_step(&o, t);
         CHECK(!outputs_overdue(&o, 0, t));
     }
-    CHECK_EQ(outputs_actual(&o, 0), held);
+    CHECK_EQ(outputs_actual(&o, 0), rest);
     /* Unrepeated, the channel rests 500 ms after the last repeat, as it
      * would after any command, and the hold ends with it. */
     const uint32_t last = T0 + 2000u;

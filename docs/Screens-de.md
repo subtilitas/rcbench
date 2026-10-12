@@ -1296,6 +1296,15 @@ plotten:
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
+Eine Zeile endet an ihrem Zeilenvorschub (LF, 0x0A). Text nach dem letzten
+Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte
+abgeschnitten hat: Sie kann jedes Feld enthalten und eine gekürzte Zahl,
+`95` von `9554`, deshalb fehlt sie in den Zeilen, den Kennwerten und im
+Plot. ZEILEN steht dann in der Warnfarbe, und die Importansicht meldet
+`LETZTE ZEILE ABGEBROCHEN, FEHLT`. Eine Datei eines anderen Programms, die
+ohne Zeilenvorschub endet, verliert ihre letzte Zeile genauso. Leerzeichen
+nach dem letzten Zeilenvorschub sind keine Zeile, ebenso Tabs und
+Wagenrückläufe (CR).
 Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
 `BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
 Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
@@ -1375,7 +1384,9 @@ Zeilen, mit denen das Festschreiben noch nicht fertig ist, und die Zeilen, die
 noch in der Queue zwischen der Control-Task und der Karten-Task stehen: unter
 1,0 s Laufzeit, solange die Karte mitkommt, und 84 Zeilen, 4,20 s bei den 20 Hz
 des Panels, wenn die Karte hängt und die Queue voll ist. Der Rest der Datei
-bleibt in beiden Fällen lesbar. Geschrieben wird von
+bleibt in beiden Fällen lesbar; eine Zeile, die der Ausfall mittendrin
+abgeschnitten hat, hat keinen Zeilenvorschub und fehlt beim Lesen (siehe
+[Logs](#logs)). Geschrieben wird von
 einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibvorgang
 250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
 Obergrenze von 150 ms.

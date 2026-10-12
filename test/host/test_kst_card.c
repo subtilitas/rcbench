@@ -120,7 +120,8 @@ static char *edited(unsigned slot, const kst_image_t *img, bool typed)
 static unsigned set_line(char *text, kst_field_id_t id, const char *value)
 {
     char head[80], tail[KST_FILE_MAX];
-    char *at, *end;
+    char *at;
+    const char *end;
     unsigned line = 1;
 
     snprintf(head, sizeof(head), "%s = ", kst_field(id)->name);
