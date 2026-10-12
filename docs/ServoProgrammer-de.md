@@ -18,8 +18,7 @@ Programmierer arbeitet.
 enthält den Hinweis des Projekts.
 
 Registerlayout und Timing stammen von 1 Tool Card #2, der
-Programmierkarte von KST, und 1 Chaservo-Servo unbekannten Typs. Kein
-KST-Servo ist gelesen worden. Die Wirkung eines Registers auf die
+Programmierkarte von KST, und 1 Chaservo-Servo unbekannten Typs. Die Wirkung eines Registers auf die
 Bewegung des Servos ist nicht gemessen: Namen, Einheiten und Limits sind
 die, die das Hersteller-Tool anzeigt und annimmt.
 [Was offen ist](#offene-messungen) nennt, was ein Prüfstand messen muss,
@@ -1059,7 +1058,6 @@ Codes.
 
 ## Einschränkungen
 
-- Kein KST-Servo ist gelesen worden.
 - Ein laufendes Schreiben zeigt die Zahl der Register, die es setzt, und
   die gesendeten Frames. Das Register, das gerade geschrieben wird, steht
   nicht auf der Link-Page und wird nicht gezeigt. Ein Zurückspielen des

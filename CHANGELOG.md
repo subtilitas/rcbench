@@ -9,8 +9,7 @@ history is in git.
 ### Fixed
 
 - `docs/ServoProgrammer.md` and its German page name the servo the
-  register layout and the timing come from: 1 Chaservo servo. No KST servo
-  has been read.
+  register layout and the timing come from: 1 Chaservo servo.
 
 ## 0.17.0 - 2026-10-12
 
