@@ -5,7 +5,7 @@ export type Lang = 'en' | 'de';
 export type Text = { en: string; de: string };
 
 export type Src =
-  | { kind: 'repo'; path: string; line: number; tag: 'v0.16.0' }
+  | { kind: 'repo'; path: string; line: number; tag: 'v0.17.0' }
   | { kind: 'guide'; section: string }
   | { kind: 'photo'; file: string }
   | { kind: 'owner'; date: string }

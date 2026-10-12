@@ -4,8 +4,8 @@ The core of the rcbench bench configurator: one data file, one resolver and the
 checks on both. It has no runtime dependency and no build step. Node.js 24 runs
 the TypeScript files directly.
 
-The data describes release 0.16.0. Every record carries a source: a file and
-line at the tag `v0.16.0`, a section of the build guide, a photo taken for
+The data describes release 0.17.0. Every record carries a source: a file and
+line at the tag `v0.17.0`, a section of the build guide, a photo taken for
 the build guide, or a dated statement of the project owner. A fact that no source confirms is marked as unknown in the
 data and is not asserted.
 
@@ -142,7 +142,7 @@ its parts stay or leave, and in `objectsOut` the test objects that leave.
 Run from `configurator/core` with Node.js 24.
 
 ```sh
-npm run check                 # static checks; the tree at v0.16.0 is read when git and the tag are present
+npm run check                 # static checks; the tree at v0.17.0 is read when git and the tag are present
 npm run check -- --strict     # as above; fails when git or the tag is absent
 npm run check -- --wires      # prints the wire table as Markdown
 npm test                      # the test suite
@@ -154,7 +154,7 @@ Exit codes of `check`: 0 no error, 1 at least one error, 2 unknown argument.
 A warning does not change the exit code. Exit codes of `coverage`: 0 figure
 current or written, 1 drift or a failing suite, 2 unknown argument.
 
-`--strict` needs the tag `v0.16.0` in the clone. A shallow clone without tags
+`--strict` needs the tag `v0.17.0` in the clone. A shallow clone without tags
 fails it.
 
 The type check needs the TypeScript compiler and the Node.js type
@@ -189,7 +189,16 @@ run of white space read as one space. The texts are the export `ANCHOR_TEXTS`;
 they are not part of `CATALOGUE`. Build guide sections, photos and owner
 statements are checked by id, number and date only.
 
-A release tag newer than `v0.16.0` is a warning.
+A release tag newer than `v0.17.0` is a warning. The Configurator workflow
+shows it as an annotation and in the summary of the run.
+
+The data moves to a release in the first pull request after the tag of that
+release: the anchors are read at the tag, so the tag exists first. That pull
+request changes `RELEASE_TAG` in `tools/check.ts`, `TAG` and `release` in
+`catalogue.ts`, the `tag` type in `../contract.ts`, `RELEASE` in
+`../src/i18n.ts`, `release` in `../drawings/anchors.json` and `version` in
+`../package.json`, and sets each anchor to the line that holds its text at
+the new tag.
 
 The 7 pin rules:
 
@@ -293,7 +302,7 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.16.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.17.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
@@ -302,5 +311,5 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
 - Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
 - Osoyoo breakout board: the source that feeds the converter of the strip, its input range, its output current and the scope of the 3.3 V or 5 V jumper are not stated.
-- ESC STICK programming: `docs/StickProgramming.md` at `v0.16.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
+- ESC STICK programming: `docs/StickProgramming.md` at `v0.17.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
 - 8 check entries of kind `unknown` state each open point in the text of a setup.

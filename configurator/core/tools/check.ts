@@ -30,7 +30,7 @@ export type Tree = {
   newestTag: string | null;
 };
 
-export const RELEASE_TAG = 'v0.16.0';
+export const RELEASE_TAG = 'v0.17.0';
 
 /** Section ids of the build guide. The generator is not in the repository; only the id is checked. */
 export const GUIDE_SECTIONS: ReadonlyArray<string> = [

@@ -7,7 +7,7 @@
 // from the repository at the release tag.
 //
 // Each record names its source in `src`:
-//   repo   a file and line at tag v0.16.0
+//   repo   a file and line at tag v0.17.0
 //   guide  a section of the build guide of the release
 //   photo  a print read from a photo of the part; such a fact also has a
 //          check entry of kind "unknown"
@@ -17,7 +17,7 @@ import type {
   Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, PowerSource, Rule, Src, Stage, Text, Wire,
 } from '../contract.ts';
 
-const TAG = 'v0.16.0';
+const TAG = 'v0.17.0';
 
 function t(en: string, de: string): Text {
   return { en, de };
@@ -361,11 +361,11 @@ const parts: Part[] = [
     slot: { column: 'R', order: 15 },
     pins: [
       pin('VCC', same('VCC'), guide('stage-4')),
-      pin('OUT', same('OUT'), repo('docs/Building.md', 108, '| OUT | not connected')),
+      pin('OUT', same('OUT'), repo('docs/Building.md', 120, '| OUT | not connected')),
       pin('GND', same('GND'), guide('stage-4')),
       // docs/Building.md names this pin PGO and ties it to GND. The print on
       // the board is not confirmed.
-      pin('GPO', same('GPO'), repo('docs/Building.md', 107, '| PGO | GND |'), false),
+      pin('GPO', same('GPO'), repo('docs/Building.md', 119, '| PGO | GND |'), false),
       pin('SDA', same('SDA'), guide('stage-4')),
       pin('SCL', same('SCL'), guide('stage-4')),
       pin('DIR', same('DIR'), guide('stage-4')),
@@ -593,7 +593,7 @@ const parts: Part[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Pads of the coprocessor. [pad, name, gpio, line in out_bind.c at v0.16.0]
+// Pads of the coprocessor. [pad, name, gpio, line in out_bind.c at v0.17.0]
 // ---------------------------------------------------------------------------
 
 const CAN_RESERVED: Text = t(
@@ -911,14 +911,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 289, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 285, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 290, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 286, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1106,7 +1106,7 @@ const wires: Wire[] = [
       'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
-    src: repo(SETTINGS, 190, 'GP22 is pad 29'),
+    src: repo(SETTINGS, 191, 'GP22 is pad 29'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
@@ -1127,7 +1127,7 @@ const wires: Wire[] = [
       'docs/Building.md names the pin PGO. No wire to the coprocessor.',
       'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.',
     ),
-    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 107, '| PGO | GND |'),
+    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 119, '| PGO | GND |'),
   },
   {
     n: 55, kind: 'wire', a: 'pad.36', b: 'ina228.V3', net: '3v3', cls: 'logic',
@@ -1457,7 +1457,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 291, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 287, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1501,7 +1501,7 @@ const checks: Check[] = [
       'AS5600 board: pull-ups on the board are not known. The print of the pin GPO, named PGO in Building.md, is not confirmed. It is tied to GND.',
       'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO, in Building.md PGO genannt, ist nicht bestätigt. Er liegt an GND.',
     ),
-    when: { has: 'as5600' }, src: repo('docs/Building.md', 107, '| PGO | GND |'),
+    when: { has: 'as5600' }, src: repo('docs/Building.md', 119, '| PGO | GND |'),
   },
   {
     id: 'tap-ground', kind: 'measure',
@@ -1610,8 +1610,8 @@ const checks: Check[] = [
   {
     id: 'esc-programming-power', kind: 'unknown',
     text: t(
-      'ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release 0.16.0 powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.',
-      'ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release 0.16.0 versorgt den ESC aus dem PD mini und zählt die Töne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.',
+      'ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release 0.17.0 powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.',
+      'ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release 0.17.0 versorgt den ESC aus dem PD mini und zählt die Töne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.',
     ),
     when: { all: [{ has: 'esc' }, { has: 'pdmini' }, { opt: 'escPower', is: 'pd' }] },
     src: repo('docs/StickProgramming.md', 6, 'PD mini'),
@@ -1705,15 +1705,6 @@ const safety: Catalogue['safety'] = [
 
 const notInRelease: Catalogue['notInRelease'] = [
   {
-    id: 'kst',
-    text: t(
-      'KST and Chaservo servo programming port: on main, in no release.',
-      'Programmieranschluss für KST- und Chaservo-Servos: auf main, in keinem Release.',
-    ),
-    release: 'main',
-    src: repo('STATUS.md', 492, 'KST servo programming'),
-  },
-  {
     id: 'knob',
     text: t(
       'Rotary knob: the docs disagree. The page follows the build guide: no knob is read on this panel.',
@@ -1725,8 +1716,8 @@ const notInRelease: Catalogue['notInRelease'] = [
   {
     id: 'mt6701',
     text: t(
-      'MT6701 magnetic encoder board: not read by 0.16.0.',
-      'MT6701-Magnetencoder-Platine: wird von 0.16.0 nicht gelesen.',
+      'MT6701 magnetic encoder board: not read by 0.17.0.',
+      'MT6701-Magnetencoder-Platine: wird von 0.17.0 nicht gelesen.',
     ),
     release: 'planned',
     src: guide('parts'),
@@ -1747,7 +1738,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 530, 'BLHeli_S and AM32, Hitec on the servo side | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 579, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 
@@ -1764,15 +1755,15 @@ const pinDefaults: PinDefault[] = [
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
     allowed: [-1, 0, 4, 6, 14, 16, 18, 20, 26],
-    src: repo(SETTINGS, 160, '"sns_sda", "Sensor SDA"'),
+    src: repo(SETTINGS, 161, '"sns_sda", "Sensor SDA"'),
   },
   {
     signal: 'scl', gpio: 17, pad: 22, choice: 'default', role: 'bus',
     // SCL follows SDA: the GPIO after it.
     allowed: [-1, 1, 5, 7, 15, 17, 19, 21, 27],
-    src: repo(SETTINGS, 163, '"sns_scl", "Sensor SCL"'),
+    src: repo(SETTINGS, 164, '"sns_scl", "Sensor SCL"'),
   },
-  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 190, '"tone_pin", "Tap pin"') },
+  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 191, '"tone_pin", "Tap pin"') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
   { signal: 'pd_tx', gpio: 7, pad: 10, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
@@ -1977,7 +1968,7 @@ function deepFreeze<T>(value: T): T {
 // Frozen: a setup holds records of the catalogue by reference, so a write to
 // a setup or to the catalogue throws instead of changing later setups.
 export const CATALOGUE: Catalogue = deepFreeze({
-  release: '0.16.0',
+  release: '0.17.0',
   hashVersion: 1,
   parts,
   pads,
