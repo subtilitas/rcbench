@@ -245,7 +245,7 @@
 <g filter="url(#cos-s2)"><rect x="232" y="30" width="40" height="18" rx="2" fill="url(#cos-tin)"/><rect x="238" y="34" width="28" height="10" fill="#17181c"/><rect x="240" y="34" width="12" height="10" fill="#e9e6de"/></g>
 <g transform="translate(296,39) rotate(0) scale(1)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#f3efe2"/></g>
 <g transform="translate(296,52) rotate(0) scale(1)" filter="url(#cos-s2)"><rect x="-8" y="-4.5" width="16" height="9" rx="1" fill="url(#cos-tin)"/><rect x="-4.5" y="-4.5" width="9" height="9" fill="#202227"/></g>
-<g filter="url(#cos-s2)"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="222" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>
+<g filter="url(#cos-s2)"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="233" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>
 <circle cx="228" cy="68" r="2.2" fill="url(#cos-gold)"/>
 <circle cx="239" cy="68" r="2.2" fill="url(#cos-gold)"/>
 <circle cx="250" cy="68" r="2.2" fill="url(#cos-gold)"/>

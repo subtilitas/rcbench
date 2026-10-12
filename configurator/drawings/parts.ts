@@ -124,8 +124,8 @@ function coproOsoyoo(d: Dwg): void {
   // The 2-pole VIN terminal and the 3 x 3 pin header of the carrier are not drawn.
   d.add(`<g filter="${d.u('s3')}"><rect x="170" y="20" width="44" height="68" rx="3" fill="#1b1c20"/><rect x="178" y="20" width="28" height="12" fill="#0b0b0d"/></g>`);
   d.add(`<g filter="${d.u('s2')}"><rect x="232" y="30" width="40" height="18" rx="2" fill="${d.u('tin')}"/><rect x="238" y="34" width="28" height="10" fill="#17181c"/><rect x="240" y="34" width="12" height="10" fill="#e9e6de"/></g>`, d.smd(296, 39, 'led'), d.smd(296, 52, 'r'));
-  // Jumper: 3 pins, the cap on 2 of them. The print reads 5V and 3V3 (product photo of the vendor).
-  d.add(`<g filter="${d.u('s2')}"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="222" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>`);
+  // Jumper: 3 pins, the cap on 2 of them. The print reads 3V3 and 5V from the left (product photo of the vendor); the cap is drawn on the 5V pair, the position the servo needs.
+  d.add(`<g filter="${d.u('s2')}"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="233" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>`);
   for (const x of [228, 239, 250]) d.add(`<circle cx="${x}" cy="68" r="2.2" fill="${d.u('gold')}"/>`);
   d.add(d.text(239, 90, '3V3 / 5V', { sz: 9, a: 'middle' }));
   const cap = (x: number, y: number): string => `<circle cx="${x}" cy="${y}" r="11" fill="${d.u('tin')}"/><path d="M${x - 9} ${y - 7}A11 11 0 0 1 ${x + 9} ${y - 7}Z" fill="#1b1c20"/>`;

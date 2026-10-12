@@ -149,7 +149,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
     ],
   );
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 39);
+  assert.equal(CATALOGUE.checks.length, 42);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [
@@ -1223,8 +1223,13 @@ test('the Osoyoo strip: no current is shown for both voltages, the DC input name
   const check = (id: string) => CATALOGUE.checks.find((c) => c.id === id)!;
   assert.equal(check('strip-converter').src.kind, 'doc');
   assert.match(check('strip-converter').text.en, /^((?!rates the board|printed 16 V).)*$/);
-  assert.match(check('strip-input').text.en, /7 to 16 V/);
+  assert.match(check('strip-print').text.en, /7 to 16 V/);
+  assert.match(check('strip-print').text.en, /16 V/);
+  assert.doesNotMatch(check('strip-input').text.en, /printed|print /);
+  assert.doesNotMatch(check('strip-parts').text.en, /datasheet|uA/);
+  assert.match(check('strip-load').text.en, /1 uA/);
   assert.notDeepEqual(check('strip-input').src, check('strip-converter').src);
+  assert.notDeepEqual(check('strip-print').src, check('strip-input').src);
 });
 
 test('the Osoyoo strip: one DC input, no unresolved 3V3 claim, the plug claim excludes the current sensor, one source per check', () => {
@@ -1247,9 +1252,25 @@ test('the Osoyoo strip: one DC input, no unresolved 3V3 claim, the plug claim ex
   // Each check of the strip holds the facts of one source.
   assert.equal(check('strip-jumper').src.kind, 'doc');
   assert.notDeepEqual(check('strip-dc').src, check('strip-jumper').src);
-  assert.notDeepEqual(check('strip-measure').src, check('strip-jumper').src);
+  assert.notDeepEqual(check('strip-measure').src, check('strip-converter').src);
   assert.equal(check('strip-measure').src.kind, 'doc');
-  assert.match(check('strip-measure').text.en, /4\.8 to 5\.2 V/);
+  // The check gives the expected reading per jumper position, in both languages.
+  assert.equal(check('strip-measure').src.kind, 'doc');
+  assert.equal(check('strip-jumper').kind, 'note');
+  for (const lang of ['en', 'de'] as const) {
+    const m = check('strip-measure').text[lang];
+    assert.match(m, lang === 'en' ? /5 V nominal/ : /5 V nominal/);
+    assert.match(m, /0 V/);
+    assert.match(m, lang === 'en' ? /3\.3 V/ : /3,3 V/);
+  }
+  // The 3.3 V limit of the Pico pin, the factory position and the shared supply without USB are stated.
+  assert.match(check('strip-level').text.en, /3\.3 V I\/O only/);
+  assert.match(check('strip-level').text.de, /nur 3,3-V-Ein- und Ausgänge/);
+  assert.match(check('strip-regulator').text.en, /as delivered/);
+  assert.match(check('strip-regulator').text.de, /Lieferzustand/);
+  assert.match(strip.pros[2]!.en, /With USB connected.*without USB voltage.*also feeds VSYS/);
+  assert.match(strip.pros[2]!.de, /Mit angeschlossenem USB.*ohne USB-Spannung.*auch VSYS/);
+  assert.doesNotMatch(check('strip-dc').text.en, /damage/);
   assert.doesNotMatch(check('strip-jumper').text.en, /4\.8|7 to 1[26] V/);
   assert.doesNotMatch(check('strip-input').text.en, /7 to 40 V/);
   assert.match(check('strip-converter').text.en, /7 to 40 V/);

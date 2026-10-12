@@ -15,7 +15,7 @@ data and is not asserted.
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
 | `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
-| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 32 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 42 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
@@ -63,9 +63,11 @@ use in one setup.
 The option `servoPower` is `external` (default) or `bench`. With `bench` the
 plus of the servo is on pad 40 (VBUS, 5 V) of the coprocessor, or on the V
 pin of the strip of the Osoyoo breakout board. The check entry
-`servo-bench-supply` is in every such setup: the servo draws from the supply
-of the logic. The current limit of pad 40 and the supply of the strip are not
-stated; the check entries `servo-5v-pin` and `strip-supply` say so. The ESC
+`servo-bench-supply` is in every such setup: the source at the V pin depends
+on the jumper V Selector (5V from the converter of the DC input, 3V3 from the
+regulator on VSYS). The current limit of pad 40 is not stated; the check entry
+`servo-5v-pin` says so. The currents of the strip and whether USB alone powers
+the 3V3 position are not measured; the check entry `strip-supply` says so. The ESC
 takes signal and GND from the bench in every setup, never a supply.
 
 The option `servoPort` is `outputs` (default) or `prog`. It is never shown

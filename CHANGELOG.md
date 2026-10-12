@@ -38,8 +38,12 @@ history is in git.
   alone powers it is not resolved. The data states that exactly 1 of the DC
   jack and the VIN terminal is connected, never both. The pro "plugs
   straight in" names the setup without the servo programmer and without the
-  INA3221 current sensor. Each check of the strip holds the facts of one
-  source: schematic, product page or XL1509 datasheet. A source of the kind `doc` names a
+  INA3221 current sensor. The data states that the Pico accepts 3.3 V I/O
+  only, that the jumper cap sits on 3V3 as delivered, the voltage expected
+  at the V pin per jumper position, and that without USB voltage the
+  converter also feeds VSYS of the Pico board. Each check of the strip holds
+  the facts of one source: schematic, product page, product photos, XL1509
+  datasheet or SN74HC04 datasheet. A source of the kind `doc` names a
   document, its address and the place in it; the data check rejects one
   without them.
 - `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
