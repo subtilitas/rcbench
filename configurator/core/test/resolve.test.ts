@@ -873,13 +873,14 @@ test('the functions that need no part are enabled in every setup and add no part
   assert.deepEqual(named.ignored, []);
 });
 
-test('Osoyoo strip with the INA3221: the 9 strip checks stay and the supply ends on wire 62', () => {
-  const both = resolve(CATALOGUE, select(['servo', 'ina3221'], [], { servoPower: 'bench', connection: 'osoyoo' }));
+test('Osoyoo strip with the INA3221 shunt (servocur): the 9 strip checks stay and the supply ends on wire 62', () => {
+  const both = resolve(CATALOGUE, select(['servo', 'servocur'], [], { servoPower: 'bench', connection: 'osoyoo' }));
   const ids = both.checks.map((c) => c.id);
   for (const id of ['strip-jumper', 'strip-dc', 'strip-measure', 'strip-feed', 'strip-converter', 'strip-input', 'strip-print', 'strip-regulator', 'strip-supply']) {
     assert.ok(ids.includes(id), id);
   }
   assert.ok(!ids.includes('strip-plug'));
+  assert.ok(both.parts.some((p) => p.part.id === 'ina3221'));
   const numbers = both.wires.map((w) => w.n);
   assert.ok(numbers.includes(62));
   assert.ok(!numbers.includes(61));
