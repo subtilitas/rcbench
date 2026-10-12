@@ -1,7 +1,10 @@
 """testbench/host/capture.sh: the warning for a channel that never changed.
 
 sigrok-cli is replaced by a stub that prints a prepared bits listing for the
-read-back call."""
+read-back call.
+
+SPDX-License-Identifier: MIT
+"""
 
 import os
 import re
@@ -16,6 +19,14 @@ SCRIPT = REPO / "testbench" / "host" / "capture.sh"
 STUB = """#!/usr/bin/env bash
 for a in "$@"; do
     [ "$a" = --input-file ] && exec cat "$FAKE_BITS"
+done
+exit 0
+"""
+
+
+STUB_FAILING = """#!/usr/bin/env bash
+for a in "$@"; do
+    [ "$a" = --input-file ] && { echo "device gone" >&2; exit 1; }
 done
 exit 0
 """
@@ -36,19 +47,19 @@ def listing(channels):
     return "\n".join(lines) + "\n"
 
 
-def run(tmp_path, text, timeout=60):
+def run(tmp_path, text, timeout=60, stub=STUB):
     host = tmp_path / "testbench" / "host"
     host.mkdir(parents=True)
     (tmp_path / "testbench" / "captures").mkdir()
     shutil.copy(SCRIPT, host / "capture.sh")
-    stub = tmp_path / "bin"
-    stub.mkdir()
-    cli = stub / "sigrok-cli"
-    cli.write_text(STUB)
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    cli = bindir / "sigrok-cli"
+    cli.write_text(stub)
     cli.chmod(cli.stat().st_mode | stat.S_IXUSR)
     bits = tmp_path / "bits.txt"
     bits.write_text(text)
-    path = f"{stub}:{os.environ['PATH']}"
+    path = f"{bindir}:{os.environ['PATH']}"
     env = dict(os.environ, FAKE_BITS=str(bits), PATH=path)
     cmd = ["bash", str(host / "capture.sh"), "t", "D0", "1m", "1", "1.65"]
     done = subprocess.run(cmd, env=env, capture_output=True, text=True,
@@ -87,8 +98,15 @@ def test_a_change_at_the_first_sample_counts(tmp_path):
     assert run(tmp_path, listing([("D2", "1" + "0" * (N - 1))])) == ""
 
 
-def test_an_empty_capture_names_nothing(tmp_path):
-    assert run(tmp_path, "") == ""
+def test_an_empty_capture_is_reported(tmp_path):
+    err = run(tmp_path, "")
+    assert err.startswith("warning: no samples in the capture")
+
+
+def test_a_failed_read_back_is_reported_and_the_path_is_printed(tmp_path):
+    err = run(tmp_path, "", stub=STUB_FAILING)
+    assert err.startswith("warning: read-back of ")
+    assert "device gone" in err
 
 
 def test_only_the_flat_channels_among_several_are_named(tmp_path):

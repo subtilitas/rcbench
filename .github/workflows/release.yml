@@ -9,6 +9,9 @@ name: Release
 # suite, the sanitizer run, the coverage floors, the analysers and the
 # checks on the docs have passed on that commit, and nothing at all when
 # they fail.  A manual run for a tag is held to the same rule.
+#
+# The configurator-data job runs beside the others and gates nothing: it
+# shows a release tag newer than the configurator data as a warning.
 
 on:
   push:
@@ -43,6 +46,9 @@ jobs:
   version:
     name: The tag matches the images
     runs-on: ubuntu-latest
+    # ci_gate.py waits up to 5400 s (90 min) for CI; 100 min leaves 10 min
+    # for the checkouts and the version check.
+    timeout-minutes: 100
     # Resolved once, here, and every job below builds this SHA rather than
     # fetching the tag again.  A tag can be force-moved while a run is in
     # flight, and four independent fetches of a moving ref can each land on a
@@ -113,6 +119,7 @@ jobs:
     needs: [version]
     name: Panel image
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
@@ -146,6 +153,7 @@ jobs:
     name: Coprocessor image
     needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
@@ -194,10 +202,45 @@ jobs:
             firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
 
+  # The configurator anchors its data to one release tag, and a tag alone
+  # starts no Configurator workflow run.  This job runs the check of that
+  # workflow on the commit of the run: a release tag newer than the data
+  # becomes an annotation of the run and a line of its summary.  The job
+  # ends green on a warning and on a failed check, and no other job needs
+  # it, so it never holds a release back.
+  configurator-data:
+    name: Configurator data
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: configurator/core
+    steps:
+      # The commit of the run: the tag on a tag push, the branch head on a
+      # manual run.  The check reads files at the release tag from git, so
+      # the clone holds the full history and the tags.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Check the data file
+        shell: bash
+        run: bash tools/check-annotate.sh --warn-only
+
   publish:
     name: Package and publish
     needs: [version, panel, iomcu]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
         with:

@@ -493,6 +493,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_PG_WRITE_N]             = "SCHREIBEN %d",
     [TX_PG_WRITE]               = "SCHREIBEN",
     [TX_PG_READ]                = "LESEN",
+    [TX_PG_MODELLED]            = "SIMULIERT",
+    [TX_PG_MODEL_NOTE]          = "Vom Panel simuliert: kein Gerät wird erreicht.",
 
     /* ------------------------------------------------------- ESC STICK */
     [TX_SP_NEEDS_V]             = "%u.%u V, Obergrenze %u.%u V",
@@ -605,7 +607,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SP_NOT_IN_ORDER]        = "NICHT IN FOLGE",
     [TX_SP_STATS]               = "GRUPPEN %u   EINSCHALTUNGEN %u   THROTTLE %s   NETZTEIL %s",
     [TX_SP_CURRENT]             = "STROM %d mA   GRUND %d mA   MESSWERTE ALLE %u ms",
-    [TX_SP_TONE_HEAD]           = "ABGRIFF %s   TONHÖHE %s   VERLOREN %u   VERPASST %u",
+    [TX_SP_TONE_HEAD]           = "ABGRIFF %s   TONHÖHE %s   VERLOREN %s   VERPASST %u",
     [TX_SP_TONE_RUNNING]        = "LÄUFT",
     [TX_SP_TONE_OVERRUN]        = "ÜBERLAUF",
     [TX_SP_TONE_WAITING]        = "WARTET",

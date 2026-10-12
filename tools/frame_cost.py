@@ -19,6 +19,8 @@ evicted is 64 bytes written back -- so a frame's traffic is roughly
 Numbers are per frame, taken as the difference between an 11-frame and a
 1-frame run so one-off setup (the initial memset, first-touch of the buffer)
 cancels out.
+
+SPDX-License-Identifier: MIT
 """
 
 from __future__ import annotations

@@ -175,6 +175,11 @@ typedef enum {
  *  renderer reads. */
 typedef struct {
     tone_state_t state;
+    /** The state and the seven values below come from a status read
+     *  younger than TONE_LINK_STALE_MS; false, and the seven 0, while none
+     *  speaks for the page: no link, no page, no read yet, a read that
+     *  old, or a page that holds the tap off. */
+    bool     read;
     bool     overrun;         /**< the capture overran since ENABLE     */
     bool     tone;            /**< the last window held a tone          */
     bool     beep;            /**< a beep is under way                  */
@@ -314,7 +319,9 @@ uint32_t tone_link_missed(const tone_link_t *t);
 /** FLAGS as last read, 0 before any read. */
 uint16_t tone_link_flags(const tone_link_t *t);
 
-/** The screen's copy of everything above, at @p now_ms. */
+/** The screen's copy of everything above, at @p now_ms.  The status's
+ *  values are filled only while tone_readout_t.read holds; the beeps and
+ *  the missed count are the panel's own and stay. */
 void tone_link_readout(const tone_link_t *t, uint32_t now_ms,
                        tone_readout_t *r);
 

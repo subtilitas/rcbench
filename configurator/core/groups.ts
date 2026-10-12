@@ -123,12 +123,13 @@ export function alwaysOn(catalogue: Catalogue, fn: Fn): boolean {
 }
 
 /**
- * The function that drives test object `id` and needs no part beyond the
- * base setup. A selection that holds it keeps the test object connected.
+ * The function that drives test object `id`, needs no part beyond the base
+ * setup and forces no option. A selection that holds it keeps the test object
+ * connected and changes no variant.
  */
 export function plainDrive(catalogue: Catalogue, id: PartId): FunctionId | null {
   const base = baseParts(catalogue);
-  const fn = catalogue.functions.find((f) => f.drives === id && f.needs.every((p) => base.includes(p)));
+  const fn = catalogue.functions.find((f) => f.drives === id && f.forces === undefined && f.needs.every((p) => base.includes(p)));
   return fn ? fn.id : null;
 }
 

@@ -102,7 +102,11 @@ endforeach()
 # and the real device against each other over a bus this suite controls.
 set(FAKES "")
 
-enable_testing()
+# Every test is stopped after 120 s unless it sets its own TIMEOUT.  CTest
+# reads the default from DartConfiguration.tcl, which include(CTest) writes
+# from DART_TESTING_TIMEOUT; the ctest default without it is 1500 s.
+set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
+include(CTest)
 
 foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_panel)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
@@ -148,7 +152,8 @@ target_compile_definitions(test_kst_pio PRIVATE
 # program includes all 7, calls one function of each module and links against
 # the C library, so a header that is not valid C++ fails the build and a
 # missing extern "C" guard fails the link.  Without a C++ compiler the check
-# is not built.
+# is not built, and the configure step fails when the environment variable CI
+# is set.
 include(CheckLanguage)
 check_language(CXX)
 if(CMAKE_CXX_COMPILER)
@@ -159,6 +164,9 @@ if(CMAKE_CXX_COMPILER)
     set_target_properties(kst_headers_cxx PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
     add_test(NAME kst_headers_cxx COMMAND kst_headers_cxx)
+elseif(DEFINED ENV{CI})
+    message(FATAL_ERROR
+        "No C++ compiler and CI is set: the KST headers cannot be checked")
 else()
     message(STATUS "No C++ compiler: the KST headers are not checked as C++")
 endif()
