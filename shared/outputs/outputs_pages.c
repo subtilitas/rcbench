@@ -80,6 +80,9 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
         if (field == LINK_CC_ROLE && v > LINK_CC_ROLE_SURFACE) {
             return LINK_NACK_BAD_VALUE;
         }
+        if (field == LINK_CC_SLEW && v > LINK_CC_SLEW_MAX) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if ((field == LINK_CC_MIN_US || field == LINK_CC_MAX_US)
             && (v < LINK_CC_FLOOR_US || v > LINK_CC_CEILING_US)) {
             return LINK_NACK_BAD_VALUE;

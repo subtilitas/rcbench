@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
+  BAD_VALUE and nothing is stored; before, any value to 65535 reached the
+  output bank.
+- The coprocessor's CAN receive takes the next buffer after one holding a
+  frame it refuses (11-bit identifier, remote frame, length above 8), so a
+  valid frame in receive buffer 1 is served in the same pass.
+- A KST panel row coordinate that names no row gives no row (empty
+  rectangle, no label or button text, not live) instead of the first row.
+
 ### Changed
 
 - The bench configurator describes release 0.17.0. Every repository source

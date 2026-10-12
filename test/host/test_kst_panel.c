@@ -5002,6 +5002,37 @@ TEST_CASE(a_port_found_held_ends_a_hold_of_arm)
     }
 }
 
+/*
+ * A coordinate no row has is no row.  It used to read as the first row of the
+ * table, so a test naming a wrong row got that row's answer.
+ */
+TEST_CASE(an_unknown_coordinate_is_no_row)
+{
+    fresh();
+    connected();
+    CHECK(kst_panel_label(PG_SERVO, 1, 1) != NULL);
+    CHECK(kst_panel_label(PG_SERVO, 1, 9) == NULL);
+    CHECK(kst_panel_label(PG_SERVO, 99, 0) == NULL);
+    CHECK(kst_panel_label(-1, 0, 0) == NULL);
+    CHECK(kst_panel_button(PG_SERVO, 99, 0) == NULL);
+    CHECK(!kst_panel_row_live(PG_SERVO, 99, 0));
+    CHECK_EQ(kst_panel_value_rect(PG_SERVO, 99, 0).w, 0);
+    CHECK_EQ(kst_panel_value_rect(PG_SERVO, 99, 0).h, 0);
+    CHECK_EQ(kst_panel_step_rect(PG_SERVO, 99, true).w, 0);
+    /* A real row still has a size. */
+    CHECK(kst_panel_value_rect(PG_SERVO, 1, 1).w > 0);
+}
+
+/* A label asked for under the wrong row name fails instead of matching. */
+TEST_CASE(a_label_under_the_wrong_row_name_fails)
+{
+    fresh();
+    connected();
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 1), TR(KP_FILES));
+    CHECK(kst_panel_label(PG_SERVO, 2, 1) == NULL
+          || strcmp(kst_panel_label(PG_SERVO, 2, 1), TR(KP_FILES)) != 0);
+}
+
 TEST_CASE(a_tap_with_no_card_asks_for_a_look_once)
 {
     fresh();
@@ -5159,6 +5190,8 @@ int main(void)
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
     RUN(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm);
     RUN(a_port_found_held_ends_a_hold_of_arm);
+    RUN(an_unknown_coordinate_is_no_row);
+    RUN(a_label_under_the_wrong_row_name_fails);
     RUN(a_tap_with_no_card_asks_for_a_look_once);
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     return test_summary("kst_panel");

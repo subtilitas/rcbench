@@ -235,6 +235,36 @@ TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
     CHECK_EQ(regs[LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
 }
 
+/* The slew has an upper bound of LINK_CC_SLEW_MAX; both edges and a value on
+ * each side of the upper one. */
+TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
+{
+    const uint16_t ok[] = { 0u, 1u, LINK_CC_SLEW_MAX - 1u, LINK_CC_SLEW_MAX };
+    const uint16_t bad[] = { LINK_CC_SLEW_MAX + 1u, 10000u, 65535u };
+    for (unsigned i = 0; i < sizeof(ok) / sizeof(ok[0]); ++i) {
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t v = ok[i];
+        CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v), 0u);
+        CHECK_EQ(regs[LINK_CC_SLEW], v);
+    }
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t v = bad[i];
+        CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(regs[LINK_CC_SLEW], 0u);
+    }
+    /* The last channel's slew is judged as well. */
+    uint16_t regs[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(regs);
+    const uint16_t v = LINK_CC_SLEW_MAX + 1u;
+    CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_COUNT - LINK_CC_STRIDE
+                                    + LINK_CC_SLEW, 1, &v),
+             LINK_NACK_BAD_VALUE);
+}
+
 TEST_CASE(a_refused_slots_write_stores_none_of_its_registers)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -1234,6 +1264,7 @@ int main(void)
     RUN(writing_a_read_only_page_is_refused);
     RUN(a_value_the_page_rejects_is_refused_with_a_reason);
     RUN(a_refused_chan_cfg_write_stores_none_of_its_registers);
+    RUN(a_slew_above_the_maximum_is_refused_and_stores_nothing);
     RUN(a_refused_slots_write_stores_none_of_its_registers);
     RUN(the_arming_frame_applies_arm_throttle_and_poles_together);
     RUN(an_arming_frame_with_a_bad_pole_count_arms_nothing);
