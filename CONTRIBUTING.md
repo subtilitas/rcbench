@@ -217,6 +217,17 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
 - `firmware/` is hardware access and wiring. A rule in a firmware file belongs
   in `shared/` or in a protocol core, with a test.
 
+## The active output
+
+A screen, tab, overlay, prompt or automatic run that drives an output names
+that output while it is shown: the pin (`GP4`), the port (`PROG PORT GP13`)
+or the supply and its voltage (`PD MINI 7.40 V`). Nothing bound, a binding
+not yet read and a target out of reach show as a warning. The label reads the
+state the drive path reads, not the setting that asks for it
+(`prog_link_target()`, not `SET_SERVO_TARGET`), and a host test holds the two
+equal. A user who cannot tell from the screen what it drives meets a defect
+of the screen.
+
 ## Style
 
 - Four spaces, no tabs. Match the file you are in.
