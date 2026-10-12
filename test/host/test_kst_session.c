@@ -1820,8 +1820,10 @@ static void gate_members(gate_t *g, const kst_plan_t *good, bool confirm,
         }
     }
     for (unsigned i = 0; i < sizeof(k_n) + 2u; ++i) {
-        const unsigned n = i < sizeof(k_n) ? k_n[i]
-                               : good->n + 2u * (i - sizeof(k_n)) - 1u;
+        const unsigned n = i < sizeof(k_n)
+                               ? k_n[i]
+                               : (unsigned)(good->n + 2u * (i - sizeof(k_n))
+                                            - 1u);
 
         if ((uint8_t)n != good->n) {
             m = *good;
@@ -2762,7 +2764,6 @@ TEST_CASE(no_path_and_a_spent_cap_end_with_no_plan_and_tell_which)
 
     /* The cap one unit below the need: no verdict. */
     up_with(&g_sim, &g_ses, &some);
-    frames = g_sim.n_frames;
     CHECK_EQ(kst_session_edit(&g_ses, &some_b, 0), KST_SES_BUSY);
     (void)plan_through(&g_sim, &g_ses);
     CHECK_EQ(g_ses.plan_result, KST_PLAN_OK);

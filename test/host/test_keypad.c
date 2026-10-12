@@ -189,6 +189,7 @@ TEST_CASE(the_keys_tile_the_area_and_ok_spans_two)
 TEST_CASE(the_keypad_draws_inside_its_area_and_only_while_open)
 {
     gfx_color_t *fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fb);
     gfx_canvas_t cv;
     gfx_canvas_init(&cv, fb, W, H, W);
     ui_theme_set(UI_THEME_DARK);
@@ -435,6 +436,7 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_types_nothing)
 TEST_CASE(the_keyboard_draws_inside_its_area_and_only_while_open)
 {
     gfx_color_t *fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fb);
     gfx_canvas_t cv;
     gfx_canvas_init(&cv, fb, W, H, W);
     ui_theme_set(UI_THEME_DARK);

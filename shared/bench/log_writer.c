@@ -29,6 +29,14 @@ static const char *const k_supply_header =
     "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"
     "charge (mAh);energy (Wh)\n";
 
+/*
+ * A short write latches the writer, and the bytes the sink took stay in the
+ * file: nothing takes them back out of a card.  Nothing is written after
+ * them either, a line feed least of all.  The row they start has no line
+ * feed, and that is what the reader drops it by (log_reader_row()): a row
+ * cut after "95" of "9554" has its fields and a number that parses, and only
+ * the missing terminator tells it from a whole row.
+ */
 static bool put(log_writer_t *w, const char *s, size_t n)
 {
     if (w->failed || w->sink.write == NULL) {

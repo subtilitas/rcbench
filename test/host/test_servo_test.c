@@ -194,7 +194,7 @@ static void keep_csv(const char *line)
     const size_t n = strlen(line);
     if (g.csv_len + n + 2u > g.csv_cap) {
         g.csv_cap = (g.csv_cap + n + 2u) * 2u;
-        g.csv_text = realloc(g.csv_text, g.csv_cap);
+        REQUIRE_REALLOC(g.csv_text, g.csv_cap);
     }
     memcpy(g.csv_text + g.csv_len, line, n);
     g.csv_len += n;
@@ -312,7 +312,7 @@ static void frame(void)
     }
     const bool moves = out && g.armed && g.sup.set_v >= g.brownout_v;
     /* A servo without enough voltage stays where it is. */
-    const uint16_t cmd = moves ? g.cmd_us : (uint16_t)(g.servo.position_us + 0.5f);
+    const uint16_t cmd = moves ? g.cmd_us : (uint16_t)(lroundf(g.servo.position_us));
     const float amps = out ? servo_sim_step(&g.servo, cmd, g.now) : 0.0f;
     if (g.enc_model_on) {
         enc_model();
@@ -2213,7 +2213,7 @@ TEST_CASE(an_invalid_reading_ends_the_angle_until_the_next)
     run_ms(1000u);
     float deg = 0.0f;
     CHECK(servo_test_enc_at(&g.t, g.now, &deg));
-    servo_test_enc_t none = { false, 0u, 0u, g.now, false };
+    servo_test_enc_t none = { false, 0u, 0u, g.now, false, false, false, false };
     servo_test_encoder(&g.t, &none);
     CHECK(!servo_test_enc_at(&g.t, g.now, &deg));
     servo_test_encoder(&g.t, NULL);
@@ -2244,7 +2244,7 @@ TEST_CASE(a_gap_in_the_angle_leaves_the_open_move_unmeasured)
     enc_rig(ENC_DEG_PER_US, &c);
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     CHECK(run_to_counted_move_start());
-    const servo_test_enc_t none = { false, 0u, 0u, g.now, false };
+    const servo_test_enc_t none = { false, 0u, 0u, g.now, false, false, false, false };
     servo_test_encoder(&g.t, &none);
     run_out(120000u);
     const servo_test_step_t *s = &g.t.steps[0];
@@ -2266,7 +2266,7 @@ TEST_CASE(a_reading_after_lost_ones_leaves_the_open_move_unmeasured)
     CHECK(run_to_counted_move_start());
     const unsigned held = g.t.enc_hist_n;
     CHECK(held > 0u);
-    const servo_test_enc_t after = { true, 100u, 0u, g.now, true };
+    const servo_test_enc_t after = { true, 100u, 0u, g.now, true, false, false, false };
     servo_test_encoder(&g.t, &after);
     CHECK(!g.t.enc_ok);
     CHECK_EQ(g.t.enc_hist_n, 1u);               /* the earlier ones are gone */
@@ -2289,7 +2289,7 @@ TEST_CASE(a_gap_after_the_move_settled_keeps_its_result)
         frame();
     }
     CHECK(g.t.enc_settled);
-    const servo_test_enc_t none = { false, 0u, 0u, g.now, false };
+    const servo_test_enc_t none = { false, 0u, 0u, g.now, false, false, false, false };
     servo_test_encoder(&g.t, &none);
     run_out(120000u);
     CHECK_EQ(g.t.steps[0].enc_moves, 3u);
@@ -2348,7 +2348,7 @@ TEST_CASE(a_row_takes_the_newest_angle_not_later_than_itself)
     CHECK(!servo_test_enc_at(&t, 1000u, &deg));            /* none yet */
     for (unsigned k = 0; k < 5u; ++k) {                    /* 1000 ... 1160 */
         const servo_test_enc_t e = { true, (uint16_t)(100u * (k + 1u)), 0u,
-                                     1000u + 40u * k, false };
+                                     1000u + 40u * k, false, false, false, false };
         servo_test_encoder(&t, &e);
     }
     /* A row at 1100: the reading of 1080, not the newer ones. */
@@ -2370,7 +2370,7 @@ TEST_CASE(a_row_takes_the_newest_angle_not_later_than_itself)
     /* The ring keeps the last SERVO_TEST_ENC_HIST readings. */
     for (unsigned k = 0; k < 40u; ++k) {
         const servo_test_enc_t e = { true, (uint16_t)(2000u + k), 0u,
-                                     2000u + 40u * k, false };
+                                     2000u + 40u * k, false, false, false, false };
         servo_test_encoder(&t, &e);
     }
     CHECK_EQ(t.enc_hist_n, SERVO_TEST_ENC_HIST);
@@ -2383,7 +2383,7 @@ TEST_CASE(a_row_takes_the_newest_angle_not_later_than_itself)
           || fabsf(deg - servo_test_enc_deg(2024u, 500u)) > 0.0001f);
     /* Across the 32-bit wrap of the clock. */
     servo_test_init(&t);
-    const servo_test_enc_t w = { true, 700u, 0u, 0xFFFFFFF0u, false };
+    const servo_test_enc_t w = { true, 700u, 0u, 0xFFFFFFF0u, false, false, false, false };
     servo_test_encoder(&t, &w);
     CHECK(servo_test_enc_at(&t, 20u, &deg));               /* 36 ms later */
     CHECK_NEAR(deg, servo_test_enc_deg(700u, 0u), 0.0001f);
@@ -2446,7 +2446,7 @@ TEST_CASE(a_stillness_from_before_the_command_is_not_the_end_of_the_move)
     t.enc_start_raw = 0u;
     /* Moved 5 degrees, still for 200 ms, the stillness older than the
      * command: not settled. */
-    servo_test_enc_t e = { true, (uint16_t)(5.0f * 4096.0f / 360.0f), 200u, 10100u, false };
+    servo_test_enc_t e = { true, (uint16_t)(5.0f * 4096.0f / 360.0f), 200u, 10100u, false, false, false, false };
     servo_test_encoder(&t, &e);
     CHECK(t.enc_moved);
     CHECK(!t.enc_settled);

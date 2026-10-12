@@ -116,7 +116,7 @@ TEST_CASE(a_refused_arm_can_be_asked_again)
     CHECK(!a.stopped);
     CHECK(arming_heartbeat(&a, t));
 
-    t = arm_by(t + 10);
+    (void)arm_by(t + 10);
     CHECK(a.armed);
 }
 
@@ -279,13 +279,13 @@ TEST_CASE(the_latch_can_be_asked_about)
 {
     /* A screen asks so a gesture already under way can be abandoned: a stop
      * on a bench that was not armed changes nothing else it could look at. */
-    arming_t a;
-    arming_init(&a, 0, SETTLE_MS);
-    CHECK(!arming_stopped(&a));
-    arming_stop(&a);
-    CHECK(arming_stopped(&a));
-    arming_request_arm(&a, 10u);
-    CHECK(!arming_stopped(&a));
+    arming_t ar;
+    arming_init(&ar, 0, SETTLE_MS);
+    CHECK(!arming_stopped(&ar));
+    arming_stop(&ar);
+    CHECK(arming_stopped(&ar));
+    arming_request_arm(&ar, 10u);
+    CHECK(!arming_stopped(&ar));
     CHECK(!arming_stopped(NULL));
 }
 
@@ -297,21 +297,21 @@ TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
      * cancel a hold begun after the first stop, and that hold would complete
      * and clear the latch.  The count is the event.
      */
-    arming_t a;
-    arming_init(&a, 0, SETTLE_MS);
-    CHECK_EQ(arming_stop_count(&a), 0);
+    arming_t ar;
+    arming_init(&ar, 0, SETTLE_MS);
+    CHECK_EQ(arming_stop_count(&ar), 0);
 
-    arming_stop(&a);
-    CHECK_EQ(arming_stop_count(&a), 1);
-    arming_stop(&a);                        /* the latch is already set */
-    CHECK(arming_stopped(&a));
-    CHECK_EQ(arming_stop_count(&a), 2);
+    arming_stop(&ar);
+    CHECK_EQ(arming_stop_count(&ar), 1);
+    arming_stop(&ar);                        /* the latch is already set */
+    CHECK(arming_stopped(&ar));
+    CHECK_EQ(arming_stop_count(&ar), 2);
 
     /* The far end's stop counts too, and an arm does not undo the count. */
-    arming_stop_from_far_end(&a);
-    CHECK_EQ(arming_stop_count(&a), 3);
-    arming_request_arm(&a, 10u);
-    CHECK_EQ(arming_stop_count(&a), 3);
+    arming_stop_from_far_end(&ar);
+    CHECK_EQ(arming_stop_count(&ar), 3);
+    arming_request_arm(&ar, 10u);
+    CHECK_EQ(arming_stop_count(&ar), 3);
     CHECK_EQ(arming_stop_count(NULL), 0);
 }
 
@@ -319,22 +319,22 @@ TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
  * only, so a run can tell the two apart. */
 TEST_CASE(a_pressed_stop_is_counted_apart_from_the_benchs_own)
 {
-    arming_t a;
-    arming_init(&a, 0, SETTLE_MS);
-    arming_stop_pressed(&a);
-    CHECK(arming_stopped(&a));
-    CHECK_EQ(arming_stop_count(&a), 1);
-    CHECK_EQ(arming_pressed_count(&a), 1);
-    arming_stop(&a);                        /* touch lost under a press */
-    arming_stop_from_far_end(&a);           /* the coprocessor's */
-    CHECK_EQ(arming_stop_count(&a), 3);
-    CHECK_EQ(arming_pressed_count(&a), 1);
+    arming_t ar;
+    arming_init(&ar, 0, SETTLE_MS);
+    arming_stop_pressed(&ar);
+    CHECK(arming_stopped(&ar));
+    CHECK_EQ(arming_stop_count(&ar), 1);
+    CHECK_EQ(arming_pressed_count(&ar), 1);
+    arming_stop(&ar);                        /* touch lost under a press */
+    arming_stop_from_far_end(&ar);           /* the coprocessor's */
+    CHECK_EQ(arming_stop_count(&ar), 3);
+    CHECK_EQ(arming_pressed_count(&ar), 1);
     /* Touch that stops answering for ARMING_TOUCH_DEAD_MS. */
-    arming_touch_poll(&a, ARMING_TOUCH_DEAD_MS);
-    CHECK_EQ(arming_stop_count(&a), 4);
-    CHECK_EQ(arming_pressed_count(&a), 1);
-    arming_request_arm(&a, ARMING_TOUCH_DEAD_MS);
-    CHECK_EQ(arming_pressed_count(&a), 1);
+    arming_touch_poll(&ar, ARMING_TOUCH_DEAD_MS);
+    CHECK_EQ(arming_stop_count(&ar), 4);
+    CHECK_EQ(arming_pressed_count(&ar), 1);
+    arming_request_arm(&ar, ARMING_TOUCH_DEAD_MS);
+    CHECK_EQ(arming_pressed_count(&ar), 1);
     arming_stop_pressed(NULL);
     CHECK_EQ(arming_pressed_count(NULL), 0);
 }
@@ -353,18 +353,18 @@ TEST_CASE(a_settling_arm_is_abandoned_when_touch_dies)
      * has to hold for whatever settle it is given.
      */
     const uint32_t settle = 4u * ARMING_TOUCH_DEAD_MS;
-    arming_t a;
-    arming_init(&a, 0, settle);
-    arming_touch_seen(&a, 0);
-    arming_request_arm(&a, 0);
+    arming_t ar;
+    arming_init(&ar, 0, settle);
+    arming_touch_seen(&ar, 0);
+    arming_request_arm(&ar, 0);
 
     /* Touch dies during the settle, then answers again before the deadline. */
     const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
-    arming_touch_poll(&a, dead_at);
-    arming_touch_seen(&a, dead_at + 10u);
+    arming_touch_poll(&ar, dead_at);
+    arming_touch_seen(&ar, dead_at + 10u);
 
-    CHECK_EQ(arming_step(&a, settle + 1u), ARMING_ACT_NONE);
-    CHECK(!a.armed);
+    CHECK_EQ(arming_step(&ar, settle + 1u), ARMING_ACT_NONE);
+    CHECK(!ar.armed);
 }
 
 TEST_CASE(an_outage_that_recovers_still_brings_the_bank_down)
@@ -376,21 +376,21 @@ TEST_CASE(an_outage_that_recovers_still_brings_the_bank_down)
      * been withheld long enough for the far end to fail safe either.  What
      * was armed comes down all the same.
      */
-    arming_t a;
-    arming_init(&a, 0, SETTLE_MS);
-    arming_touch_seen(&a, 0);
-    arming_request_arm(&a, 0);
-    CHECK_EQ(arming_step(&a, SETTLE_MS + 1u), ARMING_ACT_ARM);
-    CHECK(a.armed);
+    arming_t ar;
+    arming_init(&ar, 0, SETTLE_MS);
+    arming_touch_seen(&ar, 0);
+    arming_request_arm(&ar, 0);
+    CHECK_EQ(arming_step(&ar, SETTLE_MS + 1u), ARMING_ACT_ARM);
+    CHECK(ar.armed);
 
     const uint32_t dead_at = SETTLE_MS + ARMING_TOUCH_DEAD_MS + 2u;
-    arming_touch_poll(&a, dead_at);        /* seen only by the pump */
-    arming_touch_seen(&a, dead_at + 5u);   /* and it answers again */
+    arming_touch_poll(&ar, dead_at);        /* seen only by the pump */
+    arming_touch_seen(&ar, dead_at + 5u);   /* and it answers again */
 
-    CHECK_EQ(arming_step(&a, dead_at + 10u), ARMING_ACT_DISARM);
-    CHECK(!a.armed);
+    CHECK_EQ(arming_step(&ar, dead_at + 10u), ARMING_ACT_DISARM);
+    CHECK(!ar.armed);
     /* Once, not on every later step. */
-    CHECK_EQ(arming_step(&a, dead_at + 20u), ARMING_ACT_NONE);
+    CHECK_EQ(arming_step(&ar, dead_at + 20u), ARMING_ACT_NONE);
 }
 
 TEST_CASE(touch_health_can_be_judged_apart_from_the_policy_step)
@@ -400,17 +400,17 @@ TEST_CASE(touch_health_can_be_judged_apart_from_the_policy_step)
      * not the same and need not run at the same rate.  A death and a
      * recovery between two steps must still count.
      */
-    arming_t a;
-    arming_init(&a, 0, SETTLE_MS);
-    arming_touch_seen(&a, 0);
-    (void)arming_step(&a, 10u);
-    CHECK_EQ(arming_stop_count(&a), 0);
+    arming_t ar;
+    arming_init(&ar, 0, SETTLE_MS);
+    arming_touch_seen(&ar, 0);
+    (void)arming_step(&ar, 10u);
+    CHECK_EQ(arming_stop_count(&ar), 0);
 
     const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
-    arming_touch_poll(&a, dead_at);          /* seen only by the pump */
-    arming_touch_seen(&a, dead_at + 5u);     /* and it answers again */
-    (void)arming_step(&a, dead_at + 10u);    /* the policy runs afterwards */
-    CHECK_EQ(arming_stop_count(&a), 1);
+    arming_touch_poll(&ar, dead_at);          /* seen only by the pump */
+    arming_touch_seen(&ar, dead_at + 5u);     /* and it answers again */
+    (void)arming_step(&ar, dead_at + 10u);    /* the policy runs afterwards */
+    CHECK_EQ(arming_stop_count(&ar), 1);
 
     arming_touch_poll(NULL, 0);
 }
@@ -424,27 +424,27 @@ TEST_CASE(touch_that_stops_answering_counts_once)
      * once: a screen that abandoned its gesture must not be told again every
      * pass while the controller stays quiet.
      */
-    arming_t a;
-    arming_init(&a, 0, SETTLE_MS);
-    arming_touch_seen(&a, 0);
-    CHECK_EQ(arming_stop_count(&a), 0);
+    arming_t ar;
+    arming_init(&ar, 0, SETTLE_MS);
+    arming_touch_seen(&ar, 0);
+    CHECK_EQ(arming_stop_count(&ar), 0);
 
-    (void)arming_step(&a, 10u);
-    CHECK_EQ(arming_stop_count(&a), 0);       /* still answering */
+    (void)arming_step(&ar, 10u);
+    CHECK_EQ(arming_stop_count(&ar), 0);       /* still answering */
 
     const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
-    (void)arming_step(&a, dead_at);
-    CHECK_EQ(arming_stop_count(&a), 1);
-    (void)arming_step(&a, dead_at + 100u);
-    (void)arming_step(&a, dead_at + 200u);
-    CHECK_EQ(arming_stop_count(&a), 1);       /* the edge, not the level */
+    (void)arming_step(&ar, dead_at);
+    CHECK_EQ(arming_stop_count(&ar), 1);
+    (void)arming_step(&ar, dead_at + 100u);
+    (void)arming_step(&ar, dead_at + 200u);
+    CHECK_EQ(arming_stop_count(&ar), 1);       /* the edge, not the level */
 
     /* It answers again, and dying a second time counts again. */
-    arming_touch_seen(&a, dead_at + 300u);
-    (void)arming_step(&a, dead_at + 300u);
-    CHECK_EQ(arming_stop_count(&a), 1);
-    (void)arming_step(&a, dead_at + 300u + ARMING_TOUCH_DEAD_MS + 1u);
-    CHECK_EQ(arming_stop_count(&a), 2);
+    arming_touch_seen(&ar, dead_at + 300u);
+    (void)arming_step(&ar, dead_at + 300u);
+    CHECK_EQ(arming_stop_count(&ar), 1);
+    (void)arming_step(&ar, dead_at + 300u + ARMING_TOUCH_DEAD_MS + 1u);
+    CHECK_EQ(arming_stop_count(&ar), 2);
 }
 
 /* ---------------------------------------------- waiting for the far end */

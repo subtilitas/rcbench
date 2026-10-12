@@ -30,6 +30,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -959,6 +960,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
      */
     scr->render(&cv, 0);
     gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(plot);
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     tap(99, 11);                        /* the TABLE tab */
@@ -1002,6 +1004,7 @@ TEST_CASE(each_framebuffer_is_updated_independently)
     telemetry_sim_init(&sim, NULL);
 
     gfx_color_t *other = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(other);
     gfx_canvas_t cv1;
     gfx_canvas_init(&cv1, other, W, H, W);
 
@@ -1080,6 +1083,7 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
         scr->render(&cv, 0);
     }
     gfx_color_t *over = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(over);
     memcpy(over, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     /* The same state B, onto a buffer that never saw A. */
@@ -1180,6 +1184,7 @@ TEST_CASE(an_unanswered_bench_does_not_show_numbers)
     fresh();
     scr->render(&cv, 0);
     gfx_color_t *blank = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(blank);
     memcpy(blank, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     bench_state_t b;
@@ -1320,6 +1325,7 @@ TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
     fresh();
     scr->render(&cv, 0);
     gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(plot);
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     ev(99, 11, TOUCH_EVENT_DOWN, 1);    /* the TABLE tab */

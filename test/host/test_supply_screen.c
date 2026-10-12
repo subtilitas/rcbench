@@ -41,7 +41,9 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb  = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
         fb2 = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb2);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     memset(fb2, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -376,6 +378,7 @@ TEST_CASE(leaving_keeps_the_output_and_drops_the_hold)
     scr->leave();
     scr->render(&cv, 0);
     gfx_color_t *was = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(was);
     memcpy(was, fb, (size_t)W * H * sizeof(gfx_color_t));
     fresh();
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
@@ -1259,6 +1262,7 @@ TEST_CASE(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one)
     /* Two runs alike but for the value left in a reading whose flag says it
      * did not arrive: the plot draws them the same. */
     gfx_color_t *want = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(want);
     for (int pass = 0; pass < 2; ++pass) {
         fresh();
         supply_screen_set_output(true);
@@ -1307,6 +1311,7 @@ TEST_CASE(a_run_is_traced_from_the_switch_on_and_held_after_it)
     supply_screen_push(&st);              /* after the run: readouts only */
     render_both();
     gfx_color_t *want = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(want);
     memcpy(want, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     /* The same run with off-time samples before it on a used screen. */

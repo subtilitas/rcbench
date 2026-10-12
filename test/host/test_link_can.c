@@ -143,7 +143,7 @@ TEST_CASE(a_split_reply_is_frames_that_each_stand_alone)
             seen[part.offset + r] = part.regs[r];
         }
     }
-    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_BN_COUNT; ++i) {
         CHECK_EQ(seen[i], 0x1000 + i);
     }
     CHECK_EQ(f[3].dlc, 2);   /* the odd one out carries a single register */
