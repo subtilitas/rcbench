@@ -56,7 +56,8 @@ history is in git.
   the facts of one source: schematic, product page, product photos, XL1509
   datasheet or SN74HC04 datasheet. A source of the kind `doc` names a
   document, its address and the place in it; the data check rejects one
-  without them.
+  without them. The drawing of the board shows the jumper cap on the 5V
+  pair, labelled "cap on 5V".
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.
