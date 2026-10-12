@@ -198,7 +198,6 @@ abzüglich 1024 Bytes überschreitet.
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 064 | 3 104 |
 | `control` | `control_task` | 6 144 | 4 432 | 688 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
-| `artkeep` | `art_keep_task` | 4 096 | 944 | 2 128 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
 
@@ -210,7 +209,9 @@ decken ab, was das Werkzeug nicht sieht, und jede Tiefe oben ist deshalb eine
 Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
-  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 185
+  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
+  den Callbacks des Link-Ports und den Flash-Callbacks des Fotospeichers, denen
+  es nach Namen folgt (`PORT_CALLS`, `FLASH_CALLS`): 185
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

@@ -150,79 +150,204 @@ static uint32_t slot_for(const art_flash_t *f, uint16_t board)
     return 0u;
 }
 
+/*
+ * What art_store_put() and art_keep_begin() both refuse before anything is
+ * written: an entry this flash cannot hold, or whose pixels are not its
+ * length.  A header saying 500 x 206 over a payload that is not that many
+ * bytes would be believed by whatever sized a buffer from it later; sixty-four
+ * bits because two sixteen-bit sides multiplied are not sixteen bits.  An
+ * empty picture is refused by its sides: no two of them that are not zero
+ * make zero bytes.
+ */
+static bool entry_fits(const art_flash_t *f, const art_entry_t *e)
+{
+    return e->bytes <= art_store_capacity(f)
+           && e->width != 0u && e->height != 0u
+           && (uint64_t)e->width * (uint64_t)e->height * 2u
+                  == (uint64_t)e->bytes;
+}
+
 bool art_store_put(const art_flash_t *f, uint16_t board,
                    const art_entry_t *entry, const uint8_t *payload)
 {
-    if (!usable(f) || entry == NULL || payload == NULL) {
-        return false;
-    }
-    if (entry->bytes == 0u || entry->bytes > art_store_capacity(f)) {
-        return false;
-    }
-    /*
-     * And the pixels have to be the length.  A header saying 500 x 206 over a
-     * payload that is not that many bytes would be believed by whatever sized
-     * a buffer from it later; sixty-four bits because two sixteen-bit sides
-     * multiplied are not sixteen bits.
-     */
-    if (entry->width == 0u || entry->height == 0u
-        || (uint64_t)entry->width * (uint64_t)entry->height * 2u
-               != (uint64_t)entry->bytes) {
+    if (!usable(f) || entry == NULL || payload == NULL
+        || !entry_fits(f, entry)) {
         return false;
     }
     if (link_crc(0u, payload, entry->bytes) != entry->crc) {
         return false;      /* not the picture it says it is */
     }
-
-    const uint32_t slot = slot_for(f, board);
-    const uint32_t at   = slot * ART_SLOT_BYTES;
-
-    /*
-     * Erasing takes the old header with it first, so from here until the new
-     * one lands the slot is findable as nothing.  That is the state a power
-     * cut has to leave behind.
-     */
-    if (!f->erase(f->ctx, at, ART_SLOT_BYTES)) {
+    art_keep_t k;
+    if (!art_keep_begin(&k, f, board, entry, payload)) {
         return false;
     }
-    if (!f->write(f->ctx, at + f->sector, payload, entry->bytes)) {
+    art_keep_status_t st;
+    do {
+        st = art_keep_step(&k, true);
+    } while (st == ART_KEEP_RUNNING);
+    return st == ART_KEEP_DONE;
+}
+
+/* ------------------------------------------------- a keep, a sector at a time */
+
+/*
+ * The phases of a keep, in the order they run.  Erasing takes the old header
+ * with it first, so from the first step until the new one lands the slot is
+ * findable as nothing.  That is the state a power cut, or a keep that is
+ * never resumed, has to leave behind.
+ */
+enum {
+    KEEP_IDLE = 0,
+    KEEP_ERASE,     /* the header's sector, then the payload's            */
+    KEEP_WRITE,     /* the payload, a sector at a time                    */
+    KEEP_VERIFY,    /* read back, a sector at a time, against the CRC     */
+    KEEP_HEAD,      /* the header, last                                   */
+};
+
+bool art_keep_begin(art_keep_t *k, const art_flash_t *f, uint16_t board,
+                    const art_entry_t *entry, const uint8_t *payload)
+{
+    if (k == NULL) {
         return false;
     }
+    memset(k, 0, sizeof(*k));
+    if (!usable(f) || entry == NULL || payload == NULL
+        || !entry_fits(f, entry)) {
+        return false;
+    }
+    k->f       = f;
+    k->payload = payload;
+    k->entry   = *entry;
+    k->board   = board;
+    /* The header's sector and the sectors the payload reaches into; the
+     * rest of the slot is never read, so it is not erased. */
+    k->span    = f->sector
+                 + ((entry->bytes + f->sector - 1u) / f->sector) * f->sector;
+    k->phase   = KEEP_ERASE;
+    return true;
+}
 
-    /*
-     * Read back before the header is written.  A write that reported success
-     * and did not take would otherwise be sealed with a header saying it did,
-     * and the store would hand out a corrupt picture for as long as the board
-     * is known.
-     */
-    uint8_t buf[256];
-    uint16_t crc = 0u;
-    for (uint32_t done = 0; done < entry->bytes; ) {
-        uint32_t n = entry->bytes - done;
-        if (n > sizeof(buf)) {
-            n = sizeof(buf);
+bool art_keep_busy(const art_keep_t *k)
+{
+    return k != NULL && k->phase != KEEP_IDLE;
+}
+
+/* The first step chooses the slot, and erases its header with the same
+ * call's first sector. */
+static bool keep_erase(art_keep_t *k)
+{
+    const art_flash_t *f = k->f;
+    if (k->done == 0u) {
+        k->at = slot_for(f, k->board) * ART_SLOT_BYTES;
+    }
+    if (!f->erase(f->ctx, k->at + k->done, f->sector)) {
+        return false;
+    }
+    k->done += f->sector;
+    if (k->done >= k->span) {
+        k->phase = KEEP_WRITE;
+        k->done  = 0u;
+    }
+    return true;
+}
+
+static bool keep_write(art_keep_t *k)
+{
+    const art_flash_t *f = k->f;
+    uint32_t n = k->entry.bytes - k->done;
+    if (n > f->sector) {
+        n = f->sector;
+    }
+    if (!f->write(f->ctx, k->at + f->sector + k->done, k->payload + k->done,
+                  n)) {
+        return false;
+    }
+    k->done += n;
+    if (k->done >= k->entry.bytes) {
+        k->phase = KEEP_VERIFY;
+        k->done  = 0u;
+        k->crc   = 0u;
+    }
+    return true;
+}
+
+/*
+ * Read back before the header is written.  A write that reported success and
+ * did not take would otherwise be sealed with a header saying it did, and the
+ * store would hand out a corrupt picture for as long as the board is known.
+ */
+static bool keep_verify(art_keep_t *k)
+{
+    const art_flash_t *f = k->f;
+    uint32_t end = k->done + f->sector;
+    if (end > k->entry.bytes) {
+        end = k->entry.bytes;
+    }
+    while (k->done < end) {
+        uint32_t n = end - k->done;
+        if (n > sizeof(k->buf)) {
+            n = sizeof(k->buf);
         }
-        if (!f->read(f->ctx, at + f->sector + done, buf, n)) {
+        if (!f->read(f->ctx, k->at + f->sector + k->done, k->buf, n)) {
             return false;
         }
-        crc = link_crc(crc, buf, n);
-        done += n;
+        k->crc = link_crc(k->crc, k->buf, n);
+        k->done += n;
     }
-    if (crc != entry->crc) {
-        return false;
+    if (k->done >= k->entry.bytes) {
+        if (k->crc != k->entry.crc) {
+            return false;
+        }
+        k->phase = KEEP_HEAD;
     }
+    return true;
+}
 
+static bool keep_head(art_keep_t *k)
+{
+    const art_flash_t *f = k->f;
     art_head_t h;
     memset(&h, 0, sizeof(h));
     h.magic   = ART_MAGIC;
     h.version = ART_VERSION;
-    h.board   = board;
-    h.width   = entry->width;
-    h.height  = entry->height;
-    h.crc     = entry->crc;
-    h.bytes   = entry->bytes;
+    h.board   = k->board;
+    h.width   = k->entry.width;
+    h.height  = k->entry.height;
+    h.crc     = k->entry.crc;
+    h.bytes   = k->entry.bytes;
     h.head    = head_crc(&h);
-    return f->write(f->ctx, at, &h, sizeof(h));
+    return f->write(f->ctx, k->at, &h, sizeof(h));
+}
+
+art_keep_status_t art_keep_step(art_keep_t *k, bool may_write)
+{
+    if (!art_keep_busy(k)) {
+        return ART_KEEP_IDLE;
+    }
+    if (!may_write) {
+        return ART_KEEP_WAITING;
+    }
+    bool ok;
+    switch (k->phase) {
+    case KEEP_ERASE:
+        ok = keep_erase(k);
+        break;
+    case KEEP_WRITE:
+        ok = keep_write(k);
+        break;
+    case KEEP_VERIFY:
+        ok = keep_verify(k);
+        break;
+    default:
+        ok = keep_head(k);
+        k->phase = KEEP_IDLE;
+        return ok ? ART_KEEP_DONE : ART_KEEP_FAILED;
+    }
+    if (!ok) {
+        k->phase = KEEP_IDLE;
+        return ART_KEEP_FAILED;
+    }
+    return ART_KEEP_RUNNING;
 }
 
 bool art_store_forget(const art_flash_t *f, uint16_t board)

@@ -97,6 +97,7 @@ TRACKED = [
     "shared/safety/heartbeat.c",
     "shared/safety/arming.c",
     "shared/safety/safety_gate.c",
+    "shared/safety/flash_gate.c",
     "shared/safety/touch_loss.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",

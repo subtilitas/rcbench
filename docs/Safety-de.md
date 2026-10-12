@@ -210,6 +210,25 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
+- Das Panel schreibt seinen eigenen Flash nur bei einem entschärften
+  Prüfstand, ohne wartendes Scharfschalten, mit ausgeschaltetem
+  Netzteil-Ausgang und ohne eingereihtes ON. Flash-Auto-Suspend ist aus,
+  also hält jedes Löschen und Schreiben beide Kerne des Panels an, den
+  Control-Task mit Heartbeat, STOP, OUTPUT OFF und den Abschaltungen des
+  Netzteils eingeschlossen. Die Regel ist `flash_gate_open()` in
+  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Sie hält das
+  Speichern der Einstellungen und das Ablegen des Platinenfotos zurück.
+  Scharfschalten und Netzteil werden für einen Schreibvorgang nie
+  verweigert: der Schreibvorgang wartet. Das Ablegen (etwa 52 Löschvorgänge
+  und 52 Schreibvorgänge zu 4 kB für ein Bild von 206 kB) läuft einen Sektor
+  pro 5-ms-Durchlauf des Control-Tasks und hält zwischen zwei Sektoren an,
+  wenn der Prüfstand scharf ist oder das Netzteil einschaltet. Es macht beim
+  ersten sicheren Durchlauf mit demselben Sektor weiter. Sein Header wird
+  zuerst gelöscht und zuletzt geschrieben; ein angehaltenes oder durch
+  Stromausfall abgebrochenes Ablegen hinterlässt also kein auffindbares Foto
+  für die Platine, und die Platine wird aus ihrem Umriss gezeichnet, bis das
+  Ablegen fertig ist. Die Dauer eines Löschvorgangs auf dem Flash des Panels
+  ist nicht gemessen.
 - Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy scharf, nachdem
   seine Warnung (KEIN PROPELLER, MOTOR GESICHERT?) 2 s gehalten ist. Danach
   setzt er das Gas auf die Einstiegsstellung des Profils, bevor er das

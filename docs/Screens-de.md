@@ -974,8 +974,9 @@ OPTIONEN, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
 des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
-in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
-das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
+in dem der Prüfstand unscharf ist und kein Scharfschalten wartet, der Ausgang
+des Netzteils aus ist und kein ON eingereiht ist und das Foto der Platine
+weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
 Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
 (der Schreibvorgang wurde abgelehnt) oder SETUP NICHT GESPEICHERT: eine
@@ -1721,7 +1722,9 @@ Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
 eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
 ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
 keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
-Prüfstand disarmed ist und kein Platinenfoto geholt oder abgelegt wird. Auf
+Prüfstand disarmed ist und kein Scharfschalten wartet, der Ausgang des
+Netzteils aus ist und kein ON eingereiht ist und kein Platinenfoto geholt oder
+abgelegt wird. Auf
 dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
 steht auf `GESPEICHERT`, so schnell wie das Auge dem Druck folgt. Armed steht die
 Anforderung als `BEI STILLSTAND`, bis der Prüfstand disarmed wird.
@@ -2059,8 +2062,12 @@ Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
 
 Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
 behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
-gesehen wird, und danach nichts. Eine Platine ohne Foto, oder eine, deren
-Übertragung nicht fertig wurde, wird gezeichnet statt leer gelassen.
+gesehen wird, und danach nichts. Das Schreiben in den Flash wartet auf einen
+entschärften Prüfstand mit ausgeschaltetem Netzteil und hält zwischen zwei
+Sektoren von 4 kB an, wenn der Prüfstand scharf wird oder das Netzteil
+einschaltet ([Sicherheit](Safety-de.md#verhaltensweisen-die-absicht-sind)).
+Eine Platine ohne Foto, oder eine, deren Übertragung oder Schreiben nicht
+fertig wurde, wird gezeichnet statt leer gelassen.
 
 Ein Servokabel hat drei Adern, und die Tasten beschreiben eine davon. Die
 anderen beiden sind auf der Platine selbst markiert: eine Masse trägt ein
