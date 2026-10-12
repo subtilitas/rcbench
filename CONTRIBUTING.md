@@ -201,7 +201,17 @@ pull request why the two lines behave the same.
   pico-sdk build, the INTERFACE library `rcbench_<name>_rp2350`. It names no
   other module. A limit a module shares with this project is the module's
   own constant, and the caller holds the two equal with a `_Static_assert`.
-  A module without a pin driver says so in its `README.md`.
+  A module without a pin driver says "no pin driver" in its `README.md`.
+  `tools/check_protocols.py` checks, per module: the parts above; that no
+  include names a path leaving the module (`..` or an absolute path); that
+  no core includes `stdatomic.h` or `threads.h`, which the RP2350 build does
+  not provide; that the `README.md` has a heading with "Interface", a
+  heading "Trademarks" where it names a brand from the tool's `BRANDS`
+  list, and the words "no pin driver" where the module has no `rp2350/`
+  folder; and that every `_Static_assert` outside `protocols/` on a module
+  constant is listed in the tool's `ASSERTED` table and every listed one
+  exists. The SPDX line of the module's `.c` and `.h` files is checked by
+  `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
   the module: link pages, the binding of an output to a pin, arming, STOP,
   the stores and the screens.

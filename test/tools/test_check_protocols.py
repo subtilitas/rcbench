@@ -35,7 +35,9 @@ def module(tmp_path, name="wire", driver=True):
     """A module that holds every rule, under tmp_path/protocols/."""
     m = tmp_path / "protocols" / name
     (m / "include").mkdir(parents=True)
-    (m / "README.md").write_text("# %s\n" % name)
+    (m / "README.md").write_text(
+        "# %s\n\n## Interface\n\nA checksum.\n%s"
+        % (name, "" if driver else "\nThe module has no pin driver.\n"))
     (m / "CMakeLists.txt").write_text(
         "add_library(rcbench_%s STATIC %s.c)\n" % (name, name))
     (m / "include" / (name + ".h")).write_text(
@@ -68,7 +70,7 @@ def module(tmp_path, name="wire", driver=True):
 def static(m):
     """The rules that need no compiler."""
     return (cp.layout_problems(m) + cp.include_problems(m)
-            + cp.cmake_problems(m))
+            + cp.readme_problems(m) + cp.cmake_problems(m))
 
 
 def test_a_module_with_every_part_passes_the_static_rules(tmp_path):
@@ -117,6 +119,30 @@ def test_a_header_of_another_module_is_flagged(tmp_path):
     assert cp.include_problems(m) == [
         "wire/include/wire.h includes other.h, which is neither a C "
         "standard header nor a header of wire/"]
+
+
+def test_a_path_include_that_leaves_the_module_is_flagged(tmp_path):
+    """The name is flagged by its path, also when the file it reaches has
+    the name of a header of the module."""
+    m = module(tmp_path)
+    for target in ("../other/include/x.h", "../include/wire.h",
+                   "/usr/include/wire.h"):
+        c = m / "wire.c"
+        c.write_text('#include "%s"\n' % target
+                     + c.read_text().split("\n", 1)[1])
+        found = cp.include_problems(m)
+        assert len(found) == 1, target
+        assert "leaves wire/" in found[0]
+
+
+def test_a_stdatomic_or_threads_include_is_flagged(tmp_path):
+    """The RP2350 target build provides neither header."""
+    m = module(tmp_path)
+    for name in ("stdatomic.h", "threads.h"):
+        c = m / "wire.c"
+        c.write_text("#include <%s>\n" % name + c.read_text())
+        assert len(cp.include_problems(m)) == 1, name
+        c.write_text(c.read_text().split("\n", 1)[1])
 
 
 def test_a_system_header_outside_the_standard_is_flagged(tmp_path):
@@ -428,3 +454,54 @@ def test_an_assertion_on_the_projects_own_names_is_not_the_modules(tmp_path):
 
 def test_the_tree_lists_every_assertion_on_a_module_constant():
     assert cp.assertion_problems(cp.PROTOCOLS, cp.ASSERTED) == []
+
+
+def test_a_readme_without_an_interface_heading_is_flagged(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# wire\n\n## Use\n")
+    assert cp.readme_problems(m) == [
+        'wire/README.md has no heading with "Interface"']
+
+
+def test_a_driver_interface_heading_counts(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# wire\n\n## Driver interface\n")
+    assert cp.readme_problems(m) == []
+
+
+def test_a_readme_naming_a_brand_needs_a_trademarks_heading(tmp_path):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    readme.write_text(readme.read_text() + "Works with Futaba, S.BUS.\n")
+    assert cp.readme_problems(m) == [
+        'wire/README.md names Futaba, S.BUS and has no heading '
+        '"Trademarks"']
+    readme.write_text(readme.read_text() + "\n## Trademarks\n\nNotice.\n")
+    assert cp.readme_problems(m) == []
+
+
+def test_a_brand_inside_a_longer_word_is_not_a_brand(tmp_path):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    readme.write_text(readme.read_text() + "The KSTART byte, DShotty.\n")
+    assert cp.readme_problems(m) == []
+
+
+def test_a_module_without_a_driver_says_so_in_its_readme(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "README.md").write_text("# wire\n\n## Interface\n")
+    assert cp.readme_problems(m) == [
+        'wire/README.md does not say "no pin driver": the module has no '
+        "rp2350/ folder"]
+
+
+def test_a_module_with_a_driver_needs_no_such_sentence(tmp_path):
+    m = module(tmp_path)
+    assert cp.readme_problems(m) == []
+
+
+def test_a_missing_readme_is_the_layout_rules_finding(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").unlink()
+    assert cp.readme_problems(m) == []
+    assert cp.layout_problems(m) == ["protocols/wire/ has no README.md"]

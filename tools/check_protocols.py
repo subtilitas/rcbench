@@ -17,6 +17,12 @@ This tool reads each module and fails when one of these does not hold:
   interface is read without the SDK (software development kit);
 - every header under include/ and rp2350/ carries `extern "C"` and
   compiles by itself as C11 and as C++17, with `-Wall -Wextra -Werror`;
+- an include of a module file names no path that leaves the module: a
+  `..` component or an absolute path fails, also when the file it reaches
+  has the name of a header of the module;
+- the module's README.md has a heading with "Interface" in it; a heading
+  "Trademarks" when the text names a brand listed in BRANDS below; and,
+  for a module without an rp2350/ folder, the sentence "no pin driver";
 - the module's CMake files name no ESP-IDF (Espressif Internet-of-Things
   Development Framework) requirement and no `rcbench_` library of another
   module;
@@ -27,7 +33,15 @@ This tool reads each module and fails when one of these does not hold:
   file and by condition, and each listed condition is still asserted in its
   file.  Conditions compare with whitespace collapsed and the message
   dropped.  The list is checked in both directions, so a new assertion is
-  recorded and a removed one fails, also when its file keeps another.
+  recorded and a removed one fails, also when its file keeps another.  The
+  form is a table of the assertions that exist, read from the callers, and
+  not a search for expressions that mix a module macro with a LINK_ macro:
+  the table fails on a removed assertion and on a new one that is not
+  recorded, and the search would flag every comparison that is not a pinned
+  limit.
+
+The SPDX (Software Package Data Exchange) line of the .c and .h files under
+protocols/ is held by tools/check_docs.py.
 
     python3 tools/check_protocols.py            # the modules, then the check
     python3 tools/check_protocols.py --check    # the check alone
@@ -57,9 +71,11 @@ DRIVER = "rp2350"
 C_STANDARD = frozenset("""
     assert.h complex.h ctype.h errno.h fenv.h float.h inttypes.h iso646.h
     limits.h locale.h math.h setjmp.h signal.h stdalign.h stdarg.h
-    stdatomic.h stdbool.h stddef.h stdint.h stdio.h stdlib.h stdnoreturn.h
-    string.h tgmath.h threads.h time.h uchar.h wchar.h wctype.h
+    stdbool.h stddef.h stdint.h stdio.h stdlib.h stdnoreturn.h
+    string.h tgmath.h time.h uchar.h wchar.h wctype.h
 """.split())
+# stdatomic.h and threads.h are optional in C11 and the RP2350 target build
+# does not provide them, so a core that includes either fails here.
 
 # What a pin driver may include from the pico-sdk.
 SDK_RE = re.compile(r"^(pico\.h|pico/.+\.h|hardware/.+\.h)$")
@@ -68,6 +84,16 @@ INCLUDE_RE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*([<"])([^>"]+)[>"]',
                         re.M)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
+
+# Brand names that a module README names; a README that names one carries a
+# "Trademarks" section.
+BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
+          "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
+          "FrSky", "FlySky")
+BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![\w])"
+                      % "|".join(re.escape(b) for b in BRANDS))
+HEADING_RE = re.compile(r"^#{1,6}[ \t]+(.*?)[ \t]*$", re.M)
+NO_DRIVER_RE = re.compile(r"\bno\s+pin\s+driver\b", re.I)
 
 CMAKE_COMMENT_RE = re.compile(r"#[^\n]*")
 REQUIRES_RE = re.compile(r"\b(?:PRIV_)?REQUIRES\b")
@@ -169,6 +195,11 @@ def include_problems(module: pathlib.Path) -> list[str]:
         for form, name in includes(path.read_text(encoding="utf-8")):
             if name in C_STANDARD:
                 continue
+            if ".." in name.split("/") or name.startswith("/"):
+                problems.append(
+                    f"{rel} includes {name}: a path that leaves "
+                    f"{module.name}/")
+                continue
             if form == '"' and name in core:
                 continue
             sdk = SDK_RE.match(name) is not None
@@ -212,6 +243,29 @@ def layout_problems(module: pathlib.Path) -> list[str]:
                              (".h", "header")):
             if not list((module / DRIVER).glob("*" + suffix)):
                 problems.append(f"{name}/{DRIVER}/ has no {what}")
+    return problems
+
+
+def readme_problems(module: pathlib.Path) -> list[str]:
+    """What the README of @p module lacks: an Interface heading, a
+    Trademarks heading where a brand is named, and for a module without a
+    pin driver the statement that there is none."""
+    path = module / "README.md"
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8")
+    rel = path.relative_to(module.parent).as_posix()
+    headings = [h.lower() for h in HEADING_RE.findall(text)]
+    problems = []
+    if not any("interface" in h for h in headings):
+        problems.append(f'{rel} has no heading with "Interface"')
+    brands = sorted(set(BRAND_RE.findall(text)))
+    if brands and "trademarks" not in headings:
+        problems.append(f'{rel} names {", ".join(brands)} and has no '
+                        'heading "Trademarks"')
+    if not (module / DRIVER).is_dir() and not NO_DRIVER_RE.search(text):
+        problems.append(f'{rel} does not say "no pin driver": the module '
+                        f"has no {DRIVER}/ folder")
     return problems
 
 
@@ -342,6 +396,7 @@ def check(root: pathlib.Path = PROTOCOLS) -> list[str]:
     for module in modules(root):
         problems += layout_problems(module)
         problems += include_problems(module)
+        problems += readme_problems(module)
         problems += cmake_problems(module)
         problems += header_problems(module, cc, cxx)
     problems += assertion_problems(root, ASSERTED if root == PROTOCOLS
