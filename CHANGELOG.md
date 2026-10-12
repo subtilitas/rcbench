@@ -218,6 +218,21 @@ history is in git.
   `/raw/main/` above it. It prints page and line. The docs workflow
   installs markdown-it-py 3.0.0 before the rewrite.
 
+- The panel writes the board photograph to its flash only on a bench that
+  is disarmed, with no arm waiting, and with the supply output off and no ON
+  queued. The write (about 52 erases and 52 writes of 4 kB for a 206 kB
+  picture) runs on the control task, one sector per 5 ms pass, and pauses
+  between two sectors when the bench is armed or the supply comes on. It
+  resumes from the same sector on the first safe pass. Arming and the supply
+  are not refused while it waits. Before, the write started after every
+  fetch on a task of its own, armed or not, and each erase stalled both
+  cores: STOP, OUTPUT OFF, the supply trips and the heartbeat waited for it,
+  and a stall over 150 ms disarmed the bench. The settings save and the
+  photograph keep ask one rule, `flash_gate_open()` in
+  `shared/safety/flash_gate.c`, under the new host suite `test_flash_gate`.
+  The settings save now also waits while an arm is waiting. The `artkeep`
+  task and its 4,096-byte stack are gone. `tools/stack_check.py` follows the
+  photograph store's flash callbacks by name (`FLASH_CALLS`).
 - A log file whose last row has no line feed reads without that row. A
   write cut off by a power loss or a full card leaves the bytes the card
   took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
