@@ -476,9 +476,11 @@ most with a 4-digit code. The first sample line of a trace counts from the
 trigger time, so a sample from before the trigger carries a negative time,
 and a sample after dropped records carries a longer one: those lines are
 longer, up to the full signed 32-bit range of the time. With the
-voltage lines a trace is about 8.6 bytes a sample, 8.6 kB a second, at the
-simulated servo's 0.12 A. Above about 0.4 A on the 0.1 Ω shunt the codes have
-4 digits and the rate is 9.3 to 10.4 kB a second.
+voltage lines (a 7-byte line, one in 20 samples in the output of
+`sense_trace_gen`) a trace is 8.35 bytes a sample, 8.35 kB a second, at the
+simulated servo's 0.12 A, whose codes have 3 digits. Above about 0.4 A on the
+0.1 Ω shunt the codes have 4 digits and the rate is 9.35 kB a second. Every
+line ends in CR LF. The rate on hardware is not measured.
 
 **Have to hand:** the PD mini (WeAct PD Power Mini V1) at a limit of
 2.00 A, the INA3221 module with CH1's 0.1 Ω shunt in the servo's supply,
@@ -676,7 +678,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   out. A command that follows another output's command later
   than that, before the first servo arrived, is replayed with the first
   servo's current in it; the tool does not tell the two apart.
-- Whether a terminal keeps up with 8.6 to 10.4 kB a second without loss. A trace
+- Whether a terminal keeps up with 8.35 to 9.35 kB a second without loss. A trace
   whose line counts do not match its end line is reported and exits 1.
 - The line format has no check value. A line cut inside its last number
   is a whole line with another number, and the tool reads it as that: a

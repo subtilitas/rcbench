@@ -390,8 +390,8 @@ hinter Rauschen mit einem plausiblen Sync ankommt.
 
 ## 9. Stand in rcbench
 
-Keines der beiden Boards führt das Protokoll aus: beide Firmware-Images
-binden das Modul ein, und nichts ruft es auf. Der Entwurf legt es auf den
+Keines der beiden Boards führt das Protokoll aus: das Koprozessor-Image bindet das
+Modul ein, das Panel-Image nicht, und nichts ruft es auf. Der Entwurf legt es auf den
 Koprozessor: eine Anfrage-Antwort-Schleife mit 20 Hz, einer
 Umschaltzeit im Mikrosekundenbereich und einem Timeout, das feuert, ob Bytes
 kommen oder nicht. Das Panel sähe das Ergebnis als `bench_state` über das

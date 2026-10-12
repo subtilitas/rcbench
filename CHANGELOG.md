@@ -26,7 +26,7 @@ history is in git.
 
 ### Changed
 
-- Text corrections, no behaviour change: SECURITY.md lists all 9 input
+- Text corrections, no behaviour change: SECURITY.md lists all 10 input
   parsers; the Manifest drops its state column and points to STATUS.md;
   STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
   directory layout; sizes, counts and figures in the KST, DShot, configurator,

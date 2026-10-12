@@ -78,9 +78,10 @@ void knob_task_attach(void)
 {
     /*
      * The bus driver's add and remove calls are not thread-safe against a
-     * transaction on the same bus, and the control task reads the touch
-     * controller on it every 5 ms.  The handle is allocated once, before that
-     * task exists, and stays registered; the setting only gates the polling.
+     * transaction on the same bus, and the touch task reads the touch
+     * controller on it every 10 ms by default, and on the touch interrupt.
+     * The handle is allocated once, before that task exists, and stays
+     * registered; the setting only gates the polling.
      * Registering sends nothing to 0x36.
      */
     const i2c_device_config_t cfg = {

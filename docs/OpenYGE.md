@@ -369,8 +369,8 @@ plausible sync.
 
 ## 9. Status in rcbench
 
-Neither board runs the protocol yet: both firmware images link the module and
-nothing calls it. The design puts it on the coprocessor: a 20 Hz request and
+Neither board runs the protocol yet: the coprocessor image links the module,
+the panel image does not, and nothing calls it. The design puts it on the coprocessor: a 20 Hz request and
 response loop with a turnaround in microseconds and a timeout that fires
 whether or not bytes arrive. The panel would see the result as a `bench_state`
 through the page protocol; no OpenYGE frame would cross the panel link. A

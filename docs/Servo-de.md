@@ -679,12 +679,15 @@ modellierten Prüfstand der Host-Suite:
 
 ```
 Log:             die .CSV mit der Nummer dieser Datei, eine Zeile je Fenster des INA3221
+Netzteil:        PD mini
 Strom:           INA3221 CH1, Shunt 100.0 mOhm, Bereich 1.638 A
 Spannung:        INA3221 CH1, Lastseite des Shunts
 Shunt:           bis 0.164 V fallen am Bereichsende an ihm ab; der Sollwert wird dafür nicht angehoben
 Messwerte:       20.0 /s Fenster vom INA3221 geschlossen, 20.0 /s erreichten den Test
 Übersprungen:    0 Fenster des INA3221 erreichten den Test nie
 Auflösung:       ein Fenster alle 50 ms: eine Stellzeit ist um bis zu zwei Fenster und den Poll, der sie liest, zu lang
+Verzögerung:     etwa 50 ms von einer Stromänderung bis zum Messwert, der sie zeigt
+Stellzeiten:     eine Obergrenze, nicht gegen die Grenze geprüft
 ...
 Position: nichts misst das Ruderhorn; jedes Ergebnis ist der Strom des INA3221 auf CH1.
 Strom zwischen zwei 1-ms-Messwerten von CH1: ein Fenster enthält deren Mittel, Höchst- und Tiefstwert.
