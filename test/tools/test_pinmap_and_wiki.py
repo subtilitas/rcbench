@@ -557,6 +557,22 @@ def test_a_query_string_stays_out_of_the_directory_probe(tmp_path):
     assert f"[i]({R}/tree/main/protocols/kst/?tab=readme)" in out
 
 
+def test_a_query_string_is_not_normalised_with_the_path(tmp_path):
+    (tmp_path / "protocols" / "kst").mkdir(parents=True)
+    (tmp_path / "docs").mkdir()
+    out = wl.rewrite(
+        "[a](../README.md?a=b/../c) [b](../protocols/kst?next=/../x) "
+        "[c](../README.md?u=http://x/y)\n", root=tmp_path)
+    assert f"[a]({R}/blob/main/README.md?a=b/../c)" in out
+    assert f"[b]({R}/tree/main/protocols/kst/?next=/../x)" in out
+    assert f"[c]({R}/blob/main/README.md?u=http://x/y)" in out
+
+
+def test_a_query_string_does_not_decide_whether_a_target_leaves_docs():
+    assert not wl.leaves_docs("page.md?a=/../../x", "")
+    assert wl.leaves_docs("../README.md?a=b", "")
+
+
 def test_verify_accepts_a_page_whose_title_ends_in_md(tmp_path, capsys):
     (tmp_path / "Guide.md.md").write_text("x\n", encoding="utf-8")
     (tmp_path / "Home.md").write_text("[g](Guide.md.md)\n", encoding="utf-8")

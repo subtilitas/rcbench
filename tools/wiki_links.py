@@ -53,7 +53,9 @@ absolute path and a bare anchor are left as they are.
 - `--verify` checks every link and image the parser finds: a link is an
   absolute URL, an anchor or a page name with no `.md` and no `../`, and
   never `/raw/main/`; an image in docs/ is relative, one above docs/ is a
-  `/raw/main/` URL.
+  `/raw/main/` URL.  Two exceptions: a name that ends in `.md` passes when
+  a mirrored page has that title, and a link that shares a definition with
+  an image may have the image's `/raw/main/` form.
 
 Every page is parsed before and after the rewrite with markdown-it-py
 3.0.0, a CommonMark parser, and the two token streams are compared token by
@@ -343,31 +345,39 @@ def outside(path: str) -> bool:
     return path == ".." or path.startswith("../")
 
 
+def split_query(target: str) -> tuple[str, str]:
+    """`target` as (path, tail): the tail starts at the first `?` or `#` and
+    is kept verbatim, the path is the part that names a file."""
+    m = re.match(r"([^?#]*)(.*)", target, re.S)
+    return m.group(1), m.group(2)
+
+
 def leaves_docs(target: str, reldir: str) -> bool:
-    """True when `target`, written in docs/<reldir>, is outside docs/."""
-    return outside(posixpath.normpath(posixpath.join(reldir, target)))
+    """True when `target`, written in docs/<reldir>, is outside docs/.  A
+    query string or fragment is not part of the path."""
+    path = split_query(target)[0]
+    return outside(posixpath.normpath(posixpath.join(reldir, path)))
 
 
 def convert(target: str, reldir: str, root: Path, image: bool) -> str | None:
     """The wiki form of one relative `target`, or None when it climbs above
-    the repository and is left for the check."""
-    joined = posixpath.normpath(posixpath.join(reldir, target))
+    the repository and is left for the check.  Only the path is normalised;
+    a query string or fragment is appended as written."""
+    path, query = split_query(target)
+    joined = posixpath.normpath(posixpath.join(reldir, path))
     if not outside(joined):
-        return target[:-3] if target.endswith(".md") else target
-    repo = posixpath.normpath(posixpath.join("docs", reldir, target))
+        return (path[:-3] if path.endswith(".md") else path) + query
+    repo = posixpath.normpath(posixpath.join("docs", reldir, path))
     if outside(repo):
         return None
-    # A query string is not part of the path the repository holds.
-    repo, query = re.match(r"([^?]*)(.*)", repo, re.S).groups()
     kind = "blob"
     if image:
         kind = "raw"
-    elif (target.split("?", 1)[0].endswith("/")
-          or (root / repo.replace("\\", "")).is_dir()):
+    elif path.endswith("/") or (root / repo.replace("\\", "")).is_dir():
         kind = "tree"
-    path = "" if repo == "." else repo
-    tail = "/" if kind == "tree" and path else ""
-    return f"{REPO}/{kind}/main/{path}{tail}{query}"
+    repo = "" if repo == "." else repo
+    tail = "/" if kind == "tree" and repo else ""
+    return f"{REPO}/{kind}/main/{repo}{tail}{query}"
 
 
 def rewrite(text: str, reldir: str = "", root: Path = ROOT) -> str:

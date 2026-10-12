@@ -207,7 +207,9 @@ history is in git.
   link-shaped text in a raw HTML block or indented code block fail this
   way; the tool's description gives the form that converts.
   A query string on a link target stays out of the check for a
-  directory, so `../protocols/kst?tab=x` is a `/tree/main/` URL.
+  directory, so `../protocols/kst?tab=x` is a `/tree/main/` URL. Only the
+  path of a target is normalised; its query string is kept as written, so
+  `?a=b/../c` and `?u=http://x/y` are not altered.
   `tools/wiki_links.py --verify`, run by the CI step, reads every converted
   page with the same parser and fails on a link that is not an absolute
   URL, an anchor or a page name without `.md` and `../` (a title that
