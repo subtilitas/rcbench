@@ -80,6 +80,17 @@ typedef struct {
  */
 #define LOG_WRITER_SEP ';'
 
+/**
+ * The values of the last column, "source", of a bench file and a supply file:
+ * "measured" for a row whose values a meter or a supply produced, "model"
+ * for a row the panel's model produced (LINK_BN_SIMULATED on a bench row,
+ * supply_state_t.modelled on a supply row).  A reader takes a file with the
+ * column and a file without it; a file written without it ends at the
+ * previous column.
+ */
+#define LOG_WRITER_SRC_MEASURED "measured"
+#define LOG_WRITER_SRC_MODEL    "model"
+
 void log_writer_init(log_writer_t *w, const log_sink_t *sink);
 
 /**
@@ -115,7 +126,7 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
  *
  * The file's first row writes the supply header -- time; set (V);
  * voltage (V); limit (A); current (A); power (W); mode; charge (mAh);
- * energy (Wh) -- so a file is one kind or the other and the caller keeps it
+ * energy (Wh); source -- so a file is one kind or the other and the caller keeps it
  * so.  Readings that did not arrive, and totals nothing counted, are empty
  * cells; the mode is CV, CC or OFF, and empty while the supply does not
  * answer.  Same returns, commits and latch as log_writer_row().
