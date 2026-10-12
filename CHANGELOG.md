@@ -179,8 +179,8 @@ history is in git.
   The legal-notice link on the servo programmer pages and the KST link on
   the Link pages open the repository instead of a missing wiki page.
   `tools/wiki_links.py` exits 1 on a link that still leaves `docs/`, and the
-  CI step "The wiki link rewrite still works" checks the converted copy for
-  `](../` and `](<../`, with or without spaces after the `(`.
+  CI step "The wiki link rewrite still works" converts a copy of `docs/` and
+  runs `wiki_links.py --verify` on it.
   Reference definitions (`[label]: ../README.md "title"`) are rewritten and
   checked the same way; a link title in `"..."`, `'...'` or `(...)` stays;
   a bare target may hold backslash escapes and one level of parentheses
