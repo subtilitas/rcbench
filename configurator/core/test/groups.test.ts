@@ -55,10 +55,12 @@ const partIds = (setup: Setup): string[] => setup.parts.map((p) => p.part.id);
 const on = (setup: Setup): string[] => setup.functions.filter((f) => f.enabled).map((f) => f.fn.id);
 const off = (effect: Removal): string[] => effect.functionsOff.map((f) => f.id);
 
+// The pin of the servo signal is in no selection the page makes: the function
+// that programs a servo forces it. The option sets keep the standard outputs.
 const OPTION_SETS: Options[] = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower })))));
+      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
 
 // ---------------------------------------------------------------------------
 // groups
@@ -177,9 +179,9 @@ test('groups of the data file: every function is in exactly one group, keyed by 
     }
   }
   assert.deepEqual(g.map((x) => x.key), ['', 'pdmini', 'ina3221', 'as5600', 'ina228', 'sd', 'estop', 'sim+tap']);
-  // The first group: the 10 functions every setup runs, then the 2 that drive a test object on the base setup.
-  assert.deepEqual(g[0]?.functions.filter((id) => !alwaysOn(CATALOGUE, CATALOGUE.functions.find((f) => f.id === id) as Fn)), ['servo', 'esc']);
-  assert.equal(g[0]?.functions.length, 12);
+  // The first group: the 10 functions every setup runs, then the 3 that drive a test object on the base setup.
+  assert.deepEqual(g[0]?.functions.filter((id) => !alwaysOn(CATALOGUE, CATALOGUE.functions.find((f) => f.id === id) as Fn)), ['servo', 'servoprog', 'esc']);
+  assert.equal(g[0]?.functions.length, 13);
   assert.deepEqual([plainDrive(CATALOGUE, 'servo'), plainDrive(CATALOGUE, 'esc'), plainDrive(CATALOGUE, 'sd')], ['servo', 'esc', null]);
   assert.deepEqual(g.find((x) => x.key === 'pdmini')?.functions, ['servotest', 'stick', 'supply']);
 });
@@ -835,7 +837,11 @@ test('sweep over the data file: every part beyond the base is removable from eve
 
 test('sweep over the data file: the functions the base setup runs change no removal', () => {
   assert.ok(ON_BASE.length > 0, 'the data file holds no function without a part');
-  assert.deepEqual(groups(CATALOGUE)[0]?.functions, [...ON_BASE, ...PLAIN.keys()]);
+  // The first group: these, the plain drives of the test objects, and the
+  // servo programmer, which drives the servo on the base setup and forces the
+  // programming port.
+  assert.deepEqual([...PLAIN.keys()], ['servo', 'esc']);
+  assert.deepEqual(groups(CATALOGUE)[0]?.functions, [...ON_BASE, 'servo', 'servoprog', 'esc']);
   // The same in the terms of the page: these are the functions that name no part and no test object.
   assert.deepEqual(CATALOGUE.functions.filter((f) => f.needs.length === 0 && f.drives === undefined).map((f) => f.id), ON_BASE);
   const strip = (effect: Removal): unknown => ({ ...effect, selection: { ...effect.selection, functions: effect.selection.functions.filter((f) => !ON_BASE.includes(f)) } });

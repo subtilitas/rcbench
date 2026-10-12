@@ -82,22 +82,11 @@ jobs:
       # A warning does not fail the step. Each one becomes an annotation of
       # the run and a line of its summary: a release tag newer than the data
       # is a warning. The step ends with the exit code of the check, so a
-      # run with errors shows its warnings too.
+      # run with errors shows its warnings too. The Release workflow runs the
+      # same script on every tag push.
       - name: Check the data file
         shell: bash
-        run: |
-          status=0
-          npm run check -- --strict | tee "$RUNNER_TEMP/check.txt" || status=$?
-          warnings="$(grep '^warn ' "$RUNNER_TEMP/check.txt" || true)"
-          if [ -n "$warnings" ]; then
-            printf '%s\n' "$warnings" | sed 's/^warn /::warning title=Configurator data::/'
-            {
-              echo '### Configurator data: warnings'
-              echo
-              printf '%s\n' "$warnings" | sed 's/^warn /- /'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit "$status"
+        run: bash tools/check-annotate.sh
 
       - name: Check the coverage figure
         run: npm run coverage -- --check
