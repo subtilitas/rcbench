@@ -60,6 +60,22 @@ history is in git.
   cannot bind a pin leaves SERVO's rate, its sweep and the slots' rates as
   they were.
 
+- The SERVO screen shows the active PWM TARGET at the foot of the left card
+  with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
+  SERVO PWM (from 5 pins the first 3 and a count), `TARGET: PROG PORT GP13`
+  for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`),
+  `TARGET: PROG PORT` for a port target without a usable pin, with
+  `PWM OFF` after either while PORT PWM is off
+  (`ZIEL: PROG-PORT GP13 PWM AUS`). `TARGET: NO LINK` (`ZIEL: KEIN LINK`)
+  shows while no coprocessor answers and `TARGET: NOT KNOWN`
+  (`ZIEL: UNBEKANNT`) while the PROG page is not read or a write to it was
+  not acknowledged; the tester sends no command in either. While the servo
+  programmer holds the port, the line does not change: it keeps naming the
+  target the coprocessor holds. The warning colour marks five states: the
+  programming port, no SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding
+  not read, no link and a target not known. The pins come from the binding the tester
+  drives. The line follows the target the coprocessor holds
+  (`prog_link_drive()`), not the PWM TARGET setting.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.

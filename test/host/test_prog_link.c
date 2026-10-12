@@ -395,6 +395,201 @@ TEST_CASE(a_port_names_its_pin_unless_it_has_none_or_was_refused)
     g_page[LINK_PG_REG(0, LINK_PG_PIN)] = 300u;
     read_at(4u);
     CHECK_EQ(prog_link_pin(&g_p, 0u), PROG_LINK_NO_PIN);
+    /* A register above one byte never truncates into a pin. */
+    g_page[LINK_PG_REG(0, LINK_PG_PIN)] = 0x0100u;
+    read_at(5u);
+    CHECK_EQ(prog_link_pin(&g_p, 0u), PROG_LINK_NO_PIN);
+}
+
+/* A malformed page: a port count above the ports the page has room for
+ * names no pin for the port past the last one, whose registers lie beyond
+ * the page. */
+TEST_CASE(a_count_above_the_ports_the_page_holds_names_no_pin)
+{
+    fresh();
+    g_page[LINK_PG_COUNT] = LINK_PG_PORTS_MAX + 1u;
+    read_at(0u);
+    CHECK_EQ(prog_link_pin(&g_p, LINK_PG_PORTS_MAX), PROG_LINK_NO_PIN);
+}
+
+/* While the servo programmer holds the port, the drive does not change: it
+ * keeps the target the coprocessor holds, a port or the standard outputs;
+ * the programmer drives the port and the tester sends nothing. */
+TEST_CASE(the_drive_keeps_its_target_while_the_programmer_holds_the_port)
+{
+    prog_link_drive_t d;
+
+    fresh();
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(1u);
+    prog_link_hold(&g_p, true);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    prog_link_hold(&g_p, false);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+
+    /* Held with the standard outputs as target: still target 0, no pin. */
+    fresh();
+    g_page[LINK_PG_TARGET] = 0u;
+    read_at(1u);
+    prog_link_hold(&g_p, true);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(!d.pwm);
+}
+
+/* What the tester drives: the target the commands use, that port's pin and
+ * its pulse.  A port target without a usable pin stays a port target, with
+ * no pin.  Before the page is known, and with no link, where the commands
+ * would go is not known and the tester sends none: neither is the outputs. */
+TEST_CASE(the_drive_names_the_target_and_the_port_pin)
+{
+    prog_link_drive_t d;
+
+    d = prog_link_drive(NULL);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(!d.pwm);
+    /* No coprocessor has answered yet: no link. */
+    prog_link_init(&g_p);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, PROG_LINK_TARGET_NO_LINK);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* One without the page: the standard outputs, commanded at once. */
+    prog_link_came_up(&g_p, LINK_MINOR_PROG - 1u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(prog_link_command(&g_p, false));
+    fresh();
+    /* Not read yet: not known, and no command goes out. */
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, PROG_LINK_TARGET_UNKNOWN);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(!d.pwm);
+    CHECK(!prog_link_command(&g_p, false));
+    CHECK(!prog_link_command(&g_p, true));
+    /* Target 0: the outputs, and no port pin although port 0 has GP13. */
+    read_at(0u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Target 1 is port 0 on GP13, its pulse off. */
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(1u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    CHECK(!d.pwm);
+    /* And on. */
+    g_page[LINK_PG_PWM] = 1u;
+    read_at(1u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    CHECK(d.pwm);
+    /* Another port's pulse bit is not the target's. */
+    g_page[LINK_PG_PWM] = 2u;
+    read_at(1u);
+    CHECK(!prog_link_drive(&g_p).pwm);
+    g_page[LINK_PG_PWM] = 0u;
+    /* Port 0 without a pin. */
+    g_page[LINK_PG_REG(0, LINK_PG_PIN)] = LINK_PG_PIN_NONE;
+    read_at(2u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Port 0 refused. */
+    g_page[LINK_PG_REG(0, LINK_PG_PIN)] = 13u;
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_REFUSED(0);
+    read_at(3u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Target 2 names port 1, which a page of 1 port does not have. */
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_BOUND(0);
+    g_page[LINK_PG_TARGET] = 2u;
+    g_page[LINK_PG_REG(1, LINK_PG_PIN)] = 14u;
+    read_at(4u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 2u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* The same target with 2 ports names port 1's pin. */
+    g_page[LINK_PG_COUNT] = 2u;
+    read_at(5u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 2u);
+    CHECK_EQ(d.pin, 14u);
+    /* A target above LINK_PG_PORTS_MAX is the outputs. */
+    g_page[LINK_PG_TARGET] = LINK_PG_PORTS_MAX + 1u;
+    read_at(6u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* The link lost with port 0 the target: no link, not the outputs. */
+    g_page[LINK_PG_TARGET] = 1u;
+    g_page[LINK_PG_PWM] = 1u;
+    read_at(7u);
+    prog_link_lost(&g_p);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, PROG_LINK_TARGET_NO_LINK);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(!d.pwm);
+    /* Back up against a coprocessor that still holds the port: not known
+     * until read, then the port. */
+    prog_link_came_up(&g_p, LINK_MINOR_PROG);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, PROG_LINK_TARGET_UNKNOWN);
+    read_at(8u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    CHECK(d.pwm);
+    /* A read not answered: not known. */
+    prog_link_read(&g_p, NULL, 9u);
+    CHECK_EQ(prog_link_drive(&g_p).target, PROG_LINK_TARGET_UNKNOWN);
+}
+
+/* A write the coprocessor does not acknowledge leaves the page unknown, and
+ * the drive with it: the port it holds is not named the outputs while the
+ * tester sends nothing, however often the write is refused. */
+TEST_CASE(a_write_not_acknowledged_leaves_the_drive_unknown)
+{
+    prog_link_write_t w;
+    prog_link_drive_t d;
+
+    fresh();
+    g_page[LINK_PG_TARGET] = 1u;
+    prog_link_want(&g_p, 1u, true);
+    for (uint32_t pass = 0u; pass < 3u; ++pass) {
+        read_at(pass * PROG_LINK_POLL_MS);
+        d = prog_link_drive(&g_p);
+        CHECK_EQ(d.target, 1u);
+        CHECK_EQ(d.pin, 13u);
+        CHECK(!d.pwm);
+        /* The pulse switched on, refused (BAD_VALUE). */
+        CHECK(prog_link_next(&g_p, true, &w));
+        CHECK_EQ(w.off, (uint8_t)LINK_PG_PWM);
+        CHECK_EQ(w.value, 1u);
+        prog_link_written(&g_p, &w, false);
+        d = prog_link_drive(&g_p);
+        CHECK_EQ(d.target, PROG_LINK_TARGET_UNKNOWN);
+        CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+        CHECK(!d.pwm);
+        CHECK(!prog_link_command(&g_p, false));
+    }
+    /* Acknowledged: the port, its pulse on. */
+    read_at(3u * PROG_LINK_POLL_MS);
+    CHECK(prog_link_next(&g_p, true, &w));
+    prog_link_written(&g_p, &w, true);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    CHECK(d.pwm);
 }
 
 TEST_CASE(a_channel_configuration_maps_onto_a_port)
@@ -694,6 +889,10 @@ int main(void)
     RUN(a_coprocessor_that_started_again_is_brought_back);
     RUN(a_write_that_is_not_acknowledged_makes_the_page_unknown);
     RUN(a_port_names_its_pin_unless_it_has_none_or_was_refused);
+    RUN(a_count_above_the_ports_the_page_holds_names_no_pin);
+    RUN(the_drive_keeps_its_target_while_the_programmer_holds_the_port);
+    RUN(the_drive_names_the_target_and_the_port_pin);
+    RUN(a_write_not_acknowledged_leaves_the_drive_unknown);
     RUN(a_channel_configuration_maps_onto_a_port);
     RUN(a_target_change_returns_the_servo_rate_to_0_from_4_19);
     RUN(a_read_after_an_unanswered_target_write_compares_against_nothing);
