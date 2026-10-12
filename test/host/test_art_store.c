@@ -35,6 +35,7 @@ static unsigned g_erases;
 static unsigned g_reads;
 static uint32_t g_erase_max;
 static uint32_t g_write_max;
+static uint32_t g_read_max;
 static uint32_t g_read_bytes;
 /* Erases left before the part stops taking them, or -1 for no limit. */
 static int      g_erase_budget;
@@ -45,6 +46,7 @@ static bool fake_read(void *ctx, uint32_t off, void *dst, uint32_t len)
     if ((uint64_t)off + len > PART) { return false; }
     ++g_reads;
     g_read_bytes += len;
+    if (len > g_read_max) { g_read_max = len; }
     memcpy(dst, g_flash + off, len);
     return true;
 }
@@ -94,6 +96,7 @@ static void fresh(void)
     g_reads = 0;
     g_erase_max = 0;
     g_write_max = 0;
+    g_read_max = 0;
     g_read_bytes = 0;
 }
 
@@ -137,6 +140,8 @@ TEST_CASE(a_picture_comes_back_the_way_it_went_in)
     art_entry_t got;
     CHECK(art_store_find(&f, 7u, &got));
     CHECK_EQ(got.board, 7);
+    CHECK_EQ(got.width, 100);
+    CHECK_EQ(got.height, 1030);
     CHECK_EQ(got.bytes, 206000);
     CHECK_EQ(got.crc, e.crc);
 
@@ -402,6 +407,9 @@ TEST_CASE(a_keep_does_at_most_one_sector_a_step)
     CHECK_EQ(steps, 155);
     CHECK_EQ(g_erase_max, SECTOR);
     CHECK_EQ(g_write_max, SECTOR);
+    /* The read-back goes through the keeper's 256-byte buffer, never more
+     * at once: 16 reads for a full sector. */
+    CHECK_EQ(g_read_max, 256u);
     CHECK_EQ(g_erases, 52);
     CHECK_EQ(g_writes, 52);
 

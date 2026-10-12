@@ -265,8 +265,7 @@ static bool keep_write(art_keep_t *k)
     k->done += n;
     if (k->done >= k->entry.bytes) {
         k->phase = KEEP_VERIFY;
-        k->done  = 0u;
-        k->crc   = 0u;
+        k->done  = 0u;    /* crc is zero from art_keep_begin() */
     }
     return true;
 }
