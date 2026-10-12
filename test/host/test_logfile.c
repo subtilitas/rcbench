@@ -653,6 +653,54 @@ TEST_CASE(the_row_cap_is_reported_rather_than_silent)
     log_data_free(&d);
 }
 
+/* The cut row is known only at the end of the file.  A file past the row
+ * cap is read on to it: the flag holds at exactly the cap and with complete
+ * rows past it, and stays false when the file ends on a line feed. */
+static log_analysis_t capped(int complete_rows, const char *tail, int cap)
+{
+    static char text[4096];
+    size_t n = (size_t)snprintf(text, sizeof(text), "t,v\n");
+    for (int i = 0; i < complete_rows; ++i) {
+        n += (size_t)snprintf(text + n, sizeof(text) - n, "%d,%d\n", i, i);
+    }
+    n += (size_t)snprintf(text + n, sizeof(text) - n, "%s", tail);
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, n);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    opts.max_rows = cap;
+    log_analysis_t a;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
+    return a;
+}
+
+TEST_CASE(a_cut_row_is_found_past_the_row_cap)
+{
+    /* Exactly the cap, then the cut row: nothing is truncated. */
+    log_analysis_t a = capped(10, "10,2", 10);
+    CHECK_EQ(a.row_count, 10);
+    CHECK(!a.truncated);
+    CHECK(a.cut_row);
+
+    /* The cap, N complete rows past it, then the cut row. */
+    for (int extra = 1; extra <= 30; extra += 29) {
+        a = capped(10 + extra, "99,2", 10);
+        CHECK_EQ(a.row_count, 10);
+        CHECK(a.truncated);
+        CHECK(a.cut_row);
+    }
+
+    /* The same files ending on a line feed: no cut row. */
+    a = capped(10, "", 10);
+    CHECK(!a.truncated);
+    CHECK(!a.cut_row);
+    a = capped(40, "", 10);
+    CHECK_EQ(a.row_count, 10);
+    CHECK(a.truncated);
+    CHECK(!a.cut_row);
+}
+
 TEST_CASE(a_file_with_no_numbers_is_an_error_not_an_empty_plot)
 {
     static const char text[] = "name,note\nalpha,one\nbeta,two\n";
@@ -1418,6 +1466,7 @@ int main(void)
     RUN(forcing_the_wrong_convention_rejects_rather_than_corrupts);
     RUN(ragged_rows_are_reported_not_absorbed);
     RUN(the_row_cap_is_reported_rather_than_silent);
+    RUN(a_cut_row_is_found_past_the_row_cap);
     RUN(a_file_with_no_numbers_is_an_error_not_an_empty_plot);
     RUN(without_a_time_column_the_x_axis_is_the_row_index);
     RUN(an_unreadable_cell_holds_the_trace_instead_of_breaking_it);

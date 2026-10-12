@@ -1575,6 +1575,53 @@ TEST_CASE(a_cut_last_row_is_left_out_and_said)
     g_long[0] = '\0';
 }
 
+/* Pixels of one colour in the rows y0 <= y < y1 of the detection panel. */
+static int panel_pixels(gfx_color_t color, int y0, int y1)
+{
+    int n = 0;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = 16; x < 316; ++x) {
+            if (s_fb[y * W + x] == color) {
+                ++n;
+            }
+        }
+    }
+    return n;
+}
+
+/*
+ * A cut last row is said even when another warning holds the first line: the
+ * conflict banner (danger colour, y = 252) stays and the cut notice takes the
+ * line below it (warning colour, y = 270).  Without the cut that line is empty.
+ */
+TEST_CASE(a_cut_last_row_is_said_beside_a_convention_conflict)
+{
+    const int plain = import_warn_pixels(
+        "t;a;b\n0;10.23;1\n1;10,23;2\n2;11.5;3\n");
+    const log_analysis_t *a = log_viewer_analysis();
+    if (a == NULL) {
+        T_FAIL("no analysis");
+        return;
+    }
+    CHECK(a->convention_conflict);
+    CHECK(!a->cut_row);
+    CHECK(plain >= 0);
+    CHECK_EQ(panel_pixels(UI_WARN, 268, 290), 0);
+
+    (void)import_warn_pixels(
+        "t;a;b\n0;10.23;1\n1;10,23;2\n2;11.5;3\n3;12.5");
+    a = log_viewer_analysis();
+    if (a == NULL) {
+        T_FAIL("no analysis");
+        return;
+    }
+    CHECK(a->convention_conflict);
+    CHECK(a->cut_row);
+    CHECK(panel_pixels(UI_DANGER, 250, 268) > 0);
+    CHECK(panel_pixels(UI_WARN, 268, 290) > 0);
+    g_long[0] = '\0';
+}
+
 /* Two fingers down on the plot at x0 and x1, both moved to y0 = 200. */
 static void two_down(int x0, int x1)
 {
@@ -2283,6 +2330,7 @@ int main(void)
     RUN(delete_needs_a_selected_file);
     RUN(re_reading_the_card_selects_the_newest_run);
     RUN(a_cut_last_row_is_left_out_and_said);
+    RUN(a_cut_last_row_is_said_beside_a_convention_conflict);
     RUN(two_fingers_spread_zoom_in_and_the_view_stays);
     RUN(two_fingers_moved_together_pan_and_pinching_zooms_out);
     RUN(the_arrows_still_pick_values_and_carry_the_view);

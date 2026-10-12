@@ -64,8 +64,10 @@ history is in git.
   took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
   reader (`log_reader_row`) ends a row at its line feed and nothing else,
   leaves an unterminated last row out, and reports it in
-  `log_analysis_t.cut_row`. The import view shows ROWS in the warning
-  colour and `LAST ROW CUT OFF - LEFT OUT`. `tools/sense_trace.py
+  `log_analysis_t.cut_row`. A file past the row cap is read on to its end
+  for this, with no statistics and no allocation. The import view shows
+  ROWS in the warning colour and `LAST ROW CUT OFF - LEFT OUT`, on its own
+  line below any other import warning. `tools/sense_trace.py
   --servo-csv` applies the same rule and says so in its report. The
   delimiter is sniffed from the file without that row, so a cut row cannot
   change how the rows before it split. Only space, tab and CR after the last

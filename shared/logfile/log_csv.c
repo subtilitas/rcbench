@@ -650,11 +650,21 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     if (reader.failed) {
         return LOG_ERR_READ;
     }
-    if (out->row_count >= max_rows && next_row(&reader, delimiter, &s_row)) {
-        out->truncated = true;
+    if (out->row_count >= max_rows) {
+        /* A cut row is known only once the reader reaches the end of the
+         * file, so a capped file is read on to it.  The rows past the cap are
+         * parsed into the static row buffer and dropped: no statistics, no
+         * allocation.  The cost is one more sequential read of the rest of
+         * the file, bounded by its size and 0 bytes of extra memory. */
+        while (next_row(&reader, delimiter, &s_row)) {
+            if (row_has_content(&s_row)) {
+                out->truncated = true;
+            }
+        }
+        if (reader.failed) {
+            return LOG_ERR_READ;
+        }
     }
-    /* Read to the end, or one row past the cap: a cut row is known only once
-     * the reader reaches it, which a capped file's reader does not. */
     out->cut_row = reader.cut;
     if (out->row_count == 0) {
         return LOG_ERR_NO_ROWS;

@@ -885,6 +885,7 @@ static void render_import(gfx_canvas_t *c)
         gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
         y += 20;
 
+        bool warned = true;
         if (s.an.convention_conflict) {
             gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_MIXED),
                      UI_FONT_LABEL, UI_DANGER, 1);
@@ -894,16 +895,19 @@ static void render_import(gfx_canvas_t *c)
             snprintf(line, sizeof(line), TR(LOG_TOO_LONG),
                      s.an.long_rows);
             gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_DANGER, 1);
-        } else if (s.an.cut_row) {
-            /* Ahead of the ragged rows: those have a count of their own
-             * above, and the row left out has no other place on screen. */
-            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_LAST_CUT),
-                     UI_FONT_LABEL, UI_WARN, 1);
         } else if (s.an.ragged_rows > 0) {
             gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_ROWS_DIFFER),
                      UI_FONT_LABEL, UI_DANGER, 1);
         } else if (!s.an.convention_confident) {
             gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_UNSETTLED),
+                     UI_FONT_LABEL, UI_WARN, 1);
+        } else {
+            warned = false;
+        }
+        if (s.an.cut_row) {
+            /* Independent of the line above: the row left out has no other
+             * place on screen.  It takes the next line when one is shown. */
+            gfx_text(c, IM_LEFT.x + 16, warned ? y + 18 : y, TR(LOG_LAST_CUT),
                      UI_FONT_LABEL, UI_WARN, 1);
         }
 
