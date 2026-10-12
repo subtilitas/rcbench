@@ -812,10 +812,15 @@ screen holds.
 The model's ranges are a USB-PD PPS (Programmable Power Supply) source's
 widest profile, 3.3 to 21 V at up to 5 A. The PD mini's are from the
 vendor's page, not measured. The PD mini is a buck converter and gives no
-more than it is fed: its voltage is also capped 0.5 V under the input it
-reports, so a 5 V input allows at most 4.5 V. A set point over the input
-puts the module into ERR until it is power cycled; the 0.5 V margin is not
-measured. Both are narrowed by the caps in SETTINGS, and
+more than it is fed: its voltage is also capped 0.7 V under the input it
+reports, so a 5 V input allows at most 4.3 V. An input under 1.7 V
+leaves the 1 V minimum, which the screen shows as the cap, and one under
+1.5 V holds the output off; until an input is read the cap is 20 V. A set
+point over the input
+puts the module into ERR until it is power cycled; the margin it needs is
+not measured. The cap lies 0.2 V above the line the output is cut at (see
+below), so the input can drop 0.2 V under load before a set point at the
+cap is cut. Both are narrowed by the caps in SETTINGS, and
 the sliders follow the supply in use. A tap on a track sets the value under
 the finger.
 
@@ -868,7 +873,9 @@ coprocessor reads the module's input every 500 ms. When the input reads
 under the set point plus 0.5 V on 2 input reads in a row, it switches the
 output off at once, and the band names the input and the set point, for
 example `PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. The
-output stays off until a new hold. One low reading switches nothing, and a
+output stays off until a new hold. An input reading under 1.5 V leaves no
+room for the lowest set point, 1.0 V: the ON is not written, and the band
+shows the same message. One low reading switches nothing, and a
 read that fails neither counts nor clears. While the output is on, its set
 point is not lowered to follow a falling input. The rule is chosen without
 a bench measurement: whether a live module goes to ERR when its input sags
@@ -997,6 +1004,18 @@ its throttle-stick menu; it has a page of its own,
 
 ![Device class](img/programmer.png)
 
+The ESC and SERVO classes are a model on the panel. No transport carries
+their protocols: CONNECT, READ and WRITE change the panel's own copy of a
+device and send nothing on a wire. The device named after CONNECT is the
+model's, not an answer from hardware, and a WRITE reaches no device. Every
+page of the two classes carries the MODELLED mark: on the class tile, on
+each protocol row and on the device line, where it takes the place of a
+connection's dot. The mark's dot is amber while a session is open and grey
+while none is; it never turns green. Under the parameters the page says
+that no device is reached. ESC STICK carries no mark: a stick run goes out
+through the arming policy and the output bank, as the MOTOR screen's
+commands do.
+
 Every protocol row names its transport. There is no autodetection:
 
 ![The protocols of a class](img/programmer-protocols.png)
@@ -1006,22 +1025,23 @@ identifies and drives these ESCs and sends the DShot special commands, but
 cannot read their parameters:
 [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
 
-Nothing is editable until a device has answered:
+Nothing is editable until CONNECT opens a modelled session:
 
 ![Nothing has answered](img/programmer-idle.png)
 
-After a device answers, the parameters are shown in groups with the selected
+With a session open, the parameters are shown in groups with the selected
 row's help under the list:
 
-![Connected](img/programmer-params.png)
+![A session open](img/programmer-params.png)
 
 The settings of each firmware appear in its own units. The table for BLHeli_S
 firmware shows timing as named steps; the others show degrees of advance:
 
 ![Degrees rather than named steps](img/programmer-am32.png)
 
-A changed value is not written until WRITE is pressed. Staged changes carry a
-mark and their own colour, and the WRITE button shows how many are staged:
+A changed value is not written to the model until WRITE is pressed. Staged
+changes carry a mark and their own colour, and the WRITE button shows how many
+are staged:
 
 ![Two staged edits](img/programmer-dirty.png)
 
@@ -1039,7 +1059,7 @@ control. Three controls act on the press:
   finger.
 - The keys of the search keyboard, which follow their own press and lift.
 
-Going back one level drops the connection. Back climbs one level at a time; the
+Going back one level closes the session. Back climbs one level at a time; the
 band's home tag leaves the screen.
 
 ### ESC STICK
@@ -1121,6 +1141,12 @@ counts its beeps from the supply current.
 | `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
 | `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
+
+PITCH and LOST are the page's values from the last status read. They read
+`--`, and OVERRUN is not shown, while no read younger than 500 ms gives the
+state: in `WAITING`, in `NO TONE PAGE`, and in `NOT RUNNING` while the
+set-up the page holds has the tap off. MISSED and the beeps are the panel's
+own count and record and stay.
 
 The result stays until OK. Its red light is on when the run ended because
 something was not as expected, a stop the bench raised itself included,
@@ -1932,8 +1958,11 @@ The save waits for the bench to stop driving, and then for a gap in the
 traffic. Writing flash stops the coprocessor with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178 us, against a CAN
-frame of about 130 us and two frames of buffer in the controller. The erase
-and the page program have not been timed apart from each other. A request lost
+frame of about 130 us and two frames of buffer in the controller. The figure is one
+measurement: 1 sample, taken on the bring-up module, with the flash part not
+yet identified. The erase and the page program have not been timed apart from
+each other. The window is to be argued again against the flash part's
+datasheet maximum once the part is known. A request lost
 in that window costs the panel 1000 ms of waiting, which is past the
 coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.

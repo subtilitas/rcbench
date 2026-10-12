@@ -38,7 +38,9 @@ Duration: the host test holds a full search against the modelled servo to under
 | Stall timeout | above 1.0 A for 400 ms | abort |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
-All three run on the coprocessor.
+The limit search and the synchroniser are modules in `shared/servo`, tested on
+the host against a modelled servo. The coprocessor image does not call them, so
+the protections above are not active on the bench.
 
 ### Results
 
@@ -64,8 +66,10 @@ The search holds servo A and sweeps a correction on servo B, at centre and at
 - a difference at centre is an offset error (trim);
 - a difference at an end is a travel error for that end.
 
-Each scan covers ±40 µs around the current best point in 7 steps and narrows
-three times. Each point waits 120 ms plus the travel time at an assumed 0.8
+Each stage runs 3 scans of 7 points. The first scan covers ±40 µs around the
+stage's start point: 0 µs for the centre stage, the ±300 µs deflection for the
+end stages. Each later scan is centred on the best point of the scan before and
+covers ±13 µs, then ±4 µs. Each point waits 120 ms plus the travel time at an assumed 0.8
 µs/ms, then averages the current over 100 ms. A minimum is accepted when the
 current varies by at least 0.08 A across the scan. The current ceiling is 4.0 A
 for the pair.
@@ -190,7 +194,7 @@ longer SETTLE avoids it.
 in 0.20 V steps (`SERVO_TEST_BROWNOUT_STEP_V`) to 3.00 V
 (`SERVO_TEST_BROWNOUT_FLOOR_V`), or the supply's lowest set point if higher.
 The cap in force is the lowest of VOLTAGE MAX, the supply's own maximum, and
-for the PD mini its input voltage less 0.5 V of headroom. A floor off the
+for the PD mini its input voltage less 0.7 V. A floor off the
 0.20 V grid is the last step: on the model, whose lowest set point is
 3.3 V, the walk goes 5.0, 4.8 ... 3.4, 3.3 V. Each voltage runs
 SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
@@ -393,8 +397,8 @@ angle error.
 
 The count wraps from 4095 to 0, so every angle is a position on one turn and
 no two are subtracted or averaged as plain numbers. A move's distance from
-its start is taken the shortest way round, 0 to 180 degrees: 2 counts either
-side of the half turn from the centre are 0.18 degrees apart, not 359.8. A
+its start is taken the shortest way round, 0 to 180 degrees: two positions 1 count
+either side of the half turn from the centre are 0.18 degrees apart, not 359.8. A
 step's end angles at one end are averaged as offsets from the first of them
 and the mean is put back on the circle, so ends read at +179.9 and -179.9
 degrees average to 180 (shown as -180.00), not 0. The angle error is wrapped
@@ -507,7 +511,7 @@ left as they are.
 | `no new supply reading for 1.5 s` | `SERVO_TEST_STALE_MS` |
 | `supply output did not come on` | not on 3000 ms after the ON |
 | `set point not read back in 3 s` | the supply did not take a step's voltage |
-| `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the PD mini's input less its headroom |
+| `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the PD mini's input less 0.7 V |
 | `above STALL AT for 1 s` | `SERVO_TEST_STALL_ABORT_MS` |
 | `constant current for 1 s` | the supply reported constant current for `SERVO_TEST_CC_ABORT_MS` |
 | `no INA3221 window for 0.5 s` | a run on the INA3221: `SERVO_TEST_WIN_STALE_MS` without a window that holds current and voltage. A pass 499 ms after the last window leaves the run running, one at 500 ms ends it |

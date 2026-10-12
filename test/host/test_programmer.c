@@ -347,6 +347,127 @@ TEST_CASE(every_kind_steps)
     }
 }
 
+/* The MODELLED pill on the device line, mirrored as the rest are: 18 px
+ * in, 60 to 80 px down; its dot at (30, 70), and at (38, 62) its fill,
+ * clear of the dot's ring and of the word from x 42. */
+#define MARK_DOT_X   30
+#define MARK_DOT_Y   70
+#define MARK_FILL_X  38
+#define MARK_FILL_Y  62
+
+static int ok_pixels(void)
+{
+    int n = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_OK)) { ++n; }
+    }
+    return n;
+}
+
+/*
+ * What a modelled session shows at one step: the mark and the sentence,
+ * the pill drawn where a connection's dot would be, its dot amber while
+ * the session is open and faint while none is, and nothing in the OK
+ * colour, which on every other screen means hardware answered.
+ */
+static void shows_a_model(const char *step, bool open)
+{
+    const char *mark = programmer_screen_mark();
+    const char *note = programmer_screen_note();
+    if (mark == NULL || strcmp(mark, TR(PG_MODELLED)) != 0) {
+        T_FAIL("%s: the mark is %s", step, mark ? mark : "missing");
+    }
+    if (note == NULL || strcmp(note, TR(PG_MODEL_NOTE)) != 0) {
+        T_FAIL("%s: the sentence is %s", step, note ? note : "missing");
+    }
+    CHECK_EQ(programmer_screen_connected(), open);
+
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    programmer_invalidate();
+    scr->render(&cv, 0);
+    if (ok_pixels() != 0) {
+        T_FAIL("%s: %d pixels in the OK colour", step, ok_pixels());
+    }
+    CHECK_EQ(fb[MARK_FILL_Y * W + MARK_FILL_X],
+             ui_theme_color(UI_C_PANEL_SUNK));
+    CHECK_EQ(fb[MARK_DOT_Y * W + MARK_DOT_X],
+             open ? ui_theme_color(UI_C_WARN)
+                  : ui_theme_color(UI_C_TEXT_FAINT));
+}
+
+/*
+ * ESC and SERVO are a model with no transport: CONNECT, READ and WRITE
+ * change the screen's own copy and nothing goes on a wire.  Every step of
+ * a session carries the mark and the sentence and never the OK colour, in
+ * every protocol of the two classes and in both languages.
+ */
+TEST_CASE(a_modelled_session_is_marked_at_every_step)
+{
+    const int klass[] = { 0, 0, 0, 0, 1 };
+    const int slot[]  = { 0, 1, 2, 3, 0 };
+    for (int lang = 0; lang < 2; ++lang) {
+        for (int p = 0; p < (int)(sizeof(klass) / sizeof(klass[0])); ++p) {
+            fresh();
+            ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
+            CHECK(programmer_screen_mark() == NULL);   /* the class picker */
+            tap(TILE_CX(klass[p]), TILE_CY);
+            CHECK(programmer_screen_mark() != NULL);   /* the protocol list */
+            CHECK(programmer_screen_note() == NULL);
+            tap(ROW_CX, ROW_CY(slot[p]));
+            shows_a_model("before CONNECT", false);
+            CHECK_STR_EQ(programmer_screen_device_line(),
+                         TR(PG_NOTHING_ANSWERED));
+
+            tap(CONNECT_X, CONNECT_Y);
+            shows_a_model("CONNECT", true);
+
+            tap(STEP_UP_X, STEP_CY(1));
+            tap(STEP_UP_X, STEP_CY(1));
+            CHECK(programmer_screen_dirty() > 0);
+            tap(READ_X, BTN_CY);
+            CHECK_EQ(programmer_screen_dirty(), 0);
+            shows_a_model("READ", true);
+
+            tap(STEP_UP_X, STEP_CY(1));
+            tap(STEP_UP_X, STEP_CY(1));
+            CHECK(programmer_screen_dirty() > 0);
+            tap(WRITE_X, BTN_CY);
+            CHECK_EQ(programmer_screen_dirty(), 0);
+            shows_a_model("WRITE", true);
+
+            tap(CONNECT_X, CONNECT_Y);              /* DISCONNECT */
+            shows_a_model("DISCONNECT", false);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The two modelled classes carry the mark on their tiles; ESC STICK, which
+ * drives a real ESC through the bench, does not, and has no mark on its
+ * pages. */
+TEST_CASE(only_the_modelled_classes_carry_the_mark)
+{
+    fresh();
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    /* The pill's fill at the same place on each tile: 20 px into the
+     * 88 px pill centred on the 244 px tile, 2 px under its top edge,
+     * clear of the dot's ring and of the word. */
+    for (int i = 0; i < 3; ++i) {
+        const int x = 18 + i * 260 + (244 - 88) / 2 + 20;
+        const gfx_color_t px = fb[110 * W + x];
+        if (i < 2) {
+            CHECK_EQ(px, ui_theme_color(UI_C_PANEL_SUNK));
+        } else {
+            CHECK_EQ(px, ui_theme_color(UI_C_PANEL_HI));
+        }
+    }
+    tap(TILE_CX(2), TILE_CY);
+    CHECK(programmer_screen_mark() == NULL);
+    CHECK(programmer_screen_note() == NULL);
+    CHECK(programmer_screen_device_line() == NULL);
+}
+
 /* ------------------------------------------------------- ESC STICK */
 
 /* Mirrored from programmer_screen.c, as the rest are. */
@@ -2985,6 +3106,31 @@ static int tone_rows_lit(void)
     return n;
 }
 
+/* The same rows as one number, to tell two frames apart or alike. */
+static uint32_t tone_rows_hash(void)
+{
+    uint32_t h = 2166136261u;
+    for (int y = 284; y < 352; ++y) {
+        for (int x = 0; x < 700; ++x) {
+            h = (h ^ (uint32_t)fb[y * W + x]) * 16777619u;
+        }
+    }
+    return h;
+}
+
+/* Pixels of the same rows in the warning colour. */
+static int tone_rows_warn(void)
+{
+    const gfx_color_t warn = ui_theme_color(UI_C_WARN);
+    int n = 0;
+    for (int y = 284; y < 352; ++y) {
+        for (int x = 0; x < 700; ++x) {
+            n += (fb[y * W + x] == warn) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
 /* The tap's readout fed to the screen and one frame drawn after it. */
 static int tone_drawn(rig_t *r, const tone_readout_t *t, int buf)
 {
@@ -3033,10 +3179,49 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
         last = tone_drawn(&r, &t, buf++ & 1);
         CHECK(last > off + 200);
     }
-    /* Running with the capture overrun says so. */
+    /* The head is in the warning colour for a state the tap does not run
+     * in and for an overrun a read gives, and in no other. */
+    static const struct {
+        tone_state_t state;
+        bool read, overrun, warn;
+    } k_warn[] = {
+        { TONE_STATE_NO_PAGE, false, false, true  },
+        { TONE_STATE_WAITING, false, false, false },
+        { TONE_STATE_WAITING, false, true,  false },
+        { TONE_STATE_RUNNING, true,  false, false },
+        { TONE_STATE_RUNNING, true,  true,  true  },
+        { TONE_STATE_RUNNING, false, true,  false },
+        { TONE_STATE_REFUSED, true,  false, true  },
+        { TONE_STATE_STOPPED, true,  false, true  },
+        { TONE_STATE_STOPPED, false, false, true  },
+    };
+    for (size_t i = 0; i < sizeof(k_warn) / sizeof(k_warn[0]); ++i) {
+        tone_readout_t w;
+        memset(&w, 0, sizeof(w));
+        w.state = k_warn[i].state;
+        w.read = k_warn[i].read;
+        w.overrun = k_warn[i].overrun;
+        (void)tone_drawn(&r, &w, buf++ & 1);
+        CHECK_EQ(tone_rows_warn() > 0, k_warn[i].warn);
+    }
+    /* Running with the capture overrun says so, in the warning colour,
+     * while a status read speaks for it; an overrun no read speaks for
+     * draws nothing. */
     t.state = TONE_STATE_RUNNING;
+    t.read = true;
+    (void)tone_drawn(&r, &t, buf++ & 1);
+    const uint32_t running = tone_rows_hash();
     t.overrun = true;
     CHECK(tone_drawn(&r, &t, buf++ & 1) > off + 200);
+    CHECK(tone_rows_hash() != running);
+    t.read = false;
+    t.overrun = false;
+    (void)tone_drawn(&r, &t, buf++ & 1);
+    const uint32_t unread = tone_rows_hash();
+    t.overrun = true;
+    (void)tone_drawn(&r, &t, buf++ & 1);
+    CHECK_EQ(tone_rows_hash(), unread);
+    t.read = true;
     t.overrun = false;
 
     /* The window's pitch, the counts and four beeps add to it, and a new
@@ -3056,6 +3241,50 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
     /* A null readout changes nothing. */
     programmer_screen_tone(NULL);
     CHECK(tone_drawn(&r, &t, buf++ & 1) > bare);
+
+    /* No status read speaks for the page: a readout that still carries an
+     * overrun, a pitch and a lost count draws as one that carries none --
+     * the pitch and the lost count read "--", and the head is not in the
+     * warning colour.  The missed count and the beeps are the panel's own
+     * and stay. */
+    tone_readout_t none = t;
+    none.state = TONE_STATE_WAITING;
+    none.read = false;
+    none.overrun = false;
+    none.tone = false;
+    none.beep = false;
+    none.win_freq_dhz = 0u;
+    none.win_periods = 0u;
+    none.lost = 0u;
+    none.glitches = 0u;
+    (void)tone_drawn(&r, &none, buf++ & 1);
+    const uint32_t waiting = tone_rows_hash();
+    tone_readout_t left = none;
+    left.overrun = true;
+    left.tone = true;
+    left.beep = true;
+    left.win_freq_dhz = 15234u;
+    left.win_periods = 12u;
+    left.lost = 7u;
+    left.glitches = 5u;
+    (void)tone_drawn(&r, &left, buf++ & 1);
+    CHECK_EQ(tone_rows_hash(), waiting);
+    /* The same values with a read behind them are drawn. */
+    left.read = true;
+    (void)tone_drawn(&r, &left, buf++ & 1);
+    CHECK(tone_rows_hash() != waiting);
+    /* A lost count of 0 that a read gives is not the "--" of none. */
+    none.read = true;
+    (void)tone_drawn(&r, &none, buf++ & 1);
+    CHECK(tone_rows_hash() != waiting);
+    /* A read pitch of 0 is "--", one of 0.1 Hz is "0.1 Hz". */
+    tone_readout_t p;
+    memset(&p, 0, sizeof(p));
+    p.state = TONE_STATE_RUNNING;
+    p.read = true;
+    const int dashes = tone_drawn(&r, &p, buf++ & 1);
+    p.win_freq_dhz = 1u;
+    CHECK(tone_drawn(&r, &p, buf++ & 1) > dashes);
 
     /* Off again: nothing in its place. */
     memset(&t, 0, sizeof(t));
@@ -3674,6 +3903,8 @@ int main(void)
     RUN(paging_reaches_the_rows_that_do_not_fit);
     RUN(a_change_is_unwritten_until_it_is_written);
     RUN(every_kind_steps);
+    RUN(a_modelled_session_is_marked_at_every_step);
+    RUN(only_the_modelled_classes_carry_the_mark);
     RUN(every_protocol_draws_its_parameters);
     RUN(a_profile_the_engine_cannot_run_goes_no_further);
     RUN(no_run_starts_while_the_servo_programmer_holds_a_port);

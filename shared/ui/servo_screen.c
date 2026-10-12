@@ -475,7 +475,6 @@ static struct {
         uint16_t  hz;
         ui_hold_t hold;
         bool      down;
-        uint8_t   id;
         uint32_t  rev;
     } warn;
     uint32_t drawn_warn[2];

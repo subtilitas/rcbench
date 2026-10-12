@@ -1,4 +1,7 @@
-"""check_docs.py: the numbers a page states are held to their constants."""
+"""check_docs.py: the numbers a page states are held to their constants.
+
+SPDX-License-Identifier: MIT
+"""
 
 import re
 
@@ -256,3 +259,131 @@ def test_a_tree_without_protocols_is_read(tree, monkeypatch):
     monkeypatch.setattr(cd, "DOCS", tree / "docs")
     assert modules_tree(tree, ["gfx"], [], []) == [
         "Building.md: the tree omits shared/gfx/"]
+
+
+def suite_tree(tree, status):
+    host = tree / "test" / "host"
+    host.mkdir(parents=True)
+    (host / "CMakeLists.txt").write_text(
+        "foreach(suite gfx kst_wire kst_reg)\nendforeach()\n")
+    (tree / "STATUS.md").write_text(status, encoding="utf-8")
+    problems = []
+    cd.check_suites(problems)
+    return problems
+
+
+NAMED = "`test_gfx` `test_kst_wire` `test_kst_reg`\n"
+
+
+def test_every_count_of_binaries_agrees_with_cmake(tree):
+    assert suite_tree(
+        tree, "The suite is 3 binaries. Of the 2 `test_kst_*` binaries, 1 "
+        "runs.\n" + NAMED) == []
+
+
+def test_a_second_count_of_binaries_is_checked_too(tree):
+    out = suite_tree(
+        tree, "The suite is 3 binaries.\nAnother page says 4 binaries.\n"
+        + NAMED)
+    assert out == ["STATUS.md: says 4 binaries; CMake builds 3"]
+
+
+def test_a_count_of_one_prefix_is_checked(tree):
+    out = suite_tree(
+        tree, "The suite is 3 binaries. Of the 5 `test_kst_*` binaries.\n"
+        + NAMED)
+    assert out == ["STATUS.md: says 5 test_kst_* binaries; CMake builds 2"]
+
+
+def test_spdx_covers_the_tool_scripts(tree):
+    for rel, text in (("shared/a.c", "/* SPDX-License-Identifier: MIT */\n"),
+                      ("tools/ok.py", "# SPDX-License-Identifier: MIT\n"),
+                      ("tools/bad.py", "x = 1\n"),
+                      ("tools/bad.js", "const x = 1;\n"),
+                      ("tools/data.json", "{}\n"),
+                      ("test/tools/bad.py", "x = 1\n"),
+                      ("test/tools/__pycache__/c.py", "x = 1\n")):
+        f = tree / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+    problems = []
+    cd.check_spdx(problems)
+    assert sorted(problems) == [
+        "test/tools/bad.py has no SPDX-License-Identifier",
+        "tools/bad.js has no SPDX-License-Identifier",
+        "tools/bad.py has no SPDX-License-Identifier"]
+
+
+def sdk_tree(tree, **change):
+    """ci.yml, release.yml and the build and performance pages, agreeing on
+    pico-sdk 2.3.0 and ESP-IDF v5.4 and v5.5 unless a name in @p change
+    replaces its text."""
+    files = {
+        ".github/workflows/ci.yml":
+            "env:\n  PICO_SDK_TAG: '2.3.0'\n"
+            "        idf: [v5.4, v5.5]\n"
+            "    name: Coprocessor (pico-sdk 2.3.0)\n",
+        ".github/workflows/release.yml":
+            "env:\n  PICO_SDK_TAG: '2.3.0'\n  esp_idf_version: v5.4\n",
+        "docs/Building.md":
+            "| pico-sdk | 2.0 or newer | CI builds 2.3.0 |\n"
+            "CI builds v5.4 and v5.5\n"
+            "coprocessor build on pico-sdk 2.3.0 with\n",
+        "docs/Building-de.md":
+            "| pico-sdk | 2.0 oder neuer | CI baut 2.3.0 |\n"
+            "CI baut v5.4 und v5.5\n"
+            "Koprozessor-Build mit pico-sdk 2.3.0 mit\n",
+        "docs/Performance.md": "the image CI builds, pico-sdk 2.3.0 with\n",
+        "docs/Performance-de.md": "Image, das CI baut, pico-sdk 2.3.0 mit\n",
+    }
+    for rel, text in files.items():
+        for old, new in change.get(rel, ()):
+            assert old in text
+            text = text.replace(old, new)
+        f = tree / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text, encoding="utf-8")
+    problems = []
+    cd.check_sdk_tags(problems)
+    return problems
+
+
+def test_sdk_tags_that_agree_pass(tree):
+    assert sdk_tree(tree) == []
+
+
+@pytest.mark.parametrize("rel, old, new, said", [
+    (".github/workflows/release.yml", "'2.3.0'", "'2.3.1'",
+     "release.yml PICO_SDK_TAG says pico-sdk 2.3.1"),
+    ("docs/Building.md", "CI builds 2.3.0", "CI builds 2.2.0",
+     "Building.md requirements says pico-sdk 2.2.0"),
+    ("docs/Building-de.md", "mit pico-sdk 2.3.0", "mit pico-sdk 2.4.0",
+     "Building-de.md CI row says pico-sdk 2.4.0"),
+    ("docs/Performance.md", "pico-sdk 2.3.0", "pico-sdk 2.1.0",
+     "Performance.md says pico-sdk 2.1.0"),
+    (".github/workflows/ci.yml", "(pico-sdk 2.3.0)", "(pico-sdk 2.0.0)",
+     "ci.yml job name says pico-sdk 2.0.0"),
+    (".github/workflows/release.yml", "esp_idf_version: v5.4",
+     "esp_idf_version: v5.5", "release.yml builds ESP-IDF v5.5"),
+    ("docs/Building-de.md", "v5.4 und v5.5", "v5.4 und v5.6",
+     "Building-de.md says ESP-IDF v5.4 und v5.6"),
+])
+def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
+    out = sdk_tree(tree, **{rel: [(old, new)]})
+    assert len(out) == 1 and said in out[0]
+
+
+@pytest.mark.parametrize("rel, old, new", [
+    ("docs/Building.md", "CI builds v5.4 and v5.5", "CI builds v5.4"),
+    ("docs/Building-de.md", "CI baut v5.4 und v5.5", "CI baut v5.4"),
+])
+def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
+    out = sdk_tree(tree, **{rel: [(old, new)]})
+    page = rel.split("/")[-1]
+    assert len(out) == 1 and f"ESP-IDF statement in {page}" in out[0]
+
+
+def test_the_tree_holds_the_sdk_tags():
+    problems = []
+    cd.check_sdk_tags(problems)
+    assert problems == []

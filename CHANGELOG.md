@@ -14,6 +14,11 @@ history is in git.
   coprocessor firmware reads its ESC voltage, current and temperature through
   them.
 
+- `tools/security_parsers.py --check`, run in CI, fails when the parser table
+  in `SECURITY.md` and the parse functions in the public headers differ. The
+  table lists 10 modules; it listed 4.
+- `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
+  each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
   (`servoprog`, link `#v=1&f=servoprog`). It needs the panel and the
   coprocessor alone. Its tick puts the servo signal on wire 64, from pad 17
@@ -45,6 +50,35 @@ history is in git.
   command equal to the span still maps to 2047. The firmware passes
   `outputs_actual()` against a span of 1000, so no stored value of 0 to 1000
   changes.
+- `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
+  `Pins.md` states that it is the draft of the planned IO board.
+- The research workflow scripts are no longer in the repository. They are kept
+  on the owner's machine, outside it; `ci.yml` no longer runs
+  `session.py check`.
+- The KST README names Tool Card #2 and Chaservo in its list of what is
+  measured. The 19,178 us flash window is stated as 1 sample with the flash
+  part not yet identified.
+- The release of the bench configurator is stated once, in the `version`
+  field of `configurator/package.json`. The data file, the page header, the
+  trademark notice, the print head, the source-link tag and the data check
+  read it from there. `npm run check` in `configurator/core` compares that
+  version with `RCBENCH_VERSION_*` in `shared/link/include/rcbench_version.h`.
+  A header one release ahead, whose tag does not exist yet, is a warning,
+  since the release pull request moves the header before the tag exists and
+  `package.json` follows after the tag. A header ahead whose tag exists,
+  `package.json` ahead of the header, a differing `version` field in
+  `package-lock.json` and a README that names another release (in prose or
+  as `"release": "X.Y.Z"`) are errors. The Configurator workflow also runs
+  on a change of that header.
+- `testbench/host/capture.sh` warns when a capture holds no samples or the
+  read-back fails, and still prints the path. `selftest.sh` no longer reports
+  `sigrok-cli --scan` error output as the analyser found, and skips a
+  non-numeric `SWD_SWCLK` or `SWD_SWDIO`.
+- `docs/Servo.md` and `docs/Servo-de.md` state that the limit search and the
+  synchroniser are not called by the coprocessor image, give the scan windows
+  of the synchroniser (±40, ±13, ±4 µs) and correct the half-turn example.
+  The testbench documents carry no development history and the corrected
+  splash hold (1.6 s), heartbeat rate and run state.
 
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
@@ -57,9 +91,82 @@ history is in git.
   release tag newer than the data, as an annotation and in the run summary.
   The Release workflow runs the same check on every tag push and shows its
   warnings the same way. The check holds no release back.
+- CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
+  exact versions.
 
 ### Fixed
 
+- A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
+  BAD_VALUE and nothing is stored; before, any value to 65535 reached the
+  output bank. The PROG page's port slew has the same limit. A CHAN_CFG or
+  PROG slew above 3000 kept in the coprocessor's flash by an older build
+  starts as 3000, on the page, in BIND_CFG and in the output bank; the
+  role, endpoints and pins kept with it start as kept.
+- The coprocessor's CAN receive takes the next buffer after one holding a
+  frame it refuses (11-bit identifier, remote frame, length above 8), so a
+  valid frame in receive buffer 1 is served in the same pass.
+- A KST panel row coordinate that names no row gives no row (empty
+  rectangle, no label or button text, not live) instead of the first row.
+- **A PD mini set point at the input cap lies 200 mV above the sag cut
+  line.** The voltage set point is capped 700 mV under the module's input
+  (`PDMINI_CAP_MV`), 200 mV above the line a live output is cut at, the set
+  point plus 500 mV (`PDMINI_HEADROOM_MV`). In 0.17.0 both lines were the
+  same: 20000 mV asked from a 19990 mV input ran at 19490 mV, and a 10 mV
+  dip to 19980 mV on 2 input reads switched it off. 200 mV is
+  3000 mA through 1 m of 20 AWG cable out and back; the drop on a real
+  source is not measured. The panel's voltage cap, the servo test's
+  brown-out cap and the programming port's ENTER check (SUPPLY_RANGE) use
+  the same 700 mV.
+- An input reading under 1500 mV caps a PD mini set point at 1000 mV in
+  place of passing the set point asked, and an ON asked then is not
+  written: the output is held off as for a sag (bit 10 of the SUPPLY flags)
+  until an OFF. The SUPPLY screen and the servo test offer the cap the
+  driver writes (`pdmini_cap_mv()`): an input of 1 to 1700 mV shows 1 V, in
+  place of 20 V; 20 V stays for an input not yet read.
+- `who_failed` of the PD mini driver is stated as a change count that wraps
+  from 65535 to 0; the SUPPLY page's AUTO rate search steps across the
+  wrap.
+- The run clock counts a run that starts on tick 0 from that tick. A flag
+  (`in_run` in `arming_t`) marks a run, so every 32-bit tick, 0 and
+  0xFFFFFFFF included, is a valid start. A start time of 0 stood for "no
+  run", and a run that began on tick 0 restarted at its next pass and lost
+  that pass from its length. The tick passes 0 every 2^32 ms (49.7 days).
+
+- The ESC and SERVO classes of PROGRAMMER show that they are a model. No
+  transport carries their protocols, and CONNECT, READ and WRITE send
+  nothing on a wire. The class tiles, the protocol rows and the device line
+  carry the MODELLED mark (SIMULIERT in German). The device line's dot sits
+  in the mark, amber while a session is open and grey otherwise, and is
+  never green. The device page says "Modelled on the panel: no device is
+  reached." `docs/Screens.md`, `STATUS.md` and `testbench/README.md`
+  describe the two classes as a model.
+- The phase tap's readout on a stick run's page shows PITCH and LOST as
+  `--` and no OVERRUN once the last TONE status read is 500 ms old
+  (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
+  `tone_link_readout()` clears the status's 7 values and sets
+  `tone_readout_t.read` only while a read younger than 500 ms gives the
+  state; the head's warning colour follows the state.
+- The docs workflow no longer cancels a publish in progress when a later push
+  starts one (`cancel-in-progress: false`).
+- With the environment variable `CI` set, a missing C++ compiler fails the
+  CMake configure step of `test/host`, a missing `node` fails
+  `tools/research/session.py check`, and a missing `git`, `cmake`, `cc` or
+  `c++` fails the cases of `test/tools` that need it. Each of these skipped
+  and exited 0. The owner self-test of `session.py` reads a plan and
+  a commit of its own throwaway repository, not the working repository's.
+- The docs job and the job of the Release workflow that waits for CI with
+  `tools/ci_gate.py` time out after 100 min; the gate waits up to 5400 s
+  (90 min). A shorter limit ends the job while it waits.
+- `tools/check_docs.py` fails when `docs/Building.md` or
+  `docs/Building-de.md` has no "vX.Y and vX.Z" ESP-IDF statement.
+- `tools/check_protocols.py` lists each `_Static_assert` on a module's
+  constants by file and condition; removing one of two assertions in a file
+  fails the check. `static_assert` counts as well.
+- The cppcheck step over `shared/` resolves the headers under
+  `shared/*/include`; its pathspec matched no file. `ui_seg_hero()` names its
+  local `st`, which no longer shadows the file-scope `s` of the screens that
+  include `ui_theme.h`, and the unused member `warn.id` is removed from the
+  servo screen.
 - `testbench/host/capture.sh` checks for a channel that never changed in
   time linear in the samples. The check keeps two flags per channel in place
   of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
@@ -77,6 +184,20 @@ history is in git.
   stored setup holds ids alone, so it is the same in English and German. A
   blocked or full store and an entry of another shape give the base setup
   without an error.
+
+### Added
+
+- Every test of `test/host` stops after 120 s unless it sets its own limit,
+  and every CI job has a `timeout-minutes` limit.
+- `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
+  "Where code goes": the files outside `protocols/` with an assertion on a
+  module's macros or enumerators are listed in the tool, and a new or a
+  removed assertion fails the check.
+- `tools/check_docs.py` checks every "N binaries" count of `STATUS.md` and the
+  "N `test_kst_*` binaries" count, holds the pico-sdk and ESP-IDF tags of
+  `docs/Building.md`, `docs/Performance.md` and their German pages to
+  `ci.yml` and `release.yml`, and requires the SPDX line in the scripts
+  under `tools/` and `test/tools/`. The 18 scripts without one carry it.
 
 ## 0.17.0 - 2026-10-12
 

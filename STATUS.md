@@ -104,8 +104,8 @@ is taken in a gap ahead of the save that needs it.
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. The throttle changes only on an armed bench: not armed, the slider, its `-1` and `+1` steps and the rotary knob are refused and the value is 0 %, which every disarm returns it to; both bench screens read the value's state (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`; host suite only) |
 | Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUSED carries on from the phase it was held at on a coprocessor speaking 4.6 (`LINK_SV_RESUME`), and starts over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card shows the servo rail as its meter reads it (`servo_source.h`), in the CURRENT row, on the line over the plot and in the plot: CH1's 50 ms windows under the name `INA3221 CH1` while the INA3221 is the meter, the supply's samples under `SUPPLY` otherwise -- the PD mini's when SETUP enables it, `supply_sim_t`'s if not. A current is signed and shown in hundredths of an amp, a window with a sample at an end of the range in the warning colour, a reading that did not arrive as dashes; the row's value is repainted by itself when its digits or colour change (`test_servo`; host suite only). START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. A run reads one meter from its start to its end, the servo rail's at START TEST: the PD mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's 50 ms windows -- mean current, the highest and lowest 1 ms sample, the bus voltage at the load side of the shunt and its lowest sample -- with the supply read for its state only (`test_servo_test_win`, through the modelled INA3221, the coprocessor's schedule and pages, `sense_link` and `servo_source`). A run on the INA3221 ends ABORTED when the INA3221 stops being the meter or no window arrives for 500 ms, and never goes on with the PD mini. Currents are compared by magnitude in whole mA; the supply in constant current for 1000 ms ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the INA3221's range is said on the TEST page and in the report. Movement is a reading max(0.020 A, 3 x the idle readings' standard deviation) from the level before the command; a move with none is unseen, neither timed nor late, and a run with unseen moves and nothing failed reads NOT MEASURABLE. On the PD mini, whose readings lag about 0.3 s and repeat, and on the INA3221's windows, from which the panel times a move to 50 ms, every travel time is an upper bound and TRAVEL TIME is reported, not checked. STOP, a disarm, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A position is taken only on an armed bench: disarmed, the dial, the rotary knob, CENTRE and SWEEP are refused and the value shown is the one last driven, and at every arm the commanded value is the surface's rest, the midpoint of the channel's endpoints; RELEASE on an armed bench sets it to that rest as well (`test_servo_arm`; host suite only). |
 | Supply screen | built and tested on the host; the control task drives the PD mini through the SUPPLY page (`shared/bench/supply_link.c`) when SETUP INTERFACES enables it, and runs `supply_sim_t` otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50 ms cadence while an exchange waits. A supply run is logged with its own columns |
-| PD mini driver | the codec and driver (`protocols/pdmini/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page. The module's baud rate is 38.4 kbaud, which the automatic baud search finds. A set point above the module's input voltage sends the module into a fault that only a power cycle clears, so the panel caps the set point under the input. The module is read every 102 to 106 ms, a change of current shows in the readings 0.31 s after the command (median), and a current often repeats over several readings. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. A wiring change while a module has answered waits for a state read sent after it and is taken only if that read shows the output off (protocol 4.5). A live output whose input reads under the set point plus 0.5 V on 2 input reads in a row is switched off and the panel names the input and the set point; the rule is chosen, not measured. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
-| Analyser, programmer, balance, battery screens | built, rendered from models |
+| PD mini driver | the codec and driver (`protocols/pdmini/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page. The module's baud rate is 38.4 kbaud, which the automatic baud search finds. A set point above the module's input voltage sends the module into a fault that only a power cycle clears, so the panel and the driver cap the set point 0.7 V under the input. The module is read every 102 to 106 ms, a change of current shows in the readings 0.31 s after the command (median), and a current often repeats over several readings. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. A wiring change while a module has answered waits for a state read sent after it and is taken only if that read shows the output off (protocol 4.5). A live output whose input reads under the set point plus 0.5 V on 2 input reads in a row is switched off and the panel names the input and the set point; the 0.2 V between the cap and that line covers 3000 mA through 1 m of 20 AWG cable out and back, and the rule is chosen, not measured. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
+| Analyser, programmer, balance, battery screens | built, rendered from models. The programmer's ESC and SERVO classes are a model with no transport: CONNECT, READ and WRITE change the panel's own copy of a device and send nothing on a wire, and every page of the two classes carries the MODELLED mark and says that no device is reached (`test_programmer`). ESC STICK runs go out through the arming policy and the output bank |
 | Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built |
 | Bring-up diagnosis, both ends' counters compared | built |
@@ -229,16 +229,15 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/` and the cores under `protocols/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel, each with the task stack check; the pico-sdk build of the coprocessor with `pinmap_check.py` and the stack check of its two cores, and a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400 s) and publishes `docs/` to the GitHub wiki when it passed |
+| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000 s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release; beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 
 Not in CI: clang-tidy over `firmware/`, which needs the ESP-IDF and pico-sdk
 headers to compile each file, and cppcheck's style class over `firmware/`,
 which reports 12 findings there with cppcheck 2.17. The cppcheck step over
-`shared/` passes no include directory: its pathspec `shared/**/include`
-matches no file, so headers are not resolved there. With them resolved
-cppcheck 2.17 reports 2 style findings (`ui_theme.h:136`,
-`servo_screen.c:468`). The step over `firmware/` passes all 25. `docs.yml` and `release.yml` with the wait
-for CI have not run.
+`shared/` resolves the headers under `shared/*/include` and reports no
+finding. The step over `firmware/` passes all 25. `docs.yml` and
+`release.yml` with the wait for CI have not run.
 
 The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
@@ -343,11 +342,11 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
 | `shared/ui/ui_textkey.c` | 171 | 170 | 99.4% |
 | `shared/ui/servo_screen.c` | 3038 | 2986 | 98.3% |
-| `shared/ui/kst_panel.c` | 1517 | 1494 | 98.5% |
+| `shared/ui/kst_panel.c` | 1520 | 1498 | 98.5% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 2368 | 2267 | 95.7% |
+| `shared/ui/programmer_screen.c` | 2397 | 2296 | 95.8% |
 | `shared/ui/log_viewer_screen.c` | 1022 | 961 | 94.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 370 | 368 | 99.5% |
@@ -360,7 +359,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 62 | 62 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
-| `shared/safety/arming.c` | 164 | 158 | 96.3% |
+| `shared/safety/arming.c` | 165 | 159 | 96.4% |
 | `shared/safety/safety_gate.c` | 52 | 52 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
@@ -391,14 +390,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
-| `shared/outputs/prog_port.c` | 257 | 257 | 100.0% |
+| `shared/outputs/prog_port.c` | 261 | 261 | 100.0% |
 | `shared/bench/kst_link.c` | 399 | 397 | 99.5% |
 | `shared/bench/kst_prog.c` | 1643 | 1614 | 98.2% |
 | `shared/bench/kst_card.c` | 134 | 130 | 97.0% |
 | `shared/bench/prog_link.c` | 122 | 122 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
-| `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
+| `shared/can/mcp2515.c` | 42 | 41 | 97.6% |
 | `shared/link/link_bringup.c` | 61 | 61 | 100.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
@@ -411,7 +410,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
 | `shared/outputs/outputs.c` | 192 | 189 | 98.4% |
-| `shared/outputs/outputs_pages.c` | 225 | 216 | 96.0% |
+| `shared/outputs/outputs_pages.c` | 234 | 225 | 96.2% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
 | `shared/outputs/servo_page.c` | 210 | 208 | 99.0% |
@@ -424,11 +423,11 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/tone_page.c` | 241 | 241 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
-| `protocols/pdmini/pdmini.c` | 553 | 545 | 98.5% |
+| `protocols/pdmini/pdmini.c` | 565 | 557 | 98.6% |
 | `shared/bench/supply_link.c` | 290 | 280 | 96.5% |
 | `shared/bench/sense_link.c` | 776 | 748 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
-| `shared/bench/tone_link.c` | 392 | 387 | 98.7% |
+| `shared/bench/tone_link.c` | 395 | 390 | 98.7% |
 | `shared/bench/knob.c` | 37 | 37 | 100.0% |
 | `shared/bench/log_writer.c` | 147 | 135 | 91.8% |
 | `shared/bench/log_cadence.c` | 42 | 42 | 100.0% |
@@ -442,7 +441,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **34925** | **34134** | **97.7%** |
+| **total** | **35008** | **34217** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

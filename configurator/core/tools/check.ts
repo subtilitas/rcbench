@@ -14,12 +14,14 @@ import { fileURLToPath } from 'node:url';
 import type {
   Catalogue, Cond, OptionKey, Pad, PinDefault, Src, Wire,
 } from '../../contract.ts';
+import { TAG } from '../../release.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import type { AnchorText } from '../catalogue.ts';
 import { optionsIn, partsIn, requiresOption } from '../cond.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from '../resolve.ts';
 import { PICTURE_DIR, checkPictures, pictureFolder } from './pictures.ts';
 import type { PictureFolder } from './pictures.ts';
+import { checkReleaseSources } from './release-sources.ts';
 
 export type Finding = { level: 'error' | 'warn'; id: string; msg: string };
 
@@ -30,7 +32,7 @@ export type Tree = {
   newestTag: string | null;
 };
 
-export const RELEASE_TAG = 'v0.17.0';
+export const RELEASE_TAG = TAG;
 
 /** Section ids of the build guide. The generator is not in the repository; only the id is checked. */
 export const GUIDE_SECTIONS: ReadonlyArray<string> = [
@@ -987,6 +989,7 @@ function main(argv: string[]): number {
   const tree = gitTree(dirname(fileURLToPath(import.meta.url)));
   const folder = pictureFolder(PICTURE_DIR);
   const report = checkAll(CATALOGUE, tree, argv.includes('--strict'), ANCHOR_TEXTS, folder);
+  report.findings.push(...checkReleaseSources());
   for (const finding of report.findings) {
     process.stdout.write(`${finding.level} ${finding.id}: ${finding.msg}\n`);
   }

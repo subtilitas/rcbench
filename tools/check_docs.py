@@ -20,9 +20,9 @@ protocol's version, the heartbeat and link timings, the heartbeat and CAN
 pins, the coverage floors and the stack margin, each as one sentence in
 FACTS below; every table row that names a C constant; the ceiling table in
 Performance.md against the --max-lines arguments in ci.yml; and the pin
-counts in hardware/docs/Pins.md against pinmap.json.  A sentence in FACTS
-that is reworded so its pattern matches nowhere fails, so a check does not
-lapse with an edit.
+counts in hardware/docs/Pins.md against ioboard-pinmap-draft.json.  A sentence
+in FACTS that is reworded so its pattern matches nowhere fails, so a check
+does not lapse with an edit.
 
     python3 tools/check_docs.py
 
@@ -241,14 +241,21 @@ def check_suites(problems: list[str]) -> None:
         problems.append(f"{doc.name}: names test_{ghost}, which CMake does "
                         "not build")
 
-    m = re.search(r"(\w+) binaries", text)
-    if not m:
+    # Every "<N> binaries" in the page is a count of the suite, and every
+    # "<N> `test_<prefix>_*` binaries" is a count of the binaries with that
+    # prefix.
+    counts = re.findall(r"(\w+) binaries", text)
+    if not counts:
         problems.append(f"{doc.name}: no '<N> binaries' sentence to check")
-    else:
-        said = as_number(m.group(1))
-        if said != len(built):
-            problems.append(f"{doc.name}: says {m.group(1)} binaries; CMake "
+    for word in counts:
+        if as_number(word) != len(built):
+            problems.append(f"{doc.name}: says {word} binaries; CMake "
                             f"builds {len(built)}")
+    for word, prefix in re.findall(r"(\w+) `test_(\w+?)_\*` binaries", text):
+        have = sum(1 for n in built if n.startswith(prefix + "_"))
+        if as_number(word) != have:
+            problems.append(f"{doc.name}: says {word} test_{prefix}_* "
+                            f"binaries; CMake builds {have}")
 
 
 # Not implemented: a check that every settings row shown on screen reaches
@@ -1233,14 +1240,14 @@ def check_ceilings(problems: list[str], ci_text: str | None = None,
 
 # --- the IO board's pin count ------------------------------------------------
 
-PINMAP = HARDWARE / "docs" / "pinmap.json"
+PINMAP = HARDWARE / "docs" / "ioboard-pinmap-draft.json"
 PIN_ROWS = {"main": "Main coprocessor", "measurement":
             "Measurement coprocessor"}
 
 
 def check_pin_counts(problems: list[str]) -> None:
     """Pins.md's count of the GPIO each coprocessor uses is the number of
-    pins pinmap.json gives it, and STATUS.md repeats the same two."""
+    pins the draft pin map gives it, and STATUS.md repeats the same two."""
     import json
     chips = {c.get("chip"): len(c.get("pins", []))
              for c in json.loads(read(PINMAP)).get("chips", [])}
@@ -1254,32 +1261,121 @@ def check_pin_counts(problems: list[str]) -> None:
         if used != chips.get(chip) or free != total - used:
             problems.append(
                 f"Pins.md: says the {label.lower()} uses {used} of {total} "
-                f"with {free} free; pinmap.json gives it {chips.get(chip)}")
+                f"with {free} free; {PINMAP.name} gives it "
+                f"{chips.get(chip)}")
     m = re.search(r"uses (\d+) and (\d+) of their (\d+) GPIO",
                   " ".join(read(REPO / "STATUS.md").split()))
     if m is None:
         problems.append("STATUS.md: no 'uses <N> and <N> of their 48 GPIO'")
     elif (int(m.group(1)), int(m.group(2))) != (chips.get("main"),
                                                 chips.get("measurement")):
-        problems.append(f"STATUS.md: says {m.group(0)}; pinmap.json gives "
+        problems.append(f"STATUS.md: says {m.group(0)}; {PINMAP.name} gives "
                         f"{chips.get('main')} and "
                         f"{chips.get('measurement')}")
 
 
+def check_sdk_tags(problems: list[str]) -> None:
+    """The SDK (software development kit) tags are spelled in ci.yml,
+    release.yml and the build pages, and the copies agree.
+
+    The pico-sdk tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF
+    (Espressif Internet-of-Things Development Framework) tags are the
+    `idf` matrix of ci.yml, whose first entry is the release build's.
+    """
+    ci = read(REPO / ".github" / "workflows" / "ci.yml")
+    rel = read(REPO / ".github" / "workflows" / "release.yml")
+    found: list[tuple[str, str | None]] = []
+
+    def first(label: str, pattern: str, text: str, group: int = 1) -> str:
+        m = re.search(pattern, text)
+        if m is None:
+            problems.append(f"SDK tags: no {label}")
+            return ""
+        return m.group(group)
+
+    pico = first("PICO_SDK_TAG in ci.yml",
+                 r"PICO_SDK_TAG:\s*'([\d.]+)'", ci)
+    found.append(("release.yml PICO_SDK_TAG", first(
+        "PICO_SDK_TAG in release.yml", r"PICO_SDK_TAG:\s*'([\d.]+)'", rel)))
+    found.append(("ci.yml job name", first(
+        "'Coprocessor (pico-sdk X)' job name in ci.yml",
+        r"name: Coprocessor \(pico-sdk ([\d.]+)\)", ci)))
+    for page, build_on, build_by in (
+            ("Building.md", r"[Cc]oprocessor build on pico-sdk ([\d.]+)",
+             r"CI builds ([\d.]+) \|"),
+            ("Building-de.md", r"Koprozessor-Build mit pico-sdk ([\d.]+)",
+             r"CI baut ([\d.]+) \|")):
+        text = read(REPO / "docs" / page)
+        found.append((f"{page} CI row", first(
+            f"pico-sdk tag in the CI row of {page}", build_on, text)))
+        found.append((f"{page} requirements", first(
+            f"'CI builds <tag>' in {page}", build_by, text)))
+    for page, pat in (
+            ("Performance.md", r"image CI builds, pico-sdk ([\d.]+)"),
+            ("Performance-de.md", r"das CI baut, pico-sdk ([\d.]+)")):
+        found.append((page, first(f"pico-sdk tag in {page}", pat,
+                                  read(REPO / "docs" / page))))
+    for what, tag in found:
+        if tag and pico and tag != pico:
+            problems.append(f"SDK tags: {what} says pico-sdk {tag}; "
+                            f"ci.yml builds {pico}")
+
+    matrix = re.search(r"idf:\s*\[([^\]]*)\]", ci)
+    idfs = [v.strip() for v in matrix.group(1).split(",")] if matrix else []
+    if not idfs:
+        problems.append("SDK tags: no idf matrix in ci.yml")
+        return
+    release = first("esp_idf_version in release.yml",
+                    r"esp_idf_version:\s*(v[\d.]+)", rel)
+    if release and release != idfs[0]:
+        problems.append(f"SDK tags: release.yml builds ESP-IDF {release}; "
+                        f"the first of the ci.yml matrix is {idfs[0]}")
+    for page, joiner in (("Building.md", "and"), ("Building-de.md", "und")):
+        text = read(REPO / "docs" / page)
+        stated = list(re.finditer(
+            r"(v\d+\.\d+) %s (v\d+\.\d+)" % joiner, text))
+        if not stated:
+            problems.append(f"SDK tags: no 'vX.Y {joiner} vX.Z' ESP-IDF "
+                            f"statement in {page}")
+        for m in stated:
+            if [m.group(1), m.group(2)] != idfs:
+                problems.append(
+                    f"SDK tags: {page} says ESP-IDF {m.group(1)} "
+                    f"{joiner} {m.group(2)}; ci.yml builds "
+                    f"{', '.join(idfs)}")
+
+
+# Where the SPDX line is required: the directories walked and the suffixes
+# of the files that carry one.
+SPDX_DIRS = (
+    ("shared", (".c", ".h")),
+    ("protocols", (".c", ".h")),
+    ("firmware", (".c", ".h")),
+    ("test", (".c", ".h")),
+    ("tools", (".py", ".sh", ".js")),
+    ("test/tools", (".py", ".sh", ".js")),
+)
+
+
 def check_spdx(problems: list[str]) -> None:
-    """Every source file carries an SPDX (Software Package Data Exchange)
-    licence line.  A new file without one fails the build.
+    """Every source file and every tool script carries an SPDX (Software
+    Package Data Exchange) licence line.  A new file without one fails the
+    build.
     """
     import os
-    for base in ("shared", "protocols", "firmware", "test"):
+    seen = set()
+    for base, suffixes in SPDX_DIRS:
         for dp, dn, fn in os.walk(REPO / base):
             # Prune build trees in place (build, build-san, build-cov) so the
-            # walk never reaches a toolchain's own probe files.
-            dn[:] = [d for d in dn if not d.startswith("build")]
+            # walk never reaches a toolchain's own probe files, and the
+            # caches and installed packages of the tools.
+            dn[:] = [d for d in dn if not d.startswith("build")
+                     and d not in ("__pycache__", "node_modules")]
             for f in fn:
-                if not f.endswith((".c", ".h")):
-                    continue
                 path = pathlib.Path(dp) / f
+                if not f.endswith(suffixes) or path in seen:
+                    continue
+                seen.add(path)
                 if "SPDX-License-Identifier" not in read(path):
                     rel = path.relative_to(REPO)
                     problems.append(f"{rel} has no SPDX-License-Identifier")
@@ -1305,6 +1401,7 @@ def main() -> int:
     check_ceilings(problems)
     check_pin_counts(problems)
     check_spdx(problems)
+    check_sdk_tags(problems)
 
     for problem in problems:
         print(problem, file=sys.stderr)
