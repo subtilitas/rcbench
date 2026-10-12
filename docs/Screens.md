@@ -1132,6 +1132,12 @@ counts its beeps from the supply current.
 | `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
 
+PITCH and LOST are the page's values from the last status read. They read
+`--`, and OVERRUN is not shown, while no read younger than 500 ms gives the
+state: in `WAITING`, in `NO TONE PAGE`, and in `NOT RUNNING` while the
+set-up the page holds has the tap off. MISSED and the beeps are the panel's
+own count and record and stay.
+
 The result stays until OK. Its red light is on when the run ended because
 something was not as expected, a stop the bench raised itself included,
 and dark on DONE, a STOP pressed, ABORT and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):

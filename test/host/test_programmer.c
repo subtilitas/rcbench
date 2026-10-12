@@ -3106,6 +3106,31 @@ static int tone_rows_lit(void)
     return n;
 }
 
+/* The same rows as one number, to tell two frames apart or alike. */
+static uint32_t tone_rows_hash(void)
+{
+    uint32_t h = 2166136261u;
+    for (int y = 284; y < 352; ++y) {
+        for (int x = 0; x < 700; ++x) {
+            h = (h ^ (uint32_t)fb[y * W + x]) * 16777619u;
+        }
+    }
+    return h;
+}
+
+/* Pixels of the same rows in the warning colour. */
+static int tone_rows_warn(void)
+{
+    const gfx_color_t warn = ui_theme_color(UI_C_WARN);
+    int n = 0;
+    for (int y = 284; y < 352; ++y) {
+        for (int x = 0; x < 700; ++x) {
+            n += (fb[y * W + x] == warn) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
 /* The tap's readout fed to the screen and one frame drawn after it. */
 static int tone_drawn(rig_t *r, const tone_readout_t *t, int buf)
 {
@@ -3154,10 +3179,49 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
         last = tone_drawn(&r, &t, buf++ & 1);
         CHECK(last > off + 200);
     }
-    /* Running with the capture overrun says so. */
+    /* The head is in the warning colour for a state the tap does not run
+     * in and for an overrun a read gives, and in no other. */
+    static const struct {
+        tone_state_t state;
+        bool read, overrun, warn;
+    } k_warn[] = {
+        { TONE_STATE_NO_PAGE, false, false, true  },
+        { TONE_STATE_WAITING, false, false, false },
+        { TONE_STATE_WAITING, false, true,  false },
+        { TONE_STATE_RUNNING, true,  false, false },
+        { TONE_STATE_RUNNING, true,  true,  true  },
+        { TONE_STATE_RUNNING, false, true,  false },
+        { TONE_STATE_REFUSED, true,  false, true  },
+        { TONE_STATE_STOPPED, true,  false, true  },
+        { TONE_STATE_STOPPED, false, false, true  },
+    };
+    for (size_t i = 0; i < sizeof(k_warn) / sizeof(k_warn[0]); ++i) {
+        tone_readout_t w;
+        memset(&w, 0, sizeof(w));
+        w.state = k_warn[i].state;
+        w.read = k_warn[i].read;
+        w.overrun = k_warn[i].overrun;
+        (void)tone_drawn(&r, &w, buf++ & 1);
+        CHECK_EQ(tone_rows_warn() > 0, k_warn[i].warn);
+    }
+    /* Running with the capture overrun says so, in the warning colour,
+     * while a status read speaks for it; an overrun no read speaks for
+     * draws nothing. */
     t.state = TONE_STATE_RUNNING;
+    t.read = true;
+    (void)tone_drawn(&r, &t, buf++ & 1);
+    const uint32_t running = tone_rows_hash();
     t.overrun = true;
     CHECK(tone_drawn(&r, &t, buf++ & 1) > off + 200);
+    CHECK(tone_rows_hash() != running);
+    t.read = false;
+    t.overrun = false;
+    (void)tone_drawn(&r, &t, buf++ & 1);
+    const uint32_t unread = tone_rows_hash();
+    t.overrun = true;
+    (void)tone_drawn(&r, &t, buf++ & 1);
+    CHECK_EQ(tone_rows_hash(), unread);
+    t.read = true;
     t.overrun = false;
 
     /* The window's pitch, the counts and four beeps add to it, and a new
@@ -3177,6 +3241,50 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
     /* A null readout changes nothing. */
     programmer_screen_tone(NULL);
     CHECK(tone_drawn(&r, &t, buf++ & 1) > bare);
+
+    /* No status read speaks for the page: a readout that still carries an
+     * overrun, a pitch and a lost count draws as one that carries none --
+     * the pitch and the lost count read "--", and the head is not in the
+     * warning colour.  The missed count and the beeps are the panel's own
+     * and stay. */
+    tone_readout_t none = t;
+    none.state = TONE_STATE_WAITING;
+    none.read = false;
+    none.overrun = false;
+    none.tone = false;
+    none.beep = false;
+    none.win_freq_dhz = 0u;
+    none.win_periods = 0u;
+    none.lost = 0u;
+    none.glitches = 0u;
+    (void)tone_drawn(&r, &none, buf++ & 1);
+    const uint32_t waiting = tone_rows_hash();
+    tone_readout_t left = none;
+    left.overrun = true;
+    left.tone = true;
+    left.beep = true;
+    left.win_freq_dhz = 15234u;
+    left.win_periods = 12u;
+    left.lost = 7u;
+    left.glitches = 5u;
+    (void)tone_drawn(&r, &left, buf++ & 1);
+    CHECK_EQ(tone_rows_hash(), waiting);
+    /* The same values with a read behind them are drawn. */
+    left.read = true;
+    (void)tone_drawn(&r, &left, buf++ & 1);
+    CHECK(tone_rows_hash() != waiting);
+    /* A lost count of 0 that a read gives is not the "--" of none. */
+    none.read = true;
+    (void)tone_drawn(&r, &none, buf++ & 1);
+    CHECK(tone_rows_hash() != waiting);
+    /* A read pitch of 0 is "--", one of 0.1 Hz is "0.1 Hz". */
+    tone_readout_t p;
+    memset(&p, 0, sizeof(p));
+    p.state = TONE_STATE_RUNNING;
+    p.read = true;
+    const int dashes = tone_drawn(&r, &p, buf++ & 1);
+    p.win_freq_dhz = 1u;
+    CHECK(tone_drawn(&r, &p, buf++ & 1) > dashes);
 
     /* Off again: nothing in its place. */
     memset(&t, 0, sizeof(t));

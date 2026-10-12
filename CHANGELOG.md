@@ -6,6 +6,19 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The bench configurator offers "Program a KST or Chaservo servo"
+  (`servoprog`, link `#v=1&f=servoprog`). It needs the panel and the
+  coprocessor alone. Its tick puts the servo signal on wire 64, from pad 17
+  (GP13), the programming port, in place of wire 7 on pad 4 (GP2). The
+  result states that SETTINGS → DUT → PWM TARGET is PROG PORT, what the PD
+  mini sets when it is part of the setup (4.8 to 6.0 V or up to 8.4 V with
+  HV SERVO on, 50 to 3000 mA), that without it the programming voltage and
+  current limit are stored and not applied, and that the level of the
+  servo's reply on GP13 is not measured. Existing links keep their meaning:
+  `kst` stays an unknown id.
+
 ### Changed
 
 - The bench configurator describes release 0.17.0. Every repository source
@@ -14,9 +27,11 @@ history is in git.
   carries the line and the wording of `STATUS.md` at that tag. The list
   "Not in a release" holds 4 entries: the entry on the programming port for
   KST and Chaservo servos is removed, since 0.17.0 contains the servo
-  programmer. The configurator offers no function, part or wire for the servo programmer.
+  programmer.
 - The Configurator workflow shows each warning of the data check, such as a
   release tag newer than the data, as an annotation and in the run summary.
+  The Release workflow runs the same check on every tag push and shows its
+  warnings the same way. The check holds no release back.
 
 ### Fixed
 
@@ -28,6 +43,19 @@ history is in git.
   never green. The device page says "Modelled on the panel: no device is
   reached." `docs/Screens.md`, `STATUS.md` and `testbench/README.md`
   describe the two classes as a model.
+- The phase tap's readout on a stick run's page shows PITCH and LOST as
+  `--` and no OVERRUN once the last TONE status read is 500 ms old
+  (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
+  `tone_link_readout()` clears the status's 7 values and sets
+  `tone_readout_t.read` only while a read younger than 500 ms gives the
+  state; the head's warning colour follows the state.
+- `testbench/host/capture.sh` checks for a channel that never changed in
+  time linear in the samples. The check keeps two flags per channel in place
+  of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
+  joined string took 8 s, and 6 channels of 4 M samples take 2.2 s, where it
+  took 187 s. The output is unchanged. `test/tools/test_capture_sh.py` covers
+  flat, toggling, first-sample and last-sample changes, an empty capture and
+  several channels.
 - `docs/ServoProgrammer.md` and its German page name the servo the
   register layout and the timing come from: 1 Chaservo servo.
 - The bench configurator keeps the selection and the chosen language in the

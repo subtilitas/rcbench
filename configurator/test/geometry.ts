@@ -143,7 +143,7 @@ const OPTION_SETS: Options[] = [];
 for (const connection of ['pads', 'osoyoo'] as const) {
   for (const ina228Board of ['matek', 'xt90'] as const) {
     for (const escPower of ['battery', 'pd'] as const) {
-      for (const servoPower of ['external', 'bench'] as const) OPTION_SETS.push({ connection, ina228Board, escPower, servoPower });
+      for (const servoPower of ['external', 'bench'] as const) OPTION_SETS.push({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' });
     }
   }
 }

@@ -2143,7 +2143,8 @@ static uint32_t sp_signature(void)
         (esc_stick_hand_left_ms(e) + 999u) / 1000u, e->hand,
         e->hand_menu ? 1u : 0u,
         /* The phase tap's readout, which a run's page shows beside it. */
-        (uint32_t)s.tone.state, s.tone.overrun ? 1u : 0u,
+        (uint32_t)s.tone.state, s.tone.read ? 1u : 0u,
+        s.tone.overrun ? 1u : 0u,
         s.tone.win_freq_dhz, s.tone.lost, s.tone.missed,
         s.tone.n, (s.tone.n > 0u) ? s.tone.beeps[0].seq : 0u,
     };
@@ -3187,7 +3188,8 @@ static const char *sp_tone_state(const tone_readout_t *r)
     case TONE_STATE_WAITING:
         return TR(SP_TONE_WAITING);
     case TONE_STATE_RUNNING:
-        return r->overrun ? TR(SP_TONE_OVERRUN) : TR(SP_TONE_RUNNING);
+        return (r->read && r->overrun) ? TR(SP_TONE_OVERRUN)
+                                       : TR(SP_TONE_RUNNING);
     case TONE_STATE_REFUSED:
         return TR(SP_TONE_REFUSED);
     case TONE_STATE_STOPPED:
@@ -3221,18 +3223,27 @@ static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
     const gfx_color_t dim = ui_theme_color(UI_C_TEXT_DIM);
     const bool fault = r->state == TONE_STATE_NO_PAGE
                        || r->state == TONE_STATE_REFUSED
-                       || r->state == TONE_STATE_STOPPED || r->overrun;
+                       || r->state == TONE_STATE_STOPPED
+                       || (r->read && r->overrun);
+    /* The pitch and the lost count are the page's, and shown only while a
+     * status read younger than TONE_LINK_STALE_MS speaks for it. */
     char pitch_txt[16];
-    if (r->win_freq_dhz == 0u) {
+    char lost_txt[8];
+    if (!r->read || r->win_freq_dhz == 0u) {
         snprintf(pitch_txt, sizeof(pitch_txt), "--");
     } else {
         snprintf(pitch_txt, sizeof(pitch_txt), "%u.%u Hz",
                  (unsigned)(r->win_freq_dhz / 10u),
                  (unsigned)(r->win_freq_dhz % 10u));
     }
+    if (r->read) {
+        snprintf(lost_txt, sizeof(lost_txt), "%u", (unsigned)r->lost);
+    } else {
+        snprintf(lost_txt, sizeof(lost_txt), "--");
+    }
     char line[128];
     snprintf(line, sizeof(line), TR(SP_TONE_HEAD), sp_tone_state(r),
-             pitch_txt, (unsigned)r->lost, (unsigned)r->missed);
+             pitch_txt, lost_txt, (unsigned)r->missed);
     gfx_text(c, PAD + 12, y, line, UI_FONT_LABEL,
              fault ? ui_theme_color(UI_C_WARN) : dim, 1);
     const int x0 = PAD + 12 + (gfx_text_cells(TR(SP_TONE_BEEPS)) + 2) * 8;
