@@ -417,12 +417,16 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     st->p      = st->v * st->i;
     st->set_v  = (float)s->regs[LINK_SP_SET_MV_RB] / 1000.0f;
     st->set_i  = (float)s->regs[LINK_SP_SET_MA_RB] / 1000.0f;
-    st->ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     /* Which reading this is, and when the panel had it: the coprocessor
      * counts the module's readings, and the page read that first showed
-     * this count brought it -- not a later read of the same count. */
+     * this count brought it -- not a later read of the same count.  A
+     * count that has not moved for SUPPLY_LINK_STALE_MS is a module whose
+     * display read fails behind a page that still answers: the values
+     * are the last ones, and no total or trip takes them as new. */
     st->samples  = s->samples_seen;
     st->taken_ms = s->sample_ms;
+    st->ok = ((uint32_t)(now_ms - s->sample_ms) < SUPPLY_LINK_STALE_MS)
+                 ? (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT) : 0u;
 }
 
 bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,

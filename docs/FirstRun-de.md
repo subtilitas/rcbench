@@ -489,8 +489,11 @@ $C t=220200 ch=0 us=1800
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
 
-Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten:
-eine Triggerzeile folgt auf die Samples, die vor ihr genommen wurden.
+Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten,
+außer einer `$D`-Zeile: eine Triggerzeile folgt auf die Samples, die vor ihr
+genommen wurden. Eine `$D`-Zeile wird geschrieben, sobald der Puls des
+Ausgangs 50 ms stillgestanden hat; sie folgt Samples bis etwa 50 ms nach
+ihrem `t=`, und ihr `t=` ist ihre Zeit.
 Core 0 schreibt eine Triggerzeile und die Endzeile, sobald Core 1 einen
 Tick beendet hat, der zur Zeit der Zeile oder danach begann. `e=` in der
 Endzeile ist der Grund für das Ende: `t` die Zeit, `s` ein geändertes

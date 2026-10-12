@@ -111,13 +111,18 @@
  *       value the driver holds and reads back every 40 ms, whether the
  *       part is online, and its reset count modulo 256: as they stand at
  *       the trace's first record.  All 0 with the bus closed.
- *   The lines after these two are in the order of their times: a trigger
- *   line stands behind the samples taken before its time, the first
- *   trigger's behind the samples from before the trigger.
+ *   The lines after these two are in the order of their times, a $D line
+ *   excepted: a trigger line stands behind the samples taken before its
+ *   time, the first trigger's behind the samples from before the
+ *   trigger.
  *   $C t=T ch=C us=P     a cmd trigger: output channel C renders P µs in
  *                        the frame that starts at T
  *   $D t=T ch=C us=P     channel C's slewed command ended at P µs; T is
  *                        its last change.  Counted with the trigger lines.
+ *                        Written once the pulse has stood still for
+ *                        SENSE_TRACE_HOLD_MS (50 ms), so it follows the
+ *                        sample lines up to about 50 ms past T; T, not
+ *                        the line's place, is its time.
  *   $E t=T               an edge trigger
  *   $K t=T               a key trigger
  *   D,I                  a CH1 sample: D is its time less the previous

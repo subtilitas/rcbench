@@ -21,6 +21,23 @@ history is in git.
 
 ### Changed
 
+- The supply state reports no valid voltage or current (`ok` 0) when the
+  supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
+  with the last values kept. The INA228 temperature and diagnostic flags go
+  with the part when it is offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
+  sample. A mark kind passed as a trace trigger is ignored, and the trace
+  drops a sample while a shunt or configuration record is owed.
+- The servo limit search and the synchroniser keep every command inside 500
+  to 2500 µs. The search refuses a step of 0 µs (fault `BAD_CONFIG`), keeps
+  an endpoint backed off past the centre at the centre, and ends at the end
+  of the pulse range. Both stop on a current that is not a number. The
+  synchroniser reports `NO_MINIMUM` for a minimum at the edge of a scan
+  window and runs at least one round.
+- `tools/sense_trace.py` starts a new boot only when the tick runs back by
+  more than 100 ms; a smaller inversion stays in the boot and keeps the
+  signed difference. The `$D` line is documented as written about 50 ms after
+  its `t=`, and `servo_move.h`, `bench_frame.c` and `servo_sync.h` describe
+  what the code does.
 - `testbench/host/capture.sh` warns when a capture holds no samples or the
   read-back fails, and still prints the path. `selftest.sh` no longer reports
   `sigrok-cli --scan` error output as the analyser found, and skips a

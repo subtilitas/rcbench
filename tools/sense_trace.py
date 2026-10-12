@@ -174,6 +174,10 @@ T_PER_MS = 10               # the trace counts 0.1 ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
 EDGE_PAIR_MS = 30           # an edge line's command line lies this close
+INVERSION_MS = 100          # a trace's start line can lie this far before
+                            # the last one's: a command trigger's time is
+                            # computed, up to a frame ahead of a mark
+                            # stamped when it happened
 PAIR_ROUND_S = 1e-9         # a row at --pair-ms from its command is within
                             # it, whatever the sums that got there rounded
 TOGETHER_MS = 30            # commands this close are one change of current
@@ -353,11 +357,15 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             # Within a boot the millisecond tick and the trace number
             # both run on, modulo 2^32 and 65536, the number by more than
             # one past a trace no console took.  A tick that lies before
-            # the last one's, or a number that is not past the last
-            # one's, is a restart, and its clock a new one.
+            # the last one's by more than INVERSION_MS, or a number that
+            # is not past the last one's, is a restart, and its clock a
+            # new one.  A tick up to INVERSION_MS before the last one's,
+            # with the number on, is a trace whose trigger lay later
+            # than the next trace's: the same boot.
             ms_on = (ms - last_ms) & 0xFFFFFFFF
             n_on = (number - last_n) & 0xFFFF
-            if last_t0 is not None and (ms_on >= 1 << 31
+            ms_back = (1 << 32) - ms_on if ms_on >= 1 << 31 else 0
+            if last_t0 is not None and (ms_back > INVERSION_MS
                                         or not 0 < n_on < 1 << 15):
                 boot += 1
                 last_t0 = None
@@ -369,8 +377,14 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
                 # 4.97 days; the millisecond tick says how often it did
                 # between the two.
                 on = (t0 - last_t0[0]) & 0xFFFFFFFF
-                wraps = max(0, round((ms_on * T_PER_MS - on) / (1 << 32)))
-                t0_abs = last_t0[1] + on + (wraps << 32)
+                if ms_back:
+                    # Before the last trace's start, by a few ms: the
+                    # count's difference is a small negative number.
+                    t0_abs = last_t0[1] + on - (on >> 31 << 32)
+                else:
+                    wraps = max(0, round((ms_on * T_PER_MS - on)
+                                         / (1 << 32)))
+                    t0_abs = last_t0[1] + on + (wraps << 32)
             last_t0 = (t0, t0_abs)
             cur = Trace(number, trig, t0, t0_abs, ms, length)
             cur.boot = boot
@@ -676,10 +690,11 @@ def find_moves(tr: Trace, floor_a: float,
     # A slewed command's line carries its first pulse; its $D line the one
     # it ended at, which is the end the servo is then held at.  The $D
     # line's time is the last pulse change, which can lie before the frame
-    # time its $C line carries, and the lines stand in the order of their
-    # times: the $D line is of the latest command of its channel that
-    # lies no more than a frame's lateness after it, whichever of the two
-    # lines comes first.
+    # time its $C line carries.  The $D line is written 50 ms after that
+    # time, past the samples up to there, so its place among the lines
+    # says nothing and its t= is read: it is of the latest command of its
+    # channel that lies no more than a frame's lateness after it,
+    # whichever of the two lines comes first.
     cmds = [list(m) for m in marks if m[0] == "C"]
     ended: set[int] = set()
     for mark in marks:

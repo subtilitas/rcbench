@@ -661,6 +661,24 @@ TEST_CASE(the_dropped_records_are_named_where_they_are_missing)
     CHECK_EQ(tr.out.ahead, 0u);
 }
 
+/* The mark kinds share the trigger enumeration but are no trigger: one
+ * passed in as a trigger would index past the tables of the line writer. */
+TEST_CASE(a_mark_kind_is_no_trigger)
+{
+    rig_size(8u);
+    sense_trace_trigger(&tr, SENSE_TRACE_MARK_DEST, g_us, 0u, 1500u);
+    sense_trace_trigger(&tr, SENSE_TRACE_MARK_STEP, g_us, 0u, 1500u);
+    sense_trace_trigger(&tr, (sense_trace_trig_t)99, g_us, 0u, 1500u);
+    for (unsigned k = 0; k < 20u; ++k) {
+        pass();
+    }
+    CHECK_EQ(tr.out.stage, SENSE_TRACE_IDLE);
+    CHECK_EQ(tr.out.id, 0u);
+    CHECK_EQ(tr.out.wait_n, 0u);
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+}
+
 TEST_CASE(each_gap_in_a_trace_has_its_line)
 {
     rig_size(8u);
@@ -3435,6 +3453,7 @@ int main(void)
     RUN(a_ring_full_by_exactly_0_1_and_many_records);
     RUN(the_dropped_records_are_named_where_they_are_missing);
     RUN(each_gap_in_a_trace_has_its_line);
+    RUN(a_mark_kind_is_no_trigger);
     RUN(a_count_of_dropped_records_saturates);
     RUN(idle_keeps_the_newest_records);
     RUN(the_console_command_gives_ten_seconds);

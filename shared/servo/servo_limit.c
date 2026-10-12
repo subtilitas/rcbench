@@ -32,9 +32,15 @@ static uint16_t clamp_travel(const servo_limit_cfg_t *cfg, int32_t us)
     if (us < centre - span) {
         us = centre - span;
     }
-    /* A pulse width is unsigned; this guards a configuration with centre
-     * below max_travel. */
-    return (uint16_t)(us < 0 ? 0 : us);
+    /* A pulse width the servo takes: this also guards a configuration
+     * with centre below max_travel. */
+    if (us < (int32_t)SERVO_LIMIT_MIN_US) {
+        us = (int32_t)SERVO_LIMIT_MIN_US;
+    }
+    if (us > (int32_t)SERVO_LIMIT_MAX_US) {
+        us = (int32_t)SERVO_LIMIT_MAX_US;
+    }
+    return (uint16_t)us;
 }
 
 void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
@@ -70,10 +76,23 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
     }
     memset(lf, 0, sizeof(*lf));
     lf->cfg          = *cfg;
+    /* The centre is a command too: held within the pulse widths a servo
+     * takes. */
+    if (lf->cfg.centre_us < SERVO_LIMIT_MIN_US) {
+        lf->cfg.centre_us = SERVO_LIMIT_MIN_US;
+    }
+    if (lf->cfg.centre_us > SERVO_LIMIT_MAX_US) {
+        lf->cfg.centre_us = SERVO_LIMIT_MAX_US;
+    }
     lf->state        = SERVO_LIMIT_RUNNING;
-    lf->cmd_us       = cfg->centre_us;
-    lf->last_free_us = cfg->centre_us;
-    lf->limit_us     = cfg->centre_us;
+    lf->cmd_us       = lf->cfg.centre_us;
+    lf->last_free_us = lf->cfg.centre_us;
+    lf->limit_us     = lf->cfg.centre_us;
+    if (cfg->step_us == 0) {
+        /* A search that never moves never ends. */
+        lf->state = SERVO_LIMIT_FAULT;
+        lf->fault = SERVO_LIMIT_FAULT_BAD_CONFIG;
+    }
 }
 
 /* Finish the search with the surface returned to centre. */
@@ -95,11 +114,19 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
 static bool advance(servo_limit_t *lf)
 {
     const int32_t next  = (int32_t)lf->cmd_us + lf->cfg.step_us;
-    const int32_t reach = (lf->cfg.step_us > 0)
-                              ? (int32_t)lf->cfg.centre_us
-                                    + (int32_t)lf->cfg.max_travel_us
-                              : (int32_t)lf->cfg.centre_us
-                                    - (int32_t)lf->cfg.max_travel_us;
+    int32_t reach = (lf->cfg.step_us > 0)
+                        ? (int32_t)lf->cfg.centre_us
+                              + (int32_t)lf->cfg.max_travel_us
+                        : (int32_t)lf->cfg.centre_us
+                              - (int32_t)lf->cfg.max_travel_us;
+    /* The end of the pulse range is an end of the travel too: a command
+     * held there would otherwise never pass the reach. */
+    if (reach < (int32_t)SERVO_LIMIT_MIN_US) {
+        reach = (int32_t)SERVO_LIMIT_MIN_US;
+    }
+    if (reach > (int32_t)SERVO_LIMIT_MAX_US) {
+        reach = (int32_t)SERVO_LIMIT_MAX_US;
+    }
     const bool past = (lf->cfg.step_us > 0) ? (next > reach) : (next < reach);
     if (past) {
         lf->limit_us = lf->last_free_us;
@@ -142,6 +169,13 @@ static void judge(servo_limit_t *lf, float avg_a)
         int32_t endpoint = (int32_t)lf->last_free_us;
         endpoint -= (lf->cfg.step_us > 0) ? (int32_t)lf->cfg.backoff_us
                                           : -(int32_t)lf->cfg.backoff_us;
+        /* A bind at the first judged position backs the endpoint past
+         * centre: it stays on the side searched. */
+        const int32_t centre = (int32_t)lf->cfg.centre_us;
+        if ((lf->cfg.step_us > 0) ? (endpoint < centre)
+                                  : (endpoint > centre)) {
+            endpoint = centre;
+        }
         lf->limit_us = clamp_travel(&lf->cfg, endpoint);
         finish(lf, SERVO_LIMIT_FOUND, SERVO_LIMIT_FAULT_NONE);
         return;
@@ -172,7 +206,8 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
      * window: a servo that hits its stop while still travelling would
      * otherwise draw stall current for the whole settle time.
      */
-    if (current_a >= lf->cfg.hard_limit_a) {
+    /* A reading that is not a number is not under the ceiling. */
+    if (current_a >= lf->cfg.hard_limit_a || current_a != current_a) {
         finish(lf, SERVO_LIMIT_FAULT, SERVO_LIMIT_FAULT_OVERCURRENT);
         return lf->cmd_us;
     }
@@ -222,11 +257,14 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
 
 float servo_limit_progress(const servo_limit_t *lf)
 {
-    if (lf == NULL || lf->cfg.max_travel_us == 0) {
+    if (lf == NULL) {
         return 0.0f;
     }
     if (lf->state != SERVO_LIMIT_RUNNING) {
         return 1.0f;
+    }
+    if (lf->cfg.max_travel_us == 0) {
+        return 0.0f;
     }
     int32_t gone = (int32_t)lf->cmd_us - (int32_t)lf->cfg.centre_us;
     if (gone < 0) {
