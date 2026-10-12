@@ -59,6 +59,17 @@ history is in git.
 
 ### Fixed
 
+- A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
+  BAD_VALUE and nothing is stored; before, any value to 65535 reached the
+  output bank. The PROG page's port slew has the same limit. A CHAN_CFG or
+  PROG slew above 3000 kept in the coprocessor's flash by an older build
+  starts as 3000, on the page, in BIND_CFG and in the output bank; the
+  role, endpoints and pins kept with it start as kept.
+- The coprocessor's CAN receive takes the next buffer after one holding a
+  frame it refuses (11-bit identifier, remote frame, length above 8), so a
+  valid frame in receive buffer 1 is served in the same pass.
+- A KST panel row coordinate that names no row gives no row (empty
+  rectangle, no label or button text, not live) instead of the first row.
 - **A PD mini set point at the input cap lies 200 mV above the sag cut
   line.** The voltage set point is capped 700 mV under the module's input
   (`PDMINI_CAP_MV`), 200 mV above the line a live output is cut at, the set
