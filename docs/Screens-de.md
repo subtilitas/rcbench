@@ -75,7 +75,6 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 | Marke | Bedeutung |
 | --- | --- |
-| BALD | den Bildschirm gibt es nicht; die Kachel nennt, was er tun wird und worauf er wartet |
 | SIMULIERT | den Bildschirm gibt es und er funktioniert, aber seine Hardware ist nicht bestückt; jeder Wert ist simuliert, und der Bildschirm sagt das |
 | keine | die Hardware ist bestückt, die Messwerte sind gemessen |
 
@@ -825,7 +824,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 | --- | --- |
 | In force | jede PWM-Surface läuft mit der angezeigten Rate |
 | The rate goes with the next position | noch nicht geschrieben |
-| ABGELEHNT | eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
+| ABGELEHNT | ein Puls einer Surface oder eines pulsenden Ports ist länger als der Frame bei dieser Rate, oder eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | This coprocessor takes no frame rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
 
 Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
@@ -2184,7 +2183,6 @@ Die Pille SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
 20 px hoch und 88 px breit. Die Reiter TESTGESTELL und FLUGMODELL zeigen
 Platzierungshilfen und tragen keine Marke.
 
-## Bildschirme, die nicht fertig sind
+## Unbekannte Bildschirm-IDs
 
-Eine Kachel mit der Marke BALD nennt, was der Bildschirm tun wird und auf
-welches Bauteil oder welche Entscheidung er wartet.
+Eine Bildschirm-ID, die keinen Bildschirm benennt, zeigt die Übersicht.

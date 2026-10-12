@@ -577,7 +577,7 @@ TEST_CASE(the_voltage_is_the_lowest_cell_count_the_family_states)
     CHECK_EQ(esc_stick_profile_mv(esc_profiles_find("hobbywing-flyfun-8item")),
              7600u);
     CHECK_EQ(esc_stick_profile_mv(NULL), 0u);
-    esc_model_t m[2] = { { "a", 0, 0, false, 0, 0 }, { "b", 6, 6, true, 0, 0 } };
+    esc_model_t m[2] = { { "a", 0, 0, false, 0, 0, 0 }, { "b", 6, 6, true, 0, 0, 0 } };
     esc_profile_t p;
     memset(&p, 0, sizeof(p));
     p.models = m;
@@ -1598,8 +1598,8 @@ TEST_CASE(a_pull_starts_the_menu_and_no_group_is_lost)
 TEST_CASE(an_earlier_step_still_waits_for_done)
 {
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_BEFORE_MENU, "Check the LED.", 0u },
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+        { ESC_MANUAL_BEFORE_MENU, "Check the LED.", 0u, NULL, false, false },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
     };
     rig_hand("kontronik-jazz", k, 2);
     esc_stick_change_t c[1] = { change(1, 3) };
@@ -1785,10 +1785,10 @@ TEST_CASE(the_supply_stays_on_until_the_esc_has_confirmed)
 
     /* A profile with two such steps asks for both, in order. */
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
-        { ESC_MANUAL_BEFORE_POWER_OFF, "Watch the LED.", 0u, NULL, false },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Watch the LED.", 0u, NULL, false, false },
         { ESC_MANUAL_BEFORE_POWER_OFF, "Listen for the tones.", 0u, NULL,
-          false },
+          false, false },
     };
     rig_hand("kontronik-jazz", k, 3);
     esc_stick_change_t j[1] = { change(1, 3) };
@@ -2116,7 +2116,7 @@ TEST_CASE(stop_abort_and_the_supply_end_a_run_waiting_for_a_step)
 TEST_CASE(a_step_at_power_up_is_asked_with_the_supply_off)
 {
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
     };
     rig_hand("kontronik-jazz", k, 1);
     CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_ONE_STAGE);
@@ -2157,8 +2157,8 @@ TEST_CASE(a_step_at_power_up_is_asked_with_the_supply_off)
 TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
 {
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
     };
     rig_hand("kontronik-jazz", k, 2);
     CHECK_EQ(r.t.entry_ms, 2000u);
@@ -2177,7 +2177,7 @@ TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
     CHECK(r.e.hand_ms - on < 3010u);
     /* Without the hold, the entry's own 2 s. */
     static const esc_manual_t pull[] = {
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
     };
     rig_hand("kontronik-jazz", pull, 1);
     CHECK(start(c, 1));
@@ -2191,8 +2191,8 @@ TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
 TEST_CASE(a_step_before_power_is_asked_before_every_later_power_up)
 {
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
-        { ESC_MANUAL_AFTER_PROGRAMMING, "Pull the jumper.", 0u },
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false, false },
+        { ESC_MANUAL_AFTER_PROGRAMMING, "Pull the jumper.", 0u, NULL, false, false },
     };
     rig_hand("sunrise-pro", k, 2);
     CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_ONE_STAGE);
@@ -2225,7 +2225,7 @@ TEST_CASE(a_step_the_run_cannot_wait_for_is_refused)
 {
     const char *why = NULL;
     static const esc_manual_t during[] = {
-        { ESC_MANUAL_DURING_MENU, "Pull the jumper.", 0u },
+        { ESC_MANUAL_DURING_MENU, "Pull the jumper.", 0u, NULL, false, false },
     };
     rig_hand("kontronik-jazz", during, 1);
     CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
@@ -2233,21 +2233,21 @@ TEST_CASE(a_step_the_run_cannot_wait_for_is_refused)
     /* A hand at a powered ESC with the stick at MAX: sunrise-pro enters
      * at full throttle. */
     static const esc_manual_t menu[] = {
-        { ESC_MANUAL_BEFORE_MENU, "Press the button.", 0u },
+        { ESC_MANUAL_BEFORE_MENU, "Press the button.", 0u, NULL, false, false },
     };
     rig_hand("sunrise-pro", menu, 1);
     CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
     CHECK_STR_EQ(why, "manual step");
     static const esc_manual_t at_power[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u },
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u, NULL, false, false },
     };
     rig_hand("sunrise-pro", at_power, 1);
     CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
     CHECK_STR_EQ(why, "manual step");
     /* Before the power and after the run nobody reaches a powered ESC. */
     static const esc_manual_t outside[] = {
-        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
-        { ESC_MANUAL_AFTER_PROGRAMMING, "Pull the jumper.", 0u },
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false, false },
+        { ESC_MANUAL_AFTER_PROGRAMMING, "Pull the jumper.", 0u, NULL, false, false },
     };
     rig_hand("sunrise-pro", outside, 2);
     CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_ONE_STAGE);
@@ -2611,7 +2611,7 @@ TEST_CASE(shared_entry_times_compare_what_the_run_waits)
     static esc_item_t two_items[2];
     static esc_value_t v0[2], v1[2];
     static const esc_manual_t hold[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 5000u },
+        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 5000u, NULL, false, false },
     };
     two = *r.p;
     memcpy(two_items, r.p->items, sizeof(two_items));
@@ -2638,7 +2638,7 @@ TEST_CASE(shared_entry_times_compare_what_the_run_waits)
     CHECK(esc_stick_check(&two, c, 2, &r.t, &why));
     /* A hold shorter than one of them: 3 s against 2.5 s, refused. */
     static const esc_manual_t short_hold[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 2500u },
+        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 2500u, NULL, false, false },
     };
     two.manual = short_hold;
     CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
@@ -2901,7 +2901,7 @@ TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
      * timed and the change runs.  Entry MIN, the value at MID, the rest at
      * MIN, the hold the only time given. */
     static const esc_manual_t k_held[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false },
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
     };
     jazz.manual = k_held;
     jazz.manual_count = 1;
@@ -2924,7 +2924,7 @@ TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
 /* A button to hold while the supply comes on: the step at an unpowered
  * ESC. */
 static const esc_manual_t k_hold_button[] = {
-    { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u },
+    { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u, NULL, false, false },
 };
 
 /* A run started with the module's output still on: nothing is powered or
@@ -3005,7 +3005,7 @@ TEST_CASE(a_supply_that_comes_on_during_the_step_ends_the_run)
     /* Before a later power-up: a module on again after the run saw it off
      * ends the run before the jumper is asked for. */
     static const esc_manual_t fit[] = {
-        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false, false },
     };
     rig_hand("sunrise-pro", fit, 1);
     esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
@@ -3100,7 +3100,7 @@ TEST_CASE(a_live_reading_after_the_entry_move_ends_the_run_at_once)
 TEST_CASE(no_step_is_asked_on_an_old_reading)
 {
     static const esc_manual_t fit[] = {
-        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false },
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false, false },
     };
     rig_hand("sunrise-pro", fit, 1);
     esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
@@ -3272,7 +3272,7 @@ TEST_CASE(readings_that_stop_end_the_run_at_1001_ms_across_the_tick_wrap)
 static void readings_stop_while_a_step_is_asked(uint32_t t0)
 {
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
     };
     rig_hand("kontronik-jazz", k, 1);
     r.now = t0;
@@ -3304,7 +3304,7 @@ TEST_CASE(readings_that_stop_before_the_power_end_the_run_at_1001_ms)
     /* How long the run takes to ask for the step, for a last reading
      * 500 ms before the wrap. */
     static const esc_manual_t k[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
     };
     rig_hand("kontronik-jazz", k, 1);
     r.now = 0u;

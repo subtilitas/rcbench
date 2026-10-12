@@ -28,8 +28,8 @@ static unsigned expand(uint32_t word, unsigned bits, uint8_t *levels)
     for (unsigned i = 0; i < bits; ++i) {
         const bool bit = ((word >> (bits - 1u - i)) & 1u) != 0u;
 
-        levels[n++] = bit ? 0u : 1u;
-        levels[n++] = bit ? 1u : 0u;
+        levels[n++] = (uint8_t)(bit ? 0u : 1u); 
+        levels[n++] = (uint8_t)(bit ? 1u : 0u);
     }
     for (unsigned i = 0; i < n; ++i) {
         if (levels[i] != 0u) {
@@ -88,7 +88,7 @@ TEST_CASE(every_register_and_value_gives_a_frame_the_servo_side_reads_back)
     for (unsigned reg = 1; reg <= KST_REG_MAX; ++reg) {
         for (unsigned value = 0; value < 256u; ++value) {
             kst_frame_t f;
-            uint8_t bits[64];
+            uint8_t bits[64] = {0};
 
             CHECK(kst_frame_write((uint8_t)reg, (uint8_t)value, &f));
             CHECK_EQ(sim_read_frame(&f, bits, 64), KST_FRAME_BITS);

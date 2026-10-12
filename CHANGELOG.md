@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- `CONTRIBUTING.md`, section "The active output": every screen, tab,
+  overlay, prompt and automatic run that drives an output names the pin,
+  port or supply it drives, from the state the drive path reads, with a
+  warning when nothing is bound. A screen added or changed meets it with a
+  host test; `STATUS.md` lists the screens that do not meet it.
 - `tools/security_parsers.py --check`, run in CI, fails when the parser table
   in `SECURITY.md` and the parse functions in the public headers differ. The
   table lists 10 modules; it listed 4.
@@ -26,6 +31,37 @@ history is in git.
 
 ### Changed
 
+- The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
+  than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
+  OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and
+  `MAX_US`. The longest endpoint is the period minus 1 µs: 1784 µs at
+  560 Hz, 1999 µs at 500 Hz, 2499 µs at 400 Hz; below 400 Hz the 2500 µs
+  ceiling governs. A standard 1000 to 2000 µs servo is refused at
+  500 Hz and 560 Hz. A stored PWM slot that breaks the rule starts unbound.
+  Link protocol 4.16. The panel writes a programming port the range the
+  SERVO screen names before it switches the port's pulse on.
+- Text corrections, no behaviour change: SECURITY.md lists all 10 input
+  parsers; the Manifest drops its state column and points to STATUS.md;
+  STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
+  directory layout; sizes, counts and figures in the KST, DShot, configurator,
+  NOTICE and First run texts match the code; the Servo, OpenYGE and
+  monostable comments no longer say that unwired code runs; DShot, Servo,
+  Bringup and Manifest German pages match the English ones.
+- The host tests are built with the flags of the libraries, `-Wall -Wextra
+  -Werror -Wshadow -Wconversion -Wno-sign-conversion`, and
+  `tools/render_ui.py` builds `render_screen.c` with the same flags. clang-tidy
+  and cppcheck run over `test/host/` in CI; the checks that are off for the
+  tests are listed with their reasons in `test/host/.clang-tidy`, and
+  cppcheck's `constParameterCallback` on the page callbacks of the link tests
+  is suppressed inline, with the reason. The `analysis` job
+  timeout is 30 min. Test code fixed under the stricter rules: canvases built
+  with a zero clip rectangle in `test_kst_panel`, ids cast to a 16-bit type for
+  an 8-bit field, an out-of-range float to integer conversion in the settings
+  record helper, and allocations used without a check (`REQUIRE_ALLOC` and
+  `REQUIRE_REALLOC` in `greatest.h` end the case with the line).
+- The cppcheck command in CONTRIBUTING.md names the include directories the
+  way CI does, and the list of failing changes names the flags and the scope
+  of both analysers.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. A count that stands for 3 s
@@ -70,6 +106,12 @@ history is in git.
   time, and `tools/sense_trace.py` ends that command with it, also when the
   output was let go and the next command came within 30 ms. The tool reads
   version 2 files with the 30 ms rule as before.
+- The journal file's check in `kst_prog.c` calls `link_crc()`; a known-answer
+  test holds the value CRC-16/CCITT-FALSE gives for a journal file.
+- The programmer's pass gate uses C11 `<stdatomic.h>` in place of the
+  `__atomic_*` builtins.
+- The configurator takes the limit of 2 pictures per part from the core and
+  builds the build order of the page and of the PDF from one function.
 - `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
   `Pins.md` states that it is the draft of the planned IO board.
 - The research workflow scripts are no longer in the repository. They are kept
@@ -99,7 +141,6 @@ history is in git.
   of the synchroniser (±40, ±13, ±4 µs) and correct the half-turn example.
   The testbench documents carry no development history and the corrected
   splash hold (1.6 s), heartbeat rate and run state.
-
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming
@@ -113,6 +154,20 @@ history is in git.
   warnings the same way. The check holds no release back.
 - CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
   exact versions.
+
+### Removed
+
+- The placeholder screen for a screen id without a screen, its 16 English and
+  16 German strings, the SOON tile mark and the per-file coverage exemption
+  that existed for it. A screen id that names no screen draws the overview.
+- Six exported functions used in one file are `static`: `esc_det_drop_group`,
+  `esc_det_floor_only`, `ina228_ct_us`, `servo_test_start_str`,
+  `balance_screen_angle` and `ui_tabs_label`.
+- `ui_hero_render`, which no screen draws; `ui_hero_def_t` stays for the
+  motor screen's rail cards.
+- `board_lcd_reset()` in the panel firmware, which has no caller. The panel
+  keeps `storage_deinit()`, the unmount for the SD card remount. Also the `conflicts` field of the configurator's resolved setup,
+  which is always empty.
 
 ### Fixed
 
@@ -130,7 +185,8 @@ history is in git.
 
 - A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
   BAD_VALUE and nothing is stored; before, any value to 65535 reached the
-  output bank. The PROG page's port slew has the same limit. A CHAN_CFG or
+  output bank. The PROG page's port slew has the same limit. Link protocol
+  4.16. A CHAN_CFG or
   PROG slew above 3000 kept in the coprocessor's flash by an older build
   starts as 3000, on the page, in BIND_CFG and in the output bank; the
   role, endpoints and pins kept with it start as kept.

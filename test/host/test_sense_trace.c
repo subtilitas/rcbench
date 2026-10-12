@@ -42,7 +42,7 @@
 
 static fake_bus_t   fb;
 static fake_part_t *i3221;
-static sense_svc_t  v;
+static sense_svc_t  svc;
 static sense_cmd_t  cmd;
 static sense_snap_t snap;
 static uint64_t     g_us;
@@ -102,7 +102,7 @@ static void rig_size(uint32_t size)
         .sched = { { fake_read, fake_write, &fb }, now_us, recover, &fb },
         .open = open_bus, .close = close_bus, .ask = ask,
     };
-    sense_svc_init(&v, &io);
+    sense_svc_init(&svc, &io);
     memset(&cmd, 0, sizeof(cmd));
     cmd.cfg_gen = 1u;
     cmd.sda = 16u;
@@ -126,8 +126,8 @@ static void rig(void)
 /* Core 1's tick: the service, then the trace. */
 static void tick(void)
 {
-    sense_svc_step(&v, &cmd, &snap);
-    sense_trace_feed(&tr, v.open ? &v.sched : NULL, g_us);
+    sense_svc_step(&svc, &cmd, &snap);
+    sense_trace_feed(&tr, svc.open ? &svc.sched : NULL, g_us);
     g_us += 1000u;
 }
 
@@ -206,7 +206,7 @@ static void parse_line(const char *l)
     int mv = 0;
     int end = 0;
     unsigned long a = 0u;
-    unsigned long cmd = 0u;
+    unsigned long cmd_t = 0u;
     unsigned b = 0u;
     unsigned c = 0u;
     if (sscanf(l, "$T v=%u n=%u trig=%7s t=%lu ms=%lu len=%u%n", &p->ver,
@@ -231,12 +231,12 @@ static void parse_line(const char *l)
         p->mark_us = c;
         p->mark_t[p->n_mark++ % 32u] = a;
     } else if (sscanf(l, "$D t=%lu ch=%u us=%u cmd=%lu%n", &a, &b, &c,
-                      &cmd, &end) == 4 && l[end] == '\0') {
+                      &cmd_t, &end) == 4 && l[end] == '\0') {
         ++p->n_d;
         p->dest_t   = a;
         p->dest_ch  = b;
         p->dest_us  = c;
-        p->dest_cmd = cmd;
+        p->dest_cmd = cmd_t;
     } else if (sscanf(l, "$E t=%lu%n", &a, &end) == 1 && l[end] == '\0') {
         ++p->n_e;
         p->mark_t[p->n_mark++ % 32u] = a;
@@ -349,7 +349,7 @@ TEST_CASE(a_ring_is_a_power_of_two)
     /* Refused, it takes nothing and gives nothing. */
     rig();
     tick();
-    sense_trace_feed(&t2, &v.sched, g_us);
+    sense_trace_feed(&t2, &svc.sched, g_us);
     sense_trace_trigger(&t2, SENSE_TRACE_TRIG_KEY, g_us, 0u, 0u);
     CHECK(!sense_trace_pulse(&t2, 0u, 5u, 1500u, g_us));
     CHECK(!sense_trace_active(&t2));
@@ -389,11 +389,11 @@ TEST_CASE(the_feed_adds_no_bus_transaction_and_reads_no_clock)
 {
     rig();
     for (unsigned k = 0; k < 200u; ++k) {
-        sense_svc_step(&v, &cmd, &snap);
+        sense_svc_step(&svc, &cmd, &snap);
         const unsigned bus = fb.transactions;
         const unsigned clock = g_clock_reads;
         const uint32_t held = sense_trace_held(&tr);
-        sense_trace_feed(&tr, &v.sched, g_us);
+        sense_trace_feed(&tr, &svc.sched, g_us);
         CHECK_EQ(fb.transactions, bus);
         CHECK_EQ(g_clock_reads, clock);
         /* The first tick brings the set-up's two records as well. */
@@ -440,7 +440,7 @@ TEST_CASE(a_set_up_and_a_closed_bus_lose_and_repeat_nothing)
     for (unsigned k = 0; k < 20u; ++k) {
         tick();
     }
-    CHECK(!v.open);
+    CHECK(!svc.open);
     CHECK_EQ(held_data(), held);
     CHECK_EQ(tr.src.cfg, 0u);
     CHECK_EQ(tr.src.shunt, 0u);
@@ -471,7 +471,7 @@ TEST_CASE(a_voltage_is_taken_from_a_window_a_reset_emptied)
     for (unsigned k = 0; k < 2000u; ++k) {
         tick();
     }
-    CHECK_EQ(v.sched.i3221_resets, 1u);
+    CHECK_EQ(svc.sched.i3221_resets, 1u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
     CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
     for (unsigned k = 0u; k < held_data(); ++k) {
@@ -490,10 +490,10 @@ TEST_CASE(a_set_up_that_leaves_the_history_at_the_same_place)
     for (unsigned k = 0; k < 51u; ++k) {
         tick();
     }
-    CHECK_EQ(v.sched.ch1_head, 1u);
+    CHECK_EQ(svc.sched.ch1_head, 1u);
     ++cmd.cfg_gen;
     tick();
-    CHECK_EQ(v.sched.ch1_head, 1u);
+    CHECK_EQ(svc.sched.ch1_head, 1u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 52u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
 }
@@ -502,7 +502,7 @@ TEST_CASE(a_set_up_that_leaves_the_history_at_the_same_place)
  * holding @p n_v voltages that sum to @p v_sum. */
 static void poke(uint16_t n_v, int64_t v_sum)
 {
-    sense_sched_t *sc = &v.sched;
+    sense_sched_t *sc = &svc.sched;
     sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
     sc->ch1[sc->ch1_head].ua = 120000;
     sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
@@ -520,14 +520,14 @@ TEST_CASE(a_voltage_is_told_from_the_one_before_by_window_and_count)
     for (unsigned k = 0; k < 10u; ++k) {
         tick();
     }
-    CHECK_EQ(v.sched.acc[SENSE_SRC_CH1].n_v, 1u);
+    CHECK_EQ(svc.sched.acc[SENSE_SRC_CH1].n_v, 1u);
     ++cmd.cfg_gen;
     i3221->volts[0] = 5.0;
     for (unsigned k = 0; k < 10u; ++k) {
         tick();
     }
-    CHECK_EQ(v.sched.win, 0u);
-    CHECK_EQ(v.sched.acc[SENSE_SRC_CH1].n_v, 1u);
+    CHECK_EQ(svc.sched.win, 0u);
+    CHECK_EQ(svc.sched.acc[SENSE_SRC_CH1].n_v, 1u);
     CHECK_EQ(i3221->reads[INA3221_BUS1], 2u);
     CHECK_EQ(held_of(SENSE_TRACE_BUS), 2u);
     int32_t mv[2] = { 0, 0 };
@@ -542,7 +542,7 @@ TEST_CASE(a_voltage_is_told_from_the_one_before_by_window_and_count)
     /* The next window with as many voltages as the one before: its one
      * voltage is a new one, and the value is its own. */
     unsigned held = held_data();
-    v.sched.win += 1u;
+    svc.sched.win += 1u;
     poke(1u, 4800000);
     CHECK_EQ(held_data(), held + 2u);
     CHECK_EQ(rec(held + 1u)->v, 4800);
@@ -569,13 +569,13 @@ TEST_CASE(a_voltage_with_no_current_sample_of_its_tick_is_left_out)
     /* CH1's current read failed in a tick whose bus voltage read went
      * through: no sample line the voltage could stand behind. */
     const unsigned held = held_data();
-    v.sched.acc[SENSE_SRC_CH1].n_v  += 1u;
-    v.sched.acc[SENSE_SRC_CH1].v_sum += 5900000;
-    sense_trace_feed(&tr, &v.sched, g_us);
+    svc.sched.acc[SENSE_SRC_CH1].n_v  += 1u;
+    svc.sched.acc[SENSE_SRC_CH1].v_sum += 5900000;
+    sense_trace_feed(&tr, &svc.sched, g_us);
     CHECK_EQ(held_data(), held);
     /* The voltage after it is its own, not the two together. */
-    poke((uint16_t)(v.sched.acc[SENSE_SRC_CH1].n_v + 1u),
-         v.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
+    poke((uint16_t)(svc.sched.acc[SENSE_SRC_CH1].n_v + 1u),
+         svc.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
     CHECK_EQ(held_data(), held + 2u);
     CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CURRENT);
     CHECK_EQ(rec(held + 1u)->v, 5800);
@@ -586,8 +586,8 @@ TEST_CASE(a_voltage_with_no_current_sample_of_its_tick_is_left_out)
     }
     CHECK_EQ(sense_trace_held(&tr), 8u);
     const uint32_t lost = tr.src.lost;
-    poke((uint16_t)(v.sched.acc[SENSE_SRC_CH1].n_v + 1u),
-         v.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
+    poke((uint16_t)(svc.sched.acc[SENSE_SRC_CH1].n_v + 1u),
+         svc.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
     CHECK_EQ(tr.src.lost, lost + 1u);
 }
 
@@ -603,11 +603,11 @@ static void fill(unsigned n)
     tr.out.scanned = (uint32_t)atomic_load(&tr.head);
     unsigned fed = 0u;
     while (fed < n) {
-        sense_svc_step(&v, &cmd, &snap);
+        sense_svc_step(&svc, &cmd, &snap);
         /* The voltage's read is left out: samples only. */
-        v.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+        svc.sched.acc[SENSE_SRC_CH1].n_v = 0u;
         tr.src.n_v = 0u;
-        sense_trace_feed(&tr, &v.sched, g_us);
+        sense_trace_feed(&tr, &svc.sched, g_us);
         g_us += 1000u;
         ++fed;
     }
@@ -710,12 +710,12 @@ TEST_CASE(a_count_of_dropped_records_saturates)
 {
     fill(8u);
     tr.src.lost = SENSE_TRACE_LOST_MAX - 1u;
-    sense_svc_step(&v, &cmd, &snap);
-    sense_trace_feed(&tr, &v.sched, g_us);
+    sense_svc_step(&svc, &cmd, &snap);
+    sense_trace_feed(&tr, &svc.sched, g_us);
     g_us += 1000u;
     CHECK_EQ(tr.src.lost, SENSE_TRACE_LOST_MAX);
-    sense_svc_step(&v, &cmd, &snap);
-    sense_trace_feed(&tr, &v.sched, g_us);
+    sense_svc_step(&svc, &cmd, &snap);
+    sense_trace_feed(&tr, &svc.sched, g_us);
     CHECK_EQ(tr.src.lost, SENSE_TRACE_LOST_MAX);
 }
 
@@ -760,7 +760,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
     CHECK_EQ(seen.ms0, t0 / 10u);
     CHECK_EQ(seen.len, SENSE_TRACE_KEY_MS);
     CHECK_EQ(seen.shunt, I3221_UOHM);
-    CHECK_EQ(seen.cfg, v.sched.i3221.config);
+    CHECK_EQ(seen.cfg, svc.sched.i3221.config);
     CHECK_EQ(seen.on, 1u);
     CHECK_EQ(seen.rst, 0u);
     CHECK_EQ(seen.mark_t[0], t0);
@@ -792,7 +792,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
              "$T v=3 n=1 trig=key t=%lu ms=%lu len=10000\r\n"
              "$H dt_us=1000 shunt_uohm=100000 cfg=0x%04X on=1 rst=0\r\n",
              (unsigned long)t0, (unsigned long)(t0 / 10u),
-             (unsigned)v.sched.i3221.config);
+             (unsigned)svc.sched.i3221.config);
     CHECK(strncmp(g_log, want, strlen(want)) == 0);
     /* Idle again: the newest records are kept for the next one. */
     run(200u);
@@ -1494,7 +1494,7 @@ TEST_CASE(a_trace_with_no_bus_has_a_header_and_ends_on_time)
     rig();
     cmd.parts.ina3221_en = false;
     run(200u);
-    CHECK(!v.open);
+    CHECK(!svc.open);
     sense_trace_key(&tr, 't', g_us);
     /* With no record to end it, the end line waits for the tick that
      * starts at the end. */
@@ -1589,7 +1589,7 @@ TEST_CASE(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next)
      * one's end before its own. */
     char want[96];
     snprintf(want, sizeof(want), "$T v=3 n=2 trig=cmd t=%lu ms=%lu len=4000",
-             (unsigned long)(t0 + 46000u), (unsigned long)(t0 + 46000u) / 10u);
+             (unsigned long)t0 + 46000ul, ((unsigned long)t0 + 46000ul) / 10ul);
     CHECK(strncmp(rest, want, strlen(want)) == 0);
     CHECK(strstr(rest, "$C t=") != NULL);
     CHECK(strstr(rest, "\r\n-6000,300\r\n") != NULL);
@@ -2104,12 +2104,12 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
     run(300u);
     ++cmd.cfg_gen;
     cmd.parts.ina3221_shunt_uohm = 50000u;
-    const uint32_t seen_t = (uint32_t)(g_us / 100u);
+    const uint32_t seen_at = (uint32_t)(g_us / 100u);
     tick();
     const sense_trace_rec_t *r = newest_of(SENSE_TRACE_SHUNT);
     CHECK(r != NULL);
     if (r != NULL) {
-        CHECK_EQ(r->t, seen_t);
+        CHECK_EQ(r->t, seen_at);
     }
     run(200u);
     const char *rest = first_trace_only();
@@ -2150,10 +2150,10 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
     run(200u);
     cmd.parts.ina3221_en = false;
     ++cmd.cfg_gen;
-    for (unsigned k = 0u; k < 50u && v.open; ++k) {
+    for (unsigned k = 0u; k < 50u && svc.open; ++k) {
         tick();
     }
-    CHECK(!v.open);
+    CHECK(!svc.open);
     r = newest_of(SENSE_TRACE_SHUNT);
     CHECK(r != NULL);
     if (r != NULL) {
@@ -2195,7 +2195,6 @@ TEST_CASE(a_set_up_record_that_found_no_room_keeps_its_time_or_the_rings)
     }
     /* A record kept while the shunt's found no room: the shunt's has
      * that record's time, and no time in the ring runs back. */
-    tr.src.shunt = 1u;
     tr.src.shunt_owed  = true;
     tr.src.shunt_t     = (uint32_t)(g_us / 100u) - 500u;
     tr.src.shunt_newer = true;
@@ -2731,7 +2730,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     i3221->amps[0] = -5.0;
     g_us = (uint64_t)4294964295u * 1000u;
     run(100u);
-    v.sched.i3221.shunt_uohm = UINT32_MAX;
+    svc.sched.i3221.shunt_uohm = UINT32_MAX;
     run(5u);
     tr.out.id = 65534u;
     const uint32_t t = (uint32_t)(g_us / 100u);
@@ -2829,7 +2828,7 @@ TEST_CASE(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped)
      * read crossed the window's end: the sample is in the history, its
      * count in the ring's newest window, and the window being filled is
      * empty. */
-    sense_sched_t *sc = &v.sched;
+    sense_sched_t *sc = &svc.sched;
     const uint16_t before = (uint16_t)(sc->acc[SENSE_SRC_CH1].n_hi
                                        + sc->acc[SENSE_SRC_CH1].n_lo);
     unsigned held = held_data();
@@ -2922,13 +2921,13 @@ TEST_CASE(a_record_that_comes_late_is_still_its_traces)
      * and is parked before it feeds the trace.  Core 0 finds the ring
      * empty for 30 ms past the end. */
     const uint64_t tick_us = g_us;
-    sense_svc_step(&v, &cmd, &snap);
+    sense_svc_step(&svc, &cmd, &snap);
     parked(31u);
     CHECK(sense_trace_active(&tr));
     CHECK(strstr(g_log, "$Z ") == NULL);
     /* The feed, with the time its tick started at: the record is the
      * trace's, and the trace still open, core 1 not being past the end. */
-    sense_trace_feed(&tr, &v.sched, tick_us);
+    sense_trace_feed(&tr, &svc.sched, tick_us);
     pass();
     CHECK(sense_trace_active(&tr));
     /* The next tick starts past the end. */
@@ -2994,11 +2993,11 @@ TEST_CASE(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come)
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 5000u, 3u, 1700u);
     run(4u);
     const uint64_t tick_us = g_us;
-    sense_svc_step(&v, &cmd, &snap);
+    sense_svc_step(&svc, &cmd, &snap);
     parked(30u);
     /* The line is not written past a sample still to come. */
     CHECK(strstr(g_log, "$C ") == NULL);
-    sense_trace_feed(&tr, &v.sched, tick_us);
+    sense_trace_feed(&tr, &svc.sched, tick_us);
     run(2u);
     const char *c = strstr(g_log, "$C ");
     CHECK(c != NULL);
@@ -3045,7 +3044,7 @@ TEST_CASE(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come)
  * and no record. */
 static void tick_empty(void)
 {
-    sense_trace_feed(&tr, &v.sched, g_us);
+    sense_trace_feed(&tr, &svc.sched, g_us);
     g_us += 1000u;
 }
 
@@ -3215,10 +3214,10 @@ TEST_CASE(records_dropped_in_a_traces_first_tick_are_said_once)
     fill(8u);
     CHECK_EQ(tr.src.lost, 0u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us + 500u, 0u, 0u);
-    sense_svc_step(&v, &cmd, &snap);
-    v.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+    sense_svc_step(&svc, &cmd, &snap);
+    svc.sched.acc[SENSE_SRC_CH1].n_v = 0u;
     tr.src.n_v = 0u;
-    sense_trace_feed(&tr, &v.sched, g_us);
+    sense_trace_feed(&tr, &svc.sched, g_us);
     g_us += 1000u;
     CHECK_EQ(tr.src.lost, 1u);
     drain();

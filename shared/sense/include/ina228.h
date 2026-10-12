@@ -146,9 +146,6 @@ enum {
 uint16_t ina228_adc_config(uint8_t mode, uint8_t vbusct, uint8_t vshct,
                            uint8_t vtct, uint8_t avg);
 
-/** Conversion time of a VBUSCT, VSHCT or VTCT code, µs (Table 7-6). */
-uint32_t ina228_ct_us(uint8_t code);
-
 /** Samples averaged for an AVG code (Table 7-6). */
 uint32_t ina228_averages(uint8_t code);
 

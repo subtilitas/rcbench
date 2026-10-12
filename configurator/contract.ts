@@ -242,7 +242,6 @@ export type Setup = {
   unknown: Unknown[];
   /** The power sources of the logic and of each test object in the setup, in catalogue order. */
   power: ResolvedPower[];
-  conflicts: never[];
   ignored: string[];
 };
 

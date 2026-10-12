@@ -109,13 +109,16 @@ set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
 foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer art_store art_fetch outputs outstore heartbeat arming safety_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_panel)
-    add_executable(test_${suite} test_${suite}.c ${FAKES})
+    add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}")
-    # A case that is defined and not in main()'s RUN list is a static
-    # function nothing calls: an error, in this job and the sanitizer one.
-    target_compile_options(test_${suite} PRIVATE -Werror=unused-function)
+    # The libraries' flags, and with them -Werror in the ordinary job.  A
+    # case that is defined and not in main()'s RUN list is a static function
+    # nothing calls: an error in this job and, through the extra flag, in the
+    # sanitizer one, which drops -Werror.
+    target_compile_options(test_${suite} PRIVATE ${STRICT}
+                           -Werror=unused-function)
     add_test(NAME ${suite} COMMAND test_${suite})
     # The CSV (comma-separated values) fixtures are the corpus the log parser
     # is held to; the suite finds them relative to its own source directory,
@@ -181,6 +184,8 @@ add_executable(sense_trace_replay sense_trace_replay.c)
 target_link_libraries(sense_trace_replay PRIVATE ${UNDER_TEST})
 add_executable(sense_trace_gen sense_trace_gen.c)
 target_link_libraries(sense_trace_gen PRIVATE ${UNDER_TEST})
+target_compile_options(sense_trace_replay PRIVATE ${STRICT})
+target_compile_options(sense_trace_gen PRIVATE ${STRICT})
 target_include_directories(sense_trace_gen PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}")
 # Registered where the tool is: a copy of the tree without tools/, as
@@ -204,7 +209,6 @@ endif()
 # Not in the coverage build: the cases follow Python's random module, and
 # the figure in STATUS.md is what the C suites reach on any Python.
 if(NOT ENABLE_COVERAGE)
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
     add_executable(esc_parse_dump esc_parse_dump.c)
     target_link_libraries(esc_parse_dump PRIVATE rcbench_esc)
     target_compile_options(esc_parse_dump PRIVATE ${STRICT})

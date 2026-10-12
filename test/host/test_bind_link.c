@@ -994,9 +994,9 @@ TEST_CASE(an_older_coprocessor_can_be_left_with_pages_no_binding_describes)
         CHECK(rd == BIND_READ_OK || rd == BIND_READ_ODD);
         if (rd == BIND_READ_ODD) {
             ++odd;
-            outbind_t tap;
-            edited_binding(&tap);
-            CHECK(!bind_link_may_write(rd, BOARD, &tap));
+            outbind_t probe;
+            edited_binding(&probe);
+            CHECK(!bind_link_may_write(rd, BOARD, &probe));
         }
     }
     CHECK(odd > 0u);
@@ -1461,8 +1461,8 @@ static void panel_poll(void)
 
 static void tap(const ui_screen_t *scr, int x, int y)
 {
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)x, (int16_t)y, 40 } };
-    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)x, (int16_t)y, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)x, (int16_t)y, 40 }, 0u };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)x, (int16_t)y, 40 }, 0u };
     scr->event(&d);
     scr->event(&u);
 }
@@ -1673,7 +1673,7 @@ static void far_gets_odd_pages(void)
 static void hold_clear(float seconds, float dt)
 {
     const int x = COL_X + COL_W / 2, y = CLR_Y + CLR_H / 2;
-    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)x, (int16_t)y, 40 } };
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)x, (int16_t)y, 40 }, 0u };
     outputs_screen()->event(&d);
     for (float t = 0.0f; t < seconds - 0.001f; t += dt) {
         outputs_screen()->tick(dt);
@@ -1683,7 +1683,7 @@ static void hold_clear(float seconds, float dt)
 static void lift_clear(void)
 {
     const int x = COL_X + COL_W / 2, y = CLR_Y + CLR_H / 2;
-    touch_event_t u = { TOUCH_EVENT_UP, { 0, (int16_t)x, (int16_t)y, 40 } };
+    touch_event_t u = { TOUCH_EVENT_UP, { 0, (int16_t)x, (int16_t)y, 40 }, 0u };
     outputs_screen()->event(&u);
 }
 
@@ -1767,7 +1767,7 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
     /* A finger that slides off the key abandons the hold. */
     hold_clear(1.75f, 0.25f);
     touch_event_t mv = { TOUCH_EVENT_MOVE,
-                         { 0, (int16_t)(COL_X + COL_W + 40), CLR_Y, 40 } };
+                         { 0, (int16_t)(COL_X + COL_W + 40), CLR_Y, 40 }, 0u };
     outputs_screen()->event(&mv);
     outputs_screen()->tick(0.25f);
     outputs_screen()->tick(0.25f);
@@ -1888,8 +1888,8 @@ static bool picker_button(uint8_t gpio, int *bx, int *by)
     const int py = (SCREEN_H - bh) / 2
                    + (int)(((uint32_t)yc * (uint32_t)bh)
                            / bd->shape->height_cmm);
-    const int step = (py < SCREEN_H / 2) ? -1 : 1;
-    for (int y = py + step * 20; y > 0 && y < SCREEN_H; y += step * 2) {
+    const int dir = (py < SCREEN_H / 2) ? -1 : 1;
+    for (int y = py + dir * 20; y > 0 && y < SCREEN_H; y += dir * 2) {
         const int before = panel.applied;
         tap(picker_screen(), px, y);
         if (panel.applied != before) {

@@ -296,6 +296,8 @@ static void run_model(model_t *m, uint64_t max_cycles)
     for (uint64_t cyc = 0; cyc < max_cycles; ++cyc) {
         const bool was_dir = dir;
         const bool was_latch = latch;
+        /* cppcheck-suppress variableScope
+         * set inside the decode switch and read after it */
         bool stalled = false;
 
         /* The channels: one word a cycle each way. */

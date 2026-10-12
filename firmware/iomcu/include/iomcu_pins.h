@@ -34,11 +34,10 @@
 #define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
 
 /*
- * The safety heartbeat from the panel's J8, through the retriggerable
- * monostable.  An input here: the coprocessor gates its own outputs from it
- * and checks the period in firmware as well, because noise can fake a
- * heartbeat and the monostable is the backstop rather than the whole
- * mechanism.
+ * The safety heartbeat from the panel's J8, by a direct wire: no board
+ * carries the retriggerable monostable (docs/Safety.md).  An input here: the
+ * coprocessor gates its own outputs from it and checks the period in
+ * firmware, because noise can fake a heartbeat.
  */
 #define IOMCU_HEARTBEAT_PIN  3
 

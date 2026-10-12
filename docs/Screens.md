@@ -68,7 +68,6 @@ bottom of the screen, ARM included, while it shows.
 
 | Mark | Meaning |
 | --- | --- |
-| SOON | the screen does not exist; the tile lists what it will do and what it waits on |
 | MODELLED | the screen exists and works, but its hardware is not fitted; every value is simulated and the screen says so |
 | none | the hardware is fitted and the readings are measured |
 
@@ -747,7 +746,7 @@ OUTPUT page says what became of it:
 | --- | --- |
 | In force | every PWM surface runs at the rate shown |
 | The rate goes with the next position | not written yet |
-| REFUSED | a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| REFUSED | a pulse of a surface or a pulsing port is longer than the frame at that rate, or a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
 
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
@@ -2009,7 +2008,6 @@ vibration, 0.35 g mass to add) until a sensor is fitted. The MODELLED pill and
 the words "Not measured." stand under the readings, 20 px high and 88 px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 
-## Screens that are not ready
+## Unknown screen ids
 
-A tile marked SOON names what the screen will do and the part or decision it
-waits on.
+A screen id that names no screen draws the overview.

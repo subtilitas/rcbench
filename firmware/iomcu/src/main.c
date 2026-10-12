@@ -337,6 +337,11 @@ static void ports_apply(void)
     }
     outputs_hw_ports(pin, hz, (uint8_t)PROG_PORT_CHANNEL0);
     prog_port_bound(&s_prog, (uint8_t)(outputs_hw_ports_bound() | wire));
+    /* Each page told what the other holds, so neither takes a write that
+     * leaves a pulsing port's endpoint longer than its frame: the PROG
+     * page the rate, the SERVO page the ports that pulse. */
+    prog_port_rate(&s_prog, hz);
+    servo_page_ports(&s_servo, prog_port_pwm_channels(&s_prog));
     const uint8_t target = prog_port_target(&s_prog);
     if (target != 0u) {
         (void)servo_page_target(&s_servo, &s_outputs,
@@ -468,11 +473,12 @@ static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 /*
  * A whole CHAN_CFG page, judged and put in force: 0, or the reason with the
  * page in force unchanged.  A CHAN_CFG write is the page with one window
- * replaced; a BIND commit is the page prepared (out_stage_commit()), which
- * saves once for both pages and passes @p save false.
+ * replaced and @p slots NULL; a BIND commit is the page prepared
+ * (out_stage_commit()), with the OUTPUTS page prepared beside it as
+ * @p slots, which saves once for both pages and passes @p save false.
  */
 static uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
-                             bool save)
+                             const uint16_t *slots, bool save)
 {
     /* Not a role, nor anything of a throttle channel, while the bench is
      * armed or has been asked to arm in this pass: the bank takes the ARM
@@ -486,6 +492,12 @@ static uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
      * unbound. */
     if (outputs_chan_cfg_rate_check(&s_outputs, next,
                                     servo_page_hz(&s_servo)) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* Nor an endpoint longer than the frame of the PWM output that renders
+     * it, judged with the slots a commit puts in force beside it. */
+    if (outputs_chan_cfg_pulse_check(&s_outputs, next, slots,
+                                     servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(s->chan_cfg, next, sizeof(s->chan_cfg));
@@ -509,7 +521,7 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
     if (nack != 0u) {
         return nack;
     }
-    return chan_cfg_take(s, next, true);
+    return chan_cfg_take(s, next, NULL, true);
 }
 
 static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -1112,6 +1124,12 @@ static uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
                                  servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    /* Nor a PWM slot at a rate whose frame is shorter than its channel's
+     * endpoint. */
+    if (outputs_slots_pulse_check(&s_outputs, next,
+                                  servo_page_hz(&s_servo)) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
     const uint8_t bound_before = bound_slots();
@@ -1217,7 +1235,7 @@ static uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
 static uint8_t stage_take_cfg(void *ctx, const uint16_t *next)
 {
     s_stage_bound = bound_slots();
-    return chan_cfg_take((iomcu_state_t *)ctx, next, false);
+    return chan_cfg_take((iomcu_state_t *)ctx, next, s_stage.slots, false);
 }
 
 static uint8_t stage_take_slots(void *ctx, const uint16_t *next)
@@ -1479,12 +1497,11 @@ static const link_page_t k_pages[] = {
 /*
  * The panel's safety line, watched in firmware as well as in hardware.
  *
- * The retriggerable monostable on the daughterboard is the backstop: it
- * holds the output enable up only while edges keep arriving, with no
- * software involved.  It cannot tell a heartbeat from noise: a ringing line,
- * a short to a clock or a floating input next to a switching supply all
- * retrigger it.  heartbeat_mon_t knows the expected period and rejects what
- * cannot be the panel's 5 ms control task edging every 20 ms.
+ * No board carries the retriggerable monostable that would gate the output
+ * enable in hardware (docs/Safety.md), so this monitor is the whole check.
+ * A ringing line, a short to a clock or a floating input next to a switching
+ * supply look like edges.  heartbeat_mon_t knows the expected period and
+ * rejects what cannot be the panel's control task edging every 20 ms.
  *
  * The pin is sampled in the main loop rather than by an interrupt.  A pass
  * that turns over faster than HEARTBEAT_MIN_GAP_MS (4 ms) cannot miss an
@@ -1986,6 +2003,10 @@ int main(void)
     tone_core1_init();
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
+    /* A stored PWM slot whose channel's endpoint is longer than the frame
+     * of the slot's own rate starts unbound: an OUTPUTS write of it is
+     * refused, and the SERVO page that may have let it fit starts at 0. */
+    (void)outputs_slots_free_long(&s_outputs, s_state.slots);
     outputs_slots_apply(&s_outputs, s_state.slots);
     /* What BIND_CFG and BIND_OUT hold prepared starts as the pages in
      * force. */

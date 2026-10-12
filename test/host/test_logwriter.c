@@ -348,7 +348,7 @@ TEST_CASE(the_sources_survive_the_round_trip)
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    int cols[3] = { 9, 10, 11 };
+    const int cols[3] = { 9, 10, 11 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
     CHECK_EQ(data.count, 2);
@@ -409,7 +409,7 @@ TEST_CASE(each_window_goes_into_one_row)
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    int cols[3] = { 13, 14, 15 };
+    const int cols[3] = { 13, 14, 15 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
     CHECK_STR_EQ(data.field[0].name, "ch1 current");
@@ -673,7 +673,7 @@ TEST_CASE(a_run_stamped_with_wall_time_reads_back_with_its_gap)
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    int cols[1] = { 1 };
+    const int cols[1] = { 1 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 1, &data), LOG_OK);
     CHECK_EQ(data.count, 300);
@@ -764,12 +764,12 @@ static unsigned log_pass(log_writer_t *w, log_cadence_t *cad,
     float t_s = 0.0f;
     const bool logged = log_cadence_row(cad, chain_now(), new_sample, run,
                                         &t_s);
-    const unsigned windows = sense_link_windows(&ch.sl);
+    const unsigned windows = sense_link_windows(&chain.sl);
     const unsigned rows    = log_cadence_rows(windows);
     unsigned written = 0u;
     for (unsigned k = 0u; k < rows; ++k) {
         if (k < windows) {
-            (void)sense_link_take_window(&ch.sl, bench);
+            (void)sense_link_take_window(&chain.sl, bench);
         }
         if (logged) {
             bench_state_t row;
@@ -808,7 +808,7 @@ static void read_log(log_read_t *r)
     const char *p = strchr(g_mem.buf, '\n') + 1;       /* past the header */
     while (*p != '\0') {
         const char *end = strchr(p, '\n');
-        char cell[22][24];
+        char cell[22][24] = {{0}};
         unsigned n = 0u;
         const char *c = p;
         while (c <= end && n < 22u) {
@@ -899,12 +899,12 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     for (unsigned i = 0u; i < 20u; ++i) {
         chain_cycle(53u);
         CHECK_EQ(log_pass(&w, &cad, &bench, true, false), 0u);
-        CHECK_EQ(sense_link_windows(&ch.sl), 0u);
+        CHECK_EQ(sense_link_windows(&chain.sl), 0u);
     }
     CHECK_EQ(g_mem.len, 0u);
     const uint16_t before = bench.servo_window;   /* the last one taken */
     log_cadence_run_start(&cad, chain_now());
-    const uint64_t began = ch.us;
+    const uint64_t began = chain.us;
     unsigned most = 0u;
     for (unsigned i = 0u; i < 380u; ++i) {
         chain_cycle(53u);
@@ -919,7 +919,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
 
     log_read_t r;
     read_log(&r);
-    const unsigned closed = (unsigned)((ch.us - began) / 50000u);
+    const unsigned closed = (unsigned)((chain.us - began) / 50000u);
     CHECK(r.with_window + 1u >= closed && r.with_window <= closed + 1u);
     CHECK_EQ(r.rows, r.with_window);            /* no row without one */
     CHECK_EQ(r.with_sample, 380u);              /* each sample once   */
@@ -934,7 +934,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     CHECK_EQ((uint16_t)((uint16_t)r.first - before), 1u);
     CHECK_EQ(log_cadence_sent(&cad), r.rows);
     CHECK_EQ(log_cadence_lost(&cad), 0);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
 
     /* And the reader takes the file: its time column, no ragged row. */
     log_source_t src;
@@ -995,7 +995,7 @@ TEST_CASE(a_poll_that_brings_three_windows_writes_three_rows)
      * the window cells empty, and the windows follow in the next. */
     fresh(-1);
     w = writer();
-    ch.lose_win = 1u;
+    chain.lose_win = 1u;
     chain_cycle(53u);
     CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 1u);
     chain_cycle(53u);
@@ -1017,24 +1017,24 @@ static void far_window(uint16_t number, uint16_t n_i, int32_t ma,
                        uint16_t n_v, int32_t mv)
 {
     for (unsigned k = SENSE_WIN_RING - 1u; k > 0u; --k) {
-        ch.snap.ring[k] = ch.snap.ring[k - 1u];
+        chain.snap.ring[k] = chain.snap.ring[k - 1u];
     }
-    sense_ring_win_t *e = &ch.snap.ring[0];
+    sense_ring_win_t *e = &chain.snap.ring[0];
     memset(e, 0, sizeof(*e));
     e->closed = true;
     e->n_i = n_i;
     e->n_v = n_v;
     e->i_mean_ua = e->i_min_ua = e->i_max_ua = ma * 1000;
     e->v_mean_uv = e->v_min_uv = mv * 1000;
-    sense_window_t *win = &ch.snap.win[SENSE_SRC_CH1];
+    sense_window_t *win = &chain.snap.win[SENSE_SRC_CH1];
     memset(win, 0, sizeof(*win));
     win->number = number;
     win->n_i = n_i;
     win->n_v = n_v;
     win->i_mean_ua = win->i_min_ua = win->i_max_ua = ma * 1000;
     win->v_mean_uv = win->v_min_uv = mv * 1000;
-    ch.snap.have_win = true;
-    sense_page_publish(&ch.pg, &ch.snap, 0u);
+    chain.snap.have_win = true;
+    sense_page_publish(&chain.pg, &chain.snap, 0u);
 }
 
 /*
@@ -1060,11 +1060,11 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
     }
     /* From here the coprocessor's snapshots are written by hand: its
      * schedule stands, and the exchanges take no time. */
-    ch.exch_ms = 0u;
+    chain.exch_ms = 0u;
     chain_far_late(50u);
     (void)chain_poll();                 /* the last one it closed itself */
     (void)log_pass(&w, &cad, &bench, true, false);
-    const uint16_t n0 = (uint16_t)(ch.snap.win[SENSE_SRC_CH1].number + 1u);
+    const uint16_t n0 = (uint16_t)(chain.snap.win[SENSE_SRC_CH1].number + 1u);
     static const struct { uint16_t n_i; int32_t ma; uint16_t n_v; int32_t mv; }
     k_win[] = {
         { 12u, 412, 0u, 0 },        /* current and no voltage       */
@@ -1136,7 +1136,7 @@ TEST_CASE(a_part_that_comes_back_mid_window_writes_no_zero_voltage)
         }
         chain_far(phase);
         log_cadence_run_start(&cad, chain_now());
-        fake_reset3221(ch.i3221);
+        fake_reset3221(chain.i3221);
         for (unsigned i = 0u; i < 40u; ++i) {
             chain_cycle(53u);
             (void)log_pass(&w, &cad, &bench, true, true);

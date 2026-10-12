@@ -58,6 +58,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -157,7 +158,7 @@ TEST_CASE(back_climbs_one_level_at_a_time)
     fresh();
     descend_to_blheli();
     scr->render(&cv, 0);
-    const int at_device = lit();
+    const int on_device = lit();
 
     tap(BACK_X, BACK_Y);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -169,10 +170,10 @@ TEST_CASE(back_climbs_one_level_at_a_time)
     scr->render(&cv, 0);
     const int at_class = lit();
 
-    CHECK(at_device > 0 && at_list > 0 && at_class > 0);
-    if (at_class == at_list || at_list == at_device) {
+    CHECK(on_device > 0 && at_list > 0 && at_class > 0);
+    if (at_class == at_list || at_list == on_device) {
         T_FAIL("levels drew the same: %d, %d, %d",
-               at_class, at_list, at_device);
+               at_class, at_list, on_device);
     }
     /*
      * And from the top it does nothing rather than leaving the screen.
@@ -255,6 +256,7 @@ TEST_CASE(paging_reaches_the_rows_that_do_not_fit)
     descend_to_blheli();
     scr->render(&cv, 0);
     gfx_color_t *first = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(first);
     memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     tap(PAGE_DN_X, PAGE_CY);
@@ -271,6 +273,7 @@ TEST_CASE(paging_reaches_the_rows_that_do_not_fit)
     for (int i = 0; i < 10; ++i) { tap(PAGE_DN_X, PAGE_CY); }
     scr->render(&cv, 0);
     gfx_color_t *bottom = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(bottom);
     memcpy(bottom, fb, (size_t)W * H * sizeof(gfx_color_t));
     tap(PAGE_DN_X, PAGE_CY);
     scr->render(&cv, 0);
@@ -2330,6 +2333,7 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
             /* The same end with the one being confirmed past the fourth
              * row: the line names it unsure (the run's state moved to
              * that change, as a loop that sounds it last leaves it). */
+            /* NOLINTNEXTLINE(performance-no-int-to-ptr): drops const to move the state under test */
             esc_stick_t *moved = (esc_stick_t *)(uintptr_t)run;
             moved->active = 5u;
             CHECK(esc_stick_unsure(run, 5u));
@@ -2637,7 +2641,7 @@ TEST_CASE(a_maker_at_its_most_models_lists_every_one)
     for (unsigned i = 0; i < ESC_MAKER_MODELS_MAX; ++i) {
         (void)snprintf(names[i], sizeof(names[i]), "M%03u", i);
         many[i] = (esc_model_t){ names[i], 2u, 3u, false, 12600u,
-                                 (uint16_t)(i + 1u) };
+                                 (uint16_t)(i + 1u), 0u };
     }
     fresh();
     esc_profiles_clear_overrides();
@@ -2719,19 +2723,19 @@ TEST_CASE(the_hold_needs_every_pre_power_step_read)
         { ESC_MANUAL_BEFORE_POWER,
           "Fit the programming jumper on the two gold contacts beside the "
           "motor leads, with the receiver lead plugged in first.", 0u,
-          NULL, false },
+          NULL, false, false },
         { ESC_MANUAL_BEFORE_POWER,
           "Set the transmitter's throttle trim to its middle and its "
           "throttle curve to linear before the ESC is powered at all.", 0u,
-          NULL, false },
+          NULL, false, false },
         { ESC_MANUAL_BEFORE_POWER,
           "Connect the motor and fix it to the bench so that it cannot "
           "turn its leads off the contacts if it starts by itself.", 0u,
-          NULL, false },
+          NULL, false, false },
         { ESC_MANUAL_BEFORE_POWER,
           "Take any propeller or pinion off the motor shaft and keep "
           "hands and tools clear of the motor for the whole run.", 0u,
-          NULL, false },
+          NULL, false, false },
     };
     fresh();
     esc_profiles_clear_overrides();
@@ -2842,19 +2846,19 @@ TEST_CASE(every_step_after_programming_is_shown)
         { ESC_MANUAL_AFTER_PROGRAMMING,
           "Remove the programming jumper from the two gold contacts before "
           "the model is flown, or the ESC enters its menu again.", 0u,
-          NULL, false },
+          NULL, false, false },
         { ESC_MANUAL_AFTER_PROGRAMMING,
           "Refit the heat shrink over the programming contacts and the "
           "button so that no conductive dirt reaches them in use.", 0u,
-          NULL, false },
+          NULL, false, false },
         { ESC_MANUAL_AFTER_PROGRAMMING,
           "Disconnect the bench supply, then reconnect the flight battery "
           "and check the stored mode on the ESC's start-up tones.", 0u,
-          NULL, false },
+          NULL, false, false },
         { ESC_MANUAL_AFTER_PROGRAMMING,
           "Run the motor without a propeller at low throttle once and check "
           "the direction and the brake before the first flight.", 0u,
-          NULL, false },
+          NULL, false, false },
     };
     for (size_t i = 0; i < 4; ++i) {
         CHECK(strlen(k[i].action) > 100u
@@ -3025,7 +3029,7 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     esc_profiles_clear_overrides();
     static const esc_manual_t after[] = {
         { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the jumper.", 0u, NULL,
-          false },
+          false, false },
     };
     esc_profile_t card = *esc_profiles_find("sunrise-pro");
     card.id = "card-live";
@@ -3145,6 +3149,7 @@ static int tone_drawn(rig_t *r, const tone_readout_t *t, int buf)
     scr->render(&cv, buf);
     if (tone_base == NULL) {
         tone_base = malloc((size_t)W * H * sizeof(gfx_color_t));
+        REQUIRE_ALLOC(tone_base);
         memcpy(tone_base, fb, (size_t)W * H * sizeof(gfx_color_t));
     }
     return tone_rows_lit();
@@ -3178,10 +3183,9 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
         TONE_STATE_NO_PAGE, TONE_STATE_WAITING, TONE_STATE_RUNNING,
         TONE_STATE_REFUSED, TONE_STATE_STOPPED,
     };
-    int last = 0;
     for (size_t i = 0; i < sizeof(k_states) / sizeof(k_states[0]); ++i) {
         t.state = k_states[i];
-        last = tone_drawn(&r, &t, buf++ & 1);
+        const int last = tone_drawn(&r, &t, buf++ & 1);
         CHECK(last > off + 200);
     }
     /* The head is in the warning colour for a state the tap does not run
