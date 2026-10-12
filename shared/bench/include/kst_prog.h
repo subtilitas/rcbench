@@ -63,6 +63,7 @@
  */
 #pragma once
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -387,7 +388,7 @@ typedef struct {
  * atomic exchange of a 32-bit word.
  */
 typedef struct {
-    uint32_t pass;             /**< the id of the START offered; 0 none */
+    _Atomic uint32_t pass;     /**< the id of the START offered; 0 none */
 } kst_prog_gate_t;
 
 void kst_prog_gate_init(kst_prog_gate_t *g);

@@ -65,14 +65,12 @@ TRACKED = [
     "shared/ui/ui_band.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_plot.c",
-    "shared/ui/ui_hero.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_text.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
-    "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
@@ -204,12 +202,6 @@ MIN_TOTAL_COVERAGE = 94.0
 # lower than the total because its purpose is to catch a hole, not to demand
 # every file match the best.  Raise it as the suite improves.
 MIN_FILE_COVERAGE = 85.0
-
-# Files that are meant to be thin.  A stub exists to be replaced, so it is
-# exempt from the per-file floor by name.
-FILE_FLOOR_EXEMPT = {
-    "shared/ui/stub_screen.c",
-}
 
 LINES_RE = re.compile(r"Lines executed:([0-9.]+)% of (\d+)")
 
@@ -378,28 +370,24 @@ def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
     lines = sum(int(r["lines"]) for r in results.values())
     covered = sum(int(r["covered"]) for r in results.values())
     pct = (100.0 * covered / lines) if lines else 0.0
-    exempt = ", ".join("`%s`" % pathlib.Path(rel).name
-                       for rel in sorted(FILE_FLOOR_EXEMPT))
     if lang == "de":
         text = ("Zeilenabdeckung von `shared/` und `protocols/` durch die "
                 "Host-Suite: "
                 "**%s %%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
-                "%d %% gesamt oder unter %d %% in einer Datei fehl; "
-                "ausgenommen von der Grenze je Datei: %s. Die Tabelle je "
-                "Datei steht in [STATUS.md](STATUS.md#tests-and-ci)."
+                "%d %% gesamt oder unter %d %% in einer Datei fehl. "
+                "Die Tabelle je Datei steht in "
+                "[STATUS.md](STATUS.md#tests-and-ci)."
                 % (("%.1f" % pct).replace(".", ","),
                    thousands(covered, " "), thousands(lines, " "),
-                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE,
-                   exempt))
+                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE))
     else:
         text = ("Host-suite line coverage of `shared/` and `protocols/`: "
                 "**%.1f%%**, %s of %s lines in %d files. "
                 "CI fails below %d%% in total or below "
-                "%d%% in any file; exempt from the per-file floor: %s. "
+                "%d%% in any file. "
                 "[STATUS.md](STATUS.md#tests-and-ci) has the table per file."
                 % (pct, thousands(covered, ","), thousands(lines, ","),
-                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE,
-                   exempt))
+                   len(results), MIN_TOTAL_COVERAGE, MIN_FILE_COVERAGE))
     return "\n" + text + "\n"
 
 
@@ -470,8 +458,6 @@ def main() -> int:
         failed = True
 
     for rel in TRACKED:
-        if rel in FILE_FLOOR_EXEMPT:
-            continue
         pct = results[rel]["percent"]
         if pct < MIN_FILE_COVERAGE:
             print(f"{rel} at {pct:.1f}% is below the per-file floor "

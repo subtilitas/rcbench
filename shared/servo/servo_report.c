@@ -313,7 +313,7 @@ servo_str_t servo_test_verdict_str(servo_test_verdict_t v)
     }
 }
 
-servo_str_t servo_test_start_str(servo_test_start_t why)
+static servo_str_t servo_test_start_str(servo_test_start_t why)
 {
     if ((unsigned)why > (unsigned)SERVO_TEST_START_BAD_ENDS) {
         return SERVO_STR_START_OK;

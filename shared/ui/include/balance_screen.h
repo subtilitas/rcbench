@@ -26,8 +26,13 @@ const ui_screen_t *balance_screen(void);
 int  balance_screen_blades(void);
 /** Propeller or ducted fan. */
 int  balance_screen_rotor(void);
-/** Where the correction goes, in degrees from the index mark. */
-float balance_screen_angle(void);
+
+/** The MODELLED mark the BALANCE pane shows beside its readings, or NULL on
+ *  the other panes: the angle and both masses are fixed values. */
+const char *balance_screen_model_mark(void);
+/** The words beside the mark ("Not measured."), or NULL where it is not
+ *  shown. */
+const char *balance_screen_model_note(void);
 
 /**
  * The two blades a correction at @p angle (degrees from the index mark) falls

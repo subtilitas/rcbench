@@ -471,7 +471,10 @@ Terminal verbunden ist: seine Schleife wartet nicht auf den Host. Ein
 voller Ring verwirft den neuesten Eintrag: der Trace hat eine Zeile
 `$L n=`, wo Einträge fehlen, und ihre Summe in seiner Endzeile. Die
 Endzeile zählt jeden verworfenen Eintrag von vor dem Ende des Trace, ob
-danach noch ein Eintrag in den Ring kam oder nicht. Um wie
+danach noch ein Eintrag in den Ring kam oder nicht. Ein Sample, das
+verworfen wird, während ein Konfigurationseintrag auf Platz wartet, zählt
+nach diesem Eintrag; ein Trace, der an der Änderung der Konfiguration
+endet, zählt es nicht. Um wie
 viel ein Durchlauf von Core 0 durch das Schreiben der Zeilen länger wird,
 ist nicht gemessen.
 
@@ -489,8 +492,11 @@ $C t=220200 ch=0 us=1800
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
 
-Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten:
-eine Triggerzeile folgt auf die Samples, die vor ihr genommen wurden.
+Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten,
+außer einer `$D`-Zeile: eine Triggerzeile folgt auf die Samples, die vor ihr
+genommen wurden. Eine `$D`-Zeile wird geschrieben, sobald der Puls des
+Ausgangs 50 ms stillgestanden hat; sie folgt Samples bis etwa 50 ms nach
+ihrem `t=`, und ihr `t=` ist ihre Zeit.
 Core 0 schreibt eine Triggerzeile und die Endzeile, sobald Core 1 einen
 Tick beendet hat, der zur Zeit der Zeile oder danach begann. `e=` in der
 Endzeile ist der Grund für das Ende: `t` die Zeit, `s` ein geändertes
