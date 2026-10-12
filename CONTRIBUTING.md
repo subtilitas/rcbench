@@ -103,8 +103,7 @@ pin driver: it needs the ESP-IDF and pico-sdk headers.
 
 A change fails if:
 
-- coverage drops below 94% overall, or any single file below 85%
-  (`stub_screen.c` is exempt by name);
+- coverage drops below 94% overall, or any single file below 85%;
 - a C file under `shared/`, or under `protocols/` outside a module's
   `rp2350/` folder, is in neither `TRACKED` nor `DATA_ONLY` in
   `tools/coverage.py`, is not compiled into the host suite, or is linked by

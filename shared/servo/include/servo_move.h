@@ -129,7 +129,9 @@ typedef struct {
     uint32_t moved_t;       /**< the first sample of the movement        */
     uint32_t end_t;         /**< the arrival, or when the window ran out */
     float    sum;           /**< valued samples from the command to the
-                                 arrival, the arriving ones excluded     */
+                                 arrival.  The sample that closes the move
+                                 is not in it; for SETTLED the settle_n - 1
+                                 samples of the run before that one are   */
     uint32_t n;
     float    peak;          /**< the highest of them, 0 for none         */
     bool     clipped;       /**< a clipped sample among them: the mean

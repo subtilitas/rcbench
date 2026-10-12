@@ -10,7 +10,6 @@
 
 #include "greatest.h"
 
-#include "ui_hero.h"
 #include "ui_plot.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
@@ -521,7 +520,7 @@ TEST_CASE(the_right_edge_label_follows_the_running_state)
     CHECK_EQ(lit, 0);
 }
 
-TEST_CASE(the_plot_and_hero_render_without_running_off_the_canvas)
+TEST_CASE(the_plot_renders_without_running_off_the_canvas)
 {
     canvas();
     ui_plot_t p;
@@ -536,9 +535,6 @@ TEST_CASE(the_plot_and_hero_render_without_running_off_the_canvas)
     ui_plot_render(&p, &cv, body);
     ui_plot_render_legend(&p, &cv, (gfx_rect_t){ 8, 10, 700, 16 });
 
-    const ui_hero_def_t def = { "VOLT", "V", 0x1234, 2, NULL };
-    ui_hero_render(&cv, (gfx_rect_t){ 40, 250, 180, 80 }, &def, 20.71f, 24.32f);
-    ui_hero_render(&cv, (gfx_rect_t){ 240, 250, 180, 80 }, &def, NAN, NAN);
 
     /* Something was drawn, and nothing outside the boxes was. */
     int lit = 0;
@@ -1102,7 +1098,7 @@ int main(void)
     RUN(the_scale_never_falls_below_the_series_floor);
     RUN(a_legend_tap_cycles_focus_then_hidden);
     RUN(map_y_is_the_right_way_up_and_clamps);
-    RUN(the_plot_and_hero_render_without_running_off_the_canvas);
+    RUN(the_plot_renders_without_running_off_the_canvas);
     RUN(a_press_on_the_track_commands_nothing);
     RUN(a_drag_moves_by_how_far_it_travelled);
     RUN(tap_to_set_is_off_unless_a_slider_asks_for_it);

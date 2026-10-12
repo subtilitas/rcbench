@@ -33,7 +33,10 @@
  *
  * Dropped records.  The first record kept after a drop carries the count
  * of the records dropped before it, and a $L line stands before its
- * line.  A drop with no record kept after it is in drops alone: core 1
+ * line.  A sample dropped while a set-up record waits for room is counted
+ * after that record: core 1 adds it to the count once the record is in,
+ * so a trace that ends at the set-up change does not count it.  A drop
+ * with no record kept after it is in drops alone: core 1
  * adds to drops at the drop and stores fed at the end of the tick, core 0
  * reads fed, then drops, then the ring's head.  A ring found empty after
  * the two holds every record kept before them, so drops less the counts
@@ -111,13 +114,18 @@
  *       value the driver holds and reads back every 40 ms, whether the
  *       part is online, and its reset count modulo 256: as they stand at
  *       the trace's first record.  All 0 with the bus closed.
- *   The lines after these two are in the order of their times: a trigger
- *   line stands behind the samples taken before its time, the first
- *   trigger's behind the samples from before the trigger.
+ *   The lines after these two are in the order of their times, a $D line
+ *   excepted: a trigger line stands behind the samples taken before its
+ *   time, the first trigger's behind the samples from before the
+ *   trigger.
  *   $C t=T ch=C us=P     a cmd trigger: output channel C renders P µs in
  *                        the frame that starts at T
  *   $D t=T ch=C us=P     channel C's slewed command ended at P µs; T is
  *                        its last change.  Counted with the trigger lines.
+ *                        Written once the pulse has stood still for
+ *                        SENSE_TRACE_HOLD_MS (50 ms), so it follows the
+ *                        sample lines up to about 50 ms past T; T, not
+ *                        the line's place, is its time.
  *   $E t=T               an edge trigger
  *   $K t=T               a key trigger
  *   D,I                  a CH1 sample: D is its time less the previous
@@ -257,6 +265,9 @@ typedef struct {
     uint32_t lost;        /**< records dropped since the last one kept     */
     uint32_t dropped;     /**< every count of lost, modulo 2^32: what
                                sense_trace_t.drops holds                   */
+    uint32_t lost_after;  /**< samples dropped while a set-up record is
+                               owed: added to lost and dropped once the
+                               record is written, so they count after it  */
     uint32_t cfg, shunt;  /**< the set-up as last seen                     */
     bool     cfg_owed;    /**< its record is still to be written           */
     bool     shunt_owed;

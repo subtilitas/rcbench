@@ -609,6 +609,26 @@ TEST_CASE(an_angle_from_before_an_outage_is_not_valid_when_the_part_returns)
     CHECK(s.enc.have_angle);                       /* a new read restores it */
 }
 
+/* A device answering 0xFF at 0x36: ML and MH together is no AS5600's
+ * STATUS, and the RAW ANGLE with it is no position.  Those samples fail
+ * like any other and the part goes offline after SENSE_FAILS of them. */
+TEST_CASE(an_all_ones_status_is_not_a_sample)
+{
+    rig(false);
+    tick();                                        /* the probe */
+    ticks(20u);
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_ONLINE);
+    CHECK(s.enc.have_angle);
+    const uint16_t samples = s.enc.samples;
+    enc->status = 0xFFu;
+    enc->raw    = 4095u;
+    ticks(3u * SENSE_ENC_MAG_EVERY);
+    CHECK_EQ(as5600_state(&s.enc.dev), SENSE_PART_OFFLINE);
+    CHECK(!s.enc.have_angle);
+    CHECK(s.enc.samples <= (uint16_t)(samples + SENSE_ENC_MAG_EVERY));
+    CHECK(s.enc.raw != 4095u);
+}
+
 TEST_CASE(the_still_time_saturates_at_65535)
 {
     rig(false);
@@ -763,6 +783,7 @@ int main(void)
     RUN(a_status_that_answers_does_not_hide_failing_angle_reads);
     RUN(an_angle_from_before_an_outage_is_not_valid_when_the_part_returns);
     RUN(the_still_time_saturates_at_65535);
+    RUN(an_all_ones_status_is_not_a_sample);
     RUN(the_encoder_alone_opens_the_bus_and_reaches_the_snapshot);
     RUN(a_set_up_without_the_encoder_leaves_its_snapshot_empty);
     RUN(a_new_set_up_forgets_the_old_readings);
