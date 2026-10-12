@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- The bench configurator keeps the selection and the chosen language in the
+  browser (`localStorage`, key `rcbench.configurator`). A visit by the
+  address without a hash shows the stored setup in the stored language, in
+  place of the base setup in the browser language. A link with a setup wins
+  over the stored one and stores nothing until the visitor changes it. The
+  stored setup holds ids alone, so it is the same in English and German. A
+  blocked or full store and an entry of another shape give the base setup
+  without an error.
+
 ## 0.17.0 - 2026-10-12
 
 The link protocol is 4.15. A 0.16 board still links and arms with a 0.17
