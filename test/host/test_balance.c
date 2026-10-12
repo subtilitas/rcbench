@@ -11,6 +11,7 @@
 
 #include "balance_screen.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 
 #define W 800
@@ -97,6 +98,48 @@ TEST_CASE(no_guidance_runs_off_its_card)
                    pane, touching);
         }
     }
+}
+
+/*
+ * The angle (265 deg) and both masses (0.42 g, 0.35 g) are fixed values, so
+ * the BALANCE pane carries the MODELLED pill under the readings: 88 px by
+ * 20 px at BODY_Y + 270, its fill clear of the dot and the word, and the
+ * words "Not measured." beside it.  The other panes carry none.  In German
+ * the pill and the words are the German ones, and both fit inside the card.
+ */
+#define MARK_X  CTRL_X
+#define MARK_Y  (BODY_Y + 270)
+
+TEST_CASE(the_readings_carry_the_modelled_mark)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
+        fresh();
+        CHECK_STR_EQ(balance_screen_model_mark(), TR(BAL_MODELLED));
+        CHECK_STR_EQ(balance_screen_model_note(), TR(BAL_MODEL_NOTE));
+        CHECK_STR_EQ(TR(BAL_MODELLED), lang ? "SIMULIERT" : "MODELLED");
+        scr->render(&cv, 0);
+        CHECK_EQ(fb[(MARK_Y + 1) * W + MARK_X + 60],
+                 ui_theme_color(UI_C_PANEL_SUNK));
+        CHECK_EQ(fb[(MARK_Y + 10) * W + MARK_X + 12],
+                 ui_theme_color(UI_C_WARN));
+        /* The words beside the pill, in the dim text colour. */
+        int dim = 0;
+        for (int y = MARK_Y; y < MARK_Y + 20; ++y) {
+            for (int x = MARK_X + 96; x < CTRL_X + CTRL_W; ++x) {
+                dim += (fb[(size_t)y * W + x] == ui_theme_color(UI_C_TEXT_DIM));
+            }
+        }
+        CHECK(dim > 20);
+        /* Under the rule at BODY_Y + 296. */
+        CHECK_EQ(fb[(BODY_Y + 295) * W + MARK_X + 60],
+                 ui_theme_color(UI_C_PANEL));
+
+        tap(200, 22);
+        CHECK(balance_screen_model_mark() == NULL);
+        CHECK(balance_screen_model_note() == NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /* Both panes draw something, and they draw different things. */
@@ -365,6 +408,7 @@ TEST_CASE(every_blade_count_draws)
 int main(void)
 {
     RUN(no_guidance_runs_off_its_card);
+    RUN(the_readings_carry_the_modelled_mark);
     RUN(both_panes_draw_and_differ);
     RUN(the_diagram_stays_in_its_card);
     RUN(the_blade_count_clamps_two_to_six);
