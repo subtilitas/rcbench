@@ -77,6 +77,30 @@ stays on the part.
 | `tools/pdf-samples.ts` | 2 sample files of the PDF export. |
 | `tools/font-subset.py` | Writes the 2 font files of the PDF export. |
 
+## Release number
+
+`package.json` holds the release in its `version` field. `release.ts` exports
+it as `VERSION` and as the tag `TAG` (`v` plus the version). The data file,
+the page header, the trademark notice, the print head, the source links and
+the checks import them. The anchor table `drawings/anchors.json` is written
+by `npm run drawings` from the data file, and `npm run drawings:check` fails
+when it names another release.
+
+To move to a new release, change 2 places in the same pull request:
+
+1. `version` in `configurator/package.json` (and the 2 `version` fields at
+   the top of `package-lock.json`).
+2. `RCBENCH_VERSION_MAJOR`, `_MINOR` and `_PATCH` in
+   `shared/link/include/rcbench_version.h`.
+
+Then run `npm run drawings` to rewrite `drawings/anchors.json`, and replace
+the release number in the prose of the 3 README files of the configurator.
+`core/tools/release-sources.ts`, run by `npm run check` in `core/`, fails
+when the 2 places differ or when a README names another release. The
+Configurator workflow runs it on a change of either place. Source links
+point at the git tag `TAG`; the data check reads the files at that tag, so
+the tag must exist in the clone.
+
 ## Commands
 
 Node.js 24 is required.

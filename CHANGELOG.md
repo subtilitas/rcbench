@@ -21,6 +21,14 @@ history is in git.
 
 ### Changed
 
+- The release of the bench configurator is stated once, in the `version`
+  field of `configurator/package.json`. The data file, the page header, the
+  trademark notice, the print head, the source-link tag and the data check
+  read it from there. `npm run check` in `configurator/core` fails when
+  that version differs from `RCBENCH_VERSION_*` in
+  `shared/link/include/rcbench_version.h` or when a README of the
+  configurator names another release. The Configurator workflow also runs on
+  a change of that header.
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming
