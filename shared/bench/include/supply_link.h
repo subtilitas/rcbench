@@ -196,7 +196,10 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
  * off -- the module's reading count (SAMPLES, the coprocessor's count of
  * output readings the module answered) and the time of the page read that
  * first showed that count, and online only for a page read younger than
- * SUPPLY_LINK_STALE_MS from a module the page drives.  Left as they are: output, which is what
+ * SUPPLY_LINK_STALE_MS from a module the page drives.  The readings are
+ * marked valid (ok) only while the count moved within the last
+ * SUPPLY_LINK_STALE_MS; behind a count that stands still they stay as
+ * the last ones with ok 0.  Left as they are: output, which is what
  * the panel asked, and the run's extremes, totals and trip.
  */
 void supply_link_state(const supply_link_t *s, uint32_t now_ms,

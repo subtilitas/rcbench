@@ -471,7 +471,10 @@ Terminal verbunden ist: seine Schleife wartet nicht auf den Host. Ein
 voller Ring verwirft den neuesten Eintrag: der Trace hat eine Zeile
 `$L n=`, wo Einträge fehlen, und ihre Summe in seiner Endzeile. Die
 Endzeile zählt jeden verworfenen Eintrag von vor dem Ende des Trace, ob
-danach noch ein Eintrag in den Ring kam oder nicht. Um wie
+danach noch ein Eintrag in den Ring kam oder nicht. Ein Sample, das
+verworfen wird, während ein Konfigurationseintrag auf Platz wartet, zählt
+nach diesem Eintrag; ein Trace, der an der Änderung der Konfiguration
+endet, zählt es nicht. Um wie
 viel ein Durchlauf von Core 0 durch das Schreiben der Zeilen länger wird,
 ist nicht gemessen.
 
@@ -489,8 +492,11 @@ $C t=220200 ch=0 us=1800
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
 
-Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten:
-eine Triggerzeile folgt auf die Samples, die vor ihr genommen wurden.
+Die Zeilen nach den ersten beiden stehen in der Reihenfolge ihrer Zeiten,
+außer einer `$D`-Zeile: eine Triggerzeile folgt auf die Samples, die vor ihr
+genommen wurden. Eine `$D`-Zeile wird geschrieben, sobald der Puls des
+Ausgangs 50 ms stillgestanden hat; sie folgt Samples bis etwa 50 ms nach
+ihrem `t=`, und ihr `t=` ist ihre Zeit.
 Core 0 schreibt eine Triggerzeile und die Endzeile, sobald Core 1 einen
 Tick beendet hat, der zur Zeit der Zeile oder danach begann. `e=` in der
 Endzeile ist der Grund für das Ende: `t` die Zeit, `s` ein geändertes
@@ -502,9 +508,18 @@ meldet einen solchen Trace als Problem und spielt keine seiner Bewegungen
 nach.
 
 Eine Sample-Zeile ist die Zeit seit dem Sample davor in 0,1 ms und der
-Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile hat
-8 Bytes bei einem dreistelligen Code; mit den Spannungszeilen sind es etwa
-8,6 Bytes je Sample, 8,6 kB je Sekunde.
+Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile 1 ms
+nach dem Sample davor hat 8 Bytes bei einem dreistelligen Code und höchstens
+10 Bytes bei einem vierstelligen. Die erste Sample-Zeile eines Traces zählt
+ab dem Trigger-Zeitpunkt, ein Sample von vor dem Trigger trägt also eine
+negative Zeit, und ein Sample nach verworfenen Records eine längere: Diese
+Zeilen sind länger, bis zum vollen vorzeichenbehafteten 32-Bit-Bereich der
+Zeit. Mit den Spannungszeilen (eine Zeile von 7 Bytes, eine je 20 Samples
+in der Ausgabe von `sense_trace_gen`) sind es 8,35 Bytes je Sample,
+8,35 kB je Sekunde, beim simulierten Servo mit 0,12 A, dessen Codes 3 Stellen
+haben. Über etwa 0,4 A am 0,1-Ω-Shunt haben die Codes 4 Stellen, und die Rate
+liegt bei 9,35 kB je Sekunde. Jede Zeile endet auf CR LF. Die Rate auf der
+Hardware ist nicht gemessen.
 
 **Bereitlegen:** den PD mini (WeAct PD Power Mini V1) bei einer Grenze von
 2,00 A, das INA3221-Modul mit dem 0,1-Ω-Shunt von CH1 in der Versorgung
@@ -721,7 +736,7 @@ gewählt, nicht gemessen.
   eines anderen Ausgangs folgt, bevor dessen Servo angekommen ist, wird
   mit dem Strom des ersten Servos darin nachgespielt; das Tool
   unterscheidet beide nicht.
-- Ob ein Terminal 8,6 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
+- Ob ein Terminal 8,35 bis 9,35 kB je Sekunde ohne Verlust mitschneidet. Ein Trace,
   dessen Zeilenzahlen nicht zu seiner Endzeile passen, wird gemeldet und
   endet mit 1.
 - Das Zeilenformat hat keinen Prüfwert. Eine Zeile, die in ihrer letzten

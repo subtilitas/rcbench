@@ -597,7 +597,8 @@ void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
     d->long_equals_short = long_equals_short;
 }
 
-void esc_det_drop_group(esc_det_t *d)
+/** Forget any group under way, as if the line had been silent. */
+static void esc_det_drop_group(esc_det_t *d)
 {
     d->high = false;
     d->group_open = false;
@@ -609,7 +610,8 @@ void esc_det_drop_group(esc_det_t *d)
     d->stuck_told = false;
 }
 
-void esc_det_floor_only(esc_det_t *d)
+/** Floor only: no pulses, no groups. */
+static void esc_det_floor_only(esc_det_t *d)
 {
     d->counting = false;
     esc_det_drop_group(d);
@@ -619,7 +621,7 @@ void esc_det_count(esc_det_t *d)
 {
     /* Quiet since the last pulse ended, when one did and nothing has risen
      * since: then the gap already heard counts toward the quiet. */
-    const bool quiet = d->counting && !d->high && d->fall_ms != 0u;
+    const bool quiet = d->counting && !d->high && d->fell;
     const uint32_t from = d->fall_ms;
     d->counting = true;
     esc_det_drop_group(d);
@@ -644,6 +646,7 @@ static uint32_t readings_in(const esc_det_t *d, uint32_t ms)
 static void close_pulse(esc_det_t *d, uint32_t t_ms)
 {
     d->high = false;
+    d->fell = true;
     d->fall_ms = t_ms;
     d->n_low = 1u;
     /*

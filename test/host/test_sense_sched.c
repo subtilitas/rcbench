@@ -1483,6 +1483,51 @@ static uint16_t to_slot_across_a_boundary(unsigned slot)
     return (uint16_t)s.win;
 }
 
+/* The INA228's die temperature and DIAG are of the part online: found
+ * reset, it is offline and neither is shown as a reading. */
+TEST_CASE(the_ina228_temperature_and_diag_go_with_the_part)
+{
+    rig(1u, true);
+    ticks(120u);
+    CHECK(s.have_temp);
+    CHECK(s.have_diag);
+    fake_reset228(i228);
+    unsigned guard = 0u;
+    while (ina228_state(&s.i228) == SENSE_PART_ONLINE && guard++ < 200u) {
+        tick();
+    }
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    tick();
+    CHECK(!s.have_temp);
+    CHECK(!s.have_diag);
+}
+
+/* The INA228 goes offline on whichever tick its third failed transaction
+ * falls: on a VBUS tick, which reads no rotation item, the temperature and
+ * DIAG are dropped on that tick as well. */
+TEST_CASE(the_ina228_temperature_and_diag_go_on_a_vbus_tick)
+{
+    unsigned odd = 0u;
+    for (unsigned lead = 0u; lead < 8u; ++lead) {
+        rig(1u, true);
+        ticks(120u + lead);
+        CHECK(s.have_temp);
+        CHECK(s.have_diag);
+        i228->present = false;
+        unsigned guard = 0u;
+        while (ina228_state(&s.i228) == SENSE_PART_ONLINE && guard++ < 20u) {
+            tick();
+        }
+        CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+        if ((s.ticks & 1u) == 0u) {              /* the last tick was odd */
+            ++odd;
+        }
+        CHECK(!s.have_temp);
+        CHECK(!s.have_diag);
+    }
+    CHECK(odd > 0u);
+}
+
 /* A read-back is stamped when it is done, as every read: one that ends
  * past a window's end finds the reset in the next window, and that one is
  * emptied.  The window that ended keeps what was read in it. */
@@ -1891,6 +1936,8 @@ int main(void)
     RUN(an_ina3221_reset_is_found_within_one_rotation);
     RUN(a_reset_ina3221_is_emptied_counted_and_set_up_again);
     RUN(a_reset_found_past_a_window_end_empties_the_window_after);
+    RUN(the_ina228_temperature_and_diag_go_with_the_part);
+    RUN(the_ina228_temperature_and_diag_go_on_a_vbus_tick);
     RUN(the_reset_counts_run_on_across_255);
     RUN(one_corrupted_read_back_is_no_reset);
     RUN(a_reset_ina228_is_found_and_set_up_again);

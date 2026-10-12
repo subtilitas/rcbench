@@ -46,9 +46,6 @@ esp_err_t board_exio_read(uint8_t *out);
 /** Panel DISP + backlight enable. */
 esp_err_t board_backlight(bool on);
 
-/** Release (true) or assert (false) the panel reset line. */
-esp_err_t board_lcd_reset(bool released);
-
 /**
  * Run the GT911 reset sequence.  INT is held low across the rising edge of
  * RST so the controller latches I2C address 0x5D.  Leaves INT as an input.
