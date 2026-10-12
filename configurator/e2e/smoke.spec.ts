@@ -247,6 +247,8 @@ for (const size of SIZES) {
       await expect(page.locator('.msg.err')).toHaveText(STRINGS.badV[0]);
       await page.locator('.lang button[data-lang=de]').click();
       await expect(page.locator('.msg.err')).toHaveText(STRINGS.badV[1]);
+      // The page stores the picked language. A link without the key `l` opens in it.
+      await page.locator('.lang button[data-lang=en]').click();
       await open(page, '#v=1&f=servo,warp&p=<img src=x onerror=alert(1)>');
       await expect(page.locator('.msg')).toHaveCount(1);
       await expect(page.locator('.msg')).toContainText('warp');

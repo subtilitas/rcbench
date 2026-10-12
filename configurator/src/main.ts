@@ -1,20 +1,31 @@
-// Page state, events and rendering. The selection lives in the URL hash.
+// Page state, events and rendering. The selection lives in the URL hash. The
+// browser keeps the selection and the language the visitor chose between
+// visits (`store.ts`).
+//
+// Precedence at a load and at a change of the hash:
+// - Setup: a hash that names one, else the stored one, else the base setup.
+// - Language: the key `l` of the hash, else the stored one, else the browser's.
+// A link stores nothing. The page stores the setup when the visitor changes
+// it, and the language when the visitor picks one.
 
 import './style.css';
 import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, alwaysOn, deselectEffect, removalEffect, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
-import { formatHash, parseHash, reportIds, shareHash, testObjectTicks } from './hash.ts';
+import { HASH_VERSION, formatHash, namesSetup, parseHash, reportIds, shareHash, testObjectTicks } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { benchParts, optionsOf } from './names.ts';
+import { browserStore, readStore, writeStore } from './store.ts';
 import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
 import { result, resultError, summary } from './view/result.ts';
 import type { Mode, Notice } from './view/result.ts';
 import { install, sync } from './diagram/control.ts';
 
+/** The language of the browser. The hash names a language that differs from it. */
 const startLang: Lang = browserLang(navigator.language);
+const storage = browserStore();
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
 
 let selection: Selection = base();
@@ -53,21 +64,41 @@ function known(sel: Selection): Selection {
   return { functions, owned, options: { ...sel.options } };
 }
 
+/** The stored selection, or null: none is stored, or the catalogue resolves no setup from it. */
+function storedSelection(setup: string | null): Selection | null {
+  if (setup === null) return null;
+  const kept = known(testObjectTicks(parseHash(setup, DEFAULT_OPTIONS).selection, CATALOGUE));
+  return tryResolve(kept) ? kept : null;
+}
+
 function readHash(): void {
   const parsed = parseHash(location.hash, DEFAULT_OPTIONS);
-  lang = parsed.lang ?? startLang;
+  const stored = readStore(storage, DEFAULT_OPTIONS);
+  const linked = namesSetup(location.hash);
+  // An id the catalogue does not know leaves a stored selection without a notice.
+  const kept = linked ? null : storedSelection(stored.setup);
+  lang = parsed.lang ?? stored.lang ?? startLang;
   notices = [];
   pending = null;
   note = null;
-  if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
-  // A test object under the owned parts of a link is the tick of its function.
-  const given = testObjectTicks(parsed.selection, CATALOGUE);
-  const setup = tryResolve(given);
-  selection = known(given);
-  const dropped = [...given.functions, ...given.owned]
-    .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
-  const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
-  if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
+  if (kept) {
+    selection = kept;
+  } else {
+    if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
+    // A test object under the owned parts of a link is the tick of its function.
+    const given = testObjectTicks(parsed.selection, CATALOGUE);
+    const setup = tryResolve(given);
+    selection = known(given);
+    const dropped = [...given.functions, ...given.owned]
+      .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
+    const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
+    if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
+  }
+  // What the browser kept stands in the address like a change on the page: the link to copy and the PDF read it there.
+  // A link stays as it is until a change.
+  const hash = formatHash(selection, lang, startLang, CATALOGUE);
+  const restored = kept !== null || (parsed.lang === null && stored.lang !== null);
+  if (!linked && restored && hash !== `v=${HASH_VERSION}`) history.replaceState(null, '', `#${hash}`);
 }
 
 /** The link the PDF prints: the address of the page without the id of a function that has no tick. */
@@ -78,6 +109,16 @@ function shareUrl(): string {
 
 function writeHash(): void {
   history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE)}`);
+}
+
+/** Stores the selection of the page. The stored language stays. */
+function storeSetup(): void {
+  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE) });
+}
+
+/** Stores the language of the page. The stored selection stays. */
+function storeLang(): void {
+  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), lang });
 }
 
 function updatePanHint(): void {
@@ -169,6 +210,7 @@ function applyRemoval(effect: Removal, focusId: string): void {
   note = null;
   notices = [];
   writeHash();
+  storeSetup();
   render(focusId);
   announceSummary((view) => t(view.lang, 'rmDone', { p: part ? part.short[view.lang] : effect.part }));
 }
@@ -233,6 +275,7 @@ document.addEventListener('click', (event) => {
   if (el.dataset.lang === 'en' || el.dataset.lang === 'de') {
     lang = el.dataset.lang;
     writeHash();
+    storeLang();
     render();
     el.focus();
   } else if (el.dataset.jump) {
@@ -259,6 +302,7 @@ document.addEventListener('click', (event) => {
     pending = null;
     note = null;
     writeHash();
+    storeSetup();
     render('b-reset');
     announceSummary();
   } else if (el.id === 'b-copy') {
@@ -292,6 +336,7 @@ document.addEventListener('change', (event) => {
   pending = null;
   note = left;
   writeHash();
+  storeSetup();
   render(input.id);
   announceSummary((view) => (left ? deselectText(view, left) : ''));
 });

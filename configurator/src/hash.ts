@@ -88,6 +88,23 @@ export function parseHash(hash: string, defaults: Options): Parsed {
 }
 
 /**
+ * The hash names a setup: it carries a key other than the language, or it is
+ * longer than MAX_HASH. An empty hash and `#l=de` name none.
+ */
+export function namesSetup(hash: string): boolean {
+  if (typeof hash !== 'string') return false;
+  const body = hash.startsWith('#') ? hash.slice(1) : hash;
+  if (body === '') return false;
+  if (body.length > MAX_HASH) return true;
+  try {
+    const q = new URLSearchParams(body);
+    return [...q.keys()].some((key) => key !== 'l');
+  } catch {
+    return true;
+  }
+}
+
+/**
  * The selection with every test object under the owned parts turned into the
  * tick of the function that drives it and needs no further part. A test
  * object without such a function is dropped from the owned parts.

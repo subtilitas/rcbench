@@ -496,7 +496,7 @@ starting is not that first write: the lines stay for the next one.
 
 A value written and read back is taken as in effect. The programmer asks
 for no power cycle after a write, and its verify is the read-back of the
-same session. Whether a KST servo acts on a written value before its next
+same session. Whether a servo acts on a written value before its next
 power-up is not measured.
 
 Only registers whose value changes are written. Register 00 is never
@@ -885,7 +885,7 @@ programmer reads the servo and writes nothing to it.
 to return the port to servo PWM. The programmer does this without a supply
 cycle: the servo stays powered, a PD mini's output stays on at its voltage
 and current limit, and the tester's signal follows on the same port.
-Whether a KST servo that received a frame follows PWM before its supply was
+Whether a servo that received a frame follows PWM before its supply was
 off is not measured.
 
 LEAVE PROGRAMMING opens with `The port goes back to servo PWM. The supply
@@ -915,7 +915,7 @@ read.
 **WAIT BEFORE PWM** is 0 to 10 000 ms, 100 ms by default. The keypad takes
 no value above 10 000 ms, and no leave is sent with one. A wait of 0 ms
 ends at the coprocessor's next pass. The time left of a running wait is not
-shown. The wait a KST servo needs is not measured.
+shown. The wait a servo needs is not measured.
 
 | During the wait | Effect |
 | --- | --- |
@@ -1004,7 +1004,7 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   point where the control task drops a withdrawn command, the hand-over
   of the port's state to the page and the tester, and the card's file
   calls.
-- Whether a KST servo follows PWM while it is in programming mode is not
+- Whether a servo follows PWM while it is in programming mode is not
   measured. The programmer leaves programming without a supply cycle and
   drives the port with PWM afterwards.
 - Whether a written value acts before the servo's next power-up is not
@@ -1016,7 +1016,7 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
   **RESTORE** and **LEAVE**, or by **STOP** with the supply off.
 - **WAIT BEFORE PWM** is not applied by a coprocessor older than link
   version 4.15, and not on the leave of a port in doubt without a PD mini.
-  The wait a KST servo needs is not measured. The time left of a running
+  The wait a servo needs is not measured. The time left of a running
   wait is not shown.
 - Without a PD mini the programming voltage and the current limit are not
   applied.

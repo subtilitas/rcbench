@@ -16,7 +16,9 @@ that its functions are not verified on hardware. No function, part or power
 source repeats that. "Not in a release" on a part is a different fact and
 stays on the part.
 
-- No server, no account, no storage. The selection lives in the URL hash.
+- No server and no account. The selection lives in the URL hash. The browser
+  keeps the selection and the chosen language in `localStorage`, on the
+  visitor's device. See "Stored state".
 - No run-time dependency. The page loads 3 files from its own origin and sends
   no request to another origin. A picture loads from the same origin when its
   part card comes near the viewport.
@@ -44,6 +46,7 @@ stays on the part.
 | `src/core.ts` | The one import seam to the core: catalogue, resolver, default options, groups, removal. |
 | `src/main.ts` | State, events, rendering. |
 | `src/hash.ts` | URL hash codec. |
+| `src/store.ts` | The state the browser keeps between visits: read, check, write. |
 | `src/i18n.ts` | Chrome strings in English and German. |
 | `src/names.ts` | Names of wire ends for the table and the drawing. |
 | `src/draw/layout.ts` | Geometry of the drawing: modules, pads, lanes, wires, pills. |
@@ -66,6 +69,7 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
+| `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
 | `tools/size.ts` | Size check of the build. |
@@ -116,6 +120,51 @@ and variants each resolves to; `test/hash.test.ts` fails when one differs.
 The fixture lists the power path of the PD mini as wire 19 alone. The test
 reads wire 63, the second half of that path, apart: it stands in a setup
 exactly when wire 19 does.
+
+## Stored state
+
+The page keeps 1 entry in `localStorage`, under the key
+`rcbench.configurator`:
+
+```json
+{"v":1,"lang":"de","setup":"v=1&f=servo,esc&o=osoyoo"}
+```
+
+| Field | Meaning |
+|---|---|
+| `v` | Format version, `1`. An entry with another value is not read. |
+| `lang` | `en` or `de`: the language the visitor picked with the language buttons. `null` before the first pick. |
+| `setup` | The selection in the format of the URL hash, without the key `l`: ids and option tokens, no text of a language. `null` before the first change. |
+
+The page writes `setup` on every change of the selection: a tick, a variant,
+the removal of a part, "Start over". It writes `lang` on a click on a
+language button. It writes nothing when it opens, so a link that is opened
+and not changed leaves the stored setup as it is.
+
+Precedence when the page opens and when the hash changes:
+
+| State | Source, first match |
+|---|---|
+| Setup | A hash with a key other than `l`; the stored `setup`; the base setup. |
+| Language | The key `l` of the hash; the stored `lang`; the browser language. |
+
+A setup that comes from the store is written into the hash, so the link to
+copy and the PDF name it. The key `l` of the hash still compares with the
+browser language, not with the stored one.
+
+The entry is checked on every read. An entry of more than 4096 characters, no
+JSON object, another `v`: the page reads none and shows the base setup in the
+browser language. A `lang` other than `en` and `de` reads as `null`. A `setup`
+of more than 2000 characters or of another hash version reads as `null`. An
+id the catalogue does not know is left out of a stored setup without a
+notice. A browser that blocks `localStorage` or refuses a write leaves the
+page at work: the selection stays in the hash and no message is shown.
+
+2 tabs share the entry. The tab that changes last sets what the next visit
+without a hash shows. An open tab does not follow a change made in another.
+
+The view of the wiring (picture or schematic), the open state of "Parts you
+own", the zoom of the picture and a marked wire are not stored.
 
 ## Chooser
 
