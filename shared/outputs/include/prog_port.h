@@ -74,7 +74,8 @@ typedef struct {
     uint8_t  blocked;   /**< bit n: the kept pin was taken at start; the
                              port does not hold it */
     uint16_t hz;        /**< the SERVO page's rate, 0 for none
-                             (prog_port_rate())                    */
+                             (prog_port_rate()); 0 after a TARGET
+                             change (prog_port_write())            */
 } prog_port_t;
 
 /** @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin, all at
@@ -119,7 +120,10 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept);
  * pulsing port and a pulse switched on under a range that does not fit.
  *
  * A TARGET change returns the SERVO rate to 0 (servo_page_target()), so
- * every port is judged at PROG_PORT_RATE_HZ after one.  Refused as well
+ * every port is judged at PROG_PORT_RATE_HZ after one, and the write sets
+ * the rate prog_port_rate() last named to 0 as well: prog_port_port_hz()
+ * then names the rate each port runs at once the write is in force, before
+ * the SERVO page has followed the TARGET.  Refused as well
  * (BAD_VALUE, protocol 4.19): a TARGET change away from the standard servo
  * ports while they run at a SERVO rate, when a PWM slot back at its own
  * rate would carry a pulse longer than its frame (outputs_pulse_check());

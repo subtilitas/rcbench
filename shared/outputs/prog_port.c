@@ -322,6 +322,10 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
     }
 
     memcpy(p->regs, next, sizeof(next));
+    /* As servo_page_target() returns the SERVO page's rate to 0: the ports
+     * are bound at the rates the write leaves before the SERVO page follows
+     * the TARGET, and a revert (prog_port_revert()) brings the rate back. */
+    p->hz = hz;
     p->blocked &= (uint8_t)~moved;
     p->bound   &= (uint8_t)~moved;   /* until the caller has bound it */
     for (unsigned port = 0; port < p->count; ++port) {

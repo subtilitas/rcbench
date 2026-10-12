@@ -813,8 +813,8 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
 /*
  * Protocol 4.19: the SERVO rate reaches the TARGET port alone.  With the
  * standard servo ports as TARGET every port runs at 50 Hz whatever the
- * rate; with port 0 as TARGET port 0 runs at it and port 1 at 50 Hz; a
- * rate of 0 is 50 Hz.
+ * rate; with port 0 as TARGET port 0 runs at the rate named after the
+ * change and port 1 at 50 Hz; a rate of 0 is 50 Hz.
  */
 TEST_CASE(the_servo_rate_reaches_the_target_port_alone)
 {
@@ -825,6 +825,10 @@ TEST_CASE(the_servo_rate_reaches_the_target_port_alone)
     CHECK_EQ(prog_port_port_hz(&pg, 0u), PROG_PORT_RATE_HZ);
     CHECK_EQ(prog_port_port_hz(&pg, 1u), PROG_PORT_RATE_HZ);
     CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
+    /* The TARGET change returned the rate to 0; the SERVO page names the
+     * next. */
+    CHECK_EQ(prog_port_port_hz(&pg, 0u), PROG_PORT_RATE_HZ);
+    prog_port_rate(&pg, 400u);
     CHECK_EQ(prog_port_port_hz(&pg, 0u), 400u);
     CHECK_EQ(prog_port_port_hz(&pg, 1u), PROG_PORT_RATE_HZ);
     prog_port_rate(&pg, 0u);
@@ -859,11 +863,70 @@ TEST_CASE(a_target_change_judges_the_ports_at_50_hz)
 }
 
 /*
+ * The ports are bound before the SERVO page follows a TARGET change, and a
+ * write the silicon refuses is taken back with the rate it found.  So the
+ * write itself returns the rate to 0: right after it, before
+ * prog_port_rate(), every port reads 50 Hz -- the standard servo ports at
+ * 560 Hz leaving for port 0, and port 0 at 560 Hz leaving for port 1.  A
+ * revert brings back the TARGET and its 560 Hz.  A write that keeps the
+ * TARGET keeps the rate.
+ */
+TEST_CASE(a_target_change_returns_the_ports_rate_to_0_until_reverted)
+{
+    fresh(2u);
+    bind(0u, 13u);
+    bind(1u, 14u);
+    prog_port_rate(&pg, 560u);
+    prog_port_t was = pg;
+    CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
+    CHECK_EQ(prog_port_port_hz(&pg, 0u), PROG_PORT_RATE_HZ);
+    CHECK_EQ(prog_port_port_hz(&pg, 1u), PROG_PORT_RATE_HZ);
+    prog_port_revert(&pg, &was, &o);
+    CHECK_EQ(prog_port_target(&pg), 0u);
+    CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
+    prog_port_rate(&pg, 560u);
+    CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_CMD), 600u), 0u);
+    CHECK_EQ(prog_port_port_hz(&pg, 0u), 560u);
+    was = pg;
+    CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
+    CHECK_EQ(prog_port_port_hz(&pg, 0u), PROG_PORT_RATE_HZ);
+    CHECK_EQ(prog_port_port_hz(&pg, 1u), PROG_PORT_RATE_HZ);
+    prog_port_revert(&pg, &was, &o);
+    CHECK_EQ(prog_port_target(&pg), 1u);
+    CHECK_EQ(prog_port_port_hz(&pg, 0u), 560u);
+    CHECK_EQ(prog_port_port_hz(&pg, 1u), PROG_PORT_RATE_HZ);
+}
+
+/*
+ * The frame that changes the TARGET judges the new TARGET port at 50 Hz,
+ * not at the rate the old one ran at: with the standard servo ports at
+ * 560 Hz, port 1 pulsing at 1000 to 2000 us becomes the TARGET.
+ */
+TEST_CASE(a_new_target_is_judged_at_50_hz_not_the_old_rate)
+{
+    fresh(2u);
+    bind(0u, 13u);
+    bind(1u, 14u);
+    prog_port_rate(&pg, 560u);
+    CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_MIN_US), 2000u), 0u);
+    CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_MAX_US), 2000u), 0u);
+    CHECK_EQ(put(LINK_PG_PWM, 2u), 0u);
+    CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
+    CHECK_EQ(prog_port_target(&pg), 2u);
+    /* And so with port 0 the TARGET at 560 Hz. */
+    CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
+    prog_port_rate(&pg, 560u);
+    CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
+    CHECK_EQ(prog_port_target(&pg), 2u);
+}
+
+/*
  * A slice counts against one wrap register.  Port 0 on GP13 and GP28 share
  * slice 6 on different compares, so two ports may hold them -- at 50 Hz.
  * With port 0 the TARGET at 300 Hz, port 1 cannot move onto GP28; at 50 Hz
  * or 0 it can, and in the frame that moves the TARGET too.  Two ports on
- * one slice are named to the SERVO page as held at 50 Hz.
+ * one slice are named to the SERVO page as held at 50 Hz.  The last port
+ * as TARGET is held the same way.
  */
 TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
 {
@@ -898,6 +961,15 @@ TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
     CHECK_EQ(prog_port_target(&pg), 0u);
     CHECK_EQ(reg(PIN1), 28u);
     CHECK_EQ(prog_port_sliced_channels(NULL), 0u);
+    /* The last port as TARGET, port 1 of 2 on GP13 at 300 Hz: port 0 cannot
+     * move onto GP28. */
+    fresh(2u);
+    bind(1u, 13u);
+    CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
+    prog_port_rate(&pg, 300u);
+    CHECK_EQ(put(PIN0, 28u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(PIN0), LINK_PG_PIN_NONE);
+    CHECK_EQ(put(PIN0, 14u), 0u);
 }
 
 /*
@@ -951,6 +1023,8 @@ int main(void)
     RUN(a_pulsing_port_takes_no_endpoint_longer_than_its_frame);
     RUN(the_servo_rate_reaches_the_target_port_alone);
     RUN(a_target_change_judges_the_ports_at_50_hz);
+    RUN(a_target_change_returns_the_ports_rate_to_0_until_reverted);
+    RUN(a_new_target_is_judged_at_50_hz_not_the_old_rate);
     RUN(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate);
     RUN(a_target_change_leaves_no_slot_with_a_pulse_too_long);
     return test_summary("prog_port");

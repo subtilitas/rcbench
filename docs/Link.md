@@ -607,7 +607,8 @@ the bank is armed, while the port's `PWM` bit is set, while it is the
 and `TARGET` name only ports
 whose pin the generator has. A write that reaches a register of a port the
 build does not have is refused with BAD_VALUE, a write of register 0 or 1
-with READ_ONLY. A refused write changes nothing.
+with READ_ONLY. A refused write changes nothing, SERVO's frame rate and sweep
+included.
 
 A coprocessor that has stored no port has port 0 on GP13, pad 17 of the
 bring-up module, and the other ports without a pin. GP13's slice partner
@@ -1352,7 +1353,7 @@ the rates in `ports_apply()` and `target_sync()` in
 | Panel | Coprocessor | Behaviour |
 | --- | --- | --- |
 | 4.19 | 4.19 | as above. The panel tracks `TARGET` on PROG: a change it reads or writes acknowledged counts as rate 0, and a `TARGET` write without an answer counts as an unknown rate until a rate write lands. The SERVO screen shows the rate as not sent until the next position carries it |
-| 4.19 | 4.16 to 4.18 | the coprocessor runs every PWM surface and every programming port at SERVO's rate, whatever `TARGET` names, and keeps it across a `TARGET` change. The panel tracks no `TARGET` change below minor 19. With a programming port as target, the rate is refused while a bound PWM surface has an endpoint longer than the frame |
+| 4.19 | 4.16 to 4.18 | the coprocessor runs every PWM surface and every programming port at SERVO's rate, whatever `TARGET` names, and keeps it across a `TARGET` change. The panel tracks no `TARGET` change below minor 19, and its SERVO screen says every PWM surface runs at the rate. With a programming port as target, the rate is refused while a bound PWM surface has an endpoint longer than the frame |
 | 4.18 or older | 4.19 | the coprocessor sets the rate to 0 on a `TARGET` change, while the panel counts the rate it wrote last. The panel then counts a rate at least as fast as the one in force, the side on which no pulse is sent too wide for its frame, and writes the rate again with its next position |
 
 `test_servo_page`, `test_prog_port`, `test_prog_link` and `test_link_pages`

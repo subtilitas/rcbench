@@ -666,7 +666,8 @@ oder die Servo-Programmier-Page den Port nicht in PWM hält. `PWM` und
 `TARGET` nennen nur Ports, deren Pin
 der Generator hat. Ein Schreiben, das ein Register eines Ports erreicht, den
 der Build nicht hat, wird mit BAD_VALUE abgewiesen, ein Schreiben von
-Register 0 oder 1 mit READ_ONLY. Ein abgewiesenes Schreiben ändert nichts.
+Register 0 oder 1 mit READ_ONLY. Ein abgewiesenes Schreiben ändert nichts, auch
+nicht Frame-Rate und Sweep von SERVO.
 
 Ein Koprozessor, der keinen Port gespeichert hat, hat Port 0 auf GP13, Pad
 17 des Bring-up-Moduls, und die anderen Ports ohne Pin. Der Slice-Partner
@@ -1477,7 +1478,7 @@ die Raten in `ports_apply()` und `target_sync()` in
 | Panel | Koprozessor | Verhalten |
 | --- | --- | --- |
 | 4.19 | 4.19 | wie oben. Das Panel verfolgt `TARGET` auf PROG: eine Änderung, die es liest oder bestätigt schreibt, zählt als Rate 0, und ein `TARGET`-Schreiben ohne Antwort zählt als unbekannte Rate, bis ein Schreiben der Rate ankommt. Der SERVO-Bildschirm zeigt die Rate als nicht gesendet, bis die nächste Position sie trägt |
-| 4.19 | 4.16 bis 4.18 | der Koprozessor fährt jede PWM-Surface und jeden Programmierport mit der Rate von SERVO, gleich was `TARGET` nennt, und behält sie über eine Änderung von `TARGET`. Das Panel verfolgt unter Minor 19 keine Änderung von `TARGET`. Mit einem Programmierport als Ziel wird die Rate abgewiesen, solange eine gebundene PWM-Surface einen Endpunkt hat, der länger als der Frame ist |
+| 4.19 | 4.16 bis 4.18 | der Koprozessor fährt jede PWM-Surface und jeden Programmierport mit der Rate von SERVO, gleich was `TARGET` nennt, und behält sie über eine Änderung von `TARGET`. Das Panel verfolgt unter Minor 19 keine Änderung von `TARGET`, und sein SERVO-Bildschirm sagt, dass jede PWM-Surface mit der Rate läuft. Mit einem Programmierport als Ziel wird die Rate abgewiesen, solange eine gebundene PWM-Surface einen Endpunkt hat, der länger als der Frame ist |
 | 4.18 oder älter | 4.19 | der Koprozessor setzt die Rate bei einer Änderung von `TARGET` auf 0, während das Panel die Rate zählt, die es zuletzt geschrieben hat. Das Panel zählt dann eine Rate, die mindestens so schnell ist wie die geltende, die Seite, auf der kein Puls zu breit für seinen Frame gesendet wird, und es schreibt die Rate mit seiner nächsten Position wieder |
 
 `test_servo_page`, `test_prog_port`, `test_prog_link` und `test_link_pages`

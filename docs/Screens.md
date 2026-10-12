@@ -751,7 +751,7 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the PWM TARGET runs at the rate shown |
+| In force | the PWM TARGET runs at the rate shown. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the PWM TARGET |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |

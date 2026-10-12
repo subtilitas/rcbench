@@ -345,7 +345,16 @@ typedef enum {
                                  another rate; the pins kept theirs         */
     SERVO_RATE_UNSUPPORTED, /**< the coprocessor has no SERVO page: protocol
                                  4.0 runs each slot at its binding's rate   */
+    SERVO_RATE_IN_FORCE_SURFACES, /**< every PWM surface runs at it,
+                                       whatever the target: protocol 4.1 to
+                                       4.18                                 */
 } servo_rate_state_t;
+
+/** The state an acknowledged rate is shown in, by the coprocessor's protocol
+ *  minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
+ *  (4.19), where the rate reaches the PWM TARGET alone, and
+ *  SERVO_RATE_IN_FORCE_SURFACES below it. */
+servo_rate_state_t servo_rate_in_force(uint16_t minor);
 
 /**
  * What the panel last heard about the frame rate @p hz.  Called every frame;

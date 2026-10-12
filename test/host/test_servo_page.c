@@ -176,8 +176,9 @@ TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
  * A port target whose pulse is on is judged against its own endpoints:
  * channel 9 at 1000 to 2000 us refuses 560 Hz (1784 us) and 500 Hz
  * (1999 us) and takes 499 Hz; at 410 to 1110 us, a 760 us tail servo's,
- * 560 Hz is taken.  A port whose pulse is off, and a pulsing port that is
- * not the target, are not judged.  0 is always taken: the port is back at
+ * 560 Hz is taken, and at 1000 to 1784 us as well, 1785 us refused.  A
+ * port whose pulse is off, and a pulsing port that is not the target, are
+ * not judged.  0 is always taken: the port is back at
  * 50 Hz.
  */
 TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
@@ -198,6 +199,13 @@ TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
     CHECK(outputs_set_endpoints(&o, 9u, 410u, 1110u));
     CHECK_EQ(frame_hz(560u), 0u);
     CHECK_EQ(frame_hz(0u), 0u);
+    /* The edge: an endpoint of the frame's last count, 1784 us at 560 Hz,
+     * fits; one microsecond more does not. */
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1784u));
+    CHECK_EQ(frame_hz(560u), 0u);
+    CHECK_EQ(frame_hz(0u), 0u);
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1785u));
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
 }
 
 /*

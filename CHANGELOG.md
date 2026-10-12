@@ -49,7 +49,10 @@ history is in git.
   slice with another port's pin takes 0 or 50 Hz only; a `PIN` write onto
   the slice of a target running at another rate is refused with BAD_VALUE.
   The SERVO screen's notes read "the PWM TARGET runs at" and "a pin shares a
-  PWM slice".
+  PWM slice"; against a 4.1 to 4.18 coprocessor the note in force reads
+  "every PWM surface runs at". A PROG write refused because the silicon
+  cannot bind a pin leaves SERVO's rate, its sweep and the slots' rates as
+  they were.
 
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave

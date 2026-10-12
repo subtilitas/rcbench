@@ -533,7 +533,8 @@ TEST_CASE(nothing_is_written_while_the_programmer_has_a_port)
  * changed, say RESET once; an unanswered TARGET write says UNKNOWN; the
  * stronger of the two is kept until asked.  The first TARGET known after a
  * link-up, a write of the TARGET in force and a coprocessor below 4.19 say
- * KEPT.
+ * KEPT; below 4.19 a changed TARGET read and an unanswered TARGET write
+ * too.
  */
 TEST_CASE(a_target_change_returns_the_servo_rate_to_0_from_4_19)
 {
@@ -593,6 +594,16 @@ TEST_CASE(a_target_change_returns_the_servo_rate_to_0_from_4_19)
     CHECK(prog_link_next(&g_p, true, &w) == false);
     g_page[LINK_PG_TARGET] = 0u;
     read_at(4500u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    /* Nor a read that finds TARGET changed, 0 then 1, nor a TARGET write
+     * nobody answered. */
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(5000u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    prog_link_want(&g_p, 0u, false);
+    CHECK(prog_link_next(&g_p, true, &w));
+    CHECK_EQ(w.off, LINK_PG_TARGET);
+    prog_link_written(&g_p, &w, false);
     CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
     CHECK_EQ(prog_link_rate(NULL), PROG_LINK_RATE_KEPT);
 }

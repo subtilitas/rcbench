@@ -346,19 +346,15 @@ static void slots_rerate(void)
 }
 
 /*
- * The programming ports' pins made to agree with the PROG page: the TARGET
- * port at the SERVO page's frame rate while it names one, every other port
- * at PROG_PORT_RATE_HZ.  Never the pin the wire driver holds: it is the
- * driver's until the KST port gives it back, and the page keeps the port's
- * pulse switch and target meanwhile.  The tester's sweep is pointed where
- * the page's TARGET says before and after the binding, which can take the
- * TARGET port's pin away.
+ * The programming ports' pins bound as the PROG page holds them: the TARGET
+ * port at the SERVO rate while it names one, every other port at
+ * PROG_PORT_RATE_HZ (prog_port_port_hz()).  Never the pin the wire driver
+ * holds: it is the driver's until the KST port gives it back, and the page
+ * keeps the port's pulse switch and target meanwhile.  The pins the wire
+ * driver holds, as a mask of ports.
  */
-static void ports_apply(void)
+static uint8_t ports_bind(void)
 {
-    if (target_sync()) {
-        slots_rerate();
-    }
     uint8_t pin[LINK_PG_PORTS_MAX];
     uint16_t hz[LINK_PG_PORTS_MAX];
     const uint8_t wire = kst_port_pin_mask(&s_kst);
@@ -368,6 +364,21 @@ static void ports_apply(void)
         hz[i] = prog_port_port_hz(&s_prog, i);
     }
     outputs_hw_ports(pin, hz, (uint8_t)PROG_PORT_CHANNEL0);
+    return wire;
+}
+
+/*
+ * The programming ports' pins made to agree with the PROG page
+ * (ports_bind()).  The tester's sweep is pointed where the page's TARGET
+ * says before and after the binding, which can take the TARGET port's pin
+ * away.
+ */
+static void ports_apply(void)
+{
+    if (target_sync()) {
+        slots_rerate();
+    }
+    const uint8_t wire = ports_bind();
     prog_port_bound(&s_prog, (uint8_t)(outputs_hw_ports_bound() | wire));
     if (target_sync()) {
         slots_rerate();
@@ -592,6 +603,10 @@ static void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * reserved against all of them and bound.  A pin the generator cannot bind
  * is refused with the pins as they were.  No pin moves while the bank is
  * armed or asked to arm, or while the KST port is out of PWM.
+ *
+ * The pins are bound, at the rates the write leaves the ports at, before
+ * the SERVO page follows a TARGET change: a refused write leaves the SERVO
+ * rate, the sweep and the slots' rates as they were.
  */
 static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
@@ -611,7 +626,7 @@ static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         return nack;
     }
     reserve_held();
-    ports_apply();
+    (void)ports_bind();
     /* Every port that holds a pin has it on the generator, or the write is
      * undone: the pins, the reservation and the silicon as before. */
     for (uint8_t i = 0; i < prog_port_count(&s_prog); ++i) {
@@ -624,6 +639,7 @@ static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
             return LINK_NACK_BAD_VALUE;
         }
     }
+    ports_apply();
     prog_port_kept(&s_prog, kept_now);
     if (memcmp(kept_was, kept_now, sizeof(kept_was)) != 0) {
         save_outputs(&s_state);

@@ -5363,7 +5363,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
     if (reply.op == LINK_OP_ACK) {
         s_servo_hz_sent    = hz;
         s_servo_hz_refused = 0u;
-        servo_rate_show(SERVO_RATE_IN_FORCE, hz);
+        servo_rate_show(servo_rate_in_force(s_far_minor), hz);
         return RATE_LANDED;
     }
     if (reply.op == LINK_OP_NACK) {

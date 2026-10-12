@@ -21,6 +21,7 @@
 #include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -1388,6 +1389,42 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
         CHECK(warn > 0);
     }
     free(unsent);
+}
+
+/*
+ * What an acknowledged rate reaches depends on the coprocessor.  From 4.19
+ * the PWM TARGET alone runs at it; a 4.1 to 4.18 coprocessor runs every PWM
+ * surface at it, whatever the target, and the note says that instead.  Both
+ * are news, not a warning.
+ */
+TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
+{
+    CHECK_EQ(servo_rate_in_force(LINK_MINOR_SERVO_TARGET_RATE),
+             SERVO_RATE_IN_FORCE);
+    CHECK_EQ(servo_rate_in_force(18u), SERVO_RATE_IN_FORCE_SURFACES);
+    CHECK_EQ(servo_rate_in_force(1u), SERVO_RATE_IN_FORCE_SURFACES);
+    CHECK_STR_EQ(ui_tr(TX_SV_IN_FORCE_SURFACES_1),
+                 "In force: every PWM surface runs at %u Hz.");
+
+    fresh();
+    two_buffers();
+    open_settings();
+    servo_screen_rate(servo_rate_in_force(LINK_MINOR_SERVO_TARGET_RATE), 50u);
+    CHECK(both_whole());
+    gfx_color_t *target = malloc(FB_BYTES);
+    REQUIRE_ALLOC(target);
+    memcpy(target, fb, FB_BYTES);
+    servo_screen_rate(servo_rate_in_force(18u), 50u);
+    CHECK(both_whole());
+    CHECK(memcmp(fb, target, FB_BYTES) != 0);
+    int warn = 0;
+    for (int y = 260; y < 400; ++y) {
+        for (int x = 6; x < 494; ++x) {
+            warn += fb[y * W + x] == ui_theme_color(UI_C_WARN);
+        }
+    }
+    CHECK_EQ(warn, 0);
+    free(target);
 }
 
 /*
@@ -7833,6 +7870,7 @@ int main(void)
     RUN(each_face_of_the_overlay_draws_as_a_full_redraw_would);
     RUN(a_refused_save_repaints_only_the_save_line);
     RUN(the_output_page_says_whether_the_rate_reached_the_pins);
+    RUN(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate);
     RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
     RUN(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps);
     RUN(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is);

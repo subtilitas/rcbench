@@ -797,6 +797,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_PAUSED]              = "PAUSIERT",
     [TX_SV_RELEASE]             = "FREIGEBEN",
     [TX_SV_IN_FORCE_1]          = "Aktiv: das PWM-ZIEL läuft mit %u Hz.",
+    [TX_SV_IN_FORCE_SURFACES_1] = "Aktiv: jedes PWM-Ruder läuft mit %u Hz.",
     [TX_SV_IN_FORCE_2]          = "Ein PPM-Ausgang behält seinen eigenen Frame.",
     [TX_SV_REFUSED_1]           = "ABGELEHNT: ein Puls ist länger als der Frame, oder ein",
     [TX_SV_REFUSED_2]           = "Pin teilt den PWM-Slice mit anderer Rate. Pins bleiben.",

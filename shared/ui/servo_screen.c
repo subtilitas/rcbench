@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "link_pages.h"
 #include "log_name.h"
 #include "outputs.h"
 #include "rcbench_version.h"
@@ -2279,6 +2280,13 @@ uint16_t servo_screen_drawn(void) { return deg_to_us(s.shown_deg); }
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
 const char *servo_screen_type_name(void) { return type()->name; }
+
+servo_rate_state_t servo_rate_in_force(uint16_t minor)
+{
+    return (minor >= LINK_MINOR_SERVO_TARGET_RATE)
+               ? SERVO_RATE_IN_FORCE
+               : SERVO_RATE_IN_FORCE_SURFACES;
+}
 
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
 {
@@ -4907,6 +4915,12 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
     switch (st) {
     case SERVO_RATE_IN_FORCE:
         snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_1), (unsigned)s.frame_hz);
+        snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
+        warn = false;
+        break;
+    case SERVO_RATE_IN_FORCE_SURFACES:
+        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_SURFACES_1),
+                 (unsigned)s.frame_hz);
         snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
         warn = false;
         break;
