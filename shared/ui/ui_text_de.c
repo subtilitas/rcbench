@@ -402,6 +402,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_MIXED]              = "BEIDES BELEGT - DATEI GEMISCHT",
     [TX_LOG_TOO_LONG]           = "%d ZEILE(N) ZU LANG, REST FEHLT",
     [TX_LOG_ROWS_DIFFER]        = "ZEILEN UNGLEICH: TRENNER FALSCH?",
+    [TX_LOG_LAST_CUT]           = "LETZTE ZEILE ABGEBROCHEN, FEHLT",
     [TX_LOG_UNSETTLED]          = "NICHT EINDEUTIG - UNTEN PRÜFEN",
     [TX_LOG_HINT_NUM]           = "WERTE FALSCH?  ZAHLEN ÄNDERN",
     [TX_LOG_HINT_SEP]           = "SPALTEN FALSCH?  TRENNER ÄNDERN",

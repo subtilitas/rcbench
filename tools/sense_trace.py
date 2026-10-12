@@ -116,8 +116,10 @@ horn, and the report says so.
 With --servo-csv, a servo test's CSV file recorded with the output encoder
 on: each `travel angle (ms)` is paired with a move by time, and the
 arrival less that travel time is printed per move, with the median per
-setting.  The two files have different clocks.  The offset between them is
-found from the moves themselves: the one that pairs the most rows with a
+setting.  A row of the CSV file ends at its line feed: a last row without
+one is cut off, and the tool leaves it out and says so.  The two files
+have different clocks.  The offset between them is found from the moves
+themselves: the one that pairs the most rows with a
 command, each within --pair-ms.  Equally spaced moves pair equally well
 one move along; the tool says so when two offsets pair as many rows and
 not the same rows with the same moves, and --csv-offset sets it by hand.
@@ -939,13 +941,24 @@ def number(text: str) -> float | None:
     return value if math.isfinite(value) else None
 
 
-def read_travel(path: pathlib.Path) -> list[tuple[float, float]]:
-    """(row time in s, travel time in ms) for each `travel angle (ms)`."""
+def read_travel(path: pathlib.Path) -> tuple[list[tuple[float, float]], bool]:
+    """(row time in s, travel time in ms) for each `travel angle (ms)`, and
+    whether the file's last row was cut off and left out.
+
+    A row ends at its line feed, as the panel's reader has it
+    (log_reader_row): text after the last line feed is a row cut off by a
+    power loss or a full card.  Its fields can all be there and a number
+    in them cut short, so it is no row.
+    """
     out = []
     t_col = a_col = None
-    for line in path.read_text(encoding="utf-8",
-                               errors="replace").splitlines():
-        cells = line.split(";")
+    # Bytes: read_text() would turn a lone CR into a line end.
+    lines = path.read_bytes().decode("utf-8", errors="replace").split("\n")
+    # Space, tab and CR after the last line feed are no row; the panel's
+    # reader has the same set (str.strip() would add VT, FF and more).
+    cut = lines.pop().strip(" \t\r") != ""
+    for line in lines:
+        cells = line.rstrip("\r").split(";")
         if t_col is None:
             if "travel angle (ms)" in cells and "time (s)" in cells:
                 t_col = cells.index("time (s)")
@@ -960,7 +973,7 @@ def read_travel(path: pathlib.Path) -> list[tuple[float, float]]:
         sys.exit(f"sense_trace: {path} has no `time (s)` and `travel angle "
                  "(ms)` columns: a servo test's CSV file recorded with "
                  "AS5600 on")
-    return out
+    return out, cut
 
 
 def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
@@ -1322,9 +1335,10 @@ def main() -> int:
         print(f"sense_trace: {err}", file=sys.stderr)
         return 1
     rows: list[tuple[float, float]] = []
+    rows_cut = False
     if args.servo_csv is not None:
         try:
-            rows = read_travel(args.servo_csv)
+            rows, rows_cut = read_travel(args.servo_csv)
         except OSError as err:
             print(f"sense_trace: {err}", file=sys.stderr)
             return 2
@@ -1405,6 +1419,9 @@ def main() -> int:
                        "in the log: each boot is paired on its own clock")
         out.append(f"{args.servo_csv}: {n_rows} travel time(s), "
                    f"{paired} paired with a move")
+        if rows_cut:
+            out.append("  its last row has no line feed: cut off, and left "
+                       "out")
         if mixed:
             out.append("  PROBLEM: the rows that pair with one boot's moves "
                        "do not lie after those of the boot before it; no "

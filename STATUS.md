@@ -98,7 +98,7 @@ is taken in a gap ahead of the save that needs it.
 | Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/` |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
-| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads. An armed bench's log has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the arm; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
+| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads. An armed bench's log has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the arm; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. The throttle changes only on an armed bench: not armed, the slider, its `-1` and `+1` steps and the rotary knob are refused and the value is 0 %, which every disarm returns it to; both bench screens read the value's state (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`; host suite only) |
@@ -311,7 +311,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
 | `shared/ui/programmer_screen.c` | 2397 | 2296 | 95.8% |
-| `shared/ui/log_viewer_screen.c` | 1022 | 961 | 94.0% |
+| `shared/ui/log_viewer_screen.c` | 1027 | 966 | 94.1% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 370 | 368 | 99.5% |
 | `shared/ui/outputs_screen.c` | 376 | 370 | 98.4% |
@@ -319,7 +319,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
 | `shared/settings/settings.c` | 234 | 228 | 97.4% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
-| `shared/logfile/log_csv.c` | 612 | 581 | 94.9% |
+| `shared/logfile/log_csv.c` | 682 | 647 | 94.9% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 62 | 62 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
@@ -405,7 +405,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **35110** | **34357** | **97.9%** |
+| **total** | **35134** | **34377** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
