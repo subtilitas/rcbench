@@ -315,10 +315,16 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
-`voltage`, `current` und `power` sind, was der Bildschirm zeigt.
+`voltage`, `current` und `power` sind, was der Bildschirm zeigt. `source`
+ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
+`model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
+SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne
+die Spalte endet bei `ch3 voltage` oder `energy`; der Log-Viewer und die
+Werkzeuge lesen beide Formen, denn `source` ist eine Textspalte und
+wird nie gezeichnet.
 `ina voltage` und `ina current` sind die des INA228 und leer, solange er
 nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,
 von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
@@ -1035,11 +1041,12 @@ Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
 50 ms:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
 ```
 
 Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
-OFF und leer, solange das Netzteil nicht antwortet. Der Prüfstand hat beim
+OFF und leer, solange das Netzteil nicht antwortet. `source` ist `measured`
+für die Werte des PD mini und `model` für das Modell des Panels. Der Prüfstand hat beim
 Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
 Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Ladung und
 Energie dieser Datei zählen von den Summen seit dem Einschalten des Ausgangs
