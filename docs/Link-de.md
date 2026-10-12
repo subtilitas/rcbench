@@ -1120,6 +1120,11 @@ Backup und das Image. Seine Phase ist PLANNING, solange die zuletzt
 gelesene Page Bit 3 gesetzt und Ergebnis 35 hat, und RUNNING vor dem ersten
 Lesen und ab dem Plan. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
 keine Antwort kommt, nach `kst_link_abort()` kein Mal, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
+Nach einem abgewiesenen ABORT behält dieses Lesen die Prüfungen von oben:
+eine Page abseits der `SEQ` des Panels oder mit Operation 0 nach einem
+Lesen, das eine nannte, beendet die laufende Operation als neu gestartet,
+nie als erledigt. Ein mit BAD_VALUE abgewiesenes ABORT geht nach dem Lesen
+noch einmal, mit der `SEQ` der Page.
 Ein mit BAD_PAGE abgewiesenes Lesen der Register 0 bis 3 heißt: ein
 Koprozessor ohne die Page; mit jedem anderen Code abgewiesen zählt es als
 unbeantwortet und wird erneut gesendet. Bei einem Koprozessor ohne die Page

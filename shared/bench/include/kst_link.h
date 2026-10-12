@@ -322,7 +322,12 @@ kst_link_start_t kst_link_fetch(kst_link_t *k);
  *  runs the operation, and the ABORT ends it with KST_SES_ERR_ABORTED.
  *  The read unanswered KST_LINK_RETRIES times ends the request with
  *  KST_LINK_OUT_NO_ANSWER.  The command ABORT is sent as soon as the page
- *  is known; an operation that runs ends with KST_SES_ERR_ABORTED. */
+ *  is known; an operation that runs ends with KST_SES_ERR_ABORTED.  An
+ *  ABORT the page refuses is followed by a read of registers 0 to 3 with
+ *  the same checks: a page off the panel's SEQ, or with its operation back
+ *  at NONE, ends the operation as KST_LINK_OUT_RESTARTED, never
+ *  KST_LINK_OUT_DONE.  An ABORT refused with LINK_NACK_BAD_VALUE goes
+ *  again after that read, with the page's SEQ. */
 void kst_link_abort(kst_link_t *k);
 
 /** The next exchange owed at @p now_ms, into @p x; false for none.  The

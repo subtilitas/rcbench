@@ -1023,7 +1023,11 @@ PLANNING while the page last read has bit 3 set and result 35, and RUNNING
 before the first read and from the plan on. It sends a
 command again up to 3 times when no answer comes, and not once after
 `kst_link_abort()`, and reads `SEQ` again after
-a refusal with BAD_VALUE. A read of registers 0 to 3 refused with BAD_PAGE
+a refusal with BAD_VALUE. After a refused ABORT that read keeps the checks
+above: a page off the panel's `SEQ`, or with operation 0 after a read that
+named one, ends the operation that runs as restarted, never as done. An
+ABORT refused with BAD_VALUE goes again after the read, with the page's
+`SEQ`. A read of registers 0 to 3 refused with BAD_PAGE
 means a coprocessor without the page; refused with any other code it counts
 as unanswered and is sent again. A coprocessor without the page keeps, for
 the caller, whether the port was out of PWM at the last read that answered.

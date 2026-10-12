@@ -501,12 +501,16 @@ static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
         k->phase = (uint8_t)KST_LINK_NO_PAGE;
         break;
     case X_CMD:
-        /* The SEQ is not the page's: read it again. */
         k->cmd_live = false;
-        k->known = false;
-        k->polled = false;
         if (k->cmd_abort) {
+            /* The page is read before anything else goes, and what this
+             * module knows of it stays: a page that is not at its SEQ, or
+             * whose operation went back to NONE, started again, and the
+             * operation still running here ends as RESTARTED
+             * (on_status()).  An abort refused with BAD_VALUE goes again
+             * after the read, with the page's SEQ. */
             k->cmd_abort = false;
+            k->poll_now = true;
             if (nack != (uint8_t)LINK_NACK_BAD_VALUE) {
                 k->abort_wanted = false;
             }
@@ -514,6 +518,9 @@ static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
                 k->phase = (uint8_t)KST_LINK_SYNC;
             }
         } else {
+            /* The SEQ is not the page's: read it again. */
+            k->known = false;
+            k->polled = false;
             finish(k, KST_LINK_OUT_NACK, nack);
         }
         break;

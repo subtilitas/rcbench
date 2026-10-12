@@ -1705,6 +1705,69 @@ TEST_CASE(an_abort_after_a_restart_refused_the_write_sent_again_is_no_refusal)
     CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
 }
 
+/* The fresh page refused the abort for its SEQ and took the one sent again
+ * with its own: no outcome after the RESTARTED one, the write sent once. */
+static void abort_refused_by_a_restart(const kst_link_outcome_t *out)
+{
+    restarted_after_the_write(out);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 2);
+    CHECK_EQ(g_last_cmd[LINK_KS_W_SEQ], 1);
+    CHECK_EQ(g_port.seq, 1);
+}
+
+TEST_CASE(an_abort_refused_by_a_restart_under_a_running_write_is_no_done)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The coprocessor starts again between two status reads while the
+     * write runs; the abort reaches the fresh page before the next read
+     * and is refused with BAD_VALUE for its SEQ. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    while (g_k.phase != (uint8_t)KST_LINK_RUNNING) {
+        CHECK(g_cmds <= 1u);
+        ms();
+    }
+    port_fresh();
+    kst_link_abort(&g_k);
+    out = outcome();
+    abort_refused_by_a_restart(&out);
+    CHECK(out.taken);
+}
+
+TEST_CASE(an_abort_after_the_deciding_read_refused_by_a_restart_is_no_done)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The write's answer is lost and the abort puts it in doubt.  The read
+     * that decides says taken, and the coprocessor starts again before the
+     * abort goes. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd_reply = 1;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(1);
+    kst_link_abort(&g_k);
+    CHECK(g_k.cmd_doubt);
+    ms();
+    CHECK(!g_k.cmd_doubt);
+    CHECK_EQ(g_k.phase, (uint8_t)KST_LINK_RUNNING);
+    CHECK(g_k.abort_wanted);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 0);
+    port_fresh();
+    out = outcome();
+    abort_refused_by_a_restart(&out);
+    CHECK(out.taken);
+}
+
 /* --- from PROGRAMMING to PWM without a supply cycle (4.15) ---------------------- */
 
 static kst_link_request_t leave_after(unsigned wait_ms)
@@ -2562,6 +2625,8 @@ int main(void)
     RUN(an_abort_after_a_write_taken_at_seq_1_and_a_restart_is_no_drop);
     RUN(a_write_taken_at_seq_1_sent_again_to_a_restart_is_no_refusal);
     RUN(an_abort_after_a_restart_refused_the_write_sent_again_is_no_refusal);
+    RUN(an_abort_refused_by_a_restart_under_a_running_write_is_no_done);
+    RUN(an_abort_after_the_deciding_read_refused_by_a_restart_is_no_done);
     RUN(a_leave_sends_its_wait_and_then_the_command);
     RUN(a_leave_with_a_wait_above_10_000_ms_sends_nothing);
     RUN(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15);

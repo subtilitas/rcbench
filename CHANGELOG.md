@@ -185,7 +185,12 @@ history is in git.
   0 after a read that named an operation started again at any `SEQ`: a
   WRITE taken at `SEQ` 1 after `SEQ` 0 by a coprocessor that then starts
   again ends as restarted, not as dropped after an abort and not as refused
-  after the frame was sent again. Before, a WRITE whose answer was lost was
+  after the frame was sent again. An ABORT that the page refuses keeps these
+  checks on the read after it: a coprocessor that started again under a
+  running operation, or after the read that found the command taken, and
+  refused the ABORT with BAD_VALUE for its `SEQ`, ends the operation as
+  restarted, not as done with result OK, so the servo programmer keeps the
+  record held before the write. Before, a WRITE whose answer was lost was
   sent again ahead of the ABORT and could run.
 - `kst_session_power_cycled()` drops the session's backup, the record of
   its writes (`wrote_regs`) and the lock, after the end of an operation that
