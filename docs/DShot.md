@@ -169,7 +169,12 @@ driver that is not working.
 
 The bench maps travel so that a command of zero is motor stop and everything
 above it lands in 48 to 2047. A driver that mapped travel straight onto 0 to
-2047 would send beeps and direction changes on its way up from idle.
+2047 would send beeps and direction changes on its way up from idle. A command
+above the span of 1000 maps to zero, motor stop, not to full throttle.
+
+`out_dshot_bind()` on a pin that is already bound with a different rate or mode
+returns false and leaves the old output running. A caller releases the pin
+first.
 
 Frames go out at 1 kHz. That rate is not on the wire: the OUTPUTS page's rate
 field is a bit rate for DShot rather than a frame rate, so the bench chooses it.

@@ -111,6 +111,10 @@ uint16_t dshot_frame(uint16_t value, bool telemetry, bool inverted);
  * the command range is never entered by a throttle that is merely low.  The
  * discontinuity at the bottom is the protocol's, not this function's: an ESC
  * has no idea of "barely turning".
+ *
+ * A @p command above @p span returns DSHOT_CMD_MOTOR_STOP, the same reading
+ * of a fault that dshot_frame() applies to a value it cannot encode.  A
+ * @p command equal to @p span is the top of the range and returns 2047.
  */
 uint16_t dshot_throttle(uint16_t command, uint16_t span);
 

@@ -48,6 +48,10 @@ uint32_t dshot_edt_millivolts(uint16_t count);   /* also _amps, _celsius */
 `dshot_edt_*()` schedules the command that asks for extended telemetry:
 one ask every 500 ms at zero throttle, at most 10 asks per run.
 
+`dshot_throttle(command, span)` maps a command of 0 to `span` onto the
+value: 0 gives 0 (stop), 1 gives 48, `span` gives 2047. A command above `span`
+gives 0, as `dshot_frame()` gives 0 for a value above 2047.
+
 Driver, `out_dshot.h`:
 
 ```c
@@ -57,6 +61,11 @@ bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out);
 void out_dshot_stop(uint8_t pin);
 void out_dshot_release(uint8_t pin);
 ```
+
+`out_dshot_bind()` on a pin already bound with the same rate and mode returns
+true and leaves the output running. With a different rate or mode it returns
+false and the old output keeps running; a caller that wants the new settings
+calls `out_dshot_release()` first.
 
 `out_dshot_stop()` sends nothing further. An ESC stops on the silence after
 its own timeout.

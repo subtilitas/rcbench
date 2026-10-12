@@ -38,7 +38,13 @@ history is in git.
   of version 3 or above is read with the 6-byte header, `crc_errors` and
   `rejected` count a failing candidate once, at the front of the buffer, and
   `out_dshot_bind()` / `out_ppm_bind()` return false and keep the old binding
-  for a bound pin with other settings.
+  for a bound pin with other settings. The DShot module README,
+  `docs/DShot.md` and `docs/DShot-de.md` state this.
+- `dshot_throttle()` maps a command above its span to 0 (motor stop), as
+  `dshot_frame()` maps a value above 2047 to 0. It mapped it to 2047. A
+  command equal to the span still maps to 2047. The firmware passes
+  `outputs_actual()` against a span of 1000, so no stored value of 0 to 1000
+  changes.
 
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
