@@ -23,6 +23,9 @@ export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K
   servoPort: Object.freeze(['outputs', 'prog'] as const),
 });
 
+/** Pictures of one part that one set of options shows, at most. */
+export const PICTURES_MAX = 2;
+
 export const OPTION_KEYS: ReadonlyArray<OptionKey> = Object.freeze(
   ['connection', 'ina228Board', 'escPower', 'servoPower', 'servoPort'] as const,
 );
@@ -207,7 +210,6 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     checks,
     unknown,
     power,
-    conflicts: [],
     ignored: [...ignored].sort(),
   };
 }
