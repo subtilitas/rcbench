@@ -24,7 +24,10 @@
 typedef struct {
     char   buf[64 * 1024];
     size_t len;
-    int    fail_after;   /**< -1 never; else fail once this many bytes are in */
+    /** -1 never; else the sink holds at most this many bytes, and a write
+     *  that crosses it takes the bytes up to it and answers the short
+     *  count, as fwrite() does on a card that fills or is pulled out. */
+    int    fail_after;
     int    commits;      /**< how many times the sink was told to keep it */
     size_t kept;         /**< bytes the last commit made durable */
     bool   commit_fails;
@@ -33,15 +36,17 @@ typedef struct {
 static int mem_write(void *ctx, const void *data, size_t len)
 {
     mem_sink_t *m = (mem_sink_t *)ctx;
-    if (m->fail_after >= 0 && (int)m->len >= m->fail_after) {
-        return -1;
-    }
     if (m->len + len > sizeof(m->buf)) {
         return -1;
     }
-    memcpy(m->buf + m->len, data, len);
-    m->len += len;
-    return (int)len;
+    size_t take = len;
+    if (m->fail_after >= 0 && m->len + len > (size_t)m->fail_after) {
+        take = ((size_t)m->fail_after > m->len)
+                   ? (size_t)m->fail_after - m->len : 0u;
+    }
+    memcpy(m->buf + m->len, data, take);
+    m->len += take;
+    return (int)take;
 }
 
 /*
@@ -348,7 +353,7 @@ TEST_CASE(the_sources_survive_the_round_trip)
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    int cols[3] = { 9, 10, 11 };
+    const int cols[3] = { 9, 10, 11 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
     CHECK_EQ(data.count, 2);
@@ -409,7 +414,7 @@ TEST_CASE(each_window_goes_into_one_row)
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    int cols[3] = { 13, 14, 15 };
+    const int cols[3] = { 13, 14, 15 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
     CHECK_STR_EQ(data.field[0].name, "ch1 current");
@@ -526,6 +531,147 @@ TEST_CASE(what_survived_a_failure_still_reads)
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
     CHECK(an.row_count > 0);
     CHECK_EQ(an.delimiter, ';');
+}
+
+/* --------------------------------------------- a write cut off mid-row */
+
+/* Three rows whose numbers lose their meaning when cut: "9554" cut after
+ * "95" still parses. */
+static void write_three(log_writer_t *w, int *ok)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                         | LINK_BN_RPM_OK | LINK_BN_TEMP_OK);
+    static const float k_rpm[3] = { 8123.0f, 8840.0f, 9554.0f };
+    *ok = 0;
+    for (int i = 0; i < 3; ++i) {
+        b.voltage  = 22.34f - (float)i * 0.03f;
+        b.current  = 41.25f + (float)i;
+        b.power    = b.voltage * b.current;
+        b.rpm      = k_rpm[i];
+        b.temp_esc = 41.5f;
+        if (log_writer_row(w, 0.05f * (float)i, &b)) {
+            ++*ok;
+        }
+    }
+}
+
+/* Where each line of write_three()'s file ends: [0] the header, [1] to [3]
+ * the rows, each the offset one past its line feed. */
+static void row_ends(size_t ends[4])
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    int ok = 0;
+    write_three(&w, &ok);
+    CHECK_EQ(ok, 3);
+    int k = 0;
+    for (size_t i = 0; i < g_mem.len && k < 4; ++i) {
+        if (g_mem.buf[i] == '\n') {
+            ends[k++] = i + 1u;
+        }
+    }
+    CHECK_EQ(k, 4);
+    CHECK_EQ(ends[3], g_mem.len);
+}
+
+static log_err_t analyse_bytes(const char *text, size_t len,
+                               log_analysis_t *an)
+{
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    return log_csv_analyse(&src, &opts, an);
+}
+
+/*
+ * A card that stops part way through a row keeps the bytes it took.  At
+ * every cut inside the last row, its line feed included, the file reads as
+ * the two rows before it, cell for cell, and says its last row is cut.  A
+ * cut one byte later, after the line feed, is a complete file.
+ */
+TEST_CASE(a_row_cut_at_any_byte_reads_as_the_rows_before_it)
+{
+    size_t ends[4] = { 0 };
+    row_ends(ends);
+    static char whole[1024];
+    CHECK(g_mem.len < sizeof(whole));
+    memcpy(whole, g_mem.buf, g_mem.len);
+
+    log_analysis_t want;
+    CHECK_EQ(analyse_bytes(whole, ends[2], &want), LOG_OK);
+    CHECK_EQ(want.row_count, 2);
+    CHECK(!want.cut_row);
+    CHECK_NEAR(want.columns[4].last, 8840.0, 0.5);
+
+    for (size_t cut = ends[2]; cut <= ends[3]; ++cut) {
+        fresh((int)cut);
+        log_writer_t w = writer();
+        int ok = 0;
+        write_three(&w, &ok);
+        CHECK_EQ(g_mem.len, cut);
+        CHECK_EQ(memcmp(g_mem.buf, whole, cut), 0);
+
+        log_analysis_t an;
+        CHECK_EQ(analyse_bytes(g_mem.buf, g_mem.len, &an), LOG_OK);
+        if (cut == ends[3]) {
+            /* The last row whole, its line feed included. */
+            CHECK_EQ(ok, 3);
+            CHECK(!log_writer_failed(&w));
+            CHECK_EQ(an.row_count, 3);
+            CHECK(!an.cut_row);
+            CHECK_NEAR(an.columns[4].last, 9554.0, 0.5);
+            continue;
+        }
+        CHECK_EQ(ok, 2);
+        CHECK(log_writer_failed(&w));
+        /* At ends[2] nothing of the row went in: the file ends on a line
+         * feed and nothing is cut.  Past it, every cut is. */
+        CHECK_EQ(an.cut_row, cut > ends[2]);
+        CHECK_EQ(an.row_count, want.row_count);
+        CHECK_EQ(an.ragged_rows, 0);
+        CHECK_EQ(an.n_columns, want.n_columns);
+        for (int c = 0; c < want.n_columns; ++c) {
+            CHECK_EQ(an.columns[c].non_empty, want.columns[c].non_empty);
+            CHECK_EQ(an.columns[c].parsed, want.columns[c].parsed);
+            CHECK_NEAR(an.columns[c].last, want.columns[c].last, 1e-9);
+            CHECK_NEAR(an.columns[c].min, want.columns[c].min, 1e-9);
+            CHECK_NEAR(an.columns[c].max, want.columns[c].max, 1e-9);
+        }
+    }
+}
+
+/* The same rule at the top of the file: an empty file is no header, a
+ * header cut off is no header and is said to be cut, a header alone is no
+ * rows, and a header with its first row cut is no rows and a cut. */
+TEST_CASE(a_cut_header_or_first_row_is_no_file_to_plot)
+{
+    size_t ends[4] = { 0 };
+    row_ends(ends);
+
+    for (size_t cut = 0; cut < ends[1]; ++cut) {
+        fresh((int)cut);
+        log_writer_t w = writer();
+        int ok = 0;
+        write_three(&w, &ok);
+        CHECK_EQ(ok, 0);
+        CHECK(log_writer_failed(&w));
+        CHECK_EQ(g_mem.len, cut);
+
+        log_analysis_t an;
+        const log_err_t err = analyse_bytes(g_mem.buf, g_mem.len, &an);
+        if (cut < ends[0]) {
+            CHECK_EQ(err, LOG_ERR_NO_HEADER);
+            CHECK_EQ(an.cut_row, cut > 0u);
+        } else {
+            CHECK_EQ(err, LOG_ERR_NO_ROWS);
+            CHECK_EQ(an.cut_row, cut > ends[0]);
+        }
+        CHECK_EQ(an.row_count, 0);
+    }
 }
 
 TEST_CASE(a_writer_with_no_sink_fails_rather_than_crashes)
@@ -673,7 +819,7 @@ TEST_CASE(a_run_stamped_with_wall_time_reads_back_with_its_gap)
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    int cols[1] = { 1 };
+    const int cols[1] = { 1 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 1, &data), LOG_OK);
     CHECK_EQ(data.count, 300);
@@ -764,12 +910,12 @@ static unsigned log_pass(log_writer_t *w, log_cadence_t *cad,
     float t_s = 0.0f;
     const bool logged = log_cadence_row(cad, chain_now(), new_sample, run,
                                         &t_s);
-    const unsigned windows = sense_link_windows(&ch.sl);
+    const unsigned windows = sense_link_windows(&chain.sl);
     const unsigned rows    = log_cadence_rows(windows);
     unsigned written = 0u;
     for (unsigned k = 0u; k < rows; ++k) {
         if (k < windows) {
-            (void)sense_link_take_window(&ch.sl, bench);
+            (void)sense_link_take_window(&chain.sl, bench);
         }
         if (logged) {
             bench_state_t row;
@@ -808,7 +954,7 @@ static void read_log(log_read_t *r)
     const char *p = strchr(g_mem.buf, '\n') + 1;       /* past the header */
     while (*p != '\0') {
         const char *end = strchr(p, '\n');
-        char cell[22][24];
+        char cell[22][24] = {{0}};
         unsigned n = 0u;
         const char *c = p;
         while (c <= end && n < 22u) {
@@ -899,12 +1045,12 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     for (unsigned i = 0u; i < 20u; ++i) {
         chain_cycle(53u);
         CHECK_EQ(log_pass(&w, &cad, &bench, true, false), 0u);
-        CHECK_EQ(sense_link_windows(&ch.sl), 0u);
+        CHECK_EQ(sense_link_windows(&chain.sl), 0u);
     }
     CHECK_EQ(g_mem.len, 0u);
     const uint16_t before = bench.servo_window;   /* the last one taken */
     log_cadence_run_start(&cad, chain_now());
-    const uint64_t began = ch.us;
+    const uint64_t began = chain.us;
     unsigned most = 0u;
     for (unsigned i = 0u; i < 380u; ++i) {
         chain_cycle(53u);
@@ -919,7 +1065,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
 
     log_read_t r;
     read_log(&r);
-    const unsigned closed = (unsigned)((ch.us - began) / 50000u);
+    const unsigned closed = (unsigned)((chain.us - began) / 50000u);
     CHECK(r.with_window + 1u >= closed && r.with_window <= closed + 1u);
     CHECK_EQ(r.rows, r.with_window);            /* no row without one */
     CHECK_EQ(r.with_sample, 380u);              /* each sample once   */
@@ -934,7 +1080,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     CHECK_EQ((uint16_t)((uint16_t)r.first - before), 1u);
     CHECK_EQ(log_cadence_sent(&cad), r.rows);
     CHECK_EQ(log_cadence_lost(&cad), 0);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
 
     /* And the reader takes the file: its time column, no ragged row. */
     log_source_t src;
@@ -995,7 +1141,7 @@ TEST_CASE(a_poll_that_brings_three_windows_writes_three_rows)
      * the window cells empty, and the windows follow in the next. */
     fresh(-1);
     w = writer();
-    ch.lose_win = 1u;
+    chain.lose_win = 1u;
     chain_cycle(53u);
     CHECK_EQ(log_pass(&w, &cad, &bench, true, true), 1u);
     chain_cycle(53u);
@@ -1017,24 +1163,24 @@ static void far_window(uint16_t number, uint16_t n_i, int32_t ma,
                        uint16_t n_v, int32_t mv)
 {
     for (unsigned k = SENSE_WIN_RING - 1u; k > 0u; --k) {
-        ch.snap.ring[k] = ch.snap.ring[k - 1u];
+        chain.snap.ring[k] = chain.snap.ring[k - 1u];
     }
-    sense_ring_win_t *e = &ch.snap.ring[0];
+    sense_ring_win_t *e = &chain.snap.ring[0];
     memset(e, 0, sizeof(*e));
     e->closed = true;
     e->n_i = n_i;
     e->n_v = n_v;
     e->i_mean_ua = e->i_min_ua = e->i_max_ua = ma * 1000;
     e->v_mean_uv = e->v_min_uv = mv * 1000;
-    sense_window_t *win = &ch.snap.win[SENSE_SRC_CH1];
+    sense_window_t *win = &chain.snap.win[SENSE_SRC_CH1];
     memset(win, 0, sizeof(*win));
     win->number = number;
     win->n_i = n_i;
     win->n_v = n_v;
     win->i_mean_ua = win->i_min_ua = win->i_max_ua = ma * 1000;
     win->v_mean_uv = win->v_min_uv = mv * 1000;
-    ch.snap.have_win = true;
-    sense_page_publish(&ch.pg, &ch.snap, 0u);
+    chain.snap.have_win = true;
+    sense_page_publish(&chain.pg, &chain.snap, 0u);
 }
 
 /*
@@ -1060,11 +1206,11 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
     }
     /* From here the coprocessor's snapshots are written by hand: its
      * schedule stands, and the exchanges take no time. */
-    ch.exch_ms = 0u;
+    chain.exch_ms = 0u;
     chain_far_late(50u);
     (void)chain_poll();                 /* the last one it closed itself */
     (void)log_pass(&w, &cad, &bench, true, false);
-    const uint16_t n0 = (uint16_t)(ch.snap.win[SENSE_SRC_CH1].number + 1u);
+    const uint16_t n0 = (uint16_t)(chain.snap.win[SENSE_SRC_CH1].number + 1u);
     static const struct { uint16_t n_i; int32_t ma; uint16_t n_v; int32_t mv; }
     k_win[] = {
         { 12u, 412, 0u, 0 },        /* current and no voltage       */
@@ -1136,7 +1282,7 @@ TEST_CASE(a_part_that_comes_back_mid_window_writes_no_zero_voltage)
         }
         chain_far(phase);
         log_cadence_run_start(&cad, chain_now());
-        fake_reset3221(ch.i3221);
+        fake_reset3221(chain.i3221);
         for (unsigned i = 0u; i < 40u; ++i) {
             chain_cycle(53u);
             (void)log_pass(&w, &cad, &bench, true, true);
@@ -1166,6 +1312,8 @@ int main(void)
     RUN(a_failing_sink_latches_and_stops);
     RUN(a_commit_after_a_failure_is_refused);
     RUN(what_survived_a_failure_still_reads);
+    RUN(a_row_cut_at_any_byte_reads_as_the_rows_before_it);
+    RUN(a_cut_header_or_first_row_is_no_file_to_plot);
     RUN(a_writer_with_no_sink_fails_rather_than_crashes);
     RUN(no_more_than_one_interval_of_a_run_is_ever_uncommitted);
     RUN(what_a_power_cut_leaves_is_a_short_run_and_not_an_empty_file);

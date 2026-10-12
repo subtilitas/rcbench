@@ -59,6 +59,17 @@ typedef struct {
      */
     bool (*error)(void *ctx);
     void *ctx;
+    /**
+     * Optional, both or neither: the length of the input in bytes, and a
+     * move to an offset from its start, after which read() continues there.
+     * With them the analysis reads the last bytes of a file past the row cap
+     * for the cut row, instead of every row up to them.  NULL means the
+     * source can only be read from the top; it is then read on to its end.
+     * Last in the struct, so a source written as { read, rewind, error, ctx }
+     * has neither.
+     */
+    bool (*size)(void *ctx, size_t *bytes);
+    bool (*seek)(void *ctx, size_t offset);
 } log_source_t;
 
 typedef struct {
@@ -86,6 +97,7 @@ typedef struct {
     bool started; /**< the byte order mark, if any, has been dealt with */
     bool failed;  /**< a read reported an error; the rest of the file is lost */
     bool overflow;/**< the last row did not fit the field store */
+    bool cut;     /**< the input ended inside a row, which was not returned */
 } log_reader_t;
 
 void log_reader_init(log_reader_t *r, log_source_t *src);
@@ -97,6 +109,12 @@ void log_reader_init(log_reader_t *r, log_source_t *src);
  * @param fields       receives one pointer per field, up to @p max_fields
  * @param total_fields receives the true field count, which may exceed
  *                     @p max_fields; that is how a ragged row is spotted
+ * A row ends at its line feed (0x0A).  Input that ends inside a row -- a
+ * write cut off by a power loss or a full card -- leaves a row nothing proves
+ * complete: a number cut after two of its four digits still parses, and the
+ * field count can still match the header.  That row is not returned: the
+ * call answers -1 as at the end of input and sets @c r->cut.
+ *
  * @return the number of fields stored, or -1 at end of input
  */
 int log_reader_row(log_reader_t *r, char delimiter, char *store,
@@ -155,6 +173,10 @@ typedef struct {
     int long_rows;   /**< rows too long for the field store; cells were lost */
     int max_fields;
     bool truncated; /**< the row cap was hit; row_count is what was read */
+    /** The file ends inside a row, without its line feed.  That row is left
+     *  out of row_count and of every figure: a write cut off mid-row leaves
+     *  a number that is wrong and still parses. */
+    bool cut_row;
 } log_analysis_t;
 
 typedef struct {

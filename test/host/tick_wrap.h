@@ -39,16 +39,20 @@ static inline uint32_t tick_before_wrap(uint32_t k)
 /* Runs @p fn with the clock started at tick 0 and at 2^32 - @p k. */
 static inline void at_tick_0_and_before_the_wrap(tick_case_fn fn, uint32_t k)
 {
-    const uint32_t start[2] = { 0u, tick_before_wrap(k) };
+    const uint32_t starts[2] = { 0u, tick_before_wrap(k) };
     for (unsigned i = 0; i < 2u; ++i) {
         const int failed = t_case_failed;
         t_case_failed = 0;
-        fn(start[i]);
+        fn(starts[i]);
+        /* fn() sets t_case_failed through the function pointer, which
+         * cppcheck does not follow: it takes the value as still 0. */
+        /* cppcheck-suppress knownConditionTrueFalse */
         if (t_case_failed && i == 0u) {
             printf("      with the clock started at tick 0\n");
+        /* cppcheck-suppress knownConditionTrueFalse */
         } else if (t_case_failed) {
             printf("      with the clock started at 0x%08lX (2^32 - %lu)\n",
-                   (unsigned long)start[i], (unsigned long)k);
+                   (unsigned long)starts[i], (unsigned long)k);
         }
         t_case_failed |= failed;
     }

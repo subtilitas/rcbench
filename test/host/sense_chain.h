@@ -59,17 +59,17 @@ typedef struct {
     bool     flat;           /* CH1's current is left as the suite set it */
 } chain_t;
 
-static chain_t ch;
+static chain_t chain;
 
 static inline uint32_t chain_now(void)
 {
-    return (uint32_t)(ch.tick0 + (uint32_t)(ch.us / 1000u));
+    return (uint32_t)(chain.tick0 + (uint32_t)(chain.us / 1000u));
 }
 
 static inline uint64_t chain_clock(void *ctx)
 {
     (void)ctx;
-    return ch.us;
+    return chain.us;
 }
 
 static inline void chain_recover(void *ctx)
@@ -109,23 +109,23 @@ static inline void chain_far(unsigned ms)
     for (unsigned i = 0u; i < ms; ++i) {
         sense_cmd_t cmd;
         memset(&cmd, 0, sizeof(cmd));
-        sense_page_cmd(&ch.pg, &cmd);
-        if (!ch.flat) {
+        sense_page_cmd(&chain.pg, &cmd);
+        if (!chain.flat) {
             /* The window this tick's sample falls in: number 0 in the
              * tick that takes a set-up and starts the schedule afresh. */
-            const sense_sched_t *sc = &ch.svc.sched;
-            const uint64_t now_ms = ch.us / 1000u;
-            const bool afresh = !ch.svc.started
-                                || cmd.cfg_gen != ch.svc.cfg_gen
+            const sense_sched_t *sc = &chain.svc.sched;
+            const uint64_t now_ms = chain.us / 1000u;
+            const bool afresh = !chain.svc.started
+                                || cmd.cfg_gen != chain.svc.cfg_gen
                                 || !sc->started;
             const uint64_t win = afresh
                                      ? 0u
                                      : (now_ms - sc->t0_ms) / SENSE_WINDOW_MS;
-            ch.i3221->amps[0] = (double)chain_mean_ma((uint16_t)win) / 1000.0;
+            chain.i3221->amps[0] = (double)chain_mean_ma((uint16_t)win) / 1000.0;
         }
-        sense_svc_step(&ch.svc, &cmd, &ch.snap);
-        sense_page_publish(&ch.pg, &ch.snap, 0u);
-        ch.us += 1000u;
+        sense_svc_step(&chain.svc, &cmd, &chain.snap);
+        sense_page_publish(&chain.pg, &chain.snap, 0u);
+        chain.us += 1000u;
     }
 }
 
@@ -133,27 +133,27 @@ static inline void chain_far(unsigned ms)
  * read. */
 static inline void chain_far_late(unsigned ms)
 {
-    ch.us += (uint64_t)ms * 1000u;
+    chain.us += (uint64_t)ms * 1000u;
 }
 
 /* The coprocessor as it starts: no window, the page's set-up kept. */
 static inline void chain_far_boot(void)
 {
     const sense_svc_io_t io = {
-        .sched = { { fake_read, fake_write, &ch.fb }, chain_clock,
-                   chain_recover, &ch.fb },
+        .sched = { { fake_read, fake_write, &chain.fb }, chain_clock,
+                   chain_recover, &chain.fb },
         .open = chain_open, .close = chain_close, .ask = chain_ask,
     };
     uint16_t cfg[LINK_SN_CONFIG_COUNT];
-    sense_page_read(&ch.pg, 0u, (uint8_t)LINK_SN_CONFIG_COUNT, cfg);
-    sense_svc_init(&ch.svc, &io);
-    memset(&ch.snap, 0, sizeof(ch.snap));
-    sense_page_init(&ch.pg);
-    outputs_arm(&ch.o, false, 0u);
+    sense_page_read(&chain.pg, 0u, (uint8_t)LINK_SN_CONFIG_COUNT, cfg);
+    sense_svc_init(&chain.svc, &io);
+    memset(&chain.snap, 0, sizeof(chain.snap));
+    sense_page_init(&chain.pg);
+    outputs_arm(&chain.o, false, 0u);
     for (uint8_t at = 4u; at <= 8u; at = (uint8_t)(at + 4u)) {
-        (void)sense_page_write(&ch.pg, at, 4u, &cfg[at], &ch.o, 0u);
+        (void)sense_page_write(&chain.pg, at, 4u, &cfg[at], &chain.o, 0u);
     }
-    (void)sense_page_write(&ch.pg, 0u, 4u, &cfg[0], &ch.o, 0u);
+    (void)sense_page_write(&chain.pg, 0u, 4u, &cfg[0], &chain.o, 0u);
 }
 
 /* The set-up SETUP names in every case here: the INA3221 at 0x40 on
@@ -177,89 +177,89 @@ static inline sense_setup_t chain_setup(uint8_t channels)
 static inline void chain_start(uint16_t minor, uint32_t tick0,
                                uint8_t channels)
 {
-    memset(&ch, 0, sizeof(ch));
+    memset(&chain, 0, sizeof(chain));
     sense_bus_t scratch;
-    fake_bus_init(&ch.fb, &scratch);
-    ch.i3221 = fake_add(&ch.fb, FAKE_INA3221, CHAIN_I3221_ADDR, 0.1);
+    fake_bus_init(&chain.fb, &scratch);
+    chain.i3221 = fake_add(&chain.fb, FAKE_INA3221, CHAIN_I3221_ADDR, 0.1);
     for (unsigned c = 0u; c < 3u; ++c) {
-        ch.i3221->volts[c] = 6.0;
-        ch.i3221->amps[c]  = 0.1 * (double)(c + 1u);
+        chain.i3221->volts[c] = 6.0;
+        chain.i3221->amps[c]  = 0.1 * (double)(c + 1u);
     }
-    ch.us      = 5000000u;
-    ch.tick0   = (uint32_t)(tick0 - (uint32_t)(ch.us / 1000u));
-    ch.minor   = minor;
-    ch.exch_ms = 1u;
-    ch.idle    = true;
-    outputs_init(&ch.o, 0u);
-    outputs_reserve_pins(&ch.o, (uint64_t)1u << 3);
-    sense_page_init(&ch.pg);
+    chain.us      = 5000000u;
+    chain.tick0   = (uint32_t)(tick0 - (uint32_t)(chain.us / 1000u));
+    chain.minor   = minor;
+    chain.exch_ms = 1u;
+    chain.idle    = true;
+    outputs_init(&chain.o, 0u);
+    outputs_reserve_pins(&chain.o, (uint64_t)1u << 3);
+    sense_page_init(&chain.pg);
     const uint16_t bus[4]  = { LINK_SN_EN_I3221, 16u, 17u, LINK_SN_KHZ_BUS };
     const uint16_t part[4] = { CHAIN_I3221_ADDR, 1000u, channels, 0u };
-    (void)sense_page_write(&ch.pg, (uint8_t)LINK_SN_I3221_ADDR, 4u, part,
-                           &ch.o, 0u);
-    (void)sense_page_write(&ch.pg, 0u, 4u, bus, &ch.o, 0u);
+    (void)sense_page_write(&chain.pg, (uint8_t)LINK_SN_I3221_ADDR, 4u, part,
+                           &chain.o, 0u);
+    (void)sense_page_write(&chain.pg, 0u, 4u, bus, &chain.o, 0u);
     chain_far_boot();
-    sense_link_init(&ch.sl);
+    sense_link_init(&chain.sl);
     const sense_setup_t w = chain_setup(channels);
-    sense_link_want(&ch.sl, &w, chain_now());
+    sense_link_want(&chain.sl, &w, chain_now());
 }
 
 /* The link comes up: the panel has read the coprocessor's minor. */
 static inline void chain_link_up(void)
 {
-    sense_link_came_up(&ch.sl, ch.minor, chain_now());
+    sense_link_came_up(&chain.sl, chain.minor, chain_now());
 }
 
 /* One exchange as the coprocessor answers it, after the time it takes. */
 static inline int chain_exchange(const sense_link_op_t *op, uint16_t *regs)
 {
-    chain_far(ch.exch_ms);
-    ch.poll_frames += 1u + (op->write ? 0u : ((unsigned)op->n + 3u) / 4u);
+    chain_far(chain.exch_ms);
+    chain.poll_frames += 1u + (op->write ? 0u : ((unsigned)op->n + 3u) / 4u);
     memset(regs, 0, LINK_MAX_REGS * sizeof(uint16_t));
     if (op->page == LINK_PAGE_SERVO_WIN) {
-        ++ch.to_win;
+        ++chain.to_win;
         if (op->n == LINK_SW_COUNT) {
-            ++ch.win_all;
+            ++chain.win_all;
         } else {
-            ++ch.win_head;
+            ++chain.win_head;
         }
-        if (ch.minor < LINK_MINOR_SERVO_WIN || ch.no_win_page) {
+        if (chain.minor < LINK_MINOR_SERVO_WIN || chain.no_win_page) {
             return LINK_NACK_BAD_PAGE;
         }
-        if (ch.lose_win > 0u) {
-            --ch.lose_win;
+        if (chain.lose_win > 0u) {
+            --chain.lose_win;
             return SENSE_LINK_NO_ANSWER;
         }
-        sense_win_read(&ch.pg, op->off, op->n, regs);
+        sense_win_read(&chain.pg, op->off, op->n, regs);
         return SENSE_LINK_ACK;
     }
     if (op->page == LINK_PAGE_IDENTITY) {
         regs[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
-        regs[LINK_ID_PROTOCOL_MINOR] = ch.minor;
-        regs[LINK_ID_CAPABILITIES]   = sense_page_caps(&ch.pg);
+        regs[LINK_ID_PROTOCOL_MINOR] = chain.minor;
+        regs[LINK_ID_CAPABILITIES]   = sense_page_caps(&chain.pg);
         return SENSE_LINK_ACK;
     }
-    if (ch.minor < SENSE_LINK_MINOR) {
+    if (chain.minor < SENSE_LINK_MINOR) {
         return LINK_NACK_BAD_PAGE;
     }
     if (op->page == LINK_PAGE_SENSE) {
         if (op->write) {
-            ++ch.writes;
-            const uint8_t nack = sense_page_write(&ch.pg, op->off, op->n,
-                                                  op->regs, &ch.o, 0u);
+            ++chain.writes;
+            const uint8_t nack = sense_page_write(&chain.pg, op->off, op->n,
+                                                  op->regs, &chain.o, 0u);
             return (nack == 0u) ? SENSE_LINK_ACK : (int)nack;
         }
         if (op->kind == SENSE_LINK_OP_STATUS) {
-            ch.status_n = op->n;
-            if (ch.lose_status > 0u) {
-                --ch.lose_status;
+            chain.status_n = op->n;
+            if (chain.lose_status > 0u) {
+                --chain.lose_status;
                 return SENSE_LINK_NO_ANSWER;
             }
         }
-        sense_page_read(&ch.pg, op->off, op->n, regs);
+        sense_page_read(&chain.pg, op->off, op->n, regs);
         return SENSE_LINK_ACK;
     }
-    sense_servo_read(&ch.pg, op->off, op->n, regs);
+    sense_servo_read(&chain.pg, op->off, op->n, regs);
     return SENSE_LINK_ACK;
 }
 
@@ -267,21 +267,21 @@ static inline int chain_exchange(const sense_link_op_t *op, uint16_t *regs)
  * sense_link_service() makes them.  Returns the milliseconds it took. */
 static inline unsigned chain_poll(void)
 {
-    const uint64_t began = ch.us;
-    ch.poll_frames = 0u;
+    const uint64_t began = chain.us;
+    chain.poll_frames = 0u;
     for (int k = 0; k < 6; ++k) {
         sense_link_op_t op;
-        if (!sense_link_next(&ch.sl, chain_now(), ch.idle, &op)) {
+        if (!sense_link_next(&chain.sl, chain_now(), chain.idle, &op)) {
             break;
         }
         uint16_t regs[LINK_MAX_REGS];
         const int result = chain_exchange(&op, regs);
-        sense_link_done(&ch.sl, result, op.write ? NULL : regs, chain_now());
+        sense_link_done(&chain.sl, result, op.write ? NULL : regs, chain_now());
         if (result == SENSE_LINK_NO_ANSWER) {
             break;
         }
     }
-    return (unsigned)((ch.us - began) / 1000u);
+    return (unsigned)((chain.us - began) / 1000u);
 }
 
 /* A poll, and the rest of @p period_ms until the next one starts. */

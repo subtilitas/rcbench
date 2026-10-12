@@ -37,8 +37,6 @@ void ui_tabs_init(ui_tabs_t *t, const char *const *labels, int count,
  *  language. */
 void ui_tabs_init_text(ui_tabs_t *t, const ui_text_id_t *ids, int count,
                        gfx_rect_t row);
-/** Tab @p i's label as it is drawn now. */
-const char *ui_tabs_label(const ui_tabs_t *t, int i);
 /** Returns true when the selection changed. */
 bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt);
 /**

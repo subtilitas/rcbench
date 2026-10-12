@@ -68,7 +68,10 @@ static art_flash_t flash(void)
 
 static void fresh(void)
 {
-    if (g_flash == NULL) { g_flash = malloc(PART); }
+    if (g_flash == NULL) {
+        g_flash = malloc(PART);
+        REQUIRE_ALLOC(g_flash);
+    }
     memset(g_flash, 0xFF, PART);
     g_budget = -1;
     g_writes = 0;
@@ -79,7 +82,12 @@ static uint8_t *make(uint32_t bytes, uint16_t board, art_entry_t *e)
 {
     static uint8_t *buf;
     static uint32_t cap;
-    if (cap < bytes) { buf = realloc(buf, bytes); cap = bytes; }
+    if (cap < bytes) {
+        uint8_t *grown = realloc(buf, bytes);
+        REQUIRE_ALLOC(grown);
+        buf = grown;
+        cap = bytes;
+    }
     for (uint32_t i = 0; i < bytes; ++i) {
         buf[i] = (uint8_t)(i * 31u + board);
     }
@@ -99,10 +107,10 @@ TEST_CASE(a_picture_comes_back_the_way_it_went_in)
     CHECK_EQ(art_store_capacity(&f), ART_SLOT_BYTES - SECTOR);
 
     art_entry_t e;
-    uint8_t *src = make(206000u, 7u, &e);
+    (void)make(206000u, 7u, &e);
     CHECK(!art_store_find(&f, 7u, &e));      /* nothing kept yet */
 
-    src = make(206000u, 7u, &e);
+    const uint8_t *src = make(206000u, 7u, &e);
     CHECK(art_store_put(&f, 7u, &e, src));
 
     art_entry_t got;
@@ -130,7 +138,7 @@ TEST_CASE(a_write_that_stops_part_way_leaves_nothing_findable)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(50000u, 3u, &e);
+    const uint8_t *src = make(50000u, 3u, &e);
 
     g_budget = 0;                            /* no write survives */
     CHECK(!art_store_put(&f, 3u, &e, src));
@@ -150,12 +158,12 @@ TEST_CASE(replacing_a_picture_takes_the_old_one_with_it)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(20000u, 5u, &e);
+    const uint8_t *src = make(20000u, 5u, &e);
     CHECK(art_store_put(&f, 5u, &e, src));
 
     /* A different picture for the same board goes in the same slot. */
     art_entry_t e2;
-    uint8_t *src2 = make(30000u, 5u, &e2);
+    const uint8_t *src2 = make(30000u, 5u, &e2);
     CHECK(art_store_put(&f, 5u, &e2, src2));
     CHECK_EQ(art_store_slots(&f), SLOTS);
 
@@ -170,7 +178,7 @@ TEST_CASE(replacing_a_picture_takes_the_old_one_with_it)
     /* One board, one slot: three more boards still fit. */
     for (uint16_t b = 10; b < 13u; ++b) {
         art_entry_t x;
-        uint8_t *p = make(1000u, b, &x);
+        const uint8_t *p = make(1000u, b, &x);
         CHECK(art_store_put(&f, b, &x, p));
     }
     for (uint16_t b = 10; b < 13u; ++b) {
@@ -185,7 +193,7 @@ TEST_CASE(a_picture_that_decayed_in_flash_is_a_miss_not_a_wrong_picture)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(20000u, 9u, &e);
+    const uint8_t *src = make(20000u, 9u, &e);
     CHECK(art_store_put(&f, 9u, &e, src));
 
     /* One bit, somewhere in the middle of the payload. */
@@ -203,7 +211,7 @@ TEST_CASE(a_header_that_did_not_finish_being_written_is_not_a_header)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(20000u, 4u, &e);
+    const uint8_t *src = make(20000u, 4u, &e);
     CHECK(art_store_put(&f, 4u, &e, src));
     CHECK(art_store_find(&f, 4u, &e));
 
@@ -218,7 +226,7 @@ TEST_CASE(a_payload_that_is_not_what_it_claims_is_refused_before_it_is_written)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(20000u, 6u, &e);
+    const uint8_t *src = make(20000u, 6u, &e);
     e.crc ^= 0xFFFFu;                        /* not this picture's checksum */
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);                   /* and nothing was written */
@@ -250,7 +258,7 @@ TEST_CASE(forgetting_a_board_leaves_the_others_alone)
     const art_flash_t f = flash();
     for (uint16_t b = 1; b < 4u; ++b) {
         art_entry_t x;
-        uint8_t *p = make(5000u, b, &x);
+        const uint8_t *p = make(5000u, b, &x);
         CHECK(art_store_put(&f, b, &x, p));
     }
     CHECK(art_store_forget(&f, 2u));
@@ -267,7 +275,7 @@ TEST_CASE(a_flash_that_cannot_hold_a_slot_holds_nothing)
     fresh();
     art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(1000u, 1u, &e);
+    const uint8_t *src = make(1000u, 1u, &e);
 
     f.size = ART_SLOT_BYTES - 1u;            /* not even one slot */
     CHECK_EQ(art_store_slots(&f), 0);
@@ -287,7 +295,7 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    uint8_t *src = make(1000u, 1u, &e);
+    const uint8_t *src = make(1000u, 1u, &e);
     uint8_t back[16];
     CHECK_EQ(art_store_slots(NULL), 0);
     CHECK_EQ(art_store_capacity(NULL), 0);

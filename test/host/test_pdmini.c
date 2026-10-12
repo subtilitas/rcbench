@@ -55,7 +55,6 @@ typedef struct {
     uint32_t display_delay;   /* extra ms before a display reply         */
     uint16_t on_at_mv;        /* the active slot's mV when it came on    */
     bool     mute;            /* takes writes, answers nothing           */
-    uint32_t on_since;        /* when the output last came on            */
     int      id_says;         /* READ_ID answers this, -1 the slot       */
     bool     other_slot;      /* READ_DATA answers for the next slot     */
     bool     no_input;        /* firmware without READ_INPUT_STATE       */
@@ -1868,7 +1867,7 @@ TEST_CASE(the_shown_cap_is_the_one_written)
     for (size_t i = 0; i < sizeof e / sizeof e[0]; i++) {
         CHECK_EQ(pdmini_cap_mv(e[i].vin), e[i].cap);
         if (e[i].vin != 0u) {
-            CHECK_EQ(set_from(e[i].vin, 20000u), e[i].cap);
+            CHECK_EQ(set_from((uint16_t)e[i].vin, 20000u), e[i].cap);
         }
     }
 }
@@ -2100,7 +2099,7 @@ static session_t session(uint32_t t0)
         .inputs = m.reads[PDMINI_READ_INPUT], .ids = m.reads[PDMINI_READ_ID],
         .datas = m.reads[PDMINI_READ_DATA],
         .on_ms = m.on_ms, .attach_max = m.attach_max, .may_ms = g_may_ms,
-        .samples = st->samples, .online = st->online, .output = st->output,
+        .samples = (uint16_t)st->samples, .online = st->online, .output = st->output,
         .stuck = st->stuck,
     };
     return k;

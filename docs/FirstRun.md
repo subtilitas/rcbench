@@ -442,7 +442,9 @@ transmit buffer has, and nothing when no terminal is connected, so its
 loop does not wait for the host. A full ring drops the newest record: the
 trace has a `$L n=` line where records are missing and their sum in its
 end line. The end line counts every dropped record from before the
-trace's end, with or without a record kept after it. The time a pass of core 0 gains from writing the lines is not
+trace's end, with or without a record kept after it. A sample dropped
+while a set-up record waits for room is counted after that record, so a
+trace that ends at the set-up change does not count it. The time a pass of core 0 gains from writing the lines is not
 measured.
 
 **The lines** (`shared/sense/sense_trace.h` has every field):
@@ -459,8 +461,10 @@ $C t=220200 ch=0 us=1800
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
 
-The lines after the first two stand in the order of their times: a trigger
-line follows the samples taken before it. Core 0 writes a trigger line and
+The lines after the first two stand in the order of their times, except a
+`$D` line: a trigger line follows the samples taken before it. A `$D` line
+is written once the output's pulse has stood still for 50 ms, so it follows
+samples up to about 50 ms later than its `t=`; its `t=` is its time. Core 0 writes a trigger line and
 the end line once core 1 has finished a tick that started at or after the
 line's time. The end line's `e=` is the reason the trace ended: `t` its
 time, `s` a changed set-up, `k` the console. A capital letter (`T`, `S`,
@@ -470,9 +474,17 @@ that time can be missing or stand after the line. The tool reports such a
 trace as a problem and replays none of its moves.
 
 A sample line is the time since the sample before it in 0.1 ms and the
-shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line is 8
-bytes with a 3-digit code; with the voltage lines a trace is about 8.6
-bytes a sample, 8.6 kB a second.
+shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line 1 ms
+after the sample before it is 8 bytes with a 3-digit code and 10 bytes at
+most with a 4-digit code. The first sample line of a trace counts from the
+trigger time, so a sample from before the trigger carries a negative time,
+and a sample after dropped records carries a longer one: those lines are
+longer, up to the full signed 32-bit range of the time. With the
+voltage lines (a 7-byte line, one in 20 samples in the output of
+`sense_trace_gen`) a trace is 8.35 bytes a sample, 8.35 kB a second, at the
+simulated servo's 0.12 A, whose codes have 3 digits. Above about 0.4 A on the
+0.1 Ω shunt the codes have 4 digits and the rate is 9.35 kB a second. Every
+line ends in CR LF. The rate on hardware is not measured.
 
 **Have to hand:** the PD mini (WeAct PD Power Mini V1) at a limit of
 2.00 A, the INA3221 module with CH1's 0.1 Ω shunt in the servo's supply,
@@ -670,7 +682,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   out. A command that follows another output's command later
   than that, before the first servo arrived, is replayed with the first
   servo's current in it; the tool does not tell the two apart.
-- Whether a terminal keeps up with 8.6 kB a second without loss. A trace
+- Whether a terminal keeps up with 8.35 to 9.35 kB a second without loss. A trace
   whose line counts do not match its end line is reported and exits 1.
 - The line format has no check value. A line cut inside its last number
   is a whole line with another number, and the tool reads it as that: a

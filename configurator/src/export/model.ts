@@ -15,6 +15,7 @@ import {
   VARIANTS, powerLines, powerTitle, reasonText, runsOnBase, usedByText,
 } from '../view/chooser.ts';
 import type { View } from '../view/chooser.ts';
+import { orderStages } from '../view/order.ts';
 import { wiringDiagram } from './diagram.ts';
 import type { Diagram } from './diagram.ts';
 import { lineWords, p } from './text.ts';
@@ -263,23 +264,14 @@ function wiringSection(view: View, diagram: Diagram): Section {
 
 /** The stages as the page lists them, then every check of the setup with its kind. */
 function orderSection(view: View): Section {
-  const { lang, catalogue, setup } = view;
-  const last = Math.max(...catalogue.stages.map((s) => s.n));
-  const wired = new Set(setup.wires.flatMap((w) => [w.a, w.b ?? '']).map((ref) => ref.split('.')[0]));
-  const loose = setup.parts.map((r) => r.part)
-    .filter((part) => part.slot.column !== 'none' && part.id !== 'copro' && !wired.has(part.id))
-    .map((part) => tx(lang, part.short));
-  const stages: Item[] = [];
-  for (const stage of catalogue.stages) {
-    const numbers = setup.wires.filter((w) => w.stage === stage.n).map((w) => w.n).sort((a, b) => a - b);
-    const names = stage.n === last ? loose : [];
-    if (numbers.length === 0 && names.length === 0 && stage.n > 1) continue;
+  const { lang, setup } = view;
+  const stages: Item[] = orderStages(view).map((stage) => {
     const lines: Sub[] = [];
-    if (numbers.length > 0) lines.push({ text: t(lang, 'wiresN') + numbers.join(', '), muted: false });
-    if (names.length > 0) lines.push({ text: t(lang, 'stageParts') + names.join(', '), muted: false });
+    if (stage.numbers.length > 0) lines.push({ text: t(lang, 'wiresN') + stage.numbers.join(', '), muted: false });
+    if (stage.names.length > 0) lines.push({ text: t(lang, 'stageParts') + stage.names.join(', '), muted: false });
     if (lines.length === 0) lines.push({ text: t(lang, 'noWires'), muted: false });
-    stages.push({ runs: [{ text: tx(lang, stage.title), bold: true }], tags: [], lines });
-  }
+    return { runs: [{ text: tx(lang, stage.title), bold: true }], tags: [], lines };
+  });
   const checks: Item[] = setup.checks.map((c) => ({
     runs: [{ text: `${t(lang, KIND[c.kind])}: `, bold: true }, { text: tx(lang, c.text) }],
     tags: [],

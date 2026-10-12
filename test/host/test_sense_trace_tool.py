@@ -1027,6 +1027,56 @@ def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
           f"{arrival[(1, '0.05')]}")
 
 
+def a_tail_of_vertical_tab_or_form_feed_is_a_cut_row() -> None:
+    whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
+    path = work("tail.csv")
+    for tail, want in ((b" \t\r", False), (b"\x0b", True), (b"\x0c", True),
+                       (b"\r\x0b", True)):
+        path.write_bytes(whole + tail)
+        rows, cut = sense_trace.read_travel(path)
+        check(cut == want and len(rows) == 4,
+              f"tail {tail!r}: cut {cut}, {len(rows)} rows")
+
+
+def a_csv_row_without_its_line_feed_is_left_out() -> None:
+    whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
+    check(whole.endswith(b"\n"), "the fixture ends on its line feed")
+    last = whole.rindex(b"\n", 0, len(whole) - 1) + 1
+    full = [(10.055, 240.0), (11.905, 490.0), (13.505, 490.0),
+            (15.105, 490.0)]
+    # Every cut inside the last row, its line feed included, reads as the
+    # three rows before it; a cut at the row's start or after its line feed
+    # is a whole file.
+    for at in range(last, len(whole) + 1):
+        path = work("cut.csv")
+        path.write_bytes(whole[:at])
+        rows, cut = sense_trace.read_travel(path)
+        if at == len(whole):
+            check(rows == full and not cut, f"whole: {rows} {cut}")
+        else:
+            check(rows == full[:3], f"cut at {at}: {rows}")
+            check(cut == (at > last), f"cut at {at}: {cut}")
+    # CR LF line ends read the same, and a cut between CR and LF is a cut.
+    crlf = whole.replace(b"\n", b"\r\n")
+    path = work("cut.csv")
+    path.write_bytes(crlf)
+    check(sense_trace.read_travel(path) == (full, False), "CR LF")
+    path.write_bytes(crlf[:-1])
+    check(sense_trace.read_travel(path) == (full[:3], True), "CR, no LF")
+    # And the report says so.  Three of four equally spaced rows pair one
+    # move along as well; the offset is given.
+    path.write_bytes(whole[:-3])
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--servo-csv",
+             str(path), "--csv-offset", "12.345", "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check("3 travel time(s), 3 paired with a move" in r.stdout, r.stdout)
+    check("its last row has no line feed: cut off, and left out"
+          in r.stdout, "the cut is said")
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--servo-csv",
+             str(ARGS.fixtures / "sense-trace-sim.csv"), "--no-csv")
+    check("no line feed" not in r.stdout, "a whole file says nothing")
+
+
 def the_servo_csv_pairs_by_time() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     rows = (ARGS.fixtures / "sense-trace-sim.csv").read_text().splitlines()
@@ -1291,14 +1341,30 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     check(boots_of((3, 5000), (3, 9000)) == [0, 1], "the same number")
     check(boots_of((3, 5000), (2, 9000)) == [0, 1], "a number back")
     check(boots_of((1, 5000), (32769, 9000)) == [0, 1], "32768 on")
-    # A millisecond tick that lies before the last one's is a restart,
-    # whatever the number: by 1 ms, and by 2^31 ms, which is as far on.
-    check(boots_of((1, 5000), (2, 4999)) == [0, 1], "1 ms back")
+    # A millisecond tick that lies before the last one's by more than
+    # INVERSION_MS is a restart, whatever the number: by 101 ms, and by
+    # 2^31 ms, which is as far on.  Up to INVERSION_MS back with the
+    # number on is the same boot: a command trigger's time is computed,
+    # a frame ahead of the next trace's mark.
+    check(boots_of((1, 5000), (2, 4899)) == [0, 1], "101 ms back")
+    check(boots_of((1, 5000), (2, 4900)) == [0, 0], "100 ms back")
+    check(boots_of((1, 5000), (2, 4990)) == [0, 0], "10 ms back")
+    check(boots_of((1, 5000), (1, 4990)) == [0, 1], "10 ms back, same number")
+    check(boots_of((1, 5000), (2, 4990), (3, 4985)) == [0, 0, 0],
+          "two inversions")
     check(boots_of((1, 5000), (2, 5000)) == [0, 0], "the same tick")
     check(boots_of((1, 5000), (2, 4999 + (1 << 31))) == [0, 0],
           "2^31 ms less 1 on")
     check(boots_of((1, 5000), (2, 5000 + (1 << 31))) == [0, 1],
           "2^31 ms back")
+    # The second trace starts 10 ms before the first and is one boot, on
+    # the first's clock.
+    early = synthetic(899900, [(0, 1900), (1000, 1100), (2500, 1900)])
+    traces, _, _ = sense_trace.parse_log(numbered(a, 1, 20120)
+                                         + numbered(early, 2, 20110))
+    check([tr.boot for tr in traces] == [0, 0], "an inversion is no boot")
+    check(traces[1].t0_abs - traces[0].t0_abs == -100,
+          f"{traces[1].t0_abs - traces[0].t0_abs} apart")
     # The tick across its wrap is one boot.
     check(boots_of((1, (1 << 32) - 3000), (2, 2000)) == [0, 0],
           "the tick's wrap")
@@ -2305,6 +2371,8 @@ CASES = [
     settings_are_compared_on_the_moves_both_time,
     a_slewed_command_ends_at_its_d_line,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
+    a_csv_row_without_its_line_feed_is_left_out,
+    a_tail_of_vertical_tab_or_form_feed_is_a_cut_row,
     the_servo_csv_pairs_by_time,
     the_offset_that_pairs_the_most_is_found_between_the_obvious,
     an_offset_that_puts_rows_at_the_tolerance_itself_is_tried,

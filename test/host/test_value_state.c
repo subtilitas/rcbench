@@ -174,6 +174,9 @@ TEST_CASE(the_gate_moves_between_its_four_states)
                 const ui_value_edge_t want =
                     (st != UI_VALUE_LIVE && to[st][ev] == UI_VALUE_LIVE)
                         ? UI_VALUE_EDGE_LIVE
+                    /* cppcheck-suppress knownConditionTrueFalse
+                     * the oracle spells out each edge on its own,
+                     * independent of the table it checks */
                     : (st == UI_VALUE_LIVE && to[st][ev] != UI_VALUE_LIVE)
                         ? UI_VALUE_EDGE_LEFT : UI_VALUE_EDGE_NONE;
                 CHECK_EQ(edge, want);

@@ -200,7 +200,7 @@ uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs);
 
 /* ---------------------------------------- asking for extended telemetry */
 
-/** Between the starts of two asks that got no answer. */
+/** From the last repeat of an ask that got no answer to the start of the next. */
 #define DSHOT_EDT_RETRY_MS  500u
 
 /** Asks per run before an ESC that never answers is left alone. */

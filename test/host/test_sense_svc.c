@@ -32,7 +32,7 @@
 static fake_bus_t   fb;
 static fake_part_t *i228;
 static fake_part_t *i3221;
-static sense_svc_t  v;
+static sense_svc_t  svc;
 static sense_cmd_t  cmd;
 static sense_snap_t snap;
 static uint64_t     g_us;
@@ -114,7 +114,7 @@ static void rig(void)
         .sched = { { fake_read, fake_write, &fb }, now_us, recover, &fb },
         .open = open_bus, .close = close_bus, .ask = ask,
     };
-    sense_svc_init(&v, &io);
+    sense_svc_init(&svc, &io);
     memset(&cmd, 0, sizeof(cmd));
     cmd.cfg_gen = 1u;
     cmd.sda = 16u;
@@ -135,7 +135,7 @@ static void rig(void)
 
 static void step(void)
 {
-    sense_svc_step(&v, &cmd, &snap);
+    sense_svc_step(&svc, &cmd, &snap);
     g_us += 1000u;
 }
 
@@ -287,12 +287,12 @@ TEST_CASE(a_capture_is_armed_given_its_edge_once_and_reported)
     cmd.edge_us = g_us + 500u;
     step();
     CHECK_EQ(snap.cap_state, SENSE_CAP_WAITING);
-    const uint32_t edge_t = v.sched.cap.edge_t;
+    const uint32_t edge_t = svc.sched.cap.edge_t;
     i3221->amps[0] = 0.95;
     steps(10u);
     CHECK_EQ(snap.cap_state, SENSE_CAP_MOVING);
     /* The same edge again is not given again. */
-    CHECK_EQ(v.sched.cap.edge_t, edge_t);
+    CHECK_EQ(svc.sched.cap.edge_t, edge_t);
     steps(300u);
     i3221->amps[0] = 0.12;
     for (unsigned k = 0; k < 100u && snap.cap_state == SENSE_CAP_MOVING; ++k) {
@@ -307,7 +307,7 @@ TEST_CASE(a_capture_is_armed_given_its_edge_once_and_reported)
     CHECK(snap.cap_samples > 300u);
     CHECK(!snap.cap_clipped);
     /* The level before the command was CH1's own. */
-    CHECK_EQ(v.sched.cap.arm.rise_ua, 120000);
+    CHECK_EQ(svc.sched.cap.arm.rise_ua, 120000);
 
     /* A disarm: idle, the count kept. */
     cmd.cap_gen = 2u;
@@ -635,7 +635,7 @@ TEST_CASE(a_service_starts_closed)
     cmd.parts.ina3221_en = false;
     cmd.cfg_gen = 0u;
     step();
-    CHECK(v.started);
+    CHECK(svc.started);
     CHECK_EQ(g_opens, 0u);
     CHECK(!snap.open);
     CHECK_EQ(snap.cfg_gen, 0u);

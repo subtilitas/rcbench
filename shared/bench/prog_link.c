@@ -192,6 +192,20 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w)
     return false;
 }
 
+uint8_t prog_link_pulse_on(const prog_link_t *p, const prog_link_write_t *w)
+{
+    if (!known(p) || w == NULL || w->off != (uint8_t)LINK_PG_PWM) {
+        return 0u;
+    }
+    const uint16_t on = (uint16_t)(w->value & ~p->regs[LINK_PG_PWM]);
+    for (uint8_t port = 0u; port < LINK_PG_PORTS_MAX; ++port) {
+        if ((on & (1u << port)) != 0u) {
+            return (uint8_t)(port + 1u);
+        }
+    }
+    return 0u;
+}
+
 void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack)
 {
     if (p == NULL || w == NULL || !p->page) {

@@ -37,6 +37,18 @@ void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us)
     cfg->hard_limit_a  = 4.0f;   /* two servos, so higher than one servo's */
 }
 
+/* A command within the pulse widths a servo takes. */
+static uint16_t pulse_us(int32_t us)
+{
+    if (us < (int32_t)SERVO_SYNC_MIN_US) {
+        us = (int32_t)SERVO_SYNC_MIN_US;
+    }
+    if (us > (int32_t)SERVO_SYNC_MAX_US) {
+        us = (int32_t)SERVO_SYNC_MAX_US;
+    }
+    return (uint16_t)us;
+}
+
 /* Where in its window the scan's @p i-th point sits. */
 static int32_t point_us(const servo_sync_t *sy, uint8_t i)
 {
@@ -62,19 +74,19 @@ static void aim(servo_sync_t *sy)
 
     switch (sy->stage) {
     case SERVO_SYNC_STAGE_CENTRE:
-        sy->cmd_a_us = (uint16_t)centre;
-        sy->cmd_b_us = (uint16_t)(centre + under);
+        sy->cmd_a_us = pulse_us(centre);
+        sy->cmd_b_us = pulse_us(centre + under);
         break;
     case SERVO_SYNC_STAGE_HIGH:
-        sy->cmd_a_us = (uint16_t)(centre + defl);
+        sy->cmd_a_us = pulse_us(centre + defl);
         /* The trim found at centre is applied; the search here is for the
          * throw on top of it, which is what a travel adjustment is. */
-        sy->cmd_b_us = (uint16_t)(centre + sy->trim_us + under);
+        sy->cmd_b_us = pulse_us(centre + sy->trim_us + under);
         break;
     case SERVO_SYNC_STAGE_LOW:
     default:
-        sy->cmd_a_us = (uint16_t)(centre - defl);
-        sy->cmd_b_us = (uint16_t)(centre + sy->trim_us - under);
+        sy->cmd_a_us = pulse_us(centre - defl);
+        sy->cmd_b_us = pulse_us(centre + sy->trim_us - under);
         break;
     }
 
@@ -107,6 +119,9 @@ void servo_sync_init(servo_sync_t *sy, const servo_sync_cfg_t *cfg)
     if (sy->cfg.points < 3) {
         sy->cfg.points = 3;   /* two points have no interior minimum */
     }
+    if (sy->cfg.rounds < 1) {
+        sy->cfg.rounds = 1;   /* a scan of no round measures nothing */
+    }
     sy->state         = SERVO_SYNC_RUNNING;
     sy->stage         = SERVO_SYNC_STAGE_CENTRE;
     sy->win_centre_us = 0;
@@ -123,8 +138,8 @@ static void finish(servo_sync_t *sy, servo_sync_state_t state,
 {
     sy->state    = state;
     sy->fault    = fault;
-    sy->cmd_a_us = sy->cfg.centre_us;
-    sy->cmd_b_us = (uint16_t)((int32_t)sy->cfg.centre_us + sy->trim_us);
+    sy->cmd_a_us = pulse_us((int32_t)sy->cfg.centre_us);
+    sy->cmd_b_us = pulse_us((int32_t)sy->cfg.centre_us + sy->trim_us);
 }
 
 /* Start the next stage, or finish if that was the last. */
@@ -179,6 +194,14 @@ static void close_round(servo_sync_t *sy)
             finish(sy, SERVO_SYNC_FAULT, SERVO_SYNC_FAULT_NO_MINIMUM);
             return;
         }
+        /* The lowest point at an end of the window: the curve is still
+         * falling there and its minimum lies outside, so the point is
+         * the reach of the window and no answer.  Later rounds are
+         * bounded by the first. */
+        if (best == 0 || best == sy->cfg.points - 1) {
+            finish(sy, SERVO_SYNC_FAULT, SERVO_SYNC_FAULT_NO_MINIMUM);
+            return;
+        }
     } else if (lo < sy->best_a[sy->stage]) {
         sy->best_a[sy->stage] = lo;
     }
@@ -226,7 +249,7 @@ void servo_sync_step(servo_sync_t *sy, float total_a, uint32_t now_ms,
         /* Two servos working against each other is the condition that draws
          * the most current, so the ceiling is checked on every sample, as in
          * the limit search. */
-        if (total_a >= sy->cfg.hard_limit_a) {
+        if (total_a >= sy->cfg.hard_limit_a || total_a != total_a) {
             finish(sy, SERVO_SYNC_FAULT, SERVO_SYNC_FAULT_OVERCURRENT);
         } else if (!sy->measuring) {
             if (elapsed(now_ms, sy->phase_start_ms,
