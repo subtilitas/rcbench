@@ -276,8 +276,8 @@ TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
         outputs_chan_cfg_defaults(saved);
         for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
             uint16_t *r = &saved[c * LINK_CC_STRIDE];
-            r[LINK_CC_ROLE]   = (c == 0u) ? LINK_CC_ROLE_THROTTLE
-                                          : LINK_CC_ROLE_SURFACE;
+            r[LINK_CC_ROLE]   = (uint16_t)((c == 0u) ? LINK_CC_ROLE_THROTTLE
+                                                     : LINK_CC_ROLE_SURFACE);
             r[LINK_CC_SLEW]   = (c % 2u == 0u) ? old[i]
                                                : (uint16_t)(100u * c);
             r[LINK_CC_MIN_US] = (uint16_t)(900u + c);
