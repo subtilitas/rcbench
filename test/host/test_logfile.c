@@ -1548,7 +1548,8 @@ TEST_CASE(a_read_error_is_not_a_clean_end_of_file)
     }
 
     failing_ctx_t ctx = { text, n, 0, 0, PASS_NONE, 0, false };
-    log_source_t src = { failing_read, failing_rewind, failing_error, &ctx };
+    log_source_t src = { failing_read, failing_rewind, failing_error, &ctx,
+                         NULL, NULL };
 
     /* Healthy first: the whole file is there. */
     log_analysis_t a;
@@ -1594,7 +1595,8 @@ TEST_CASE(a_column_pass_that_fails_is_refused_like_the_others)
     }
 
     failing_ctx_t ctx = { text, n, 0, 0, PASS_NONE, 0, false };
-    log_source_t src = { failing_read, failing_rewind, failing_error, &ctx };
+    log_source_t src = { failing_read, failing_rewind, failing_error, &ctx,
+                         NULL, NULL };
 
     /* Intact, the span settles the unit at milliseconds. */
     log_analysis_t a;
