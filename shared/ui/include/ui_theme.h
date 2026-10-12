@@ -133,9 +133,9 @@ int ui_theme_contrast(void);
  */
 static inline gfx_seg_style_t ui_seg_hero(void)
 {
-    gfx_seg_style_t s = { .digit_w = 22, .digit_h = 32, .thickness = 4,
-                          .gap = 5, .slant = 3, .ghost = true };
-    return s;
+    gfx_seg_style_t st = { .digit_w = 22, .digit_h = 32, .thickness = 4,
+                           .gap = 5, .slant = 3, .ghost = true };
+    return st;
 }
 
 /* Fonts by role rather than by size, so a face can be swapped in one place. */

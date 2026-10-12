@@ -1281,15 +1281,123 @@ TEST_CASE(the_readout_follows_the_flags)
     CHECK(r.overrun);
 }
 
+/* The page's values in the fake: an overrun, a tone and a beep under way,
+ * a pitch, and both counts. */
+static void fake_busy(void)
+{
+    fk.flags = LINK_TN_RUNNING | LINK_TN_OVERRUN | LINK_TN_TONE
+               | LINK_TN_BEEP;
+    fk.win_freq = 15234u;
+    fk.win_periods = 12u;
+    fk.lost = 7u;
+    fk.glitches = 5u;
+}
+
+/* The readout holds the values fake_busy() put on the page. */
+static void check_busy(const tone_readout_t *r)
+{
+    CHECK_EQ(r->state, TONE_STATE_RUNNING);
+    CHECK(r->read);
+    CHECK(r->overrun);
+    CHECK(r->tone);
+    CHECK(r->beep);
+    CHECK_EQ(r->win_freq_dhz, 15234u);
+    CHECK_EQ(r->win_periods, 12u);
+    CHECK_EQ(r->lost, 7u);
+    CHECK_EQ(r->glitches, 5u);
+}
+
+/* The readout holds none of the page's values: no status read speaks for
+ * it.  The panel's own missed count and beeps are not checked here. */
+static void check_unread(const tone_readout_t *r)
+{
+    CHECK(!r->read);
+    CHECK(!r->overrun);
+    CHECK(!r->tone);
+    CHECK(!r->beep);
+    CHECK_EQ(r->win_freq_dhz, 0u);
+    CHECK_EQ(r->win_periods, 0u);
+    CHECK_EQ(r->lost, 0u);
+    CHECK_EQ(r->glitches, 0u);
+}
+
 TEST_CASE(a_status_that_stops_coming_is_no_longer_running)
 {
     fresh(8u);
     tap_on();
+    fake_busy();
+    polls(2);
     tone_readout_t r;
     tone_link_readout(&tl, now, &r);
-    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    check_busy(&r);
     tone_link_readout(&tl, now + TONE_LINK_STALE_MS + 100u, &r);
     CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+}
+
+/* The beeps and the missed count are the panel's: a stale status leaves
+ * them in the readout. */
+TEST_CASE(a_stale_status_keeps_the_beeps_the_panel_read)
+{
+    fresh(8u);
+    tap_on();
+    fake_beeps(3);
+    polls(2);
+    tone_readout_t r;
+    tone_link_readout(&tl, now + TONE_LINK_STALE_MS + 100u, &r);
+    check_unread(&r);
+    CHECK_EQ(r.n, 3u);
+    CHECK_EQ(r.beeps[0].seq, 3u);
+    CHECK_EQ(r.missed, tone_link_missed(&tl));
+}
+
+/* A link that goes takes the page's values from the readout at once, and
+ * one that comes up again gives them back only with its first status. */
+TEST_CASE(a_link_restart_shows_no_value_until_its_first_status)
+{
+    fresh(8u);
+    tap_on();
+    fake_busy();
+    polls(2);
+    tone_readout_t r;
+    tone_link_readout(&tl, now, &r);
+    check_busy(&r);
+
+    tone_link_lost(&tl);
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+
+    tone_link_came_up(&tl, 8u, now);
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+
+    polls(14);
+    tone_link_readout(&tl, now, &r);
+    check_busy(&r);
+}
+
+/* A status read that a state other than its own wins over: the page's
+ * values go with it. */
+TEST_CASE(a_status_the_state_does_not_come_from_gives_no_value)
+{
+    fresh(8u);
+    tap_on();
+    fake_busy();
+    polls(2);
+    tone_readout_t r;
+    /* Off asked, and the page still holds the tap on. */
+    tone_setup_t w = setup_default();
+    want(&w);
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+    /* The page holds it off. */
+    polls(14);
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_OFF);
+    check_unread(&r);
 }
 
 TEST_CASE(a_pin_not_free_and_an_overrun_are_said_on_their_edges)
@@ -1488,26 +1596,32 @@ TEST_CASE(the_status_is_due_at_its_interval_across_the_tick_wrap)
                                   650u + TONE_LINK_READ_MS / 2u);
 }
 
-/* A status is the tap's state for TONE_LINK_STALE_MS less 1 ms and no
- * longer; the last one came at t0 + 650. */
+/* A status is the tap's state and its values for TONE_LINK_STALE_MS less
+ * 1 ms and no longer; the last one came at t0 + 750. */
 static void a_status_goes_stale_at_its_time(uint32_t t0)
 {
     fresh_at(8u, t0);
     tap_on();
+    fake_busy();
+    polls(2);
     const uint32_t had = now - 50u;
     tone_readout_t r;
     tone_link_readout(&tl, had + 1u, &r);
-    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    check_busy(&r);
     tone_link_readout(&tl, had + TONE_LINK_STALE_MS - 1u, &r);
-    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    check_busy(&r);
     tone_link_readout(&tl, had + TONE_LINK_STALE_MS, &r);
     CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+    tone_link_readout(&tl, had + TONE_LINK_STALE_MS + 1u, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
 }
 
 TEST_CASE(a_status_goes_stale_at_its_time_across_the_tick_wrap)
 {
     at_tick_0_and_before_the_wrap(a_status_goes_stale_at_its_time,
-                                  650u + TONE_LINK_STALE_MS / 2u);
+                                  750u + TONE_LINK_STALE_MS / 2u);
 }
 
 /* The second of two events waits TONE_LINK_EVENT_GAP_MS from the first and
@@ -1640,6 +1754,9 @@ int main(void)
     RUN(a_beep_costs_a_select_and_a_read);
     RUN(the_readout_follows_the_flags);
     RUN(a_status_that_stops_coming_is_no_longer_running);
+    RUN(a_stale_status_keeps_the_beeps_the_panel_read);
+    RUN(a_link_restart_shows_no_value_until_its_first_status);
+    RUN(a_status_the_state_does_not_come_from_gives_no_value);
     RUN(a_pin_not_free_and_an_overrun_are_said_on_their_edges);
     RUN(events_are_handed_out_one_at_a_time_and_can_be_put_back);
     RUN(an_overrun_said_once_is_not_said_again_by_an_edit_of_the_range);

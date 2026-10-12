@@ -33,6 +33,16 @@ history is in git.
   without the servo programmer. A source of the kind `doc` names a
   document, its address and the place in it; the data check rejects one
   without them.
+- `testbench/host/capture.sh` warns when a capture holds no samples or the
+  read-back fails, and still prints the path. `selftest.sh` no longer reports
+  `sigrok-cli --scan` error output as the analyser found, and skips a
+  non-numeric `SWD_SWCLK` or `SWD_SWDIO`.
+- `docs/Servo.md` and `docs/Servo-de.md` state that the limit search and the
+  synchroniser are not called by the coprocessor image, give the scan windows
+  of the synchroniser (±40, ±13, ±4 µs) and correct the half-turn example.
+  The testbench documents carry no development history and the corrected
+  splash hold (1.6 s), heartbeat rate and run state.
+
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming
@@ -44,9 +54,46 @@ history is in git.
   release tag newer than the data, as an annotation and in the run summary.
   The Release workflow runs the same check on every tag push and shows its
   warnings the same way. The check holds no release back.
+- CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
+  exact versions.
 
 ### Fixed
 
+- The ESC and SERVO classes of PROGRAMMER show that they are a model. No
+  transport carries their protocols, and CONNECT, READ and WRITE send
+  nothing on a wire. The class tiles, the protocol rows and the device line
+  carry the MODELLED mark (SIMULIERT in German). The device line's dot sits
+  in the mark, amber while a session is open and grey otherwise, and is
+  never green. The device page says "Modelled on the panel: no device is
+  reached." `docs/Screens.md`, `STATUS.md` and `testbench/README.md`
+  describe the two classes as a model.
+- The phase tap's readout on a stick run's page shows PITCH and LOST as
+  `--` and no OVERRUN once the last TONE status read is 500 ms old
+  (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
+  `tone_link_readout()` clears the status's 7 values and sets
+  `tone_readout_t.read` only while a read younger than 500 ms gives the
+  state; the head's warning colour follows the state.
+- The docs workflow no longer cancels a publish in progress when a later push
+  starts one (`cancel-in-progress: false`).
+- With the environment variable `CI` set, a missing C++ compiler fails the
+  CMake configure step of `test/host`, a missing `node` fails
+  `tools/research/session.py check`, and a missing `git`, `cmake`, `cc` or
+  `c++` fails the cases of `test/tools` that need it. Each of these skipped
+  and exited 0. The owner self-test of `session.py` reads a plan and
+  a commit of its own throwaway repository, not the working repository's.
+- The docs job and the job of the Release workflow that waits for CI with
+  `tools/ci_gate.py` time out after 100 min; the gate waits up to 5400 s
+  (90 min). A shorter limit ends the job while it waits.
+- `tools/check_docs.py` fails when `docs/Building.md` or
+  `docs/Building-de.md` has no "vX.Y and vX.Z" ESP-IDF statement.
+- `tools/check_protocols.py` lists each `_Static_assert` on a module's
+  constants by file and condition; removing one of two assertions in a file
+  fails the check. `static_assert` counts as well.
+- The cppcheck step over `shared/` resolves the headers under
+  `shared/*/include`; its pathspec matched no file. `ui_seg_hero()` names its
+  local `st`, which no longer shadows the file-scope `s` of the screens that
+  include `ui_theme.h`, and the unused member `warn.id` is removed from the
+  servo screen.
 - `testbench/host/capture.sh` checks for a channel that never changed in
   time linear in the samples. The check keeps two flags per channel in place
   of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
@@ -64,6 +111,20 @@ history is in git.
   stored setup holds ids alone, so it is the same in English and German. A
   blocked or full store and an entry of another shape give the base setup
   without an error.
+
+### Added
+
+- Every test of `test/host` stops after 120 s unless it sets its own limit,
+  and every CI job has a `timeout-minutes` limit.
+- `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
+  "Where code goes": the files outside `protocols/` with an assertion on a
+  module's macros or enumerators are listed in the tool, and a new or a
+  removed assertion fails the check.
+- `tools/check_docs.py` checks every "N binaries" count of `STATUS.md` and the
+  "N `test_kst_*` binaries" count, holds the pico-sdk and ESP-IDF tags of
+  `docs/Building.md`, `docs/Performance.md` and their German pages to
+  `ci.yml` and `release.yml`, and requires the SPDX line in the scripts
+  under `tools/` and `test/tools/`. The 18 scripts without one carry it.
 
 ## 0.17.0 - 2026-10-12
 
