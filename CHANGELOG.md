@@ -176,6 +176,21 @@ history is in git.
 
 ### Fixed
 
+- The panel writes the board photograph to its flash only on a bench that
+  is disarmed, with no arm waiting, and with the supply output off and no ON
+  queued. The write (about 52 erases and 52 writes of 4 kB for a 206 kB
+  picture) runs on the control task, one sector per 5 ms pass, and pauses
+  between two sectors when the bench is armed or the supply comes on. It
+  resumes from the same sector on the first safe pass. Arming and the supply
+  are not refused while it waits. Before, the write started after every
+  fetch on a task of its own, armed or not, and each erase stalled both
+  cores: STOP, OUTPUT OFF, the supply trips and the heartbeat waited for it,
+  and a stall over 150 ms disarmed the bench. The settings save and the
+  photograph keep ask one rule, `flash_gate_open()` in
+  `shared/safety/flash_gate.c`, under the new host suite `test_flash_gate`.
+  The settings save now also waits while an arm is waiting. The `artkeep`
+  task and its 4,096-byte stack are gone. `tools/stack_check.py` follows the
+  photograph store's flash callbacks by name (`FLASH_CALLS`).
 - A log file whose last row has no line feed reads without that row. A
   write cut off by a power loss or a full card leaves the bytes the card
   took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
@@ -259,6 +274,34 @@ history is in git.
   `tone_link_readout()` clears the status's 7 values and sets
   `tone_readout_t.read` only while a read younger than 500 ms gives the
   state; the head's warning colour follows the state.
+- An abort of the servo programmer sends no command again that went to the
+  coprocessor without an answer. The panel reads registers 0 to 3 of the
+  KST page instead: the `SEQ` before the command ends the request as
+  dropped, with nothing written, and any other `SEQ` as restarted; a page
+  that took the command runs it, and the ABORT that follows ends it with
+  result ABORTED. A read that stays unanswered 3 times ends the request with
+  no answer. The command's `SEQ` counts as taken only with the command's
+  operation in `OP` or a refusal in `RESULT`: at the command after `SEQ`
+  0xFFFF, whose `SEQ` is 0, a coprocessor that started again ends the
+  request as restarted, not as done with result OK. A page whose `OP` reads
+  0 after a read that named an operation started again at any `SEQ`: a
+  WRITE taken at `SEQ` 1 after `SEQ` 0 by a coprocessor that then starts
+  again ends as restarted, not as dropped after an abort and not as refused
+  after the frame was sent again. An ABORT that the page refuses keeps these
+  checks on the read after it: a coprocessor that started again under a
+  running operation, or after the read that found the command taken, and
+  refused the ABORT with BAD_VALUE for its `SEQ`, ends the operation as
+  restarted, not as done with result OK, so the servo programmer keeps the
+  record held before the write. Before, a WRITE whose answer was lost was
+  sent again ahead of the ABORT and could run.
+- `kst_session_power_cycled()` drops the session's backup, the record of
+  its writes (`wrote_regs`) and the lock, after the end of an operation that
+  runs. An edit, a write and a restore end with `KST_SES_ERR_NO_BACKUP`
+  until a read of all registers takes the servo then on the line as the new
+  backup, so a servo of the same type swapped in during the power cycle gets
+  no value of the first. The coprocessor's port begins a new session at
+  each ENTER from PWM, so on the bench the backup was already gone after a
+  power cycle; `docs/ServoProgrammer.md` and its German page state it.
 - The docs workflow no longer cancels a publish in progress when a later push
   starts one (`cancel-in-progress: false`).
 - With the environment variable `CI` set, a missing C++ compiler fails the
