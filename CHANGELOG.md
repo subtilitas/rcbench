@@ -51,19 +51,22 @@ history is in git.
   with a `..` component or an absolute path in a module fails; so does an
   include the tool cannot resolve (a macro operand or a call of
   `__has_include` outside a literal; `#ifdef __has_include` passes), a line
-  of only `#` or `%:`, and a `??=` trigraph directive. `#include_next`,
-  `#import`, the `%:` digraph, line continuations (LF and CRLF), `//`
-  inside a string or a raw string literal, a number with digit separators
-  (`1'000`) or an exponent sign (`1e-x`), a leading byte order mark, form
-  feed and vertical tab are read. Each file is read under the literal rules
+  of only `#` or `%:`, a `??=` trigraph directive, and the trigraph `??/`
+  anywhere in the file. `#include_next`, `#import`, the `%:` digraph, line
+  continuations (LF and CRLF, also with blanks between the backslash and
+  the newline), a lone CR as a line end, `//` inside a string or a raw
+  string literal, a quote without its closing quote, which runs to the
+  line end, a number with digit separators (`1'000`) or an exponent sign
+  (`1e-x`), a leading byte order mark, form feed and vertical tab are
+  read. Each file is read under the literal rules
   of ISO C11 and C17, gnu11 and gnu17 (raw strings), C23 (digit
   separators), and gnu23 and C++14 or later (both); an include found under
   any of them counts. A line continuation inside a raw string literal is
   kept. The C of a `.pio` file is the text pioasm 2.3.0 writes into the
   generated header: the `% c-sdk {` blocks after the first `.program`,
   found as pioasm lexes the file (a `;` inside a `/* */` comment ends
-  nothing, an empty block name is c-sdk, a block ends only at `%}` in
-  column 0). The CMake include directories and link targets of a module are
+  nothing, an empty block name is c-sdk, a lone CR is a character of its
+  line, a block ends only at `%}` in column 0). The CMake include directories and link targets of a module are
   not checked.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave

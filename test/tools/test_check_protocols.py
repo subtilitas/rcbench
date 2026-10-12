@@ -1010,6 +1010,122 @@ def test_a_line_continuation_inside_a_raw_string_is_not_joined():
                        ) == [('"', "a.h")]
 
 
+@pytest.mark.parametrize("blank", [" ", "\t", "\f", "\v", " \t "])
+def test_blanks_between_backslash_and_newline_join_the_lines(tmp_path,
+                                                             blank):
+    """GCC and Clang join `\\`, blanks, newline: `*\\ ` + newline + `/`
+    closes the comment, and the include below it is read."""
+    m = module(tmp_path)
+    c = m / "wire.c"
+    c.write_text(c.read_text() + "/* note *\\" + blank + "\n/\n"
+                 '#include "../../outside.h"\n/* */\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+def test_a_lone_cr_ends_a_line_of_c(tmp_path):
+    m = module(tmp_path)
+    write_core(m, '// x\r#include "../../outside.h"\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+def test_a_lone_cr_in_a_pio_block_is_part_of_the_line(tmp_path):
+    """pioasm reads `%}` + CR + `*/` as one line of C, which closes the
+    comment: the include after it is in the generated header."""
+    m = module(tmp_path)
+    (m / cp.DRIVER / "wire.pio").write_bytes(
+        b'.program wire_tx\n    nop\n% c-sdk {\n/*\n%}\r*/\n'
+        b'#include "../../../outside.h"\n%}\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+def test_a_crlf_pio_file_ends_its_block_at_percent_brace(tmp_path):
+    """`%}` + CRLF ends the block, so the `; /*` after it is a PIO
+    comment and the include in the next block is C."""
+    m = module(tmp_path)
+    (m / cp.DRIVER / "wire.pio").write_bytes(
+        b".program p\r\n    nop\r\n% c-sdk {\r\nint a;\r\n%}\r\n; /*\r\n"
+        b'% c-sdk {\r\n#include "../../../outside.h"\r\n%}\r\n; */\r\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+@pytest.mark.parametrize("blank", ["\v", "\f", "\r"])
+def test_a_block_name_is_trimmed_of_spaces_and_tabs_only(blank):
+    """pioasm 2.3.0 trims a block name of spaces and tabs; `c-sdk` + VT,
+    FF or CR is a block of an unknown type and is not written."""
+    assert cp.pio_c_code(".program p\n    nop\n% c-sdk" + blank + "{\n"
+                         '#include "x.h"\n%}\n') == ""
+    assert cp.pio_c_code(".program p\n    nop\n%" + blank + "{\n"
+                         '#include "x.h"\n%}\n') == ""
+
+
+@pytest.mark.parametrize("text", [
+    "#if 0\ndon't /* worry\n#endif\n#include \"../../outside.h\"\n/* */\n",
+    '#if 0\n"open /* string\n#endif\n#include "../../outside.h"\n/* */\n'])
+def test_an_unterminated_literal_runs_to_the_line_end(tmp_path, text):
+    """GCC lexes a `'` or `"` without its closing quote to the line end,
+    so the `/*` after it opens no comment."""
+    m = module(tmp_path)
+    write_core(m, text)
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+@pytest.mark.parametrize("text", [
+    '/* note *??/\n/\n#include "../../outside.h"\n/* */\n',
+    "char c = '??/\n'; /* x */\n",
+    'const char *s = "a??/"";\n',
+    "/* ??/ */\n"])
+def test_a_backslash_trigraph_is_flagged(tmp_path, text):
+    """ISO C11 and C17 read `??/` as a backslash, also in a comment."""
+    m = module(tmp_path)
+    write_core(m, text)
+    problems = cp.include_problems(m)
+    assert any("trigraph ??/" in p for p in problems), problems
+
+
+# Each set of literal rules is the only one that finds the include in one
+# text: a raw string, a digit separator, or neither, opens a comment that
+# hides it under the other three.
+VIEW_ONLY = {
+    (False, False): 'R"(")" /*"\n1\'a /* \'\n#include "b.h"\n*/\n',
+    (True, False): 'R"(a" /* ")"\n1\'a /* \'\n#include "b.h"\n*/\n',
+    (False, True): 'R"(")" /*"\n1\'a\'/*\'\n#include "b.h"\n*/\n',
+    (True, True): 'R"(a" /* ")"\n1\'a\'/*\'\n#include "b.h"\n*/\n',
+}
+
+
+def test_the_check_reads_four_sets_of_literal_rules():
+    assert sorted(cp.LITERAL_VIEWS) == sorted(VIEW_ONLY)
+
+
+@pytest.mark.parametrize("view", list(VIEW_ONLY))
+def test_each_literal_view_finds_an_include_the_others_do_not(view):
+    text = VIEW_ONLY[view]
+    assert cp.includes(text) == [('"', "b.h")]
+    for other in VIEW_ONLY:
+        found = cp.view_includes(text, cp.source_token_re(*other))
+        assert (found == [('"', "b.h")]) == (other == view), other
+
+
+@pytest.mark.parametrize("text", [
+    'R"(a)"\\\n /*"\n#include "b.h"\n*/\n',
+    'R"(a)" /*"\n#include "b.h"\n*/\n',
+    'R"(a)"/*"\n#include "b.h"\n*/\n'])
+def test_the_text_after_a_raw_string_is_read_from_its_end(text):
+    """The scan resumes right after the raw string's closing `"`, also when
+    a line continuation follows it: the `/*` is a comment."""
+    assert cp.includes(text) == []
+
+
+def test_a_repeated_include_is_listed_each_time():
+    assert cp.includes('#include "a.h"\n#include "a.h"\n') == [
+        ('"', "a.h"), ('"', "a.h")]
+
+
 # Differential: the check against the compilers and pioasm.  Each case puts
 # `#include "../outside.h"` somewhere; the check finds it exactly when one
 # of the compilers includes the file, under any of the C standards and, for
@@ -1050,6 +1166,13 @@ DIFF_C = [
                 "0x1p+4", "1e-x'y", "0x1p-a'b")],
     *[("h", p + 'R"d(/* "#include "x.h" )d" ;\n' + OUT + "/* */\n")
       for p in ("", "u8", "u", "U", "L")],
+    ("c", "/* note *\\ \n/\n" + OUT + "/* */\n"),
+    ("c", "/* note *\\\t\n/\n" + OUT + "/* */\n"),
+    ("c", "// x\r" + OUT),
+    ("c", "#if 0\ndon't /* worry\n#endif\n" + OUT + "/* */\n"),
+    ("c", '#if 0\n"open /* string\n#endif\n' + OUT + "/* */\n"),
+    *[("h", text.replace('#include "b.h"\n', OUT))
+      for text in VIEW_ONLY.values()],
 ]
 DIFF_PIO = [
     ".program t\n/* shift out; LSB first */\n    out pins, 1\n% c-sdk {\n"
@@ -1078,6 +1201,13 @@ DIFF_PIO = [
     + "*/\n%}\n",
     ".program t\n    nop\n% c-sdk {\n/*\n%}\n.program u\n    nop\n"
     "% c-sdk {\n" + OUT + "*/\n%}\n",
+    # A lone CR is part of a line for pioasm; CRLF ends a block at `%}`.
+    ".program t\n    nop\n% c-sdk {\n/*\n%}\r*/\n" + OUT + "%}\n",
+    ".program p\r\n    nop\r\n% c-sdk {\r\nint a;\r\n%}\r\n; /*\r\n"
+    "% c-sdk {\r\n" + OUT.replace("\n", "\r\n") + "%}\r\n; */\r\n",
+    # A block name with VT, FF or CR is no c-sdk block.
+    *[".program t\n    nop\n% c-sdk" + b + "{\n/*\n%}\n% c-sdk {\n" + OUT
+      + "%}\n" for b in ("\v", "\f", "\r")],
 ]
 
 
@@ -1113,8 +1243,8 @@ needs_gcc = pytest.mark.skipif(not (GCC and GXX),
 def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
     src = tmp_path / "d" / ("case." + kind)
     src.parent.mkdir()
-    src.write_text(text)
-    found = ('"', "../outside.h") in cp.includes(text)
+    src.write_bytes(text.encode())
+    found = ('"', "../outside.h") in cp.source_includes(src)
     assert found == compilers_include(src, kind == "h", tmp_path), text
 
 
@@ -1124,10 +1254,10 @@ def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
 def test_the_check_agrees_with_pioasm(tmp_path, text):
     src = tmp_path / "d" / "case.pio"
     src.parent.mkdir()
-    src.write_text(text)
+    src.write_bytes(text.encode())
     out = tmp_path / "d" / "case.pio.h"
     run = subprocess.run([PIOASM, "-o", "c-sdk", str(src), str(out)],
                          capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
-    found = ('"', "../outside.h") in cp.includes(text, pio=True)
+    found = ('"', "../outside.h") in cp.source_includes(src)
     assert found == compilers_include(out, True, tmp_path), text

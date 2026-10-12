@@ -228,9 +228,13 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   `#include_next`, `#import` and `%:include` are read like `#include`; a
   macro include and `__has_include` fail, because the tool does not expand
   macros; a call of `__has_include` outside a literal fails, and
-  `#ifdef __has_include` passes; a line of only `#` or `%:` and a `??=`
-  trigraph directive fail, because they can hide an include; a leading
-  UTF-8 byte order mark, form feed and vertical tab are read; each file is
+  `#ifdef __has_include` passes; a line of only `#` or `%:`, a `??=`
+  trigraph directive and the trigraph `??/` anywhere in the file fail,
+  because they can hide an include (ISO C11 and C17 read `??/` as a
+  backslash); a leading UTF-8 byte order mark, form feed and vertical tab
+  are read, CRLF and a lone CR end a line, a backslash followed by blanks
+  and a newline joins the lines, and a quote without its closing quote
+  runs to the line end, as GCC reads them; each file is
   read under the literal rules of ISO C11 and C17 (no raw strings, no digit
   separators), gnu11 and gnu17 (raw strings), C23 (digit separators), and
   gnu23 and C++14 or later (both), and an include found under any of them
@@ -239,9 +243,10 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   exponent signs (`1e-x`); the C of a `.pio` file is what pioasm 2.3.0
   writes into the generated header, the `% c-sdk {` blocks after the first
   `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
-  the line end, a `;` inside a `/* */` comment ends nothing, an empty block
-  name is c-sdk, and a block ends only at `%}` in column 0 with blanks
-  after it; that
+  the line end, a `;` inside a `/* */` comment ends nothing, a block name
+  is trimmed of spaces and tabs and an empty one is c-sdk, a lone CR is a
+  character of its line, and a block ends only at `%}` in column 0 with
+  spaces, tabs or CRs after it; that
   the `README.md` has a heading with "Interface", a heading with
   "Trademark" in it where it names a brand from the tool's `BRANDS` list,
   and the words "no pin driver" where the module has no `rp2350/` folder;
