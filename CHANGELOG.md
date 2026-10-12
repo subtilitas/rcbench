@@ -47,6 +47,25 @@ history is in git.
 
 ### Fixed
 
+- **A PD mini set point at the input cap lies 200 mV above the sag cut
+  line.** The voltage set point is capped 700 mV under the module's input
+  (`PDMINI_CAP_MV`), 200 mV above the line a live output is cut at, the set
+  point plus 500 mV (`PDMINI_HEADROOM_MV`). In 0.17.0 both lines were the
+  same: 20000 mV asked from a 19990 mV input ran at 19490 mV, and a 10 mV
+  dip to 19980 mV on 2 input reads switched it off. 200 mV is
+  3000 mA through 1 m of 20 AWG cable out and back; the drop on a real
+  source is not measured. The panel's voltage cap, the servo test's
+  brown-out cap and the programming port's ENTER check (SUPPLY_RANGE) use
+  the same 700 mV.
+- An input reading under 1500 mV caps a PD mini set point at 1000 mV in
+  place of passing the set point asked, and an ON asked then is not
+  written: the output is held off as for a sag (bit 10 of the SUPPLY flags)
+  until an OFF. The SUPPLY screen and the servo test offer the cap the
+  driver writes (`pdmini_cap_mv()`): an input of 1 to 1700 mV shows 1 V, in
+  place of 20 V; 20 V stays for an input not yet read.
+- `who_failed` of the PD mini driver is stated as a change count that wraps
+  from 65535 to 0; the SUPPLY page's AUTO rate search steps across the
+  wrap.
 - The run clock counts a run that starts on tick 0 from that tick. A flag
   (`in_run` in `arming_t`) marks a run, so every 32-bit tick, 0 and
   0xFFFFFFFF included, is a valid start. A start time of 0 stood for "no
