@@ -21,14 +21,16 @@ history is in git.
 ### Fixed
 
 - The wiki mirror points each link that leaves `docs/` at the repository on
-  GitHub: `blob/main/<path>` for a file, `tree/main/<path>` for a directory
-  and `raw/main/<path>` for an image, with the anchor, the title and angle
-  brackets around the target kept.
+  GitHub: `blob/main/<path>` for a file, `tree/main/<path>/` for a directory
+  and `raw/main/<path>` for an image, with the anchor, the title, angle
+  brackets around the target and spaces inside the parentheses kept.
+  A target is a directory when it ends in `/` or names a directory of the
+  repository, so `[x](..)` and `[x](../protocols/kst)` open the tree view.
   The legal-notice link on the servo programmer pages and the KST link on
   the Link pages open the repository instead of a missing wiki page.
   `tools/wiki_links.py` exits 1 on a link that still leaves `docs/`, and the
   CI step "The wiki link rewrite still works" checks the converted copy for
-  `](../` and `](<../`.
+  `](../` and `](<../`, with or without spaces after the `(`.
 - `docs/ServoProgrammer.md` and its German page name the servo the
   register layout and the timing come from: 1 Chaservo servo.
 - The bench configurator keeps the selection and the chosen language in the

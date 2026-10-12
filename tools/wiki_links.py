@@ -16,9 +16,12 @@ absolute path and a bare anchor are left as they are.
 - A link to a markdown page inside docs/ loses its `.md`; an anchor stays.
 - A link whose target leaves docs/ points at the repository on GitHub,
   because the wiki holds nothing outside docs/.  A file becomes
-  `https://github.com/subtilitas/rcbench/blob/main/<path>`, a target that
-  ends in `/` becomes `.../tree/main/<path>`, and an image becomes
-  `.../raw/main/<path>`.  An anchor stays.  A link title stays.
+  `https://github.com/subtilitas/rcbench/blob/main/<path>`, a directory
+  becomes `.../tree/main/<path>/`, and an image becomes
+  `.../raw/main/<path>`.  A target is a directory when it ends in `/` or
+  names a directory of the repository this script lives in.  An anchor
+  stays.  A link title stays.
+- Spaces and tabs between the parentheses and the target stay.
 - Any other link inside docs/ (an image, a file) is unchanged.
 
 `--check` also fails when a relative link still leaves docs/ after the
@@ -34,16 +37,20 @@ import sys
 from pathlib import Path
 
 REPO = "https://github.com/subtilitas/rcbench"
+# The repository this script belongs to, which holds docs/.  The wiki copy
+# is rewritten elsewhere, so a directory is recognised here.
+ROOT = Path(__file__).resolve().parents[1]
 
 # `[text](target "title")`, with an optional `!` for an image.  The text may
 # span lines and hold one level of brackets.  The target may stand in angle
-# brackets, `[text](<a b.md>)`, and may then hold spaces.
+# brackets, `[text](<a b.md>)`, and may then hold spaces.  Spaces and tabs
+# may stand inside the parentheses, `[text]( a.md )`.
 LINK = re.compile(
     r"(?P<bang>!?)\[(?P<label>(?:[^\[\]]|\[[^\[\]]*\])*)\]"
-    r"\((?P<lt><)?(?!\w+:)(?!/)(?!#)"
+    r"\((?P<lead>[ \t]*)(?P<lt><)?(?!\w+:)(?!/)(?!#)"
     r"(?P<target>(?(lt)[^<>#\n]+|[^()\s#]+))"
     r"(?P<anchor>#(?(lt)[^<>\n]*|[^()\s]*))?(?(lt)>)"
-    r"(?P<title>\s+\"[^\"]*\")?\)")
+    r"(?P<title>\s+\"[^\"]*\")?(?P<trail>[ \t]*)\)")
 
 
 def leaves_docs(target: str, reldir: str) -> bool:
@@ -52,13 +59,15 @@ def leaves_docs(target: str, reldir: str) -> bool:
     return joined.startswith("..")
 
 
-def rewrite(text: str, reldir: str = "") -> str:
+def rewrite(text: str, reldir: str = "", root: Path = ROOT) -> str:
     """Translate the links of one page.  `reldir` is the page's directory
-    relative to docs/, in POSIX form, empty for a page at the top."""
+    relative to docs/, in POSIX form, empty for a page at the top.  `root`
+    is the repository the targets are looked up in."""
 
     def one(m: re.Match) -> str:
-        bang, label, lt, target, anchor, title = m.group(
-            "bang", "label", "lt", "target", "anchor", "title")
+        bang, label, lead, lt, target, anchor, title, trail = m.group(
+            "bang", "label", "lead", "lt", "target", "anchor", "title",
+            "trail")
         anchor, title = anchor or "", title or ""
         joined = posixpath.normpath(posixpath.join(reldir, target))
         if joined.startswith(".."):
@@ -68,14 +77,15 @@ def rewrite(text: str, reldir: str = "") -> str:
             kind = "blob"
             if bang:
                 kind = "raw"
-            elif target.endswith("/"):
+            elif target.endswith("/") or (root / repo).is_dir():
                 kind = "tree"
-            tail = "/" if kind == "tree" else ""
-            target = f"{REPO}/{kind}/main/{repo}{tail}"
+            path = "" if repo == "." else repo
+            tail = "/" if kind == "tree" and path else ""
+            target = f"{REPO}/{kind}/main/{path}{tail}"
         elif target.endswith(".md"):
             target = target[:-3]
         dest = f"<{target}{anchor}>" if lt else f"{target}{anchor}"
-        return f"{bang}[{label}]({dest}{title})"
+        return f"{bang}[{label}]({lead}{dest}{title}{trail})"
 
     return LINK.sub(one, text)
 

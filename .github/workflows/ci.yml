@@ -150,7 +150,7 @@ jobs:
           fi
           # The wiki holds nothing outside docs/, so a link that climbs out
           # of it must have become a repository URL.
-          if grep -rnE '\]\(<?\.\./' /tmp/wikicheck; then
+          if grep -rnE '\]\([[:space:]]*<?\.\./' /tmp/wikicheck; then
             echo "::error::links that leave docs/ survived the rewrite"
             exit 1
           fi

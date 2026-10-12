@@ -144,3 +144,29 @@ def test_a_target_in_angle_brackets_above_the_repository_fails(tmp_path):
     (tmp_path / "Home.md").write_text("[a](<../../x y.md>)\n",
                                       encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
+
+
+def test_a_directory_without_a_slash_becomes_a_tree_url(tmp_path):
+    (tmp_path / "protocols" / "kst").mkdir(parents=True)
+    (tmp_path / "NOTICE").write_text("n\n", encoding="utf-8")
+    text = "[k](../protocols/kst) [n](../NOTICE) [r](..)"
+    assert wl.rewrite(text, root=tmp_path) == (
+        f"[k]({R}/tree/main/protocols/kst/) [n]({R}/blob/main/NOTICE) "
+        f"[r]({R}/tree/main/)")
+
+
+def test_a_directory_of_this_repository_is_found_by_default():
+    assert wl.rewrite("[k](../protocols/kst)") == (
+        f"[k]({R}/tree/main/protocols/kst/)")
+
+
+def test_spaces_inside_the_parentheses_are_rewritten_and_kept():
+    assert wl.rewrite("[n]( ../README.md)") == f"[n]( {R}/blob/main/README.md)"
+    assert wl.rewrite('[n](\t<../a b.md> "t" )') == (
+        f'[n](\t<{R}/blob/main/a b.md> "t" )')
+    assert wl.rewrite("[s]( Screens.md )") == "[s]( Screens )"
+
+
+def test_a_spaced_target_above_the_repository_fails(tmp_path):
+    (tmp_path / "Home.md").write_text("[a]( ../../x.md)\n", encoding="utf-8")
+    assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
