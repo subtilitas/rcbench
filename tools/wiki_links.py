@@ -15,6 +15,8 @@ locator), an absolute path and an image reference are left as they are.
 
     tools/wiki_links.py <dir>          rewrite in place
     tools/wiki_links.py --check <dir>  report what would change, change nothing
+
+SPDX-License-Identifier: MIT
 """
 
 import re

@@ -471,6 +471,8 @@ UI_TEXT(PG_RANGE_OF,                0, "%d-%d of %d")
 UI_TEXT(PG_WRITE_N,                 0, "WRITE %d")
 UI_TEXT(PG_WRITE,                   0, "WRITE")
 UI_TEXT(PG_READ,                    0, "READ")
+UI_TEXT(PG_MODELLED,                0, "MODELLED")
+UI_TEXT(PG_MODEL_NOTE,              0, "Modelled on the panel: no device is reached.")
 
 /* ----------------------------------------------------------- ESC STICK */
 UI_TEXT(SP_NEEDS_V,                27, "needs %u.%u V, cap %u.%u V")

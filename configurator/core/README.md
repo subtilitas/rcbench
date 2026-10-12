@@ -310,7 +310,7 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 <!-- coverage:begin -->
 | File | Lines run | Lines | Line coverage |
 | --- | ---: | ---: | ---: |
-| `resolve.ts` | 213 | 213 | 100.0 % |
+| `resolve.ts` | 215 | 215 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
 | `groups.ts` | 416 | 416 | 100.0 % |
 <!-- coverage:end -->

@@ -1,5 +1,8 @@
 """coverage.py: every source under shared/ and every protocol core is in
-the measurement, and the README figure is rendered from it."""
+the measurement, and the README figure is rendered from it.
+
+SPDX-License-Identifier: MIT
+"""
 
 import pytest
 

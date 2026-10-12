@@ -19,14 +19,14 @@
 # 16 channels.  Reading a 1 us servo step needs no more than 8 MHz; reading a
 # bit edge does.
 #
-# Writes captures/<name>-<timestamp>.sr and prints the path.  Nothing here
-# decodes: a capture is evidence and stays as it was taken.
+# Writes captures/<name>-<threshold>v-<timestamp>.sr and prints the path.
+# Nothing here decodes: a capture is evidence and stays as it was taken.
 #
 # SPDX-License-Identifier: MIT
 set -euo pipefail
 
 if [ $# -lt 5 ]; then
-    sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
 fi
 
@@ -58,7 +58,11 @@ sigrok-cli "${args[@]}"
 # samples -- counting those makes an all-high D0 look like two levels.
 # Each channel keeps two flags, "a 0 was seen" and "a 1 was seen", so the pass
 # is linear in the samples: a 4 M-sample channel takes seconds, not minutes.
-flat=$(sigrok-cli --input-file "$out" --output-format bits:width=1 2>/dev/null |
+# A capture with no samples (a missing FPGA bitstream) and a read-back that
+# fails are reported as warnings; the path is printed in both cases.
+err=$(mktemp)
+trap 'rm -f "$err"' EXIT
+if ! flat=$(sigrok-cli --input-file "$out" --output-format bits:width=1 2>"$err" |
        awk -F: 'NF > 1 {
            name = $1; gsub(/[ \t]/, "", name);
            bits = $2; gsub(/[^01]/, "", bits);
@@ -68,11 +72,18 @@ flat=$(sigrok-cli --input-file "$out" --output-format bits:width=1 2>/dev/null |
            if (index(bits, "1")) one[name] = 1;
        }
        END {
-           for (n in seen)
+           for (n in seen) {
+               count++;
                if (!(n in zero) || !(n in one))
                    printf "%s ", n;
-       }')
-if [ -n "$flat" ]; then
+           }
+           if (!count) printf "@empty";
+       }'); then
+    echo "warning: read-back of $out failed: $(head -n 3 "$err" | tr '\n' ' ')" >&2
+    flat=
+elif [ "$flat" = "@empty" ]; then
+    echo "warning: no samples in the capture -- check the FPGA bitstream (selftest.sh)" >&2
+elif [ -n "$flat" ]; then
     echo "warning: never changed: ${flat% } -- probe, threshold or ground" >&2
 fi
 
