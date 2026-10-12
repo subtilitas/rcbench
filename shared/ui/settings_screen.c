@@ -80,8 +80,9 @@
  * A key held repeats: a 0 to 30,000 mAh range is 300 taps otherwise.  The
  * first step comes REPEAT_DELAY_S after the press, then REPEAT_SLOW_HZ, and
  * REPEAT_FAST_HZ once the key is held REPEAT_FAST_S longer.  The time runs
- * only while the contact stays on the key within the slop; the release of
- * a key that has repeated adds no step.
+ * only while the contact stays on the key within the slop, and one frame
+ * counts for at most UI_HOLD_MAX_CREDIT_S (0.25 s); the release of a key
+ * that has repeated adds no step.
  */
 #define REPEAT_DELAY_S 0.45f
 #define REPEAT_SLOW_HZ 8.0f
@@ -364,7 +365,9 @@ static void tick(float dt_s)
         return;
     }
     float before = s.held_for;
-    s.held_for += dt_s;
+    /* A stalled frame is worth UI_HOLD_MAX_CREDIT_S (0.25 s) and no more,
+     * so a 1 s stall steps at most 3 times at 8 Hz and 8 times at 30 Hz. */
+    s.held_for += ui_hold_credit(dt_s);
     if (s.held_for < REPEAT_DELAY_S) {
         return;
     }
