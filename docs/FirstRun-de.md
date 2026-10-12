@@ -156,14 +156,22 @@ Auf der Panel-Konsole, in dieser Reihenfolge:
 
 - Zusätzlicher CAN-Verkehr über Dutzende Sekunden. Es nimmt 15 ms von jedem
   50-ms-Poll, ist also in Wanduhrzeit langsamer, als der Bus allein bräuchte.
-- **Ein sichtbarer Stillstand des Displays**, wenn es fertig ist und in den
-  Flash schreibt. Eine Flash-Operation schließt den Cache, durch den das
-  Nachladen des Bounce-Buffers PSRAM liest, also steht das Panel für die
-  Dauer des Schreibens. Settings-Speichern kostet das schon heute.
+- **Sichtbare Stillstände des Displays**, wenn es fertig ist und in den
+  Flash schreibt: einer pro Löschen oder Schreiben eines Sektors von 4 kB,
+  etwa 104 für ein Bild von 206 kB. Eine Flash-Operation schließt den Cache,
+  durch den das Nachladen des Bounce-Buffers PSRAM liest, also steht das
+  Panel für die Dauer jeder einzelnen. Settings-Speichern kostet das schon
+  heute.
+- **Das Schreiben wartet auf einen sicheren Prüfstand.** Es nimmt einen
+  Sektor pro 5-ms-Durchlauf der Control-Task, und nur solange der Prüfstand
+  entschärft und das Netzteil aus ist. Scharf oder mit eingeschaltetem
+  Netzteil erscheint einmal `photograph waits for a disarmed bench with the
+  supply off` auf der Konsole, und `kept` folgt nach dem Entschärfen.
 - **Der Heartbeat darf davon nicht gestört werden.** Die Übertragung ist in
-  Scheiben geteilt und das Flash-Schreiben läuft auf einer eigenen Task genau
-  deswegen. **Fällt der Heartbeat in dieser Minute aus, anhalten und
-  aufschreiben** — das ist das Wichtigste, was dieser erste Lauf finden kann.
+  Scheiben geteilt und das Flash-Schreiben wird im scharfen Zustand genau
+  deswegen zurückgehalten. **Fällt der Heartbeat in dieser Minute aus,
+  anhalten und aufschreiben** — das ist das Wichtigste, was dieser erste Lauf
+  finden kann.
 
 Beim **zweiten** Link-Aufbau ist das Foto schon behalten und nichts davon
 passiert. Wer es ganz überspringen will: ein Koprozessor ohne einkompiliertes
@@ -759,7 +767,7 @@ gewählt, nicht gemessen.
 | Arm verweigert, kein offensichtlicher Grund | Touch 500 ms tot sperrt es. Das Panel berühren. |
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
 | Heartbeat fällt in der ersten Minute aus | **Die Artwork-Übertragung oder der Flash-Keeper.** Siehe §4. |
-| Display friert kurz ein | Ein Flash-Schreiben. Einmalig erwartet, wenn das Foto behalten wird. |
+| Display friert kurz ein | Ein Flash-Schreiben. Erwartet, solange das Foto abgelegt wird, einmal pro gelöschtem oder geschriebenem Sektor von 4 kB. |
 | Koprozessor bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
 | Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand scharf ist |
@@ -771,7 +779,7 @@ gewählt, nicht gemessen.
 **Verhält sich der Prüfstand so, dass es aufs Panel zeigt**, sind die drei
 neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 
-- die **Flash-Keeper-Task** (`artkeep`),
+- das **Ablegen des Fotos** in der Control-Task, ein Flash-Sektor pro Durchlauf,
 - die **Artwork-Scheibe** in der Poll-Schleife der Control-Task und
 - die **Run-Log-Task** (`runlog`), der jeder Schreibzugriff auf die SD-Karte
   (Secure Digital) gehört.

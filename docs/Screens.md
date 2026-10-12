@@ -286,10 +286,15 @@ give the spacing of the rows while the INA3221 is enabled.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
-`voltage`, `current` and `power` are what the screen shows. `ina voltage` and
+`voltage`, `current` and `power` are what the screen shows. `source` is
+`measured` on a row whose values a meter produced and `model` on a row the
+panel's model produced (the MODELLED mark); a supply file has the same last
+column. A file without the column ends at `ch3 voltage` or `energy`, and the
+log viewer and the tools read both forms: `source` is a
+text column and is never plotted. `ina voltage` and
 `ina current` are the INA228's and are empty while it is not the source;
 `esc current` is the ESC's own telemetry current, from the SENSE page while
 the INA228 is the source and from the BENCH page otherwise, and empty when
@@ -899,9 +904,9 @@ second finger does nothing anywhere on the screen.
 SETTINGS, at the right of the strip above both columns, opens the supply's
 settings over the left column. Each is kept in the panel's NVS (non-volatile
 storage) and survives a restart. A value opens the keypad; a switch flips on
-the tap. Every change is written at the next frame the bench is disarmed, the
-supply's output is off and the board's photograph is not being fetched, and
-with it any change on SETUP that was not saved: a flash write stalls both
+the tap. Every change is written at the next frame the bench is disarmed with
+no arm waiting, the supply's output is off with no ON queued and the board's
+photograph is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
 cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
 WAITING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
 change made on SETUP and left without SAVE, which nothing writes until SAVE
@@ -951,11 +956,12 @@ lowest and highest values again from the current reading.
 A run is recorded to a `BENCHnnn.CSV` of its own, one row every 50 ms:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
 ```
 
 A reading that did not arrive is an empty cell. `mode` is CV, CC or OFF, and
-empty while the supply does not answer. The bench takes the log: arming during
+empty while the supply does not answer. `source` is `measured` for the PD mini's
+readings and `model` for the panel's model. The bench takes the log: arming during
 a supply run ends that run's file, and an output still on at the disarm starts
 a new file. That file's charge and energy go on from the totals counted since
 the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50 ms cadence while
@@ -1627,8 +1633,9 @@ screen is in:
 The press asks; it does not write. Writing settings commits a page of NVS
 (non-volatile storage), and a flash operation on the ESP32-S3 disables the
 instruction cache, so neither core runs for its duration. The write is taken
-on the first frame at which the bench is disarmed and no board photograph is
-being fetched or stored. On the settings screen that is the next frame, and
+on the first frame at which the bench is disarmed with no arm waiting, the
+supply's output is off with no ON queued, and no board photograph is being
+fetched or kept. On the settings screen that is the next frame, and
 the label goes to `SAVED` as fast as the eye follows the press. Armed, the
 request stands as `WHEN IDLE` until the bench is disarmed.
 
@@ -1939,8 +1946,11 @@ shape and the buttons are in the same places:
 
 The photograph is fetched over the link once per board and kept in the
 panel's flash, so it costs about ten seconds the first time a board is seen
-and nothing after that. A board with no photograph, or one whose transfer has
-not finished, is drawn rather than left blank.
+and nothing after that. Writing it to flash waits for a disarmed bench with
+the supply off and pauses between two 4 kB sectors when the bench is armed or
+the supply comes on ([Safety](Safety.md#deliberate-behaviours)). A board with
+no photograph, or one whose transfer or write has not finished, is drawn
+rather than left blank.
 
 A servo lead has three wires and the buttons describe one. The other two are
 marked on the board itself: a ground carries a white **G**, and a rail carries
