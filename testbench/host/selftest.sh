@@ -120,7 +120,7 @@ else
         bad "kingst-la2016 driver" "not in this libsigrok -- see README, The parts"
         scan=
     else
-        scan=$(sigrok-cli --driver kingst-la2016 --scan 2>&1 | tail -n +2)
+        scan=$(sigrok-cli --driver kingst-la2016 --scan 2>/dev/null | tail -n +2)
     fi
     if [ -z "$scan" ]; then
         bad "LA2016" "not found by the kingst-la2016 driver"
@@ -192,6 +192,11 @@ if [ -n "$SWD_SWCLK" ] || [ -n "$SWD_SWDIO" ]; then
             line=${pair#*:}
             [ -n "$line" ] || continue
             now=$(pull_now "$line")
+            case $line in
+                ''|*[!0-9]*)
+                    say "$role pull (GPIO$line)" "not a GPIO number -- not read"
+                    continue ;;
+            esac
             [ "$line" -lt 9 ] && boot=pu || boot=pd
             if [ -z "$now" ]; then
                 say "$role pull (GPIO$line)" "not readable"
