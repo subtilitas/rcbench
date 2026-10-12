@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
+  (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
+  `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The
+  coprocessor firmware reads its ESC voltage, current and temperature through
+  them.
+
 - `CONTRIBUTING.md`, section "The active output": every screen, tab,
   overlay, prompt and automatic run that drives an output names the pin,
   port or supply it drives, from the state the drive path reads, with a
@@ -51,6 +57,24 @@ history is in git.
   datasheet or SN74HC04 datasheet. A source of the kind `doc` names a
   document, its address and the place in it; the data check rejects one
   without them.
+- `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
+  172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
+  1000 us, now 999 us.
+- `docs/Receivers.md`, `docs/Screens.md` and the S.BUS module README state that
+  no firmware feeds the analyser screen: the S.BUS core is in the panel image
+  and the host tests, no byte source exists, and the screen shows SILENT. The
+  German pages follow.
+- The OpenYGE and the output driver headers state what the code does: a frame
+  of version 3 or above is read with the 6-byte header, `crc_errors` and
+  `rejected` count a failing candidate once, at the front of the buffer, and
+  `out_dshot_bind()` / `out_ppm_bind()` return false and keep the old binding
+  for a bound pin with other settings. The DShot module README,
+  `docs/DShot.md` and `docs/DShot-de.md` state this.
+- `dshot_throttle()` maps a command above its span to 0 (motor stop), as
+  `dshot_frame()` maps a value above 2047 to 0. It mapped it to 2047. A
+  command equal to the span still maps to 2047. The firmware passes
+  `outputs_actual()` against a span of 1000, so no stored value of 0 to 1000
+  changes.
 - The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
   than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
   OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and

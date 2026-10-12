@@ -52,6 +52,10 @@ extern "C" {
  * cannot start another's receiver.  A bind that cannot get that pair is
  * refused rather than falling back to a one-way output that would look like
  * an ESC with no telemetry.
+ *
+ * A pin that is already bound with the same rate and mode stays as it is and
+ * the call returns true.  With a different rate or mode it returns false and
+ * the old binding keeps running; release the pin first to change it.
  */
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional);
 
