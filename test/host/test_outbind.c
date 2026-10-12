@@ -1721,6 +1721,22 @@ TEST_CASE(the_pins_named_are_the_surfaces_pins_and_follow_a_rebinding)
     CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE),
              (uint64_t)1u << 4);
 
+    /* The slot's pin at the top of the mask, GP63, and past it, 64. */
+    unsigned bound = LINK_OUT_SLOTS;
+    for (unsigned sl = 0; sl < LINK_OUT_SLOTS; ++sl) {
+        if (slots[sl * LINK_OS_STRIDE + LINK_OS_PIN] == 4u) {
+            bound = sl;
+        }
+    }
+    CHECK(bound < LINK_OUT_SLOTS);
+    if (bound < LINK_OUT_SLOTS) {
+        slots[bound * LINK_OS_STRIDE + LINK_OS_PIN] = 63u;
+        CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE),
+                 (uint64_t)1u << 63);
+        slots[bound * LINK_OS_STRIDE + LINK_OS_PIN] = 64u;
+        CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE), 0u);
+    }
+
     /* Two servos and a motor: the motor's pin is not one of them. */
     init(&b);
     outbind_set_proto(&b, motor);

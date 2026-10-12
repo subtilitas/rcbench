@@ -5755,6 +5755,7 @@ static const tgt_state_t k_tgt[] = {
 #define TGT_NONE   7        /* k_tgt: no SERVO PWM pin */
 #define TGT_PORT   9        /* k_tgt: the port, its pin not known */
 #define TGT_PORT_PIN 10     /* k_tgt: the port on GP13, its pulse on */
+#define TGT_PORT_OFF 11     /* k_tgt: the port on GP63, its pulse off */
 #define TGT_UNKNOWN 13      /* k_tgt: the target not known */
 #define TGT_NO_LINK 14      /* k_tgt: no link */
 
@@ -5770,6 +5771,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     gfx_color_t *box[2 * TGT_N];
     for (int i = 0; i < 2 * TGT_N; ++i) {
         box[i] = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+        REQUIRE_ALLOC(box[i]);
     }
     for (int lang = 0; lang < 2; ++lang) {
         for (int i = 0; i < TGT_N; ++i) {
@@ -5841,6 +5843,14 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     scr->render(&cv, 0);
     target_box(d);
     CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t)),
+             0);
+    /* Only the port's pulse turned off: the line follows, without a tap. */
+    servo_screen_set_drive(1u, 63u, true);
+    scr->render(&cv, 0);
+    servo_screen_set_drive(1u, 63u, false);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[TGT_PORT_OFF], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
     /* The port driven with no pin known (none, refused, or a port the page
      * does not have): still the port, not the GP2 the outputs carry. */
