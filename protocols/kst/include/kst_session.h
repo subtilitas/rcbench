@@ -141,7 +141,10 @@ typedef struct {
 typedef struct {
     /* --- for the caller to read ------------------------------------------- */
     kst_image_t image;       /**< the servo as last known; valid with has_image */
-    kst_image_t backup;      /**< the first image read; valid with has_backup */
+    kst_image_t backup;      /**< the first image read, after
+                                  kst_session_init() or the last
+                                  kst_session_power_cycled(); valid with
+                                  has_backup */
     kst_fingerprint_t fingerprint;  /**< of the last image read */
     kst_stats_t stats;
     kst_reply_t last_reply;  /**< of the last transaction */
@@ -207,6 +210,8 @@ typedef struct {
     uint8_t first_ok;
     uint8_t dirty;
     uint8_t unseen;          /* a write ended with the servo not read */
+    uint8_t cycled;          /* the supply was off under the running
+                                operation */
     uint8_t undone;
     uint8_t confirm;         /**< the running restore may be unchecked */
 } kst_session_t;
@@ -365,8 +370,12 @@ kst_ses_t kst_session_step(kst_session_t *s);
  *  plans ends at the next kst_session_step() call. */
 void kst_session_abort(kst_session_t *s);
 
-/** The servo's supply was off: it has left programming mode.  A running
- *  operation is aborted. */
+/** The servo's supply was off: it has left programming mode, and the
+ *  servo on the line may be another one.  A running operation is aborted.
+ *  The backup, wrote_regs and the lock are dropped, after the end of the
+ *  running operation where one runs: an edit, a write and a restore are
+ *  refused with KST_SES_ERR_NO_BACKUP until a kst_session_read_all() takes
+ *  the servo as it then is for the new backup. */
 void kst_session_power_cycled(kst_session_t *s);
 
 #ifdef __cplusplus

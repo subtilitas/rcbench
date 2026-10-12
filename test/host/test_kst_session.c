@@ -1441,15 +1441,67 @@ TEST_CASE(a_power_cycle_leaves_the_mode_and_ends_what_runs)
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
     CHECK_EQ(g_ses.in_mode, 0);
     CHECK_EQ(kst_session_read_all(&g_ses), KST_SES_ERR_NOT_IN_MODE);
-    /* The backup of the session is kept. */
-    CHECK_EQ(g_ses.has_backup, 1);
+    /* The backup of the session went with the supply. */
+    CHECK_EQ(g_ses.has_backup, 0);
     CHECK_EQ(kst_session_enter(&g_ses), KST_SES_BUSY);
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
     CHECK_EQ(g_sim.n_syncs, 2);
     CHECK_EQ(g_ses.last_reply.flags, 2);
-    CHECK_EQ(kst_session_verify(&g_ses, &g_ses.backup), KST_SES_BUSY);
+    CHECK_EQ(kst_session_verify(&g_ses, &g_ses.image), KST_SES_BUSY);
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_OK);
     CHECK_EQ(g_sim.n_overlap, 0);
+}
+
+/* After a power cycle the servo on the port may be another one of the same
+ * type.  Servo B equals A's backup in every field the session did not
+ * write and differs in the one it wrote: the record of A's writes would let
+ * A's value through the comparison.  The backup and the record go with the
+ * supply; a restore is refused until a read, and the read is B's backup. */
+TEST_CASE(a_power_cycle_drops_the_backup_so_a_swapped_servo_gets_none_of_it)
+{
+    kst_image_t a_first, b;
+    kst_plan_t plan;
+    kst_ses_t r;
+
+    up(&g_sim, &g_ses);
+    memcpy(a_first.r, g_sim.reg, sizeof(a_first.r));
+    plan = edit_plan(&g_ses, KST_F_BOOST, 19);
+    CHECK_EQ(run_plan(&g_sim, &g_ses, &plan), KST_SES_OK);
+    CHECK(g_ses.wrote_regs != 0u);
+    b = a_first;
+    CHECK(kst_field_edit(&b, KST_F_BOOST, 25));
+    for (unsigned reg = 0; reg < KST_REG_COUNT; ++reg) {
+        if (b.r[reg] != a_first.r[reg]) {
+            CHECK((g_ses.wrote_regs & BIT(reg)) != 0u);
+        }
+    }
+    CHECK(memcmp(b.r, a_first.r, sizeof(b.r)) != 0);
+
+    g_sim.in_mode = false;
+    kst_session_power_cycled(&g_ses);
+    CHECK_EQ(g_ses.has_backup, 0);
+    CHECK_EQ(g_ses.wrote_regs, 0u);
+    CHECK_EQ(g_ses.locked, 0);
+    /* Servo B in place of A. */
+    memcpy(g_sim.reg, b.r, sizeof(g_sim.reg));
+    enter(&g_sim, &g_ses);
+    g_sim.n_writes = 0;
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_ERR_NO_BACKUP);
+    CHECK_EQ(g_ses.result, KST_SES_ERR_NO_BACKUP);
+    CHECK_EQ(kst_session_write(&g_ses, &plan, true), KST_SES_ERR_NO_BACKUP);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(servo_holds(&g_sim, &b));
+
+    /* A read of B: its own backup, and the restore takes B to B. */
+    read_all(&g_sim, &g_ses);
+    CHECK_EQ(g_ses.has_backup, 1);
+    CHECK(memcmp(g_ses.backup.r, b.r, sizeof(b.r)) == 0);
+    CHECK_EQ(g_ses.wrote_regs, 0u);
+    r = kst_session_restore(&g_ses, true);
+    CHECK_EQ(r == KST_SES_BUSY ? sim_run(&g_sim, &g_ses) : r, KST_SES_OK);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(servo_holds(&g_sim, &b));
+    conduct(&g_sim);
 }
 
 TEST_CASE(a_driver_that_refuses_a_frame_ends_the_operation)
@@ -2516,6 +2568,39 @@ TEST_CASE(a_power_cycle_while_the_session_plans_ends_it_with_nothing_sent)
     CHECK_EQ(g_ses.result, KST_SES_ERR_NOT_IN_MODE);
 }
 
+/* A power cycle under a write: the write's end, which records what it may
+ * have written and locks the session, comes after the call.  The servo is
+ * forgotten after that end, not before it. */
+TEST_CASE(a_power_cycle_under_a_write_forgets_the_servo_when_the_write_ends)
+{
+    const kst_image_t a = image_of(k_long_a);
+    const kst_image_t b = image_of(k_long_b);
+
+    up_with(&g_sim, &g_ses, &a);
+    g_sim.n_writes = 0;
+    CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
+    for (unsigned i = 0; i < 200000u && g_sim.n_writes == 0u; ++i) {
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
+        g_sim.now_us += 100u;
+    }
+    CHECK(g_sim.n_writes > 0u);
+    g_sim.in_mode = false;
+    kst_session_power_cycled(&g_ses);
+    CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_ABORTED);
+    CHECK_EQ(g_ses.in_mode, 0);
+    CHECK_EQ(g_ses.has_backup, 0);
+    CHECK_EQ(g_ses.wrote_regs, 0u);
+    CHECK_EQ(g_ses.locked, 0);
+    enter(&g_sim, &g_ses);
+    CHECK_EQ(kst_session_restore(&g_ses, true), KST_SES_ERR_NO_BACKUP);
+    read_all(&g_sim, &g_ses);
+    CHECK_EQ(g_ses.has_backup, 1);
+    CHECK(servo_holds(&g_sim, &g_ses.backup));
+    /* The read after the cycle records no write. */
+    CHECK_EQ(g_ses.wrote_regs, 0u);
+    conduct(&g_sim);
+}
+
 TEST_CASE(a_second_request_while_the_session_plans_is_refused_and_changes_nothing)
 {
     const kst_image_t a = image_of(k_long_a);
@@ -2870,6 +2955,7 @@ int main(void)
     RUN(an_abort_after_the_first_write_locks_and_before_it_does_not);
     RUN(a_restore_with_nothing_to_write_unlocks);
     RUN(a_power_cycle_leaves_the_mode_and_ends_what_runs);
+    RUN(a_power_cycle_drops_the_backup_so_a_swapped_servo_gets_none_of_it);
     RUN(a_driver_that_refuses_a_frame_ends_the_operation);
     RUN(a_driver_that_never_finishes_ends_the_operation);
     RUN(the_driver_has_5_ms_after_the_window);
@@ -2886,6 +2972,7 @@ int main(void)
     RUN(a_long_plan_is_one_slice_per_step_and_sends_nothing_until_it_is_there);
     RUN(an_abort_while_the_session_plans_sends_nothing_and_locks_nothing);
     RUN(a_power_cycle_while_the_session_plans_ends_it_with_nothing_sent);
+    RUN(a_power_cycle_under_a_write_forgets_the_servo_when_the_write_ends);
     RUN(a_second_request_while_the_session_plans_is_refused_and_changes_nothing);
     RUN(what_the_planner_refuses_at_once_starts_no_operation);
     RUN(a_servo_that_fails_the_fingerprint_is_restored_and_not_edited);

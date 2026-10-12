@@ -255,12 +255,27 @@ static bool read_advance(kst_session_t *s)
 
 /* --- operations -------------------------------------------------------------- */
 
+/* The servo was without power: the servo on the port may be another one.
+ * The backup and the record of the writes go; the next full read is the
+ * new backup. */
+static void forget_servo(kst_session_t *s)
+{
+    s->has_backup = 0;
+    s->wrote_regs = 0;
+    s->unseen = 0;
+    s->locked = 0;
+    s->cycled = 0;
+}
+
 static void finish(kst_session_t *s, kst_ses_t result)
 {
     s->op = OP_NONE;
     s->reading = 0;
     s->planning = 0;
     s->result = (uint8_t)result;
+    if (s->cycled != 0u) {
+        forget_servo(s);
+    }
 }
 
 /* The servo may hold part of a plan. */
@@ -941,6 +956,13 @@ void kst_session_power_cycled(kst_session_t *s)
 {
     if (s != NULL) {
         s->in_mode = 0;
-        kst_session_abort(s);
+        if (s->op != OP_NONE) {
+            /* The end of the running operation may still record a write:
+             * the servo is forgotten after it. */
+            s->cycled = 1;
+            kst_session_abort(s);
+        } else {
+            forget_servo(s);
+        }
     }
 }
