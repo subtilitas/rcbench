@@ -188,6 +188,10 @@ typedef struct {
  * false while the page is not known.  A coprocessor without the page has
  * target 0.
  *
+ * While the servo programmer holds the port (prog_link_hold(true)) the
+ * target is unchanged: the line keeps naming the port, because the
+ * programmer drives that port and the tester sends nothing.
+ *
  * Otherwise the target is prog_link_target(), the one the commands use; the
  * pin is the target port's GPIO, or PROG_LINK_NO_PIN with the standard
  * outputs as target or a port without a usable pin (none, refused, or a

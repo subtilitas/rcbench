@@ -401,6 +401,25 @@ TEST_CASE(a_port_names_its_pin_unless_it_has_none_or_was_refused)
  * its pulse.  A port target without a usable pin stays a port target, with
  * no pin.  Before the page is known, and with no link, where the commands
  * would go is not known and the tester sends none: neither is the outputs. */
+/* While the servo programmer holds the port, the line keeps naming the port:
+ * the programmer drives it at that moment, the tester sends nothing. */
+TEST_CASE(the_drive_keeps_naming_the_port_while_the_programmer_holds_it)
+{
+    prog_link_drive_t d;
+
+    fresh();
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(1u);
+    prog_link_hold(&g_p, true);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    prog_link_hold(&g_p, false);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+}
+
 TEST_CASE(the_drive_names_the_target_and_the_port_pin)
 {
     prog_link_drive_t d;
@@ -692,6 +711,7 @@ int main(void)
     RUN(a_coprocessor_that_started_again_is_brought_back);
     RUN(a_write_that_is_not_acknowledged_makes_the_page_unknown);
     RUN(a_port_names_its_pin_unless_it_has_none_or_was_refused);
+    RUN(the_drive_keeps_naming_the_port_while_the_programmer_holds_it);
     RUN(the_drive_names_the_target_and_the_port_pin);
     RUN(a_write_not_acknowledged_leaves_the_drive_unknown);
     RUN(a_channel_configuration_maps_onto_a_port);

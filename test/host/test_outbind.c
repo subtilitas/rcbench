@@ -1751,6 +1751,26 @@ TEST_CASE(the_pins_named_are_the_surfaces_pins_and_follow_a_rebinding)
     CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_THROTTLE),
              (uint64_t)1u << 0);
 
+    /* The last slot counts: slot 7 holds a copy of the servo's slot on
+     * GP9, and GP9 is in the mask. */
+    init(&b);
+    outbind_set_proto(&b, servo);
+    (void)outbind_toggle(&b, idx(2));
+    (void)outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    {
+        const size_t last = (size_t)(LINK_OUT_SLOTS - 1u) * LINK_OS_STRIDE;
+        for (unsigned sl = 0; sl + 1u < LINK_OUT_SLOTS; ++sl) {
+            if (slots[sl * LINK_OS_STRIDE + LINK_OS_PIN] == 2u) {
+                memcpy(&slots[last], &slots[sl * LINK_OS_STRIDE],
+                       (size_t)LINK_OS_STRIDE * sizeof(slots[0]));
+            }
+        }
+        slots[last + LINK_OS_PIN] = 9u;
+        CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE),
+                 ((uint64_t)1u << 2) | ((uint64_t)1u << 9));
+    }
+
     /* Nothing bound, and no page. */
     init(&b);
     (void)outbind_to_slots(&b, slots);

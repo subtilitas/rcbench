@@ -46,8 +46,9 @@ history is in git.
   (`ZIEL: PROG-PORT GP13 PWM AUS`). `TARGET: NO LINK` (`ZIEL: KEIN LINK`)
   shows while no coprocessor answers and `TARGET: NOT KNOWN`
   (`ZIEL: UNBEKANNT`) while the PROG page is not read or a write to it was
-  not acknowledged; the tester sends no command in either. The warning colour marks the programming port, no
-  SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding not read, no link
+  not acknowledged; the tester sends no command in either. While the servo
+  programmer holds the port, the line keeps naming the port. The warning
+  colour marks the programming port, no SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding not read, no link
   and a target not known. The pins come from the binding the tester
   drives. The line follows the target the coprocessor holds
   (`prog_link_drive()`), not the PWM TARGET setting.
