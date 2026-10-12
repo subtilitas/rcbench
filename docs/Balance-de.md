@@ -21,6 +21,11 @@ Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
 gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
 drei“).
 
+Die Anzeigewerte (Vibration 0,42 g, Winkel 265°, zuzufügende Masse 0,35 g) sind
+feste Werte und keine Messung. Eine Marke SIMULIERT und der Text „Nicht
+gemessen.“ stehen darunter, in derselben Pille wie im Menü. Nur der Reiter
+WUCHTEN trägt die Marke.
+
 Bei einem Impeller wird die Korrektur als Winkel auf der Nabe angegeben, weil
 eine Blattspitze im Kanal nicht erreichbar ist:
 

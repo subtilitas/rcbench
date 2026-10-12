@@ -66,8 +66,10 @@ typedef struct {
      *  PD mini's from its page; the model counts its steps. */
     uint16_t      samples;
     /** When the panel had this reading, on its millisecond clock: the page
-     *  read that brought it, or the model's step.  0 is not known. */
+     *  read that brought it, or the model's step.  Valid only while
+     *  @c stamped is set: 0 is a tick like any other. */
     uint32_t      taken_ms;
+    bool          stamped;    /**< taken_ms is set                       */
 
     /* The run's extremes, from the output's switch-on: how far the voltage
      * sagged, and the most current and power it gave. */
