@@ -502,9 +502,13 @@ meldet einen solchen Trace als Problem und spielt keine seiner Bewegungen
 nach.
 
 Eine Sample-Zeile ist die Zeit seit dem Sample davor in 0,1 ms und der
-Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile hat
-8 Bytes bei einem dreistelligen Code und höchstens 10 Bytes bei einem
-vierstelligen. Mit den Spannungszeilen sind es etwa 8,6 Bytes je Sample,
+Shunt-Code, 40 µV je Schritt: 0,4 mA am 0,1-Ω-Shunt. Eine Sample-Zeile 1 ms
+nach dem Sample davor hat 8 Bytes bei einem dreistelligen Code und höchstens
+10 Bytes bei einem vierstelligen. Die erste Sample-Zeile eines Traces zählt
+ab dem Trigger-Zeitpunkt, ein Sample von vor dem Trigger trägt also eine
+negative Zeit, und ein Sample nach verworfenen Records eine längere: Diese
+Zeilen sind länger, bis zum vollen vorzeichenbehafteten 32-Bit-Bereich der
+Zeit. Mit den Spannungszeilen sind es etwa 8,6 Bytes je Sample,
 8,6 kB je Sekunde, beim simulierten Servo mit 0,12 A. Über etwa 0,4 A am
 0,1-Ω-Shunt haben die Codes 4 Stellen, und die Rate liegt bei 9,3 bis
 10,4 kB je Sekunde.

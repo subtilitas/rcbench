@@ -470,8 +470,12 @@ that time can be missing or stand after the line. The tool reports such a
 trace as a problem and replays none of its moves.
 
 A sample line is the time since the sample before it in 0.1 ms and the
-shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line is 8
-bytes with a 3-digit code and 10 bytes at most with a 4-digit code. With the
+shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line 1 ms
+after the sample before it is 8 bytes with a 3-digit code and 10 bytes at
+most with a 4-digit code. The first sample line of a trace counts from the
+trigger time, so a sample from before the trigger carries a negative time,
+and a sample after dropped records carries a longer one: those lines are
+longer, up to the full signed 32-bit range of the time. With the
 voltage lines a trace is about 8.6 bytes a sample, 8.6 kB a second, at the
 simulated servo's 0.12 A. Above about 0.4 A on the 0.1 Ω shunt the codes have
 4 digits and the rate is 9.3 to 10.4 kB a second.

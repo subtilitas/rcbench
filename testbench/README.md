@@ -399,7 +399,7 @@ Proposed channel map, to be checked against the wiring as built:
 | 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the emulator at 0x14 |
 | 10 | touch SDA | panel's I²C bus | with SCL, which address answered and what it said |
 | 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
-| 12 | programmer line | one-wire, 19,200 baud | BLHeli_S, AM32, ESCape32 |
+| 12 | KST port | coprocessor GP13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
 | 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
 | 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |
