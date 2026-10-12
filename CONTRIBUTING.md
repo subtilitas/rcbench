@@ -215,11 +215,16 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   include names a path with a `..` component or an absolute path, and that
   `#include_next`, `#import` and `%:include` are read like `#include`; a
   macro include and `__has_include` fail, because the tool does not expand
-  macros; that
-  the `README.md` has a heading with "Interface", a heading "Trademarks"
-  where it names a brand from the tool's `BRANDS` list, and the words "no
-  pin driver" where the module has no `rp2350/` folder, all outside fenced
-  code blocks; and that every `_Static_assert` in the C files under
+  macros; a call of `__has_include` outside a string literal fails, and
+  `#ifdef __has_include` passes; a line of only `#` or `%:` and a `??=`
+  trigraph directive fail, because they can hide an include; a leading
+  UTF-8 byte order mark, form feed and vertical tab are read; that
+  the `README.md` has a heading with "Interface", a heading with
+  "Trademarks" in it where it names a brand from the tool's `BRANDS` list,
+  and the words "no pin driver" where the module has no `rp2350/` folder;
+  the Interface heading and "no pin driver" count outside fenced code
+  blocks and HTML comments only, while a brand is matched anywhere in the
+  file, in any case, in paths, code blocks and comments included; and that every `_Static_assert` in the C files under
   `shared/` and `firmware/` on a module constant is listed in the tool's
   `ASSERTED` table and every listed one exists. Assertions under `test/`
   are not checked. The CMake include directories and link targets of a

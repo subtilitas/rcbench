@@ -499,10 +499,7 @@ def test_a_closing_hash_sequence_is_no_part_of_the_heading(tmp_path):
     readme.write_text("# wire #\n\n## Interface ##\n\nWorks with Futaba.\n"
                       "\n## Trademarks ##\n\nNotice.\n")
     assert cp.readme_problems(m) == []
-    readme.write_text("# wire\n\n## Interface\n\nWorks with Futaba.\n"
-                      "\n## Trademarks#\n\nNotice.\n")
-    assert cp.readme_problems(m) == [
-        'wire/README.md names Futaba and has no heading "Trademarks"']
+    assert cp.HEADING_RE.findall("## Trademarks ##\n") == ["Trademarks"]
 
 
 def test_a_brand_inside_a_longer_word_is_not_a_brand(tmp_path):
@@ -594,3 +591,95 @@ def test_includes_reads_continuations_digraphs_and_literal_slashes():
 def test_a_string_with_slashes_does_not_hide_the_next_include():
     text = 'const char *u = "http://x";\n#include "a.h"\n'
     assert cp.includes(text) == [('"', "a.h")]
+
+
+def write_core(m, text, encoding="utf-8"):
+    (m / "wire.c").write_bytes(text.encode(encoding))
+
+
+@pytest.mark.parametrize("text", [
+    '# /*\n*/ include "../../shared/x.h"\n',
+    '#\n#include <stdint.h>\n',
+    '%:\n',
+    '  # \t\n'])
+def test_a_bare_directive_line_is_flagged(tmp_path, text):
+    m = module(tmp_path)
+    write_core(m, text)
+    problems = cp.include_problems(m)
+    assert len(problems) == 1
+    assert "a line of only" in problems[0]
+
+
+def test_a_bare_hash_inside_a_comment_or_string_is_not_a_directive():
+    assert cp.includes('/*\n#\n*/\nchar *s = "#";\n') == []
+
+
+def test_a_bom_does_not_hide_the_first_include(tmp_path):
+    m = module(tmp_path)
+    write_core(m, '\ufeff#include "../../shared/x.h"\n')
+    assert any("a .. component" in p for p in cp.include_problems(m))
+
+
+@pytest.mark.parametrize("line", [
+    '\f#include "../x.h"', '#\finclude "../x.h"', '#\vinclude "../x.h"',
+    '#include\f"../x.h"'])
+def test_form_feed_and_vertical_tab_are_directive_white_space(line):
+    assert cp.includes(line + "\n") == [('"', "../x.h")]
+
+
+@pytest.mark.parametrize("line", [
+    '??=include "../x.h"', '  ??= include <a.h>', '??=define A 1'])
+def test_a_trigraph_directive_is_flagged(tmp_path, line):
+    m = module(tmp_path)
+    write_core(m, line + "\n")
+    problems = cp.include_problems(m)
+    assert len(problems) == 1
+    assert "??= trigraph" in problems[0]
+
+
+def test_has_include_is_refused_as_an_operator_only():
+    assert cp.includes("#if __has_include(<x.h>)\n") == [
+        ("?", "__has_include")]
+    assert cp.includes("#if __has_include_next (<x.h>)\n") == [
+        ("?", "__has_include_next")]
+    assert cp.includes("#if defined(__has_include) && __has_include\n(<x>)\n"
+                       ) == [("?", "__has_include")]
+    assert cp.includes("#ifdef __has_include\n#endif\n") == []
+    assert cp.includes('puts("__has_include(x)");\n') == []
+    assert cp.includes("/* __has_include(x) */\n") == []
+
+
+def test_a_fence_opener_with_a_backtick_in_its_info_is_no_fence(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").write_text(
+        "# wire\n\n```inline``` text\n\n## Interface\n")
+    assert cp.readme_problems(m) == []
+    (m / "README.md").write_text(
+        "# wire\n\n~~~ a`b\n# Interface\n~~~\n")
+    assert len(cp.readme_problems(m)) == 1
+
+
+def test_a_fence_marker_inside_an_html_comment_opens_nothing(tmp_path):
+    m = module(tmp_path)
+    (m / "README.md").write_text(
+        "# wire\n\n<!--\n```\n-->\n\n## Interface\n")
+    assert cp.readme_problems(m) == []
+
+
+@pytest.mark.parametrize("heading", [
+    "Trademarks and notices", "Trademarks:", "[Trademarks](#t)",
+    "**Trademark** notice", "TRADEMARKS"])
+def test_a_heading_that_contains_trademark_counts(tmp_path, heading):
+    m = module(tmp_path)
+    (m / "README.md").write_text(
+        "# wire\n\n## Interface\n\nFutaba.\n\n## %s\n" % heading)
+    assert cp.readme_problems(m) == []
+
+
+def test_a_brand_in_a_path_or_a_code_block_needs_the_heading(tmp_path):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    for text in ("See protocols/dshot/README.md.\n",
+                 "```\nKST 1;\n```\n", "<!-- Futaba -->\n"):
+        readme.write_text("# wire\n\n## Interface\n\n" + text)
+        assert len(cp.readme_problems(m)) == 1, text

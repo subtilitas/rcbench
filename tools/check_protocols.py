@@ -21,12 +21,23 @@ This tool reads each module and fails when one of these does not hold:
   absolute path, also when the file it reaches has the name of a header of
   the module.  The scan reads `#include`, `#include_next`, `#import` and
   their `%:` digraph forms, joins backslash-newline continuations first and
-  keeps string literals out of comment removal.  An operand that is neither
-  `<...>` nor `"..."` (a macro include) and any use of `__has_include` or
-  `__has_include_next` fail, because the tool does not expand macros;
+  keeps string literals out of comment removal.  A file is read with an
+  optional UTF-8 byte order mark, and form feed and vertical tab count as
+  white space in a directive.  An operand that is neither `<...>` nor
+  `"..."` (a macro include) and a call of `__has_include` or
+  `__has_include_next` outside a string literal fail, because the tool does
+  not expand macros; `#ifdef __has_include` passes.  A line of only `#` or
+  `%:` and a line that opens with the trigraph `??=` fail, because a
+  comment across a line break or a trigraph can hide an include.  A C++14
+  digit separator (`1'000`) can pair with a later `'` and report a
+  commented-out include;
 - the module's README.md has a heading with "Interface" in it; a heading
-  "Trademarks" when the text names a brand listed in BRANDS below; and,
-  for a module without an rp2350/ folder, the sentence "no pin driver";
+  with "Trademarks" in it, in any case, when the text names a brand listed
+  in BRANDS below; and, for a module without an rp2350/ folder, the
+  sentence "no pin driver".  The Interface heading and "no pin driver" are
+  read outside fenced code blocks and HTML comments.  A brand is matched
+  anywhere in the file, in any case, in paths, code blocks and comments
+  too;
 - the module's CMake files name no ESP-IDF (Espressif Internet-of-Things
   Development Framework) requirement and no `rcbench_` library of another
   module;
@@ -89,16 +100,26 @@ C_STANDARD = frozenset("""
 SDK_RE = re.compile(r"^(pico\.h|pico/.+\.h|hardware/.+\.h)$")
 
 # A directive that includes a file: `#` or its digraph `%:`.
-DIRECTIVE = r"^[ \t]*(?:#|%:)[ \t]*(?:include_next|include|import)\b"
-INCLUDE_RE = re.compile(DIRECTIVE + r"[ \t]*(.*)$", re.M)
+# White space between the tokens of a directive: space, tab, form feed and
+# vertical tab.
+WS = r"[ \t\f\v]"
+DIRECTIVE = (r"^" + WS + r"*(?:#|%:)" + WS
+             + r"*(?:include_next|include|import)\b")
+INCLUDE_RE = re.compile(DIRECTIVE + WS + r"*(.*)$", re.M)
+# A line with nothing but `#` or `%:` (a null directive, or a directive
+# whose name a comment across a line break has cut off), and a line that
+# opens with the trigraph `??=` for `#`.
+BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
+TRIGRAPH_RE = re.compile(r"^" + WS + r"*\?\?=")
+STRING_RE = re.compile(r"""\"(?:\\.|[^"\\\n])*\"|'(?:\\.|[^'\\\n])*'""")
 OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
-HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
+HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\s*\(")
 CONTINUATION_RE = re.compile(r"\\\r?\n")
 # One token that the comment remover keeps or drops: the operand of an
 # include directive and string and character literals are kept whole, so a
 # `//` inside them starts no comment.
 SOURCE_TOKEN_RE = re.compile(
-    "(" + DIRECTIVE + r'[ \t]*(?:<[^>\n]*>|"[^"\n]*"))'
+    "(" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
     r"""|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')"""
     r"|(/\*.*?\*/|//[^\n]*)", re.M | re.S)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
@@ -114,10 +135,13 @@ BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![A-Za-z_])"
                       % "|".join(re.escape(b) for b in BRANDS), re.I)
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.S)
 EMPHASIS_RE = re.compile(r"[*_`]")
+LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 # An ATX heading's text: an optional closing sequence of `#` is no part of it.
 HEADING_RE = re.compile(
     r"^[ ]{0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$", re.M)
 FENCE_RE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})")
+# A backtick fence takes no backtick in its info string (CommonMark).
+BACKTICK_FENCE_RE = re.compile(r"^[ ]{0,3}`{3,}[^`\n]*$")
 NO_DRIVER_RE = re.compile(r"\bno\s+pin\s+driver\b", re.I)
 
 CMAKE_COMMENT_RE = re.compile(r"#[^\n]*")
@@ -187,12 +211,20 @@ def strip_comments(text: str) -> str:
 def includes(text: str) -> list[tuple[str, str]]:
     """(form, name) for every include directive of @p text outside a C
     comment, in order: form is `<` or `"`, or `?` when the operand is
-    neither (a macro) and name is the operand as written.  A use of
-    `__has_include` is listed as form `?`."""
+    neither (a macro) and name is the operand as written.  A line of only
+    `#` or `%:` is form `#`, a line that opens with `??=` is form `??=`, and
+    a call of `__has_include` outside a string literal is form `?`, listed
+    after the includes."""
     blanked = strip_comments(text)
     found = []
     for m in re.finditer(r"^.*$", blanked, re.M):
         line = m.group(0)
+        if BARE_DIRECTIVE_RE.match(line):
+            found.append(("#", line.strip()))
+            continue
+        if TRIGRAPH_RE.match(line):
+            found.append(("??=", line.strip()))
+            continue
         hit = INCLUDE_RE.match(line)
         if hit:
             operand = hit.group(1).strip()
@@ -202,8 +234,8 @@ def includes(text: str) -> list[tuple[str, str]]:
                              else ('"', op.group(2)))
             else:
                 found.append(("?", operand))
-        for use in HAS_INCLUDE_RE.finditer(line):
-            found.append(("?", use.group(0)))
+    for use in HAS_INCLUDE_RE.finditer(STRING_RE.sub('""', blanked)):
+        found.append(("?", use.group(0)[:-1].strip()))
     return found
 
 
@@ -242,7 +274,17 @@ def include_problems(module: pathlib.Path) -> list[str]:
     for path in files:
         rel = path.relative_to(module.parent).as_posix()
         in_driver = is_driver(path, module)
-        for form, name in includes(path.read_text(encoding="utf-8")):
+        for form, name in includes(path.read_text(encoding="utf-8-sig")):
+            if form == "#":
+                problems.append(
+                    f"{rel} has a line of only {name}: a comment across "
+                    "a line break can hide the include that follows")
+                continue
+            if form == "??=":
+                problems.append(
+                    f"{rel} has a ??= trigraph directive, which the check "
+                    "does not read")
+                continue
             if form == "?":
                 problems.append(
                     f"{rel} includes {name}: an include the check cannot "
@@ -303,13 +345,24 @@ def layout_problems(module: pathlib.Path) -> list[str]:
 
 
 def prose(text: str) -> str:
-    """@p text without its fenced code blocks and HTML comments: a
-    `# comment` in a CMake or shell example is no heading.  A fence closes
-    on a fence of the same character, at least as long, or at the end of
-    the text."""
+    """@p text without its HTML comments and fenced code blocks: a
+    `# comment` in a CMake or shell example is no heading.  Comments go
+    first, so a fence marker inside one opens nothing.  A fence closes on a
+    fence of the same character, at least as long, or at the end of the
+    text.  A backtick fence takes no backtick in its info string.
+
+    Not supported: a `<!--` inside inline code or a fenced block drops the
+    text up to the next `-->` or the end; a fence indented 4 or more spaces
+    in a list item is not a fence here.  The first fails by demanding
+    headings, the second counts a heading inside it."""
+    text = HTML_COMMENT_RE.sub(
+        lambda m: re.sub(r"[^\n]", "", m.group(0)), text)
     out, fence = [], ""
     for line in text.splitlines(keepends=True):
         m = FENCE_RE.match(line)
+        if m and m.group(1)[0] == "`" and not fence \
+                and not BACKTICK_FENCE_RE.match(line):
+            m = None
         if fence:
             if (m and m.group(1)[0] == fence[0]
                     and len(m.group(1)) >= len(fence)
@@ -319,8 +372,7 @@ def prose(text: str) -> str:
             fence = m.group(1)
         else:
             out.append(line)
-    return HTML_COMMENT_RE.sub(
-        lambda m: re.sub(r"[^\n]", "", m.group(0)), "".join(out))
+    return "".join(out)
 
 
 def readme_problems(module: pathlib.Path) -> list[str]:
@@ -333,13 +385,13 @@ def readme_problems(module: pathlib.Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     rel = path.relative_to(module.parent).as_posix()
     shown = prose(text)
-    headings = [EMPHASIS_RE.sub("", h).strip().lower()
+    headings = [EMPHASIS_RE.sub("", LINK_RE.sub(r"\1", h)).strip().lower()
                 for h in HEADING_RE.findall(shown)]
     problems = []
     if not any("interface" in h for h in headings):
         problems.append(f'{rel} has no heading with "Interface"')
     brands = sorted(set(BRAND_RE.findall(text)))
-    if brands and "trademarks" not in headings:
+    if brands and not any("trademark" in h for h in headings):
         problems.append(f'{rel} names {", ".join(brands)} and has no '
                         'heading "Trademarks"')
     if not (module / DRIVER).is_dir() and not NO_DRIVER_RE.search(shown):

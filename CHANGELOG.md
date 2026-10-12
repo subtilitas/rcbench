@@ -28,14 +28,18 @@ history is in git.
 
 - `tools/check_protocols.py` checks that a module's `README.md` has an
   "Interface" heading, a "Trademarks" heading where it names a brand, and
-  the words "no pin driver" where the module has no `rp2350/` folder; text
-  inside fenced code blocks does not count. Brand names match in any case
-  and with a version suffix (`DShot300`, `S.BUS2`); HTML comments do not
-  count, and emphasis marks in a heading are ignored. An include path with a
-  `..` component or an absolute path in a module fails; so does an include
-  the tool cannot resolve (a macro operand or `__has_include`);
-  `#include_next`, `#import`, the `%:` digraph, line continuations and `//`
-  inside a string are read. The CMake include directories and link targets
+  the words "no pin driver" where the module has no `rp2350/` folder; the
+  Interface heading and "no pin driver" count outside fenced code blocks and
+  HTML comments only. The Trademarks heading is any heading that contains
+  "trademark", in any case, emphasis and link markup ignored. Brand names
+  match anywhere in the file (paths, code blocks and comments included), in
+  any case and with a version suffix (`DShot300`, `S.BUS2`). An include path
+  with a `..` component or an absolute path in a module fails; so does an
+  include the tool cannot resolve (a macro operand or a call of
+  `__has_include`; `#ifdef __has_include` passes), a line of only `#` or
+  `%:`, and a `??=` trigraph directive. `#include_next`, `#import`, the `%:`
+  digraph, line continuations, `//` inside a string, a leading byte order
+  mark, form feed and vertical tab are read. The CMake include directories and link targets
   of a module are not checked.
 - `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
   `Pins.md` states that it is the draft of the planned IO board.
