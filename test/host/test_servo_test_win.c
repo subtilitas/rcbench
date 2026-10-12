@@ -114,7 +114,7 @@ static void out_drain(out_t *o, servo_test_t *t)
             ++o->rows;                  /* the header is the first */
             if (o->csv_len + n + 2u > o->csv_cap) {
                 o->csv_cap = (o->csv_cap + n + 2u) * 2u;
-                o->csv = realloc(o->csv, o->csv_cap);
+                REQUIRE_REALLOC(o->csv, o->csv_cap);
             }
             memcpy(o->csv + o->csv_len, text, n);
             o->csv_len += n;
@@ -1713,7 +1713,12 @@ TEST_CASE(a_recorded_log_with_windows_missing_ends_the_run_at_its_first_gap)
     } rec[1400];
     unsigned n = 0u;
     char line[512];
-    CHECK(fgets(line, sizeof(line), f) != NULL);            /* the header */
+    const bool has_header = fgets(line, sizeof(line), f) != NULL;
+    CHECK(has_header);                                       /* the header */
+    if (!has_header) {
+        (void)fclose(f);
+        return;
+    }
     CHECK(strstr(line, ";window;ch1 current (A);ch1 max (A);ch1 voltage "
                        "(V);") != NULL);
     while (fgets(line, sizeof(line), f) != NULL && n < 1400u) {
@@ -1852,7 +1857,7 @@ typedef struct {
     unsigned offs, releases;
 } bench_t;
 
-static bench_t b;
+static bench_t bench;
 
 static uint32_t b_now(void) { return chain_now(); }
 
@@ -1861,49 +1866,49 @@ static uint32_t b_now(void) { return chain_now(); }
 static void b_rail_ms(void)
 {
     double amps = 0.0;
-    if (b.output) {
-        amps = (double)servo_sim_step(&b.servo, b.cmd, b_now());
+    if (bench.output) {
+        amps = (double)servo_sim_step(&bench.servo, bench.cmd, b_now());
     }
-    b.in_cc = false;
-    if (b.limits && amps > (double)b.set_i) {
-        amps    = (double)b.set_i;
-        b.in_cc = true;
+    bench.in_cc = false;
+    if (bench.limits && amps > (double)bench.set_i) {
+        amps    = (double)bench.set_i;
+        bench.in_cc = true;
     }
-    b.amps = amps;
-    ch.i3221->amps[0]  = amps * b.sign;
-    ch.i3221->volts[0] = b.output ? (double)b.set_v - amps * SOURCE_OHM
+    bench.amps = amps;
+    chain.i3221->amps[0]  = amps * bench.sign;
+    chain.i3221->volts[0] = bench.output ? (double)bench.set_v - amps * SOURCE_OHM
                                   : 0.0;
     chain_far(1u);
 }
 
 static void b_push(const item_t *it)
 {
-    if (b.q_n >= Q_LEN) {
-        ++b.q_lost;
-        memmove(&b.q[0], &b.q[1], (Q_LEN - 1u) * sizeof(b.q[0]));
-        --b.q_n;
+    if (bench.q_n >= Q_LEN) {
+        ++bench.q_lost;
+        memmove(&bench.q[0], &bench.q[1], (Q_LEN - 1u) * sizeof(bench.q[0]));
+        --bench.q_n;
     }
-    b.q[b.q_n++] = *it;
+    bench.q[bench.q_n++] = *it;
 }
 
 /* One pass of the control task: the poll, the meter, the windows it
  * brought and the supply's reading when one is due. */
 static void b_pass(void)
 {
-    const uint64_t began = ch.us;
-    if (b.link_up && (b.poll_every < 2u || b.passes % b.poll_every == 0u)) {
+    const uint64_t began = chain.us;
+    if (bench.link_up && (bench.poll_every < 2u || bench.passes % bench.poll_every == 0u)) {
         (void)chain_poll();
     }
     sense_link_meter_t m;
-    sense_link_meter(&ch.sl, &m);
-    (void)servo_source_step(&b.src, b_now(), b.link_up, ch.minor,
-                            b.link_up ? &m : NULL);
+    sense_link_meter(&chain.sl, &m);
+    (void)servo_source_step(&bench.src, b_now(), bench.link_up, chain.minor,
+                            bench.link_up ? &m : NULL);
     item_t it;
     memset(&it, 0, sizeof(it));
-    it.meter = meter_of(&b.src);
+    it.meter = meter_of(&bench.src);
     sense_link_win_t w;
-    while (b.link_up && sense_link_take_win(&ch.sl, &w)) {
-        ++b.wins_taken;
+    while (bench.link_up && sense_link_take_win(&chain.sl, &w)) {
+        ++bench.wins_taken;
         it.is_win       = true;
         it.win.number   = w.number;
         it.win.current  = w.current;
@@ -1917,27 +1922,27 @@ static void b_pass(void)
         it.win.taken_ms = w.taken_ms;
         b_push(&it);
     }
-    if ((int32_t)(b_now() - b.pd_next) >= 0) {
-        b.pd_next += PD_MS;
+    if ((int32_t)(b_now() - bench.pd_next) >= 0) {
+        bench.pd_next += PD_MS;
         it.is_win = false;
         memset(&it.pd, 0, sizeof(it.pd));
         it.pd.online   = true;
-        it.pd.output   = b.output;
+        it.pd.output   = bench.output;
         it.pd.ok       = true;
-        it.pd.set_v    = b.set_v;
-        it.pd.set_i    = b.set_i;
-        it.pd.v        = b.output ? b.set_v : 0.0f;
-        it.pd.i        = (float)b.amps * b.pd_gain;
-        it.pd.mode     = !b.output ? 0u : b.in_cc ? 2u : 1u;
-        it.pd.samples  = ++b.pd_samples;
+        it.pd.set_v    = bench.set_v;
+        it.pd.set_i    = bench.set_i;
+        it.pd.v        = bench.output ? bench.set_v : 0.0f;
+        it.pd.i        = (float)bench.amps * bench.pd_gain;
+        it.pd.mode     = !bench.output ? 0u : bench.in_cc ? 2u : 1u;
+        it.pd.samples  = ++bench.pd_samples;
         it.pd.taken_ms = b_now();
         b_push(&it);
     }
     /* The rest of the pass, a millisecond of the rail at a time. */
-    while ((ch.us - began) / 1000u < PASS_MS) {
+    while ((chain.us - began) / 1000u < PASS_MS) {
         b_rail_ms();
     }
-    ++b.passes;
+    ++bench.passes;
 }
 
 /* One frame of the render loop: the meter, then what the queue holds in
@@ -1947,39 +1952,39 @@ static void b_frame(void)
     for (unsigned k = 0u; k < FRAME_MS / PASS_MS; ++k) {
         b_pass();
     }
-    const servo_test_meter_now_t snap = meter_of(&b.src);
-    servo_test_meter_now(&b.t, &snap, b_now());
-    for (unsigned k = 0u; k < b.q_n; ++k) {
-        servo_test_meter_now(&b.t, &b.q[k].meter, b_now());
-        if (b.q[k].is_win) {
-            servo_test_window(&b.t, &b.q[k].win, 0u);
+    const servo_test_meter_now_t snap = meter_of(&bench.src);
+    servo_test_meter_now(&bench.t, &snap, b_now());
+    for (unsigned k = 0u; k < bench.q_n; ++k) {
+        servo_test_meter_now(&bench.t, &bench.q[k].meter, b_now());
+        if (bench.q[k].is_win) {
+            servo_test_window(&bench.t, &bench.q[k].win, 0u);
         } else {
-            servo_test_reading(&b.t, &b.q[k].pd, 0u);
+            servo_test_reading(&bench.t, &bench.q[k].pd, 0u);
         }
     }
-    b.q_n = 0u;
-    const servo_test_in_t in = { b.armed, 20.0f };
+    bench.q_n = 0u;
+    const servo_test_in_t in = { bench.armed, 20.0f };
     servo_test_do_t d;
-    servo_test_step(&b.t, b_now(), &in, &d);
+    servo_test_step(&bench.t, b_now(), &in, &d);
     if (d.set) {
-        b.set_v = d.set_v;
-        b.set_i = d.set_i;
+        bench.set_v = d.set_v;
+        bench.set_i = d.set_i;
     }
     if (d.on) {
-        b.output = true;
+        bench.output = true;
     }
     if (d.off) {
-        ++b.offs;
-        b.output = false;
+        ++bench.offs;
+        bench.output = false;
     }
     if (d.command) {
-        b.cmd = d.cmd_us;
+        bench.cmd = d.cmd_us;
     }
     if (d.release) {
-        ++b.releases;
-        b.cmd = CENTRE;
+        ++bench.releases;
+        bench.cmd = CENTRE;
     }
-    out_drain(&b.out, &b.t);
+    out_drain(&bench.out, &bench.t);
 }
 
 static void b_frames_ms(uint32_t ms)
@@ -1994,27 +1999,27 @@ static void b_frames_ms(uint32_t ms)
  * that the INA3221 is the rail's meter. */
 static void b_fresh(uint32_t tick0)
 {
-    out_reset(&b.out);
-    memset(&b, 0, sizeof(b));
-    servo_test_init(&b.t);
+    out_reset(&bench.out);
+    memset(&bench, 0, sizeof(bench));
+    servo_test_init(&bench.t);
     chain_start(LINK_MINOR_SERVO_WIN, tick0 - 2000u, 1u);
-    ch.flat = true;
-    ch.i3221->amps[0] = 0.0;
-    servo_source_init(&b.src);
+    chain.flat = true;
+    chain.i3221->amps[0] = 0.0;
+    servo_source_init(&bench.src);
     servo_sim_cfg_t sc;
     servo_sim_defaults(&sc);
     sc.stop_lo_us = 1000u;
     sc.stop_hi_us = 2000u;
-    servo_sim_init(&b.servo, &sc);
-    b.servo.position_us = (float)CENTRE;
-    b.armed   = true;
-    b.set_v   = 5.0f;
-    b.set_i   = 2.0f;
-    b.pd_gain = 1.0f;
-    b.sign    = 1.0;
-    b.cmd     = CENTRE;
-    b.link_up = true;
-    b.pd_next = b_now();
+    servo_sim_init(&bench.servo, &sc);
+    bench.servo.position_us = (float)CENTRE;
+    bench.armed   = true;
+    bench.set_v   = 5.0f;
+    bench.set_i   = 2.0f;
+    bench.pd_gain = 1.0f;
+    bench.sign    = 1.0;
+    bench.cmd     = CENTRE;
+    bench.link_up = true;
+    bench.pd_next = b_now();
     chain_link_up();
     b_frames_ms(2000u);
 }
@@ -2044,9 +2049,9 @@ static void b_cfg(servo_test_cfg_t *c)
 /* Start a run on the meter servo_source names, as the SERVO screen does. */
 static void b_start(servo_test_cfg_t *c)
 {
-    if (servo_source_id(&b.src) == SERVO_SOURCE_INA3221) {
+    if (servo_source_id(&bench.src) == SERVO_SOURCE_INA3221) {
         servo_test_meter_ina3221(&c->meter, 1000u);
-        c->meter_changes = servo_source_changes(&b.src);
+        c->meter_changes = servo_source_changes(&bench.src);
     } else {
         servo_test_meter_pdmini(&c->meter);
         c->ina_why = (uint8_t)SERVO_TEST_INA_SETTLING;
@@ -2054,25 +2059,25 @@ static void b_start(servo_test_cfg_t *c)
     servo_test_reading_t last;
     memset(&last, 0, sizeof(last));
     last.online = true;
-    last.output = b.output;
-    CHECK_EQ(servo_test_start(&b.t, c, b_now(), &last, 3.0f, 20.0f),
+    last.output = bench.output;
+    CHECK_EQ(servo_test_start(&bench.t, c, b_now(), &last, 3.0f, 20.0f),
              SERVO_TEST_START_OK);
 }
 
 static void b_out(void)
 {
-    for (uint32_t k = 0u; k < 120000u && !servo_test_drained(&b.t);
+    for (uint32_t k = 0u; k < 120000u && !servo_test_drained(&bench.t);
          k += FRAME_MS) {
         b_frame();
     }
-    CHECK(servo_test_drained(&b.t));
+    CHECK(servo_test_drained(&bench.t));
 }
 
 static bool b_until(servo_test_phase_t phase)
 {
-    for (uint32_t k = 0u; k < 30000u && servo_test_running(&b.t);
+    for (uint32_t k = 0u; k < 30000u && servo_test_running(&bench.t);
          k += FRAME_MS) {
-        if (b.t.phase == phase) {
+        if (bench.t.phase == phase) {
             return true;
         }
         b_frame();
@@ -2084,27 +2089,27 @@ static bool b_until(servo_test_phase_t phase)
  * change nothing of it. */
 static void b_check_ended(servo_test_abort_t why)
 {
-    CHECK(!servo_test_running(&b.t));
-    CHECK_EQ(b.t.why, why);
+    CHECK(!servo_test_running(&bench.t));
+    CHECK_EQ(bench.t.why, why);
     b_out();
-    CHECK_EQ(servo_test_verdict(&b.t), SERVO_TEST_ABORTED);
-    CHECK_EQ(b.offs, 1u);
-    CHECK_EQ(b.releases, 1u);
-    CHECK(!b.output);
+    CHECK_EQ(servo_test_verdict(&bench.t), SERVO_TEST_ABORTED);
+    CHECK_EQ(bench.offs, 1u);
+    CHECK_EQ(bench.releases, 1u);
+    CHECK(!bench.output);
     char mark[96];
     snprintf(mark, sizeof(mark), "Result:         ABORTED - %s\n",
              servo_test_abort_name(why));
-    CHECK(strstr(b.out.report, mark) != NULL);
-    const unsigned rows = b.out.rows, txt = b.out.txt;
+    CHECK(strstr(bench.out.report, mark) != NULL);
+    const unsigned rows = bench.out.rows, txt = bench.out.txt;
     b_frames_ms(2000u);
-    CHECK_EQ(b.t.why, why);
-    CHECK_EQ(b.out.rows, rows);
-    CHECK_EQ(b.out.txt, txt);
-    CHECK_EQ(b.offs, 1u);
-    CHECK_EQ(b.releases, 1u);
+    CHECK_EQ(bench.t.why, why);
+    CHECK_EQ(bench.out.rows, rows);
+    CHECK_EQ(bench.out.txt, txt);
+    CHECK_EQ(bench.offs, 1u);
+    CHECK_EQ(bench.releases, 1u);
     /* The run never read the other meter. */
-    CHECK_EQ(rows_with(b.out.csv, COL_METER, "PDMINI"), 0u);
-    CHECK_EQ(rows_with(b.out.csv, COL_METER, "INA3221"), rows - 1u);
+    CHECK_EQ(rows_with(bench.out.csv, COL_METER, "PDMINI"), 0u);
+    CHECK_EQ(rows_with(bench.out.csv, COL_METER, "INA3221"), rows - 1u);
 }
 
 /* A full run through the chain: the modelled servo's current at the
@@ -2117,31 +2122,31 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
     static const uint32_t k_tick0[] = { 5000u, 0xFFFFE000u };
     for (size_t i = 0u; i < 2u; ++i) {
         b_fresh(k_tick0[i]);
-        CHECK_EQ(servo_source_id(&b.src), SERVO_SOURCE_INA3221);
-        b.pd_gain = 0.25f;
+        CHECK_EQ(servo_source_id(&bench.src), SERVO_SOURCE_INA3221);
+        bench.pd_gain = 0.25f;
         servo_test_cfg_t c;
         b_cfg(&c);
         c.idle_max_a = 0.3f;
         c.hold_max_a = 0.3f;
         c.travel_max_ms = 100u;     /* not checked: an upper bound */
         b_start(&c);
-        CHECK_EQ(b.t.cfg.meter.kind, SERVO_TEST_METER_INA3221);
+        CHECK_EQ(bench.t.cfg.meter.kind, SERVO_TEST_METER_INA3221);
         const uint32_t began = b_now();
         b_out();
         if (i > 0u) {
             CHECK(began >= 0xFFFFE000u && b_now() < began);
         }
-        CHECK_EQ(b.t.why, SERVO_TEST_AB_NONE);
-        CHECK_EQ(servo_test_verdict(&b.t), SERVO_TEST_PASS);
-        CHECK_EQ(b.offs, 1u);
-        CHECK_EQ(b.releases, 1u);
-        CHECK(!b.output);
-        CHECK_EQ(b.q_lost, 0u);
-        CHECK_EQ(b.t.skipped, 0u);
-        CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
-        CHECK_EQ(b.t.clipped, 0u);
+        CHECK_EQ(bench.t.why, SERVO_TEST_AB_NONE);
+        CHECK_EQ(servo_test_verdict(&bench.t), SERVO_TEST_PASS);
+        CHECK_EQ(bench.offs, 1u);
+        CHECK_EQ(bench.releases, 1u);
+        CHECK(!bench.output);
+        CHECK_EQ(bench.q_lost, 0u);
+        CHECK_EQ(bench.t.skipped, 0u);
+        CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
+        CHECK_EQ(bench.t.clipped, 0u);
         for (unsigned k = 0u; k < 2u; ++k) {
-            const servo_test_step_t *s = &b.t.steps[k];
+            const servo_test_step_t *s = &bench.t.steps[k];
             CHECK(s->done);
             CHECK_EQ(s->moves, 4u);
             CHECK_EQ(s->travels, 4u);
@@ -2174,19 +2179,19 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
                        0.03f);
         }
         /* One row a window, every window the link took. */
-        CHECK_EQ(b.out.rows - 1u, b.t.readings);
-        CHECK_EQ(rows_with(b.out.csv, COL_METER, "INA3221"),
-                 b.out.rows - 1u);
+        CHECK_EQ(bench.out.rows - 1u, bench.t.readings);
+        CHECK_EQ(rows_with(bench.out.csv, COL_METER, "INA3221"),
+                 bench.out.rows - 1u);
         float per_s = 0.0f, mod_s = 0.0f;
         uint32_t every = 0u;
-        CHECK(servo_test_rates(&b.t, &per_s, &mod_s, &every));
+        CHECK(servo_test_rates(&bench.t, &per_s, &mod_s, &every));
         CHECK_NEAR(per_s, 20.0f, 0.1f);
         CHECK_NEAR(mod_s, 20.0f, 0.1f);
         CHECK_EQ(every, 50u);
-        CHECK(strstr(b.out.report, "Current:        INA3221 CH1, shunt "
+        CHECK(strstr(bench.out.report, "Current:        INA3221 CH1, shunt "
                                    "100.0 mOhm, range 1.638 A\n") != NULL);
-        CHECK(strstr(b.out.report, "Result:         PASS\n") != NULL);
-        CHECK(strstr(b.out.report, "STALL AT 1.50 A cannot be reached")
+        CHECK(strstr(bench.out.report, "Result:         PASS\n") != NULL);
+        CHECK(strstr(bench.out.report, "STALL AT 1.50 A cannot be reached")
               == NULL);
     }
 }
@@ -2212,18 +2217,18 @@ static unsigned row_times(const char *csv, uint32_t *ms, unsigned cap)
 TEST_CASE(windows_that_arrive_together_keep_their_own_times)
 {
     b_fresh(5000u);
-    b.poll_every = 150u / PASS_MS;
+    bench.poll_every = 150u / PASS_MS;
     servo_test_cfg_t c;
     b_cfg(&c);
     c.step_count = 1u;
     b_start(&c);
     b_out();
-    CHECK_EQ(b.t.why, SERVO_TEST_AB_NONE);
-    CHECK_EQ(b.t.skipped, 0u);
-    CHECK_EQ(sense_link_win_lost(&ch.sl), 0u);
+    CHECK_EQ(bench.t.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(bench.t.skipped, 0u);
+    CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
     static uint32_t ms[2000];
-    const unsigned n = row_times(b.out.csv, ms, 2000u);
-    CHECK_EQ(n, b.out.rows - 1u);
+    const unsigned n = row_times(bench.out.csv, ms, 2000u);
+    CHECK_EQ(n, bench.out.rows - 1u);
     unsigned same = 0u, off = 0u;
     for (unsigned k = 2u; k < n; ++k) {
         const uint32_t step = ms[k] - ms[k - 1u];
@@ -2233,7 +2238,7 @@ TEST_CASE(windows_that_arrive_together_keep_their_own_times)
     }
     CHECK_EQ(same, 0u);
     CHECK_EQ(off, 0u);
-    const servo_test_step_t *s = &b.t.steps[0];
+    const servo_test_step_t *s = &bench.t.steps[0];
     CHECK_EQ(s->travels, 4u);
     CHECK_EQ(s->timeouts, 0u);
     /* IDLE's 1000 ms and the three 600 ms holds at an end hold the windows
@@ -2248,17 +2253,17 @@ TEST_CASE(windows_that_arrive_together_keep_their_own_times)
 
     /* A servo on a stop: 20 windows over STALL AT in a row. */
     b_fresh(5000u);
-    b.poll_every = 150u / PASS_MS;
-    b.servo.cfg.stop_hi_us = 1850u;
+    bench.poll_every = 150u / PASS_MS;
+    bench.servo.cfg.stop_hi_us = 1850u;
     b_cfg(&c);
     c.step_count = 1u;
     b_start(&c);
     b_out();
-    CHECK_EQ(b.t.why, SERVO_TEST_AB_STALL);
+    CHECK_EQ(bench.t.why, SERVO_TEST_AB_STALL);
     /* The window that ended it is the twentieth from the first over it:
      * its time 1000 ms after that one began, give or take a poll's
      * exchanges, whichever read brought it. */
-    const uint32_t over_for = b.t.end_ms - b.t.stall_since_ms;
+    const uint32_t over_for = bench.t.end_ms - bench.t.stall_since_ms;
     CHECK(over_for >= 1000u && over_for <= 1006u);
     b_check_ended(SERVO_TEST_AB_STALL);
 }
@@ -2270,40 +2275,40 @@ TEST_CASE(a_full_run_on_the_pd_mini_beside_a_working_ina3221)
 {
     b_fresh(5000u);
     /* A part that reset: the meter is the PD mini for the next second. */
-    fake_reset3221(ch.i3221);
+    fake_reset3221(chain.i3221);
     for (unsigned k = 0u; k < 50u
-                          && servo_source_id(&b.src) == SERVO_SOURCE_INA3221;
+                          && servo_source_id(&bench.src) == SERVO_SOURCE_INA3221;
          ++k) {
         b_frame();
     }
-    CHECK_EQ(servo_source_id(&b.src), SERVO_SOURCE_PDMINI);
+    CHECK_EQ(servo_source_id(&bench.src), SERVO_SOURCE_PDMINI);
     servo_test_cfg_t c;
     b_cfg(&c);
     b_start(&c);
-    CHECK_EQ(b.t.cfg.meter.kind, SERVO_TEST_METER_PDMINI);
+    CHECK_EQ(bench.t.cfg.meter.kind, SERVO_TEST_METER_PDMINI);
     b_frames_ms(4000u);
-    CHECK_EQ(servo_source_id(&b.src), SERVO_SOURCE_INA3221);
-    CHECK(servo_test_running(&b.t));
+    CHECK_EQ(servo_source_id(&bench.src), SERVO_SOURCE_INA3221);
+    CHECK(servo_test_running(&bench.t));
     b_out();
-    CHECK_EQ(b.t.why, SERVO_TEST_AB_NONE);
-    CHECK_EQ(servo_test_verdict(&b.t), SERVO_TEST_PASS);
-    CHECK_EQ(b.out.rows - 1u, b.t.readings);
-    CHECK_EQ(rows_with(b.out.csv, COL_METER, "PDMINI"), b.out.rows - 1u);
-    CHECK_EQ(rows_with(b.out.csv, COL_WINDOW, ""), b.out.rows - 1u);
+    CHECK_EQ(bench.t.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(servo_test_verdict(&bench.t), SERVO_TEST_PASS);
+    CHECK_EQ(bench.out.rows - 1u, bench.t.readings);
+    CHECK_EQ(rows_with(bench.out.csv, COL_METER, "PDMINI"), bench.out.rows - 1u);
+    CHECK_EQ(rows_with(bench.out.csv, COL_WINDOW, ""), bench.out.rows - 1u);
     float per_s = 0.0f;
     uint32_t every = 0u;
-    CHECK(servo_test_rates(&b.t, &per_s, NULL, &every));
+    CHECK(servo_test_rates(&bench.t, &per_s, NULL, &every));
     CHECK(every >= 103u && every <= 105u);
     for (unsigned k = 0u; k < 2u; ++k) {
-        const servo_test_step_t *s = &b.t.steps[k];
+        const servo_test_step_t *s = &bench.t.steps[k];
         CHECK_EQ(s->travels, 4u);
         CHECK_NEAR(s->idle.sum / (float)s->idle.n, 0.12f, 0.03f);
         /* Late by up to a reading and a frame. */
         CHECK(s->travel_max_ms >= 667u);
         CHECK(s->travel_max_ms <= 667u + PD_MS + FRAME_MS + 10u);
     }
-    CHECK(strstr(b.out.report, "Current:        PD mini\n") != NULL);
-    CHECK(strstr(b.out.report, "INA3221:        not used: it has worked "
+    CHECK(strstr(bench.out.report, "Current:        PD mini\n") != NULL);
+    CHECK(strstr(bench.out.report, "INA3221:        not used: it has worked "
                                "for less than 1 s\n") != NULL);
 }
 
@@ -2317,24 +2322,24 @@ TEST_CASE(the_meter_failing_mid_run_never_switches_meter)
     b_start(&c);
     CHECK(b_until(SERVO_TEST_PH_HOLD));
     const uint32_t failed = b_now();
-    ch.i3221->present = false;
-    for (unsigned k = 0u; k < 100u && servo_test_running(&b.t); ++k) {
+    chain.i3221->present = false;
+    for (unsigned k = 0u; k < 100u && servo_test_running(&bench.t); ++k) {
         b_frame();
     }
-    CHECK(!servo_test_running(&b.t));
+    CHECK(!servo_test_running(&bench.t));
     /* Within a window, a poll and a frame of the part going: sooner than
      * the 500 ms the run's own rule takes. */
-    CHECK(b.t.end_ms - failed <= 250u);
-    CHECK(b.t.why == SERVO_TEST_AB_INA_SILENT
-          || b.t.why == SERVO_TEST_AB_INA_NO_WINDOW);
-    CHECK_EQ(servo_source_id(&b.src), SERVO_SOURCE_PDMINI);
-    CHECK(b.pd_samples > 20u);
-    b_check_ended(b.t.why);
+    CHECK(bench.t.end_ms - failed <= 250u);
+    CHECK(bench.t.why == SERVO_TEST_AB_INA_SILENT
+          || bench.t.why == SERVO_TEST_AB_INA_NO_WINDOW);
+    CHECK_EQ(servo_source_id(&bench.src), SERVO_SOURCE_PDMINI);
+    CHECK(bench.pd_samples > 20u);
+    b_check_ended(bench.t.why);
     /* The part back and the meter again: the run stays ended. */
-    ch.i3221->present = true;
+    chain.i3221->present = true;
     b_frames_ms(3000u);
-    CHECK_EQ(servo_test_verdict(&b.t), SERVO_TEST_ABORTED);
-    CHECK(!b.output);
+    CHECK_EQ(servo_test_verdict(&bench.t), SERVO_TEST_ABORTED);
+    CHECK(!bench.output);
 }
 
 /* The part resets itself during a run: the coprocessor counts it in
@@ -2347,12 +2352,12 @@ TEST_CASE(a_part_that_resets_itself_ends_the_run)
     b_cfg(&c);
     b_start(&c);
     CHECK(b_until(SERVO_TEST_PH_HOLD));
-    fake_reset3221(ch.i3221);
-    for (unsigned k = 0u; k < 100u && servo_test_running(&b.t); ++k) {
+    fake_reset3221(chain.i3221);
+    for (unsigned k = 0u; k < 100u && servo_test_running(&bench.t); ++k) {
         b_frame();
     }
     b_check_ended(SERVO_TEST_AB_INA_RESET);
-    CHECK(strstr(b.out.report, "Result:         ABORTED - INA3221 reset "
+    CHECK(strstr(bench.out.report, "Result:         ABORTED - INA3221 reset "
                                "itself\n") != NULL);
 }
 
@@ -2365,10 +2370,10 @@ TEST_CASE(the_link_going_ends_a_run_on_the_ina3221)
     b_cfg(&c);
     b_start(&c);
     CHECK(b_until(SERVO_TEST_PH_HOLD));
-    b.link_up = false;
-    sense_link_lost(&ch.sl);
+    bench.link_up = false;
+    sense_link_lost(&chain.sl);
     b_frame();
-    CHECK_EQ(servo_source_id(&b.src), SERVO_SOURCE_MODEL);
+    CHECK_EQ(servo_source_id(&bench.src), SERVO_SOURCE_MODEL);
     b_check_ended(SERVO_TEST_AB_LINK);
 }
 
@@ -2382,42 +2387,42 @@ TEST_CASE(the_link_going_ends_a_run_on_the_ina3221)
 TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
 {
     b_fresh(5000u);
-    b.servo.cfg.stop_hi_us = 1850u;
+    bench.servo.cfg.stop_hi_us = 1850u;
     servo_test_cfg_t c;
     b_cfg(&c);
     c.step_count = 1u;
     c.stall_a = 1.5f;
     b_start(&c);
     b_out();
-    CHECK(b.t.clipped >= 19u);
-    CHECK(b.t.stalled);
+    CHECK(bench.t.clipped >= 19u);
+    CHECK(bench.t.stalled);
     b_check_ended(SERVO_TEST_AB_STALL);
-    CHECK(strstr(b.out.report, "Stall threshold  highest 1.638 A, STALL AT "
+    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638 A, STALL AT "
                                "1.50 A: FAIL\n") != NULL);
-    CHECK(strstr(b.out.report, "Clipped:        ") != NULL);
-    CHECK(rows_with(b.out.csv, COL_CLIPPED, "50") >= 15u);
-    CHECK(rows_with(b.out.csv, COL_CURRENT, "1.638") >= 15u);
+    CHECK(strstr(bench.out.report, "Clipped:        ") != NULL);
+    CHECK(rows_with(bench.out.csv, COL_CLIPPED, "50") >= 15u);
+    CHECK(rows_with(bench.out.csv, COL_CURRENT, "1.638") >= 15u);
 
     b_fresh(5000u);
-    b.servo.cfg.stop_hi_us = 1850u;
+    bench.servo.cfg.stop_hi_us = 1850u;
     b_cfg(&c);
     c.step_count = 1u;
     c.stall_a = 2.0f;
     b_start(&c);
     b_out();
-    CHECK_EQ(b.t.why, SERVO_TEST_AB_NONE);
-    CHECK(!b.t.stalled);
-    CHECK(b.t.clipped > 40u);
-    CHECK_EQ(b.t.cc_readings, 0u);
-    CHECK_NEAR(b.t.stall_peak_a, 1.638f, 0.001f);
-    CHECK(strstr(b.out.report, "Stall threshold  highest 1.638 A, STALL AT "
+    CHECK_EQ(bench.t.why, SERVO_TEST_AB_NONE);
+    CHECK(!bench.t.stalled);
+    CHECK(bench.t.clipped > 40u);
+    CHECK_EQ(bench.t.cc_readings, 0u);
+    CHECK_NEAR(bench.t.stall_peak_a, 1.638f, 0.001f);
+    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638 A, STALL AT "
                                "2.00 A: PASS\n") != NULL);
-    CHECK(strstr(b.out.report, "STALL AT 2.00 A cannot be reached: INA3221 "
+    CHECK(strstr(bench.out.report, "STALL AT 2.00 A cannot be reached: INA3221 "
                                "range 1.638 A\n") != NULL);
     char want[96];
     snprintf(want, sizeof(want), "Clipped:        %lu windows hold a sample "
-             "at an end of the range, 1.638 A", (unsigned long)b.t.clipped);
-    CHECK(strstr(b.out.report, want) != NULL);
+             "at an end of the range, 1.638 A", (unsigned long)bench.t.clipped);
+    CHECK(strstr(bench.out.report, want) != NULL);
 }
 
 /* The same servo against a supply that holds 1.00 A: the INA3221 reads
@@ -2426,8 +2431,8 @@ TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
 TEST_CASE(a_servo_on_a_stop_against_the_limit_ends_on_constant_current)
 {
     b_fresh(5000u);
-    b.servo.cfg.stop_hi_us = 1850u;
-    b.limits = true;
+    bench.servo.cfg.stop_hi_us = 1850u;
+    bench.limits = true;
     servo_test_cfg_t c;
     b_cfg(&c);
     c.step_count = 1u;
@@ -2435,14 +2440,14 @@ TEST_CASE(a_servo_on_a_stop_against_the_limit_ends_on_constant_current)
     c.stall_a = 2.0f;
     b_start(&c);
     b_out();
-    CHECK(!b.t.stalled);
-    CHECK_EQ(b.t.clipped, 0u);
-    CHECK(b.t.cc_longest_ms >= 1000u && b.t.cc_longest_ms < 1000u + PD_MS);
-    CHECK_NEAR(b.t.stall_peak_a, 1.0f, 0.002f);
+    CHECK(!bench.t.stalled);
+    CHECK_EQ(bench.t.clipped, 0u);
+    CHECK(bench.t.cc_longest_ms >= 1000u && bench.t.cc_longest_ms < 1000u + PD_MS);
+    CHECK_NEAR(bench.t.stall_peak_a, 1.0f, 0.002f);
     b_check_ended(SERVO_TEST_AB_CC);
-    CHECK(strstr(b.out.report, "STALL AT 2.00 A cannot be reached: current "
+    CHECK(strstr(bench.out.report, "STALL AT 2.00 A cannot be reached: current "
                                "limit 1.00 A\n") != NULL);
-    CHECK(strstr(b.out.report, "STALL AT 2.00 A cannot be reached: INA3221 "
+    CHECK(strstr(bench.out.report, "STALL AT 2.00 A cannot be reached: INA3221 "
                                "range 1.638 A\n") != NULL);
 }
 
@@ -2451,20 +2456,20 @@ TEST_CASE(a_servo_on_a_stop_against_the_limit_ends_on_constant_current)
 TEST_CASE(a_reversed_shunt_reads_negative_through_the_chain)
 {
     b_fresh(5000u);
-    b.sign = -1.0;
+    bench.sign = -1.0;
     servo_test_cfg_t c;
     b_cfg(&c);
     c.step_count = 1u;
     b_start(&c);
     b_out();
-    CHECK_EQ(b.t.why, SERVO_TEST_AB_NONE);
-    CHECK(servo_test_negative_at_rest(&b.t));
-    const servo_test_step_t *s = &b.t.steps[0];
+    CHECK_EQ(bench.t.why, SERVO_TEST_AB_NONE);
+    CHECK(servo_test_negative_at_rest(&bench.t));
+    const servo_test_step_t *s = &bench.t.steps[0];
     CHECK_NEAR(s->idle.sum / (float)s->idle.n, -0.12f, 0.005f);
     CHECK_NEAR(s->peak_a, -0.96f, 0.012f);
-    CHECK(strstr(b.out.report, "Current reads negative at rest: shunt "
+    CHECK(strstr(bench.out.report, "Current reads negative at rest: shunt "
                                "direction\n") != NULL);
-    CHECK(strstr(b.out.csv, ";-0.1") != NULL);
+    CHECK(strstr(bench.out.csv, ";-0.1") != NULL);
 }
 
 int main(void)
@@ -2499,6 +2504,6 @@ int main(void)
     RUN(a_servo_on_a_stop_against_the_limit_ends_on_constant_current);
     RUN(a_reversed_shunt_reads_negative_through_the_chain);
     out_reset(&h.out);
-    out_reset(&b.out);
+    out_reset(&bench.out);
     return test_summary("servo_test_win");
 }

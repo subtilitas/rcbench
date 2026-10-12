@@ -47,6 +47,21 @@ history is in git.
   NOTICE and First run texts match the code; the Servo, OpenYGE and
   monostable comments no longer say that unwired code runs; DShot, Servo,
   Bringup and Manifest German pages match the English ones.
+- The host tests are built with the flags of the libraries, `-Wall -Wextra
+  -Werror -Wshadow -Wconversion -Wno-sign-conversion`, and
+  `tools/render_ui.py` builds `render_screen.c` with the same flags. clang-tidy
+  and cppcheck run over `test/host/` in CI; the checks that are off for the
+  tests are listed with their reasons in `test/host/.clang-tidy`, and
+  cppcheck's `constParameterCallback` on the page callbacks of the link tests
+  is suppressed inline, with the reason. The `analysis` job
+  timeout is 30 min. Test code fixed under the stricter rules: canvases built
+  with a zero clip rectangle in `test_kst_panel`, ids cast to a 16-bit type for
+  an 8-bit field, an out-of-range float to integer conversion in the settings
+  record helper, and allocations used without a check (`REQUIRE_ALLOC` and
+  `REQUIRE_REALLOC` in `greatest.h` end the case with the line).
+- The cppcheck command in CONTRIBUTING.md names the include directories the
+  way CI does, and the list of failing changes names the flags and the scope
+  of both analysers.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. The INA228 temperature and diagnostic flags go

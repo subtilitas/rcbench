@@ -62,6 +62,26 @@ static void t_install_crash_handler(void)
         printf("      %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
     } while (0)
 
+/* An allocation a case cannot continue without: names the line and ends the
+ * process, so no code after it reads through a null pointer. */
+#define REQUIRE_ALLOC(p)                                                      \
+    do {                                                                      \
+        if ((p) == NULL) {                                                    \
+            printf("      %s:%d: out of memory\n", __FILE__, __LINE__);       \
+            fflush(stdout);                                                   \
+            abort();                                                          \
+        }                                                                     \
+    } while (0)
+
+/* realloc that keeps the original pointer valid on failure and ends the
+ * process when the block cannot grow. */
+#define REQUIRE_REALLOC(p, bytes)                                             \
+    do {                                                                      \
+        void *grown_ = realloc((p), (bytes));                                 \
+        REQUIRE_ALLOC(grown_);                                                \
+        (p) = grown_;                                                         \
+    } while (0)
+
 #define CHECK(cond)                                                           \
     do {                                                                      \
         if (!(cond)) {                                                        \

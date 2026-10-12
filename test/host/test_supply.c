@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <math.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -21,7 +22,7 @@ TEST_CASE(a_set_point_is_clamped_and_stepped)
     CHECK_NEAR(supply_snap(5.011f, 3.3f, 21.0f, 0.02f), 5.02f, 1e-4f);
     CHECK_NEAR(supply_snap(5.009f, 3.3f, 21.0f, 0.02f), 5.0f, 1e-4f);
     CHECK_NEAR(supply_snap(1.23f, 0.5f, 5.0f, 0.0f), 1.23f, 1e-6f);
-    const float nan = 0.0f / 0.0f;
+    const float nan = nanf("");
     CHECK_NEAR(supply_snap(nan, 0.5f, 5.0f, 0.05f), 0.5f, 1e-6f);
 }
 

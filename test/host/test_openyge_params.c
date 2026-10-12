@@ -33,7 +33,7 @@ TEST_CASE(the_table_is_complete_only_when_every_index_has_arrived)
     for (uint16_t i = 1; i < 31; ++i) {
         openyge_params_observe(&p, i, (uint16_t)(100 + i));
         if (openyge_params_complete(&p)) {
-            T_FAIL("complete with index %u still missing", 31);
+            T_FAIL("complete with index %u still missing", 31u);
         }
     }
     openyge_params_observe(&p, 31, 131);

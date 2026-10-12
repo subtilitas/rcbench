@@ -1,0 +1,75 @@
+# Static analysis for the host tests.  The configuration of the parent
+# folder applies; this file turns off the checks that fire on the shape of
+# test code.  Production code in shared/ and protocols/ keeps all of them.
+#
+# What is off for the tests, and why:
+#
+#   bugprone-implicit-widening-of-multiplication-result
+#                                    index and offset arithmetic on fixtures
+#                                    smaller than 64 KiB; no product nears
+#                                    2^31
+#   bugprone-suspicious-memory-comparison
+#                                    memcmp over canvas buffers and over
+#                                    zero-initialised structs is the byte
+#                                    identity the case asserts
+#   bugprone-unchecked-string-to-number-conversion
+#                                    the tools parse their own fixture text;
+#                                    a malformed value fails the case
+#   clang-analyzer-security.insecureAPI.strcpy
+#                                    fixture buffers are sized for the copied
+#                                    literal at the call
+#   clang-analyzer-optin.core.EnumCastOutOfRange
+#                                    out-of-range enum values are the input
+#                                    of the rejection cases
+#   misc-redundant-expression        constant fixtures such as 0.0f / 0.0f
+#                                    (NaN) and UI_HOLD_S / 2.0f / TICK_S
+#   readability-non-const-parameter  fault-injection callbacks share one
+#                                    function-pointer type
+#   bugprone-float-loop-counter      parameter sweeps step a float through a
+#   clang-analyzer-security.FloatLoopCounter
+#                                    bounded range of at most a few hundred
+#                                    steps
+#   clang-analyzer-core.NullDereference
+#   clang-analyzer-core.NonNullParamChecker
+#   clang-analyzer-security.ArrayBound
+#                                    the analyser continues past a failed
+#                                    CHECK, which records the failure and
+#                                    returns no value; a passing run does
+#                                    not take that path
+#   bugprone-integer-division        microsecond-to-millisecond conversions
+#                                    of integer constants; the truncation is
+#                                    the specified value
+#   bugprone-casting-through-void    aligned byte storage reinterpreted as
+#                                    the record under test
+#   bugprone-not-null-terminated-result
+#                                    memcpy of fixed-length records, not C
+#                                    strings
+#   bugprone-inc-dec-in-conditions   countdown fault injectors (n-- == 0)
+#   bugprone-assignment-in-if-condition
+#                                    strstr / strchr scan chains
+#   bugprone-branch-clone            case tables spell out each branch
+#   bugprone-signal-handler          greatest.h names the crashed case from its
+#                                    signal handler and then re-raises the
+#                                    signal; the process is already dying
+InheritParentConfig: true
+Checks: >
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-suspicious-memory-comparison,
+  -bugprone-unchecked-string-to-number-conversion,
+  -clang-analyzer-security.insecureAPI.strcpy,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
+  -misc-redundant-expression,
+  -readability-non-const-parameter,
+  -bugprone-float-loop-counter,
+  -clang-analyzer-security.FloatLoopCounter,
+  -clang-analyzer-core.NullDereference,
+  -clang-analyzer-core.NonNullParamChecker,
+  -clang-analyzer-security.ArrayBound,
+  -bugprone-integer-division,
+  -bugprone-casting-through-void,
+  -bugprone-not-null-terminated-result,
+  -bugprone-inc-dec-in-conditions,
+  -bugprone-assignment-in-if-condition,
+  -bugprone-branch-clone,
+  -bugprone-signal-handler
+HeaderFilterRegex: '(shared|protocols|test/host)/.*\.h$'
