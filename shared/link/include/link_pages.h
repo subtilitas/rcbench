@@ -122,9 +122,9 @@ typedef enum {
 /** The first minor whose SERVO rate is the tester's target's alone: the
  *  surfaces of the standard servo ports with them as PROG's TARGET, else
  *  the TARGET port's pin, the slots at their own rates and the other ports
- *  at 50 Hz.  A TARGET change returns the rate to 0.  Minor 16 runs every
- *  PWM surface and every programming port at the one SERVO rate, whatever
- *  the TARGET. */
+ *  at 50 Hz.  A TARGET change returns the rate to 0.  An older minor runs
+ *  every PWM surface and every programming port at the one SERVO rate,
+ *  whatever the TARGET. */
 #define LINK_MINOR_SERVO_TARGET_RATE 19u
 
 /* ----------------------------------------------------------------- outputs */
@@ -227,8 +227,8 @@ enum {
  *     the slots run at their own rates.  A port pin that shares its PWM
  *     slice with another port's pin takes only 0 or 50 (BAD_VALUE).  Every
  *     port that is not the target runs at 50 Hz, and a TARGET change sets
- *     FRAME_HZ to 0.  A 4.16 coprocessor runs every surface and every port
- *     at FRAME_HZ, whatever the target.
+ *     FRAME_HZ to 0.  A coprocessor before 4.19 runs every surface and
+ *     every port at FRAME_HZ, whatever the target.
  *
  *     SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so
  *     a start fits one frame.  SWEEP is the curve, 0 stopped, 1 square,

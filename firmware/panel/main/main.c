@@ -5310,9 +5310,12 @@ static bool write_servo(const servo_cmd_t sv)
 }
 
 /*
- * The SERVO page: the frame rate every PWM output rendering a surface runs
- * at.  A coprocessor before protocol 4.1 has no such page and runs each slot
- * at its binding's rate, 50 Hz for a servo.
+ * The SERVO page: the frame rate of the PWM target -- every PWM output
+ * rendering a surface for the standard target, the one programming port
+ * for a port target (protocol 4.19).  A coprocessor before protocol 4.1 has
+ * no such page and runs each slot at its binding's rate, 50 Hz for a servo.
+ * From 4.19 a TARGET change sets the page back to 0; prog_link_rate() says
+ * so and servo_rate_reset_note() records it here.
  *
  * The rate is written with every held position, not once: a coprocessor that
  * restarts between two polls goes back to each slot's own rate without the
@@ -5371,7 +5374,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
     return RATE_NO_ANSWER;
 }
 
-/* The rate the surfaces run at as far as this end knows, or
+/* The rate the PWM target runs at as far as this end knows, or
  * SERVO_HZ_UNKNOWN. */
 static uint16_t servo_rate_now(void)
 {

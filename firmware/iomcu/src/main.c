@@ -72,7 +72,7 @@ static iomcu_state_t s_state;
 /* What the output drivers make true, whatever is connected; see main(). */
 #define IOMCU_CAPABILITIES \
     ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM))
-/* The SERVO page: the surfaces' frame rate and their sweep.  Not kept. */
+/* The SERVO page: the PWM target's frame rate and the sweep.  Not kept. */
 static servo_page_t s_servo;
 /* The SUPPLY page and the PD mini it drives on a PIO UART.  Not kept. */
 static supply_page_t s_supply;

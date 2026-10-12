@@ -37,6 +37,20 @@ history is in git.
 
 ### Changed
 
+- Protocol 4.19 (the minor is aligned when the pull requests carrying 4.17
+  and 4.18 merge): SERVO's frame rate drives the PWM target alone. With
+  OUTPUTS as target it runs every PWM slot whose first channel is a surface,
+  every programming port at 50 Hz. With PROG PORT as target it runs that
+  port's pin alone; every slot keeps its OUTPUTS rate and every other port
+  runs at 50 Hz. A SERVO rate change moves no throttle and no other output,
+  and the pulse-longer-than-frame refusal (BAD_VALUE) judges the target
+  alone. A change of PROG `TARGET` sets the rate to 0, and the panel sends
+  it again with the next position. A port whose pin shares its RP2350 PWM
+  slice with another port's pin takes 0 or 50 Hz only; a `PIN` write onto
+  the slice of a target running at another rate is refused with BAD_VALUE.
+  The SERVO screen's notes read "the PWM TARGET runs at" and "a pin shares a
+  PWM slice".
+
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.

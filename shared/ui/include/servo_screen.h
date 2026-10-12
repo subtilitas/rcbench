@@ -74,8 +74,10 @@ typedef struct {
     uint16_t         slew_per_s;
     /**
      * The frame rate the profile in force runs at, in Hz.  The panel writes
-     * it to the coprocessor's SERVO page, which runs every PWM output whose
-     * first channel is a surface at it; see servo_screen_rate().
+     * it to the coprocessor's SERVO page, which runs the PWM target at it:
+     * every PWM output whose first channel is a surface, or from protocol
+     * 4.19 the one programming port the target names; see
+     * servo_screen_rate().
      */
     uint16_t         frame_hz;
     /** SERVO_CMD_SWEEP's curve, as the SERVO page takes it (servo_sweep.h):

@@ -733,8 +733,15 @@ another one.
 ![The warning](img/servo-warning.png)
 
 **The frame rate reaches the pins** through the coprocessor's SERVO page
-(protocol 4.1). It applies to every PWM output whose first channel is a
-surface; a PPM output keeps its own frame. It goes with every held position,
+(protocol 4.1). It applies to the PWM TARGET alone. With OUTPUTS, the standard
+servo ports, as target that is every PWM output whose first channel is a surface; a
+PPM output keeps its own frame. With PROG PORT as target it is the
+programming port's pin, and every slot keeps its own rate (protocol 4.19).
+Every other programming port runs at 50 Hz. A port whose pin shares its PWM
+slice with another programming port's pin runs at 50 Hz only: the RP2350
+gives both pins of a slice one divider and one wrap, so a faster rate there
+is refused. A change of PWM TARGET puts the rate back to 0, each output at
+its own rate, and the screen sends its rate again with the next position. It goes with every held position,
 and a profile changed while the armed servo rests restates the rest with it;
 one changed while an arm is on its way is the one the arm uses.
 A faster rate goes after the pulse widths, once all of them have landed; any
@@ -744,9 +751,9 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | every PWM surface runs at the rate shown |
+| In force | the PWM TARGET runs at the rate shown |
 | The rate goes with the next position | not written yet |
-| REFUSED | a pulse of a surface or a pulsing port is longer than the frame at that rate, or a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
 
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
@@ -754,7 +761,7 @@ back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
-does not arm, from any screen, while the rate the surfaces run at is not
+does not arm, from any screen, while the rate the PWM TARGET runs at is not
 known: the arm is refused with `servo frame rate not known -- arm again`, and
 an arm made while the link was down reaches the coprocessor only once the
 reset has landed.

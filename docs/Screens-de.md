@@ -810,8 +810,16 @@ anderes gedacht war.
 ![Die Warnung](img/de/servo-warning.png)
 
 **Die Frame Rate erreicht die Pins** über die SERVO-Page des Koprozessors
-(Protokoll 4.1). Sie gilt für jeden PWM-Ausgang, dessen erster Kanal die Rolle
-surface hat; ein PPM-Ausgang behält seinen eigenen Frame. Sie geht mit jeder
+(Protokoll 4.1). Sie gilt nur für das PWM-ZIEL. Mit AUSGÄNGE, den Standard-Servoports,
+als Ziel ist das jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat; ein
+PPM-Ausgang behält seinen eigenen Frame. Mit PROG-PORT als Ziel ist es der Pin
+des Programmierports, und jeder Slot behält seine eigene Rate (Protokoll
+4.19). Jeder andere Programmierport läuft mit 50 Hz. Ein Port, dessen Pin
+seinen PWM-Slice mit dem Pin eines anderen Programmierports teilt, läuft nur
+mit 50 Hz: der RP2350 gibt beiden Pins eines Slices einen Teiler und einen
+Wrap, eine schnellere Rate dort wird also abgelehnt. Eine Änderung des
+PWM-ZIELS setzt die Rate auf 0 zurück, jeden Ausgang auf seine eigene Rate,
+und die Seite sendet ihre Rate mit der nächsten Stellung erneut. Sie geht mit jeder
 gehaltenen Stellung hinaus, und ein Profilwechsel, während das scharfe Servo
 ruht, setzt die Ruhelage mit ihr neu; einer, der während eines laufenden Arm
 geschieht, ist der, den der Arm verwendet. Eine schnellere Rate folgt den
@@ -822,10 +830,10 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| In force | jede PWM-Surface läuft mit der angezeigten Rate |
-| The rate goes with the next position | noch nicht geschrieben |
-| ABGELEHNT | ein Puls einer Surface oder eines pulsenden Ports ist länger als der Frame bei dieser Rate, oder eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
-| This coprocessor takes no frame rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
+| Aktiv | das PWM-ZIEL läuft mit der angezeigten Rate |
+| Die Rate geht mit der nächsten Position | noch nicht geschrieben |
+| ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
+| Dieser Koprozessor nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
 
 Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
 jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; die Seite sendet
@@ -833,7 +841,7 @@ ihre Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
 Rate jedes Slots unbeantwortet bleibt (OUTPUTS meldet `KEIN LINK`) oder
 abgelehnt wird (`ABGELEHNT`), und der Prüfstand wird von keiner
-Seite aus scharf, solange die Rate der Surfaces nicht bekannt ist: Der Arm
+Seite aus scharf, solange die Rate des PWM-ZIELS nicht bekannt ist: Der Arm
 wird mit `Frame Rate des Servos unbekannt -- erneut ARM` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
 Zurücksetzen angekommen ist.
