@@ -1,5 +1,8 @@
 """render_ui.py --fit: an overflow fails in either language unless it is a
-known one, and a known one that is gone fails too."""
+known one, and a known one that is gone fails too.
+
+SPDX-License-Identifier: MIT
+"""
 
 import render_ui as ui
 

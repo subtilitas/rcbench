@@ -108,6 +108,16 @@ static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
                 (int32_t)p->cfg)) {
         p->cfg_owed = false;
     }
+    /* The samples dropped while a record was owed were taken under the
+     * new set-up: counted from here, behind its records, the count the
+     * next record carries.  The last owed record went in in this call
+     * and took lost with it, so lost is 0 here. */
+    if (!p->shunt_owed && !p->cfg_owed && p->lost_after != 0u) {
+        p->lost       = p->lost_after;
+        p->dropped   += p->lost_after;
+        p->lost_after = 0u;
+        atomic_store_explicit(&tr->drops, p->dropped, memory_order_release);
+    }
 }
 
 /* The tick's records, when it has any.  @p tick_t is its start. */
@@ -170,8 +180,12 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
             if (p->shunt_owed || p->cfg_owed) {
                 /* The set-up record this sample is coded against is not
                  * in the ring yet: core 0 can free a place between the
-                 * two pushes, and the sample would stand before it. */
-                drop(tr);
+                 * two pushes, and the sample would stand before it.  Its
+                 * loss is counted after that record (publish()), not
+                 * with the count the record carries. */
+                if (p->lost_after < SENSE_TRACE_LOST_MAX) {
+                    ++p->lost_after;
+                }
             } else {
                 kept = push(tr, kind, c->t, c->ua);
             }

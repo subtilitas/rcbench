@@ -585,12 +585,6 @@ static void read_rotation(sense_sched_t *s)
                         || s->have_flags;
         break;
     }
-    /* The die temperature and DIAG are of the part online: once it is
-     * offline, the last ones are no reading of now. */
-    if (ina228_state(&s->i228) != SENSE_PART_ONLINE) {
-        s->have_temp = false;
-        s->have_diag = false;
-    }
 }
 
 /* ------------------------------------------------------------ encoder */
@@ -767,6 +761,13 @@ void sense_sched_tick(sense_sched_t *s)
         read_rotation(s);
     } else if (s->cfg.as5600_en) {
         read_enc(s);
+    }
+    /* The die temperature and DIAG are of the part online: once it is
+     * offline, the last ones are no reading of now.  Checked every tick,
+     * as a failed CURRENT or VBUS read takes the part offline as well. */
+    if (ina228_state(&s->i228) != SENSE_PART_ONLINE) {
+        s->have_temp = false;
+        s->have_diag = false;
     }
     /* The capture on CH1's own time, whatever came after it; then the
      * sample into the history, so the level before a command is taken

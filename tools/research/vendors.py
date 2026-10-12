@@ -27,6 +27,8 @@ read with one keyword search: the answer lists the matches with their makers,
 or gives the one product. `digikey-quota` prints the calls left today and
 when the count resets; it takes one call.
 The chrome and safari clients need curl_cffi (pip install curl_cffi).
+
+SPDX-License-Identifier: MIT
 """
 
 import argparse

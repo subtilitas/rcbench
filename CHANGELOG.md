@@ -24,13 +24,15 @@ history is in git.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. The INA228 temperature and diagnostic flags go
-  with the part when it is offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
+  with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
   sample. A mark kind passed as a trace trigger is ignored, and the trace
-  drops a sample while a shunt or configuration record is owed.
+  drops a sample while a shunt or configuration record is owed and counts
+  it after that record.
 - The servo limit search and the synchroniser keep every command inside 500
   to 2500 µs. The search refuses a step of 0 µs (fault `BAD_CONFIG`), keeps
   an endpoint backed off past the centre at the centre, and ends at the end
-  of the pulse range. Both stop on a current that is not a number. The
+  of the pulse range. A last step shorter than `step_us` reaches the end of
+  the travel, so the end is measured before `NO_LIMIT`. Both stop on a current that is not a number. The
   synchroniser reports `NO_MINIMUM` for a minimum at the edge of a scan
   window and runs at least one round.
 - `tools/sense_trace.py` starts a new boot only when the tick runs back by
@@ -80,8 +82,16 @@ history is in git.
   release tag newer than the data, as an annotation and in the run summary.
   The Release workflow runs the same check on every tag push and shows its
   warnings the same way. The check holds no release back.
+- CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at
+  exact versions.
 
 ### Fixed
+
+- The run clock counts a run that starts on tick 0 from that tick. A flag
+  (`in_run` in `arming_t`) marks a run, so every 32-bit tick, 0 and
+  0xFFFFFFFF included, is a valid start. A start time of 0 stood for "no
+  run", and a run that began on tick 0 restarted at its next pass and lost
+  that pass from its length. The tick passes 0 every 2^32 ms (49.7 days).
 
 - The ESC and SERVO classes of PROGRAMMER show that they are a model. No
   transport carries their protocols, and CONNECT, READ and WRITE send
@@ -97,6 +107,27 @@ history is in git.
   `tone_link_readout()` clears the status's 7 values and sets
   `tone_readout_t.read` only while a read younger than 500 ms gives the
   state; the head's warning colour follows the state.
+- The docs workflow no longer cancels a publish in progress when a later push
+  starts one (`cancel-in-progress: false`).
+- With the environment variable `CI` set, a missing C++ compiler fails the
+  CMake configure step of `test/host`, a missing `node` fails
+  `tools/research/session.py check`, and a missing `git`, `cmake`, `cc` or
+  `c++` fails the cases of `test/tools` that need it. Each of these skipped
+  and exited 0. The owner self-test of `session.py` reads a plan and
+  a commit of its own throwaway repository, not the working repository's.
+- The docs job and the job of the Release workflow that waits for CI with
+  `tools/ci_gate.py` time out after 100 min; the gate waits up to 5400 s
+  (90 min). A shorter limit ends the job while it waits.
+- `tools/check_docs.py` fails when `docs/Building.md` or
+  `docs/Building-de.md` has no "vX.Y and vX.Z" ESP-IDF statement.
+- `tools/check_protocols.py` lists each `_Static_assert` on a module's
+  constants by file and condition; removing one of two assertions in a file
+  fails the check. `static_assert` counts as well.
+- The cppcheck step over `shared/` resolves the headers under
+  `shared/*/include`; its pathspec matched no file. `ui_seg_hero()` names its
+  local `st`, which no longer shadows the file-scope `s` of the screens that
+  include `ui_theme.h`, and the unused member `warn.id` is removed from the
+  servo screen.
 - `testbench/host/capture.sh` checks for a channel that never changed in
   time linear in the samples. The check keeps two flags per channel in place
   of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
@@ -114,6 +145,20 @@ history is in git.
   stored setup holds ids alone, so it is the same in English and German. A
   blocked or full store and an entry of another shape give the base setup
   without an error.
+
+### Added
+
+- Every test of `test/host` stops after 120 s unless it sets its own limit,
+  and every CI job has a `timeout-minutes` limit.
+- `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
+  "Where code goes": the files outside `protocols/` with an assertion on a
+  module's macros or enumerators are listed in the tool, and a new or a
+  removed assertion fails the check.
+- `tools/check_docs.py` checks every "N binaries" count of `STATUS.md` and the
+  "N `test_kst_*` binaries" count, holds the pico-sdk and ESP-IDF tags of
+  `docs/Building.md`, `docs/Performance.md` and their German pages to
+  `ci.yml` and `release.yml`, and requires the SPDX line in the scripts
+  under `tools/` and `test/tools/`. The 18 scripts without one carry it.
 
 ## 0.17.0 - 2026-10-12
 

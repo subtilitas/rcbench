@@ -2605,6 +2605,78 @@ TEST_CASE(a_set_up_record_with_no_room_is_written_when_there_is_room)
     CHECK_EQ(seen.code[seen.n_s - 1u], 150);
 }
 
+/* The ring full when the set-up changes: the samples of the ticks while
+ * its records wait for room are counted after them, on the first record
+ * kept behind them, not with the count they carry.  The trace that ends
+ * at the change counts none of them. */
+TEST_CASE(a_sample_dropped_while_a_set_up_record_waits_counts_after_it)
+{
+    rig_size(8u);
+    run(20u);
+    sense_trace_key(&tr, 't', g_us);
+    run(20u);
+    stall(20u);
+    CHECK_EQ(sense_trace_held(&tr), 8u);
+    ++cmd.cfg_gen;
+    cmd.parts.ina3221_shunt_uohm = 50000u;
+    i3221->shunt_ohm = 0.05;
+    for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
+        tick();
+    }
+    CHECK(tr.src.shunt_owed);
+    const uint32_t lost1    = tr.src.lost;
+    const uint32_t dropped1 = tr.src.dropped;
+    /* 5 ticks more with no room: the shunt's record is counted in each,
+     * the samples of the 5 are not. */
+    stall(5u);
+    CHECK(tr.src.shunt_owed);
+    CHECK_EQ(tr.src.lost, lost1 + 5u);
+    uint32_t fails = 5u;
+    const uint32_t head0 = (uint32_t)atomic_load(&tr.head);
+    for (unsigned k = 0u;
+         k < 50u && (tr.src.shunt_owed || tr.src.cfg_owed); ++k) {
+        pass_as(SENSE_TRACE_LINE_MAX * 4u, true);
+        tick();
+        if (tr.src.shunt_owed || tr.src.cfg_owed) {
+            ++fails;
+        }
+    }
+    CHECK(!tr.src.shunt_owed && !tr.src.cfg_owed);
+    const uint32_t deferred = tr.src.dropped - dropped1 - fails;
+    CHECK(deferred >= 5u);
+    /* The records from the shunt's on: the set-up's carry their own
+     * count, the record behind them the samples'. */
+    const uint32_t head = (uint32_t)atomic_load(&tr.head);
+    uint32_t setup_lost = 0u;
+    uint32_t after_lost = 0u;
+    bool seen_setup = false;
+    bool seen_after = false;
+    for (uint32_t k = head0; k != head; ++k) {
+        const sense_trace_rec_t *r = &g_ring[k & tr.mask];
+        const uint32_t kind = r->meta >> 24;
+        if (kind == SENSE_TRACE_SHUNT || kind == SENSE_TRACE_CFG) {
+            CHECK(!seen_after);
+            setup_lost += r->meta & SENSE_TRACE_LOST_MAX;
+            seen_setup = true;
+        } else if (seen_setup && !seen_after) {
+            after_lost = r->meta & SENSE_TRACE_LOST_MAX;
+            seen_after = true;
+        }
+    }
+    CHECK(seen_setup && seen_after);
+    CHECK_EQ(setup_lost, lost1 + fails);
+    CHECK_EQ(after_lost, deferred);
+    CHECK_EQ((uint32_t)atomic_load(&tr.drops), tr.src.dropped);
+    run(20u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_z, 1u);
+    CHECK_EQ(seen.z_e, 's');
+    CHECK_EQ(seen.z_l, seen.lost);
+    CHECK(seen.z_l <= lost1 + fails);
+}
+
 TEST_CASE(idle_keeps_no_record_from_before_a_set_up)
 {
     rig();
@@ -3553,6 +3625,7 @@ int main(void)
     RUN(records_dropped_before_a_set_up_record_are_said_in_its_trace);
     RUN(a_state_change_under_a_backlog_keeps_its_place);
     RUN(a_set_up_record_with_no_room_is_written_when_there_is_room);
+    RUN(a_sample_dropped_while_a_set_up_record_waits_counts_after_it);
     RUN(idle_keeps_no_record_from_before_a_set_up);
     RUN(a_pulse_is_the_one_the_frame_can_carry);
     RUN(every_line_at_its_longest_fits);
