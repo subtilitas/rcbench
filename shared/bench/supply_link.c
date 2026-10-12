@@ -399,6 +399,7 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     if (s == NULL || st == NULL) {
         return;
     }
+    st->modelled = false;
     const bool fresh = s->read_any
                        && (uint32_t)(now_ms - s->read_ms) < SUPPLY_LINK_STALE_MS;
     const uint16_t f = s->regs[LINK_SP_FLAGS];

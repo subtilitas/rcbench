@@ -57,6 +57,7 @@ typedef struct {
     supply_mode_t mode;
     bool          output;     /**< the output is switched on             */
     bool          online;     /**< the supply answers                    */
+    bool          modelled;   /**< the panel's model produced the readings */
     uint8_t       ok;         /**< SUPPLY_OK_*                           */
     /** The trip that switched the output off last, as supply_trip_kind_t;
      *  kept until the output is switched on again. */

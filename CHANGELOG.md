@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- The bench log and the supply log end in a column `source`: `measured` for a
+  row a meter or the PD mini produced, `model` for a row the panel's model
+  produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
+  the column is read as before; the column is text and is never plotted. The
+  servo test's CSV is unchanged: its `meter` column names `MODEL`.
+
 - The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
   (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
   `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The

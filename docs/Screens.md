@@ -286,10 +286,15 @@ give the spacing of the rows while the INA3221 is enabled.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
-`voltage`, `current` and `power` are what the screen shows. `ina voltage` and
+`voltage`, `current` and `power` are what the screen shows. `source` is
+`measured` on a row whose values a meter produced and `model` on a row the
+panel's model produced (the MODELLED mark); a supply file has the same last
+column. A file without the column ends at `ch3 voltage` or `energy`, and the
+log viewer and the tools read both forms: `source` is a
+text column and is never plotted. `ina voltage` and
 `ina current` are the INA228's and are empty while it is not the source;
 `esc current` is the ESC's own telemetry current, from the SENSE page while
 the INA228 is the source and from the BENCH page otherwise, and empty when
@@ -941,11 +946,12 @@ lowest and highest values again from the current reading.
 A run is recorded to a `BENCHnnn.CSV` of its own, one row every 50 ms:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
 ```
 
 A reading that did not arrive is an empty cell. `mode` is CV, CC or OFF, and
-empty while the supply does not answer. The bench takes the log: arming during
+empty while the supply does not answer. `source` is `measured` for the PD mini's
+readings and `model` for the panel's model. The bench takes the log: arming during
 a supply run ends that run's file, and an output still on at the disarm starts
 a new file. That file's charge and energy go on from the totals counted since
 the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50 ms cadence while
