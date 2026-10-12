@@ -515,6 +515,11 @@ export function checkSrc(
           findings.push(err(id, `src names the owner statement "${String(src.date)}", which is not in the list`));
         }
         break;
+      case 'doc':
+        if (typeof src.title !== 'string' || src.title === '') findings.push(err(id, 'src "doc" has no title'));
+        if (typeof src.url !== 'string' || !/^https:\/\/[^\s/]+\/\S*$/.test(src.url)) findings.push(err(id, 'src "doc" has no https address'));
+        if (typeof src.ref !== 'string' || src.ref === '') findings.push(err(id, 'src "doc" names no page, net or table'));
+        break;
       default:
         findings.push(err(id, `src has the unknown kind "${String((src as { kind?: unknown }).kind)}"`));
     }

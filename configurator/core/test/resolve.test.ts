@@ -490,7 +490,7 @@ test('an option keeps its value while it is not visible', () => {
   const setup = resolve(CATALOGUE, select([], [], { ina228Board: 'xt90', escPower: 'pd', connection: 'osoyoo' }));
   assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd', 'external', 'outputs']);
   assert.deepEqual(setup.checks.map((c) => c.id), [
-    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals',
+    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals', 'strip-parts',
   ]);
 });
 

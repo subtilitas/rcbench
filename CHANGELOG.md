@@ -21,6 +21,18 @@ history is in git.
 
 ### Changed
 
+- The bench configurator states the supply of the V pins of the Osoyoo
+  breakout board from its schematic REV 1.0, the XL1509 datasheet and the
+  product page. The jumper V Selector (header H3, print 5V and 3V3) sets the
+  V pins of all 40 strips: 5V from the XL1509 converter, fed by the DC jack
+  or the VIN terminal (chip input 7 to 40 V, print 7 to 16 V, 2 A rated),
+  3V3 from the regulator fed by VSYS of the Pico board (500 mA rated, vendor
+  values). Without a DC supply the 5V position gives 0 V. The data carries
+  a warning to check the jumper before a servo is plugged in, since a servo
+  gets 3.3 V in position 3V3. The pro "plugs straight in" names the setup
+  without the servo programmer. A source of the kind `doc` names a
+  document, its address and the place in it; the data check rejects one
+  without them.
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming

@@ -123,6 +123,13 @@ function sourceProblems(src: unknown, release: string): string[] {
       if (!ok) out.push(`date "${String(s.date)}" is no calendar date`);
       return out;
     }
+    case 'doc':
+      return [
+        ...(keys !== 'kind,ref,title,url' ? [`has the keys ${keys}`] : []),
+        ...(typeof s.url !== 'string' || !/^https:\/\/\S+$/.test(s.url) ? [`url "${String(s.url)}" is no https address`] : []),
+        ...(typeof s.title !== 'string' || s.title.length === 0 ? ['title is empty'] : []),
+        ...(typeof s.ref !== 'string' || s.ref.length === 0 ? ['ref is empty'] : []),
+      ];
     case 'page':
       return keys !== 'kind' ? [`has the keys ${keys}`] : [];
     default:
@@ -346,6 +353,9 @@ test('the rules report a catalogue that breaks them', () => {
   assert.deepEqual(sourceProblems({ kind: 'photo', file: '5' }, release), ['file "5" is no photo number']);
   assert.deepEqual(sourceProblems({ kind: 'owner', date: '2026-02-30' }, release), ['date "2026-02-30" is no calendar date']);
   assert.deepEqual(sourceProblems({ kind: 'owner', date: '11.10.2026' }, release), ['date "11.10.2026" is no calendar date']);
+  assert.deepEqual(sourceProblems({ kind: 'doc', title: 'T', url: 'http://x.y/a', ref: 'p. 1' }, release), ['url "http://x.y/a" is no https address']);
+  assert.deepEqual(sourceProblems({ kind: 'doc', title: '', url: 'https://x.y/a', ref: 'p. 1' }, release), ['title is empty']);
+  assert.deepEqual(sourceProblems({ kind: 'doc', title: 'T', url: 'https://x.y/a', ref: '' }, release), ['ref is empty']);
   assert.deepEqual(sourceProblems({ kind: 'page', line: 3 }, release), ['has the keys kind,line']);
   assert.deepEqual(sourceProblems({ kind: 'forum' }, release), ['kind "forum" is no source kind']);
   assert.deepEqual(sourceProblems(null, release), ['is no object']);

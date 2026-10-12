@@ -9,6 +9,7 @@ export type Src =
   | { kind: 'guide'; section: string }
   | { kind: 'photo'; file: string }
   | { kind: 'owner'; date: string }
+  | { kind: 'doc'; title: string; url: string; ref: string }
   | { kind: 'page' };
 
 export type Release = 'released' | 'main' | 'planned';

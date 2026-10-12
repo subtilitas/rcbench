@@ -186,9 +186,10 @@ Colour is not the only carrier: a wire keeps its wire number of the data file.
   drawn and carry no anchor: the data file lists no pin for them.
   `stripPoint(pad, row)` in `parts.ts` gives the place of each strip pin.
 - Carrier board: the jumper and the DC-DC converter are drawn at the USB end,
-  where photo `05-rp2350-can-breakout` shows them, not to scale. Which jumper
-  position gives 3.3 V: not legible in the photo. That the 8-pin chip and the
-  inductor form the converter is read from the photo, not from a schematic.
+  where photo `05-rp2350-can-breakout` shows them, not to scale. The print of
+  the jumper reads 5V and 3V3 beside the header and V Selector below it, per the
+  product photo of the vendor; the schematic REV 1.0 names the 8-pin chip U9
+  (converter) and the inductor.
 - microSD card, USB cable and hook-up wire: drawings without a pin.
 - How the colours look with a colour vision deficiency: not measured.
 - Not confirmed by a print on the part or by a maker document: which 2 tabs
