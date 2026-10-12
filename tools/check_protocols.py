@@ -71,11 +71,9 @@ DRIVER = "rp2350"
 C_STANDARD = frozenset("""
     assert.h complex.h ctype.h errno.h fenv.h float.h inttypes.h iso646.h
     limits.h locale.h math.h setjmp.h signal.h stdalign.h stdarg.h
-    stdbool.h stddef.h stdint.h stdio.h stdlib.h stdnoreturn.h
-    string.h tgmath.h time.h uchar.h wchar.h wctype.h
+    stdatomic.h stdbool.h stddef.h stdint.h stdio.h stdlib.h stdnoreturn.h
+    string.h tgmath.h threads.h time.h uchar.h wchar.h wctype.h
 """.split())
-# stdatomic.h and threads.h are optional in C11 and the RP2350 target build
-# does not provide them, so a core that includes either fails here.
 
 # What a pin driver may include from the pico-sdk.
 SDK_RE = re.compile(r"^(pico\.h|pico/.+\.h|hardware/.+\.h)$")
@@ -92,7 +90,9 @@ BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "FrSky", "FlySky")
 BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![\w])"
                       % "|".join(re.escape(b) for b in BRANDS))
-HEADING_RE = re.compile(r"^[ ]{0,3}#{1,6}[ \t]+(.*?)[ \t]*$", re.M)
+# An ATX heading's text: an optional closing sequence of `#` is no part of it.
+HEADING_RE = re.compile(
+    r"^[ ]{0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$", re.M)
 FENCE_RE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})")
 NO_DRIVER_RE = re.compile(r"\bno\s+pin\s+driver\b", re.I)
 
@@ -275,7 +275,8 @@ def readme_problems(module: pathlib.Path) -> list[str]:
         return []
     text = path.read_text(encoding="utf-8")
     rel = path.relative_to(module.parent).as_posix()
-    headings = [h.lower() for h in HEADING_RE.findall(prose(text))]
+    shown = prose(text)
+    headings = [h.lower() for h in HEADING_RE.findall(shown)]
     problems = []
     if not any("interface" in h for h in headings):
         problems.append(f'{rel} has no heading with "Interface"')
@@ -283,7 +284,7 @@ def readme_problems(module: pathlib.Path) -> list[str]:
     if brands and "trademarks" not in headings:
         problems.append(f'{rel} names {", ".join(brands)} and has no '
                         'heading "Trademarks"')
-    if not (module / DRIVER).is_dir() and not NO_DRIVER_RE.search(text):
+    if not (module / DRIVER).is_dir() and not NO_DRIVER_RE.search(shown):
         problems.append(f'{rel} does not say "no pin driver": the module '
                         f"has no {DRIVER}/ folder")
     return problems

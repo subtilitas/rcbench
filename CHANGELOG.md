@@ -23,10 +23,9 @@ history is in git.
 
 - `tools/check_protocols.py` checks that a module's `README.md` has an
   "Interface" heading, a "Trademarks" heading where it names a brand, and
-  the words "no pin driver" where the module has no `rp2350/` folder. An
-  include path with a `..` component or an absolute path in a module fails,
-  and `stdatomic.h` and `threads.h` no longer count as C standard headers
-  for a core.
+  the words "no pin driver" where the module has no `rp2350/` folder; text
+  inside fenced code blocks does not count. An include path with a `..`
+  component or an absolute path in a module fails.
 - The release of the bench configurator is stated once, in the `version`
   field of `configurator/package.json`. The data file, the page header, the
   trademark notice, the print head, the source-link tag and the data check

@@ -135,14 +135,14 @@ def test_a_path_include_that_leaves_the_module_is_flagged(tmp_path):
         assert "leaves wire/" in found[0]
 
 
-def test_a_stdatomic_or_threads_include_is_flagged(tmp_path):
-    """The RP2350 target build provides neither header."""
+def test_stdatomic_and_threads_are_standard_headers(tmp_path):
+    """Both are C11 headers, and the ARM GNU 14.2 newlib of the RP2350
+    build ships both."""
     m = module(tmp_path)
-    for name in ("stdatomic.h", "threads.h"):
-        c = m / "wire.c"
-        c.write_text("#include <%s>\n" % name + c.read_text())
-        assert len(cp.include_problems(m)) == 1, name
-        c.write_text(c.read_text().split("\n", 1)[1])
+    c = m / "wire.c"
+    c.write_text("#include <stdatomic.h>\n#include <threads.h>\n"
+                 + c.read_text())
+    assert cp.include_problems(m) == []
 
 
 def test_a_system_header_outside_the_standard_is_flagged(tmp_path):
@@ -493,6 +493,18 @@ def test_a_readme_naming_a_brand_needs_a_trademarks_heading(tmp_path):
     assert cp.readme_problems(m) == []
 
 
+def test_a_closing_hash_sequence_is_no_part_of_the_heading(tmp_path):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    readme.write_text("# wire #\n\n## Interface ##\n\nWorks with Futaba.\n"
+                      "\n## Trademarks ##\n\nNotice.\n")
+    assert cp.readme_problems(m) == []
+    readme.write_text("# wire\n\n## Interface\n\nWorks with Futaba.\n"
+                      "\n## Trademarks#\n\nNotice.\n")
+    assert cp.readme_problems(m) == [
+        'wire/README.md names Futaba and has no heading "Trademarks"']
+
+
 def test_a_brand_inside_a_longer_word_is_not_a_brand(tmp_path):
     m = module(tmp_path)
     readme = m / "README.md"
@@ -503,6 +515,15 @@ def test_a_brand_inside_a_longer_word_is_not_a_brand(tmp_path):
 def test_a_module_without_a_driver_says_so_in_its_readme(tmp_path):
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text("# wire\n\n## Interface\n")
+    assert cp.readme_problems(m) == [
+        'wire/README.md does not say "no pin driver": the module has no '
+        "rp2350/ folder"]
+
+
+def test_no_pin_driver_inside_a_fenced_block_does_not_count(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "README.md").write_text(
+        "# wire\n\n## Interface\n\n```text\nno pin driver\n```\n")
     assert cp.readme_problems(m) == [
         'wire/README.md does not say "no pin driver": the module has no '
         "rp2350/ folder"]
