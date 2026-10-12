@@ -78,7 +78,8 @@ void prog_port_defaults(uint16_t *kept, uint16_t pin0);
 
 /**
  * Take the kept registers at start, after the slots and the other pin
- * holders are restored.  A value no write would take becomes its default.
+ * holders are restored.  A value no write would take becomes its default,
+ * except a slew above LINK_CC_SLEW_MAX, which becomes LINK_CC_SLEW_MAX.
  * A pin that is taken (a slot's, one in @p taken, reserved in @p o, or
  * beside a PWM slot in the silicon) stays on the page and is not held:
  * LINK_PG_FLAGS says refused until another pin is written.  Sets the role,
