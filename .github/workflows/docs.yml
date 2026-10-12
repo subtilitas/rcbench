@@ -86,9 +86,13 @@ jobs:
       # `Screens.md` downloads the file instead of opening the page.  In the
       # repository the opposite holds, and check_docs.py holds every link to
       # it.  The translation happens here, on the way out, and only to the
-      # copy.
+      # copy.  Each page is compared with its original through
+      # markdown-it-py, a CommonMark parser, and a difference other than the
+      # rewritten links stops the mirror before the push.
       - name: Point the links at wiki pages rather than at files
-        run: python3 source/tools/wiki_links.py wiki
+        run: |
+          python3 -m pip install --quiet markdown-it-py==3.0.0
+          python3 source/tools/wiki_links.py wiki
 
       - name: Commit and push
         env:

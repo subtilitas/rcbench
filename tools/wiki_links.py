@@ -27,9 +27,10 @@ absolute path and a bare anchor are left as they are.
   next line, one line ending each: `[label]:` then `  ../README.md`.
 - A definition that an image uses, `![alt][label]`, `![label][]` or
   `![label]`, gets the `raw` form.  Labels are compared as CommonMark
-  compares them: case folded, white space collapsed.  When an image and a
-  link share one definition, the image wins, because `raw` also opens in a
-  browser.
+  compares them: case folded, each run of spaces, tabs and line endings
+  as one space; other white space, U+00A0 among it, stays.  When an image
+  and a link share one definition, the image wins, because `raw` also
+  opens in a browser.
 - A link title is `"t"`, `'t'` or `(t)`.
 - A label may nest square brackets to any depth.
 - A URL is anything that starts with a scheme, `[A-Za-z][A-Za-z0-9+.-]*:`,
@@ -40,33 +41,72 @@ absolute path and a bare anchor are left as they are.
   with `../`.  `..notes.md` is a page named `..notes`.  The same rule decides
   whether a target climbs above the repository.
 - Any other link inside docs/ (an image, a file) is unchanged.
-- Text in a code span, in a fenced code block (``` or ~~~) and after a
-  backslash-escaped `[` or `![` is not a link and stays as written.  A
-  fence opens at 0 to 3 spaces of indent, also after block quote markers
-  (`> ```); an indented code block is not recognised, so links in it are
-  rewritten.  An image may stand in link text; a `]` after a backslash
-  does not close the text.  A line ending may follow `(`.
+- Text in a code span, in a fenced code block (``` or ~~~), in a URI or
+  email autolink (`<https://...>`) and after a backslash-escaped `[` or
+  `![` is not a link and stays as written.  Backslash escapes are read left
+  to right, so `\\\\` before a backtick leaves the backtick to open a code
+  span.  A fence opens at 0 to 3 spaces of indent, also after block quote
+  markers (`> ```), and ends where its block quote ends.  An image may stand
+  in link text; a `]` after a backslash does not close the text.  A line
+  ending may follow `(`; a blank line between a target and a title ends
+  the link.
 - `--verify` checks every link and image the parser finds: a link is an
   absolute URL, an anchor or a page name with no `.md` and no `../`, and
   never `/raw/main/`; an image in docs/ is relative, one above docs/ is a
   `/raw/main/` URL.
 
+Every page is parsed before and after the rewrite with markdown-it-py
+3.0.0, a CommonMark parser, and the two token streams are compared token by
+token.  They match in kind, tag, text and attributes, except a link's href
+and an image's src, which must be what the rules above give the original.
+A link the scanner misses and text it alters both fail the run, with page,
+line and both values.  The page is then not written.
+
+Current limitations.  The scanner reads less than CommonMark; each case
+below fails the conversion with page and line, and the page needs the
+form given:
+
+- A reference definition inside a block quote or list item,
+  `> [ref]: ../README.md`, is not rewritten.  A page that uses one fails;
+  write the definition at the top level, 0 to 3 spaces in.
+- A definition-shaped line right after a paragraph line, `text` then
+  `[ref]: ../README.md`, is paragraph text in CommonMark but is rewritten.
+  Put a blank line in front of a definition, or write `\\[` for text.
+- A definition label over two lines, `[Foo` then `  bar]: ../README.md`, is
+  not seen.  A page that uses it fails; write the label on one line.
+- A raw HTML block (`<pre>`, `<div>`, `<!-- -->` at the start of a line) is
+  not recognised, and a relative link-shaped text in it is rewritten.  Put
+  the example in a fenced code block.  The same holds for an indented code
+  block and for inline HTML.
+- markdown-it-py collapses all Unicode white space in a label, CommonMark
+  only spaces, tabs and line endings.  A page where an image label and a
+  link label differ only in other white space (a no-break
+  space, U+00A0, against a space) fails; write plain spaces.
+- Any other construct the scanner reads differently from the parser fails
+  the same way.
+
 `--check` also fails when a relative link still leaves docs/ after the
 rewrite, which is the case for a target that climbs above the repository.
 
-    tools/wiki_links.py <dir>          rewrite in place
-    tools/wiki_links.py --check <dir>  report what would change, change nothing
-    tools/wiki_links.py --verify <dir> fail on a rewritten page whose links
-                                       or images a wiki cannot open; the
-                                       page is read with markdown-it-py, a
-                                       CommonMark parser, not by this
-                                       script's scanner
+    tools/wiki_links.py <dir>          rewrite in place, then compare each
+                                       page with its original
+    tools/wiki_links.py --check <dir>  report what would change and run the
+                                       comparison, change nothing
+    tools/wiki_links.py --verify <dir> fail on an already rewritten page
+                                       whose links or images a wiki cannot
+                                       open; the page is read with
+                                       markdown-it-py, not by this script's
+                                       scanner
+
+All three modes need markdown-it-py (`pip install markdown-it-py==3.0.0`)
+and exit 2 without it.
 
 SPDX-License-Identifier: MIT
 """
 
 import posixpath
 import re
+import string
 import sys
 from pathlib import Path
 from urllib.parse import unquote
@@ -76,7 +116,14 @@ REPO = "https://github.com/subtilitas/rcbench"
 # is rewritten elsewhere, so a directory is recognised here.
 ROOT = Path(__file__).resolve().parents[1]
 
-TITLE = r"""(?:"[^"]*"|'[^']*'|\([^()\n]*\))"""
+# A line ending that does not end in a blank line: a title and the space in
+# front of it may cross one, a blank line ends the link.
+_NB = r"\n(?![ \t]*\n)"
+TITLE = (r'(?:"(?:\\[^\n]|\\(?=\n)|[^"\\\n]|' + _NB + r')*"'
+         r"|'(?:\\[^\n]|\\(?=\n)|[^'\\\n]|" + _NB + r")*'"
+         r"|\((?:\\[^\n]|\\(?=\n)|[^()\\\n]|" + _NB + r")*\))")
+# White space holding at most one line ending, between a target and a title.
+SEP = r"(?:[ \t]+(?:\n[ \t]*)?|\n[ \t]*)"
 
 # A URI (uniform resource identifier) scheme, as the standard writes it.
 NOT_URL = r"(?![A-Za-z][A-Za-z0-9+.-]*:)(?!/)(?!#)"
@@ -92,13 +139,14 @@ TAIL = re.compile(
     r"\((?P<lead>[ \t]*(?:\n[ \t]*)?)(?P<lt><)?" + NOT_URL +
     r"(?P<target>(?(lt)[^<>#\n]+|(?:\\.|[^()\s#\\]|\((?:\\.|[^()\s\\])*\))+))"
     r"(?P<anchor>#(?(lt)[^<>\n]*|(?:\\.|[^()\s\\])*))?(?(lt)>)"
-    r"(?P<title>\s+" + TITLE + r")?(?P<trail>[ \t]*(?:\n[ \t]*)?)\)")
+    r"(?P<title>" + SEP + TITLE + r")?(?P<trail>[ \t]*(?:\n[ \t]*)?)\)")
 
 # Any inline destination, URL or not: `(dest "title")`.  An image followed by
 # one is an inline image, whatever the destination, and no reference.
 INLINE_ANY = re.compile(
     r"\([ \t]*(?:\n[ \t]*)?(?:<[^<>\n]*>|(?:\\.|[^()\s\\]|"
-    r"\((?:\\.|[^()\s\\])*\))*)(?:\s+" + TITLE + r")?\s*\)")
+    r"\((?:\\.|[^()\s\\])*\))*)(?:" + SEP + TITLE +
+    r")?[ \t]*(?:\n[ \t]*)?\)")
 
 # `[label]: target "title"`, at most 3 spaces in.  The target is bare or in
 # angle brackets.  It follows on the same line or, after one line ending, on
@@ -112,46 +160,100 @@ DEFINITION = re.compile(
     re.M)
 
 HOLE = "\ue000"  # stands in for a masked character; matches no pattern above
+# Block quote markers `>` in front of a line, each at 0-3 spaces of indent.
+QUOTE = re.compile(r"(?:[ ]{0,3}>[ ]?)*")
 # A fence opens at 0-3 spaces of indent, after any number of block quote
-# markers `>`.  Four spaces make an indented code block.
-FENCE = re.compile(r"(?:[ ]{0,3}>[ ]?)*[ ]{0,3}(`{3,}|~{3,})(.*)")
-SPAN = re.compile(
-    r"(?<![`\\])(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)")
-ESCAPED_OPENER = re.compile(r"(?<!\\)(?:\\\\)*\\(\[)")
+# markers.  Four spaces make an indented code block.
+FENCE = re.compile(r"((?:[ ]{0,3}>[ ]?)*)[ ]{0,3}(`{3,}|~{3,})(.*)")
+# A URI autolink, `<scheme:...>`, or an email autolink, `<a@b.c>`.
+AUTOLINK = re.compile(
+    r"<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*"
+    r"|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9]"
+    r"(?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)>")
+# The characters a backslash escapes.
+PUNCT = frozenset(string.punctuation)
+BLANK = re.compile(r"\n[ \t]*\n")
 
 
-def _hole(m: re.Match, group: int = 0) -> str:
-    """The text of `m` with every character but line endings masked."""
-    return re.sub(r"[^\n]", HOLE, m.group(group))
-
-
-def mask(text: str) -> str:
-    """`text` with code and escaped openers blanked, same length and same
-    line endings, so offsets found in the result hold in `text`.  A fenced
-    code block (``` or ~~~, closed by a fence of the same kind and at least
-    the same length, or by the end of the page) and a code span are
-    blanked, and so is a `[` after an odd number of backslashes.  An
-    indented code block is not recognised: its indent also marks list
-    continuations."""
+def _fences(text: str) -> str:
+    """`text` with fenced code blocks blanked.  A fence closes on a fence of
+    the same kind, at least as long, behind the same number of block quote
+    markers.  A fence inside a block quote also ends where the quote ends,
+    on a line with fewer markers; a fence outside one ends at the end of
+    the page."""
     out: list[str] = []
     fence = ""
+    depth = 0
     for line in text.splitlines(keepends=True):
         body = line.rstrip("\r\n")
         end = line[len(body):]
         m = FENCE.fullmatch(body)
+        if fence and QUOTE.match(body).group(0).count(">") < depth:
+            fence = ""
         if fence:
-            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(
-                    fence) and not m.group(2).strip():
+            if (m and m.group(1).count(">") == depth
+                    and m.group(2)[0] == fence[0]
+                    and len(m.group(2)) >= len(fence)
+                    and not m.group(3).strip()):
                 fence = ""
             out.append(HOLE * len(body) + end)
-        elif m and not (m.group(1)[0] == "`" and "`" in m.group(2)):
-            fence = m.group(1)
+        elif m and not (m.group(2)[0] == "`" and "`" in m.group(3)):
+            fence, depth = m.group(2), m.group(1).count(">")
             out.append(HOLE * len(body) + end)
         else:
             out.append(line)
-    masked = SPAN.sub(_hole, "".join(out))
-    return ESCAPED_OPENER.sub(
-        lambda m: m.group(0)[:-1] + HOLE, masked)
+    return "".join(out)
+
+
+def _blank(chars: list[str], start: int, end: int) -> None:
+    """Mask `chars[start:end]`, line endings kept."""
+    for k in range(start, end):
+        if chars[k] != "\n":
+            chars[k] = HOLE
+
+
+def mask(text: str) -> str:
+    """`text` with code, autolinks and escaped openers blanked, same length
+    and same line endings, so offsets found in the result hold in `text`.
+
+    Fenced code blocks go first.  The rest is read left to right, as a
+    CommonMark parser reads inline text: a backslash escapes the
+    punctuation character after it, and an escaped `[` is blanked; a URI or
+    email autolink is blanked whole; a run of backticks opens a code span
+    that the next run of the same length closes, within one paragraph, and
+    the span is blanked.  A run with no closer is literal.  An escaped
+    backtick is literal, and the rest of its run may still open a span."""
+    s = _fences(text)
+    out = list(s)
+    n = len(s)
+    i = 0
+    while i < n:
+        c = s[i]
+        if c == "\\" and i + 1 < n and s[i + 1] in PUNCT:
+            if s[i + 1] == "[":
+                out[i + 1] = HOLE
+            i += 2
+            continue
+        if c == "<":
+            m = AUTOLINK.match(s, i)
+            if m:
+                _blank(out, i, m.end())
+                i = m.end()
+                continue
+        if c == "`":
+            j = i
+            while j < n and s[j] == "`":
+                j += 1
+            closer = re.compile(r"(?<!`)`{%d}(?!`)" % (j - i)).search(s, j)
+            if closer and not BLANK.search(s, j, closer.start()):
+                _blank(out, i, closer.end())
+                i = closer.end()
+            else:
+                i = j
+            continue
+        i += 1
+    return "".join(out)
 
 
 def _close(masked: str, i: int) -> int | None:
@@ -181,9 +283,10 @@ def _close(masked: str, i: int) -> int | None:
 
 
 def norm(label: str) -> str:
-    """A reference label as CommonMark compares it: folded case, runs of
-    white space as one space, no white space at the ends."""
-    return " ".join(label.split()).casefold()
+    """A reference label as CommonMark compares it: folded case, each run
+    of spaces, tabs and line endings as one space, none at the ends.  Other
+    white space, a no-break space (U+00A0) among it, stays as it is."""
+    return re.sub(r"[ \t\r\n]+", " ", label).strip(" ").casefold()
 
 
 class Link:
@@ -380,13 +483,130 @@ def verify_text(text: str, reldir: str = "") -> list[tuple[int, str, str]]:
     return found
 
 
-def verify_tree(root: Path) -> int:
-    """Report every link of a rewritten tree that a wiki cannot open."""
+def _line(lines: list[str], first: int, last: int, needle: str) -> int:
+    """The 1-based line that holds `needle`: in lines first to last, else
+    anywhere on the page, else `first`."""
+    needle = needle.strip().split("\n")[0][:60]
+    if needle:
+        for n in [*range(first, min(last, len(lines))), *range(len(lines))]:
+            if needle in lines[n]:
+                return n + 1
+    return first + 1
+
+
+def wiki_hrefs(md, href: str, image: bool, reldir: str,
+               root: Path) -> set[str]:
+    """The hrefs the rewrite gives a parsed link or image `href`, as the
+    parser writes them: the rule of `convert` on the part before `#`,
+    tried on the target as parsed and with its percent escapes decoded."""
+    if not href or SCHEME.match(href) or href.startswith(("#", "/")):
+        return {href}
+    path, hash_, anchor = href.partition("#")
+    out = set()
+    for target in (path, unquote(path)):
+        new = convert(target, reldir, root, image)
+        out.add(href if new is None
+                else md.normalizeLink(new + hash_ + anchor))
+    return out
+
+
+# What two token streams must share, token by token.  `content` of an
+# `inline` token is its source text, links included; its children carry
+# what it means and are compared instead.
+FIELDS = ("type", "tag", "nesting", "level", "map", "markup", "info",
+          "block", "hidden", "content")
+HREF = {("link_open", "href"), ("image", "src")}
+
+
+def gate(before: str, after: str, reldir: str = "",
+         root: Path = ROOT) -> list[tuple[int, str, str, str]]:
+    """Every difference between a page and its rewrite as a CommonMark
+    parser reads them, as (line, what, before, after).  Both pages are
+    parsed with markdown-it-py and their tokens are walked side by side.
+    Each token matches in every field of `FIELDS` and every attribute, but
+    a link's href and an image's src, which are what `convert` gives the
+    original: a page name for a `.md` page, a repository URL above docs/.
+    A link that shares a definition with an image may have the image's
+    `raw` form.  A missed link and altered prose both show here.  At the
+    first token that differs in kind the walk stops: what follows no
+    longer pairs up."""
+    from markdown_it import MarkdownIt
+
+    md = MarkdownIt("commonmark")
+    env_b: dict = {}
+    env_a: dict = {}
+    tb = md.parse(before, env_b)
+    ta = md.parse(after, env_a)
+    lines = before.splitlines()
+    found: list[tuple[int, str, str, str]] = []
+
+    def flat(tokens):
+        for t in tokens:
+            yield t
+            yield from flat(t.children or [])
+
+    images = {t.attrGet("src") for t in flat(tb) if t.type == "image"}
+
+    def walk(xs, ys, span) -> bool:
+        for x, y in zip(xs, ys, strict=False):
+            if x.map:
+                span = x.map
+            for f in FIELDS:
+                if f == "content" and x.type == "inline":
+                    continue
+                vx, vy = getattr(x, f), getattr(y, f)
+                if vx != vy:
+                    found.append((_line(lines, *span, str(vx)),
+                                  f"{x.type} {f}", str(vx), str(vy)))
+                    if f in ("type", "tag", "nesting"):
+                        return False
+            for key in sorted({*x.attrs, *y.attrs}):
+                vx, vy = x.attrGet(key), y.attrGet(key)
+                if (x.type, key) in HREF:
+                    image = x.type == "image"
+                    ok = wiki_hrefs(md, str(vx), image, reldir, root)
+                    if not image and vx in images:
+                        ok |= wiki_hrefs(md, str(vx), True, reldir, root)
+                    if vy not in ok:
+                        want = " or ".join(sorted(ok))
+                        found.append((
+                            _line(lines, *span, unquote(str(vx))),
+                            f"{x.type} {key}, wanted {want}",
+                            str(vx), str(vy)))
+                elif vx != vy:
+                    found.append((_line(lines, *span, str(vx)),
+                                  f"{x.type} {key}", str(vx), str(vy)))
+            if not walk(x.children or [], y.children or [], span):
+                return False
+        if len(xs) != len(ys):
+            found.append((span[0] + 1, "token count", str(len(xs)),
+                          str(len(ys))))
+            return False
+        return True
+
+    walk(tb, ta, [0, 1])
+    refs_b = env_b.get("references", {})
+    refs_a = env_a.get("references", {})
+    if refs_b.keys() != refs_a.keys():
+        found.append((1, "definition labels", " ".join(sorted(refs_b)),
+                      " ".join(sorted(refs_a))))
+    return found
+
+
+def _need_parser() -> bool:
+    """True when markdown-it-py can be imported; else say how to get it."""
     try:
         import markdown_it  # noqa: F401
     except ImportError:
-        print("--verify needs markdown-it-py: pip install markdown-it-py",
-              file=sys.stderr)
+        print("wiki_links.py needs markdown-it-py: "
+              "pip install markdown-it-py", file=sys.stderr)
+        return False
+    return True
+
+
+def verify_tree(root: Path) -> int:
+    """Report every link of a rewritten tree that a wiki cannot open."""
+    if not _need_parser():
         return 2
     bad = 0
     for page in sorted(root.rglob("*.md")):
@@ -419,24 +639,31 @@ def main(argv: list[str]) -> int:
 
     if verify:
         return verify_tree(root)
+    if not _need_parser():
+        return 2
 
     changed = 0
     bad = 0
     for page in sorted(root.rglob("*.md")):
+        name = page.relative_to(root)
         reldir = page.parent.relative_to(root).as_posix()
         reldir = "" if reldir == "." else reldir
         before = page.read_text(encoding="utf-8")
         after = rewrite(before, reldir)
         for target in stranded(after, reldir):
-            print(f"{page.relative_to(root)}: {target} leaves docs/",
-                  file=sys.stderr)
+            print(f"{name}: {target} leaves docs/", file=sys.stderr)
             bad += 1
+        diffs = gate(before, after, reldir)
+        for line, what, was, now in diffs:
+            print(f"{name}:{line}: {what}: before {was!r}, after {now!r}",
+                  file=sys.stderr)
+        bad += len(diffs)
         if after == before:
             continue
         changed += 1
         n = sum(1 for _ in targets(before))
-        print(f"{page.relative_to(root)}: {n} link(s)")
-        if not check:
+        print(f"{name}: {n} link(s)")
+        if not check and not diffs:
             page.write_text(after, encoding="utf-8")
 
     if changed == 0:
@@ -446,8 +673,8 @@ def main(argv: list[str]) -> int:
     else:
         print(f"\nrewrote {changed} page(s)")
     if bad:
-        print(f"{bad} link(s) leave docs/ and cannot be rewritten",
-              file=sys.stderr)
+        print(f"{bad} link(s) leave docs/ or differ from the original page "
+              "as a CommonMark parser reads it", file=sys.stderr)
         return 1
     return 0
 

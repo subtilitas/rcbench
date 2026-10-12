@@ -392,3 +392,148 @@ def test_verify_judges_references_and_subdirectories():
     assert wl.verify_text("[a](../P)\n", "sub") == []
     assert wl.verify_text("[a](../../P.md)\n", "sub")[0][2] == (
         "a relative target above docs/")
+
+
+# The parser gate: each page against its rewrite, as markdown-it-py reads
+# them.  A case the scanner reads right passes it; one it misreads fails it
+# with the page, the line and both values.
+
+def converted(tmp_path, text):
+    """Exit code, error output and page text after a rewrite of a page."""
+    page = tmp_path / "Home.md"
+    page.write_text(text, encoding="utf-8")
+    return wl.main(["wiki_links.py", str(tmp_path)]), page
+
+
+def gated(text):
+    out = wl.rewrite(text)
+    return out, wl.gate(text, out)
+
+
+def test_the_gate_passes_a_rewrite_of_every_kind():
+    text = ("[a](Screens.md#x) [b](<Servo Page.md> 't') ![i](img/a.png)\n"
+            "[n](../NOTICE) [d](../protocols/kst) ![l](../hardware/l.png)\n"
+            "[api](../API_\\(v2\\).md) [r][x] ![s][x]\n\n"
+            "[x]: ../hardware/a.png\n")
+    out, diffs = gated(text)
+    assert out != text and diffs == []
+
+
+def test_the_gate_fails_on_a_missed_link_and_on_altered_text():
+    text = "Text.\n\n[a](../NOTICE) and `code`\n"
+    missed = text
+    assert wl.gate(text, missed) == [(
+        3, f"link_open href, wanted {R}/blob/main/NOTICE",
+        "../NOTICE", "../NOTICE")]
+    altered = wl.rewrite(text).replace("code", "c0de")
+    assert wl.gate(text, altered) == [(3, "code_inline content", "code",
+                                       "c0de")]
+
+
+def test_a_failing_gate_names_page_line_and_both_values(tmp_path, capsys):
+    code, page = converted(tmp_path, "Intro.\n\n> [ref]: ../README.md\n\n"
+                           "[ref]\n")
+    assert code == 1
+    err = capsys.readouterr().err
+    assert (f"Home.md:3: link_open href, wanted {R}/blob/main/README.md: "
+            "before '../README.md', after '../README.md'") in err
+    assert page.read_text(encoding="utf-8").startswith("Intro.")
+    assert wl.main(["wiki_links.py", "--check", str(tmp_path)]) == 1
+
+
+# One case for each construct of review round 7.
+
+def test_r7_a_fence_indented_four_spaces_keeps_the_next_link():
+    out, diffs = gated("    ```\n[x](Screens.md)\n")
+    assert out == "    ```\n[x](Screens)\n" and diffs == []
+
+
+def test_r7_a_line_ending_before_the_destination():
+    out, diffs = gated("[notice](\n../README.md)\n")
+    assert out == f"[notice](\n{R}/blob/main/README.md)\n" and diffs == []
+
+
+def test_r7_a_label_over_two_lines_fails_the_gate(tmp_path, capsys):
+    text = "[Foo\n  bar]: ../README.md\n\n[Baz][Foo bar]\n"
+    assert converted(tmp_path, text)[0] == 1
+    assert "Home.md:2: link_open href" in capsys.readouterr().err
+
+
+def test_r7_a_link_in_a_raw_html_block_fails_the_gate(tmp_path, capsys):
+    text = "<pre>\n[x](../NOTICE)\n</pre>\n"
+    code, page = converted(tmp_path, text)
+    assert code == 1
+    assert "Home.md:1: html_block content" in capsys.readouterr().err
+    assert page.read_text(encoding="utf-8") == text
+
+
+def test_r7_an_escaped_backslash_leaves_the_backtick_to_open_a_span():
+    text = "\\\\`[x](../NOTICE)` [y](../NOTICE)\n"
+    out, diffs = gated(text)
+    assert out == f"\\\\`[x](../NOTICE)` [y]({R}/blob/main/NOTICE)\n"
+    assert diffs == []
+    # An odd run escapes the backtick, and the link is a link.
+    out, diffs = gated("\\`[x](../NOTICE)`\n")
+    assert out == f"\\`[x]({R}/blob/main/NOTICE)`\n" and diffs == []
+    # The rest of an escaped run still opens a span.
+    text = "\\```[x](../NOTICE)``\n"
+    assert gated(text) == (text, [])
+
+
+def test_r7_a_definition_line_in_a_paragraph_fails_the_gate(tmp_path,
+                                                             capsys):
+    text = "paragraph\n[ref]: ../README.md\n\n[ref]\n"
+    code, page = converted(tmp_path, text)
+    assert code == 1
+    err = capsys.readouterr().err
+    assert ("Home.md:2: text content: before '[ref]: ../README.md', after "
+            f"'[ref]: {R}/blob/main/README.md'") in err
+    assert page.read_text(encoding="utf-8") == text
+
+
+def test_r7_a_definition_in_a_container_fails_the_gate(tmp_path, capsys):
+    for text in ("[ref]\n\n> [ref]: ../README.md\n",
+                 "[ref]\n\n- [ref]: ../README.md\n"):
+        assert converted(tmp_path, text)[0] == 1, text
+        assert "Home.md:3: link_open href" in capsys.readouterr().err
+
+
+def test_r7_a_uri_autolink_is_left_whole():
+    text = ("<http://example.com/[x](../NOTICE)> <a@b.org> "
+            "[y](../NOTICE)\n")
+    out, diffs = gated(text)
+    assert out == text.replace("[y](../NOTICE)",
+                               f"[y]({R}/blob/main/NOTICE)")
+    assert diffs == []
+
+
+def test_r7_a_no_break_space_is_not_label_white_space(tmp_path, capsys):
+    text = "![img][a\u00a0b] [doc][a b]\n\n[a b]: ../README.md\n"
+    assert wl.norm("a\u00a0b") != wl.norm("a b") == wl.norm(" A\t\nb ")
+    # CommonMark leaves the image undefined; the link gets the blob form.
+    assert f"[a b]: {R}/blob/main/README.md" in wl.rewrite(text)
+    # markdown-it-py matches the image to the definition, so the page fails.
+    assert converted(tmp_path, text)[0] == 1
+    assert "Home.md:3: image src" in capsys.readouterr().err
+
+
+def test_r7_a_quoted_fence_ends_with_its_block_quote():
+    for text in ("> ```\n> code\n\n[x](../NOTICE)\n",
+                 "> ```\n> code\n[x](../NOTICE)\n",
+                 ">> ~~~\n>> code\n> [x](../NOTICE)\n"):
+        out, diffs = gated(text)
+        assert out == text.replace("](../NOTICE)",
+                                   f"]({R}/blob/main/NOTICE)"), text
+        assert diffs == [], text
+    # Inside the quote the fence still holds; a deeper marker is content.
+    text = "> ```\n> >\n> [x](../NOTICE)\n> ```\n"
+    assert gated(text) == (text, [])
+
+
+def test_r7_a_blank_line_before_a_title_ends_the_link():
+    text = '[x](Screens.md\n\n"title")\n'
+    assert gated(text) == (text, [])
+    out, diffs = gated('[x](Screens.md\n"title")\n')
+    assert out == '[x](Screens\n"title")\n' and diffs == []
+    text = '[x](Screens.md "a\n\nb")\n'
+    assert gated(text) == (text, [])
