@@ -63,9 +63,9 @@ python3 tools/gen_board_art.py --check
 python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
+python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
-python3 tools/research/session.py check  # the research scripts against their plan
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
@@ -76,7 +76,7 @@ python3 tools/stack_check.py firmware/panel/build --check-doc
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
-python3 tools/pinmap_check.py hardware/docs/pinmap.json --sdk "$PICO_SDK_PATH"
+python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json --sdk "$PICO_SDK_PATH"
 
 cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
@@ -175,6 +175,15 @@ ends within 2700 s. The working tree is not written. CI runs it on every
 pull request and puts the survivors in the job summary; a survivor does not
 fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
+
+`mutation.yml` runs every mutant of every line of `shared/safety` and
+`shared/outputs` (3032 mutants) each Sunday at 03:17 UTC and on demand. It has
+no mutant limit and runs in 6 shards of files (file i of the sorted list goes
+to shard i mod 6). A shard starts no mutant after 18000 s, stops one build or
+suite run after 600 s and ends within 21000 s; the mutants left are reported as
+not run. The share of mutants that run within the budget on a hosted runner is
+not measured. A survivor does not fail the job. The result is the job summaries
+and the artifacts `mutation-full-0` to `mutation-full-5`.
 
 ## Where code goes
 

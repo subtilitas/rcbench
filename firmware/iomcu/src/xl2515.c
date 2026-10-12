@@ -145,11 +145,10 @@ bool xl2515_send(const link_can_frame_t *f)
     return true;
 }
 
-bool xl2515_recv(link_can_frame_t *f)
+/* Consume the next full receive buffer, RXB0 before RXB1. */
+static bool fetch_rx(void *ctx, uint8_t buf[13])
 {
-    if (f == NULL) {
-        return false;
-    }
+    (void)ctx;
     const uint8_t intf = read_reg(MCP2515_CANINTF);
     uint8_t base, flag;
     if ((intf & MCP2515_INTF_RX0) != 0u) {
@@ -161,32 +160,14 @@ bool xl2515_recv(link_can_frame_t *f)
     } else {
         return false;
     }
-
-    uint8_t buf[13];
     read_regs(base, buf, 13);
     bit_modify(MCP2515_CANINTF, flag, 0);
-
-    memset(f, 0, sizeof(*f));
-    if (!mcp2515_unpack_id(buf, &f->id)) {
-        return false;   /* an 11-bit identifier; nothing here sends those */
-    }
-    /*
-     * Bit 6 of the DLC (data length code) register is RTR (remote
-     * transmission request): a remote frame, which carries a length but no
-     * data.  Its data registers hold whatever the last data frame left
-     * there, so accepting one would deliver stale bytes under a fresh
-     * identifier.  Nothing on this bus sends remote frames, so one is
-     * foreign traffic or a fault.
-     */
-    if ((buf[4] & 0x40u) != 0u) {
-        return false;
-    }
-    f->dlc = (uint8_t)(buf[4] & 0x0Fu);
-    if (f->dlc > 8) {
-        return false;
-    }
-    memcpy(f->data, buf + 5, f->dlc);
     return true;
+}
+
+bool xl2515_recv(link_can_frame_t *f)
+{
+    return mcp2515_recv_next(fetch_rx, NULL, f);
 }
 
 bool xl2515_take_overflow(void)

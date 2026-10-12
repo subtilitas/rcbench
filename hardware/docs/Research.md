@@ -151,7 +151,7 @@ Owner decisions of 2026-09-27, each applied where the last column says:
 | RAMXEED | counts as Fujitsu | S1, R12 |
 | INA3221 | INA3221AIRGVR, a fixed input of R8 the owner keeps whatever a run returns (owner, 2026-10-03) | [Fixed inputs](#scope), the Servo current row above, R8 |
 | Branches | `research/round1` and `research/round1-results` start from `main` after the pull requests that carry these decisions and the workflow scripts are merged | prerequisites 4 and 5 |
-| Workflow scripts | committed to `main` under `tools/research/` through a pull request that the automated reviewers and the owner review, with their schemas and the tool that writes and commits each task's returns | prerequisite 6 |
+| Workflow scripts | kept outside the repository, in `~/rcbench-research/tools-research/` on the owner's machine (owner, 2026-10-12), with their schemas and the tool that writes and commits each task's returns | prerequisite 6 |
 | Start of T1 | on the owner's go, once prerequisites 4 to 6 are in place | status line |
 | Agents | every agent runs on the session's model at the session's effort | prerequisite 1 |
 | Task size | the sizes S8 approves: the largest task is planned at 28 agents, and each task stays at 32 or fewer with the agents it adds for refutations and restarts. The session's Dynamic workflow size setting is advisory and is not changed | prerequisite 1 |
@@ -558,8 +558,8 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    P7 and its critic write the pages there, and the session commits them after
    T6. While the tasks run, nothing is pushed to `main`, and a pull request of
    the results is opened only when the owner asks for one.
-6. **The workflow scripts and their schemas**, in `tools/research/`
-   ([its README](../../tools/research/README.md)): `round1.js`, one run per
+6. **The workflow scripts and their schemas**, in `~/rcbench-research/tools-research/`
+   (its `README.md`): `round1.js`, one run per
    task; the return schema of each role; the host table; `vendors.py`, the
    readings agents take; and `session.py`, which prepares a task, records its
    returns and commits them. `session.py check` holds them to this page in CI
@@ -582,16 +582,16 @@ Round 2 runs in two stages (owner, 2026-10-01):
 | 1 | every function of R1 to R3 and R5 to R11 that the rules below do not leave to stage 2: the ICs and the parts round 1's categories name, among them those under [Follow-ups](#follow-ups), which round 1 left without a part or whose requirement changed after round 1 | round 1's, as follow-up tasks: one P1 follow-up, P2-P4 follow-ups, a P5-P6 follow-up, then T6 writes the pages |
 | 2 | the passives, connectors and connector protection of row 2 of the [Scope](#scope) table, by part type: resistors and capacitors, inductors and crystals, connectors, connector protection | no P1 and one verifier; the connector makers of Sourcing rule 2 are asked before it; its plan is not on this page |
 
-The scripts in `tools/research/` run stage 1. Stage 2 has no scripts: its
+The scripts in `~/rcbench-research/tools-research/` run stage 1. Stage 2 has no scripts: its
 categories, records and gates do not exist.
 
 Where this section differs from a row under [Research categories](#research-categories) or [Agent layout](#agent-layout), this section and [the specification](IOBoard.md) hold. The category rows are the plan as round 1 read it. For example, the 9.9 A pack current in R5 and R7 is about 49.7 A in the specification's Pack path current row.
 
 ### Branches and records
 
-- `research/round2` takes the place of the branch of prerequisite 4. `research/round2-results` takes the place of the results branch of prerequisite 5. Both start from the same `main` commit, after the pull request that carries this section and round 2's support in `tools/research/`.
+- `research/round2` takes the place of the branch of prerequisite 4. `research/round2-results` takes the place of the results branch of prerequisite 5. Both start from the same `main` commit, after the pull request that carries this section and round 2's support in `~/rcbench-research/tools-research/`.
 - The owner's answers to round 2's questions arrive on `research/round2`. Before T6 the session merges it into `research/round2-results`.
-- The session runs `tools/research/session.py` with `--round 2` and the base directory `~/rcbench-research/round2`.
+- The session runs `~/rcbench-research/tools-research/session.py` with `--round 2` and the base directory `~/rcbench-research/round2`.
 - Each run's returns go under `hardware/research/round2/<run>/`. Round 1's returns under `hardware/research/round1/` count as earlier runs: the gates, the selection and the question numbers read both directories.
 - `hardware/research/round2/selection.json` holds the part each function keeps over both rounds, once a round 2 run is recorded. Until then `hardware/research/round1/selection.json` holds it.
 - A run name is unique over both rounds. Round 2's follow-ups are named `FU-2` and a suffix. T6 runs once in each round. After T6 of round 2, `session.py prepare --round 2` refuses every run.
@@ -658,7 +658,7 @@ A run of 3 categories or fewer keeps 16 free agents or more: 5 refutations at 3 
 
 A conflict or gap that FU-2P56 returns goes to pass 2: a P2-P4 follow-up of its categories, then a P5-P6 follow-up, before T6.
 
-Each round 1 run from FU-A2 to T5 records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). The runs before FU-A2 and T6's two runs record no count. On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 2 (FU-A4-stopped-1), 13 (FU-C2), 15 (FU-A4), 21 (FU-B3, four categories), 73 (FU-B1, four categories), 74 (FU-C1, five categories), 87 (FU-A3, three categories) and 195 (T3, four categories); each figure includes the next run's reading. T5's is not recorded. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls ([the scripts' README](../../tools/research/README.md)). Round 2's figures are not measured. At round 1's figures, FU-2A, FU-2C, FU-2B1 and FU-2B2 take about 356 calls together: 87 as FU-A3, 74 as FU-C1, and 195 for R5 to R8 as T3. Of one UTC (Coordinated Universal Time) day's 1,000 calls, with no other use that day, each of the four starts with more than 600 left. FU-2P56's count is not measured, as T5's is not recorded. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
+Each round 1 run from FU-A2 to T5 records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). The runs before FU-A2 and T6's two runs record no count. On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 2 (FU-A4-stopped-1), 13 (FU-C2), 15 (FU-A4), 21 (FU-B3, four categories), 73 (FU-B1, four categories), 74 (FU-C1, five categories), 87 (FU-A3, three categories) and 195 (T3, four categories); each figure includes the next run's reading. T5's is not recorded. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls (the scripts' `README.md` in `~/rcbench-research/tools-research/`). Round 2's figures are not measured. At round 1's figures, FU-2A, FU-2C, FU-2B1 and FU-2B2 take about 356 calls together: 87 as FU-A3, 74 as FU-C1, and 195 for R5 to R8 as T3. Of one UTC (Coordinated Universal Time) day's 1,000 calls, with no other use that day, each of the four starts with more than 600 left. FU-2P56's count is not measured, as T5's is not recorded. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
 
 ### Pages of round 2
 
@@ -674,7 +674,7 @@ The status line keeps round 1's table and adds a table of round 2's runs: each r
 
 The critic checks as in round 1, each figure against a file under either directory.
 
-[Pins](Pins.md) and `hardware/docs/pinmap.json` are not outputs. A part that changes a pin's use is stated on its group page as not known in the pin map.
+[Pins](Pins.md) and `hardware/docs/ioboard-pinmap-draft.json` are not outputs. A part that changes a pin's use is stated on its group page as not known in the pin map.
 
 ## Questions for the owner
 
@@ -1019,7 +1019,7 @@ V151) apply to the pouch cells of the SLS XTRON pack the owner names
 These stay open while the research runs. The research tasks report the
 alternatives with their figures, and P5 budgets both alternatives of Q4 and
 Q8. The owner decides each before T6 and writes the decision in the last
-column; `tools/research/session.py prepare T6` refuses to start T6 while one is
+column; `~/rcbench-research/tools-research/session.py prepare T6` refuses to start T6 while one is
 empty.
 
 | ID | To decide | Reported by | Decision (owner, date) |

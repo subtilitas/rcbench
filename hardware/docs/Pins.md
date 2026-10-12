@@ -2,8 +2,9 @@
 
 **Status: draft, 2026-09-30.** The GPIO (general-purpose input/output) of the
 IO board's two RP2354B, the main and the measurement coprocessor
-([IOBoard](IOBoard.md#two-coprocessors)). [pinmap.json](pinmap.json) holds the
-same map for tools; the tables below follow it. The schematic's routing can move
+([IOBoard](IOBoard.md#two-coprocessors)). [ioboard-pinmap-draft.json](ioboard-pinmap-draft.json) holds the
+same map for tools. The file is the draft of the planned IO board, not of a
+board that exists; the tables below follow it. The schematic's routing can move
 a signal to another pin with the same function.
 
 `tools/pinmap_check.py` checks the map against the pin functions in
@@ -17,7 +18,7 @@ Every PIO pin names its protocol, every serial pin its bus, and an I²C bus
 has 2 pins.
 
 ```sh
-python3 tools/pinmap_check.py hardware/docs/pinmap.json
+python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json
 ```
 
 | Chip | GPIO used | Free |
