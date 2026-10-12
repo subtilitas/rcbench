@@ -154,6 +154,15 @@ PORT_CALLS = {
     "link_read_window": ("port_exchange", "port_now"),
 }
 
+# The art_flash_t callbacks shared/artwork calls: the panel's one flash, in
+# components/art_flash.  The photograph's keep takes a sector a pass on the
+# control task, so its erase and write chain is followed by name.  The same
+# checks as PORT_CALLS.
+FLASH_CALLS = {
+    "art_keep_step": ("part_read", "part_erase", "part_write"),
+    "art_store_read": ("part_read",),
+}
+
 
 def die(msg: str) -> None:
     sys.exit(f"stack_check: {msg}")
@@ -1325,25 +1334,29 @@ def main() -> int:
             f.calls |= tables.get(slot, set())
         f.callx = 0
 
-    for caller, callbacks in PORT_CALLS.items():
-        addrs = by_name.get(caller, [])
-        if len(addrs) != 1:
-            fails.append(f"PORT_CALLS: {caller} is {len(addrs)} functions "
-                         f"in the ELF, not 1")
-            continue
-        f = funcs[addrs[0]]
-        if f.callx == 0:
-            fails.append(f"PORT_CALLS: {caller} makes no indirect call; "
-                         f"the table no longer matches shared/link")
-            continue
-        for cb in callbacks:
-            targets = by_name.get(cb, [])
-            if len(targets) != 1:
-                fails.append(f"PORT_CALLS: callback {cb} is {len(targets)} "
-                             f"functions in the ELF, not 1")
+    for table, home, calls in (("PORT_CALLS", "shared/link", PORT_CALLS),
+                               ("FLASH_CALLS", "shared/artwork",
+                                FLASH_CALLS)):
+        for caller, callbacks in calls.items():
+            addrs = by_name.get(caller, [])
+            if len(addrs) != 1:
+                fails.append(f"{table}: {caller} is {len(addrs)} functions "
+                             f"in the ELF, not 1")
                 continue
-            f.calls.add(targets[0])
-        f.callx = 0
+            f = funcs[addrs[0]]
+            if f.callx == 0:
+                fails.append(f"{table}: {caller} makes no indirect call; "
+                             f"the table no longer matches {home}")
+                continue
+            for cb in callbacks:
+                targets = by_name.get(cb, [])
+                if len(targets) != 1:
+                    fails.append(f"{table}: callback {cb} is "
+                                 f"{len(targets)} functions in the ELF, "
+                                 f"not 1")
+                    continue
+                f.calls.add(targets[0])
+            f.callx = 0
 
     for f in funcs.values():
         for c in f.calls:

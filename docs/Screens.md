@@ -889,9 +889,9 @@ second finger does nothing anywhere on the screen.
 SETTINGS, at the right of the strip above both columns, opens the supply's
 settings over the left column. Each is kept in the panel's NVS (non-volatile
 storage) and survives a restart. A value opens the keypad; a switch flips on
-the tap. Every change is written at the next frame the bench is disarmed, the
-supply's output is off and the board's photograph is not being fetched, and
-with it any change on SETUP that was not saved: a flash write stalls both
+the tap. Every change is written at the next frame the bench is disarmed with
+no arm waiting, the supply's output is off with no ON queued and the board's
+photograph is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
 cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
 WAITING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
 change made on SETUP and left without SAVE, which nothing writes until SAVE
@@ -1612,8 +1612,9 @@ screen is in:
 The press asks; it does not write. Writing settings commits a page of NVS
 (non-volatile storage), and a flash operation on the ESP32-S3 disables the
 instruction cache, so neither core runs for its duration. The write is taken
-on the first frame at which the bench is disarmed and no board photograph is
-being fetched or stored. On the settings screen that is the next frame, and
+on the first frame at which the bench is disarmed with no arm waiting, the
+supply's output is off with no ON queued, and no board photograph is being
+fetched or kept. On the settings screen that is the next frame, and
 the label goes to `SAVED` as fast as the eye follows the press. Armed, the
 request stands as `WHEN IDLE` until the bench is disarmed.
 
@@ -1924,8 +1925,11 @@ shape and the buttons are in the same places:
 
 The photograph is fetched over the link once per board and kept in the
 panel's flash, so it costs about ten seconds the first time a board is seen
-and nothing after that. A board with no photograph, or one whose transfer has
-not finished, is drawn rather than left blank.
+and nothing after that. Writing it to flash waits for a disarmed bench with
+the supply off and pauses between two 4 kB sectors when the bench is armed or
+the supply comes on ([Safety](Safety.md#deliberate-behaviours)). A board with
+no photograph, or one whose transfer or write has not finished, is drawn
+rather than left blank.
 
 A servo lead has three wires and the buttons describe one. The other two are
 marked on the board itself: a ground carries a white **G**, and a rail carries
