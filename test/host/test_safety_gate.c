@@ -39,6 +39,7 @@
 #include "link_msg.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 #include "safety_gate.h"
 
 /* ------------------------------------------------------- the gate alone */
@@ -58,7 +59,7 @@ static void gate_init(uint32_t now)
  * every pass so the link stays out of silence. */
 static safety_gate_t gate_run(uint32_t from, uint32_t to)
 {
-    safety_gate_t g = { false, false };
+    safety_gate_t g = { false, false, 0u };
     for (uint32_t t = from; t != to; ++t) {
         g_dev.last_request_ms = t;
         g_dev.heard = true;
@@ -177,7 +178,7 @@ TEST_CASE(a_silent_line_latches_at_the_ceiling_and_not_before)
         }
         (void)gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC);
         (void)gate_write(LINK_CT_ARM, 1u);
-        safety_gate_t g = { false, false };
+        safety_gate_t g = { false, false, 0u };
         for (uint32_t i = 301u; i < 300u + HEARTBEAT_MAX_GAP_MS; ++i) {
             g_dev.last_request_ms = t0 + i;
             g = safety_gate_step(&g_beat, false, &g_dev, g_control, t0 + i);
@@ -278,6 +279,85 @@ TEST_CASE(a_refused_arm_leaves_the_latch_set)
     CHECK_EQ(gate_write(LINK_CT_THROTTLE, LINK_THROTTLE_MAX + 1u),
              LINK_NACK_BAD_VALUE);
     CHECK(!link_dev_arm_latched(&g_dev));
+}
+
+/*
+ * An arm names its roles, and the gate passes them on: the bank is armed for
+ * those and no other.  Heartbeat loss and link silence take the arm away
+ * whatever its roles, with ARM zeroed, so the bank is disarmed whole.
+ */
+TEST_CASE(a_role_arm_is_passed_on_and_every_stop_takes_it_whole)
+{
+    static outputs_t bank;
+    gate_init(0);
+    (void)gate_run(1, 200);
+    CHECK_EQ(gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC), 0);
+    CHECK_EQ(gate_write(LINK_CT_ARM, LINK_ARM_THROTTLE), 0);
+    safety_gate_t g = gate_run(200, 260);
+    CHECK(g.arm);
+    CHECK_EQ(g.roles, LINK_ARM_THROTTLE);
+
+    outputs_init(&bank, 260u);
+    outputs_set_role(&bank, 0, OUT_ROLE_THROTTLE);
+    outputs_set_role(&bank, 1, OUT_ROLE_SURFACE);
+    outputs_arm_roles(&bank, outputs_arm_roles_of(g.roles), 260u);
+    CHECK(outputs_role_armed(&bank, OUT_ROLE_THROTTLE));
+    CHECK(!outputs_role_armed(&bank, OUT_ROLE_SURFACE));
+
+    /* The heartbeat: one edge 2 ms after a real one. */
+    g_dev.last_request_ms = 262u;
+    (void)safety_gate_step(&g_beat, true, &g_dev, g_control, 261u);
+    g = safety_gate_step(&g_beat, true, &g_dev, g_control, 262u);
+    CHECK(g.off);
+    CHECK(!g.arm);
+    CHECK_EQ(g.roles, 0u);
+    CHECK_EQ(g_control[LINK_CT_ARM], 0u);
+    outputs_arm_roles(&bank, outputs_arm_roles_of(g.roles), 262u);
+    CHECK(!outputs_armed(&bank));
+    CHECK_EQ(outputs_armed_roles(&bank), 0u);
+
+    /* Link silence, with an arm for the surfaces. */
+    gate_init(1000u);
+    (void)gate_run(1001u, 1200u);
+    CHECK_EQ(gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC), 0);
+    CHECK_EQ(gate_write(LINK_CT_ARM, LINK_ARM_SURFACE), 0);
+    g = gate_run(1200u, 1260u);
+    CHECK_EQ(g.roles, LINK_ARM_SURFACE);
+    outputs_arm_roles(&bank, outputs_arm_roles_of(g.roles), 1260u);
+    CHECK(outputs_role_armed(&bank, OUT_ROLE_SURFACE));
+    bool off = false;
+    for (uint32_t t = 1260u; t < 1260u + 2u * LINK_DEV_SILENCE_MS; ++t) {
+        g = safety_gate_step(&g_beat, (t % 20u) == 0u, &g_dev, g_control, t);
+        off = off || g.off;
+    }
+    CHECK(off);
+    CHECK(g_dev.failsafe);
+    CHECK(!g.arm);
+    CHECK_EQ(g.roles, 0u);
+    CHECK_EQ(g_control[LINK_CT_ARM], 0u);
+    outputs_arm_roles(&bank, outputs_arm_roles_of(g.roles), 1400u);
+    CHECK(!outputs_armed(&bank));
+}
+
+/*
+ * An ARM value that names no role is the panel's mistake, not an arm while
+ * untrusted: BAD_VALUE, and the latch is left as it was.
+ */
+TEST_CASE(a_bad_arm_value_latches_nothing)
+{
+    gate_init(0);
+    (void)gate_run(1, 50);                   /* not trusted yet */
+    CHECK_EQ(gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC), 0);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    CHECK_EQ(gate_write(LINK_CT_ARM, 0x0008u), LINK_NACK_BAD_VALUE);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    CHECK_EQ(gate_write(LINK_CT_ARM, LINK_ARM_ALL | LINK_ARM_SURFACE),
+             LINK_NACK_BAD_VALUE);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    CHECK_EQ(g_control[LINK_CT_ARM], 0u);
+    /* A role arm in the same state is an arm, and latches. */
+    CHECK_EQ(gate_write(LINK_CT_ARM, LINK_ARM_SURFACE), LINK_NACK_NOT_ARMED);
+    CHECK(link_dev_arm_latched(&g_dev));
 }
 
 TEST_CASE(null_arguments_arm_nothing)
@@ -1543,6 +1623,8 @@ int main(void)
     RUN(link_silence_latches_at_200_ms_across_the_wrap);
     RUN(a_refused_arm_leaves_the_latch_set);
     RUN(null_arguments_arm_nothing);
+    RUN(a_role_arm_is_passed_on_and_every_stop_takes_it_whole);
+    RUN(a_bad_arm_value_latches_nothing);
     RUN(the_power_up_arm_is_taken_on_the_first_hold);
     RUN(a_restarted_coprocessor_is_not_armed_again);
     RUN(a_restart_across_the_tick_wrap_is_not_armed_again);

@@ -1320,10 +1320,134 @@ TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
  */
 TEST_CASE(a_pulse_longer_than_its_frame_needs_no_new_register)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 16u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_PULSE_FRAME);
     CHECK_EQ(LINK_MINOR_PULSE_FRAME, 16u);
     CHECK(LINK_MINOR_PULSE_FRAME > LINK_MINOR_KST_LEAVE);
     CHECK_EQ(LINK_CC_CEILING_US, 2500u);
+}
+
+/*
+ * 4.18 gives ARM's non-zero values a meaning and moves no register: 1 is
+ * every role, which is what an older panel writes, and the roles are bits
+ * above it.
+ */
+TEST_CASE(an_arm_names_its_roles_from_4_18)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 18u);
+    CHECK_EQ(LINK_MINOR_ARM_ROLE, 18u);
+    CHECK(LINK_MINOR_ARM_ROLE > LINK_MINOR_PULSE_FRAME);
+    CHECK_EQ(LINK_CT_ARM, 0u);
+    CHECK_EQ(LINK_ARM_ALL, 1u);
+    CHECK_EQ(LINK_ARM_ROLES & LINK_ARM_ALL, 0u);
+    CHECK_EQ(LINK_ARM_THROTTLE & LINK_ARM_SURFACE, 0u);
+}
+
+/* ARM is 0, LINK_ARM_ALL, or a set of role bits; any other value names no
+ * role and is not an arm. */
+TEST_CASE(arm_takes_zero_one_or_a_set_of_roles)
+{
+    static const uint16_t ok[] = {
+        0u, LINK_ARM_ALL, LINK_ARM_THROTTLE, LINK_ARM_SURFACE, LINK_ARM_ROLES,
+    };
+    static const uint16_t bad[] = {
+        LINK_ARM_ALL | LINK_ARM_THROTTLE, LINK_ARM_ALL | LINK_ARM_SURFACE,
+        LINK_ARM_ALL | LINK_ARM_ROLES, 0x0008u, 0x8000u, 0xFFFFu,
+    };
+    for (size_t i = 0; i < sizeof(ok) / sizeof(ok[0]); ++i) {
+        CHECK(link_arm_value_ok(ok[i]));
+    }
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        CHECK(!link_arm_value_ok(bad[i]));
+        CHECK_EQ(link_arm_roles(bad[i]), 0u);
+    }
+    CHECK_EQ(link_arm_roles(0u), 0u);
+    CHECK_EQ(link_arm_roles(LINK_ARM_ALL), LINK_ARM_ROLES);
+    CHECK_EQ(link_arm_roles(LINK_ARM_THROTTLE), LINK_ARM_THROTTLE);
+    CHECK_EQ(link_arm_roles(LINK_ARM_SURFACE), LINK_ARM_SURFACE);
+    CHECK_EQ(link_arm_roles(LINK_ARM_ROLES), LINK_ARM_ROLES);
+}
+
+/*
+ * The roles of an arm change only through a disarm.  A different set while
+ * armed is refused with BAD_VALUE and changes nothing; the same set again is
+ * a re-assert; 0 and then the new set is accepted.
+ */
+TEST_CASE(an_armed_bench_changes_its_roles_only_through_a_disarm)
+{
+    fresh();
+    link_msg_t r;
+    const uint16_t throttle[LINK_CT_ARM_FRAME] = { LINK_ARM_THROTTLE, 2500, 14 };
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, throttle, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], LINK_ARM_THROTTLE);
+
+    const uint16_t surface[LINK_CT_ARM_FRAME] = { LINK_ARM_SURFACE, 1000, 12 };
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, surface, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(g.control[LINK_CT_ARM], LINK_ARM_THROTTLE);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 2500);
+    CHECK_EQ(g.control[LINK_CT_MOTOR_POLES], 14);
+
+    /* Every role is a different set too, and so is 1. */
+    const uint16_t all[1] = { LINK_ARM_ALL };
+    CHECK(write_control(LINK_CT_ARM, 1, all, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, throttle, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], LINK_ARM_THROTTLE);
+
+    const uint16_t disarm[1] = { 0 };
+    CHECK(write_control(LINK_CT_ARM, 1, disarm, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, surface, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], LINK_ARM_SURFACE);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 1000);
+}
+
+/*
+ * A value that names no role is BAD_VALUE even while the bench may not arm:
+ * the panel's mistake is reported as its own, ahead of NOT_ARMED.  A valid
+ * role arm in that state is NOT_ARMED as an old-style 1 is.
+ */
+TEST_CASE(a_bad_arm_value_is_refused_ahead_of_not_armed)
+{
+    fresh();
+    g.may_arm = false;
+    link_msg_t r;
+    const uint16_t bad[1] = { LINK_ARM_ALL | LINK_ARM_THROTTLE };
+    CHECK(write_control(LINK_CT_ARM, 1, bad, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(g.control[LINK_CT_ARM], 0);
+
+    const uint16_t role[1] = { LINK_ARM_SURFACE };
+    CHECK(write_control(LINK_CT_ARM, 1, role, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_NOT_ARMED);
+    CHECK_EQ(g.control[LINK_CT_ARM], 0);
+
+    g.may_arm = true;
+    const uint16_t past[1] = { 0x0008u };
+    CHECK(write_control(LINK_CT_ARM, 1, past, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(g.control[LINK_CT_ARM], 0);
+}
+
+/* A panel before 4.18 writes 1; that is still an arm, of every role. */
+TEST_CASE(an_old_style_arm_of_one_arms_every_role)
+{
+    fresh();
+    link_msg_t r;
+    const uint16_t one[1] = { LINK_ARM_ALL };
+    CHECK(write_control(LINK_CT_ARM, 1, one, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], LINK_ARM_ALL);
+    CHECK_EQ(link_arm_roles(g.control[LINK_CT_ARM]), LINK_ARM_ROLES);
 }
 
 int main(void)
@@ -1368,5 +1492,10 @@ int main(void)
     RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
     RUN(outputs_under_an_armed_bank_takes_no_change);
     RUN(a_pulse_longer_than_its_frame_needs_no_new_register);
+    RUN(an_arm_names_its_roles_from_4_18);
+    RUN(arm_takes_zero_one_or_a_set_of_roles);
+    RUN(an_armed_bench_changes_its_roles_only_through_a_disarm);
+    RUN(a_bad_arm_value_is_refused_ahead_of_not_armed);
+    RUN(an_old_style_arm_of_one_arms_every_role);
     return test_summary("link_pages");
 }

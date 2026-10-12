@@ -120,6 +120,7 @@ SOURCES = [
     "shared/outputs/out_bind.c",
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
+    "shared/link/link_control.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)

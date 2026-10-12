@@ -1733,6 +1733,199 @@ TEST_CASE(a_keepalive_holds_off_the_timeout_and_changes_no_command)
     CHECK(!outputs_keepalive(NULL, 0, 1400u));
 }
 
+/* ------------------------------------------------------------ arm roles */
+
+#define T_BIT OUT_ROLE_BIT(OUT_ROLE_THROTTLE)
+#define S_BIT OUT_ROLE_BIT(OUT_ROLE_SURFACE)
+
+/* A motor on slot 0 (channel 0, GP0) and a servo on slot 1 (channel 1,
+ * GP1), both commanded. */
+static void motor_and_servo(void)
+{
+    fresh();
+    CHECK(put_pwm(0, 0, 0));
+    CHECK(put_pwm(1, 1, 1));
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set_role(&o, 1, OUT_ROLE_SURFACE));
+    CHECK(outputs_set(&o, 0, 700u, 1000u));
+    CHECK(outputs_set(&o, 1, 900u, 1000u));
+}
+
+/*
+ * An arm for the throttle drives the motor and leaves the servo beside it
+ * without a pulse, at its rest whatever it was commanded.  The other way
+ * round for an arm for the surfaces.
+ */
+TEST_CASE(an_arm_drives_only_the_roles_it_names)
+{
+    motor_and_servo();
+    outputs_arm_roles(&o, T_BIT, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK(outputs_armed(&o));
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_armed_roles(&o), T_BIT);
+    CHECK(outputs_role_armed(&o, OUT_ROLE_THROTTLE));
+    CHECK(!outputs_role_armed(&o, OUT_ROLE_SURFACE));
+    CHECK(outputs_channel_driving(&o, 0));
+    CHECK(!outputs_channel_driving(&o, 1));
+    CHECK(outputs_slot_driving(&o, 0));
+    CHECK(!outputs_slot_driving(&o, 1));
+    CHECK_EQ(outputs_actual(&o, 0), 700u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+    /* The command is kept: what an arm for the surfaces would drive. */
+    CHECK_EQ(outputs_command(&o, 1), 900u);
+
+    outputs_arm(&o, false, 1020u);
+    CHECK_EQ(outputs_armed_roles(&o), 0u);
+    CHECK(!outputs_channel_driving(&o, 0));
+    CHECK(!outputs_slot_driving(&o, 0));
+
+    CHECK(outputs_set(&o, 0, 700u, 1030u));
+    CHECK(outputs_set(&o, 1, 900u, 1030u));
+    outputs_arm_roles(&o, S_BIT, 1030u);
+    outputs_step(&o, 1040u);
+    CHECK_EQ(outputs_armed_roles(&o), S_BIT);
+    CHECK(!outputs_channel_driving(&o, 0));
+    CHECK(outputs_channel_driving(&o, 1));
+    CHECK(!outputs_slot_driving(&o, 0));
+    CHECK(outputs_slot_driving(&o, 1));
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+    CHECK_EQ(outputs_actual(&o, 1), 900u);
+}
+
+/* outputs_arm() is every role, and so is a bank nobody narrowed. */
+TEST_CASE(a_plain_arm_is_every_role)
+{
+    motor_and_servo();
+    CHECK_EQ(o.roles, OUT_ROLES_ALL);
+    outputs_arm(&o, true, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK_EQ(outputs_armed_roles(&o), OUT_ROLES_ALL);
+    CHECK(outputs_slot_driving(&o, 0));
+    CHECK(outputs_slot_driving(&o, 1));
+    CHECK_EQ(outputs_actual(&o, 0), 700u);
+    CHECK_EQ(outputs_actual(&o, 1), 900u);
+    /* And after an arm for one role and a disarm. */
+    outputs_arm(&o, false, 1020u);
+    outputs_arm_roles(&o, T_BIT, 1030u);
+    outputs_arm(&o, false, 1040u);
+    outputs_arm(&o, true, 1050u);
+    CHECK_EQ(outputs_armed_roles(&o), OUT_ROLES_ALL);
+}
+
+/*
+ * The limits of the set: 0 disarms, bits past OUT_ROLES_ALL are ignored,
+ * and a set of only those is no role and disarms too.
+ */
+TEST_CASE(an_arm_with_no_role_is_a_disarm)
+{
+    motor_and_servo();
+    outputs_arm_roles(&o, T_BIT, 1000u);
+    outputs_arm_roles(&o, 0u, 1010u);
+    CHECK(!outputs_armed(&o));
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+
+    outputs_arm_roles(&o, (uint8_t)(S_BIT | 0xF0u), 1020u);
+    CHECK_EQ(outputs_armed_roles(&o), S_BIT);
+    outputs_arm_roles(&o, 0xF0u, 1030u);
+    CHECK(!outputs_armed(&o));
+    CHECK_EQ(outputs_armed_roles(&o), 0u);
+    /* NULL is nothing, and answers nothing. */
+    outputs_arm_roles(NULL, T_BIT, 1040u);
+    CHECK_EQ(outputs_armed_roles(NULL), 0u);
+    CHECK(!outputs_role_armed(NULL, OUT_ROLE_THROTTLE));
+    CHECK(!outputs_channel_driving(NULL, 0));
+    CHECK(!outputs_channel_driving(&o, OUT_MAX_CHANNELS));
+    CHECK(!outputs_slot_driving(NULL, 0));
+    CHECK(!outputs_slot_driving(&o, OUT_MAX_SLOTS));
+    /* An empty slot drives nothing armed or not. */
+    outputs_arm(&o, true, 1050u);
+    CHECK(!outputs_slot_driving(&o, 2));
+}
+
+/*
+ * A change of set while armed is applied at once: the role that leaves is
+ * at rest with no ramp and no carried part-unit, and the role that joins is
+ * fresh, as at an arm, however long it sat out.
+ */
+TEST_CASE(a_role_switch_while_armed_rests_the_old_and_stamps_the_new)
+{
+    motor_and_servo();
+    CHECK(outputs_set_slew(&o, 0, 300u));
+    outputs_arm_roles(&o, T_BIT, 1000u);
+    for (uint32_t t = 1001u; t <= 1400u; ++t) {
+        CHECK(outputs_set(&o, 0, 700u, t));
+        outputs_step(&o, t);
+    }
+    CHECK(outputs_actual(&o, 0) > 0u);
+    CHECK(outputs_overdue(&o, 1, 1600u));      /* the servo sat out 600 ms */
+
+    outputs_arm_roles(&o, S_BIT, 1600u);
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+    CHECK_EQ(o.channel[0].slew_rem, 0u);
+    CHECK(!outputs_overdue(&o, 1, 1600u));
+    outputs_step(&o, 1601u);
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+    CHECK_EQ(outputs_actual(&o, 1), 900u);
+
+    /* Re-asserting the set is not activity: the servo still times out. */
+    for (uint32_t t = 1700u; t <= 2200u; t += 100u) {
+        outputs_arm_roles(&o, S_BIT, t);
+        outputs_step(&o, t);
+    }
+    CHECK(outputs_overdue(&o, 1, 2200u));
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+}
+
+/*
+ * A PPM (pulse-position modulation) frame carries every channel or none.  A
+ * slot that mixes roles drives when one of them is armed, with the others
+ * held at their rest inside the frame.
+ */
+TEST_CASE(a_mixed_ppm_frame_drives_with_its_unarmed_channels_at_rest)
+{
+    fresh();
+    const out_slot_t ppm = { .driver = OUT_DRIVER_PPM, .first_channel = 0,
+                             .channels = 2, .pin = 5, .rate_hz = 50 };
+    CHECK(outputs_configure(&o, 0, &ppm));
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set(&o, 0, 600u, 1000u));
+    CHECK(outputs_set(&o, 1, 950u, 1000u));
+    outputs_arm_roles(&o, S_BIT, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK(outputs_slot_driving(&o, 0));
+    CHECK(!outputs_channel_driving(&o, 0));
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1000u);
+    CHECK_EQ(outputs_actual(&o, 1), 950u);
+}
+
+/*
+ * The CONTROL ARM value and the bank's roles: 1 is every role (a panel
+ * before 4.18), the role bits name theirs, and a value the page refuses
+ * arms nothing.
+ */
+TEST_CASE(an_arm_value_maps_to_its_roles_and_back)
+{
+    CHECK_EQ(outputs_arm_roles_of(0u), 0u);
+    CHECK_EQ(outputs_arm_roles_of(LINK_ARM_ALL), OUT_ROLES_ALL);
+    CHECK_EQ(outputs_arm_roles_of(LINK_ARM_THROTTLE), T_BIT);
+    CHECK_EQ(outputs_arm_roles_of(LINK_ARM_SURFACE), S_BIT);
+    CHECK_EQ(outputs_arm_roles_of(LINK_ARM_ROLES), OUT_ROLES_ALL);
+    CHECK_EQ(outputs_arm_roles_of(LINK_ARM_ALL | LINK_ARM_THROTTLE), 0u);
+    CHECK_EQ(outputs_arm_roles_of(0x0008u), 0u);
+    CHECK_EQ(outputs_arm_roles_of(0xFFFFu), 0u);
+
+    CHECK_EQ(outputs_arm_value_of(0u), 0u);
+    CHECK_EQ(outputs_arm_value_of(T_BIT), LINK_ARM_THROTTLE);
+    CHECK_EQ(outputs_arm_value_of(S_BIT), LINK_ARM_SURFACE);
+    CHECK_EQ(outputs_arm_value_of(OUT_ROLES_ALL), LINK_ARM_ROLES);
+    CHECK_EQ(outputs_arm_value_of(0xF0u), 0u);
+    for (uint8_t r = 1u; r <= OUT_ROLES_ALL; ++r) {
+        CHECK_EQ(outputs_arm_roles_of(outputs_arm_value_of(r)), r);
+    }
+}
+
 int main(void)
 {
     RUN(a_channel_write_keeps_only_the_channels_it_named_alive);
@@ -1802,5 +1995,11 @@ int main(void)
     RUN(a_stored_slot_with_a_pulse_longer_than_its_frame_starts_unbound);
     RUN(each_driver_number_on_the_wire_is_that_driver_in_the_bank);
     RUN(a_keepalive_holds_off_the_timeout_and_changes_no_command);
+    RUN(an_arm_drives_only_the_roles_it_names);
+    RUN(a_plain_arm_is_every_role);
+    RUN(an_arm_with_no_role_is_a_disarm);
+    RUN(a_role_switch_while_armed_rests_the_old_and_stamps_the_new);
+    RUN(a_mixed_ppm_frame_drives_with_its_unarmed_channels_at_rest);
+    RUN(an_arm_value_maps_to_its_roles_and_back);
     return test_summary("outputs");
 }

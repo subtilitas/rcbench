@@ -34,7 +34,6 @@ void sense_trace_hw_feed(const sense_svc_t *svc, uint64_t tick_us)
 
 void sense_trace_hw_outputs(const outputs_t *o)
 {
-    const bool drive = outputs_driving(o);
     for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
         const out_slot_t *s = &o->slot[i];
         if (s->driver != OUT_DRIVER_PWM || !outputs_hw_bound(i)) {
@@ -47,7 +46,7 @@ void sense_trace_hw_outputs(const outputs_t *o)
          * held to the frame as out_pwm_write() holds it. */
         const uint slice = pwm_gpio_to_slice_num(s->pin);
         const uint32_t top = pwm_hw->slice[slice].top;
-        const uint16_t pulse = drive
+        const uint16_t pulse = outputs_slot_driving(o, i)
             ? sense_trace_rendered(outputs_pulse_us(o, s->first_channel), top)
             : 0u;
         const uint64_t now = time_us_64();

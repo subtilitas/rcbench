@@ -34,6 +34,20 @@
  */
 uint16_t link_driver_of(out_driver_t d);
 
+/**
+ * The roles a CONTROL ARM value arms, as OUT_ROLE_BIT()s: OUT_ROLES_ALL for
+ * LINK_ARM_ALL, the named roles for a set of LINK_ARM_ROLES, and 0 for 0 and
+ * for a value the page refuses (link_arm_value_ok()).
+ */
+uint8_t outputs_arm_roles_of(uint16_t arm);
+
+/**
+ * The CONTROL ARM value that arms @p roles, OUT_ROLE_BIT()s: a set of
+ * LINK_ARM_ROLES, or 0 for no role.  A coprocessor older than
+ * LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL and nothing narrower.
+ */
+uint16_t outputs_arm_value_of(uint8_t roles);
+
 /* --- SERVO: the frame rate of every PWM output rendering a surface; the
  *     page itself is servo_page.h */
 

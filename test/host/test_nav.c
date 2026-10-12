@@ -2159,6 +2159,18 @@ TEST_CASE(servo_settings_and_close_carried_into_the_band_do_nothing)
     CHECK_EQ(panel_look(), shut);
 }
 
+/* The band's chip names the role an arm covers: the motor's, the servo's,
+ * or ARMED alone for both, as an arm with no link names no role. */
+TEST_CASE(the_armed_chip_names_the_role)
+{
+    CHECK_STR_EQ(ui_band_armed_label(UI_ARMED_MOTOR), "ARMED MOTOR");
+    CHECK_STR_EQ(ui_band_armed_label(UI_ARMED_SERVO), "ARMED SERVO");
+    CHECK_STR_EQ(ui_band_armed_label(UI_ARMED_MOTOR | UI_ARMED_SERVO),
+                 "ARMED");
+    CHECK_STR_EQ(ui_band_armed_label(0u), "ARMED");
+    CHECK_STR_EQ(ui_band_armed_label(0xF0u | UI_ARMED_SERVO), "ARMED SERVO");
+}
+
 int main(void)
 {
     RUN(the_navigation_count_sees_away_and_back);
@@ -2231,5 +2243,6 @@ int main(void)
     RUN(a_release_made_for_the_finger_activates_nothing_but_stop);
     RUN(reset_peaks_needs_the_fingers_release_and_disarm_does_not);
     RUN(servo_settings_and_close_carried_into_the_band_do_nothing);
+    RUN(the_armed_chip_names_the_role);
     return test_summary("nav");
 }

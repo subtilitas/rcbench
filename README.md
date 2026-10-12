@@ -13,8 +13,9 @@ requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
 **Status: under construction.** The project is under development and its
 functions are not verified on hardware. The panel boots and every screen
-exists. The output drivers are built and an armed bank drives every bound pin
-at its role's rest whether or not anything commands it. What is unmeasured is
+exists. The output drivers are built. An arm names the roles it drives: the
+throttle outputs from MOTOR & ESC, the surfaces from SERVO. An armed role
+drives every pin bound to it at its rest whether or not anything commands it. What is unmeasured is
 the timing on an instrument -- no bit width, frame period or reply delay in
 this tree has been seen on a scope or an analyser. Most other measurements
 wait on parts that are not fitted. Screens showing simulated values are marked

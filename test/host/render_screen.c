@@ -2092,6 +2092,9 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-result-ina") == 0
                    || strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0;
+    /* An arm covers the role of the screen that asked for it. */
+    st.armed_roles = !st.armed ? 0u
+                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

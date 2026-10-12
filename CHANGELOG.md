@@ -37,6 +37,20 @@ history is in git.
 
 ### Changed
 
+- An arm drives only the outputs of the screen's role (link protocol 4.18).
+  ARM on the CONTROL page takes 0, 1 (every output), 0x0002 (throttle
+  channels), 0x0004 (surfaces and programming ports) or 0x0006; any other
+  value is refused with BAD_VALUE, and so is a change from one non-zero ARM
+  to another. MOTOR & ESC and a PROGRAMMER stick run write 0x0002, SERVO
+  writes 0x0004. A pin of a role the arm does not name sends no pulse. An
+  arm for the other role disarms first and arms after 100 ms. SERVO sweeps,
+  RESUME and SERVO_SENSE captures need the surfaces armed and answer
+  NOT_ARMED on a bench armed for the throttle alone. STOP, heartbeat loss,
+  link silence and a disarm still zero the whole ARM. A 4.18 panel writes 1
+  to a coprocessor older than 4.18, which arms every output.
+- The band's arm chip reads ARMED MOTOR, ARMED SERVO or, for an arm of every
+  output, ARMED.
+- The servo programmer takes no port while the bench is armed for the motor.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.

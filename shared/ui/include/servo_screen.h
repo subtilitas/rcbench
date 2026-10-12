@@ -164,7 +164,9 @@ void servo_screen_encoder(const servo_test_enc_t *e);
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 
 /**
- * What the bench is, so the button can say it.
+ * Whether the bench is armed for the surfaces, so the button can say it.
+ * An arm for the motor alone is not one: ARM on this screen arms the
+ * surfaces, and a bench armed for the motor disarms before it does.
  *
  * The screen does not decide whether it is armed: arming is asked of the
  * policy and the answer comes back from the bench, the same way MOTOR & ESC
@@ -193,6 +195,14 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * the automatic test end where it was asked.
  */
 void servo_screen_set_armed(bool armed);
+
+/**
+ * Whether the bench is armed for any role.  servo_screen_set_armed() is
+ * told whether the surfaces are armed, which an arm for the motor alone
+ * leaves false; this is what keeps the servo programmer from taking a port
+ * under a motor that is armed, as it is kept from one under armed surfaces.
+ */
+void servo_screen_set_bench_armed(bool armed);
 
 /**
  * Abandon a hold that is under way, because the bench has been stopped.

@@ -106,7 +106,7 @@ was immer im Register ARM steht.
 
 Eines löscht ihn: das Schreiben von 0x5AFE in CLEAR auf der Control-Page.
 Das Panel schreibt CLEAR an einer Stelle, beim Schärfen, das eine Person
-durch 2 s Halten von ARM vollendet. Das ARM = 1, das das Panel bei jedem
+durch 2 s Halten von ARM vollendet. Das ARM, das das Panel bei jedem
 Poll alle 50 ms einer scharfen Bank schreibt, trägt kein CLEAR und bringt
 einen Koprozessor mit gesetztem Latch daher nie zurück.
 
@@ -144,7 +144,7 @@ bis zu 1000 ms scharf. Zwei Fälle:
 - Das Panel bemerkt den Ausfall. Bei ihm rastet ein Stopp ein, und es
   schreibt von da an ARM = 0.
 - Das Panel bemerkt ihn nicht, weil die Anfrage wiederholt wurde, bis der neu
-  gestartete Koprozessor antwortete. Sein nächstes Schreiben von ARM = 1 wird
+  gestartete Koprozessor antwortete. Sein nächstes Schreiben von ARM wird
   mit NOT_ARMED abgewiesen, und bei dieser Antwort rastet am Panel ein Stopp
   ein.
 
@@ -178,8 +178,8 @@ Koprozessor setzt seinen Latch, sobald er der Leitung nicht mehr vertraut,
 innerhalb von 150 ms. Die Grenze der Frist ist der Frame, der schärft,
 selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
 bis zum Timeout von 1000 ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
-Koprozessor hat die Bank dann scharf geschaltet, in Ruhe: Gas 0, Surfaces
-zentriert. Das Panel macht das nicht rückgängig. Ein Austausch des Schärfens, auf
+Koprozessor hat dann die angefragte Rolle scharf geschaltet, in Ruhe: Gas 0
+für MOTOR & ESC und PROGRAMMER, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Ein Austausch des Schärfens, auf
 den niemand antwortet -- das Lesen von STATUS, das Freigeben des Servos,
 CLEAR oder der Frame, der schärft --, hat den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schärfen
@@ -462,8 +462,23 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   schreibt eine Bindung und den Pulsbereich des Throttle nur entschärft.
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
   Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
-- Ein scharfer Prüfstand treibt jeden gebundenen Pin, ob ihn etwas
-  kommandiert oder nicht. Ein Kanal, der 500 ms lang kein Kommando bekommt,
+- Ein ARM nennt die Rollen, die es treibt ([Link, Ein Arm für eine
+  Rolle](Link-de.md#ein-arm-für-eine-rolle)). MOTOR & ESC und ein
+  Stick-Lauf auf PROGRAMMER schalten die Throttle-Ausgänge scharf, ARM
+  0x0002. SERVO schaltet die Surfaces und den Pin des PROG PORT scharf, ARM
+  0x0004. Ein Pin einer Rolle, die das ARM nicht nennt, sendet keinen Puls,
+  wie bei einem entschärften Prüfstand. Ein Koprozessor älter als Protokoll
+  4.18 nimmt jedes ARM ungleich 0 als ganze Bank; an ihm treibt also jeder
+  gebundene Pin.
+- Ein ARM für die andere Rolle geht über ein Entschärfen. Das Panel schreibt
+  ARM = 0, wartet mindestens 100 ms und schreibt dann die neuen Rollen; den
+  Wechsel von einem ARM ungleich 0 zu einem anderen weist der Koprozessor
+  mit BAD_VALUE ab.
+- STOP, das Ausbleiben des Heartbeat, Stille auf dem Link und ein
+  Entschärfen setzen jeweils das ganze ARM auf 0, gleich welche Rollen es
+  nannte, und jeder Ausgang hört auf.
+- Ein scharfer Prüfstand treibt jeden gebundenen Pin der scharfen Rollen, ob
+  ihn etwas kommandiert oder nicht. Ein Kanal, der 500 ms lang kein Kommando bekommt,
   wird auf der Ruhelage seiner Rolle ausgegeben: gestoppt bei throttle,
   zentriert bei surface. Zentriert ist die Mitte der Endpunkte dieses Kanals
   — 1500 us über den voreingestellten 1000 bis 2000 us, 760 us über den 660

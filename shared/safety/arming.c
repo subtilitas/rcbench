@@ -109,9 +109,25 @@ uint32_t arming_pressed_count(const arming_t *a)
 
 void arming_request_arm(arming_t *a, uint32_t now_ms)
 {
-    if (a == NULL || arming_touch_dead(a, now_ms)) {
+    arming_request_arm_roles(a, now_ms, ARMING_ROLES_ALL);
+}
+
+uint8_t arming_roles(const arming_t *a)
+{
+    return (a != NULL) ? a->roles : 0u;
+}
+
+void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles)
+{
+    if (a == NULL || roles == 0u || arming_touch_dead(a, now_ms)) {
         return;
     }
+    /* Other roles than the bench is armed for: a disarm first, so nothing
+     * of the old roles is still driving when the new ones start. */
+    if (a->armed && roles != a->roles) {
+        a->switching = true;
+    }
+    a->roles = roles;
     /*
      * The latch clears here, before the write, so the heartbeat resumes and
      * the coprocessor can come to trust it.  Clearing it only after a
@@ -282,6 +298,18 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
         if (a->armed) {
             a->armed  = false;
             a->arming = false;
+            return ARMING_ACT_DISARM;
+        }
+    }
+
+    /* A request for other roles: the disarm on its own step, and the arm
+     * for them from the settle on.  Returned at once so an arm reached in
+     * the same step cannot overwrite it. */
+    if (a->switching) {
+        a->switching = false;
+        if (a->armed) {
+            a->armed  = false;
+            a->in_run = false;
             return ARMING_ACT_DISARM;
         }
     }

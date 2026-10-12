@@ -7,7 +7,8 @@
  * so a start is whole.  Register 5 is how many ends a sweep started after it
  * reaches before it stops; register 6 reads how many the sweep has reached.
  *
- * A sweep runs only while the bench is armed, and only while the panel keeps
+ * A sweep runs only while the bench is armed for the surfaces
+ * (OUT_ROLE_SURFACE), and only while the panel keeps
  * writing it: one that hears nothing for OUT_DEFAULT_TIMEOUT_MS stops, the
  * rule a channel command already keeps, so a panel that goes quiet leaves no
  * servo moving.  A write that repeats the sweep in force keeps it going
@@ -72,7 +73,8 @@ void servo_page_init(servo_page_t *p);
  * a sweep started or changed by a write that does not carry all four of its
  * registers, or a resume with no phase kept or with a curve that has
  * changed since the hold (BAD_VALUE); a sweep, a hold or a resume while the
- * bank is not armed (NOT_ARMED).
+ * bank is not armed for the surfaces, an arm for the throttle alone among
+ * them (NOT_ARMED).
  */
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, outputs_t *o, uint32_t now_ms);
@@ -82,7 +84,8 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
 void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
 
 /**
- * One pass: stop a sweep the bank is no longer armed for, one not written
+ * One pass: stop a sweep the bank's surfaces are no longer armed for, one
+ * not written
  * for OUT_DEFAULT_TIMEOUT_MS or one that has made its movements, and
  * command every surface along a sweep that runs.  True while it runs.
  */
