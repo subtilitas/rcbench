@@ -150,12 +150,17 @@ On the panel console, in this order:
 
 - Extra CAN traffic for tens of seconds. It takes 15 ms of each 50 ms poll,
   so it is slower in wall clock than the bus alone would need.
-- **A visible display stall** when it finishes and writes to flash. A flash
+- **Visible display stalls** when it finishes and writes to flash: one per
+  erase or write of a 4 kB sector, about 104 for a 206 kB picture. A flash
   operation closes the cache the panel's bounce-buffer refill reads PSRAM
-  through, so the panel stops for the length of the write. Settings saves
+  through, so the panel stops for the length of each. Settings saves
   already do this.
+- **The write waits for a safe bench.** It takes one sector per 5 ms control
+  pass, and only while the bench is disarmed with the supply off. Armed or
+  with the supply on, `photograph waits for a disarmed bench with the supply
+  off` appears once on the console and `kept` follows after the disarm.
 - **It must not disturb the heartbeat.** The transfer is sliced and the flash
-  write runs on its own task for exactly that reason. **If the heartbeat
+  write is held back while armed for exactly that reason. **If the heartbeat
   drops during this minute, stop and write it down** — that is the most
   important thing this first run can find.
 
@@ -703,7 +708,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 | Arm refused, no obvious reason | Touch dead for 500 ms blocks it. Touch the panel. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
 | Heartbeat drops in the first minute | **The artwork transfer or the flash keeper.** See §4. |
-| Display freezes briefly | A flash write. Expected once, when the photograph is kept. |
+| Display freezes briefly | A flash write. Expected while the photograph is kept, once per 4 kB sector erased or written. |
 | Coprocessor does not boot after flashing | Image past 4 MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
 | Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is armed |
@@ -715,7 +720,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 **If the bench misbehaves in a way that points at the panel**, the three
 newest and least proven things are all mine and all only compiler-checked:
 
-- the **flash keeper task** (`artkeep`),
+- the **photograph keep** in the control task, one flash sector a pass,
 - the **artwork slice** inside the control task's poll loop, and
 - the **run log task** (`runlog`), which owns every write to the SD (Secure
   Digital) card.
