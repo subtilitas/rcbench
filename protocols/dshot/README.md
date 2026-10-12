@@ -45,7 +45,8 @@ bool     dshot_edt_frame(dshot_edt_t *e, bool stopped, uint32_t now_ms);
 ```
 
 `dshot_edt_*()` schedules the command that asks for extended telemetry:
-one ask every 500 ms at zero throttle, at most 10 asks per run.
+an ask is 10 repeats and the next starts 500 ms after the last repeat (509
+ms between starts at 1 kHz), at zero throttle, at most 10 asks per run.
 
 Driver, `out_dshot.h`:
 

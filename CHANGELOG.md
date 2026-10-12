@@ -26,6 +26,13 @@ history is in git.
 
 ### Changed
 
+- Text corrections, no behaviour change: SECURITY.md lists all 10 input
+  parsers; the Manifest drops its state column and points to STATUS.md;
+  STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
+  directory layout; sizes, counts and figures in the KST, DShot, configurator,
+  NOTICE and First run texts match the code; the Servo, OpenYGE and
+  monostable comments no longer say that unwired code runs; DShot, Servo,
+  Bringup and Manifest German pages match the English ones.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. The INA228 temperature and diagnostic flags go
