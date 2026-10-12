@@ -128,15 +128,15 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 #define DSHOT_TELEM_RATE_DEN 4u
 
 /**
- * Units of the extended telemetry payload, per count of the twelve bits.
- * Voltage is 0.25 V per count, current 1 A per count, temperature 1 degree
- * Celsius per count.
+ * Units of the extended telemetry payload, per count of its eight bits
+ * (0 to 255).  Voltage is 0.25 V per count, current 1 A per count,
+ * temperature 1 degree Celsius per count.
  */
 #define DSHOT_EDT_MV_PER_COUNT      250u
 #define DSHOT_EDT_A_PER_COUNT       1u
 #define DSHOT_EDT_DEGC_PER_COUNT    1u
 
-/** Millivolts for a DSHOT_TELEM_VOLTAGE payload (at most 4095 * 250). */
+/** Millivolts for a DSHOT_TELEM_VOLTAGE payload (at most 255 * 250 = 63,750). */
 uint32_t dshot_edt_millivolts(uint16_t count);
 /** Amperes for a DSHOT_TELEM_CURRENT payload. */
 uint32_t dshot_edt_amps(uint16_t count);

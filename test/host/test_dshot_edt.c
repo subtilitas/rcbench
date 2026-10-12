@@ -384,9 +384,9 @@ TEST_CASE(the_extended_units_are_the_documented_ones)
     CHECK_EQ(dshot_edt_millivolts(0u), 0u);
     CHECK_EQ(dshot_edt_millivolts(1u), 250u);
     CHECK_EQ(dshot_edt_millivolts(48u), 12000u);     /* 12.00 V */
-    CHECK_EQ(dshot_edt_millivolts(4095u), 1023750u);
+    CHECK_EQ(dshot_edt_millivolts(255u), 63750u);   /* the top count */
     CHECK_EQ(dshot_edt_amps(37u), 37u);
-    CHECK_EQ(dshot_edt_amps(4095u), 4095u);
+    CHECK_EQ(dshot_edt_amps(255u), 255u);
     CHECK_EQ(dshot_edt_celsius(25u), 25u);
 }
 
