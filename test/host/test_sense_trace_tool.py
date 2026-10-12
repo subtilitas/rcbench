@@ -1027,6 +1027,45 @@ def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
           f"{arrival[(1, '0.05')]}")
 
 
+def a_csv_row_without_its_line_feed_is_left_out() -> None:
+    whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
+    check(whole.endswith(b"\n"), "the fixture ends on its line feed")
+    last = whole.rindex(b"\n", 0, len(whole) - 1) + 1
+    full = [(10.055, 240.0), (11.905, 490.0), (13.505, 490.0),
+            (15.105, 490.0)]
+    # Every cut inside the last row, its line feed included, reads as the
+    # three rows before it; a cut at the row's start or after its line feed
+    # is a whole file.
+    for at in range(last, len(whole) + 1):
+        path = work("cut.csv")
+        path.write_bytes(whole[:at])
+        rows, cut = sense_trace.read_travel(path)
+        if at == len(whole):
+            check(rows == full and not cut, f"whole: {rows} {cut}")
+        else:
+            check(rows == full[:3], f"cut at {at}: {rows}")
+            check(cut == (at > last), f"cut at {at}: {cut}")
+    # CR LF line ends read the same, and a cut between CR and LF is a cut.
+    crlf = whole.replace(b"\n", b"\r\n")
+    path = work("cut.csv")
+    path.write_bytes(crlf)
+    check(sense_trace.read_travel(path) == (full, False), "CR LF")
+    path.write_bytes(crlf[:-1])
+    check(sense_trace.read_travel(path) == (full[:3], True), "CR, no LF")
+    # And the report says so.  Three of four equally spaced rows pair one
+    # move along as well; the offset is given.
+    path.write_bytes(whole[:-3])
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--servo-csv",
+             str(path), "--csv-offset", "12.345", "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+    check("3 travel time(s), 3 paired with a move" in r.stdout, r.stdout)
+    check("its last row has no line feed: cut off, and left out"
+          in r.stdout, "the cut is said")
+    r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--servo-csv",
+             str(ARGS.fixtures / "sense-trace-sim.csv"), "--no-csv")
+    check("no line feed" not in r.stdout, "a whole file says nothing")
+
+
 def the_servo_csv_pairs_by_time() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     rows = (ARGS.fixtures / "sense-trace-sim.csv").read_text().splitlines()
@@ -2305,6 +2344,7 @@ CASES = [
     settings_are_compared_on_the_moves_both_time,
     a_slewed_command_ends_at_its_d_line,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
+    a_csv_row_without_its_line_feed_is_left_out,
     the_servo_csv_pairs_by_time,
     the_offset_that_pairs_the_most_is_found_between_the_obvious,
     an_offset_that_puts_rows_at_the_tolerance_itself_is_tried,

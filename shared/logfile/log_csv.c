@@ -180,7 +180,7 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
     int nf = 0;
     int tf = 0;
     bool in_quotes = false;
-    bool saw_anything = false;
+    bool saw_content = false; /* a byte that is not a blank */
     bool full = false;
     bool done = false;
 
@@ -197,7 +197,9 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
         if (c < 0) {
             break;
         }
-        saw_anything = true;
+        if (!isspace(c)) {
+            saw_content = true;
+        }
 
         if (in_quotes) {
             if (c == '"') {
@@ -243,20 +245,19 @@ int log_reader_row(log_reader_t *r, char delimiter, char *store,
     }
 
     if (!done) {
-        /* End of input.  A trailing partial row still counts, but a file that
-         * ended cleanly on a newline must not produce a phantom empty one. */
-        if (!saw_anything || (sp == field_start && tf == 0)) {
-            return -1;
+        /*
+         * End of input inside a row.  A row is complete at its line feed and
+         * nothing else proves it: a write cut off after "95" of "9554" leaves
+         * a row with every field present and a wrong number in the last one,
+         * and its field count matches the header.  So a row without its line
+         * feed is not a row.  It is dropped and the reader says so, unless
+         * it holds nothing but blanks: a file that ends on its newline, or on
+         * a stray carriage return or space after it, has no row left to lose.
+         */
+        if (saw_content) {
+            r->cut = true;
         }
-        if (!full && sp + 1u <= store_size) {
-            store[sp] = '\0';
-            if (nf < max_fields) {
-                fields[nf++] = store + field_start;
-            }
-        } else if (nf < max_fields) {
-            fields[nf++] = s_empty;
-        }
-        tf++;
+        return -1;
     }
 
     if (total_fields != NULL) {
@@ -585,6 +586,7 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     log_reader_init(&reader, src);
 
     if (!next_row(&reader, delimiter, &s_row)) {
+        out->cut_row = reader.cut;   /* a header cut off is no header */
         return LOG_ERR_NO_HEADER;
     }
     if (s_row.total > LOG_MAX_COLUMNS) {
@@ -631,6 +633,9 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     if (out->row_count >= max_rows && next_row(&reader, delimiter, &s_row)) {
         out->truncated = true;
     }
+    /* Read to the end, or one row past the cap: a cut row is known only once
+     * the reader reaches it, which a capped file's reader does not. */
+    out->cut_row = reader.cut;
     if (out->row_count == 0) {
         return LOG_ERR_NO_ROWS;
     }

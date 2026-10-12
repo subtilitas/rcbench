@@ -270,18 +270,68 @@ TEST_CASE(rows_honour_quotes_and_doubled_quotes)
 {
     static const char *const r0[] = { "a", "b,c", "d" };
     static const char *const r1[] = { "1", "2", "3" };
-    split_check("a,\"b,c\",d\n1,2,3", ',', 0, r0, 3);
-    split_check("a,\"b,c\",d\n1,2,3", ',', 1, r1, 3);
+    split_check("a,\"b,c\",d\n1,2,3\n", ',', 0, r0, 3);
+    split_check("a,\"b,c\",d\n1,2,3\n", ',', 1, r1, 3);
 
     static const char *const esc[] = { "a", "say \"hi\"", "c" };
-    split_check("a,\"say \"\"hi\"\"\",c", ',', 0, esc, 3);
+    split_check("a,\"say \"\"hi\"\"\",c\n", ',', 0, esc, 3);
 
-    /* CRLF (carriage return, line feed) line ends, and a last line with no
-     * newline at all. */
+    /* CRLF (carriage return, line feed) line ends. */
     static const char *const crlf[] = { "x", "y" };
-    split_check("x,y\r\nz,w", ',', 0, crlf, 2);
+    split_check("x,y\r\nz,w\r\n", ',', 0, crlf, 2);
     static const char *const tail[] = { "z", "w" };
-    split_check("x,y\r\nz,w", ',', 1, tail, 2);
+    split_check("x,y\r\nz,w\r\n", ',', 1, tail, 2);
+}
+
+/* How many rows the reader returns from @p text, and whether it says the
+ * input ended inside one. */
+static int rows_in(const char *text, bool *cut)
+{
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, strlen(text));
+    log_reader_t r;
+    log_reader_init(&r, &src);
+    char store[LOG_ROW_MAX];
+    char *fields[LOG_MAX_COLUMNS];
+    int total = 0;
+    int rows = 0;
+    while (log_reader_row(&r, ',', store, sizeof(store), fields,
+                          LOG_MAX_COLUMNS, &total) >= 0) {
+        ++rows;
+    }
+    /* Asked again past the end, it stays at the end and keeps saying so. */
+    CHECK_EQ(log_reader_row(&r, ',', store, sizeof(store), fields,
+                            LOG_MAX_COLUMNS, &total), -1);
+    *cut = r.cut;
+    return rows;
+}
+
+/*
+ * A row is complete at its line feed and at nothing else.  A last row
+ * without one is left out and the reader says so, whatever it holds: all of
+ * its fields, the start of a quoted field, a line cut between CR and LF.  A
+ * tail of blanks after the last line feed is no row and nothing is cut.
+ */
+TEST_CASE(a_last_row_without_its_line_feed_is_not_a_row)
+{
+    bool cut = false;
+    CHECK_EQ(rows_in("a,b\n1,2\n", &cut), 2);
+    CHECK(!cut);
+    CHECK_EQ(rows_in("a,b\n1,2", &cut), 1);
+    CHECK(cut);
+    CHECK_EQ(rows_in("a,b\n1,", &cut), 1);
+    CHECK(cut);
+    CHECK_EQ(rows_in("a,b\n1,2\r", &cut), 1);
+    CHECK(cut);
+    CHECK_EQ(rows_in("a,b\n\"1\n2", &cut), 1);
+    CHECK(cut);
+    CHECK_EQ(rows_in("a,b", &cut), 0);
+    CHECK(cut);
+    CHECK_EQ(rows_in("", &cut), 0);
+    CHECK(!cut);
+    CHECK_EQ(rows_in("a,b\n1,2\n \t\r", &cut), 2);
+    CHECK(!cut);
 }
 
 TEST_CASE(a_quoted_field_may_straddle_a_read_boundary)
@@ -1314,6 +1364,7 @@ int main(void)
     RUN(units_from_values_and_headers);
     RUN(blackbox_field_names_keep_their_grouping);
     RUN(rows_honour_quotes_and_doubled_quotes);
+    RUN(a_last_row_without_its_line_feed_is_not_a_row);
     RUN(a_quoted_field_may_straddle_a_read_boundary);
     RUN(delimiter_is_sniffed_from_a_sample);
     RUN(english_file_reads_as_english);

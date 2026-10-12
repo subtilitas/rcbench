@@ -1529,6 +1529,52 @@ static void long_file(void)
     draw();
 }
 
+/* Open @p text as LONG.CSV on the import view and count the warning's
+ * pixels there. */
+static int import_warn_pixels(const char *text)
+{
+    fresh();
+    snprintf(g_long, sizeof(g_long), "%s", text);
+    g_removed[0] = g_removed[1] = g_removed[2] = true;
+    log_viewer_refresh();
+    open_file(5);
+    draw();
+    return pixels_of(UI_WARN);
+}
+
+/*
+ * A file whose last row has no line feed -- a run cut off by a power loss --
+ * imports without that row, and the import view says so: the row count in
+ * the warning colour and a line of its own.
+ */
+TEST_CASE(a_cut_last_row_is_left_out_and_said)
+{
+    const int whole = import_warn_pixels(
+        "t,v\n0.00,10.25\n0.05,20.50\n0.10,95.54\n");
+    const log_analysis_t *a = log_viewer_analysis();
+    if (a == NULL) {
+        T_FAIL("no analysis");
+        return;
+    }
+    CHECK_EQ(a->row_count, 3);
+    CHECK(!a->cut_row);
+    /* Settled, so the warning line is free for the cut. */
+    CHECK(a->convention_confident);
+
+    const int cut = import_warn_pixels(
+        "t,v\n0.00,10.25\n0.05,20.50\n0.10,95.5");
+    a = log_viewer_analysis();
+    if (a == NULL) {
+        T_FAIL("no analysis");
+        return;
+    }
+    CHECK_EQ(a->row_count, 2);
+    CHECK(a->cut_row);
+    CHECK_NEAR(a->columns[1].last, 20.5, 1e-9);
+    CHECK(cut > whole);
+    g_long[0] = '\0';
+}
+
 /* Two fingers down on the plot at x0 and x1, both moved to y0 = 200. */
 static void two_down(int x0, int x1)
 {
@@ -2236,6 +2282,7 @@ int main(void)
     RUN(a_touch_loss_drops_the_press_on_delete);
     RUN(delete_needs_a_selected_file);
     RUN(re_reading_the_card_selects_the_newest_run);
+    RUN(a_cut_last_row_is_left_out_and_said);
     RUN(two_fingers_spread_zoom_in_and_the_view_stays);
     RUN(two_fingers_moved_together_pan_and_pinching_zooms_out);
     RUN(the_arrows_still_pick_values_and_carry_the_view);

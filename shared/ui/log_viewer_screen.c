@@ -839,7 +839,7 @@ static void render_import(gfx_canvas_t *c)
                  s.an.row_count, s.an.truncated ? " " : "",
                  s.an.truncated ? TR(LOG_CAPPED) : "");
         rows[n].key = TR(LOG_KEY_ROWS);
-        rows[n].color = s.an.truncated ? UI_WARN : UI_TEXT;
+        rows[n].color = (s.an.truncated || s.an.cut_row) ? UI_WARN : UI_TEXT;
         n++;
 
         snprintf(rows[n].value, sizeof(rows[n].value), "%d", s.an.n_columns);
@@ -894,6 +894,11 @@ static void render_import(gfx_canvas_t *c)
             snprintf(line, sizeof(line), TR(LOG_TOO_LONG),
                      s.an.long_rows);
             gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_DANGER, 1);
+        } else if (s.an.cut_row) {
+            /* Ahead of the ragged rows: those have a count of their own
+             * above, and the row left out has no other place on screen. */
+            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_LAST_CUT),
+                     UI_FONT_LABEL, UI_WARN, 1);
         } else if (s.an.ragged_rows > 0) {
             gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_ROWS_DIFFER),
                      UI_FONT_LABEL, UI_DANGER, 1);

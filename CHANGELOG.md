@@ -20,6 +20,14 @@ history is in git.
 
 ### Fixed
 
+- A log file whose last row has no line feed reads without that row. A
+  write cut off by a power loss or a full card leaves the bytes the card
+  took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
+  reader (`log_reader_row`) ends a row at its line feed and nothing else,
+  leaves an unterminated last row out, and reports it in
+  `log_analysis_t.cut_row`. The import view shows ROWS in the warning
+  colour and `LAST ROW CUT OFF - LEFT OUT`. `tools/sense_trace.py
+  --servo-csv` applies the same rule and says so in its report.
 - `docs/ServoProgrammer.md` and its German page name the servo the
   register layout and the timing come from: 1 Chaservo servo.
 - The bench configurator keeps the selection and the chosen language in the
