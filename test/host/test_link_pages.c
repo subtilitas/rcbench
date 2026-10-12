@@ -235,6 +235,90 @@ TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
     CHECK_EQ(regs[LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
 }
 
+/* The slew has an upper bound of LINK_CC_SLEW_MAX; both edges and a value on
+ * each side of the upper one. */
+TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
+{
+    const uint16_t ok[] = { 0u, 1u, LINK_CC_SLEW_MAX - 1u, LINK_CC_SLEW_MAX };
+    const uint16_t bad[] = { LINK_CC_SLEW_MAX + 1u, 10000u, 65535u };
+    for (unsigned i = 0; i < sizeof(ok) / sizeof(ok[0]); ++i) {
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t v = ok[i];
+        CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v), 0u);
+        CHECK_EQ(regs[LINK_CC_SLEW], v);
+    }
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t v = bad[i];
+        CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(regs[LINK_CC_SLEW], 0u);
+    }
+    /* The last channel's slew is judged as well. */
+    uint16_t regs[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(regs);
+    const uint16_t v = LINK_CC_SLEW_MAX + 1u;
+    CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_COUNT - LINK_CC_STRIDE
+                                    + LINK_CC_SLEW, 1, &v),
+             LINK_NACK_BAD_VALUE);
+}
+
+/* A CHAN_CFG kept by a build before the slew limit: a slew above it starts
+ * as the maximum, everything else as kept. */
+TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
+{
+    const uint16_t old[] = { LINK_CC_SLEW_MAX + 1u, 65535u };
+    for (unsigned i = 0; i < sizeof(old) / sizeof(old[0]); ++i) {
+        uint16_t saved[LINK_CC_COUNT];
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(saved);
+        for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+            uint16_t *r = &saved[c * LINK_CC_STRIDE];
+            r[LINK_CC_ROLE]   = (c == 0u) ? LINK_CC_ROLE_THROTTLE
+                                          : LINK_CC_ROLE_SURFACE;
+            r[LINK_CC_SLEW]   = (c % 2u == 0u) ? old[i]
+                                               : (uint16_t)(100u * c);
+            r[LINK_CC_MIN_US] = (uint16_t)(900u + c);
+            r[LINK_CC_MAX_US] = (uint16_t)(2100u - c);
+        }
+        saved[LINK_CC_COUNT - LINK_CC_STRIDE + LINK_CC_SLEW] = old[i];
+        memset(regs, 0xA5, sizeof(regs));
+        outputs_chan_cfg_restore(regs, saved);
+        for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+            const uint16_t *r = &regs[c * LINK_CC_STRIDE];
+            const uint16_t *k = &saved[c * LINK_CC_STRIDE];
+            CHECK_EQ(r[LINK_CC_ROLE], k[LINK_CC_ROLE]);
+            CHECK_EQ(r[LINK_CC_MIN_US], k[LINK_CC_MIN_US]);
+            CHECK_EQ(r[LINK_CC_MAX_US], k[LINK_CC_MAX_US]);
+            if (k[LINK_CC_SLEW] > LINK_CC_SLEW_MAX) {
+                CHECK_EQ(r[LINK_CC_SLEW], LINK_CC_SLEW_MAX);
+            } else {
+                CHECK_EQ(r[LINK_CC_SLEW], k[LINK_CC_SLEW]);
+            }
+        }
+        CHECK_EQ(regs[LINK_CC_COUNT - LINK_CC_STRIDE + LINK_CC_SLEW],
+                 LINK_CC_SLEW_MAX);
+        /* What starts is a page a write takes whole. */
+        uint16_t page[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(page);
+        CHECK_EQ(outputs_chan_cfg_write(page, 0u, LINK_CC_COUNT, regs), 0u);
+    }
+    /* The maximum itself is kept as it is. */
+    uint16_t saved[LINK_CC_COUNT];
+    uint16_t regs[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(saved);
+    saved[LINK_CC_SLEW] = LINK_CC_SLEW_MAX;
+    outputs_chan_cfg_restore(regs, saved);
+    CHECK_EQ(memcmp(regs, saved, sizeof(regs)), 0);
+    /* Nothing without both. */
+    const uint16_t before = regs[LINK_CC_SLEW];
+    outputs_chan_cfg_restore(regs, NULL);
+    outputs_chan_cfg_restore(NULL, saved);
+    CHECK_EQ(regs[LINK_CC_SLEW], before);
+}
+
 TEST_CASE(a_refused_slots_write_stores_none_of_its_registers)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -1247,6 +1331,8 @@ int main(void)
     RUN(writing_a_read_only_page_is_refused);
     RUN(a_value_the_page_rejects_is_refused_with_a_reason);
     RUN(a_refused_chan_cfg_write_stores_none_of_its_registers);
+    RUN(a_slew_above_the_maximum_is_refused_and_stores_nothing);
+    RUN(a_kept_slew_above_the_maximum_starts_as_the_maximum);
     RUN(a_refused_slots_write_stores_none_of_its_registers);
     RUN(the_arming_frame_applies_arm_throttle_and_poles_together);
     RUN(an_arming_frame_with_a_bad_pole_count_arms_nothing);

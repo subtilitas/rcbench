@@ -20,9 +20,9 @@ protocol's version, the heartbeat and link timings, the heartbeat and CAN
 pins, the coverage floors and the stack margin, each as one sentence in
 FACTS below; every table row that names a C constant; the ceiling table in
 Performance.md against the --max-lines arguments in ci.yml; and the pin
-counts in hardware/docs/Pins.md against pinmap.json.  A sentence in FACTS
-that is reworded so its pattern matches nowhere fails, so a check does not
-lapse with an edit.
+counts in hardware/docs/Pins.md against ioboard-pinmap-draft.json.  A sentence
+in FACTS that is reworded so its pattern matches nowhere fails, so a check
+does not lapse with an edit.
 
     python3 tools/check_docs.py
 
@@ -1240,14 +1240,14 @@ def check_ceilings(problems: list[str], ci_text: str | None = None,
 
 # --- the IO board's pin count ------------------------------------------------
 
-PINMAP = HARDWARE / "docs" / "pinmap.json"
+PINMAP = HARDWARE / "docs" / "ioboard-pinmap-draft.json"
 PIN_ROWS = {"main": "Main coprocessor", "measurement":
             "Measurement coprocessor"}
 
 
 def check_pin_counts(problems: list[str]) -> None:
     """Pins.md's count of the GPIO each coprocessor uses is the number of
-    pins pinmap.json gives it, and STATUS.md repeats the same two."""
+    pins the draft pin map gives it, and STATUS.md repeats the same two."""
     import json
     chips = {c.get("chip"): len(c.get("pins", []))
              for c in json.loads(read(PINMAP)).get("chips", [])}
@@ -1261,14 +1261,15 @@ def check_pin_counts(problems: list[str]) -> None:
         if used != chips.get(chip) or free != total - used:
             problems.append(
                 f"Pins.md: says the {label.lower()} uses {used} of {total} "
-                f"with {free} free; pinmap.json gives it {chips.get(chip)}")
+                f"with {free} free; {PINMAP.name} gives it "
+                f"{chips.get(chip)}")
     m = re.search(r"uses (\d+) and (\d+) of their (\d+) GPIO",
                   " ".join(read(REPO / "STATUS.md").split()))
     if m is None:
         problems.append("STATUS.md: no 'uses <N> and <N> of their 48 GPIO'")
     elif (int(m.group(1)), int(m.group(2))) != (chips.get("main"),
                                                 chips.get("measurement")):
-        problems.append(f"STATUS.md: says {m.group(0)}; pinmap.json gives "
+        problems.append(f"STATUS.md: says {m.group(0)}; {PINMAP.name} gives "
                         f"{chips.get('main')} and "
                         f"{chips.get('measurement')}")
 

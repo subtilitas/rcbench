@@ -146,12 +146,17 @@ typedef enum {
  *     nothing is clamped against. */
 enum {
     LINK_CC_ROLE    = 0, /**< 0 throttle, 1 surface                     */
-    LINK_CC_SLEW    = 1, /**< span a second; 0 means at once            */
+    LINK_CC_SLEW    = 1, /**< span a second, 0 to LINK_CC_SLEW_MAX; 0 means at once */
     LINK_CC_MIN_US  = 2, /**< the pulse a command of 0 renders as       */
     LINK_CC_MAX_US  = 3, /**< and of LINK_CH_SPAN                       */
     LINK_CC_STRIDE  = 4,
 };
 #define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)
+
+/** The fastest slew a write may name, in thousandths of the span a second:
+ *  3000, 300 %/s, the panel's own maximum.  A higher value is refused with
+ *  BAD_VALUE. */
+#define LINK_CC_SLEW_MAX 3000u
 
 #define LINK_CC_ROLE_THROTTLE 0u
 #define LINK_CC_ROLE_SURFACE  1u

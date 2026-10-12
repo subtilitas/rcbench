@@ -1948,7 +1948,9 @@ int main(void)
     const bool have_saved = out_store_load(&saved);
     if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
-        memcpy(s_state.chan_cfg, saved.chan_cfg, sizeof(s_state.chan_cfg));
+        /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
+         * and in BIND_CFG, which is seeded from this below. */
+        outputs_chan_cfg_restore(s_state.chan_cfg, saved.chan_cfg);
         /* A stored slot on a programming port's bank channel starts
          * unbound: an OUTPUTS write of it is refused. */
         (void)prog_port_slots_free(s_state.slots);

@@ -2134,8 +2134,11 @@ Lücke im Verkehr. Flash zu schreiben hält den Koprozessor mit abgeschalteten
 Interrupts an, und solange antwortet er auf nichts: auf dem
 Inbetriebnahme-Modul wurde ein Speichervorgang, der in einem Fenster gelöscht
 und programmiert hat, mit 19.178 us gemessen, gegen einen CAN-Frame von etwa
-130 us und zwei Frames Puffer im Controller. Löschen und Page Program sind
-nicht getrennt voneinander gemessen. Ein in diesem Fenster verlorener Request
+130 us und zwei Frames Puffer im Controller. Der Wert ist eine einzelne
+Messung: 1 Probe, auf dem Inbetriebnahme-Modul genommen, das Flash-Bauteil ist
+noch nicht bestimmt. Löschen und Page Program sind nicht getrennt voneinander
+gemessen. Das Fenster wird gegen das Maximum im Datenblatt neu begründet,
+sobald das Bauteil bekannt ist. Ein in diesem Fenster verlorener Request
 kostet das Panel 1000 ms Wartezeit, was über dem 200-ms-Failsafe des
 Koprozessors liegt; ein einziger verlorener Frame endet also als `FEHLER 01`
 (`LINK_FAULT_LINK_SILENT`) an einem Kabel, an dem nichts fehlt.
