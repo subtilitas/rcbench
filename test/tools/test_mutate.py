@@ -1,5 +1,8 @@
 """mutate.py: which lines, which mutants, and a run that leaves nothing
-behind."""
+behind.
+
+SPDX-License-Identifier: MIT
+"""
 
 import pathlib
 import shutil
@@ -7,6 +10,7 @@ import subprocess
 
 import pytest
 
+from conftest import skip_or_fail
 import mutate as mu
 
 DIFF = """\
@@ -239,7 +243,7 @@ def tiny(tmp_path, monkeypatch):
     """A repository of one source and one test, laid out as this one."""
     for tool in ("git", "cmake", "cc"):
         if shutil.which(tool) is None:
-            pytest.skip(f"{tool} is not on PATH")
+            skip_or_fail(f"{tool} is not on PATH")
     repo = tmp_path / "repo"
     (repo / "shared" / "limit").mkdir(parents=True)
     (repo / "test" / "host").mkdir(parents=True)

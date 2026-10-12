@@ -136,7 +136,9 @@ typedef struct {
     uint32_t handshake_until_ms;
     bool     handshake_bounded;
     uint32_t last_touch_ms;
-    uint32_t run_start_ms;    /**< 0 when not in a run                    */
+    bool     in_run;          /**< a run is being timed                   */
+    uint32_t run_start_ms;    /**< its start; any tick, 0 included; read
+                                   only while in_run                      */
     uint32_t run_seconds;     /**< held after the run ends                */
 } arming_t;
 
