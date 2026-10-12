@@ -51,6 +51,13 @@ history is in git.
   a bare target may hold backslash escapes and one level of parentheses
   (`API_(v2).md`); a name that starts with two dots (`..notes.md`) is a page
   inside `docs/`, and only `..` or `../` leaves it.
+  Links in code spans, in fenced code blocks and after an escaped `[` stay
+  as written. A definition that an image uses (`![alt][label]`) gets the
+  `raw` form. A label may nest brackets to any depth, a URL scheme may hold
+  `+`, `-` and `.` (`git+https:`), and a definition may put its target and
+  title on the next line. The CI step runs `tools/wiki_links.py --verify`,
+  which fails on a surviving relative `.md` link or a link that leaves
+  `docs/`, code left out.
 
 - The phase tap's readout on a stick run's page shows PITCH and LOST as
   `--` and no OVERRUN once the last TONE status read is 500 ms old

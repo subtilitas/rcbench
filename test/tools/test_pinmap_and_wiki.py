@@ -230,3 +230,86 @@ def test_parentheses_in_a_bare_target_are_kept():
     assert wl.rewrite(r"[api](../API_\(v2\).md)") == (
         rf"[api]({R}/blob/main/API_\(v2\).md)")
     assert wl.rewrite("[a](Screens.md) and (b)") == "[a](Screens) and (b)"
+
+
+def test_code_spans_fences_and_escaped_openers_are_left_alone():
+    text = ("`[x](../NOTICE)` and ``a ` [x](../NOTICE) ``\n"
+            "\\[x](../NOTICE)\n"
+            "```\n[x](../NOTICE)\n[d]: ../README.md\n```\n"
+            "~~~~ md\n[x](../NOTICE)\n~~~\n[y](../NOTICE)\n~~~~\n"
+            "after [real](../NOTICE)\n")
+    out = wl.rewrite(text)
+    assert out == text.replace("after [real](../NOTICE)",
+                               f"after [real]({R}/blob/main/NOTICE)")
+    assert wl.survivors(out) == []
+    assert wl.stranded(out) == []
+
+
+def test_an_escaped_backslash_does_not_escape_the_opener():
+    assert wl.rewrite("\\\\[x](../NOTICE)") == (
+        f"\\\\[x]({R}/blob/main/NOTICE)")
+
+
+def test_an_unclosed_fence_runs_to_the_end_of_the_page():
+    text = "[a](../NOTICE)\n```\n[b](../NOTICE)\n"
+    assert wl.rewrite(text) == (
+        f"[a]({R}/blob/main/NOTICE)\n```\n[b](../NOTICE)\n")
+
+
+def test_verify_ignores_code_and_fails_on_a_real_survivor(tmp_path, capsys):
+    page = tmp_path / "Home.md"
+    page.write_text("`[x](../NOTICE)`\n```\n[a](B.md)\n```\n",
+                    encoding="utf-8")
+    assert wl.main(["wiki_links.py", "--verify", str(tmp_path)]) == 0
+    page.write_text("[a](B.md)\n[b][c]\n\n[c]: ../NOTICE\n",
+                    encoding="utf-8")
+    assert wl.main(["wiki_links.py", "--verify", str(tmp_path)]) == 1
+    err = capsys.readouterr().err
+    assert "B.md survived" in err and "../NOTICE survived" in err
+    assert page.read_text(encoding="utf-8").startswith("[a](B.md)")
+
+
+def test_an_image_by_reference_gets_the_raw_url():
+    text = ("![logo][Asset] ![Pic][] ![shot] [l][doc]\n\n"
+            "[asset]: ../hardware/logo.png\n"
+            "[pic]: ../hardware/pic.png\n"
+            "[shot]: ../hardware/shot.png\n"
+            "[doc]: ../README.md\n")
+    out = wl.rewrite(text)
+    assert f"[asset]: {R}/raw/main/hardware/logo.png\n" in out
+    assert f"[pic]: {R}/raw/main/hardware/pic.png\n" in out
+    assert f"[shot]: {R}/raw/main/hardware/shot.png\n" in out
+    assert f"[doc]: {R}/blob/main/README.md\n" in out
+
+
+def test_a_definition_used_by_an_image_and_a_link_is_raw():
+    out = wl.rewrite("![a][x] [b][x]\n\n[x]: ../hardware/a.png\n")
+    assert f"[x]: {R}/raw/main/hardware/a.png" in out
+
+
+def test_brackets_in_a_label_nest_to_any_depth():
+    assert wl.rewrite("[outer [middle [inner]]](../README.md)") == (
+        f"[outer [middle [inner]]]({R}/blob/main/README.md)")
+    assert wl.rewrite("![a [b [c]]](../hardware/x.png)") == (
+        f"![a [b [c]]]({R}/raw/main/hardware/x.png)")
+
+
+def test_a_scheme_with_plus_dash_or_dot_is_a_url():
+    text = ("[a](git+https://x.org/a.md) [b](svn+ssh://x/b.md) "
+            "[c](a-b.c://x/d.md)\n\n[d]: git+https://x.org/e.md\n")
+    assert wl.rewrite(text) == text
+    assert wl.stranded(text) == []
+
+
+def test_a_definition_target_and_title_on_later_lines():
+    text = ("[legal]:\n  ../README.md\n  'title'\n"
+            "[b]: ../NOTICE\n  \"t\"\n"
+            "[c]:\n<../a b.md>\n"
+            "[s]:\n  Screens.md\n")
+    assert wl.rewrite(text) == (
+        f"[legal]:\n  {R}/blob/main/README.md\n  'title'\n"
+        f"[b]: {R}/blob/main/NOTICE\n  \"t\"\n"
+        f"[c]:\n<{R}/blob/main/a b.md>\n"
+        "[s]:\n  Screens\n")
+    assert wl.stranded("[legal]:\n  ../README.md\n") == ["../README.md"]
+    assert wl.survivors("[s]:\n  Screens.md\n") == ["Screens.md"]

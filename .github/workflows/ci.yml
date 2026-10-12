@@ -144,16 +144,7 @@ jobs:
         run: |
           cp -a docs /tmp/wikicheck
           python3 tools/wiki_links.py /tmp/wikicheck
-          if grep -rnoE '(\]\([[:space:]]*<?|^ {0,3}\[[^]]+\]:[[:space:]]*<?)[A-Za-z0-9_-]+\.md([)#>]|[[:space:]]|$)' /tmp/wikicheck; then
-            echo "::error::links to .md files survived the rewrite"
-            exit 1
-          fi
-          # The wiki holds nothing outside docs/, so a link that climbs out
-          # of it must have become a repository URL.
-          if grep -rnE '(\]\([[:space:]]*<?|^ {0,3}\[[^]]+\]:[[:space:]]*<?)\.\./' /tmp/wikicheck; then
-            echo "::error::links that leave docs/ survived the rewrite"
-            exit 1
-          fi
+          python3 tools/wiki_links.py --verify /tmp/wikicheck
 
       # Frame rate on this panel is bandwidth-bound, so the regression guard
       # is cache-line traffic per frame, not wall-clock on a runner that

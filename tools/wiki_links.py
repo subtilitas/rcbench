@@ -23,21 +23,35 @@ absolute path and a bare anchor are left as they are.
   stays.  A link title stays.
 - Spaces and tabs between the parentheses and the target stay.
 - A reference definition, `[label]: ../README.md "title"`, is rewritten the
-  same way as an inline link.  The title of a definition is read on the same
-  line.
+  same way as an inline link.  Its target and its title may stand on the
+  next line, one line ending each: `[label]:` then `  ../README.md`.
+- A definition that an image uses, `![alt][label]`, `![label][]` or
+  `![label]`, gets the `raw` form.  Labels are compared as CommonMark
+  compares them: case folded, white space collapsed.  When an image and a
+  link share one definition, the image wins, because `raw` also opens in a
+  browser.
 - A link title is `"t"`, `'t'` or `(t)`.
+- A label may nest square brackets to any depth.
+- A URL is anything that starts with a scheme, `[A-Za-z][A-Za-z0-9+.-]*:`,
+  such as `https:`, `mailto:` or `git+https:`.
 - A bare target may hold backslash escapes and one level of balanced
   parentheses, `[api](../API_(v2).md)`; they stay as written.
 - A target is outside docs/ only when its normalised path is `..` or starts
   with `../`.  `..notes.md` is a page named `..notes`.  The same rule decides
   whether a target climbs above the repository.
 - Any other link inside docs/ (an image, a file) is unchanged.
+- Text in a code span, in a fenced code block (``` or ~~~) and after a
+  backslash-escaped `[` is not a link and stays as written.  An indented
+  code block is not recognised; links in it are rewritten.
 
 `--check` also fails when a relative link still leaves docs/ after the
 rewrite, which is the case for a target that climbs above the repository.
 
     tools/wiki_links.py <dir>          rewrite in place
     tools/wiki_links.py --check <dir>  report what would change, change nothing
+    tools/wiki_links.py --verify <dir> fail on a rewritten page that still
+                                       holds a relative .md link or a link
+                                       that leaves docs/, code left out
 """
 
 import posixpath
@@ -52,26 +66,149 @@ ROOT = Path(__file__).resolve().parents[1]
 
 TITLE = r"""(?:"[^"]*"|'[^']*'|\([^()\n]*\))"""
 
-# `[text](target "title")`, with an optional `!` for an image.  The text may
-# span lines and hold one level of brackets.  The target may stand in angle
-# brackets, `[text](<a b.md>)`, and may then hold spaces.  A bare target
-# holds no spaces, but may hold backslash escapes and one level of balanced
-# parentheses, `[api](API_(v2).md)`.  Spaces and tabs may stand inside the
-# parentheses, `[text]( a.md )`.  The title is `"t"`, `'t'` or `(t)`.
-LINK = re.compile(
-    r"(?P<bang>!?)\[(?P<label>(?:[^\[\]]|\[[^\[\]]*\])*)\]"
-    r"\((?P<lead>[ \t]*)(?P<lt><)?(?!\w+:)(?!/)(?!#)"
+# A URI (uniform resource identifier) scheme, as the standard writes it.
+NOT_URL = r"(?![A-Za-z][A-Za-z0-9+.-]*:)(?!/)(?!#)"
+
+# The part of `[text](target "title")` from the opening parenthesis on.  The
+# target may stand in angle brackets, `[text](<a b.md>)`, and may then hold
+# spaces.  A bare target holds no spaces, but may hold backslash escapes and
+# one level of balanced parentheses, `[api](API_(v2).md)`.  Spaces and tabs
+# may stand inside the parentheses, `[text]( a.md )`.  The title is `"t"`,
+# `'t'` or `(t)`.  The label in front is found by `find_links`, because a
+# label may nest brackets to any depth.
+TAIL = re.compile(
+    r"\((?P<lead>[ \t]*)(?P<lt><)?" + NOT_URL +
     r"(?P<target>(?(lt)[^<>#\n]+|(?:\\.|[^()\s#\\]|\((?:\\.|[^()\s\\])*\))+))"
     r"(?P<anchor>#(?(lt)[^<>\n]*|(?:\\.|[^()\s\\])*))?(?(lt)>)"
     r"(?P<title>\s+" + TITLE + r")?(?P<trail>[ \t]*)\)")
 
-# `[label]: target "title"` on a line of its own, at most 3 spaces in.  The
-# target is bare or in angle brackets; the title follows on the same line.
+# `[label]: target "title"`, at most 3 spaces in.  The target is bare or in
+# angle brackets.  It follows on the same line or, after one line ending, on
+# the next.  The title follows the target on its line or on the next line.
 DEFINITION = re.compile(
-    r"^(?P<head> {0,3}\[[^\]\n]+\]:[ \t]*)(?P<lt><)?(?!\w+:)(?!/)(?!#)"
+    r"^(?P<head> {0,3}\[(?P<label>[^\]\n]+)\]:(?:[ \t]*\n[ \t]*|[ \t]*))"
+    r"(?P<lt><)?" + NOT_URL +
     r"(?P<target>(?(lt)[^<>#\n]+|[^\s#<>]+))"
     r"(?P<anchor>#(?(lt)[^<>\n]*|\S*))?(?(lt)>)"
-    r"(?P<title>[ \t]+" + TITLE + r")?(?P<trail>[ \t]*)$", re.M)
+    r"(?P<title>(?:[ \t]+|[ \t]*\n[ \t]*)" + TITLE + r")?(?P<trail>[ \t]*)$",
+    re.M)
+
+HOLE = "\ue000"  # stands in for a masked character; matches no pattern above
+FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})(.*)")
+SPAN = re.compile(
+    r"(?<![`\\])(`+)(?!`)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\1(?!`)")
+ESCAPED_OPENER = re.compile(r"(?<!\\)(?:\\\\)*\\(\[)")
+
+
+def _hole(m: re.Match, group: int = 0) -> str:
+    """The text of `m` with every character but line endings masked."""
+    return re.sub(r"[^\n]", HOLE, m.group(group))
+
+
+def mask(text: str) -> str:
+    """`text` with code and escaped openers blanked, same length and same
+    line endings, so offsets found in the result hold in `text`.  A fenced
+    code block (``` or ~~~, closed by a fence of the same kind and at least
+    the same length, or by the end of the page) and a code span are
+    blanked, and so is a `[` after an odd number of backslashes.  An
+    indented code block is not recognised: its indent also marks list
+    continuations."""
+    out: list[str] = []
+    fence = ""
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        end = line[len(body):]
+        m = FENCE.fullmatch(body)
+        if fence:
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(
+                    fence) and not m.group(2).strip():
+                fence = ""
+            out.append(HOLE * len(body) + end)
+        elif m and not (m.group(1)[0] == "`" and "`" in m.group(2)):
+            fence = m.group(1)
+            out.append(HOLE * len(body) + end)
+        else:
+            out.append(line)
+    masked = SPAN.sub(_hole, "".join(out))
+    return ESCAPED_OPENER.sub(
+        lambda m: m.group(0)[:-1] + HOLE, masked)
+
+
+def _close(masked: str, i: int) -> int | None:
+    """Index of the `]` that closes the `[` at `i`, to any depth of
+    nesting, or None.  A blank line ends the search."""
+    depth = 0
+    n = len(masked)
+    while i < n:
+        c = masked[i]
+        if c == "[":
+            depth += 1
+        elif c == "]":
+            depth -= 1
+            if depth == 0:
+                return i
+        elif c == "\n":
+            k = i + 1
+            while k < n and masked[k] in " \t":
+                k += 1
+            if k < n and masked[k] == "\n":
+                return None
+        i += 1
+    return None
+
+
+def norm(label: str) -> str:
+    """A reference label as CommonMark compares it: folded case, runs of
+    white space as one space, no white space at the ends."""
+    return " ".join(label.split()).casefold()
+
+
+class Link:
+    """One inline link or image: its span in the page, whether it is an
+    image, its label and the match of the part from `(` on."""
+
+    def __init__(self, start, bang, label, m):
+        self.start, self.bang, self.label, self.m = start, bang, label, m
+
+
+def find_links(text: str, masked: str) -> tuple[list[Link], set[str]]:
+    """The inline links of a page in order, and the normalised labels that
+    an image uses by reference: `![alt][label]`, `![label][]` or
+    `![label]`."""
+    links: list[Link] = []
+    images: set[str] = set()
+    i = 0
+    while (i := masked.find("[", i)) != -1:
+        j = _close(masked, i)
+        if j is None:
+            i += 1
+            continue
+        k = i - 1
+        while k >= 0 and masked[k] == "\\":
+            k -= 1
+        bang = i > 0 and masked[i - 1] == "!" and (i - 1 - k) % 2 == 0
+        label = text[i + 1:j]
+        m = TAIL.match(masked, j + 1)
+        if m:
+            links.append(Link(i - 1 if bang else i, bang, label, m))
+            i = m.end()
+            continue
+        if bang:
+            ref = label
+            if masked[j + 1:j + 2] == "[":
+                e = masked.find("]", j + 2)
+                if e != -1 and masked.find("[", j + 2, e) == -1:
+                    ref = text[j + 2:e] or label
+            images.add(norm(ref))
+        i += 1
+    return links, images
+
+
+def _group(text: str, m: re.Match, name: str) -> str | None:
+    """Group `name` of a match on the masked page, read from the page."""
+    if m.start(name) < 0:
+        return None
+    return text[m.start(name):m.end(name)]
 
 
 def outside(path: str) -> bool:
@@ -108,36 +245,50 @@ def rewrite(text: str, reldir: str = "", root: Path = ROOT) -> str:
     """Translate the links of one page.  `reldir` is the page's directory
     relative to docs/, in POSIX form, empty for a page at the top.  `root`
     is the repository the targets are looked up in."""
+    masked = mask(text)
+    links, images = find_links(text, masked)
+    edits: list[tuple[int, int, str]] = []
 
-    def inline(m: re.Match) -> str:
-        bang, label, lead, lt, target, anchor, title, trail = m.group(
-            "bang", "label", "lead", "lt", "target", "anchor", "title",
-            "trail")
-        new = convert(target, reldir, root, bool(bang))
+    for link in links:
+        m = link.m
+        lt = m.group("lt")
+        target = _group(text, m, "target")
+        new = convert(target, reldir, root, link.bang)
         if new is None:
-            return m.group(0)
-        dest = f"{new}{anchor or ''}"
+            continue
+        dest = f"{new}{_group(text, m, 'anchor') or ''}"
         dest = f"<{dest}>" if lt else dest
-        return f"{bang}[{label}]({lead}{dest}{title or ''}{trail})"
+        lead, title, trail = (_group(text, m, g) or ""
+                              for g in ("lead", "title", "trail"))
+        edits.append((m.start(), m.end(),
+                      f"({lead}{dest}{title}{trail})"))
 
-    def definition(m: re.Match) -> str:
-        head, lt, target, anchor, title, trail = m.group(
-            "head", "lt", "target", "anchor", "title", "trail")
-        new = convert(target, reldir, root, False)
+    for m in DEFINITION.finditer(masked):
+        target = _group(text, m, "target")
+        image = norm(_group(text, m, "label")) in images
+        new = convert(target, reldir, root, image)
         if new is None:
-            return m.group(0)
-        dest = f"{new}{anchor or ''}"
-        dest = f"<{dest}>" if lt else dest
-        return f"{head}{dest}{title or ''}{trail}"
+            continue
+        dest = f"{new}{_group(text, m, 'anchor') or ''}"
+        if m.group("lt"):
+            dest = f"<{dest}>"
+        head, title, trail = (_group(text, m, g) or ""
+                              for g in ("head", "title", "trail"))
+        edits.append((m.start(), m.end(), f"{head}{dest}{title}{trail}"))
 
-    return DEFINITION.sub(definition, LINK.sub(inline, text))
+    for start, end, new in sorted(edits, reverse=True):
+        text = text[:start] + new + text[end:]
+    return text
 
 
 def targets(text: str):
-    """Every relative target of an inline link or a definition line."""
-    for pattern in (LINK, DEFINITION):
-        for m in pattern.finditer(text):
-            yield m.group("target")
+    """Every relative target of an inline link or a definition line, code
+    left out."""
+    masked = mask(text)
+    for link in find_links(text, masked)[0]:
+        yield _group(text, link.m, "target")
+    for m in DEFINITION.finditer(masked):
+        yield _group(text, m, "target")
 
 
 def stranded(text: str, reldir: str = "") -> list[str]:
@@ -145,8 +296,34 @@ def stranded(text: str, reldir: str = "") -> list[str]:
     return [t for t in targets(text) if leaves_docs(t, reldir)]
 
 
+def survivors(text: str, reldir: str = "") -> list[str]:
+    """Relative targets of already rewritten text that a wiki cannot
+    open: a markdown page with its extension, or a target outside docs/."""
+    return [t for t in targets(text)
+            if t.endswith(".md") or leaves_docs(t, reldir)]
+
+
+def verify_tree(root: Path) -> int:
+    """Report every link of a rewritten tree that a wiki cannot open."""
+    bad = 0
+    for page in sorted(root.rglob("*.md")):
+        reldir = page.parent.relative_to(root).as_posix()
+        reldir = "" if reldir == "." else reldir
+        text = page.read_text(encoding="utf-8")
+        for target in survivors(text, reldir):
+            print(f"{page.relative_to(root)}: {target} survived the rewrite",
+                  file=sys.stderr)
+            bad += 1
+    if bad:
+        print(f"{bad} link(s) survived the rewrite", file=sys.stderr)
+        return 1
+    print("no link survived the rewrite")
+    return 0
+
+
 def main(argv: list[str]) -> int:
     check = "--check" in argv
+    verify = "--verify" in argv
     args = [a for a in argv[1:] if not a.startswith("-")]
     if len(args) != 1:
         print(__doc__, file=sys.stderr)
@@ -156,6 +333,9 @@ def main(argv: list[str]) -> int:
     if not root.is_dir():
         print(f"{root} is not a directory", file=sys.stderr)
         return 2
+
+    if verify:
+        return verify_tree(root)
 
     changed = 0
     bad = 0
