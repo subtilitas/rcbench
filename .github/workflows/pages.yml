@@ -3,7 +3,8 @@ name: Configurator
 # Checks, builds and publishes the bench configurator under configurator/.
 #
 # - core: type check, test suite, static checks on the data file against the
-#   tree at the release tag, and the coverage figure in
+#   tree at the release tag, the release of package.json against the firmware
+#   header rcbench_version.h, and the coverage figure in
 #   configurator/core/README.md.
 # - build: type check and unit tests of the page, the check of the part
 #   drawings against the data file, the Vite build, the size budget (250 kB
@@ -23,11 +24,13 @@ on:
   pull_request:
     paths:
       - 'configurator/**'
+      - 'shared/link/include/rcbench_version.h'
       - '.github/workflows/pages.yml'
   push:
     branches: [main]
     paths:
       - 'configurator/**'
+      - 'shared/link/include/rcbench_version.h'
       - '.github/workflows/pages.yml'
 
 # A newer push to a pull request replaces the run in progress. A run on main

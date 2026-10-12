@@ -14,12 +14,14 @@ data and is not asserted.
 | File | Content |
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
+| `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
 | `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 32 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
+| `tools/release-sources.ts` | The check of `../package.json` against `RCBENCH_VERSION_*` in `shared/link/include/rcbench_version.h` and against the release numbers in the Markdown files of the configurator. `tools/check.ts` runs it. |
 | `tools/check-annotate.sh` | Runs `tools/check.ts --strict` in a GitHub Actions job and shows each warning as an annotation and in the summary of the run. |
 | `tools/pictures.ts` | The check of the picture records against the files of `../public/pictures/`. |
 | `tools/coverage.ts` | Measures line coverage and keeps the figure below current. |
