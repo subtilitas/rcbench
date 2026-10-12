@@ -5023,6 +5023,44 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
     }
 }
 
+bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
+                         uint8_t target, uint8_t gpio, bool pwm, int setting)
+{
+    if (l1 == NULL || l2 == NULL || size == 0u) {
+        return false;
+    }
+    /* No link, or the page not known: where the rate runs is not known. */
+    if (target == SERVO_SCREEN_TARGET_NO_LINK
+        || target == SERVO_SCREEN_TARGET_UNKNOWN) {
+        snprintf(l1, size, TR(SV_IN_FORCE_UNKNOWN), (unsigned)hz);
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
+        return true;
+    }
+    /* The target the coprocessor holds, not the setting: the setting waits
+     * for a bench at rest, and PROG PORT with no pin bound to the port
+     * leaves the standard outputs the target. */
+    const bool other = setting < 0 || (unsigned)setting != target;
+    bool warn = other;
+    if (target == 0u) {
+        snprintf(l1, size, TR(SV_IN_FORCE_OUT), (unsigned)hz);
+    } else if (gpio == SERVO_SCREEN_NO_PIN) {
+        snprintf(l1, size, TR(SV_IN_FORCE_PORT), (unsigned)hz);
+        warn = true;
+    } else {
+        snprintf(l1, size, TR(SV_IN_FORCE_PORT_PIN), (unsigned)gpio,
+                 (unsigned)hz);
+    }
+    if (other) {
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_NOT_SET));
+    } else if (target != 0u && !pwm) {
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_PWM_OFF));
+        warn = true;
+    } else {
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
+    }
+    return warn;
+}
+
 /* Whether the frame rate reached the pins, in two lines. */
 static void draw_rate_note(gfx_canvas_t *c, int x, int y)
 {
@@ -5034,9 +5072,9 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
     bool warn = true;
     switch (st) {
     case SERVO_RATE_IN_FORCE:
-        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_1), (unsigned)s.frame_hz);
-        snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
-        warn = false;
+        warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
+                                   s.drive_target, s.drive_pin, s.drive_pwm,
+                                   settings_get_int(SET_SERVO_TARGET));
         break;
     case SERVO_RATE_IN_FORCE_SURFACES:
         snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_SURFACES_1),

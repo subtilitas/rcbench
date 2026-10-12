@@ -54,9 +54,13 @@ history is in git.
   it again with the next position. A port whose pin shares its RP2350 PWM
   slice with another port's pin takes 0 or 50 Hz only; a `PIN` write onto
   the slice of a target running at another rate is refused with BAD_VALUE.
-  The SERVO screen's notes read "the PWM TARGET runs at" and "a pin shares a
-  PWM slice"; against a 4.1 to 4.18 coprocessor the note in force reads
-  "every PWM surface runs at". A PROG write refused because the silicon
+  The SERVO screen's note in force names the target the coprocessor holds
+  (`prog_link_drive()`): "OUTPUTS run at" or "PROG PORT GP13 runs at", in
+  the warning colour while that target differs from the PWM TARGET setting,
+  while the port has no pin, while PORT PWM is OFF and while the target is
+  not known. The refusal note reads "a pin shares a PWM slice"; against a
+  4.1 to 4.18 coprocessor the note in force reads "every PWM surface runs
+  at". A PROG write refused because the silicon
   cannot bind a pin leaves SERVO's rate, its sweep and the slots' rates as
   they were.
 

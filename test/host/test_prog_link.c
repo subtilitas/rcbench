@@ -874,6 +874,37 @@ TEST_CASE(a_link_up_starts_the_target_record_over)
     CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
 }
 
+/*
+ * Only a TARGET write feeds the TARGET record: a port's command or the pulse
+ * register written, answered or not, leaves the rate KEPT and the TARGET
+ * seen, so a read that then finds the TARGET changed still says RESET.
+ */
+TEST_CASE(a_write_to_another_register_leaves_the_target_record)
+{
+    prog_link_write_t w;
+
+    page_fresh();
+    prog_link_init(&g_p);
+    prog_link_came_up(&g_p, LINK_MINOR_SERVO_TARGET_RATE);
+    read_at(0u);
+    w.off   = (uint8_t)LINK_PG_REG(0, LINK_PG_CMD);
+    w.value = 5u;
+    prog_link_written(&g_p, &w, true);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    w.off   = (uint8_t)LINK_PG_PWM;
+    w.value = 1u;
+    prog_link_written(&g_p, &w, true);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    w.off   = (uint8_t)LINK_PG_REG(0, LINK_PG_CMD);
+    w.value = 7u;
+    prog_link_written(&g_p, &w, false);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
+    /* The TARGET seen before them is still the one compared against. */
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(500u);
+    CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_RESET);
+}
+
 int main(void)
 {
     RUN(nothing_is_written_while_the_programmer_has_a_port);
@@ -897,6 +928,7 @@ int main(void)
     RUN(a_target_change_returns_the_servo_rate_to_0_from_4_19);
     RUN(a_read_after_an_unanswered_target_write_compares_against_nothing);
     RUN(a_link_up_starts_the_target_record_over);
+    RUN(a_write_to_another_register_leaves_the_target_record);
     RUN(no_object_is_no_fault);
     return test_summary("prog_link");
 }
