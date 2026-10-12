@@ -8,7 +8,9 @@
  * on an output an OFF was asked for, and notices a module that goes quiet;
  * a state read asked for and what it shows; the SUPPLY page taking a
  * wiring change only on such a read showing the output off; a live output
- * switched off when its input sags under the set point on two reads.
+ * switched off when its input sags under the set point on two reads; a
+ * display read that goes before set points dragged faster than they are
+ * written.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,6 +23,7 @@
 #include "link_pages.h"
 #include "outputs.h"
 #include "pdmini.h"
+#include "supply_link.h"
 #include "supply_page.h"
 
 /* ------------------------------------------------------------- the module */
@@ -1441,6 +1444,53 @@ TEST_CASE(a_dragged_slider_does_not_starve_the_input)
     CHECK_EQ(m.mv[0], 5000u - PDMINI_CAP_MV);
 }
 
+/*
+ * A live output, its set point changed every 50 ms for 5 s with the confirm
+ * slide off: the write and its read-back take longer than 50 ms, and a new
+ * set point is waiting after each.  The display is still read at least every
+ * PDMINI_DISPLAY_LATE_MS and a transaction, so the panel, reading the count
+ * of readings off the page every 50 ms, never sees it stand for
+ * SUPPLY_LINK_STALE_MS and never cuts the output for readings stopped.
+ */
+TEST_CASE(a_dragged_live_set_point_does_not_starve_the_display)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 6000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    supply_link_t sl;
+    supply_link_init(&sl);
+    uint16_t regs[LINK_SP_COUNT];
+    memset(regs, 0, sizeof(regs));
+    const unsigned displays = m.reads[PDMINI_READ_DISPLAY];
+    const unsigned writes = m.data_writes;
+    uint32_t seen = pdmini_status(&d)->samples;
+    uint32_t seen_at = now;
+    uint32_t gap_most = 0u;
+    for (int k = 0; k < 100; ++k) {
+        pdmini_want(&d, true, (uint16_t)(6000u + 100u * (unsigned)(k % 40)),
+                    1000u);
+        run(50u, false);
+        const uint32_t samples = pdmini_status(&d)->samples;
+        if (samples != seen) {
+            seen = samples;
+            seen_at = now;
+        }
+        if ((uint32_t)(now - seen_at) > gap_most) {
+            gap_most = (uint32_t)(now - seen_at);
+        }
+        regs[LINK_SP_SAMPLES] = (uint16_t)samples;
+        supply_link_read(&sl, regs, now);
+        CHECK(!supply_link_blind(&sl, now));
+    }
+    CHECK(m.output);                           /* still on, never cut */
+    CHECK(m.data_writes > writes + 20u);       /* the drag went on writing */
+    CHECK(m.reads[PDMINI_READ_DISPLAY] >= displays + 5000u / 600u);
+    CHECK(gap_most < PDMINI_DISPLAY_LATE_MS + 100u);
+    CHECK(gap_most < SUPPLY_LINK_STALE_MS);
+}
+
 /* An ON after a pause is judged on a fresh input: the source sagged since
  * the last reading, and the slot already holds the voltage asked. */
 TEST_CASE(an_on_after_a_pause_reads_the_input_first)
@@ -2205,6 +2255,7 @@ int main(void)
     RUN(a_set_point_over_the_input_is_kept_under_it);
     RUN(nothing_is_switched_on_before_the_input_is_read);
     RUN(a_dragged_slider_does_not_starve_the_input);
+    RUN(a_dragged_live_set_point_does_not_starve_the_display);
     RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(a_restart_goes_with_the_output_off_and_is_followed);
     RUN(an_argument_outlasts_a_module_that_comes_back);

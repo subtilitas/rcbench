@@ -164,6 +164,11 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         is known, watched this long         */
 #define PDMINI_GAP_MS       10u    /**< pins at rest between transactions  */
 #define PDMINI_DISPLAY_MS  100u    /**< how often the output is read       */
+#define PDMINI_DISPLAY_LATE_MS 500u /**< a display read this late goes
+                                        before a set-point write: set points
+                                        changed faster than a write and its
+                                        read-back take would otherwise hold
+                                        the readings back                  */
 #define PDMINI_STATE_MS    500u    /**< the output state and the input     */
 #define PDMINI_IDENTIFY_MS 1000u   /**< WHO_AM_I again while nothing answers */
 #define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */

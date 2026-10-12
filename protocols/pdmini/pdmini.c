@@ -786,6 +786,20 @@ static bool next_job(pdmini_t *d, uint32_t now)
             d->data_tries = 0u;
         }
     }
+    /*
+     * A display read PDMINI_DISPLAY_LATE_MS late goes before the set
+     * points: a slider dragged with no confirm slide hands a new set point
+     * every 50 ms or so, its write and read-back take about as long, and
+     * the readings would otherwise stand until the drag stops -- long
+     * enough for the panel to take them as stopped and cut the output.
+     * Not between the reads before an ON, which go one after the other.
+     */
+    if (on_step == 0u
+        && (uint32_t)(now - d->last_display) >= PDMINI_DISPLAY_LATE_MS) {
+        d->last_display = now;
+        read1(d, now, PDMINI_READ_DISPLAY);
+        return true;
+    }
     if (d->want_set && !data_paused && input_ok) {
         if (d->slot < 0) {
             d->last_slot = now;
