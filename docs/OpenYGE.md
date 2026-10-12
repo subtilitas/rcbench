@@ -369,12 +369,13 @@ plausible sync.
 
 ## 9. Status in rcbench
 
-The protocol runs on the coprocessor: a 20 Hz request and response loop with a
-turnaround in microseconds and a timeout that fires whether or not bytes
-arrive. The panel sees the result as a `bench_state` through the page protocol;
-no OpenYGE frame crosses the panel link. A throttle command travels as a
-control-page write behind the heartbeat and the coprocessor's failsafe
-([Safety](Safety.md)).
+Neither board runs the protocol yet: the coprocessor image links the module,
+the panel image does not, and nothing calls it. The design puts it on the coprocessor: a 20 Hz request and
+response loop with a turnaround in microseconds and a timeout that fires
+whether or not bytes arrive. The panel would see the result as a `bench_state`
+through the page protocol; no OpenYGE frame would cross the panel link. A
+throttle command would travel as a control-page write behind the heartbeat and
+the coprocessor's failsafe ([Safety](Safety.md)).
 
 A YGE ESC reports voltage, current, consumption, eRPM and four temperatures
 itself, so every modelled field of `bench_state` has a source before the

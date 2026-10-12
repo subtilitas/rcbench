@@ -59,7 +59,7 @@ protocols is GPL or AGPL against this repository's MIT. The programming
 protocol of KST and Chaservo servos has no published specification: it is the
 one written from wire captures (see Trademarks below).
 
-test/host/greatest.h is a 108-line test harness written for this project. It is
+test/host/greatest.h is a 107-line test harness written for this project. It is
 not the `greatest` library of the same name.
 
 

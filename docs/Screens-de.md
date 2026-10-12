@@ -839,7 +839,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 | --- | --- |
 | In force | jede PWM-Surface läuft mit der angezeigten Rate |
 | The rate goes with the next position | noch nicht geschrieben |
-| ABGELEHNT | eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
+| ABGELEHNT | ein Puls einer Surface oder eines pulsenden Ports ist länger als der Frame bei dieser Rate, oder eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | This coprocessor takes no frame rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
 
 Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen

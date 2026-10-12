@@ -39,8 +39,8 @@ Duration: the host test holds a full search against the modelled servo to under
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
 The limit search and the synchroniser are modules in `shared/servo`, tested on
-the host against a modelled servo. The coprocessor image does not call them, so
-the protections above are not active on the bench.
+the host against a modelled servo. Neither firmware image calls them, so the
+protections above are not active on the bench.
 
 ### Results
 

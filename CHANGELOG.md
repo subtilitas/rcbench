@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- `CONTRIBUTING.md`, section "The active output": every screen, tab,
+  overlay, prompt and automatic run that drives an output names the pin,
+  port or supply it drives, from the state the drive path reads, with a
+  warning when nothing is bound. A screen added or changed meets it with a
+  host test; `STATUS.md` lists the screens that do not meet it.
 - `tools/security_parsers.py --check`, run in CI, fails when the parser table
   in `SECURITY.md` and the parse functions in the public headers differ. The
   table lists 10 modules; it listed 4.
@@ -34,6 +39,22 @@ history is in git.
   (`TARGET: NO SERVO PWM PIN`) and a binding not read. The pins come from
   the binding the tester drives. The line follows the target the drive uses,
   not the PWM TARGET setting.
+- The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
+  than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
+  OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and
+  `MAX_US`. The longest endpoint is the period minus 1 µs: 1784 µs at
+  560 Hz, 1999 µs at 500 Hz, 2499 µs at 400 Hz; below 400 Hz the 2500 µs
+  ceiling governs. A standard 1000 to 2000 µs servo is refused at
+  500 Hz and 560 Hz. A stored PWM slot that breaks the rule starts unbound.
+  Link protocol 4.16. The panel writes a programming port the range the
+  SERVO screen names before it switches the port's pulse on.
+- Text corrections, no behaviour change: SECURITY.md lists all 10 input
+  parsers; the Manifest drops its state column and points to STATUS.md;
+  STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
+  directory layout; sizes, counts and figures in the KST, DShot, configurator,
+  NOTICE and First run texts match the code; the Servo, OpenYGE and
+  monostable comments no longer say that unwired code runs; DShot, Servo,
+  Bringup and Manifest German pages match the English ones.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
   with the last values kept. The INA228 temperature and diagnostic flags go
@@ -132,7 +153,8 @@ history is in git.
 
 - A CHAN_CFG slew above 3000 (300 %/s of the span) is refused with
   BAD_VALUE and nothing is stored; before, any value to 65535 reached the
-  output bank. The PROG page's port slew has the same limit. A CHAN_CFG or
+  output bank. The PROG page's port slew has the same limit. Link protocol
+  4.16. A CHAN_CFG or
   PROG slew above 3000 kept in the coprocessor's flash by an older build
   starts as 3000, on the page, in BIND_CFG and in the output bank; the
   role, endpoints and pins kept with it start as kept.
