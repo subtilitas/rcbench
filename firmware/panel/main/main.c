@@ -3778,8 +3778,10 @@ static prog_link_t        s_prog_link;
 static atomic_uint        s_prog_want_target;
 static atomic_bool        s_prog_want_pwm;
 static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
-/* The port's pin while the drive uses the port, else PROG_LINK_NO_PIN. */
-static atomic_uint        s_drive_pin = PROG_LINK_NO_PIN;
+/* Where the tester's commands go, for the SERVO screen's target line:
+ * prog_link_drive()'s target in bits 8 to 15, its pin in bits 0 to 7.  One
+ * word, so the screen never reads one drive's target with another's pin. */
+static atomic_uint        s_drive = PROG_LINK_NO_PIN;
 /*
  * The supply command a programming port left on the SUPPLY page, for the
  * SUPPLY screen's set points: the values, and a count the control task
@@ -6693,11 +6695,8 @@ static __attribute__((noinline)) void prog_link_service(void)
         prog_link_written(&s_prog_link, &w, ack);
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
-    /* Target n + 1 is port n. */
-    const uint8_t drive = prog_link_target(&s_prog_link);
-    atomic_store(&s_drive_pin,
-                 drive != 0u ? prog_link_pin(&s_prog_link, (uint8_t)(drive - 1u))
-                             : PROG_LINK_NO_PIN);
+    const prog_link_drive_t drive = prog_link_drive(&s_prog_link);
+    atomic_store(&s_drive, ((unsigned)drive.target << 8) | drive.pin);
     servo_surfaces_publish();
 }
 
@@ -7316,7 +7315,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* And no port is the target or names a pin. */
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
-            atomic_store(&s_drive_pin, PROG_LINK_NO_PIN);
+            atomic_store(&s_drive, PROG_LINK_NO_PIN);
             servo_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
@@ -8324,7 +8323,9 @@ void app_main(void)
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
-            servo_screen_set_prog_pin((uint8_t)atomic_load(&s_drive_pin));
+            const unsigned drive = atomic_load(&s_drive);
+            servo_screen_set_drive((uint8_t)(drive >> 8),
+                                   (uint8_t)(drive & 0xFFu));
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),

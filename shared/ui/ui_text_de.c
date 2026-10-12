@@ -795,6 +795,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_TARGET_NONE]         = "ZIEL: KEIN SERVO-PWM-PIN",
     [TX_SV_TARGET_UNREAD]       = "ZIEL: PINS NICHT GELESEN",
     [TX_SV_TARGET_PORT_PIN]     = "ZIEL: PROG-PORT GP%u",
+    [TX_SV_TARGET_PORT]         = "ZIEL: PROG-PORT",
     [TX_SV_RANGE]               = "BEREICH",
     [TX_SV_CENTRE_BTN]          = "ZENTRIEREN",
     [TX_SV_PAUSE]               = "PAUSE",

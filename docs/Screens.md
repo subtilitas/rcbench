@@ -711,9 +711,12 @@ the line names the GPIOs bound as SERVO PWM in the binding the tester drives:
 (`TARGET: PINS NOT READ`). With PROG PORT the line reads
 `TARGET: PROG PORT GP13` in the warning colour; the pin is the GPIO the
 coprocessor reports for the programming port, and the outputs on the SERVO
-PWM pins carry no pulse. The line follows the target the drive uses, not the
-setting: PROG PORT chosen while the port holds no pin, or before a change
-has been applied, shows the OUTPUTS form.
+PWM pins carry no pulse. A port target without a usable pin (none, refused
+at start, or a port the coprocessor does not have) reads
+`TARGET: PROG PORT`, also in the warning colour: the commands go to the port
+all the same. The line follows the target the coprocessor holds, not the
+setting: a PWM TARGET change waits for a quiet bench and reaches the line
+once the coprocessor has taken it.
 
 ![The target line with PROG PORT](img/servo-target.png)
 

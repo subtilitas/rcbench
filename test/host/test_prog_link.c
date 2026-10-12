@@ -397,6 +397,73 @@ TEST_CASE(a_port_names_its_pin_unless_it_has_none_or_was_refused)
     CHECK_EQ(prog_link_pin(&g_p, 0u), PROG_LINK_NO_PIN);
 }
 
+/* What the tester drives: the target the commands use and that port's pin.
+ * A port target without a usable pin stays a port target, with no pin. */
+TEST_CASE(the_drive_names_the_target_and_the_port_pin)
+{
+    prog_link_drive_t d;
+
+    d = prog_link_drive(NULL);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    fresh();
+    /* Not read yet: the standard outputs. */
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Target 0: the outputs, and no port pin although port 0 has GP13. */
+    read_at(0u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Target 1 is port 0 on GP13. */
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(1u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, 13u);
+    /* Port 0 without a pin. */
+    g_page[LINK_PG_REG(0, LINK_PG_PIN)] = LINK_PG_PIN_NONE;
+    read_at(2u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Port 0 refused. */
+    g_page[LINK_PG_REG(0, LINK_PG_PIN)] = 13u;
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_REFUSED(0);
+    read_at(3u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 1u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* Target 2 names port 1, which a page of 1 port does not have. */
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_BOUND(0);
+    g_page[LINK_PG_TARGET] = 2u;
+    g_page[LINK_PG_REG(1, LINK_PG_PIN)] = 14u;
+    read_at(4u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 2u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* The same target with 2 ports names port 1's pin. */
+    g_page[LINK_PG_COUNT] = 2u;
+    read_at(5u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 2u);
+    CHECK_EQ(d.pin, 14u);
+    /* A target above LINK_PG_PORTS_MAX is the outputs. */
+    g_page[LINK_PG_TARGET] = LINK_PG_PORTS_MAX + 1u;
+    read_at(6u);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    /* The link lost: the outputs. */
+    g_page[LINK_PG_TARGET] = 1u;
+    read_at(7u);
+    prog_link_lost(&g_p);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+}
+
 TEST_CASE(a_channel_configuration_maps_onto_a_port)
 {
     uint16_t cc[LINK_CC_STRIDE];
@@ -540,6 +607,7 @@ int main(void)
     RUN(a_coprocessor_that_started_again_is_brought_back);
     RUN(a_write_that_is_not_acknowledged_makes_the_page_unknown);
     RUN(a_port_names_its_pin_unless_it_has_none_or_was_refused);
+    RUN(the_drive_names_the_target_and_the_port_pin);
     RUN(a_channel_configuration_maps_onto_a_port);
     RUN(no_object_is_no_fault);
     return test_summary("prog_link");

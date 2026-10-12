@@ -2037,7 +2037,7 @@ int main(int argc, char **argv)
         if (strcmp(view, "servo-target") == 0) {
             /* PWM TARGET on the programming port, bound to GP13. */
             settings_set(SET_SERVO_TARGET, 1.0f);
-            servo_screen_set_prog_pin(13u);
+            servo_screen_set_drive(1u, 13u);
         }
         if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);

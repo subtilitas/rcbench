@@ -231,6 +231,16 @@ uint8_t prog_link_pin(const prog_link_t *p, uint8_t port)
     return pin >= PROG_LINK_NO_PIN ? PROG_LINK_NO_PIN : (uint8_t)pin;
 }
 
+prog_link_drive_t prog_link_drive(const prog_link_t *p)
+{
+    prog_link_drive_t d = { prog_link_target(p), PROG_LINK_NO_PIN };
+
+    if (d.target != 0u) {
+        d.pin = prog_link_pin(p, (uint8_t)(d.target - 1u));
+    }
+    return d;
+}
+
 void prog_link_cfg(const uint16_t *cc, uint16_t *out)
 {
     if (cc == NULL || out == NULL) {

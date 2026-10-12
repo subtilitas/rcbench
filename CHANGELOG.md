@@ -34,11 +34,12 @@ history is in git.
 - The SERVO screen shows the active PWM TARGET at the foot of the left card
   with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
   SERVO PWM (from 5 pins the first 3 and a count), `TARGET: PROG PORT GP13`
-  for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`). The
-  warning colour marks the programming port, no SERVO PWM pin
+  for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`),
+  `TARGET: PROG PORT` for a port target without a usable pin. The warning
+  colour marks the programming port, no SERVO PWM pin
   (`TARGET: NO SERVO PWM PIN`) and a binding not read. The pins come from
-  the binding the tester drives. The line follows the target the drive uses,
-  not the PWM TARGET setting.
+  the binding the tester drives. The line follows the target the
+  coprocessor holds (`prog_link_drive()`), not the PWM TARGET setting.
 - The coprocessor refuses a PWM (pulse-width modulation) endpoint longer
   than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
   OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and

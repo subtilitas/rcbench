@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "sense_link.h"
 #include "servo_source.h"
 #include "servo_test.h"
@@ -365,19 +368,31 @@ void servo_screen_set_surfaces(bool any);
  *  and this false has no angles, and takes no angle columns. */
 void servo_screen_set_enc_held(bool held);
 
-/** What servo_screen_set_prog_pin() takes while the outputs are driven. */
+/** The pin servo_screen_set_drive() takes for a port without a known pin. */
 #define SERVO_SCREEN_NO_PIN 0xFFu
 
-/** The GPIO of the programming port while the drive uses it as the target
- *  (prog_link_target() is not 0), or SERVO_SCREEN_NO_PIN while the drive uses
- *  the outputs.  The target line names it; the setting does not matter. */
-void servo_screen_set_prog_pin(uint8_t gpio);
+/** Where the tester's commands go now (prog_link_drive()): @p target 0 for
+ *  the standard outputs or 1 + n for programming port n, and @p gpio that
+ *  port's GPIO or SERVO_SCREEN_NO_PIN.  The target line follows it, not the
+ *  PWM TARGET setting.  @p gpio is ignored with target 0. */
+void servo_screen_set_drive(uint8_t target, uint8_t gpio);
 
 /** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
  *  the tester drives, and whether a binding has been read.  The target line
- *  names them while PWM TARGET is OUTPUTS: up to 4 pins, else the first 3
- *  and a count. */
+ *  names them while the drive uses the outputs: up to 4 pins, else the
+ *  first 3 and a count. */
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
+
+/**
+ * The target line's text in the current language, into @p out of @p size
+ * bytes, for the drive @p target / @p gpio (as servo_screen_set_drive()) and
+ * the SERVO PWM pins @p pins / @p known (as servo_screen_set_pins()).
+ * Returns whether the line takes the warning colour: a port target, no
+ * SERVO PWM pin, or no binding read.  A port target reads
+ * "TARGET: PROG PORT GPn", or "TARGET: PROG PORT" without a known pin.
+ */
+bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
+                       uint64_t pins, bool known);
 
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */

@@ -785,9 +785,13 @@ einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
 wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
 `ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
 Koprozessor für den Programmierport meldet, und die Ausgänge an den
-SERVO-PWM-Pins führen keinen Puls. Die Zeile folgt dem Ziel, das der Antrieb
-nutzt, nicht der Einstellung: PROG-PORT gewählt, solange der Port keinen Pin
-hält oder bevor eine Änderung angewendet ist, zeigt die AUSGÄNGE-Form.
+SERVO-PWM-Pins führen keinen Puls. Ein Port als Ziel ohne nutzbaren Pin
+(keiner, beim Start abgelehnt, oder ein Port, den der Koprozessor nicht hat)
+lautet `ZIEL: PROG-PORT`, ebenfalls in der Warnfarbe: die Befehle gehen
+trotzdem an den Port. Die Zeile folgt dem Ziel, das der Koprozessor hält,
+nicht der Einstellung: eine Änderung von PWM-ZIEL wartet auf einen ruhigen
+Prüfstand und erscheint in der Zeile, sobald der Koprozessor sie übernommen
+hat.
 
 ![Die Zielzeile mit PROG-PORT](img/de/servo-target.png)
 

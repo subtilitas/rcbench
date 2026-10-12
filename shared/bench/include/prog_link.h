@@ -161,6 +161,23 @@ bool prog_link_pwm(const prog_link_t *p);
  *  read, no such port, no pin, or a pin the coprocessor refused. */
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port);
 
+/** What the tester drives: the target and, with a port, its pin. */
+typedef struct {
+    uint8_t target;     /**< prog_link_target(): 0, or 1 + n for port n */
+    uint8_t pin;        /**< that port's prog_link_pin(), else
+                             PROG_LINK_NO_PIN                            */
+} prog_link_drive_t;
+
+/**
+ * Where the tester's commands go now, for the SERVO screen's target line.
+ * The target is prog_link_target(), the one the commands use; the pin is
+ * the target port's GPIO, or PROG_LINK_NO_PIN with the standard outputs as
+ * target or a port without a usable pin (none, refused, or a port the page
+ * does not have).  A port target without a pin stays a port target: the
+ * commands still go to the port and the outputs get no pulse.
+ */
+prog_link_drive_t prog_link_drive(const prog_link_t *p);
+
 /** A channel's configuration as the CHAN_CFG page takes it
  *  (LINK_CC_STRIDE registers) as a port takes it from LINK_PG_SLEW on:
  *  SLEW, MIN_US, MAX_US. */
