@@ -104,7 +104,7 @@ auf Low lässt.
 | 560 Hz | 1785 µs | 1784 µs |
 | 500 Hz | 2000 µs | 1999 µs |
 | 400 Hz | 2500 µs | 2499 µs |
-| 333 Hz und darunter | 3003 µs und mehr | 2500 µs, die Obergrenze |
+| 399 Hz und darunter | 2506 µs und mehr | 2500 µs, die Obergrenze |
 
 Ein Schreiben auf CHAN_CFG, OUTPUTS, BIND, SERVO oder PROG, das einem
 PWM-Ausgang einen längeren Endpunkt hinterließe, wird mit BAD_VALUE

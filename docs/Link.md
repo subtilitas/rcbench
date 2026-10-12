@@ -1227,7 +1227,7 @@ for 1 µs. The rule is `out_pwm_pulse_max()` in
 | 560 Hz | 1785 µs | 1784 µs |
 | 500 Hz | 2000 µs | 1999 µs |
 | 400 Hz | 2500 µs | 2499 µs |
-| 333 Hz and below | 3003 µs and more | 2500 µs, CHAN_CFG's ceiling |
+| 399 Hz and below | 2506 µs and more | 2500 µs, CHAN_CFG's ceiling |
 
 The rate judged is the one the output runs at: SERVO's register 0 for a
 slot whose first channel is a surface while that register is not 0, the
@@ -1244,7 +1244,7 @@ changes nothing:
 | --- | --- |
 | CHAN_CFG (0x23) | an endpoint of a channel a PWM slot renders is longer than that slot's frame |
 | OUTPUTS (0x22) | a PWM slot's rate is too fast for its channel's endpoints |
-| BIND (0x30) `COMMIT` | the prepared CHAN_CFG page, judged with the prepared OUTPUTS page, breaks the rule; either page alone may not |
+| BIND (0x30) `COMMIT` | the prepared CHAN_CFG page, judged with the prepared OUTPUTS page, breaks the rule; either page alone may break it |
 | SERVO (0x29) register 0 | the rate would leave a surface, or a programming port whose `PWM` bit is set, with an endpoint longer than its frame. 0 is judged as well: it sends each surface back to its slot's own rate |
 | PROG (0x33) `PWM`, `MIN_US`, `MAX_US` | a port whose `PWM` bit is set after the write has an endpoint longer than the frame of the port rate |
 
@@ -1269,9 +1269,9 @@ frame's last count to that count. No page write reaches it.
 
 | Panel | Coprocessor | Behaviour |
 | --- | --- | --- |
-| 4.16 | 4.16 | as above. The panel's SERVO screen keeps a pause of at least 1000 µs between pulses (500 µs for a heli servo) and raises the rate only after the narrower range landed, so it asks for no refused combination. Before a write that switches a port's pulse on, the panel writes the port the range the screen names |
+| 4.16 | 4.16 | as above. The panel's SERVO screen keeps a pause of at least 1000 µs between pulses (500 µs for a heli servo) and raises the rate only after the narrower range landed, so with OUTPUTS as its target it asks for no refused combination. With a programming port as its target it writes only the port's range, and its rate is refused while a bound PWM surface has an endpoint longer than the frame; the screen then shows REFUSED. Before a write that switches a port's pulse on, the panel writes the port the range the screen names |
 | 4.16 | 4.15 or older | the coprocessor takes a longer endpoint. Its PWM driver cuts the pulse to the frame's last count, 1784 µs at 560 Hz, while the page, the panel and the log show the endpoint written. The range the panel writes ahead of a pulse is taken as any range write |
-| 4.15 or older | 4.16 | the SERVO screen asks for no refused combination, as above. A port's `PWM` write is refused while the port keeps a range from an earlier profile that does not fit the port rate; that panel writes it again after its next read of PROG, every 500 ms, and the port renders no pulse until a command has written it a range that fits |
+| 4.15 or older | 4.16 | the SERVO screen behaves as above. A port's `PWM` write is refused while the port keeps a range from an earlier profile that does not fit the port rate; that panel reads PROG again and writes it again on its next pass, and the port renders no pulse until a command has written it a range that fits |
 
 ### Bit timing
 

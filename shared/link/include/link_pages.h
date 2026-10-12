@@ -174,8 +174,8 @@ enum {
  *
  * A PWM output's endpoints also fit its frame (since 4.16): neither longer
  * than out_pwm_pulse_max() of the rate the output runs at, one microsecond
- * under the period -- 1784 us at 560 Hz, 2499 us at 400 Hz.  At 333 Hz and
- * below the ceiling is the shorter of the two.  A write that would leave a
+ * under the period -- 1784 us at 560 Hz, 2499 us at 400 Hz.  Below 400 Hz
+ * the ceiling is the shorter of the two.  A write that would leave a
  * longer one is refused with BAD_VALUE (outputs_pulse_check()).
  */
 #define LINK_CC_DEFAULT_MIN 1000u

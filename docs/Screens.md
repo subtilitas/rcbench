@@ -747,7 +747,7 @@ OUTPUT page says what became of it:
 | --- | --- |
 | In force | every PWM surface runs at the rate shown |
 | The rate goes with the next position | not written yet |
-| REFUSED | a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| REFUSED | a pulse of a surface or a pulsing port is longer than the frame at that rate, or a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
 
 A coprocessor restart, and every binding written on OUTPUTS, put each slot

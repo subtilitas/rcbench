@@ -94,7 +94,7 @@ pin low for 1 µs.
 | 560 Hz | 1785 µs | 1784 µs |
 | 500 Hz | 2000 µs | 1999 µs |
 | 400 Hz | 2500 µs | 2499 µs |
-| 333 Hz and below | 3003 µs and more | 2500 µs, the ceiling |
+| 399 Hz and below | 2506 µs and more | 2500 µs, the ceiling |
 
 A CHAN_CFG, OUTPUTS, BIND, SERVO or PROG write that would leave a PWM output
 with a longer endpoint is refused with BAD_VALUE, and nothing changes. The

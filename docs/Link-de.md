@@ -1345,7 +1345,7 @@ Periode minus 1 µs, abgerundet: der letzte Zählerstand bei 1 MHz, der den Pin
 | 560 Hz | 1785 µs | 1784 µs |
 | 500 Hz | 2000 µs | 1999 µs |
 | 400 Hz | 2500 µs | 2499 µs |
-| 333 Hz und darunter | 3003 µs und mehr | 2500 µs, die Obergrenze von CHAN_CFG |
+| 399 Hz und darunter | 2506 µs und mehr | 2500 µs, die Obergrenze von CHAN_CFG |
 
 Beurteilt wird die Rate, mit der der Ausgang läuft: Register 0 von SERVO für
 einen Slot, dessen erster Kanal die Rolle surface hat, solange dieses
@@ -1391,9 +1391,9 @@ Schreiben einer Page erreicht das.
 
 | Panel | Koprozessor | Verhalten |
 | --- | --- | --- |
-| 4.16 | 4.16 | wie oben. Der SERVO-Bildschirm des Panels hält zwischen zwei Pulsen eine Pause von mindestens 1000 µs (500 µs für ein Heli-Servo) und erhöht die Rate erst, nachdem der schmalere Bereich angekommen ist; er verlangt also keine abgewiesene Kombination. Vor einem Schreiben, das den Puls eines Ports einschaltet, schreibt das Panel dem Port den Bereich, den der Bildschirm nennt |
+| 4.16 | 4.16 | wie oben. Der SERVO-Bildschirm des Panels hält zwischen zwei Pulsen eine Pause von mindestens 1000 µs (500 µs für ein Heli-Servo) und erhöht die Rate erst, nachdem der schmalere Bereich angekommen ist; mit OUTPUTS als Ziel verlangt er also keine abgewiesene Kombination. Mit einem Programmierport als Ziel schreibt er nur den Bereich des Ports, und seine Rate wird abgewiesen, solange eine gebundene PWM-Surface einen Endpunkt hat, der länger als der Frame ist; der Bildschirm zeigt dann ABGELEHNT. Vor einem Schreiben, das den Puls eines Ports einschaltet, schreibt das Panel dem Port den Bereich, den der Bildschirm nennt |
 | 4.16 | 4.15 oder älter | der Koprozessor nimmt einen längeren Endpunkt. Sein PWM-Treiber kürzt den Puls auf den letzten Zählerstand des Frames, 1784 µs bei 560 Hz, während Page, Panel und Log den geschriebenen Endpunkt zeigen. Den Bereich, den das Panel vor einem Puls schreibt, nimmt er wie jedes Schreiben eines Bereichs |
-| 4.15 oder älter | 4.16 | der SERVO-Bildschirm verlangt keine abgewiesene Kombination, wie oben. Ein `PWM`-Schreiben auf einen Port wird abgewiesen, solange der Port einen Bereich aus einem früheren Profil hält, der nicht zur Port-Rate passt; dieses Panel schreibt es nach seinem nächsten Lesen von PROG wieder, alle 500 ms, und der Port gibt keinen Puls aus, bis ein Kommando ihm einen passenden Bereich geschrieben hat |
+| 4.15 oder älter | 4.16 | der SERVO-Bildschirm verhält sich wie oben. Ein `PWM`-Schreiben auf einen Port wird abgewiesen, solange der Port einen Bereich aus einem früheren Profil hält, der nicht zur Port-Rate passt; dieses Panel liest PROG erneut und schreibt es bei seinem nächsten Durchlauf wieder, und der Port gibt keinen Puls aus, bis ein Kommando ihm einen passenden Bereich geschrieben hat |
 
 ### Bit Timing
 

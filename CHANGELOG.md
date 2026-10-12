@@ -30,8 +30,8 @@ history is in git.
   than the frame of the output that renders it, with BAD_VALUE, on CHAN_CFG,
   OUTPUTS, a BIND commit, SERVO's frame rate and PROG's `PWM`, `MIN_US` and
   `MAX_US`. The longest endpoint is the period minus 1 µs: 1784 µs at
-  560 Hz, 1999 µs at 500 Hz, 2499 µs at 400 Hz; at 333 Hz and below the
-  2500 µs ceiling governs. A standard 1000 to 2000 µs servo is refused at
+  560 Hz, 1999 µs at 500 Hz, 2499 µs at 400 Hz; below 400 Hz the 2500 µs
+  ceiling governs. A standard 1000 to 2000 µs servo is refused at
   500 Hz and 560 Hz. A stored PWM slot that breaks the rule starts unbound.
   Link protocol 4.16. The panel writes a programming port the range the
   SERVO screen names before it switches the port's pulse on.
