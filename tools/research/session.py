@@ -44,6 +44,8 @@ working tree of the round's plan branch and commits them. Nothing is pushed.
 `script` writes roundN-RUN.js, round1.js with DIR/args-RUN.json in place of
 the Workflow tool's `args`, for the Workflow tool's scriptPath, into DIR or
 the directory --out names.
+
+SPDX-License-Identifier: MIT
 """
 
 import argparse
@@ -320,14 +322,15 @@ def fixed_inputs(text):
     return rows
 
 
-def spec_text(commit):
+def spec_text(commit, repo=ROOT):
     """The specification a run read: the files under hardware/docs/, by
     content, and Research.md without the rows under Raised by P1 and with
     the Decision cells of Q4, Q8 and Q9 blank, which have their own checks.
-    None when the commit is not in this clone."""
+    None when the commit is not in this clone (`repo`, by default this one)."""
     plan_rel = PLAN_REL.replace(os.sep, "/")
-    listed = git("ls-tree", "-r", commit, "--", "hardware/docs/", check=False)
-    shown = git("show", f"{commit}:{plan_rel}", check=False)
+    listed = git("ls-tree", "-r", commit, "--", "hardware/docs/", check=False,
+                 cwd=repo)
+    shown = git("show", f"{commit}:{plan_rel}", check=False, cwd=repo)
     if listed.returncode or shown.returncode:
         return None
     lines, sec = [], ""
@@ -516,6 +519,9 @@ def cmd_check(_args):
         if run.returncode:
             fails.append("dry run: " + run.stdout.strip())
         dry = run.stdout.strip().splitlines()[-1:] or ["no output"]
+    elif os.environ.get("CI"):
+        fails.append("dry run: node is not installed and CI is set")
+        dry = ["not run: node is not installed"]
     else:
         dry = ["not run: node is not installed"]
 
@@ -731,6 +737,16 @@ def owner_selftest():
         use_round(2)
         r1, r2 = (posix(runs_dir(k)) for k in (1, 2))
         git("init", "-q", tmp)
+        # The plan the gate reads is the fixture's own, not this clone's.
+        plan_path = os.path.join(tmp, PLAN_REL)
+        os.makedirs(os.path.dirname(plan_path), exist_ok=True)
+        plan_text = ("# Plan\n\n#### Raised by P1\n\n"
+                     "| ID | Category | Question | Answer |\n"
+                     "|---|---|---|---|\n"
+                     "| V1 | R7 | How many cells? | 16 |\n\n"
+                     "#### Next\n")
+        with open(plan_path, "w") as f:
+            f.write(plan_text)
         put(f"{r1}/FU-A", {"task": "FU", "sequence": 1, "summary": {
             "selection": {
                 "R1": [{"function": "Microcontroller", "part": "RP2354B"}],
@@ -892,8 +908,8 @@ def owner_selftest():
                "a row that says so without owner_keeps fails")
         # The stale-selection gate compares the upstream parts a run saw,
         # by the owner list it was given, with today's.
-        head = git("rev-parse", "HEAD").strip()
-        rows = raised_rows(read(os.path.join(ROOT, PLAN_REL)))
+        head = git("rev-parse", "HEAD", cwd=tmp).strip()
+        rows = raised_rows(plan_text)
         decider = {"task": "FU", "commit": head, "followup": {
             "phases": "P2-P4", "round": 1, "categories": ["R7"],
             "items": []}, "summary": {"selection": {
@@ -904,7 +920,7 @@ def owner_selftest():
         def stale_with(seq, **given):
             put(f"{r2}/FU-2S", {**decider, "sequence": seq, **given})
             return stale_selections(tmp, ["R7"], rows, head, ["R8"],
-                                    ["R7"])
+                                    ["R7"], repo=tmp)
         expect(changed_up not in stale_with(
             10, owner_fixed=owner_items(effective_selection(tmp))),
             "a run given today's owner list sees no upstream change")
@@ -1723,14 +1739,15 @@ def deciding_runs(results, c, eff):
 
 
 def stale_selections(results, categories, rows, now, upstream=(),
-                     downstream=()):
+                     downstream=(), repo=ROOT):
     """Each run whose parts for a category were not qualified against what
     is in force now: a P1 run raised questions for the category after it;
     the category's answers under "Raised by P1", or the specification,
     differ from those at the plan commit it read (answers to questions
     that only feed a decision aside); or, for a category that takes the
     parts of T2 and T4 (`downstream`, those of T3), the `upstream` parts
-    differ from those selection.json held when it ran."""
+    differ from those selection.json held when it ran.  The plan and the
+    specification are read from the repository `repo`."""
     done = runs(results)
     seq = {n: t.get("sequence", 0) for n, t in done}
     eff = effective_selection(results)
@@ -1739,14 +1756,15 @@ def stale_selections(results, categories, rows, now, upstream=(),
 
     def rows_of(commit):
         if commit not in rows_at:
-            shown = git("show", f"{commit}:{PLAN_REL}", check=False)
+            shown = git("show", f"{commit}:{PLAN_REL}", check=False,
+                        cwd=repo)
             rows_at[commit] = raised_rows(shown.stdout) \
                 if shown.returncode == 0 else None
         return rows_at[commit]
 
     def spec_of(commit):
         if commit not in spec_at:
-            spec_at[commit] = spec_text(commit)
+            spec_at[commit] = spec_text(commit, repo)
         return spec_at[commit]
 
     def up_of(before, fixed=None):
