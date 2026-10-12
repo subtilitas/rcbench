@@ -985,12 +985,17 @@ Servo, das einen Frame erhalten hat, PWM folgt, bevor seine Versorgung
 aus war, ist nicht gemessen.
 
 Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port
-bleiben. Ein Ausgang des PD mini, den **VERBINDEN** eingeschaltet hat,
-gehört dem Bildschirm SERVO, und solange der Port ihn hält, bleibt der
-Ausgang an: ein OFF würde die Sitzung beenden und ein Schreiben auf der
-Leitung abschneiden. Er geht aus, wenn der Port loslässt -- ein VERLASSEN,
-das mit dem Port auf PWM endet, ein STOP, der das Netzteil ausschaltet --,
-außer SERVO wird vorher wieder gezeigt.
+bleiben. Ein Ausgang des PD mini, den SERVO eingeschaltet hat -- mit
+AUSGANG EIN, mit einem Test oder mit **VERBINDEN** --, gehört dem
+Bildschirm SERVO, und solange der Port ihn hält, bleibt der Ausgang nach
+dem Verlassen von SERVO an: ein OFF würde die Sitzung beenden und ein
+Schreiben auf der Leitung abschneiden. Ein ON, das SERVO verlangt hat und
+das auf dem Weg ist, wenn der Port das Netzteil übernimmt, zählt als
+eingeschaltet, auch wenn es erst nach dem Verlassen als an gemeldet wird.
+Der Ausgang geht aus, wenn der Port loslässt -- ein **VERBINDEN**, das nach
+dem Verlassen von SERVO ohne Sitzung endet, ein STOP, der das Netzteil
+ausschaltet --, außer SERVO wird vorher wieder gezeigt. Nach
+**VERLASSEN** auf SERVO bleibt der Ausgang an, bis SERVO verlassen wird.
 
 PROGRAMMIEREN VERLASSEN öffnet mit
 `Der Port geht zurück auf Servo-PWM. Versorgung bleibt.` und

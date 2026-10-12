@@ -613,10 +613,9 @@ TEST_CASE(a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way)
 }
 
 /*
- * A hold on OUTPUT ON that loses its touch after the ON was taken and
- * before the supply reported it leaves the output off and nobody's: the
- * servo programmer's CONNECT that switches the PD mini on afterwards is
- * claimed, and left, as SERVO's.
+ * A hold on OUTPUT ON that loses its touch before the ON was taken leaves
+ * the output off and nobody's: the servo programmer's CONNECT that switches
+ * the PD mini on afterwards is claimed, and left, as SERVO's.
  */
 TEST_CASE(a_dropped_hold_releases_the_owner_so_a_later_claim_works)
 {
@@ -625,16 +624,103 @@ TEST_CASE(a_dropped_hold_releases_the_owner_so_a_later_claim_works)
     fresh();
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
     tick_for(HOLD_TICKS);                       /* the ON is asked */
-    drain();
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
     scr->cancel();                              /* the touch is lost */
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    CHECK(!supply_screen_output_live());
+    CHECK(!supply_screen_poll_cmd(&c));         /* the ON is dropped */
     supply_screen_set_output(true);             /* CONNECT's PD mini */
     supply_screen_claim(SUPPLY_BY_SERVO);
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
     supply_screen_left(SUPPLY_BY_SERVO);
     CHECK(supply_screen_poll_cmd(&c));
     CHECK(c.off);
+}
+
+/*
+ * A hold on OUTPUT ON that loses its touch after the ON was taken keeps
+ * that ON's owner: the ON is on the wire and lands, and leaving SUPPLY
+ * switches it off.  An ON the application then drops lets the owner go.
+ */
+TEST_CASE(a_dropped_hold_keeps_the_owner_of_an_on_already_taken)
+{
+    supply_cmd_t c;
+
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+    drain();                                    /* the ON is taken */
+    scr->cancel();                              /* the touch is lost */
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    CHECK(supply_screen_output_live());
+    CHECK(!supply_screen_poll_cmd(&c));         /* nothing new is asked */
+    supply_screen_set_output(true);             /* the ON lands */
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    scr->leave();
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+
+    /* Taken, then dropped by the application: nobody's, nothing owed. */
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+    drain();
+    scr->cancel();
+    supply_screen_set_on_coming(false);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    CHECK(!supply_screen_output_live());
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(&c));
+}
+
+/*
+ * An ON SERVO asked, taken before a programming port took the supply,
+ * stays SERVO's: left while the port holds, the output that comes on
+ * afterwards is switched off when the port lets go.  Not taken, the ON is
+ * dropped with the hold and nothing is owed.
+ */
+TEST_CASE(an_on_taken_before_the_port_held_is_owed_its_off)
+{
+    supply_cmd_t c;
+
+    /* Taken, the port holds, SERVO is left, the ON lands. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    drain();
+    supply_screen_set_port_held(true);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    CHECK(supply_screen_off_owed());
+    CHECK(!supply_screen_poll_cmd(&c));         /* nothing under the port */
+    supply_screen_set_output(true);
+    CHECK(supply_screen_off_owed());
+    supply_screen_set_port_held(false);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+
+    /* Taken, SERVO left, the application drops the ON: nothing owed. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    drain();
+    supply_screen_set_port_held(true);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    supply_screen_set_on_coming(false);
+    CHECK(!supply_screen_off_owed());
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    supply_screen_set_port_held(false);
+    CHECK(!supply_screen_poll_cmd(&c));
+
+    /* Not taken: the hold drops it, SERVO's leave owes nothing. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    supply_screen_set_port_held(true);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    CHECK(!supply_screen_off_owed());
+    supply_screen_set_port_held(false);
+    CHECK(!supply_screen_poll_cmd(&c));
 }
 
 /* An output being switched off is nobody's to claim. */
@@ -915,12 +1001,23 @@ TEST_CASE(an_on_asked_for_counts_as_live_before_it_is_seen)
     supply_screen_cancel_on();
     tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.3f, 1e-4f);
-    /* Nor one a touch loss dropped. */
+    /* One collected before a touch loss is on the wire and still counts,
+     * until the application drops it. */
     hold_on();
     (void)supply_screen_poll_cmd(&c);
     scr->cancel();
     tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.3f, 1e-4f);
+    tap(DISCARD_X, ASK_Y);
+    supply_screen_set_on_coming(false);
+    tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.4f, 1e-4f);
+    /* Nor one a touch loss dropped before it was collected. */
+    hold_on();
+    scr->cancel();
+    CHECK(!supply_screen_poll_cmd(&c));
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.5f, 1e-4f);
     /* Nor one an OFF overtook. */
     hold_on();
     supply_screen_set_output(true);
@@ -2055,6 +2152,8 @@ int main(void)
     RUN(an_off_owed_under_a_held_port_goes_when_the_port_lets_go);
     RUN(a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way);
     RUN(a_dropped_hold_releases_the_owner_so_a_later_claim_works);
+    RUN(a_dropped_hold_keeps_the_owner_of_an_on_already_taken);
+    RUN(an_on_taken_before_the_port_held_is_owed_its_off);
     RUN(an_output_being_switched_off_is_not_claimed);
     RUN(reset_peaks_posts_its_own_command);
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);

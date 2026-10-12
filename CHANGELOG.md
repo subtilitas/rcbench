@@ -51,16 +51,21 @@ history is in git.
   screen switched on: reported on, or an ON on its way. An output another
   screen switched on stays. Overlays, keypads, questions and the servo
   programmer on SERVO are no leave. A PD mini output switched on by the
-  servo programmer's CONNECT is SERVO's; leaving SERVO while the programmer
-  holds the port keeps it on until the port lets go, then switches it off
-  unless SERVO is shown again first. MOTOR & ESC switches no supply; an ESC
-  run there is powered from its own source.
+  servo programmer's CONNECT is SERVO's. An output SERVO switched on stays
+  on after SERVO is left while the servo programmer holds its port, until
+  the port lets go, then goes off unless SERVO is shown again first; an ON
+  SERVO asked for that is on its way when the port takes the supply counts
+  as switched on. A touch loss during a hold on OUTPUT ON drops an ON not
+  yet sent; an ON already sent stays the screen's and goes off with the
+  leave. MOTOR & ESC switches no supply; an ESC run there is powered from
+  its own source.
 - The servo programmer's record of an interrupted write (`KST/KST.TXT`) is
   version 2: `RCBENCH KST 2` with a `pin=` line, the GPIO the port drove.
   The record's lines name that pin (`Connect it on GP13 and READ ALL.`). A
   version 1 record, one with no pin (`FF`) and one with a pin above GP47
-  are read and name the port. A panel of an earlier release does not read
-  a version 2 record.
+  are read and name the port. A record discarded leaves no pin behind: the
+  next record names the pin of its own port. A panel of an earlier release
+  does not read a version 2 record.
 - The SERVO screen shows the active PWM TARGET at the foot of the left card
   with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
   SERVO PWM (from 5 pins the first 3 and a count), `TARGET: PROG PORT GP13`

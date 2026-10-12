@@ -160,6 +160,9 @@ static void journal_clear(kst_prog_t *p)
         p->journal = false;
         p->journal_open = false;
         p->journal_other = false;
+        /* No record, no pin: the next record names the pin of its own
+         * port at its own write. */
+        p->journal_pin = KST_PROG_NO_PIN;
         file_want(p, FILE_KEEP);
     }
 }

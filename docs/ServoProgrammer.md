@@ -907,11 +907,15 @@ Whether a servo that received a frame follows PWM before its supply was
 off is not measured.
 
 Leaving the SERVO screen is no LEAVE: the session and the port stay. A PD
-mini output that **CONNECT** switched on is the SERVO screen's, and while
-the port holds it the output stays on: an OFF would end the session and cut
-a write on the wire. It goes off when the port lets go -- a LEAVE that ends
-with the port at PWM, a STOP that switches the supply off -- unless SERVO
-is shown again first.
+mini output SERVO switched on -- by OUTPUT ON, by a test or by
+**CONNECT** -- is the SERVO screen's, and while the port holds it the
+output stays on after SERVO is left: an OFF would end the session and cut
+a write on the wire. An ON SERVO asked for that is on its way when the port
+takes the supply counts as switched on, also when it is reported on only
+after the leave. The output goes off when the port lets go -- a
+**CONNECT** that ends without a session after SERVO was left, a STOP that
+switches the supply off -- unless SERVO is shown again first. After
+**LEAVE** on SERVO the output stays on until SERVO is left.
 
 LEAVE PROGRAMMING opens with `The port goes back to servo PWM. The supply
 stays as is.` and `The servo gets the tester's signal and may move.` The

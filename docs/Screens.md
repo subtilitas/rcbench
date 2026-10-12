@@ -499,7 +499,8 @@ the change on both.
   by a test, or by the servo programmer's CONNECT. While the servo
   programmer holds a port the output stays on, as an OFF would end the
   session and cut a write under way; it goes off when the port lets go,
-  unless SERVO is shown again first. An output SERVO did not switch on
+  unless SERVO is shown again first. An ON SERVO asked for that is on its
+  way when the port takes the supply counts as switched on. An output SERVO did not switch on
   stays as it is. The servo programmer, the keypads and the questions
   belong to SERVO and are no leave. A press on OUTPUT OFF as the screen is
   left is sent as the OFF it was.
@@ -888,10 +889,9 @@ to stay armed -- and a supply that stops answering, and a trip. The output
 stays off until it is switched on again. Leaving the screen switches off an
 output SUPPLY switched on: one reported on, or an ON on its way. SERVO and
 ESC STICK do the same for the output each switched on, so an output is on
-only while the screen that switched it on is shown. The exception is the
-PD mini that the servo programmer's CONNECT switched on: it stays on after
-SERVO is left while the programmer holds its port, until the port lets go
-(see SERVO). A servo is powered from SERVO and an ESC from ESC STICK.
+only while the screen that switched it on is shown. The exception: an
+output SERVO switched on stays on after SERVO is left while the servo
+programmer holds its port, until the port lets go (see SERVO). A servo is powered from SERVO and an ESC from ESC STICK.
 MOTOR & ESC switches no supply; an ESC run there is powered from its own
 source. An output another screen switched on
 stays as it is when SUPPLY is left. The keypad, the HV question and the

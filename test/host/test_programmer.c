@@ -801,6 +801,9 @@ TEST_CASE(no_run_starts_while_the_servo_programmer_holds_a_port)
 TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
 {
     enum { R_MODEL, R_NOT_READ, R_NO_THROTTLE, R_COUNT };
+    /* Inside RUN, left of its label: the button's body. */
+    const int run_px = (BTN_CY * W) + WRITE_X - 76;
+    static gfx_color_t before[W * H];
     motor_cmd_t mc;
 
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
@@ -821,7 +824,18 @@ TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
             }
             descend_to_hobbywing();
             pick_cutoff();
+            /* RUN is drawn as taking no press, and a tap on it opens no
+             * warning, before any tick could close one: the frame after
+             * the tap is the frame before it, with the note set. */
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK_EQ(fb[run_px], GFX_RGB(38, 46, 58));
+            memcpy(before, fb, sizeof(before));
             tap(WRITE_X, BTN_CY);
+            CHECK_STR_EQ(programmer_screen_stick_note(), want);
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK(memcmp(before, fb, sizeof(before)) == 0);
             hold_for(2.25f);
             CHECK_EQ(programmer_screen_stick_runs(), 0u);
             CHECK(!esc_stick_running(programmer_screen_stick()));
@@ -835,6 +849,10 @@ TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
             programmer_screen_set_throttle(true, 0x80u);   /* channel 7 */
             scr->tick(0.02f);
             CHECK_STR_EQ(programmer_screen_stick_note(), "");
+            /* RUN takes a press again, drawn in the colour of danger. */
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK_EQ(fb[run_px], ui_theme_color(UI_C_DANGER));
             tap(WRITE_X, BTN_CY);
             hold_for(2.25f);
             CHECK_EQ(programmer_screen_stick_runs(), 1u);

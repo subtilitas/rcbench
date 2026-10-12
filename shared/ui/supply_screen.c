@@ -707,7 +707,9 @@ void supply_screen_set_port_held(bool held)
     if (held) {
         /* What was under way and would change the supply ends here: a
          * hold on OUTPUT ON, an ON not collected, a drag, a set point
-         * being typed, a question about one. */
+         * being typed, a question about one.  An ON already collected is
+         * on the wire: it stays asked, and its owner with it, until it
+         * lands or the application drops it (supply_screen_set_on_coming()). */
         if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER
             || (s.pressed == P_OUTPUT && !s.press_on)
             || s.pressed == P_APPLY || s.pressed == P_CARD_V
@@ -718,8 +720,10 @@ void supply_screen_set_port_held(bool held)
         ui_slider_release(&s.v_slider);
         ui_slider_release(&s.i_slider);
         ui_hold_reset(&s.hold);
-        s.pending.on = false;
-        s.on_asked   = false;
+        if (s.pending.on) {
+            s.pending.on = false;
+            s.on_asked   = false;
+        }
         if (s.kp.open && (s.kp_target == KP_SET_V
                           || s.kp_target == KP_SET_I)) {
             if (s.pressed == P_KEYPAD) {
@@ -803,8 +807,10 @@ void supply_screen_left(supply_by_t by)
     }
     if (s.port_held) {
         /* An OFF now would end the port's session and cut a write on the
-         * wire: owed until the port lets go. */
-        s.off_owed = s.on;
+         * wire: owed until the port lets go, for an output on and for an
+         * ON collected before the port held the supply, which may land
+         * after this leave. */
+        s.off_owed = s.on || s.on_asked || s.pending.on;
         return;
     }
     if (s.on || s.on_asked || s.pending.on) {
@@ -1185,16 +1191,19 @@ static void released(int was, int row, int x, int y)
  * is a press, so a release that never came is an OFF the operator made, and
  * it is sent.  An ON this screen has posted and the application has not
  * collected is dropped: the hold that posted it may have completed on a
- * contact that had gone.  A key held on the keypad is let go of; what was
- * typed stays.
+ * contact that had gone.  An ON already collected is on the wire and stays
+ * asked, with its owner, so a leave switches it off.  A key held on the
+ * keypad is let go of; what was typed stays.
  */
 static void drop_press(void)
 {
     if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
-    s.pending.on = false;
-    s.on_asked   = false;
+    if (s.pending.on) {
+        s.pending.on = false;
+        s.on_asked   = false;
+    }
     owner_settle();
     ui_slider_release(&s.v_slider);
     ui_slider_release(&s.i_slider);
@@ -1959,7 +1968,7 @@ static void enter(void)
 /*
  * Touch events were lost.  The press is dropped as drop_press() drops it:
  * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent,
- * and an ON not yet collected is dropped.
+ * and an ON not yet collected is dropped; one collected stays asked.
  */
 static void cancel(void)
 {

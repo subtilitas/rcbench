@@ -4709,6 +4709,8 @@ TEST_CASE(the_record_names_a_pin_of_the_coprocessor_only)
         bool whole;
         uint8_t pin;
     } k[] = {
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=00\ncheck=A87D\n",
+          true, 0u },
         { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=2F\ncheck=64E2\n",
           true, KST_PROG_PIN_LAST },
         { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=30\ncheck=F12D\n",
@@ -4720,6 +4722,8 @@ TEST_CASE(the_record_names_a_pin_of_the_coprocessor_only)
         { "RCBENCH KST 1\n" REC_IMAGES "port=2\npin=0D\ncheck=2DE9\n",
           false, 0 },
         { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=0G\ncheck=39B3\n",
+          false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=ZZ\ncheck=1036\n",
           false, 0 },
         { "RCBENCH KST 3\n" REC_IMAGES "port=2\npin=0D\ncheck=53E7\n",
           false, 0 },
@@ -6652,6 +6656,83 @@ TEST_CASE(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make)
 
 /* ----------------------------------- soft rules against the session's image */
 
+/*
+ * The session's restore on a locked session with no servo read records the
+ * pin its port has at the restore: GP13 as the feed gives it.  A record
+ * discarded before leaves no pin behind, and a binding that moved the port
+ * since is the one recorded; a port with no pin records none.
+ */
+TEST_CASE(a_locked_restore_with_no_servo_read_records_the_pin_of_its_port)
+{
+    static const struct {
+        bool discarded;     /* a record of GP13 discarded first */
+        bool known;         /* the feed has a pin for the port  */
+        uint8_t pin;        /* and which                        */
+        uint8_t want;
+        const char *line;
+    } k[] = {
+        { false, true,  13u, 13u,             "\nport=0\npin=0D\ncheck=" },
+        { true,  true,  9u,  9u,              "\nport=0\npin=09\ncheck=" },
+        { true,  false, 13u, KST_PROG_NO_PIN, "\nport=0\npin=FF\ncheck=" },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        kst_prog_restore_t plan;
+        char out[KST_PROG_FILE_MAX];
+        size_t n;
+
+        by_hand();
+        g_p.have_servo = false;
+        g_f.have_image = false;
+        g_f.card = true;
+        g_f.port_pin[CH] = 13u;
+        g_f.port_pin_known = (uint8_t)(1u << CH);
+        g_f.rd.flags = LINK_KS_F_IN_MODE | LINK_KS_F_BACKUP | LINK_KS_F_LOCKED;
+        pass(1);
+        while (kst_prog_take(&g_p, &(kst_prog_cmd_t){ 0 })) {
+        }
+        if (k[i].discarded) {
+            kst_prog_t rec;
+            char text[KST_PROG_FILE_MAX];
+            size_t len;
+
+            kst_prog_init(&rec);
+            rec.journal = true;
+            rec.journal_open = true;
+            rec.journal_port = CH;
+            rec.journal_pin = 13u;
+            rec.journal_img = sim_bench_image();
+            rec.journal_target = rec.journal_img;
+            len = kst_prog_file_text(&rec, text, sizeof(text));
+            CHECK(len != 0u);
+            CHECK(kst_prog_file_load(&g_p, text, len));
+            CHECK_EQ(kst_prog_journal_pin(&g_p), 13u);
+            kst_prog_forget(&g_p);
+            CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+            CHECK(!kst_prog_journal(&g_p));
+            CHECK_EQ(kst_prog_journal_pin(&g_p), KST_PROG_NO_PIN);
+            /* The card takes the text with no record. */
+            CHECK(kst_prog_file_take(&g_p, out, sizeof(out)) != 0u);
+            kst_prog_file_done(&g_p, true);
+            g_f.port_pin[CH] = k[i].pin;
+            g_f.port_pin_known = k[i].known ? (uint8_t)(1u << CH) : 0u;
+            pass(1);
+        }
+        CHECK(!kst_prog_journal(&g_p));
+        CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+                 KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_journal(&g_p));
+        CHECK_EQ(kst_prog_journal_pin(&g_p), k[i].want);
+        n = kst_prog_file_take(&g_p, out, sizeof(out));
+        CHECK(n > 0u);
+        out[n < sizeof(out) ? n : sizeof(out) - 1u] = 0;
+        CHECK(strstr(out, k[i].line) != NULL);
+    }
+}
+
 TEST_CASE(a_confirmed_soft_limit_is_asked_again_further_out)
 {
     const kst_image_t sv = sim_bench_image();
@@ -7140,6 +7221,7 @@ int main(void)
     RUN(without_a_gate_an_unanswered_start_leaves_the_servo_in_doubt);
     RUN(a_record_is_held_against_the_servo_whenever_the_card_comes);
     RUN(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make);
+    RUN(a_locked_restore_with_no_servo_read_records_the_pin_of_its_port);
     RUN(a_confirmed_soft_limit_is_asked_again_further_out);
     RUN(a_value_on_the_other_side_of_the_servos_is_asked_again);
     RUN(the_soft_limits_compare_with_the_servo_as_the_session_found_it);

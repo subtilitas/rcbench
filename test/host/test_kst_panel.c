@@ -3428,6 +3428,8 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
     snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2_PIN), (unsigned)RIG_PIN);
     CHECK_STR_EQ(t[1], second);
+    /* The band's second line holds the record's own line first. */
+    CHECK_STR_EQ(kst_panel_standing_line(1), second);
     img = rig_servo();
     other_20k(&img);
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
@@ -3444,6 +3446,16 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2_PIN),
              (unsigned)RIG_PIN);
     CHECK_STR_EQ(t[1], second);
+    /* The band keeps the two lines after the message has gone, in each
+     * language. */
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2_PIN),
+                 (unsigned)RIG_PIN);
+        CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_M_JOURNAL_OTHER));
+        CHECK_STR_EQ(kst_panel_standing_line(1), second);
+    }
+    ui_text_set_language(UI_LANG_EN);
     show();
     /* Nothing is edited, and the switch does not open a write. */
     tap(kst_panel_tab_rect(PG_TUNE));
@@ -3498,6 +3510,9 @@ TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
                  (unsigned)RIG_PIN);
         CHECK_STR_EQ(t[0], first);
         CHECK_STR_EQ(t[1], TR(KP_M_JOURNAL_SAME));
+        /* The band keeps the two lines after the message has gone. */
+        CHECK_STR_EQ(kst_panel_standing_line(0), first);
+        CHECK_STR_EQ(kst_panel_standing_line(1), TR(KP_M_JOURNAL_SAME));
         CHECK(M->journal);
         show();
         /* The switch does not open a write. */
@@ -3532,6 +3547,8 @@ TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
         CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
         CHECK_STR_EQ(t[0], first);
         CHECK_STR_EQ(t[1], TR(KP_M_JOURNAL_DONE));
+        CHECK_STR_EQ(kst_panel_standing_line(0), first);
+        CHECK_STR_EQ(kst_panel_standing_line(1), TR(KP_M_JOURNAL_DONE));
     }
     ui_text_set_language(UI_LANG_EN);
 }

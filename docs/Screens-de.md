@@ -552,11 +552,13 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
   zurückgesetzt --, wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
   öffnet sich, und nichts geht an. Das Verlassen von SERVO schaltet einen
-  Ausgang aus, den SERVO eingeschaltet hat: mit AUSGANG AN, mit einem Test
+  Ausgang aus, den SERVO eingeschaltet hat: mit AUSGANG EIN, mit einem Test
   oder mit VERBINDEN des Servo-Programmierers. Solange der
   Servo-Programmierer einen Port hält, bleibt der Ausgang an, weil ein OFF
   die Sitzung beenden und ein laufendes Schreiben abschneiden würde; er geht
   aus, wenn der Port loslässt, außer SERVO wird vorher wieder gezeigt. Ein
+  ON, das SERVO verlangt hat und das auf dem Weg ist, wenn der Port das
+  Netzteil übernimmt, zählt als eingeschaltet. Ein
   Ausgang, den SERVO nicht eingeschaltet hat, bleibt, wie er ist. Der
   Servo-Programmierer, die Tastenfelder und die Fragen gehören zu SERVO und
   sind kein Verlassen. Ein Druck auf AUSGANG AUS beim Verlassen wird als das
@@ -975,9 +977,9 @@ Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet hat: einen,
 der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC STICK tun
 dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein Ausgang
 nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet hat.
-Die Ausnahme ist der PD mini, den das CONNECT des Servo-Programmierers
-eingeschaltet hat: er bleibt nach dem Verlassen von SERVO an, solange der
-Programmierer seinen Port hält, bis der Port loslässt (siehe SERVO). Ein
+Die Ausnahme: ein Ausgang, den SERVO eingeschaltet hat, bleibt nach dem
+Verlassen von SERVO an, solange der Servo-Programmierer seinen Port hält,
+bis der Port loslässt (siehe SERVO). Ein
 Servo wird von SERVO versorgt, ein ESC von ESC STICK. MOTOR & ESC schaltet
 keine Versorgung; ein ESC, der dort läuft, wird aus seiner eigenen Quelle
 versorgt.
