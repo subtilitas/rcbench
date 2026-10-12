@@ -20,6 +20,12 @@ history is in git.
 
 ### Fixed
 
+- The phase tap's readout on a stick run's page shows PITCH and LOST as
+  `--` and no OVERRUN once the last TONE status read is 500 ms old
+  (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
+  `tone_link_readout()` clears the status's 7 values and sets
+  `tone_readout_t.read` only while a read younger than 500 ms gives the
+  state; the head's warning colour follows the state.
 - `docs/ServoProgrammer.md` and its German page name the servo the
   register layout and the timing come from: 1 Chaservo servo.
 - The bench configurator keeps the selection and the chosen language in the

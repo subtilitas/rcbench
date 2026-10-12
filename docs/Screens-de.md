@@ -1231,6 +1231,12 @@ Pieptöne weiter aus dem Netzteilstrom.
 | `PIN BELEGT` | der Koprozessor hält den Abgriff aus: sein Pin ist anderweitig gebunden |
 | `LÄUFT NICHT` | eingeschaltet, und die Page hält den Abgriff aus oder lässt ihn nicht laufen: die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
 
+TONHÖHE und VERLOREN sind Werte der Page aus dem letzten Status-Read. Sie
+zeigen `--`, und `ÜBERLAUF` erscheint nicht, solange kein Read jünger als
+500 ms den Zustand liefert: bei `WARTET`, bei `KEINE TONE-PAGE` und bei
+`LÄUFT NICHT`, solange die Einstellung der Page den Abgriff aus hat.
+VERPASST und die Pieptöne zählt und speichert das Panel selbst; sie bleiben.
+
 Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
 etwas nicht wie erwartet war, ein Stopp des Prüfstands selbst eingeschlossen,
 und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN und
