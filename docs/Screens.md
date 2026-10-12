@@ -490,8 +490,14 @@ the change on both.
   hold and a tap on APPLY switch nothing on. A set point that rises above
   6.0 V during the ordinary hold -- on SUPPLY, or put back after a run --
   is seen as the hold completes: HV SERVOS ONLY opens and nothing comes on.
-  Leaving SERVO leaves the output as it is; a press on
-  OUTPUT OFF as the screen is left is sent as the OFF it was.
+  Leaving SERVO switches off an output SERVO switched on: by OUTPUT ON,
+  by a test, or by the servo programmer's CONNECT. While the servo
+  programmer holds a port the output stays on, as an OFF would end the
+  session and cut a write under way; it goes off when the port lets go,
+  unless SERVO is shown again first. An output SERVO did not switch on
+  stays as it is. The servo programmer, the keypads and the questions
+  belong to SERVO and are no leave. A press on OUTPUT OFF as the screen is
+  left is sent as the OFF it was.
 
 **SWEEP drives the servo through a curve** on the coprocessor, where its
 timing does not depend on the link: the TEST page's CURVE (square, sine or
@@ -848,10 +854,14 @@ OFF is a tap. STOP switches the output off on every screen. So does every
 other stop the bench counts -- touch that stops answering, an ON whose touch
 events went missing before the screen showed it, and the coprocessor refusing
 to stay armed -- and a supply that stops answering, and a trip. The output
-stays off until it is switched on again. Leaving the screen keeps the output
-on, so a servo or an ESC fed by the supply stays powered on the screen that
-tests it, and the link-lost screen, which has no STOP, does not open while
-the output is on.
+stays off until it is switched on again. Leaving the screen switches off an
+output SUPPLY switched on: one reported on, or an ON on its way. SERVO and
+ESC STICK do the same for the output each switched on, so an output is on
+only while the screen that switched it on is shown. A servo or an ESC is
+powered from the screen that tests it. An output another screen switched on
+stays as it is when SUPPLY is left. The keypad, the HV question and the
+other overlays of SUPPLY are no leave. The link-lost screen, which has no
+STOP, does not open while the output is on.
 
 **With the PD mini**, an OFF goes to the SUPPLY page before anything else
 the panel owes it, and the coprocessor switches the output off itself when
@@ -1097,6 +1107,11 @@ resistor load takes its place. The run starts after HOLD TO RUN is held
 for 2 s:
 
 ![The warning](img/programmer-stick-warning.png)
+
+RUN opens nothing, and the line beside it names the reason, while no pin
+is bound as a throttle, while the output binding is not read, and while
+the supply is the panel's model; such a reason closes a warning that is
+open ([Before a run](StickProgramming.md#before-a-run)).
 
 A profile whose ESC needs a person at it -- a jumper fitted and pulled, a
 button pressed -- carries a red MANUAL tag in the list and MANUAL

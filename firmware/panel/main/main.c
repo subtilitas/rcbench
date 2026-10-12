@@ -6711,6 +6711,15 @@ static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->armed       = outputs_armed(&s_out);
     f->card        = storage_mounted();
     f->target      = prog_link_target(&s_prog_link);
+    /* The pin of each programming port, for the journal of a write. */
+    f->port_pin_known = 0u;
+    for (uint8_t port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        const uint8_t pin = prog_link_pin(&s_prog_link, port);
+        f->port_pin[port] = pin;
+        if (pin != PROG_LINK_NO_PIN) {
+            f->port_pin_known |= (uint8_t)(1u << port);
+        }
+    }
     /* The PD mini's output while it is the supply, answers and is on. */
     f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
     f->out_mv      = 0u;
@@ -8430,6 +8439,8 @@ void app_main(void)
          * to.  Testing it outside would let this task cache it and miss a
          * binding the control task had just read off the wire. */
         static bind_reading_t got;      /* app_main only */
+        static bool got_read;           /* app_main only */
+        static uint8_t got_throttle;    /* app_main only */
         bool have = false;
         if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
             have = s_outputs_read_fresh;
@@ -8454,7 +8465,14 @@ void app_main(void)
              */
             outputs_screen_set_reading(&got);
             picker_screen_set_binding(outputs_screen_binding());
+            /* RUN on ESC STICK moves the throttle pins: none bound, or
+             * no binding read, is a run refused with the reason. */
+            got_read = got.state == BIND_READ_OK;
+            got_throttle = got_read
+                ? outputs_role_channels(got.slots, got.cfg, OUT_ROLE_THROTTLE)
+                : 0u;
         }
+        programmer_screen_set_throttle(got_read, got_throttle);
         /* A pick on the outputs screen writes nothing and so reads nothing
          * back: the picker follows the selection, and whether the binding
          * is one a read confirmed, every frame. */

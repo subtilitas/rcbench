@@ -37,6 +37,23 @@ history is in git.
 
 ### Changed
 
+- RUN on ESC STICK is refused while no pin is bound as a throttle, while the
+  output binding is not read, and while the supply is the panel's model; the
+  line beside RUN names the reason, in English and German, and such a reason
+  closes an open warning.
+- Leaving SUPPLY, SERVO or ESC STICK switches off a PD mini output that
+  screen switched on: reported on, or an ON on its way. An output another
+  screen switched on stays. Overlays, keypads, questions and the servo
+  programmer on SERVO are no leave. A PD mini output switched on by the
+  servo programmer's CONNECT is SERVO's; leaving SERVO while the programmer
+  holds the port keeps it on until the port lets go, then switches it off
+  unless SERVO is shown again first.
+- The servo programmer's record of an interrupted write (`KST/KST.TXT`) is
+  version 2: `RCBENCH KST 2` with a `pin=` line, the GPIO the port drove.
+  The record's lines name that pin (`Connect it on GP13 and READ ALL.`). A
+  version 1 record, one with no pin (`FF`) and one with a pin above GP47
+  are read and name the port. A panel of an earlier release does not read
+  a version 2 record.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.

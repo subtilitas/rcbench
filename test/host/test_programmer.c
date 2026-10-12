@@ -70,6 +70,7 @@ static void fresh(void)
     supply_screen_settings_loaded();
     scr = programmer_screen();
     scr->reset();
+    programmer_screen_set_throttle(true, 0x01u);    /* channel 0 a throttle */
 }
 
 static void tap(int x, int y)
@@ -791,6 +792,100 @@ TEST_CASE(no_run_starts_while_the_servo_programmer_holds_a_port)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * RUN moves the throttle pins and powers the ESC from the supply: with the
+ * supply the panel's model, no binding read, or no pin bound as a
+ * throttle, none starts and the note names which.  Each reason put right,
+ * the same RUN starts.
+ */
+TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
+{
+    enum { R_MODEL, R_NOT_READ, R_NO_THROTTLE, R_COUNT };
+    motor_cmd_t mc;
+
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        for (int k = 0; k < R_COUNT; ++k) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            const char *want = NULL;
+            if (k == R_MODEL) {
+                supply_screen_set_model(true);
+                want = TR(SP_SUPPLY_MODEL);
+            } else if (k == R_NOT_READ) {
+                /* A mask with no read behind it is no throttle known. */
+                programmer_screen_set_throttle(false, 0x01u);
+                want = TR(SP_BIND_NOT_READ);
+            } else {
+                programmer_screen_set_throttle(true, 0x00u);
+                want = TR(SP_NO_THROTTLE);
+            }
+            descend_to_hobbywing();
+            pick_cutoff();
+            tap(WRITE_X, BTN_CY);
+            hold_for(2.25f);
+            CHECK_EQ(programmer_screen_stick_runs(), 0u);
+            CHECK(!esc_stick_running(programmer_screen_stick()));
+            CHECK(!programmer_screen_poll_cmd(&mc));
+            CHECK_STR_EQ(programmer_screen_stick_note(), want);
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK(lit() > 20000);
+            /* Put right: the same RUN starts. */
+            supply_screen_set_model(false);
+            programmer_screen_set_throttle(true, 0x80u);   /* channel 7 */
+            scr->tick(0.02f);
+            CHECK_STR_EQ(programmer_screen_stick_note(), "");
+            tap(WRITE_X, BTN_CY);
+            hold_for(2.25f);
+            CHECK_EQ(programmer_screen_stick_runs(), 1u);
+            scr->leave();
+            supply_screen_set_model(false);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * The warning open, and the bench stops being able to carry a run: the
+ * warning closes and the note says why.  Put right again, the next hold
+ * at HOLD TO RUN is no run: RUN has to be pressed anew.
+ */
+TEST_CASE(a_bench_that_loses_its_throttle_closes_the_warning)
+{
+    for (int k = 0; k < 3; ++k) {
+        fresh();
+        descend_to_hobbywing();
+        pick_cutoff();
+        tap(WRITE_X, BTN_CY);                /* RUN: the warning */
+        press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y);
+        scr->tick(0.25f);                    /* a hold under way */
+        if (k == 0) {
+            supply_screen_set_model(true);
+        } else if (k == 1) {
+            programmer_screen_set_throttle(false, 0x00u);
+        } else {
+            programmer_screen_set_throttle(true, 0x00u);
+        }
+        scr->tick(0.02f);
+        press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
+        CHECK_STR_EQ(programmer_screen_stick_note(),
+                     k == 0 ? TR(SP_SUPPLY_MODEL)
+                     : k == 1 ? TR(SP_BIND_NOT_READ) : TR(SP_NO_THROTTLE));
+        supply_screen_set_model(false);
+        programmer_screen_set_throttle(true, 0x01u);
+        scr->tick(0.02f);
+        hold_for(2.25f);
+        if (programmer_screen_stick_runs() != 0u) {
+            T_FAIL("reason %d left the warning open", k);
+        }
+        /* RUN again opens it, and the hold starts the run. */
+        tap(WRITE_X, BTN_CY);
+        hold_for(2.25f);
+        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        scr->leave();
+    }
+}
+
 TEST_CASE(a_run_needs_a_change_and_the_warning_held_two_seconds)
 {
     fresh();
@@ -954,7 +1049,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     fresh();
     descend_to_hobbywing();
     pick_cutoff();
-    supply_screen_ask_on();                 /* the output on its way */
+    supply_screen_ask_on(SUPPLY_BY_SERVO);  /* the output on its way */
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
@@ -1246,7 +1341,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     descend_to_hobbywing();
     pick_cutoff();
     tap(WRITE_X, BTN_CY);
-    supply_screen_ask_on();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
 }
@@ -3917,6 +4012,8 @@ int main(void)
     RUN(every_protocol_draws_its_parameters);
     RUN(a_profile_the_engine_cannot_run_goes_no_further);
     RUN(no_run_starts_while_the_servo_programmer_holds_a_port);
+    RUN(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply);
+    RUN(a_bench_that_loses_its_throttle_closes_the_warning);
     RUN(a_run_needs_a_change_and_the_warning_held_two_seconds);
     RUN(a_hold_that_is_interrupted_starts_nothing);
     RUN(a_whole_run_on_the_modelled_bench_stores_and_lets_go);

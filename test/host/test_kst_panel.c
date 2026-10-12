@@ -3361,6 +3361,51 @@ static void other_20k(kst_image_t *img)
                         1u - kst_field_get(img, KST_F_20K_SEL)));
 }
 
+/* The record's lines name the GPIO the write went through; a record of
+ * version 1, one with no pin and one whose pin no coprocessor has name the
+ * port.  In every language, in the message and in the lines that stand. */
+TEST_CASE(the_record_names_its_pin_and_its_port_without_one)
+{
+#define REC_IMAGES \
+    "journal=00F5F5144877046541A40D805307140096960001010000000000000A00100000\n" \
+    "target=00C8C8144877046541A40D805307140096960001010000000000000A00100000\n"
+    /* Each check value is from an independent bitwise CRC-16/CCITT-FALSE. */
+    static const struct {
+        const char *text;
+        bool pin;
+    } k[] = {
+        { "RCBENCH KST 2\n" REC_IMAGES "port=0\npin=0D\ncheck=AA87\n", true },
+        { "RCBENCH KST 1\n" REC_IMAGES "port=0\ncheck=C56D\n", false },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=0\npin=30\ncheck=374A\n", false },
+    };
+#undef REC_IMAGES
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+            char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+            char want[KST_PANEL_LINE];
+
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            g_rig.card = true;
+            CHECK(kst_panel_file_load(k[i].text, strlen(k[i].text)));
+            CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
+            if (k[i].pin) {
+                snprintf(want, sizeof(want), TR(KP_M_JOURNAL_2_PIN), 13u);
+                CHECK(strstr(want, "13") != NULL);
+            } else {
+                snprintf(want, sizeof(want), TR(KP_M_JOURNAL_2), 1u);
+            }
+            CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
+            CHECK_STR_EQ(t[0], TR(KP_M_JOURNAL));
+            CHECK_STR_EQ(t[1], want);
+            CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_M_JOURNAL));
+            CHECK_STR_EQ(kst_panel_standing_line(1), want);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
 {
     char file[KST_PROG_FILE_MAX];
@@ -3375,13 +3420,13 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     len = g_rig.file_len;
     memcpy(file, g_rig.file, len + 1u);
 
-    /* A panel that starts later: the message names the write's port. */
+    /* A panel that starts later: the message names the write's pin. */
     fresh();
     g_rig.card = true;
     CHECK(kst_panel_file_load(file, len));
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL);
     CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
-    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2), (unsigned)RIG_PORT + 1u);
+    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2_PIN), (unsigned)RIG_PIN);
     CHECK_STR_EQ(t[1], second);
     img = rig_servo();
     other_20k(&img);
@@ -3396,8 +3441,8 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
     CHECK_STR_EQ(said(), TR(KP_M_JOURNAL_OTHER));
     CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
-    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2),
-             (unsigned)RIG_PORT + 1u);
+    snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2_PIN),
+             (unsigned)RIG_PIN);
     CHECK_STR_EQ(t[1], second);
     show();
     /* Nothing is edited, and the switch does not open a write. */
@@ -3420,7 +3465,7 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
 
 /* A servo that holds what the record says the servo held before the write
  * may be a second one with the same settings: the record stays, the two
- * lines ask with the port's number, and nothing is written until the record
+ * lines ask with the pin's number, and nothing is written until the record
  * is discarded from RESTORE. */
 TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
 {
@@ -3449,8 +3494,8 @@ TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
         CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);
-        snprintf(first, sizeof(first), TR(KP_M_JOURNAL_ASK),
-                 (unsigned)RIG_PORT + 1u);
+        snprintf(first, sizeof(first), TR(KP_M_JOURNAL_ASK_PIN),
+                 (unsigned)RIG_PIN);
         CHECK_STR_EQ(t[0], first);
         CHECK_STR_EQ(t[1], TR(KP_M_JOURNAL_SAME));
         CHECK(M->journal);
@@ -4729,6 +4774,113 @@ static void screen_key(ui_key_t key_id)
     screen_tap(cx(r), cy(r));
 }
 
+/* OUTPUT ON held on the SERVO screen's SET row until it asks. */
+static void servo_output_on(void)
+{
+    supply_cmd_t c;
+
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(0.025f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.on);
+    supply_screen_set_output(true);         /* the supply reports it */
+    scr->tick(0.025f);
+}
+
+/* CONNECT, with the PD mini's output on behind it as the port reports. */
+static void connect_powered(void)
+{
+    g_rig.rail = true;
+    link_up();
+    screen_tap(PROG_X, BTN_Y);
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK(kst_panel_holds_port());
+    supply_screen_set_output(true);
+    scr->tick(0.02f);
+}
+
+/*
+ * A supply the SERVO screen switched on goes off when the screen is left:
+ * by OUTPUT ON, or by the programmer's CONNECT.  The programmer's overlay
+ * and the SET row's keypad are the screen's own and are no leave.  Left
+ * while the port holds the supply, the OFF waits for the port to let go:
+ * an OFF now would end the session and cut a write on the wire.  Shown
+ * again first, the OFF is dropped and the next leave owes it again.
+ */
+TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
+{
+    supply_cmd_t c;
+
+    /* OUTPUT ON, the overlay opened and closed, a keypad: still on. */
+    fresh_screen();
+    g_rig.rail = true;
+    link_up();
+    servo_output_on();
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(kst_panel_is_open());
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(!kst_panel_is_open());
+    screen_tap(SUP_V_X, SUP_ROW_Y);
+    screen_key(UI_KEY_CANCEL);
+    CHECK(!supply_screen_poll_cmd(&c));
+    scr->leave();
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+    supply_screen_set_output(false);
+
+    /* With the output off the leave asks nothing. */
+    fresh_screen();
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(&c));
+
+    /* CONNECT's supply, left under the held port: owed, not sent. */
+    fresh_screen();
+    connect_powered();
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(&c));
+    CHECK(supply_screen_off_owed());
+    CHECK(kst_panel_holds_port());
+    /* Shown again: dropped, and the way back sends no OFF of its own. */
+    scr->enter();
+    scr->tick(0.02f);
+    CHECK(!supply_screen_off_owed());
+    tap(val(PG_SERVO, 0, 0));
+    hold(2.1f);
+    settle();
+    CHECK(!kst_panel_holds_port());
+    CHECK(!supply_screen_poll_cmd(&c));
+    /* The port back in PWM, the supply still on: leaving switches it off. */
+    scr->leave();
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+
+    /* Left under the held port, which then lets go behind the screen: a
+     * STOP, and the PD mini off under the port, which ends the session.
+     * The panel's report of the output is a sample behind: the owed OFF
+     * goes as the port lets go. */
+    fresh_screen();
+    connect_powered();
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(&c));
+    rig_stop(true);
+    g_rig.sup_on = false;
+    for (unsigned i = 0; i < 60000u && supply_screen_port_held(); ++i) {
+        rig_frame();
+    }
+    CHECK(!supply_screen_port_held());
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+    CHECK(!supply_screen_off_owed());
+    rig_stop(false);
+    settle();
+}
+
 /* From CONNECT to the end of DISCONNECT the supply's own controls offer an
  * OFF and nothing else: the SET row of the SERVO screen and the SUPPLY
  * screen take no set point and no ON. */
@@ -5161,6 +5313,7 @@ int main(void)
     RUN(a_restore_and_a_release_whose_card_is_pulled_come_back_too);
     RUN(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named);
     RUN(a_servo_that_fits_the_record_is_asked_about);
+    RUN(the_record_names_its_pin_and_its_port_without_one);
     RUN(the_record_of_a_card_put_in_late_is_read);
     RUN(a_late_card_does_not_replace_a_record_that_was_read_back);
     RUN(the_backup_of_the_session_is_not_offered_for_another_servo);
@@ -5187,6 +5340,7 @@ int main(void)
     RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
     RUN(no_setting_that_reaches_the_port_changes_while_it_is_held);
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
+    RUN(leaving_servo_switches_its_supply_off_once_the_port_lets_go);
     RUN(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm);
     RUN(a_port_found_held_ends_a_hold_of_arm);
     RUN(an_unknown_coordinate_is_no_row);

@@ -527,9 +527,14 @@ done: `Register 03, 1 write done.`
 | Before a write | the panel, in `KST/KST.TXT` or in memory | the write ends verified, or the record is discarded |
 
 `KST.TXT` is the record of a write under way: text of at most 400 bytes in
-the card's folder `KST` with the line `RCBENCH KST 1`, the lines
-`journal=`, `target=` and `port=`, and `check=` with the CRC-16 (cyclic
-redundancy check) of the bytes before it. A file whose check fails is not
+the card's folder `KST` with the line `RCBENCH KST 2`, the lines
+`journal=`, `target=`, `port=` and `pin=`, and `check=` with the CRC-16
+(cyclic redundancy check) of the bytes before it. `pin=` holds the GPIO
+(general-purpose input/output) the port drove at the write, in two
+hexadecimal digits: `0D` for GP13, `FF` when the panel knew no pin for the
+port. A record of version 1 (`RCBENCH KST 1`, no `pin=` line) is read and
+names the port only. A pin above GP47 reads the same way: the record
+stands and its lines name the port. A file whose check fails is not
 used: `KST.TXT on the card is not readable. It is not used.` The name `KST`
 is the record's: no servo file takes it, and the list of files leaves it
 out.
@@ -826,16 +831,17 @@ across a power cycle of the bench.
 ![An interrupted write](img/servo-kst-doubt.png)
 
 `A write was interrupted. The servo may be half written.` stays until the
-servo is read, with the port of the write below it: `Do not use it.
-Connect it on port 1 and READ ALL.` Every control but **CONNECT**, **READ
+servo is read, with the pin of the write below it: `Do not use it.
+Connect it on GP13 and READ ALL.` A record that holds no pin names the
+port instead: `Connect it on port 1 and READ ALL.` Every control but **CONNECT**, **READ
 ALL**, **RESTORE**, **LEAVE** and, where the session's restore needs it,
 the write switch is off. The read compares the servo with the
 record:
 
 | The servo holds | Message | Then |
 | --- | --- | --- |
-| the image before the write | `Is this the servo of the interrupted write on port 1?` `It holds the old values. If yes: RESTORE, discard record.` | the record stays until it is discarded |
-| the image the write was to leave | `Is this the servo of the interrupted write on port 1?` `It holds the new values. If yes: RESTORE, discard record.` | the record stays until it is discarded |
+| the image before the write | `Is this the servo of the interrupted write on GP13?` `It holds the old values. If yes: RESTORE, discard record.` | the record stays until it is discarded |
+| the image the write was to leave | `Is this the servo of the interrupted write on GP13?` `It holds the new values. If yes: RESTORE, discard record.` | the record stays until it is discarded |
 | anything else | `The servo holds a mix of old and new values.` `Do not use this servo. Restore the backup: RESTORE.` | **RESTORE** offers the session's backup while the session lives, and `Values before the interrupted write` |
 
 ![The servo holds a mix](img/servo-kst-journal.png)
@@ -855,8 +861,9 @@ servo of the write.
 The record belongs to one servo. A servo read on another port is not that
 servo, and neither is one with a register that holds neither the value of
 the image before the write nor the value the write was to leave: `This is
-not the servo of the interrupted write.` `It was on port 2. RESTORE:
-discard the record.` Nothing is restored, edited or written while that
+not the servo of the interrupted write.` `It was on GP13. RESTORE:
+discard the record.` For a record that holds no pin the line names the
+port: `It was on port 1.` Nothing is restored, edited or written while that
 stands, and **RESTORE** holds the discard entry only. **LEAVE** and a
 **CONNECT** of the write's servo bring the comparison above. One register
 is exempt: the low register of a field that lies in two registers and that
@@ -887,6 +894,13 @@ cycle: the servo stays powered, a PD mini's output stays on at its voltage
 and current limit, and the tester's signal follows on the same port.
 Whether a servo that received a frame follows PWM before its supply was
 off is not measured.
+
+Leaving the SERVO screen is no LEAVE: the session and the port stay. A PD
+mini output that **CONNECT** switched on is the SERVO screen's, and while
+the port holds it the output stays on: an OFF would end the session and cut
+a write on the wire. It goes off when the port lets go -- a LEAVE that ends
+with the port at PWM, a STOP that switches the supply off -- unless SERVO
+is shown again first.
 
 LEAVE PROGRAMMING opens with `The port goes back to servo PWM. The supply
 stays as is.` and `The servo gets the tester's signal and may move.` The

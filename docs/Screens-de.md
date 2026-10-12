@@ -545,9 +545,16 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
   Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
   zurückgesetzt --, wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
-  öffnet sich, und nichts geht an. Beim Verlassen von SERVO bleibt
-  der Ausgang, wie er ist; ein Druck auf AUSGANG AUS beim Verlassen wird als
-  das OFF gesendet, das er war.
+  öffnet sich, und nichts geht an. Das Verlassen von SERVO schaltet einen
+  Ausgang aus, den SERVO eingeschaltet hat: mit AUSGANG AN, mit einem Test
+  oder mit VERBINDEN des Servo-Programmierers. Solange der
+  Servo-Programmierer einen Port hält, bleibt der Ausgang an, weil ein OFF
+  die Sitzung beenden und ein laufendes Schreiben abschneiden würde; er geht
+  aus, wenn der Port loslässt, außer SERVO wird vorher wieder gezeigt. Ein
+  Ausgang, den SERVO nicht eingeschaltet hat, bleibt, wie er ist. Der
+  Servo-Programmierer, die Tastenfelder und die Fragen gehören zu SERVO und
+  sind kein Verlassen. Ein Druck auf AUSGANG AUS beim Verlassen wird als das
+  OFF gesendet, das er war.
 
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
 nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck), TEMPO (0,05 bis
@@ -931,10 +938,16 @@ Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
 gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
 bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine Abschaltung.
 Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des
-Bildschirms lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf
-dem Bildschirm versorgt bleibt, der es testet; der Bildschirm für den
-verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang an
-ist.
+Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet hat: einen,
+der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC STICK tun
+dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein Ausgang
+nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet hat.
+Ein Servo oder ein ESC wird von dem Bildschirm aus versorgt, der es testet.
+Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim
+Verlassen von SUPPLY, wie er ist. Das Tastenfeld, die HV-Frage und die
+übrigen Overlays von SUPPLY sind kein Verlassen. Der Bildschirm für den
+verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang
+an ist.
 
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,
@@ -1205,6 +1218,11 @@ Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
 beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
+
+START öffnet nichts, und die Zeile daneben nennt den Grund, solange kein Pin
+als Throttle gebunden ist, solange die Ausgangsbindung nicht gelesen ist
+und solange das Netzteil das Modell des Panels ist; ein solcher Grund
+schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
 
 Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
 und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild

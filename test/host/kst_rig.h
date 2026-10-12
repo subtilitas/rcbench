@@ -219,6 +219,12 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->stopped = g_rig.stopped;
     f->card = g_rig.card;
     f->target = g_rig.target;
+    for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        f->port_pin[i] = rig_hw_pin(NULL, i);
+        if (f->port_pin[i] != 0xFFu) {
+            f->port_pin_known |= (uint8_t)(1u << i);
+        }
+    }
     f->supply_read = g_rig.rail && g_rig.sup_on;
     f->out_mv = f->supply_read ? g_rig.sup_mv : 0u;
     f->out_ma = f->supply_read ? g_rig.load_ma : 0u;
