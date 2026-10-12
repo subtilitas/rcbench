@@ -206,6 +206,16 @@ void    outputs_slots_apply(outputs_t *o, const uint16_t *regs);
 uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,
                               out_role_t role);
 
+/**
+ * The GPIOs of the slots that render a channel marked with @p role, as a
+ * mask: bit n is GPIO n.  The channels are those of
+ * outputs_role_channels(), so the pins named are the pins the SERVO screen's
+ * commands reach.  A slot is one pin whatever its channel count.  Either page
+ * NULL, or a pin of 64 or more, adds nothing.
+ */
+uint64_t outputs_role_pins(const uint16_t *slots, const uint16_t *chan_cfg,
+                           out_role_t role);
+
 /* --- CHANNELS: what each output is asked for.  Clamped, not refused, because
  *     a command arrives many times a second from a host that may be mid-drag. */
 void    outputs_channels_defaults(uint16_t *regs);
