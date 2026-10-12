@@ -1224,7 +1224,6 @@ test('the Osoyoo strip: no current is shown for both voltages, the DC input name
   assert.equal(check('strip-converter').src.kind, 'doc');
   assert.match(check('strip-converter').text.en, /^((?!rates the board|printed 16 V).)*$/);
   assert.match(check('strip-print').text.en, /7 to 16 V/);
-  assert.match(check('strip-print').text.en, /16 V/);
   assert.doesNotMatch(check('strip-input').text.en, /printed|print /);
   assert.doesNotMatch(check('strip-parts').text.en, /datasheet|uA/);
   assert.match(check('strip-load').text.en, /1 uA/);
@@ -1255,11 +1254,10 @@ test('the Osoyoo strip: one DC input, no unresolved 3V3 claim, the plug claim ex
   assert.notDeepEqual(check('strip-measure').src, check('strip-converter').src);
   assert.equal(check('strip-measure').src.kind, 'doc');
   // The check gives the expected reading per jumper position, in both languages.
-  assert.equal(check('strip-measure').src.kind, 'doc');
   assert.equal(check('strip-jumper').kind, 'note');
   for (const lang of ['en', 'de'] as const) {
     const m = check('strip-measure').text[lang];
-    assert.match(m, lang === 'en' ? /5 V nominal/ : /5 V nominal/);
+    assert.match(m, /5 V nominal/);
     assert.match(m, /0 V/);
     assert.match(m, lang === 'en' ? /3\.3 V/ : /3,3 V/);
   }
