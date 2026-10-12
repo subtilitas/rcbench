@@ -21,6 +21,7 @@
 #include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -5634,6 +5635,130 @@ TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 }
 
+/* The target line at the foot of the left card, as the pixels of its box. */
+#define TGT_X 206
+#define TGT_Y ((H - UI_BAND_H) - 6 - 36 + 1)
+#define TGT_W 278
+#define TGT_H 24
+
+static void target_box(gfx_color_t *out)
+{
+    for (int y = 0; y < TGT_H; ++y) {
+        memcpy(out + y * TGT_W, fb + (TGT_Y + y) * W + TGT_X,
+               TGT_W * sizeof(gfx_color_t));
+    }
+}
+
+/* One state of the target line. */
+typedef struct {
+    int      target;        /* SET_SERVO_TARGET */
+    uint64_t pins;          /* GPIOs bound as SERVO PWM */
+    bool     known;
+    uint8_t  prog_pin;
+    bool     warn;          /* the warning colour */
+} tgt_state_t;
+
+#define PIN(n) ((uint64_t)1u << (n))
+
+static const tgt_state_t k_tgt[] = {
+    { 0, PIN(2),                              true,  0xFFu, false },
+    { 0, PIN(4),                              true,  0xFFu, false },
+    { 0, PIN(2) | PIN(4),                     true,  0xFFu, false },
+    { 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false },
+    { 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true, 0xFFu, false },
+    { 0, 0,                                   true,  0xFFu, true  },
+    { 0, 0,                                   false, 0xFFu, true  },
+    { 1, PIN(2),                              true,  13u,   true  },
+};
+#define TGT_N ((int)(sizeof(k_tgt) / sizeof(k_tgt[0])))
+
+/* The active PWM target is on the SERVO screen in both languages: the pins
+ * bound as SERVO PWM for OUTPUTS, the programming port with its pin, and the
+ * warning colour for the port, for no pin and for a binding not read.  Every
+ * state reads differently, and no line reaches the edges of its box. */
+TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
+{
+    gfx_color_t *box[2 * TGT_N];
+    for (int i = 0; i < 2 * TGT_N; ++i) {
+        box[i] = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+    }
+    for (int lang = 0; lang < 2; ++lang) {
+        for (int i = 0; i < TGT_N; ++i) {
+            const tgt_state_t *st = &k_tgt[i];
+            fresh();
+            ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+            settings_set(SET_SERVO_TARGET, (float)st->target);
+            servo_screen_set_pins(st->pins, st->known);
+            servo_screen_set_prog_pin(st->prog_pin);
+            scr->render(&cv, 0);
+            gfx_color_t *bx = box[lang * TGT_N + i];
+            target_box(bx);
+            const gfx_color_t fill = bx[2 * TGT_W + 4];
+            CHECK_EQ(fill == ui_theme_color(UI_C_WARN), st->warn);
+            /* Text stays clear of the box's left and right edges. */
+            for (int y = 6; y < TGT_H - 6; ++y) {
+                for (int x = 0; x < 3; ++x) {
+                    CHECK_EQ(bx[y * TGT_W + x], bx[6 * TGT_W + 0]);
+                    CHECK_EQ(bx[y * TGT_W + TGT_W - 1 - x],
+                             bx[6 * TGT_W + TGT_W - 1]);
+                }
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    for (int i = 0; i < 2 * TGT_N; ++i) {
+        for (int j = i + 1; j < 2 * TGT_N; ++j) {
+            CHECK(memcmp(box[i], box[j], TGT_W * TGT_H
+                                         * sizeof(gfx_color_t)) != 0);
+        }
+    }
+
+    /* Rebinding GP2 to GP4 changes the line, without a tap; and back. */
+    fresh();
+    servo_screen_set_pins(PIN(2), true);
+    scr->render(&cv, 0);
+    gfx_color_t *a = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+    target_box(a);
+    servo_screen_set_pins(PIN(4), true);
+    scr->render(&cv, 0);
+    target_box(box[0]);
+    CHECK(memcmp(a, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)) != 0);
+    servo_screen_set_pins(PIN(2), true);
+    scr->render(&cv, 0);
+    target_box(box[0]);
+    CHECK_EQ(memcmp(a, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
+    free(a);
+
+    /* The line follows the drive, not the setting.  PROG PORT chosen but not
+     * driven (no pin from the port) shows the pins the outputs carry, as
+     * GP2 does; with no such pin it is the warning, as no pin does. */
+    gfx_color_t *d = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+    fresh();
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_pins(PIN(2), true);
+    servo_screen_set_prog_pin(0xFFu);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
+    servo_screen_set_pins(0u, true);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[5], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
+    /* The port driven while the setting still reads OUTPUTS. */
+    fresh();
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    servo_screen_set_pins(PIN(2), true);
+    servo_screen_set_prog_pin(13u);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[TGT_N - 1], TGT_W * TGT_H * sizeof(gfx_color_t)),
+             0);
+    free(d);
+    for (int i = 0; i < 2 * TGT_N; ++i) {
+        free(box[i]);
+    }
+}
+
 /* A test or a sweep under way keeps the port's pulse: switched off, the run
  * would go on stepping and recording a servo that gets no pulse. */
 TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
@@ -7666,6 +7791,7 @@ int main(void)
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
+    RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);

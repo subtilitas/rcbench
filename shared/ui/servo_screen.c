@@ -628,6 +628,9 @@ static struct {
     uint32_t  test_sig;      /**< what the box last showed              */
 
     uint32_t ctrl_rev;
+    uint8_t  prog_pin;     /* the programming port's GPIO, or none    */
+    uint64_t pins;         /* GPIOs bound as SERVO PWM, bit n = GPIO n */
+    bool     pins_known;   /* a binding was read                       */
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
 } s;
@@ -2384,6 +2387,7 @@ static uint32_t test_signature(void);
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+    s.prog_pin    = SERVO_SCREEN_NO_PIN;
     servo_test_init(&s.test);
     test_tell();                /* a run the reset took with it is over */
     s.test_sig = test_signature();
@@ -3097,6 +3101,23 @@ void servo_screen_set_link(bool up)
 void servo_screen_set_enc_held(bool held)
 {
     s.enc_held = held;
+}
+
+void servo_screen_set_prog_pin(uint8_t gpio)
+{
+    if (gpio != s.prog_pin) {
+        s.prog_pin = gpio;
+        ++s.ctrl_rev;
+    }
+}
+
+void servo_screen_set_pins(uint64_t gpio_mask, bool known)
+{
+    if (gpio_mask != s.pins || known != s.pins_known) {
+        s.pins = gpio_mask;
+        s.pins_known = known;
+        ++s.ctrl_rev;
+    }
 }
 
 void servo_screen_set_surfaces(bool any)
@@ -4452,6 +4473,59 @@ static void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+/*
+ * What the tester drives, along the bottom of the left card.  The programming
+ * port is the rare case and is filled in the warning colour: the outputs
+ * then get no pulse.
+ */
+static void draw_target(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = { PAD + 200, H - PAD - 36, LCARD_W - 200 - 10, 26 };
+    /* The target the drive uses, not the setting: a change waits for a quiet
+     * bench, and a port that is chosen but not bound is not driven. */
+    const bool port = s.prog_pin != SERVO_SCREEN_NO_PIN;
+    char line[40];
+    bool warn = port;
+    if (!port) {
+        char list[24] = "";
+        unsigned n = 0u;
+        for (unsigned g = 0u; g < 64u; ++g) {
+            n += (unsigned)((s.pins >> g) & 1u);
+        }
+        const unsigned shown = n > 4u ? 3u : n;
+        unsigned seen = 0u;
+        for (unsigned g = 0u; g < 64u && seen < shown; ++g) {
+            if (((s.pins >> g) & 1u) != 0u) {
+                const size_t len = strlen(list);
+                snprintf(list + len, sizeof(list) - len, "%sGP%u",
+                         seen ? " " : "", g);
+                ++seen;
+            }
+        }
+        if (!s.pins_known) {
+            snprintf(line, sizeof(line), "%s", TR(SV_TARGET_UNREAD));
+            warn = true;
+        } else if (n == 0u) {
+            snprintf(line, sizeof(line), "%s", TR(SV_TARGET_NONE));
+            warn = true;
+        } else if (n > shown) {
+            snprintf(line, sizeof(line), TR(SV_TARGET_OUT_MORE), list,
+                     n - shown);
+        } else {
+            snprintf(line, sizeof(line), TR(SV_TARGET_OUT), list);
+        }
+    } else {
+        snprintf(line, sizeof(line), TR(SV_TARGET_PORT_PIN),
+                 (unsigned)s.prog_pin);
+    }
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 4,
+                        warn ? ui_theme_color(UI_C_WARN)
+                             : ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text_in(c, r, line, UI_FONT_LABEL,
+                warn ? ui_theme_color(UI_C_BG) : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+}
+
 static void draw_left(gfx_canvas_t *c)
 {
     /* Everything that moves lives in this rectangle, so this is what gets
@@ -4496,6 +4570,7 @@ static void draw_left(gfx_canvas_t *c)
     if (s.test_box) {
         draw_test_box(c);
     }
+    draw_target(c);
 }
 
 static void row_in(gfx_canvas_t *c, int y, const char *label,

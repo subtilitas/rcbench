@@ -2016,6 +2016,8 @@ int main(int argc, char **argv)
         }
         /* A coprocessor that took the screen's 50 Hz. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+        /* The binding read: one SERVO PWM output on GP2. */
+        servo_screen_set_pins((uint64_t)1u << 2, true);
         /* The output encoder on, its centre at count 3000 and the horn
          * read at the commanded 38 degrees: 38 * 4096 / 360 = 432
          * counts on. */
@@ -2029,6 +2031,11 @@ int main(int argc, char **argv)
          * right card, the tabs over the left card, the TYPE row and the
          * list's HELI CYCLIC.
          */
+        if (strcmp(view, "servo-target") == 0) {
+            /* PWM TARGET on the programming port, bound to GP13. */
+            settings_set(SET_SERVO_TARGET, 1.0f);
+            servo_screen_set_prog_pin(13u);
+        }
         if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
         } else if (strcmp(view, "servo-hv") == 0) {
@@ -2051,6 +2058,7 @@ int main(int argc, char **argv)
             servo_sweep_view(strcmp(view, "servo-paused") == 0);
         } else if (strcmp(view, "servo") != 0
                    && strcmp(view, "servo-ina") != 0
+                   && strcmp(view, "servo-target") != 0
                    && strcmp(view, "servo-clipped") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);

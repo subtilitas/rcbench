@@ -26,6 +26,14 @@ history is in git.
 
 ### Changed
 
+- The SERVO screen shows the active PWM TARGET at the foot of the left card
+  with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
+  SERVO PWM (from 5 pins the first 3 and a count), `TARGET: PROG PORT GP13`
+  for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`). The
+  warning colour marks the programming port, no SERVO PWM pin
+  (`TARGET: NO SERVO PWM PIN`) and a binding not read. The pins come from
+  the binding the tester drives. The line follows the target the drive uses,
+  not the PWM TARGET setting.
 - `hardware/docs/pinmap.json` is `hardware/docs/ioboard-pinmap-draft.json`;
   `Pins.md` states that it is the draft of the planned IO board.
 - The research workflow scripts are no longer in the repository. They are kept

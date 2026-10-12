@@ -703,6 +703,21 @@ name opens a keyboard.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
+The active PWM TARGET is shown at the foot of the left card, beside the dial,
+while neither the settings nor the programmer covers that card. With OUTPUTS
+the line names the GPIOs bound as SERVO PWM in the binding the tester drives:
+`TARGET: GP4`, `TARGET: GP2 GP4`; from 5 pins on, the first 3 and a count,
+`TARGET: GP2 GP4 GP5 +2`. It is the warning colour with no such pin
+(`TARGET: NO SERVO PWM PIN`) and before a binding has been read
+(`TARGET: PINS NOT READ`). With PROG PORT the line reads
+`TARGET: PROG PORT GP13` in the warning colour; the pin is the GPIO the
+coprocessor reports for the programming port, and the outputs on the SERVO
+PWM pins carry no pulse. The line follows the target the drive uses, not the
+setting: PROG PORT chosen while the port holds no pin, or before a change
+has been applied, shows the OUTPUTS form.
+
+![The target line with PROG PORT](img/servo-target.png)
+
 | Type | Centre | Travel | Frame rates |
 | --- | --- | --- | --- |
 | STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |

@@ -777,6 +777,21 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
+Das aktive PWM-ZIEL steht am Fuß der linken Karte neben der Anzeige, solange
+weder die Einstellungen noch der Programmierer diese Karte bedecken. Mit
+AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen Bindung
+als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; ab 5 Pins die
+ersten 3 und eine Zahl, `ZIEL: GP2 GP4 GP5 +2`. Sie ist in der Warnfarbe ohne
+einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
+wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
+`ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
+Koprozessor für den Programmierport meldet, und die Ausgänge an den
+SERVO-PWM-Pins führen keinen Puls. Die Zeile folgt dem Ziel, das der Antrieb
+nutzt, nicht der Einstellung: PROG-PORT gewählt, solange der Port keinen Pin
+hält oder bevor eine Änderung angewendet ist, zeigt die AUSGÄNGE-Form.
+
+![Die Zielzeile mit PROG-PORT](img/de/servo-target.png)
+
 | Typ | Mitte | Weg | Bildwiederholraten |
 | --- | --- | --- | --- |
 | STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |

@@ -365,6 +365,20 @@ void servo_screen_set_surfaces(bool any);
  *  and this false has no angles, and takes no angle columns. */
 void servo_screen_set_enc_held(bool held);
 
+/** What servo_screen_set_prog_pin() takes while the outputs are driven. */
+#define SERVO_SCREEN_NO_PIN 0xFFu
+
+/** The GPIO of the programming port while the drive uses it as the target
+ *  (prog_link_target() is not 0), or SERVO_SCREEN_NO_PIN while the drive uses
+ *  the outputs.  The target line names it; the setting does not matter. */
+void servo_screen_set_prog_pin(uint8_t gpio);
+
+/** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
+ *  the tester drives, and whether a binding has been read.  The target line
+ *  names them while PWM TARGET is OUTPUTS: up to 4 pins, else the first 3
+ *  and a count. */
+void servo_screen_set_pins(uint64_t gpio_mask, bool known);
+
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */
 void servo_screen_sweep_refused(void);

@@ -1694,6 +1694,56 @@ TEST_CASE(the_horn_reaches_the_surfaces_and_never_the_motor)
     CHECK_EQ(surfaces & motors, 0u);      /* and never both */
 }
 
+/* The pins the SERVO screen names are the GPIOs of the surfaces' slots: the
+ * motor's pin is not among them, a rebinding moves them, and nothing bound
+ * names none. */
+TEST_CASE(the_pins_named_are_the_surfaces_pins_and_follow_a_rebinding)
+{
+    const uint8_t servo = proto_named("SERVO PWM");
+    const uint8_t motor = proto_named("DSHOT600");
+    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    outbind_t b;
+
+    init(&b);
+    outbind_set_proto(&b, servo);
+    (void)outbind_toggle(&b, idx(2));
+    (void)outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE),
+             (uint64_t)1u << 2);
+
+    /* GP2 rebound to GP4. */
+    init(&b);
+    outbind_set_proto(&b, servo);
+    (void)outbind_toggle(&b, idx(4));
+    (void)outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE),
+             (uint64_t)1u << 4);
+
+    /* Two servos and a motor: the motor's pin is not one of them. */
+    init(&b);
+    outbind_set_proto(&b, motor);
+    (void)outbind_toggle(&b, idx(0));
+    outbind_set_proto(&b, servo);
+    (void)outbind_toggle(&b, idx(2));
+    (void)outbind_toggle(&b, idx(5));
+    (void)outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE),
+             ((uint64_t)1u << 2) | ((uint64_t)1u << 5));
+    CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_THROTTLE),
+             (uint64_t)1u << 0);
+
+    /* Nothing bound, and no page. */
+    init(&b);
+    (void)outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(outputs_role_pins(slots, cc, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(outputs_role_pins(NULL, cc, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(outputs_role_pins(slots, NULL, OUT_ROLE_SURFACE), 0u);
+}
+
 /*
  * With nothing bound as a surface the horn has nothing to drive, and the
  * answer is no channels rather than channel 0.  Falling back to a channel
@@ -1943,6 +1993,7 @@ int main(void)
     RUN(a_pad_list_that_cannot_belong_to_the_board_is_refused);
     RUN(the_horn_reaches_the_surfaces_and_never_the_motor);
     RUN(a_binding_with_no_surface_gives_the_horn_nothing);
+    RUN(the_pins_named_are_the_surfaces_pins_and_follow_a_rebinding);
     RUN(one_ppm_pin_puts_every_channel_it_carries_in_the_mask);
     RUN(the_mask_names_the_channels_the_pages_render);
     RUN(a_binding_wider_than_the_page_stops_the_mask_where_it_stops_the_slots);
