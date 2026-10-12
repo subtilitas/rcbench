@@ -774,7 +774,7 @@ TEST_CASE(the_error_paths_name_themselves)
         n += (size_t)snprintf(wide + n, sizeof(wide) - n, "%sc%d",
                               (i > 0) ? "," : "", i);
     }
-    n += (size_t)snprintf(wide + n, sizeof(wide) - n, "\n1\n");
+    (void)snprintf(wide + n, sizeof(wide) - n, "\n1\n");
     CHECK_EQ(analyse_text(wide, NULL, &a), LOG_ERR_TOO_MANY_COLUMNS);
 
     for (int e = LOG_OK; e <= LOG_ERR_ARG; ++e) {
@@ -1058,7 +1058,7 @@ TEST_CASE(an_integer_part_that_cannot_be_a_group_settles_the_convention)
     CHECK(a.convention == LOG_CONV_EN);
     CHECK_EQ(a.time_index, 0);
 
-    int pick[1] = { 1 };
+    const int pick[1] = { 1 };
     log_data_t d;
     CHECK(log_csv_build(&src, &a, pick, 1, &d) == LOG_OK);
     CHECK_NEAR(d.duration_s, 0.06, 1e-6);
@@ -1229,7 +1229,7 @@ TEST_CASE(a_read_error_is_not_a_clean_end_of_file)
      * returning a short array the screen would plot as the whole run. */
     failing_arm(&ctx, PASS_NONE, 0);
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
-    int pick[1] = { 1 };
+    const int pick[1] = { 1 };
     log_data_t d;
     failing_arm(&ctx, PASS_ROWS, 1000);
     CHECK_EQ(log_csv_build(&src, &a, pick, 1, &d), LOG_ERR_READ);

@@ -133,7 +133,7 @@ static bool assemble(const char *path)
         if (c != NULL) {
             *c = '\0';
         }
-        char *s = buf;
+        const char *s = buf;
         while (*s == ' ' || *s == '\t') {
             ++s;
         }
@@ -215,7 +215,7 @@ static bool assemble(const char *path)
                     target = labels[j].addr;
                 }
             }
-            w = (uint16_t)(0x0000u | (d << 8) | (cond << 5) | target);
+            w = (uint16_t)((d << 8) | (cond << 5) | target);
         } else if (!strcmp(m, "in")) {
             const unsigned cnt = (unsigned)atoi(tok[k + 2u]);
             w = (uint16_t)(0x4000u | (d << 8) | (src_code(tok[k + 1u]) << 5)

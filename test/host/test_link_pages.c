@@ -114,17 +114,17 @@ TEST_CASE(a_read_returns_the_registers)
 TEST_CASE(every_window_of_every_page_round_trips)
 {
     fresh();
-    for (uint8_t i = 0; i < LINK_ID_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_ID_COUNT; ++i) {
         g.identity[i] = (uint16_t)(0xC000u + i);
     }
-    for (uint8_t off = 0; off < LINK_ID_COUNT; ++off) {
-        for (uint8_t n = 1; n <= LINK_ID_COUNT - off; ++n) {
+    for (unsigned off = 0; off < LINK_ID_COUNT; ++off) {
+        for (unsigned n = 1; n <= LINK_ID_COUNT - off; ++n) {
             link_msg_t r;
-            CHECK(ask_read(LINK_PAGE_IDENTITY, off, n, &r));
+            CHECK(ask_read(LINK_PAGE_IDENTITY, (uint8_t)off, (uint8_t)n, &r));
             CHECK_EQ(r.op, LINK_OP_DATA);
             CHECK_EQ(r.offset, off);
             CHECK_EQ(r.count, n);
-            for (uint8_t k = 0; k < n; ++k) {
+            for (unsigned k = 0; k < n; ++k) {
                 CHECK_EQ(r.regs[k], (uint16_t)(0xC000u + off + k));
             }
         }
@@ -822,7 +822,7 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_SW_COUNT, 28);
     CHECK_EQ(LINK_KS_COUNT, 32);
     CHECK(LINK_KS_COUNT <= LINK_MAX_REGS);
-    CHECK(LINK_KS_W_COUNT <= LINK_KS_COUNT);
+    CHECK((int)LINK_KS_W_COUNT <= (int)LINK_KS_COUNT);
     /* The status a poll reads is one frame, the results three, the image
      * four: 16 registers hold the 32 servo registers. */
     CHECK_EQ(LINK_KS_FAIL, 4);

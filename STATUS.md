@@ -227,15 +227,19 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/` and the cores under `protocols/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel, each with the task stack check; the pico-sdk build of the coprocessor with `pinmap_check.py` and the stack check of its two cores, and a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel, each with the task stack check; the pico-sdk build of the coprocessor with `pinmap_check.py` and the stack check of its two cores, and a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400 s) and publishes `docs/` to the GitHub wiki when it passed |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release; beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 
 Not in CI: clang-tidy over `firmware/`, which needs the ESP-IDF and pico-sdk
 headers to compile each file, and cppcheck's style class over `firmware/`,
 which reports 12 findings there with cppcheck 2.17. The cppcheck step over
-`shared/` resolves the headers under `shared/*/include` and reports no
-finding. The step over `firmware/` passes all 25. `docs.yml` and
+`shared/`, `protocols/` and `test/host/` resolves the headers under
+`shared/*/include`, `protocols/*/include` and `test/host`, and reports no
+finding. clang-tidy reports none over the same files except
+`test/host/render_screen.c` and `test/host/bench_frame.c`, which CMake does not
+build and so have no compile command; `tools/render_ui.py` builds the first
+with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
 The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,

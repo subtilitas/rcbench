@@ -21,6 +21,21 @@ history is in git.
 
 ### Changed
 
+- The host tests are built with the flags of the libraries, `-Wall -Wextra
+  -Werror -Wshadow -Wconversion -Wno-sign-conversion`, and
+  `tools/render_ui.py` builds `render_screen.c` with the same flags. clang-tidy
+  and cppcheck run over `test/host/` in CI; the checks that are off for the
+  tests are listed with their reasons in `test/host/.clang-tidy`, and the page
+  callbacks of the link tests in `.cppcheck-suppress`. The `analysis` job
+  timeout is 30 min. Test code fixed under the stricter rules: canvases built
+  with a zero clip rectangle in `test_kst_panel`, ids cast to a 16-bit type for
+  an 8-bit field, an out-of-range float to integer conversion in the settings
+  record helper, and allocations used without a check (`REQUIRE_ALLOC` and
+  `REQUIRE_REALLOC` in `greatest.h` end the case with the line).
+- The cppcheck command in CONTRIBUTING.md names the include directories the
+  way CI does, and the list of failing changes names the flags and the scope
+  of both analysers.
+
 - `testbench/host/capture.sh` warns when a capture holds no samples or the
   read-back fails, and still prints the path. `selftest.sh` no longer reports
   `sigrok-cli --scan` error output as the analyser found, and skips a

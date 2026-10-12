@@ -1352,11 +1352,9 @@ TEST_CASE(an_abort_while_the_port_plans_ends_it_with_nothing_written)
 
 TEST_CASE(a_disarm_while_the_port_plans_ends_it_and_leaves_the_supply)
 {
-    unsigned frames;
-
     /* In the first pass of the planning and in a later one. */
     for (unsigned passes = 0; passes <= 500u; passes += 500u) {
-        frames = long_write_plans(SUPPLY_ON, passes);
+        const unsigned frames = long_write_plans(SUPPLY_ON, passes);
         tick_as(true, true);
         cut_while_planning(frames);
         CHECK_EQ(op(), LINK_KST_OP_WRITE);

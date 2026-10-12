@@ -9,3 +9,9 @@ unusedFunction
 # has an unused include from the one translation unit it is scanning.
 missingIncludeSystem
 unmatchedSuppression
+
+# Page callbacks in the link tests take the registered void *ctx of
+# link_page_t.  Most test pages ignore it; the type of the member is not
+# const, so a const parameter would need a cast at every table entry.
+constParameterCallback:test/host/test_link_loopback.c
+constParameterCallback:test/host/test_link_pages.c

@@ -287,7 +287,7 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
                              uint32_t window_ns)
 {
     sim_t *sim = (sim_t *)ctx;
-    uint8_t bits[64];
+    uint8_t bits[64] = {0};
     const unsigned n = sim_read_frame(frame, bits, 64);
     sim_kind_t kind = SIM_ANY;
     unsigned reg = 0;

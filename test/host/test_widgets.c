@@ -28,6 +28,7 @@ static void canvas(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -535,7 +536,7 @@ TEST_CASE(the_plot_and_hero_render_without_running_off_the_canvas)
     ui_plot_render(&p, &cv, body);
     ui_plot_render_legend(&p, &cv, (gfx_rect_t){ 8, 10, 700, 16 });
 
-    const ui_hero_def_t def = { "VOLT", "V", 0x1234, 2 };
+    const ui_hero_def_t def = { "VOLT", "V", 0x1234, 2, NULL };
     ui_hero_render(&cv, (gfx_rect_t){ 40, 250, 180, 80 }, &def, 20.71f, 24.32f);
     ui_hero_render(&cv, (gfx_rect_t){ 240, 250, 180, 80 }, &def, NAN, NAN);
 
@@ -886,7 +887,8 @@ TEST_CASE(no_widget_draws_outside_the_box_it_was_given)
 
     /* A margin of untouched canvas all the way round. */
     const int M = 40;
-    const gfx_rect_t box = { M, M, W - 2 * M, H - 2 * M };
+    const gfx_rect_t box = { (int16_t)M, (int16_t)M, (int16_t)(W - 2 * M),
+                             (int16_t)(H - 2 * M) };
 
     ui_panel(&cv, (gfx_rect_t){ box.x, box.y, 300, 90 }, "PANEL", 0x1234);
     ui_panel_header(&cv, (gfx_rect_t){ box.x + 320, box.y, 300, 30 },

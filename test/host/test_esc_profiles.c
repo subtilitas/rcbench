@@ -70,6 +70,7 @@ static char *subst(const char *from, const char *to)
     }
     const size_t head = (size_t)(at - k_min);
     char *out = malloc(sizeof(k_min) + strlen(to));
+    REQUIRE_ALLOC(out);
     memcpy(out, k_min, head);
     strcpy(out + head, to);
     strcat(out, at + strlen(from));
@@ -399,6 +400,7 @@ TEST_CASE(a_value_reads_its_moves_after_the_selection)
         const char *at = strstr(j, from);
         if (at != NULL) {
             j2 = malloc(strlen(j) + 64u);
+            REQUIRE_ALLOC(j2);
             const size_t head = (size_t)(at - j);
             memcpy(j2, j, head);
             strcpy(j2 + head, "{\"number\": 2, \"name\": \"on\", "
@@ -596,6 +598,7 @@ static char *swap_in(const char *src, const char *from, const char *to)
     }
     const size_t head = (size_t)(at - src);
     char *out = malloc(strlen(src) + strlen(to) + 1u);
+    REQUIRE_ALLOC(out);
     memcpy(out, src, head);
     strcpy(out + head, to);
     strcat(out, at + strlen(from));
@@ -1012,6 +1015,7 @@ TEST_CASE(every_truncation_is_refused)
     /* The text ends in "}\n"; cutting the newline alone leaves it whole. */
     for (size_t len = 0; len + 1u < n; ++len) {
         char *buf = malloc(len > 0u ? len : 1u);
+        REQUIRE_ALLOC(buf);
         memcpy(buf, k_min, len);
         esc_profile_t p;
         void *block = NULL;
@@ -1478,7 +1482,7 @@ TEST_CASE(a_maker_holds_at_most_its_models)
     static char names[ESC_MAKER_MODELS_MAX][8];
     for (unsigned i = 0; i < ESC_MAKER_MODELS_MAX; ++i) {
         (void)snprintf(names[i], sizeof(names[i]), "M%03u", i);
-        many[i] = (esc_model_t){ names[i], 2u, 3u, false, 12600u, 10u };
+        many[i] = (esc_model_t){ names[i], 2u, 3u, false, 12600u, 10u, 0u };
     }
     unsigned have = 0;
     for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {

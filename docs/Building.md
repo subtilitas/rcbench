@@ -199,13 +199,16 @@ into `build-trace/` unless `--replay` names a built one.
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, wiki-link, frame-cost, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/` and the cores under `protocols/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check, v5.4 with the stack table of this wiki; coprocessor build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, and once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, wiki-link, frame-cost, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check, v5.4 with the stack table of this wiki; coprocessor build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, and once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums and creates a release; beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 
 clang-tidy does not run over `firmware/`: it compiles each file and needs
 the ESP-IDF and pico-sdk headers, which the analysis job does not have.
-cppcheck's style class does not run over `firmware/` either.
+cppcheck's style class does not run over `firmware/` either. The host tests
+are built with the library flags `-Wall -Wextra -Werror -Wshadow -Wconversion
+-Wno-sign-conversion`; `test/host/.clang-tidy` lists the checks that are off
+for them, each with its reason.
 
 CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at these
 exact versions. Every job has a `timeout-minutes` limit: 100 min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400 s, 90 min), 10 to 60 min for the others. ctest stops a

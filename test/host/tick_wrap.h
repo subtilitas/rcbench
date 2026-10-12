@@ -44,8 +44,12 @@ static inline void at_tick_0_and_before_the_wrap(tick_case_fn fn, uint32_t k)
         const int failed = t_case_failed;
         t_case_failed = 0;
         fn(start[i]);
+        /* fn() sets t_case_failed through the function pointer, which
+         * cppcheck does not follow: it takes the value as still 0. */
+        /* cppcheck-suppress knownConditionTrueFalse */
         if (t_case_failed && i == 0u) {
             printf("      with the clock started at tick 0\n");
+        /* cppcheck-suppress knownConditionTrueFalse */
         } else if (t_case_failed) {
             printf("      with the clock started at 0x%08lX (2^32 - %lu)\n",
                    (unsigned long)start[i], (unsigned long)k);

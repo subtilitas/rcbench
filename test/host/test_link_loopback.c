@@ -151,7 +151,7 @@ static void fresh(void)
 {
     memset(&g, 0, sizeof(g));
     memset(&bus, 0, sizeof(bus));
-    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_BN_COUNT; ++i) {
         g.bench[i] = (uint16_t)(0x2000 + i);
     }
     g.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
@@ -170,7 +170,7 @@ static void fresh(void)
 TEST_CASE(a_page_wider_than_a_frame_comes_back_whole)
 {
     fresh();
-    link_msg_t req, got;
+    link_msg_t req = {0}, got = {0};
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK(exchange(&req, 100, &got));
 
@@ -178,7 +178,7 @@ TEST_CASE(a_page_wider_than_a_frame_comes_back_whole)
     CHECK_EQ(got.page, LINK_PAGE_BENCH);
     CHECK_EQ(got.offset, 0);
     CHECK_EQ(got.count, LINK_BN_COUNT);
-    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_BN_COUNT; ++i) {
         CHECK_EQ(got.regs[i], 0x2000 + i);
     }
     CHECK_EQ(host.replies, 1u);
@@ -198,7 +198,7 @@ TEST_CASE(the_pieces_may_arrive_in_any_order)
     link_msg_t req, got;
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK(exchange(&req, 100, &got));
-    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_BN_COUNT; ++i) {
         CHECK_EQ(got.regs[i], 0x2000 + i);
     }
 }

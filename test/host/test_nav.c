@@ -43,6 +43,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -307,6 +308,7 @@ TEST_CASE(a_cancelled_tile_press_navigates_nowhere)
     to_overview();
     ui_router_render(&cv, 0);
     gfx_color_t *idle = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(idle);
     memcpy(idle, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch(110, UI_BAND_H + 90, TOUCH_EVENT_DOWN, 3);
@@ -339,6 +341,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
     ui_router_goto(SCREEN_ANALYSER);
     ui_router_render(&cv, 0);
     gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(before);
     memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch(200, UI_BAND_H + 20, TOUCH_EVENT_DOWN, 2);   /* the second tab */
@@ -747,6 +750,7 @@ TEST_CASE(the_simulation_mark_covers_the_whole_screen)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     ui_router_render(&cv, 0);
     gfx_color_t *plain = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(plain);
     memcpy(plain, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     st.simulated = true;
@@ -816,6 +820,7 @@ TEST_CASE(the_simulation_mark_lets_the_screen_through)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     ui_router_render(&cv, 0);
     gfx_color_t *plain = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(plain);
     memcpy(plain, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     st.simulated = true;
@@ -997,6 +1002,7 @@ TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     ui_router_render(&cv, 0);
     gfx_color_t *first = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(first);
     memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -1664,7 +1670,8 @@ static void a_throttle_drag_then(ender_t e)
         feed_tap(1, stop.x + stop.w / 2, stop.y + stop.h / 2);
         CHECK(ui_router_take_stop());
         motor_screen_cancel_arm();
-        /* fall through: the bench disarms on a stop */
+        /* the bench disarms on a stop: the next case's checks apply */
+        /* fall through */
     case END_DISARM:
         motor_screen_set_throttle(0.0f);
         drain_motor();

@@ -55,7 +55,6 @@ typedef struct {
     uint32_t display_delay;   /* extra ms before a display reply         */
     uint16_t on_at_mv;        /* the active slot's mV when it came on    */
     bool     mute;            /* takes writes, answers nothing           */
-    uint32_t on_since;        /* when the output last came on            */
     int      id_says;         /* READ_ID answers this, -1 the slot       */
     bool     other_slot;      /* READ_DATA answers for the next slot     */
     bool     no_input;        /* firmware without READ_INPUT_STATE       */
@@ -1906,7 +1905,7 @@ static session_t session(uint32_t t0)
         .inputs = m.reads[PDMINI_READ_INPUT], .ids = m.reads[PDMINI_READ_ID],
         .datas = m.reads[PDMINI_READ_DATA],
         .on_ms = m.on_ms, .attach_max = m.attach_max, .may_ms = g_may_ms,
-        .samples = st->samples, .online = st->online, .output = st->output,
+        .samples = (uint16_t)st->samples, .online = st->online, .output = st->output,
         .stuck = st->stuck,
     };
     return k;

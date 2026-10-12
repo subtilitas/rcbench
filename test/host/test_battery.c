@@ -24,6 +24,7 @@ static void fresh(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -120,6 +121,7 @@ TEST_CASE(the_scale_follows_the_pack)
     pack(6, 3.80f, 0.010f);
     scr->render(&cv, 0);
     gfx_color_t *small = malloc((size_t)W * H * sizeof(gfx_color_t));
+    REQUIRE_ALLOC(small);
     memcpy(small, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     pack(6, 3.80f, 0.020f);

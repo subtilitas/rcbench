@@ -229,6 +229,7 @@ static void fresh(void)
     g_long[0] = '\0';
     if (s_fb == NULL) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(s_fb);
     }
     memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&s_c, s_fb, W, H, W);
@@ -925,6 +926,7 @@ TEST_CASE(both_framebuffers_follow_an_interaction)
      * than as an obviously wrong pixel -- so assert the two agree. */
     if (s_fb_b == NULL) {
         s_fb_b = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(s_fb_b);
     }
     gfx_canvas_t cb;
     memset(s_fb_b, 0, (size_t)W * H * sizeof(gfx_color_t));

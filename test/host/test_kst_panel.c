@@ -58,6 +58,7 @@ static void canvas(void)
 {
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(fb);
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
@@ -210,7 +211,7 @@ static const char *status(int i)
 }
 
 /* MORE, and the entry @p i of its list. */
-static void more(int i)
+static void more_input(int i)
 {
     tap(kst_panel_tab_rect(PG_SERVO));
     tap(val(PG_SERVO, 2, 1));
@@ -219,7 +220,7 @@ static void more(int i)
 }
 
 /* Digits, a dot for '.', then OK. */
-static void type(const char *t)
+static void type_text(const char *t)
 {
     static const ui_key_t d[] = { UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3,
                                   UI_KEY_4, UI_KEY_5, UI_KEY_6, UI_KEY_7,
@@ -489,30 +490,30 @@ TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
         CHECK_NEAR(kst_panel_keypad()->max,
                    (float)KST_PANEL_STD_MV / 1000.0f, 0.001f);
         /* 6.1 V and 4.7 V cannot be entered. */
-        type("6.1");
+        type_text("6.1");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK(kst_panel_keypad()->refused);
-        type("4.7");
+        type_text("4.7");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK(kst_panel_keypad()->refused);
-        type("1.0");
+        type_text("1.0");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
         /* The ends can, and neither asks for a hold. */
-        type("6.0");
+        type_text("6.0");
         CHECK_EQ(kst_panel_editor(), 0);
         CHECK_EQ(kst_prog_supply_mv(M), 6000u);
-        more(0);
-        type("5.5");
+        more_input(0);
+        type_text("5.5");
         CHECK_EQ(kst_panel_editor(), 0);
         CHECK_EQ(kst_prog_supply_mv(M), 5500u);
         /* CANCEL keeps what was set. */
-        more(0);
+        more_input(0);
         key(UI_KEY_4);
         key(UI_KEY_CANCEL);
         CHECK_EQ(kst_prog_supply_mv(M), 5500u);
-        more(0);
-        type("4.8");
+        more_input(0);
+        type_text("4.8");
         snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 4u, 8u,
                  1000u);
         CHECK_STR_EQ(status(0), want);
@@ -545,14 +546,14 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     g_rig.rail = true;
     kst_panel_set_hv(true);
     link_up();
-    more(0);
+    more_input(0);
     CHECK_NEAR(kst_panel_keypad()->max,
                (float)KST_PORT_SUPPLY_MAX_MV / 1000.0f, 0.001f);
-    type("8.5");
+    type_text("8.5");
     CHECK_EQ(kst_panel_editor(), 1);
     CHECK(kst_panel_keypad()->refused);
     /* 6.1 V is the first that asks. */
-    type("6.1");
+    type_text("6.1");
     CHECK_EQ(kst_panel_editor(), 3);
     snprintf(want, sizeof(want), TR(KP_SUPPLY_V), 6u, 1u);
     CHECK_STR_EQ(kst_panel_warning_line(0), want);
@@ -568,8 +569,8 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
     /* The port's highest, held. */
-    more(0);
-    type("8.4");
+    more_input(0);
+    type_text("8.4");
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     CHECK_EQ(kst_panel_editor(), 0);
@@ -589,26 +590,26 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     g_rig.rail = true;
     kst_panel_set_hv(true);
     link_up();
-    more(0);
+    more_input(0);
     CHECK_EQ(kst_panel_editor(), 1);
     kst_panel_set_hv(false);
     CHECK_EQ(kst_panel_editor(), 0);
     kst_panel_set_hv(true);
-    more(0);
-    type("7.4");
+    more_input(0);
+    type_text("7.4");
     CHECK_EQ(kst_panel_editor(), 3);
     kst_panel_set_hv(false);
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
-    more(0);
+    more_input(0);
     CHECK_NEAR(kst_panel_keypad()->max, (float)KST_PANEL_STD_MV / 1000.0f,
                0.001f);
-    type("7.4");
+    type_text("7.4");
     CHECK_EQ(kst_panel_editor(), 1);
     key(UI_KEY_CANCEL);
     /* A value inside the standard range stays when HV SERVO goes. */
-    more(0);
-    type("5.5");
+    more_input(0);
+    type_text("5.5");
     kst_panel_set_hv(true);
     kst_panel_set_hv(false);
     CHECK_EQ(kst_prog_supply_mv(M), 5500u);
@@ -665,15 +666,15 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
     g_rig.rail = true;
     kst_panel_set_hv(true);
     link_up();
-    more(0);
-    type("8.4");
+    more_input(0);
+    type_text("8.4");
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
     CHECK_NEAR(settings_get(SET_SERVO_PROG_V), 6.0f, 0.001f);
     /* The current limit set after it stores no more either. */
-    more(1);
-    type("800");
+    more_input(1);
+    type_text("800");
     CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
     CHECK_NEAR(settings_get(SET_SERVO_PROG_V), 6.0f, 0.001f);
     /* An opening with no port held reads the settings: 6.0 V. */
@@ -681,8 +682,8 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
     CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
     kst_panel_open();
     CHECK_EQ(kst_prog_supply_mv(M), KST_PANEL_STD_MV);
-    more(0);
-    type("7.4");
+    more_input(0);
+    type_text("7.4");
     hold(2.1f);
     CHECK_EQ(kst_prog_supply_mv(M), 7400u);
     kst_panel_screen_entry();
@@ -690,8 +691,8 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
 
     /* A held port keeps the session's voltage over an opening; a panel
      * that starts under it has none above 6.0 V. */
-    more(0);
-    type("7.4");
+    more_input(0);
+    type_text("7.4");
     hold(2.1f);
     CHECK_EQ(kst_prog_supply_mv(M), 7400u);
     tap(val(PG_SERVO, 0, 0));
@@ -886,22 +887,22 @@ TEST_CASE(the_current_limit_is_typed_inside_50_to_3000_ma)
     fresh();
     g_rig.rail = true;
     link_up();
-    more(1);
+    more_input(1);
     CHECK_EQ(kst_panel_editor(), 1);
     CHECK_STR_EQ(kst_panel_keypad()->title, TR(KP_PROG_CURRENT));
     CHECK_NEAR(kst_panel_keypad()->min, (float)PDMINI_I_MIN_MA, 0.001f);
     CHECK_NEAR(kst_panel_keypad()->max, (float)PDMINI_I_MAX_MA, 0.001f);
-    type("49");
+    type_text("49");
     CHECK_EQ(kst_panel_editor(), 1);
     CHECK(kst_panel_keypad()->refused);
-    type("3001");
+    type_text("3001");
     CHECK_EQ(kst_panel_editor(), 1);
     CHECK_EQ(kst_prog_supply_ma(M), KST_PROG_SUPPLY_MA);
-    type("50");
+    type_text("50");
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(kst_prog_supply_ma(M), 50u);
-    more(1);
-    type("3000");
+    more_input(1);
+    type_text("3000");
     CHECK_EQ(kst_prog_supply_ma(M), 3000u);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
     snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 5u, 0u,
@@ -929,8 +930,8 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         CHECK_EQ(g_rig.sup_sets, 0);
         /* 4.8 V is what it can give. */
-        more(0);
-        type("4.8");
+        more_input(0);
+        type_text("4.8");
         tap(val(PG_SERVO, 0, 0));
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
@@ -1251,19 +1252,19 @@ TEST_CASE(the_wait_before_pwm_is_a_row_with_limits_and_is_kept)
         CHECK_NEAR(kst_panel_keypad()->max, (float)KST_PROG_WAIT_MAX_MS,
                    0.001f);
         /* The limits are taken. */
-        type("0");
+        type_text("0");
         CHECK_EQ(kst_panel_editor(), 0);
         CHECK_EQ(kst_prog_wait_ms(M), 0u);
         CHECK_EQ(settings_get_int(SET_SERVO_PROG_WAIT), 0);
-        more(2);
-        type("10000");
+        more_input(2);
+        type_text("10000");
         CHECK_EQ(kst_panel_editor(), 0);
         CHECK_EQ(kst_prog_wait_ms(M), 10000u);
         CHECK_EQ(settings_get_int(SET_SERVO_PROG_WAIT), 10000);
         CHECK(settings_save_asked());
         /* 1 ms above is refused: the value stays. */
-        more(2);
-        type("10001");
+        more_input(2);
+        type_text("10001");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK(kst_panel_keypad()->refused);
         CHECK_EQ(kst_prog_wait_ms(M), 10000u);
@@ -1501,7 +1502,6 @@ TEST_CASE(the_hold_button_fills_through_its_own_revision)
     connected();
     tap(val(PG_SERVO, 3, 0));
     CHECK_EQ(kst_panel_editor(), 3);
-    rev = kst_panel_revision();
     hold_rev = kst_panel_hold_revision();
     tick(0.1f);
     CHECK_EQ(kst_panel_hold_revision(), hold_rev);
@@ -2577,9 +2577,7 @@ TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
 {
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
     char want[KST_PANEL_LINE];
-    unsigned named;
     unsigned of = 0;
-    fake_file_t *f;
 
     for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
         kst_image_t ot = other_type();
@@ -2587,13 +2585,13 @@ TEST_CASE(an_edited_file_is_named_as_one_and_its_locked_values_are_counted)
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         connected();
-        f = file_with("ED", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 10u));
+        fake_file_t *f = file_with("ED", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 10u));
         f->kind = KST_PROG_FILE_EDITED;
         pick("ED");
         CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
         CHECK_EQ(lines(t), 2);
         /* How many of the 27 fields its lines give. */
-        named = kst_prog_load_named(M, &of);
+        const unsigned named = kst_prog_load_named(M, &of);
         CHECK(named >= 1u && named <= 27u);
         CHECK_EQ(of, 27);
         snprintf(want, sizeof(want), TR(KP_FILE_EDITED_N), named, 27u);
@@ -2720,13 +2718,12 @@ TEST_CASE(a_file_that_does_not_read_says_why)
 {
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
     char want[KST_PANEL_LINE];
-    fake_file_t *f;
 
     for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         connected();
-        f = file_with("X", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 1u));
+        fake_file_t *f = file_with("X", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 1u));
         f->result = KST_PROG_CARD_BAD;
         pick("X");
         CHECK_EQ(msg(), KST_PROG_MSG_LOAD_BAD);
@@ -3832,7 +3829,7 @@ TEST_CASE(the_revision_moves_with_what_is_shown_and_rests_with_it)
 
 static bool lines_ok(unsigned id, unsigned arg, uint8_t reg)
 {
-    const kst_prog_msg_t m = { .id = (uint16_t)id, .level = KST_PROG_WARN,
+    const kst_prog_msg_t m = { .id = (uint8_t)id, .level = KST_PROG_WARN,
                                .reg = reg, .arg = (uint16_t)arg, .seq = 1 };
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
     const int n = kst_panel_message_lines(&m, t);
@@ -3854,7 +3851,7 @@ static bool family_ok(unsigned from, unsigned n)
     for (unsigned i = 0; i < n; ++i) {
         char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
         char unknown[KST_PANEL_LINE];
-        const kst_prog_msg_t m = { .id = (uint16_t)(from + i), .reg = 0xFFu };
+        const kst_prog_msg_t m = { .id = (uint8_t)(from + i), .reg = 0xFFu };
 
         snprintf(unknown, sizeof(unknown), TR(KP_M_UNKNOWN), from + i);
         ok = ok && lines_ok(from + i, 3, 0xFFu) && lines_ok(from + i, 3, 0x1Fu);
@@ -3897,7 +3894,7 @@ static void texts_in(ui_lang_t lang)
     CHECK_STR_EQ(t[0], TR(KP_ST_NO_OP));
     /* 3 and 4 are refusals no port gives: they are a line all the same. */
     for (unsigned gap = 3u; gap < (unsigned)LINK_KST_REF_UNSAFE; ++gap) {
-        m.id = (uint16_t)(KST_PROG_MSG_REF + gap);
+        m.id = (uint8_t)(KST_PROG_MSG_REF + gap);
         CHECK_EQ(kst_panel_message_lines(&m, t), 1);
         CHECK(t[0][0] != '\0');
     }
@@ -4056,7 +4053,7 @@ static void type_duty(const char *digits)
     tap(kst_panel_tab_rect(PG_TUNE));
     tap(val(PG_TUNE, 1, 0));
     CHECK_EQ(kst_panel_editor(), 1);
-    type(digits);
+    type_text(digits);
 }
 
 TEST_CASE(the_write_page_lists_each_value_from_the_servos_to_the_new)
@@ -4739,8 +4736,9 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     supply_cmd_t c;
     static gfx_color_t a[W * H];
     static gfx_color_t b[W * H];
-    gfx_canvas_t ca = { a, W, H, W };
-    gfx_canvas_t cb = { b, W, H, W };
+    gfx_canvas_t ca, cb;
+    gfx_canvas_init(&ca, a, W, H, W);
+    gfx_canvas_init(&cb, b, W, H, W);
     int moved = 0;
 
     fresh_screen();

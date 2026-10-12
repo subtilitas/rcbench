@@ -372,6 +372,8 @@ TEST_CASE(a_channel_configuration_maps_onto_a_port)
     CHECK_EQ(out[0], 1u);
     prog_link_cfg(cc, NULL);
     prog_link_cfg(cc, out);
+    /* cppcheck-suppress duplicateExpression
+     * the page's offset from itself: the first register */
     CHECK_EQ(out[LINK_PG_SLEW - LINK_PG_SLEW], 250u);
     CHECK_EQ(out[LINK_PG_MIN_US - LINK_PG_SLEW], 660u);
     CHECK_EQ(out[LINK_PG_MAX_US - LINK_PG_SLEW], 860u);
