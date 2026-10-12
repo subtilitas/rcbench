@@ -177,9 +177,8 @@ typedef struct {
     tone_state_t state;
     /** The state and the seven values below come from a status read
      *  younger than TONE_LINK_STALE_MS; false, and the seven 0, while none
-     *  speaks for
-     *  the page: no link, no page, no read yet, a read that old, or a page
-     *  that holds the tap off. */
+     *  speaks for the page: no link, no page, no read yet, a read that
+     *  old, or a page that holds the tap off. */
     bool     read;
     bool     overrun;         /**< the capture overran since ENABLE     */
     bool     tone;            /**< the last window held a tone          */
