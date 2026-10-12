@@ -12,7 +12,8 @@
  * driver holds the port, the port's pulse is on or the tester points at
  * it; the pulse and the tester only on a port the generator has; a refused
  * write storing nothing; the command clamped to the span; the endpoints at
- * both limits; the read-only registers and the page end; a port the build
+ * both limits; the slew refused above 3000 and a kept one above it started
+ * at 3000; the read-only registers and the page end; a port the build
  * does not have; a slot refused on a port's pin and beside it; a write
  * taken back; no endpoint longer than the frame on a port whose pulse is
  * on.
@@ -438,8 +439,9 @@ TEST_CASE(the_endpoints_and_the_slew_are_held_to_the_channels_range)
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2500u), 0u);
     CHECK_EQ(o.channel[9].min_us, 400u);
     CHECK_EQ(o.channel[9].max_us, 2500u);
-    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), 0xFFFFu), 0u);
-    CHECK_EQ(o.channel[9].slew_per_s, 0xFFFFu);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), 0xFFFFu), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), LINK_CC_SLEW_MAX), 0u);
+    CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
     CHECK_EQ(o.channel[9].role, OUT_ROLE_SURFACE);
     /* A reversed pair is a reversed servo to the page; the channel renders
      * between the two as the CHANNELS page's does. */
@@ -451,6 +453,62 @@ TEST_CASE(the_endpoints_and_the_slew_are_held_to_the_channels_range)
     /* Armed too. */
     outputs_arm(&o, true, 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MIN_US), 900u), 0u);
+}
+
+/* The slew is held to CHAN_CFG's: 0 to LINK_CC_SLEW_MAX, and a refused
+ * slew stores nothing on the page or in the bank. */
+TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
+{
+    const unsigned slew1 = LINK_PG_REG(1u, LINK_PG_SLEW);
+
+    fresh(2u);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), 0u), 0u);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), LINK_CC_SLEW_MAX), 0u);
+    CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
+    CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
+    const prog_port_t was = pg;
+    const outputs_t bank = o;
+    const uint16_t bad[] = { LINK_CC_SLEW_MAX + 1u, 10000u, 0xFFFFu };
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), bad[i]),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(put(slew1, bad[i]), LINK_NACK_BAD_VALUE);
+    }
+    /* In a frame with good registers before it, nothing of the frame. */
+    const uint16_t frame[3] = { 500u, LINK_CC_SLEW_MAX + 1u, 900u };
+    CHECK_EQ(prog_port_write(&pg, LINK_PG_REG(0u, LINK_PG_CMD), 3u, frame, &o,
+                             0u, false, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(memcmp(&was, &pg, sizeof(pg)), 0);
+    CHECK_EQ(memcmp(&bank, &o, sizeof(o)), 0);
+    /* The last port's slew is judged as well. */
+    CHECK_EQ(put(slew1, LINK_CC_SLEW_MAX), 0u);
+    CHECK_EQ(o.channel[10].slew_per_s, LINK_CC_SLEW_MAX);
+}
+
+/* A slew kept above the maximum by a build before the limit starts as the
+ * maximum, on the page, in the bank and in what is kept again. */
+TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
+{
+    uint16_t kept[PROG_PORT_KEPT_COUNT];
+    uint16_t back[PROG_PORT_KEPT_COUNT];
+    const uint16_t old[] = { LINK_CC_SLEW_MAX + 1u, 0xFFFFu };
+
+    for (unsigned i = 0; i < sizeof(old) / sizeof(old[0]); ++i) {
+        fresh(2u);
+        prog_port_defaults(kept, 13u);
+        kept[1] = old[i];
+        kept[PROG_PORT_KEPT + 1u] = LINK_CC_SLEW_MAX;
+        prog_port_restore(&pg, kept, &o, 0u);
+        CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
+        CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
+        CHECK_EQ(reg(LINK_PG_REG(1u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
+        /* The rest of the port as kept. */
+        CHECK_EQ(reg(PIN0), 13u);
+        CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MIN_US)), LINK_CC_DEFAULT_MIN);
+        CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MAX_US)), LINK_CC_DEFAULT_MAX);
+        prog_port_kept(&pg, back);
+        CHECK_EQ(back[1], LINK_CC_SLEW_MAX);
+    }
 }
 
 TEST_CASE(a_refused_write_stores_none_of_its_registers)
@@ -755,6 +813,8 @@ int main(void)
     RUN(the_pulse_and_the_tester_only_on_a_port_the_generator_has);
     RUN(a_command_is_clamped_and_reaches_the_ports_channel);
     RUN(the_endpoints_and_the_slew_are_held_to_the_channels_range);
+    RUN(a_slew_above_the_maximum_is_refused_and_stores_nothing);
+    RUN(a_kept_slew_above_the_maximum_starts_as_the_maximum);
     RUN(a_refused_write_stores_none_of_its_registers);
     RUN(read_only_registers_the_page_end_and_absent_ports_are_refused);
     RUN(a_slot_is_refused_on_a_ports_pin_and_beside_it);

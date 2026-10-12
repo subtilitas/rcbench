@@ -135,7 +135,9 @@ void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
         }
         p->regs[REG(port, LINK_PG_PIN)]  = pin;
         p->regs[REG(port, LINK_PG_CMD)]  = (uint16_t)(OUT_SPAN / 2u);
-        p->regs[REG(port, LINK_PG_SLEW)] = k[1];
+        /* A kept slew above the maximum starts as the maximum. */
+        p->regs[REG(port, LINK_PG_SLEW)] =
+            (k[1] > LINK_CC_SLEW_MAX) ? (uint16_t)LINK_CC_SLEW_MAX : k[1];
         if (us_ok(k[2]) && us_ok(k[3])) {
             p->regs[REG(port, LINK_PG_MIN_US)] = k[2];
             p->regs[REG(port, LINK_PG_MAX_US)] = k[3];
@@ -222,6 +224,10 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
         if (carries(off, n, REG(port, LINK_PG_CMD))
             && next[REG(port, LINK_PG_CMD)] > OUT_SPAN) {
             next[REG(port, LINK_PG_CMD)] = (uint16_t)OUT_SPAN;
+        }
+        if (carries(off, n, REG(port, LINK_PG_SLEW))
+            && next[REG(port, LINK_PG_SLEW)] > LINK_CC_SLEW_MAX) {
+            return LINK_NACK_BAD_VALUE;
         }
         if ((carries(off, n, REG(port, LINK_PG_MIN_US))
              && !us_ok(next[REG(port, LINK_PG_MIN_US)]))

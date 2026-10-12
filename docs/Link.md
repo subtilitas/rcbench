@@ -93,8 +93,8 @@ BIND_OUT and BIND from 4.10, SERVO_WIN, SENSE's `RESETS` and a signed
 SUPPLY's flag bit 11 and SERVO_SENSE's port bit from 4.13. From 4.14 the programming port
 plans a write over several passes and reports results 33 to 35; the panel
 writes nothing differently for it. The operation LEAVE and write register 28
-of that page are sent from 4.15. From 4.16 the coprocessor refuses a PWM
-endpoint longer than its frame, and the panel states a programming port's
+of that page are sent from 4.15. From 4.16 the coprocessor refuses a slew
+above 3000 and a PWM endpoint longer than its frame, and the panel states a programming port's
 range ahead of the write that switches the port's pulse on
 ([A pulse no longer than its frame](#a-pulse-no-longer-than-its-frame)). The
 coprocessor never reads the panel's minor; a page
@@ -246,7 +246,7 @@ rest of another. The three pages make the change one step:
 
 | Page | Registers | Rules |
 | --- | --- | --- |
-| BIND_CFG | 32, as CHAN_CFG | a CHAN_CFG page that is not in force. A frame is checked by CHAN_CFG's value rules (role 0 or 1, endpoints 400 to 2500 µs) and refused with BAD_VALUE, storing nothing, on a breach. No output changes |
+| BIND_CFG | 32, as CHAN_CFG | a CHAN_CFG page that is not in force. A frame is checked by CHAN_CFG's value rules (role 0 or 1, slew 0 to 3000, endpoints 400 to 2500 µs) and refused with BAD_VALUE, storing nothing, on a breach. No output changes |
 | BIND_OUT | 32, as OUTPUTS | an OUTPUTS page that is not in force. A frame is checked by OUTPUTS' value rules (a driver 0 to 4, a pin number up to 63) and refused with BAD_VALUE on a breach. No output changes |
 | BIND | 1: `COMMIT` | a write carries the CRC (cyclic redundancy check) of the 64 prepared registers. Reads the CRC of what is prepared |
 
@@ -553,7 +553,7 @@ build has 1. `shared/outputs/prog_port.c` holds the rules.
 | 3 | `TARGET` | read, write | what SERVO's sweep and hold command: 0 the standard servo ports, n + 1 port n. Not kept |
 | 4 + 5 n | `PIN` | read, write | port n's coprocessor GPIO (general-purpose input/output), or 0xFFFF for none. Kept |
 | 5 + 5 n | `CMD` | read, write | the command, 0 to 1000; a higher value is taken as 1000. Not kept |
-| 6 + 5 n | `SLEW` | read, write | as CHAN_CFG's slew. Kept |
+| 6 + 5 n | `SLEW` | read, write | as CHAN_CFG's slew: 0 to 3000, a higher value refused with BAD_VALUE, nothing stored (since 4.16). Kept; a kept slew above 3000 starts as 3000 |
 | 7 + 5 n | `MIN_US` | read, write | the pulse at command 0, 400 to 2500 µs, default 1000; while the port's `PWM` bit is set, at most the frame of the port's rate minus 1 µs (since 4.16). Kept |
 | 8 + 5 n | `MAX_US` | read, write | the pulse at command 1000, 400 to 2500 µs, default 2000; while the port's `PWM` bit is set, at most the frame of the port's rate minus 1 µs (since 4.16). Kept |
 
@@ -609,7 +609,8 @@ is set until another `PIN` is written.
 | 4.12 or older | 4.13 | the panel never reads or writes 0x33: no port renders a pulse, and port 0 holds GP13 |
 
 `test_prog_port` runs the page: every pin refusal in both directions, the
-endpoints at 399, 400, 2500 and 2501 µs, a pin move under an armed bank, a
+endpoints at 399, 400, 2500 and 2501 µs, the slew at 3000 and 3001 and a kept
+slew of 3001 and 65535, a pin move under an armed bank, a
 set `PWM` bit and a `TARGET`, 0 and 5 ports asked of a 4-port model, and a
 stored pin taken at start. No pulse of a port has been measured on
 hardware.
@@ -692,7 +693,7 @@ register 0 reads 1 while a PD mini answers; the port then switches it.
 ENTER takes the programming voltage and current limit from write registers
 26 and 27. With a PD mini answering, ENTER is refused with SUPPLY_RANGE
 unless the voltage is at most 8400 mV, the current 50 to 3000 mA and the
-voltage at least 500 mV under the PD mini's input. 8400 mV is the highest
+session's voltage at least 700 mV under the PD mini's input. 8400 mV is the highest
 servo rail of the IO board. The session's voltage is the staged one, or
 the lower of it and the voltage of an output that is on; under 4800 mV
 ENTER is refused with SUPPLY_LOW (since 4.15) and the supply is not
@@ -1093,7 +1094,7 @@ Clearing a latched failsafe is such a side effect.
 | 0x20 | BENCH | read | voltage (10 mV), current (10 mA), power (W), rpm (revolutions per minute), ESC (electronic speed controller) temperature and motor temperature (0.1 °C, signed), charge (mAh), energy (0.1 Wh), minimum voltage, maximum current, maximum power, maximum rpm, flags |
 | 0x21 | reserved | | not assigned; not to be reused |
 | 0x22 | OUTPUTS | read, write | per slot: driver (0 none, 1 PWM (pulse-width modulation), 2 PPM (pulse-position modulation), 3 DShot, 4 bidirectional DShot), pin, first channel and channel count in one register, rate in Hz (kbit/s for both DShot drivers); eight slots of four registers |
-| 0x23 | CHAN_CFG | read, write | per channel: role (0 throttle, 1 surface), slew (span per second, 0 = immediate), minimum and maximum pulse in µs, 400 to 2500 and, on a channel a PWM slot renders, at most its frame minus 1 µs (since 4.16); eight channels of four registers |
+| 0x23 | CHAN_CFG | read, write | per channel: role (0 throttle, 1 surface), slew (thousandths of the span per second, 0 to 3000, 0 = immediate; a higher value is refused with BAD_VALUE and nothing is stored (since 4.16); a slew above 3000 kept in the coprocessor's flash by an older build starts as 3000), minimum and maximum pulse in µs, 400 to 2500 and, on a channel a PWM slot renders, at most its frame minus 1 µs (since 4.16); eight channels of four registers |
 | 0x24 | CATALOGUE | read | the board's own pins, one register each: GPIO (general-purpose input/output) number in 6 bits, the pad number printed beside it in 6, what holds it in 4 (0 free, 1 heartbeat, 2 CAN, 3 flash, 4 debug, 5 sensor, 15 other); 32 slots, and a pad number of 0 means there is no pin in that slot |
 | 0x25 | SHAPE | read | where those pads are: outline width and height in 0.01 mm, the corner pad 1 sits at and the pads in one row packed as (corner << 8) \| per side, the pitch in 0.01 mm, and the distance from the edge to the centre of a pad row. Two rows on one pitch, numbered away from pad 1 along its edge and back along the opposite one. All zero when the coprocessor has no shape for its board, which means it is listed and not drawn |
 | 0x26 | ARTWORK | read | what a picture of the board is: blocks of payload (0 when the coprocessor carries none), width and height in pixels, format (0 none, 1 RGB565 with the low byte first), payload length in two registers, and a CRC (cyclic redundancy check) over the whole payload seeded zero |

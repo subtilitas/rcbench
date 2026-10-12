@@ -812,10 +812,15 @@ screen holds.
 The model's ranges are a USB-PD PPS (Programmable Power Supply) source's
 widest profile, 3.3 to 21 V at up to 5 A. The PD mini's are from the
 vendor's page, not measured. The PD mini is a buck converter and gives no
-more than it is fed: its voltage is also capped 0.5 V under the input it
-reports, so a 5 V input allows at most 4.5 V. A set point over the input
-puts the module into ERR until it is power cycled; the 0.5 V margin is not
-measured. Both are narrowed by the caps in SETTINGS, and
+more than it is fed: its voltage is also capped 0.7 V under the input it
+reports, so a 5 V input allows at most 4.3 V. An input under 1.7 V
+leaves the 1 V minimum, which the screen shows as the cap, and one under
+1.5 V holds the output off; until an input is read the cap is 20 V. A set
+point over the input
+puts the module into ERR until it is power cycled; the margin it needs is
+not measured. The cap lies 0.2 V above the line the output is cut at (see
+below), so the input can drop 0.2 V under load before a set point at the
+cap is cut. Both are narrowed by the caps in SETTINGS, and
 the sliders follow the supply in use. A tap on a track sets the value under
 the finger.
 
@@ -868,7 +873,9 @@ coprocessor reads the module's input every 500 ms. When the input reads
 under the set point plus 0.5 V on 2 input reads in a row, it switches the
 output off at once, and the band names the input and the set point, for
 example `PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. The
-output stays off until a new hold. One low reading switches nothing, and a
+output stays off until a new hold. An input reading under 1.5 V leaves no
+room for the lowest set point, 1.0 V: the ON is not written, and the band
+shows the same message. One low reading switches nothing, and a
 read that fails neither counts nor clears. While the output is on, its set
 point is not lowered to follow a falling input. The rule is chosen without
 a bench measurement: whether a live module goes to ERR when its input sags
@@ -1948,8 +1955,11 @@ The save waits for the bench to stop driving, and then for a gap in the
 traffic. Writing flash stops the coprocessor with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178 us, against a CAN
-frame of about 130 us and two frames of buffer in the controller. The erase
-and the page program have not been timed apart from each other. A request lost
+frame of about 130 us and two frames of buffer in the controller. The figure is one
+measurement: 1 sample, taken on the bring-up module, with the flash part not
+yet identified. The erase and the page program have not been timed apart from
+each other. The window is to be argued again against the flash part's
+datasheet maximum once the part is known. A request lost
 in that window costs the panel 1000 ms of waiting, which is past the
 coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.

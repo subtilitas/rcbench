@@ -76,8 +76,8 @@ typedef enum {
  * 4.14 the servo programming page (KST, 0x32) plans a write after the
  * command's frame and reports LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
  * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to a
- * coprocessor from 4.15 only.  From 4.16 CHAN_CFG, OUTPUTS, BIND, SERVO and
- * PROG refuse a write that would leave a PWM output with an endpoint longer
+ * coprocessor from 4.15 only.  From 4.16 CHAN_CFG and PROG refuse a slew
+ * above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG refuse a write that would leave a PWM output with an endpoint longer
  * than its frame (out_pwm_pulse_max()); the panel states a port's range
  * before it switches the port's pulse on, which an older coprocessor takes
  * as well.  A
@@ -148,12 +148,17 @@ typedef enum {
  *     nothing is clamped against. */
 enum {
     LINK_CC_ROLE    = 0, /**< 0 throttle, 1 surface                     */
-    LINK_CC_SLEW    = 1, /**< span a second; 0 means at once            */
+    LINK_CC_SLEW    = 1, /**< span a second, 0 to LINK_CC_SLEW_MAX; 0 means at once */
     LINK_CC_MIN_US  = 2, /**< the pulse a command of 0 renders as       */
     LINK_CC_MAX_US  = 3, /**< and of LINK_CH_SPAN                       */
     LINK_CC_STRIDE  = 4,
 };
 #define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)
+
+/** The fastest slew a write may name, in thousandths of the span a second:
+ *  3000, 300 %/s, the panel's own maximum.  A higher value is refused with
+ *  BAD_VALUE. */
+#define LINK_CC_SLEW_MAX 3000u
 
 #define LINK_CC_ROLE_THROTTLE 0u
 #define LINK_CC_ROLE_SURFACE  1u

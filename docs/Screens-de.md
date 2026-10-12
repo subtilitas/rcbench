@@ -895,10 +895,12 @@ Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
 (Programmable Power Supply), 3,3 bis 21 V bei bis zu 5 A. Die des PD mini
 stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini
 ist ein Abwärtswandler und gibt nicht mehr ab, als er bekommt: seine
-Spannung ist zusätzlich auf 0,5 V unter der Eingangsspannung begrenzt, die
-er meldet, an 5 V Eingang also höchstens 4,5 V. Ein Sollwert über dem
-Eingang bringt das Modul in ERR, bis es stromlos war; die 0,5 V Abstand
-sind nicht gemessen. Beide engen
+Spannung ist zusätzlich auf 0,7 V unter der Eingangsspannung begrenzt, die
+er meldet, an 5 V Eingang also höchstens 4,3 V. Unter 1,7 V Eingang bleibt der Mindestwert von 1 V, den der Bildschirm als Grenze zeigt, und unter 1,5 V bleibt der Ausgang aus; solange kein Eingang gelesen ist, gilt 20 V. Ein Sollwert über dem
+Eingang bringt das Modul in ERR, bis es stromlos war; welchen Abstand es
+braucht, ist nicht gemessen. Die Grenze liegt 0,2 V über der Linie, an der
+der Ausgang abgeschaltet wird (siehe unten): der Eingang darf unter Last um
+0,2 V sinken, bevor ein Sollwert an der Grenze abgeschaltet wird. Beide engen
 die Grenzen unter OPTIONEN ein, und die Schieber folgen dem Netzteil, das
 in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
@@ -955,7 +957,9 @@ ist, liest der Koprozessor den Eingang des Moduls alle 500 ms. Liegt der
 Eingang bei 2 Lesungen hintereinander unter dem Sollwert plus 0,5 V, schaltet
 er den Ausgang sofort ab, und das Band nennt Eingang und Sollwert, zum
 Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
-Der Ausgang bleibt aus bis zu einem neuen Halten. Eine einzelne niedrige
+Der Ausgang bleibt aus bis zu einem neuen Halten. Ein Eingang unter 1,5 V
+lässt keinen Platz für den kleinsten Sollwert, 1,0 V: das ON wird nicht
+geschrieben, und das Band zeigt dieselbe Meldung. Eine einzelne niedrige
 Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
 setzt sie zurück. Solange der Ausgang an ist, wird sein Sollwert einem
 fallenden Eingang nicht nachgeführt. Die Regel ist ohne Messung am Prüfstand
@@ -2124,8 +2128,11 @@ Lücke im Verkehr. Flash zu schreiben hält den Koprozessor mit abgeschalteten
 Interrupts an, und solange antwortet er auf nichts: auf dem
 Inbetriebnahme-Modul wurde ein Speichervorgang, der in einem Fenster gelöscht
 und programmiert hat, mit 19.178 us gemessen, gegen einen CAN-Frame von etwa
-130 us und zwei Frames Puffer im Controller. Löschen und Page Program sind
-nicht getrennt voneinander gemessen. Ein in diesem Fenster verlorener Request
+130 us und zwei Frames Puffer im Controller. Der Wert ist eine einzelne
+Messung: 1 Probe, auf dem Inbetriebnahme-Modul genommen, das Flash-Bauteil ist
+noch nicht bestimmt. Löschen und Page Program sind nicht getrennt voneinander
+gemessen. Das Fenster wird gegen das Maximum im Datenblatt neu begründet,
+sobald das Bauteil bekannt ist. Ein in diesem Fenster verlorener Request
 kostet das Panel 1000 ms Wartezeit, was über dem 200-ms-Failsafe des
 Koprozessors liegt; ein einziger verlorener Frame endet also als `FEHLER 01`
 (`LINK_FAULT_LINK_SILENT`) an einem Kabel, an dem nichts fehlt.
