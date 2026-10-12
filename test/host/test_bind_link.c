@@ -994,9 +994,9 @@ TEST_CASE(an_older_coprocessor_can_be_left_with_pages_no_binding_describes)
         CHECK(rd == BIND_READ_OK || rd == BIND_READ_ODD);
         if (rd == BIND_READ_ODD) {
             ++odd;
-            outbind_t tap;
-            edited_binding(&tap);
-            CHECK(!bind_link_may_write(rd, BOARD, &tap));
+            outbind_t probe;
+            edited_binding(&probe);
+            CHECK(!bind_link_may_write(rd, BOARD, &probe));
         }
     }
     CHECK(odd > 0u);

@@ -33,12 +33,18 @@ typedef struct {
 
 static fake_dev_t g;
 
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const fake_dev_t *f = (const fake_dev_t *)ctx;
     memcpy(out, f->identity + off, (size_t)n * sizeof(uint16_t));
 }
 
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const fake_dev_t *f = (const fake_dev_t *)ctx;

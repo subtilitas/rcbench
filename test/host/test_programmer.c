@@ -158,7 +158,7 @@ TEST_CASE(back_climbs_one_level_at_a_time)
     fresh();
     descend_to_blheli();
     scr->render(&cv, 0);
-    const int at_device = lit();
+    const int on_device = lit();
 
     tap(BACK_X, BACK_Y);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -170,10 +170,10 @@ TEST_CASE(back_climbs_one_level_at_a_time)
     scr->render(&cv, 0);
     const int at_class = lit();
 
-    CHECK(at_device > 0 && at_list > 0 && at_class > 0);
-    if (at_class == at_list || at_list == at_device) {
+    CHECK(on_device > 0 && at_list > 0 && at_class > 0);
+    if (at_class == at_list || at_list == on_device) {
         T_FAIL("levels drew the same: %d, %d, %d",
-               at_class, at_list, at_device);
+               at_class, at_list, on_device);
     }
     /*
      * And from the top it does nothing rather than leaving the screen.

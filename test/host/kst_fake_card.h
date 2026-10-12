@@ -141,17 +141,17 @@ static inline size_t fake_card_text(const fake_file_t *f, char *out,
     }
     len = kst_file_format(&f->img, full, sizeof(full));
     while (at < len) {
-        size_t end = at;
+        size_t line_end = at;
 
-        while (end < len && full[end] != '\n') {
-            end++;
+        while (line_end < len && full[line_end] != '\n') {
+            line_end++;
         }
-        end++;
-        if (!fake_card_drops(&full[at], kind, typed) && n + (end - at) <= cap) {
-            memcpy(&out[n], &full[at], end - at);
-            n += end - at;
+        line_end++;
+        if (!fake_card_drops(&full[at], kind, typed) && n + (line_end - at) <= cap) {
+            memcpy(&out[n], &full[at], line_end - at);
+            n += line_end - at;
         }
-        at = end;
+        at = line_end;
     }
     return n;
 }

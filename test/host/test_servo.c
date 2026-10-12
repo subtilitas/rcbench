@@ -6370,8 +6370,9 @@ static void rail_supply(float v, float i)
 static sense_link_win_t rail_win(int ma, unsigned mv)
 {
     static uint16_t number;
+    number = (uint16_t)(number + 1u);
     const sense_link_win_t w = {
-        .number = ++number, .current = true, .voltage = true,
+        .number = number, .current = true, .voltage = true,
         .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma, .min_ma = (int16_t)ma,
         .mean_mv = (uint16_t)mv, .min_mv = (uint16_t)mv,
     };

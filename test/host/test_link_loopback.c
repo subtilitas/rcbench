@@ -43,10 +43,16 @@ static state_t   g;
 static link_dev_t dev;
 static link_host_t host;
 
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void id_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     memcpy(out, ((state_t *)ctx)->identity + off, (size_t)n * 2u);
 }
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void ct_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     memcpy(out, ((state_t *)ctx)->control + off, (size_t)n * 2u);
@@ -59,11 +65,17 @@ static uint8_t ct_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     memcpy(((state_t *)ctx)->control + off, in, (size_t)n * 2u);
     return 0;
 }
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void bn_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     memcpy(out, ((state_t *)ctx)->bench + off, (size_t)n * 2u);
 }
 
+/* The member of link_page_t is a non-const void *ctx; this page only reads
+ * through it, and a const parameter would need a cast at the table entry. */
+// cppcheck-suppress constParameterCallback
 static void wide_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     memcpy(out, ((state_t *)ctx)->wide + off, (size_t)n * 2u);
