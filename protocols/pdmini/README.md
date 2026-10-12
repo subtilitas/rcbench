@@ -24,9 +24,18 @@ The module has two parts.
   line idling high back-feeds an unpowered module.
 - The output is read every 100 ms, its state and the input every 500 ms.
 - 3 failed state reads in a row take the module for gone.
+- A voltage set point is capped 700 mV under the input the module reports,
+  rounded down to 10 mV, and is never under 1000 mV.
 - A live output whose input reads under the set point plus 500 mV on 2 reads
   in a row is switched off and held off. The rule is chosen without a bench
   measurement.
+- The 200 mV between the cap and the cut line lets the input drop under load
+  without a cut: 3000 mA through 1 m of 20 AWG copper out and back
+  (2 x 33 mOhm) drops 200 mV. The drop on a real source and cable is not
+  measured. A dip of 200 mV or more from the reading the cap was taken from
+  cuts a set point at the cap.
+- An ON asked while the input reads under 1500 mV is not written: there is
+  no room for the lowest set point. The output is held off as for a sag.
 - The core is non-blocking and keeps no time of its own. The caller passes
   milliseconds.
 - The pin driver takes 2 PIO (programmable input/output) state machines and
