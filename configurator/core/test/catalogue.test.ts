@@ -148,7 +148,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
     ],
   );
   assert.equal(CATALOGUE.rules.length, 6);
-  assert.equal(CATALOGUE.checks.length, 37);
+  assert.equal(CATALOGUE.checks.length, 39);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [
@@ -1224,4 +1224,32 @@ test('the Osoyoo strip: no current is shown for both voltages, the DC input name
   assert.match(check('strip-converter').text.en, /^((?!rates the board|printed 16 V).)*$/);
   assert.match(check('strip-input').text.en, /7 to 16 V/);
   assert.notDeepEqual(check('strip-input').src, check('strip-converter').src);
+});
+
+test('the Osoyoo strip: one DC input, no unresolved 3V3 claim, the plug claim excludes the current sensor, one source per check', () => {
+  const strip = CATALOGUE.powerSources.find((s) => s.id === 'strip-v')!;
+  const check = (id: string) => CATALOGUE.checks.find((c) => c.id === id)!;
+  // Exactly one of the jack and the VIN terminal, never both: the check and the power source say so in both languages.
+  assert.match(check('strip-dc').text.en, /exactly 1 supply.*never both/);
+  assert.match(check('strip-dc').text.de, /Genau 1 Versorgung.*nie an beiden/);
+  assert.match(strip.cons.map((c) => c.en).join(' '), /exactly 1 of the two and never both/);
+  assert.match(strip.cons.map((c) => c.de).join(' '), /genau eine von beiden und nie beide/);
+  // The 3V3 claim carries the condition the unknown states.
+  for (const lang of ['en', 'de'] as const) {
+    const con = strip.cons.find((c) => /3V3/.test(c[lang]) && /3[.,]3 V/.test(c[lang]) && !/VSYS/.test(c[lang]))!;
+    assert.match(con[lang], lang === 'en' ? /whether USB alone powers it is not resolved/ : /ob USB allein ihn versorgt, ist nicht geklärt/);
+    assert.match(check('strip-jumper').text[lang], lang === 'en' ? /not resolved/ : /nicht geklärt/);
+  }
+  // The straight-in advantage names the same exclusions as the strip-plug check.
+  assert.match(strip.pros[0]!.en, /Without the servo programmer and without the INA3221/);
+  assert.match(strip.pros[0]!.de, /Ohne den Servo-Programmierer und ohne den Stromsensor INA3221/);
+  // Each check of the strip holds the facts of one source.
+  assert.equal(check('strip-jumper').src.kind, 'doc');
+  assert.notDeepEqual(check('strip-dc').src, check('strip-jumper').src);
+  assert.notDeepEqual(check('strip-measure').src, check('strip-jumper').src);
+  assert.equal(check('strip-measure').src.kind, 'doc');
+  assert.match(check('strip-measure').text.en, /4\.8 to 5\.2 V/);
+  assert.doesNotMatch(check('strip-jumper').text.en, /4\.8|7 to 1[26] V/);
+  assert.doesNotMatch(check('strip-input').text.en, /7 to 40 V/);
+  assert.match(check('strip-converter').text.en, /7 to 40 V/);
 });

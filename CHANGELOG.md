@@ -29,8 +29,12 @@ history is in git.
   3V3 from the regulator fed by VSYS of the Pico board (500 mA rated, vendor
   values). Without a DC supply the 5V position gives 0 V. The data carries
   a warning to check the jumper before a servo is plugged in, since a servo
-  gets 3.3 V in position 3V3. The pro "plugs straight in" names the setup
-  without the servo programmer. A source of the kind `doc` names a
+  gets 3.3 V in position 3V3, where the regulator is powered; whether USB
+  alone powers it is not resolved. The data states that exactly 1 of the DC
+  jack and the VIN terminal is connected, never both. The pro "plugs
+  straight in" names the setup without the servo programmer and without the
+  INA3221 current sensor. Each check of the strip holds the facts of one
+  source: schematic, product page or XL1509 datasheet. A source of the kind `doc` names a
   document, its address and the place in it; the data check rejects one
   without them.
 - `testbench/host/capture.sh` warns when a capture holds no samples or the

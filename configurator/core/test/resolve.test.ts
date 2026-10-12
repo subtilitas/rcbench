@@ -434,7 +434,7 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.deepEqual(partIds(strip), [...LOCKED, 'servo']);
   assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 7, 8, 61]);
   assert.deepEqual(plus(strip), [[61, 'servo.POS', null]]);
-  for (const id of [WARNING, 'strip-jumper', 'strip-plug', 'strip-supply']) assert.ok(ids(strip).includes(id), id);
+  for (const id of [WARNING, 'strip-jumper', 'strip-dc', 'strip-measure', 'strip-plug', 'strip-supply']) assert.ok(ids(strip).includes(id), id);
   assert.ok(!ids(strip).includes('servo-5v-pin'));
   assert.deepEqual(used(strip), ['strip-v']);
   // No wire of the strip variant ends on pad 40.
