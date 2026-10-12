@@ -915,7 +915,7 @@ Ein Lesen gibt diese Register:
 | ---: | --- | --- |
 | 0 | `STATE` | Bits 0 bis 2 der Zustand. Bit 3 eine Operation läuft. Bit 4 ein Frame wurde gesendet, seit das Servo zuletzt ohne Spannung war oder der Port zuletzt mit LEAVE verlassen wurde. Bit 5 ein Stopp oder ein Abbruch hat die Session unterbrochen: READ_ALL kommt vor allem anderen. Bit 6 ein Image ist gelesen. Bit 7 die Session hält ein Backup. Bit 8 das Image hat das bekannte Layout. Bit 9 nur RESTORE wird angenommen. Bit 10 ein PD mini antwortet, und der Port schaltet die Versorgung des Servos. Bit 11 die Register 16 bis 31 zeigen das Backup. Bits 12 bis 15 der Programmierport |
 | 1 | `SEQ` | die `SEQ` des zuletzt angenommenen Kommandos; 0 beim Start |
-| 2 | `OP` | Bits 12 bis 15 die zuletzt gestartete Operation, Bits 0 bis 11 die Frames, die sie gesendet hat, gehalten bei 4095 |
+| 2 | `OP` | Bits 12 bis 15 die zuletzt gestartete Operation, 0 beim Start und bis eine Operation startet; ein abgewiesenes Kommando lässt sie stehen. Bits 0 bis 11 die Frames, die sie gesendet hat, gehalten bei 4095 |
 | 3 | `LINK_KS_RESULT` | Low-Byte das Ergebnis dieser Operation, 1 solange sie läuft, 35 solange ein WRITE oder ein RESTORE plant (seit 4.14). High-Byte der Grund, aus dem das zuletzt angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
 | 4 | `LINK_KS_FAIL` | Low-Byte das Servoregister, das das Ergebnis nennt, 0xFF für keines. High-Byte die erledigten Schreibzugriffe des Plans |
 | 5, 6 | `DIFF` | Bit n: Servoregister n weicht von dem ab, was die Operation erwartet hat. Register 5 hält die Servoregister 0 bis 15 |
@@ -957,8 +957,26 @@ RESTORE, einem `KEY`, der weder 0 noch 0x57A5 ist, oder einer `SEQ`, die
 nicht die der Page plus 1 ist, wird mit BAD_VALUE abgewiesen und ändert
 nichts. Der zuletzt angenommene Frame, noch einmal gesendet, wird quittiert
 und tut nichts; ein Kommando, dessen Antwort verloren ging, wird also
-unverändert noch einmal gesendet. Ein angenommenes Kommando wird quittiert;
-was aus ihm wurde, steht in `LINK_KS_RESULT`.
+unverändert noch einmal gesendet. Nach einem Abbruch am Panel wird es nicht
+noch einmal gesendet: das Panel liest die Register 0 bis 3. Die `SEQ` vor
+dem Kommando heißt, dass es nicht angenommen wurde; die Anfrage gilt dann
+als verworfen. Die `SEQ` des Kommandos heißt nur zusammen mit seiner
+Operation in `OP` oder einer Abweisung im oberen Byte von
+`LINK_KS_RESULT`, dass es angenommen wurde. Jede andere `SEQ` ist ein
+Koprozessor, der neu gestartet ist. Ein neu gestarteter Koprozessor liest
+`SEQ` 0, Operation 0 und keine Abweisung. Operation 0 nach einem Lesen,
+das eine Operation nannte, ist ein Neustart bei jeder `SEQ`, auch bei der
+des Kommandos und der davor: die `SEQ` 0 einer frischen Page ist nach
+`SEQ` 0xFFFF die des Kommandos und nach `SEQ` 0 die davor, und eine
+frische Page nimmt ein noch einmal gesendetes Kommando mit `SEQ` 1 als ihr
+eigenes nächstes an. Das Panel meldet dann einen Neustart und kein
+Ergebnis. Ein Koprozessor, der seit seinem Start kein Kommando angenommen
+hat, liest vor und nach einem Neustart `SEQ` 0 und Operation 0: startet er
+zwischen seinem ersten Kommando und diesem Lesen neu, gilt die Anfrage als
+verworfen. Von solchen ersten Kommandos starten nur ENTER und REBOOT eine
+Operation; jedes Schreiben braucht PROGRAMMING, das ein ENTER startet. Ein
+angenommenes Kommando wird quittiert; was aus ihm wurde, steht in
+`LINK_KS_RESULT`.
 
 | Operation | Wert | Tut |
 | --- | ---: | --- |
@@ -1104,7 +1122,12 @@ nicht in PWM steht, und sonst alle 500 ms (eine Anfrage und ein Daten-Frame,
 Backup und das Image. Seine Phase ist PLANNING, solange die zuletzt
 gelesene Page Bit 3 gesetzt und Ergebnis 35 hat, und RUNNING vor dem ersten
 Lesen und ab dem Plan. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
-keine Antwort kommt, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
+keine Antwort kommt, nach `kst_link_abort()` kein Mal, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
+Nach einem abgewiesenen ABORT behält dieses Lesen die Prüfungen von oben:
+eine Page abseits der `SEQ` des Panels oder mit Operation 0 nach einem
+Lesen, das eine nannte, beendet die laufende Operation als neu gestartet,
+nie als erledigt. Ein mit BAD_VALUE abgewiesenes ABORT geht nach dem Lesen
+noch einmal, mit der `SEQ` der Page.
 Ein mit BAD_PAGE abgewiesenes Lesen der Register 0 bis 3 heißt: ein
 Koprozessor ohne die Page; mit jedem anderen Code abgewiesen zählt es als
 unbeantwortet und wird erneut gesendet. Bei einem Koprozessor ohne die Page

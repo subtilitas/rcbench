@@ -93,6 +93,7 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
     }
     k->active = false;
     k->verdict = false;
+    k->cmd_doubt = false;
     if (k->phase != (uint8_t)KST_LINK_DOWN
         && k->phase != (uint8_t)KST_LINK_NO_PAGE) {
         k->phase = (uint8_t)(k->known ? KST_LINK_READY : KST_LINK_SYNC);
@@ -245,15 +246,31 @@ kst_link_start_t kst_link_fetch(kst_link_t *k)
     return s;
 }
 
+/* The request's command went and no answer came: it is not sent again.
+ * Whether the page took it, the next status read says (on_status()).  That
+ * read has KST_LINK_RETRIES tries of its own. */
+static void cmd_in_doubt(kst_link_t *k)
+{
+    k->cmd_live = false;
+    k->cmd_doubt = true;
+    k->tries = 0;
+}
+
 void kst_link_abort(kst_link_t *k)
 {
     if (k == NULL || !k->up || !k->page) {
         return;
     }
-    /* The command has not gone: nothing of the request reaches the servo. */
-    if (k->active && k->phase == (uint8_t)KST_LINK_SENDING && !k->cmd_live
-        && !k->verdict) {
-        finish(k, KST_LINK_OUT_DROPPED, 0u);
+    if (k->active && k->phase == (uint8_t)KST_LINK_SENDING && !k->verdict
+        && !k->cmd_doubt) {
+        if (!k->cmd_live || k->cmd_abort) {
+            /* The command has not gone: nothing of the request reaches
+             * the servo.  A live command here is an ABORT before it. */
+            finish(k, KST_LINK_OUT_DROPPED, 0u);
+        } else if (k->pending == X_NONE) {
+            cmd_in_doubt(k);
+        }
+        /* On its way: kst_link_done() decides with its answer. */
     }
     k->abort_wanted = true;
 }
@@ -326,11 +343,12 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
     if (!k->known) {
         return due(k, now_ms, KST_LINK_POLL_MS) && ask_status(k, now_ms, x);
     }
-    /* A command without an answer goes again as it was. */
+    /* A command without an answer goes again as it was, unless an abort
+     * came for it (cmd_doubt). */
     if (k->cmd_live) {
         return ask_cmd(k, x);
     }
-    if (k->verdict || k->poll_now) {
+    if (k->verdict || k->poll_now || k->cmd_doubt) {
         return ask_status(k, now_ms, x);
     }
     if (k->abort_wanted) {
@@ -378,10 +396,54 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
            && ask_status(k, now_ms, x);
 }
 
+/* Whether the page @p regs took the command that was not sent again.  A
+ * command taken leaves its SEQ, and either its operation in LINK_KS_OP or a
+ * refusal in LINK_KS_RESULT's high byte.  A page that started again has SEQ
+ * 0, operation NONE and no refusal: at SEQ 0, the command after 0xFFFF, the
+ * SEQ alone does not tell the two apart.  The command's operation is never
+ * NONE. */
+static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
+{
+    return regs[LINK_KS_SEQ] == k->cmd[LINK_KS_W_SEQ]
+           && ((regs[LINK_KS_RESULT] >> 8) != 0u
+               || LINK_KS_OP_OF(regs[LINK_KS_OP]) == k->op);
+}
+
+/* Whether the page @p regs is one that started again since the status last
+ * read, whatever its SEQ.  The coprocessor names the operation it last
+ * started in LINK_KS_OP and keeps it until the next one; a refused command
+ * leaves it.  Only a start of the coprocessor sets it back to NONE.  A
+ * page that has started no operation yet reads NONE before and after a
+ * start, and only its SEQ tells. */
+static bool op_went_back(const kst_link_t *k, const uint16_t *regs)
+{
+    return k->known
+           && LINK_KS_OP_OF(k->status[LINK_KS_OP])
+                  != (uint8_t)LINK_KST_OP_NONE
+           && LINK_KS_OP_OF(regs[LINK_KS_OP]) == (uint8_t)LINK_KST_OP_NONE;
+}
+
 static void on_status(kst_link_t *k, const uint16_t *regs)
 {
-    const bool restarted = k->known && regs[LINK_KS_SEQ] != k->seq;
+    const bool went_back = op_went_back(k, regs);
+    bool restarted = k->known
+                     && (regs[LINK_KS_SEQ] != k->seq || went_back);
+    bool dropped = false;
 
+    if (k->cmd_doubt) {
+        /* The page says whether it took the command that was not sent
+         * again: its SEQ and its trace, taken; the SEQ before it, not.  Any
+         * other page started again: another SEQ, the command's SEQ without
+         * its trace, or an operation back at NONE. */
+        k->cmd_doubt = false;
+        if (!went_back && page_took_cmd(k, regs)) {
+            restarted = false;
+            k->verdict = true;
+            k->taken = true;
+        } else {
+            dropped = !restarted;
+        }
+    }
     memcpy(k->status, regs, sizeof(k->status));
     k->seq = regs[LINK_KS_SEQ];
     k->known = true;
@@ -395,6 +457,10 @@ static void on_status(kst_link_t *k, const uint16_t *regs)
          * about the page holds. */
         finish(k, KST_LINK_OUT_RESTARTED, 0u);
         k->phase = (uint8_t)KST_LINK_READY;
+        return;
+    }
+    if (dropped) {
+        finish(k, KST_LINK_OUT_DROPPED, 0u);
         return;
     }
     if (k->active && k->verdict) {
@@ -435,12 +501,16 @@ static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
         k->phase = (uint8_t)KST_LINK_NO_PAGE;
         break;
     case X_CMD:
-        /* The SEQ is not the page's: read it again. */
         k->cmd_live = false;
-        k->known = false;
-        k->polled = false;
         if (k->cmd_abort) {
+            /* The page is read before anything else goes, and what this
+             * module knows of it stays: a page that is not at its SEQ, or
+             * whose operation went back to NONE, started again, and the
+             * operation still running here ends as RESTARTED
+             * (on_status()).  An abort refused with BAD_VALUE goes again
+             * after the read, with the page's SEQ. */
             k->cmd_abort = false;
+            k->poll_now = true;
             if (nack != (uint8_t)LINK_NACK_BAD_VALUE) {
                 k->abort_wanted = false;
             }
@@ -448,6 +518,9 @@ static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
                 k->phase = (uint8_t)KST_LINK_SYNC;
             }
         } else {
+            /* The SEQ is not the page's: read it again. */
+            k->known = false;
+            k->polled = false;
             finish(k, KST_LINK_OUT_NACK, nack);
         }
         break;
@@ -476,7 +549,12 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
             && result != (int)LINK_NACK_BAD_PAGE)) {
         /* A status read refused for another reason than "no such page"
          * says nothing about the page: it is asked again. */
-        if (++k->tries >= KST_LINK_RETRIES) {
+        if (kind == X_CMD && !k->cmd_abort && k->abort_wanted
+            && k->active) {
+            /* An abort came while the command was on its way, on any of
+             * its tries. */
+            cmd_in_doubt(k);
+        } else if (++k->tries >= KST_LINK_RETRIES) {
             /* Given up: what the page holds is read again before
              * anything else is sent. */
             k->tries = 0;
