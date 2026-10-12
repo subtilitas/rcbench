@@ -35,6 +35,12 @@ history is in git.
 
 ### Fixed
 
+- The phase tap's readout on a stick run's page shows PITCH and LOST as
+  `--` and no OVERRUN once the last TONE status read is 500 ms old
+  (`TONE_LINK_STALE_MS`), or while the state does not come from that read.
+  `tone_link_readout()` clears the status's 7 values and sets
+  `tone_readout_t.read` only while a read younger than 500 ms gives the
+  state; the head's warning colour follows the state.
 - `testbench/host/capture.sh` checks for a channel that never changed in
   time linear in the samples. The check keeps two flags per channel in place
   of the joined samples: 6 channels of 1 M samples take 0.6 s, where the
